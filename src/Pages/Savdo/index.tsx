@@ -22,6 +22,13 @@ type ActivityTab = "Vazifa" | "Kommentariya" | "Habarnoma" | "Qo'shimcha";
 type ModalFocus = "tolov" | "faoliyat";
 type ToastType = "success" | "warning" | "info";
 
+type DetailTab =
+  | "Asosiyisi"
+  | "Savatcha"
+  | "Tarix"
+  | "Bekor qilish"
+  | "Qaytarish";
+
 type Sale = {
   id: string;
   mijozNomi: string;
@@ -101,6 +108,14 @@ const savdolar: Sale[] = [
   },
 ];
 
+const detailTabs: DetailTab[] = [
+  "Asosiyisi",
+  "Savatcha",
+  "Tarix",
+  "Bekor qilish",
+  "Qaytarish",
+];
+
 const activityTabs: ActivityTab[] = [
   "Vazifa",
   "Kommentariya",
@@ -174,7 +189,7 @@ function getToastType(text: string): ToastType {
 }
 
 function formatSumma(summa: number) {
-  return `${summa.toLocaleString("ru-RU")} so'm`;
+  return `${ summa.toLocaleString("ru-RU") } so'm`;
 }
 
 function focusClass(isActive: boolean, isPaymentAccepted: boolean) {
@@ -196,6 +211,7 @@ export default function Savdo() {
   const [paymentAccepted, setPaymentAccepted] = useState(false);
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("Bugun");
+  const [detailTab, setDetailTab] = useState<DetailTab>("Asosiyisi");
   const [activityTab, setActivityTab] = useState<ActivityTab>("Vazifa");
   const [hujjat, setHujjat] = useState("Hujjatlar");
   const [actionType, setActionType] = useState("Nima qilish kerak");
@@ -231,6 +247,7 @@ export default function Savdo() {
     setSelectedSale(sale);
     setModalFocus("tolov");
     setPaymentAccepted(false);
+    setDetailTab("Asosiyisi");
     setActivityTab("Vazifa");
     setHujjat("Hujjatlar");
     setActionType("Nima qilish kerak");
@@ -240,6 +257,7 @@ export default function Savdo() {
     setSelectedSale(null);
     setModalFocus("tolov");
     setPaymentAccepted(false);
+    setDetailTab("Asosiyisi");
   }
 
   function handleDocumentAction(value: string) {
@@ -399,267 +417,334 @@ export default function Savdo() {
 
       {selectedSale &&
         createPortal(
-        <>
-          <div className="fixed inset-0 z-[9998] bg-black/55 backdrop-blur-[2px]" />
+          <>
+            <div className="fixed inset-0 z-[9998] bg-black/55 backdrop-blur-[2px]" />
 
-          <section
-            className={[
-              "scrollbar-hidden fixed bottom-4 left-4 right-4 top-4 z-[9999] overflow-y-auto rounded-[34px] p-5 shadow-2xl transition-colors duration-300 sm:bottom-6 sm:left-6 sm:right-6 sm:top-6 lg:bottom-[32px] lg:left-[120px] lg:right-[32px] lg:top-[32px] lg:p-6 2xl:left-[140px]",
-              paymentAccepted ? "bg-white" : "bg-[#D8D8D8]",
-            ].join(" ")}
-          >
-            <div className="mb-6 flex flex-col items-start justify-between gap-5 xl:flex-row">
-              <div>
-                <p className="text-sm font-medium text-gray-500">
-                  Savdo spisok ichi
-                </p>
-                <h2 className="mt-1 text-4xl font-bold text-gray-950">
-                  {selectedSale.mijozNomi}
-                </h2>
-              </div>
+            <section
+              className={[
+                "scrollbar-hidden fixed bottom-4 left-4 right-4 top-4 z-[9999] overflow-y-auto rounded-[34px] p-5 shadow-2xl transition-colors duration-300 sm:bottom-6 sm:left-6 sm:right-6 sm:top-6 lg:bottom-[32px] lg:left-[120px] lg:right-[32px] lg:top-[32px] lg:p-6 2xl:left-[140px]",
+                paymentAccepted ? "bg-white" : "bg-[#D8D8D8]",
+              ].join(" ")}
+            >
+              <div className="mb-6 flex flex-col items-start justify-between gap-5 xl:flex-row">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">
+                    Savdo spisok ichi
+                  </p>
+                  <h2 className="mt-1 text-4xl font-bold text-gray-950">
+                    {selectedSale.mijozNomi}
+                  </h2>
+                </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() => {
-                    setPaymentAccepted(false);
-                    setModalFocus("tolov");
-                    showToast("To'lov orqaga qaytarildi");
-                  }}
-                  className="h-11 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-semibold text-gray-600 transition hover:text-[#FF5A00]"
-                >
-                  To'lovga qaytish
-                </button>
-
-                <select
-                  value={hujjat}
-                  onChange={(e) => handleDocumentAction(e.target.value)}
-                  className="h-11 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-semibold text-gray-700 outline-none transition hover:border-orange-300"
-                >
-                  <option>Hujjatlar</option>
-                  <option>Chek chiqarish</option>
-                  <option>Hisob-faktura</option>
-                  <option>Nakladnoy</option>
-                  <option>PDF yuklash</option>
-                </select>
-
-                <button
-                  onClick={closeDetail}
-                  className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FF5A00] text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600"
-                  aria-label="Yopish"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[360px_minmax(0,1fr)] 2xl:grid-cols-[380px_minmax(0,1fr)]">
-              <aside className={focusClass(modalFocus === "tolov", paymentAccepted)}>
-                <div className="mb-5 flex items-center justify-between border-b border-gray-100 pb-4">
-                  <h3 className="text-xl font-bold text-gray-950">Savdo</h3>
+                <div className="flex flex-wrap items-center gap-2">
                   <button
-                    onClick={() => showToast("Tahrirlash rejimi ochildi")}
-                    className="text-sm font-semibold text-gray-400 transition hover:text-[#FF5A00]"
+                    onClick={() => {
+                      setPaymentAccepted(false);
+                      setModalFocus("tolov");
+                      showToast("To'lov orqaga qaytarildi");
+                    }}
+                    className="h-11 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-semibold text-gray-600 transition hover:text-[#FF5A00]"
                   >
-                    Tahrirlash
+                    To'lovga qaytish
                   </button>
-                </div>
 
-                <p className="text-sm text-gray-500">Summa</p>
-                <h4 className="mt-1 text-3xl font-bold text-gray-950">
-                  {formatSumma(selectedSale.summa)}
-                </h4>
-
-                <button
-                  onClick={() => {
-                    setPaymentAccepted(true);
-                    setModalFocus("faoliyat");
-                    showToast("To'lov qabul qilindi");
-                  }}
-                  className="mt-5 w-full rounded-2xl bg-green-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-green-700"
-                >
-                  To'lov qabul qilish
-                </button>
-
-                <div className="mt-6 rounded-3xl bg-gray-50 p-5">
-                  <p className="font-bold text-gray-800">
-                    To'lov va yetkazib berish
-                  </p>
-                  <p className="mt-1 text-sm text-gray-500">
-                    To'lov, yetkazib berish va savdo holati haqida ma'lumot.
-                  </p>
-                </div>
-
-                <div className="mt-6 space-y-5">
-                  <div>
-                    <p className="text-sm text-gray-500">Kontragent</p>
-                    <div className="mt-2 rounded-2xl bg-gray-100 px-4 py-3 font-semibold text-gray-800">
-                      {selectedSale.mijozNomi}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-gray-500">Manzil</p>
-                    <div className="mt-2 rounded-2xl bg-gray-100 px-4 py-3 text-gray-700">
-                      {selectedSale.manzil}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-gray-500">Telefon</p>
-                    <div className="mt-2 rounded-2xl bg-gray-100 px-4 py-3 text-gray-700">
-                      {selectedSale.telefon}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-gray-500">Mas'ul shaxs</p>
-                    <div className="mt-2 rounded-2xl bg-gray-100 px-4 py-3 text-gray-700">
-                      {selectedSale.masul}
-                    </div>
-                  </div>
-                </div>
-              </aside>
-
-              <main className={focusClass(modalFocus === "faoliyat", paymentAccepted)}>
-                <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex flex-wrap gap-2">
-                    {activityTabs.map((tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => setActivityTab(tab)}
-                        className={[
-                          "rounded-full px-4 py-2 text-sm font-semibold transition",
-                          activityTab === tab
-                            ? "border border-orange-400 bg-orange-50 text-[#FF5A00]"
-                            : "text-gray-600 hover:bg-orange-50 hover:text-[#FF5A00]",
-                        ].join(" ")}
-                      >
-                        {tab}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => showToast("Settings bosildi")}
-                      className="rounded-xl bg-gray-100 p-3 text-gray-700 transition hover:bg-[#FF5A00] hover:text-white"
-                      aria-label="Settings"
-                    >
-                      <Settings size={18} />
-                    </button>
-
-                    <button
-                      onClick={() => showToast("Print oynasi ochildi")}
-                      className="rounded-xl bg-gray-100 p-3 text-gray-700 transition hover:bg-[#FF5A00] hover:text-white"
-                      aria-label="Print"
-                    >
-                      <Printer size={18} />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
                   <select
-                    value={actionType}
-                    onChange={(e) => setActionType(e.target.value)}
-                    className="h-14 flex-1 rounded-2xl border border-gray-100 px-4 text-gray-700 outline-none"
+                    value={hujjat}
+                    onChange={(e) => handleDocumentAction(e.target.value)}
+                    className="h-11 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-semibold text-gray-700 outline-none transition hover:border-orange-300"
                   >
-                    <option>Nima qilish kerak</option>
-                    <option>Qo'ng'iroq qilish</option>
-                    <option>To'lovni eslatish</option>
-                    <option>Yangi buyurtma olish</option>
+                    <option>Hujjatlar</option>
+                    <option>Chek chiqarish</option>
+                    <option>Hisob-faktura</option>
+                    <option>Nakladnoy</option>
+                    <option>PDF yuklash</option>
                   </select>
 
                   <button
-                    onClick={() =>
-                      actionType === "Nima qilish kerak"
-                        ? showToast("Avval amal tanlang")
-                        : showToast(`${activityTab} qo'shildi`)
-                    }
-                    className="rounded-2xl bg-[#FF5A00] px-6 text-sm font-bold text-white transition hover:bg-orange-600"
+                    onClick={closeDetail}
+                    className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FF5A00] text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600"
+                    aria-label="Yopish"
                   >
-                    Qo'shish
+                    <X size={24} />
                   </button>
                 </div>
+              </div>
 
-                <div className="my-6 flex items-center gap-3">
-                  <div className="h-px flex-1 bg-gray-200" />
-                  <span className="rounded-full border border-green-300 bg-green-50 px-5 py-2 text-sm font-medium text-green-600">
-                    Bugun
-                  </span>
-                  <div className="h-px flex-1 bg-gray-200" />
-                </div>
-
-                <div className="space-y-4">
-                  {activityItems.map((item) => {
-                    const Icon = item.icon;
-
-                    return (
-                      <article
-                        key={item.turi}
-                        className="flex gap-5 rounded-3xl bg-white p-6 shadow-sm"
-                      >
-                        <div
-                          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white ${item.rang}`}
-                        >
-                          <Icon size={24} />
-                        </div>
-
-                        <div>
-                          <h3 className="text-lg font-bold text-gray-800">
-                            {item.turi}{" "}
-                            <span className="text-sm font-normal text-gray-400">
-                              | {item.vaqt}
-                            </span>
-                          </h3>
-                          <p className="mt-2 text-sm text-gray-500">
-                            {item.text}
-                          </p>
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-3">
-                  {savatchaItems.map((item) => (
-                    <div key={item.nom} className="rounded-2xl bg-gray-50 p-4">
-                      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-[#FF5A00]">
-                        <ShoppingCart size={18} />
-                      </div>
-                      <p className="font-semibold text-gray-900">{item.nom}</p>
-                      <p className="mt-1 text-sm text-gray-500">
-                        {item.soni} x {formatSumma(item.narx)}
-                      </p>
-                    </div>
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-orange-100 bg-white px-4 py-3 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  {detailTabs.map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setDetailTab(tab)}
+                      className={[
+                        "rounded-full px-4 py-2 text-sm font-semibold transition",
+                        detailTab === tab
+                          ? "border border-orange-400 bg-orange-50 text-[#FF5A00]"
+                          : "text-gray-500 hover:bg-orange-50 hover:text-[#FF5A00]",
+                      ].join(" ")}
+                    >
+                      {tab}
+                    </button>
                   ))}
                 </div>
 
-                <div className="mt-5 rounded-3xl border border-orange-100 bg-orange-50 p-5">
-                  <div className="mb-3 flex items-center gap-3">
-                    <Package className="text-[#FF5A00]" size={20} />
-                    <p className="font-bold text-orange-700">
-                      Mahsulot qaytarish
-                    </p>
-                  </div>
-                  <p className="text-sm text-orange-700/75">
-                    Qaytarish yoki bekor qilish amallari uchun activity paneldan
-                    kerakli vazifani tanlang.
-                  </p>
-                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => showToast("Settings bosildi")}
+                    className="rounded-xl bg-gray-100 p-3 text-gray-700 transition hover:bg-[#FF5A00] hover:text-white"
+                    aria-label="Settings"
+                  >
+                    <Settings size={18} />
+                  </button>
 
-                <button
-                  onClick={() => showToast("Bekor qilish amali demo holatda")}
-                  className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-5 py-3 text-sm font-bold text-red-600 transition hover:bg-red-500 hover:text-white"
-                >
-                  <Trash2 size={17} />
-                  Savdoni bekor qilish
-                </button>
-              </main>
-            </div>
-          </section>
-        </>
-        ,
+                  <button
+                    onClick={() => showToast("Print oynasi ochildi")}
+                    className="rounded-xl bg-gray-100 p-3 text-gray-700 transition hover:bg-[#FF5A00] hover:text-white"
+                    aria-label="Print"
+                  >
+                    <Printer size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {detailTab === "Asosiyisi" && (
+                <div className="grid grid-cols-1 gap-6 xl:grid-cols-[360px_minmax(0,1fr)] 2xl:grid-cols-[380px_minmax(0,1fr)]">
+                  <aside className={focusClass(modalFocus === "tolov", paymentAccepted)}>
+                    <div className="mb-5 flex items-center justify-between border-b border-gray-100 pb-4">
+                      <h3 className="text-xl font-bold text-gray-950">Savdo</h3>
+                      <button
+                        onClick={() => showToast("Tahrirlash rejimi ochildi")}
+                        className="text-sm font-semibold text-gray-400 transition hover:text-[#FF5A00]"
+                      >
+                        Tahrirlash
+                      </button>
+                    </div>
+
+                    <p className="text-sm text-gray-500">Summa</p>
+                    <h4 className="mt-1 text-3xl font-bold text-gray-950">
+                      {formatSumma(selectedSale.summa)}
+                    </h4>
+
+                    <button
+                      onClick={() => {
+                        setPaymentAccepted(true);
+                        setModalFocus("faoliyat");
+                        showToast("To'lov qabul qilindi");
+                      }}
+                      className="mt-5 w-full rounded-2xl bg-green-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-green-700"
+                    >
+                      To'lov qabul qilish
+                    </button>
+
+                    <div className="mt-6 rounded-3xl bg-gray-50 p-5">
+                      <p className="font-bold text-gray-800">
+                        To'lov va yetkazib berish
+                      </p>
+                      <p className="mt-1 text-sm text-gray-500">
+                        To'lov, yetkazib berish va savdo holati haqida ma'lumot.
+                      </p>
+                    </div>
+
+                    <div className="mt-6 space-y-5">
+                      <div>
+                        <p className="text-sm text-gray-500">Kontragent</p>
+                        <div className="mt-2 rounded-2xl bg-gray-100 px-4 py-3 font-semibold text-gray-800">
+                          {selectedSale.mijozNomi}
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-sm text-gray-500">Manzil</p>
+                        <div className="mt-2 rounded-2xl bg-gray-100 px-4 py-3 text-gray-700">
+                          {selectedSale.manzil}
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-sm text-gray-500">Telefon</p>
+                        <div className="mt-2 rounded-2xl bg-gray-100 px-4 py-3 text-gray-700">
+                          {selectedSale.telefon}
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-sm text-gray-500">Mas'ul shaxs</p>
+                        <div className="mt-2 rounded-2xl bg-gray-100 px-4 py-3 text-gray-700">
+                          {selectedSale.masul}
+                        </div>
+                      </div>
+                    </div>
+                  </aside>
+
+                  <main className={focusClass(modalFocus === "faoliyat", paymentAccepted)}>
+                    <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex flex-wrap gap-2">
+                        {activityTabs.map((tab) => (
+                          <button
+                            key={tab}
+                            onClick={() => setActivityTab(tab)}
+                            className={[
+                              "rounded-full px-4 py-2 text-sm font-semibold transition",
+                              activityTab === tab
+                                ? "border border-orange-400 bg-orange-50 text-[#FF5A00]"
+                                : "text-gray-600 hover:bg-orange-50 hover:text-[#FF5A00]",
+                            ].join(" ")}
+                          >
+                            {tab}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <select
+                        value={actionType}
+                        onChange={(e) => setActionType(e.target.value)}
+                        className="h-14 flex-1 rounded-2xl border border-gray-100 px-4 text-gray-700 outline-none"
+                      >
+                        <option>Nima qilish kerak</option>
+                        <option>Qo'ng'iroq qilish</option>
+                        <option>To'lovni eslatish</option>
+                        <option>Yangi buyurtma olish</option>
+                      </select>
+
+                      <button
+                        onClick={() =>
+                          actionType === "Nima qilish kerak"
+                            ? showToast("Avval amal tanlang")
+                            : showToast(`${activityTab} qo'shildi`)
+                        }
+                        className="rounded-2xl bg-[#FF5A00] px-6 text-sm font-bold text-white transition hover:bg-orange-600"
+                      >
+                        Qo'shish
+                      </button>
+                    </div>
+
+                    <div className="my-6 flex items-center gap-3">
+                      <div className="h-px flex-1 bg-gray-200" />
+                      <span className="rounded-full border border-green-300 bg-green-50 px-5 py-2 text-sm font-medium text-green-600">
+                        Bugun
+                      </span>
+                      <div className="h-px flex-1 bg-gray-200" />
+                    </div>
+
+                    <div className="space-y-4">
+                      {activityItems.map((item) => {
+                        const Icon = item.icon;
+
+                        return (
+                          <article
+                            key={item.turi}
+                            className="flex gap-5 rounded-3xl bg-white p-6 shadow-sm"
+                          >
+                            <div
+                              className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white ${item.rang}`}
+                            >
+                              <Icon size={24} />
+                            </div>
+
+                            <div>
+                              <h3 className="text-lg font-bold text-gray-800">
+                                {item.turi}{" "}
+                                <span className="text-sm font-normal text-gray-400">
+                                  | {item.vaqt}
+                                </span>
+                              </h3>
+                              <p className="mt-2 text-sm text-gray-500">
+                                {item.text}
+                              </p>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  </main>
+                </div>
+              )}
+
+              {detailTab === "Savatcha" && (
+                <div className="rounded-[28px] bg-white p-6 shadow-sm">
+                  <div className="mb-5 flex items-center gap-3">
+                    <ShoppingCart className="text-[#FF5A00]" size={22} />
+                    <h3 className="text-2xl font-bold text-gray-950">Savatcha</h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+                    {savatchaItems.map((item) => (
+                      <div key={item.nom} className="rounded-2xl bg-gray-50 p-4">
+                        <p className="font-semibold text-gray-900">{item.nom}</p>
+                        <p className="mt-1 text-sm text-gray-500">
+                          {item.soni} x {formatSumma(item.narx)}
+                        </p>
+                        <p className="mt-3 font-bold text-[#FF5A00]">
+                          {formatSumma(item.soni * item.narx)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {detailTab === "Tarix" && (
+                <div className="rounded-[28px] bg-white p-6 shadow-sm">
+                  <h3 className="text-2xl font-bold text-gray-950">Tarix</h3>
+
+                  <div className="mt-5 space-y-4">
+                    {activityItems.map((item) => (
+                      <div key={item.turi} className="rounded-2xl border border-gray-100 p-4">
+                        <p className="font-bold text-gray-900">
+                          {item.turi} | {item.vaqt}
+                        </p>
+                        <p className="mt-1 text-sm text-gray-500">{item.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {detailTab === "Bekor qilish" && (
+                <div className="rounded-[28px] border border-red-100 bg-red-50 p-6">
+                  <h3 className="text-2xl font-bold text-red-600">Bekor qilish</h3>
+                  <p className="mt-2 text-sm text-red-500">
+                    Ushbu savdoni bekor qilish uchun pastdagi tugmani bosing.
+                  </p>
+
+                  <button
+                    onClick={() => {
+                      showToast("Savdo bekor qilindi");
+                      closeDetail();
+                    }}
+                    className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-red-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-red-600"
+                  >
+                    <Trash2 size={17} />
+                    Savdoni bekor qilish
+                  </button>
+                </div>
+              )}
+
+              {detailTab === "Qaytarish" && (
+                <div className="rounded-[28px] border border-orange-100 bg-orange-50 p-6">
+                  <div className="mb-3 flex items-center gap-3">
+                    <Package className="text-[#FF5A00]" size={22} />
+                    <h3 className="text-2xl font-bold text-orange-700">
+                      Mahsulot qaytarish
+                    </h3>
+                  </div>
+
+                  <p className="text-sm text-orange-700/75">
+                    Sotilgan mahsulotlarni qaytarish jarayoni shu yerda bajariladi.
+                  </p>
+
+                  <button
+                    onClick={() => showToast("Qaytarish jarayoni boshlandi")}
+                    className="mt-6 rounded-2xl bg-[#FF5A00] px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
+                  >
+                    Qaytarishni boshlash
+                  </button>
+                </div>
+              )}
+            </section>
+          </>,
           document.body
         )}
     </div>
