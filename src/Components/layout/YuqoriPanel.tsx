@@ -207,10 +207,18 @@ export default function YuqoriPanel() {
 
     if (!product) return;
 
-    setSelectedQuantities((prev) => ({
-      ...prev,
-      [productId]: Math.min(Math.max(nextQuantity, 1), product.soni),
-    }));
+    setSelectedQuantities((prev) => {
+      const next = { ...prev };
+      const safeQuantity = Math.min(Math.max(nextQuantity, 0), product.soni);
+
+      if (safeQuantity <= 0) {
+        delete next[productId];
+        return next;
+      }
+
+      next[productId] = safeQuantity;
+      return next;
+    });
   }
 
   function addSelectedProductsToCart() {
@@ -319,14 +327,15 @@ export default function YuqoriPanel() {
 
               <main className="min-w-0 overflow-auto p-4">
                 <div className="space-y-2">
-                  <div className="grid grid-cols-[minmax(0,1fr)_150px] px-3 pb-2 text-sm font-bold text-orange-500">
+                  <div className="grid grid-cols-[minmax(0,1fr)_140px_80px] items-center px-3 pb-2 text-sm font-bold text-orange-500">
                     <span>Mahsulot nomi</span>
+                    <span />
                     <span className="text-right">Qoldiq</span>
                   </div>
 
                   {filteredProducts.map((product) => {
-                    const selectedQuantity = selectedQuantities[product.id];
-                    const isSelected = Boolean(selectedQuantity);
+                    const selectedQuantity = selectedQuantities[product.id] ?? 0;
+                    const isSelected = selectedQuantity > 0;
 
                     return (
                       <div
@@ -340,7 +349,7 @@ export default function YuqoriPanel() {
                         role="button"
                         tabIndex={product.soni > 0 ? 0 : -1}
                         className={[
-                          "grid w-full grid-cols-[minmax(0,1fr)_150px] items-center rounded-xl border px-3 py-3 text-left transition",
+                          "grid w-full grid-cols-[minmax(0,1fr)_140px_80px] items-center rounded-xl border px-3 py-3 text-left transition",
                           isSelected
                             ? "border-orange-500 bg-orange-50"
                             : "border-gray-100 bg-white hover:bg-orange-50",
@@ -350,37 +359,38 @@ export default function YuqoriPanel() {
                         <span className="truncate text-sm font-bold text-gray-800">
                           {product.nomi}
                         </span>
-                        <span className="flex justify-end">
-                          {isSelected ? (
-                            <span
-                              onClick={(event) => event.stopPropagation()}
-                              className="flex h-9 items-center rounded-lg bg-white px-1 shadow-sm"
+                        <span className="flex justify-center">
+                          <span
+                            onClick={(event) => event.stopPropagation()}
+                            className="flex h-9 items-center rounded-lg bg-white px-1 shadow-sm"
+                          >
+                            <button
+                              onClick={() =>
+                                updateSelectedQuantity(product.id, selectedQuantity - 1)
+                              }
+                              disabled={selectedQuantity <= 0}
+                              className="flex h-7 w-7 items-center justify-center rounded-md text-gray-600 transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-transparent"
                             >
-                              <button
-                                onClick={() =>
-                                  updateSelectedQuantity(product.id, selectedQuantity - 1)
-                                }
-                                className="flex h-7 w-7 items-center justify-center rounded-md text-gray-600 hover:bg-orange-50"
-                              >
-                                -
-                              </button>
-                              <span className="w-9 text-center text-sm font-bold text-gray-900">
-                                {selectedQuantity}
-                              </span>
-                              <button
-                                onClick={() =>
-                                  updateSelectedQuantity(product.id, selectedQuantity + 1)
-                                }
-                                className="flex h-7 w-7 items-center justify-center rounded-md text-gray-600 hover:bg-orange-50"
-                              >
-                                +
-                              </button>
+                              -
+                            </button>
+                            <span className="w-9 text-center text-sm font-bold text-gray-900">
+                              {selectedQuantity}
                             </span>
-                          ) : (
-                            <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-600">
-                              {product.soni}
-                            </span>
-                          )}
+                            <button
+                              onClick={() =>
+                                updateSelectedQuantity(product.id, selectedQuantity + 1)
+                              }
+                              disabled={product.soni <= 0 || selectedQuantity >= product.soni}
+                              className="flex h-7 w-7 items-center justify-center rounded-md text-gray-600 transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-transparent"
+                            >
+                              +
+                            </button>
+                          </span>
+                        </span>
+                        <span className="flex justify-end">
+                          <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-600">
+                            {product.soni}
+                          </span>
                         </span>
                       </div>
                     );
