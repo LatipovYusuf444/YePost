@@ -27,8 +27,10 @@ type OmborState = {
   purchases: Purchase[];
   products: PurchaseProduct[];
   addPurchase: (purchase: Omit<Purchase, "id">) => Purchase;
+  updatePurchase: (purchaseId: number, purchase: Omit<Purchase, "id">) => void;
   addProduct: (product: Omit<PurchaseProduct, "id">) => PurchaseProduct;
   decreaseProductStock: (productId: number, quantity: number) => void;
+  ensureMinimumPurchases: (minimum: number) => void;
   ensureMinimumStock: (minimum: number) => void;
 };
 
@@ -93,6 +95,66 @@ const demoPurchases: Purchase[] = [
     summa: 150000,
     ombor: "Ombor nomi",
   },
+  {
+    id: 7,
+    ismi: "Sardor Textile",
+    sana: "27.11.2025",
+    ozgartirilganSana: "22.04.2026",
+    masul: "Javohir Karimov",
+    yetkazibBeruvchi: "Premium Logistic",
+    summa: 820000,
+    ombor: "Asosiy ombor",
+  },
+  {
+    id: 8,
+    ismi: "Madina Market",
+    sana: "28.11.2025",
+    ozgartirilganSana: "23.04.2026",
+    masul: "Sevara Azimova",
+    yetkazibBeruvchi: "City Supply",
+    summa: 430000,
+    ombor: "Filial ombor",
+  },
+  {
+    id: 9,
+    ismi: "Bekzod Optom",
+    sana: "29.11.2025",
+    ozgartirilganSana: "24.04.2026",
+    masul: "Akmal Mirzaev",
+    yetkazibBeruvchi: "East Trade",
+    summa: 1250000,
+    ombor: "Zaxira ombor",
+  },
+  {
+    id: 10,
+    ismi: "Ali Ashurmatov",
+    sana: "30.11.2025",
+    ozgartirilganSana: "25.04.2026",
+    masul: "Dilorom Kosimova",
+    yetkazibBeruvchi: "24.12.2020",
+    summa: 150000,
+    ombor: "Ombor nomi",
+  },
+  {
+    id: 11,
+    ismi: "Sardor Textile",
+    sana: "01.12.2025",
+    ozgartirilganSana: "26.04.2026",
+    masul: "Javohir Karimov",
+    yetkazibBeruvchi: "Premium Logistic",
+    summa: 820000,
+    ombor: "Asosiy ombor",
+  },
+  {
+    id: 12,
+    ismi: "Madina Market",
+    sana: "05.06.2026",
+    ozgartirilganSana: "05.06.2026",
+    masul: "Sevara Azimova",
+    yetkazibBeruvchi: "City Supply",
+    summa: 430000,
+    ombor: "Filial ombor",
+  },
 ];
 
 const demoProducts: PurchaseProduct[] = Array.from({ length: 12 }, (_, index) => ({
@@ -120,6 +182,13 @@ export const useOmborStore = create<OmborState>()(
 
         return nextPurchase;
       },
+      updatePurchase: (purchaseId, purchase) => {
+        set((state) => ({
+          purchases: state.purchases.map((item) =>
+            item.id === purchaseId ? { ...purchase, id: purchaseId } : item
+          ),
+        }));
+      },
       addProduct: (product) => {
         const nextProduct = { ...product, id: Date.now() };
 
@@ -137,6 +206,18 @@ export const useOmborStore = create<OmborState>()(
               : product
           ),
         }));
+      },
+      ensureMinimumPurchases: (minimum) => {
+        set((state) => {
+          if (state.purchases.length >= minimum) return state;
+
+          const existingIds = new Set(state.purchases.map((purchase) => purchase.id));
+          const missingPurchases = demoPurchases.filter((purchase) => !existingIds.has(purchase.id));
+
+          return {
+            purchases: [...state.purchases, ...missingPurchases].slice(0, minimum),
+          };
+        });
       },
       ensureMinimumStock: (minimum) => {
         set((state) => ({

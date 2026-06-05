@@ -14,6 +14,7 @@ import {
   Square,
   X,
 } from "lucide-react";
+import TablePagination from "@/Components/common/TablePagination";
 import { useOmborStore, type Purchase } from "@/store/omborStore";
 
 type DetailTab = "Asosiyisi" | "Mahsulotlar" | "Tarix" | "Bekor qilish" | "Qaytarish";
@@ -48,11 +49,14 @@ function emptyForm(): Omit<Purchase, "id"> {
 export default function Xaridlar() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"xaridlar" | "xujatlar">("xaridlar");
+  const [purchasePage, setPurchasePage] = useState(1);
+  const [productPage, setProductPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const purchases = useOmborStore((state) => state.purchases);
   const purchaseProducts = useOmborStore((state) => state.products);
   const addPurchase = useOmborStore((state) => state.addPurchase);
   const addProduct = useOmborStore((state) => state.addProduct);
+  const ensureMinimumPurchases = useOmborStore((state) => state.ensureMinimumPurchases);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
   const [detailTab, setDetailTab] = useState<DetailTab>("Asosiyisi");
@@ -69,6 +73,10 @@ export default function Xaridlar() {
     },
   ]);
   const [form, setForm] = useState(emptyForm);
+
+  useEffect(() => {
+    ensureMinimumPurchases(12);
+  }, [ensureMinimumPurchases]);
 
   useEffect(() => {
     if (selectedPurchase) document.body.style.overflow = "hidden";
@@ -119,6 +127,22 @@ export default function Xaridlar() {
         .includes(value)
     );
   }, [productSearch, purchaseProducts]);
+  const safePurchasePage = Math.min(
+    purchasePage,
+    Math.max(1, Math.ceil(filteredPurchases.length / 10))
+  );
+  const paginatedPurchases = filteredPurchases.slice(
+    (safePurchasePage - 1) * 10,
+    safePurchasePage * 10
+  );
+  const safeProductPage = Math.min(
+    productPage,
+    Math.max(1, Math.ceil(filteredProducts.length / 10))
+  );
+  const paginatedProducts = filteredProducts.slice(
+    (safeProductPage - 1) * 10,
+    safeProductPage * 10
+  );
 
   function toggleSelect(id: number) {
     setSelectedIds((prev) =>
@@ -253,7 +277,7 @@ export default function Xaridlar() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-gray-600">
-                {filteredPurchases.map((purchase) => (
+                {paginatedPurchases.map((purchase) => (
                   <tr
                     key={purchase.id}
                     onClick={() => openDetail(purchase)}
@@ -314,6 +338,11 @@ export default function Xaridlar() {
               </tbody>
             </table>
           </div>
+          <TablePagination
+            page={safePurchasePage}
+            totalItems={filteredPurchases.length}
+            onPageChange={setPurchasePage}
+          />
         </div>
       ) : (
         <div className="mt-6 rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-14 text-center text-sm text-gray-400">
@@ -660,7 +689,7 @@ export default function Xaridlar() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 text-gray-600">
-                          {filteredProducts.map((product) => (
+                          {paginatedProducts.map((product) => (
                             <tr key={product.id} className="transition hover:bg-orange-50/40">
                               <td className="px-4 py-3">
                                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-orange-50 text-orange-500">
@@ -698,6 +727,11 @@ export default function Xaridlar() {
                         </tbody>
                       </table>
                     </div>
+                    <TablePagination
+                      page={safeProductPage}
+                      totalItems={filteredProducts.length}
+                      onPageChange={setProductPage}
+                    />
                   </div>
                 </div>
               )}

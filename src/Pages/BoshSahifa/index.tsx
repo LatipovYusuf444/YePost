@@ -11,7 +11,6 @@ import {
   Search,
   Settings,
   Trash2,
-  UserPlus,
   WalletCards,
   X,
 } from "lucide-react";
@@ -265,7 +264,6 @@ export default function BoshSahifa() {
             <div className="mb-5">
               <div className="mb-2 flex items-center justify-between">
                 <p className="text-sm font-bold text-gray-700">Mijoz</p>
-                <UserPlus size={17} className="text-green-600" />
               </div>
 
               <input
@@ -279,7 +277,6 @@ export default function BoshSahifa() {
             <div className="mb-5">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <p className="text-sm font-bold text-gray-700">Chegirma</p>
-                <button className="text-xs font-bold text-green-600">Kodni kiritish</button>
               </div>
 
               <div className="grid grid-cols-[minmax(0,1fr)_74px] gap-2">

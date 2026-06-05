@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   ChevronDown,
@@ -8,189 +8,74 @@ import {
   X,
 } from "lucide-react";
 import TablePagination from "@/Components/common/TablePagination";
+import { useOmborStore, type Purchase } from "@/store/omborStore";
 
-type TransferTab = "kirim" | "xujatlar";
+type DoneTab = "kirim" | "xujatlar";
 type DateFilter = "all" | "today";
 
-type Transfer = {
-  id: number;
-  ismi: string;
-  sana: string;
-  ozgartirilganSana: string;
-  masul: string;
-  qayerdan: string;
-  summa: number;
-  qayerga: string;
-};
-
 const todayDate = "05.06.2026";
-
-const demoTransfers: Transfer[] = [
-  {
-    id: 1,
-    ismi: "Ali Ashurmatov",
-    sana: "20.11.2025",
-    ozgartirilganSana: "14.04.2026",
-    masul: "Dilorom Kosimova",
-    qayerdan: "Xasanboy",
-    summa: 150000,
-    qayerga: "Xasanboy",
-  },
-  {
-    id: 2,
-    ismi: "Sardor Textile",
-    sana: "21.11.2025",
-    ozgartirilganSana: "15.04.2026",
-    masul: "Javohir Karimov",
-    qayerdan: "Asosiy ombor",
-    summa: 820000,
-    qayerga: "Filial ombor",
-  },
-  {
-    id: 3,
-    ismi: "Madina Market",
-    sana: "22.11.2025",
-    ozgartirilganSana: "16.04.2026",
-    masul: "Sevara Azimova",
-    qayerdan: "Zaxira ombor",
-    summa: 430000,
-    qayerga: "Asosiy ombor",
-  },
-  {
-    id: 4,
-    ismi: "Ali Ashurmatov",
-    sana: "24.11.2025",
-    ozgartirilganSana: "18.04.2026",
-    masul: "Dilorom Kosimova",
-    qayerdan: "Xasanboy",
-    summa: 150000,
-    qayerga: "Xasanboy",
-  },
-  {
-    id: 5,
-    ismi: "Bekzod Optom",
-    sana: "25.11.2025",
-    ozgartirilganSana: "20.04.2026",
-    masul: "Akmal Mirzaev",
-    qayerdan: "Filial ombor",
-    summa: 1250000,
-    qayerga: "Zaxira ombor",
-  },
-  {
-    id: 6,
-    ismi: "Ali Ashurmatov",
-    sana: "26.11.2025",
-    ozgartirilganSana: "21.04.2026",
-    masul: "Dilorom Kosimova",
-    qayerdan: "Xasanboy",
-    summa: 150000,
-    qayerga: "Xasanboy",
-  },
-  {
-    id: 7,
-    ismi: "Madina Market",
-    sana: todayDate,
-    ozgartirilganSana: todayDate,
-    masul: "Sevara Azimova",
-    qayerdan: "Asosiy ombor",
-    summa: 430000,
-    qayerga: "Filial ombor",
-  },
-  {
-    id: 8,
-    ismi: "Ali Ashurmatov",
-    sana: "28.11.2025",
-    ozgartirilganSana: "23.04.2026",
-    masul: "Dilorom Kosimova",
-    qayerdan: "Xasanboy",
-    summa: 150000,
-    qayerga: "Asosiy ombor",
-  },
-  {
-    id: 9,
-    ismi: "Bekzod Optom",
-    sana: "29.11.2025",
-    ozgartirilganSana: "24.04.2026",
-    masul: "Akmal Mirzaev",
-    qayerdan: "Zaxira ombor",
-    summa: 1250000,
-    qayerga: "Filial ombor",
-  },
-  {
-    id: 10,
-    ismi: "Sardor Textile",
-    sana: "30.11.2025",
-    ozgartirilganSana: "25.04.2026",
-    masul: "Javohir Karimov",
-    qayerdan: "Asosiy ombor",
-    summa: 820000,
-    qayerga: "Zaxira ombor",
-  },
-  {
-    id: 11,
-    ismi: "Madina Market",
-    sana: "01.12.2025",
-    ozgartirilganSana: "26.04.2026",
-    masul: "Sevara Azimova",
-    qayerdan: "Filial ombor",
-    summa: 430000,
-    qayerga: "Asosiy ombor",
-  },
-  {
-    id: 12,
-    ismi: "Ali Ashurmatov",
-    sana: todayDate,
-    ozgartirilganSana: todayDate,
-    masul: "Dilorom Kosimova",
-    qayerdan: "Xasanboy",
-    summa: 150000,
-    qayerga: "Filial ombor",
-  },
-];
 
 function formatSumma(value: number) {
   return `${value.toLocaleString("ru-RU")} uzs`;
 }
 
-function emptyTransfer(): Omit<Transfer, "id"> {
+function emptyForm(): Omit<Purchase, "id"> {
   return {
     ismi: "",
     sana: "",
     ozgartirilganSana: "",
     masul: "",
-    qayerdan: "",
+    yetkazibBeruvchi: "",
     summa: 0,
-    qayerga: "",
+    ombor: "",
   };
 }
 
-export default function Kochirishlar() {
-  const [transfers, setTransfers] = useState(demoTransfers);
+export default function AmalgaOshirilganlar() {
+  const purchases = useOmborStore((state) => state.purchases);
+  const addPurchase = useOmborStore((state) => state.addPurchase);
+  const updatePurchase = useOmborStore((state) => state.updatePurchase);
+  const ensureMinimumPurchases = useOmborStore((state) => state.ensureMinimumPurchases);
   const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState<TransferTab>("kirim");
+  const [activeTab, setActiveTab] = useState<DoneTab>("kirim");
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [isDateMenuOpen, setIsDateMenuOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingTransferId, setEditingTransferId] = useState<number | null>(null);
-  const [form, setForm] = useState(emptyTransfer);
+  const [editingPurchaseId, setEditingPurchaseId] = useState<number | null>(null);
+  const [form, setForm] = useState(emptyForm);
 
-  const filteredTransfers = useMemo(() => {
+  useEffect(() => {
+    ensureMinimumPurchases(12);
+  }, [ensureMinimumPurchases]);
+
+  const completedRows = useMemo(
+    () =>
+      purchases.map((purchase, index) => ({
+        ...purchase,
+        status: index % 3 === 0 ? "Tasdiqlangan" : index % 3 === 1 ? "Qabul qilingan" : "Yopilgan",
+        klient: purchase.yetkazibBeruvchi,
+      })),
+    [purchases]
+  );
+
+  const filteredRows = useMemo(() => {
     const value = search.toLowerCase().trim();
 
-    return transfers.filter((transfer) => {
-      const matchesDate = dateFilter === "all" || transfer.sana === todayDate;
+    return completedRows.filter((row) => {
+      const matchesDate = dateFilter === "all" || row.sana === todayDate;
       const matchesSearch =
         !value ||
         [
-          transfer.ismi,
-          transfer.sana,
-          transfer.ozgartirilganSana,
-          transfer.masul,
-          transfer.qayerdan,
-          transfer.qayerga,
-          formatSumma(transfer.summa),
+          row.ismi,
+          row.sana,
+          row.ozgartirilganSana,
+          row.masul,
+          row.klient,
+          row.ombor,
+          row.status,
+          formatSumma(row.summa),
         ]
           .join(" ")
           .toLowerCase()
@@ -198,9 +83,9 @@ export default function Kochirishlar() {
 
       return matchesDate && matchesSearch;
     });
-  }, [dateFilter, search, transfers]);
-  const safePage = Math.min(page, Math.max(1, Math.ceil(filteredTransfers.length / 10)));
-  const paginatedTransfers = filteredTransfers.slice((safePage - 1) * 10, safePage * 10);
+  }, [completedRows, dateFilter, search]);
+  const safePage = Math.min(page, Math.max(1, Math.ceil(filteredRows.length / 10)));
+  const paginatedRows = filteredRows.slice((safePage - 1) * 10, safePage * 10);
 
   function toggleSelect(id: number) {
     setSelectedIds((prev) =>
@@ -209,51 +94,44 @@ export default function Kochirishlar() {
   }
 
   function openCreateModal() {
-    setEditingTransferId(null);
-    setForm(emptyTransfer());
+    setEditingPurchaseId(null);
+    setForm(emptyForm());
     setIsModalOpen(true);
   }
 
-  function openEditModal(transfer: Transfer) {
-    setEditingTransferId(transfer.id);
+  function openEditModal(purchase: Purchase) {
+    setEditingPurchaseId(purchase.id);
     setForm({
-      ismi: transfer.ismi,
-      sana: transfer.sana,
-      ozgartirilganSana: transfer.ozgartirilganSana,
-      masul: transfer.masul,
-      qayerdan: transfer.qayerdan,
-      summa: transfer.summa,
-      qayerga: transfer.qayerga,
+      ismi: purchase.ismi,
+      sana: purchase.sana,
+      ozgartirilganSana: purchase.ozgartirilganSana,
+      masul: purchase.masul,
+      yetkazibBeruvchi: purchase.yetkazibBeruvchi,
+      summa: purchase.summa,
+      ombor: purchase.ombor,
     });
     setIsModalOpen(true);
   }
 
   function closeModal() {
-    setEditingTransferId(null);
-    setForm(emptyTransfer());
+    setEditingPurchaseId(null);
+    setForm(emptyForm());
     setIsModalOpen(false);
   }
 
-  function saveTransfer() {
-    const nextTransfer = {
-      ismi: form.ismi || "Yangi ko'chirish",
+  function saveCompletedPurchase() {
+    const nextPurchase = {
+      ismi: form.ismi || "Yangi kirim",
       sana: form.sana || todayDate,
       ozgartirilganSana: form.ozgartirilganSana || todayDate,
       masul: form.masul || "Mas'ul shaxs",
-      qayerdan: form.qayerdan || "Asosiy ombor",
+      yetkazibBeruvchi: form.yetkazibBeruvchi || "Demo klient",
       summa: Number(form.summa) || 150000,
-      qayerga: form.qayerga || "Filial ombor",
+      ombor: form.ombor || "Asosiy ombor",
     };
 
-    if (editingTransferId) {
-      setTransfers((prev) =>
-        prev.map((transfer) =>
-          transfer.id === editingTransferId ? { ...nextTransfer, id: editingTransferId } : transfer
-        )
-      );
-    } else {
-      setTransfers((prev) => [{ ...nextTransfer, id: Date.now() }, ...prev]);
-    }
+    if (editingPurchaseId) updatePurchase(editingPurchaseId, nextPurchase);
+    else addPurchase(nextPurchase);
 
     closeModal();
   }
@@ -325,7 +203,7 @@ export default function Kochirishlar() {
             activeTab === "kirim" ? "text-gray-900" : "text-gray-400 hover:text-gray-700",
           ].join(" ")}
         >
-          Ko'chirishlar
+          Amalga oshirilganlar
         </button>
         <button
           onClick={() => setActiveTab("xujatlar")}
@@ -341,7 +219,7 @@ export default function Kochirishlar() {
       {activeTab === "kirim" ? (
         <div className="mt-6 overflow-hidden rounded-xl border border-gray-100">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] border-collapse text-left text-sm">
+            <table className="w-full min-w-[960px] border-collapse text-left text-sm">
               <thead className="bg-gray-50 text-xs font-bold text-orange-500">
                 <tr>
                   <th className="w-10 px-4 py-3" />
@@ -349,21 +227,22 @@ export default function Kochirishlar() {
                   <th className="px-4 py-3">Sana</th>
                   <th className="px-4 py-3">O'zgartirilgan sana</th>
                   <th className="px-4 py-3">Mas'ul shaxs</th>
-                  <th className="px-4 py-3">Qayerdan</th>
+                  <th className="px-4 py-3">Klient</th>
                   <th className="px-4 py-3">Summa</th>
-                  <th className="px-4 py-3">Qayerga</th>
+                  <th className="px-4 py-3">Ombor</th>
+                  <th className="px-4 py-3">Holat</th>
                   <th className="w-28 px-4 py-3">Amal</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-gray-600">
-                {paginatedTransfers.map((transfer) => (
-                  <tr key={transfer.id} className="transition hover:bg-orange-50/40">
+                {paginatedRows.map((row) => (
+                  <tr key={row.id} className="transition hover:bg-orange-50/40">
                     <td className="px-4 py-4">
                       <button
-                        onClick={() => toggleSelect(transfer.id)}
+                        onClick={() => toggleSelect(row.id)}
                         className={[
                           "flex h-4 w-4 items-center justify-center rounded border transition",
-                          selectedIds.includes(transfer.id)
+                          selectedIds.includes(row.id)
                             ? "border-orange-500 bg-orange-500 text-white"
                             : "border-gray-300 bg-white text-transparent",
                         ].join(" ")}
@@ -373,19 +252,24 @@ export default function Kochirishlar() {
                       </button>
                     </td>
                     <td className="whitespace-nowrap px-4 py-4 font-semibold text-gray-700">
-                      {transfer.ismi}
+                      {row.ismi}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-4">{transfer.sana}</td>
-                    <td className="whitespace-nowrap px-4 py-4">{transfer.ozgartirilganSana}</td>
-                    <td className="whitespace-nowrap px-4 py-4">{transfer.masul}</td>
-                    <td className="whitespace-nowrap px-4 py-4">{transfer.qayerdan}</td>
-                    <td className="whitespace-nowrap px-4 py-4">{formatSumma(transfer.summa)}</td>
+                    <td className="whitespace-nowrap px-4 py-4">{row.sana}</td>
+                    <td className="whitespace-nowrap px-4 py-4">{row.ozgartirilganSana}</td>
+                    <td className="whitespace-nowrap px-4 py-4">{row.masul}</td>
+                    <td className="whitespace-nowrap px-4 py-4">{row.klient}</td>
+                    <td className="whitespace-nowrap px-4 py-4">{formatSumma(row.summa)}</td>
                     <td className="whitespace-nowrap px-4 py-4 font-semibold text-gray-700">
-                      {transfer.qayerga}
+                      {row.ombor}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-4">
+                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-600">
+                        {row.status}
+                      </span>
                     </td>
                     <td className="px-4 py-4">
                       <button
-                        onClick={() => openEditModal(transfer)}
+                        onClick={() => openEditModal(row)}
                         className="inline-flex h-8 items-center gap-1 rounded-lg px-2 text-xs font-bold text-gray-400 transition hover:bg-orange-50 hover:text-orange-600"
                       >
                         Tahrirlash
@@ -394,10 +278,10 @@ export default function Kochirishlar() {
                   </tr>
                 ))}
 
-                {filteredTransfers.length === 0 && (
+                {filteredRows.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-12 text-center text-gray-400">
-                      Ko'chirish topilmadi
+                    <td colSpan={10} className="px-4 py-12 text-center text-gray-400">
+                      Amalga oshirilgan kirim topilmadi
                     </td>
                   </tr>
                 )}
@@ -406,19 +290,19 @@ export default function Kochirishlar() {
           </div>
           <TablePagination
             page={safePage}
-            totalItems={filteredTransfers.length}
+            totalItems={filteredRows.length}
             onPageChange={setPage}
           />
         </div>
       ) : (
         <div className="mt-6 rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-14 text-center text-sm text-gray-400">
-          Xujatlar demo holatda. Ko'chirishlar tanlanganda jadval ko'rinadi.
+          Xujatlar demo holatda. Amalga oshirilganlar tanlanganda asosiy jadval ko'rinadi.
         </div>
       )}
 
       {selectedIds.length > 0 && (
         <div className="mt-4 rounded-xl border border-orange-100 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700">
-          {selectedIds.length} ta ko'chirish tanlandi
+          {selectedIds.length} ta hujjat tanlandi
         </div>
       )}
 
@@ -427,7 +311,7 @@ export default function Kochirishlar() {
           <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-gray-900">
-                {editingTransferId ? "Ko'chirishni tahrirlash" : "Yangi ko'chirish"}
+                {editingPurchaseId ? "Amalga oshirilganni tahrirlash" : "Yangi amalga oshirilgan"}
               </h2>
               <button
                 onClick={closeModal}
@@ -444,13 +328,13 @@ export default function Kochirishlar() {
                 ["sana", "Sana"],
                 ["ozgartirilganSana", "O'zgartirilgan sana"],
                 ["masul", "Mas'ul shaxs"],
-                ["qayerdan", "Qayerdan"],
-                ["qayerga", "Qayerga"],
+                ["yetkazibBeruvchi", "Klient"],
+                ["ombor", "Ombor"],
               ].map(([key, label]) => (
                 <label key={key} className="text-xs font-bold text-gray-500">
                   {label}
                   <input
-                    value={String(form[key as keyof Omit<Transfer, "id">])}
+                    value={String(form[key as keyof Omit<Purchase, "id">])}
                     onChange={(event) =>
                       setForm((prev) => ({ ...prev, [key]: event.target.value }))
                     }
@@ -480,10 +364,10 @@ export default function Kochirishlar() {
                 Bekor qilish
               </button>
               <button
-                onClick={saveTransfer}
+                onClick={saveCompletedPurchase}
                 className="h-10 rounded-lg bg-orange-500 px-4 text-sm font-bold text-white transition hover:bg-orange-600"
               >
-                {editingTransferId ? "Yangilash" : "Saqlash"}
+                {editingPurchaseId ? "Yangilash" : "Saqlash"}
               </button>
             </div>
           </div>

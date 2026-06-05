@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Filter, Package, Plus, Search } from "lucide-react";
+import TablePagination from "@/Components/common/TablePagination";
 import { useOmborStore } from "@/store/omborStore";
 
 function formatSumma(value: number) {
@@ -11,6 +12,7 @@ export default function Mahsulotlar() {
   const addProduct = useOmborStore((state) => state.addProduct);
   const [search, setSearch] = useState("");
   const [onlyAvailable, setOnlyAvailable] = useState(false);
+  const [page, setPage] = useState(1);
 
   const filteredProducts = useMemo(() => {
     const value = search.toLowerCase().trim();
@@ -34,6 +36,8 @@ export default function Mahsulotlar() {
       return matchesSearch && matchesAvailable;
     });
   }, [onlyAvailable, products, search]);
+  const safePage = Math.min(page, Math.max(1, Math.ceil(filteredProducts.length / 10)));
+  const paginatedProducts = filteredProducts.slice((safePage - 1) * 10, safePage * 10);
 
   function handleAddProduct() {
     addProduct({
@@ -105,7 +109,7 @@ export default function Mahsulotlar() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-gray-600">
-              {filteredProducts.map((product) => (
+              {paginatedProducts.map((product) => (
                 <tr key={product.id} className="transition hover:bg-orange-50/40">
                   <td className="px-4 py-3">
                     <div className="flex h-7 w-7 items-center justify-center rounded-full bg-orange-50 text-orange-500">
@@ -143,6 +147,11 @@ export default function Mahsulotlar() {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          page={safePage}
+          totalItems={filteredProducts.length}
+          onPageChange={setPage}
+        />
       </div>
     </div>
   );

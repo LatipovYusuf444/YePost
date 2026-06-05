@@ -105,6 +105,30 @@ function slugify(value: string) {
     .replace(/\s+/g, "-");
 }
 
+function getTabPath(moduleKey: ModuleKey, basePath: string, tab: string, index: number) {
+  if (moduleKey === "ombor") {
+    if (tab === "Xaridlar") return "/ombor";
+    if (tab === "Amalga oshirilganlar") return "/ombor/amalga-oshirilganlar";
+    if (tab === "Chiqimlar") return "/ombor/chiqimlar";
+    if (tab === "Ko‘chirishlar") return "/ombor/kochirishlar";
+    if (tab === "Mahsulotlar") return "/ombor/mahsulotlar";
+  }
+
+  return index === 0 ? basePath : `${basePath}#${slugify(tab)}`;
+}
+
+function isTabActive(moduleKey: ModuleKey, pathname: string, tab: string, index: number) {
+  if (moduleKey === "ombor") {
+    if (tab === "Xaridlar") return pathname === "/ombor";
+    if (tab === "Amalga oshirilganlar") return pathname === "/ombor/amalga-oshirilganlar";
+    if (tab === "Chiqimlar") return pathname === "/ombor/chiqimlar";
+    if (tab === "Ko‘chirishlar") return pathname === "/ombor/kochirishlar";
+    if (tab === "Mahsulotlar") return pathname === "/ombor/mahsulotlar";
+  }
+
+  return index === 0;
+}
+
 export default function YuqoriPanel() {
   // Hozirgi URL ni oladi
   const { pathname } = useLocation();
@@ -476,11 +500,11 @@ export default function YuqoriPanel() {
       {/* Module tablari */}
       <nav className="flex min-w-0 flex-1 items-center gap-5 overflow-x-auto">
         {tabs.map((tab, index) => {
-          // Birinchi tab doim asosiy active tab bo‘ladi
-          const isActive = index === 0;
+          // Ombor ichida real route, qolgan modulelarda hozircha birinchi tab active.
+          const isActive = isTabActive(moduleKey, pathname, tab, index);
 
-          // Birinchi tab asosiy routega boradi, qolganlari hash link bo‘ladi
-          const to = index === 0 ? basePath : `${basePath}#${slugify(tab)}`;
+          // Ombor tablari alohida page ochadi, qolgan tablar eski hash linkda qoladi.
+          const to = getTabPath(moduleKey, basePath, tab, index);
 
           return (
             <Link
