@@ -40,7 +40,7 @@ const moduleTabs: Record<ModuleKey, string[]> = {
     "Analitika",
   ],
 
-  mijozlar: ["Mijozlar", "Guruhlar", "Qarzdorlik", "Aloqalar", "Analitika"],
+  mijozlar: ["Mijoz", "Kompaniya", "Yetkazib beruvchi"],
 
   // Omborga kirganda tepa navbar shu tablarni ko‘rsatadi
   ombor: [
@@ -117,7 +117,13 @@ function getTabPath(moduleKey: ModuleKey, basePath: string, tab: string, index: 
   return index === 0 ? basePath : `${basePath}#${slugify(tab)}`;
 }
 
-function isTabActive(moduleKey: ModuleKey, pathname: string, tab: string, index: number) {
+function isTabActive(
+  moduleKey: ModuleKey,
+  pathname: string,
+  hash: string,
+  tab: string,
+  index: number
+) {
   if (moduleKey === "ombor") {
     if (tab === "Xaridlar") return pathname === "/ombor";
     if (tab === "Amalga oshirilganlar") return pathname === "/ombor/amalga-oshirilganlar";
@@ -126,12 +132,16 @@ function isTabActive(moduleKey: ModuleKey, pathname: string, tab: string, index:
     if (tab === "Mahsulotlar") return pathname === "/ombor/mahsulotlar";
   }
 
-  return index === 0;
+  const activeHash = hash.replace("#", "");
+
+  if (index === 0) return activeHash.length === 0;
+
+  return activeHash === slugify(tab);
 }
 
 export default function YuqoriPanel() {
   // Hozirgi URL ni oladi
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   const products = useOmborStore((state) => state.products);
   const addProduct = useOmborStore((state) => state.addProduct);
   const decreaseProductStock = useOmborStore((state) => state.decreaseProductStock);
@@ -501,7 +511,7 @@ export default function YuqoriPanel() {
       <nav className="flex min-w-0 flex-1 items-center gap-5 overflow-x-auto">
         {tabs.map((tab, index) => {
           // Ombor ichida real route, qolgan modulelarda hozircha birinchi tab active.
-          const isActive = isTabActive(moduleKey, pathname, tab, index);
+          const isActive = isTabActive(moduleKey, pathname, hash, tab, index);
 
           // Ombor tablari alohida page ochadi, qolgan tablar eski hash linkda qoladi.
           const to = getTabPath(moduleKey, basePath, tab, index);

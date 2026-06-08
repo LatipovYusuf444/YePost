@@ -11,6 +11,14 @@ export type Customer = {
   dela: string;
   masul: string;
   yaratilganSana: string;
+  avatar?: string;
+  status?: string;
+  manba?: string;
+  tolovTuri?: string;
+  manzil?: string;
+  izoh?: string;
+  summa?: number;
+  savdolarSoni?: number;
 };
 
 type MijozlarState = {
