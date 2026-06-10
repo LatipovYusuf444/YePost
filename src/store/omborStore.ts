@@ -21,6 +21,7 @@ export type PurchaseProduct = {
   shtrixKodi: string;
   olchovBirligi: string;
   narxi: number;
+  sotishNarxi?: number;
 };
 
 type OmborState = {

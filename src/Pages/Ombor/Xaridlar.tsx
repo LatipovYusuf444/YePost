@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { z } from "zod";
 import {
   CalendarDays,
   ChevronDown,
@@ -29,20 +30,43 @@ const detailTabs: DetailTab[] = [
 ];
 
 const activityTabs: ActivityTab[] = ["Vazifa", "Kommentariya", "Habarnoma", "Qo'shimcha"];
+const warehouseOptions = ["Ombor nomi", "Asosiy ombor", "Zaxira ombor"];
+
+const purchaseSchema = z.object({
+  ismi: z.string().trim().min(1, "Ismi kiritilishi kerak"),
+  sana: z.string().trim().min(1, "Sana kiritilishi kerak"),
+  ozgartirilganSana: z.string().trim().min(1, "O'zgartirilgan sana kiritilishi kerak"),
+  masul: z.string().trim().min(1, "Mas'ul shaxs kiritilishi kerak"),
+  yetkazibBeruvchi: z.string().trim().min(1, "Yetkazib beruvchi kiritilishi kerak"),
+  summa: z.number().positive("Summa 0 dan katta bo'lishi kerak"),
+  ombor: z.string().trim().min(1, "Ombor tanlanishi kerak"),
+});
+
+type PurchaseFormErrors = Partial<Record<keyof Omit<Purchase, "id">, string>>;
 
 function formatSumma(value: number) {
   return `${value.toLocaleString("ru-RU")} uzs`;
 }
 
+function formatToday() {
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date());
+}
+
 function emptyForm(): Omit<Purchase, "id"> {
+  const today = formatToday();
+
   return {
     ismi: "",
-    sana: "",
-    ozgartirilganSana: "",
+    sana: today,
+    ozgartirilganSana: today,
     masul: "",
     yetkazibBeruvchi: "",
     summa: 0,
-    ombor: "",
+    ombor: warehouseOptions[0],
   };
 }
 
@@ -73,6 +97,7 @@ export default function Xaridlar() {
     },
   ]);
   const [form, setForm] = useState(emptyForm);
+  const [formErrors, setFormErrors] = useState<PurchaseFormErrors>({});
 
   useEffect(() => {
     ensureMinimumPurchases(12);
@@ -195,25 +220,72 @@ export default function Xaridlar() {
   }
 
   function createPurchase() {
-    addPurchase({
-      ismi: form.ismi || "Yangi xarid",
-      sana: form.sana || "04.06.2026",
-      ozgartirilganSana: form.ozgartirilganSana || "04.06.2026",
-      masul: form.masul || "Mas'ul shaxs",
-      yetkazibBeruvchi: form.yetkazibBeruvchi || "Yetkazib beruvchi",
+    const today = formatToday();
+    const parsed = purchaseSchema.safeParse({
+      ...form,
+      ismi: form.ismi.trim(),
+      sana: form.sana.trim(),
+      ozgartirilganSana: form.ozgartirilganSana.trim(),
+      masul: form.masul.trim(),
+      yetkazibBeruvchi: form.yetkazibBeruvchi.trim(),
       summa: Number(form.summa) || 0,
-      ombor: form.ombor || "Ombor nomi",
+      ombor: form.ombor.trim(),
+    });
+
+    if (!parsed.success) {
+      const nextErrors: PurchaseFormErrors = {};
+
+      parsed.error.issues.forEach((issue) => {
+        const key = issue.path[0] as keyof Omit<Purchase, "id"> | undefined;
+        if (key) nextErrors[key] = issue.message;
+      });
+      setFormErrors(nextErrors);
+      return;
+    }
+
+    addPurchase({
+      ismi: parsed.data.ismi,
+      sana: parsed.data.sana || today,
+      ozgartirilganSana: parsed.data.ozgartirilganSana || today,
+      masul: parsed.data.masul,
+      yetkazibBeruvchi: parsed.data.yetkazibBeruvchi,
+      summa: parsed.data.summa,
+      ombor: parsed.data.ombor,
     });
     setForm(emptyForm());
+    setFormErrors({});
     setIsModalOpen(false);
   }
+
+  function openCreateModal() {
+    setForm(emptyForm());
+    setFormErrors({});
+    setIsModalOpen(true);
+  }
+
+  function closeCreateModal() {
+    setForm(emptyForm());
+    setFormErrors({});
+    setIsModalOpen(false);
+  }
+
+  const isCreateFormValid = purchaseSchema.safeParse({
+    ...form,
+    ismi: form.ismi.trim(),
+    sana: form.sana.trim(),
+    ozgartirilganSana: form.ozgartirilganSana.trim(),
+    masul: form.masul.trim(),
+    yetkazibBeruvchi: form.yetkazibBeruvchi.trim(),
+    summa: Number(form.summa) || 0,
+    ombor: form.ombor.trim(),
+  }).success;
 
   return (
     <div className="min-h-[calc(100vh-190px)] rounded-2xl bg-white">
       <div className="flex flex-col gap-3 border-b border-gray-100 pb-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={openCreateModal}
             className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 text-sm font-bold text-white shadow-sm shadow-orange-200 transition hover:bg-orange-600"
           >
             <Plus size={16} />
@@ -350,81 +422,163 @@ export default function Xaridlar() {
         </div>
       )}
 
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-900">Yangi xarid</h2>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100 text-gray-500 hover:text-orange-600"
-              >
-                <X size={18} />
-              </button>
-            </div>
+      {isModalOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 px-4 py-6 backdrop-blur-sm lg:pl-[120px]">
+            <div className="flex h-[min(780px,calc(100dvh-48px))] w-full max-w-5xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
+              <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-950">Yangi xarid</h2>
+                  <p className="mt-1 text-sm text-gray-400">
+                    Xarid ma'lumotlarini to'liq kiriting va omborni tanlang
+                  </p>
+                </div>
+                <button
+                  onClick={closeCreateModal}
+                  className="flex h-11 w-11 items-center justify-center rounded-xl bg-gray-100 text-gray-500 transition hover:bg-orange-500 hover:text-white"
+                  aria-label="Yopish"
+                >
+                  <X size={20} />
+                </button>
+              </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              {[
-                ["ismi", "Ismi"],
-                ["sana", "Sana"],
-                ["ozgartirilganSana", "O'zgartirilgan sana"],
-                ["masul", "Mas'ul shaxs"],
-                ["yetkazibBeruvchi", "Yetkazib beruvchi"],
-                ["ombor", "Ombor"],
-              ].map(([key, label]) => (
-                <label key={key} className="text-xs font-bold text-gray-500">
-                  {label}
-                  <input
-                    value={String(form[key as keyof Omit<Purchase, "id">])}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, [key]: event.target.value }))
-                    }
-                    className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 text-sm text-gray-700 outline-none focus:border-orange-300"
-                  />
-                </label>
-              ))}
+              <div className="min-h-0 flex-1 overflow-y-auto bg-[#D8D8D8] p-6">
+                <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+                  <aside className="rounded-[28px] bg-white p-6 shadow-sm">
+                    <h3 className="text-lg font-bold text-gray-950">Xarid holati</h3>
+                    <p className="mt-2 text-sm text-gray-500">
+                      Barcha maydonlar to'ldirilgandan keyin saqlash yoqiladi.
+                    </p>
 
-              <label className="text-xs font-bold text-gray-500">
-                Summa
-                <input
-                  type="number"
-                  value={form.summa || ""}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, summa: Number(event.target.value) }))
-                  }
-                  className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 text-sm text-gray-700 outline-none focus:border-orange-300"
-                />
-              </label>
-            </div>
+                    <div className="mt-6 rounded-3xl bg-orange-50 p-5">
+                      <p className="text-sm font-bold text-orange-600">Summa</p>
+                      <p className="mt-2 text-2xl font-black text-gray-950">
+                        {formatSumma(Number(form.summa) || 0)}
+                      </p>
+                    </div>
 
-            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="h-10 rounded-lg bg-gray-100 px-4 text-sm font-bold text-gray-600"
-              >
-                Bekor qilish
-              </button>
-              <button
-                onClick={createPurchase}
-                className="h-10 rounded-lg bg-orange-500 px-4 text-sm font-bold text-white hover:bg-orange-600"
-              >
-                Saqlash
-              </button>
+                    <div className="mt-4 rounded-3xl bg-gray-50 p-5">
+                      <p className="text-sm font-bold text-gray-500">Ombor</p>
+                      <p className="mt-2 text-xl font-black text-gray-950">{form.ombor}</p>
+                    </div>
+                  </aside>
+
+                  <main className="rounded-[28px] bg-white p-6 shadow-sm">
+                    <div className="grid gap-5 md:grid-cols-2">
+                      {[
+                        ["ismi", "Ismi"],
+                        ["sana", "Sana"],
+                        ["ozgartirilganSana", "O'zgartirilgan sana"],
+                        ["masul", "Mas'ul shaxs"],
+                        ["yetkazibBeruvchi", "Yetkazib beruvchi"],
+                      ].map(([key, label]) => {
+                        const fieldKey = key as keyof Omit<Purchase, "id">;
+
+                        return (
+                          <label key={key} className="text-xs font-bold text-gray-500">
+                            {label}
+                            <input
+                              value={String(form[fieldKey])}
+                              onChange={(event) => {
+                                setForm((prev) => ({ ...prev, [key]: event.target.value }));
+                                setFormErrors((prev) => ({ ...prev, [key]: undefined }));
+                              }}
+                              className={[
+                                "mt-1 h-12 w-full rounded-xl border px-4 text-sm text-gray-700 outline-none transition focus:border-orange-300",
+                                formErrors[fieldKey] ? "border-red-300" : "border-gray-200",
+                              ].join(" ")}
+                            />
+                            {formErrors[fieldKey] && (
+                              <span className="mt-1 block text-xs font-semibold text-red-500">
+                                {formErrors[fieldKey]}
+                              </span>
+                            )}
+                          </label>
+                        );
+                      })}
+
+                      <label className="text-xs font-bold text-gray-500">
+                        Ombor
+                        <select
+                          value={form.ombor}
+                          onChange={(event) => {
+                            setForm((prev) => ({ ...prev, ombor: event.target.value }));
+                            setFormErrors((prev) => ({ ...prev, ombor: undefined }));
+                          }}
+                          className={[
+                            "mt-1 h-12 w-full rounded-xl border bg-white px-4 text-sm text-gray-700 outline-none transition focus:border-orange-300",
+                            formErrors.ombor ? "border-red-300" : "border-gray-200",
+                          ].join(" ")}
+                        >
+                          {warehouseOptions.map((warehouse) => (
+                            <option key={warehouse} value={warehouse}>
+                              {warehouse}
+                            </option>
+                          ))}
+                        </select>
+                        {formErrors.ombor && (
+                          <span className="mt-1 block text-xs font-semibold text-red-500">
+                            {formErrors.ombor}
+                          </span>
+                        )}
+                      </label>
+
+                      <label className="text-xs font-bold text-gray-500">
+                        Summa
+                        <input
+                          type="number"
+                          min={0}
+                          value={form.summa || ""}
+                          onChange={(event) => {
+                            setForm((prev) => ({ ...prev, summa: Number(event.target.value) }));
+                            setFormErrors((prev) => ({ ...prev, summa: undefined }));
+                          }}
+                          className={[
+                            "mt-1 h-12 w-full rounded-xl border px-4 text-sm text-gray-700 outline-none transition focus:border-orange-300",
+                            formErrors.summa ? "border-red-300" : "border-gray-200",
+                          ].join(" ")}
+                        />
+                        {formErrors.summa && (
+                          <span className="mt-1 block text-xs font-semibold text-red-500">
+                            {formErrors.summa}
+                          </span>
+                        )}
+                      </label>
+                    </div>
+                  </main>
+                </div>
+              </div>
+
+              <div className="flex shrink-0 flex-col-reverse gap-3 border-t border-gray-100 bg-white px-6 py-5 sm:flex-row sm:justify-end">
+                <button
+                  onClick={closeCreateModal}
+                  className="h-11 rounded-xl bg-gray-100 px-5 text-sm font-bold text-gray-600 transition hover:text-orange-600"
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  onClick={createPurchase}
+                  disabled={!isCreateFormValid}
+                  className="h-11 rounded-xl bg-orange-500 px-5 text-sm font-bold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-orange-200"
+                >
+                  Saqlash
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
       {selectedPurchase &&
         createPortal(
           <>
             <div className="fixed inset-0 z-[9998] bg-black/55 backdrop-blur-[2px]" />
 
-            <section className="scrollbar-hidden fixed bottom-3 left-3 right-3 top-3 z-[9999] overflow-y-auto rounded-[28px] bg-[#D8D8D8] p-3 shadow-2xl sm:bottom-5 sm:left-5 sm:right-5 sm:top-5 sm:p-5 lg:bottom-6 lg:left-[120px] lg:right-6 lg:top-6 2xl:left-[140px]">
-            <div className="mb-4 flex flex-col items-start justify-between gap-4 xl:flex-row xl:items-center">
+            <section className="scrollbar-hidden fixed bottom-4 left-4 right-4 top-4 z-[9999] overflow-y-auto rounded-[34px] bg-[#D8D8D8] p-5 shadow-2xl sm:bottom-6 sm:left-6 sm:right-6 sm:top-6 lg:bottom-[32px] lg:left-[120px] lg:right-[32px] lg:top-[32px] lg:p-6 2xl:left-[140px]">
+            <div className="mb-7 flex flex-col items-start justify-between gap-5 xl:flex-row xl:items-center">
               <div>
-                <p className="text-xs font-medium text-gray-500 sm:text-sm">Xarid spisok ichi</p>
-                <h2 className="mt-0.5 text-2xl font-bold text-gray-950 sm:text-3xl">
+                <p className="text-sm font-medium text-gray-500">Xarid spisok ichi</p>
+                <h2 className="mt-1 text-4xl font-bold text-gray-950">
                   {selectedPurchase.ismi}
                 </h2>
               </div>
@@ -432,7 +586,7 @@ export default function Xaridlar() {
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => setIsPaid(false)}
-                  className="h-10 rounded-xl border border-orange-100 bg-white px-4 text-sm font-semibold text-gray-700 transition hover:text-orange-600"
+                  className="h-11 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-semibold text-gray-700 transition hover:text-orange-600"
                 >
                   To'lovga qaytish
                 </button>
@@ -440,7 +594,7 @@ export default function Xaridlar() {
                 <select
                   value={documentType}
                   onChange={(event) => setDocumentType(event.target.value)}
-                  className="h-10 rounded-xl border border-orange-100 bg-white px-4 text-sm font-semibold text-gray-700 outline-none transition hover:border-orange-300"
+                  className="h-11 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-semibold text-gray-700 outline-none transition hover:border-orange-300"
                 >
                   <option>Hujjatlar</option>
                   <option>Chek</option>
@@ -450,7 +604,7 @@ export default function Xaridlar() {
 
                 <button
                   onClick={closeDetail}
-                  className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500 text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600"
+                  className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600"
                   aria-label="Yopish"
                 >
                   <X size={23} />
@@ -458,14 +612,14 @@ export default function Xaridlar() {
               </div>
             </div>
 
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-orange-100 bg-white px-3 py-2.5 shadow-sm">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-orange-100 bg-white px-4 py-3 shadow-sm">
               <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
                 {detailTabs.map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setDetailTab(tab)}
                     className={[
-                      "shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold transition",
+                      "shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition",
                       detailTab === tab
                         ? "border border-orange-400 bg-orange-50 text-orange-600"
                         : "text-gray-500 hover:bg-orange-50 hover:text-orange-600",
@@ -477,7 +631,7 @@ export default function Xaridlar() {
               </div>
 
               <div className="flex shrink-0 items-center gap-2">
-                <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-700 transition hover:bg-orange-500 hover:text-white">
+                <button className="flex h-11 w-11 items-center justify-center rounded-xl bg-gray-100 text-gray-700 transition hover:bg-orange-500 hover:text-white">
                   <Settings size={18} />
                 </button>
               </div>
@@ -485,9 +639,9 @@ export default function Xaridlar() {
 
             <div className="flex-1">
               {detailTab === "Asosiyisi" && (
-                <div className="grid items-start gap-4 xl:grid-cols-[330px_minmax(0,1fr)] 2xl:grid-cols-[350px_minmax(0,1fr)]">
-                  <div className="space-y-4">
-                    <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5">
+                <div className="grid grid-cols-1 items-start gap-7 xl:grid-cols-[460px_minmax(0,1fr)] 2xl:grid-cols-[500px_minmax(0,1fr)]">
+                  <div className="space-y-5">
+                    <section className="rounded-[28px] bg-white p-6 shadow-sm">
                       <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-3">
                         <h3 className="text-lg font-bold text-gray-950">Xarid</h3>
                         <button className="text-sm font-semibold text-gray-400 hover:text-orange-600">
@@ -507,21 +661,21 @@ export default function Xaridlar() {
                       <button
                         onClick={() => setIsPaid((prev) => !prev)}
                         className={[
-                          "mb-4 w-full rounded-xl px-4 py-2.5 text-sm font-bold text-white transition",
+                          "mb-5 w-full rounded-2xl px-4 py-4 text-sm font-bold text-white transition",
                           isPaid ? "bg-green-700" : "bg-green-600 hover:bg-green-700",
                         ].join(" ")}
                       >
                         {isPaid ? "To'lov qabul qilindi" : "To'lov qabul qilish"}
                       </button>
 
-                      <div className="mb-4 rounded-2xl bg-gray-50 p-4">
+                      <div className="mb-5 rounded-3xl bg-gray-50 p-6">
                         <p className="font-bold text-gray-800">To'lov va yetkazib berish</p>
                         <p className="mt-1 text-sm text-gray-500">
                           Xarid to'lovi, yetkazib beruvchi va ombor holati haqida ma'lumot.
                         </p>
                       </div>
 
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         {[
                           ["Yetkazib beruvchi", selectedPurchase.yetkazibBeruvchi],
                           ["Ombor", selectedPurchase.ombor],
@@ -530,7 +684,7 @@ export default function Xaridlar() {
                         ].map(([label, value]) => (
                           <div key={label}>
                             <p className="text-sm text-gray-500">{label}</p>
-                            <div className="mt-1.5 rounded-xl bg-gray-100 px-3 py-2.5 text-sm font-semibold text-gray-800">
+                            <div className="mt-2 rounded-2xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-800">
                               {value}
                             </div>
                           </div>
@@ -538,7 +692,7 @@ export default function Xaridlar() {
                       </div>
                     </section>
 
-                    <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5">
+                    <section className="rounded-[28px] bg-white p-6 shadow-sm">
                       <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-3">
                         <h3 className="text-base font-bold text-gray-950">
                           Qo'shimcha ma'lumotlar
@@ -568,15 +722,15 @@ export default function Xaridlar() {
                     </section>
                   </div>
 
-                  <main className="rounded-2xl bg-white p-4 shadow-sm sm:p-5">
-                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <main className="rounded-[28px] bg-white p-6 shadow-sm">
+                    <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                       <div className="flex flex-wrap gap-2">
                         {activityTabs.map((tab) => (
                           <button
                             key={tab}
                             onClick={() => setActivityTab(tab)}
                             className={[
-                              "rounded-full px-3.5 py-1.5 text-sm font-semibold transition",
+                              "rounded-full px-4 py-2 text-sm font-semibold transition",
                               activityTab === tab
                                 ? "border border-orange-400 bg-orange-50 text-orange-600"
                                 : "text-gray-600 hover:bg-orange-50 hover:text-orange-600",
@@ -592,7 +746,7 @@ export default function Xaridlar() {
                       <select
                         value={actionType}
                         onChange={(event) => setActionType(event.target.value)}
-                        className="h-11 min-w-0 flex-1 rounded-xl border border-gray-100 bg-white px-4 text-sm text-gray-700 outline-none"
+                        className="h-14 min-w-0 flex-1 rounded-2xl border border-gray-100 bg-white px-4 text-sm text-gray-700 outline-none"
                       >
                         <option>Nima qilish kerak</option>
                         <option>Qo'ng'iroq qilish</option>
@@ -601,36 +755,36 @@ export default function Xaridlar() {
                       </select>
                       <button
                         onClick={addActivity}
-                        className="h-11 rounded-xl bg-orange-500 px-5 text-sm font-bold text-white hover:bg-orange-600"
+                        className="h-14 rounded-2xl bg-orange-500 px-6 text-sm font-bold text-white hover:bg-orange-600"
                       >
                         Qo'shish
                       </button>
                     </div>
 
-                    <div className="my-4 flex items-center gap-3">
+                    <div className="my-6 flex items-center gap-3">
                       <div className="h-px flex-1 bg-gray-200" />
                       <span className="rounded-full border border-green-300 bg-green-50 px-4 py-1.5 text-sm font-medium text-green-600">
                         Bugun
                       </span>
                       <div className="h-px flex-1 bg-gray-200" />
-                      <button className="inline-flex h-9 items-center gap-2 rounded-full bg-gray-50 px-3.5 text-sm font-semibold text-gray-500">
+                      <button className="inline-flex h-10 items-center gap-2 rounded-full bg-gray-50 px-4 text-sm font-semibold text-gray-500">
                         Filtr
                         <Filter size={14} />
                       </button>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {comments.map((comment) => (
                         <article
                           key={comment.id}
-                          className="flex gap-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-100"
+                          className="flex gap-5 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-100"
                         >
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white">
-                            <MessageSquare size={19} />
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white">
+                            <MessageSquare size={22} />
                           </div>
 
                           <div className="min-w-0">
-                            <h3 className="text-sm font-bold text-gray-700">
+                            <h3 className="text-lg font-bold text-gray-800">
                               {activityTab}{" "}
                               <span className="text-sm font-medium text-gray-500">
                                 | {comment.time}
@@ -646,35 +800,35 @@ export default function Xaridlar() {
               )}
 
               {detailTab === "Mahsulotlar" && (
-                <div className="rounded-2xl bg-[#D8D8D8]">
-                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="rounded-[28px] bg-[#D8D8D8]">
+                  <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                       <button
                         onClick={addPurchaseProduct}
-                        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 text-sm font-bold text-white shadow-sm shadow-orange-200 transition hover:bg-orange-600"
+                        className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-orange-500 px-5 text-sm font-bold text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600"
                       >
                         <Plus size={16} />
                         Mahsulot qo'shish
                       </button>
 
-                      <div className="flex h-10 w-full items-center gap-2 rounded-lg bg-white px-3 sm:w-[340px] lg:w-[420px]">
+                      <div className="flex h-12 w-full items-center gap-3 rounded-xl bg-white px-4 shadow-sm sm:w-[400px] lg:w-[520px]">
                         <input
                           value={productSearch}
                           onChange={(event) => setProductSearch(event.target.value)}
                           placeholder="Qidirish"
-                          className="min-w-0 flex-1 bg-transparent text-sm text-gray-700 outline-none placeholder:text-gray-400"
+                          className="min-w-0 flex-1 bg-transparent text-sm font-medium text-gray-700 outline-none placeholder:text-gray-400"
                         />
-                        <Search size={18} className="text-gray-300" />
+                        <Search size={20} className="text-gray-300" />
                       </div>
                     </div>
 
-                    <button className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-5 text-sm font-bold text-gray-500 transition hover:text-orange-600">
+                    <button className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-bold text-gray-500 shadow-sm transition hover:text-orange-600">
                       Filtr
                       <Filter size={15} />
                     </button>
                   </div>
 
-                  <div className="overflow-hidden rounded-2xl bg-white">
+                  <div className="overflow-hidden rounded-[24px] bg-white shadow-sm">
                     <div className="overflow-x-auto">
                       <table className="w-full min-w-[860px] border-collapse text-left text-sm">
                         <thead className="text-orange-500">

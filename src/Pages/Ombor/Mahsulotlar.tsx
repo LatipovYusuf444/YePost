@@ -390,7 +390,7 @@ export default function OmborMahsulotlar() {
       {isModalOpen &&
         createPortal(
           <div className="fixed inset-0 z-[9999] bg-black/55 p-4 backdrop-blur-[2px] sm:p-6 lg:pl-[120px]">
-            <div className="relative mx-auto flex h-full max-w-[1180px] flex-col overflow-hidden rounded-2xl bg-[#E2E2E2] shadow-2xl">
+            <div className="relative mx-auto flex h-full max-w-[1320px] flex-col overflow-hidden rounded-[28px] bg-[#E2E2E2] shadow-2xl">
               <div className="absolute -left-10 top-10 hidden flex-col gap-2 lg:flex">
                 <button
                   onClick={closeModal}

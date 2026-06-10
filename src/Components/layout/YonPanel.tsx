@@ -2,7 +2,6 @@ import { NavLink } from "react-router-dom";
 import {
   Home,
   LogOut,
-  Package,
   Settings,
   ShoppingCart,
   Users,
@@ -15,7 +14,6 @@ const menyular = [
   { nom: "Savdo", path: "/savdo", icon: ShoppingCart },
   { nom: "Ombor", path: "/ombor", icon: Warehouse },
   { nom: "Mijozlar", path: "/mijozlar", icon: Users },
-  { nom: "Mahsulotlar", path: "/mahsulotlar", icon: Package },
   { nom: "Kassa", path: "/kassa", icon: Wallet },
   { nom: "Sozlamalar", path: "/sozlamalar", icon: Settings },
 ];

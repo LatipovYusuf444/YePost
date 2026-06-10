@@ -461,25 +461,25 @@ export default function Mijozlar() {
           <>
             <div className="fixed inset-0 z-[9998] bg-black/55 backdrop-blur-[2px]" />
 
-            <section className="fixed left-4 right-4 top-1/2 z-[9999] max-h-[calc(100dvh-72px)] -translate-y-1/2 overflow-y-auto rounded-[34px] bg-[#D8D8D8] p-5 shadow-2xl sm:left-6 sm:right-6 lg:left-[120px] lg:right-[32px] lg:p-6 2xl:left-[140px]">
-              <div className="mb-6 flex flex-col items-start justify-between gap-5 xl:flex-row">
+            <section className="scrollbar-hidden fixed bottom-4 left-4 right-4 top-4 z-[9999] overflow-y-auto rounded-[34px] bg-[#D8D8D8] p-5 shadow-2xl sm:bottom-6 sm:left-6 sm:right-6 sm:top-6 lg:bottom-[32px] lg:left-[120px] lg:right-[32px] lg:top-[32px] lg:p-6 2xl:left-[140px]">
+              <div className="mb-7 flex flex-col items-start justify-between gap-5 xl:flex-row">
                 <div className="flex items-center gap-4">
                   {activeDetailCustomer.avatar ? (
                     <img
                       src={activeDetailCustomer.avatar}
                       alt=""
-                      className="h-16 w-16 rounded-3xl object-cover ring-4 ring-white/70"
+                      className="h-[72px] w-[72px] rounded-3xl object-cover ring-4 ring-white/70"
                     />
                   ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-orange-500 shadow-sm">
-                      <UserRound size={28} />
+                    <div className="flex h-[72px] w-[72px] items-center justify-center rounded-3xl bg-white text-orange-500 shadow-sm">
+                      <UserRound size={30} />
                     </div>
                   )}
                   <div>
                     <p className="text-sm font-medium text-gray-500">
                       Mijozlar spisok ichi
                     </p>
-                    <h2 className="mt-1 text-3xl font-bold text-gray-950">
+                    <h2 className="mt-1 text-4xl font-bold text-gray-950">
                       {activeDetailCustomer.kontakt}
                     </h2>
                   </div>
@@ -534,8 +534,8 @@ export default function Mijozlar() {
                 </span>
               </div>
 
-              <div className="grid items-start grid-cols-1 gap-5 xl:grid-cols-[430px_minmax(0,1fr)] 2xl:grid-cols-[460px_minmax(0,1fr)]">
-                <aside className="rounded-[24px] bg-white p-5 shadow-sm">
+              <div className="grid grid-cols-1 items-start gap-7 xl:grid-cols-[460px_minmax(0,1fr)] 2xl:grid-cols-[500px_minmax(0,1fr)]">
+                <aside className="rounded-[28px] bg-white p-6 shadow-sm">
                   <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-3">
                     <h3 className="text-lg font-bold text-gray-950">Kontakt haqida</h3>
                     <button
@@ -642,7 +642,7 @@ export default function Mijozlar() {
                   </div>
                 </aside>
 
-                <main className="rounded-[24px] bg-white p-5 shadow-sm">
+                <main className="rounded-[28px] bg-white p-6 shadow-sm">
                   <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex flex-wrap gap-2">
                       {detailActivityTabs.map((tab) => (
@@ -747,9 +747,9 @@ export default function Mijozlar() {
         )}
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/45 px-5 py-12 backdrop-blur-sm">
-          <div className="flex max-h-[calc(100dvh-96px)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 px-4 py-6 backdrop-blur-sm sm:px-6 lg:pl-[120px]">
+          <div className="flex h-[min(840px,calc(100dvh-48px))] w-full max-w-[1280px] flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5">
               <div>
                 <h2 className="text-lg font-bold text-gray-900">
                   {editingCustomerId ? "Mijozni tahrirlash" : "Yangi mijoz"}
@@ -760,16 +760,16 @@ export default function Mijozlar() {
               </div>
               <button
                 onClick={closeModal}
-                className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100 text-gray-500 transition hover:text-orange-600"
+                className="flex h-11 w-11 items-center justify-center rounded-xl bg-gray-100 text-gray-500 transition hover:bg-orange-500 hover:text-white"
                 aria-label="Yopish"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto p-5">
-              <div className="grid gap-5 xl:grid-cols-[240px_minmax(0,1fr)]">
-                <div className="rounded-2xl border border-orange-100 bg-orange-50/50 p-4 xl:min-h-[360px]">
+            <div className="min-h-0 flex-1 overflow-y-auto p-6">
+              <div className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
+                <div className="rounded-[24px] border border-orange-100 bg-orange-50/50 p-5 xl:min-h-[460px]">
                   <div className="mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-white text-orange-500 shadow-sm">
                     {form.avatar ? (
                       <img src={form.avatar} alt="" className="h-full w-full object-cover" />
@@ -797,7 +797,7 @@ export default function Mijozlar() {
                   )}
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-5 md:grid-cols-2">
                   <label className="text-xs font-bold text-gray-500">
                     Turi
                     <select
@@ -805,7 +805,7 @@ export default function Mijozlar() {
                       onChange={(event) =>
                         setForm((prev) => ({ ...prev, kind: event.target.value as CustomerKind }))
                       }
-                      className="mt-1 h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none focus:border-orange-300"
+                      className="mt-1 h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-700 outline-none focus:border-orange-300"
                     >
                       {customerTabs.map((tab) => (
                         <option key={tab.id} value={tab.id}>
@@ -822,7 +822,7 @@ export default function Mijozlar() {
                       onChange={(event) =>
                         setForm((prev) => ({ ...prev, status: event.target.value }))
                       }
-                      className="mt-1 h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none focus:border-orange-300"
+                      className="mt-1 h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-700 outline-none focus:border-orange-300"
                     >
                       {statusOptions.map((option) => (
                         <option key={option}>{option}</option>
@@ -845,7 +845,7 @@ export default function Mijozlar() {
                         onChange={(event) =>
                           setForm((prev) => ({ ...prev, [key]: event.target.value }))
                         }
-                        className="mt-1 h-11 w-full rounded-lg border border-gray-200 px-3 text-sm text-gray-700 outline-none focus:border-orange-300"
+                        className="mt-1 h-12 w-full rounded-xl border border-gray-200 px-4 text-sm text-gray-700 outline-none focus:border-orange-300"
                       />
                     </label>
                   ))}
@@ -857,7 +857,7 @@ export default function Mijozlar() {
                       onChange={(event) =>
                         setForm((prev) => ({ ...prev, manba: event.target.value }))
                       }
-                      className="mt-1 h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none focus:border-orange-300"
+                      className="mt-1 h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-700 outline-none focus:border-orange-300"
                     >
                       {sourceOptions.map((option) => (
                         <option key={option}>{option}</option>
@@ -872,7 +872,7 @@ export default function Mijozlar() {
                       onChange={(event) =>
                         setForm((prev) => ({ ...prev, tolovTuri: event.target.value }))
                       }
-                      className="mt-1 h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none focus:border-orange-300"
+                      className="mt-1 h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-700 outline-none focus:border-orange-300"
                     >
                       {paymentOptions.map((option) => (
                         <option key={option}>{option}</option>
@@ -887,14 +887,14 @@ export default function Mijozlar() {
                       onChange={(event) =>
                         setForm((prev) => ({ ...prev, izoh: event.target.value }))
                       }
-                      className="mt-1 min-h-24 w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-300"
+                      className="mt-1 min-h-32 w-full resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 outline-none focus:border-orange-300"
                     />
                   </label>
                 </div>
               </div>
             </div>
 
-            <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-gray-100 bg-white px-5 py-4 sm:flex-row sm:justify-between">
+            <div className="flex shrink-0 flex-col-reverse gap-3 border-t border-gray-100 bg-white px-6 py-5 sm:flex-row sm:justify-between">
               {editingCustomerId ? (
                 <button
                   onClick={() => {

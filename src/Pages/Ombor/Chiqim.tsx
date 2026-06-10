@@ -404,22 +404,22 @@ export default function Chiqimlar() {
       )}
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/45 px-4 py-6 backdrop-blur-sm lg:pl-[120px]">
+          <div className="max-h-[calc(100dvh-48px)] w-full max-w-4xl overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl">
+            <div className="mb-5 flex items-center justify-between">
               <h2 className="text-lg font-bold text-gray-900">
                 {editingExpenseId ? "Chiqimni tahrirlash" : "Yangi chiqim"}
               </h2>
               <button
                 onClick={closeModal}
-                className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100 text-gray-500 transition hover:text-orange-600"
+                className="flex h-11 w-11 items-center justify-center rounded-xl bg-gray-100 text-gray-500 transition hover:bg-orange-500 hover:text-white"
                 aria-label="Yopish"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-2">
               {[
                 ["ismi", "Ismi"],
                 ["sana", "Sana"],
@@ -434,7 +434,7 @@ export default function Chiqimlar() {
                     onChange={(event) =>
                       setForm((prev) => ({ ...prev, [key]: event.target.value }))
                     }
-                    className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 text-sm text-gray-700 outline-none transition focus:border-orange-300"
+                    className="mt-1 h-12 w-full rounded-xl border border-gray-200 px-4 text-sm text-gray-700 outline-none transition focus:border-orange-300"
                   />
                 </label>
               ))}
@@ -447,12 +447,12 @@ export default function Chiqimlar() {
                   onChange={(event) =>
                     setForm((prev) => ({ ...prev, summa: Number(event.target.value) }))
                   }
-                  className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 text-sm text-gray-700 outline-none transition focus:border-orange-300"
+                  className="mt-1 h-12 w-full rounded-xl border border-gray-200 px-4 text-sm text-gray-700 outline-none transition focus:border-orange-300"
                 />
               </label>
             </div>
 
-            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
                 onClick={closeModal}
                 className="h-10 rounded-lg bg-gray-100 px-4 text-sm font-bold text-gray-600"

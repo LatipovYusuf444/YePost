@@ -194,14 +194,14 @@ function formatSumma(summa: number) {
 
 function focusClass(isActive: boolean, isPaymentAccepted: boolean) {
   if (isPaymentAccepted) {
-    return "rounded-[28px] bg-white p-6 opacity-100 scale-100 pointer-events-auto transition-all duration-300";
+    return "rounded-[28px] bg-white p-6 shadow-sm opacity-100 scale-100 pointer-events-auto transition-all duration-300";
   }
 
   return [
-    "rounded-[28px] p-6 transition-all duration-300",
+    "rounded-[28px] bg-white p-6 shadow-sm transition-all duration-300",
     isActive
-      ? "bg-white opacity-100 scale-100 pointer-events-auto"
-      : "bg-white/60 opacity-60 pointer-events-none",
+      ? "opacity-100 scale-100 pointer-events-auto"
+      : "opacity-100 pointer-events-none",
   ].join(" ");
 }
 
@@ -422,18 +422,19 @@ export default function Savdo() {
 
             <section
               className={[
-                "scrollbar-hidden fixed bottom-4 left-4 right-4 top-4 z-[9999] overflow-y-auto rounded-[34px] p-5 shadow-2xl transition-colors duration-300 sm:bottom-6 sm:left-6 sm:right-6 sm:top-6 lg:bottom-[32px] lg:left-[120px] lg:right-[32px] lg:top-[32px] lg:p-6 2xl:left-[140px]",
-                paymentAccepted ? "bg-white" : "bg-[#D8D8D8]",
+                "scrollbar-hidden fixed bottom-4 left-4 right-4 top-4 z-[9999] overflow-y-auto rounded-[34px] bg-[#D8D8D8] p-5 shadow-2xl transition-colors duration-300 sm:bottom-6 sm:left-6 sm:right-6 sm:top-6 lg:bottom-[32px] lg:left-[120px] lg:right-[32px] lg:top-[32px] lg:p-6 2xl:left-[140px]",
               ].join(" ")}
             >
-              <div className="mb-6 flex flex-col items-start justify-between gap-5 xl:flex-row">
-                <div>
+              <div className="mb-7 flex flex-col items-start justify-between gap-5 xl:flex-row">
+                <div className="flex min-h-[72px] items-center">
+                  <div>
                   <p className="text-sm font-medium text-gray-500">
                     Savdo spisok ichi
                   </p>
                   <h2 className="mt-1 text-4xl font-bold text-gray-950">
                     {selectedSale.mijozNomi}
                   </h2>
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -508,7 +509,7 @@ export default function Savdo() {
               </div>
 
               {detailTab === "Asosiyisi" && (
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-[360px_minmax(0,1fr)] 2xl:grid-cols-[380px_minmax(0,1fr)]">
+                <div className="grid grid-cols-1 items-start gap-7 xl:grid-cols-[460px_minmax(0,1fr)] 2xl:grid-cols-[500px_minmax(0,1fr)]">
                   <aside className={focusClass(modalFocus === "tolov", paymentAccepted)}>
                     <div className="mb-5 flex items-center justify-between border-b border-gray-100 pb-4">
                       <h3 className="text-xl font-bold text-gray-950">Savdo</h3>
@@ -531,12 +532,12 @@ export default function Savdo() {
                         setModalFocus("faoliyat");
                         showToast("To'lov qabul qilindi");
                       }}
-                      className="mt-5 w-full rounded-2xl bg-green-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-green-700"
+                      className="mt-6 w-full rounded-2xl bg-green-600 px-5 py-4 text-sm font-bold text-white transition hover:bg-green-700"
                     >
                       To'lov qabul qilish
                     </button>
 
-                    <div className="mt-6 rounded-3xl bg-gray-50 p-5">
+                    <div className="mt-7 rounded-3xl bg-gray-50 p-6">
                       <p className="font-bold text-gray-800">
                         To'lov va yetkazib berish
                       </p>
@@ -545,7 +546,7 @@ export default function Savdo() {
                       </p>
                     </div>
 
-                    <div className="mt-6 space-y-5">
+                    <div className="mt-7 space-y-5">
                       <div>
                         <p className="text-sm text-gray-500">Kontragent</p>
                         <div className="mt-2 rounded-2xl bg-gray-100 px-4 py-3 font-semibold text-gray-800">
@@ -596,7 +597,7 @@ export default function Savdo() {
                       </div>
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row">
                       <select
                         value={actionType}
                         onChange={(e) => setActionType(e.target.value)}
@@ -614,7 +615,7 @@ export default function Savdo() {
                             ? showToast("Avval amal tanlang")
                             : showToast(`${activityTab} qo'shildi`)
                         }
-                        className="rounded-2xl bg-[#FF5A00] px-6 text-sm font-bold text-white transition hover:bg-orange-600"
+                        className="rounded-2xl bg-[#FF5A00] px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
                       >
                         Qo'shish
                       </button>

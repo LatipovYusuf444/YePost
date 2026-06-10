@@ -289,26 +289,26 @@ export default function YuqoriPanel() {
     createPortal(
       <>
         <div className="fixed inset-0 z-[9998] bg-black/45 backdrop-blur-[2px]" />
-        <section className="fixed bottom-8 left-4 right-4 top-16 z-[9999] overflow-hidden rounded-3xl bg-white shadow-2xl sm:left-1/2 sm:right-auto sm:top-20 sm:h-[min(720px,calc(100vh-120px))] sm:w-[min(760px,calc(100vw-56px))] sm:-translate-x-1/2 lg:left-[calc(50%+56px)]">
+        <section className="fixed bottom-5 left-3 right-3 top-12 z-[9999] overflow-hidden rounded-[28px] bg-white shadow-2xl sm:left-1/2 sm:right-auto sm:top-14 sm:h-[min(820px,calc(100vh-96px))] sm:w-[min(920px,calc(100vw-64px))] sm:-translate-x-1/2 lg:left-[calc(50%+56px)] xl:w-[min(1040px,calc(100vw-120px))]">
           <div className="flex h-full flex-col">
-            <div className="flex flex-col gap-3 border-b border-gray-100 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="flex flex-col gap-3 border-b border-gray-100 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:px-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <button
                   onClick={handleAddProduct}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 text-sm font-bold text-white shadow-sm shadow-orange-200 transition hover:bg-orange-600"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-orange-500 px-5 text-sm font-bold text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600"
                 >
                   <Plus size={16} />
                   Qo'shish
                 </button>
 
-                <div className="flex h-10 w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 sm:w-[320px]">
+                <div className="flex h-12 w-full items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 shadow-sm sm:w-[400px] lg:w-[470px]">
                   <input
                     value={productSearch}
                     onChange={(event) => setProductSearch(event.target.value)}
                     placeholder="Qidirish"
-                    className="min-w-0 flex-1 bg-transparent text-sm text-gray-700 outline-none placeholder:text-gray-400"
+                    className="min-w-0 flex-1 bg-transparent text-[15px] font-medium text-gray-700 outline-none placeholder:text-gray-400"
                   />
-                  <Search size={18} className="text-gray-300" />
+                  <Search size={20} className="text-gray-300" />
                 </div>
               </div>
 
@@ -316,7 +316,7 @@ export default function YuqoriPanel() {
                 <button
                   onClick={() => setOnlyAvailable((prev) => !prev)}
                   className={[
-                    "inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 text-sm font-bold shadow-sm transition",
+                    "inline-flex h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold shadow-lg transition",
                     onlyAvailable
                       ? "bg-orange-600 text-white shadow-orange-200"
                       : "bg-orange-500 text-white shadow-orange-200 hover:bg-orange-600",
@@ -327,7 +327,7 @@ export default function YuqoriPanel() {
                 </button>
                 <button
                   onClick={closeProductsModal}
-                  className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-600 transition hover:bg-orange-500 hover:text-white"
+                  className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 text-gray-600 transition hover:bg-orange-500 hover:text-white"
                   aria-label="Yopish"
                 >
                   <X size={19} />
@@ -335,9 +335,9 @@ export default function YuqoriPanel() {
               </div>
             </div>
 
-            <div className="grid min-h-0 flex-1 grid-cols-1 sm:grid-cols-[170px_minmax(0,1fr)]">
-              <aside className="border-b border-gray-100 p-4 lg:border-b-0 lg:border-r">
-                <nav className="flex gap-2 overflow-x-auto lg:block lg:space-y-3">
+            <div className="grid min-h-0 flex-1 grid-cols-1 sm:grid-cols-[210px_minmax(0,1fr)] lg:grid-cols-[220px_minmax(0,1fr)]">
+              <aside className="border-b border-gray-100 bg-gray-50/60 p-4 sm:border-b-0 sm:border-r sm:p-5">
+                <nav className="flex gap-2 overflow-x-auto sm:block sm:space-y-3 sm:overflow-visible">
                   {productGroups.map((group) => {
                     const isActive = activeGroupId === group.id;
 
@@ -346,10 +346,10 @@ export default function YuqoriPanel() {
                         key={group.id}
                         onClick={() => setActiveGroupId(group.id)}
                         className={[
-                          "shrink-0 rounded-lg px-3 py-2 text-left text-sm font-semibold transition lg:block lg:w-full",
+                          "shrink-0 rounded-xl px-4 py-3 text-left text-[15px] font-bold transition sm:block sm:w-full",
                           isActive
-                            ? "bg-orange-50 text-orange-600"
-                            : "text-gray-700 hover:bg-orange-50 hover:text-orange-600",
+                            ? "bg-white text-orange-600 shadow-sm ring-1 ring-orange-100"
+                            : "text-gray-700 hover:bg-white hover:text-orange-600",
                         ].join(" ")}
                       >
                         {group.nom}
@@ -359,9 +359,9 @@ export default function YuqoriPanel() {
                 </nav>
               </aside>
 
-              <main className="min-w-0 overflow-auto p-4">
-                <div className="space-y-2">
-                  <div className="grid grid-cols-[minmax(0,1fr)_140px_80px] items-center px-3 pb-2 text-sm font-bold text-orange-500">
+              <main className="min-w-0 overflow-auto px-4 py-5 sm:px-5 lg:px-6">
+                <div className="space-y-3">
+                  <div className="grid grid-cols-[minmax(0,1fr)_140px_70px] items-center gap-3 px-4 pb-2 text-sm font-bold text-orange-500 sm:grid-cols-[minmax(0,1fr)_160px_90px] lg:grid-cols-[minmax(0,1fr)_180px_100px]">
                     <span>Mahsulot nomi</span>
                     <span />
                     <span className="text-right">Qoldiq</span>
@@ -383,31 +383,31 @@ export default function YuqoriPanel() {
                         role="button"
                         tabIndex={product.soni > 0 ? 0 : -1}
                         className={[
-                          "grid w-full grid-cols-[minmax(0,1fr)_140px_80px] items-center rounded-xl border px-3 py-3 text-left transition",
+                          "grid min-h-16 w-full grid-cols-[minmax(0,1fr)_140px_70px] items-center gap-3 rounded-2xl border px-4 py-3 text-left transition sm:grid-cols-[minmax(0,1fr)_160px_90px] lg:grid-cols-[minmax(0,1fr)_180px_100px]",
                           isSelected
                             ? "border-orange-500 bg-orange-50"
-                            : "border-gray-100 bg-white hover:bg-orange-50",
+                            : "border-gray-100 bg-white shadow-sm hover:bg-orange-50 hover:shadow-md",
                           product.soni <= 0 ? "opacity-50" : "",
                         ].join(" ")}
                       >
-                        <span className="truncate text-sm font-bold text-gray-800">
+                        <span className="truncate text-base font-bold text-gray-800">
                           {product.nomi}
                         </span>
                         <span className="flex justify-center">
                           <span
                             onClick={(event) => event.stopPropagation()}
-                            className="flex h-9 items-center rounded-lg bg-white px-1 shadow-sm"
+                            className="flex h-11 items-center rounded-xl border border-gray-100 bg-white px-1.5 shadow-sm"
                           >
                             <button
                               onClick={() =>
                                 updateSelectedQuantity(product.id, selectedQuantity - 1)
                               }
                               disabled={selectedQuantity <= 0}
-                              className="flex h-7 w-7 items-center justify-center rounded-md text-gray-600 transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-transparent"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-600 transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-transparent"
                             >
                               -
                             </button>
-                            <span className="w-9 text-center text-sm font-bold text-gray-900">
+                            <span className="w-10 text-center text-base font-bold text-gray-900">
                               {selectedQuantity}
                             </span>
                             <button
@@ -415,14 +415,14 @@ export default function YuqoriPanel() {
                                 updateSelectedQuantity(product.id, selectedQuantity + 1)
                               }
                               disabled={product.soni <= 0 || selectedQuantity >= product.soni}
-                              className="flex h-7 w-7 items-center justify-center rounded-md text-gray-600 transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-transparent"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-600 transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-transparent"
                             >
                               +
                             </button>
                           </span>
                         </span>
                         <span className="flex justify-end">
-                          <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-600">
+                          <span className="min-w-12 rounded-full bg-orange-50 px-3 py-1.5 text-center text-sm font-bold text-orange-600">
                             {product.soni}
                           </span>
                         </span>
@@ -440,16 +440,16 @@ export default function YuqoriPanel() {
             </div>
 
             {Object.keys(selectedQuantities).length > 0 && (
-              <div className="grid grid-cols-2 gap-2 border-t border-orange-100 bg-white p-4">
+              <div className="grid grid-cols-1 gap-3 border-t border-orange-100 bg-white p-4 sm:grid-cols-2 sm:px-6">
                 <button
                   onClick={addSelectedProductsToCart}
-                  className="h-11 rounded-xl bg-orange-500 text-sm font-bold text-white transition hover:bg-orange-600"
+                  className="h-12 rounded-xl bg-orange-500 text-sm font-bold text-white shadow-lg shadow-orange-100 transition hover:bg-orange-600"
                 >
                   Savatga qo'shish
                 </button>
                 <button
                   onClick={cancelProductSelection}
-                  className="h-11 rounded-xl bg-gray-100 text-sm font-bold text-gray-600 transition hover:text-orange-600"
+                  className="h-12 rounded-xl bg-gray-100 text-sm font-bold text-gray-600 transition hover:text-orange-600"
                 >
                   Bekor qilish
                 </button>
