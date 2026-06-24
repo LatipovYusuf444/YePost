@@ -1,236 +1,496 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-
-export type Purchase = {
-  id: number;
-  ismi: string;
-  sana: string;
-  ozgartirilganSana: string;
-  masul: string;
-  yetkazibBeruvchi: string;
-  summa: number;
-  ombor: string;
-};
-
-export type PurchaseProduct = {
-  id: number;
-  purchaseId?: number;
-  nomi: string;
-  soni: number;
-  kodi: string;
-  shtrixKodi: string;
-  olchovBirligi: string;
-  narxi: number;
-  sotishNarxi?: number;
-};
+import {
+  barchaModifikatsiyalar,
+  chiqimApi,
+  filiallarApi,
+  inventarizatsiyaApi,
+  kirimApi,
+  kochirishApi,
+  kompaniyalarApi,
+  omborlarApi,
+  omborQoldiqlari,
+  xodimlar,
+  yetkazibBeruvchiYaratish,
+  yetkazibBeruvchilar,
+} from "@/api/omborApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import type {
+  ChiqimHujjati,
+  ChiqimYaratishMalumoti,
+  Filial,
+  FilialYaratishMalumoti,
+  InventarizatsiyaHujjati,
+  InventarizatsiyaYaratishMalumoti,
+  KirimHujjati,
+  KirimYaratishMalumoti,
+  Kompaniya,
+  KompaniyaSaqlashMalumoti,
+  KochirishHujjati,
+  KochirishYaratishMalumoti,
+  MahsulotModifikatsiyasi,
+  NomliEntity,
+  Ombor,
+  OmborQoldigi,
+  OmborSaqlashMalumoti,
+} from "@/types/ombor";
 
 type OmborState = {
-  purchases: Purchase[];
-  products: PurchaseProduct[];
-  addPurchase: (purchase: Omit<Purchase, "id">) => Purchase;
-  updatePurchase: (purchaseId: number, purchase: Omit<Purchase, "id">) => void;
-  addProduct: (product: Omit<PurchaseProduct, "id">) => PurchaseProduct;
-  decreaseProductStock: (productId: number, quantity: number) => void;
-  ensureMinimumPurchases: (minimum: number) => void;
-  ensureMinimumStock: (minimum: number) => void;
+  kompaniyalar: Kompaniya[];
+  omborlar: Ombor[];
+  filiallar: Filial[];
+  kirimlar: KirimHujjati[];
+  chiqimlar: ChiqimHujjati[];
+  kochirishlar: KochirishHujjati[];
+  inventarizatsiyalar: InventarizatsiyaHujjati[];
+  qoldiqlar: OmborQoldigi[];
+  modifikatsiyalar: MahsulotModifikatsiyasi[];
+  yetkazibBeruvchilar: NomliEntity[];
+  xodimlar: NomliEntity[];
+  yuklanmoqda: boolean;
+  amalBajarilmoqda: boolean;
+  xatolik: string | null;
+  malumotlarniYuklash: () => Promise<void>;
+  qoldiqlarniYuklash: (warehouseId?: string) => Promise<void>;
+  kompaniyaOlish: (id: string) => Promise<Kompaniya | null>;
+  kompaniyaYaratish: (data: KompaniyaSaqlashMalumoti) => Promise<boolean>;
+  kompaniyaYangilash: (id: string, data: Partial<KompaniyaSaqlashMalumoti>) => Promise<boolean>;
+  kompaniyaOchirish: (id: string) => Promise<boolean>;
+  filialOlish: (id: string) => Promise<Filial | null>;
+  omborYaratish: (data: OmborSaqlashMalumoti) => Promise<boolean>;
+  omborOlish: (id: string) => Promise<Ombor | null>;
+  omborYangilash: (id: string, data: Partial<OmborSaqlashMalumoti>) => Promise<boolean>;
+  omborOchirish: (id: string) => Promise<boolean>;
+  filialYaratish: (data: FilialYaratishMalumoti) => Promise<Filial | null>;
+  filialYangilash: (id: string, data: Partial<FilialYaratishMalumoti>) => Promise<boolean>;
+  filialOchirish: (id: string) => Promise<boolean>;
+  yetkazibBeruvchiYaratish: (data: { name: string; phone?: string }) => Promise<boolean>;
+  kirimYaratish: (data: KirimYaratishMalumoti) => Promise<boolean>;
+  kirimTasdiqlash: (id: string) => Promise<boolean>;
+  kirimBekorQilish: (id: string) => Promise<boolean>;
+  chiqimYaratish: (data: ChiqimYaratishMalumoti) => Promise<boolean>;
+  chiqimTasdiqlash: (id: string) => Promise<boolean>;
+  chiqimBekorQilish: (id: string) => Promise<boolean>;
+  kochirishYaratish: (data: KochirishYaratishMalumoti) => Promise<boolean>;
+  kochirishJonatish: (id: string) => Promise<boolean>;
+  kochirishQabulQilish: (id: string) => Promise<boolean>;
+  kochirishBekorQilish: (id: string) => Promise<boolean>;
+  inventarizatsiyaYaratish: (data: InventarizatsiyaYaratishMalumoti) => Promise<boolean>;
+  inventarizatsiyaTasdiqlash: (id: string) => Promise<boolean>;
+  xatolikniTozalash: () => void;
 };
 
-const demoPurchases: Purchase[] = [
-  {
-    id: 1,
-    ismi: "Ali Ashurmatov",
-    sana: "20.11.2025",
-    ozgartirilganSana: "14.04.2026",
-    masul: "Dilorom Kosimova",
-    yetkazibBeruvchi: "24.12.2020",
-    summa: 150000,
-    ombor: "Ombor nomi",
-  },
-  {
-    id: 2,
-    ismi: "Sardor Textile",
-    sana: "21.11.2025",
-    ozgartirilganSana: "15.04.2026",
-    masul: "Javohir Karimov",
-    yetkazibBeruvchi: "Premium Logistic",
-    summa: 820000,
-    ombor: "Asosiy ombor",
-  },
-  {
-    id: 3,
-    ismi: "Madina Market",
-    sana: "22.11.2025",
-    ozgartirilganSana: "16.04.2026",
-    masul: "Sevara Azimova",
-    yetkazibBeruvchi: "City Supply",
-    summa: 430000,
-    ombor: "Filial ombor",
-  },
-  {
-    id: 4,
-    ismi: "Ali Ashurmatov",
-    sana: "24.11.2025",
-    ozgartirilganSana: "18.04.2026",
-    masul: "Dilorom Kosimova",
-    yetkazibBeruvchi: "24.12.2020",
-    summa: 150000,
-    ombor: "Ombor nomi",
-  },
-  {
-    id: 5,
-    ismi: "Bekzod Optom",
-    sana: "25.11.2025",
-    ozgartirilganSana: "20.04.2026",
-    masul: "Akmal Mirzaev",
-    yetkazibBeruvchi: "East Trade",
-    summa: 1250000,
-    ombor: "Zaxira ombor",
-  },
-  {
-    id: 6,
-    ismi: "Ali Ashurmatov",
-    sana: "26.11.2025",
-    ozgartirilganSana: "21.04.2026",
-    masul: "Dilorom Kosimova",
-    yetkazibBeruvchi: "24.12.2020",
-    summa: 150000,
-    ombor: "Ombor nomi",
-  },
-  {
-    id: 7,
-    ismi: "Sardor Textile",
-    sana: "27.11.2025",
-    ozgartirilganSana: "22.04.2026",
-    masul: "Javohir Karimov",
-    yetkazibBeruvchi: "Premium Logistic",
-    summa: 820000,
-    ombor: "Asosiy ombor",
-  },
-  {
-    id: 8,
-    ismi: "Madina Market",
-    sana: "28.11.2025",
-    ozgartirilganSana: "23.04.2026",
-    masul: "Sevara Azimova",
-    yetkazibBeruvchi: "City Supply",
-    summa: 430000,
-    ombor: "Filial ombor",
-  },
-  {
-    id: 9,
-    ismi: "Bekzod Optom",
-    sana: "29.11.2025",
-    ozgartirilganSana: "24.04.2026",
-    masul: "Akmal Mirzaev",
-    yetkazibBeruvchi: "East Trade",
-    summa: 1250000,
-    ombor: "Zaxira ombor",
-  },
-  {
-    id: 10,
-    ismi: "Ali Ashurmatov",
-    sana: "30.11.2025",
-    ozgartirilganSana: "25.04.2026",
-    masul: "Dilorom Kosimova",
-    yetkazibBeruvchi: "24.12.2020",
-    summa: 150000,
-    ombor: "Ombor nomi",
-  },
-  {
-    id: 11,
-    ismi: "Sardor Textile",
-    sana: "01.12.2025",
-    ozgartirilganSana: "26.04.2026",
-    masul: "Javohir Karimov",
-    yetkazibBeruvchi: "Premium Logistic",
-    summa: 820000,
-    ombor: "Asosiy ombor",
-  },
-  {
-    id: 12,
-    ismi: "Madina Market",
-    sana: "05.06.2026",
-    ozgartirilganSana: "05.06.2026",
-    masul: "Sevara Azimova",
-    yetkazibBeruvchi: "City Supply",
-    summa: 430000,
-    ombor: "Filial ombor",
-  },
-];
+function hujjatniAlmashtirish<T extends { id: string }>(royxat: T[], hujjat: T) {
+  return royxat.map((item) => (item.id === hujjat.id ? hujjat : item));
+}
 
-const demoProducts: PurchaseProduct[] = Array.from({ length: 12 }, (_, index) => ({
-  id: index + 1,
-  purchaseId: 1,
-  nomi: "Miss Dior",
-  soni: 24 + index,
-  kodi: "10297",
-  shtrixKodi: "981638",
-  olchovBirligi: "ml",
-  narxi: 2000000,
-}));
+export const useOmborStore = create<OmborState>((set) => ({
+  kompaniyalar: [],
+  omborlar: [],
+  filiallar: [],
+  kirimlar: [],
+  chiqimlar: [],
+  kochirishlar: [],
+  inventarizatsiyalar: [],
+  qoldiqlar: [],
+  modifikatsiyalar: [],
+  yetkazibBeruvchilar: [],
+  xodimlar: [],
+  yuklanmoqda: false,
+  amalBajarilmoqda: false,
+  xatolik: null,
 
-export const useOmborStore = create<OmborState>()(
-  persist(
-    (set) => ({
-      purchases: demoPurchases,
-      products: demoProducts,
-      addPurchase: (purchase) => {
-        const nextPurchase = { ...purchase, id: Date.now() };
-
-        set((state) => ({
-          purchases: [nextPurchase, ...state.purchases],
-        }));
-
-        return nextPurchase;
-      },
-      updatePurchase: (purchaseId, purchase) => {
-        set((state) => ({
-          purchases: state.purchases.map((item) =>
-            item.id === purchaseId ? { ...purchase, id: purchaseId } : item
-          ),
-        }));
-      },
-      addProduct: (product) => {
-        const nextProduct = { ...product, id: Date.now() };
-
-        set((state) => ({
-          products: [nextProduct, ...state.products],
-        }));
-
-        return nextProduct;
-      },
-      decreaseProductStock: (productId, quantity) => {
-        set((state) => ({
-          products: state.products.map((product) =>
-            product.id === productId
-              ? { ...product, soni: Math.max(product.soni - quantity, 0) }
-              : product
-          ),
-        }));
-      },
-      ensureMinimumPurchases: (minimum) => {
-        set((state) => {
-          if (state.purchases.length >= minimum) return state;
-
-          const existingIds = new Set(state.purchases.map((purchase) => purchase.id));
-          const missingPurchases = demoPurchases.filter((purchase) => !existingIds.has(purchase.id));
-
-          return {
-            purchases: [...state.purchases, ...missingPurchases].slice(0, minimum),
-          };
-        });
-      },
-      ensureMinimumStock: (minimum) => {
-        set((state) => ({
-          products: state.products.map((product) => ({
-            ...product,
-            soni: Math.max(product.soni, minimum),
-          })),
-        }));
-      },
-    }),
-    {
-      name: "yepost-ombor-demo",
+  malumotlarniYuklash: async () => {
+    set({ yuklanmoqda: true, xatolik: null });
+    try {
+      const [
+        kompaniyalar,
+        omborlar,
+        filiallar,
+        kirimlar,
+        chiqimlar,
+        kochirishlar,
+        inventarizatsiyalar,
+        qoldiqlar,
+        modifikatsiyalar,
+        suppliers,
+        users,
+      ] = await Promise.all([
+        kompaniyalarApi.royxat(),
+        omborlarApi.royxat(),
+        filiallarApi.royxat(),
+        kirimApi.royxat(),
+        chiqimApi.royxat(),
+        kochirishApi.royxat(),
+        inventarizatsiyaApi.royxat(),
+        omborQoldiqlari(),
+        barchaModifikatsiyalar(),
+        yetkazibBeruvchilar(),
+        xodimlar(),
+      ]);
+      set({
+        kompaniyalar,
+        omborlar,
+        filiallar,
+        kirimlar,
+        chiqimlar,
+        kochirishlar,
+        inventarizatsiyalar,
+        qoldiqlar,
+        modifikatsiyalar,
+        yetkazibBeruvchilar: suppliers,
+        xodimlar: users,
+        yuklanmoqda: false,
+      });
+    } catch (error) {
+      set({ yuklanmoqda: false, xatolik: getApiErrorMessage(error) });
     }
-  )
-);
+  },
+
+  qoldiqlarniYuklash: async (warehouseId) => {
+    try {
+      set({ qoldiqlar: await omborQoldiqlari(warehouseId) });
+    } catch (error) {
+      set({ xatolik: getApiErrorMessage(error) });
+    }
+  },
+
+  kompaniyaOlish: async (id) => {
+    try {
+      return await kompaniyalarApi.olish(id);
+    } catch (error) {
+      set({ xatolik: getApiErrorMessage(error) });
+      return null;
+    }
+  },
+  kompaniyaYaratish: async (data) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const kompaniya = await kompaniyalarApi.yaratish(data);
+      set((state) => ({
+        kompaniyalar: [kompaniya, ...state.kompaniyalar],
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+  kompaniyaYangilash: async (id, data) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const kompaniya = await kompaniyalarApi.yangilash(id, data);
+      set((state) => ({
+        kompaniyalar: hujjatniAlmashtirish(state.kompaniyalar, kompaniya),
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+  kompaniyaOchirish: async (id) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      await kompaniyalarApi.ochirish(id);
+      set((state) => ({
+        kompaniyalar: state.kompaniyalar.filter((item) => item.id !== id),
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+
+  filialOlish: async (id) => {
+    try {
+      return await filiallarApi.olish(id);
+    } catch (error) {
+      set({ xatolik: getApiErrorMessage(error) });
+      return null;
+    }
+  },
+
+  omborYaratish: async (data) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const ombor = await omborlarApi.yaratish(data);
+      set((state) => ({
+        omborlar: [ombor, ...state.omborlar],
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+
+  omborOlish: async (id) => {
+    try {
+      return await omborlarApi.olish(id);
+    } catch (error) {
+      set({ xatolik: getApiErrorMessage(error) });
+      return null;
+    }
+  },
+
+  omborYangilash: async (id, data) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const ombor = await omborlarApi.yangilash(id, data);
+      set((state) => ({
+        omborlar: hujjatniAlmashtirish(state.omborlar, ombor),
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+
+  omborOchirish: async (id) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      await omborlarApi.ochirish(id);
+      set((state) => ({
+        omborlar: state.omborlar.filter((ombor) => ombor.id !== id),
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+
+  filialYaratish: async (data) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const filial = await filiallarApi.yaratish(data);
+      set((state) => ({
+        filiallar: [filial, ...state.filiallar],
+        amalBajarilmoqda: false,
+      }));
+      return filial;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return null;
+    }
+  },
+  filialYangilash: async (id, data) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const filial = await filiallarApi.yangilash(id, data);
+      set((state) => ({
+        filiallar: hujjatniAlmashtirish(state.filiallar, filial),
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+  filialOchirish: async (id) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      await filiallarApi.ochirish(id);
+      set((state) => ({
+        filiallar: state.filiallar.filter((item) => item.id !== id),
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+
+  yetkazibBeruvchiYaratish: async (data) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const supplier = await yetkazibBeruvchiYaratish(data);
+      set((state) => ({
+        yetkazibBeruvchilar: [supplier, ...state.yetkazibBeruvchilar],
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+
+  kirimYaratish: async (data) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const hujjat = await kirimApi.yaratish(data);
+      set((state) => ({ kirimlar: [hujjat, ...state.kirimlar], amalBajarilmoqda: false }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+  kirimTasdiqlash: async (id) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const hujjat = await kirimApi.tasdiqlash(id);
+      set((state) => ({
+        kirimlar: hujjatniAlmashtirish(state.kirimlar, hujjat),
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+  kirimBekorQilish: async (id) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const hujjat = await kirimApi.bekorQilish(id);
+      set((state) => ({
+        kirimlar: hujjatniAlmashtirish(state.kirimlar, hujjat),
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+
+  chiqimYaratish: async (data) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const hujjat = await chiqimApi.yaratish(data);
+      set((state) => ({ chiqimlar: [hujjat, ...state.chiqimlar], amalBajarilmoqda: false }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+  chiqimTasdiqlash: async (id) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const hujjat = await chiqimApi.tasdiqlash(id);
+      set((state) => ({
+        chiqimlar: hujjatniAlmashtirish(state.chiqimlar, hujjat),
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+  chiqimBekorQilish: async (id) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const hujjat = await chiqimApi.bekorQilish(id);
+      set((state) => ({
+        chiqimlar: hujjatniAlmashtirish(state.chiqimlar, hujjat),
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+
+  kochirishYaratish: async (data) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const hujjat = await kochirishApi.yaratish(data);
+      set((state) => ({
+        kochirishlar: [hujjat, ...state.kochirishlar],
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+  kochirishJonatish: async (id) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const hujjat = await kochirishApi.jonatish(id);
+      set((state) => ({
+        kochirishlar: hujjatniAlmashtirish(state.kochirishlar, hujjat),
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+  kochirishQabulQilish: async (id) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const hujjat = await kochirishApi.qabulQilish(id);
+      set((state) => ({
+        kochirishlar: hujjatniAlmashtirish(state.kochirishlar, hujjat),
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+  kochirishBekorQilish: async (id) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const hujjat = await kochirishApi.bekorQilish(id);
+      set((state) => ({
+        kochirishlar: hujjatniAlmashtirish(state.kochirishlar, hujjat),
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+
+  inventarizatsiyaYaratish: async (data) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const hujjat = await inventarizatsiyaApi.yaratish(data);
+      set((state) => ({
+        inventarizatsiyalar: [hujjat, ...state.inventarizatsiyalar],
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+  inventarizatsiyaTasdiqlash: async (id) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const hujjat = await inventarizatsiyaApi.tasdiqlash(id);
+      set((state) => ({
+        inventarizatsiyalar: hujjatniAlmashtirish(state.inventarizatsiyalar, hujjat),
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+
+  xatolikniTozalash: () => set({ xatolik: null }),
+}));

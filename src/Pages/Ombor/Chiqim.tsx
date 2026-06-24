@@ -1,474 +1,62 @@
-import { useMemo, useState } from "react";
-import {
-  CalendarDays,
-  ChevronDown,
-  Plus,
-  Search,
-  Square,
-  X,
-} from "lucide-react";
-import TablePagination from "@/Components/common/TablePagination";
+import { useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
+import { useOmborStore } from "@/store/omborStore";
+import type { ChiqimSababi } from "@/types/ombor";
+import { holat, modificationNomi, qoldiqMiqdori, sana } from "./omborYordamchilari";
 
-type ExpenseTab = "kirim" | "xujatlar";
-type DateFilter = "all" | "today";
-
-type Expense = {
-  id: number;
-  ismi: string;
-  sana: string;
-  ozgartirilganSana: string;
-  masul: string;
-  summa: number;
-  ombor: string;
+const sabablar: Record<ChiqimSababi, string> = {
+  DAMAGE: "Shikastlangan",
+  EXPIRY: "Muddati o'tgan",
+  THEFT: "Yo'qolgan/o'g'irlangan",
+  OTHER: "Boshqa",
 };
 
-const todayDate = "05.06.2026";
+export default function Chiqim() {
+  const store = useOmborStore();
+  const malumotlarniYuklash = store.malumotlarniYuklash;
+  const [modal, setModal] = useState(false);
+  const [warehouseId, setWarehouseId] = useState("");
+  const [reason, setReason] = useState<ChiqimSababi>("OTHER");
+  const [modificationId, setModificationId] = useState("");
+  const [quantity, setQuantity] = useState(1);
+  const [note, setNote] = useState("");
 
-const demoExpenses: Expense[] = [
-  {
-    id: 1,
-    ismi: "Ali Ashurmatov",
-    sana: "20.11.2025",
-    ozgartirilganSana: "14.04.2026",
-    masul: "Dilorom Kosimova",
-    summa: 150000,
-    ombor: "Ombor nomi",
-  },
-  {
-    id: 2,
-    ismi: "Sardor Textile",
-    sana: "21.11.2025",
-    ozgartirilganSana: "15.04.2026",
-    masul: "Javohir Karimov",
-    summa: 820000,
-    ombor: "Asosiy ombor",
-  },
-  {
-    id: 3,
-    ismi: "Madina Market",
-    sana: "22.11.2025",
-    ozgartirilganSana: "16.04.2026",
-    masul: "Sevara Azimova",
-    summa: 430000,
-    ombor: "Filial ombor",
-  },
-  {
-    id: 4,
-    ismi: "Bekzod Optom",
-    sana: "24.11.2025",
-    ozgartirilganSana: "18.04.2026",
-    masul: "Akmal Mirzaev",
-    summa: 1250000,
-    ombor: "Zaxira ombor",
-  },
-  {
-    id: 5,
-    ismi: "Ali Ashurmatov",
-    sana: "25.11.2025",
-    ozgartirilganSana: "20.04.2026",
-    masul: "Dilorom Kosimova",
-    summa: 150000,
-    ombor: "Ombor nomi",
-  },
-  {
-    id: 6,
-    ismi: "Madina Market",
-    sana: todayDate,
-    ozgartirilganSana: todayDate,
-    masul: "Sevara Azimova",
-    summa: 430000,
-    ombor: "Filial ombor",
-  },
-  {
-    id: 7,
-    ismi: "Sardor Textile",
-    sana: "27.11.2025",
-    ozgartirilganSana: "22.04.2026",
-    masul: "Javohir Karimov",
-    summa: 820000,
-    ombor: "Asosiy ombor",
-  },
-  {
-    id: 8,
-    ismi: "Ali Ashurmatov",
-    sana: "28.11.2025",
-    ozgartirilganSana: "23.04.2026",
-    masul: "Dilorom Kosimova",
-    summa: 150000,
-    ombor: "Ombor nomi",
-  },
-  {
-    id: 9,
-    ismi: "Bekzod Optom",
-    sana: "29.11.2025",
-    ozgartirilganSana: "24.04.2026",
-    masul: "Akmal Mirzaev",
-    summa: 1250000,
-    ombor: "Zaxira ombor",
-  },
-  {
-    id: 10,
-    ismi: "Madina Market",
-    sana: "30.11.2025",
-    ozgartirilganSana: "25.04.2026",
-    masul: "Sevara Azimova",
-    summa: 430000,
-    ombor: "Filial ombor",
-  },
-  {
-    id: 11,
-    ismi: "Sardor Textile",
-    sana: "01.12.2025",
-    ozgartirilganSana: "26.04.2026",
-    masul: "Javohir Karimov",
-    summa: 820000,
-    ombor: "Asosiy ombor",
-  },
-  {
-    id: 12,
-    ismi: "Ali Ashurmatov",
-    sana: todayDate,
-    ozgartirilganSana: todayDate,
-    masul: "Dilorom Kosimova",
-    summa: 150000,
-    ombor: "Ombor nomi",
-  },
-];
+  useEffect(() => { void malumotlarniYuklash(); }, [malumotlarniYuklash]);
+  const qoldiqlar = useMemo(
+    () => store.qoldiqlar.filter((item) => !warehouseId || item.warehouseId === warehouseId || item.warehouse?.id === warehouseId),
+    [store.qoldiqlar, warehouseId]
+  );
 
-function formatSumma(value: number) {
-  return `${value.toLocaleString("ru-RU")} uzs`;
-}
-
-function emptyExpense(): Omit<Expense, "id"> {
-  return {
-    ismi: "",
-    sana: "",
-    ozgartirilganSana: "",
-    masul: "",
-    summa: 0,
-    ombor: "",
-  };
-}
-
-export default function Chiqimlar() {
-  const [expenses, setExpenses] = useState(demoExpenses);
-  const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState<ExpenseTab>("kirim");
-  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
-  const [isDateMenuOpen, setIsDateMenuOpen] = useState(false);
-  const [page, setPage] = useState(1);
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingExpenseId, setEditingExpenseId] = useState<number | null>(null);
-  const [form, setForm] = useState(emptyExpense);
-
-  const filteredExpenses = useMemo(() => {
-    const value = search.toLowerCase().trim();
-
-    return expenses.filter((expense) => {
-      const matchesDate = dateFilter === "all" || expense.sana === todayDate;
-      const matchesSearch =
-        !value ||
-        [
-          expense.ismi,
-          expense.sana,
-          expense.ozgartirilganSana,
-          expense.masul,
-          expense.ombor,
-          formatSumma(expense.summa),
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(value);
-
-      return matchesDate && matchesSearch;
-    });
-  }, [dateFilter, expenses, search]);
-  const safePage = Math.min(page, Math.max(1, Math.ceil(filteredExpenses.length / 10)));
-  const paginatedExpenses = filteredExpenses.slice((safePage - 1) * 10, safePage * 10);
-
-  function toggleSelect(id: number) {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  }
-
-  function openCreateModal() {
-    setEditingExpenseId(null);
-    setForm(emptyExpense());
-    setIsModalOpen(true);
-  }
-
-  function openEditModal(expense: Expense) {
-    setEditingExpenseId(expense.id);
-    setForm({
-      ismi: expense.ismi,
-      sana: expense.sana,
-      ozgartirilganSana: expense.ozgartirilganSana,
-      masul: expense.masul,
-      summa: expense.summa,
-      ombor: expense.ombor,
-    });
-    setIsModalOpen(true);
-  }
-
-  function closeModal() {
-    setEditingExpenseId(null);
-    setForm(emptyExpense());
-    setIsModalOpen(false);
-  }
-
-  function saveExpense() {
-    const nextExpense = {
-      ismi: form.ismi || "Yangi chiqim",
-      sana: form.sana || todayDate,
-      ozgartirilganSana: form.ozgartirilganSana || todayDate,
-      masul: form.masul || "Mas'ul shaxs",
-      summa: Number(form.summa) || 150000,
-      ombor: form.ombor || "Asosiy ombor",
-    };
-
-    if (editingExpenseId) {
-      setExpenses((prev) =>
-        prev.map((expense) =>
-          expense.id === editingExpenseId ? { ...nextExpense, id: editingExpenseId } : expense
-        )
-      );
-    } else {
-      setExpenses((prev) => [{ ...nextExpense, id: Date.now() }, ...prev]);
-    }
-
-    closeModal();
+  async function yaratish() {
+    if (!warehouseId || !modificationId || quantity <= 0) return;
+    const ok = await store.chiqimYaratish({ warehouseId, reason, note: note || undefined, items: [{ modificationId, quantity }] });
+    if (ok) setModal(false);
   }
 
   return (
-    <div className="min-h-[calc(100vh-190px)] rounded-2xl bg-white">
-      <div className="flex flex-col gap-3 border-b border-gray-100 pb-5 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <button
-            onClick={openCreateModal}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 text-sm font-bold text-white shadow-sm shadow-orange-200 transition hover:bg-orange-600"
-          >
-            <Plus size={16} />
-            Qo'shish
-          </button>
-
-          <div className="flex h-10 w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 sm:w-[320px] lg:w-[420px]">
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Qidirish"
-              className="min-w-0 flex-1 bg-transparent text-sm text-gray-700 outline-none placeholder:text-gray-400"
-            />
-            <Search size={18} className="text-gray-300" />
-          </div>
-        </div>
-
-        <div className="relative">
-          <button
-            onClick={() => setIsDateMenuOpen((prev) => !prev)}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 text-sm font-bold text-white shadow-sm shadow-orange-200 transition hover:bg-orange-600"
-          >
-            <CalendarDays size={16} />
-            {dateFilter === "today" ? "Bugun" : "Barchasi"}
-            <ChevronDown size={15} />
-          </button>
-          {isDateMenuOpen && (
-            <div className="absolute right-0 top-12 z-20 w-40 overflow-hidden rounded-xl border border-orange-100 bg-white p-1 shadow-xl">
-              {[
-                ["all", "Barchasi"],
-                ["today", "Bugun"],
-              ].map(([value, label]) => (
-                <button
-                  key={value}
-                  onClick={() => {
-                    setDateFilter(value as DateFilter);
-                    setIsDateMenuOpen(false);
-                  }}
-                  className={[
-                    "block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold transition",
-                    dateFilter === value
-                      ? "bg-orange-50 text-orange-600"
-                      : "text-gray-600 hover:bg-orange-50 hover:text-orange-600",
-                  ].join(" ")}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+    <div className="space-y-5">
+      <header className="flex items-end justify-between">
+        <div><p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-500">Hisobdan chiqarish</p><h1 className="text-3xl font-black">Ombordan chiqim</h1></div>
+        <button onClick={() => setModal(true)} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-4 font-black text-white"><Plus size={17}/>Yangi chiqim</button>
+      </header>
+      {store.xatolik && <div className="rounded-2xl bg-red-50 p-4 font-bold text-red-600">{store.xatolik}</div>}
+      <div className="overflow-x-auto rounded-2xl border border-orange-100 bg-white">
+        <table className="w-full min-w-[800px] text-left text-sm">
+          <thead className="bg-orange-50"><tr><th className="px-5 py-4">ID</th><th className="px-5 py-4">Ombor</th><th className="px-5 py-4">Sabab</th><th className="px-5 py-4">Sana</th><th className="px-5 py-4">Holat</th><th className="px-5 py-4 text-right">Amal</th></tr></thead>
+          <tbody className="divide-y divide-orange-100">
+            {store.chiqimlar.map((item) => <tr key={item.id}><td className="px-5 py-4 font-bold text-orange-600">{item.id.slice(0,8)}</td><td className="px-5 py-4">{item.warehouse?.name ?? item.warehouseId}</td><td className="px-5 py-4">{sabablar[item.reason as ChiqimSababi] ?? item.reason}</td><td className="px-5 py-4">{sana(item.createdAt)}</td><td className="px-5 py-4">{holat(item.status)}</td><td className="px-5 py-4 text-right">{String(item.status ?? "DRAFT").toUpperCase()==="DRAFT" && <div className="flex justify-end gap-2"><button onClick={() => void store.chiqimBekorQilish(item.id)} className="rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-600">Bekor</button><button onClick={() => void store.chiqimTasdiqlash(item.id)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white">Tasdiqlash</button></div>}</td></tr>)}
+            {store.chiqimlar.length===0 && <tr><td colSpan={6} className="py-14 text-center text-gray-400">Chiqim hujjatlari mavjud emas</td></tr>}
+          </tbody>
+        </table>
       </div>
-
-      <div className="mt-6 flex items-center gap-7">
-        <button
-          onClick={() => setActiveTab("kirim")}
-          className={[
-            "text-base font-semibold transition",
-            activeTab === "kirim" ? "text-gray-900" : "text-gray-400 hover:text-gray-700",
-          ].join(" ")}
-        >
-          Chiqimlar
-        </button>
-        <button
-          onClick={() => setActiveTab("xujatlar")}
-          className={[
-            "text-base font-semibold transition",
-            activeTab === "xujatlar" ? "text-gray-900" : "text-gray-400 hover:text-gray-700",
-          ].join(" ")}
-        >
-          Xujatlar
-        </button>
-      </div>
-
-      {activeTab === "kirim" ? (
-        <div className="mt-6 overflow-hidden rounded-xl border border-gray-100">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px] border-collapse text-left text-sm">
-              <thead className="bg-gray-50 text-xs font-bold text-orange-500">
-                <tr>
-                  <th className="w-10 px-4 py-3" />
-                  <th className="px-4 py-3">Ismi</th>
-                  <th className="px-4 py-3">Sana</th>
-                  <th className="px-4 py-3">O'zgartirilgan sana</th>
-                  <th className="px-4 py-3">Mas'ul shaxs</th>
-                  <th className="px-4 py-3">Summa</th>
-                  <th className="px-4 py-3">Ombor</th>
-                  <th className="w-28 px-4 py-3">Amal</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 text-gray-600">
-                {paginatedExpenses.map((expense) => (
-                  <tr key={expense.id} className="transition hover:bg-orange-50/40">
-                    <td className="px-4 py-4">
-                      <button
-                        onClick={() => toggleSelect(expense.id)}
-                        className={[
-                          "flex h-4 w-4 items-center justify-center rounded border transition",
-                          selectedIds.includes(expense.id)
-                            ? "border-orange-500 bg-orange-500 text-white"
-                            : "border-gray-300 bg-white text-transparent",
-                        ].join(" ")}
-                        aria-label="Tanlash"
-                      >
-                        <Square size={8} fill="currentColor" />
-                      </button>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-4 font-semibold text-gray-700">
-                      {expense.ismi}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-4">{expense.sana}</td>
-                    <td className="whitespace-nowrap px-4 py-4">{expense.ozgartirilganSana}</td>
-                    <td className="whitespace-nowrap px-4 py-4">{expense.masul}</td>
-                    <td className="whitespace-nowrap px-4 py-4">{formatSumma(expense.summa)}</td>
-                    <td className="whitespace-nowrap px-4 py-4 font-semibold text-gray-700">
-                      {expense.ombor}
-                    </td>
-                    <td className="px-4 py-4">
-                      <button
-                        onClick={() => openEditModal(expense)}
-                        className="inline-flex h-8 items-center gap-1 rounded-lg px-2 text-xs font-bold text-gray-400 transition hover:bg-orange-50 hover:text-orange-600"
-                      >
-                        Tahrirlash
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-
-                {filteredExpenses.length === 0 && (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-12 text-center text-gray-400">
-                      Chiqim topilmadi
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          <TablePagination
-            page={safePage}
-            totalItems={filteredExpenses.length}
-            onPageChange={setPage}
-          />
-        </div>
-      ) : (
-        <div className="mt-6 rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-14 text-center text-sm text-gray-400">
-          Xujatlar demo holatda. Chiqimlar tanlanganda chiqimlar jadvali ko'rinadi.
-        </div>
-      )}
-
-      {selectedIds.length > 0 && (
-        <div className="mt-4 rounded-xl border border-orange-100 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700">
-          {selectedIds.length} ta chiqim tanlandi
-        </div>
-      )}
-
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/45 px-4 py-6 backdrop-blur-sm lg:pl-[120px]">
-          <div className="max-h-[calc(100dvh-48px)] w-full max-w-4xl overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-900">
-                {editingExpenseId ? "Chiqimni tahrirlash" : "Yangi chiqim"}
-              </h2>
-              <button
-                onClick={closeModal}
-                className="flex h-11 w-11 items-center justify-center rounded-xl bg-gray-100 text-gray-500 transition hover:bg-orange-500 hover:text-white"
-                aria-label="Yopish"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="grid gap-5 sm:grid-cols-2">
-              {[
-                ["ismi", "Ismi"],
-                ["sana", "Sana"],
-                ["ozgartirilganSana", "O'zgartirilgan sana"],
-                ["masul", "Mas'ul shaxs"],
-                ["ombor", "Ombor"],
-              ].map(([key, label]) => (
-                <label key={key} className="text-xs font-bold text-gray-500">
-                  {label}
-                  <input
-                    value={String(form[key as keyof Omit<Expense, "id">])}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, [key]: event.target.value }))
-                    }
-                    className="mt-1 h-12 w-full rounded-xl border border-gray-200 px-4 text-sm text-gray-700 outline-none transition focus:border-orange-300"
-                  />
-                </label>
-              ))}
-
-              <label className="text-xs font-bold text-gray-500">
-                Summa
-                <input
-                  type="number"
-                  value={form.summa || ""}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, summa: Number(event.target.value) }))
-                  }
-                  className="mt-1 h-12 w-full rounded-xl border border-gray-200 px-4 text-sm text-gray-700 outline-none transition focus:border-orange-300"
-                />
-              </label>
-            </div>
-
-            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button
-                onClick={closeModal}
-                className="h-10 rounded-lg bg-gray-100 px-4 text-sm font-bold text-gray-600"
-              >
-                Bekor qilish
-              </button>
-              <button
-                onClick={saveExpense}
-                className="h-10 rounded-lg bg-orange-500 px-4 text-sm font-bold text-white transition hover:bg-orange-600"
-              >
-                {editingExpenseId ? "Yangilash" : "Saqlash"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {modal && <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 p-4"><div className="w-full max-w-xl space-y-4 rounded-[28px] bg-white p-6"><h2 className="text-2xl font-black">Yangi chiqim</h2>
+        <select value={warehouseId} onChange={(e)=>{setWarehouseId(e.target.value);void store.qoldiqlarniYuklash(e.target.value)}} className="h-12 w-full rounded-2xl border px-4"><option value="">Ombor *</option>{store.omborlar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>
+        <select value={reason} onChange={(e)=>setReason(e.target.value as ChiqimSababi)} className="h-12 w-full rounded-2xl border px-4">{Object.entries(sabablar).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select>
+        <select value={modificationId} onChange={(e)=>setModificationId(e.target.value)} className="h-12 w-full rounded-2xl border px-4"><option value="">Mahsulot *</option>{qoldiqlar.map((x,i)=><option key={`${x.modificationId}-${i}`} value={x.modificationId}>{modificationNomi(x.modification)} — {qoldiqMiqdori(x)}</option>)}</select>
+        <input type="number" min="0.001" step="0.001" value={quantity} onChange={(e)=>setQuantity(Number(e.target.value))} className="h-12 w-full rounded-2xl border px-4" placeholder="Miqdor"/>
+        <textarea value={note} onChange={(e)=>setNote(e.target.value)} className="w-full rounded-2xl border p-4" placeholder="Izoh"/>
+        <div className="flex justify-end gap-3"><button onClick={()=>setModal(false)} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">Yopish</button><button onClick={()=>void yaratish()} className="h-11 rounded-2xl bg-orange-500 px-5 font-black text-white">Qoralama saqlash</button></div>
+      </div></div>}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   Home,
   LogOut,
@@ -8,6 +8,7 @@ import {
   Wallet,
   Warehouse,
 } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
 
 const menyular = [
   { nom: "Bosh sahifa", path: "/", icon: Home },
@@ -19,6 +20,14 @@ const menyular = [
 ];
 
 export default function YonPanel() {
+  const navigate = useNavigate();
+  const logout = useAuthStore((state) => state.logout);
+
+  async function handleLogout() {
+    await logout();
+    navigate("/login", { replace: true });
+  }
+
   return (
     <aside className="peer/sidebar group fixed left-0 top-0 z-50 flex h-screen w-14 overflow-hidden rounded-r-[28px] bg-gradient-to-b from-orange-400 via-orange-600 to-orange-700 text-white shadow-2xl shadow-orange-600/25 transition-[width] duration-300 ease-out hover:w-[246px]">
       <div className="flex h-full w-14 shrink-0 flex-col items-center bg-gradient-to-b from-orange-700 via-orange-800 to-orange-900/95">
@@ -58,7 +67,12 @@ export default function YonPanel() {
         </nav>
 
         <div className="flex h-[96px] w-full items-center justify-center">
-          <button className="flex h-10 w-10 items-center justify-center rounded-2xl text-white/85 transition duration-300 hover:bg-white/12 hover:text-white">
+          <button
+            onClick={() => void handleLogout()}
+            title="Tizimdan chiqish"
+            aria-label="Tizimdan chiqish"
+            className="flex h-10 w-10 items-center justify-center rounded-2xl text-white/85 transition duration-300 hover:bg-white/12 hover:text-white"
+          >
             <LogOut size={20} />
           </button>
         </div>
@@ -104,7 +118,10 @@ export default function YonPanel() {
 
         <div className="relative mx-4 flex h-[96px] items-center">
           <span className="absolute left-0 right-0 top-0 h-px bg-white/18" />
-          <button className="flex h-10 w-full items-center rounded-full px-7 text-[15px] font-bold text-white/86 transition duration-300 hover:bg-white/12 hover:text-white">
+          <button
+            onClick={() => void handleLogout()}
+            className="flex h-10 w-full items-center rounded-full px-7 text-[15px] font-bold text-white/86 transition duration-300 hover:bg-white/12 hover:text-white"
+          >
             <span>Chiqish</span>
           </button>
         </div>

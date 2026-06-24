@@ -1,753 +1,294 @@
 import { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
 import {
-  Bell,
-  CheckCircle,
   CircleAlert,
-  CircleCheck,
-  Info,
-  MessageSquare,
-  Package,
+  LoaderCircle,
   Plus,
-  Printer,
+  RefreshCw,
   Search,
-  Settings,
   ShoppingCart,
-  Trash2,
-  X,
 } from "lucide-react";
+import { useSavdoStore } from "@/store/savdoStore";
+import type { Sotuv, SotuvYaratishMalumoti } from "@/types/savdo";
+import BekorQilinganlar from "./BekorQilinganlar";
+import Qaytarish from "./Qaytarish";
+import Savatcha from "./Savatcha";
+import SotuvlarJadvali from "./SotuvlarJadvali";
+import SotuvTafsilotlariModal from "./SotuvTafsilotlariModal";
+import Tarix from "./Tarix";
+import Tolovlar from "./Tolovlar";
+import YangiSotuvModal from "./YangiSotuvModal";
+import { mijozNomi, sotuvRaqami } from "./savdoYordamchilari";
 
-type SaleStatus = "To'landi" | "Qarz" | "Bekor qilingan";
-type ActivityTab = "Vazifa" | "Kommentariya" | "Habarnoma" | "Qo'shimcha";
-type ModalFocus = "tolov" | "faoliyat";
-type ToastType = "success" | "warning" | "info";
+type SavdoTabi =
+  | "barchasi"
+  | "savatcha"
+  | "tarix"
+  | "tolovlar"
+  | "qaytarish"
+  | "bekor-qilingan";
 
-type DetailTab =
-  | "Asosiyisi"
-  | "Savatcha"
-  | "Tarix"
-  | "Bekor qilish"
-  | "Qaytarish";
-
-type Sale = {
-  id: string;
-  mijozNomi: string;
-  summa: number;
-  sana: string;
-  masul: string;
-  telefon: string;
-  manzil: string;
-  status: SaleStatus;
-};
-
-type ToastState = {
-  text: string;
-  type: ToastType;
-};
-
-const savdolar: Sale[] = [
-  {
-    id: "MIJ-1001",
-    mijozNomi: "Azizbek Karimov",
-    summa: 4_250_000,
-    sana: "03.06.2026",
-    masul: "Dilshod",
-    telefon: "+998 90 123 45 67",
-    manzil: "Sergeli",
-    status: "To'landi",
-  },
-  {
-    id: "MIJ-1002",
-    mijozNomi: "Madina Textile",
-    summa: 12_800_000,
-    sana: "03.06.2026",
-    masul: "Sevara",
-    telefon: "+998 93 456 78 90",
-    manzil: "Yunusobod",
-    status: "Qarz",
-  },
-  {
-    id: "MIJ-1003",
-    mijozNomi: "Bekzod Market",
-    summa: 980_000,
-    sana: "02.06.2026",
-    masul: "Javohir",
-    telefon: "+998 94 777 12 34",
-    manzil: "Chilonzor",
-    status: "To'landi",
-  },
-  {
-    id: "MIJ-1004",
-    mijozNomi: "Niso Savdo",
-    summa: 6_430_000,
-    sana: "02.06.2026",
-    masul: "Malika",
-    telefon: "+998 97 111 22 33",
-    manzil: "Olmazor",
-    status: "Qarz",
-  },
-  {
-    id: "MIJ-1005",
-    mijozNomi: "Samarqand Optom",
-    summa: 21_500_000,
-    sana: "01.06.2026",
-    masul: "Akmal",
-    telefon: "+998 91 555 66 77",
-    manzil: "Samarqand",
-    status: "To'landi",
-  },
-  {
-    id: "MIJ-1006",
-    mijozNomi: "Premium Store",
-    summa: 3_120_000,
-    sana: "01.06.2026",
-    masul: "Zarina",
-    telefon: "+998 99 000 45 45",
-    manzil: "Yakkasaroy",
-    status: "Bekor qilingan",
-  },
+const tablar: Array<{ id: SavdoTabi; nomi: string }> = [
+  { id: "barchasi", nomi: "Barcha sotuvlar" },
+  { id: "savatcha", nomi: "Qoralamalar" },
+  { id: "tarix", nomi: "Savdo tarixi" },
+  { id: "tolovlar", nomi: "To'lovlar" },
+  { id: "qaytarish", nomi: "Qaytarish" },
+  { id: "bekor-qilingan", nomi: "Bekor qilinganlar" },
 ];
-
-const detailTabs: DetailTab[] = [
-  "Asosiyisi",
-  "Savatcha",
-  "Tarix",
-  "Bekor qilish",
-  "Qaytarish",
-];
-
-const activityTabs: ActivityTab[] = [
-  "Vazifa",
-  "Kommentariya",
-  "Habarnoma",
-  "Qo'shimcha",
-];
-
-const activityItems = [
-  {
-    turi: "Vazifa",
-    vaqt: "18:37",
-    text: "Mijozga qayta qo'ng'iroq qilish va yangi buyurtmani aniqlash.",
-    icon: CheckCircle,
-    rang: "bg-yellow-400",
-  },
-  {
-    turi: "Kommentariya",
-    vaqt: "14:00",
-    text: "Mijoz keyingi haftada yana mahsulot olishini aytdi.",
-    icon: MessageSquare,
-    rang: "bg-blue-600",
-  },
-  {
-    turi: "Habarnoma",
-    vaqt: "12:24",
-    text: "To'lov qabul qilindi va savdo yakunlandi.",
-    icon: Bell,
-    rang: "bg-green-500",
-  },
-];
-
-const savatchaItems = [
-  { nom: "Coca-Cola 1.5L", soni: 12, narx: 15_000 },
-  { nom: "Pepsi 1L", soni: 8, narx: 12_000 },
-  { nom: "Shakar 1kg", soni: 25, narx: 14_000 },
-];
-
-const toastStyles: Record<
-  ToastType,
-  { icon: typeof CircleCheck; iconClass: string; accentClass: string }
-> = {
-  success: {
-    icon: CircleCheck,
-    iconClass: "bg-emerald-500 text-white shadow-emerald-200",
-    accentClass: "from-emerald-500",
-  },
-  warning: {
-    icon: CircleAlert,
-    iconClass: "bg-amber-400 text-white shadow-amber-200",
-    accentClass: "from-amber-400",
-  },
-  info: {
-    icon: Info,
-    iconClass: "bg-[#FF5A00] text-white shadow-orange-200",
-    accentClass: "from-[#FF5A00]",
-  },
-};
-
-function getToastType(text: string): ToastType {
-  const normalized = text.toLowerCase();
-
-  if (normalized.includes("qabul qilindi") || normalized.includes("qo'shildi")) {
-    return "success";
-  }
-
-  if (normalized.includes("avval") || normalized.includes("orqaga")) {
-    return "warning";
-  }
-
-  return "info";
-}
-
-function formatSumma(summa: number) {
-  return `${ summa.toLocaleString("ru-RU") } so'm`;
-}
-
-function focusClass(isActive: boolean, isPaymentAccepted: boolean) {
-  if (isPaymentAccepted) {
-    return "rounded-[28px] bg-white p-6 shadow-sm opacity-100 scale-100 pointer-events-auto transition-all duration-300";
-  }
-
-  return [
-    "rounded-[28px] bg-white p-6 shadow-sm transition-all duration-300",
-    isActive
-      ? "opacity-100 scale-100 pointer-events-auto"
-      : "opacity-100 pointer-events-none",
-  ].join(" ");
-}
 
 export default function Savdo() {
-  const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
-  const [modalFocus, setModalFocus] = useState<ModalFocus>("tolov");
-  const [paymentAccepted, setPaymentAccepted] = useState(false);
-  const [search, setSearch] = useState("");
-  const [dateFilter, setDateFilter] = useState("Bugun");
-  const [detailTab, setDetailTab] = useState<DetailTab>("Asosiyisi");
-  const [activityTab, setActivityTab] = useState<ActivityTab>("Vazifa");
-  const [hujjat, setHujjat] = useState("Hujjatlar");
-  const [actionType, setActionType] = useState("Nima qilish kerak");
-  const [toast, setToast] = useState<ToastState | null>(null);
+  const {
+    sotuvlar,
+    qaytarishlar,
+    omborlar,
+    mijozlar,
+    mijozKompaniyalari,
+    xodimlar,
+    qoldiqlar,
+    tanlanganSotuv,
+    yuklanmoqda,
+    amalBajarilmoqda,
+    xatolik,
+    boshlangichMalumotlarniYuklash,
+    qoldiqlarniYuklash,
+    sotuvTafsilotiniYuklash,
+    yangiSotuvYaratish,
+    sotuvniTasdiqlash,
+    sotuvniBekorQilish,
+    yangiQaytarishYaratish,
+    qaytarishniTasdiqlash,
+    qaytarishniBekorQilish,
+    tanlanganSotuvniTozalash,
+    xatolikniTozalash,
+  } = useSavdoStore();
+  const [faolTab, setFaolTab] = useState<SavdoTabi>("barchasi");
+  const [qidiruv, setQidiruv] = useState("");
+  const [yangiSotuvOchiq, setYangiSotuvOchiq] = useState(false);
+  const [xabar, setXabar] = useState("");
 
   useEffect(() => {
-    if (selectedSale) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
+    void boshlangichMalumotlarniYuklash();
+  }, [boshlangichMalumotlarniYuklash]);
 
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [selectedSale]);
+  useEffect(() => {
+    if (!xabar) return;
+    const timer = window.setTimeout(() => setXabar(""), 2500);
+    return () => window.clearTimeout(timer);
+  }, [xabar]);
 
-  const filteredSales = useMemo(() => {
-    const q = search.toLowerCase().trim();
+  const qidirilganSotuvlar = useMemo(() => {
+    const qiymat = qidiruv.trim().toLowerCase();
+    if (!qiymat) return sotuvlar;
 
-    return savdolar.filter((sale) => {
-      return (
-        sale.id.toLowerCase().includes(q) ||
-        sale.mijozNomi.toLowerCase().includes(q) ||
-        sale.telefon.toLowerCase().includes(q)
-      );
-    });
-  }, [search]);
+    return sotuvlar.filter((sotuv) =>
+      [
+        sotuvRaqami(sotuv),
+        mijozNomi(sotuv),
+        sotuv.customer?.phone,
+        sotuv.status,
+        sotuv.note,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(qiymat)
+    );
+  }, [qidiruv, sotuvlar]);
 
-  function showToast(text: string) {
-    setToast({ text, type: getToastType(text) });
-    window.setTimeout(() => setToast(null), 2200);
+  async function sotuvniOchish(sotuv: Sotuv) {
+    await sotuvTafsilotiniYuklash(sotuv.id);
   }
 
-  function openDetail(sale: Sale) {
-    setSelectedSale(sale);
-    setModalFocus("tolov");
-    setPaymentAccepted(false);
-    setDetailTab("Asosiyisi");
-    setActivityTab("Vazifa");
-    setHujjat("Hujjatlar");
-    setActionType("Nima qilish kerak");
+  async function yangiSotuvniSaqlash(malumot: SotuvYaratishMalumoti) {
+    const sotuv = await yangiSotuvYaratish(malumot);
+
+    if (!sotuv) return false;
+    setXabar("Yangi sotuv qoralama holatida yaratildi.");
+    return true;
   }
 
-  function closeDetail() {
-    setSelectedSale(null);
-    setModalFocus("tolov");
-    setPaymentAccepted(false);
-    setDetailTab("Asosiyisi");
+  async function tasdiqlash(sotuvId: string) {
+    const muvaffaqiyatli = await sotuvniTasdiqlash(sotuvId);
+    if (muvaffaqiyatli) setXabar("Sotuv tasdiqlandi va ombor qoldig'i yangilandi.");
   }
 
-  function handleDocumentAction(value: string) {
-    setHujjat(value);
-    if (value !== "Hujjatlar") showToast(`${value} tanlandi`);
+  async function bekorQilish(sotuvId: string) {
+    const rozilik = window.confirm(
+      "Sotuvni bekor qilasizmi? Tasdiqlangan bo'lsa ombor qoldig'i tiklanadi."
+    );
+    if (!rozilik) return;
+
+    const muvaffaqiyatli = await sotuvniBekorQilish(sotuvId);
+    if (muvaffaqiyatli) setXabar("Sotuv bekor qilindi.");
   }
 
   return (
-    <div className="space-y-6">
-      {toast &&
-        createPortal(
-          (() => {
-            const Icon = toastStyles[toast.type].icon;
-
-            return (
-              <div className="fixed right-6 top-6 z-[10000] w-[min(380px,calc(100vw-48px))] animate-in slide-in-from-top-3 fade-in duration-300">
-                <div className="relative overflow-hidden rounded-[22px] border border-white/70 bg-white/85 p-4 shadow-[0_22px_70px_rgba(15,23,42,0.18)] backdrop-blur-2xl">
-                  <div
-                    className={[
-                      "absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b to-transparent",
-                      toastStyles[toast.type].accentClass,
-                    ].join(" ")}
-                  />
-
-                  <div className="flex items-center gap-3 pl-2">
-                    <div
-                      className={[
-                        "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-lg",
-                        toastStyles[toast.type].iconClass,
-                      ].join(" ")}
-                    >
-                      <Icon size={21} />
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-orange-900/40">
-                        Yepost
-                      </p>
-                      <p className="mt-0.5 text-sm font-semibold text-gray-900">
-                        {toast.text}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })(),
-          document.body
-        )}
-
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Savdo</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Savdo operatsiyalari, mijozlar va mas'ul shaxslar bo'yicha ro'yxat.
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-3 rounded-[26px] border border-orange-100 bg-white/80 p-4 shadow-sm backdrop-blur-xl lg:flex-row lg:items-center">
-        <button
-          onClick={() => showToast("Yangi savdo oynasi ochiladi")}
-          className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#FF5A00] px-5 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600"
-        >
-          <Plus size={18} />
-          Qo'shish
-        </button>
-
-        <div className="flex h-12 min-w-0 flex-1 items-center gap-3 rounded-2xl border border-orange-100 bg-white/80 px-5">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Mijoz ID, mijoz nomi yoki telefon raqam"
-            className="min-w-0 flex-1 bg-transparent text-sm text-gray-700 outline-none placeholder:text-orange-900/35"
-          />
-          <Search size={20} className="text-gray-500" />
+    <div className="space-y-5">
+      <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        <div>
+          <p className="text-sm font-bold uppercase tracking-[0.18em] text-orange-500">
+            Savdo bo'limi
+          </p>
+          <h1 className="mt-1 text-3xl font-black text-gray-950">Savdo boshqaruvi</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Sotuv, to'lov, qoralama, bekor qilish va qaytarish amallari server bilan
+            ulangan.
+          </p>
         </div>
 
-        <select
-          value={dateFilter}
-          onChange={(e) => {
-            setDateFilter(e.target.value);
-            showToast(`${e.target.value} filter tanlandi`);
-          }}
-          className="h-12 rounded-2xl border border-orange-100 bg-white/80 px-5 text-sm font-semibold text-gray-600 shadow-sm outline-none"
-        >
-          <option>Bugun</option>
-          <option>Kecha</option>
-          <option>Haftalik</option>
-          <option>Oylik</option>
-          <option>Yillik</option>
-        </select>
-      </div>
-
-      <div className="overflow-hidden rounded-xl border border-orange-100 bg-white/75 shadow-sm backdrop-blur-xl">
-        <div className="max-h-[calc(100vh-310px)] overflow-auto">
-          <table className="min-w-[900px] w-full border-collapse text-left text-sm">
-            <thead className="sticky top-0 z-10 bg-orange-50/95 text-xs uppercase tracking-wide text-orange-900/60 backdrop-blur-xl">
-              <tr>
-                <th className="px-5 py-4 font-semibold">Mijoz ID</th>
-                <th className="px-5 py-4 font-semibold">Mijoz nomi</th>
-                <th className="px-5 py-4 font-semibold">Summa</th>
-                <th className="px-5 py-4 font-semibold">Sana</th>
-                <th className="px-5 py-4 font-semibold">Mas'ul shaxs</th>
-                <th className="px-5 py-4 font-semibold">Telefon raqam</th>
-                <th className="px-5 py-4 font-semibold">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-orange-100/70 text-gray-700">
-              {filteredSales.map((sale, index) => (
-                <tr
-                  key={sale.id}
-                  onClick={() => openDetail(sale)}
-                  className={[
-                    "cursor-pointer transition hover:bg-orange-50",
-                    index % 2 === 0 ? "bg-white/45" : "bg-orange-50/25",
-                  ].join(" ")}
-                >
-                  <td className="whitespace-nowrap px-5 py-4 font-semibold text-orange-600">
-                    {sale.id}
-                  </td>
-                  <td className="whitespace-nowrap px-5 py-4 font-medium text-gray-900">
-                    {sale.mijozNomi}
-                  </td>
-                  <td className="whitespace-nowrap px-5 py-4">
-                    {formatSumma(sale.summa)}
-                  </td>
-                  <td className="whitespace-nowrap px-5 py-4">{sale.sana}</td>
-                  <td className="whitespace-nowrap px-5 py-4">{sale.masul}</td>
-                  <td className="whitespace-nowrap px-5 py-4">{sale.telefon}</td>
-                  <td className="whitespace-nowrap px-5 py-4">
-                    <span
-                      className={[
-                        "rounded-full px-3 py-1 text-xs font-bold",
-                        sale.status === "To'landi"
-                          ? "bg-green-50 text-green-600"
-                          : sale.status === "Qarz"
-                            ? "bg-orange-50 text-orange-600"
-                            : "bg-red-50 text-red-600",
-                      ].join(" ")}
-                    >
-                      {sale.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-
-              {filteredSales.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-400">
-                    Ma'lumot topilmadi
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <button
+            onClick={() => void boshlangichMalumotlarniYuklash()}
+            disabled={yuklanmoqda}
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-white px-4 text-sm font-bold text-gray-600 shadow-sm ring-1 ring-orange-100 hover:text-orange-600 disabled:opacity-50"
+          >
+            <RefreshCw size={17} className={yuklanmoqda ? "animate-spin" : ""} />
+            Yangilash
+          </button>
+          <button
+            onClick={() => setYangiSotuvOchiq(true)}
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-lg shadow-orange-200 hover:bg-orange-600"
+          >
+            <Plus size={18} />
+            Yangi sotuv
+          </button>
         </div>
-      </div>
+      </header>
 
-      {selectedSale &&
-        createPortal(
-          <>
-            <div className="fixed inset-0 z-[9998] bg-black/55 backdrop-blur-[2px]" />
+      {(xatolik || xabar) && (
+        <div
+          className={`flex items-start justify-between gap-3 rounded-2xl border p-4 text-sm font-semibold ${
+            xatolik
+              ? "border-red-100 bg-red-50 text-red-600"
+              : "border-emerald-100 bg-emerald-50 text-emerald-700"
+          }`}
+        >
+          <div className="flex items-start gap-2">
+            {xatolik && <CircleAlert size={18} className="mt-0.5 shrink-0" />}
+            <span>{xatolik || xabar}</span>
+          </div>
+          {xatolik && (
+            <button onClick={xatolikniTozalash} className="font-black">
+              Yopish
+            </button>
+          )}
+        </div>
+      )}
 
-            <section
-              className={[
-                "scrollbar-hidden fixed bottom-4 left-4 right-4 top-4 z-[9999] overflow-y-auto rounded-[34px] bg-[#D8D8D8] p-5 shadow-2xl transition-colors duration-300 sm:bottom-6 sm:left-6 sm:right-6 sm:top-6 lg:bottom-[32px] lg:left-[120px] lg:right-[32px] lg:top-[32px] lg:p-6 2xl:left-[140px]",
-              ].join(" ")}
-            >
-              <div className="mb-7 flex flex-col items-start justify-between gap-5 xl:flex-row">
-                <div className="flex min-h-[72px] items-center">
-                  <div>
-                  <p className="text-sm font-medium text-gray-500">
-                    Savdo spisok ichi
-                  </p>
-                  <h2 className="mt-1 text-4xl font-bold text-gray-950">
-                    {selectedSale.mijozNomi}
-                  </h2>
-                  </div>
-                </div>
+      <section className="rounded-2xl border border-orange-100 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="scrollbar-hidden flex gap-2 overflow-x-auto">
+            {tablar.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setFaolTab(tab.id)}
+                className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${
+                  faolTab === tab.id
+                    ? "bg-orange-500 text-white"
+                    : "bg-orange-50 text-orange-700 hover:bg-orange-100"
+                }`}
+              >
+                {tab.nomi}
+              </button>
+            ))}
+          </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={() => {
-                      setPaymentAccepted(false);
-                      setModalFocus("tolov");
-                      showToast("To'lov orqaga qaytarildi");
-                    }}
-                    className="h-11 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-semibold text-gray-600 transition hover:text-[#FF5A00]"
-                  >
-                    To'lovga qaytish
-                  </button>
+          {!["tolovlar", "qaytarish"].includes(faolTab) && (
+            <label className="flex h-11 min-w-0 items-center gap-2 rounded-2xl border border-gray-200 px-4 xl:w-80">
+              <Search size={18} className="shrink-0 text-gray-400" />
+              <input
+                value={qidiruv}
+                onChange={(event) => setQidiruv(event.target.value)}
+                placeholder="Sotuv, mijoz yoki telefon..."
+                className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+              />
+            </label>
+          )}
+        </div>
+      </section>
 
-                  <select
-                    value={hujjat}
-                    onChange={(e) => handleDocumentAction(e.target.value)}
-                    className="h-11 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-semibold text-gray-700 outline-none transition hover:border-orange-300"
-                  >
-                    <option>Hujjatlar</option>
-                    <option>Chek chiqarish</option>
-                    <option>Hisob-faktura</option>
-                    <option>Nakladnoy</option>
-                    <option>PDF yuklash</option>
-                  </select>
+      {yuklanmoqda ? (
+        <div className="flex min-h-80 items-center justify-center rounded-2xl border border-orange-100 bg-white">
+          <div className="text-center">
+            <LoaderCircle className="mx-auto animate-spin text-orange-500" size={34} />
+            <p className="mt-3 text-sm font-semibold text-gray-500">
+              Ma'lumotlar serverdan yuklanmoqda...
+            </p>
+          </div>
+        </div>
+      ) : (
+        <>
+          {faolTab === "barchasi" && (
+            <SotuvlarJadvali
+              sotuvlar={qidirilganSotuvlar}
+              onSotuvniOchish={sotuvniOchish}
+            />
+          )}
+          {faolTab === "savatcha" && (
+            <Savatcha
+              sotuvlar={qidirilganSotuvlar}
+              onSotuvniOchish={sotuvniOchish}
+            />
+          )}
+          {faolTab === "tarix" && (
+            <Tarix sotuvlar={qidirilganSotuvlar} onSotuvniOchish={sotuvniOchish} />
+          )}
+          {faolTab === "tolovlar" && <Tolovlar sotuvlar={sotuvlar} />}
+          {faolTab === "bekor-qilingan" && (
+            <BekorQilinganlar
+              sotuvlar={qidirilganSotuvlar}
+              onSotuvniOchish={sotuvniOchish}
+            />
+          )}
+          {faolTab === "qaytarish" && (
+            <Qaytarish
+              sotuvlar={sotuvlar}
+              qaytarishlar={qaytarishlar}
+              amalBajarilmoqda={amalBajarilmoqda}
+              onYaratish={yangiQaytarishYaratish}
+              onTasdiqlash={qaytarishniTasdiqlash}
+              onBekorQilish={qaytarishniBekorQilish}
+            />
+          )}
+        </>
+      )}
 
-                  <button
-                    onClick={closeDetail}
-                    className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FF5A00] text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600"
-                    aria-label="Yopish"
-                  >
-                    <X size={24} />
-                  </button>
-                </div>
-              </div>
+      {!yuklanmoqda && sotuvlar.length === 0 && omborlar.length === 0 && (
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          <ShoppingCart size={20} className="mt-0.5 shrink-0" />
+          <div>
+            <p className="font-black">Serverda hozir ma'lumot yo'q</p>
+            <p className="mt-1">
+              Test akkauntda ombor, mahsulot va mijoz ma'lumotlari hali yaratilmagan.
+              Integratsiya ishlayapti, lekin yangi sotuv uchun avval ombor va mahsulot
+              qoldig'i kiritilishi kerak.
+            </p>
+          </div>
+        </div>
+      )}
 
-              <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-orange-100 bg-white px-4 py-3 shadow-sm">
-                <div className="flex flex-wrap items-center gap-2">
-                  {detailTabs.map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setDetailTab(tab)}
-                      className={[
-                        "rounded-full px-4 py-2 text-sm font-semibold transition",
-                        detailTab === tab
-                          ? "border border-orange-400 bg-orange-50 text-[#FF5A00]"
-                          : "text-gray-500 hover:bg-orange-50 hover:text-[#FF5A00]",
-                      ].join(" ")}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
+      {yangiSotuvOchiq && (
+        <YangiSotuvModal
+          omborlar={omborlar}
+          mijozlar={mijozlar}
+          mijozKompaniyalari={mijozKompaniyalari}
+          xodimlar={xodimlar}
+          qoldiqlar={qoldiqlar}
+          amalBajarilmoqda={amalBajarilmoqda}
+          onOmborTanlash={(omborId) => void qoldiqlarniYuklash(omborId)}
+          onSaqlash={yangiSotuvniSaqlash}
+          onYopish={() => setYangiSotuvOchiq(false)}
+        />
+      )}
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => showToast("Settings bosildi")}
-                    className="rounded-xl bg-gray-100 p-3 text-gray-700 transition hover:bg-[#FF5A00] hover:text-white"
-                    aria-label="Settings"
-                  >
-                    <Settings size={18} />
-                  </button>
-
-                  <button
-                    onClick={() => showToast("Print oynasi ochildi")}
-                    className="rounded-xl bg-gray-100 p-3 text-gray-700 transition hover:bg-[#FF5A00] hover:text-white"
-                    aria-label="Print"
-                  >
-                    <Printer size={18} />
-                  </button>
-                </div>
-              </div>
-
-              {detailTab === "Asosiyisi" && (
-                <div className="grid grid-cols-1 items-start gap-7 xl:grid-cols-[460px_minmax(0,1fr)] 2xl:grid-cols-[500px_minmax(0,1fr)]">
-                  <aside className={focusClass(modalFocus === "tolov", paymentAccepted)}>
-                    <div className="mb-5 flex items-center justify-between border-b border-gray-100 pb-4">
-                      <h3 className="text-xl font-bold text-gray-950">Savdo</h3>
-                      <button
-                        onClick={() => showToast("Tahrirlash rejimi ochildi")}
-                        className="text-sm font-semibold text-gray-400 transition hover:text-[#FF5A00]"
-                      >
-                        Tahrirlash
-                      </button>
-                    </div>
-
-                    <p className="text-sm text-gray-500">Summa</p>
-                    <h4 className="mt-1 text-3xl font-bold text-gray-950">
-                      {formatSumma(selectedSale.summa)}
-                    </h4>
-
-                    <button
-                      onClick={() => {
-                        setPaymentAccepted(true);
-                        setModalFocus("faoliyat");
-                        showToast("To'lov qabul qilindi");
-                      }}
-                      className="mt-6 w-full rounded-2xl bg-green-600 px-5 py-4 text-sm font-bold text-white transition hover:bg-green-700"
-                    >
-                      To'lov qabul qilish
-                    </button>
-
-                    <div className="mt-7 rounded-3xl bg-gray-50 p-6">
-                      <p className="font-bold text-gray-800">
-                        To'lov va yetkazib berish
-                      </p>
-                      <p className="mt-1 text-sm text-gray-500">
-                        To'lov, yetkazib berish va savdo holati haqida ma'lumot.
-                      </p>
-                    </div>
-
-                    <div className="mt-7 space-y-5">
-                      <div>
-                        <p className="text-sm text-gray-500">Kontragent</p>
-                        <div className="mt-2 rounded-2xl bg-gray-100 px-4 py-3 font-semibold text-gray-800">
-                          {selectedSale.mijozNomi}
-                        </div>
-                      </div>
-
-                      <div>
-                        <p className="text-sm text-gray-500">Manzil</p>
-                        <div className="mt-2 rounded-2xl bg-gray-100 px-4 py-3 text-gray-700">
-                          {selectedSale.manzil}
-                        </div>
-                      </div>
-
-                      <div>
-                        <p className="text-sm text-gray-500">Telefon</p>
-                        <div className="mt-2 rounded-2xl bg-gray-100 px-4 py-3 text-gray-700">
-                          {selectedSale.telefon}
-                        </div>
-                      </div>
-
-                      <div>
-                        <p className="text-sm text-gray-500">Mas'ul shaxs</p>
-                        <div className="mt-2 rounded-2xl bg-gray-100 px-4 py-3 text-gray-700">
-                          {selectedSale.masul}
-                        </div>
-                      </div>
-                    </div>
-                  </aside>
-
-                  <main className={focusClass(modalFocus === "faoliyat", paymentAccepted)}>
-                    <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex flex-wrap gap-2">
-                        {activityTabs.map((tab) => (
-                          <button
-                            key={tab}
-                            onClick={() => setActivityTab(tab)}
-                            className={[
-                              "rounded-full px-4 py-2 text-sm font-semibold transition",
-                              activityTab === tab
-                                ? "border border-orange-400 bg-orange-50 text-[#FF5A00]"
-                                : "text-gray-600 hover:bg-orange-50 hover:text-[#FF5A00]",
-                            ].join(" ")}
-                          >
-                            {tab}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-3 sm:flex-row">
-                      <select
-                        value={actionType}
-                        onChange={(e) => setActionType(e.target.value)}
-                        className="h-14 flex-1 rounded-2xl border border-gray-100 px-4 text-gray-700 outline-none"
-                      >
-                        <option>Nima qilish kerak</option>
-                        <option>Qo'ng'iroq qilish</option>
-                        <option>To'lovni eslatish</option>
-                        <option>Yangi buyurtma olish</option>
-                      </select>
-
-                      <button
-                        onClick={() =>
-                          actionType === "Nima qilish kerak"
-                            ? showToast("Avval amal tanlang")
-                            : showToast(`${activityTab} qo'shildi`)
-                        }
-                        className="rounded-2xl bg-[#FF5A00] px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
-                      >
-                        Qo'shish
-                      </button>
-                    </div>
-
-                    <div className="my-6 flex items-center gap-3">
-                      <div className="h-px flex-1 bg-gray-200" />
-                      <span className="rounded-full border border-green-300 bg-green-50 px-5 py-2 text-sm font-medium text-green-600">
-                        Bugun
-                      </span>
-                      <div className="h-px flex-1 bg-gray-200" />
-                    </div>
-
-                    <div className="space-y-4">
-                      {activityItems.map((item) => {
-                        const Icon = item.icon;
-
-                        return (
-                          <article
-                            key={item.turi}
-                            className="flex gap-5 rounded-3xl bg-white p-6 shadow-sm"
-                          >
-                            <div
-                              className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white ${item.rang}`}
-                            >
-                              <Icon size={24} />
-                            </div>
-
-                            <div>
-                              <h3 className="text-lg font-bold text-gray-800">
-                                {item.turi}{" "}
-                                <span className="text-sm font-normal text-gray-400">
-                                  | {item.vaqt}
-                                </span>
-                              </h3>
-                              <p className="mt-2 text-sm text-gray-500">
-                                {item.text}
-                              </p>
-                            </div>
-                          </article>
-                        );
-                      })}
-                    </div>
-                  </main>
-                </div>
-              )}
-
-              {detailTab === "Savatcha" && (
-                <div className="rounded-[28px] bg-white p-6 shadow-sm">
-                  <div className="mb-5 flex items-center gap-3">
-                    <ShoppingCart className="text-[#FF5A00]" size={22} />
-                    <h3 className="text-2xl font-bold text-gray-950">Savatcha</h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-                    {savatchaItems.map((item) => (
-                      <div key={item.nom} className="rounded-2xl bg-gray-50 p-4">
-                        <p className="font-semibold text-gray-900">{item.nom}</p>
-                        <p className="mt-1 text-sm text-gray-500">
-                          {item.soni} x {formatSumma(item.narx)}
-                        </p>
-                        <p className="mt-3 font-bold text-[#FF5A00]">
-                          {formatSumma(item.soni * item.narx)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {detailTab === "Tarix" && (
-                <div className="rounded-[28px] bg-white p-6 shadow-sm">
-                  <h3 className="text-2xl font-bold text-gray-950">Tarix</h3>
-
-                  <div className="mt-5 space-y-4">
-                    {activityItems.map((item) => (
-                      <div key={item.turi} className="rounded-2xl border border-gray-100 p-4">
-                        <p className="font-bold text-gray-900">
-                          {item.turi} | {item.vaqt}
-                        </p>
-                        <p className="mt-1 text-sm text-gray-500">{item.text}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {detailTab === "Bekor qilish" && (
-                <div className="rounded-[28px] border border-red-100 bg-red-50 p-6">
-                  <h3 className="text-2xl font-bold text-red-600">Bekor qilish</h3>
-                  <p className="mt-2 text-sm text-red-500">
-                    Ushbu savdoni bekor qilish uchun pastdagi tugmani bosing.
-                  </p>
-
-                  <button
-                    onClick={() => {
-                      showToast("Savdo bekor qilindi");
-                      closeDetail();
-                    }}
-                    className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-red-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-red-600"
-                  >
-                    <Trash2 size={17} />
-                    Savdoni bekor qilish
-                  </button>
-                </div>
-              )}
-
-              {detailTab === "Qaytarish" && (
-                <div className="rounded-[28px] border border-orange-100 bg-orange-50 p-6">
-                  <div className="mb-3 flex items-center gap-3">
-                    <Package className="text-[#FF5A00]" size={22} />
-                    <h3 className="text-2xl font-bold text-orange-700">
-                      Mahsulot qaytarish
-                    </h3>
-                  </div>
-
-                  <p className="text-sm text-orange-700/75">
-                    Sotilgan mahsulotlarni qaytarish jarayoni shu yerda bajariladi.
-                  </p>
-
-                  <button
-                    onClick={() => showToast("Qaytarish jarayoni boshlandi")}
-                    className="mt-6 rounded-2xl bg-[#FF5A00] px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
-                  >
-                    Qaytarishni boshlash
-                  </button>
-                </div>
-              )}
-            </section>
-          </>,
-          document.body
-        )}
+      {tanlanganSotuv && (
+        <SotuvTafsilotlariModal
+          sotuv={tanlanganSotuv}
+          amalBajarilmoqda={amalBajarilmoqda}
+          onYopish={tanlanganSotuvniTozalash}
+          onTasdiqlash={(sotuvId) => void tasdiqlash(sotuvId)}
+          onBekorQilish={(sotuvId) => void bekorQilish(sotuvId)}
+        />
+      )}
     </div>
   );
 }
