@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { LoaderCircle, RotateCcw } from "lucide-react";
+import { Eye, LoaderCircle, RotateCcw } from "lucide-react";
 import type {
   Qaytarish as QaytarishTuri,
   QaytarishSababi,
@@ -14,6 +14,7 @@ import {
   sotuvHolati,
   sotuvRaqami,
 } from "./savdoYordamchilari";
+import QaytarishTafsilotlariModal from "./QaytarishTafsilotlariModal";
 
 type QaytarishProps = {
   sotuvlar: Sotuv[];
@@ -52,6 +53,7 @@ export default function Qaytarish({
   const [reason, setReason] = useState<QaytarishSababi>("OTHER");
   const [note, setNote] = useState("");
   const [xatolik, setXatolik] = useState("");
+  const [tanlanganId, setTanlanganId] = useState<string | null>(null);
 
   async function toliqQaytarishYaratish() {
     setXatolik("");
@@ -192,8 +194,16 @@ export default function Qaytarish({
                     <td className="px-5 py-4">{sananiFormatlash(qaytarish.createdAt)}</td>
                     <td className="px-5 py-4 font-semibold">{holat}</td>
                     <td className="px-5 py-4 text-right">
-                      {holat === "DRAFT" ? (
-                        <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => setTanlanganId(qaytarish.id)}
+                          className="inline-flex items-center gap-1 rounded-xl bg-orange-50 px-3 py-2 text-xs font-bold text-orange-600"
+                        >
+                          <Eye size={14} />
+                          Ko'rish
+                        </button>
+                      {holat === "DRAFT" && (
+                        <>
                           <button
                             disabled={amalBajarilmoqda}
                             onClick={() => onBekorQilish(qaytarish.id)}
@@ -208,10 +218,9 @@ export default function Qaytarish({
                           >
                             Tasdiqlash
                           </button>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">Amal mavjud emas</span>
+                        </>
                       )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -227,6 +236,12 @@ export default function Qaytarish({
           </table>
         </div>
       </div>
+      {tanlanganId && (
+        <QaytarishTafsilotlariModal
+          qaytarishId={tanlanganId}
+          onYopish={() => setTanlanganId(null)}
+        />
+      )}
     </div>
   );
 }

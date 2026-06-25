@@ -65,16 +65,24 @@ type OmborState = {
   filialOchirish: (id: string) => Promise<boolean>;
   yetkazibBeruvchiYaratish: (data: { name: string; phone?: string }) => Promise<boolean>;
   kirimYaratish: (data: KirimYaratishMalumoti) => Promise<boolean>;
+  kirimOlish: (id: string) => Promise<KirimHujjati | null>;
+  kirimYangilash: (id: string, data: Partial<KirimYaratishMalumoti>) => Promise<boolean>;
   kirimTasdiqlash: (id: string) => Promise<boolean>;
   kirimBekorQilish: (id: string) => Promise<boolean>;
   chiqimYaratish: (data: ChiqimYaratishMalumoti) => Promise<boolean>;
+  chiqimOlish: (id: string) => Promise<ChiqimHujjati | null>;
+  chiqimYangilash: (id: string, data: Partial<ChiqimYaratishMalumoti>) => Promise<boolean>;
   chiqimTasdiqlash: (id: string) => Promise<boolean>;
   chiqimBekorQilish: (id: string) => Promise<boolean>;
   kochirishYaratish: (data: KochirishYaratishMalumoti) => Promise<boolean>;
+  kochirishOlish: (id: string) => Promise<KochirishHujjati | null>;
+  kochirishYangilash: (id: string, data: Partial<KochirishYaratishMalumoti>) => Promise<boolean>;
   kochirishJonatish: (id: string) => Promise<boolean>;
   kochirishQabulQilish: (id: string) => Promise<boolean>;
   kochirishBekorQilish: (id: string) => Promise<boolean>;
   inventarizatsiyaYaratish: (data: InventarizatsiyaYaratishMalumoti) => Promise<boolean>;
+  inventarizatsiyaOlish: (id: string) => Promise<InventarizatsiyaHujjati | null>;
+  inventarizatsiyaYangilash: (id: string, data: Partial<InventarizatsiyaYaratishMalumoti>) => Promise<boolean>;
   inventarizatsiyaTasdiqlash: (id: string) => Promise<boolean>;
   xatolikniTozalash: () => void;
 };
@@ -337,6 +345,28 @@ export const useOmborStore = create<OmborState>((set) => ({
       return false;
     }
   },
+  kirimOlish: async (id) => {
+    try {
+      return await kirimApi.olish(id);
+    } catch (error) {
+      set({ xatolik: getApiErrorMessage(error) });
+      return null;
+    }
+  },
+  kirimYangilash: async (id, data) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const hujjat = await kirimApi.yangilash(id, data);
+      set((state) => ({
+        kirimlar: hujjatniAlmashtirish(state.kirimlar, hujjat),
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
   kirimTasdiqlash: async (id) => {
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
@@ -371,6 +401,28 @@ export const useOmborStore = create<OmborState>((set) => ({
     try {
       const hujjat = await chiqimApi.yaratish(data);
       set((state) => ({ chiqimlar: [hujjat, ...state.chiqimlar], amalBajarilmoqda: false }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+  chiqimOlish: async (id) => {
+    try {
+      return await chiqimApi.olish(id);
+    } catch (error) {
+      set({ xatolik: getApiErrorMessage(error) });
+      return null;
+    }
+  },
+  chiqimYangilash: async (id, data) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const hujjat = await chiqimApi.yangilash(id, data);
+      set((state) => ({
+        chiqimlar: hujjatniAlmashtirish(state.chiqimlar, hujjat),
+        amalBajarilmoqda: false,
+      }));
       return true;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
@@ -412,6 +464,28 @@ export const useOmborStore = create<OmborState>((set) => ({
       const hujjat = await kochirishApi.yaratish(data);
       set((state) => ({
         kochirishlar: [hujjat, ...state.kochirishlar],
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+  kochirishOlish: async (id) => {
+    try {
+      return await kochirishApi.olish(id);
+    } catch (error) {
+      set({ xatolik: getApiErrorMessage(error) });
+      return null;
+    }
+  },
+  kochirishYangilash: async (id, data) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const hujjat = await kochirishApi.yangilash(id, data);
+      set((state) => ({
+        kochirishlar: hujjatniAlmashtirish(state.kochirishlar, hujjat),
         amalBajarilmoqda: false,
       }));
       return true;
@@ -469,6 +543,31 @@ export const useOmborStore = create<OmborState>((set) => ({
       const hujjat = await inventarizatsiyaApi.yaratish(data);
       set((state) => ({
         inventarizatsiyalar: [hujjat, ...state.inventarizatsiyalar],
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+  inventarizatsiyaOlish: async (id) => {
+    try {
+      return await inventarizatsiyaApi.olish(id);
+    } catch (error) {
+      set({ xatolik: getApiErrorMessage(error) });
+      return null;
+    }
+  },
+  inventarizatsiyaYangilash: async (id, data) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const hujjat = await inventarizatsiyaApi.yangilash(id, data);
+      set((state) => ({
+        inventarizatsiyalar: hujjatniAlmashtirish(
+          state.inventarizatsiyalar,
+          hujjat
+        ),
         amalBajarilmoqda: false,
       }));
       return true;

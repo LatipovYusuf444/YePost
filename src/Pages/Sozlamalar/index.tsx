@@ -1,28 +1,59 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, LoaderCircle, RefreshCw } from "lucide-react";
+import {
+  CreditCard,
+  KeyRound,
+  Layers3,
+  LoaderCircle,
+  RefreshCw,
+  UserRound,
+  WalletCards,
+} from "lucide-react";
+import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useTenantStore } from "@/store/tenantStore";
 import KompaniyaSozlamalari from "./KompaniyaSozlamalari";
 import Profil from "./Profil";
+import ShaxsiyProfil from "./ShaxsiyProfil";
 import TolovSozlamalari from "./TolovSozlamalari";
+import Xavsizlik from "./Xavsizlik";
 
-type Tab = "ish-maydoni" | "tariflar" | "obunalar";
+type Tab = "profil" | "xavfsizlik" | "ish-maydoni" | "tariflar" | "obunalar";
 
-const tablar: Array<{ id: Tab; nom: string }> = [
-  { id: "ish-maydoni", nom: "Ish maydoni" },
-  { id: "tariflar", nom: "Tariflar" },
-  { id: "obunalar", nom: "Obunalar" },
+const shaxsiyTablar: Array<{
+  id: Tab;
+  nom: string;
+  icon: typeof UserRound;
+}> = [
+  { id: "profil", nom: "Mening profilim", icon: UserRound },
+  { id: "xavfsizlik", nom: "Xavfsizlik", icon: KeyRound },
+];
+
+const direktorTablari: Array<{
+  id: Tab;
+  nom: string;
+  icon: typeof UserRound;
+}> = [
+  { id: "ish-maydoni", nom: "Ish maydoni", icon: Layers3 },
+  { id: "tariflar", nom: "Tariflar", icon: CreditCard },
+  { id: "obunalar", nom: "Obunalar", icon: WalletCards },
 ];
 
 export default function Sozlamalar() {
-  const store = useTenantStore();
-  const malumotlarniYuklash = store.malumotlarniYuklash;
-  const [tab, setTab] = useState<Tab>("ish-maydoni");
+  const tenantStore = useTenantStore();
+  const profilStore = useAuthProfileStore();
+  const tenantlarniYuklash = tenantStore.malumotlarniYuklash;
+  const profilniYuklash = profilStore.profilniYuklash;
+  const [tab, setTab] = useState<Tab>("profil");
 
   useEffect(() => {
-    void malumotlarniYuklash();
-  }, [malumotlarniYuklash]);
+    void Promise.all([profilniYuklash(), tenantlarniYuklash()]);
+  }, [profilniYuklash, tenantlarniYuklash]);
 
-  if (store.yuklanmoqda) {
+  const direktor = profilStore.profil?.role === "DIREKTOR";
+  const tablar = direktor
+    ? [...shaxsiyTablar, ...direktorTablari]
+    : shaxsiyTablar;
+
+  if (profilStore.yuklanmoqda) {
     return (
       <div className="flex h-72 items-center justify-center">
         <LoaderCircle className="animate-spin text-orange-500" size={34} />
@@ -30,65 +61,74 @@ export default function Sozlamalar() {
     );
   }
 
-  if (store.profil && store.profil.role !== "DIREKTOR") {
-    return (
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
-        <AlertTriangle className="text-amber-500" />
-        <h1 className="mt-3 text-2xl font-black">Direktor ruxsati kerak</h1>
-        <p className="mt-2 text-gray-600">
-          Ish maydoni, tarif va obunalarni faqat direktor boshqarishi mumkin.
-        </p>
-      </div>
-    );
+  async function yangilash() {
+    profilStore.xabarlarniTozalash();
+    await profilniYuklash();
+    if (direktor) await tenantlarniYuklash();
   }
 
   return (
     <div className="space-y-5">
-      <header className="flex items-end justify-between gap-4">
+      <header className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-500">
-            Direktor boshqaruvi
+            Hisob va tizim sozlamalari
           </p>
-          <h1 className="text-3xl font-black">Tizim va obuna sozlamalari</h1>
+          <h1 className="text-3xl font-black">Sozlamalar</h1>
           <p className="mt-1 text-sm text-gray-500">
-            {store.profil?.fullName ?? store.profil?.username} · Direktor
+            {profilStore.profil?.fullName ?? profilStore.profil?.username}
+            {" · "}
+            {direktor ? "Direktor" : profilStore.profil?.role}
           </p>
         </div>
         <button
-          onClick={() => void malumotlarniYuklash()}
-          className="inline-flex h-11 items-center gap-2 rounded-2xl bg-white px-4 font-bold text-gray-600 ring-1 ring-orange-100"
+          onClick={() => void yangilash()}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-white px-4 font-bold text-gray-600 ring-1 ring-orange-100"
         >
           <RefreshCw size={16} />
           Yangilash
         </button>
       </header>
 
-      {store.xatolik && (
+      {(profilStore.xatolik || (direktor && tenantStore.xatolik)) && (
         <div className="flex justify-between rounded-2xl bg-red-50 p-4 font-bold text-red-600">
-          <span>{store.xatolik}</span>
-          <button onClick={store.xatolikniTozalash}>Yopish</button>
+          <span>{profilStore.xatolik ?? tenantStore.xatolik}</span>
+          <button
+            onClick={() => {
+              profilStore.xabarlarniTozalash();
+              tenantStore.xatolikniTozalash();
+            }}
+          >
+            Yopish
+          </button>
         </div>
       )}
 
       <nav className="flex gap-2 overflow-x-auto rounded-2xl border border-orange-100 bg-white p-2">
-        {tablar.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => setTab(item.id)}
-            className={`rounded-xl px-5 py-2.5 font-bold ${
-              tab === item.id
-                ? "bg-orange-500 text-white"
-                : "text-gray-500 hover:bg-orange-50"
-            }`}
-          >
-            {item.nom}
-          </button>
-        ))}
+        {tablar.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setTab(item.id)}
+              className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-5 py-2.5 font-bold ${
+                tab === item.id
+                  ? "bg-orange-500 text-white"
+                  : "text-gray-500 hover:bg-orange-50"
+              }`}
+            >
+              <Icon size={17} />
+              {item.nom}
+            </button>
+          );
+        })}
       </nav>
 
-      {tab === "ish-maydoni" && <KompaniyaSozlamalari />}
-      {tab === "tariflar" && <TolovSozlamalari />}
-      {tab === "obunalar" && <Profil />}
+      {tab === "profil" && <ShaxsiyProfil />}
+      {tab === "xavfsizlik" && <Xavsizlik />}
+      {direktor && tab === "ish-maydoni" && <KompaniyaSozlamalari />}
+      {direktor && tab === "tariflar" && <TolovSozlamalari />}
+      {direktor && tab === "obunalar" && <Profil />}
     </div>
   );
 }

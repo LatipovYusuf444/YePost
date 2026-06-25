@@ -2,6 +2,7 @@ import AsosiyLayout from "@/Components/layout/AsosiyPanel"
 import Login from "@/Pages/Auth/Login"
 import BoshSahifa from "@/Pages/BoshSahifa"
 import Kassa from "@/Pages/Kassa"
+import Hodimlar from "@/Pages/Hodimlar"
 import Mahsulotlar from "@/Pages/Mahsulotlar"
 import AmalgaOshirilganlar from "@/Pages/Ombor/AmalgaOshirilganlar"
 import Chiqimlar from "@/Pages/Ombor/Chiqim"
@@ -42,6 +43,7 @@ export default function AppRouter() {
         <Route path="/ombor/qoldiq" element={<OmborQoldigi />} />
         <Route path="/ombor/inventarizatsiya" element={<Inventarizatsiya />} />
         <Route path="/kassa" element={<Kassa />} />
+        <Route path="/hodimlar" element={<Hodimlar />} />
         <Route path="/sozlamalar" element={<Sozlamalar />} />
 
         {/* Noto‘g‘ri route bo‘lsa bosh sahifaga qaytaradi */}

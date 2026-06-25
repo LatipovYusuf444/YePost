@@ -5,7 +5,9 @@ import {
   omborlarRoyxatiniOlish,
   omborQoldiqlariniOlish,
   qaytarishlarRoyxatiniOlish,
+  qaytarishTafsilotiniOlish,
   qaytarishniBekorQilish,
+  qaytarishniYangilash,
   qaytarishniTasdiqlash,
   qaytarishYaratish,
   sotuvlarRoyxatiniOlish,
@@ -46,6 +48,11 @@ type SavdoState = {
   sotuvniTasdiqlash: (sotuvId: string) => Promise<boolean>;
   sotuvniBekorQilish: (sotuvId: string) => Promise<boolean>;
   yangiQaytarishYaratish: (malumot: QaytarishYaratishMalumoti) => Promise<boolean>;
+  qaytarishTafsilotiniYuklash: (qaytarishId: string) => Promise<Qaytarish | null>;
+  qaytarishniYangilash: (
+    qaytarishId: string,
+    malumot: Partial<QaytarishYaratishMalumoti>
+  ) => Promise<Qaytarish | null>;
   qaytarishniTasdiqlash: (qaytarishId: string) => Promise<boolean>;
   qaytarishniBekorQilish: (qaytarishId: string) => Promise<boolean>;
   tanlanganSotuvniTozalash: () => void;
@@ -192,6 +199,35 @@ export const useSavdoStore = create<SavdoState>((set) => ({
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
       return false;
+    }
+  },
+
+  qaytarishTafsilotiniYuklash: async (qaytarishId) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const qaytarish = await qaytarishTafsilotiniOlish(qaytarishId);
+      set({ amalBajarilmoqda: false });
+      return qaytarish;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return null;
+    }
+  },
+
+  qaytarishniYangilash: async (qaytarishId, malumot) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const yangilangan = await qaytarishniYangilash(qaytarishId, malumot);
+      set((state) => ({
+        qaytarishlar: state.qaytarishlar.map((qaytarish) =>
+          qaytarish.id === qaytarishId ? yangilangan : qaytarish
+        ),
+        amalBajarilmoqda: false,
+      }));
+      return yangilangan;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return null;
     }
   },
 

@@ -63,8 +63,12 @@ export const omborlarApi = {
 // Ombor/Xaridlar.tsx va Kirim.tsx: kirim hujjatlari.
 export const kirimApi = {
   royxat: async () => (await apiClient.get<KirimHujjati[]>("/inventory/purchases")).data,
+  olish: async (id: string) =>
+    (await apiClient.get<KirimHujjati>(`/inventory/purchases/${id}`)).data,
   yaratish: async (data: KirimYaratishMalumoti) =>
     (await apiClient.post<KirimHujjati>("/inventory/purchases", data)).data,
+  yangilash: async (id: string, data: Partial<KirimYaratishMalumoti>) =>
+    (await apiClient.patch<KirimHujjati>(`/inventory/purchases/${id}`, data)).data,
   tasdiqlash: async (id: string) =>
     (await apiClient.post<KirimHujjati>(`/inventory/purchases/${id}/confirm`)).data,
   bekorQilish: async (id: string) =>
@@ -75,8 +79,12 @@ export const kirimApi = {
 export const chiqimApi = {
   royxat: async () =>
     (await apiClient.get<ChiqimHujjati[]>("/inventory/write-offs")).data,
+  olish: async (id: string) =>
+    (await apiClient.get<ChiqimHujjati>(`/inventory/write-offs/${id}`)).data,
   yaratish: async (data: ChiqimYaratishMalumoti) =>
     (await apiClient.post<ChiqimHujjati>("/inventory/write-offs", data)).data,
+  yangilash: async (id: string, data: Partial<ChiqimYaratishMalumoti>) =>
+    (await apiClient.patch<ChiqimHujjati>(`/inventory/write-offs/${id}`, data)).data,
   tasdiqlash: async (id: string) =>
     (await apiClient.post<ChiqimHujjati>(`/inventory/write-offs/${id}/confirm`)).data,
   bekorQilish: async (id: string) =>
@@ -87,8 +95,12 @@ export const chiqimApi = {
 export const kochirishApi = {
   royxat: async () =>
     (await apiClient.get<KochirishHujjati[]>("/inventory/transfers")).data,
+  olish: async (id: string) =>
+    (await apiClient.get<KochirishHujjati>(`/inventory/transfers/${id}`)).data,
   yaratish: async (data: KochirishYaratishMalumoti) =>
     (await apiClient.post<KochirishHujjati>("/inventory/transfers", data)).data,
+  yangilash: async (id: string, data: Partial<KochirishYaratishMalumoti>) =>
+    (await apiClient.patch<KochirishHujjati>(`/inventory/transfers/${id}`, data)).data,
   jonatish: async (id: string) =>
     (await apiClient.post<KochirishHujjati>(`/inventory/transfers/${id}/send`)).data,
   qabulQilish: async (id: string) =>
@@ -101,8 +113,21 @@ export const kochirishApi = {
 export const inventarizatsiyaApi = {
   royxat: async () =>
     (await apiClient.get<InventarizatsiyaHujjati[]>("/inventory/stock-takes")).data,
+  olish: async (id: string) =>
+    (await apiClient.get<InventarizatsiyaHujjati>(`/inventory/stock-takes/${id}`))
+      .data,
   yaratish: async (data: InventarizatsiyaYaratishMalumoti) =>
     (await apiClient.post<InventarizatsiyaHujjati>("/inventory/stock-takes", data)).data,
+  yangilash: async (
+    id: string,
+    data: Partial<InventarizatsiyaYaratishMalumoti>
+  ) =>
+    (
+      await apiClient.patch<InventarizatsiyaHujjati>(
+        `/inventory/stock-takes/${id}`,
+        data
+      )
+    ).data,
   tasdiqlash: async (id: string) =>
     (await apiClient.post<InventarizatsiyaHujjati>(`/inventory/stock-takes/${id}/confirm`))
       .data,

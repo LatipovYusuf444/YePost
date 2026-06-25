@@ -5,9 +5,23 @@ export type JoriyFoydalanuvchi = {
   workspaceId: string;
   branchId?: string | null;
   username: string;
-  fullName?: string;
+  fullName?: string | null;
   role: FoydalanuvchiRoli | string;
   isActive?: boolean;
+  telegramId?: string | null;
+  isStaff?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type ProfilYangilashMalumoti = {
+  fullName?: string;
+  telegramId?: string;
+};
+
+export type ParolAlmashtirishMalumoti = {
+  oldPassword: string;
+  newPassword: string;
 };
 
 export type Workspace = {

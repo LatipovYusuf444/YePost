@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { LoaderCircle, Plus, Trash2 } from "lucide-react";
+import { Eye, LoaderCircle, Plus, Trash2 } from "lucide-react";
 import { useOmborStore } from "@/store/omborStore";
 import { holat, hujjatRaqami, modificationNomi, pul, sana } from "./omborYordamchilari";
+import InventoryHujjatModal from "./InventoryHujjatModal";
 
 type Qator = { modificationId: string; quantity: number; price: number };
 
@@ -9,6 +10,7 @@ export default function Xaridlar() {
   const store = useOmborStore();
   const malumotlarniYuklash = store.malumotlarniYuklash;
   const [modal, setModal] = useState(false);
+  const [tanlanganId, setTanlanganId] = useState<string | null>(null);
   const [supplierId, setSupplierId] = useState("");
   const [warehouseId, setWarehouseId] = useState("");
   const [responsibleId, setResponsibleId] = useState("");
@@ -82,12 +84,15 @@ export default function Xaridlar() {
                   <td className="px-5 py-4">{sana(hujjat.createdAt)}</td>
                   <td className="px-5 py-4">{holat(hujjat.status)}</td>
                   <td className="px-5 py-4 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button onClick={() => setTanlanganId(hujjat.id)} className="inline-flex items-center gap-1 rounded-xl bg-orange-50 px-3 py-2 text-xs font-bold text-orange-600"><Eye size={14}/>Ko'rish</button>
                     {String(hujjat.status ?? "DRAFT").toUpperCase() === "DRAFT" && (
-                      <div className="flex justify-end gap-2">
+                      <>
                         <button onClick={() => void store.kirimBekorQilish(hujjat.id)} className="rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-600">Bekor qilish</button>
                         <button onClick={() => void store.kirimTasdiqlash(hujjat.id)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white">Tasdiqlash</button>
-                      </div>
+                      </>
                     )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -163,6 +168,7 @@ export default function Xaridlar() {
           </form>
         </div>
       )}
+      {tanlanganId && <InventoryHujjatModal tur="kirim" id={tanlanganId} onClose={() => setTanlanganId(null)} />}
     </div>
   );
 }

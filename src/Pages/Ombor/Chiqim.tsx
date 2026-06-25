@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 import { useOmborStore } from "@/store/omborStore";
 import type { ChiqimSababi } from "@/types/ombor";
 import { holat, modificationNomi, qoldiqMiqdori, sana } from "./omborYordamchilari";
+import InventoryHujjatModal from "./InventoryHujjatModal";
 
 const sabablar: Record<ChiqimSababi, string> = {
   DAMAGE: "Shikastlangan",
@@ -15,6 +16,7 @@ export default function Chiqim() {
   const store = useOmborStore();
   const malumotlarniYuklash = store.malumotlarniYuklash;
   const [modal, setModal] = useState(false);
+  const [tanlanganId, setTanlanganId] = useState<string | null>(null);
   const [warehouseId, setWarehouseId] = useState("");
   const [reason, setReason] = useState<ChiqimSababi>("OTHER");
   const [modificationId, setModificationId] = useState("");
@@ -44,7 +46,7 @@ export default function Chiqim() {
         <table className="w-full min-w-[800px] text-left text-sm">
           <thead className="bg-orange-50"><tr><th className="px-5 py-4">ID</th><th className="px-5 py-4">Ombor</th><th className="px-5 py-4">Sabab</th><th className="px-5 py-4">Sana</th><th className="px-5 py-4">Holat</th><th className="px-5 py-4 text-right">Amal</th></tr></thead>
           <tbody className="divide-y divide-orange-100">
-            {store.chiqimlar.map((item) => <tr key={item.id}><td className="px-5 py-4 font-bold text-orange-600">{item.id.slice(0,8)}</td><td className="px-5 py-4">{item.warehouse?.name ?? item.warehouseId}</td><td className="px-5 py-4">{sabablar[item.reason as ChiqimSababi] ?? item.reason}</td><td className="px-5 py-4">{sana(item.createdAt)}</td><td className="px-5 py-4">{holat(item.status)}</td><td className="px-5 py-4 text-right">{String(item.status ?? "DRAFT").toUpperCase()==="DRAFT" && <div className="flex justify-end gap-2"><button onClick={() => void store.chiqimBekorQilish(item.id)} className="rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-600">Bekor</button><button onClick={() => void store.chiqimTasdiqlash(item.id)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white">Tasdiqlash</button></div>}</td></tr>)}
+            {store.chiqimlar.map((item) => <tr key={item.id}><td className="px-5 py-4 font-bold text-orange-600">{item.id.slice(0,8)}</td><td className="px-5 py-4">{item.warehouse?.name ?? item.warehouseId}</td><td className="px-5 py-4">{sabablar[item.reason as ChiqimSababi] ?? item.reason}</td><td className="px-5 py-4">{sana(item.createdAt)}</td><td className="px-5 py-4">{holat(item.status)}</td><td className="px-5 py-4 text-right"><div className="flex justify-end gap-2"><button onClick={()=>setTanlanganId(item.id)} className="inline-flex items-center gap-1 rounded-xl bg-orange-50 px-3 py-2 text-xs font-bold text-orange-600"><Eye size={14}/>Ko'rish</button>{String(item.status ?? "DRAFT").toUpperCase()==="DRAFT" && <><button onClick={() => void store.chiqimBekorQilish(item.id)} className="rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-600">Bekor</button><button onClick={() => void store.chiqimTasdiqlash(item.id)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white">Tasdiqlash</button></>}</div></td></tr>)}
             {store.chiqimlar.length===0 && <tr><td colSpan={6} className="py-14 text-center text-gray-400">Chiqim hujjatlari mavjud emas</td></tr>}
           </tbody>
         </table>
@@ -57,6 +59,7 @@ export default function Chiqim() {
         <textarea value={note} onChange={(e)=>setNote(e.target.value)} className="w-full rounded-2xl border p-4" placeholder="Izoh"/>
         <div className="flex justify-end gap-3"><button onClick={()=>setModal(false)} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">Yopish</button><button onClick={()=>void yaratish()} className="h-11 rounded-2xl bg-orange-500 px-5 font-black text-white">Qoralama saqlash</button></div>
       </div></div>}
+      {tanlanganId&&<InventoryHujjatModal tur="chiqim" id={tanlanganId} onClose={()=>setTanlanganId(null)}/>}
     </div>
   );
 }

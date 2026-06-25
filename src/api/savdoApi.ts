@@ -56,9 +56,27 @@ export async function qaytarishlarRoyxatiniOlish() {
   return response.data;
 }
 
+// Qaytarish.tsx: tanlangan qaytarishning to'liq tafsilotlarini ID orqali oladi.
+export async function qaytarishTafsilotiniOlish(qaytarishId: string) {
+  const response = await apiClient.get<Qaytarish>(`/returns/${qaytarishId}`);
+  return response.data;
+}
+
 // Qaytarish.tsx: yangi qaytarish hujjatini qoralama holatida yaratadi.
 export async function qaytarishYaratish(malumot: QaytarishYaratishMalumoti) {
   const response = await apiClient.post<Qaytarish>("/returns", malumot);
+  return response.data;
+}
+
+// Qaytarish.tsx: faqat DRAFT holatidagi qaytarish hujjatini tahrirlaydi.
+export async function qaytarishniYangilash(
+  qaytarishId: string,
+  malumot: Partial<QaytarishYaratishMalumoti>
+) {
+  const response = await apiClient.patch<Qaytarish>(
+    `/returns/${qaytarishId}`,
+    malumot
+  );
   return response.data;
 }
 

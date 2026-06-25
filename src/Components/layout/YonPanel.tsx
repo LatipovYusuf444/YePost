@@ -1,9 +1,11 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   Home,
+  PackageSearch,
   LogOut,
   Settings,
   ShoppingCart,
+  UserCog,
   Users,
   Wallet,
   Warehouse,
@@ -13,9 +15,11 @@ import { useAuthStore } from "@/store/authStore";
 const menyular = [
   { nom: "Bosh sahifa", path: "/", icon: Home },
   { nom: "Savdo", path: "/savdo", icon: ShoppingCart },
+  { nom: "Mahsulotlar", path: "/mahsulotlar", icon: PackageSearch },
   { nom: "Ombor", path: "/ombor", icon: Warehouse },
   { nom: "Mijozlar", path: "/mijozlar", icon: Users },
   { nom: "Kassa", path: "/kassa", icon: Wallet },
+  { nom: "Xodimlar", path: "/hodimlar", icon: UserCog },
   { nom: "Sozlamalar", path: "/sozlamalar", icon: Settings },
 ];
 
