@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Eye, LoaderCircle, Plus } from "lucide-react";
+import AppModal from "@/Components/common/AppModal";
 import { useTenantStore } from "@/store/tenantStore";
 import type { Obuna, ObunaDavri, ObunaHolati } from "@/types/tenant";
 import {
@@ -112,8 +113,8 @@ export default function Profil() {
       </div>
 
       {modal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 p-4">
-          <form onSubmit={saqlash} className="w-full max-w-lg rounded-[28px] bg-white p-6">
+        <AppModal>
+          <form onSubmit={saqlash} className="w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl">
             <h2 className="text-2xl font-black">Yangi obuna</h2>
             {store.xatolik && <div className="mt-4 rounded-xl bg-red-50 p-3 font-bold text-red-600">{store.xatolik}</div>}
             <div className="mt-5 space-y-3">
@@ -164,12 +165,12 @@ export default function Profil() {
               </button>
             </div>
           </form>
-        </div>
+        </AppModal>
       )}
 
       {detail && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 p-4">
-          <div className="w-full max-w-lg rounded-[28px] bg-white p-6">
+        <AppModal>
+          <div className="w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl">
             <h2 className="text-2xl font-black">Obuna tafsiloti</h2>
             <div className="mt-5 space-y-3 rounded-2xl bg-gray-50 p-4 text-sm">
               <p><b>Obuna raqami:</b> {detail.id}</p>
@@ -184,7 +185,7 @@ export default function Profil() {
               <button onClick={() => setDetail(null)} className="h-11 rounded-2xl bg-orange-500 px-5 font-black text-white">Yopish</button>
             </div>
           </div>
-        </div>
+        </AppModal>
       )}
     </div>
   );

@@ -9,6 +9,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
 import type {
   ChiqimHujjati,
@@ -288,8 +289,8 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
   const qoralama = hujjatHolati(hujjat) === "DRAFT";
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-      <div className="max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-[30px] bg-white shadow-2xl">
+    <AppModal>
+      <div className="scrollbar-hidden max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-[30px] bg-white shadow-2xl">
         <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-orange-100 bg-white/95 px-6 py-5 backdrop-blur">
           <div className="flex items-start gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">
@@ -780,7 +781,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
           </div>
         )}
       </div>
-    </div>
+    </AppModal>
   );
 }
 

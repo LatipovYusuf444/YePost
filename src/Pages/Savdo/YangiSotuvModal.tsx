@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { LoaderCircle, Plus, Trash2, X } from "lucide-react";
+import AppModal from "@/Components/common/AppModal";
 import type {
   MijozTanlovi,
   OmborTanlovi,
@@ -131,10 +132,10 @@ export default function YangiSotuvModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-950/55 p-4 backdrop-blur-sm">
+    <AppModal>
       <form
         onSubmit={submit}
-        className="max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-[30px] bg-white shadow-2xl"
+        className="scrollbar-hidden max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-[30px] bg-white shadow-2xl"
       >
         <header className="sticky top-0 z-10 flex items-center justify-between border-b border-orange-100 bg-white/95 p-6 backdrop-blur-xl">
           <div>
@@ -390,6 +391,6 @@ export default function YangiSotuvModal({
           </button>
         </footer>
       </form>
-    </div>
+    </AppModal>
   );
 }

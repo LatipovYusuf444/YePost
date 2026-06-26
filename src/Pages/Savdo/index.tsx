@@ -7,6 +7,7 @@ import {
   Search,
   ShoppingCart,
 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { useSavdoStore } from "@/store/savdoStore";
 import type { Sotuv, SotuvYaratishMalumoti } from "@/types/savdo";
 import BekorQilinganlar from "./BekorQilinganlar";
@@ -61,14 +62,25 @@ export default function Savdo() {
     tanlanganSotuvniTozalash,
     xatolikniTozalash,
   } = useSavdoStore();
-  const [faolTab, setFaolTab] = useState<SavdoTabi>("barchasi");
+  const [searchParams] = useSearchParams();
   const [qidiruv, setQidiruv] = useState("");
   const [yangiSotuvOchiq, setYangiSotuvOchiq] = useState(false);
   const [xabar, setXabar] = useState("");
 
+  const urlTab = searchParams.get("tab") as SavdoTabi | null;
+  const faolTab: SavdoTabi = tablar.some((tab) => tab.id === urlTab)
+    ? (urlTab as SavdoTabi)
+    : "barchasi";
+
   useEffect(() => {
     void boshlangichMalumotlarniYuklash();
   }, [boshlangichMalumotlarniYuklash]);
+
+  useEffect(() => {
+    const yangiSotuvniOchish = () => setYangiSotuvOchiq(true);
+    window.addEventListener("savdo:yangi-sotuv", yangiSotuvniOchish);
+    return () => window.removeEventListener("savdo:yangi-sotuv", yangiSotuvniOchish);
+  }, []);
 
   useEffect(() => {
     if (!xabar) return;
@@ -124,16 +136,9 @@ export default function Savdo() {
   return (
     <div className="space-y-5">
       <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div>
-          <p className="text-sm font-bold uppercase tracking-[0.18em] text-orange-500">
-            Savdo bo'limi
-          </p>
-          <h1 className="mt-1 text-3xl font-black text-gray-950">Savdo boshqaruvi</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Sotuv, to'lov, qoralama, bekor qilish va qaytarish amallari server bilan
-            ulangan.
-          </p>
-        </div>
+        <p className="text-sm font-bold uppercase tracking-[0.18em] text-orange-500">
+          Savdo bo'limi
+        </p>
 
         <div className="flex flex-col gap-3 sm:flex-row">
           <button
@@ -174,37 +179,17 @@ export default function Savdo() {
         </div>
       )}
 
-      <section className="rounded-2xl border border-orange-100 bg-white p-4 shadow-sm">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div className="scrollbar-hidden flex gap-2 overflow-x-auto">
-            {tablar.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setFaolTab(tab.id)}
-                className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${
-                  faolTab === tab.id
-                    ? "bg-orange-500 text-white"
-                    : "bg-orange-50 text-orange-700 hover:bg-orange-100"
-                }`}
-              >
-                {tab.nomi}
-              </button>
-            ))}
-          </div>
-
-          {!["tolovlar", "qaytarish"].includes(faolTab) && (
-            <label className="flex h-11 min-w-0 items-center gap-2 rounded-2xl border border-gray-200 px-4 xl:w-80">
-              <Search size={18} className="shrink-0 text-gray-400" />
-              <input
-                value={qidiruv}
-                onChange={(event) => setQidiruv(event.target.value)}
-                placeholder="Sotuv, mijoz yoki telefon..."
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-              />
-            </label>
-          )}
-        </div>
-      </section>
+      {!["tolovlar", "qaytarish"].includes(faolTab) && (
+        <label className="flex h-12 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 shadow-sm xl:w-96">
+          <Search size={18} className="shrink-0 text-gray-400" />
+          <input
+            value={qidiruv}
+            onChange={(event) => setQidiruv(event.target.value)}
+            placeholder="Sotuv, mijoz yoki telefon..."
+            className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+          />
+        </label>
+      )}
 
       {yuklanmoqda ? (
         <div className="flex min-h-80 items-center justify-center rounded-2xl border border-orange-100 bg-white">

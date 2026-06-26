@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Eye, LoaderCircle, Plus, Trash2 } from "lucide-react";
+import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
 import { holat, hujjatRaqami, modificationNomi, pul, sana } from "./omborYordamchilari";
 import InventoryHujjatModal from "./InventoryHujjatModal";
@@ -103,8 +104,8 @@ export default function Xaridlar() {
       </div>
 
       {modal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-950/55 p-4 backdrop-blur-sm">
-          <form onSubmit={saqlash} className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-[28px] bg-white p-6">
+        <AppModal>
+          <form onSubmit={saqlash} className="scrollbar-hidden max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl">
             <h2 className="text-2xl font-black">Yangi kirim hujjati</h2>
             <div className="mt-5 grid gap-4 md:grid-cols-3">
               <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="h-12 rounded-2xl border px-4">
@@ -166,7 +167,7 @@ export default function Xaridlar() {
               <button disabled={store.amalBajarilmoqda} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-5 font-black text-white disabled:opacity-50">{store.amalBajarilmoqda && <LoaderCircle size={16} className="animate-spin"/>}Qoralama saqlash</button>
             </div>
           </form>
-        </div>
+        </AppModal>
       )}
       {tanlanganId && <InventoryHujjatModal tur="kirim" id={tanlanganId} onClose={() => setTanlanganId(null)} />}
     </div>

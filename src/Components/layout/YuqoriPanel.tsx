@@ -1,12 +1,20 @@
 import { Bell, CalendarDays, ChevronDown, Search, Zap } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
-type ModuleKey = "savdo" | "mahsulotlar" | "mijozlar" | "ombor" | "default";
+type ModuleKey = "savdo" | "mahsulotlar" | "mijozlar" | "ombor" | "hisobotlar" | "default";
 
 const moduleTabs: Record<ModuleKey, Array<{ nom: string; path: string }>> = {
-  savdo: [{ nom: "Savdo", path: "/savdo" }],
+  savdo: [
+    { nom: "Barcha sotuvlar", path: "/savdo" },
+    { nom: "Qoralamalar", path: "/savdo?tab=savatcha" },
+    { nom: "Savdo tarixi", path: "/savdo?tab=tarix" },
+    { nom: "To'lovlar", path: "/savdo?tab=tolovlar" },
+    { nom: "Qaytarish", path: "/savdo?tab=qaytarish" },
+    { nom: "Bekor qilinganlar", path: "/savdo?tab=bekor-qilingan" },
+  ],
   mahsulotlar: [{ nom: "Mahsulotlar", path: "/mahsulotlar" }],
   mijozlar: [{ nom: "Mijozlar", path: "/mijozlar" }],
+  hisobotlar: [{ nom: "Hisobotlar", path: "/hisobotlar" }],
   ombor: [
     { nom: "Omborlar", path: "/ombor" },
     { nom: "Kirim", path: "/ombor/kirimlar" },
@@ -24,12 +32,15 @@ function getModuleKey(pathname: string): ModuleKey {
   if (pathname.startsWith("/mahsulotlar")) return "mahsulotlar";
   if (pathname.startsWith("/mijozlar")) return "mijozlar";
   if (pathname.startsWith("/ombor")) return "ombor";
+  if (pathname.startsWith("/hisobotlar")) return "hisobotlar";
   return "default";
 }
 
 export default function YuqoriPanel() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const moduleKey = getModuleKey(pathname);
+
+  const savdoTab = new URLSearchParams(search).get("tab") ?? "barchasi";
 
   if (moduleKey === "default") {
     return (
@@ -52,9 +63,14 @@ export default function YuqoriPanel() {
     <header className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-orange-100 bg-white/60 px-4 py-3 shadow-sm backdrop-blur-xl">
       <nav className="flex min-w-0 flex-1 items-center gap-5 overflow-x-auto">
         {moduleTabs[moduleKey].map((tab) => {
+          const [tabPath, tabQuery = ""] = tab.path.split("?");
+          const tabParams = new URLSearchParams(tabQuery);
+          const tabKey = tabParams.get("tab") ?? "barchasi";
           const isActive =
-            pathname === tab.path ||
-            (tab.path !== "/ombor" && pathname.startsWith(`${tab.path}/`));
+            moduleKey === "savdo"
+              ? pathname === "/savdo" && savdoTab === tabKey
+              : pathname === tabPath ||
+                (tabPath !== "/ombor" && pathname.startsWith(`${tabPath}/`));
           return (
             <Link
               key={tab.path}
@@ -74,12 +90,16 @@ export default function YuqoriPanel() {
         <button className="flex h-10 w-10 items-center justify-center rounded-2xl border border-orange-100 bg-white/60 text-gray-700">
           <Bell size={18} />
         </button>
-        <button className="hidden h-10 items-center gap-2 rounded-2xl border border-orange-100 bg-white/60 px-3 text-sm text-gray-600 lg:flex">
-          <CalendarDays size={17} /> Bugun <ChevronDown size={15} />
-        </button>
-        <button className="hidden h-10 items-center gap-2 rounded-2xl bg-orange-500 px-3 text-sm font-bold text-white lg:flex">
-          <Zap size={17} /> Tezkor amallar
-        </button>
+        {moduleKey !== "savdo" && (
+          <>
+            <button className="hidden h-10 items-center gap-2 rounded-2xl border border-orange-100 bg-white/60 px-3 text-sm text-gray-600 lg:flex">
+              <CalendarDays size={17} /> Bugun <ChevronDown size={15} />
+            </button>
+            <button className="hidden h-10 items-center gap-2 rounded-2xl bg-orange-500 px-3 text-sm font-bold text-white lg:flex">
+              <Zap size={17} /> Tezkor amallar
+            </button>
+          </>
+        )}
       </div>
     </header>
   );

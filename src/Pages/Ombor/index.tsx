@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Edit3, LoaderCircle, Plus, RefreshCw, Trash2, Warehouse } from "lucide-react";
+import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
 import type { Ombor } from "@/types/ombor";
 import FiliallarBoshqaruvi from "./FiliallarBoshqaruvi";
@@ -212,7 +213,7 @@ export default function Ombor() {
       )}
 
       {modalOchiq && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-950/55 p-4 backdrop-blur-sm">
+        <AppModal>
           <form onSubmit={saqlash} className="w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl">
             <h2 className="text-2xl font-black text-gray-950">
               {tahrirOmbor ? "Omborni tahrirlash" : "Yangi ombor"}
@@ -301,7 +302,7 @@ export default function Ombor() {
               </button>
             </div>
           </form>
-        </div>
+        </AppModal>
       )}
     </div>
   );

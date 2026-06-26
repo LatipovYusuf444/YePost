@@ -202,24 +202,24 @@ export default function Qaytarish({
                           <Eye size={14} />
                           Ko'rish
                         </button>
-                      {holat === "DRAFT" && (
-                        <>
-                          <button
-                            disabled={amalBajarilmoqda}
-                            onClick={() => onBekorQilish(qaytarish.id)}
-                            className="rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-600"
-                          >
-                            Bekor qilish
-                          </button>
-                          <button
-                            disabled={amalBajarilmoqda}
-                            onClick={() => onTasdiqlash(qaytarish.id)}
-                            className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white"
-                          >
-                            Tasdiqlash
-                          </button>
-                        </>
-                      )}
+                        {holat === "DRAFT" && (
+                          <>
+                            <button
+                              disabled={amalBajarilmoqda}
+                              onClick={() => onBekorQilish(qaytarish.id)}
+                              className="rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-600"
+                            >
+                              Bekor qilish
+                            </button>
+                            <button
+                              disabled={amalBajarilmoqda}
+                              onClick={() => onTasdiqlash(qaytarish.id)}
+                              className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white"
+                            >
+                              Tasdiqlash
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

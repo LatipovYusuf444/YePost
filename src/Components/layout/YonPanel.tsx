@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   Home,
+  BarChart3,
   PackageSearch,
   LogOut,
   Settings,
@@ -19,6 +20,7 @@ const menyular = [
   { nom: "Ombor", path: "/ombor", icon: Warehouse },
   { nom: "Mijozlar", path: "/mijozlar", icon: Users },
   { nom: "Kassa", path: "/kassa", icon: Wallet },
+  { nom: "Hisobotlar", path: "/hisobotlar", icon: BarChart3 },
   { nom: "Xodimlar", path: "/hodimlar", icon: UserCog },
   { nom: "Sozlamalar", path: "/sozlamalar", icon: Settings },
 ];

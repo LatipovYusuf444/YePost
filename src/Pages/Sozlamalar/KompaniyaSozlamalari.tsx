@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Edit3, LoaderCircle, Plus, Trash2 } from "lucide-react";
+import AppModal from "@/Components/common/AppModal";
 import { useTenantStore } from "@/store/tenantStore";
 import type { Workspace } from "@/types/tenant";
 
@@ -116,10 +117,10 @@ export default function KompaniyaSozlamalari() {
       </div>
 
       {modal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 p-4">
+        <AppModal>
           <form
             onSubmit={saqlash}
-            className="w-full max-w-lg rounded-[28px] bg-white p-6"
+            className="w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl"
           >
             <h2 className="text-2xl font-black">
               {editing ? "Ish maydonini tahrirlash" : "Yangi ish maydoni"}
@@ -182,7 +183,7 @@ export default function KompaniyaSozlamalari() {
               </button>
             </div>
           </form>
-        </div>
+        </AppModal>
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Eye, Plus } from "lucide-react";
+import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
 import type { InventarizatsiyaTuri } from "@/types/ombor";
 import { holat, modificationNomi, qoldiqMiqdori, sana } from "./omborYordamchilari";
@@ -25,12 +26,12 @@ export default function Inventarizatsiya() {
       {store.inventarizatsiyalar.map(x=><tr key={x.id}><td className="px-5 py-4 font-bold text-orange-600">{x.id.slice(0,8)}</td><td className="px-5 py-4">{x.warehouse?.name??x.warehouseId}</td><td className="px-5 py-4">{x.type==="PARTIAL"?"Qisman":"To'liq"}</td><td className="px-5 py-4">{sana(x.createdAt)}</td><td className="px-5 py-4">{holat(x.status)}</td><td className="px-5 py-4 text-right"><div className="flex justify-end gap-2"><button onClick={()=>setTanlanganId(x.id)} className="inline-flex items-center gap-1 rounded-xl bg-orange-50 px-3 py-2 text-xs font-bold text-orange-600"><Eye size={14}/>Ko'rish</button>{String(x.status??"DRAFT").toUpperCase()==="DRAFT"&&<button onClick={()=>void store.inventarizatsiyaTasdiqlash(x.id)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white">Yakunlash</button>}</div></td></tr>)}
       {store.inventarizatsiyalar.length===0&&<tr><td colSpan={6} className="py-14 text-center text-gray-400">Inventarizatsiya hujjatlari mavjud emas</td></tr>}
     </tbody></table></div>
-    {modal&&<div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 p-4"><div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-[28px] bg-white p-6"><h2 className="text-2xl font-black">Inventarizatsiya boshlash</h2>
+    {modal&&<AppModal><div className="scrollbar-hidden max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl"><h2 className="text-2xl font-black">Inventarizatsiya boshlash</h2>
       <div className="mt-5 grid gap-3 sm:grid-cols-2"><select value={warehouseId} onChange={(e)=>omborTanlash(e.target.value)} className="h-12 rounded-2xl border px-4"><option value="">Ombor *</option>{store.omborlar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select><select value={type} onChange={(e)=>setType(e.target.value as InventarizatsiyaTuri)} className="h-12 rounded-2xl border px-4"><option value="FULL">To'liq</option><option value="PARTIAL">Qisman</option></select></div>
       <div className="mt-5 space-y-2">{qoldiqlar.map((x,i)=><div key={`${x.modificationId}-${i}`} className="grid grid-cols-[1fr_100px_130px] items-center gap-3 rounded-xl bg-gray-50 p-3"><span className="font-bold">{modificationNomi(x.modification)}</span><span className="text-sm text-gray-500">Tizim: {qoldiqMiqdori(x)}</span><input type="number" min="0" value={actuals[x.modificationId]??qoldiqMiqdori(x)} onChange={(e)=>setActuals(v=>({...v,[x.modificationId]:Number(e.target.value)}))} className="h-10 rounded-xl border px-3" /></div>)}</div>
       <textarea value={note} onChange={(e)=>setNote(e.target.value)} className="mt-4 w-full rounded-2xl border p-4" placeholder="Izoh"/>
       <div className="mt-5 flex justify-end gap-3"><button onClick={()=>setModal(false)} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">Yopish</button><button onClick={()=>void yaratish()} className="h-11 rounded-2xl bg-orange-500 px-5 font-black text-white">Qoralama saqlash</button></div>
-    </div></div>}
+    </div></AppModal>}
     {tanlanganId&&<InventoryHujjatModal tur="inventarizatsiya" id={tanlanganId} onClose={()=>setTanlanganId(null)}/>}
   </div>
 }

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Edit3, LoaderCircle, Plus, Trash2 } from "lucide-react";
+import AppModal from "@/Components/common/AppModal";
 import { useTenantStore } from "@/store/tenantStore";
 import type { Tarif, TarifTuri } from "@/types/tenant";
 import { tarifTuriMatni } from "./tenantMatnlari";
@@ -125,8 +126,8 @@ export default function TolovSozlamalari() {
       </div>
 
       {modal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 p-4">
-          <form onSubmit={saqlash} className="w-full max-w-lg rounded-[28px] bg-white p-6">
+        <AppModal>
+          <form onSubmit={saqlash} className="w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl">
             <h2 className="text-2xl font-black">
               {editing ? "Tarifni tahrirlash" : "Yangi tarif"}
             </h2>
@@ -169,7 +170,7 @@ export default function TolovSozlamalari() {
               </button>
             </div>
           </form>
-        </div>
+        </AppModal>
       )}
     </div>
   );

@@ -12,6 +12,7 @@ import {
   UserRound,
   UsersRound,
 } from "lucide-react";
+import AppModal from "@/Components/common/AppModal";
 import { useAccountStore } from "@/store/accountStore";
 import type { AccountFoydalanuvchi, AccountRoli } from "@/types/account";
 import Rollar from "./Rollar";
@@ -239,7 +240,7 @@ function Foydalanuvchilar() {
       </div>
 
       {modal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-slate-950/55 p-4 backdrop-blur-sm">
+        <AppModal>
           <form
             onSubmit={saqlash}
             className="my-6 w-full max-w-2xl rounded-[30px] bg-white p-6 shadow-2xl md:p-8"
@@ -359,7 +360,7 @@ function Foydalanuvchilar() {
               </button>
             </div>
           </form>
-        </div>
+        </AppModal>
       )}
     </section>
   );

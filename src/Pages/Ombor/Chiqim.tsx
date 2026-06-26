@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Eye, Plus } from "lucide-react";
+import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
 import type { ChiqimSababi } from "@/types/ombor";
 import { holat, modificationNomi, qoldiqMiqdori, sana } from "./omborYordamchilari";
@@ -51,14 +52,14 @@ export default function Chiqim() {
           </tbody>
         </table>
       </div>
-      {modal && <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 p-4"><div className="w-full max-w-xl space-y-4 rounded-[28px] bg-white p-6"><h2 className="text-2xl font-black">Yangi chiqim</h2>
+      {modal && <AppModal><div className="w-full max-w-xl space-y-4 rounded-[28px] bg-white p-6 shadow-2xl"><h2 className="text-2xl font-black">Yangi chiqim</h2>
         <select value={warehouseId} onChange={(e)=>{setWarehouseId(e.target.value);void store.qoldiqlarniYuklash(e.target.value)}} className="h-12 w-full rounded-2xl border px-4"><option value="">Ombor *</option>{store.omborlar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>
         <select value={reason} onChange={(e)=>setReason(e.target.value as ChiqimSababi)} className="h-12 w-full rounded-2xl border px-4">{Object.entries(sabablar).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select>
         <select value={modificationId} onChange={(e)=>setModificationId(e.target.value)} className="h-12 w-full rounded-2xl border px-4"><option value="">Mahsulot *</option>{qoldiqlar.map((x,i)=><option key={`${x.modificationId}-${i}`} value={x.modificationId}>{modificationNomi(x.modification)} — {qoldiqMiqdori(x)}</option>)}</select>
         <input type="number" min="0.001" step="0.001" value={quantity} onChange={(e)=>setQuantity(Number(e.target.value))} className="h-12 w-full rounded-2xl border px-4" placeholder="Miqdor"/>
         <textarea value={note} onChange={(e)=>setNote(e.target.value)} className="w-full rounded-2xl border p-4" placeholder="Izoh"/>
         <div className="flex justify-end gap-3"><button onClick={()=>setModal(false)} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">Yopish</button><button onClick={()=>void yaratish()} className="h-11 rounded-2xl bg-orange-500 px-5 font-black text-white">Qoralama saqlash</button></div>
-      </div></div>}
+      </div></AppModal>}
       {tanlanganId&&<InventoryHujjatModal tur="chiqim" id={tanlanganId} onClose={()=>setTanlanganId(null)}/>}
     </div>
   );

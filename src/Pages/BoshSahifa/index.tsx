@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
 import {
   Bell,
   CheckCircle,
@@ -14,6 +13,7 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
+import AppModal from "@/Components/common/AppModal";
 import { usePosStore } from "@/store/posStore";
 
 type CustomerType = "donalik" | "doimiy";
@@ -503,12 +503,9 @@ export default function BoshSahifa() {
           </>
         )}
       </aside>
-      {selectedCustomerModal &&
-        createPortal(
-          <>
-            <div className="fixed inset-0 z-[9998] bg-black/55 backdrop-blur-[2px]" />
-
-            <section className="scrollbar-hidden fixed bottom-4 left-4 right-4 top-4 z-[9999] overflow-y-auto rounded-[34px] bg-[#D8D8D8] p-4 shadow-2xl sm:bottom-6 sm:left-6 sm:right-6 sm:top-6 sm:p-6 lg:bottom-[32px] lg:left-[120px] lg:right-[32px] lg:top-[32px] 2xl:left-[140px]">
+      {selectedCustomerModal && (
+        <AppModal>
+            <section className="scrollbar-hidden max-h-[94vh] w-full max-w-[1500px] overflow-y-auto rounded-[34px] bg-[#D8D8D8] p-4 shadow-2xl sm:p-6">
               <div className="mb-6 flex flex-col items-start justify-between gap-5 xl:flex-row xl:items-center">
                 <div>
                   <p className="text-sm font-medium text-gray-500">Doimiy mijoz savdosi</p>
@@ -751,9 +748,8 @@ export default function BoshSahifa() {
                 </div>
               )}
             </section>
-          </>,
-          document.body
-        )}
+        </AppModal>
+      )}
     </div>
   );
 }

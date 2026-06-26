@@ -7,6 +7,7 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
+import AppModal from "@/Components/common/AppModal";
 import { useAccountStore } from "@/store/accountStore";
 import type { AccountVakolati, VakolatKodi } from "@/types/account";
 
@@ -206,7 +207,7 @@ export default function Ruxsatlar() {
       </div>
 
       {modal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm">
+        <AppModal>
           <form
             onSubmit={saqlash}
             className="w-full max-w-lg rounded-[30px] bg-white p-7 shadow-2xl"
@@ -314,7 +315,7 @@ export default function Ruxsatlar() {
               </button>
             </div>
           </form>
-        </div>
+        </AppModal>
       )}
     </section>
   );

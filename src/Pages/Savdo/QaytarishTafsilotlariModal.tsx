@@ -8,6 +8,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import AppModal from "@/Components/common/AppModal";
 import { sotuvTafsilotiniOlish } from "@/api/savdoApi";
 import { useSavdoStore } from "@/store/savdoStore";
 import type {
@@ -231,8 +232,8 @@ export default function QaytarishTafsilotlariModal({
   );
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-      <section className="max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-[30px] bg-white shadow-2xl">
+    <AppModal>
+      <section className="scrollbar-hidden max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-[30px] bg-white shadow-2xl">
         <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-orange-100 bg-white/95 px-6 py-5 backdrop-blur">
           <div className="flex items-start gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">
@@ -608,7 +609,7 @@ export default function QaytarishTafsilotlariModal({
           </div>
         )}
       </section>
-    </div>
+    </AppModal>
   );
 }
 

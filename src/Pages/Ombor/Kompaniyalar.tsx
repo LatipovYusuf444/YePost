@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Building2, Edit3, LoaderCircle, Plus, Trash2 } from "lucide-react";
+import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
 import type { Kompaniya } from "@/types/ombor";
 
@@ -90,8 +91,8 @@ export default function Kompaniyalar() {
         {store.kompaniyalar.length === 0 && <div className="col-span-full rounded-2xl border border-dashed p-12 text-center text-gray-400">Kompaniya mavjud emas</div>}
       </div>
       {modal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 p-4">
-          <form onSubmit={saqlash} className="w-full max-w-lg rounded-[28px] bg-white p-6">
+        <AppModal>
+          <form onSubmit={saqlash} className="w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl">
             <h2 className="text-2xl font-black">{editing ? "Kompaniyani tahrirlash" : "Yangi kompaniya"}</h2>
             {store.xatolik && <div className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-600">{store.xatolik}</div>}
             <div className="mt-5 space-y-3">
@@ -105,7 +106,7 @@ export default function Kompaniyalar() {
               <button disabled={store.amalBajarilmoqda} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-5 font-black text-white disabled:opacity-50">{store.amalBajarilmoqda&&<LoaderCircle size={16} className="animate-spin"/>}Saqlash</button>
             </div>
           </form>
-        </div>
+        </AppModal>
       )}
     </div>
   );
