@@ -25,17 +25,20 @@ type YangiSotuvModalProps = {
 
 type MahsulotQatori = {
   modificationId: string;
-  quantity: number;
-  price: number;
-  discount: number;
+  quantity: string;
+  price: string;
+  discount: string;
 };
 
 function qoldiqNomi(qoldiq: QoldiqTanlovi) {
-  return (
-    qoldiq.modification?.product?.name ??
-    qoldiq.modification?.name ??
-    qoldiq.modificationId
-  );
+  const productName = qoldiq.modification?.product?.name;
+  const variantName = qoldiq.modification?.name;
+
+  if (productName && variantName && variantName !== "Asosiy variant") {
+    return `${productName} — ${variantName}`;
+  }
+
+  return productName ?? variantName ?? qoldiq.modificationId;
 }
 
 function qoldiqNarxi(qoldiq?: QoldiqTanlovi) {
@@ -46,6 +49,12 @@ function qoldiqNarxi(qoldiq?: QoldiqTanlovi) {
     qoldiq?.modification?.price?.retailPrice ??
     0
   );
+}
+
+function raqamgaAylantirish(value: string) {
+  if (!value.trim()) return 0;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
 }
 
 export default function YangiSotuvModal({
@@ -65,9 +74,9 @@ export default function YangiSotuvModal({
   const [responsibleId, setResponsibleId] = useState("");
   const [note, setNote] = useState("");
   const [tolovTuri, setTolovTuri] = useState<TolovTuri>("CASH");
-  const [tolovSummasi, setTolovSummasi] = useState(0);
+  const [tolovSummasi, setTolovSummasi] = useState("");
   const [mahsulotlar, setMahsulotlar] = useState<MahsulotQatori[]>([
-    { modificationId: "", quantity: 1, price: 0, discount: 0 },
+    { modificationId: "", quantity: "1", price: "", discount: "" },
   ]);
   const [xatolik, setXatolik] = useState("");
 
@@ -75,7 +84,10 @@ export default function YangiSotuvModal({
     () =>
       mahsulotlar.reduce(
         (summa, mahsulot) =>
-          summa + mahsulot.quantity * mahsulot.price - mahsulot.discount,
+          summa +
+          raqamgaAylantirish(mahsulot.quantity) *
+            raqamgaAylantirish(mahsulot.price) -
+          raqamgaAylantirish(mahsulot.discount),
         0
       ),
     [mahsulotlar]
@@ -93,7 +105,7 @@ export default function YangiSotuvModal({
     const qoldiq = qoldiqlar.find((item) => item.modificationId === modificationId);
     mahsulotniYangilash(index, {
       modificationId,
-      price: qoldiqNarxi(qoldiq),
+      price: qoldiqNarxi(qoldiq) ? String(qoldiqNarxi(qoldiq)) : "",
     });
   }
 
@@ -101,10 +113,18 @@ export default function YangiSotuvModal({
     event.preventDefault();
     setXatolik("");
 
-    const tozaMahsulotlar = mahsulotlar.filter(
-      (mahsulot) =>
-        mahsulot.modificationId && mahsulot.quantity > 0 && mahsulot.price >= 0
-    );
+    const tozaMahsulotlar = mahsulotlar
+      .map((mahsulot) => ({
+        modificationId: mahsulot.modificationId,
+        quantity: raqamgaAylantirish(mahsulot.quantity),
+        price: raqamgaAylantirish(mahsulot.price),
+        discount: raqamgaAylantirish(mahsulot.discount),
+      }))
+      .filter(
+        (mahsulot) =>
+          mahsulot.modificationId && mahsulot.quantity > 0 && mahsulot.price >= 0
+      );
+    const tolovSummasiRaqam = raqamgaAylantirish(tolovSummasi);
 
     if (!warehouseId) {
       setXatolik("Avval omborni tanlang.");
@@ -125,7 +145,7 @@ export default function YangiSotuvModal({
       note: note.trim() || undefined,
       items: tozaMahsulotlar,
       payments:
-        tolovSummasi > 0 ? [{ paymentType: tolovTuri, amount: tolovSummasi }] : [],
+        tolovSummasiRaqam > 0 ? [{ paymentType: tolovTuri, amount: tolovSummasiRaqam }] : [],
     });
 
     if (muvaffaqiyatli) onYopish();
@@ -248,7 +268,7 @@ export default function YangiSotuvModal({
                 onClick={() =>
                   setMahsulotlar((joriy) => [
                     ...joriy,
-                    { modificationId: "", quantity: 1, price: 0, discount: 0 },
+                    { modificationId: "", quantity: "1", price: "", discount: "" },
                   ])
                 }
                 className="inline-flex items-center gap-2 rounded-xl bg-orange-50 px-3 py-2 text-xs font-bold text-orange-600"
@@ -272,7 +292,7 @@ export default function YangiSotuvModal({
                     <option value="">Mahsulotni tanlang</option>
                     {qoldiqlar.map((qoldiq) => (
                       <option key={qoldiq.modificationId} value={qoldiq.modificationId}>
-                        {qoldiqNomi(qoldiq)} — qoldiq: {qoldiq.quantity ?? qoldiq.balance ?? 0}
+                        {qoldiqNomi(qoldiq)} — qoldiq: {qoldiq.quantity ?? qoldiq.balance ?? 0} — narx: {pulniFormatlash(qoldiqNarxi(qoldiq))}
                       </option>
                     ))}
                   </select>
@@ -282,7 +302,7 @@ export default function YangiSotuvModal({
                     step="0.001"
                     value={mahsulot.quantity}
                     onChange={(event) =>
-                      mahsulotniYangilash(index, { quantity: Number(event.target.value) })
+                      mahsulotniYangilash(index, { quantity: event.target.value })
                     }
                     className="h-11 rounded-xl border border-gray-200 px-3 text-sm outline-none"
                     placeholder="Miqdor"
@@ -292,7 +312,7 @@ export default function YangiSotuvModal({
                     min="0"
                     value={mahsulot.price}
                     onChange={(event) =>
-                      mahsulotniYangilash(index, { price: Number(event.target.value) })
+                      mahsulotniYangilash(index, { price: event.target.value })
                     }
                     className="h-11 rounded-xl border border-gray-200 px-3 text-sm outline-none"
                     placeholder="Narx"
@@ -302,7 +322,7 @@ export default function YangiSotuvModal({
                     min="0"
                     value={mahsulot.discount}
                     onChange={(event) =>
-                      mahsulotniYangilash(index, { discount: Number(event.target.value) })
+                      mahsulotniYangilash(index, { discount: event.target.value })
                     }
                     className="h-11 rounded-xl border border-gray-200 px-3 text-sm outline-none"
                     placeholder="Chegirma"
@@ -345,8 +365,9 @@ export default function YangiSotuvModal({
                 type="number"
                 min="0"
                 value={tolovSummasi}
-                onChange={(event) => setTolovSummasi(Number(event.target.value))}
+                onChange={(event) => setTolovSummasi(event.target.value)}
                 className="h-11 w-full rounded-xl border border-gray-200 bg-white px-3"
+                placeholder="Masalan: 10000"
               />
             </label>
             <div className="flex flex-col justify-end">

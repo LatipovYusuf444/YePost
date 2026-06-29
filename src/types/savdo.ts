@@ -124,6 +124,7 @@ export type XodimTanlovi = NomliMalumot & { username?: string };
 export type QoldiqTanlovi = {
   id?: string;
   warehouseId?: string;
+  productId?: string;
   modificationId: string;
   quantity?: number;
   balance?: number;
@@ -132,8 +133,11 @@ export type QoldiqTanlovi = {
   modification?: {
     id: string;
     name?: string;
+    barcode?: string;
+    article?: string | null;
     product?: NomliMalumot;
     price?: {
+      costPrice?: number;
       retailPrice?: number;
       wholesalePrice?: number;
       sellingPrice?: number;

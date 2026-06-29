@@ -19,6 +19,13 @@ import type {
   OmborSaqlashMalumoti,
 } from "@/types/ombor";
 
+type RoyxatJavobi<T> = T[] | { value?: T[]; items?: T[]; results?: T[]; data?: T[] };
+
+function royxatniAjratish<T>(data: RoyxatJavobi<T>): T[] {
+  if (Array.isArray(data)) return data;
+  return data.value ?? data.items ?? data.results ?? data.data ?? [];
+}
+
 // Organization sahifasi: kompaniyaning barcha Swagger CRUD endpointlari.
 export const kompaniyalarApi = {
   royxat: async () =>
@@ -135,11 +142,11 @@ export const inventarizatsiyaApi = {
 
 // Ombor/OmborQoldigi.tsx va Mahsulotlar.tsx: real ombor qoldiqlari.
 export async function omborQoldiqlari(warehouseId?: string) {
-  return (
-    await apiClient.get<OmborQoldigi[]>("/inventory/stock-balance", {
+  const response = await apiClient.get<RoyxatJavobi<OmborQoldigi>>("/inventory/stock-balance", {
       params: warehouseId ? { warehouseId } : undefined,
-    })
-  ).data;
+    });
+
+  return royxatniAjratish(response.data);
 }
 
 // Ombor hujjatlari formalaridagi yetkazib beruvchi va mas'ul xodim tanlovlari.

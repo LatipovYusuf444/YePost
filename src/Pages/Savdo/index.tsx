@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  CalendarDays,
+  ChevronDown,
   CircleAlert,
   LoaderCircle,
   Plus,
-  RefreshCw,
   Search,
   ShoppingCart,
 } from "lucide-react";
@@ -64,6 +65,7 @@ export default function Savdo() {
   } = useSavdoStore();
   const [searchParams] = useSearchParams();
   const [qidiruv, setQidiruv] = useState("");
+  const [sanaFilteri, setSanaFilteri] = useState<"bugun" | "barchasi">("bugun");
   const [yangiSotuvOchiq, setYangiSotuvOchiq] = useState(false);
   const [xabar, setXabar] = useState("");
 
@@ -90,9 +92,17 @@ export default function Savdo() {
 
   const qidirilganSotuvlar = useMemo(() => {
     const qiymat = qidiruv.trim().toLowerCase();
-    if (!qiymat) return sotuvlar;
+    const bugun = new Date().toDateString();
+    const sanaBoyicha = sanaFilteri === "bugun"
+      ? sotuvlar.filter((sotuv) => {
+          const sana = sotuv.createdAt ? new Date(sotuv.createdAt) : null;
+          return sana && !Number.isNaN(sana.getTime()) && sana.toDateString() === bugun;
+        })
+      : sotuvlar;
 
-    return sotuvlar.filter((sotuv) =>
+    if (!qiymat) return sanaBoyicha;
+
+    return sanaBoyicha.filter((sotuv) =>
       [
         sotuvRaqami(sotuv),
         mijozNomi(sotuv),
@@ -104,7 +114,7 @@ export default function Savdo() {
         .toLowerCase()
         .includes(qiymat)
     );
-  }, [qidiruv, sotuvlar]);
+  }, [qidiruv, sanaFilteri, sotuvlar]);
 
   async function sotuvniOchish(sotuv: Sotuv) {
     await sotuvTafsilotiniYuklash(sotuv.id);
@@ -135,30 +145,6 @@ export default function Savdo() {
 
   return (
     <div className="space-y-5">
-      <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <p className="text-sm font-bold uppercase tracking-[0.18em] text-orange-500">
-          Savdo bo'limi
-        </p>
-
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <button
-            onClick={() => void boshlangichMalumotlarniYuklash()}
-            disabled={yuklanmoqda}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-white px-4 text-sm font-bold text-gray-600 shadow-sm ring-1 ring-orange-100 hover:text-orange-600 disabled:opacity-50"
-          >
-            <RefreshCw size={17} className={yuklanmoqda ? "animate-spin" : ""} />
-            Yangilash
-          </button>
-          <button
-            onClick={() => setYangiSotuvOchiq(true)}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-lg shadow-orange-200 hover:bg-orange-600"
-          >
-            <Plus size={18} />
-            Yangi sotuv
-          </button>
-        </div>
-      </header>
-
       {(xatolik || xabar) && (
         <div
           className={`flex items-start justify-between gap-3 rounded-2xl border p-4 text-sm font-semibold ${
@@ -179,20 +165,8 @@ export default function Savdo() {
         </div>
       )}
 
-      {!["tolovlar", "qaytarish"].includes(faolTab) && (
-        <label className="flex h-12 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 shadow-sm xl:w-96">
-          <Search size={18} className="shrink-0 text-gray-400" />
-          <input
-            value={qidiruv}
-            onChange={(event) => setQidiruv(event.target.value)}
-            placeholder="Sotuv, mijoz yoki telefon..."
-            className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-          />
-        </label>
-      )}
-
       {yuklanmoqda ? (
-        <div className="flex min-h-80 items-center justify-center rounded-2xl border border-orange-100 bg-white">
+        <div className="flex min-h-80 items-center justify-center rounded-[28px] border border-gray-100 bg-white shadow-sm">
           <div className="text-center">
             <LoaderCircle className="mx-auto animate-spin text-orange-500" size={34} />
             <p className="mt-3 text-sm font-semibold text-gray-500">
@@ -202,28 +176,80 @@ export default function Savdo() {
         </div>
       ) : (
         <>
-          {faolTab === "barchasi" && (
-            <SotuvlarJadvali
-              sotuvlar={qidirilganSotuvlar}
-              onSotuvniOchish={sotuvniOchish}
-            />
+          {!["tolovlar", "qaytarish"].includes(faolTab) && (
+            <section className="overflow-hidden rounded-[30px] border border-gray-100 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
+              <div className="border-b border-gray-100 px-10 py-7">
+                <h1 className="text-[22px] font-medium text-[#262626]">Sotuv</h1>
+              </div>
+
+              <div className="flex flex-col gap-4 px-10 py-6 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <button
+                    onClick={() => setYangiSotuvOchiq(true)}
+                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md bg-orange-500 px-4 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-500/20"
+                  >
+                    <Plus size={16} />
+                    Qo'shish
+                  </button>
+
+                  <label className="flex h-10 w-full items-center gap-2 rounded-lg border border-gray-200 bg-[#FAFAFA] px-3 transition focus-within:border-orange-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-orange-100 sm:w-[390px]">
+                    <input
+                      value={qidiruv}
+                      onChange={(event) => setQidiruv(event.target.value)}
+                      placeholder="Qidirish"
+                      className="min-w-0 flex-1 bg-transparent text-sm text-gray-700 outline-none placeholder:text-gray-400"
+                    />
+                    <Search size={18} className="shrink-0 text-gray-300" />
+                  </label>
+                </div>
+
+                <div className="relative">
+                  <select
+                    value={sanaFilteri}
+                    onChange={(event) =>
+                      setSanaFilteri(event.target.value as "bugun" | "barchasi")
+                    }
+                    className="h-10 appearance-none rounded-md bg-orange-500 pl-11 pr-10 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-orange-600"
+                  >
+                    <option value="bugun">Bugun</option>
+                    <option value="barchasi">Barchasi</option>
+                  </select>
+                  <CalendarDays
+                    size={17}
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white"
+                  />
+                  <ChevronDown
+                    size={15}
+                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-white/80"
+                  />
+                </div>
+              </div>
+
+              {faolTab === "barchasi" && (
+                <SotuvlarJadvali
+                  sotuvlar={qidirilganSotuvlar}
+                  onSotuvniOchish={sotuvniOchish}
+                />
+              )}
+              {faolTab === "savatcha" && (
+                <Savatcha
+                  sotuvlar={qidirilganSotuvlar}
+                  onSotuvniOchish={sotuvniOchish}
+                />
+              )}
+              {faolTab === "tarix" && (
+                <Tarix sotuvlar={qidirilganSotuvlar} onSotuvniOchish={sotuvniOchish} />
+              )}
+              {faolTab === "bekor-qilingan" && (
+                <BekorQilinganlar
+                  sotuvlar={qidirilganSotuvlar}
+                  onSotuvniOchish={sotuvniOchish}
+                />
+              )}
+            </section>
           )}
-          {faolTab === "savatcha" && (
-            <Savatcha
-              sotuvlar={qidirilganSotuvlar}
-              onSotuvniOchish={sotuvniOchish}
-            />
-          )}
-          {faolTab === "tarix" && (
-            <Tarix sotuvlar={qidirilganSotuvlar} onSotuvniOchish={sotuvniOchish} />
-          )}
+
           {faolTab === "tolovlar" && <Tolovlar sotuvlar={sotuvlar} />}
-          {faolTab === "bekor-qilingan" && (
-            <BekorQilinganlar
-              sotuvlar={qidirilganSotuvlar}
-              onSotuvniOchish={sotuvniOchish}
-            />
-          )}
           {faolTab === "qaytarish" && (
             <Qaytarish
               sotuvlar={sotuvlar}

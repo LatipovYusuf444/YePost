@@ -371,8 +371,10 @@ export const useOmborStore = create<OmborState>((set) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const hujjat = await kirimApi.tasdiqlash(id);
+      const qoldiqlar = await omborQoldiqlari();
       set((state) => ({
         kirimlar: hujjatniAlmashtirish(state.kirimlar, hujjat),
+        qoldiqlar,
         amalBajarilmoqda: false,
       }));
       return true;

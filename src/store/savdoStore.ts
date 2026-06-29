@@ -2,6 +2,7 @@ import { create } from "zustand";
 import {
   mijozKompaniyalariRoyxatiniOlish,
   mijozlarRoyxatiniOlish,
+  katalogModifikatsiyalariniQoldiqTanlovigaOlish,
   omborlarRoyxatiniOlish,
   omborQoldiqlariniOlish,
   qaytarishlarRoyxatiniOlish,
@@ -28,6 +29,78 @@ import type {
   SotuvYaratishMalumoti,
   XodimTanlovi,
 } from "@/types/savdo";
+
+function qoldiqlarniKatalogBilanBirlashtirish(
+  stockQoldiqlar: QoldiqTanlovi[],
+  katalogQoldiqlar: QoldiqTanlovi[]
+) {
+  const map = new Map<string, QoldiqTanlovi>();
+
+  for (const item of katalogQoldiqlar) {
+    map.set(item.modificationId, item);
+  }
+
+  for (const item of stockQoldiqlar) {
+    const katalogItem = map.get(item.modificationId);
+    const modification = item.modification ?? katalogItem?.modification;
+
+    map.set(item.modificationId, {
+      ...katalogItem,
+      ...item,
+      modification: modification
+        ? {
+            ...katalogItem?.modification,
+            ...item.modification,
+            id: modification.id,
+            product: item.modification?.product ?? katalogItem?.modification?.product,
+            price: item.modification?.price ?? katalogItem?.modification?.price,
+          }
+        : undefined,
+      sellingPrice:
+        item.sellingPrice ??
+        item.price ??
+        katalogItem?.sellingPrice ??
+        katalogItem?.price,
+      price:
+        item.price ??
+        item.sellingPrice ??
+        katalogItem?.price ??
+        katalogItem?.sellingPrice,
+    });
+  }
+
+  return Array.from(map.values()).sort((a, b) => {
+    const aName = a.modification?.product?.name ?? a.modification?.name ?? a.modificationId;
+    const bName = b.modification?.product?.name ?? b.modification?.name ?? b.modificationId;
+    return aName.localeCompare(bName, "uz");
+  });
+}
+
+function sotuvniBoglanganMalumotlarBilanBoyitish(
+  sotuv: Sotuv,
+  malumotlar: {
+    mijozlar: MijozTanlovi[];
+    mijozKompaniyalari: MijozTanlovi[];
+    xodimlar: XodimTanlovi[];
+    omborlar: OmborTanlovi[];
+  }
+) {
+  const customer = sotuv.customer ?? malumotlar.mijozlar.find((item) => item.id === sotuv.customerId);
+  const clientCompany =
+    sotuv.clientCompany ??
+    malumotlar.mijozKompaniyalari.find((item) => item.id === sotuv.clientCompanyId);
+  const responsible =
+    sotuv.responsible ?? malumotlar.xodimlar.find((item) => item.id === sotuv.responsibleId);
+  const warehouse = sotuv.warehouse ?? malumotlar.omborlar.find((item) => item.id === sotuv.warehouseId);
+
+  return {
+    ...sotuv,
+    customer,
+    clientCompany,
+    responsible,
+    warehouse,
+  };
+}
 
 type SavdoState = {
   sotuvlar: Sotuv[];
@@ -59,7 +132,7 @@ type SavdoState = {
   xatolikniTozalash: () => void;
 };
 
-export const useSavdoStore = create<SavdoState>((set) => ({
+export const useSavdoStore = create<SavdoState>((set, get) => ({
   sotuvlar: [],
   qaytarishlar: [],
   omborlar: [],
@@ -83,7 +156,8 @@ export const useSavdoStore = create<SavdoState>((set) => ({
         mijozlar,
         mijozKompaniyalari,
         xodimlar,
-        qoldiqlar,
+        stockQoldiqlar,
+        katalogQoldiqlar,
       ] = await Promise.all([
         sotuvlarRoyxatiniOlish(),
         qaytarishlarRoyxatiniOlish(),
@@ -92,10 +166,19 @@ export const useSavdoStore = create<SavdoState>((set) => ({
         mijozKompaniyalariRoyxatiniOlish(),
         xodimlarRoyxatiniOlish(),
         omborQoldiqlariniOlish(),
+        katalogModifikatsiyalariniQoldiqTanlovigaOlish(),
       ]);
 
+      const qoldiqlar = qoldiqlarniKatalogBilanBirlashtirish(
+        stockQoldiqlar,
+        katalogQoldiqlar
+      );
+      const boglanganMalumotlar = { mijozlar, mijozKompaniyalari, xodimlar, omborlar };
+
       set({
-        sotuvlar,
+        sotuvlar: sotuvlar.map((sotuv) =>
+          sotuvniBoglanganMalumotlarBilanBoyitish(sotuv, boglanganMalumotlar)
+        ),
         qaytarishlar,
         omborlar,
         mijozlar,
@@ -111,8 +194,16 @@ export const useSavdoStore = create<SavdoState>((set) => ({
 
   qoldiqlarniYuklash: async (warehouseId) => {
     try {
-      const qoldiqlar = await omborQoldiqlariniOlish(warehouseId);
-      set({ qoldiqlar });
+      const [stockQoldiqlar, katalogQoldiqlar] = await Promise.all([
+        omborQoldiqlariniOlish(warehouseId),
+        katalogModifikatsiyalariniQoldiqTanlovigaOlish(),
+      ]);
+      set({
+        qoldiqlar: qoldiqlarniKatalogBilanBirlashtirish(
+          stockQoldiqlar,
+          katalogQoldiqlar
+        ),
+      });
     } catch (error) {
       set({ xatolik: getApiErrorMessage(error) });
     }
@@ -123,8 +214,9 @@ export const useSavdoStore = create<SavdoState>((set) => ({
 
     try {
       const sotuv = await sotuvTafsilotiniOlish(sotuvId);
-      set({ tanlanganSotuv: sotuv, amalBajarilmoqda: false });
-      return sotuv;
+      const boyitilgan = sotuvniBoglanganMalumotlarBilanBoyitish(sotuv, get());
+      set({ tanlanganSotuv: boyitilgan, amalBajarilmoqda: false });
+      return boyitilgan;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
       return null;
@@ -136,12 +228,13 @@ export const useSavdoStore = create<SavdoState>((set) => ({
 
     try {
       const sotuv = await sotuvYaratish(malumot);
+      const boyitilgan = sotuvniBoglanganMalumotlarBilanBoyitish(sotuv, get());
       set((state) => ({
-        sotuvlar: [sotuv, ...state.sotuvlar],
-        tanlanganSotuv: sotuv,
+        sotuvlar: [boyitilgan, ...state.sotuvlar],
+        tanlanganSotuv: boyitilgan,
         amalBajarilmoqda: false,
       }));
-      return sotuv;
+      return boyitilgan;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
       return null;
@@ -153,11 +246,12 @@ export const useSavdoStore = create<SavdoState>((set) => ({
 
     try {
       const yangilangan = await sotuvniTasdiqlash(sotuvId);
+      const boyitilgan = sotuvniBoglanganMalumotlarBilanBoyitish(yangilangan, get());
       set((state) => ({
         sotuvlar: state.sotuvlar.map((sotuv) =>
-          sotuv.id === sotuvId ? yangilangan : sotuv
+          sotuv.id === sotuvId ? boyitilgan : sotuv
         ),
-        tanlanganSotuv: yangilangan,
+        tanlanganSotuv: boyitilgan,
         amalBajarilmoqda: false,
       }));
       return true;
@@ -172,11 +266,12 @@ export const useSavdoStore = create<SavdoState>((set) => ({
 
     try {
       const yangilangan = await sotuvniBekorQilish(sotuvId);
+      const boyitilgan = sotuvniBoglanganMalumotlarBilanBoyitish(yangilangan, get());
       set((state) => ({
         sotuvlar: state.sotuvlar.map((sotuv) =>
-          sotuv.id === sotuvId ? yangilangan : sotuv
+          sotuv.id === sotuvId ? boyitilgan : sotuv
         ),
-        tanlanganSotuv: yangilangan,
+        tanlanganSotuv: boyitilgan,
         amalBajarilmoqda: false,
       }));
       return true;
