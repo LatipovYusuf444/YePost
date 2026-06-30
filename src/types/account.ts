@@ -13,6 +13,9 @@ export type AccountFoydalanuvchi = {
   branchId?: string | null;
   username: string;
   fullName?: string | null;
+  avatarUrl?: string | null;
+  photoUrl?: string | null;
+  imageUrl?: string | null;
   role: AccountRoli | string;
   telegramId?: string | null;
   isActive: boolean;
