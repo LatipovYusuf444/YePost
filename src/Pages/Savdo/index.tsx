@@ -55,6 +55,7 @@ export default function Savdo() {
     qoldiqlarniYuklash,
     sotuvTafsilotiniYuklash,
     yangiSotuvYaratish,
+    sotuvniYangilash,
     sotuvniTasdiqlash,
     sotuvniBekorQilish,
     yangiQaytarishYaratish,
@@ -117,6 +118,7 @@ export default function Savdo() {
   }, [qidiruv, sanaFilteri, sotuvlar]);
 
   async function sotuvniOchish(sotuv: Sotuv) {
+    await qoldiqlarniYuklash(sotuv.warehouseId);
     await sotuvTafsilotiniYuklash(sotuv.id);
   }
 
@@ -294,8 +296,10 @@ export default function Savdo() {
       {tanlanganSotuv && (
         <SotuvTafsilotlariModal
           sotuv={tanlanganSotuv}
+          qoldiqlar={qoldiqlar}
           amalBajarilmoqda={amalBajarilmoqda}
           onYopish={tanlanganSotuvniTozalash}
+          onYangilash={sotuvniYangilash}
           onTasdiqlash={(sotuvId) => void tasdiqlash(sotuvId)}
           onBekorQilish={(sotuvId) => void bekorQilish(sotuvId)}
         />

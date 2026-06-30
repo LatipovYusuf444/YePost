@@ -53,7 +53,7 @@ function qoldiqNarxi(qoldiq?: QoldiqTanlovi) {
 
 function raqamgaAylantirish(value: string) {
   if (!value.trim()) return 0;
-  const number = Number(value);
+  const number = Number(value.replace(/[^\d.]/g, ""));
   return Number.isFinite(number) ? number : 0;
 }
 
@@ -92,6 +92,9 @@ export default function YangiSotuvModal({
       ),
     [mahsulotlar]
   );
+  const tolovSummasiRaqam = raqamgaAylantirish(tolovSummasi);
+  const qarzdorlik = Math.max(jami - tolovSummasiRaqam, 0);
+  const ortiqchaTolov = Math.max(tolovSummasiRaqam - jami, 0);
 
   function mahsulotniYangilash(index: number, yangilanish: Partial<MahsulotQatori>) {
     setMahsulotlar((joriy) =>
@@ -124,8 +127,6 @@ export default function YangiSotuvModal({
         (mahsulot) =>
           mahsulot.modificationId && mahsulot.quantity > 0 && mahsulot.price >= 0
       );
-    const tolovSummasiRaqam = raqamgaAylantirish(tolovSummasi);
-
     if (!warehouseId) {
       setXatolik("Avval omborni tanlang.");
       return;
@@ -133,6 +134,18 @@ export default function YangiSotuvModal({
 
     if (tozaMahsulotlar.length === 0) {
       setXatolik("Kamida bitta mahsulot tanlang.");
+      return;
+    }
+
+    if (jami <= 0) {
+      setXatolik("Sotuv summasi 0 dan katta bo'lishi kerak.");
+      return;
+    }
+
+    if (tolovSummasiRaqam > jami) {
+      setXatolik(
+        `To'lov summasi sotuv jamidan oshmasligi kerak. Maksimal: ${pulniFormatlash(jami)}.`
+      );
       return;
     }
 
@@ -364,15 +377,48 @@ export default function YangiSotuvModal({
               <input
                 type="number"
                 min="0"
+                max={jami || undefined}
                 value={tolovSummasi}
                 onChange={(event) => setTolovSummasi(event.target.value)}
-                className="h-11 w-full rounded-xl border border-gray-200 bg-white px-3"
+                className={`h-11 w-full rounded-xl border bg-white px-3 outline-none transition ${
+                  ortiqchaTolov > 0
+                    ? "border-red-400 ring-4 ring-red-100"
+                    : "border-gray-200 focus:border-orange-400"
+                }`}
                 placeholder="Masalan: 10000"
               />
+              {ortiqchaTolov > 0 && (
+                <p className="text-xs font-semibold text-red-500">
+                  To'lov sotuv jamidan oshib ketdi.
+                </p>
+              )}
             </label>
             <div className="flex flex-col justify-end">
               <p className="text-xs font-bold uppercase text-gray-400">Sotuv jami</p>
               <p className="mt-1 text-xl font-black text-gray-950">{pulniFormatlash(jami)}</p>
+            </div>
+          </div>
+
+          <div className="grid gap-3 rounded-2xl border border-gray-100 bg-white p-4 text-sm md:grid-cols-3">
+            <div>
+              <p className="text-xs font-bold uppercase text-gray-400">Qabul qilinadigan to'lov</p>
+              <p className="mt-1 font-black text-blue-600">{pulniFormatlash(tolovSummasiRaqam)}</p>
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase text-gray-400">Qarzdorlik qoldig'i</p>
+              <p className={`mt-1 font-black ${qarzdorlik > 0 ? "text-red-500" : "text-emerald-600"}`}>
+                {pulniFormatlash(qarzdorlik)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase text-gray-400">To'lov holati</p>
+              <p className="mt-1 font-black text-gray-800">
+                {tolovSummasiRaqam === 0
+                  ? "To'lanmagan"
+                  : qarzdorlik > 0
+                    ? "Qisman to'langan"
+                    : "To'liq to'langan"}
+              </p>
             </div>
           </div>
 

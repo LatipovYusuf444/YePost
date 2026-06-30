@@ -15,6 +15,7 @@ import {
   sotuvniBekorQilish,
   sotuvniTasdiqlash,
   sotuvTafsilotiniOlish,
+  sotuvniYangilash as sotuvniYangilashApi,
   sotuvYaratish,
   xodimlarRoyxatiniOlish,
 } from "@/api/savdoApi";
@@ -83,6 +84,7 @@ function sotuvniBoglanganMalumotlarBilanBoyitish(
     mijozKompaniyalari: MijozTanlovi[];
     xodimlar: XodimTanlovi[];
     omborlar: OmborTanlovi[];
+    qoldiqlar?: QoldiqTanlovi[];
   }
 ) {
   const customer = sotuv.customer ?? malumotlar.mijozlar.find((item) => item.id === sotuv.customerId);
@@ -92,6 +94,22 @@ function sotuvniBoglanganMalumotlarBilanBoyitish(
   const responsible =
     sotuv.responsible ?? malumotlar.xodimlar.find((item) => item.id === sotuv.responsibleId);
   const warehouse = sotuv.warehouse ?? malumotlar.omborlar.find((item) => item.id === sotuv.warehouseId);
+  const items = sotuv.items?.map((item) => {
+    const qoldiq = malumotlar.qoldiqlar?.find(
+      (qoldiqItem) => qoldiqItem.modificationId === item.modificationId
+    );
+
+    if (!qoldiq?.modification) return item;
+
+    return {
+      ...item,
+      modification: {
+        id: item.modification?.id ?? qoldiq.modification.id,
+        name: item.modification?.name ?? qoldiq.modification.name,
+        product: item.modification?.product ?? qoldiq.modification.product,
+      },
+    };
+  });
 
   return {
     ...sotuv,
@@ -99,6 +117,7 @@ function sotuvniBoglanganMalumotlarBilanBoyitish(
     clientCompany,
     responsible,
     warehouse,
+    items,
   };
 }
 
@@ -118,6 +137,10 @@ type SavdoState = {
   qoldiqlarniYuklash: (warehouseId?: string) => Promise<void>;
   sotuvTafsilotiniYuklash: (sotuvId: string) => Promise<Sotuv | null>;
   yangiSotuvYaratish: (malumot: SotuvYaratishMalumoti) => Promise<Sotuv | null>;
+  sotuvniYangilash: (
+    sotuvId: string,
+    malumot: Partial<SotuvYaratishMalumoti>
+  ) => Promise<boolean>;
   sotuvniTasdiqlash: (sotuvId: string) => Promise<boolean>;
   sotuvniBekorQilish: (sotuvId: string) => Promise<boolean>;
   yangiQaytarishYaratish: (malumot: QaytarishYaratishMalumoti) => Promise<boolean>;
@@ -173,7 +196,7 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
         stockQoldiqlar,
         katalogQoldiqlar
       );
-      const boglanganMalumotlar = { mijozlar, mijozKompaniyalari, xodimlar, omborlar };
+      const boglanganMalumotlar = { mijozlar, mijozKompaniyalari, xodimlar, omborlar, qoldiqlar };
 
       set({
         sotuvlar: sotuvlar.map((sotuv) =>
@@ -238,6 +261,26 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
       return null;
+    }
+  },
+
+  sotuvniYangilash: async (sotuvId, malumot) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+
+    try {
+      const yangilangan = await sotuvniYangilashApi(sotuvId, malumot);
+      const boyitilgan = sotuvniBoglanganMalumotlarBilanBoyitish(yangilangan, get());
+      set((state) => ({
+        sotuvlar: state.sotuvlar.map((sotuv) =>
+          sotuv.id === sotuvId ? boyitilgan : sotuv
+        ),
+        tanlanganSotuv: boyitilgan,
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
     }
   },
 
