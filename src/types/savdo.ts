@@ -13,7 +13,7 @@ export type NomliMalumot = {
   email?: string;
   address?: string;
 };
-
+// dfsgdsgsgs
 export type SotuvMahsuloti = {
   id?: string;
   saleItemId?: string;
