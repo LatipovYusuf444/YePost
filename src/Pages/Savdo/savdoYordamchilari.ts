@@ -33,6 +33,23 @@ export function sotuvSummasi(sotuv: Sotuv) {
   );
 }
 
+export function sotuvTolanganSummasi(sotuv: Sotuv) {
+  return (
+    sotuv.paidAmount ??
+    sotuv.payments?.reduce((jami, tolov) => jami + Number(tolov.amount ?? 0), 0) ??
+    0
+  );
+}
+
+export function sotuvQarzdorlikSummasi(sotuv: Sotuv) {
+  if (typeof sotuv.debtAmount === "number") return Math.max(sotuv.debtAmount, 0);
+  return Math.max(sotuvSummasi(sotuv) - sotuvTolanganSummasi(sotuv), 0);
+}
+
+export function sotuvOrtiqchaTolovSummasi(sotuv: Sotuv) {
+  return Math.max(sotuvTolanganSummasi(sotuv) - sotuvSummasi(sotuv), 0);
+}
+
 export function qaytarishSummasi(qaytarish: Qaytarish) {
   return (
     qaytarish.totalAmount ??
@@ -62,6 +79,20 @@ export function masulNomi(sotuv: Sotuv) {
   return sotuv.responsible?.fullName || sotuv.responsible?.name || "—";
 }
 
+export function sotuvJadvalId(sotuv: Sotuv) {
+  const onlyDigits = sotuv.id.replace(/\D/g, "");
+
+  if (onlyDigits.length >= 8) return onlyDigits.slice(0, 8);
+  if (onlyDigits.length > 0) return onlyDigits.padEnd(8, "0");
+
+  let hash = 0;
+  for (const belgi of sotuv.id) {
+    hash = (hash * 31 + belgi.charCodeAt(0)) % 100_000_000;
+  }
+
+  return String(hash).padStart(8, "0");
+}
+
 export function sotuvRaqami(sotuv: Sotuv) {
   return sotuv.documentNumber || sotuv.number || sotuv.id.slice(0, 8).toUpperCase();
 }
@@ -86,4 +117,3 @@ export const tolovTuriMatni: Record<TolovTuri, string> = {
   BANK: "Bank o'tkazmasi",
   DEBT: "Qarz",
 };
-

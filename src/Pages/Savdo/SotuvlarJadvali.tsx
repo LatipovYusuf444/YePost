@@ -4,6 +4,7 @@ import {
   masulNomi,
   mijozNomi,
   pulniFormatlash,
+  sotuvJadvalId,
   sotuvRaqami,
   sotuvSummasi,
 } from "./savdoYordamchilari";
@@ -13,20 +14,6 @@ type SotuvlarJadvaliProps = {
   onSotuvniOchish: (sotuv: Sotuv) => void;
   boshMatn?: string;
 };
-
-function mijozId(sotuv: Sotuv) {
-  const idManbasi = `${sotuv.documentNumber ?? ""}${sotuv.number ?? ""}${sotuv.id}`;
-  const onlyDigits = idManbasi.replace(/\D/g, "");
-
-  if (onlyDigits.length >= 8) return onlyDigits.slice(-8);
-
-  let hash = 0;
-  for (const belgi of sotuv.id) {
-    hash = (hash * 31 + belgi.charCodeAt(0)) % 100_000_000;
-  }
-
-  return String(hash).padStart(8, "0");
-}
 
 function telefonRaqam(sotuv: Sotuv) {
   return sotuv.customer?.phone || sotuv.clientCompany?.phone || "—";
@@ -82,7 +69,7 @@ export default function SotuvlarJadvali({
                   title={`${sotuvRaqami(sotuv)} sotuvini ko'rish`}
                 >
                   <td className="border-b border-gray-100 px-4 py-3.5">
-                    {mijozId(sotuv)}
+                    {sotuvJadvalId(sotuv)}
                   </td>
                   <td className="border-b border-gray-100 px-4 py-3.5 font-medium">
                     {mijozNomi(sotuv)}
