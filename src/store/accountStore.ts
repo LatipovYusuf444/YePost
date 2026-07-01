@@ -29,11 +29,11 @@ type AccountState = {
   foydalanuvchiOlish: (id: string) => Promise<AccountFoydalanuvchi | null>;
   foydalanuvchiYaratish: (
     data: FoydalanuvchiYaratishMalumoti
-  ) => Promise<boolean>;
+  ) => Promise<AccountFoydalanuvchi | null>;
   foydalanuvchiYangilash: (
     id: string,
     data: FoydalanuvchiYangilashMalumoti
-  ) => Promise<boolean>;
+  ) => Promise<AccountFoydalanuvchi | null>;
   foydalanuvchiOchirish: (id: string) => Promise<boolean>;
   vakolatOlish: (id: string) => Promise<AccountVakolati | null>;
   vakolatYaratish: (data: VakolatYaratishMalumoti) => Promise<boolean>;
@@ -100,10 +100,10 @@ export const useAccountStore = create<AccountState>((set) => ({
         foydalanuvchilar: [item, ...state.foydalanuvchilar],
         amalBajarilmoqda: false,
       }));
-      return true;
+      return item;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
-      return false;
+      return null;
     }
   },
   foydalanuvchiYangilash: async (id, data) => {
@@ -114,10 +114,10 @@ export const useAccountStore = create<AccountState>((set) => ({
         foydalanuvchilar: almashtirish(state.foydalanuvchilar, item),
         amalBajarilmoqda: false,
       }));
-      return true;
+      return item;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
-      return false;
+      return null;
     }
   },
   foydalanuvchiOchirish: async (id) => {

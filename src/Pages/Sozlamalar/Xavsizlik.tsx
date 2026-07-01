@@ -35,7 +35,7 @@ export default function Xavsizlik() {
       setNewPassword("");
       setConfirmPassword("");
       window.alert(
-        "Parol muvaffaqiyatli almashtirildi. Xavfsizlik uchun yangi parol bilan qayta kiring."
+        "Parol muvaffaqiyatli almashtirildi. Xavfsizlik uchun yangi parol bilan qayta kiriting."
       );
       await logout();
       navigate("/login", { replace: true });

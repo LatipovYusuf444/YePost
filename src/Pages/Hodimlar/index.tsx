@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import { useAccountStore } from "@/store/accountStore";
-import type { AccountFoydalanuvchi, AccountRoli } from "@/types/account";
+import type { AccountFoydalanuvchi, AccountRoli, VakolatKodi } from "@/types/account";
 import Rollar from "./Rollar";
 import Ruxsatlar from "./Ruxsatlar";
 
@@ -64,6 +64,31 @@ const korinishlar: Array<{ id: Korinish; nom: string; icon: typeof Monitor }> = 
   { id: "jadval", nom: "Jadval", icon: Table2 },
 ];
 
+const vakolatMatnlari: Record<VakolatKodi, { nom: string; izoh: string }> = {
+  DELETE: {
+    nom: "Ma'lumotlarni o'chirish",
+    izoh: "Ruxsat etilgan bo'limlarda o'chirish amallarini bajaradi.",
+  },
+  REPORTS: {
+    nom: "Hisobotlarni ko'rish",
+    izoh: "Savdo, kassa va boshqaruv hisobotlarini ochadi.",
+  },
+  EXPENSE: {
+    nom: "Xarajat kiritish",
+    izoh: "Kassa va moliyaviy xarajatlarni ro'yxatga oladi.",
+  },
+  CASH_IN: {
+    nom: "Kassaga kirim qilish",
+    izoh: "Kassaga qo'shimcha pul kirimini amalga oshiradi.",
+  },
+  RETURN_CANCEL: {
+    nom: "Qaytarishni bekor qilish",
+    izoh: "Tasdiqlangan mahsulot qaytarishlarini bekor qiladi.",
+  },
+};
+
+const vakolatKodlari = Object.keys(vakolatMatnlari) as VakolatKodi[];
+
 function sana(matn?: string) {
   if (!matn) return "-";
   return new Intl.DateTimeFormat("uz-UZ", {
@@ -92,6 +117,9 @@ function Foydalanuvchilar() {
   const [telegramId, setTelegramId] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [avatarPreview, setAvatarPreview] = useState("");
+  const [tanlanganVakolatlar, setTanlanganVakolatlar] = useState<Set<VakolatKodi>>(
+    () => new Set()
+  );
   const [kameraOchiq, setKameraOchiq] = useState(false);
   const [kameraXatolik, setKameraXatolik] = useState("");
   const firstInputRef = useRef<HTMLInputElement>(null);
@@ -118,6 +146,7 @@ function Foydalanuvchilar() {
     setTelegramId("");
     setIsActive(true);
     setAvatarPreview("");
+    setTanlanganVakolatlar(new Set());
     store.xatolikniTozalash();
     setModal(true);
   }
@@ -135,6 +164,14 @@ function Foydalanuvchilar() {
     setTelegramId(item.telegramId ?? "");
     setIsActive(item.isActive);
     setAvatarPreview(xodimRasmi(item));
+    setTanlanganVakolatlar(
+      new Set(
+        store.vakolatlar
+          .filter((vakolat) => vakolat.userId === item.id && vakolat.isActive)
+          .map((vakolat) => vakolat.code as VakolatKodi)
+          .filter((code): code is VakolatKodi => vakolatKodlari.includes(code))
+      )
+    );
     setModal(true);
   }
 
@@ -226,6 +263,35 @@ function Foydalanuvchilar() {
     firstInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
+  function vakolatniAlmashtirish(code: VakolatKodi) {
+    setTanlanganVakolatlar((oldingi) => {
+      const keyingi = new Set(oldingi);
+      if (keyingi.has(code)) keyingi.delete(code);
+      else keyingi.add(code);
+      return keyingi;
+    });
+  }
+
+  async function vakolatlarniSinxronlash(userId: string) {
+    const mavjudVakolatlar = store.vakolatlar.filter((item) => item.userId === userId);
+    let hammasiOk = true;
+
+    for (const code of vakolatKodlari) {
+      const mavjud = mavjudVakolatlar.find((item) => item.code === code);
+      const tanlangan = tanlanganVakolatlar.has(code);
+
+      if (tanlangan && !mavjud) {
+        hammasiOk = (await store.vakolatYaratish({ userId, code, isActive: true })) && hammasiOk;
+      } else if (tanlangan && mavjud && !mavjud.isActive) {
+        hammasiOk = (await store.vakolatYangilash(mavjud.id, { isActive: true })) && hammasiOk;
+      } else if (!tanlangan && mavjud) {
+        hammasiOk = (await store.vakolatOchirish(mavjud.id)) && hammasiOk;
+      }
+    }
+
+    return hammasiOk;
+  }
+
   useEffect(() => kameraniYopish, []);
 
   async function saqlash(event: FormEvent) {
@@ -240,7 +306,7 @@ function Foydalanuvchilar() {
       telegramId: telegramId.trim() || undefined,
       isActive,
     };
-    const ok = editing
+    const saqlangan = editing
       ? await store.foydalanuvchiYangilash(editing.id, {
           ...umumiy,
           ...(password.trim() ? { password: password.trim() } : {}),
@@ -249,7 +315,9 @@ function Foydalanuvchilar() {
           ...umumiy,
           password: password.trim(),
         });
-    if (ok) setModal(false);
+    if (!saqlangan) return;
+    const vakolatOk = await vakolatlarniSinxronlash(saqlangan.id);
+    if (vakolatOk) setModal(false);
   }
 
   async function ochirish(item: AccountFoydalanuvchi) {
@@ -583,10 +651,10 @@ function Foydalanuvchilar() {
       )}
 
       {modal && (
-        <AppModal className="items-stretch justify-end p-2 pl-16 md:p-3 md:pl-20">
+        <AppModal className="items-center justify-center p-4">
           <form
             onSubmit={saqlash}
-            className="relative flex h-[calc(100vh-16px)] w-full max-w-none flex-col overflow-visible rounded-[28px] bg-white shadow-2xl md:h-[calc(100vh-24px)]"
+            className="relative flex h-[90vh] w-full max-w-[1420px] flex-col overflow-visible rounded-[28px] bg-white shadow-2xl"
           >
             <div className="absolute -left-11 top-5 hidden flex-col gap-3 md:flex">
               <button
@@ -647,9 +715,9 @@ function Foydalanuvchilar() {
                   {store.xatolik}
                 </div>
               )}
-              <div className="grid gap-5 xl:grid-cols-[390px_minmax(0,1fr)]">
+              <div className="grid gap-5 lg:grid-cols-[330px_minmax(0,1fr)]">
                 <div className="space-y-4">
-                  <section className="relative overflow-hidden rounded-2xl border border-orange-100 bg-white p-5 shadow-sm">
+                  <section className="relative overflow-hidden rounded-2xl border border-orange-100 bg-white p-4 shadow-sm">
                     <div className="flex items-start justify-end">
                       <div className="absolute left-0 top-3 z-10 flex flex-col items-start gap-1">
                         <div
@@ -678,7 +746,7 @@ function Foydalanuvchilar() {
                         {isActive ? "Faol" : "Faol emas"}
                       </span>
                     </div>
-                    <div className="group relative mx-auto mt-10 flex h-44 w-44 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-orange-100 to-gray-100 text-orange-500 ring-4 ring-orange-50 transition hover:ring-orange-100">
+                    <div className="group relative mx-auto mt-9 flex h-36 w-36 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-orange-100 to-gray-100 text-orange-500 ring-4 ring-orange-50 transition hover:ring-orange-100">
                       {avatarPreview ? (
                         <img
                           src={avatarPreview}
@@ -686,7 +754,7 @@ function Foydalanuvchilar() {
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <UserRound size={70} />
+                        <UserRound size={58} />
                       )}
                       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/82 text-gray-600 opacity-0 backdrop-blur-[1px] transition group-hover:opacity-100">
                         {avatarPreview && (
@@ -724,28 +792,7 @@ function Foydalanuvchilar() {
                         {kameraXatolik}
                       </p>
                     )}
-                    <div className="mt-4 flex justify-center gap-2">
-                      <label className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-orange-50 px-4 text-sm font-black text-orange-600 transition hover:bg-orange-100">
-                        <Camera size={16} />
-                        Rasm yuklash
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="sr-only"
-                          onChange={(event) => rasmTanlash(event.target.files?.[0])}
-                        />
-                      </label>
-                      {avatarPreview && (
-                        <button
-                          type="button"
-                          onClick={() => setAvatarPreview("")}
-                          className="h-10 rounded-xl bg-gray-100 px-4 text-sm font-black text-gray-500 transition hover:bg-red-50 hover:text-red-500"
-                        >
-                          Olib tashlash
-                        </button>
-                      )}
-                    </div>
-                    <h3 className="mt-5 truncate text-center text-xl font-black">
+                    <h3 className="mt-4 truncate text-center text-lg font-black">
                       {fullName.trim() || username.trim() || "Yangi xodim"}
                     </h3>
                     <p className="mt-1 truncate text-center text-sm font-bold text-orange-600">
@@ -753,34 +800,22 @@ function Foydalanuvchilar() {
                     </p>
                   </section>
 
-                  <section className="grid grid-cols-2 gap-3 rounded-2xl border border-orange-100 bg-white p-4 text-sm font-bold text-gray-500 shadow-sm">
-                    <div className="flex items-center gap-3 rounded-xl border border-orange-100 p-3">
-                      <Smartphone size={20} className="text-orange-500" />
+                  <section className="grid grid-cols-2 gap-3 rounded-2xl border border-orange-100 bg-white p-3 text-sm font-bold text-gray-500 shadow-sm">
+                    <div className="flex items-center gap-2 rounded-xl border border-orange-100 p-3">
+                      <Smartphone size={18} className="text-orange-500" />
                       Telefon
                     </div>
-                    <div className="flex items-center gap-3 rounded-xl border border-orange-100 p-3">
-                      <Monitor size={20} className="text-orange-500" />
+                    <div className="flex items-center gap-2 rounded-xl border border-orange-100 p-3">
+                      <Monitor size={18} className="text-orange-500" />
                       Kompyuter
                     </div>
                   </section>
 
-                  <section className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm">
-                    <h3 className="font-black">Ruxsatlar</h3>
-                    <div className="mt-4 grid grid-cols-5 gap-3 text-gray-300">
-                      {Array.from({ length: 10 }).map((_, index) => (
-                        <div
-                          key={index}
-                          className="flex aspect-square items-center justify-center rounded-full border border-gray-200 bg-gray-50"
-                        >
-                          <ShieldCheck size={18} />
-                        </div>
-                      ))}
-                    </div>
-                  </section>
                 </div>
 
-                <div className="space-y-4">
-                  <section className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm md:p-6">
+                <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+                  <div className="space-y-4">
+                    <section className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm md:p-6">
                     <h3 className="border-b border-gray-100 pb-4 text-xl font-black text-gray-700">
                       Kontakt ma'lumotlari
                     </h3>
@@ -870,9 +905,9 @@ function Foydalanuvchilar() {
                         </label>
                       </div>
                     </div>
-                  </section>
+                    </section>
 
-                  <section className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm md:p-6">
+                    <section className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm md:p-6">
                     <h3 className="border-b border-gray-100 pb-4 text-xl font-black text-gray-700">
                       Hujjatlar uchun ma'lumot
                     </h3>
@@ -888,6 +923,43 @@ function Foydalanuvchilar() {
                         <p>
                           Rol va faol holat xodimning tizimdagi imkoniyatlarini belgilaydi.
                         </p>
+                      </div>
+                    </div>
+                    </section>
+                  </div>
+
+                  <section className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm md:p-6">
+                    <h3 className="border-b border-gray-100 pb-4 text-xl font-black text-gray-700">
+                      Ruxsat sozlamalari
+                    </h3>
+                    <div className="mt-5 space-y-4">
+                      <div className="overflow-hidden rounded-2xl border border-orange-100">
+                        <div className="bg-orange-50 px-4 py-3 text-sm font-black text-gray-600">
+                          Maxsus vakolatlar
+                        </div>
+                        <div className="divide-y divide-orange-100 p-4">
+                          {vakolatKodlari.map((code) => (
+                            <label
+                              key={code}
+                              className="flex cursor-pointer items-start gap-3 py-3"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={tanlanganVakolatlar.has(code)}
+                                onChange={() => vakolatniAlmashtirish(code)}
+                                className="mt-1 h-5 w-5 shrink-0 accent-orange-500"
+                              />
+                              <span className="min-w-0">
+                                <span className="block text-sm font-black text-gray-700">
+                                  {vakolatMatnlari[code].nom}
+                                </span>
+                                <span className="mt-1 block text-xs font-semibold leading-5 text-gray-400">
+                                  {vakolatMatnlari[code].izoh}
+                                </span>
+                              </span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </section>

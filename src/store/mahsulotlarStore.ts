@@ -39,6 +39,10 @@ type MahsulotlarState = {
     data: MahsulotMalumoti,
     variant: ModifikatsiyaMalumoti
   ) => Promise<boolean>;
+  mahsulotVariantlarBilanYaratish: (
+    data: MahsulotMalumoti,
+    variantlar: ModifikatsiyaMalumoti[]
+  ) => Promise<boolean>;
   mahsulotOchirish: (id: string) => Promise<boolean>;
   modifikatsiyalarniYuklash: (productId: string) => Promise<void>;
   modifikatsiyaOlish: (id: string) => Promise<MahsulotModifikatsiyasi | null>;
@@ -192,6 +196,39 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set) => ({
           await mahsulotlarApi.ochirish(mahsulot.id);
         } catch {
           // Asosiy xatoni foydalanuvchiga ko'rsatamiz.
+        }
+        throw variantXatosi;
+      }
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+  mahsulotVariantlarBilanYaratish: async (data, variantlar) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const mahsulot = await mahsulotlarApi.yaratish(data);
+
+      try {
+        const modifikatsiyalar = await Promise.all(
+          variantlar.map((variant) =>
+            modifikatsiyalarApi.yaratish(mahsulot.id, variant)
+          )
+        );
+        set((state) => ({
+          mahsulotlar: [mahsulot, ...state.mahsulotlar],
+          modifikatsiyalar: {
+            ...state.modifikatsiyalar,
+            [mahsulot.id]: modifikatsiyalar,
+          },
+          amalBajarilmoqda: false,
+        }));
+        return true;
+      } catch (variantXatosi) {
+        try {
+          await mahsulotlarApi.ochirish(mahsulot.id);
+        } catch {
+          // Variantlardan biri yaratilmasa asosiy xato ko'rsatiladi.
         }
         throw variantXatosi;
       }
