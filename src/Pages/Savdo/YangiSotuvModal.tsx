@@ -10,6 +10,7 @@ import type {
   XodimTanlovi,
 } from "@/types/savdo";
 import { pulniFormatlash } from "./savdoYordamchilari";
+import SavdoSelect from "./SavdoSelect";
 
 type YangiSotuvModalProps = {
   omborlar: OmborTanlovi[];
@@ -55,6 +56,24 @@ function raqamgaAylantirish(value: string) {
   if (!value.trim()) return 0;
   const number = Number(value.replace(/[^\d.]/g, ""));
   return Number.isFinite(number) ? number : 0;
+}
+
+function mijozKorinishi(mijoz?: MijozTanlovi) {
+  return (
+    [mijoz?.firstName, mijoz?.lastName].filter(Boolean).join(" ") ||
+    mijoz?.fullName ||
+    mijoz?.name ||
+    mijoz?.id ||
+    "Mijoz"
+  );
+}
+
+function mijozKompaniyaId(mijoz?: MijozTanlovi) {
+  return mijoz?.companyId || mijoz?.company?.id || "";
+}
+
+function kompaniyaNomi(kompaniya?: MijozTanlovi) {
+  return kompaniya?.name || kompaniya?.fullName || kompaniya?.id || "";
 }
 
 export default function YangiSotuvModal({
@@ -112,6 +131,36 @@ export default function YangiSotuvModal({
     });
   }
 
+  function mijozniTanlash(tanlanganCustomerId: string) {
+    setCustomerId(tanlanganCustomerId);
+
+    if (!tanlanganCustomerId) {
+      setClientCompanyId("");
+      return;
+    }
+
+    const mijoz = mijozlar.find((item) => item.id === tanlanganCustomerId);
+    const boglanganKompaniyaId = mijozKompaniyaId(mijoz);
+
+    if (boglanganKompaniyaId) {
+      setClientCompanyId(boglanganKompaniyaId);
+    } else {
+      setClientCompanyId("");
+    }
+  }
+
+  function kompaniyaniTanlash(tanlanganCompanyId: string) {
+    setClientCompanyId(tanlanganCompanyId);
+
+    if (!tanlanganCompanyId) {
+      setCustomerId("");
+      return;
+    }
+
+    const vakil = mijozlar.find((mijoz) => mijozKompaniyaId(mijoz) === tanlanganCompanyId);
+    setCustomerId(vakil?.id ?? "");
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setXatolik("");
@@ -165,104 +214,95 @@ export default function YangiSotuvModal({
   }
 
   return (
-    <AppModal>
+    <AppModal className="items-start justify-center bg-black/45 px-5 py-5 backdrop-blur-[2px]">
       <form
         onSubmit={submit}
-        className="scrollbar-hidden max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-[30px] bg-white shadow-2xl"
+        className="scrollbar-hidden max-h-[calc(100vh-40px)] min-h-[calc(100vh-76px)] w-full max-w-[min(1560px,calc(100vw-120px))] overflow-y-auto rounded-[38px] bg-white shadow-[0_34px_110px_rgba(15,23,42,.34)] ring-1 ring-white/70"
       >
-        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-orange-100 bg-white/95 p-6 backdrop-blur-xl">
+        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-orange-100 bg-white/95 px-8 py-7 backdrop-blur-xl">
           <div>
-            <p className="text-sm font-bold uppercase tracking-wide text-orange-500">
+            <p className="text-sm font-black uppercase tracking-[0.22em] text-orange-500">
               Yangi sotuv
             </p>
-            <h2 className="text-2xl font-black text-gray-950">Yangi sotuv yaratish</h2>
+            <h2 className="mt-1 text-3xl font-black text-gray-950">Yangi sotuv yaratish</h2>
           </div>
           <button
             type="button"
             onClick={onYopish}
-            className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gray-100 text-gray-600 hover:bg-orange-500 hover:text-white"
+            className="flex h-14 w-14 items-center justify-center rounded-[22px] bg-gray-100 text-gray-600 transition hover:bg-orange-500 hover:text-white"
             aria-label="Oynani yopish"
           >
-            <X size={20} />
+            <X size={23} />
           </button>
         </header>
 
-        <div className="space-y-6 p-6">
-          <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-8 px-8 py-8">
+          <div className="grid gap-6 xl:grid-cols-2">
             <label className="space-y-2 text-sm font-bold text-gray-700">
               <span>Ombor *</span>
-              <select
+              <SavdoSelect
                 value={warehouseId}
-                onChange={(event) => {
-                  setWarehouseId(event.target.value);
-                  onOmborTanlash(event.target.value);
+                onChange={(value) => {
+                  setWarehouseId(value);
+                  onOmborTanlash(value);
                 }}
-                className="h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 font-medium outline-none focus:border-orange-400"
-              >
-                <option value="">Omborni tanlang</option>
-                {omborlar.map((ombor) => (
-                  <option key={ombor.id} value={ombor.id}>
-                    {ombor.name ?? ombor.id}
-                  </option>
-                ))}
-              </select>
+                placeholder="Omborni tanlang"
+                options={omborlar.map((ombor) => ({
+                  value: ombor.id,
+                  label: ombor.name ?? ombor.id,
+                }))}
+              />
             </label>
 
             <label className="space-y-2 text-sm font-bold text-gray-700">
               <span>Mas'ul xodim</span>
-              <select
+              <SavdoSelect
                 value={responsibleId}
-                onChange={(event) => setResponsibleId(event.target.value)}
-                className="h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 font-medium outline-none focus:border-orange-400"
-              >
-                <option value="">Mas'ul xodimni tanlang</option>
-                {xodimlar.map((xodim) => (
-                  <option key={xodim.id} value={xodim.id}>
-                    {xodim.fullName ?? xodim.username ?? xodim.id}
-                  </option>
-                ))}
-              </select>
+                onChange={setResponsibleId}
+                placeholder="Mas'ul xodimni tanlang"
+                options={xodimlar.map((xodim) => ({
+                  value: xodim.id,
+                  label: xodim.fullName ?? xodim.username ?? xodim.id,
+                }))}
+              />
             </label>
 
             <label className="space-y-2 text-sm font-bold text-gray-700">
               <span>Jismoniy mijoz</span>
-              <select
+              <SavdoSelect
                 value={customerId}
-                onChange={(event) => {
-                  setCustomerId(event.target.value);
-                  if (event.target.value) setClientCompanyId("");
-                }}
-                className="h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 font-medium outline-none focus:border-orange-400"
-              >
-                <option value="">Donalik mijoz</option>
-                {mijozlar.map((mijoz) => (
-                  <option key={mijoz.id} value={mijoz.id}>
-                    {[mijoz.firstName, mijoz.lastName].filter(Boolean).join(" ") ||
-                      mijoz.fullName ||
-                      mijoz.name ||
-                      mijoz.id}
-                  </option>
-                ))}
-              </select>
+                onChange={mijozniTanlash}
+                placeholder="Donalik mijoz"
+                options={mijozlar.map((mijoz) => ({
+                  value: mijoz.id,
+                  label: `${mijozKorinishi(mijoz)}${mijoz.phone ? ` — ${mijoz.phone}` : ""}`,
+                }))}
+              />
+              {customerId && clientCompanyId && (
+                <p className="text-xs font-semibold text-emerald-600">
+                  Mijoz kompaniyaga avtomatik biriktirildi:{" "}
+                  {kompaniyaNomi(mijozKompaniyalari.find((item) => item.id === clientCompanyId))}
+                </p>
+              )}
             </label>
 
             <label className="space-y-2 text-sm font-bold text-gray-700">
               <span>Mijoz kompaniyasi</span>
-              <select
+              <SavdoSelect
                 value={clientCompanyId}
-                onChange={(event) => {
-                  setClientCompanyId(event.target.value);
-                  if (event.target.value) setCustomerId("");
-                }}
-                className="h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 font-medium outline-none focus:border-orange-400"
-              >
-                <option value="">Kompaniya tanlanmagan</option>
-                {mijozKompaniyalari.map((kompaniya) => (
-                  <option key={kompaniya.id} value={kompaniya.id}>
-                    {kompaniya.name ?? kompaniya.id}
-                  </option>
-                ))}
-              </select>
+                onChange={kompaniyaniTanlash}
+                placeholder="Kompaniya tanlanmagan"
+                options={mijozKompaniyalari.map((kompaniya) => ({
+                  value: kompaniya.id,
+                  label: `${kompaniyaNomi(kompaniya)}${kompaniya.phone ? ` — ${kompaniya.phone}` : ""}`,
+                }))}
+              />
+              {clientCompanyId && customerId && (
+                <p className="text-xs font-semibold text-emerald-600">
+                  Kompaniya vakili avtomatik tanlandi:{" "}
+                  {mijozKorinishi(mijozlar.find((item) => item.id === customerId))}
+                </p>
+              )}
             </label>
           </div>
 
@@ -274,8 +314,8 @@ export default function YangiSotuvModal({
           )}
 
           <div>
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-lg font-black text-gray-900">Mahsulotlar</h3>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-2xl font-black text-gray-900">Mahsulotlar</h3>
               <button
                 type="button"
                 onClick={() =>
@@ -284,31 +324,29 @@ export default function YangiSotuvModal({
                     { modificationId: "", quantity: "1", price: "", discount: "" },
                   ])
                 }
-                className="inline-flex items-center gap-2 rounded-xl bg-orange-50 px-3 py-2 text-xs font-bold text-orange-600"
+                className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-50 px-5 text-sm font-black text-orange-600 transition hover:bg-orange-100"
               >
                 <Plus size={15} />
                 Qator qo'shish
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               {mahsulotlar.map((mahsulot, index) => (
                 <div
                   key={index}
-                  className="grid gap-3 rounded-2xl border border-gray-100 p-4 md:grid-cols-[minmax(220px,1fr)_110px_150px_130px_44px]"
+                  className="grid gap-4 rounded-[26px] border border-gray-100 bg-white p-5 shadow-[0_12px_34px_rgba(15,23,42,.04)] md:grid-cols-[minmax(320px,1fr)_140px_190px_170px_52px]"
                 >
-                  <select
+                  <SavdoSelect
                     value={mahsulot.modificationId}
-                    onChange={(event) => modifikatsiyaniTanlash(index, event.target.value)}
-                    className="h-11 rounded-xl border border-gray-200 px-3 text-sm outline-none"
-                  >
-                    <option value="">Mahsulotni tanlang</option>
-                    {qoldiqlar.map((qoldiq) => (
-                      <option key={qoldiq.modificationId} value={qoldiq.modificationId}>
-                        {qoldiqNomi(qoldiq)} — qoldiq: {qoldiq.quantity ?? qoldiq.balance ?? 0} — narx: {pulniFormatlash(qoldiqNarxi(qoldiq))}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) => modifikatsiyaniTanlash(index, value)}
+                    placeholder="Mahsulotni tanlang"
+                    options={qoldiqlar.map((qoldiq) => ({
+                      value: qoldiq.modificationId,
+                      label: `${qoldiqNomi(qoldiq)} — qoldiq: ${qoldiq.quantity ?? qoldiq.balance ?? 0} — narx: ${pulniFormatlash(qoldiqNarxi(qoldiq))}`,
+                    }))}
+                    dropdownClassName="min-w-[520px]"
+                  />
                   <input
                     type="number"
                     min="0.001"
@@ -317,7 +355,7 @@ export default function YangiSotuvModal({
                     onChange={(event) =>
                       mahsulotniYangilash(index, { quantity: event.target.value })
                     }
-                    className="h-11 rounded-xl border border-gray-200 px-3 text-sm outline-none"
+                    className="h-14 rounded-2xl border border-gray-200 px-5 text-base outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                     placeholder="Miqdor"
                   />
                   <input
@@ -327,7 +365,7 @@ export default function YangiSotuvModal({
                     onChange={(event) =>
                       mahsulotniYangilash(index, { price: event.target.value })
                     }
-                    className="h-11 rounded-xl border border-gray-200 px-3 text-sm outline-none"
+                    className="h-14 rounded-2xl border border-gray-200 px-5 text-base outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                     placeholder="Narx"
                   />
                   <input
@@ -337,7 +375,7 @@ export default function YangiSotuvModal({
                     onChange={(event) =>
                       mahsulotniYangilash(index, { discount: event.target.value })
                     }
-                    className="h-11 rounded-xl border border-gray-200 px-3 text-sm outline-none"
+                    className="h-14 rounded-2xl border border-gray-200 px-5 text-base outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                     placeholder="Chegirma"
                   />
                   <button
@@ -348,7 +386,7 @@ export default function YangiSotuvModal({
                         joriy.filter((_, qatorIndex) => qatorIndex !== index)
                       )
                     }
-                    className="flex h-11 items-center justify-center rounded-xl bg-red-50 text-red-500 disabled:opacity-30"
+                    className="flex h-14 items-center justify-center rounded-2xl bg-red-50 text-red-500 transition hover:bg-red-100 disabled:opacity-30"
                     aria-label="Mahsulot qatorini o'chirish"
                   >
                     <Trash2 size={17} />
@@ -358,19 +396,19 @@ export default function YangiSotuvModal({
             </div>
           </div>
 
-          <div className="grid gap-4 rounded-2xl bg-gray-50 p-5 md:grid-cols-3">
+          <div className="grid gap-6 rounded-[28px] bg-gray-50 p-6 md:grid-cols-3">
             <label className="space-y-2 text-sm font-bold text-gray-700">
               <span>To'lov turi</span>
-              <select
+              <SavdoSelect
                 value={tolovTuri}
-                onChange={(event) => setTolovTuri(event.target.value as TolovTuri)}
-                className="h-11 w-full rounded-xl border border-gray-200 bg-white px-3"
-              >
-                <option value="CASH">Naqd</option>
-                <option value="CARD">Karta</option>
-                <option value="BANK">Bank o'tkazmasi</option>
-                <option value="DEBT">Qarz</option>
-              </select>
+                onChange={(value) => setTolovTuri(value as TolovTuri)}
+                options={[
+                  { value: "CASH", label: "Naqd" },
+                  { value: "CARD", label: "Karta" },
+                  { value: "BANK", label: "Bank o'tkazmasi" },
+                  { value: "DEBT", label: "Qarz" },
+                ]}
+              />
             </label>
             <label className="space-y-2 text-sm font-bold text-gray-700">
               <span>To'lov summasi</span>
@@ -380,7 +418,7 @@ export default function YangiSotuvModal({
                 max={jami || undefined}
                 value={tolovSummasi}
                 onChange={(event) => setTolovSummasi(event.target.value)}
-                className={`h-11 w-full rounded-xl border bg-white px-3 outline-none transition ${
+                className={`h-14 w-full rounded-2xl border bg-white px-5 text-base outline-none transition ${
                   ortiqchaTolov > 0
                     ? "border-red-400 ring-4 ring-red-100"
                     : "border-gray-200 focus:border-orange-400"
@@ -395,11 +433,11 @@ export default function YangiSotuvModal({
             </label>
             <div className="flex flex-col justify-end">
               <p className="text-xs font-bold uppercase text-gray-400">Sotuv jami</p>
-              <p className="mt-1 text-xl font-black text-gray-950">{pulniFormatlash(jami)}</p>
+              <p className="mt-1 text-2xl font-black text-gray-950">{pulniFormatlash(jami)}</p>
             </div>
           </div>
 
-          <div className="grid gap-3 rounded-2xl border border-gray-100 bg-white p-4 text-sm md:grid-cols-3">
+          <div className="grid gap-4 rounded-[28px] border border-gray-100 bg-white p-5 text-sm shadow-[0_10px_28px_rgba(15,23,42,.04)] md:grid-cols-3">
             <div>
               <p className="text-xs font-bold uppercase text-gray-400">Qabul qilinadigan to'lov</p>
               <p className="mt-1 font-black text-blue-600">{pulniFormatlash(tolovSummasiRaqam)}</p>
@@ -428,7 +466,7 @@ export default function YangiSotuvModal({
               value={note}
               onChange={(event) => setNote(event.target.value)}
               rows={3}
-              className="w-full resize-none rounded-2xl border border-gray-200 p-4 font-medium outline-none focus:border-orange-400"
+              className="w-full resize-none rounded-[24px] border border-gray-200 p-5 text-base font-medium outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
               placeholder="Sotuv bo'yicha qo'shimcha izoh"
             />
           </label>
@@ -440,18 +478,18 @@ export default function YangiSotuvModal({
           )}
         </div>
 
-        <footer className="sticky bottom-0 flex justify-end gap-3 border-t border-orange-100 bg-white/95 p-6 backdrop-blur-xl">
+        <footer className="sticky bottom-0 flex justify-end gap-4 border-t border-orange-100 bg-white/95 px-8 py-7 backdrop-blur-xl">
           <button
             type="button"
             onClick={onYopish}
-            className="h-12 rounded-2xl bg-gray-100 px-5 text-sm font-bold text-gray-600"
+            className="h-14 rounded-2xl bg-gray-100 px-7 text-base font-bold text-gray-600 transition hover:bg-gray-200"
           >
             Yopish
           </button>
           <button
             type="submit"
             disabled={amalBajarilmoqda || omborlar.length === 0}
-            className="inline-flex h-12 items-center gap-2 rounded-2xl bg-orange-500 px-6 text-sm font-black text-white hover:bg-orange-600 disabled:opacity-50"
+            className="inline-flex h-14 items-center gap-2 rounded-2xl bg-orange-500 px-8 text-base font-black text-white shadow-[0_14px_32px_rgba(249,115,22,.24)] transition hover:bg-orange-600 hover:shadow-[0_18px_40px_rgba(249,115,22,.32)] disabled:opacity-50"
           >
             {amalBajarilmoqda && <LoaderCircle size={17} className="animate-spin" />}
             Qoralama saqlash

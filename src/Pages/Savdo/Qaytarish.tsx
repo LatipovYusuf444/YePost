@@ -15,6 +15,7 @@ import {
   sotuvRaqami,
 } from "./savdoYordamchilari";
 import QaytarishTafsilotlariModal from "./QaytarishTafsilotlariModal";
+import SavdoSelect from "./SavdoSelect";
 
 type QaytarishProps = {
   sotuvlar: Sotuv[];
@@ -100,32 +101,28 @@ export default function Qaytarish({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
           <label className="flex-1 space-y-2 text-sm font-bold text-gray-700">
             <span>Tasdiqlangan sotuv</span>
-            <select
+            <SavdoSelect
               value={saleId}
-              onChange={(event) => setSaleId(event.target.value)}
-              className="h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 outline-none focus:border-orange-400"
-            >
-              <option value="">Sotuvni tanlang</option>
-              {qaytarishMumkinSotuvlar.map((sotuv) => (
-                <option key={sotuv.id} value={sotuv.id}>
-                  {sotuvRaqami(sotuv)} — {mijozNomi(sotuv)}
-                </option>
-              ))}
-            </select>
+              onChange={setSaleId}
+              placeholder="Sotuvni tanlang"
+              buttonClassName="h-12"
+              options={qaytarishMumkinSotuvlar.map((sotuv) => ({
+                value: sotuv.id,
+                label: `${sotuvRaqami(sotuv)} — ${mijozNomi(sotuv)}`,
+              }))}
+            />
           </label>
           <label className="space-y-2 text-sm font-bold text-gray-700">
             <span>Sabab</span>
-            <select
+            <SavdoSelect
               value={reason}
-              onChange={(event) => setReason(event.target.value as QaytarishSababi)}
-              className="h-12 rounded-2xl border border-gray-200 bg-white px-4 outline-none"
-            >
-              {Object.entries(sababMatni).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => setReason(value as QaytarishSababi)}
+              buttonClassName="h-12"
+              options={Object.entries(sababMatni).map(([value, label]) => ({
+                value,
+                label,
+              }))}
+            />
           </label>
           <label className="flex-1 space-y-2 text-sm font-bold text-gray-700">
             <span>Izoh</span>

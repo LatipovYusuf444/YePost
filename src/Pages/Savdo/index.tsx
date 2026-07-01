@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  CalendarDays,
-  ChevronDown,
   CircleAlert,
   LoaderCircle,
   Plus,
@@ -20,6 +18,7 @@ import Tarix from "./Tarix";
 import Tolovlar from "./Tolovlar";
 import YangiSotuvModal from "./YangiSotuvModal";
 import { mijozNomi, sotuvRaqami } from "./savdoYordamchilari";
+import SavdoSelect from "./SavdoSelect";
 
 type SavdoTabi =
   | "barchasi"
@@ -205,24 +204,16 @@ export default function Savdo() {
                   </label>
                 </div>
 
-                <div className="relative">
-                  <select
+                <div className="w-[176px]">
+                  <SavdoSelect
                     value={sanaFilteri}
-                    onChange={(event) =>
-                      setSanaFilteri(event.target.value as "bugun" | "barchasi")
-                    }
-                    className="h-10 appearance-none rounded-md bg-orange-500 pl-11 pr-10 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-orange-600"
-                  >
-                    <option value="bugun">Bugun</option>
-                    <option value="barchasi">Barchasi</option>
-                  </select>
-                  <CalendarDays
-                    size={17}
-                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white"
-                  />
-                  <ChevronDown
-                    size={15}
-                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-white/80"
+                    onChange={(value) => setSanaFilteri(value as "bugun" | "barchasi")}
+                    options={[
+                      { value: "bugun", label: "Bugun" },
+                      { value: "barchasi", label: "Barchasi" },
+                    ]}
+                    buttonClassName="h-10 rounded-md border-orange-500 bg-orange-500 px-4 text-sm font-semibold text-white shadow-sm hover:bg-orange-600"
+                    dropdownClassName="rounded-2xl"
                   />
                 </div>
               </div>

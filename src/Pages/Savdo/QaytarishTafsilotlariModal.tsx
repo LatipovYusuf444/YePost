@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import {
   Edit3,
   LoaderCircle,
@@ -22,6 +22,7 @@ import {
   sananiFormatlash,
   sotuvRaqami,
 } from "./savdoYordamchilari";
+import SavdoSelect from "./SavdoSelect";
 
 type Props = {
   qaytarishId: string;
@@ -245,7 +246,7 @@ export default function QaytarishTafsilotlariModal({
               </p>
               <h2 className="text-2xl font-black">
                 {qaytarish
-                  ? `Qaytarish · ${qaytarish.id.slice(0, 8).toUpperCase()}`
+                  ? `Qaytarish В· ${qaytarish.id.slice(0, 8).toUpperCase()}`
                   : "Qaytarish hujjati"}
               </h2>
             </div>
@@ -409,77 +410,68 @@ export default function QaytarishTafsilotlariModal({
                 <div className="grid gap-4 md:grid-cols-2">
                   <label className="text-sm font-bold">
                     Tasdiqlangan sotuv *
-                    <select
+                    <SavdoSelect
                       value={saleId}
-                      onChange={(event) =>
-                        void sotuvniTanlash(event.target.value)
-                      }
-                      className="mt-2 h-12 w-full rounded-2xl border bg-white px-4"
-                    >
-                      <option value="">Sotuvni tanlang</option>
-                      {tasdiqlanganSotuvlar.map((sotuv) => (
-                        <option key={sotuv.id} value={sotuv.id}>
-                          {sotuvRaqami(sotuv)} — {mijozNomi(sotuv)}
-                        </option>
-                      ))}
-                      {!tasdiqlanganSotuvlar.some(
-                        (sotuv) => sotuv.id === qaytarish.saleId
-                      ) && (
-                        <option value={qaytarish.saleId}>
-                          {qaytarish.sale
-                            ? sotuvRaqami(qaytarish.sale)
-                            : qaytarish.saleId}
-                        </option>
-                      )}
-                    </select>
+                      onChange={(value) => void sotuvniTanlash(value)}
+                      placeholder="Sotuvni tanlang"
+                      className="mt-2"
+                      buttonClassName="h-12"
+                      options={[
+                        ...tasdiqlanganSotuvlar.map((sotuv) => ({
+                          value: sotuv.id,
+                          label: `${sotuvRaqami(sotuv)} — ${mijozNomi(sotuv)}`,
+                        })),
+                        ...(!tasdiqlanganSotuvlar.some((sotuv) => sotuv.id === qaytarish.saleId)
+                          ? [
+                              {
+                                value: qaytarish.saleId,
+                                label: qaytarish.sale ? sotuvRaqami(qaytarish.sale) : qaytarish.saleId,
+                              },
+                            ]
+                          : []),
+                      ]}
+                    />
                   </label>
                   <label className="text-sm font-bold">
                     Ombor *
-                    <select
+                    <SavdoSelect
                       value={warehouseId}
-                      onChange={(event) => setWarehouseId(event.target.value)}
-                      className="mt-2 h-12 w-full rounded-2xl border bg-white px-4"
-                    >
-                      <option value="">Omborni tanlang</option>
-                      {omborlar.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.name ?? item.id}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={setWarehouseId}
+                      placeholder="Omborni tanlang"
+                      className="mt-2"
+                      buttonClassName="h-12"
+                      options={omborlar.map((item) => ({
+                        value: item.id,
+                        label: item.name ?? item.id,
+                      }))}
+                    />
                   </label>
                   <label className="text-sm font-bold">
                     Qaytarish sababi
-                    <select
+                    <SavdoSelect
                       value={reason}
-                      onChange={(event) =>
-                        setReason(event.target.value as QaytarishSababi)
-                      }
-                      className="mt-2 h-12 w-full rounded-2xl border bg-white px-4"
-                    >
-                      {Object.entries(sababMatni).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(value) => setReason(value as QaytarishSababi)}
+                      className="mt-2"
+                      buttonClassName="h-12"
+                      options={Object.entries(sababMatni).map(([value, label]) => ({
+                        value,
+                        label,
+                      }))}
+                    />
                   </label>
                   <label className="text-sm font-bold">
                     Mas'ul xodim
-                    <select
+                    <SavdoSelect
                       value={responsibleId}
-                      onChange={(event) =>
-                        setResponsibleId(event.target.value)
-                      }
-                      className="mt-2 h-12 w-full rounded-2xl border bg-white px-4"
-                    >
-                      <option value="">Biriktirilmagan</option>
-                      {xodimlar.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.fullName ?? item.name ?? item.id}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={setResponsibleId}
+                      placeholder="Biriktirilmagan"
+                      className="mt-2"
+                      buttonClassName="h-12"
+                      options={xodimlar.map((item) => ({
+                        value: item.id,
+                        label: item.fullName ?? item.name ?? item.id,
+                      }))}
+                    />
                   </label>
                 </div>
 

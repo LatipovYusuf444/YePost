@@ -12,6 +12,8 @@ export type NomliMalumot = {
   phone?: string;
   email?: string;
   address?: string;
+  companyId?: string | null;
+  company?: NomliMalumot | null;
 };
 // dfsgdsgsgs
 export type SotuvMahsuloti = {
