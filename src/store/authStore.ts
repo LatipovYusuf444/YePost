@@ -5,9 +5,11 @@ import {
   type LoginPayload,
 } from "@/api/sozlamalarApi";
 import {
+  AUTH_SESSION_CHANGED_EVENT,
   authTokenlarniOlish,
   authTokenlarniSaqlash,
   authTokenlarniTozalash,
+  type AuthTokenlar,
 } from "@/lib/authTokenStorage";
 
 type AuthState = {
@@ -91,3 +93,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 }));
+
+if (typeof window !== "undefined") {
+  window.addEventListener(AUTH_SESSION_CHANGED_EVENT, (event) => {
+    const tokenlar = (event as CustomEvent<AuthTokenlar>).detail;
+    useAuthStore.setState(tokenlar);
+  });
+}

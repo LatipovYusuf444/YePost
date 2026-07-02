@@ -10,7 +10,6 @@ import {
   ExternalLink,
   FileText,
   Link,
-  MapPin,
   ImageIcon,
   LoaderCircle,
   MessageSquare,
@@ -26,12 +25,11 @@ import {
   SlidersHorizontal,
   Smile,
   Trash2,
-  Users,
   UserRound,
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
-import type { QoldiqTanlovi, Sotuv, SotuvYaratishMalumoti } from "@/types/savdo";
+import type { QoldiqTanlovi, Sotuv, SotuvYaratishMalumoti, XodimTanlovi } from "@/types/savdo";
 import {
   masulNomi,
   mijozNomi,
@@ -52,6 +50,7 @@ import SavdoSelect from "./SavdoSelect";
 type SotuvTafsilotlariModalProps = {
   sotuv: Sotuv;
   qoldiqlar: QoldiqTanlovi[];
+  xodimlar: XodimTanlovi[];
   amalBajarilmoqda: boolean;
   onYopish: () => void;
   onYangilash: (
@@ -81,6 +80,7 @@ type SaqlanganFaoliyat = {
   sarlavha: string;
   matn: string;
   sana: string;
+  xodimId?: string;
   harakat?: string;
   pinned?: boolean;
   completed?: boolean;
@@ -168,6 +168,22 @@ function qisqaVaqt(value?: string) {
   return new Intl.DateTimeFormat("uz-UZ", { hour: "2-digit", minute: "2-digit" }).format(date);
 }
 
+function xodimNomi(xodim?: XodimTanlovi | null) {
+  if (!xodim) return "Xodim tanlanmagan";
+  return xodim.fullName || xodim.name || xodim.username || xodim.email || xodim.id;
+}
+
+function xodimBoshHarflari(xodim?: XodimTanlovi | null) {
+  const nom = xodimNomi(xodim);
+  if (nom === "Xodim tanlanmagan") return "";
+  return nom
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((qism) => qism[0]?.toUpperCase())
+    .join("");
+}
+
 function tarixVaqti(value?: string) {
   if (!value) return "Sana yo'q";
   const date = new Date(value);
@@ -188,6 +204,29 @@ function tarixVaqti(value?: string) {
   return sananiFormatlash(value);
 }
 
+function boshlangichKalendarSanasi() {
+  const sana = new Date();
+  sana.setHours(15, 0, 0, 0);
+  return sana;
+}
+
+function sanaKaliti(sana: Date) {
+  const year = sana.getFullYear();
+  const month = String(sana.getMonth() + 1).padStart(2, "0");
+  const day = String(sana.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function kalendarMatni(value: Date | string, qisqa = false) {
+  const sana = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(sana.getTime())) return "";
+  const weekday = new Intl.DateTimeFormat("uz-UZ", { weekday: qisqa ? "short" : "long" }).format(sana);
+  const month = new Intl.DateTimeFormat("uz-UZ", { month: "long" }).format(sana);
+  const vaqt = new Intl.DateTimeFormat("uz-UZ", { hour: "2-digit", minute: "2-digit" }).format(sana);
+  const haftaKuni = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+  return `${haftaKuni}, ${sana.getDate()}-${month}, soat ${vaqt}`;
+}
+
 function yilKunlari(year = new Date().getFullYear()) {
   const bugun = new Date();
   const formatter = new Intl.DateTimeFormat("uz-UZ", {
@@ -196,12 +235,15 @@ function yilKunlari(year = new Date().getFullYear()) {
     month: "long",
   });
   const soatlar = ["8", "9", "10", "11", "12", "13", "14", "15", "16", "17"];
-  const kunlar: Array<{ kun: string; soatlar: string[]; bugun: boolean }> = [];
+  const kunlar: Array<{ kun: string; sana: Date; dateKey: string; soatlar: string[]; bugun: boolean }> = [];
   const sana = new Date(year, 0, 1);
 
   while (sana.getFullYear() === year) {
+    const kunSanasi = new Date(sana);
     kunlar.push({
       kun: formatter.format(sana),
+      sana: kunSanasi,
+      dateKey: sanaKaliti(kunSanasi),
       soatlar,
       bugun:
         sana.getFullYear() === bugun.getFullYear() &&
@@ -257,6 +299,7 @@ function qoldiqTavsifi(qoldiq: QoldiqTanlovi) {
 export default function SotuvTafsilotlariModal({
   sotuv,
   qoldiqlar,
+  xodimlar,
   amalBajarilmoqda,
   onYopish,
   onYangilash,
@@ -430,6 +473,7 @@ export default function SotuvTafsilotlariModal({
           ) : (
             <UmumiyTab
               sotuv={sotuv}
+              xodimlar={xodimlar}
               jami={jami}
               holat={holat}
               draft={draft}
@@ -921,6 +965,7 @@ function YukXatiGeneratorModal({
 
 function UmumiyTab({
   sotuv,
+  xodimlar,
   jami,
   holat,
   draft,
@@ -934,6 +979,7 @@ function UmumiyTab({
   onHujjatOchish,
 }: {
   sotuv: Sotuv;
+  xodimlar: XodimTanlovi[];
   jami: number;
   holat: ReturnType<typeof sotuvHolati>;
   draft: boolean;
@@ -952,11 +998,11 @@ function UmumiyTab({
     setSaqlanganFaoliyatlar(sotuvFaoliyatlariniOlish(sotuv.id));
   }, [sotuv.id]);
 
-  function faoliyatniSaqlash(faoliyat: Omit<SaqlanganFaoliyat, "id" | "sana">) {
+  function faoliyatniSaqlash(faoliyat: Omit<SaqlanganFaoliyat, "id" | "sana"> & { sana?: string }) {
     const yangiFaoliyat: SaqlanganFaoliyat = {
       ...faoliyat,
       id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      sana: new Date().toISOString(),
+      sana: faoliyat.sana ?? new Date().toISOString(),
     };
     setSaqlanganFaoliyatlar((joriy) => {
       const yangilangan = [yangiFaoliyat, ...joriy];
@@ -1010,7 +1056,7 @@ function UmumiyTab({
       <TimelineRail />
 
         <main className="space-y-6">
-          <FaoliyatPanel onSaqlash={faoliyatniSaqlash} />
+          <FaoliyatPanel xodimlar={xodimlar} onSaqlash={faoliyatniSaqlash} />
         <Divider label="Bugun" />
         {hujjatlar.map((hujjat) => (
           <HujjatFeedCard
@@ -1027,6 +1073,7 @@ function UmumiyTab({
             <CalendarFeedCard
               key={faoliyat.id}
               faoliyat={faoliyat}
+              xodimlar={xodimlar}
               onOchirish={faoliyatniOchirish}
               onYangilash={faoliyatniYangilash}
               onZakrepit={(id) => faoliyatniYangilash(id, { pinned: !faoliyat.pinned })}
@@ -2509,17 +2556,20 @@ function ProductsCard({ sotuv }: { sotuv: Sotuv }) {
 }
 
 function FaoliyatPanel({
+  xodimlar = [],
   onSaqlash,
 }: {
-  onSaqlash?: (faoliyat: Omit<SaqlanganFaoliyat, "id" | "sana">) => void;
+  xodimlar?: XodimTanlovi[];
+  onSaqlash?: (faoliyat: Omit<SaqlanganFaoliyat, "id" | "sana"> & { sana?: string }) => void;
 }) {
   const [activeTab, setActiveTab] = useState("Ish");
   const [ochiq, setOchiq] = useState(false);
   const [matn, setMatn] = useState("");
   const [tafsilot, setTafsilot] = useState("");
-  const [harakatlarOchiq, setHarakatlarOchiq] = useState(false);
-  const [tanlanganHarakat, setTanlanganHarakat] = useState("");
   const [kalendarOchiq, setKalendarOchiq] = useState(false);
+  const [tanlanganSana, setTanlanganSana] = useState(() => boshlangichKalendarSanasi());
+  const [xodimTanlashJoy, setXodimTanlashJoy] = useState<"forma" | "kalendar" | null>(null);
+  const [tanlanganXodimId, setTanlanganXodimId] = useState("");
   const [kanalModalOchiq, setKanalModalOchiq] = useState(false);
   const [xabarQoshishOchiq, setXabarQoshishOchiq] = useState(false);
   const [kalendarDrag, setKalendarDrag] = useState<{
@@ -2534,58 +2584,47 @@ function FaoliyatPanel({
     { key: "Xabar", label: "Xabar", title: "Xabar yuborish", placeholder: "Xabar matnini kiriting..." },
     { key: "Vazifa", label: "Vazifa", title: "Vazifa yaratish", placeholder: "Vazifa tavsifini yozing..." },
   ];
-  const harakatlar = [
-    { label: "Kalendariga qo'shish", icon: CalendarDays },
-    { label: "Mijozni tanlash", icon: UserRound },
-    { label: "Hamkasbni taklif qilish", icon: Users },
-    { label: "Manzilni ko'rsatish", icon: MapPin },
-    { label: "Muzokara xonasini tanlash", icon: MessageSquare },
-    { label: "Havola biriktirish", icon: Link },
-    { label: "Fayl biriktirish", icon: Paperclip },
-  ];
   const tanlanganTab = faoliyatTablari.find((tab) => tab.key === activeTab) ?? faoliyatTablari[0];
   const ishTabi = activeTab === "Ish";
+  const tanlanganSanaKaliti = sanaKaliti(tanlanganSana);
+  const tanlanganSoat = String(tanlanganSana.getHours());
+  const tanlanganXodim = xodimlar.find((xodim) => xodim.id === tanlanganXodimId);
+
+  function kalendarSanasiniTanlash(sana: Date, soat: string) {
+    const keyingiSana = new Date(sana);
+    keyingiSana.setHours(Number(soat), 0, 0, 0);
+    setTanlanganSana(keyingiSana);
+    setKalendarOchiq(true);
+  }
 
   function tabniTanlash(key: string) {
     setActiveTab(key);
     setOchiq(true);
-    setHarakatlarOchiq(false);
     setXabarQoshishOchiq(false);
+    setXodimTanlashJoy(null);
     if (key !== "Ish") {
-      setTanlanganHarakat("");
       setKalendarOchiq(false);
-    }
-  }
-
-  function harakatniTanlash(label: string) {
-    if (!ishTabi) return;
-    setTanlanganHarakat(label);
-    setHarakatlarOchiq(false);
-    setKalendarOchiq(label === "Kalendariga qo'shish");
-    if (!tafsilot.trim()) {
-      setTafsilot(`${label}: `);
-    } else if (!tafsilot.includes(label)) {
-      setTafsilot((joriy) => `${joriy.trim()}\n${label}: `);
     }
   }
 
   function saqlash() {
     const sarlavha = matn.trim() || tanlanganTab.title;
-    const izoh = [tanlanganHarakat ? `Harakat: ${tanlanganHarakat}` : "", tafsilot.trim()]
-      .filter(Boolean)
-      .join(" — ");
+    const izoh = tafsilot.trim();
     if (!sarlavha && !izoh) return;
     onSaqlash?.({
       turi: activeTab,
       sarlavha,
       matn: izoh,
-      harakat: tanlanganHarakat || undefined,
+      harakat: ishTabi ? "Kalendariga qo'shish" : undefined,
+      xodimId: ishTabi ? tanlanganXodimId || undefined : undefined,
+      sana: ishTabi ? tanlanganSana.toISOString() : undefined,
     });
     setMatn("");
     setTafsilot("");
-    setTanlanganHarakat("");
-    setHarakatlarOchiq(false);
     setKalendarOchiq(false);
+    setTanlanganSana(boshlangichKalendarSanasi());
+    setTanlanganXodimId("");
+    setXodimTanlashJoy(null);
     setKanalModalOchiq(false);
     setXabarQoshishOchiq(false);
     setOchiq(false);
@@ -2594,9 +2633,10 @@ function FaoliyatPanel({
   function bekorQilish() {
     setMatn("");
     setTafsilot("");
-    setTanlanganHarakat("");
-    setHarakatlarOchiq(false);
     setKalendarOchiq(false);
+    setTanlanganSana(boshlangichKalendarSanasi());
+    setTanlanganXodimId("");
+    setXodimTanlashJoy(null);
     setKanalModalOchiq(false);
     setXabarQoshishOchiq(false);
     setOchiq(false);
@@ -2638,7 +2678,6 @@ function FaoliyatPanel({
           type="button"
           onClick={() => {
             setOchiq(true);
-            setHarakatlarOchiq(false);
           }}
           className="inline-flex items-center gap-1 rounded-lg px-3 py-2 transition hover:bg-slate-50 hover:text-blue-600"
         >
@@ -2651,12 +2690,10 @@ function FaoliyatPanel({
           type="button"
           onClick={() => {
             setOchiq(true);
-            setHarakatlarOchiq(false);
           }}
           className="flex h-14 w-full items-center justify-between rounded-xl border border-slate-200 px-5 text-left text-slate-400 transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:border-blue-300 hover:bg-slate-50 hover:shadow-sm"
         >
           <span>Nima qilish kerak</span>
-          {ishTabi && <span className="text-xs text-slate-500">harakatlar <ChevronDown size={13} className="inline" /></span>}
         </button>
       ) : (
         <div className="animate-in slide-in-from-top-2 fade-in-0 overflow-visible duration-300">
@@ -2839,7 +2876,80 @@ function FaoliyatPanel({
               </div>
               <div className="flex shrink-0 items-center gap-3 pt-1 text-slate-400">
                 <span className="h-3 w-3 rounded-sm bg-amber-400" />
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-400 text-white text-xs">👤</span>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setXodimTanlashJoy((joriy) => (joriy === "forma" ? null : "forma"))}
+                    className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition ${
+                      tanlanganXodim
+                        ? "bg-blue-600 text-white ring-2 ring-blue-100"
+                        : "bg-slate-300 text-indigo-700 hover:bg-slate-400 hover:text-white"
+                    }`}
+                    title={xodimNomi(tanlanganXodim)}
+                    aria-label="Xodim tanlash"
+                  >
+                    {tanlanganXodim ? xodimBoshHarflari(tanlanganXodim) : <UserRound size={17} />}
+                  </button>
+
+                  {xodimTanlashJoy === "forma" && (
+                    <div className="animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 absolute right-0 top-10 z-[95] w-[280px] rounded-2xl bg-white p-2 text-left shadow-[0_20px_60px_rgba(15,23,42,.18)] ring-1 ring-slate-100 duration-200">
+                      <div className="px-3 py-2 text-xs font-bold uppercase text-slate-400">
+                        Xodim tanlash
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTanlanganXodimId("");
+                          setXodimTanlashJoy(null);
+                        }}
+                        className={`flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold transition ${
+                          !tanlanganXodimId
+                            ? "bg-blue-50 text-blue-600"
+                            : "text-slate-600 hover:bg-slate-50 hover:text-blue-600"
+                        }`}
+                      >
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                          <UserRound size={15} />
+                        </span>
+                        <span>Biriktirilmagan</span>
+                      </button>
+                      <div className="max-h-64 overflow-y-auto py-1">
+                        {xodimlar.map((xodim) => {
+                          const active = xodim.id === tanlanganXodimId;
+                          return (
+                            <button
+                              key={xodim.id}
+                              type="button"
+                              onClick={() => {
+                                setTanlanganXodimId(xodim.id);
+                                setXodimTanlashJoy(null);
+                              }}
+                              className={`flex h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-sm transition ${
+                                active
+                                  ? "bg-blue-600 font-bold text-white"
+                                  : "text-slate-700 hover:bg-blue-50 hover:text-blue-600"
+                              }`}
+                            >
+                              <span
+                                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                                  active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+                                }`}
+                              >
+                                {xodimBoshHarflari(xodim) || <UserRound size={15} />}
+                              </span>
+                              <span className="min-w-0 flex-1 truncate">{xodimNomi(xodim)}</span>
+                            </button>
+                          );
+                        })}
+                        {xodimlar.length === 0 && (
+                          <div className="px-3 py-4 text-sm font-semibold text-slate-400">
+                            Backenddan xodim topilmadi.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -2847,50 +2957,16 @@ function FaoliyatPanel({
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
+                  onClick={() => {
+                    setKalendarOchiq((joriy) => !joriy);
+                  }}
                   className="inline-flex h-10 items-center gap-2 rounded-xl border border-sky-200 px-3 text-sm text-slate-600 transition hover:border-blue-400 hover:text-blue-600"
                 >
-                  Dushanba, 6-iyul, soat 15:00
+                  {kalendarMatni(tanlanganSana)}
+                  <ChevronDown size={14} className={`transition ${kalendarOchiq ? "rotate-180" : ""}`} />
                 </button>
                 <Bell size={17} className="text-slate-400" />
               </div>
-              {ishTabi && <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setHarakatlarOchiq((joriy) => !joriy)}
-                  className={`inline-flex h-10 items-center gap-2 rounded-xl border px-4 text-sm transition ${
-                    harakatlarOchiq || tanlanganHarakat
-                      ? "border-blue-400 text-blue-600"
-                      : "border-sky-200 text-slate-500 hover:border-blue-400 hover:text-blue-600"
-                  }`}
-                >
-                  {tanlanganHarakat || "harakatlar"} <ChevronDown size={14} />
-                </button>
-
-                {harakatlarOchiq && (
-                  <div className="absolute right-0 top-12 z-50 w-[280px] rounded-[22px] bg-white px-5 py-4 text-left shadow-[0_18px_55px_rgba(15,23,42,0.18)] ring-1 ring-slate-100">
-                    <div className="absolute right-8 -top-2 h-4 w-4 rotate-45 bg-white ring-1 ring-slate-100" />
-                    <div className="relative space-y-1">
-                      {harakatlar.map((harakat, index) => {
-                        const Icon = harakat.icon;
-                        const ajratish = index === 1 || index === 3 || index === 5;
-                        return (
-                          <div key={harakat.label}>
-                            {ajratish && <div className="my-2 h-px bg-slate-100" />}
-                            <button
-                              type="button"
-                              onClick={() => harakatniTanlash(harakat.label)}
-                              className="flex h-11 w-full items-center gap-4 rounded-xl px-2 text-left text-sm text-slate-700 transition hover:bg-slate-50 hover:text-blue-600"
-                            >
-                              <Icon size={19} className="text-slate-400" />
-                              <span>{harakat.label}</span>
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>}
             </div>
           </div>
 
@@ -2901,7 +2977,7 @@ function FaoliyatPanel({
                   <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
                     <CalendarDays size={18} className="text-slate-500" />
                     <span className="font-semibold">Kalendariga qo'shildi</span>
-                    <span className="truncate text-blue-600">abdulaziz001969@gmail.com</span>
+                    <span className="truncate text-blue-600">{xodimNomi(tanlanganXodim)}</span>
                     <button type="button" className="text-xs uppercase text-slate-400 transition hover:text-blue-600">
                       o'zgartirish
                     </button>
@@ -2914,7 +2990,6 @@ function FaoliyatPanel({
                   type="button"
                   onClick={() => {
                     setKalendarOchiq(false);
-                    setTanlanganHarakat("");
                   }}
                   className="rounded-full p-1 text-slate-400 transition hover:bg-white hover:text-slate-700"
                   aria-label="Kalendar panelini yopish"
@@ -2924,8 +2999,79 @@ function FaoliyatPanel({
               </div>
 
               <div className="mt-5 flex gap-4">
-                <div className="flex w-14 shrink-0 items-center justify-center">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-400 text-white">👤</span>
+                <div className="relative flex w-14 shrink-0 items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setXodimTanlashJoy((joriy) => (joriy === "kalendar" ? null : "kalendar"))}
+                    className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold transition ${
+                      tanlanganXodim
+                        ? "bg-blue-600 text-white ring-2 ring-blue-100"
+                        : "bg-slate-400 text-white hover:bg-blue-600"
+                    }`}
+                    title={xodimNomi(tanlanganXodim)}
+                    aria-label="Kalendar xodimini tanlash"
+                  >
+                    {tanlanganXodim ? xodimBoshHarflari(tanlanganXodim) : <UserRound size={17} />}
+                  </button>
+
+                  {xodimTanlashJoy === "kalendar" && (
+                    <div className="animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 absolute left-0 top-11 z-[95] w-[280px] rounded-2xl bg-white p-2 text-left shadow-[0_20px_60px_rgba(15,23,42,.18)] ring-1 ring-slate-100 duration-200">
+                      <div className="px-3 py-2 text-xs font-bold uppercase text-slate-400">
+                        Xodim tanlash
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTanlanganXodimId("");
+                          setXodimTanlashJoy(null);
+                        }}
+                        className={`flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold transition ${
+                          !tanlanganXodimId
+                            ? "bg-blue-50 text-blue-600"
+                            : "text-slate-600 hover:bg-slate-50 hover:text-blue-600"
+                        }`}
+                      >
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                          <UserRound size={15} />
+                        </span>
+                        <span>Biriktirilmagan</span>
+                      </button>
+                      <div className="max-h-64 overflow-y-auto py-1">
+                        {xodimlar.map((xodim) => {
+                          const active = xodim.id === tanlanganXodimId;
+                          return (
+                            <button
+                              key={xodim.id}
+                              type="button"
+                              onClick={() => {
+                                setTanlanganXodimId(xodim.id);
+                                setXodimTanlashJoy(null);
+                              }}
+                              className={`flex h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-sm transition ${
+                                active
+                                  ? "bg-blue-600 font-bold text-white"
+                                  : "text-slate-700 hover:bg-blue-50 hover:text-blue-600"
+                              }`}
+                            >
+                              <span
+                                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                                  active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+                                }`}
+                              >
+                                {xodimBoshHarflari(xodim) || <UserRound size={15} />}
+                              </span>
+                              <span className="min-w-0 flex-1 truncate">{xodimNomi(xodim)}</span>
+                            </button>
+                          );
+                        })}
+                        {xodimlar.length === 0 && (
+                          <div className="px-3 py-4 text-sm font-semibold text-slate-400">
+                            Backenddan xodim topilmadi.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div
                   className={`scrollbar-hidden min-w-0 flex-1 select-none overflow-x-auto pb-3 touch-pan-x ${
@@ -2948,7 +3094,7 @@ function FaoliyatPanel({
                   onMouseLeave={() => setKalendarDrag((joriy) => ({ ...joriy, active: false }))}
                 >
                   <div className="flex min-w-[760px] gap-3">
-                    {yilKunlari().map((kun) => (
+                    {yilKunlari(tanlanganSana.getFullYear()).map((kun) => (
                       <div key={kun.kun} className="min-w-[500px] border-l border-slate-200 pl-3">
                         <div className="mb-2 flex items-center gap-2 text-xs text-slate-700">
                           <span>{kun.kun}</span>
@@ -2961,9 +3107,18 @@ function FaoliyatPanel({
                         </div>
                         <div className="mt-2 grid h-9 grid-cols-10 overflow-hidden bg-white">
                           {kun.soatlar.map((soat, soatIndex) => (
-                            <div
+                            <button
                               key={`${kun.kun}-${soat}`}
-                              className={`border-l border-slate-100 ${soatIndex >= 2 && soatIndex <= 4 ? "bg-slate-100" : "bg-white"}`}
+                              type="button"
+                              onClick={() => kalendarSanasiniTanlash(kun.sana, soat)}
+                              className={`border-l border-slate-100 transition hover:bg-blue-100 ${
+                                kun.dateKey === tanlanganSanaKaliti && soat === tanlanganSoat
+                                  ? "bg-blue-500 shadow-inner"
+                                  : soatIndex >= 2 && soatIndex <= 4
+                                    ? "bg-slate-100"
+                                    : "bg-white"
+                              }`}
+                              title={`${kun.kun}, soat ${soat}:00`}
                             />
                           ))}
                         </div>
@@ -3248,16 +3403,24 @@ function FeedCard({
 
 function CalendarFeedCard({
   faoliyat,
+  xodimlar,
   onOchirish,
   onYangilash,
   onZakrepit,
 }: {
   faoliyat: SaqlanganFaoliyat;
+  xodimlar: XodimTanlovi[];
   onOchirish: (id: string) => void;
   onYangilash: (id: string, malumot: Partial<SaqlanganFaoliyat>) => void;
   onZakrepit: (id: string) => void;
 }) {
+  const sana = new Date(faoliyat.sana);
   const vaqt = qisqaVaqt(faoliyat.sana);
+  const kun = Number.isNaN(sana.getTime()) ? "--" : String(sana.getDate()).padStart(2, "0");
+  const oy = Number.isNaN(sana.getTime())
+    ? ""
+    : new Intl.DateTimeFormat("uz-UZ", { month: "short" }).format(sana);
+  const xodim = xodimlar.find((item) => item.id === faoliyat.xodimId);
   const [bajarildi, setBajarildi] = useState(Boolean(faoliyat.completed));
   const [tahrirOchiq, setTahrirOchiq] = useState(false);
   const [menuOchiq, setMenuOchiq] = useState(false);
@@ -3310,9 +3473,9 @@ function CalendarFeedCard({
                   <CalendarDays size={16} />
                 </div>
                 <div className="rounded-lg border border-sky-200 bg-white px-3 py-2">
-                  <p className="text-2xl font-black leading-5 text-slate-700">06</p>
-                  <p className="mt-1 text-[10px] uppercase text-slate-500">iyul</p>
-                  <p className="text-[9px] font-bold text-blue-600">14:35</p>
+                  <p className="text-2xl font-black leading-5 text-slate-700">{kun}</p>
+                  <p className="mt-1 text-[10px] uppercase text-slate-500">{oy}</p>
+                  <p className="text-[9px] font-bold text-blue-600">{vaqt}</p>
                 </div>
               </div>
 
@@ -3323,13 +3486,14 @@ function CalendarFeedCard({
                 </p>
                 <button
                   type="button"
+                  onClick={() => setTahrirOchiq((joriy) => !joriy)}
                   className={`mt-3 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 transition ${
                     bajarildi ? "bg-slate-50 hover:bg-slate-100" : "bg-orange-100 hover:bg-orange-200"
                   }`}
                 >
                   <span>Sana va vaqt</span>
-                  <span className="font-semibold text-slate-900">Du, 6-iyul, 14:35</span>
-                  <ChevronDown size={14} />
+                  <span className="font-semibold text-slate-900">{kalendarMatni(faoliyat.sana, true)}</span>
+                  <ChevronDown size={14} className={`transition ${tahrirOchiq ? "rotate-180" : ""}`} />
                 </button>
               </div>
 
@@ -3338,7 +3502,14 @@ function CalendarFeedCard({
 
             {tahrirOchiq && (
               <div className="animate-in slide-in-from-top-2 fade-in-0 mt-5 duration-300">
-                <KalendarTanlashPanel onClose={() => setTahrirOchiq(false)} />
+                <KalendarTanlashPanel
+                  selectedDate={sana}
+                  onSelect={(keyingiSana) => {
+                    onYangilash(faoliyat.id, { sana: keyingiSana.toISOString() });
+                    setTahrirOchiq(false);
+                  }}
+                  onClose={() => setTahrirOchiq(false)}
+                />
               </div>
             )}
 
@@ -3368,7 +3539,14 @@ function CalendarFeedCard({
         <div className="flex shrink-0 items-center gap-3">
           <span className="h-3 w-3 rounded-sm bg-amber-400" />
           {bajarildi && faoliyat.pinned && <Pin size={16} className="fill-blue-500 text-blue-500" />}
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-500 text-xs text-white">👤</span>
+          <span
+            className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+              xodim ? "bg-blue-600 text-white" : "bg-slate-500 text-white"
+            }`}
+            title={xodimNomi(xodim)}
+          >
+            {xodim ? xodimBoshHarflari(xodim) : <UserRound size={15} />}
+          </span>
           <button
             type="button"
             onClick={() => onOchirish(faoliyat.id)}
@@ -3439,9 +3617,26 @@ function CalendarFeedCard({
   );
 }
 
-function KalendarTanlashPanel({ onClose }: { onClose: () => void }) {
+function KalendarTanlashPanel({
+  selectedDate,
+  onSelect,
+  onClose,
+}: {
+  selectedDate: Date;
+  onSelect: (date: Date) => void;
+  onClose: () => void;
+}) {
   const [drag, setDrag] = useState({ active: false, startX: 0, scrollLeft: 0 });
-  const kunlar = yilKunlari();
+  const joriySana = Number.isNaN(selectedDate.getTime()) ? boshlangichKalendarSanasi() : selectedDate;
+  const selectedDateKey = sanaKaliti(joriySana);
+  const selectedHour = String(joriySana.getHours());
+  const kunlar = yilKunlari(joriySana.getFullYear());
+
+  function sananiTanlash(sana: Date, soat: string) {
+    const keyingiSana = new Date(sana);
+    keyingiSana.setHours(Number(soat), 0, 0, 0);
+    onSelect(keyingiSana);
+  }
 
   return (
     <div className="rounded-b-xl bg-slate-50 px-5 py-4">
@@ -3511,9 +3706,18 @@ function KalendarTanlashPanel({ onClose }: { onClose: () => void }) {
                 </div>
                 <div className="mt-2 grid h-11 grid-cols-10 overflow-hidden bg-white">
                   {kun.soatlar.map((soat, index) => (
-                    <div
+                    <button
                       key={`${kun.kun}-${soat}`}
-                      className={`border-l border-slate-100 ${kun.bugun && index >= 2 && index <= 4 ? "bg-slate-100" : "bg-white"}`}
+                      type="button"
+                      onClick={() => sananiTanlash(kun.sana, soat)}
+                      className={`border-l border-slate-100 transition hover:bg-blue-100 ${
+                        kun.dateKey === selectedDateKey && soat === selectedHour
+                          ? "bg-blue-500 shadow-inner"
+                          : kun.bugun && index >= 2 && index <= 4
+                            ? "bg-slate-100"
+                            : "bg-white"
+                      }`}
+                      title={`${kun.kun}, soat ${soat}:00`}
                     />
                   ))}
                 </div>

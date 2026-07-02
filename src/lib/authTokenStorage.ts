@@ -5,6 +5,7 @@ export type AuthTokenlar = {
 };
 
 const AUTH_STORAGE_KEY = "yepost-auth-session";
+export const AUTH_SESSION_CHANGED_EVENT = "yepost-auth-session-changed";
 
 const boshAuthHolati: AuthTokenlar = {
   accessToken: null,
@@ -31,6 +32,7 @@ export function authTokenlarniOlish(): AuthTokenlar {
 
 export function authTokenlarniSaqlash(tokenlar: AuthTokenlar) {
   window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(tokenlar));
+  window.dispatchEvent(new CustomEvent<AuthTokenlar>(AUTH_SESSION_CHANGED_EVENT, { detail: tokenlar }));
 }
 
 export function accessTokenniSaqlash(accessToken: string) {
@@ -43,4 +45,5 @@ export function accessTokenniSaqlash(accessToken: string) {
 export function authTokenlarniTozalash() {
   window.localStorage.removeItem(AUTH_STORAGE_KEY);
   window.localStorage.removeItem("yepost-auth");
+  window.dispatchEvent(new CustomEvent<AuthTokenlar>(AUTH_SESSION_CHANGED_EVENT, { detail: boshAuthHolati }));
 }

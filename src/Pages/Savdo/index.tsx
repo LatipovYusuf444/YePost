@@ -288,6 +288,7 @@ export default function Savdo() {
         <SotuvTafsilotlariModal
           sotuv={tanlanganSotuv}
           qoldiqlar={qoldiqlar}
+          xodimlar={xodimlar}
           amalBajarilmoqda={amalBajarilmoqda}
           onYopish={tanlanganSotuvniTozalash}
           onYangilash={sotuvniYangilash}
