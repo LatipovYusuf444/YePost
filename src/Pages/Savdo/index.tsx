@@ -89,7 +89,7 @@ export default function Savdo() {
     const timer = window.setTimeout(() => setXabar(""), 2500);
     return () => window.clearTimeout(timer);
   }, [xabar]);
-
+// fsfbhjsbfjhsbjfbshjfbhsgn
   const qidirilganSotuvlar = useMemo(() => {
     const qiymat = qidiruv.trim().toLowerCase();
     const bugun = new Date().toDateString();
