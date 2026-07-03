@@ -3,6 +3,7 @@ import {
   Bell,
   CheckCircle,
   Filter,
+  LoaderCircle,
   MessageSquare,
   Minus,
   Paperclip,
@@ -13,48 +14,36 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
+
 import AppModal from "@/Components/common/AppModal";
+import {
+  mijozlarRoyxatiniOlish,
+  omborlarRoyxatiniOlish,
+  omborQoldiqlariniOlish,
+  sotuvniTasdiqlash,
+  sotuvYaratish,
+} from "@/api/savdoApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { usePosStore } from "@/store/posStore";
+import type { MijozTanlovi, OmborTanlovi, TolovTuri } from "@/types/savdo";
 
 type CustomerType = "donalik" | "doimiy";
-
-type RegularCustomer = {
-  id: number;
-  ism: string;
-  telefon: string;
-  qarz: number;
-  oxirgiXarid: string;
-};
-
 type CustomerDetailTab = "Asosiyisi" | "Savatcha" | "Tarix";
 type CustomerActivityTab = "Vazifa" | "Kommentariya" | "Habarnoma" | "Qo'shimcha";
+type NarxTuri = "chakana" | "ulgurji";
 
-const doimiyMijozlar: RegularCustomer[] = [
-  {
-    id: 1,
-    ism: "Azizbek Karimov",
-    telefon: "+998 90 123 45 67",
-    qarz: 0,
-    oxirgiXarid: "03.06.2026",
-  },
-  {
-    id: 2,
-    ism: "Madina Textile",
-    telefon: "+998 93 456 78 90",
-    qarz: 1280000,
-    oxirgiXarid: "02.06.2026",
-  },
-  {
-    id: 3,
-    ism: "Bekzod Market",
-    telefon: "+998 94 777 12 34",
-    qarz: 450000,
-    oxirgiXarid: "01.06.2026",
-  },
-];
+type PaymentType = {
+  label: string;
+  apiTuri: TolovTuri;
+};
 
 const quickDiscounts = [15, 30, 50, 75];
-const paymentTypes = ["Payme", "Click", "Uzum", "Paynet"];
+const paymentTypes: PaymentType[] = [
+  { label: "Payme", apiTuri: "CARD" },
+  { label: "Click", apiTuri: "CARD" },
+  { label: "Uzum", apiTuri: "CARD" },
+  { label: "Paynet", apiTuri: "CARD" },
+];
 const customerDetailTabs: CustomerDetailTab[] = ["Asosiyisi", "Savatcha", "Tarix"];
 const customerActivityTabs: CustomerActivityTab[] = [
   "Vazifa",
@@ -64,7 +53,7 @@ const customerActivityTabs: CustomerActivityTab[] = [
 ];
 
 function formatSumma(value: number) {
-  return `${value.toLocaleString("ru-RU")} uzs`;
+  return `${Math.round(Number(value) || 0).toLocaleString("ru-RU")} uzs`;
 }
 
 function readNumber(value: unknown, fallback = 0) {
@@ -74,25 +63,75 @@ function readNumber(value: unknown, fallback = 0) {
   return Number.isFinite(numberValue) ? numberValue : fallback;
 }
 
+function mijozNomi(mijoz?: MijozTanlovi | null) {
+  if (!mijoz) return "";
+  const ism = [mijoz.firstName, mijoz.lastName].filter(Boolean).join(" ").trim();
+  return mijoz.fullName || ism || mijoz.name || mijoz.phone || mijoz.id;
+}
+
+function xatoMatni(error: unknown, fallback: string) {
+  return getApiErrorMessage(error) || fallback;
+}
+
 export default function BoshSahifa() {
   const cart = usePosStore((state) => state.cart);
   const updateCartQuantity = usePosStore((state) => state.updateQuantity);
+  const updatePriceType = usePosStore((state) => state.updatePriceType);
   const removeFromCart = usePosStore((state) => state.removeFromCart);
   const clearPosCart = usePosStore((state) => state.clearCart);
+
+  const [omborlar, setOmborlar] = useState<OmborTanlovi[]>([]);
+  const [mijozlar, setMijozlar] = useState<MijozTanlovi[]>([]);
+  const [warehouseId, setWarehouseId] = useState("");
   const [discountPercent, setDiscountPercent] = useState(0);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [paymentType, setPaymentType] = useState("Payme");
   const [customerName, setCustomerName] = useState("");
   const [mijozTuri, setMijozTuri] = useState<CustomerType>("donalik");
-  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [customerSearch, setCustomerSearch] = useState("");
-  const [narxTuri, setNarxTuri] = useState<"chakana" | "ulgurji">("chakana");
-  const [selectedCustomerModal, setSelectedCustomerModal] = useState<RegularCustomer | null>(null);
+  const [narxTuri, setNarxTuri] = useState<NarxTuri>("chakana");
+  const [selectedCustomerModal, setSelectedCustomerModal] = useState<MijozTanlovi | null>(null);
   const [customerDetailTab, setCustomerDetailTab] = useState<CustomerDetailTab>("Asosiyisi");
   const [customerActivityTab, setCustomerActivityTab] = useState<CustomerActivityTab>("Vazifa");
   const [customerActionType, setCustomerActionType] = useState("Nima qilish kerak");
   const [customerDocumentType, setCustomerDocumentType] = useState("Hujjatlar");
   const [customerPaymentAccepted, setCustomerPaymentAccepted] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [note, setNote] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const loadBase = async () => {
+      setLoading(true);
+      try {
+        const [warehouses, customers] = await Promise.all([
+          omborlarRoyxatiniOlish(),
+          mijozlarRoyxatiniOlish(),
+        ]);
+        if (!active) return;
+        setOmborlar(warehouses);
+        setMijozlar(customers);
+        setWarehouseId((oldValue) => oldValue || String(warehouses[0]?.id ?? ""));
+      } catch (error) {
+        if (active) setMessage({ type: "error", text: xatoMatni(error, "Bosh sahifa ma'lumotlari olinmadi") });
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    void loadBase();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    updatePriceType(narxTuri);
+  }, [narxTuri, updatePriceType]);
 
   useEffect(() => {
     if (selectedCustomerModal) document.body.style.overflow = "hidden";
@@ -106,21 +145,23 @@ export default function BoshSahifa() {
   const total = cart.reduce((sum, item) => sum + item.narx * item.soni, 0);
   const percentDiscountSum = Math.round((total * discountPercent) / 100);
   const discountSum = Math.min(total, discountAmount || percentDiscountSum);
+  const payableTotal = Math.max(total - discountSum, 0);
+  const selectedPayment = paymentTypes.find((item) => item.label === paymentType) ?? paymentTypes[0];
 
   const filteredCustomers = useMemo(() => {
     const value = customerSearch.toLowerCase().trim();
 
     if (!value) return [];
 
-    return doimiyMijozlar.filter((customer) =>
-      [customer.ism, customer.telefon, customer.oxirgiXarid, formatSumma(customer.qarz)]
+    return mijozlar.filter((customer) =>
+      [mijozNomi(customer), customer.phone, customer.email, customer.address]
         .join(" ")
         .toLowerCase()
         .includes(value)
     );
-  }, [customerSearch]);
+  }, [customerSearch, mijozlar]);
 
-  function updateQuantity(productId: number, nextQuantity: number) {
+  function updateQuantity(productId: string, nextQuantity: number) {
     updateCartQuantity(productId, nextQuantity);
   }
 
@@ -129,25 +170,68 @@ export default function BoshSahifa() {
     setDiscountPercent(0);
     setDiscountAmount(0);
     setCustomerName("");
+    setSelectedCustomerId("");
+    setNote("");
+    setMessage(null);
   }
 
-  function handlePay() {
+  async function handlePay() {
+    if (!warehouseId) {
+      setMessage({ type: "error", text: "Sotuv uchun ombor topilmadi" });
+      return;
+    }
     if (cart.length === 0) {
-      alert("Savatcha bo'sh");
+      setMessage({ type: "error", text: "Savatcha bo'sh" });
       return;
     }
 
-    alert("To'lov muvaffaqiyatli amalga oshirildi");
-    clearCart();
+    const rawTotal = cart.reduce((sum, item) => sum + item.narx * item.soni, 0);
+    let remainingDiscount = Math.min(discountSum, rawTotal);
+    const items = cart.map((item, index) => {
+      const lineTotal = item.narx * item.soni;
+      const lineDiscount =
+        index === cart.length - 1
+          ? remainingDiscount
+          : Math.min(Math.round((discountSum * lineTotal) / rawTotal), remainingDiscount);
+      remainingDiscount -= lineDiscount;
+
+      return {
+        modificationId: item.modificationId || item.id,
+        quantity: item.soni,
+        price: item.narx,
+        discount: lineDiscount,
+      };
+    });
+
+    setSaving(true);
+    setMessage(null);
+    try {
+      const sale = await sotuvYaratish({
+        warehouseId,
+        customerId: mijozTuri === "doimiy" && selectedCustomerId ? selectedCustomerId : undefined,
+        saleType: mijozTuri === "doimiy" ? "CLIENT" : "QUICK",
+        note: [customerName ? `Mijoz: ${customerName}` : "", note].filter(Boolean).join(" | ") || undefined,
+        items,
+        payments: payableTotal > 0 ? [{ paymentType: selectedPayment.apiTuri, amount: payableTotal }] : undefined,
+      });
+      await sotuvniTasdiqlash(sale.id);
+      if (warehouseId) await omborQoldiqlariniOlish(warehouseId);
+      clearCart();
+      setMessage({ type: "success", text: "To'lov muvaffaqiyatli amalga oshirildi" });
+    } catch (error) {
+      setMessage({ type: "error", text: xatoMatni(error, "Sotuvni yakunlab bo'lmadi") });
+    } finally {
+      setSaving(false);
+    }
   }
 
   function handleNextCustomer() {
     if (!selectedCustomerId) {
-      alert("Avval mijoz tanlang");
+      setMessage({ type: "error", text: "Avval mijoz tanlang" });
       return;
     }
 
-    const customer = doimiyMijozlar.find((item) => item.id === selectedCustomerId);
+    const customer = mijozlar.find((item) => String(item.id) === selectedCustomerId);
 
     if (!customer) return;
 
@@ -178,7 +262,37 @@ export default function BoshSahifa() {
               </span>
             </div>
           </div>
+
+          {omborlar.length > 1 && (
+            <select
+              value={warehouseId}
+              onChange={(event) => setWarehouseId(event.target.value)}
+              className="h-10 rounded-lg border border-gray-100 bg-gray-50 px-3 text-sm font-semibold text-gray-600 outline-none focus:border-orange-200"
+            >
+              {omborlar.map((ombor) => (
+                <option key={ombor.id} value={ombor.id}>
+                  {mijozNomi(ombor)}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
+
+        {message && (
+          <div
+            className={[
+              "mb-4 flex items-center justify-between rounded-xl border px-4 py-3 text-sm font-semibold",
+              message.type === "success"
+                ? "border-green-200 bg-green-50 text-green-700"
+                : "border-red-200 bg-red-50 text-red-600",
+            ].join(" ")}
+          >
+            <span>{message.text}</span>
+            <button onClick={() => setMessage(null)} className="font-bold">
+              Yopish
+            </button>
+          </div>
+        )}
 
         <div className="flex min-h-[360px] flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm sm:min-h-[430px] xl:min-h-[500px]">
           {cart.length === 0 ? (
@@ -315,10 +429,22 @@ export default function BoshSahifa() {
               </div>
             </div>
 
-            <button className="mb-3 flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-green-300 bg-green-50 text-xs font-bold text-green-700">
+            <button
+              onClick={() => setNoteOpen((value) => !value)}
+              className="mb-3 flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-green-300 bg-green-50 text-xs font-bold text-green-700"
+            >
               <Paperclip size={14} />
               Eslatma qo'shish
             </button>
+
+            {noteOpen && (
+              <textarea
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+                placeholder="Eslatma..."
+                className="mb-4 h-20 w-full resize-none rounded-lg bg-gray-100 px-3 py-2 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-orange-100"
+              />
+            )}
 
             <div className="mb-5 grid grid-cols-2 rounded-lg bg-gray-100 p-1">
               <button
@@ -349,11 +475,11 @@ export default function BoshSahifa() {
             <div className="mb-5 grid grid-cols-2 gap-2">
               {paymentTypes.map((item) => (
                 <button
-                  key={item}
-                  onClick={() => setPaymentType(item)}
+                  key={item.label}
+                  onClick={() => setPaymentType(item.label)}
                   className={[
                     "flex h-10 items-center justify-center rounded-lg border bg-white text-sm font-bold transition",
-                    paymentType === item
+                    paymentType === item.label
                       ? "border-green-300 text-gray-900 shadow-sm"
                       : "border-gray-200 text-gray-700 hover:border-orange-200",
                   ].join(" ")}
@@ -362,16 +488,16 @@ export default function BoshSahifa() {
                     size={15}
                     className={[
                       "mr-2",
-                      item === "Payme"
+                      item.label === "Payme"
                         ? "text-cyan-500"
-                        : item === "Click"
+                        : item.label === "Click"
                           ? "text-blue-600"
-                          : item === "Uzum"
+                          : item.label === "Uzum"
                             ? "text-violet-600"
                             : "text-green-600",
                     ].join(" ")}
                   />
-                  {item}
+                  {item.label}
                 </button>
               ))}
             </div>
@@ -389,8 +515,10 @@ export default function BoshSahifa() {
 
               <button
                 onClick={handlePay}
-                className="h-10 w-full rounded-lg bg-orange-500 text-xs font-bold text-white transition hover:bg-orange-600"
+                disabled={saving || loading || cart.length === 0}
+                className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-orange-500 text-xs font-bold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-300"
               >
+                {saving && <LoaderCircle size={15} className="animate-spin" />}
                 To'lash
               </button>
 
@@ -419,12 +547,12 @@ export default function BoshSahifa() {
 
             <div className="mb-5 max-h-[420px] space-y-3 overflow-auto pr-1">
               {filteredCustomers.map((customer) => {
-                const isActive = selectedCustomerId === customer.id;
+                const isActive = selectedCustomerId === String(customer.id);
 
                 return (
                   <button
                     key={customer.id}
-                    onClick={() => setSelectedCustomerId(customer.id)}
+                    onClick={() => setSelectedCustomerId(String(customer.id))}
                     className={[
                       "w-full rounded-2xl border bg-white p-4 text-left transition hover:bg-orange-50",
                       isActive
@@ -435,28 +563,16 @@ export default function BoshSahifa() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-bold text-gray-900">
-                          {customer.ism}
+                          {mijozNomi(customer)}
                         </p>
                         <p className="mt-1 text-xs font-medium text-gray-500">
-                          {customer.telefon}
+                          {customer.phone || "Telefon kiritilmagan"}
                         </p>
                       </div>
 
-                      <span
-                        className={[
-                          "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold",
-                          customer.qarz === 0
-                            ? "bg-green-50 text-green-600"
-                            : "bg-orange-50 text-orange-600",
-                        ].join(" ")}
-                      >
-                        {customer.qarz === 0 ? "Qarzi yo'q" : `Qarz: ${formatSumma(customer.qarz)}`}
+                      <span className="shrink-0 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-bold text-green-600">
+                        Mijoz
                       </span>
-                    </div>
-
-                    <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
-                      <span>Oxirgi xarid</span>
-                      <span className="font-bold text-gray-700">{customer.oxirgiXarid}</span>
                     </div>
                   </button>
                 );
@@ -505,249 +621,222 @@ export default function BoshSahifa() {
       </aside>
       {selectedCustomerModal && (
         <AppModal>
-            <section className="scrollbar-hidden max-h-[94vh] w-full max-w-[1500px] overflow-y-auto rounded-[34px] bg-[#D8D8D8] p-4 shadow-2xl sm:p-6">
-              <div className="mb-6 flex flex-col items-start justify-between gap-5 xl:flex-row xl:items-center">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Doimiy mijoz savdosi</p>
-                  <h2 className="mt-1 text-3xl font-bold text-gray-950 sm:text-4xl">
-                    {selectedCustomerModal.ism}
-                  </h2>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={() => setCustomerPaymentAccepted(false)}
-                    className="h-12 rounded-2xl border border-orange-100 bg-white px-5 text-sm font-semibold text-gray-700 transition hover:text-orange-600"
-                  >
-                    To'lovga qaytish
-                  </button>
-
-                  <select
-                    value={customerDocumentType}
-                    onChange={(event) => setCustomerDocumentType(event.target.value)}
-                    className="h-12 rounded-2xl border border-orange-100 bg-white px-5 text-sm font-semibold text-gray-700 outline-none transition hover:border-orange-300"
-                  >
-                    <option>Hujjatlar</option>
-                    <option>Chek</option>
-                    <option>Nakladnoy</option>
-                    <option>PDF</option>
-                  </select>
-
-                  <button
-                    onClick={closeCustomerModal}
-                    className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600"
-                    aria-label="Yopish"
-                  >
-                    <X size={26} />
-                  </button>
-                </div>
+          <section className="scrollbar-hidden max-h-[94vh] w-full max-w-[1500px] overflow-y-auto rounded-[34px] bg-[#D8D8D8] p-4 shadow-2xl sm:p-6">
+            <div className="mb-6 flex flex-col items-start justify-between gap-5 xl:flex-row xl:items-center">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Doimiy mijoz savdosi</p>
+                <h2 className="mt-1 text-3xl font-bold text-gray-950 sm:text-4xl">
+                  {mijozNomi(selectedCustomerModal)}
+                </h2>
               </div>
 
-              <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-orange-100 bg-white px-4 py-3 shadow-sm">
-                <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
-                  {customerDetailTabs.map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setCustomerDetailTab(tab)}
-                      className={[
-                        "shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition",
-                        customerDetailTab === tab
-                          ? "border border-orange-400 bg-orange-50 text-orange-600"
-                          : "text-gray-500 hover:bg-orange-50 hover:text-orange-600",
-                      ].join(" ")}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => setCustomerPaymentAccepted(false)}
+                  className="h-12 rounded-2xl border border-orange-100 bg-white px-5 text-sm font-semibold text-gray-700 transition hover:text-orange-600"
+                >
+                  To'lovga qaytish
+                </button>
 
-                <button className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 text-gray-700 transition hover:bg-orange-500 hover:text-white">
-                  <Settings size={18} />
+                <select
+                  value={customerDocumentType}
+                  onChange={(event) => setCustomerDocumentType(event.target.value)}
+                  className="h-12 rounded-2xl border border-orange-100 bg-white px-5 text-sm font-semibold text-gray-700 outline-none transition hover:border-orange-300"
+                >
+                  <option>Hujjatlar</option>
+                  <option>Chek</option>
+                  <option>Nakladnoy</option>
+                  <option>PDF</option>
+                </select>
+
+                <button
+                  onClick={closeCustomerModal}
+                  className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600"
+                  aria-label="Yopish"
+                >
+                  <X size={26} />
                 </button>
               </div>
+            </div>
 
-              {customerDetailTab === "Asosiyisi" && (
-                <div className="grid items-start gap-6 xl:grid-cols-[360px_minmax(0,1fr)] 2xl:grid-cols-[380px_minmax(0,1fr)]">
-                  <div className="space-y-5">
-                    <section className="rounded-[28px] bg-white p-6 shadow-sm">
-                      <div className="mb-5 flex items-center justify-between border-b border-gray-100 pb-4">
-                        <h3 className="text-xl font-bold text-gray-950">Savdo</h3>
-                        <button className="text-sm font-semibold text-gray-400 transition hover:text-orange-600">
-                          Tahrirlash
-                        </button>
-                      </div>
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-orange-100 bg-white px-4 py-3 shadow-sm">
+              <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
+                {customerDetailTabs.map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setCustomerDetailTab(tab)}
+                    className={[
+                      "shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition",
+                      customerDetailTab === tab
+                        ? "border border-orange-400 bg-orange-50 text-orange-600"
+                        : "text-gray-500 hover:bg-orange-50 hover:text-orange-600",
+                    ].join(" ")}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
 
-                      <p className="text-sm text-gray-500">Summa</p>
-                      <h4 className="mt-1 text-3xl font-bold text-gray-950">
-                        {formatSumma(total)}
-                      </h4>
+              <button className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 text-gray-700 transition hover:bg-orange-500 hover:text-white">
+                <Settings size={18} />
+              </button>
+            </div>
 
-                      <button
-                        onClick={() => setCustomerPaymentAccepted(true)}
-                        className="mt-5 w-full rounded-2xl bg-green-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-green-700"
-                      >
-                        {customerPaymentAccepted ? "To'lov qabul qilindi" : "To'lov qabul qilish"}
+            {customerDetailTab === "Asosiyisi" && (
+              <div className="grid items-start gap-6 xl:grid-cols-[360px_minmax(0,1fr)] 2xl:grid-cols-[380px_minmax(0,1fr)]">
+                <div className="space-y-5">
+                  <section className="rounded-[28px] bg-white p-6 shadow-sm">
+                    <div className="mb-5 flex items-center justify-between border-b border-gray-100 pb-4">
+                      <h3 className="text-xl font-bold text-gray-950">Savdo</h3>
+                      <button className="text-sm font-semibold text-gray-400 transition hover:text-orange-600">
+                        Tahrirlash
                       </button>
+                    </div>
 
-                      <div className="mt-6 rounded-3xl bg-gray-50 p-5">
-                        <p className="font-bold text-gray-800">To'lov va yetkazib berish</p>
-                        <p className="mt-1 text-sm text-gray-500">
-                          Doimiy mijoz savdosi, qarzdorlik va oxirgi xarid ma'lumotlari.
-                        </p>
-                      </div>
+                    <p className="text-sm text-gray-500">Summa</p>
+                    <h4 className="mt-1 text-3xl font-bold text-gray-950">
+                      {formatSumma(total)}
+                    </h4>
 
-                      <div className="mt-6 space-y-5">
-                        {[
-                          ["Kontragent", selectedCustomerModal.ism],
-                          ["Telefon", selectedCustomerModal.telefon],
-                          ["Oxirgi xarid", selectedCustomerModal.oxirgiXarid],
-                          [
-                            "Qarzdorlik",
-                            selectedCustomerModal.qarz === 0
-                              ? "Qarzi yo'q"
-                              : formatSumma(selectedCustomerModal.qarz),
-                          ],
-                          ["Narx turi", narxTuri === "chakana" ? "Chakana narx" : "Ulgurji narx"],
-                        ].map(([label, value]) => (
-                          <div key={label}>
-                            <p className="text-sm text-gray-500">{label}</p>
-                            <div className="mt-2 rounded-2xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-800">
-                              {value}
-                            </div>
+                    <button
+                      onClick={handlePay}
+                      disabled={saving || cart.length === 0}
+                      className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-green-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-green-700 disabled:bg-gray-300"
+                    >
+                      {saving && <LoaderCircle size={16} className="animate-spin" />}
+                      {customerPaymentAccepted ? "To'lov qabul qilindi" : "To'lov qabul qilish"}
+                    </button>
+
+                    <div className="mt-6 rounded-3xl bg-gray-50 p-5">
+                      <p className="font-bold text-gray-800">To'lov va yetkazib berish</p>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Doimiy mijoz savdosi real backend orqali saqlanadi.
+                      </p>
+                    </div>
+
+                    <div className="mt-6 space-y-5">
+                      {[
+                        ["Kontragent", mijozNomi(selectedCustomerModal)],
+                        ["Telefon", selectedCustomerModal.phone || "Telefon kiritilmagan"],
+                        ["Email", selectedCustomerModal.email || "Kiritilmagan"],
+                        ["Manzil", selectedCustomerModal.address || "Kiritilmagan"],
+                        ["Narx turi", narxTuri === "chakana" ? "Chakana narx" : "Ulgurji narx"],
+                      ].map(([label, value]) => (
+                        <div key={label}>
+                          <p className="text-sm text-gray-500">{label}</p>
+                          <div className="mt-2 rounded-2xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-800">
+                            {value}
                           </div>
-                        ))}
-                      </div>
-                    </section>
-
-                    <section className="rounded-[28px] bg-white p-6 shadow-sm">
-                      <div className="mb-5 flex items-center justify-between border-b border-gray-100 pb-4">
-                        <h3 className="text-base font-bold text-gray-950">
-                          Qo'shimcha ma'lumotlar
-                        </h3>
-                        <button className="text-sm font-semibold text-gray-400 transition hover:text-orange-600">
-                          Tahrirlash
-                        </button>
-                      </div>
-
-                      <p className="text-sm text-gray-500">Qaytarilgan savdo</p>
-                      <select className="mt-2 h-10 w-full rounded-2xl bg-gray-100 px-4 text-sm font-semibold text-gray-700 outline-none">
-                        <option>Tanlang</option>
-                        <option>Qaytarilgan</option>
-                        <option>Qaytarilmagan</option>
-                      </select>
-
-                      <p className="mt-5 text-sm text-gray-500">Qo'shimcha kommentariya</p>
-                      <p className="mt-1 text-sm font-bold text-gray-700">Kommentariya...</p>
-                    </section>
-                  </div>
-
-                  <main className="rounded-[28px] bg-white p-6 shadow-sm">
-                    <div className="mb-5 flex flex-wrap gap-2">
-                      {customerActivityTabs.map((tab) => (
-                        <button
-                          key={tab}
-                          onClick={() => setCustomerActivityTab(tab)}
-                          className={[
-                            "rounded-full px-4 py-2 text-sm font-semibold transition",
-                            customerActivityTab === tab
-                              ? "border border-orange-400 bg-orange-50 text-orange-600"
-                              : "text-gray-600 hover:bg-orange-50 hover:text-orange-600",
-                          ].join(" ")}
-                        >
-                          {tab}
-                        </button>
+                        </div>
                       ))}
                     </div>
+                  </section>
+                </div>
 
-                    <select
-                      value={customerActionType}
-                      onChange={(event) => setCustomerActionType(event.target.value)}
-                      className="h-14 w-full rounded-2xl border border-gray-100 bg-white px-4 text-gray-700 outline-none"
-                    >
-                      <option>Nima qilish kerak</option>
-                      <option>Qo'ng'iroq qilish</option>
-                      <option>To'lovni eslatish</option>
-                      <option>Yangi buyurtma olish</option>
-                    </select>
-
-                    <div className="my-6 flex items-center gap-3">
-                      <div className="h-px flex-1 bg-gray-200" />
-                      <span className="rounded-full border border-green-300 bg-green-50 px-5 py-2 text-sm font-medium text-green-600">
-                        Bugun
-                      </span>
-                      <div className="h-px flex-1 bg-gray-200" />
-                      <button className="inline-flex h-10 items-center gap-2 rounded-full bg-gray-50 px-4 text-sm font-semibold text-gray-500">
-                        Filtr
-                        <Filter size={14} />
+                <main className="rounded-[28px] bg-white p-6 shadow-sm">
+                  <div className="mb-5 flex flex-wrap gap-2">
+                    {customerActivityTabs.map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setCustomerActivityTab(tab)}
+                        className={[
+                          "rounded-full px-4 py-2 text-sm font-semibold transition",
+                          customerActivityTab === tab
+                            ? "border border-orange-400 bg-orange-50 text-orange-600"
+                            : "text-gray-600 hover:bg-orange-50 hover:text-orange-600",
+                        ].join(" ")}
+                      >
+                        {tab}
                       </button>
-                    </div>
+                    ))}
+                  </div>
 
-                    <div className="space-y-4">
-                      {[
-                        {
-                          title: "Vazifa",
-                          time: "18:37",
-                          text: `${selectedCustomerModal.ism} bilan keyingi xarid bo'yicha bog'lanish.`,
-                          icon: CheckCircle,
-                          className: "bg-yellow-400",
-                        },
-                        {
-                          title: "Kommentariya",
-                          time: "14:00",
-                          text: `${selectedCustomerModal.telefon} raqamiga qo'ng'iroq qilish kerak.`,
-                          icon: MessageSquare,
-                          className: "bg-blue-600",
-                        },
-                        {
-                          title: "Habarnoma",
-                          time: "14:00",
-                          text:
-                            selectedCustomerModal.qarz === 0
-                              ? "Mijozda qarzdorlik mavjud emas."
-                              : `Qarzdorlik: ${formatSumma(selectedCustomerModal.qarz)}.`,
-                          icon: Bell,
-                          className: "bg-green-500",
-                        },
-                      ].map((item) => {
-                        const Icon = item.icon;
+                  <select
+                    value={customerActionType}
+                    onChange={(event) => setCustomerActionType(event.target.value)}
+                    className="h-14 w-full rounded-2xl border border-gray-100 bg-white px-4 text-gray-700 outline-none"
+                  >
+                    <option>Nima qilish kerak</option>
+                    <option>Qo'ng'iroq qilish</option>
+                    <option>To'lovni eslatish</option>
+                    <option>Yangi buyurtma olish</option>
+                  </select>
 
-                        return (
-                          <article
-                            key={item.title}
-                            className="flex gap-5 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-100"
+                  <div className="my-6 flex items-center gap-3">
+                    <div className="h-px flex-1 bg-gray-200" />
+                    <span className="rounded-full border border-green-300 bg-green-50 px-5 py-2 text-sm font-medium text-green-600">
+                      Bugun
+                    </span>
+                    <div className="h-px flex-1 bg-gray-200" />
+                    <button className="inline-flex h-10 items-center gap-2 rounded-full bg-gray-50 px-4 text-sm font-semibold text-gray-500">
+                      Filtr
+                      <Filter size={14} />
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {[
+                      {
+                        title: "Vazifa",
+                        time: "18:37",
+                        text: `${mijozNomi(selectedCustomerModal)} bilan keyingi xarid bo'yicha bog'lanish.`,
+                        icon: CheckCircle,
+                        className: "bg-yellow-400",
+                      },
+                      {
+                        title: "Kommentariya",
+                        time: "14:00",
+                        text: `${selectedCustomerModal.phone || "Mijoz"} bo'yicha izoh qo'shish mumkin.`,
+                        icon: MessageSquare,
+                        className: "bg-blue-600",
+                      },
+                      {
+                        title: "Habarnoma",
+                        time: "14:00",
+                        text: "Sotuv yakunlanganda hujjat backendda tasdiqlanadi.",
+                        icon: Bell,
+                        className: "bg-green-500",
+                      },
+                    ].map((item) => {
+                      const Icon = item.icon;
+
+                      return (
+                        <article
+                          key={item.title}
+                          className="flex gap-5 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-100"
+                        >
+                          <div
+                            className={[
+                              "flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white",
+                              item.className,
+                            ].join(" ")}
                           >
-                            <div
-                              className={[
-                                "flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white",
-                                item.className,
-                              ].join(" ")}
-                            >
-                              <Icon size={24} />
-                            </div>
+                            <Icon size={24} />
+                          </div>
 
-                            <div className="min-w-0">
-                              <h3 className="text-lg font-bold text-gray-800">
-                                {item.title}{" "}
-                                <span className="text-sm font-normal text-gray-400">
-                                  | {item.time}
-                                </span>
-                              </h3>
-                              <p className="mt-2 text-sm text-gray-500">{item.text}</p>
-                            </div>
-                          </article>
-                        );
-                      })}
-                    </div>
-                  </main>
-                </div>
-              )}
+                          <div className="min-w-0">
+                            <h3 className="text-lg font-bold text-gray-800">
+                              {item.title}{" "}
+                              <span className="text-sm font-normal text-gray-400">
+                                | {item.time}
+                              </span>
+                            </h3>
+                            <p className="mt-2 text-sm text-gray-500">{item.text}</p>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </main>
+              </div>
+            )}
 
-              {customerDetailTab !== "Asosiyisi" && (
-                <div className="rounded-[28px] bg-white p-8 text-center text-sm font-semibold text-gray-400">
-                  {customerDetailTab} bo'limi demo holatda
-                </div>
-              )}
-            </section>
+            {customerDetailTab !== "Asosiyisi" && (
+              <div className="rounded-[28px] bg-white p-8 text-center text-sm font-semibold text-gray-400">
+                {customerDetailTab} bo'limi demo holatda
+              </div>
+            )}
+          </section>
         </AppModal>
       )}
     </div>

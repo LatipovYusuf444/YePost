@@ -9,9 +9,17 @@ import type {
 } from "@/types/finance";
 import type { Filial } from "@/types/ombor";
 
+type RoyxatJavobi<T> = T[] | { value?: T[]; items?: T[]; results?: T[]; data?: T[] };
+
+function royxatniAjratish<T>(data: RoyxatJavobi<T>): T[] {
+  if (Array.isArray(data)) return data;
+  return data.value ?? data.items ?? data.results ?? data.data ?? [];
+}
+
 // Kassa sahifasi: GET/POST/PATCH/DELETE /finance/expenses endpointlari.
 export const xarajatApi = {
-  royxat: async () => (await apiClient.get<Xarajat[]>("/finance/expenses")).data,
+  royxat: async () =>
+    royxatniAjratish((await apiClient.get<RoyxatJavobi<Xarajat>>("/finance/expenses")).data),
   olish: async (id: string) => (await apiClient.get<Xarajat>(`/finance/expenses/${id}`)).data,
   yaratish: async (data: XarajatSaqlash) =>
     (await apiClient.post<Xarajat>("/finance/expenses", data)).data,
@@ -23,7 +31,8 @@ export const xarajatApi = {
 
 // Kassa sahifasi: GET/POST/PATCH/DELETE /finance/loans endpointlari.
 export const qarzApi = {
-  royxat: async () => (await apiClient.get<Qarz[]>("/finance/loans")).data,
+  royxat: async () =>
+    royxatniAjratish((await apiClient.get<RoyxatJavobi<Qarz>>("/finance/loans")).data),
   olish: async (id: string) => (await apiClient.get<Qarz>(`/finance/loans/${id}`)).data,
   yaratish: async (data: QarzSaqlash) =>
     (await apiClient.post<Qarz>("/finance/loans", data)).data,
@@ -35,7 +44,8 @@ export const qarzApi = {
 
 // Kassa sahifasi: GET/POST/PATCH/DELETE /finance/cash-ins endpointlari.
 export const kassaKirimApi = {
-  royxat: async () => (await apiClient.get<KassaKirim[]>("/finance/cash-ins")).data,
+  royxat: async () =>
+    royxatniAjratish((await apiClient.get<RoyxatJavobi<KassaKirim>>("/finance/cash-ins")).data),
   olish: async (id: string) =>
     (await apiClient.get<KassaKirim>(`/finance/cash-ins/${id}`)).data,
   yaratish: async (data: KassaKirimSaqlash) =>

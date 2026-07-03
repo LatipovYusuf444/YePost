@@ -69,7 +69,12 @@ export const omborlarApi = {
 
 // Ombor/Xaridlar.tsx va Kirim.tsx: kirim hujjatlari.
 export const kirimApi = {
-  royxat: async () => (await apiClient.get<KirimHujjati[]>("/inventory/purchases")).data,
+  royxat: async () => {
+    const response = await apiClient.get<RoyxatJavobi<KirimHujjati>>(
+      "/inventory/purchases"
+    );
+    return royxatniAjratish(response.data);
+  },
   olish: async (id: string) =>
     (await apiClient.get<KirimHujjati>(`/inventory/purchases/${id}`)).data,
   yaratish: async (data: KirimYaratishMalumoti) =>
@@ -84,8 +89,12 @@ export const kirimApi = {
 
 // Ombor/Chiqim.tsx: ombordan hisobdan chiqarish hujjatlari.
 export const chiqimApi = {
-  royxat: async () =>
-    (await apiClient.get<ChiqimHujjati[]>("/inventory/write-offs")).data,
+  royxat: async () => {
+    const response = await apiClient.get<RoyxatJavobi<ChiqimHujjati>>(
+      "/inventory/write-offs"
+    );
+    return royxatniAjratish(response.data);
+  },
   olish: async (id: string) =>
     (await apiClient.get<ChiqimHujjati>(`/inventory/write-offs/${id}`)).data,
   yaratish: async (data: ChiqimYaratishMalumoti) =>
@@ -100,8 +109,12 @@ export const chiqimApi = {
 
 // Ombor/Kochirish.tsx: omborlar orasida ko'chirish hujjatlari.
 export const kochirishApi = {
-  royxat: async () =>
-    (await apiClient.get<KochirishHujjati[]>("/inventory/transfers")).data,
+  royxat: async () => {
+    const response = await apiClient.get<RoyxatJavobi<KochirishHujjati>>(
+      "/inventory/transfers"
+    );
+    return royxatniAjratish(response.data);
+  },
   olish: async (id: string) =>
     (await apiClient.get<KochirishHujjati>(`/inventory/transfers/${id}`)).data,
   yaratish: async (data: KochirishYaratishMalumoti) =>
@@ -118,8 +131,12 @@ export const kochirishApi = {
 
 // Ombor/Inventarizatsiya.tsx: inventarizatsiya hujjatlari.
 export const inventarizatsiyaApi = {
-  royxat: async () =>
-    (await apiClient.get<InventarizatsiyaHujjati[]>("/inventory/stock-takes")).data,
+  royxat: async () => {
+    const response = await apiClient.get<RoyxatJavobi<InventarizatsiyaHujjati>>(
+      "/inventory/stock-takes"
+    );
+    return royxatniAjratish(response.data);
+  },
   olish: async (id: string) =>
     (await apiClient.get<InventarizatsiyaHujjati>(`/inventory/stock-takes/${id}`))
       .data,

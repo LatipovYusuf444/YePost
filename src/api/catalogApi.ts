@@ -12,9 +12,19 @@ import type {
   OlchovBirligiMalumoti,
 } from "@/types/catalog";
 
+type RoyxatJavobi<T> = T[] | { value?: T[]; items?: T[]; results?: T[]; data?: T[] };
+
+function royxatniAjratish<T>(data: RoyxatJavobi<T>): T[] {
+  if (Array.isArray(data)) return data;
+  return data.value ?? data.items ?? data.results ?? data.data ?? [];
+}
+
 // Mahsulotlar sahifasi: Swagger catalog/categories to'liq CRUD.
 export const kategoriyalarApi = {
-  royxat: async () => (await apiClient.get<Kategoriya[]>("/catalog/categories")).data,
+  royxat: async () => {
+    const response = await apiClient.get<RoyxatJavobi<Kategoriya>>("/catalog/categories");
+    return royxatniAjratish(response.data);
+  },
   olish: async (id: string) =>
     (await apiClient.get<Kategoriya>(`/catalog/categories/${id}`)).data,
   yaratish: async (data: KategoriyaMalumoti) =>
@@ -27,7 +37,10 @@ export const kategoriyalarApi = {
 
 // Mahsulotlar sahifasi: Swagger catalog/units to'liq CRUD.
 export const birliklarApi = {
-  royxat: async () => (await apiClient.get<OlchovBirligi[]>("/catalog/units")).data,
+  royxat: async () => {
+    const response = await apiClient.get<RoyxatJavobi<OlchovBirligi>>("/catalog/units");
+    return royxatniAjratish(response.data);
+  },
   olish: async (id: string) =>
     (await apiClient.get<OlchovBirligi>(`/catalog/units/${id}`)).data,
   yaratish: async (data: OlchovBirligiMalumoti) =>
@@ -40,7 +53,10 @@ export const birliklarApi = {
 
 // Mahsulotlar sahifasi: Swagger catalog/products to'liq CRUD.
 export const mahsulotlarApi = {
-  royxat: async () => (await apiClient.get<Mahsulot[]>("/catalog/products")).data,
+  royxat: async () => {
+    const response = await apiClient.get<RoyxatJavobi<Mahsulot>>("/catalog/products");
+    return royxatniAjratish(response.data);
+  },
   olish: async (id: string) =>
     (await apiClient.get<Mahsulot>(`/catalog/products/${id}`)).data,
   yaratish: async (data: MahsulotMalumoti) =>
@@ -53,12 +69,12 @@ export const mahsulotlarApi = {
 
 // Mahsulot tafsiloti: modifikatsiyalar CRUD va alohida narx endpointlari.
 export const modifikatsiyalarApi = {
-  royxat: async (productId: string) =>
-    (
-      await apiClient.get<MahsulotModifikatsiyasi[]>(
+  royxat: async (productId: string) => {
+    const response = await apiClient.get<RoyxatJavobi<MahsulotModifikatsiyasi>>(
         `/catalog/products/${productId}/modifications`
-      )
-    ).data,
+    );
+    return royxatniAjratish(response.data);
+  },
   olish: async (id: string) =>
     (await apiClient.get<MahsulotModifikatsiyasi>(`/catalog/modifications/${id}`))
       .data,

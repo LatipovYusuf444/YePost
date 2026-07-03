@@ -7,6 +7,7 @@ import {
   productProfitReportApi,
   stockMovementReportApi,
 } from "@/api/reportsApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type {
   AuditFilter,
   AuditLogsJavobi,
@@ -67,16 +68,6 @@ const boshTanlovlar: Tanlovlar = {
   suppliers: [],
 };
 
-function xabar(error: unknown) {
-  if (typeof error === "object" && error && "response" in error) {
-    const response = (error as { response?: { data?: { message?: unknown } } }).response;
-    const message = response?.data?.message;
-    if (Array.isArray(message)) return message.join(", ");
-    if (typeof message === "string") return message;
-  }
-  return "Hisobot ma'lumotlarini olishda xatolik yuz berdi.";
-}
-
 function faylYuklash(blob: Blob, nom: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -107,7 +98,7 @@ export const useReportsStore = create<ReportsStore>((set) => ({
       const tanlovlar = await hisobotTanlovlariniOlish();
       set({ tanlovlar });
     } catch (error) {
-      set({ xatolik: xabar(error) });
+      set({ xatolik: getApiErrorMessage(error) });
     } finally {
       set({ yuklanmoqda: false });
     }
@@ -122,7 +113,7 @@ export const useReportsStore = create<ReportsStore>((set) => ({
     try {
       set({ stockMovement: await stockMovementReportApi.olish(params) });
     } catch (error) {
-      set({ xatolik: xabar(error) });
+      set({ xatolik: getApiErrorMessage(error) });
     } finally {
       set({ amalBajarilmoqda: false });
     }
@@ -133,7 +124,7 @@ export const useReportsStore = create<ReportsStore>((set) => ({
     try {
       set({ counterpartyBalance: await counterpartyBalanceReportApi.olish(params) });
     } catch (error) {
-      set({ xatolik: xabar(error) });
+      set({ xatolik: getApiErrorMessage(error) });
     } finally {
       set({ amalBajarilmoqda: false });
     }
@@ -144,7 +135,7 @@ export const useReportsStore = create<ReportsStore>((set) => ({
     try {
       set({ productProfit: await productProfitReportApi.olish(params) });
     } catch (error) {
-      set({ xatolik: xabar(error) });
+      set({ xatolik: getApiErrorMessage(error) });
     } finally {
       set({ amalBajarilmoqda: false });
     }
@@ -155,7 +146,7 @@ export const useReportsStore = create<ReportsStore>((set) => ({
     try {
       set({ incomeExpense: await incomeExpenseReportApi.olish(params) });
     } catch (error) {
-      set({ xatolik: xabar(error) });
+      set({ xatolik: getApiErrorMessage(error) });
     } finally {
       set({ amalBajarilmoqda: false });
     }
@@ -166,7 +157,7 @@ export const useReportsStore = create<ReportsStore>((set) => ({
     try {
       set({ auditLogs: await auditLogsOlish(params) });
     } catch (error) {
-      set({ xatolik: xabar(error) });
+      set({ xatolik: getApiErrorMessage(error) });
     } finally {
       set({ amalBajarilmoqda: false });
     }
@@ -188,7 +179,7 @@ export const useReportsStore = create<ReportsStore>((set) => ({
               : await incomeExpenseReportApi.export(params as IncomeExpenseFilter, exportTuri);
       faylYuklash(blob, `hisobot-${turi}.${exportTuri === "excel" ? "xlsx" : "pdf"}`);
     } catch (error) {
-      set({ xatolik: xabar(error) });
+      set({ xatolik: getApiErrorMessage(error) });
     } finally {
       set({ amalBajarilmoqda: false });
     }

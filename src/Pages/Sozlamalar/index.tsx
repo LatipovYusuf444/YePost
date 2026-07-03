@@ -4,6 +4,7 @@ import {
   KeyRound,
   Layers3,
   LoaderCircle,
+  PlugZap,
   RefreshCw,
   UserRound,
   WalletCards,
@@ -11,12 +12,19 @@ import {
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useTenantStore } from "@/store/tenantStore";
 import KompaniyaSozlamalari from "./KompaniyaSozlamalari";
+import Integratsiyalar from "./Integratsiyalar";
 import Profil from "./Profil";
 import ShaxsiyProfil from "./ShaxsiyProfil";
 import TolovSozlamalari from "./TolovSozlamalari";
 import Xavsizlik from "./Xavsizlik";
 
-type Tab = "profil" | "xavfsizlik" | "ish-maydoni" | "tariflar" | "obunalar";
+type Tab =
+  | "profil"
+  | "xavfsizlik"
+  | "ish-maydoni"
+  | "integratsiyalar"
+  | "tariflar"
+  | "obunalar";
 
 const shaxsiyTablar: Array<{
   id: Tab;
@@ -33,6 +41,7 @@ const direktorTablari: Array<{
   icon: typeof UserRound;
 }> = [
   { id: "ish-maydoni", nom: "Ish maydoni", icon: Layers3 },
+  { id: "integratsiyalar", nom: "Integratsiyalar", icon: PlugZap },
   { id: "tariflar", nom: "Tariflar", icon: CreditCard },
   { id: "obunalar", nom: "Obunalar", icon: WalletCards },
 ];
@@ -127,6 +136,7 @@ export default function Sozlamalar() {
       {tab === "profil" && <ShaxsiyProfil />}
       {tab === "xavfsizlik" && <Xavsizlik />}
       {direktor && tab === "ish-maydoni" && <KompaniyaSozlamalari />}
+      {direktor && tab === "integratsiyalar" && <Integratsiyalar />}
       {direktor && tab === "tariflar" && <TolovSozlamalari />}
       {direktor && tab === "obunalar" && <Profil />}
     </div>

@@ -8,9 +8,19 @@ import type {
   YetkazibBeruvchiMalumoti,
 } from "@/types/partner";
 
+type RoyxatJavobi<T> = T[] | { value?: T[]; items?: T[]; results?: T[]; data?: T[] };
+
+function royxatniAjratish<T>(data: RoyxatJavobi<T>): T[] {
+  if (Array.isArray(data)) return data;
+  return data.value ?? data.items ?? data.results ?? data.data ?? [];
+}
+
 // Mijozlar sahifasi: jismoniy mijozlar to'liq CRUD.
 export const mijozlarApi = {
-  royxat: async () => (await apiClient.get<Mijoz[]>("/partners/customers")).data,
+  royxat: async () => {
+    const response = await apiClient.get<RoyxatJavobi<Mijoz>>("/partners/customers");
+    return royxatniAjratish(response.data);
+  },
   olish: async (id: string) =>
     (await apiClient.get<Mijoz>(`/partners/customers/${id}`)).data,
   yaratish: async (data: MijozMalumoti) =>
@@ -23,8 +33,12 @@ export const mijozlarApi = {
 
 // Mijozlar sahifasi: mijoz kompaniyalari to'liq CRUD.
 export const mijozKompaniyalariApi = {
-  royxat: async () =>
-    (await apiClient.get<MijozKompaniyasi[]>("/partners/client-companies")).data,
+  royxat: async () => {
+    const response = await apiClient.get<RoyxatJavobi<MijozKompaniyasi>>(
+      "/partners/client-companies"
+    );
+    return royxatniAjratish(response.data);
+  },
   olish: async (id: string) =>
     (await apiClient.get<MijozKompaniyasi>(`/partners/client-companies/${id}`))
       .data,
@@ -48,8 +62,12 @@ export const mijozKompaniyalariApi = {
 
 // Mijozlar sahifasi: yetkazib beruvchilar to'liq CRUD.
 export const yetkazibBeruvchilarApi = {
-  royxat: async () =>
-    (await apiClient.get<YetkazibBeruvchi[]>("/partners/suppliers")).data,
+  royxat: async () => {
+    const response = await apiClient.get<RoyxatJavobi<YetkazibBeruvchi>>(
+      "/partners/suppliers"
+    );
+    return royxatniAjratish(response.data);
+  },
   olish: async (id: string) =>
     (await apiClient.get<YetkazibBeruvchi>(`/partners/suppliers/${id}`)).data,
   yaratish: async (data: YetkazibBeruvchiMalumoti) =>

@@ -2,17 +2,22 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export type CartItem = {
-  id: number;
+  id: string;
+  modificationId: string;
   nom: string;
   narx: number;
+  chakanaNarx: number;
+  ulgurjiNarx: number;
+  qoldiq: number;
   soni: number;
 };
 
 type PosState = {
   cart: CartItem[];
   addToCart: (item: Omit<CartItem, "soni">, quantity?: number) => void;
-  updateQuantity: (productId: number, nextQuantity: number) => void;
-  removeFromCart: (productId: number) => void;
+  updateQuantity: (productId: string, nextQuantity: number) => void;
+  updatePriceType: (priceType: "chakana" | "ulgurji") => void;
+  removeFromCart: (productId: string) => void;
   clearCart: () => void;
 };
 
@@ -28,14 +33,18 @@ export const usePosStore = create<PosState>()(
             return {
               cart: state.cart.map((cartItem) =>
                 cartItem.id === item.id
-                  ? { ...cartItem, soni: cartItem.soni + quantity }
+                  ? {
+                      ...cartItem,
+                      ...item,
+                      soni: Math.min(cartItem.soni + quantity, item.qoldiq || cartItem.soni + quantity),
+                    }
                   : cartItem
               ),
             };
           }
 
           return {
-            cart: [...state.cart, { ...item, soni: quantity }],
+            cart: [...state.cart, { ...item, soni: Math.min(quantity, item.qoldiq || quantity) }],
           };
         });
       },
@@ -43,9 +52,19 @@ export const usePosStore = create<PosState>()(
         set((state) => ({
           cart: state.cart
             .map((item) =>
-              item.id === productId ? { ...item, soni: Math.max(nextQuantity, 0) } : item
+              item.id === productId
+                ? { ...item, soni: Math.min(Math.max(nextQuantity, 0), item.qoldiq || nextQuantity) }
+                : item
             )
             .filter((item) => item.soni > 0),
+        }));
+      },
+      updatePriceType: (priceType) => {
+        set((state) => ({
+          cart: state.cart.map((item) => ({
+            ...item,
+            narx: priceType === "ulgurji" ? item.ulgurjiNarx || item.chakanaNarx : item.chakanaNarx,
+          })),
         }));
       },
       removeFromCart: (productId) => {

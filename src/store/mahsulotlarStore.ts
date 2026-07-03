@@ -61,7 +61,17 @@ function almashtir<T extends { id: string }>(items: T[], item: T) {
   return items.map((old) => (old.id === item.id ? item : old));
 }
 
-export const useMahsulotlarStore = create<MahsulotlarState>((set) => ({
+function mahsulotniBoyitish(mahsulot: Mahsulot, state: MahsulotlarState) {
+  return {
+    ...mahsulot,
+    category:
+      mahsulot.category ??
+      state.kategoriyalar.find((kategoriya) => kategoriya.id === mahsulot.categoryId),
+    unit: mahsulot.unit ?? state.birliklar.find((birlik) => birlik.id === mahsulot.unitId),
+  };
+}
+
+export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
   kategoriyalar: [],
   birliklar: [],
   mahsulotlar: [],
@@ -78,7 +88,18 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set) => ({
         birliklarApi.royxat(),
         mahsulotlarApi.royxat(),
       ]);
-      set({ kategoriyalar, birliklar, mahsulotlar, yuklanmoqda: false });
+      set({
+        kategoriyalar,
+        birliklar,
+        mahsulotlar: mahsulotlar.map((mahsulot) => ({
+          ...mahsulot,
+          category:
+            mahsulot.category ??
+            kategoriyalar.find((kategoriya) => kategoriya.id === mahsulot.categoryId),
+          unit: mahsulot.unit ?? birliklar.find((birlik) => birlik.id === mahsulot.unitId),
+        })),
+        yuklanmoqda: false,
+      });
     } catch (error) {
       set({ yuklanmoqda: false, xatolik: getApiErrorMessage(error) });
     }
@@ -159,7 +180,8 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set) => ({
   mahsulotSaqlash: async (id, data) => {
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
-      const item = id ? await mahsulotlarApi.yangilash(id, data) : await mahsulotlarApi.yaratish(data);
+      const response = id ? await mahsulotlarApi.yangilash(id, data) : await mahsulotlarApi.yaratish(data);
+      const item = mahsulotniBoyitish(response, get());
       set((state) => ({
         mahsulotlar: id ? almashtir(state.mahsulotlar, item) : [item, ...state.mahsulotlar],
         amalBajarilmoqda: false,
@@ -173,7 +195,7 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set) => ({
   mahsulotNarxBilanYaratish: async (data, variant) => {
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
-      const mahsulot = await mahsulotlarApi.yaratish(data);
+      const mahsulot = mahsulotniBoyitish(await mahsulotlarApi.yaratish(data), get());
 
       try {
         const modifikatsiya = await modifikatsiyalarApi.yaratish(
@@ -207,7 +229,7 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set) => ({
   mahsulotVariantlarBilanYaratish: async (data, variantlar) => {
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
-      const mahsulot = await mahsulotlarApi.yaratish(data);
+      const mahsulot = mahsulotniBoyitish(await mahsulotlarApi.yaratish(data), get());
 
       try {
         const modifikatsiyalar = await Promise.all(

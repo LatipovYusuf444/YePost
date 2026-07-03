@@ -67,9 +67,10 @@ function formatKey(key: string) {
 function valuesFromResponse(data: HisobotJavobi | null): unknown[] {
   if (!data) return [];
   if (Array.isArray(data)) return data;
-  if (typeof data === "object" && data && "value" in data) {
-    const value = (data as { value?: unknown }).value;
-    return Array.isArray(value) ? value : [];
+  if (typeof data === "object" && data) {
+    const obj = data as Record<string, unknown>;
+    const rows = obj.value ?? obj.items ?? obj.results ?? obj.data ?? obj.rows;
+    return Array.isArray(rows) ? rows : [];
   }
   return [];
 }
@@ -489,7 +490,8 @@ function HisobotNatija({ data }: { data: HisobotJavobi | null }) {
 
   if (!Array.isArray(data) && typeof data === "object" && data && rows.length === 0) {
     const entries = Object.entries(data as Record<string, unknown>).filter(
-      ([key]) => key !== "value" && key !== "Count"
+      ([key]) =>
+        !["value", "items", "results", "data", "rows", "Count", "count"].includes(key)
     );
     if (entries.length > 0) {
       return (

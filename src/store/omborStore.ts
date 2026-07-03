@@ -387,8 +387,10 @@ export const useOmborStore = create<OmborState>((set) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const hujjat = await kirimApi.bekorQilish(id);
+      const qoldiqlar = await omborQoldiqlari();
       set((state) => ({
         kirimlar: hujjatniAlmashtirish(state.kirimlar, hujjat),
+        qoldiqlar,
         amalBajarilmoqda: false,
       }));
       return true;
@@ -435,8 +437,10 @@ export const useOmborStore = create<OmborState>((set) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const hujjat = await chiqimApi.tasdiqlash(id);
+      const qoldiqlar = await omborQoldiqlari();
       set((state) => ({
         chiqimlar: hujjatniAlmashtirish(state.chiqimlar, hujjat),
+        qoldiqlar,
         amalBajarilmoqda: false,
       }));
       return true;
@@ -449,8 +453,10 @@ export const useOmborStore = create<OmborState>((set) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const hujjat = await chiqimApi.bekorQilish(id);
+      const qoldiqlar = await omborQoldiqlari();
       set((state) => ({
         chiqimlar: hujjatniAlmashtirish(state.chiqimlar, hujjat),
+        qoldiqlar,
         amalBajarilmoqda: false,
       }));
       return true;
@@ -500,8 +506,10 @@ export const useOmborStore = create<OmborState>((set) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const hujjat = await kochirishApi.jonatish(id);
+      const qoldiqlar = await omborQoldiqlari();
       set((state) => ({
         kochirishlar: hujjatniAlmashtirish(state.kochirishlar, hujjat),
+        qoldiqlar,
         amalBajarilmoqda: false,
       }));
       return true;
@@ -514,8 +522,10 @@ export const useOmborStore = create<OmborState>((set) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const hujjat = await kochirishApi.qabulQilish(id);
+      const qoldiqlar = await omborQoldiqlari();
       set((state) => ({
         kochirishlar: hujjatniAlmashtirish(state.kochirishlar, hujjat),
+        qoldiqlar,
         amalBajarilmoqda: false,
       }));
       return true;
@@ -528,8 +538,10 @@ export const useOmborStore = create<OmborState>((set) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const hujjat = await kochirishApi.bekorQilish(id);
+      const qoldiqlar = await omborQoldiqlari();
       set((state) => ({
         kochirishlar: hujjatniAlmashtirish(state.kochirishlar, hujjat),
+        qoldiqlar,
         amalBajarilmoqda: false,
       }));
       return true;
@@ -582,8 +594,10 @@ export const useOmborStore = create<OmborState>((set) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const hujjat = await inventarizatsiyaApi.tasdiqlash(id);
+      const qoldiqlar = await omborQoldiqlari();
       set((state) => ({
         inventarizatsiyalar: hujjatniAlmashtirish(state.inventarizatsiyalar, hujjat),
+        qoldiqlar,
         amalBajarilmoqda: false,
       }));
       return true;

@@ -28,7 +28,10 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+import { crmApi, royxatniAjratish } from "@/api/crmApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import AppModal from "@/Components/common/AppModal";
+import type { Activity, Comment } from "@/types/crm";
 import type { QoldiqTanlovi, Sotuv, SotuvYaratishMalumoti, XodimTanlovi } from "@/types/savdo";
 import {
   masulNomi,
@@ -117,6 +120,34 @@ function sotuvFaoliyatlariniOlish(sotuvId: string): SaqlanganFaoliyat[] {
 function sotuvFaoliyatlariniSaqlash(sotuvId: string, faoliyatlar: SaqlanganFaoliyat[]) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(faoliyatSaqlashKaliti(sotuvId), JSON.stringify(faoliyatlar));
+}
+
+function crmActivityniFaoliyatga(activity: Activity): SaqlanganFaoliyat {
+  return {
+    id: activity.id,
+    turi: activity.type === "TASK" ? "Vazifa" : activity.type === "MEETING" ? "Ish" : "Ish",
+    sarlavha: activity.subject ?? "CRM vazifa",
+    matn: activity.description ?? activity.result ?? "",
+    sana: activity.dueAt ?? activity.createdAt ?? new Date().toISOString(),
+    xodimId: activity.assigneeId,
+    harakat: "Kalendariga qo'shish",
+    completed: String(activity.status ?? "").toUpperCase() === "DONE",
+  };
+}
+
+function crmCommentniFaoliyatga(comment: Comment): SaqlanganFaoliyat {
+  return {
+    id: comment.id,
+    turi: "Izoh",
+    sarlavha: "Izoh",
+    matn: comment.text ?? "",
+    sana: comment.createdAt ?? new Date().toISOString(),
+    pinned: Boolean(comment.pinned ?? comment.isPinned),
+  };
+}
+
+function mijozIdOlish(sotuv: Sotuv) {
+  return sotuv.customerId ?? sotuv.customer?.id ?? "";
 }
 
 function sotuvHujjatlariniOlish(sotuvId: string): SaqlanganHujjat[] {
@@ -993,40 +1024,181 @@ function UmumiyTab({
   onHujjatOchish: (hujjat: SaqlanganHujjat) => void;
 }) {
   const [saqlanganFaoliyatlar, setSaqlanganFaoliyatlar] = useState<SaqlanganFaoliyat[]>([]);
+  const [crmYuklanmoqda, setCrmYuklanmoqda] = useState(false);
+  const [crmXatolik, setCrmXatolik] = useState("");
+  const customerId = mijozIdOlish(sotuv);
 
   useEffect(() => {
-    setSaqlanganFaoliyatlar(sotuvFaoliyatlariniOlish(sotuv.id));
-  }, [sotuv.id]);
+    let active = true;
 
-  function faoliyatniSaqlash(faoliyat: Omit<SaqlanganFaoliyat, "id" | "sana"> & { sana?: string }) {
-    const yangiFaoliyat: SaqlanganFaoliyat = {
-      ...faoliyat,
-      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      sana: faoliyat.sana ?? new Date().toISOString(),
+    async function yuklash() {
+      setCrmXatolik("");
+      if (!customerId) {
+        setSaqlanganFaoliyatlar(sotuvFaoliyatlariniOlish(sotuv.id));
+        return;
+      }
+
+      setCrmYuklanmoqda(true);
+      try {
+        const [activities, comments] = await Promise.all([
+          crmApi.activities({ customerId }),
+          crmApi.comments(customerId, { limit: 50 }),
+        ]);
+        if (!active) return;
+        setSaqlanganFaoliyatlar([
+          ...activities.map(crmActivityniFaoliyatga),
+          ...royxatniAjratish(comments).map(crmCommentniFaoliyatga),
+        ]);
+      } catch (error) {
+        if (!active) return;
+        setCrmXatolik(getApiErrorMessage(error));
+        setSaqlanganFaoliyatlar(sotuvFaoliyatlariniOlish(sotuv.id));
+      } finally {
+        if (active) setCrmYuklanmoqda(false);
+      }
+    }
+
+    void yuklash();
+    return () => {
+      active = false;
     };
-    setSaqlanganFaoliyatlar((joriy) => {
-      const yangilangan = [yangiFaoliyat, ...joriy];
-      sotuvFaoliyatlariniSaqlash(sotuv.id, yangilangan);
-      return yangilangan;
-    });
+  }, [customerId, sotuv.id]);
+
+  async function faoliyatniSaqlash(faoliyat: Omit<SaqlanganFaoliyat, "id" | "sana"> & { sana?: string }) {
+    try {
+      if (customerId) {
+        if (faoliyat.turi === "Izoh") {
+          const comment = await crmApi.commentYaratish(customerId, {
+            text: faoliyat.matn || faoliyat.sarlavha,
+          });
+          setSaqlanganFaoliyatlar((joriy) => [crmCommentniFaoliyatga(comment), ...joriy]);
+          return;
+        }
+
+        if (faoliyat.turi === "Xabar") {
+          const text = faoliyat.matn || faoliyat.sarlavha;
+          await crmApi.chatXabarYuborish(customerId, text);
+          const xabarFaoliyati: SaqlanganFaoliyat = {
+            id: `chat-${Date.now()}`,
+            turi: "Xabar",
+            sarlavha: "Xabar yuborildi",
+            matn: text,
+            sana: new Date().toISOString(),
+          };
+          setSaqlanganFaoliyatlar((joriy) => [xabarFaoliyati, ...joriy]);
+          return;
+        }
+
+        const assigneeId = faoliyat.xodimId || sotuv.responsibleId;
+        if (!assigneeId) {
+          setCrmXatolik("CRM ish yaratish uchun mas'ul xodim tanlanishi kerak.");
+          return;
+        }
+
+        const activity = await crmApi.activityYaratish({
+          type: faoliyat.turi === "Vazifa" ? "TASK" : "CALL",
+          customerId,
+          subject: faoliyat.sarlavha,
+          description: faoliyat.matn || undefined,
+          dueAt: faoliyat.sana ?? new Date().toISOString(),
+          assigneeId,
+        });
+        setSaqlanganFaoliyatlar((joriy) => [crmActivityniFaoliyatga(activity), ...joriy]);
+        return;
+      }
+
+      const yangiFaoliyat: SaqlanganFaoliyat = {
+        ...faoliyat,
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        sana: faoliyat.sana ?? new Date().toISOString(),
+      };
+      setSaqlanganFaoliyatlar((joriy) => {
+        const yangilangan = [yangiFaoliyat, ...joriy];
+        sotuvFaoliyatlariniSaqlash(sotuv.id, yangilangan);
+        return yangilangan;
+      });
+    } catch (error) {
+      setCrmXatolik(getApiErrorMessage(error));
+    }
   }
 
-  function faoliyatniYangilash(id: string, malumot: Partial<SaqlanganFaoliyat>) {
-    setSaqlanganFaoliyatlar((joriy) => {
-      const yangilangan = joriy.map((faoliyat) =>
-        faoliyat.id === id ? { ...faoliyat, ...malumot } : faoliyat
-      );
-      sotuvFaoliyatlariniSaqlash(sotuv.id, yangilangan);
-      return yangilangan;
-    });
+  async function faoliyatniYangilash(id: string, malumot: Partial<SaqlanganFaoliyat>) {
+    try {
+      const joriyFaoliyat = saqlanganFaoliyatlar.find((faoliyat) => faoliyat.id === id);
+      if (customerId && joriyFaoliyat?.turi === "Izoh" && malumot.matn !== undefined) {
+        const comment = await crmApi.commentYangilash(id, malumot.matn);
+        setSaqlanganFaoliyatlar((joriy) =>
+          joriy.map((faoliyat) => (faoliyat.id === id ? crmCommentniFaoliyatga(comment) : faoliyat))
+        );
+        return;
+      }
+
+      if (customerId && joriyFaoliyat?.turi !== "Izoh") {
+        const data: Record<string, string> = {};
+        if (malumot.sarlavha !== undefined) data.subject = malumot.sarlavha;
+        if (malumot.matn !== undefined) data.description = malumot.matn;
+        if (malumot.sana !== undefined) data.dueAt = malumot.sana;
+        if (malumot.completed !== undefined) {
+          const activity = malumot.completed
+            ? await crmApi.activityYakunlash(id)
+            : await crmApi.activityYangilash(id, { dueAt: joriyFaoliyat?.sana });
+          setSaqlanganFaoliyatlar((joriy) =>
+            joriy.map((faoliyat) => (faoliyat.id === id ? crmActivityniFaoliyatga(activity) : faoliyat))
+          );
+          return;
+        }
+        const activity = await crmApi.activityYangilash(id, data);
+        setSaqlanganFaoliyatlar((joriy) =>
+          joriy.map((faoliyat) => (faoliyat.id === id ? crmActivityniFaoliyatga(activity) : faoliyat))
+        );
+        return;
+      }
+
+      setSaqlanganFaoliyatlar((joriy) => {
+        const yangilangan = joriy.map((faoliyat) =>
+          faoliyat.id === id ? { ...faoliyat, ...malumot } : faoliyat
+        );
+        sotuvFaoliyatlariniSaqlash(sotuv.id, yangilangan);
+        return yangilangan;
+      });
+    } catch (error) {
+      setCrmXatolik(getApiErrorMessage(error));
+    }
   }
 
-  function faoliyatniOchirish(id: string) {
-    setSaqlanganFaoliyatlar((joriy) => {
-      const yangilangan = joriy.filter((faoliyat) => faoliyat.id !== id);
-      sotuvFaoliyatlariniSaqlash(sotuv.id, yangilangan);
-      return yangilangan;
-    });
+  async function faoliyatniOchirish(id: string) {
+    try {
+      const joriyFaoliyat = saqlanganFaoliyatlar.find((faoliyat) => faoliyat.id === id);
+      if (customerId && joriyFaoliyat?.turi === "Izoh") {
+        await crmApi.commentOchirish(id);
+      } else if (customerId && joriyFaoliyat && !id.startsWith("chat-")) {
+        await crmApi.activityOchirish(id);
+      }
+      setSaqlanganFaoliyatlar((joriy) => {
+        const yangilangan = joriy.filter((faoliyat) => faoliyat.id !== id);
+        if (!customerId) sotuvFaoliyatlariniSaqlash(sotuv.id, yangilangan);
+        return yangilangan;
+      });
+    } catch (error) {
+      setCrmXatolik(getApiErrorMessage(error));
+    }
+  }
+
+  async function faoliyatniZakrepitQilish(faoliyat: SaqlanganFaoliyat) {
+    try {
+      if (customerId && faoliyat.turi === "Izoh") {
+        const comment = faoliyat.pinned
+          ? await crmApi.commentUnpin(faoliyat.id)
+          : await crmApi.commentPin(faoliyat.id);
+        setSaqlanganFaoliyatlar((joriy) =>
+          joriy.map((item) => (item.id === faoliyat.id ? crmCommentniFaoliyatga(comment) : item))
+        );
+        return;
+      }
+      await faoliyatniYangilash(faoliyat.id, { pinned: !faoliyat.pinned });
+    } catch (error) {
+      setCrmXatolik(getApiErrorMessage(error));
+    }
   }
 
   return (
@@ -1056,8 +1228,18 @@ function UmumiyTab({
       <TimelineRail />
 
         <main className="space-y-6">
+          {crmXatolik && (
+            <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">
+              {crmXatolik}
+            </div>
+          )}
           <FaoliyatPanel xodimlar={xodimlar} onSaqlash={faoliyatniSaqlash} />
         <Divider label="Bugun" />
+        {crmYuklanmoqda && (
+          <div className="flex h-24 items-center justify-center rounded-2xl bg-white shadow-sm">
+            <LoaderCircle className="animate-spin text-orange-500" size={24} />
+          </div>
+        )}
         {hujjatlar.map((hujjat) => (
           <HujjatFeedCard
             key={hujjat.id}
@@ -1076,7 +1258,7 @@ function UmumiyTab({
               xodimlar={xodimlar}
               onOchirish={faoliyatniOchirish}
               onYangilash={faoliyatniYangilash}
-              onZakrepit={(id) => faoliyatniYangilash(id, { pinned: !faoliyat.pinned })}
+              onZakrepit={() => void faoliyatniZakrepitQilish(faoliyat)}
             />
           ) : (
               <FeedCard
