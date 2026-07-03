@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import { omborlarApi, yetkazibBeruvchiYaratish, yetkazibBeruvchilar as yetkazibBeruvchilarApi } from "@/api/omborApi";
 import { useMahsulotlarStore } from "@/store/mahsulotlarStore";
 import type {
   Kategoriya,
@@ -27,6 +28,7 @@ import type {
   MahsulotModifikatsiyasi,
   OlchovBirligi,
 } from "@/types/catalog";
+import type { NomliEntity, Ombor } from "@/types/ombor";
 
 type Tab = "mahsulotlar" | "kategoriyalar" | "birliklar";
 type Korinish = "kartochka" | "jadval";
@@ -55,6 +57,19 @@ type VariantDraft = {
   retailCurrency: "UZS" | "USD";
   wholesalePrice: string;
   wholesaleCurrency: "UZS" | "USD";
+};
+
+type VariantStockDraft = {
+  open: boolean;
+  warehouseId: string;
+  quantity: string;
+  minStock: string;
+};
+
+type OptionalFeatureField = {
+  id: number;
+  name: string;
+  value: string;
 };
 
 const korinishlar: Array<{ id: Korinish; nom: string; icon: typeof Boxes }> = [
@@ -269,6 +284,14 @@ function MoneyInput({value,suffix,onChange,currency,onCurrencyChange,onApplyAll}
   </div>;
 }
 
+function StockInput({value,onChange,warning}:{value:string;onChange:(value:string)=>void;warning?:boolean}) {
+  return <div className="relative max-w-[170px]">
+    {warning&&<span className="absolute left-4 top-1/2 z-10 flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full bg-yellow-400 text-[10px] font-black text-white">!</span>}
+    <input value={formatNumberInput(value)} onChange={(e)=>onChange(e.target.value.replace(/[^\d.]/g,""))} className={`h-11 w-full rounded-2xl border border-transparent bg-white px-4 text-sm font-black text-gray-700 outline-none focus:border-orange-200 focus:ring-2 focus:ring-orange-100 ${warning?"pl-10":"pl-4"} pr-14`} placeholder="0"/>
+    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-gray-400">dona</span>
+  </div>;
+}
+
 function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}) {
   const store=useMahsulotlarStore();
   const editing=item!=="new";
@@ -285,6 +308,24 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
   const [savedVariationOptions,setSavedVariationOptions]=useState<Record<string,string[]>>({});
   const [activeVariationRow,setActiveVariationRow]=useState<number|null>(null);
   const [variantDrafts,setVariantDrafts]=useState<Record<string,VariantDraft>>({});
+  const [variantStockDrafts,setVariantStockDrafts]=useState<Record<string,VariantStockDraft>>({});
+  const [omborlar,setOmborlar]=useState<Ombor[]>([]);
+  const [yetkazibBeruvchilar,setYetkazibBeruvchilar]=useState<NomliEntity[]>([]);
+  const [brand,setBrand]=useState("");
+  const [brandInput,setBrandInput]=useState("");
+  const [savedBrands,setSavedBrands]=useState<string[]>([]);
+  const [brandMenuOpen,setBrandMenuOpen]=useState(false);
+  const [supplierId,setSupplierId]=useState("");
+  const [supplierInput,setSupplierInput]=useState("");
+  const [supplierMenuOpen,setSupplierMenuOpen]=useState(false);
+  const [supplierCreating,setSupplierCreating]=useState(false);
+  const [categorySearch,setCategorySearch]=useState("");
+  const [newCategoryName,setNewCategoryName]=useState("");
+  const [categoryCreating,setCategoryCreating]=useState(false);
+  const [editingCategoryId,setEditingCategoryId]=useState<string|null>(null);
+  const [editingCategoryName,setEditingCategoryName]=useState("");
+  const [categoryUpdating,setCategoryUpdating]=useState(false);
+  const [optionalFields,setOptionalFields]=useState<OptionalFeatureField[]>([]);
   const imageInputRef=useRef<HTMLInputElement|null>(null);
 
   const variantCombinations = useMemo<VariantCombination[]>(() => {
@@ -331,6 +372,39 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
     });
   }, [variantCombinations]);
 
+  useEffect(() => {
+    let mounted=true;
+    Promise.allSettled([omborlarApi.royxat(), yetkazibBeruvchilarApi()])
+      .then(([omborNatija,yetkazibBeruvchiNatija])=>{
+        if(!mounted)return;
+        setOmborlar(omborNatija.status==="fulfilled"?omborNatija.value:[]);
+        setYetkazibBeruvchilar(yetkazibBeruvchiNatija.status==="fulfilled"?yetkazibBeruvchiNatija.value:[]);
+      });
+    return ()=>{mounted=false};
+  }, []);
+
+  const filteredCategories=useMemo(()=>{
+    const query=categorySearch.trim().toLowerCase();
+    return query
+      ?store.kategoriyalar.filter((kategoriya)=>kategoriya.name.toLowerCase().includes(query))
+      :store.kategoriyalar;
+  },[categorySearch,store.kategoriyalar]);
+
+  useEffect(() => {
+    setVariantStockDrafts((drafts) => {
+      const next: Record<string, VariantStockDraft> = {};
+      variantCombinations.forEach((combo,index) => {
+        next[combo.key] = drafts[combo.key] ?? {
+          open: index === 0,
+          warehouseId: omborlar[0]?.id ?? "",
+          quantity: "",
+          minStock: "",
+        };
+      });
+      return next;
+    });
+  }, [variantCombinations, omborlar]);
+
   async function save(e:FormEvent){
     e.preventDefault();
     const variantParams=variationRows.reduce<Record<string, string[]>>((params,row)=>{
@@ -339,13 +413,30 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
       return params;
     },{});
     const hasVariantParams=Object.keys(variantParams).length>0;
+    const selectedSupplier=yetkazibBeruvchilar.find((supplier)=>supplier.id===supplierId);
+    const characteristicParams:Record<string, unknown>={};
+    if(brand.trim())characteristicParams.brand=brand.trim();
+    if(selectedSupplier){
+      characteristicParams.supplierId=selectedSupplier.id;
+      characteristicParams.supplierName=selectedSupplier.name??selectedSupplier.fullName??selectedSupplier.username??selectedSupplier.id;
+    }
+    optionalFields.forEach((field)=>{
+      const key=field.name.trim();
+      const value=field.value.trim();
+      if(key&&value)characteristicParams[key]=value;
+    });
+    const defaultParams={
+      ...(hasVariantParams?variantParams:{}),
+      ...characteristicParams,
+    };
+    const hasDefaultParams=Object.keys(defaultParams).length>0;
     const generatedVariants=variantCombinations
       .filter((combo)=>variantDrafts[combo.key]?.active!==false)
       .map((combo)=>({
         name:combo.label,
         barcode:variantDrafts[combo.key]?.barcode||generateBarcodeValue(),
         article:article.trim()||undefined,
-        params:combo.params,
+        params:{...combo.params,...characteristicParams},
         price:{
           costPrice:Number(variantDrafts[combo.key]?.costPrice||0),
           retailPrice:Number(variantDrafts[combo.key]?.retailPrice||0),
@@ -363,7 +454,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
           name:hasVariantParams?Object.values(variantParams).flat().join(", "):"Asosiy variant",
           barcode:barcode.trim(),
           article:article.trim()||undefined,
-          params:hasVariantParams?variantParams:undefined,
+          params:hasDefaultParams?defaultParams:undefined,
           price:{
             costPrice:0,
             retailPrice:0,
@@ -451,10 +542,119 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
     );
   }
 
+  function filteredBrands() {
+    const query=brandInput.trim().toLowerCase();
+    return savedBrands.filter((item)=>item!==brand&&(!query||item.toLowerCase().includes(query)));
+  }
+
+  function addBrand(value=brandInput) {
+    const clean=value.trim();
+    if(!clean)return;
+    setBrand(clean);
+    setSavedBrands((items)=>Array.from(new Set([...items,clean])));
+    setBrandInput(clean);
+    setBrandMenuOpen(false);
+  }
+
+  function supplierName(supplier:NomliEntity) {
+    return supplier.name??supplier.fullName??supplier.username??supplier.id;
+  }
+
+  function filteredSuppliers() {
+    const query=supplierInput.trim().toLowerCase();
+    return yetkazibBeruvchilar.filter((supplier)=> {
+      const nameValue=supplierName(supplier);
+      return supplier.id!==supplierId&&(!query||nameValue.toLowerCase().includes(query));
+    });
+  }
+
+  function selectSupplier(supplier:NomliEntity) {
+    setSupplierId(supplier.id);
+    setSupplierInput(supplierName(supplier));
+    setSupplierMenuOpen(false);
+  }
+
+  async function createSupplierFromInput() {
+    const nameValue=supplierInput.trim();
+    if(!nameValue)return;
+    const existing=yetkazibBeruvchilar.find((supplier)=>supplierName(supplier).toLowerCase()===nameValue.toLowerCase());
+    if(existing){
+      selectSupplier(existing);
+      return;
+    }
+    setSupplierCreating(true);
+    try {
+      const created=await yetkazibBeruvchiYaratish({name:nameValue});
+      setYetkazibBeruvchilar((items)=>[created,...items]);
+      selectSupplier(created);
+    } finally {
+      setSupplierCreating(false);
+    }
+  }
+
+  function addOptionalField() {
+    setOptionalFields((fields)=>[...fields,{id:Date.now(),name:"",value:""}]);
+  }
+
+  function updateOptionalField(id:number, patch:Partial<OptionalFeatureField>) {
+    setOptionalFields((fields)=>fields.map((field)=>field.id===id?{...field,...patch}:field));
+  }
+
+  function removeOptionalField(id:number) {
+    setOptionalFields((fields)=>fields.filter((field)=>field.id!==id));
+  }
+
+  async function createCategoryFromCharacteristics() {
+    const nameValue=(newCategoryName.trim()||categorySearch.trim());
+    if(!nameValue)return;
+    const existing=store.kategoriyalar.find((kategoriya)=>
+      kategoriya.name.toLowerCase()===nameValue.toLowerCase()
+    );
+    if(existing){
+      setCategoryId(existing.id);
+      setCategorySearch("");
+      setNewCategoryName("");
+      return;
+    }
+    setCategoryCreating(true);
+    const ok=await store.kategoriyaSaqlash(null,{name:nameValue});
+    setCategoryCreating(false);
+    if(!ok)return;
+    const created=useMahsulotlarStore.getState().kategoriyalar.find((kategoriya)=>
+      kategoriya.name.toLowerCase()===nameValue.toLowerCase()
+    );
+    if(created)setCategoryId(created.id);
+    setCategorySearch("");
+    setNewCategoryName("");
+  }
+
+  function startCategoryEdit(kategoriya:Kategoriya) {
+    setEditingCategoryId(kategoriya.id);
+    setEditingCategoryName(kategoriya.name);
+  }
+
+  async function saveCategoryEdit() {
+    const nameValue=editingCategoryName.trim();
+    if(!editingCategoryId||!nameValue)return;
+    setCategoryUpdating(true);
+    const ok=await store.kategoriyaSaqlash(editingCategoryId,{name:nameValue});
+    setCategoryUpdating(false);
+    if(!ok)return;
+    setEditingCategoryId(null);
+    setEditingCategoryName("");
+  }
+
   function updateVariantDraft(key:string, patch:Partial<VariantDraft>) {
     setVariantDrafts((drafts)=>({
       ...drafts,
       [key]: {...(drafts[key]??{barcode:"",imageUrl:"",active:true,costPrice:"",costCurrency:"UZS",markup:"",retailPrice:"",retailCurrency:"UZS",wholesalePrice:"",wholesaleCurrency:"UZS"}),...patch},
+    }));
+  }
+
+  function updateVariantStockDraft(key:string, patch:Partial<VariantStockDraft>) {
+    setVariantStockDrafts((drafts)=>({
+      ...drafts,
+      [key]: {...(drafts[key]??{open:false,warehouseId:omborlar[0]?.id??"",quantity:"",minStock:""}),...patch},
     }));
   }
 
@@ -539,13 +739,12 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
     updateVariantDraft(key,{imageUrl:URL.createObjectURL(file)});
   }
 
-  return <AppModal><form onSubmit={save} className="scrollbar-hidden max-h-[94vh] w-full max-w-6xl overflow-y-auto rounded-[30px] bg-white shadow-2xl">
+  return <AppModal><form onSubmit={save} className="scrollbar-hidden max-h-[94vh] w-full max-w-[min(1500px,calc(100vw-32px))] overflow-y-auto rounded-[30px] bg-white shadow-2xl">
     <div className="flex items-center justify-between gap-4 border-b border-gray-100 px-6 py-5">
       <div className="flex min-w-0 items-center gap-4">
         <button type="button" onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white"><X size={18}/></button>
         <h2 className="truncate text-2xl font-black">{editing?"Mahsulotni tahrirlash":"Yangi mahsulot"}</h2>
       </div>
-      <button disabled={store.amalBajarilmoqda} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white shadow-sm disabled:opacity-50">{store.amalBajarilmoqda&&<LoaderCircle size={16} className="animate-spin"/>}{editing?"Saqlash":"Yaratish"}</button>
     </div>
 
     <div className="px-6 py-6">
@@ -553,53 +752,63 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
         {store.xatolik&&<div className="mb-4"><ErrorBox/></div>}
         <section className="space-y-5">
           <div className="flex items-center gap-4"><h3 className="text-xl font-black">Asosiy</h3><div className="h-px flex-1 bg-gray-100"/></div>
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="grid gap-5 xl:grid-cols-3">
             <div className="space-y-4">
-              <label className="block text-sm font-black text-gray-500">Nomi *
-                <div className="relative mt-2">
-                  <input value={name} onChange={e=>setName(e.target.value)} className="input pr-40" placeholder="Nomi kiriting"/>
-                  <button type="button" onClick={quickFill} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl px-3 py-1.5 text-sm font-black text-orange-600 hover:bg-orange-50">Tez qo'shish</button>
-                </div>
-              </label>
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="block text-sm font-black text-gray-500">Artikul *
+                <label className="block text-sm font-black text-gray-500">Nomi *
                   <div className="relative mt-2">
-                    <input value={article} onChange={e=>setArticle(e.target.value)} className="input pr-36" placeholder="Artikul kiriting"/>
-                    <button type="button" onClick={generateArticle} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl px-3 py-1.5 text-sm font-black text-orange-600 hover:bg-orange-50">Generatsiya</button>
+                    <input value={name} onChange={e=>setName(e.target.value)} className="input pr-28" placeholder="Nomi kiriting"/>
+                    <button type="button" onClick={quickFill} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1.5 text-xs font-black text-orange-600 hover:bg-orange-50">Tez</button>
                   </div>
                 </label>
+                <label className="block text-sm font-black text-gray-500">Artikul *
+                  <div className="relative mt-2">
+                    <input value={article} onChange={e=>setArticle(e.target.value)} className="input pr-24" placeholder="Artikul"/>
+                    <button type="button" onClick={generateArticle} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1.5 text-xs font-black text-orange-600 hover:bg-orange-50">Gen</button>
+                  </div>
+                </label>
+            </div>
+            <div className="space-y-4">
                 <label className="block text-sm font-black text-gray-500">Barkod{editing?"":" *"}
                   <div className="relative mt-2">
-                    <input value={barcode} onChange={e=>setBarcode(e.target.value)} className="input pr-36" placeholder="Barkod kiriting"/>
-                    <button type="button" onClick={generateBarcode} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl px-3 py-1.5 text-sm font-black text-orange-600 hover:bg-orange-50">Generatsiya</button>
+                    <input value={barcode} onChange={e=>setBarcode(e.target.value)} className="input pr-24" placeholder="Barkod"/>
+                    <button type="button" onClick={generateBarcode} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1.5 text-xs font-black text-orange-600 hover:bg-orange-50">Gen</button>
                   </div>
                 </label>
                 <label className="block text-sm font-black text-gray-500">Kategoriya *
-                  <select value={categoryId} onChange={e=>setCategoryId(e.target.value)} className="input mt-2"><option value="">Kategoriya tanlang</option>{store.kategoriyalar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>
+                  <select value={categoryId} onChange={e=>setCategoryId(e.target.value)} className="input mt-2"><option value="">Kategoriya</option>{store.kategoriyalar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>
                 </label>
-                <label className="block text-sm font-black text-gray-500">O'lchov birligi *
-                  <select value={unitId} onChange={e=>setUnitId(e.target.value)} className="input mt-2"><option value="">O'lchov birligi tanlang</option>{store.birliklar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>
-                </label>
-              </div>
             </div>
-            <div className="space-y-2">
-              <p className="text-sm font-black text-gray-500">Foto</p>
-              <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden"/>
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={()=>imageInputRef.current?.click()}
-                onKeyDown={(e)=>{if(e.key==="Enter"||e.key===" ")imageInputRef.current?.click()}}
-                onDragOver={(e)=>e.preventDefault()}
-                onDrop={handleImageDrop}
-                className="flex min-h-[236px] cursor-pointer flex-col items-center justify-center rounded-[24px] border border-dashed border-gray-200 bg-gray-100 px-5 py-6 text-center transition hover:border-orange-200 hover:bg-orange-50/40"
-              >
-                {imageUrl ? <img src={imageUrl} alt="Mahsulot rasmi" className="max-h-48 rounded-2xl object-contain"/> : <>
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-orange-500 shadow-sm"><ImagePlus size={24}/></div>
-                  <p className="font-black text-gray-600">Rasmni shu joyga tashlang</p>
-                  <p className="mt-1 text-sm font-bold text-gray-400">yoki</p>
-                  <p className="text-sm font-black text-orange-600">Tanlash uchun bosing</p>
-                </>}
+            <div className="space-y-4">
+                <div className="block text-sm font-black text-gray-500">
+                  <p>O'lchov birligi *</p>
+                  <div className="mt-2 flex items-center gap-3">
+                    <select value={unitId} onChange={e=>setUnitId(e.target.value)} className="input min-w-0 flex-1"><option value="">O'lchov birligi tanlang</option>{store.birliklar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>
+                    <button type="button" onClick={()=>setIsActive(!isActive)} aria-label="Mahsulot holatini o'zgartirish" className={`flex h-8 w-14 shrink-0 items-center rounded-full p-1 transition ${isActive?"bg-orange-500 shadow-sm shadow-orange-100":"bg-gray-200"}`}>
+                      <span className={`h-6 w-6 rounded-full bg-white shadow transition ${isActive?"translate-x-6":"translate-x-0"}`}/>
+                    </button>
+                  </div>
+                </div>
+              <div className="space-y-2">
+                <p className="text-sm font-black text-gray-500">Foto</p>
+                <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden"/>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={()=>imageInputRef.current?.click()}
+                  onKeyDown={(e)=>{if(e.key==="Enter"||e.key===" ")imageInputRef.current?.click()}}
+                  onDragOver={(e)=>e.preventDefault()}
+                  onDrop={handleImageDrop}
+                  className="flex min-h-[108px] cursor-pointer flex-col items-center justify-center rounded-[24px] border border-dashed border-gray-200 bg-gray-100 px-4 py-4 text-center transition hover:border-orange-200 hover:bg-orange-50/40"
+                >
+                  {imageUrl ? <div className="relative">
+                    <img src={imageUrl} alt="Mahsulot rasmi" className="max-h-24 rounded-2xl object-contain"/>
+                    <button type="button" onClick={(event)=>{event.stopPropagation();setImageUrl("")}} className="absolute -right-3 -top-3 flex h-7 w-7 items-center justify-center rounded-full bg-white text-red-500 shadow-lg ring-1 ring-red-100 hover:bg-red-500 hover:text-white"><X size={15}/></button>
+                  </div> : <>
+                    <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-orange-500 shadow-sm"><ImagePlus size={20}/></div>
+                    <p className="text-sm font-black text-gray-600">Rasmni tashlang</p>
+                    <p className="text-sm font-black text-orange-600">Tanlash uchun bosing</p>
+                  </>}
+                </div>
               </div>
             </div>
           </div>
@@ -685,13 +894,117 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
                 })}
               </div>
             </div>}
+            {variantCombinations.length>0&&<div className="space-y-3">
+              {variantCombinations.map((combo)=>{
+                const stock=variantStockDrafts[combo.key]??{open:false,warehouseId:omborlar[0]?.id??"",quantity:"",minStock:""};
+                return <div key={combo.key} className="overflow-hidden rounded-[24px] bg-gray-50 ring-1 ring-gray-100">
+                  <button type="button" onClick={()=>updateVariantStockDraft(combo.key,{open:!stock.open})} className="flex w-full items-center gap-2 border-b border-gray-100 px-5 py-4 text-left text-sm font-black text-gray-600 hover:bg-orange-50/50">
+                    {stock.open?<ChevronUp size={16}/>:<ChevronDown size={16}/>}
+                    <span className="truncate">{name.trim()||"Mahsulot"} / {combo.label}</span>
+                  </button>
+                  {stock.open&&<div className="px-5 pb-5 pt-4">
+                    <div className="grid grid-cols-[minmax(180px,1fr)_190px_190px] gap-4 border-b border-gray-200 pb-3 text-xs font-black uppercase tracking-[0.08em] text-gray-500">
+                      <span>Do'kon / Ombor</span>
+                      <span>Miqdor</span>
+                      <span>Minimal qoldiq</span>
+                    </div>
+                    <div className="grid grid-cols-[minmax(180px,1fr)_190px_190px] items-center gap-4 pt-3">
+                      {omborlar.length>0?<select value={stock.warehouseId} onChange={(e)=>updateVariantStockDraft(combo.key,{warehouseId:e.target.value})} className="h-11 rounded-2xl border border-transparent bg-white px-4 text-sm font-black text-gray-600 outline-none focus:border-orange-200 focus:ring-2 focus:ring-orange-100">
+                        {omborlar.map((ombor)=><option key={ombor.id} value={ombor.id}>{ombor.name}</option>)}
+                      </select>:<div className="h-11 rounded-2xl bg-white px-4 py-3 text-sm font-black text-gray-600">Store Shop</div>}
+                      <StockInput value={stock.quantity} onChange={(value)=>updateVariantStockDraft(combo.key,{quantity:value})}/>
+                      <StockInput value={stock.minStock} onChange={(value)=>updateVariantStockDraft(combo.key,{minStock:value})} warning/>
+                    </div>
+                  </div>}
+                </div>
+              })}
+            </div>}
+            <div className="space-y-5 pt-2">
+              <div className="flex items-center gap-4"><h3 className="text-xl font-black">Xarakteristikalar</h3><div className="h-px flex-1 border-t border-dashed border-gray-200"/></div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="block text-sm font-black text-gray-500">Brend
+                  <div className="relative mt-2 space-y-2">
+                    <div className="relative">
+                      <input value={brandInput} onFocus={()=>setBrandMenuOpen(true)} onChange={(e)=>{setBrandInput(e.target.value);setBrand(e.target.value.trim());setBrandMenuOpen(true)}} onKeyDown={(e)=>{if(e.key==="Enter"){e.preventDefault();addBrand()}}} className="input bg-gray-100 pr-12 focus:border-blue-400 focus:ring-blue-100" placeholder="Brend kiriting"/>
+                      <ChevronDown size={17} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"/>
+                    </div>
+                    {brandMenuOpen&&filteredBrands().length>0&&<div className="absolute left-0 right-0 top-[52px] z-30 overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-gray-100">
+                      {filteredBrands().map((item)=><button key={item} type="button" onMouseDown={(e)=>{e.preventDefault();addBrand(item)}} className="block w-full px-5 py-3 text-left text-sm font-black text-gray-600 hover:bg-orange-50 hover:text-orange-600">{item}</button>)}
+                    </div>}
+                    {brandInput.trim()&&!savedBrands.includes(brandInput.trim())&&<button type="button" onClick={()=>addBrand()} className="flex w-full items-center gap-2 rounded-2xl bg-gray-100 px-4 py-3 text-left text-sm font-black text-gray-600 hover:bg-orange-50 hover:text-orange-600"><Plus size={16}/>Qo'shish "{brandInput.trim()}"</button>}
+                  </div>
+                </label>
+                <label className="block text-sm font-black text-gray-500">Yetkazib beruvchi
+                  <div className="relative mt-2 space-y-2">
+                    <div className="relative">
+                      <input value={supplierInput} onFocus={()=>setSupplierMenuOpen(true)} onChange={(e)=>{setSupplierInput(e.target.value);setSupplierId("");setSupplierMenuOpen(true)}} onKeyDown={(e)=>{if(e.key==="Enter"){e.preventDefault();void createSupplierFromInput()}}} className="input bg-gray-100 pr-12 focus:border-blue-400 focus:ring-blue-100" placeholder="Yetkazib beruvchi kiriting"/>
+                      <ChevronDown size={17} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"/>
+                    </div>
+                    {supplierMenuOpen&&filteredSuppliers().length>0&&<div className="absolute left-0 right-0 top-[52px] z-30 overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-gray-100">
+                      {filteredSuppliers().map((supplier)=><button key={supplier.id} type="button" onMouseDown={(e)=>{e.preventDefault();selectSupplier(supplier)}} className="block w-full px-5 py-3 text-left text-sm font-black text-gray-600 hover:bg-orange-50 hover:text-orange-600">{supplierName(supplier)}</button>)}
+                    </div>}
+                    {supplierInput.trim()&&!yetkazibBeruvchilar.some((supplier)=>supplierName(supplier).toLowerCase()===supplierInput.trim().toLowerCase())&&<button type="button" disabled={supplierCreating} onClick={()=>void createSupplierFromInput()} className="flex w-full items-center gap-2 rounded-2xl bg-gray-100 px-4 py-3 text-left text-sm font-black text-gray-600 disabled:opacity-50 hover:bg-orange-50 hover:text-orange-600">{supplierCreating?<LoaderCircle size={16} className="animate-spin"/>:<Plus size={16}/>}Qo'shish "{supplierInput.trim()}"</button>}
+                  </div>
+                </label>
+              </div>
+              <div className="rounded-[24px] border border-dashed border-gray-200 px-5 py-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-base font-black text-gray-600">Qo'shimcha maydon</p>
+                    <p className="mt-1 text-sm font-bold text-gray-400">Mahsulotga kerakli qo'shimcha xarakteristika qo'shing</p>
+                  </div>
+                  <button type="button" onClick={addOptionalField} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-gray-100 px-4 text-sm font-black text-blue-500 hover:bg-orange-50 hover:text-orange-600"><Plus size={17}/>Maydon qo'shish</button>
+                </div>
+                {optionalFields.length>0&&<div className="mt-4 space-y-3">
+                  {optionalFields.map((field)=>(
+                    <div key={field.id} className="grid gap-3 md:grid-cols-[1fr_1fr_44px]">
+                      <input value={field.name} onChange={(e)=>updateOptionalField(field.id,{name:e.target.value})} className="input bg-gray-100" placeholder="Maydon nomi"/>
+                      <input value={field.value} onChange={(e)=>updateOptionalField(field.id,{value:e.target.value})} className="input bg-gray-100" placeholder="Qiymat"/>
+                      <button type="button" onClick={()=>removeOptionalField(field.id)} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white"><X size={18}/></button>
+                    </div>
+                  ))}
+                </div>}
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-black text-gray-500">Kategoriya</p>
+                <div className="rounded-[24px] border border-gray-200 p-4">
+                  <div className="relative">
+                    <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
+                    <input value={categorySearch} onChange={(e)=>setCategorySearch(e.target.value)} onKeyDown={(e)=>{if(e.key==="Enter"){e.preventDefault();void createCategoryFromCharacteristics()}}} className="input bg-gray-100 pl-11" placeholder="Kategoriya nomi"/>
+                  </div>
+                  <div className="scrollbar-hidden mt-3 max-h-40 space-y-2 overflow-y-auto">
+                    {filteredCategories.map((kategoriya)=>(
+                      editingCategoryId===kategoriya.id?
+                        <div key={kategoriya.id} className="flex items-center gap-2 rounded-2xl bg-orange-50 p-2 ring-1 ring-orange-100">
+                          <input value={editingCategoryName} onChange={(e)=>setEditingCategoryName(e.target.value)} onKeyDown={(e)=>{if(e.key==="Enter"){e.preventDefault();void saveCategoryEdit()}if(e.key==="Escape"){setEditingCategoryId(null);setEditingCategoryName("")}}} className="h-10 min-w-0 flex-1 rounded-xl border border-orange-100 bg-white px-3 text-sm font-black text-gray-700 outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100" autoFocus/>
+                          <button type="button" disabled={categoryUpdating||!editingCategoryName.trim()} onClick={()=>void saveCategoryEdit()} className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500 text-white disabled:opacity-50">{categoryUpdating?<LoaderCircle size={16} className="animate-spin"/>:<Edit3 size={16}/>}</button>
+                          <button type="button" onClick={()=>{setEditingCategoryId(null);setEditingCategoryName("")}} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-gray-400 hover:text-red-500"><X size={16}/></button>
+                        </div>:
+                        <div key={kategoriya.id} className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black transition ${categoryId===kategoriya.id?"bg-orange-50 text-orange-600 ring-1 ring-orange-100":"bg-gray-100 text-gray-600 hover:bg-orange-50 hover:text-orange-600"}`}>
+                          <button type="button" onClick={()=>setCategoryId(kategoriya.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                            <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${categoryId===kategoriya.id?"border-orange-500 bg-orange-500":"border-gray-300 bg-white"}`}>
+                              {categoryId===kategoriya.id&&<span className="h-1.5 w-1.5 rounded-sm bg-white"/>}
+                            </span>
+                            <span className="min-w-0 flex-1 truncate">{kategoriya.name}</span>
+                          </button>
+                          <button type="button" onClick={()=>startCategoryEdit(kategoriya)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-blue-500 hover:bg-white hover:text-orange-500"><Edit3 size={16}/></button>
+                        </div>
+                    ))}
+                    {filteredCategories.length===0&&<div className="rounded-2xl bg-gray-50 px-4 py-3 text-center text-sm font-bold text-gray-400">Kategoriya topilmadi</div>}
+                  </div>
+                  <div className="mt-3">
+                    <input value={newCategoryName} onChange={(e)=>setNewCategoryName(e.target.value)} onKeyDown={(e)=>{if(e.key==="Enter"){e.preventDefault();void createCategoryFromCharacteristics()}}} className="sr-only" placeholder="Yangi kategoriya nomi"/>
+                    <button type="button" disabled={categoryCreating||!(newCategoryName.trim()||categorySearch.trim())} onClick={()=>void createCategoryFromCharacteristics()} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gray-100 px-5 text-sm font-black text-blue-500 disabled:opacity-50 hover:bg-orange-50 hover:text-orange-600">
+                      {categoryCreating?<LoaderCircle size={16} className="animate-spin"/>:<Plus size={17}/>}
+                      Yangi kategoriya qo'shish
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
-        <section className="space-y-5">
-          <div className="flex items-center gap-4"><h3 className="text-xl font-black">Holat</h3><div className="h-px flex-1 bg-gray-100"/></div>
-          <label className="flex items-center gap-3 rounded-2xl bg-orange-50 p-4 font-bold text-gray-700"><input type="checkbox" checked={isActive} onChange={e=>setIsActive(e.target.checked)} className="h-5 w-5 accent-orange-500"/>Mahsulot faol</label>
-        </section>
       </main>
     </div>
 
