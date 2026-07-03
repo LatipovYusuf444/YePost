@@ -20,6 +20,10 @@ import {
   pulniFormatlash,
   qaytarishSummasi,
   sananiFormatlash,
+  sotuvMahsulotiId,
+  sotuvMahsulotiMiqdori,
+  sotuvMahsulotiModifikatsiyaId,
+  sotuvMahsulotiNarxi,
   sotuvRaqami,
 } from "./savdoYordamchilari";
 import SavdoSelect from "./SavdoSelect";
@@ -114,22 +118,33 @@ export default function QaytarishTafsilotlariModal({
       setResponsibleId(sotuv.responsibleId ?? "");
       setItems(
         (sotuv.items ?? [])
-          .filter((item) => item.id && item.modificationId)
           .map((item) => {
+            const saleItemId = sotuvMahsulotiId(item);
+            const modificationId = sotuvMahsulotiModifikatsiyaId(item);
+            const sotilganMiqdor = sotuvMahsulotiMiqdori(item);
+            const sotilganNarx = sotuvMahsulotiNarxi(item);
             const qaytarilgan = mavjud?.items?.find(
               (qaytarishItem) =>
-                qaytarishItem.saleItemId === item.id ||
+                qaytarishItem.saleItemId === saleItemId ||
                 qaytarishItem.saleItemId === item.saleItemId
             );
             return {
-              saleItemId: item.id ?? item.saleItemId ?? "",
-              modificationId: item.modificationId,
-              quantity: Number(qaytarilgan?.quantity ?? item.quantity),
-              price: Number(qaytarilgan?.price ?? item.price),
-              maxQuantity: Number(item.quantity),
+              saleItemId,
+              modificationId,
+              quantity: Number(qaytarilgan?.quantity ?? sotilganMiqdor),
+              price: Number(qaytarilgan?.price ?? sotilganNarx),
+              maxQuantity: sotilganMiqdor,
               nom: mahsulotNomi(item),
             };
           })
+          .filter(
+            (item) =>
+              item.saleItemId &&
+              item.modificationId &&
+              Number.isFinite(item.quantity) &&
+              Number.isFinite(item.price) &&
+              item.maxQuantity >= 0.001
+          )
       );
       return sotuv;
     } finally {

@@ -242,12 +242,13 @@ export default function Savdo() {
             </section>
           )}
 
-          {faolTab === "tolovlar" && <Tolovlar sotuvlar={sotuvlar} />}
+          {faolTab === "tolovlar" && <Tolovlar sotuvlar={sotuvlar} qaytarishlar={qaytarishlar} />}
           {faolTab === "qaytarish" && (
             <Qaytarish
               sotuvlar={sotuvlar}
               qaytarishlar={qaytarishlar}
               amalBajarilmoqda={amalBajarilmoqda}
+              onSotuvTafsilotiniOlish={sotuvTafsilotiniYuklash}
               onYaratish={yangiQaytarishYaratish}
               onTasdiqlash={qaytarishniTasdiqlash}
               onBekorQilish={qaytarishniBekorQilish}

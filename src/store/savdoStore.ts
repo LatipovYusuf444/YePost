@@ -19,6 +19,7 @@ import {
   sotuvYaratish,
   xodimlarRoyxatiniOlish,
 } from "@/api/savdoApi";
+import { xarajatApi } from "@/api/financeApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type {
   MijozTanlovi,
@@ -30,6 +31,96 @@ import type {
   SotuvYaratishMalumoti,
   XodimTanlovi,
 } from "@/types/savdo";
+import type { TolovUsuli } from "@/types/finance";
+
+const qaytariladiganTolovUsullari = new Set(["CASH", "CARD", "BANK"]);
+
+function bugungiSana() {
+  const date = new Date();
+  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return offsetDate.toISOString().slice(0, 10);
+}
+
+function qaytarishSummasi(qaytarish: Qaytarish) {
+  return Number(
+    qaytarish.totalAmount ??
+      qaytarish.total ??
+      qaytarish.items?.reduce(
+        (jami, item) => jami + Number(item.quantity ?? 0) * Number(item.price ?? 0),
+        0
+      ) ??
+      0
+  );
+}
+
+function qaytarishTolovChiqimlari(qaytarish: Qaytarish, avvalQaytarilganSumma = 0) {
+  let qolganSumma = qaytarishSummasi(qaytarish);
+  let otkazibYuboriladiganSumma = Math.max(avvalQaytarilganSumma, 0);
+  const payments = qaytarish.sale?.payments ?? [];
+  const chiqimlar: Array<{ amount: number; paymentMethod: TolovUsuli }> = [];
+
+  for (const payment of payments) {
+    if (qolganSumma <= 0) break;
+
+    const paymentMethod = String(payment.paymentType ?? "").toUpperCase();
+    const amount = Number(payment.amount ?? 0);
+
+    if (!qaytariladiganTolovUsullari.has(paymentMethod) || amount <= 0) continue;
+
+    let paymentdagiQolganSumma = amount;
+    if (otkazibYuboriladiganSumma > 0) {
+      const otkazildi = Math.min(otkazibYuboriladiganSumma, amount);
+      otkazibYuboriladiganSumma -= otkazildi;
+      paymentdagiQolganSumma -= otkazildi;
+      if (paymentdagiQolganSumma <= 0) continue;
+    }
+
+    const qaytariladiganSumma = Math.min(qolganSumma, paymentdagiQolganSumma);
+    if (qaytariladiganSumma <= 0) continue;
+    chiqimlar.push({
+      amount: qaytariladiganSumma,
+      paymentMethod: paymentMethod as TolovUsuli,
+    });
+    qolganSumma -= qaytariladiganSumma;
+  }
+
+  return chiqimlar;
+}
+
+async function qaytarishToloviniKassagaYozish(qaytarish: Qaytarish, avvalQaytarilganSumma = 0) {
+  const chiqimlar = qaytarishTolovChiqimlari(qaytarish, avvalQaytarilganSumma);
+  if (chiqimlar.length === 0) return;
+
+  await Promise.all(
+    chiqimlar.map((chiqim) =>
+      xarajatApi.yaratish({
+        date: bugungiSana(),
+        category: "OTHER",
+        amount: chiqim.amount,
+        paymentMethod: chiqim.paymentMethod,
+        note: [
+          "Sotuv qaytarimi",
+          `Qaytarish ID: ${qaytarish.id}`,
+          qaytarish.saleId ? `Sotuv ID: ${qaytarish.saleId}` : "",
+          qaytarish.reason ? `Sabab: ${qaytarish.reason}` : "",
+        ]
+          .filter(Boolean)
+          .join(" | "),
+      })
+    )
+  );
+}
+
+async function qaytarishniTolovlariBilanToldirish(qaytarish: Qaytarish) {
+  if (qaytarish.sale?.payments?.length || !qaytarish.saleId) return qaytarish;
+
+  try {
+    const sale = await sotuvTafsilotiniOlish(qaytarish.saleId);
+    return { ...qaytarish, sale };
+  } catch {
+    return qaytarish;
+  }
+}
 
 function qoldiqlarniKatalogBilanBirlashtirish(
   stockQoldiqlar: QoldiqTanlovi[],
@@ -373,13 +464,49 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
 
     try {
+      const oldingiQaytarish =
+        get().qaytarishlar.find((qaytarish) => qaytarish.id === qaytarishId) ??
+        (await qaytarishTafsilotiniOlish(qaytarishId));
       const yangilangan = await qaytarishniTasdiqlash(qaytarishId);
-      set((state) => ({
-        qaytarishlar: state.qaytarishlar.map((qaytarish) =>
-          qaytarish.id === qaytarishId ? yangilangan : qaytarish
+      const toliqQaytarish = await qaytarishniTolovlariBilanToldirish({
+        ...oldingiQaytarish,
+        ...yangilangan,
+        sale: yangilangan.sale ?? oldingiQaytarish?.sale,
+        items: yangilangan.items ?? oldingiQaytarish?.items,
+      } as Qaytarish);
+      const avvalQaytarilganSumma = get()
+        .qaytarishlar.filter(
+          (qaytarish) =>
+            qaytarish.id !== qaytarishId &&
+            qaytarish.saleId === toliqQaytarish.saleId &&
+            String(qaytarish.status ?? "").toUpperCase() === "CONFIRMED"
+        )
+        .reduce((summa, qaytarish) => summa + qaytarishSummasi(qaytarish), 0);
+
+      try {
+        await qaytarishToloviniKassagaYozish(toliqQaytarish, avvalQaytarilganSumma);
+      } catch (error) {
+        set({ xatolik: `Qaytarish tasdiqlandi, lekin to'lov qaytarimi kassaga yozilmadi: ${getApiErrorMessage(error)}` });
+      }
+
+      const [sotuvlar, qaytarishlar] = await Promise.all([
+        sotuvlarRoyxatiniOlish(),
+        qaytarishlarRoyxatiniOlish(),
+      ]);
+      const qoldiqlarniYangilashKerak = toliqQaytarish.warehouseId || yangilangan.warehouseId;
+
+      if (qoldiqlarniYangilashKerak) {
+        await get().qoldiqlarniYuklash(qoldiqlarniYangilashKerak);
+      }
+
+      const boglanganMalumotlar = get();
+      set({
+        sotuvlar: sotuvlar.map((sotuv) =>
+          sotuvniBoglanganMalumotlarBilanBoyitish(sotuv, boglanganMalumotlar)
         ),
+        qaytarishlar,
         amalBajarilmoqda: false,
-      }));
+      });
       return true;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });

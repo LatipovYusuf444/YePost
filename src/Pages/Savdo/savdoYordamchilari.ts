@@ -1,4 +1,70 @@
-import type { Qaytarish, Sotuv, SotuvHolati, TolovTuri } from "@/types/savdo";
+import type { Qaytarish, Sotuv, SotuvHolati, SotuvMahsuloti, TolovTuri } from "@/types/savdo";
+
+type MoslashuvchanSotuvMahsuloti = SotuvMahsuloti &
+  Record<string, unknown> & {
+    saleItem?: { id?: string };
+    modification?: SotuvMahsuloti["modification"] & {
+      price?: {
+        sellingPrice?: number | string;
+        retailPrice?: number | string;
+        wholesalePrice?: number | string;
+      };
+    };
+  };
+
+function raqamgaAylantirish(value: unknown) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  if (typeof value === "string") {
+    const compact = value.replace(/\s/g, "");
+    const normalized = /,\d{3}(\D|$)/.test(compact) && !compact.includes(".")
+      ? compact.replace(/,/g, "")
+      : compact.replace(",", ".");
+    const cleaned = normalized.replace(/[^\d.-]/g, "");
+    const number = Number(cleaned);
+    return Number.isFinite(number) ? number : 0;
+  }
+
+  return 0;
+}
+
+export function sotuvMahsulotiId(item: SotuvMahsuloti) {
+  const mosItem = item as MoslashuvchanSotuvMahsuloti;
+  return item.id ?? item.saleItemId ?? mosItem.saleItem?.id ?? "";
+}
+
+export function sotuvMahsulotiModifikatsiyaId(item: SotuvMahsuloti) {
+  return item.modificationId ?? item.modification?.id ?? "";
+}
+
+export function sotuvMahsulotiMiqdori(item: SotuvMahsuloti) {
+  const mosItem = item as MoslashuvchanSotuvMahsuloti;
+  return raqamgaAylantirish(
+    item.quantity ??
+      mosItem.qty ??
+      mosItem.qtySold ??
+      mosItem.soldQuantity ??
+      mosItem.amount
+  );
+}
+
+export function sotuvMahsulotiNarxi(item: SotuvMahsuloti) {
+  const mosItem = item as MoslashuvchanSotuvMahsuloti;
+  const narx = raqamgaAylantirish(
+    item.price ??
+      mosItem.unitPrice ??
+      mosItem.salePrice ??
+      mosItem.sellingPrice ??
+      mosItem.modification?.price?.sellingPrice ??
+      mosItem.modification?.price?.retailPrice ??
+      mosItem.modification?.price?.wholesalePrice
+  );
+
+  if (narx > 0) return narx;
+
+  const miqdor = sotuvMahsulotiMiqdori(item);
+  const jami = raqamgaAylantirish(mosItem.total ?? mosItem.totalAmount ?? mosItem.sum);
+  return miqdor > 0 && jami > 0 ? jami / miqdor : 0;
+}
 
 export function pulniFormatlash(value: number | string | null | undefined) {
   const raqam = Number(value ?? 0);
@@ -26,7 +92,9 @@ export function sotuvSummasi(sotuv: Sotuv) {
     sotuv.total ??
     sotuv.items?.reduce(
       (jami, mahsulot) =>
-        jami + mahsulot.quantity * mahsulot.price - Number(mahsulot.discount ?? 0),
+        jami +
+        sotuvMahsulotiMiqdori(mahsulot) * sotuvMahsulotiNarxi(mahsulot) -
+        Number(mahsulot.discount ?? 0),
       0
     ) ??
     0

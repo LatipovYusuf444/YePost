@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import {
   Bell,
   CalendarDays,
+  ChevronDown,
   Copy,
   Download,
   ExternalLink,
@@ -48,7 +49,46 @@ type MahsulotQatori = {
   discount: string;
 };
 
-const faoliyatTablar = ["Ish", "Izoh", "Xabar", "Vazifa", "Slotlar", "Ko'proq"];
+const faoliyatTablar = ["Ish", "Izoh", "Xabar", "Vazifa", "Ko'proq"];
+
+const faoliyatMatnlari: Record<string, { title: string; placeholder: string }> = {
+  Ish: {
+    title: "Mijoz bilan bog'lanish",
+    placeholder: "Vazifa haqida batafsil yozing...",
+  },
+  Izoh: {
+    title: "Izoh yozish",
+    placeholder: "Izoh matnini kiriting...",
+  },
+  Xabar: {
+    title: "Xabar yuborish",
+    placeholder: "Xabar matnini kiriting...",
+  },
+  Vazifa: {
+    title: "Vazifa yaratish",
+    placeholder: "Vazifa haqida batafsil yozing...",
+  },
+  "Ko'proq": {
+    title: "Qo'shimcha ish",
+    placeholder: "Qo'shimcha ma'lumot kiriting...",
+  },
+};
+
+const bosqichlar = [
+  { value: "Yangi", label: "Yangi" },
+  { value: "Hujjat tayyorlash", label: "Hujjat tayyorlash" },
+  { value: "Oldindan to'lov hisobi", label: "Oldindan to'lov hisobi" },
+  { value: "Ish jarayonida", label: "Ish jarayonida" },
+  { value: "Yakuniy hisob", label: "Yakuniy hisob" },
+  { value: "Sotuv muvaffaqiyatli", label: "Sotuv muvaffaqiyatli" },
+  { value: "Sotuv bekor bo'ldi", label: "Sotuv bekor bo'ldi" },
+  { value: "Bekor sababini tahlil qilish", label: "Bekor sababini tahlil qilish" },
+];
+
+const valyutalar = [
+  { value: "UZS", label: "O'zbek so'mi" },
+  { value: "USD", label: "AQSH dollari" },
+];
 
 function bugungiSana() {
   const date = new Date();
@@ -61,6 +101,25 @@ function kelasiHafta() {
   date.setDate(date.getDate() + 7);
   const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
   return offsetDate.toISOString().slice(0, 10);
+}
+
+function faoliyatSanasiMatni(dateValue: string, timeValue: string) {
+  const parsed = new Date(`${dateValue || bugungiSana()}T${timeValue || "00:00"}`);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "Bugun, soat 15:00";
+  }
+
+  const sanaMatni =
+    dateValue === bugungiSana()
+      ? "Bugun"
+      : new Intl.DateTimeFormat("uz-UZ", {
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+        }).format(parsed);
+
+  return `${sanaMatni}, soat ${timeValue || "15:00"}`;
 }
 
 function qoldiqNomi(qoldiq: QoldiqTanlovi) {
@@ -135,13 +194,20 @@ export default function YangiSotuvModal({
   const [customerId, setCustomerId] = useState("");
   const [clientCompanyId, setClientCompanyId] = useState("");
   const [responsibleId, setResponsibleId] = useState("");
+  const [sotuvNomi, setSotuvNomi] = useState("");
+  const [bosqich, setBosqich] = useState("Yangi");
+  const [valyuta, setValyuta] = useState("UZS");
   const [note, setNote] = useState("");
   const [tolovTuri, setTolovTuri] = useState<TolovTuri>("CASH");
   const [tolovSummasi, setTolovSummasi] = useState("");
   const [boshlanishSanasi, setBoshlanishSanasi] = useState(bugungiSana());
   const [tugashSanasi, setTugashSanasi] = useState(kelasiHafta());
   const [faolTab, setFaolTab] = useState("Ish");
-  const [faoliyatMatni, setFaoliyatMatni] = useState("");
+  const [faoliyatSarlavha, setFaoliyatSarlavha] = useState("");
+  const [faoliyatTafsilot, setFaoliyatTafsilot] = useState("");
+  const [faoliyatSana, setFaoliyatSana] = useState(bugungiSana());
+  const [faoliyatSoat, setFaoliyatSoat] = useState("15:00");
+  const [faoliyatSaqlangan, setFaoliyatSaqlangan] = useState(false);
   const [mahsulotlar, setMahsulotlar] = useState<MahsulotQatori[]>([
     { modificationId: "", quantity: "1", price: "", discount: "" },
   ]);
@@ -165,6 +231,36 @@ export default function YangiSotuvModal({
   const tanlanganMijoz = mijozlar.find((item) => item.id === customerId);
   const tanlanganKompaniya = mijozKompaniyalari.find((item) => item.id === clientCompanyId);
   const tanlanganOmbor = omborlar.find((item) => item.id === warehouseId);
+  const korsatiladiganSotuvNomi =
+    sotuvNomi.trim() ||
+    (tanlanganMijoz ? `${mijozKorinishi(tanlanganMijoz)} uchun yangi sotuv` : "");
+
+  function backendIzohiniYigish() {
+    const faoliyatOzgarilgan =
+      faoliyatSaqlangan ||
+      Boolean(faoliyatSarlavha.trim()) ||
+      Boolean(faoliyatTafsilot.trim()) ||
+      faoliyatSana !== bugungiSana() ||
+      faoliyatSoat !== "15:00";
+    const faoliyatSarlavhasi =
+      faoliyatSarlavha.trim() || faoliyatMatnlari[faolTab]?.title || "";
+    const faoliyatMalumotlari = [
+      faolTab ? `Faoliyat turi: ${faolTab}` : "",
+      faoliyatSarlavhasi ? `Faoliyat sarlavhasi: ${faoliyatSarlavhasi}` : "",
+      faoliyatTafsilot.trim() ? `Faoliyat izohi: ${faoliyatTafsilot.trim()}` : "",
+      faoliyatSana ? `Faoliyat sanasi: ${faoliyatSana} ${faoliyatSoat}` : "",
+    ].filter(Boolean);
+    const metadata = [
+      korsatiladiganSotuvNomi ? `Sotuv nomi: ${korsatiladiganSotuvNomi}` : "",
+      bosqich ? `Bosqich: ${bosqich}` : "",
+      `Valyuta: ${valyutalar.find((item) => item.value === valyuta)?.label ?? valyuta}`,
+      boshlanishSanasi ? `Boshlanish sanasi: ${boshlanishSanasi}` : "",
+      tugashSanasi ? `Tugash sanasi: ${tugashSanasi}` : "",
+      faoliyatOzgarilgan && faoliyatMalumotlari.length ? faoliyatMalumotlari.join("\n") : "",
+    ].filter(Boolean);
+
+    return [...metadata, note.trim()].filter(Boolean).join("\n");
+  }
 
   function mahsulotniYangilash(index: number, yangilanish: Partial<MahsulotQatori>) {
     setMahsulotlar((joriy) =>
@@ -234,9 +330,12 @@ export default function YangiSotuvModal({
             customerId,
             clientCompanyId,
             responsibleId,
+            sotuvNomi: korsatiladiganSotuvNomi,
+            bosqich,
+            valyuta,
             boshlanishSanasi,
             tugashSanasi,
-            note,
+            note: backendIzohiniYigish(),
             items: mahsulotlar,
             payment: { paymentType: tolovTuri, amount: tolovSummasiRaqam },
           },
@@ -275,6 +374,11 @@ export default function YangiSotuvModal({
       return;
     }
 
+    if (boshlanishSanasi && tugashSanasi && tugashSanasi < boshlanishSanasi) {
+      setXatolik("Tugash sanasi boshlanish sanasidan oldin bo'lmasligi kerak.");
+      return;
+    }
+
     if (tozaMahsulotlar.length === 0) {
       setXatolik("Kamida bitta mahsulot tanlang.");
       return;
@@ -298,7 +402,7 @@ export default function YangiSotuvModal({
       clientCompanyId: clientCompanyId || undefined,
       responsibleId: responsibleId || undefined,
       saleType: customerId || clientCompanyId ? "CLIENT" : "QUICK",
-      note: note.trim() || undefined,
+      note: backendIzohiniYigish() || undefined,
       items: tozaMahsulotlar,
       payments:
         tolovSummasiRaqam > 0
@@ -312,46 +416,46 @@ export default function YangiSotuvModal({
   return (
     <AppModal className="items-start justify-start bg-slate-950/55 p-0 py-3 pl-[78px] pr-3 backdrop-blur-[3px]">
       <div className="relative h-[calc(100vh-32px)] w-full">
-        <div className="absolute -left-[58px] top-5 z-[90] flex flex-col items-center gap-2.5">
+        <div className="absolute -left-[46px] top-5 z-[90] flex flex-col items-center gap-2">
           <button
             type="button"
             onClick={onYopish}
             title="Yopish"
-            className="flex h-11 w-11 items-center justify-center rounded-[15px] bg-[#FF6A00] text-white shadow-[0_12px_26px_rgba(249,115,22,.34)] ring-1 ring-white/80 transition duration-300 hover:-translate-x-1 hover:scale-105 active:scale-95"
+            className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[#FF6A00] text-white shadow-[0_10px_22px_rgba(249,115,22,.32)] ring-1 ring-white/80 transition duration-300 hover:-translate-x-0.5 hover:scale-105 active:scale-95"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
           <button
             type="button"
             onClick={nusxaOlish}
             title="Havolani nusxalash"
-            className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-white text-[#FF6A00] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-1 hover:bg-orange-50"
+            className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#FF6A00] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
           >
-            <Link size={17} />
+            <Link size={15} />
           </button>
           <button
             type="button"
             onClick={qoralamaniYuklash}
             title="Qoralamani yuklash"
-            className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-white text-[#FF6A00] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-1 hover:bg-orange-50"
+            className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#FF6A00] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
           >
-            <Download size={17} />
+            <Download size={15} />
           </button>
           <button
             type="button"
             onClick={() => window.open(window.location.href, "_blank", "noopener,noreferrer")}
             title="Yangi oynada ochish"
-            className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-white text-[#FF6A00] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-1 hover:bg-orange-50"
+            className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#FF6A00] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
           >
-            <ExternalLink size={17} />
+            <ExternalLink size={15} />
           </button>
           <button
             type="button"
             onClick={() => window.print()}
             title="Chop etish"
-            className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-white text-[#FF6A00] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-1 hover:bg-orange-50"
+            className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#FF6A00] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
           >
-            <Printer size={17} />
+            <Printer size={15} />
           </button>
         </div>
 
@@ -406,13 +510,9 @@ export default function YangiSotuvModal({
                       <span className="text-sm font-bold text-slate-400">Sotuv nomi</span>
                       <div className="flex items-center gap-2">
                         <input
-                          value={
-                            tanlanganMijoz
-                              ? `${mijozKorinishi(tanlanganMijoz)} uchun yangi sotuv`
-                              : ""
-                          }
-                          readOnly
-                          placeholder="Sotuv #"
+                          value={sotuvNomi}
+                          onChange={(event) => setSotuvNomi(event.target.value)}
+                          placeholder={korsatiladiganSotuvNomi || "Sotuv #"}
                           className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100"
                         />
                         <FieldSettings />
@@ -422,10 +522,13 @@ export default function YangiSotuvModal({
                     <label className="grid gap-2">
                       <span className="text-sm font-bold text-slate-400">Bosqich</span>
                       <div className="flex items-center gap-2">
-                        <input
-                          value="Yangi"
-                          readOnly
-                          className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold outline-none"
+                        <SavdoSelect
+                          value={bosqich}
+                          onChange={setBosqich}
+                          options={bosqichlar}
+                          className="min-w-0 flex-1"
+                          buttonClassName="h-11 rounded-xl px-3.5 text-sm"
+                          dropdownClassName="min-w-[320px]"
                         />
                         <FieldSettings />
                       </div>
@@ -445,10 +548,11 @@ export default function YangiSotuvModal({
                       </label>
                       <label className="grid gap-2">
                         <span className="text-sm font-bold text-slate-400">Valyuta</span>
-                        <input
-                          value="O'zbek so'mi"
-                          readOnly
-                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold outline-none"
+                        <SavdoSelect
+                          value={valyuta}
+                          onChange={setValyuta}
+                          options={valyutalar}
+                          buttonClassName="h-11 rounded-xl px-3.5 text-sm"
                         />
                       </label>
                     </div>
@@ -573,6 +677,8 @@ export default function YangiSotuvModal({
                           label: ombor.name ?? ombor.id,
                         }))}
                         buttonClassName="h-11 rounded-xl px-3.5 text-sm"
+                        dropdownClassName="min-w-[300px]"
+                        portal
                       />
                     </label>
                     <label className="grid gap-2">
@@ -586,6 +692,8 @@ export default function YangiSotuvModal({
                           label: xodim.fullName ?? xodim.username ?? xodim.id,
                         }))}
                         buttonClassName="h-11 rounded-xl px-3.5 text-sm"
+                        dropdownClassName="min-w-[320px]"
+                        portal
                       />
                     </label>
                   </div>
@@ -615,55 +723,134 @@ export default function YangiSotuvModal({
                       <button
                         key={tab}
                         type="button"
-                        onClick={() => setFaolTab(tab)}
-                         className={`relative rounded-xl px-3 py-1.5 text-sm font-bold transition ${
+                        onClick={() => {
+                          setFaolTab(tab);
+                          setFaoliyatSaqlangan(false);
+                        }}
+                        className={`relative inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-bold transition ${
                           faolTab === tab
                             ? "border border-sky-200 bg-sky-50 text-blue-600"
                             : "text-slate-500 hover:bg-slate-50"
                         }`}
                       >
-                        {tab === "Onlayn ro'yxatdan o'tish" && (
-                          <span className="absolute -top-2 left-3 text-[9px] font-black uppercase text-slate-400">
-                            Yangi
-                          </span>
-                        )}
                         {tab}
+                        {tab === "Ko'proq" && <ChevronDown size={14} />}
                       </button>
                     ))}
                   </div>
 
-                  <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-3.5 transition focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100">
-                    <input
-                      value={faoliyatMatni}
-                      onChange={(event) => setFaoliyatMatni(event.target.value)}
-                      placeholder={
-                        faolTab === "Izoh"
-                          ? "Izoh yozing"
-                          : faolTab === "Xabar"
-                            ? "Xabar matnini yozing"
-                            : "Nima qilish kerak"
-                      }
-                      className="h-9 w-full border-0 bg-transparent text-sm font-semibold outline-none placeholder:text-slate-400"
-                    />
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex flex-wrap items-center gap-3">
+                  <div className="mt-4 rounded-2xl border border-blue-500 bg-white p-4 transition focus-within:ring-4 focus-within:ring-blue-100">
+                    <div className="flex items-start gap-3">
+                      <div className="min-w-0 flex-1 space-y-3">
+                        <input
+                          value={faoliyatSarlavha}
+                          onChange={(event) => {
+                            setFaoliyatSarlavha(event.target.value);
+                            setFaoliyatSaqlangan(false);
+                          }}
+                          placeholder={faoliyatMatnlari[faolTab]?.title ?? "Faoliyat nomi"}
+                          className="h-9 w-full border-0 bg-transparent text-base font-semibold text-slate-700 outline-none placeholder:text-slate-700"
+                        />
+                        <textarea
+                          value={faoliyatTafsilot}
+                          onChange={(event) => {
+                            setFaoliyatTafsilot(event.target.value);
+                            setFaoliyatSaqlangan(false);
+                          }}
+                          rows={4}
+                          placeholder={
+                            faoliyatMatnlari[faolTab]?.placeholder ??
+                            "Faoliyat haqida batafsil yozing..."
+                          }
+                          className="w-full resize-none border-0 bg-transparent text-sm font-semibold leading-6 text-slate-600 outline-none placeholder:text-slate-400"
+                        />
+                      </div>
+                      <div className="flex shrink-0 items-center gap-3 pt-1">
+                        <span className="h-3.5 w-3.5 rounded-full bg-amber-400" />
                         <button
                           type="button"
-                          className="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-semibold text-slate-600"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-blue-600 transition hover:bg-sky-100"
+                          title="Mas'ul xodim"
                         >
-                          <CalendarDays size={16} />
-                          Bugun, soat 15:00
+                          <UserRound size={18} />
                         </button>
-                        <Bell size={18} className="text-slate-400" />
-                        <MessageSquare size={18} className="text-slate-400" />
+                      </div>
+                    </div>
+
+                    <div className="mt-5 flex flex-wrap items-center gap-3">
+                      <div className="inline-flex min-h-11 flex-wrap items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-semibold text-slate-600">
+                        <CalendarDays size={16} className="shrink-0" />
+                        <span className="shrink-0">
+                          {faoliyatSanasiMatni(faoliyatSana, faoliyatSoat)}
+                        </span>
+                        <input
+                          type="date"
+                          value={faoliyatSana}
+                          onChange={(event) => {
+                            setFaoliyatSana(event.target.value);
+                            setFaoliyatSaqlangan(false);
+                          }}
+                          className="h-7 rounded-lg border border-sky-100 bg-white px-2 text-xs font-bold text-slate-600 outline-none focus:border-blue-400"
+                        />
+                        <input
+                          type="time"
+                          value={faoliyatSoat}
+                          onChange={(event) => {
+                            setFaoliyatSoat(event.target.value);
+                            setFaoliyatSaqlangan(false);
+                          }}
+                          className="h-7 rounded-lg border border-sky-100 bg-white px-2 text-xs font-bold text-slate-600 outline-none focus:border-blue-400"
+                        />
                       </div>
                       <button
                         type="button"
-                        onClick={() => setFaoliyatMatni("")}
-                        className="rounded-xl border border-sky-200 px-4 py-2 text-sm font-semibold text-slate-500 transition hover:border-[#FF6A00] hover:text-[#FF6A00]"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-blue-600"
+                        title="Eslatma"
                       >
-                        Harakatlar
+                        <Bell size={18} />
                       </button>
+                      {(faolTab === "Xabar" || faolTab === "Ko'proq") && (
+                        <button
+                          type="button"
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-blue-600"
+                          title="Xabar"
+                        >
+                          <MessageSquare size={18} />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="mt-5 flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!faoliyatSarlavha.trim()) {
+                            setFaoliyatSarlavha(faoliyatMatnlari[faolTab]?.title ?? "");
+                          }
+                          setFaoliyatSaqlangan(true);
+                        }}
+                        className="inline-flex h-10 items-center justify-center rounded-2xl bg-[#12B8F3] px-6 text-sm font-black uppercase text-white shadow-[0_10px_24px_rgba(18,184,243,.22)] transition hover:-translate-y-0.5 hover:bg-[#079BD0]"
+                      >
+                        Saqlash
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFaoliyatSarlavha("");
+                          setFaoliyatTafsilot("");
+                          setFaoliyatSana(bugungiSana());
+                          setFaoliyatSoat("15:00");
+                          setFaoliyatSaqlangan(false);
+                        }}
+                        className="inline-flex h-10 items-center justify-center rounded-2xl px-4 text-sm font-black uppercase text-slate-600 transition hover:bg-slate-100"
+                      >
+                        Bekor qilish
+                      </button>
+                      {faoliyatSaqlangan && (
+                        <span className="text-xs font-bold text-emerald-600">
+                          Faoliyat qoralamaga qo'shildi
+                        </span>
+                      )}
                     </div>
                   </div>
                 </section>
@@ -727,7 +914,8 @@ export default function YangiSotuvModal({
                                 label: `${qoldiqNomi(item)} - qoldiq: ${qoldiqMiqdori(item)} - narx: ${pulniFormatlash(qoldiqNarxi(item))}`,
                               }))}
                               buttonClassName="h-11 rounded-xl px-3.5 text-sm"
-                              dropdownClassName="min-w-[420px]"
+                              dropdownClassName="min-w-[520px] max-w-[min(720px,calc(100vw-32px))]"
+                              portal
                             />
 
                             <button

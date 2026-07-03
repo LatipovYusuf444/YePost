@@ -535,7 +535,7 @@ function ModalTezkorPanel({ sotuv, onYopish }: { sotuv: Sotuv; onYopish: () => v
   ];
 
   return (
-    <div className="absolute -left-[68px] top-7 z-50 flex flex-col items-center gap-3">
+    <div className="absolute -left-[52px] top-7 z-50 flex flex-col items-center gap-2">
       {amallar.map((amal, index) => {
         const Icon = amal.icon;
         const close = index === 0;
@@ -545,14 +545,14 @@ function ModalTezkorPanel({ sotuv, onYopish }: { sotuv: Sotuv; onYopish: () => v
             type="button"
             onClick={amal.onClick}
             title={amal.label}
-            className={`flex h-[52px] w-[52px] items-center justify-center rounded-[18px] shadow-[0_14px_34px_rgba(15,23,42,.20)] ring-1 ring-white/70 transition duration-300 hover:-translate-x-1 hover:scale-105 active:scale-95 ${
+            className={`flex h-11 w-11 items-center justify-center rounded-[15px] shadow-[0_10px_24px_rgba(15,23,42,.18)] ring-1 ring-white/70 transition duration-300 hover:-translate-x-0.5 hover:scale-105 active:scale-95 ${
               close
                 ? "bg-[#FF6A00] text-white hover:bg-[#EA580C] hover:shadow-[0_16px_34px_rgba(234,88,12,.36)]"
                 : "bg-white text-[#FF6A00] hover:bg-[#FFF3E2] hover:text-[#EA580C]"
             }`}
             aria-label={amal.label}
           >
-            <Icon size={close ? 21 : 19} strokeWidth={2.3} />
+            <Icon size={close ? 19 : 17} strokeWidth={2.3} />
           </button>
         );
       })}

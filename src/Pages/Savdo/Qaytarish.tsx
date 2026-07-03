@@ -11,6 +11,10 @@ import {
   pulniFormatlash,
   qaytarishSummasi,
   sananiFormatlash,
+  sotuvMahsulotiId,
+  sotuvMahsulotiMiqdori,
+  sotuvMahsulotiModifikatsiyaId,
+  sotuvMahsulotiNarxi,
   sotuvHolati,
   sotuvRaqami,
 } from "./savdoYordamchilari";
@@ -21,6 +25,7 @@ type QaytarishProps = {
   sotuvlar: Sotuv[];
   qaytarishlar: QaytarishTuri[];
   amalBajarilmoqda: boolean;
+  onSotuvTafsilotiniOlish: (sotuvId: string) => Promise<Sotuv | null>;
   onYaratish: (malumot: QaytarishYaratishMalumoti) => Promise<boolean>;
   onTasdiqlash: (qaytarishId: string) => Promise<boolean>;
   onBekorQilish: (qaytarishId: string) => Promise<boolean>;
@@ -36,6 +41,7 @@ export default function Qaytarish({
   sotuvlar,
   qaytarishlar,
   amalBajarilmoqda,
+  onSotuvTafsilotiniOlish,
   onYaratish,
   onTasdiqlash,
   onBekorQilish,
@@ -58,31 +64,47 @@ export default function Qaytarish({
 
   async function toliqQaytarishYaratish() {
     setXatolik("");
-    const sotuv = sotuvlar.find((item) => item.id === saleId);
+    const royxatdagiSotuv = sotuvlar.find((item) => item.id === saleId);
 
-    if (!sotuv) {
+    if (!royxatdagiSotuv) {
       setXatolik("Qaytariladigan sotuvni tanlang.");
       return;
     }
 
-    const items = (sotuv.items ?? [])
-      .filter((item) => item.id && item.modificationId)
+    const toliqSotuv = (await onSotuvTafsilotiniOlish(royxatdagiSotuv.id)) ?? royxatdagiSotuv;
+    const warehouseId = toliqSotuv.warehouseId ?? toliqSotuv.warehouse?.id ?? "";
+
+    if (!warehouseId) {
+      setXatolik("Sotuv ombori topilmadi. Qaytarish uchun ombor kerak.");
+      return;
+    }
+
+    const items = (toliqSotuv.items ?? [])
       .map((item) => ({
-        saleItemId: item.id as string,
-        modificationId: item.modificationId,
-        quantity: item.quantity,
-        price: item.price,
-      }));
+        saleItemId: sotuvMahsulotiId(item),
+        modificationId: sotuvMahsulotiModifikatsiyaId(item),
+        quantity: sotuvMahsulotiMiqdori(item),
+        price: sotuvMahsulotiNarxi(item),
+      }))
+      .filter(
+        (item) =>
+          item.saleItemId &&
+          item.modificationId &&
+          Number.isFinite(item.quantity) &&
+          item.quantity >= 0.001 &&
+          Number.isFinite(item.price) &&
+          item.price >= 0
+      );
 
     if (items.length === 0) {
-      setXatolik("Sotuv mahsulotlarida saleItemId mavjud emas.");
+      setXatolik("Bu sotuvda qaytarish uchun yaroqli mahsulot qatori topilmadi.");
       return;
     }
 
     const muvaffaqiyatli = await onYaratish({
-      saleId: sotuv.id,
-      warehouseId: sotuv.warehouseId ?? sotuv.warehouse?.id ?? "",
-      responsibleId: sotuv.responsibleId,
+      saleId: toliqSotuv.id,
+      warehouseId,
+      responsibleId: toliqSotuv.responsibleId,
       reason,
       note: note.trim() || undefined,
       items,
