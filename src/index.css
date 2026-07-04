@@ -161,7 +161,182 @@ body {
     @apply h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 font-medium outline-none focus:border-orange-300;
   }
 
+  .login-bg-enter {
+    animation: login-bg-enter 1400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    transform-origin: center;
+    will-change: transform, opacity;
+  }
+
+  .login-overlay-enter {
+    animation: login-fade-in 900ms ease-out both;
+    will-change: opacity;
+  }
+
+  .login-aura-enter {
+    animation: login-aura-enter 1600ms cubic-bezier(0.16, 1, 0.3, 1) both,
+      login-aura-float 7600ms ease-in-out 1600ms infinite;
+    will-change: transform, opacity;
+  }
+
+  .login-mobile-brand {
+    animation: login-item-enter 850ms cubic-bezier(0.16, 1, 0.3, 1) 180ms both;
+    will-change: transform, opacity;
+  }
+
+  .login-panel-enter {
+    animation: login-panel-enter 1280ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
+    will-change: transform, opacity, filter;
+  }
+
+  .login-item-enter {
+    animation: login-item-enter 940ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    will-change: transform, opacity, filter;
+  }
+
+  .login-liquid-sheen {
+    background-size: 150% 150%;
+    animation: login-liquid-sheen 11500ms ease-in-out 1300ms infinite;
+    will-change: background-position, opacity;
+  }
+
+  .login-float-blue {
+    animation: login-float-blue 7200ms ease-in-out 1300ms infinite;
+    will-change: transform, opacity;
+  }
+
+  .login-float-orange {
+    animation: login-float-orange 8200ms ease-in-out 1500ms infinite;
+    will-change: transform, opacity;
+  }
+
   html {
     @apply font-sans;
+  }
+}
+
+@keyframes login-bg-enter {
+  from {
+    opacity: 0;
+    transform: scale(1.045);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes login-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes login-aura-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(-90px, 18px, 0) scale(0.55);
+  }
+  to {
+    opacity: 0.48;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes login-aura-float {
+  0%,
+  100% {
+    opacity: 0.38;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.68;
+    transform: translate3d(-16px, 10px, 0) scale(1.08);
+  }
+}
+
+@keyframes login-panel-enter {
+  from {
+    opacity: 0;
+    filter: blur(16px);
+    transform: translate3d(-86px, 18px, 0) scale(0.965);
+  }
+  62% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(5px, 0, 0) scale(1.006);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes login-item-enter {
+  from {
+    opacity: 0;
+    filter: blur(9px);
+    transform: translate3d(-34px, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes login-liquid-sheen {
+  0%,
+  100% {
+    background-position: 0% 0%;
+    opacity: 1;
+  }
+  50% {
+    background-position: 100% 42%;
+    opacity: 0.92;
+  }
+}
+
+@keyframes login-float-blue {
+  0%,
+  100% {
+    opacity: 0.54;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.82;
+    transform: translate3d(-18px, 12px, 0) scale(1.04);
+  }
+}
+
+@keyframes login-float-orange {
+  0%,
+  100% {
+    opacity: 0.48;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.72;
+    transform: translate3d(16px, -10px, 0) scale(1.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-bg-enter,
+  .login-overlay-enter,
+  .login-aura-enter,
+  .login-mobile-brand,
+  .login-panel-enter,
+  .login-item-enter,
+  .login-liquid-sheen,
+  .login-float-blue,
+  .login-float-orange {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    filter: none;
   }
 }

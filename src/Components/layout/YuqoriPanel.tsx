@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bell, CalendarDays, ChevronDown, LoaderCircle, PackagePlus, Plus, Search, X, Zap } from "lucide-react";
+import { Bell, CalendarDays, ChevronDown, LoaderCircle, PackagePlus, Plus, RefreshCw, Search, X, Zap } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { crmApi } from "@/api/crmApi";
 import {
@@ -202,7 +202,13 @@ function qoldiqNomi(item: QoldiqTanlovi) {
 }
 
 function qoldiqMiqdori(item: QoldiqTanlovi) {
-  return Number(item.quantity ?? item.balance ?? 0);
+  const raw = item as QoldiqTanlovi & {
+    availableQuantity?: number;
+    availableQty?: number;
+    balanceQty?: number;
+    qty?: number;
+  };
+  return Number(raw.quantity ?? raw.balance ?? raw.availableQuantity ?? raw.availableQty ?? raw.balanceQty ?? raw.qty ?? 0);
 }
 
 function qoldiqNarxi(item: QoldiqTanlovi, narxTuri: "chakana" | "ulgurji") {
@@ -252,6 +258,10 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
   const [narxTuri, setNarxTuri] = useState<"chakana" | "ulgurji">("chakana");
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [xabar, setXabar] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
+  const [omborDropdownOchiq, setOmborDropdownOchiq] = useState(false);
+
+  const tanlanganOmbor = omborlar.find((ombor) => String(ombor.id) === warehouseId);
 
   useEffect(() => {
     let active = true;
@@ -276,29 +286,37 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
   }, []);
 
   useEffect(() => {
-    if (!warehouseId) return;
     let active = true;
     const load = async () => {
       setYuklanmoqda(true);
       setXabar("");
-      try {
-        const [stock, catalog] = await Promise.all([
-          omborQoldiqlariniOlish(warehouseId),
+      const [stockResult, catalogResult] = await Promise.allSettled([
+          omborQoldiqlariniOlish(warehouseId || undefined),
           katalogModifikatsiyalariniQoldiqTanlovigaOlish(),
         ]);
-        if (active) setMahsulotlar(qoldiqBirlashtirish(stock, catalog));
-      } catch {
-        if (active) setXabar("Mahsulot qoldiqlari olinmadi");
-      } finally {
-        if (active) setYuklanmoqda(false);
+
+      if (!active) return;
+
+      const stock = stockResult.status === "fulfilled" ? stockResult.value : [];
+      const catalog = catalogResult.status === "fulfilled" ? catalogResult.value : [];
+
+      setMahsulotlar(qoldiqBirlashtirish(stock, catalog));
+      if (stockResult.status === "rejected" && catalogResult.status === "rejected") {
+        setXabar("Mahsulot qoldiqlari olinmadi");
+      } else if (stockResult.status === "rejected") {
+        setXabar("Ombor qoldig'i olinmadi, katalogdagi mahsulotlar ko'rsatildi");
+      } else if (catalogResult.status === "rejected") {
+        setXabar("Katalog olinmadi, ombordagi mavjud qoldiqlar ko'rsatildi");
       }
+
+      setYuklanmoqda(false);
     };
 
     void load();
     return () => {
       active = false;
     };
-  }, [warehouseId]);
+  }, [warehouseId, reloadKey]);
 
   const filteredProducts = useMemo(() => {
     const query = qidiruv.trim().toLowerCase();
@@ -348,9 +366,44 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[220] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-sm">
-      <section className="flex h-[min(760px,92vh)] w-full max-w-[980px] flex-col overflow-hidden rounded-[34px] border border-orange-100 bg-white shadow-[0_30px_120px_rgba(15,23,42,.32)]">
-        <div className="flex items-center justify-between border-b border-orange-50 bg-[#fff8f1] px-6 py-5">
+    <div className="fixed inset-0 z-[220] flex items-center justify-center bg-slate-950/45 px-5 backdrop-blur-sm">
+      <div className="relative w-full max-w-[1500px]">
+        <div className="absolute -left-20 top-7 hidden flex-col gap-3 xl:flex">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600"
+            aria-label="Yopish"
+          >
+            <X size={24} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setReloadKey((value) => value + 1)}
+            className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-orange-500 shadow-md ring-1 ring-orange-100 transition hover:bg-orange-50"
+            aria-label="Yangilash"
+          >
+            <RefreshCw size={22} className={yuklanmoqda ? "animate-spin" : ""} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setQidiruv("")}
+            className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-orange-500 shadow-md ring-1 ring-orange-100 transition hover:bg-orange-50"
+            aria-label="Qidiruvni tozalash"
+          >
+            <Search size={22} />
+          </button>
+          <button
+            type="button"
+            className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-orange-500 shadow-md ring-1 ring-orange-100"
+            aria-label="Mahsulotlar"
+          >
+            <PackagePlus size={22} />
+          </button>
+        </div>
+
+        <section className="flex h-[min(860px,94vh)] w-full flex-col overflow-hidden rounded-[34px] border border-orange-100 bg-white shadow-[0_30px_120px_rgba(15,23,42,.32)]">
+        <div className="flex items-center justify-between border-b border-orange-50 bg-[#fff8f1] px-7 py-6">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.22em] text-orange-500">YePost</p>
             <h2 className="mt-1 text-2xl font-black text-slate-950">Mahsulot tanlash</h2>
@@ -365,7 +418,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <div className="grid gap-3 border-b border-orange-50 px-6 py-4 lg:grid-cols-[minmax(0,1fr)_220px_220px]">
+        <div className="grid gap-3 border-b border-orange-50 px-7 py-5 lg:grid-cols-[minmax(0,1fr)_280px_280px]">
           <label className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4">
             <Search size={18} className="text-slate-400" />
             <input
@@ -376,17 +429,53 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
             />
           </label>
 
-          <select
-            value={warehouseId}
-            onChange={(event) => setWarehouseId(event.target.value)}
-            className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-orange-300"
-          >
-            {omborlar.map((ombor) => (
-              <option key={ombor.id} value={ombor.id}>
-                {nomniOlish(ombor)}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setOmborDropdownOchiq((value) => !value)}
+              className={`flex h-12 w-full items-center justify-between rounded-2xl border bg-white px-4 text-left text-sm font-bold outline-none transition ${
+                omborDropdownOchiq ? "border-orange-400 ring-4 ring-orange-50" : "border-slate-200 hover:border-orange-200"
+              }`}
+            >
+              <span className={tanlanganOmbor ? "text-slate-700" : "text-slate-400"}>
+                {tanlanganOmbor ? nomniOlish(tanlanganOmbor) : "Omborni tanlang"}
+              </span>
+              <ChevronDown
+                size={18}
+                className={`shrink-0 text-slate-400 transition ${omborDropdownOchiq ? "rotate-180 text-orange-500" : ""}`}
+              />
+            </button>
+
+            {omborDropdownOchiq && (
+              <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[260] max-h-72 overflow-auto rounded-2xl border border-orange-100 bg-white p-2 shadow-[0_18px_55px_rgba(15,23,42,.18)]">
+                {omborlar.length === 0 ? (
+                  <div className="rounded-xl px-3 py-3 text-sm font-bold text-slate-400">
+                    Ombor topilmadi
+                  </div>
+                ) : (
+                  omborlar.map((ombor) => {
+                    const active = String(ombor.id) === warehouseId;
+                    return (
+                      <button
+                        key={ombor.id}
+                        type="button"
+                        onClick={() => {
+                          setWarehouseId(String(ombor.id));
+                          setOmborDropdownOchiq(false);
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-3 py-3 text-left text-sm font-bold transition ${
+                          active ? "bg-orange-50 text-orange-600" : "text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        {nomniOlish(ombor)}
+                        {active && <span className="h-2 w-2 rounded-full bg-orange-500" />}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
 
           <div className="grid grid-cols-2 rounded-2xl bg-slate-100 p-1">
             <button
@@ -411,12 +500,12 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {xabar && (
-          <div className="mx-6 mt-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
+          <div className="mx-7 mt-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
             {xabar}
           </div>
         )}
 
-        <div className="min-h-0 flex-1 overflow-auto p-6">
+        <div className="min-h-0 flex-1 overflow-auto p-7">
           {yuklanmoqda ? (
             <div className="flex h-full min-h-[360px] items-center justify-center text-slate-500">
               <LoaderCircle className="mr-2 animate-spin text-orange-500" size={24} />
@@ -427,7 +516,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
               Mahsulot topilmadi
             </div>
           ) : (
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
               {filteredProducts.map((item) => {
                 const qoldiq = qoldiqMiqdori(item);
                 const narx = qoldiqNarxi(item, narxTuri);
@@ -485,6 +574,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
           )}
         </div>
       </section>
+      </div>
     </div>,
     document.body
   );

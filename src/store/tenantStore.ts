@@ -6,6 +6,7 @@ import {
   workspaceApi,
 } from "@/api/tenantApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { foydalanuvchiDirektormi } from "@/lib/roles";
 import type {
   JoriyFoydalanuvchi,
   Obuna,
@@ -56,7 +57,7 @@ export const useTenantStore = create<TenantState>((set) => ({
     try {
       const profil = await joriyFoydalanuvchiniOlish();
 
-      if (profil.role !== "DIREKTOR") {
+      if (!foydalanuvchiDirektormi(profil)) {
         set({ profil, yuklanmoqda: false });
         return;
       }

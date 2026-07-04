@@ -1,6 +1,6 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
 import { API_BASE_URL } from "./apiConfig";
-import { accessTokenniYangilash } from "./sozlamalarApi";
+import { accessTokenniAjratish, accessTokenniYangilash } from "./sozlamalarApi";
 import {
   accessTokenniSaqlash,
   authTokenlarniOlish,
@@ -59,7 +59,11 @@ apiClient.interceptors.response.use(
 
     try {
       tokenYangilashSorovi ??= accessTokenniYangilash(authHolati.refreshToken)
-        .then((response) => response.access)
+        .then((response) => {
+          const accessToken = accessTokenniAjratish(response);
+          if (!accessToken) throw new Error("Backend refresh token javobida access token qaytmadi.");
+          return accessToken;
+        })
         .finally(() => {
           tokenYangilashSorovi = null;
         });

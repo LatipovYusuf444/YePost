@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import { useAccountStore } from "@/store/accountStore";
+import { foydalanuvchiDirektormi } from "@/lib/roles";
 import type { AccountFoydalanuvchi, AccountRoli, VakolatKodi } from "@/types/account";
 import Rollar from "./Rollar";
 import Ruxsatlar from "./Ruxsatlar";
@@ -1061,7 +1062,7 @@ export default function Hodimlar() {
     );
   }
 
-  if (store.profil && store.profil.role !== "DIREKTOR") {
+  if (store.profil && !foydalanuvchiDirektormi(store.profil)) {
     return (
       <div className="rounded-[26px] border border-amber-200 bg-amber-50 p-7">
         <AlertTriangle className="text-amber-500" size={28} />

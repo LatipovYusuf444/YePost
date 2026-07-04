@@ -6,6 +6,7 @@ import {
 } from "@/api/accountsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { joriyFoydalanuvchiniOlish } from "@/api/tenantApi";
+import { foydalanuvchiDirektormi } from "@/lib/roles";
 import type {
   AccountFoydalanuvchi,
   AccountVakolati,
@@ -62,7 +63,7 @@ export const useAccountStore = create<AccountState>((set) => ({
     set({ yuklanmoqda: true, xatolik: null });
     try {
       const profil = await joriyFoydalanuvchiniOlish();
-      if (profil.role !== "DIREKTOR") {
+      if (!foydalanuvchiDirektormi(profil)) {
         set({ profil, yuklanmoqda: false });
         return;
       }

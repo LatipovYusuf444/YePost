@@ -7,12 +7,29 @@ export type LoginPayload = {
 };
 
 export type LoginResponse = {
-  access: string;
-  refresh: string;
+  access?: string;
+  refresh?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  token?: string;
+  data?: {
+    access?: string;
+    refresh?: string;
+    accessToken?: string;
+    refreshToken?: string;
+    token?: string;
+  };
 };
 
 export type RefreshResponse = {
-  access: string;
+  access?: string;
+  accessToken?: string;
+  token?: string;
+  data?: {
+    access?: string;
+    accessToken?: string;
+    token?: string;
+  };
 };
 
 type ApiErrorBody = {
@@ -91,7 +108,37 @@ export async function backenddanChiqish(accessToken: string) {
   });
 }
 
+export function loginTokenlariniAjratish(tokens: LoginResponse) {
+  const accessToken =
+    tokens.access ??
+    tokens.accessToken ??
+    tokens.token ??
+    tokens.data?.access ??
+    tokens.data?.accessToken ??
+    tokens.data?.token;
+  const refreshToken =
+    tokens.refresh ?? tokens.refreshToken ?? tokens.data?.refresh ?? tokens.data?.refreshToken ?? null;
+
+  return { accessToken: accessToken ?? null, refreshToken };
+}
+
+export function accessTokenniAjratish(response: RefreshResponse) {
+  return (
+    response.access ??
+    response.accessToken ??
+    response.token ??
+    response.data?.access ??
+    response.data?.accessToken ??
+    response.data?.token ??
+    null
+  );
+}
+
 export function getApiErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
   if (!axios.isAxiosError<ApiErrorBody>(error)) {
     return "Kutilmagan xatolik yuz berdi. Qayta urinib ko'ring.";
   }

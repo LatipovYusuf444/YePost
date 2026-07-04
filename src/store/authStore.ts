@@ -2,6 +2,7 @@ import { create } from "zustand";
 import {
   backenddanChiqish,
   login as loginRequest,
+  loginTokenlariniAjratish,
   type LoginPayload,
 } from "@/api/sozlamalarApi";
 import {
@@ -51,9 +52,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // Login.tsx shu metod orqali POST /auth/login endpointiga ulanadi.
   login: async (payload) => {
     const tokens = await loginRequest(payload);
+    const normalizedTokens = loginTokenlariniAjratish(tokens);
+
+    if (!normalizedTokens.accessToken) {
+      throw new Error("Backend login tokenini qaytarmadi.");
+    }
+
     const authHolati = {
-      accessToken: tokens.access,
-      refreshToken: tokens.refresh,
+      accessToken: normalizedTokens.accessToken,
+      refreshToken: normalizedTokens.refreshToken,
       username: payload.username,
     };
 

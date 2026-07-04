@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useTenantStore } from "@/store/tenantStore";
+import { foydalanuvchiDirektormi } from "@/lib/roles";
 import KompaniyaSozlamalari from "./KompaniyaSozlamalari";
 import Integratsiyalar from "./Integratsiyalar";
 import Profil from "./Profil";
@@ -57,7 +58,7 @@ export default function Sozlamalar() {
     void Promise.all([profilniYuklash(), tenantlarniYuklash()]);
   }, [profilniYuklash, tenantlarniYuklash]);
 
-  const direktor = profilStore.profil?.role === "DIREKTOR";
+  const direktor = foydalanuvchiDirektormi(profilStore.profil);
   const tablar = direktor
     ? [...shaxsiyTablar, ...direktorTablari]
     : shaxsiyTablar;

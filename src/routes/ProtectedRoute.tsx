@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { isAccessTokenValid, useAuthStore } from "@/store/authStore";
-import { accessTokenniYangilash as refreshAccessToken } from "@/api/sozlamalarApi";
+import { accessTokenniAjratish, accessTokenniYangilash as refreshAccessToken } from "@/api/sozlamalarApi";
 import { authTokenlarniTozalash } from "@/lib/authTokenStorage";
 
 type ProtectedRouteProps = {
@@ -26,7 +26,9 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
     refreshAccessToken(refreshToken)
       .then((response) => {
-        if (!bekorQilindi) accessTokenniSaqlash(response.access);
+        const accessToken = accessTokenniAjratish(response);
+        if (!accessToken) throw new Error("Backend refresh token javobida access token qaytmadi.");
+        if (!bekorQilindi) accessTokenniSaqlash(accessToken);
       })
       .catch(() => {
         if (!bekorQilindi) authTokenlarniTozalash();
