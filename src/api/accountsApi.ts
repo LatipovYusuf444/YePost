@@ -1,4 +1,5 @@
 import apiClient from "./axios";
+import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import type {
   AccountFoydalanuvchi,
   AccountVakolati,
@@ -11,34 +12,91 @@ import type { Filial } from "@/types/ombor";
 
 // Hodimlar/index.tsx: Swagger accounts/users bo'limining to'liq CRUD amallari.
 export const foydalanuvchilarApi = {
-  royxat: async () =>
-    (await apiClient.get<AccountFoydalanuvchi[]>("/accounts/users")).data,
-  olish: async (id: string) =>
-    (await apiClient.get<AccountFoydalanuvchi>(`/accounts/users/${id}`)).data,
-  yaratish: async (data: FoydalanuvchiYaratishMalumoti) =>
-    (await apiClient.post<AccountFoydalanuvchi>("/accounts/users", data)).data,
-  yangilash: async (id: string, data: FoydalanuvchiYangilashMalumoti) =>
-    (await apiClient.patch<AccountFoydalanuvchi>(`/accounts/users/${id}`, data))
-      .data,
-  ochirish: async (id: string) =>
-    (await apiClient.delete<AccountFoydalanuvchi>(`/accounts/users/${id}`)).data,
+  royxat: async () => {
+    const response = await apiClient.get<AccountFoydalanuvchi[] | ApiListEnvelope<AccountFoydalanuvchi>>(
+      "/accounts/users"
+    );
+
+    return apiList(response.data);
+  },
+  olish: async (id: string) => {
+    const response = await apiClient.get<AccountFoydalanuvchi | ApiEnvelope<AccountFoydalanuvchi>>(
+      `/accounts/users/${id}`
+    );
+
+    return apiData(response.data);
+  },
+  yaratish: async (data: FoydalanuvchiYaratishMalumoti) => {
+    const response = await apiClient.post<AccountFoydalanuvchi | ApiEnvelope<AccountFoydalanuvchi>>(
+      "/accounts/users",
+      data
+    );
+
+    return apiData(response.data);
+  },
+  yangilash: async (id: string, data: FoydalanuvchiYangilashMalumoti) => {
+    const response = await apiClient.patch<AccountFoydalanuvchi | ApiEnvelope<AccountFoydalanuvchi>>(
+      `/accounts/users/${id}`,
+      data
+    );
+
+    return apiData(response.data);
+  },
+  ochirish: async (id: string) => {
+    const response = await apiClient.delete<AccountFoydalanuvchi | ApiEnvelope<AccountFoydalanuvchi>>(
+      `/accounts/users/${id}`
+    );
+
+    return apiData(response.data);
+  },
 };
 
 // Hodimlar/Ruxsatlar.tsx: Swagger accounts/grants bo'limining to'liq CRUD amallari.
 export const vakolatlarApi = {
-  royxat: async () =>
-    (await apiClient.get<AccountVakolati[]>("/accounts/grants")).data,
-  olish: async (id: string) =>
-    (await apiClient.get<AccountVakolati>(`/accounts/grants/${id}`)).data,
-  yaratish: async (data: VakolatYaratishMalumoti) =>
-    (await apiClient.post<AccountVakolati>("/accounts/grants", data)).data,
-  yangilash: async (id: string, data: VakolatYangilashMalumoti) =>
-    (await apiClient.patch<AccountVakolati>(`/accounts/grants/${id}`, data)).data,
-  ochirish: async (id: string) =>
-    (await apiClient.delete<AccountVakolati>(`/accounts/grants/${id}`)).data,
+  royxat: async () => {
+    const response = await apiClient.get<AccountVakolati[] | ApiListEnvelope<AccountVakolati>>(
+      "/accounts/grants"
+    );
+
+    return apiList(response.data);
+  },
+  olish: async (id: string) => {
+    const response = await apiClient.get<AccountVakolati | ApiEnvelope<AccountVakolati>>(
+      `/accounts/grants/${id}`
+    );
+
+    return apiData(response.data);
+  },
+  yaratish: async (data: VakolatYaratishMalumoti) => {
+    const response = await apiClient.post<AccountVakolati | ApiEnvelope<AccountVakolati>>(
+      "/accounts/grants",
+      data
+    );
+
+    return apiData(response.data);
+  },
+  yangilash: async (id: string, data: VakolatYangilashMalumoti) => {
+    const response = await apiClient.patch<AccountVakolati | ApiEnvelope<AccountVakolati>>(
+      `/accounts/grants/${id}`,
+      data
+    );
+
+    return apiData(response.data);
+  },
+  ochirish: async (id: string) => {
+    const response = await apiClient.delete<AccountVakolati | ApiEnvelope<AccountVakolati>>(
+      `/accounts/grants/${id}`
+    );
+
+    return apiData(response.data);
+  },
 };
 
 // Foydalanuvchi formasidagi filial tanlovi real organization/branches ro'yxatidan olinadi.
 export async function accountFiliallari() {
-  return (await apiClient.get<Filial[]>("/organization/branches")).data;
+  const response = await apiClient.get<Filial[] | ApiListEnvelope<Filial>>(
+    "/organization/branches"
+  );
+
+  return apiList(response.data);
 }

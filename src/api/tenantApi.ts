@@ -1,4 +1,5 @@
 import apiClient from "./axios";
+import { apiData, type ApiEnvelope } from "./response";
 import type {
   JoriyFoydalanuvchi,
   Obuna,
@@ -11,7 +12,11 @@ import type {
 
 // Sozlamalar/index.tsx: direktor rolini va joriy workspaceId ni tekshiradi.
 export async function joriyFoydalanuvchiniOlish() {
-  return (await apiClient.get<JoriyFoydalanuvchi>("/auth/me")).data;
+  const response = await apiClient.get<JoriyFoydalanuvchi | ApiEnvelope<JoriyFoydalanuvchi>>(
+    "/auth/me"
+  );
+
+  return apiData(response.data);
 }
 
 // Sozlamalar → Workspace: barcha Swagger CRUD amallari.
