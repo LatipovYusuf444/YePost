@@ -292,6 +292,29 @@ function StockInput({value,onChange,warning}:{value:string;onChange:(value:strin
   </div>;
 }
 
+const emptyVariantDraft: VariantDraft = {
+  barcode: "",
+  imageUrl: "",
+  active: true,
+  costPrice: "",
+  costCurrency: "UZS",
+  markup: "",
+  retailPrice: "",
+  retailCurrency: "UZS",
+  wholesalePrice: "",
+  wholesaleCurrency: "UZS",
+};
+
+function cleanRemoteImage(value: string) {
+  const clean = value.trim();
+  return clean && !clean.startsWith("blob:") ? clean : "";
+}
+
+function numericOrZero(value: string) {
+  const number = Number(value || 0);
+  return Number.isFinite(number) && number > 0 ? number : 0;
+}
+
 function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}) {
   const store=useMahsulotlarStore();
   const editing=item!=="new";
@@ -309,6 +332,8 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
   const [activeVariationRow,setActiveVariationRow]=useState<number|null>(null);
   const [variantDrafts,setVariantDrafts]=useState<Record<string,VariantDraft>>({});
   const [variantStockDrafts,setVariantStockDrafts]=useState<Record<string,VariantStockDraft>>({});
+  const [baseDraft,setBaseDraft]=useState<VariantDraft>(emptyVariantDraft);
+  const [baseStock,setBaseStock]=useState<VariantStockDraft>({open:true,warehouseId:"",quantity:"",minStock:""});
   const [omborlar,setOmborlar]=useState<Ombor[]>([]);
   const [yetkazibBeruvchilar,setYetkazibBeruvchilar]=useState<NomliEntity[]>([]);
   const [brand,setBrand]=useState("");
@@ -419,6 +444,8 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
     if(selectedSupplier){
       characteristicParams.supplierId=selectedSupplier.id;
       characteristicParams.supplierName=selectedSupplier.name??selectedSupplier.fullName??selectedSupplier.username??selectedSupplier.id;
+    } else if (supplierInput.trim()) {
+      characteristicParams.supplierName=supplierInput.trim();
     }
     optionalFields.forEach((field)=>{
       const key=field.name.trim();
@@ -436,15 +463,18 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
         name:combo.label,
         barcode:variantDrafts[combo.key]?.barcode||generateBarcodeValue(),
         article:article.trim()||undefined,
+        imageUrl:cleanRemoteImage(variantDrafts[combo.key]?.imageUrl??"")||undefined,
+        minStock:numericOrZero(variantStockDrafts[combo.key]?.minStock??""),
         params:{...combo.params,...characteristicParams},
         price:{
           costPrice:Number(variantDrafts[combo.key]?.costPrice||0),
           retailPrice:Number(variantDrafts[combo.key]?.retailPrice||0),
           wholesalePrice:Number(variantDrafts[combo.key]?.wholesalePrice||variantDrafts[combo.key]?.retailPrice||0),
+          currency:variantDrafts[combo.key]?.retailCurrency??"UZS",
         },
       }));
     if(!name.trim()||!categoryId||!unitId||(!editing&&generatedVariants.length===0&&!barcode.trim()))return;
-    const safeImageUrl=imageUrl.trim().startsWith("blob:")?"":imageUrl.trim();
+    const safeImageUrl=cleanRemoteImage(imageUrl);
     const data={name:name.trim(),categoryId,unitId,barcode:barcode.trim()||undefined,article:article.trim()||undefined,imageUrl:safeImageUrl||undefined,isActive};
     const ok=editing
       ?await store.mahsulotSaqlash(item.id,data)
@@ -454,11 +484,14 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
           name:hasVariantParams?Object.values(variantParams).flat().join(", "):"Asosiy variant",
           barcode:barcode.trim(),
           article:article.trim()||undefined,
+          imageUrl:safeImageUrl||undefined,
+          minStock:numericOrZero(baseStock.minStock),
           params:hasDefaultParams?defaultParams:undefined,
           price:{
-            costPrice:0,
-            retailPrice:0,
-            wholesalePrice:0,
+            costPrice:Number(baseDraft.costPrice||0),
+            retailPrice:Number(baseDraft.retailPrice||0),
+            wholesalePrice:Number(baseDraft.wholesalePrice||baseDraft.retailPrice||0),
+            currency:baseDraft.retailCurrency??"UZS",
           },
         });
     if(ok)onClose()
@@ -673,6 +706,24 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
       if(cost>0&&retail>=0)patch.markup=String(Number((((retail-cost)/cost)*100).toFixed(2)));
     }
     updateVariantDraft(key,patch);
+  }
+
+  function updateBasePrice(field:"costPrice"|"markup"|"retailPrice"|"wholesalePrice", value:string) {
+    const numericValue=value.replace(/[^\d.]/g,"");
+    setBaseDraft((current)=>{
+      const patch:Partial<VariantDraft>={[field]:numericValue};
+      if(field==="costPrice"||field==="markup"){
+        const cost=Number(field==="costPrice"?numericValue:current.costPrice||0);
+        const markup=Number(field==="markup"?numericValue:current.markup||0);
+        if(cost>0&&markup>=0)patch.retailPrice=String(Math.round(cost+(cost*markup/100)));
+      }
+      if(field==="retailPrice"){
+        const cost=Number(current.costPrice||0);
+        const retail=Number(numericValue||0);
+        if(cost>0&&retail>=0)patch.markup=String(Number((((retail-cost)/cost)*100).toFixed(2)));
+      }
+      return {...current,...patch};
+    });
   }
 
   function applyCostToAll(sourceKey:string) {
@@ -892,6 +943,29 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
                     <MoneyInput value={draft.wholesalePrice} currency={draft.wholesaleCurrency} onChange={(value)=>updateVariantPrice(combo.key,"wholesalePrice",value)} onCurrencyChange={(value)=>updateVariantDraft(combo.key,{wholesaleCurrency:value})}/>
                   </div>
                 })}
+              </div>
+            </div>}
+            {variantCombinations.length===0&&<div className="rounded-[24px] border border-orange-100 bg-orange-50/30 p-4">
+              <div className="mb-4">
+                <p className="text-base font-black text-gray-700">Asosiy variant narxlari</p>
+                <p className="mt-1 text-sm font-bold text-gray-400">Variatsiya kiritilmasa, mahsulot uchun bitta asosiy variant yaratiladi.</p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">Kelish narxi
+                  <div className="mt-2"><MoneyInput value={baseDraft.costPrice} currency={baseDraft.costCurrency} onChange={(value)=>updateBasePrice("costPrice",value)} onCurrencyChange={(value)=>setBaseDraft((draft)=>({...draft,costCurrency:value}))}/></div>
+                </label>
+                <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">Ustama
+                  <div className="mt-2"><MoneyInput value={baseDraft.markup} suffix="%" onChange={(value)=>updateBasePrice("markup",value)}/></div>
+                </label>
+                <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">Sotuv narxi
+                  <div className="mt-2"><MoneyInput value={baseDraft.retailPrice} currency={baseDraft.retailCurrency} onChange={(value)=>updateBasePrice("retailPrice",value)} onCurrencyChange={(value)=>setBaseDraft((draft)=>({...draft,retailCurrency:value}))}/></div>
+                </label>
+                <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">Ulgurji narx
+                  <div className="mt-2"><MoneyInput value={baseDraft.wholesalePrice} currency={baseDraft.wholesaleCurrency} onChange={(value)=>updateBasePrice("wholesalePrice",value)} onCurrencyChange={(value)=>setBaseDraft((draft)=>({...draft,wholesaleCurrency:value}))}/></div>
+                </label>
+                <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">Minimal qoldiq
+                  <div className="mt-2"><StockInput value={baseStock.minStock} onChange={(value)=>setBaseStock((stock)=>({...stock,minStock:value}))} warning/></div>
+                </label>
               </div>
             </div>}
             {variantCombinations.length>0&&<div className="space-y-3">

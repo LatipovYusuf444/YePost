@@ -1,11 +1,11 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Eye, LoaderCircle, Plus, Trash2 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
 import { holat, hujjatRaqami, modificationNomi, pul, sana } from "./omborYordamchilari";
 import InventoryHujjatModal from "./InventoryHujjatModal";
 
-type Qator = { modificationId: string; quantity: number; price: number };
+type Qator = { modificationId: string; quantity: number; price: string };
 
 export default function Xaridlar() {
   const store = useOmborStore();
@@ -19,16 +19,45 @@ export default function Xaridlar() {
   const [supplierName, setSupplierName] = useState("");
   const [supplierPhone, setSupplierPhone] = useState("");
   const [items, setItems] = useState<Qator[]>([
-    { modificationId: "", quantity: 1, price: 0 },
+    { modificationId: "", quantity: 1, price: "" },
   ]);
 
   useEffect(() => {
     void malumotlarniYuklash();
   }, [malumotlarniYuklash]);
 
+  const suppliersMap = useMemo(
+    () => new Map(store.yetkazibBeruvchilar.map((item) => [item.id, item])),
+    [store.yetkazibBeruvchilar]
+  );
+
+  const warehousesMap = useMemo(
+    () => new Map(store.omborlar.map((item) => [item.id, item])),
+    [store.omborlar]
+  );
+
+  function supplierNomi(id: string, name?: string) {
+    return name ?? suppliersMap.get(id)?.name ?? suppliersMap.get(id)?.fullName ?? id;
+  }
+
+  function omborNomi(id: string, name?: string) {
+    return name ?? warehousesMap.get(id)?.name ?? id;
+  }
+
+  function kirimSummasi(hujjat: (typeof store.kirimlar)[number]) {
+    const backendSumma = Number(hujjat.totalAmount ?? hujjat.total ?? 0);
+    if (backendSumma > 0) return backendSumma;
+    return (hujjat.items ?? []).reduce(
+      (summa, item) => summa + Number(item.quantity ?? 0) * Number(item.price ?? 0),
+      0
+    );
+  }
+
   async function saqlash(event: FormEvent) {
     event.preventDefault();
-    const toza = items.filter((item) => item.modificationId && item.quantity > 0);
+    const toza = items
+      .filter((item) => item.modificationId && item.quantity > 0)
+      .map((item) => ({ ...item, price: Number(item.price || 0) }));
     if (!supplierId || !warehouseId || toza.length === 0) return;
     const ok = await store.kirimYaratish({
       supplierId,
@@ -79,9 +108,9 @@ export default function Xaridlar() {
               {store.kirimlar.map((hujjat) => (
                 <tr key={hujjat.id}>
                   <td className="px-5 py-4 font-bold text-orange-600">{hujjatRaqami(hujjat)}</td>
-                  <td className="px-5 py-4">{hujjat.supplier?.name ?? hujjat.supplierId}</td>
-                  <td className="px-5 py-4">{hujjat.warehouse?.name ?? hujjat.warehouseId}</td>
-                  <td className="px-5 py-4 font-bold">{pul(hujjat.totalAmount ?? hujjat.total)}</td>
+                  <td className="px-5 py-4">{supplierNomi(hujjat.supplierId, hujjat.supplier?.name)}</td>
+                  <td className="px-5 py-4">{omborNomi(hujjat.warehouseId, hujjat.warehouse?.name)}</td>
+                  <td className="px-5 py-4 font-bold">{pul(kirimSummasi(hujjat))}</td>
                   <td className="px-5 py-4">{sana(hujjat.createdAt)}</td>
                   <td className="px-5 py-4">{holat(hujjat.status)}</td>
                   <td className="px-5 py-4 text-right">
@@ -150,16 +179,22 @@ export default function Xaridlar() {
             <div className="mt-5 space-y-3">
               {items.map((item, index) => (
                 <div key={index} className="grid gap-3 rounded-2xl bg-gray-50 p-4 md:grid-cols-[1fr_120px_160px_44px]">
-                  <select value={item.modificationId} onChange={(e) => setItems((rows) => rows.map((row, i) => i === index ? {...row, modificationId:e.target.value} : row))} className="h-11 rounded-xl border px-3">
+                  <select value={item.modificationId} onChange={(e) => setItems((rows) => rows.map((row, i) => i === index ? {...row, modificationId:e.target.value} : row))} className="h-11 rounded-xl border px-3 md:mt-6">
                     <option value="">Mahsulot modifikatsiyasi</option>
                     {store.modifikatsiyalar.map((mod) => <option key={mod.id} value={mod.id}>{modificationNomi(mod)} — {mod.barcode}</option>)}
                   </select>
-                  <input type="number" min="0.001" step="0.001" value={item.quantity} onChange={(e) => setItems((rows) => rows.map((row, i) => i === index ? {...row, quantity:Number(e.target.value)} : row))} className="h-11 rounded-xl border px-3" />
-                  <input type="number" min="0" value={item.price} onChange={(e) => setItems((rows) => rows.map((row, i) => i === index ? {...row, price:Number(e.target.value)} : row))} className="h-11 rounded-xl border px-3" placeholder="Tan narx" />
-                  <button type="button" disabled={items.length === 1} onClick={() => setItems((rows) => rows.filter((_, i) => i !== index))} className="flex h-11 items-center justify-center rounded-xl bg-red-50 text-red-500 disabled:opacity-30"><Trash2 size={16}/></button>
+                  <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">
+                    Miqdor
+                    <input type="number" min="0.001" step="0.001" value={item.quantity} onChange={(e) => setItems((rows) => rows.map((row, i) => i === index ? {...row, quantity:Number(e.target.value)} : row))} className="mt-2 h-11 w-full rounded-xl border px-3" />
+                  </label>
+                  <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">
+                    Tan narx
+                    <input type="number" min="0" value={item.price} onChange={(e) => setItems((rows) => rows.map((row, i) => i === index ? {...row, price:e.target.value} : row))} className="mt-2 h-11 w-full rounded-xl border px-3" placeholder="Tan narx" />
+                  </label>
+                  <button type="button" disabled={items.length === 1} onClick={() => setItems((rows) => rows.filter((_, i) => i !== index))} className="mt-6 flex h-11 items-center justify-center rounded-xl bg-red-50 text-red-500 disabled:opacity-30"><Trash2 size={16}/></button>
                 </div>
               ))}
-              <button type="button" onClick={() => setItems((rows) => [...rows, {modificationId:"", quantity:1, price:0}])} className="rounded-xl bg-orange-50 px-4 py-2 text-sm font-bold text-orange-600">+ Mahsulot qo'shish</button>
+              <button type="button" onClick={() => setItems((rows) => [...rows, {modificationId:"", quantity:1, price:""}])} className="rounded-xl bg-orange-50 px-4 py-2 text-sm font-bold text-orange-600">+ Mahsulot qo'shish</button>
             </div>
             <textarea value={note} onChange={(e) => setNote(e.target.value)} className="mt-5 w-full rounded-2xl border p-4" placeholder="Izoh" />
             <div className="mt-5 flex justify-end gap-3">

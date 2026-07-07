@@ -26,8 +26,14 @@ export function qoldiqMiqdori(qoldiq: OmborQoldigi) {
   return qoldiq.availableQuantity ?? qoldiq.quantity ?? qoldiq.balance ?? 0;
 }
 
-export function hujjatRaqami(hujjat: { id: string; documentNumber?: string; number?: string }) {
-  return hujjat.documentNumber ?? hujjat.number ?? hujjat.id.slice(0, 8).toUpperCase();
+export function hujjatRaqami(hujjat: { id?: string; documentNumber?: string; docNumber?: string; number?: string }) {
+  return (
+    hujjat.documentNumber ||
+    hujjat.docNumber ||
+    hujjat.number ||
+    hujjat.id?.slice(0, 8).toUpperCase() ||
+    "Hujjat"
+  );
 }
 
 export function holat(value?: string) {

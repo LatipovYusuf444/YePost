@@ -28,6 +28,7 @@ export type MahsulotNarxi = {
   costPrice?: number | string;
   retailPrice?: number | string;
   wholesalePrice?: number | string;
+  currency?: string;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -39,6 +40,8 @@ export type MahsulotModifikatsiyasi = {
   params?: Record<string, unknown> | null;
   barcode: string;
   article?: string | null;
+  imageUrl?: string | null;
+  minStock?: number | string | null;
   price?: MahsulotNarxi | null;
   createdAt?: string;
   updatedAt?: string;
@@ -49,10 +52,13 @@ export type ModifikatsiyaMalumoti = {
   params?: Record<string, unknown>;
   barcode: string;
   article?: string;
+  imageUrl?: string;
+  minStock?: number;
   price?: {
     costPrice?: number;
     retailPrice?: number;
     wholesalePrice?: number;
+    currency?: string;
   };
 };
 

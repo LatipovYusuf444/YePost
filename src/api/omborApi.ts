@@ -1,4 +1,5 @@
 import apiClient from "./axios";
+import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import type {
   ChiqimHujjati,
   ChiqimYaratishMalumoti,
@@ -22,49 +23,49 @@ import type {
 type RoyxatJavobi<T> = T[] | { value?: T[]; items?: T[]; results?: T[]; data?: T[] };
 
 function royxatniAjratish<T>(data: RoyxatJavobi<T>): T[] {
-  if (Array.isArray(data)) return data;
-  return data.value ?? data.items ?? data.results ?? data.data ?? [];
+  return apiList(data as T[] | ApiListEnvelope<T>);
 }
 
 // Organization sahifasi: kompaniyaning barcha Swagger CRUD endpointlari.
 export const kompaniyalarApi = {
   royxat: async () =>
-    (await apiClient.get<Kompaniya[]>("/organization/company")).data,
+    apiList((await apiClient.get<Kompaniya[] | ApiListEnvelope<Kompaniya>>("/organization/company")).data),
   olish: async (id: string) =>
-    (await apiClient.get<Kompaniya>(`/organization/company/${id}`)).data,
+    apiData((await apiClient.get<Kompaniya | ApiEnvelope<Kompaniya>>(`/organization/company/${id}`)).data),
   yaratish: async (data: KompaniyaSaqlashMalumoti) =>
-    (await apiClient.post<Kompaniya>("/organization/company", data)).data,
+    apiData((await apiClient.post<Kompaniya | ApiEnvelope<Kompaniya>>("/organization/company", data)).data),
   yangilash: async (id: string, data: Partial<KompaniyaSaqlashMalumoti>) =>
-    (await apiClient.patch<Kompaniya>(`/organization/company/${id}`, data)).data,
+    apiData((await apiClient.patch<Kompaniya | ApiEnvelope<Kompaniya>>(`/organization/company/${id}`, data)).data),
   ochirish: async (id: string) =>
-    (await apiClient.delete<Kompaniya>(`/organization/company/${id}`)).data,
+    apiData((await apiClient.delete<Kompaniya | ApiEnvelope<Kompaniya>>(`/organization/company/${id}`)).data),
 };
 
 // Ombor/index.tsx: branchId maydoniga real UUID tanlash uchun filiallar.
 export const filiallarApi = {
   royxat: async () =>
-    (await apiClient.get<Filial[]>("/organization/branches")).data,
+    apiList((await apiClient.get<Filial[] | ApiListEnvelope<Filial>>("/organization/branches")).data),
   olish: async (id: string) =>
-    (await apiClient.get<Filial>(`/organization/branches/${id}`)).data,
+    apiData((await apiClient.get<Filial | ApiEnvelope<Filial>>(`/organization/branches/${id}`)).data),
   yaratish: async (data: FilialYaratishMalumoti) =>
-    (await apiClient.post<Filial>("/organization/branches", data)).data,
+    apiData((await apiClient.post<Filial | ApiEnvelope<Filial>>("/organization/branches", data)).data),
   yangilash: async (id: string, data: Partial<FilialYaratishMalumoti>) =>
-    (await apiClient.patch<Filial>(`/organization/branches/${id}`, data)).data,
+    apiData((await apiClient.patch<Filial | ApiEnvelope<Filial>>(`/organization/branches/${id}`, data)).data),
   ochirish: async (id: string) =>
-    (await apiClient.delete<Filial>(`/organization/branches/${id}`)).data,
+    apiData((await apiClient.delete<Filial | ApiEnvelope<Filial>>(`/organization/branches/${id}`)).data),
 };
 
 // Ombor/index.tsx: omborlar ro'yxati va CRUD amallari.
 export const omborlarApi = {
-  royxat: async () => (await apiClient.get<Ombor[]>("/organization/warehouses")).data,
+  royxat: async () =>
+    apiList((await apiClient.get<Ombor[] | ApiListEnvelope<Ombor>>("/organization/warehouses")).data),
   olish: async (id: string) =>
-    (await apiClient.get<Ombor>(`/organization/warehouses/${id}`)).data,
+    apiData((await apiClient.get<Ombor | ApiEnvelope<Ombor>>(`/organization/warehouses/${id}`)).data),
   yaratish: async (data: OmborSaqlashMalumoti) =>
-    (await apiClient.post<Ombor>("/organization/warehouses", data)).data,
+    apiData((await apiClient.post<Ombor | ApiEnvelope<Ombor>>("/organization/warehouses", data)).data),
   yangilash: async (id: string, data: Partial<OmborSaqlashMalumoti>) =>
-    (await apiClient.patch<Ombor>(`/organization/warehouses/${id}`, data)).data,
+    apiData((await apiClient.patch<Ombor | ApiEnvelope<Ombor>>(`/organization/warehouses/${id}`, data)).data),
   ochirish: async (id: string) =>
-    (await apiClient.delete<Ombor>(`/organization/warehouses/${id}`)).data,
+    apiData((await apiClient.delete<Ombor | ApiEnvelope<Ombor>>(`/organization/warehouses/${id}`)).data),
 };
 
 // Ombor/Xaridlar.tsx va Kirim.tsx: kirim hujjatlari.
@@ -76,15 +77,32 @@ export const kirimApi = {
     return royxatniAjratish(response.data);
   },
   olish: async (id: string) =>
-    (await apiClient.get<KirimHujjati>(`/inventory/purchases/${id}`)).data,
+    apiData(
+      (await apiClient.get<KirimHujjati | ApiEnvelope<KirimHujjati>>(`/inventory/purchases/${id}`)).data
+    ),
   yaratish: async (data: KirimYaratishMalumoti) =>
-    (await apiClient.post<KirimHujjati>("/inventory/purchases", data)).data,
+    apiData(
+      (await apiClient.post<KirimHujjati | ApiEnvelope<KirimHujjati>>("/inventory/purchases", data)).data
+    ),
   yangilash: async (id: string, data: Partial<KirimYaratishMalumoti>) =>
-    (await apiClient.patch<KirimHujjati>(`/inventory/purchases/${id}`, data)).data,
+    apiData(
+      (await apiClient.patch<KirimHujjati | ApiEnvelope<KirimHujjati>>(
+        `/inventory/purchases/${id}`,
+        data
+      )).data
+    ),
   tasdiqlash: async (id: string) =>
-    (await apiClient.post<KirimHujjati>(`/inventory/purchases/${id}/confirm`)).data,
+    apiData(
+      (await apiClient.post<KirimHujjati | ApiEnvelope<KirimHujjati>>(
+        `/inventory/purchases/${id}/confirm`
+      )).data
+    ),
   bekorQilish: async (id: string) =>
-    (await apiClient.post<KirimHujjati>(`/inventory/purchases/${id}/cancel`)).data,
+    apiData(
+      (await apiClient.post<KirimHujjati | ApiEnvelope<KirimHujjati>>(
+        `/inventory/purchases/${id}/cancel`
+      )).data
+    ),
 };
 
 // Ombor/Chiqim.tsx: ombordan hisobdan chiqarish hujjatlari.
@@ -168,31 +186,43 @@ export async function omborQoldiqlari(warehouseId?: string) {
 
 // Ombor hujjatlari formalaridagi yetkazib beruvchi va mas'ul xodim tanlovlari.
 export async function yetkazibBeruvchilar() {
-  return (await apiClient.get<NomliEntity[]>("/partners/suppliers")).data;
+  return apiList(
+    (await apiClient.get<NomliEntity[] | ApiListEnvelope<NomliEntity>>("/partners/suppliers")).data
+  );
 }
 
 // Ombor/Xaridlar.tsx: kirim oynasidan yangi yetkazib beruvchi yaratish.
 export async function yetkazibBeruvchiYaratish(data: { name: string; phone?: string }) {
-  return (await apiClient.post<NomliEntity>("/partners/suppliers", data)).data;
+  return apiData(
+    (await apiClient.post<NomliEntity | ApiEnvelope<NomliEntity>>("/partners/suppliers", data)).data
+  );
 }
 
 export async function xodimlar() {
-  return (await apiClient.get<NomliEntity[]>("/accounts/users")).data;
+  return apiList(
+    (await apiClient.get<NomliEntity[] | ApiListEnvelope<NomliEntity>>("/accounts/users")).data
+  );
 }
 
 // Kirim formasida hali qoldiqda bo'lmagan mahsulotlarni ham tanlash uchun katalog olinadi.
 export async function barchaModifikatsiyalar() {
-  const mahsulotlar = (
-    await apiClient.get<Array<{ id: string; name?: string }>>("/catalog/products")
-  ).data;
+  const mahsulotlar = apiList(
+    (
+      await apiClient.get<
+        Array<{ id: string; name?: string }> | ApiListEnvelope<{ id: string; name?: string }>
+      >("/catalog/products")
+    ).data
+  );
 
   const royxatlar = await Promise.all(
     mahsulotlar.map(async (mahsulot) => {
-      const modifications = (
-        await apiClient.get<MahsulotModifikatsiyasi[]>(
-          `/catalog/products/${mahsulot.id}/modifications`
-        )
-      ).data;
+      const modifications = apiList(
+        (
+          await apiClient.get<MahsulotModifikatsiyasi[] | ApiListEnvelope<MahsulotModifikatsiyasi>>(
+            `/catalog/products/${mahsulot.id}/modifications`
+          )
+        ).data
+      );
 
       return modifications.map((modification) => ({
         ...modification,

@@ -71,6 +71,12 @@ function mahsulotniBoyitish(mahsulot: Mahsulot, state: MahsulotlarState) {
   };
 }
 
+function mahsulotIdTekshirish(mahsulot: Mahsulot) {
+  if (!mahsulot.id) {
+    throw new Error("Backend mahsulot ID qaytarmadi. Mahsulot saqlanmadi.");
+  }
+}
+
 export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
   kategoriyalar: [],
   birliklar: [],
@@ -196,6 +202,7 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const mahsulot = mahsulotniBoyitish(await mahsulotlarApi.yaratish(data), get());
+      mahsulotIdTekshirish(mahsulot);
 
       try {
         const modifikatsiya = await modifikatsiyalarApi.yaratish(
@@ -215,7 +222,7 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
         // Backend mahsulot va variantni alohida endpointlarda yaratadi.
         // Variant yaratilmasa yarimta mahsulot qolmasligi uchun mahsulot tozalanadi.
         try {
-          await mahsulotlarApi.ochirish(mahsulot.id);
+          if (mahsulot.id) await mahsulotlarApi.ochirish(mahsulot.id);
         } catch {
           // Asosiy xatoni foydalanuvchiga ko'rsatamiz.
         }
@@ -230,6 +237,7 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const mahsulot = mahsulotniBoyitish(await mahsulotlarApi.yaratish(data), get());
+      mahsulotIdTekshirish(mahsulot);
 
       try {
         const modifikatsiyalar = await Promise.all(
@@ -248,7 +256,7 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
         return true;
       } catch (variantXatosi) {
         try {
-          await mahsulotlarApi.ochirish(mahsulot.id);
+          if (mahsulot.id) await mahsulotlarApi.ochirish(mahsulot.id);
         } catch {
           // Variantlardan biri yaratilmasa asosiy xato ko'rsatiladi.
         }

@@ -98,6 +98,7 @@ export type KirimHujjati = {
   id: string;
   number?: string;
   documentNumber?: string;
+  docNumber?: string;
   supplierId: string;
   warehouseId: string;
   responsibleId?: string;
