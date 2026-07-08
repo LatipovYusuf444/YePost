@@ -91,7 +91,24 @@ function hujjatniAlmashtirish<T extends { id: string }>(royxat: T[], hujjat: T) 
   return royxat.map((item) => (item.id === hujjat.id ? hujjat : item));
 }
 
-export const useOmborStore = create<OmborState>((set) => ({
+function qoldiqlarniBoglash(
+  qoldiqlar: OmborQoldigi[],
+  omborlar: Ombor[],
+  modifikatsiyalar: MahsulotModifikatsiyasi[]
+) {
+  const omborMap = new Map(omborlar.map((ombor) => [ombor.id, ombor]));
+  const modifikatsiyaMap = new Map(
+    modifikatsiyalar.map((modifikatsiya) => [modifikatsiya.id, modifikatsiya])
+  );
+
+  return qoldiqlar.map((qoldiq) => ({
+    ...qoldiq,
+    warehouse: qoldiq.warehouse ?? (qoldiq.warehouseId ? omborMap.get(qoldiq.warehouseId) : undefined),
+    modification: qoldiq.modification ?? modifikatsiyaMap.get(qoldiq.modificationId),
+  }));
+}
+
+export const useOmborStore = create<OmborState>((set, get) => ({
   kompaniyalar: [],
   omborlar: [],
   filiallar: [],
@@ -143,7 +160,7 @@ export const useOmborStore = create<OmborState>((set) => ({
         chiqimlar,
         kochirishlar,
         inventarizatsiyalar,
-        qoldiqlar,
+        qoldiqlar: qoldiqlarniBoglash(qoldiqlar, omborlar, modifikatsiyalar),
         modifikatsiyalar,
         yetkazibBeruvchilar: suppliers,
         xodimlar: users,
@@ -156,7 +173,19 @@ export const useOmborStore = create<OmborState>((set) => ({
 
   qoldiqlarniYuklash: async (warehouseId) => {
     try {
-      set({ qoldiqlar: await omborQoldiqlari(warehouseId) });
+      let { omborlar, modifikatsiyalar } = get();
+      if (omborlar.length === 0 || modifikatsiyalar.length === 0) {
+        [omborlar, modifikatsiyalar] = await Promise.all([
+          omborlar.length ? Promise.resolve(omborlar) : omborlarApi.royxat(),
+          modifikatsiyalar.length ? Promise.resolve(modifikatsiyalar) : barchaModifikatsiyalar(),
+        ]);
+      }
+      const qoldiqlar = await omborQoldiqlari(warehouseId);
+      set({
+        omborlar,
+        modifikatsiyalar,
+        qoldiqlar: qoldiqlarniBoglash(qoldiqlar, omborlar, modifikatsiyalar),
+      });
     } catch (error) {
       set({ xatolik: getApiErrorMessage(error) });
     }
@@ -371,7 +400,8 @@ export const useOmborStore = create<OmborState>((set) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const hujjat = await kirimApi.tasdiqlash(id);
-      const qoldiqlar = await omborQoldiqlari();
+      const { omborlar, modifikatsiyalar } = get();
+      const qoldiqlar = qoldiqlarniBoglash(await omborQoldiqlari(), omborlar, modifikatsiyalar);
       set((state) => ({
         kirimlar: hujjatniAlmashtirish(state.kirimlar, hujjat),
         qoldiqlar,
@@ -387,7 +417,8 @@ export const useOmborStore = create<OmborState>((set) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const hujjat = await kirimApi.bekorQilish(id);
-      const qoldiqlar = await omborQoldiqlari();
+      const { omborlar, modifikatsiyalar } = get();
+      const qoldiqlar = qoldiqlarniBoglash(await omborQoldiqlari(), omborlar, modifikatsiyalar);
       set((state) => ({
         kirimlar: hujjatniAlmashtirish(state.kirimlar, hujjat),
         qoldiqlar,
@@ -437,7 +468,8 @@ export const useOmborStore = create<OmborState>((set) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const hujjat = await chiqimApi.tasdiqlash(id);
-      const qoldiqlar = await omborQoldiqlari();
+      const { omborlar, modifikatsiyalar } = get();
+      const qoldiqlar = qoldiqlarniBoglash(await omborQoldiqlari(), omborlar, modifikatsiyalar);
       set((state) => ({
         chiqimlar: hujjatniAlmashtirish(state.chiqimlar, hujjat),
         qoldiqlar,
@@ -453,7 +485,8 @@ export const useOmborStore = create<OmborState>((set) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const hujjat = await chiqimApi.bekorQilish(id);
-      const qoldiqlar = await omborQoldiqlari();
+      const { omborlar, modifikatsiyalar } = get();
+      const qoldiqlar = qoldiqlarniBoglash(await omborQoldiqlari(), omborlar, modifikatsiyalar);
       set((state) => ({
         chiqimlar: hujjatniAlmashtirish(state.chiqimlar, hujjat),
         qoldiqlar,
@@ -506,7 +539,8 @@ export const useOmborStore = create<OmborState>((set) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const hujjat = await kochirishApi.jonatish(id);
-      const qoldiqlar = await omborQoldiqlari();
+      const { omborlar, modifikatsiyalar } = get();
+      const qoldiqlar = qoldiqlarniBoglash(await omborQoldiqlari(), omborlar, modifikatsiyalar);
       set((state) => ({
         kochirishlar: hujjatniAlmashtirish(state.kochirishlar, hujjat),
         qoldiqlar,
@@ -522,7 +556,8 @@ export const useOmborStore = create<OmborState>((set) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const hujjat = await kochirishApi.qabulQilish(id);
-      const qoldiqlar = await omborQoldiqlari();
+      const { omborlar, modifikatsiyalar } = get();
+      const qoldiqlar = qoldiqlarniBoglash(await omborQoldiqlari(), omborlar, modifikatsiyalar);
       set((state) => ({
         kochirishlar: hujjatniAlmashtirish(state.kochirishlar, hujjat),
         qoldiqlar,
@@ -538,7 +573,8 @@ export const useOmborStore = create<OmborState>((set) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const hujjat = await kochirishApi.bekorQilish(id);
-      const qoldiqlar = await omborQoldiqlari();
+      const { omborlar, modifikatsiyalar } = get();
+      const qoldiqlar = qoldiqlarniBoglash(await omborQoldiqlari(), omborlar, modifikatsiyalar);
       set((state) => ({
         kochirishlar: hujjatniAlmashtirish(state.kochirishlar, hujjat),
         qoldiqlar,
@@ -594,7 +630,8 @@ export const useOmborStore = create<OmborState>((set) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const hujjat = await inventarizatsiyaApi.tasdiqlash(id);
-      const qoldiqlar = await omborQoldiqlari();
+      const { omborlar, modifikatsiyalar } = get();
+      const qoldiqlar = qoldiqlarniBoglash(await omborQoldiqlari(), omborlar, modifikatsiyalar);
       set((state) => ({
         inventarizatsiyalar: hujjatniAlmashtirish(state.inventarizatsiyalar, hujjat),
         qoldiqlar,

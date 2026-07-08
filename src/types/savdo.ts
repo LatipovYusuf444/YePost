@@ -20,9 +20,9 @@ export type SotuvMahsuloti = {
   id?: string;
   saleItemId?: string;
   modificationId: string;
-  quantity: number;
-  price: number;
-  discount?: number;
+  quantity: number | string;
+  price: number | string;
+  discount?: number | string;
   modification?: {
     id: string;
     name?: string;
@@ -33,7 +33,7 @@ export type SotuvMahsuloti = {
 export type SotuvTolovi = {
   id?: string;
   paymentType: TolovTuri;
-  amount: number;
+  amount: number | string;
 };
 
 export type Sotuv = {
@@ -47,10 +47,10 @@ export type Sotuv = {
   saleType?: SotuvTuri;
   status?: SotuvHolati | string;
   note?: string;
-  total?: number;
-  totalAmount?: number;
-  paidAmount?: number;
-  debtAmount?: number;
+  total?: number | string;
+  totalAmount?: number | string;
+  paidAmount?: number | string;
+  debtAmount?: number | string;
   createdAt?: string;
   updatedAt?: string;
   confirmedAt?: string;
@@ -96,8 +96,8 @@ export type Qaytarish = {
   responsibleId?: string;
   note?: string;
   status?: SotuvHolati | string;
-  total?: number;
-  totalAmount?: number;
+  total?: number | string;
+  totalAmount?: number | string;
   createdAt?: string;
   updatedAt?: string;
   sale?: Sotuv;
@@ -129,10 +129,10 @@ export type QoldiqTanlovi = {
   warehouseId?: string;
   productId?: string;
   modificationId: string;
-  quantity?: number;
-  balance?: number;
-  sellingPrice?: number;
-  price?: number;
+  quantity?: number | string;
+  balance?: number | string;
+  sellingPrice?: number | string;
+  price?: number | string;
   modification?: {
     id: string;
     name?: string;
@@ -140,10 +140,10 @@ export type QoldiqTanlovi = {
     article?: string | null;
     product?: NomliMalumot;
     price?: {
-      costPrice?: number;
-      retailPrice?: number;
-      wholesalePrice?: number;
-      sellingPrice?: number;
+      costPrice?: number | string;
+      retailPrice?: number | string;
+      wholesalePrice?: number | string;
+      sellingPrice?: number | string;
     };
   };
   warehouse?: OmborTanlovi;

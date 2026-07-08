@@ -68,10 +68,11 @@ export type MahsulotModifikatsiyasi = {
   article?: string;
   productId?: string;
   product?: NomliEntity;
+  params?: Record<string, string | number | null | undefined>;
   price?: {
-    costPrice?: number;
-    retailPrice?: number;
-    wholesalePrice?: number;
+    costPrice?: number | string;
+    retailPrice?: number | string;
+    wholesalePrice?: number | string;
   };
 };
 
@@ -79,9 +80,9 @@ export type OmborQoldigi = {
   id?: string;
   warehouseId?: string;
   modificationId: string;
-  quantity?: number;
-  balance?: number;
-  availableQuantity?: number;
+  quantity?: number | string;
+  balance?: number | string;
+  availableQuantity?: number | string;
   warehouse?: Ombor;
   modification?: MahsulotModifikatsiyasi;
 };

@@ -1,4 +1,5 @@
 import apiClient from "./axios";
+import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import type {
   MijozTanlovi,
   OmborTanlovi,
@@ -14,27 +15,26 @@ import type { Mahsulot, MahsulotModifikatsiyasi } from "@/types/catalog";
 type RoyxatJavobi<T> = T[] | { value?: T[]; items?: T[]; results?: T[]; data?: T[] };
 
 function royxatniAjratish<T>(data: RoyxatJavobi<T>): T[] {
-  if (Array.isArray(data)) return data;
-  return data.value ?? data.items ?? data.results ?? data.data ?? [];
+  return apiList(data as T[] | ApiListEnvelope<T>);
 }
 
 // Savdo/index.tsx, Savatcha.tsx, Tarix.tsx va BekorQilinganlar.tsx:
 // barcha sotuvlarni backenddan oladi.
 export async function sotuvlarRoyxatiniOlish() {
-  const response = await apiClient.get<RoyxatJavobi<Sotuv>>("/sales");
+  const response = await apiClient.get<RoyxatJavobi<Sotuv> | ApiListEnvelope<Sotuv>>("/sales");
   return royxatniAjratish(response.data);
 }
 
 // Savdo/index.tsx: tanlangan sotuvning mahsulotlari va to'lovlarini oladi.
 export async function sotuvTafsilotiniOlish(sotuvId: string) {
-  const response = await apiClient.get<Sotuv>(`/sales/${sotuvId}`);
-  return response.data;
+  const response = await apiClient.get<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${sotuvId}`);
+  return apiData(response.data);
 }
 
 // Savdo/index.tsx: yangi sotuvni qoralama holatida yaratadi.
 export async function sotuvYaratish(malumot: SotuvYaratishMalumoti) {
-  const response = await apiClient.post<Sotuv>("/sales", malumot);
-  return response.data;
+  const response = await apiClient.post<Sotuv | ApiEnvelope<Sotuv>>("/sales", malumot);
+  return apiData(response.data);
 }
 
 // Savatcha.tsx: faqat DRAFT holatidagi sotuvni tahrirlaydi.
@@ -42,38 +42,38 @@ export async function sotuvniYangilash(
   sotuvId: string,
   malumot: Partial<SotuvYaratishMalumoti>
 ) {
-  const response = await apiClient.patch<Sotuv>(`/sales/${sotuvId}`, malumot);
-  return response.data;
+  const response = await apiClient.patch<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${sotuvId}`, malumot);
+  return apiData(response.data);
 }
 
 // Savatcha.tsx va Savdo/index.tsx: qoralama sotuvni tasdiqlaydi.
 export async function sotuvniTasdiqlash(sotuvId: string) {
-  const response = await apiClient.post<Sotuv>(`/sales/${sotuvId}/confirm`);
-  return response.data;
+  const response = await apiClient.post<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${sotuvId}/confirm`);
+  return apiData(response.data);
 }
 
 // Savdo/index.tsx: sotuvni bekor qiladi va ombor qoldig'ini tiklaydi.
 export async function sotuvniBekorQilish(sotuvId: string) {
-  const response = await apiClient.post<Sotuv>(`/sales/${sotuvId}/cancel`);
-  return response.data;
+  const response = await apiClient.post<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${sotuvId}/cancel`);
+  return apiData(response.data);
 }
 
 // Qaytarish.tsx: barcha qaytarish hujjatlarini oladi.
 export async function qaytarishlarRoyxatiniOlish() {
-  const response = await apiClient.get<RoyxatJavobi<Qaytarish>>("/returns");
+  const response = await apiClient.get<RoyxatJavobi<Qaytarish> | ApiListEnvelope<Qaytarish>>("/returns");
   return royxatniAjratish(response.data);
 }
 
 // Qaytarish.tsx: tanlangan qaytarishning to'liq tafsilotlarini ID orqali oladi.
 export async function qaytarishTafsilotiniOlish(qaytarishId: string) {
-  const response = await apiClient.get<Qaytarish>(`/returns/${qaytarishId}`);
-  return response.data;
+  const response = await apiClient.get<Qaytarish | ApiEnvelope<Qaytarish>>(`/returns/${qaytarishId}`);
+  return apiData(response.data);
 }
 
 // Qaytarish.tsx: yangi qaytarish hujjatini qoralama holatida yaratadi.
 export async function qaytarishYaratish(malumot: QaytarishYaratishMalumoti) {
-  const response = await apiClient.post<Qaytarish>("/returns", malumot);
-  return response.data;
+  const response = await apiClient.post<Qaytarish | ApiEnvelope<Qaytarish>>("/returns", malumot);
+  return apiData(response.data);
 }
 
 // Qaytarish.tsx: faqat DRAFT holatidagi qaytarish hujjatini tahrirlaydi.
@@ -85,48 +85,48 @@ export async function qaytarishniYangilash(
     `/returns/${qaytarishId}`,
     malumot
   );
-  return response.data;
+  return apiData(response.data);
 }
 
 // Qaytarish.tsx: qaytarishni tasdiqlaydi va mahsulotni omborga qaytaradi.
 export async function qaytarishniTasdiqlash(qaytarishId: string) {
-  const response = await apiClient.post<Qaytarish>(`/returns/${qaytarishId}/confirm`);
-  return response.data;
+  const response = await apiClient.post<Qaytarish | ApiEnvelope<Qaytarish>>(`/returns/${qaytarishId}/confirm`);
+  return apiData(response.data);
 }
 
 // Qaytarish.tsx: qaytarish hujjatini bekor qiladi.
 export async function qaytarishniBekorQilish(qaytarishId: string) {
-  const response = await apiClient.post<Qaytarish>(`/returns/${qaytarishId}/cancel`);
-  return response.data;
+  const response = await apiClient.post<Qaytarish | ApiEnvelope<Qaytarish>>(`/returns/${qaytarishId}/cancel`);
+  return apiData(response.data);
 }
 
 // Savdo/index.tsx: yangi sotuv formasidagi ombor tanlovi uchun.
 export async function omborlarRoyxatiniOlish() {
-  const response = await apiClient.get<RoyxatJavobi<OmborTanlovi>>("/organization/warehouses");
+  const response = await apiClient.get<RoyxatJavobi<OmborTanlovi> | ApiListEnvelope<OmborTanlovi>>("/organization/warehouses");
   return royxatniAjratish(response.data);
 }
 
 // Savdo/index.tsx: sotuvga biriktiriladigan jismoniy mijozlar uchun.
 export async function mijozlarRoyxatiniOlish() {
-  const response = await apiClient.get<RoyxatJavobi<MijozTanlovi>>("/partners/customers");
+  const response = await apiClient.get<RoyxatJavobi<MijozTanlovi> | ApiListEnvelope<MijozTanlovi>>("/partners/customers");
   return royxatniAjratish(response.data);
 }
 
 // Savdo/index.tsx: sotuvga biriktiriladigan mijoz kompaniyalari uchun.
 export async function mijozKompaniyalariRoyxatiniOlish() {
-  const response = await apiClient.get<RoyxatJavobi<MijozTanlovi>>("/partners/client-companies");
+  const response = await apiClient.get<RoyxatJavobi<MijozTanlovi> | ApiListEnvelope<MijozTanlovi>>("/partners/client-companies");
   return royxatniAjratish(response.data);
 }
 
 // Savdo/index.tsx: sotuv uchun mas'ul xodim tanlovi.
 export async function xodimlarRoyxatiniOlish() {
-  const response = await apiClient.get<RoyxatJavobi<XodimTanlovi>>("/accounts/users");
+  const response = await apiClient.get<RoyxatJavobi<XodimTanlovi> | ApiListEnvelope<XodimTanlovi>>("/accounts/users");
   return royxatniAjratish(response.data);
 }
 
 // Savdo/index.tsx: ombordagi mavjud modifikatsiya, qoldiq va narxlarni oladi.
 export async function omborQoldiqlariniOlish(warehouseId?: string) {
-  const response = await apiClient.get<RoyxatJavobi<QoldiqTanlovi>>("/inventory/stock-balance", {
+  const response = await apiClient.get<RoyxatJavobi<QoldiqTanlovi> | ApiListEnvelope<QoldiqTanlovi>>("/inventory/stock-balance", {
     params: warehouseId ? { warehouseId } : undefined,
   });
   return royxatniAjratish(response.data);

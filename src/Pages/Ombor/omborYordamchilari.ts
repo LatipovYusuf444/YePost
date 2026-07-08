@@ -19,7 +19,12 @@ export function pul(value?: number) {
 }
 
 export function modificationNomi(modification?: MahsulotModifikatsiyasi) {
-  return modification?.product?.name ?? modification?.name ?? modification?.barcode ?? "Noma'lum";
+  const productName = modification?.product?.name;
+  const variantName = modification?.name;
+  if (productName && variantName && productName !== variantName) {
+    return `${productName} / ${variantName}`;
+  }
+  return productName ?? variantName ?? modification?.barcode ?? "Noma'lum";
 }
 
 export function qoldiqMiqdori(qoldiq: OmborQoldigi) {

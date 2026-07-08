@@ -1,4 +1,5 @@
 import apiClient from "./axios";
+import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import type {
   Activity,
   ActivityFilter,
@@ -27,130 +28,136 @@ function tozaParams(params?: Record<string, unknown>) {
 }
 
 export function royxatniAjratish<T>(data: RoyxatJavobi<T> | CursorJavobi<T>): T[] {
-  if (Array.isArray(data)) return data;
-  return data.items ?? data.results ?? data.data ?? data.value ?? [];
+  return apiList(data as T[] | ApiListEnvelope<T>);
 }
 
 export const crmApi = {
   timeline: async (customerId: string, params?: TimelineFilter) =>
-    (
-      await apiClient.get<CursorJavobi<TimelineItem>>(
-        `/crm/customers/${customerId}/timeline`,
-        { params: tozaParams(params) }
-      )
-    ).data,
+    apiData(
+      (
+        await apiClient.get<CursorJavobi<TimelineItem> | ApiEnvelope<CursorJavobi<TimelineItem>>>(
+          `/crm/customers/${customerId}/timeline`,
+          { params: tozaParams(params) }
+        )
+      ).data
+    ),
 
   bildirishnomalar: async (unread?: boolean) =>
     royxatniAjratish(
       (
-        await apiClient.get<RoyxatJavobi<Bildirishnoma>>("/crm/notifications", {
+        await apiClient.get<RoyxatJavobi<Bildirishnoma> | ApiListEnvelope<Bildirishnoma>>("/crm/notifications", {
           params: unread === undefined ? undefined : { unread },
         })
       ).data
     ),
   bildirishnomaOqildi: async (id: string) =>
-    (await apiClient.post<Bildirishnoma>(`/crm/notifications/${id}/read`)).data,
+    apiData((await apiClient.post<Bildirishnoma | ApiEnvelope<Bildirishnoma>>(`/crm/notifications/${id}/read`)).data),
   barchaBildirishnomalarOqildi: async () =>
-    (await apiClient.post<Bildirishnoma[]>("/crm/notifications/read-all")).data,
+    apiData((await apiClient.post<Bildirishnoma[] | ApiEnvelope<Bildirishnoma[]>>("/crm/notifications/read-all")).data),
 
   customFields: async (entityType?: string) =>
     royxatniAjratish(
       (
-        await apiClient.get<RoyxatJavobi<CustomField>>("/crm/custom-fields", {
+        await apiClient.get<RoyxatJavobi<CustomField> | ApiListEnvelope<CustomField>>("/crm/custom-fields", {
           params: tozaParams({ entityType }),
         })
       ).data
     ),
   customFieldYaratish: async (data: CustomFieldSaqlash) =>
-    (await apiClient.post<CustomField>("/crm/custom-fields", data)).data,
+    apiData((await apiClient.post<CustomField | ApiEnvelope<CustomField>>("/crm/custom-fields", data)).data),
   customFieldYangilash: async (id: string, data: CustomFieldSaqlash) =>
-    (await apiClient.patch<CustomField>(`/crm/custom-fields/${id}`, data)).data,
+    apiData((await apiClient.patch<CustomField | ApiEnvelope<CustomField>>(`/crm/custom-fields/${id}`, data)).data),
   customFieldOchirish: async (id: string) =>
-    (await apiClient.delete<CustomField>(`/crm/custom-fields/${id}`)).data,
+    apiData((await apiClient.delete<CustomField | ApiEnvelope<CustomField>>(`/crm/custom-fields/${id}`)).data),
 
   dublikatlar: async (params: MijozDublikatFilter) =>
     royxatniAjratish(
       (
-        await apiClient.get<RoyxatJavobi<unknown>>("/crm/customers/duplicates", {
+        await apiClient.get<RoyxatJavobi<unknown> | ApiListEnvelope<unknown>>("/crm/customers/duplicates", {
           params: tozaParams(params),
         })
       ).data
     ),
   mijozKartasi: async (customerId: string) =>
-    (await apiClient.get<MijozKartasi>(`/crm/customers/${customerId}/card`)).data,
+    apiData((await apiClient.get<MijozKartasi | ApiEnvelope<MijozKartasi>>(`/crm/customers/${customerId}/card`)).data),
 
   activities: async (params?: ActivityFilter) =>
     royxatniAjratish(
       (
-        await apiClient.get<RoyxatJavobi<Activity>>("/crm/activities", {
+        await apiClient.get<RoyxatJavobi<Activity> | ApiListEnvelope<Activity>>("/crm/activities", {
           params: tozaParams(params),
         })
       ).data
     ),
   activityYaratish: async (data: ActivitySaqlash) =>
-    (await apiClient.post<Activity>("/crm/activities", data)).data,
+    apiData((await apiClient.post<Activity | ApiEnvelope<Activity>>("/crm/activities", data)).data),
   myDay: async () =>
     royxatniAjratish(
-      (await apiClient.get<RoyxatJavobi<Activity>>("/crm/activities/my-day")).data
+      (await apiClient.get<RoyxatJavobi<Activity> | ApiListEnvelope<Activity>>("/crm/activities/my-day")).data
     ),
   activityOlish: async (id: string) =>
-    (await apiClient.get<Activity>(`/crm/activities/${id}`)).data,
+    apiData((await apiClient.get<Activity | ApiEnvelope<Activity>>(`/crm/activities/${id}`)).data),
   activityYangilash: async (id: string, data: ActivityYangilash) =>
-    (await apiClient.patch<Activity>(`/crm/activities/${id}`, data)).data,
+    apiData((await apiClient.patch<Activity | ApiEnvelope<Activity>>(`/crm/activities/${id}`, data)).data),
   activityOchirish: async (id: string) =>
-    (await apiClient.delete<Activity>(`/crm/activities/${id}`)).data,
+    apiData((await apiClient.delete<Activity | ApiEnvelope<Activity>>(`/crm/activities/${id}`)).data),
   activityYakunlash: async (id: string, result?: string) =>
-    (await apiClient.post<Activity>(`/crm/activities/${id}/complete`, { result })).data,
+    apiData((await apiClient.post<Activity | ApiEnvelope<Activity>>(`/crm/activities/${id}/complete`, { result })).data),
 
   comments: async (customerId: string, params?: { cursor?: string; limit?: number }) =>
-    (
-      await apiClient.get<CursorJavobi<Comment>>(`/crm/customers/${customerId}/comments`, {
-        params: tozaParams(params),
-      })
-    ).data,
+    apiData(
+      (
+        await apiClient.get<CursorJavobi<Comment> | ApiEnvelope<CursorJavobi<Comment>>>(
+          `/crm/customers/${customerId}/comments`,
+          { params: tozaParams(params) }
+        )
+      ).data
+    ),
   commentYaratish: async (customerId: string, data: CommentSaqlash) =>
-    (await apiClient.post<Comment>(`/crm/customers/${customerId}/comments`, data)).data,
+    apiData((await apiClient.post<Comment | ApiEnvelope<Comment>>(`/crm/customers/${customerId}/comments`, data)).data),
   commentYangilash: async (id: string, text: string) =>
-    (await apiClient.patch<Comment>(`/crm/comments/${id}`, { text })).data,
+    apiData((await apiClient.patch<Comment | ApiEnvelope<Comment>>(`/crm/comments/${id}`, { text })).data),
   commentOchirish: async (id: string) =>
-    (await apiClient.delete<Comment>(`/crm/comments/${id}`)).data,
+    apiData((await apiClient.delete<Comment | ApiEnvelope<Comment>>(`/crm/comments/${id}`)).data),
   commentPin: async (id: string) =>
-    (await apiClient.post<Comment>(`/crm/comments/${id}/pin`)).data,
+    apiData((await apiClient.post<Comment | ApiEnvelope<Comment>>(`/crm/comments/${id}/pin`)).data),
   commentUnpin: async (id: string) =>
-    (await apiClient.post<Comment>(`/crm/comments/${id}/unpin`)).data,
+    apiData((await apiClient.post<Comment | ApiEnvelope<Comment>>(`/crm/comments/${id}/unpin`)).data),
 
   faylYuklash: async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
-    return (
-      await apiClient.post("/crm/attachments", formData, {
+    return apiData(
+      (
+        await apiClient.post("/crm/attachments", formData, {
         headers: { "Content-Type": "multipart/form-data" },
-      })
-    ).data;
+        })
+      ).data
+    );
   },
   faylYuklabOlish: async (id: string) =>
     (await apiClient.get<Blob>(`/crm/attachments/${id}/download`, { responseType: "blob" }))
       .data,
 
   chatTarixi: async (customerId: string, params?: { cursor?: string; limit?: number }) =>
-    (
-      await apiClient.get<CursorJavobi<ChatMessage>>(
-        `/crm/customers/${customerId}/chat/messages`,
-        { params: tozaParams(params) }
-      )
-    ).data,
+    apiData(
+      (
+        await apiClient.get<CursorJavobi<ChatMessage> | ApiEnvelope<CursorJavobi<ChatMessage>>>(
+          `/crm/customers/${customerId}/chat/messages`,
+          { params: tozaParams(params) }
+        )
+      ).data
+    ),
   chatXabarYuborish: async (customerId: string, text: string) =>
-    (await apiClient.post<ChatMessage>(`/crm/customers/${customerId}/chat/messages`, { text }))
-      .data,
+    apiData((await apiClient.post<ChatMessage | ApiEnvelope<ChatMessage>>(`/crm/customers/${customerId}/chat/messages`, { text })).data),
   chatThreadlar: async (unassigned?: boolean) =>
     royxatniAjratish(
       (
-        await apiClient.get<RoyxatJavobi<ChatThread>>("/crm/chat/threads", {
+        await apiClient.get<RoyxatJavobi<ChatThread> | ApiListEnvelope<ChatThread>>("/crm/chat/threads", {
           params: unassigned === undefined ? undefined : { unassigned },
         })
       ).data
     ),
   chatThreadBiriktirish: async (id: string, customerId: string) =>
-    (await apiClient.patch<ChatThread>(`/crm/chat/threads/${id}/assign`, { customerId }))
-      .data,
+    apiData((await apiClient.patch<ChatThread | ApiEnvelope<ChatThread>>(`/crm/chat/threads/${id}/assign`, { customerId })).data),
 };

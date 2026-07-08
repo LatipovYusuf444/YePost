@@ -188,8 +188,14 @@ function mijozTelefon(sotuv: Sotuv) {
   return sotuv.customer?.phone || sotuv.clientCompany?.phone || "—";
 }
 
+function tozaManzil(value?: string | null) {
+  const text = String(value ?? "").trim();
+  const placeholderlar = new Set(["", "—", "-", "null", "undefined", "string"]);
+  return placeholderlar.has(text.toLowerCase()) ? "" : text;
+}
+
 function mijozManzili(sotuv: Sotuv) {
-  return sotuv.customer?.address || sotuv.clientCompany?.address || "—";
+  return tozaManzil(sotuv.customer?.address) || tozaManzil(sotuv.clientCompany?.address) || "—";
 }
 
 function qisqaVaqt(value?: string) {
@@ -296,16 +302,21 @@ function mahsulotTavsifi(item: SotuvItem) {
   return "Mahsulot ma'lumoti katalogdan olinadi";
 }
 
+function son(value: unknown) {
+  const raqam = Number(value ?? 0);
+  return Number.isFinite(raqam) ? raqam : 0;
+}
+
 function mahsulotJami(item: SotuvItem) {
-  return item.quantity * item.price - Number(item.discount ?? 0);
+  return son(item.quantity) * son(item.price) - son(item.discount);
 }
 
 function qoldiqMiqdori(qoldiq: QoldiqTanlovi) {
-  return Number(qoldiq.quantity ?? qoldiq.balance ?? 0);
+  return son(qoldiq.quantity ?? qoldiq.balance);
 }
 
 function qoldiqNarxi(qoldiq: QoldiqTanlovi) {
-  return Number(
+  return son(
     qoldiq.sellingPrice ??
       qoldiq.price ??
       qoldiq.modification?.price?.sellingPrice ??
@@ -1766,7 +1777,7 @@ function TovarlarTab({
   } | null>(null);
 
   const yangiQatorJami = yangiQatorlar.reduce(
-    (summa, qator) => summa + qator.quantity * qator.price - Number(qator.discount ?? 0),
+    (summa, qator) => summa + qator.quantity * qator.price - son(qator.discount),
     0
   );
   const umumiyJami = jami + yangiQatorJami;
@@ -1881,9 +1892,9 @@ function TovarlarTab({
       items: [
         ...items.map((item) => ({
           modificationId: item.modificationId,
-          quantity: item.quantity,
-          price: item.price,
-          discount: item.discount ?? 0,
+          quantity: son(item.quantity),
+          price: son(item.price),
+          discount: son(item.discount),
         })),
         ...yangiQatorlar.map((qator) => ({
           modificationId: qator.modificationId,
@@ -2393,7 +2404,7 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
                               key: omborKey,
                               left: Math.min(rect.left, window.innerWidth - 390),
                               top: rect.bottom + 8,
-                              quantity: item.quantity,
+                              quantity: son(item.quantity),
                             }
                       );
                     }}
@@ -2406,7 +2417,7 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
                   </button>
 
                   <a className="text-blue-600 underline underline-offset-4" href="#">
-                    {Math.max(item.quantity, 0)} dona
+                    {Math.max(son(item.quantity), 0)} dona
                   </a>
 
                   <div>
