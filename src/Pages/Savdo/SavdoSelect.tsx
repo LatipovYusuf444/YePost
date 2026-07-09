@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -56,28 +57,33 @@ export default function SavdoSelect({
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const selected = options.find((option) => option.value === value);
 
-  function updateDropdownPosition() {
+  const updateDropdownPosition = useCallback(() => {
     if (!portal || !buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
     const gap = 8;
     const viewportPadding = 12;
+    const dropdownWidth = rect.width;
     const belowSpace = window.innerHeight - rect.bottom - gap - viewportPadding;
     const aboveSpace = rect.top - gap - viewportPadding;
-    const preferredHeight = Math.min(320, options.length * 48 + 16);
+    const preferredHeight = Math.min(240, options.length * 40 + 8);
     const opensUp = belowSpace < preferredHeight && aboveSpace > belowSpace;
     const maxHeight = Math.max(
-      140,
-      Math.min(320, opensUp ? aboveSpace : belowSpace)
+      112,
+      Math.min(240, opensUp ? aboveSpace : belowSpace)
+    );
+    const left = Math.min(
+      Math.max(viewportPadding, rect.left),
+      window.innerWidth - dropdownWidth - viewportPadding
     );
 
     setDropdownStyle({
       position: "fixed",
-      left: Math.max(viewportPadding, rect.left),
+      left,
       top: opensUp ? Math.max(viewportPadding, rect.top - gap - maxHeight) : rect.bottom + gap,
-      width: rect.width,
+      width: dropdownWidth,
       maxHeight,
     });
-  }
+  }, [options.length, portal]);
 
   useEffect(() => {
     function close(event: MouseEvent) {
@@ -104,7 +110,7 @@ export default function SavdoSelect({
       window.removeEventListener("resize", updateDropdownPosition);
       window.removeEventListener("scroll", updateDropdownPosition, true);
     };
-  }, [open, portal]);
+  }, [open, portal, updateDropdownPosition]);
 
   const dropdown = open && (
     <div
@@ -112,8 +118,8 @@ export default function SavdoSelect({
       style={portal ? dropdownStyle : undefined}
       className={cn(
         portal
-          ? "z-[100010] overflow-y-auto rounded-[22px] border border-orange-100 bg-white p-2 shadow-[0_24px_70px_rgba(15,23,42,.22)] ring-1 ring-white/70"
-          : "absolute left-0 right-0 z-[80] mt-2 max-h-72 overflow-y-auto rounded-[22px] border border-orange-100 bg-white p-2 shadow-[0_22px_60px_rgba(15,23,42,.16)] ring-1 ring-white/70",
+          ? "z-[100010] overflow-y-auto rounded-xl border border-orange-100 bg-white p-1 shadow-[0_18px_44px_rgba(15,23,42,.18)] ring-1 ring-white/70"
+          : "absolute left-0 right-0 z-[80] mt-2 max-h-60 overflow-y-auto rounded-xl border border-orange-100 bg-white p-1 shadow-[0_18px_44px_rgba(15,23,42,.14)] ring-1 ring-white/70",
         dropdownClassName
       )}
     >
@@ -135,9 +141,9 @@ export default function SavdoSelect({
                 onChange(option.value);
                 setOpen(false);
               }}
-              className={`flex min-h-11 w-full items-center justify-between gap-3 rounded-2xl px-4 py-2.5 text-left text-sm font-semibold transition ${
+              className={`flex min-h-9 w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold transition ${
                 active
-                  ? "bg-orange-500 text-white shadow-[0_10px_22px_rgba(249,115,22,.22)]"
+                  ? "bg-orange-500 text-white shadow-[0_8px_18px_rgba(249,115,22,.20)]"
                   : "text-slate-700 hover:bg-orange-50 hover:text-orange-600"
               } ${option.disabled ? "cursor-not-allowed opacity-40" : ""}`}
             >

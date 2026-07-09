@@ -60,7 +60,7 @@ type SotuvTafsilotlariModalProps = {
     sotuvId: string,
     malumot: Partial<SotuvYaratishMalumoti>
   ) => Promise<boolean>;
-  onTasdiqlash: (sotuvId: string) => void;
+  onTasdiqlash: (sotuvId: string) => Promise<void> | void;
   onBekorQilish: (sotuvId: string) => void;
 };
 
@@ -1027,7 +1027,7 @@ function UmumiyTab({
   draft: boolean;
   vaqt: string;
   amalBajarilmoqda: boolean;
-  onTasdiqlash: (sotuvId: string) => void;
+  onTasdiqlash: (sotuvId: string) => Promise<void> | void;
   onBekorQilish: (sotuvId: string) => void;
   onYetkazish: () => void;
   onOmbordanChiqarish: () => void;
@@ -1305,7 +1305,7 @@ function KelishuvCard({
   holat: ReturnType<typeof sotuvHolati>;
   draft: boolean;
   amalBajarilmoqda: boolean;
-  onTasdiqlash: (sotuvId: string) => void;
+  onTasdiqlash: (sotuvId: string) => Promise<void> | void;
   onBekorQilish: (sotuvId: string) => void;
   onYetkazish: () => void;
   onOmbordanChiqarish: () => void;

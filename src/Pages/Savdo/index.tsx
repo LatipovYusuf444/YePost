@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  CheckCircle2,
   CircleAlert,
   LoaderCircle,
   Plus,
@@ -8,7 +9,7 @@ import {
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useSavdoStore } from "@/store/savdoStore";
-import type { Sotuv, SotuvYaratishMalumoti } from "@/types/savdo";
+import type { Sotuv, SotuvHolati, SotuvYaratishMalumoti, TolovTuri } from "@/types/savdo";
 import BekorQilinganlar from "./BekorQilinganlar";
 import Qaytarish from "./Qaytarish";
 import Savatcha from "./Savatcha";
@@ -17,7 +18,7 @@ import SotuvTafsilotlariModal from "./SotuvTafsilotlariModal";
 import Tarix from "./Tarix";
 import Tolovlar from "./Tolovlar";
 import YangiSotuvModal from "./YangiSotuvModal";
-import { mijozNomi, sotuvRaqami } from "./savdoYordamchilari";
+import { mijozNomi, sotuvHolati, sotuvRaqami } from "./savdoYordamchilari";
 import SavdoSelect from "./SavdoSelect";
 
 type SavdoTabi =
@@ -35,6 +36,21 @@ const tablar: Array<{ id: SavdoTabi; nomi: string }> = [
   { id: "tolovlar", nomi: "To'lovlar" },
   { id: "qaytarish", nomi: "Qaytarish" },
   { id: "bekor-qilingan", nomi: "Bekor qilinganlar" },
+];
+
+const statusFilterlari: Array<{ value: SotuvHolati | "barchasi"; label: string }> = [
+  { value: "barchasi", label: "Holat: barchasi" },
+  { value: "DRAFT", label: "Qoralama" },
+  { value: "CONFIRMED", label: "Tasdiqlangan" },
+  { value: "CANCELLED", label: "Bekor qilingan" },
+];
+
+const tolovFilterlari: Array<{ value: TolovTuri | "barchasi"; label: string }> = [
+  { value: "barchasi", label: "To'lov: barchasi" },
+  { value: "CASH", label: "Naqd" },
+  { value: "CARD", label: "Karta" },
+  { value: "BANK", label: "Bank o'tkazmasi" },
+  { value: "DEBT", label: "Qarz" },
 ];
 
 export default function Savdo() {
@@ -66,6 +82,8 @@ export default function Savdo() {
   const [searchParams] = useSearchParams();
   const [qidiruv, setQidiruv] = useState("");
   const [sanaFilteri, setSanaFilteri] = useState<"bugun" | "barchasi">("bugun");
+  const [statusFilteri, setStatusFilteri] = useState<SotuvHolati | "barchasi">("barchasi");
+  const [tolovFilteri, setTolovFilteri] = useState<TolovTuri | "barchasi">("barchasi");
   const [yangiSotuvOchiq, setYangiSotuvOchiq] = useState(false);
   const [yangiSotuvVarianti, setYangiSotuvVarianti] = useState<"sale" | "draft">("sale");
   const [xabar, setXabar] = useState("");
@@ -74,6 +92,14 @@ export default function Savdo() {
   const faolTab: SavdoTabi = tablar.some((tab) => tab.id === urlTab)
     ? (urlTab as SavdoTabi)
     : "barchasi";
+  const sahifaSarlavhasi =
+    faolTab === "tarix"
+      ? "Savdo tarixi"
+      : faolTab === "bekor-qilingan"
+        ? "Bekor qilingan sotuvlar"
+        : "Barcha sotuvlar";
+  const statusFilterKorinsin = faolTab !== "tarix" && faolTab !== "bekor-qilingan";
+  const yangiSotuvKorinsin = faolTab === "barchasi";
 
   useEffect(() => {
     void boshlangichMalumotlarniYuklash();
@@ -93,7 +119,6 @@ export default function Savdo() {
     const timer = window.setTimeout(() => setXabar(""), 2500);
     return () => window.clearTimeout(timer);
   }, [xabar]);
-// fsfbhjsbfjhsbjfbshjfbhsgn
   const qidirilganSotuvlar = useMemo(() => {
     const qiymat = qidiruv.trim().toLowerCase();
     const bugun = new Date().toDateString();
@@ -104,21 +129,35 @@ export default function Savdo() {
         })
       : sotuvlar;
 
-    if (!qiymat) return sanaBoyicha;
+    const filterlangan = sanaBoyicha.filter((sotuv) => {
+      const statusMos =
+        !statusFilterKorinsin ||
+        statusFilteri === "barchasi" ||
+        sotuvHolati(sotuv) === statusFilteri;
+      const tolovMos =
+        tolovFilteri === "barchasi" ||
+        sotuv.payments?.some((tolov) => String(tolov.paymentType).toUpperCase() === tolovFilteri);
 
-    return sanaBoyicha.filter((sotuv) =>
+      return statusMos && tolovMos;
+    });
+
+    if (!qiymat) return filterlangan;
+
+    return filterlangan.filter((sotuv) =>
       [
         sotuvRaqami(sotuv),
         mijozNomi(sotuv),
         sotuv.customer?.phone,
+        sotuv.clientCompany?.phone,
         sotuv.status,
         sotuv.note,
+        ...(sotuv.payments?.map((tolov) => tolov.paymentType) ?? []),
       ]
         .join(" ")
         .toLowerCase()
         .includes(qiymat)
     );
-  }, [qidiruv, sanaFilteri, sotuvlar]);
+  }, [qidiruv, sanaFilteri, sotuvlar, statusFilterKorinsin, statusFilteri, tolovFilteri]);
 
   async function sotuvniOchish(sotuv: Sotuv) {
     await qoldiqlarniYuklash(sotuv.warehouseId);
@@ -139,7 +178,8 @@ export default function Savdo() {
 
   async function tasdiqlash(sotuvId: string) {
     const muvaffaqiyatli = await sotuvniTasdiqlash(sotuvId);
-    if (muvaffaqiyatli) setXabar("Sotuv tasdiqlandi va ombor qoldig'i yangilandi.");
+    if (muvaffaqiyatli) setXabar("To'lov qabul qilindi. Qoralama savdoga aylantirildi.");
+    return muvaffaqiyatli;
   }
 
   async function bekorQilish(sotuvId: string) {
@@ -154,23 +194,29 @@ export default function Savdo() {
 
   return (
     <div className="space-y-5">
-      {(xatolik || xabar) && (
+      {xatolik && (
         <div
-          className={`flex items-start justify-between gap-3 rounded-2xl border p-4 text-sm font-semibold ${
-            xatolik
-              ? "border-red-100 bg-red-50 text-red-600"
-              : "border-emerald-100 bg-emerald-50 text-emerald-700"
-          }`}
+          className="flex items-start justify-between gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-600"
         >
           <div className="flex items-start gap-2">
-            {xatolik && <CircleAlert size={18} className="mt-0.5 shrink-0" />}
-            <span>{xatolik || xabar}</span>
+            <CircleAlert size={18} className="mt-0.5 shrink-0" />
+            <span>{xatolik}</span>
           </div>
-          {xatolik && (
-            <button onClick={xatolikniTozalash} className="font-black">
-              Yopish
-            </button>
-          )}
+          <button onClick={xatolikniTozalash} className="font-black">
+            Yopish
+          </button>
+        </div>
+      )}
+
+      {xabar && (
+        <div className="fixed right-6 top-6 z-[100060] flex max-w-sm items-start gap-3 rounded-2xl border border-emerald-100 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-[0_18px_50px_rgba(15,23,42,.16)] ring-1 ring-white/80">
+          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <CheckCircle2 size={20} />
+          </span>
+          <div>
+            <p className="font-black text-emerald-700">Muvaffaqiyatli</p>
+            <p className="mt-0.5 leading-5 text-slate-500">{xabar}</p>
+          </div>
         </div>
       )}
 
@@ -208,44 +254,70 @@ export default function Savdo() {
           {!["tolovlar", "qaytarish", "savatcha"].includes(faolTab) && (
             <section className="overflow-hidden rounded-[30px] border border-gray-100 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
               <div className="border-b border-gray-100 px-10 py-7">
-                <h1 className="text-[22px] font-medium text-[#262626]">Sotuv</h1>
+                <h1 className="text-[22px] font-medium text-[#262626]">{sahifaSarlavhasi}</h1>
               </div>
 
               <div className="flex flex-col gap-4 px-10 py-6 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <button
-                    onClick={() => {
-                      setYangiSotuvVarianti("sale");
-                      setYangiSotuvOchiq(true);
-                    }}
-                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md bg-orange-500 px-4 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-500/20"
-                  >
-                    <Plus size={16} />
-                    Qo'shish
-                  </button>
+                  {yangiSotuvKorinsin && (
+                    <button
+                      onClick={() => {
+                        setYangiSotuvVarianti("sale");
+                        setYangiSotuvOchiq(true);
+                      }}
+                      className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md bg-orange-500 px-4 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-500/20"
+                    >
+                      <Plus size={16} />
+                      Qo'shish
+                    </button>
+                  )}
 
                   <label className="flex h-10 w-full items-center gap-2 rounded-lg border border-gray-200 bg-[#FAFAFA] px-3 transition focus-within:border-orange-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-orange-100 sm:w-[390px]">
                     <input
                       value={qidiruv}
                       onChange={(event) => setQidiruv(event.target.value)}
-                      placeholder="Qidirish"
+                      placeholder={faolTab === "tarix" ? "Savdo tarixidan qidirish" : "Qidirish"}
                       className="min-w-0 flex-1 bg-transparent text-sm text-gray-700 outline-none placeholder:text-gray-400"
                     />
                     <Search size={18} className="shrink-0 text-gray-300" />
                   </label>
                 </div>
 
-                <div className="w-[176px]">
-                  <SavdoSelect
-                    value={sanaFilteri}
-                    onChange={(value) => setSanaFilteri(value as "bugun" | "barchasi")}
-                    options={[
-                      { value: "bugun", label: "Bugun" },
-                      { value: "barchasi", label: "Barchasi" },
-                    ]}
-                    buttonClassName="h-10 rounded-md border-orange-500 bg-orange-500 px-4 text-sm font-semibold text-white shadow-sm hover:bg-orange-600"
-                    dropdownClassName="rounded-2xl"
-                  />
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  {statusFilterKorinsin && (
+                    <div className="w-full sm:w-[160px]">
+                      <SavdoSelect
+                        value={statusFilteri}
+                        onChange={(value) => setStatusFilteri(value as SotuvHolati | "barchasi")}
+                        options={statusFilterlari}
+                        portal
+                        buttonClassName="h-10 rounded-md border-gray-200 bg-white px-3 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
+                      />
+                    </div>
+                  )}
+
+                  <div className="w-full sm:w-[170px]">
+                    <SavdoSelect
+                      value={tolovFilteri}
+                      onChange={(value) => setTolovFilteri(value as TolovTuri | "barchasi")}
+                      options={tolovFilterlari}
+                      portal
+                      buttonClassName="h-10 rounded-md border-gray-200 bg-white px-3 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
+                    />
+                  </div>
+
+                  <div className="w-full sm:w-[150px]">
+                    <SavdoSelect
+                      value={sanaFilteri}
+                      onChange={(value) => setSanaFilteri(value as "bugun" | "barchasi")}
+                      options={[
+                        { value: "bugun", label: "Sana: bugun" },
+                        { value: "barchasi", label: "Sana: barchasi" },
+                      ]}
+                      portal
+                      buttonClassName="h-10 rounded-md border-orange-500 bg-orange-500 px-3 text-sm font-semibold text-white shadow-sm hover:bg-orange-600"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -319,7 +391,10 @@ export default function Savdo() {
           amalBajarilmoqda={amalBajarilmoqda}
           onYopish={tanlanganSotuvniTozalash}
           onYangilash={sotuvniYangilash}
-          onTasdiqlash={(sotuvId) => void tasdiqlash(sotuvId)}
+          onTasdiqlash={async (sotuvId) => {
+            const muvaffaqiyatli = await tasdiqlash(sotuvId);
+            if (muvaffaqiyatli) tanlanganSotuvniTozalash();
+          }}
           onBekorQilish={(sotuvId) => void bekorQilish(sotuvId)}
         />
       )}

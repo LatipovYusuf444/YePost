@@ -72,7 +72,7 @@ export function pulniFormatlash(value: number | string | null | undefined) {
 }
 
 export function sananiFormatlash(value?: string) {
-  if (!value) return "—";
+  if (!value) return "-";
 
   const sana = new Date(value);
   return Number.isNaN(sana.getTime())
@@ -149,7 +149,7 @@ export function mijozNomi(sotuv: Sotuv) {
 }
 
 export function masulNomi(sotuv: Sotuv) {
-  return sotuv.responsible?.fullName || sotuv.responsible?.name || "—";
+  return sotuv.responsible?.fullName || sotuv.responsible?.name || "-";
 }
 
 export function sotuvJadvalId(sotuv: Sotuv) {

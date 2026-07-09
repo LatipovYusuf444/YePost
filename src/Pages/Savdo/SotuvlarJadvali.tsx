@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { ReceiptText } from "lucide-react";
 import type { Sotuv } from "@/types/savdo";
 import {
@@ -16,11 +17,11 @@ type SotuvlarJadvaliProps = {
 };
 
 function telefonRaqam(sotuv: Sotuv) {
-  return sotuv.customer?.phone || sotuv.clientCompany?.phone || "—";
+  return sotuv.customer?.phone || sotuv.clientCompany?.phone || "-";
 }
 
 function sanaVaVaqt(value?: string) {
-  if (!value) return { sana: "—", vaqt: "" };
+  if (!value) return { sana: "-", vaqt: "" };
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return { sana: value, vaqt: "" };
@@ -43,13 +44,26 @@ export default function SotuvlarJadvali({
   onSotuvniOchish,
   boshMatn = "Sotuv topilmadi",
 }: SotuvlarJadvaliProps) {
+  const pageSize = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(Math.ceil(sotuvlar.length / pageSize), 1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sotuvlar]);
+
+  const visibleRows = useMemo(
+    () => sotuvlar.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [currentPage, sotuvlar]
+  );
+
   return (
     <div className="px-10 pb-10">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[900px] border-collapse text-left text-sm">
           <thead className="text-[13px] font-medium text-orange-600">
             <tr>
-              <th className="border-b border-gray-200 px-4 py-3 font-medium">Mijoz ID</th>
+              <th className="border-b border-gray-200 px-4 py-3 font-medium">Savdo raqami</th>
               <th className="border-b border-gray-200 px-4 py-3 font-medium">Mijoz nomi</th>
               <th className="border-b border-gray-200 px-4 py-3 font-medium">Summa</th>
               <th className="border-b border-gray-200 px-4 py-3 font-medium">Sana</th>
@@ -58,7 +72,7 @@ export default function SotuvlarJadvali({
             </tr>
           </thead>
           <tbody className="text-[13px] text-[#4B4B4B]">
-            {sotuvlar.map((sotuv) => {
+            {visibleRows.map((sotuv) => {
               const sana = sanaVaVaqt(sotuv.createdAt);
 
               return (
@@ -109,6 +123,36 @@ export default function SotuvlarJadvali({
           </tbody>
         </table>
       </div>
+
+      {sotuvlar.length > pageSize && (
+        <div className="mt-5 flex flex-col gap-3 border-t border-gray-100 pt-5 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            {sotuvlar.length} ta yozuvdan {(currentPage - 1) * pageSize + 1}-
+            {Math.min(currentPage * pageSize, sotuvlar.length)} ko'rsatilmoqda
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}
+              disabled={currentPage === 1}
+              className="h-9 rounded-lg border border-gray-200 px-3 font-semibold text-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Oldingi
+            </button>
+            <span className="min-w-16 text-center font-semibold text-gray-700">
+              {currentPage}/{totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="h-9 rounded-lg border border-gray-200 px-3 font-semibold text-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Keyingi
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

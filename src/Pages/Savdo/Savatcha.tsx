@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { type MouseEvent, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Copy,
   Edit3,
-  Eye,
   FileText,
   LoaderCircle,
   MoreHorizontal,
@@ -14,7 +14,7 @@ import {
   Trash2,
   XCircle,
 } from "lucide-react";
-import type { DraftSale, DraftStatus, MijozTanlovi, QoldiqTanlovi, Sotuv, XodimTanlovi } from "@/types/savdo";
+import type { DraftStatus, MijozTanlovi, QoldiqTanlovi, Sotuv, XodimTanlovi } from "@/types/savdo";
 import { draftSalesService, saleToDraftSale } from "@/api/draftSalesService";
 import { pulniFormatlash, sotuvHolati } from "./savdoYordamchilari";
 import SavdoSelect from "./SavdoSelect";
@@ -34,7 +34,7 @@ type SavatchaProps = {
 
 const statusOptions: Array<{ value: DraftStatus | "all"; label: string }> = [
   { value: "all", label: "Barchasi" },
-  { value: "draft", label: "Draft" },
+  { value: "draft", label: "Qoralama" },
   { value: "waiting", label: "Kutilmoqda" },
   { value: "editing", label: "Tahrirlanmoqda" },
   { value: "cancelled", label: "Bekor qilingan" },
@@ -48,7 +48,7 @@ const sanaOptions = [
 ];
 
 const statusMatni: Record<DraftStatus, string> = {
-  draft: "Draft",
+  draft: "Qoralama",
   waiting: "Kutilmoqda",
   editing: "Tahrirlanmoqda",
   paid: "To'lov qilindi",
@@ -56,7 +56,7 @@ const statusMatni: Record<DraftStatus, string> = {
 };
 
 function sanaMatni(value?: string) {
-  if (!value) return "—";
+  if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat("uz-UZ", {
@@ -87,10 +87,6 @@ function sanaFilterdanOtadi(value: string | undefined, filter: string) {
   const since = new Date(start);
   since.setDate(since.getDate() - Math.max(days - 1, 0));
   return date >= since;
-}
-
-function draftChegirma(draft: DraftSale) {
-  return draft.discountAmount || draft.items.reduce((sum, item) => sum + item.discount, 0);
 }
 
 function qoldiqYetarlimi(sotuv: Sotuv, qoldiqlar: QoldiqTanlovi[]) {
@@ -124,6 +120,7 @@ export default function Savatcha({
   const [xodimFilter, setXodimFilter] = useState("all");
   const [mijozFilter, setMijozFilter] = useState("all");
   const [ochiqMenuId, setOchiqMenuId] = useState<string | null>(null);
+  const [menuJoylashuvi, setMenuJoylashuvi] = useState<{ top: number; left: number } | null>(null);
   const [amalId, setAmalId] = useState<string | null>(null);
   const [sahifa, setSahifa] = useState(1);
   const pageSize = 10;
@@ -165,17 +162,55 @@ export default function Savatcha({
   const currentPage = Math.min(sahifa, totalPages);
   const visibleRows = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  async function actionBajarish(sotuv: Sotuv, action: "view" | "continue" | "edit" | "duplicate" | "print" | "cancel" | "delete") {
-    setOchiqMenuId(null);
+  useEffect(() => {
+    if (!ochiqMenuId) return;
 
-    if (action === "view" || action === "edit") {
+    function yopish() {
+      setOchiqMenuId(null);
+      setMenuJoylashuvi(null);
+    }
+
+    window.addEventListener("resize", yopish);
+    window.addEventListener("scroll", yopish, true);
+    return () => {
+      window.removeEventListener("resize", yopish);
+      window.removeEventListener("scroll", yopish, true);
+    };
+  }, [ochiqMenuId]);
+
+  function amallarMenyusiniOchish(event: MouseEvent<HTMLButtonElement>, draftId: string) {
+    if (ochiqMenuId === draftId) {
+      setOchiqMenuId(null);
+      setMenuJoylashuvi(null);
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const menuWidth = 190;
+    const viewportPadding = 12;
+
+    setOchiqMenuId(draftId);
+    setMenuJoylashuvi({
+      top: rect.bottom + 8,
+      left: Math.min(
+        Math.max(viewportPadding, rect.right - menuWidth),
+        window.innerWidth - menuWidth - viewportPadding
+      ),
+    });
+  }
+
+  async function actionBajarish(sotuv: Sotuv, action: "continue" | "edit" | "duplicate" | "print" | "cancel" | "delete") {
+    setOchiqMenuId(null);
+    setMenuJoylashuvi(null);
+
+    if (action === "edit") {
       onSotuvniOchish(sotuv);
       return;
     }
 
     if (action === "continue") {
       if (ochirilganMahsulotBormi(sotuv, qoldiqlar)) {
-        window.alert("Draftdagi ayrim mahsulotlar o'chirilgan. Mahsulotni qayta tanlang.");
+        window.alert("Qoralamadagi ayrim mahsulotlar o'chirilgan. Mahsulotni qayta tanlang.");
       }
       if (!qoldiqYetarlimi(sotuv, qoldiqlar)) {
         window.alert("Omborda yetarli mahsulot mavjud emas.");
@@ -222,7 +257,7 @@ export default function Savatcha({
             <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-500">Savdo</p>
             <h1 className="mt-1 text-2xl font-black text-slate-950">Qoralamalar</h1>
             <p className="mt-1 text-sm font-semibold text-slate-400">
-              Draft saqlanganda ombor va kassa o'zgarmaydi. To'lovdan keyin savdoga aylanadi.
+              Qoralama saqlanganda ombor va kassa o'zgarmaydi. To'lovdan keyin savdoga aylanadi.
             </p>
           </div>
           <button
@@ -245,7 +280,7 @@ export default function Savatcha({
                 setSahifa(1);
               }}
               className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-700 outline-none placeholder:text-slate-400"
-              placeholder="Draft ID, mijoz, telefon, mas'ul, summa"
+              placeholder="Qoralama ID, mijoz, telefon, mas'ul, summa"
             />
           </label>
 
@@ -313,23 +348,34 @@ export default function Savatcha({
 
         <div className="px-6 pb-6 xl:px-10">
           <div className="overflow-x-auto rounded-[24px] border border-orange-100">
-            <table className="w-full min-w-[1240px] border-collapse text-left text-sm">
+            <table className="w-full min-w-[1210px] border-collapse text-left text-sm">
+              <colgroup>
+                <col className="w-[66px]" />
+                <col className="w-[190px]" />
+                <col className="w-[170px]" />
+                <col className="w-[150px]" />
+                <col className="w-[150px]" />
+                <col className="w-[130px]" />
+                <col className="w-[190px]" />
+                <col className="w-[170px]" />
+                <col className="w-[170px]" />
+                <col className="w-[100px]" />
+              </colgroup>
               <thead className="bg-[#FFF8EF] text-xs font-black uppercase tracking-wide text-orange-600">
                 <tr>
                   {[
-                    "Mijoz ID",
+                    "T/r",
                     "Mijoz nomi",
                     "Telefon raqam",
                     "Mahsulotlar soni",
                     "Summa",
-                    "Chegirma",
-                    "Status",
+                    "Holat",
                     "Mas'ul shaxs",
                     "Sana",
                     "Oxirgi tahrir",
                     "Amallar",
                   ].map((title) => (
-                    <th key={title} className="border-b border-orange-100 px-4 py-3 font-black">
+                    <th key={title} className="whitespace-nowrap border-b border-orange-100 px-4 py-3 align-middle font-black">
                       {title}
                     </th>
                   ))}
@@ -348,72 +394,84 @@ export default function Savatcha({
                         : "bg-orange-50 text-orange-600 ring-orange-100";
 
                   return (
-                    <tr key={draft.id} className="transition hover:bg-orange-50/45">
-                      <td className="border-b border-orange-50 px-4 py-4 font-black text-slate-700">
+                    <tr
+                      key={draft.id}
+                      onClick={() => onSotuvniOchish(sotuv)}
+                      className="cursor-pointer transition hover:bg-orange-50/45"
+                      title="Qoralama tafsilotlarini ochish"
+                    >
+                      <td className="whitespace-nowrap border-b border-orange-50 px-4 py-4 align-middle font-black text-slate-700">
                         {mijozRaqami}
                       </td>
-                      <td className="border-b border-orange-50 px-4 py-4">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (draft.customerId) window.location.assign(`/mijozlar?customerId=${draft.customerId}`);
-                          }}
-                          className="font-bold text-slate-800 transition hover:text-orange-600 hover:underline"
+                      <td className="border-b border-orange-50 px-4 py-4 align-middle">
+                        <span
+                          className="block max-w-[170px] truncate whitespace-nowrap font-bold text-slate-800"
+                          title={draft.customerName}
                         >
                           {draft.customerName}
-                        </button>
+                        </span>
                       </td>
-                      <td className="border-b border-orange-50 px-4 py-4">{draft.customerPhone || "—"}</td>
-                      <td className="border-b border-orange-50 px-4 py-4">{draft.items.length}</td>
-                      <td className="border-b border-orange-50 px-4 py-4 font-black text-emerald-700">{pulniFormatlash(draft.finalAmount || draft.totalAmount)}</td>
-                      <td className="border-b border-orange-50 px-4 py-4 font-semibold text-red-500">{pulniFormatlash(draftChegirma(draft))}</td>
-                      <td className="border-b border-orange-50 px-4 py-4">
+                      <td className="whitespace-nowrap border-b border-orange-50 px-4 py-4 align-middle">{draft.customerPhone || "-"}</td>
+                      <td className="whitespace-nowrap border-b border-orange-50 px-4 py-4 text-center align-middle font-semibold">{draft.items.length}</td>
+                      <td className="whitespace-nowrap border-b border-orange-50 px-4 py-4 align-middle font-black text-emerald-700">{pulniFormatlash(draft.finalAmount || draft.totalAmount)}</td>
+                      <td className="whitespace-nowrap border-b border-orange-50 px-4 py-4 align-middle">
                         <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ring-1 ${statusTone}`}>
                           {statusMatni[draft.status]}
                         </span>
                       </td>
-                      <td className="border-b border-orange-50 px-4 py-4">{draft.responsibleUserName}</td>
-                      <td className="border-b border-orange-50 px-4 py-4">{sanaMatni(draft.createdAt)}</td>
-                      <td className="border-b border-orange-50 px-4 py-4">{sanaMatni(draft.updatedAt)}</td>
-                      <td className="relative border-b border-orange-50 px-4 py-4">
+                      <td className="whitespace-nowrap border-b border-orange-50 px-4 py-4 align-middle">{draft.responsibleUserName}</td>
+                      <td className="whitespace-nowrap border-b border-orange-50 px-4 py-4 align-middle">{sanaMatni(draft.createdAt)}</td>
+                      <td className="whitespace-nowrap border-b border-orange-50 px-4 py-4 align-middle">{sanaMatni(draft.updatedAt)}</td>
+                      <td className="relative whitespace-nowrap border-b border-orange-50 px-4 py-4 align-middle">
                         <button
                           type="button"
-                          onClick={() => setOchiqMenuId((current) => (current === draft.id ? null : draft.id))}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            amallarMenyusiniOchish(event, draft.id);
+                          }}
                           className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-600 transition hover:bg-orange-100"
                           aria-label="Qoralama amallari"
                         >
                           {amalId === draft.id || amalBajarilmoqda ? <LoaderCircle size={16} className="animate-spin" /> : <MoreHorizontal size={18} />}
                         </button>
-                        {ochiqMenuId === draft.id && (
-                          <div className="absolute right-4 top-14 z-[80] w-[220px] rounded-[22px] bg-white p-2 shadow-[0_20px_60px_rgba(92,38,8,.18)] ring-1 ring-orange-100">
-                            {[
-                              { key: "view", label: "Ko'rish", icon: Eye },
-                              { key: "continue", label: "Davom ettirish", icon: PlayCircle },
-                              { key: "edit", label: "Tahrirlash", icon: Edit3 },
-                              { key: "duplicate", label: "Nusxa olish", icon: Copy },
-                              { key: "print", label: "Chop etish", icon: Printer },
-                              { key: "cancel", label: "Bekor qilish", icon: XCircle },
-                              { key: "delete", label: "O'chirish", icon: Trash2, danger: true },
-                            ].map((item) => {
-                              const Icon = item.icon;
-                              return (
-                                <button
-                                  key={item.key}
-                                  type="button"
-                                  onClick={() => void actionBajarish(sotuv, item.key as Parameters<typeof actionBajarish>[1])}
-                                  className={`flex h-10 w-full items-center gap-3 rounded-2xl px-3 text-left text-sm font-semibold transition ${
-                                    item.danger
-                                      ? "text-red-500 hover:bg-red-50"
-                                      : "text-slate-700 hover:bg-orange-50 hover:text-orange-600"
-                                  }`}
-                                >
-                                  <Icon size={16} />
-                                  {item.label}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
+                        {ochiqMenuId === draft.id &&
+                          menuJoylashuvi &&
+                          createPortal(
+                            <div
+                              className="fixed z-[100020] w-[190px] rounded-xl bg-white p-1.5 shadow-[0_18px_42px_rgba(92,38,8,.18)] ring-1 ring-orange-100"
+                              style={menuJoylashuvi}
+                            >
+                              {[
+                                { key: "continue", label: "Davom ettirish", icon: PlayCircle },
+                                { key: "edit", label: "Tahrirlash", icon: Edit3 },
+                                { key: "duplicate", label: "Nusxa olish", icon: Copy },
+                                { key: "print", label: "Chop etish", icon: Printer },
+                                { key: "cancel", label: "Bekor qilish", icon: XCircle },
+                                { key: "delete", label: "O'chirish", icon: Trash2, danger: true },
+                              ].map((item) => {
+                                const Icon = item.icon;
+                                return (
+                                  <button
+                                    key={item.key}
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      void actionBajarish(sotuv, item.key as Parameters<typeof actionBajarish>[1]);
+                                    }}
+                                    className={`flex h-9 w-full items-center gap-2 rounded-lg px-2.5 text-left text-sm font-semibold transition ${
+                                      item.danger
+                                        ? "text-red-500 hover:bg-red-50"
+                                        : "text-slate-700 hover:bg-orange-50 hover:text-orange-600"
+                                    }`}
+                                  >
+                                    <Icon size={15} />
+                                    {item.label}
+                                  </button>
+                                );
+                              })}
+                            </div>,
+                            document.body
+                          )}
                       </td>
                     </tr>
                   );
@@ -421,7 +479,7 @@ export default function Savatcha({
 
                 {visibleRows.length === 0 && (
                   <tr>
-                    <td colSpan={11} className="px-6 py-20 text-center">
+                    <td colSpan={10} className="px-6 py-20 text-center">
                       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[24px] bg-orange-50 text-orange-500">
                         <PackageOpen size={32} />
                       </div>
@@ -471,9 +529,9 @@ export default function Savatcha({
       </section>
 
       <div className="grid gap-3 md:grid-cols-4">
-        <StatCard label="Jami draftlar" value={String(qoralamalar.length)} />
-        <StatCard label="Bugungi draftlar" value={String(qoralamalar.filter((draft) => sanaFilterdanOtadi(draft.createdAt, "today")).length)} />
-        <StatCard label="Bekor qilingan draftlar" value={String(qoralamalar.filter((draft) => draft.status === "cancelled").length)} />
+        <StatCard label="Jami qoralamalar" value={String(qoralamalar.length)} />
+        <StatCard label="Bugungi qoralamalar" value={String(qoralamalar.filter((draft) => sanaFilterdanOtadi(draft.createdAt, "today")).length)} />
+        <StatCard label="Bekor qilingan qoralamalar" value={String(qoralamalar.filter((draft) => draft.status === "cancelled").length)} />
         <StatCard label="To'lovga aylangan" value={String(sotuvlar.filter((sotuv) => sotuvHolati(sotuv) === "CONFIRMED").length)} />
       </div>
     </div>

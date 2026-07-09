@@ -135,12 +135,10 @@ export function accessTokenniAjratish(response: RefreshResponse) {
 }
 
 export function getApiErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
   if (!axios.isAxiosError<ApiErrorBody>(error)) {
-    return "Kutilmagan xatolik yuz berdi. Qayta urinib ko'ring.";
+    return error instanceof Error
+      ? error.message
+      : "Kutilmagan xatolik yuz berdi. Qayta urinib ko'ring.";
   }
 
   if (!error.response) {
@@ -152,6 +150,18 @@ export function getApiErrorMessage(error: unknown) {
     return typeof message === "string"
       ? xatoniOzbekchalashtirish(message)
       : "Login, parol yoki sessiya tokeni noto'g'ri.";
+  }
+
+  if (error.response.status === 403) {
+    return "Bu amalni bajarish uchun ruxsat yetarli emas.";
+  }
+
+  if (error.response.status === 404) {
+    return "Ma'lumot topilmadi yoki endpoint mavjud emas.";
+  }
+
+  if (error.response.status >= 500) {
+    return "Serverda xatolik yuz berdi. Birozdan keyin qayta urinib ko'ring.";
   }
 
   const message = error.response.data?.message;

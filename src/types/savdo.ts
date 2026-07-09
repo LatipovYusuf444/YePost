@@ -16,7 +16,7 @@ export type NomliMalumot = {
   companyId?: string | null;
   company?: NomliMalumot | null;
 };
-// dfsgdsgsgs
+
 export type SotuvMahsuloti = {
   id?: string;
   saleItemId?: string;
