@@ -3,6 +3,7 @@ import { API_BASE_URL } from "./apiConfig";
 import { accessTokenniAjratish, accessTokenniYangilash } from "./sozlamalarApi";
 import {
   accessTokenniSaqlash,
+  authSessiyaYaroqli,
   authTokenlarniOlish,
   authTokenlarniTozalash,
 } from "@/lib/authTokenStorage";
@@ -25,7 +26,14 @@ type QaytaUriniladiganSorov = InternalAxiosRequestConfig & {
 let tokenYangilashSorovi: Promise<string> | null = null;
 
 apiClient.interceptors.request.use((config) => {
-  const accessToken = authTokenlarniOlish().accessToken;
+  const authHolati = authTokenlarniOlish();
+  const accessToken = authHolati.accessToken;
+
+  if (accessToken && !authSessiyaYaroqli(authHolati)) {
+    authTokenlarniTozalash();
+    window.location.assign("/login");
+    return config;
+  }
 
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;
@@ -48,6 +56,7 @@ apiClient.interceptors.response.use(
       aslSorov._qaytaUrinildi ||
       aslSorov.url?.includes("/auth/login") ||
       aslSorov.url?.includes("/auth/refresh") ||
+      !authSessiyaYaroqli(authHolati) ||
       !authHolati.refreshToken
     ) {
       authTokenlarniTozalash();

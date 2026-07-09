@@ -2,6 +2,7 @@ export type SotuvHolati = "DRAFT" | "CONFIRMED" | "CANCELLED";
 export type SotuvTuri = "QUICK" | "CLIENT";
 export type TolovTuri = "CASH" | "CARD" | "BANK" | "DEBT";
 export type QaytarishSababi = "DEFECT" | "WRONG" | "OTHER";
+export type DraftStatus = "draft" | "waiting" | "editing" | "paid" | "cancelled";
 
 export type NomliMalumot = {
   id: string;
@@ -23,11 +24,23 @@ export type SotuvMahsuloti = {
   quantity: number | string;
   price: number | string;
   discount?: number | string;
+  total?: number | string;
   modification?: {
     id: string;
     name?: string;
     product?: NomliMalumot;
   };
+};
+
+export type DraftSaleItem = {
+  productId?: string;
+  productName: string;
+  barcode?: string;
+  quantity: number;
+  unitPrice: number;
+  discount: number;
+  totalPrice: number;
+  stockAvailable: number;
 };
 
 export type SotuvTolovi = {
@@ -40,6 +53,7 @@ export type Sotuv = {
   id: string;
   number?: string;
   documentNumber?: string;
+  docNumber?: string;
   warehouseId?: string;
   customerId?: string;
   clientCompanyId?: string;
@@ -49,9 +63,11 @@ export type Sotuv = {
   note?: string;
   total?: number | string;
   totalAmount?: number | string;
+  discountAmount?: number | string;
   paidAmount?: number | string;
   debtAmount?: number | string;
   createdAt?: string;
+  date?: string;
   updatedAt?: string;
   confirmedAt?: string;
   cancelledAt?: string;
@@ -61,6 +77,26 @@ export type Sotuv = {
   responsible?: NomliMalumot;
   items?: SotuvMahsuloti[];
   payments?: SotuvTolovi[];
+};
+
+export type DraftSale = {
+  id: string;
+  draftNumber: string;
+  customerId?: string;
+  customerName: string;
+  customerPhone: string;
+  items: DraftSaleItem[];
+  totalAmount: number;
+  discountAmount: number;
+  finalAmount: number;
+  status: DraftStatus;
+  note?: string;
+  responsibleUserId?: string;
+  responsibleUserName: string;
+  createdAt?: string;
+  updatedAt?: string;
+  cancelledAt?: string;
+  cancellationReason?: string;
 };
 
 export type SotuvYaratishMalumoti = {

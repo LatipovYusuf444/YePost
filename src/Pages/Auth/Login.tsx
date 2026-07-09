@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
-import { isAccessTokenValid, useAuthStore } from "@/store/authStore";
+import { isAuthSessionValid, useAuthStore } from "@/store/authStore";
 import loginHero from "@/assets/yepost-login-hero.png";
 
 type LoginLocationState = {
@@ -49,6 +49,7 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const accessToken = useAuthStore((state) => state.accessToken);
+  const expiresAt = useAuthStore((state) => state.expiresAt);
   const login = useAuthStore((state) => state.login);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -65,7 +66,7 @@ export default function Login() {
   const showUsernameError = (touched.username || submitTried) && validationErrors.username;
   const showPasswordError = (touched.password || submitTried) && validationErrors.password;
 
-  if (isAccessTokenValid(accessToken)) {
+  if (isAuthSessionValid({ accessToken, expiresAt })) {
     return <Navigate to="/" replace />;
   }
 

@@ -6,7 +6,9 @@ import {
   type LoginPayload,
 } from "@/api/sozlamalarApi";
 import {
+  AUTH_SESSION_DURATION_MS,
   AUTH_SESSION_CHANGED_EVENT,
+  authSessiyaYaroqli,
   authTokenlarniOlish,
   authTokenlarniSaqlash,
   authTokenlarniTozalash,
@@ -17,6 +19,7 @@ type AuthState = {
   accessToken: string | null;
   refreshToken: string | null;
   username: string | null;
+  expiresAt: number | null;
   login: (payload: LoginPayload) => Promise<void>;
   accessTokenniYangilash: (accessToken: string) => void;
   logout: () => Promise<void>;
@@ -44,6 +47,10 @@ export function isAccessTokenValid(token: string | null) {
   return expiresAt !== null && expiresAt > Date.now();
 }
 
+export function isAuthSessionValid(tokenlar: Pick<AuthState, "accessToken" | "expiresAt">) {
+  return authSessiyaYaroqli(tokenlar) && isAccessTokenValid(tokenlar.accessToken);
+}
+
 const saqlanganTokenlar = authTokenlarniOlish();
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -62,6 +69,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       accessToken: normalizedTokens.accessToken,
       refreshToken: normalizedTokens.refreshToken,
       username: payload.username,
+      expiresAt: Date.now() + AUTH_SESSION_DURATION_MS,
     };
 
     authTokenlarniSaqlash(authHolati);
@@ -74,6 +82,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       accessToken,
       refreshToken: get().refreshToken,
       username: get().username,
+      expiresAt: get().expiresAt,
     };
 
     authTokenlarniSaqlash(authHolati);
@@ -96,6 +105,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         accessToken: null,
         refreshToken: null,
         username: null,
+        expiresAt: null,
       });
     }
   },

@@ -67,6 +67,7 @@ export default function Savdo() {
   const [qidiruv, setQidiruv] = useState("");
   const [sanaFilteri, setSanaFilteri] = useState<"bugun" | "barchasi">("bugun");
   const [yangiSotuvOchiq, setYangiSotuvOchiq] = useState(false);
+  const [yangiSotuvVarianti, setYangiSotuvVarianti] = useState<"sale" | "draft">("sale");
   const [xabar, setXabar] = useState("");
 
   const urlTab = searchParams.get("tab") as SavdoTabi | null;
@@ -79,7 +80,10 @@ export default function Savdo() {
   }, [boshlangichMalumotlarniYuklash]);
 
   useEffect(() => {
-    const yangiSotuvniOchish = () => setYangiSotuvOchiq(true);
+    const yangiSotuvniOchish = () => {
+      setYangiSotuvVarianti("sale");
+      setYangiSotuvOchiq(true);
+    };
     window.addEventListener("savdo:yangi-sotuv", yangiSotuvniOchish);
     return () => window.removeEventListener("savdo:yangi-sotuv", yangiSotuvniOchish);
   }, []);
@@ -125,7 +129,11 @@ export default function Savdo() {
     const sotuv = await yangiSotuvYaratish(malumot);
 
     if (!sotuv) return false;
-    setXabar("Yangi sotuv qoralama holatida yaratildi.");
+    setXabar(
+      yangiSotuvVarianti === "draft"
+        ? "Yangi qoralama saqlandi."
+        : "Yangi sotuv qoralama holatida yaratildi."
+    );
     return true;
   }
 
@@ -177,7 +185,27 @@ export default function Savdo() {
         </div>
       ) : (
         <>
-          {!["tolovlar", "qaytarish"].includes(faolTab) && (
+          {faolTab === "savatcha" && (
+            <Savatcha
+              sotuvlar={sotuvlar}
+              xodimlar={xodimlar}
+              mijozlar={mijozlar}
+              qoldiqlar={qoldiqlar}
+              amalBajarilmoqda={amalBajarilmoqda}
+              onQoshish={() => {
+                setYangiSotuvVarianti("draft");
+                setYangiSotuvOchiq(true);
+              }}
+              onSotuvniOchish={sotuvniOchish}
+              onDavomEttirish={async (sotuv) => {
+                await sotuvniOchish(sotuv);
+              }}
+              onRefresh={boshlangichMalumotlarniYuklash}
+              onXabar={setXabar}
+            />
+          )}
+
+          {!["tolovlar", "qaytarish", "savatcha"].includes(faolTab) && (
             <section className="overflow-hidden rounded-[30px] border border-gray-100 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
               <div className="border-b border-gray-100 px-10 py-7">
                 <h1 className="text-[22px] font-medium text-[#262626]">Sotuv</h1>
@@ -186,7 +214,10 @@ export default function Savdo() {
               <div className="flex flex-col gap-4 px-10 py-6 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <button
-                    onClick={() => setYangiSotuvOchiq(true)}
+                    onClick={() => {
+                      setYangiSotuvVarianti("sale");
+                      setYangiSotuvOchiq(true);
+                    }}
                     className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md bg-orange-500 px-4 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-500/20"
                   >
                     <Plus size={16} />
@@ -220,12 +251,6 @@ export default function Savdo() {
 
               {faolTab === "barchasi" && (
                 <SotuvlarJadvali
-                  sotuvlar={qidirilganSotuvlar}
-                  onSotuvniOchish={sotuvniOchish}
-                />
-              )}
-              {faolTab === "savatcha" && (
-                <Savatcha
                   sotuvlar={qidirilganSotuvlar}
                   onSotuvniOchish={sotuvniOchish}
                 />
@@ -273,6 +298,7 @@ export default function Savdo() {
 
       {yangiSotuvOchiq && (
         <YangiSotuvModal
+          variant={yangiSotuvVarianti}
           omborlar={omborlar}
           mijozlar={mijozlar}
           mijozKompaniyalari={mijozKompaniyalari}

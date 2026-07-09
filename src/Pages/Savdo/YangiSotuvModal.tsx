@@ -31,6 +31,7 @@ import { pulniFormatlash } from "./savdoYordamchilari";
 import SavdoSelect from "./SavdoSelect";
 
 type YangiSotuvModalProps = {
+  variant?: "sale" | "draft";
   omborlar: OmborTanlovi[];
   mijozlar: MijozTanlovi[];
   mijozKompaniyalari: MijozTanlovi[];
@@ -175,11 +176,26 @@ function kompaniyaNomi(kompaniya?: MijozTanlovi) {
   return kompaniya?.name || kompaniya?.fullName || kompaniya?.id || "";
 }
 
+function xodimNomi(xodim?: XodimTanlovi) {
+  return xodim?.fullName || xodim?.name || xodim?.username || xodim?.email || xodim?.id || "Xodim";
+}
+
+function xodimBoshHarflari(xodim?: XodimTanlovi) {
+  const nom = xodimNomi(xodim);
+  const qismlar = nom.split(/\s+/).filter(Boolean);
+  return qismlar
+    .slice(0, 2)
+    .map((qism) => qism[0])
+    .join("")
+    .toUpperCase();
+}
+
 function FieldSettings() {
   return <Settings size={16} className="shrink-0 text-slate-300" />;
 }
 
 export default function YangiSotuvModal({
+  variant = "sale",
   omborlar,
   mijozlar,
   mijozKompaniyalari,
@@ -231,9 +247,36 @@ export default function YangiSotuvModal({
   const tanlanganMijoz = mijozlar.find((item) => item.id === customerId);
   const tanlanganKompaniya = mijozKompaniyalari.find((item) => item.id === clientCompanyId);
   const tanlanganOmbor = omborlar.find((item) => item.id === warehouseId);
+  const tanlanganXodim = xodimlar.find((item) => item.id === responsibleId);
+  const draftMode = variant === "draft";
+  const modalMatnlari = draftMode
+    ? {
+        title: "Qoralama qo'shish",
+        badge: "Qoralama",
+        sectionTitle: "Qoralama haqida",
+        nameLabel: "Qoralama nomi",
+        namePlaceholder: "Qoralama #",
+        amountLabel: "Qoralama summasi",
+        notePrefix: "Qoralama nomi",
+        stockWarning: "Serverda ombor mavjud emas. Qoralama yaratishdan oldin Sozlamalar - Ombor bo'limida ombor yaratilishi kerak.",
+        submitLabel: "Qoralama saqlash",
+      }
+    : {
+        title: "Sotuv yaratish",
+        badge: "Yangi",
+        sectionTitle: "Sotuv haqida",
+        nameLabel: "Sotuv nomi",
+        namePlaceholder: "Sotuv #",
+        amountLabel: "Sotuv summasi",
+        notePrefix: "Sotuv nomi",
+        stockWarning: "Serverda ombor mavjud emas. Sotuv yaratishdan oldin Sozlamalar - Ombor bo'limida ombor yaratilishi kerak.",
+        submitLabel: "Qoralama saqlash",
+      };
   const korsatiladiganSotuvNomi =
     sotuvNomi.trim() ||
-    (tanlanganMijoz ? `${mijozKorinishi(tanlanganMijoz)} uchun yangi sotuv` : "");
+    (tanlanganMijoz
+      ? `${mijozKorinishi(tanlanganMijoz)} uchun yangi ${draftMode ? "qoralama" : "sotuv"}`
+      : "");
 
   function backendIzohiniYigish() {
     const faoliyatOzgarilgan =
@@ -251,7 +294,7 @@ export default function YangiSotuvModal({
       faoliyatSana ? `Faoliyat sanasi: ${faoliyatSana} ${faoliyatSoat}` : "",
     ].filter(Boolean);
     const metadata = [
-      korsatiladiganSotuvNomi ? `Sotuv nomi: ${korsatiladiganSotuvNomi}` : "",
+      korsatiladiganSotuvNomi ? `${modalMatnlari.notePrefix}: ${korsatiladiganSotuvNomi}` : "",
       bosqich ? `Bosqich: ${bosqich}` : "",
       `Valyuta: ${valyutalar.find((item) => item.value === valyuta)?.label ?? valyuta}`,
       boshlanishSanasi ? `Boshlanish sanasi: ${boshlanishSanasi}` : "",
@@ -468,11 +511,11 @@ export default function YangiSotuvModal({
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-3">
                   <h2 className="text-[30px] font-black tracking-tight text-slate-950">
-                    Sotuv yaratish
+                    {modalMatnlari.title}
                   </h2>
                   <Copy size={17} className="text-slate-300" />
                   <span className="rounded-full bg-[#FFF3E2] px-3 py-1 text-xs font-black uppercase tracking-wider text-[#FF6A00]">
-                    Yangi
+                    {modalMatnlari.badge}
                   </span>
                 </div>
               </div>
@@ -496,7 +539,7 @@ export default function YangiSotuvModal({
                   <div className="mb-4 flex items-center justify-between border-b border-orange-100/80 pb-3">
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
-                        Sotuv haqida
+                        {modalMatnlari.sectionTitle}
                       </h3>
                       <Settings size={15} className="text-slate-300" />
                     </div>
@@ -507,12 +550,12 @@ export default function YangiSotuvModal({
 
                   <div className="space-y-4">
                     <label className="grid gap-2">
-                      <span className="text-sm font-bold text-slate-400">Sotuv nomi</span>
+                      <span className="text-sm font-bold text-slate-400">{modalMatnlari.nameLabel}</span>
                       <div className="flex items-center gap-2">
                         <input
                           value={sotuvNomi}
                           onChange={(event) => setSotuvNomi(event.target.value)}
-                          placeholder={korsatiladiganSotuvNomi || "Sotuv #"}
+                          placeholder={korsatiladiganSotuvNomi || modalMatnlari.namePlaceholder}
                           className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100"
                         />
                         <FieldSettings />
@@ -529,6 +572,7 @@ export default function YangiSotuvModal({
                           className="min-w-0 flex-1"
                           buttonClassName="h-11 rounded-xl px-3.5 text-sm"
                           dropdownClassName="min-w-[320px]"
+                          portal
                         />
                         <FieldSettings />
                       </div>
@@ -536,7 +580,7 @@ export default function YangiSotuvModal({
 
                     <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_150px]">
                       <label className="grid gap-2">
-                        <span className="text-sm font-bold text-slate-400">Sotuv summasi</span>
+                        <span className="text-sm font-bold text-slate-400">{modalMatnlari.amountLabel}</span>
                         <div className="flex items-center gap-2">
                           <input
                             value={jami > 0 ? pulniFormatlash(jami) : ""}
@@ -553,6 +597,8 @@ export default function YangiSotuvModal({
                           onChange={setValyuta}
                           options={valyutalar}
                           buttonClassName="h-11 rounded-xl px-3.5 text-sm"
+                          dropdownClassName="min-w-[180px]"
+                          portal
                         />
                       </label>
                     </div>
@@ -618,6 +664,8 @@ export default function YangiSotuvModal({
                             value: mijoz.id,
                             label: `${mijozKorinishi(mijoz)}${mijoz.phone ? ` - ${mijoz.phone}` : ""}`,
                           }))}
+                          dropdownClassName="min-w-[360px]"
+                          portal
                         />
                       </div>
                       {customerId && clientCompanyId && (
@@ -644,6 +692,8 @@ export default function YangiSotuvModal({
                             value: kompaniya.id,
                             label: `${kompaniyaNomi(kompaniya)}${kompaniya.phone ? ` - ${kompaniya.phone}` : ""}`,
                           }))}
+                          dropdownClassName="min-w-[360px]"
+                          portal
                         />
                       </div>
                       {clientCompanyId && customerId && (
@@ -767,13 +817,42 @@ export default function YangiSotuvModal({
                       </div>
                       <div className="flex shrink-0 items-center gap-3 pt-1">
                         <span className="h-3.5 w-3.5 rounded-full bg-amber-400" />
-                        <button
-                          type="button"
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-[#FF6A00] transition hover:bg-orange-200"
-                          title="Mas'ul xodim"
-                        >
-                          <UserRound size={18} />
-                        </button>
+                        <SavdoSelect
+                          value={responsibleId}
+                          onChange={(value) => {
+                            setResponsibleId(value);
+                            setFaoliyatSaqlangan(false);
+                          }}
+                          placeholder="Mas'ul xodim"
+                          options={xodimlar.map((xodim) => ({
+                            value: xodim.id,
+                            searchLabel: xodimNomi(xodim),
+                            label: (
+                              <span className="flex min-w-0 items-center gap-3">
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xs font-black text-[#FF6A00]">
+                                  {xodimBoshHarflari(xodim) || <UserRound size={15} />}
+                                </span>
+                                <span className="min-w-0 flex-1 truncate">{xodimNomi(xodim)}</span>
+                              </span>
+                            ),
+                          }))}
+                          selectedLabel={
+                            tanlanganXodim ? (
+                              <span className="flex h-full w-full items-center justify-center text-xs font-black">
+                                {xodimBoshHarflari(tanlanganXodim)}
+                              </span>
+                            ) : (
+                              <span className="flex h-full w-full items-center justify-center">
+                                <UserRound size={18} />
+                              </span>
+                            )
+                          }
+                          className="w-9 shrink-0"
+                          buttonClassName="h-9 w-9 rounded-full border-0 bg-orange-100 p-0 text-[#FF6A00] shadow-none hover:bg-orange-200 focus:ring-orange-100"
+                          dropdownClassName="min-w-[260px]"
+                          portal
+                          hideChevron
+                        />
                       </div>
                     </div>
 
@@ -1006,6 +1085,8 @@ export default function YangiSotuvModal({
                         { value: "DEBT", label: "Qarz" },
                       ]}
                       buttonClassName="h-11 rounded-xl px-3.5 text-sm"
+                      dropdownClassName="min-w-[280px]"
+                      portal
                     />
                   </label>
                   <label className="grid gap-2">
@@ -1078,8 +1159,7 @@ export default function YangiSotuvModal({
 
                 {omborlar.length === 0 && (
                   <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-700">
-                    Serverda ombor mavjud emas. Sotuv yaratishdan oldin Sozlamalar - Ombor
-                    bo'limida ombor yaratilishi kerak.
+                    {modalMatnlari.stockWarning}
                   </div>
                 )}
 
@@ -1106,7 +1186,7 @@ export default function YangiSotuvModal({
               className="inline-flex items-center gap-2 rounded-2xl bg-[#FF6A00] px-7 py-3 text-sm font-black text-white shadow-[0_14px_32px_rgba(255,106,0,.24)] transition hover:-translate-y-0.5 hover:bg-[#EA580C] hover:shadow-[0_18px_40px_rgba(234,88,12,.32)] disabled:opacity-50"
             >
               {amalBajarilmoqda && <LoaderCircle size={17} className="animate-spin" />}
-              Qoralama saqlash
+              {modalMatnlari.submitLabel}
             </button>
           </footer>
         </form>

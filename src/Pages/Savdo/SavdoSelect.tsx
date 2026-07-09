@@ -27,6 +27,8 @@ type SavdoSelectProps = {
   dropdownClassName?: string;
   disabled?: boolean;
   portal?: boolean;
+  selectedLabel?: ReactNode;
+  hideChevron?: boolean;
 };
 
 function labelToText(label: ReactNode) {
@@ -44,6 +46,8 @@ export default function SavdoSelect({
   dropdownClassName = "",
   disabled = false,
   portal = false,
+  selectedLabel,
+  hideChevron = false,
 }: SavdoSelectProps) {
   const [open, setOpen] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({});
@@ -56,14 +60,22 @@ export default function SavdoSelect({
     if (!portal || !buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
     const gap = 8;
-    const maxHeight = Math.min(320, window.innerHeight - rect.bottom - gap - 12);
+    const viewportPadding = 12;
+    const belowSpace = window.innerHeight - rect.bottom - gap - viewportPadding;
+    const aboveSpace = rect.top - gap - viewportPadding;
+    const preferredHeight = Math.min(320, options.length * 48 + 16);
+    const opensUp = belowSpace < preferredHeight && aboveSpace > belowSpace;
+    const maxHeight = Math.max(
+      140,
+      Math.min(320, opensUp ? aboveSpace : belowSpace)
+    );
 
     setDropdownStyle({
       position: "fixed",
-      left: rect.left,
-      top: rect.bottom + gap,
+      left: Math.max(viewportPadding, rect.left),
+      top: opensUp ? Math.max(viewportPadding, rect.top - gap - maxHeight) : rect.bottom + gap,
       width: rect.width,
-      maxHeight: Math.max(maxHeight, 180),
+      maxHeight,
     });
   }
 
@@ -154,15 +166,17 @@ export default function SavdoSelect({
         )}
       >
         <span className={`min-w-0 truncate ${selected ? "" : "text-slate-400"}`}>
-          {selected?.label ?? placeholder}
+          {selectedLabel ?? selected?.label ?? placeholder}
         </span>
-        <ChevronDown
-          size={18}
-          className={cn(
-            "shrink-0 text-current opacity-50 transition group-hover:opacity-80",
-            open && "rotate-180 opacity-100"
-          )}
-        />
+        {!hideChevron && (
+          <ChevronDown
+            size={18}
+            className={cn(
+              "shrink-0 text-current opacity-50 transition group-hover:opacity-80",
+              open && "rotate-180 opacity-100"
+            )}
+          />
+        )}
       </button>
 
       {portal && typeof document !== "undefined"

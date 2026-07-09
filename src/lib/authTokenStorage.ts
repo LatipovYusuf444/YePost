@@ -2,16 +2,23 @@ export type AuthTokenlar = {
   accessToken: string | null;
   refreshToken: string | null;
   username: string | null;
+  expiresAt: number | null;
 };
 
 const AUTH_STORAGE_KEY = "yepost-auth-session";
 export const AUTH_SESSION_CHANGED_EVENT = "yepost-auth-session-changed";
+export const AUTH_SESSION_DURATION_MS = 24 * 60 * 60 * 1000;
 
 const boshAuthHolati: AuthTokenlar = {
   accessToken: null,
   refreshToken: null,
   username: null,
+  expiresAt: null,
 };
+
+export function authSessiyaYaroqli(tokenlar: Pick<AuthTokenlar, "accessToken" | "expiresAt">) {
+  return Boolean(tokenlar.accessToken && tokenlar.expiresAt && tokenlar.expiresAt > Date.now());
+}
 
 export function authTokenlarniOlish(): AuthTokenlar {
   try {
@@ -19,12 +26,20 @@ export function authTokenlarniOlish(): AuthTokenlar {
     if (!saqlangan) return boshAuthHolati;
 
     const parsed = JSON.parse(saqlangan) as Partial<AuthTokenlar>;
-
-    return {
+    const tokenlar = {
       accessToken: parsed.accessToken ?? null,
       refreshToken: parsed.refreshToken ?? null,
       username: parsed.username ?? null,
+      expiresAt: parsed.expiresAt ?? null,
     };
+
+    if (!authSessiyaYaroqli(tokenlar)) {
+      window.localStorage.removeItem(AUTH_STORAGE_KEY);
+      window.localStorage.removeItem("yepost-auth");
+      return boshAuthHolati;
+    }
+
+    return tokenlar;
   } catch {
     return boshAuthHolati;
   }
