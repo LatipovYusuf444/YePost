@@ -26,7 +26,7 @@ type QaytarishProps = {
   qaytarishlar: QaytarishTuri[];
   amalBajarilmoqda: boolean;
   onSotuvTafsilotiniOlish: (sotuvId: string) => Promise<Sotuv | null>;
-  onYaratish: (malumot: QaytarishYaratishMalumoti) => Promise<boolean>;
+  onYaratish: (malumot: QaytarishYaratishMalumoti) => Promise<QaytarishTuri | null>;
   onTasdiqlash: (qaytarishId: string) => Promise<boolean>;
   onBekorQilish: (qaytarishId: string) => Promise<boolean>;
 };

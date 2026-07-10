@@ -234,7 +234,7 @@ type SavdoState = {
   ) => Promise<boolean>;
   sotuvniTasdiqlash: (sotuvId: string) => Promise<boolean>;
   sotuvniBekorQilish: (sotuvId: string) => Promise<boolean>;
-  yangiQaytarishYaratish: (malumot: QaytarishYaratishMalumoti) => Promise<boolean>;
+  yangiQaytarishYaratish: (malumot: QaytarishYaratishMalumoti) => Promise<Qaytarish | null>;
   qaytarishTafsilotiniYuklash: (qaytarishId: string) => Promise<Qaytarish | null>;
   qaytarishniYangilash: (
     qaytarishId: string,
@@ -424,10 +424,10 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
         qaytarishlar: [qaytarish, ...state.qaytarishlar],
         amalBajarilmoqda: false,
       }));
-      return true;
+      return qaytarish;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
-      return false;
+      return null;
     }
   },
 

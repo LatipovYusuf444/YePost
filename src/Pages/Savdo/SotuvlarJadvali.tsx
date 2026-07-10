@@ -1,24 +1,86 @@
 import { useEffect, useMemo, useState } from "react";
-import { ReceiptText } from "lucide-react";
-import type { Sotuv } from "@/types/savdo";
+import { Eye, ReceiptText, RotateCcw } from "lucide-react";
+import type { Qaytarish, Sotuv } from "@/types/savdo";
 import {
   masulNomi,
   mijozNomi,
   pulniFormatlash,
+  qaytarishSummasi,
   sotuvJadvalId,
+  sotuvMahsulotiId,
+  sotuvMahsulotiMiqdori,
   sotuvRaqami,
   sotuvSummasi,
+  tolovTuriMatni,
 } from "./savdoYordamchilari";
 
 type SotuvlarJadvaliProps = {
   sotuvlar: Sotuv[];
   onSotuvniOchish: (sotuv: Sotuv) => void;
+  qaytarishlar?: Qaytarish[];
+  onQaytarish?: (sotuv: Sotuv) => void;
+  tarixKorinish?: boolean;
   boshMatn?: string;
 };
 
 function telefonRaqam(sotuv: Sotuv) {
   return sotuv.customer?.phone || sotuv.clientCompany?.phone || "-";
 }
+
+function qaytarishTasdiqlangan(qaytarish: Qaytarish) {
+  return String(qaytarish.status ?? "").toUpperCase() === "CONFIRMED";
+}
+
+type TarixHolat = "SOLD" | "PARTIALLY_RETURNED" | "FULLY_RETURNED";
+
+function qaytarishStatistikasi(sotuv: Sotuv, qaytarishlar: Qaytarish[]) {
+  const sotuvQaytarishlari = qaytarishlar.filter(
+    (qaytarish) => qaytarish.saleId === sotuv.id && qaytarishTasdiqlangan(qaytarish)
+  );
+  const qaytarilganSumma = sotuvQaytarishlari.reduce(
+    (summa, qaytarish) => summa + qaytarishSummasi(qaytarish),
+    0
+  );
+  const items = sotuv.items ?? [];
+  const jamiSotilgan = items.reduce(
+    (summa, item) => summa + Math.max(sotuvMahsulotiMiqdori(item), 0),
+    0
+  );
+  const jamiQaytarilgan = items.reduce((summa, item) => {
+    const saleItemId = sotuvMahsulotiId(item);
+    return (
+      summa +
+      sotuvQaytarishlari.reduce((qaytSumma, qaytarish) => {
+        const itemSumma =
+          qaytarish.items
+            ?.filter((qaytItem) => qaytItem.saleItemId === saleItemId)
+            .reduce((jami, qaytItem) => jami + Number(qaytItem.quantity ?? 0), 0) ?? 0;
+        return qaytSumma + itemSumma;
+      }, 0)
+    );
+  }, 0);
+
+  const holat: TarixHolat =
+    jamiSotilgan > 0 && jamiQaytarilgan >= jamiSotilgan
+      ? "FULLY_RETURNED"
+      : jamiQaytarilgan > 0 || qaytarilganSumma > 0
+        ? "PARTIALLY_RETURNED"
+        : "SOLD";
+
+  return { holat, qaytarilganSumma };
+}
+
+const tarixHolatMatni = {
+  SOLD: "Sotilgan",
+  PARTIALLY_RETURNED: "Qisman qaytarilgan",
+  FULLY_RETURNED: "To'liq qaytarilgan",
+} as const;
+
+const tarixHolatClass = {
+  SOLD: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+  PARTIALLY_RETURNED: "bg-amber-50 text-amber-700 ring-amber-100",
+  FULLY_RETURNED: "bg-red-50 text-red-600 ring-red-100",
+} as const;
 
 function sanaVaVaqt(value?: string) {
   if (!value) return { sana: "-", vaqt: "" };
@@ -42,6 +104,9 @@ function sanaVaVaqt(value?: string) {
 export default function SotuvlarJadvali({
   sotuvlar,
   onSotuvniOchish,
+  qaytarishlar = [],
+  onQaytarish,
+  tarixKorinish = false,
   boshMatn = "Sotuv topilmadi",
 }: SotuvlarJadvaliProps) {
   const pageSize = 10;
@@ -60,20 +125,34 @@ export default function SotuvlarJadvali({
   return (
     <div className="px-10 pb-10">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px] border-collapse text-left text-sm">
+        <table className={`w-full border-collapse text-left text-sm ${tarixKorinish ? "min-w-[1180px]" : "min-w-[900px]"}`}>
           <thead className="text-[13px] font-medium text-orange-600">
             <tr>
               <th className="border-b border-gray-200 px-4 py-3 font-medium">Savdo raqami</th>
               <th className="border-b border-gray-200 px-4 py-3 font-medium">Mijoz nomi</th>
+              {tarixKorinish && (
+                <th className="border-b border-gray-200 px-4 py-3 font-medium">To'lov turi</th>
+              )}
               <th className="border-b border-gray-200 px-4 py-3 font-medium">Summa</th>
+              {tarixKorinish && (
+                <>
+                  <th className="border-b border-gray-200 px-4 py-3 font-medium">Holati</th>
+                  <th className="border-b border-gray-200 px-4 py-3 font-medium">Qaytarilgan summa</th>
+                </>
+              )}
               <th className="border-b border-gray-200 px-4 py-3 font-medium">Sana</th>
               <th className="border-b border-gray-200 px-4 py-3 font-medium">Mas'ul shaxs</th>
               <th className="border-b border-gray-200 px-4 py-3 font-medium">Telefon raqam</th>
+              {tarixKorinish && (
+                <th className="border-b border-gray-200 px-4 py-3 text-right font-medium">Amallar</th>
+              )}
             </tr>
           </thead>
           <tbody className="text-[13px] text-[#4B4B4B]">
             {visibleRows.map((sotuv) => {
               const sana = sanaVaVaqt(sotuv.createdAt);
+              const stat = qaytarishStatistikasi(sotuv, qaytarishlar);
+              const paymentType = sotuv.payments?.[0]?.paymentType;
 
               return (
                 <tr
@@ -88,9 +167,26 @@ export default function SotuvlarJadvali({
                   <td className="border-b border-gray-100 px-4 py-3.5 font-medium">
                     {mijozNomi(sotuv)}
                   </td>
+                  {tarixKorinish && (
+                    <td className="border-b border-gray-100 px-4 py-3.5">
+                      {paymentType ? tolovTuriMatni[paymentType] : "-"}
+                    </td>
+                  )}
                   <td className="border-b border-gray-100 px-4 py-3.5 font-semibold text-emerald-700">
                     {pulniFormatlash(sotuvSummasi(sotuv))}
                   </td>
+                  {tarixKorinish && (
+                    <>
+                      <td className="border-b border-gray-100 px-4 py-3.5">
+                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ring-1 ${tarixHolatClass[stat.holat]}`}>
+                          {tarixHolatMatni[stat.holat]}
+                        </span>
+                      </td>
+                      <td className="border-b border-gray-100 px-4 py-3.5 font-bold text-orange-600">
+                        {pulniFormatlash(stat.qaytarilganSumma)}
+                      </td>
+                    </>
+                  )}
                   <td className="border-b border-gray-100 px-4 py-3.5">
                     <span className="block">{sana.sana}</span>
                     {sana.vaqt && (
@@ -105,13 +201,42 @@ export default function SotuvlarJadvali({
                   <td className="border-b border-gray-100 px-4 py-3.5">
                     {telefonRaqam(sotuv)}
                   </td>
+                  {tarixKorinish && (
+                    <td className="border-b border-gray-100 px-4 py-3.5">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onSotuvniOchish(sotuv);
+                          }}
+                          className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-orange-50 px-3 text-xs font-black text-orange-600 transition hover:bg-orange-500 hover:text-white"
+                        >
+                          <Eye size={14} />
+                          Batafsil
+                        </button>
+                        <button
+                          type="button"
+                          disabled={stat.holat === "FULLY_RETURNED" || !onQaytarish}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onQaytarish?.(sotuv);
+                          }}
+                          className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-emerald-50 px-3 text-xs font-black text-emerald-700 transition hover:bg-emerald-600 hover:text-white disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                        >
+                          <RotateCcw size={14} />
+                          Qaytarish
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               );
             })}
 
             {sotuvlar.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-6 py-20 text-center">
+                <td colSpan={tarixKorinish ? 10 : 6} className="px-6 py-20 text-center">
                   <ReceiptText className="mx-auto text-orange-200" size={40} />
                   <p className="mt-3 font-semibold text-gray-500">{boshMatn}</p>
                   <p className="mt-1 text-sm text-gray-400">

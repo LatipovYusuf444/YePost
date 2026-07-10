@@ -11,6 +11,7 @@ import { useSearchParams } from "react-router-dom";
 import { useSavdoStore } from "@/store/savdoStore";
 import type { Sotuv, SotuvHolati, SotuvYaratishMalumoti, TolovTuri } from "@/types/savdo";
 import BekorQilinganlar from "./BekorQilinganlar";
+import MahsulotQaytarishModal from "./MahsulotQaytarishModal";
 import Qaytarish from "./Qaytarish";
 import Savatcha from "./Savatcha";
 import SotuvlarJadvali from "./SotuvlarJadvali";
@@ -86,6 +87,7 @@ export default function Savdo() {
   const [tolovFilteri, setTolovFilteri] = useState<TolovTuri | "barchasi">("barchasi");
   const [yangiSotuvOchiq, setYangiSotuvOchiq] = useState(false);
   const [yangiSotuvVarianti, setYangiSotuvVarianti] = useState<"sale" | "draft">("sale");
+  const [qaytariladiganSotuv, setQaytariladiganSotuv] = useState<Sotuv | null>(null);
   const [xabar, setXabar] = useState("");
 
   const urlTab = searchParams.get("tab") as SavdoTabi | null;
@@ -162,6 +164,13 @@ export default function Savdo() {
   async function sotuvniOchish(sotuv: Sotuv) {
     await qoldiqlarniYuklash(sotuv.warehouseId);
     await sotuvTafsilotiniYuklash(sotuv.id);
+  }
+
+  async function mahsulotQaytarishniOchish(sotuv: Sotuv) {
+    await qoldiqlarniYuklash(sotuv.warehouseId);
+    const toliqSotuv = await sotuvTafsilotiniYuklash(sotuv.id);
+    tanlanganSotuvniTozalash();
+    setQaytariladiganSotuv(toliqSotuv ?? sotuv);
   }
 
   async function yangiSotuvniSaqlash(malumot: SotuvYaratishMalumoti) {
@@ -328,7 +337,12 @@ export default function Savdo() {
                 />
               )}
               {faolTab === "tarix" && (
-                <Tarix sotuvlar={qidirilganSotuvlar} onSotuvniOchish={sotuvniOchish} />
+                <Tarix
+                  sotuvlar={qidirilganSotuvlar}
+                  qaytarishlar={qaytarishlar}
+                  onSotuvniOchish={sotuvniOchish}
+                  onQaytarish={(sotuv) => void mahsulotQaytarishniOchish(sotuv)}
+                />
               )}
               {faolTab === "bekor-qilingan" && (
                 <BekorQilinganlar
@@ -339,7 +353,13 @@ export default function Savdo() {
             </section>
           )}
 
-          {faolTab === "tolovlar" && <Tolovlar sotuvlar={sotuvlar} qaytarishlar={qaytarishlar} />}
+          {faolTab === "tolovlar" && (
+            <Tolovlar
+              sotuvlar={sotuvlar}
+              qaytarishlar={qaytarishlar}
+              onSotuvniOchish={sotuvniOchish}
+            />
+          )}
           {faolTab === "qaytarish" && (
             <Qaytarish
               sotuvlar={sotuvlar}
@@ -396,6 +416,21 @@ export default function Savdo() {
             if (muvaffaqiyatli) tanlanganSotuvniTozalash();
           }}
           onBekorQilish={(sotuvId) => void bekorQilish(sotuvId)}
+        />
+      )}
+
+      {qaytariladiganSotuv && (
+        <MahsulotQaytarishModal
+          sotuv={qaytariladiganSotuv}
+          qaytarishlar={qaytarishlar}
+          amalBajarilmoqda={amalBajarilmoqda}
+          onYopish={() => setQaytariladiganSotuv(null)}
+          onYaratish={yangiQaytarishYaratish}
+          onTasdiqlash={qaytarishniTasdiqlash}
+          onMuvaffaqiyat={() => {
+            setXabar("Mahsulot qaytarildi va return backendda tasdiqlandi.");
+            void boshlangichMalumotlarniYuklash();
+          }}
         />
       )}
     </div>

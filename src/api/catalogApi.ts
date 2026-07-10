@@ -13,6 +13,13 @@ import type {
   OlchovBirligiMalumoti,
 } from "@/types/catalog";
 
+
+
+// Swagger’da qaytarish uchun alohida POST /sales/{id}/return yo‘qligini avvalgi tekshiruv ham ko‘rsatgan edi
+
+
+
+
 // Mahsulotlar sahifasi: Swagger catalog/categories to'liq CRUD.
 export const kategoriyalarApi = {
   royxat: async () => {
