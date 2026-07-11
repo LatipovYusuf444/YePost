@@ -483,10 +483,13 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
         )
         .reduce((summa, qaytarish) => summa + qaytarishSummasi(qaytarish), 0);
 
-      try {
-        await qaytarishToloviniKassagaYozish(toliqQaytarish, avvalQaytarilganSumma);
-      } catch (error) {
-        set({ xatolik: `Qaytarish tasdiqlandi, lekin to'lov qaytarimi kassaga yozilmadi: ${getApiErrorMessage(error)}` });
+      const refundMethod = String(toliqQaytarish.refundMethod ?? "CASH").toUpperCase();
+      if (refundMethod !== "BALANCE" && refundMethod !== "NONE") {
+        try {
+          await qaytarishToloviniKassagaYozish(toliqQaytarish, avvalQaytarilganSumma);
+        } catch (error) {
+          set({ xatolik: `Qaytarish tasdiqlandi, lekin to'lov qaytarimi kassaga yozilmadi: ${getApiErrorMessage(error)}` });
+        }
       }
 
       const [sotuvlar, qaytarishlar] = await Promise.all([

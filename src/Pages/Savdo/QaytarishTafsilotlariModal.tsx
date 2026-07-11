@@ -10,10 +10,12 @@ import {
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import { sotuvTafsilotiniOlish } from "@/api/savdoApi";
+import { mahsulotlarApi, modifikatsiyalarApi } from "@/api/catalogApi";
 import { useSavdoStore } from "@/store/savdoStore";
 import type {
   Qaytarish,
   QaytarishSababi,
+  QaytarishToloviniQaytarishUsuli as RefundMethod,
 } from "@/types/savdo";
 import {
   mijozNomi,
@@ -48,6 +50,13 @@ const sababMatni: Record<QaytarishSababi, string> = {
   OTHER: "Boshqa sabab",
 };
 
+const refundMethodMatni: Record<RefundMethod, string> = {
+  CASH: "Naqd",
+  CARD: "Karta",
+  BALANCE: "Mijoz balansiga",
+  NONE: "Pul qaytarilmaydi",
+};
+
 function mahsulotNomi(item: {
   modificationId: string;
   modification?: {
@@ -55,11 +64,19 @@ function mahsulotNomi(item: {
     product?: { name?: string };
   };
 }) {
-  return (
-    item.modification?.product?.name ??
-    item.modification?.name ??
-    item.modificationId
-  );
+  const productName = item.modification?.product?.name;
+  const variantName = item.modification?.name;
+  return [productName, variantName && variantName !== productName ? variantName : ""]
+    .filter(Boolean)
+    .join(" / ") || item.modificationId;
+}
+
+function sababniOzbekcha(reason?: string) {
+  return sababMatni[String(reason ?? "OTHER").toUpperCase() as QaytarishSababi] ?? "Boshqa sabab";
+}
+
+function refundMethodniOzbekcha(method?: string) {
+  return refundMethodMatni[String(method ?? "CASH").toUpperCase() as RefundMethod] ?? "Naqd";
 }
 
 export default function QaytarishTafsilotlariModal({
@@ -101,7 +118,59 @@ export default function QaytarishTafsilotlariModal({
       xatolikniTozalash();
       const item = await qaytarishTafsilotiniYuklash(qaytarishId);
       if (!faol) return;
-      setQaytarish(item);
+      if (item?.saleId) {
+        try {
+          const sale = await sotuvTafsilotiniOlish(item.saleId);
+          if (!faol) return;
+          const sotuvdanBoyitilgan = (item.items ?? []).map((returnItem) => {
+            const saleItem = (sale.items ?? []).find(
+              (candidate) =>
+                sotuvMahsulotiId(candidate) === returnItem.saleItemId ||
+                sotuvMahsulotiModifikatsiyaId(candidate) === returnItem.modificationId
+            );
+            return { ...returnItem, modification: returnItem.modification ?? saleItem?.modification };
+          });
+          const boyitilganItems = await Promise.all(
+            sotuvdanBoyitilgan.map(async (returnItem) => {
+              if (returnItem.modification?.product?.name) return returnItem;
+              try {
+                const modification = await modifikatsiyalarApi.olish(returnItem.modificationId);
+                const nestedProduct = (modification as typeof modification & { product?: { id: string; name?: string } }).product;
+                const productId = modification.productId ?? nestedProduct?.id;
+                let product = null;
+                if (productId) {
+                  try {
+                    product = await mahsulotlarApi.olish(productId);
+                  } catch {
+                    product = null;
+                  }
+                }
+                return {
+                  ...returnItem,
+                  modification: {
+                    ...returnItem.modification,
+                    id: modification.id,
+                    name: modification.name ?? returnItem.modification?.name,
+                    product: product
+                      ? { id: product.id, name: product.name }
+                      : nestedProduct?.name
+                        ? { id: nestedProduct.id, name: nestedProduct.name }
+                        : returnItem.modification?.product,
+                  },
+                };
+              } catch {
+                return returnItem;
+              }
+            })
+          );
+          if (!faol) return;
+          setQaytarish({ ...item, sale, items: boyitilganItems });
+        } catch {
+          setQaytarish(item);
+        }
+      } else {
+        setQaytarish(item);
+      }
       setYuklanmoqda(false);
     }
     void yuklash();
@@ -248,18 +317,18 @@ export default function QaytarishTafsilotlariModal({
   );
 
   return (
-    <AppModal>
-      <section className="scrollbar-hidden max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-[30px] bg-white shadow-2xl">
-        <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-orange-100 bg-white/95 px-6 py-5 backdrop-blur">
+    <AppModal className="items-start justify-start bg-[rgba(54,22,8,.50)] p-3 backdrop-blur-[3px] lg:py-4 lg:pl-[88px] lg:pr-4">
+      <section className="scrollbar-hidden h-[calc(100vh-24px)] w-full overflow-y-auto rounded-[34px] border border-orange-100 bg-gradient-to-br from-[#FFF8EF] via-[#FFFDF9] to-[#FFE8D2] text-[#253044] shadow-[0_34px_120px_rgba(92,38,8,.42)] ring-1 ring-white/80 lg:h-[calc(100vh-32px)] lg:rounded-l-[46px] lg:rounded-r-[36px]">
+        <header className="sticky top-0 z-20 flex items-start justify-between gap-4 border-b border-orange-100/80 bg-[#FFF8EF]/90 px-6 py-5 backdrop-blur-xl lg:px-10 lg:py-6">
           <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-200">
               <RotateCcw size={22} />
             </div>
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-orange-500">
                 Qaytarish tafsilotlari
               </p>
-              <h2 className="text-2xl font-black">
+              <h2 className="mt-1 text-2xl font-black text-slate-950">
                 {qaytarish
                   ? `Qaytarish В· ${qaytarish.id.slice(0, 8).toUpperCase()}`
                   : "Qaytarish hujjati"}
@@ -268,7 +337,7 @@ export default function QaytarishTafsilotlariModal({
           </div>
           <button
             onClick={onYopish}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-500"
+            className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm ring-1 ring-orange-100 transition hover:bg-orange-500 hover:text-white"
             aria-label="Oynani yopish"
           >
             <X size={19} />
@@ -284,7 +353,7 @@ export default function QaytarishTafsilotlariModal({
             Qaytarish ma'lumotlarini olib bo'lmadi.
           </div>
         ) : (
-          <div className="p-6">
+          <div className="p-5 lg:p-9">
             {xatolik && (
               <div className="mb-5 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">
                 {xatolik}
@@ -293,14 +362,14 @@ export default function QaytarishTafsilotlariModal({
 
             {!tahrir ? (
               <>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                   <Malumot nom="Holat" qiymat={holatMatni(holat)} />
                   <Malumot
                     nom="Sotuv"
                     qiymat={
                       qaytarish.sale
                         ? sotuvRaqami(qaytarish.sale)
-                        : qaytarish.saleId
+                        : sotuvRaqami({ id: qaytarish.saleId })
                     }
                   />
                   <Malumot
@@ -313,7 +382,7 @@ export default function QaytarishTafsilotlariModal({
                   />
                 </div>
 
-                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
                   <Malumot
                     nom="Mijoz"
                     qiymat={
@@ -335,11 +404,7 @@ export default function QaytarishTafsilotlariModal({
                   <Malumot
                     nom="Sabab"
                     qiymat={
-                      sababMatni[
-                        qaytarish.reason as QaytarishSababi
-                      ] ??
-                      qaytarish.reason ??
-                      "Boshqa sabab"
+                      sababniOzbekcha(qaytarish.reason)
                     }
                   />
                   <Malumot
@@ -352,11 +417,17 @@ export default function QaytarishTafsilotlariModal({
                       "Biriktirilmagan"
                     }
                   />
+                  <Malumot
+                    nom="Pul qaytarish turi"
+                    qiymat={
+                      refundMethodniOzbekcha(qaytarish.refundMethod)
+                    }
+                  />
                 </div>
 
-                <div className="mt-6 overflow-hidden rounded-2xl border border-orange-100">
+                <div className="mt-7 overflow-hidden rounded-[26px] border border-orange-100 bg-white shadow-[0_16px_45px_rgba(249,115,22,.07)]">
                   <table className="w-full min-w-[650px] text-left text-sm">
-                    <thead className="bg-orange-50 text-gray-600">
+                    <thead className="bg-[#FFF3E4] text-xs font-black uppercase tracking-wide text-orange-700/70">
                       <tr>
                         <th className="px-4 py-3">Mahsulot</th>
                         <th className="px-4 py-3">Miqdor</th>
@@ -366,7 +437,7 @@ export default function QaytarishTafsilotlariModal({
                     </thead>
                     <tbody className="divide-y divide-orange-100">
                       {(qaytarish.items ?? []).map((item, index) => (
-                        <tr key={item.id ?? `${item.saleItemId}-${index}`}>
+                        <tr key={item.id ?? `${item.saleItemId}-${index}`} className="transition hover:bg-orange-50/50">
                           <td className="px-4 py-3 font-bold">
                             {mahsulotNomi(item)}
                           </td>
@@ -394,7 +465,7 @@ export default function QaytarishTafsilotlariModal({
                 </div>
 
                 {qaytarish.note && (
-                  <div className="mt-5 rounded-2xl bg-slate-50 p-4">
+                  <div className="mt-5 rounded-[24px] border border-slate-100 bg-white/80 p-5 shadow-sm">
                     <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
                       Izoh
                     </p>
@@ -404,7 +475,7 @@ export default function QaytarishTafsilotlariModal({
                   </div>
                 )}
 
-                <div className="mt-6 flex justify-end">
+                <div className="mt-7 flex justify-end">
                   {qoralama ? (
                     <button
                       onClick={() => void tahrirlashniBoshlash()}
@@ -440,7 +511,7 @@ export default function QaytarishTafsilotlariModal({
                           ? [
                               {
                                 value: qaytarish.saleId,
-                                label: qaytarish.sale ? sotuvRaqami(qaytarish.sale) : qaytarish.saleId,
+                                label: qaytarish.sale ? sotuvRaqami(qaytarish.sale) : sotuvRaqami({ id: qaytarish.saleId }),
                               },
                             ]
                           : []),
@@ -622,12 +693,14 @@ export default function QaytarishTafsilotlariModal({
 
 function Malumot({ nom, qiymat }: { nom: string; qiymat: string }) {
   return (
-    <div className="rounded-2xl border border-orange-100 bg-orange-50/40 p-4">
-      <div className="flex items-center gap-2 text-gray-400">
-        <Package size={15} />
+    <div className="group min-h-[112px] rounded-[24px] border border-orange-100 bg-white/80 p-5 shadow-[0_12px_35px_rgba(249,115,22,.06)] transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-[0_18px_45px_rgba(249,115,22,.10)]">
+      <div className="flex items-center gap-2 text-slate-400">
+        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-50 text-orange-500 transition group-hover:bg-orange-500 group-hover:text-white">
+          <Package size={15} />
+        </span>
         <span className="text-xs font-bold uppercase tracking-wider">{nom}</span>
       </div>
-      <p className="mt-2 break-words font-black text-gray-800">{qiymat}</p>
+      <p className="mt-3 break-words text-base font-black text-slate-800">{qiymat}</p>
     </div>
   );
 }

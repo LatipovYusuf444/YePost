@@ -20,6 +20,7 @@ const moduleTabs: Record<ModuleKey, Array<{ nom: string; path: string }>> = {
     { nom: "Qoralamalar", path: "/savdo?tab=savatcha" },
     { nom: "Savdo tarixi", path: "/savdo?tab=tarix" },
     { nom: "To'lovlar", path: "/savdo?tab=tolovlar" },
+    { nom: "Qarzdorliklar", path: "/savdo?tab=qarzdorliklar" },
     { nom: "Qaytarish", path: "/savdo?tab=qaytarish" },
     { nom: "Bekor qilinganlar", path: "/savdo?tab=bekor-qilingan" },
   ],

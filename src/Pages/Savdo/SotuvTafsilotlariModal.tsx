@@ -32,7 +32,7 @@ import { crmApi, royxatniAjratish } from "@/api/crmApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import AppModal from "@/Components/common/AppModal";
 import type { Activity, Comment } from "@/types/crm";
-import type { QoldiqTanlovi, Sotuv, SotuvYaratishMalumoti, XodimTanlovi } from "@/types/savdo";
+import type { QoldiqTanlovi, Sotuv, SotuvYaratishMalumoti, TolovTuri, XodimTanlovi } from "@/types/savdo";
 import {
   masulNomi,
   mijozNomi,
@@ -185,7 +185,21 @@ function sotuvOchirilganTarixiniSaqlash(sotuvId: string, ids: string[]) {
 }
 
 function mijozTelefon(sotuv: Sotuv) {
-  return sotuv.customer?.phone || sotuv.clientCompany?.phone || "—";
+  return sotuv.customer?.phone || sotuv.clientCompany?.phone || "-";
+}
+
+function modalMijozNomi(sotuv: Sotuv) {
+  const customerName = [sotuv.customer?.firstName, sotuv.customer?.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  return (
+    customerName ||
+    sotuv.customer?.fullName ||
+    sotuv.customer?.name ||
+    sotuv.clientCompany?.name ||
+    "-"
+  );
 }
 
 function tozaManzil(value?: string | null) {
@@ -351,6 +365,7 @@ export default function SotuvTafsilotlariModal({
   const [activeTab, setActiveTab] = useState("Umumiy");
   const [yetkazishOchiq, setYetkazishOchiq] = useState(false);
   const [ombordanChiqarishOchiq, setOmbordanChiqarishOchiq] = useState(false);
+  const [tolovModalOchiq, setTolovModalOchiq] = useState(false);
   const [hujjatMenuOchiq, setHujjatMenuOchiq] = useState(false);
   const [hujjatGeneratorOchiq, setHujjatGeneratorOchiq] = useState(false);
   const [tanlanganHujjatTuri, setTanlanganHujjatTuri] = useState<HujjatTuri>("Nakladnoy");
@@ -468,10 +483,10 @@ export default function SotuvTafsilotlariModal({
                 {draft && (
                   <button
                     disabled={amalBajarilmoqda}
-                    onClick={() => onTasdiqlash(sotuv.id)}
+                    onClick={() => setTolovModalOchiq(true)}
                     className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#FF6A00] px-4 text-sm font-bold text-white shadow-[0_10px_24px_rgba(249,115,22,.24)] transition hover:bg-[#EA580C] disabled:opacity-50"
                   >
-                    {amalBajarilmoqda ? <LoaderCircle size={16} className="animate-spin" /> : "Taklif"}
+                    {amalBajarilmoqda ? <LoaderCircle size={16} className="animate-spin" /> : "To'lovni qabul qilish"}
                     <ChevronDown size={15} />
                   </button>
                 )}
@@ -521,7 +536,7 @@ export default function SotuvTafsilotlariModal({
               draft={draft}
               vaqt={vaqt}
               amalBajarilmoqda={amalBajarilmoqda}
-              onTasdiqlash={onTasdiqlash}
+              onTolovOchish={() => setTolovModalOchiq(true)}
               onBekorQilish={onBekorQilish}
               onYetkazish={() => setYetkazishOchiq(true)}
               onOmbordanChiqarish={() => setOmbordanChiqarishOchiq(true)}
@@ -533,6 +548,17 @@ export default function SotuvTafsilotlariModal({
 
         {yetkazishOchiq && <YetkazishPanel sotuv={sotuv} jami={jami} onClose={() => setYetkazishOchiq(false)} />}
         {ombordanChiqarishOchiq && <OmbordanChiqarishPanel sotuv={sotuv} jami={jami} onClose={() => setOmbordanChiqarishOchiq(false)} />}
+        {tolovModalOchiq && (
+          <TolovQabulQilishModal
+            sotuv={sotuv}
+            jami={jami}
+            draft={draft}
+            amalBajarilmoqda={amalBajarilmoqda}
+            onYangilash={onYangilash}
+            onTasdiqlash={onTasdiqlash}
+            onYopish={() => setTolovModalOchiq(false)}
+          />
+        )}
         {hujjatGeneratorOchiq && (
           <YukXatiGeneratorModal
             sotuv={sotuv}
@@ -1013,7 +1039,7 @@ function UmumiyTab({
   draft,
   vaqt,
   amalBajarilmoqda,
-  onTasdiqlash,
+  onTolovOchish,
   onBekorQilish,
   onYetkazish,
   onOmbordanChiqarish,
@@ -1027,7 +1053,7 @@ function UmumiyTab({
   draft: boolean;
   vaqt: string;
   amalBajarilmoqda: boolean;
-  onTasdiqlash: (sotuvId: string) => Promise<void> | void;
+  onTolovOchish: () => void;
   onBekorQilish: (sotuvId: string) => void;
   onYetkazish: () => void;
   onOmbordanChiqarish: () => void;
@@ -1221,7 +1247,7 @@ function UmumiyTab({
           holat={holat}
           draft={draft}
           amalBajarilmoqda={amalBajarilmoqda}
-          onTasdiqlash={onTasdiqlash}
+          onTolovOchish={onTolovOchish}
           onBekorQilish={onBekorQilish}
           onYetkazish={onYetkazish}
           onOmbordanChiqarish={onOmbordanChiqarish}
@@ -1295,7 +1321,7 @@ function KelishuvCard({
   holat,
   draft,
   amalBajarilmoqda,
-  onTasdiqlash,
+  onTolovOchish,
   onBekorQilish,
   onYetkazish,
   onOmbordanChiqarish,
@@ -1305,7 +1331,7 @@ function KelishuvCard({
   holat: ReturnType<typeof sotuvHolati>;
   draft: boolean;
   amalBajarilmoqda: boolean;
-  onTasdiqlash: (sotuvId: string) => Promise<void> | void;
+  onTolovOchish: () => void;
   onBekorQilish: (sotuvId: string) => void;
   onYetkazish: () => void;
   onOmbordanChiqarish: () => void;
@@ -1321,6 +1347,7 @@ function KelishuvCard({
     setMenuOpen(false);
     if (bolim === "Yetkazish" || bolim === "To'lov va yetkazish") onYetkazish();
     if (bolim === "Ombordan chiqarish") onOmbordanChiqarish();
+    if (bolim === "To'lov") onTolovOchish();
   }
 
   return (
@@ -1336,7 +1363,7 @@ function KelishuvCard({
         {draft ? (
           <button
             disabled={amalBajarilmoqda}
-            onClick={() => onTasdiqlash(sotuv.id)}
+            onClick={onTolovOchish}
             className="h-10 rounded-xl bg-[#FF6A00] px-4 text-xs font-black uppercase text-white shadow-[0_10px_24px_rgba(249,115,22,.22)] transition hover:bg-[#EA580C] disabled:opacity-50"
           >
             To'lovni qabul qilish
@@ -1407,7 +1434,7 @@ function KelishuvCard({
         </div>
       </div>
 
-      <Info label="Mijoz" value={mijozNomi(sotuv)} />
+      <Info label="Mijoz" value={modalMijozNomi(sotuv)} />
       <Info label="Telefon" value={mijozTelefon(sotuv)} />
       <Info label="Manzil" value={mijozManzili(sotuv)} />
       <Info label="Mas'ul shaxs" value={masulNomi(sotuv)} />
@@ -1421,6 +1448,211 @@ function KelishuvCard({
         )}
       </div>
     </section>
+  );
+}
+
+const tolovTuriOptions: Array<{ value: TolovTuri; label: string }> = [
+  { value: "CASH", label: "Naqd" },
+  { value: "CARD", label: "Karta" },
+  { value: "BANK", label: "Bank o'tkazmasi" },
+];
+
+function TolovQabulQilishModal({
+  sotuv,
+  jami,
+  draft,
+  amalBajarilmoqda,
+  onYangilash,
+  onTasdiqlash,
+  onYopish,
+}: {
+  sotuv: Sotuv;
+  jami: number;
+  draft: boolean;
+  amalBajarilmoqda: boolean;
+  onYangilash: (
+    sotuvId: string,
+    malumot: Partial<SotuvYaratishMalumoti>
+  ) => Promise<boolean>;
+  onTasdiqlash: (sotuvId: string) => Promise<void> | void;
+  onYopish: () => void;
+}) {
+  const mavjudTolovlar = sotuv.payments ?? [];
+  const mavjudYigindisi = mavjudTolovlar.reduce((jami2, tolov) => jami2 + Number(tolov.amount ?? 0), 0);
+  const boshlangichQarz = Math.max(jami - mavjudYigindisi, 0);
+
+  const [tolovTuri, setTolovTuri] = useState<TolovTuri>("CASH");
+  const [summa, setSumma] = useState(mavjudYigindisi > 0 ? String(boshlangichQarz) : "0");
+  const [xatolik, setXatolik] = useState("");
+
+  const yangiSumma = Number(summa) || 0;
+  const yakuniyTolangan = mavjudYigindisi + yangiSumma;
+  const qolganQarz = Math.max(jami - yakuniyTolangan, 0);
+
+  async function submit() {
+    setXatolik("");
+
+    if (yangiSumma < 0) {
+      setXatolik("To'lov summasi manfiy bo'lishi mumkin emas.");
+      return;
+    }
+
+    if (yakuniyTolangan > jami) {
+      setXatolik(`To'lov summasi qarzdorlikdan oshmasligi kerak. Maksimal: ${pulniFormatlash(boshlangichQarz)}.`);
+      return;
+    }
+
+    const yangiTolovlar = [
+      ...mavjudTolovlar.map((tolov) => ({ paymentType: tolov.paymentType, amount: Number(tolov.amount ?? 0) })),
+      ...(yangiSumma > 0 ? [{ paymentType: tolovTuri, amount: yangiSumma }] : []),
+    ];
+
+    const saqlandi = await onYangilash(sotuv.id, { payments: yangiTolovlar });
+    if (!saqlandi) {
+      setXatolik("To'lov saqlanmadi. Qaytadan urinib ko'ring.");
+      return;
+    }
+
+    await onTasdiqlash(sotuv.id);
+  }
+
+  return (
+    <AppModal>
+      <div className="w-full max-w-lg rounded-[28px] bg-white p-7 shadow-2xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#FF6A00]">To'lov</p>
+            <h2 className="mt-1 text-2xl font-black text-slate-900">To'lovni qabul qilish</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onYopish}
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-500 transition hover:bg-orange-500 hover:text-white"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {!draft ? (
+          <div className="mt-6 space-y-4">
+            <div className="rounded-2xl bg-orange-50 p-4 text-sm font-semibold text-orange-700">
+              Bu sotuv allaqachon tasdiqlangan. Hozircha backend'da tasdiqlangan sotuvga qo'shimcha to'lov qo'shish
+              imkoniyati yo'q — bu funksiya backend jamoasi endpoint qo'shgach faollashadi.
+            </div>
+            <div className="flex justify-between text-sm font-bold text-slate-600">
+              <span>Sotuv jami</span>
+              <span>{pulniFormatlash(jami)}</span>
+            </div>
+            <div className="flex justify-between text-sm font-bold text-red-500">
+              <span>Qarzdorlik qoldig'i</span>
+              <span>{pulniFormatlash(sotuvQarzdorlikSummasi(sotuv))}</span>
+            </div>
+            <button
+              type="button"
+              onClick={onYopish}
+              className="h-11 w-full rounded-2xl bg-gray-100 text-sm font-bold text-gray-600"
+            >
+              Tushunarli
+            </button>
+          </div>
+        ) : (
+          <div className="mt-6 space-y-4">
+            {mavjudTolovlar.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {mavjudTolovlar.map((tolov, index) => (
+                  <span
+                    key={tolov.id ?? `${tolov.paymentType}-${index}`}
+                    className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-[#FF6A00]"
+                  >
+                    {tolovTuriMatni[tolov.paymentType]}: {pulniFormatlash(tolov.amount)}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-400">To'lov turi</span>
+                <SavdoSelect
+                  value={tolovTuri}
+                  onChange={(value) => setTolovTuri(value as TolovTuri)}
+                  options={tolovTuriOptions}
+                  buttonClassName="h-11 rounded-xl px-3.5 text-sm"
+                  portal
+                />
+              </label>
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-400">To'lov summasi</span>
+                <input
+                  type="number"
+                  min="0"
+                  max={boshlangichQarz || undefined}
+                  value={summa}
+                  onChange={(event) => setSumma(event.target.value)}
+                  className="h-11 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100"
+                  placeholder="0"
+                />
+              </label>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setSumma(String(boshlangichQarz))}
+                className="rounded-xl bg-orange-50 px-3 py-2 text-xs font-bold text-[#FF6A00] transition hover:bg-orange-100"
+              >
+                To'liq to'lash ({pulniFormatlash(boshlangichQarz)})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSumma("0")}
+                className="rounded-xl bg-gray-100 px-3 py-2 text-xs font-bold text-gray-500 transition hover:bg-gray-200"
+              >
+                Qarzga qoldirish
+              </button>
+            </div>
+
+            <div className="space-y-2 rounded-2xl bg-slate-50 p-4 text-sm">
+              <div className="flex justify-between text-slate-400">
+                <span>Sotuv jami</span>
+                <span>{pulniFormatlash(jami)}</span>
+              </div>
+              <div className="flex justify-between text-[#FF6A00]">
+                <span>Jami to'lov (avvalgi + yangi)</span>
+                <span className="font-bold">{pulniFormatlash(yakuniyTolangan)}</span>
+              </div>
+              <div className={`flex justify-between ${qolganQarz > 0 ? "text-red-500" : "text-emerald-600"}`}>
+                <span>{qolganQarz > 0 ? "Qarzdorlik qoldig'i" : "Qarzdorlik yo'q"}</span>
+                <span className="font-bold">{pulniFormatlash(qolganQarz)}</span>
+              </div>
+            </div>
+
+            {xatolik && (
+              <div className="rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-600">{xatolik}</div>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={onYopish}
+                className="h-11 rounded-2xl bg-gray-100 px-5 text-sm font-bold text-gray-600"
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="button"
+                disabled={amalBajarilmoqda}
+                onClick={() => void submit()}
+                className="inline-flex h-11 items-center gap-2 rounded-2xl bg-[#FF6A00] px-6 text-sm font-black text-white shadow-[0_10px_24px_rgba(249,115,22,.24)] transition hover:bg-[#EA580C] disabled:opacity-50"
+              >
+                {amalBajarilmoqda && <LoaderCircle size={16} className="animate-spin" />}
+                Tasdiqlash va yakunlash
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </AppModal>
   );
 }
 
@@ -3067,13 +3299,13 @@ function FaoliyatPanel({
                   className="mt-5 min-h-[72px] w-full resize-none bg-transparent text-sm text-slate-600 outline-none placeholder:text-slate-400"
                 />
               </div>
-              <div className="flex shrink-0 items-center gap-3 pt-1 text-slate-400">
-                <span className="h-3 w-3 rounded-sm bg-amber-400" />
-                <div className="relative">
+              <div className="flex h-10 shrink-0 items-center gap-2 text-slate-400">
+                <span className="h-3 w-3 shrink-0 rounded-full bg-amber-400 ring-4 ring-amber-50" />
+                <div className="relative flex h-10 items-center">
                   <button
                     type="button"
                     onClick={() => setXodimTanlashJoy((joriy) => (joriy === "forma" ? null : "forma"))}
-                    className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition ${
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold leading-none transition ${
                       tanlanganXodim
                         ? "bg-[#FF6A00] text-white ring-2 ring-orange-100"
                         : "bg-orange-100 text-[#FF6A00] hover:bg-orange-200"
@@ -3085,7 +3317,10 @@ function FaoliyatPanel({
                   </button>
 
                   {xodimTanlashJoy === "forma" && (
-                    <div className="animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 absolute right-0 top-10 z-[95] w-[280px] rounded-2xl bg-white p-2 text-left shadow-[0_20px_60px_rgba(92,38,8,.18)] ring-1 ring-orange-100 duration-200">
+                    <div
+                      className="animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 absolute top-12 z-[120] w-[min(280px,calc(100vw-32px))] overflow-hidden rounded-2xl bg-white p-2 text-left shadow-[0_20px_60px_rgba(92,38,8,.22)] ring-1 ring-orange-100 duration-200"
+                      style={{ right: 0 }}
+                    >
                       <div className="px-3 py-2 text-xs font-bold uppercase text-slate-400">
                         Xodim tanlash
                       </div>
@@ -3208,7 +3443,7 @@ function FaoliyatPanel({
                   </button>
 
                   {xodimTanlashJoy === "kalendar" && (
-                    <div className="animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 absolute left-0 top-11 z-[95] w-[280px] rounded-2xl bg-white p-2 text-left shadow-[0_20px_60px_rgba(92,38,8,.18)] ring-1 ring-orange-100 duration-200">
+                    <div className="animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 absolute left-0 top-11 z-[120] w-[min(280px,calc(100vw-32px))] overflow-hidden rounded-2xl bg-white p-2 text-left shadow-[0_20px_60px_rgba(92,38,8,.22)] ring-1 ring-orange-100 duration-200">
                       <div className="px-3 py-2 text-xs font-bold uppercase text-slate-400">
                         Xodim tanlash
                       </div>

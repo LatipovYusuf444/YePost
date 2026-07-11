@@ -11,13 +11,13 @@ import { useSearchParams } from "react-router-dom";
 import { useSavdoStore } from "@/store/savdoStore";
 import type { Sotuv, SotuvHolati, SotuvYaratishMalumoti, TolovTuri } from "@/types/savdo";
 import BekorQilinganlar from "./BekorQilinganlar";
-import MahsulotQaytarishModal from "./MahsulotQaytarishModal";
 import Qaytarish from "./Qaytarish";
 import Savatcha from "./Savatcha";
 import SotuvlarJadvali from "./SotuvlarJadvali";
 import SotuvTafsilotlariModal from "./SotuvTafsilotlariModal";
 import Tarix from "./Tarix";
 import Tolovlar from "./Tolovlar";
+import Qarzdorliklar from "../Qarzdorlik";
 import YangiSotuvModal from "./YangiSotuvModal";
 import { mijozNomi, sotuvHolati, sotuvRaqami } from "./savdoYordamchilari";
 import SavdoSelect from "./SavdoSelect";
@@ -27,6 +27,7 @@ type SavdoTabi =
   | "savatcha"
   | "tarix"
   | "tolovlar"
+  | "qarzdorliklar"
   | "qaytarish"
   | "bekor-qilingan";
 
@@ -35,6 +36,7 @@ const tablar: Array<{ id: SavdoTabi; nomi: string }> = [
   { id: "savatcha", nomi: "Qoralamalar" },
   { id: "tarix", nomi: "Savdo tarixi" },
   { id: "tolovlar", nomi: "To'lovlar" },
+  { id: "qarzdorliklar", nomi: "Qarzdorliklar" },
   { id: "qaytarish", nomi: "Qaytarish" },
   { id: "bekor-qilingan", nomi: "Bekor qilinganlar" },
 ];
@@ -80,14 +82,14 @@ export default function Savdo() {
     tanlanganSotuvniTozalash,
     xatolikniTozalash,
   } = useSavdoStore();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [qidiruv, setQidiruv] = useState("");
   const [sanaFilteri, setSanaFilteri] = useState<"bugun" | "barchasi">("bugun");
   const [statusFilteri, setStatusFilteri] = useState<SotuvHolati | "barchasi">("barchasi");
   const [tolovFilteri, setTolovFilteri] = useState<TolovTuri | "barchasi">("barchasi");
   const [yangiSotuvOchiq, setYangiSotuvOchiq] = useState(false);
   const [yangiSotuvVarianti, setYangiSotuvVarianti] = useState<"sale" | "draft">("sale");
-  const [qaytariladiganSotuv, setQaytariladiganSotuv] = useState<Sotuv | null>(null);
+  const [qaytariladiganSotuvId, setQaytariladiganSotuvId] = useState("");
   const [xabar, setXabar] = useState("");
 
   const urlTab = searchParams.get("tab") as SavdoTabi | null;
@@ -167,10 +169,8 @@ export default function Savdo() {
   }
 
   async function mahsulotQaytarishniOchish(sotuv: Sotuv) {
-    await qoldiqlarniYuklash(sotuv.warehouseId);
-    const toliqSotuv = await sotuvTafsilotiniYuklash(sotuv.id);
-    tanlanganSotuvniTozalash();
-    setQaytariladiganSotuv(toliqSotuv ?? sotuv);
+    setQaytariladiganSotuvId(sotuv.id);
+    setSearchParams({ tab: "qaytarish" });
   }
 
   async function yangiSotuvniSaqlash(malumot: SotuvYaratishMalumoti) {
@@ -260,7 +260,7 @@ export default function Savdo() {
             />
           )}
 
-          {!["tolovlar", "qaytarish", "savatcha"].includes(faolTab) && (
+          {!["tolovlar", "qarzdorliklar", "qaytarish", "savatcha", "bekor-qilingan"].includes(faolTab) && (
             <section className="overflow-hidden rounded-[30px] border border-gray-100 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
               <div className="border-b border-gray-100 px-10 py-7">
                 <h1 className="text-[22px] font-medium text-[#262626]">{sahifaSarlavhasi}</h1>
@@ -344,13 +344,15 @@ export default function Savdo() {
                   onQaytarish={(sotuv) => void mahsulotQaytarishniOchish(sotuv)}
                 />
               )}
-              {faolTab === "bekor-qilingan" && (
-                <BekorQilinganlar
-                  sotuvlar={qidirilganSotuvlar}
-                  onSotuvniOchish={sotuvniOchish}
-                />
-              )}
             </section>
+          )}
+
+          {faolTab === "bekor-qilingan" && (
+            <BekorQilinganlar
+              sotuvlar={sotuvlar}
+              onSotuvniOchish={sotuvniOchish}
+              onYangilash={boshlangichMalumotlarniYuklash}
+            />
           )}
 
           {faolTab === "tolovlar" && (
@@ -360,10 +362,18 @@ export default function Savdo() {
               onSotuvniOchish={sotuvniOchish}
             />
           )}
+          {faolTab === "qarzdorliklar" && (
+            <Qarzdorliklar
+              sotuvlar={sotuvlar}
+              onSotuvniOchish={sotuvniOchish}
+              onYangilash={boshlangichMalumotlarniYuklash}
+            />
+          )}
           {faolTab === "qaytarish" && (
             <Qaytarish
               sotuvlar={sotuvlar}
               qaytarishlar={qaytarishlar}
+              boshlangichSotuvId={qaytariladiganSotuvId}
               amalBajarilmoqda={amalBajarilmoqda}
               onSotuvTafsilotiniOlish={sotuvTafsilotiniYuklash}
               onYaratish={yangiQaytarishYaratish}
@@ -419,20 +429,6 @@ export default function Savdo() {
         />
       )}
 
-      {qaytariladiganSotuv && (
-        <MahsulotQaytarishModal
-          sotuv={qaytariladiganSotuv}
-          qaytarishlar={qaytarishlar}
-          amalBajarilmoqda={amalBajarilmoqda}
-          onYopish={() => setQaytariladiganSotuv(null)}
-          onYaratish={yangiQaytarishYaratish}
-          onTasdiqlash={qaytarishniTasdiqlash}
-          onMuvaffaqiyat={() => {
-            setXabar("Mahsulot qaytarildi va return backendda tasdiqlandi.");
-            void boshlangichMalumotlarniYuklash();
-          }}
-        />
-      )}
     </div>
   );
 }

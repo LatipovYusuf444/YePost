@@ -2,6 +2,8 @@ export type SotuvHolati = "DRAFT" | "CONFIRMED" | "CANCELLED";
 export type SotuvTuri = "QUICK" | "CLIENT";
 export type TolovTuri = "CASH" | "CARD" | "BANK" | "DEBT";
 export type QaytarishSababi = "DEFECT" | "WRONG" | "OTHER";
+
+export type QaytarishToloviniQaytarishUsuli = "CASH" | "CARD" | "BALANCE" | "NONE";
 export type DraftStatus = "draft" | "waiting" | "editing" | "paid" | "cancelled";
 
 export type NomliMalumot = {
@@ -134,6 +136,8 @@ export type Qaytarish = {
   status?: SotuvHolati | string;
   total?: number | string;
   totalAmount?: number | string;
+  restock?: boolean;
+  refundMethod?: QaytarishToloviniQaytarishUsuli | string;
   createdAt?: string;
   updatedAt?: string;
   sale?: Sotuv;
@@ -147,6 +151,8 @@ export type QaytarishYaratishMalumoti = {
   warehouseId: string;
   reason?: QaytarishSababi;
   responsibleId?: string;
+  restock?: boolean;
+  refundMethod?: QaytarishToloviniQaytarishUsuli;
   note?: string;
   items: Array<{
     saleItemId: string;

@@ -168,7 +168,7 @@ export function sotuvJadvalId(sotuv: Sotuv) {
 }
 
 export function sotuvRaqami(sotuv: Sotuv) {
-  return sotuv.documentNumber || sotuv.number || sotuv.id?.slice(0, 8).toUpperCase() || "SOTUV";
+  return sotuvJadvalId(sotuv);
 }
 
 export function sotuvHolati(sotuv: Sotuv): SotuvHolati {

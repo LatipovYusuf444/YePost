@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import { useMijozlarStore } from "@/store/mijozlarStore";
+import { tolovSummasiniFormatlash } from "@/utils/tolovFormatters";
 import type {
   Mijoz,
   MijozKompaniyasi,
@@ -96,7 +97,7 @@ export default function Mijozlar() {
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">{tab==="mijozlar"?<UserRound size={23}/>:tab==="kompaniyalar"?<Building2 size={23}/>:<Truck size={23}/>}</div>
               <h2 className="mt-4 text-xl font-black">{partnerNomi(item)}</h2>
               <p className="mt-2 flex items-center gap-2 text-sm text-gray-500"><Phone size={15}/>{"phone" in item&&item.phone?item.phone:"Telefon kiritilmagan"}</p>
-              {tab==="mijozlar"&&<><p className="mt-2 text-sm text-gray-500">Manzil: {(item as Mijoz).address||"Kiritilmagan"}</p><p className="mt-1 text-sm text-gray-500">Kompaniya: {(item as Mijoz).company?.name??store.kompaniyalar.find(x=>x.id===(item as Mijoz).companyId)?.name??"Biriktirilmagan"}</p></>}
+              {tab==="mijozlar"&&<><p className="mt-2 text-sm text-gray-500">Manzil: {(item as Mijoz).address||"Kiritilmagan"}</p><p className="mt-1 text-sm text-gray-500">Kompaniya: {(item as Mijoz).company?.name??store.kompaniyalar.find(x=>x.id===(item as Mijoz).companyId)?.name??"Biriktirilmagan"}</p><p className="mt-1 text-sm font-bold text-emerald-600">Balans: {tolovSummasiniFormatlash((item as Mijoz).balance)}</p></>}
               {tab==="kompaniyalar"&&<p className="mt-2 text-sm text-gray-500">STIR: {(item as MijozKompaniyasi).inn||"Kiritilmagan"}</p>}
               <div className="mt-5 grid grid-cols-[1fr_42px] gap-2 border-t pt-4"><button onClick={()=>void olish(item)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-50 py-2.5 font-bold text-orange-600"><Edit3 size={15}/>Ko'rish va tahrirlash</button><button onClick={()=>void ochirish(item)} className="flex items-center justify-center rounded-xl bg-red-50 text-red-500"><Trash2 size={16}/></button></div>
             </article>)}

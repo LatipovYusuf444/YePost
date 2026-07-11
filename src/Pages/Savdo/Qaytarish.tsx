@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Eye, LoaderCircle, RotateCcw } from "lucide-react";
 import type {
   Qaytarish as QaytarishTuri,
@@ -24,6 +24,7 @@ import SavdoSelect from "./SavdoSelect";
 type QaytarishProps = {
   sotuvlar: Sotuv[];
   qaytarishlar: QaytarishTuri[];
+  boshlangichSotuvId?: string;
   amalBajarilmoqda: boolean;
   onSotuvTafsilotiniOlish: (sotuvId: string) => Promise<Sotuv | null>;
   onYaratish: (malumot: QaytarishYaratishMalumoti) => Promise<QaytarishTuri | null>;
@@ -37,9 +38,20 @@ const sababMatni: Record<QaytarishSababi, string> = {
   OTHER: "Boshqa sabab",
 };
 
+function sababniOzbekcha(reason?: string) {
+  return sababMatni[String(reason ?? "OTHER").toUpperCase() as QaytarishSababi] ?? "Boshqa sabab";
+}
+
+function holatniOzbekcha(holat: string) {
+  if (holat === "CONFIRMED") return "Tasdiqlangan";
+  if (holat === "CANCELLED" || holat === "CANCELED") return "Bekor qilingan";
+  return "Qoralama";
+}
+
 export default function Qaytarish({
   sotuvlar,
   qaytarishlar,
+  boshlangichSotuvId = "",
   amalBajarilmoqda,
   onSotuvTafsilotiniOlish,
   onYaratish,
@@ -56,11 +68,15 @@ export default function Qaytarish({
       ),
     [sotuvlar]
   );
-  const [saleId, setSaleId] = useState("");
+  const [saleId, setSaleId] = useState(boshlangichSotuvId);
   const [reason, setReason] = useState<QaytarishSababi>("OTHER");
   const [note, setNote] = useState("");
   const [xatolik, setXatolik] = useState("");
   const [tanlanganId, setTanlanganId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (boshlangichSotuvId) setSaleId(boshlangichSotuvId);
+  }, [boshlangichSotuvId]);
 
   async function toliqQaytarishYaratish() {
     setXatolik("");
@@ -182,7 +198,7 @@ export default function Qaytarish({
             <thead className="bg-orange-50 text-xs uppercase tracking-wide text-orange-900/60">
               <tr>
                 <th className="px-5 py-4">Hujjat</th>
-                <th className="px-5 py-4">Sotuv</th>
+                <th className="px-5 py-4">Sotuv va mijoz</th>
                 <th className="px-5 py-4">Sabab</th>
                 <th className="px-5 py-4">Summa</th>
                 <th className="px-5 py-4">Sana</th>
@@ -195,27 +211,38 @@ export default function Qaytarish({
                 const holat = String(qaytarish.status ?? "DRAFT").toUpperCase();
 
                 return (
-                  <tr key={qaytarish.id} className="hover:bg-orange-50/60">
+                  <tr
+                    key={qaytarish.id}
+                    onClick={() => setTanlanganId(qaytarish.id)}
+                    className="cursor-pointer transition hover:bg-orange-50/60"
+                  >
                     <td className="px-5 py-4 font-bold text-orange-600">
                       {qaytarish.id.slice(0, 8).toUpperCase()}
                     </td>
                     <td className="px-5 py-4">
-                      {qaytarish.sale ? sotuvRaqami(qaytarish.sale) : qaytarish.saleId}
+                      <p className="font-bold text-slate-800">
+                        {qaytarish.sale ? sotuvRaqami(qaytarish.sale) : sotuvRaqami(sotuvlar.find((item) => item.id === qaytarish.saleId) ?? { id: qaytarish.saleId })}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400">
+                        {mijozNomi(qaytarish.sale ?? sotuvlar.find((item) => item.id === qaytarish.saleId) ?? { id: qaytarish.saleId })}
+                      </p>
                     </td>
                     <td className="px-5 py-4">
-                      {sababMatni[qaytarish.reason as QaytarishSababi] ??
-                        qaytarish.reason ??
-                        "Boshqa"}
+                      {sababniOzbekcha(qaytarish.reason)}
                     </td>
                     <td className="px-5 py-4 font-bold">
                       {pulniFormatlash(qaytarishSummasi(qaytarish))}
                     </td>
                     <td className="px-5 py-4">{sananiFormatlash(qaytarish.createdAt)}</td>
-                    <td className="px-5 py-4 font-semibold">{holat}</td>
+                    <td className="px-5 py-4">
+                      <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${holat === "CONFIRMED" ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100" : holat === "CANCELLED" || holat === "CANCELED" ? "bg-red-50 text-red-600 ring-1 ring-red-100" : "bg-amber-50 text-amber-700 ring-1 ring-amber-100"}`}>
+                        {holatniOzbekcha(holat)}
+                      </span>
+                    </td>
                     <td className="px-5 py-4 text-right">
                       <div className="flex justify-end gap-2">
                         <button
-                          onClick={() => setTanlanganId(qaytarish.id)}
+                          onClick={(event) => { event.stopPropagation(); setTanlanganId(qaytarish.id); }}
                           className="inline-flex items-center gap-1 rounded-xl bg-orange-50 px-3 py-2 text-xs font-bold text-orange-600"
                         >
                           <Eye size={14} />
@@ -225,14 +252,14 @@ export default function Qaytarish({
                           <>
                             <button
                               disabled={amalBajarilmoqda}
-                              onClick={() => onBekorQilish(qaytarish.id)}
+                              onClick={(event) => { event.stopPropagation(); void onBekorQilish(qaytarish.id); }}
                               className="rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-600"
                             >
                               Bekor qilish
                             </button>
                             <button
                               disabled={amalBajarilmoqda}
-                              onClick={() => onTasdiqlash(qaytarish.id)}
+                              onClick={(event) => { event.stopPropagation(); void onTasdiqlash(qaytarish.id); }}
                               className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white"
                             >
                               Tasdiqlash

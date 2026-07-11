@@ -3,7 +3,6 @@ import { createPortal } from "react-dom";
 import {
   Copy,
   Edit3,
-  FileText,
   LoaderCircle,
   MoreHorizontal,
   PackageOpen,
@@ -528,28 +527,6 @@ export default function Savatcha({
         </div>
       </section>
 
-      <div className="grid gap-3 md:grid-cols-4">
-        <StatCard label="Jami qoralamalar" value={String(qoralamalar.length)} />
-        <StatCard label="Bugungi qoralamalar" value={String(qoralamalar.filter((draft) => sanaFilterdanOtadi(draft.createdAt, "today")).length)} />
-        <StatCard label="Bekor qilingan qoralamalar" value={String(qoralamalar.filter((draft) => draft.status === "cancelled").length)} />
-        <StatCard label="To'lovga aylangan" value={String(sotuvlar.filter((sotuv) => sotuvHolati(sotuv) === "CONFIRMED").length)} />
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[22px] border border-orange-100 bg-white p-4 shadow-[0_14px_34px_rgba(249,115,22,.07)]">
-      <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-50 text-orange-500">
-          <FileText size={18} />
-        </span>
-        <div>
-          <p className="text-xs font-black uppercase tracking-wide text-slate-400">{label}</p>
-          <p className="mt-1 text-xl font-black text-slate-900">{value}</p>
-        </div>
-      </div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import AppModal from "@/Components/common/AppModal";
 import type {
   Qaytarish,
   QaytarishSababi,
+  QaytarishToloviniQaytarishUsuli as RefundMethod,
   QaytarishYaratishMalumoti,
   Sotuv,
 } from "@/types/savdo";
@@ -39,8 +40,6 @@ type UiSabab =
   | "OPERATOR_ERROR"
   | "OTHER";
 
-type RefundMethod = "CASH" | "CARD" | "BALANCE" | "NONE";
-
 const sababOptions: Array<{ value: UiSabab; label: string }> = [
   { value: "CUSTOMER_CHANGED_MIND", label: "Xaridor fikridan qaytdi" },
   { value: "DEFECT", label: "Mahsulot nuqsonli" },
@@ -49,11 +48,11 @@ const sababOptions: Array<{ value: UiSabab; label: string }> = [
   { value: "OTHER", label: "Boshqa" },
 ];
 
-const refundOptions = [
+const refundOptions: Array<{ value: RefundMethod; label: string }> = [
   { value: "CASH", label: "Naqd" },
   { value: "CARD", label: "Karta" },
-  { value: "BALANCE", label: "Mijoz balansiga", disabled: true },
-  { value: "NONE", label: "Pul qaytarilmaydi", disabled: true },
+  { value: "BALANCE", label: "Mijoz balansiga" },
+  { value: "NONE", label: "Pul qaytarilmaydi" },
 ];
 
 const uiSababMatni: Record<UiSabab, string> = {
@@ -158,11 +157,6 @@ export default function MahsulotQaytarishModal({
       return;
     }
 
-    if (refundMethod === "BALANCE" || refundMethod === "NONE") {
-      setXatolik("Bu pul qaytarish turi Swagger'da mavjud emas. Hozir real API faqat kassa qaytarimini qo'llaydi.");
-      return;
-    }
-
     if (sabab === "OTHER" && note.trim().length < 3) {
       setXatolik("Boshqa sabab tanlanganda izoh yozish majburiy.");
       return;
@@ -202,14 +196,9 @@ export default function MahsulotQaytarishModal({
       warehouseId,
       responsibleId: sotuv.responsibleId,
       reason: backendSabab(sabab),
-      note: [
-        `Sabab: ${uiSababMatni[sabab]}`,
-        `Pul qaytarish turi: ${refundMethod === "CASH" ? "Naqd" : "Karta"}`,
-        "Omborga qaytarish: ha",
-        note.trim(),
-      ]
-        .filter(Boolean)
-        .join(" | "),
+      restock: true,
+      refundMethod,
+      note: [`Sabab: ${uiSababMatni[sabab]}`, note.trim()].filter(Boolean).join(" | "),
       items: items.map((item) => ({
         saleItemId: item.saleItemId,
         modificationId: item.modificationId,
@@ -316,7 +305,7 @@ export default function MahsulotQaytarishModal({
 
           <aside className="space-y-4 border-l border-orange-100 bg-white/75 p-6 shadow-[-18px_0_50px_rgba(249,115,22,.06)]">
             <div className="rounded-2xl bg-orange-50 p-4 text-sm font-semibold text-orange-700">
-              Swagger bo'yicha tasdiqlangan return omborga qaytadi. Omborga qaytarmaslik, mijoz balansiga yozish yoki pul qaytarmaslik endpointda yo'q.
+              Tasdiqlangan qaytarish tovarni omborga qaytaradi. Pul qaytarish turi tanlanganiga qarab naqd/karta kassadan chiqadi, mijoz balansiga yoziladi yoki umuman qaytarilmaydi.
             </div>
             <label className="space-y-2 text-sm font-black text-slate-700">
               <span>Qaytarish sababi</span>

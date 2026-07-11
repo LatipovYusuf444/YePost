@@ -8,6 +8,7 @@ import type {
   TolovUsuliKeng,
   TolovYozuvi,
 } from "@/types/tolov";
+import { sotuvRaqami } from "@/Pages/Savdo/savdoYordamchilari";
 
 const boshlangichFiltrlar: TolovFiltrlari = {
   search: "",
@@ -22,10 +23,6 @@ const boshlangichFiltrlar: TolovFiltrlari = {
 function raqam(value: unknown) {
   const number = Number(value ?? 0);
   return Number.isFinite(number) ? number : 0;
-}
-
-function sotuvRaqami(sotuv: Sotuv) {
-  return sotuv.documentNumber || sotuv.number || sotuv.id?.slice(0, 8).toUpperCase() || "SOTUV";
 }
 
 function mijozNomi(sotuv?: Sotuv) {
@@ -130,7 +127,7 @@ function tolovlarniNormalizatsiyaQilish(
 
       return {
         id: `return-${qaytarish.id}`,
-        sotuvId: sotuv ? sotuvRaqami(sotuv) : qaytarish.saleId?.slice(0, 8).toUpperCase() || "QAYTARISH",
+        sotuvId: sotuv ? sotuvRaqami(sotuv) : sotuvRaqami({ id: qaytarish.saleId || "QAYTARISH" }),
         mijoz: mijozNomi(sotuv),
         turi: "CHIQIM" as const,
         tolovTuri: mosTolovTuri(paymentType),

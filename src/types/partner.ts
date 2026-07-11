@@ -23,6 +23,7 @@ export type Mijoz = {
   telegramId?: string | null;
   companyId?: string | null;
   company?: MijozKompaniyasi | null;
+  balance?: number | string | null;
   customFields?: Record<string, unknown> | null;
   createdAt?: string;
   updatedAt?: string;
