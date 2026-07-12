@@ -1,5 +1,10 @@
+import { MotionConfig } from "motion/react";
 import AppRouter from "./routes/AppRouter";
 
 export default function App() {
-  return <AppRouter />;
+  return (
+    <MotionConfig reducedMotion="user">
+      <AppRouter />
+    </MotionConfig>
+  );
 }

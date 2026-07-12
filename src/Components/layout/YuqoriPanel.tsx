@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bell, CalendarDays, ChevronDown, LoaderCircle, PackagePlus, Plus, RefreshCw, Search, X, Zap } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { motion } from "motion/react";
+import { Bell, CalendarDays, ChevronDown, LoaderCircle, LogOut, PackagePlus, Plus, RefreshCw, Search, Settings, UserRound, X, Zap } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { crmApi } from "@/api/crmApi";
 import {
   katalogModifikatsiyalariniQoldiqTanlovigaOlish,
@@ -9,8 +10,18 @@ import {
   omborQoldiqlariniOlish,
 } from "@/api/savdoApi";
 import { usePosStore } from "@/store/posStore";
+import { useAuthStore } from "@/store/authStore";
+import { useAuthProfileStore } from "@/store/authProfileStore";
 import type { Bildirishnoma } from "@/types/crm";
 import type { OmborTanlovi, QoldiqTanlovi } from "@/types/savdo";
+import type { FoydalanuvchiRoli, JoriyFoydalanuvchi } from "@/types/tenant";
+
+const rolMatni: Record<FoydalanuvchiRoli, string> = {
+  DIREKTOR: "Direktor",
+  ADMIN: "Administrator",
+  KASSIR: "Kassir",
+  OMBORCHI: "Omborchi",
+};
 
 type ModuleKey = "savdo" | "mahsulotlar" | "mijozlar" | "ombor" | "hisobotlar" | "default";
 
@@ -49,12 +60,27 @@ function getModuleKey(pathname: string): ModuleKey {
 }
 
 export default function YuqoriPanel() {
+  const navigate = useNavigate();
   const { pathname, search } = useLocation();
   const moduleKey = getModuleKey(pathname);
   const [bildirishnomalar, setBildirishnomalar] = useState<Bildirishnoma[]>([]);
   const [bildirishnomaOchiq, setBildirishnomaOchiq] = useState(false);
   const [bildirishnomaYuklanmoqda, setBildirishnomaYuklanmoqda] = useState(false);
   const [mahsulotModalOchiq, setMahsulotModalOchiq] = useState(false);
+  const [profilOchiq, setProfilOchiq] = useState(false);
+
+  const profil = useAuthProfileStore((state) => state.profil);
+  const profilniYuklash = useAuthProfileStore((state) => state.profilniYuklash);
+  const logout = useAuthStore((state) => state.logout);
+
+  useEffect(() => {
+    if (!profil) void profilniYuklash();
+  }, [profil, profilniYuklash]);
+
+  async function handleLogout() {
+    await logout();
+    navigate("/login", { replace: true });
+  }
 
   const savdoTab = new URLSearchParams(search).get("tab") ?? "barchasi";
   const oqilmaganSoni = useMemo(
@@ -127,6 +153,12 @@ export default function YuqoriPanel() {
           onRead={(id) => void bildirishnomaniOqish(id)}
           onReadAll={() => void hammasiniOqish()}
         />
+        <ProfilTugmasi
+          profil={profil}
+          ochiq={profilOchiq}
+          setOchiq={setProfilOchiq}
+          onLogout={() => void handleLogout()}
+        />
         {mahsulotModalOchiq && (
           <MahsulotTanlashModal onClose={() => setMahsulotModalOchiq(false)} />
         )}
@@ -135,7 +167,12 @@ export default function YuqoriPanel() {
   }
 
   return (
-    <header className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-orange-100 bg-white/60 px-4 py-3 shadow-sm backdrop-blur-xl">
+    <motion.header
+      initial={{ opacity: 0, y: -16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+      className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-orange-100 bg-white/60 px-4 py-3 shadow-sm backdrop-blur-xl"
+    >
       <nav className="flex min-w-0 flex-1 items-center gap-5 overflow-x-auto">
         {moduleTabs[moduleKey].map((tab) => {
           const [tabPath, tabQuery = ""] = tab.path.split("?");
@@ -182,8 +219,14 @@ export default function YuqoriPanel() {
             </button>
           </>
         )}
+        <ProfilTugmasi
+          profil={profil}
+          ochiq={profilOchiq}
+          setOchiq={setProfilOchiq}
+          onLogout={() => void handleLogout()}
+        />
       </div>
-    </header>
+    </motion.header>
   );
 }
 
@@ -719,6 +762,124 @@ function BildirishnomaTugmasi({
               ))
             )}
           </div>
+            </div>
+          </>,
+          document.body
+        )}
+    </div>
+  );
+}
+
+function ProfilTugmasi({
+  profil,
+  ochiq,
+  setOchiq,
+  onLogout,
+}: {
+  profil: JoriyFoydalanuvchi | null;
+  ochiq: boolean;
+  setOchiq: (value: boolean) => void;
+  onLogout: () => void;
+}) {
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [position, setPosition] = useState({ top: 0, right: 24 });
+
+  useEffect(() => {
+    if (!ochiq) return;
+
+    function updatePosition() {
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setPosition({
+        top: rect.bottom + 10,
+        right: Math.max(12, window.innerWidth - rect.right),
+      });
+    }
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [ochiq]);
+
+  const ism = profil?.fullName?.trim() || profil?.username || "";
+  const bosh = ism.slice(0, 1).toUpperCase() || "?";
+  const rolNomi = profil ? rolMatni[profil.role as FoydalanuvchiRoli] ?? profil.role : "";
+
+  return (
+    <div className="relative">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setOchiq(!ochiq)}
+        className="flex h-10 items-center gap-2 rounded-2xl border border-orange-100 bg-white/60 py-1 pl-1 pr-3 transition hover:border-orange-200 hover:bg-white"
+        aria-label="Profil menyusi"
+      >
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-orange-400 to-orange-600 text-xs font-black text-white shadow-sm">
+          {bosh}
+        </span>
+        <span className="hidden max-w-[120px] truncate text-sm font-bold text-gray-700 sm:block">
+          {ism || "Foydalanuvchi"}
+        </span>
+        <ChevronDown
+          size={14}
+          className={`hidden shrink-0 text-gray-400 transition sm:block ${ochiq ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {ochiq &&
+        createPortal(
+          <>
+            <button
+              type="button"
+              className="fixed inset-0 z-[190] cursor-default bg-transparent"
+              aria-label="Profil menyusini yopish"
+              onClick={() => setOchiq(false)}
+            />
+            <div
+              className="fixed z-[200] w-[260px] overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-[0_24px_90px_rgba(15,23,42,.22)]"
+              style={{ top: position.top, right: position.right }}
+            >
+              <div className="flex items-center gap-3 border-b border-orange-100 bg-orange-50/60 p-4">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-orange-400 to-orange-600 text-base font-black text-white shadow-sm">
+                  {bosh}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate font-black text-slate-900">{ism || "Foydalanuvchi"}</p>
+                  <p className="truncate text-xs font-bold text-orange-600">{rolNomi || "..."}</p>
+                </div>
+              </div>
+              <div className="p-2">
+                <Link
+                  to="/sozlamalar"
+                  onClick={() => setOchiq(false)}
+                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-orange-50 hover:text-orange-600"
+                >
+                  <UserRound size={17} /> Mening profilim
+                </Link>
+                <Link
+                  to="/sozlamalar"
+                  onClick={() => setOchiq(false)}
+                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-orange-50 hover:text-orange-600"
+                >
+                  <Settings size={17} /> Sozlamalar
+                </Link>
+              </div>
+              <div className="border-t border-orange-100 p-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOchiq(false);
+                    onLogout();
+                  }}
+                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold text-red-500 transition hover:bg-red-50"
+                >
+                  <LogOut size={17} /> Tizimdan chiqish
+                </button>
+              </div>
             </div>
           </>,
           document.body
