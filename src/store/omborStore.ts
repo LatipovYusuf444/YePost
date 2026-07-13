@@ -64,12 +64,12 @@ type OmborState = {
   filialYangilash: (id: string, data: Partial<FilialYaratishMalumoti>) => Promise<boolean>;
   filialOchirish: (id: string) => Promise<boolean>;
   yetkazibBeruvchiYaratish: (data: { name: string; phone?: string }) => Promise<boolean>;
-  kirimYaratish: (data: KirimYaratishMalumoti) => Promise<boolean>;
+  kirimYaratish: (data: KirimYaratishMalumoti) => Promise<KirimHujjati | null>;
   kirimOlish: (id: string) => Promise<KirimHujjati | null>;
   kirimYangilash: (id: string, data: Partial<KirimYaratishMalumoti>) => Promise<boolean>;
   kirimTasdiqlash: (id: string) => Promise<boolean>;
   kirimBekorQilish: (id: string) => Promise<boolean>;
-  chiqimYaratish: (data: ChiqimYaratishMalumoti) => Promise<boolean>;
+  chiqimYaratish: (data: ChiqimYaratishMalumoti) => Promise<ChiqimHujjati | null>;
   chiqimOlish: (id: string) => Promise<ChiqimHujjati | null>;
   chiqimYangilash: (id: string, data: Partial<ChiqimYaratishMalumoti>) => Promise<boolean>;
   chiqimTasdiqlash: (id: string) => Promise<boolean>;
@@ -368,10 +368,10 @@ export const useOmborStore = create<OmborState>((set, get) => ({
     try {
       const hujjat = await kirimApi.yaratish(data);
       set((state) => ({ kirimlar: [hujjat, ...state.kirimlar], amalBajarilmoqda: false }));
-      return true;
+      return hujjat;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
-      return false;
+      return null;
     }
   },
   kirimOlish: async (id) => {
@@ -436,10 +436,10 @@ export const useOmborStore = create<OmborState>((set, get) => ({
     try {
       const hujjat = await chiqimApi.yaratish(data);
       set((state) => ({ chiqimlar: [hujjat, ...state.chiqimlar], amalBajarilmoqda: false }));
-      return true;
+      return hujjat;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
-      return false;
+      return null;
     }
   },
   chiqimOlish: async (id) => {
