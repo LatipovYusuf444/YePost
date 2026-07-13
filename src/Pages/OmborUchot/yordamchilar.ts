@@ -1,5 +1,14 @@
 import { boshlangichHujjatlar, boshlangichKirimlar } from "./mockData";
-import type { ChiqimHujjat, Hujjat, HujjatHolati, KirimHujjat, Mahsulot, OmborItem, TarixYozuvi } from "./types";
+import type {
+  ChiqimHujjat,
+  Hujjat,
+  HujjatHolati,
+  InventarizatsiyaHujjat,
+  KirimHujjat,
+  Mahsulot,
+  OmborItem,
+  TarixYozuvi,
+} from "./types";
 
 export function hozirgiVaqt() {
   return new Intl.DateTimeFormat("uz-UZ", {
@@ -48,6 +57,10 @@ export function kirimJami(hujjat: Pick<KirimHujjat, "satrlar">) {
 }
 
 export function chiqimJami(hujjat: Pick<ChiqimHujjat, "satrlar">) {
+  return hujjat.satrlar.reduce((jami, satr) => jami + satr.soni * satr.tanNarx, 0);
+}
+
+export function inventarizatsiyaJami(hujjat: Pick<InventarizatsiyaHujjat, "satrlar">) {
   return hujjat.satrlar.reduce((jami, satr) => jami + satr.soni * satr.tanNarx, 0);
 }
 

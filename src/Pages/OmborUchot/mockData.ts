@@ -1,4 +1,4 @@
-import type { ChiqimHujjat, Hujjat, KirimHujjat, Mahsulot, OmborItem } from "./types";
+import type { ChiqimHujjat, Hujjat, InventarizatsiyaHujjat, KirimHujjat, Mahsulot, OmborItem } from "./types";
 
 export const mockOmborlar: OmborItem[] = [
   { id: "omb-1", nomi: "Markaziy ombor", manzil: "Toshkent, Chilonzor", faol: true },
@@ -14,12 +14,12 @@ export const mockYetkazibBeruvchilar: string[] = [
   "Mahalliy fermer xo'jaligi",
 ];
 
-export const mockMijozlar: string[] = [
-  "Do'kon 'Boshoq'",
-  "Savdo markazi 'Mega Planet'",
-  "Restoran 'Osiyo taomlari'",
-  "Jismoniy shaxs mijoz",
-  "Ulgurji xaridor 'Barakat'",
+export const mockChiqimSabablari: string[] = [
+  "Kamomad (inventarizatsiya)",
+  "Brak/Yaroqsiz mahsulot",
+  "Ichki iste'mol",
+  "Muddati o'tgan",
+  "Boshqa",
 ];
 
 export const mockMasulShaxslar: string[] = [
@@ -86,7 +86,7 @@ function satr(mahsulotId: string, miqdor: number, narx: number) {
   return { id: crypto.randomUUID(), mahsulotId, miqdor, narx };
 }
 
-export const boshlangichHujjatlar: Record<"chiqim" | "kochirma" | "inventarizatsiya", Hujjat[]> = {
+export const boshlangichHujjatlar: Record<"chiqim" | "kochirma", Hujjat[]> = {
   chiqim: [
     {
       id: crypto.randomUUID(),
@@ -112,19 +112,6 @@ export const boshlangichHujjatlar: Record<"chiqim" | "kochirma" | "inventarizats
       izoh: "Do'kon omboriga to'ldirish",
       holati: "tasdiqlangan",
       satrlar: [satr("mah-4", 50, 9000)],
-    },
-  ],
-  inventarizatsiya: [
-    {
-      id: crypto.randomUUID(),
-      raqami: "INV-0001",
-      sana: new Date().toISOString().slice(0, 10),
-      valyuta: "UZS",
-      kontragentNomi: "Yillik inventarizatsiya",
-      omborId: "omb-1",
-      izoh: "",
-      holati: "qoralama",
-      satrlar: [satr("mah-5", 12, 42000)],
     },
   ],
 };
@@ -168,8 +155,6 @@ function chiqimSatri(mahsulotId: string, omborId: string, soni: number) {
     omborId,
     soni,
     tanNarx: mahsulot?.tanNarx ?? 0,
-    sotuvNarx: mahsulot?.sotuvNarx ?? 0,
-    ulgurjiNarx: mahsulot?.ulgurjiNarx ?? 0,
   };
 }
 
@@ -177,7 +162,7 @@ export const boshlangichChiqimlar: ChiqimHujjat[] = [
   {
     id: crypto.randomUUID(),
     nomi: "Chiqim hujjati #1",
-    mijoz: "Do'kon 'Boshoq'",
+    sabab: "Brak/Yaroqsiz mahsulot",
     sana: new Date().toISOString().slice(0, 10),
     masulShaxs: "Malika Yusupova",
     holati: "tasdiqlangan",
@@ -186,5 +171,32 @@ export const boshlangichChiqimlar: ChiqimHujjat[] = [
     yaratilganSana: new Date().toISOString().slice(0, 10),
     ozgartirilganSana: new Date().toISOString().slice(0, 10),
     ozgartirganShaxs: "Malika Yusupova",
+  },
+];
+
+function inventarizatsiyaSatri(mahsulotId: string, omborId: string, soni: number) {
+  const mahsulot = mockMahsulotlar.find((item) => item.id === mahsulotId);
+  return {
+    id: crypto.randomUUID(),
+    mahsulotId,
+    shtrixKod: mahsulot?.shtrixKod ?? "",
+    omborId,
+    soni,
+    tanNarx: mahsulot?.tanNarx ?? 0,
+  };
+}
+
+export const boshlangichInventarizatsiyalar: InventarizatsiyaHujjat[] = [
+  {
+    id: crypto.randomUUID(),
+    nomi: "Inventarizatsiya hujjati #1",
+    sana: new Date().toISOString().slice(0, 10),
+    masulShaxs: "Nodira Karimova",
+    holati: "qoralama",
+    satrlar: [inventarizatsiyaSatri("mah-5", "omb-1", 12)],
+    omborId: "omb-1",
+    yaratilganSana: new Date().toISOString().slice(0, 10),
+    ozgartirilganSana: new Date().toISOString().slice(0, 10),
+    ozgartirganShaxs: "Nodira Karimova",
   },
 ];

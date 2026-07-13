@@ -15,11 +15,11 @@ import {
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
-import type { ChiqimHujjat, Mahsulot, OmborItem, TarixYozuvi } from "./types";
-import { holatNomi, hozirgiVaqt, chiqimJami, pul, sana, tarixgaQoshish } from "./yordamchilar";
+import type { InventarizatsiyaHujjat, Mahsulot, OmborItem, TarixYozuvi } from "./types";
+import { holatNomi, hozirgiVaqt, inventarizatsiyaJami, pul, sana, tarixgaQoshish } from "./yordamchilar";
 
 type Props = {
-  hujjat: ChiqimHujjat;
+  hujjat: InventarizatsiyaHujjat;
   mahsulotlar: Mahsulot[];
   omborlar: OmborItem[];
   onYopish: () => void;
@@ -28,10 +28,10 @@ type Props = {
   onTasdiqlash: () => void;
 };
 
-type ChiqimFayl = { id: string; nomi: string; sana: string };
-type ChiqimKomment = { id: string; matn: string; muallif: string; vaqt: string };
+type InventarizatsiyaFayl = { id: string; nomi: string; sana: string };
+type InventarizatsiyaKomment = { id: string; matn: string; muallif: string; vaqt: string };
 
-export default function ChiqimKorishModal({
+export default function InventarizatsiyaKorishModal({
   hujjat,
   mahsulotlar,
   omborlar,
@@ -40,14 +40,14 @@ export default function ChiqimKorishModal({
   onBekorQilish,
   onTasdiqlash,
 }: Props) {
-  const [fayllar, setFayllar] = useState<ChiqimFayl[]>([]);
+  const [fayllar, setFayllar] = useState<InventarizatsiyaFayl[]>([]);
   const [kommentMatni, setKommentMatni] = useState("");
-  const [kommentlar, setKommentlar] = useState<ChiqimKomment[]>([]);
+  const [kommentlar, setKommentlar] = useState<InventarizatsiyaKomment[]>([]);
   const [tarix, setTarix] = useState<TarixYozuvi[]>(() =>
     tarixgaQoshish(hujjat.tarix, "Hujjat ko'rish uchun ochildi")
   );
 
-  const jami = chiqimJami(hujjat);
+  const jami = inventarizatsiyaJami(hujjat);
 
   function tarixgaYozish(matn: string) {
     setTarix((oldTarix) => [{ id: crypto.randomUUID(), matn, vaqt: hozirgiVaqt() }, ...oldTarix]);
@@ -57,7 +57,7 @@ export default function ChiqimKorishModal({
     const tanlanganFayllar = event.target.files;
     if (!tanlanganFayllar || tanlanganFayllar.length === 0) return;
     const bugun = new Date().toISOString().slice(0, 10);
-    const yangiFayllar: ChiqimFayl[] = Array.from(tanlanganFayllar).map((fayl) => ({
+    const yangiFayllar: InventarizatsiyaFayl[] = Array.from(tanlanganFayllar).map((fayl) => ({
       id: crypto.randomUUID(),
       nomi: fayl.name,
       sana: bugun,
@@ -184,7 +184,7 @@ export default function ChiqimKorishModal({
               <div className="min-w-0 space-y-4">
                 <section className="overflow-hidden rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur">
                   <h3 className="mb-4 border-b border-orange-100/80 pb-3 text-sm font-black uppercase tracking-wide text-slate-600">
-                    Chiqim haqida
+                    Inventarizatsiya haqida
                   </h3>
 
                   <div className="space-y-4">
@@ -194,15 +194,9 @@ export default function ChiqimKorishModal({
                       </p>
                       <p className="mt-2 text-4xl font-black text-slate-950">{pul(jami)}</p>
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-400">Sabab</p>
-                      <p className="mt-1 text-base font-bold text-slate-800">
-                        {hujjat.sabab || "—"}
-                      </p>
-                    </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-sm font-bold text-slate-400">Qachon chiqim qilingan</p>
+                        <p className="text-sm font-bold text-slate-400">Qachon o'tkazilgan</p>
                         <p className="mt-1 text-base font-bold text-slate-800">{sana(hujjat.sana)}</p>
                       </div>
                       <div>

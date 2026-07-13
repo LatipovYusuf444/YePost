@@ -38,6 +38,7 @@ export type Hujjat = {
   izoh?: string;
   holati: HujjatHolati;
   satrlar: HujjatSatri[];
+  tarix?: TarixYozuvi[];
 };
 
 export type KirimSatri = {
@@ -79,18 +80,39 @@ export type ChiqimSatri = {
   omborId: string;
   soni: number;
   tanNarx: number;
-  sotuvNarx: number;
-  ulgurjiNarx: number;
 };
 
 export type ChiqimHujjat = {
   id: string;
   nomi: string;
-  mijoz: string;
+  sabab: string;
   sana: string;
   masulShaxs: string;
   holati: HujjatHolati;
   satrlar: ChiqimSatri[];
+  omborId?: string;
+  yaratilganSana?: string;
+  ozgartirilganSana?: string;
+  ozgartirganShaxs?: string;
+  tarix?: TarixYozuvi[];
+};
+
+export type InventarizatsiyaSatri = {
+  id: string;
+  mahsulotId: string;
+  shtrixKod: string;
+  omborId: string;
+  soni: number;
+  tanNarx: number;
+};
+
+export type InventarizatsiyaHujjat = {
+  id: string;
+  nomi: string;
+  sana: string;
+  masulShaxs: string;
+  holati: HujjatHolati;
+  satrlar: InventarizatsiyaSatri[];
   omborId?: string;
   yaratilganSana?: string;
   ozgartirilganSana?: string;

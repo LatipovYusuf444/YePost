@@ -29,8 +29,7 @@ import {
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import SavdoSelect from "@/Pages/Savdo/SavdoSelect";
-import { mockMasulShaxslar, mockMijozlar } from "./mockData";
-import QidiruvSelect from "./QidiruvSelect";
+import { mockChiqimSabablari, mockMasulShaxslar } from "./mockData";
 import type { ChiqimHujjat, ChiqimSatri, Mahsulot, OmborItem } from "./types";
 import { chiqimJami, pul, qoldiqlarniHisoblash } from "./yordamchilar";
 
@@ -51,8 +50,6 @@ function bosSatr(mahsulot: Mahsulot, omborId: string): ChiqimSatri {
     omborId,
     soni: 1,
     tanNarx: mahsulot.tanNarx,
-    sotuvNarx: mahsulot.sotuvNarx,
-    ulgurjiNarx: mahsulot.ulgurjiNarx,
   };
 }
 
@@ -64,14 +61,10 @@ function bosSatrBosh(omborId: string): ChiqimSatri {
     omborId,
     soni: 1,
     tanNarx: 0,
-    sotuvNarx: 0,
-    ulgurjiNarx: 0,
   };
 }
 
-function FieldSettings() {
-  return <Settings size={15} className="shrink-0 text-slate-300" />;
-}
+const BOSHQA_SABAB = "Boshqa";
 
 type ChiqimFayl = { id: string; nomi: string; sana: string };
 type ChiqimKomment = { id: string; matn: string; muallif: string; vaqt: string };
@@ -87,21 +80,12 @@ function hozirgiVaqt() {
   }).format(new Date());
 }
 
-type UstunKaliti =
-  | "shtrixKod"
-  | "tanNarx"
-  | "sotuvNarx"
-  | "ulgurjiNarx"
-  | "soni"
-  | "ombor"
-  | "qoldiq"
-  | "summa";
+type UstunKaliti = "mahsulot" | "shtrixKod" | "tanNarx" | "soni" | "ombor" | "qoldiq" | "summa";
 
 const USTUN_SOZLAMALARI: { kalit: UstunKaliti; nom: string; kenglik: number }[] = [
+  { kalit: "mahsulot", nom: "Mahsulot", kenglik: 320 },
   { kalit: "shtrixKod", nom: "Shtrix kod", kenglik: 160 },
   { kalit: "tanNarx", nom: "Tan narhi", kenglik: 130 },
-  { kalit: "sotuvNarx", nom: "Sotuv narhi", kenglik: 130 },
-  { kalit: "ulgurjiNarx", nom: "Ulgurji narhi", kenglik: 130 },
   { kalit: "soni", nom: "Soni", kenglik: 110 },
   { kalit: "ombor", nom: "Ombor", kenglik: 200 },
   { kalit: "qoldiq", nom: "Qoldiq", kenglik: 140 },
@@ -117,7 +101,15 @@ export default function ChiqimModal({
   onSaqlash,
 }: Props) {
   const [nomi, setNomi] = useState(boshlangich?.nomi ?? keyingiNomi);
-  const [mijoz, setMijoz] = useState(boshlangich?.mijoz ?? "");
+  const [sababTanlovi, setSababTanlovi] = useState(() => {
+    const boshlangichSabab = boshlangich?.sabab ?? "";
+    if (!boshlangichSabab) return "";
+    return mockChiqimSabablari.includes(boshlangichSabab) ? boshlangichSabab : BOSHQA_SABAB;
+  });
+  const [sababErkinMatn, setSababErkinMatn] = useState(() => {
+    const boshlangichSabab = boshlangich?.sabab ?? "";
+    return boshlangichSabab && !mockChiqimSabablari.includes(boshlangichSabab) ? boshlangichSabab : "";
+  });
   const [sanaQiymati, setSanaQiymati] = useState(boshlangich?.sana ?? new Date().toISOString().slice(0, 10));
   const [masulShaxs, setMasulShaxs] = useState(boshlangich?.masulShaxs ?? "");
   const [satrlar, setSatrlar] = useState<ChiqimSatri[]>(
@@ -134,10 +126,9 @@ export default function ChiqimModal({
     },
   ]);
 
-  const [ustunKengliklari, setUstunKengliklari] = useState<Record<string, number>>(() => ({
-    mahsulot: 320,
-    ...Object.fromEntries(USTUN_SOZLAMALARI.map((ustun) => [ustun.kalit, ustun.kenglik])),
-  }));
+  const [ustunKengliklari, setUstunKengliklari] = useState<Record<string, number>>(() =>
+    Object.fromEntries(USTUN_SOZLAMALARI.map((ustun) => [ustun.kalit, ustun.kenglik]))
+  );
   const [korinadiganUstunlar, setKorinadiganUstunlar] = useState<Record<UstunKaliti, boolean>>(
     () =>
       Object.fromEntries(USTUN_SOZLAMALARI.map((ustun) => [ustun.kalit, true])) as Record<
@@ -145,6 +136,10 @@ export default function ChiqimModal({
         boolean
       >
   );
+  const [ustunTartibi, setUstunTartibi] = useState<UstunKaliti[]>(() =>
+    USTUN_SOZLAMALARI.map((ustun) => ustun.kalit)
+  );
+  const [sudralayotganUstun, setSudralayotganUstun] = useState<UstunKaliti | null>(null);
   const [ustunlarMenyusiOchiq, setUstunlarMenyusiOchiq] = useState(false);
   const ustunlarMenyusiRef = useRef<HTMLDivElement | null>(null);
 
@@ -168,7 +163,9 @@ export default function ChiqimModal({
 
   const birinchiOmbor = omborlar[0]?.id ?? "";
   const joriyQoldiqlar = useMemo(() => qoldiqlarniHisoblash(), []);
-  const korinadiganUstunSozlamalari = USTUN_SOZLAMALARI.filter((ustun) => korinadiganUstunlar[ustun.kalit]);
+  const korinadiganUstunSozlamalari = ustunTartibi
+    .map((kalit) => USTUN_SOZLAMALARI.find((ustun) => ustun.kalit === kalit)!)
+    .filter((ustun) => korinadiganUstunlar[ustun.kalit]);
   const barchaMahsulotlar = useMemo(
     () => [...mahsulotlar, ...qoshimchaMahsulotlar],
     [mahsulotlar, qoshimchaMahsulotlar]
@@ -238,6 +235,28 @@ export default function ChiqimModal({
 
   function satrSudrashTugadi() {
     setSudralayotganSatrId(null);
+  }
+
+  function ustunSudrashBoshlandi(kalit: UstunKaliti) {
+    setSudralayotganUstun(kalit);
+  }
+
+  function ustunUstigaOlibKelindi(event: ReactDragEvent, kalit: UstunKaliti) {
+    event.preventDefault();
+    if (!sudralayotganUstun || sudralayotganUstun === kalit) return;
+    setUstunTartibi((old) => {
+      const boshlanishIndex = old.indexOf(sudralayotganUstun);
+      const maqsadIndex = old.indexOf(kalit);
+      if (boshlanishIndex === -1 || maqsadIndex === -1) return old;
+      const yangi = [...old];
+      const [kochirilgan] = yangi.splice(boshlanishIndex, 1);
+      yangi.splice(maqsadIndex, 0, kochirilgan);
+      return yangi;
+    });
+  }
+
+  function ustunSudrashTugadi() {
+    setSudralayotganUstun(null);
   }
 
   function mahsulotYaratish() {
@@ -346,6 +365,30 @@ export default function ChiqimModal({
     const qoldiq = joriyQoldiqlar.get(`${satr.omborId}::${satr.mahsulotId}`) ?? 0;
 
     switch (kalit) {
+      case "mahsulot":
+        return (
+          <div className="flex items-center gap-1.5">
+            <span className="flex h-11 w-16 shrink-0 items-center justify-center rounded-lg border border-dashed border-orange-200 bg-white text-slate-300">
+              <ImageIcon size={18} />
+            </span>
+            <SavdoSelect
+              value={satr.mahsulotId}
+              onChange={(value) => mahsulotTanlash(satr.id, value)}
+              placeholder="Mahsulotni tanlang"
+              options={barchaMahsulotlar.map((item) => ({
+                value: item.id,
+                label: item.nomi,
+                searchLabel: `${item.nomi} ${item.shtrixKod}`,
+              }))}
+              className="min-w-0 flex-1"
+              buttonClassName="h-9 rounded-lg px-2.5 text-sm"
+              dropdownClassName="min-w-[320px]"
+              qidirish
+              qidiruvPlaceholder="Mahsulot yoki shtrix kod bo'yicha qidirish"
+              portal
+            />
+          </div>
+        );
       case "shtrixKod":
         return (
           <div className="relative">
@@ -365,26 +408,6 @@ export default function ChiqimModal({
             min={0}
             value={satr.tanNarx}
             onChange={(event) => satrniOzgartirish(satr.id, { tanNarx: Number(event.target.value) })}
-            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100"
-          />
-        );
-      case "sotuvNarx":
-        return (
-          <input
-            type="number"
-            min={0}
-            value={satr.sotuvNarx}
-            onChange={(event) => satrniOzgartirish(satr.id, { sotuvNarx: Number(event.target.value) })}
-            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100"
-          />
-        );
-      case "ulgurjiNarx":
-        return (
-          <input
-            type="number"
-            min={0}
-            value={satr.ulgurjiNarx}
-            onChange={(event) => satrniOzgartirish(satr.id, { ulgurjiNarx: Number(event.target.value) })}
             className="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100"
           />
         );
@@ -507,8 +530,6 @@ export default function ChiqimModal({
               mahsulotId,
               shtrixKod: yangiMahsulot?.shtrixKod ?? satr.shtrixKod,
               tanNarx: yangiMahsulot?.tanNarx ?? satr.tanNarx,
-              sotuvNarx: yangiMahsulot?.sotuvNarx ?? satr.sotuvNarx,
-              ulgurjiNarx: yangiMahsulot?.ulgurjiNarx ?? satr.ulgurjiNarx,
             }
           : satr
       );
@@ -527,7 +548,7 @@ export default function ChiqimModal({
     return {
       id: boshlangich?.id ?? crypto.randomUUID(),
       nomi: nomi.trim() || keyingiNomi,
-      mijoz: mijoz.trim(),
+      sabab: (sababTanlovi === BOSHQA_SABAB ? sababErkinMatn : sababTanlovi).trim(),
       sana: sanaQiymati,
       masulShaxs: masulShaxs.trim(),
       holati: boshlangich?.holati ?? "qoralama",
@@ -619,7 +640,6 @@ export default function ChiqimModal({
                       <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
                         Chiqim haqida
                       </h3>
-                      <Settings size={15} className="text-slate-300" />
                     </div>
                     <span className="text-xs font-black uppercase tracking-[0.18em] text-slate-300">
                       Bekor qilish
@@ -629,34 +649,33 @@ export default function ChiqimModal({
                   <div className="space-y-4">
                     <label className="grid gap-2">
                       <span className="text-sm font-bold text-slate-400">Chiqimni nomi</span>
-                      <div className="flex items-center gap-2">
-                        <input
-                          value={nomi}
-                          onChange={(event) => setNomi(event.target.value)}
-                          placeholder={keyingiNomi}
-                          className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100"
-                        />
-                        <FieldSettings />
-                      </div>
+                      <input
+                        value={nomi}
+                        onChange={(event) => setNomi(event.target.value)}
+                        placeholder={keyingiNomi}
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100"
+                      />
                     </label>
 
                     <label className="grid gap-2">
-                      <span className="text-sm font-bold text-slate-400">Mijoz</span>
-                      <div className="flex items-center gap-2">
-                        <QidiruvSelect
-                          boshlangichMatn={mijoz}
-                          onErkinMatnOzgarishi={setMijoz}
-                          onTanlash={(variant) => setMijoz(variant.label)}
-                          placeholder="Kimga chiqim bo'lmoqda"
-                          variantlar={mockMijozlar.map((mijozNomi) => ({
-                            id: mijozNomi,
-                            label: mijozNomi,
-                          }))}
-                          className="min-w-0 flex-1"
-                          inputClassName="h-11 rounded-xl"
+                      <span className="text-sm font-bold text-slate-400">Sabab</span>
+                      <SavdoSelect
+                        value={sababTanlovi}
+                        onChange={setSababTanlovi}
+                        placeholder="Chiqim sababini tanlang"
+                        options={mockChiqimSabablari.map((item) => ({ value: item, label: item }))}
+                        buttonClassName="h-11 rounded-xl px-3.5 text-sm"
+                        dropdownClassName="min-w-[300px]"
+                        portal
+                      />
+                      {sababTanlovi === BOSHQA_SABAB && (
+                        <input
+                          value={sababErkinMatn}
+                          onChange={(event) => setSababErkinMatn(event.target.value)}
+                          placeholder="Sababni yozing"
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100"
                         />
-                        <FieldSettings />
-                      </div>
+                      )}
                     </label>
 
                     <label className="grid gap-2">
@@ -908,7 +927,7 @@ export default function ChiqimModal({
                         <p className="px-2 py-1 text-xs font-black uppercase tracking-wide text-slate-400">
                           Ustunlarni ko'rsatish
                         </p>
-                        {USTUN_SOZLAMALARI.map((ustun) => (
+                        {USTUN_SOZLAMALARI.filter((ustun) => ustun.kalit !== "mahsulot").map((ustun) => (
                           <label
                             key={ustun.kalit}
                             className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-slate-700 hover:bg-orange-50"
@@ -943,7 +962,6 @@ export default function ChiqimModal({
                       <colgroup>
                         <col style={{ width: 32 }} />
                         <col style={{ width: 48 }} />
-                        <col style={{ width: ustunKengliklari.mahsulot }} />
                         {korinadiganUstunSozlamalari.map((ustun) => (
                           <col key={ustun.kalit} style={{ width: ustunKengliklari[ustun.kalit] }} />
                         ))}
@@ -961,18 +979,27 @@ export default function ChiqimModal({
                             />
                           </th>
                           <th className="px-3 py-3">№</th>
-                          <th className="relative px-3 py-3">
-                            Mahsulot
-                            <span
-                              onMouseDown={(event) => ustunOlchaminiOzgartirish("mahsulot", event)}
-                              className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none hover:bg-orange-300/70"
-                            />
-                          </th>
                           {korinadiganUstunSozlamalari.map((ustun) => (
-                            <th key={ustun.kalit} className="relative px-3 py-3">
-                              {ustun.nom}
+                            <th
+                              key={ustun.kalit}
+                              draggable
+                              onDragStart={() => ustunSudrashBoshlandi(ustun.kalit)}
+                              onDragOver={(event) => ustunUstigaOlibKelindi(event, ustun.kalit)}
+                              onDragEnd={ustunSudrashTugadi}
+                              className={`relative cursor-grab select-none px-3 py-3 active:cursor-grabbing ${
+                                sudralayotganUstun === ustun.kalit ? "opacity-40" : ""
+                              }`}
+                            >
+                              <span className="inline-flex items-center gap-1">
+                                <GripVertical size={12} className="text-slate-300" />
+                                {ustun.nom}
+                              </span>
                               <span
-                                onMouseDown={(event) => ustunOlchaminiOzgartirish(ustun.kalit, event)}
+                                draggable={false}
+                                onMouseDown={(event) => {
+                                  event.stopPropagation();
+                                  ustunOlchaminiOzgartirish(ustun.kalit, event);
+                                }}
                                 className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none hover:bg-orange-300/70"
                               />
                             </th>
@@ -1005,29 +1032,6 @@ export default function ChiqimModal({
                               <div className="flex items-center gap-1.5 text-xs font-black text-slate-400">
                                 <GripVertical size={14} className="cursor-grab text-slate-300 active:cursor-grabbing" />
                                 {index + 1}
-                              </div>
-                            </td>
-                            <td className="px-3 py-2.5">
-                              <div className="flex items-center gap-1.5">
-                                <span className="flex h-11 w-16 shrink-0 items-center justify-center rounded-lg border border-dashed border-orange-200 bg-white text-slate-300">
-                                  <ImageIcon size={18} />
-                                </span>
-                                <SavdoSelect
-                                  value={satr.mahsulotId}
-                                  onChange={(value) => mahsulotTanlash(satr.id, value)}
-                                  placeholder="Mahsulotni tanlang"
-                                  options={barchaMahsulotlar.map((item) => ({
-                                    value: item.id,
-                                    label: item.nomi,
-                                    searchLabel: `${item.nomi} ${item.shtrixKod}`,
-                                  }))}
-                                  className="min-w-0 flex-1"
-                                  buttonClassName="h-9 rounded-lg px-2.5 text-sm"
-                                  dropdownClassName="min-w-[320px]"
-                                  qidirish
-                                  qidiruvPlaceholder="Mahsulot yoki shtrix kod bo'yicha qidirish"
-                                  portal
-                                />
                               </div>
                             </td>
                             {korinadiganUstunSozlamalari.map((ustun) => (

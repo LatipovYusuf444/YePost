@@ -2,77 +2,62 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, FileText, Plus, Search, Settings, Trash2 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
-import HujjatModal from "./HujjatModal";
-import { mockMahsulotlar, mockOmborlar } from "./mockData";
-import type { Hujjat } from "./types";
-import { holatNomi, hujjatJami, pul, sana } from "./yordamchilar";
+import InventarizatsiyaKorishModal from "./InventarizatsiyaKorishModal";
+import InventarizatsiyaModal from "./InventarizatsiyaModal";
+import { boshlangichInventarizatsiyalar, mockMahsulotlar, mockOmborlar } from "./mockData";
+import type { InventarizatsiyaHujjat } from "./types";
+import { holatNomi, inventarizatsiyaJami, omborNomi, pul, sana, tarixgaQoshish } from "./yordamchilar";
 
-type Props = {
-  prefiks: string;
-  sarlavha: string;
-  tavsif: string;
-  kontragentYorligi?: string;
-  omborYorligi: string;
-  ikkinchiOmborYorligi?: string;
-  boshlangichRoyxat: Hujjat[];
-};
+const BARCHA_USTUNLAR = [
+  { kalit: "nomi", nom: "Nomi" },
+  { kalit: "holati", nom: "Status" },
+  { kalit: "yaratilganSana", nom: "Yaratilgan vaqti" },
+  { kalit: "omborId", nom: "Ombor" },
+  { kalit: "masulShaxs", nom: "Yaratgan mas'ul shaxs" },
+  { kalit: "ozgartirilganSana", nom: "O'zgartirilgan vaqti" },
+  { kalit: "ozgartirganShaxs", nom: "O'zgartirgan mas'ul shaxs" },
+  { kalit: "summa", nom: "Summa" },
+] as const;
 
-type UstunKaliti = "raqami" | "sana" | "kontragent" | "ombor" | "omborTo" | "summa" | "holati";
+type UstunKaliti = (typeof BARCHA_USTUNLAR)[number]["kalit"];
 
+const BOSHLANGICH_TANLANGAN: UstunKaliti[] = [
+  "nomi",
+  "holati",
+  "yaratilganSana",
+  "omborId",
+  "masulShaxs",
+  "ozgartirilganSana",
+  "ozgartirganShaxs",
+  "summa",
+];
+
+const SAQLASH_KALITI = "omboruchot-inventarizatsiya-ustunlar";
 const AMALLAR_KENGLIK_PX = 96;
 const BOSHLANGICH_KENGLIK_PX = 170;
 const ENG_KICHIK_KENGLIK_PX = 70;
 const SARLAVHA_BALANDLIK_PX = 44;
 const SATR_BALANDLIK_PX = 60;
 
-function omborNomi(omborId: string) {
-  return mockOmborlar.find((ombor) => ombor.id === omborId)?.nomi ?? "—";
-}
-
-export default function HujjatlarRoyxati({
-  prefiks,
-  sarlavha,
-  tavsif,
-  kontragentYorligi,
-  omborYorligi,
-  ikkinchiOmborYorligi,
-  boshlangichRoyxat,
-}: Props) {
-  const [royxat, setRoyxat] = useState<Hujjat[]>(boshlangichRoyxat);
+export default function InventarizatsiyaJadvali() {
+  const [royxat, setRoyxat] = useState<InventarizatsiyaHujjat[]>(boshlangichInventarizatsiyalar);
   const [qidiruv, setQidiruv] = useState("");
   const [modalOchiq, setModalOchiq] = useState(false);
-  const [tahrirHujjat, setTahrirHujjat] = useState<Hujjat | null>(null);
-  const [ochirilayotganHujjat, setOchirilayotganHujjat] = useState<Hujjat | null>(null);
+  const [tahrirHujjat, setTahrirHujjat] = useState<InventarizatsiyaHujjat | null>(null);
+  const [korishHujjat, setKorishHujjat] = useState<InventarizatsiyaHujjat | null>(null);
+  const [ochirilayotganHujjat, setOchirilayotganHujjat] = useState<InventarizatsiyaHujjat | null>(null);
   const [sozlamaOchiq, setSozlamaOchiq] = useState(false);
-
-  const saqlashKaliti = `omboruchot-${prefiks.toLowerCase()}-ustunlar`;
-
-  const barchaUstunlar = useMemo(() => {
-    const ustunlar: { kalit: UstunKaliti; nom: string }[] = [
-      { kalit: "raqami", nom: "Raqami" },
-      { kalit: "sana", nom: "Sana" },
-    ];
-    if (kontragentYorligi) ustunlar.push({ kalit: "kontragent", nom: kontragentYorligi });
-    ustunlar.push({ kalit: "ombor", nom: omborYorligi });
-    if (ikkinchiOmborYorligi) ustunlar.push({ kalit: "omborTo", nom: ikkinchiOmborYorligi });
-    ustunlar.push({ kalit: "summa", nom: "Summa" }, { kalit: "holati", nom: "Holati" });
-    return ustunlar;
-  }, [kontragentYorligi, omborYorligi, ikkinchiOmborYorligi]);
-
-  const boshlangichTanlangan = useMemo(() => barchaUstunlar.map((ustun) => ustun.kalit), [barchaUstunlar]);
-
   const [tanlanganUstunlar, setTanlanganUstunlar] = useState<UstunKaliti[]>(() => {
-    if (typeof window === "undefined") return boshlangichTanlangan;
+    if (typeof window === "undefined") return BOSHLANGICH_TANLANGAN;
     try {
-      const saqlangan = window.localStorage.getItem(saqlashKaliti);
-      if (!saqlangan) return boshlangichTanlangan;
+      const saqlangan = window.localStorage.getItem(SAQLASH_KALITI);
+      if (!saqlangan) return BOSHLANGICH_TANLANGAN;
       const ozLar: UstunKaliti[] = JSON.parse(saqlangan);
-      return ozLar.filter((kalit) => barchaUstunlar.some((ustun) => ustun.kalit === kalit));
+      return ozLar.filter((kalit) => BARCHA_USTUNLAR.some((ustun) => ustun.kalit === kalit));
     } catch {
-      return boshlangichTanlangan;
+      return BOSHLANGICH_TANLANGAN;
     }
   });
-
   const sozlamaTugmaRef = useRef<HTMLButtonElement | null>(null);
   const sozlamaPanelRef = useRef<HTMLDivElement | null>(null);
   const jadvalRef = useRef<HTMLTableElement | null>(null);
@@ -83,8 +68,8 @@ export default function HujjatlarRoyxati({
   const [skrollHolati, setSkrollHolati] = useState({ chap: 0, kenglik: 100, korinadi: false });
 
   const korinadiganUstunlar = useMemo(
-    () => barchaUstunlar.filter((ustun) => tanlanganUstunlar.includes(ustun.kalit)),
-    [barchaUstunlar, tanlanganUstunlar]
+    () => BARCHA_USTUNLAR.filter((ustun) => tanlanganUstunlar.includes(ustun.kalit)),
+    [tanlanganUstunlar]
   );
 
   const [kengliklar, setKengliklar] = useState<number[]>(() =>
@@ -97,8 +82,8 @@ export default function HujjatlarRoyxati({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem(saqlashKaliti, JSON.stringify(tanlanganUstunlar));
-  }, [tanlanganUstunlar, saqlashKaliti]);
+    window.localStorage.setItem(SAQLASH_KALITI, JSON.stringify(tanlanganUstunlar));
+  }, [tanlanganUstunlar]);
 
   function skrollHolatiniYangilash() {
     const el = skrollRef.current;
@@ -241,28 +226,37 @@ export default function HujjatlarRoyxati({
     window.addEventListener("mouseup", toxtatish);
   }
 
-  const keyingiRaqam = useMemo(
-    () => `${prefiks}-${String(royxat.length + 1).padStart(4, "0")}`,
-    [prefiks, royxat.length]
-  );
+  const keyingiNomi = useMemo(() => `Inventarizatsiya hujjati #${royxat.length + 1}`, [royxat.length]);
 
   const korinadiganRoyxat = useMemo(() => {
     const soz = qidiruv.trim().toLowerCase();
     if (!soz) return royxat;
     return royxat.filter(
       (hujjat) =>
-        hujjat.raqami.toLowerCase().includes(soz) ||
-        hujjat.kontragentNomi.toLowerCase().includes(soz)
+        hujjat.nomi.toLowerCase().includes(soz) ||
+        (hujjat.masulShaxs ?? "").toLowerCase().includes(soz) ||
+        sana(hujjat.sana).toLowerCase().includes(soz) ||
+        holatNomi(hujjat.holati).toLowerCase().includes(soz)
     );
   }, [royxat, qidiruv]);
 
-  function modalniOchish(hujjat?: Hujjat) {
+  function modalniOchish(hujjat?: InventarizatsiyaHujjat) {
     setTahrirHujjat(hujjat ?? null);
     setModalOchiq(true);
   }
 
-  function saqlash(hujjat: Hujjat, tasdiqla: boolean) {
-    const yakuniyHujjat: Hujjat = { ...hujjat, holati: tasdiqla ? "tasdiqlangan" : "qoralama" };
+  function saqlash(hujjat: InventarizatsiyaHujjat, tasdiqla: boolean) {
+    const mavjudHujjat = royxat.find((item) => item.id === hujjat.id);
+    let tarix = mavjudHujjat?.tarix;
+    tarix = tarixgaQoshish(tarix, mavjudHujjat ? "Hujjat tahrirlandi" : "Hujjat yaratildi");
+    if (tasdiqla && mavjudHujjat?.holati !== "tasdiqlangan") {
+      tarix = tarixgaQoshish(tarix, "Hujjat tasdiqlandi");
+    }
+    const yakuniyHujjat: InventarizatsiyaHujjat = {
+      ...hujjat,
+      holati: tasdiqla ? "tasdiqlangan" : "qoralama",
+      tarix,
+    };
     setRoyxat((oldRoyxat) => {
       const mavjud = oldRoyxat.some((item) => item.id === yakuniyHujjat.id);
       return mavjud
@@ -272,7 +266,7 @@ export default function HujjatlarRoyxati({
     setModalOchiq(false);
   }
 
-  function ochirishSorash(hujjat: Hujjat) {
+  function ochirishSorash(hujjat: InventarizatsiyaHujjat) {
     setOchirilayotganHujjat(hujjat);
   }
 
@@ -282,20 +276,33 @@ export default function HujjatlarRoyxati({
     setOchirilayotganHujjat(null);
   }
 
-  function katakQiymati(hujjat: Hujjat, kalit: UstunKaliti) {
+  function bekorQilish(hujjat: InventarizatsiyaHujjat) {
+    const yangilangan: InventarizatsiyaHujjat = {
+      ...hujjat,
+      holati: "qoralama",
+      tarix: tarixgaQoshish(hujjat.tarix, "Tasdiqlash bekor qilindi, tahrirlash uchun ochildi"),
+    };
+    setRoyxat((oldRoyxat) => oldRoyxat.map((item) => (item.id === hujjat.id ? yangilangan : item)));
+    setKorishHujjat(null);
+    modalniOchish(yangilangan);
+  }
+
+  function tasdiqlash(hujjat: InventarizatsiyaHujjat) {
+    const yangilangan: InventarizatsiyaHujjat = {
+      ...hujjat,
+      holati: "tasdiqlangan",
+      tarix: tarixgaQoshish(hujjat.tarix, "Hujjat tasdiqlandi"),
+    };
+    setRoyxat((oldRoyxat) => oldRoyxat.map((item) => (item.id === hujjat.id ? yangilangan : item)));
+    setKorishHujjat(yangilangan);
+  }
+
+  function katakQiymati(hujjat: InventarizatsiyaHujjat, kalit: UstunKaliti) {
     switch (kalit) {
-      case "raqami":
-        return <span className="font-black text-gray-950">{hujjat.raqami}</span>;
-      case "sana":
-        return <span className="text-gray-500">{sana(hujjat.sana)}</span>;
-      case "kontragent":
-        return <span className="text-gray-700">{hujjat.kontragentNomi || "—"}</span>;
-      case "ombor":
-        return <span className="text-gray-700">{omborNomi(hujjat.omborId)}</span>;
-      case "omborTo":
-        return <span className="text-gray-700">{hujjat.omborIdTo ? omborNomi(hujjat.omborIdTo) : "—"}</span>;
-      case "summa":
-        return <span className="font-bold text-gray-700">{pul(hujjatJami(hujjat))}</span>;
+      case "nomi":
+        return <span className="font-black text-gray-950">{hujjat.nomi}</span>;
+      case "masulShaxs":
+        return <span className="text-gray-700">{hujjat.masulShaxs || "—"}</span>;
       case "holati":
         return (
           <span
@@ -306,6 +313,16 @@ export default function HujjatlarRoyxati({
             {holatNomi(hujjat.holati)}
           </span>
         );
+      case "yaratilganSana":
+        return <span className="text-gray-500">{hujjat.yaratilganSana ? sana(hujjat.yaratilganSana) : "—"}</span>;
+      case "ozgartirilganSana":
+        return <span className="text-gray-500">{hujjat.ozgartirilganSana ? sana(hujjat.ozgartirilganSana) : "—"}</span>;
+      case "ozgartirganShaxs":
+        return <span className="text-gray-700">{hujjat.ozgartirganShaxs || "—"}</span>;
+      case "omborId":
+        return <span className="text-gray-700">{omborNomi(mockOmborlar, hujjat.omborId)}</span>;
+      case "summa":
+        return <span className="font-bold text-gray-700">{pul(inventarizatsiyaJami(hujjat))}</span>;
       default:
         return null;
     }
@@ -316,8 +333,8 @@ export default function HujjatlarRoyxati({
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-500">Ombor uchoti</p>
-          <h1 className="mt-1 text-3xl font-black text-gray-950">{sarlavha}</h1>
-          <p className="mt-1 text-sm text-gray-500">{tavsif}</p>
+          <h1 className="mt-1 text-3xl font-black text-gray-950">Inventarizatsiya</h1>
+          <p className="mt-1 text-sm text-gray-500">Ombordagi haqiqiy qoldiqlarni tekshirish hujjatlari.</p>
         </div>
         <button
           onClick={() => modalniOchish()}
@@ -333,7 +350,7 @@ export default function HujjatlarRoyxati({
         <input
           value={qidiruv}
           onChange={(event) => setQidiruv(event.target.value)}
-          placeholder="Raqami yoki kontragent bo'yicha qidirish"
+          placeholder="Nomi, mas'ul shaxs, sana yoki holati bo'yicha qidirish"
           className="h-11 w-full rounded-2xl border border-gray-200 bg-white pl-10 pr-4 text-sm outline-none focus:border-orange-400"
         />
       </div>
@@ -379,7 +396,7 @@ export default function HujjatlarRoyxati({
                 {korinadiganRoyxat.map((hujjat) => (
                   <tr
                     key={hujjat.id}
-                    onClick={() => modalniOchish(hujjat)}
+                    onClick={() => setKorishHujjat(hujjat)}
                     style={{ height: SATR_BALANDLIK_PX }}
                     className="cursor-pointer hover:bg-orange-50/30"
                   >
@@ -471,24 +488,35 @@ export default function HujjatlarRoyxati({
         {korinadiganRoyxat.length === 0 && (
           <div className="p-14 text-center">
             <FileText className="mx-auto text-orange-200" size={42} />
-            <p className="mt-3 font-bold text-gray-500">Hujjat topilmadi</p>
-            <p className="mt-1 text-sm text-gray-400">"Yaratish" tugmasi orqali yangi hujjat qo'shing.</p>
+            <p className="mt-3 font-bold text-gray-500">Inventarizatsiya hujjati topilmadi</p>
+            <p className="mt-1 text-sm text-gray-400">"Yaratish" tugmasi orqali yangi inventarizatsiya qo'shing.</p>
           </div>
         )}
       </div>
 
       {modalOchiq && (
-        <HujjatModal
-          sarlavha={tahrirHujjat ? `${sarlavha}ni tahrirlash` : `Yangi ${sarlavha.toLowerCase()}`}
-          kontragentYorligi={kontragentYorligi}
-          omborYorligi={omborYorligi}
-          ikkinchiOmborYorligi={ikkinchiOmborYorligi}
-          omborlar={mockOmborlar}
+        <InventarizatsiyaModal
           mahsulotlar={mockMahsulotlar}
+          omborlar={mockOmborlar}
           boshlangich={tahrirHujjat}
-          keyingiRaqam={keyingiRaqam}
+          keyingiNomi={keyingiNomi}
           onYopish={() => setModalOchiq(false)}
           onSaqlash={saqlash}
+        />
+      )}
+
+      {korishHujjat && !modalOchiq && (
+        <InventarizatsiyaKorishModal
+          hujjat={korishHujjat}
+          mahsulotlar={mockMahsulotlar}
+          omborlar={mockOmborlar}
+          onYopish={() => setKorishHujjat(null)}
+          onTahrirlash={() => {
+            modalniOchish(korishHujjat);
+            setKorishHujjat(null);
+          }}
+          onBekorQilish={() => bekorQilish(korishHujjat)}
+          onTasdiqlash={() => tasdiqlash(korishHujjat)}
         />
       )}
 
@@ -502,7 +530,7 @@ export default function HujjatlarRoyxati({
               Hujjatni o'chirasizmi?
             </h3>
             <p className="mt-1.5 text-center text-sm text-gray-500">
-              "{ochirilayotganHujjat.raqami}" hujjati butunlay o'chiriladi. Bu amalni qaytarib bo'lmaydi.
+              "{ochirilayotganHujjat.nomi}" hujjati butunlay o'chiriladi. Bu amalni qaytarib bo'lmaydi.
             </p>
             <div className="mt-6 flex gap-3">
               <button
@@ -531,7 +559,7 @@ export default function HujjatlarRoyxati({
           >
             <p className="px-3 py-2 text-xs font-black uppercase tracking-wide text-gray-400">Ko'rinadigan ustunlar</p>
             <div className="max-h-80 overflow-y-auto">
-              {barchaUstunlar.map((ustun) => {
+              {BARCHA_USTUNLAR.map((ustun) => {
                 const tanlangan = tanlanganUstunlar.includes(ustun.kalit);
                 return (
                   <label

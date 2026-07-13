@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight, Edit3, FileText, Plus, Search, Settings, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, Plus, Search, Settings, Trash2 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import KirimKorishModal from "./KirimKorishModal";
 import KirimModal from "./KirimModal";
@@ -36,6 +36,8 @@ const SAQLASH_KALITI = "omboruchot-kirim-ustunlar";
 const AMALLAR_KENGLIK_PX = 96;
 const BOSHLANGICH_KENGLIK_PX = 170;
 const ENG_KICHIK_KENGLIK_PX = 70;
+const SARLAVHA_BALANDLIK_PX = 44;
+const SATR_BALANDLIK_PX = 60;
 
 export default function KirimJadvali() {
   const [royxat, setRoyxat] = useState<KirimHujjat[]>(boshlangichKirimlar);
@@ -359,94 +361,105 @@ export default function KirimJadvali() {
       </div>
 
       <div className="overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-sm">
-        <div
-          ref={skrollRef}
-          onScroll={skrollHolatiniYangilash}
-          className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-        <table
-          ref={jadvalRef}
-          style={{ width: `${kengliklar.reduce((jami, kenglik) => jami + kenglik, 0) + AMALLAR_KENGLIK_PX}px` }}
-          className="table-fixed text-sm"
-        >
-          <colgroup>
-            {kengliklar.map((kenglik, index) => (
-              <col key={korinadiganUstunlar[index].kalit} style={{ width: `${kenglik}px` }} />
-            ))}
-            <col style={{ width: `${AMALLAR_KENGLIK_PX}px` }} />
-          </colgroup>
-          <thead className="bg-orange-50/60 text-left text-xs font-bold uppercase tracking-wide text-orange-500">
-            <tr>
-              {korinadiganUstunlar.map((ustun, index) => (
-                <th key={ustun.kalit} className="relative truncate px-5 py-3">
-                  {ustun.nom}
-                  {index < korinadiganUstunlar.length - 1 && (
-                    <div
-                      onMouseDown={(event) => tortishniBoshlash(index, event)}
-                      className="absolute right-0 top-0 h-full w-2 cursor-col-resize select-none after:absolute after:right-[3px] after:top-1/2 after:h-4 after:w-[2px] after:-translate-y-1/2 after:rounded-full after:bg-orange-200 hover:after:bg-orange-400"
-                    />
-                  )}
-                </th>
-              ))}
-              <th className="relative px-5 py-3">
-                <div className="flex justify-end">
-                  <button
-                    ref={sozlamaTugmaRef}
-                    onClick={() => setSozlamaOchiq((old) => !old)}
-                    title="Ustunlarni sozlash"
-                    aria-label="Ustunlarni sozlash"
-                    className={`inline-flex h-7 w-7 items-center justify-center rounded-lg transition ${
-                      sozlamaOchiq ? "bg-orange-100 text-orange-600" : "text-orange-400 hover:bg-orange-100 hover:text-orange-600"
-                    }`}
-                  >
-                    <Settings size={16} />
-                  </button>
-                </div>
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {korinadiganRoyxat.map((hujjat) => (
-              <tr
-                key={hujjat.id}
-                onClick={() => setKorishHujjat(hujjat)}
-                className="cursor-pointer hover:bg-orange-50/30"
-              >
-                {korinadiganUstunlar.map((ustun) => (
-                  <td key={ustun.kalit} className="truncate px-5 py-3">
-                    {katakQiymati(hujjat, ustun.kalit)}
-                  </td>
+        <div className="flex">
+          <div
+            ref={skrollRef}
+            onScroll={skrollHolatiniYangilash}
+            className="min-w-0 flex-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            <table
+              ref={jadvalRef}
+              style={{
+                width: "100%",
+                minWidth: `${kengliklar.reduce((jami, kenglik) => jami + kenglik, 0)}px`,
+              }}
+              className="table-fixed text-sm"
+            >
+              <colgroup>
+                {kengliklar.map((kenglik, index) => (
+                  <col key={korinadiganUstunlar[index].kalit} style={{ width: `${kenglik}px` }} />
                 ))}
-                <td className="px-5 py-3">
-                  <div className="flex justify-end gap-2">
-                    {hujjat.holati !== "tasdiqlangan" && (
+                <col />
+              </colgroup>
+              <thead className="bg-orange-50/60 text-left text-xs font-bold uppercase tracking-wide text-orange-500">
+                <tr style={{ height: SARLAVHA_BALANDLIK_PX }}>
+                  {korinadiganUstunlar.map((ustun, index) => (
+                    <th key={ustun.kalit} className="relative truncate px-5 py-3">
+                      {ustun.nom}
+                      {index < korinadiganUstunlar.length - 1 && (
+                        <div
+                          onMouseDown={(event) => tortishniBoshlash(index, event)}
+                          className="absolute right-0 top-0 h-full w-2 cursor-col-resize select-none after:absolute after:right-[3px] after:top-1/2 after:h-4 after:w-[2px] after:-translate-y-1/2 after:rounded-full after:bg-orange-200 hover:after:bg-orange-400"
+                        />
+                      )}
+                    </th>
+                  ))}
+                  <th />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {korinadiganRoyxat.map((hujjat) => (
+                  <tr
+                    key={hujjat.id}
+                    onClick={() => setKorishHujjat(hujjat)}
+                    style={{ height: SATR_BALANDLIK_PX }}
+                    className="cursor-pointer hover:bg-orange-50/30"
+                  >
+                    {korinadiganUstunlar.map((ustun) => (
+                      <td key={ustun.kalit} className="truncate px-5 py-3">
+                        {katakQiymati(hujjat, ustun.kalit)}
+                      </td>
+                    ))}
+                    <td />
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div
+            className="shrink-0"
+            style={{ width: AMALLAR_KENGLIK_PX }}
+          >
+            <table className="w-full table-fixed text-sm">
+              <thead className="bg-orange-50/60">
+                <tr style={{ height: SARLAVHA_BALANDLIK_PX }}>
+                  <th className="relative px-5 py-2">
+                    <div className="flex justify-end">
                       <button
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          modalniOchish(hujjat);
-                        }}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-600"
-                        aria-label="Tahrirlash"
+                        ref={sozlamaTugmaRef}
+                        onClick={() => setSozlamaOchiq((old) => !old)}
+                        title="Ustunlarni sozlash"
+                        aria-label="Ustunlarni sozlash"
+                        className={`inline-flex h-7 w-7 items-center justify-center rounded-lg transition ${
+                          sozlamaOchiq ? "bg-orange-100 text-orange-600" : "text-orange-400 hover:bg-orange-100 hover:text-orange-600"
+                        }`}
                       >
-                        <Edit3 size={15} />
+                        <Settings size={16} />
                       </button>
-                    )}
-                    <button
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        ochirishSorash(hujjat);
-                      }}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500"
-                      aria-label="O'chirish"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {korinadiganRoyxat.map((hujjat) => (
+                  <tr key={hujjat.id} style={{ height: SATR_BALANDLIK_PX }}>
+                    <td className="px-5 py-3">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => ochirishSorash(hujjat)}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500"
+                          aria-label="O'chirish"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {skrollHolati.korinadi && (
