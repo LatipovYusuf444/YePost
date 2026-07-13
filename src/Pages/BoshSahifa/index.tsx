@@ -14,7 +14,7 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
-
+// sdajdhjsagdhjagfhghjaskfhksajhfj
 import AppModal from "@/Components/common/AppModal";
 import {
   mijozlarRoyxatiniOlish,
