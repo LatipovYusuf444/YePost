@@ -41,8 +41,8 @@ const quickDiscounts = [15, 30, 50, 75];
 const paymentTypes: PaymentType[] = [
   { label: "Payme", apiTuri: "CARD" },
   { label: "Click", apiTuri: "CARD" },
-  { label: "Uzum", apiTuri: "CARD" },
-  { label: "Paynet", apiTuri: "CARD" },
+  { label: "Naqd", apiTuri: "CASH" },
+  { label: "Bank", apiTuri: "BANK" },
 ];
 const customerDetailTabs: CustomerDetailTab[] = ["Asosiyisi", "Savatcha", "Tarix"];
 const customerActivityTabs: CustomerActivityTab[] = [
@@ -102,6 +102,8 @@ export default function BoshSahifa() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [tolovModalOchiq, setTolovModalOchiq] = useState(false);
+  const [tolovSummasi, setTolovSummasi] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -132,6 +134,11 @@ export default function BoshSahifa() {
   useEffect(() => {
     updatePriceType(narxTuri);
   }, [narxTuri, updatePriceType]);
+
+  useEffect(() => {
+    const cartWarehouseId = cart.find((item) => item.warehouseId)?.warehouseId;
+    if (cartWarehouseId && cartWarehouseId !== warehouseId) setWarehouseId(cartWarehouseId);
+  }, [cart, warehouseId]);
 
   useEffect(() => {
     if (selectedCustomerModal) document.body.style.overflow = "hidden";
@@ -175,13 +182,28 @@ export default function BoshSahifa() {
     setMessage(null);
   }
 
-  async function handlePay() {
+  function handlePay() {
+    setMessage(null);
     if (!warehouseId) {
       setMessage({ type: "error", text: "Sotuv uchun ombor topilmadi" });
       return;
     }
     if (cart.length === 0) {
       setMessage({ type: "error", text: "Savatcha bo'sh" });
+      return;
+    }
+    if (cart.some((item) => item.warehouseId && item.warehouseId !== warehouseId)) {
+      setMessage({ type: "error", text: "Savatchadagi mahsulotlar boshqa omborga tegishli. Omborni tekshiring." });
+      return;
+    }
+    setTolovSummasi(String(payableTotal));
+    setTolovModalOchiq(true);
+  }
+
+  async function tolovniTasdiqlash() {
+    const qabulQilinadiganSumma = readNumber(tolovSummasi);
+    if (qabulQilinadiganSumma <= 0 || qabulQilinadiganSumma > payableTotal) {
+      setMessage({ type: "error", text: `To'lov summasi 1 dan ${formatSumma(payableTotal)} gacha bo'lishi kerak` });
       return;
     }
 
@@ -212,11 +234,12 @@ export default function BoshSahifa() {
         saleType: mijozTuri === "doimiy" ? "CLIENT" : "QUICK",
         note: [customerName ? `Mijoz: ${customerName}` : "", note].filter(Boolean).join(" | ") || undefined,
         items,
-        payments: payableTotal > 0 ? [{ paymentType: selectedPayment.apiTuri, amount: payableTotal }] : undefined,
+        payments: [{ paymentType: selectedPayment.apiTuri, amount: qabulQilinadiganSumma }],
       });
       await sotuvniTasdiqlash(sale.id);
       if (warehouseId) await omborQoldiqlariniOlish(warehouseId);
       clearCart();
+      setTolovModalOchiq(false);
       setMessage({ type: "success", text: "To'lov muvaffaqiyatli amalga oshirildi" });
     } catch (error) {
       setMessage({ type: "error", text: xatoMatni(error, "Sotuvni yakunlab bo'lmadi") });
@@ -839,6 +862,39 @@ export default function BoshSahifa() {
           </section>
         </AppModal>
       )}
+      {tolovModalOchiq && (
+        <AppModal className="bg-slate-950/60 backdrop-blur-md">
+          <section className="max-h-[94vh] w-full max-w-6xl overflow-y-auto rounded-[38px] border border-orange-100 bg-gradient-to-br from-[#fff8ef] via-white to-[#ffe9d4] shadow-[0_35px_120px_rgba(15,23,42,.38)]">
+            <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-orange-100 bg-white/85 px-9 py-7 backdrop-blur-xl">
+              <div><p className="text-xs font-black uppercase tracking-[.22em] text-orange-500">To'lovni tasdiqlash</p><h2 className="mt-1 text-2xl font-black text-slate-950">Sotuv uchun to'lov</h2><p className="mt-1 text-sm font-semibold text-slate-400">To'lov tasdiqlangandan keyin sotuv backendda yakunlanadi.</p></div>
+              <button type="button" onClick={() => setTolovModalOchiq(false)} disabled={saving} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm ring-1 ring-orange-100 hover:bg-orange-500 hover:text-white disabled:opacity-50"><X size={20}/></button>
+            </header>
+
+            <div className="grid gap-8 p-9 lg:grid-cols-[minmax(0,1fr)_400px]">
+              <div>
+                <div className="mb-4 flex items-center justify-between"><h3 className="font-black text-slate-900">Mahsulotlar</h3><span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-black text-orange-600">{cart.reduce((sum, item) => sum + item.soni, 0)} dona</span></div>
+                <div className="max-h-[480px] space-y-3 overflow-y-auto pr-1">
+                  {cart.map((item) => <article key={item.id} className="flex items-center justify-between gap-5 rounded-[24px] border border-orange-100 bg-white p-5 shadow-[0_12px_35px_rgba(249,115,22,.07)]"><div className="min-w-0"><p className="truncate text-base font-black text-slate-900">{item.nom}</p><p className="mt-1.5 text-sm font-semibold text-slate-400">{item.soni} × {formatSumma(item.narx)} · {item.warehouseName || "Tanlangan ombor"}</p></div><p className="shrink-0 text-base font-black text-orange-600">{formatSumma(item.soni * item.narx)}</p></article>)}
+                </div>
+                <div className="mt-5 grid grid-cols-3 gap-3 text-sm"><Summary label="Oraliq jami" value={formatSumma(total)}/><Summary label="Chegirma" value={formatSumma(discountSum)}/><Summary label="To'lanadi" value={formatSumma(payableTotal)} accent/></div>
+              </div>
+
+              <aside className="flex flex-col rounded-[30px] border border-orange-100 bg-white p-7 shadow-[0_18px_50px_rgba(249,115,22,.10)]">
+                <div className="rounded-[24px] bg-[#fff8ef] p-5 ring-1 ring-orange-100"><p className="text-xs font-black uppercase tracking-wide text-slate-400">To'lanadigan jami</p><p className="mt-2 text-3xl font-black text-slate-950">{formatSumma(payableTotal)}</p><p className="mt-2 text-sm font-bold text-orange-500">Tanlangan: {paymentType}</p></div>
+                <label className="mt-6 block"><span className="text-xs font-black uppercase tracking-wide text-slate-400">Qabul qilinadigan summa</span><div className="mt-2 flex h-16 items-center rounded-2xl border border-orange-200 bg-[#fffaf5] px-5 focus-within:ring-4 focus-within:ring-orange-50"><input type="number" min="1" max={payableTotal} value={tolovSummasi} onChange={(e) => setTolovSummasi(e.target.value)} className="min-w-0 flex-1 bg-transparent text-2xl font-black text-slate-900 outline-none"/><span className="text-sm font-black text-orange-500">UZS</span></div></label>
+                <div className="mt-4 flex gap-3"><button type="button" onClick={() => setTolovSummasi(String(payableTotal))} className="flex-1 rounded-2xl bg-orange-50 px-3 py-3 text-xs font-black text-orange-600">To'liq summa</button><button type="button" onClick={() => setTolovSummasi(String(Math.round(payableTotal / 2)))} className="flex-1 rounded-2xl bg-slate-100 px-3 py-3 text-xs font-black text-slate-600">50%</button></div>
+                {message?.type === "error" && <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 p-3 text-xs font-bold leading-5 text-red-600">{message.text}</div>}
+                <button type="button" onClick={() => void tolovniTasdiqlash()} disabled={saving || readNumber(tolovSummasi) <= 0 || readNumber(tolovSummasi) > payableTotal} className="mt-auto flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 py-4 text-sm font-black text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none">{saving && <LoaderCircle size={17} className="animate-spin"/>} To'lovni tasdiqlash</button>
+                <p className="mt-3 text-center text-xs font-semibold leading-5 text-slate-400">Tasdiqlashda `/sales` yaratiladi va `/sales/id/confirm` orqali ombor qoldig'i kamayadi.</p>
+              </aside>
+            </div>
+          </section>
+        </AppModal>
+      )}
     </div>
   );
+}
+
+function Summary({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
+  return <div className={`rounded-2xl p-3 ${accent ? "bg-orange-500 text-white" : "bg-white text-slate-700 ring-1 ring-orange-100"}`}><p className={`text-[10px] font-black uppercase ${accent ? "text-white/70" : "text-slate-400"}`}>{label}</p><p className="mt-1 text-sm font-black">{value}</p></div>;
 }

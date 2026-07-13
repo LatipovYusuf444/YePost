@@ -10,6 +10,7 @@ export type JoriyFoydalanuvchi = {
   isActive?: boolean;
   telegramId?: string | null;
   isStaff?: boolean;
+  avatarUrl?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };

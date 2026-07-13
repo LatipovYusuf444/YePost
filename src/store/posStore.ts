@@ -9,6 +9,8 @@ export type CartItem = {
   chakanaNarx: number;
   ulgurjiNarx: number;
   qoldiq: number;
+  warehouseId?: string;
+  warehouseName?: string;
   soni: number;
 };
 

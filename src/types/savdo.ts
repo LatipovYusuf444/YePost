@@ -138,6 +138,7 @@ export type Qaytarish = {
   totalAmount?: number | string;
   restock?: boolean;
   refundMethod?: QaytarishToloviniQaytarishUsuli | string;
+  refundAmount?: number | string;
   createdAt?: string;
   updatedAt?: string;
   sale?: Sotuv;

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "motion/react";
-import { Bell, CalendarDays, ChevronDown, LoaderCircle, LogOut, PackagePlus, Plus, RefreshCw, Search, Settings, UserRound, X, Zap } from "lucide-react";
+import { Bell, CalendarDays, ChevronDown, LoaderCircle, LogOut, Minus, PackagePlus, Plus, RefreshCw, Search, Settings, ShoppingCart, UserRound, X, Zap } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { crmApi } from "@/api/crmApi";
 import {
@@ -138,7 +138,7 @@ export default function YuqoriPanel() {
         <button
           type="button"
           onClick={() => setMahsulotModalOchiq(true)}
-          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-orange-100 bg-orange-500 text-white shadow-sm shadow-orange-100 transition hover:bg-orange-600"
+          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-950 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600 hover:shadow-md active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
           aria-label="Mahsulot qo'shish"
         >
           <PackagePlus size={20} />
@@ -295,6 +295,7 @@ function qoldiqBirlashtirish(omborQoldiq: QoldiqTanlovi[], katalog: QoldiqTanlov
 
 function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
   const addToCart = usePosStore((state) => state.addToCart);
+  const cart = usePosStore((state) => state.cart);
   const [omborlar, setOmborlar] = useState<OmborTanlovi[]>([]);
   const [warehouseId, setWarehouseId] = useState("");
   const [mahsulotlar, setMahsulotlar] = useState<QoldiqTanlovi[]>([]);
@@ -304,6 +305,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
   const [xabar, setXabar] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [omborDropdownOchiq, setOmborDropdownOchiq] = useState(false);
+  const [tanlanganMiqdorlar, setTanlanganMiqdorlar] = useState<Record<string, number>>({});
 
   const tanlanganOmbor = omborlar.find((ombor) => String(ombor.id) === warehouseId);
 
@@ -341,14 +343,19 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
 
       if (!active) return;
 
-      const stock = stockResult.status === "fulfilled" ? stockResult.value : [];
+      const stock = stockResult.status === "fulfilled"
+        ? stockResult.value.filter((item) => {
+            const itemWarehouseId = item.warehouseId ?? item.warehouse?.id;
+            return !warehouseId || !itemWarehouseId || String(itemWarehouseId) === warehouseId;
+          })
+        : [];
       const catalog = catalogResult.status === "fulfilled" ? catalogResult.value : [];
 
       setMahsulotlar(qoldiqBirlashtirish(stock, catalog));
       if (stockResult.status === "rejected" && catalogResult.status === "rejected") {
         setXabar("Mahsulot qoldiqlari olinmadi");
       } else if (stockResult.status === "rejected") {
-        setXabar("Ombor qoldig'i olinmadi, katalogdagi mahsulotlar ko'rsatildi");
+        setXabar("Tanlangan ombor qoldig'i backenddan olinmadi");
       } else if (catalogResult.status === "rejected") {
         setXabar("Katalog olinmadi, ombordagi mavjud qoldiqlar ko'rsatildi");
       }
@@ -366,6 +373,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
     const query = qidiruv.trim().toLowerCase();
     return mahsulotlar
       .filter((item) => {
+        if (qoldiqMiqdori(item) <= 0) return false;
         if (!query) return true;
         return [
           qoldiqNomi(item),
@@ -384,7 +392,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
       });
   }, [mahsulotlar, qidiruv]);
 
-  function addProduct(item: QoldiqTanlovi) {
+  function miqdorniYangilash(item: QoldiqTanlovi, ozgarish: number) {
     const qoldiq = qoldiqMiqdori(item);
     const narx = qoldiqNarxi(item, narxTuri);
 
@@ -398,15 +406,46 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
       return;
     }
 
-    addToCart({
-      id: item.modificationId,
-      modificationId: item.modificationId,
-      nom: qoldiqNomi(item),
-      narx,
-      chakanaNarx: qoldiqNarxi(item, "chakana"),
-      ulgurjiNarx: qoldiqNarxi(item, "ulgurji"),
-      qoldiq,
+    setTanlanganMiqdorlar((joriy) => {
+      const yangi = Math.min(Math.max((joriy[item.modificationId] ?? 0) + ozgarish, 0), qoldiq);
+      const keyingi = { ...joriy };
+      if (yangi === 0) delete keyingi[item.modificationId];
+      else keyingi[item.modificationId] = yangi;
+      return keyingi;
     });
+  }
+
+  const tanlanganlar = mahsulotlar.filter((item) => (tanlanganMiqdorlar[item.modificationId] ?? 0) > 0);
+  const tanlanganSoni = Object.values(tanlanganMiqdorlar).reduce((sum, quantity) => sum + quantity, 0);
+  const tanlanganJami = tanlanganlar.reduce(
+    (sum, item) => sum + (tanlanganMiqdorlar[item.modificationId] ?? 0) * qoldiqNarxi(item, narxTuri),
+    0
+  );
+
+  function savatchagaQoshish() {
+    if (tanlanganlar.length === 0) return;
+    const boshqaOmborBor = cart.some(
+      (item) => item.warehouseId && String(item.warehouseId) !== warehouseId
+    );
+    if (boshqaOmborBor) {
+      setXabar("Savatchada boshqa ombor mahsuloti bor. Bitta sotuv faqat bitta ombordan qilinadi.");
+      return;
+    }
+    tanlanganlar.forEach((item) => {
+      addToCart({
+        id: item.modificationId,
+        modificationId: item.modificationId,
+        nom: qoldiqNomi(item),
+        narx: qoldiqNarxi(item, narxTuri),
+        chakanaNarx: qoldiqNarxi(item, "chakana"),
+        ulgurjiNarx: qoldiqNarxi(item, "ulgurji"),
+        qoldiq: qoldiqMiqdori(item),
+        warehouseId,
+        warehouseName: tanlanganOmbor ? nomniOlish(tanlanganOmbor) : undefined,
+      }, tanlanganMiqdorlar[item.modificationId]);
+    });
+    setTanlanganMiqdorlar({});
+    onClose();
   }
 
   return createPortal(
@@ -505,6 +544,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
                         type="button"
                         onClick={() => {
                           setWarehouseId(String(ombor.id));
+                          setTanlanganMiqdorlar({});
                           setOmborDropdownOchiq(false);
                         }}
                         className={`flex w-full items-center justify-between rounded-xl px-3 py-3 text-left text-sm font-bold transition ${
@@ -557,7 +597,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
             </div>
           ) : filteredProducts.length === 0 ? (
             <div className="flex h-full min-h-[360px] items-center justify-center rounded-[26px] border border-dashed border-slate-200 text-center text-sm font-semibold text-slate-400">
-              Mahsulot topilmadi
+              Tanlangan omborda sotuv uchun mavjud mahsulot yo'q
             </div>
           ) : (
             <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
@@ -582,15 +622,17 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
                           {item.modification?.barcode || item.modification?.article || "Kod kiritilmagan"}
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => addProduct(item)}
-                        disabled={!sotishMumkin}
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-sm shadow-orange-100 transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
-                        aria-label="Savatchaga qo'shish"
-                      >
-                        <Plus size={19} />
-                      </button>
+                      <div className={`flex shrink-0 items-center rounded-2xl p-1 ${tanlanganMiqdorlar[item.modificationId] ? "bg-orange-500 text-white shadow-lg shadow-orange-100" : "bg-slate-100 text-slate-500"}`}>
+                        {tanlanganMiqdorlar[item.modificationId] ? (
+                          <>
+                            <button type="button" onClick={() => miqdorniYangilash(item, -1)} className="flex h-8 w-8 items-center justify-center rounded-xl hover:bg-white/15" aria-label="Kamaytirish"><Minus size={16}/></button>
+                            <span className="min-w-9 text-center text-sm font-black">{tanlanganMiqdorlar[item.modificationId]}</span>
+                            <button type="button" onClick={() => miqdorniYangilash(item, 1)} disabled={!sotishMumkin || tanlanganMiqdorlar[item.modificationId] >= qoldiq} className="flex h-8 w-8 items-center justify-center rounded-xl hover:bg-white/15 disabled:opacity-40" aria-label="Ko'paytirish"><Plus size={16}/></button>
+                          </>
+                        ) : (
+                          <button type="button" onClick={() => miqdorniYangilash(item, 1)} disabled={!sotishMumkin} className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500 text-white disabled:bg-slate-200 disabled:text-slate-400" aria-label="Tanlash"><Plus size={19}/></button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="mt-4 grid grid-cols-2 gap-2">
@@ -617,6 +659,13 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
         </div>
+        <footer className="flex flex-col gap-4 border-t border-orange-100 bg-[#fff8f1] px-7 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 text-orange-600"><ShoppingCart size={22}/></span>
+            <div><p className="text-xs font-black uppercase tracking-wide text-slate-400">Tanlangan mahsulotlar</p><p className="mt-1 font-black text-slate-900">{tanlanganSoni} dona · {formatSumma(tanlanganJami)}</p></div>
+          </div>
+          <button type="button" onClick={savatchagaQoshish} disabled={tanlanganSoni === 0} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-7 text-sm font-black text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"><ShoppingCart size={18}/> Savatchaga qo'shish {tanlanganSoni > 0 ? `(${tanlanganSoni})` : ""}</button>
+        </footer>
       </section>
       </div>
     </div>,
@@ -683,7 +732,7 @@ function BildirishnomaTugmasi({
           setOchiq(!ochiq);
           if (!ochiq) onReload();
         }}
-        className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-orange-100 bg-white/60 text-gray-700"
+        className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-orange-100 bg-white/60 text-gray-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600 hover:shadow-md active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
         aria-label="Bildirishnomalar"
       >
         <Bell size={18} />
@@ -806,8 +855,8 @@ function ProfilTugmasi({
   }, [ochiq]);
 
   const ism = profil?.fullName?.trim() || profil?.username || "";
-  const bosh = ism.slice(0, 1).toUpperCase() || "?";
   const rolNomi = profil ? rolMatni[profil.role as FoydalanuvchiRoli] ?? profil.role : "";
+  const rasmUrl = profil?.avatarUrl || "";
 
   return (
     <div className="relative">
@@ -815,19 +864,14 @@ function ProfilTugmasi({
         ref={buttonRef}
         type="button"
         onClick={() => setOchiq(!ochiq)}
-        className="flex h-10 items-center gap-2 rounded-2xl border border-orange-100 bg-white/60 py-1 pl-1 pr-3 transition hover:border-orange-200 hover:bg-white"
+        className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-white/60 text-gray-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600 hover:shadow-md active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
         aria-label="Profil menyusi"
       >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-orange-400 to-orange-600 text-xs font-black text-white shadow-sm">
-          {bosh}
-        </span>
-        <span className="hidden max-w-[120px] truncate text-sm font-bold text-gray-700 sm:block">
-          {ism || "Foydalanuvchi"}
-        </span>
-        <ChevronDown
-          size={14}
-          className={`hidden shrink-0 text-gray-400 transition sm:block ${ochiq ? "rotate-180" : ""}`}
-        />
+        {rasmUrl ? (
+          <img src={rasmUrl} alt={ism || "Profil"} className="h-full w-full object-cover" />
+        ) : (
+          <UserRound size={18} />
+        )}
       </button>
 
       {ochiq &&
@@ -843,13 +887,17 @@ function ProfilTugmasi({
               className="fixed z-[200] w-[260px] overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-[0_24px_90px_rgba(15,23,42,.22)]"
               style={{ top: position.top, right: position.right }}
             >
-              <div className="flex items-center gap-3 border-b border-orange-100 bg-orange-50/60 p-4">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-orange-400 to-orange-600 text-base font-black text-white shadow-sm">
-                  {bosh}
+              <div className="flex items-center gap-3 border-b border-gray-100 bg-gray-50/70 p-4">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm">
+                  {rasmUrl ? (
+                    <img src={rasmUrl} alt={ism || "Profil"} className="h-full w-full object-cover" />
+                  ) : (
+                    <UserRound size={20} />
+                  )}
                 </span>
                 <div className="min-w-0">
                   <p className="truncate font-black text-slate-900">{ism || "Foydalanuvchi"}</p>
-                  <p className="truncate text-xs font-bold text-orange-600">{rolNomi || "..."}</p>
+                  <p className="truncate text-xs font-bold text-gray-500">{rolNomi || "..."}</p>
                 </div>
               </div>
               <div className="p-2">
