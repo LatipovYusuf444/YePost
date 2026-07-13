@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type SavdoSelectOption = {
@@ -30,6 +30,8 @@ type SavdoSelectProps = {
   portal?: boolean;
   selectedLabel?: ReactNode;
   hideChevron?: boolean;
+  qidirish?: boolean;
+  qidiruvPlaceholder?: string;
 };
 
 function labelToText(label: ReactNode) {
@@ -49,13 +51,23 @@ export default function SavdoSelect({
   portal = false,
   selectedLabel,
   hideChevron = false,
+  qidirish = false,
+  qidiruvPlaceholder = "Qidirish...",
 }: SavdoSelectProps) {
   const [open, setOpen] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({});
+  const [qidiruvMatni, setQidiruvMatni] = useState("");
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const qidiruvInputRef = useRef<HTMLInputElement | null>(null);
   const selected = options.find((option) => option.value === value);
+  const korinadiganOptions = qidirish
+    ? options.filter((option) => {
+        const matn = (option.searchLabel ?? labelToText(option.label)).toLowerCase();
+        return matn.includes(qidiruvMatni.trim().toLowerCase());
+      })
+    : options;
 
   const updateDropdownPosition = useCallback(() => {
     if (!portal || !buttonRef.current) return;
@@ -112,23 +124,46 @@ export default function SavdoSelect({
     };
   }, [open, portal, updateDropdownPosition]);
 
+  useEffect(() => {
+    if (open && qidirish) {
+      setQidiruvMatni("");
+      window.requestAnimationFrame(() => qidiruvInputRef.current?.focus());
+    }
+  }, [open, qidirish]);
+
   const dropdown = open && (
     <div
       ref={dropdownRef}
       style={portal ? dropdownStyle : undefined}
       className={cn(
         portal
-          ? "z-[100010] overflow-y-auto rounded-xl border border-orange-100 bg-white p-1 shadow-[0_18px_44px_rgba(15,23,42,.18)] ring-1 ring-white/70"
-          : "absolute left-0 right-0 z-[80] mt-2 max-h-60 overflow-y-auto rounded-xl border border-orange-100 bg-white p-1 shadow-[0_18px_44px_rgba(15,23,42,.14)] ring-1 ring-white/70",
+          ? "z-[100010] flex flex-col overflow-hidden rounded-xl border border-orange-100 bg-white shadow-[0_18px_44px_rgba(15,23,42,.18)] ring-1 ring-white/70"
+          : "absolute left-0 right-0 z-[80] mt-2 flex max-h-60 flex-col overflow-hidden rounded-xl border border-orange-100 bg-white shadow-[0_18px_44px_rgba(15,23,42,.14)] ring-1 ring-white/70",
         dropdownClassName
       )}
     >
-      {options.length === 0 ? (
-        <div className="px-4 py-3 text-sm font-semibold text-slate-400">
-          Ma'lumot topilmadi
+      {qidirish && (
+        <div className="shrink-0 border-b border-orange-100 p-1.5">
+          <div className="relative">
+            <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              ref={qidiruvInputRef}
+              value={qidiruvMatni}
+              onChange={(event) => setQidiruvMatni(event.target.value)}
+              onKeyDown={(event) => event.stopPropagation()}
+              placeholder={qidiruvPlaceholder}
+              className="h-8 w-full rounded-lg border border-slate-200 bg-white pl-7 pr-2 text-sm font-semibold outline-none focus:border-orange-400"
+            />
+          </div>
         </div>
-      ) : (
-        options.map((option) => {
+      )}
+      <div className="overflow-y-auto p-1">
+        {korinadiganOptions.length === 0 ? (
+          <div className="px-4 py-3 text-sm font-semibold text-slate-400">
+            Ma'lumot topilmadi
+          </div>
+        ) : (
+          korinadiganOptions.map((option) => {
           const active = option.value === value;
 
           return (
@@ -151,8 +186,9 @@ export default function SavdoSelect({
               {active && <Check size={16} className="shrink-0" />}
             </button>
           );
-        })
-      )}
+          })
+        )}
+      </div>
     </div>
   );
 
