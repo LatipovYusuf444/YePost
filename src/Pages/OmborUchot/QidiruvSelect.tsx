@@ -33,7 +33,7 @@ export default function QidiruvSelect({
 
   const natijalar = useMemo(() => {
     const soz = matn.trim().toLowerCase();
-    if (!soz) return variantlar.slice(0, 8);
+    if (!soz) return [];
     return variantlar.filter((variant) => variant.label.toLowerCase().includes(soz)).slice(0, 8);
   }, [variantlar, matn]);
 
@@ -51,7 +51,6 @@ export default function QidiruvSelect({
           onErkinMatnOzgarishi?.(event.target.value);
           setOchiq(true);
         }}
-        onFocus={() => setOchiq(true)}
         onBlur={() => {
           window.setTimeout(() => {
             setOchiq(false);

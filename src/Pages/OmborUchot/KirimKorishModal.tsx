@@ -1,4 +1,10 @@
-import { useState, type ChangeEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 import {
   CalendarDays,
   CheckCircle2,
@@ -10,12 +16,13 @@ import {
   MessageSquare,
   Printer,
   RotateCcw,
+  Settings,
   Trash2,
   Upload,
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
-import type { KirimHujjat, Mahsulot, OmborItem, TarixYozuvi } from "./types";
+import type { KirimHujjat, KirimSatri, Mahsulot, OmborItem, TarixYozuvi } from "./types";
 import { holatNomi, hozirgiVaqt, kirimJami, pul, sana, tarixgaQoshish } from "./yordamchilar";
 
 type Props = {
@@ -30,6 +37,27 @@ type Props = {
 
 type KirimFayl = { id: string; nomi: string; sana: string };
 type KirimKomment = { id: string; matn: string; muallif: string; vaqt: string };
+
+type UstunKaliti =
+  | "mahsulot"
+  | "shtrixKod"
+  | "tanNarx"
+  | "sotuvNarx"
+  | "ulgurjiNarx"
+  | "soni"
+  | "ombor"
+  | "summa";
+
+const USTUN_SOZLAMALARI: { kalit: UstunKaliti; nom: string; kenglik: number }[] = [
+  { kalit: "mahsulot", nom: "Mahsulot", kenglik: 320 },
+  { kalit: "shtrixKod", nom: "Shtrix kod", kenglik: 160 },
+  { kalit: "tanNarx", nom: "Tan narhi", kenglik: 130 },
+  { kalit: "sotuvNarx", nom: "Sotuv narhi", kenglik: 130 },
+  { kalit: "ulgurjiNarx", nom: "Ulgurji narhi", kenglik: 130 },
+  { kalit: "soni", nom: "Soni", kenglik: 110 },
+  { kalit: "ombor", nom: "Ombor", kenglik: 200 },
+  { kalit: "summa", nom: "Summa", kenglik: 150 },
+];
 
 export default function KirimKorishModal({
   hujjat,
@@ -46,8 +74,90 @@ export default function KirimKorishModal({
   const [tarix, setTarix] = useState<TarixYozuvi[]>(() =>
     tarixgaQoshish(hujjat.tarix, "Hujjat ko'rish uchun ochildi")
   );
+  const [korinadiganUstunlar, setKorinadiganUstunlar] = useState<Record<UstunKaliti, boolean>>(
+    () =>
+      Object.fromEntries(USTUN_SOZLAMALARI.map((ustun) => [ustun.kalit, true])) as Record<
+        UstunKaliti,
+        boolean
+      >
+  );
+  const [ustunKengliklari, setUstunKengliklari] = useState<Record<string, number>>(() =>
+    Object.fromEntries(USTUN_SOZLAMALARI.map((ustun) => [ustun.kalit, ustun.kenglik]))
+  );
+  const [ustunlarMenyusiOchiq, setUstunlarMenyusiOchiq] = useState(false);
+  const ustunlarMenyusiRef = useRef<HTMLDivElement | null>(null);
+  const ustunlarTugmaRef = useRef<HTMLButtonElement | null>(null);
 
   const jami = kirimJami(hujjat);
+  const korinadiganUstunSozlamalari = USTUN_SOZLAMALARI.filter(
+    (ustun) => korinadiganUstunlar[ustun.kalit]
+  );
+
+  useEffect(() => {
+    if (!ustunlarMenyusiOchiq) return;
+    function tashqigaBosish(event: globalThis.MouseEvent) {
+      const nishon = event.target as Node;
+      if (
+        !ustunlarMenyusiRef.current?.contains(nishon) &&
+        !ustunlarTugmaRef.current?.contains(nishon)
+      ) {
+        setUstunlarMenyusiOchiq(false);
+      }
+    }
+    document.addEventListener("mousedown", tashqigaBosish);
+    return () => document.removeEventListener("mousedown", tashqigaBosish);
+  }, [ustunlarMenyusiOchiq]);
+
+  function ustunKorinishiniAlmashtirish(kalit: UstunKaliti) {
+    setKorinadiganUstunlar((oldUstunlar) => ({ ...oldUstunlar, [kalit]: !oldUstunlar[kalit] }));
+  }
+
+  function ustunOlchaminiOzgartirish(kalit: string, event: ReactMouseEvent) {
+    event.preventDefault();
+    const boshlanishX = event.clientX;
+    const boshlanishKenglik = ustunKengliklari[kalit] ?? 100;
+
+    function harakat(moveEvent: globalThis.MouseEvent) {
+      const farq = moveEvent.clientX - boshlanishX;
+      setUstunKengliklari((old) => ({ ...old, [kalit]: Math.max(60, boshlanishKenglik + farq) }));
+    }
+    function toxtash() {
+      window.removeEventListener("mousemove", harakat);
+      window.removeEventListener("mouseup", toxtash);
+    }
+    window.addEventListener("mousemove", harakat);
+    window.addEventListener("mouseup", toxtash);
+  }
+
+  function ustunHujayrasi(kalit: UstunKaliti, satr: KirimSatri) {
+    const mahsulot = mahsulotlar.find((item) => item.id === satr.mahsulotId);
+    const ombor = omborlar.find((item) => item.id === satr.omborId);
+
+    switch (kalit) {
+      case "mahsulot":
+        return (
+          <span className="font-bold text-slate-800">{mahsulot?.nomi ?? "Noma'lum mahsulot"}</span>
+        );
+      case "shtrixKod":
+        return <span className="text-slate-500">{satr.shtrixKod || "—"}</span>;
+      case "tanNarx":
+        return <span className="text-slate-700">{pul(satr.tanNarx)}</span>;
+      case "sotuvNarx":
+        return <span className="text-slate-700">{pul(satr.sotuvNarx)}</span>;
+      case "ulgurjiNarx":
+        return <span className="text-slate-700">{pul(satr.ulgurjiNarx)}</span>;
+      case "soni":
+        return (
+          <span className="text-slate-700">
+            {satr.soni} {mahsulot?.birlik ?? "dona"}
+          </span>
+        );
+      case "ombor":
+        return <span className="text-slate-700">{ombor?.nomi ?? "—"}</span>;
+      case "summa":
+        return <span className="font-black text-emerald-600">{pul(satr.soni * satr.tanNarx)}</span>;
+    }
+  }
 
   function tarixgaYozish(matn: string) {
     setTarix((oldTarix) => [{ id: crypto.randomUUID(), matn, vaqt: hozirgiVaqt() }, ...oldTarix]);
@@ -324,59 +434,109 @@ export default function KirimKorishModal({
               </div>
             </div>
 
-            <section className="mt-5 overflow-hidden rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur">
+            <section className="relative mt-5 rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur">
               <h3 className="mb-4 border-b border-orange-100/80 pb-3 text-sm font-black uppercase tracking-wide text-slate-600">
                 Tovarlar
               </h3>
 
-              <div className="overflow-x-auto rounded-2xl border border-orange-100">
-                <table className="w-full min-w-[820px] border-collapse text-sm">
-                  <thead className="bg-orange-50/70 text-left text-[11px] font-black uppercase tracking-wide text-slate-500">
-                    <tr>
-                      <th className="px-3 py-3">№</th>
-                      <th className="px-3 py-3">Mahsulot</th>
-                      <th className="px-3 py-3">Shtrix kod</th>
-                      <th className="px-3 py-3">Tan narhi</th>
-                      <th className="px-3 py-3">Sotuv narhi</th>
-                      <th className="px-3 py-3">Ulgurji narhi</th>
-                      <th className="px-3 py-3">Soni</th>
-                      <th className="px-3 py-3">Ombor</th>
-                      <th className="px-3 py-3">Summa</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-orange-50">
-                    {hujjat.satrlar.map((satr, index) => {
-                      const mahsulot = mahsulotlar.find((item) => item.id === satr.mahsulotId);
-                      const ombor = omborlar.find((item) => item.id === satr.omborId);
-                      return (
+              <div className="relative">
+                <div className="overflow-x-auto rounded-2xl border border-orange-100">
+                  <table
+                    className="border-collapse text-sm"
+                    style={{ tableLayout: "fixed", width: "100%", minWidth: "max-content" }}
+                  >
+                    <colgroup>
+                      <col style={{ width: 48 }} />
+                      {korinadiganUstunSozlamalari.map((ustun) => (
+                        <col key={ustun.kalit} style={{ width: ustunKengliklari[ustun.kalit] }} />
+                      ))}
+                      <col />
+                      <col style={{ width: 56 }} />
+                    </colgroup>
+                    <thead className="bg-orange-50/70 text-left text-[11px] font-black uppercase tracking-wide text-slate-500">
+                      <tr>
+                        <th className="px-3 py-3">№</th>
+                        {korinadiganUstunSozlamalari.map((ustun) => (
+                          <th key={ustun.kalit} className="relative truncate px-3 py-3">
+                            {ustun.nom}
+                            <span
+                              onMouseDown={(event) => ustunOlchaminiOzgartirish(ustun.kalit, event)}
+                              className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none hover:bg-orange-300/70"
+                            />
+                          </th>
+                        ))}
+                        <th />
+                        <th className="px-3 py-3 text-right">
+                          <button
+                            ref={ustunlarTugmaRef}
+                            type="button"
+                            onClick={() => setUstunlarMenyusiOchiq((old) => !old)}
+                            aria-label="Ustunlarni sozlash"
+                            title="Ustunlarni ko'rsatish/berkitish"
+                            className={`inline-flex h-7 w-7 items-center justify-center rounded-lg transition ${
+                              ustunlarMenyusiOchiq
+                                ? "bg-orange-100 text-[#FF6A00]"
+                                : "text-slate-400 hover:bg-orange-100 hover:text-[#FF6A00]"
+                            }`}
+                          >
+                            <Settings size={16} />
+                          </button>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-orange-50">
+                      {hujjat.satrlar.map((satr, index) => (
                         <tr key={satr.id} className="hover:bg-orange-50/30">
                           <td className="px-3 py-2.5 text-xs font-black text-slate-400">{index + 1}</td>
-                          <td className="px-3 py-2.5 font-bold text-slate-800">
-                            {mahsulot?.nomi ?? "Noma'lum mahsulot"}
-                          </td>
-                          <td className="px-3 py-2.5 text-slate-500">{satr.shtrixKod || "—"}</td>
-                          <td className="px-3 py-2.5 text-slate-700">{pul(satr.tanNarx)}</td>
-                          <td className="px-3 py-2.5 text-slate-700">{pul(satr.sotuvNarx)}</td>
-                          <td className="px-3 py-2.5 text-slate-700">{pul(satr.ulgurjiNarx)}</td>
-                          <td className="px-3 py-2.5 text-slate-700">
-                            {satr.soni} {mahsulot?.birlik ?? "dona"}
-                          </td>
-                          <td className="px-3 py-2.5 text-slate-700">{ombor?.nomi ?? "—"}</td>
-                          <td className="px-3 py-2.5 font-black text-emerald-600">
-                            {pul(satr.soni * satr.tanNarx)}
+                          {korinadiganUstunSozlamalari.map((ustun) => (
+                            <td key={ustun.kalit} className="truncate px-3 py-2.5">
+                              {ustunHujayrasi(ustun.kalit, satr)}
+                            </td>
+                          ))}
+                          <td />
+                          <td />
+                        </tr>
+                      ))}
+                      {hujjat.satrlar.length === 0 && (
+                        <tr>
+                          <td
+                            colSpan={korinadiganUstunSozlamalari.length + 3}
+                            className="px-3 py-8 text-center text-slate-400"
+                          >
+                            Mahsulot qo'shilmagan
                           </td>
                         </tr>
-                      );
-                    })}
-                    {hujjat.satrlar.length === 0 && (
-                      <tr>
-                        <td colSpan={9} className="px-3 py-8 text-center text-slate-400">
-                          Mahsulot qo'shilmagan
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {ustunlarMenyusiOchiq && (
+                  <div
+                    ref={ustunlarMenyusiRef}
+                    className="absolute right-0 top-12 z-20 w-56 rounded-xl border border-orange-100 bg-white p-2 shadow-xl"
+                  >
+                    <p className="px-2 py-1 text-xs font-black uppercase tracking-wide text-slate-400">
+                      Ustunlarni ko'rsatish
+                    </p>
+                    <div className="max-h-60 overflow-y-auto">
+                      {USTUN_SOZLAMALARI.filter((ustun) => ustun.kalit !== "mahsulot").map((ustun) => (
+                        <label
+                          key={ustun.kalit}
+                          className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-slate-700 hover:bg-orange-50"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={korinadiganUstunlar[ustun.kalit]}
+                            onChange={() => ustunKorinishiniAlmashtirish(ustun.kalit)}
+                            className="h-4 w-4 accent-orange-500"
+                          />
+                          {ustun.nom}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
 

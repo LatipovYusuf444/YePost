@@ -29,48 +29,41 @@ import {
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import SavdoSelect from "@/Pages/Savdo/SavdoSelect";
-import { mockMasulShaxslar, mockYetkazibBeruvchilar } from "./mockData";
-import QidiruvSelect from "./QidiruvSelect";
-import type { KirimHujjat, KirimSatri, Mahsulot, OmborItem } from "./types";
-import { kirimJami, pul, qoldiqlarniHisoblash } from "./yordamchilar";
+import { mockMasulShaxslar } from "./mockData";
+import type { KochirmaHujjat, KochirmaSatri, Mahsulot, OmborItem } from "./types";
+import { kochirmaJami, pul, qoldiqlarniHisoblash } from "./yordamchilar";
 
 type Props = {
   mahsulotlar: Mahsulot[];
   omborlar: OmborItem[];
-  boshlangich: KirimHujjat | null;
+  boshlangich: KochirmaHujjat | null;
   keyingiNomi: string;
   onYopish: () => void;
-  onSaqlash: (hujjat: KirimHujjat, tasdiqla: boolean) => void;
+  onSaqlash: (hujjat: KochirmaHujjat, tasdiqla: boolean) => void;
 };
 
-function bosSatr(mahsulot: Mahsulot, omborId: string): KirimSatri {
+function bosSatr(mahsulot: Mahsulot): KochirmaSatri {
   return {
     id: crypto.randomUUID(),
     mahsulotId: mahsulot.id,
     shtrixKod: mahsulot.shtrixKod,
-    omborId,
     soni: 1,
     tanNarx: mahsulot.tanNarx,
-    sotuvNarx: mahsulot.sotuvNarx,
-    ulgurjiNarx: mahsulot.ulgurjiNarx,
   };
 }
 
-function bosSatrBosh(omborId: string): KirimSatri {
+function bosSatrBosh(): KochirmaSatri {
   return {
     id: crypto.randomUUID(),
     mahsulotId: "",
     shtrixKod: "",
-    omborId,
     soni: 1,
     tanNarx: 0,
-    sotuvNarx: 0,
-    ulgurjiNarx: 0,
   };
 }
 
-type KirimFayl = { id: string; nomi: string; sana: string };
-type KirimKomment = { id: string; matn: string; muallif: string; vaqt: string };
+type KochirmaFayl = { id: string; nomi: string; sana: string };
+type KochirmaKomment = { id: string; matn: string; muallif: string; vaqt: string };
 type TarixYozuvi = { id: string; matn: string; vaqt: string };
 
 function hozirgiVaqt() {
@@ -83,30 +76,18 @@ function hozirgiVaqt() {
   }).format(new Date());
 }
 
-type UstunKaliti =
-  | "mahsulot"
-  | "shtrixKod"
-  | "tanNarx"
-  | "sotuvNarx"
-  | "ulgurjiNarx"
-  | "soni"
-  | "ombor"
-  | "qoldiq"
-  | "summa";
+type UstunKaliti = "mahsulot" | "shtrixKod" | "tanNarx" | "soni" | "qoldiq" | "summa";
 
 const USTUN_SOZLAMALARI: { kalit: UstunKaliti; nom: string; kenglik: number }[] = [
   { kalit: "mahsulot", nom: "Mahsulot", kenglik: 320 },
   { kalit: "shtrixKod", nom: "Shtrix kod", kenglik: 160 },
   { kalit: "tanNarx", nom: "Tan narhi", kenglik: 130 },
-  { kalit: "sotuvNarx", nom: "Sotuv narhi", kenglik: 130 },
-  { kalit: "ulgurjiNarx", nom: "Ulgurji narhi", kenglik: 130 },
   { kalit: "soni", nom: "Soni", kenglik: 110 },
-  { kalit: "ombor", nom: "Ombor", kenglik: 200 },
-  { kalit: "qoldiq", nom: "Qoldiq", kenglik: 140 },
+  { kalit: "qoldiq", nom: "Ombordagi qoldiq", kenglik: 160 },
   { kalit: "summa", nom: "Summa", kenglik: 150 },
 ];
 
-export default function KirimModal({
+export default function KochirmaModal({
   mahsulotlar,
   omborlar,
   boshlangich,
@@ -115,15 +96,16 @@ export default function KirimModal({
   onSaqlash,
 }: Props) {
   const [nomi, setNomi] = useState(boshlangich?.nomi ?? keyingiNomi);
-  const [yetkazibBeruvchi, setYetkazibBeruvchi] = useState(boshlangich?.yetkazibBeruvchi ?? "");
+  const [omborIdFrom, setOmborIdFrom] = useState(boshlangich?.omborIdFrom ?? omborlar[0]?.id ?? "");
+  const [omborIdTo, setOmborIdTo] = useState(boshlangich?.omborIdTo ?? omborlar[1]?.id ?? "");
   const [sanaQiymati, setSanaQiymati] = useState(boshlangich?.sana ?? new Date().toISOString().slice(0, 10));
   const [masulShaxs, setMasulShaxs] = useState(boshlangich?.masulShaxs ?? "");
-  const [satrlar, setSatrlar] = useState<KirimSatri[]>(
-    boshlangich?.satrlar ?? [bosSatrBosh(omborlar[0]?.id ?? "")]
+  const [satrlar, setSatrlar] = useState<KochirmaSatri[]>(
+    boshlangich?.satrlar ?? [bosSatrBosh()]
   );
-  const [fayllar, setFayllar] = useState<KirimFayl[]>([]);
+  const [fayllar, setFayllar] = useState<KochirmaFayl[]>([]);
   const [kommentMatni, setKommentMatni] = useState("");
-  const [kommentlar, setKommentlar] = useState<KirimKomment[]>([]);
+  const [kommentlar, setKommentlar] = useState<KochirmaKomment[]>([]);
   const [tarix, setTarix] = useState<TarixYozuvi[]>([
     {
       id: crypto.randomUUID(),
@@ -168,7 +150,6 @@ export default function KirimModal({
   const jadvalScrollRef = useRef<HTMLDivElement | null>(null);
   const [scrollHolati, setScrollHolati] = useState({ chapFoiz: 0, kengFoiz: 100, korinadimi: false });
 
-  const birinchiOmbor = omborlar[0]?.id ?? "";
   const joriyQoldiqlar = useMemo(() => qoldiqlarniHisoblash(), []);
   const korinadiganUstunSozlamalari = ustunTartibi
     .map((kalit) => USTUN_SOZLAMALARI.find((ustun) => ustun.kalit === kalit)!)
@@ -177,6 +158,7 @@ export default function KirimModal({
     () => [...mahsulotlar, ...qoshimchaMahsulotlar],
     [mahsulotlar, qoshimchaMahsulotlar]
   );
+  const manbaOmbor = omborlar.find((item) => item.id === omborIdFrom);
 
   useEffect(() => {
     if (!ustunlarMenyusiOchiq) return;
@@ -283,7 +265,7 @@ export default function KirimModal({
       ulgurjiNarx: Number(yangiMahsulotUlgurjiNarx) || 0,
     };
     setQoshimchaMahsulotlar((old) => [...old, yangi]);
-    setSatrlar((old) => [...old, bosSatr(yangi, birinchiOmbor)]);
+    setSatrlar((old) => [...old, bosSatr(yangi)]);
     tarixgaYozish(`Yangi mahsulot yaratildi: ${yangi.nomi}`);
     setYangiMahsulotNomi("");
     setYangiMahsulotShtrixKod("");
@@ -370,10 +352,9 @@ export default function KirimModal({
     setKorinadiganUstunlar((old) => ({ ...old, [kalit]: !old[kalit] }));
   }
 
-  function ustunHujayrasi(kalit: UstunKaliti, satr: KirimSatri) {
+  function ustunHujayrasi(kalit: UstunKaliti, satr: KochirmaSatri) {
     const mahsulot = barchaMahsulotlar.find((item) => item.id === satr.mahsulotId);
-    const ombor = omborlar.find((item) => item.id === satr.omborId);
-    const qoldiq = joriyQoldiqlar.get(`${satr.omborId}::${satr.mahsulotId}`) ?? 0;
+    const qoldiq = joriyQoldiqlar.get(`${omborIdFrom}::${satr.mahsulotId}`) ?? 0;
 
     switch (kalit) {
       case "mahsulot":
@@ -422,26 +403,6 @@ export default function KirimModal({
             className="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100"
           />
         );
-      case "sotuvNarx":
-        return (
-          <input
-            type="number"
-            min={0}
-            value={satr.sotuvNarx}
-            onChange={(event) => satrniOzgartirish(satr.id, { sotuvNarx: Number(event.target.value) })}
-            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100"
-          />
-        );
-      case "ulgurjiNarx":
-        return (
-          <input
-            type="number"
-            min={0}
-            value={satr.ulgurjiNarx}
-            onChange={(event) => satrniOzgartirish(satr.id, { ulgurjiNarx: Number(event.target.value) })}
-            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100"
-          />
-        );
       case "soni":
         return (
           <div className="relative">
@@ -457,27 +418,12 @@ export default function KirimModal({
             </span>
           </div>
         );
-      case "ombor":
-        return (
-          <SavdoSelect
-            value={satr.omborId}
-            onChange={(value) => satrniOzgartirish(satr.id, { omborId: value })}
-            options={omborlar.map((item) => ({ value: item.id, label: item.nomi }))}
-            placeholder="Ombor qidirish"
-            buttonClassName="h-9 rounded-lg border-slate-200 px-2.5 text-xs shadow-none"
-            dropdownClassName="min-w-[220px]"
-            qidirish
-            qidiruvPlaceholder="Ombor qidirish"
-            hideChevron
-            portal
-          />
-        );
       case "qoldiq":
         return (
           <div className="text-xs font-bold text-slate-500">
             {qoldiq} {mahsulot?.birlik ?? ""}
             <span className="mt-0.5 block text-[10px] font-semibold text-slate-400">
-              {ombor?.nomi ?? "—"}
+              {manbaOmbor?.nomi ?? "—"}
             </span>
           </div>
         );
@@ -499,7 +445,7 @@ export default function KirimModal({
     if (!tanlanganFayllar || tanlanganFayllar.length === 0) return;
 
     const bugun = new Date().toISOString().slice(0, 10);
-    const yangiFayllar: KirimFayl[] = Array.from(tanlanganFayllar).map((fayl) => ({
+    const yangiFayllar: KochirmaFayl[] = Array.from(tanlanganFayllar).map((fayl) => ({
       id: crypto.randomUUID(),
       nomi: fayl.name,
       sana: bugun,
@@ -538,10 +484,10 @@ export default function KirimModal({
   }
 
   function qatorQoshish() {
-    setSatrlar((oldSatrlar) => [...oldSatrlar, bosSatrBosh(birinchiOmbor)]);
+    setSatrlar((oldSatrlar) => [...oldSatrlar, bosSatrBosh()]);
   }
 
-  function satrniOzgartirish(id: string, ozgarish: Partial<KirimSatri>) {
+  function satrniOzgartirish(id: string, ozgarish: Partial<KochirmaSatri>) {
     setSatrlar((oldSatrlar) =>
       oldSatrlar.map((satr) => (satr.id === id ? { ...satr, ...ozgarish } : satr))
     );
@@ -561,15 +507,11 @@ export default function KirimModal({
               mahsulotId,
               shtrixKod: yangiMahsulot?.shtrixKod ?? satr.shtrixKod,
               tanNarx: yangiMahsulot?.tanNarx ?? satr.tanNarx,
-              sotuvNarx: yangiMahsulot?.sotuvNarx ?? satr.sotuvNarx,
-              ulgurjiNarx: yangiMahsulot?.ulgurjiNarx ?? satr.ulgurjiNarx,
             }
           : satr
       );
 
-      return boshEdi && oxirgiEdi && mahsulotId
-        ? [...yangilangan, bosSatrBosh(joriySatr?.omborId || birinchiOmbor)]
-        : yangilangan;
+      return boshEdi && oxirgiEdi && mahsulotId ? [...yangilangan, bosSatrBosh()] : yangilangan;
     });
   }
 
@@ -577,16 +519,16 @@ export default function KirimModal({
     setSatrlar((oldSatrlar) => oldSatrlar.filter((satr) => satr.id !== id));
   }
 
-  function yasashHujjat(): KirimHujjat {
+  function yasashHujjat(): KochirmaHujjat {
     return {
       id: boshlangich?.id ?? crypto.randomUUID(),
       nomi: nomi.trim() || keyingiNomi,
-      yetkazibBeruvchi: yetkazibBeruvchi.trim(),
       sana: sanaQiymati,
       masulShaxs: masulShaxs.trim(),
       holati: boshlangich?.holati ?? "qoralama",
       satrlar,
-      omborId: satrlar[0]?.omborId ?? boshlangich?.omborId ?? "",
+      omborIdFrom,
+      omborIdTo,
       yaratilganSana: boshlangich?.yaratilganSana ?? new Date().toISOString().slice(0, 10),
       ozgartirilganSana: new Date().toISOString().slice(0, 10),
       ozgartirganShaxs: masulShaxs.trim(),
@@ -598,7 +540,7 @@ export default function KirimModal({
     void navigator.clipboard?.writeText(window.location.href);
   }
 
-  const jami = kirimJami({ satrlar });
+  const jami = kochirmaJami({ satrlar });
 
   return (
     <AppModal className="items-start justify-start bg-slate-950/55 p-0 py-3 pl-[78px] pr-3 backdrop-blur-[3px]">
@@ -644,7 +586,7 @@ export default function KirimModal({
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-3">
                   <h2 className="text-[30px] font-black tracking-tight text-slate-950">
-                    {boshlangich ? "Kirimni tahrirlash" : "Yangi kirim"}
+                    {boshlangich ? "Ko'chirmani tahrirlash" : "Yangi ko'chirma"}
                   </h2>
                   <Copy size={17} className="text-slate-300" />
                   <span className="rounded-full bg-[#FFF3E2] px-3 py-1 text-xs font-black uppercase tracking-wider text-[#FF6A00]">
@@ -670,13 +612,13 @@ export default function KirimModal({
                 <section className="overflow-hidden rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur">
                   <div className="mb-4 border-b border-orange-100/80 pb-3">
                     <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
-                      Kirim haqida
+                      Ko'chirma haqida
                     </h3>
                   </div>
 
                   <div className="space-y-4">
                     <label className="grid gap-2">
-                      <span className="text-sm font-bold text-slate-400">Kirimni nomi</span>
+                      <span className="text-sm font-bold text-slate-400">Ko'chirmani nomi</span>
                       <input
                         value={nomi}
                         onChange={(event) => setNomi(event.target.value)}
@@ -685,23 +627,46 @@ export default function KirimModal({
                       />
                     </label>
 
-                    <label className="grid gap-2">
-                      <span className="text-sm font-bold text-slate-400">Yetkazib beruvchi</span>
-                      <QidiruvSelect
-                        boshlangichMatn={yetkazibBeruvchi}
-                        onErkinMatnOzgarishi={setYetkazibBeruvchi}
-                        onTanlash={(variant) => setYetkazibBeruvchi(variant.label)}
-                        placeholder="Yetkazib beruvchi nomini yozing"
-                        variantlar={mockYetkazibBeruvchilar.map((beruvchi) => ({
-                          id: beruvchi,
-                          label: beruvchi,
-                        }))}
-                        inputClassName="h-11 rounded-xl"
-                      />
-                    </label>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <label className="grid gap-2">
+                        <span className="text-sm font-bold text-slate-400">Ombordan</span>
+                        <SavdoSelect
+                          value={omborIdFrom}
+                          onChange={setOmborIdFrom}
+                          placeholder="Qaysi ombordan"
+                          options={omborlar.map((item) => ({ value: item.id, label: item.nomi }))}
+                          buttonClassName="h-11 rounded-xl px-3.5 text-sm"
+                          dropdownClassName="min-w-[260px]"
+                          qidirish
+                          qidiruvPlaceholder="Ombor qidirish"
+                          portal
+                        />
+                      </label>
+
+                      <label className="grid gap-2">
+                        <span className="text-sm font-bold text-slate-400">Omborga</span>
+                        <SavdoSelect
+                          value={omborIdTo}
+                          onChange={setOmborIdTo}
+                          placeholder="Qaysi omborga"
+                          options={omborlar.map((item) => ({ value: item.id, label: item.nomi }))}
+                          buttonClassName="h-11 rounded-xl px-3.5 text-sm"
+                          dropdownClassName="min-w-[260px]"
+                          qidirish
+                          qidiruvPlaceholder="Ombor qidirish"
+                          portal
+                        />
+                      </label>
+                    </div>
+
+                    {omborIdFrom && omborIdTo && omborIdFrom === omborIdTo && (
+                      <p className="rounded-xl bg-red-50 px-3.5 py-2.5 text-xs font-bold text-red-500">
+                        "Ombordan" va "Omborga" bir xil bo'lmasligi kerak.
+                      </p>
+                    )}
 
                     <label className="grid gap-2">
-                      <span className="text-sm font-bold text-slate-400">Qachon kirim qilingan</span>
+                      <span className="text-sm font-bold text-slate-400">Qachon ko'chirilgan</span>
                       <div className="relative">
                         <input
                           type="date"
@@ -1143,7 +1108,6 @@ export default function KirimModal({
                         className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-bold uppercase text-slate-500 outline-none disabled:opacity-40"
                       >
                         <option value="">- Amallar -</option>
-                        <option value="ombor">Omborni o'zgartirish</option>
                         <option value="narx">Narxni yangilash</option>
                       </select>
                       <label className="flex items-center gap-1.5 text-xs font-bold uppercase text-slate-500">

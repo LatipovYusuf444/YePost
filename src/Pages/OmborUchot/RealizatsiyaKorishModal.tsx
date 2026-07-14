@@ -22,11 +22,11 @@ import {
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
-import type { ChiqimHujjat, ChiqimSatri, Mahsulot, OmborItem, TarixYozuvi } from "./types";
-import { holatNomi, hozirgiVaqt, chiqimJami, pul, sana, tarixgaQoshish } from "./yordamchilar";
+import type { RealizatsiyaHujjat, RealizatsiyaSatri, Mahsulot, OmborItem, TarixYozuvi } from "./types";
+import { holatNomi, hozirgiVaqt, realizatsiyaJami, pul, sana, tarixgaQoshish } from "./yordamchilar";
 
 type Props = {
-  hujjat: ChiqimHujjat;
+  hujjat: RealizatsiyaHujjat;
   mahsulotlar: Mahsulot[];
   omborlar: OmborItem[];
   onYopish: () => void;
@@ -35,21 +35,31 @@ type Props = {
   onTasdiqlash: () => void;
 };
 
-type ChiqimFayl = { id: string; nomi: string; sana: string };
-type ChiqimKomment = { id: string; matn: string; muallif: string; vaqt: string };
+type RealizatsiyaFayl = { id: string; nomi: string; sana: string };
+type RealizatsiyaKomment = { id: string; matn: string; muallif: string; vaqt: string };
 
-type UstunKaliti = "mahsulot" | "shtrixKod" | "tanNarx" | "soni" | "ombor" | "summa";
+type UstunKaliti =
+  | "mahsulot"
+  | "shtrixKod"
+  | "tanNarx"
+  | "sotuvNarx"
+  | "ulgurjiNarx"
+  | "soni"
+  | "ombor"
+  | "summa";
 
 const USTUN_SOZLAMALARI: { kalit: UstunKaliti; nom: string; kenglik: number }[] = [
   { kalit: "mahsulot", nom: "Mahsulot", kenglik: 320 },
   { kalit: "shtrixKod", nom: "Shtrix kod", kenglik: 160 },
   { kalit: "tanNarx", nom: "Tan narhi", kenglik: 130 },
+  { kalit: "sotuvNarx", nom: "Sotuv narhi", kenglik: 130 },
+  { kalit: "ulgurjiNarx", nom: "Ulgurji narhi", kenglik: 130 },
   { kalit: "soni", nom: "Soni", kenglik: 110 },
   { kalit: "ombor", nom: "Ombor", kenglik: 200 },
   { kalit: "summa", nom: "Summa", kenglik: 150 },
 ];
 
-export default function ChiqimKorishModal({
+export default function RealizatsiyaKorishModal({
   hujjat,
   mahsulotlar,
   omborlar,
@@ -58,9 +68,9 @@ export default function ChiqimKorishModal({
   onBekorQilish,
   onTasdiqlash,
 }: Props) {
-  const [fayllar, setFayllar] = useState<ChiqimFayl[]>([]);
+  const [fayllar, setFayllar] = useState<RealizatsiyaFayl[]>([]);
   const [kommentMatni, setKommentMatni] = useState("");
-  const [kommentlar, setKommentlar] = useState<ChiqimKomment[]>([]);
+  const [kommentlar, setKommentlar] = useState<RealizatsiyaKomment[]>([]);
   const [tarix, setTarix] = useState<TarixYozuvi[]>(() =>
     tarixgaQoshish(hujjat.tarix, "Hujjat ko'rish uchun ochildi")
   );
@@ -78,7 +88,7 @@ export default function ChiqimKorishModal({
   const ustunlarMenyusiRef = useRef<HTMLDivElement | null>(null);
   const ustunlarTugmaRef = useRef<HTMLButtonElement | null>(null);
 
-  const jami = chiqimJami(hujjat);
+  const jami = realizatsiyaJami(hujjat);
   const korinadiganUstunSozlamalari = USTUN_SOZLAMALARI.filter(
     (ustun) => korinadiganUstunlar[ustun.kalit]
   );
@@ -119,7 +129,7 @@ export default function ChiqimKorishModal({
     window.addEventListener("mouseup", toxtash);
   }
 
-  function ustunHujayrasi(kalit: UstunKaliti, satr: ChiqimSatri) {
+  function ustunHujayrasi(kalit: UstunKaliti, satr: RealizatsiyaSatri) {
     const mahsulot = mahsulotlar.find((item) => item.id === satr.mahsulotId);
     const ombor = omborlar.find((item) => item.id === satr.omborId);
 
@@ -132,6 +142,10 @@ export default function ChiqimKorishModal({
         return <span className="text-slate-500">{satr.shtrixKod || "—"}</span>;
       case "tanNarx":
         return <span className="text-slate-700">{pul(satr.tanNarx)}</span>;
+      case "sotuvNarx":
+        return <span className="text-slate-700">{pul(satr.sotuvNarx)}</span>;
+      case "ulgurjiNarx":
+        return <span className="text-slate-700">{pul(satr.ulgurjiNarx)}</span>;
       case "soni":
         return (
           <span className="text-slate-700">
@@ -141,7 +155,7 @@ export default function ChiqimKorishModal({
       case "ombor":
         return <span className="text-slate-700">{ombor?.nomi ?? "—"}</span>;
       case "summa":
-        return <span className="font-black text-emerald-600">{pul(satr.soni * satr.tanNarx)}</span>;
+        return <span className="font-black text-emerald-600">{pul(satr.soni * satr.sotuvNarx)}</span>;
     }
   }
 
@@ -153,7 +167,7 @@ export default function ChiqimKorishModal({
     const tanlanganFayllar = event.target.files;
     if (!tanlanganFayllar || tanlanganFayllar.length === 0) return;
     const bugun = new Date().toISOString().slice(0, 10);
-    const yangiFayllar: ChiqimFayl[] = Array.from(tanlanganFayllar).map((fayl) => ({
+    const yangiFayllar: RealizatsiyaFayl[] = Array.from(tanlanganFayllar).map((fayl) => ({
       id: crypto.randomUUID(),
       nomi: fayl.name,
       sana: bugun,
@@ -280,7 +294,7 @@ export default function ChiqimKorishModal({
               <div className="min-w-0 space-y-4">
                 <section className="overflow-hidden rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur">
                   <h3 className="mb-4 border-b border-orange-100/80 pb-3 text-sm font-black uppercase tracking-wide text-slate-600">
-                    Chiqim haqida
+                    Realizatsiya haqida
                   </h3>
 
                   <div className="space-y-4">
@@ -290,15 +304,21 @@ export default function ChiqimKorishModal({
                       </p>
                       <p className="mt-2 text-4xl font-black text-slate-950">{pul(jami)}</p>
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-400">Sabab</p>
-                      <p className="mt-1 text-base font-bold text-slate-800">
-                        {hujjat.sabab || "—"}
-                      </p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-bold text-slate-400">Mijoz</p>
+                        <p className="mt-1 text-base font-bold text-slate-800">{hujjat.mijoz || "—"}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-400">Kompaniya</p>
+                        <p className="mt-1 text-base font-bold text-slate-800">
+                          {hujjat.kompaniya || "—"}
+                        </p>
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-sm font-bold text-slate-400">Qachon chiqim qilingan</p>
+                        <p className="text-sm font-bold text-slate-400">Qachon sotilgan</p>
                         <p className="mt-1 text-base font-bold text-slate-800">{sana(hujjat.sana)}</p>
                       </div>
                       <div>
@@ -307,6 +327,12 @@ export default function ChiqimKorishModal({
                           {hujjat.masulShaxs || "—"}
                         </p>
                       </div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-400">Savdo hujjati</p>
+                      <p className="mt-1 text-base font-bold text-[#FF6A00]">
+                        {hujjat.savdoId ? `${hujjat.savdoId} (savdo bilan bog'langan)` : "Qo'lda yaratilgan"}
+                      </p>
                     </div>
                   </div>
 

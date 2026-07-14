@@ -6,6 +6,7 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import {
+  ArrowRight,
   CalendarDays,
   CheckCircle2,
   Edit3,
@@ -22,11 +23,11 @@ import {
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
-import type { ChiqimHujjat, ChiqimSatri, Mahsulot, OmborItem, TarixYozuvi } from "./types";
-import { holatNomi, hozirgiVaqt, chiqimJami, pul, sana, tarixgaQoshish } from "./yordamchilar";
+import type { KochirmaHujjat, KochirmaSatri, Mahsulot, OmborItem, TarixYozuvi } from "./types";
+import { holatNomi, hozirgiVaqt, kochirmaJami, omborNomi, pul, sana, tarixgaQoshish } from "./yordamchilar";
 
 type Props = {
-  hujjat: ChiqimHujjat;
+  hujjat: KochirmaHujjat;
   mahsulotlar: Mahsulot[];
   omborlar: OmborItem[];
   onYopish: () => void;
@@ -35,21 +36,20 @@ type Props = {
   onTasdiqlash: () => void;
 };
 
-type ChiqimFayl = { id: string; nomi: string; sana: string };
-type ChiqimKomment = { id: string; matn: string; muallif: string; vaqt: string };
+type KochirmaFayl = { id: string; nomi: string; sana: string };
+type KochirmaKomment = { id: string; matn: string; muallif: string; vaqt: string };
 
-type UstunKaliti = "mahsulot" | "shtrixKod" | "tanNarx" | "soni" | "ombor" | "summa";
+type UstunKaliti = "mahsulot" | "shtrixKod" | "tanNarx" | "soni" | "summa";
 
 const USTUN_SOZLAMALARI: { kalit: UstunKaliti; nom: string; kenglik: number }[] = [
   { kalit: "mahsulot", nom: "Mahsulot", kenglik: 320 },
   { kalit: "shtrixKod", nom: "Shtrix kod", kenglik: 160 },
   { kalit: "tanNarx", nom: "Tan narhi", kenglik: 130 },
   { kalit: "soni", nom: "Soni", kenglik: 110 },
-  { kalit: "ombor", nom: "Ombor", kenglik: 200 },
   { kalit: "summa", nom: "Summa", kenglik: 150 },
 ];
 
-export default function ChiqimKorishModal({
+export default function KochirmaKorishModal({
   hujjat,
   mahsulotlar,
   omborlar,
@@ -58,9 +58,9 @@ export default function ChiqimKorishModal({
   onBekorQilish,
   onTasdiqlash,
 }: Props) {
-  const [fayllar, setFayllar] = useState<ChiqimFayl[]>([]);
+  const [fayllar, setFayllar] = useState<KochirmaFayl[]>([]);
   const [kommentMatni, setKommentMatni] = useState("");
-  const [kommentlar, setKommentlar] = useState<ChiqimKomment[]>([]);
+  const [kommentlar, setKommentlar] = useState<KochirmaKomment[]>([]);
   const [tarix, setTarix] = useState<TarixYozuvi[]>(() =>
     tarixgaQoshish(hujjat.tarix, "Hujjat ko'rish uchun ochildi")
   );
@@ -78,7 +78,7 @@ export default function ChiqimKorishModal({
   const ustunlarMenyusiRef = useRef<HTMLDivElement | null>(null);
   const ustunlarTugmaRef = useRef<HTMLButtonElement | null>(null);
 
-  const jami = chiqimJami(hujjat);
+  const jami = kochirmaJami(hujjat);
   const korinadiganUstunSozlamalari = USTUN_SOZLAMALARI.filter(
     (ustun) => korinadiganUstunlar[ustun.kalit]
   );
@@ -119,9 +119,8 @@ export default function ChiqimKorishModal({
     window.addEventListener("mouseup", toxtash);
   }
 
-  function ustunHujayrasi(kalit: UstunKaliti, satr: ChiqimSatri) {
+  function ustunHujayrasi(kalit: UstunKaliti, satr: KochirmaSatri) {
     const mahsulot = mahsulotlar.find((item) => item.id === satr.mahsulotId);
-    const ombor = omborlar.find((item) => item.id === satr.omborId);
 
     switch (kalit) {
       case "mahsulot":
@@ -138,8 +137,6 @@ export default function ChiqimKorishModal({
             {satr.soni} {mahsulot?.birlik ?? "dona"}
           </span>
         );
-      case "ombor":
-        return <span className="text-slate-700">{ombor?.nomi ?? "—"}</span>;
       case "summa":
         return <span className="font-black text-emerald-600">{pul(satr.soni * satr.tanNarx)}</span>;
     }
@@ -153,7 +150,7 @@ export default function ChiqimKorishModal({
     const tanlanganFayllar = event.target.files;
     if (!tanlanganFayllar || tanlanganFayllar.length === 0) return;
     const bugun = new Date().toISOString().slice(0, 10);
-    const yangiFayllar: ChiqimFayl[] = Array.from(tanlanganFayllar).map((fayl) => ({
+    const yangiFayllar: KochirmaFayl[] = Array.from(tanlanganFayllar).map((fayl) => ({
       id: crypto.randomUUID(),
       nomi: fayl.name,
       sana: bugun,
@@ -280,7 +277,7 @@ export default function ChiqimKorishModal({
               <div className="min-w-0 space-y-4">
                 <section className="overflow-hidden rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur">
                   <h3 className="mb-4 border-b border-orange-100/80 pb-3 text-sm font-black uppercase tracking-wide text-slate-600">
-                    Chiqim haqida
+                    Ko'chirma haqida
                   </h3>
 
                   <div className="space-y-4">
@@ -291,14 +288,20 @@ export default function ChiqimKorishModal({
                       <p className="mt-2 text-4xl font-black text-slate-950">{pul(jami)}</p>
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-slate-400">Sabab</p>
-                      <p className="mt-1 text-base font-bold text-slate-800">
-                        {hujjat.sabab || "—"}
-                      </p>
+                      <p className="text-sm font-bold text-slate-400">Yo'nalish</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-base font-bold text-slate-800">
+                        <span className="rounded-lg bg-orange-50 px-2.5 py-1 text-sm text-[#EA580C]">
+                          {omborNomi(omborlar, hujjat.omborIdFrom)}
+                        </span>
+                        <ArrowRight size={16} className="text-slate-400" />
+                        <span className="rounded-lg bg-emerald-50 px-2.5 py-1 text-sm text-emerald-600">
+                          {omborNomi(omborlar, hujjat.omborIdTo)}
+                        </span>
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-sm font-bold text-slate-400">Qachon chiqim qilingan</p>
+                        <p className="text-sm font-bold text-slate-400">Qachon ko'chirilgan</p>
                         <p className="mt-1 text-base font-bold text-slate-800">{sana(hujjat.sana)}</p>
                       </div>
                       <div>

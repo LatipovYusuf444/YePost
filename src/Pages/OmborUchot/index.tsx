@@ -1,15 +1,24 @@
 import { useState } from "react";
 import Kirim from "./Kirim";
+import Realizatsiya from "./Realizatsiya";
 import Chiqim from "./Chiqim";
 import Kochirma from "./Kochirma";
 import Inventarizatsiya from "./Inventarizatsiya";
 import Omborlar from "./Omborlar";
 import Qoldiqlar from "./Qoldiqlar";
 
-type Tab = "kirim" | "chiqim" | "inventarizatsiya" | "kochirma" | "omborlar" | "qoldiqlar";
+type Tab =
+  | "kirim"
+  | "realizatsiya"
+  | "chiqim"
+  | "inventarizatsiya"
+  | "kochirma"
+  | "omborlar"
+  | "qoldiqlar";
 
 const tablar: Array<{ id: Tab; nom: string }> = [
   { id: "kirim", nom: "Kirim" },
+  { id: "realizatsiya", nom: "Realizatsiya" },
   { id: "chiqim", nom: "Chiqim" },
   { id: "inventarizatsiya", nom: "Inventarizatsiya" },
   { id: "kochirma", nom: "Ko'chirma" },
@@ -19,6 +28,7 @@ const tablar: Array<{ id: Tab; nom: string }> = [
 
 const sahifalar: Record<Tab, () => React.JSX.Element> = {
   kirim: Kirim,
+  realizatsiya: Realizatsiya,
   chiqim: Chiqim,
   inventarizatsiya: Inventarizatsiya,
   kochirma: Kochirma,

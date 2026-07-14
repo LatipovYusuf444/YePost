@@ -142,6 +142,7 @@ export default function ChiqimModal({
   const [sudralayotganUstun, setSudralayotganUstun] = useState<UstunKaliti | null>(null);
   const [ustunlarMenyusiOchiq, setUstunlarMenyusiOchiq] = useState(false);
   const ustunlarMenyusiRef = useRef<HTMLDivElement | null>(null);
+  const ustunlarTugmaRef = useRef<HTMLButtonElement | null>(null);
 
   const [tanlanganSatrlar, setTanlanganSatrlar] = useState<Set<string>>(new Set());
   const [amalTuri, setAmalTuri] = useState("");
@@ -174,7 +175,11 @@ export default function ChiqimModal({
   useEffect(() => {
     if (!ustunlarMenyusiOchiq) return;
     function tashqigaBosish(event: globalThis.MouseEvent) {
-      if (!ustunlarMenyusiRef.current?.contains(event.target as Node)) {
+      const nishon = event.target as Node;
+      if (
+        !ustunlarMenyusiRef.current?.contains(nishon) &&
+        !ustunlarTugmaRef.current?.contains(nishon)
+      ) {
         setUstunlarMenyusiOchiq(false);
       }
     }
@@ -635,15 +640,10 @@ export default function ChiqimModal({
             <div className="grid gap-5 xl:grid-cols-2">
               <div className="min-w-0 space-y-4">
                 <section className="overflow-hidden rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur">
-                  <div className="mb-4 flex items-center justify-between border-b border-orange-100/80 pb-3">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
-                        Chiqim haqida
-                      </h3>
-                    </div>
-                    <span className="text-xs font-black uppercase tracking-[0.18em] text-slate-300">
-                      Bekor qilish
-                    </span>
+                  <div className="mb-4 border-b border-orange-100/80 pb-3">
+                    <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
+                      Chiqim haqida
+                    </h3>
                   </div>
 
                   <div className="space-y-4">
@@ -828,7 +828,7 @@ export default function ChiqimModal({
               </div>
             </div>
 
-            <section className="mt-5 overflow-hidden rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur">
+            <section className="relative mt-5 rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">Tovarlar</h3>
                 <div className="flex flex-wrap items-center gap-2">
@@ -911,39 +911,6 @@ export default function ChiqimModal({
                       </div>
                     )}
                   </div>
-
-                  <div className="relative" ref={ustunlarMenyusiRef}>
-                    <button
-                      type="button"
-                      onClick={() => setUstunlarMenyusiOchiq((old) => !old)}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-500 ring-1 ring-orange-100 transition hover:bg-orange-50 hover:text-[#FF6A00]"
-                      aria-label="Ustunlarni sozlash"
-                      title="Ustunlarni ko'rsatish/berkitish"
-                    >
-                      <Settings size={16} />
-                    </button>
-                    {ustunlarMenyusiOchiq && (
-                      <div className="absolute right-0 top-11 z-20 w-56 rounded-xl border border-orange-100 bg-white p-2 shadow-xl">
-                        <p className="px-2 py-1 text-xs font-black uppercase tracking-wide text-slate-400">
-                          Ustunlarni ko'rsatish
-                        </p>
-                        {USTUN_SOZLAMALARI.filter((ustun) => ustun.kalit !== "mahsulot").map((ustun) => (
-                          <label
-                            key={ustun.kalit}
-                            className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-slate-700 hover:bg-orange-50"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={korinadiganUstunlar[ustun.kalit]}
-                              onChange={() => ustunKorinishiniAlmashtirish(ustun.kalit)}
-                              className="h-4 w-4 accent-orange-500"
-                            />
-                            {ustun.nom}
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
 
@@ -952,20 +919,24 @@ export default function ChiqimModal({
                   Mahsulot qo'shilmagan. "Qator qo'shish" tugmasini bosing va qatorda mahsulotni qidiring.
                 </div>
               ) : (
-                <>
+                <div className="relative">
                   <div
                     ref={jadvalScrollRef}
                     onScroll={jadvalScrollHolatiniYangilash}
                     className="scrollbar-hidden overflow-x-auto rounded-2xl border border-orange-100"
                   >
-                    <table className="border-collapse text-sm" style={{ tableLayout: "fixed", width: "max-content" }}>
+                    <table
+                      className="border-collapse text-sm"
+                      style={{ tableLayout: "fixed", width: "100%", minWidth: "max-content" }}
+                    >
                       <colgroup>
                         <col style={{ width: 32 }} />
                         <col style={{ width: 48 }} />
                         {korinadiganUstunSozlamalari.map((ustun) => (
                           <col key={ustun.kalit} style={{ width: ustunKengliklari[ustun.kalit] }} />
                         ))}
-                        <col style={{ width: 40 }} />
+                        <col />
+                        <col style={{ width: 56 }} />
                       </colgroup>
                       <thead className="bg-orange-50/70 text-left text-[11px] font-black uppercase tracking-wide text-slate-500">
                         <tr>
@@ -1004,7 +975,23 @@ export default function ChiqimModal({
                               />
                             </th>
                           ))}
-                          <th className="px-3 py-3" />
+                          <th />
+                          <th className="px-3 py-3 text-right">
+                            <button
+                              ref={ustunlarTugmaRef}
+                              type="button"
+                              onClick={() => setUstunlarMenyusiOchiq((old) => !old)}
+                              aria-label="Ustunlarni sozlash"
+                              title="Ustunlarni ko'rsatish/berkitish"
+                              className={`inline-flex h-7 w-7 items-center justify-center rounded-lg transition ${
+                                ustunlarMenyusiOchiq
+                                  ? "bg-orange-100 text-[#FF6A00]"
+                                  : "text-slate-400 hover:bg-orange-100 hover:text-[#FF6A00]"
+                              }`}
+                            >
+                              <Settings size={16} />
+                            </button>
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-orange-50">
@@ -1039,6 +1026,7 @@ export default function ChiqimModal({
                                 {ustunHujayrasi(ustun.kalit, satr)}
                               </td>
                             ))}
+                            <td />
                             <td className="px-3 py-2.5 text-right">
                               <button
                                 type="button"
@@ -1054,6 +1042,33 @@ export default function ChiqimModal({
                       </tbody>
                     </table>
                   </div>
+
+                  {ustunlarMenyusiOchiq && (
+                    <div
+                      ref={ustunlarMenyusiRef}
+                      className="absolute right-0 top-12 z-20 w-56 rounded-xl border border-orange-100 bg-white p-2 shadow-xl"
+                    >
+                      <p className="px-2 py-1 text-xs font-black uppercase tracking-wide text-slate-400">
+                        Ustunlarni ko'rsatish
+                      </p>
+                      <div className="max-h-60 overflow-y-auto">
+                        {USTUN_SOZLAMALARI.filter((ustun) => ustun.kalit !== "mahsulot").map((ustun) => (
+                          <label
+                            key={ustun.kalit}
+                            className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-slate-700 hover:bg-orange-50"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={korinadiganUstunlar[ustun.kalit]}
+                              onChange={() => ustunKorinishiniAlmashtirish(ustun.kalit)}
+                              className="h-4 w-4 accent-orange-500"
+                            />
+                            {ustun.nom}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {scrollHolati.korinadimi && (
                     <div className="mt-2 flex items-center gap-2">
@@ -1124,7 +1139,7 @@ export default function ChiqimModal({
                       <p className="text-xl font-black text-slate-950">{pul(jami)}</p>
                     </div>
                   </div>
-                </>
+                </div>
               )}
             </section>
           </div>

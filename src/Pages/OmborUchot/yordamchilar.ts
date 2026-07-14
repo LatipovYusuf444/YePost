@@ -1,12 +1,19 @@
-import { boshlangichHujjatlar, boshlangichKirimlar } from "./mockData";
+import {
+  boshlangichHujjatlar,
+  boshlangichKirimlar,
+  boshlangichKochirmalar,
+  boshlangichRealizatsiyalar,
+} from "./mockData";
 import type {
   ChiqimHujjat,
   Hujjat,
   HujjatHolati,
   InventarizatsiyaHujjat,
   KirimHujjat,
+  KochirmaHujjat,
   Mahsulot,
   OmborItem,
+  RealizatsiyaHujjat,
   TarixYozuvi,
 } from "./types";
 
@@ -56,11 +63,19 @@ export function kirimJami(hujjat: Pick<KirimHujjat, "satrlar">) {
   return hujjat.satrlar.reduce((jami, satr) => jami + satr.soni * satr.tanNarx, 0);
 }
 
+export function realizatsiyaJami(hujjat: Pick<RealizatsiyaHujjat, "satrlar">) {
+  return hujjat.satrlar.reduce((jami, satr) => jami + satr.soni * satr.sotuvNarx, 0);
+}
+
 export function chiqimJami(hujjat: Pick<ChiqimHujjat, "satrlar">) {
   return hujjat.satrlar.reduce((jami, satr) => jami + satr.soni * satr.tanNarx, 0);
 }
 
 export function inventarizatsiyaJami(hujjat: Pick<InventarizatsiyaHujjat, "satrlar">) {
+  return hujjat.satrlar.reduce((jami, satr) => jami + satr.soni * satr.tanNarx, 0);
+}
+
+export function kochirmaJami(hujjat: Pick<KochirmaHujjat, "satrlar">) {
   return hujjat.satrlar.reduce((jami, satr) => jami + satr.soni * satr.tanNarx, 0);
 }
 
@@ -75,13 +90,16 @@ export function qoldiqlarniHisoblash() {
   for (const hujjat of boshlangichKirimlar) {
     for (const satr of hujjat.satrlar) ozgartirish(satr.omborId, satr.mahsulotId, satr.soni);
   }
+  for (const hujjat of boshlangichRealizatsiyalar) {
+    for (const satr of hujjat.satrlar) ozgartirish(satr.omborId, satr.mahsulotId, -satr.soni);
+  }
   for (const hujjat of boshlangichHujjatlar.chiqim) {
     for (const satr of hujjat.satrlar) ozgartirish(hujjat.omborId, satr.mahsulotId, -satr.miqdor);
   }
-  for (const hujjat of boshlangichHujjatlar.kochirma) {
+  for (const hujjat of boshlangichKochirmalar) {
     for (const satr of hujjat.satrlar) {
-      ozgartirish(hujjat.omborId, satr.mahsulotId, -satr.miqdor);
-      if (hujjat.omborIdTo) ozgartirish(hujjat.omborIdTo, satr.mahsulotId, satr.miqdor);
+      if (hujjat.omborIdFrom) ozgartirish(hujjat.omborIdFrom, satr.mahsulotId, -satr.soni);
+      if (hujjat.omborIdTo) ozgartirish(hujjat.omborIdTo, satr.mahsulotId, satr.soni);
     }
   }
 

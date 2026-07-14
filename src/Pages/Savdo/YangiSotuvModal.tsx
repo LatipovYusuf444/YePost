@@ -536,16 +536,10 @@ export default function YangiSotuvModal({
             <div className="grid gap-5 xl:grid-cols-[minmax(390px,0.78fr)_minmax(540px,1.22fr)]">
               <div className="min-w-0 space-y-4">
                 <section className="overflow-hidden rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur">
-                  <div className="mb-4 flex items-center justify-between border-b border-orange-100/80 pb-3">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
-                        {modalMatnlari.sectionTitle}
-                      </h3>
-                      <Settings size={15} className="text-slate-300" />
-                    </div>
-                    <span className="text-xs font-black uppercase tracking-[0.18em] text-slate-300">
-                      Bekor qilish
-                    </span>
+                  <div className="mb-4 border-b border-orange-100/80 pb-3">
+                    <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
+                      {modalMatnlari.sectionTitle}
+                    </h3>
                   </div>
 
                   <div className="space-y-4">

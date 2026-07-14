@@ -25,25 +25,26 @@ import {
   Settings,
   Trash2,
   Upload,
+  Users,
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import SavdoSelect from "@/Pages/Savdo/SavdoSelect";
-import { mockMasulShaxslar, mockYetkazibBeruvchilar } from "./mockData";
+import { mockKompaniyalar, mockMasulShaxslar, mockMijozlar } from "./mockData";
 import QidiruvSelect from "./QidiruvSelect";
-import type { KirimHujjat, KirimSatri, Mahsulot, OmborItem } from "./types";
-import { kirimJami, pul, qoldiqlarniHisoblash } from "./yordamchilar";
+import type { RealizatsiyaHujjat, RealizatsiyaSatri, Mahsulot, OmborItem } from "./types";
+import { realizatsiyaJami, pul, qoldiqlarniHisoblash } from "./yordamchilar";
 
 type Props = {
   mahsulotlar: Mahsulot[];
   omborlar: OmborItem[];
-  boshlangich: KirimHujjat | null;
+  boshlangich: RealizatsiyaHujjat | null;
   keyingiNomi: string;
   onYopish: () => void;
-  onSaqlash: (hujjat: KirimHujjat, tasdiqla: boolean) => void;
+  onSaqlash: (hujjat: RealizatsiyaHujjat, tasdiqla: boolean) => void;
 };
 
-function bosSatr(mahsulot: Mahsulot, omborId: string): KirimSatri {
+function bosSatr(mahsulot: Mahsulot, omborId: string): RealizatsiyaSatri {
   return {
     id: crypto.randomUUID(),
     mahsulotId: mahsulot.id,
@@ -56,7 +57,7 @@ function bosSatr(mahsulot: Mahsulot, omborId: string): KirimSatri {
   };
 }
 
-function bosSatrBosh(omborId: string): KirimSatri {
+function bosSatrBosh(omborId: string): RealizatsiyaSatri {
   return {
     id: crypto.randomUUID(),
     mahsulotId: "",
@@ -69,8 +70,8 @@ function bosSatrBosh(omborId: string): KirimSatri {
   };
 }
 
-type KirimFayl = { id: string; nomi: string; sana: string };
-type KirimKomment = { id: string; matn: string; muallif: string; vaqt: string };
+type RealizatsiyaFayl = { id: string; nomi: string; sana: string };
+type RealizatsiyaKomment = { id: string; matn: string; muallif: string; vaqt: string };
 type TarixYozuvi = { id: string; matn: string; vaqt: string };
 
 function hozirgiVaqt() {
@@ -106,7 +107,7 @@ const USTUN_SOZLAMALARI: { kalit: UstunKaliti; nom: string; kenglik: number }[] 
   { kalit: "summa", nom: "Summa", kenglik: 150 },
 ];
 
-export default function KirimModal({
+export default function RealizatsiyaModal({
   mahsulotlar,
   omborlar,
   boshlangich,
@@ -115,15 +116,16 @@ export default function KirimModal({
   onSaqlash,
 }: Props) {
   const [nomi, setNomi] = useState(boshlangich?.nomi ?? keyingiNomi);
-  const [yetkazibBeruvchi, setYetkazibBeruvchi] = useState(boshlangich?.yetkazibBeruvchi ?? "");
+  const [mijoz, setMijoz] = useState(boshlangich?.mijoz ?? "");
+  const [kompaniya, setKompaniya] = useState(boshlangich?.kompaniya ?? "");
   const [sanaQiymati, setSanaQiymati] = useState(boshlangich?.sana ?? new Date().toISOString().slice(0, 10));
   const [masulShaxs, setMasulShaxs] = useState(boshlangich?.masulShaxs ?? "");
-  const [satrlar, setSatrlar] = useState<KirimSatri[]>(
+  const [satrlar, setSatrlar] = useState<RealizatsiyaSatri[]>(
     boshlangich?.satrlar ?? [bosSatrBosh(omborlar[0]?.id ?? "")]
   );
-  const [fayllar, setFayllar] = useState<KirimFayl[]>([]);
+  const [fayllar, setFayllar] = useState<RealizatsiyaFayl[]>([]);
   const [kommentMatni, setKommentMatni] = useState("");
-  const [kommentlar, setKommentlar] = useState<KirimKomment[]>([]);
+  const [kommentlar, setKommentlar] = useState<RealizatsiyaKomment[]>([]);
   const [tarix, setTarix] = useState<TarixYozuvi[]>([
     {
       id: crypto.randomUUID(),
@@ -370,7 +372,7 @@ export default function KirimModal({
     setKorinadiganUstunlar((old) => ({ ...old, [kalit]: !old[kalit] }));
   }
 
-  function ustunHujayrasi(kalit: UstunKaliti, satr: KirimSatri) {
+  function ustunHujayrasi(kalit: UstunKaliti, satr: RealizatsiyaSatri) {
     const mahsulot = barchaMahsulotlar.find((item) => item.id === satr.mahsulotId);
     const ombor = omborlar.find((item) => item.id === satr.omborId);
     const qoldiq = joriyQoldiqlar.get(`${satr.omborId}::${satr.mahsulotId}`) ?? 0;
@@ -483,7 +485,7 @@ export default function KirimModal({
         );
       case "summa":
         return (
-          <span className="text-sm font-black text-emerald-600">{pul(satr.soni * satr.tanNarx)}</span>
+          <span className="text-sm font-black text-emerald-600">{pul(satr.soni * satr.sotuvNarx)}</span>
         );
       default:
         return null;
@@ -499,7 +501,7 @@ export default function KirimModal({
     if (!tanlanganFayllar || tanlanganFayllar.length === 0) return;
 
     const bugun = new Date().toISOString().slice(0, 10);
-    const yangiFayllar: KirimFayl[] = Array.from(tanlanganFayllar).map((fayl) => ({
+    const yangiFayllar: RealizatsiyaFayl[] = Array.from(tanlanganFayllar).map((fayl) => ({
       id: crypto.randomUUID(),
       nomi: fayl.name,
       sana: bugun,
@@ -541,7 +543,7 @@ export default function KirimModal({
     setSatrlar((oldSatrlar) => [...oldSatrlar, bosSatrBosh(birinchiOmbor)]);
   }
 
-  function satrniOzgartirish(id: string, ozgarish: Partial<KirimSatri>) {
+  function satrniOzgartirish(id: string, ozgarish: Partial<RealizatsiyaSatri>) {
     setSatrlar((oldSatrlar) =>
       oldSatrlar.map((satr) => (satr.id === id ? { ...satr, ...ozgarish } : satr))
     );
@@ -577,16 +579,18 @@ export default function KirimModal({
     setSatrlar((oldSatrlar) => oldSatrlar.filter((satr) => satr.id !== id));
   }
 
-  function yasashHujjat(): KirimHujjat {
+  function yasashHujjat(): RealizatsiyaHujjat {
     return {
       id: boshlangich?.id ?? crypto.randomUUID(),
       nomi: nomi.trim() || keyingiNomi,
-      yetkazibBeruvchi: yetkazibBeruvchi.trim(),
+      mijoz: mijoz.trim(),
+      kompaniya: kompaniya.trim(),
       sana: sanaQiymati,
       masulShaxs: masulShaxs.trim(),
       holati: boshlangich?.holati ?? "qoralama",
       satrlar,
       omborId: satrlar[0]?.omborId ?? boshlangich?.omborId ?? "",
+      savdoId: boshlangich?.savdoId,
       yaratilganSana: boshlangich?.yaratilganSana ?? new Date().toISOString().slice(0, 10),
       ozgartirilganSana: new Date().toISOString().slice(0, 10),
       ozgartirganShaxs: masulShaxs.trim(),
@@ -598,7 +602,7 @@ export default function KirimModal({
     void navigator.clipboard?.writeText(window.location.href);
   }
 
-  const jami = kirimJami({ satrlar });
+  const jami = realizatsiyaJami({ satrlar });
 
   return (
     <AppModal className="items-start justify-start bg-slate-950/55 p-0 py-3 pl-[78px] pr-3 backdrop-blur-[3px]">
@@ -644,7 +648,7 @@ export default function KirimModal({
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-3">
                   <h2 className="text-[30px] font-black tracking-tight text-slate-950">
-                    {boshlangich ? "Kirimni tahrirlash" : "Yangi kirim"}
+                    {boshlangich ? "Realizatsiyani tahrirlash" : "Yangi realizatsiya"}
                   </h2>
                   <Copy size={17} className="text-slate-300" />
                   <span className="rounded-full bg-[#FFF3E2] px-3 py-1 text-xs font-black uppercase tracking-wider text-[#FF6A00]">
@@ -670,13 +674,13 @@ export default function KirimModal({
                 <section className="overflow-hidden rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur">
                   <div className="mb-4 border-b border-orange-100/80 pb-3">
                     <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
-                      Kirim haqida
+                      Realizatsiya haqida
                     </h3>
                   </div>
 
                   <div className="space-y-4">
                     <label className="grid gap-2">
-                      <span className="text-sm font-bold text-slate-400">Kirimni nomi</span>
+                      <span className="text-sm font-bold text-slate-400">Realizatsiya nomi</span>
                       <input
                         value={nomi}
                         onChange={(event) => setNomi(event.target.value)}
@@ -685,23 +689,41 @@ export default function KirimModal({
                       />
                     </label>
 
-                    <label className="grid gap-2">
-                      <span className="text-sm font-bold text-slate-400">Yetkazib beruvchi</span>
-                      <QidiruvSelect
-                        boshlangichMatn={yetkazibBeruvchi}
-                        onErkinMatnOzgarishi={setYetkazibBeruvchi}
-                        onTanlash={(variant) => setYetkazibBeruvchi(variant.label)}
-                        placeholder="Yetkazib beruvchi nomini yozing"
-                        variantlar={mockYetkazibBeruvchilar.map((beruvchi) => ({
-                          id: beruvchi,
-                          label: beruvchi,
-                        }))}
-                        inputClassName="h-11 rounded-xl"
-                      />
-                    </label>
+                    <div className="grid gap-3 rounded-2xl border border-orange-100 bg-orange-50/40 p-3.5">
+                      <div className="flex items-center gap-2">
+                        <Users size={15} className="text-[#FF6A00]" />
+                        <span className="text-xs font-black uppercase tracking-wide text-slate-500">
+                          Xaridor
+                        </span>
+                      </div>
+
+                      <label className="grid gap-2">
+                        <span className="text-sm font-bold text-slate-400">Mijoz</span>
+                        <QidiruvSelect
+                          boshlangichMatn={mijoz}
+                          onErkinMatnOzgarishi={setMijoz}
+                          onTanlash={(variant) => setMijoz(variant.label)}
+                          placeholder="Mijoz nomini yozing"
+                          variantlar={mockMijozlar.map((item) => ({ id: item, label: item }))}
+                          inputClassName="h-11 rounded-xl"
+                        />
+                      </label>
+
+                      <label className="grid gap-2">
+                        <span className="text-sm font-bold text-slate-400">Kompaniya</span>
+                        <QidiruvSelect
+                          boshlangichMatn={kompaniya}
+                          onErkinMatnOzgarishi={setKompaniya}
+                          onTanlash={(variant) => setKompaniya(variant.label)}
+                          placeholder="Kompaniya nomini yozing"
+                          variantlar={mockKompaniyalar.map((item) => ({ id: item, label: item }))}
+                          inputClassName="h-11 rounded-xl"
+                        />
+                      </label>
+                    </div>
 
                     <label className="grid gap-2">
-                      <span className="text-sm font-bold text-slate-400">Qachon kirim qilingan</span>
+                      <span className="text-sm font-bold text-slate-400">Qachon sotilgan</span>
                       <div className="relative">
                         <input
                           type="date"
