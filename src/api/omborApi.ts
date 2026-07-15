@@ -1,3 +1,4 @@
+import axios from "axios";
 import apiClient from "./axios";
 import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import type {
@@ -114,15 +115,37 @@ export const chiqimApi = {
     return royxatniAjratish(response.data);
   },
   olish: async (id: string) =>
-    (await apiClient.get<ChiqimHujjati>(`/inventory/write-offs/${id}`)).data,
+    apiData(
+      (await apiClient.get<ChiqimHujjati | ApiEnvelope<ChiqimHujjati>>(
+        `/inventory/write-offs/${id}`
+      )).data
+    ),
   yaratish: async (data: ChiqimYaratishMalumoti) =>
-    (await apiClient.post<ChiqimHujjati>("/inventory/write-offs", data)).data,
+    apiData(
+      (await apiClient.post<ChiqimHujjati | ApiEnvelope<ChiqimHujjati>>(
+        "/inventory/write-offs",
+        data
+      )).data
+    ),
   yangilash: async (id: string, data: Partial<ChiqimYaratishMalumoti>) =>
-    (await apiClient.patch<ChiqimHujjati>(`/inventory/write-offs/${id}`, data)).data,
+    apiData(
+      (await apiClient.patch<ChiqimHujjati | ApiEnvelope<ChiqimHujjati>>(
+        `/inventory/write-offs/${id}`,
+        data
+      )).data
+    ),
   tasdiqlash: async (id: string) =>
-    (await apiClient.post<ChiqimHujjati>(`/inventory/write-offs/${id}/confirm`)).data,
+    apiData(
+      (await apiClient.post<ChiqimHujjati | ApiEnvelope<ChiqimHujjati>>(
+        `/inventory/write-offs/${id}/confirm`
+      )).data
+    ),
   bekorQilish: async (id: string) =>
-    (await apiClient.post<ChiqimHujjati>(`/inventory/write-offs/${id}/cancel`)).data,
+    apiData(
+      (await apiClient.post<ChiqimHujjati | ApiEnvelope<ChiqimHujjati>>(
+        `/inventory/write-offs/${id}/cancel`
+      )).data
+    ),
 };
 
 // Ombor/Kochirish.tsx: omborlar orasida ko'chirish hujjatlari.
@@ -177,11 +200,18 @@ export const inventarizatsiyaApi = {
 
 // Ombor/OmborQoldigi.tsx va Mahsulotlar.tsx: real ombor qoldiqlari.
 export async function omborQoldiqlari(warehouseId?: string) {
-  const response = await apiClient.get<RoyxatJavobi<OmborQoldigi>>("/inventory/stock-balance", {
+  try {
+    const response = await apiClient.get<RoyxatJavobi<OmborQoldigi>>("/inventory/stock-balance", {
       params: warehouseId ? { warehouseId } : undefined,
     });
 
-  return royxatniAjratish(response.data);
+    return royxatniAjratish(response.data);
+  } catch (error) {
+    // Endpoint mavjud, lekin backend ayrim bo'sh omborlar uchun [] o'rniga 404 qaytaradi.
+    // Ro'yxat so'rovida bu xato emas — omborda hali qoldiq yo'q degani.
+    if (axios.isAxiosError(error) && error.response?.status === 404) return [];
+    throw error;
+  }
 }
 
 // Ombor hujjatlari formalaridagi yetkazib beruvchi va mas'ul xodim tanlovlari.

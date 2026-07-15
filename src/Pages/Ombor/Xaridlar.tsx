@@ -60,11 +60,17 @@ export default function Xaridlar() {
     );
   }
 
+  function kirimNomi(hujjat: KirimHujjati) {
+    const match = (hujjat.note ?? "").trim().match(/^Nomi:\s*(.+?)\s*(?:\|.*)?$/);
+    return match?.[1]?.trim() || "Kirim hujjati";
+  }
+
   const royxat = useMemo(() => {
     const q = qidiruv.trim().toLowerCase();
     if (!q) return store.kirimlar;
     return store.kirimlar.filter((hujjat) => {
       const matn = [
+        kirimNomi(hujjat),
         hujjatRaqami(hujjat),
         supplierNomi(hujjat.supplierId, hujjat.supplier?.name),
         masulNomi(hujjat),
@@ -151,7 +157,7 @@ export default function Xaridlar() {
                       className="cursor-pointer hover:bg-orange-50/30"
                     >
                       <td className="px-5 py-3">
-                        <p className="font-black text-gray-950">Kirim hujjati</p>
+                        <p className="font-black text-gray-950">{kirimNomi(hujjat)}</p>
                         <p className="text-xs font-semibold text-orange-500">{hujjatRaqami(hujjat)}</p>
                       </td>
                       <td className="px-5 py-3 text-gray-700">
@@ -211,78 +217,6 @@ export default function Xaridlar() {
       </div>
 
       {modal && <YangiKirimModal onClose={() => setModal(false)} />}
-      {/* Eski kirim modali almashtirildi.
-        <AppModal>
-          <form onSubmit={saqlash} className="scrollbar-hidden max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl">
-            <h2 className="text-2xl font-black">Yangi kirim hujjati</h2>
-            <div className="mt-5 grid gap-4 md:grid-cols-3">
-              <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="h-12 rounded-2xl border px-4">
-                <option value="">Yetkazib beruvchi *</option>
-                {store.yetkazibBeruvchilar.map((item) => <option key={item.id} value={item.id}>{item.name ?? item.id}</option>)}
-              </select>
-              <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} className="h-12 rounded-2xl border px-4">
-                <option value="">Ombor *</option>
-                {store.omborlar.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-              </select>
-              <select value={responsibleId} onChange={(e) => setResponsibleId(e.target.value)} className="h-12 rounded-2xl border px-4">
-                <option value="">Mas'ul xodim</option>
-                {store.xodimlar.map((item) => <option key={item.id} value={item.id}>{item.fullName ?? item.username ?? item.id}</option>)}
-              </select>
-            </div>
-            <div className="mt-4 rounded-2xl border border-orange-100 bg-orange-50/60 p-4">
-              <p className="text-sm font-black text-orange-700">
-                Yetkazib beruvchi ro'yxatda yo'qmi?
-              </p>
-              <div className="mt-3 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-                <input
-                  value={supplierName}
-                  onChange={(event) => setSupplierName(event.target.value)}
-                  className="h-11 rounded-xl border border-orange-100 bg-white px-3"
-                  placeholder="Yetkazib beruvchi nomi"
-                />
-                <input
-                  value={supplierPhone}
-                  onChange={(event) => setSupplierPhone(event.target.value)}
-                  className="h-11 rounded-xl border border-orange-100 bg-white px-3"
-                  placeholder="+998..."
-                />
-                <button
-                  type="button"
-                  onClick={() => void supplierQoshish()}
-                  className="h-11 rounded-xl bg-orange-500 px-4 text-sm font-black text-white"
-                >
-                  Yaratish
-                </button>
-              </div>
-            </div>
-            <div className="mt-5 space-y-3">
-              {items.map((item, index) => (
-                <div key={index} className="grid gap-3 rounded-2xl bg-gray-50 p-4 md:grid-cols-[1fr_120px_160px_44px]">
-                  <select value={item.modificationId} onChange={(e) => setItems((rows) => rows.map((row, i) => i === index ? {...row, modificationId:e.target.value} : row))} className="h-11 rounded-xl border px-3 md:mt-6">
-                    <option value="">Mahsulot modifikatsiyasi</option>
-                    {store.modifikatsiyalar.map((mod) => <option key={mod.id} value={mod.id}>{modificationNomi(mod)} — {mod.barcode}</option>)}
-                  </select>
-                  <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">
-                    Miqdor
-                    <input type="number" min="0.001" step="0.001" value={item.quantity} onChange={(e) => setItems((rows) => rows.map((row, i) => i === index ? {...row, quantity:Number(e.target.value)} : row))} className="mt-2 h-11 w-full rounded-xl border px-3" />
-                  </label>
-                  <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">
-                    Tan narx
-                    <input type="number" min="0" value={item.price} onChange={(e) => setItems((rows) => rows.map((row, i) => i === index ? {...row, price:e.target.value} : row))} className="mt-2 h-11 w-full rounded-xl border px-3" placeholder="Tan narx" />
-                  </label>
-                  <button type="button" disabled={items.length === 1} onClick={() => setItems((rows) => rows.filter((_, i) => i !== index))} className="mt-6 flex h-11 items-center justify-center rounded-xl bg-red-50 text-red-500 disabled:opacity-30"><Trash2 size={16}/></button>
-                </div>
-              ))}
-              <button type="button" onClick={() => setItems((rows) => [...rows, {modificationId:"", quantity:1, price:""}])} className="rounded-xl bg-orange-50 px-4 py-2 text-sm font-bold text-orange-600">+ Mahsulot qo'shish</button>
-            </div>
-            <textarea value={note} onChange={(e) => setNote(e.target.value)} className="mt-5 w-full rounded-2xl border p-4" placeholder="Izoh" />
-            <div className="mt-5 flex justify-end gap-3">
-              <button type="button" onClick={() => setModal(false)} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">Yopish</button>
-              <button disabled={store.amalBajarilmoqda} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-5 font-black text-white disabled:opacity-50">{store.amalBajarilmoqda && <LoaderCircle size={16} className="animate-spin"/>}Qoralama saqlash</button>
-            </div>
-          </form>
-        </AppModal>
-      )} */}
 
       {tanlanganId && (
         <KirimTafsilotModal id={tanlanganId} onClose={() => setTanlanganId(null)} />

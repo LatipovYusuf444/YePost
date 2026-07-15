@@ -172,6 +172,7 @@ export const useOmborStore = create<OmborState>((set, get) => ({
   },
 
   qoldiqlarniYuklash: async (warehouseId) => {
+    set({ xatolik: null });
     try {
       let { omborlar, modifikatsiyalar } = get();
       if (omborlar.length === 0 || modifikatsiyalar.length === 0) {
@@ -185,6 +186,7 @@ export const useOmborStore = create<OmborState>((set, get) => ({
         omborlar,
         modifikatsiyalar,
         qoldiqlar: qoldiqlarniBoglash(qoldiqlar, omborlar, modifikatsiyalar),
+        xatolik: null,
       });
     } catch (error) {
       set({ xatolik: getApiErrorMessage(error) });

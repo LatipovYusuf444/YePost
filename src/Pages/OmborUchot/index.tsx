@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Kirim from "./Kirim";
 import Realizatsiya from "./Realizatsiya";
 import Chiqim from "./Chiqim";
 import Kochirma from "./Kochirma";
@@ -8,7 +7,6 @@ import Omborlar from "./Omborlar";
 import Qoldiqlar from "./Qoldiqlar";
 
 type Tab =
-  | "kirim"
   | "realizatsiya"
   | "chiqim"
   | "inventarizatsiya"
@@ -17,7 +15,6 @@ type Tab =
   | "qoldiqlar";
 
 const tablar: Array<{ id: Tab; nom: string }> = [
-  { id: "kirim", nom: "Kirim" },
   { id: "realizatsiya", nom: "Realizatsiya" },
   { id: "chiqim", nom: "Chiqim" },
   { id: "inventarizatsiya", nom: "Inventarizatsiya" },
@@ -27,7 +24,6 @@ const tablar: Array<{ id: Tab; nom: string }> = [
 ];
 
 const sahifalar: Record<Tab, () => React.JSX.Element> = {
-  kirim: Kirim,
   realizatsiya: Realizatsiya,
   chiqim: Chiqim,
   inventarizatsiya: Inventarizatsiya,
@@ -37,7 +33,7 @@ const sahifalar: Record<Tab, () => React.JSX.Element> = {
 };
 
 export default function OmborUchot() {
-  const [faolTab, setFaolTab] = useState<Tab>("kirim");
+  const [faolTab, setFaolTab] = useState<Tab>("realizatsiya");
   const FaolSahifa = sahifalar[faolTab];
 
   return (

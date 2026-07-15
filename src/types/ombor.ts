@@ -132,14 +132,25 @@ export type ChiqimSababi = "DAMAGE" | "EXPIRY" | "THEFT" | "OTHER";
 
 export type ChiqimHujjati = {
   id: string;
+  number?: string;
+  documentNumber?: string;
+  docNumber?: string;
   warehouseId: string;
   reason: ChiqimSababi | string;
   responsibleId?: string;
   note?: string;
   status?: HujjatHolati | string;
+  total?: number;
+  totalAmount?: number;
   createdAt?: string;
+  updatedAt?: string;
+  confirmedAt?: string;
+  createdById?: string;
+  updatedById?: string;
   warehouse?: Ombor;
   responsible?: NomliEntity;
+  createdBy?: NomliEntity;
+  updatedBy?: NomliEntity;
   items?: Array<{
     id?: string;
     modificationId: string;
