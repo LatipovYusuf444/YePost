@@ -1,6 +1,5 @@
 import { useState } from "react";
 import Realizatsiya from "./Realizatsiya";
-import Chiqim from "./Chiqim";
 import Kochirma from "./Kochirma";
 import Inventarizatsiya from "./Inventarizatsiya";
 import Omborlar from "./Omborlar";
@@ -8,7 +7,6 @@ import Qoldiqlar from "./Qoldiqlar";
 
 type Tab =
   | "realizatsiya"
-  | "chiqim"
   | "inventarizatsiya"
   | "kochirma"
   | "omborlar"
@@ -16,7 +14,6 @@ type Tab =
 
 const tablar: Array<{ id: Tab; nom: string }> = [
   { id: "realizatsiya", nom: "Realizatsiya" },
-  { id: "chiqim", nom: "Chiqim" },
   { id: "inventarizatsiya", nom: "Inventarizatsiya" },
   { id: "kochirma", nom: "Ko'chirma" },
   { id: "omborlar", nom: "Ombor" },
@@ -25,7 +22,6 @@ const tablar: Array<{ id: Tab; nom: string }> = [
 
 const sahifalar: Record<Tab, () => React.JSX.Element> = {
   realizatsiya: Realizatsiya,
-  chiqim: Chiqim,
   inventarizatsiya: Inventarizatsiya,
   kochirma: Kochirma,
   omborlar: Omborlar,

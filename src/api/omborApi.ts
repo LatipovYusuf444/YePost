@@ -27,6 +27,56 @@ function royxatniAjratish<T>(data: RoyxatJavobi<T>): T[] {
   return apiList(data as T[] | ApiListEnvelope<T>);
 }
 
+const omborKengaytirilganMaydonlari = [
+  "address",
+  "latitude",
+  "longitude",
+  "openingTime",
+  "closingTime",
+  "responsibleId",
+] as const;
+
+function kengaytirilganOmborMaydonlariRadEtildi(error: unknown) {
+  if (!axios.isAxiosError(error) || error.response?.status !== 400) return false;
+  const javob = JSON.stringify(error.response.data).toLowerCase();
+  return omborKengaytirilganMaydonlari.some((maydon) =>
+    javob.includes(`property ${maydon.toLowerCase()} should not exist`)
+  );
+}
+
+async function omborYaratishToliq(data: OmborSaqlashMalumoti) {
+  try {
+    const response = await apiClient.post<Ombor | ApiEnvelope<Ombor>>(
+      "/organization/warehouses",
+      data
+    );
+    return apiData(response.data);
+  } catch (error) {
+    if (!kengaytirilganOmborMaydonlariRadEtildi(error)) throw error;
+    throw new Error(
+      "Backend ombor manzili, GPS, ish vaqti va mas'ul shaxs maydonlarini hali qabul qilmaydi. Warehouse DTO yangilanmaguncha ombor saqlanmadi."
+    );
+  }
+}
+
+async function omborYangilashToliq(
+  id: string,
+  data: Partial<OmborSaqlashMalumoti>
+) {
+  try {
+    const response = await apiClient.patch<Ombor | ApiEnvelope<Ombor>>(
+      `/organization/warehouses/${id}`,
+      data
+    );
+    return apiData(response.data);
+  } catch (error) {
+    if (!kengaytirilganOmborMaydonlariRadEtildi(error)) throw error;
+    throw new Error(
+      "Backend ombor manzili, GPS, ish vaqti va mas'ul shaxs maydonlarini hali qabul qilmaydi. Warehouse DTO yangilanmaguncha o'zgarishlar saqlanmadi."
+    );
+  }
+}
+
 // Organization sahifasi: kompaniyaning barcha Swagger CRUD endpointlari.
 export const kompaniyalarApi = {
   royxat: async () =>
@@ -61,10 +111,8 @@ export const omborlarApi = {
     apiList((await apiClient.get<Ombor[] | ApiListEnvelope<Ombor>>("/organization/warehouses")).data),
   olish: async (id: string) =>
     apiData((await apiClient.get<Ombor | ApiEnvelope<Ombor>>(`/organization/warehouses/${id}`)).data),
-  yaratish: async (data: OmborSaqlashMalumoti) =>
-    apiData((await apiClient.post<Ombor | ApiEnvelope<Ombor>>("/organization/warehouses", data)).data),
-  yangilash: async (id: string, data: Partial<OmborSaqlashMalumoti>) =>
-    apiData((await apiClient.patch<Ombor | ApiEnvelope<Ombor>>(`/organization/warehouses/${id}`, data)).data),
+  yaratish: omborYaratishToliq,
+  yangilash: omborYangilashToliq,
   ochirish: async (id: string) =>
     apiData((await apiClient.delete<Ombor | ApiEnvelope<Ombor>>(`/organization/warehouses/${id}`)).data),
 };

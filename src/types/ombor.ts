@@ -4,16 +4,31 @@ export type Ombor = {
   id: string;
   name: string;
   branchId?: string | null;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  openingTime?: string | null;
+  closingTime?: string | null;
+  responsibleId?: string | null;
+  createdById?: string | null;
   isActive?: boolean;
   isDeleted?: boolean;
   createdAt?: string;
   updatedAt?: string;
   branch?: { id: string; name?: string };
+  responsible?: NomliEntity;
+  createdBy?: NomliEntity;
 };
 
 export type OmborSaqlashMalumoti = {
   name: string;
-  branchId?: string;
+  branchId?: string | null;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  openingTime?: string | null;
+  closingTime?: string | null;
+  responsibleId?: string | null;
   isActive?: boolean;
 };
 

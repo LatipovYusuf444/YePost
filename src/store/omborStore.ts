@@ -50,6 +50,7 @@ type OmborState = {
   amalBajarilmoqda: boolean;
   xatolik: string | null;
   malumotlarniYuklash: () => Promise<void>;
+  omborMalumotlariniYuklash: () => Promise<void>;
   qoldiqlarniYuklash: (warehouseId?: string) => Promise<void>;
   kompaniyaOlish: (id: string) => Promise<Kompaniya | null>;
   kompaniyaYaratish: (data: KompaniyaSaqlashMalumoti) => Promise<boolean>;
@@ -166,6 +167,20 @@ export const useOmborStore = create<OmborState>((set, get) => ({
         xodimlar: users,
         yuklanmoqda: false,
       });
+    } catch (error) {
+      set({ yuklanmoqda: false, xatolik: getApiErrorMessage(error) });
+    }
+  },
+
+  omborMalumotlariniYuklash: async () => {
+    set({ yuklanmoqda: true, xatolik: null });
+    try {
+      const [omborlar, filiallar, users] = await Promise.all([
+        omborlarApi.royxat(),
+        filiallarApi.royxat(),
+        xodimlar(),
+      ]);
+      set({ omborlar, filiallar, xodimlar: users, yuklanmoqda: false });
     } catch (error) {
       set({ yuklanmoqda: false, xatolik: getApiErrorMessage(error) });
     }
