@@ -1,35 +1,23 @@
 import { useState } from "react";
-import Realizatsiya from "./Realizatsiya";
 import Kochirma from "./Kochirma";
-import Inventarizatsiya from "./Inventarizatsiya";
-import Omborlar from "./Omborlar";
 import Qoldiqlar from "./Qoldiqlar";
 
 type Tab =
-  | "realizatsiya"
-  | "inventarizatsiya"
   | "kochirma"
-  | "omborlar"
   | "qoldiqlar";
 
 const tablar: Array<{ id: Tab; nom: string }> = [
-  { id: "realizatsiya", nom: "Realizatsiya" },
-  { id: "inventarizatsiya", nom: "Inventarizatsiya" },
   { id: "kochirma", nom: "Ko'chirma" },
-  { id: "omborlar", nom: "Ombor" },
   { id: "qoldiqlar", nom: "Ombordagi qoldiqlar" },
 ];
 
 const sahifalar: Record<Tab, () => React.JSX.Element> = {
-  realizatsiya: Realizatsiya,
-  inventarizatsiya: Inventarizatsiya,
   kochirma: Kochirma,
-  omborlar: Omborlar,
   qoldiqlar: Qoldiqlar,
 };
 
 export default function OmborUchot() {
-  const [faolTab, setFaolTab] = useState<Tab>("realizatsiya");
+  const [faolTab, setFaolTab] = useState<Tab>("kochirma");
   const FaolSahifa = sahifalar[faolTab];
 
   return (

@@ -28,7 +28,9 @@ export function modificationNomi(modification?: MahsulotModifikatsiyasi) {
 }
 
 export function qoldiqMiqdori(qoldiq: OmborQoldigi) {
-  return qoldiq.availableQuantity ?? qoldiq.quantity ?? qoldiq.balance ?? 0;
+  const qiymat = qoldiq.availableQuantity ?? qoldiq.quantity ?? qoldiq.balance ?? 0;
+  const miqdor = Number(qiymat);
+  return Number.isFinite(miqdor) && miqdor >= 0 ? miqdor : 0;
 }
 
 export function hujjatRaqami(hujjat: { id?: string; documentNumber?: string; docNumber?: string; number?: string }) {

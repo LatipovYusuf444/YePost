@@ -227,23 +227,42 @@ export const inventarizatsiyaApi = {
     return royxatniAjratish(response.data);
   },
   olish: async (id: string) =>
-    (await apiClient.get<InventarizatsiyaHujjati>(`/inventory/stock-takes/${id}`))
-      .data,
+    apiData(
+      (
+        await apiClient.get<InventarizatsiyaHujjati | ApiEnvelope<InventarizatsiyaHujjati>>(
+          `/inventory/stock-takes/${id}`
+        )
+      ).data
+    ),
   yaratish: async (data: InventarizatsiyaYaratishMalumoti) =>
-    (await apiClient.post<InventarizatsiyaHujjati>("/inventory/stock-takes", data)).data,
+    apiData(
+      (
+        await apiClient.post<InventarizatsiyaHujjati | ApiEnvelope<InventarizatsiyaHujjati>>(
+          "/inventory/stock-takes",
+          data
+        )
+      ).data
+    ),
   yangilash: async (
     id: string,
     data: Partial<InventarizatsiyaYaratishMalumoti>
   ) =>
-    (
+    apiData(
+      (
       await apiClient.patch<InventarizatsiyaHujjati>(
         `/inventory/stock-takes/${id}`,
         data
       )
-    ).data,
+      ).data
+    ),
   tasdiqlash: async (id: string) =>
-    (await apiClient.post<InventarizatsiyaHujjati>(`/inventory/stock-takes/${id}/confirm`))
-      .data,
+    apiData(
+      (
+        await apiClient.post<InventarizatsiyaHujjati | ApiEnvelope<InventarizatsiyaHujjati>>(
+          `/inventory/stock-takes/${id}/confirm`
+        )
+      ).data
+    ),
 };
 
 // Ombor/OmborQoldigi.tsx va Mahsulotlar.tsx: real ombor qoldiqlari.

@@ -81,7 +81,9 @@ type OmborState = {
   kochirishJonatish: (id: string) => Promise<boolean>;
   kochirishQabulQilish: (id: string) => Promise<boolean>;
   kochirishBekorQilish: (id: string) => Promise<boolean>;
-  inventarizatsiyaYaratish: (data: InventarizatsiyaYaratishMalumoti) => Promise<boolean>;
+  inventarizatsiyaYaratish: (
+    data: InventarizatsiyaYaratishMalumoti
+  ) => Promise<InventarizatsiyaHujjati | null>;
   inventarizatsiyaOlish: (id: string) => Promise<InventarizatsiyaHujjati | null>;
   inventarizatsiyaYangilash: (id: string, data: Partial<InventarizatsiyaYaratishMalumoti>) => Promise<boolean>;
   inventarizatsiyaTasdiqlash: (id: string) => Promise<boolean>;
@@ -612,10 +614,10 @@ export const useOmborStore = create<OmborState>((set, get) => ({
         inventarizatsiyalar: [hujjat, ...state.inventarizatsiyalar],
         amalBajarilmoqda: false,
       }));
-      return true;
+      return hujjat;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
-      return false;
+      return null;
     }
   },
   inventarizatsiyaOlish: async (id) => {
