@@ -163,8 +163,8 @@ body {
   }
 
   .scrollbar-orange::-webkit-scrollbar {
-    height: 62px;
-    width: 62px;
+    height: 10px;
+    width: 10px;
   }
 
   .scrollbar-orange::-webkit-scrollbar-track {

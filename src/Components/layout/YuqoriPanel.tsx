@@ -36,7 +36,7 @@ const moduleTabs: Record<ModuleKey, Array<{ nom: string; path: string }>> = {
     { nom: "Bekor qilinganlar", path: "/savdo?tab=bekor-qilingan" },
   ],
   mahsulotlar: [{ nom: "Mahsulotlar", path: "/mahsulotlar" }],
-  mijozlar: [{ nom: "Mijozlar", path: "/mijozlar" }],
+  mijozlar: [{ nom: "Xaridorlar", path: "/mijozlar" }],
   hisobotlar: [{ nom: "Hisobotlar", path: "/hisobotlar" }],
   ombor: [
     { nom: "Omborlar", path: "/ombor" },

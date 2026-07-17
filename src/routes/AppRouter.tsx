@@ -2,7 +2,7 @@ import AsosiyLayout from "@/Components/layout/AsosiyPanel"
 import Login from "@/Pages/Auth/Login"
 import BoshSahifa from "@/Pages/BoshSahifa"
 import Kassa from "@/Pages/Kassa"
-import Hisobotlar from "@/Pages/Hisobotlar"
+import HisobotUchot from "@/Pages/HisobotUchot"
 import Hodimlar from "@/Pages/Hodimlar"
 import Mahsulotlar from "@/Pages/Mahsulotlar"
 import AmalgaOshirilganlar from "@/Pages/Ombor/AmalgaOshirilganlar"
@@ -15,6 +15,7 @@ import Xaridlar from "@/Pages/Ombor/Xaridlar"
 import Mijozlar from "@/Pages/Mijozlar"
 import Ombor from "@/Pages/Ombor"
 import OmborUchot from "@/Pages/OmborUchot"
+import XaridorUchot from "@/Pages/XaridorUchot"
 import Savdo from "@/Pages/Savdo"
 import Sozlamalar from "@/Pages/Sozlamalar"
 import { Navigate, Route, Routes } from "react-router"
@@ -45,8 +46,9 @@ export default function AppRouter() {
         <Route path="/ombor/qoldiq" element={<OmborQoldigi />} />
         <Route path="/ombor/inventarizatsiya" element={<Inventarizatsiya />} />
         <Route path="/ombor-uchot" element={<OmborUchot />} />
+        <Route path="/xaridor-uchot" element={<XaridorUchot />} />
         <Route path="/kassa" element={<Kassa />} />
-        <Route path="/hisobotlar" element={<Hisobotlar />} />
+        <Route path="/hisobotlar" element={<HisobotUchot />} />
         <Route path="/hodimlar" element={<Hodimlar />} />
         <Route path="/sozlamalar" element={<Sozlamalar />} />
 
