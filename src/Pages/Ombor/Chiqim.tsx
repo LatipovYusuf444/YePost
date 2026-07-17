@@ -326,7 +326,7 @@ export default function Chiqim() {
             <thead className="bg-[#fff9f3] text-[11px] font-black uppercase tracking-wide text-orange-500">
               <tr>
                 {faolUstunlar.map((column) => (
-                  <th key={column.id} className="relative h-[74px] border-r border-orange-200/80 px-7 py-4">
+                  <th key={column.id} className="relative h-[58px] border-r border-orange-200/80 px-7 py-3">
                     <span className="block truncate">{column.nom}</span>
                     <button
                       type="button"

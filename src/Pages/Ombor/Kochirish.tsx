@@ -475,7 +475,7 @@ export default function Kochirish() {
             <thead className="bg-[#FFF9F3] text-[13px] font-black uppercase text-[#FF5A00]">
               <tr>
                 {korinadiganUstunlarRoyxati.map((ustun) => (
-                  <th key={ustun.kalit} className="relative h-[74px] overflow-visible px-7 py-4">
+                  <th key={ustun.kalit} className="relative h-[58px] overflow-visible px-7 py-3">
                     <span className="block max-w-[190px] truncate">{ustun.nom}</span>
                     <span
                       role="separator"

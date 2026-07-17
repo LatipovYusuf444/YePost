@@ -168,7 +168,7 @@ export default function OmborJadval({ children, className = "" }: OmborJadvalPro
         onMouseDown={resizeBoshlash}
         onMouseMove={resizeCursor}
         onMouseLeave={(event) => { event.currentTarget.style.cursor = ""; }}
-        className="scrollbar-hidden overflow-x-auto [&_table]:min-w-full [&_thead]:bg-[#fff9f3] [&_thead]:text-orange-600 [&_thead_th]:relative [&_thead_th]:h-[74px] [&_thead_th]:whitespace-nowrap [&_thead_th]:border-r [&_thead_th]:border-orange-200 [&_thead_th]:px-7 [&_thead_th]:py-4 [&_thead_th]:text-xs [&_thead_th]:font-black [&_thead_th]:uppercase [&_thead_th:last-child]:border-r-0 [&_tbody]:divide-y [&_tbody]:divide-orange-100 [&_tbody_td]:px-7 [&_tbody_td]:py-5"
+        className="scrollbar-hidden overflow-x-auto [&_table]:min-w-full [&_thead]:bg-[#fff9f3] [&_thead]:text-orange-600 [&_thead_th]:relative [&_thead_th]:h-[58px] [&_thead_th]:whitespace-nowrap [&_thead_th]:border-r [&_thead_th]:border-orange-200 [&_thead_th]:px-7 [&_thead_th]:py-3 [&_thead_th]:text-xs [&_thead_th]:font-black [&_thead_th]:uppercase [&_thead_th:last-child]:border-r-0 [&_tbody]:divide-y [&_tbody]:divide-orange-100 [&_tbody_td]:px-7 [&_tbody_td]:py-5"
       >
         {children}
       </div>

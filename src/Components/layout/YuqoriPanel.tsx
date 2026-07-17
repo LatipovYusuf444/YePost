@@ -39,13 +39,13 @@ const moduleTabs: Record<ModuleKey, Array<{ nom: string; path: string }>> = {
   mijozlar: [{ nom: "Xaridorlar", path: "/mijozlar" }],
   hisobotlar: [{ nom: "Hisobotlar", path: "/hisobotlar" }],
   ombor: [
-    { nom: "Omborlar", path: "/ombor" },
+    { nom: "Inventarizatsiya", path: "/ombor/inventarizatsiya" },
     { nom: "Kirim", path: "/ombor/kirimlar" },
-    { nom: "Amalga oshirilganlar", path: "/ombor/amalga-oshirilganlar" },
     { nom: "Chiqim", path: "/ombor/chiqimlar" },
     { nom: "Ko'chirish", path: "/ombor/kochirishlar" },
     { nom: "Qoldiq", path: "/ombor/qoldiq" },
-    { nom: "Inventarizatsiya", path: "/ombor/inventarizatsiya" },
+    { nom: "Amalga oshirilganlar", path: "/ombor/amalga-oshirilganlar" },
+    { nom: "Omborlar", path: "/ombor/omborlar" },
   ],
   default: [{ nom: "Bosh sahifa", path: "/" }],
 };
@@ -173,7 +173,13 @@ export default function YuqoriPanel() {
       transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
       className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-orange-100 bg-white/60 px-4 py-3 shadow-sm backdrop-blur-xl"
     >
-      <nav className="flex min-w-0 flex-1 items-center gap-5 overflow-x-auto">
+      <nav
+        className={
+          moduleKey === "ombor"
+            ? "grid min-w-0 flex-1 grid-flow-col auto-cols-[minmax(140px,1fr)] items-center overflow-x-auto"
+            : "flex min-w-0 flex-1 items-center gap-5 overflow-x-auto"
+        }
+      >
         {moduleTabs[moduleKey].map((tab) => {
           const [tabPath, tabQuery = ""] = tab.path.split("?");
           const tabParams = new URLSearchParams(tabQuery);
@@ -187,7 +193,11 @@ export default function YuqoriPanel() {
             <Link
               key={tab.path}
               to={tab.path}
-              className={`relative shrink-0 pb-2 text-sm ${
+              className={`relative shrink-0 text-sm ${
+                moduleKey === "ombor"
+                  ? "flex h-11 w-full items-center justify-center px-3 text-center"
+                  : "pb-2"
+              } ${
                 isActive
                   ? "font-bold text-orange-600 after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-orange-500"
                   : "font-medium text-gray-500 hover:text-orange-600"

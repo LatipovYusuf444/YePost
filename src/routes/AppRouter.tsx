@@ -36,7 +36,8 @@ export default function AppRouter() {
         {/* <Route path="/pos" element={<Savdo />} /> */}
         <Route path="/mahsulotlar" element={<Mahsulotlar />} />
         <Route path="/mijozlar" element={<Mijozlar />} />
-        <Route path="/ombor" element={<Ombor />} />
+        <Route path="/ombor" element={<Navigate to="/ombor/inventarizatsiya" replace />} />
+        <Route path="/ombor/omborlar" element={<Ombor />} />
         <Route path="/ombor/kirimlar" element={<Xaridlar />} />
         <Route path="/ombor/amalga-oshirilganlar" element={<AmalgaOshirilganlar />} />
         <Route path="/ombor/chiqimlar" element={<Chiqimlar />} />
