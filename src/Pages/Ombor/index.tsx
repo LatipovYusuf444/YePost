@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   CalendarDays,
   ChevronDown,
@@ -18,11 +18,14 @@ import {
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import { manzilniKoordinatadanAniqlash } from "@/api/omborApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useOmborStore } from "@/store/omborStore";
 import type { Ombor, OmborSaqlashMalumoti } from "@/types/ombor";
 import FiliallarBoshqaruvi from "./FiliallarBoshqaruvi";
 import Kompaniyalar from "./Kompaniyalar";
 import OrganizationTablari, { type OrganizationTab } from "./OrganizationTablari";
+import OmborJadval from "./OmborJadval";
 
 type Korinish = "jadval" | "kartochka";
 
@@ -31,6 +34,7 @@ export default function Ombor() {
     omborlar,
     filiallar,
     xodimlar,
+    omborMasullari,
     yuklanmoqda,
     amalBajarilmoqda,
     xatolik,
@@ -58,7 +62,22 @@ export default function Ombor() {
   const [gpsYuklanmoqda, setGpsYuklanmoqda] = useState(false);
   const [formaXatosi, setFormaXatosi] = useState<string | null>(null);
   const korinishMenuRef = useRef<HTMLDivElement | null>(null);
-  const tanlanganMasul = xodimlar.find((xodim) => xodim.id === responsibleId);
+  const masulTanlovlari = useMemo(() => {
+    const tanlovlar = [...omborMasullari];
+    const joriyMasul = tahrirOmbor?.responsible;
+    if (joriyMasul && !tanlovlar.some((xodim) => xodim.id === joriyMasul.id)) {
+      tanlovlar.push(joriyMasul);
+    }
+    return tanlovlar;
+  }, [omborMasullari, tahrirOmbor?.responsible]);
+  const xodimMap = useMemo(
+    () =>
+      new Map(
+        [...xodimlar, ...omborMasullari].map((xodim) => [String(xodim.id), xodim])
+      ),
+    [omborMasullari, xodimlar]
+  );
+  const tanlanganMasul = masulTanlovlari.find((xodim) => xodim.id === responsibleId);
   const yaratilganSana =
     tahrirOmbor?.createdAt?.slice(0, 10) ?? new Date().toISOString().slice(0, 10);
 
@@ -164,9 +183,21 @@ export default function Ombor() {
 
     setGpsYuklanmoqda(true);
     navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setGps(`${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`);
-        setGpsYuklanmoqda(false);
+      async ({ coords }) => {
+        const latitude = Number(coords.latitude.toFixed(6));
+        const longitude = Number(coords.longitude.toFixed(6));
+        setGps(`${latitude}, ${longitude}`);
+
+        try {
+          const natija = await manzilniKoordinatadanAniqlash(latitude, longitude);
+          if (natija.address?.trim()) setAddress(natija.address.trim());
+        } catch (error) {
+          setFormaXatosi(
+            `GPS aniqlandi, lekin yozma manzil olinmadi: ${getApiErrorMessage(error)}`
+          );
+        } finally {
+          setGpsYuklanmoqda(false);
+        }
       },
       () => {
         setFormaXatosi("GPS joylashuvini aniqlab bo'lmadi. Brauzer ruxsatini tekshiring.");
@@ -217,7 +248,7 @@ export default function Ombor() {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-500">
-            Ombor uchoti
+            Ombor boshqaruvi
           </p>
           <h1 className="mt-1 text-3xl font-black text-gray-950">Omborlar</h1>
           <p className="mt-1 text-sm text-gray-500">
@@ -315,8 +346,7 @@ export default function Ombor() {
           <LoaderCircle className="animate-spin text-orange-500" size={32} />
         </div>
       ) : korinish === "jadval" ? (
-        <div className="overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-sm">
-          <div className="overflow-x-auto">
+        <OmborJadval>
             <table className="w-full min-w-[1480px] text-left">
               <thead className="bg-orange-50/70 text-xs font-black uppercase text-orange-600">
                 <tr>
@@ -357,7 +387,7 @@ export default function Ombor() {
                 </div>
               </td>
               <td className="px-6 py-5 text-sm font-semibold text-gray-600">
-                <p className="max-w-56 leading-5">{ombor.address || "—"}</p>
+                <p className="max-w-56 leading-5">{ombor.address || "Manzil kiritilmagan"}</p>
                 {ombor.latitude != null && ombor.longitude != null && (
                   <p className="mt-1 flex items-start gap-1 text-xs font-bold text-slate-400">
                     <MapPin size={13} className="mt-0.5 shrink-0" />
@@ -375,16 +405,16 @@ export default function Ombor() {
                     {ombor.closingTime}
                   </>
                 ) : (
-                  "—"
+                  "Ish vaqti kiritilmagan"
                 )}
               </td>
               <td className="px-6 py-5 text-sm font-semibold text-gray-600">
                 {ombor.createdBy?.fullName ??
                   ombor.createdBy?.username ??
                   ombor.createdBy?.name ??
-                  xodimlar.find((xodim) => xodim.id === ombor.createdById)?.fullName ??
-                  xodimlar.find((xodim) => xodim.id === ombor.createdById)?.username ??
-                  "—"}
+                  (ombor.createdById ? xodimMap.get(ombor.createdById)?.fullName : undefined) ??
+                  (ombor.createdById ? xodimMap.get(ombor.createdById)?.username : undefined) ??
+                  "Yaratuvchi aniqlanmagan"}
               </td>
               <td className="px-6 py-5 text-sm font-semibold text-gray-500">
                 {sananiFormatlash(ombor.createdAt)}
@@ -393,14 +423,14 @@ export default function Ombor() {
                 {ombor.responsible?.fullName ??
                   ombor.responsible?.username ??
                   ombor.responsible?.name ??
-                  xodimlar.find((xodim) => xodim.id === ombor.responsibleId)?.fullName ??
-                  xodimlar.find((xodim) => xodim.id === ombor.responsibleId)?.username ??
-                  "—"}
+                  (ombor.responsibleId ? xodimMap.get(ombor.responsibleId)?.fullName : undefined) ??
+                  (ombor.responsibleId ? xodimMap.get(ombor.responsibleId)?.username : undefined) ??
+                  "Mas'ul biriktirilmagan"}
               </td>
               <td className="px-6 py-5 text-sm font-black text-gray-600">
                 {ombor.responsible?.phone ??
-                  xodimlar.find((xodim) => xodim.id === ombor.responsibleId)?.phone ??
-                  "—"}
+                  (ombor.responsibleId ? xodimMap.get(ombor.responsibleId)?.phone : undefined) ??
+                  "Telefon kiritilmagan"}
               </td>
               <td className="px-6 py-5 text-right">
                 <span
@@ -446,8 +476,7 @@ export default function Ombor() {
           )}
               </tbody>
             </table>
-          </div>
-        </div>
+        </OmborJadval>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {omborlar.map((ombor) => {
@@ -704,7 +733,7 @@ export default function Ombor() {
                           className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                         >
                           <option value="">Mas'ul shaxsni tanlang</option>
-                          {xodimlar.map((xodim) => (
+                          {masulTanlovlari.map((xodim) => (
                             <option key={xodim.id} value={xodim.id}>
                               {xodim.fullName ?? xodim.username ?? xodim.name ?? xodim.id}
                             </option>

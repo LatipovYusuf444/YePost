@@ -14,6 +14,7 @@ import {
   sotuvlarRoyxatiniOlish,
   sotuvniBekorQilish,
   sotuvniTasdiqlash,
+  sotuvgaTolovQoshish as sotuvgaTolovQoshishApi,
   sotuvTafsilotiniOlish,
   sotuvniYangilash as sotuvniYangilashApi,
   sotuvYaratish,
@@ -28,6 +29,7 @@ import type {
   QaytarishYaratishMalumoti,
   QoldiqTanlovi,
   Sotuv,
+  SotuvTolovi,
   SotuvYaratishMalumoti,
   XodimTanlovi,
 } from "@/types/savdo";
@@ -182,6 +184,10 @@ type SavdoState = {
     malumot: Partial<SotuvYaratishMalumoti>
   ) => Promise<boolean>;
   sotuvniTasdiqlash: (sotuvId: string) => Promise<boolean>;
+  sotuvgaTolovQoshish: (
+    sotuvId: string,
+    tolov: Pick<SotuvTolovi, "paymentType" | "amount">
+  ) => Promise<boolean>;
   sotuvniBekorQilish: (sotuvId: string) => Promise<boolean>;
   yangiQaytarishYaratish: (malumot: QaytarishYaratishMalumoti) => Promise<Qaytarish | null>;
   qaytarishTafsilotiniYuklash: (qaytarishId: string) => Promise<Qaytarish | null>;
@@ -329,6 +335,26 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
 
     try {
       const yangilangan = await sotuvniTasdiqlash(sotuvId);
+      const boyitilgan = sotuvniBoglanganMalumotlarBilanBoyitish(yangilangan, get());
+      set((state) => ({
+        sotuvlar: state.sotuvlar.map((sotuv) =>
+          sotuv.id === sotuvId ? boyitilgan : sotuv
+        ),
+        tanlanganSotuv: boyitilgan,
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+
+  sotuvgaTolovQoshish: async (sotuvId, tolov) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+
+    try {
+      const yangilangan = await sotuvgaTolovQoshishApi(sotuvId, tolov);
       const boyitilgan = sotuvniBoglanganMalumotlarBilanBoyitish(yangilangan, get());
       set((state) => ({
         sotuvlar: state.sotuvlar.map((sotuv) =>

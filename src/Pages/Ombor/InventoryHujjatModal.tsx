@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
+  Ban,
   Edit3,
   FileText,
   LoaderCircle,
   Package,
+  PackageCheck,
   Plus,
   Save,
+  Send,
   Trash2,
   X,
 } from "lucide-react";
@@ -333,6 +336,21 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
     if (yangilangan) setHujjat(yangilangan);
   }
 
+  async function kochirishHolatiniYangilash(amal: "send" | "receive" | "cancel") {
+    if (tur !== "kochirish" || !hujjat) return;
+    setValidatsiyaXatosi("");
+    store.xatolikniTozalash();
+    const ok =
+      amal === "send"
+        ? await store.kochirishJonatish(id)
+        : amal === "receive"
+          ? await store.kochirishQabulQilish(id)
+          : await store.kochirishBekorQilish(id);
+    if (!ok) return;
+    const yangilangan = await store.kochirishOlish(id);
+    if (yangilangan) setHujjat(yangilangan);
+  }
+
   const qoralama = hujjatHolati(hujjat) === "DRAFT";
 
   return (
@@ -369,6 +387,36 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            {hujjat && tur === "kochirish" && !tahrir && hujjatHolati(hujjat) === "DRAFT" && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => void kochirishHolatiniYangilash("cancel")}
+                  disabled={store.amalBajarilmoqda}
+                  className="inline-flex h-12 items-center gap-2 rounded-2xl bg-red-50 px-4 font-black text-red-500 transition hover:bg-red-100 disabled:opacity-50"
+                >
+                  <Ban size={17} /> Bekor qilish
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void kochirishHolatiniYangilash("send")}
+                  disabled={store.amalBajarilmoqda}
+                  className="inline-flex h-12 items-center gap-2 rounded-2xl bg-sky-500 px-4 font-black text-white transition hover:bg-sky-600 disabled:opacity-50"
+                >
+                  <Send size={17} /> Jo'natish
+                </button>
+              </>
+            )}
+            {hujjat && tur === "kochirish" && !tahrir && hujjatHolati(hujjat) === "SENT" && (
+              <button
+                type="button"
+                onClick={() => void kochirishHolatiniYangilash("receive")}
+                disabled={store.amalBajarilmoqda}
+                className="inline-flex h-12 items-center gap-2 rounded-2xl bg-emerald-500 px-4 font-black text-white transition hover:bg-emerald-600 disabled:opacity-50"
+              >
+                <PackageCheck size={18} /> Qabul qilish
+              </button>
+            )}
             {hujjat && qoralama && !tahrir && (
               <button
                 type="button"

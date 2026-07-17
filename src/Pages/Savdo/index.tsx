@@ -75,6 +75,7 @@ export default function Savdo() {
     yangiSotuvYaratish,
     sotuvniYangilash,
     sotuvniTasdiqlash,
+    sotuvgaTolovQoshish,
     sotuvniBekorQilish,
     yangiQaytarishYaratish,
     qaytarishniTasdiqlash,
@@ -421,6 +422,7 @@ export default function Savdo() {
           amalBajarilmoqda={amalBajarilmoqda}
           onYopish={tanlanganSotuvniTozalash}
           onYangilash={sotuvniYangilash}
+          onTolovQoshish={sotuvgaTolovQoshish}
           onTasdiqlash={async (sotuvId) => {
             const muvaffaqiyatli = await tasdiqlash(sotuvId);
             if (muvaffaqiyatli) tanlanganSotuvniTozalash();

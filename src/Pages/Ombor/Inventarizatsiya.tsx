@@ -5,6 +5,7 @@ import { useOmborStore } from "@/store/omborStore";
 import type { InventarizatsiyaTuri } from "@/types/ombor";
 import { holat, hujjatRaqami, modificationNomi, qoldiqMiqdori, sana } from "./omborYordamchilari";
 import InventoryHujjatModal from "./InventoryHujjatModal";
+import OmborJadval from "./OmborJadval";
 
 export default function Inventarizatsiya() {
   const store = useOmborStore();
@@ -179,7 +180,7 @@ export default function Inventarizatsiya() {
         <div className="rounded-2xl bg-red-50 p-4 font-bold text-red-600">{store.xatolik}</div>
       )}
 
-      <div className="overflow-x-auto rounded-[28px] border border-orange-100 bg-white shadow-sm [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-orange-500 [&::-webkit-scrollbar-track]:bg-orange-50">
+      <OmborJadval>
         <table className="w-full min-w-[1050px] text-left text-sm">
           <thead className="bg-orange-50/70 text-xs font-black uppercase text-orange-500">
             <tr>
@@ -257,7 +258,7 @@ export default function Inventarizatsiya() {
             )}
           </tbody>
         </table>
-      </div>
+      </OmborJadval>
 
       {modal && (
         <AppModal>

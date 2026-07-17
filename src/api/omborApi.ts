@@ -205,17 +205,29 @@ export const kochirishApi = {
     return royxatniAjratish(response.data);
   },
   olish: async (id: string) =>
-    (await apiClient.get<KochirishHujjati>(`/inventory/transfers/${id}`)).data,
+    apiData(
+      (await apiClient.get<KochirishHujjati | ApiEnvelope<KochirishHujjati>>(`/inventory/transfers/${id}`)).data
+    ),
   yaratish: async (data: KochirishYaratishMalumoti) =>
-    (await apiClient.post<KochirishHujjati>("/inventory/transfers", data)).data,
+    apiData(
+      (await apiClient.post<KochirishHujjati | ApiEnvelope<KochirishHujjati>>("/inventory/transfers", data)).data
+    ),
   yangilash: async (id: string, data: Partial<KochirishYaratishMalumoti>) =>
-    (await apiClient.patch<KochirishHujjati>(`/inventory/transfers/${id}`, data)).data,
+    apiData(
+      (await apiClient.patch<KochirishHujjati | ApiEnvelope<KochirishHujjati>>(`/inventory/transfers/${id}`, data)).data
+    ),
   jonatish: async (id: string) =>
-    (await apiClient.post<KochirishHujjati>(`/inventory/transfers/${id}/send`)).data,
+    apiData(
+      (await apiClient.post<KochirishHujjati | ApiEnvelope<KochirishHujjati>>(`/inventory/transfers/${id}/send`)).data
+    ),
   qabulQilish: async (id: string) =>
-    (await apiClient.post<KochirishHujjati>(`/inventory/transfers/${id}/receive`)).data,
+    apiData(
+      (await apiClient.post<KochirishHujjati | ApiEnvelope<KochirishHujjati>>(`/inventory/transfers/${id}/receive`)).data
+    ),
   bekorQilish: async (id: string) =>
-    (await apiClient.post<KochirishHujjati>(`/inventory/transfers/${id}/cancel`)).data,
+    apiData(
+      (await apiClient.post<KochirishHujjati | ApiEnvelope<KochirishHujjati>>(`/inventory/transfers/${id}/cancel`)).data
+    ),
 };
 
 // Ombor/Inventarizatsiya.tsx: inventarizatsiya hujjatlari.
@@ -299,6 +311,38 @@ export async function xodimlar() {
   return apiList(
     (await apiClient.get<NomliEntity[] | ApiListEnvelope<NomliEntity>>("/accounts/users")).data
   );
+}
+
+// Ombor yaratish/tahrirlash formasida faqat omborga mas'ul bo'la oladigan
+// xodimlarni chiqarish uchun maxsus backend tanlovi.
+export async function omborMasullari() {
+  return apiList(
+    (
+      await apiClient.get<NomliEntity[] | ApiListEnvelope<NomliEntity>>(
+        "/organization/warehouses/responsibles"
+      )
+    ).data
+  );
+}
+
+export type TeskariGeokodlashJavobi = {
+  address: string | null;
+  latitude: number;
+  longitude: number;
+};
+
+// Ombor formasida brauzer GPS koordinatasini foydalanuvchiga tushunarli
+// yozma manzilga aylantiradi.
+export async function manzilniKoordinatadanAniqlash(
+  latitude: number,
+  longitude: number
+) {
+  const response = await apiClient.get<
+    TeskariGeokodlashJavobi | ApiEnvelope<TeskariGeokodlashJavobi>
+  >("/location/reverse-geocode", {
+    params: { latitude, longitude },
+  });
+  return apiData(response.data);
 }
 
 // Kirim formasida hali qoldiqda bo'lmagan mahsulotlarni ham tanlash uchun katalog olinadi.

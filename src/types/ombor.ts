@@ -170,6 +170,9 @@ export type ChiqimHujjati = {
     id?: string;
     modificationId: string;
     quantity: number;
+    price?: number | string;
+    unitPrice?: number | string;
+    costPrice?: number | string;
     modification?: MahsulotModifikatsiyasi;
   }>;
 };
@@ -184,19 +187,35 @@ export type ChiqimYaratishMalumoti = {
 
 export type KochirishHujjati = {
   id: string;
+  number?: string;
+  documentNumber?: string;
+  docNumber?: string;
   sourceWarehouseId: string;
   destWarehouseId: string;
   responsibleId?: string;
   note?: string;
   status?: HujjatHolati | string;
+  total?: number;
+  totalAmount?: number;
   createdAt?: string;
+  updatedAt?: string;
+  sentAt?: string;
+  receivedAt?: string;
+  cancelledAt?: string;
+  createdById?: string;
+  updatedById?: string;
   sourceWarehouse?: Ombor;
   destWarehouse?: Ombor;
   responsible?: NomliEntity;
+  createdBy?: NomliEntity;
+  updatedBy?: NomliEntity;
   items?: Array<{
     id?: string;
     modificationId: string;
     quantity: number;
+    price?: number | string;
+    unitPrice?: number | string;
+    costPrice?: number | string;
     modification?: MahsulotModifikatsiyasi;
   }>;
 };

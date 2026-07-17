@@ -209,7 +209,7 @@ export default function YuqoriPanel() {
           onRead={(id) => void bildirishnomaniOqish(id)}
           onReadAll={() => void hammasiniOqish()}
         />
-        {moduleKey !== "savdo" && (
+        {moduleKey !== "savdo" && moduleKey !== "ombor" && (
           <>
             <button className="hidden h-10 items-center gap-2 rounded-2xl border border-orange-100 bg-white/60 px-3 text-sm text-gray-600 lg:flex">
               <CalendarDays size={17} /> Bugun <ChevronDown size={15} />

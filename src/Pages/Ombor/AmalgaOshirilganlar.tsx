@@ -14,6 +14,7 @@ import { useOmborStore } from "@/store/omborStore";
 import type { ChiqimHujjati, KirimHujjati } from "@/types/ombor";
 import InventoryHujjatModal, { type InventoryHujjatTuri } from "./InventoryHujjatModal";
 import { hujjatRaqami, pul, sana } from "./omborYordamchilari";
+import OmborJadval from "./OmborJadval";
 
 type HujjatTuri = "Kirim" | "Chiqim" | "Ko'chirish" | "Inventarizatsiya";
 
@@ -361,8 +362,8 @@ export default function AmalgaOshirilganlar() {
         </div>
       )}
 
-      <div className="relative overflow-visible rounded-[28px] border border-orange-100 bg-white shadow-sm">
-        <div className="overflow-x-auto rounded-[28px]">
+      <div className="relative overflow-visible">
+        <OmborJadval>
           <table className="w-full min-w-[860px] table-fixed text-left text-sm">
             <thead className="bg-orange-50/70 text-xs font-black uppercase text-orange-500">
               <tr>
@@ -427,7 +428,7 @@ export default function AmalgaOshirilganlar() {
               ))}
             </tbody>
           </table>
-        </div>
+        </OmborJadval>
 
         {sozlamaOchiq && (
           <div className="absolute right-4 top-14 z-40 w-56 rounded-2xl border border-orange-100 bg-white p-3 shadow-xl">

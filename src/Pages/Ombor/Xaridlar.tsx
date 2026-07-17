@@ -6,6 +6,7 @@ import type { KirimHujjati } from "@/types/ombor";
 import { holat, hujjatRaqami, pul, sana } from "./omborYordamchilari";
 import KirimTafsilotModal from "./KirimTafsilotModal";
 import YangiKirimModal from "./YangiKirimModal";
+import OmborJadval from "./OmborJadval";
 
 function holatBadgeSinfi(status?: string) {
   const s = String(status ?? "DRAFT").toUpperCase();
@@ -126,8 +127,7 @@ export default function Xaridlar() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-sm">
-        <div className="overflow-x-auto">
+      <OmborJadval>
           <table className="w-full min-w-[900px] text-left text-sm">
             <thead className="bg-orange-50/60 text-xs font-bold uppercase tracking-wide text-orange-500">
               <tr>
@@ -213,8 +213,7 @@ export default function Xaridlar() {
               )}
             </tbody>
           </table>
-        </div>
-      </div>
+      </OmborJadval>
 
       {modal && <YangiKirimModal onClose={() => setModal(false)} />}
 

@@ -14,7 +14,6 @@ import Inventarizatsiya from "@/Pages/Ombor/Inventarizatsiya"
 import Xaridlar from "@/Pages/Ombor/Xaridlar"
 import Mijozlar from "@/Pages/Mijozlar"
 import Ombor from "@/Pages/Ombor"
-import OmborUchot from "@/Pages/OmborUchot"
 import Savdo from "@/Pages/Savdo"
 import Sozlamalar from "@/Pages/Sozlamalar"
 import { Navigate, Route, Routes } from "react-router"
@@ -44,7 +43,6 @@ export default function AppRouter() {
         <Route path="/ombor/mahsulotlar" element={<OmborMahsulotlar />} />
         <Route path="/ombor/qoldiq" element={<OmborQoldigi />} />
         <Route path="/ombor/inventarizatsiya" element={<Inventarizatsiya />} />
-        <Route path="/ombor-uchot" element={<OmborUchot />} />
         <Route path="/kassa" element={<Kassa />} />
         <Route path="/hisobotlar" element={<Hisobotlar />} />
         <Route path="/hodimlar" element={<Hodimlar />} />

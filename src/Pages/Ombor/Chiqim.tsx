@@ -316,8 +316,8 @@ export default function Chiqim() {
         </div>
       )}
 
-      <div className="overflow-visible rounded-[26px] border border-orange-100 bg-white shadow-[0_4px_16px_rgba(92,50,16,.08)]">
-        <div ref={jadvalRef} className="scrollbar-hidden overflow-x-auto rounded-t-[26px]">
+      <div className="overflow-visible rounded-[30px] border border-orange-100 bg-white shadow-sm">
+        <div ref={jadvalRef} className="scrollbar-hidden overflow-x-auto rounded-t-[30px]">
           <table className="table-fixed text-left text-sm" style={{ width: jadvalKengligi, minWidth: "100%" }}>
             <colgroup>
               {faolUstunlar.map((column) => <col key={column.id} style={{ width: ustunKengliklari[column.id] }} />)}
@@ -326,7 +326,7 @@ export default function Chiqim() {
             <thead className="bg-[#fff9f3] text-[11px] font-black uppercase tracking-wide text-orange-500">
               <tr>
                 {faolUstunlar.map((column) => (
-                  <th key={column.id} className="relative border-r border-orange-200/80 px-6 py-5">
+                  <th key={column.id} className="relative h-[74px] border-r border-orange-200/80 px-7 py-4">
                     <span className="block truncate">{column.nom}</span>
                     <button
                       type="button"
@@ -376,8 +376,8 @@ export default function Chiqim() {
           )}
         </div>
 
-        <div className="flex items-center gap-4 border-t border-orange-100 px-5 py-4">
-          <button type="button" onClick={() => jadvalniSurish(-1)} aria-label="Jadvalni chapga surish" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-white text-orange-500 shadow-sm transition hover:bg-orange-50"><ChevronLeft size={19} /></button>
+        <div className="flex h-[70px] items-center gap-4 border-t border-orange-100 px-5">
+          <button type="button" onClick={() => jadvalniSurish(-1)} aria-label="Jadvalni chapga surish" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-white text-orange-500 shadow-sm transition hover:bg-orange-50"><ChevronLeft size={20} /></button>
           <div ref={scrollYoliRef} onPointerDown={scrollYoliniBosish} className="relative h-3 flex-1 cursor-pointer touch-none rounded-full bg-orange-50">
             <button
               type="button"
@@ -387,7 +387,7 @@ export default function Chiqim() {
               style={{ left: scrollHolati.chap, width: scrollHolati.kenglik }}
             />
           </div>
-          <button type="button" onClick={() => jadvalniSurish(1)} aria-label="Jadvalni o'ngga surish" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-white text-orange-500 shadow-sm transition hover:bg-orange-50"><ChevronRight size={19} /></button>
+          <button type="button" onClick={() => jadvalniSurish(1)} aria-label="Jadvalni o'ngga surish" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-white text-orange-500 shadow-sm transition hover:bg-orange-50"><ChevronRight size={20} /></button>
         </div>
       </div>
 
