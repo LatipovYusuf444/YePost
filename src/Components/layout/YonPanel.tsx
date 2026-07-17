@@ -3,7 +3,6 @@ import { motion } from "motion/react";
 import {
   Home,
   BarChart3,
-  ClipboardList,
   PackageSearch,
   LogOut,
   Settings,
@@ -20,7 +19,6 @@ const menyular = [
   { nom: "Savdo", path: "/savdo", icon: ShoppingCart },
   { nom: "Mahsulotlar", path: "/mahsulotlar", icon: PackageSearch },
   { nom: "Ombor", path: "/ombor", icon: Warehouse },
-  { nom: "Ombor uchoti", path: "/ombor-uchot", icon: ClipboardList },
   { nom: "Xaridorlar", path: "/mijozlar", icon: Users },
   { nom: "Xaridorlar uchoti", path: "/xaridor-uchot", icon: Users },
   { nom: "Kassa", path: "/kassa", icon: Wallet },

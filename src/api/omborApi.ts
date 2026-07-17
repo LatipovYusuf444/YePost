@@ -1,3 +1,4 @@
+import axios from "axios";
 import apiClient from "./axios";
 import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import type {
@@ -24,6 +25,56 @@ type RoyxatJavobi<T> = T[] | { value?: T[]; items?: T[]; results?: T[]; data?: T
 
 function royxatniAjratish<T>(data: RoyxatJavobi<T>): T[] {
   return apiList(data as T[] | ApiListEnvelope<T>);
+}
+
+const omborKengaytirilganMaydonlari = [
+  "address",
+  "latitude",
+  "longitude",
+  "openingTime",
+  "closingTime",
+  "responsibleId",
+] as const;
+
+function kengaytirilganOmborMaydonlariRadEtildi(error: unknown) {
+  if (!axios.isAxiosError(error) || error.response?.status !== 400) return false;
+  const javob = JSON.stringify(error.response.data).toLowerCase();
+  return omborKengaytirilganMaydonlari.some((maydon) =>
+    javob.includes(`property ${maydon.toLowerCase()} should not exist`)
+  );
+}
+
+async function omborYaratishToliq(data: OmborSaqlashMalumoti) {
+  try {
+    const response = await apiClient.post<Ombor | ApiEnvelope<Ombor>>(
+      "/organization/warehouses",
+      data
+    );
+    return apiData(response.data);
+  } catch (error) {
+    if (!kengaytirilganOmborMaydonlariRadEtildi(error)) throw error;
+    throw new Error(
+      "Backend ombor manzili, GPS, ish vaqti va mas'ul shaxs maydonlarini hali qabul qilmaydi. Warehouse DTO yangilanmaguncha ombor saqlanmadi."
+    );
+  }
+}
+
+async function omborYangilashToliq(
+  id: string,
+  data: Partial<OmborSaqlashMalumoti>
+) {
+  try {
+    const response = await apiClient.patch<Ombor | ApiEnvelope<Ombor>>(
+      `/organization/warehouses/${id}`,
+      data
+    );
+    return apiData(response.data);
+  } catch (error) {
+    if (!kengaytirilganOmborMaydonlariRadEtildi(error)) throw error;
+    throw new Error(
+      "Backend ombor manzili, GPS, ish vaqti va mas'ul shaxs maydonlarini hali qabul qilmaydi. Warehouse DTO yangilanmaguncha o'zgarishlar saqlanmadi."
+    );
+  }
 }
 
 // Organization sahifasi: kompaniyaning barcha Swagger CRUD endpointlari.
@@ -60,10 +111,8 @@ export const omborlarApi = {
     apiList((await apiClient.get<Ombor[] | ApiListEnvelope<Ombor>>("/organization/warehouses")).data),
   olish: async (id: string) =>
     apiData((await apiClient.get<Ombor | ApiEnvelope<Ombor>>(`/organization/warehouses/${id}`)).data),
-  yaratish: async (data: OmborSaqlashMalumoti) =>
-    apiData((await apiClient.post<Ombor | ApiEnvelope<Ombor>>("/organization/warehouses", data)).data),
-  yangilash: async (id: string, data: Partial<OmborSaqlashMalumoti>) =>
-    apiData((await apiClient.patch<Ombor | ApiEnvelope<Ombor>>(`/organization/warehouses/${id}`, data)).data),
+  yaratish: omborYaratishToliq,
+  yangilash: omborYangilashToliq,
   ochirish: async (id: string) =>
     apiData((await apiClient.delete<Ombor | ApiEnvelope<Ombor>>(`/organization/warehouses/${id}`)).data),
 };
@@ -114,15 +163,37 @@ export const chiqimApi = {
     return royxatniAjratish(response.data);
   },
   olish: async (id: string) =>
-    (await apiClient.get<ChiqimHujjati>(`/inventory/write-offs/${id}`)).data,
+    apiData(
+      (await apiClient.get<ChiqimHujjati | ApiEnvelope<ChiqimHujjati>>(
+        `/inventory/write-offs/${id}`
+      )).data
+    ),
   yaratish: async (data: ChiqimYaratishMalumoti) =>
-    (await apiClient.post<ChiqimHujjati>("/inventory/write-offs", data)).data,
+    apiData(
+      (await apiClient.post<ChiqimHujjati | ApiEnvelope<ChiqimHujjati>>(
+        "/inventory/write-offs",
+        data
+      )).data
+    ),
   yangilash: async (id: string, data: Partial<ChiqimYaratishMalumoti>) =>
-    (await apiClient.patch<ChiqimHujjati>(`/inventory/write-offs/${id}`, data)).data,
+    apiData(
+      (await apiClient.patch<ChiqimHujjati | ApiEnvelope<ChiqimHujjati>>(
+        `/inventory/write-offs/${id}`,
+        data
+      )).data
+    ),
   tasdiqlash: async (id: string) =>
-    (await apiClient.post<ChiqimHujjati>(`/inventory/write-offs/${id}/confirm`)).data,
+    apiData(
+      (await apiClient.post<ChiqimHujjati | ApiEnvelope<ChiqimHujjati>>(
+        `/inventory/write-offs/${id}/confirm`
+      )).data
+    ),
   bekorQilish: async (id: string) =>
-    (await apiClient.post<ChiqimHujjati>(`/inventory/write-offs/${id}/cancel`)).data,
+    apiData(
+      (await apiClient.post<ChiqimHujjati | ApiEnvelope<ChiqimHujjati>>(
+        `/inventory/write-offs/${id}/cancel`
+      )).data
+    ),
 };
 
 // Ombor/Kochirish.tsx: omborlar orasida ko'chirish hujjatlari.
@@ -134,17 +205,29 @@ export const kochirishApi = {
     return royxatniAjratish(response.data);
   },
   olish: async (id: string) =>
-    (await apiClient.get<KochirishHujjati>(`/inventory/transfers/${id}`)).data,
+    apiData(
+      (await apiClient.get<KochirishHujjati | ApiEnvelope<KochirishHujjati>>(`/inventory/transfers/${id}`)).data
+    ),
   yaratish: async (data: KochirishYaratishMalumoti) =>
-    (await apiClient.post<KochirishHujjati>("/inventory/transfers", data)).data,
+    apiData(
+      (await apiClient.post<KochirishHujjati | ApiEnvelope<KochirishHujjati>>("/inventory/transfers", data)).data
+    ),
   yangilash: async (id: string, data: Partial<KochirishYaratishMalumoti>) =>
-    (await apiClient.patch<KochirishHujjati>(`/inventory/transfers/${id}`, data)).data,
+    apiData(
+      (await apiClient.patch<KochirishHujjati | ApiEnvelope<KochirishHujjati>>(`/inventory/transfers/${id}`, data)).data
+    ),
   jonatish: async (id: string) =>
-    (await apiClient.post<KochirishHujjati>(`/inventory/transfers/${id}/send`)).data,
+    apiData(
+      (await apiClient.post<KochirishHujjati | ApiEnvelope<KochirishHujjati>>(`/inventory/transfers/${id}/send`)).data
+    ),
   qabulQilish: async (id: string) =>
-    (await apiClient.post<KochirishHujjati>(`/inventory/transfers/${id}/receive`)).data,
+    apiData(
+      (await apiClient.post<KochirishHujjati | ApiEnvelope<KochirishHujjati>>(`/inventory/transfers/${id}/receive`)).data
+    ),
   bekorQilish: async (id: string) =>
-    (await apiClient.post<KochirishHujjati>(`/inventory/transfers/${id}/cancel`)).data,
+    apiData(
+      (await apiClient.post<KochirishHujjati | ApiEnvelope<KochirishHujjati>>(`/inventory/transfers/${id}/cancel`)).data
+    ),
 };
 
 // Ombor/Inventarizatsiya.tsx: inventarizatsiya hujjatlari.
@@ -156,32 +239,58 @@ export const inventarizatsiyaApi = {
     return royxatniAjratish(response.data);
   },
   olish: async (id: string) =>
-    (await apiClient.get<InventarizatsiyaHujjati>(`/inventory/stock-takes/${id}`))
-      .data,
+    apiData(
+      (
+        await apiClient.get<InventarizatsiyaHujjati | ApiEnvelope<InventarizatsiyaHujjati>>(
+          `/inventory/stock-takes/${id}`
+        )
+      ).data
+    ),
   yaratish: async (data: InventarizatsiyaYaratishMalumoti) =>
-    (await apiClient.post<InventarizatsiyaHujjati>("/inventory/stock-takes", data)).data,
+    apiData(
+      (
+        await apiClient.post<InventarizatsiyaHujjati | ApiEnvelope<InventarizatsiyaHujjati>>(
+          "/inventory/stock-takes",
+          data
+        )
+      ).data
+    ),
   yangilash: async (
     id: string,
     data: Partial<InventarizatsiyaYaratishMalumoti>
   ) =>
-    (
+    apiData(
+      (
       await apiClient.patch<InventarizatsiyaHujjati>(
         `/inventory/stock-takes/${id}`,
         data
       )
-    ).data,
+      ).data
+    ),
   tasdiqlash: async (id: string) =>
-    (await apiClient.post<InventarizatsiyaHujjati>(`/inventory/stock-takes/${id}/confirm`))
-      .data,
+    apiData(
+      (
+        await apiClient.post<InventarizatsiyaHujjati | ApiEnvelope<InventarizatsiyaHujjati>>(
+          `/inventory/stock-takes/${id}/confirm`
+        )
+      ).data
+    ),
 };
 
 // Ombor/OmborQoldigi.tsx va Mahsulotlar.tsx: real ombor qoldiqlari.
 export async function omborQoldiqlari(warehouseId?: string) {
-  const response = await apiClient.get<RoyxatJavobi<OmborQoldigi>>("/inventory/stock-balance", {
+  try {
+    const response = await apiClient.get<RoyxatJavobi<OmborQoldigi>>("/inventory/stock-balance", {
       params: warehouseId ? { warehouseId } : undefined,
     });
 
-  return royxatniAjratish(response.data);
+    return royxatniAjratish(response.data);
+  } catch (error) {
+    // Endpoint mavjud, lekin backend ayrim bo'sh omborlar uchun [] o'rniga 404 qaytaradi.
+    // Ro'yxat so'rovida bu xato emas — omborda hali qoldiq yo'q degani.
+    if (axios.isAxiosError(error) && error.response?.status === 404) return [];
+    throw error;
+  }
 }
 
 // Ombor hujjatlari formalaridagi yetkazib beruvchi va mas'ul xodim tanlovlari.
@@ -202,6 +311,38 @@ export async function xodimlar() {
   return apiList(
     (await apiClient.get<NomliEntity[] | ApiListEnvelope<NomliEntity>>("/accounts/users")).data
   );
+}
+
+// Ombor yaratish/tahrirlash formasida faqat omborga mas'ul bo'la oladigan
+// xodimlarni chiqarish uchun maxsus backend tanlovi.
+export async function omborMasullari() {
+  return apiList(
+    (
+      await apiClient.get<NomliEntity[] | ApiListEnvelope<NomliEntity>>(
+        "/organization/warehouses/responsibles"
+      )
+    ).data
+  );
+}
+
+export type TeskariGeokodlashJavobi = {
+  address: string | null;
+  latitude: number;
+  longitude: number;
+};
+
+// Ombor formasida brauzer GPS koordinatasini foydalanuvchiga tushunarli
+// yozma manzilga aylantiradi.
+export async function manzilniKoordinatadanAniqlash(
+  latitude: number,
+  longitude: number
+) {
+  const response = await apiClient.get<
+    TeskariGeokodlashJavobi | ApiEnvelope<TeskariGeokodlashJavobi>
+  >("/location/reverse-geocode", {
+    params: { latitude, longitude },
+  });
+  return apiData(response.data);
 }
 
 // Kirim formasida hali qoldiqda bo'lmagan mahsulotlarni ham tanlash uchun katalog olinadi.

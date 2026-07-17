@@ -1,8 +1,8 @@
-import KirimKorishModal from "@/Pages/OmborUchot/KirimKorishModal";
-import RealizatsiyaKorishModal from "@/Pages/OmborUchot/RealizatsiyaKorishModal";
-import ChiqimKorishModal from "@/Pages/OmborUchot/ChiqimKorishModal";
-import InventarizatsiyaKorishModal from "@/Pages/OmborUchot/InventarizatsiyaKorishModal";
-import type { Mahsulot as OmborMahsulot, OmborItem } from "@/Pages/OmborUchot/types";
+import KirimKorishModal from "./omborModallari/KirimKorishModal";
+import RealizatsiyaKorishModal from "./omborModallari/RealizatsiyaKorishModal";
+import ChiqimKorishModal from "./omborModallari/ChiqimKorishModal";
+import InventarizatsiyaKorishModal from "./omborModallari/InventarizatsiyaKorishModal";
+import type { Mahsulot as OmborMahsulot, OmborItem } from "./omborModallari/types";
 import {
   mockMaxsulotlar,
   mockMijozlar,

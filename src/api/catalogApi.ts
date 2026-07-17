@@ -20,6 +20,21 @@ import type {
 
 
 
+// Ombor/YangiKirimModal.tsx: hujjatga fayl biriktirish uchun real rasm/fayl yuklash.
+export const mediaApi = {
+  yuklash: async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await apiClient.post<
+      { id: string; imageUrl: string } | ApiEnvelope<{ id: string; imageUrl: string }>
+    >("/catalog/media", formData);
+    const natija = apiData(response.data);
+    // Backend to'liq "/api/v1/..." yo'l qaytaradi, apiClient esa bazaviy manzilida
+    // "/api/v1" ni allaqachon o'z ichiga oladi — takrorlanmasligi uchun kesib olinadi.
+    return { ...natija, imageUrl: natija.imageUrl.replace(/^\/api\/v1/, "") };
+  },
+};
+
 // Mahsulotlar sahifasi: Swagger catalog/categories to'liq CRUD.
 export const kategoriyalarApi = {
   royxat: async () => {

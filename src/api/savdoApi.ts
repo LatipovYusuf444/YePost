@@ -7,6 +7,7 @@ import type {
   QaytarishYaratishMalumoti,
   QoldiqTanlovi,
   Sotuv,
+  SotuvTolovi,
   SotuvYaratishMalumoti,
   XodimTanlovi,
 } from "@/types/savdo";
@@ -56,6 +57,17 @@ export async function sotuvniTasdiqlash(sotuvId: string) {
 export async function sotuvniBekorQilish(sotuvId: string) {
   const response = await apiClient.post<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${sotuvId}/cancel`);
   return apiData(response.data);
+}
+
+// Tasdiqlangan sotuvdagi qarzdorlikka yangi to'lov qo'shadi.
+// Payment endpoint umumiy ResponseHelper qaytargani uchun, saqlangandan keyin
+// sotuvning yangilangan holatini alohida GET orqali qayta olamiz.
+export async function sotuvgaTolovQoshish(
+  sotuvId: string,
+  tolov: Pick<SotuvTolovi, "paymentType" | "amount">
+) {
+  await apiClient.post(`/sales/${sotuvId}/payments`, tolov);
+  return sotuvTafsilotiniOlish(sotuvId);
 }
 
 // Qaytarish.tsx: barcha qaytarish hujjatlarini oladi.

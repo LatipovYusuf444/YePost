@@ -1,6 +1,6 @@
-import KirimKorishModal from "@/Pages/OmborUchot/KirimKorishModal";
-import RealizatsiyaKorishModal from "@/Pages/OmborUchot/RealizatsiyaKorishModal";
-import type { Mahsulot as OmborMahsulot, OmborItem } from "@/Pages/OmborUchot/types";
+import KirimKorishModal from "./omborModallari/KirimKorishModal";
+import RealizatsiyaKorishModal from "./omborModallari/RealizatsiyaKorishModal";
+import type { Mahsulot as OmborMahsulot, OmborItem } from "./omborModallari/types";
 import { mockMaxsulotlar, mockOmborlar } from "./mockData";
 import type { HisobKitobHujjati } from "./types";
 

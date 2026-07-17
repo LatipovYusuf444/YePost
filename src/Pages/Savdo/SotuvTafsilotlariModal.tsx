@@ -32,7 +32,7 @@ import { crmApi, royxatniAjratish } from "@/api/crmApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import AppModal from "@/Components/common/AppModal";
 import type { Activity, Comment } from "@/types/crm";
-import type { QoldiqTanlovi, Sotuv, SotuvYaratishMalumoti, TolovTuri, XodimTanlovi } from "@/types/savdo";
+import type { QoldiqTanlovi, Sotuv, SotuvTolovi, SotuvYaratishMalumoti, TolovTuri, XodimTanlovi } from "@/types/savdo";
 import {
   masulNomi,
   mijozNomi,
@@ -59,6 +59,10 @@ type SotuvTafsilotlariModalProps = {
   onYangilash: (
     sotuvId: string,
     malumot: Partial<SotuvYaratishMalumoti>
+  ) => Promise<boolean>;
+  onTolovQoshish: (
+    sotuvId: string,
+    tolov: Pick<SotuvTolovi, "paymentType" | "amount">
   ) => Promise<boolean>;
   onTasdiqlash: (sotuvId: string) => Promise<void> | void;
   onBekorQilish: (sotuvId: string) => void;
@@ -359,6 +363,7 @@ export default function SotuvTafsilotlariModal({
   amalBajarilmoqda,
   onYopish,
   onYangilash,
+  onTolovQoshish,
   onTasdiqlash,
   onBekorQilish,
 }: SotuvTafsilotlariModalProps) {
@@ -480,7 +485,7 @@ export default function SotuvTafsilotlariModal({
                     </div>
                   )}
                 </div>
-                {draft && (
+                {holat !== "CANCELLED" && sotuvQarzdorlikSummasi(sotuv) > 0 && (
                   <button
                     disabled={amalBajarilmoqda}
                     onClick={() => setTolovModalOchiq(true)}
@@ -555,6 +560,7 @@ export default function SotuvTafsilotlariModal({
             draft={draft}
             amalBajarilmoqda={amalBajarilmoqda}
             onYangilash={onYangilash}
+            onTolovQoshish={onTolovQoshish}
             onTasdiqlash={onTasdiqlash}
             onYopish={() => setTolovModalOchiq(false)}
           />
@@ -1463,6 +1469,7 @@ function TolovQabulQilishModal({
   draft,
   amalBajarilmoqda,
   onYangilash,
+  onTolovQoshish,
   onTasdiqlash,
   onYopish,
 }: {
@@ -1474,6 +1481,10 @@ function TolovQabulQilishModal({
     sotuvId: string,
     malumot: Partial<SotuvYaratishMalumoti>
   ) => Promise<boolean>;
+  onTolovQoshish: (
+    sotuvId: string,
+    tolov: Pick<SotuvTolovi, "paymentType" | "amount">
+  ) => Promise<boolean>;
   onTasdiqlash: (sotuvId: string) => Promise<void> | void;
   onYopish: () => void;
 }) {
@@ -1482,7 +1493,9 @@ function TolovQabulQilishModal({
   const boshlangichQarz = Math.max(jami - mavjudYigindisi, 0);
 
   const [tolovTuri, setTolovTuri] = useState<TolovTuri>("CASH");
-  const [summa, setSumma] = useState(mavjudYigindisi > 0 ? String(boshlangichQarz) : "0");
+  const [summa, setSumma] = useState(
+    !draft || mavjudYigindisi > 0 ? String(boshlangichQarz) : "0"
+  );
   const [xatolik, setXatolik] = useState("");
 
   const yangiSumma = Number(summa) || 0;
@@ -1492,13 +1505,26 @@ function TolovQabulQilishModal({
   async function submit() {
     setXatolik("");
 
-    if (yangiSumma < 0) {
-      setXatolik("To'lov summasi manfiy bo'lishi mumkin emas.");
+    if (yangiSumma < 0 || (!draft && yangiSumma <= 0)) {
+      setXatolik(draft ? "To'lov summasi manfiy bo'lishi mumkin emas." : "To'lov summasi 0 dan katta bo'lishi kerak.");
       return;
     }
 
     if (yakuniyTolangan > jami) {
       setXatolik(`To'lov summasi qarzdorlikdan oshmasligi kerak. Maksimal: ${pulniFormatlash(boshlangichQarz)}.`);
+      return;
+    }
+
+    if (!draft) {
+      const saqlandi = await onTolovQoshish(sotuv.id, {
+        paymentType: tolovTuri,
+        amount: yangiSumma,
+      });
+      if (!saqlandi) {
+        setXatolik("To'lov saqlanmadi. Qaytadan urinib ko'ring.");
+        return;
+      }
+      onYopish();
       return;
     }
 
@@ -1533,30 +1559,7 @@ function TolovQabulQilishModal({
           </button>
         </div>
 
-        {!draft ? (
-          <div className="mt-6 space-y-4">
-            <div className="rounded-2xl bg-orange-50 p-4 text-sm font-semibold text-orange-700">
-              Bu sotuv allaqachon tasdiqlangan. Hozircha backend'da tasdiqlangan sotuvga qo'shimcha to'lov qo'shish
-              imkoniyati yo'q — bu funksiya backend jamoasi endpoint qo'shgach faollashadi.
-            </div>
-            <div className="flex justify-between text-sm font-bold text-slate-600">
-              <span>Sotuv jami</span>
-              <span>{pulniFormatlash(jami)}</span>
-            </div>
-            <div className="flex justify-between text-sm font-bold text-red-500">
-              <span>Qarzdorlik qoldig'i</span>
-              <span>{pulniFormatlash(sotuvQarzdorlikSummasi(sotuv))}</span>
-            </div>
-            <button
-              type="button"
-              onClick={onYopish}
-              className="h-11 w-full rounded-2xl bg-gray-100 text-sm font-bold text-gray-600"
-            >
-              Tushunarli
-            </button>
-          </div>
-        ) : (
-          <div className="mt-6 space-y-4">
+        <div className="mt-6 space-y-4">
             {mavjudTolovlar.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {mavjudTolovlar.map((tolov, index) => (
@@ -1646,11 +1649,10 @@ function TolovQabulQilishModal({
                 className="inline-flex h-11 items-center gap-2 rounded-2xl bg-[#FF6A00] px-6 text-sm font-black text-white shadow-[0_10px_24px_rgba(249,115,22,.24)] transition hover:bg-[#EA580C] disabled:opacity-50"
               >
                 {amalBajarilmoqda && <LoaderCircle size={16} className="animate-spin" />}
-                Tasdiqlash va yakunlash
+                {draft ? "Tasdiqlash va yakunlash" : "To'lovni qo'shish"}
               </button>
             </div>
-          </div>
-        )}
+        </div>
       </div>
     </AppModal>
   );
