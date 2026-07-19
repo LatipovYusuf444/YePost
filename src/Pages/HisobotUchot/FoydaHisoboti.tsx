@@ -3,8 +3,9 @@ import { Download, Search } from "lucide-react";
 import KengaytiriladiganJadval, { type Ustun } from "./KengaytiriladiganJadval";
 import KopTanlovli from "./KopTanlovli";
 import MuddatTanlov from "./MuddatTanlov";
+import { foydaHisobotiniYuklash } from "./excelEksport";
 import {
-  mijozKompaniyasi,
+  filialKompaniyasi,
   mockFiliallar,
   mockKompaniyalar,
   mockMaxsulotlar,
@@ -24,9 +25,9 @@ type Filter = {
   filialIds: string[];
 };
 
-// Default: oxirgi 3 oy (oylik ajratma ko'rinsin).
+// Default: oxirgi 4 oy (oylik ajratma ko'rinsin).
 const boshFilter: Filter = {
-  dateFrom: oyBoshiMinus(2),
+  dateFrom: oyBoshiMinus(3),
   dateTo: bugun(),
   customerIds: [],
   kompaniyaIds: [],
@@ -34,12 +35,14 @@ const boshFilter: Filter = {
   filialIds: [],
 };
 
+type OyQiymati = { savdo: number; foyda: number };
+
 type Qator = {
   id: string;
   nomi: string;
-  oylik: Record<string, number>; // oy kaliti → o'sha oydagi foyda
+  oylik: Record<string, OyQiymati>; // oy kaliti → o'sha oydagi savdo va foyda
+  jamiSavdo: number;
   jamiFoyda: number;
-  jamiTushum: number; // faqat rentabellik (foiz) hisoblash uchun
   rentabellik: number;
 };
 
@@ -49,21 +52,6 @@ function nomTop(royxat: Tanlov[], id: string) {
 
 function foiz(value: number) {
   return `${value.toFixed(2)}%`;
-}
-
-function csvYuklash(ustunlar: string[], qatorlar: (string | number)[][]) {
-  const satrlar = [ustunlar, ...qatorlar].map((qator) =>
-    qator.map((katak) => `"${String(katak).replace(/"/g, '""')}"`).join(",")
-  );
-  const blob = new Blob(["﻿" + satrlar.join("\n")], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "foyda-hisoboti.csv";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
 }
 
 export default function FoydaHisoboti() {
@@ -94,8 +82,9 @@ export default function FoydaHisoboti() {
         ichida(filter.customerIds, m.customerId) &&
         ichida(filter.warehouseIds, m.warehouseId) &&
         ichida(filter.filialIds, m.filialId) &&
+        // Kompaniya — bizning firmamiz: harakat filiali qaysi firmaga tegishli.
         (filter.kompaniyaIds.length === 0 ||
-          filter.kompaniyaIds.includes(mijozKompaniyasi[m.customerId] ?? ""))
+          filter.kompaniyaIds.includes(filialKompaniyasi[m.filialId] ?? ""))
     );
 
     const jamlanma = new Map<string, Qator>();
@@ -103,8 +92,8 @@ export default function FoydaHisoboti() {
       const mahsulot = mockMaxsulotlar.find((p) => p.id === m.productId);
       if (!mahsulot) continue;
 
-      const tushum = m.miqdor * mahsulot.sotuvNarx;
-      const foyda = tushum - m.miqdor * mahsulot.tanNarx;
+      const savdo = m.miqdor * mahsulot.sotuvNarx;
+      const foyda = savdo - m.miqdor * mahsulot.tanNarx;
       const oy = m.sana.slice(0, 7);
 
       const eski =
@@ -113,14 +102,15 @@ export default function FoydaHisoboti() {
           id: m.customerId,
           nomi: nomTop(mockMijozlar, m.customerId),
           oylik: {},
+          jamiSavdo: 0,
           jamiFoyda: 0,
-          jamiTushum: 0,
           rentabellik: 0,
         } satisfies Qator);
 
-      eski.oylik[oy] = (eski.oylik[oy] ?? 0) + foyda;
+      const oyEski = eski.oylik[oy] ?? { savdo: 0, foyda: 0 };
+      eski.oylik[oy] = { savdo: oyEski.savdo + savdo, foyda: oyEski.foyda + foyda };
+      eski.jamiSavdo += savdo;
       eski.jamiFoyda += foyda;
-      eski.jamiTushum += tushum;
       jamlanma.set(m.customerId, eski);
     }
 
@@ -128,32 +118,39 @@ export default function FoydaHisoboti() {
     return [...jamlanma.values()]
       .map((k) => ({
         ...k,
-        rentabellik: k.jamiTushum ? (k.jamiFoyda / k.jamiTushum) * 100 : 0,
+        rentabellik: k.jamiSavdo ? (k.jamiFoyda / k.jamiSavdo) * 100 : 0,
       }))
       .filter((k) => !kalit || k.nomi.toLowerCase().includes(kalit))
       .sort((a, b) => b.jamiFoyda - a.jamiFoyda);
   }, [filter, qidiruv]);
 
   const jami = useMemo(() => {
-    const oylik: Record<string, number> = {};
+    const oylik: Record<string, OyQiymati> = {};
     for (const oy of oylar) {
-      oylik[oy] = qatorlar.reduce((s, k) => s + (k.oylik[oy] ?? 0), 0);
+      oylik[oy] = {
+        savdo: qatorlar.reduce((s, k) => s + (k.oylik[oy]?.savdo ?? 0), 0),
+        foyda: qatorlar.reduce((s, k) => s + (k.oylik[oy]?.foyda ?? 0), 0),
+      };
     }
+    const savdo = qatorlar.reduce((s, k) => s + k.jamiSavdo, 0);
     const foyda = qatorlar.reduce((s, k) => s + k.jamiFoyda, 0);
-    const tushum = qatorlar.reduce((s, k) => s + k.jamiTushum, 0);
-    return { oylik, foyda, tushum, rentabellik: tushum ? (foyda / tushum) * 100 : 0 };
+    return { oylik, savdo, foyda, rentabellik: savdo ? (foyda / savdo) * 100 : 0 };
   }, [qatorlar, oylar]);
 
-  function eksport() {
-    csvYuklash(
-      ["Xaridor", ...oylar.map((o) => oyNomi(o, true)), "Jami foyda", "Rentabellik"],
-      qatorlar.map((k) => [
-        k.nomi,
-        ...oylar.map((o) => k.oylik[o] ?? 0),
-        k.jamiFoyda,
-        foiz(k.rentabellik),
-      ])
-    );
+  async function eksport() {
+    // Kompaniya sarlavhasi: tanlanmagan bo'lsa "Barchasi".
+    const kompaniya = filter.kompaniyaIds.length
+      ? filter.kompaniyaIds.map((id) => nomTop(mockKompaniyalar, id)).join(", ")
+      : "Barchasi";
+
+    await foydaHisobotiniYuklash({
+      qatorlar: qatorlar.map((k) => ({ nomi: k.nomi, oylik: k.oylik })),
+      oylar,
+      oyNomlari: oylar.map((o) => oyNomi(o, kopYil)),
+      dateFrom: filter.dateFrom,
+      dateTo: filter.dateTo,
+      kompaniya,
+    });
   }
 
   const ustunlar: Ustun<Qator>[] = useMemo(
@@ -165,21 +162,51 @@ export default function FoydaHisoboti() {
         katak: (k) => <span className="font-black text-gray-950">{k.nomi}</span>,
         jami: () => `Jami: ${qatorlar.length} ta`,
       },
-      ...oylar.map<Ustun<Qator>>((oy) => ({
-        id: `oy-${oy}`,
-        nom: oyNomi(oy, kopYil),
-        kenglik: 130,
+      ...oylar.flatMap<Ustun<Qator>>((oy) => [
+        {
+          id: `savdo-${oy}`,
+          nom: `${oyNomi(oy, kopYil)} Jami savdo`,
+          kenglik: 150,
+          hizalash: "right",
+          katak: (k) =>
+            k.oylik[oy]?.savdo ? (
+              <span className="text-gray-700">{pul(k.oylik[oy].savdo)}</span>
+            ) : (
+              <span className="text-gray-300">—</span>
+            ),
+          jami: () => (jami.oylik[oy]?.savdo ? pul(jami.oylik[oy].savdo) : "—"),
+        },
+        {
+          id: `foyda-${oy}`,
+          nom: `${oyNomi(oy, kopYil)} Jami foyda`,
+          kenglik: 150,
+          hizalash: "right",
+          katak: (k) =>
+            k.oylik[oy]?.foyda ? (
+              <span
+                className={k.oylik[oy].foyda >= 0 ? "font-bold text-emerald-600" : "font-bold text-red-500"}
+              >
+                {pul(k.oylik[oy].foyda)}
+              </span>
+            ) : (
+              <span className="text-gray-300">—</span>
+            ),
+          jami: () =>
+            jami.oylik[oy]?.foyda ? (
+              <span className="text-emerald-600">{pul(jami.oylik[oy].foyda)}</span>
+            ) : (
+              "—"
+            ),
+        },
+      ]),
+      {
+        id: "jamiSavdo",
+        nom: "Jami savdo",
+        kenglik: 160,
         hizalash: "right",
-        katak: (k) =>
-          k.oylik[oy] ? (
-            <span className={k.oylik[oy] >= 0 ? "font-bold text-emerald-600" : "font-bold text-red-500"}>
-              {pul(k.oylik[oy])}
-            </span>
-          ) : (
-            <span className="text-gray-300">—</span>
-          ),
-        jami: () => (jami.oylik[oy] ? pul(jami.oylik[oy]) : "—"),
-      })),
+        katak: (k) => <span className="font-black text-gray-800">{pul(k.jamiSavdo)}</span>,
+        jami: () => pul(jami.savdo),
+      },
       {
         id: "jamiFoyda",
         nom: "Jami foyda",
@@ -256,11 +283,11 @@ export default function FoydaHisoboti() {
             Hisobotni shakllantirish
           </button>
           <button
-            onClick={eksport}
+            onClick={() => void eksport()}
             className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-bold text-orange-600 shadow-sm transition hover:bg-orange-50"
           >
             <Download size={16} />
-            Excel (CSV)
+            Excel yuklash
           </button>
         </div>
         <div className="relative md:w-72">
@@ -284,12 +311,7 @@ export default function FoydaHisoboti() {
             </div>
           </div>
         ) : (
-          <>
-            <p className="mb-3 text-xs font-semibold text-gray-400">
-              Har oy ustunida — o'sha oyda mijozdan olingan foyda. Rentabellik = jami foyda ÷ jami tushum.
-            </p>
-            <KengaytiriladiganJadval ustunlar={ustunlar} qatorlar={qatorlar} jamiBor kengaytir />
-          </>
+          <KengaytiriladiganJadval ustunlar={ustunlar} qatorlar={qatorlar} jamiBor kengaytir />
         )}
       </section>
     </div>

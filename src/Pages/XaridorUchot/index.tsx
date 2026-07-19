@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { useUchotStore } from "@/store/uchotStore";
 import Kompaniyalar from "./Kompaniyalar";
 import Xaridorlar from "./Xaridorlar";
 import YetkazibBeruvchilar from "./YetkazibBeruvchilar";
-import { mockKompaniyalar, mockXaridorlar, mockYetkazibBeruvchilar } from "./mockData";
-import type { Xaridor, XaridorKompaniyasi, YetkazibBeruvchi } from "./types";
+import { mockKompaniyalar, mockYetkazibBeruvchilar } from "./mockData";
+import type { XaridorKompaniyasi, YetkazibBeruvchi } from "./types";
 
 type Tab = "xaridorlar" | "kompaniyalar" | "yetkazib-beruvchilar";
 
@@ -22,18 +23,18 @@ function saqlash<T extends { id: string }>(royxat: T[], item: T) {
 
 export default function XaridorUchot() {
   const [faolTab, setFaolTab] = useState<Tab>("xaridorlar");
-  const [xaridorlar, setXaridorlar] = useState<Xaridor[]>(mockXaridorlar);
+  // Xaridorlar umumiy store'da — kassa to'lovlari qarzni shu yerda o'zgartiradi.
+  const xaridorlar = useUchotStore((s) => s.xaridorlar);
+  const xaridorSaqlash = useUchotStore((s) => s.xaridorSaqlash);
+  const xaridorOchirish = useUchotStore((s) => s.xaridorOchirish);
+  const xaridorKompaniyasiniTozalash = useUchotStore((s) => s.xaridorKompaniyasiniTozalash);
   const [kompaniyalar, setKompaniyalar] = useState<XaridorKompaniyasi[]>(mockKompaniyalar);
   const [yetkazibBeruvchilar, setYetkazibBeruvchilar] =
     useState<YetkazibBeruvchi[]>(mockYetkazibBeruvchilar);
 
   function kompaniyaniOchirish(id: string) {
     setKompaniyalar((oldRoyxat) => oldRoyxat.filter((item) => item.id !== id));
-    setXaridorlar((oldRoyxat) =>
-      oldRoyxat.map((xaridor) =>
-        xaridor.kompaniyaId === id ? { ...xaridor, kompaniyaId: "" } : xaridor
-      )
-    );
+    xaridorKompaniyasiniTozalash(id);
   }
 
   return (
@@ -58,10 +59,8 @@ export default function XaridorUchot() {
         <Xaridorlar
           xaridorlar={xaridorlar}
           kompaniyalar={kompaniyalar}
-          onSaqlash={(xaridor) => setXaridorlar((oldRoyxat) => saqlash(oldRoyxat, xaridor))}
-          onOchirish={(id) =>
-            setXaridorlar((oldRoyxat) => oldRoyxat.filter((item) => item.id !== id))
-          }
+          onSaqlash={xaridorSaqlash}
+          onOchirish={xaridorOchirish}
         />
       )}
 

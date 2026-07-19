@@ -20,7 +20,6 @@ const menyular = [
   { nom: "Mahsulotlar", path: "/mahsulotlar", icon: PackageSearch },
   { nom: "Ombor", path: "/ombor", icon: Warehouse },
   { nom: "Xaridorlar", path: "/mijozlar", icon: Users },
-  { nom: "Xaridorlar uchoti", path: "/xaridor-uchot", icon: Users },
   { nom: "Kassa", path: "/kassa", icon: Wallet },
   { nom: "Hisobotlar", path: "/hisobotlar", icon: BarChart3 },
   { nom: "Xodimlar", path: "/hodimlar", icon: UserCog },

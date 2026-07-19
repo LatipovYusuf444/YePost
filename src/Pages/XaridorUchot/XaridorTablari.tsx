@@ -5,13 +5,7 @@ import KirimModal from "./KirimModal";
 import XaridorSavdoModal from "./XaridorSavdoModal";
 import XaridorTafsilotlariModal from "./XaridorTafsilotlariModal";
 import XodimModal from "./XodimModal";
-import {
-  mockKompaniyalar,
-  mockSavdolar,
-  mockTarix,
-  mockTolovlar,
-  xodimTopish,
-} from "./mockData";
+import { mockKompaniyalar, mockSavdolar, mockTarix, xodimTopish } from "./mockData";
 import type { Kirim, TarixYozuvi, Xaridor, XaridorSavdosi, XaridorTolovi, Xodim } from "./types";
 import {
   kirimHolatMatni,
@@ -142,7 +136,6 @@ export function SavdolarTab({
           xaridor={korilayotganXaridor}
           kompaniyalar={mockKompaniyalar}
           savdolar={mockSavdolar}
-          tolovlar={mockTolovlar}
           tarix={mockTarix}
           onTahrirlash={() => {}}
           onYopish={() => setKorilayotganXaridor(null)}

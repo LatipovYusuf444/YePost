@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
-import { Building2, Hash, Phone, Plus, Search, Settings, Trash2, UserRound } from "lucide-react";
+import { Building2, Hash, Phone, Plus, Search, Trash2, UserRound } from "lucide-react";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
 import IjtimoiyIkonlar from "./IjtimoiyIkonlar";
+import KartaSozlama, { type Maydon } from "./KartaSozlama";
 import KompaniyaModal from "./KompaniyaModal";
 import KompaniyaTafsilotlariModal from "./KompaniyaTafsilotlariModal";
 import KorinishTanlov, { type Korinish } from "./KorinishTanlov";
@@ -21,6 +22,28 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, onSaqlash, onOc
   const [qidiruv, setQidiruv] = useState("");
   const [korinish, setKorinish] = useState<Korinish>("karta");
   const [korilayotganXodim, setKorilayotganXodim] = useState<Xodim | null>(null);
+  const [yashirinMaydon, setYashirinMaydon] = useState<Set<string>>(() => new Set());
+
+  const kartaMaydonlari: Maydon[] = [
+    { id: "nomi", nom: "Nomi" },
+    { id: "stir", nom: "STIR" },
+    { id: "tel", nom: "Tel nomer" },
+    { id: "ijtimoiy", nom: "Ijtimoiy tarmoq" },
+    { id: "aloqa", nom: "Mas'ul shaxs" },
+    { id: "yaratilgan", nom: "Yaratilgan sana" },
+    { id: "yaratgan", nom: "Yaratgan mas'ul shaxs" },
+  ];
+
+  function maydonToggle(id: string) {
+    setYashirinMaydon((oldingi) => {
+      const yangi = new Set(oldingi);
+      if (yangi.has(id)) yangi.delete(id);
+      else yangi.add(id);
+      return yangi;
+    });
+  }
+
+  const korinadi = (id: string) => !yashirinMaydon.has(id);
   const [modalOchiq, setModalOchiq] = useState(false);
   const [tahrirKompaniya, setTahrirKompaniya] = useState<XaridorKompaniyasi | null>(null);
   const [tafsilotKompaniya, setTafsilotKompaniya] = useState<XaridorKompaniyasi | null>(null);
@@ -135,18 +158,11 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, onSaqlash, onOc
                 <Building2 size={22} />
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    modalniOchish(kompaniya);
-                  }}
-                  title="Sozlamalar"
-                  aria-label="Sozlamalar"
-                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FFF3E2] text-[#FF6A00] transition hover:bg-orange-500 hover:text-white"
-                >
-                  <Settings size={16} />
-                </button>
+                <KartaSozlama
+                  maydonlar={kartaMaydonlari}
+                  yashirin={yashirinMaydon}
+                  onToggle={maydonToggle}
+                />
                 <button
                   type="button"
                   onClick={(event) => {
@@ -163,26 +179,34 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, onSaqlash, onOc
             </div>
 
             {/* 1 Nomi */}
-            <h2 className="mt-5 text-xl font-black text-gray-950">{kompaniya.nomi}</h2>
+            {korinadi("nomi") && (
+              <h2 className="mt-5 text-xl font-black text-gray-950">{kompaniya.nomi}</h2>
+            )}
 
-            <p className="mt-2 flex items-center gap-1.5 text-sm font-bold text-gray-500">
-              <Hash size={14} className="text-orange-400" />
-              STIR: {kompaniya.stir || "—"}
-            </p>
+            {korinadi("stir") && (
+              <p className="mt-2 flex items-center gap-1.5 text-sm font-bold text-gray-500">
+                <Hash size={14} className="text-orange-400" />
+                STIR: {kompaniya.stir || "—"}
+              </p>
+            )}
 
             {/* 2 Tel nomer */}
-            <p className="mt-2 flex items-center gap-1.5 text-sm font-bold text-gray-500">
-              <Phone size={14} className="text-orange-400" />
-              {kompaniya.telefon || "—"}
-            </p>
+            {korinadi("tel") && (
+              <p className="mt-2 flex items-center gap-1.5 text-sm font-bold text-gray-500">
+                <Phone size={14} className="text-orange-400" />
+                {kompaniya.telefon || "—"}
+              </p>
+            )}
 
             {/* 3 Ijtimoiy tarmoq */}
-            <div className="mt-3">
-              <IjtimoiyIkonlar ijtimoiy={kompaniya.ijtimoiy} />
-            </div>
+            {korinadi("ijtimoiy") && (
+              <div className="mt-3">
+                <IjtimoiyIkonlar ijtimoiy={kompaniya.ijtimoiy} />
+              </div>
+            )}
 
             {/* 4 Aloqa shaxsi (bo'lsa) */}
-            {kompaniya.aloqaShaxsi && (
+            {korinadi("aloqa") && kompaniya.aloqaShaxsi && (
               <p className="mt-3 flex items-center gap-1.5 text-sm text-gray-500">
                 <UserRound size={14} className="text-orange-400" />
                 {kompaniya.aloqaShaxsi}
@@ -190,13 +214,17 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, onSaqlash, onOc
             )}
 
             {/* 5 Yaratilgan sana · 6 Yaratgan mas'ul shaxs */}
+            {(korinadi("yaratilgan") || korinadi("yaratgan")) && (
             <div className="mt-5 space-y-1 border-t border-gray-100 pt-4 text-sm">
+              {korinadi("yaratilgan") && (
               <p className="flex items-center justify-between gap-2">
                 <span className="text-gray-400">Yaratilgan sana</span>
                 <span className="font-semibold text-gray-600">
                   {sanaFormat(kompaniya.yaratilganSana)}
                 </span>
               </p>
+              )}
+              {korinadi("yaratgan") && (
               <p className="flex items-center justify-between gap-2">
                 <span className="text-gray-400">Yaratgan</span>
                 <button
@@ -210,7 +238,9 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, onSaqlash, onOc
                   {kompaniya.yaratganMasul}
                 </button>
               </p>
+              )}
             </div>
+            )}
           </article>
         ))}
 

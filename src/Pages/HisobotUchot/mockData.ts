@@ -50,17 +50,17 @@ export const mockMijozlar: Tanlov[] = [
   { id: "mij-3", nomi: "Jasur To'xtayev" },
 ];
 
+// Kompaniya — BIZNING firmalarimiz (MoySklad'dagi "Организация"), mijozniki emas.
 export const mockKompaniyalar: Tanlov[] = [
-  { id: "kmp-1", nomi: "Oq Yo'l Savdo MChJ" },
-  { id: "kmp-2", nomi: "Global Trade Group" },
-  { id: "kmp-3", nomi: "Zamin Market" },
+  { id: "kmp-1", nomi: "Aisa" },
+  { id: "kmp-2", nomi: "Aisa Savdo MChJ" },
 ];
 
-// Qaysi xaridor qaysi kompaniyaga tegishli ("" — biriktirilmagan).
-export const mijozKompaniyasi: Record<string, string> = {
-  "mij-1": "kmp-1",
-  "mij-2": "kmp-2",
-  "mij-3": "",
+// Har bir filial qaysi kompaniyamizga tegishli.
+export const filialKompaniyasi: Record<string, string> = {
+  "fil-1": "kmp-1",
+  "fil-2": "kmp-1",
+  "fil-3": "kmp-2",
 };
 
 export const mockYetkazibBeruvchilar: Tanlov[] = [

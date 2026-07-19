@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
-import { Building2, Phone, Plus, Search, Settings, Trash2, UserRound } from "lucide-react";
+import { Building2, Phone, Plus, Search, Trash2, UserRound } from "lucide-react";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
 import IjtimoiyIkonlar from "./IjtimoiyIkonlar";
+import KartaSozlama, { type Maydon } from "./KartaSozlama";
 import KorinishTanlov, { type Korinish } from "./KorinishTanlov";
 import XaridorModal from "./XaridorModal";
 import XaridorTafsilotlariModal from "./XaridorTafsilotlariModal";
@@ -24,6 +25,27 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, onSaqlash, onOchi
   const [tahrirXaridor, setTahrirXaridor] = useState<Xaridor | null>(null);
   const [tafsilotXaridor, setTafsilotXaridor] = useState<Xaridor | null>(null);
   const [korilayotganXodim, setKorilayotganXodim] = useState<Xodim | null>(null);
+  const [yashirinMaydon, setYashirinMaydon] = useState<Set<string>>(() => new Set());
+
+  const kartaMaydonlari: Maydon[] = [
+    { id: "ism", nom: "Ism Familiya" },
+    { id: "tel", nom: "Tel nomer" },
+    { id: "ijtimoiy", nom: "Ijtimoiy tarmoq" },
+    { id: "kompaniya", nom: "Kompaniya" },
+    { id: "yaratilgan", nom: "Yaratilgan sana" },
+    { id: "yaratgan", nom: "Yaratgan mas'ul shaxs" },
+  ];
+
+  function maydonToggle(id: string) {
+    setYashirinMaydon((oldingi) => {
+      const yangi = new Set(oldingi);
+      if (yangi.has(id)) yangi.delete(id);
+      else yangi.add(id);
+      return yangi;
+    });
+  }
+
+  const korinadi = (id: string) => !yashirinMaydon.has(id);
 
   const ustunlar: Ustun<Xaridor>[] = [
     { id: "ism", nom: "Ismi", kenglik: 130, katak: (x) => <span className="font-black text-slate-900">{x.ism}</span> },
@@ -143,18 +165,11 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, onSaqlash, onOchi
                 <UserRound size={22} />
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    modalniOchish(xaridor);
-                  }}
-                  title="Sozlamalar"
-                  aria-label="Sozlamalar"
-                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FFF3E2] text-[#FF6A00] transition hover:bg-orange-500 hover:text-white"
-                >
-                  <Settings size={16} />
-                </button>
+                <KartaSozlama
+                  maydonlar={kartaMaydonlari}
+                  yashirin={yashirinMaydon}
+                  onToggle={maydonToggle}
+                />
                 <button
                   type="button"
                   onClick={(event) => {
@@ -171,26 +186,32 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, onSaqlash, onOchi
             </div>
 
             {/* 1 Ism Familiya */}
-            <h2 className="mt-5 text-xl font-black text-gray-950">{xaridorNomi(xaridor)}</h2>
+            {korinadi("ism") && (
+              <h2 className="mt-5 text-xl font-black text-gray-950">{xaridorNomi(xaridor)}</h2>
+            )}
 
             {/* 2 Tel nomer */}
-            <p className="mt-2 flex items-center gap-1.5 text-sm font-bold text-gray-500">
-              <Phone size={14} className="text-orange-400" />
-              {asosiyTelefon(xaridor) || "—"}
-              {xaridor.telefonlar.length > 1 && (
-                <span className="rounded-lg bg-orange-50 px-1.5 py-0.5 text-xs font-black text-orange-500">
-                  +{xaridor.telefonlar.length - 1}
-                </span>
-              )}
-            </p>
+            {korinadi("tel") && (
+              <p className="mt-2 flex items-center gap-1.5 text-sm font-bold text-gray-500">
+                <Phone size={14} className="text-orange-400" />
+                {asosiyTelefon(xaridor) || "—"}
+                {xaridor.telefonlar.length > 1 && (
+                  <span className="rounded-lg bg-orange-50 px-1.5 py-0.5 text-xs font-black text-orange-500">
+                    +{xaridor.telefonlar.length - 1}
+                  </span>
+                )}
+              </p>
+            )}
 
             {/* 3 Ijtimoiy tarmoq */}
-            <div className="mt-3">
-              <IjtimoiyIkonlar ijtimoiy={xaridor.ijtimoiy} />
-            </div>
+            {korinadi("ijtimoiy") && (
+              <div className="mt-3">
+                <IjtimoiyIkonlar ijtimoiy={xaridor.ijtimoiy} />
+              </div>
+            )}
 
             {/* 4 Kompaniya aloqasi (bo'lsa) */}
-            {kompaniyaNomi(kompaniyalar, xaridor.kompaniyaId) && (
+            {korinadi("kompaniya") && kompaniyaNomi(kompaniyalar, xaridor.kompaniyaId) && (
               <p className="mt-3 flex items-center gap-1.5 text-sm text-gray-500">
                 <Building2 size={14} className="text-orange-400" />
                 {kompaniyaNomi(kompaniyalar, xaridor.kompaniyaId)}
@@ -198,13 +219,17 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, onSaqlash, onOchi
             )}
 
             {/* 5 Yaratilgan sana · 6 Yaratgan mas'ul shaxs */}
+            {(korinadi("yaratilgan") || korinadi("yaratgan")) && (
             <div className="mt-5 space-y-1 border-t border-gray-100 pt-4 text-sm">
+              {korinadi("yaratilgan") && (
               <p className="flex items-center justify-between gap-2">
                 <span className="text-gray-400">Yaratilgan sana</span>
                 <span className="font-semibold text-gray-600">
                   {sanaFormat(xaridor.yaratilganSana)}
                 </span>
               </p>
+              )}
+              {korinadi("yaratgan") && (
               <p className="flex items-center justify-between gap-2">
                 <span className="text-gray-400">Yaratgan</span>
                 <button
@@ -218,7 +243,9 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, onSaqlash, onOchi
                   {xaridor.yaratganMasul}
                 </button>
               </p>
+              )}
             </div>
+            )}
           </article>
         ))}
 
@@ -236,7 +263,6 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, onSaqlash, onOchi
           xaridor={tafsilotXaridor}
           kompaniyalar={kompaniyalar}
           savdolar={mockSavdolar}
-          tolovlar={mockTolovlar}
           tarix={mockTarix}
           onTahrirlash={() => modalniOchish(tafsilotXaridor)}
           onOchirish={() => {

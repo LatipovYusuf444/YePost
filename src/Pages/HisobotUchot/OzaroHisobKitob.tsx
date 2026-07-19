@@ -5,6 +5,7 @@ import KopTanlovli from "./KopTanlovli";
 import Dropdown from "./Dropdown";
 import MuddatTanlov from "./MuddatTanlov";
 import HisobKitobModal from "./HisobKitobModal";
+import { ozaroHisobKitobniYuklash } from "./excelEksport";
 import {
   mockHisobKitob,
   mockKontragentlar,
@@ -14,7 +15,7 @@ import {
   mockYetkazibBeruvchilar,
 } from "./mockData";
 import type { Kontragent, Tanlov } from "./types";
-import { bugun, pul, son } from "./yordamchilar";
+import { bugun, pul, sanadaMi } from "./yordamchilar";
 
 type Filter = {
   dateFrom: string;
@@ -46,18 +47,31 @@ const QARZ_TURLARI = [
 
 const maxsulotTanlovlari: Tanlov[] = mockMaxsulotlar.map((m) => ({ id: m.id, nomi: m.nomi }));
 
-type Qator = Kontragent & { id: string; nomi: string; balans: number };
+type Qator = Kontragent & {
+  id: string;
+  nomi: string;
+  bosh: number; // davr boshidagi qoldiq
+  kirim: number; // davr ichidagi kirim (prixod)
+  chiqim: number; // davr ichidagi chiqim (rasxod)
+  yakuniy: number; // bosh + kirim − chiqim
+};
 
 function kontragentNomi(k: Kontragent) {
   const royxat = k.turi === "mijoz" ? mockMijozlar : mockYetkazibBeruvchilar;
   return royxat.find((item) => item.id === k.refId)?.nomi ?? k.refId;
 }
 
-// balans > 0 → biz qarzdormiz; < 0 → ular bizga qarzdor.
-function balansHisobla(refId: string, dateTo: string) {
-  return mockHisobKitob
-    .filter((d) => d.refId === refId && (!dateTo || d.sana.slice(0, 10) <= dateTo))
+// Davr bo'yicha: boshlang'ich qoldiq, kirim, chiqim, yakuniy qoldiq.
+// yakuniy > 0 → biz qarzdormiz; < 0 → ular bizga qarzdor.
+function hisobla(refId: string, dateFrom: string, dateTo: string) {
+  const barcha = mockHisobKitob.filter((d) => d.refId === refId);
+  const bosh = barcha
+    .filter((d) => dateFrom && d.sana.slice(0, 10) < dateFrom)
     .reduce((s, d) => s + d.prixod - d.rasxod, 0);
+  const davr = barcha.filter((d) => sanadaMi(d.sana, dateFrom, dateTo));
+  const kirim = davr.reduce((s, d) => s + d.prixod, 0);
+  const chiqim = davr.reduce((s, d) => s + d.rasxod, 0);
+  return { bosh, kirim, chiqim, yakuniy: bosh + kirim - chiqim };
 }
 
 function qarzTuriMos(k: Qator, qarzTuri: string) {
@@ -67,13 +81,13 @@ function qarzTuriMos(k: Qator, qarzTuri: string) {
     case "yetkazib":
       return k.turi === "yetkazibBeruvchi";
     case "biz-xaridor":
-      return k.turi === "mijoz" && k.balans > 0;
+      return k.turi === "mijoz" && k.yakuniy > 0;
     case "biz-yetkazib":
-      return k.turi === "yetkazibBeruvchi" && k.balans > 0;
+      return k.turi === "yetkazibBeruvchi" && k.yakuniy > 0;
     case "ular-xaridor":
-      return k.turi === "mijoz" && k.balans < 0;
+      return k.turi === "mijoz" && k.yakuniy < 0;
     case "ular-yetkazib":
-      return k.turi === "yetkazibBeruvchi" && k.balans < 0;
+      return k.turi === "yetkazibBeruvchi" && k.yakuniy < 0;
     default:
       return true;
   }
@@ -81,21 +95,6 @@ function qarzTuriMos(k: Qator, qarzTuri: string) {
 
 function son2(value: number) {
   return value < 0 ? `−${pul(Math.abs(value))}` : pul(value);
-}
-
-function csvYuklash(ustunlar: string[], qatorlar: (string | number)[][]) {
-  const satrlar = [ustunlar, ...qatorlar].map((qator) =>
-    qator.map((katak) => `"${String(katak).replace(/"/g, '""')}"`).join(",")
-  );
-  const blob = new Blob(["﻿" + satrlar.join("\n")], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "ozaro-hisob-kitob.csv";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
 }
 
 export default function OzaroHisobKitob() {
@@ -129,7 +128,7 @@ export default function OzaroHisobKitob() {
         ...k,
         id: k.refId,
         nomi: kontragentNomi(k),
-        balans: balansHisobla(k.refId, filter.dateTo),
+        ...hisobla(k.refId, filter.dateFrom, filter.dateTo),
       }))
       .filter((k) => qarzTuriMos(k, filter.qarzTuri))
       .filter((k) =>
@@ -143,42 +142,86 @@ export default function OzaroHisobKitob() {
       .filter((k) => !kalit || k.nomi.toLowerCase().includes(kalit));
   }, [filter, qidiruv, harakatRefIdlar]);
 
-  const jamiBalans = useMemo(() => qatorlar.reduce((s, k) => s + k.balans, 0), [qatorlar]);
+  const jami = useMemo(
+    () => ({
+      bosh: qatorlar.reduce((s, k) => s + k.bosh, 0),
+      kirim: qatorlar.reduce((s, k) => s + k.kirim, 0),
+      chiqim: qatorlar.reduce((s, k) => s + k.chiqim, 0),
+      yakuniy: qatorlar.reduce((s, k) => s + k.yakuniy, 0),
+    }),
+    [qatorlar]
+  );
 
   const ustunlar: Ustun<Qator>[] = useMemo(
     () => [
       {
-        id: "kontragent",
-        nom: "Kontragent",
-        kenglik: 320,
+        id: "xaridor",
+        nom: "Xaridorlar",
+        kenglik: 240,
         katak: (k) => <span className="font-black text-gray-950">{k.nomi}</span>,
-        jami: () => `Jami: ${qatorlar.length} ta`,
+        jami: () => "Jami:",
       },
       {
-        id: "oxirgi",
-        nom: "Oxirgi qoldiq",
-        kenglik: 200,
+        id: "bosh",
+        nom: "Boshlang'ich qoldiq",
+        kenglik: 170,
+        hizalash: "right",
+        katak: (k) => <span className="text-gray-600">{son2(k.bosh)}</span>,
+        jami: () => son2(jami.bosh),
+      },
+      {
+        id: "kirim",
+        nom: "Kirim",
+        kenglik: 150,
+        hizalash: "right",
+        katak: (k) =>
+          k.kirim ? <span className="font-bold text-emerald-600">{pul(k.kirim)}</span> : <span className="text-gray-300">—</span>,
+        jami: () => <span className="text-emerald-600">{pul(jami.kirim)}</span>,
+      },
+      {
+        id: "chiqim",
+        nom: "Chiqim",
+        kenglik: 150,
+        hizalash: "right",
+        katak: (k) =>
+          k.chiqim ? <span className="font-bold text-red-500">{pul(k.chiqim)}</span> : <span className="text-gray-300">—</span>,
+        jami: () => <span className="text-red-500">{pul(jami.chiqim)}</span>,
+      },
+      {
+        id: "yakuniy",
+        nom: "Yakuniy qoldiq",
+        kenglik: 170,
         hizalash: "right",
         katak: (k) => (
           <span
             className={
-              k.balans > 0 ? "font-black text-red-500" : k.balans < 0 ? "font-black text-emerald-600" : "text-gray-500"
+              k.yakuniy > 0 ? "font-black text-red-500" : k.yakuniy < 0 ? "font-black text-emerald-600" : "text-gray-500"
             }
           >
-            {son2(k.balans)}
+            {son2(k.yakuniy)}
           </span>
         ),
-        jami: () => <span className={jamiBalans >= 0 ? "text-red-500" : "text-emerald-600"}>{son(jamiBalans)}</span>,
+        jami: () => (
+          <span className={jami.yakuniy > 0 ? "text-red-500" : "text-emerald-600"}>{son2(jami.yakuniy)}</span>
+        ),
       },
     ],
-    [qatorlar, jamiBalans]
+    [jami]
   );
 
-  function eksport() {
-    csvYuklash(
-      ["Kontragent", "Turi", "Oxirgi qoldiq"],
-      qatorlar.map((k) => [k.nomi, k.turi === "mijoz" ? "Mijoz" : "Yetkazib beruvchi", k.balans])
-    );
+  async function eksport() {
+    await ozaroHisobKitobniYuklash({
+      qatorlar: qatorlar.map((k) => ({
+        nomi: k.nomi,
+        bosh: k.bosh,
+        kirim: k.kirim,
+        chiqim: k.chiqim,
+        yakuniy: k.yakuniy,
+      })),
+      dateFrom: filter.dateFrom,
+      dateTo: filter.dateTo,
+      qidiruv,
+    });
   }
 
   return (
@@ -229,11 +272,11 @@ export default function OzaroHisobKitob() {
             Hisobotni shakllantirish
           </button>
           <button
-            onClick={eksport}
+            onClick={() => void eksport()}
             className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-bold text-orange-600 shadow-sm transition hover:bg-orange-50"
           >
             <Download size={16} />
-            Excel (CSV)
+            Excel yuklash
           </button>
         </div>
         <div className="relative md:w-72">
