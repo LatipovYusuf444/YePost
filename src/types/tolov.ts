@@ -24,17 +24,23 @@ export type TolovYozuvi = {
   sana?: string;
   manba: TolovManbasi;
   sotuv?: Sotuv;
-  raw?: Sotuv | Qaytarish | KassaKirim | Xarajat;
+  raw?: Sotuv | Qaytarish | KassaKirim | Xarajat | FinanceTransaction;
 };
 
 export type TolovFiltrlari = {
   search: string;
   turi: TolovYonalishi | "BARCHASI";
   tolovTuri: TolovUsuliKeng | "BARCHASI";
+  manba: TolovManbasi | "BARCHASI";
   startDate: string;
   endDate: string;
   page: number;
   pageSize: number;
+};
+
+export type FinanceTransaction = {
+  id: string; source: TolovManbasi; type: "INCOME" | "EXPENSE"; paymentType: string;
+  amount: number | string; date: string; note?: string | null; refId?: string | null; refDocNumber?: string | null;
 };
 
 export type TolovMoliyaManbalari = {

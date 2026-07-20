@@ -152,3 +152,9 @@ export async function hisobotTanlovlariniOlish() {
     suppliers: royxatniAjratish(suppliers.data),
   };
 }
+
+export type StockBalanceParams={asOf?:string;warehouseIds?:string;branchIds?:string;categoryIds?:string;productIds?:string;modificationIds?:string;balanceStatus?:"ALL"|"POSITIVE"|"ZERO"|"NEGATIVE";priceType?:"COST"|"RETAIL"|"WHOLESALE";groupByWarehouse?:boolean;search?:string;page?:number;pageSize?:number};
+export type StockBalanceItem={warehouseId:string|null;warehouseName:string|null;productId:string;productName:string;modificationId:string;modificationName?:string|null;barcode?:string|null;unitName?:string|null;quantity:number|string;reservedQuantity:number|string;availableQuantity:number|string;costPrice?:number|string;retailPrice?:number|string;wholesalePrice?:number|string;totalAmount?:number|string};
+export type StockBalanceResponse={items:StockBalanceItem[];total:number;page:number;pageSize:number;totalPages:number;summary:{quantity:number|string;reservedQuantity:number|string;availableQuantity:number|string;totalAmount:number|string}};
+export async function stockBalanceReport(params:StockBalanceParams){return (await apiClient.get<StockBalanceResponse>("/reports/stock-balance",{params})).data}
+export async function stockBalanceExport(params:StockBalanceParams){const response=await apiClient.get<Blob>("/reports/stock-balance/export",{params,responseType:"blob"});const disposition=String(response.headers["content-disposition"]??"");const match=disposition.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i);const filename=match?decodeURIComponent(match[1].replace(/"/g,"")):`stock-balance-${new Date().toISOString().slice(0,10)}.xlsx`;const url=URL.createObjectURL(response.data);const link=document.createElement("a");link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url)}

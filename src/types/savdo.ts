@@ -1,6 +1,33 @@
 export type SotuvHolati = "DRAFT" | "CONFIRMED" | "CANCELLED";
 export type SotuvTuri = "QUICK" | "CLIENT";
 export type TolovTuri = "CASH" | "CARD" | "BANK" | "DEBT";
+export type YetkazishHolati = "PENDING" | "DISPATCHED" | "DELIVERED" | "CANCELLED";
+
+export type YetkazishMalumoti = {
+  id: string;
+  saleId?: string;
+  recipientName?: string | null;
+  recipientPhone?: string | null;
+  address?: string | null;
+  courierName?: string | null;
+  cost?: number | string | null;
+  scheduledAt?: string | null;
+  note?: string | null;
+  status: YetkazishHolati;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type YetkazishPayload = {
+  recipientName?: string;
+  recipientPhone?: string;
+  address?: string;
+  courierName?: string;
+  cost?: number;
+  scheduledAt?: string;
+  note?: string;
+};
+export type SaleAuditLog = { id: string; action: "CREATE"|"UPDATE"|"DELETE"; actor?: NomliMalumot|null; user?: NomliMalumot|null; diff?: {before?:Record<string,unknown>|null;after?:Record<string,unknown>|null}|null; createdAt:string };
 export type QaytarishSababi = "DEFECT" | "WRONG" | "OTHER";
 
 export type QaytarishToloviniQaytarishUsuli = "CASH" | "CARD" | "BALANCE" | "NONE";
@@ -10,6 +37,7 @@ export type NomliMalumot = {
   id: string;
   name?: string;
   fullName?: string;
+  username?: string;
   firstName?: string;
   lastName?: string;
   phone?: string;

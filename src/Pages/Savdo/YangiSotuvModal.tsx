@@ -19,6 +19,8 @@ import {
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import { crmApi } from "@/api/crmApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type {
   MijozTanlovi,
   OmborTanlovi,
@@ -131,7 +133,7 @@ function qoldiqNomi(qoldiq: QoldiqTanlovi) {
     return `${productName} - ${variantName}`;
   }
 
-  return productName ?? variantName ?? qoldiq.modificationId;
+  return productName ?? variantName ?? "Nomi aniqlanmagan mahsulot";
 }
 
 function qoldiqMiqdori(qoldiq?: QoldiqTanlovi) {
@@ -224,6 +226,7 @@ export default function YangiSotuvModal({
   const [faoliyatSana, setFaoliyatSana] = useState(bugungiSana());
   const [faoliyatSoat, setFaoliyatSoat] = useState("15:00");
   const [faoliyatSaqlangan, setFaoliyatSaqlangan] = useState(false);
+  const [sotuvBackendgaSaqlandi, setSotuvBackendgaSaqlandi] = useState(false);
   const [mahsulotlar, setMahsulotlar] = useState<MahsulotQatori[]>([
     { modificationId: "", quantity: "1", price: "", discount: "" },
   ]);
@@ -279,30 +282,51 @@ export default function YangiSotuvModal({
       : "");
 
   function backendIzohiniYigish() {
-    const faoliyatOzgarilgan =
-      faoliyatSaqlangan ||
-      Boolean(faoliyatSarlavha.trim()) ||
-      Boolean(faoliyatTafsilot.trim()) ||
-      faoliyatSana !== bugungiSana() ||
-      faoliyatSoat !== "15:00";
-    const faoliyatSarlavhasi =
-      faoliyatSarlavha.trim() || faoliyatMatnlari[faolTab]?.title || "";
-    const faoliyatMalumotlari = [
-      faolTab ? `Faoliyat turi: ${faolTab}` : "",
-      faoliyatSarlavhasi ? `Faoliyat sarlavhasi: ${faoliyatSarlavhasi}` : "",
-      faoliyatTafsilot.trim() ? `Faoliyat izohi: ${faoliyatTafsilot.trim()}` : "",
-      faoliyatSana ? `Faoliyat sanasi: ${faoliyatSana} ${faoliyatSoat}` : "",
-    ].filter(Boolean);
     const metadata = [
       korsatiladiganSotuvNomi ? `${modalMatnlari.notePrefix}: ${korsatiladiganSotuvNomi}` : "",
       bosqich ? `Bosqich: ${bosqich}` : "",
       `Valyuta: ${valyutalar.find((item) => item.value === valyuta)?.label ?? valyuta}`,
       boshlanishSanasi ? `Boshlanish sanasi: ${boshlanishSanasi}` : "",
       tugashSanasi ? `Tugash sanasi: ${tugashSanasi}` : "",
-      faoliyatOzgarilgan && faoliyatMalumotlari.length ? faoliyatMalumotlari.join("\n") : "",
     ].filter(Boolean);
 
     return [...metadata, note.trim()].filter(Boolean).join("\n");
+  }
+
+  async function faoliyatniBackendgaSaqlash() {
+    const faoliyatOzgarilgan = faoliyatSaqlangan || Boolean(faoliyatSarlavha.trim()) || Boolean(faoliyatTafsilot.trim());
+    if (!faoliyatOzgarilgan) return true;
+    if (!customerId) {
+      setXatolik("CRM faoliyatini saqlash uchun mijozni tanlang.");
+      return false;
+    }
+    try {
+      const sarlavha = faoliyatSarlavha.trim() || faoliyatMatnlari[faolTab]?.title || "Faoliyat";
+      const matn = faoliyatTafsilot.trim() || sarlavha;
+      if (faolTab === "Izoh") {
+        await crmApi.commentYaratish(customerId, { text: matn });
+      } else if (faolTab === "Xabar") {
+        await crmApi.chatXabarYuborish(customerId, matn);
+      } else {
+        if (!responsibleId) {
+          setXatolik("Ish yoki vazifa yaratish uchun mas’ul xodimni tanlang.");
+          return false;
+        }
+        const dueAt = new Date(`${faoliyatSana}T${faoliyatSoat || "00:00"}`).toISOString();
+        await crmApi.activityYaratish({
+          type: faolTab === "Vazifa" ? "TASK" : "CALL",
+          customerId,
+          subject: sarlavha,
+          description: faoliyatTafsilot.trim() || undefined,
+          dueAt,
+          assigneeId: responsibleId,
+        });
+      }
+      return true;
+    } catch (error) {
+      setXatolik(getApiErrorMessage(error));
+      return false;
+    }
   }
 
   function mahsulotniYangilash(index: number, yangilanish: Partial<MahsulotQatori>) {
@@ -439,21 +463,25 @@ export default function YangiSotuvModal({
       return;
     }
 
-    const muvaffaqiyatli = await onSaqlash({
-      warehouseId,
-      customerId: customerId || undefined,
-      clientCompanyId: clientCompanyId || undefined,
-      responsibleId: responsibleId || undefined,
-      saleType: customerId || clientCompanyId ? "CLIENT" : "QUICK",
-      note: backendIzohiniYigish() || undefined,
-      items: tozaMahsulotlar,
-      payments:
-        tolovSummasiRaqam > 0
-          ? [{ paymentType: tolovTuri, amount: tolovSummasiRaqam }]
-          : [],
-    });
+    let muvaffaqiyatli = sotuvBackendgaSaqlandi;
+    if (!sotuvBackendgaSaqlandi) {
+      muvaffaqiyatli = await onSaqlash({
+        warehouseId,
+        customerId: customerId || undefined,
+        clientCompanyId: clientCompanyId || undefined,
+        responsibleId: responsibleId || undefined,
+        saleType: customerId || clientCompanyId ? "CLIENT" : "QUICK",
+        note: backendIzohiniYigish() || undefined,
+        items: tozaMahsulotlar,
+        payments:
+          tolovSummasiRaqam > 0
+            ? [{ paymentType: tolovTuri, amount: tolovSummasiRaqam }]
+            : [],
+      });
+      if (muvaffaqiyatli) setSotuvBackendgaSaqlandi(true);
+    }
 
-    if (muvaffaqiyatli) onYopish();
+    if (muvaffaqiyatli && await faoliyatniBackendgaSaqlash()) onYopish();
   }
 
   return (
@@ -832,17 +860,17 @@ export default function YangiSotuvModal({
                           }))}
                           selectedLabel={
                             tanlanganXodim ? (
-                              <span className="flex h-full w-full items-center justify-center text-xs font-black">
+                              <span className="flex h-9 w-9 shrink-0 items-center justify-center text-center text-xs font-black leading-none">
                                 {xodimBoshHarflari(tanlanganXodim)}
                               </span>
                             ) : (
-                              <span className="flex h-full w-full items-center justify-center">
-                                <UserRound size={18} />
+                              <span className="flex h-9 w-9 shrink-0 items-center justify-center leading-none">
+                                <UserRound size={18} className="block shrink-0" />
                               </span>
                             )
                           }
                           className="w-9 shrink-0"
-                          buttonClassName="h-9 w-9 rounded-full border-0 bg-orange-100 p-0 text-[#FF6A00] shadow-none hover:bg-orange-200 focus:ring-orange-100"
+                          buttonClassName="h-9 w-9 justify-center gap-0 rounded-full border-0 bg-orange-100 p-0 text-center text-[#FF6A00] shadow-none [&>span]:flex [&>span]:h-9 [&>span]:w-9 [&>span]:items-center [&>span]:justify-center hover:bg-orange-200 focus:ring-orange-100"
                           dropdownClassName="min-w-[260px]"
                           portal
                           hideChevron

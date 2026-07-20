@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
-  Clock3,
   LoaderCircle,
-  MessageSquare,
   PackageMinus,
   RotateCcw,
   Settings,
@@ -13,6 +11,7 @@ import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
 import type { ChiqimHujjati, ChiqimSababi, MahsulotModifikatsiyasi } from "@/types/ombor";
 import { holat, hujjatRaqami, modificationNomi, pul, sana } from "./omborYordamchilari";
+import InventoryDocumentActivity from "./InventoryDocumentActivity";
 
 type Props = { id: string; onClose: () => void };
 
@@ -36,13 +35,11 @@ export default function ChiqimTafsilotModal({ id, onClose }: Props) {
   const xatolikniTozalash = useOmborStore((state) => state.xatolikniTozalash);
   const [hujjat, setHujjat] = useState<ChiqimHujjati | null>(null);
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
-  const [note, setNote] = useState("");
   const [bekorTasdiq, setBekorTasdiq] = useState(false);
 
   async function hujjatniYangilash() {
     const item = await chiqimOlish(id);
     setHujjat(item);
-    setNote(item?.note ?? "");
     return item;
   }
 
@@ -54,7 +51,6 @@ export default function ChiqimTafsilotModal({ id, onClose }: Props) {
       const item = await chiqimOlish(id);
       if (!faol) return;
       setHujjat(item);
-      setNote(item?.note ?? "");
       setYuklanmoqda(false);
     }
     void yuklash();
@@ -100,13 +96,6 @@ export default function ChiqimTafsilotModal({ id, onClose }: Props) {
   const sabab = hujjat
     ? sabablar[hujjat.reason as ChiqimSababi] ?? hujjat.reason ?? "—"
     : "—";
-  const noteOzgargan = note.trim() !== (hujjat?.note ?? "").trim();
-
-  async function izohniSaqlash() {
-    if (!hujjat || !qoralama || !noteOzgargan) return;
-    const ok = await store.chiqimYangilash(id, { note: note.trim() || undefined });
-    if (ok) await hujjatniYangilash();
-  }
 
   async function tasdiqlash() {
     if (!hujjat || !qoralama) return;
@@ -161,22 +150,7 @@ export default function ChiqimTafsilotModal({ id, onClose }: Props) {
                 </div>
               </section>
 
-              <div className="space-y-5">
-                <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
-                  <SectionTitle icon={<MessageSquare size={18} />} text="Kommentariya" />
-                  <textarea value={note} onChange={(event) => setNote(event.target.value)} readOnly={!qoralama} rows={4} placeholder="Izoh yozilmagan" className="w-full resize-none rounded-2xl border border-slate-200 p-4 text-sm font-medium text-slate-700 outline-none transition read-only:bg-slate-50 focus:border-orange-400 focus:ring-4 focus:ring-orange-100" />
-                  <div className="mt-4 flex justify-end">
-                    <button type="button" onClick={() => void izohniSaqlash()} disabled={!qoralama || !noteOzgargan || store.amalBajarilmoqda} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-orange-200">{store.amalBajarilmoqda && <LoaderCircle size={16} className="animate-spin" />}Saqlash</button>
-                  </div>
-                </section>
-
-                <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
-                  <SectionTitle icon={<Clock3 size={18} />} text="Tarix" />
-                  <History text="Hujjat yaratildi" time={sana(hujjat.createdAt)} />
-                  {hujjat.confirmedAt && <History text="Hujjat tasdiqlandi" time={sana(hujjat.confirmedAt)} />}
-                  {hujjat.updatedAt && hujjat.updatedAt !== hujjat.createdAt && <History text="Hujjat yangilandi" time={sana(hujjat.updatedAt)} />}
-                </section>
-              </div>
+              <InventoryDocumentActivity documentType="WRITE_OFF" documentId={hujjat.id}/>
             </div>
 
             <section className="mt-5 rounded-[26px] border border-orange-100 bg-white p-4 shadow-sm sm:p-5">
@@ -228,8 +202,4 @@ function SectionTitle({ icon, text }: { icon: React.ReactNode; text: string }) {
 
 function Info({ label, value, className = "" }: { label: string; value: string; className?: string }) {
   return <div className={className}><p className="text-sm font-bold text-slate-400">{label}</p><p className="mt-1 font-black text-slate-800">{value}</p></div>;
-}
-
-function History({ text, time }: { text: string; time: string }) {
-  return <div className="flex items-start gap-3 border-b border-orange-50 py-3 last:border-0"><span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-orange-500" /><div><p className="text-sm font-bold text-slate-700">{text}</p><p className="text-xs font-semibold text-slate-400">{time}</p></div></div>;
 }

@@ -74,7 +74,11 @@ export default function SavdoSelect({
     const rect = buttonRef.current.getBoundingClientRect();
     const gap = 8;
     const viewportPadding = 12;
-    const dropdownWidth = rect.width;
+    const renderedDropdownWidth = dropdownRef.current?.getBoundingClientRect().width ?? 0;
+    const dropdownWidth = Math.min(
+      Math.max(rect.width, renderedDropdownWidth),
+      window.innerWidth - viewportPadding * 2
+    );
     const belowSpace = window.innerHeight - rect.bottom - gap - viewportPadding;
     const aboveSpace = rect.top - gap - viewportPadding;
     const preferredHeight = Math.min(240, options.length * 40 + 8);
@@ -93,6 +97,7 @@ export default function SavdoSelect({
       left,
       top: opensUp ? Math.max(viewportPadding, rect.top - gap - maxHeight) : rect.bottom + gap,
       width: dropdownWidth,
+      maxWidth: `calc(100vw - ${viewportPadding * 2}px)`,
       maxHeight,
     });
   }, [options.length, portal]);

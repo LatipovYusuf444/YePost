@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
+import InventoryDocumentActivity from "./InventoryDocumentActivity";
+import type { InventoryDocumentType } from "@/types/inventoryDocuments";
 import type {
   ChiqimHujjati,
   ChiqimSababi,
@@ -60,6 +62,9 @@ const sarlavhalar: Record<InventoryHujjatTuri, string> = {
   chiqim: "Chiqim hujjati",
   kochirish: "Ko'chirish hujjati",
   inventarizatsiya: "Inventarizatsiya hujjati",
+};
+const documentTypes: Record<InventoryHujjatTuri, InventoryDocumentType> = {
+  kirim: "PURCHASE", chiqim: "WRITE_OFF", kochirish: "TRANSFER", inventarizatsiya: "STOCK_TAKE",
 };
 
 const sabablar: Record<ChiqimSababi, string> = {
@@ -709,6 +714,10 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                     </p>
                   </div>
                 )}
+
+                <div className="mt-5">
+                  <InventoryDocumentActivity documentType={documentTypes[tur]} documentId={hujjat.id}/>
+                </div>
 
                 <div className="mt-6 flex justify-end gap-3">
                   {qoralama && tur === "inventarizatsiya" && (

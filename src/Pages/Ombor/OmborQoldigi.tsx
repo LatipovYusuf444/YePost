@@ -8,7 +8,6 @@ import {
   Search,
 } from "lucide-react";
 import {
-  birliklarApi,
   kategoriyalarApi,
   mahsulotlarApi,
 } from "@/api/catalogApi";
@@ -16,21 +15,19 @@ import {
   barchaModifikatsiyalar,
   filiallarApi,
   omborlarApi,
-  omborQoldiqlari,
 } from "@/api/omborApi";
+import { stockBalanceExport, stockBalanceReport, type StockBalanceParams, type StockBalanceResponse } from "@/api/reportsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import KopTanlov from "./KopTanlov";
 import OmborJadval from "./OmborJadval";
 import type {
   Kategoriya,
   Mahsulot,
-  OlchovBirligi,
 } from "@/types/catalog";
 import type {
   Filial,
   MahsulotModifikatsiyasi,
   Ombor,
-  OmborQoldigi,
 } from "@/types/ombor";
 
 type NarxTuri = "costPrice" | "retailPrice" | "wholesalePrice";
@@ -65,12 +62,6 @@ type Satr = {
   umumiy: number;
 };
 
-type KengaytirilganQoldiq = OmborQoldigi & {
-  reservedQuantity?: number | string;
-  reserved?: number | string;
-  available?: number | string;
-  totalQuantity?: number | string;
-};
 
 const bugun = () => new Date().toISOString().slice(0, 10);
 
@@ -127,25 +118,16 @@ function variantNomi(modification: MahsulotModifikatsiyasi) {
   return modification.name?.trim() || params || "Asosiy variant";
 }
 
-function qoldiqQiymatlari(item: KengaytirilganQoldiq) {
-  const jami = raqam(
-    item.balance ?? item.quantity ?? item.totalQuantity ?? item.availableQuantity ?? item.available
-  );
-  const backendRezerv = item.reservedQuantity ?? item.reserved;
-  const backendBosh = item.availableQuantity ?? item.available;
-  const bosh = backendBosh === undefined ? jami : raqam(backendBosh);
-  const rezerv = backendRezerv === undefined ? Math.max(jami - bosh, 0) : raqam(backendRezerv);
-  return { jami, rezerv, bosh };
-}
+function reportParams(value:Filtr,search=""):StockBalanceParams{return {asOf:value.sana||undefined,warehouseIds:value.omborlar.length?value.omborlar.join(","):undefined,branchIds:value.filiallar.length?value.filiallar.join(","):undefined,categoryIds:value.kategoriyalar.length?value.kategoriyalar.join(","):undefined,productIds:value.mahsulotlar.length?value.mahsulotlar.join(","):undefined,modificationIds:value.variatsiyalar.length?value.variatsiyalar.join(","):undefined,balanceStatus:value.qoldiqTuri==="musbat"?"POSITIVE":value.qoldiqTuri==="nol"?"ZERO":value.qoldiqTuri==="manfiy"?"NEGATIVE":"ALL",priceType:value.narxTuri==="retailPrice"?"RETAIL":value.narxTuri==="wholesalePrice"?"WHOLESALE":"COST",groupByWarehouse:value.omborlarBoyichaAjratish,search:search.trim()||undefined,page:1,pageSize:1000}}
 
 export default function OmborQoldigi() {
   const [omborlar, setOmborlar] = useState<Ombor[]>([]);
   const [filiallar, setFiliallar] = useState<Filial[]>([]);
   const [kategoriyalar, setKategoriyalar] = useState<Kategoriya[]>([]);
-  const [birliklar, setBirliklar] = useState<OlchovBirligi[]>([]);
   const [mahsulotlar, setMahsulotlar] = useState<Mahsulot[]>([]);
   const [modifikatsiyalar, setModifikatsiyalar] = useState<MahsulotModifikatsiyasi[]>([]);
-  const [qoldiqlar, setQoldiqlar] = useState<OmborQoldigi[]>([]);
+  const [report,setReport]=useState<StockBalanceResponse>({items:[],total:0,page:1,pageSize:1000,totalPages:1,summary:{quantity:0,reservedQuantity:0,availableQuantity:0,totalAmount:0}});
+  const [exportYuklanmoqda,setExportYuklanmoqda]=useState(false);
   const [filtr, setFiltr] = useState<Filtr>(BOSHLANGICH_FILTR);
   const [qollangan, setQollangan] = useState<Filtr>(BOSHLANGICH_FILTR);
   const [shakllantirilgan, setShakllantirilgan] = useState(bugun());
@@ -161,26 +143,20 @@ export default function OmborQoldigi() {
         warehouses,
         branches,
         categories,
-        units,
         products,
         modifications,
-        stocks,
       ] = await Promise.all([
         omborlarApi.royxat(),
         filiallarApi.royxat(),
         kategoriyalarApi.royxat(),
-        birliklarApi.royxat(),
         mahsulotlarApi.royxat(),
         barchaModifikatsiyalar(),
-        omborQoldiqlari(),
       ]);
       setOmborlar(warehouses);
       setFiliallar(branches);
       setKategoriyalar(categories);
-      setBirliklar(units);
       setMahsulotlar(products);
       setModifikatsiyalar(modifications);
-      setQoldiqlar(stocks);
     } catch (error) {
       setXatolik(getApiErrorMessage(error));
     } finally {
@@ -197,20 +173,14 @@ export default function OmborQoldigi() {
   }
 
   async function hisobotniShakllantirish() {
-    await malumotlarniYuklash();
-    setQollangan({ ...filtr });
+    setYuklanmoqda(true);setXatolik(null);
+    try{const applied={...filtr};setReport(await stockBalanceReport(reportParams(applied,jadvalQidiruvi)));setQollangan(applied)}catch(error){setXatolik(getApiErrorMessage(error))}finally{setYuklanmoqda(false)}
     setShakllantirilgan(bugun());
   }
 
   const productMap = useMemo(
     () => new Map(mahsulotlar.map((item) => [item.id, item])),
     [mahsulotlar]
-  );
-  const unitMap = useMemo(() => new Map(birliklar.map((item) => [item.id, item])), [birliklar]);
-  const omborMap = useMemo(() => new Map(omborlar.map((item) => [item.id, item])), [omborlar]);
-  const modificationMap = useMemo(
-    () => new Map(modifikatsiyalar.map((item) => [item.id, item])),
-    [modifikatsiyalar]
   );
 
   const variatsiyaVariantlari = useMemo(
@@ -235,6 +205,12 @@ export default function OmborQoldigi() {
   }, [modifikatsiyalar]);
 
   const satrlar = useMemo<Satr[]>(() => {
+    return report.items.map((item) => {
+      const birlikNarx = raqam(qollangan.narxTuri === "retailPrice" ? item.retailPrice : qollangan.narxTuri === "wholesalePrice" ? item.wholesalePrice : item.costPrice);
+      return { kalit: `${item.modificationId}:${item.warehouseId ?? "all"}`, mahsulotNomi: item.productName, birlik: item.unitName || "—", shtrixKod: item.barcode || "", variatsiya: item.modificationName || "Asosiy variant", omborNomi: item.warehouseName || "Barcha omborlar", jami: raqam(item.quantity), rezerv: raqam(item.reservedQuantity), bosh: raqam(item.availableQuantity), birlikNarx, umumiy: raqam(item.totalAmount) };
+    });
+    /* Eski client-side hisoblash olib tashlandi.
+    const qoldiqlar: never[] = [];
     const groups = new Map<string, Satr>();
 
     for (const rawStock of qoldiqlar) {
@@ -310,34 +286,27 @@ export default function OmborQoldigi() {
           : true
       )
       .sort((a, b) => a.mahsulotNomi.localeCompare(b.mahsulotNomi, "uz"));
+    */
   }, [
-    jadvalQidiruvi,
-    modificationMap,
-    omborMap,
-    productMap,
-    qoldiqlar,
-    qollangan,
-    unitMap,
+    report.items,
+    qollangan.narxTuri,
   ]);
 
   const yakun = useMemo(
-    () =>
-      satrlar.reduce(
-        (sum, item) => ({
-          jami: sum.jami + item.jami,
-          rezerv: sum.rezerv + item.rezerv,
-          bosh: sum.bosh + item.bosh,
-          umumiy: sum.umumiy + item.umumiy,
-        }),
-        { jami: 0, rezerv: 0, bosh: 0, umumiy: 0 }
-      ),
-    [satrlar]
+    () => ({ jami: raqam(report.summary.quantity), rezerv: raqam(report.summary.reservedQuantity), bosh: raqam(report.summary.availableQuantity), umumiy: raqam(report.summary.totalAmount) }),
+    [report.summary]
   );
 
   const narxTuriNomi =
     narxTurlari.find((item) => item.kalit === qollangan.narxTuri)?.nom ?? "Narx";
 
-  function excelgaYuklash() {
+  async function excelgaYuklash() {
+    if (exportYuklanmoqda) return;
+    setExportYuklanmoqda(true); setXatolik(null);
+    try { await stockBalanceExport(reportParams(qollangan, jadvalQidiruvi)); }
+    catch (error) { setXatolik(getApiErrorMessage(error)); }
+    finally { setExportYuklanmoqda(false); }
+    return;
     const headers = [
       "Nomi",
       "O'lchov birligi",
@@ -455,7 +424,7 @@ export default function OmborQoldigi() {
           Hisobotni shakllantirish
         </button>
         <button type="button" onClick={() => window.print()} className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-5 text-sm font-bold text-gray-600 hover:text-orange-600"><Printer size={17} />Chop etish</button>
-        <button type="button" onClick={excelgaYuklash} className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-5 text-sm font-bold text-gray-600 hover:text-orange-600"><FileDown size={17} />Excelga yuklash</button>
+        <button type="button" onClick={() => void excelgaYuklash()} disabled={exportYuklanmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-5 text-sm font-bold text-gray-600 hover:text-orange-600 disabled:opacity-50">{exportYuklanmoqda?<LoaderCircle size={17} className="animate-spin"/>:<FileDown size={17} />}Excelga yuklash</button>
         <span className="text-sm font-bold text-gray-400">{sana(qollangan.sana)} holatiga (shakllantirilgan: {sana(shakllantirilgan)})</span>
         <label className="relative ml-auto w-full max-w-sm">
           <Search size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -465,7 +434,7 @@ export default function OmborQoldigi() {
 
       {qollangan.sana !== bugun() && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-          Backend hozir tarixiy sanadagi qoldiqni bermaydi. Jadvalda joriy qoldiq ko'rsatilmoqda; sana filtri uchun alohida endpoint talab qilinadi.
+          Hisobot backenddagi tanlangan sana va joriy filterlar asosida shakllantirildi.
         </div>
       )}
 

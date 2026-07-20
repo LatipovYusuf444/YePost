@@ -27,11 +27,6 @@ const omborlar: OmborItem[] = mockOmborlar.map((o) => ({
   faol: true,
 }));
 
-// Hujjat tovar hujjatimi (ochsa bo'ladimi)?
-export function ochilaganHujjatmi(h: HisobKitobHujjati) {
-  return h.turi === "realizatsiya" || h.turi === "xarid";
-}
-
 export default function HisobKitobHujjatKorish({
   hujjat,
   kontragent,

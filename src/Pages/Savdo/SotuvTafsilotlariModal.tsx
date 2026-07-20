@@ -29,10 +29,20 @@ import {
   X,
 } from "lucide-react";
 import { crmApi, royxatniAjratish } from "@/api/crmApi";
+import {
+  yetkazishniBekorQilish,
+  yetkazishniJonatish,
+  yetkazishniOlish,
+  yetkazishniYakunlash,
+  yetkazishniYangilash,
+  yetkazishYaratish,
+  sotuvTarixiniOlish,
+  sotuvTafsilotiniOlish,
+} from "@/api/savdoApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import AppModal from "@/Components/common/AppModal";
-import type { Activity, Comment } from "@/types/crm";
-import type { QoldiqTanlovi, Sotuv, SotuvTolovi, SotuvYaratishMalumoti, TolovTuri, XodimTanlovi } from "@/types/savdo";
+import type { Activity, Attachment, ChatMessage, Comment } from "@/types/crm";
+import type { QoldiqTanlovi, SaleAuditLog, Sotuv, SotuvTolovi, SotuvYaratishMalumoti, TolovTuri, XodimTanlovi, YetkazishMalumoti, YetkazishPayload } from "@/types/savdo";
 import {
   masulNomi,
   mijozNomi,
@@ -91,6 +101,8 @@ type SaqlanganFaoliyat = {
   harakat?: string;
   pinned?: boolean;
   completed?: boolean;
+  attachmentIds?: string[];
+  mentionUserIds?: string[];
 };
 
 type HujjatTuri = "Nakladnoy" | "Hisob-faktura";
@@ -105,26 +117,7 @@ type SaqlanganHujjat = {
 
 const tabs = ["Umumiy", "Tovarlar", "Hisob-fakturalar", "Tarix"];
 const bolimlar = ["To'lov", "To'lov va yetkazish", "Terminal orqali to'lov", "Yetkazish", "Ombordan chiqarish"];
-const faoliyatSaqlashKaliti = (sotuvId: string) => `yepost:savdo-faoliyat:${sotuvId}`;
 const hujjatSaqlashKaliti = (sotuvId: string) => `yepost:savdo-hujjatlar:${sotuvId}`;
-const tarixOchirilganKaliti = (sotuvId: string) => `yepost:savdo-tarix-ochirilgan:${sotuvId}`;
-
-function sotuvFaoliyatlariniOlish(sotuvId: string): SaqlanganFaoliyat[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(faoliyatSaqlashKaliti(sotuvId));
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function sotuvFaoliyatlariniSaqlash(sotuvId: string, faoliyatlar: SaqlanganFaoliyat[]) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(faoliyatSaqlashKaliti(sotuvId), JSON.stringify(faoliyatlar));
-}
 
 function crmActivityniFaoliyatga(activity: Activity): SaqlanganFaoliyat {
   return {
@@ -171,22 +164,6 @@ function sotuvHujjatlariniSaqlash(sotuvId: string, hujjatlar: SaqlanganHujjat[])
   window.localStorage.setItem(hujjatSaqlashKaliti(sotuvId), JSON.stringify(hujjatlar));
 }
 
-function sotuvOchirilganTarixiniOlish(sotuvId: string): string[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(tarixOchirilganKaliti(sotuvId));
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function sotuvOchirilganTarixiniSaqlash(sotuvId: string, ids: string[]) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(tarixOchirilganKaliti(sotuvId), JSON.stringify(ids));
-}
 
 function mijozTelefon(sotuv: Sotuv) {
   return sotuv.customer?.phone || sotuv.clientCompany?.phone || "-";
@@ -531,7 +508,7 @@ export default function SotuvTafsilotlariModal({
           ) : activeTab === "Hisob-fakturalar" ? (
             <HisobFakturalarTab sotuv={sotuv} />
           ) : activeTab === "Tarix" ? (
-            <TarixTab sotuv={sotuv} hujjatlar={hujjatlar} />
+            <TarixTab sotuv={sotuv} />
           ) : (
             <UmumiyTab
               sotuv={sotuv}
@@ -1077,25 +1054,28 @@ function UmumiyTab({
     async function yuklash() {
       setCrmXatolik("");
       if (!customerId) {
-        setSaqlanganFaoliyatlar(sotuvFaoliyatlariniOlish(sotuv.id));
+        setSaqlanganFaoliyatlar([]);
+        setCrmXatolik("Bu sotuvga mijoz biriktirilmagan. CRM faoliyatini saqlash uchun avval mijozni biriktiring.");
         return;
       }
 
       setCrmYuklanmoqda(true);
       try {
-        const [activities, comments] = await Promise.all([
+        const [activities, comments, messages] = await Promise.all([
           crmApi.activities({ customerId }),
           crmApi.comments(customerId, { limit: 50 }),
+          crmApi.chatTarixi(customerId, { limit: 50 }),
         ]);
         if (!active) return;
         setSaqlanganFaoliyatlar([
           ...activities.map(crmActivityniFaoliyatga),
           ...royxatniAjratish(comments).map(crmCommentniFaoliyatga),
+          ...royxatniAjratish(messages).map(crmXabarniFaoliyatga),
         ]);
       } catch (error) {
         if (!active) return;
         setCrmXatolik(getApiErrorMessage(error));
-        setSaqlanganFaoliyatlar(sotuvFaoliyatlariniOlish(sotuv.id));
+        setSaqlanganFaoliyatlar([]);
       } finally {
         if (active) setCrmYuklanmoqda(false);
       }
@@ -1109,33 +1089,33 @@ function UmumiyTab({
 
   async function faoliyatniSaqlash(faoliyat: Omit<SaqlanganFaoliyat, "id" | "sana"> & { sana?: string }) {
     try {
+      setCrmXatolik("");
+      if (!customerId) {
+        setCrmXatolik("Faoliyatni backendga saqlash uchun sotuvga mijoz biriktirilishi kerak.");
+        return false;
+      }
       if (customerId) {
         if (faoliyat.turi === "Izoh") {
           const comment = await crmApi.commentYaratish(customerId, {
             text: faoliyat.matn || faoliyat.sarlavha,
+            attachmentIds: faoliyat.attachmentIds,
+            mentionUserIds: faoliyat.mentionUserIds,
           });
           setSaqlanganFaoliyatlar((joriy) => [crmCommentniFaoliyatga(comment), ...joriy]);
-          return;
+          return true;
         }
 
         if (faoliyat.turi === "Xabar") {
           const text = faoliyat.matn || faoliyat.sarlavha;
-          await crmApi.chatXabarYuborish(customerId, text);
-          const xabarFaoliyati: SaqlanganFaoliyat = {
-            id: `chat-${Date.now()}`,
-            turi: "Xabar",
-            sarlavha: "Xabar yuborildi",
-            matn: text,
-            sana: new Date().toISOString(),
-          };
-          setSaqlanganFaoliyatlar((joriy) => [xabarFaoliyati, ...joriy]);
-          return;
+          const message = await crmApi.chatXabarYuborish(customerId, text);
+          setSaqlanganFaoliyatlar((joriy) => [crmXabarniFaoliyatga(message), ...joriy]);
+          return true;
         }
 
         const assigneeId = faoliyat.xodimId || sotuv.responsibleId;
         if (!assigneeId) {
           setCrmXatolik("CRM ish yaratish uchun mas'ul xodim tanlanishi kerak.");
-          return;
+          return false;
         }
 
         const activity = await crmApi.activityYaratish({
@@ -1147,22 +1127,13 @@ function UmumiyTab({
           assigneeId,
         });
         setSaqlanganFaoliyatlar((joriy) => [crmActivityniFaoliyatga(activity), ...joriy]);
-        return;
+        return true;
       }
-
-      const yangiFaoliyat: SaqlanganFaoliyat = {
-        ...faoliyat,
-        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-        sana: faoliyat.sana ?? new Date().toISOString(),
-      };
-      setSaqlanganFaoliyatlar((joriy) => {
-        const yangilangan = [yangiFaoliyat, ...joriy];
-        sotuvFaoliyatlariniSaqlash(sotuv.id, yangilangan);
-        return yangilangan;
-      });
     } catch (error) {
       setCrmXatolik(getApiErrorMessage(error));
+      return false;
     }
+    return false;
   }
 
   async function faoliyatniYangilash(id: string, malumot: Partial<SaqlanganFaoliyat>) {
@@ -1197,13 +1168,7 @@ function UmumiyTab({
         return;
       }
 
-      setSaqlanganFaoliyatlar((joriy) => {
-        const yangilangan = joriy.map((faoliyat) =>
-          faoliyat.id === id ? { ...faoliyat, ...malumot } : faoliyat
-        );
-        sotuvFaoliyatlariniSaqlash(sotuv.id, yangilangan);
-        return yangilangan;
-      });
+      setCrmXatolik("Bu yozuv turi uchun backend tahrirlash endpointi mavjud emas.");
     } catch (error) {
       setCrmXatolik(getApiErrorMessage(error));
     }
@@ -1212,16 +1177,16 @@ function UmumiyTab({
   async function faoliyatniOchirish(id: string) {
     try {
       const joriyFaoliyat = saqlanganFaoliyatlar.find((faoliyat) => faoliyat.id === id);
+      if (joriyFaoliyat?.turi === "Xabar") {
+        setCrmXatolik("Yuborilgan xabarni o‘chirish endpointi backendda mavjud emas.");
+        return;
+      }
       if (customerId && joriyFaoliyat?.turi === "Izoh") {
         await crmApi.commentOchirish(id);
       } else if (customerId && joriyFaoliyat && !id.startsWith("chat-")) {
         await crmApi.activityOchirish(id);
       }
-      setSaqlanganFaoliyatlar((joriy) => {
-        const yangilangan = joriy.filter((faoliyat) => faoliyat.id !== id);
-        if (!customerId) sotuvFaoliyatlariniSaqlash(sotuv.id, yangilangan);
-        return yangilangan;
-      });
+      setSaqlanganFaoliyatlar((joriy) => joriy.filter((faoliyat) => faoliyat.id !== id));
     } catch (error) {
       setCrmXatolik(getApiErrorMessage(error));
     }
@@ -1309,7 +1274,7 @@ function UmumiyTab({
                 title={faoliyat.turi}
                 time={qisqaVaqt(faoliyat.sana)}
                 text={`${faoliyat.sarlavha}${faoliyat.matn ? ` — ${faoliyat.matn}` : ""}`}
-                onOchirish={() => faoliyatniOchirish(faoliyat.id)}
+                onOchirish={faoliyat.turi === "Xabar" ? undefined : () => faoliyatniOchirish(faoliyat.id)}
               />
             )
           )}
@@ -1785,93 +1750,33 @@ type TarixQatori = {
   accent?: "green" | "blue" | "orange";
 };
 
-function TarixTab({ sotuv, hujjatlar }: { sotuv: Sotuv; hujjatlar: SaqlanganHujjat[] }) {
+function TarixTab({ sotuv }: { sotuv: Sotuv }) {
   const [filter, setFilter] = useState("");
   const [sanaTartibi, setSanaTartibi] = useState<"desc" | "asc">("desc");
-  const [ochirilganQatorlar, setOchirilganQatorlar] = useState<string[]>(() =>
-    sotuvOchirilganTarixiniOlish(sotuv.id)
-  );
-  const avtor = masulNomi(sotuv) || "Tizim";
-  const yaratilganSana = sotuv.createdAt || new Date().toISOString();
-  const faoliyatlar = sotuvFaoliyatlariniOlish(sotuv.id);
+  const [backendTarix,setBackendTarix]=useState<SaleAuditLog[]>([]);
+  const [tarixYuklanmoqda,setTarixYuklanmoqda]=useState(true);
+  const [tarixXatosi,setTarixXatosi]=useState("");
 
   useEffect(() => {
-    setOchirilganQatorlar(sotuvOchirilganTarixiniOlish(sotuv.id));
+    let active=true;setTarixYuklanmoqda(true);setTarixXatosi("");
+    void sotuvTarixiniOlish(sotuv.id).then(data=>{if(active)setBackendTarix(data)}).catch(error=>{if(active)setTarixXatosi(getApiErrorMessage(error))}).finally(()=>{if(active)setTarixYuklanmoqda(false)});
+    return()=>{active=false};
   }, [sotuv.id]);
-
-  function tarixQatoriniOchirish(qatorId: string) {
-    setOchirilganQatorlar((joriy) => {
-      const yangilangan = Array.from(new Set([...joriy, qatorId]));
-      sotuvOchirilganTarixiniSaqlash(sotuv.id, yangilangan);
-      return yangilangan;
-    });
-  }
-
-  const qatorlar: TarixQatori[] = [
-    {
-      id: `created-${sotuv.id}`,
-      sana: yaratilganSana,
-      avtor,
-      tip: "Sotuv yaratildi",
-      tavsif: `${mijozNomi(sotuv)} uchun ${sotuvRaqami(sotuv)} sotuv yaratildi.`,
-      accent: "blue" as const,
-    },
-    {
-      id: `status-${sotuv.id}`,
-      sana: sotuv.updatedAt || yaratilganSana,
-      avtor,
-      tip: "Holat o'zgardi",
-      tavsif: `Sotuv holati: ${sotuvHolatiMatni[sotuvHolati(sotuv)]}.`,
-      accent: sotuvHolati(sotuv) === "CONFIRMED" ? ("green" as const) : ("orange" as const),
-    },
-    ...(sotuv.items ?? []).map((item, index) => ({
-      id: `item-${item.id ?? index}`,
-      sana: yaratilganSana,
-      avtor,
-      tip: "Mahsulot qo'shildi",
-      tavsif: `${mahsulotNomi(item)} — miqdor: ${item.quantity}, narx: ${pulniFormatlash(item.price)}, jami: ${pulniFormatlash(mahsulotJami(item))}.`,
-      accent: "green" as const,
-    })),
-    ...(sotuv.payments ?? []).map((tolov, index) => ({
-      id: `payment-${tolov.id ?? index}`,
-      sana: (tolov as { createdAt?: string }).createdAt || yaratilganSana,
-      avtor,
-      tip: "To'lov qabul qilindi",
-      tavsif: `${tolovTuriMatni[tolov.paymentType]} orqali ${pulniFormatlash(tolov.amount)} qabul qilindi.`,
-      accent: "green" as const,
-    })),
-    ...hujjatlar.map((hujjat) => ({
-      id: `doc-${hujjat.id}`,
-      sana: hujjat.sana,
-      avtor,
-      tip: "Hujjat yaratildi",
-      tavsif: `${hujjat.nomi} hujjati tayyorlandi.`,
-      accent: "green" as const,
-    })),
-    ...faoliyatlar.map((faoliyat) => ({
-      id: `activity-${faoliyat.id}`,
-      sana: faoliyat.sana,
-      avtor,
-      tip: faoliyat.completed ? "Ish bajarildi" : faoliyat.turi,
-      tavsif: `${faoliyat.sarlavha}${faoliyat.matn ? ` — ${faoliyat.matn}` : ""}`,
-      accent: faoliyat.completed ? ("green" as const) : ("blue" as const),
-    })),
-  ].sort((a, b) => {
+  const qatorlar:TarixQatori[]=backendTarix.map((item):TarixQatori=>{const before=item.diff?.before??{},after=item.diff?.after??{};const oldStatus=before.status,newStatus=after.status;return{id:item.id,sana:item.createdAt,avtor:item.actor?.fullName||item.actor?.username||item.user?.fullName||item.user?.username||"Tizim",tip:item.action==="CREATE"?"Sotuv yaratildi":item.action==="DELETE"?"Sotuv o'chirildi":"Sotuv yangilandi",tavsif:oldStatus!==newStatus&&newStatus?`Holat: ${String(oldStatus??"—")} → ${String(newStatus)}`:`O'zgarish: ${JSON.stringify(item.diff??{})}`,accent:item.action==="CREATE"?"blue":"orange"}}).sort((a, b) => {
     const aVaqt = new Date(a.sana).getTime();
     const bVaqt = new Date(b.sana).getTime();
     return sanaTartibi === "desc" ? bVaqt - aVaqt : aVaqt - bVaqt;
   });
 
   const qidiruv = filter.trim().toLowerCase();
-  const faolQatorlar = qatorlar.filter((qator) => !ochirilganQatorlar.includes(qator.id));
   const korinadiganQatorlar = qidiruv
-    ? faolQatorlar.filter((qator) =>
+    ? qatorlar.filter((qator) =>
         [qator.avtor, qator.tip, qator.tavsif, tarixVaqti(qator.sana)]
           .join(" ")
           .toLowerCase()
           .includes(qidiruv)
       )
-    : faolQatorlar;
+    : qatorlar;
 
   return (
     <div className="px-9 py-8">
@@ -1923,18 +1828,6 @@ function TarixTab({ sotuv, hujjatlar }: { sotuv: Sotuv; hujjatlar: SaqlanganHujj
                 <input type="checkbox" className="h-4 w-4 rounded border-slate-300" readOnly />
               </div>
               <div className="flex items-center gap-3 text-slate-600">
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    tarixQatoriniOchirish(qator.id);
-                  }}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-400 transition hover:bg-red-100 hover:text-red-600 active:scale-95"
-                  title="Tarix qatorini o'chirish"
-                  aria-label="Tarix qatorini o'chirish"
-                >
-                  <Trash2 size={15} />
-                </button>
                 <span>{tarixVaqti(qator.sana)}</span>
               </div>
               <div className="flex min-w-0 items-center gap-3 text-slate-700">
@@ -1960,7 +1853,9 @@ function TarixTab({ sotuv, hujjatlar }: { sotuv: Sotuv; hujjatlar: SaqlanganHujj
             </div>
           ))}
 
-          {korinadiganQatorlar.length === 0 && (
+          {tarixYuklanmoqda && <div className="flex h-48 items-center justify-center"><LoaderCircle className="animate-spin text-orange-500"/></div>}
+          {tarixXatosi && <div className="p-6 text-center text-sm font-semibold text-red-600">{tarixXatosi}</div>}
+          {!tarixYuklanmoqda && !tarixXatosi && korinadiganQatorlar.length === 0 && (
             <div className="flex h-48 items-center justify-center text-sm font-medium text-slate-400">
               Tarix bo'yicha ma'lumot topilmadi
             </div>
@@ -2753,8 +2648,92 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
   );
 }
 
+function yetkazishFormasiniYigish(data: YetkazishMalumoti | null, sotuv: Sotuv) {
+  return {
+    recipientName: data?.recipientName ?? mijozNomi(sotuv),
+    recipientPhone: data?.recipientPhone ?? mijozTelefon(sotuv),
+    address: data?.address ?? mijozManzili(sotuv),
+    courierName: data?.courierName ?? "",
+    cost: data?.cost == null ? "" : String(data.cost),
+    scheduledAt: data?.scheduledAt ? data.scheduledAt.slice(0, 16) : "",
+    note: data?.note ?? "",
+  };
+}
+
+function crmXabarniFaoliyatga(message: ChatMessage): SaqlanganFaoliyat {
+  return {
+    id: message.id ?? `chat-${message.createdAt ?? "unknown"}`,
+    turi: "Xabar",
+    sarlavha: message.direction === "IN" ? "Mijozdan xabar" : "Xabar yuborildi",
+    matn: message.text ?? "",
+    sana: message.createdAt ?? new Date().toISOString(),
+  };
+}
+
 function YetkazishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; onClose: () => void }) {
   const items = sotuv.items ?? [];
+  const [yetkazish, setYetkazish] = useState<YetkazishMalumoti | null>(null);
+  const [forma, setForma] = useState({ recipientName: "", recipientPhone: "", address: "", courierName: "", cost: "", scheduledAt: "", note: "" });
+  const [yuklanmoqda, setYuklanmoqda] = useState(true);
+  const [saqlanmoqda, setSaqlanmoqda] = useState(false);
+  const [xato, setXato] = useState("");
+
+  function formaniToldirish(data: YetkazishMalumoti | null) {
+    setForma(yetkazishFormasiniYigish(data, sotuv));
+  }
+
+  useEffect(() => {
+    let bekorQilindi = false;
+    setYuklanmoqda(true);
+    void yetkazishniOlish(sotuv.id)
+      .then((data) => {
+        if (bekorQilindi) return;
+        setYetkazish(data);
+        setForma(yetkazishFormasiniYigish(data, sotuv));
+      })
+      .catch((error) => !bekorQilindi && setXato(getApiErrorMessage(error)))
+      .finally(() => !bekorQilindi && setYuklanmoqda(false));
+    return () => { bekorQilindi = true; };
+  }, [sotuv]);
+
+  function payloadniYigish(): YetkazishPayload {
+    const qiymat = (value: string) => value.trim() || undefined;
+    return {
+      recipientName: qiymat(forma.recipientName),
+      recipientPhone: qiymat(forma.recipientPhone),
+      address: qiymat(forma.address),
+      courierName: qiymat(forma.courierName),
+      cost: forma.cost === "" ? undefined : Number(forma.cost),
+      scheduledAt: forma.scheduledAt ? new Date(forma.scheduledAt).toISOString() : undefined,
+      note: qiymat(forma.note),
+    };
+  }
+
+  async function saqlash() {
+    setSaqlanmoqda(true); setXato("");
+    try {
+      const data = yetkazish
+        ? await yetkazishniYangilash(sotuv.id, payloadniYigish())
+        : await yetkazishYaratish(sotuv.id, payloadniYigish());
+      await Promise.all([sotuvTafsilotiniOlish(sotuv.id), sotuvTarixiniOlish(sotuv.id)]);
+      setYetkazish(data); formaniToldirish(data);
+    } catch (error) { setXato(getApiErrorMessage(error)); }
+    finally { setSaqlanmoqda(false); }
+  }
+
+  async function holatAmali(action: "dispatch" | "complete" | "cancel") {
+    setSaqlanmoqda(true); setXato("");
+    try {
+      const data = action === "dispatch"
+        ? await yetkazishniJonatish(sotuv.id)
+        : action === "complete"
+          ? await yetkazishniYakunlash(sotuv.id)
+          : await yetkazishniBekorQilish(sotuv.id);
+      await Promise.all([sotuvTafsilotiniOlish(sotuv.id), sotuvTarixiniOlish(sotuv.id)]);
+      setYetkazish(data); formaniToldirish(data);
+    } catch (error) { setXato(getApiErrorMessage(error)); }
+    finally { setSaqlanmoqda(false); }
+  }
 
   return (
     <div className="absolute inset-0 z-50 bg-blue-950/70 backdrop-blur-[1px]">
@@ -2826,15 +2805,41 @@ function YetkazishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; 
             </Qadam>
 
             <Qadam number={2} title="Yetkazish">
-              <div className="mt-8 grid max-w-2xl gap-4 md:grid-cols-2">
-                <div className="flex h-36 items-center justify-center rounded-xl bg-white shadow-sm">
-                  <span className="text-2xl font-black text-orange-600">Yetkazish xizmati</span>
+              {yuklanmoqda ? (
+                <div className="mt-8 flex items-center gap-3 text-slate-500"><LoaderCircle className="animate-spin" size={20} /> Ma'lumot yuklanmoqda...</div>
+              ) : (
+                <div className="mt-6 max-w-3xl space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-slate-500">
+                      {yetkazish ? "Yetkazib berish ma'lumoti" : "Yetkazib berish ma'lumoti mavjud emas"}
+                    </p>
+                    {yetkazish && <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-orange-600">{yetkazish.status}</span>}
+                  </div>
+                  {xato && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{xato}</p>}
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {([
+                      ["recipientName", "Qabul qiluvchi", "text"], ["recipientPhone", "Telefon", "tel"],
+                      ["address", "Manzil", "text"], ["courierName", "Kuryer", "text"],
+                      ["cost", "Yetkazish narxi", "number"], ["scheduledAt", "Rejalashtirilgan vaqt", "datetime-local"],
+                    ] as const).map(([key, label, type]) => (
+                      <label key={key} className="text-sm font-semibold text-slate-600">{label}
+                        <input type={type} min={type === "number" ? 0 : undefined} value={forma[key]} onChange={(event) => setForma((old) => ({ ...old, [key]: event.target.value }))} disabled={yetkazish?.status === "DELIVERED" || yetkazish?.status === "CANCELLED"} className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 outline-none focus:border-orange-400 disabled:bg-slate-100" />
+                      </label>
+                    ))}
+                  </div>
+                  <label className="block text-sm font-semibold text-slate-600">Izoh
+                    <textarea value={forma.note} onChange={(event) => setForma((old) => ({ ...old, note: event.target.value }))} disabled={yetkazish?.status === "DELIVERED" || yetkazish?.status === "CANCELLED"} rows={3} className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-white p-3 outline-none focus:border-orange-400 disabled:bg-slate-100" />
+                  </label>
+                  <div className="flex flex-wrap gap-3">
+                    {(!yetkazish || (yetkazish.status !== "DELIVERED" && yetkazish.status !== "CANCELLED")) && <button type="button" onClick={() => void saqlash()} disabled={saqlanmoqda || (!yetkazish && sotuvHolati(sotuv) !== "CONFIRMED")} className="rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-black text-white disabled:opacity-40">{yetkazish ? "Saqlash" : "Yetkazishni yaratish"}</button>}
+                    {yetkazish?.status === "PENDING" && <button type="button" onClick={() => void holatAmali("dispatch")} disabled={saqlanmoqda} className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white">Jo'natish</button>}
+                    {yetkazish?.status === "DISPATCHED" && <button type="button" onClick={() => void holatAmali("complete")} disabled={saqlanmoqda} className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-black text-white">Yetkazildi</button>}
+                    {(yetkazish?.status === "PENDING" || yetkazish?.status === "DISPATCHED") && <button type="button" onClick={() => void holatAmali("cancel")} disabled={saqlanmoqda} className="rounded-xl bg-red-50 px-5 py-2.5 text-sm font-black text-red-600">Bekor qilish</button>}
+                    {saqlanmoqda && <LoaderCircle className="animate-spin self-center text-orange-500" size={20} />}
+                  </div>
+                  {!yetkazish && sotuvHolati(sotuv) !== "CONFIRMED" && <p className="text-xs font-semibold text-amber-600">Yetkazish faqat tasdiqlangan sotuv uchun yaratiladi.</p>}
                 </div>
-                <div className="flex h-36 flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 text-slate-400">
-                  <Plus size={30} />
-                  <span className="mt-2 font-semibold">Tavsiya qiling</span>
-                </div>
-              </div>
+              )}
             </Qadam>
           </main>
         </div>
@@ -2846,6 +2851,34 @@ function YetkazishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; 
 function OmbordanChiqarishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; onClose: () => void }) {
   const items = sotuv.items ?? [];
   const tasdiqlangan = sotuvHolati(sotuv) === "CONFIRMED";
+  const [faoliyatXatosi, setFaoliyatXatosi] = useState("");
+
+  async function faoliyatniBackendgaSaqlash(faoliyat: Omit<SaqlanganFaoliyat, "id" | "sana"> & { sana?: string }) {
+    const customerId = mijozIdOlish(sotuv);
+    if (!customerId) {
+      setFaoliyatXatosi("Faoliyatni saqlash uchun sotuvga mijoz biriktirilishi kerak.");
+      return false;
+    }
+    setFaoliyatXatosi("");
+    try {
+      if (faoliyat.turi === "Izoh") {
+        await crmApi.commentYaratish(customerId, { text: faoliyat.matn || faoliyat.sarlavha, attachmentIds: faoliyat.attachmentIds, mentionUserIds: faoliyat.mentionUserIds });
+      } else if (faoliyat.turi === "Xabar") {
+        await crmApi.chatXabarYuborish(customerId, faoliyat.matn || faoliyat.sarlavha);
+      } else {
+        const assigneeId = faoliyat.xodimId || sotuv.responsibleId;
+        if (!assigneeId) {
+          setFaoliyatXatosi("Ish yoki vazifa yaratish uchun mas’ul xodim kerak.");
+          return false;
+        }
+        await crmApi.activityYaratish({ type: faoliyat.turi === "Vazifa" ? "TASK" : "CALL", customerId, subject: faoliyat.sarlavha, description: faoliyat.matn || undefined, dueAt: faoliyat.sana ?? new Date().toISOString(), assigneeId });
+      }
+      return true;
+    } catch (error) {
+      setFaoliyatXatosi(getApiErrorMessage(error));
+      return false;
+    }
+  }
 
   return (
     <div className="absolute inset-0 z-[60] bg-slate-900/45 backdrop-blur-[1px]">
@@ -2898,7 +2931,8 @@ function OmbordanChiqarishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: 
           <TimelineRail />
 
           <main className="space-y-5">
-            <FaoliyatPanel />
+            {faoliyatXatosi && <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">{faoliyatXatosi}</div>}
+            <FaoliyatPanel onSaqlash={faoliyatniBackendgaSaqlash} />
             <Divider label="Bugun" />
             <article className="rounded-2xl bg-white/80 p-5 text-slate-700 shadow-sm">
               Hozir siz {mijozNomi(sotuv)} uchun ombordan chiqarish hujjatini ko'ryapsiz.
@@ -2987,7 +3021,7 @@ function FaoliyatPanel({
   onSaqlash,
 }: {
   xodimlar?: XodimTanlovi[];
-  onSaqlash?: (faoliyat: Omit<SaqlanganFaoliyat, "id" | "sana"> & { sana?: string }) => void;
+  onSaqlash?: (faoliyat: Omit<SaqlanganFaoliyat, "id" | "sana"> & { sana?: string }) => Promise<boolean>;
 }) {
   const [activeTab, setActiveTab] = useState("Ish");
   const [ochiq, setOchiq] = useState(false);
@@ -2995,10 +3029,14 @@ function FaoliyatPanel({
   const [tafsilot, setTafsilot] = useState("");
   const [kalendarOchiq, setKalendarOchiq] = useState(false);
   const [tanlanganSana, setTanlanganSana] = useState(() => boshlangichKalendarSanasi());
-  const [xodimTanlashJoy, setXodimTanlashJoy] = useState<"forma" | "kalendar" | null>(null);
+  const [xodimTanlashJoy, setXodimTanlashJoy] = useState<"forma" | "kalendar" | "mention" | null>(null);
   const [tanlanganXodimId, setTanlanganXodimId] = useState("");
   const [kanalModalOchiq, setKanalModalOchiq] = useState(false);
   const [xabarQoshishOchiq, setXabarQoshishOchiq] = useState(false);
+  const [saqlanmoqda, setSaqlanmoqda] = useState(false);
+  const [panelXatosi, setPanelXatosi] = useState("");
+  const [biriktirmalar, setBiriktirmalar] = useState<Attachment[]>([]);
+  const [mentionUserIds, setMentionUserIds] = useState<string[]>([]);
   const [kalendarDrag, setKalendarDrag] = useState<{
     active: boolean;
     startX: number;
@@ -3034,18 +3072,27 @@ function FaoliyatPanel({
     }
   }
 
-  function saqlash() {
+  async function saqlash() {
     const sarlavha = matn.trim() || tanlanganTab.title;
     const izoh = tafsilot.trim();
-    if (!sarlavha && !izoh) return;
-    onSaqlash?.({
+    if ((!sarlavha && !izoh) || !onSaqlash || saqlanmoqda) return;
+    setSaqlanmoqda(true);
+    setPanelXatosi("");
+    const saqlandi = await onSaqlash({
       turi: activeTab,
       sarlavha,
       matn: izoh,
       harakat: ishTabi ? "Kalendariga qo'shish" : undefined,
       xodimId: ishTabi ? tanlanganXodimId || undefined : undefined,
       sana: ishTabi ? tanlanganSana.toISOString() : undefined,
+      attachmentIds: activeTab === "Izoh" ? biriktirmalar.map((item) => item.id) : undefined,
+      mentionUserIds: activeTab === "Izoh" ? mentionUserIds : undefined,
     });
+    setSaqlanmoqda(false);
+    if (!saqlandi) {
+      setPanelXatosi("Ma’lumot backendga saqlanmadi.");
+      return;
+    }
     setMatn("");
     setTafsilot("");
     setKalendarOchiq(false);
@@ -3054,7 +3101,20 @@ function FaoliyatPanel({
     setXodimTanlashJoy(null);
     setKanalModalOchiq(false);
     setXabarQoshishOchiq(false);
+    setBiriktirmalar([]);
+    setMentionUserIds([]);
     setOchiq(false);
+  }
+
+  async function faylYuklash(file?: File) {
+    if (!file) return;
+    setPanelXatosi("");
+    try {
+      const attachment = await crmApi.faylYuklash(file);
+      setBiriktirmalar((joriy) => [...joriy, attachment]);
+    } catch (error) {
+      setPanelXatosi(getApiErrorMessage(error));
+    }
   }
 
   function bekorQilish() {
@@ -3066,21 +3126,14 @@ function FaoliyatPanel({
     setXodimTanlashJoy(null);
     setKanalModalOchiq(false);
     setXabarQoshishOchiq(false);
+    setBiriktirmalar([]);
+    setMentionUserIds([]);
+    setPanelXatosi("");
     setOchiq(false);
   }
 
   function xabarQoshimchaTanlash(label: string) {
-    const qoshimchaMatnlar: Record<string, string> = {
-      Fayl: "[Fayl biriktirildi]",
-      "To'lovni qabul qilish": "[To'lov havolasi]",
-      Hujjat: "[Hujjat biriktirildi]",
-      "CRM ma'lumotlari": "[CRM ma'lumotlari]",
-    };
-    setTafsilot((joriy) => {
-      const qoshimcha = qoshimchaMatnlar[label] ?? label;
-      const ajratgich = joriy.trim() ? "\n" : "";
-      return `${joriy}${ajratgich}${qoshimcha}`.slice(0, 200);
-    });
+    setPanelXatosi(`${label}ni chat xabariga biriktirish endpointi backendda mavjud emas.`);
     setXabarQoshishOchiq(false);
   }
 
@@ -3111,6 +3164,8 @@ function FaoliyatPanel({
           Ko'proq <ChevronDown size={14} />
         </button>
       </nav>
+
+      {panelXatosi && <p className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm font-bold text-red-500">{panelXatosi}</p>}
 
       {!ochiq ? (
         <button
@@ -3207,11 +3262,11 @@ function FaoliyatPanel({
                 <button
                   type="button"
                   onClick={saqlash}
-                  disabled={!tafsilot.trim()}
+                  disabled={!tafsilot.trim() || saqlanmoqda}
                   className="inline-flex items-center gap-2 rounded-full bg-[#FF6A00] px-5 py-2 text-xs font-bold uppercase text-white transition hover:-translate-y-0.5 hover:bg-[#EA580C] hover:shadow-md disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:hover:translate-y-0 disabled:hover:shadow-none"
                 >
                   <Send size={14} />
-                  Yuborish
+                  {saqlanmoqda ? "Yuborilmoqda..." : "Yuborish"}
                 </button>
                 <button
                   type="button"
@@ -3234,27 +3289,48 @@ function FaoliyatPanel({
 
               <div className="mt-3 flex flex-wrap items-center justify-between gap-4 text-sm text-slate-400">
                 <div className="flex flex-wrap items-center gap-7">
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-2 transition hover:text-[#FF6A00]"
-                  >
+                  <label className="inline-flex cursor-pointer items-center gap-2 transition hover:text-[#FF6A00]">
                     <Paperclip size={18} />
                     Fayl
-                  </button>
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={(event) => void faylYuklash(event.target.files?.[0])}
+                    />
+                  </label>
                   <button
                     type="button"
+                    onClick={() => setPanelXatosi("CRM izohidan hujjat yaratish endpointi backendda mavjud emas.")}
                     className="inline-flex items-center gap-2 transition hover:text-[#FF6A00]"
                   >
                     <FileText size={18} />
                     Hujjat yaratish
                   </button>
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-2 transition hover:text-[#FF6A00]"
-                  >
-                    <span className="text-xl leading-none">@</span>
-                    Odamni belgilash
-                  </button>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setXodimTanlashJoy((joriy) => (joriy === "mention" ? null : "mention"))}
+                      className="inline-flex items-center gap-2 transition hover:text-[#FF6A00]"
+                    >
+                      <span className="text-xl leading-none">@</span>
+                      Odamni belgilash
+                    </button>
+                    {xodimTanlashJoy === "mention" && (
+                      <div className="absolute left-0 top-8 z-[100] max-h-52 w-64 overflow-y-auto rounded-2xl bg-white p-2 shadow-xl ring-1 ring-orange-100">
+                        {xodimlar.map((xodim) => (
+                          <label key={xodim.id} className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-orange-50">
+                            <input
+                              type="checkbox"
+                              checked={mentionUserIds.includes(xodim.id)}
+                              onChange={() => setMentionUserIds((joriy) => joriy.includes(xodim.id) ? joriy.filter((id) => id !== xodim.id) : [...joriy, xodim.id])}
+                              className="accent-orange-500"
+                            />
+                            {xodimNomi(xodim)}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -3265,13 +3341,21 @@ function FaoliyatPanel({
                 </button>
               </div>
 
+              {(biriktirmalar.length > 0 || mentionUserIds.length > 0) && (
+                <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
+                  {biriktirmalar.map((fayl) => <span key={fayl.id} className="rounded-lg bg-orange-50 px-2 py-1">{fayl.originalName || fayl.fileName || "Fayl"}</span>)}
+                  {mentionUserIds.map((id) => <span key={id} className="rounded-lg bg-blue-50 px-2 py-1">@{xodimNomi(xodimlar.find((item) => item.id === id))}</span>)}
+                </div>
+              )}
+
               <div className="mt-7 flex flex-wrap items-center gap-4">
                 <button
                   type="button"
                   onClick={saqlash}
-                  className="rounded-full bg-[#FF6A00] px-5 py-2 text-xs font-bold uppercase text-white transition hover:-translate-y-0.5 hover:bg-[#EA580C] hover:shadow-md"
+                  disabled={saqlanmoqda}
+                  className="rounded-full bg-[#FF6A00] px-5 py-2 text-xs font-bold uppercase text-white transition hover:-translate-y-0.5 hover:bg-[#EA580C] hover:shadow-md disabled:opacity-50"
                 >
-                  Yuborish
+                  {saqlanmoqda ? "Saqlanmoqda..." : "Yuborish"}
                 </button>
                 <button
                   type="button"
@@ -3565,9 +3649,10 @@ function FaoliyatPanel({
             <button
               type="button"
               onClick={saqlash}
-              className="rounded-full bg-[#FF6A00] px-5 py-2 text-xs font-bold uppercase text-white transition hover:bg-[#EA580C]"
+              disabled={saqlanmoqda}
+              className="rounded-full bg-[#FF6A00] px-5 py-2 text-xs font-bold uppercase text-white transition hover:bg-[#EA580C] disabled:opacity-50"
             >
-              Saqlash
+              {saqlanmoqda ? "Saqlanmoqda..." : "Saqlash"}
             </button>
             <button
               type="button"

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   Ban,
-  Clock3,
   Edit3,
   FileText,
   LoaderCircle,
@@ -10,7 +9,6 @@ import {
   Printer,
   Save,
   Send,
-  StickyNote,
   Trash2,
   X,
 } from "lucide-react";
@@ -18,6 +16,7 @@ import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
 import type { KochirishHujjati, MahsulotModifikatsiyasi, NomliEntity } from "@/types/ombor";
 import { holat, hujjatRaqami, modificationNomi, pul, qoldiqMiqdori } from "./omborYordamchilari";
+import InventoryDocumentActivity from "./InventoryDocumentActivity";
 
 type Props = { id: string; onClose: () => void };
 type TahrirQatori = { modificationId: string; quantity: number };
@@ -208,17 +207,6 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
     await hujjatniYuklash();
   }
 
-  const tarix = [
-    hujjat?.createdAt && { nom: "Hujjat yaratildi", vaqt: hujjat.createdAt },
-    hujjat?.sentAt && { nom: "Ko'chirma jo'natildi", vaqt: hujjat.sentAt },
-    hujjat?.receivedAt && { nom: "Ko'chirma qabul qilindi", vaqt: hujjat.receivedAt },
-    hujjat?.cancelledAt && { nom: "Ko'chirma bekor qilindi", vaqt: hujjat.cancelledAt },
-    hujjat?.updatedAt && hujjat.updatedAt !== hujjat.createdAt && {
-      nom: "Hujjat yangilandi",
-      vaqt: hujjat.updatedAt,
-    },
-  ].filter(Boolean) as Array<{ nom: string; vaqt: string }>;
-
   return (
     <AppModal className="items-start justify-start overflow-hidden bg-slate-950/60 p-0 py-4 pl-[92px] pr-4 backdrop-blur-[3px]">
       <div className="relative h-[calc(100dvh-32px)] w-full">
@@ -318,16 +306,7 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
                     </div>
                   </section>
 
-                  <div className="space-y-6">
-                    <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm sm:p-6">
-                      <div className="flex items-center gap-2 border-b border-orange-100 pb-4"><StickyNote size={18} className="text-[#FF5A00]" /><h3 className="font-black uppercase text-slate-600">Izoh</h3></div>
-                      <p className={`mt-5 min-h-24 whitespace-pre-wrap text-base font-semibold leading-7 ${hujjat.note ? "text-slate-700" : "text-slate-400"}`}>{hujjat.note || "Ushbu ko'chirma uchun izoh kiritilmagan."}</p>
-                    </section>
-                    <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm sm:p-6">
-                      <div className="flex items-center gap-2 border-b border-orange-100 pb-4"><Clock3 size={18} className="text-[#FF5A00]" /><h3 className="font-black uppercase text-slate-600">Tarix</h3></div>
-                      <div className="mt-5 space-y-4">{tarix.map((yozuv, index) => <div key={`${yozuv.nom}-${yozuv.vaqt}`} className="flex gap-3"><span className={`mt-2 h-2.5 w-2.5 shrink-0 rounded-full ${index === 0 ? "bg-[#FF5A00]" : "bg-orange-300"}`} /><div><p className="font-black text-slate-700">{yozuv.nom}</p><p className="text-sm font-bold text-slate-400">{sana(yozuv.vaqt, true)}</p></div></div>)}</div>
-                    </section>
-                  </div>
+                  <InventoryDocumentActivity documentType="TRANSFER" documentId={hujjat.id}/>
                 </div>
 
                 <section className="mt-6 rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm sm:p-6">

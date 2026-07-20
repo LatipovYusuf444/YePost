@@ -5,6 +5,7 @@ import type {
   ActivityFilter,
   ActivitySaqlash,
   ActivityYangilash,
+  Attachment,
   Bildirishnoma,
   ChatMessage,
   ChatThread,
@@ -129,7 +130,7 @@ export const crmApi = {
     formData.append("file", file);
     return apiData(
       (
-        await apiClient.post("/crm/attachments", formData, {
+        await apiClient.post<Attachment | ApiEnvelope<Attachment>>("/crm/attachments", formData, {
         headers: { "Content-Type": "multipart/form-data" },
         })
       ).data

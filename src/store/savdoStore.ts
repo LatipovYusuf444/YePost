@@ -5,6 +5,7 @@ import {
   katalogModifikatsiyalariniQoldiqTanlovigaOlish,
   omborlarRoyxatiniOlish,
   omborQoldiqlariniOlish,
+  qoldiqNomlariniBoyitish,
   qaytarishlarRoyxatiniOlish,
   qaytarishTafsilotiniOlish,
   qaytarishniBekorQilish,
@@ -238,9 +239,8 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
         katalogModifikatsiyalariniQoldiqTanlovigaOlish(),
       ]);
 
-      const qoldiqlar = qoldiqlarniKatalogBilanBirlashtirish(
-        stockQoldiqlar,
-        katalogQoldiqlar
+      const qoldiqlar = await qoldiqNomlariniBoyitish(
+        qoldiqlarniKatalogBilanBirlashtirish(stockQoldiqlar, katalogQoldiqlar)
       );
       const boglanganMalumotlar = { mijozlar, mijozKompaniyalari, xodimlar, omborlar, qoldiqlar };
 
@@ -267,12 +267,10 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
         omborQoldiqlariniOlish(warehouseId),
         katalogModifikatsiyalariniQoldiqTanlovigaOlish(),
       ]);
-      set({
-        qoldiqlar: qoldiqlarniKatalogBilanBirlashtirish(
-          stockQoldiqlar,
-          katalogQoldiqlar
-        ),
-      });
+      const qoldiqlar = await qoldiqNomlariniBoyitish(
+        qoldiqlarniKatalogBilanBirlashtirish(stockQoldiqlar, katalogQoldiqlar)
+      );
+      set({ qoldiqlar });
     } catch (error) {
       set({ xatolik: getApiErrorMessage(error) });
     }

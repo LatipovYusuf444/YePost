@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Ban, CheckCircle2, Clock3, Download, FileText, LoaderCircle, MessageSquare, Paperclip, RotateCcw, X } from "lucide-react";
+import { Ban, CheckCircle2, FileText, LoaderCircle, RotateCcw, X } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
-import apiClient from "@/api/axios";
 import { useOmborStore } from "@/store/omborStore";
 import type { KirimHujjati, MahsulotModifikatsiyasi } from "@/types/ombor";
-import { holat, hujjatRaqami, modificationNomi, pul, sana } from "./omborYordamchilari";
+import { holat, hujjatRaqami, modificationNomi, pul } from "./omborYordamchilari";
+import InventoryDocumentActivity from "./InventoryDocumentActivity";
 
 type Props = { id: string; onClose: () => void };
 
@@ -25,18 +25,12 @@ function statusSinfi(status?: string) {
 function notedanQismlar(note?: string) {
   const qismlar = (note ?? "").split("|").map((qism) => qism.trim()).filter(Boolean);
   let nomi = "";
-  const fayllar: Array<{ nomi: string; url: string }> = [];
-  const izohQismlari: string[] = [];
 
   for (const qism of qismlar) {
     const nomiMatch = qism.match(/^Nomi:\s*(.+)$/);
-    const faylMatch = qism.match(/^Fayl:\s*(.+?)\s*\((.+)\)$/);
     if (nomiMatch) nomi = nomiMatch[1].trim();
-    else if (faylMatch) fayllar.push({ nomi: faylMatch[1].trim(), url: faylMatch[2].trim() });
-    else izohQismlari.push(qism);
   }
-
-  return { nomi, izoh: izohQismlari.join(" | "), fayllar };
+  return { nomi };
 }
 
 export default function KirimTafsilotModal({ id, onClose }: Props) {
@@ -73,24 +67,7 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
   const warehouse = hujjat?.warehouse ?? store.omborlar.find((item) => item.id === hujjat?.warehouseId);
   const jami = hujjat ? Number(hujjat.totalAmount ?? hujjat.total ?? 0) || (hujjat.items ?? []).reduce((sum, item) => sum + Number(item.quantity) * Number(item.price), 0) : 0;
   const status = String(hujjat?.status ?? "DRAFT").toUpperCase();
-  const { nomi, izoh, fayllar } = notedanQismlar(hujjat?.note);
-  const [yuklanayotganFayl, setYuklanayotganFayl] = useState<string | null>(null);
-  const [faylXatosi, setFaylXatosi] = useState("");
-
-  async function faylniOchish(fayl: { nomi: string; url: string }) {
-    setYuklanayotganFayl(fayl.url);
-    setFaylXatosi("");
-    try {
-      const response = await apiClient.get(fayl.url, { responseType: "blob" });
-      const blobUrl = URL.createObjectURL(response.data as Blob);
-      window.open(blobUrl, "_blank");
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
-    } catch {
-      setFaylXatosi("Faylni ochib bo'lmadi.");
-    } finally {
-      setYuklanayotganFayl(null);
-    }
-  }
+  const { nomi } = notedanQismlar(hujjat?.note);
 
   async function tasdiqlash() {
     if (!hujjat || !(await store.kirimTasdiqlash(hujjat.id))) return;
@@ -139,49 +116,8 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
               </div>
             </section>
 
-            <div className="space-y-5">
-              <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
-                <SectionTitle icon={<MessageSquare size={18}/>} text="Kommentariya" />
-                <div className="min-h-28 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm font-medium leading-6 text-slate-600">{izoh || "Bu kirim hujjatiga izoh yozilmagan."}</div>
-              </section>
-              <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
-                <SectionTitle icon={<Clock3 size={18}/>} text="Tarix" />
-                <div className="space-y-4">
-                  <History text="Hujjat yaratildi" time={sana(hujjat.createdAt)}/>
-                  {hujjat.updatedAt && hujjat.updatedAt !== hujjat.createdAt && <History text="Hujjat yangilandi" time={sana(hujjat.updatedAt)}/>} 
-                  {hujjat.confirmedAt && <History text="Hujjat tasdiqlandi" time={sana(hujjat.confirmedAt)}/>} 
-                </div>
-              </section>
-            </div>
+            <InventoryDocumentActivity documentType="PURCHASE" documentId={hujjat.id}/>
           </div>
-
-          {fayllar.length > 0 && (
-            <section className="mt-5 rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
-              <SectionTitle icon={<Paperclip size={18}/>} text="Biriktirilgan fayllar" />
-              {faylXatosi && <p className="mb-3 text-sm font-bold text-red-600">{faylXatosi}</p>}
-              <div className="space-y-2">
-                {fayllar.map((fayl) => (
-                  <button
-                    key={fayl.url}
-                    type="button"
-                    onClick={() => void faylniOchish(fayl)}
-                    disabled={yuklanayotganFayl === fayl.url}
-                    className="flex w-full items-center justify-between gap-3 rounded-2xl border border-orange-100 bg-[#fffdfa] px-4 py-3 text-left transition hover:bg-orange-50 disabled:opacity-60"
-                  >
-                    <div className="flex min-w-0 items-center gap-2">
-                      <FileText size={16} className="shrink-0 text-orange-500" />
-                      <span className="truncate text-sm font-bold text-slate-700">{fayl.nomi}</span>
-                    </div>
-                    {yuklanayotganFayl === fayl.url ? (
-                      <LoaderCircle size={16} className="shrink-0 animate-spin text-orange-500" />
-                    ) : (
-                      <Download size={16} className="shrink-0 text-slate-400" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
 
           <section className="mt-5 rounded-[26px] border border-orange-100 bg-white p-4 shadow-sm sm:p-5">
             <SectionTitle icon={<FileText size={18}/>} text="Tovarlar" />
@@ -211,4 +147,3 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
 
 function SectionTitle({ icon, text }: { icon: React.ReactNode; text: string }) { return <div className="mb-5 flex items-center gap-2 border-b border-orange-100 pb-4 text-sm font-black uppercase tracking-wide text-slate-600"><span className="text-orange-500">{icon}</span>{text}</div>; }
 function Info({ label, value }: { label: string; value: string }) { return <div><p className="text-sm font-bold text-slate-400">{label}</p><p className="mt-1 break-words text-base font-black text-slate-700">{value}</p></div>; }
-function History({ text, time }: { text: string; time: string }) { return <div className="flex items-start gap-3"><span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-orange-500"/><div><p className="text-sm font-bold text-slate-700">{text}</p><p className="text-xs font-semibold text-slate-400">{time}</p></div></div>; }

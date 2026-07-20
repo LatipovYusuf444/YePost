@@ -28,6 +28,10 @@ const tolovTuriOptions = [
   { value: "BANK", label: "Bank" },
   { value: "OTHER", label: "Boshqa" },
 ];
+const manbaOptions = [
+  { value: "BARCHASI", label: "Barcha manbalar" }, { value: "SALE", label: "Sotuv" },
+  { value: "RETURN", label: "Qaytarim" }, { value: "CASH_IN", label: "Kassa kirimi" }, { value: "EXPENSE", label: "Xarajat" },
+];
 
 function turiBadge(tolov: TolovYozuvi) {
   const kirim = tolov.turi === "KIRIM";
@@ -104,7 +108,7 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
         </button>
       </div>
 
-      <div className="grid gap-3 py-5 lg:grid-cols-[minmax(240px,1fr)_170px_190px_160px_160px]">
+      <div className="grid gap-3 py-5 lg:grid-cols-[minmax(220px,1fr)_150px_170px_170px_150px_150px]">
         <label className="flex h-11 items-center gap-2 rounded-2xl border border-orange-100 bg-[#FFF8EF]/70 px-4 transition focus-within:border-orange-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-orange-100">
           <Search size={18} className="shrink-0 text-orange-300" />
           <input
@@ -122,6 +126,7 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
           portal
           buttonClassName="h-11 rounded-2xl px-4 text-sm"
         />
+        <SavdoSelect value={filtrlar.manba} onChange={(value) => filtrniYangilash({ manba: value as typeof filtrlar.manba })} options={manbaOptions} portal buttonClassName="h-11 rounded-2xl px-4 text-sm" />
         <SavdoSelect
           value={filtrlar.tolovTuri}
           onChange={(value) => filtrniYangilash({ tolovTuri: value })}

@@ -1,4 +1,5 @@
 import apiClient from "./axios";
+import axios from "axios";
 import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import type {
   MijozTanlovi,
@@ -10,6 +11,9 @@ import type {
   SotuvTolovi,
   SotuvYaratishMalumoti,
   XodimTanlovi,
+  YetkazishMalumoti,
+  YetkazishPayload,
+  SaleAuditLog,
 } from "@/types/savdo";
 import type { Mahsulot, MahsulotModifikatsiyasi } from "@/types/catalog";
 
@@ -68,6 +72,58 @@ export async function sotuvgaTolovQoshish(
 ) {
   await apiClient.post(`/sales/${sotuvId}/payments`, tolov);
   return sotuvTafsilotiniOlish(sotuvId);
+}
+
+export async function yetkazishniOlish(sotuvId: string) {
+  try {
+    const response = await apiClient.get<YetkazishMalumoti | ApiEnvelope<YetkazishMalumoti>>(
+      `/sales/${sotuvId}/delivery`
+    );
+    return apiData(response.data);
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) return null;
+    throw error;
+  }
+}
+
+export async function sotuvTarixiniOlish(sotuvId:string){
+  const response=await apiClient.get<{data?:SaleAuditLog[];total?:number}>(`/sales/${sotuvId}/history`);
+  return response.data.data??[];
+}
+
+export async function yetkazishYaratish(sotuvId: string, payload: YetkazishPayload) {
+  const response = await apiClient.post<YetkazishMalumoti | ApiEnvelope<YetkazishMalumoti>>(
+    `/sales/${sotuvId}/delivery`, payload
+  );
+  return apiData(response.data);
+}
+
+export async function yetkazishniYangilash(sotuvId: string, payload: YetkazishPayload) {
+  const response = await apiClient.patch<YetkazishMalumoti | ApiEnvelope<YetkazishMalumoti>>(
+    `/sales/${sotuvId}/delivery`, payload
+  );
+  return apiData(response.data);
+}
+
+export async function yetkazishniJonatish(sotuvId: string) {
+  const response = await apiClient.post<YetkazishMalumoti | ApiEnvelope<YetkazishMalumoti>>(
+    `/sales/${sotuvId}/delivery/dispatch`
+  );
+  return apiData(response.data);
+}
+
+export async function yetkazishniYakunlash(sotuvId: string) {
+  const response = await apiClient.post<YetkazishMalumoti | ApiEnvelope<YetkazishMalumoti>>(
+    `/sales/${sotuvId}/delivery/complete`
+  );
+  return apiData(response.data);
+}
+
+export async function yetkazishniBekorQilish(sotuvId: string) {
+  const response = await apiClient.post<YetkazishMalumoti | ApiEnvelope<YetkazishMalumoti>>(
+    `/sales/${sotuvId}/delivery/cancel`
+  );
+  return apiData(response.data);
 }
 
 // Qaytarish.tsx: barcha qaytarish hujjatlarini oladi.
@@ -142,6 +198,65 @@ export async function omborQoldiqlariniOlish(warehouseId?: string) {
     params: warehouseId ? { warehouseId } : undefined,
   });
   return royxatniAjratish(response.data);
+}
+
+// Qoldiq javobida faqat modificationId kelgan yozuvlarning katalogdagi haqiqiy
+// mahsulot nomini tiklaydi. Shu orqali selectda UUID nom o'rnida ko'rinmaydi.
+export async function qoldiqNomlariniBoyitish(qoldiqlar: QoldiqTanlovi[]) {
+  const productCache = new Map<string, Promise<Mahsulot | null>>();
+
+  function mahsulotniOlish(productId: string) {
+    const cached = productCache.get(productId);
+    if (cached) return cached;
+
+    const request = apiClient
+      .get<Mahsulot | ApiEnvelope<Mahsulot>>(`/catalog/products/${productId}`)
+      .then((response) => apiData(response.data))
+      .catch(() => null);
+    productCache.set(productId, request);
+    return request;
+  }
+
+  return Promise.all(
+    qoldiqlar.map(async (qoldiq) => {
+      if (qoldiq.modification?.product?.name) return qoldiq;
+
+      try {
+        const response = await apiClient.get<
+          MahsulotModifikatsiyasi | ApiEnvelope<MahsulotModifikatsiyasi>
+        >(`/catalog/modifications/${qoldiq.modificationId}`);
+        const modification = apiData(response.data);
+        const productId = modification.productId ?? qoldiq.productId;
+        const product = productId ? await mahsulotniOlish(productId) : null;
+
+        return {
+          ...qoldiq,
+          productId: productId ?? qoldiq.productId,
+          modification: {
+            ...qoldiq.modification,
+            id: modification.id,
+            name: modification.name ?? qoldiq.modification?.name ?? undefined,
+            barcode: modification.barcode ?? qoldiq.modification?.barcode,
+            article: modification.article ?? qoldiq.modification?.article,
+            product: product
+              ? { id: product.id, name: product.name }
+              : qoldiq.modification?.product,
+            price: qoldiq.modification?.price ??
+              (modification.price
+                ? {
+                    costPrice: modification.price.costPrice,
+                    retailPrice: modification.price.retailPrice,
+                    wholesalePrice: modification.price.wholesalePrice,
+                    sellingPrice: modification.price.retailPrice,
+                  }
+                : undefined),
+          },
+        } satisfies QoldiqTanlovi;
+      } catch {
+        return qoldiq;
+      }
+    })
+  );
 }
 
 // YangiSotuvModal.tsx: ombor qoldig'ida bo'lmasa ham katalogdagi real mahsulot
