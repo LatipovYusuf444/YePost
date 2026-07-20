@@ -1,12 +1,23 @@
-import { useEffect, useMemo, useState } from "react";
-import { Ban, CheckCircle2, FileText, LoaderCircle, Plus, Search } from "lucide-react";
-import AppModal from "@/Components/common/AppModal";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { FileText, LoaderCircle, Plus, Search, Settings } from "lucide-react";
 import { useOmborStore } from "@/store/omborStore";
 import type { KirimHujjati } from "@/types/ombor";
 import { holat, hujjatRaqami, pul, sana } from "./omborYordamchilari";
 import KirimTafsilotModal from "./KirimTafsilotModal";
 import YangiKirimModal from "./YangiKirimModal";
 import OmborJadval from "./OmborJadval";
+
+type UstunKaliti = "nomi" | "yetkazibBeruvchi" | "sana" | "masul" | "status" | "summa";
+
+const USTUNLAR: Array<{ kalit: UstunKaliti; nom: string; kenglik: number }> = [
+  { kalit: "nomi", nom: "Nomi", kenglik: 250 },
+  { kalit: "yetkazibBeruvchi", nom: "Yetkazib beruvchi", kenglik: 260 },
+  { kalit: "sana", nom: "Sana", kenglik: 220 },
+  { kalit: "masul", nom: "Mas'ul shaxs", kenglik: 230 },
+  { kalit: "status", nom: "Status", kenglik: 210 },
+  { kalit: "summa", nom: "Summa", kenglik: 220 },
+];
 
 function holatBadgeSinfi(status?: string) {
   const s = String(status ?? "DRAFT").toUpperCase();
@@ -21,7 +32,47 @@ export default function Xaridlar() {
   const [qidiruv, setQidiruv] = useState("");
   const [modal, setModal] = useState(false);
   const [tanlanganId, setTanlanganId] = useState<string | null>(null);
-  const [bekorSorash, setBekorSorash] = useState<KirimHujjati | null>(null);
+  const [sozlamaOchiq, setSozlamaOchiq] = useState(false);
+  const [sozlamaJoylashuvi, setSozlamaJoylashuvi] = useState({ top: 0, left: 0 });
+  const sozlamaTugmaRef = useRef<HTMLButtonElement | null>(null);
+  const sozlamaRef = useRef<HTMLDivElement | null>(null);
+  const [korinadiganUstunlar, setKorinadiganUstunlar] = useState<Record<UstunKaliti, boolean>>(
+    () => Object.fromEntries(USTUNLAR.map((ustun) => [ustun.kalit, true])) as Record<UstunKaliti, boolean>
+  );
+
+  const faolUstunlar = USTUNLAR.filter((ustun) => korinadiganUstunlar[ustun.kalit]);
+
+  const sozlamaJoylashuviniYangilash = useCallback(() => {
+    const rect = sozlamaTugmaRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const kenglik = 300;
+    const balandlik = 350;
+    const left = Math.min(window.innerWidth - kenglik - 12, Math.max(12, rect.right - kenglik));
+    const pastga = rect.bottom + 10;
+    const top = pastga + balandlik <= window.innerHeight - 12
+      ? pastga
+      : Math.max(12, rect.top - balandlik - 10);
+    setSozlamaJoylashuvi({ top, left });
+  }, []);
+
+  useEffect(() => {
+    if (!sozlamaOchiq) return;
+    const tashqarigaBosish = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (!sozlamaRef.current?.contains(target) && !sozlamaTugmaRef.current?.contains(target)) {
+        setSozlamaOchiq(false);
+      }
+    };
+    sozlamaJoylashuviniYangilash();
+    document.addEventListener("mousedown", tashqarigaBosish);
+    window.addEventListener("resize", sozlamaJoylashuviniYangilash);
+    window.addEventListener("scroll", sozlamaJoylashuviniYangilash, true);
+    return () => {
+      document.removeEventListener("mousedown", tashqarigaBosish);
+      window.removeEventListener("resize", sozlamaJoylashuviniYangilash);
+      window.removeEventListener("scroll", sozlamaJoylashuviniYangilash, true);
+    };
+  }, [sozlamaJoylashuviniYangilash, sozlamaOchiq]);
 
   useEffect(() => {
     void malumotlarniYuklash();
@@ -85,10 +136,38 @@ export default function Xaridlar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store.kirimlar, qidiruv, suppliersMap, store.xodimlar]);
 
-  async function bekorQilishTasdiqlash() {
-    if (!bekorSorash) return;
-    const ok = await store.kirimBekorQilish(bekorSorash.id);
-    if (ok) setBekorSorash(null);
+  function ustunniAlmashtirish(kalit: UstunKaliti) {
+    setKorinadiganUstunlar((oldingi) => {
+      const korinadiganlarSoni = Object.values(oldingi).filter(Boolean).length;
+      if (oldingi[kalit] && korinadiganlarSoni === 1) return oldingi;
+      return { ...oldingi, [kalit]: !oldingi[kalit] };
+    });
+  }
+
+  function katak(hujjat: KirimHujjati, kalit: UstunKaliti): ReactNode {
+    switch (kalit) {
+      case "nomi":
+        return (
+          <>
+            <p className="font-black text-gray-950">{kirimNomi(hujjat)}</p>
+            <p className="text-xs font-semibold text-orange-500">{hujjatRaqami(hujjat)}</p>
+          </>
+        );
+      case "yetkazibBeruvchi":
+        return supplierNomi(hujjat.supplierId, hujjat.supplier?.name);
+      case "sana":
+        return sana(hujjat.createdAt);
+      case "masul":
+        return masulNomi(hujjat);
+      case "status":
+        return (
+          <span className={`rounded-full px-3 py-1 text-xs font-bold ${holatBadgeSinfi(hujjat.status)}`}>
+            {holat(hujjat.status)}
+          </span>
+        );
+      case "summa":
+        return <span className="font-bold text-gray-700">{pul(kirimSummasi(hujjat))}</span>;
+    }
   }
 
   return (
@@ -128,81 +207,62 @@ export default function Xaridlar() {
       )}
 
       <OmborJadval>
-          <table className="w-full min-w-[900px] text-left text-sm">
+          <table
+            className="w-full table-fixed text-left text-sm"
+            style={{ minWidth: Math.max(560, faolUstunlar.reduce((jami, ustun) => jami + ustun.kenglik, 76)) }}
+          >
+            <colgroup>
+              {faolUstunlar.map((ustun) => <col key={ustun.kalit} style={{ width: ustun.kenglik }} />)}
+              <col style={{ width: 76 }} />
+            </colgroup>
             <thead className="bg-orange-50/60 text-xs font-bold uppercase tracking-wide text-orange-500">
               <tr>
-                <th className="px-5 py-3">Nomi</th>
-                <th className="px-5 py-3">Yetkazib beruvchi</th>
-                <th className="px-5 py-3">Sana</th>
-                <th className="px-5 py-3">Mas'ul shaxs</th>
-                <th className="px-5 py-3">Status</th>
-                <th className="px-5 py-3">Summa</th>
-                <th className="px-5 py-3 text-right">Amallar</th>
+                {faolUstunlar.map((ustun) => <th key={ustun.kalit}>{ustun.nom}</th>)}
+                <th className="sticky right-0 z-10 bg-[#fff9f3] text-right">
+                  <button
+                    ref={sozlamaTugmaRef}
+                    type="button"
+                    onClick={() => {
+                      if (!sozlamaOchiq) sozlamaJoylashuviniYangilash();
+                      setSozlamaOchiq((oldingi) => !oldingi);
+                    }}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-500 transition hover:bg-orange-100"
+                    aria-label="Ko'rinadigan ustunlarni sozlash"
+                    aria-expanded={sozlamaOchiq}
+                  >
+                    <Settings size={18} />
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {store.yuklanmoqda ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-16 text-center">
+                  <td colSpan={faolUstunlar.length + 1} className="px-6 py-16 text-center">
                     <LoaderCircle className="mx-auto animate-spin text-orange-500" size={28} />
                   </td>
                 </tr>
               ) : (
                 royxat.map((hujjat) => {
-                  const status = String(hujjat.status ?? "DRAFT").toUpperCase();
                   return (
                     <tr
                       key={hujjat.id}
                       onClick={() => setTanlanganId(hujjat.id)}
                       className="cursor-pointer hover:bg-orange-50/30"
                     >
-                      <td className="px-5 py-3">
-                        <p className="font-black text-gray-950">{kirimNomi(hujjat)}</p>
-                        <p className="text-xs font-semibold text-orange-500">{hujjatRaqami(hujjat)}</p>
-                      </td>
-                      <td className="px-5 py-3 text-gray-700">
-                        {supplierNomi(hujjat.supplierId, hujjat.supplier?.name)}
-                      </td>
-                      <td className="px-5 py-3 text-gray-500">{sana(hujjat.createdAt)}</td>
-                      <td className="px-5 py-3 text-gray-700">{masulNomi(hujjat)}</td>
-                      <td className="px-5 py-3">
-                        <span className={`rounded-full px-3 py-1 text-xs font-bold ${holatBadgeSinfi(hujjat.status)}`}>
-                          {holat(hujjat.status)}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3 font-bold text-gray-700">{pul(kirimSummasi(hujjat))}</td>
-                      <td className="px-5 py-3 text-right" onClick={(event) => event.stopPropagation()}>
-                        <div className="flex justify-end gap-2">
-                          {status === "DRAFT" && (
-                            <button
-                              onClick={() => void store.kirimTasdiqlash(hujjat.id)}
-                              disabled={store.amalBajarilmoqda}
-                              title="Tasdiqlash"
-                              aria-label="Tasdiqlash"
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 transition hover:bg-emerald-100 disabled:opacity-50"
-                            >
-                              <CheckCircle2 size={16} />
-                            </button>
-                          )}
-                          {status === "CONFIRMED" && (
-                            <button
-                              onClick={() => setBekorSorash(hujjat)}
-                              title="Bekor qilish"
-                              aria-label="Bekor qilish"
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100"
-                            >
-                              <Ban size={16} />
-                            </button>
-                          )}
-                        </div>
-                      </td>
+                      {faolUstunlar.map((ustun) => (
+                        <td key={ustun.kalit} className="overflow-hidden text-gray-700">
+                          <div className="truncate">{katak(hujjat, ustun.kalit)}</div>
+                        </td>
+                      ))}
+                      <td className="sticky right-0 bg-white" />
                     </tr>
                   );
                 })
               )}
               {!store.yuklanmoqda && royxat.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-14 text-center">
+                  <td colSpan={faolUstunlar.length + 1} className="p-14 text-center">
                     <FileText className="mx-auto text-orange-200" size={42} />
                     <p className="mt-3 font-bold text-gray-500">Kirim hujjati topilmadi</p>
                     <p className="mt-1 text-sm text-gray-400">
@@ -215,41 +275,41 @@ export default function Xaridlar() {
           </table>
       </OmborJadval>
 
+      {sozlamaOchiq &&
+        createPortal(
+          <div
+            ref={sozlamaRef}
+            role="menu"
+            className="fixed z-[99990] w-[300px] rounded-[22px] border border-orange-100 bg-white p-4 shadow-[0_22px_65px_rgba(15,23,42,.2)]"
+            style={{ top: sozlamaJoylashuvi.top, left: sozlamaJoylashuvi.left }}
+          >
+            <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">
+              Ko'rinadigan ustunlar
+            </p>
+            {USTUNLAR.map((ustun) => (
+              <label
+                key={ustun.kalit}
+                className="flex cursor-pointer items-center gap-3 rounded-xl px-1 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-orange-50"
+              >
+                <input
+                  type="checkbox"
+                  checked={korinadiganUstunlar[ustun.kalit]}
+                  onChange={() => ustunniAlmashtirish(ustun.kalit)}
+                  className="h-5 w-5 accent-orange-500"
+                />
+                {ustun.nom}
+              </label>
+            ))}
+          </div>,
+          document.body
+        )}
+
       {modal && <YangiKirimModal onClose={() => setModal(false)} />}
 
       {tanlanganId && (
         <KirimTafsilotModal id={tanlanganId} onClose={() => setTanlanganId(null)} />
       )}
 
-      {bekorSorash && (
-        <AppModal>
-          <div className="w-full max-w-sm rounded-[24px] bg-white p-6 shadow-[0_24px_60px_rgba(15,23,42,.25)]">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-500">
-              <Ban size={22} />
-            </div>
-            <h3 className="mt-4 text-center text-lg font-black text-gray-950">Hujjatni bekor qilasizmi?</h3>
-            <p className="mt-1.5 text-center text-sm text-gray-500">
-              "{hujjatRaqami(bekorSorash)}" hujjati bekor qilinadi va ombor qoldig'i tiklanadi.
-            </p>
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={() => setBekorSorash(null)}
-                className="h-11 flex-1 rounded-2xl border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-50"
-              >
-                Yopish
-              </button>
-              <button
-                onClick={() => void bekorQilishTasdiqlash()}
-                disabled={store.amalBajarilmoqda}
-                className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-red-500 text-sm font-black text-white hover:bg-red-600 disabled:opacity-50"
-              >
-                {store.amalBajarilmoqda && <LoaderCircle size={16} className="animate-spin" />}
-                Ha, bekor qilish
-              </button>
-            </div>
-          </div>
-        </AppModal>
-      )}
     </div>
   );
 }

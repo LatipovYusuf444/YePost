@@ -37,7 +37,9 @@ export default function AppRouter() {
         {/* Mock Xaridor uchoti eski backendli Mijozlar sahifasi o'rnida
             (backend kodi Pages/Mijozlar da tegilmagan holda qoladi). */}
         <Route path="/mijozlar" element={<XaridorUchot />} />
-        <Route path="/ombor" element={<Ombor />} />
+        {/* Ombor yo'nalishlari (hamkasb strukturasi saqlandi) */}
+        <Route path="/ombor" element={<Navigate to="/ombor/inventarizatsiya" replace />} />
+        <Route path="/ombor/omborlar" element={<Ombor />} />
         <Route path="/ombor/kirimlar" element={<Xaridlar />} />
         <Route path="/ombor/amalga-oshirilganlar" element={<AmalgaOshirilganlar />} />
         <Route path="/ombor/chiqimlar" element={<Chiqimlar />} />

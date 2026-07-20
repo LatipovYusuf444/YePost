@@ -46,7 +46,6 @@ type Filtr = {
   variatsiyalar: string[];
   xarakteristikalar: string[];
   qoldiqTuri: QoldiqFiltri;
-  rezervniKorsatish: boolean;
   omborlarBoyichaAjratish: boolean;
   shtrixKodniKorsatish: boolean;
   variatsiyalarniKorsatish: boolean;
@@ -85,7 +84,6 @@ const BOSHLANGICH_FILTR: Filtr = {
   variatsiyalar: [],
   xarakteristikalar: [],
   qoldiqTuri: "hammasi",
-  rezervniKorsatish: true,
   omborlarBoyichaAjratish: false,
   shtrixKodniKorsatish: false,
   variatsiyalarniKorsatish: false,
@@ -347,7 +345,7 @@ export default function OmborQoldigi() {
       ...(qollangan.variatsiyalarniKorsatish ? ["Variatsiya"] : []),
       ...(qollangan.omborlarBoyichaAjratish ? ["Ombor"] : []),
       "Jami",
-      ...(qollangan.rezervniKorsatish ? ["Rezervda", "Bo'sh"] : []),
+      "Bo'sh",
       `${narxTuriNomi} (birlik)`,
       "Umumiy summa",
     ];
@@ -359,7 +357,7 @@ export default function OmborQoldigi() {
         ...(qollangan.variatsiyalarniKorsatish ? [item.variatsiya] : []),
         ...(qollangan.omborlarBoyichaAjratish ? [item.omborNomi] : []),
         item.jami,
-        ...(qollangan.rezervniKorsatish ? [item.rezerv, item.bosh] : []),
+        item.bosh,
         item.birlikNarx,
         item.umumiy,
       ]
@@ -439,11 +437,10 @@ export default function OmborQoldigi() {
 
         <div className="grid gap-3 border-t border-gray-100 pt-4 sm:grid-cols-2 xl:grid-cols-4">
           {([
-            ["rezervniKorsatish", "Rezervni ko'rsatish"],
             ["omborlarBoyichaAjratish", "Omborlar bo'yicha ajratish"],
             ["shtrixKodniKorsatish", "Shtrix kodni ko'rsatish"],
             ["variatsiyalarniKorsatish", "Variatsiyalarni ko'rsatish"],
-          ] as Array<["rezervniKorsatish" | "omborlarBoyichaAjratish" | "shtrixKodniKorsatish" | "variatsiyalarniKorsatish", string]>).map(([key, label]) => (
+          ] as Array<["omborlarBoyichaAjratish" | "shtrixKodniKorsatish" | "variatsiyalarniKorsatish", string]>).map(([key, label]) => (
             <label key={key} className="flex items-center gap-2.5 text-sm font-bold text-gray-600">
               <input type="checkbox" checked={filtr[key]} onChange={(event) => ozgartirish(key, event.target.checked)} className="h-[18px] w-[18px] accent-orange-500" />
               {label}
@@ -481,12 +478,12 @@ export default function OmborQoldigi() {
                 {qollangan.variatsiyalarniKorsatish && <th rowSpan={2} className="px-5 py-3 text-left">Variatsiya</th>}
                 {qollangan.omborlarBoyichaAjratish && <th rowSpan={2} className="px-5 py-3 text-left">Ombor</th>}
                 <th rowSpan={2} className="px-5 py-3 text-left">O'lchov birligi</th>
-                <th colSpan={qollangan.rezervniKorsatish ? 3 : 1} className="border-b border-orange-100 px-5 py-2 text-center">Umumiy qoldiq</th>
+                <th colSpan={2} className="border-b border-orange-100 px-5 py-2 text-center">Umumiy qoldiq</th>
                 <th colSpan={2} className="border-b border-orange-100 px-5 py-2 text-center">{narxTuriNomi}</th>
               </tr>
               <tr>
                 <th className="px-5 py-2 text-right">Jami</th>
-                {qollangan.rezervniKorsatish && <><th className="px-5 py-2 text-right">Rezervda</th><th className="px-5 py-2 text-right">Bo'sh</th></>}
+                <th className="px-5 py-2 text-right">Bo'sh</th>
                 <th className="px-5 py-2 text-right">Birlik</th>
                 <th className="px-5 py-2 text-right">Umumiy</th>
               </tr>
@@ -500,7 +497,7 @@ export default function OmborQoldigi() {
                   {qollangan.omborlarBoyichaAjratish && <td className="px-5 py-3 text-gray-600">{item.omborNomi}</td>}
                   <td className="px-5 py-3 text-gray-500">{item.birlik}</td>
                   <td className={`px-5 py-3 text-right font-bold ${item.jami < 0 ? "text-red-500" : "text-gray-800"}`}>{item.jami}</td>
-                  {qollangan.rezervniKorsatish && <><td className="px-5 py-3 text-right font-bold text-gray-500">{item.rezerv}</td><td className="px-5 py-3 text-right font-bold text-emerald-600">{item.bosh}</td></>}
+                  <td className="px-5 py-3 text-right font-bold text-emerald-600">{item.bosh}</td>
                   <td className="px-5 py-3 text-right text-gray-600">{pul(item.birlikNarx)}</td>
                   <td className="px-5 py-3 text-right font-black text-gray-900">{pul(item.umumiy)}</td>
                 </tr>
@@ -512,7 +509,7 @@ export default function OmborQoldigi() {
                   <td className="px-5 py-3" colSpan={1 + (qollangan.shtrixKodniKorsatish ? 1 : 0) + (qollangan.variatsiyalarniKorsatish ? 1 : 0) + (qollangan.omborlarBoyichaAjratish ? 1 : 0)}>Jami: {satrlar.length} ta pozitsiya</td>
                   <td className="px-5 py-3" />
                   <td className="px-5 py-3 text-right">{yakun.jami}</td>
-                  {qollangan.rezervniKorsatish && <><td className="px-5 py-3 text-right">{yakun.rezerv}</td><td className="px-5 py-3 text-right">{yakun.bosh}</td></>}
+                  <td className="px-5 py-3 text-right">{yakun.bosh}</td>
                   <td className="px-5 py-3" />
                   <td className="px-5 py-3 text-right">{pul(yakun.umumiy)}</td>
                 </tr>
