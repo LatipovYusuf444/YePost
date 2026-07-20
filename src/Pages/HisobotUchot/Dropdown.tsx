@@ -33,16 +33,16 @@ export default function Dropdown({
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className={`flex h-10 w-full items-center justify-between gap-2 rounded-lg border bg-white px-2.5 text-xs font-semibold text-gray-700 outline-none transition ${
-            open ? "border-orange-400" : "border-gray-200 hover:border-orange-300"
+          className={`flex h-11 w-full items-center justify-between gap-2 rounded-2xl border bg-white px-3.5 text-sm font-semibold text-gray-700 outline-none transition ${
+            open ? "border-orange-400 ring-4 ring-orange-100" : "border-slate-200 hover:border-orange-300"
           }`}
         >
           <span className="truncate">{joriy?.nomi ?? "Tanlang"}</span>
-          <ChevronDown size={15} className={`shrink-0 text-gray-400 transition ${open ? "rotate-180" : ""}`} />
+          <ChevronDown size={16} className={`shrink-0 text-gray-400 transition ${open ? "rotate-180" : ""}`} />
         </button>
 
         {open && (
-          <div className="absolute left-0 right-0 z-30 mt-1 max-h-64 overflow-auto rounded-xl border border-orange-100 bg-white p-1 shadow-xl">
+          <div className="absolute left-0 right-0 z-30 mt-2 max-h-64 overflow-auto rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_50px_rgba(92,38,8,.16)]">
             {options.map((o) => (
               <button
                 key={o.value}
@@ -51,8 +51,8 @@ export default function Dropdown({
                   onChange(o.value);
                   setOpen(false);
                 }}
-                className={`block w-full rounded-lg px-2.5 py-2 text-left text-xs font-semibold transition ${
-                  o.value === value ? "bg-orange-50 text-orange-600" : "text-gray-700 hover:bg-orange-50"
+                className={`block w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${
+                  o.value === value ? "bg-orange-50 text-orange-600" : "text-gray-700 hover:bg-orange-50 hover:text-orange-600"
                 }`}
               >
                 {o.nomi}

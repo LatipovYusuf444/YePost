@@ -1,7 +1,7 @@
 // Hisobot uchoti: mock modul tiplari. Backendga bog'liq emas.
 // Yangi maydon qo'shilganda: shu tipga qo'shiladi → mockData.ts ga qiymat → jadvalga ustun.
 
-export type HisobotTab = "stock" | "counterparty" | "profit" | "income" | "audit";
+export type HisobotTab = "stock" | "qoldiq" | "counterparty" | "profit" | "foydaxarajat" | "income" | "audit";
 
 // Tanlov ro'yxati (filter selectlari / ko'p tanlovli maydonlar uchun)
 export type Tanlov = {
@@ -90,13 +90,40 @@ export type MahsulotFoydasi = {
   foyda: number;
 };
 
+// Foyda va xarajat (P&L) yozuvi.
+// tur: daromad (tushum) / tannarx (sotilgan tovar tannarxi) / xarajat (operatsion).
+export type FoydaXarajatYozuvi = {
+  id: string;
+  sana: string;
+  filialId: string;
+  tur: "daromad" | "tannarx" | "xarajat";
+  kategoriya: string;
+  summa: number;
+};
+
 // Kirim-chiqim harakati
 export type KirimChiqim = {
   id: string;
   sana: string;
   branchId: string;
+  kassaId: string;
   turi: "kirim" | "chiqim";
   kategoriya: string;
+  summa: number;
+};
+
+// Kassa pul hujjati — kirim-chiqim tafsiloti (aylanma) uchun.
+// Bank: Payme/Click integratsiyasi ham shu hisob raqamga tushadi.
+// Karta: kartadan o'tkazma.
+export type KassaHujjati = {
+  id: string;
+  sana: string;
+  raqam: string; // FP1, FP2, ...
+  nomi: string; // hujjat nomi (kirim kassa orderi, to'lov topshiriqnomasi ...)
+  branchId: string;
+  kassaId: string;
+  tolovTuri: string; // naqd | karta | bank | payme | click
+  turi: "kirim" | "chiqim";
   summa: number;
 };
 

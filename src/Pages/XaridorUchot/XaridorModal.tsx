@@ -12,6 +12,7 @@ import {
 import AppModal from "@/Components/common/AppModal";
 import FaoliyatPaneli from "./FaoliyatPaneli";
 import IjtimoiyTanlov from "./IjtimoiyTanlov";
+import Tanlov from "./Tanlov";
 import TezkorPanel from "./TezkorPanel";
 import { SavdolarTab, TarixTab, TolovlarTab } from "./XaridorTablari";
 import type {
@@ -276,18 +277,18 @@ export default function XaridorModal({
                         <Building2 size={14} className="text-[#FF6A00]" />
                         Kompaniya
                       </span>
-                      <select
-                        value={kompaniyaId}
-                        onChange={(event) => setKompaniyaId(event.target.value)}
-                        className={maydonKlass}
-                      >
-                        <option value="">Biriktirilmagan</option>
-                        {kompaniyalar.map((kompaniya) => (
-                          <option key={kompaniya.id} value={kompaniya.id}>
-                            {kompaniya.nomi}
-                          </option>
-                        ))}
-                      </select>
+                      <Tanlov
+                        qiymat={kompaniyaId}
+                        onChange={setKompaniyaId}
+                        placeholder="Biriktirilmagan"
+                        variantlar={[
+                          { value: "", label: "Biriktirilmagan" },
+                          ...kompaniyalar.map((kompaniya) => ({
+                            value: kompaniya.id,
+                            label: kompaniya.nomi,
+                          })),
+                        ]}
+                      />
                     </label>
 
                     <label className="grid gap-2">

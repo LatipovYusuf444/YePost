@@ -1,6 +1,8 @@
 import type {
   AuditYozuvi,
+  FoydaXarajatYozuvi,
   HisobKitobHujjati,
+  KassaHujjati,
   KirimChiqim,
   Kontragent,
   MahsulotFoydasi,
@@ -42,6 +44,14 @@ export const mockXarakteristikalar: Tanlov[] = [
   { id: "xar-3", nomi: "50 g" },
   { id: "xar-4", nomi: "500 ml" },
   { id: "xar-5", nomi: "100 g" },
+];
+
+export const mockVariatsiyalar: Tanlov[] = [
+  { id: "var-1", nomi: "Qizil" },
+  { id: "var-2", nomi: "Ko'k" },
+  { id: "var-3", nomi: "S o'lcham" },
+  { id: "var-4", nomi: "M o'lcham" },
+  { id: "var-5", nomi: "L o'lcham" },
 ];
 
 export const mockMijozlar: Tanlov[] = [
@@ -160,13 +170,77 @@ export const mockMahsulotFoydasi: MahsulotFoydasi[] = [
   { id: "mf-4", mahsulot: "Nescafe Gold 100g", categoryId: "kat-1", sotilgan: 60, tushum: 2100000, tannarx: 1500000, foyda: 600000 },
 ];
 
+// Kassalar — kirim-chiqim hisoboti dimensiyasi.
+// Bank hisobi: Payme/Click integratsiyasidan tushgan pullar ham shu yerga tushadi.
+// Karta: kartadan o'tkazma.
+export const mockKassalar: Tanlov[] = [
+  { id: "kas-1", nomi: "Naqd kassa" },
+  { id: "kas-2", nomi: "Bank hisobi" },
+  { id: "kas-3", nomi: "Karta" },
+];
+
+// Har bir kassaning davr boshidagi bazaviy qoldig'i (mock)
+export const kassaBoshlangichQoldiq: Record<string, number> = {
+  "kas-1": 5000000,
+  "kas-2": 12000000,
+  "kas-3": 3000000,
+};
+
 export const mockKirimChiqim: KirimChiqim[] = [
-  { id: "kc-1", sana: "2026-07-14", branchId: "fil-1", turi: "kirim", kategoriya: "Sotuv tushumi", summa: 632000 },
-  { id: "kc-2", sana: "2026-07-13", branchId: "fil-1", turi: "chiqim", kategoriya: "Ijara", summa: 1500000 },
-  { id: "kc-3", sana: "2026-07-12", branchId: "fil-2", turi: "kirim", kategoriya: "Sotuv tushumi", summa: 480000 },
-  { id: "kc-4", sana: "2026-07-11", branchId: "fil-2", turi: "chiqim", kategoriya: "Ish haqi", summa: 3200000 },
-  { id: "kc-5", sana: "2026-07-10", branchId: "fil-3", turi: "kirim", kategoriya: "Sotuv tushumi", summa: 150000 },
-  { id: "kc-6", sana: "2026-07-09", branchId: "fil-3", turi: "chiqim", kategoriya: "Kommunal", summa: 420000 },
+  { id: "kc-1", sana: "2026-07-14", branchId: "fil-1", kassaId: "kas-1", turi: "kirim", kategoriya: "Sotuv tushumi", summa: 632000 },
+  { id: "kc-2", sana: "2026-07-13", branchId: "fil-1", kassaId: "kas-1", turi: "chiqim", kategoriya: "Ijara", summa: 1500000 },
+  { id: "kc-3", sana: "2026-07-12", branchId: "fil-2", kassaId: "kas-2", turi: "kirim", kategoriya: "Sotuv tushumi", summa: 480000 },
+  { id: "kc-4", sana: "2026-07-11", branchId: "fil-2", kassaId: "kas-1", turi: "chiqim", kategoriya: "Ish haqi", summa: 3200000 },
+  { id: "kc-5", sana: "2026-07-10", branchId: "fil-3", kassaId: "kas-3", turi: "kirim", kategoriya: "Sotuv tushumi", summa: 150000 },
+  { id: "kc-6", sana: "2026-07-09", branchId: "fil-3", kassaId: "kas-2", turi: "chiqim", kategoriya: "Kommunal", summa: 420000 },
+];
+
+// To'lov turlari — kirim-chiqim filtri uchun.
+// Payme/Click → Bank hisobiga tushadi; Karta → kartadan o'tkazma.
+export const mockTolovTurlari: Tanlov[] = [
+  { id: "naqd", nomi: "Naqd" },
+  { id: "karta", nomi: "Karta" },
+  { id: "bank", nomi: "Bank o'tkazma" },
+  { id: "payme", nomi: "Payme" },
+  { id: "click", nomi: "Click" },
+];
+
+// Kassa pul hujjatlari — aylanma tafsiloti (hujjat bo'yicha qoldiq).
+// nomi: Bank → to'lov topshiriqnomasi, Naqd → kassa orderi, Karta → o'tkazma.
+export const mockKassaHujjatlari: KassaHujjati[] = [
+  { id: "kh-1", sana: "2026-07-06", raqam: "FP1", nomi: "Kiruvchi to'lov topshiriqnomasi №FP1", branchId: "fil-1", kassaId: "kas-2", tolovTuri: "bank", turi: "kirim", summa: 480000 },
+  { id: "kh-2", sana: "2026-07-06", raqam: "FP1", nomi: "Kirim kassa orderi №FP1", branchId: "fil-1", kassaId: "kas-1", tolovTuri: "naqd", turi: "kirim", summa: 632000 },
+  { id: "kh-3", sana: "2026-07-07", raqam: "FP1", nomi: "Kartadan o'tkazma (kirim) №FP1", branchId: "fil-2", kassaId: "kas-3", tolovTuri: "karta", turi: "kirim", summa: 150000 },
+  { id: "kh-4", sana: "2026-07-08", raqam: "FP2", nomi: "Kiruvchi to'lov topshiriqnomasi №FP2 (Payme)", branchId: "fil-1", kassaId: "kas-2", tolovTuri: "payme", turi: "kirim", summa: 320000 },
+  { id: "kh-5", sana: "2026-07-09", raqam: "FP1", nomi: "Chiqim kassa orderi №FP1", branchId: "fil-1", kassaId: "kas-1", tolovTuri: "naqd", turi: "chiqim", summa: 1500000 },
+  { id: "kh-6", sana: "2026-07-10", raqam: "FP1", nomi: "Chiquvchi to'lov topshiriqnomasi №FP1", branchId: "fil-1", kassaId: "kas-2", tolovTuri: "bank", turi: "chiqim", summa: 150000 },
+  { id: "kh-7", sana: "2026-07-11", raqam: "FP2", nomi: "Chiqim kassa orderi №FP2", branchId: "fil-2", kassaId: "kas-1", tolovTuri: "naqd", turi: "chiqim", summa: 3200000 },
+  { id: "kh-8", sana: "2026-07-12", raqam: "FP3", nomi: "Kiruvchi to'lov topshiriqnomasi №FP3 (Click)", branchId: "fil-2", kassaId: "kas-2", tolovTuri: "click", turi: "kirim", summa: 210000 },
+  { id: "kh-9", sana: "2026-07-13", raqam: "FP2", nomi: "Kartadan o'tkazma (chiqim) №FP2", branchId: "fil-2", kassaId: "kas-3", tolovTuri: "karta", turi: "chiqim", summa: 40000 },
+  { id: "kh-10", sana: "2026-07-14", raqam: "FP3", nomi: "Kirim kassa orderi №FP3", branchId: "fil-3", kassaId: "kas-1", tolovTuri: "naqd", turi: "kirim", summa: 150000 },
+  { id: "kh-11", sana: "2026-07-15", raqam: "FP4", nomi: "Kiruvchi to'lov topshiriqnomasi №FP4", branchId: "fil-3", kassaId: "kas-2", tolovTuri: "bank", turi: "kirim", summa: 90000 },
+  { id: "kh-12", sana: "2026-07-16", raqam: "FP3", nomi: "Kartadan o'tkazma (kirim) №FP3", branchId: "fil-3", kassaId: "kas-3", tolovTuri: "karta", turi: "kirim", summa: 75000 },
+];
+
+// Foyda va xarajat (P&L) yozuvlari — Muddat/Filial bo'yicha filtrlanadi.
+export const mockFoydaXarajat: FoydaXarajatYozuvi[] = [
+  // Daromad (sotuvdan tushum va xizmat)
+  { id: "fx-1", sana: "2026-07-04", filialId: "fil-1", tur: "daromad", kategoriya: "Sotuvdan tushum", summa: 18500000 },
+  { id: "fx-2", sana: "2026-07-11", filialId: "fil-1", tur: "daromad", kategoriya: "Sotuvdan tushum", summa: 14200000 },
+  { id: "fx-3", sana: "2026-07-08", filialId: "fil-2", tur: "daromad", kategoriya: "Sotuvdan tushum", summa: 9600000 },
+  { id: "fx-4", sana: "2026-07-15", filialId: "fil-3", tur: "daromad", kategoriya: "Sotuvdan tushum", summa: 7300000 },
+  // Sotilgan tovar tannarxi (COGS)
+  { id: "fx-6", sana: "2026-07-04", filialId: "fil-1", tur: "tannarx", kategoriya: "Sotilgan tovar tannarxi", summa: 12800000 },
+  { id: "fx-7", sana: "2026-07-11", filialId: "fil-1", tur: "tannarx", kategoriya: "Sotilgan tovar tannarxi", summa: 9700000 },
+  { id: "fx-8", sana: "2026-07-08", filialId: "fil-2", tur: "tannarx", kategoriya: "Sotilgan tovar tannarxi", summa: 6500000 },
+  { id: "fx-9", sana: "2026-07-15", filialId: "fil-3", tur: "tannarx", kategoriya: "Sotilgan tovar tannarxi", summa: 5000000 },
+  // Operatsion xarajatlar
+  { id: "fx-10", sana: "2026-07-05", filialId: "fil-1", tur: "xarajat", kategoriya: "Ijara", summa: 3500000 },
+  { id: "fx-11", sana: "2026-07-10", filialId: "fil-1", tur: "xarajat", kategoriya: "Ish haqi", summa: 6200000 },
+  { id: "fx-12", sana: "2026-07-09", filialId: "fil-1", tur: "xarajat", kategoriya: "Kommunal", summa: 850000 },
+  { id: "fx-13", sana: "2026-07-12", filialId: "fil-2", tur: "xarajat", kategoriya: "Reklama", summa: 1200000 },
+  { id: "fx-14", sana: "2026-07-14", filialId: "fil-2", tur: "xarajat", kategoriya: "Transport", summa: 640000 },
+  { id: "fx-15", sana: "2026-07-16", filialId: "fil-3", tur: "xarajat", kategoriya: "Boshqa xarajatlar", summa: 430000 },
 ];
 
 export const mockAudit: AuditYozuvi[] = [

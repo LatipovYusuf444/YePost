@@ -2,7 +2,6 @@ import { useMemo, useState, type ReactNode } from "react";
 import {
   Banknote,
   CalendarDays,
-  ChevronDown,
   Clock3,
   Landmark,
   MessageSquare,
@@ -13,6 +12,7 @@ import {
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import { useUchotStore } from "@/store/uchotStore";
+import Tanlov from "@/Pages/XaridorUchot/Tanlov";
 import { mockXodimlar, mockYetkazibBeruvchilar } from "@/Pages/XaridorUchot/mockData";
 import { asosiyTelefon, xaridorNomi } from "@/Pages/XaridorUchot/yordamchilar";
 import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali } from "./types";
@@ -251,40 +251,29 @@ export default function KassaAmaliyotModal({
 
                 {/* 2. Tur */}
                 <Maydon label={tushum ? "Tushum turi *" : "Chiqim turi *"}>
-                  <div className="relative">
-                    <select
-                      value={turi}
-                      onChange={(event) => turniOzgartir(event.target.value as KassaAmaliyotTuri)}
-                      className={`${maydonKlass} appearance-none pr-10`}
-                    >
-                      {(tushum ? tushumTurlari : chiqimTurlari).map((t) => (
-                        <option key={t} value={t}>
-                          {turNomi[t]}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown
-                      size={16}
-                      className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-                  </div>
+                  <Tanlov
+                    qiymat={turi}
+                    onChange={(v) => turniOzgartir(v as KassaAmaliyotTuri)}
+                    variantlar={(tushum ? tushumTurlari : chiqimTurlari).map((t) => ({
+                      value: t,
+                      label: turNomi[t],
+                    }))}
+                  />
                 </Maydon>
 
                 {/* 3. Partiya — turga qarab: mijoz / xodim / yetkazib */}
                 {partiya === "xaridor" && (
                   <Maydon label="Mijoz *">
-                    <select
-                      value={xaridorId}
-                      onChange={(event) => setXaridorId(event.target.value)}
-                      className={maydonKlass}
-                    >
-                      <option value="">Mijozni tanlang</option>
-                      {xaridorlar.map((x) => (
-                        <option key={x.id} value={x.id}>
-                          {xaridorNomi(x)} — {asosiyTelefon(x)}
-                        </option>
-                      ))}
-                    </select>
+                    <Tanlov
+                      qiymat={xaridorId}
+                      onChange={setXaridorId}
+                      placeholder="Mijozni tanlang"
+                      qidiruv
+                      variantlar={xaridorlar.map((x) => ({
+                        value: x.id,
+                        label: `${xaridorNomi(x)} — ${asosiyTelefon(x)}`,
+                      }))}
+                    />
                     {tanlanganXaridor && (
                       <div className="mt-2 flex items-center justify-between rounded-xl bg-orange-50 px-3.5 py-2.5 text-sm">
                         <span className="font-bold text-slate-500">Joriy qarzi</span>
@@ -307,35 +296,31 @@ export default function KassaAmaliyotModal({
 
                 {partiya === "xodim" && (
                   <Maydon label="Xodim *">
-                    <select
-                      value={kontragent}
-                      onChange={(event) => setKontragent(event.target.value)}
-                      className={maydonKlass}
-                    >
-                      <option value="">Xodimni tanlang</option>
-                      {mockXodimlar.map((x) => (
-                        <option key={x.id} value={x.ism}>
-                          {x.ism} — {x.lavozim}
-                        </option>
-                      ))}
-                    </select>
+                    <Tanlov
+                      qiymat={kontragent}
+                      onChange={setKontragent}
+                      placeholder="Xodimni tanlang"
+                      qidiruv
+                      variantlar={mockXodimlar.map((x) => ({
+                        value: x.ism,
+                        label: `${x.ism} — ${x.lavozim}`,
+                      }))}
+                    />
                   </Maydon>
                 )}
 
                 {partiya === "yetkazib" && (
                   <Maydon label="Yetkazib beruvchi *">
-                    <select
-                      value={kontragent}
-                      onChange={(event) => setKontragent(event.target.value)}
-                      className={maydonKlass}
-                    >
-                      <option value="">Yetkazib beruvchini tanlang</option>
-                      {mockYetkazibBeruvchilar.map((b) => (
-                        <option key={b.id} value={b.nomi}>
-                          {b.nomi}
-                        </option>
-                      ))}
-                    </select>
+                    <Tanlov
+                      qiymat={kontragent}
+                      onChange={setKontragent}
+                      placeholder="Yetkazib beruvchini tanlang"
+                      qidiruv
+                      variantlar={mockYetkazibBeruvchilar.map((b) => ({
+                        value: b.nomi,
+                        label: b.nomi,
+                      }))}
+                    />
                   </Maydon>
                 )}
 
@@ -385,18 +370,12 @@ export default function KassaAmaliyotModal({
 
                 {/* Mas'ul shaxs */}
                 <Maydon label="Mas'ul shaxs">
-                  <select
-                    value={masul}
-                    onChange={(event) => setMasul(event.target.value)}
-                    className={maydonKlass}
-                  >
-                    <option value="">Mas'ul shaxsni tanlang</option>
-                    {mockXodimlar.map((x) => (
-                      <option key={x.id} value={x.ism}>
-                        {x.ism}
-                      </option>
-                    ))}
-                  </select>
+                  <Tanlov
+                    qiymat={masul}
+                    onChange={setMasul}
+                    placeholder="Mas'ul shaxsni tanlang"
+                    variantlar={mockXodimlar.map((x) => ({ value: x.ism, label: x.ism }))}
+                  />
                 </Maydon>
 
                 {/* Sana */}

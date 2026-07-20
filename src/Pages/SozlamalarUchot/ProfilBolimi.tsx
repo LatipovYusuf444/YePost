@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { UserRound } from "lucide-react";
 import { useSozlamalarStore } from "@/store/sozlamalarUchotStore";
 import { BolimKarta, Maydon, SaqlashTugma } from "./UmumiyUI";
 import { maydonKlass } from "./yordamchilar";
@@ -49,9 +48,6 @@ export default function ProfilBolimi() {
           </p>
           <p className="text-sm font-semibold text-gray-400">{lavozim || "—"}</p>
         </div>
-        <span className="ml-auto hidden text-gray-300 sm:block">
-          <UserRound size={40} />
-        </span>
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
