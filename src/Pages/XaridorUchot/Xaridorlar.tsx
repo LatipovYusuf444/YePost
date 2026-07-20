@@ -6,25 +6,23 @@ import KartaSozlama, { type Maydon } from "./KartaSozlama";
 import KorinishTanlov, { type Korinish } from "./KorinishTanlov";
 import XaridorModal from "./XaridorModal";
 import XaridorTafsilotlariModal from "./XaridorTafsilotlariModal";
-import XodimModal from "./XodimModal";
-import { mockSavdolar, mockTarix, mockTolovlar, xodimTopish } from "./mockData";
-import type { Xaridor, XaridorKompaniyasi, Xodim } from "./types";
+import type { Xaridor, XaridorKompaniyasi } from "./types";
 import { asosiyTelefon, kompaniyaNomi, sanaFormat, xaridorNomi } from "./yordamchilar";
 
 type Props = {
   xaridorlar: Xaridor[];
   kompaniyalar: XaridorKompaniyasi[];
-  onSaqlash: (xaridor: Xaridor) => void;
-  onOchirish: (id: string) => void;
+  savdolar: import("./types").XaridorSavdosi[];
+  onSaqlash: (xaridor: Xaridor) => Promise<Xaridor | null>;
+  onOchirish: (id: string) => Promise<boolean>;
 };
 
-export default function Xaridorlar({ xaridorlar, kompaniyalar, onSaqlash, onOchirish }: Props) {
+export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqlash, onOchirish }: Props) {
   const [qidiruv, setQidiruv] = useState("");
   const [korinish, setKorinish] = useState<Korinish>("karta");
   const [modalOchiq, setModalOchiq] = useState(false);
   const [tahrirXaridor, setTahrirXaridor] = useState<Xaridor | null>(null);
   const [tafsilotXaridor, setTafsilotXaridor] = useState<Xaridor | null>(null);
-  const [korilayotganXodim, setKorilayotganXodim] = useState<Xodim | null>(null);
   const [yashirinMaydon, setYashirinMaydon] = useState<Set<string>>(() => new Set());
 
   const kartaMaydonlari: Maydon[] = [
@@ -57,18 +55,7 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, onSaqlash, onOchi
       id: "yaratgan",
       nom: "Mas'ul shaxs yaratgan",
       kenglik: 170,
-      katak: (x) => (
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            setKorilayotganXodim(xodimTopish(x.yaratganMasul));
-          }}
-          className="max-w-full truncate text-left text-slate-500 transition hover:text-[#FF6A00] hover:underline"
-        >
-          {x.yaratganMasul}
-        </button>
-      ),
+      katak: (x) => <span className="text-slate-500">{x.yaratganMasul}</span>,
     },
     { id: "yaratilgan", nom: "Sana yaratilgan", kenglik: 140, katak: (x) => <span className="text-slate-500">{sanaFormat(x.yaratilganSana)}</span> },
     { id: "ozgartirilgan", nom: "O'zgartirilgan sana", kenglik: 150, katak: (x) => <span className="text-slate-500">{sanaFormat(x.ozgartirilganSana)}</span> },
@@ -100,9 +87,9 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, onSaqlash, onOchi
     setModalOchiq(true);
   }
 
-  function ochirish(xaridor: Xaridor) {
+  async function ochirish(xaridor: Xaridor) {
     if (!window.confirm(`${xaridorNomi(xaridor)} ma'lumotini o'chirasizmi?`)) return;
-    onOchirish(xaridor.id);
+    return onOchirish(xaridor.id);
   }
 
   return (
@@ -174,7 +161,7 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, onSaqlash, onOchi
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
-                    ochirish(xaridor);
+                    void ochirish(xaridor);
                   }}
                   title="O'chirish"
                   aria-label="O'chirish"
@@ -232,16 +219,9 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, onSaqlash, onOchi
               {korinadi("yaratgan") && (
               <p className="flex items-center justify-between gap-2">
                 <span className="text-gray-400">Yaratgan</span>
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setKorilayotganXodim(xodimTopish(xaridor.yaratganMasul));
-                  }}
-                  className="truncate font-semibold text-gray-600 transition hover:text-[#FF6A00] hover:underline"
-                >
+                <span className="truncate font-semibold text-gray-600">
                   {xaridor.yaratganMasul}
-                </button>
+                </span>
               </p>
               )}
             </div>
@@ -262,12 +242,10 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, onSaqlash, onOchi
         <XaridorTafsilotlariModal
           xaridor={tafsilotXaridor}
           kompaniyalar={kompaniyalar}
-          savdolar={mockSavdolar}
-          tarix={mockTarix}
+          savdolar={savdolar}
           onTahrirlash={() => modalniOchish(tafsilotXaridor)}
-          onOchirish={() => {
-            ochirish(tafsilotXaridor);
-            setTafsilotXaridor(null);
+          onOchirish={async () => {
+            if (await ochirish(tafsilotXaridor)) setTafsilotXaridor(null);
           }}
           onYopish={() => setTafsilotXaridor(null)}
         />
@@ -277,21 +255,19 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, onSaqlash, onOchi
         <XaridorModal
           boshlangich={tahrirXaridor}
           kompaniyalar={kompaniyalar}
-          savdolar={mockSavdolar}
-          tolovlar={mockTolovlar}
-          tarix={mockTarix}
+          savdolar={savdolar}
+          tolovlar={[]}
+          tarix={[]}
           onYopish={() => setModalOchiq(false)}
-          onSaqlash={(xaridor) => {
-            onSaqlash(xaridor);
-            setTafsilotXaridor((joriy) => (joriy?.id === xaridor.id ? xaridor : joriy));
+          onSaqlash={async (xaridor) => {
+            const saqlangan = await onSaqlash(xaridor);
+            if (!saqlangan) return;
+            setTafsilotXaridor((joriy) => (joriy?.id === saqlangan.id ? saqlangan : joriy));
             setModalOchiq(false);
           }}
         />
       )}
 
-      {korilayotganXodim && (
-        <XodimModal xodim={korilayotganXodim} onYopish={() => setKorilayotganXodim(null)} />
-      )}
     </div>
   );
 }

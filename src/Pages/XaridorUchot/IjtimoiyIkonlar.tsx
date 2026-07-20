@@ -28,9 +28,6 @@ export default function IjtimoiyIkonlar({ ijtimoiy }: { ijtimoiy: IjtimoiyTarmoq
   const [nusxalandi, setNusxalandi] = useState(false);
   const taymer = useRef<number | null>(null);
 
-  const bor = konfig.filter((t) => ijtimoiy[t.kalit].trim());
-  if (bor.length === 0) return <span className="text-slate-400">—</span>;
-
   function yopish() {
     setFaol(null);
     setJoy(null);
@@ -40,7 +37,10 @@ export default function IjtimoiyIkonlar({ ijtimoiy }: { ijtimoiy: IjtimoiyTarmoq
   function bosildi(event: MouseEvent<HTMLButtonElement>, kalit: Kalit, link: string) {
     event.stopPropagation();
     const quti = event.currentTarget.getBoundingClientRect();
-    const yangiJoy = { top: quti.bottom + 6, left: quti.left };
+    const yangiJoy = {
+      top: Math.min(quti.bottom + 8, window.innerHeight - 76),
+      left: Math.max(12, Math.min(quti.left, window.innerWidth - 330)),
+    };
 
     if (taymer.current) {
       // 2-marta bosish — havolani nusxalash
@@ -62,23 +62,44 @@ export default function IjtimoiyIkonlar({ ijtimoiy }: { ijtimoiy: IjtimoiyTarmoq
     }
   }
 
+  async function nusxalash(link: string) {
+    try {
+      await navigator.clipboard.writeText(link);
+      setNusxalandi(true);
+      window.setTimeout(() => setNusxalandi(false), 1600);
+    } catch {
+      setNusxalandi(false);
+    }
+  }
+
   const faolLink = faol ? tarmoqLink(faol, ijtimoiy[faol]) : "";
 
   return (
     <span className="inline-flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-      {bor.map((t) => {
-        const link = tarmoqLink(t.kalit, ijtimoiy[t.kalit]);
+      {konfig.map((t) => {
+        const qiymat = ijtimoiy[t.kalit].trim();
+        const link = qiymat ? tarmoqLink(t.kalit, qiymat) : "";
         return (
           <button
             key={t.kalit}
             type="button"
-            title="1× havola, 2× nusxa"
-            onClick={(event) => bosildi(event, t.kalit, link)}
-            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition ${t.rang} ${
-              faol === t.kalit ? "ring-2 ring-[#FF6A00]" : "opacity-80 hover:opacity-100"
+            title={qiymat ? `${t.kalit}: ${qiymat}` : `${t.kalit} kiritilmagan`}
+            aria-label={qiymat ? `${t.kalit} havolasini ochish` : `${t.kalit} kiritilmagan`}
+            aria-expanded={faol === t.kalit}
+            disabled={!qiymat}
+            onClick={(event) => qiymat && bosildi(event, t.kalit, link)}
+            className={`group relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-sm transition-all duration-200 outline-none ${t.rang} ${
+              faol === t.kalit
+                ? "-translate-y-0.5 scale-105 ring-2 ring-[#FF6A00] ring-offset-2 shadow-md"
+                : qiymat
+                  ? "opacity-85 hover:-translate-y-1 hover:scale-110 hover:opacity-100 hover:shadow-lg active:translate-y-0 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#FF6A00] focus-visible:ring-offset-2"
+                  : "cursor-default opacity-45"
             }`}
           >
             {t.ikonka}
+            {qiymat && (
+              <span className="pointer-events-none absolute inset-0 rounded-xl bg-current opacity-0 transition-opacity duration-200 group-hover:opacity-[0.08]" />
+            )}
           </button>
         );
       })}
@@ -95,20 +116,31 @@ export default function IjtimoiyIkonlar({ ijtimoiy }: { ijtimoiy: IjtimoiyTarmoq
               style={{ zIndex: 100000 }}
             />
             <div
-              className="fixed flex items-center gap-2 whitespace-nowrap rounded-xl border border-orange-100 bg-white px-3 py-2 shadow-[0_18px_50px_rgba(92,38,8,.22)]"
+              role="dialog"
+              aria-label={`${faol} havolasi`}
+              className="fixed flex max-w-[calc(100vw-24px)] animate-in items-center gap-2 whitespace-nowrap rounded-2xl border border-orange-100 bg-white p-2 shadow-[0_18px_50px_rgba(92,38,8,.22)] duration-200 fade-in zoom-in-95"
               style={{ top: joy.top, left: joy.left, zIndex: 100001 }}
             >
               <a
                 href={faolLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="max-w-[260px] truncate text-xs font-semibold text-[#FF6A00] hover:underline"
+                onClick={yopish}
+                className="inline-flex h-9 max-w-[210px] items-center rounded-xl bg-orange-50 px-3 text-xs font-bold text-[#FF6A00] outline-none transition hover:bg-orange-100 focus-visible:ring-2 focus-visible:ring-[#FF6A00]"
               >
-                {faolLink}
+                <span className="truncate">Ochish · {faolLink}</span>
               </a>
-              {nusxalandi && (
-                <span className="text-xs font-bold text-emerald-600">Nusxalandi ✓</span>
-              )}
+              <button
+                type="button"
+                onClick={() => void nusxalash(faolLink)}
+                className={`h-9 rounded-xl px-3 text-xs font-bold outline-none transition focus-visible:ring-2 focus-visible:ring-offset-1 ${
+                  nusxalandi
+                    ? "bg-emerald-50 text-emerald-600 focus-visible:ring-emerald-500"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 focus-visible:ring-slate-400"
+                }`}
+              >
+                {nusxalandi ? "Nusxalandi ✓" : "Nusxalash"}
+              </button>
             </div>
           </>,
           document.body

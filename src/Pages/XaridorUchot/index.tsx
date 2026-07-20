@@ -1,88 +1,141 @@
-import { useState } from "react";
-import { useUchotStore } from "@/store/uchotStore";
+import { useCallback, useEffect, useState } from "react";
+import { LoaderCircle, RefreshCw } from "lucide-react";
+import { mijozKompaniyalariApi, mijozlarApi, yetkazibBeruvchilarApi } from "@/api/partnersApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { sotuvlarRoyxatiniOlish } from "@/api/savdoApi";
+import { kirimApi, omborlarApi, omborMasullari } from "@/api/omborApi";
 import Kompaniyalar from "./Kompaniyalar";
 import Xaridorlar from "./Xaridorlar";
 import YetkazibBeruvchilar from "./YetkazibBeruvchilar";
-import { mockKompaniyalar, mockYetkazibBeruvchilar } from "./mockData";
-import type { XaridorKompaniyasi, YetkazibBeruvchi } from "./types";
+import { kompaniyaniUiGa, kirimniUiGa, mijozniUiGa, sotuvniUiGa, yetkazibBeruvchiniUiGa } from "./backendAdapters";
+import type { Kirim, Xaridor, XaridorKompaniyasi, XaridorSavdosi, YetkazibBeruvchi } from "./types";
 
 type Tab = "xaridorlar" | "kompaniyalar" | "yetkazib-beruvchilar";
 
-const tablar: Array<{ id: Tab; nom: string }> = [
-  { id: "xaridorlar", nom: "Xaridorlar" },
-  { id: "kompaniyalar", nom: "Kompaniya" },
-  { id: "yetkazib-beruvchilar", nom: "Yetkazib beruvchilar" },
-];
+type Props = {
+  faolTab?: Tab;
+};
 
-// Mock holat: barcha tablar bitta joydan boshqariladi, backendga so'rov yuborilmaydi.
-function saqlash<T extends { id: string }>(royxat: T[], item: T) {
-  return royxat.some((old) => old.id === item.id)
-    ? royxat.map((old) => (old.id === item.id ? item : old))
-    : [item, ...royxat];
-}
+export default function XaridorUchot({ faolTab = "xaridorlar" }: Props) {
+  const [xaridorlar, setXaridorlar] = useState<Xaridor[]>([]);
+  const [kompaniyalar, setKompaniyalar] = useState<XaridorKompaniyasi[]>([]);
+  const [yetkazibBeruvchilar, setYetkazibBeruvchilar] = useState<YetkazibBeruvchi[]>([]);
+  const [savdolar, setSavdolar] = useState<XaridorSavdosi[]>([]);
+  const [kirimlar, setKirimlar] = useState<Kirim[]>([]);
+  const [yuklanmoqda, setYuklanmoqda] = useState(true);
+  const [amalBajarilmoqda, setAmalBajarilmoqda] = useState(false);
+  const [xatolik, setXatolik] = useState("");
 
-export default function XaridorUchot() {
-  const [faolTab, setFaolTab] = useState<Tab>("xaridorlar");
-  // Xaridorlar umumiy store'da — kassa to'lovlari qarzni shu yerda o'zgartiradi.
-  const xaridorlar = useUchotStore((s) => s.xaridorlar);
-  const xaridorSaqlash = useUchotStore((s) => s.xaridorSaqlash);
-  const xaridorOchirish = useUchotStore((s) => s.xaridorOchirish);
-  const xaridorKompaniyasiniTozalash = useUchotStore((s) => s.xaridorKompaniyasiniTozalash);
-  const [kompaniyalar, setKompaniyalar] = useState<XaridorKompaniyasi[]>(mockKompaniyalar);
-  const [yetkazibBeruvchilar, setYetkazibBeruvchilar] =
-    useState<YetkazibBeruvchi[]>(mockYetkazibBeruvchilar);
+  const yuklash = useCallback(async () => {
+    setYuklanmoqda(true);
+    setXatolik("");
+    try {
+      const [customers, companies, suppliers, sales, purchases, warehouses, responsibles] = await Promise.all([
+        mijozlarApi.royxat(),
+        mijozKompaniyalariApi.royxat(),
+        yetkazibBeruvchilarApi.royxat(),
+        sotuvlarRoyxatiniOlish(),
+        kirimApi.royxat(),
+        omborlarApi.royxat(),
+        omborMasullari(),
+      ]);
+      setXaridorlar(customers.map(mijozniUiGa));
+      setKompaniyalar(companies.map(kompaniyaniUiGa));
+      setYetkazibBeruvchilar(suppliers.map(yetkazibBeruvchiniUiGa));
+      const lookup = { omborlar: warehouses, masullar: responsibles };
+      setSavdolar(sales.map((item) => sotuvniUiGa(item, lookup)));
+      setKirimlar(purchases.map((item) => kirimniUiGa(item, lookup)));
+    } catch (error) {
+      setXatolik(getApiErrorMessage(error));
+    } finally {
+      setYuklanmoqda(false);
+    }
+  }, []);
 
-  function kompaniyaniOchirish(id: string) {
-    setKompaniyalar((oldRoyxat) => oldRoyxat.filter((item) => item.id !== id));
-    xaridorKompaniyasiniTozalash(id);
+  useEffect(() => { void yuklash(); }, [yuklash]);
+
+  async function xaridorSaqlash(xaridor: Xaridor) {
+    setAmalBajarilmoqda(true); setXatolik("");
+    try {
+      const payload = {
+        firstName: xaridor.ism.trim(),
+        lastName: xaridor.familiya.trim(),
+        phone: xaridor.telefonlar.find((item) => item.trim())?.trim() ?? "",
+        address: xaridor.manzil.trim() || undefined,
+        telegramId: xaridor.ijtimoiy.telegram.trim() || undefined,
+        companyId: xaridor.kompaniyaId || undefined,
+      };
+      const mavjud = xaridorlar.some((item) => item.id === xaridor.id);
+      const saved = mavjud ? await mijozlarApi.yangilash(xaridor.id, payload) : await mijozlarApi.yaratish(payload);
+      const ui = mijozniUiGa(saved);
+      setXaridorlar((current) => mavjud ? current.map((item) => item.id === ui.id ? ui : item) : [ui, ...current]);
+      return ui;
+    } catch (error) {
+      setXatolik(getApiErrorMessage(error));
+      throw error;
+    } finally { setAmalBajarilmoqda(false); }
+  }
+
+  async function xaridorOchirish(id: string) {
+    setAmalBajarilmoqda(true); setXatolik("");
+    try { await mijozlarApi.ochirish(id); setXaridorlar((items) => items.filter((item) => item.id !== id)); return true; }
+    catch (error) { setXatolik(getApiErrorMessage(error)); return false; }
+    finally { setAmalBajarilmoqda(false); }
+  }
+
+  async function kompaniyaSaqlash(kompaniya: XaridorKompaniyasi) {
+    setAmalBajarilmoqda(true); setXatolik("");
+    try {
+      const payload = { name: kompaniya.nomi.trim(), inn: kompaniya.stir.trim() || undefined, phone: kompaniya.telefon.trim() || undefined };
+      const mavjud = kompaniyalar.some((item) => item.id === kompaniya.id);
+      const saved = mavjud ? await mijozKompaniyalariApi.yangilash(kompaniya.id, payload) : await mijozKompaniyalariApi.yaratish(payload);
+      const ui = kompaniyaniUiGa(saved);
+      setKompaniyalar((current) => mavjud ? current.map((item) => item.id === ui.id ? ui : item) : [ui, ...current]);
+      return ui;
+    } catch (error) { setXatolik(getApiErrorMessage(error)); throw error; }
+    finally { setAmalBajarilmoqda(false); }
+  }
+
+  async function kompaniyaOchirish(id: string) {
+    setAmalBajarilmoqda(true); setXatolik("");
+    try { await mijozKompaniyalariApi.ochirish(id); setKompaniyalar((items) => items.filter((item) => item.id !== id)); await yuklash(); return true; }
+    catch (error) { setXatolik(getApiErrorMessage(error)); return false; }
+    finally { setAmalBajarilmoqda(false); }
+  }
+
+  async function yetkazibBeruvchiSaqlash(beruvchi: YetkazibBeruvchi) {
+    setAmalBajarilmoqda(true); setXatolik("");
+    try {
+      const payload = { name: beruvchi.nomi.trim(), phone: beruvchi.telefon.trim() || undefined };
+      const mavjud = yetkazibBeruvchilar.some((item) => item.id === beruvchi.id);
+      const saved = mavjud ? await yetkazibBeruvchilarApi.yangilash(beruvchi.id, payload) : await yetkazibBeruvchilarApi.yaratish(payload);
+      const ui = yetkazibBeruvchiniUiGa(saved);
+      setYetkazibBeruvchilar((current) => mavjud ? current.map((item) => item.id === ui.id ? ui : item) : [ui, ...current]);
+      return ui;
+    } catch (error) { setXatolik(getApiErrorMessage(error)); throw error; }
+    finally { setAmalBajarilmoqda(false); }
+  }
+
+  async function yetkazibBeruvchiOchirish(id: string) {
+    setAmalBajarilmoqda(true); setXatolik("");
+    try { await yetkazibBeruvchilarApi.ochirish(id); setYetkazibBeruvchilar((items) => items.filter((item) => item.id !== id)); return true; }
+    catch (error) { setXatolik(getApiErrorMessage(error)); return false; }
+    finally { setAmalBajarilmoqda(false); }
   }
 
   return (
     <div className="space-y-5">
-      <div className="flex gap-2 overflow-x-auto rounded-2xl border border-orange-100 bg-white p-2 shadow-sm">
-        {tablar.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setFaolTab(tab.id)}
-            className={`shrink-0 rounded-xl px-5 py-2.5 text-sm font-bold ${
-              faolTab === tab.id
-                ? "bg-orange-500 text-white"
-                : "text-gray-500 hover:bg-orange-50 hover:text-orange-600"
-            }`}
-          >
-            {tab.nom}
-          </button>
-        ))}
-      </div>
+      {xatolik && <div className="flex items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600"><span>{xatolik}</span><button onClick={() => void yuklash()} className="inline-flex items-center gap-2"><RefreshCw size={16}/>Qayta urinish</button></div>}
+      {(yuklanmoqda || amalBajarilmoqda) && <div className="flex items-center justify-center gap-2 rounded-2xl bg-white p-3 text-sm font-bold text-slate-500"><LoaderCircle className="animate-spin" size={18}/>{yuklanmoqda ? "Backend ma’lumotlari yuklanmoqda..." : "Saqlanmoqda..."}</div>}
 
-      {faolTab === "xaridorlar" && (
-        <Xaridorlar
-          xaridorlar={xaridorlar}
-          kompaniyalar={kompaniyalar}
-          onSaqlash={xaridorSaqlash}
-          onOchirish={xaridorOchirish}
-        />
+      {!yuklanmoqda && faolTab === "xaridorlar" && (
+        <Xaridorlar xaridorlar={xaridorlar} kompaniyalar={kompaniyalar} savdolar={savdolar} onSaqlash={xaridorSaqlash} onOchirish={xaridorOchirish}/>
       )}
-
-      {faolTab === "kompaniyalar" && (
-        <Kompaniyalar
-          kompaniyalar={kompaniyalar}
-          xaridorlar={xaridorlar}
-          onSaqlash={(kompaniya) => setKompaniyalar((oldRoyxat) => saqlash(oldRoyxat, kompaniya))}
-          onOchirish={kompaniyaniOchirish}
-        />
+      {!yuklanmoqda && faolTab === "kompaniyalar" && (
+        <Kompaniyalar kompaniyalar={kompaniyalar} xaridorlar={xaridorlar} savdolar={savdolar} onSaqlash={kompaniyaSaqlash} onOchirish={kompaniyaOchirish}/>
       )}
-
-      {faolTab === "yetkazib-beruvchilar" && (
-        <YetkazibBeruvchilar
-          yetkazibBeruvchilar={yetkazibBeruvchilar}
-          onSaqlash={(beruvchi) =>
-            setYetkazibBeruvchilar((oldRoyxat) => saqlash(oldRoyxat, beruvchi))
-          }
-          onOchirish={(id) =>
-            setYetkazibBeruvchilar((oldRoyxat) => oldRoyxat.filter((item) => item.id !== id))
-          }
-        />
+      {!yuklanmoqda && faolTab === "yetkazib-beruvchilar" && (
+        <YetkazibBeruvchilar yetkazibBeruvchilar={yetkazibBeruvchilar} kirimlar={kirimlar} onSaqlash={yetkazibBeruvchiSaqlash} onOchirish={yetkazibBeruvchiOchirish}/>
       )}
     </div>
   );

@@ -4,27 +4,26 @@ import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/Kengaytiril
 import IjtimoiyIkonlar from "./IjtimoiyIkonlar";
 import KartaSozlama, { type Maydon } from "./KartaSozlama";
 import KorinishTanlov, { type Korinish } from "./KorinishTanlov";
-import XodimModal from "./XodimModal";
 import YetkazibBeruvchiModal from "./YetkazibBeruvchiModal";
 import YetkazibTafsilotlariModal from "./YetkazibTafsilotlariModal";
-import { xodimTopish } from "./mockData";
-import type { Xodim, YetkazibBeruvchi } from "./types";
+import type { YetkazibBeruvchi } from "./types";
 import { sanaFormat } from "./yordamchilar";
 
 type Props = {
   yetkazibBeruvchilar: YetkazibBeruvchi[];
-  onSaqlash: (yetkazibBeruvchi: YetkazibBeruvchi) => void;
-  onOchirish: (id: string) => void;
+  kirimlar: import("./types").Kirim[];
+  onSaqlash: (yetkazibBeruvchi: YetkazibBeruvchi) => Promise<YetkazibBeruvchi | null>;
+  onOchirish: (id: string) => Promise<boolean>;
 };
 
 export default function YetkazibBeruvchilar({
   yetkazibBeruvchilar,
+  kirimlar,
   onSaqlash,
   onOchirish,
 }: Props) {
   const [qidiruv, setQidiruv] = useState("");
   const [korinish, setKorinish] = useState<Korinish>("karta");
-  const [korilayotganXodim, setKorilayotganXodim] = useState<Xodim | null>(null);
   const [yashirinMaydon, setYashirinMaydon] = useState<Set<string>>(() => new Set());
 
   const kartaMaydonlari: Maydon[] = [
@@ -61,18 +60,7 @@ export default function YetkazibBeruvchilar({
       id: "yaratgan",
       nom: "Mas'ul shaxs yaratgan",
       kenglik: 170,
-      katak: (b) => (
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            setKorilayotganXodim(xodimTopish(b.yaratganMasul));
-          }}
-          className="max-w-full truncate text-left text-slate-500 transition hover:text-[#FF6A00] hover:underline"
-        >
-          {b.yaratganMasul}
-        </button>
-      ),
+      katak: (b) => <span className="text-slate-500">{b.yaratganMasul}</span>,
     },
     { id: "yaratilgan", nom: "Sana yaratilgan", kenglik: 140, katak: (b) => <span className="text-slate-500">{sanaFormat(b.yaratilganSana)}</span> },
     { id: "ozgartirilgan", nom: "O'zgartirilgan sana", kenglik: 150, katak: (b) => <span className="text-slate-500">{sanaFormat(b.ozgartirilganSana)}</span> },
@@ -92,9 +80,9 @@ export default function YetkazibBeruvchilar({
     setModalOchiq(true);
   }
 
-  function ochirish(beruvchi: YetkazibBeruvchi) {
+  async function ochirish(beruvchi: YetkazibBeruvchi) {
     if (!window.confirm(`${beruvchi.nomi} ma'lumotini o'chirasizmi?`)) return;
-    onOchirish(beruvchi.id);
+    return onOchirish(beruvchi.id);
   }
 
   return (
@@ -168,7 +156,7 @@ export default function YetkazibBeruvchilar({
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
-                    ochirish(beruvchi);
+                    void ochirish(beruvchi);
                   }}
                   title="O'chirish"
                   aria-label="O'chirish"
@@ -228,16 +216,9 @@ export default function YetkazibBeruvchilar({
               {korinadi("yaratgan") && (
               <p className="flex items-center justify-between gap-2">
                 <span className="text-gray-400">Yaratgan</span>
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setKorilayotganXodim(xodimTopish(beruvchi.yaratganMasul));
-                  }}
-                  className="truncate font-semibold text-gray-600 transition hover:text-[#FF6A00] hover:underline"
-                >
+                <span className="truncate font-semibold text-gray-600">
                   {beruvchi.yaratganMasul}
-                </button>
+                </span>
               </p>
               )}
             </div>
@@ -257,10 +238,10 @@ export default function YetkazibBeruvchilar({
       {tafsilotBeruvchi && (
         <YetkazibTafsilotlariModal
           beruvchi={tafsilotBeruvchi}
+          kirimlar={kirimlar}
           onTahrirlash={() => modalniOchish(tafsilotBeruvchi)}
-          onOchirish={() => {
-            ochirish(tafsilotBeruvchi);
-            setTafsilotBeruvchi(null);
+          onOchirish={async () => {
+            if (await ochirish(tafsilotBeruvchi)) setTafsilotBeruvchi(null);
           }}
           onYopish={() => setTafsilotBeruvchi(null)}
         />
@@ -269,18 +250,17 @@ export default function YetkazibBeruvchilar({
       {modalOchiq && (
         <YetkazibBeruvchiModal
           boshlangich={tahrirBeruvchi}
+          kirimlar={kirimlar}
           onYopish={() => setModalOchiq(false)}
-          onSaqlash={(beruvchi) => {
-            onSaqlash(beruvchi);
-            setTafsilotBeruvchi((joriy) => (joriy?.id === beruvchi.id ? beruvchi : joriy));
+          onSaqlash={async (beruvchi) => {
+            const saqlangan = await onSaqlash(beruvchi);
+            if (!saqlangan) return;
+            setTafsilotBeruvchi((joriy) => (joriy?.id === saqlangan.id ? saqlangan : joriy));
             setModalOchiq(false);
           }}
         />
       )}
 
-      {korilayotganXodim && (
-        <XodimModal xodim={korilayotganXodim} onYopish={() => setKorilayotganXodim(null)} />
-      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { Briefcase, Building2, CalendarDays, Hash, Phone, UserRound } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import FaoliyatPaneli from "./FaoliyatPaneli";
 import IjtimoiyTanlov from "./IjtimoiyTanlov";
 import TezkorPanel from "./TezkorPanel";
@@ -24,7 +25,7 @@ type Props = {
   tolovlar?: XaridorTolovi[];
   tarix?: TarixYozuvi[];
   onYopish: () => void;
-  onSaqlash: (kompaniya: XaridorKompaniyasi) => void;
+  onSaqlash: (kompaniya: XaridorKompaniyasi) => Promise<void>;
 };
 
 export default function KompaniyaModal({
@@ -47,6 +48,7 @@ export default function KompaniyaModal({
   const [instagram, setInstagram] = useState(boshlangich?.ijtimoiy.instagram ?? "");
   const [yaratilganSana, setYaratilganSana] = useState(boshlangich?.yaratilganSana ?? bugun());
   const [xato, setXato] = useState("");
+  const [saqlanmoqda, setSaqlanmoqda] = useState(false);
   const [faolTab, setFaolTab] = useState<MalumotTab>("Ma'lumotlar");
 
   // Kompaniyaning savdolari/to'lovlari/tarixi — unga biriktirilgan xaridorlarники.
@@ -81,7 +83,7 @@ export default function KompaniyaModal({
     return xaridor ? xaridorNomi(xaridor) : "—";
   }
 
-  function saqlash(event: FormEvent) {
+  async function saqlash(event: FormEvent) {
     event.preventDefault();
 
     if (!nomi.trim()) {
@@ -89,7 +91,9 @@ export default function KompaniyaModal({
       return;
     }
 
-    onSaqlash({
+    setSaqlanmoqda(true);
+    try {
+      await onSaqlash({
       id: boshlangich?.id ?? yangiId("kmp"),
       nomi: nomi.trim(),
       stir: stir.trim(),
@@ -106,7 +110,12 @@ export default function KompaniyaModal({
       yaratilganSana,
       ozgartirilganSana: bugun(),
       ozgartirganMasul: "Administrator",
-    });
+      });
+    } catch (error) {
+      setXato(getApiErrorMessage(error));
+    } finally {
+      setSaqlanmoqda(false);
+    }
   }
 
   return (
@@ -307,8 +316,8 @@ export default function KompaniyaModal({
             >
               Bekor qilish
             </button>
-            <button className="rounded-2xl bg-[#FF6A00] px-6 py-2.5 text-sm font-black text-white shadow-[0_14px_32px_rgba(255,106,0,.24)] transition hover:-translate-y-0.5 hover:bg-[#EA580C]">
-              Saqlash
+            <button disabled={saqlanmoqda} className="rounded-2xl bg-[#FF6A00] px-6 py-2.5 text-sm font-black text-white shadow-[0_14px_32px_rgba(255,106,0,.24)] transition hover:-translate-y-0.5 hover:bg-[#EA580C] disabled:opacity-50">
+              {saqlanmoqda ? "Saqlanmoqda..." : "Saqlash"}
             </button>
           </footer>
         </form>

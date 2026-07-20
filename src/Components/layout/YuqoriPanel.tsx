@@ -36,7 +36,11 @@ const moduleTabs: Record<ModuleKey, Array<{ nom: string; path: string }>> = {
     { nom: "Bekor qilinganlar", path: "/savdo?tab=bekor-qilingan" },
   ],
   mahsulotlar: [{ nom: "Mahsulotlar", path: "/mahsulotlar" }],
-  mijozlar: [{ nom: "Xaridorlar", path: "/mijozlar" }],
+  mijozlar: [
+    { nom: "Xaridorlar", path: "/mijozlar" },
+    { nom: "Kompaniya", path: "/mijozlar/kompaniya" },
+    { nom: "Yetkazib beruvchilar", path: "/mijozlar/yetkazib-beruvchilar" },
+  ],
   hisobotlar: [{ nom: "Hisobotlar", path: "/hisobotlar" }],
   ombor: [
     { nom: "Inventarizatsiya", path: "/ombor/inventarizatsiya" },
@@ -187,6 +191,8 @@ export default function YuqoriPanel() {
           const isActive =
             moduleKey === "savdo"
               ? pathname === "/savdo" && savdoTab === tabKey
+              : moduleKey === "mijozlar"
+                ? pathname === tabPath
               : pathname === tabPath ||
                 (tabPath !== "/ombor" && pathname.startsWith(`${tabPath}/`));
           return (

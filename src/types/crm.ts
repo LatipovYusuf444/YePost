@@ -34,6 +34,8 @@ export type TimelineItem = {
   timestamp?: string;
   actor?: CrmUser;
   user?: CrmUser;
+  actorName?: string;
+  payload?: Record<string, unknown>;
   [key: string]: unknown;
 };
 

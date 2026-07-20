@@ -4,9 +4,7 @@ import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/Kengaytiril
 import KirimModal from "./KirimModal";
 import XaridorSavdoModal from "./XaridorSavdoModal";
 import XaridorTafsilotlariModal from "./XaridorTafsilotlariModal";
-import XodimModal from "./XodimModal";
-import { mockKompaniyalar, mockSavdolar, mockTarix, xodimTopish } from "./mockData";
-import type { Kirim, TarixYozuvi, Xaridor, XaridorSavdosi, XaridorTolovi, Xodim } from "./types";
+import type { Kirim, TarixYozuvi, Xaridor, XaridorKompaniyasi, XaridorSavdosi, XaridorTolovi } from "./types";
 import {
   kirimHolatMatni,
   kirimHolatRangi,
@@ -45,6 +43,8 @@ export function SavdolarTab({
   xaridorNomi = "—",
   xaridorNomiOlish,
   xaridorOlish,
+  kompaniyalar = [],
+  barchaSavdolar = savdolar,
 }: {
   savdolar: XaridorSavdosi[];
   xaridorNomi?: string;
@@ -52,10 +52,11 @@ export function SavdolarTab({
   xaridorNomiOlish?: (savdo: XaridorSavdosi) => string;
   // "Xaridor" katagini bosganda ochish uchun to'liq xaridor obyektini qaytaradi.
   xaridorOlish?: (savdo: XaridorSavdosi) => Xaridor | undefined;
+  kompaniyalar?: XaridorKompaniyasi[];
+  barchaSavdolar?: XaridorSavdosi[];
 }) {
   const [korilayotganSavdo, setKorilayotganSavdo] = useState<XaridorSavdosi | null>(null);
   const [korilayotganXaridor, setKorilayotganXaridor] = useState<Xaridor | null>(null);
-  const [korilayotganXodim, setKorilayotganXodim] = useState<Xodim | null>(null);
 
   const nomOlish = (savdo: XaridorSavdosi) =>
     xaridorNomiOlish ? xaridorNomiOlish(savdo) : xaridorNomi;
@@ -96,14 +97,7 @@ export function SavdolarTab({
       id: "masul",
       nom: "Mas'ul shaxs",
       kenglik: 170,
-      katak: (savdo) => (
-        <BosiladiganKatak
-          onClick={() => setKorilayotganXodim(xodimTopish(savdo.masul))}
-          className="text-slate-500"
-        >
-          {savdo.masul}
-        </BosiladiganKatak>
-      ),
+      katak: (savdo) => <span className="text-slate-500">{savdo.masul}</span>,
     },
     {
       id: "sana",
@@ -127,6 +121,7 @@ export function SavdolarTab({
         <XaridorSavdoModal
           savdo={korilayotganSavdo}
           xaridorNomi={nomOlish(korilayotganSavdo)}
+          customerId={korilayotganSavdo.xaridorId}
           onYopish={() => setKorilayotganSavdo(null)}
         />
       )}
@@ -134,17 +129,13 @@ export function SavdolarTab({
       {korilayotganXaridor && (
         <XaridorTafsilotlariModal
           xaridor={korilayotganXaridor}
-          kompaniyalar={mockKompaniyalar}
-          savdolar={mockSavdolar}
-          tarix={mockTarix}
+          kompaniyalar={kompaniyalar}
+          savdolar={barchaSavdolar}
           onTahrirlash={() => {}}
           onYopish={() => setKorilayotganXaridor(null)}
         />
       )}
 
-      {korilayotganXodim && (
-        <XodimModal xodim={korilayotganXodim} onYopish={() => setKorilayotganXodim(null)} />
-      )}
     </div>
   );
 }
@@ -157,7 +148,6 @@ export function KirimTab({
   beruvchiNomi?: string;
 }) {
   const [korilayotganKirim, setKorilayotganKirim] = useState<Kirim | null>(null);
-  const [korilayotganXodim, setKorilayotganXodim] = useState<Xodim | null>(null);
 
   if (kirimlar.length === 0) return <BoshHolat matn="Kirimlar yo'q" />;
 
@@ -185,14 +175,7 @@ export function KirimTab({
       id: "masul",
       nom: "Mas'ul shaxs",
       kenglik: 170,
-      katak: (kirim) => (
-        <BosiladiganKatak
-          onClick={() => setKorilayotganXodim(xodimTopish(kirim.masul))}
-          className="text-slate-500"
-        >
-          {kirim.masul}
-        </BosiladiganKatak>
-      ),
+      katak: (kirim) => <span className="text-slate-500">{kirim.masul}</span>,
     },
     {
       id: "holat",
@@ -232,9 +215,6 @@ export function KirimTab({
         />
       )}
 
-      {korilayotganXodim && (
-        <XodimModal xodim={korilayotganXodim} onYopish={() => setKorilayotganXodim(null)} />
-      )}
     </div>
   );
 }

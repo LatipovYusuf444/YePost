@@ -5,8 +5,7 @@ import FaoliyatPaneli from "./FaoliyatPaneli";
 import { InstagramIkonka, TelegramIkonka, WhatsappIkonka } from "./IjtimoiyIkonkalar";
 import TezkorPanel from "./TezkorPanel";
 import { KirimTab, TarixTab, TolovlarTab } from "./XaridorTablari";
-import { mockKirimlar } from "./mockData";
-import type { IjtimoiyTarmoqlar, YetkazibBeruvchi } from "./types";
+import type { IjtimoiyTarmoqlar, Kirim, YetkazibBeruvchi } from "./types";
 import { sanaFormat } from "./yordamchilar";
 
 type Tab = "Ma'lumotlar" | "Kirim" | "To'lovlar" | "Tarix";
@@ -14,6 +13,7 @@ const tablar: Tab[] = ["Ma'lumotlar", "Kirim", "To'lovlar", "Tarix"];
 
 type Props = {
   beruvchi: YetkazibBeruvchi;
+  kirimlar: Kirim[];
   onTahrirlash: () => void;
   onOchirish?: () => void;
   onYopish: () => void;
@@ -21,6 +21,7 @@ type Props = {
 
 export default function YetkazibTafsilotlariModal({
   beruvchi,
+  kirimlar: barchaKirimlar,
   onTahrirlash,
   onOchirish,
   onYopish,
@@ -28,8 +29,8 @@ export default function YetkazibTafsilotlariModal({
   const [faolTab, setFaolTab] = useState<Tab>("Ma'lumotlar");
 
   const kirimlar = useMemo(
-    () => mockKirimlar.filter((kirim) => kirim.yetkazibBeruvchiId === beruvchi.id),
-    [beruvchi.id]
+    () => barchaKirimlar.filter((kirim) => kirim.yetkazibBeruvchiId === beruvchi.id),
+    [beruvchi.id, barchaKirimlar]
   );
 
   return (

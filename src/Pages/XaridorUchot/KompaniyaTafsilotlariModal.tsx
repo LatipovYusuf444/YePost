@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, Hash, Phone, Trash2, UserRound } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import { crmApi, royxatniAjratish } from "@/api/crmApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import FaoliyatPaneli from "./FaoliyatPaneli";
 import { InstagramIkonka, TelegramIkonka, WhatsappIkonka } from "./IjtimoiyIkonkalar";
 import TezkorPanel from "./TezkorPanel";
@@ -14,6 +16,7 @@ import type {
   XaridorTolovi,
 } from "./types";
 import { sanaFormat, xaridorNomi } from "./yordamchilar";
+import { timelineniTarixga, timelineniTolovga } from "./backendAdapters";
 
 type Tab = "Ma'lumotlar" | "Savdolar" | "To'lovlar" | "Tarix";
 const tablar: Tab[] = ["Ma'lumotlar", "Savdolar", "To'lovlar", "Tarix"];
@@ -40,6 +43,9 @@ export default function KompaniyaTafsilotlariModal({
   onYopish,
 }: Props) {
   const [faolTab, setFaolTab] = useState<Tab>("Ma'lumotlar");
+  const [backendTolovlar, setBackendTolovlar] = useState<XaridorTolovi[]>([]);
+  const [backendTarix, setBackendTarix] = useState<TarixYozuvi[]>([]);
+  const [xatolik, setXatolik] = useState("");
 
   const xaridorIdlar = useMemo(
     () => new Set(xaridorlar.filter((x) => x.kompaniyaId === kompaniya.id).map((x) => x.id)),
@@ -49,16 +55,40 @@ export default function KompaniyaTafsilotlariModal({
     () => savdolar.filter((s) => xaridorIdlar.has(s.xaridorId)),
     [savdolar, xaridorIdlar]
   );
+  useEffect(() => {
+    const ids = [...xaridorIdlar];
+    if (ids.length === 0) {
+      setBackendTolovlar([]);
+      setBackendTarix([]);
+      return;
+    }
+    let faol = true;
+    setXatolik("");
+    void Promise.all(ids.map(async (customerId) => {
+      const items = royxatniAjratish(await crmApi.timeline(customerId, { limit: 100 }));
+      return {
+        tarix: items.map((item, index) => timelineniTarixga(customerId, item, index)),
+        tolovlar: items.map((item, index) => timelineniTolovga(customerId, item, index)).filter((item): item is XaridorTolovi => item !== null),
+      };
+    })).then((results) => {
+      if (!faol) return;
+      setBackendTarix(results.flatMap((item) => item.tarix));
+      setBackendTolovlar(results.flatMap((item) => item.tolovlar));
+    }).catch((error) => {
+      if (faol) setXatolik(getApiErrorMessage(error));
+    });
+    return () => { faol = false; };
+  }, [xaridorIdlar]);
   const kompaniyaTolovlari = useMemo(
-    () => tolovlar.filter((t) => xaridorIdlar.has(t.xaridorId)),
-    [tolovlar, xaridorIdlar]
+    () => [...tolovlar, ...backendTolovlar].filter((t) => xaridorIdlar.has(t.xaridorId)),
+    [tolovlar, backendTolovlar, xaridorIdlar]
   );
   const kompaniyaTarixi = useMemo(
     () =>
-      tarix
+      [...tarix, ...backendTarix]
         .filter((y) => xaridorIdlar.has(y.xaridorId))
         .sort((a, b) => new Date(b.sana).getTime() - new Date(a.sana).getTime()),
-    [tarix, xaridorIdlar]
+    [tarix, backendTarix, xaridorIdlar]
   );
 
   function savdoXaridori(savdo: XaridorSavdosi) {
@@ -152,11 +182,14 @@ export default function KompaniyaTafsilotlariModal({
                 <FaoliyatPaneli />
               </div>
             )}
+            {xatolik && <div className="mx-9 mt-5 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">{xatolik}</div>}
             {faolTab === "Savdolar" && (
               <SavdolarTab
                 savdolar={kompaniyaSavdolari}
                 xaridorNomiOlish={savdoXaridori}
                 xaridorOlish={(savdo) => xaridorlar.find((x) => x.id === savdo.xaridorId)}
+                kompaniyalar={[kompaniya]}
+                barchaSavdolar={savdolar}
               />
             )}
             {faolTab === "To'lovlar" && <TolovlarTab tolovlar={kompaniyaTolovlari} />}

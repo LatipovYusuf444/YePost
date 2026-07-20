@@ -34,9 +34,10 @@ export default function AppRouter() {
         <Route path="/savdo" element={<Savdo />} />
         {/* <Route path="/pos" element={<Savdo />} /> */}
         <Route path="/mahsulotlar" element={<Mahsulotlar />} />
-        {/* Mock Xaridor uchoti eski backendli Mijozlar sahifasi o'rnida
-            (backend kodi Pages/Mijozlar da tegilmagan holda qoladi). */}
-        <Route path="/mijozlar" element={<XaridorUchot />} />
+        {/* Xaridorlar, kompaniyalar va yetkazib beruvchilar real partner/CRM API'lariga ulangan. */}
+        <Route path="/mijozlar" element={<XaridorUchot faolTab="xaridorlar" />} />
+        <Route path="/mijozlar/kompaniya" element={<XaridorUchot faolTab="kompaniyalar" />} />
+        <Route path="/mijozlar/yetkazib-beruvchilar" element={<XaridorUchot faolTab="yetkazib-beruvchilar" />} />
         {/* Ombor yo'nalishlari (hamkasb strukturasi saqlandi) */}
         <Route path="/ombor" element={<Navigate to="/ombor/inventarizatsiya" replace />} />
         <Route path="/ombor/omborlar" element={<Ombor />} />

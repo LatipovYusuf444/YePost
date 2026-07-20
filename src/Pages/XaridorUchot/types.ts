@@ -1,5 +1,4 @@
-// Xaridor uchoti: mock modul tiplari. Backendga bog'liq emas.
-// Yangi maydon qo'shilganda: shu tipga qo'shiladi → mockData.ts ga qiymat → modalkaga input.
+// Xaridor uchoti UI view-model tiplari. Backend DTO'lari backendAdapters.ts orqali moslanadi.
 
 export type IjtimoiyTarmoqlar = {
   telegram: string;

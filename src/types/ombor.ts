@@ -115,6 +115,7 @@ export type KirimHujjati = {
   number?: string;
   documentNumber?: string;
   docNumber?: string;
+  date?: string;
   supplierId: string;
   warehouseId: string;
   responsibleId?: string;
@@ -150,6 +151,7 @@ export type ChiqimHujjati = {
   number?: string;
   documentNumber?: string;
   docNumber?: string;
+  date?: string;
   warehouseId: string;
   reason: ChiqimSababi | string;
   responsibleId?: string;

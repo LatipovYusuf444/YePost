@@ -6,22 +6,20 @@ import KartaSozlama, { type Maydon } from "./KartaSozlama";
 import KompaniyaModal from "./KompaniyaModal";
 import KompaniyaTafsilotlariModal from "./KompaniyaTafsilotlariModal";
 import KorinishTanlov, { type Korinish } from "./KorinishTanlov";
-import XodimModal from "./XodimModal";
-import { mockSavdolar, mockTarix, mockTolovlar, xodimTopish } from "./mockData";
-import type { Xaridor, XaridorKompaniyasi, Xodim } from "./types";
+import type { Xaridor, XaridorKompaniyasi } from "./types";
 import { sanaFormat } from "./yordamchilar";
 
 type Props = {
   kompaniyalar: XaridorKompaniyasi[];
   xaridorlar: Xaridor[];
-  onSaqlash: (kompaniya: XaridorKompaniyasi) => void;
-  onOchirish: (id: string) => void;
+  savdolar: import("./types").XaridorSavdosi[];
+  onSaqlash: (kompaniya: XaridorKompaniyasi) => Promise<XaridorKompaniyasi | null>;
+  onOchirish: (id: string) => Promise<boolean>;
 };
 
-export default function Kompaniyalar({ kompaniyalar, xaridorlar, onSaqlash, onOchirish }: Props) {
+export default function Kompaniyalar({ kompaniyalar, xaridorlar, savdolar, onSaqlash, onOchirish }: Props) {
   const [qidiruv, setQidiruv] = useState("");
   const [korinish, setKorinish] = useState<Korinish>("karta");
-  const [korilayotganXodim, setKorilayotganXodim] = useState<Xodim | null>(null);
   const [yashirinMaydon, setYashirinMaydon] = useState<Set<string>>(() => new Set());
 
   const kartaMaydonlari: Maydon[] = [
@@ -60,18 +58,7 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, onSaqlash, onOc
       id: "yaratgan",
       nom: "Mas'ul shaxs yaratgan",
       kenglik: 170,
-      katak: (k) => (
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            setKorilayotganXodim(xodimTopish(k.yaratganMasul));
-          }}
-          className="max-w-full truncate text-left text-slate-500 transition hover:text-[#FF6A00] hover:underline"
-        >
-          {k.yaratganMasul}
-        </button>
-      ),
+      katak: (k) => <span className="text-slate-500">{k.yaratganMasul}</span>,
     },
     { id: "yaratilgan", nom: "Sana yaratilgan", kenglik: 140, katak: (k) => <span className="text-slate-500">{sanaFormat(k.yaratilganSana)}</span> },
     { id: "ozgartirilgan", nom: "O'zgartirilgan sana", kenglik: 150, katak: (k) => <span className="text-slate-500">{sanaFormat(k.ozgartirilganSana)}</span> },
@@ -91,9 +78,9 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, onSaqlash, onOc
     setModalOchiq(true);
   }
 
-  function ochirish(kompaniya: XaridorKompaniyasi) {
+  async function ochirish(kompaniya: XaridorKompaniyasi) {
     if (!window.confirm(`${kompaniya.nomi} kompaniyasini o'chirasizmi?`)) return;
-    onOchirish(kompaniya.id);
+    return onOchirish(kompaniya.id);
   }
 
   return (
@@ -167,7 +154,7 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, onSaqlash, onOc
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
-                    ochirish(kompaniya);
+                    void ochirish(kompaniya);
                   }}
                   title="O'chirish"
                   aria-label="O'chirish"
@@ -227,16 +214,9 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, onSaqlash, onOc
               {korinadi("yaratgan") && (
               <p className="flex items-center justify-between gap-2">
                 <span className="text-gray-400">Yaratgan</span>
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setKorilayotganXodim(xodimTopish(kompaniya.yaratganMasul));
-                  }}
-                  className="truncate font-semibold text-gray-600 transition hover:text-[#FF6A00] hover:underline"
-                >
+                <span className="truncate font-semibold text-gray-600">
                   {kompaniya.yaratganMasul}
-                </button>
+                </span>
               </p>
               )}
             </div>
@@ -257,13 +237,12 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, onSaqlash, onOc
         <KompaniyaTafsilotlariModal
           kompaniya={tafsilotKompaniya}
           xaridorlar={xaridorlar}
-          savdolar={mockSavdolar}
-          tolovlar={mockTolovlar}
-          tarix={mockTarix}
+          savdolar={savdolar}
+          tolovlar={[]}
+          tarix={[]}
           onTahrirlash={() => modalniOchish(tafsilotKompaniya)}
-          onOchirish={() => {
-            ochirish(tafsilotKompaniya);
-            setTafsilotKompaniya(null);
+          onOchirish={async () => {
+            if (await ochirish(tafsilotKompaniya)) setTafsilotKompaniya(null);
           }}
           onYopish={() => setTafsilotKompaniya(null)}
         />
@@ -273,21 +252,19 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, onSaqlash, onOc
         <KompaniyaModal
           boshlangich={tahrirKompaniya}
           xaridorlar={xaridorlar}
-          savdolar={mockSavdolar}
-          tolovlar={mockTolovlar}
-          tarix={mockTarix}
+          savdolar={savdolar}
+          tolovlar={[]}
+          tarix={[]}
           onYopish={() => setModalOchiq(false)}
-          onSaqlash={(kompaniya) => {
-            onSaqlash(kompaniya);
-            setTafsilotKompaniya((joriy) => (joriy?.id === kompaniya.id ? kompaniya : joriy));
+          onSaqlash={async (kompaniya) => {
+            const saqlangan = await onSaqlash(kompaniya);
+            if (!saqlangan) return;
+            setTafsilotKompaniya((joriy) => (joriy?.id === saqlangan.id ? saqlangan : joriy));
             setModalOchiq(false);
           }}
         />
       )}
 
-      {korilayotganXodim && (
-        <XodimModal xodim={korilayotganXodim} onYopish={() => setKorilayotganXodim(null)} />
-      )}
     </div>
   );
 }

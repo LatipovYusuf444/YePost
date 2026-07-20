@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Bell,
   Briefcase,
@@ -9,10 +9,13 @@ import {
   UserRound,
   Wallet,
 } from "lucide-react";
-import { bugun, qisqaVaqt, sanaFormat, yangiId } from "./yordamchilar";
+import { crmApi, royxatniAjratish } from "@/api/crmApi";
+import { profilApi } from "@/api/authProfileApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import type { Activity, ChatMessage, Comment } from "@/types/crm";
+import { bugun, qisqaVaqt, sanaFormat } from "./yordamchilar";
 
-// Tafsilotlar/yaratish modalkalarining o'ng ustunidagi faoliyat oqimi.
-// Mock-first: yozilgan ish/izoh darhol lokal oqimga qo'shiladi (backend yo'q).
+// Tafsilotlar modalkalarining o'ng ustunidagi real CRM faoliyat oqimi.
 
 export type FaoliyatTuri = "ish" | "izoh" | "xabar" | "vazifa" | "tolov" | "ozgarish";
 
@@ -61,15 +64,57 @@ function muddatMatni(sana: string, vaqt: string) {
 
 type Props = {
   boshlangichYozuvlar?: FaoliyatYozuvi[];
+  customerId?: string;
 };
 
-export default function FaoliyatPaneli({ boshlangichYozuvlar = [] }: Props) {
+const BOSH_YOZUVLAR: FaoliyatYozuvi[] = [];
+
+function activityYozuvi(item: Activity): FaoliyatYozuvi {
+  return { id: item.id, turi: item.type === "TASK" ? "vazifa" : "ish", sarlavha: item.subject || "CRM faoliyati", matn: item.description || item.result || "", sana: item.dueAt || item.createdAt || new Date().toISOString() };
+}
+
+function commentYozuvi(item: Comment): FaoliyatYozuvi {
+  return { id: item.id, turi: "izoh", sarlavha: "Izoh", matn: item.text || "", sana: item.createdAt || new Date().toISOString() };
+}
+
+function chatYozuvi(item: ChatMessage, index: number): FaoliyatYozuvi {
+  return { id: item.id || `chat-${item.createdAt || index}`, turi: "xabar", sarlavha: item.direction === "IN" ? "Mijozdan xabar" : "Xabar yuborildi", matn: item.text || "", sana: item.createdAt || new Date().toISOString() };
+}
+
+export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, customerId }: Props) {
   const [faoliyatTab, setFaoliyatTab] = useState<FaoliyatTuri>("ish");
   const [sarlavha, setSarlavha] = useState("");
   const [tafsilot, setTafsilot] = useState("");
   const [sana, setSana] = useState(bugun());
   const [vaqt, setVaqt] = useState(hozirgiVaqt());
   const [yozuvlar, setYozuvlar] = useState<FaoliyatYozuvi[]>(boshlangichYozuvlar);
+  const [assigneeId, setAssigneeId] = useState("");
+  const [yuklanmoqda, setYuklanmoqda] = useState(false);
+  const [saqlanmoqda, setSaqlanmoqda] = useState(false);
+  const [xatolik, setXatolik] = useState("");
+
+  const yuklash = useCallback(async () => {
+    if (!customerId) { setYozuvlar(boshlangichYozuvlar); return; }
+    setYuklanmoqda(true); setXatolik("");
+    try {
+      const [activities, comments, chat, profile] = await Promise.all([
+        crmApi.activities({ customerId }),
+        crmApi.comments(customerId, { limit: 100 }),
+        crmApi.chatTarixi(customerId, { limit: 100 }),
+        profilApi.olish(),
+      ]);
+      setAssigneeId(profile.id);
+      setYozuvlar([
+        ...activities.map(activityYozuvi),
+        ...royxatniAjratish(comments).map(commentYozuvi),
+        ...royxatniAjratish(chat).map(chatYozuvi),
+        ...boshlangichYozuvlar,
+      ].sort((a,b) => new Date(b.sana).getTime() - new Date(a.sana).getTime()));
+    } catch (error) { setXatolik(getApiErrorMessage(error)); }
+    finally { setYuklanmoqda(false); }
+  }, [boshlangichYozuvlar, customerId]);
+
+  useEffect(() => { void yuklash(); }, [yuklash]);
 
   function tozalash() {
     setSarlavha("");
@@ -78,26 +123,27 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = [] }: Props) {
     setVaqt(hozirgiVaqt());
   }
 
-  function saqlash() {
+  async function saqlash() {
     const tozaSarlavha = sarlavha.trim();
     if (!tozaSarlavha) return;
-
+    if (!customerId) { setXatolik("CRM faoliyatini saqlash uchun real mijoz ID mavjud emas."); return; }
     const muddat = new Date(`${sana}T${vaqt || "00:00"}`);
-    setYozuvlar((joriy) => [
-      {
-        id: yangiId("fao"),
-        turi: faoliyatTab,
-        sarlavha: tozaSarlavha,
-        matn: tafsilot.trim(),
-        sana: Number.isNaN(muddat.getTime()) ? new Date().toISOString() : muddat.toISOString(),
-      },
-      ...joriy,
-    ]);
-    tozalash();
+    setSaqlanmoqda(true); setXatolik("");
+    try {
+      if (faoliyatTab === "izoh") await crmApi.commentYaratish(customerId, { text: tafsilot.trim() || tozaSarlavha });
+      else if (faoliyatTab === "xabar") await crmApi.chatXabarYuborish(customerId, tafsilot.trim() || tozaSarlavha);
+      else {
+        if (!assigneeId) throw new Error("Joriy mas’ul foydalanuvchi aniqlanmadi.");
+        await crmApi.activityYaratish({ type: faoliyatTab === "vazifa" ? "TASK" : "CALL", customerId, subject: tozaSarlavha, description: tafsilot.trim() || undefined, dueAt: Number.isNaN(muddat.getTime()) ? new Date().toISOString() : muddat.toISOString(), assigneeId });
+      }
+      tozalash(); await yuklash();
+    } catch (error) { setXatolik(getApiErrorMessage(error)); }
+    finally { setSaqlanmoqda(false); }
   }
 
   return (
     <div className="space-y-5">
+      {xatolik && <div className="rounded-2xl border border-red-100 bg-red-50 p-3 text-sm font-bold text-red-600">{xatolik}</div>}
       <section className="overflow-hidden rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur">
         <div className="flex flex-wrap items-center gap-2">
           {yozishTablari.map((tab) => (
@@ -179,11 +225,11 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = [] }: Props) {
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={saqlash}
-              disabled={!sarlavha.trim()}
+              onClick={() => void saqlash()}
+              disabled={!sarlavha.trim() || saqlanmoqda || !customerId}
               className="inline-flex h-10 items-center justify-center rounded-2xl bg-[#FF6A00] px-6 text-sm font-black uppercase text-white shadow-[0_12px_28px_rgba(255,106,0,.22)] transition hover:-translate-y-0.5 hover:bg-[#EA580C] disabled:cursor-not-allowed disabled:bg-orange-200 disabled:shadow-none disabled:hover:translate-y-0"
             >
-              Saqlash
+              {saqlanmoqda ? "Saqlanmoqda..." : "Saqlash"}
             </button>
             <button
               type="button"
@@ -203,6 +249,7 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = [] }: Props) {
       </div>
 
       <div className="space-y-4">
+        {yuklanmoqda && <p className="rounded-[22px] bg-white/70 p-6 text-center text-sm font-semibold text-slate-400">CRM ma’lumotlari yuklanmoqda...</p>}
         {yozuvlar.map((yozuv) => (
           <article
             key={yozuv.id}

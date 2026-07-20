@@ -1,12 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Briefcase, Building2, Phone, Trash2 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
-import FaoliyatPaneli, { type FaoliyatTuri, type FaoliyatYozuvi } from "./FaoliyatPaneli";
+import FaoliyatPaneli from "./FaoliyatPaneli";
+import { crmApi, royxatniAjratish } from "@/api/crmApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { InstagramIkonka, TelegramIkonka, WhatsappIkonka } from "./IjtimoiyIkonkalar";
 import TezkorPanel from "./TezkorPanel";
-import { SavdolarTab, TarixTab } from "./XaridorTablari";
-import XaridorTolovlariTab from "./XaridorTolovlariTab";
-import type { TarixYozuvi, Xaridor, XaridorKompaniyasi, XaridorSavdosi } from "./types";
+import { SavdolarTab, TarixTab, TolovlarTab } from "./XaridorTablari";
+import { timelineniTarixga, timelineniTolovga } from "./backendAdapters";
+import type { TarixYozuvi, Xaridor, XaridorKompaniyasi, XaridorSavdosi, XaridorTolovi } from "./types";
 import { kompaniyaNomi, sanaFormat, xaridorNomi } from "./yordamchilar";
 
 type Tab = "Ma'lumotlar" | "Savdolar" | "To'lovlar" | "Tarix";
@@ -17,7 +19,6 @@ type Props = {
   xaridor: Xaridor;
   kompaniyalar: XaridorKompaniyasi[];
   savdolar: XaridorSavdosi[];
-  tarix: TarixYozuvi[];
   onTahrirlash: () => void;
   onOchirish?: () => void;
   onYopish: () => void;
@@ -27,24 +28,29 @@ export default function XaridorTafsilotlariModal({
   xaridor,
   kompaniyalar,
   savdolar,
-  tarix,
   onTahrirlash,
   onOchirish,
   onYopish,
 }: Props) {
   const [faolTab, setFaolTab] = useState<Tab>("Ma'lumotlar");
+  const [xaridorTarixi, setXaridorTarixi] = useState<TarixYozuvi[]>([]);
+  const [tolovlar, setTolovlar] = useState<XaridorTolovi[]>([]);
+  const [xatolik, setXatolik] = useState("");
 
   const xaridorSavdolari = useMemo(
     () => savdolar.filter((savdo) => savdo.xaridorId === xaridor.id),
     [savdolar, xaridor.id]
   );
-  const xaridorTarixi = useMemo(
-    () =>
-      tarix
-        .filter((yozuv) => yozuv.xaridorId === xaridor.id)
-        .sort((a, b) => new Date(b.sana).getTime() - new Date(a.sana).getTime()),
-    [tarix, xaridor.id]
-  );
+  useEffect(() => {
+    let active = true;
+    void crmApi.timeline(xaridor.id, { limit: 100 }).then((response) => {
+      if (!active) return;
+      const items = royxatniAjratish(response);
+      setXaridorTarixi(items.map((item, index) => timelineniTarixga(xaridor.id, item, index)));
+      setTolovlar(items.map((item, index) => timelineniTolovga(xaridor.id, item, index)).filter((item): item is XaridorTolovi => Boolean(item)));
+    }).catch((error) => { if (active) setXatolik(getApiErrorMessage(error)); });
+    return () => { active = false; };
+  }, [xaridor.id]);
 
   return (
     <AppModal className="items-start justify-start bg-[rgba(54,22,8,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
@@ -103,17 +109,21 @@ export default function XaridorTafsilotlariModal({
               </nav>
             </header>
 
+            {xatolik && <div className="mx-9 mt-5 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">{xatolik}</div>}
+
             {faolTab === "Ma'lumotlar" && (
-              <MalumotlarTab xaridor={xaridor} kompaniyalar={kompaniyalar} tarix={xaridorTarixi} />
+              <MalumotlarTab xaridor={xaridor} kompaniyalar={kompaniyalar} />
             )}
             {faolTab === "Savdolar" && (
               <SavdolarTab
                 savdolar={xaridorSavdolari}
                 xaridorNomi={xaridorNomi(xaridor)}
                 xaridorOlish={() => xaridor}
+                kompaniyalar={kompaniyalar}
+                barchaSavdolar={savdolar}
               />
             )}
-            {faolTab === "To'lovlar" && <XaridorTolovlariTab xaridorId={xaridor.id} />}
+            {faolTab === "To'lovlar" && <TolovlarTab tolovlar={tolovlar} />}
             {faolTab === "Tarix" && <TarixTab tarix={xaridorTarixi} />}
           </div>
         </section>
@@ -125,21 +135,10 @@ export default function XaridorTafsilotlariModal({
 function MalumotlarTab({
   xaridor,
   kompaniyalar,
-  tarix,
 }: {
   xaridor: Xaridor;
   kompaniyalar: XaridorKompaniyasi[];
-  tarix: TarixYozuvi[];
 }) {
-  // Tarix yozuvlari faoliyat oqimiga aylantiriladi.
-  const faoliyatYozuvlari: FaoliyatYozuvi[] = tarix.map((yozuv) => ({
-    id: yozuv.id,
-    turi: tarixTuriga[yozuv.turi],
-    sarlavha: yozuv.sarlavha,
-    matn: yozuv.matn,
-    sana: yozuv.sana,
-  }));
-
   return (
     <div className="grid gap-6 px-9 py-7 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <div className="space-y-5">
@@ -207,18 +206,10 @@ function MalumotlarTab({
         </section>
       </div>
 
-      <FaoliyatPaneli boshlangichYozuvlar={faoliyatYozuvlari} />
+      <FaoliyatPaneli customerId={xaridor.id} />
     </div>
   );
 }
-
-// Tarix turini faoliyat paneli turiga moslash.
-const tarixTuriga: Record<TarixYozuvi["turi"], FaoliyatTuri> = {
-  savdo: "ish",
-  tolov: "tolov",
-  izoh: "izoh",
-  ozgarish: "ozgarish",
-};
 
 function Qator({
   icon,
