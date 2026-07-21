@@ -4,10 +4,12 @@ export type IjtimoiyTarmoqlar = {
   telegram: string;
   whatsapp: string;
   instagram: string;
+  website?: string;
 };
 
 export type Xaridor = {
   id: string;
+  partnerId?: string;
   ism: string;
   familiya: string;
   telefonlar: string[]; // kamida bitta, formada yana qo'shish mumkin
@@ -19,10 +21,12 @@ export type Xaridor = {
   yaratganMasul: string; // yaratgan mas'ul shaxs
   yaratilganSana: string;
   ozgartirilganSana: string; // oxirgi o'zgartirilgan sana
+  customFields?: Record<string, unknown>;
 };
 
 export type XaridorKompaniyasi = {
   id: string;
+  partnerId?: string;
   nomi: string;
   stir: string;
   telefon: string;
@@ -34,10 +38,12 @@ export type XaridorKompaniyasi = {
   yaratilganSana: string;
   ozgartirilganSana: string;
   ozgartirganMasul: string; // o'zgartirgan mas'ul shaxs
+  customFields?: Record<string, unknown>;
 };
 
 export type YetkazibBeruvchi = {
   id: string;
+  partnerId?: string;
   nomi: string;
   stir: string;
   telefon: string;
@@ -49,6 +55,7 @@ export type YetkazibBeruvchi = {
   yaratilganSana: string;
   ozgartirilganSana: string;
   ozgartirganMasul: string;
+  customFields?: Record<string, unknown>;
 };
 
 export type Xodim = {

@@ -16,6 +16,7 @@ type Props = {
   savdo: XaridorSavdosi;
   xaridorNomi: string;
   customerId?: string;
+  partnerId?: string;
   onYopish: () => void;
 };
 
@@ -24,7 +25,7 @@ type Tab = (typeof tablar)[number];
 
 // Savdolar jadvalidagi qatorni bosganda ochiladigan savdo tafsilotlari oynasi.
 // Savdo modulidagi SotuvTafsilotlariModal ko'rinishida, mock-first (backendsiz).
-export default function XaridorSavdoModal({ savdo, xaridorNomi, customerId, onYopish }: Props) {
+export default function XaridorSavdoModal({ savdo, xaridorNomi, customerId, partnerId, onYopish }: Props) {
   const [faolTab, setFaolTab] = useState<Tab>("Umumiy");
 
   const qarzdorlik = savdo.summa - savdo.tolangan;
@@ -149,7 +150,7 @@ export default function XaridorSavdoModal({ savdo, xaridorNomi, customerId, onYo
                 <TimelineRail />
 
                 <main className="space-y-6">
-                  <FaoliyatPaneli customerId={customerId} />
+                  <FaoliyatPaneli partnerId={partnerId} customerId={customerId} />
                   <Divider label="Bugun" />
                   <FeedCard
                     title="Hisoblash rejimi o'zgartirildi"

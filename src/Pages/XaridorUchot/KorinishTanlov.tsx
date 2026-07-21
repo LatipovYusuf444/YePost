@@ -39,7 +39,7 @@ export default function KorinishTanlov({
             onClick={() => setOchiq(false)}
             className="fixed inset-0 z-40 cursor-default"
           />
-          <div className="absolute right-0 z-50 mt-2 w-52 overflow-hidden rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_50px_rgba(92,38,8,.16)]">
+          <div className="absolute right-0 z-50 mt-2 w-48 overflow-hidden rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_50px_rgba(92,38,8,.16)]">
             {variantlar.map(({ kalit, ikonka: Ikonka, nom }) => (
               <button
                 key={kalit}
@@ -48,7 +48,7 @@ export default function KorinishTanlov({
                   onChange(kalit);
                   setOchiq(false);
                 }}
-                className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
+                className={`flex min-h-9 w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-bold transition ${
                   joriy.kalit === kalit
                     ? "bg-[#FF6A00] text-white"
                     : "text-slate-600 hover:bg-orange-50 hover:text-[#FF6A00]"

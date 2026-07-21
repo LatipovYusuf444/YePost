@@ -95,6 +95,7 @@ export default function KompaniyaModal({
     try {
       await onSaqlash({
       id: boshlangich?.id ?? yangiId("kmp"),
+      partnerId: boshlangich?.partnerId,
       nomi: nomi.trim(),
       stir: stir.trim(),
       telefon: telefon.trim(),
@@ -105,11 +106,13 @@ export default function KompaniyaModal({
         telegram: telegram.trim(),
         whatsapp: whatsapp.trim(),
         instagram: instagram.trim(),
+        website: boshlangich?.ijtimoiy.website ?? "",
       },
       yaratganMasul: boshlangich?.yaratganMasul ?? "Administrator",
       yaratilganSana,
       ozgartirilganSana: bugun(),
       ozgartirganMasul: "Administrator",
+      customFields: boshlangich?.customFields ?? {},
       });
     } catch (error) {
       setXato(getApiErrorMessage(error));
@@ -290,7 +293,7 @@ export default function KompaniyaModal({
                     </section>
                   </div>
 
-                  <FaoliyatPaneli />
+                  <FaoliyatPaneli partnerId={boshlangich?.partnerId} />
                 </div>
               </div>
             )}

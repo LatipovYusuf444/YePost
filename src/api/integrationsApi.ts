@@ -1,4 +1,5 @@
 import apiClient from "./axios";
+import { apiData, type ApiEnvelope } from "./response";
 
 export type TelegramIntegratsiya = {
   botToken?: string | null;
@@ -28,11 +29,11 @@ export type PrinterIntegratsiyaSaqlash = {
 
 export const integratsiyalarApi = {
   telegramOlish: async () =>
-    (await apiClient.get<TelegramIntegratsiya>("/integrations/telegram")).data,
+    apiData((await apiClient.get<TelegramIntegratsiya | ApiEnvelope<TelegramIntegratsiya>>("/integrations/telegram")).data),
   telegramYangilash: async (data: TelegramIntegratsiyaSaqlash) =>
-    (await apiClient.patch<TelegramIntegratsiya>("/integrations/telegram", data)).data,
+    apiData((await apiClient.patch<TelegramIntegratsiya | ApiEnvelope<TelegramIntegratsiya>>("/integrations/telegram", data)).data),
   printerOlish: async () =>
-    (await apiClient.get<PrinterIntegratsiya>("/integrations/printer")).data,
+    apiData((await apiClient.get<PrinterIntegratsiya | ApiEnvelope<PrinterIntegratsiya>>("/integrations/printer")).data),
   printerYangilash: async (data: PrinterIntegratsiyaSaqlash) =>
-    (await apiClient.patch<PrinterIntegratsiya>("/integrations/printer", data)).data,
+    apiData((await apiClient.patch<PrinterIntegratsiya | ApiEnvelope<PrinterIntegratsiya>>("/integrations/printer", data)).data),
 };

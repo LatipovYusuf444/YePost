@@ -43,14 +43,17 @@ export default function XaridorTafsilotlariModal({
   );
   useEffect(() => {
     let active = true;
-    void crmApi.timeline(xaridor.id, { limit: 100 }).then((response) => {
+    const request = xaridor.partnerId
+      ? crmApi.partnerTimeline(xaridor.partnerId, { limit: 100 })
+      : crmApi.timeline(xaridor.id, { limit: 100 });
+    void request.then((response) => {
       if (!active) return;
       const items = royxatniAjratish(response);
       setXaridorTarixi(items.map((item, index) => timelineniTarixga(xaridor.id, item, index)));
       setTolovlar(items.map((item, index) => timelineniTolovga(xaridor.id, item, index)).filter((item): item is XaridorTolovi => Boolean(item)));
     }).catch((error) => { if (active) setXatolik(getApiErrorMessage(error)); });
     return () => { active = false; };
-  }, [xaridor.id]);
+  }, [xaridor.id, xaridor.partnerId]);
 
   return (
     <AppModal className="items-start justify-start bg-[rgba(54,22,8,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
@@ -206,7 +209,7 @@ function MalumotlarTab({
         </section>
       </div>
 
-      <FaoliyatPaneli customerId={xaridor.id} />
+      <FaoliyatPaneli partnerId={xaridor.partnerId} customerId={xaridor.id} />
     </div>
   );
 }

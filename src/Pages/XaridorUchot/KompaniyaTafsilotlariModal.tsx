@@ -57,18 +57,21 @@ export default function KompaniyaTafsilotlariModal({
   );
   useEffect(() => {
     const ids = [...xaridorIdlar];
-    if (ids.length === 0) {
+    if (!kompaniya.partnerId && ids.length === 0) {
       setBackendTolovlar([]);
       setBackendTarix([]);
       return;
     }
     let faol = true;
     setXatolik("");
-    void Promise.all(ids.map(async (customerId) => {
-      const items = royxatniAjratish(await crmApi.timeline(customerId, { limit: 100 }));
+    const timelineSorovlari = kompaniya.partnerId
+      ? [{ id: kompaniya.id, request: crmApi.partnerTimeline(kompaniya.partnerId, { limit: 100 }) }]
+      : ids.map((customerId) => ({ id: customerId, request: crmApi.timeline(customerId, { limit: 100 }) }));
+    void Promise.all(timelineSorovlari.map(async ({ id, request }) => {
+      const items = royxatniAjratish(await request);
       return {
-        tarix: items.map((item, index) => timelineniTarixga(customerId, item, index)),
-        tolovlar: items.map((item, index) => timelineniTolovga(customerId, item, index)).filter((item): item is XaridorTolovi => item !== null),
+        tarix: items.map((item, index) => timelineniTarixga(id, item, index)),
+        tolovlar: items.map((item, index) => timelineniTolovga(id, item, index)).filter((item): item is XaridorTolovi => item !== null),
       };
     })).then((results) => {
       if (!faol) return;
@@ -78,17 +81,19 @@ export default function KompaniyaTafsilotlariModal({
       if (faol) setXatolik(getApiErrorMessage(error));
     });
     return () => { faol = false; };
-  }, [xaridorIdlar]);
+  }, [xaridorIdlar, kompaniya.id, kompaniya.partnerId]);
   const kompaniyaTolovlari = useMemo(
-    () => [...tolovlar, ...backendTolovlar].filter((t) => xaridorIdlar.has(t.xaridorId)),
-    [tolovlar, backendTolovlar, xaridorIdlar]
+    () => kompaniya.partnerId
+      ? [...tolovlar, ...backendTolovlar]
+      : [...tolovlar, ...backendTolovlar].filter((t) => xaridorIdlar.has(t.xaridorId)),
+    [tolovlar, backendTolovlar, xaridorIdlar, kompaniya.partnerId]
   );
   const kompaniyaTarixi = useMemo(
     () =>
       [...tarix, ...backendTarix]
-        .filter((y) => xaridorIdlar.has(y.xaridorId))
+        .filter((y) => kompaniya.partnerId || xaridorIdlar.has(y.xaridorId))
         .sort((a, b) => new Date(b.sana).getTime() - new Date(a.sana).getTime()),
-    [tarix, backendTarix, xaridorIdlar]
+    [tarix, backendTarix, xaridorIdlar, kompaniya.partnerId]
   );
 
   function savdoXaridori(savdo: XaridorSavdosi) {
@@ -179,7 +184,7 @@ export default function KompaniyaTafsilotlariModal({
                   </dl>
                 </section>
 
-                <FaoliyatPaneli />
+                <FaoliyatPaneli partnerId={kompaniya.partnerId} />
               </div>
             )}
             {xatolik && <div className="mx-9 mt-5 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">{xatolik}</div>}

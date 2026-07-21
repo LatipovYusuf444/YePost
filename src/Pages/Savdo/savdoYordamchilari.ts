@@ -191,3 +191,4 @@ export const tolovTuriMatni: Record<TolovTuri, string> = {
   BANK: "Bank o'tkazmasi",
   DEBT: "Qarz",
 };
+

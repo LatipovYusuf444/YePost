@@ -39,16 +39,19 @@ export function Maydon({ label, children }: { label: string; children: ReactNode
 export function Switch({
   yoniq,
   onChange,
+  disabled = false,
 }: {
   yoniq: boolean;
   onChange: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onChange}
+      disabled={disabled}
       aria-pressed={yoniq}
-      className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition ${
+      className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50 ${
         yoniq ? "bg-[#FF6A00]" : "bg-slate-200"
       }`}
     >

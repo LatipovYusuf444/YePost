@@ -105,6 +105,7 @@ export default function XaridorModal({
     try {
       await onSaqlash({
       id: boshlangich?.id ?? yangiId("xrd"),
+      partnerId: boshlangich?.partnerId,
       ism: ism.trim(),
       familiya: familiya.trim(),
       telefonlar: tozaTelefonlar,
@@ -120,6 +121,7 @@ export default function XaridorModal({
       yaratganMasul: boshlangich?.yaratganMasul ?? "Administrator",
       yaratilganSana,
       ozgartirilganSana: bugun(),
+      customFields: boshlangich?.customFields ?? {},
       });
     } catch (error) {
       setXato(getApiErrorMessage(error));
@@ -329,7 +331,7 @@ export default function XaridorModal({
                 </section>
               </div>
 
-              <FaoliyatPaneli customerId={boshlangich?.id} />
+              <FaoliyatPaneli partnerId={boshlangich?.partnerId} customerId={boshlangich?.id} />
             </div>
             </div>
             )}

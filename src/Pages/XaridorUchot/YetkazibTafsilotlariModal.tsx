@@ -1,11 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, Hash, Phone, Trash2, UserRound } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import { crmApi, royxatniAjratish } from "@/api/crmApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import FaoliyatPaneli from "./FaoliyatPaneli";
 import { InstagramIkonka, TelegramIkonka, WhatsappIkonka } from "./IjtimoiyIkonkalar";
 import TezkorPanel from "./TezkorPanel";
 import { KirimTab, TarixTab, TolovlarTab } from "./XaridorTablari";
-import type { IjtimoiyTarmoqlar, Kirim, YetkazibBeruvchi } from "./types";
+import { timelineniTarixga, timelineniTolovga } from "./backendAdapters";
+import type { IjtimoiyTarmoqlar, Kirim, TarixYozuvi, XaridorTolovi, YetkazibBeruvchi } from "./types";
 import { sanaFormat } from "./yordamchilar";
 
 type Tab = "Ma'lumotlar" | "Kirim" | "To'lovlar" | "Tarix";
@@ -27,11 +30,33 @@ export default function YetkazibTafsilotlariModal({
   onYopish,
 }: Props) {
   const [faolTab, setFaolTab] = useState<Tab>("Ma'lumotlar");
+  const [tarix, setTarix] = useState<TarixYozuvi[]>([]);
+  const [tolovlar, setTolovlar] = useState<XaridorTolovi[]>([]);
+  const [xatolik, setXatolik] = useState("");
 
   const kirimlar = useMemo(
     () => barchaKirimlar.filter((kirim) => kirim.yetkazibBeruvchiId === beruvchi.id),
     [beruvchi.id, barchaKirimlar]
   );
+
+  useEffect(() => {
+    if (!beruvchi.partnerId) {
+      setTarix([]);
+      setTolovlar([]);
+      return;
+    }
+    let faol = true;
+    setXatolik("");
+    void crmApi.partnerTimeline(beruvchi.partnerId, { limit: 100 }).then((response) => {
+      if (!faol) return;
+      const items = royxatniAjratish(response);
+      setTarix(items.map((item, index) => timelineniTarixga(beruvchi.id, item, index)));
+      setTolovlar(items.map((item, index) => timelineniTolovga(beruvchi.id, item, index)).filter((item): item is XaridorTolovi => item !== null));
+    }).catch((error) => {
+      if (faol) setXatolik(getApiErrorMessage(error));
+    });
+    return () => { faol = false; };
+  }, [beruvchi.id, beruvchi.partnerId]);
 
   return (
     <AppModal className="items-start justify-start bg-[rgba(54,22,8,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
@@ -116,12 +141,13 @@ export default function YetkazibTafsilotlariModal({
                   </dl>
                 </section>
 
-                <FaoliyatPaneli />
+                <FaoliyatPaneli partnerId={beruvchi.partnerId} />
               </div>
             )}
+            {xatolik && <div className="mx-9 mt-5 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">{xatolik}</div>}
             {faolTab === "Kirim" && <KirimTab kirimlar={kirimlar} beruvchiNomi={beruvchi.nomi} />}
-            {faolTab === "To'lovlar" && <TolovlarTab tolovlar={[]} />}
-            {faolTab === "Tarix" && <TarixTab tarix={[]} />}
+            {faolTab === "To'lovlar" && <TolovlarTab tolovlar={tolovlar} />}
+            {faolTab === "Tarix" && <TarixTab tarix={tarix} />}
           </div>
         </section>
       </div>

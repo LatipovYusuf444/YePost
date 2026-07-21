@@ -16,6 +16,14 @@ type Props = {
   faolTab?: Tab;
 };
 
+function customFieldsniTekshir(customFields: Record<string, unknown> | undefined) {
+  const value = customFields ?? {};
+  if (new TextEncoder().encode(JSON.stringify(value)).byteLength > 2048) {
+    throw new Error("Maxsus maydonlar hajmi 2KB dan oshmasligi kerak.");
+  }
+  return value;
+}
+
 export default function XaridorUchot({ faolTab = "xaridorlar" }: Props) {
   const [xaridorlar, setXaridorlar] = useState<Xaridor[]>([]);
   const [kompaniyalar, setKompaniyalar] = useState<XaridorKompaniyasi[]>([]);
@@ -57,6 +65,13 @@ export default function XaridorUchot({ faolTab = "xaridorlar" }: Props) {
   async function xaridorSaqlash(xaridor: Xaridor) {
     setAmalBajarilmoqda(true); setXatolik("");
     try {
+      const customFields = customFieldsniTekshir({
+        ...(xaridor.customFields ?? {}),
+        position: xaridor.lavozim.trim() || undefined,
+        whatsapp: xaridor.ijtimoiy.whatsapp.trim() || undefined,
+        instagram: xaridor.ijtimoiy.instagram.trim() || undefined,
+        extraPhones: xaridor.telefonlar.slice(1).map((item) => item.trim()).filter(Boolean),
+      });
       const payload = {
         firstName: xaridor.ism.trim(),
         lastName: xaridor.familiya.trim(),
@@ -64,6 +79,7 @@ export default function XaridorUchot({ faolTab = "xaridorlar" }: Props) {
         address: xaridor.manzil.trim() || undefined,
         telegramId: xaridor.ijtimoiy.telegram.trim() || undefined,
         companyId: xaridor.kompaniyaId || undefined,
+        customFields,
       };
       const mavjud = xaridorlar.some((item) => item.id === xaridor.id);
       const saved = mavjud ? await mijozlarApi.yangilash(xaridor.id, payload) : await mijozlarApi.yaratish(payload);
@@ -86,7 +102,20 @@ export default function XaridorUchot({ faolTab = "xaridorlar" }: Props) {
   async function kompaniyaSaqlash(kompaniya: XaridorKompaniyasi) {
     setAmalBajarilmoqda(true); setXatolik("");
     try {
-      const payload = { name: kompaniya.nomi.trim(), inn: kompaniya.stir.trim() || undefined, phone: kompaniya.telefon.trim() || undefined };
+      const payload = {
+        name: kompaniya.nomi.trim(),
+        inn: kompaniya.stir.trim() || undefined,
+        phone: kompaniya.telefon.trim() || undefined,
+        contactPerson: kompaniya.aloqaShaxsi.trim() || undefined,
+        position: kompaniya.lavozim.trim() || undefined,
+        socials: {
+          telegram: kompaniya.ijtimoiy.telegram.trim() || undefined,
+          whatsapp: kompaniya.ijtimoiy.whatsapp.trim() || undefined,
+          instagram: kompaniya.ijtimoiy.instagram.trim() || undefined,
+          website: kompaniya.ijtimoiy.website?.trim() || undefined,
+        },
+        customFields: customFieldsniTekshir(kompaniya.customFields),
+      };
       const mavjud = kompaniyalar.some((item) => item.id === kompaniya.id);
       const saved = mavjud ? await mijozKompaniyalariApi.yangilash(kompaniya.id, payload) : await mijozKompaniyalariApi.yaratish(payload);
       const ui = kompaniyaniUiGa(saved);
@@ -106,7 +135,20 @@ export default function XaridorUchot({ faolTab = "xaridorlar" }: Props) {
   async function yetkazibBeruvchiSaqlash(beruvchi: YetkazibBeruvchi) {
     setAmalBajarilmoqda(true); setXatolik("");
     try {
-      const payload = { name: beruvchi.nomi.trim(), phone: beruvchi.telefon.trim() || undefined };
+      const payload = {
+        name: beruvchi.nomi.trim(),
+        inn: beruvchi.stir.trim() || undefined,
+        phone: beruvchi.telefon.trim() || undefined,
+        contactPerson: beruvchi.aloqaShaxsi.trim() || undefined,
+        position: beruvchi.lavozim.trim() || undefined,
+        socials: {
+          telegram: beruvchi.ijtimoiy.telegram.trim() || undefined,
+          whatsapp: beruvchi.ijtimoiy.whatsapp.trim() || undefined,
+          instagram: beruvchi.ijtimoiy.instagram.trim() || undefined,
+          website: beruvchi.ijtimoiy.website?.trim() || undefined,
+        },
+        customFields: customFieldsniTekshir(beruvchi.customFields),
+      };
       const mavjud = yetkazibBeruvchilar.some((item) => item.id === beruvchi.id);
       const saved = mavjud ? await yetkazibBeruvchilarApi.yangilash(beruvchi.id, payload) : await yetkazibBeruvchilarApi.yaratish(payload);
       const ui = yetkazibBeruvchiniUiGa(saved);

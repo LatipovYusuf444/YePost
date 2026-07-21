@@ -34,7 +34,7 @@ const bolimlar: { id: SozlamaBolim; nom: string; icon: typeof UserRound; faqatDi
     { id: "bildirishnoma", nom: "Bildirishnomalar", icon: Bell },
   ];
 
-// Sozlamalar uchoti — mock modul (backendsiz). Chapda bo'limlar, o'ngda tanlangani.
+// Sozlamalar uchoti: mavjud bo'limlar real backend API'lariga ulangan.
 export default function SozlamalarUchot() {
   const [bolim, setBolim] = useState<SozlamaBolim>("profil");
 

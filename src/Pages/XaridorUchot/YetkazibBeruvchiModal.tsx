@@ -51,6 +51,7 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
     try {
       await onSaqlash({
       id: boshlangich?.id ?? yangiId("ytk"),
+      partnerId: boshlangich?.partnerId,
       nomi: nomi.trim(),
       stir: stir.trim(),
       telefon: telefon.trim(),
@@ -61,11 +62,13 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
         telegram: telegram.trim(),
         whatsapp: whatsapp.trim(),
         instagram: instagram.trim(),
+        website: boshlangich?.ijtimoiy.website ?? "",
       },
       yaratganMasul: boshlangich?.yaratganMasul ?? "Administrator",
       yaratilganSana,
       ozgartirilganSana: bugun(),
       ozgartirganMasul: "Administrator",
+      customFields: boshlangich?.customFields ?? {},
       });
     } catch (error) {
       setXato(getApiErrorMessage(error));
@@ -245,7 +248,7 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
                     </section>
                   </div>
 
-                  <FaoliyatPaneli />
+                  <FaoliyatPaneli partnerId={boshlangich?.partnerId} />
                 </div>
               </div>
             )}

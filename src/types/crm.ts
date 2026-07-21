@@ -116,6 +116,7 @@ export type Activity = {
 
 export type ActivityFilter = {
   customerId?: string;
+  partnerId?: string;
   assigneeId?: string;
   status?: ActivityHolati;
   from?: string;
@@ -124,12 +125,13 @@ export type ActivityFilter = {
 
 export type ActivitySaqlash = {
   type: ActivityTuri;
-  customerId: string;
+  customerId?: string;
+  partnerId?: string;
   subject: string;
   description?: string;
   dueAt: string;
   remindAt?: string;
-  assigneeId: string;
+  assigneeId?: string;
 };
 
 export type ActivityYangilash = Partial<ActivitySaqlash>;
@@ -137,6 +139,7 @@ export type ActivityYangilash = Partial<ActivitySaqlash>;
 export type Comment = {
   id: string;
   customerId?: string;
+  partnerId?: string;
   text?: string;
   pinned?: boolean;
   isPinned?: boolean;
@@ -152,6 +155,7 @@ export type CommentSaqlash = {
   text: string;
   mentionUserIds?: string[];
   attachmentIds?: string[];
+  attachments?: unknown[];
 };
 
 export type Attachment = {
@@ -167,6 +171,7 @@ export type Attachment = {
 export type ChatMessage = {
   id?: string;
   customerId?: string;
+  partnerId?: string;
   text?: string;
   direction?: "IN" | "OUT" | string;
   createdAt?: string;
@@ -177,6 +182,7 @@ export type ChatMessage = {
 export type ChatThread = {
   id: string;
   customerId?: string;
+  partnerId?: string;
   customer?: unknown;
   lastMessage?: ChatMessage;
   unreadCount?: number;

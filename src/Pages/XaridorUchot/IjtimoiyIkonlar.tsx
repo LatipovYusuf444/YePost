@@ -72,12 +72,12 @@ export default function IjtimoiyIkonlar({ ijtimoiy }: { ijtimoiy: IjtimoiyTarmoq
     }
   }
 
-  const faolLink = faol ? tarmoqLink(faol, ijtimoiy[faol]) : "";
+  const faolLink = faol ? tarmoqLink(faol, ijtimoiy[faol] ?? "") : "";
 
   return (
     <span className="inline-flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
       {konfig.map((t) => {
-        const qiymat = ijtimoiy[t.kalit].trim();
+        const qiymat = (ijtimoiy[t.kalit] ?? "").trim();
         const link = qiymat ? tarmoqLink(t.kalit, qiymat) : "";
         return (
           <button

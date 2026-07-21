@@ -52,7 +52,7 @@ export default function IjtimoiyTanlov({
 
       <div className="flex items-center gap-2">
         {tarmoqlar.map((tarmoq) => {
-          const toldirilgan = Boolean(qiymatlar[tarmoq.kalit].trim());
+          const toldirilgan = Boolean((qiymatlar[tarmoq.kalit] ?? "").trim());
           const ochiq = faol === tarmoq.kalit;
           return (
             <button
@@ -78,7 +78,7 @@ export default function IjtimoiyTanlov({
         <input
           key={tanlangan.kalit}
           autoFocus
-          value={qiymatlar[tanlangan.kalit]}
+          value={qiymatlar[tanlangan.kalit] ?? ""}
           onChange={(event) => onChange(tanlangan.kalit, event.target.value)}
           placeholder={`${tanlangan.nom}: ${tanlangan.placeholder}`}
           className={maydonKlass}

@@ -122,6 +122,7 @@ export function SavdolarTab({
           savdo={korilayotganSavdo}
           xaridorNomi={nomOlish(korilayotganSavdo)}
           customerId={korilayotganSavdo.xaridorId}
+          partnerId={xaridorOlish?.(korilayotganSavdo)?.partnerId}
           onYopish={() => setKorilayotganSavdo(null)}
         />
       )}

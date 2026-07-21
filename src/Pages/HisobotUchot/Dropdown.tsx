@@ -42,7 +42,7 @@ export default function Dropdown({
         </button>
 
         {open && (
-          <div className="absolute left-0 right-0 z-30 mt-2 max-h-64 overflow-auto rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_50px_rgba(92,38,8,.16)]">
+          <div className="absolute left-0 right-0 z-30 mt-2 max-h-52 overflow-auto rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_50px_rgba(92,38,8,.16)]">
             {options.map((o) => (
               <button
                 key={o.value}
@@ -51,7 +51,7 @@ export default function Dropdown({
                   onChange(o.value);
                   setOpen(false);
                 }}
-                className={`block w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${
+                className={`block min-h-9 w-full rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${
                   o.value === value ? "bg-orange-50 text-orange-600" : "text-gray-700 hover:bg-orange-50 hover:text-orange-600"
                 }`}
               >

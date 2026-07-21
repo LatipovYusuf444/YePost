@@ -70,7 +70,7 @@ export default function Tanlov({
               </div>
             )}
 
-            <div className="max-h-56 overflow-y-auto">
+            <div className="max-h-52 overflow-y-auto">
               {korinadigan.map((v) => {
                 const tanlangan = v.value === qiymat;
                 return (
@@ -81,7 +81,7 @@ export default function Tanlov({
                       onChange(v.value);
                       yopish();
                     }}
-                    className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${
+                    className={`flex min-h-9 w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${
                       tanlangan
                         ? "bg-orange-50 text-[#FF6A00]"
                         : "text-slate-600 hover:bg-orange-50 hover:text-[#FF6A00]"

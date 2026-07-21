@@ -74,18 +74,17 @@ export default function SavdoSelect({
     const rect = buttonRef.current.getBoundingClientRect();
     const gap = 8;
     const viewportPadding = 12;
-    const renderedDropdownWidth = dropdownRef.current?.getBoundingClientRect().width ?? 0;
-    const dropdownWidth = Math.min(
-      Math.max(rect.width, renderedDropdownWidth),
-      window.innerWidth - viewportPadding * 2
-    );
+    // Portal birinchi marta style'siz render bo'lganda uning auto-width'i butun
+    // viewportgacha cho'zilishi mumkin. O'sha o'lchamni qayta ishlatish dropdownni
+    // ekran bo'ylab yoyib yuborardi. Menyu har doim trigger kengligida qoladi.
+    const dropdownWidth = Math.min(rect.width, window.innerWidth - viewportPadding * 2);
     const belowSpace = window.innerHeight - rect.bottom - gap - viewportPadding;
     const aboveSpace = rect.top - gap - viewportPadding;
-    const preferredHeight = Math.min(240, options.length * 40 + 8);
+    const preferredHeight = Math.min(224, options.length * 40 + 8);
     const opensUp = belowSpace < preferredHeight && aboveSpace > belowSpace;
     const maxHeight = Math.max(
       112,
-      Math.min(240, opensUp ? aboveSpace : belowSpace)
+      Math.min(224, opensUp ? aboveSpace : belowSpace)
     );
     const left = Math.min(
       Math.max(viewportPadding, rect.left),
@@ -97,6 +96,7 @@ export default function SavdoSelect({
       left,
       top: opensUp ? Math.max(viewportPadding, rect.top - gap - maxHeight) : rect.bottom + gap,
       width: dropdownWidth,
+      minWidth: 0,
       maxWidth: `calc(100vw - ${viewportPadding * 2}px)`,
       maxHeight,
     });
@@ -143,7 +143,7 @@ export default function SavdoSelect({
       className={cn(
         portal
           ? "z-[100010] flex flex-col overflow-hidden rounded-xl border border-orange-100 bg-white shadow-[0_18px_44px_rgba(15,23,42,.18)] ring-1 ring-white/70"
-          : "absolute left-0 right-0 z-[80] mt-2 flex max-h-60 flex-col overflow-hidden rounded-xl border border-orange-100 bg-white shadow-[0_18px_44px_rgba(15,23,42,.14)] ring-1 ring-white/70",
+          : "absolute left-0 right-0 z-[80] mt-2 flex max-h-56 flex-col overflow-hidden rounded-xl border border-orange-100 bg-white shadow-[0_18px_44px_rgba(15,23,42,.14)] ring-1 ring-white/70",
         dropdownClassName
       )}
     >

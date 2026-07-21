@@ -12,7 +12,6 @@ import type {
   Kirim,
 } from "./types";
 
-const boshIjtimoiy = { telegram: "", whatsapp: "", instagram: "" };
 const raqam = (value: unknown) => Number(value ?? 0) || 0;
 type NomliLookup = { id: string; name?: string; fullName?: string; username?: string };
 type HujjatLookup = { omborlar?: NomliLookup[]; masullar?: NomliLookup[] };
@@ -22,58 +21,78 @@ const lookupNomi = (items: NomliLookup[] | undefined, id: string | undefined) =>
 };
 
 export function mijozniUiGa(item: Mijoz): Xaridor {
-  const custom = item.customFields ?? {};
+  const custom = item.partner?.customFields ?? item.customFields ?? {};
+  const socials = item.socials ?? {};
+  const extraPhones = Array.isArray(custom.extraPhones)
+    ? custom.extraPhones.filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    : [];
   return {
     id: item.id,
+    partnerId: item.partner?.id,
     ism: item.firstName ?? "",
     familiya: item.lastName ?? "",
-    telefonlar: item.phone ? [item.phone] : [],
+    telefonlar: item.phone ? [item.phone, ...extraPhones] : extraPhones,
     ijtimoiy: {
-      telegram: item.telegramId ?? "",
-      whatsapp: "",
-      instagram: "",
+      telegram: socials.telegram ?? item.telegramId ?? "",
+      whatsapp: socials.whatsapp ?? (typeof custom.whatsapp === "string" ? custom.whatsapp : ""),
+      instagram: socials.instagram ?? (typeof custom.instagram === "string" ? custom.instagram : ""),
     },
     manzil: item.address ?? "",
     kompaniyaId: item.companyId ?? "",
     lavozim: typeof custom.position === "string" ? custom.position : "",
     balans: raqam(item.balance),
-    yaratganMasul: "Tizim",
-    yaratilganSana: item.createdAt ?? "",
-    ozgartirilganSana: item.updatedAt ?? item.createdAt ?? "",
+    yaratganMasul: item.partner?.createdBy?.fullName || "Tizim",
+    yaratilganSana: item.partner?.createdAt ?? item.createdAt ?? "",
+    ozgartirilganSana: item.partner?.updatedAt ?? item.updatedAt ?? item.createdAt ?? "",
+    customFields: custom,
   };
 }
 
 export function kompaniyaniUiGa(item: MijozKompaniyasi): UiKompaniya {
   return {
     id: item.id,
+    partnerId: item.partner?.id,
     nomi: item.name,
     stir: item.inn ?? "",
     telefon: item.phone ?? "",
-    aloqaShaxsi: "",
+    aloqaShaxsi: item.contactPerson ?? "",
     aloqaTelefoni: "",
-    lavozim: "",
-    ijtimoiy: boshIjtimoiy,
-    yaratganMasul: "Tizim",
-    yaratilganSana: item.createdAt ?? "",
-    ozgartirilganSana: item.updatedAt ?? item.createdAt ?? "",
-    ozgartirganMasul: "Tizim",
+    lavozim: item.position ?? "",
+    ijtimoiy: {
+      telegram: item.socials?.telegram ?? "",
+      whatsapp: item.socials?.whatsapp ?? "",
+      instagram: item.socials?.instagram ?? "",
+      website: item.socials?.website ?? "",
+    },
+    yaratganMasul: item.partner?.createdBy?.fullName || "Tizim",
+    yaratilganSana: item.partner?.createdAt ?? item.createdAt ?? "",
+    ozgartirilganSana: item.partner?.updatedAt ?? item.updatedAt ?? item.createdAt ?? "",
+    ozgartirganMasul: item.partner?.updatedBy?.fullName || item.partner?.createdBy?.fullName || "Tizim",
+    customFields: item.partner?.customFields ?? {},
   };
 }
 
 export function yetkazibBeruvchiniUiGa(item: YetkazibBeruvchi): UiYetkazibBeruvchi {
   return {
     id: item.id,
+    partnerId: item.partner?.id,
     nomi: item.name,
-    stir: "",
+    stir: item.inn ?? "",
     telefon: item.phone ?? "",
-    aloqaShaxsi: "",
+    aloqaShaxsi: item.contactPerson ?? "",
     aloqaTelefoni: "",
-    lavozim: "",
-    ijtimoiy: boshIjtimoiy,
-    yaratganMasul: "Tizim",
-    yaratilganSana: item.createdAt ?? "",
-    ozgartirilganSana: item.updatedAt ?? item.createdAt ?? "",
-    ozgartirganMasul: "Tizim",
+    lavozim: item.position ?? "",
+    ijtimoiy: {
+      telegram: item.socials?.telegram ?? "",
+      whatsapp: item.socials?.whatsapp ?? "",
+      instagram: item.socials?.instagram ?? "",
+      website: item.socials?.website ?? "",
+    },
+    yaratganMasul: item.partner?.createdBy?.fullName || "Tizim",
+    yaratilganSana: item.partner?.createdAt ?? item.createdAt ?? "",
+    ozgartirilganSana: item.partner?.updatedAt ?? item.updatedAt ?? item.createdAt ?? "",
+    ozgartirganMasul: item.partner?.updatedBy?.fullName || item.partner?.createdBy?.fullName || "Tizim",
+    customFields: item.partner?.customFields ?? {},
   };
 }
 

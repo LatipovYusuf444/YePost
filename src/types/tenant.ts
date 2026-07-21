@@ -6,6 +6,7 @@ export type JoriyFoydalanuvchi = {
   branchId?: string | null;
   username: string;
   fullName?: string | null;
+  phone?: string | null;
   role: FoydalanuvchiRoli | string;
   isActive?: boolean;
   telegramId?: string | null;
