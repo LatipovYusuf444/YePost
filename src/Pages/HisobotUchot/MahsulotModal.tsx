@@ -1,13 +1,13 @@
-import { useRef, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import { ChevronDown, ImagePlus, Plus, X } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
-import { mockKategoriyalar } from "./mockData";
+import { birliklarApi, mahsulotlarApi, mediaApi, modifikatsiyalarApi } from "@/api/catalogApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import type { Mahsulot, MahsulotModifikatsiyasi, OlchovBirligi } from "@/types/catalog";
+import { useHisobotRealData } from "./HisobotRealData";
 import type { Maxsulot } from "./types";
 
-// Mahsulotlar sahifasidagi "Mahsulotni tahrirlash" UI'sining mock nusxasi.
-// Backendga bog'lanmagan — lokal holat, mock ma'lumot.
-
-const BIRLIKLAR = ["Dona", "kg", "litr", "metr", "quti"];
+// Hisobotdan ochilgan mahsulot real katalog endpointlari orqali tahrirlanadi.
 
 function tasodifiyRaqam(uzunlik: number) {
   let natija = "";
@@ -22,6 +22,7 @@ export default function MahsulotModal({
   mahsulot: Maxsulot;
   onClose: () => void;
 }) {
+  const { kategoriyalar } = useHisobotRealData();
   const [nomi, setNomi] = useState(mahsulot.nomi);
   const [barkod, setBarkod] = useState(mahsulot.barkod);
   const [artikul, setArtikul] = useState(mahsulot.artikul);
@@ -33,7 +34,37 @@ export default function MahsulotModal({
   const [tanNarx, setTanNarx] = useState(String(mahsulot.tanNarx));
   const [sotuvNarx, setSotuvNarx] = useState(String(mahsulot.sotuvNarx));
   const [ulgurji, setUlgurji] = useState(String(mahsulot.ulgurjiNarx));
+  const [asosiyMahsulot, setAsosiyMahsulot] = useState<Mahsulot | null>(null);
+  const [modifikatsiya, setModifikatsiya] = useState<MahsulotModifikatsiyasi | null>(null);
+  const [birliklar, setBirliklar] = useState<OlchovBirligi[]>([]);
+  const [rasmFayli, setRasmFayli] = useState<File | null>(null);
+  const [saqlanmoqda, setSaqlanmoqda] = useState(false);
+  const [xato, setXato] = useState("");
   const rasmInput = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([mahsulotlarApi.olish(mahsulot.id), modifikatsiyalarApi.royxat(mahsulot.id), birliklarApi.royxat()])
+      .then(([product, modifications, units]) => {
+        if (!active) return;
+        const main = modifications[0] ?? null;
+        setAsosiyMahsulot(product);
+        setModifikatsiya(main);
+        setBirliklar(units);
+        setNomi(product.name);
+        setKategoriya(product.categoryId);
+        setBirlik(product.unitId);
+        setFaol(product.isActive);
+        setBarkod(main?.barcode ?? product.barcode ?? "");
+        setArtikul(main?.article ?? product.article ?? "");
+        setRasm(main?.imageUrl ?? product.imageUrl ?? "");
+        setTanNarx(String(main?.price?.costPrice ?? 0));
+        setSotuvNarx(String(main?.price?.retailPrice ?? 0));
+        setUlgurji(String(main?.price?.wholesalePrice ?? 0));
+      })
+      .catch((error) => setXato(getApiErrorMessage(error)));
+    return () => { active = false; };
+  }, [mahsulot.id]);
 
   const ustama =
     Number(tanNarx) > 0 && Number(sotuvNarx) >= 0
@@ -42,7 +73,38 @@ export default function MahsulotModal({
 
   function rasmTanlash(file?: File) {
     if (!file || !file.type.startsWith("image/")) return;
+    setRasmFayli(file);
     setRasm(URL.createObjectURL(file));
+  }
+
+  async function saqlash() {
+    if (!asosiyMahsulot || !nomi.trim() || !kategoriya || !birlik) return;
+    setSaqlanmoqda(true);
+    setXato("");
+    try {
+      const uploaded = rasmFayli ? await mediaApi.yuklash(rasmFayli) : null;
+      await mahsulotlarApi.yangilash(asosiyMahsulot.id, {
+        name: nomi.trim(), categoryId: kategoriya, unitId: birlik,
+        imageUrl: uploaded?.imageUrl ?? asosiyMahsulot.imageUrl ?? undefined,
+        barcode: barkod.trim() || undefined, article: artikul.trim() || undefined, isActive: faol,
+      });
+      if (modifikatsiya) {
+        await modifikatsiyalarApi.yangilash(modifikatsiya.id, {
+          name: modifikatsiya.name ?? undefined, params: modifikatsiya.params ?? undefined, barcode: barkod.trim(),
+          article: artikul.trim() || undefined,
+          imageUrl: uploaded?.imageUrl ?? modifikatsiya.imageUrl ?? undefined,
+        });
+        await modifikatsiyalarApi.narxYangilash(modifikatsiya.id, {
+          costPrice: Number(tanNarx) || 0, retailPrice: Number(sotuvNarx) || 0,
+          wholesalePrice: Number(ulgurji) || 0,
+        });
+      }
+      onClose();
+    } catch (error) {
+      setXato(getApiErrorMessage(error));
+    } finally {
+      setSaqlanmoqda(false);
+    }
   }
 
   function rasmTashlandi(e: DragEvent) {
@@ -53,10 +115,7 @@ export default function MahsulotModal({
   return (
     <AppModal>
       <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          onClose();
-        }}
+        onSubmit={(e) => { e.preventDefault(); void saqlash(); }}
         className="scrollbar-hidden max-h-[94vh] w-full max-w-[min(1200px,calc(100vw-32px))] overflow-y-auto rounded-[30px] bg-white shadow-2xl"
       >
         <div className="flex items-center justify-between gap-4 border-b border-gray-100 px-6 py-5">
@@ -73,6 +132,7 @@ export default function MahsulotModal({
         </div>
 
         <div className="px-6 py-6">
+          {xato && <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
           <section className="space-y-5">
             <div className="flex items-center gap-4">
               <h3 className="text-xl font-black">Asosiy</h3>
@@ -127,7 +187,7 @@ export default function MahsulotModal({
                   Kategoriya *
                   <select value={kategoriya} onChange={(e) => setKategoriya(e.target.value)} className="input mt-2">
                     <option value="">Kategoriya</option>
-                    {mockKategoriyalar.map((k) => (
+              {kategoriyalar.map((k) => (
                       <option key={k.id} value={k.id}>
                         {k.nomi}
                       </option>
@@ -141,9 +201,9 @@ export default function MahsulotModal({
                   <p>O'lchov birligi *</p>
                   <div className="mt-2 flex items-center gap-3">
                     <select value={birlik} onChange={(e) => setBirlik(e.target.value)} className="input min-w-0 flex-1">
-                      {BIRLIKLAR.map((b) => (
-                        <option key={b} value={b}>
-                          {b}
+                      {birliklar.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name}
                         </option>
                       ))}
                     </select>
@@ -258,8 +318,8 @@ export default function MahsulotModal({
             <button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">
               Bekor qilish
             </button>
-            <button className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white">
-              Saqlash
+            <button disabled={saqlanmoqda || !asosiyMahsulot} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">
+              {saqlanmoqda ? "Saqlanmoqda..." : "Saqlash"}
             </button>
           </div>
         </div>

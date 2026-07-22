@@ -1,20 +1,13 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Download, Search } from "lucide-react";
 import KengaytiriladiganJadval, { type Ustun } from "./KengaytiriladiganJadval";
 import KopTanlovli from "./KopTanlovli";
 import MuddatTanlov from "./MuddatTanlov";
 import MahsulotModal from "./MahsulotModal";
 import HujjatKorish from "./HujjatKorish";
-import {
-  mockFiliallar,
-  mockKategoriyalar,
-  mockMaxsulotlar,
-  mockMijozlar,
-  mockOmborlar,
-  mockTovarHarakati,
-  mockXarakteristikalar,
-  mockYetkazibBeruvchilar,
-} from "./mockData";
+import { useHisobotRealData } from "./HisobotRealData";
+import { stockMovementReportApi } from "@/api/reportsApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { Maxsulot, Tanlov, TovarHarakati, TovarHarakatiFilter } from "./types";
 import { bugun, bugunMinus, sanadaMi, son } from "./yordamchilar";
 
@@ -29,9 +22,6 @@ const boshFilter: TovarHarakatiFilter = {
   customerIds: [],
   supplierIds: [],
 };
-
-// Maxsulotni Tanlov ko'rinishiga o'tkazamiz (KopTanlovli uchun umumiy tip)
-const maxsulotTanlovlari: Tanlov[] = mockMaxsulotlar.map((m) => ({ id: m.id, nomi: m.nomi }));
 
 function nomTop(royxat: Tanlov[], id: string) {
   return royxat.find((item) => item.id === id)?.nomi ?? "—";
@@ -71,33 +61,30 @@ type KorinishQator = {
   harakat?: TovarHarakati; // hujjat qatorida — hujjat modalini ochish uchun
 };
 
-// Mock CSV eksport — backendsiz, brauzerda fayl yaratadi.
-function csvYuklash(ustunlar: string[], qatorlar: (string | number)[][]) {
-  const satrlar = [ustunlar, ...qatorlar].map((qator) =>
-    qator.map((katak) => `"${String(katak).replace(/"/g, '""')}"`).join(",")
-  );
-  const blob = new Blob(["﻿" + satrlar.join("\n")], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "tovar-harakati.csv";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
 export default function TovarHarakati() {
+  const {
+    maxsulotlar,
+    omborlar,
+    kategoriyalar,
+    variatsiyalar,
+    tovarHarakati,
+  } = useHisobotRealData();
+  const maxsulotTanlovlari: Tanlov[] = useMemo(
+    () => maxsulotlar.map((m) => ({ id: m.id, nomi: m.nomi })),
+    [maxsulotlar]
+  );
   const [ish, setIsh] = useState<TovarHarakatiFilter>(boshFilter); // tahrirlanayotgan
   const [filter, setFilter] = useState<TovarHarakatiFilter>(boshFilter); // qo'llangan
   const [qidiruv, setQidiruv] = useState("");
   const [ochilganMahsulot, setOchilganMahsulot] = useState<Maxsulot | null>(null);
   const [ochilganHarakat, setOchilganHarakat] = useState<TovarHarakati | null>(null);
+  const [xato, setXato] = useState("");
+  const [eksportYuklanmoqda, setEksportYuklanmoqda] = useState(false);
 
-  function mahsulotOchish(productId?: string) {
-    const mahsulot = mockMaxsulotlar.find((m) => m.id === productId);
+  const mahsulotOchish = useCallback((productId?: string) => {
+    const mahsulot = maxsulotlar.find((m) => m.id === productId);
     if (mahsulot) setOchilganMahsulot(mahsulot);
-  }
+  }, [maxsulotlar]);
 
   function yangilash<K extends keyof TovarHarakatiFilter>(kalit: K, qiymat: TovarHarakatiFilter[K]) {
     setIsh((old) => ({ ...old, [kalit]: qiymat }));
@@ -108,23 +95,18 @@ export default function TovarHarakati() {
     const ichida = (massiv: string[], id: string) => massiv.length === 0 || massiv.includes(id);
     const kalit = qidiruv.trim().toLowerCase();
 
-    const yozuvlar = mockTovarHarakati.filter((r) => {
+    const yozuvlar = tovarHarakati.filter((r) => {
       const asosiy =
         sanadaMi(r.sana, filter.dateFrom, filter.dateTo) &&
         ichida(filter.warehouseIds, r.warehouseId) &&
-        ichida(filter.filialIds, r.filialId) &&
         ichida(filter.categoryIds, r.categoryId) &&
         ichida(filter.productIds, r.productId) &&
-        ichida(filter.xarakteristikaIds, r.xarakteristikaId) &&
-        (filter.customerIds.length === 0 || filter.customerIds.includes(r.customerId)) &&
-        (filter.supplierIds.length === 0 || filter.supplierIds.includes(r.supplierId));
+        ichida(filter.xarakteristikaIds, r.xarakteristikaId);
       if (!asosiy) return false;
       if (!kalit) return true;
       return [
         nomTop(maxsulotTanlovlari, r.productId),
         hujjatNomi(r),
-        r.customerId ? nomTop(mockMijozlar, r.customerId) : "",
-        r.supplierId ? nomTop(mockYetkazibBeruvchilar, r.supplierId) : "",
       ]
         .join(" ")
         .toLowerCase()
@@ -132,13 +114,17 @@ export default function TovarHarakati() {
     });
 
     const natija: KorinishQator[] = [];
-    for (const mahsulot of mockMaxsulotlar) {
+    for (const mahsulot of maxsulotlar) {
       const guruh = yozuvlar
         .filter((r) => r.productId === mahsulot.id)
         .sort((a, b) => a.sana.localeCompare(b.sana));
       if (guruh.length === 0) continue;
 
-      let qoldiq = mahsulot.boshQoldiq;
+      let qoldiq = tovarHarakati
+        .filter((r) => r.productId === mahsulot.id && r.sana.slice(0, 10) < filter.dateFrom)
+        .filter((r) => ichida(filter.warehouseIds, r.warehouseId) && ichida(filter.categoryIds, r.categoryId) && ichida(filter.xarakteristikaIds, r.xarakteristikaId))
+        .reduce((summa, r) => summa + (kirimTuri(r) ? r.miqdor : -r.miqdor), 0);
+      const boshlangichQoldiq = qoldiq;
       let kirimJami = 0;
       let chiqimJami = 0;
       const detaylar: KorinishQator[] = [];
@@ -158,8 +144,8 @@ export default function TovarHarakati() {
           id: r.id,
           nomi: "",
           hujjat: hujjatNomi(r),
-          xaridor: r.customerId ? nomTop(mockMijozlar, r.customerId) : "",
-          yetkazib: r.supplierId ? nomTop(mockYetkazibBeruvchilar, r.supplierId) : "",
+          xaridor: "",
+          yetkazib: "",
           boshQoldiq: bosh,
           kirim: kirimmi ? r.miqdor : null,
           chiqim: kirimmi ? null : r.miqdor,
@@ -175,7 +161,7 @@ export default function TovarHarakati() {
         hujjat: "",
         xaridor: "",
         yetkazib: "",
-        boshQoldiq: mahsulot.boshQoldiq,
+        boshQoldiq: boshlangichQoldiq,
         kirim: kirimJami,
         chiqim: chiqimJami,
         oxirgiQoldiq: qoldiq,
@@ -184,7 +170,7 @@ export default function TovarHarakati() {
       natija.push(...detaylar);
     }
     return natija;
-  }, [filter, qidiruv]);
+  }, [filter, maxsulotlar, maxsulotTanlovlari, qidiruv, tovarHarakati]);
 
   const jami = useMemo(() => {
     const sarlavhalar = korinishQatorlar.filter((r) => r.kind === "header");
@@ -195,20 +181,29 @@ export default function TovarHarakati() {
     };
   }, [korinishQatorlar]);
 
-  function eksport() {
-    csvYuklash(
-      ["Nomi", "Xujjat", "Xaridor", "Yetkazib beruvchi", "Boshlang'ich qoldiq", "Kirim", "Chiqim", "Oxirgi qoldiq"],
-      korinishQatorlar.map((r) => [
-        r.nomi,
-        r.hujjat,
-        r.xaridor,
-        r.yetkazib,
-        r.boshQoldiq,
-        r.kirim ?? "",
-        r.chiqim ?? "",
-        r.oxirgiQoldiq,
-      ])
-    );
+  async function eksport() {
+    setXato("");
+    if (filter.xarakteristikaIds.length !== 1) {
+      setXato("Excel yuklash uchun bitta variatsiyani tanlang.");
+      return;
+    }
+    if (filter.warehouseIds.length > 1) {
+      setXato("Excel yuklash uchun ko'pi bilan bitta omborni tanlang.");
+      return;
+    }
+    setEksportYuklanmoqda(true);
+    try {
+      await stockMovementReportApi.export({
+        modificationId: filter.xarakteristikaIds[0],
+        warehouseId: filter.warehouseIds[0],
+        dateFrom: filter.dateFrom,
+        dateTo: filter.dateTo,
+      }, "excel");
+    } catch (error) {
+      setXato(getApiErrorMessage(error));
+    } finally {
+      setEksportYuklanmoqda(false);
+    }
   }
 
   const ustunlar: Ustun<KorinishQator>[] = useMemo(
@@ -249,18 +244,6 @@ export default function TovarHarakati() {
           ),
       },
       {
-        id: "xaridor",
-        nom: "Xaridor",
-        kenglik: 160,
-        katak: (r) => (r.kind === "detail" ? r.xaridor || tire : ""),
-      },
-      {
-        id: "yetkazib",
-        nom: "Yetkazib beruvchi",
-        kenglik: 180,
-        katak: (r) => (r.kind === "detail" ? r.yetkazib || tire : ""),
-      },
-      {
         id: "boshQoldiq",
         nom: "Boshlang'ich qoldiq",
         kenglik: 160,
@@ -296,7 +279,7 @@ export default function TovarHarakati() {
       },
       { id: "oxirgiQoldiq", nom: "Oxirgi qoldiq", kenglik: 140, katak: (r) => son(r.oxirgiQoldiq) },
     ],
-    [jami]
+    [jami, mahsulotOchish]
   );
 
   return (
@@ -312,19 +295,13 @@ export default function TovarHarakati() {
 
           <KopTanlovli
             label="Ombor"
-            options={mockOmborlar}
+              options={omborlar}
             selected={ish.warehouseIds}
             onChange={(v) => yangilash("warehouseIds", v)}
           />
           <KopTanlovli
-            label="Filial"
-            options={mockFiliallar}
-            selected={ish.filialIds}
-            onChange={(v) => yangilash("filialIds", v)}
-          />
-          <KopTanlovli
             label="Kategoriya"
-            options={mockKategoriyalar}
+              options={kategoriyalar}
             selected={ish.categoryIds}
             onChange={(v) => yangilash("categoryIds", v)}
           />
@@ -335,22 +312,10 @@ export default function TovarHarakati() {
             onChange={(v) => yangilash("productIds", v)}
           />
           <KopTanlovli
-            label="Xarakteristika"
-            options={mockXarakteristikalar}
+            label="Variatsiya"
+              options={variatsiyalar}
             selected={ish.xarakteristikaIds}
             onChange={(v) => yangilash("xarakteristikaIds", v)}
-          />
-          <KopTanlovli
-            label="Xaridor"
-            options={mockMijozlar}
-            selected={ish.customerIds}
-            onChange={(v) => yangilash("customerIds", v)}
-          />
-          <KopTanlovli
-            label="Yetkazib beruvchi"
-            options={mockYetkazibBeruvchilar}
-            selected={ish.supplierIds}
-            onChange={(v) => yangilash("supplierIds", v)}
           />
         </div>
       </section>
@@ -366,11 +331,12 @@ export default function TovarHarakati() {
             Hisobotni shakllantirish
           </button>
           <button
-            onClick={eksport}
+            onClick={() => void eksport()}
+            disabled={eksportYuklanmoqda}
             className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-bold text-orange-600 shadow-sm transition hover:bg-orange-50"
           >
             <Download size={16} />
-            Excel (CSV)
+            {eksportYuklanmoqda ? "Yuklanmoqda..." : "Excel (.xlsx)"}
           </button>
         </div>
         <div className="relative md:w-72">
@@ -383,6 +349,8 @@ export default function TovarHarakati() {
           />
         </div>
       </div>
+
+      {xato && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
 
       {/* Natija jadvali */}
       <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm">

@@ -8,23 +8,19 @@ import type {
   XarajatSaqlash,
 } from "@/types/finance";
 import type { Filial } from "@/types/ombor";
+import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
 
-type RoyxatJavobi<T> = T[] | { value?: T[]; items?: T[]; results?: T[]; data?: T[] };
-
-function royxatniAjratish<T>(data: RoyxatJavobi<T>): T[] {
-  if (Array.isArray(data)) return data;
-  return data.value ?? data.items ?? data.results ?? data.data ?? [];
-}
+type RoyxatJavobi<T> = T[] | ApiListEnvelope<T>;
 
 // Kassa sahifasi: GET/POST/PATCH/DELETE /finance/expenses endpointlari.
 export const xarajatApi = {
   royxat: async () =>
-    royxatniAjratish((await apiClient.get<RoyxatJavobi<Xarajat>>("/finance/expenses")).data),
-  olish: async (id: string) => (await apiClient.get<Xarajat>(`/finance/expenses/${id}`)).data,
+    apiList((await apiClient.get<RoyxatJavobi<Xarajat>>("/finance/expenses")).data),
+  olish: async (id: string) => apiData((await apiClient.get<Xarajat | ApiEnvelope<Xarajat>>(`/finance/expenses/${id}`)).data),
   yaratish: async (data: XarajatSaqlash) =>
-    (await apiClient.post<Xarajat>("/finance/expenses", data)).data,
+    apiData((await apiClient.post<Xarajat | ApiEnvelope<Xarajat>>("/finance/expenses", data)).data),
   yangilash: async (id: string, data: Partial<XarajatSaqlash>) =>
-    (await apiClient.patch<Xarajat>(`/finance/expenses/${id}`, data)).data,
+    apiData((await apiClient.patch<Xarajat | ApiEnvelope<Xarajat>>(`/finance/expenses/${id}`, data)).data),
   ochirish: async (id: string) =>
     (await apiClient.delete<Xarajat>(`/finance/expenses/${id}`)).data,
 };
@@ -32,12 +28,13 @@ export const xarajatApi = {
 // Kassa sahifasi: GET/POST/PATCH/DELETE /finance/loans endpointlari.
 export const qarzApi = {
   royxat: async () =>
-    royxatniAjratish((await apiClient.get<RoyxatJavobi<Qarz>>("/finance/loans")).data),
-  olish: async (id: string) => (await apiClient.get<Qarz>(`/finance/loans/${id}`)).data,
+    apiList((await apiClient.get<RoyxatJavobi<Qarz>>("/finance/loans")).data),
+  olish: async (id: string) =>
+    apiData((await apiClient.get<Qarz | ApiEnvelope<Qarz>>(`/finance/loans/${id}`)).data),
   yaratish: async (data: QarzSaqlash) =>
-    (await apiClient.post<Qarz>("/finance/loans", data)).data,
+    apiData((await apiClient.post<Qarz | ApiEnvelope<Qarz>>("/finance/loans", data)).data),
   yangilash: async (id: string, data: Partial<QarzSaqlash>) =>
-    (await apiClient.patch<Qarz>(`/finance/loans/${id}`, data)).data,
+    apiData((await apiClient.patch<Qarz | ApiEnvelope<Qarz>>(`/finance/loans/${id}`, data)).data),
   ochirish: async (id: string) =>
     (await apiClient.delete<Qarz>(`/finance/loans/${id}`)).data,
 };
@@ -45,18 +42,18 @@ export const qarzApi = {
 // Kassa sahifasi: GET/POST/PATCH/DELETE /finance/cash-ins endpointlari.
 export const kassaKirimApi = {
   royxat: async () =>
-    royxatniAjratish((await apiClient.get<RoyxatJavobi<KassaKirim>>("/finance/cash-ins")).data),
+    apiList((await apiClient.get<RoyxatJavobi<KassaKirim>>("/finance/cash-ins")).data),
   olish: async (id: string) =>
-    (await apiClient.get<KassaKirim>(`/finance/cash-ins/${id}`)).data,
+    apiData((await apiClient.get<KassaKirim | ApiEnvelope<KassaKirim>>(`/finance/cash-ins/${id}`)).data),
   yaratish: async (data: KassaKirimSaqlash) =>
-    (await apiClient.post<KassaKirim>("/finance/cash-ins", data)).data,
+    apiData((await apiClient.post<KassaKirim | ApiEnvelope<KassaKirim>>("/finance/cash-ins", data)).data),
   yangilash: async (id: string, data: Partial<KassaKirimSaqlash>) =>
-    (await apiClient.patch<KassaKirim>(`/finance/cash-ins/${id}`, data)).data,
+    apiData((await apiClient.patch<KassaKirim | ApiEnvelope<KassaKirim>>(`/finance/cash-ins/${id}`, data)).data),
   ochirish: async (id: string) =>
     (await apiClient.delete<KassaKirim>(`/finance/cash-ins/${id}`)).data,
 };
 
 // Kassa formalaridagi filial tanlovi uchun.
 export async function filiallarniOlish() {
-  return (await apiClient.get<Filial[]>("/organization/branches")).data;
+  return apiList((await apiClient.get<Filial[] | ApiListEnvelope<Filial>>("/organization/branches")).data);
 }

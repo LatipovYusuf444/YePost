@@ -1,5 +1,4 @@
-// Xodim uchoti: mock modul tiplari. Backendga bog'liq emas.
-// Yangi maydon qo'shilganda: shu tipga qo'shiladi → mockData.ts ga qiymat → modalkaga input.
+// Xodim UI modellari accounts va organization endpointlaridan shakllantiriladi.
 
 export type XodimHolati = "faol" | "tatilda" | "ishdan-ketgan";
 
@@ -9,6 +8,7 @@ export type Xodim = {
   familiya: string;
   telefonlar: string[]; // kamida bitta, formada yana qo'shish mumkin
   login: string;
+  parol?: string;
   lavozimId: string; // "" — lavozim biriktirilmagan
   bolimId: string; // "" — bo'lim biriktirilmagan
   filial: string;

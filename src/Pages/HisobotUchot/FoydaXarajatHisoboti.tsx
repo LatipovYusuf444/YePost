@@ -1,15 +1,18 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Download } from "lucide-react";
 import MuddatTanlov from "./MuddatTanlov";
 import KopTanlovli from "./KopTanlovli";
-import { mockFiliallar, mockFoydaXarajat } from "./mockData";
+import { useHisobotRealData } from "./HisobotRealData";
+import { incomeExpenseReportApi } from "@/api/reportsApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import type { FoydaXarajatYozuvi } from "./types";
 import { bugun, bugunMinus, pul, sanadaMi } from "./yordamchilar";
 
 // Foyda va xarajat (P&L) hisoboti — Daromad − Tannarx = Yalpi foyda − Xarajat = Sof foyda.
-// Muddat/Filial bo'yicha filtrlanadi. Backendsiz mock.
+// Muddat/Filial bo'yicha real hisobot ma'lumotlari filtrlanadi.
 type SatrModeli = { kategoriya: string; summa: number };
 
-function guruhla(rows: typeof mockFoydaXarajat, tur: "daromad" | "tannarx" | "xarajat"): SatrModeli[] {
+function guruhla(rows: FoydaXarajatYozuvi[], tur: "daromad" | "tannarx" | "xarajat"): SatrModeli[] {
   const map = new Map<string, number>();
   rows.filter((r) => r.tur === tur).forEach((r) => map.set(r.kategoriya, (map.get(r.kategoriya) ?? 0) + r.summa));
   return [...map.entries()].map(([kategoriya, summa]) => ({ kategoriya, summa })).sort((a, b) => b.summa - a.summa);
@@ -19,30 +22,46 @@ function foiz(qism: number, butun: number) {
   return butun ? `${((qism / butun) * 100).toFixed(1)}%` : "—";
 }
 
-function csvYuklash(qatorlar: (string | number)[][]) {
-  const satrlar = qatorlar.map((qator) =>
-    qator.map((katak) => `"${String(katak).replace(/"/g, '""')}"`).join(",")
-  );
-  const blob = new Blob(["﻿" + satrlar.join("\n")], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "foyda-xarajat.csv";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
 export default function FoydaXarajatHisoboti() {
+  const { filiallar: filialTanlovlari } = useHisobotRealData();
   const [dateFrom, setDateFrom] = useState(bugunMinus(30));
   const [dateTo, setDateTo] = useState(bugun());
   const [filiallar, setFiliallar] = useState<string[]>([]);
+  const [foydaXarajat, setFoydaXarajat] = useState<FoydaXarajatYozuvi[]>([]);
+  const [yuklanmoqda, setYuklanmoqda] = useState(false);
+  const [xato, setXato] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    setYuklanmoqda(true);
+    setXato("");
+    const branchIds = filiallar.length ? filiallar : [undefined];
+    Promise.all(branchIds.map((branchId) => incomeExpenseReportApi.olish({ dateFrom, dateTo, branchId })))
+      .then((responses) => {
+        if (!active) return;
+        const total = responses.reduce<{ saleRevenue: number; saleProfit: number; expenseTotal: number; refundTotal: number }>((sum, value) => {
+          const row = value as Record<string, number | string | undefined>;
+          return {
+            saleRevenue: sum.saleRevenue + Number(row.saleRevenue ?? 0),
+            saleProfit: sum.saleProfit + Number(row.saleProfit ?? 0),
+            expenseTotal: sum.expenseTotal + Number(row.expenseTotal ?? 0),
+            refundTotal: sum.refundTotal + Number(row.refundTotal ?? 0),
+          };
+        }, { saleRevenue: 0, saleProfit: 0, expenseTotal: 0, refundTotal: 0 });
+        const sana = `${dateTo}T23:59:59.000Z`;
+        setFoydaXarajat([
+          { id: "saleRevenue", sana, filialId: "", tur: "daromad", kategoriya: "Savdo tushumi", summa: total.saleRevenue },
+          { id: "saleCost", sana, filialId: "", tur: "tannarx", kategoriya: "Sotilgan tovar tannarxi", summa: total.saleRevenue - total.saleProfit },
+          { id: "expenseTotal", sana, filialId: "", tur: "xarajat", kategoriya: "Xarajatlar va qaytarishlar", summa: total.expenseTotal + total.refundTotal },
+        ]);
+      })
+      .catch((error) => { if (active) setXato(getApiErrorMessage(error)); })
+      .finally(() => { if (active) setYuklanmoqda(false); });
+    return () => { active = false; };
+  }, [dateFrom, dateTo, filiallar]);
 
   const hisob = useMemo(() => {
-    const rows = mockFoydaXarajat.filter(
-      (r) => sanadaMi(r.sana, dateFrom, dateTo) && (filiallar.length === 0 || filiallar.includes(r.filialId))
-    );
+    const rows = foydaXarajat.filter((r) => sanadaMi(r.sana, dateFrom, dateTo));
     const daromadlar = guruhla(rows, "daromad");
     const tannarxlar = guruhla(rows, "tannarx");
     const xarajatlar = guruhla(rows, "xarajat");
@@ -53,18 +72,19 @@ export default function FoydaXarajatHisoboti() {
     const yalpi = daromad - tannarx;
     const sof = yalpi - xarajat;
     return { daromadlar, tannarxlar, xarajatlar, daromad, tannarx, xarajat, yalpi, sof };
-  }, [dateFrom, dateTo, filiallar]);
+  }, [dateFrom, dateTo, foydaXarajat]);
 
-  function eksport() {
-    const q: (string | number)[][] = [["Bo'lim", "Kategoriya", "Summa"]];
-    hisob.daromadlar.forEach((r) => q.push(["Daromad", r.kategoriya, r.summa]));
-    q.push(["", "Jami daromad", hisob.daromad]);
-    hisob.tannarxlar.forEach((r) => q.push(["Tannarx", r.kategoriya, r.summa]));
-    q.push(["", "Yalpi foyda", hisob.yalpi]);
-    hisob.xarajatlar.forEach((r) => q.push(["Xarajat", r.kategoriya, r.summa]));
-    q.push(["", "Jami xarajat", hisob.xarajat]);
-    q.push(["", "Sof foyda", hisob.sof]);
-    csvYuklash(q);
+  async function eksport() {
+    setXato("");
+    try {
+      const branchIds = filiallar.length ? filiallar : [undefined];
+      for (const branchId of branchIds) {
+        await incomeExpenseReportApi.export({ dateFrom, dateTo, branchId }, "excel");
+      }
+      return;
+    } catch (error) {
+      setXato(getApiErrorMessage(error));
+    }
   }
 
   return (
@@ -80,17 +100,21 @@ export default function FoydaXarajatHisoboti() {
               setDateTo(t);
             }}
           />
-          <KopTanlovli label="Filial" options={mockFiliallar} selected={filiallar} onChange={setFiliallar} />
+          <KopTanlovli label="Filial" options={filialTanlovlari} selected={filiallar} onChange={setFiliallar} />
         </div>
       </section>
 
       <button
-        onClick={eksport}
+        onClick={() => void eksport()}
+        disabled={yuklanmoqda}
         className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-bold text-orange-600 shadow-sm transition hover:bg-orange-50"
       >
         <Download size={16} />
-        Excel (CSV)
+        Excel (.xlsx)
       </button>
+
+      {xato && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
+      {yuklanmoqda && <p className="rounded-2xl bg-orange-50 px-4 py-3 text-sm font-bold text-orange-600">Hisobot backenddan shakllantirilmoqda...</p>}
 
       {/* Hisobot (statement) */}
       <section className="overflow-hidden rounded-[28px] border border-orange-100 bg-white shadow-sm">

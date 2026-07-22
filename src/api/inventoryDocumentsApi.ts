@@ -2,9 +2,22 @@ import apiClient from "./axios";
 import type { ApiEnvelope } from "./response";
 import type { DocumentAttachment, DocumentComment, DocumentHistory, InventoryDocumentType, InventoryHistoryAction, Paginated } from "@/types/inventoryDocuments";
 
-type PageEnvelope<T> = { success?: boolean; statusCode?: number; data?: T[]; total?: number; page?: number; pageSize?: number; totalPages?: number };
+type PageData<T> = T[] | { items?: T[]; total?: number; page?: number; pageSize?: number; totalPages?: number };
+type PageEnvelope<T> = { success?: boolean; statusCode?: number; data?: PageData<T>; items?: T[]; total?: number; page?: number; pageSize?: number; totalPages?: number };
 const base = (type: InventoryDocumentType, id: string) => `/inventory/documents/${type}/${id}`;
-function page<T>(value: PageEnvelope<T>): Paginated<T> { return { items: value.data ?? [], total: value.total ?? 0, page: value.page ?? 1, pageSize: value.pageSize ?? 20, totalPages: value.totalPages ?? 1 }; }
+function page<T>(value: PageEnvelope<T>): Paginated<T> {
+  const nested = value.data && !Array.isArray(value.data) ? value.data : undefined;
+  const items = Array.isArray(value.data) ? value.data : nested?.items ?? value.items ?? [];
+  const total = Number(nested?.total ?? value.total ?? items.length);
+  const pageSize = Number(nested?.pageSize ?? value.pageSize ?? 20);
+  return {
+    items,
+    total,
+    page: Number(nested?.page ?? value.page ?? 1),
+    pageSize,
+    totalPages: Number(nested?.totalPages ?? value.totalPages ?? Math.max(1, Math.ceil(total / Math.max(1, pageSize)))),
+  };
+}
 
 export const inventoryDocumentsApi = {
   comments: async (type: InventoryDocumentType, id: string, params?: { page?: number; pageSize?: number }) => page((await apiClient.get<PageEnvelope<DocumentComment>>(`${base(type,id)}/comments`, { params })).data),

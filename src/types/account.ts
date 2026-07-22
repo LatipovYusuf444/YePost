@@ -1,4 +1,4 @@
-export type AccountRoli = "KASSIR" | "OMBORCHI" | "ADMIN" | "DIREKTOR";
+export type AccountRoli = "CASHIER" | "STOREKEEPER" | "ADMIN" | "DIRECTOR";
 
 export type VakolatKodi =
   | "DELETE"
@@ -13,6 +13,9 @@ export type AccountFoydalanuvchi = {
   branchId?: string | null;
   username: string;
   fullName?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  position?: string | null;
   avatarUrl?: string | null;
   photoUrl?: string | null;
   imageUrl?: string | null;
@@ -34,6 +37,9 @@ export type FoydalanuvchiYaratishMalumoti = {
   username: string;
   password: string;
   fullName?: string;
+  phone?: string;
+  email?: string;
+  position?: string;
   role?: AccountRoli;
   branchId?: string;
   telegramId?: string;

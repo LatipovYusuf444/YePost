@@ -3,7 +3,7 @@ import { Plus, Search, ShieldCheck, Trash2, UsersRound } from "lucide-react";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
 import KorinishTanlov, { type Korinish } from "../XaridorUchot/KorinishTanlov";
 import LavozimModal from "./LavozimModal";
-import { mockVakolatlar } from "./mockData";
+import { backendVakolatlar } from "./backendMetadata";
 import type { Lavozim, Xodim } from "./types";
 import { sanaFormat } from "./yordamchilar";
 
@@ -55,7 +55,7 @@ export default function Lavozimlar({ lavozimlar, xodimlar, onSaqlash, onOchirish
       hizalash: "right",
       katak: (l) => (
         <span className="font-bold text-slate-600">
-          {l.vakolatlar.length} / {mockVakolatlar.length}
+          {l.vakolatlar.length} / {backendVakolatlar.length}
         </span>
       ),
     },
@@ -161,7 +161,7 @@ export default function Lavozimlar({ lavozimlar, xodimlar, onSaqlash, onOchirish
                     key={kod}
                     className="rounded-lg bg-orange-50 px-2 py-1 text-xs font-black text-[#FF6A00]"
                   >
-                    {mockVakolatlar.find((vakolat) => vakolat.kod === kod)?.nom ?? kod}
+                    {backendVakolatlar.find((vakolat) => vakolat.kod === kod)?.nom ?? kod}
                   </span>
                 ))}
                 {lavozim.vakolatlar.length > 4 && (

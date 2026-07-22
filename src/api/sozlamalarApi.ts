@@ -1,5 +1,6 @@
 import axios from "axios";
 import { API_BASE_URL } from "./apiConfig";
+import { apiTilHeaderi } from "./apiLanguage";
 
 export type LoginPayload = {
   username: string;
@@ -38,40 +39,12 @@ type ApiErrorBody = {
   error?: string;
 };
 
-function xatoniOzbekchalashtirish(message: string) {
-  const lugat: Array<[RegExp, string]> = [
-    [/branchId must be a UUID/i, "Filial noto'g'ri tanlangan."],
-    [/responsibleId must be a UUID/i, "Mas'ul xodim noto'g'ri tanlangan."],
-    [/warehouseId must be a UUID/i, "Ombor noto'g'ri tanlangan."],
-    [/tariffId must be a UUID/i, "Tarif noto'g'ri tanlangan."],
-    [/categoryId must be a UUID/i, "Kategoriya noto'g'ri tanlangan."],
-    [/unitId must be a UUID/i, "O'lchov birligi noto'g'ri tanlangan."],
-    [/companyId must be a UUID/i, "Mijoz kompaniyasi noto'g'ri tanlangan."],
-    [/barcode.*already|barcode.*exists/i, "Bu shtrix-kod avval boshqa mahsulotda ishlatilgan."],
-    [/userId must be a UUID/i, "Foydalanuvchi noto'g'ri tanlangan."],
-    [/username.*already|username.*exists/i, "Bu login boshqa foydalanuvchida mavjud."],
-    [/grant.*already|code.*already/i, "Bu vakolat foydalanuvchiga avval biriktirilgan."],
-    [/password.*short|password.*length/i, "Parol talab qilingan uzunlikka mos emas."],
-    [/old password|current password|password is incorrect|wrong password/i, "Amaldagi parol noto'g'ri."],
-    [/new password.*same|same password/i, "Yangi parol amaldagi paroldan farq qilishi kerak."],
-    [/items\.\d+\.quantity.*(less than 0\.001|must be a number)/i, "Qaytariladigan mahsulot miqdori noto'g'ri."],
-    [/items\.\d+\.price.*(less than 0|must be a number)/i, "Qaytariladigan mahsulot narxi noto'g'ri."],
-    [/saleItemId/i, "Qaytariladigan sotuv mahsuloti topilmadi."],
-    [/must be a UUID/i, "Tanlangan ma'lumot formati noto'g'ri."],
-    [/already exists|duplicate/i, "Bunday ma'lumot avval yaratilgan."],
-    [/not found/i, "Ma'lumot topilmadi."],
-    [/Unauthorized/i, "Tizimga kirish muddati tugagan."],
-    [/Forbidden/i, "Bu amalni bajarish uchun ruxsat yetarli emas."],
-  ];
-
-  return lugat.find(([pattern]) => pattern.test(message))?.[1] ?? message;
-}
-
 export async function login(payload: LoginPayload) {
   // Login.tsx: autentifikatsiyasiz POST /auth/login so'rovini yuboradi.
   const response = await axios.post<LoginResponse>(`${API_BASE_URL}/auth/login`, payload, {
     headers: {
       Accept: "application/json",
+      ...apiTilHeaderi(),
       "Content-Type": "application/json",
     },
     timeout: 30_000,
@@ -89,6 +62,7 @@ export async function accessTokenniYangilash(refreshToken: string) {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
+        ...apiTilHeaderi(),
       },
       timeout: 30_000,
     }
@@ -103,6 +77,7 @@ export async function backenddanChiqish(accessToken: string) {
     headers: {
       Accept: "application/json",
       Authorization: `Bearer ${accessToken}`,
+      ...apiTilHeaderi(),
     },
     timeout: 30_000,
   });
@@ -145,34 +120,20 @@ export function getApiErrorMessage(error: unknown) {
     return "Server bilan bog'lanib bo'lmadi. Internet aloqasini tekshiring.";
   }
 
-  if (error.response.status === 401) {
-    const message = error.response.data?.message;
-    return typeof message === "string"
-      ? xatoniOzbekchalashtirish(message)
-      : "Login, parol yoki sessiya tokeni noto'g'ri.";
-  }
-
-  if (error.response.status === 403) {
-    return "Bu amalni bajarish uchun ruxsat yetarli emas.";
-  }
-
-  if (error.response.status === 404) {
-    return "Ma'lumot topilmadi yoki endpoint mavjud emas.";
-  }
-
-  if (error.response.status >= 500) {
-    return "Serverda xatolik yuz berdi. Birozdan keyin qayta urinib ko'ring.";
-  }
-
   const message = error.response.data?.message;
   if (Array.isArray(message)) {
-    return message.map(xatoniOzbekchalashtirish).join(" ");
+    return message.join(" ");
   }
+  if (message) return message;
+  if (error.response.data?.detail) return error.response.data.detail;
+  if (error.response.data?.error) return error.response.data.error;
 
-  return xatoniOzbekchalashtirish(
-    message ??
-      error.response.data?.detail ??
-      error.response.data?.error ??
-      "Amalni bajarishda xatolik yuz berdi."
-  );
+  const generic: Record<number, string> = {
+    400: "Yuborilgan ma'lumotlarda xatolik bor.",
+    401: "Login yoki sessiya tokeni noto'g'ri.",
+    403: "Bu amalni bajarish uchun ruxsat yetarli emas.",
+    404: "Ma'lumot topilmadi.",
+    409: "Bu amal mavjud holat bilan to'qnashdi.",
+  };
+  return generic[error.response.status] ?? "Amalni bajarishda xatolik yuz berdi.";
 }

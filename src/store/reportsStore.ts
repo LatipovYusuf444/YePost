@@ -68,17 +68,6 @@ const boshTanlovlar: Tanlovlar = {
   suppliers: [],
 };
 
-function faylYuklash(blob: Blob, nom: string) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = nom;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
 export const useReportsStore = create<ReportsStore>((set) => ({
   tanlovlar: boshTanlovlar,
   stockMovement: null,
@@ -166,18 +155,18 @@ export const useReportsStore = create<ReportsStore>((set) => ({
   hisobotExport: async (turi, params, exportTuri) => {
     set({ amalBajarilmoqda: true, xatolik: "" });
     try {
-      const blob =
+      await (
         turi === "stock"
-          ? await stockMovementReportApi.export(params as StockMovementFilter, exportTuri)
+          ? stockMovementReportApi.export(params as StockMovementFilter, exportTuri)
           : turi === "counterparty"
-            ? await counterpartyBalanceReportApi.export(
+            ? counterpartyBalanceReportApi.export(
                 params as CounterpartyBalanceFilter,
                 exportTuri
               )
             : turi === "profit"
-              ? await productProfitReportApi.export(params as ProductProfitFilter, exportTuri)
-              : await incomeExpenseReportApi.export(params as IncomeExpenseFilter, exportTuri);
-      faylYuklash(blob, `hisobot-${turi}.${exportTuri === "excel" ? "xlsx" : "pdf"}`);
+              ? productProfitReportApi.export(params as ProductProfitFilter, exportTuri)
+              : incomeExpenseReportApi.export(params as IncomeExpenseFilter, exportTuri)
+      );
     } catch (error) {
       set({ xatolik: getApiErrorMessage(error) });
     } finally {

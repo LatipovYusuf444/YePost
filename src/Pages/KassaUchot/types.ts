@@ -1,5 +1,4 @@
-// Kassa uchoti: mock modul tiplari. Backendga bog'liq emas.
-// Yangi maydon qo'shilganda: shu tipga qo'shiladi → mockData.ts ga qiymat → jadval ustuni.
+// Kassa UI modeli backenddagi finance transactionlardan shakllantiriladi.
 
 export type KassaKanali = "naqd" | "bank" | "ilova"; // to'lov turi / hisob
 export type KassaYonalishi = "tushum" | "chiqim";
@@ -35,4 +34,10 @@ export type KassaAmaliyoti = {
   sana: string; // ISO
   masul: string; // mas'ul shaxs
   izoh: string;
+  backendSource?: "SALE" | "RETURN" | "CASH_IN" | "EXPENSE";
+  backendRefId?: string;
+  backendCashInSource?: "OWNER" | "INVESTOR" | "LOAN" | "OTHER";
+  backendExpenseCategory?: "SALARY" | "RENT" | "UTILITIES" | "LOGISTICS" | "MARKETING" | "OTHER";
+  backendBranchId?: string;
+  readonly?: boolean;
 };

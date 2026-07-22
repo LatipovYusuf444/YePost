@@ -1,20 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, Download, Search } from "lucide-react";
 import KengaytiriladiganJadval, { type Ustun } from "./KengaytiriladiganJadval";
 import KopTanlovli from "./KopTanlovli";
 import Dropdown from "./Dropdown";
-import {
-  mockFiliallar,
-  mockKategoriyalar,
-  mockMaxsulotlar,
-  mockOmborlar,
-  mockTovarHarakati,
-  mockVariatsiyalar,
-  mockXarakteristikalar,
-} from "./mockData";
+import { stockBalanceExport, stockBalanceReport, type StockBalanceResponse } from "@/api/reportsApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { useHisobotRealData } from "./HisobotRealData";
 import { son } from "./yordamchilar";
 
-// Ombor qoldig'i hisoboti — joriy qoldiq = boshQoldiq + Σkirim − Σchiqim (mock).
+// Ombor qoldig'i backenddagi /reports/stock-balance natijasidan olinadi.
 // Filter paneli backend "Ombor qoldig'i" hujjat filtriga mos: sana, ombor, filial,
 // kategoriya, mahsulot, narx turi, variatsiya, xarakteristika, qoldiqlar + belgilar.
 type NarxTuri = "tanNarx" | "sotuvNarx" | "ulgurjiNarx";
@@ -35,15 +29,6 @@ const qoldiqVariantlari: { value: string; nomi: string }[] = [
 
 const bugungiSana = new Date().toISOString().slice(0, 10);
 
-function kategoriyaNomi(id: string) {
-  return mockKategoriyalar.find((k) => k.id === id)?.nomi ?? "—";
-}
-
-// Kirim/inventarizatsiya qoldiqni oshiradi, chiqim/realizatsiya kamaytiradi.
-function kirimmi(turi: string) {
-  return turi === "kirim" || turi === "inventarizatsiya";
-}
-
 type Qator = {
   id: string;
   nomi: string;
@@ -55,22 +40,15 @@ type Qator = {
   summa: number;
 };
 
-function csvYuklash(ustunlar: string[], qatorlar: (string | number)[][]) {
-  const satrlar = [ustunlar, ...qatorlar].map((qator) =>
-    qator.map((katak) => `"${String(katak).replace(/"/g, '""')}"`).join(",")
-  );
-  const blob = new Blob(["﻿" + satrlar.join("\n")], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "ombor-qoldigi.csv";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
 export default function QoldiqHisoboti() {
+  const {
+    maxsulotlar: katalogMahsulotlar,
+    omborlar: omborTanlovlari,
+    filiallar: filialTanlovlari,
+    kategoriyalar: kategoriyaTanlovlari,
+    variatsiyalar: variatsiyaTanlovlari,
+    xarakteristikalar: xarakteristikaTanlovlari,
+  } = useHisobotRealData();
   const [sana, setSana] = useState(bugungiSana);
   const [omborlar, setOmborlar] = useState<string[]>([]);
   const [filiallar, setFiliallar] = useState<string[]>([]);
@@ -86,69 +64,67 @@ export default function QoldiqHisoboti() {
   const [shtrixKod, setShtrixKod] = useState(false);
   const [variatsiyaKor, setVariatsiyaKor] = useState(false);
   const [qidiruv, setQidiruv] = useState("");
+  const [report, setReport] = useState<StockBalanceResponse | null>(null);
+  const [xato, setXato] = useState("");
+  const [yuklanmoqda, setYuklanmoqda] = useState(false);
+  const [exportYuklanmoqda, setExportYuklanmoqda] = useState(false);
 
   const maxsulotTanlovlari = useMemo(
-    () => mockMaxsulotlar.map((m) => ({ id: m.id, nomi: m.nomi })),
-    []
+    () => katalogMahsulotlar.map((m) => ({ id: m.id, nomi: m.nomi })),
+    [katalogMahsulotlar]
   );
 
-  const qatorlar = useMemo<Qator[]>(() => {
-    const ichida = (massiv: string[], id: string) => massiv.length === 0 || massiv.includes(id);
-    const kalit = qidiruv.trim().toLowerCase();
+  const params = useMemo(() => ({
+    asOf: sana,
+    warehouseIds: omborlar.length ? omborlar.join(",") : undefined,
+    branchIds: filiallar.length ? filiallar.join(",") : undefined,
+    categoryIds: kategoriyalar.length ? kategoriyalar.join(",") : undefined,
+    productIds: mahsulotlar.length ? mahsulotlar.join(",") : undefined,
+    modificationIds: variatsiyalar.length ? variatsiyalar.join(",") : undefined,
+    balanceStatus: ({ hammasi: "ALL", musbat: "POSITIVE", nol: "ZERO", manfiy: "NEGATIVE" } as const)[qoldiqTuri],
+    priceType: ({ tanNarx: "COST", sotuvNarx: "RETAIL", ulgurjiNarx: "WHOLESALE" } as const)[narxTuri],
+    groupByWarehouse: omborBoyicha,
+    includeReserved: rezervni,
+    search: qidiruv.trim() || undefined,
+    page: 1,
+    pageSize: 1000,
+  }), [filiallar, kategoriyalar, mahsulotlar, narxTuri, omborBoyicha, omborlar, qidiruv, qoldiqTuri, rezervni, sana, variatsiyalar]);
 
-    return mockMaxsulotlar
-      .filter(
-        (m) =>
-          ichida(kategoriyalar, m.categoryId) &&
-          ichida(mahsulotlar, m.id) &&
-          (!kalit ||
-            [m.nomi, kategoriyaNomi(m.categoryId), m.artikul, m.barkod]
-              .join(" ")
-              .toLowerCase()
-              .includes(kalit))
-      )
-      .map((m) => {
-        // Tanlangan sanagacha bo'lgan, ombor/filial/xarakteristika filtriga mos harakatlar.
-        const harakatlar = mockTovarHarakati.filter(
-          (r) =>
-            r.productId === m.id &&
-            r.sana.slice(0, 10) <= sana &&
-            ichida(omborlar, r.warehouseId) &&
-            ichida(filiallar, r.filialId) &&
-            ichida(xarakteristikalar, r.xarakteristikaId)
-        );
-        const qoldiq = harakatlar.reduce(
-          (jami, r) => jami + (kirimmi(r.hujjatTuri) ? r.miqdor : -r.miqdor),
-          m.boshQoldiq
-        );
-        const narx = m[narxTuri];
-        return {
-          id: m.id,
-          nomi: m.nomi,
-          barkod: m.barkod,
-          kategoriya: kategoriyaNomi(m.categoryId),
-          birlik: m.birlik,
-          qoldiq,
-          narx,
-          summa: qoldiq * narx,
-        };
-      })
-      .filter((q) => {
-        if (qoldiqTuri === "musbat") return q.qoldiq > 0;
-        if (qoldiqTuri === "nol") return q.qoldiq === 0;
-        if (qoldiqTuri === "manfiy") return q.qoldiq < 0;
-        return true;
-      });
-  }, [sana, omborlar, filiallar, kategoriyalar, mahsulotlar, xarakteristikalar, narxTuri, qoldiqTuri, qidiruv]);
+  useEffect(() => {
+    let active = true;
+    setYuklanmoqda(true);
+    setXato("");
+    stockBalanceReport(params)
+      .then((value) => { if (active) setReport(value); })
+      .catch((error) => { if (active) setXato(getApiErrorMessage(error)); })
+      .finally(() => { if (active) setYuklanmoqda(false); });
+    return () => { active = false; };
+  }, [params]);
 
-  const jami = useMemo(
-    () => ({
-      mahsulot: qatorlar.length,
-      qoldiq: qatorlar.reduce((s, q) => s + q.qoldiq, 0),
-      summa: qatorlar.reduce((s, q) => s + q.summa, 0),
-    }),
-    [qatorlar]
-  );
+  const qatorlar = useMemo<Qator[]>(() => (report?.items ?? []).map((item) => {
+    const product = katalogMahsulotlar.find((entry) => entry.id === item.productId);
+    const narx = narxTuri === "tanNarx"
+      ? Number(item.costPrice ?? 0)
+      : narxTuri === "ulgurjiNarx"
+        ? Number(item.wholesalePrice ?? 0)
+        : Number(item.retailPrice ?? 0);
+    return {
+      id: `${item.warehouseId ?? "all"}-${item.modificationId}`,
+      nomi: [item.productName, variatsiyaKor ? item.modificationName : ""].filter(Boolean).join(" — "),
+      barkod: item.barcode ?? "",
+      kategoriya: kategoriyaTanlovlari.find((entry) => entry.id === product?.categoryId)?.nomi ?? "—",
+      birlik: item.unitName ?? product?.birlik ?? "",
+      qoldiq: Number(item.quantity ?? 0),
+      narx,
+      summa: Number(item.totalAmount ?? Number(item.quantity ?? 0) * narx),
+    };
+  }), [katalogMahsulotlar, kategoriyaTanlovlari, narxTuri, report, variatsiyaKor]);
+
+  const jami = useMemo(() => ({
+    mahsulot: report?.total ?? qatorlar.length,
+    qoldiq: Number(report?.summary.quantity ?? 0),
+    summa: Number(report?.summary.totalAmount ?? 0),
+  }), [qatorlar.length, report]);
 
   const ustunlar: Ustun<Qator>[] = useMemo(() => {
     const ust: Ustun<Qator>[] = [
@@ -193,20 +169,17 @@ export default function QoldiqHisoboti() {
     return ust;
   }, [jami, shtrixKod]);
 
-  function eksport() {
-    const bosh = ["Mahsulot", ...(shtrixKod ? ["Shtrix kod"] : []), "Kategoriya", "Birlik", "Qoldiq", "Narx", "Summa"];
-    csvYuklash(
-      bosh,
-      qatorlar.map((q) => [
-        q.nomi,
-        ...(shtrixKod ? [q.barkod] : []),
-        q.kategoriya,
-        q.birlik,
-        q.qoldiq,
-        q.narx,
-        q.summa,
-      ])
-    );
+  async function eksport() {
+    if (exportYuklanmoqda) return;
+    setExportYuklanmoqda(true);
+    setXato("");
+    try {
+      await stockBalanceExport(params);
+    } catch (error) {
+      setXato(getApiErrorMessage(error));
+    } finally {
+      setExportYuklanmoqda(false);
+    }
   }
 
   return (
@@ -235,11 +208,11 @@ export default function QoldiqHisoboti() {
 
         {/* Filtrlar to'ri */}
         <div className="grid gap-x-5 gap-y-4 sm:grid-cols-2 xl:grid-cols-4">
-          <KopTanlovli label="Ombor" options={mockOmborlar} selected={omborlar} onChange={setOmborlar} />
-          <KopTanlovli label="Filial" options={mockFiliallar} selected={filiallar} onChange={setFiliallar} />
+          <KopTanlovli label="Ombor" options={omborTanlovlari} selected={omborlar} onChange={setOmborlar} />
+          <KopTanlovli label="Filial" options={filialTanlovlari} selected={filiallar} onChange={setFiliallar} />
           <KopTanlovli
             label="Mahsulot kategoriyasi"
-            options={mockKategoriyalar}
+            options={kategoriyaTanlovlari}
             selected={kategoriyalar}
             onChange={setKategoriyalar}
            
@@ -259,14 +232,14 @@ export default function QoldiqHisoboti() {
           />
           <KopTanlovli
             label="Variatsiyalar"
-            options={mockVariatsiyalar}
+            options={variatsiyaTanlovlari}
             selected={variatsiyalar}
             onChange={setVariatsiyalar}
            
           />
           <KopTanlovli
             label="Xarakteristika"
-            options={mockXarakteristikalar}
+            options={xarakteristikaTanlovlari}
             selected={xarakteristikalar}
             onChange={setXarakteristikalar}
            
@@ -290,12 +263,14 @@ export default function QoldiqHisoboti() {
 
       {/* Amal qatori */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        {xato && <p className="text-sm font-bold text-red-600">{xato}</p>}
         <button
           onClick={eksport}
+          disabled={exportYuklanmoqda}
           className="inline-flex h-12 items-center gap-2 self-start rounded-2xl border border-orange-100 bg-white px-4 text-sm font-bold text-orange-600 shadow-sm transition hover:bg-orange-50"
         >
           <Download size={16} />
-          Excel (CSV)
+          {exportYuklanmoqda ? "Yuklanmoqda..." : "Excel (.xlsx)"}
         </button>
         <div className="relative md:w-72">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -310,7 +285,9 @@ export default function QoldiqHisoboti() {
 
       {/* Natija jadvali */}
       <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm">
-        {qatorlar.length === 0 ? (
+        {yuklanmoqda ? (
+          <div className="flex h-72 items-center justify-center font-bold text-gray-400">Backenddan yuklanmoqda...</div>
+        ) : qatorlar.length === 0 ? (
           <div className="flex h-72 items-center justify-center rounded-2xl border border-dashed border-orange-200 bg-orange-50/30 text-center">
             <div>
               <Search className="mx-auto text-orange-300" size={40} />

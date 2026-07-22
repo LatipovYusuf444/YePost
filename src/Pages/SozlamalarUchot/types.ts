@@ -1,4 +1,4 @@
-// Sozlamalar uchoti: mock modul tiplari. Backendga bog'liq emas.
+// Sozlamalar UI modellari backend preference va organization endpointlariga mos.
 
 export type SozlamaBolim =
   | "profil"

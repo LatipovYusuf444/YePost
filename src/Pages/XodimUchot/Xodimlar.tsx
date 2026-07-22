@@ -5,7 +5,6 @@ import KartaSozlama, { type Maydon } from "../XaridorUchot/KartaSozlama";
 import KorinishTanlov, { type Korinish } from "../XaridorUchot/KorinishTanlov";
 import XodimFormaModal from "./XodimFormaModal";
 import XodimTafsilotlariModal from "./XodimTafsilotlariModal";
-import { mockTarix } from "./mockData";
 import type { Bolim, Lavozim, Xodim } from "./types";
 import {
   asosiyTelefon,
@@ -288,7 +287,7 @@ export default function Xodimlar({ xodimlar, lavozimlar, bolimlar, onSaqlash, on
           xodim={tafsilotXodim}
           lavozimlar={lavozimlar}
           bolimlar={bolimlar}
-          tarix={mockTarix}
+          tarix={[]}
           onTahrirlash={() => modalniOchish(tafsilotXodim)}
           onOchirish={() => {
             ochirish(tafsilotXodim);
@@ -303,7 +302,7 @@ export default function Xodimlar({ xodimlar, lavozimlar, bolimlar, onSaqlash, on
           boshlangich={tahrirXodim}
           lavozimlar={lavozimlar}
           bolimlar={bolimlar}
-          tarix={mockTarix}
+          tarix={[]}
           onYopish={() => setModalOchiq(false)}
           onSaqlash={(xodim) => {
             onSaqlash(xodim);

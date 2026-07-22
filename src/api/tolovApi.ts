@@ -8,6 +8,20 @@ export async function financeTransactions(params: {search?:string;type?:"INCOME"
   return {items:response.data.data??[],total:response.data.total??0,page:response.data.page??1,pageSize:response.data.pageSize??10,totalPages:response.data.totalPages??1};
 }
 
+export async function barchaFinanceTransactions(
+  params: Omit<Parameters<typeof financeTransactions>[0], "page" | "pageSize"> = {}
+) {
+  const first = await financeTransactions({ ...params, page: 1, pageSize: 100 });
+  if (first.totalPages <= 1) return first.items;
+
+  const pages = await Promise.all(
+    Array.from({ length: first.totalPages - 1 }, (_, index) =>
+      financeTransactions({ ...params, page: index + 2, pageSize: 100 })
+    )
+  );
+  return [first.items, ...pages.map((page) => page.items)].flat();
+}
+
 // Swagger bo'yicha mavjud real moliya endpointlari:
 // GET /finance/cash-ins va GET /finance/expenses.
 export async function moliyaTolovManbalariniOlish(): Promise<TolovMoliyaManbalari> {

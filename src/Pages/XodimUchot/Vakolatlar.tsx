@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Check, Lock, Search } from "lucide-react";
-import { mockVakolatlar } from "./mockData";
+import { backendVakolatlar } from "./backendMetadata";
 import type { Lavozim, Xodim } from "./types";
 import { lavozimNomi, xodimNomi } from "./yordamchilar";
 
@@ -17,10 +17,10 @@ export default function Vakolatlar({ xodimlar, lavozimlar, onSaqlash, embedded =
   const [qidiruv, setQidiruv] = useState("");
   const [guruh, setGuruh] = useState("Barchasi");
 
-  const guruhlar = ["Barchasi", ...new Set(mockVakolatlar.map((vakolat) => vakolat.guruh))];
+  const guruhlar = ["Barchasi", ...new Set(backendVakolatlar.map((vakolat) => vakolat.guruh))];
 
   const korsatiladiganVakolatlar = useMemo(
-    () => (guruh === "Barchasi" ? mockVakolatlar : mockVakolatlar.filter((v) => v.guruh === guruh)),
+    () => (guruh === "Barchasi" ? backendVakolatlar : backendVakolatlar.filter((v) => v.guruh === guruh)),
     [guruh]
   );
 

@@ -103,6 +103,10 @@ export const filiallarApi = {
     apiData((await apiClient.patch<Filial | ApiEnvelope<Filial>>(`/organization/branches/${id}`, data)).data),
   ochirish: async (id: string) =>
     apiData((await apiClient.delete<Filial | ApiEnvelope<Filial>>(`/organization/branches/${id}`)).data),
+  masullar: async () =>
+    apiList((await apiClient.get<NomliEntity[] | ApiListEnvelope<NomliEntity>>("/organization/branches/responsibles")).data),
+  asosiyQilish: async (id: string) =>
+    apiData((await apiClient.post<Filial | ApiEnvelope<Filial>>(`/organization/branches/${id}/set-primary`)).data),
 };
 
 // Ombor/index.tsx: omborlar ro'yxati va CRUD amallari.

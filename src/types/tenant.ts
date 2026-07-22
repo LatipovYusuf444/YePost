@@ -7,6 +7,8 @@ export type JoriyFoydalanuvchi = {
   username: string;
   fullName?: string | null;
   phone?: string | null;
+  email?: string | null;
+  position?: string | null;
   role: FoydalanuvchiRoli | string;
   isActive?: boolean;
   telegramId?: string | null;
@@ -18,6 +20,9 @@ export type JoriyFoydalanuvchi = {
 
 export type ProfilYangilashMalumoti = {
   fullName?: string;
+  phone?: string;
+  email?: string;
+  position?: string;
   telegramId?: string;
 };
 

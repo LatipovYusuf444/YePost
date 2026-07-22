@@ -1,44 +1,41 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Download, X } from "lucide-react";
 import MuddatTanlov from "./MuddatTanlov";
 import KopTanlovli from "./KopTanlovli";
-import {
-  kassaBoshlangichQoldiq,
-  mockFiliallar,
-  mockKassalar,
-  mockKassaHujjatlari,
-  mockTolovTurlari,
-} from "./mockData";
+import { useHisobotRealData } from "./HisobotRealData";
+import type { Tanlov } from "./types";
 import { bugun, bugunMinus, sanaFormat, sanadaMi, son } from "./yordamchilar";
 import type { KassaHujjati } from "./types";
 import KassaAmaliyotModal from "@/Pages/KassaUchot/KassaAmaliyotModal";
 import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali } from "@/Pages/KassaUchot/types";
+import { barchaFinanceTransactions } from "@/api/tolovApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
 
 // Kirim-chiqim (kassa oboroti) hisoboti — matritsa: kassalar × (Kirim/Chiqim/Qoldiq).
 // Qatorlar: Boshlang'ich qoldiq / Aylanma / Yakuniy qoldiq.
-// "Aylanma" bosilsa — hujjatlar bo'yicha qoldiq tafsiloti modalda ochiladi. Backendsiz.
+// "Aylanma" bosilsa — backend tranzaksiyalari hujjatlar kesimida ochiladi.
 
 // Ustunlar tartibi: Bank → Karta → Naqd
-const KASSA_TARTIB = ["kas-2", "kas-3", "kas-1"];
+const KASSA_TARTIB = ["BANK", "CARD", "CASH"];
+const KASSA_TANLOVLARI: Tanlov[] = [
+  { id: "BANK", nomi: "Bank" },
+  { id: "CARD", nomi: "Karta" },
+  { id: "CASH", nomi: "Naqd" },
+];
 
 // To'lov turi qaysi kassaga tushadi: naqd→Naqd, karta→Karta, bank/payme/click→Bank
 const TOLOV_KASSA: Record<string, string> = {
-  naqd: "kas-1",
-  karta: "kas-3",
-  bank: "kas-2",
-  payme: "kas-2",
-  click: "kas-2",
+  CASH: "CASH",
+  CARD: "CARD",
+  BANK: "BANK",
 };
 
 function kassaNomi(id: string) {
-  return mockKassalar.find((k) => k.id === id)?.nomi ?? id;
-}
-function filialNomi(id: string) {
-  return mockFiliallar.find((f) => f.id === id)?.nomi ?? id;
+  return KASSA_TANLOVLARI.find((k) => k.id === id)?.nomi ?? id;
 }
 
 // Kassa (hisobot) → Kassa moduli kanali
-const KASSA_KANAL: Record<string, KassaKanali> = { "kas-1": "naqd", "kas-2": "bank", "kas-3": "ilova" };
+const KASSA_KANAL: Record<string, KassaKanali> = { CASH: "naqd", BANK: "bank", CARD: "ilova" };
 
 function kanalOl(kassaId: string): KassaKanali {
   return KASSA_KANAL[kassaId] ?? "naqd";
@@ -48,7 +45,7 @@ function turiOl(h: KassaHujjati): KassaAmaliyotTuri {
 }
 
 // Hisobot hujjatini kassa moduli amaliyotiga o'girish (to'lov moduliga ulangan holda ochish)
-function hujjatAmaliyoti(h: KassaHujjati): KassaAmaliyoti {
+function hujjatAmaliyoti(h: KassaHujjati, filiallar: Tanlov[]): KassaAmaliyoti {
   return {
     id: h.id,
     kanal: kanalOl(h.kassaId),
@@ -57,7 +54,7 @@ function hujjatAmaliyoti(h: KassaHujjati): KassaAmaliyoti {
     holat: "tasdiqlangan",
     raqam: h.raqam,
     nomi: h.nomi,
-    kontragent: filialNomi(h.branchId),
+    kontragent: filiallar.find((item) => item.id === h.branchId)?.nomi ?? h.branchId,
     summa: h.summa,
     sana: h.sana,
     masul: "",
@@ -92,15 +89,42 @@ function csvYuklash(nom: string, ustunlar: string[], qatorlar: (string | number)
 }
 
 export default function KirimChiqimHisoboti() {
+  const { filiallar: filialTanlovlari } = useHisobotRealData();
   const [dateFrom, setDateFrom] = useState(bugunMinus(30));
   const [dateTo, setDateTo] = useState(bugun());
   const [kassalar, setKassalar] = useState<string[]>([]);
-  const [filiallar, setFiliallar] = useState<string[]>([]);
+  const [kassaHujjatlar, setKassaHujjatlar] = useState<KassaHujjati[]>([]);
+  const [yuklanmoqda, setYuklanmoqda] = useState(false);
+  const [xato, setXato] = useState("");
   const [tolovTurlari, setTolovTurlari] = useState<string[]>([]);
   const [aylanmaOchiq, setAylanmaOchiq] = useState(false);
   const [tanlanganHujjat, setTanlanganHujjat] = useState<KassaHujjati | null>(null);
   const [enlar, setEnlar] = useState<Record<string, number>>({});
   const [tartib, setTartib] = useState<string[]>(KASSA_TARTIB);
+
+  useEffect(() => {
+    let active = true;
+    setYuklanmoqda(true);
+    setXato("");
+    barchaFinanceTransactions({ dateTo })
+      .then((items) => {
+        if (!active) return;
+        setKassaHujjatlar(items.map((item) => ({
+          id: item.id,
+          sana: item.date,
+          raqam: item.refDocNumber || item.id,
+          nomi: item.note || item.refDocNumber || item.source,
+          branchId: "",
+          kassaId: TOLOV_KASSA[item.paymentType] ?? item.paymentType,
+          tolovTuri: item.paymentType,
+          turi: item.type === "EXPENSE" ? "chiqim" : "kirim",
+          summa: Number(item.amount ?? 0),
+        })));
+      })
+      .catch((error) => { if (active) setXato(getApiErrorMessage(error)); })
+      .finally(() => { if (active) setYuklanmoqda(false); });
+    return () => { active = false; };
+  }, [dateTo]);
 
   // Guruh (kassa) ustunini sudrab qayta joylashtirish
   function qaytaTartibla(fromId: string, toId: string) {
@@ -150,15 +174,13 @@ export default function KirimChiqimHisoboti() {
     [kassaIdlar]
   );
 
-  // Filial + to'lov turiga mos hujjatlar (barcha sana)
+  // Backend transaction endpointi filial kesimini bermaydi; to'lov turiga mos hujjatlar.
   const mosHujjatlar = useMemo(
     () =>
-      mockKassaHujjatlari.filter(
-        (r) =>
-          (filiallar.length === 0 || filiallar.includes(r.branchId)) &&
-          (tolovTurlari.length === 0 || tolovTurlari.includes(r.tolovTuri))
+      kassaHujjatlar.filter(
+        (r) => tolovTurlari.length === 0 || tolovTurlari.includes(r.tolovTuri)
       ),
-    [filiallar, tolovTurlari]
+    [kassaHujjatlar, tolovTurlari]
   );
 
   // Har bir kassaning boshlang'ich (davr boshigacha) va davr aylanmasi
@@ -171,7 +193,7 @@ export default function KirimChiqimHisoboti() {
         .reduce((s, r) => s + (r.turi === "kirim" ? r.summa : -r.summa), 0);
       const davr = rows.filter((r) => sanadaMi(r.sana, dateFrom, dateTo));
       map[id] = {
-        boshlangich: (kassaBoshlangichQoldiq[id] ?? 0) + oldingi,
+        boshlangich: oldingi,
         kirim: davr.filter((r) => r.turi === "kirim").reduce((s, r) => s + r.summa, 0),
         chiqim: davr.filter((r) => r.turi === "chiqim").reduce((s, r) => s + r.summa, 0),
       };
@@ -260,7 +282,7 @@ export default function KirimChiqimHisoboti() {
 
       {/* Filter paneli */}
       <section className="rounded-3xl border border-orange-100 bg-white p-5 shadow-sm">
-        <div className="grid gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
           <MuddatTanlov
             dateFrom={dateFrom}
             dateTo={dateTo}
@@ -269,16 +291,18 @@ export default function KirimChiqimHisoboti() {
               setDateTo(t);
             }}
           />
-          <KopTanlovli label="Kassa" options={mockKassalar} selected={kassalar} onChange={setKassalar} />
-          <KopTanlovli label="Filial" options={mockFiliallar} selected={filiallar} onChange={setFiliallar} />
+          <KopTanlovli label="Kassa" options={KASSA_TANLOVLARI} selected={kassalar} onChange={setKassalar} />
           <KopTanlovli
             label="To'lov turi"
-            options={mockTolovTurlari}
+            options={KASSA_TANLOVLARI}
             selected={tolovTurlari}
             onChange={setTolovTurlari}
           />
         </div>
       </section>
+
+      {xato && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
+      {yuklanmoqda && <p className="rounded-2xl bg-orange-50 px-4 py-3 text-sm font-bold text-orange-600">Kassa aylanmasi backenddan yuklanmoqda...</p>}
 
       <button
         onClick={eksport}
@@ -335,7 +359,7 @@ export default function KirimChiqimHisoboti() {
       {/* Hujjat ko'rish — kassa (to'lov) moduli amaliyot modalida ochiladi */}
       {tanlanganHujjat && (
         <KassaAmaliyotModal
-          boshlangich={hujjatAmaliyoti(tanlanganHujjat)}
+            boshlangich={hujjatAmaliyoti(tanlanganHujjat, filialTanlovlari)}
           boshlangichKanal={kanalOl(tanlanganHujjat.kassaId)}
           boshlangichTuri={turiOl(tanlanganHujjat)}
           onYopish={() => setTanlanganHujjat(null)}

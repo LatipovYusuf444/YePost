@@ -36,7 +36,9 @@ export type Filial = {
   id: string;
   name: string;
   address?: string;
+  phone?: string;
   status?: "ACTIVE" | "INACTIVE" | string;
+  isPrimary?: boolean;
   responsibleId?: string | null;
   isDeleted?: boolean;
   createdAt?: string;
@@ -46,8 +48,10 @@ export type Filial = {
 export type FilialYaratishMalumoti = {
   name: string;
   address?: string;
+  phone?: string;
   status?: "ACTIVE" | "INACTIVE";
-  responsibleId?: string;
+  isPrimary?: boolean;
+  responsibleId?: string | null;
 };
 
 export type Kompaniya = {
@@ -56,6 +60,7 @@ export type Kompaniya = {
   inn?: string;
   address?: string;
   phone?: string;
+  currency?: "UZS" | "USD" | string;
   isDeleted?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -66,6 +71,7 @@ export type KompaniyaSaqlashMalumoti = {
   inn?: string;
   address?: string;
   phone?: string;
+  currency?: "UZS" | "USD";
 };
 
 export type NomliEntity = {

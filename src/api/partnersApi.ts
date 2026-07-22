@@ -1,4 +1,3 @@
-import axios from "axios";
 import apiClient from "./axios";
 import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import type {
@@ -10,56 +9,16 @@ import type {
   YetkazibBeruvchiMalumoti,
 } from "@/types/partner";
 
-function yangiPartnerMaydonlariQollanmaydi(error: unknown) {
-  if (!axios.isAxiosError(error) || error.response?.status !== 400) return false;
-  const raw = error.response.data as { message?: string | string[] } | undefined;
-  const messages = Array.isArray(raw?.message) ? raw.message : [raw?.message ?? ""];
-  return messages.some((message) => message.includes("should not exist"));
-}
-
-function yangiCustomFieldsQollanmaydi(error: unknown) {
-  if (!axios.isAxiosError(error) || error.response?.status !== 400) return false;
-  const raw = error.response.data as { message?: string | string[] } | undefined;
-  const messages = Array.isArray(raw?.message) ? raw.message : [raw?.message ?? ""];
-  return messages.some((message) => message.includes("Noma'lum maxsus maydon"));
-}
-
-function eskiMijozPayload(data: MijozMalumoti) {
-  const payload: Partial<MijozMalumoti> = { ...data };
-  delete payload.customFields;
-  return payload;
-}
-
-function eskiKompaniyaPayload(data: MijozKompaniyasiMalumoti) {
-  return { name: data.name, inn: data.inn, phone: data.phone };
-}
-
-function eskiSupplierPayload(data: YetkazibBeruvchiMalumoti) {
-  return { name: data.name, phone: data.phone };
-}
-
 // Mijozlar sahifasi: jismoniy mijozlar to'liq CRUD.
 export const mijozlarApi = {
   royxat: async () =>
     apiList((await apiClient.get<Mijoz[] | ApiListEnvelope<Mijoz>>("/partners/customers")).data),
   olish: async (id: string) =>
     apiData((await apiClient.get<Mijoz | ApiEnvelope<Mijoz>>(`/partners/customers/${id}`)).data),
-  yaratish: async (data: MijozMalumoti) => {
-    try {
-      return apiData((await apiClient.post<Mijoz | ApiEnvelope<Mijoz>>("/partners/customers", data)).data);
-    } catch (error) {
-      if (!yangiCustomFieldsQollanmaydi(error)) throw error;
-      return apiData((await apiClient.post<Mijoz | ApiEnvelope<Mijoz>>("/partners/customers", eskiMijozPayload(data))).data);
-    }
-  },
-  yangilash: async (id: string, data: Partial<MijozMalumoti>) => {
-    try {
-      return apiData((await apiClient.patch<Mijoz | ApiEnvelope<Mijoz>>(`/partners/customers/${id}`, data)).data);
-    } catch (error) {
-      if (!yangiCustomFieldsQollanmaydi(error)) throw error;
-      return apiData((await apiClient.patch<Mijoz | ApiEnvelope<Mijoz>>(`/partners/customers/${id}`, eskiMijozPayload(data as MijozMalumoti))).data);
-    }
-  },
+  yaratish: async (data: MijozMalumoti) =>
+    apiData((await apiClient.post<Mijoz | ApiEnvelope<Mijoz>>("/partners/customers", data)).data),
+  yangilash: async (id: string, data: Partial<MijozMalumoti>) =>
+    apiData((await apiClient.patch<Mijoz | ApiEnvelope<Mijoz>>(`/partners/customers/${id}`, data)).data),
   ochirish: async (id: string) =>
     apiData((await apiClient.delete<Mijoz | ApiEnvelope<Mijoz>>(`/partners/customers/${id}`)).data),
 };
@@ -82,22 +41,10 @@ export const mijozKompaniyalariApi = {
         )
       ).data
     ),
-  yaratish: async (data: MijozKompaniyasiMalumoti) => {
-    try {
-      return apiData((await apiClient.post<MijozKompaniyasi | ApiEnvelope<MijozKompaniyasi>>("/partners/client-companies", data)).data);
-    } catch (error) {
-      if (!yangiPartnerMaydonlariQollanmaydi(error)) throw error;
-      return apiData((await apiClient.post<MijozKompaniyasi | ApiEnvelope<MijozKompaniyasi>>("/partners/client-companies", eskiKompaniyaPayload(data))).data);
-    }
-  },
-  yangilash: async (id: string, data: Partial<MijozKompaniyasiMalumoti>) => {
-    try {
-      return apiData((await apiClient.patch<MijozKompaniyasi | ApiEnvelope<MijozKompaniyasi>>(`/partners/client-companies/${id}`, data)).data);
-    } catch (error) {
-      if (!yangiPartnerMaydonlariQollanmaydi(error)) throw error;
-      return apiData((await apiClient.patch<MijozKompaniyasi | ApiEnvelope<MijozKompaniyasi>>(`/partners/client-companies/${id}`, eskiKompaniyaPayload(data as MijozKompaniyasiMalumoti))).data);
-    }
-  },
+  yaratish: async (data: MijozKompaniyasiMalumoti) =>
+    apiData((await apiClient.post<MijozKompaniyasi | ApiEnvelope<MijozKompaniyasi>>("/partners/client-companies", data)).data),
+  yangilash: async (id: string, data: Partial<MijozKompaniyasiMalumoti>) =>
+    apiData((await apiClient.patch<MijozKompaniyasi | ApiEnvelope<MijozKompaniyasi>>(`/partners/client-companies/${id}`, data)).data),
   ochirish: async (id: string) =>
     apiData(
       (
@@ -123,22 +70,10 @@ export const yetkazibBeruvchilarApi = {
       (await apiClient.get<YetkazibBeruvchi | ApiEnvelope<YetkazibBeruvchi>>(`/partners/suppliers/${id}`))
         .data
     ),
-  yaratish: async (data: YetkazibBeruvchiMalumoti) => {
-    try {
-      return apiData((await apiClient.post<YetkazibBeruvchi | ApiEnvelope<YetkazibBeruvchi>>("/partners/suppliers", data)).data);
-    } catch (error) {
-      if (!yangiPartnerMaydonlariQollanmaydi(error)) throw error;
-      return apiData((await apiClient.post<YetkazibBeruvchi | ApiEnvelope<YetkazibBeruvchi>>("/partners/suppliers", eskiSupplierPayload(data))).data);
-    }
-  },
-  yangilash: async (id: string, data: Partial<YetkazibBeruvchiMalumoti>) => {
-    try {
-      return apiData((await apiClient.patch<YetkazibBeruvchi | ApiEnvelope<YetkazibBeruvchi>>(`/partners/suppliers/${id}`, data)).data);
-    } catch (error) {
-      if (!yangiPartnerMaydonlariQollanmaydi(error)) throw error;
-      return apiData((await apiClient.patch<YetkazibBeruvchi | ApiEnvelope<YetkazibBeruvchi>>(`/partners/suppliers/${id}`, eskiSupplierPayload(data as YetkazibBeruvchiMalumoti))).data);
-    }
-  },
+  yaratish: async (data: YetkazibBeruvchiMalumoti) =>
+    apiData((await apiClient.post<YetkazibBeruvchi | ApiEnvelope<YetkazibBeruvchi>>("/partners/suppliers", data)).data),
+  yangilash: async (id: string, data: Partial<YetkazibBeruvchiMalumoti>) =>
+    apiData((await apiClient.patch<YetkazibBeruvchi | ApiEnvelope<YetkazibBeruvchi>>(`/partners/suppliers/${id}`, data)).data),
   ochirish: async (id: string) =>
     apiData(
       (

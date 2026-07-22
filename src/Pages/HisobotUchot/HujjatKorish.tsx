@@ -3,25 +3,21 @@ import RealizatsiyaKorishModal from "./omborModallari/RealizatsiyaKorishModal";
 import ChiqimKorishModal from "./omborModallari/ChiqimKorishModal";
 import InventarizatsiyaKorishModal from "./omborModallari/InventarizatsiyaKorishModal";
 import type { Mahsulot as OmborMahsulot, OmborItem } from "./omborModallari/types";
-import {
-  mockMaxsulotlar,
-  mockMijozlar,
-  mockOmborlar,
-  mockYetkazibBeruvchilar,
-} from "./mockData";
-import type { TovarHarakati } from "./types";
+import { useHisobotRealData } from "./HisobotRealData";
+import type { Maxsulot, Tanlov, TovarHarakati } from "./types";
 
-// OmborUchot "Korish" modallarini HisobotUchot mock harakatidan qayta ishlatamiz.
+// Hisobotdagi real ombor harakatini hujjat ko'rinishida ochadi.
 // Har bir harakat qatoridan mos hujjat obyekti yasab beramiz (bitta satrli).
 
-const MASUL_SHAXS = "Abdulaziz";
+const MASUL_SHAXS = "Tizim";
 
 function nomTop(royxat: { id: string; nomi: string }[], id: string) {
   return royxat.find((item) => item.id === id)?.nomi ?? "";
 }
 
 // HisobotUchot mahsulotlarini OmborUchot Mahsulot ko'rinishiga o'tkazamiz.
-const omborMahsulotlar: OmborMahsulot[] = mockMaxsulotlar.map((m) => ({
+function omborMahsulotlarga(maxsulotlar: Maxsulot[]): OmborMahsulot[] {
+  return maxsulotlar.map((m) => ({
   id: m.id,
   nomi: m.nomi,
   birlik: m.birlik,
@@ -30,14 +26,17 @@ const omborMahsulotlar: OmborMahsulot[] = mockMaxsulotlar.map((m) => ({
   tanNarx: m.tanNarx,
   sotuvNarx: m.sotuvNarx,
   ulgurjiNarx: m.ulgurjiNarx,
-}));
+  }));
+}
 
-const omborlar: OmborItem[] = mockOmborlar.map((o) => ({
+function omborlarga(tanlovlar: Tanlov[]): OmborItem[] {
+  return tanlovlar.map((o) => ({
   id: o.id,
   nomi: o.nomi,
   manzil: "—",
   faol: true,
-}));
+  }));
+}
 
 export default function HujjatKorish({
   harakat,
@@ -46,7 +45,10 @@ export default function HujjatKorish({
   harakat: TovarHarakati;
   onYopish: () => void;
 }) {
-  const mahsulot = mockMaxsulotlar.find((m) => m.id === harakat.productId);
+  const { maxsulotlar, omborlar: omborTanlovlari, mijozlar, yetkazibBeruvchilar } = useHisobotRealData();
+  const omborMahsulotlar = omborMahsulotlarga(maxsulotlar);
+  const omborlar = omborlarga(omborTanlovlari);
+  const mahsulot = maxsulotlar.find((m) => m.id === harakat.productId);
   const nomi = `${HUJJAT_PREFIX[harakat.hujjatTuri]} №${harakat.hujjatRaqam}`;
   const shtrixKod = mahsulot?.barkod ?? "";
   const tanNarx = mahsulot?.tanNarx ?? 0;
@@ -60,7 +62,7 @@ export default function HujjatKorish({
         hujjat={{
           id: harakat.id,
           nomi,
-          yetkazibBeruvchi: nomTop(mockYetkazibBeruvchilar, harakat.supplierId),
+          yetkazibBeruvchi: nomTop(yetkazibBeruvchilar, harakat.supplierId),
           sana: harakat.sana,
           masulShaxs: MASUL_SHAXS,
           holati: "tasdiqlangan",
@@ -93,7 +95,7 @@ export default function HujjatKorish({
         hujjat={{
           id: harakat.id,
           nomi,
-          mijoz: nomTop(mockMijozlar, harakat.customerId),
+          mijoz: nomTop(mijozlar, harakat.customerId),
           kompaniya: "",
           sana: harakat.sana,
           masulShaxs: MASUL_SHAXS,

@@ -19,6 +19,7 @@ export type NomliBoglanish = {
 export type Xarajat = {
   id: string;
   branchId?: string | null;
+  responsibleId?: string | null;
   date?: string;
   category: XarajatKategoriyasi | string;
   amount: number;
@@ -66,6 +67,7 @@ export type QarzSaqlash = {
 export type KassaKirim = {
   id: string;
   branchId?: string | null;
+  responsibleId?: string | null;
   date?: string;
   source: KassaKirimManbasi | string;
   amount: number;

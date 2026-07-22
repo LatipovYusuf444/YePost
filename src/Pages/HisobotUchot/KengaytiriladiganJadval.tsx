@@ -2,7 +2,7 @@ import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { Check, Settings, Trash2 } from "lucide-react";
 
 // Ustun kengligini sichqoncha bilan o'zgartirsa (resize) va sudrab joyini
-// almashtirsa (reorder) bo'ladigan umumiy jadval. Mock modul uchun, backendsiz.
+// almashtirsa (reorder) bo'ladigan umumiy hisobot jadvali.
 
 export type Ustun<T> = {
   id: string;
@@ -25,7 +25,7 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
   qatorlar,
   jamiBor = false,
   onQatorBosildi,
-  kengaytir = false,
+  kengaytir = true,
   qatorKlass,
   sozlamaBor = false,
   onQatorOchirish,
@@ -122,9 +122,9 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
   }
 
   return (
-    <div className="scrollbar-orange overflow-x-auto rounded-2xl border border-orange-100">
+    <div className="scrollbar-orange w-full overflow-x-auto rounded-2xl border border-orange-100">
       <table
-        className="text-left text-sm"
+        className="min-w-full text-left text-sm"
         style={
           kengaytir
             ? { tableLayout: "fixed", width: "100%", minWidth: jamiKenglik }

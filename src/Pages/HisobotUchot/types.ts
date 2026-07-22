@@ -1,5 +1,4 @@
-// Hisobot uchoti: mock modul tiplari. Backendga bog'liq emas.
-// Yangi maydon qo'shilganda: shu tipga qo'shiladi → mockData.ts ga qiymat → jadvalga ustun.
+// Hisobot UI modellari real report endpointlari javobidan shakllantiriladi.
 
 export type HisobotTab = "stock" | "qoldiq" | "counterparty" | "profit" | "foydaxarajat" | "income" | "audit";
 

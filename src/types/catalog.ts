@@ -11,6 +11,7 @@ export type KategoriyaMalumoti = {
 
 export type OlchovBirligi = {
   id: string;
+  code?: string | null;
   name: string;
   shortName?: string | null;
   createdAt?: string;
@@ -18,6 +19,7 @@ export type OlchovBirligi = {
 };
 
 export type OlchovBirligiMalumoti = {
+  code?: string;
   name: string;
   shortName?: string;
 };

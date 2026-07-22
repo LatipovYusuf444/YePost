@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { ShieldCheck, X } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
-import { mockVakolatlar } from "./mockData";
+import { backendVakolatlar } from "./backendMetadata";
 import type { Lavozim } from "./types";
 import { bugun, maydonKlass, yangiId } from "./yordamchilar";
 
@@ -21,7 +21,7 @@ export default function LavozimModal({ boshlangich, onYopish, onSaqlash }: Props
   );
   const [xato, setXato] = useState("");
 
-  const guruhlar = [...new Set(mockVakolatlar.map((vakolat) => vakolat.guruh))];
+  const guruhlar = [...new Set(backendVakolatlar.map((vakolat) => vakolat.guruh))];
 
   function toggle(kod: string) {
     setVakolatlar((oldingi) => {
@@ -115,7 +115,7 @@ export default function LavozimModal({ boshlangich, onYopish, onSaqlash }: Props
                 {guruh}
               </h2>
               <div className="mt-4 space-y-2">
-                {mockVakolatlar
+                {backendVakolatlar
                   .filter((vakolat) => vakolat.guruh === guruh)
                   .map((vakolat) => (
                     <label

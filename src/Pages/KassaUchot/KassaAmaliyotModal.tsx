@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Banknote,
   CalendarDays,
@@ -11,10 +11,10 @@ import {
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
-import { useUchotStore } from "@/store/uchotStore";
 import Tanlov from "@/Pages/XaridorUchot/Tanlov";
-import { mockXodimlar, mockYetkazibBeruvchilar } from "@/Pages/XaridorUchot/mockData";
-import { asosiyTelefon, xaridorNomi } from "@/Pages/XaridorUchot/yordamchilar";
+import { foydalanuvchilarApi } from "@/api/accountsApi";
+import { mijozlarApi, yetkazibBeruvchilarApi } from "@/api/partnersApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali } from "./types";
 import {
   hozir,
@@ -68,6 +68,9 @@ type Props = {
   onSaqlash: (amaliyot: KassaAmaliyoti) => void;
 };
 
+type XaridorTanlov = { id: string; nomi: string; telefon: string; balans: number };
+type OddiyTanlov = { id: string; nomi: string };
+
 // Kassa amaliyotini yaratish (o'zimizning "Yangi kirim" uslubida).
 // Mijozdan to'lov turi tanlansa — mijoz tanlanadi va qarzi (balans) kamayadi.
 export default function KassaAmaliyotModal({
@@ -77,8 +80,9 @@ export default function KassaAmaliyotModal({
   onYopish,
   onSaqlash,
 }: Props) {
-  const xaridorlar = useUchotStore((s) => s.xaridorlar);
-  const amaliyotlar = useUchotStore((s) => s.amaliyotlar);
+  const [xaridorlar, setXaridorlar] = useState<XaridorTanlov[]>([]);
+  const [xodimlar, setXodimlar] = useState<OddiyTanlov[]>([]);
+  const [yetkazibBeruvchilar, setYetkazibBeruvchilar] = useState<OddiyTanlov[]>([]);
 
   const [turi, setTuri] = useState<KassaAmaliyotTuri>(boshlangich?.turi ?? boshlangichTuri);
   const [kanal, setKanal] = useState<KassaKanali>(boshlangich?.kanal ?? boshlangichKanal);
@@ -92,11 +96,29 @@ export default function KassaAmaliyotModal({
   const [izoh, setIzoh] = useState(boshlangich?.izoh ?? "");
   const [xato, setXato] = useState("");
 
+  useEffect(() => {
+    let active = true;
+    Promise.all([mijozlarApi.royxat(), foydalanuvchilarApi.royxat(), yetkazibBeruvchilarApi.royxat()])
+      .then(([customers, users, suppliers]) => {
+        if (!active) return;
+        setXaridorlar(customers.map((item) => ({
+          id: item.id,
+          nomi: [item.firstName, item.lastName].filter(Boolean).join(" ") || item.phone || item.id,
+          telefon: item.phone ?? "",
+          balans: Number(item.balance ?? 0),
+        })));
+        setXodimlar(users.map((item) => ({ id: item.id, nomi: item.fullName || item.username })));
+        setYetkazibBeruvchilar(suppliers.map((item) => ({ id: item.id, nomi: item.name })));
+      })
+      .catch((error) => setXato(getApiErrorMessage(error)));
+    return () => { active = false; };
+  }, []);
+
   // Mavjud hujjat: seed'lar tasdiqlangan; yangi hujjat — qoralama.
   const mavjudHolat = boshlangich?.holat ?? "tasdiqlangan";
   // Yangi hujjat darrov tahrirlanadi; mavjudi avval ko'rish rejimida ochiladi.
   const [tahrirRejim, setTahrirRejim] = useState(boshlangich === null);
-  const readonly = !tahrirRejim;
+  const readonly = Boolean(boshlangich?.readonly) || !tahrirRejim;
 
   const yonalish = turYonalishi[turi];
   const tushum = yonalish === "tushum";
@@ -138,7 +160,7 @@ export default function KassaAmaliyotModal({
     }
 
     const yakuniyKontragent =
-      partiya === "xaridor" && tanlanganXaridor ? xaridorNomi(tanlanganXaridor) : kontragent.trim();
+      partiya === "xaridor" && tanlanganXaridor ? tanlanganXaridor.nomi : kontragent.trim();
 
     onSaqlash({
       id: boshlangich?.id ?? yangiId("ks"),
@@ -147,13 +169,16 @@ export default function KassaAmaliyotModal({
       turi,
       holat: tasdiqla ? "tasdiqlangan" : "qoralama",
       xaridorId: partiya === "xaridor" ? xaridorId : undefined,
-      raqam: boshlangich?.raqam ?? keyingiRaqam(amaliyotlar),
+      raqam: boshlangich?.raqam ?? keyingiRaqam([]),
       nomi: nomi.trim() || turNomi[turi],
       kontragent: yakuniyKontragent,
       summa: Number(summa),
       sana: new Date(`${sana}T${new Date().toISOString().slice(11, 16)}`).toISOString(),
       masul: masul.trim(),
       izoh: izoh.trim(),
+      backendSource: boshlangich?.backendSource,
+      backendRefId: boshlangich?.backendRefId,
+      readonly: boshlangich?.readonly,
     });
   }
 
@@ -200,7 +225,7 @@ export default function KassaAmaliyotModal({
           {/* O'ngda (tepada) — faqat ko'rish rejimida.
               Qoralama → Tahrirlash; Tasdiqlangan → "Bekor qilish" (tasdiqlashni bekor
               qilib, o'sha oynada tahrirlashga o'tadi). Yopish faqat chapdagi X. */}
-          {!tahrirRejim &&
+          {!boshlangich?.readonly && !tahrirRejim &&
             (mavjudHolat === "qoralama" ? (
               <button
                 type="button"
@@ -271,7 +296,7 @@ export default function KassaAmaliyotModal({
                       qidiruv
                       variantlar={xaridorlar.map((x) => ({
                         value: x.id,
-                        label: `${xaridorNomi(x)} — ${asosiyTelefon(x)}`,
+                        label: `${x.nomi}${x.telefon ? ` — ${x.telefon}` : ""}`,
                       }))}
                     />
                     {tanlanganXaridor && (
@@ -301,9 +326,9 @@ export default function KassaAmaliyotModal({
                       onChange={setKontragent}
                       placeholder="Xodimni tanlang"
                       qidiruv
-                      variantlar={mockXodimlar.map((x) => ({
-                        value: x.ism,
-                        label: `${x.ism} — ${x.lavozim}`,
+                      variantlar={xodimlar.map((x) => ({
+                        value: x.nomi,
+                        label: x.nomi,
                       }))}
                     />
                   </Maydon>
@@ -316,7 +341,7 @@ export default function KassaAmaliyotModal({
                       onChange={setKontragent}
                       placeholder="Yetkazib beruvchini tanlang"
                       qidiruv
-                      variantlar={mockYetkazibBeruvchilar.map((b) => ({
+                      variantlar={yetkazibBeruvchilar.map((b) => ({
                         value: b.nomi,
                         label: b.nomi,
                       }))}
@@ -374,7 +399,7 @@ export default function KassaAmaliyotModal({
                     qiymat={masul}
                     onChange={setMasul}
                     placeholder="Mas'ul shaxsni tanlang"
-                    variantlar={mockXodimlar.map((x) => ({ value: x.ism, label: x.ism }))}
+                    variantlar={xodimlar.map((x) => ({ value: x.nomi, label: x.nomi }))}
                   />
                 </Maydon>
 

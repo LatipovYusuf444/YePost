@@ -1,39 +1,32 @@
 import apiClient from "./axios";
 import { apiData, type ApiEnvelope } from "./response";
 
-export type TelegramIntegratsiya = {
-  botToken?: string | null;
-  chatId?: string | null;
-  isActive?: boolean;
-  crmBotEnabled?: boolean;
-};
+export type TelegramIntegratsiya = { botToken?: string | null; chatId?: string | null; isActive?: boolean; crmBotEnabled?: boolean };
+export type PrinterIntegratsiya = { ipAddress?: string | null; port?: number | null; isActive?: boolean };
+export type TelegramIntegratsiyaSaqlash = { botToken?: string; chatId?: string; isActive?: boolean; crmBotEnabled?: boolean };
+export type PrinterIntegratsiyaSaqlash = { ipAddress?: string; port?: number; isActive?: boolean };
 
-export type PrinterIntegratsiya = {
-  ipAddress?: string | null;
-  port?: number | null;
+export type TolovProvayderi = "PAYME" | "CLICK" | "UZUM";
+export type TolovIntegratsiyasi = {
+  provider: TolovProvayderi;
+  merchantId?: string | null;
+  serviceId?: string | null;
   isActive?: boolean;
+  hasSecretKey?: boolean;
+  updatedAt?: string | null;
 };
-
-export type TelegramIntegratsiyaSaqlash = {
-  botToken?: string;
-  chatId?: string;
-  isActive?: boolean;
-  crmBotEnabled?: boolean;
-};
-
-export type PrinterIntegratsiyaSaqlash = {
-  ipAddress?: string;
-  port?: number;
+export type TolovIntegratsiyasiSaqlash = {
+  merchantId?: string;
+  serviceId?: string;
+  secretKey?: string;
   isActive?: boolean;
 };
 
 export const integratsiyalarApi = {
-  telegramOlish: async () =>
-    apiData((await apiClient.get<TelegramIntegratsiya | ApiEnvelope<TelegramIntegratsiya>>("/integrations/telegram")).data),
-  telegramYangilash: async (data: TelegramIntegratsiyaSaqlash) =>
-    apiData((await apiClient.patch<TelegramIntegratsiya | ApiEnvelope<TelegramIntegratsiya>>("/integrations/telegram", data)).data),
-  printerOlish: async () =>
-    apiData((await apiClient.get<PrinterIntegratsiya | ApiEnvelope<PrinterIntegratsiya>>("/integrations/printer")).data),
-  printerYangilash: async (data: PrinterIntegratsiyaSaqlash) =>
-    apiData((await apiClient.patch<PrinterIntegratsiya | ApiEnvelope<PrinterIntegratsiya>>("/integrations/printer", data)).data),
+  telegramOlish: async () => apiData((await apiClient.get<TelegramIntegratsiya | ApiEnvelope<TelegramIntegratsiya>>("/integrations/telegram")).data),
+  telegramYangilash: async (data: TelegramIntegratsiyaSaqlash) => apiData((await apiClient.patch<TelegramIntegratsiya | ApiEnvelope<TelegramIntegratsiya>>("/integrations/telegram", data)).data),
+  printerOlish: async () => apiData((await apiClient.get<PrinterIntegratsiya | ApiEnvelope<PrinterIntegratsiya>>("/integrations/printer")).data),
+  printerYangilash: async (data: PrinterIntegratsiyaSaqlash) => apiData((await apiClient.patch<PrinterIntegratsiya | ApiEnvelope<PrinterIntegratsiya>>("/integrations/printer", data)).data),
+  tolovOlish: async (provider: TolovProvayderi) => apiData((await apiClient.get<TolovIntegratsiyasi | ApiEnvelope<TolovIntegratsiyasi>>(`/integrations/payments/${provider}`)).data),
+  tolovYangilash: async (provider: TolovProvayderi, data: TolovIntegratsiyasiSaqlash) => apiData((await apiClient.patch<TolovIntegratsiyasi | ApiEnvelope<TolovIntegratsiyasi>>(`/integrations/payments/${provider}`, data)).data),
 };

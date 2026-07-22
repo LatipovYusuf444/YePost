@@ -1,24 +1,62 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
 import KassaAmaliyotModal from "../KassaUchot/KassaAmaliyotModal";
 import type { KassaAmaliyoti } from "../KassaUchot/types";
 import { amaliyotTuriMatni, kanalMatni, sanaFormat, summaFormat } from "../KassaUchot/yordamchilar";
-import { useUchotStore } from "@/store/uchotStore";
+import { sotuvlarRoyxatiniOlish } from "@/api/savdoApi";
+import { financeTransactions } from "@/api/tolovApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
 
 // Mijozning kassadagi to'lovlari (pul tushgan/qaytarilgan). Umumiy store'dan o'qiladi.
 // Qatorni bosganda "pul tushgan" (kassa amaliyoti) oynasi ochiladi.
 export default function XaridorTolovlariTab({ xaridorId }: { xaridorId: string }) {
-  const amaliyotlar = useUchotStore((s) => s.amaliyotlar);
-  const amaliyotSaqlash = useUchotStore((s) => s.amaliyotSaqlash);
+  const [tolovlar, setTolovlar] = useState<KassaAmaliyoti[]>([]);
+  const [yuklanmoqda, setYuklanmoqda] = useState(true);
+  const [xatolik, setXatolik] = useState("");
   const [korilayotgan, setKorilayotgan] = useState<KassaAmaliyoti | null>(null);
 
-  const tolovlar = useMemo(
-    () =>
-      amaliyotlar
-        .filter((a) => a.xaridorId === xaridorId)
-        .sort((a, b) => new Date(b.sana).getTime() - new Date(a.sana).getTime()),
-    [amaliyotlar, xaridorId]
-  );
+  useEffect(() => {
+    let active = true;
+    setYuklanmoqda(true);
+    setXatolik("");
+    Promise.all([sotuvlarRoyxatiniOlish(), financeTransactions({ source: "SALE", page: 1, pageSize: 100 })])
+      .then(([sales, transactions]) => {
+        if (!active) return;
+        const saleIds = new Set(sales.filter((sale) => sale.customerId === xaridorId || sale.customer?.id === xaridorId).map((sale) => sale.id));
+        setTolovlar(transactions.items
+          .filter((item) => Boolean(item.refId && saleIds.has(item.refId)))
+          .map<KassaAmaliyoti>((item) => ({
+            id: item.id,
+            kanal: item.paymentType === "BANK" ? "bank" : item.paymentType === "CARD" ? "ilova" : "naqd",
+            yonalish: "tushum",
+            turi: "donalik_savdo",
+            holat: "tasdiqlangan",
+            xaridorId,
+            raqam: item.refDocNumber || item.id.slice(0, 8).toUpperCase(),
+            nomi: item.refDocNumber || "Sotuv to'lovi",
+            kontragent: "",
+            summa: Number(item.amount ?? 0),
+            sana: item.date,
+            masul: "Tizim",
+            izoh: item.note ?? "",
+            backendSource: "SALE",
+            backendRefId: item.refId ?? item.id,
+            readonly: true,
+          }))
+          .sort((a, b) => new Date(b.sana).getTime() - new Date(a.sana).getTime()));
+      })
+      .catch((error) => setXatolik(getApiErrorMessage(error)))
+      .finally(() => { if (active) setYuklanmoqda(false); });
+    return () => { active = false; };
+  }, [xaridorId]);
+
+  if (yuklanmoqda) {
+    return <div className="px-9 py-7 text-sm font-bold text-slate-500">To'lovlar backenddan yuklanmoqda...</div>;
+  }
+
+  if (xatolik) {
+    return <div className="px-9 py-7 text-sm font-bold text-red-600">{xatolik}</div>;
+  }
 
   if (tolovlar.length === 0) {
     return (
@@ -94,10 +132,7 @@ export default function XaridorTolovlariTab({ xaridorId }: { xaridorId: string }
           boshlangichKanal={korilayotgan.kanal}
           boshlangichTuri={korilayotgan.turi}
           onYopish={() => setKorilayotgan(null)}
-          onSaqlash={(amaliyot) => {
-            amaliyotSaqlash(amaliyot);
-            setKorilayotgan(null);
-          }}
+          onSaqlash={() => setKorilayotgan(null)}
         />
       )}
     </div>

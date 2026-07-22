@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -9,7 +9,16 @@ import {
   Search,
   Smartphone,
 } from "lucide-react";
-import { useUchotStore } from "@/store/uchotStore";
+import { barchaFinanceTransactions } from "@/api/tolovApi";
+import { kassaKirimApi, xarajatApi } from "@/api/financeApi";
+import { foydalanuvchilarApi } from "@/api/accountsApi";
+import { filiallarApi } from "@/api/omborApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import type { FinanceTransaction } from "@/types/tolov";
+import type { TolovUsuli } from "@/types/finance";
+import type { KassaKirim, Xarajat } from "@/types/finance";
+import type { AccountFoydalanuvchi } from "@/types/account";
+import type { Filial } from "@/types/ombor";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
 import KassaAmaliyotModal from "./KassaAmaliyotModal";
 import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali, KassaYonalishi } from "./types";
@@ -49,12 +58,74 @@ const guruhlar: Guruh[] = [
   },
 ];
 
-// Kassa uchoti — mock modul (backendsiz). 3 kanal × 2 yo'nalish.
+// Kassa uchoti backenddagi yagona finance transaction oqimidan foydalanadi.
+function kanalniMoslash(paymentType: string): KassaKanali {
+  if (paymentType === "BANK") return "bank";
+  if (paymentType === "CARD") return "ilova";
+  return "naqd";
+}
+
+function backendTuriniMoslash(item: FinanceTransaction, cashIn?: KassaKirim, expense?: Xarajat): KassaAmaliyotTuri {
+  if (item.source === "SALE") return "donalik_savdo";
+  if (item.source === "RETURN") return "xaridorga_qaytarish";
+  if (item.source === "CASH_IN") return cashIn?.source === "LOAN" ? "hisobdor_qaytardi" : "boshqa_kirim";
+  return expense?.category === "SALARY" ? "ish_haqi" : "xarajat";
+}
+
+const cashInNomi: Record<string, string> = {
+  OWNER: "Ta'sischidan kirim",
+  INVESTOR: "Investordan kirim",
+  LOAN: "Qarz mablag'i kirimi",
+  OTHER: "Boshqa kassa kirimi",
+};
+const expenseNomi: Record<string, string> = {
+  SALARY: "Ish haqi",
+  RENT: "Ijara xarajati",
+  UTILITIES: "Kommunal xarajat",
+  LOGISTICS: "Logistika xarajati",
+  MARKETING: "Marketing xarajati",
+  OTHER: "Boshqa xarajat",
+};
+
+function amaliyotgaMoslash(
+  item: FinanceTransaction,
+  cashIns: Map<string, KassaKirim>,
+  expenses: Map<string, Xarajat>,
+  users: Map<string, AccountFoydalanuvchi>,
+  branches: Map<string, Filial>
+): KassaAmaliyoti {
+  const cashIn = item.source === "CASH_IN" ? cashIns.get(item.refId ?? "") : undefined;
+  const expense = item.source === "EXPENSE" ? expenses.get(item.refId ?? "") : undefined;
+  const raw = cashIn ?? expense;
+  const responsible = raw?.responsibleId ? users.get(raw.responsibleId) : undefined;
+  const branch = raw?.branchId ? branches.get(raw.branchId) : undefined;
+  return {
+    id: item.id,
+    kanal: kanalniMoslash(item.paymentType),
+    yonalish: item.type === "INCOME" ? "tushum" : "chiqim",
+    turi: backendTuriniMoslash(item, cashIn, expense),
+    holat: "tasdiqlangan",
+    raqam: item.refDocNumber || item.id.slice(0, 8).toUpperCase(),
+    nomi: item.refDocNumber || (cashIn ? cashInNomi[cashIn.source] : expense ? expenseNomi[expense.category] : item.source),
+    kontragent: branch?.name ?? "",
+    summa: Number(item.amount ?? 0),
+    sana: item.date,
+    masul: responsible?.fullName || responsible?.username || "Tizim",
+    izoh: raw?.note ?? item.note ?? "",
+    backendSource: item.source,
+    backendRefId: item.refId ?? item.id,
+    backendCashInSource: cashIn?.source as KassaAmaliyoti["backendCashInSource"],
+    backendExpenseCategory: expense?.category as KassaAmaliyoti["backendExpenseCategory"],
+    backendBranchId: raw?.branchId ?? undefined,
+    readonly: item.source === "SALE" || item.source === "RETURN",
+  };
+}
+
 export default function KassaUchot() {
   // Amaliyotlar umumiy store'da — xaridordan to'lov xaridor qarzini kamaytiradi.
-  const amaliyotlar = useUchotStore((s) => s.amaliyotlar);
-  const amaliyotSaqlash = useUchotStore((s) => s.amaliyotSaqlash);
-  const amaliyotOchirish = useUchotStore((s) => s.amaliyotOchirish);
+  const [amaliyotlar, setAmaliyotlar] = useState<KassaAmaliyoti[]>([]);
+  const [yuklanmoqda, setYuklanmoqda] = useState(true);
+  const [xatolik, setXatolik] = useState("");
   const [kanal, setKanal] = useState<KassaKanali>("naqd");
   const [yonalish, setYonalish] = useState<KassaYonalishi>("tushum");
   const [ochiqMenyu, setOchiqMenyu] = useState<KassaKanali | null>(null);
@@ -62,26 +133,81 @@ export default function KassaUchot() {
   const [modalOchiq, setModalOchiq] = useState(false);
   const [tahrirAmaliyot, setTahrirAmaliyot] = useState<KassaAmaliyoti | null>(null);
 
+  const yuklash = useCallback(async () => {
+    setYuklanmoqda(true);
+    setXatolik("");
+    try {
+      const [transactions, cashIns, expenses, users, branches] = await Promise.all([
+        barchaFinanceTransactions(),
+        kassaKirimApi.royxat(),
+        xarajatApi.royxat(),
+        foydalanuvchilarApi.royxat(),
+        filiallarApi.royxat(),
+      ]);
+      const cashInMap = new Map(cashIns.map((item) => [item.id, item]));
+      const expenseMap = new Map(expenses.map((item) => [item.id, item]));
+      const userMap = new Map(users.map((item) => [item.id, item]));
+      const branchMap = new Map(branches.map((item) => [item.id, item]));
+      setAmaliyotlar(transactions.map((item) => amaliyotgaMoslash(item, cashInMap, expenseMap, userMap, branchMap)));
+    } catch (error) {
+      setXatolik(getApiErrorMessage(error));
+    } finally {
+      setYuklanmoqda(false);
+    }
+  }, []);
+
+  useEffect(() => { void yuklash(); }, [yuklash]);
+
   function modalniOchish(amaliyot?: KassaAmaliyoti) {
     setTahrirAmaliyot(amaliyot ?? null);
     setModalOchiq(true);
   }
 
-  function saqlash(amaliyot: KassaAmaliyoti) {
-    amaliyotSaqlash(amaliyot);
-    // Yangi yozuv o'z bo'limiga tushib, o'sha bo'lim ochiladi.
-    setKanal(amaliyot.kanal);
-    setYonalish(amaliyot.yonalish);
-    setModalOchiq(false);
+  async function saqlash(amaliyot: KassaAmaliyoti) {
+    setXatolik("");
+    try {
+      const paymentMethod: TolovUsuli = amaliyot.kanal === "bank" ? "BANK" : amaliyot.kanal === "ilova" ? "CARD" : "CASH";
+      const payload = {
+        date: amaliyot.sana,
+        amount: amaliyot.summa,
+        paymentMethod,
+        note: amaliyot.izoh || amaliyot.nomi,
+        branchId: amaliyot.backendBranchId,
+      };
+      const cashInSource = amaliyot.backendCashInSource ?? (amaliyot.turi === "hisobdor_qaytardi" ? "LOAN" : "OTHER");
+      const expenseCategory = amaliyot.backendExpenseCategory ?? (amaliyot.turi === "ish_haqi" ? "SALARY" : "OTHER");
+      if (amaliyot.backendSource === "CASH_IN" && amaliyot.backendRefId) {
+        await kassaKirimApi.yangilash(amaliyot.backendRefId, { ...payload, source: cashInSource });
+      } else if (amaliyot.backendSource === "EXPENSE" && amaliyot.backendRefId) {
+        await xarajatApi.yangilash(amaliyot.backendRefId, { ...payload, category: expenseCategory });
+      } else if (amaliyot.yonalish === "tushum") {
+        await kassaKirimApi.yaratish({ ...payload, source: cashInSource });
+      } else {
+        await xarajatApi.yaratish({ ...payload, category: expenseCategory });
+      }
+      setKanal(amaliyot.kanal);
+      setYonalish(amaliyot.yonalish);
+      setModalOchiq(false);
+      await yuklash();
+    } catch (error) {
+      setXatolik(getApiErrorMessage(error));
+    }
   }
 
-  function ochirish(amaliyot: KassaAmaliyoti) {
+  async function ochirish(amaliyot: KassaAmaliyoti) {
+    if (amaliyot.readonly || !amaliyot.backendRefId) return;
     if (!window.confirm(`${amaliyot.raqam} amaliyotini o'chirasizmi?`)) return;
-    amaliyotOchirish(amaliyot.id);
+    try {
+      if (amaliyot.backendSource === "CASH_IN") await kassaKirimApi.ochirish(amaliyot.backendRefId);
+      else if (amaliyot.backendSource === "EXPENSE") await xarajatApi.ochirish(amaliyot.backendRefId);
+      await yuklash();
+    } catch (error) {
+      setXatolik(getApiErrorMessage(error));
+    }
   }
 
   // Bo'limga qarab modalning boshlang'ich turi.
-  const boshlangichTuri: KassaAmaliyotTuri = yonalish === "tushum" ? "xaridor_tolovi" : "xarajat";
+  const boshlangichTuri: KassaAmaliyotTuri = yonalish === "tushum" ? "boshqa_kirim" : "xarajat";
 
   const tushum = yonalish === "tushum";
   const joriyGuruh = guruhlar.find((g) => g.kanal === kanal) ?? guruhlar[0];
@@ -177,6 +303,17 @@ export default function KassaUchot() {
           Naqd, bank va ilova orqali tushum va chiqimlar nazorati.
         </p>
       </header>
+
+      {xatolik && (
+        <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
+          {xatolik}
+        </div>
+      )}
+      {yuklanmoqda && (
+        <div className="rounded-2xl border border-orange-100 bg-white px-4 py-3 text-sm font-bold text-slate-500">
+          Backend ma'lumotlari yuklanmoqda...
+        </div>
+      )}
 
       {/* 3 guruh — har biri ochiladi (Tushumlar / Chiqimlar) */}
       <div className="flex flex-wrap gap-2 rounded-2xl border border-orange-100 bg-white p-2 shadow-sm">

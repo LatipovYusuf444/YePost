@@ -14,7 +14,7 @@ import AppModal from "@/Components/common/AppModal";
 import FaoliyatPaneli from "../XaridorUchot/FaoliyatPaneli";
 import TezkorPanel from "../XaridorUchot/TezkorPanel";
 import { TarixTab } from "./XodimTablari";
-import { mockFiliallar, mockVakolatlar } from "./mockData";
+import { backendVakolatlar } from "./backendMetadata";
 import type { Bolim, Lavozim, Xodim, XodimHolati, XodimTarixi } from "./types";
 import { bugun, holatMatni, maydonKlass, xodimNomi, yangiId } from "./yordamchilar";
 
@@ -46,6 +46,7 @@ export default function XodimFormaModal({
     boshlangich?.telefonlar.length ? boshlangich.telefonlar : [""]
   );
   const [login, setLogin] = useState(boshlangich?.login ?? "");
+  const [parol, setParol] = useState("");
   const [lavozimId, setLavozimId] = useState(boshlangich?.lavozimId ?? "");
   const [bolimId, setBolimId] = useState(boshlangich?.bolimId ?? "");
   const [filial, setFilial] = useState(boshlangich?.filial ?? "");
@@ -96,8 +97,8 @@ export default function XodimFormaModal({
 
     const tozaTelefonlar = telefonlar.map((telefon) => telefon.trim()).filter(Boolean);
 
-    if (!ism.trim() || !familiya.trim() || !login.trim() || tozaTelefonlar.length === 0) {
-      setXato("Ism, familiya, login va kamida bitta telefon to'ldirilishi shart.");
+    if (!ism.trim() || !familiya.trim() || !login.trim() || tozaTelefonlar.length === 0 || (!boshlangich && !parol.trim())) {
+      setXato("Ism, familiya, login, telefon va yangi xodim uchun parol to'ldirilishi shart.");
       return;
     }
 
@@ -107,6 +108,7 @@ export default function XodimFormaModal({
       familiya: familiya.trim(),
       telefonlar: tozaTelefonlar,
       login: login.trim(),
+      parol: parol.trim() || undefined,
       lavozimId,
       bolimId,
       filial,
@@ -124,7 +126,7 @@ export default function XodimFormaModal({
     });
   }
 
-  const guruhlar = [...new Set(mockVakolatlar.map((vakolat) => vakolat.guruh))];
+  const guruhlar = [...new Set(backendVakolatlar.map((vakolat) => vakolat.guruh))];
 
   return (
     <AppModal className="items-start justify-start bg-[rgba(54,22,8,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
@@ -279,6 +281,19 @@ export default function XodimFormaModal({
                         </label>
 
                         <label className="grid gap-2">
+                          <span className="text-sm font-bold text-slate-400">
+                            {boshlangich ? "Yangi parol (ixtiyoriy)" : "Parol *"}
+                          </span>
+                          <input
+                            type="password"
+                            value={parol}
+                            onChange={(event) => setParol(event.target.value)}
+                            autoComplete="new-password"
+                            className={maydonKlass}
+                          />
+                        </label>
+
+                        <label className="grid gap-2">
                           <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                             <Briefcase size={14} className="text-[#FF6A00]" />
                             Lavozim
@@ -324,9 +339,9 @@ export default function XodimFormaModal({
                             className={maydonKlass}
                           >
                             <option value="">Biriktirilmagan</option>
-                            {mockFiliallar.map((item) => (
-                              <option key={item} value={item}>
-                                {item}
+                            {bolimlar.map((item) => (
+                              <option key={item.id} value={item.nomi}>
+                                {item.nomi}
                               </option>
                             ))}
                           </select>
@@ -408,7 +423,7 @@ export default function XodimFormaModal({
                       {guruh}
                     </h2>
                     <div className="mt-4 space-y-3">
-                      {mockVakolatlar
+                            {backendVakolatlar
                         .filter((vakolat) => vakolat.guruh === guruh)
                         .map((vakolat) => {
                           const lavozimda = lavozimVakolatlari.has(vakolat.kod);

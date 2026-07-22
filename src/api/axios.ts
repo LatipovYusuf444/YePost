@@ -1,6 +1,7 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
 import { API_BASE_URL } from "./apiConfig";
 import { accessTokenniAjratish, accessTokenniYangilash } from "./sozlamalarApi";
+import { apiTiliniOlish } from "./apiLanguage";
 import {
   accessTokenniSaqlash,
   authSessiyaYaroqli,
@@ -38,6 +39,8 @@ apiClient.interceptors.request.use((config) => {
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
+
+  config.headers["x-lang"] = apiTiliniOlish();
 
   return config;
 });
@@ -80,6 +83,7 @@ apiClient.interceptors.response.use(
       const yangiAccessToken = await tokenYangilashSorovi;
       accessTokenniSaqlash(yangiAccessToken);
       aslSorov.headers.Authorization = `Bearer ${yangiAccessToken}`;
+      aslSorov.headers["x-lang"] = apiTiliniOlish();
 
       return apiClient(aslSorov);
     } catch (refreshXatosi) {

@@ -1,15 +1,16 @@
 import KirimKorishModal from "./omborModallari/KirimKorishModal";
 import RealizatsiyaKorishModal from "./omborModallari/RealizatsiyaKorishModal";
 import type { Mahsulot as OmborMahsulot, OmborItem } from "./omborModallari/types";
-import { mockMaxsulotlar, mockOmborlar } from "./mockData";
-import type { HisobKitobHujjati } from "./types";
+import { useHisobotRealData } from "./HisobotRealData";
+import type { HisobKitobHujjati, Maxsulot, Tanlov } from "./types";
 
 // O'zaro hisob-kitobdagi TOVAR hujjatlarini OmborUchot Korish modallarida ochamiz.
 // To'lov hujjatlari (kassaKirim/tolov) hozircha ochilmaydi — null qaytadi.
 
-const MASUL_SHAXS = "Abdulaziz";
+const MASUL_SHAXS = "Tizim";
 
-const omborMahsulotlar: OmborMahsulot[] = mockMaxsulotlar.map((m) => ({
+function omborMahsulotlarga(maxsulotlar: Maxsulot[]): OmborMahsulot[] {
+  return maxsulotlar.map((m) => ({
   id: m.id,
   nomi: m.nomi,
   birlik: m.birlik,
@@ -18,14 +19,17 @@ const omborMahsulotlar: OmborMahsulot[] = mockMaxsulotlar.map((m) => ({
   tanNarx: m.tanNarx,
   sotuvNarx: m.sotuvNarx,
   ulgurjiNarx: m.ulgurjiNarx,
-}));
+  }));
+}
 
-const omborlar: OmborItem[] = mockOmborlar.map((o) => ({
+function omborlarga(tanlovlar: Tanlov[]): OmborItem[] {
+  return tanlovlar.map((o) => ({
   id: o.id,
   nomi: o.nomi,
   manzil: "—",
   faol: true,
-}));
+  }));
+}
 
 export default function HisobKitobHujjatKorish({
   hujjat,
@@ -36,11 +40,14 @@ export default function HisobKitobHujjatKorish({
   kontragent: string;
   onYopish: () => void;
 }) {
-  const mahsulot = mockMaxsulotlar.find((m) => m.id === hujjat.productId);
+  const { maxsulotlar, omborlar: omborTanlovlari } = useHisobotRealData();
+  const omborMahsulotlar = omborMahsulotlarga(maxsulotlar);
+  const omborlar = omborlarga(omborTanlovlari);
+  const mahsulot = maxsulotlar.find((m) => m.id === hujjat.productId);
   const summa = hujjat.rasxod || hujjat.prixod;
   const soni = hujjat.soni ?? 1;
   const tanNarx = soni > 0 ? summa / soni : summa;
-  const omborId = mockOmborlar[0]?.id ?? "";
+  const omborId = omborTanlovlari[0]?.id ?? "";
   const yoq = () => {};
 
   const satr = {

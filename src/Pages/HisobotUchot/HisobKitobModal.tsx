@@ -4,7 +4,7 @@ import AppModal from "@/Components/common/AppModal";
 import KengaytiriladiganJadval, { type Ustun } from "./KengaytiriladiganJadval";
 import HisobKitobHujjatKorish from "./HisobKitobHujjatKorish";
 import { ochilaganHujjatmi } from "./hisobKitobYordamchilari";
-import { mockHisobKitob } from "./mockData";
+import { useHisobotRealData } from "./HisobotRealData";
 import type { HisobKitobHujjati } from "./types";
 import { pul, sanadaMi, vaqtFormat } from "./yordamchilar";
 
@@ -48,10 +48,11 @@ export default function HisobKitobModal({
   dateTo: string;
   onClose: () => void;
 }) {
+  const { hisobKitob } = useHisobotRealData();
   const [ochilganHujjat, setOchilganHujjat] = useState<HisobKitobHujjati | null>(null);
 
   const qatorlar = useMemo<Qator[]>(() => {
-    const barcha = mockHisobKitob.filter((d) => d.refId === refId);
+    const barcha = hisobKitob.filter((d) => d.refId === refId);
     const opening = barcha
       .filter((d) => dateFrom && d.sana.slice(0, 10) < dateFrom)
       .reduce((s, d) => s + d.prixod - d.rasxod, 0);
@@ -78,7 +79,7 @@ export default function HisobKitobModal({
         manba: d,
       };
     });
-  }, [refId, dateFrom, dateTo]);
+  }, [dateFrom, dateTo, hisobKitob, refId]);
 
   const ustunlar: Ustun<Qator>[] = useMemo(
     () => [

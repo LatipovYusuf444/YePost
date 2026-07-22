@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { CalendarDays, Clock, TriangleAlert, UserCheck } from "lucide-react";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
-import { mockDavomat } from "./mockData";
 import type { Davomat as DavomatYozuvi, DavomatHolati, Xodim } from "./types";
 import {
   davomatMatni,
@@ -15,6 +14,7 @@ import {
 type Props = { xodimlar: Xodim[] };
 
 const holatlar: Array<DavomatHolati | "barchasi"> = ["barchasi", "keldi", "kechikdi", "kelmadi", "tatil"];
+const backendDavomat: DavomatYozuvi[] = [];
 
 function sanaMinus(kun: number) {
   const sana = new Date();
@@ -35,7 +35,7 @@ export default function Davomat({ xodimlar }: Props) {
 
   const royxat = useMemo(
     () =>
-      mockDavomat.filter((yozuv) => {
+      backendDavomat.filter((yozuv) => {
         if (sanadan && yozuv.sana < sanadan) return false;
         if (sanagacha && yozuv.sana > sanagacha) return false;
         if (xodimId && yozuv.xodimId !== xodimId) return false;

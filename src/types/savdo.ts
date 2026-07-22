@@ -45,6 +45,7 @@ export type NomliMalumot = {
   address?: string;
   companyId?: string | null;
   company?: NomliMalumot | null;
+  partner?: { id: string } | null;
 };
 
 export type SotuvMahsuloti = {

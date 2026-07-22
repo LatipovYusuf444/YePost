@@ -45,17 +45,17 @@ const tablar: Array<{ id: Tab; nom: string; icon: typeof UsersRound }> = [
 ];
 
 const rolNomi: Record<AccountRoli, string> = {
-  DIREKTOR: "Direktor",
+  DIRECTOR: "Direktor",
   ADMIN: "Administrator",
-  KASSIR: "Kassir",
-  OMBORCHI: "Omborchi",
+  CASHIER: "Kassir",
+  STOREKEEPER: "Omborchi",
 };
 
 const rolBackendNomi: Record<AccountRoli, string> = {
-  DIREKTOR: "DIREKTOR",
-  ADMIN: "ADMINISTRATOR",
-  KASSIR: "KASSIR",
-  OMBORCHI: "OMBORCHI",
+  DIRECTOR: "DIRECTOR",
+  ADMIN: "ADMIN",
+  CASHIER: "CASHIER",
+  STOREKEEPER: "STOREKEEPER",
 };
 
 const korinishlar: Array<{ id: Korinish; nom: string; icon: typeof Monitor }> = [
@@ -113,7 +113,7 @@ function Foydalanuvchilar() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState<AccountRoli>("KASSIR");
+  const [role, setRole] = useState<AccountRoli>("CASHIER");
   const [branchId, setBranchId] = useState("");
   const [telegramId, setTelegramId] = useState("");
   const [isActive, setIsActive] = useState(true);
@@ -142,7 +142,7 @@ function Foydalanuvchilar() {
     setUsername("");
     setPassword("");
     setFullName("");
-    setRole("KASSIR");
+    setRole("CASHIER");
     setBranchId("");
     setTelegramId("");
     setIsActive(true);

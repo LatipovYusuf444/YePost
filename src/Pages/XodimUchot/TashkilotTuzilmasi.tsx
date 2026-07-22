@@ -15,7 +15,6 @@ import AppModal from "@/Components/common/AppModal";
 import BolimModal from "./BolimModal";
 import XodimFormaModal from "./XodimFormaModal";
 import XodimTafsilotlariModal from "./XodimTafsilotlariModal";
-import { mockTarix } from "./mockData";
 import type { Bolim, Lavozim, Xodim } from "./types";
 import { bosHarflar, lavozimNomi, xodimNomi } from "./yordamchilar";
 
@@ -344,7 +343,7 @@ export default function TashkilotTuzilmasi({
           xodim={tafsilotXodim}
           lavozimlar={lavozimlar}
           bolimlar={bolimlar}
-          tarix={mockTarix}
+          tarix={[]}
           onTahrirlash={() => {
             setTahrirXodim(tafsilotXodim);
             setXodimModal(true);
@@ -358,7 +357,7 @@ export default function TashkilotTuzilmasi({
           boshlangich={tahrirXodim}
           lavozimlar={lavozimlar}
           bolimlar={bolimlar}
-          tarix={mockTarix}
+          tarix={[]}
           onYopish={() => setXodimModal(false)}
           onSaqlash={(xodim) => {
             onXodimSaqlash(xodim);

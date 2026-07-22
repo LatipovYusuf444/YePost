@@ -1,6 +1,6 @@
 import { CalendarDays, MessageSquare, PenLine, ShieldCheck } from "lucide-react";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
-import { mockVakolatlar } from "./mockData";
+import { backendVakolatlar } from "./backendMetadata";
 import type { Davomat, Lavozim, TarixTuri, Xodim, XodimTarixi } from "./types";
 import {
   davomatMatni,
@@ -58,7 +58,7 @@ export function VakolatlarTab({ xodim, lavozimlar }: { xodim: Xodim; lavozimlar:
   const lavozim = lavozimlar.find((item) => item.id === xodim.lavozimId);
   const lavozimdan = new Set(lavozim?.vakolatlar ?? []);
   const shaxsiy = new Set(xodim.vakolatlar);
-  const guruhlar = [...new Set(mockVakolatlar.map((vakolat) => vakolat.guruh))];
+  const guruhlar = [...new Set(backendVakolatlar.map((vakolat) => vakolat.guruh))];
 
   return (
     <div className="space-y-5 px-9 py-7">
@@ -77,7 +77,7 @@ export function VakolatlarTab({ xodim, lavozimlar }: { xodim: Xodim; lavozimlar:
             {guruh}
           </h2>
           <ul className="mt-4 space-y-3">
-            {mockVakolatlar
+            {backendVakolatlar
               .filter((vakolat) => vakolat.guruh === guruh)
               .map((vakolat) => {
                 const lavozimda = lavozimdan.has(vakolat.kod);

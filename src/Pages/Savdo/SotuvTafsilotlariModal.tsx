@@ -40,6 +40,7 @@ import {
   sotuvTafsilotiniOlish,
 } from "@/api/savdoApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { mijozlarApi, mijozKompaniyalariApi } from "@/api/partnersApi";
 import AppModal from "@/Components/common/AppModal";
 import type { Activity, Attachment, ChatMessage, Comment } from "@/types/crm";
 import type { QoldiqTanlovi, SaleAuditLog, Sotuv, SotuvTolovi, SotuvYaratishMalumoti, TolovTuri, XodimTanlovi, YetkazishMalumoti, YetkazishPayload } from "@/types/savdo";
@@ -117,7 +118,6 @@ type SaqlanganHujjat = {
 
 const tabs = ["Umumiy", "Tovarlar", "Hisob-fakturalar", "Tarix"];
 const bolimlar = ["To'lov", "To'lov va yetkazish", "Terminal orqali to'lov", "Yetkazish", "Ombordan chiqarish"];
-const hujjatSaqlashKaliti = (sotuvId: string) => `yepost:savdo-hujjatlar:${sotuvId}`;
 
 function crmActivityniFaoliyatga(activity: Activity): SaqlanganFaoliyat {
   return {
@@ -146,24 +146,6 @@ function crmCommentniFaoliyatga(comment: Comment): SaqlanganFaoliyat {
 function mijozIdOlish(sotuv: Sotuv) {
   return sotuv.customerId ?? sotuv.customer?.id ?? "";
 }
-
-function sotuvHujjatlariniOlish(sotuvId: string): SaqlanganHujjat[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(hujjatSaqlashKaliti(sotuvId));
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function sotuvHujjatlariniSaqlash(sotuvId: string, hujjatlar: SaqlanganHujjat[]) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(hujjatSaqlashKaliti(sotuvId), JSON.stringify(hujjatlar));
-}
-
 
 function mijozTelefon(sotuv: Sotuv) {
   return sotuv.customer?.phone || sotuv.clientCompany?.phone || "-";
@@ -358,7 +340,7 @@ export default function SotuvTafsilotlariModal({
   const vaqt = qisqaVaqt(sotuv.createdAt) || "—";
 
   useEffect(() => {
-    setHujjatlar(sotuvHujjatlariniOlish(sotuv.id));
+    setHujjatlar([]);
   }, [sotuv.id]);
 
   function hujjatYaratish(turi: HujjatTuri) {
@@ -374,9 +356,7 @@ export default function SotuvTafsilotlariModal({
     setTanlanganHujjatTuri(turi);
     setActiveTab("Umumiy");
     setHujjatlar((joriy) => {
-      const yangilangan = [yangiHujjat, ...joriy.filter((hujjat) => hujjat.turi !== turi)];
-      sotuvHujjatlariniSaqlash(sotuv.id, yangilangan);
-      return yangilangan;
+      return [yangiHujjat, ...joriy.filter((hujjat) => hujjat.turi !== turi)];
     });
     setHujjatGeneratorOchiq(true);
   }
@@ -1047,24 +1027,42 @@ function UmumiyTab({
   const [crmYuklanmoqda, setCrmYuklanmoqda] = useState(false);
   const [crmXatolik, setCrmXatolik] = useState("");
   const customerId = mijozIdOlish(sotuv);
+  const [partnerId, setPartnerId] = useState(sotuv.customer?.partner?.id ?? sotuv.clientCompany?.partner?.id ?? "");
+
+  useEffect(() => {
+    let active = true;
+    const request = customerId
+      ? mijozlarApi.olish(customerId)
+      : sotuv.clientCompanyId
+        ? mijozKompaniyalariApi.olish(sotuv.clientCompanyId)
+        : null;
+    if (!request) {
+      setPartnerId("");
+      return () => { active = false; };
+    }
+    request
+      .then((entity) => { if (active) setPartnerId(entity.partner?.id ?? ""); })
+      .catch((error) => { if (active) setCrmXatolik(getApiErrorMessage(error)); });
+    return () => { active = false; };
+  }, [customerId, sotuv.clientCompanyId]);
 
   useEffect(() => {
     let active = true;
 
     async function yuklash() {
       setCrmXatolik("");
-      if (!customerId) {
+      if (!partnerId) {
         setSaqlanganFaoliyatlar([]);
-        setCrmXatolik("Bu sotuvga mijoz biriktirilmagan. CRM faoliyatini saqlash uchun avval mijozni biriktiring.");
+        if (!customerId && !sotuv.clientCompanyId) setCrmXatolik("Bu sotuvga mijoz yoki kompaniya biriktirilmagan.");
         return;
       }
 
       setCrmYuklanmoqda(true);
       try {
         const [activities, comments, messages] = await Promise.all([
-          crmApi.activities({ customerId }),
-          crmApi.comments(customerId, { limit: 50 }),
-          crmApi.chatTarixi(customerId, { limit: 50 }),
+          crmApi.activities({ partnerId }),
+          crmApi.partnerComments(partnerId, { limit: 50 }),
+          crmApi.partnerChatTarixi(partnerId, { limit: 50 }),
         ]);
         if (!active) return;
         setSaqlanganFaoliyatlar([
@@ -1085,18 +1083,18 @@ function UmumiyTab({
     return () => {
       active = false;
     };
-  }, [customerId, sotuv.id]);
+  }, [customerId, partnerId, sotuv.clientCompanyId, sotuv.id]);
 
   async function faoliyatniSaqlash(faoliyat: Omit<SaqlanganFaoliyat, "id" | "sana"> & { sana?: string }) {
     try {
       setCrmXatolik("");
-      if (!customerId) {
-        setCrmXatolik("Faoliyatni backendga saqlash uchun sotuvga mijoz biriktirilishi kerak.");
+      if (!partnerId) {
+        setCrmXatolik("Faoliyatni backendga saqlash uchun sotuvda real partner ID bo'lishi kerak.");
         return false;
       }
-      if (customerId) {
+      if (partnerId) {
         if (faoliyat.turi === "Izoh") {
-          const comment = await crmApi.commentYaratish(customerId, {
+          const comment = await crmApi.partnerCommentYaratish(partnerId, {
             text: faoliyat.matn || faoliyat.sarlavha,
             attachmentIds: faoliyat.attachmentIds,
             mentionUserIds: faoliyat.mentionUserIds,
@@ -1107,7 +1105,7 @@ function UmumiyTab({
 
         if (faoliyat.turi === "Xabar") {
           const text = faoliyat.matn || faoliyat.sarlavha;
-          const message = await crmApi.chatXabarYuborish(customerId, text);
+          const message = await crmApi.partnerChatXabarYuborish(partnerId, text);
           setSaqlanganFaoliyatlar((joriy) => [crmXabarniFaoliyatga(message), ...joriy]);
           return true;
         }
@@ -1120,7 +1118,7 @@ function UmumiyTab({
 
         const activity = await crmApi.activityYaratish({
           type: faoliyat.turi === "Vazifa" ? "TASK" : "CALL",
-          customerId,
+          partnerId,
           subject: faoliyat.sarlavha,
           description: faoliyat.matn || undefined,
           dueAt: faoliyat.sana ?? new Date().toISOString(),
@@ -1139,7 +1137,7 @@ function UmumiyTab({
   async function faoliyatniYangilash(id: string, malumot: Partial<SaqlanganFaoliyat>) {
     try {
       const joriyFaoliyat = saqlanganFaoliyatlar.find((faoliyat) => faoliyat.id === id);
-      if (customerId && joriyFaoliyat?.turi === "Izoh" && malumot.matn !== undefined) {
+      if (partnerId && joriyFaoliyat?.turi === "Izoh" && malumot.matn !== undefined) {
         const comment = await crmApi.commentYangilash(id, malumot.matn);
         setSaqlanganFaoliyatlar((joriy) =>
           joriy.map((faoliyat) => (faoliyat.id === id ? crmCommentniFaoliyatga(comment) : faoliyat))
@@ -1147,7 +1145,7 @@ function UmumiyTab({
         return;
       }
 
-      if (customerId && joriyFaoliyat?.turi !== "Izoh") {
+      if (partnerId && joriyFaoliyat?.turi !== "Izoh") {
         const data: Record<string, string> = {};
         if (malumot.sarlavha !== undefined) data.subject = malumot.sarlavha;
         if (malumot.matn !== undefined) data.description = malumot.matn;
@@ -1181,9 +1179,9 @@ function UmumiyTab({
         setCrmXatolik("Yuborilgan xabarni o‘chirish endpointi backendda mavjud emas.");
         return;
       }
-      if (customerId && joriyFaoliyat?.turi === "Izoh") {
+      if (partnerId && joriyFaoliyat?.turi === "Izoh") {
         await crmApi.commentOchirish(id);
-      } else if (customerId && joriyFaoliyat && !id.startsWith("chat-")) {
+      } else if (partnerId && joriyFaoliyat && !id.startsWith("chat-")) {
         await crmApi.activityOchirish(id);
       }
       setSaqlanganFaoliyatlar((joriy) => joriy.filter((faoliyat) => faoliyat.id !== id));
@@ -1194,7 +1192,7 @@ function UmumiyTab({
 
   async function faoliyatniZakrepitQilish(faoliyat: SaqlanganFaoliyat) {
     try {
-      if (customerId && faoliyat.turi === "Izoh") {
+      if (partnerId && faoliyat.turi === "Izoh") {
         const comment = faoliyat.pinned
           ? await crmApi.commentUnpin(faoliyat.id)
           : await crmApi.commentPin(faoliyat.id);

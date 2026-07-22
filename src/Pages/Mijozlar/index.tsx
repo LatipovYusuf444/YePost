@@ -83,8 +83,7 @@ export default function Xaridorlar() {
           </p>
           <h1 className="mt-1 text-3xl font-black">Xaridorlar va yetkazib beruvchilar</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Jismoniy xaridorlar, xaridor kompaniyalari va yetkazib beruvchilar. Hozircha mock
-            ma'lumot bilan ishlaydi.
+            Jismoniy xaridorlar, xaridor kompaniyalari va yetkazib beruvchilar backenddan olinadi.
           </p>
         </div>
         <button

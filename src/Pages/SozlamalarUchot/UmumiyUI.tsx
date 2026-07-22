@@ -64,12 +64,13 @@ export function Switch({
   );
 }
 
-export function SaqlashTugma({ onClick }: { onClick: () => void }) {
+export function SaqlashTugma({ onClick, disabled = false }: { onClick: () => void; disabled?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex h-11 items-center gap-2 rounded-2xl bg-[#FF6A00] px-6 text-sm font-black text-white shadow-[0_14px_32px_rgba(255,106,0,.24)] transition hover:-translate-y-0.5 hover:bg-[#EA580C]"
+      disabled={disabled}
+      className="inline-flex h-11 items-center gap-2 rounded-2xl bg-[#FF6A00] px-6 text-sm font-black text-white shadow-[0_14px_32px_rgba(255,106,0,.24)] transition hover:-translate-y-0.5 hover:bg-[#EA580C] disabled:cursor-not-allowed disabled:opacity-50"
     >
       Saqlash
     </button>

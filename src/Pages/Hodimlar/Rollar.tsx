@@ -15,7 +15,7 @@ const rollar: Array<{
   icon: typeof Crown;
 }> = [
   {
-    kod: "DIREKTOR",
+    kod: "DIRECTOR",
     nom: "Direktor",
     izoh: "Tizimdagi eng yuqori boshqaruv darajasi.",
     vazifalar: [
@@ -37,7 +37,7 @@ const rollar: Array<{
     icon: ShieldCheck,
   },
   {
-    kod: "KASSIR",
+    kod: "CASHIER",
     nom: "Kassir",
     izoh: "Savdo va kassa amallarini bajaruvchi xodim.",
     vazifalar: [
@@ -48,7 +48,7 @@ const rollar: Array<{
     icon: ShoppingCart,
   },
   {
-    kod: "OMBORCHI",
+    kod: "STOREKEEPER",
     nom: "Omborchi",
     izoh: "Tovar kirimi, chiqimi va qoldig'iga mas'ul xodim.",
     vazifalar: [

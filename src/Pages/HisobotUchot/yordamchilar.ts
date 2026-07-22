@@ -1,4 +1,4 @@
-// Hisobot uchoti mock modul yordamchilari.
+// Hisobot UI yordamchilari.
 
 export function pul(summa: number) {
   return `${Math.round(summa).toLocaleString("uz-UZ")} so'm`;
