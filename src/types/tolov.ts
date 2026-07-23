@@ -2,7 +2,7 @@ import type { KassaKirim, Xarajat } from "./finance";
 import type { Qaytarish, Sotuv } from "./savdo";
 
 export type TolovYonalishi = "KIRIM" | "CHIQIM";
-export type TolovManbasi = "SALE" | "RETURN" | "CASH_IN" | "EXPENSE";
+export type TolovManbasi = "SALE" | "RETURN" | "CASH_IN" | "EXPENSE" | "CASH_OPERATION";
 
 export type TolovUsuliKeng =
   | "CASH"
@@ -41,6 +41,11 @@ export type TolovFiltrlari = {
 export type FinanceTransaction = {
   id: string; source: TolovManbasi; type: "INCOME" | "EXPENSE"; paymentType: string;
   amount: number | string; date: string; note?: string | null; refId?: string | null; refDocNumber?: string | null;
+  status?: "CONFIRMED" | "DRAFT" | "CANCELLED";
+  branchId?: string | null; branchName?: string | null;
+  responsibleId?: string | null; responsibleName?: string | null;
+  counterpartyType?: "CUSTOMER" | "SUPPLIER" | "EMPLOYEE" | null;
+  counterpartyId?: string | null; counterpartyName?: string | null;
 };
 
 export type TolovMoliyaManbalari = {

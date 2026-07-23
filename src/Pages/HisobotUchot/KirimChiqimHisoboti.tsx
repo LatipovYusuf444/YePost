@@ -8,7 +8,7 @@ import { bugun, bugunMinus, sanaFormat, sanadaMi, son } from "./yordamchilar";
 import type { KassaHujjati } from "./types";
 import KassaAmaliyotModal from "@/Pages/KassaUchot/KassaAmaliyotModal";
 import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali } from "@/Pages/KassaUchot/types";
-import { barchaFinanceTransactions } from "@/api/tolovApi";
+import { cashFlowReportApi, type CashFlowReport } from "@/api/reportsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 
 // Kirim-chiqim (kassa oboroti) hisoboti — matritsa: kassalar × (Kirim/Chiqim/Qoldiq).
@@ -89,6 +89,7 @@ function csvYuklash(nom: string, ustunlar: string[], qatorlar: (string | number)
 }
 
 export default function KirimChiqimHisoboti() {
+  void csvYuklash;
   const { filiallar: filialTanlovlari } = useHisobotRealData();
   const [dateFrom, setDateFrom] = useState(bugunMinus(30));
   const [dateTo, setDateTo] = useState(bugun());
@@ -97,6 +98,8 @@ export default function KirimChiqimHisoboti() {
   const [yuklanmoqda, setYuklanmoqda] = useState(false);
   const [xato, setXato] = useState("");
   const [tolovTurlari, setTolovTurlari] = useState<string[]>([]);
+  const [backendSummary, setBackendSummary] = useState<CashFlowReport["byPaymentMethod"]>([]);
+  const [exportYuklanmoqda, setExportYuklanmoqda] = useState(false);
   const [aylanmaOchiq, setAylanmaOchiq] = useState(false);
   const [tanlanganHujjat, setTanlanganHujjat] = useState<KassaHujjati | null>(null);
   const [enlar, setEnlar] = useState<Record<string, number>>({});
@@ -106,25 +109,37 @@ export default function KirimChiqimHisoboti() {
     let active = true;
     setYuklanmoqda(true);
     setXato("");
-    barchaFinanceTransactions({ dateTo })
-      .then((items) => {
+    cashFlowReportApi
+      .olish({
+        dateFrom: new Date(`${dateFrom}T00:00:00.000Z`).toISOString(),
+        dateTo: new Date(`${dateTo}T23:59:59.999Z`).toISOString(),
+        paymentMethods: tolovTurlari.length ? tolovTurlari.join(",") : undefined,
+      })
+      .then((report) => {
         if (!active) return;
-        setKassaHujjatlar(items.map((item) => ({
+        setBackendSummary(report.byPaymentMethod ?? []);
+        setKassaHujjatlar((report.items ?? []).map((item) => ({
           id: item.id,
           sana: item.date,
-          raqam: item.refDocNumber || item.id,
-          nomi: item.note || item.refDocNumber || item.source,
-          branchId: "",
-          kassaId: TOLOV_KASSA[item.paymentType] ?? item.paymentType,
-          tolovTuri: item.paymentType,
-          turi: item.type === "EXPENSE" ? "chiqim" : "kirim",
-          summa: Number(item.amount ?? 0),
+          raqam: item.documentNumber || item.refDocNumber || item.id,
+          nomi: item.name || item.note || item.documentNumber || "Kassa amaliyoti",
+          branchId: item.branchId ?? "",
+          kassaId: TOLOV_KASSA[item.paymentMethod ?? item.paymentType ?? "CASH"] ?? "CASH",
+          tolovTuri: item.paymentMethod ?? item.paymentType ?? "CASH",
+          turi: Number(item.expense ?? 0) > 0 || item.type === "EXPENSE" ? "chiqim" : "kirim",
+          summa: Number(
+            Number(item.expense ?? 0) > 0
+              ? item.expense
+              : Number(item.income ?? 0) > 0
+                ? item.income
+                : item.amount ?? 0
+          ),
         })));
       })
       .catch((error) => { if (active) setXato(getApiErrorMessage(error)); })
       .finally(() => { if (active) setYuklanmoqda(false); });
     return () => { active = false; };
-  }, [dateTo]);
+  }, [dateFrom, dateTo, tolovTurlari]);
 
   // Guruh (kassa) ustunini sudrab qayta joylashtirish
   function qaytaTartibla(fromId: string, toId: string) {
@@ -188,18 +203,21 @@ export default function KirimChiqimHisoboti() {
     const map: Record<string, { boshlangich: number; kirim: number; chiqim: number }> = {};
     kassaIdlar.forEach((id) => {
       const rows = mosHujjatlar.filter((r) => r.kassaId === id);
-      const oldingi = rows
-        .filter((r) => !dateFrom || r.sana < dateFrom)
-        .reduce((s, r) => s + (r.turi === "kirim" ? r.summa : -r.summa), 0);
-      const davr = rows.filter((r) => sanadaMi(r.sana, dateFrom, dateTo));
+      const summary = backendSummary.find((item) => item.paymentMethod === id);
       map[id] = {
-        boshlangich: oldingi,
-        kirim: davr.filter((r) => r.turi === "kirim").reduce((s, r) => s + r.summa, 0),
-        chiqim: davr.filter((r) => r.turi === "chiqim").reduce((s, r) => s + r.summa, 0),
+        boshlangich: Number(summary?.openingBalance ?? 0),
+        kirim: Number(
+          summary?.income ??
+            rows.filter((r) => r.turi === "kirim").reduce((s, r) => s + r.summa, 0)
+        ),
+        chiqim: Number(
+          summary?.expense ??
+            rows.filter((r) => r.turi === "chiqim").reduce((s, r) => s + r.summa, 0)
+        ),
       };
     });
     return map;
-  }, [mosHujjatlar, kassaIdlar, dateFrom, dateTo]);
+  }, [mosHujjatlar, kassaIdlar, backendSummary]);
 
   // Umumiy matritsa qatorlari (Boshlang'ich / Aylanma / Yakuniy)
   const satrlar: Satr[] = useMemo(() => {
@@ -258,15 +276,21 @@ export default function KirimChiqimHisoboti() {
     });
   }, [mosHujjatlar, kassaIdlar, kassaHisob, dateFrom, dateTo]);
 
-  function eksport() {
-    const bosh = [""];
-    ustunlar.forEach((g) => bosh.push(`${g.nomi} Kirim`, `${g.nomi} Chiqim`, `${g.nomi} Qoldiq`));
-    const satr = satrlar.map((q) => {
-      const r: (string | number)[] = [q.label];
-      q.kataklar.forEach((k) => r.push(k.kirim, k.chiqim, k.qoldiq ?? ""));
-      return r;
-    });
-    csvYuklash("kirim-chiqim", bosh, satr);
+  async function eksport() {
+    if (exportYuklanmoqda) return;
+    setExportYuklanmoqda(true);
+    setXato("");
+    try {
+      await cashFlowReportApi.export({
+        dateFrom: new Date(`${dateFrom}T00:00:00.000Z`).toISOString(),
+        dateTo: new Date(`${dateTo}T23:59:59.999Z`).toISOString(),
+        paymentMethods: tolovTurlari.length ? tolovTurlari.join(",") : undefined,
+      });
+    } catch (error) {
+      setXato(getApiErrorMessage(error));
+    } finally {
+      setExportYuklanmoqda(false);
+    }
   }
 
   return (
@@ -305,11 +329,12 @@ export default function KirimChiqimHisoboti() {
       {yuklanmoqda && <p className="rounded-2xl bg-orange-50 px-4 py-3 text-sm font-bold text-orange-600">Kassa aylanmasi backenddan yuklanmoqda...</p>}
 
       <button
-        onClick={eksport}
+        onClick={() => void eksport()}
+        disabled={exportYuklanmoqda}
         className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-bold text-orange-600 shadow-sm transition hover:bg-orange-50"
       >
         <Download size={16} />
-        Excel (CSV)
+        {exportYuklanmoqda ? "Yuklanmoqda..." : "Excel (.xlsx)"}
       </button>
 
       {/* Kassa oboroti matritsasi */}

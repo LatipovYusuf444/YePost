@@ -6,11 +6,31 @@ import { useHisobotRealData } from "./HisobotRealData";
 import { incomeExpenseReportApi } from "@/api/reportsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { FoydaXarajatYozuvi } from "./types";
-import { bugun, bugunMinus, pul, sanadaMi } from "./yordamchilar";
+import { bugun, bugunMinus, pul } from "./yordamchilar";
 
 // Foyda va xarajat (P&L) hisoboti — Daromad − Tannarx = Yalpi foyda − Xarajat = Sof foyda.
 // Muddat/Filial bo'yicha real hisobot ma'lumotlari filtrlanadi.
 type SatrModeli = { kategoriya: string; summa: number };
+type IncomeExpenseResponse = {
+  income?: {
+    saleRevenue?: number | string;
+    otherIncome?: number | string;
+    total?: number | string;
+  };
+  cost?: { costOfGoods?: number | string };
+  expenses?: {
+    items?: Array<{ category?: string; name?: string; amount?: number | string }>;
+    refunds?: number | string;
+    total?: number | string;
+  };
+  summary?: {
+    revenue?: number | string;
+    cost?: number | string;
+    grossProfit?: number | string;
+    expense?: number | string;
+    netProfit?: number | string;
+  };
+};
 
 function guruhla(rows: FoydaXarajatYozuvi[], tur: "daromad" | "tannarx" | "xarajat"): SatrModeli[] {
   const map = new Map<string, number>();
@@ -35,25 +55,62 @@ export default function FoydaXarajatHisoboti() {
     let active = true;
     setYuklanmoqda(true);
     setXato("");
-    const branchIds = filiallar.length ? filiallar : [undefined];
-    Promise.all(branchIds.map((branchId) => incomeExpenseReportApi.olish({ dateFrom, dateTo, branchId })))
-      .then((responses) => {
+    incomeExpenseReportApi
+      .olish({
+        dateFrom: new Date(`${dateFrom}T00:00:00.000Z`).toISOString(),
+        dateTo: new Date(`${dateTo}T23:59:59.999Z`).toISOString(),
+        branchIds: filiallar.length ? filiallar.join(",") : undefined,
+      })
+      .then((response) => {
         if (!active) return;
-        const total = responses.reduce<{ saleRevenue: number; saleProfit: number; expenseTotal: number; refundTotal: number }>((sum, value) => {
-          const row = value as Record<string, number | string | undefined>;
-          return {
-            saleRevenue: sum.saleRevenue + Number(row.saleRevenue ?? 0),
-            saleProfit: sum.saleProfit + Number(row.saleProfit ?? 0),
-            expenseTotal: sum.expenseTotal + Number(row.expenseTotal ?? 0),
-            refundTotal: sum.refundTotal + Number(row.refundTotal ?? 0),
-          };
-        }, { saleRevenue: 0, saleProfit: 0, expenseTotal: 0, refundTotal: 0 });
+        const value = response as IncomeExpenseResponse;
         const sana = `${dateTo}T23:59:59.000Z`;
-        setFoydaXarajat([
-          { id: "saleRevenue", sana, filialId: "", tur: "daromad", kategoriya: "Savdo tushumi", summa: total.saleRevenue },
-          { id: "saleCost", sana, filialId: "", tur: "tannarx", kategoriya: "Sotilgan tovar tannarxi", summa: total.saleRevenue - total.saleProfit },
-          { id: "expenseTotal", sana, filialId: "", tur: "xarajat", kategoriya: "Xarajatlar va qaytarishlar", summa: total.expenseTotal + total.refundTotal },
-        ]);
+        const rows: FoydaXarajatYozuvi[] = [
+          {
+            id: "saleRevenue",
+            sana,
+            filialId: "",
+            tur: "daromad",
+            kategoriya: "Savdo tushumi",
+            summa: Number(value.income?.saleRevenue ?? value.summary?.revenue ?? 0),
+          },
+          {
+            id: "otherIncome",
+            sana,
+            filialId: "",
+            tur: "daromad",
+            kategoriya: "Boshqa daromad",
+            summa: Number(value.income?.otherIncome ?? 0),
+          },
+          {
+            id: "saleCost",
+            sana,
+            filialId: "",
+            tur: "tannarx",
+            kategoriya: "Sotilgan tovar tannarxi",
+            summa: Number(value.cost?.costOfGoods ?? value.summary?.cost ?? 0),
+          },
+          ...(value.expenses?.items ?? []).map((item, index) => ({
+            id: `expense-${item.category ?? index}`,
+            sana,
+            filialId: "",
+            tur: "xarajat" as const,
+            kategoriya: item.name || item.category || "Xarajat",
+            summa: Number(item.amount ?? 0),
+          })),
+        ];
+        const refunds = Number(value.expenses?.refunds ?? 0);
+        if (refunds) {
+          rows.push({
+            id: "refunds",
+            sana,
+            filialId: "",
+            tur: "xarajat",
+            kategoriya: "Qaytarishlar",
+            summa: refunds,
+          });
+        }
+        setFoydaXarajat(rows.filter((item) => item.summa !== 0));
       })
       .catch((error) => { if (active) setXato(getApiErrorMessage(error)); })
       .finally(() => { if (active) setYuklanmoqda(false); });
@@ -61,7 +118,7 @@ export default function FoydaXarajatHisoboti() {
   }, [dateFrom, dateTo, filiallar]);
 
   const hisob = useMemo(() => {
-    const rows = foydaXarajat.filter((r) => sanadaMi(r.sana, dateFrom, dateTo));
+    const rows = foydaXarajat;
     const daromadlar = guruhla(rows, "daromad");
     const tannarxlar = guruhla(rows, "tannarx");
     const xarajatlar = guruhla(rows, "xarajat");
@@ -72,16 +129,16 @@ export default function FoydaXarajatHisoboti() {
     const yalpi = daromad - tannarx;
     const sof = yalpi - xarajat;
     return { daromadlar, tannarxlar, xarajatlar, daromad, tannarx, xarajat, yalpi, sof };
-  }, [dateFrom, dateTo, foydaXarajat]);
+  }, [foydaXarajat]);
 
   async function eksport() {
     setXato("");
     try {
-      const branchIds = filiallar.length ? filiallar : [undefined];
-      for (const branchId of branchIds) {
-        await incomeExpenseReportApi.export({ dateFrom, dateTo, branchId }, "excel");
-      }
-      return;
+      await incomeExpenseReportApi.export({
+        dateFrom: new Date(`${dateFrom}T00:00:00.000Z`).toISOString(),
+        dateTo: new Date(`${dateTo}T23:59:59.999Z`).toISOString(),
+        branchIds: filiallar.length ? filiallar.join(",") : undefined,
+      }, "excel");
     } catch (error) {
       setXato(getApiErrorMessage(error));
     }

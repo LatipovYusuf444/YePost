@@ -155,7 +155,6 @@ export type CommentSaqlash = {
   text: string;
   mentionUserIds?: string[];
   attachmentIds?: string[];
-  attachments?: unknown[];
 };
 
 export type Attachment = {

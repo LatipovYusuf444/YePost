@@ -3,7 +3,21 @@ import type { TolovMoliyaManbalari } from "@/types/tolov";
 import apiClient from "./axios";
 import type { FinanceTransaction, TolovManbasi } from "@/types/tolov";
 
-export async function financeTransactions(params: {search?:string;type?:"INCOME"|"EXPENSE";paymentType?:string;source?:TolovManbasi;dateFrom?:string;dateTo?:string;page?:number;pageSize?:number}) {
+export async function financeTransactions(params: {
+  search?: string;
+  type?: "INCOME" | "EXPENSE";
+  branchId?: string;
+  responsibleId?: string;
+  counterpartyType?: "CUSTOMER" | "SUPPLIER" | "EMPLOYEE";
+  counterpartyId?: string;
+  status?: "CONFIRMED" | "DRAFT" | "CANCELLED";
+  paymentType?: string;
+  source?: TolovManbasi;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  pageSize?: number;
+}) {
   const response=await apiClient.get<{data?:FinanceTransaction[];total?:number;page?:number;pageSize?:number;totalPages?:number}>("/finance/transactions",{params});
   return {items:response.data.data??[],total:response.data.total??0,page:response.data.page??1,pageSize:response.data.pageSize??10,totalPages:response.data.totalPages??1};
 }

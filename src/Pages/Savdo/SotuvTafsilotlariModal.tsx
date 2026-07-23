@@ -2852,24 +2852,24 @@ function OmbordanChiqarishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: 
   const [faoliyatXatosi, setFaoliyatXatosi] = useState("");
 
   async function faoliyatniBackendgaSaqlash(faoliyat: Omit<SaqlanganFaoliyat, "id" | "sana"> & { sana?: string }) {
-    const customerId = mijozIdOlish(sotuv);
-    if (!customerId) {
-      setFaoliyatXatosi("Faoliyatni saqlash uchun sotuvga mijoz biriktirilishi kerak.");
+    const partnerId = sotuv.customer?.partner?.id ?? sotuv.clientCompany?.partner?.id;
+    if (!partnerId) {
+      setFaoliyatXatosi("Faoliyatni saqlash uchun sotuvda real partner ID bo'lishi kerak.");
       return false;
     }
     setFaoliyatXatosi("");
     try {
       if (faoliyat.turi === "Izoh") {
-        await crmApi.commentYaratish(customerId, { text: faoliyat.matn || faoliyat.sarlavha, attachmentIds: faoliyat.attachmentIds, mentionUserIds: faoliyat.mentionUserIds });
+        await crmApi.partnerCommentYaratish(partnerId, { text: faoliyat.matn || faoliyat.sarlavha, attachmentIds: faoliyat.attachmentIds, mentionUserIds: faoliyat.mentionUserIds });
       } else if (faoliyat.turi === "Xabar") {
-        await crmApi.chatXabarYuborish(customerId, faoliyat.matn || faoliyat.sarlavha);
+        await crmApi.partnerChatXabarYuborish(partnerId, faoliyat.matn || faoliyat.sarlavha);
       } else {
         const assigneeId = faoliyat.xodimId || sotuv.responsibleId;
         if (!assigneeId) {
           setFaoliyatXatosi("Ish yoki vazifa yaratish uchun mas’ul xodim kerak.");
           return false;
         }
-        await crmApi.activityYaratish({ type: faoliyat.turi === "Vazifa" ? "TASK" : "CALL", customerId, subject: faoliyat.sarlavha, description: faoliyat.matn || undefined, dueAt: faoliyat.sana ?? new Date().toISOString(), assigneeId });
+        await crmApi.activityYaratish({ type: faoliyat.turi === "Vazifa" ? "TASK" : "CALL", partnerId, subject: faoliyat.sarlavha, description: faoliyat.matn || undefined, dueAt: faoliyat.sana ?? new Date().toISOString(), assigneeId });
       }
       return true;
     } catch (error) {

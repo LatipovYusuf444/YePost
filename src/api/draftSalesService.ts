@@ -113,19 +113,10 @@ export const draftSalesService = {
     return saleToDraftSale(apiData(response.data));
   },
   deleteDraft: async (id: string) => {
-    try {
-      await apiClient.delete(`/sales/${id}`);
-    } catch {
-      await apiClient.post(`/sales/${id}/cancel`);
-    }
+    await apiClient.post(`/sales/${id}/cancel`);
   },
   continueDraft: async (id: string) => {
-    try {
-      const response = await apiClient.post<Sotuv | ApiEnvelope<Sotuv>>(`/draft-sales/${id}/continue`);
-      return saleToDraftSale(apiData(response.data));
-    } catch {
-      return draftSalesService.getDraftById(id);
-    }
+    return draftSalesService.getDraftById(id);
   },
   duplicateDraft: async (id: string) => {
     const response = await apiClient.get<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${id}`);

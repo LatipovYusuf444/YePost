@@ -55,7 +55,12 @@ export default function FoydaHisoboti() {
     let active = true;
     setYuklanmoqda(true);
     setXato("");
-    productProfitReportApi.olish({ dateFrom, dateTo, categoryId: categoryId || undefined })
+    productProfitReportApi.barchasi({
+      groupBy: "PRODUCT",
+      dateFrom: new Date(`${dateFrom}T00:00:00.000Z`).toISOString(),
+      dateTo: new Date(`${dateTo}T23:59:59.999Z`).toISOString(),
+      categoryId: categoryId || undefined,
+    })
       .then((value) => {
         if (!active) return;
         setQatorlar(rows(value).map((item, index) => {
@@ -108,7 +113,12 @@ export default function FoydaHisoboti() {
     setExportYuklanmoqda(true);
     setXato("");
     try {
-      await productProfitReportApi.export({ dateFrom, dateTo, categoryId: categoryId || undefined }, "excel");
+      await productProfitReportApi.export({
+        groupBy: "PRODUCT",
+        dateFrom: new Date(`${dateFrom}T00:00:00.000Z`).toISOString(),
+        dateTo: new Date(`${dateTo}T23:59:59.999Z`).toISOString(),
+        categoryId: categoryId || undefined,
+      }, "excel");
     } catch (error) {
       setXato(getApiErrorMessage(error));
     } finally {

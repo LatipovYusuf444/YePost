@@ -56,17 +56,16 @@ export default function KompaniyaTafsilotlariModal({
     [savdolar, xaridorIdlar]
   );
   useEffect(() => {
-    const ids = [...xaridorIdlar];
-    if (!kompaniya.partnerId && ids.length === 0) {
+    if (!kompaniya.partnerId) {
       setBackendTolovlar([]);
       setBackendTarix([]);
       return;
     }
     let faol = true;
     setXatolik("");
-    const timelineSorovlari = kompaniya.partnerId
-      ? [{ id: kompaniya.id, request: crmApi.partnerTimeline(kompaniya.partnerId, { limit: 100 }) }]
-      : ids.map((customerId) => ({ id: customerId, request: crmApi.timeline(customerId, { limit: 100 }) }));
+    const timelineSorovlari = [
+      { id: kompaniya.id, request: crmApi.partnerTimeline(kompaniya.partnerId, { limit: 100 }) },
+    ];
     void Promise.all(timelineSorovlari.map(async ({ id, request }) => {
       const items = royxatniAjratish(await request);
       return {

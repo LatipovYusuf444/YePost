@@ -296,7 +296,8 @@ export default function YangiSotuvModal({
   async function faoliyatniBackendgaSaqlash() {
     const faoliyatOzgarilgan = faoliyatSaqlangan || Boolean(faoliyatSarlavha.trim()) || Boolean(faoliyatTafsilot.trim());
     if (!faoliyatOzgarilgan) return true;
-    if (!customerId) {
+    const partnerId = tanlanganMijoz?.partner?.id;
+    if (!partnerId) {
       setXatolik("CRM faoliyatini saqlash uchun mijozni tanlang.");
       return false;
     }
@@ -304,9 +305,9 @@ export default function YangiSotuvModal({
       const sarlavha = faoliyatSarlavha.trim() || faoliyatMatnlari[faolTab]?.title || "Faoliyat";
       const matn = faoliyatTafsilot.trim() || sarlavha;
       if (faolTab === "Izoh") {
-        await crmApi.commentYaratish(customerId, { text: matn });
+        await crmApi.partnerCommentYaratish(partnerId, { text: matn });
       } else if (faolTab === "Xabar") {
-        await crmApi.chatXabarYuborish(customerId, matn);
+        await crmApi.partnerChatXabarYuborish(partnerId, matn);
       } else {
         if (!responsibleId) {
           setXatolik("Ish yoki vazifa yaratish uchun mas’ul xodimni tanlang.");
@@ -315,7 +316,7 @@ export default function YangiSotuvModal({
         const dueAt = new Date(`${faoliyatSana}T${faoliyatSoat || "00:00"}`).toISOString();
         await crmApi.activityYaratish({
           type: faolTab === "Vazifa" ? "TASK" : "CALL",
-          customerId,
+          partnerId,
           subject: sarlavha,
           description: faoliyatTafsilot.trim() || undefined,
           dueAt,

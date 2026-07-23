@@ -53,6 +53,11 @@ type MovementRow = {
   refId?: string;
   quantity?: number | string;
   price?: number | string | null;
+  warehouseId?: string;
+  branchId?: string;
+  productId?: string;
+  categoryId?: string;
+  modificationId?: string;
 };
 
 type CounterpartySummary = { total?: number | string; paid?: number | string; debt?: number | string };
@@ -182,8 +187,10 @@ export function HisobotRealDataProvider({ children }: { children: ReactNode }) {
             warehouse,
             rows: list<MovementRow>(
               await stockMovementReportApi.olish({
-                modificationId: modification.id,
-                warehouseId: warehouse?.id,
+                modificationIds: modification.id,
+                warehouseIds: warehouse?.id,
+                page: 1,
+                pageSize: 500,
               })
             ),
           }));
@@ -233,12 +240,14 @@ export function HisobotRealDataProvider({ children }: { children: ReactNode }) {
               sana: row.date ?? "",
               hujjatTuri: movementType(row.type),
               hujjatRaqam: row.docNumber ?? row.refId ?? "",
-              productId: modification.product?.id ?? "",
-              xarakteristikaId: modification.id,
+              productId: row.productId ?? modification.product?.id ?? "",
+              xarakteristikaId: row.modificationId ?? modification.id,
               categoryId:
-                products.find((product) => product.id === modification.product?.id)?.category?.id ?? "",
-              warehouseId: warehouse?.id ?? "",
-              filialId: warehouse?.branchId ?? "",
+                row.categoryId ??
+                products.find((product) => product.id === modification.product?.id)?.category?.id ??
+                "",
+              warehouseId: row.warehouseId ?? warehouse?.id ?? "",
+              filialId: row.branchId ?? warehouse?.branchId ?? "",
               miqdor: Math.abs(number(row.quantity)),
               customerId: "",
               supplierId: "",

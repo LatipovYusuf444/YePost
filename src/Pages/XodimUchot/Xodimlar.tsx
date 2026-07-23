@@ -21,6 +21,7 @@ type Props = {
   xodimlar: Xodim[];
   lavozimlar: Lavozim[];
   bolimlar: Bolim[];
+  filiallar?: Array<{ id: string; nomi: string }>;
   onSaqlash: (xodim: Xodim) => void;
   onOchirish: (id: string) => void;
 };
@@ -34,7 +35,7 @@ const kartaMaydonlari: Maydon[] = [
   { id: "ishBoshlagan", nom: "Ishga kirgan sana" },
 ];
 
-export default function Xodimlar({ xodimlar, lavozimlar, bolimlar, onSaqlash, onOchirish }: Props) {
+export default function Xodimlar({ xodimlar, lavozimlar, bolimlar, filiallar = [], onSaqlash, onOchirish }: Props) {
   const [qidiruv, setQidiruv] = useState("");
   const [korinish, setKorinish] = useState<Korinish>("karta");
   const [modalOchiq, setModalOchiq] = useState(false);
@@ -90,7 +91,11 @@ export default function Xodimlar({ xodimlar, lavozimlar, bolimlar, onSaqlash, on
       nom: "Oylik",
       kenglik: 150,
       hizalash: "right",
-      katak: (x) => <span className="font-bold text-slate-600">{x.oylik ? summaFormat(x.oylik) : "—"}</span>,
+      katak: (x) => (
+        <span className="font-bold text-slate-600">
+          {x.oylik !== null ? summaFormat(x.oylik) : "—"}
+        </span>
+      ),
     },
     {
       id: "ishBoshlagan",
@@ -256,7 +261,7 @@ export default function Xodimlar({ xodimlar, lavozimlar, bolimlar, onSaqlash, on
                     <p className="flex items-center justify-between gap-2">
                       <span className="text-gray-400">Oylik</span>
                       <span className="font-semibold text-gray-600">
-                        {xodim.oylik ? summaFormat(xodim.oylik) : "—"}
+                        {xodim.oylik !== null ? summaFormat(xodim.oylik) : "—"}
                       </span>
                     </p>
                   )}
@@ -302,6 +307,7 @@ export default function Xodimlar({ xodimlar, lavozimlar, bolimlar, onSaqlash, on
           boshlangich={tahrirXodim}
           lavozimlar={lavozimlar}
           bolimlar={bolimlar}
+          filiallar={filiallar}
           tarix={[]}
           onYopish={() => setModalOchiq(false)}
           onSaqlash={(xodim) => {

@@ -6,7 +6,6 @@ import {
   Landmark,
   MessageSquare,
   PackagePlus,
-  RotateCcw,
   Smartphone,
   X,
 } from "lucide-react";
@@ -89,6 +88,9 @@ export default function KassaAmaliyotModal({
   const [nomi, setNomi] = useState(boshlangich?.nomi ?? "");
   // partiya id — xaridorId (mijoz) yoki kontragent nomi (xodim/yetkazib)
   const [xaridorId, setXaridorId] = useState(boshlangich?.xaridorId ?? "");
+  const [supplierId, setSupplierId] = useState(boshlangich?.supplierId ?? "");
+  const [employeeId, setEmployeeId] = useState(boshlangich?.employeeId ?? "");
+  const [responsibleId, setResponsibleId] = useState(boshlangich?.responsibleId ?? "");
   const [kontragent, setKontragent] = useState(boshlangich?.kontragent ?? "");
   const [summa, setSumma] = useState(boshlangich ? String(boshlangich.summa) : "");
   const [masul, setMasul] = useState(boshlangich?.masul ?? "");
@@ -118,7 +120,11 @@ export default function KassaAmaliyotModal({
   const mavjudHolat = boshlangich?.holat ?? "tasdiqlangan";
   // Yangi hujjat darrov tahrirlanadi; mavjudi avval ko'rish rejimida ochiladi.
   const [tahrirRejim, setTahrirRejim] = useState(boshlangich === null);
-  const readonly = Boolean(boshlangich?.readonly) || !tahrirRejim;
+  const readonly =
+    Boolean(boshlangich?.readonly) ||
+    mavjudHolat === "tasdiqlangan" ||
+    mavjudHolat === "bekor_qilingan" ||
+    !tahrirRejim;
 
   const yonalish = turYonalishi[turi];
   const tushum = yonalish === "tushum";
@@ -138,6 +144,8 @@ export default function KassaAmaliyotModal({
     setTuri(yangiTuri);
     // Tur o'zgarsa partiya tozalanadi (chalkashmasligi uchun).
     setXaridorId("");
+    setSupplierId("");
+    setEmployeeId("");
     setKontragent("");
   }
 
@@ -146,7 +154,7 @@ export default function KassaAmaliyotModal({
       setXato("Mijozdan to'lov uchun mijoz tanlanishi shart.");
       return;
     }
-    if ((partiya === "xodim" || partiya === "yetkazib") && !kontragent.trim()) {
+    if ((partiya === "xodim" && !employeeId) || (partiya === "yetkazib" && !supplierId)) {
       setXato(partiya === "xodim" ? "Xodim tanlanishi shart." : "Yetkazib beruvchi tanlanishi shart.");
       return;
     }
@@ -159,8 +167,13 @@ export default function KassaAmaliyotModal({
       return;
     }
 
-    const yakuniyKontragent =
-      partiya === "xaridor" && tanlanganXaridor ? tanlanganXaridor.nomi : kontragent.trim();
+    const yakuniyKontragent = partiya === "xaridor" && tanlanganXaridor
+      ? tanlanganXaridor.nomi
+      : partiya === "xodim"
+        ? xodimlar.find((item) => item.id === employeeId)?.nomi ?? kontragent.trim()
+        : partiya === "yetkazib"
+          ? yetkazibBeruvchilar.find((item) => item.id === supplierId)?.nomi ?? kontragent.trim()
+          : kontragent.trim();
 
     onSaqlash({
       id: boshlangich?.id ?? yangiId("ks"),
@@ -169,6 +182,9 @@ export default function KassaAmaliyotModal({
       turi,
       holat: tasdiqla ? "tasdiqlangan" : "qoralama",
       xaridorId: partiya === "xaridor" ? xaridorId : undefined,
+      supplierId: partiya === "yetkazib" ? supplierId : undefined,
+      employeeId: partiya === "xodim" ? employeeId : undefined,
+      responsibleId: responsibleId || undefined,
       raqam: boshlangich?.raqam ?? keyingiRaqam([]),
       nomi: nomi.trim() || turNomi[turi],
       kontragent: yakuniyKontragent,
@@ -178,6 +194,8 @@ export default function KassaAmaliyotModal({
       izoh: izoh.trim(),
       backendSource: boshlangich?.backendSource,
       backendRefId: boshlangich?.backendRefId,
+      saleId: boshlangich?.saleId,
+      purchaseId: boshlangich?.purchaseId,
       readonly: boshlangich?.readonly,
     });
   }
@@ -214,10 +232,16 @@ export default function KassaAmaliyotModal({
                 className={`rounded-full px-3 py-1 text-xs font-black ${
                   mavjudHolat === "qoralama"
                     ? "bg-amber-50 text-amber-600"
-                    : "bg-emerald-50 text-emerald-600"
+                    : mavjudHolat === "bekor_qilingan"
+                      ? "bg-red-50 text-red-600"
+                      : "bg-emerald-50 text-emerald-600"
                 }`}
               >
-                {mavjudHolat === "qoralama" ? "QORALAMA" : "TASDIQLANGAN"}
+                {mavjudHolat === "qoralama"
+                  ? "QORALAMA"
+                  : mavjudHolat === "bekor_qilingan"
+                    ? "BEKOR QILINGAN"
+                    : "TASDIQLANGAN"}
               </span>
             )}
           </div>
@@ -225,8 +249,8 @@ export default function KassaAmaliyotModal({
           {/* O'ngda (tepada) — faqat ko'rish rejimida.
               Qoralama → Tahrirlash; Tasdiqlangan → "Bekor qilish" (tasdiqlashni bekor
               qilib, o'sha oynada tahrirlashga o'tadi). Yopish faqat chapdagi X. */}
-          {!boshlangich?.readonly && !tahrirRejim &&
-            (mavjudHolat === "qoralama" ? (
+          {!boshlangich?.readonly && !tahrirRejim && mavjudHolat === "qoralama" &&
+            (
               <button
                 type="button"
                 onClick={() => setTahrirRejim(true)}
@@ -234,16 +258,7 @@ export default function KassaAmaliyotModal({
               >
                 Tahrirlash
               </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setTahrirRejim(true)}
-                className="inline-flex h-12 items-center gap-2 rounded-2xl bg-slate-700 px-6 text-sm font-black text-white shadow-lg shadow-slate-200 hover:bg-slate-800"
-              >
-                <RotateCcw size={17} />
-                Bekor qilish
-              </button>
-            ))}
+            )}
         </header>
 
         <div className="scrollbar-orange min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-8">
@@ -322,12 +337,12 @@ export default function KassaAmaliyotModal({
                 {partiya === "xodim" && (
                   <Maydon label="Xodim *">
                     <Tanlov
-                      qiymat={kontragent}
-                      onChange={setKontragent}
+                      qiymat={employeeId}
+                      onChange={setEmployeeId}
                       placeholder="Xodimni tanlang"
                       qidiruv
                       variantlar={xodimlar.map((x) => ({
-                        value: x.nomi,
+                        value: x.id,
                         label: x.nomi,
                       }))}
                     />
@@ -337,12 +352,12 @@ export default function KassaAmaliyotModal({
                 {partiya === "yetkazib" && (
                   <Maydon label="Yetkazib beruvchi *">
                     <Tanlov
-                      qiymat={kontragent}
-                      onChange={setKontragent}
+                      qiymat={supplierId}
+                      onChange={setSupplierId}
                       placeholder="Yetkazib beruvchini tanlang"
                       qidiruv
                       variantlar={yetkazibBeruvchilar.map((b) => ({
-                        value: b.nomi,
+                        value: b.id,
                         label: b.nomi,
                       }))}
                     />
@@ -396,10 +411,13 @@ export default function KassaAmaliyotModal({
                 {/* Mas'ul shaxs */}
                 <Maydon label="Mas'ul shaxs">
                   <Tanlov
-                    qiymat={masul}
-                    onChange={setMasul}
+                    qiymat={responsibleId}
+                    onChange={(value) => {
+                      setResponsibleId(value);
+                      setMasul(xodimlar.find((item) => item.id === value)?.nomi ?? "");
+                    }}
                     placeholder="Mas'ul shaxsni tanlang"
-                    variantlar={xodimlar.map((x) => ({ value: x.nomi, label: x.nomi }))}
+                    variantlar={xodimlar.map((x) => ({ value: x.id, label: x.nomi }))}
                   />
                 </Maydon>
 

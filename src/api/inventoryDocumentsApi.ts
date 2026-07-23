@@ -1,4 +1,5 @@
 import apiClient from "./axios";
+import { apiData } from "./response";
 import type { ApiEnvelope } from "./response";
 import type { DocumentAttachment, DocumentComment, DocumentHistory, InventoryDocumentType, InventoryHistoryAction, Paginated } from "@/types/inventoryDocuments";
 
@@ -21,8 +22,10 @@ function page<T>(value: PageEnvelope<T>): Paginated<T> {
 
 export const inventoryDocumentsApi = {
   comments: async (type: InventoryDocumentType, id: string, params?: { page?: number; pageSize?: number }) => page((await apiClient.get<PageEnvelope<DocumentComment>>(`${base(type,id)}/comments`, { params })).data),
-  commentCreate: async (type: InventoryDocumentType, id: string, body: { text: string; attachmentIds?: string[]; mentionUserIds?: string[] }) => (await apiClient.post<ApiEnvelope<DocumentComment>>(`${base(type,id)}/comments`, body)).data.data,
-  commentUpdate: async (type: InventoryDocumentType, id: string, commentId: string, text: string) => (await apiClient.patch<ApiEnvelope<DocumentComment>>(`${base(type,id)}/comments/${commentId}`, { text })).data.data,
+  commentCreate: async (type: InventoryDocumentType, id: string, body: { text: string; attachmentIds?: string[]; mentionUserIds?: string[] }) =>
+    apiData((await apiClient.post<DocumentComment | ApiEnvelope<DocumentComment>>(`${base(type,id)}/comments`, body)).data),
+  commentUpdate: async (type: InventoryDocumentType, id: string, commentId: string, text: string) =>
+    apiData((await apiClient.patch<DocumentComment | ApiEnvelope<DocumentComment>>(`${base(type,id)}/comments/${commentId}`, { text })).data),
   commentDelete: async (type: InventoryDocumentType, id: string, commentId: string) => apiClient.delete(`${base(type,id)}/comments/${commentId}`),
   attachments: async (type: InventoryDocumentType, id: string) => {
     const response = await apiClient.get<ApiEnvelope<{ items?: DocumentAttachment[] }>>(`${base(type,id)}/attachments`);

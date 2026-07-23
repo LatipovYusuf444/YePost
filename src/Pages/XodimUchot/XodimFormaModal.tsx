@@ -27,6 +27,7 @@ type Props = {
   boshlangich: Xodim | null;
   lavozimlar: Lavozim[];
   bolimlar?: Bolim[]; // bo'lim tanlash uchun
+  filiallar?: Array<{ id: string; nomi: string }>;
   tarix?: XodimTarixi[];
   onYopish: () => void;
   onSaqlash: (xodim: Xodim) => void;
@@ -36,6 +37,7 @@ export default function XodimFormaModal({
   boshlangich,
   lavozimlar,
   bolimlar = [],
+  filiallar = [],
   tarix = [],
   onYopish,
   onSaqlash,
@@ -46,6 +48,7 @@ export default function XodimFormaModal({
     boshlangich?.telefonlar.length ? boshlangich.telefonlar : [""]
   );
   const [login, setLogin] = useState(boshlangich?.login ?? "");
+  const [rol, setRol] = useState<Xodim["rol"]>(boshlangich?.rol ?? "CASHIER");
   const [parol, setParol] = useState("");
   const [lavozimId, setLavozimId] = useState(boshlangich?.lavozimId ?? "");
   const [bolimId, setBolimId] = useState(boshlangich?.bolimId ?? "");
@@ -108,13 +111,14 @@ export default function XodimFormaModal({
       familiya: familiya.trim(),
       telefonlar: tozaTelefonlar,
       login: login.trim(),
+      rol,
       parol: parol.trim() || undefined,
       lavozimId,
       bolimId,
       filial,
       manzil: manzil.trim(),
       ishBoshlaganSana,
-      oylik: Number(oylik) || 0,
+      oylik: oylik.trim() === "" ? null : Number(oylik),
       holat,
       izoh: izoh.trim(),
       // Lavozimdan kelgan vakolat shaxsiy ro'yxatda takrorlanmaydi.
@@ -281,6 +285,20 @@ export default function XodimFormaModal({
                         </label>
 
                         <label className="grid gap-2">
+                          <span className="text-sm font-bold text-slate-400">Tizim roli</span>
+                          <select
+                            value={rol}
+                            onChange={(event) => setRol(event.target.value as Xodim["rol"])}
+                            className={maydonKlass}
+                          >
+                            <option value="CASHIER">Kassir</option>
+                            <option value="STOREKEEPER">Omborchi</option>
+                            <option value="ADMIN">Administrator</option>
+                            <option value="DIRECTOR">Direktor</option>
+                          </select>
+                        </label>
+
+                        <label className="grid gap-2">
                           <span className="text-sm font-bold text-slate-400">
                             {boshlangich ? "Yangi parol (ixtiyoriy)" : "Parol *"}
                           </span>
@@ -339,7 +357,7 @@ export default function XodimFormaModal({
                             className={maydonKlass}
                           >
                             <option value="">Biriktirilmagan</option>
-                            {bolimlar.map((item) => (
+                            {filiallar.map((item) => (
                               <option key={item.id} value={item.nomi}>
                                 {item.nomi}
                               </option>

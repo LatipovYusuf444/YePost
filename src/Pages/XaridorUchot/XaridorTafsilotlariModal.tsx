@@ -42,10 +42,13 @@ export default function XaridorTafsilotlariModal({
     [savdolar, xaridor.id]
   );
   useEffect(() => {
+    if (!xaridor.partnerId) {
+      setXaridorTarixi([]);
+      setTolovlar([]);
+      return;
+    }
     let active = true;
-    const request = xaridor.partnerId
-      ? crmApi.partnerTimeline(xaridor.partnerId, { limit: 100 })
-      : crmApi.timeline(xaridor.id, { limit: 100 });
+    const request = crmApi.partnerTimeline(xaridor.partnerId, { limit: 100 });
     void request.then((response) => {
       if (!active) return;
       const items = royxatniAjratish(response);

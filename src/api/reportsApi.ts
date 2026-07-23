@@ -26,8 +26,42 @@ function royxatniAjratish<T>(data: RoyxatJavobi<T>): T[] {
   return data.value ?? data.items ?? data.results ?? data.data ?? [];
 }
 
-async function getReport(path: string, params: Record<string, unknown>) {
-  return (await apiClient.get<HisobotJavobi>(path, { params: tozaParams(params) })).data;
+function reportData<T>(raw: T | { data?: T; success?: boolean }): T {
+  if (raw && typeof raw === "object" && "success" in raw && "data" in raw) {
+    return (raw as { data: T }).data;
+  }
+  return raw as T;
+}
+
+async function getReport<T = HisobotJavobi>(path: string, params: Record<string, unknown>): Promise<T> {
+  const raw = (await apiClient.get<T | { data?: T; success?: boolean }>(path, {
+    params: tozaParams(params),
+  })).data;
+  return reportData(raw);
+}
+
+type PagedReport = {
+  items?: unknown[];
+  page?: number;
+  pageSize?: number;
+  total?: number;
+  totalPages?: number;
+  summary?: unknown;
+};
+
+async function getAllReport(path: string, params: Record<string, unknown>, pageSize = 500) {
+  const first = await getReport<PagedReport>(path, { ...params, page: 1, pageSize });
+  const totalPages = Number(first.totalPages ?? 1);
+  if (totalPages <= 1) return first;
+  const pages = await Promise.all(
+    Array.from({ length: totalPages - 1 }, (_, index) =>
+      getReport<PagedReport>(path, { ...params, page: index + 2, pageSize })
+    )
+  );
+  return {
+    ...first,
+    items: [first.items ?? [], ...pages.map((page) => page.items ?? [])].flat(),
+  };
 }
 
 function faylniSaqlash(blob: Blob, disposition: string, fallback: string) {
@@ -53,31 +87,175 @@ async function exportReport(path: string, params: Record<string, unknown>, fallb
 
 // Hisobotlar sahifasi: GET /reports/stock-movement
 export const stockMovementReportApi = {
-  olish: (params: StockMovementFilter) => getReport("/reports/stock-movement", params),
-  export: (params: StockMovementFilter, exportTuri: ExportTuri) =>
-    exportReport("/reports/stock-movement", { ...params, export: exportTuri }, `stock-movement.${exportTuri === "pdf" ? "pdf" : "xlsx"}`),
+  olish: (params: StockMovementFilter) => {
+    const { modificationId, warehouseId, ...rest } = params;
+    return getReport("/reports/stock-movement", {
+      ...rest,
+      modificationIds: rest.modificationIds ?? modificationId,
+      warehouseIds: rest.warehouseIds ?? warehouseId,
+    });
+  },
+  barchasi: (params: StockMovementFilter) => {
+    const { modificationId, warehouseId, ...rest } = params;
+    return getAllReport("/reports/stock-movement", {
+      ...rest,
+      modificationIds: rest.modificationIds ?? modificationId,
+      warehouseIds: rest.warehouseIds ?? warehouseId,
+    });
+  },
+  export: (params: StockMovementFilter, exportTuri: ExportTuri = "excel") => {
+    void exportTuri;
+    const { modificationId, warehouseId, ...rest } = params;
+    return exportReport(
+      "/reports/stock-movement/export",
+      {
+        ...rest,
+        modificationIds: rest.modificationIds ?? modificationId,
+        warehouseIds: rest.warehouseIds ?? warehouseId,
+      },
+      "stock-movement.xlsx"
+    );
+  },
 };
 
 // Hisobotlar sahifasi: GET /reports/counterparty-balance
 export const counterpartyBalanceReportApi = {
-  olish: (params: CounterpartyBalanceFilter) =>
-    getReport("/reports/counterparty-balance", params),
-  export: (params: CounterpartyBalanceFilter, exportTuri: ExportTuri) =>
-    exportReport("/reports/counterparty-balance", { ...params, export: exportTuri }, `counterparty-balance.${exportTuri === "pdf" ? "pdf" : "xlsx"}`),
+  olish: (params: CounterpartyBalanceFilter) => {
+    const { customerId, supplierId, ...rest } = params;
+    return getReport("/reports/counterparty-balance", {
+      ...rest,
+      counterpartyType:
+        rest.counterpartyType ?? (customerId ? "CUSTOMER" : supplierId ? "SUPPLIER" : undefined),
+      search: rest.search,
+    });
+  },
+  barchasi: (params: CounterpartyBalanceFilter) => {
+    const { customerId, supplierId, ...rest } = params;
+    return getAllReport("/reports/counterparty-balance", {
+      ...rest,
+      counterpartyType:
+        rest.counterpartyType ?? (customerId ? "CUSTOMER" : supplierId ? "SUPPLIER" : undefined),
+    });
+  },
+  hujjatlar: (type: "CUSTOMER" | "SUPPLIER", id: string) =>
+    getReport(`/reports/counterparty-balance/${type}/${id}/documents`, {}),
+  export: (params: CounterpartyBalanceFilter, exportTuri: ExportTuri = "excel") => {
+    return exportReport(
+      "/reports/counterparty-balance",
+      { ...params, export: exportTuri },
+      `counterparty-balance.${exportTuri === "pdf" ? "pdf" : "xlsx"}`
+    );
+  },
 };
 
 // Hisobotlar sahifasi: GET /reports/product-profit
 export const productProfitReportApi = {
-  olish: (params: ProductProfitFilter) => getReport("/reports/product-profit", params),
-  export: (params: ProductProfitFilter, exportTuri: ExportTuri) =>
-    exportReport("/reports/product-profit", { ...params, export: exportTuri }, `product-profit.${exportTuri === "pdf" ? "pdf" : "xlsx"}`),
+  olish: (params: ProductProfitFilter) => {
+    return getReport("/reports/product-profit", {
+      groupBy: "PRODUCT",
+      ...params,
+    });
+  },
+  barchasi: (params: ProductProfitFilter) =>
+    getAllReport("/reports/product-profit", { groupBy: "PRODUCT", ...params }),
+  export: (params: ProductProfitFilter, exportTuri: ExportTuri = "excel") => {
+    return exportReport(
+      "/reports/product-profit",
+      { groupBy: "PRODUCT", ...params, export: exportTuri },
+      `product-profit.${exportTuri === "pdf" ? "pdf" : "xlsx"}`
+    );
+  },
 };
 
 // Hisobotlar sahifasi: GET /reports/income-expense
 export const incomeExpenseReportApi = {
-  olish: (params: IncomeExpenseFilter) => getReport("/reports/income-expense", params),
-  export: (params: IncomeExpenseFilter, exportTuri: ExportTuri) =>
-    exportReport("/reports/income-expense", { ...params, export: exportTuri }, `income-expense.${exportTuri === "pdf" ? "pdf" : "xlsx"}`),
+  olish: (params: IncomeExpenseFilter) => {
+    const { branchId, ...rest } = params;
+    return getReport("/reports/income-expense", {
+      ...rest,
+      branchIds: rest.branchIds ?? branchId,
+    });
+  },
+  export: (params: IncomeExpenseFilter, exportTuri: ExportTuri = "excel") => {
+    const { branchId, ...rest } = params;
+    return exportReport(
+      "/reports/income-expense",
+      { ...rest, branchIds: rest.branchIds ?? branchId, export: exportTuri },
+      `income-expense.${exportTuri === "pdf" ? "pdf" : "xlsx"}`
+    );
+  },
+};
+
+export type CashFlowParams = {
+  dateFrom?: string;
+  dateTo?: string;
+  branchIds?: string;
+  paymentMethods?: string;
+  responsibleIds?: string;
+};
+
+export type CashFlowReport = {
+  summary: {
+    openingBalance: number | string;
+    income: number | string;
+    expense: number | string;
+    closingBalance: number | string;
+  };
+  byPaymentMethod: Array<{
+    paymentMethod: string;
+    openingBalance: number | string;
+    income: number | string;
+    expense: number | string;
+    closingBalance: number | string;
+  }>;
+  items: Array<{
+    id: string;
+    date: string;
+    documentNumber?: string;
+    refDocNumber?: string;
+    name?: string;
+    note?: string;
+    paymentMethod?: string;
+    paymentType?: string;
+    income?: number | string;
+    expense?: number | string;
+    amount?: number | string;
+    type?: "INCOME" | "EXPENSE";
+    runningBalance?: number | string;
+    branchId?: string | null;
+  }>;
+};
+
+export const cashFlowReportApi = {
+  olish: async (params: CashFlowParams) => {
+    const raw = await getReport<
+      CashFlowReport & {
+        summary: CashFlowReport["summary"] & {
+          byPaymentMethod?: Record<
+            string,
+            { income?: number | string; expense?: number | string }
+          >;
+        };
+      }
+    >("/reports/cash-flow", params);
+    if (Array.isArray(raw.byPaymentMethod)) return raw;
+    const byPaymentMethod = Object.entries(raw.summary?.byPaymentMethod ?? {}).map(
+      ([paymentMethod, value]) => {
+        const income = Number(value.income ?? 0);
+        const expense = Number(value.expense ?? 0);
+        return {
+          paymentMethod,
+          openingBalance: 0,
+          income,
+          expense,
+          closingBalance: income - expense,
+        };
+      }
+    );
+    return { ...raw, byPaymentMethod };
+  },
+  export: (params: CashFlowParams) =>
+    exportReport("/reports/cash-flow/export", params, `cash-flow-${new Date().toISOString().slice(0, 10)}.xlsx`),
 };
 
 // Audit sahifasi: GET /audit/logs

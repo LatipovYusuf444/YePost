@@ -82,7 +82,7 @@ function chatYozuvi(item: ChatMessage, index: number): FaoliyatYozuvi {
   return { id: item.id || `chat-${item.createdAt || index}`, turi: "xabar", sarlavha: item.direction === "IN" ? "Mijozdan xabar" : "Xabar yuborildi", matn: item.text || "", sana: item.createdAt || new Date().toISOString() };
 }
 
-export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, customerId, partnerId }: Props) {
+export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, partnerId }: Props) {
   const [faoliyatTab, setFaoliyatTab] = useState<FaoliyatTuri>("ish");
   const [sarlavha, setSarlavha] = useState("");
   const [tafsilot, setTafsilot] = useState("");
@@ -95,13 +95,13 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, cu
   const [xatolik, setXatolik] = useState("");
 
   const yuklash = useCallback(async () => {
-    if (!partnerId && !customerId) { setYozuvlar(boshlangichYozuvlar); return; }
+    if (!partnerId) { setYozuvlar(boshlangichYozuvlar); return; }
     setYuklanmoqda(true); setXatolik("");
     try {
       const [activities, comments, chat, profile] = await Promise.all([
-        crmApi.activities(partnerId ? { partnerId } : { customerId }),
-        partnerId ? crmApi.partnerComments(partnerId, { limit: 100 }) : crmApi.comments(customerId!, { limit: 100 }),
-        partnerId ? crmApi.partnerChatTarixi(partnerId, { limit: 100 }) : crmApi.chatTarixi(customerId!, { limit: 100 }),
+        crmApi.activities({ partnerId }),
+        crmApi.partnerComments(partnerId, { limit: 100 }),
+        crmApi.partnerChatTarixi(partnerId, { limit: 100 }),
         profilApi.olish(),
       ]);
       setAssigneeId(profile.id);
@@ -113,7 +113,7 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, cu
       ].sort((a,b) => new Date(b.sana).getTime() - new Date(a.sana).getTime()));
     } catch (error) { setXatolik(getApiErrorMessage(error)); }
     finally { setYuklanmoqda(false); }
-  }, [boshlangichYozuvlar, customerId, partnerId]);
+  }, [boshlangichYozuvlar, partnerId]);
 
   useEffect(() => { void yuklash(); }, [yuklash]);
 
@@ -127,21 +127,19 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, cu
   async function saqlash() {
     const tozaSarlavha = sarlavha.trim();
     if (!tozaSarlavha) return;
-    if (!partnerId && !customerId) { setXatolik("CRM faoliyatini saqlash uchun real partner ID mavjud emas."); return; }
+    if (!partnerId) { setXatolik("CRM faoliyatini saqlash uchun real partner ID mavjud emas."); return; }
     const muddat = new Date(`${sana}T${vaqt || "00:00"}`);
     setSaqlanmoqda(true); setXatolik("");
     try {
       if (faoliyatTab === "izoh") {
-        const data = { text: tafsilot.trim() || tozaSarlavha, attachments: [] };
-        if (partnerId) await crmApi.partnerCommentYaratish(partnerId, data);
-        else await crmApi.commentYaratish(customerId!, data);
+        const data = { text: tafsilot.trim() || tozaSarlavha };
+        await crmApi.partnerCommentYaratish(partnerId, data);
       } else if (faoliyatTab === "xabar") {
-        if (partnerId) await crmApi.partnerChatXabarYuborish(partnerId, tafsilot.trim() || tozaSarlavha);
-        else await crmApi.chatXabarYuborish(customerId!, tafsilot.trim() || tozaSarlavha);
+        await crmApi.partnerChatXabarYuborish(partnerId, tafsilot.trim() || tozaSarlavha);
       }
       else {
         if (!assigneeId) throw new Error("Joriy mas’ul foydalanuvchi aniqlanmadi.");
-        await crmApi.activityYaratish({ type: faoliyatTab === "vazifa" ? "TASK" : "CALL", ...(partnerId ? { partnerId } : { customerId }), subject: tozaSarlavha, description: tafsilot.trim() || undefined, dueAt: Number.isNaN(muddat.getTime()) ? new Date().toISOString() : muddat.toISOString(), assigneeId });
+        await crmApi.activityYaratish({ type: faoliyatTab === "vazifa" ? "TASK" : "CALL", partnerId, subject: tozaSarlavha, description: tafsilot.trim() || undefined, dueAt: Number.isNaN(muddat.getTime()) ? new Date().toISOString() : muddat.toISOString(), assigneeId });
       }
       tozalash(); await yuklash();
     } catch (error) { setXatolik(getApiErrorMessage(error)); }
@@ -233,7 +231,7 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, cu
             <button
               type="button"
               onClick={() => void saqlash()}
-              disabled={!sarlavha.trim() || saqlanmoqda || (!partnerId && !customerId)}
+              disabled={!sarlavha.trim() || saqlanmoqda || !partnerId}
               className="inline-flex h-10 items-center justify-center rounded-2xl bg-[#FF6A00] px-6 text-sm font-black uppercase text-white shadow-[0_12px_28px_rgba(255,106,0,.22)] transition hover:-translate-y-0.5 hover:bg-[#EA580C] disabled:cursor-not-allowed disabled:bg-orange-200 disabled:shadow-none disabled:hover:translate-y-0"
             >
               {saqlanmoqda ? "Saqlanmoqda..." : "Saqlash"}

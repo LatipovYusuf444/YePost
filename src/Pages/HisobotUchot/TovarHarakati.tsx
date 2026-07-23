@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, Search } from "lucide-react";
 import KengaytiriladiganJadval, { type Ustun } from "./KengaytiriladiganJadval";
 import KopTanlovli from "./KopTanlovli";
@@ -67,7 +67,6 @@ export default function TovarHarakati() {
     omborlar,
     kategoriyalar,
     variatsiyalar,
-    tovarHarakati,
   } = useHisobotRealData();
   const maxsulotTanlovlari: Tanlov[] = useMemo(
     () => maxsulotlar.map((m) => ({ id: m.id, nomi: m.nomi })),
@@ -80,6 +79,80 @@ export default function TovarHarakati() {
   const [ochilganHarakat, setOchilganHarakat] = useState<TovarHarakati | null>(null);
   const [xato, setXato] = useState("");
   const [eksportYuklanmoqda, setEksportYuklanmoqda] = useState(false);
+  const [tovarHarakati, setTovarHarakati] = useState<TovarHarakati[]>([]);
+  const [yuklanmoqda, setYuklanmoqda] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    setYuklanmoqda(true);
+    setXato("");
+    stockMovementReportApi
+      .barchasi({
+        dateFrom: new Date(`${filter.dateFrom}T00:00:00.000Z`).toISOString(),
+        dateTo: new Date(`${filter.dateTo}T23:59:59.999Z`).toISOString(),
+        warehouseIds: filter.warehouseIds.length ? filter.warehouseIds.join(",") : undefined,
+        branchIds: filter.filialIds.length ? filter.filialIds.join(",") : undefined,
+        categoryIds: filter.categoryIds.length ? filter.categoryIds.join(",") : undefined,
+        productIds: filter.productIds.length ? filter.productIds.join(",") : undefined,
+        modificationIds: filter.xarakteristikaIds.length
+          ? filter.xarakteristikaIds.join(",")
+          : undefined,
+        customerIds: filter.customerIds.length ? filter.customerIds.join(",") : undefined,
+        supplierIds: filter.supplierIds.length ? filter.supplierIds.join(",") : undefined,
+        search: qidiruv || undefined,
+      })
+      .then((response) => {
+        if (!active) return;
+        const raw = response as {
+          items?: Array<{
+            date?: string;
+            type?: string;
+            docNumber?: string;
+            refId?: string;
+            warehouseId?: string;
+            branchId?: string;
+            productId?: string;
+            categoryId?: string;
+            modificationId?: string;
+            quantity?: number | string;
+            customerId?: string;
+            supplierId?: string;
+          }>;
+        };
+        setTovarHarakati(
+          (raw.items ?? []).map((row, index) => ({
+            id: `${row.refId ?? index}-${row.modificationId ?? ""}-${row.date ?? ""}`,
+            sana: row.date ?? "",
+            hujjatTuri:
+              row.type === "PURCHASE" || row.type === "RETURN" || row.type === "TRANSFER_IN"
+                ? "kirim"
+                : row.type === "STOCK_TAKE"
+                  ? "inventarizatsiya"
+                  : row.type === "SALE"
+                    ? "realizatsiya"
+                    : "chiqim",
+            hujjatRaqam: row.docNumber ?? row.refId ?? "",
+            productId: row.productId ?? "",
+            xarakteristikaId: row.modificationId ?? "",
+            categoryId: row.categoryId ?? "",
+            warehouseId: row.warehouseId ?? "",
+            filialId: row.branchId ?? "",
+            miqdor: Math.abs(Number(row.quantity ?? 0)),
+            customerId: row.customerId ?? "",
+            supplierId: row.supplierId ?? "",
+          }))
+        );
+      })
+      .catch((error) => {
+        if (active) setXato(getApiErrorMessage(error));
+      })
+      .finally(() => {
+        if (active) setYuklanmoqda(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [filter, qidiruv]);
 
   const mahsulotOchish = useCallback((productId?: string) => {
     const mahsulot = maxsulotlar.find((m) => m.id === productId);
@@ -183,21 +256,19 @@ export default function TovarHarakati() {
 
   async function eksport() {
     setXato("");
-    if (filter.xarakteristikaIds.length !== 1) {
-      setXato("Excel yuklash uchun bitta variatsiyani tanlang.");
-      return;
-    }
-    if (filter.warehouseIds.length > 1) {
-      setXato("Excel yuklash uchun ko'pi bilan bitta omborni tanlang.");
-      return;
-    }
     setEksportYuklanmoqda(true);
     try {
       await stockMovementReportApi.export({
-        modificationId: filter.xarakteristikaIds[0],
-        warehouseId: filter.warehouseIds[0],
-        dateFrom: filter.dateFrom,
-        dateTo: filter.dateTo,
+        dateFrom: new Date(`${filter.dateFrom}T00:00:00.000Z`).toISOString(),
+        dateTo: new Date(`${filter.dateTo}T23:59:59.999Z`).toISOString(),
+        warehouseIds: filter.warehouseIds.length ? filter.warehouseIds.join(",") : undefined,
+        branchIds: filter.filialIds.length ? filter.filialIds.join(",") : undefined,
+        categoryIds: filter.categoryIds.length ? filter.categoryIds.join(",") : undefined,
+        productIds: filter.productIds.length ? filter.productIds.join(",") : undefined,
+        modificationIds: filter.xarakteristikaIds.length ? filter.xarakteristikaIds.join(",") : undefined,
+        customerIds: filter.customerIds.length ? filter.customerIds.join(",") : undefined,
+        supplierIds: filter.supplierIds.length ? filter.supplierIds.join(",") : undefined,
+        search: qidiruv || undefined,
       }, "excel");
     } catch (error) {
       setXato(getApiErrorMessage(error));
@@ -354,7 +425,11 @@ export default function TovarHarakati() {
 
       {/* Natija jadvali */}
       <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm">
-        {korinishQatorlar.length === 0 ? (
+        {yuklanmoqda ? (
+          <div className="flex h-72 items-center justify-center font-bold text-slate-400">
+            Backenddan yuklanmoqda...
+          </div>
+        ) : korinishQatorlar.length === 0 ? (
           <Bosh />
         ) : (
           <>

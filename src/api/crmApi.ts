@@ -33,16 +33,6 @@ export function royxatniAjratish<T>(data: RoyxatJavobi<T> | CursorJavobi<T>): T[
 }
 
 export const crmApi = {
-  timeline: async (customerId: string, params?: TimelineFilter) =>
-    apiData(
-      (
-        await apiClient.get<CursorJavobi<TimelineItem> | ApiEnvelope<CursorJavobi<TimelineItem>>>(
-          `/crm/customers/${customerId}/timeline`,
-          { params: tozaParams(params) }
-        )
-      ).data
-    ),
-
   partnerTimeline: async (partnerId: string, params?: TimelineFilter) =>
     apiData(
       (
@@ -115,15 +105,6 @@ export const crmApi = {
   activityYakunlash: async (id: string, result?: string) =>
     apiData((await apiClient.post<Activity | ApiEnvelope<Activity>>(`/crm/activities/${id}/complete`, { result })).data),
 
-  comments: async (customerId: string, params?: { cursor?: string; limit?: number }) =>
-    apiData(
-      (
-        await apiClient.get<CursorJavobi<Comment> | ApiEnvelope<CursorJavobi<Comment>>>(
-          `/crm/customers/${customerId}/comments`,
-          { params: tozaParams(params) }
-        )
-      ).data
-    ),
   partnerComments: async (partnerId: string, params?: { cursor?: string; limit?: number }) =>
     apiData(
       (
@@ -133,8 +114,6 @@ export const crmApi = {
         )
       ).data
     ),
-  commentYaratish: async (customerId: string, data: CommentSaqlash) =>
-    apiData((await apiClient.post<Comment | ApiEnvelope<Comment>>(`/crm/customers/${customerId}/comments`, data)).data),
   partnerCommentYaratish: async (partnerId: string, data: CommentSaqlash) =>
     apiData((await apiClient.post<Comment | ApiEnvelope<Comment>>(`/crm/partners/${partnerId}/comments`, data)).data),
   commentYangilash: async (id: string, text: string) =>
@@ -161,15 +140,6 @@ export const crmApi = {
     (await apiClient.get<Blob>(`/crm/attachments/${id}/download`, { responseType: "blob" }))
       .data,
 
-  chatTarixi: async (customerId: string, params?: { cursor?: string; limit?: number }) =>
-    apiData(
-      (
-        await apiClient.get<CursorJavobi<ChatMessage> | ApiEnvelope<CursorJavobi<ChatMessage>>>(
-          `/crm/customers/${customerId}/chat/messages`,
-          { params: tozaParams(params) }
-        )
-      ).data
-    ),
   partnerChatTarixi: async (partnerId: string, params?: { cursor?: string; limit?: number }) =>
     apiData(
       (
@@ -179,8 +149,6 @@ export const crmApi = {
         )
       ).data
     ),
-  chatXabarYuborish: async (customerId: string, text: string) =>
-    apiData((await apiClient.post<ChatMessage | ApiEnvelope<ChatMessage>>(`/crm/customers/${customerId}/chat/messages`, { text })).data),
   partnerChatXabarYuborish: async (partnerId: string, text: string) =>
     apiData((await apiClient.post<ChatMessage | ApiEnvelope<ChatMessage>>(`/crm/partners/${partnerId}/chat/messages`, { text })).data),
   chatThreadlar: async (unassigned?: boolean) =>
@@ -191,8 +159,6 @@ export const crmApi = {
         })
       ).data
     ),
-  chatThreadBiriktirish: async (id: string, customerId: string) =>
-    apiData((await apiClient.patch<ChatThread | ApiEnvelope<ChatThread>>(`/crm/chat/threads/${id}/assign`, { customerId })).data),
   chatThreadPartnerBiriktirish: async (id: string, partnerId: string) =>
     apiData((await apiClient.patch<ChatThread | ApiEnvelope<ChatThread>>(`/crm/chat/threads/${id}/assign`, { partnerId })).data),
 };

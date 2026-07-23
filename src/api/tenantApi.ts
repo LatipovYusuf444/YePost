@@ -1,5 +1,5 @@
 import apiClient from "./axios";
-import { apiData, type ApiEnvelope } from "./response";
+import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import type {
   JoriyFoydalanuvchi,
   Obuna,
@@ -21,35 +21,38 @@ export async function joriyFoydalanuvchiniOlish() {
 
 // Sozlamalar → Workspace: barcha Swagger CRUD amallari.
 export const workspaceApi = {
-  royxat: async () => (await apiClient.get<Workspace[]>("/tenants/workspaces")).data,
+  royxat: async () =>
+    apiList((await apiClient.get<Workspace[] | ApiListEnvelope<Workspace>>("/tenants/workspaces")).data),
   olish: async (id: string) =>
-    (await apiClient.get<Workspace>(`/tenants/workspaces/${id}`)).data,
+    apiData((await apiClient.get<Workspace | ApiEnvelope<Workspace>>(`/tenants/workspaces/${id}`)).data),
   yaratish: async (data: WorkspaceSaqlashMalumoti) =>
-    (await apiClient.post<Workspace>("/tenants/workspaces", data)).data,
+    apiData((await apiClient.post<Workspace | ApiEnvelope<Workspace>>("/tenants/workspaces", data)).data),
   yangilash: async (id: string, data: Partial<WorkspaceSaqlashMalumoti>) =>
-    (await apiClient.patch<Workspace>(`/tenants/workspaces/${id}`, data)).data,
+    apiData((await apiClient.patch<Workspace | ApiEnvelope<Workspace>>(`/tenants/workspaces/${id}`, data)).data),
   ochirish: async (id: string) =>
-    (await apiClient.delete<Workspace>(`/tenants/workspaces/${id}`)).data,
+    apiData((await apiClient.delete<Workspace | ApiEnvelope<Workspace>>(`/tenants/workspaces/${id}`)).data),
 };
 
 // Sozlamalar → Tariflar: barcha Swagger CRUD amallari.
 export const tarifApi = {
-  royxat: async () => (await apiClient.get<Tarif[]>("/tenants/tariffs")).data,
+  royxat: async () =>
+    apiList((await apiClient.get<Tarif[] | ApiListEnvelope<Tarif>>("/tenants/tariffs")).data),
   olish: async (id: string) =>
-    (await apiClient.get<Tarif>(`/tenants/tariffs/${id}`)).data,
+    apiData((await apiClient.get<Tarif | ApiEnvelope<Tarif>>(`/tenants/tariffs/${id}`)).data),
   yaratish: async (data: TarifSaqlashMalumoti) =>
-    (await apiClient.post<Tarif>("/tenants/tariffs", data)).data,
+    apiData((await apiClient.post<Tarif | ApiEnvelope<Tarif>>("/tenants/tariffs", data)).data),
   yangilash: async (id: string, data: Partial<TarifSaqlashMalumoti>) =>
-    (await apiClient.patch<Tarif>(`/tenants/tariffs/${id}`, data)).data,
+    apiData((await apiClient.patch<Tarif | ApiEnvelope<Tarif>>(`/tenants/tariffs/${id}`, data)).data),
   ochirish: async (id: string) =>
-    (await apiClient.delete<Tarif>(`/tenants/tariffs/${id}`)).data,
+    apiData((await apiClient.delete<Tarif | ApiEnvelope<Tarif>>(`/tenants/tariffs/${id}`)).data),
 };
 
 // Sozlamalar → Obunalar: backend faqat GET, POST va GET/{id} beradi.
 export const obunaApi = {
-  royxat: async () => (await apiClient.get<Obuna[]>("/tenants/subscriptions")).data,
+  royxat: async () =>
+    apiList((await apiClient.get<Obuna[] | ApiListEnvelope<Obuna>>("/tenants/subscriptions")).data),
   olish: async (id: string) =>
-    (await apiClient.get<Obuna>(`/tenants/subscriptions/${id}`)).data,
+    apiData((await apiClient.get<Obuna | ApiEnvelope<Obuna>>(`/tenants/subscriptions/${id}`)).data),
   yaratish: async (data: ObunaYaratishMalumoti) =>
-    (await apiClient.post<Obuna>("/tenants/subscriptions", data)).data,
+    apiData((await apiClient.post<Obuna | ApiEnvelope<Obuna>>("/tenants/subscriptions", data)).data),
 };

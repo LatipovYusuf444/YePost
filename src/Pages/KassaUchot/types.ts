@@ -18,7 +18,7 @@ export type KassaAmaliyotTuri =
   | "boshqa_chiqim" // Boshqa pul xarajatlari (izoh majburiy)
   | "xarajat"; // eski/tarixiy xarajat yozuvlari
 
-export type KassaHolati = "qoralama" | "tasdiqlangan";
+export type KassaHolati = "qoralama" | "tasdiqlangan" | "bekor_qilingan";
 
 export type KassaAmaliyoti = {
   id: string;
@@ -27,6 +27,11 @@ export type KassaAmaliyoti = {
   turi: KassaAmaliyotTuri;
   holat?: KassaHolati; // qoralama = saqlangan, tasdiqlangan = tasdiqlangan (bo'sh = tasdiqlangan)
   xaridorId?: string; // xaridor_tolovi uchun — shu xaridor qarzidan ayiriladi
+  supplierId?: string;
+  employeeId?: string;
+  responsibleId?: string;
+  saleId?: string;
+  purchaseId?: string;
   raqam: string;
   nomi: string; // amaliyot nomi / asosi
   kontragent: string; // kimdan olindi yoki kimga berildi
@@ -34,10 +39,8 @@ export type KassaAmaliyoti = {
   sana: string; // ISO
   masul: string; // mas'ul shaxs
   izoh: string;
-  backendSource?: "SALE" | "RETURN" | "CASH_IN" | "EXPENSE";
+  backendSource?: "SALE" | "RETURN" | "CASH_IN" | "EXPENSE" | "CASH_OPERATION";
   backendRefId?: string;
-  backendCashInSource?: "OWNER" | "INVESTOR" | "LOAN" | "OTHER";
-  backendExpenseCategory?: "SALARY" | "RENT" | "UTILITIES" | "LOGISTICS" | "MARKETING" | "OTHER";
   backendBranchId?: string;
   readonly?: boolean;
 };

@@ -16,6 +16,9 @@ export type AccountFoydalanuvchi = {
   phone?: string | null;
   email?: string | null;
   position?: string | null;
+  departmentId?: string | null;
+  positionId?: string | null;
+  salary?: string | null;
   avatarUrl?: string | null;
   photoUrl?: string | null;
   imageUrl?: string | null;
@@ -40,6 +43,9 @@ export type FoydalanuvchiYaratishMalumoti = {
   phone?: string;
   email?: string;
   position?: string;
+  departmentId?: string;
+  positionId?: string;
+  salary?: number;
   role?: AccountRoli;
   branchId?: string;
   telegramId?: string;

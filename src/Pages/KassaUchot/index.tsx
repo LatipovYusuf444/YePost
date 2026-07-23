@@ -10,15 +10,19 @@ import {
   Smartphone,
 } from "lucide-react";
 import { barchaFinanceTransactions } from "@/api/tolovApi";
-import { kassaKirimApi, xarajatApi } from "@/api/financeApi";
+import { cashOperationsApi } from "@/api/cashOperationsApi";
 import { foydalanuvchilarApi } from "@/api/accountsApi";
 import { filiallarApi } from "@/api/omborApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { FinanceTransaction } from "@/types/tolov";
 import type { TolovUsuli } from "@/types/finance";
-import type { KassaKirim, Xarajat } from "@/types/finance";
 import type { AccountFoydalanuvchi } from "@/types/account";
 import type { Filial } from "@/types/ombor";
+import type {
+  CashOperation,
+  CashOperationPayload,
+  CashOperationType,
+} from "@/types/cashOperation";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
 import KassaAmaliyotModal from "./KassaAmaliyotModal";
 import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali, KassaYonalishi } from "./types";
@@ -65,59 +69,118 @@ function kanalniMoslash(paymentType: string): KassaKanali {
   return "naqd";
 }
 
-function backendTuriniMoslash(item: FinanceTransaction, cashIn?: KassaKirim, expense?: Xarajat): KassaAmaliyotTuri {
+function backendTuriniMoslash(item: FinanceTransaction): KassaAmaliyotTuri {
   if (item.source === "SALE") return "donalik_savdo";
   if (item.source === "RETURN") return "xaridorga_qaytarish";
-  if (item.source === "CASH_IN") return cashIn?.source === "LOAN" ? "hisobdor_qaytardi" : "boshqa_kirim";
-  return expense?.category === "SALARY" ? "ish_haqi" : "xarajat";
+  if (item.source === "CASH_IN") return "boshqa_kirim";
+  return "xarajat";
 }
-
-const cashInNomi: Record<string, string> = {
-  OWNER: "Ta'sischidan kirim",
-  INVESTOR: "Investordan kirim",
-  LOAN: "Qarz mablag'i kirimi",
-  OTHER: "Boshqa kassa kirimi",
-};
-const expenseNomi: Record<string, string> = {
-  SALARY: "Ish haqi",
-  RENT: "Ijara xarajati",
-  UTILITIES: "Kommunal xarajat",
-  LOGISTICS: "Logistika xarajati",
-  MARKETING: "Marketing xarajati",
-  OTHER: "Boshqa xarajat",
-};
 
 function amaliyotgaMoslash(
   item: FinanceTransaction,
-  cashIns: Map<string, KassaKirim>,
-  expenses: Map<string, Xarajat>,
   users: Map<string, AccountFoydalanuvchi>,
   branches: Map<string, Filial>
 ): KassaAmaliyoti {
-  const cashIn = item.source === "CASH_IN" ? cashIns.get(item.refId ?? "") : undefined;
-  const expense = item.source === "EXPENSE" ? expenses.get(item.refId ?? "") : undefined;
-  const raw = cashIn ?? expense;
-  const responsible = raw?.responsibleId ? users.get(raw.responsibleId) : undefined;
-  const branch = raw?.branchId ? branches.get(raw.branchId) : undefined;
+  const responsible = item.responsibleId
+    ? users.get(item.responsibleId)
+    : undefined;
+  const branch = item.branchId
+    ? branches.get(item.branchId)
+    : undefined;
   return {
     id: item.id,
     kanal: kanalniMoslash(item.paymentType),
     yonalish: item.type === "INCOME" ? "tushum" : "chiqim",
-    turi: backendTuriniMoslash(item, cashIn, expense),
+    turi: backendTuriniMoslash(item),
     holat: "tasdiqlangan",
     raqam: item.refDocNumber || item.id.slice(0, 8).toUpperCase(),
-    nomi: item.refDocNumber || (cashIn ? cashInNomi[cashIn.source] : expense ? expenseNomi[expense.category] : item.source),
-    kontragent: branch?.name ?? "",
+    nomi: item.refDocNumber || item.note || item.source,
+    kontragent: item.counterpartyName || branch?.name || "",
     summa: Number(item.amount ?? 0),
     sana: item.date,
-    masul: responsible?.fullName || responsible?.username || "Tizim",
-    izoh: raw?.note ?? item.note ?? "",
+    masul: item.responsibleName || responsible?.fullName || responsible?.username || "Tizim",
+    izoh: item.note ?? "",
     backendSource: item.source,
     backendRefId: item.refId ?? item.id,
-    backendCashInSource: cashIn?.source as KassaAmaliyoti["backendCashInSource"],
-    backendExpenseCategory: expense?.category as KassaAmaliyoti["backendExpenseCategory"],
-    backendBranchId: raw?.branchId ?? undefined,
-    readonly: item.source === "SALE" || item.source === "RETURN",
+    backendBranchId: item.branchId ?? undefined,
+    readonly: true,
+  };
+}
+
+const cashOperationTuri: Record<CashOperationType, KassaAmaliyotTuri> = {
+  CUSTOMER_PAYMENT: "xaridor_tolovi",
+  EMPLOYEE_RETURN: "hisobdor_qaytardi",
+  SUPPLIER_RETURN: "taminotchi_qaytardi",
+  OTHER_INCOME: "boshqa_kirim",
+  RETAIL_SALE: "donalik_savdo",
+  SUPPLIER_PAYMENT: "taminot_tolovi",
+  CUSTOMER_REFUND: "xaridorga_qaytarish",
+  SALARY_PAYMENT: "ish_haqi",
+  OTHER_EXPENSE: "boshqa_chiqim",
+};
+
+const uiOperationTuri: Record<KassaAmaliyotTuri, CashOperationType> = {
+  xaridor_tolovi: "CUSTOMER_PAYMENT",
+  hisobdor_qaytardi: "EMPLOYEE_RETURN",
+  taminotchi_qaytardi: "SUPPLIER_RETURN",
+  boshqa_kirim: "OTHER_INCOME",
+  donalik_savdo: "RETAIL_SALE",
+  taminot_tolovi: "SUPPLIER_PAYMENT",
+  xaridorga_qaytarish: "CUSTOMER_REFUND",
+  ish_haqi: "SALARY_PAYMENT",
+  boshqa_chiqim: "OTHER_EXPENSE",
+  xarajat: "OTHER_EXPENSE",
+};
+
+function cashOperationgaMoslash(
+  item: CashOperation,
+  users: Map<string, AccountFoydalanuvchi>,
+  branches: Map<string, Filial>
+): KassaAmaliyoti {
+  const responsible = item.responsibleId ? users.get(item.responsibleId) : undefined;
+  const branch = item.branchId ? branches.get(item.branchId) : undefined;
+  const counterparty =
+    item.counterparty?.name ||
+    item.counterparty?.fullName ||
+    [item.customer?.firstName, item.customer?.lastName].filter(Boolean).join(" ") ||
+    item.supplier?.name ||
+    item.employee?.fullName ||
+    item.employee?.username ||
+    branch?.name ||
+    item.branch?.name ||
+    "";
+  return {
+    id: item.id,
+    kanal: kanalniMoslash(item.paymentMethod),
+    yonalish: item.direction === "INCOME" ? "tushum" : "chiqim",
+    turi: cashOperationTuri[item.type],
+    holat:
+      item.status === "DRAFT"
+        ? "qoralama"
+        : item.status === "CANCELLED"
+          ? "bekor_qilingan"
+          : "tasdiqlangan",
+    xaridorId: item.customerId ?? undefined,
+    supplierId: item.supplierId ?? undefined,
+    employeeId: item.employeeId ?? undefined,
+    responsibleId: item.responsibleId ?? undefined,
+    saleId: item.saleId ?? undefined,
+    purchaseId: item.purchaseId ?? undefined,
+    raqam: item.docNumber,
+    nomi: item.name || amaliyotTuriMatni[cashOperationTuri[item.type]],
+    kontragent: counterparty,
+    summa: Number(item.amount ?? 0),
+    sana: item.date,
+    masul:
+      item.responsible?.fullName ||
+      responsible?.fullName ||
+      responsible?.username ||
+      "Tizim",
+    izoh: item.note || "",
+    backendSource: "CASH_OPERATION",
+    backendRefId: item.id,
+    backendBranchId: item.branchId ?? undefined,
+    readonly: item.status === "CANCELLED",
   };
 }
 
@@ -137,18 +200,21 @@ export default function KassaUchot() {
     setYuklanmoqda(true);
     setXatolik("");
     try {
-      const [transactions, cashIns, expenses, users, branches] = await Promise.all([
+      const [transactions, cashOperations, users, branches] = await Promise.all([
         barchaFinanceTransactions(),
-        kassaKirimApi.royxat(),
-        xarajatApi.royxat(),
+        cashOperationsApi.barchasi(),
         foydalanuvchilarApi.royxat(),
         filiallarApi.royxat(),
       ]);
-      const cashInMap = new Map(cashIns.map((item) => [item.id, item]));
-      const expenseMap = new Map(expenses.map((item) => [item.id, item]));
       const userMap = new Map(users.map((item) => [item.id, item]));
       const branchMap = new Map(branches.map((item) => [item.id, item]));
-      setAmaliyotlar(transactions.map((item) => amaliyotgaMoslash(item, cashInMap, expenseMap, userMap, branchMap)));
+      const operationRows = cashOperations.items.map((item) =>
+        cashOperationgaMoslash(item, userMap, branchMap)
+      );
+      const transactionRows = transactions
+        .filter((item) => item.source !== "CASH_OPERATION")
+        .map((item) => amaliyotgaMoslash(item, userMap, branchMap));
+      setAmaliyotlar([...operationRows, ...transactionRows]);
     } catch (error) {
       setXatolik(getApiErrorMessage(error));
     } finally {
@@ -166,24 +232,31 @@ export default function KassaUchot() {
   async function saqlash(amaliyot: KassaAmaliyoti) {
     setXatolik("");
     try {
-      const paymentMethod: TolovUsuli = amaliyot.kanal === "bank" ? "BANK" : amaliyot.kanal === "ilova" ? "CARD" : "CASH";
-      const payload = {
+      const paymentMethod: TolovUsuli =
+        amaliyot.kanal === "bank" ? "BANK" : amaliyot.kanal === "ilova" ? "CARD" : "CASH";
+      const payload: CashOperationPayload = {
+        type: uiOperationTuri[amaliyot.turi],
         date: amaliyot.sana,
         amount: amaliyot.summa,
         paymentMethod,
+        name: amaliyot.nomi,
         note: amaliyot.izoh || amaliyot.nomi,
         branchId: amaliyot.backendBranchId,
+        responsibleId: amaliyot.responsibleId,
+        customerId: amaliyot.xaridorId,
+        supplierId: amaliyot.supplierId,
+        employeeId: amaliyot.employeeId,
+        saleId: amaliyot.saleId,
+        purchaseId: amaliyot.purchaseId,
       };
-      const cashInSource = amaliyot.backendCashInSource ?? (amaliyot.turi === "hisobdor_qaytardi" ? "LOAN" : "OTHER");
-      const expenseCategory = amaliyot.backendExpenseCategory ?? (amaliyot.turi === "ish_haqi" ? "SALARY" : "OTHER");
-      if (amaliyot.backendSource === "CASH_IN" && amaliyot.backendRefId) {
-        await kassaKirimApi.yangilash(amaliyot.backendRefId, { ...payload, source: cashInSource });
-      } else if (amaliyot.backendSource === "EXPENSE" && amaliyot.backendRefId) {
-        await xarajatApi.yangilash(amaliyot.backendRefId, { ...payload, category: expenseCategory });
-      } else if (amaliyot.yonalish === "tushum") {
-        await kassaKirimApi.yaratish({ ...payload, source: cashInSource });
+      let saved: CashOperation;
+      if (amaliyot.backendSource === "CASH_OPERATION" && amaliyot.backendRefId) {
+        saved = await cashOperationsApi.yangilash(amaliyot.backendRefId, payload);
       } else {
-        await xarajatApi.yaratish({ ...payload, category: expenseCategory });
+        saved = await cashOperationsApi.yaratish(payload);
+      }
+      if (amaliyot.holat === "tasdiqlangan" && saved.status === "DRAFT") {
+        await cashOperationsApi.tasdiqlash(saved.id);
       }
       setKanal(amaliyot.kanal);
       setYonalish(amaliyot.yonalish);
@@ -195,11 +268,12 @@ export default function KassaUchot() {
   }
 
   async function ochirish(amaliyot: KassaAmaliyoti) {
-    if (amaliyot.readonly || !amaliyot.backendRefId) return;
-    if (!window.confirm(`${amaliyot.raqam} amaliyotini o'chirasizmi?`)) return;
+    if (amaliyot.readonly || amaliyot.backendSource !== "CASH_OPERATION" || !amaliyot.backendRefId) return;
+    const cancel = amaliyot.holat === "tasdiqlangan";
+    if (!window.confirm(`${amaliyot.raqam} amaliyotini ${cancel ? "bekor qilasizmi" : "o'chirasizmi"}?`)) return;
     try {
-      if (amaliyot.backendSource === "CASH_IN") await kassaKirimApi.ochirish(amaliyot.backendRefId);
-      else if (amaliyot.backendSource === "EXPENSE") await xarajatApi.ochirish(amaliyot.backendRefId);
+      if (cancel) await cashOperationsApi.bekorQilish(amaliyot.backendRefId);
+      else await cashOperationsApi.ochirish(amaliyot.backendRefId);
       await yuklash();
     } catch (error) {
       setXatolik(getApiErrorMessage(error));

@@ -8,13 +8,14 @@ export type Xodim = {
   familiya: string;
   telefonlar: string[]; // kamida bitta, formada yana qo'shish mumkin
   login: string;
+  rol: "ADMIN" | "DIRECTOR" | "CASHIER" | "STOREKEEPER";
   parol?: string;
   lavozimId: string; // "" — lavozim biriktirilmagan
   bolimId: string; // "" — bo'lim biriktirilmagan
   filial: string;
   manzil: string;
   ishBoshlaganSana: string;
-  oylik: number;
+  oylik: number | null;
   holat: XodimHolati;
   izoh: string;
   vakolatlar: string[]; // lavozim vakolatlaridan tashqari shaxsiy vakolatlar (VakolatKodi)

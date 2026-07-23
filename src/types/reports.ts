@@ -6,20 +6,51 @@ export type SanaFilter = {
 };
 
 export type StockMovementFilter = SanaFilter & {
-  modificationId: string;
+  warehouseIds?: string;
+  branchIds?: string;
+  categoryIds?: string;
+  productIds?: string;
+  modificationIds?: string;
+  customerIds?: string;
+  supplierIds?: string;
+  documentTypes?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  /** Eski UI bilan moslik; API qatlamida CSV maydoniga o'tkaziladi. */
+  modificationId?: string;
   warehouseId?: string;
 };
 
 export type CounterpartyBalanceFilter = {
+  counterpartyType?: "CUSTOMER" | "SUPPLIER";
+  debtStatus?: "ALL" | "DEBTOR" | "CREDITOR" | "ZERO";
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  customerIds?: string;
+  supplierIds?: string;
+  productIds?: string;
   customerId?: string;
   supplierId?: string;
 };
 
 export type ProductProfitFilter = SanaFilter & {
+  groupBy?: "PRODUCT" | "CUSTOMER" | "MONTH" | "BRANCH" | "WAREHOUSE";
+  branchIds?: string;
+  warehouseIds?: string;
+  customerIds?: string;
+  companyIds?: string;
+  productIds?: string;
+  page?: number;
+  pageSize?: number;
   categoryId?: string;
 };
 
 export type IncomeExpenseFilter = SanaFilter & {
+  branchIds?: string;
   branchId?: string;
 };
 
