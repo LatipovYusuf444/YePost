@@ -1,3 +1,4 @@
+import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useState } from "react";
 import { Eye, LoaderCircle, Plus, Search, X } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
@@ -287,7 +288,7 @@ export default function Inventarizatsiya() {
                   <div className="mt-5 space-y-4">
                     <label className="block">
                       <span className="mb-2 block text-sm font-bold text-slate-500">Ombor *</span>
-                      <select
+                      <AppSelect
                         value={warehouseId}
                         onChange={(event) => void omborTanlash(event.target.value)}
                         className="h-13 w-full rounded-2xl border border-slate-200 bg-white px-4 font-semibold text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
@@ -296,22 +297,22 @@ export default function Inventarizatsiya() {
                         {store.omborlar.map((ombor) => (
                           <option key={ombor.id} value={ombor.id}>{ombor.name}</option>
                         ))}
-                      </select>
+                      </AppSelect>
                     </label>
                     <label className="block">
                       <span className="mb-2 block text-sm font-bold text-slate-500">Tekshiruv turi *</span>
-                      <select
+                      <AppSelect
                         value={type}
                         onChange={(event) => setType(event.target.value as InventarizatsiyaTuri)}
                         className="h-13 w-full rounded-2xl border border-slate-200 bg-white px-4 font-semibold text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                       >
                         <option value="FULL">To'liq</option>
                         <option value="PARTIAL">Qisman</option>
-                      </select>
+                      </AppSelect>
                     </label>
                     <label className="block">
                       <span className="mb-2 block text-sm font-bold text-slate-500">Mas'ul shaxs</span>
-                      <select
+                      <AppSelect
                         value={responsibleId}
                         onChange={(event) => setResponsibleId(event.target.value)}
                         className="h-13 w-full rounded-2xl border border-slate-200 bg-white px-4 font-semibold text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
@@ -322,7 +323,7 @@ export default function Inventarizatsiya() {
                             {xodim.fullName ?? xodim.username ?? xodim.name ?? "Noma'lum xodim"}
                           </option>
                         ))}
-                      </select>
+                      </AppSelect>
                     </label>
                   </div>
                 </section>
@@ -369,7 +370,7 @@ export default function Inventarizatsiya() {
                     <table className="w-full min-w-[980px] text-left text-sm">
                       <thead className="bg-orange-50/70 text-xs font-black uppercase text-slate-500">
                         <tr>
-                          <th className="px-4 py-4">№</th>
+                          <th className="px-4 py-4">в„–</th>
                           <th className="px-4 py-4">Mahsulot</th>
                           <th className="px-4 py-4">Shtrix kod</th>
                           <th className="px-4 py-4">Ombor</th>
@@ -388,7 +389,7 @@ export default function Inventarizatsiya() {
                             <tr key={`${qoldiq.modificationId}-${index}`}>
                               <td className="px-4 py-4 text-slate-400">{index + 1}</td>
                               <td className="px-4 py-4 font-black text-slate-900">{modificationNomi(qoldiq.modification)}</td>
-                              <td className="px-4 py-4 text-slate-500">{qoldiq.modification?.barcode ?? "—"}</td>
+                              <td className="px-4 py-4 text-slate-500">{qoldiq.modification?.barcode ?? "вЂ”"}</td>
                               <td className="px-4 py-4">{qoldiq.warehouse?.name ?? omborMap.get(warehouseId) ?? "Noma'lum ombor"}</td>
                               <td className="px-4 py-4 font-bold text-slate-600">{tizim}</td>
                               <td className="px-4 py-3">
@@ -406,7 +407,7 @@ export default function Inventarizatsiya() {
                                 />
                               </td>
                               <td className={`px-4 py-4 font-black ${farq == null || farq === 0 ? "text-slate-400" : farq > 0 ? "text-emerald-600" : "text-red-500"}`}>
-                                {farq == null ? "—" : farq > 0 ? `+${farq}` : farq}
+                                {farq == null ? "вЂ”" : farq > 0 ? `+${farq}` : farq}
                               </td>
                             </tr>
                           );
@@ -460,3 +461,4 @@ export default function Inventarizatsiya() {
     </div>
   );
 }
+

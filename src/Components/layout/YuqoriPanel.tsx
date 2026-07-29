@@ -179,7 +179,7 @@ export default function YuqoriPanel() {
     >
       <nav
         className={
-          moduleKey === "ombor"
+          moduleKey === "ombor" || moduleKey === "savdo"
             ? "grid min-w-0 flex-1 grid-flow-col auto-cols-[minmax(140px,1fr)] items-center overflow-x-auto"
             : "flex min-w-0 flex-1 items-center gap-5 overflow-x-auto"
         }
@@ -200,7 +200,7 @@ export default function YuqoriPanel() {
               key={tab.path}
               to={tab.path}
               className={`relative shrink-0 text-sm ${
-                moduleKey === "ombor"
+                moduleKey === "ombor" || moduleKey === "savdo"
                   ? "flex h-11 w-full items-center justify-center px-3 text-center"
                   : "pb-2"
               } ${

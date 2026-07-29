@@ -1,3 +1,4 @@
+import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   AlertTriangle,
@@ -857,7 +858,7 @@ function Foydalanuvchilar() {
                       <div className="grid gap-4 md:grid-cols-2">
                         <label className="text-sm font-bold text-gray-400">
                           Rol
-                          <select
+                          <AppSelect
                             value={role}
                             onChange={(event) => setRole(event.target.value as AccountRoli)}
                             className="mt-2 h-12 w-full rounded-xl border border-gray-200 bg-white px-4 font-semibold text-gray-700 outline-none transition focus:border-orange-300 focus:ring-4 focus:ring-orange-100"
@@ -867,11 +868,11 @@ function Foydalanuvchilar() {
                                 {label}
                               </option>
                             ))}
-                          </select>
+                          </AppSelect>
                         </label>
                         <label className="text-sm font-bold text-gray-400">
                           Filial
-                          <select
+                          <AppSelect
                             value={branchId}
                             onChange={(event) => setBranchId(event.target.value)}
                             className="mt-2 h-12 w-full rounded-xl border border-gray-200 bg-white px-4 font-semibold text-gray-700 outline-none transition focus:border-orange-300 focus:ring-4 focus:ring-orange-100"
@@ -882,7 +883,7 @@ function Foydalanuvchilar() {
                                 {item.name}
                               </option>
                             ))}
-                          </select>
+                          </AppSelect>
                         </label>
                       </div>
                       <div className="grid gap-4 md:grid-cols-2">
@@ -1128,3 +1129,4 @@ export default function Hodimlar() {
     </div>
   );
 }
+

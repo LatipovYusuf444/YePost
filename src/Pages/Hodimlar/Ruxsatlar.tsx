@@ -1,3 +1,4 @@
+import AppSelect from "@/Components/ui/AppSelect";
 import { useMemo, useState, type FormEvent } from "react";
 import {
   Edit3,
@@ -265,7 +266,7 @@ export default function Ruxsatlar() {
             <div className="mt-6 space-y-4">
               <label className="block text-sm font-bold">
                 Foydalanuvchi *
-                <select
+                <AppSelect
                   value={userId}
                   onChange={(event) => {
                     const yangiUserId = event.target.value;
@@ -289,11 +290,11 @@ export default function Ruxsatlar() {
                       {item.fullName || item.username} (@{item.username})
                     </option>
                   ))}
-                </select>
+                </AppSelect>
               </label>
               <label className="block text-sm font-bold">
                 Vakolat turi *
-                <select
+                <AppSelect
                   value={code}
                   onChange={(event) =>
                     setCode(event.target.value as VakolatKodi)
@@ -308,10 +309,10 @@ export default function Ruxsatlar() {
                       disabled={!editing && mavjudKodlar.has(item)}
                     >
                       {vakolatMatnlari[item].nom}
-                      {!editing && mavjudKodlar.has(item) ? " — mavjud" : ""}
+                      {!editing && mavjudKodlar.has(item) ? " вЂ” mavjud" : ""}
                     </option>
                   ))}
-                </select>
+                </AppSelect>
               </label>
               <div className="rounded-2xl bg-orange-50 p-4 text-sm text-orange-800">
                 {vakolatMatnlari[code].izoh}
@@ -359,3 +360,4 @@ export default function Ruxsatlar() {
     </section>
   );
 }
+

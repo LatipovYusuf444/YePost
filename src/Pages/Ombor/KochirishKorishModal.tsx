@@ -1,3 +1,4 @@
+import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
@@ -32,11 +33,11 @@ function status(hujjat?: KochirishHujjati | null) {
 }
 
 function shaxsNomi(shaxs?: NomliEntity) {
-  return shaxs?.fullName || shaxs?.name || shaxs?.username || "—";
+  return shaxs?.fullName || shaxs?.name || shaxs?.username || "вЂ”";
 }
 
 function sana(value?: string, vaqt = false) {
-  if (!value) return "—";
+  if (!value) return "вЂ”";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat("uz-UZ", {
@@ -137,7 +138,7 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
       xodim.id === masulObyekti?.id
   );
   const masulNomi =
-    shaxsNomi(masulObyekti) !== "—"
+    shaxsNomi(masulObyekti) !== "вЂ”"
       ? shaxsNomi(masulObyekti)
       : shaxsNomi(masulRoyxatdan);
   const joriyStatus = status(hujjat);
@@ -261,14 +262,14 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
               <section className="mx-auto max-w-5xl rounded-[28px] border border-orange-100 bg-white p-6 shadow-sm">
                 <h3 className="border-b border-orange-100 pb-4 text-lg font-black text-slate-700">Ko'chirmani tahrirlash</h3>
                 <div className="mt-5 grid gap-4 md:grid-cols-3">
-                  <select value={sourceWarehouseId} onChange={(event) => void manbaniAlmashtirish(event.target.value)} className="input"><option value="">Ombordan *</option>{store.omborlar.map((ombor) => <option key={ombor.id} value={ombor.id}>{ombor.name}</option>)}</select>
-                  <select value={destWarehouseId} onChange={(event) => setDest(event.target.value)} className="input"><option value="">Omborga *</option>{store.omborlar.filter((ombor) => ombor.id !== sourceWarehouseId).map((ombor) => <option key={ombor.id} value={ombor.id}>{ombor.name}</option>)}</select>
-                  <select value={responsibleId} onChange={(event) => setResponsible(event.target.value)} className="input"><option value="">Mas'ul shaxs</option>{store.xodimlar.map((xodim) => <option key={xodim.id} value={xodim.id}>{shaxsNomi(xodim)}</option>)}</select>
+                  <AppSelect value={sourceWarehouseId} onChange={(event) => void manbaniAlmashtirish(event.target.value)} className="input"><option value="">Ombordan *</option>{store.omborlar.map((ombor) => <option key={ombor.id} value={ombor.id}>{ombor.name}</option>)}</AppSelect>
+                  <AppSelect value={destWarehouseId} onChange={(event) => setDest(event.target.value)} className="input"><option value="">Omborga *</option>{store.omborlar.filter((ombor) => ombor.id !== sourceWarehouseId).map((ombor) => <option key={ombor.id} value={ombor.id}>{ombor.name}</option>)}</AppSelect>
+                  <AppSelect value={responsibleId} onChange={(event) => setResponsible(event.target.value)} className="input"><option value="">Mas'ul shaxs</option>{store.xodimlar.map((xodim) => <option key={xodim.id} value={xodim.id}>{shaxsNomi(xodim)}</option>)}</AppSelect>
                 </div>
                 <div className="mt-5 space-y-3">
                   {items.map((item, index) => (
                     <div key={`${item.modificationId}-${index}`} className="grid gap-3 rounded-2xl bg-orange-50/60 p-3 md:grid-cols-[1fr_160px_44px]">
-                      <select value={item.modificationId} onChange={(event) => setItems((oldingi) => oldingi.map((qator, i) => i === index ? { ...qator, modificationId: event.target.value } : qator))} className="input"><option value="">Mahsulot *</option>{store.qoldiqlar.map((qoldiq) => <option key={`${qoldiq.modificationId}-${qoldiq.id ?? "q"}`} value={qoldiq.modificationId}>{modificationNomi(qoldiq.modification)} — {qoldiqMiqdori(qoldiq)}</option>)}</select>
+                      <AppSelect value={item.modificationId} onChange={(event) => setItems((oldingi) => oldingi.map((qator, i) => i === index ? { ...qator, modificationId: event.target.value } : qator))} className="input"><option value="">Mahsulot *</option>{store.qoldiqlar.map((qoldiq) => <option key={`${qoldiq.modificationId}-${qoldiq.id ?? "q"}`} value={qoldiq.modificationId}>{modificationNomi(qoldiq.modification)} вЂ” {qoldiqMiqdori(qoldiq)}</option>)}</AppSelect>
                       <input type="number" min="0.001" step="0.001" value={item.quantity} onChange={(event) => setItems((oldingi) => oldingi.map((qator, i) => i === index ? { ...qator, quantity: Number(event.target.value) } : qator))} className="input" />
                       <button type="button" disabled={items.length === 1} onClick={() => setItems((oldingi) => oldingi.filter((_, i) => i !== index))} className="flex h-12 items-center justify-center rounded-2xl bg-red-50 text-red-500 disabled:opacity-30"><Trash2 size={17} /></button>
                     </div>
@@ -313,8 +314,8 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
                   <div className="flex items-center gap-2 border-b border-orange-100 pb-4"><FileText size={18} className="text-[#FF5A00]" /><h3 className="font-black uppercase text-slate-600">Tovarlar</h3></div>
                   <div className="mt-5 overflow-x-auto rounded-2xl border border-orange-100">
                     <table className="w-full min-w-[900px] text-left text-sm">
-                      <thead className="bg-[#FFF9F3] text-xs font-black uppercase text-slate-500"><tr><th className="px-4 py-4">№</th><th className="px-4 py-4">Mahsulot</th><th className="px-4 py-4">Shtrix kod</th><th className="px-4 py-4">Narxi</th><th className="px-4 py-4">Soni</th><th className="px-4 py-4">Summa</th></tr></thead>
-                      <tbody className="divide-y divide-orange-100">{toliqItems.map(({ item, mod }, index) => { const narx = narxniOlish(item, mod); return <tr key={item.id ?? `${item.modificationId}-${index}`}><td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td><td className="px-4 py-4 font-black text-slate-800">{modificationNomi(mod)}</td><td className="px-4 py-4 text-slate-500">{mod?.barcode ?? "—"}</td><td className="px-4 py-4">{pul(narx)}</td><td className="px-4 py-4">{item.quantity} {item.unit ?? "dona"}</td><td className="px-4 py-4 font-black text-emerald-600">{pul(Number(item.quantity) * narx)}</td></tr>; })}{!toliqItems.length && <tr><td colSpan={6} className="px-5 py-12 text-center font-bold text-slate-400">Mahsulotlar mavjud emas</td></tr>}</tbody>
+                      <thead className="bg-[#FFF9F3] text-xs font-black uppercase text-slate-500"><tr><th className="px-4 py-4">в„–</th><th className="px-4 py-4">Mahsulot</th><th className="px-4 py-4">Shtrix kod</th><th className="px-4 py-4">Narxi</th><th className="px-4 py-4">Soni</th><th className="px-4 py-4">Summa</th></tr></thead>
+                      <tbody className="divide-y divide-orange-100">{toliqItems.map(({ item, mod }, index) => { const narx = narxniOlish(item, mod); return <tr key={item.id ?? `${item.modificationId}-${index}`}><td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td><td className="px-4 py-4 font-black text-slate-800">{modificationNomi(mod)}</td><td className="px-4 py-4 text-slate-500">{mod?.barcode ?? "вЂ”"}</td><td className="px-4 py-4">{pul(narx)}</td><td className="px-4 py-4">{item.quantity} {item.unit ?? "dona"}</td><td className="px-4 py-4 font-black text-emerald-600">{pul(Number(item.quantity) * narx)}</td></tr>; })}{!toliqItems.length && <tr><td colSpan={6} className="px-5 py-12 text-center font-bold text-slate-400">Mahsulotlar mavjud emas</td></tr>}</tbody>
                     </table>
                   </div>
                 </section>
@@ -326,3 +327,4 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
     </AppModal>
   );
 }
+

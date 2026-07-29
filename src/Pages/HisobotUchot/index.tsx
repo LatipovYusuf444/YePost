@@ -1,3 +1,4 @@
+import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   Activity,
@@ -316,13 +317,13 @@ function Select({
   return (
     <label className="text-sm font-bold text-gray-700">
       {label}
-      <select
+      <AppSelect
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="mt-2 h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 outline-none focus:border-orange-400"
       >
         {children}
-      </select>
+      </AppSelect>
     </label>
   );
 }
@@ -343,3 +344,4 @@ function Bosh({ text }: { text: string }) {
     </div>
   );
 }
+

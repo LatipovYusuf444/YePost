@@ -1,3 +1,4 @@
+import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { ChevronDown, ImagePlus, Plus, X } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
@@ -185,14 +186,14 @@ export default function MahsulotModal({
                 </label>
                 <label className="block text-sm font-black text-gray-500">
                   Kategoriya *
-                  <select value={kategoriya} onChange={(e) => setKategoriya(e.target.value)} className="input mt-2">
+                  <AppSelect value={kategoriya} onChange={(e) => setKategoriya(e.target.value)} className="input mt-2">
                     <option value="">Kategoriya</option>
               {kategoriyalar.map((k) => (
                       <option key={k.id} value={k.id}>
                         {k.nomi}
                       </option>
                     ))}
-                  </select>
+                  </AppSelect>
                 </label>
               </div>
 
@@ -200,13 +201,13 @@ export default function MahsulotModal({
                 <div className="block text-sm font-black text-gray-500">
                   <p>O'lchov birligi *</p>
                   <div className="mt-2 flex items-center gap-3">
-                    <select value={birlik} onChange={(e) => setBirlik(e.target.value)} className="input min-w-0 flex-1">
+                    <AppSelect value={birlik} onChange={(e) => setBirlik(e.target.value)} className="input min-w-0 flex-1">
                       {birliklar.map((b) => (
                         <option key={b.id} value={b.id}>
                           {b.name}
                         </option>
                       ))}
-                    </select>
+                    </AppSelect>
                     <button
                       type="button"
                       onClick={() => setFaol(!faol)}
@@ -346,3 +347,4 @@ function Narx({ label, value, onChange }: { label: string; value: string; onChan
     </label>
   );
 }
+

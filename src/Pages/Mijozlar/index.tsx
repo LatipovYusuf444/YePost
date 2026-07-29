@@ -1,3 +1,4 @@
+import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   Building2,
@@ -346,7 +347,7 @@ function PartnerModal({
                 className="input"
                 placeholder="Telegram ID"
               />
-              <select
+              <AppSelect
                 value={companyId}
                 onChange={(e) => setCompanyId(e.target.value)}
                 className="input"
@@ -357,7 +358,7 @@ function PartnerModal({
                     {x.name}
                   </option>
                 ))}
-              </select>
+              </AppSelect>
               <textarea
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
@@ -417,3 +418,4 @@ function partnerNomi(item: Partner) {
     return [item.firstName, item.lastName, item.middleName].filter(Boolean).join(" ");
   return item.name;
 }
+

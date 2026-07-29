@@ -1,3 +1,4 @@
+import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useState } from "react";
 import { LoaderCircle } from "lucide-react";
 import { kompaniyalarApi } from "@/api/omborApi";
@@ -31,14 +32,14 @@ export default function KompaniyaBolimi() {
     } catch (error) { setXato(getApiErrorMessage(error)); } finally { setSaqlanmoqda(false); }
   }
 
-  return <BolimKarta sarlavha="Kompaniya ma'lumotlari" izoh="Hujjatlar va cheklarda ishlatiladigan real tashkilot ma'lumotlari." amal={xabar ? <span className="text-sm font-bold text-emerald-600">Saqlandi ✓</span> : undefined}>
+  return <BolimKarta sarlavha="Kompaniya ma'lumotlari" izoh="Hujjatlar va cheklarda ishlatiladigan real tashkilot ma'lumotlari." amal={xabar ? <span className="text-sm font-bold text-emerald-600">Saqlandi вњ“</span> : undefined}>
     {yuklanmoqda ? <div className="flex h-44 items-center justify-center gap-2 text-sm font-bold text-slate-400"><LoaderCircle className="animate-spin" size={20}/>Yuklanmoqda...</div> : <>
       {xato && <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
       <div className="grid gap-4 sm:grid-cols-2">
         <Maydon label="Kompaniya nomi"><input value={nomi} onChange={(e) => setNomi(e.target.value)} className={maydonKlass}/></Maydon>
         <Maydon label="STIR"><input value={stir} onChange={(e) => setStir(e.target.value)} className={maydonKlass}/></Maydon>
         <Maydon label="Telefon"><input type="tel" value={telefon} onChange={(e) => setTelefon(e.target.value)} className={maydonKlass}/></Maydon>
-        <Maydon label="Valyuta"><select value={valyuta} onChange={(e) => setValyuta(e.target.value as "UZS" | "USD")} className={maydonKlass}><option value="UZS">O'zbek so'mi (UZS)</option><option value="USD">AQSH dollari (USD)</option></select></Maydon>
+        <Maydon label="Valyuta"><AppSelect value={valyuta} onChange={(e) => setValyuta(e.target.value as "UZS" | "USD")} className={maydonKlass}><option value="UZS">O'zbek so'mi (UZS)</option><option value="USD">AQSH dollari (USD)</option></AppSelect></Maydon>
         <div className="sm:col-span-2"><Maydon label="Manzil"><input value={manzil} onChange={(e) => setManzil(e.target.value)} className={maydonKlass}/></Maydon></div>
       </div>
       <div className="mt-6 flex justify-end"><SaqlashTugma disabled={saqlanmoqda} onClick={() => void saqlash()}/></div>
@@ -46,3 +47,4 @@ export default function KompaniyaBolimi() {
     </>}
   </BolimKarta>;
 }
+

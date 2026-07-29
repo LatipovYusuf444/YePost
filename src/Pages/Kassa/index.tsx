@@ -1,3 +1,4 @@
+import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   ArrowDownCircle,
@@ -85,7 +86,7 @@ function pul(value?: number | string) {
 }
 
 function sana(value?: string | null) {
-  if (!value) return "—";
+  if (!value) return "вЂ”";
   return new Date(value).toLocaleDateString("uz-UZ");
 }
 
@@ -574,7 +575,7 @@ function FinanceModal({
           {modal.tur !== "qarz" && (
             <label className="text-sm font-bold">
               Filial
-              <select
+              <AppSelect
                 value={branchId}
                 onChange={(event) => setBranchId(event.target.value)}
                 className="mt-2 h-12 w-full rounded-2xl border bg-white px-4"
@@ -585,14 +586,14 @@ function FinanceModal({
                     {item.name}
                   </option>
                 ))}
-              </select>
+              </AppSelect>
             </label>
           )}
 
           {modal.tur === "xarajat" && (
             <label className="text-sm font-bold">
               Xarajat turi *
-              <select
+              <AppSelect
                 value={category}
                 onChange={(event) => setCategory(event.target.value as XarajatKategoriyasi)}
                 className="mt-2 h-12 w-full rounded-2xl border bg-white px-4"
@@ -602,7 +603,7 @@ function FinanceModal({
                     {label}
                   </option>
                 ))}
-              </select>
+              </AppSelect>
             </label>
           )}
 
@@ -610,7 +611,7 @@ function FinanceModal({
             <>
               <label className="text-sm font-bold">
                 Qarz turi *
-                <select
+                <AppSelect
                   value={direction}
                   onChange={(event) => setDirection(event.target.value as QarzYonlishi)}
                   className="mt-2 h-12 w-full rounded-2xl border bg-white px-4"
@@ -620,7 +621,7 @@ function FinanceModal({
                       {label}
                     </option>
                   ))}
-                </select>
+                </AppSelect>
               </label>
               <label className="text-sm font-bold">
                 Kontragent *
@@ -637,7 +638,7 @@ function FinanceModal({
           {modal.tur === "kirim" && (
             <label className="text-sm font-bold">
               Kirim manbasi *
-              <select
+              <AppSelect
                 value={source}
                 onChange={(event) => setSource(event.target.value as KassaKirimManbasi)}
                 className="mt-2 h-12 w-full rounded-2xl border bg-white px-4"
@@ -647,7 +648,7 @@ function FinanceModal({
                     {label}
                   </option>
                 ))}
-              </select>
+              </AppSelect>
             </label>
           )}
 
@@ -665,7 +666,7 @@ function FinanceModal({
 
           <label className="text-sm font-bold">
             To'lov usuli
-            <select
+            <AppSelect
               value={paymentMethod}
               onChange={(event) => setPaymentMethod(event.target.value as TolovUsuli)}
               className="mt-2 h-12 w-full rounded-2xl border bg-white px-4"
@@ -675,7 +676,7 @@ function FinanceModal({
                   {label}
                 </option>
               ))}
-            </select>
+            </AppSelect>
           </label>
 
           {modal.tur === "qarz" && (
@@ -749,3 +750,4 @@ function FinanceModal({
     </AppModal>
   );
 }
+

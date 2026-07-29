@@ -1,3 +1,4 @@
+import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
@@ -372,7 +373,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
               </p>
               <h2 className="text-2xl font-black text-slate-950 sm:text-3xl">
                 {sarlavhalar[tur]}
-                {hujjat ? ` · ${hujjatRaqami(hujjat)}` : ""}
+                {hujjat ? ` В· ${hujjatRaqami(hujjat)}` : ""}
               </h2>
               {hujjat && (
                 <span
@@ -651,9 +652,9 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                             </td>
                             {tur === "inventarizatsiya" ? (
                               <>
-                                <td className="px-4 py-3 text-slate-500">{mod?.barcode ?? "—"}</td>
+                                <td className="px-4 py-3 text-slate-500">{mod?.barcode ?? "вЂ”"}</td>
                                 <td className="px-4 py-3">{inventarizatsiyaOmbori}</td>
-                                <td className="px-4 py-3">{expectedQuantity ?? "—"}</td>
+                                <td className="px-4 py-3">{expectedQuantity ?? "вЂ”"}</td>
                                 <td className="px-4 py-3 font-black text-slate-900">{quantity}</td>
                                 <td
                                   className={`px-4 py-3 font-black ${
@@ -665,7 +666,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                                   }`}
                                 >
                                   {expectedQuantity == null
-                                    ? "—"
+                                    ? "вЂ”"
                                     : Number(quantity) - Number(expectedQuantity) > 0
                                       ? `+${Number(quantity) - Number(expectedQuantity)}`
                                       : Number(quantity) - Number(expectedQuantity)}
@@ -741,7 +742,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
               <div>
                 <div className="grid gap-4 md:grid-cols-2">
                   {tur === "kirim" && (
-                    <select
+                    <AppSelect
                       value={supplierId}
                       onChange={(event) => setSupplierId(event.target.value)}
                       className="h-12 rounded-2xl border px-4"
@@ -752,12 +753,12 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                           {item.name ?? item.id}
                         </option>
                       ))}
-                    </select>
+                    </AppSelect>
                   )}
                   {(tur === "kirim" ||
                     tur === "chiqim" ||
                     tur === "inventarizatsiya") && (
-                    <select
+                    <AppSelect
                       value={warehouseId}
                       onChange={(event) => setWarehouseId(event.target.value)}
                       className="h-12 rounded-2xl border px-4"
@@ -768,11 +769,11 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                           {item.name}
                         </option>
                       ))}
-                    </select>
+                    </AppSelect>
                   )}
                   {tur === "kochirish" && (
                     <>
-                      <select
+                      <AppSelect
                         value={sourceWarehouseId}
                         onChange={(event) =>
                           setSourceWarehouseId(event.target.value)
@@ -785,8 +786,8 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                             {item.name}
                           </option>
                         ))}
-                      </select>
-                      <select
+                      </AppSelect>
+                      <AppSelect
                         value={destWarehouseId}
                         onChange={(event) =>
                           setDestWarehouseId(event.target.value)
@@ -801,11 +802,11 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                               {item.name}
                             </option>
                           ))}
-                      </select>
+                      </AppSelect>
                     </>
                   )}
                   {tur === "chiqim" && (
-                    <select
+                    <AppSelect
                       value={reason}
                       onChange={(event) =>
                         setReason(event.target.value as ChiqimSababi)
@@ -817,10 +818,10 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                           {label}
                         </option>
                       ))}
-                    </select>
+                    </AppSelect>
                   )}
                   {tur === "inventarizatsiya" && (
-                    <select
+                    <AppSelect
                       value={stockTakeType}
                       onChange={(event) =>
                         setStockTakeType(
@@ -831,9 +832,9 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                     >
                       <option value="FULL">To'liq</option>
                       <option value="PARTIAL">Qisman</option>
-                    </select>
+                    </AppSelect>
                   )}
-                  <select
+                  <AppSelect
                     value={responsibleId}
                     onChange={(event) => setResponsibleId(event.target.value)}
                     className="h-12 rounded-2xl border px-4"
@@ -844,7 +845,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                         {item.fullName ?? item.username ?? item.id}
                       </option>
                     ))}
-                  </select>
+                  </AppSelect>
                 </div>
 
                 <div className="mt-5 space-y-3">
@@ -857,7 +858,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                           : "md:grid-cols-[1fr_140px_44px]"
                       }`}
                     >
-                      <select
+                      <AppSelect
                         value={item.modificationId}
                         onChange={(event) =>
                           qatorniYangilash(index, {
@@ -871,11 +872,11 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                           <option key={modification.id} value={modification.id}>
                             {modificationNomi(modification)}
                             {modification.barcode
-                              ? ` — ${modification.barcode}`
+                              ? ` вЂ” ${modification.barcode}`
                               : ""}
                           </option>
                         ))}
-                      </select>
+                      </AppSelect>
                       <input
                         type="number"
                         min="0.001"
@@ -991,3 +992,4 @@ function Malumot({ nom, qiymat }: { nom: string; qiymat: string }) {
     </div>
   );
 }
+

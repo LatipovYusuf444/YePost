@@ -1,3 +1,4 @@
+import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   CalendarDays,
@@ -78,6 +79,11 @@ export default function Ombor() {
     [omborMasullari, xodimlar]
   );
   const tanlanganMasul = masulTanlovlari.find((xodim) => xodim.id === responsibleId);
+  function omborYaratuvchisi(ombor: Ombor) {
+    return ombor.createdBy ??
+      (ombor.createdById ? xodimMap.get(String(ombor.createdById)) : undefined) ??
+      null;
+  }
   const yaratilganSana =
     tahrirOmbor?.createdAt?.slice(0, 10) ?? new Date().toISOString().slice(0, 10);
 
@@ -103,9 +109,9 @@ export default function Ombor() {
   }, [korinishMenuOchiq]);
 
   function sananiFormatlash(sana?: string) {
-    if (!sana) return "—";
+    if (!sana) return "вЂ”";
     const qiymat = new Date(sana);
-    if (Number.isNaN(qiymat.getTime())) return "—";
+    if (Number.isNaN(qiymat.getTime())) return "вЂ”";
     return new Intl.DateTimeFormat("uz-UZ", {
       year: "numeric",
       month: "2-digit",
@@ -401,20 +407,32 @@ export default function Ombor() {
               <td className="px-6 py-5 text-sm font-semibold leading-5 text-gray-600">
                 {ombor.openingTime && ombor.closingTime ? (
                   <>
-                    {ombor.openingTime} –<br />
+                    {ombor.openingTime} вЂ“<br />
                     {ombor.closingTime}
                   </>
                 ) : (
                   "Ish vaqti kiritilmagan"
                 )}
               </td>
-              <td className="px-6 py-5 text-sm font-semibold text-gray-600">
-                {ombor.createdBy?.fullName ??
-                  ombor.createdBy?.username ??
-                  ombor.createdBy?.name ??
-                  (ombor.createdById ? xodimMap.get(ombor.createdById)?.fullName : undefined) ??
-                  (ombor.createdById ? xodimMap.get(ombor.createdById)?.username : undefined) ??
-                  "Yaratuvchi aniqlanmagan"}
+              <td className="px-6 py-5 text-sm text-gray-600">
+                {(() => {
+                  const yaratuvchi = omborYaratuvchisi(ombor);
+                  if (!yaratuvchi) return <span className="font-semibold text-slate-400">Backendda creator mavjud emas</span>;
+                  const nomi = yaratuvchi.fullName || yaratuvchi.name || yaratuvchi.username || "Foydalanuvchi";
+                  return (
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500 ring-1 ring-orange-100">
+                        <UserRound size={17} />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate font-black text-slate-800">{nomi}</p>
+                        {yaratuvchi.username && yaratuvchi.username !== nomi && (
+                          <p className="mt-0.5 truncate text-xs font-semibold text-slate-400">@{yaratuvchi.username}</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </td>
               <td className="px-6 py-5 text-sm font-semibold text-gray-500">
                 {sananiFormatlash(ombor.createdAt)}
@@ -469,7 +487,7 @@ export default function Ombor() {
                 <Warehouse className="mx-auto text-orange-200" size={42} />
                 <p className="mt-3 font-bold text-gray-500">Ombor mavjud emas</p>
                 <p className="mt-1 text-sm text-gray-400">
-                  “Ombor qo'shish” tugmasi orqali birinchi omborni yarating.
+                  вЂњOmbor qo'shishвЂќ tugmasi orqali birinchi omborni yarating.
                 </p>
               </td>
             </tr>
@@ -517,14 +535,14 @@ export default function Ombor() {
                       <p className="flex items-center gap-2">
                         <MapPin size={15} className="shrink-0 text-orange-500" />
                         <span className="truncate">
-                          {ombor.latitude ?? "—"}, {ombor.longitude ?? "—"}
+                          {ombor.latitude ?? "вЂ”"}, {ombor.longitude ?? "вЂ”"}
                         </span>
                       </p>
                     )}
                     <p className="flex items-center gap-2">
                       <Clock3 size={15} className="shrink-0 text-orange-500" />
                       <span>
-                        {ombor.openingTime || "—"} — {ombor.closingTime || "—"}
+                        {ombor.openingTime || "вЂ”"} вЂ” {ombor.closingTime || "вЂ”"}
                       </span>
                     </p>
                     <p className="flex items-center gap-2">
@@ -573,7 +591,7 @@ export default function Ombor() {
               <Warehouse className="mx-auto text-orange-200" size={42} />
               <p className="mt-3 font-bold text-gray-500">Ombor mavjud emas</p>
               <p className="mt-1 text-sm text-gray-400">
-                “Ombor qo'shish” tugmasi orqali birinchi omborni yarating.
+                вЂњOmbor qo'shishвЂќ tugmasi orqali birinchi omborni yarating.
               </p>
             </div>
           )}
@@ -696,7 +714,7 @@ export default function Ombor() {
                         onChange={(event) => setOpeningTime(event.target.value)}
                         className="h-14 min-w-0 rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                       />
-                      <span className="text-slate-400">—</span>
+                      <span className="text-slate-400">вЂ”</span>
                       <input
                         type="time"
                         value={closingTime}
@@ -727,7 +745,7 @@ export default function Ombor() {
                     <div className="mt-4 space-y-4">
                       <label className="grid gap-2">
                         <span className="text-sm font-bold text-slate-500">Ismi</span>
-                        <select
+                        <AppSelect
                           value={responsibleId}
                           onChange={(event) => setResponsibleId(event.target.value)}
                           className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
@@ -738,7 +756,7 @@ export default function Ombor() {
                               {xodim.fullName ?? xodim.username ?? xodim.name ?? xodim.id}
                             </option>
                           ))}
-                        </select>
+                        </AppSelect>
                       </label>
                       <label className="grid gap-2">
                         <span className="flex items-center gap-2 text-sm font-bold text-slate-500">

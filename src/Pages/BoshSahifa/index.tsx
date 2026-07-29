@@ -1,3 +1,4 @@
+import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useState } from "react";
 import {
   Bell,
@@ -287,7 +288,7 @@ export default function BoshSahifa() {
           </div>
 
           {omborlar.length > 1 && (
-            <select
+            <AppSelect
               value={warehouseId}
               onChange={(event) => setWarehouseId(event.target.value)}
               className="h-10 rounded-lg border border-gray-100 bg-gray-50 px-3 text-sm font-semibold text-gray-600 outline-none focus:border-orange-200"
@@ -297,7 +298,7 @@ export default function BoshSahifa() {
                   {mijozNomi(ombor)}
                 </option>
               ))}
-            </select>
+            </AppSelect>
           )}
         </div>
 
@@ -661,7 +662,7 @@ export default function BoshSahifa() {
                   To'lovga qaytish
                 </button>
 
-                <select
+                <AppSelect
                   value={customerDocumentType}
                   onChange={(event) => setCustomerDocumentType(event.target.value)}
                   className="h-12 rounded-2xl border border-orange-100 bg-white px-5 text-sm font-semibold text-gray-700 outline-none transition hover:border-orange-300"
@@ -670,7 +671,7 @@ export default function BoshSahifa() {
                   <option>Chek</option>
                   <option>Nakladnoy</option>
                   <option>PDF</option>
-                </select>
+                </AppSelect>
 
                 <button
                   onClick={closeCustomerModal}
@@ -774,7 +775,7 @@ export default function BoshSahifa() {
                     ))}
                   </div>
 
-                  <select
+                  <AppSelect
                     value={customerActionType}
                     onChange={(event) => setCustomerActionType(event.target.value)}
                     className="h-14 w-full rounded-2xl border border-gray-100 bg-white px-4 text-gray-700 outline-none"
@@ -783,7 +784,7 @@ export default function BoshSahifa() {
                     <option>Qo'ng'iroq qilish</option>
                     <option>To'lovni eslatish</option>
                     <option>Yangi buyurtma olish</option>
-                  </select>
+                  </AppSelect>
 
                   <div className="my-6 flex items-center gap-3">
                     <div className="h-px flex-1 bg-gray-200" />
@@ -874,7 +875,7 @@ export default function BoshSahifa() {
               <div>
                 <div className="mb-4 flex items-center justify-between"><h3 className="font-black text-slate-900">Mahsulotlar</h3><span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-black text-orange-600">{cart.reduce((sum, item) => sum + item.soni, 0)} dona</span></div>
                 <div className="max-h-[480px] space-y-3 overflow-y-auto pr-1">
-                  {cart.map((item) => <article key={item.id} className="flex items-center justify-between gap-5 rounded-[24px] border border-orange-100 bg-white p-5 shadow-[0_12px_35px_rgba(249,115,22,.07)]"><div className="min-w-0"><p className="truncate text-base font-black text-slate-900">{item.nom}</p><p className="mt-1.5 text-sm font-semibold text-slate-400">{item.soni} × {formatSumma(item.narx)} · {item.warehouseName || "Tanlangan ombor"}</p></div><p className="shrink-0 text-base font-black text-orange-600">{formatSumma(item.soni * item.narx)}</p></article>)}
+                  {cart.map((item) => <article key={item.id} className="flex items-center justify-between gap-5 rounded-[24px] border border-orange-100 bg-white p-5 shadow-[0_12px_35px_rgba(249,115,22,.07)]"><div className="min-w-0"><p className="truncate text-base font-black text-slate-900">{item.nom}</p><p className="mt-1.5 text-sm font-semibold text-slate-400">{item.soni} Г— {formatSumma(item.narx)} В· {item.warehouseName || "Tanlangan ombor"}</p></div><p className="shrink-0 text-base font-black text-orange-600">{formatSumma(item.soni * item.narx)}</p></article>)}
                 </div>
                 <div className="mt-5 grid grid-cols-3 gap-3 text-sm"><Summary label="Oraliq jami" value={formatSumma(total)}/><Summary label="Chegirma" value={formatSumma(discountSum)}/><Summary label="To'lanadi" value={formatSumma(payableTotal)} accent/></div>
               </div>
@@ -898,3 +899,4 @@ export default function BoshSahifa() {
 function Summary({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
   return <div className={`rounded-2xl p-3 ${accent ? "bg-orange-500 text-white" : "bg-white text-slate-700 ring-1 ring-orange-100"}`}><p className={`text-[10px] font-black uppercase ${accent ? "text-white/70" : "text-slate-400"}`}>{label}</p><p className="mt-1 text-sm font-black">{value}</p></div>;
 }
+

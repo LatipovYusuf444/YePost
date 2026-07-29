@@ -1,3 +1,4 @@
+import AppSelect from "@/Components/ui/AppSelect";
 import { useState, type FormEvent } from "react";
 import { Edit3, LoaderCircle, Plus, Trash2 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
@@ -135,11 +136,11 @@ export default function TolovSozlamalari() {
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <label className="text-sm font-bold">
                 Tarif turi
-                <select value={type} onChange={(event) => setType(event.target.value as TarifTuri)} disabled={Boolean(editing)} className="mt-2 h-12 w-full rounded-2xl border px-4 disabled:bg-gray-100">
+                <AppSelect value={type} onChange={(event) => setType(event.target.value as TarifTuri)} disabled={Boolean(editing)} className="mt-2 h-12 w-full rounded-2xl border px-4 disabled:bg-gray-100">
                   {(editing ? [editing.type] : boshTurlar).map((item) => (
                     <option key={item} value={item}>{tarifTuriMatni[item]}</option>
                   ))}
-                </select>
+                </AppSelect>
               </label>
               <label className="text-sm font-bold">
                 Tarif nomi *
@@ -175,3 +176,4 @@ export default function TolovSozlamalari() {
     </div>
   );
 }
+

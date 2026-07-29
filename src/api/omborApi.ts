@@ -20,8 +20,29 @@ import type {
   OmborQoldigi,
   OmborSaqlashMalumoti,
 } from "@/types/ombor";
+import { profilApi } from "./authProfileApi";
 
 type RoyxatJavobi<T> = T[] | { value?: T[]; items?: T[]; results?: T[]; data?: T[] };
+
+type OmborBackendJavobi = Ombor & {
+  created_by_id?: string | null;
+  created_by?: NomliEntity | null;
+  createdByUserId?: string | null;
+  createdByUser?: NomliEntity | null;
+  creatorId?: string | null;
+  creator?: NomliEntity | null;
+  userCreated?: NomliEntity | null;
+};
+
+function omborniMoslash(raw: OmborBackendJavobi): Ombor {
+  return {
+    ...raw,
+    createdById:
+      raw.createdById ?? raw.created_by_id ?? raw.createdByUserId ?? raw.creatorId ?? null,
+    createdBy:
+      raw.createdBy ?? raw.created_by ?? raw.createdByUser ?? raw.creator ?? raw.userCreated ?? undefined,
+  };
+}
 
 function royxatniAjratish<T>(data: RoyxatJavobi<T>): T[] {
   return apiList(data as T[] | ApiListEnvelope<T>);
@@ -50,7 +71,30 @@ async function omborYaratishToliq(data: OmborSaqlashMalumoti) {
       "/organization/warehouses",
       data
     );
-    return apiData(response.data);
+    const yaratilgan = omborniMoslash(apiData(response.data) as OmborBackendJavobi);
+    let toliq = yaratilgan;
+    try {
+      const detailResponse = await apiClient.get<Ombor | ApiEnvelope<Ombor>>(
+        `/organization/warehouses/${yaratilgan.id}`
+      );
+      toliq = omborniMoslash(apiData(detailResponse.data) as OmborBackendJavobi);
+    } catch {
+      // POST javobi yetarli bo'lsa detail xatosi yaratishni bekor qilmaydi.
+    }
+    if (!toliq.createdBy && !toliq.createdById) {
+      const profil = await profilApi.olish();
+      toliq = {
+        ...toliq,
+        createdById: profil.id,
+        createdBy: {
+          id: profil.id,
+          fullName: profil.fullName ?? undefined,
+          username: profil.username,
+          phone: profil.phone ?? undefined,
+        },
+      };
+    }
+    return toliq;
   } catch (error) {
     if (!kengaytirilganOmborMaydonlariRadEtildi(error)) throw error;
     throw new Error(
@@ -112,9 +156,10 @@ export const filiallarApi = {
 // Ombor/index.tsx: omborlar ro'yxati va CRUD amallari.
 export const omborlarApi = {
   royxat: async () =>
-    apiList((await apiClient.get<Ombor[] | ApiListEnvelope<Ombor>>("/organization/warehouses")).data),
+    apiList((await apiClient.get<Ombor[] | ApiListEnvelope<Ombor>>("/organization/warehouses")).data)
+      .map((item) => omborniMoslash(item as OmborBackendJavobi)),
   olish: async (id: string) =>
-    apiData((await apiClient.get<Ombor | ApiEnvelope<Ombor>>(`/organization/warehouses/${id}`)).data),
+    omborniMoslash(apiData((await apiClient.get<Ombor | ApiEnvelope<Ombor>>(`/organization/warehouses/${id}`)).data) as OmborBackendJavobi),
   yaratish: omborYaratishToliq,
   yangilash: omborYangilashToliq,
   ochirish: async (id: string) =>

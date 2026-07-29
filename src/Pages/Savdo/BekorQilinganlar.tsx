@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Ban, CalendarX2, Eye, RefreshCw, Search, ShieldX, UserRound, WalletCards } from "lucide-react";
 import type { Sotuv } from "@/types/savdo";
 import { masulNomi, mijozNomi, pulniFormatlash, sananiFormatlash, sotuvHolati, sotuvRaqami, sotuvSummasi } from "./savdoYordamchilari";
+import DateRangePicker from "@/Components/ui/DateRangePicker";
 
 type Props = {
   sotuvlar: Sotuv[];
@@ -25,7 +26,8 @@ function bugunmi(value?: string) {
 
 export default function BekorQilinganlar({ sotuvlar, onSotuvniOchish, onYangilash }: Props) {
   const [qidiruv, setQidiruv] = useState("");
-  const [sana, setSana] = useState<"BARCHASI" | "BUGUN" | "30KUN">("BARCHASI");
+  const [sanaDan, setSanaDan] = useState("");
+  const [sanaGacha, setSanaGacha] = useState("");
   const [yangilanmoqda, setYangilanmoqda] = useState(false);
 
   const bekorQilinganlar = useMemo(() => sotuvlar
@@ -34,14 +36,14 @@ export default function BekorQilinganlar({ sotuvlar, onSotuvniOchish, onYangilas
 
   const rows = useMemo(() => {
     const q = qidiruv.trim().toLowerCase();
-    const hozir = Date.now();
     return bekorQilinganlar.filter((sotuv) => {
-      const vaqt = new Date(bekorSana(sotuv) ?? 0).getTime();
-      const sanaMos = sana === "BARCHASI" || (sana === "BUGUN" ? bugunmi(bekorSana(sotuv)) : hozir - vaqt <= 30 * 86_400_000);
+      const date = new Date(bekorSana(sotuv) ?? 0);
+      const sanaKaliti = Number.isNaN(date.getTime()) ? "" : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      const sanaMos = (!sanaDan && !sanaGacha) || Boolean(sanaKaliti && (!sanaDan || sanaKaliti >= sanaDan) && (!sanaGacha || sanaKaliti <= sanaGacha));
       const qMos = !q || [sotuvRaqami(sotuv), mijozNomi(sotuv), telefon(sotuv), masulNomi(sotuv), sotuv.note].join(" ").toLowerCase().includes(q);
       return sanaMos && qMos;
     });
-  }, [bekorQilinganlar, qidiruv, sana]);
+  }, [bekorQilinganlar, qidiruv, sanaDan, sanaGacha]);
 
   const jamiSumma = bekorQilinganlar.reduce((sum, sotuv) => sum + sotuvSummasi(sotuv), 0);
   const bugungi = bekorQilinganlar.filter((sotuv) => bugunmi(bekorSana(sotuv))).length;
@@ -67,7 +69,7 @@ export default function BekorQilinganlar({ sotuvlar, onSotuvniOchish, onYangilas
 
     <div className="flex flex-col gap-3 border-b border-orange-100 bg-white/55 px-6 py-5 backdrop-blur sm:px-9 lg:flex-row lg:items-center lg:justify-between">
       <label className="flex h-12 w-full items-center gap-3 rounded-2xl border border-orange-100 bg-white px-4 shadow-sm transition focus-within:border-orange-300 focus-within:ring-4 focus-within:ring-orange-50 lg:max-w-xl"><Search size={18} className="text-orange-400"/><input value={qidiruv} onChange={(e) => setQidiruv(e.target.value)} placeholder="Sotuv raqami, mijoz, telefon yoki mas'ul..." className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-700 outline-none"/></label>
-      <div className="grid grid-cols-3 rounded-2xl bg-slate-100 p-1">{(["BARCHASI", "BUGUN", "30KUN"] as const).map((item) => <button key={item} onClick={() => setSana(item)} className={`rounded-xl px-4 py-2.5 text-xs font-black transition ${sana === item ? "bg-white text-orange-600 shadow-sm" : "text-slate-500"}`}>{item === "BARCHASI" ? "Barchasi" : item === "BUGUN" ? "Bugun" : "Oxirgi 30 kun"}</button>)}</div>
+      <DateRangePicker from={sanaDan} to={sanaGacha} onChange={(from, to) => { setSanaDan(from); setSanaGacha(to); }} compact className="w-full lg:w-[260px]" />
     </div>
 
     <div className="overflow-x-auto bg-white/70"><table className="w-full min-w-[1050px] text-left text-sm">

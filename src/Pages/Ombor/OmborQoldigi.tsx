@@ -1,3 +1,4 @@
+import AppSelect from "@/Components/ui/AppSelect";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
@@ -187,7 +188,7 @@ export default function OmborQoldigi() {
     () =>
       modifikatsiyalar.map((item) => ({
         id: item.id,
-        label: `${mahsulotNomi(productMap.get(item.productId ?? item.product?.id ?? ""), item)} — ${variantNomi(item)}`,
+        label: `${mahsulotNomi(productMap.get(item.productId ?? item.product?.id ?? ""), item)} вЂ” ${variantNomi(item)}`,
       })),
     [modifikatsiyalar, productMap]
   );
@@ -207,7 +208,7 @@ export default function OmborQoldigi() {
   const satrlar = useMemo<Satr[]>(() => {
     return report.items.map((item) => {
       const birlikNarx = raqam(qollangan.narxTuri === "retailPrice" ? item.retailPrice : qollangan.narxTuri === "wholesalePrice" ? item.wholesalePrice : item.costPrice);
-      return { kalit: `${item.modificationId}:${item.warehouseId ?? "all"}`, mahsulotNomi: item.productName, birlik: item.unitName || "—", shtrixKod: item.barcode || "", variatsiya: item.modificationName || "Asosiy variant", omborNomi: item.warehouseName || "Barcha omborlar", jami: raqam(item.quantity), rezerv: raqam(item.reservedQuantity), bosh: raqam(item.availableQuantity), birlikNarx, umumiy: raqam(item.totalAmount) };
+      return { kalit: `${item.modificationId}:${item.warehouseId ?? "all"}`, mahsulotNomi: item.productName, birlik: item.unitName || "вЂ”", shtrixKod: item.barcode || "", variatsiya: item.modificationName || "Asosiy variant", omborNomi: item.warehouseName || "Barcha omborlar", jami: raqam(item.quantity), rezerv: raqam(item.reservedQuantity), bosh: raqam(item.availableQuantity), birlikNarx, umumiy: raqam(item.totalAmount) };
     });
     /* Eski client-side hisoblash olib tashlandi.
     const qoldiqlar: never[] = [];
@@ -258,7 +259,7 @@ export default function OmborQoldigi() {
       groups.set(groupKey, {
         kalit: groupKey,
         mahsulotNomi: mahsulotNomi(product, modification),
-        birlik: unit?.shortName || unit?.name || "—",
+        birlik: unit?.shortName || unit?.name || "вЂ”",
         shtrixKod: modification.barcode ?? product?.barcode ?? "",
         variatsiya: variantNomi(modification),
         omborNomi: warehouse?.name ?? "Noma'lum ombor",
@@ -387,20 +388,20 @@ export default function OmborQoldigi() {
 
           <div className="min-w-0">
             <p className="mb-1.5 text-xs font-bold text-gray-500">Narx turi</p>
-            <select value={filtr.narxTuri} onChange={(event) => ozgartirish("narxTuri", event.target.value as NarxTuri)} className="h-11 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 outline-none focus:border-orange-400">
+            <AppSelect value={filtr.narxTuri} onChange={(event) => ozgartirish("narxTuri", event.target.value as NarxTuri)} className="h-11 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 outline-none focus:border-orange-400">
               {narxTurlari.map((item) => <option key={item.kalit} value={item.kalit}>{item.nom}</option>)}
-            </select>
+            </AppSelect>
           </div>
           <KopTanlov sarlavha="Variatsiyalar" variantlar={variatsiyaVariantlari} tanlangan={filtr.variatsiyalar} onOzgarish={(value) => ozgartirish("variatsiyalar", value)} qidiruvPlaceholder="Variatsiya qidirish" />
           <KopTanlov sarlavha="Xarakteristika" variantlar={xarakteristikaVariantlari} tanlangan={filtr.xarakteristikalar} onOzgarish={(value) => ozgartirish("xarakteristikalar", value)} qidiruvPlaceholder="Xarakteristika qidirish" />
           <div className="min-w-0">
             <p className="mb-1.5 text-xs font-bold text-gray-500">Qoldiqlar</p>
-            <select value={filtr.qoldiqTuri} onChange={(event) => ozgartirish("qoldiqTuri", event.target.value as QoldiqFiltri)} className="h-11 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 outline-none focus:border-orange-400">
+            <AppSelect value={filtr.qoldiqTuri} onChange={(event) => ozgartirish("qoldiqTuri", event.target.value as QoldiqFiltri)} className="h-11 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 outline-none focus:border-orange-400">
               <option value="hammasi">Hammasi</option>
               <option value="musbat">Musbat qoldiq</option>
               <option value="nol">Nol qoldiq</option>
               <option value="manfiy">Manfiy qoldiq</option>
-            </select>
+            </AppSelect>
           </div>
         </div>
 
@@ -461,7 +462,7 @@ export default function OmborQoldigi() {
               {satrlar.map((item) => (
                 <tr key={item.kalit} className="hover:bg-orange-50/30">
                   <td className="px-5 py-3 font-black text-gray-950">{item.mahsulotNomi}</td>
-                  {qollangan.shtrixKodniKorsatish && <td className="px-5 py-3 text-gray-500">{item.shtrixKod || "—"}</td>}
+                  {qollangan.shtrixKodniKorsatish && <td className="px-5 py-3 text-gray-500">{item.shtrixKod || "вЂ”"}</td>}
                   {qollangan.variatsiyalarniKorsatish && <td className="px-5 py-3 text-gray-500">{item.variatsiya}</td>}
                   {qollangan.omborlarBoyichaAjratish && <td className="px-5 py-3 text-gray-600">{item.omborNomi}</td>}
                   <td className="px-5 py-3 text-gray-500">{item.birlik}</td>
@@ -491,3 +492,4 @@ export default function OmborQoldigi() {
     </div>
   );
 }
+

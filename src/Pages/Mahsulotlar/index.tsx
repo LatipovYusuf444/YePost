@@ -1,3 +1,4 @@
+import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
 import {
   Boxes,
@@ -197,8 +198,8 @@ export default function Mahsulotlar() {
             {mahsulotlar.map(item=><article key={item.id} className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
               <div className="flex justify-between"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-600"><Boxes size={22}/></div><span className={`rounded-full px-3 py-1 text-xs font-bold ${item.isActive?"bg-emerald-50 text-emerald-600":"bg-gray-100 text-gray-500"}`}>{item.isActive?"Faol":"Faol emas"}</span></div>
               <h2 className="mt-4 text-xl font-black">{item.name}</h2>
-              <p className="mt-1 text-sm text-gray-500">{item.category?.name??store.kategoriyalar.find(x=>x.id===item.categoryId)?.name??"Kategoriya"} · {item.unit?.shortName??item.unit?.name??store.birliklar.find(x=>x.id===item.unitId)?.shortName??"Birlik"}</p>
-              <p className="mt-2 text-xs text-gray-400">Shtrix-kod: {item.barcode||"Kiritilmagan"} · Artikul: {item.article||"Kiritilmagan"}</p>
+              <p className="mt-1 text-sm text-gray-500">{item.category?.name??store.kategoriyalar.find(x=>x.id===item.categoryId)?.name??"Kategoriya"} В· {item.unit?.shortName??item.unit?.name??store.birliklar.find(x=>x.id===item.unitId)?.shortName??"Birlik"}</p>
+              <p className="mt-2 text-xs text-gray-400">Shtrix-kod: {item.barcode||"Kiritilmagan"} В· Artikul: {item.article||"Kiritilmagan"}</p>
               <div className="mt-5 grid grid-cols-[1fr_1fr_42px] gap-2 border-t pt-4">
                 <button onClick={()=>{setModProduct(item);void store.modifikatsiyalarniYuklash(item.id)}} className="inline-flex items-center justify-center gap-1 rounded-xl bg-slate-50 py-2.5 text-sm font-bold text-slate-600"><Eye size={15}/>Variantlar</button>
                 <button onClick={()=>void mahsulotTahrirlash(item)} className="inline-flex items-center justify-center gap-1 rounded-xl bg-orange-50 py-2.5 text-sm font-bold text-orange-600"><Edit3 size={15}/>Tahrirlash</button>
@@ -252,7 +253,7 @@ export default function Mahsulotlar() {
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {(tab==="kategoriyalar"?store.kategoriyalar:store.birliklar).map(item=><article key={item.id} className="rounded-[24px] border border-orange-100 bg-white p-5">
               <div className="flex items-start justify-between"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">{tab==="kategoriyalar"?<Tags size={21}/>:<Ruler size={21}/>}</div><div className="flex gap-2"><button onClick={()=>void oddiyTahrirlash(item)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-600"><Edit3 size={15}/></button><button onClick={()=>void oddiyOchirish(item.id)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500"><Trash2 size={15}/></button></div></div>
-              <h3 className="mt-4 text-lg font-black">{item.name}</h3>{"shortName" in item&&<p className="text-sm text-gray-400">Qisqa nomi: {String(item.shortName||"—")}</p>}
+              <h3 className="mt-4 text-lg font-black">{item.name}</h3>{"shortName" in item&&<p className="text-sm text-gray-400">Qisqa nomi: {String(item.shortName||"вЂ”")}</p>}
             </article>)}
             {(tab==="kategoriyalar"?store.kategoriyalar:store.birliklar).length===0&&<Empty matn="Ma'lumot mavjud emas"/>}
           </div>
@@ -279,7 +280,7 @@ function formatNumberInput(value:string) {
 function MoneyInput({value,suffix,onChange,currency,onCurrencyChange,onApplyAll}:{value:string;suffix?:string;onChange:(value:string)=>void;currency?:"UZS"|"USD";onCurrencyChange?:(value:"UZS"|"USD")=>void;onApplyAll?:()=>void}) {
   return <div className="group relative">
     <input value={formatNumberInput(value)} onChange={(e)=>onChange(e.target.value)} className={`h-12 w-full rounded-2xl border-0 bg-gray-100 px-4 text-sm font-black text-gray-700 outline-none focus:ring-2 focus:ring-orange-100 ${currency?"pr-32":"pr-12"}`} placeholder="0"/>
-    {currency&&onCurrencyChange?<select value={currency} onChange={(e)=>onCurrencyChange(e.target.value as "UZS"|"USD")} className="absolute right-2 top-1/2 h-9 min-w-[76px] -translate-y-1/2 rounded-xl border border-gray-200 bg-white px-2 text-xs font-black text-gray-600 outline-none hover:border-orange-200 focus:border-orange-300"><option value="UZS">UZS</option><option value="USD">USD</option></select>:<span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-gray-400">{suffix}</span>}
+    {currency&&onCurrencyChange?<AppSelect value={currency} onChange={(e)=>onCurrencyChange(e.target.value as "UZS"|"USD")} className="absolute right-2 top-1/2 h-9 min-w-[76px] -translate-y-1/2 rounded-xl border border-gray-200 bg-white px-2 text-xs font-black text-gray-600 outline-none hover:border-orange-200 focus:border-orange-300"><option value="UZS">UZS</option><option value="USD">USD</option></AppSelect>:<span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-gray-400">{suffix}</span>}
     {onApplyAll&&value&&<button type="button" onClick={onApplyAll} className="absolute left-0 top-[calc(100%+4px)] z-20 hidden rounded-lg bg-blue-600 px-2 py-1 text-[10px] font-black text-white shadow-lg group-focus-within:block hover:bg-blue-700">Hammaga qo'llash</button>}
   </div>;
 }
@@ -826,14 +827,14 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
                   </div>
                 </label>
                 <label className="block text-sm font-black text-gray-500">Kategoriya *
-                  <select value={categoryId} onChange={e=>setCategoryId(e.target.value)} className="input mt-2"><option value="">Kategoriya</option>{store.kategoriyalar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>
+                  <AppSelect value={categoryId} onChange={e=>setCategoryId(e.target.value)} className="input mt-2"><option value="">Kategoriya</option>{store.kategoriyalar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</AppSelect>
                 </label>
             </div>
             <div className="space-y-4">
                 <div className="block text-sm font-black text-gray-500">
                   <p>O'lchov birligi *</p>
                   <div className="mt-2 flex items-center gap-3">
-                    <select value={unitId} onChange={e=>setUnitId(e.target.value)} className="input min-w-0 flex-1"><option value="">O'lchov birligi tanlang</option>{store.birliklar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>
+                    <AppSelect value={unitId} onChange={e=>setUnitId(e.target.value)} className="input min-w-0 flex-1"><option value="">O'lchov birligi tanlang</option>{store.birliklar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</AppSelect>
                     <button type="button" onClick={()=>setIsActive(!isActive)} aria-label="Mahsulot holatini o'zgartirish" className={`flex h-8 w-14 shrink-0 items-center rounded-full p-1 transition ${isActive?"bg-orange-500 shadow-sm shadow-orange-100":"bg-gray-200"}`}>
                       <span className={`h-6 w-6 rounded-full bg-white shadow transition ${isActive?"translate-x-6":"translate-x-0"}`}/>
                     </button>
@@ -885,7 +886,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
                           {row.options.map((option)=><span key={option} className="inline-flex max-w-full items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-sm font-black text-orange-600"><span className="truncate">{option}</span><button type="button" onClick={()=>removeVariationOption(row.id,option)} className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-white"><X size={12}/></button></span>)}
                           <input value={row.value} onFocus={()=>setActiveVariationRow(row.id)} onChange={e=>{updateVariationRow(row.id,{value:e.target.value});setActiveVariationRow(row.id)}} onKeyDown={e=>{if(e.key==="Enter"||e.key===","){e.preventDefault();addVariationOption(row.id)}}} className="h-8 min-w-28 flex-1 bg-transparent text-sm font-bold text-gray-700 outline-none" placeholder={row.options.length?"Yana qo'shish":`${row.attribute} qiymatini kiriting`}/>
                         </div>
-                        <span className="shrink-0 text-gray-300">⋮⋮</span>
+                        <span className="shrink-0 text-gray-300">в‹®в‹®</span>
                         <button type="button" onClick={()=>removeVariationRow(row.id)} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-500"><X size={14}/></button>
                       </div>
                       {activeVariationRow===row.id&&savedOptionsFor(row).length>0&&<div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-gray-100">
@@ -983,9 +984,9 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
                       <span>Minimal qoldiq</span>
                     </div>
                     <div className="grid grid-cols-[minmax(180px,1fr)_190px_190px] items-center gap-4 pt-3">
-                      {omborlar.length>0?<select value={stock.warehouseId} onChange={(e)=>updateVariantStockDraft(combo.key,{warehouseId:e.target.value})} className="h-11 rounded-2xl border border-transparent bg-white px-4 text-sm font-black text-gray-600 outline-none focus:border-orange-200 focus:ring-2 focus:ring-orange-100">
+                      {omborlar.length>0?<AppSelect value={stock.warehouseId} onChange={(e)=>updateVariantStockDraft(combo.key,{warehouseId:e.target.value})} className="h-11 rounded-2xl border border-transparent bg-white px-4 text-sm font-black text-gray-600 outline-none focus:border-orange-200 focus:ring-2 focus:ring-orange-100">
                         {omborlar.map((ombor)=><option key={ombor.id} value={ombor.id}>{ombor.name}</option>)}
-                      </select>:<div className="h-11 rounded-2xl bg-white px-4 py-3 text-sm font-black text-gray-600">Store Shop</div>}
+                      </AppSelect>:<div className="h-11 rounded-2xl bg-white px-4 py-3 text-sm font-black text-gray-600">Store Shop</div>}
                       <StockInput value={stock.quantity} onChange={(value)=>updateVariantStockDraft(combo.key,{quantity:value})}/>
                       <StockInput value={stock.minStock} onChange={(value)=>updateVariantStockDraft(combo.key,{minStock:value})} warning/>
                     </div>
@@ -1121,9 +1122,9 @@ function MahsulotModal({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}) {
   }
   return <Modal title={editing?"Mahsulotni tahrirlash":"Yangi mahsulot"} onClose={onClose}><form onSubmit={save} className="space-y-4">
     {store.xatolik&&<ErrorBox/>}<input value={name} onChange={e=>setName(e.target.value)} className="input" placeholder="Mahsulot nomi *"/>
-    <div className="grid gap-4 sm:grid-cols-2"><select value={categoryId} onChange={e=>setCategoryId(e.target.value)} className="input"><option value="">Kategoriya *</option>{store.kategoriyalar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select><select value={unitId} onChange={e=>setUnitId(e.target.value)} className="input"><option value="">O'lchov birligi *</option>{store.birliklar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select><input value={barcode} onChange={e=>setBarcode(e.target.value)} className="input" placeholder={`Shtrix-kod${editing?"":" *"}`}/><input value={article} onChange={e=>setArticle(e.target.value)} className="input" placeholder="Artikul"/></div>
+    <div className="grid gap-4 sm:grid-cols-2"><AppSelect value={categoryId} onChange={e=>setCategoryId(e.target.value)} className="input"><option value="">Kategoriya *</option>{store.kategoriyalar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</AppSelect><AppSelect value={unitId} onChange={e=>setUnitId(e.target.value)} className="input"><option value="">O'lchov birligi *</option>{store.birliklar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</AppSelect><input value={barcode} onChange={e=>setBarcode(e.target.value)} className="input" placeholder={`Shtrix-kod${editing?"":" *"}`}/><input value={article} onChange={e=>setArticle(e.target.value)} className="input" placeholder="Artikul"/></div>
     {!editing&&<div className="rounded-[22px] border border-orange-100 bg-orange-50/60 p-4">
-      <div className="mb-4"><p className="font-black text-orange-800">Boshlang'ich narxlar</p><p className="mt-1 text-xs text-orange-700/70">Mahsulot bilan birga “Asosiy variant” va uning narxlari yaratiladi.</p></div>
+      <div className="mb-4"><p className="font-black text-orange-800">Boshlang'ich narxlar</p><p className="mt-1 text-xs text-orange-700/70">Mahsulot bilan birga вЂњAsosiy variantвЂќ va uning narxlari yaratiladi.</p></div>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="text-sm font-bold text-gray-700">Kelish (tan) narxi
           <div className="relative mt-2"><input type="number" min="0" step="0.01" value={costPrice} onChange={e=>setCostPrice(e.target.value)} className="input pr-16" placeholder="Kelish narxini kiriting"/><span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">so'm</span></div>
@@ -1152,9 +1153,9 @@ function ModifikatsiyalarModal({product,onClose}:{product:Mahsulot;onClose:()=>v
   const store=useMahsulotlarStore();const items=store.modifikatsiyalar[product.id]??[];const [editing,setEditing]=useState<MahsulotModifikatsiyasi|"new"|null>(null);
   async function remove(id:string){if(window.confirm("Variantni o'chirasizmi?"))await store.modifikatsiyaOchirish(product.id,id)}
   async function edit(item:MahsulotModifikatsiyasi){const [toliq,narx]=await Promise.all([store.modifikatsiyaOlish(item.id),store.narxOlish(item.id)]);if(toliq)setEditing({...toliq,price:narx??toliq.price})}
-  return <Modal wide title={`${product.name} — variantlar va narxlar`} onClose={onClose}>
+  return <Modal wide title={`${product.name} вЂ” variantlar va narxlar`} onClose={onClose}>
     <div className="flex justify-end"><button onClick={()=>setEditing("new")} className="inline-flex h-10 items-center gap-2 rounded-xl bg-orange-500 px-4 font-black text-white"><PackagePlus size={16}/>Variant qo'shish</button></div>
-    <div className="mt-4 space-y-3">{items.map(item=><div key={item.id} className="rounded-2xl border border-orange-100 p-4"><div className="flex flex-col justify-between gap-3 md:flex-row"><div><h3 className="font-black">{item.name||"Asosiy variant"}</h3><p className="text-sm text-gray-500">Shtrix-kod: {item.barcode} · Artikul: {item.article||"—"}</p><p className="mt-2 text-sm font-bold text-orange-600">Tan narx: {money(item.price?.costPrice)} · Chakana: {money(item.price?.retailPrice)} · Ulgurji: {money(item.price?.wholesalePrice)}</p></div><div className="flex gap-2"><button onClick={()=>void edit(item)} className="rounded-xl bg-orange-50 px-3 py-2 font-bold text-orange-600">Tahrirlash</button><button onClick={()=>void remove(item.id)} className="rounded-xl bg-red-50 px-3 py-2 text-red-500"><Trash2 size={16}/></button></div></div></div>)}{items.length===0&&<Empty matn="Variantlar mavjud emas"/>}</div>
+    <div className="mt-4 space-y-3">{items.map(item=><div key={item.id} className="rounded-2xl border border-orange-100 p-4"><div className="flex flex-col justify-between gap-3 md:flex-row"><div><h3 className="font-black">{item.name||"Asosiy variant"}</h3><p className="text-sm text-gray-500">Shtrix-kod: {item.barcode} В· Artikul: {item.article||"вЂ”"}</p><p className="mt-2 text-sm font-bold text-orange-600">Tan narx: {money(item.price?.costPrice)} В· Chakana: {money(item.price?.retailPrice)} В· Ulgurji: {money(item.price?.wholesalePrice)}</p></div><div className="flex gap-2"><button onClick={()=>void edit(item)} className="rounded-xl bg-orange-50 px-3 py-2 font-bold text-orange-600">Tahrirlash</button><button onClick={()=>void remove(item.id)} className="rounded-xl bg-red-50 px-3 py-2 text-red-500"><Trash2 size={16}/></button></div></div></div>)}{items.length===0&&<Empty matn="Variantlar mavjud emas"/>}</div>
     {editing&&<ModForm productId={product.id} item={editing} onClose={()=>setEditing(null)}/>}
   </Modal>
 }
@@ -1169,3 +1170,4 @@ function Modal({title,onClose,children,wide=false}:{title:string;onClose:()=>voi
 function Actions({loading,onClose}:{loading:boolean;onClose:()=>void}){return <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">Bekor qilish</button><button disabled={loading} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{loading&&<LoaderCircle size={16} className="animate-spin"/>}Saqlash</button></div>}
 function ErrorBox(){const x=useMahsulotlarStore(s=>s.xatolik);return <div className="rounded-xl bg-red-50 p-3 font-bold text-red-600">{x}</div>}
 function money(value:number|string|undefined){return `${Number(value??0).toLocaleString("uz-UZ")} so'm`}
+

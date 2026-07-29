@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Building2, CircleDollarSign, RefreshCw, Search, UserRound, UsersRound, WalletCards } from "lucide-react";
+import { Building2, CircleDollarSign, RefreshCw, Search, UserRound } from "lucide-react";
 import type { Sotuv } from "@/types/savdo";
 import { mijozNomi, pulniFormatlash, sananiFormatlash, sotuvHolati, sotuvQarzdorlikSummasi, sotuvRaqami, sotuvSummasi, sotuvTolanganSummasi } from "@/Pages/Savdo/savdoYordamchilari";
 
@@ -27,9 +27,6 @@ export default function Qarzdorliklar({ sotuvlar, onSotuvniOchish, onYangilash }
       return turMos && (!q || [mijozNomi(sotuv), telefon(sotuv), sotuvRaqami(sotuv)].join(" ").toLowerCase().includes(q));
     });
   }, [qarzlar, qidiruv, tur]);
-  const jami = qarzlar.reduce((sum, item) => sum + sotuvQarzdorlikSummasi(item), 0);
-  const mijozJami = qarzlar.filter((item) => !kompaniyami(item)).reduce((sum, item) => sum + sotuvQarzdorlikSummasi(item), 0);
-
   async function yangilash() {
     setYangilanmoqda(true);
     try { await onYangilash(); } finally { setYangilanmoqda(false); }
@@ -46,11 +43,6 @@ export default function Qarzdorliklar({ sotuvlar, onSotuvniOchish, onYangilash }
         <button onClick={() => void yangilash()} disabled={yangilanmoqda} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-lg shadow-orange-200 hover:bg-orange-600 disabled:opacity-60">
           <RefreshCw size={17} className={yangilanmoqda ? "animate-spin" : ""}/> Yangilash
         </button>
-      </div>
-      <div className="mt-7 grid gap-4 md:grid-cols-3">
-        <Stat icon={WalletCards} nom="Jami qarzdorlik" qiymat={jami} asosiy />
-        <Stat icon={UsersRound} nom="Jismoniy mijozlar" qiymat={mijozJami}/>
-        <Stat icon={Building2} nom="Kompaniyalar" qiymat={jami - mijozJami}/>
       </div>
     </div>
     <div className="flex flex-col gap-3 border-y border-orange-100 px-6 py-5 lg:flex-row lg:justify-between sm:px-8">
@@ -71,8 +63,4 @@ export default function Qarzdorliklar({ sotuvlar, onSotuvniOchish, onYangilash }
     {rows.length === 0 && <div className="px-6 py-20 text-center"><CircleDollarSign className="mx-auto text-orange-200" size={42}/><h2 className="mt-3 text-lg font-black text-slate-800">Qarzdorlik topilmadi</h2><p className="mt-1 text-sm font-semibold text-slate-400">Qidiruvni o'zgartiring yoki barcha qarzlar yopilgan.</p></div>}
     <div className="flex justify-between border-t border-orange-100 bg-[#fffaf5] px-8 py-4 text-xs font-bold text-slate-500"><span>{rows.length} ta qarzdor savdo</span><span>Qatorni bosing — sotuv tafsilotlari ochiladi</span></div>
   </section>;
-}
-
-function Stat({ icon: Icon, nom, qiymat, asosiy = false }: { icon: typeof WalletCards; nom: string; qiymat: number; asosiy?: boolean }) {
-  return <article className={`rounded-[24px] p-5 shadow-lg ${asosiy ? "bg-orange-500 text-white shadow-orange-200" : "bg-white text-slate-800 ring-1 ring-orange-100"}`}><div className="flex items-center justify-between"><div><p className={`text-xs font-black uppercase ${asosiy ? "text-white/75" : "text-slate-400"}`}>{nom}</p><p className="mt-2 text-xl font-black sm:text-2xl">{pulniFormatlash(qiymat)}</p></div><span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${asosiy ? "bg-white/15" : "bg-orange-50 text-orange-500"}`}><Icon size={21}/></span></div></article>;
 }

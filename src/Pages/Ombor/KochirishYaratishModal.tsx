@@ -1,3 +1,4 @@
+import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useState } from "react";
 import {
   Barcode,
@@ -28,7 +29,7 @@ function yangiQator(): Qator {
 }
 
 function shaxsNomi(shaxs?: { fullName?: string; username?: string; name?: string }) {
-  return shaxs?.fullName || shaxs?.name || shaxs?.username || "—";
+  return shaxs?.fullName || shaxs?.name || shaxs?.username || "вЂ”";
 }
 
 function modifikatsiyaNarxi(mod?: MahsulotModifikatsiyasi) {
@@ -190,17 +191,17 @@ export default function KochirishYaratishModal({ onClose }: Props) {
                 <div className="mt-5 grid gap-5 sm:grid-cols-2">
                   <label className="grid gap-2 text-sm font-bold text-slate-400">
                     Ombordan *
-                    <select value={sourceWarehouseId} onChange={(event) => void manbaTanlash(event.target.value)} className="input text-slate-700">
+                    <AppSelect value={sourceWarehouseId} onChange={(event) => void manbaTanlash(event.target.value)} className="input text-slate-700">
                       <option value="">Manba omborni tanlang</option>
                       {store.omborlar.map((ombor) => <option key={ombor.id} value={ombor.id}>{ombor.name}</option>)}
-                    </select>
+                    </AppSelect>
                   </label>
                   <label className="grid gap-2 text-sm font-bold text-slate-400">
                     Omborga *
-                    <select value={destWarehouseId} onChange={(event) => setDest(event.target.value)} className="input text-slate-700">
+                    <AppSelect value={destWarehouseId} onChange={(event) => setDest(event.target.value)} className="input text-slate-700">
                       <option value="">Qabul qiluvchi omborni tanlang</option>
                       {store.omborlar.filter((ombor) => ombor.id !== sourceWarehouseId).map((ombor) => <option key={ombor.id} value={ombor.id}>{ombor.name}</option>)}
-                    </select>
+                    </AppSelect>
                   </label>
                   <label className="grid gap-2 text-sm font-bold text-slate-400 sm:col-span-2">
                     Yaratilish sanasi
@@ -210,10 +211,10 @@ export default function KochirishYaratishModal({ onClose }: Props) {
                   </label>
                   <label className="grid gap-2 text-sm font-bold text-slate-400 sm:col-span-2">
                     Mas'ul shaxs
-                    <select value={responsibleId} onChange={(event) => setResponsible(event.target.value)} className="input text-slate-700">
+                    <AppSelect value={responsibleId} onChange={(event) => setResponsible(event.target.value)} className="input text-slate-700">
                       <option value="">Mas'ul shaxsni tanlang</option>
                       {store.xodimlar.map((xodim) => <option key={xodim.id} value={xodim.id}>{shaxsNomi(xodim)}</option>)}
-                    </select>
+                    </AppSelect>
                   </label>
                 </div>
               </section>
@@ -241,17 +242,17 @@ export default function KochirishYaratishModal({ onClose }: Props) {
               <div className="mt-5 overflow-x-auto rounded-2xl border border-orange-100">
                 <table className="w-full min-w-[1150px] table-fixed text-left text-sm">
                   <thead className="bg-[#FFF9F3] text-xs font-black uppercase text-slate-500">
-                    <tr><th className="w-12 px-3 py-4">№</th><th className="w-[310px] px-3 py-4">Mahsulot</th><th className="w-44 px-3 py-4">Shtrix kod</th><th className="w-36 px-3 py-4">Narxi</th><th className="w-36 px-3 py-4">Soni</th><th className="w-44 px-3 py-4">Ombordagi qoldiq</th><th className="w-40 px-3 py-4">Summa</th><th className="w-16 px-3 py-4"><Package size={16} /></th></tr>
+                    <tr><th className="w-12 px-3 py-4">в„–</th><th className="w-[310px] px-3 py-4">Mahsulot</th><th className="w-44 px-3 py-4">Shtrix kod</th><th className="w-36 px-3 py-4">Narxi</th><th className="w-36 px-3 py-4">Soni</th><th className="w-44 px-3 py-4">Ombordagi qoldiq</th><th className="w-40 px-3 py-4">Summa</th><th className="w-16 px-3 py-4"><Package size={16} /></th></tr>
                   </thead>
                   <tbody className="divide-y divide-orange-100">
                     {qatorMalumotlari.map(({ item, qoldiq, mod, narx, summa }, index) => (
                       <tr key={item.id}>
                         <td className="px-3 py-3 font-bold text-slate-400"><span className="flex items-center gap-1"><GripVertical size={14} className="text-slate-300" />{index + 1}</span></td>
-                        <td className="px-3 py-3"><select value={item.modificationId} disabled={!sourceWarehouseId} onChange={(event) => qatorniYangilash(item.id, { modificationId: event.target.value })} className="input"><option value="">{sourceWarehouseId ? "Mahsulotni tanlang" : "Avval omborni tanlang"}</option>{qoldiqlar.map((variant) => <option key={`${variant.modificationId}-${variant.id ?? "q"}`} value={variant.modificationId} disabled={items.some((qator) => qator.id !== item.id && qator.modificationId === variant.modificationId)}>{modificationNomi(variant.modification)}</option>)}</select></td>
-                        <td className="px-3 py-3"><span className="flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 text-slate-500"><Barcode size={16} />{mod?.barcode ?? "—"}</span></td>
+                        <td className="px-3 py-3"><AppSelect value={item.modificationId} disabled={!sourceWarehouseId} onChange={(event) => qatorniYangilash(item.id, { modificationId: event.target.value })} className="input"><option value="">{sourceWarehouseId ? "Mahsulotni tanlang" : "Avval omborni tanlang"}</option>{qoldiqlar.map((variant) => <option key={`${variant.modificationId}-${variant.id ?? "q"}`} value={variant.modificationId} disabled={items.some((qator) => qator.id !== item.id && qator.modificationId === variant.modificationId)}>{modificationNomi(variant.modification)}</option>)}</AppSelect></td>
+                        <td className="px-3 py-3"><span className="flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 text-slate-500"><Barcode size={16} />{mod?.barcode ?? "вЂ”"}</span></td>
                         <td className="px-3 py-3 font-black text-slate-700">{pul(narx)}</td>
                         <td className="px-3 py-3"><label className="relative block"><input type="number" min="0.001" max={qoldiq ? qoldiqMiqdori(qoldiq) : undefined} step="0.001" value={item.quantity} onChange={(event) => qatorniYangilash(item.id, { quantity: Number(event.target.value) })} className="input pr-12" /><span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">dona</span></label></td>
-                        <td className="px-3 py-3"><p className="font-black text-slate-700">{qoldiq ? qoldiqMiqdori(qoldiq) : 0}</p><p className="text-xs font-bold text-slate-400">{store.omborlar.find((ombor) => ombor.id === sourceWarehouseId)?.name ?? "—"}</p></td>
+                        <td className="px-3 py-3"><p className="font-black text-slate-700">{qoldiq ? qoldiqMiqdori(qoldiq) : 0}</p><p className="text-xs font-bold text-slate-400">{store.omborlar.find((ombor) => ombor.id === sourceWarehouseId)?.name ?? "вЂ”"}</p></td>
                         <td className="px-3 py-3 font-black text-emerald-600">{pul(summa)}</td>
                         <td className="px-3 py-3"><button type="button" onClick={() => setItems((oldingi) => oldingi.filter((qator) => qator.id !== item.id))} disabled={items.length === 1} className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 disabled:opacity-30" aria-label="Qatorni o'chirish"><Trash2 size={16} /></button></td>
                       </tr>
@@ -275,3 +276,4 @@ export default function KochirishYaratishModal({ onClose }: Props) {
     </AppModal>
   );
 }
+

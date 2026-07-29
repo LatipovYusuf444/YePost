@@ -1,3 +1,4 @@
+import AppSelect from "@/Components/ui/AppSelect";
 import { useState, type FormEvent } from "react";
 import { Eye, LoaderCircle, Plus } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
@@ -120,31 +121,31 @@ export default function Profil() {
             <div className="mt-5 space-y-3">
               <label className="block text-sm font-bold">
                 Tarif *
-                <select value={tariffId} onChange={(event) => setTariffId(event.target.value)} className="mt-2 h-12 w-full rounded-2xl border px-4">
+                <AppSelect value={tariffId} onChange={(event) => setTariffId(event.target.value)} className="mt-2 h-12 w-full rounded-2xl border px-4">
                   <option value="">Tarifni tanlang</option>
                   {store.tariflar.filter((x) => x.isActive).map((x) => (
                     <option key={x.id} value={x.id}>
-                      {tarifTuriMatni[x.type]} tarif — {Number(x.monthlyPrice).toLocaleString("uz-UZ")} so'm
+                      {tarifTuriMatni[x.type]} tarif вЂ” {Number(x.monthlyPrice).toLocaleString("uz-UZ")} so'm
                     </option>
                   ))}
-                </select>
+                </AppSelect>
               </label>
               <label className="block text-sm font-bold">
                 Obuna davri
-                <select value={period} onChange={(event) => setPeriod(event.target.value as ObunaDavri)} className="mt-2 h-12 w-full rounded-2xl border px-4">
+                <AppSelect value={period} onChange={(event) => setPeriod(event.target.value as ObunaDavri)} className="mt-2 h-12 w-full rounded-2xl border px-4">
                   <option value="MONTHLY">Oylik</option>
                   <option value="QUARTERLY">Choraklik</option>
                   <option value="ANNUAL">Yillik</option>
-                </select>
+                </AppSelect>
               </label>
               <label className="block text-sm font-bold">
                 Obuna holati
-                <select value={status} onChange={(event) => setStatus(event.target.value as ObunaHolati)} className="mt-2 h-12 w-full rounded-2xl border px-4">
+                <AppSelect value={status} onChange={(event) => setStatus(event.target.value as ObunaHolati)} className="mt-2 h-12 w-full rounded-2xl border px-4">
                   <option value="TRIAL">Sinov muddati</option>
                   <option value="ACTIVE">Faol</option>
                   <option value="EXPIRED">Muddati tugagan</option>
                   <option value="CANCELLED">Bekor qilingan</option>
-                </select>
+                </AppSelect>
               </label>
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="text-sm font-bold">
@@ -190,3 +191,4 @@ export default function Profil() {
     </div>
   );
 }
+

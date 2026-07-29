@@ -1,3 +1,4 @@
+import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useState } from "react";
 import {
   Barcode,
@@ -202,7 +203,7 @@ export default function YangiChiqimModal({ onClose }: Props) {
             <div className="scrollbar-orange overflow-x-auto pb-2">
               <div className="min-w-[1220px] space-y-3">
                 <div className="grid grid-cols-[42px_76px_2.1fr_1fr_1fr_1fr_1.35fr_1fr_1fr_48px] gap-3 px-3 text-[11px] font-black uppercase tracking-wide text-slate-400">
-                  <span>№</span><span /><span>Mahsulot</span><span>Shtrix kod</span><span>Tan narxi</span><span>Soni</span><span>Ombor</span><span>Qoldiq</span><span>Summa</span><span />
+                  <span>в„–</span><span /><span>Mahsulot</span><span>Shtrix kod</span><span>Tan narxi</span><span>Soni</span><span>Ombor</span><span>Qoldiq</span><span>Summa</span><span />
                 </div>
                 {qatorlar.map((row, index) => {
                   const mod = store.modifikatsiyalar.find((item) => item.id === row.modificationId);
@@ -213,18 +214,18 @@ export default function YangiChiqimModal({ onClose }: Props) {
                     <div key={row.id} className="grid grid-cols-[42px_76px_2.1fr_1fr_1fr_1fr_1.35fr_1fr_1fr_48px] items-center gap-3 rounded-2xl border border-orange-100 bg-[#fffdfa] p-3">
                       <span className="text-center text-sm font-black text-slate-400">{index + 1}</span>
                       <div className="flex h-12 items-center justify-center rounded-xl border border-dashed border-orange-200 bg-white text-slate-300"><Image size={20} /></div>
-                      <select value={row.modificationId} onChange={(event) => qatorniYangilash(row.id, { modificationId: event.target.value })} className={`${input} min-w-0`}>
+                      <AppSelect value={row.modificationId} onChange={(event) => qatorniYangilash(row.id, { modificationId: event.target.value })} className={`${input} min-w-0`}>
                         <option value="">Mahsulotni tanlang</option>
                         {mavjudMahsulotlar.map((item, itemIndex) => (
                           <option key={`${item.modificationId}-${itemIndex}`} value={item.modificationId} disabled={qatorlar.some((boshqa) => boshqa.id !== row.id && boshqa.modificationId === item.modificationId)}>
                             {modificationNomi(item.modification ?? store.modifikatsiyalar.find((modification) => modification.id === item.modificationId))}
                           </option>
                         ))}
-                      </select>
+                      </AppSelect>
                       <div className="relative"><Barcode size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={mod?.barcode ?? ""} readOnly placeholder="Shtrix kod" className={`${input} pl-9`} /></div>
                       <input value={narx ? narx.toLocaleString("uz-UZ") : "0"} readOnly className={input} />
                       <div className="relative"><input type="number" min="0.001" max={mavjud || undefined} step="0.001" value={row.quantity} onChange={(event) => qatorniYangilash(row.id, { quantity: Number(event.target.value) })} className={`${input} pr-14`} /><span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400">dona</span></div>
-                      <div className="relative"><Warehouse size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><select value={warehouseId} onChange={(event) => omborniAlmashtirish(event.target.value)} className={`${input} appearance-none pl-9 pr-8`}><option value="">Omborni tanlang</option>{store.omborlar.filter((item) => item.isActive !== false).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" /></div>
+                      <div className="relative"><Warehouse size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><AppSelect value={warehouseId} onChange={(event) => omborniAlmashtirish(event.target.value)} className={`${input} appearance-none pl-9 pr-8`}><option value="">Omborni tanlang</option>{store.omborlar.filter((item) => item.isActive !== false).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</AppSelect><ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" /></div>
                       <div className="rounded-xl bg-slate-50 px-3 py-2.5"><p className="font-black text-slate-700">{mavjud.toLocaleString("uz-UZ")}</p><p className="truncate text-[10px] font-semibold text-slate-400">{store.omborlar.find((item) => item.id === warehouseId)?.name ?? "Ombor"}</p></div>
                       <p className="font-black text-emerald-600">{pul(row.quantity * narx)}</p>
                       <button type="button" disabled={qatorlar.length === 1} onClick={() => setQatorlar((rows) => rows.filter((item) => item.id !== row.id))} aria-label="Qatorni o'chirish" className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100 disabled:opacity-30"><Trash2 size={17} /></button>
@@ -259,9 +260,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function SelectField({ label, value, onChange, placeholder, options }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; options: Array<{ id: string; name: string }> }) {
-  return <label className="space-y-2 text-sm font-bold text-slate-500"><span>{label}</span><div className="relative"><select value={value} onChange={(event) => onChange(event.target.value)} className={`${input} appearance-none pr-10`}><option value="">{placeholder}</option>{options.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}</select><ChevronDown size={17} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" /></div></label>;
+  return <label className="space-y-2 text-sm font-bold text-slate-500"><span>{label}</span><div className="relative"><AppSelect value={value} onChange={(event) => onChange(event.target.value)} className={`${input} appearance-none pr-10`}><option value="">{placeholder}</option>{options.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}</AppSelect><ChevronDown size={17} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" /></div></label>;
 }
 
 function ActionButton({ children, busy, outline, onClick }: { children: React.ReactNode; busy: boolean; outline?: boolean; onClick: () => void }) {
   return <button type="button" onClick={onClick} disabled={busy} className={`inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-7 text-sm font-black transition disabled:opacity-50 ${outline ? "border border-orange-300 bg-white text-orange-600 hover:bg-orange-50" : "bg-orange-500 text-white shadow-lg shadow-orange-100 hover:bg-orange-600"}`}>{busy && <LoaderCircle size={17} className="animate-spin" />}{children}</button>;
 }
+

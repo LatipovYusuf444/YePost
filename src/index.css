@@ -96,6 +96,45 @@ body {
     sans-serif;
 }
 
+/* Savdo bo'limining barcha tablarida jadval tipografiyasi yagona ko'rinishda. */
+.savdo-table-typography table {
+  font-family: "Geist Variable", Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+
+.savdo-table-typography table thead,
+.savdo-table-typography table thead tr {
+  background: #fff8ef !important;
+}
+
+.savdo-table-typography table thead th {
+  font-family: inherit;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  line-height: 1.35;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: #ea580c !important;
+  background: #fff8ef !important;
+}
+
+.savdo-table-typography table tbody,
+.savdo-table-typography table tbody td {
+  font-family: inherit;
+  font-size: 13px !important;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #475569;
+}
+
+.savdo-table-typography table button,
+.savdo-table-typography table input,
+.savdo-table-typography table select {
+  font-family: inherit;
+}
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);

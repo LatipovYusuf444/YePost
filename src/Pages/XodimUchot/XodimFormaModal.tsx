@@ -1,3 +1,4 @@
+import AppSelect from "@/Components/ui/AppSelect";
 import { useMemo, useState, type FormEvent } from "react";
 import {
   Briefcase,
@@ -286,7 +287,7 @@ export default function XodimFormaModal({
 
                         <label className="grid gap-2">
                           <span className="text-sm font-bold text-slate-400">Tizim roli</span>
-                          <select
+                          <AppSelect
                             value={rol}
                             onChange={(event) => setRol(event.target.value as Xodim["rol"])}
                             className={maydonKlass}
@@ -295,7 +296,7 @@ export default function XodimFormaModal({
                             <option value="STOREKEEPER">Omborchi</option>
                             <option value="ADMIN">Administrator</option>
                             <option value="DIRECTOR">Direktor</option>
-                          </select>
+                          </AppSelect>
                         </label>
 
                         <label className="grid gap-2">
@@ -316,7 +317,7 @@ export default function XodimFormaModal({
                             <Briefcase size={14} className="text-[#FF6A00]" />
                             Lavozim
                           </span>
-                          <select
+                          <AppSelect
                             value={lavozimId}
                             onChange={(event) => setLavozimId(event.target.value)}
                             className={maydonKlass}
@@ -327,7 +328,7 @@ export default function XodimFormaModal({
                                 {item.nomi}
                               </option>
                             ))}
-                          </select>
+                          </AppSelect>
                         </label>
 
                         <label className="grid gap-2">
@@ -335,7 +336,7 @@ export default function XodimFormaModal({
                             <Network size={14} className="text-[#FF6A00]" />
                             Bo'lim
                           </span>
-                          <select
+                          <AppSelect
                             value={bolimId}
                             onChange={(event) => setBolimId(event.target.value)}
                             className={maydonKlass}
@@ -346,12 +347,12 @@ export default function XodimFormaModal({
                                 {item.nomi}
                               </option>
                             ))}
-                          </select>
+                          </AppSelect>
                         </label>
 
                         <label className="grid gap-2">
                           <span className="text-sm font-bold text-slate-400">Filial</span>
-                          <select
+                          <AppSelect
                             value={filial}
                             onChange={(event) => setFilial(event.target.value)}
                             className={maydonKlass}
@@ -362,7 +363,7 @@ export default function XodimFormaModal({
                                 {item.nomi}
                               </option>
                             ))}
-                          </select>
+                          </AppSelect>
                         </label>
 
                         <label className="grid gap-2">
@@ -394,7 +395,7 @@ export default function XodimFormaModal({
 
                         <label className="grid gap-2">
                           <span className="text-sm font-bold text-slate-400">Holat</span>
-                          <select
+                          <AppSelect
                             value={holat}
                             onChange={(event) => setHolat(event.target.value as XodimHolati)}
                             className={maydonKlass}
@@ -404,7 +405,7 @@ export default function XodimFormaModal({
                                 {holatMatni[item]}
                               </option>
                             ))}
-                          </select>
+                          </AppSelect>
                         </label>
 
                         <label className="grid gap-2">
@@ -506,3 +507,4 @@ export default function XodimFormaModal({
     </AppModal>
   );
 }
+

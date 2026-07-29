@@ -21,6 +21,7 @@ import Qarzdorliklar from "../Qarzdorlik";
 import YangiSotuvModal from "./YangiSotuvModal";
 import { mijozNomi, sotuvHolati, sotuvRaqami } from "./savdoYordamchilari";
 import SavdoSelect from "./SavdoSelect";
+import DateRangePicker from "@/Components/ui/DateRangePicker";
 
 type SavdoTabi =
   | "barchasi"
@@ -85,7 +86,8 @@ export default function Savdo() {
   } = useSavdoStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const [qidiruv, setQidiruv] = useState("");
-  const [sanaFilteri, setSanaFilteri] = useState<"bugun" | "barchasi">("bugun");
+  const [sanaDan, setSanaDan] = useState(() => new Date().toISOString().slice(0, 10));
+  const [sanaGacha, setSanaGacha] = useState(() => new Date().toISOString().slice(0, 10));
   const [statusFilteri, setStatusFilteri] = useState<SotuvHolati | "barchasi">("barchasi");
   const [tolovFilteri, setTolovFilteri] = useState<TolovTuri | "barchasi">("barchasi");
   const [yangiSotuvOchiq, setYangiSotuvOchiq] = useState(false);
@@ -126,13 +128,14 @@ export default function Savdo() {
   }, [xabar]);
   const qidirilganSotuvlar = useMemo(() => {
     const qiymat = qidiruv.trim().toLowerCase();
-    const bugun = new Date().toDateString();
-    const sanaBoyicha = sanaFilteri === "bugun"
-      ? sotuvlar.filter((sotuv) => {
-          const sana = sotuv.createdAt ? new Date(sotuv.createdAt) : null;
-          return sana && !Number.isNaN(sana.getTime()) && sana.toDateString() === bugun;
-        })
-      : sotuvlar;
+    const sanaBoyicha = sotuvlar.filter((sotuv) => {
+      if (!sanaDan && !sanaGacha) return true;
+      if (!sotuv.createdAt) return false;
+      const sana = new Date(sotuv.createdAt);
+      if (Number.isNaN(sana.getTime())) return false;
+      const kalit = `${sana.getFullYear()}-${String(sana.getMonth() + 1).padStart(2, "0")}-${String(sana.getDate()).padStart(2, "0")}`;
+      return (!sanaDan || kalit >= sanaDan) && (!sanaGacha || kalit <= sanaGacha);
+    });
 
     const filterlangan = sanaBoyicha.filter((sotuv) => {
       const statusMos =
@@ -162,7 +165,7 @@ export default function Savdo() {
         .toLowerCase()
         .includes(qiymat)
     );
-  }, [qidiruv, sanaFilteri, sotuvlar, statusFilterKorinsin, statusFilteri, tolovFilteri]);
+  }, [qidiruv, sanaDan, sanaGacha, sotuvlar, statusFilterKorinsin, statusFilteri, tolovFilteri]);
 
   async function sotuvniOchish(sotuv: Sotuv) {
     await qoldiqlarniYuklash(sotuv.warehouseId);
@@ -203,7 +206,7 @@ export default function Savdo() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="savdo-table-typography space-y-5">
       {xatolik && (
         <div
           className="flex items-start justify-between gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-600"
@@ -316,16 +319,12 @@ export default function Savdo() {
                     />
                   </div>
 
-                  <div className="w-full sm:w-[150px]">
-                    <SavdoSelect
-                      value={sanaFilteri}
-                      onChange={(value) => setSanaFilteri(value as "bugun" | "barchasi")}
-                      options={[
-                        { value: "bugun", label: "Sana: bugun" },
-                        { value: "barchasi", label: "Sana: barchasi" },
-                      ]}
-                      portal
-                      buttonClassName="h-10 rounded-md border-orange-500 bg-orange-500 px-3 text-sm font-semibold text-white shadow-sm hover:bg-orange-600"
+                  <div className="w-full sm:w-[230px]">
+                    <DateRangePicker
+                      from={sanaDan}
+                      to={sanaGacha}
+                      onChange={(from, to) => { setSanaDan(from); setSanaGacha(to); }}
+                      compact
                     />
                   </div>
                 </div>

@@ -1,3 +1,4 @@
+import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Barcode,
@@ -325,7 +326,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                           className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-black text-orange-600 hover:bg-orange-50 disabled:opacity-50"
                         >
                           <UserPlus size={15} />
-                          "{supplierQuery.trim()}" — yangi yetkazib beruvchi qo'shish
+                          "{supplierQuery.trim()}" вЂ” yangi yetkazib beruvchi qo'shish
                         </button>
                       )}
                       {supplierMoslari.length === 0 && !supplierQuery.trim() && (
@@ -464,7 +465,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                       <Square size={16} />
                     )}
                   </button>
-                  <span>№</span>
+                  <span>в„–</span>
                   <span>Mahsulot</span>
                   <span>Shtrix kod</span>
                   <span>Tan narxi</span>
@@ -497,7 +498,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                         )}
                       </button>
                       <span className="text-center text-sm font-black text-slate-400">{index + 1}</span>
-                      <select
+                      <AppSelect
                         value={row.modificationId}
                         onChange={(event) => mahsulotTanlash(row.id, event.target.value)}
                         className={`${inputSm} min-w-0`}
@@ -508,7 +509,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                             {modificationNomi(item)}
                           </option>
                         ))}
-                      </select>
+                      </AppSelect>
                       <div className="relative">
                         <Barcode size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input value={mod?.barcode ?? ""} readOnly placeholder="Shtrix kod" className={`${inputSm} pl-8`} />
@@ -547,7 +548,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                       />
                       <div className="relative">
                         <Warehouse size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <select
+                        <AppSelect
                           value={row.warehouseId}
                           onChange={(event) => yangilash(row.id, { warehouseId: event.target.value })}
                           className={`${inputSm} appearance-none pl-8 pr-7`}
@@ -560,7 +561,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                                 {item.name}
                               </option>
                             ))}
-                        </select>
+                        </AppSelect>
                         <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       </div>
                       <p className="truncate text-center text-xs font-bold text-slate-500">
@@ -784,14 +785,14 @@ function SelectField({
     <label className="space-y-2 text-sm font-bold text-slate-500">
       <span>{label}</span>
       <div className="relative">
-        <select value={value} onChange={(event) => onChange(event.target.value)} className={`${input} appearance-none pr-10`}>
+        <AppSelect value={value} onChange={(event) => onChange(event.target.value)} className={`${input} appearance-none pr-10`}>
           <option value="">{placeholder}</option>
           {options.map((option) => (
             <option key={option.id} value={option.id}>
               {option.name}
             </option>
           ))}
-        </select>
+        </AppSelect>
         <ChevronDown size={17} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
       </div>
     </label>
@@ -823,3 +824,4 @@ function ActionButton({
     </button>
   );
 }
+
