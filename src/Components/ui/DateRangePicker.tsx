@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { CalendarDays, Check, ChevronLeft, ChevronRight, X } from "lucide-react";
 
 type Props = {
@@ -45,17 +46,61 @@ export default function DateRangePicker({ from, to, onChange, className = "", co
     return new Date(initial.getFullYear(), initial.getMonth(), 1);
   });
   const ref = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const [popupJoylashuvi, setPopupJoylashuvi] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setDraftFrom(from);
     setDraftTo(to);
     const close = (event: MouseEvent) => {
-      if (!ref.current?.contains(event.target as Node)) setOpen(false);
+      const target = event.target as Node;
+      if (!ref.current?.contains(target) && !popupRef.current?.contains(target)) setOpen(false);
     };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, [open, from, to]);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setPopupJoylashuvi(null);
+      return;
+    }
+
+    function joylashtirish() {
+      const trigger = ref.current;
+      if (!trigger) return;
+
+      const rect = trigger.getBoundingClientRect();
+      const chet = 12;
+      const oraliq = 8;
+      const width = Math.min(340, window.innerWidth - chet * 2);
+      const popupHeight = popupRef.current?.offsetHeight ?? 470;
+      const pastdagiJoy = window.innerHeight - rect.bottom - oraliq - chet;
+      const tepadaOchilsin = pastdagiJoy < popupHeight && rect.top > pastdagiJoy;
+      const xomTop = tepadaOchilsin
+        ? rect.top - popupHeight - oraliq
+        : rect.bottom + oraliq;
+      const top = Math.max(chet, Math.min(xomTop, window.innerHeight - popupHeight - chet));
+      const left = Math.max(chet, Math.min(rect.right - width, window.innerWidth - width - chet));
+
+      setPopupJoylashuvi({ top, left, width });
+    }
+
+    joylashtirish();
+    const frame = window.requestAnimationFrame(joylashtirish);
+    window.addEventListener("resize", joylashtirish);
+    window.addEventListener("scroll", joylashtirish, true);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", joylashtirish);
+      window.removeEventListener("scroll", joylashtirish, true);
+    };
+  }, [open, month]);
 
   const days = useMemo(() => {
     const firstWeekday = (month.getDay() + 6) % 7;
@@ -103,8 +148,17 @@ export default function DateRangePicker({ from, to, onChange, className = "", co
         <CalendarDays size={16} className="shrink-0 opacity-80" />
       </button>
 
-      {open && (
-        <div className="absolute right-0 top-[calc(100%+8px)] z-[1000] w-[min(340px,calc(100vw-24px))] rounded-[24px] border border-orange-100 bg-white p-3 shadow-[0_24px_70px_rgba(15,23,42,.22)]">
+      {open && typeof document !== "undefined" && createPortal(
+        <div
+          ref={popupRef}
+          className="fixed z-[100100] max-h-[calc(100dvh-24px)] overflow-y-auto rounded-[24px] border border-orange-100 bg-white p-3 shadow-[0_24px_70px_rgba(15,23,42,.22)]"
+          style={{
+            top: popupJoylashuvi?.top ?? 0,
+            left: popupJoylashuvi?.left ?? 0,
+            width: popupJoylashuvi?.width ?? Math.min(340, window.innerWidth - 24),
+            visibility: popupJoylashuvi ? "visible" : "hidden",
+          }}
+        >
           <div className="flex items-center justify-between px-1 pb-2">
             <button type="button" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="grid h-9 w-9 place-items-center rounded-xl text-slate-500 hover:bg-orange-50 hover:text-orange-600"><ChevronLeft size={18}/></button>
             <strong className="text-sm font-black capitalize text-slate-800">{new Intl.DateTimeFormat("uz-UZ", { month: "long", year: "numeric" }).format(month)}</strong>
@@ -131,7 +185,8 @@ export default function DateRangePicker({ from, to, onChange, className = "", co
             <div className="rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-500">Gacha: <span className="text-slate-800">{display(draftTo) || "—"}</span></div>
           </div>
           <button type="button" onClick={() => { onChange(draftFrom, draftTo || draftFrom); setOpen(false); }} className="mt-2 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-orange-500 text-sm font-black text-white hover:bg-orange-600"><Check size={16}/> Qo‘llash</button>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

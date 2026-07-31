@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Eye, ReceiptText, RotateCcw } from "lucide-react";
+import { ReceiptText, RotateCcw } from "lucide-react";
 import type { Qaytarish, Sotuv } from "@/types/savdo";
 import {
   masulNomi,
@@ -202,19 +202,8 @@ export default function SotuvlarJadvali({
                     {telefonRaqam(sotuv)}
                   </td>
                   {tarixKorinish && (
-                    <td className="border-b border-gray-100 px-4 py-3.5">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onSotuvniOchish(sotuv);
-                          }}
-                          className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-orange-50 px-3 text-xs font-black text-orange-600 transition hover:bg-orange-500 hover:text-white"
-                        >
-                          <Eye size={14} />
-                          Batafsil
-                        </button>
+                    <td className="border-b border-gray-100 px-4 py-3.5 text-right align-middle">
+                      <div className="flex items-center justify-end">
                         <button
                           type="button"
                           disabled={stat.holat === "FULLY_RETURNED" || !onQaytarish}

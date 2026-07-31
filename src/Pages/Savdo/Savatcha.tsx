@@ -254,7 +254,7 @@ export default function Savatcha({
         <div className="flex flex-col gap-4 border-b border-orange-100/80 px-6 py-6 lg:flex-row lg:items-start lg:justify-between xl:px-10">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-500">Savdo</p>
-            <h1 className="mt-1 text-2xl font-black text-slate-950">Qoralamalar</h1>
+            <h1 className="savdo-section-title mt-1">Qoralamalar</h1>
             <p className="mt-1 text-sm font-semibold text-slate-400">
               Qoralama saqlanganda ombor va kassa o'zgarmaydi. To'lovdan keyin savdoga aylanadi.
             </p>

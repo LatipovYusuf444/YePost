@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Eye, LoaderCircle, RotateCcw } from "lucide-react";
+import { LoaderCircle, RotateCcw } from "lucide-react";
 import type {
   Qaytarish as QaytarishTuri,
   QaytarishSababi,
@@ -55,8 +55,6 @@ export default function Qaytarish({
   amalBajarilmoqda,
   onSotuvTafsilotiniOlish,
   onYaratish,
-  onTasdiqlash,
-  onBekorQilish,
 }: QaytarishProps) {
   const qaytarishMumkinSotuvlar = useMemo(
     () =>
@@ -203,7 +201,6 @@ export default function Qaytarish({
                 <th className="px-5 py-4">Summa</th>
                 <th className="px-5 py-4">Sana</th>
                 <th className="px-5 py-4">Holati</th>
-                <th className="px-5 py-4 text-right">Amallar</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-orange-100/70">
@@ -239,41 +236,12 @@ export default function Qaytarish({
                         {holatniOzbekcha(holat)}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={(event) => { event.stopPropagation(); setTanlanganId(qaytarish.id); }}
-                          className="inline-flex items-center gap-1 rounded-xl bg-orange-50 px-3 py-2 text-xs font-bold text-orange-600"
-                        >
-                          <Eye size={14} />
-                          Ko'rish
-                        </button>
-                        {holat === "DRAFT" && (
-                          <>
-                            <button
-                              disabled={amalBajarilmoqda}
-                              onClick={(event) => { event.stopPropagation(); void onBekorQilish(qaytarish.id); }}
-                              className="rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-600"
-                            >
-                              Bekor qilish
-                            </button>
-                            <button
-                              disabled={amalBajarilmoqda}
-                              onClick={(event) => { event.stopPropagation(); void onTasdiqlash(qaytarish.id); }}
-                              className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white"
-                            >
-                              Tasdiqlash
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
                   </tr>
                 );
               })}
               {qaytarishlar.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-16 text-center text-gray-400">
+                  <td colSpan={6} className="px-6 py-16 text-center text-gray-400">
                     Qaytarish hujjatlari mavjud emas
                   </td>
                 </tr>

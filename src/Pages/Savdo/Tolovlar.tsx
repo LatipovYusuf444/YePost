@@ -92,7 +92,7 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
       <div className="flex flex-col gap-4 border-b border-orange-100/80 pb-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-500">Savdo</p>
-          <h1 className="mt-1 text-2xl font-black text-slate-950">To'lovlar</h1>
+          <h1 className="savdo-section-title mt-1">To'lovlar</h1>
           <p className="mt-1 text-sm font-semibold text-slate-400">
             Sotuv, qaytarim, kassa kirimi va xarajatlar real backenddan olinadi.
           </p>

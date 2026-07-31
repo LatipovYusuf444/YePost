@@ -37,7 +37,7 @@ export default function Qarzdorliklar({ sotuvlar, onSotuvniOchish, onYangilash }
       <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[.2em] text-orange-500"><CircleDollarSign size={17}/> Savdo nazorati</p>
-          <h1 className="mt-2 text-3xl font-black text-slate-950">Qarzdorliklar</h1>
+          <h1 className="savdo-section-title mt-2">Qarzdorliklar</h1>
           <p className="mt-2 text-sm font-semibold text-slate-500">Tasdiqlangan savdolardagi to'lanmagan qoldiqlar real backenddan olinadi.</p>
         </div>
         <button onClick={() => void yangilash()} disabled={yangilanmoqda} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-lg shadow-orange-200 hover:bg-orange-600 disabled:opacity-60">

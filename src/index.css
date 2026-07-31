@@ -96,7 +96,195 @@ body {
     sans-serif;
 }
 
+/* Saytdagi barcha asosiy sarlavhalar bir xil shriftda ko'rinadi. */
+h1 {
+  font-family: "Geist Variable", Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+/* Barcha modal va qator tafsilotlaridagi katta tipografiyani ixcham saqlaydi. */
+.app-modal-compact {
+  font-family: "Geist Variable", Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.app-modal-compact h1,
+.app-modal-compact h2 {
+  font-family: inherit;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.app-modal-compact h3 {
+  font-family: inherit;
+  font-size: 16px !important;
+  line-height: 1.4 !important;
+}
+
+.app-modal-compact [class~="text-base"] {
+  font-size: 15px !important;
+}
+
+.app-modal-compact [class~="text-lg"] {
+  font-size: 17px !important;
+}
+
+.app-modal-compact [class~="text-xl"] {
+  font-size: 19px !important;
+}
+
+.app-modal-compact [class~="text-2xl"] {
+  font-size: 24px !important;
+  line-height: 1.3 !important;
+}
+
+.app-modal-compact [class~="text-3xl"],
+.app-modal-compact [class~="sm:text-3xl"],
+.app-modal-compact [class*="text-[30px]"],
+.app-modal-compact [class*="text-[36px]"],
+.app-modal-compact [class*="text-[38px]"] {
+  font-size: 26px !important;
+  line-height: 1.25 !important;
+}
+
+.app-modal-compact [class~="text-4xl"],
+.app-modal-compact [class~="sm:text-4xl"] {
+  font-size: 32px !important;
+  line-height: 1.2 !important;
+}
+
+.app-modal-compact [class~="text-5xl"],
+.app-modal-compact [class~="sm:text-5xl"],
+.app-modal-compact [class~="text-6xl"],
+.app-modal-compact [class~="sm:text-6xl"] {
+  font-size: 34px !important;
+  line-height: 1.15 !important;
+}
+
+/* Modal kartalarida ortiqcha bo'sh joylarni kamaytiradi. */
+.app-modal-compact [class~="p-8"],
+.app-modal-compact [class~="sm:p-8"] {
+  padding: 20px !important;
+}
+
+.app-modal-compact [class~="p-7"],
+.app-modal-compact [class~="sm:p-7"],
+.app-modal-compact [class~="p-6"],
+.app-modal-compact [class~="sm:p-6"] {
+  padding: 18px !important;
+}
+
+.app-modal-compact [class~="px-8"],
+.app-modal-compact [class~="sm:px-8"] {
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+}
+
+.app-modal-compact [class~="py-8"],
+.app-modal-compact [class~="sm:py-8"] {
+  padding-top: 20px !important;
+  padding-bottom: 20px !important;
+}
+
+.app-modal-compact [class~="gap-6"] {
+  gap: 18px !important;
+}
+
+.app-modal-compact [class~="gap-5"] {
+  gap: 16px !important;
+}
+
+.app-modal-compact [class~="mt-6"] {
+  margin-top: 18px !important;
+}
+
+.app-modal-compact [class~="mt-5"] {
+  margin-top: 16px !important;
+}
+
+.app-modal-compact [class~="min-h-48"] {
+  min-height: 128px !important;
+}
+
+.app-modal-compact [class~="min-h-40"] {
+  min-height: 112px !important;
+}
+
+.app-modal-compact [class*="rounded-[28px]"],
+.app-modal-compact [class*="rounded-[30px]"],
+.app-modal-compact [class*="rounded-[32px]"],
+.app-modal-compact [class*="rounded-[34px]"] {
+  border-radius: 22px !important;
+}
+
+/* Eski va yangi modal action-rail'larini bir xil o'lcham va joylashuvda ushlaydi. */
+.app-modal-compact [class*="-left-"][class*="flex-col"]:not([data-modal-action-rail]) {
+  left: -58px !important;
+  top: 24px !important;
+  gap: 10px !important;
+}
+
+.app-modal-compact [class*="-left-"][class*="flex-col"]:not([data-modal-action-rail]) > button {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 16px !important;
+}
+
+.app-modal-compact[data-generated-action-rail="true"] > button[class*="-left-"],
+.app-modal-compact[data-generated-action-rail="true"] > div > button[class*="-left-"] {
+  display: none !important;
+}
+
+/* Barcha sahifa va modallardagi jadvallar uchun yagona tipografiya. */
+table {
+  font-family: "Geist Variable", Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+
+table thead th {
+  font-family: inherit;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  line-height: 1.35;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: #ea580c !important;
+}
+
+table tbody,
+table tbody td {
+  font-family: inherit;
+  font-size: 13px !important;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #475569;
+}
+
+table button,
+table input,
+table select,
+table textarea {
+  font-family: inherit;
+}
+
 /* Savdo bo'limining barcha tablarida jadval tipografiyasi yagona ko'rinishda. */
+.savdo-section-title {
+  font-family: "Geist Variable", Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  color: #262626;
+}
+
 .savdo-table-typography table {
   font-family: "Geist Variable", Inter, ui-sans-serif, system-ui, sans-serif;
   font-size: 13px;

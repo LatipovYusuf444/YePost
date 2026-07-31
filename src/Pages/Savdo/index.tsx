@@ -267,7 +267,7 @@ export default function Savdo() {
           {!["tolovlar", "qarzdorliklar", "qaytarish", "savatcha", "bekor-qilingan"].includes(faolTab) && (
             <section className="overflow-hidden rounded-[30px] border border-gray-100 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
               <div className="border-b border-gray-100 px-10 py-7">
-                <h1 className="text-[22px] font-medium text-[#262626]">{sahifaSarlavhasi}</h1>
+                <h1 className="savdo-section-title">{sahifaSarlavhasi}</h1>
               </div>
 
               <div className="flex flex-col gap-4 px-10 py-6 lg:flex-row lg:items-center lg:justify-between">

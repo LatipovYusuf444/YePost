@@ -174,8 +174,7 @@ export default function Xaridlar() {
     <div className="space-y-5">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-500">Ombor</p>
-          <h1 className="mt-1 text-3xl font-black text-gray-950">Kirim</h1>
+          <h1 className="text-3xl font-black text-gray-950">Kirim</h1>
           <p className="mt-1 text-sm text-gray-500">Omborga tovar kirim qilish hujjatlari.</p>
         </div>
         <button
