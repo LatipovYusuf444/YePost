@@ -9,12 +9,14 @@ import {
   Settings,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { chiqimApi, kirimApi } from "@/api/omborApi";
 import { useOmborStore } from "@/store/omborStore";
-import type { ChiqimHujjati, KirimHujjati } from "@/types/ombor";
 import InventoryHujjatModal, { type InventoryHujjatTuri } from "./InventoryHujjatModal";
 import { hujjatRaqami, pul, sana } from "./omborYordamchilari";
 import OmborJadval from "./OmborJadval";
+import {
+  getInventoryRealizationDate,
+  isCompletedInventoryDocument,
+} from "./inventoryRealization";
 
 type HujjatTuri = "Kirim" | "Chiqim" | "Ko'chirish" | "Inventarizatsiya";
 
@@ -25,7 +27,7 @@ type JadvalQatori = {
   ombor: string;
   masul: string;
   status: string;
-  createdAt?: string;
+  realizationDate?: string;
   summa?: number;
 };
 
@@ -119,7 +121,7 @@ function Status({ value }: { value: string }) {
 export default function AmalgaOshirilganlar() {
   const navigate = useNavigate();
   const store = useOmborStore();
-  const malumotlarniYuklash = store.malumotlarniYuklash;
+  const amalgaOshirilganlarniYuklash = store.amalgaOshirilganlarniYuklash;
   const [qidiruv, setQidiruv] = useState("");
   const [yaratishOchiq, setYaratishOchiq] = useState(false);
   const [sozlamaOchiq, setSozlamaOchiq] = useState(false);
@@ -127,53 +129,13 @@ export default function AmalgaOshirilganlar() {
     id: string;
     tur: InventoryHujjatTuri;
   } | null>(null);
-  const [kirimTafsilotlari, setKirimTafsilotlari] = useState<Record<string, KirimHujjati>>({});
-  const [chiqimTafsilotlari, setChiqimTafsilotlari] = useState<Record<string, ChiqimHujjati>>({});
   const [korinadiganUstunlar, setKorinadiganUstunlar] = useState<UstunKaliti[]>(
     ustunlar.map((ustun) => ustun.kalit)
   );
 
   useEffect(() => {
-    void malumotlarniYuklash();
-  }, [malumotlarniYuklash]);
-
-  useEffect(() => {
-    let faol = true;
-    const kirimlar = store.kirimlar.filter(
-      (item) => String(item.status ?? "DRAFT").toUpperCase() !== "DRAFT"
-    );
-    const chiqimlar = store.chiqimlar.filter(
-      (item) => String(item.status ?? "DRAFT").toUpperCase() !== "DRAFT"
-    );
-
-    async function tafsilotlarniYuklash() {
-      const [kirimNatijalari, chiqimNatijalari] = await Promise.all([
-        Promise.allSettled(kirimlar.map((item) => kirimApi.olish(item.id))),
-        Promise.allSettled(chiqimlar.map((item) => chiqimApi.olish(item.id))),
-      ]);
-      if (!faol) return;
-
-      setKirimTafsilotlari(
-        Object.fromEntries(
-          kirimNatijalari.flatMap((natija) =>
-            natija.status === "fulfilled" && natija.value ? [[natija.value.id, natija.value]] : []
-          )
-        )
-      );
-      setChiqimTafsilotlari(
-        Object.fromEntries(
-          chiqimNatijalari.flatMap((natija) =>
-            natija.status === "fulfilled" && natija.value ? [[natija.value.id, natija.value]] : []
-          )
-        )
-      );
-    }
-
-    if (kirimlar.length || chiqimlar.length) void tafsilotlarniYuklash();
-    return () => {
-      faol = false;
-    };
-  }, [store.chiqimlar, store.kirimlar]);
+    void amalgaOshirilganlarniYuklash();
+  }, [amalgaOshirilganlarniYuklash]);
 
   const omborMap = useMemo(
     () => new Map(store.omborlar.map((ombor) => [String(ombor.id), ombor])),
@@ -187,8 +149,7 @@ export default function AmalgaOshirilganlar() {
   const rows = useMemo<JadvalQatori[]>(
     () =>
       [
-        ...store.kirimlar.map((royxatItem) => {
-          const item = kirimTafsilotlari[royxatItem.id] ?? royxatItem;
+        ...store.kirimlar.map((item) => {
           return {
           id: item.id,
           turi: "Kirim" as const,
@@ -196,12 +157,11 @@ export default function AmalgaOshirilganlar() {
           ombor: omborNomi(item.warehouseId, item.warehouse, omborMap),
           masul: entityNomi(item.responsibleId, item.responsible, xodimMap),
           status: String(item.status ?? "DRAFT"),
-          createdAt: item.createdAt,
+          realizationDate: getInventoryRealizationDate(item, "kirim"),
           summa: kirimSummasi(item.totalAmount, item.total, item.items),
           };
         }),
-        ...store.chiqimlar.map((royxatItem) => {
-          const item = chiqimTafsilotlari[royxatItem.id] ?? royxatItem;
+        ...store.chiqimlar.map((item) => {
           return {
           id: item.id,
           turi: "Chiqim" as const,
@@ -209,7 +169,7 @@ export default function AmalgaOshirilganlar() {
           ombor: omborNomi(item.warehouseId, item.warehouse, omborMap),
           masul: entityNomi(item.responsibleId, item.responsible, xodimMap),
           status: String(item.status ?? "DRAFT"),
-          createdAt: item.createdAt,
+          realizationDate: getInventoryRealizationDate(item, "chiqim"),
           summa: backendSummasi(item.totalAmount, item.total),
           };
         }),
@@ -224,7 +184,7 @@ export default function AmalgaOshirilganlar() {
           )}`,
           masul: entityNomi(item.responsibleId, item.responsible, xodimMap),
           status: String(item.status ?? "DRAFT"),
-          createdAt: item.createdAt,
+          realizationDate: getInventoryRealizationDate(item, "kochirish"),
         })),
         ...store.inventarizatsiyalar.map((item) => ({
           id: item.id,
@@ -233,14 +193,22 @@ export default function AmalgaOshirilganlar() {
           ombor: omborNomi(item.warehouseId, item.warehouse, omborMap),
           masul: entityNomi(item.responsibleId, item.responsible, xodimMap),
           status: String(item.status ?? "DRAFT"),
-          createdAt: item.createdAt,
+          realizationDate: getInventoryRealizationDate(item, "inventarizatsiya"),
         })),
       ]
-        .filter((item) => item.status.toUpperCase() !== "DRAFT")
-        .sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? ""))),
+        .filter((item) => {
+          const turlar: Record<HujjatTuri, InventoryHujjatTuri> = {
+            Kirim: "kirim",
+            Chiqim: "chiqim",
+            "Ko'chirish": "kochirish",
+            Inventarizatsiya: "inventarizatsiya",
+          };
+          return isCompletedInventoryDocument(turlar[item.turi], item.status);
+        })
+        .sort((a, b) =>
+          String(b.realizationDate ?? "").localeCompare(String(a.realizationDate ?? ""))
+        ),
     [
-      chiqimTafsilotlari,
-      kirimTafsilotlari,
       omborMap,
       store.chiqimlar,
       store.inventarizatsiyalar,
@@ -260,7 +228,7 @@ export default function AmalgaOshirilganlar() {
         item.ombor,
         item.masul,
         statusMatni(item.status),
-        sana(item.createdAt),
+        sana(item.realizationDate),
         item.summa == null ? "" : String(item.summa),
       ]
         .join(" ")
@@ -292,7 +260,7 @@ export default function AmalgaOshirilganlar() {
   function katak(item: JadvalQatori, kalit: UstunKaliti) {
     if (kalit === "turi") return item.turi;
     if (kalit === "ombor") return item.ombor;
-    if (kalit === "sana") return sana(item.createdAt);
+    if (kalit === "sana") return sana(item.realizationDate);
     if (kalit === "masul") return item.masul;
     if (kalit === "status") return <Status value={item.status} />;
     return item.summa == null ? "—" : pul(item.summa);
@@ -348,7 +316,7 @@ export default function AmalgaOshirilganlar() {
         </label>
         <button
           type="button"
-          onClick={() => void malumotlarniYuklash()}
+          onClick={() => void amalgaOshirilganlarniYuklash()}
           disabled={store.yuklanmoqda}
           className="inline-flex h-11 items-center justify-center gap-2 self-start rounded-2xl border border-orange-100 bg-white px-4 text-sm font-bold text-orange-600 transition hover:bg-orange-50 disabled:opacity-60 sm:self-auto"
         >

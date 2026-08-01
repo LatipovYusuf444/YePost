@@ -52,6 +52,7 @@ type OmborState = {
   amalBajarilmoqda: boolean;
   xatolik: string | null;
   malumotlarniYuklash: () => Promise<void>;
+  amalgaOshirilganlarniYuklash: () => Promise<void>;
   omborMalumotlariniYuklash: () => Promise<void>;
   kochirishMalumotlariniYuklash: () => Promise<void>;
   qoldiqlarniYuklash: (warehouseId?: string) => Promise<void>;
@@ -200,6 +201,44 @@ export const useOmborStore = create<OmborState>((set, get) => ({
     } catch (error) {
       set({ yuklanmoqda: false, xatolik: getApiErrorMessage(error) });
     }
+  },
+
+  amalgaOshirilganlarniYuklash: async () => {
+    if (get().yuklanmoqda) return;
+    set({ yuklanmoqda: true, xatolik: null });
+
+    const natijalar = await Promise.allSettled([
+      kirimApi.royxat(),
+      chiqimApi.royxat(),
+      kochirishApi.royxat(),
+      inventarizatsiyaApi.royxat(),
+      omborlarApi.royxat(),
+      xodimlar(),
+    ] as const);
+
+    const [kirimlar, chiqimlar, kochirishlar, inventarizatsiyalar, omborlar, users] =
+      natijalar;
+    const hujjatXatolari = natijalar.slice(0, 4).filter((natija) => natija.status === "rejected");
+
+    set((state) => ({
+      kirimlar: kirimlar.status === "fulfilled" ? kirimlar.value : state.kirimlar,
+      chiqimlar: chiqimlar.status === "fulfilled" ? chiqimlar.value : state.chiqimlar,
+      kochirishlar:
+        kochirishlar.status === "fulfilled" ? kochirishlar.value : state.kochirishlar,
+      inventarizatsiyalar:
+        inventarizatsiyalar.status === "fulfilled"
+          ? inventarizatsiyalar.value
+          : state.inventarizatsiyalar,
+      omborlar: omborlar.status === "fulfilled" ? omborlar.value : state.omborlar,
+      xodimlar: users.status === "fulfilled" ? users.value : state.xodimlar,
+      yuklanmoqda: false,
+      xatolik:
+        hujjatXatolari.length === 4
+          ? "Amalga oshirilgan hujjatlarni yuklab bo'lmadi. Qayta urinib ko'ring."
+          : hujjatXatolari.length > 0
+            ? "Ayrim hujjatlar yuklanmadi. Mavjud ma'lumotlar ko'rsatildi."
+            : null,
+    }));
   },
 
   omborMalumotlariniYuklash: async () => {
