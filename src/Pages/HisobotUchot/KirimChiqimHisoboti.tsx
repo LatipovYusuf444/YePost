@@ -10,6 +10,7 @@ import KassaAmaliyotModal from "@/Pages/KassaUchot/KassaAmaliyotModal";
 import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali } from "@/Pages/KassaUchot/types";
 import { cashFlowReportApi, type CashFlowReport } from "@/api/reportsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import AppModal from "@/Components/common/AppModal";
 
 // Kirim-chiqim (kassa oboroti) hisoboti — matritsa: kassalar × (Kirim/Chiqim/Qoldiq).
 // Qatorlar: Boshlang'ich qoldiq / Aylanma / Yakuniy qoldiq.
@@ -349,13 +350,9 @@ export default function KirimChiqimHisoboti() {
 
       {/* Aylanma tafsiloti — modal */}
       {aylanmaOchiq && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
-          onClick={() => setAylanmaOchiq(false)}
-        >
+        <AppModal onClose={() => setAylanmaOchiq(false)}>
           <div
             className="flex max-h-[90vh] w-[min(1100px,96vw)] flex-col overflow-hidden rounded-[28px] border border-orange-100 bg-white shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-orange-100 px-6 py-4">
               <h3 className="text-lg font-black text-gray-900">Aylanma tafsiloti</h3>
@@ -378,7 +375,7 @@ export default function KirimChiqimHisoboti() {
               />
             </div>
           </div>
-        </div>
+        </AppModal>
       )}
 
       {/* Hujjat ko'rish — kassa (to'lov) moduli amaliyot modalida ochiladi */}

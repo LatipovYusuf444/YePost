@@ -12,7 +12,6 @@ type AppModalProps = {
 export default function AppModal({ children, className = "", onClose, actionRail = true }: AppModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [railHolati, setRailHolati] = useState<{ top: number; left: number } | null>(null);
-  const [maxsusRailBor, setMaxsusRailBor] = useState(true);
 
   useLayoutEffect(() => {
     if (!actionRail) return;
@@ -22,7 +21,6 @@ export default function AppModal({ children, className = "", onClose, actionRail
     const maxsusRail = overlay.querySelector<HTMLElement>(
       '[class*="-left-"][class*="flex-col"]:not([data-modal-action-rail])'
     );
-    setMaxsusRailBor(Boolean(maxsusRail));
     if (maxsusRail) return;
 
     const panel = Array.from(overlay.children).find(
@@ -33,8 +31,8 @@ export default function AppModal({ children, className = "", onClose, actionRail
 
     function joylashtirish() {
       const rect = modalPanel.getBoundingClientRect();
-      const left = Math.max(10, rect.left - 62);
-      const top = Math.max(12, Math.min(rect.top + 24, window.innerHeight - 238));
+      const left = Math.max(12, rect.left - 50);
+      const top = Math.max(12, Math.min(rect.top + 20, window.innerHeight - 208));
       setRailHolati({ top, left });
     }
 
@@ -93,11 +91,11 @@ export default function AppModal({ children, className = "", onClose, actionRail
   return createPortal(
     <div
       ref={overlayRef}
-      data-generated-action-rail={actionRail && !maxsusRailBor ? "true" : undefined}
+      data-generated-action-rail={actionRail && railHolati ? "true" : undefined}
       className={`app-modal-compact scrollbar-hidden fixed inset-0 z-[99999] flex items-center justify-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm ${className}`}
     >
       {children}
-      {actionRail && !maxsusRailBor && railHolati && (
+      {actionRail && railHolati && (
         <ModalActionRail
           top={railHolati.top}
           left={railHolati.left}

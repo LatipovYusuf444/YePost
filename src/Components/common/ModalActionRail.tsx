@@ -40,7 +40,7 @@ export default function ModalActionRail({ top, left, onClose, onDownload, onOpen
   return (
     <div
       data-modal-action-rail="true"
-      className="app-modal-action-rail fixed z-[100120] flex flex-col items-center gap-2.5"
+      className="app-modal-action-rail fixed z-[100120] flex flex-col items-center gap-2"
       style={{ top, left }}
     >
       {actions.map(({ label, icon: Icon, onClick, close }) => (
@@ -50,13 +50,13 @@ export default function ModalActionRail({ top, left, onClose, onDownload, onOpen
           onClick={onClick}
           title={label}
           aria-label={label}
-          className={`flex h-12 w-12 items-center justify-center rounded-2xl shadow-[0_10px_24px_rgba(15,23,42,.22)] ring-1 ring-white/80 transition duration-200 hover:-translate-x-0.5 hover:scale-105 active:scale-95 ${
+          className={`flex h-10 w-10 items-center justify-center rounded-[14px] shadow-[0_8px_20px_rgba(15,23,42,.2)] ring-1 ring-white/80 transition duration-200 hover:-translate-x-0.5 hover:scale-105 active:scale-95 ${
             close
               ? "bg-[#FF5A00] text-white hover:bg-[#E95200]"
               : "bg-white text-[#FF5A00] hover:bg-orange-50"
           }`}
         >
-          <Icon size={close ? 21 : 19} strokeWidth={2.2} />
+          <Icon size={close ? 18 : 17} strokeWidth={2.2} />
         </button>
       ))}
     </div>

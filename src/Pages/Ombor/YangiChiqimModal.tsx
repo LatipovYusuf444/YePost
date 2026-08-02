@@ -121,7 +121,7 @@ export default function YangiChiqimModal({ onClose }: Props) {
   }
 
   return (
-    <AppModal className="!items-stretch !p-2 sm:!p-4">
+    <AppModal onClose={onClose} className="sidebar-aligned-document-modal items-stretch p-3 sm:p-5">
       <div className="flex min-h-0 w-full flex-col overflow-hidden rounded-[34px] border border-orange-100 bg-[#fff8ef] shadow-[0_28px_90px_rgba(69,35,13,.32)]">
         <header className="flex shrink-0 items-center justify-between border-b border-orange-100 bg-white/80 px-5 py-4 sm:px-8">
           <div className="flex items-center gap-3">
@@ -266,4 +266,3 @@ function SelectField({ label, value, onChange, placeholder, options }: { label: 
 function ActionButton({ children, busy, outline, onClick }: { children: React.ReactNode; busy: boolean; outline?: boolean; onClick: () => void }) {
   return <button type="button" onClick={onClick} disabled={busy} className={`inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-7 text-sm font-black transition disabled:opacity-50 ${outline ? "border border-orange-300 bg-white text-orange-600 hover:bg-orange-50" : "bg-orange-500 text-white shadow-lg shadow-orange-100 hover:bg-orange-600"}`}>{busy && <LoaderCircle size={17} className="animate-spin" />}{children}</button>;
 }
-

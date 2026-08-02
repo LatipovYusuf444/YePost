@@ -112,6 +112,18 @@ h1 {
   line-height: 1.45;
 }
 
+/* Desktop modallar sidebar ustiga chiqmaydi. */
+@media (min-width: 768px) {
+  .app-modal-compact {
+    padding-left: 76px !important;
+  }
+
+  /* To'liq ekranli hujjat modallaridagi !p-* utility sidebar bo'shligini bosib ketmasin. */
+  .app-modal-compact.sidebar-aligned-document-modal {
+    padding: 20px 20px 20px 76px !important;
+  }
+}
+
 .app-modal-compact h1,
 .app-modal-compact h2 {
   font-family: inherit;
@@ -225,20 +237,39 @@ h1 {
 
 /* Eski va yangi modal action-rail'larini bir xil o'lcham va joylashuvda ushlaydi. */
 .app-modal-compact [class*="-left-"][class*="flex-col"]:not([data-modal-action-rail]) {
-  left: -58px !important;
-  top: 24px !important;
-  gap: 10px !important;
+  left: -50px !important;
+  top: 20px !important;
+  gap: 8px !important;
 }
 
 .app-modal-compact [class*="-left-"][class*="flex-col"]:not([data-modal-action-rail]) > button {
-  width: 48px !important;
-  height: 48px !important;
-  border-radius: 16px !important;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 14px !important;
+}
+
+.app-modal-compact [class*="-left-"][class*="flex-col"]:not([data-modal-action-rail]) > button svg {
+  width: 17px !important;
+  height: 17px !important;
 }
 
 .app-modal-compact[data-generated-action-rail="true"] > button[class*="-left-"],
 .app-modal-compact[data-generated-action-rail="true"] > div > button[class*="-left-"] {
   display: none !important;
+}
+
+/* Ichma-ich modal ochilganda faqat eng ustidagi modalning rail'i ko'rinadi. */
+body > .app-modal-compact:has(~ .app-modal-compact) > .app-modal-action-rail,
+body > .app-modal-compact:has(~ .app-modal-compact) > [class*="-left-"][class*="flex-col"],
+body > .app-modal-compact:has(~ .app-modal-compact) > * > [class*="-left-"][class*="flex-col"] {
+  display: none !important;
+}
+
+/* Keng mahsulot modali mavjud kontent maydonini to'liq egallaydi. */
+@media (min-width: 768px) {
+  .product-modal-overlay .product-modal-panel {
+    max-width: none;
+  }
 }
 
 /* Barcha sahifa va modallardagi jadvallar uchun yagona tipografiya. */

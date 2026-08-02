@@ -80,7 +80,7 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
     await qaytaYuklash();
   }
 
-  return <AppModal className="!items-stretch !p-3 sm:!p-5">
+  return <AppModal onClose={onClose} className="sidebar-aligned-document-modal items-stretch p-3 sm:p-5">
     <div className="flex min-h-0 w-full flex-col overflow-hidden rounded-[32px] border border-orange-100 bg-[#fff9f2] shadow-[0_28px_90px_rgba(69,35,13,.34)]">
       <header className="flex shrink-0 flex-col gap-3 border-b border-orange-100 bg-white/75 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
         <div className="flex min-w-0 items-center gap-3">

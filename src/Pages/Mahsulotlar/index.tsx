@@ -791,7 +791,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
     updateVariantDraft(key,{imageUrl:URL.createObjectURL(file)});
   }
 
-  return <AppModal><form onSubmit={save} className="scrollbar-hidden max-h-[94vh] w-full max-w-[min(1500px,calc(100vw-32px))] overflow-y-auto rounded-[30px] bg-white shadow-2xl">
+  return <AppModal className="product-modal-overlay"><form onSubmit={save} className="product-modal-panel scrollbar-hidden max-h-[94vh] w-full overflow-y-auto rounded-[30px] bg-white shadow-2xl">
     <div className="flex items-center justify-between gap-4 border-b border-gray-100 px-6 py-5">
       <div className="flex min-w-0 items-center gap-4">
         <button type="button" onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white"><X size={18}/></button>
@@ -1170,4 +1170,3 @@ function Modal({title,onClose,children,wide=false}:{title:string;onClose:()=>voi
 function Actions({loading,onClose}:{loading:boolean;onClose:()=>void}){return <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">Bekor qilish</button><button disabled={loading} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{loading&&<LoaderCircle size={16} className="animate-spin"/>}Saqlash</button></div>}
 function ErrorBox(){const x=useMahsulotlarStore(s=>s.xatolik);return <div className="rounded-xl bg-red-50 p-3 font-bold text-red-600">{x}</div>}
 function money(value:number|string|undefined){return `${Number(value??0).toLocaleString("uz-UZ")} so'm`}
-

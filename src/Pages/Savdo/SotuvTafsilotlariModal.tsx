@@ -841,7 +841,7 @@ function YukXatiGeneratorModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[140] flex items-start justify-end bg-slate-950/45 px-5 py-5 pl-[380px] backdrop-blur-sm">
+    <div className="app-modal-compact fixed inset-0 z-[140] flex items-start justify-end bg-slate-950/45 px-5 py-5 pl-[380px] backdrop-blur-sm">
       <div className="relative h-[calc(100vh-40px)] w-full max-w-[1120px] overflow-visible rounded-[32px] bg-[#EEF3F6] shadow-[0_30px_90px_rgba(15,23,42,.34)]">
         <div className="absolute -left-[58px] top-4 z-20 flex flex-col items-center gap-2">
           <button
@@ -3698,7 +3698,7 @@ function AloqaKanallariModal({ onClose }: { onClose: () => void }) {
   ];
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-sm">
+    <AppModal onClose={onClose}>
       <div className="animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 max-h-[86vh] w-full max-w-[980px] overflow-hidden rounded-[28px] bg-[#EEF3F7] shadow-[0_30px_90px_rgba(15,23,42,.35)] duration-300">
         <div className="flex items-start justify-between gap-4 border-b border-slate-200/70 bg-white/60 px-6 py-5">
           <div>
@@ -3763,7 +3763,7 @@ function AloqaKanallariModal({ onClose }: { onClose: () => void }) {
           </section>
         </div>
       </div>
-    </div>
+    </AppModal>
   );
 }
 

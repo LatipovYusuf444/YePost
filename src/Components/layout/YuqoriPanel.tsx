@@ -465,7 +465,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[220] flex items-center justify-center bg-slate-950/45 px-5 backdrop-blur-sm">
+    <div className="app-modal-compact fixed inset-0 z-[220] flex items-center justify-center bg-slate-950/45 px-5 backdrop-blur-sm">
       <div className="relative w-full max-w-[1500px]">
         <div className="absolute -left-20 top-7 hidden flex-col gap-3 xl:flex">
           <button
