@@ -2,6 +2,10 @@ import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import ModalActionRail from "./ModalActionRail";
 
+let ochiqModallarSoni = 0;
+let oldingiBodyOverflow = "";
+let oldingiHtmlOverflow = "";
+
 type AppModalProps = {
   children: ReactNode;
   className?: string;
@@ -12,6 +16,24 @@ type AppModalProps = {
 export default function AppModal({ children, className = "", onClose, actionRail = true }: AppModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [railHolati, setRailHolati] = useState<{ top: number; left: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (ochiqModallarSoni === 0) {
+      oldingiBodyOverflow = document.body.style.overflow;
+      oldingiHtmlOverflow = document.documentElement.style.overflow;
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+    }
+    ochiqModallarSoni += 1;
+
+    return () => {
+      ochiqModallarSoni = Math.max(0, ochiqModallarSoni - 1);
+      if (ochiqModallarSoni === 0) {
+        document.body.style.overflow = oldingiBodyOverflow;
+        document.documentElement.style.overflow = oldingiHtmlOverflow;
+      }
+    };
+  }, []);
 
   useLayoutEffect(() => {
     if (!actionRail) return;
@@ -92,7 +114,7 @@ export default function AppModal({ children, className = "", onClose, actionRail
     <div
       ref={overlayRef}
       data-generated-action-rail={actionRail && railHolati ? "true" : undefined}
-      className={`app-modal-compact scrollbar-hidden fixed inset-0 z-[99999] flex items-center justify-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm ${className}`}
+      className={`app-modal-compact fixed inset-0 z-[99999] flex items-center justify-center overflow-hidden overscroll-none bg-black/55 p-4 backdrop-blur-sm ${className}`}
     >
       {children}
       {actionRail && railHolati && (

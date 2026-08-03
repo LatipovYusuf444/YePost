@@ -21,7 +21,7 @@ import {
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
-import { omborlarApi, yetkazibBeruvchiYaratish, yetkazibBeruvchilar as yetkazibBeruvchilarApi } from "@/api/omborApi";
+import { omborlarApi } from "@/api/omborApi";
 import { useMahsulotlarStore } from "@/store/mahsulotlarStore";
 import type {
   Kategoriya,
@@ -29,7 +29,7 @@ import type {
   MahsulotModifikatsiyasi,
   OlchovBirligi,
 } from "@/types/catalog";
-import type { NomliEntity, Ombor } from "@/types/ombor";
+import type { Ombor } from "@/types/ombor";
 
 type Tab = "mahsulotlar" | "kategoriyalar" | "birliklar";
 type Korinish = "kartochka" | "jadval";
@@ -336,15 +336,10 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
   const [baseDraft,setBaseDraft]=useState<VariantDraft>(emptyVariantDraft);
   const [baseStock,setBaseStock]=useState<VariantStockDraft>({open:true,warehouseId:"",quantity:"",minStock:""});
   const [omborlar,setOmborlar]=useState<Ombor[]>([]);
-  const [yetkazibBeruvchilar,setYetkazibBeruvchilar]=useState<NomliEntity[]>([]);
   const [brand,setBrand]=useState("");
   const [brandInput,setBrandInput]=useState("");
   const [savedBrands,setSavedBrands]=useState<string[]>([]);
   const [brandMenuOpen,setBrandMenuOpen]=useState(false);
-  const [supplierId,setSupplierId]=useState("");
-  const [supplierInput,setSupplierInput]=useState("");
-  const [supplierMenuOpen,setSupplierMenuOpen]=useState(false);
-  const [supplierCreating,setSupplierCreating]=useState(false);
   const [categorySearch,setCategorySearch]=useState("");
   const [newCategoryName,setNewCategoryName]=useState("");
   const [categoryCreating,setCategoryCreating]=useState(false);
@@ -400,11 +395,10 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
 
   useEffect(() => {
     let mounted=true;
-    Promise.allSettled([omborlarApi.royxat(), yetkazibBeruvchilarApi()])
-      .then(([omborNatija,yetkazibBeruvchiNatija])=>{
+    Promise.allSettled([omborlarApi.royxat()])
+      .then(([omborNatija])=>{
         if(!mounted)return;
         setOmborlar(omborNatija.status==="fulfilled"?omborNatija.value:[]);
-        setYetkazibBeruvchilar(yetkazibBeruvchiNatija.status==="fulfilled"?yetkazibBeruvchiNatija.value:[]);
       });
     return ()=>{mounted=false};
   }, []);
@@ -439,15 +433,8 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
       return params;
     },{});
     const hasVariantParams=Object.keys(variantParams).length>0;
-    const selectedSupplier=yetkazibBeruvchilar.find((supplier)=>supplier.id===supplierId);
     const characteristicParams:Record<string, unknown>={};
     if(brand.trim())characteristicParams.brand=brand.trim();
-    if(selectedSupplier){
-      characteristicParams.supplierId=selectedSupplier.id;
-      characteristicParams.supplierName=selectedSupplier.name??selectedSupplier.fullName??selectedSupplier.username??selectedSupplier.id;
-    } else if (supplierInput.trim()) {
-      characteristicParams.supplierName=supplierInput.trim();
-    }
     optionalFields.forEach((field)=>{
       const key=field.name.trim();
       const value=field.value.trim();
@@ -588,42 +575,6 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
     setSavedBrands((items)=>Array.from(new Set([...items,clean])));
     setBrandInput(clean);
     setBrandMenuOpen(false);
-  }
-
-  function supplierName(supplier:NomliEntity) {
-    return supplier.name??supplier.fullName??supplier.username??supplier.id;
-  }
-
-  function filteredSuppliers() {
-    const query=supplierInput.trim().toLowerCase();
-    return yetkazibBeruvchilar.filter((supplier)=> {
-      const nameValue=supplierName(supplier);
-      return supplier.id!==supplierId&&(!query||nameValue.toLowerCase().includes(query));
-    });
-  }
-
-  function selectSupplier(supplier:NomliEntity) {
-    setSupplierId(supplier.id);
-    setSupplierInput(supplierName(supplier));
-    setSupplierMenuOpen(false);
-  }
-
-  async function createSupplierFromInput() {
-    const nameValue=supplierInput.trim();
-    if(!nameValue)return;
-    const existing=yetkazibBeruvchilar.find((supplier)=>supplierName(supplier).toLowerCase()===nameValue.toLowerCase());
-    if(existing){
-      selectSupplier(existing);
-      return;
-    }
-    setSupplierCreating(true);
-    try {
-      const created=await yetkazibBeruvchiYaratish({name:nameValue});
-      setYetkazibBeruvchilar((items)=>[created,...items]);
-      selectSupplier(created);
-    } finally {
-      setSupplierCreating(false);
-    }
   }
 
   function addOptionalField() {
@@ -996,7 +947,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
             </div>}
             <div className="space-y-5 pt-2">
               <div className="flex items-center gap-4"><h3 className="text-xl font-black">Xarakteristikalar</h3><div className="h-px flex-1 border-t border-dashed border-gray-200"/></div>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div>
                 <label className="block text-sm font-black text-gray-500">Brend
                   <div className="relative mt-2 space-y-2">
                     <div className="relative">
@@ -1007,18 +958,6 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
                       {filteredBrands().map((item)=><button key={item} type="button" onMouseDown={(e)=>{e.preventDefault();addBrand(item)}} className="block w-full px-5 py-3 text-left text-sm font-black text-gray-600 hover:bg-orange-50 hover:text-orange-600">{item}</button>)}
                     </div>}
                     {brandInput.trim()&&!savedBrands.includes(brandInput.trim())&&<button type="button" onClick={()=>addBrand()} className="flex w-full items-center gap-2 rounded-2xl bg-gray-100 px-4 py-3 text-left text-sm font-black text-gray-600 hover:bg-orange-50 hover:text-orange-600"><Plus size={16}/>Qo'shish "{brandInput.trim()}"</button>}
-                  </div>
-                </label>
-                <label className="block text-sm font-black text-gray-500">Yetkazib beruvchi
-                  <div className="relative mt-2 space-y-2">
-                    <div className="relative">
-                      <input value={supplierInput} onFocus={()=>setSupplierMenuOpen(true)} onChange={(e)=>{setSupplierInput(e.target.value);setSupplierId("");setSupplierMenuOpen(true)}} onKeyDown={(e)=>{if(e.key==="Enter"){e.preventDefault();void createSupplierFromInput()}}} className="input bg-gray-100 pr-12 focus:border-blue-400 focus:ring-blue-100" placeholder="Yetkazib beruvchi kiriting"/>
-                      <ChevronDown size={17} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"/>
-                    </div>
-                    {supplierMenuOpen&&filteredSuppliers().length>0&&<div className="absolute left-0 right-0 top-[52px] z-30 overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-gray-100">
-                      {filteredSuppliers().map((supplier)=><button key={supplier.id} type="button" onMouseDown={(e)=>{e.preventDefault();selectSupplier(supplier)}} className="block w-full px-5 py-3 text-left text-sm font-black text-gray-600 hover:bg-orange-50 hover:text-orange-600">{supplierName(supplier)}</button>)}
-                    </div>}
-                    {supplierInput.trim()&&!yetkazibBeruvchilar.some((supplier)=>supplierName(supplier).toLowerCase()===supplierInput.trim().toLowerCase())&&<button type="button" disabled={supplierCreating} onClick={()=>void createSupplierFromInput()} className="flex w-full items-center gap-2 rounded-2xl bg-gray-100 px-4 py-3 text-left text-sm font-black text-gray-600 disabled:opacity-50 hover:bg-orange-50 hover:text-orange-600">{supplierCreating?<LoaderCircle size={16} className="animate-spin"/>:<Plus size={16}/>}Qo'shish "{supplierInput.trim()}"</button>}
                   </div>
                 </label>
               </div>
