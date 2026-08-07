@@ -334,6 +334,11 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
     try {
       const yangilangan = await sotuvniTasdiqlash(sotuvId);
       const boyitilgan = sotuvniBoglanganMalumotlarBilanBoyitish(yangilangan, get());
+      const warehouseId =
+        yangilangan.warehouseId ?? get().sotuvlar.find((sotuv) => sotuv.id === sotuvId)?.warehouseId;
+      if (warehouseId) {
+        await get().qoldiqlarniYuklash(warehouseId);
+      }
       set((state) => ({
         sotuvlar: state.sotuvlar.map((sotuv) =>
           sotuv.id === sotuvId ? boyitilgan : sotuv
@@ -374,6 +379,11 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
     try {
       const yangilangan = await sotuvniBekorQilish(sotuvId);
       const boyitilgan = sotuvniBoglanganMalumotlarBilanBoyitish(yangilangan, get());
+      const warehouseId =
+        yangilangan.warehouseId ?? get().sotuvlar.find((sotuv) => sotuv.id === sotuvId)?.warehouseId;
+      if (warehouseId) {
+        await get().qoldiqlarniYuklash(warehouseId);
+      }
       set((state) => ({
         sotuvlar: state.sotuvlar.map((sotuv) =>
           sotuv.id === sotuvId ? boyitilgan : sotuv

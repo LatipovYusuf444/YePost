@@ -15,6 +15,7 @@ import {
   yetkazibBeruvchilar,
 } from "@/api/omborApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { qaytarishlarRoyxatiniOlish, sotuvlarRoyxatiniOlish } from "@/api/savdoApi";
 import type {
   ChiqimHujjati,
   ChiqimYaratishMalumoti,
@@ -34,6 +35,7 @@ import type {
   OmborQoldigi,
   OmborSaqlashMalumoti,
 } from "@/types/ombor";
+import type { Qaytarish, Sotuv } from "@/types/savdo";
 
 type OmborState = {
   kompaniyalar: Kompaniya[];
@@ -43,6 +45,8 @@ type OmborState = {
   chiqimlar: ChiqimHujjati[];
   kochirishlar: KochirishHujjati[];
   inventarizatsiyalar: InventarizatsiyaHujjati[];
+  sotuvlar: Sotuv[];
+  qaytarishlar: Qaytarish[];
   qoldiqlar: OmborQoldigi[];
   modifikatsiyalar: MahsulotModifikatsiyasi[];
   yetkazibBeruvchilar: NomliEntity[];
@@ -147,6 +151,8 @@ export const useOmborStore = create<OmborState>((set, get) => ({
   chiqimlar: [],
   kochirishlar: [],
   inventarizatsiyalar: [],
+  sotuvlar: [],
+  qaytarishlar: [],
   qoldiqlar: [],
   modifikatsiyalar: [],
   yetkazibBeruvchilar: [],
@@ -212,13 +218,23 @@ export const useOmborStore = create<OmborState>((set, get) => ({
       chiqimApi.royxat(),
       kochirishApi.royxat(),
       inventarizatsiyaApi.royxat(),
+      sotuvlarRoyxatiniOlish(),
+      qaytarishlarRoyxatiniOlish(),
       omborlarApi.royxat(),
       xodimlar(),
     ] as const);
 
-    const [kirimlar, chiqimlar, kochirishlar, inventarizatsiyalar, omborlar, users] =
-      natijalar;
-    const hujjatXatolari = natijalar.slice(0, 4).filter((natija) => natija.status === "rejected");
+    const [
+      kirimlar,
+      chiqimlar,
+      kochirishlar,
+      inventarizatsiyalar,
+      sotuvlar,
+      qaytarishlar,
+      omborlar,
+      users,
+    ] = natijalar;
+    const hujjatXatolari = natijalar.slice(0, 6).filter((natija) => natija.status === "rejected");
 
     set((state) => ({
       kirimlar: kirimlar.status === "fulfilled" ? kirimlar.value : state.kirimlar,
@@ -229,11 +245,14 @@ export const useOmborStore = create<OmborState>((set, get) => ({
         inventarizatsiyalar.status === "fulfilled"
           ? inventarizatsiyalar.value
           : state.inventarizatsiyalar,
+      sotuvlar: sotuvlar.status === "fulfilled" ? sotuvlar.value : state.sotuvlar,
+      qaytarishlar:
+        qaytarishlar.status === "fulfilled" ? qaytarishlar.value : state.qaytarishlar,
       omborlar: omborlar.status === "fulfilled" ? omborlar.value : state.omborlar,
       xodimlar: users.status === "fulfilled" ? users.value : state.xodimlar,
       yuklanmoqda: false,
       xatolik:
-        hujjatXatolari.length === 4
+        hujjatXatolari.length === 6
           ? "Amalga oshirilgan hujjatlarni yuklab bo'lmadi. Qayta urinib ko'ring."
           : hujjatXatolari.length > 0
             ? "Ayrim hujjatlar yuklanmadi. Mavjud ma'lumotlar ko'rsatildi."

@@ -157,6 +157,8 @@ export type QaytarishMahsuloti = {
 
 export type Qaytarish = {
   id: string;
+  documentNumber?: string;
+  number?: string;
   saleId: string;
   warehouseId: string;
   reason?: QaytarishSababi | string;
@@ -170,6 +172,7 @@ export type Qaytarish = {
   refundAmount?: number | string;
   createdAt?: string;
   updatedAt?: string;
+  confirmedAt?: string;
   sale?: Sotuv;
   warehouse?: NomliMalumot;
   responsible?: NomliMalumot;
