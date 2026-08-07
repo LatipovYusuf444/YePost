@@ -21,7 +21,7 @@ import {
   sotuvYaratish,
   xodimlarRoyxatiniOlish,
 } from "@/api/savdoApi";
-import { xarajatApi } from "@/api/financeApi";
+import { cashOperationsApi } from "@/api/cashOperationsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type {
   MijozTanlovi,
@@ -34,13 +34,9 @@ import type {
   SotuvYaratishMalumoti,
   XodimTanlovi,
 } from "@/types/savdo";
-import type { TolovUsuli } from "@/types/finance";
+import type { CashPaymentMethod } from "@/types/cashOperation";
 
-const kassagaYoziladiganTolovUsullari = new Set(["CASH", "CARD", "BANK"]);
-
-function bugungiSana() {
-  return new Date().toISOString();
-}
+const kassagaYoziladiganTolovUsullari = new Set(["CASH", "CARD"]);
 
 async function qaytarishToloviniKassagaYozish(qaytarish: Qaytarish) {
   const refundMethod = String(qaytarish.refundMethod ?? "CASH").toUpperCase();
@@ -58,13 +54,17 @@ async function qaytarishToloviniKassagaYozish(qaytarish: Qaytarish) {
   );
   if (summa <= 0) return;
 
-  await xarajatApi.yaratish({
-    date: bugungiSana(),
-    category: "OTHER",
+  // POST /finance/expenses eskirgan (Swagger: "o'rniga POST /finance/cash-operations
+  // ishlating"). Yaratilgan operatsiya qoralama holatida keladi, shu uchun kassa
+  // hisobotlarida (masalan /reports/cash-flow) ko'rinishi uchun darhol tasdiqlanadi.
+  const operatsiya = await cashOperationsApi.yaratish({
+    type: "CUSTOMER_REFUND",
     amount: summa,
-    paymentMethod: refundMethod as TolovUsuli,
+    paymentMethod: refundMethod as CashPaymentMethod,
+    date: new Date().toISOString(),
+    saleId: qaytarish.saleId || undefined,
+    name: "Sotuv qaytarimi",
     note: [
-      "Sotuv qaytarimi",
       `Qaytarish ID: ${qaytarish.id}`,
       qaytarish.saleId ? `Sotuv ID: ${qaytarish.saleId}` : "",
       qaytarish.reason ? `Sabab: ${qaytarish.reason}` : "",
@@ -72,6 +72,7 @@ async function qaytarishToloviniKassagaYozish(qaytarish: Qaytarish) {
       .filter(Boolean)
       .join(" | "),
   });
+  await cashOperationsApi.tasdiqlash(operatsiya.id);
 }
 
 function qoldiqlarniKatalogBilanBirlashtirish(

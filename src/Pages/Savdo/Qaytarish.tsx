@@ -55,6 +55,7 @@ export default function Qaytarish({
   amalBajarilmoqda,
   onSotuvTafsilotiniOlish,
   onYaratish,
+  onTasdiqlash,
 }: QaytarishProps) {
   const qaytarishMumkinSotuvlar = useMemo(
     () =>
@@ -115,7 +116,7 @@ export default function Qaytarish({
       return;
     }
 
-    const muvaffaqiyatli = await onYaratish({
+    const yaratilganQaytarish = await onYaratish({
       saleId: toliqSotuv.id,
       warehouseId,
       responsibleId: toliqSotuv.responsibleId,
@@ -124,11 +125,19 @@ export default function Qaytarish({
       items,
     });
 
-    if (muvaffaqiyatli) {
-      setSaleId("");
-      setReason("OTHER");
-      setNote("");
+    if (!yaratilganQaytarish) return;
+
+    const tasdiqlandi = await onTasdiqlash(yaratilganQaytarish.id);
+    if (!tasdiqlandi) {
+      setXatolik(
+        "Qaytarish yaratildi, lekin tasdiqlashda xatolik yuz berdi. Ro'yxatdan qaytarishni tanlab qayta tasdiqlang."
+      );
+      return;
     }
+
+    setSaleId("");
+    setReason("OTHER");
+    setNote("");
   }
 
   return (

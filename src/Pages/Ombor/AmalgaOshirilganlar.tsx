@@ -12,7 +12,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useOmborStore } from "@/store/omborStore";
 import { useSavdoStore } from "@/store/savdoStore";
-import type { Sotuv } from "@/types/savdo";
+import type { Sotuv, SotuvTolovi } from "@/types/savdo";
 import {
   qaytarishSummasi,
   sotuvHolati,
@@ -366,6 +366,17 @@ export default function AmalgaOshirilganlar() {
     void savdo.sotuvTafsilotiniYuklash(sotuvId);
   }
 
+  async function realizatsiyaTolovQoshish(
+    sotuvId: string,
+    tolov: Pick<SotuvTolovi, "paymentType" | "amount">
+  ) {
+    const muvaffaqiyatli = await savdo.sotuvgaTolovQoshish(sotuvId, tolov);
+    if (muvaffaqiyatli) {
+      void amalgaOshirilganlarniYuklash();
+    }
+    return muvaffaqiyatli;
+  }
+
   async function realizatsiyaTasdiqlash(sotuvId: string) {
     const muvaffaqiyatli = await savdo.sotuvniTasdiqlash(sotuvId);
     if (muvaffaqiyatli) {
@@ -660,7 +671,7 @@ export default function AmalgaOshirilganlar() {
           amalBajarilmoqda={savdo.amalBajarilmoqda}
           onYopish={savdo.tanlanganSotuvniTozalash}
           onYangilash={savdo.sotuvniYangilash}
-          onTolovQoshish={savdo.sotuvgaTolovQoshish}
+          onTolovQoshish={realizatsiyaTolovQoshish}
           onTasdiqlash={realizatsiyaTasdiqlash}
           onBekorQilish={realizatsiyaBekorQilish}
         />

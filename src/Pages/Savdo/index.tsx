@@ -8,9 +8,11 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
+import { sotuvTafsilotiniOlish } from "@/api/savdoApi";
 import { useSavdoStore } from "@/store/savdoStore";
 import type { Sotuv, SotuvHolati, SotuvYaratishMalumoti, TolovTuri } from "@/types/savdo";
 import BekorQilinganlar from "./BekorQilinganlar";
+import MahsulotQaytarishModal from "./MahsulotQaytarishModal";
 import Qaytarish from "./Qaytarish";
 import Savatcha from "./Savatcha";
 import SotuvlarJadvali from "./SotuvlarJadvali";
@@ -84,7 +86,7 @@ export default function Savdo() {
     tanlanganSotuvniTozalash,
     xatolikniTozalash,
   } = useSavdoStore();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [qidiruv, setQidiruv] = useState("");
   const [sanaDan, setSanaDan] = useState(() => new Date().toISOString().slice(0, 10));
   const [sanaGacha, setSanaGacha] = useState(() => new Date().toISOString().slice(0, 10));
@@ -92,7 +94,7 @@ export default function Savdo() {
   const [tolovFilteri, setTolovFilteri] = useState<TolovTuri | "barchasi">("barchasi");
   const [yangiSotuvOchiq, setYangiSotuvOchiq] = useState(false);
   const [yangiSotuvVarianti, setYangiSotuvVarianti] = useState<"sale" | "draft">("sale");
-  const [qaytariladiganSotuvId, setQaytariladiganSotuvId] = useState("");
+  const [qaytarishModalSotuv, setQaytarishModalSotuv] = useState<Sotuv | null>(null);
   const [xabar, setXabar] = useState("");
 
   const urlTab = searchParams.get("tab") as SavdoTabi | null;
@@ -173,8 +175,12 @@ export default function Savdo() {
   }
 
   async function mahsulotQaytarishniOchish(sotuv: Sotuv) {
-    setQaytariladiganSotuvId(sotuv.id);
-    setSearchParams({ tab: "qaytarish" });
+    try {
+      const toliqSotuv = await sotuvTafsilotiniOlish(sotuv.id);
+      setQaytarishModalSotuv(toliqSotuv);
+    } catch {
+      setQaytarishModalSotuv(sotuv);
+    }
   }
 
   async function yangiSotuvniSaqlash(malumot: SotuvYaratishMalumoti) {
@@ -373,7 +379,6 @@ export default function Savdo() {
             <Qaytarish
               sotuvlar={sotuvlar}
               qaytarishlar={qaytarishlar}
-              boshlangichSotuvId={qaytariladiganSotuvId}
               amalBajarilmoqda={amalBajarilmoqda}
               onSotuvTafsilotiniOlish={sotuvTafsilotiniYuklash}
               onYaratish={yangiQaytarishYaratish}
@@ -430,6 +435,17 @@ export default function Savdo() {
         />
       )}
 
+      {qaytarishModalSotuv && (
+        <MahsulotQaytarishModal
+          sotuv={qaytarishModalSotuv}
+          qaytarishlar={qaytarishlar}
+          amalBajarilmoqda={amalBajarilmoqda}
+          onYopish={() => setQaytarishModalSotuv(null)}
+          onYaratish={yangiQaytarishYaratish}
+          onTasdiqlash={qaytarishniTasdiqlash}
+          onMuvaffaqiyat={() => setXabar("Qaytarish tasdiqlandi. Ombor qoldig'i yangilandi.")}
+        />
+      )}
     </div>
   );
 }
