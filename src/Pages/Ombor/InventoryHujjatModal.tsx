@@ -12,7 +12,6 @@ import {
   Save,
   Send,
   Trash2,
-  X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
@@ -342,6 +341,17 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
     if (yangilangan) setHujjat(yangilangan);
   }
 
+  async function inventarizatsiyaniBekorQilish() {
+    if (tur !== "inventarizatsiya" || !hujjat || hujjatHolati(hujjat) !== "CONFIRMED") return;
+    if (!window.confirm("Tasdiqlangan inventarizatsiyani bekor qilasizmi? Ombor qoldiqlari qayta hisoblanadi.")) return;
+    setValidatsiyaXatosi("");
+    store.xatolikniTozalash();
+    const ok = await store.inventarizatsiyaBekorQilish(id);
+    if (!ok) return;
+    const yangilangan = await store.inventarizatsiyaOlish(id);
+    if (yangilangan) setHujjat(yangilangan);
+  }
+
   async function kochirishHolatiniYangilash(amal: "send" | "receive" | "cancel") {
     if (tur !== "kochirish" || !hujjat) return;
     setValidatsiyaXatosi("");
@@ -360,7 +370,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
   const qoralama = hujjatHolati(hujjat) === "DRAFT";
 
   return (
-    <AppModal>
+    <AppModal onClose={onClose}>
       <div className="scrollbar-hidden max-h-[95vh] w-full max-w-[1500px] overflow-y-auto rounded-[36px] border border-orange-100 bg-[#fff8ef] shadow-[0_30px_100px_rgba(15,23,42,.28)]">
         <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-orange-100 bg-[#fffaf5]/95 px-7 py-5 backdrop-blur-xl">
           <div className="flex items-start gap-3">
@@ -432,14 +442,6 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                 <Edit3 size={18} /> Tahrirlash
               </button>
             )}
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600"
-              aria-label="Yopish"
-            >
-              <X size={22} />
-            </button>
           </div>
         </header>
 
@@ -721,6 +723,21 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                 </div>
 
                 <div className="mt-6 flex justify-end gap-3">
+                  {hujjatHolati(hujjat) === "CONFIRMED" && tur === "inventarizatsiya" && (
+                    <button
+                      type="button"
+                      onClick={() => void inventarizatsiyaniBekorQilish()}
+                      disabled={store.amalBajarilmoqda}
+                      className="inline-flex h-12 items-center gap-2 rounded-2xl bg-red-500 px-6 font-black text-white shadow-lg shadow-red-100 transition hover:bg-red-600 disabled:opacity-50"
+                    >
+                      {store.amalBajarilmoqda ? (
+                        <LoaderCircle size={18} className="animate-spin" />
+                      ) : (
+                        <Ban size={18} />
+                      )}
+                      Bekor qilish
+                    </button>
+                  )}
                   {qoralama && tur === "inventarizatsiya" && (
                     <button
                       type="button"
@@ -992,4 +1009,3 @@ function Malumot({ nom, qiymat }: { nom: string; qiymat: string }) {
     </div>
   );
 }
-

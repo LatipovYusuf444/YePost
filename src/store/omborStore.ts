@@ -95,6 +95,7 @@ type OmborState = {
   inventarizatsiyaOlish: (id: string) => Promise<InventarizatsiyaHujjati | null>;
   inventarizatsiyaYangilash: (id: string, data: Partial<InventarizatsiyaYaratishMalumoti>) => Promise<boolean>;
   inventarizatsiyaTasdiqlash: (id: string) => Promise<boolean>;
+  inventarizatsiyaBekorQilish: (id: string) => Promise<boolean>;
   xatolikniTozalash: () => void;
 };
 
@@ -773,6 +774,23 @@ export const useOmborStore = create<OmborState>((set, get) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const hujjat = await inventarizatsiyaApi.tasdiqlash(id);
+      const { omborlar, modifikatsiyalar } = get();
+      const qoldiqlar = qoldiqlarniBoglash(await omborQoldiqlari(), omborlar, modifikatsiyalar);
+      set((state) => ({
+        inventarizatsiyalar: hujjatniAlmashtirish(state.inventarizatsiyalar, hujjat),
+        qoldiqlar,
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+  inventarizatsiyaBekorQilish: async (id) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const hujjat = await inventarizatsiyaApi.bekorQilish(id);
       const { omborlar, modifikatsiyalar } = get();
       const qoldiqlar = qoldiqlarniBoglash(await omborQoldiqlari(), omborlar, modifikatsiyalar);
       set((state) => ({

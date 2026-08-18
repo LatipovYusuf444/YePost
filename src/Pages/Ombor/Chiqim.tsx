@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
-  Ban,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   FileText,
@@ -9,9 +8,7 @@ import {
   Plus,
   Search,
   Settings,
-  Trash2,
 } from "lucide-react";
-import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
 import type {
   ChiqimHujjati,
@@ -68,7 +65,6 @@ export default function Chiqim() {
   const [qidiruv, setQidiruv] = useState("");
   const [modal, setModal] = useState(false);
   const [tanlanganId, setTanlanganId] = useState<string | null>(null);
-  const [bekorSorash, setBekorSorash] = useState<ChiqimHujjati | null>(null);
   const [sozlama, setSozlama] = useState(false);
   const [korinadigan, setKorinadigan] = useState<Set<Ustun>>(
     () => new Set(ustunlar.map((item) => item.id))
@@ -77,19 +73,49 @@ export default function Chiqim() {
     () => Object.fromEntries(ustunlar.map((item) => [item.id, item.width])) as Record<Ustun, number>
   );
   const [scrollHolati, setScrollHolati] = useState({ chap: 0, kenglik: 0, maxChap: 0, maxScroll: 0 });
+  const [sozlamaJoylashuvi, setSozlamaJoylashuvi] = useState({ top: 0, left: 0 });
   const sozlamaRef = useRef<HTMLDivElement | null>(null);
+  const sozlamaTugmaRef = useRef<HTMLButtonElement | null>(null);
   const jadvalRef = useRef<HTMLDivElement | null>(null);
   const scrollYoliRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => { void malumotlarniYuklash(); }, [malumotlarniYuklash]);
+
+  const sozlamaJoylashuviniYangilash = useCallback(() => {
+    const rect = sozlamaTugmaRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const menyuKengligi = 256;
+    const menyuBalandligi = 430;
+    const left = Math.min(
+      window.innerWidth - menyuKengligi - 12,
+      Math.max(12, rect.right - menyuKengligi)
+    );
+    const pastgaTop = rect.bottom + 8;
+    const top =
+      pastgaTop + menyuBalandligi <= window.innerHeight - 12
+        ? pastgaTop
+        : Math.max(12, rect.top - menyuBalandligi - 8);
+    setSozlamaJoylashuvi({ top, left });
+  }, []);
+
   useEffect(() => {
     if (!sozlama) return;
     const yopish = (event: MouseEvent) => {
-      if (!sozlamaRef.current?.contains(event.target as Node)) setSozlama(false);
+      const target = event.target as Node;
+      if (!sozlamaRef.current?.contains(target) && !sozlamaTugmaRef.current?.contains(target)) {
+        setSozlama(false);
+      }
     };
+    sozlamaJoylashuviniYangilash();
     document.addEventListener("mousedown", yopish);
-    return () => document.removeEventListener("mousedown", yopish);
-  }, [sozlama]);
+    window.addEventListener("resize", sozlamaJoylashuviniYangilash);
+    window.addEventListener("scroll", sozlamaJoylashuviniYangilash, true);
+    return () => {
+      document.removeEventListener("mousedown", yopish);
+      window.removeEventListener("resize", sozlamaJoylashuviniYangilash);
+      window.removeEventListener("scroll", sozlamaJoylashuviniYangilash, true);
+    };
+  }, [sozlama, sozlamaJoylashuviniYangilash]);
 
   const omborMap = useMemo(
     () => new Map(store.omborlar.map((item) => [item.id, item.name])),
@@ -159,11 +185,6 @@ export default function Chiqim() {
     // Qidiruv real backend ma'lumotlari va maplarga bog'liq.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qidiruv, store.chiqimlar, omborMap, xodimMap]);
-
-  async function bekorQilish() {
-    if (!bekorSorash) return;
-    if (await store.chiqimBekorQilish(bekorSorash.id)) setBekorSorash(null);
-  }
 
   function ustunniAlmashtirish(id: Ustun) {
     setKorinadigan((old) => {
@@ -337,17 +358,20 @@ export default function Chiqim() {
                   </th>
                 ))}
                 <th className="sticky right-0 z-10 w-20 min-w-20 bg-[#fff9f3] px-5 py-3">
-                  <div ref={sozlamaRef} className="relative flex justify-end">
-                    <button onClick={() => setSozlama((value) => !value)} aria-label="Ustunlarni sozlash" className="flex h-9 w-9 items-center justify-center rounded-xl text-orange-500 transition hover:bg-orange-100"><Settings size={17} /></button>
-                    {sozlama && (
-                      <div className="absolute right-0 top-11 z-30 w-64 rounded-2xl border border-orange-100 bg-white p-2 text-slate-600 shadow-2xl">
-                        {ustunlar.map((column) => (
-                          <label key={column.id} className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold hover:bg-orange-50">
-                            <input type="checkbox" checked={korinadigan.has(column.id)} onChange={() => ustunniAlmashtirish(column.id)} className="accent-orange-500" />{column.nom}
-                          </label>
-                        ))}
-                      </div>
-                    )}
+                  <div className="relative flex justify-end">
+                    <button
+                      ref={sozlamaTugmaRef}
+                      type="button"
+                      onClick={() => {
+                        if (!sozlama) sozlamaJoylashuviniYangilash();
+                        setSozlama((value) => !value);
+                      }}
+                      aria-label="Ustunlarni sozlash"
+                      aria-expanded={sozlama}
+                      className="flex h-9 w-9 items-center justify-center rounded-xl text-orange-500 transition hover:bg-orange-100"
+                    >
+                      <Settings size={17} />
+                    </button>
                   </div>
                 </th>
               </tr>
@@ -355,20 +379,12 @@ export default function Chiqim() {
             <tbody className="divide-y divide-orange-100">
               {store.yuklanmoqda ? (
                 <tr><td colSpan={faolUstunlar.length + 1} className="py-20 text-center"><LoaderCircle className="mx-auto animate-spin text-orange-500" size={30} /></td></tr>
-              ) : royxat.map((item) => {
-                const status = String(item.status ?? "DRAFT").toUpperCase();
-                return (
+              ) : royxat.map((item) => (
                   <tr key={item.id} onClick={() => setTanlanganId(item.id)} className="cursor-pointer transition hover:bg-orange-50/40">
                     {faolUstunlar.map((column) => <td key={column.id} className="overflow-hidden px-6 py-5">{katak(item, column.id)}</td>)}
-                    <td className="sticky right-0 bg-white px-5 py-4 group-hover:bg-orange-50/40" onClick={(event) => event.stopPropagation()}>
-                      <div className="flex justify-end gap-2">
-                        {status === "DRAFT" && <button onClick={() => void store.chiqimTasdiqlash(item.id)} disabled={store.amalBajarilmoqda} title="Tasdiqlash" aria-label="Tasdiqlash" className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 transition hover:bg-emerald-100 disabled:opacity-50"><CheckCircle2 size={18} /></button>}
-                        {status === "CONFIRMED" && <button onClick={() => setBekorSorash(item)} title="Bekor qilish" aria-label="Bekor qilish" className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-50 text-red-500 transition hover:bg-red-100"><Trash2 size={18} /></button>}
-                      </div>
-                    </td>
+                    <td className="sticky right-0 bg-white px-5 py-4 group-hover:bg-orange-50/40" />
                   </tr>
-                );
-              })}
+                ))}
             </tbody>
           </table>
           {!store.yuklanmoqda && royxat.length === 0 && (
@@ -391,21 +407,28 @@ export default function Chiqim() {
         </div>
       </div>
 
+      {sozlama &&
+        createPortal(
+          <div
+            ref={sozlamaRef}
+            role="menu"
+            className="fixed z-[99990] w-64 overflow-hidden rounded-2xl border border-orange-100 bg-white p-2 text-left text-slate-600 shadow-2xl"
+            style={{ top: sozlamaJoylashuvi.top, left: sozlamaJoylashuvi.left }}
+          >
+            <div className="max-h-[410px] overflow-y-auto">
+              {ustunlar.map((column) => (
+                <label key={column.id} className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold hover:bg-orange-50">
+                  <input type="checkbox" checked={korinadigan.has(column.id)} onChange={() => ustunniAlmashtirish(column.id)} className="accent-orange-500" />
+                  {column.nom}
+                </label>
+              ))}
+            </div>
+          </div>,
+          document.body
+        )}
+
       {modal && <YangiChiqimModal onClose={() => setModal(false)} />}
       {tanlanganId && <ChiqimTafsilotModal id={tanlanganId} onClose={() => setTanlanganId(null)} />}
-      {bekorSorash && (
-        <AppModal>
-          <div className="w-full max-w-sm rounded-[26px] bg-white p-6 shadow-2xl">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-500"><Ban size={22} /></div>
-            <h3 className="mt-4 text-center text-lg font-black text-slate-950">Chiqimni bekor qilasizmi?</h3>
-            <p className="mt-2 text-center text-sm text-slate-500">“{hujjatRaqami(bekorSorash)}” hujjati bekor qilinadi. Ombor qoldig'i backend orqali tiklanadi.</p>
-            <div className="mt-6 flex gap-3">
-              <button onClick={() => setBekorSorash(null)} className="h-11 flex-1 rounded-2xl bg-slate-100 text-sm font-bold text-slate-600">Yopish</button>
-              <button onClick={() => void bekorQilish()} disabled={store.amalBajarilmoqda} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-red-500 text-sm font-black text-white disabled:opacity-50">{store.amalBajarilmoqda && <LoaderCircle size={16} className="animate-spin" />}Ha, bekor qilish</button>
-            </div>
-          </div>
-        </AppModal>
-      )}
     </div>
   );
 }

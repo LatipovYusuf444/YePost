@@ -28,7 +28,7 @@ type Tab = (typeof tablar)[number];
 export default function XaridorSavdoModal({ savdo, xaridorNomi, customerId, partnerId, onYopish }: Props) {
   const [faolTab, setFaolTab] = useState<Tab>("Umumiy");
 
-  const qarzdorlik = savdo.summa - savdo.tolangan;
+  const qarzdorlik = savdo.qarz;
 
   return (
     <AppModal className="items-start justify-start bg-[rgba(54,22,8,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">

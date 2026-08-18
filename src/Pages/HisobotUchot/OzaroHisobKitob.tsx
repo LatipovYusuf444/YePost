@@ -32,6 +32,13 @@ export default function OzaroHisobKitob() {
   const [qidiruv, setQidiruv] = useState("");
   const [yuklanmoqda, setYuklanmoqda] = useState(false);
   const [xato, setXato] = useState("");
+  const [yangilanish, setYangilanish] = useState(0);
+
+  useEffect(() => {
+    const yangilash = () => setYangilanish((value) => value + 1);
+    window.addEventListener("savdo:yangilandi", yangilash);
+    return () => window.removeEventListener("savdo:yangilandi", yangilash);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -78,7 +85,7 @@ export default function OzaroHisobKitob() {
       .catch((error) => { if (active) setXato(getApiErrorMessage(error)); })
       .finally(() => { if (active) setYuklanmoqda(false); });
     return () => { active = false; };
-  }, [customerIds, supplierIds, qidiruv]);
+  }, [customerIds, supplierIds, qidiruv, yangilanish]);
 
   const korinadigan = useMemo(() => {
     const key = qidiruv.trim().toLowerCase();

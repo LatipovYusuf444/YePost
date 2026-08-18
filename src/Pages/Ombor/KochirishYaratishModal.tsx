@@ -173,15 +173,12 @@ export default function KochirishYaratishModal({ onClose }: Props) {
         </aside>
 
         <div className="flex h-full flex-col overflow-hidden rounded-l-[44px] rounded-r-[36px] border border-orange-100 bg-gradient-to-br from-[#FFF9F2] via-[#FFFDF9] to-[#FFE8D2] shadow-[0_35px_110px_rgba(43,22,12,.42)]">
-          <header className="flex min-h-[92px] shrink-0 items-center justify-between gap-4 border-b border-orange-100 bg-[#FFF9F2]/95 px-8 py-4 backdrop-blur-xl">
+          <header className="flex min-h-[92px] shrink-0 items-center gap-4 border-b border-orange-100 bg-[#FFF9F2]/95 px-8 py-4 backdrop-blur-xl">
             <div className="flex items-center gap-4">
               <h2 className="text-3xl font-black tracking-tight text-slate-950 sm:text-[38px]">Yangi ko'chirma</h2>
               <Copy size={19} className="text-slate-300" />
               <span className="rounded-full bg-orange-50 px-4 py-1.5 text-xs font-black uppercase text-[#FF5A00]">Yangi</span>
             </div>
-            <button type="button" onClick={onClose} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-sm ring-1 ring-slate-200" aria-label="Oynani yopish">
-              <X size={20} />
-            </button>
           </header>
 
           <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto p-6 sm:p-8">
@@ -276,4 +273,3 @@ export default function KochirishYaratishModal({ onClose }: Props) {
     </AppModal>
   );
 }
-

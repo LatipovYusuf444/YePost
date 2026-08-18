@@ -247,9 +247,6 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
                   <PackageCheck size={18} /> Qabul qilish
                 </button>
               )}
-              <button type="button" onClick={onClose} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-sm ring-1 ring-slate-200" aria-label="Oynani yopish">
-                <X size={20} />
-              </button>
             </div>
           </header>
 
@@ -327,4 +324,3 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
     </AppModal>
   );
 }
-

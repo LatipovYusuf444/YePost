@@ -40,10 +40,10 @@ export function sotuvMahsulotiMiqdori(item: SotuvMahsuloti) {
   const mosItem = item as MoslashuvchanSotuvMahsuloti;
   return raqamgaAylantirish(
     item.quantity ??
-      mosItem.qty ??
-      mosItem.qtySold ??
-      mosItem.soldQuantity ??
-      mosItem.amount
+    mosItem.qty ??
+    mosItem.qtySold ??
+    mosItem.soldQuantity ??
+    mosItem.amount
   );
 }
 
@@ -51,12 +51,12 @@ export function sotuvMahsulotiNarxi(item: SotuvMahsuloti) {
   const mosItem = item as MoslashuvchanSotuvMahsuloti;
   const narx = raqamgaAylantirish(
     item.price ??
-      mosItem.unitPrice ??
-      mosItem.salePrice ??
-      mosItem.sellingPrice ??
-      mosItem.modification?.price?.sellingPrice ??
-      mosItem.modification?.price?.retailPrice ??
-      mosItem.modification?.price?.wholesalePrice
+    mosItem.unitPrice ??
+    mosItem.salePrice ??
+    mosItem.sellingPrice ??
+    mosItem.modification?.price?.sellingPrice ??
+    mosItem.modification?.price?.retailPrice ??
+    mosItem.modification?.price?.wholesalePrice
   );
 
   if (narx > 0) return narx;
@@ -78,12 +78,12 @@ export function sananiFormatlash(value?: string) {
   return Number.isNaN(sana.getTime())
     ? value
     : new Intl.DateTimeFormat("uz-UZ", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(sana);
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(sana);
 }
 
 export function sotuvSummasi(sotuv: Sotuv) {
@@ -111,13 +111,26 @@ export function sotuvChegirmaSummasi(sotuv: Sotuv) {
 
 export function sotuvTolanganSummasi(sotuv: Sotuv) {
   const paymentsJami = sotuv.payments?.reduce((jami, tolov) => jami + raqamgaAylantirish(tolov.amount), 0) ?? 0;
-  const backendJami = raqamgaAylantirish(sotuv.paidAmount);
-  return backendJami > 0 || paymentsJami === 0 ? backendJami : paymentsJami;
+  const holat = String(sotuv.status ?? "DRAFT").toUpperCase();
+  if (
+    holat !== "DRAFT" &&
+    sotuv.paidAmount !== undefined &&
+    sotuv.paidAmount !== null
+  ) {
+    return raqamgaAylantirish(sotuv.paidAmount);
+  }
+  return paymentsJami;
 }
 
 export function sotuvQarzdorlikSummasi(sotuv: Sotuv) {
-  const backendQarz = raqamgaAylantirish(sotuv.debtAmount);
-  if (backendQarz > 0) return backendQarz;
+  const holat = String(sotuv.status ?? "DRAFT").toUpperCase();
+  if (
+    holat !== "DRAFT" &&
+    sotuv.debtAmount !== undefined &&
+    sotuv.debtAmount !== null
+  ) {
+    return Math.max(raqamgaAylantirish(sotuv.debtAmount), 0);
+  }
   return Math.max(sotuvSummasi(sotuv) - sotuvTolanganSummasi(sotuv), 0);
 }
 

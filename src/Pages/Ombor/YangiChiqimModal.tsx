@@ -12,7 +12,6 @@ import {
   Plus,
   Trash2,
   Warehouse,
-  X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
@@ -123,14 +122,11 @@ export default function YangiChiqimModal({ onClose }: Props) {
   return (
     <AppModal onClose={onClose} className="sidebar-aligned-document-modal items-stretch p-3 sm:p-5">
       <div className="flex min-h-0 w-full flex-col overflow-hidden rounded-[34px] border border-orange-100 bg-[#fff8ef] shadow-[0_28px_90px_rgba(69,35,13,.32)]">
-        <header className="flex shrink-0 items-center justify-between border-b border-orange-100 bg-white/80 px-5 py-4 sm:px-8">
+        <header className="flex shrink-0 items-center border-b border-orange-100 bg-white/80 px-5 py-4 sm:px-8">
           <div className="flex items-center gap-3">
             <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">Yangi chiqim</h2>
             <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-black text-orange-500">YANGI</span>
           </div>
-          <button type="button" onClick={onClose} aria-label="Yopish" className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-orange-200 hover:text-orange-500">
-            <X size={21} />
-          </button>
         </header>
 
         <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-8">

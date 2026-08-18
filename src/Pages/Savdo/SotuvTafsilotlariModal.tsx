@@ -42,7 +42,9 @@ import {
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { mijozlarApi, mijozKompaniyalariApi } from "@/api/partnersApi";
 import AppModal from "@/Components/common/AppModal";
+import { useOmborStore } from "@/store/omborStore";
 import type { Activity, Attachment, ChatMessage, Comment } from "@/types/crm";
+import type { Ombor } from "@/types/ombor";
 import type { QoldiqTanlovi, SaleAuditLog, Sotuv, SotuvTolovi, SotuvYaratishMalumoti, TolovTuri, XodimTanlovi, YetkazishMalumoti, YetkazishPayload } from "@/types/savdo";
 import {
   masulNomi,
@@ -173,6 +175,14 @@ function tozaManzil(value?: string | null) {
 
 function mijozManzili(sotuv: Sotuv) {
   return tozaManzil(sotuv.customer?.address) || tozaManzil(sotuv.clientCompany?.address) || "—";
+}
+
+function sotuvOmborNomi(sotuv: Sotuv, omborlar: Ombor[]) {
+  return (
+    sotuv.warehouse?.name ||
+    omborlar.find((ombor) => ombor.id === sotuv.warehouseId)?.name ||
+    "Ombor tanlanmagan"
+  );
 }
 
 function qisqaVaqt(value?: string) {
@@ -1276,6 +1286,13 @@ function UmumiyTab({
               />
             )
           )}
+        {holat === "CONFIRMED" && (
+          <OmbordanChiqarishHujjatFeedCard
+            sotuv={sotuv}
+            vaqt={qisqaVaqt(sotuv.confirmedAt) || vaqt}
+            onOchish={onOmbordanChiqarish}
+          />
+        )}
         <FeedCard title="Hisoblash rejimi o'zgartirildi" time={vaqt} text={`Tovarlar narxiga asoslanib → ${pulniFormatlash(jami)}`} />
         <FeedCard title="Sotuv yaratildi" time={vaqt} text={`${mijozNomi(sotuv)} uchun ${sotuvRaqami(sotuv)} sotuv yaratildi.`} />
         <ProductsCard sotuv={sotuv} />
@@ -1456,9 +1473,7 @@ function TolovQabulQilishModal({
   const boshlangichQarz = Math.max(jami - mavjudYigindisi, 0);
 
   const [tolovTuri, setTolovTuri] = useState<TolovTuri>("CASH");
-  const [summa, setSumma] = useState(
-    !draft || mavjudYigindisi > 0 ? String(boshlangichQarz) : "0"
-  );
+  const [summa, setSumma] = useState("0");
   const [xatolik, setXatolik] = useState("");
 
   const yangiSumma = Number(summa) || 0;
@@ -1507,43 +1522,53 @@ function TolovQabulQilishModal({
 
   return (
     <AppModal>
-      <div className="w-full max-w-lg rounded-[28px] bg-white p-7 shadow-2xl">
+      <div className="w-full max-w-2xl rounded-[32px] bg-white p-8 shadow-2xl">
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#FF6A00]">To'lov</p>
-            <h2 className="mt-1 text-2xl font-black text-slate-900">To'lovni qabul qilish</h2>
+          <div className="flex items-center gap-4">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-[#FF6A00]">
+              <CreditCard size={26} />
+            </span>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#FF6A00]">To'lov</p>
+              <h2 className="mt-1 text-2xl font-black text-slate-900">To'lovni qabul qilish</h2>
+            </div>
           </div>
           <button
             type="button"
             onClick={onYopish}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-500 transition hover:bg-orange-500 hover:text-white"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-500 transition hover:bg-orange-500 hover:text-white"
           >
             <X size={18} />
           </button>
         </div>
 
-        <div className="mt-6 space-y-4">
+        <div className="mt-7 space-y-5">
             {mavjudTolovlar.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {mavjudTolovlar.map((tolov, index) => (
-                  <span
-                    key={tolov.id ?? `${tolov.paymentType}-${index}`}
-                    className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-[#FF6A00]"
-                  >
-                    {tolovTuriMatni[tolov.paymentType]}: {pulniFormatlash(tolov.amount)}
-                  </span>
-                ))}
+              <div>
+                <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">
+                  Avvalgi to'lovlar
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {mavjudTolovlar.map((tolov, index) => (
+                    <span
+                      key={tolov.id ?? `${tolov.paymentType}-${index}`}
+                      className="rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold text-[#FF6A00]"
+                    >
+                      {tolovTuriMatni[tolov.paymentType]}: {pulniFormatlash(tolov.amount)}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-400">To'lov turi</span>
                 <SavdoSelect
                   value={tolovTuri}
                   onChange={(value) => setTolovTuri(value as TolovTuri)}
                   options={tolovTuriOptions}
-                  buttonClassName="h-11 rounded-xl px-3.5 text-sm"
+                  buttonClassName="h-12 rounded-xl px-4 text-sm"
                   portal
                 />
               </label>
@@ -1555,53 +1580,59 @@ function TolovQabulQilishModal({
                   max={boshlangichQarz || undefined}
                   value={summa}
                   onChange={(event) => setSumma(event.target.value)}
-                  className="h-11 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100"
+                  className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100"
                   placeholder="0"
                 />
               </label>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2.5">
               <button
                 type="button"
                 onClick={() => setSumma(String(boshlangichQarz))}
-                className="rounded-xl bg-orange-50 px-3 py-2 text-xs font-bold text-[#FF6A00] transition hover:bg-orange-100"
+                className="rounded-xl bg-orange-50 px-4 py-2.5 text-xs font-bold text-[#FF6A00] transition hover:bg-orange-100"
               >
                 To'liq to'lash ({pulniFormatlash(boshlangichQarz)})
               </button>
               <button
                 type="button"
                 onClick={() => setSumma("0")}
-                className="rounded-xl bg-gray-100 px-3 py-2 text-xs font-bold text-gray-500 transition hover:bg-gray-200"
+                className="rounded-xl bg-gray-100 px-4 py-2.5 text-xs font-bold text-gray-500 transition hover:bg-gray-200"
               >
                 Qarzga qoldirish
               </button>
             </div>
 
-            <div className="space-y-2 rounded-2xl bg-slate-50 p-4 text-sm">
-              <div className="flex justify-between text-slate-400">
-                <span>Sotuv jami</span>
-                <span>{pulniFormatlash(jami)}</span>
+            <div className="grid gap-4 rounded-2xl bg-gradient-to-br from-orange-50/70 to-white p-5 ring-1 ring-orange-100 sm:grid-cols-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wide text-slate-400">Sotuv jami</p>
+                <p className="mt-1.5 text-lg font-black text-slate-800">{pulniFormatlash(jami)}</p>
               </div>
-              <div className="flex justify-between text-[#FF6A00]">
-                <span>Jami to'lov (avvalgi + yangi)</span>
-                <span className="font-bold">{pulniFormatlash(yakuniyTolangan)}</span>
+              <div>
+                <p className="text-xs font-black uppercase tracking-wide text-slate-400">
+                  Jami to'lov
+                </p>
+                <p className="mt-1.5 text-lg font-black text-[#FF6A00]">{pulniFormatlash(yakuniyTolangan)}</p>
               </div>
-              <div className={`flex justify-between ${qolganQarz > 0 ? "text-red-500" : "text-emerald-600"}`}>
-                <span>{qolganQarz > 0 ? "Qarzdorlik qoldig'i" : "Qarzdorlik yo'q"}</span>
-                <span className="font-bold">{pulniFormatlash(qolganQarz)}</span>
+              <div>
+                <p className="text-xs font-black uppercase tracking-wide text-slate-400">
+                  {qolganQarz > 0 ? "Qarzdorlik qoldig'i" : "Qarzdorlik"}
+                </p>
+                <p className={`mt-1.5 text-lg font-black ${qolganQarz > 0 ? "text-red-500" : "text-emerald-600"}`}>
+                  {qolganQarz > 0 ? pulniFormatlash(qolganQarz) : "Yo'q"}
+                </p>
               </div>
             </div>
 
             {xatolik && (
-              <div className="rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-600">{xatolik}</div>
+              <div className="rounded-2xl bg-red-50 p-3.5 text-sm font-bold text-red-600">{xatolik}</div>
             )}
 
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-3 pt-1">
               <button
                 type="button"
                 onClick={onYopish}
-                className="h-11 rounded-2xl bg-gray-100 px-5 text-sm font-bold text-gray-600"
+                className="h-12 rounded-2xl bg-gray-100 px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-200"
               >
                 Bekor qilish
               </button>
@@ -1609,7 +1640,7 @@ function TolovQabulQilishModal({
                 type="button"
                 disabled={amalBajarilmoqda}
                 onClick={() => void submit()}
-                className="inline-flex h-11 items-center gap-2 rounded-2xl bg-[#FF6A00] px-6 text-sm font-black text-white shadow-[0_10px_24px_rgba(249,115,22,.24)] transition hover:bg-[#EA580C] disabled:opacity-50"
+                className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#FF6A00] px-6 text-sm font-black text-white shadow-[0_10px_24px_rgba(249,115,22,.24)] transition hover:bg-[#EA580C] disabled:opacity-50"
               >
                 {amalBajarilmoqda && <LoaderCircle size={16} className="animate-spin" />}
                 {draft ? "Tasdiqlash va yakunlash" : "To'lovni qo'shish"}
@@ -2849,6 +2880,8 @@ function YetkazishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; 
 function OmbordanChiqarishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; onClose: () => void }) {
   const items = sotuv.items ?? [];
   const tasdiqlangan = sotuvHolati(sotuv) === "CONFIRMED";
+  const omborlar = useOmborStore((state) => state.omborlar);
+  const omborNomi = sotuvOmborNomi(sotuv, omborlar);
   const [faoliyatXatosi, setFaoliyatXatosi] = useState("");
 
   async function faoliyatniBackendgaSaqlash(faoliyat: Omit<SaqlanganFaoliyat, "id" | "sana"> & { sana?: string }) {
@@ -2901,7 +2934,7 @@ function OmbordanChiqarishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: 
               <Info label="Telefon" value={mijozTelefon(sotuv)} />
               <Info label="Manzil" value={mijozManzili(sotuv)} />
               <Info label="Kompaniya" value={sotuv.clientCompany?.name || "Kompaniya tanlanmagan"} />
-              <Info label="Ombor" value={sotuv.warehouse?.name || sotuv.warehouseId || "Ombor tanlanmagan"} />
+              <Info label="Ombor" value={omborNomi} />
               <Info label="Mas'ul shaxs" value={masulNomi(sotuv)} />
             </section>
 
@@ -2943,7 +2976,7 @@ function OmbordanChiqarishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: 
                 <div>
                   <h3 className="text-lg font-semibold text-slate-700">{tasdiqlangan ? "Ombor amali bajarilgan" : "Ombor amali kutilmoqda"}</h3>
                   <p className="mt-2 text-sm text-slate-500">
-                    {items.length} ta tovar, summa {pulniFormatlash(jami)}. Ombor: {sotuv.warehouse?.name || sotuv.warehouseId || "tanlanmagan"}.
+                    {items.length} ta tovar, summa {pulniFormatlash(jami)}. Ombor: {omborNomi}.
                   </p>
                 </div>
               </div>
@@ -3869,6 +3902,65 @@ function HujjatFeedCard({
           <FileText size={18} className="transition group-hover:text-slate-400" />
           <MoreHorizontal size={22} className="transition group-hover:text-slate-400" />
         </div>
+      </div>
+    </article>
+  );
+}
+
+function OmbordanChiqarishHujjatFeedCard({
+  sotuv,
+  vaqt,
+  onOchish,
+}: {
+  sotuv: Sotuv;
+  vaqt: string;
+  onOchish: () => void;
+}) {
+  const omborlar = useOmborStore((state) => state.omborlar);
+  const omborNomi = sotuvOmborNomi(sotuv, omborlar);
+
+  return (
+    <article className="group relative overflow-visible rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_14px_38px_rgba(255,106,0,.08)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(255,106,0,.12)]">
+      <div className="absolute -left-[70px] top-5 hidden h-11 w-11 items-center justify-center rounded-full bg-emerald-500 text-white shadow-[0_12px_30px_rgba(16,185,129,.30)] xl:flex">
+        <Package size={21} />
+      </div>
+
+      <div className="flex items-start justify-between gap-5">
+        <div className="flex min-w-0 items-start gap-4">
+          <div className="flex h-[96px] w-[108px] shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
+            <Package size={42} strokeWidth={1.8} />
+          </div>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-3">
+              <h3 className="font-black text-slate-900">Ombordan chiqarish hujjati qo'shildi</h3>
+              <span className="text-sm font-medium text-slate-400">{vaqt}</span>
+            </div>
+            <div className="mt-3 space-y-1.5 text-sm">
+              <p className="text-slate-500">
+                Sotuv <span className="font-semibold text-slate-800">{sotuvRaqami(sotuv)}</span>
+              </p>
+              <p className="text-slate-500">
+                Mijoz <span className="font-semibold text-slate-800">{mijozNomi(sotuv)}</span>
+              </p>
+              <p className="text-slate-400">
+                Ombor{" "}
+                <span className="font-semibold text-slate-700">{omborNomi}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <UserRound className="mt-1 shrink-0 rounded-full bg-slate-100 p-1.5 text-slate-500" size={32} />
+      </div>
+
+      <div className="mt-5 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={onOchish}
+          className="inline-flex h-10 min-w-[150px] items-center justify-center rounded-xl border border-orange-100 bg-white px-5 text-sm font-bold text-slate-700 transition hover:border-[#FF6A00] hover:text-[#FF6A00]"
+        >
+          Hujjatni ko'rish
+        </button>
       </div>
     </article>
   );

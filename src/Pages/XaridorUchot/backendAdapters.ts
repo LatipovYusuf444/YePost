@@ -2,6 +2,11 @@ import type { TimelineItem } from "@/types/crm";
 import type { Mijoz, MijozKompaniyasi, YetkazibBeruvchi } from "@/types/partner";
 import type { Sotuv } from "@/types/savdo";
 import type { KirimHujjati } from "@/types/ombor";
+import {
+  sotuvQarzdorlikSummasi,
+  sotuvSummasi,
+  sotuvTolanganSummasi,
+} from "@/Pages/Savdo/savdoYordamchilari";
 import type {
   TarixYozuvi,
   Xaridor,
@@ -97,18 +102,21 @@ export function yetkazibBeruvchiniUiGa(item: YetkazibBeruvchi): UiYetkazibBeruvc
 }
 
 export function sotuvniUiGa(item: Sotuv, lookup: HujjatLookup = {}): XaridorSavdosi {
-  const jami = raqam(item.totalAmount ?? item.total);
-  const tolangan = raqam(item.paidAmount);
+  const jami = sotuvSummasi(item);
+  const tolangan = sotuvTolanganSummasi(item);
+  const qarz = sotuvQarzdorlikSummasi(item);
   const status = String(item.status ?? "").toUpperCase();
   return {
     id: item.id,
     xaridorId: item.customerId ?? item.customer?.id ?? "",
+    kompaniyaId: item.clientCompanyId ?? item.clientCompany?.id ?? "",
     nomi: item.note?.split("\n")[0] || item.docNumber || item.documentNumber || "Sotuv",
     raqam: item.docNumber || item.documentNumber || item.number || item.id,
     sana: item.date || item.createdAt || "",
     summa: jami,
     tolangan,
-    holat: status === "CANCELLED" ? "bekor" : status === "DRAFT" ? "qoralama" : jami > tolangan ? "qarzdor" : "tolangan",
+    qarz,
+    holat: status === "CANCELLED" ? "bekor" : status === "DRAFT" ? "qoralama" : qarz > 0 ? "qarzdor" : "tolangan",
     ombor: item.warehouse?.name || lookupNomi(lookup.omborlar, item.warehouseId) || "Noma’lum ombor",
     masul: item.responsible?.fullName || item.responsible?.name || item.responsible?.username || lookupNomi(lookup.masullar, item.responsibleId) || "Biriktirilmagan",
   };

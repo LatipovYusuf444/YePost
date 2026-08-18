@@ -52,8 +52,8 @@ export default function KompaniyaTafsilotlariModal({
     [xaridorlar, kompaniya.id]
   );
   const kompaniyaSavdolari = useMemo(
-    () => savdolar.filter((s) => xaridorIdlar.has(s.xaridorId)),
-    [savdolar, xaridorIdlar]
+    () => savdolar.filter((s) => s.kompaniyaId === kompaniya.id || xaridorIdlar.has(s.xaridorId)),
+    [kompaniya.id, savdolar, xaridorIdlar]
   );
   useEffect(() => {
     if (!kompaniya.partnerId) {

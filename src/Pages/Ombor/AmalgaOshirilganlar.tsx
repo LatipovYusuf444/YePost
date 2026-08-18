@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
   FileText,
-  Filter,
   LoaderCircle,
   Plus,
   RefreshCw,
@@ -14,44 +13,19 @@ import { useOmborStore } from "@/store/omborStore";
 import { useSavdoStore } from "@/store/savdoStore";
 import type { Sotuv, SotuvTolovi } from "@/types/savdo";
 import {
-  qaytarishSummasi,
   sotuvHolati,
   sotuvQarzdorlikSummasi,
   sotuvSummasi,
   sotuvTolanganSummasi,
 } from "@/Pages/Savdo/savdoYordamchilari";
-import QaytarishTafsilotlariModal from "@/Pages/Savdo/QaytarishTafsilotlariModal";
 import SotuvTafsilotlariModal from "@/Pages/Savdo/SotuvTafsilotlariModal";
-import InventoryHujjatModal, { type InventoryHujjatTuri } from "./InventoryHujjatModal";
 import { hujjatRaqami, pul, sana } from "./omborYordamchilari";
 import OmborJadval from "./OmborJadval";
-import {
-  getInventoryRealizationDate,
-  isCompletedInventoryDocument,
-} from "./inventoryRealization";
-
-type HujjatTuri =
-  | "Kirim"
-  | "Chiqim"
-  | "Ko'chirish"
-  | "Inventarizatsiya"
-  | "Realizatsiya"
-  | "Qaytarish";
-
-const barchaTurlar: HujjatTuri[] = [
-  "Kirim",
-  "Chiqim",
-  "Ko'chirish",
-  "Inventarizatsiya",
-  "Realizatsiya",
-  "Qaytarish",
-];
 
 type JadvalQatori = {
   id: string;
-  turi: HujjatTuri;
   nomi: string;
-  kontragent?: string;
+  kontragent: string;
   ombor: string;
   masul: string;
   status: string;
@@ -88,29 +62,7 @@ function omborNomi(
   );
 }
 
-function backendSummasi(totalAmount?: number, total?: number) {
-  const qiymat = totalAmount ?? total;
-  if (qiymat == null || !Number.isFinite(Number(qiymat))) return undefined;
-  return Number(qiymat);
-}
-
-function kirimSummasi(
-  totalAmount: number | undefined,
-  total: number | undefined,
-  items: Array<{ quantity: number; price: number }> | undefined
-) {
-  const backendQiymati = backendSummasi(totalAmount, total);
-  if (backendQiymati != null) return backendQiymati;
-  if (!items?.length) return undefined;
-
-  return items.reduce(
-    (jami, item) => jami + Number(item.quantity || 0) * Number(item.price || 0),
-    0
-  );
-}
-
 type UstunKaliti =
-  | "turi"
   | "kontragent"
   | "ombor"
   | "sana"
@@ -121,7 +73,6 @@ type UstunKaliti =
   | "qarz";
 
 const ustunlar: Array<{ kalit: UstunKaliti; nom: string }> = [
-  { kalit: "turi", nom: "Turi" },
   { kalit: "kontragent", nom: "Kontragent" },
   { kalit: "ombor", nom: "Ombor" },
   { kalit: "sana", nom: "Sana" },
@@ -132,13 +83,7 @@ const ustunlar: Array<{ kalit: UstunKaliti; nom: string }> = [
   { kalit: "qarz", nom: "Qarz" },
 ];
 
-const yaratishVariantlari = [
-  { nom: "Kirim yaratish", path: "/ombor/kirimlar" },
-  { nom: "Chiqim yaratish", path: "/ombor/chiqimlar" },
-  { nom: "Ko'chirish yaratish", path: "/ombor/kochirishlar" },
-  { nom: "Inventarizatsiya", path: "/ombor/inventarizatsiya" },
-  { nom: "Sotuv yaratish", path: "/savdo" },
-];
+const yaratishVariantlari = [{ nom: "Sotuv yaratish", path: "/savdo" }];
 
 function statusMatni(value?: string) {
   const status = String(value ?? "DRAFT").toUpperCase();
@@ -179,13 +124,6 @@ export default function AmalgaOshirilganlar() {
   const [qidiruv, setQidiruv] = useState("");
   const [yaratishOchiq, setYaratishOchiq] = useState(false);
   const [sozlamaOchiq, setSozlamaOchiq] = useState(false);
-  const [turFilterOchiq, setTurFilterOchiq] = useState(false);
-  const [turFilteri, setTurFilteri] = useState<HujjatTuri[]>(barchaTurlar);
-  const [tanlanganHujjat, setTanlanganHujjat] = useState<{
-    id: string;
-    tur: InventoryHujjatTuri;
-  } | null>(null);
-  const [tanlanganQaytarishId, setTanlanganQaytarishId] = useState<string | null>(null);
   const [korinadiganUstunlar, setKorinadiganUstunlar] = useState<UstunKaliti[]>(
     ustunlar.map((ustun) => ustun.kalit)
   );
@@ -212,128 +150,36 @@ export default function AmalgaOshirilganlar() {
     () => new Map(store.xodimlar.map((xodim) => [String(xodim.id), xodim])),
     [store.xodimlar]
   );
-  const saleMap = useMemo(
-    () => new Map(store.sotuvlar.map((sotuv) => [sotuv.id, sotuv])),
-    [store.sotuvlar]
-  );
 
   const rows = useMemo<JadvalQatori[]>(
     () =>
-      [
-        ...store.kirimlar
-          .filter((item) => isCompletedInventoryDocument("kirim", item.status))
-          .map((item) => {
-          return {
-          id: item.id,
-          turi: "Kirim" as const,
-          nomi: hujjatRaqami(item),
-          ombor: omborNomi(item.warehouseId, item.warehouse, omborMap),
-          masul: entityNomi(item.responsibleId, item.responsible, xodimMap),
-          status: String(item.status ?? "DRAFT"),
-          realizationDate: getInventoryRealizationDate(item, "kirim"),
-          summa: kirimSummasi(item.totalAmount, item.total, item.items),
-          };
-        }),
-        ...store.chiqimlar
-          .filter((item) => isCompletedInventoryDocument("chiqim", item.status))
-          .map((item) => {
-          return {
-          id: item.id,
-          turi: "Chiqim" as const,
-          nomi: hujjatRaqami(item),
-          ombor: omborNomi(item.warehouseId, item.warehouse, omborMap),
-          masul: entityNomi(item.responsibleId, item.responsible, xodimMap),
-          status: String(item.status ?? "DRAFT"),
-          realizationDate: getInventoryRealizationDate(item, "chiqim"),
-          summa: backendSummasi(item.totalAmount, item.total),
-          };
-        }),
-        ...store.kochirishlar
-          .filter((item) => isCompletedInventoryDocument("kochirish", item.status))
-          .map((item) => ({
-          id: item.id,
-          turi: "Ko'chirish" as const,
-          nomi: hujjatRaqami(item),
-          ombor: `${omborNomi(item.sourceWarehouseId, item.sourceWarehouse, omborMap)} → ${omborNomi(
-            item.destWarehouseId,
-            item.destWarehouse,
-            omborMap
-          )}`,
-          masul: entityNomi(item.responsibleId, item.responsible, xodimMap),
-          status: String(item.status ?? "DRAFT"),
-          realizationDate: getInventoryRealizationDate(item, "kochirish"),
-        })),
-        ...store.inventarizatsiyalar
-          .filter((item) => isCompletedInventoryDocument("inventarizatsiya", item.status))
-          .map((item) => ({
-          id: item.id,
-          turi: "Inventarizatsiya" as const,
-          nomi: hujjatRaqami(item),
-          ombor: omborNomi(item.warehouseId, item.warehouse, omborMap),
-          masul: entityNomi(item.responsibleId, item.responsible, xodimMap),
-          status: String(item.status ?? "DRAFT"),
-          realizationDate: getInventoryRealizationDate(item, "inventarizatsiya"),
-        })),
-        ...store.sotuvlar
-          .filter((sotuv) => sotuvHolati(sotuv) === "CONFIRMED")
-          .map((sotuv) => ({
-            id: sotuv.id,
-            turi: "Realizatsiya" as const,
-            nomi: hujjatRaqami(sotuv),
-            kontragent: kontragentNomi(sotuv),
-            ombor: omborNomi(sotuv.warehouseId, sotuv.warehouse, omborMap),
-            masul: entityNomi(sotuv.responsibleId, sotuv.responsible, xodimMap),
-            status: String(sotuv.status ?? "CONFIRMED"),
-            realizationDate: sotuv.confirmedAt ?? sotuv.createdAt,
-            summa: sotuvSummasi(sotuv),
-            tolangan: sotuvTolanganSummasi(sotuv),
-            qarz: sotuvQarzdorlikSummasi(sotuv),
-          })),
-        ...store.qaytarishlar
-          .filter((qaytarish) => String(qaytarish.status ?? "DRAFT").toUpperCase() === "CONFIRMED")
-          .map((qaytarish) => {
-            const boglangan = qaytarish.sale ?? saleMap.get(qaytarish.saleId);
-            return {
-              id: qaytarish.id,
-              turi: "Qaytarish" as const,
-              nomi: hujjatRaqami(qaytarish),
-              kontragent: boglangan ? kontragentNomi(boglangan) : "—",
-              ombor: omborNomi(qaytarish.warehouseId, qaytarish.warehouse, omborMap),
-              masul: entityNomi(qaytarish.responsibleId, qaytarish.responsible, xodimMap),
-              status: String(qaytarish.status ?? "CONFIRMED"),
-              realizationDate: qaytarish.confirmedAt ?? qaytarish.updatedAt ?? qaytarish.createdAt,
-              summa: qaytarishSummasi(qaytarish),
-            };
-          }),
-      ].sort((a, b) =>
-        String(b.realizationDate ?? "").localeCompare(String(a.realizationDate ?? ""))
-      ),
-    [
-      omborMap,
-      saleMap,
-      store.chiqimlar,
-      store.inventarizatsiyalar,
-      store.kirimlar,
-      store.kochirishlar,
-      store.qaytarishlar,
-      store.sotuvlar,
-      xodimMap,
-    ]
-  );
-
-  const turBoyichaFiltrlanganRows = useMemo(
-    () => rows.filter((item) => turFilteri.includes(item.turi)),
-    [rows, turFilteri]
+      store.sotuvlar
+        .filter((sotuv) => sotuvHolati(sotuv) === "CONFIRMED")
+        .map((sotuv) => ({
+          id: sotuv.id,
+          nomi: hujjatRaqami(sotuv),
+          kontragent: kontragentNomi(sotuv),
+          ombor: omborNomi(sotuv.warehouseId, sotuv.warehouse, omborMap),
+          masul: entityNomi(sotuv.responsibleId, sotuv.responsible, xodimMap),
+          status: String(sotuv.status ?? "CONFIRMED"),
+          realizationDate: sotuv.confirmedAt ?? sotuv.createdAt,
+          summa: sotuvSummasi(sotuv),
+          tolangan: sotuvTolanganSummasi(sotuv),
+          qarz: sotuvQarzdorlikSummasi(sotuv),
+        }))
+        .sort((a, b) =>
+          String(b.realizationDate ?? "").localeCompare(String(a.realizationDate ?? ""))
+        ),
+    [omborMap, store.sotuvlar, xodimMap]
   );
 
   const filtrlanganRows = useMemo(() => {
     const query = qidiruv.trim().toLowerCase();
-    if (!query) return turBoyichaFiltrlanganRows;
-    return turBoyichaFiltrlanganRows.filter((item) =>
+    if (!query) return rows;
+    return rows.filter((item) =>
       [
         item.nomi,
-        item.turi,
-        item.kontragent ?? "",
+        item.kontragent,
         item.ombor,
         item.masul,
         statusMatni(item.status),
@@ -344,7 +190,7 @@ export default function AmalgaOshirilganlar() {
         .toLowerCase()
         .includes(query)
     );
-  }, [qidiruv, turBoyichaFiltrlanganRows]);
+  }, [qidiruv, rows]);
 
   function ustunniAlmashtirish(kalit: UstunKaliti) {
     setKorinadiganUstunlar((oldingi) =>
@@ -353,12 +199,6 @@ export default function AmalgaOshirilganlar() {
           ? oldingi
           : oldingi.filter((item) => item !== kalit)
         : [...oldingi, kalit]
-    );
-  }
-
-  function turniAlmashtirish(tur: HujjatTuri) {
-    setTurFilteri((oldingi) =>
-      oldingi.includes(tur) ? oldingi.filter((item) => item !== tur) : [...oldingi, tur]
     );
   }
 
@@ -399,32 +239,7 @@ export default function AmalgaOshirilganlar() {
     })();
   }
 
-  function hujjatniOchish(item: JadvalQatori) {
-    if (item.turi === "Realizatsiya") {
-      realizatsiyaniOchish(item.id);
-      return;
-    }
-    if (item.turi === "Qaytarish") {
-      setTanlanganQaytarishId(item.id);
-      return;
-    }
-    if (item.turi === "Kirim") {
-      setTanlanganHujjat({ id: item.id, tur: "kirim" });
-      return;
-    }
-    if (item.turi === "Chiqim") {
-      setTanlanganHujjat({ id: item.id, tur: "chiqim" });
-      return;
-    }
-    if (item.turi === "Ko'chirish") {
-      setTanlanganHujjat({ id: item.id, tur: "kochirish" });
-      return;
-    }
-    setTanlanganHujjat({ id: item.id, tur: "inventarizatsiya" });
-  }
-
   function katak(item: JadvalQatori, kalit: UstunKaliti) {
-    if (kalit === "turi") return item.turi;
     if (kalit === "kontragent") return item.kontragent || "—";
     if (kalit === "ombor") return item.ombor;
     if (kalit === "sana") return sana(item.realizationDate);
@@ -444,8 +259,7 @@ export default function AmalgaOshirilganlar() {
         <div>
           <h1 className="text-3xl font-black tracking-tight text-slate-950">Amalga oshirilganlar</h1>
           <p className="mt-1 text-sm leading-6 text-slate-500">
-            Omborda amalga oshirilgan kirim, chiqim, ko'chirish, inventarizatsiya, realizatsiya va
-            qaytarish hujjatlari.
+            Omborda amalga oshirilgan realizatsiya (sotuv) hujjatlari.
           </p>
         </div>
 
@@ -483,44 +297,11 @@ export default function AmalgaOshirilganlar() {
           <input
             value={qidiruv}
             onChange={(event) => setQidiruv(event.target.value)}
-            placeholder="Nomi, turi, ombor, mas'ul shaxs yoki holati"
+            placeholder="Nomi, kontragent, ombor, mas'ul shaxs yoki holati"
             className="h-14 w-full rounded-[20px] border border-slate-200 bg-white pl-13 pr-5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
           />
         </label>
         <div className="flex flex-wrap items-center gap-3">
-          <div className="relative shrink-0">
-            <button
-              type="button"
-              onClick={() => setTurFilterOchiq((oldingi) => !oldingi)}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-bold text-orange-600 transition hover:bg-orange-50"
-            >
-              <Filter size={16} />
-              Turi
-              {turFilteri.length < barchaTurlar.length ? ` (${turFilteri.length})` : ""}
-              <ChevronDown size={14} />
-            </button>
-            {turFilterOchiq && (
-              <div className="absolute right-0 top-12 z-40 w-60 rounded-2xl border border-orange-100 bg-white p-3 shadow-xl">
-                <p className="px-2 pb-2 text-xs font-black uppercase tracking-wide text-slate-400">
-                  Hujjat turi
-                </p>
-                {barchaTurlar.map((tur) => (
-                  <label
-                    key={tur}
-                    className="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 text-sm font-bold text-slate-700 hover:bg-orange-50"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={turFilteri.includes(tur)}
-                      onChange={() => turniAlmashtirish(tur)}
-                      className="h-4 w-4 accent-orange-500"
-                    />
-                    {tur}
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
           <button
             type="button"
             onClick={() => void amalgaOshirilganlarniYuklash()}
@@ -576,8 +357,8 @@ export default function AmalgaOshirilganlar() {
             <tbody className="divide-y divide-orange-100">
               {filtrlanganRows.map((item) => (
                 <tr
-                  key={`${item.turi}-${item.id}`}
-                  onClick={() => hujjatniOchish(item)}
+                  key={item.id}
+                  onClick={() => realizatsiyaniOchish(item.id)}
                   className="cursor-pointer text-slate-600 transition hover:bg-orange-50/40"
                 >
                   <td className="truncate px-6 py-5 font-black text-slate-900">{item.nomi}</td>
@@ -602,7 +383,7 @@ export default function AmalgaOshirilganlar() {
                       type="button"
                       onClick={(event) => {
                         event.stopPropagation();
-                        hujjatniOchish(item);
+                        realizatsiyaniOchish(item.id);
                       }}
                       title="Hujjatni ko'rish"
                       aria-label="Hujjatni ko'rish"
@@ -655,14 +436,6 @@ export default function AmalgaOshirilganlar() {
         )}
       </div>
 
-      {tanlanganHujjat && (
-        <InventoryHujjatModal
-          tur={tanlanganHujjat.tur}
-          id={tanlanganHujjat.id}
-          onClose={() => setTanlanganHujjat(null)}
-        />
-      )}
-
       {savdo.tanlanganSotuv && (
         <SotuvTafsilotlariModal
           sotuv={savdo.tanlanganSotuv}
@@ -674,13 +447,6 @@ export default function AmalgaOshirilganlar() {
           onTolovQoshish={realizatsiyaTolovQoshish}
           onTasdiqlash={realizatsiyaTasdiqlash}
           onBekorQilish={realizatsiyaBekorQilish}
-        />
-      )}
-
-      {tanlanganQaytarishId && (
-        <QaytarishTafsilotlariModal
-          qaytarishId={tanlanganQaytarishId}
-          onYopish={() => setTanlanganQaytarishId(null)}
         />
       )}
     </div>

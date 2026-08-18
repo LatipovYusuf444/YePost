@@ -1,12 +1,24 @@
 import AppSelect from "@/Components/ui/AppSelect";
-import { useEffect, useMemo, useState } from "react";
-import { Eye, LoaderCircle, Plus, Search, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { LoaderCircle, Plus, Search, Settings, X } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
 import type { InventarizatsiyaTuri } from "@/types/ombor";
 import { holat, hujjatRaqami, modificationNomi, qoldiqMiqdori, sana } from "./omborYordamchilari";
 import InventoryHujjatModal from "./InventoryHujjatModal";
 import OmborJadval from "./OmborJadval";
+
+type InventarizatsiyaUstuni = "nomi" | "status" | "yaratilgan" | "ombor" | "masul" | "turi";
+
+const INVENTARIZATSIYA_USTUNLARI: Array<{ id: InventarizatsiyaUstuni; nom: string }> = [
+  { id: "nomi", nom: "Nomi" },
+  { id: "status", nom: "Status" },
+  { id: "yaratilgan", nom: "Yaratilgan vaqt" },
+  { id: "ombor", nom: "Ombor" },
+  { id: "masul", nom: "Mas'ul shaxs" },
+  { id: "turi", nom: "Turi" },
+];
 
 export default function Inventarizatsiya() {
   const store = useOmborStore();
@@ -21,10 +33,49 @@ export default function Inventarizatsiya() {
   const [formaXatosi, setFormaXatosi] = useState("");
   const [qoldiqYuklanmoqda, setQoldiqYuklanmoqda] = useState(false);
   const [qidiruv, setQidiruv] = useState("");
+  const [ustunlarMenyusi, setUstunlarMenyusi] = useState(false);
+  const [korinadiganUstunlar, setKorinadiganUstunlar] = useState<Set<InventarizatsiyaUstuni>>(
+    () => new Set(INVENTARIZATSIYA_USTUNLARI.map((ustun) => ustun.id))
+  );
+  const [sozlamaJoylashuvi, setSozlamaJoylashuvi] = useState({ top: 0, left: 0 });
+  const sozlamaTugmaRef = useRef<HTMLButtonElement | null>(null);
+  const sozlamaRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     void malumotlarniYuklash();
   }, [malumotlarniYuklash]);
+
+  const sozlamaJoylashuviniYangilash = useCallback(() => {
+    const rect = sozlamaTugmaRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const menyuKengligi = 256;
+    const menyuBalandligi = 330;
+    const left = Math.min(window.innerWidth - menyuKengligi - 12, Math.max(12, rect.right - menyuKengligi));
+    const pastgaTop = rect.bottom + 8;
+    const top = pastgaTop + menyuBalandligi <= window.innerHeight - 12
+      ? pastgaTop
+      : Math.max(12, rect.top - menyuBalandligi - 8);
+    setSozlamaJoylashuvi({ top, left });
+  }, []);
+
+  useEffect(() => {
+    if (!ustunlarMenyusi) return;
+    function tashqarigaBosish(event: MouseEvent) {
+      const target = event.target as Node;
+      if (!sozlamaRef.current?.contains(target) && !sozlamaTugmaRef.current?.contains(target)) {
+        setUstunlarMenyusi(false);
+      }
+    }
+    sozlamaJoylashuviniYangilash();
+    document.addEventListener("mousedown", tashqarigaBosish);
+    window.addEventListener("resize", sozlamaJoylashuviniYangilash);
+    window.addEventListener("scroll", sozlamaJoylashuviniYangilash, true);
+    return () => {
+      document.removeEventListener("mousedown", tashqarigaBosish);
+      window.removeEventListener("resize", sozlamaJoylashuviniYangilash);
+      window.removeEventListener("scroll", sozlamaJoylashuviniYangilash, true);
+    };
+  }, [sozlamaJoylashuviniYangilash, ustunlarMenyusi]);
 
   const omborMap = useMemo(
     () => new Map(store.omborlar.map((ombor) => [ombor.id, ombor.name])),
@@ -64,6 +115,43 @@ export default function Inventarizatsiya() {
         .includes(query);
     });
   }, [omborMap, qidiruv, store.inventarizatsiyalar, xodimMap]);
+
+  const faolUstunlar = INVENTARIZATSIYA_USTUNLARI.filter((ustun) => korinadiganUstunlar.has(ustun.id));
+
+  function ustunniAlmashtirish(id: InventarizatsiyaUstuni) {
+    setKorinadiganUstunlar((oldingi) => {
+      const keyingi = new Set(oldingi);
+      if (keyingi.has(id)) {
+        if (keyingi.size > 1) keyingi.delete(id);
+      } else {
+        keyingi.add(id);
+      }
+      return keyingi;
+    });
+  }
+
+  function jadvalKatagi(item: (typeof store.inventarizatsiyalar)[number], ustun: InventarizatsiyaUstuni): ReactNode {
+    const status = String(item.status ?? "DRAFT").toUpperCase();
+    const masul = item.responsible ?? (item.responsibleId ? xodimMap.get(item.responsibleId) : undefined);
+    if (ustun === "nomi") return <span className="font-black text-slate-900">{hujjatRaqami(item)}</span>;
+    if (ustun === "status") {
+      return (
+        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${
+          status === "CONFIRMED"
+            ? "bg-emerald-50 text-emerald-600"
+            : status === "CANCELLED" || status === "CANCELED"
+              ? "bg-red-50 text-red-500"
+              : "bg-slate-100 text-slate-500"
+        }`}>
+          {holat(item.status)}
+        </span>
+      );
+    }
+    if (ustun === "yaratilgan") return <span className="whitespace-nowrap">{sana(item.createdAt)}</span>;
+    if (ustun === "ombor") return item.warehouse?.name ?? omborMap.get(item.warehouseId) ?? "Noma'lum ombor";
+    if (ustun === "masul") return masul?.fullName ?? masul?.username ?? masul?.name ?? "Biriktirilmagan";
+    return item.type === "PARTIAL" ? "Qisman" : "To'liq";
+  }
 
   function formaniOchish() {
     store.xatolikniTozalash();
@@ -146,11 +234,6 @@ export default function Inventarizatsiya() {
     setNote("");
   }
 
-  async function yakunlash(id: string) {
-    store.xatolikniTozalash();
-    await store.inventarizatsiyaTasdiqlash(id);
-  }
-
   return (
     <div className="space-y-5">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
@@ -185,66 +268,35 @@ export default function Inventarizatsiya() {
         <table className="w-full min-w-[1050px] text-left text-sm">
           <thead className="bg-orange-50/70 text-xs font-black uppercase text-orange-500">
             <tr>
-              <th className="px-6 py-5">Nomi</th>
-              <th className="border-l border-orange-200/70 px-6 py-5">Status</th>
-              <th className="border-l border-orange-200/70 px-6 py-5">Yaratilgan vaqt</th>
-              <th className="border-l border-orange-200/70 px-6 py-5">Ombor</th>
-              <th className="border-l border-orange-200/70 px-6 py-5">Mas'ul shaxs</th>
-              <th className="border-l border-orange-200/70 px-6 py-5">Turi</th>
-              <th className="px-6 py-5 text-right">Amal</th>
+              {faolUstunlar.map((ustun) => <th key={ustun.id}>{ustun.nom}</th>)}
+              <th className="sticky right-0 z-10 w-20 min-w-20 bg-[#fff9f3] px-5 py-3 text-right">
+                <button
+                  ref={sozlamaTugmaRef}
+                  type="button"
+                  onClick={() => {
+                    if (!ustunlarMenyusi) sozlamaJoylashuviniYangilash();
+                    setUstunlarMenyusi((oldingi) => !oldingi);
+                  }}
+                  aria-label="Ustunlarni sozlash"
+                  aria-expanded={ustunlarMenyusi}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-orange-500 transition hover:bg-orange-100"
+                >
+                  <Settings size={18} />
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-orange-100">
             {korinadiganHujjatlar.map((item) => {
-              const status = String(item.status ?? "DRAFT").toUpperCase();
-              const masul = item.responsible ?? (item.responsibleId ? xodimMap.get(item.responsibleId) : undefined);
               return (
               <tr key={item.id} onClick={() => setTanlanganId(item.id)} className="cursor-pointer text-slate-600 transition hover:bg-orange-50/40">
-                <td className="px-6 py-5 font-black text-slate-900">{hujjatRaqami(item)}</td>
-                <td className="px-6 py-5">
-                  <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${
-                    status === "CONFIRMED"
-                      ? "bg-emerald-50 text-emerald-600"
-                      : status === "CANCELLED" || status === "CANCELED"
-                        ? "bg-red-50 text-red-500"
-                        : "bg-slate-100 text-slate-500"
-                  }`}>
-                    {holat(item.status)}
-                  </span>
-                </td>
-                <td className="whitespace-nowrap px-6 py-5">{sana(item.createdAt)}</td>
-                <td className="px-6 py-5">
-                  {item.warehouse?.name ?? omborMap.get(item.warehouseId) ?? "Noma'lum ombor"}
-                </td>
-                <td className="px-6 py-5">{masul?.fullName ?? masul?.username ?? masul?.name ?? "Biriktirilmagan"}</td>
-                <td className="px-6 py-5">{item.type === "PARTIAL" ? "Qisman" : "To'liq"}</td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={(event) => { event.stopPropagation(); setTanlanganId(item.id); }}
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600 transition hover:bg-orange-100"
-                      aria-label="Ko'rish"
-                    >
-                      <Eye size={17} />
-                    </button>
-                    {status === "DRAFT" && (
-                      <button
-                        type="button"
-                        onClick={(event) => { event.stopPropagation(); void yakunlash(item.id); }}
-                        disabled={store.amalBajarilmoqda}
-                        className="h-10 rounded-xl bg-emerald-600 px-4 text-xs font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
-                      >
-                        Yakunlash
-                      </button>
-                    )}
-                  </div>
-                </td>
+                {faolUstunlar.map((ustun) => <td key={ustun.id}>{jadvalKatagi(item, ustun.id)}</td>)}
+                <td className="sticky right-0 bg-white px-5 py-4 group-hover:bg-orange-50/40" />
               </tr>
             );})}
             {store.yuklanmoqda && store.inventarizatsiyalar.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-14 text-center text-gray-400">
+                <td colSpan={faolUstunlar.length + 1} className="py-14 text-center text-gray-400">
                   <LoaderCircle size={22} className="mx-auto mb-2 animate-spin text-orange-500" />
                   Hujjatlar yuklanmoqda...
                 </td>
@@ -252,7 +304,7 @@ export default function Inventarizatsiya() {
             )}
             {!store.yuklanmoqda && korinadiganHujjatlar.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-14 text-center text-gray-400">
+                <td colSpan={faolUstunlar.length + 1} className="py-14 text-center text-gray-400">
                   {qidiruv ? "Qidiruv bo'yicha hujjat topilmadi" : "Inventarizatsiya hujjatlari mavjud emas"}
                 </td>
               </tr>
@@ -260,6 +312,29 @@ export default function Inventarizatsiya() {
           </tbody>
         </table>
       </OmborJadval>
+
+      {ustunlarMenyusi &&
+        createPortal(
+          <div
+            ref={sozlamaRef}
+            role="menu"
+            className="fixed z-[99990] w-64 overflow-hidden rounded-2xl border border-orange-100 bg-white p-2 text-left text-slate-600 shadow-2xl"
+            style={{ top: sozlamaJoylashuvi.top, left: sozlamaJoylashuvi.left }}
+          >
+            {INVENTARIZATSIYA_USTUNLARI.map((ustun) => (
+              <label key={ustun.id} className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold hover:bg-orange-50">
+                <input
+                  type="checkbox"
+                  checked={korinadiganUstunlar.has(ustun.id)}
+                  onChange={() => ustunniAlmashtirish(ustun.id)}
+                  className="h-4 w-4 accent-orange-500"
+                />
+                {ustun.nom}
+              </label>
+            ))}
+          </div>,
+          document.body
+        )}
 
       {modal && (
         <AppModal>
@@ -461,4 +536,3 @@ export default function Inventarizatsiya() {
     </div>
   );
 }
-

@@ -6,9 +6,10 @@ import { crmApi, royxatniAjratish } from "@/api/crmApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { InstagramIkonka, TelegramIkonka, WhatsappIkonka } from "./IjtimoiyIkonkalar";
 import TezkorPanel from "./TezkorPanel";
-import { SavdolarTab, TarixTab, TolovlarTab } from "./XaridorTablari";
-import { timelineniTarixga, timelineniTolovga } from "./backendAdapters";
-import type { TarixYozuvi, Xaridor, XaridorKompaniyasi, XaridorSavdosi, XaridorTolovi } from "./types";
+import { SavdolarTab, TarixTab } from "./XaridorTablari";
+import XaridorTolovlariTab from "./XaridorTolovlariTab";
+import { timelineniTarixga } from "./backendAdapters";
+import type { TarixYozuvi, Xaridor, XaridorKompaniyasi, XaridorSavdosi } from "./types";
 import { kompaniyaNomi, sanaFormat, xaridorNomi } from "./yordamchilar";
 
 type Tab = "Ma'lumotlar" | "Savdolar" | "To'lovlar" | "Tarix";
@@ -34,7 +35,6 @@ export default function XaridorTafsilotlariModal({
 }: Props) {
   const [faolTab, setFaolTab] = useState<Tab>("Ma'lumotlar");
   const [xaridorTarixi, setXaridorTarixi] = useState<TarixYozuvi[]>([]);
-  const [tolovlar, setTolovlar] = useState<XaridorTolovi[]>([]);
   const [xatolik, setXatolik] = useState("");
 
   const xaridorSavdolari = useMemo(
@@ -44,7 +44,6 @@ export default function XaridorTafsilotlariModal({
   useEffect(() => {
     if (!xaridor.partnerId) {
       setXaridorTarixi([]);
-      setTolovlar([]);
       return;
     }
     let active = true;
@@ -53,7 +52,6 @@ export default function XaridorTafsilotlariModal({
       if (!active) return;
       const items = royxatniAjratish(response);
       setXaridorTarixi(items.map((item, index) => timelineniTarixga(xaridor.id, item, index)));
-      setTolovlar(items.map((item, index) => timelineniTolovga(xaridor.id, item, index)).filter((item): item is XaridorTolovi => Boolean(item)));
     }).catch((error) => { if (active) setXatolik(getApiErrorMessage(error)); });
     return () => { active = false; };
   }, [xaridor.id, xaridor.partnerId]);
@@ -118,7 +116,11 @@ export default function XaridorTafsilotlariModal({
             {xatolik && <div className="mx-9 mt-5 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">{xatolik}</div>}
 
             {faolTab === "Ma'lumotlar" && (
-              <MalumotlarTab xaridor={xaridor} kompaniyalar={kompaniyalar} />
+              <MalumotlarTab
+                xaridor={xaridor}
+                kompaniyalar={kompaniyalar}
+                savdolar={xaridorSavdolari}
+              />
             )}
             {faolTab === "Savdolar" && (
               <SavdolarTab
@@ -129,7 +131,7 @@ export default function XaridorTafsilotlariModal({
                 barchaSavdolar={savdolar}
               />
             )}
-            {faolTab === "To'lovlar" && <TolovlarTab tolovlar={tolovlar} />}
+            {faolTab === "To'lovlar" && <XaridorTolovlariTab xaridorId={xaridor.id} />}
             {faolTab === "Tarix" && <TarixTab tarix={xaridorTarixi} />}
           </div>
         </section>
@@ -141,10 +143,16 @@ export default function XaridorTafsilotlariModal({
 function MalumotlarTab({
   xaridor,
   kompaniyalar,
+  savdolar,
 }: {
   xaridor: Xaridor;
   kompaniyalar: XaridorKompaniyasi[];
+  savdolar: XaridorSavdosi[];
 }) {
+  const jamiRealizatsiya = savdolar.reduce((sum, savdo) => sum + savdo.summa, 0);
+  const jamiTolangan = savdolar.reduce((sum, savdo) => sum + savdo.tolangan, 0);
+  const jamiQarz = savdolar.reduce((sum, savdo) => sum + savdo.qarz, 0);
+
   return (
     <div className="grid gap-6 px-9 py-7 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <div className="space-y-5">
@@ -208,6 +216,12 @@ function MalumotlarTab({
               qiymat={xaridor.lavozim || "Kiritilmagan"}
             />
             <Qator nom="Ro'yxatga olingan sana" qiymat={sanaFormat(xaridor.yaratilganSana)} />
+            <Qator nom="Jami realizatsiya" qiymat={jamiRealizatsiya.toLocaleString("uz-UZ") + " so'm"} />
+            <Qator nom="Jami to'langan" qiymat={jamiTolangan.toLocaleString("uz-UZ") + " so'm"} />
+            <Qator
+              nom={jamiQarz > 0 ? "Qarzdor: HA" : "Qarzdor emas"}
+              qiymat={jamiQarz.toLocaleString("uz-UZ") + " so'm"}
+            />
           </dl>
         </section>
       </div>

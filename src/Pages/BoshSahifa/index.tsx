@@ -20,12 +20,10 @@ import AppModal from "@/Components/common/AppModal";
 import {
   mijozlarRoyxatiniOlish,
   omborlarRoyxatiniOlish,
-  omborQoldiqlariniOlish,
-  sotuvniTasdiqlash,
-  sotuvYaratish,
 } from "@/api/savdoApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { usePosStore } from "@/store/posStore";
+import { useSavdoStore } from "@/store/savdoStore";
 import type { MijozTanlovi, OmborTanlovi, TolovTuri } from "@/types/savdo";
 
 type CustomerType = "donalik" | "doimiy";
@@ -80,6 +78,8 @@ export default function BoshSahifa() {
   const updatePriceType = usePosStore((state) => state.updatePriceType);
   const removeFromCart = usePosStore((state) => state.removeFromCart);
   const clearPosCart = usePosStore((state) => state.clearCart);
+  const yangiSotuvYaratish = useSavdoStore((state) => state.yangiSotuvYaratish);
+  const sotuvniTasdiqlash = useSavdoStore((state) => state.sotuvniTasdiqlash);
 
   const [omborlar, setOmborlar] = useState<OmborTanlovi[]>([]);
   const [mijozlar, setMijozlar] = useState<MijozTanlovi[]>([]);
@@ -207,6 +207,13 @@ export default function BoshSahifa() {
       setMessage({ type: "error", text: `To'lov summasi 1 dan ${formatSumma(payableTotal)} gacha bo'lishi kerak` });
       return;
     }
+    if (
+      qabulQilinadiganSumma < payableTotal &&
+      (mijozTuri !== "doimiy" || !selectedCustomerId)
+    ) {
+      setMessage({ type: "error", text: "Qarzga sotuv uchun xaridorni tanlang." });
+      return;
+    }
 
     const rawTotal = cart.reduce((sum, item) => sum + item.narx * item.soni, 0);
     let remainingDiscount = Math.min(discountSum, rawTotal);
@@ -229,7 +236,7 @@ export default function BoshSahifa() {
     setSaving(true);
     setMessage(null);
     try {
-      const sale = await sotuvYaratish({
+      const sale = await yangiSotuvYaratish({
         warehouseId,
         customerId: mijozTuri === "doimiy" && selectedCustomerId ? selectedCustomerId : undefined,
         saleType: mijozTuri === "doimiy" ? "CLIENT" : "QUICK",
@@ -237,8 +244,11 @@ export default function BoshSahifa() {
         items,
         payments: [{ paymentType: selectedPayment.apiTuri, amount: qabulQilinadiganSumma }],
       });
-      await sotuvniTasdiqlash(sale.id);
-      if (warehouseId) await omborQoldiqlariniOlish(warehouseId);
+      if (!sale) throw new Error("Sotuv qoralamasini yaratib bo'lmadi");
+      const tasdiqlandi = await sotuvniTasdiqlash(sale.id);
+      if (!tasdiqlandi) {
+        throw new Error(useSavdoStore.getState().xatolik || "Sotuvni tasdiqlab bo'lmadi");
+      }
       clearCart();
       setTolovModalOchiq(false);
       setMessage({ type: "success", text: "To'lov muvaffaqiyatli amalga oshirildi" });
@@ -899,4 +909,3 @@ export default function BoshSahifa() {
 function Summary({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
   return <div className={`rounded-2xl p-3 ${accent ? "bg-orange-500 text-white" : "bg-white text-slate-700 ring-1 ring-orange-100"}`}><p className={`text-[10px] font-black uppercase ${accent ? "text-white/70" : "text-slate-400"}`}>{label}</p><p className="mt-1 text-sm font-black">{value}</p></div>;
 }
-

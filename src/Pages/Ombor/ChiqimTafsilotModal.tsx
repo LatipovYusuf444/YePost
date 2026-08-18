@@ -5,7 +5,6 @@ import {
   PackageMinus,
   RotateCcw,
   Settings,
-  X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
@@ -123,7 +122,6 @@ export default function ChiqimTafsilotModal({ id, onClose }: Props) {
           <div className="flex shrink-0 items-center gap-2">
             {qoralama && <button type="button" onClick={() => void tasdiqlash()} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-emerald-600 px-5 text-sm font-black text-white shadow-lg shadow-emerald-100 disabled:opacity-50"><CheckCircle2 size={18} />Tasdiqlash</button>}
             {tasdiqlangan && <button type="button" onClick={() => setBekorTasdiq(true)} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-slate-700 px-5 text-sm font-black text-white shadow-lg disabled:opacity-50"><RotateCcw size={18} />Bekor qilish</button>}
-            <button type="button" onClick={onClose} aria-label="Yopish" className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:text-orange-500"><X size={21} /></button>
           </div>
         </header>
 

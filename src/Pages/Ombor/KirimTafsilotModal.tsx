@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Ban, CheckCircle2, FileText, LoaderCircle, RotateCcw, X } from "lucide-react";
+import { Ban, CheckCircle2, FileText, LoaderCircle, RotateCcw } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
 import type { KirimHujjati, MahsulotModifikatsiyasi } from "@/types/ombor";
@@ -92,7 +92,6 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
         <div className="flex items-center justify-end gap-2">
           {hujjat && status === "DRAFT" && <button type="button" onClick={() => void tasdiqlash()} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-emerald-600 px-5 text-sm font-black text-white shadow-lg shadow-emerald-100 disabled:opacity-50">{store.amalBajarilmoqda ? <LoaderCircle size={17} className="animate-spin"/> : <CheckCircle2 size={17}/>}Tasdiqlash</button>}
           {hujjat && status === "CONFIRMED" && <button type="button" onClick={() => setBekorSorash(true)} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-slate-700 px-5 text-sm font-black text-white shadow-lg shadow-slate-200 disabled:opacity-50"><RotateCcw size={17}/>Bekor qilish</button>}
-          <button type="button" onClick={onClose} aria-label="Yopish" className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:text-orange-500"><X size={21}/></button>
         </div>
       </header>
 

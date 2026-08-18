@@ -9,6 +9,7 @@ import Xaridorlar from "./Xaridorlar";
 import YetkazibBeruvchilar from "./YetkazibBeruvchilar";
 import { kompaniyaniUiGa, kirimniUiGa, mijozniUiGa, sotuvniUiGa, yetkazibBeruvchiniUiGa } from "./backendAdapters";
 import type { Kirim, Xaridor, XaridorKompaniyasi, XaridorSavdosi, YetkazibBeruvchi } from "./types";
+import { sotuvHolati } from "@/Pages/Savdo/savdoYordamchilari";
 
 type Tab = "xaridorlar" | "kompaniyalar" | "yetkazib-beruvchilar";
 
@@ -51,7 +52,11 @@ export default function XaridorUchot({ faolTab = "xaridorlar" }: Props) {
       setKompaniyalar(companies.map(kompaniyaniUiGa));
       setYetkazibBeruvchilar(suppliers.map(yetkazibBeruvchiniUiGa));
       const lookup = { omborlar: warehouses, masullar: responsibles };
-      setSavdolar(sales.map((item) => sotuvniUiGa(item, lookup)));
+      setSavdolar(
+        sales
+          .filter((item) => sotuvHolati(item) === "CONFIRMED")
+          .map((item) => sotuvniUiGa(item, lookup))
+      );
       setKirimlar(purchases.map((item) => kirimniUiGa(item, lookup)));
     } catch (error) {
       setXatolik(getApiErrorMessage(error));
@@ -61,6 +66,12 @@ export default function XaridorUchot({ faolTab = "xaridorlar" }: Props) {
   }, []);
 
   useEffect(() => { void yuklash(); }, [yuklash]);
+
+  useEffect(() => {
+    const yangilash = () => void yuklash();
+    window.addEventListener("savdo:yangilandi", yangilash);
+    return () => window.removeEventListener("savdo:yangilandi", yangilash);
+  }, [yuklash]);
 
   async function xaridorSaqlash(xaridor: Xaridor) {
     setAmalBajarilmoqda(true); setXatolik("");

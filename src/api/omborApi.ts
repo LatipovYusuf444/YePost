@@ -324,6 +324,14 @@ export const inventarizatsiyaApi = {
         )
       ).data
     ),
+  bekorQilish: async (id: string) =>
+    apiData(
+      (
+        await apiClient.post<InventarizatsiyaHujjati | ApiEnvelope<InventarizatsiyaHujjati>>(
+          `/inventory/stock-takes/${id}/cancel`
+        )
+      ).data
+    ),
 };
 
 // Ombor/OmborQoldigi.tsx va Mahsulotlar.tsx: real ombor qoldiqlari.

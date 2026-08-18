@@ -4,7 +4,7 @@ import KassaAmaliyotModal from "../KassaUchot/KassaAmaliyotModal";
 import type { KassaAmaliyoti } from "../KassaUchot/types";
 import { amaliyotTuriMatni, kanalMatni, sanaFormat, summaFormat } from "../KassaUchot/yordamchilar";
 import { sotuvlarRoyxatiniOlish } from "@/api/savdoApi";
-import { financeTransactions } from "@/api/tolovApi";
+import { barchaFinanceTransactions } from "@/api/tolovApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 
 // Mijozning kassadagi to'lovlari (pul tushgan/qaytarilgan). Umumiy store'dan o'qiladi.
@@ -14,17 +14,27 @@ export default function XaridorTolovlariTab({ xaridorId }: { xaridorId: string }
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [xatolik, setXatolik] = useState("");
   const [korilayotgan, setKorilayotgan] = useState<KassaAmaliyoti | null>(null);
+  const [yangilanish, setYangilanish] = useState(0);
+
+  useEffect(() => {
+    const yangilash = () => setYangilanish((value) => value + 1);
+    window.addEventListener("savdo:yangilandi", yangilash);
+    return () => window.removeEventListener("savdo:yangilandi", yangilash);
+  }, []);
 
   useEffect(() => {
     let active = true;
     setYuklanmoqda(true);
     setXatolik("");
-    Promise.all([sotuvlarRoyxatiniOlish(), financeTransactions({ source: "SALE", page: 1, pageSize: 100 })])
+    Promise.all([
+      sotuvlarRoyxatiniOlish(),
+      barchaFinanceTransactions({ source: "SALE" }),
+    ])
       .then(([sales, transactions]) => {
         if (!active) return;
         const saleIds = new Set(sales.filter((sale) => sale.customerId === xaridorId || sale.customer?.id === xaridorId).map((sale) => sale.id));
-        setTolovlar(transactions.items
-          .filter((item) => Boolean(item.refId && saleIds.has(item.refId)))
+        setTolovlar(transactions
+          .filter((item) => item.counterpartyId === xaridorId || Boolean(item.refId && saleIds.has(item.refId)))
           .map<KassaAmaliyoti>((item) => ({
             id: item.id,
             kanal: item.paymentType === "BANK" ? "bank" : item.paymentType === "CARD" ? "ilova" : "naqd",
@@ -48,7 +58,7 @@ export default function XaridorTolovlariTab({ xaridorId }: { xaridorId: string }
       .catch((error) => setXatolik(getApiErrorMessage(error)))
       .finally(() => { if (active) setYuklanmoqda(false); });
     return () => { active = false; };
-  }, [xaridorId]);
+  }, [xaridorId, yangilanish]);
 
   if (yuklanmoqda) {
     return <div className="px-9 py-7 text-sm font-bold text-slate-500">To'lovlar backenddan yuklanmoqda...</div>;

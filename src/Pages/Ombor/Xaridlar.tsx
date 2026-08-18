@@ -8,14 +8,24 @@ import KirimTafsilotModal from "./KirimTafsilotModal";
 import YangiKirimModal from "./YangiKirimModal";
 import OmborJadval from "./OmborJadval";
 
-type UstunKaliti = "nomi" | "yetkazibBeruvchi" | "sana" | "masul" | "status" | "summa";
+type UstunKaliti =
+  | "nomi"
+  | "yetkazibBeruvchi"
+  | "ombor"
+  | "yaratilgan"
+  | "masul"
+  | "status"
+  | "ozgartirilgan"
+  | "summa";
 
 const USTUNLAR: Array<{ kalit: UstunKaliti; nom: string; kenglik: number }> = [
   { kalit: "nomi", nom: "Nomi", kenglik: 250 },
   { kalit: "yetkazibBeruvchi", nom: "Yetkazib beruvchi", kenglik: 260 },
-  { kalit: "sana", nom: "Sana", kenglik: 220 },
+  { kalit: "ombor", nom: "Ombor", kenglik: 220 },
+  { kalit: "yaratilgan", nom: "Yaratilgan vaqt", kenglik: 220 },
   { kalit: "masul", nom: "Mas'ul shaxs", kenglik: 230 },
   { kalit: "status", nom: "Status", kenglik: 210 },
+  { kalit: "ozgartirilgan", nom: "O'zgartirilgan vaqt", kenglik: 220 },
   { kalit: "summa", nom: "Summa", kenglik: 220 },
 ];
 
@@ -88,6 +98,11 @@ export default function Xaridlar() {
     [store.xodimlar]
   );
 
+  const omborlarMap = useMemo(
+    () => new Map(store.omborlar.map((item) => [item.id, item.name])),
+    [store.omborlar]
+  );
+
   function supplierNomi(id: string, name?: string) {
     return name ?? suppliersMap.get(id)?.name ?? suppliersMap.get(id)?.fullName ?? id;
   }
@@ -125,8 +140,10 @@ export default function Xaridlar() {
         kirimNomi(hujjat),
         hujjatRaqami(hujjat),
         supplierNomi(hujjat.supplierId, hujjat.supplier?.name),
+        hujjat.warehouse?.name ?? omborlarMap.get(hujjat.warehouseId),
         masulNomi(hujjat),
         sana(hujjat.createdAt),
+        sana(hujjat.updatedAt),
         holat(hujjat.status),
       ]
         .join(" ")
@@ -134,7 +151,7 @@ export default function Xaridlar() {
       return matn.includes(q);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store.kirimlar, qidiruv, suppliersMap, store.xodimlar]);
+  }, [store.kirimlar, qidiruv, suppliersMap, store.xodimlar, omborlarMap]);
 
   function ustunniAlmashtirish(kalit: UstunKaliti) {
     setKorinadiganUstunlar((oldingi) => {
@@ -155,7 +172,9 @@ export default function Xaridlar() {
         );
       case "yetkazibBeruvchi":
         return supplierNomi(hujjat.supplierId, hujjat.supplier?.name);
-      case "sana":
+      case "ombor":
+        return hujjat.warehouse?.name ?? omborlarMap.get(hujjat.warehouseId) ?? "Noma'lum ombor";
+      case "yaratilgan":
         return sana(hujjat.createdAt);
       case "masul":
         return masulNomi(hujjat);
@@ -165,6 +184,8 @@ export default function Xaridlar() {
             {holat(hujjat.status)}
           </span>
         );
+      case "ozgartirilgan":
+        return sana(hujjat.updatedAt);
       case "summa":
         return <span className="font-bold text-gray-700">{pul(kirimSummasi(hujjat))}</span>;
     }

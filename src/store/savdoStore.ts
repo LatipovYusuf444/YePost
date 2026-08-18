@@ -35,6 +35,7 @@ import type {
   XodimTanlovi,
 } from "@/types/savdo";
 import type { CashPaymentMethod } from "@/types/cashOperation";
+import { sotuvQarzdorlikSummasi } from "@/Pages/Savdo/savdoYordamchilari";
 
 const kassagaYoziladiganTolovUsullari = new Set(["CASH", "CARD"]);
 
@@ -333,6 +334,22 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
 
     try {
+      const tekshiriladiganSotuv = await sotuvTafsilotiniOlish(sotuvId);
+
+      if (
+        sotuvQarzdorlikSummasi(tekshiriladiganSotuv) > 0 &&
+        !tekshiriladiganSotuv.customerId &&
+        !tekshiriladiganSotuv.customer?.id &&
+        !tekshiriladiganSotuv.clientCompanyId &&
+        !tekshiriladiganSotuv.clientCompany?.id
+      ) {
+        set({
+          amalBajarilmoqda: false,
+          xatolik: "Qarzga sotuv uchun xaridorni tanlang.",
+        });
+        return false;
+      }
+
       const yangilangan = await sotuvniTasdiqlash(sotuvId);
       const boyitilgan = sotuvniBoglanganMalumotlarBilanBoyitish(yangilangan, get());
       const warehouseId =
@@ -347,6 +364,7 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
         tanlanganSotuv: boyitilgan,
         amalBajarilmoqda: false,
       }));
+      window.dispatchEvent(new CustomEvent("savdo:yangilandi", { detail: { sotuvId } }));
       return true;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
@@ -367,6 +385,7 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
         tanlanganSotuv: boyitilgan,
         amalBajarilmoqda: false,
       }));
+      window.dispatchEvent(new CustomEvent("savdo:yangilandi", { detail: { sotuvId } }));
       return true;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
@@ -392,6 +411,7 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
         tanlanganSotuv: boyitilgan,
         amalBajarilmoqda: false,
       }));
+      window.dispatchEvent(new CustomEvent("savdo:yangilandi", { detail: { sotuvId } }));
       return true;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });

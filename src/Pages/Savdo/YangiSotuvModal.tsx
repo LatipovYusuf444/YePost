@@ -26,7 +26,6 @@ import type {
   OmborTanlovi,
   QoldiqTanlovi,
   SotuvYaratishMalumoti,
-  TolovTuri,
   XodimTanlovi,
 } from "@/types/savdo";
 import { pulniFormatlash } from "./savdoYordamchilari";
@@ -216,8 +215,6 @@ export default function YangiSotuvModal({
   const [bosqich, setBosqich] = useState("Yangi");
   const [valyuta, setValyuta] = useState("UZS");
   const [note, setNote] = useState("");
-  const [tolovTuri, setTolovTuri] = useState<TolovTuri>("CASH");
-  const [tolovSummasi, setTolovSummasi] = useState("");
   const [boshlanishSanasi, setBoshlanishSanasi] = useState(bugungiSana());
   const [tugashSanasi, setTugashSanasi] = useState(kelasiHafta());
   const [faolTab, setFaolTab] = useState("Ish");
@@ -244,9 +241,6 @@ export default function YangiSotuvModal({
       ),
     [mahsulotlar]
   );
-  const tolovSummasiRaqam = raqamgaAylantirish(tolovSummasi);
-  const qarzdorlik = Math.max(jami - tolovSummasiRaqam, 0);
-  const ortiqchaTolov = Math.max(tolovSummasiRaqam - jami, 0);
   const tanlanganMijoz = mijozlar.find((item) => item.id === customerId);
   const tanlanganKompaniya = mijozKompaniyalari.find((item) => item.id === clientCompanyId);
   const tanlanganOmbor = omborlar.find((item) => item.id === warehouseId);
@@ -344,6 +338,11 @@ export default function YangiSotuvModal({
       modificationId,
       price: qoldiqNarxi(qoldiq) ? String(qoldiqNarxi(qoldiq)) : "",
     });
+
+    if (qoldiq?.warehouseId && qoldiq.warehouseId !== warehouseId) {
+      setWarehouseId(qoldiq.warehouseId);
+      onOmborTanlash(qoldiq.warehouseId);
+    }
   }
 
   function mijozniTanlash(tanlanganCustomerId: string) {
@@ -405,7 +404,6 @@ export default function YangiSotuvModal({
             tugashSanasi,
             note: backendIzohiniYigish(),
             items: mahsulotlar,
-            payment: { paymentType: tolovTuri, amount: tolovSummasiRaqam },
           },
           null,
           2
@@ -457,13 +455,6 @@ export default function YangiSotuvModal({
       return;
     }
 
-    if (tolovSummasiRaqam > jami) {
-      setXatolik(
-        `To'lov summasi sotuv jamidan oshmasligi kerak. Maksimal: ${pulniFormatlash(jami)}.`
-      );
-      return;
-    }
-
     let muvaffaqiyatli = sotuvBackendgaSaqlandi;
     if (!sotuvBackendgaSaqlandi) {
       muvaffaqiyatli = await onSaqlash({
@@ -474,10 +465,6 @@ export default function YangiSotuvModal({
         saleType: customerId || clientCompanyId ? "CLIENT" : "QUICK",
         note: backendIzohiniYigish() || undefined,
         items: tozaMahsulotlar,
-        payments:
-          tolovSummasiRaqam > 0
-            ? [{ paymentType: tolovTuri, amount: tolovSummasiRaqam }]
-            : [],
       });
       if (muvaffaqiyatli) setSotuvBackendgaSaqlandi(true);
     }
@@ -1095,89 +1082,19 @@ export default function YangiSotuvModal({
                   </div>
                 </section>
 
-                <section className="grid min-w-0 gap-3 rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur lg:grid-cols-[1fr_1fr_190px]">
-                  <label className="grid gap-2">
-                    <span className="text-sm font-bold text-slate-400">To'lov turi</span>
-                    <SavdoSelect
-                      value={tolovTuri}
-                      onChange={(value) => setTolovTuri(value as TolovTuri)}
-                      options={[
-                        { value: "CASH", label: "Naqd" },
-                        { value: "CARD", label: "Karta" },
-                        { value: "BANK", label: "Bank o'tkazmasi" },
-                        { value: "DEBT", label: "Qarz" },
-                      ]}
-                      buttonClassName="h-11 rounded-xl px-3.5 text-sm"
-                      dropdownClassName="min-w-[280px]"
-                      portal
-                    />
-                  </label>
-                  <label className="grid gap-2">
-                    <span className="text-sm font-bold text-slate-400">To'lov summasi</span>
-                    <input
-                      type="number"
-                      min="0"
-                      max={jami || undefined}
-                      value={tolovSummasi}
-                      onChange={(event) => setTolovSummasi(event.target.value)}
-                      className={`h-11 rounded-xl border bg-white px-3.5 text-sm font-semibold outline-none transition ${
-                        ortiqchaTolov > 0
-                          ? "border-red-400 ring-4 ring-red-100"
-                          : "border-slate-200 focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100"
-                      }`}
-                      placeholder="Masalan: 10000"
-                    />
-                    {ortiqchaTolov > 0 && (
-                      <p className="text-xs font-semibold text-red-500">
-                        To'lov sotuv jamidan oshib ketdi.
-                      </p>
-                    )}
-                  </label>
-                  <div className="rounded-2xl bg-gradient-to-br from-[#FFF3E2] to-[#FFE7D1] px-4 py-3 ring-1 ring-orange-100">
+                <section className="flex flex-wrap items-center justify-between gap-4 rounded-[22px] bg-gradient-to-br from-[#FFF3E2] to-[#FFE7D1] p-5 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur">
+                  <div>
                     <p className="text-xs font-black uppercase tracking-wide text-[#EA580C]">
                       Sotuv jami
                     </p>
-                    <p className="mt-1 text-xl font-black text-slate-950">
+                    <p className="mt-1 text-3xl font-black text-slate-950">
                       {pulniFormatlash(jami)}
                     </p>
                   </div>
-                </section>
-
-                <section className="rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur">
-                  <div className="grid gap-3 md:grid-cols-3">
-                    <div>
-                      <p className="text-xs font-black uppercase text-slate-400">
-                        Qabul qilinadigan to'lov
-                      </p>
-                      <p className="mt-1 font-black text-[#FF6A00]">
-                        {pulniFormatlash(tolovSummasiRaqam)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-black uppercase text-slate-400">
-                        Qarzdorlik qoldig'i
-                      </p>
-                      <p
-                        className={`mt-1 font-black ${
-                          qarzdorlik > 0 ? "text-red-500" : "text-emerald-600"
-                        }`}
-                      >
-                        {pulniFormatlash(qarzdorlik)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-black uppercase text-slate-400">
-                        To'lov holati
-                      </p>
-                      <p className="mt-1 font-black text-slate-800">
-                        {tolovSummasiRaqam === 0
-                          ? "To'lanmagan"
-                          : qarzdorlik > 0
-                            ? "Qisman to'langan"
-                            : "To'liq to'langan"}
-                      </p>
-                    </div>
-                  </div>
+                  <p className="max-w-[300px] text-xs font-semibold leading-5 text-[#8A4B12]">
+                    To'lov shu yerda qabul qilinmaydi — sotuv qoralama sifatida saqlangach,
+                    to'lovni sotuv sahifasidan alohida qabul qilasiz.
+                  </p>
                 </section>
 
                 {omborlar.length === 0 && (

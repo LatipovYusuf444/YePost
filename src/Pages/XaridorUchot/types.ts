@@ -72,11 +72,13 @@ export type SavdoHolati = "qoralama" | "tolangan" | "qarzdor" | "bekor";
 export type XaridorSavdosi = {
   id: string;
   xaridorId: string;
+  kompaniyaId: string;
   nomi: string; // savdo nomi
   raqam: string;
   sana: string;
   summa: number;
   tolangan: number;
+  qarz: number;
   holat: SavdoHolati;
   ombor: string;
   masul: string; // mas'ul shaxs
