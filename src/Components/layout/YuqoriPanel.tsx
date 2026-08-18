@@ -132,17 +132,17 @@ export default function YuqoriPanel() {
   if (moduleKey === "default") {
     return (
       <header className="mb-6 flex items-center gap-4">
-        <div className="flex h-11 flex-1 items-center rounded-2xl border border-orange-100 bg-white/60 px-4 shadow-sm">
+        <div className="flex h-13 flex-1 items-center rounded-[18px] border border-gold-200/60 bg-white/75 px-5 shadow-gold-soft transition focus-within:border-gold-400 focus-within:shadow-[0_0_0_4px_rgba(200,146,35,0.10)]">
+          <Search size={18} className="mr-3 shrink-0 text-[#8F8980]" />
           <input
-            placeholder="Qidirish"
-            className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+            placeholder="Qidirish..."
+            className="min-w-0 flex-1 bg-transparent text-sm text-[#1C1A17] outline-none placeholder:text-[#8F8980]"
           />
-          <Search size={18} className="text-gray-400" />
         </div>
         <button
           type="button"
           onClick={() => setMahsulotModalOchiq(true)}
-          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-950 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600 hover:shadow-md active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
+          className="flex h-13 w-13 items-center justify-center rounded-2xl border border-gold-200/60 bg-white text-[#1C1A17] shadow-gold-soft transition-all duration-200 hover:-translate-y-0.5 hover:border-gold-300 hover:bg-gold-100 hover:text-gold-600 hover:shadow-gold-medium active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2"
           aria-label="Mahsulot qo'shish"
         >
           <PackagePlus size={20} />
@@ -175,7 +175,7 @@ export default function YuqoriPanel() {
       initial={{ opacity: 0, y: -16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-      className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-orange-100 bg-white/60 px-4 py-3 shadow-sm backdrop-blur-xl"
+      className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gold-100 bg-white/60 px-4 py-3 shadow-sm backdrop-blur-xl"
     >
       <nav
         className={
@@ -205,8 +205,8 @@ export default function YuqoriPanel() {
                   : "pb-2"
               } ${
                 isActive
-                  ? "font-bold text-orange-600 after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-orange-500"
-                  : "font-medium text-gray-500 hover:text-orange-600"
+                  ? "font-bold text-gold-600 after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-gold-500"
+                  : "font-medium text-gray-500 hover:text-gold-600"
               }`}
             >
               {tab.nom}
@@ -227,10 +227,10 @@ export default function YuqoriPanel() {
         />
         {moduleKey !== "savdo" && moduleKey !== "ombor" && (
           <>
-            <button className="hidden h-10 items-center gap-2 rounded-2xl border border-orange-100 bg-white/60 px-3 text-sm text-gray-600 lg:flex">
+            <button className="hidden h-10 items-center gap-2 rounded-2xl border border-gold-100 bg-white/60 px-3 text-sm text-gray-600 lg:flex">
               <CalendarDays size={17} /> Bugun <ChevronDown size={15} />
             </button>
-            <button className="hidden h-10 items-center gap-2 rounded-2xl bg-orange-500 px-3 text-sm font-bold text-white lg:flex">
+            <button className="hidden h-10 items-center gap-2 rounded-2xl bg-gold-500 px-3 text-sm font-bold text-white lg:flex">
               <Zap size={17} /> Tezkor amallar
             </button>
           </>
@@ -471,7 +471,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={onClose}
-            className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600"
+            className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gold-500 text-white shadow-lg shadow-gold-200 transition hover:bg-gold-600"
             aria-label="Yopish"
           >
             <X size={24} />
@@ -479,7 +479,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={() => setReloadKey((value) => value + 1)}
-            className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-orange-500 shadow-md ring-1 ring-orange-100 transition hover:bg-orange-50"
+            className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-gold-500 shadow-md ring-1 ring-gold-100 transition hover:bg-gold-50"
             aria-label="Yangilash"
           >
             <RefreshCw size={22} className={yuklanmoqda ? "animate-spin" : ""} />
@@ -487,37 +487,37 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={() => setQidiruv("")}
-            className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-orange-500 shadow-md ring-1 ring-orange-100 transition hover:bg-orange-50"
+            className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-gold-500 shadow-md ring-1 ring-gold-100 transition hover:bg-gold-50"
             aria-label="Qidiruvni tozalash"
           >
             <Search size={22} />
           </button>
           <button
             type="button"
-            className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-orange-500 shadow-md ring-1 ring-orange-100"
+            className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-gold-500 shadow-md ring-1 ring-gold-100"
             aria-label="Mahsulotlar"
           >
             <PackagePlus size={22} />
           </button>
         </div>
 
-        <section className="flex h-[min(860px,94vh)] w-full flex-col overflow-hidden rounded-[34px] border border-orange-100 bg-white shadow-[0_30px_120px_rgba(15,23,42,.32)]">
-        <div className="flex items-center justify-between border-b border-orange-50 bg-[#fff8f1] px-7 py-6">
+        <section className="flex h-[min(860px,94vh)] w-full flex-col overflow-hidden rounded-[34px] border border-gold-100 bg-white shadow-[0_30px_120px_rgba(15,23,42,.32)]">
+        <div className="flex items-center justify-between border-b border-gold-50 bg-[#fff8f1] px-7 py-6">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-orange-500">YePost</p>
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-gold-500">YePost</p>
             <h2 className="mt-1 text-2xl font-black text-slate-950">Mahsulot tanlash</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm ring-1 ring-orange-100 transition hover:bg-orange-500 hover:text-white"
+            className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm ring-1 ring-gold-100 transition hover:bg-gold-500 hover:text-white"
             aria-label="Yopish"
           >
             <X size={22} />
           </button>
         </div>
 
-        <div className="grid gap-3 border-b border-orange-50 px-7 py-5 lg:grid-cols-[minmax(0,1fr)_280px_280px]">
+        <div className="grid gap-3 border-b border-gold-50 px-7 py-5 lg:grid-cols-[minmax(0,1fr)_280px_280px]">
           <label className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4">
             <Search size={18} className="text-slate-400" />
             <input
@@ -533,7 +533,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
               type="button"
               onClick={() => setOmborDropdownOchiq((value) => !value)}
               className={`flex h-12 w-full items-center justify-between rounded-2xl border bg-white px-4 text-left text-sm font-bold outline-none transition ${
-                omborDropdownOchiq ? "border-orange-400 ring-4 ring-orange-50" : "border-slate-200 hover:border-orange-200"
+                omborDropdownOchiq ? "border-gold-400 ring-4 ring-gold-50" : "border-slate-200 hover:border-gold-200"
               }`}
             >
               <span className={tanlanganOmbor ? "text-slate-700" : "text-slate-400"}>
@@ -541,12 +541,12 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
               </span>
               <ChevronDown
                 size={18}
-                className={`shrink-0 text-slate-400 transition ${omborDropdownOchiq ? "rotate-180 text-orange-500" : ""}`}
+                className={`shrink-0 text-slate-400 transition ${omborDropdownOchiq ? "rotate-180 text-gold-500" : ""}`}
               />
             </button>
 
             {omborDropdownOchiq && (
-              <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[260] max-h-72 overflow-auto rounded-2xl border border-orange-100 bg-white p-2 shadow-[0_18px_55px_rgba(15,23,42,.18)]">
+              <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[260] max-h-72 overflow-auto rounded-2xl border border-gold-100 bg-white p-2 shadow-[0_18px_55px_rgba(15,23,42,.18)]">
                 {omborlar.length === 0 ? (
                   <div className="rounded-xl px-3 py-3 text-sm font-bold text-slate-400">
                     Ombor topilmadi
@@ -564,11 +564,11 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
                           setOmborDropdownOchiq(false);
                         }}
                         className={`flex w-full items-center justify-between rounded-xl px-3 py-3 text-left text-sm font-bold transition ${
-                          active ? "bg-orange-50 text-orange-600" : "text-slate-600 hover:bg-slate-50"
+                          active ? "bg-gold-50 text-gold-600" : "text-slate-600 hover:bg-slate-50"
                         }`}
                       >
                         {nomniOlish(ombor)}
-                        {active && <span className="h-2 w-2 rounded-full bg-orange-500" />}
+                        {active && <span className="h-2 w-2 rounded-full bg-gold-500" />}
                       </button>
                     );
                   })
@@ -582,7 +582,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
               type="button"
               onClick={() => setNarxTuri("chakana")}
               className={`rounded-xl text-sm font-black transition ${
-                narxTuri === "chakana" ? "bg-orange-500 text-white shadow-sm" : "text-slate-500"
+                narxTuri === "chakana" ? "bg-gold-500 text-white shadow-sm" : "text-slate-500"
               }`}
             >
               Chakana
@@ -591,7 +591,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
               type="button"
               onClick={() => setNarxTuri("ulgurji")}
               className={`rounded-xl text-sm font-black transition ${
-                narxTuri === "ulgurji" ? "bg-orange-500 text-white shadow-sm" : "text-slate-500"
+                narxTuri === "ulgurji" ? "bg-gold-500 text-white shadow-sm" : "text-slate-500"
               }`}
             >
               Ulgurji
@@ -608,7 +608,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
         <div className="min-h-0 flex-1 overflow-auto p-7">
           {yuklanmoqda ? (
             <div className="flex h-full min-h-[360px] items-center justify-center text-slate-500">
-              <LoaderCircle className="mr-2 animate-spin text-orange-500" size={24} />
+              <LoaderCircle className="mr-2 animate-spin text-gold-500" size={24} />
               Mahsulotlar yuklanmoqda...
             </div>
           ) : filteredProducts.length === 0 ? (
@@ -625,7 +625,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
                 return (
                   <article
                     key={item.modificationId}
-                    className={`rounded-[22px] border bg-white p-4 shadow-sm transition hover:border-orange-200 hover:shadow-md ${
+                    className={`rounded-[22px] border bg-white p-4 shadow-sm transition hover:border-gold-200 hover:shadow-md ${
                       sotishMumkin ? "border-slate-100" : "border-slate-100 opacity-80"
                     }`}
                   >
@@ -638,7 +638,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
                           {item.modification?.barcode || item.modification?.article || "Kod kiritilmagan"}
                         </p>
                       </div>
-                      <div className={`flex shrink-0 items-center rounded-2xl p-1 ${tanlanganMiqdorlar[item.modificationId] ? "bg-orange-500 text-white shadow-lg shadow-orange-100" : "bg-slate-100 text-slate-500"}`}>
+                      <div className={`flex shrink-0 items-center rounded-2xl p-1 ${tanlanganMiqdorlar[item.modificationId] ? "bg-gold-500 text-white shadow-lg shadow-gold-100" : "bg-slate-100 text-slate-500"}`}>
                         {tanlanganMiqdorlar[item.modificationId] ? (
                           <>
                             <button type="button" onClick={() => miqdorniYangilash(item, -1)} className="flex h-8 w-8 items-center justify-center rounded-xl hover:bg-white/15" aria-label="Kamaytirish"><Minus size={16}/></button>
@@ -646,7 +646,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
                             <button type="button" onClick={() => miqdorniYangilash(item, 1)} disabled={!sotishMumkin || tanlanganMiqdorlar[item.modificationId] >= qoldiq} className="flex h-8 w-8 items-center justify-center rounded-xl hover:bg-white/15 disabled:opacity-40" aria-label="Ko'paytirish"><Plus size={16}/></button>
                           </>
                         ) : (
-                          <button type="button" onClick={() => miqdorniYangilash(item, 1)} disabled={!sotishMumkin} className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500 text-white disabled:bg-slate-200 disabled:text-slate-400" aria-label="Tanlash"><Plus size={19}/></button>
+                          <button type="button" onClick={() => miqdorniYangilash(item, 1)} disabled={!sotishMumkin} className="flex h-9 w-9 items-center justify-center rounded-xl bg-gold-500 text-white disabled:bg-slate-200 disabled:text-slate-400" aria-label="Tanlash"><Plus size={19}/></button>
                         )}
                       </div>
                     </div>
@@ -658,9 +658,9 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
                           {qoldiq.toLocaleString("uz-UZ")}
                         </p>
                       </div>
-                      <div className="rounded-2xl bg-orange-50 px-3 py-3">
-                        <p className="text-[11px] font-black uppercase text-orange-400">Narx</p>
-                        <p className="mt-1 text-base font-black text-orange-600">{formatSumma(narx)}</p>
+                      <div className="rounded-2xl bg-gold-50 px-3 py-3">
+                        <p className="text-[11px] font-black uppercase text-gold-400">Narx</p>
+                        <p className="mt-1 text-base font-black text-gold-600">{formatSumma(narx)}</p>
                       </div>
                     </div>
 
@@ -675,12 +675,12 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
         </div>
-        <footer className="flex flex-col gap-4 border-t border-orange-100 bg-[#fff8f1] px-7 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <footer className="flex flex-col gap-4 border-t border-gold-100 bg-[#fff8f1] px-7 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 text-orange-600"><ShoppingCart size={22}/></span>
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gold-100 text-gold-600"><ShoppingCart size={22}/></span>
             <div><p className="text-xs font-black uppercase tracking-wide text-slate-400">Tanlangan mahsulotlar</p><p className="mt-1 font-black text-slate-900">{tanlanganSoni} dona · {formatSumma(tanlanganJami)}</p></div>
           </div>
-          <button type="button" onClick={savatchagaQoshish} disabled={tanlanganSoni === 0} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-7 text-sm font-black text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"><ShoppingCart size={18}/> Savatchaga qo'shish {tanlanganSoni > 0 ? `(${tanlanganSoni})` : ""}</button>
+          <button type="button" onClick={savatchagaQoshish} disabled={tanlanganSoni === 0} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-gold-500 px-7 text-sm font-black text-white shadow-lg shadow-gold-200 transition hover:bg-gold-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"><ShoppingCart size={18}/> Savatchaga qo'shish {tanlanganSoni > 0 ? `(${tanlanganSoni})` : ""}</button>
         </footer>
       </section>
       </div>
@@ -748,12 +748,12 @@ function BildirishnomaTugmasi({
           setOchiq(!ochiq);
           if (!ochiq) onReload();
         }}
-        className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-orange-100 bg-white/60 text-gray-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600 hover:shadow-md active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
+        className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-gold-100 bg-white/60 text-gray-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-gold-200 hover:bg-gold-50 hover:text-gold-600 hover:shadow-md active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2"
         aria-label="Bildirishnomalar"
       >
         <Bell size={18} />
         {oqilmaganSoni > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-black text-white">
+          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-gold-500 px-1 text-[10px] font-black text-white">
             {oqilmaganSoni > 9 ? "9+" : oqilmaganSoni}
           </span>
         )}
@@ -769,10 +769,10 @@ function BildirishnomaTugmasi({
               onClick={() => setOchiq(false)}
             />
             <div
-              className="fixed z-[200] w-[min(380px,calc(100vw-24px))] overflow-hidden rounded-[28px] border border-orange-100 bg-white shadow-[0_24px_90px_rgba(15,23,42,.22)]"
+              className="fixed z-[200] w-[min(380px,calc(100vw-24px))] overflow-hidden rounded-[28px] border border-gold-100 bg-white shadow-[0_24px_90px_rgba(15,23,42,.22)]"
               style={{ top: position.top, right: position.right }}
             >
-          <div className="flex items-center justify-between border-b border-orange-50 px-4 py-3">
+          <div className="flex items-center justify-between border-b border-gold-50 px-4 py-3">
             <div>
               <p className="font-black text-gray-900">Bildirishnomalar</p>
               <p className="text-xs text-gray-400">{oqilmaganSoni} ta o'qilmagan</p>
@@ -780,7 +780,7 @@ function BildirishnomaTugmasi({
             <button
               type="button"
               onClick={onReadAll}
-              className="rounded-xl bg-orange-50 px-3 py-2 text-xs font-bold text-orange-600"
+              className="rounded-xl bg-gold-50 px-3 py-2 text-xs font-bold text-gold-600"
             >
               Hammasi o'qildi
             </button>
@@ -789,7 +789,7 @@ function BildirishnomaTugmasi({
           <div className="max-h-[380px] overflow-auto p-2">
             {yuklanmoqda ? (
               <div className="flex h-28 items-center justify-center">
-                <LoaderCircle className="animate-spin text-orange-500" size={24} />
+                <LoaderCircle className="animate-spin text-gold-500" size={24} />
               </div>
             ) : items.length === 0 ? (
               <p className="px-4 py-10 text-center text-sm font-medium text-gray-400">
@@ -801,12 +801,12 @@ function BildirishnomaTugmasi({
                   key={item.id}
                   type="button"
                   onClick={() => onRead(item.id)}
-                  className="block w-full rounded-2xl px-4 py-3 text-left hover:bg-orange-50"
+                  className="block w-full rounded-2xl px-4 py-3 text-left hover:bg-gold-50"
                 >
                   <div className="flex items-start gap-3">
                     <span
                       className={`mt-1 h-2.5 w-2.5 rounded-full ${
-                        item.isRead || item.readAt ? "bg-gray-200" : "bg-orange-500"
+                        item.isRead || item.readAt ? "bg-gray-200" : "bg-gold-500"
                       }`}
                     />
                     <div className="min-w-0 flex-1">
@@ -817,7 +817,7 @@ function BildirishnomaTugmasi({
                         {item.text ?? item.message ?? "Yangi CRM hodisasi"}
                       </p>
                       {item.createdAt && (
-                        <p className="mt-1 text-[11px] font-bold text-orange-500">
+                        <p className="mt-1 text-[11px] font-bold text-gold-500">
                           {new Date(item.createdAt).toLocaleString("uz-UZ")}
                         </p>
                       )}
@@ -880,7 +880,7 @@ function ProfilTugmasi({
         ref={buttonRef}
         type="button"
         onClick={() => setOchiq(!ochiq)}
-        className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-white/60 text-gray-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600 hover:shadow-md active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
+        className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-white/60 text-gray-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-gold-200 hover:bg-gold-50 hover:text-gold-600 hover:shadow-md active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2"
         aria-label="Profil menyusi"
       >
         {rasmUrl ? (
@@ -900,7 +900,7 @@ function ProfilTugmasi({
               onClick={() => setOchiq(false)}
             />
             <div
-              className="fixed z-[200] w-[260px] overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-[0_24px_90px_rgba(15,23,42,.22)]"
+              className="fixed z-[200] w-[260px] overflow-hidden rounded-[24px] border border-gold-100 bg-white shadow-[0_24px_90px_rgba(15,23,42,.22)]"
               style={{ top: position.top, right: position.right }}
             >
               <div className="flex items-center gap-3 border-b border-gray-100 bg-gray-50/70 p-4">
@@ -920,19 +920,19 @@ function ProfilTugmasi({
                 <Link
                   to="/sozlamalar"
                   onClick={() => setOchiq(false)}
-                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-orange-50 hover:text-orange-600"
+                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-gold-50 hover:text-gold-600"
                 >
                   <UserRound size={17} /> Mening profilim
                 </Link>
                 <Link
                   to="/sozlamalar"
                   onClick={() => setOchiq(false)}
-                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-orange-50 hover:text-orange-600"
+                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-gold-50 hover:text-gold-600"
                 >
                   <Settings size={17} /> Sozlamalar
                 </Link>
               </div>
-              <div className="border-t border-orange-100 p-2">
+              <div className="border-t border-gold-100 p-2">
                 <button
                   type="button"
                   onClick={() => {

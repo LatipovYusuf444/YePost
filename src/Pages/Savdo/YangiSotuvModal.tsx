@@ -1,8 +1,7 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   Bell,
   CalendarDays,
-  ChevronDown,
   Copy,
   Download,
   ExternalLink,
@@ -21,6 +20,7 @@ import {
 import AppModal from "@/Components/common/AppModal";
 import { crmApi } from "@/api/crmApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { useAuthProfileStore } from "@/store/authProfileStore";
 import type {
   MijozTanlovi,
   OmborTanlovi,
@@ -46,12 +46,13 @@ type YangiSotuvModalProps = {
 
 type MahsulotQatori = {
   modificationId: string;
+  qoldiqKaliti: string;
   quantity: string;
   price: string;
   discount: string;
 };
 
-const faoliyatTablar = ["Ish", "Izoh", "Xabar", "Vazifa", "Ko'proq"];
+const faoliyatTablar = ["Ish", "Izoh", "Xabar", "Vazifa", "Uchrashuv"];
 
 const faoliyatMatnlari: Record<string, { title: string; placeholder: string }> = {
   Ish: {
@@ -70,9 +71,9 @@ const faoliyatMatnlari: Record<string, { title: string; placeholder: string }> =
     title: "Vazifa yaratish",
     placeholder: "Vazifa haqida batafsil yozing...",
   },
-  "Ko'proq": {
-    title: "Qo'shimcha ish",
-    placeholder: "Qo'shimcha ma'lumot kiriting...",
+  Uchrashuv: {
+    title: "Uchrashuv belgilash",
+    placeholder: "Uchrashuv haqida batafsil yozing...",
   },
 };
 
@@ -153,6 +154,10 @@ function qoldiqNarxi(qoldiq?: QoldiqTanlovi) {
   );
 }
 
+function qoldiqKaliti(qoldiq: Pick<QoldiqTanlovi, "modificationId" | "warehouseId">) {
+  return qoldiq.warehouseId ? `${qoldiq.modificationId}::${qoldiq.warehouseId}` : qoldiq.modificationId;
+}
+
 function raqamgaAylantirish(value: string) {
   if (!value.trim()) return 0;
   const number = Number(value.replace(/[^\d.]/g, ""));
@@ -211,10 +216,21 @@ export default function YangiSotuvModal({
   const [customerId, setCustomerId] = useState("");
   const [clientCompanyId, setClientCompanyId] = useState("");
   const [responsibleId, setResponsibleId] = useState("");
+  const joriyProfil = useAuthProfileStore((state) => state.profil);
+  const profilniYuklash = useAuthProfileStore((state) => state.profilniYuklash);
+
+  useEffect(() => {
+    if (!joriyProfil) void profilniYuklash();
+  }, [joriyProfil, profilniYuklash]);
+
+  useEffect(() => {
+    // Sotuvning mas'ul xodimi har doim tizimga real kirgan foydalanuvchining
+    // o'zi bo'lishi kerak (masalan, direktor kirsa - direktor, admin kirsa - admin).
+    if (joriyProfil?.id) setResponsibleId(joriyProfil.id);
+  }, [joriyProfil]);
   const [sotuvNomi, setSotuvNomi] = useState("");
   const [bosqich, setBosqich] = useState("Yangi");
   const [valyuta, setValyuta] = useState("UZS");
-  const [note, setNote] = useState("");
   const [boshlanishSanasi, setBoshlanishSanasi] = useState(bugungiSana());
   const [tugashSanasi, setTugashSanasi] = useState(kelasiHafta());
   const [faolTab, setFaolTab] = useState("Ish");
@@ -225,7 +241,7 @@ export default function YangiSotuvModal({
   const [faoliyatSaqlangan, setFaoliyatSaqlangan] = useState(false);
   const [sotuvBackendgaSaqlandi, setSotuvBackendgaSaqlandi] = useState(false);
   const [mahsulotlar, setMahsulotlar] = useState<MahsulotQatori[]>([
-    { modificationId: "", quantity: "1", price: "", discount: "" },
+    { modificationId: "", qoldiqKaliti: "", quantity: "1", price: "", discount: "" },
   ]);
   const [xatolik, setXatolik] = useState("");
 
@@ -243,7 +259,6 @@ export default function YangiSotuvModal({
   );
   const tanlanganMijoz = mijozlar.find((item) => item.id === customerId);
   const tanlanganKompaniya = mijozKompaniyalari.find((item) => item.id === clientCompanyId);
-  const tanlanganOmbor = omborlar.find((item) => item.id === warehouseId);
   const tanlanganXodim = xodimlar.find((item) => item.id === responsibleId);
   const draftMode = variant === "draft";
   const modalMatnlari = draftMode
@@ -284,7 +299,7 @@ export default function YangiSotuvModal({
       tugashSanasi ? `Tugash sanasi: ${tugashSanasi}` : "",
     ].filter(Boolean);
 
-    return [...metadata, note.trim()].filter(Boolean).join("\n");
+    return metadata.join("\n");
   }
 
   async function faoliyatniBackendgaSaqlash() {
@@ -308,8 +323,9 @@ export default function YangiSotuvModal({
           return false;
         }
         const dueAt = new Date(`${faoliyatSana}T${faoliyatSoat || "00:00"}`).toISOString();
+        const faoliyatTuri = faolTab === "Vazifa" ? "TASK" : faolTab === "Uchrashuv" ? "MEETING" : "CALL";
         await crmApi.activityYaratish({
-          type: faolTab === "Vazifa" ? "TASK" : "CALL",
+          type: faoliyatTuri,
           partnerId,
           subject: sarlavha,
           description: faoliyatTafsilot.trim() || undefined,
@@ -332,10 +348,15 @@ export default function YangiSotuvModal({
     );
   }
 
-  function modifikatsiyaniTanlash(index: number, modificationId: string) {
-    const qoldiq = qoldiqlar.find((item) => item.modificationId === modificationId);
+  function modifikatsiyaniTanlash(index: number, tanlanganQoldiqKaliti: string) {
+    // Bitta mahsulot bir nechta omborda mavjud bo'lishi mumkin, shuning uchun
+    // faqat modificationId emas, aynan modificationId+warehouseId kombinatsiyasi
+    // bo'yicha aniq qoldiq yozuvini topamiz (aks holda boshqa ombordagi
+    // qoldiq/narx tasodifan tanlanib qolishi mumkin edi).
+    const qoldiq = qoldiqlar.find((item) => qoldiqKaliti(item) === tanlanganQoldiqKaliti);
     mahsulotniYangilash(index, {
-      modificationId,
+      modificationId: qoldiq?.modificationId ?? tanlanganQoldiqKaliti,
+      qoldiqKaliti: tanlanganQoldiqKaliti,
       price: qoldiqNarxi(qoldiq) ? String(qoldiqNarxi(qoldiq)) : "",
     });
 
@@ -378,7 +399,7 @@ export default function YangiSotuvModal({
   function qatorQoshish() {
     setMahsulotlar((joriy) => [
       ...joriy,
-      { modificationId: "", quantity: "1", price: "", discount: "" },
+      { modificationId: "", qoldiqKaliti: "", quantity: "1", price: "", discount: "" },
     ]);
   }
 
@@ -722,57 +743,27 @@ export default function YangiSotuvModal({
                     </h3>
                     <FieldSettings />
                   </div>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <label className="grid gap-2">
-                      <span className="text-sm font-bold text-slate-400">Ombor *</span>
-                      <SavdoSelect
-                        value={warehouseId}
-                        onChange={(value) => {
-                          setWarehouseId(value);
-                          onOmborTanlash(value);
-                        }}
-                        placeholder="Omborni tanlang"
-                        options={omborlar.map((ombor) => ({
-                          value: ombor.id,
-                          label: ombor.name ?? ombor.id,
-                        }))}
-                        buttonClassName="h-11 rounded-xl px-3.5 text-sm"
-                        dropdownClassName="min-w-[300px]"
-                        portal
-                      />
-                    </label>
+                  <div className="grid gap-3">
                     <label className="grid gap-2">
                       <span className="text-sm font-bold text-slate-400">Mas'ul xodim</span>
-                      <SavdoSelect
-                        value={responsibleId}
-                        onChange={setResponsibleId}
-                        placeholder="Mas'ul xodimni tanlang"
-                        options={xodimlar.map((xodim) => ({
-                          value: xodim.id,
-                          label: xodim.fullName ?? xodim.username ?? xodim.id,
-                        }))}
-                        buttonClassName="h-11 rounded-xl px-3.5 text-sm"
-                        dropdownClassName="min-w-[320px]"
-                        portal
-                      />
+                      <div className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-sm font-semibold text-slate-600">
+                        <UserRound size={16} className="shrink-0 text-slate-400" />
+                        <span className="truncate">
+                          {joriyProfil
+                            ? joriyProfil.fullName?.trim() || joriyProfil.username
+                            : "Yuklanmoqda..."}
+                        </span>
+                        {joriyProfil?.role && (
+                          <span className="ml-auto shrink-0 rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-black uppercase text-[#FF6A00]">
+                            {joriyProfil.role}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        Sotuv har doim tizimga kirgan foydalanuvchi nomidan yaratiladi.
+                      </p>
                     </label>
                   </div>
-                </section>
-
-                <section className="overflow-hidden rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur">
-                  <div className="mb-4 flex items-center justify-between border-b border-orange-100/80 pb-3">
-                    <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
-                      Izoh
-                    </h3>
-                    <FieldSettings />
-                  </div>
-                  <textarea
-                    value={note}
-                    onChange={(event) => setNote(event.target.value)}
-                    rows={3}
-                    className="w-full resize-none rounded-2xl border border-slate-200 p-3.5 text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100"
-                    placeholder="Sotuv bo'yicha qo'shimcha izoh"
-                  />
                 </section>
               </div>
 
@@ -794,7 +785,6 @@ export default function YangiSotuvModal({
                         }`}
                       >
                         {tab}
-                        {tab === "Ko'proq" && <ChevronDown size={14} />}
                       </button>
                     ))}
                   </div>
@@ -898,7 +888,7 @@ export default function YangiSotuvModal({
                       >
                         <Bell size={18} />
                       </button>
-                      {(faolTab === "Xabar" || faolTab === "Ko'proq") && (
+                      {faolTab === "Xabar" && (
                         <button
                           type="button"
                           className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-orange-50 hover:text-[#FF6A00]"
@@ -962,7 +952,7 @@ export default function YangiSotuvModal({
                   <div className="space-y-3">
                     {mahsulotlar.map((mahsulot, index) => {
                       const qoldiq = qoldiqlar.find(
-                        (item) => item.modificationId === mahsulot.modificationId
+                        (item) => qoldiqKaliti(item) === mahsulot.qoldiqKaliti
                       );
                       const miqdor = raqamgaAylantirish(mahsulot.quantity);
                       const narx = raqamgaAylantirish(mahsulot.price);
@@ -995,13 +985,17 @@ export default function YangiSotuvModal({
 
                           <div className="grid min-w-0 gap-2 xl:grid-cols-[minmax(150px,1fr)_42px_96px_88px_96px] 2xl:grid-cols-[minmax(190px,1fr)_48px_118px_108px_112px]">
                             <SavdoSelect
-                              value={mahsulot.modificationId}
+                              value={mahsulot.qoldiqKaliti}
                               onChange={(value) => modifikatsiyaniTanlash(index, value)}
                               placeholder="Mahsulotni tanlang"
-                              options={qoldiqlar.map((item) => ({
-                                value: item.modificationId,
-                                label: `${qoldiqNomi(item)} - qoldiq: ${qoldiqMiqdori(item)} - narx: ${pulniFormatlash(qoldiqNarxi(item))}`,
-                              }))}
+                              options={qoldiqlar.map((item) => {
+                                const itemOmborNomi =
+                                  item.warehouse?.name ?? omborlar.find((ombor) => ombor.id === item.warehouseId)?.name;
+                                return {
+                                  value: qoldiqKaliti(item),
+                                  label: `${qoldiqNomi(item)}${itemOmborNomi ? ` (${itemOmborNomi})` : ""} - qoldiq: ${qoldiqMiqdori(item)} - narx: ${pulniFormatlash(qoldiqNarxi(item))}`,
+                                };
+                              })}
                               buttonClassName="h-11 rounded-xl px-3.5 text-sm"
                               dropdownClassName="min-w-[520px] max-w-[min(720px,calc(100vw-32px))]"
                               portal
@@ -1051,13 +1045,25 @@ export default function YangiSotuvModal({
                           </div>
 
                           <div className="mt-3 grid gap-2 md:grid-cols-3">
-                            <div className="rounded-xl bg-white/80 px-3 py-2.5 ring-1 ring-orange-50">
+                            <div className="rounded-xl bg-white/80 px-3 py-2 ring-1 ring-orange-50">
                               <p className="text-xs font-black uppercase text-slate-400">
                                 Ombor
                               </p>
-                              <p className="mt-1 text-sm font-bold text-slate-700">
-                                {tanlanganOmbor?.name || "Tanlanmagan"}
-                              </p>
+                              <SavdoSelect
+                                value={warehouseId}
+                                onChange={(value) => {
+                                  setWarehouseId(value);
+                                  onOmborTanlash(value);
+                                }}
+                                placeholder="Omborni tanlang"
+                                options={omborlar.map((ombor) => ({
+                                  value: ombor.id,
+                                  label: ombor.name ?? ombor.id,
+                                }))}
+                                buttonClassName="h-7 rounded-lg border-0 bg-transparent px-0 text-sm font-bold text-slate-700 shadow-none hover:bg-transparent"
+                                dropdownClassName="min-w-[240px]"
+                                portal
+                              />
                             </div>
                             <div className="rounded-xl bg-white/80 px-3 py-2.5 ring-1 ring-orange-50">
                               <p className="text-xs font-black uppercase text-slate-400">

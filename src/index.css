@@ -46,6 +46,23 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Champagne gold / cream palette — premium POS theme. */
+  --color-gold-50: #FBF7F0;
+  --color-gold-100: #F8F3EA;
+  --color-gold-150: #F3EADA;
+  --color-gold-200: #ECDDBE;
+  --color-gold-300: #E1B650;
+  --color-gold-400: #D5A536;
+  --color-gold-500: #C89223;
+  --color-gold-600: #B88116;
+  --color-gold-700: #96690F;
+  --color-cream-50: #FFFDF9;
+  --color-cream-100: #FBF7F0;
+  --color-cream-200: #F8F3EA;
+  --shadow-gold-soft: 0 8px 30px rgba(126, 91, 30, 0.07);
+  --shadow-gold-medium: 0 12px 40px rgba(126, 91, 30, 0.10);
+  --shadow-gold-strong: 0 20px 60px rgba(126, 91, 30, 0.14);
 }
 
 :root {
@@ -88,8 +105,8 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(251, 146, 60, 0.13), transparent 34rem),
-    linear-gradient(135deg, #FFF7ED 0%, #FFF4E6 48%, #FFEAD5 100%);
+    radial-gradient(circle at top left, rgba(213, 165, 54, 0.09), transparent 34rem),
+    linear-gradient(135deg, #FBF7F0 0%, #F8F3EA 48%, #F3EADA 100%);
   color: var(--foreground);
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",

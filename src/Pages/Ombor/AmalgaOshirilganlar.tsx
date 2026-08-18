@@ -4,21 +4,20 @@ import {
   FileText,
   LoaderCircle,
   Plus,
-  RefreshCw,
   Search,
   Settings,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useOmborStore } from "@/store/omborStore";
 import { useSavdoStore } from "@/store/savdoStore";
-import type { Sotuv, SotuvTolovi } from "@/types/savdo";
+import type { Sotuv } from "@/types/savdo";
 import {
   sotuvHolati,
   sotuvQarzdorlikSummasi,
   sotuvSummasi,
   sotuvTolanganSummasi,
 } from "@/Pages/Savdo/savdoYordamchilari";
-import SotuvTafsilotlariModal from "@/Pages/Savdo/SotuvTafsilotlariModal";
+import { OmbordanChiqarishHujjatModal } from "@/Pages/Savdo/SotuvTafsilotlariModal";
 import { hujjatRaqami, pul, sana } from "./omborYordamchilari";
 import OmborJadval from "./OmborJadval";
 
@@ -132,6 +131,21 @@ export default function AmalgaOshirilganlar() {
     void amalgaOshirilganlarniYuklash();
   }, [amalgaOshirilganlarniYuklash]);
 
+  useEffect(() => {
+    const yangilash = () => void amalgaOshirilganlarniYuklash();
+    window.addEventListener("savdo:yangilandi", yangilash);
+    return () => window.removeEventListener("savdo:yangilandi", yangilash);
+  }, [amalgaOshirilganlarniYuklash]);
+
+  const savdoBoshlangichMalumotlarniYuklash = savdo.boshlangichMalumotlarniYuklash;
+
+  useEffect(() => {
+    // Mijoz/kompaniya ro'yxati shu yerda yuklanmasa, hujjat ochilganda
+    // sotuvga biriktirilgan real mijoz/kompaniya nomi aniqlanmay, "Donalik
+    // mijoz" degan standart matnga tushib qoladi.
+    void savdoBoshlangichMalumotlarniYuklash();
+  }, [savdoBoshlangichMalumotlarniYuklash]);
+
   const savdoTanlanganSotuvniTozalash = savdo.tanlanganSotuvniTozalash;
   const savdoXatolikniTozalash = savdo.xatolikniTozalash;
 
@@ -206,39 +220,6 @@ export default function AmalgaOshirilganlar() {
     void savdo.sotuvTafsilotiniYuklash(sotuvId);
   }
 
-  async function realizatsiyaTolovQoshish(
-    sotuvId: string,
-    tolov: Pick<SotuvTolovi, "paymentType" | "amount">
-  ) {
-    const muvaffaqiyatli = await savdo.sotuvgaTolovQoshish(sotuvId, tolov);
-    if (muvaffaqiyatli) {
-      void amalgaOshirilganlarniYuklash();
-    }
-    return muvaffaqiyatli;
-  }
-
-  async function realizatsiyaTasdiqlash(sotuvId: string) {
-    const muvaffaqiyatli = await savdo.sotuvniTasdiqlash(sotuvId);
-    if (muvaffaqiyatli) {
-      savdo.tanlanganSotuvniTozalash();
-      void amalgaOshirilganlarniYuklash();
-    }
-  }
-
-  function realizatsiyaBekorQilish(sotuvId: string) {
-    const rozilik = window.confirm(
-      "Sotuvni bekor qilasizmi? Tasdiqlangan bo'lsa ombor qoldig'i tiklanadi."
-    );
-    if (!rozilik) return;
-    void (async () => {
-      const muvaffaqiyatli = await savdo.sotuvniBekorQilish(sotuvId);
-      if (muvaffaqiyatli) {
-        savdo.tanlanganSotuvniTozalash();
-        void amalgaOshirilganlarniYuklash();
-      }
-    })();
-  }
-
   function katak(item: JadvalQatori, kalit: UstunKaliti) {
     if (kalit === "kontragent") return item.kontragent || "—";
     if (kalit === "ombor") return item.ombor;
@@ -301,16 +282,6 @@ export default function AmalgaOshirilganlar() {
             className="h-14 w-full rounded-[20px] border border-slate-200 bg-white pl-13 pr-5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
           />
         </label>
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={() => void amalgaOshirilganlarniYuklash()}
-            disabled={store.yuklanmoqda}
-            className="inline-flex h-11 items-center justify-center gap-2 self-start rounded-2xl border border-orange-100 bg-white px-4 text-sm font-bold text-orange-600 transition hover:bg-orange-50 disabled:opacity-60 sm:self-auto"
-          >
-            <RefreshCw size={17} className={store.yuklanmoqda ? "animate-spin" : ""} /> Yangilash
-          </button>
-        </div>
       </div>
 
       {store.xatolik && (
@@ -437,16 +408,10 @@ export default function AmalgaOshirilganlar() {
       </div>
 
       {savdo.tanlanganSotuv && (
-        <SotuvTafsilotlariModal
+        <OmbordanChiqarishHujjatModal
           sotuv={savdo.tanlanganSotuv}
-          qoldiqlar={savdo.qoldiqlar}
-          xodimlar={savdo.xodimlar}
-          amalBajarilmoqda={savdo.amalBajarilmoqda}
-          onYopish={savdo.tanlanganSotuvniTozalash}
-          onYangilash={savdo.sotuvniYangilash}
-          onTolovQoshish={realizatsiyaTolovQoshish}
-          onTasdiqlash={realizatsiyaTasdiqlash}
-          onBekorQilish={realizatsiyaBekorQilish}
+          jami={sotuvSummasi(savdo.tanlanganSotuv)}
+          onClose={savdo.tanlanganSotuvniTozalash}
         />
       )}
     </div>

@@ -39,6 +39,19 @@ import { sotuvQarzdorlikSummasi } from "@/Pages/Savdo/savdoYordamchilari";
 
 const kassagaYoziladiganTolovUsullari = new Set(["CASH", "CARD"]);
 
+function xatolikKodi(error: unknown): string | undefined {
+  if (typeof error !== "object" || error === null) return undefined;
+  const response = (error as { response?: { data?: { code?: string } } }).response;
+  return response?.data?.code;
+}
+
+function tasdiqlashXatoligiMatni(error: unknown) {
+  if (xatolikKodi(error) === "errors.inventory.out_of_stock") {
+    return "Ombordagi mahsulot qoldig'i yetarli emas. Sotuvni tasdiqlashdan oldin ombor qoldig'ini to'ldiring yoki sotuvdagi miqdorni kamaytiring.";
+  }
+  return getApiErrorMessage(error);
+}
+
 async function qaytarishToloviniKassagaYozish(qaytarish: Qaytarish) {
   const refundMethod = String(qaytarish.refundMethod ?? "CASH").toUpperCase();
   if (!kassagaYoziladiganTolovUsullari.has(refundMethod)) return;
@@ -367,7 +380,7 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
       window.dispatchEvent(new CustomEvent("savdo:yangilandi", { detail: { sotuvId } }));
       return true;
     } catch (error) {
-      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      set({ amalBajarilmoqda: false, xatolik: tasdiqlashXatoligiMatni(error) });
       return false;
     }
   },

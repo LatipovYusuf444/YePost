@@ -43,6 +43,7 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { mijozlarApi, mijozKompaniyalariApi } from "@/api/partnersApi";
 import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
+import { useSavdoStore } from "@/store/savdoStore";
 import type { Activity, Attachment, ChatMessage, Comment } from "@/types/crm";
 import type { Ombor } from "@/types/ombor";
 import type { QoldiqTanlovi, SaleAuditLog, Sotuv, SotuvTolovi, SotuvYaratishMalumoti, TolovTuri, XodimTanlovi, YetkazishMalumoti, YetkazishPayload } from "@/types/savdo";
@@ -51,6 +52,7 @@ import {
   mijozNomi,
   pulniFormatlash,
   sananiFormatlash,
+  sotuvChegirmaSummasi,
   sotuvHolati,
   sotuvHolatiMatni,
   sotuvJadvalId,
@@ -1327,12 +1329,31 @@ function KelishuvCard({
   const tolanganSumma = sotuvTolanganSummasi(sotuv);
   const qarzdorlikSumma = sotuvQarzdorlikSummasi(sotuv);
   const ortiqchaTolovSumma = sotuvOrtiqchaTolovSummasi(sotuv);
+  const sotuvniHaqiqiyTasdiqlash = useSavdoStore((state) => state.sotuvniTasdiqlash);
+  const [ombordanChiqarishYuklanmoqda, setOmbordanChiqarishYuklanmoqda] = useState(false);
+  const [ombordanChiqarishXatosi, setOmbordanChiqarishXatosi] = useState("");
+
+  async function ombordanChiqarishniBoshlash() {
+    setOmbordanChiqarishXatosi("");
+    if (draft) {
+      setOmbordanChiqarishYuklanmoqda(true);
+      const muvaffaqiyatli = await sotuvniHaqiqiyTasdiqlash(sotuv.id);
+      setOmbordanChiqarishYuklanmoqda(false);
+      if (!muvaffaqiyatli) {
+        setOmbordanChiqarishXatosi(
+          useSavdoStore.getState().xatolik || "Sotuvni ombordan chiqarish uchun tasdiqlab bo'lmadi."
+        );
+        return;
+      }
+    }
+    onOmbordanChiqarish();
+  }
 
   function bolimniTanlash(bolim: string) {
     setTanlanganBolim(bolim);
     setMenuOpen(false);
     if (bolim === "Yetkazish" || bolim === "To'lov va yetkazish") onYetkazish();
-    if (bolim === "Ombordan chiqarish") onOmbordanChiqarish();
+    if (bolim === "Ombordan chiqarish") void ombordanChiqarishniBoshlash();
     if (bolim === "To'lov") onTolovOchish();
   }
 
@@ -1373,20 +1394,35 @@ function KelishuvCard({
             </button>
             {menuOpen && (
               <div className="absolute left-0 top-7 z-40 w-[238px] rounded-[22px] bg-white py-3 shadow-[0_18px_50px_rgba(92,38,8,.16)] ring-1 ring-orange-100">
-                {bolimlar.map((bolim) => (
-                  <button
-                    key={bolim}
-                    type="button"
-                    onClick={() => bolimniTanlash(bolim)}
-                    className="flex h-11 w-full items-center gap-3 px-5 text-left text-[15px] text-slate-700 transition hover:bg-orange-50 hover:text-[#FF6A00]"
-                  >
-                    {bolim === "Ombordan chiqarish" && <Package size={15} className="text-sky-500" />}
-                    <span>{bolim}</span>
-                  </button>
-                ))}
+                {bolimlar.map((bolim) => {
+                  const ombordanChiqarishBolimi = bolim === "Ombordan chiqarish";
+                  return (
+                    <button
+                      key={bolim}
+                      type="button"
+                      disabled={ombordanChiqarishBolimi && ombordanChiqarishYuklanmoqda}
+                      onClick={() => bolimniTanlash(bolim)}
+                      className="flex h-11 w-full items-center gap-3 px-5 text-left text-[15px] text-slate-700 transition hover:bg-orange-50 hover:text-[#FF6A00] disabled:opacity-50"
+                    >
+                      {ombordanChiqarishBolimi &&
+                        (ombordanChiqarishYuklanmoqda ? (
+                          <LoaderCircle size={15} className="animate-spin text-sky-500" />
+                        ) : (
+                          <Package size={15} className="text-sky-500" />
+                        ))}
+                      <span>{ombordanChiqarishBolimi && ombordanChiqarishYuklanmoqda ? "Tasdiqlanmoqda..." : bolim}</span>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
+
+          {ombordanChiqarishXatosi && (
+            <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-600">
+              {ombordanChiqarishXatosi}
+            </p>
+          )}
 
           {(sotuv.payments ?? []).length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">
@@ -2101,12 +2137,12 @@ function TovarlarTab({
           <button
             type="button"
             onClick={yangiMahsulotQatoriQoshish}
-            className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-500/20"
+            className="rounded-xl bg-[#FF6A00] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#EA580C] hover:shadow-lg hover:shadow-orange-500/20"
           >
             Mahsulot qo'shish
           </button>
         </div>
-        <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm transition hover:text-blue-600">
+        <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm transition hover:text-[#FF6A00]">
           <MoreHorizontal size={20} />
         </button>
         {yangiQatorlar.length > 0 && (
@@ -2180,17 +2216,17 @@ function TovarlarTab({
                   <button
                     type="button"
                     onClick={(event) => omborPopupOchish(omborKey, event.currentTarget, mavjudQoldiq, itemOmborNomi, itemOmborManzili)}
-                    className="flex h-12 w-full items-center gap-3 rounded-md border border-slate-300 bg-white px-3 text-left transition hover:border-blue-300 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10"
+                    className="flex h-12 w-full items-center gap-3 rounded-md border border-slate-300 bg-white px-3 text-left transition hover:border-orange-300 focus:border-orange-400 focus:ring-4 focus:ring-orange-500/10"
                   >
                     <span className="min-w-0 flex-1 truncate">{itemOmborNomi}</span>
                     <Search size={18} className="text-slate-500" />
                   </button>
 
-                  <span className="text-blue-600 underline underline-offset-4">{Math.max(mavjudQoldiq, 0)} dona</span>
+                  <span className="text-[#FF6A00] underline underline-offset-4">{Math.max(mavjudQoldiq, 0)} dona</span>
 
                   <div>
                     <div className="flex h-12 items-center justify-end rounded-md border border-slate-300 bg-white px-3">{rezerv}</div>
-                    {!tasdiqlangan && <span className="mt-1 block text-right text-xs text-blue-600 underline underline-offset-4">qoralama</span>}
+                    {!tasdiqlangan && <span className="mt-1 block text-right text-xs text-[#FF6A00] underline underline-offset-4">qoralama</span>}
                   </div>
 
                   <span>{ombordanChiqdi} dona</span>
@@ -2209,7 +2245,7 @@ function TovarlarTab({
               return (
                 <div
                   key={qator.id}
-                  className={`grid ${jadvalUstunlari} items-start gap-x-5 border-b border-blue-100 bg-blue-50/30 px-7 py-4 text-sm text-slate-700`}
+                  className={`grid ${jadvalUstunlari} items-start gap-x-5 border-b border-orange-100 bg-orange-50/30 px-7 py-4 text-sm text-slate-700`}
                 >
                   <div className="flex items-center gap-4 text-slate-400">
                     <span className="text-lg">☰</span>
@@ -2229,7 +2265,7 @@ function TovarlarTab({
                               : { key: qator.id, left: Math.min(rect.left, window.innerWidth - 720), top: rect.bottom + 8 }
                           );
                         }}
-                        className={`flex h-12 min-w-0 flex-1 items-center rounded-md border bg-white px-3 text-left transition hover:border-blue-300 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 ${
+                        className={`flex h-12 min-w-0 flex-1 items-center rounded-md border bg-white px-3 text-left transition hover:border-orange-300 focus:border-orange-400 focus:ring-4 focus:ring-orange-500/10 ${
                           xatoKorsatish && xatolar.mahsulot ? "border-red-400 ring-4 ring-red-100" : "border-slate-300"
                         }`}
                       >
@@ -2255,7 +2291,7 @@ function TovarlarTab({
                       onChange={(event) => yangiQatorniYangilash(qator.id, { price: raqamniAjratish(event.target.value) })}
                       onFocus={(event) => event.currentTarget.select()}
                       placeholder="0 so'm"
-                      className={`h-12 w-full rounded-md border bg-white px-3 text-right outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 ${
+                      className={`h-12 w-full rounded-md border bg-white px-3 text-right outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-500/10 ${
                         xatoKorsatish && xatolar.narx ? "border-red-400 ring-4 ring-red-100" : "border-slate-300"
                       }`}
                     />
@@ -2298,7 +2334,7 @@ function TovarlarTab({
                           qator.warehouseAddress || omborManzili
                         )
                       }
-                      className={`flex h-12 w-full items-center gap-3 rounded-md border bg-white px-3 text-left transition hover:border-blue-300 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 ${
+                      className={`flex h-12 w-full items-center gap-3 rounded-md border bg-white px-3 text-left transition hover:border-orange-300 focus:border-orange-400 focus:ring-4 focus:ring-orange-500/10 ${
                         xatoKorsatish && xatolar.ombor ? "border-red-400 ring-4 ring-red-100" : "border-slate-300"
                       }`}
                     >
@@ -2310,7 +2346,7 @@ function TovarlarTab({
                     )}
                   </div>
 
-                  <span className="text-blue-600 underline underline-offset-4">{Math.max(qator.availableQty, 0)} dona</span>
+                  <span className="text-[#FF6A00] underline underline-offset-4">{Math.max(qator.availableQty, 0)} dona</span>
                   <div className="flex h-12 items-center justify-end rounded-md border border-slate-300 bg-white px-3">0</div>
                   <span>0 dona</span>
                   <div className="flex items-center justify-between gap-3">
@@ -2359,7 +2395,7 @@ function TovarlarTab({
             className="fixed z-[100001] w-[690px] rounded-2xl bg-white p-3 shadow-[0_24px_70px_rgba(15,23,42,0.2)] ring-1 ring-slate-100"
             style={{ left: mahsulotPopover.left, top: mahsulotPopover.top }}
           >
-            <label className="mb-3 flex h-12 items-center gap-2 rounded-xl border border-blue-400 bg-white px-4 ring-4 ring-blue-500/10">
+            <label className="mb-3 flex h-12 items-center gap-2 rounded-xl border border-orange-400 bg-white px-4 ring-4 ring-orange-500/10">
               <input
                 value={mahsulotQidiruv}
                 onChange={(event) => setMahsulotQidiruv(event.target.value)}
@@ -2387,9 +2423,9 @@ function TovarlarTab({
                       key={`${qoldiq.warehouseId ?? qoldiq.warehouse?.id ?? "ombor"}-${qoldiq.modificationId}`}
                       type="button"
                       onClick={() => qoldiqniTanlash(mahsulotPopover.key, qoldiq)}
-                      className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-blue-50"
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-orange-50"
                     >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-50 text-[#FF6A00]">
                         <Package size={18} />
                       </span>
                       <span className="min-w-0 flex-1">
@@ -2425,7 +2461,7 @@ function TovarlarTab({
             className="fixed z-[100001] w-[360px] rounded-2xl bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.18)] ring-1 ring-slate-100"
             style={{ left: omborPopover.left, top: omborPopover.top }}
           >
-            <label className="mb-2 flex h-11 items-center gap-2 rounded-xl border border-blue-400 bg-white px-3 ring-4 ring-blue-500/10">
+            <label className="mb-2 flex h-11 items-center gap-2 rounded-xl border border-orange-400 bg-white px-3 ring-4 ring-orange-500/10">
               <input
                 value={skladQidiruv}
                 onChange={(event) => setSkladQidiruv(event.target.value)}
@@ -2445,7 +2481,7 @@ function TovarlarTab({
             <button
               type="button"
               onClick={() => setOmborPopover(null)}
-              className="flex w-full items-center gap-3 rounded-xl bg-blue-50 px-3 py-3 text-left transition hover:bg-blue-100"
+              className="flex w-full items-center gap-3 rounded-xl bg-orange-50 px-3 py-3 text-left transition hover:bg-orange-100"
               title={omborPopover.title}
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-600">
@@ -2487,14 +2523,14 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
     <div className="px-7 py-7">
       <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-4">
-          <button className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700">
+          <button className="rounded-xl bg-[#FF6A00] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#EA580C]">
             Mahsulot qo'shish
           </button>
-          <button className="rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-600 shadow-sm transition hover:text-blue-600">
+          <button className="rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-600 shadow-sm transition hover:text-[#FF6A00]">
             Mahsulot tanlash
           </button>
         </div>
-        <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm transition hover:text-blue-600">
+        <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm transition hover:text-[#FF6A00]">
           <MoreHorizontal size={20} />
         </button>
       </div>
@@ -2567,14 +2603,14 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
                       );
                     }}
                     className={`flex h-12 w-full items-center gap-3 rounded-md border bg-white px-3 text-left transition ${
-                      omborOchilgan ? "border-blue-400 ring-4 ring-blue-500/10" : "border-slate-300 hover:border-blue-300"
+                      omborOchilgan ? "border-orange-400 ring-4 ring-orange-500/10" : "border-slate-300 hover:border-orange-300"
                     }`}
                   >
                     <span className="min-w-0 flex-1 truncate">{omborNomi}</span>
                     <Search size={18} className="text-slate-500" />
                   </button>
 
-                  <a className="text-blue-600 underline underline-offset-4" href="#">
+                  <a className="text-[#FF6A00] underline underline-offset-4" href="#">
                     {Math.max(son(item.quantity), 0)} dona
                   </a>
 
@@ -2583,7 +2619,7 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
                       {rezerv}
                     </div>
                     {!tasdiqlangan && (
-                      <a className="mt-1 block text-right text-xs text-blue-600 underline underline-offset-4" href="#">
+                      <a className="mt-1 block text-right text-xs text-[#FF6A00] underline underline-offset-4" href="#">
                         qoralama
                       </a>
                     )}
@@ -2629,7 +2665,7 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
             className="fixed z-[100001] w-[360px] rounded-2xl bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.18)] ring-1 ring-slate-100"
             style={{ left: omborPopover.left, top: omborPopover.top }}
           >
-            <label className="mb-2 flex h-11 items-center gap-2 rounded-xl border border-blue-400 bg-white px-3 ring-4 ring-blue-500/10">
+            <label className="mb-2 flex h-11 items-center gap-2 rounded-xl border border-orange-400 bg-white px-3 ring-4 ring-orange-500/10">
               <input
                 value={skladQidiruv}
                 onChange={(event) => setSkladQidiruv(event.target.value)}
@@ -2651,7 +2687,7 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
                 <button
                   type="button"
                   onClick={() => setOmborPopover(null)}
-                  className="flex w-full items-center gap-3 rounded-xl bg-blue-50 px-3 py-3 text-left transition hover:bg-blue-100"
+                  className="flex w-full items-center gap-3 rounded-xl bg-orange-50 px-3 py-3 text-left transition hover:bg-orange-100"
                   title={omborNomi}
                 >
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-600">
@@ -2878,11 +2914,43 @@ function YetkazishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; 
 }
 
 function OmbordanChiqarishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; onClose: () => void }) {
+  return (
+    <div className="absolute inset-0 z-[60] bg-[rgba(54,22,8,.45)] backdrop-blur-[1px]">
+      <OmbordanChiqarishHujjatMazmuni sotuv={sotuv} jami={jami} onClose={onClose} />
+    </div>
+  );
+}
+
+export function OmbordanChiqarishHujjatModal({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; onClose: () => void }) {
+  return (
+    <AppModal className="items-start justify-start bg-[rgba(54,22,8,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
+      <div className="relative h-[calc(100vh-32px)] w-full">
+        <ModalTezkorPanel sotuv={sotuv} onYopish={onClose} />
+        <OmbordanChiqarishHujjatMazmuni sotuv={sotuv} jami={jami} onClose={onClose} ikkinchiYopishTugmasi={false} />
+      </div>
+    </AppModal>
+  );
+}
+
+function OmbordanChiqarishHujjatMazmuni({
+  sotuv,
+  jami,
+  onClose,
+  ikkinchiYopishTugmasi = true,
+}: {
+  sotuv: Sotuv;
+  jami: number;
+  onClose: () => void;
+  ikkinchiYopishTugmasi?: boolean;
+}) {
   const items = sotuv.items ?? [];
   const tasdiqlangan = sotuvHolati(sotuv) === "CONFIRMED";
   const omborlar = useOmborStore((state) => state.omborlar);
   const omborNomi = sotuvOmborNomi(sotuv, omborlar);
+  const mahsulotlarJami = items.reduce((yigindi, item) => yigindi + son(item.quantity) * son(item.price), 0);
+  const chegirmaSummasi = sotuvChegirmaSummasi(sotuv);
   const [faoliyatXatosi, setFaoliyatXatosi] = useState("");
+  const [faolBolim, setFaolBolim] = useState<"Umumiy" | "Tovarlar">("Umumiy");
 
   async function faoliyatniBackendgaSaqlash(faoliyat: Omit<SaqlanganFaoliyat, "id" | "sana"> & { sana?: string }) {
     const partnerId = sotuv.customer?.partner?.id ?? sotuv.clientCompany?.partner?.id;
@@ -2912,79 +2980,140 @@ function OmbordanChiqarishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: 
   }
 
   return (
-    <div className="absolute inset-0 z-[60] bg-slate-900/45 backdrop-blur-[1px]">
-      <div className="scrollbar-hidden h-full overflow-y-auto rounded-l-3xl bg-[#eef3f6] px-7 py-7 shadow-2xl">
-        <div className="flex items-start justify-between gap-4 border-b border-slate-300/70 pb-6">
+      <div className="scrollbar-hidden h-full overflow-y-auto rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#FFF8EF] via-[#FFFDF9] to-[#FFE8D2] px-7 py-7 shadow-[0_34px_120px_rgba(92,38,8,.42)] ring-1 ring-white/80">
+        <div className="flex items-start justify-between gap-4 border-b border-orange-100/80 pb-6">
           <div>
             <h2 className="text-3xl font-semibold text-slate-900">Ombordan chiqarish hujjati</h2>
             <p className="mt-2 text-sm text-slate-500">
               Real sotuv: {sotuvRaqami(sotuv)} · {tasdiqlangan ? "mahsulot ombordan chiqarilgan" : "tasdiqlanganda ombordan chiqadi"}
             </p>
           </div>
-          <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-600 shadow-sm transition hover:bg-sky-500 hover:text-white">
-            <X size={19} />
-          </button>
+          {ikkinchiYopishTugmasi && (
+            <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-[#FF6A00] hover:text-white">
+              <X size={19} />
+            </button>
+          )}
         </div>
 
-        <div className="mt-8 grid gap-6 xl:grid-cols-[42%_34px_minmax(0,1fr)]">
-          <aside className="space-y-4">
-            <section className="rounded-2xl bg-white p-5 shadow-sm">
-              <CardTitle title="Asosiy ma'lumotlar" />
-              <Info label="Mijoz" value={mijozNomi(sotuv)} pill />
-              <Info label="Telefon" value={mijozTelefon(sotuv)} />
-              <Info label="Manzil" value={mijozManzili(sotuv)} />
-              <Info label="Kompaniya" value={sotuv.clientCompany?.name || "Kompaniya tanlanmagan"} />
-              <Info label="Ombor" value={omborNomi} />
-              <Info label="Mas'ul shaxs" value={masulNomi(sotuv)} />
-            </section>
+        <nav className="mt-6 flex gap-2 border-b border-orange-100/80">
+          {(["Umumiy", "Tovarlar"] as const).map((bolim) => (
+            <button
+              key={bolim}
+              type="button"
+              onClick={() => setFaolBolim(bolim)}
+              className={`-mb-px rounded-t-xl border border-b-0 px-4 py-2.5 text-sm font-bold transition ${
+                faolBolim === bolim
+                  ? "border-orange-200 bg-white text-[#FF6A00]"
+                  : "border-transparent text-slate-500 hover:text-[#FF6A00]"
+              }`}
+            >
+              {bolim}
+            </button>
+          ))}
+        </nav>
 
-            <section className="rounded-2xl bg-white p-5 shadow-sm">
+        {faolBolim === "Tovarlar" ? (
+          <section className="mt-6 rounded-2xl bg-white p-6 shadow-sm">
+            <div className="border-b border-orange-100 pb-5">
               <CardTitle title="Tovarlar" />
-              <div className="space-y-2">
-                {items.map((item, index) => (
-                  <div key={item.id ?? `${item.modificationId}-${index}`} className="rounded-xl bg-slate-50 p-3 text-sm">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-slate-700">{mahsulotNomi(item)}</p>
-                        <p className="mt-1 text-xs text-slate-400">{item.quantity} dona × {pulniFormatlash(item.price)}</p>
-                      </div>
-                      <span className={`rounded-full px-2 py-1 text-xs font-bold ${tasdiqlangan ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
-                        {tasdiqlangan ? "Ombordan chiqdi" : "Kutilmoqda"}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-                {items.length === 0 && <p className="text-sm text-slate-400">Tovarlar mavjud emas</p>}
+            </div>
+            {items.length > 0 ? (
+              <div className="mt-2 overflow-x-auto">
+                <table className="w-full min-w-[720px] text-left text-sm">
+                  <thead className="text-xs font-semibold text-slate-400">
+                    <tr className="border-b border-orange-100">
+                      <th className="py-4 pr-4 font-semibold">Mahsulot</th>
+                      <th className="px-4 py-4 text-right font-semibold">Narx</th>
+                      <th className="px-4 py-4 text-right font-semibold">Miqdor</th>
+                      <th className="px-4 py-4 text-right font-semibold">Ombor</th>
+                      <th className="px-4 py-4 text-right font-semibold">Holati</th>
+                      <th className="py-4 pl-4 text-right font-semibold">Jami</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-orange-100 text-slate-700">
+                    {items.map((item, index) => (
+                      <tr key={item.id ?? `${item.modificationId}-${index}`}>
+                        <td className="py-4 pr-4 font-semibold text-slate-700">{mahsulotNomi(item)}</td>
+                        <td className="px-4 py-4 text-right">{pulniFormatlash(item.price)}</td>
+                        <td className="px-4 py-4 text-right">{item.quantity} dona</td>
+                        <td className="px-4 py-4 text-right text-slate-500">{omborNomi}</td>
+                        <td className="px-4 py-4 text-right">
+                          <span
+                            className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                              tasdiqlangan ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+                            }`}
+                          >
+                            {tasdiqlangan ? "Ombordan chiqdi" : "Kutilmoqda"}
+                          </span>
+                        </td>
+                        <td className="py-4 pl-4 text-right font-bold text-slate-900">{pulniFormatlash(mahsulotJami(item))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            </section>
-          </aside>
+            ) : (
+              <p className="mt-4 text-sm text-slate-400">Tovarlar mavjud emas</p>
+            )}
 
-          <TimelineRail />
-
-          <main className="space-y-5">
-            {faoliyatXatosi && <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">{faoliyatXatosi}</div>}
-            <FaoliyatPanel onSaqlash={faoliyatniBackendgaSaqlash} />
-            <Divider label="Bugun" />
-            <article className="rounded-2xl bg-white/80 p-5 text-slate-700 shadow-sm">
-              Hozir siz {mijozNomi(sotuv)} uchun ombordan chiqarish hujjatini ko'ryapsiz.
-            </article>
-            <article className="rounded-2xl bg-white/80 p-5 shadow-sm">
-              <div className="flex items-start gap-4">
-                <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white ${tasdiqlangan ? "bg-emerald-500" : "bg-amber-400"}`}>
-                  <Package size={20} />
-                </span>
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-700">{tasdiqlangan ? "Ombor amali bajarilgan" : "Ombor amali kutilmoqda"}</h3>
-                  <p className="mt-2 text-sm text-slate-500">
-                    {items.length} ta tovar, summa {pulniFormatlash(jami)}. Ombor: {omborNomi}.
+            {items.length > 0 && (
+              <div className="border-t border-orange-100 px-1 py-6">
+                <div className="ml-auto max-w-sm space-y-3 text-right text-sm text-slate-500">
+                  <p>
+                    Mahsulotlar jami<span className="ml-8 text-slate-700">{pulniFormatlash(mahsulotlarJami)}</span>
                   </p>
+                  {chegirmaSummasi > 0 && (
+                    <p className="text-lime-700">
+                      Chegirma summasi<span className="ml-8">-{pulniFormatlash(chegirmaSummasi)}</span>
+                    </p>
+                  )}
+                  <div className="border-t border-orange-100 pt-4 text-2xl font-bold text-slate-900">
+                    Jami summa<span className="ml-8 text-[#FF6A00]">{pulniFormatlash(jami)}</span>
+                  </div>
                 </div>
               </div>
-            </article>
-          </main>
-        </div>
+            )}
+          </section>
+        ) : (
+          <div className="mt-6 grid gap-6 xl:grid-cols-[42%_34px_minmax(0,1fr)]">
+            <aside className="space-y-4">
+              <section className="rounded-2xl bg-white p-5 shadow-sm">
+                <CardTitle title="Asosiy ma'lumotlar" />
+                <Info label="Mijoz" value={mijozNomi(sotuv)} pill />
+                <Info label="Telefon" value={mijozTelefon(sotuv)} />
+                <Info label="Manzil" value={mijozManzili(sotuv)} />
+                <Info label="Kompaniya" value={sotuv.clientCompany?.name || "Kompaniya tanlanmagan"} />
+                <Info label="Ombor" value={omborNomi} />
+                <Info label="Mas'ul shaxs" value={masulNomi(sotuv)} />
+              </section>
+            </aside>
+
+            <TimelineRail />
+
+            <main className="space-y-5">
+              {faoliyatXatosi && <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">{faoliyatXatosi}</div>}
+              <FaoliyatPanel onSaqlash={faoliyatniBackendgaSaqlash} />
+              <Divider label="Bugun" />
+              <article className="rounded-2xl bg-white/80 p-5 text-slate-700 shadow-sm">
+                Hozir siz {mijozNomi(sotuv)} uchun ombordan chiqarish hujjatini ko'ryapsiz.
+              </article>
+              <article className="rounded-2xl bg-white/80 p-5 shadow-sm">
+                <div className="flex items-start gap-4">
+                  <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white ${tasdiqlangan ? "bg-emerald-500" : "bg-amber-400"}`}>
+                    <Package size={20} />
+                  </span>
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-700">{tasdiqlangan ? "Ombor amali bajarilgan" : "Ombor amali kutilmoqda"}</h3>
+                    <p className="mt-2 text-sm text-slate-500">
+                      {items.length} ta tovar, summa {pulniFormatlash(jami)}. Ombor: {omborNomi}.
+                    </p>
+                  </div>
+                </div>
+              </article>
+            </main>
+          </div>
+        )}
       </div>
-    </div>
   );
 }
 
