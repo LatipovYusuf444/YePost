@@ -42,7 +42,7 @@ function bugunMinus(kun: number) {
 
 function pul(value: unknown) {
   const number = Number(value ?? 0);
-  if (!Number.isFinite(number)) return String(value ?? "вЂ”");
+  if (!Number.isFinite(number)) return String(value ?? "—");
   return `${number.toLocaleString("uz-UZ")} so'm`;
 }
 
@@ -328,7 +328,7 @@ function HisobotFilterlar(props: {
             <option value="">Variant tanlang</option>
             {tanlovlar.modifications.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.product?.name ? `${item.product.name} вЂ” ` : ""}
+                {item.product?.name ? `${item.product.name} — ` : ""}
                 {nom(item)}
                 {item.barcode ? ` (${item.barcode})` : ""}
               </option>
@@ -501,7 +501,7 @@ function HisobotNatija({ data }: { data: HisobotJavobi | null }) {
             <article key={key} className="rounded-2xl bg-orange-50 p-5">
               <p className="text-sm font-bold text-orange-600">{formatKey(key)}</p>
               <h3 className="mt-2 text-2xl font-black text-gray-950">
-                {typeof value === "number" ? pul(value) : String(value ?? "вЂ”")}
+                {typeof value === "number" ? pul(value) : String(value ?? "—")}
               </h3>
             </article>
           ))}
@@ -593,10 +593,10 @@ function AuditTable({
               <div className="flex flex-col justify-between gap-3 md:flex-row">
                 <div>
                   <p className="font-black text-gray-950">
-                    {String(log.action ?? "ACTION")} вЂ” {String(log.resource ?? "Resource")}
+                    {String(log.action ?? "ACTION")} — {String(log.resource ?? "Resource")}
                   </p>
                   <p className="mt-1 text-sm text-gray-500">
-                    Foydalanuvchi: {log.user?.fullName ?? log.user?.username ?? String(log.userId ?? "вЂ”")}
+                    Foydalanuvchi: {log.user?.fullName ?? log.user?.username ?? String(log.userId ?? "—")}
                   </p>
                 </div>
                 <p className="text-sm font-bold text-orange-600">
@@ -631,8 +631,8 @@ function Empty({ text }: { text: string }) {
 }
 
 function renderValue(value: unknown): string {
-  if (value === null || value === undefined) return "вЂ”";
-  if (typeof value === "number") return Number.isFinite(value) ? value.toLocaleString("uz-UZ") : "вЂ”";
+  if (value === null || value === undefined) return "—";
+  if (typeof value === "number") return Number.isFinite(value) ? value.toLocaleString("uz-UZ") : "—";
   if (typeof value === "object") {
     const obj = value as { name?: string; fullName?: string; id?: string };
     return obj.name ?? obj.fullName ?? obj.id ?? JSON.stringify(value);

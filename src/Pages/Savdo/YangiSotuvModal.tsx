@@ -471,6 +471,19 @@ export default function YangiSotuvModal({
       return;
     }
 
+    for (const mahsulot of mahsulotlar) {
+      const soralganMiqdor = raqamgaAylantirish(mahsulot.quantity);
+      if (!mahsulot.modificationId || soralganMiqdor <= 0) continue;
+      const tanlanganQoldiq = qoldiqlar.find((item) => qoldiqKaliti(item) === mahsulot.qoldiqKaliti);
+      const mavjudMiqdor = tanlanganQoldiq ? qoldiqMiqdori(tanlanganQoldiq) : 0;
+      if (soralganMiqdor > mavjudMiqdor) {
+        setXatolik(
+          `"${tanlanganQoldiq ? qoldiqNomi(tanlanganQoldiq) : "Tanlangan mahsulot"}" uchun omborda faqat ${mavjudMiqdor} dona qoldiq bor — ${soralganMiqdor} dona sota olmaysiz.`
+        );
+        return;
+      }
+    }
+
     if (jami <= 0) {
       setXatolik("Sotuv summasi 0 dan katta bo'lishi kerak.");
       return;
@@ -568,6 +581,19 @@ export default function YangiSotuvModal({
             </div>
 
           </header>
+
+          {xatolik && (
+            <div className="mx-7 mt-4 flex items-start justify-between gap-4 rounded-2xl border border-red-200 bg-red-50 px-5 py-3.5 text-sm font-bold text-red-600 shadow-sm">
+              <span>{xatolik}</span>
+              <button
+                type="button"
+                onClick={() => setXatolik("")}
+                className="shrink-0 text-xs font-black uppercase text-red-500 hover:text-red-700"
+              >
+                Yopish
+              </button>
+            </div>
+          )}
 
           <div className="scrollbar-hidden h-[calc(100%-74px)] overflow-y-auto px-7 py-4 pb-28">
             <div className="grid gap-5 xl:grid-cols-[minmax(390px,0.78fr)_minmax(540px,1.22fr)]">
@@ -988,14 +1014,16 @@ export default function YangiSotuvModal({
                               value={mahsulot.qoldiqKaliti}
                               onChange={(value) => modifikatsiyaniTanlash(index, value)}
                               placeholder="Mahsulotni tanlang"
-                              options={qoldiqlar.map((item) => {
-                                const itemOmborNomi =
-                                  item.warehouse?.name ?? omborlar.find((ombor) => ombor.id === item.warehouseId)?.name;
-                                return {
-                                  value: qoldiqKaliti(item),
-                                  label: `${qoldiqNomi(item)}${itemOmborNomi ? ` (${itemOmborNomi})` : ""} - qoldiq: ${qoldiqMiqdori(item)} - narx: ${pulniFormatlash(qoldiqNarxi(item))}`,
-                                };
-                              })}
+                              options={qoldiqlar
+                                .filter((item) => qoldiqMiqdori(item) > 0)
+                                .map((item) => {
+                                  const itemOmborNomi =
+                                    item.warehouse?.name ?? omborlar.find((ombor) => ombor.id === item.warehouseId)?.name;
+                                  return {
+                                    value: qoldiqKaliti(item),
+                                    label: `${qoldiqNomi(item)}${itemOmborNomi ? ` (${itemOmborNomi})` : ""} - qoldiq: ${qoldiqMiqdori(item)} - narx: ${pulniFormatlash(qoldiqNarxi(item))}`,
+                                  };
+                                })}
                               buttonClassName="h-11 rounded-xl px-3.5 text-sm"
                               dropdownClassName="min-w-[520px] max-w-[min(720px,calc(100vw-32px))]"
                               portal
@@ -1106,12 +1134,6 @@ export default function YangiSotuvModal({
                 {omborlar.length === 0 && (
                   <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-700">
                     {modalMatnlari.stockWarning}
-                  </div>
-                )}
-
-                {xatolik && (
-                  <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">
-                    {xatolik}
                   </div>
                 )}
               </div>

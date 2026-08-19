@@ -102,7 +102,7 @@ export default function Davomat({ xodimlar }: Props) {
   }, [royxat]);
   const nomOlish = (id: string) => {
     const xodim = xodimlar.find((item) => item.id === id);
-    return xodim ? xodimNomi(xodim) : "вЂ”";
+    return xodim ? xodimNomi(xodim) : "—";
   };
 
   async function selfAction(action: "in" | "out") {
@@ -140,7 +140,7 @@ export default function Davomat({ xodimlar }: Props) {
     setFormaKetgan(row.ketgan); setFormaIzoh(row.izoh);
   }
   async function ochirish(row: DavomatYozuvi) {
-    if (!window.confirm("Davomat yozuvini oвЂchirasizmi?")) return;
+    if (!window.confirm("Davomat yozuvini o'chirasizmi?")) return;
     try { await davomatApi.ochirish(row.id); await yuklash(); }
     catch (error) { setXato(getApiErrorMessage(error)); }
   }
@@ -149,10 +149,10 @@ export default function Davomat({ xodimlar }: Props) {
     { id: "xodim", nom: "Xodim", kenglik: 190, katak: (d) => <span className="font-black text-slate-900">{nomOlish(d.xodimId)}</span> },
     { id: "sana", nom: "Sana", kenglik: 130, katak: (d) => <span className="text-slate-500">{sanaFormat(d.sana)}</span> },
     { id: "holat", nom: "Holat", kenglik: 130, katak: (d) => <span className={`rounded-lg px-2.5 py-1 text-xs font-black ${davomatRangi[d.holat]}`}>{davomatMatni[d.holat]}</span> },
-    { id: "kelgan", nom: "Kelgan", kenglik: 110, katak: (d) => d.kelgan || "вЂ”" },
-    { id: "ketgan", nom: "Ketgan", kenglik: 110, katak: (d) => d.ketgan || "вЂ”" },
-    { id: "soat", nom: "Ish soati", kenglik: 110, hizalash: "right", katak: (d) => ishSoati(d.kelgan, d.ketgan) || "вЂ”", jami: () => statistika.soat },
-    { id: "izoh", nom: "Izoh", kenglik: 170, katak: (d) => d.izoh || "вЂ”" },
+    { id: "kelgan", nom: "Kelgan", kenglik: 110, katak: (d) => d.kelgan || "—" },
+    { id: "ketgan", nom: "Ketgan", kenglik: 110, katak: (d) => d.ketgan || "—" },
+    { id: "soat", nom: "Ish soati", kenglik: 110, hizalash: "right", katak: (d) => ishSoati(d.kelgan, d.ketgan) || "—", jami: () => statistika.soat },
+    { id: "izoh", nom: "Izoh", kenglik: 170, katak: (d) => d.izoh || "—" },
   ];
 
   return <div className="space-y-5">
@@ -183,7 +183,7 @@ export default function Davomat({ xodimlar }: Props) {
       <AppSelect value={formaHolat} onChange={(e) => setFormaHolat(e.target.value as DavomatHolati)} className={maydonKlass}>{holatlar.filter((x) => x !== "barchasi").map((item) => <option key={item} value={item}>{davomatMatni[item]}</option>)}</AppSelect>
       <span className="flex gap-2"><input type="time" value={formaKelgan} onChange={(e) => setFormaKelgan(e.target.value)} className={maydonKlass}/><input type="time" value={formaKetgan} onChange={(e) => setFormaKetgan(e.target.value)} className={maydonKlass}/></span>
       <input value={formaIzoh} onChange={(e) => setFormaIzoh(e.target.value)} placeholder="Izoh" className={maydonKlass}/>
-      <button onClick={() => void yozuvSaqlash()} className="h-11 rounded-xl bg-orange-500 px-4 font-black text-white">{tahrirId ? "Yangilash" : "QoвЂlda kiritish"}</button>
+      <button onClick={() => void yozuvSaqlash()} className="h-11 rounded-xl bg-orange-500 px-4 font-black text-white">{tahrirId ? "Yangilash" : "Qo'lda kiritish"}</button>
     </section>
 
     <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -192,7 +192,7 @@ export default function Davomat({ xodimlar }: Props) {
       <Karta ikonka={<TriangleAlert size={18}/>} nom="Kelmadi" qiymat={`${statistika.kelmadi} kun`} rang="text-red-500 bg-red-50"/>
       <Karta ikonka={<Clock size={18}/>} nom="Jami ish soati" qiymat={`${statistika.soat} soat`} rang="text-sky-600 bg-sky-50"/>
     </section>
-    {yuklanmoqda ? <p className="rounded-2xl bg-white p-10 text-center font-bold text-gray-400">Backenddan yuklanmoqda...</p> : royxat.length ? <KengaytiriladiganJadval ustunlar={ustunlar} qatorlar={royxat} kengaytir sozlamaBor jamiBor onQatorBosildi={tahrirlash} onQatorOchirish={ochirish}/> : <p className="rounded-2xl border border-dashed border-orange-200 bg-white p-14 text-center font-bold text-gray-400">Tanlangan filter boвЂyicha davomat yozuvi yoвЂq</p>}
+    {yuklanmoqda ? <p className="rounded-2xl bg-white p-10 text-center font-bold text-gray-400">Backenddan yuklanmoqda...</p> : royxat.length ? <KengaytiriladiganJadval ustunlar={ustunlar} qatorlar={royxat} kengaytir sozlamaBor jamiBor onQatorBosildi={tahrirlash} onQatorOchirish={ochirish}/> : <p className="rounded-2xl border border-dashed border-orange-200 bg-white p-14 text-center font-bold text-gray-400">Tanlangan filter bo'yicha davomat yozuvi yo'q</p>}
   </div>;
 }
 

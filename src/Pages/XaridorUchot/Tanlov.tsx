@@ -6,8 +6,8 @@ export type TanlovVarianti = { value: string; label: string };
 const tugmaKlass =
   "flex h-11 w-full items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white px-3.5 text-left text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100";
 
-// Native <AppSelect> o'rniga вЂ” ochilgan ro'yxati ham yumaloq (dizaynga mos) tanlov.
-// qidiruv=true bo'lsa вЂ” ro'yxat tepasida qidiruv maydoni chiqadi (yozib topiladi).
+// Native <AppSelect> o'rniga — ochilgan ro'yxati ham yumaloq (dizaynga mos) tanlov.
+// qidiruv=true bo'lsa — ro'yxat tepasida qidiruv maydoni chiqadi (yozib topiladi).
 export default function Tanlov({
   qiymat,
   variantlar,

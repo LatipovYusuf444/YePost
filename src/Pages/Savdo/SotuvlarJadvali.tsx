@@ -24,7 +24,9 @@ type SotuvlarJadvaliProps = {
 };
 
 function telefonRaqam(sotuv: Sotuv) {
-  return sotuv.customer?.phone || sotuv.clientCompany?.phone || "-";
+  // "Mas'ul shaxs" ustuniga mos — tizimga kirgan (sotuvni amalga oshirgan)
+  // xodimning real telefon raqami, mijozning emas.
+  return sotuv.responsible?.phone || "-";
 }
 
 function qaytarishTasdiqlangan(qaytarish: Qaytarish) {

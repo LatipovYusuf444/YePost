@@ -654,9 +654,9 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                             </td>
                             {tur === "inventarizatsiya" ? (
                               <>
-                                <td className="px-4 py-3 text-slate-500">{mod?.barcode ?? "вЂ”"}</td>
+                                <td className="px-4 py-3 text-slate-500">{mod?.barcode ?? "—"}</td>
                                 <td className="px-4 py-3">{inventarizatsiyaOmbori}</td>
-                                <td className="px-4 py-3">{expectedQuantity ?? "вЂ”"}</td>
+                                <td className="px-4 py-3">{expectedQuantity ?? "—"}</td>
                                 <td className="px-4 py-3 font-black text-slate-900">{quantity}</td>
                                 <td
                                   className={`px-4 py-3 font-black ${
@@ -668,7 +668,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                                   }`}
                                 >
                                   {expectedQuantity == null
-                                    ? "вЂ”"
+                                    ? "—"
                                     : Number(quantity) - Number(expectedQuantity) > 0
                                       ? `+${Number(quantity) - Number(expectedQuantity)}`
                                       : Number(quantity) - Number(expectedQuantity)}
@@ -889,7 +889,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                           <option key={modification.id} value={modification.id}>
                             {modificationNomi(modification)}
                             {modification.barcode
-                              ? ` вЂ” ${modification.barcode}`
+                              ? ` — ${modification.barcode}`
                               : ""}
                           </option>
                         ))}

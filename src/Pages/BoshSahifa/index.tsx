@@ -22,6 +22,7 @@ import {
   omborlarRoyxatiniOlish,
 } from "@/api/savdoApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { useAuthProfileStore } from "@/store/authProfileStore";
 import { usePosStore } from "@/store/posStore";
 import { useSavdoStore } from "@/store/savdoStore";
 import type { MijozTanlovi, OmborTanlovi, TolovTuri } from "@/types/savdo";
@@ -80,6 +81,8 @@ export default function BoshSahifa() {
   const clearPosCart = usePosStore((state) => state.clearCart);
   const yangiSotuvYaratish = useSavdoStore((state) => state.yangiSotuvYaratish);
   const sotuvniTasdiqlash = useSavdoStore((state) => state.sotuvniTasdiqlash);
+  const joriyProfil = useAuthProfileStore((state) => state.profil);
+  const profilniYuklash = useAuthProfileStore((state) => state.profilniYuklash);
 
   const [omborlar, setOmborlar] = useState<OmborTanlovi[]>([]);
   const [mijozlar, setMijozlar] = useState<MijozTanlovi[]>([]);
@@ -131,6 +134,10 @@ export default function BoshSahifa() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!joriyProfil) void profilniYuklash();
+  }, [joriyProfil, profilniYuklash]);
 
   useEffect(() => {
     updatePriceType(narxTuri);
@@ -240,6 +247,9 @@ export default function BoshSahifa() {
         warehouseId,
         customerId: mijozTuri === "doimiy" && selectedCustomerId ? selectedCustomerId : undefined,
         saleType: mijozTuri === "doimiy" ? "CLIENT" : "QUICK",
+        // Sotuvning mas'ul xodimi har doim tizimga real kirgan foydalanuvchi
+        // (kassir, admin, direktor va h.k.) bo'lishi kerak.
+        responsibleId: joriyProfil?.id,
         note: [customerName ? `Mijoz: ${customerName}` : "", note].filter(Boolean).join(" | ") || undefined,
         items,
         payments: [{ paymentType: selectedPayment.apiTuri, amount: qabulQilinadiganSumma }],

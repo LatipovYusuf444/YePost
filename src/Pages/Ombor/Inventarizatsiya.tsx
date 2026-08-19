@@ -464,7 +464,7 @@ export default function Inventarizatsiya() {
                             <tr key={`${qoldiq.modificationId}-${index}`}>
                               <td className="px-4 py-4 text-slate-400">{index + 1}</td>
                               <td className="px-4 py-4 font-black text-slate-900">{modificationNomi(qoldiq.modification)}</td>
-                              <td className="px-4 py-4 text-slate-500">{qoldiq.modification?.barcode ?? "вЂ”"}</td>
+                              <td className="px-4 py-4 text-slate-500">{qoldiq.modification?.barcode ?? "—"}</td>
                               <td className="px-4 py-4">{qoldiq.warehouse?.name ?? omborMap.get(warehouseId) ?? "Noma'lum ombor"}</td>
                               <td className="px-4 py-4 font-bold text-slate-600">{tizim}</td>
                               <td className="px-4 py-3">
@@ -482,7 +482,7 @@ export default function Inventarizatsiya() {
                                 />
                               </td>
                               <td className={`px-4 py-4 font-black ${farq == null || farq === 0 ? "text-slate-400" : farq > 0 ? "text-emerald-600" : "text-red-500"}`}>
-                                {farq == null ? "вЂ”" : farq > 0 ? `+${farq}` : farq}
+                                {farq == null ? "—" : farq > 0 ? `+${farq}` : farq}
                               </td>
                             </tr>
                           );

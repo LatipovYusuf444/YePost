@@ -21,6 +21,7 @@ import {
 import AppModal from "@/Components/common/AppModal";
 import { manzilniKoordinatadanAniqlash } from "@/api/omborApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useOmborStore } from "@/store/omborStore";
 import type { Ombor, OmborSaqlashMalumoti } from "@/types/ombor";
 import FiliallarBoshqaruvi from "./FiliallarBoshqaruvi";
@@ -63,6 +64,13 @@ export default function Ombor() {
   const [gpsYuklanmoqda, setGpsYuklanmoqda] = useState(false);
   const [formaXatosi, setFormaXatosi] = useState<string | null>(null);
   const korinishMenuRef = useRef<HTMLDivElement | null>(null);
+  const joriyProfil = useAuthProfileStore((state) => state.profil);
+  const profilniYuklash = useAuthProfileStore((state) => state.profilniYuklash);
+
+  useEffect(() => {
+    if (!joriyProfil) void profilniYuklash();
+  }, [joriyProfil, profilniYuklash]);
+
   const masulTanlovlari = useMemo(() => {
     const tanlovlar = [...omborMasullari];
     const joriyMasul = tahrirOmbor?.responsible;
@@ -109,9 +117,9 @@ export default function Ombor() {
   }, [korinishMenuOchiq]);
 
   function sananiFormatlash(sana?: string) {
-    if (!sana) return "вЂ”";
+    if (!sana) return "—";
     const qiymat = new Date(sana);
-    if (Number.isNaN(qiymat.getTime())) return "вЂ”";
+    if (Number.isNaN(qiymat.getTime())) return "—";
     return new Intl.DateTimeFormat("uz-UZ", {
       year: "numeric",
       month: "2-digit",
@@ -134,7 +142,16 @@ export default function Ombor() {
     setAddress(toliqOmbor?.address ?? "");
     setOpeningTime(toliqOmbor?.openingTime ?? "09:00");
     setClosingTime(toliqOmbor?.closingTime ?? "18:00");
-    setResponsibleId(toliqOmbor?.responsibleId ?? toliqOmbor?.responsible?.id ?? "");
+    // Yangi ombor yaratilayotganda (tahrirlash emas) mas'ul shaxs har doim
+    // tizimga real kirgan foydalanuvchi bo'lishi kerak — agar u omborga
+    // mas'ul bo'la oladigan xodimlar ro'yxatida mavjud bo'lsa.
+    const joriyFoydalanuvchiMasulBolaOladimi =
+      !ombor && joriyProfil?.id && omborMasullari.some((xodim) => xodim.id === joriyProfil.id);
+    setResponsibleId(
+      toliqOmbor?.responsibleId ??
+        toliqOmbor?.responsible?.id ??
+        (joriyFoydalanuvchiMasulBolaOladimi ? joriyProfil!.id : "")
+    );
     setIsActive(toliqOmbor?.isActive ?? true);
     setGpsYuklanmoqda(false);
     setFormaXatosi(null);
@@ -407,7 +424,7 @@ export default function Ombor() {
               <td className="px-6 py-5 text-sm font-semibold leading-5 text-gray-600">
                 {ombor.openingTime && ombor.closingTime ? (
                   <>
-                    {ombor.openingTime} вЂ“<br />
+                    {ombor.openingTime} –<br />
                     {ombor.closingTime}
                   </>
                 ) : (
@@ -487,7 +504,7 @@ export default function Ombor() {
                 <Warehouse className="mx-auto text-orange-200" size={42} />
                 <p className="mt-3 font-bold text-gray-500">Ombor mavjud emas</p>
                 <p className="mt-1 text-sm text-gray-400">
-                  вЂњOmbor qo'shishвЂќ tugmasi orqali birinchi omborni yarating.
+                  "Ombor qo'shish" tugmasi orqali birinchi omborni yarating.
                 </p>
               </td>
             </tr>
@@ -535,14 +552,14 @@ export default function Ombor() {
                       <p className="flex items-center gap-2">
                         <MapPin size={15} className="shrink-0 text-orange-500" />
                         <span className="truncate">
-                          {ombor.latitude ?? "вЂ”"}, {ombor.longitude ?? "вЂ”"}
+                          {ombor.latitude ?? "—"}, {ombor.longitude ?? "—"}
                         </span>
                       </p>
                     )}
                     <p className="flex items-center gap-2">
                       <Clock3 size={15} className="shrink-0 text-orange-500" />
                       <span>
-                        {ombor.openingTime || "вЂ”"} вЂ” {ombor.closingTime || "вЂ”"}
+                        {ombor.openingTime || "—"} — {ombor.closingTime || "—"}
                       </span>
                     </p>
                     <p className="flex items-center gap-2">
@@ -591,7 +608,7 @@ export default function Ombor() {
               <Warehouse className="mx-auto text-orange-200" size={42} />
               <p className="mt-3 font-bold text-gray-500">Ombor mavjud emas</p>
               <p className="mt-1 text-sm text-gray-400">
-                вЂњOmbor qo'shishвЂќ tugmasi orqali birinchi omborni yarating.
+                "Ombor qo'shish" tugmasi orqali birinchi omborni yarating.
               </p>
             </div>
           )}
@@ -602,9 +619,9 @@ export default function Ombor() {
         <AppModal>
           <form
             onSubmit={saqlash}
-            className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-[34px] border border-orange-100 bg-[#FFF9F1] shadow-2xl"
+            className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[34px] border border-orange-100 bg-[#FFF9F1] shadow-2xl"
           >
-            <header className="flex shrink-0 items-center justify-between border-b border-orange-100 px-6 py-5 sm:px-8">
+            <header className="flex shrink-0 items-center justify-between border-b border-orange-100 px-7 py-6 sm:px-9">
               <div className="flex items-center gap-4">
                 <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-orange-500">
                   <Warehouse size={25} />
@@ -628,7 +645,7 @@ export default function Ombor() {
               </button>
             </header>
 
-            <div className="scrollbar-hidden flex-1 overflow-y-auto px-5 py-5 sm:px-8">
+            <div className="scrollbar-hidden flex-1 overflow-y-auto px-6 py-6 sm:px-9">
               {xatolik && (
                 <div className="mb-4 flex items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">
                   <span>{xatolik}</span>
@@ -646,98 +663,102 @@ export default function Ombor() {
                 </div>
               )}
 
-              <section className="rounded-[26px] border border-orange-100 bg-white p-5 sm:p-6">
-                <h3 className="border-b border-orange-100 pb-4 text-sm font-black uppercase tracking-wide text-slate-600">
-                  Ombor haqida
-                </h3>
+              <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+                <section className="rounded-[26px] border border-orange-100 bg-white p-5 sm:p-6">
+                  <h3 className="border-b border-orange-100 pb-4 text-sm font-black uppercase tracking-wide text-slate-600">
+                    Ombor haqida
+                  </h3>
 
-                <div className="mt-5 space-y-5">
-                  <label className="grid gap-2">
-                    <span className="text-sm font-bold text-slate-500">Ombor nomi *</span>
-                    <input
-                      value={name}
-                      onChange={(event) => setName(event.target.value)}
-                      required
-                      autoFocus
-                      className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
-                      placeholder="Masalan: Markaziy ombor"
-                    />
-                  </label>
-
-                  <div className="grid gap-2">
-                    <span className="flex items-center gap-2 text-sm font-bold text-slate-500">
-                      <MapPin size={16} className="text-orange-500" />
-                      Joylashuvi (GPS)
-                    </span>
-                    <div className="flex gap-2">
+                  <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                    <label className="grid gap-2 sm:col-span-2">
+                      <span className="text-sm font-bold text-slate-500">Ombor nomi *</span>
                       <input
-                        value={gps}
-                        onChange={(event) => setGps(event.target.value)}
-                        className="h-14 min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
-                        placeholder="41.311081, 69.240562"
+                        value={name}
+                        onChange={(event) => setName(event.target.value)}
+                        required
+                        autoFocus
+                        className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+                        placeholder="Masalan: Markaziy ombor"
                       />
-                      <button
-                        type="button"
-                        onClick={gpsniAniqlash}
-                        disabled={gpsYuklanmoqda}
-                        className="inline-flex h-14 shrink-0 items-center justify-center gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-4 text-sm font-black uppercase text-orange-600 transition hover:bg-orange-100 disabled:opacity-50"
-                      >
-                        {gpsYuklanmoqda ? (
-                          <LoaderCircle size={17} className="animate-spin" />
-                        ) : (
-                          <MapPin size={17} />
-                        )}
-                        Aniqlash
-                      </button>
+                    </label>
+
+                    <div className="grid gap-2 sm:col-span-2">
+                      <span className="flex items-center gap-2 text-sm font-bold text-slate-500">
+                        <MapPin size={16} className="text-orange-500" />
+                        Joylashuvi (GPS)
+                      </span>
+                      <div className="flex gap-2">
+                        <input
+                          value={gps}
+                          onChange={(event) => setGps(event.target.value)}
+                          className="h-14 min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+                          placeholder="41.311081, 69.240562"
+                        />
+                        <button
+                          type="button"
+                          onClick={gpsniAniqlash}
+                          disabled={gpsYuklanmoqda}
+                          className="inline-flex h-14 shrink-0 items-center justify-center gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-4 text-sm font-black uppercase text-orange-600 transition hover:bg-orange-100 disabled:opacity-50"
+                        >
+                          {gpsYuklanmoqda ? (
+                            <LoaderCircle size={17} className="animate-spin" />
+                          ) : (
+                            <MapPin size={17} />
+                          )}
+                          Aniqlash
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
-                  <label className="grid gap-2">
-                    <span className="text-sm font-bold text-slate-500">Manzil</span>
-                    <input
-                      value={address}
-                      onChange={(event) => setAddress(event.target.value)}
-                      className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
-                      placeholder="Toshkent, Chilonzor tumani, 12-uy"
-                    />
-                  </label>
+                    <label className="grid gap-2 sm:col-span-2">
+                      <span className="text-sm font-bold text-slate-500">Manzil</span>
+                      <input
+                        value={address}
+                        onChange={(event) => setAddress(event.target.value)}
+                        className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+                        placeholder="Toshkent, Chilonzor tumani, 12-uy"
+                      />
+                    </label>
 
-                  <div className="grid gap-2">
-                    <span className="flex items-center gap-2 text-sm font-bold text-slate-500">
-                      <Clock3 size={16} className="text-orange-500" />
-                      Ishlash vaqti
-                    </span>
-                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                      <input
-                        type="time"
-                        value={openingTime}
-                        onChange={(event) => setOpeningTime(event.target.value)}
-                        className="h-14 min-w-0 rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
-                      />
-                      <span className="text-slate-400">вЂ”</span>
-                      <input
-                        type="time"
-                        value={closingTime}
-                        onChange={(event) => setClosingTime(event.target.value)}
-                        className="h-14 min-w-0 rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
-                      />
+                    <div className="grid gap-2">
+                      <span className="flex items-center gap-2 text-sm font-bold text-slate-500">
+                        <Clock3 size={16} className="text-orange-500" />
+                        Ishlash vaqti
+                      </span>
+                      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                        <input
+                          type="time"
+                          value={openingTime}
+                          onChange={(event) => setOpeningTime(event.target.value)}
+                          className="h-14 min-w-0 rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+                        />
+                        <span className="text-slate-400">—</span>
+                        <input
+                          type="time"
+                          value={closingTime}
+                          onChange={(event) => setClosingTime(event.target.value)}
+                          className="h-14 min-w-0 rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+                        />
+                      </div>
                     </div>
+
+                    <label className="grid gap-2">
+                      <span className="flex items-center gap-2 text-sm font-bold text-slate-500">
+                        <CalendarDays size={16} className="text-orange-500" />
+                        Yaratilgan sana
+                      </span>
+                      <input
+                        type="date"
+                        value={yaratilganSana}
+                        readOnly
+                        className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base font-semibold text-slate-700 outline-none"
+                      />
+                    </label>
                   </div>
+                </section>
 
-                  <label className="grid gap-2">
-                    <span className="flex items-center gap-2 text-sm font-bold text-slate-500">
-                      <CalendarDays size={16} className="text-orange-500" />
-                      Yaratilgan sana
-                    </span>
-                    <input
-                      type="date"
-                      value={yaratilganSana}
-                      readOnly
-                      className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base font-semibold text-slate-700 outline-none"
-                    />
-                  </label>
-
-                  <div className="rounded-[22px] border border-orange-100 bg-orange-50/40 p-4">
+                <div className="space-y-6">
+                  <section className="rounded-[26px] border border-orange-100 bg-orange-50/40 p-5 sm:p-6">
                     <div className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-600">
                       <UserRound size={17} className="text-orange-500" />
                       Mas'ul shaxs
@@ -771,9 +792,9 @@ export default function Ombor() {
                         />
                       </label>
                     </div>
-                  </div>
+                  </section>
 
-                  <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700">
+                  <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-orange-100 bg-white px-4 py-4 text-sm font-bold text-slate-700 shadow-sm">
                     <input
                       type="checkbox"
                       checked={isActive}
@@ -783,10 +804,10 @@ export default function Ombor() {
                     Ombor faol
                   </label>
                 </div>
-              </section>
+              </div>
             </div>
 
-            <footer className="flex shrink-0 justify-end gap-3 border-t border-orange-100 bg-[#FFF9F1]/95 px-6 py-4 backdrop-blur sm:px-8">
+            <footer className="flex shrink-0 justify-end gap-3 border-t border-orange-100 bg-[#FFF9F1]/95 px-7 py-5 backdrop-blur sm:px-9">
               <button
                 type="button"
                 onClick={() => setModalOchiq(false)}

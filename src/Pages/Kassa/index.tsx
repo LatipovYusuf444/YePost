@@ -86,7 +86,7 @@ function pul(value?: number | string) {
 }
 
 function sana(value?: string | null) {
-  if (!value) return "вЂ”";
+  if (!value) return "—";
   return new Date(value).toLocaleDateString("uz-UZ");
 }
 

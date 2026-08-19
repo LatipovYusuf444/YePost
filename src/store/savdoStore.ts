@@ -89,6 +89,14 @@ async function qaytarishToloviniKassagaYozish(qaytarish: Qaytarish) {
   await cashOperationsApi.tasdiqlash(operatsiya.id);
 }
 
+function qoldiqBirlashtirishKaliti(item: Pick<QoldiqTanlovi, "modificationId" | "warehouseId">) {
+  // Bitta mahsulot bir nechta omborda alohida qoldiqqa ega bo'lishi mumkin,
+  // shuning uchun faqat modificationId emas, ombor bilan birga kalit qilinadi
+  // (aks holda bir xil mahsulotning boshqa ombordagi qoldig'i tasodifan
+  // ustidan yozilib, yo'qolib qolar edi).
+  return item.warehouseId ? `${item.modificationId}::${item.warehouseId}` : item.modificationId;
+}
+
 function qoldiqlarniKatalogBilanBirlashtirish(
   stockQoldiqlar: QoldiqTanlovi[],
   katalogQoldiqlar: QoldiqTanlovi[]
@@ -96,14 +104,15 @@ function qoldiqlarniKatalogBilanBirlashtirish(
   const map = new Map<string, QoldiqTanlovi>();
 
   for (const item of katalogQoldiqlar) {
-    map.set(item.modificationId, item);
+    map.set(qoldiqBirlashtirishKaliti(item), item);
   }
 
   for (const item of stockQoldiqlar) {
-    const katalogItem = map.get(item.modificationId);
+    const kalit = qoldiqBirlashtirishKaliti(item);
+    const katalogItem = map.get(kalit) ?? map.get(item.modificationId);
     const modification = item.modification ?? katalogItem?.modification;
 
-    map.set(item.modificationId, {
+    map.set(kalit, {
       ...katalogItem,
       ...item,
       modification: modification

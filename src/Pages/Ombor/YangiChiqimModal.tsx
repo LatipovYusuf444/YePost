@@ -14,6 +14,7 @@ import {
   Warehouse,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useOmborStore } from "@/store/omborStore";
 import type { ChiqimSababi } from "@/types/ombor";
 import { modificationNomi, pul, qoldiqMiqdori } from "./omborYordamchilari";
@@ -38,6 +39,19 @@ export default function YangiChiqimModal({ onClose }: Props) {
     store.omborlar.find((item) => item.isActive !== false)?.id ?? store.omborlar[0]?.id ?? "";
   const [warehouseId, setWarehouseId] = useState(birinchiOmbor);
   const [responsibleId, setResponsibleId] = useState("");
+  const joriyProfil = useAuthProfileStore((state) => state.profil);
+  const profilniYuklash = useAuthProfileStore((state) => state.profilniYuklash);
+
+  useEffect(() => {
+    if (!joriyProfil) void profilniYuklash();
+  }, [joriyProfil, profilniYuklash]);
+
+  useEffect(() => {
+    // Chiqim hujjatining mas'ul xodimi har doim tizimga real kirgan
+    // foydalanuvchi bo'lishi kerak.
+    if (joriyProfil?.id) setResponsibleId(joriyProfil.id);
+  }, [joriyProfil]);
+
   const [reason, setReason] = useState<ChiqimSababi | "">("");
   const [note, setNote] = useState("");
   const [qatorlar, setQatorlar] = useState<Qator[]>([yangiQator()]);

@@ -309,7 +309,7 @@ export default function Ruxsatlar() {
                       disabled={!editing && mavjudKodlar.has(item)}
                     >
                       {vakolatMatnlari[item].nom}
-                      {!editing && mavjudKodlar.has(item) ? " вЂ” mavjud" : ""}
+                      {!editing && mavjudKodlar.has(item) ? " — mavjud" : ""}
                     </option>
                   ))}
                 </AppSelect>

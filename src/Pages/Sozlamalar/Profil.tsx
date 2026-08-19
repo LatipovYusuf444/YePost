@@ -125,7 +125,7 @@ export default function Profil() {
                   <option value="">Tarifni tanlang</option>
                   {store.tariflar.filter((x) => x.isActive).map((x) => (
                     <option key={x.id} value={x.id}>
-                      {tarifTuriMatni[x.type]} tarif вЂ” {Number(x.monthlyPrice).toLocaleString("uz-UZ")} so'm
+                      {tarifTuriMatni[x.type]} tarif — {Number(x.monthlyPrice).toLocaleString("uz-UZ")} so'm
                     </option>
                   ))}
                 </AppSelect>

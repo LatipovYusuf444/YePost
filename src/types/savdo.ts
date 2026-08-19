@@ -27,7 +27,7 @@ export type YetkazishPayload = {
   scheduledAt?: string;
   note?: string;
 };
-export type SaleAuditLog = { id: string; action: "CREATE"|"UPDATE"|"DELETE"; actor?: NomliMalumot|null; user?: NomliMalumot|null; diff?: {before?:Record<string,unknown>|null;after?:Record<string,unknown>|null}|null; createdAt:string };
+export type SaleAuditLog = { id: string; action: "CREATE"|"UPDATE"|"DELETE"; actor?: NomliMalumot|null; user?: NomliMalumot|null; diff?: Record<string,unknown>|null; createdAt:string };
 export type QaytarishSababi = "DEFECT" | "WRONG" | "OTHER";
 
 export type QaytarishToloviniQaytarishUsuli = "CASH" | "CARD" | "BALANCE" | "NONE";

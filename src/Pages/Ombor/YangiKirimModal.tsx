@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useOmborStore } from "@/store/omborStore";
 import {
   birliklarApi,
@@ -78,6 +79,19 @@ export default function YangiKirimModal({ onClose }: Props) {
   const [supplierOchiq, setSupplierOchiq] = useState(false);
   const supplierRef = useRef<HTMLDivElement | null>(null);
   const [responsibleId, setResponsibleId] = useState("");
+  const joriyProfil = useAuthProfileStore((state) => state.profil);
+  const profilniYuklash = useAuthProfileStore((state) => state.profilniYuklash);
+
+  useEffect(() => {
+    if (!joriyProfil) void profilniYuklash();
+  }, [joriyProfil, profilniYuklash]);
+
+  useEffect(() => {
+    // Kirim hujjatining mas'ul xodimi har doim tizimga real kirgan
+    // foydalanuvchi bo'lishi kerak.
+    if (joriyProfil?.id) setResponsibleId(joriyProfil.id);
+  }, [joriyProfil]);
+
   const [note, setNote] = useState("");
   const [qatorlar, setQatorlar] = useState<Qator[]>([yangiQator(birinchiOmbor)]);
   const [tanlangan, setTanlangan] = useState<Set<string>>(new Set());
@@ -318,7 +332,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                           className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-black text-orange-600 hover:bg-orange-50 disabled:opacity-50"
                         >
                           <UserPlus size={15} />
-                          "{supplierQuery.trim()}" вЂ” yangi yetkazib beruvchi qo'shish
+                          "{supplierQuery.trim()}" — yangi yetkazib beruvchi qo'shish
                         </button>
                       )}
                       {supplierMoslari.length === 0 && !supplierQuery.trim() && (
