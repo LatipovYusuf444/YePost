@@ -1,11 +1,11 @@
 import { useState } from "react";
 import {
   Bell,
-  BookText,
   Building2,
   MapPin,
   PlugZap,
   Receipt,
+  Ruler,
   ShieldCheck,
   UserRound,
 } from "lucide-react";
@@ -16,7 +16,7 @@ import ChekBolimi from "./ChekBolimi";
 import FiliallarBolimi from "./FiliallarBolimi";
 import IntegratsiyaBolimi from "./IntegratsiyaBolimi";
 import KompaniyaBolimi from "./KompaniyaBolimi";
-import MalumotnomaBolimi from "./MalumotnomaBolimi";
+import OlchovBirligiBolimi from "./OlchovBirligiBolimi";
 import ProfilBolimi from "./ProfilBolimi";
 import VakolatlarBolimi from "./VakolatlarBolimi";
 import type { SozlamaBolim } from "./types";
@@ -27,7 +27,7 @@ const bolimlar: { id: SozlamaBolim; nom: string; icon: typeof UserRound; faqatDi
     { id: "profil", nom: "Mening profilim", icon: UserRound },
     { id: "kompaniya", nom: "Kompaniya", icon: Building2 },
     { id: "filiallar", nom: "Filiallar", icon: MapPin },
-    { id: "malumotnoma", nom: "Ma'lumotnoma", icon: BookText },
+    { id: "birliklar", nom: "O'lchov birligi", icon: Ruler },
     { id: "vakolatlar", nom: "Vakolatlar", icon: ShieldCheck },
     { id: "integratsiya", nom: "Integratsiya", icon: PlugZap, faqatDirektor: true },
     { id: "chek", nom: "Chek sozlamalari", icon: Receipt },
@@ -82,7 +82,7 @@ export default function SozlamalarUchot() {
           {bolim === "profil" && <ProfilBolimi />}
           {bolim === "kompaniya" && <KompaniyaBolimi />}
           {bolim === "filiallar" && <FiliallarBolimi />}
-          {bolim === "malumotnoma" && <MalumotnomaBolimi />}
+          {bolim === "birliklar" && <OlchovBirligiBolimi />}
           {bolim === "vakolatlar" && <VakolatlarBolimi />}
           {bolim === "integratsiya" && direktor && <IntegratsiyaBolimi />}
           {bolim === "chek" && <ChekBolimi />}

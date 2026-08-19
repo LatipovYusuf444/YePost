@@ -4,7 +4,7 @@ export type SozlamaBolim =
   | "profil"
   | "kompaniya"
   | "filiallar"
-  | "malumotnoma"
+  | "birliklar"
   | "vakolatlar"
   | "integratsiya"
   | "chek"

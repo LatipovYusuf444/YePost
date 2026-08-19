@@ -13,7 +13,6 @@ import {
   PackagePlus,
   Plus,
   RefreshCw,
-  Ruler,
   Search,
   Table2,
   Tags,
@@ -27,11 +26,10 @@ import type {
   Kategoriya,
   Mahsulot,
   MahsulotModifikatsiyasi,
-  OlchovBirligi,
 } from "@/types/catalog";
 import type { Ombor } from "@/types/ombor";
 
-type Tab = "mahsulotlar" | "kategoriyalar" | "birliklar";
+type Tab = "mahsulotlar" | "kategoriyalar";
 type Korinish = "kartochka" | "jadval";
 type VariationRow = {
   id: number;
@@ -86,7 +84,7 @@ export default function Mahsulotlar() {
   const [korinish, setKorinish] = useState<Korinish>("kartochka");
   const [korinishMenu, setKorinishMenu] = useState(false);
   const [mahsulotModal, setMahsulotModal] = useState<Mahsulot | "new" | null>(null);
-  const [oddiyModal, setOddiyModal] = useState<Kategoriya | OlchovBirligi | "new" | null>(null);
+  const [oddiyModal, setOddiyModal] = useState<Kategoriya | "new" | null>(null);
   const [modProduct, setModProduct] = useState<Mahsulot | null>(null);
 
   useEffect(() => { void yuklash(); }, [yuklash]);
@@ -102,15 +100,11 @@ export default function Mahsulotlar() {
 
   async function oddiyOchirish(id: string) {
     if (!window.confirm("Ushbu ma'lumotni o'chirasizmi?")) return;
-    if (tab === "kategoriyalar") await store.kategoriyaOchirish(id);
-    else await store.birlikOchirish(id);
+    await store.kategoriyaOchirish(id);
   }
 
-  async function oddiyTahrirlash(item: Kategoriya | OlchovBirligi) {
-    const toliq =
-      tab === "kategoriyalar"
-        ? await store.kategoriyaOlish(item.id)
-        : await store.birlikOlish(item.id);
+  async function oddiyTahrirlash(item: Kategoriya) {
+    const toliq = await store.kategoriyaOlish(item.id);
     if (toliq) setOddiyModal(toliq);
   }
 
@@ -164,7 +158,6 @@ export default function Mahsulotlar() {
         {[
           ["mahsulotlar","Mahsulotlar",Boxes],
           ["kategoriyalar","Kategoriyalar",Layers3],
-          ["birliklar","O'lchov birliklari",Ruler],
         ].map(([id,nom,Icon]) => {
           const IconComponent = Icon as typeof Boxes;
           return <button key={String(id)} onClick={()=>setTab(id as Tab)} className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-5 py-2.5 font-bold ${tab===id?"bg-orange-500 text-white":"text-gray-500 hover:bg-orange-50"}`}><IconComponent size={17}/>{String(nom)}</button>;
@@ -249,19 +242,19 @@ export default function Mahsulotlar() {
         </section>
       ) : (
         <section className="space-y-4">
-          <div className="flex items-end justify-between"><div><h2 className="text-2xl font-black">{tab==="kategoriyalar"?"Kategoriyalar":"O'lchov birliklari"}</h2><p className="text-sm text-gray-500">Mahsulotlar uchun asosiy ma'lumotnoma.</p></div><button onClick={()=>setOddiyModal("new")} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-5 font-black text-white"><Plus size={17}/>Qo'shish</button></div>
+          <div className="flex items-end justify-between"><div><h2 className="text-2xl font-black">Kategoriyalar</h2><p className="text-sm text-gray-500">Mahsulotlar uchun asosiy ma'lumotnoma.</p></div><button onClick={()=>setOddiyModal("new")} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-5 font-black text-white"><Plus size={17}/>Qo'shish</button></div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {(tab==="kategoriyalar"?store.kategoriyalar:store.birliklar).map(item=><article key={item.id} className="rounded-[24px] border border-orange-100 bg-white p-5">
-              <div className="flex items-start justify-between"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">{tab==="kategoriyalar"?<Tags size={21}/>:<Ruler size={21}/>}</div><div className="flex gap-2"><button onClick={()=>void oddiyTahrirlash(item)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-600"><Edit3 size={15}/></button><button onClick={()=>void oddiyOchirish(item.id)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500"><Trash2 size={15}/></button></div></div>
-              <h3 className="mt-4 text-lg font-black">{item.name}</h3>{"shortName" in item&&<p className="text-sm text-gray-400">Qisqa nomi: {String(item.shortName||"—")}</p>}
+            {store.kategoriyalar.map(item=><article key={item.id} className="rounded-[24px] border border-orange-100 bg-white p-5">
+              <div className="flex items-start justify-between"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-orange-600"><Tags size={21}/></div><div className="flex gap-2"><button onClick={()=>void oddiyTahrirlash(item)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-600"><Edit3 size={15}/></button><button onClick={()=>void oddiyOchirish(item.id)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500"><Trash2 size={15}/></button></div></div>
+              <h3 className="mt-4 text-lg font-black">{item.name}</h3>
             </article>)}
-            {(tab==="kategoriyalar"?store.kategoriyalar:store.birliklar).length===0&&<Empty matn="Ma'lumot mavjud emas"/>}
+            {store.kategoriyalar.length===0&&<Empty matn="Ma'lumot mavjud emas"/>}
           </div>
         </section>
       )}
 
       {mahsulotModal&&<MahsulotModalKeng item={mahsulotModal} onClose={()=>setMahsulotModal(null)}/>}
-      {oddiyModal&&<OddiyModal tur={tab as "kategoriyalar"|"birliklar"} item={oddiyModal} onClose={()=>setOddiyModal(null)}/>}
+      {oddiyModal&&<OddiyModal item={oddiyModal} onClose={()=>setOddiyModal(null)}/>}
       {modProduct&&<ModifikatsiyalarModal product={modProduct} onClose={()=>setModProduct(null)}/>}
     </div>
   );
@@ -1082,10 +1075,10 @@ function MahsulotModal({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}) {
 
 void MahsulotModal;
 
-function OddiyModal({tur,item,onClose}:{tur:"kategoriyalar"|"birliklar";item:Kategoriya|OlchovBirligi|"new";onClose:()=>void}) {
-  const store=useMahsulotlarStore();const editing=item!=="new";const [name,setName]=useState(editing?item.name:"");const [shortName,setShortName]=useState(editing&&"shortName" in item?item.shortName??"":"");
-  async function save(e:FormEvent){e.preventDefault();if(!name.trim())return;const ok=tur==="kategoriyalar"?await store.kategoriyaSaqlash(editing?item.id:null,{name:name.trim()}):await store.birlikSaqlash(editing?item.id:null,{name:name.trim(),shortName:shortName.trim()||undefined});if(ok)onClose()}
-  return <Modal title={`${editing?"Tahrirlash":"Yangi"} ${tur==="kategoriyalar"?"kategoriya":"o'lchov birligi"}`} onClose={onClose}><form onSubmit={save} className="space-y-4">{store.xatolik&&<ErrorBox/>}<input value={name} onChange={e=>setName(e.target.value)} className="input" placeholder="Nomi *"/>{tur==="birliklar"&&<input value={shortName} onChange={e=>setShortName(e.target.value)} className="input" placeholder="Qisqa nomi, masalan: kg"/>}<Actions loading={store.amalBajarilmoqda} onClose={onClose}/></form></Modal>
+function OddiyModal({item,onClose}:{item:Kategoriya|"new";onClose:()=>void}) {
+  const store=useMahsulotlarStore();const editing=item!=="new";const [name,setName]=useState(editing?item.name:"");
+  async function save(e:FormEvent){e.preventDefault();if(!name.trim())return;const ok=await store.kategoriyaSaqlash(editing?item.id:null,{name:name.trim()});if(ok)onClose()}
+  return <Modal title={`${editing?"Tahrirlash":"Yangi"} kategoriya`} onClose={onClose}><form onSubmit={save} className="space-y-4">{store.xatolik&&<ErrorBox/>}<input value={name} onChange={e=>setName(e.target.value)} className="input" placeholder="Nomi *"/><Actions loading={store.amalBajarilmoqda} onClose={onClose}/></form></Modal>
 }
 
 function ModifikatsiyalarModal({product,onClose}:{product:Mahsulot;onClose:()=>void}) {
