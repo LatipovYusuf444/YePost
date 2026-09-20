@@ -195,7 +195,7 @@ export default function ChiqimKorishModal({
             type="button"
             onClick={onYopish}
             title="Yopish"
-            className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[#FF6A00] text-white shadow-[0_10px_22px_rgba(249,115,22,.32)] ring-1 ring-white/80 transition duration-300 hover:-translate-x-0.5 hover:scale-105 active:scale-95"
+            className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[#2563EB] text-white shadow-[0_10px_22px_rgba(37,99,235,.32)] ring-1 ring-white/80 transition duration-300 hover:-translate-x-0.5 hover:scale-105 active:scale-95"
           >
             <X size={18} />
           </button>
@@ -203,7 +203,7 @@ export default function ChiqimKorishModal({
             type="button"
             onClick={nusxaOlish}
             title="Havolani nusxalash"
-            className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#FF6A00] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
+            className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#2563EB] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
           >
             <Link size={15} />
           </button>
@@ -211,7 +211,7 @@ export default function ChiqimKorishModal({
             type="button"
             onClick={() => window.open(window.location.href, "_blank", "noopener,noreferrer")}
             title="Yangi oynada ochish"
-            className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#FF6A00] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
+            className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#2563EB] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
           >
             <ExternalLink size={15} />
           </button>
@@ -219,14 +219,14 @@ export default function ChiqimKorishModal({
             type="button"
             onClick={() => window.print()}
             title="Chop etish"
-            className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#FF6A00] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
+            className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#2563EB] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
           >
             <Printer size={15} />
           </button>
         </div>
 
-        <div className="relative h-full w-full overflow-hidden rounded-l-[48px] rounded-r-[36px] bg-gradient-to-br from-[#FFF8EF] via-[#FFFDF9] to-[#FFE7D1] text-[#253044] shadow-[0_34px_120px_rgba(92,38,8,.42)] ring-1 ring-white/80">
-          <header className="sticky top-0 z-30 border-b border-orange-100/80 bg-[#FFF8EF]/88 px-7 py-3.5 backdrop-blur-xl">
+        <div className="relative h-full w-full overflow-hidden rounded-l-[48px] rounded-r-[36px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80">
+          <header className="sticky top-0 z-30 border-b border-orange-100/80 bg-[#F8FAFC]/88 px-7 py-3.5 backdrop-blur-xl">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-3">
@@ -235,7 +235,7 @@ export default function ChiqimKorishModal({
                     className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider ${
                       hujjat.holati === "tasdiqlangan"
                         ? "bg-emerald-50 text-emerald-600"
-                        : "bg-[#FFF3E2] text-[#FF6A00]"
+                        : "bg-[#EFF6FF] text-[#2563EB]"
                     }`}
                   >
                     {holatNomi(hujjat.holati)}
@@ -257,7 +257,7 @@ export default function ChiqimKorishModal({
                   <button
                     type="button"
                     onClick={onTahrirlash}
-                    className="inline-flex h-11 items-center gap-2 rounded-[15px] bg-[#FF6A00] px-4 text-sm font-black text-white shadow-[0_10px_24px_rgba(249,115,22,.22)] transition hover:-translate-y-0.5 hover:bg-[#EA580C]"
+                    className="inline-flex h-11 items-center gap-2 rounded-[15px] bg-[#2563EB] px-4 text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,235,.22)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8]"
                   >
                     <Edit3 size={16} />
                     Tahrirlash
@@ -266,7 +266,7 @@ export default function ChiqimKorishModal({
                 <button
                   type="button"
                   onClick={onYopish}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[15px] bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-[#FF6A00] hover:text-white"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[15px] bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-[#2563EB] hover:text-white"
                   aria-label="Oynani yopish"
                 >
                   <X size={19} />
@@ -278,14 +278,14 @@ export default function ChiqimKorishModal({
           <div className="scrollbar-hidden h-[calc(100%-74px)] overflow-y-auto px-7 py-4 pb-10">
             <div className="grid gap-5 xl:grid-cols-2">
               <div className="min-w-0 space-y-4">
-                <section className="overflow-hidden rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur">
+                <section className="overflow-hidden rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80 backdrop-blur">
                   <h3 className="mb-4 border-b border-orange-100/80 pb-3 text-sm font-black uppercase tracking-wide text-slate-600">
                     Chiqim haqida
                   </h3>
 
                   <div className="space-y-4">
-                    <div className="flex h-[160px] w-full flex-col justify-center rounded-2xl bg-gradient-to-br from-[#FFF3E2] to-[#FFE7D1] p-6 ring-1 ring-orange-100">
-                      <p className="text-sm font-black uppercase tracking-wide text-[#EA580C]">
+                    <div className="flex h-[160px] w-full flex-col justify-center rounded-2xl bg-gradient-to-br from-[#EFF6FF] to-[#E8EEF7] p-6 ring-1 ring-orange-100">
+                      <p className="text-sm font-black uppercase tracking-wide text-[#1D4ED8]">
                         Umumiy summa
                       </p>
                       <p className="mt-2 text-4xl font-black text-slate-950">{pul(jami)}</p>
@@ -313,7 +313,7 @@ export default function ChiqimKorishModal({
                   <div className="mt-5 border-t border-orange-100/80 pt-4">
                     <div className="mb-3 flex items-center justify-between">
                       <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">Fayllar</h3>
-                      <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl bg-[#FF6A00] px-3.5 text-sm font-black text-white shadow-[0_10px_24px_rgba(249,115,22,.22)] transition hover:-translate-y-0.5 hover:bg-[#EA580C]">
+                      <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl bg-[#2563EB] px-3.5 text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,235,.22)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8]">
                         <Upload size={15} />
                         Fayl yuklash
                         <input type="file" multiple className="hidden" onChange={faylTanlash} />
@@ -331,7 +331,7 @@ export default function ChiqimKorishModal({
                             key={fayl.id}
                             className="flex flex-wrap items-center gap-2.5 rounded-xl bg-white/80 p-3 ring-1 ring-orange-50"
                           >
-                            <FileText size={18} className="shrink-0 text-[#FF6A00]" />
+                            <FileText size={18} className="shrink-0 text-[#2563EB]" />
                             <span className="min-w-0 flex-1 truncate text-sm font-bold text-slate-700">
                               {fayl.nomi}
                             </span>
@@ -356,9 +356,9 @@ export default function ChiqimKorishModal({
               </div>
 
               <div className="min-w-0 space-y-4">
-                <section className="overflow-hidden rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur">
+                <section className="overflow-hidden rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80 backdrop-blur">
                   <div className="mb-4 flex items-center gap-2 border-b border-orange-100/80 pb-3">
-                    <MessageSquare size={16} className="text-[#FF6A00]" />
+                    <MessageSquare size={16} className="text-[#2563EB]" />
                     <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
                       Kommentariya
                     </h3>
@@ -370,14 +370,14 @@ export default function ChiqimKorishModal({
                       onChange={(event) => setKommentMatni(event.target.value)}
                       rows={3}
                       placeholder="Izoh yozing..."
-                      className="w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100"
+                      className="w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
                     />
                     <div className="flex justify-end">
                       <button
                         type="button"
                         onClick={izohQoshish}
                         disabled={!kommentMatni.trim()}
-                        className="inline-flex h-9 items-center rounded-xl bg-[#FF6A00] px-4 text-sm font-black text-white transition hover:bg-[#EA580C] disabled:opacity-40"
+                        className="inline-flex h-9 items-center rounded-xl bg-[#2563EB] px-4 text-sm font-black text-white transition hover:bg-[#1D4ED8] disabled:opacity-40"
                       >
                         Yuborish
                       </button>
@@ -399,16 +399,16 @@ export default function ChiqimKorishModal({
                   )}
                 </section>
 
-                <section className="overflow-hidden rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur">
+                <section className="overflow-hidden rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80 backdrop-blur">
                   <div className="mb-4 flex items-center gap-2 border-b border-orange-100/80 pb-3">
-                    <History size={16} className="text-[#FF6A00]" />
+                    <History size={16} className="text-[#2563EB]" />
                     <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">Tarix</h3>
                   </div>
 
                   <div className="space-y-3.5">
                     {tarix.map((yozuv) => (
                       <div key={yozuv.id} className="flex items-start gap-3">
-                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#FF6A00]" />
+                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#2563EB]" />
                         <div className="min-w-0">
                           <p className="text-sm font-bold text-slate-700">{yozuv.matn}</p>
                           <p className="text-xs font-semibold text-slate-400">{yozuv.vaqt}</p>
@@ -420,7 +420,7 @@ export default function ChiqimKorishModal({
               </div>
             </div>
 
-            <section className="relative mt-5 rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur">
+            <section className="relative mt-5 rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80 backdrop-blur">
               <h3 className="mb-4 border-b border-orange-100/80 pb-3 text-sm font-black uppercase tracking-wide text-slate-600">
                 Tovarlar
               </h3>
@@ -439,7 +439,7 @@ export default function ChiqimKorishModal({
                       <col />
                       <col style={{ width: 56 }} />
                     </colgroup>
-                    <thead className="bg-orange-50/70 text-left text-[11px] font-black uppercase tracking-wide text-slate-500">
+                    <thead className="bg-slate-50 text-left text-[11px] font-black uppercase tracking-wide text-slate-500">
                       <tr>
                         <th className="px-3 py-3">№</th>
                         {korinadiganUstunSozlamalari.map((ustun) => (
@@ -461,8 +461,8 @@ export default function ChiqimKorishModal({
                             title="Ustunlarni ko'rsatish/berkitish"
                             className={`inline-flex h-7 w-7 items-center justify-center rounded-lg transition ${
                               ustunlarMenyusiOchiq
-                                ? "bg-orange-100 text-[#FF6A00]"
-                                : "text-slate-400 hover:bg-orange-100 hover:text-[#FF6A00]"
+                                ? "bg-orange-100 text-[#2563EB]"
+                                : "text-slate-400 hover:bg-orange-100 hover:text-[#2563EB]"
                             }`}
                           >
                             <Settings size={16} />

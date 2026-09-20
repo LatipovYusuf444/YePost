@@ -57,7 +57,7 @@ export default function XodimTafsilotlariModal({
   );
 
   return (
-    <AppModal className="items-start justify-start bg-[rgba(54,22,8,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
+    <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
       <div className="relative h-[calc(100vh-32px)] w-full">
         <TezkorPanel
           havolaId={xodim.id}
@@ -66,9 +66,9 @@ export default function XodimTafsilotlariModal({
           onYopish={onYopish}
         />
 
-        <section className="relative h-full w-full overflow-hidden rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#FFF8EF] via-[#FFFDF9] to-[#FFE8D2] text-[#253044] shadow-[0_34px_120px_rgba(92,38,8,.42)] ring-1 ring-white/80">
+        <section className="relative h-full w-full overflow-hidden rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80">
           <div className="scrollbar-orange h-full overflow-y-auto">
-            <header className="sticky top-0 z-30 border-b border-orange-100/80 bg-[#FFF8EF]/90 px-9 py-6 backdrop-blur-xl">
+            <header className="sticky top-0 z-30 border-b border-orange-100/80 bg-[#F8FAFC]/90 px-9 py-6 backdrop-blur-xl">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex min-w-0 items-center gap-3">
                   <h1 className="truncate text-2xl font-bold text-slate-900">{xodimNomi(xodim)}</h1>
@@ -93,7 +93,7 @@ export default function XodimTafsilotlariModal({
                   <button
                     type="button"
                     onClick={onTahrirlash}
-                    className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#FF6A00] px-4 text-sm font-bold text-white shadow-[0_10px_24px_rgba(249,115,22,.24)] transition hover:bg-[#EA580C]"
+                    className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#2563EB] px-4 text-sm font-bold text-white shadow-[0_10px_24px_rgba(37,99,235,.24)] transition hover:bg-[#1D4ED8]"
                   >
                     Ma'lumotni o'zgartirish
                   </button>
@@ -108,8 +108,8 @@ export default function XodimTafsilotlariModal({
                     onClick={() => setFaolTab(tab)}
                     className={`shrink-0 rounded-xl px-3 py-2 text-sm transition ${
                       faolTab === tab
-                        ? "border border-orange-200 bg-white text-[#FF6A00]"
-                        : "text-slate-500 hover:bg-white hover:text-[#FF6A00]"
+                        ? "border border-orange-200 bg-white text-[#2563EB]"
+                        : "text-slate-500 hover:bg-white hover:text-[#2563EB]"
                     }`}
                   >
                     {tab}
@@ -166,7 +166,7 @@ function MalumotlarTab({
   return (
     <div className="grid gap-6 px-9 py-7 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <div className="space-y-5">
-        <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80">
+        <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80">
           <div className="border-b border-orange-100/80 pb-3">
             <h2 className="text-sm font-black uppercase tracking-wide text-slate-600">
               Xodim haqida
@@ -176,7 +176,7 @@ function MalumotlarTab({
           <dl className="mt-5 space-y-4">
             <div>
               <dt className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
-                <span className="text-[#FF6A00]">
+                <span className="text-[#2563EB]">
                   <Phone size={14} />
                 </span>
                 Telefon
@@ -224,7 +224,7 @@ function MalumotlarTab({
           </dl>
         </section>
 
-        <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80">
+        <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80">
           <div className="border-b border-orange-100/80 pb-3">
             <h2 className="text-sm font-black uppercase tracking-wide text-slate-600">
               Qo'shimcha ma'lumotlar
@@ -256,7 +256,7 @@ function Qator({
   return (
     <div>
       <dt className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
-        {icon && <span className="text-[#FF6A00]">{icon}</span>}
+        {icon && <span className="text-[#2563EB]">{icon}</span>}
         {nom}
       </dt>
       <dd className="mt-0.5 text-base font-semibold text-slate-800">{qiymat}</dd>

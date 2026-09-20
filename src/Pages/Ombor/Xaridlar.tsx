@@ -167,7 +167,7 @@ export default function Xaridlar() {
         return (
           <>
             <p className="font-black text-gray-950">{kirimNomi(hujjat)}</p>
-            <p className="text-xs font-semibold text-orange-500">{hujjatRaqami(hujjat)}</p>
+            <p className="text-xs font-semibold text-slate-500">{hujjatRaqami(hujjat)}</p>
           </>
         );
       case "yetkazibBeruvchi":
@@ -235,10 +235,10 @@ export default function Xaridlar() {
               {faolUstunlar.map((ustun) => <col key={ustun.kalit} style={{ width: ustun.kenglik }} />)}
               <col style={{ width: 76 }} />
             </colgroup>
-            <thead className="bg-orange-50/60 text-xs font-bold uppercase tracking-wide text-orange-500">
+            <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500">
               <tr>
                 {faolUstunlar.map((ustun) => <th key={ustun.kalit}>{ustun.nom}</th>)}
-                <th className="sticky right-0 z-10 bg-[#fff9f3] text-right">
+                <th className="sticky right-0 z-10 bg-[#F8FAFC] text-right">
                   <button
                     ref={sozlamaTugmaRef}
                     type="button"

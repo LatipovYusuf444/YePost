@@ -128,7 +128,7 @@ export default function SotuvlarJadvali({
     <div className="px-10 pb-10">
       <div className="overflow-x-auto">
         <table className={`w-full border-collapse text-left text-sm ${tarixKorinish ? "min-w-[1180px]" : "min-w-[900px]"}`}>
-          <thead className="text-[13px] font-medium text-orange-600">
+          <thead className="text-[13px] font-medium text-slate-500">
             <tr>
               <th className="border-b border-gray-200 px-4 py-3 font-medium">Savdo raqami</th>
               <th className="border-b border-gray-200 px-4 py-3 font-medium">Mijoz nomi</th>
@@ -184,7 +184,7 @@ export default function SotuvlarJadvali({
                           {tarixHolatMatni[stat.holat]}
                         </span>
                       </td>
-                      <td className="border-b border-gray-100 px-4 py-3.5 font-bold text-orange-600">
+                      <td className="border-b border-gray-100 px-4 py-3.5 font-semibold text-slate-900">
                         {pulniFormatlash(stat.qaytarilganSumma)}
                       </td>
                     </>

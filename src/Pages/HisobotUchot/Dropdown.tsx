@@ -42,7 +42,7 @@ export default function Dropdown({
         </button>
 
         {open && (
-          <div className="absolute left-0 right-0 z-30 mt-2 max-h-52 overflow-auto rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_50px_rgba(92,38,8,.16)]">
+          <div className="absolute left-0 right-0 z-30 mt-2 max-h-52 overflow-auto rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_50px_rgba(15,23,42,.16)]">
             {options.map((o) => (
               <button
                 key={o.value}

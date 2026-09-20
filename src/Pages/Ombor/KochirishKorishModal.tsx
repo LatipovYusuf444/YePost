@@ -212,16 +212,16 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
     <AppModal className="items-start justify-start overflow-hidden bg-slate-950/60 p-0 py-4 pl-[92px] pr-4 backdrop-blur-[3px]">
       <div className="relative h-[calc(100dvh-32px)] w-full">
         <aside className="absolute -left-[58px] top-6 z-30 flex flex-col items-center gap-3">
-          <button type="button" onClick={onClose} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FF5A00] text-white shadow-xl ring-1 ring-white/80" aria-label="Yopish">
+          <button type="button" onClick={onClose} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#2563EB] text-white shadow-xl ring-1 ring-white/80" aria-label="Yopish">
             <X size={21} />
           </button>
-          <button type="button" onClick={() => window.print()} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#FF5A00] shadow-lg ring-1 ring-orange-100" aria-label="Chop etish">
+          <button type="button" onClick={() => window.print()} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#2563EB] shadow-lg ring-1 ring-orange-100" aria-label="Chop etish">
             <Printer size={18} />
           </button>
         </aside>
 
-        <div className="h-full overflow-hidden rounded-l-[44px] rounded-r-[36px] border border-orange-100 bg-gradient-to-br from-[#FFF9F2] via-[#FFFDF9] to-[#FFE8D2] shadow-[0_35px_110px_rgba(43,22,12,.42)]">
-          <header className="sticky top-0 z-20 flex min-h-[92px] items-center justify-between gap-4 border-b border-orange-100 bg-[#FFF9F2]/95 px-8 py-4 backdrop-blur-xl">
+        <div className="h-full overflow-hidden rounded-l-[44px] rounded-r-[36px] border border-orange-100 bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] shadow-[0_35px_110px_rgba(15,23,42,.42)]">
+          <header className="sticky top-0 z-20 flex min-h-[92px] items-center justify-between gap-4 border-b border-orange-100 bg-[#F8FAFC]/95 px-8 py-4 backdrop-blur-xl">
             <div className="flex min-w-0 flex-wrap items-center gap-4">
               <h2 className="truncate text-3xl font-black tracking-tight text-slate-950 sm:text-[36px]">
                 Ko'chirma hujjati #{hujjat ? hujjatRaqami(hujjat) : "..."}
@@ -234,7 +234,7 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
                   <button type="button" onClick={() => void tahrirlashniOchish()} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-white px-4 font-black text-slate-700 shadow-sm ring-1 ring-slate-200">
                     <Edit3 size={17} /> Tahrirlash
                   </button>
-                  <button type="button" onClick={() => void amalBajarish("send")} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#FF5A00] px-5 font-black text-white disabled:opacity-50">
+                  <button type="button" onClick={() => void amalBajarish("send")} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#2563EB] px-5 font-black text-white disabled:opacity-50">
                     <Send size={17} /> Jo'natish
                   </button>
                   <button type="button" onClick={() => void amalBajarish("cancel")} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-slate-700 px-5 font-black text-white disabled:opacity-50">
@@ -277,7 +277,7 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
                 {(xato || store.xatolik) && <p className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">{xato || store.xatolik}</p>}
                 <div className="mt-6 flex justify-end gap-3">
                   <button type="button" onClick={() => setTahrir(false)} className="h-12 rounded-2xl bg-slate-100 px-6 font-black text-slate-600">Bekor qilish</button>
-                  <button type="button" onClick={() => void saqlash()} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#FF5A00] px-6 font-black text-white disabled:opacity-50"><Save size={17} /> Saqlash</button>
+                  <button type="button" onClick={() => void saqlash()} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#2563EB] px-6 font-black text-white disabled:opacity-50"><Save size={17} /> Saqlash</button>
                 </div>
               </section>
             ) : (
@@ -286,8 +286,8 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
                 <div className="grid gap-6 xl:grid-cols-2">
                   <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm sm:p-6">
                     <h3 className="border-b border-orange-100 pb-4 text-base font-black uppercase text-slate-600">Ko'chirma haqida</h3>
-                    <div className="mt-5 flex min-h-48 flex-col justify-center rounded-[24px] bg-gradient-to-br from-[#FFF3E2] to-[#FFE4C7] p-8">
-                      <p className="text-sm font-black uppercase tracking-wide text-[#F05A16]">Umumiy summa</p>
+                    <div className="mt-5 flex min-h-48 flex-col justify-center rounded-[24px] bg-gradient-to-br from-[#EFF6FF] to-[#E8EEF7] p-8">
+                      <p className="text-sm font-black uppercase tracking-wide text-[#2563EB]">Umumiy summa</p>
                       <p className="mt-2 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">{pul(jami)}</p>
                     </div>
                     <div className="mt-5">
@@ -308,10 +308,10 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
                 </div>
 
                 <section className="mt-6 rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm sm:p-6">
-                  <div className="flex items-center gap-2 border-b border-orange-100 pb-4"><FileText size={18} className="text-[#FF5A00]" /><h3 className="font-black uppercase text-slate-600">Tovarlar</h3></div>
+                  <div className="flex items-center gap-2 border-b border-orange-100 pb-4"><FileText size={18} className="text-[#2563EB]" /><h3 className="font-black uppercase text-slate-600">Tovarlar</h3></div>
                   <div className="mt-5 overflow-x-auto rounded-2xl border border-orange-100">
                     <table className="w-full min-w-[900px] text-left text-sm">
-                      <thead className="bg-[#FFF9F3] text-xs font-black uppercase text-slate-500"><tr><th className="px-4 py-4">в„–</th><th className="px-4 py-4">Mahsulot</th><th className="px-4 py-4">Shtrix kod</th><th className="px-4 py-4">Narxi</th><th className="px-4 py-4">Soni</th><th className="px-4 py-4">Summa</th></tr></thead>
+                      <thead className="bg-[#F8FAFC] text-xs font-black uppercase text-slate-500"><tr><th className="px-4 py-4">в„–</th><th className="px-4 py-4">Mahsulot</th><th className="px-4 py-4">Shtrix kod</th><th className="px-4 py-4">Narxi</th><th className="px-4 py-4">Soni</th><th className="px-4 py-4">Summa</th></tr></thead>
                       <tbody className="divide-y divide-orange-100">{toliqItems.map(({ item, mod }, index) => { const narx = narxniOlish(item, mod); return <tr key={item.id ?? `${item.modificationId}-${index}`}><td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td><td className="px-4 py-4 font-black text-slate-800">{modificationNomi(mod)}</td><td className="px-4 py-4 text-slate-500">{mod?.barcode ?? "—"}</td><td className="px-4 py-4">{pul(narx)}</td><td className="px-4 py-4">{item.quantity} {item.unit ?? "dona"}</td><td className="px-4 py-4 font-black text-emerald-600">{pul(Number(item.quantity) * narx)}</td></tr>; })}{!toliqItems.length && <tr><td colSpan={6} className="px-5 py-12 text-center font-bold text-slate-400">Mahsulotlar mavjud emas</td></tr>}</tbody>
                     </table>
                   </div>

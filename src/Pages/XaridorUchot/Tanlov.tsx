@@ -4,7 +4,7 @@ import { Check, ChevronDown, Search } from "lucide-react";
 export type TanlovVarianti = { value: string; label: string };
 
 const tugmaKlass =
-  "flex h-11 w-full items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white px-3.5 text-left text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100";
+  "flex h-11 w-full items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white px-3.5 text-left text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100";
 
 // Native <AppSelect> o'rniga — ochilgan ro'yxati ham yumaloq (dizaynga mos) tanlov.
 // qidiruv=true bo'lsa — ro'yxat tepasida qidiruv maydoni chiqadi (yozib topiladi).
@@ -56,7 +56,7 @@ export default function Tanlov({
             onClick={yopish}
             className="fixed inset-0 z-40 cursor-default"
           />
-          <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_50px_rgba(92,38,8,.16)]">
+          <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_50px_rgba(15,23,42,.16)]">
             {qidiruv && (
               <div className="mb-1 flex items-center gap-2 rounded-xl border border-slate-200 px-3">
                 <Search size={15} className="text-slate-400" />
@@ -83,8 +83,8 @@ export default function Tanlov({
                     }}
                     className={`flex min-h-9 w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${
                       tanlangan
-                        ? "bg-orange-50 text-[#FF6A00]"
-                        : "text-slate-600 hover:bg-orange-50 hover:text-[#FF6A00]"
+                        ? "bg-orange-50 text-[#2563EB]"
+                        : "text-slate-600 hover:bg-orange-50 hover:text-[#2563EB]"
                     }`}
                   >
                     <span className="truncate">{v.label}</span>

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import {
   birliklarApi,
+  getStandardUnits,
   kategoriyalarApi,
   mahsulotlarApi,
   modifikatsiyalarApi,
@@ -16,11 +17,13 @@ import type {
   NarxMalumoti,
   OlchovBirligi,
   OlchovBirligiMalumoti,
+  StandardUnit,
 } from "@/types/catalog";
 
 type MahsulotlarState = {
   kategoriyalar: Kategoriya[];
   birliklar: OlchovBirligi[];
+  standardBirliklar: StandardUnit[];
   mahsulotlar: Mahsulot[];
   modifikatsiyalar: Record<string, MahsulotModifikatsiyasi[]>;
   yuklanmoqda: boolean;
@@ -33,6 +36,7 @@ type MahsulotlarState = {
   birlikOlish: (id: string) => Promise<OlchovBirligi | null>;
   birlikSaqlash: (id: string | null, data: OlchovBirligiMalumoti) => Promise<boolean>;
   birlikOchirish: (id: string) => Promise<boolean>;
+  standardBirlikniWorkspacegaOtkazish: (unit: StandardUnit) => Promise<string | null>;
   mahsulotOlish: (id: string) => Promise<Mahsulot | null>;
   mahsulotSaqlash: (id: string | null, data: MahsulotMalumoti) => Promise<boolean>;
   mahsulotNarxBilanYaratish: (
@@ -77,9 +81,44 @@ function mahsulotIdTekshirish(mahsulot: Mahsulot) {
   }
 }
 
+function birlikMatniniNormallashtirish(value?: string | null) {
+  return value?.trim().toLocaleLowerCase() ?? "";
+}
+
+function standardBirlikkaMosiniTopish(
+  birliklar: OlchovBirligi[],
+  standard: StandardUnit
+) {
+  const code = birlikMatniniNormallashtirish(standard.code);
+  if (code) {
+    const codeBoyicha = birliklar.find(
+      (birlik) => birlikMatniniNormallashtirish(birlik.code) === code
+    );
+    if (codeBoyicha) return codeBoyicha;
+  }
+
+  const qisqaNomlar = [standard.shortNameUz, standard.shortNameRu]
+    .map(birlikMatniniNormallashtirish)
+    .filter(Boolean);
+  const qisqaNomBoyicha = birliklar.find((birlik) =>
+    qisqaNomlar.includes(birlikMatniniNormallashtirish(birlik.shortName))
+  );
+  if (qisqaNomBoyicha) return qisqaNomBoyicha;
+
+  const nomlar = [standard.nameUz, standard.nameRu]
+    .map(birlikMatniniNormallashtirish)
+    .filter(Boolean);
+  return birliklar.find((birlik) =>
+    nomlar.includes(birlikMatniniNormallashtirish(birlik.name))
+  );
+}
+
+const standardBirlikSorovlari = new Map<number, Promise<string>>();
+
 export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
   kategoriyalar: [],
   birliklar: [],
+  standardBirliklar: [],
   mahsulotlar: [],
   modifikatsiyalar: {},
   yuklanmoqda: false,
@@ -89,14 +128,16 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
   yuklash: async () => {
     set({ yuklanmoqda: true, xatolik: null });
     try {
-      const [kategoriyalar, birliklar, mahsulotlar] = await Promise.all([
+      const [kategoriyalar, birliklar, mahsulotlar, standardBirliklar] = await Promise.all([
         kategoriyalarApi.royxat(),
         birliklarApi.royxat(),
         mahsulotlarApi.royxat(),
+        getStandardUnits().catch(() => []),
       ]);
       set({
         kategoriyalar,
         birliklar,
+        standardBirliklar,
         mahsulotlar: mahsulotlar.map((mahsulot) => ({
           ...mahsulot,
           category:
@@ -176,6 +217,51 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
       return false;
+    }
+  },
+  standardBirlikniWorkspacegaOtkazish: async (standard) => {
+    const mavjud = standardBirlikkaMosiniTopish(get().birliklar, standard);
+    if (mavjud) return mavjud.id;
+
+    const davomEtayotganSorov = standardBirlikSorovlari.get(standard.id);
+    if (davomEtayotganSorov) {
+      try {
+        return await davomEtayotganSorov;
+      } catch (error) {
+        set({ xatolik: getApiErrorMessage(error) });
+        return null;
+      }
+    }
+
+    const sorov = (async () => {
+      const qaytaTekshirilgan = standardBirlikkaMosiniTopish(get().birliklar, standard);
+      if (qaytaTekshirilgan) return qaytaTekshirilgan.id;
+
+      const code = standard.code?.trim();
+      const item = await birliklarApi.yaratish({
+        ...(code ? { code } : {}),
+        name: standard.nameUz.trim(),
+        shortName: standard.shortNameUz.trim(),
+      });
+      if (typeof item.id !== "string" || !item.id.trim()) {
+        throw new Error("Backend workspace o'lchov birligi UUID qiymatini qaytarmadi.");
+      }
+      set((state) => ({
+        birliklar: state.birliklar.some((birlik) => birlik.id === item.id)
+          ? state.birliklar
+          : [item, ...state.birliklar],
+      }));
+      return item.id;
+    })();
+
+    standardBirlikSorovlari.set(standard.id, sorov);
+    try {
+      return await sorov;
+    } catch (error) {
+      set({ xatolik: getApiErrorMessage(error) });
+      return null;
+    } finally {
+      standardBirlikSorovlari.delete(standard.id);
     }
   },
 

@@ -298,7 +298,7 @@ export default function BoshSahifa() {
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl font-bold leading-tight text-[#1C1A17] sm:text-3xl">
+              <h1 className="text-2xl font-bold leading-tight text-[#0F172A] sm:text-3xl">
                 Savatcha
               </h1>
               <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-linear-to-br from-gold-300 to-gold-600 px-2 text-xs font-bold text-white shadow-gold-soft">
@@ -311,7 +311,7 @@ export default function BoshSahifa() {
             <AppSelect
               value={warehouseId}
               onChange={(event) => setWarehouseId(event.target.value)}
-              className="h-10 rounded-xl border border-gold-200/60 bg-gold-50 px-3 text-sm font-semibold text-[#1C1A17] outline-none focus:border-gold-400"
+              className="h-10 rounded-xl border border-gold-200/60 bg-gold-50 px-3 text-sm font-semibold text-[#0F172A] outline-none focus:border-gold-400"
             >
               {omborlar.map((ombor) => (
                 <option key={ombor.id} value={ombor.id}>
@@ -343,10 +343,10 @@ export default function BoshSahifa() {
             <div className="flex flex-1 items-center justify-center p-6 text-center">
               <div className="flex flex-col items-center">
                 <GoldCartIllustration className="h-[220px] w-[220px] sm:h-[260px] sm:w-[260px]" />
-                <h2 className="mt-2 text-xl font-bold text-[#1C1A17] sm:text-2xl">
+                <h2 className="mt-2 text-xl font-bold text-[#0F172A] sm:text-2xl">
                   Savatcha bo'sh
                 </h2>
-                <p className="mt-2 text-sm text-[#8F8980]">
+                <p className="mt-2 text-sm text-[#94A3B8]">
                   Hozircha hech qanday mahsulot tanlanmagan
                 </p>
               </div>
@@ -359,21 +359,21 @@ export default function BoshSahifa() {
                   className="mb-2 grid gap-3 rounded-xl bg-gold-50/70 p-3 sm:grid-cols-[minmax(0,1fr)_108px_116px_36px] sm:items-center"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-[#1C1A17]">{item.nom}</p>
-                    <p className="mt-0.5 text-xs text-[#8F8980]">{formatSumma(item.narx)}</p>
+                    <p className="truncate text-sm font-bold text-[#0F172A]">{item.nom}</p>
+                    <p className="mt-0.5 text-xs text-[#94A3B8]">{formatSumma(item.narx)}</p>
                   </div>
 
                   <div className="flex h-9 items-center justify-between rounded-lg bg-white px-1 shadow-sm">
                     <button
                       onClick={() => updateQuantity(item.id, item.soni - 1)}
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-[#8F8980] hover:bg-gold-100 hover:text-gold-600"
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-[#94A3B8] hover:bg-gold-100 hover:text-gold-600"
                     >
                       <Minus size={14} />
                     </button>
-                    <span className="text-sm font-bold text-[#1C1A17]">{item.soni}</span>
+                    <span className="text-sm font-bold text-[#0F172A]">{item.soni}</span>
                     <button
                       onClick={() => updateQuantity(item.id, item.soni + 1)}
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-[#8F8980] hover:bg-gold-100 hover:text-gold-600"
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-[#94A3B8] hover:bg-gold-100 hover:text-gold-600"
                     >
                       <Plus size={14} />
                     </button>
@@ -410,7 +410,7 @@ export default function BoshSahifa() {
                 "h-10 rounded-xl text-xs font-bold transition sm:text-sm",
                 mijozTuri === value
                   ? "bg-linear-to-br from-gold-300 to-gold-600 text-white shadow-gold-soft"
-                  : "text-[#77736D] hover:bg-white/70 hover:text-gold-600",
+                  : "text-[#64748B] hover:bg-white/70 hover:text-gold-600",
               ].join(" ")}
             >
               {label}
@@ -422,7 +422,7 @@ export default function BoshSahifa() {
           <>
             <div className="mb-5">
               <div className="mb-2 flex items-center justify-between">
-                <p className="text-sm font-bold text-[#1C1A17]">Mijoz</p>
+                <p className="text-sm font-bold text-[#0F172A]">Mijoz</p>
               </div>
 
               <input
@@ -435,7 +435,7 @@ export default function BoshSahifa() {
 
             <div className="mb-5">
               <div className="mb-2 flex items-center justify-between gap-2">
-                <p className="text-sm font-bold text-[#1C1A17]">Chegirma</p>
+                <p className="text-sm font-bold text-[#0F172A]">Chegirma</p>
               </div>
 
               <div className="grid grid-cols-[minmax(0,1fr)_74px] gap-2">
@@ -465,7 +465,7 @@ export default function BoshSahifa() {
                       "h-9 rounded-full text-xs font-bold transition",
                       discountPercent === item
                         ? "bg-linear-to-br from-gold-300 to-gold-600 text-white"
-                        : "bg-gold-100 text-[#77736D] hover:bg-gold-150",
+                        : "bg-gold-100 text-[#64748B] hover:bg-gold-150",
                     ].join(" ")}
                   >
                     {item}%
@@ -498,7 +498,7 @@ export default function BoshSahifa() {
                   "rounded-lg py-2.5 text-xs font-bold transition",
                   narxTuri === "chakana"
                     ? "border border-gold-300 bg-white text-gold-600"
-                    : "text-[#77736D] hover:text-gold-600",
+                    : "text-[#64748B] hover:text-gold-600",
                 ].join(" ")}
               >
                 Chakana narx
@@ -509,14 +509,14 @@ export default function BoshSahifa() {
                   "rounded-lg py-2.5 text-xs font-bold transition",
                   narxTuri === "ulgurji"
                     ? "border border-gold-300 bg-white text-gold-600"
-                    : "text-[#77736D] hover:text-gold-600",
+                    : "text-[#64748B] hover:text-gold-600",
                 ].join(" ")}
               >
                 Ulgurji narx
               </button>
             </div>
 
-            <p className="mb-2 text-sm font-bold text-[#1C1A17]">To'lov turini tanlang</p>
+            <p className="mb-2 text-sm font-bold text-[#0F172A]">To'lov turini tanlang</p>
             <div className="mb-5 grid grid-cols-2 gap-2">
               {paymentTypes.map((item) => (
                 <button
@@ -525,7 +525,7 @@ export default function BoshSahifa() {
                   className={[
                     "flex h-11 items-center justify-center rounded-xl border bg-white text-sm font-bold transition",
                     paymentType === item.label
-                      ? "border-gold-400 bg-gold-50 text-[#1C1A17] shadow-gold-soft"
+                      ? "border-gold-400 bg-gold-50 text-[#0F172A] shadow-gold-soft"
                       : "border-gray-200 text-gray-700 hover:border-gold-200",
                   ].join(" ")}
                 >
@@ -548,12 +548,12 @@ export default function BoshSahifa() {
             </div>
 
             <div className="mt-auto rounded-xl bg-gold-50 p-3">
-              <div className="mb-2 flex justify-between text-xs text-[#77736D]">
+              <div className="mb-2 flex justify-between text-xs text-[#64748B]">
                 <span>Oraliq jami</span>
                 <span>{formatSumma(total)}</span>
               </div>
 
-              <div className="mb-3 flex justify-between text-sm font-black text-[#1C1A17]">
+              <div className="mb-3 flex justify-between text-sm font-black text-[#0F172A]">
                 <span>Jami</span>
                 <span className="text-gold-600">{formatSumma(payableTotal)}</span>
               </div>
@@ -569,7 +569,7 @@ export default function BoshSahifa() {
 
               <button
                 onClick={clearCart}
-                className="mt-2 h-10 w-full rounded-xl bg-white text-xs font-bold text-[#77736D] transition hover:text-gold-600"
+                className="mt-2 h-10 w-full rounded-xl bg-white text-xs font-bold text-[#64748B] transition hover:text-gold-600"
               >
                 Kechiktirish
               </button>
@@ -887,7 +887,7 @@ export default function BoshSahifa() {
       )}
       {tolovModalOchiq && (
         <AppModal className="bg-slate-950/60 backdrop-blur-md">
-          <section className="max-h-[94vh] w-full max-w-6xl overflow-y-auto rounded-[38px] border border-gold-100 bg-gradient-to-br from-[#fff8ef] via-white to-[#ffe9d4] shadow-[0_35px_120px_rgba(15,23,42,.38)]">
+          <section className="max-h-[94vh] w-full max-w-6xl overflow-y-auto rounded-[38px] border border-gold-100 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E8EEF7] shadow-[0_35px_120px_rgba(15,23,42,.38)]">
             <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-gold-100 bg-white/85 px-9 py-7 backdrop-blur-xl">
               <div><p className="text-xs font-black uppercase tracking-[.22em] text-gold-500">To'lovni tasdiqlash</p><h2 className="mt-1 text-2xl font-black text-slate-950">Sotuv uchun to'lov</h2><p className="mt-1 text-sm font-semibold text-slate-400">To'lov tasdiqlangandan keyin sotuv backendda yakunlanadi.</p></div>
               <button type="button" onClick={() => setTolovModalOchiq(false)} disabled={saving} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm ring-1 ring-gold-100 hover:bg-gold-500 hover:text-white disabled:opacity-50"><X size={20}/></button>
@@ -897,14 +897,14 @@ export default function BoshSahifa() {
               <div>
                 <div className="mb-4 flex items-center justify-between"><h3 className="font-black text-slate-900">Mahsulotlar</h3><span className="rounded-full bg-gold-50 px-3 py-1 text-xs font-black text-gold-600">{cart.reduce((sum, item) => sum + item.soni, 0)} dona</span></div>
                 <div className="max-h-[480px] space-y-3 overflow-y-auto pr-1">
-                  {cart.map((item) => <article key={item.id} className="flex items-center justify-between gap-5 rounded-[24px] border border-gold-100 bg-white p-5 shadow-[0_12px_35px_rgba(249,115,22,.07)]"><div className="min-w-0"><p className="truncate text-base font-black text-slate-900">{item.nom}</p><p className="mt-1.5 text-sm font-semibold text-slate-400">{item.soni} Г— {formatSumma(item.narx)} В· {item.warehouseName || "Tanlangan ombor"}</p></div><p className="shrink-0 text-base font-black text-gold-600">{formatSumma(item.soni * item.narx)}</p></article>)}
+                  {cart.map((item) => <article key={item.id} className="flex items-center justify-between gap-5 rounded-[24px] border border-gold-100 bg-white p-5 shadow-[0_12px_35px_rgba(37,99,235,.07)]"><div className="min-w-0"><p className="truncate text-base font-black text-slate-900">{item.nom}</p><p className="mt-1.5 text-sm font-semibold text-slate-400">{item.soni} Г— {formatSumma(item.narx)} В· {item.warehouseName || "Tanlangan ombor"}</p></div><p className="shrink-0 text-base font-black text-gold-600">{formatSumma(item.soni * item.narx)}</p></article>)}
                 </div>
                 <div className="mt-5 grid grid-cols-3 gap-3 text-sm"><Summary label="Oraliq jami" value={formatSumma(total)}/><Summary label="Chegirma" value={formatSumma(discountSum)}/><Summary label="To'lanadi" value={formatSumma(payableTotal)} accent/></div>
               </div>
 
-              <aside className="flex flex-col rounded-[30px] border border-gold-100 bg-white p-7 shadow-[0_18px_50px_rgba(249,115,22,.10)]">
-                <div className="rounded-[24px] bg-[#fff8ef] p-5 ring-1 ring-gold-100"><p className="text-xs font-black uppercase tracking-wide text-slate-400">To'lanadigan jami</p><p className="mt-2 text-3xl font-black text-slate-950">{formatSumma(payableTotal)}</p><p className="mt-2 text-sm font-bold text-gold-500">Tanlangan: {paymentType}</p></div>
-                <label className="mt-6 block"><span className="text-xs font-black uppercase tracking-wide text-slate-400">Qabul qilinadigan summa</span><div className="mt-2 flex h-16 items-center rounded-2xl border border-gold-200 bg-[#fffaf5] px-5 focus-within:ring-4 focus-within:ring-gold-50"><input type="number" min="1" max={payableTotal} value={tolovSummasi} onChange={(e) => setTolovSummasi(e.target.value)} className="min-w-0 flex-1 bg-transparent text-2xl font-black text-slate-900 outline-none"/><span className="text-sm font-black text-gold-500">UZS</span></div></label>
+              <aside className="flex flex-col rounded-[30px] border border-gold-100 bg-white p-7 shadow-[0_18px_50px_rgba(37,99,235,.10)]">
+                <div className="rounded-[24px] bg-[#F8FAFC] p-5 ring-1 ring-gold-100"><p className="text-xs font-black uppercase tracking-wide text-slate-400">To'lanadigan jami</p><p className="mt-2 text-3xl font-black text-slate-950">{formatSumma(payableTotal)}</p><p className="mt-2 text-sm font-bold text-gold-500">Tanlangan: {paymentType}</p></div>
+                <label className="mt-6 block"><span className="text-xs font-black uppercase tracking-wide text-slate-400">Qabul qilinadigan summa</span><div className="mt-2 flex h-16 items-center rounded-2xl border border-gold-200 bg-[#F8FAFC] px-5 focus-within:ring-4 focus-within:ring-gold-50"><input type="number" min="1" max={payableTotal} value={tolovSummasi} onChange={(e) => setTolovSummasi(e.target.value)} className="min-w-0 flex-1 bg-transparent text-2xl font-black text-slate-900 outline-none"/><span className="text-sm font-black text-gold-500">UZS</span></div></label>
                 <div className="mt-4 flex gap-3"><button type="button" onClick={() => setTolovSummasi(String(payableTotal))} className="flex-1 rounded-2xl bg-gold-50 px-3 py-3 text-xs font-black text-gold-600">To'liq summa</button><button type="button" onClick={() => setTolovSummasi(String(Math.round(payableTotal / 2)))} className="flex-1 rounded-2xl bg-slate-100 px-3 py-3 text-xs font-black text-slate-600">50%</button></div>
                 {message?.type === "error" && <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 p-3 text-xs font-bold leading-5 text-red-600">{message.text}</div>}
                 <button type="button" onClick={() => void tolovniTasdiqlash()} disabled={saving || readNumber(tolovSummasi) <= 0 || readNumber(tolovSummasi) > payableTotal} className="mt-auto flex w-full items-center justify-center gap-2 rounded-2xl bg-gold-500 px-5 py-4 text-sm font-black text-white shadow-lg shadow-gold-200 transition hover:bg-gold-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none">{saving && <LoaderCircle size={17} className="animate-spin"/>} To'lovni tasdiqlash</button>

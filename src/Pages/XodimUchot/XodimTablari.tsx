@@ -71,7 +71,7 @@ export function VakolatlarTab({ xodim, lavozimlar }: { xodim: Xodim; lavozimlar:
       {guruhlar.map((guruh) => (
         <section
           key={guruh}
-          className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80"
+          className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80"
         >
           <h2 className="border-b border-orange-100/80 pb-3 text-sm font-black uppercase tracking-wide text-slate-600">
             {guruh}
@@ -94,7 +94,7 @@ export function VakolatlarTab({ xodim, lavozimlar }: { xodim: Xodim; lavozimlar:
                     <span
                       className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-black ${
                         shaxsiyda
-                          ? "bg-orange-50 text-[#FF6A00]"
+                          ? "bg-orange-50 text-[#2563EB]"
                           : lavozimda
                             ? "bg-emerald-50 text-emerald-600"
                             : "bg-slate-100 text-slate-400"
@@ -130,9 +130,9 @@ export function TarixTab({ tarix }: { tarix: XodimTarixi[] }) {
           return (
             <li
               key={yozuv.id}
-              className="flex gap-4 rounded-[22px] bg-white/92 p-5 shadow-[0_14px_36px_rgba(255,106,0,.06)] ring-1 ring-orange-100/80"
+              className="flex gap-4 rounded-[22px] bg-white/92 p-5 shadow-[0_14px_36px_rgba(37,99,235,.06)] ring-1 ring-orange-100/80"
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF3E2] text-[#FF6A00]">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB]">
                 <Ikonka size={18} />
               </span>
               <div className="min-w-0 flex-1">

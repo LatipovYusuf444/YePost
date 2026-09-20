@@ -10,7 +10,7 @@ export default defineConfig({
     proxy: {
       // Backend CORS yoqmaganligi uchun brauzer so'rovlarini Vite orqali uzatamiz.
       '/backend-api': {
-        target: 'https://aigpt-5a99e3f99526.herokuapp.com',
+        target: 'https://pos.169-58-167-219.sslip.io',
         changeOrigin: true,
         secure: true,
         rewrite: (requestPath) => requestPath.replace(/^\/backend-api/, ''),

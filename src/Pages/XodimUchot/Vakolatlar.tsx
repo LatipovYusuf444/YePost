@@ -99,7 +99,7 @@ export default function Vakolatlar({ xodimlar, lavozimlar, onSaqlash, embedded =
           Lavozimdan kelgan
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#FF6A00] text-white">
+          <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#2563EB] text-white">
             <Check size={12} />
           </span>
           Shaxsiy vakolat
@@ -160,7 +160,7 @@ export default function Vakolatlar({ xodimlar, lavozimlar, onSaqlash, embedded =
                             lavozimda
                               ? "cursor-not-allowed bg-emerald-100 text-emerald-600"
                               : shaxsiy
-                                ? "bg-[#FF6A00] text-white hover:bg-[#EA580C]"
+                                ? "bg-[#2563EB] text-white hover:bg-[#1D4ED8]"
                                 : "border border-slate-200 bg-white text-transparent hover:border-orange-300 hover:bg-orange-50"
                           }`}
                         >

@@ -131,7 +131,7 @@ export default function XaridorModal({
   }
 
   return (
-    <AppModal className="items-start justify-start bg-[rgba(54,22,8,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
+    <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
       <div className="relative h-[calc(100vh-32px)] w-full">
         <TezkorPanel
           havolaId={boshlangich?.id ?? "yangi"}
@@ -142,19 +142,19 @@ export default function XaridorModal({
 
         <form
           onSubmit={saqlash}
-          className="relative flex h-full w-full flex-col overflow-hidden rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#FFF8EF] via-[#FFFDF9] to-[#FFE8D2] text-[#253044] shadow-[0_34px_120px_rgba(92,38,8,.42)] ring-1 ring-white/80"
+          className="relative flex h-full w-full flex-col overflow-hidden rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80"
         >
-          <header className="border-b border-orange-100/80 bg-[#FFF8EF]/90 px-9 py-6 backdrop-blur-xl">
+          <header className="border-b border-orange-100/80 bg-[#F8FAFC]/90 px-9 py-6 backdrop-blur-xl">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <span className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#FFF3E2] text-[#FF6A00]">
+                <span className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#EFF6FF] text-[#2563EB]">
                   <UserRound size={22} />
                 </span>
                 <div>
                   <h1 className="text-2xl font-bold text-slate-900">
                     {boshlangich ? "Xaridorni tahrirlash" : "Yangi xaridor"}
                   </h1>
-                  <span className="text-xs font-black uppercase tracking-wider text-[#FF6A00]">
+                  <span className="text-xs font-black uppercase tracking-wider text-[#2563EB]">
                     Xaridor ma'lumotlari
                   </span>
                 </div>
@@ -169,8 +169,8 @@ export default function XaridorModal({
                   onClick={() => setFaolTab(tab)}
                   className={`shrink-0 rounded-xl px-3 py-2 text-sm transition ${
                     faolTab === tab
-                      ? "border border-orange-200 bg-white text-[#FF6A00]"
-                      : "text-slate-500 hover:bg-white hover:text-[#FF6A00]"
+                      ? "border border-orange-200 bg-white text-[#2563EB]"
+                      : "text-slate-500 hover:bg-white hover:text-[#2563EB]"
                   }`}
                 >
                   {tab}
@@ -191,7 +191,7 @@ export default function XaridorModal({
             {/* Chapda maydonlar, o'ngda faoliyat oqimi — tafsilotlar modalkasidagidek. */}
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
               <div className="space-y-6">
-                <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80">
+                <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80">
                   <h2 className="border-b border-orange-100/80 pb-3 text-sm font-black uppercase tracking-wide text-slate-600">
                     Shaxsiy ma'lumotlar
                   </h2>
@@ -219,7 +219,7 @@ export default function XaridorModal({
 
                     <div className="grid gap-2">
                       <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
-                        <Phone size={14} className="text-[#FF6A00]" />
+                        <Phone size={14} className="text-[#2563EB]" />
                         Telefon *
                       </span>
 
@@ -246,7 +246,7 @@ export default function XaridorModal({
                       <button
                         type="button"
                         onClick={telefonQoshish}
-                        className="inline-flex h-10 w-fit items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-3.5 text-xs font-black uppercase text-[#FF6A00] transition hover:bg-orange-100"
+                        className="inline-flex h-10 w-fit items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-3.5 text-xs font-black uppercase text-[#2563EB] transition hover:bg-orange-100"
                       >
                         <Plus size={15} />
                         Telefon qo'shish
@@ -255,20 +255,20 @@ export default function XaridorModal({
 
                     <label className="grid gap-2">
                       <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
-                        <MapPin size={14} className="text-[#FF6A00]" />
+                        <MapPin size={14} className="text-[#2563EB]" />
                         Manzil
                       </span>
                       <textarea
                         value={manzil}
                         onChange={(event) => setManzil(event.target.value)}
                         placeholder="Toshkent sh., Chilonzor tumani, 12-kvartal"
-                        className="min-h-24 w-full rounded-xl border border-slate-200 bg-white p-3.5 text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100"
+                        className="min-h-24 w-full rounded-xl border border-slate-200 bg-white p-3.5 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
                       />
                     </label>
                   </div>
                 </section>
 
-                <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80">
+                <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80">
                   <h2 className="border-b border-orange-100/80 pb-3 text-sm font-black uppercase tracking-wide text-slate-600">
                     Aloqa va ish
                   </h2>
@@ -285,7 +285,7 @@ export default function XaridorModal({
 
                     <label className="grid gap-2">
                       <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
-                        <Building2 size={14} className="text-[#FF6A00]" />
+                        <Building2 size={14} className="text-[#2563EB]" />
                         Kompaniya
                       </span>
                       <Tanlov
@@ -304,7 +304,7 @@ export default function XaridorModal({
 
                     <label className="grid gap-2">
                       <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
-                        <Briefcase size={14} className="text-[#FF6A00]" />
+                        <Briefcase size={14} className="text-[#2563EB]" />
                         Lavozim
                       </span>
                       <input
@@ -317,7 +317,7 @@ export default function XaridorModal({
 
                     <label className="grid gap-2">
                       <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
-                        <CalendarDays size={14} className="text-[#FF6A00]" />
+                        <CalendarDays size={14} className="text-[#2563EB]" />
                         Ro'yxatga olingan sana
                       </span>
                       <input
@@ -347,7 +347,7 @@ export default function XaridorModal({
             {faolTab === "Tarix" && <TarixTab tarix={xaridorTarixi} />}
           </div>
 
-          <footer className="flex justify-end gap-3 border-t border-orange-100 bg-[#FFF8EF]/90 px-9 py-4 backdrop-blur-xl">
+          <footer className="flex justify-end gap-3 border-t border-orange-100 bg-[#F8FAFC]/90 px-9 py-4 backdrop-blur-xl">
             <button
               type="button"
               onClick={onYopish}
@@ -355,7 +355,7 @@ export default function XaridorModal({
             >
               Bekor qilish
             </button>
-            <button disabled={saqlanmoqda} className="rounded-2xl bg-[#FF6A00] px-6 py-2.5 text-sm font-black text-white shadow-[0_14px_32px_rgba(255,106,0,.24)] transition hover:-translate-y-0.5 hover:bg-[#EA580C] disabled:opacity-50">
+            <button disabled={saqlanmoqda} className="rounded-2xl bg-[#2563EB] px-6 py-2.5 text-sm font-black text-white shadow-[0_14px_32px_rgba(37,99,235,.24)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] disabled:opacity-50">
               {saqlanmoqda ? "Saqlanmoqda..." : "Saqlash"}
             </button>
           </footer>

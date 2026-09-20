@@ -90,9 +90,9 @@ export default function IjtimoiyIkonlar({ ijtimoiy }: { ijtimoiy: IjtimoiyTarmoq
             onClick={(event) => qiymat && bosildi(event, t.kalit, link)}
             className={`group relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-sm transition-all duration-200 outline-none ${t.rang} ${
               faol === t.kalit
-                ? "-translate-y-0.5 scale-105 ring-2 ring-[#FF6A00] ring-offset-2 shadow-md"
+                ? "-translate-y-0.5 scale-105 ring-2 ring-[#2563EB] ring-offset-2 shadow-md"
                 : qiymat
-                  ? "opacity-85 hover:-translate-y-1 hover:scale-110 hover:opacity-100 hover:shadow-lg active:translate-y-0 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#FF6A00] focus-visible:ring-offset-2"
+                  ? "opacity-85 hover:-translate-y-1 hover:scale-110 hover:opacity-100 hover:shadow-lg active:translate-y-0 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2"
                   : "cursor-default opacity-45"
             }`}
           >
@@ -118,7 +118,7 @@ export default function IjtimoiyIkonlar({ ijtimoiy }: { ijtimoiy: IjtimoiyTarmoq
             <div
               role="dialog"
               aria-label={`${faol} havolasi`}
-              className="fixed flex max-w-[calc(100vw-24px)] animate-in items-center gap-2 whitespace-nowrap rounded-2xl border border-orange-100 bg-white p-2 shadow-[0_18px_50px_rgba(92,38,8,.22)] duration-200 fade-in zoom-in-95"
+              className="fixed flex max-w-[calc(100vw-24px)] animate-in items-center gap-2 whitespace-nowrap rounded-2xl border border-orange-100 bg-white p-2 shadow-[0_18px_50px_rgba(15,23,42,.22)] duration-200 fade-in zoom-in-95"
               style={{ top: joy.top, left: joy.left, zIndex: 100001 }}
             >
               <a
@@ -126,7 +126,7 @@ export default function IjtimoiyIkonlar({ ijtimoiy }: { ijtimoiy: IjtimoiyTarmoq
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={yopish}
-                className="inline-flex h-9 max-w-[210px] items-center rounded-xl bg-orange-50 px-3 text-xs font-bold text-[#FF6A00] outline-none transition hover:bg-orange-100 focus-visible:ring-2 focus-visible:ring-[#FF6A00]"
+                className="inline-flex h-9 max-w-[210px] items-center rounded-xl bg-orange-50 px-3 text-xs font-bold text-[#2563EB] outline-none transition hover:bg-orange-100 focus-visible:ring-2 focus-visible:ring-[#2563EB]"
               >
                 <span className="truncate">Ochish · {faolLink}</span>
               </a>

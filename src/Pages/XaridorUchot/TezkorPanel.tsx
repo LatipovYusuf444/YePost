@@ -49,8 +49,8 @@ export default function TezkorPanel({ havolaId, faylNomi, malumot, onYopish }: P
             title={amal.label}
             className={`flex h-11 w-11 items-center justify-center rounded-[15px] shadow-[0_10px_24px_rgba(15,23,42,.18)] ring-1 ring-white/70 transition duration-300 hover:-translate-x-0.5 hover:scale-105 active:scale-95 ${
               yopish
-                ? "bg-[#FF6A00] text-white hover:bg-[#EA580C]"
-                : "bg-white text-[#FF6A00] hover:bg-[#FFF3E2] hover:text-[#EA580C]"
+                ? "bg-[#2563EB] text-white hover:bg-[#1D4ED8]"
+                : "bg-white text-[#2563EB] hover:bg-[#EFF6FF] hover:text-[#1D4ED8]"
             }`}
             aria-label={amal.label}
           >

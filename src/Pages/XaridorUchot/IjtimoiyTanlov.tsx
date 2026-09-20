@@ -61,7 +61,7 @@ export default function IjtimoiyTanlov({
               onClick={() => setFaol(ochiq ? null : tarmoq.kalit)}
               title={tarmoq.nom}
               className={`relative flex h-11 w-11 items-center justify-center rounded-xl transition ${tarmoq.rang} ${
-                ochiq ? "ring-2 ring-[#FF6A00] ring-offset-2" : "opacity-70 hover:opacity-100"
+                ochiq ? "ring-2 ring-[#2563EB] ring-offset-2" : "opacity-70 hover:opacity-100"
               }`}
               aria-label={tarmoq.nom}
             >

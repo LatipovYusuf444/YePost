@@ -88,14 +88,14 @@ export default function TashkilotTuzilmasi({
             className="relative cursor-pointer rounded-[15px] border border-orange-100 bg-white shadow-sm transition hover:border-orange-200 hover:shadow-md"
           >
             {bolim.otaId === "" && (
-              <span className="absolute -top-2.5 right-4 rounded-md bg-[#FF6A00] px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-white">
+              <span className="absolute -top-2.5 right-4 rounded-md bg-[#2563EB] px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-white">
                 Kompaniya
               </span>
             )}
 
             <div className="flex items-start justify-between gap-2 px-4 pt-4">
               <div className="flex min-w-0 items-center gap-2">
-                <Building2 size={17} className="shrink-0 text-[#FF6A00]" />
+                <Building2 size={17} className="shrink-0 text-[#2563EB]" />
                 <h3 className="truncate font-black text-slate-900">{bolim.nomi}</h3>
               </div>
 
@@ -107,7 +107,7 @@ export default function TashkilotTuzilmasi({
                     setMenyuId((joriy) => (joriy === bolim.id ? null : bolim.id));
                   }}
                   aria-label="Amallar"
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-orange-50 hover:text-[#FF6A00]"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-orange-50 hover:text-[#2563EB]"
                 >
                   <MoreHorizontal size={16} />
                 </button>
@@ -123,7 +123,7 @@ export default function TashkilotTuzilmasi({
                       }}
                       className="fixed inset-0 z-40 cursor-default"
                     />
-                    <div className="absolute right-0 top-8 z-50 w-48 rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_50px_rgba(92,38,8,.16)]">
+                    <div className="absolute right-0 top-8 z-50 w-48 rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_50px_rgba(15,23,42,.16)]">
                       <button
                         type="button"
                         onClick={(event) => {
@@ -131,7 +131,7 @@ export default function TashkilotTuzilmasi({
                           setBolimModal({ bolim, otaId: bolim.otaId });
                           setMenyuId(null);
                         }}
-                        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-bold text-slate-600 transition hover:bg-orange-50 hover:text-[#FF6A00]"
+                        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-bold text-slate-600 transition hover:bg-orange-50 hover:text-[#2563EB]"
                       >
                         <Pencil size={15} />
                         Tahrirlash
@@ -143,7 +143,7 @@ export default function TashkilotTuzilmasi({
                           setBolimModal({ bolim: null, otaId: bolim.id });
                           setMenyuId(null);
                         }}
-                        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-bold text-slate-600 transition hover:bg-orange-50 hover:text-[#FF6A00]"
+                        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-bold text-slate-600 transition hover:bg-orange-50 hover:text-[#2563EB]"
                       >
                         <Plus size={15} />
                         Ichki bo'lim
@@ -167,7 +167,7 @@ export default function TashkilotTuzilmasi({
 
             <div className="px-4 pb-4 pt-3">
               <p className="text-xs font-bold text-slate-400">Bo'ysunuvchilar</p>
-              <span className="mt-1.5 inline-flex rounded-lg bg-orange-50 px-2.5 py-1 text-xs font-black text-[#FF6A00]">
+              <span className="mt-1.5 inline-flex rounded-lg bg-orange-50 px-2.5 py-1 text-xs font-black text-[#2563EB]">
                 {xodimSoni} xodim
               </span>
             </div>
@@ -185,7 +185,7 @@ export default function TashkilotTuzilmasi({
           onClick={() => setBolimModal({ bolim: null, otaId: bolim.id })}
           title="Ichki bo'lim qo'shish"
           aria-label="Ichki bo'lim qo'shish"
-          className="z-10 -mt-3 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#FF6A00] text-white shadow-md transition hover:bg-[#EA580C]"
+          className="z-10 -mt-3 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#2563EB] text-white shadow-md transition hover:bg-[#1D4ED8]"
         >
           <Plus size={15} />
         </button>
@@ -231,16 +231,16 @@ export default function TashkilotTuzilmasi({
   const choqqilar = bolalar.get("") ?? [];
 
   return (
-    <AppModal className="items-center justify-center bg-[rgba(54,22,8,.50)] p-4 backdrop-blur-[3px]">
-      <div className="flex h-[calc(100vh-32px)] w-full flex-col overflow-hidden rounded-[28px] bg-gradient-to-br from-[#FFF8EF] via-[#FFFDF9] to-[#FFE8D2] text-[#253044] shadow-[0_34px_120px_rgba(92,38,8,.42)] ring-1 ring-white/80">
-        <header className="flex items-center justify-between gap-4 border-b border-orange-100/80 bg-[#FFF8EF]/90 px-7 py-5 backdrop-blur-xl">
+    <AppModal className="items-center justify-center bg-[rgba(15,23,42,.50)] p-4 backdrop-blur-[3px]">
+      <div className="flex h-[calc(100vh-32px)] w-full flex-col overflow-hidden rounded-[28px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80">
+        <header className="flex items-center justify-between gap-4 border-b border-orange-100/80 bg-[#F8FAFC]/90 px-7 py-5 backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <span className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#FFF3E2] text-[#FF6A00]">
+            <span className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#EFF6FF] text-[#2563EB]">
               <Building2 size={22} />
             </span>
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Tashkilot tuzilmasi</h1>
-              <span className="text-xs font-black uppercase tracking-wider text-[#FF6A00]">
+              <span className="text-xs font-black uppercase tracking-wider text-[#2563EB]">
                 Bo'limlar, rahbarlar va xodimlar
               </span>
             </div>
@@ -249,7 +249,7 @@ export default function TashkilotTuzilmasi({
           <div className="flex shrink-0 items-center gap-2">
             <button
               onClick={() => setBolimModal({ bolim: null, otaId: tanlangan?.id ?? "" })}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#FF6A00] px-4 text-sm font-black text-white shadow-[0_10px_24px_rgba(249,115,22,.24)] transition hover:bg-[#EA580C]"
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#2563EB] px-4 text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,235,.24)] transition hover:bg-[#1D4ED8]"
             >
               <Plus size={16} />
               Bo'lim qo'shish
@@ -291,7 +291,7 @@ export default function TashkilotTuzilmasi({
               type="button"
               onClick={() => setMasshtab((joriy) => Math.max(50, joriy - 10))}
               aria-label="Kichraytirish"
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition hover:bg-orange-50 hover:text-[#FF6A00]"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition hover:bg-orange-50 hover:text-[#2563EB]"
             >
               <Minus size={15} />
             </button>
@@ -300,7 +300,7 @@ export default function TashkilotTuzilmasi({
               type="button"
               onClick={() => setMasshtab((joriy) => Math.min(150, joriy + 10))}
               aria-label="Kattalashtirish"
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition hover:bg-orange-50 hover:text-[#FF6A00]"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition hover:bg-orange-50 hover:text-[#2563EB]"
             >
               <Plus size={15} />
             </button>
@@ -408,7 +408,7 @@ function BolimPaneli({
             type="button"
             onClick={onTahrirlash}
             aria-label="Bo'limni tahrirlash"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#FFF3E2] text-[#FF6A00] transition hover:bg-orange-500 hover:text-white"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB] transition hover:bg-orange-500 hover:text-white"
           >
             <Pencil size={15} />
           </button>
@@ -416,7 +416,7 @@ function BolimPaneli({
 
         <span className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-orange-100 bg-orange-50/60 px-3 py-1.5 text-xs font-black text-slate-600">
           Jami xodimlar
-          <span className="text-[#FF6A00]">{xodimlar.length}</span>
+          <span className="text-[#2563EB]">{xodimlar.length}</span>
         </span>
       </header>
 
@@ -474,7 +474,7 @@ function Guruh({
         onClick={() => setOchiq((joriy) => !joriy)}
         className="flex w-full items-center gap-2 py-2 text-left"
       >
-        <ChevronDown size={15} className={`text-[#FF6A00] transition ${ochiq ? "" : "-rotate-90"}`} />
+        <ChevronDown size={15} className={`text-[#2563EB] transition ${ochiq ? "" : "-rotate-90"}`} />
         <span className="font-black text-slate-800">{nom}</span>
         <span className="font-black text-slate-400">{xodimlar.length}</span>
       </button>

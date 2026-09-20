@@ -302,7 +302,7 @@ export default function AmalgaOshirilganlar() {
       <div className="relative overflow-visible">
         <OmborJadval>
           <table className="w-full min-w-[860px] table-fixed text-left text-sm">
-            <thead className="bg-orange-50/70 text-xs font-black uppercase text-orange-500">
+            <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500">
               <tr>
                 <th className="w-[210px] px-6 py-5">Nomi</th>
                 {ustunlar

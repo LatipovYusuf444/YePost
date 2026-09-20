@@ -428,7 +428,7 @@ export default function Kochirish() {
         <button
           type="button"
           onClick={() => setModal(true)}
-          className="inline-flex h-14 items-center justify-center gap-2 self-start rounded-[22px] bg-[#FF5A00] px-6 text-base font-black text-white shadow-[0_12px_28px_rgba(255,90,0,.22)] transition hover:-translate-y-0.5 hover:bg-orange-600"
+          className="inline-flex h-14 items-center justify-center gap-2 self-start rounded-[22px] bg-[#2563EB] px-6 text-base font-black text-white shadow-[0_12px_28px_rgba(37,99,235,.22)] transition hover:-translate-y-0.5 hover:bg-orange-600"
         >
           <Plus size={20} /> Yaratish
         </button>
@@ -472,7 +472,7 @@ export default function Kochirish() {
               ))}
               <col style={{ width: 80 }} />
             </colgroup>
-            <thead className="bg-[#FFF9F3] text-[13px] font-black uppercase text-[#FF5A00]">
+            <thead className="bg-[#F8FAFC] text-[13px] font-black uppercase text-slate-500">
               <tr>
                 {korinadiganUstunlarRoyxati.map((ustun) => (
                   <th key={ustun.kalit} className="relative h-[58px] overflow-visible px-7 py-3">
@@ -484,11 +484,11 @@ export default function Kochirish() {
                       onMouseDown={(event) => ustunOlchaminiOzgartirish(ustun.kalit, event)}
                       className="group/resize absolute -right-1.5 top-0 z-20 flex h-full w-3 cursor-col-resize select-none items-center justify-center"
                     >
-                      <span className="h-6 w-px bg-orange-200 transition-all group-hover/resize:h-full group-hover/resize:w-0.5 group-hover/resize:bg-[#FF5A00]" />
+                      <span className="h-6 w-px bg-orange-200 transition-all group-hover/resize:h-full group-hover/resize:w-0.5 group-hover/resize:bg-[#2563EB]" />
                     </span>
                   </th>
                 ))}
-                <th className="sticky right-0 z-10 w-20 min-w-20 bg-[#FFF9F3] px-5 py-4 text-right">
+                <th className="sticky right-0 z-10 w-20 min-w-20 bg-[#F8FAFC] px-5 py-4 text-right">
                   <div className="relative inline-block">
                     <button
                       ref={sozlamalarTugmaRef}
@@ -497,7 +497,7 @@ export default function Kochirish() {
                         if (!ustunlarMenyusi) sozlamalarJoylashuviniYangilash();
                         setUstunlarMenyusi((oldingi) => !oldingi);
                       }}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#FF5A00] hover:bg-orange-100"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#2563EB] hover:bg-orange-100"
                       aria-label="Ustunlarni sozlash"
                       aria-expanded={ustunlarMenyusi}
                     >
@@ -539,14 +539,14 @@ export default function Kochirish() {
                         <div className="truncate">{hujayra(hujjat, ustun.kalit)}</div>
                       </td>
                     ))}
-                    <td className="sticky right-0 bg-white px-5 py-3 text-right group-hover:bg-[#FFFBF7]">
+                    <td className="sticky right-0 bg-white px-5 py-3 text-right group-hover:bg-[#F8FAFC]">
                       <button
                         type="button"
                         onClick={(event) => {
                           event.stopPropagation();
                           setTanlanganId(hujjat.id);
                         }}
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-[#FF5A00] transition hover:bg-[#FF5A00] hover:text-white"
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-[#2563EB] transition hover:bg-[#2563EB] hover:text-white"
                         aria-label={`${hujjatNomi(hujjat)}ni ko'rish`}
                       >
                         <Eye size={18} />
@@ -571,7 +571,7 @@ export default function Kochirish() {
           </table>
         </div>
         <div className="flex h-[70px] items-center gap-4 border-t border-orange-100 px-5">
-          <button type="button" onClick={() => jadvalniSurish(-1)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-white text-[#FF5A00] shadow-sm hover:bg-orange-50" aria-label="Chapga surish">
+          <button type="button" onClick={() => jadvalniSurish(-1)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-white text-[#2563EB] shadow-sm hover:bg-orange-50" aria-label="Chapga surish">
             <ChevronLeft size={20} />
           </button>
           <div
@@ -582,14 +582,14 @@ export default function Kochirish() {
           >
             <div
               onMouseDown={scrollThumbniSurish}
-              className={`absolute inset-y-0 rounded-full bg-[#FF5A00] transition-[background-color] hover:bg-orange-600 ${scrollHolati.mavjud ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
+              className={`absolute inset-y-0 rounded-full bg-[#2563EB] transition-[background-color] hover:bg-orange-600 ${scrollHolati.mavjud ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
               style={{
                 left: `${scrollHolati.chap}%`,
                 width: `${scrollHolati.kenglik}%`,
               }}
             />
           </div>
-          <button type="button" onClick={() => jadvalniSurish(1)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-white text-[#FF5A00] shadow-sm hover:bg-orange-50" aria-label="O'ngga surish">
+          <button type="button" onClick={() => jadvalniSurish(1)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-white text-[#2563EB] shadow-sm hover:bg-orange-50" aria-label="O'ngga surish">
             <ChevronRight size={20} />
           </button>
         </div>

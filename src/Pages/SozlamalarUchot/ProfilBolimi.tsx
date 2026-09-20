@@ -45,7 +45,7 @@ export default function ProfilBolimi() {
   return <BolimKarta sarlavha="Mening profilim" izoh="Shaxsiy ma'lumotlaringiz real hisobdan olinadi." amal={muvaffaqiyat ? <span className="text-sm font-bold text-emerald-600">Saqlandi ✓</span> : undefined}>
     {yuklanmoqda && !profil ? <div className="flex h-48 items-center justify-center gap-2 text-sm font-bold text-slate-400"><LoaderCircle className="animate-spin" size={20}/>Profil yuklanmoqda...</div> : <>
       {xatolik && <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xatolik}</p>}
-      <div className="flex items-center gap-4"><div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-50 text-xl font-black text-[#FF6A00]">{boshHarf}</div><div><p className="text-lg font-black text-gray-950">{profil?.fullName || profil?.username || "Foydalanuvchi"}</p><p className="text-sm font-semibold text-gray-400">{profil?.role || "—"}</p></div></div>
+      <div className="flex items-center gap-4"><div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-50 text-xl font-black text-[#2563EB]">{boshHarf}</div><div><p className="text-lg font-black text-gray-950">{profil?.fullName || profil?.username || "Foydalanuvchi"}</p><p className="text-sm font-semibold text-gray-400">{profil?.role || "—"}</p></div></div>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <Maydon label="Ism"><input value={ism} onChange={(e) => setIsm(e.target.value)} className={maydonKlass}/></Maydon>
         <Maydon label="Familiya"><input value={familiya} onChange={(e) => setFamiliya(e.target.value)} className={maydonKlass}/></Maydon>

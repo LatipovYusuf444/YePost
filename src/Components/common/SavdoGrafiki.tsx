@@ -100,26 +100,26 @@ export default function SavdoGrafiki() {
             <AreaChart data={activeData}>
               <defs>
                 <linearGradient id="orangeGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#FF6B2C" stopOpacity={0.35} />
-                  <stop offset="95%" stopColor="#FF6B2C" stopOpacity={0.02} />
+                  <stop offset="5%" stopColor="#2563EB" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="#2563EB" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
 
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#FED7AA" />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#BFDBFE" />
               <XAxis dataKey="nom" axisLine={false} tickLine={false} tick={{ fill: "#9CA3AF", fontSize: 12 }} />
               <YAxis axisLine={false} tickLine={false} tick={{ fill: "#9CA3AF", fontSize: 12 }} tickFormatter={formatSumma} />
               <Tooltip
                 formatter={(value) => [`${Number(value).toLocaleString("ru-RU")} so‘m`, "Savdo"]}
                 contentStyle={{
                   borderRadius: "16px",
-                  border: "1px solid #FED7AA",
-                  boxShadow: "0 10px 30px rgba(249,115,22,0.15)",
+                  border: "1px solid #BFDBFE",
+                  boxShadow: "0 10px 30px rgba(37,99,235,0.15)",
                 }}
               />
               <Area
                 type="monotone"
                 dataKey="savdo"
-                stroke="#FF6B2C"
+                stroke="#2563EB"
                 strokeWidth={4}
                 fill="url(#orangeGradient)"
                 activeDot={{ r: 7 }}
@@ -127,18 +127,18 @@ export default function SavdoGrafiki() {
             </AreaChart>
           ) : (
             <BarChart data={activeData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#FED7AA" />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#BFDBFE" />
               <XAxis dataKey="nom" axisLine={false} tickLine={false} tick={{ fill: "#9CA3AF", fontSize: 12 }} />
               <YAxis axisLine={false} tickLine={false} tick={{ fill: "#9CA3AF", fontSize: 12 }} tickFormatter={formatSumma} />
               <Tooltip
                 formatter={(value) => [`${Number(value).toLocaleString("ru-RU")} so‘m`, "Savdo"]}
                 contentStyle={{
                   borderRadius: "16px",
-                  border: "1px solid #FED7AA",
-                  boxShadow: "0 10px 30px rgba(249,115,22,0.15)",
+                  border: "1px solid #BFDBFE",
+                  boxShadow: "0 10px 30px rgba(37,99,235,0.15)",
                 }}
               />
-              <Bar dataKey="savdo" fill="#FF6B2C" radius={[14, 14, 0, 0]} />
+              <Bar dataKey="savdo" fill="#2563EB" radius={[14, 14, 0, 0]} />
             </BarChart>
           )}
         </ResponsiveContainer>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "motion/react";
-import { Bell, CalendarDays, ChevronDown, LoaderCircle, LogOut, Minus, PackagePlus, Plus, RefreshCw, Search, Settings, ShoppingCart, UserRound, X, Zap } from "lucide-react";
+import { Bell, ChevronDown, LoaderCircle, LogOut, Menu, Minus, PackagePlus, Plus, RefreshCw, Search, Settings, ShoppingCart, UserRound, X } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { crmApi } from "@/api/crmApi";
 import {
@@ -23,50 +23,15 @@ const rolMatni: Record<FoydalanuvchiRoli, string> = {
   OMBORCHI: "Omborchi",
 };
 
-type ModuleKey = "savdo" | "mahsulotlar" | "mijozlar" | "ombor" | "hisobotlar" | "default";
-
-const moduleTabs: Record<ModuleKey, Array<{ nom: string; path: string }>> = {
-  savdo: [
-    { nom: "Barcha sotuvlar", path: "/savdo" },
-    { nom: "Qoralamalar", path: "/savdo?tab=savatcha" },
-    { nom: "Savdo tarixi", path: "/savdo?tab=tarix" },
-    { nom: "To'lovlar", path: "/savdo?tab=tolovlar" },
-    { nom: "Qarzdorliklar", path: "/savdo?tab=qarzdorliklar" },
-    { nom: "Qaytarish", path: "/savdo?tab=qaytarish" },
-    { nom: "Bekor qilinganlar", path: "/savdo?tab=bekor-qilingan" },
-  ],
-  mahsulotlar: [{ nom: "Mahsulotlar", path: "/mahsulotlar" }],
-  mijozlar: [
-    { nom: "Xaridorlar", path: "/mijozlar" },
-    { nom: "Kompaniya", path: "/mijozlar/kompaniya" },
-    { nom: "Yetkazib beruvchilar", path: "/mijozlar/yetkazib-beruvchilar" },
-  ],
-  hisobotlar: [{ nom: "Hisobotlar", path: "/hisobotlar" }],
-  ombor: [
-    { nom: "Inventarizatsiya", path: "/ombor/inventarizatsiya" },
-    { nom: "Kirim", path: "/ombor/kirimlar" },
-    { nom: "Chiqim", path: "/ombor/chiqimlar" },
-    { nom: "Ko'chirish", path: "/ombor/kochirishlar" },
-    { nom: "Qoldiq", path: "/ombor/qoldiq" },
-    { nom: "Amalga oshirilganlar", path: "/ombor/amalga-oshirilganlar" },
-    { nom: "Omborlar", path: "/ombor/omborlar" },
-  ],
-  default: [{ nom: "Bosh sahifa", path: "/" }],
-};
-
-function getModuleKey(pathname: string): ModuleKey {
-  if (pathname.startsWith("/savdo")) return "savdo";
-  if (pathname.startsWith("/mahsulotlar")) return "mahsulotlar";
-  if (pathname.startsWith("/mijozlar")) return "mijozlar";
-  if (pathname.startsWith("/ombor")) return "ombor";
-  if (pathname.startsWith("/hisobotlar")) return "hisobotlar";
-  return "default";
-}
-
-export default function YuqoriPanel() {
+export default function YuqoriPanel({
+  sidebarAcik,
+  onSidebarToggle,
+}: {
+  sidebarAcik: boolean;
+  onSidebarToggle: () => void;
+}) {
   const navigate = useNavigate();
-  const { pathname, search } = useLocation();
-  const moduleKey = getModuleKey(pathname);
+  const { pathname } = useLocation();
   const [bildirishnomalar, setBildirishnomalar] = useState<Bildirishnoma[]>([]);
   const [bildirishnomaOchiq, setBildirishnomaOchiq] = useState(false);
   const [bildirishnomaYuklanmoqda, setBildirishnomaYuklanmoqda] = useState(false);
@@ -86,7 +51,6 @@ export default function YuqoriPanel() {
     navigate("/login", { replace: true });
   }
 
-  const savdoTab = new URLSearchParams(search).get("tab") ?? "barchasi";
   const oqilmaganSoni = useMemo(
     () => bildirishnomalar.filter((item) => !item.isRead && !item.readAt).length,
     [bildirishnomalar]
@@ -129,20 +93,30 @@ export default function YuqoriPanel() {
     void bildirishnomalarniYuklash();
   }, []);
 
-  if (moduleKey === "default") {
+  // Bosh sahifa ("/") navbari avvalgidek qoladi; qolgan barcha sahifalar minimal navbardan foydalanadi.
+  if (pathname === "/") {
     return (
       <header className="mb-6 flex items-center gap-4">
-        <div className="flex h-13 flex-1 items-center rounded-[18px] border border-gold-200/60 bg-white/75 px-5 shadow-gold-soft transition focus-within:border-gold-400 focus-within:shadow-[0_0_0_4px_rgba(200,146,35,0.10)]">
-          <Search size={18} className="mr-3 shrink-0 text-[#8F8980]" />
+        <button
+          type="button"
+          onClick={onSidebarToggle}
+          aria-label={sidebarAcik ? "Yon panelni yopish" : "Yon panelni ochish"}
+          aria-expanded={sidebarAcik}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
+        >
+          <Menu size={20} />
+        </button>
+        <div className="flex h-13 flex-1 items-center rounded-[18px] border border-gold-200/60 bg-white/75 px-5 shadow-gold-soft transition focus-within:border-gold-400 focus-within:shadow-[0_0_0_4px_rgba(37,99,235,0.10)]">
+          <Search size={18} className="mr-3 shrink-0 text-[#94A3B8]" />
           <input
             placeholder="Qidirish..."
-            className="min-w-0 flex-1 bg-transparent text-sm text-[#1C1A17] outline-none placeholder:text-[#8F8980]"
+            className="min-w-0 flex-1 bg-transparent text-sm text-[#0F172A] outline-none placeholder:text-[#94A3B8]"
           />
         </div>
         <button
           type="button"
           onClick={() => setMahsulotModalOchiq(true)}
-          className="flex h-13 w-13 items-center justify-center rounded-2xl border border-gold-200/60 bg-white text-[#1C1A17] shadow-gold-soft transition-all duration-200 hover:-translate-y-0.5 hover:border-gold-300 hover:bg-gold-100 hover:text-gold-600 hover:shadow-gold-medium active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2"
+          className="flex h-13 w-13 items-center justify-center rounded-2xl border border-gold-200/60 bg-white text-[#0F172A] shadow-gold-soft transition-all duration-200 hover:-translate-y-0.5 hover:border-gold-300 hover:bg-gold-100 hover:text-gold-600 hover:shadow-gold-medium active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2"
           aria-label="Mahsulot qo'shish"
         >
           <PackagePlus size={20} />
@@ -175,72 +149,35 @@ export default function YuqoriPanel() {
       initial={{ opacity: 0, y: -16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-      className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gold-100 bg-white/60 px-4 py-3 shadow-sm backdrop-blur-xl"
+      className="mb-6 flex h-16 items-center justify-between gap-2 rounded-2xl border border-gray-200/80 bg-white px-4"
     >
-      <nav
-        className={
-          moduleKey === "ombor" || moduleKey === "savdo"
-            ? "grid min-w-0 flex-1 grid-flow-col auto-cols-[minmax(140px,1fr)] items-center overflow-x-auto"
-            : "flex min-w-0 flex-1 items-center gap-5 overflow-x-auto"
-        }
+      <button
+        type="button"
+        onClick={onSidebarToggle}
+        aria-label={sidebarAcik ? "Yon panelni yopish" : "Yon panelni ochish"}
+        aria-expanded={sidebarAcik}
+        className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
       >
-        {moduleTabs[moduleKey].map((tab) => {
-          const [tabPath, tabQuery = ""] = tab.path.split("?");
-          const tabParams = new URLSearchParams(tabQuery);
-          const tabKey = tabParams.get("tab") ?? "barchasi";
-          const isActive =
-            moduleKey === "savdo"
-              ? pathname === "/savdo" && savdoTab === tabKey
-              : moduleKey === "mijozlar"
-                ? pathname === tabPath
-              : pathname === tabPath ||
-                (tabPath !== "/ombor" && pathname.startsWith(`${tabPath}/`));
-          return (
-            <Link
-              key={tab.path}
-              to={tab.path}
-              className={`relative shrink-0 text-sm ${
-                moduleKey === "ombor" || moduleKey === "savdo"
-                  ? "flex h-11 w-full items-center justify-center px-3 text-center"
-                  : "pb-2"
-              } ${
-                isActive
-                  ? "font-bold text-gold-600 after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-gold-500"
-                  : "font-medium text-gray-500 hover:text-gold-600"
-              }`}
-            >
-              {tab.nom}
-            </Link>
-          );
-        })}
-      </nav>
-      <div className="flex shrink-0 items-center gap-2">
+        <Menu size={20} />
+      </button>
+      <div className="flex items-center gap-2">
         <BildirishnomaTugmasi
-          ochiq={bildirishnomaOchiq}
-          setOchiq={setBildirishnomaOchiq}
-          items={bildirishnomalar}
-          oqilmaganSoni={oqilmaganSoni}
-          yuklanmoqda={bildirishnomaYuklanmoqda}
-          onReload={() => void bildirishnomalarniYuklash()}
-          onRead={(id) => void bildirishnomaniOqish(id)}
-          onReadAll={() => void hammasiniOqish()}
-        />
-        {moduleKey !== "savdo" && moduleKey !== "ombor" && (
-          <>
-            <button className="hidden h-10 items-center gap-2 rounded-2xl border border-gold-100 bg-white/60 px-3 text-sm text-gray-600 lg:flex">
-              <CalendarDays size={17} /> Bugun <ChevronDown size={15} />
-            </button>
-            <button className="hidden h-10 items-center gap-2 rounded-2xl bg-gold-500 px-3 text-sm font-bold text-white lg:flex">
-              <Zap size={17} /> Tezkor amallar
-            </button>
-          </>
-        )}
-        <ProfilTugmasi
-          profil={profil}
-          ochiq={profilOchiq}
-          setOchiq={setProfilOchiq}
-          onLogout={() => void handleLogout()}
-        />
+        ochiq={bildirishnomaOchiq}
+        setOchiq={setBildirishnomaOchiq}
+        items={bildirishnomalar}
+        oqilmaganSoni={oqilmaganSoni}
+        yuklanmoqda={bildirishnomaYuklanmoqda}
+        onReload={() => void bildirishnomalarniYuklash()}
+        onRead={(id) => void bildirishnomaniOqish(id)}
+        onReadAll={() => void hammasiniOqish()}
+      />
+      <ProfilTugmasi
+        profil={profil}
+        ochiq={profilOchiq}
+        setOchiq={setProfilOchiq}
+        onLogout={() => void handleLogout()}
+        bosHarfBilan
+      />
       </div>
     </motion.header>
   );
@@ -502,7 +439,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <section className="flex h-[min(860px,94vh)] w-full flex-col overflow-hidden rounded-[34px] border border-gold-100 bg-white shadow-[0_30px_120px_rgba(15,23,42,.32)]">
-        <div className="flex items-center justify-between border-b border-gold-50 bg-[#fff8f1] px-7 py-6">
+        <div className="flex items-center justify-between border-b border-gold-50 bg-[#F8FAFC] px-7 py-6">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.22em] text-gold-500">YePost</p>
             <h2 className="mt-1 text-2xl font-black text-slate-950">Mahsulot tanlash</h2>
@@ -675,7 +612,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
         </div>
-        <footer className="flex flex-col gap-4 border-t border-gold-100 bg-[#fff8f1] px-7 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <footer className="flex flex-col gap-4 border-t border-gold-100 bg-[#F8FAFC] px-7 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gold-100 text-gold-600"><ShoppingCart size={22}/></span>
             <div><p className="text-xs font-black uppercase tracking-wide text-slate-400">Tanlangan mahsulotlar</p><p className="mt-1 font-black text-slate-900">{tanlanganSoni} dona · {formatSumma(tanlanganJami)}</p></div>
@@ -753,7 +690,7 @@ function BildirishnomaTugmasi({
       >
         <Bell size={18} />
         {oqilmaganSoni > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-gold-500 px-1 text-[10px] font-black text-white">
+          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white">
             {oqilmaganSoni > 9 ? "9+" : oqilmaganSoni}
           </span>
         )}
@@ -840,11 +777,13 @@ function ProfilTugmasi({
   ochiq,
   setOchiq,
   onLogout,
+  bosHarfBilan = false,
 }: {
   profil: JoriyFoydalanuvchi | null;
   ochiq: boolean;
   setOchiq: (value: boolean) => void;
   onLogout: () => void;
+  bosHarfBilan?: boolean;
 }) {
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [position, setPosition] = useState({ top: 0, right: 24 });
@@ -873,6 +812,8 @@ function ProfilTugmasi({
   const ism = profil?.fullName?.trim() || profil?.username || "";
   const rolNomi = profil ? rolMatni[profil.role as FoydalanuvchiRoli] ?? profil.role : "";
   const rasmUrl = profil?.avatarUrl || "";
+  // Rasm bo'lmasa ism bosh harfi (faqat bosHarfBilan berilgan navbarda); ism yo'q bo'lsa avvalgi ikonka.
+  const bosHarf = bosHarfBilan && ism ? ism.charAt(0).toUpperCase() : "";
 
   return (
     <div className="relative">
@@ -880,11 +821,13 @@ function ProfilTugmasi({
         ref={buttonRef}
         type="button"
         onClick={() => setOchiq(!ochiq)}
-        className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-white/60 text-gray-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-gold-200 hover:bg-gold-50 hover:text-gold-600 hover:shadow-md active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2"
+        className={`flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2 ${bosHarf ? "border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100" : "border-gray-200 bg-white/60 text-gray-700 hover:border-gold-200 hover:bg-gold-50 hover:text-gold-600"}`}
         aria-label="Profil menyusi"
       >
         {rasmUrl ? (
           <img src={rasmUrl} alt={ism || "Profil"} className="h-full w-full object-cover" />
+        ) : bosHarf ? (
+          <span className="text-sm font-bold">{bosHarf}</span>
         ) : (
           <UserRound size={18} />
         )}
@@ -904,9 +847,11 @@ function ProfilTugmasi({
               style={{ top: position.top, right: position.right }}
             >
               <div className="flex items-center gap-3 border-b border-gray-100 bg-gray-50/70 p-4">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm">
+                <span className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border shadow-sm ${bosHarf ? "border-blue-100 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-600"}`}>
                   {rasmUrl ? (
                     <img src={rasmUrl} alt={ism || "Profil"} className="h-full w-full object-cover" />
+                  ) : bosHarf ? (
+                    <span className="text-base font-bold">{bosHarf}</span>
                   ) : (
                     <UserRound size={20} />
                   )}

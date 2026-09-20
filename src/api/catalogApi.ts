@@ -11,6 +11,7 @@ import type {
   MahsulotNarxi,
   OlchovBirligi,
   OlchovBirligiMalumoti,
+  StandardUnit,
 } from "@/types/catalog";
 
 
@@ -59,6 +60,13 @@ export const kategoriyalarApi = {
 };
 
 // Mahsulotlar sahifasi: Swagger catalog/units to'liq CRUD.
+export async function getStandardUnits() {
+  const response = await apiClient.get<StandardUnit[] | ApiListEnvelope<StandardUnit>>(
+    "/catalog/units/standard"
+  );
+  return apiList(response.data);
+}
+
 export const birliklarApi = {
   royxat: async () => {
     const response = await apiClient.get<OlchovBirligi[] | ApiListEnvelope<OlchovBirligi>>(

@@ -371,8 +371,8 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
 
   return (
     <AppModal onClose={onClose}>
-      <div className="scrollbar-hidden max-h-[95vh] w-full max-w-[1500px] overflow-y-auto rounded-[36px] border border-orange-100 bg-[#fff8ef] shadow-[0_30px_100px_rgba(15,23,42,.28)]">
-        <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-orange-100 bg-[#fffaf5]/95 px-7 py-5 backdrop-blur-xl">
+      <div className="scrollbar-hidden max-h-[95vh] w-full max-w-[1500px] overflow-y-auto rounded-[36px] border border-orange-100 bg-[#F8FAFC] shadow-[0_30px_100px_rgba(15,23,42,.28)]">
+        <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-orange-100 bg-[#F8FAFC]/95 px-7 py-5 backdrop-blur-xl">
           <div className="flex items-start gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-200">
               <FileText size={22} />
@@ -599,7 +599,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                   <h3 className="border-b border-orange-100 pb-4 text-sm font-black uppercase tracking-wide text-slate-600">Tovarlar</h3>
                 <div className="mt-5 overflow-x-auto rounded-2xl border border-orange-100">
                   <table className="w-full min-w-[700px] text-left text-sm">
-                    <thead className="bg-orange-50 text-gray-600">
+                    <thead className="bg-slate-50 text-gray-600">
                       <tr>
                         <th className="px-4 py-3">Mahsulot</th>
                         {tur === "inventarizatsiya" ? (

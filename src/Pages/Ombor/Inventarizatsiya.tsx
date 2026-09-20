@@ -266,10 +266,10 @@ export default function Inventarizatsiya() {
 
       <OmborJadval>
         <table className="w-full min-w-[1050px] text-left text-sm">
-          <thead className="bg-orange-50/70 text-xs font-black uppercase text-orange-500">
+          <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500">
             <tr>
               {faolUstunlar.map((ustun) => <th key={ustun.id}>{ustun.nom}</th>)}
-              <th className="sticky right-0 z-10 w-20 min-w-20 bg-[#fff9f3] px-5 py-3 text-right">
+              <th className="sticky right-0 z-10 w-20 min-w-20 bg-[#F8FAFC] px-5 py-3 text-right">
                 <button
                   ref={sozlamaTugmaRef}
                   type="button"
@@ -338,8 +338,8 @@ export default function Inventarizatsiya() {
 
       {modal && (
         <AppModal>
-          <div className="scrollbar-hidden flex max-h-[95vh] w-full max-w-[1500px] flex-col overflow-hidden rounded-[36px] border border-orange-100 bg-[#fff8ef] shadow-[0_30px_100px_rgba(15,23,42,.3)]">
-            <header className="flex shrink-0 items-center justify-between gap-4 border-b border-orange-100 bg-[#fffaf5] px-7 py-5">
+          <div className="scrollbar-hidden flex max-h-[95vh] w-full max-w-[1500px] flex-col overflow-hidden rounded-[36px] border border-orange-100 bg-[#F8FAFC] shadow-[0_30px_100px_rgba(15,23,42,.3)]">
+            <header className="flex shrink-0 items-center justify-between gap-4 border-b border-orange-100 bg-[#F8FAFC] px-7 py-5">
               <div className="flex flex-wrap items-center gap-3">
                 <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">Yangi inventarizatsiya</h2>
                 <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-black uppercase text-orange-600">Yangi</span>
@@ -443,7 +443,7 @@ export default function Inventarizatsiya() {
                 ) : (
                   <div className="mt-5 overflow-x-auto rounded-2xl border border-orange-100 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-orange-500 [&::-webkit-scrollbar-track]:bg-orange-50">
                     <table className="w-full min-w-[980px] text-left text-sm">
-                      <thead className="bg-orange-50/70 text-xs font-black uppercase text-slate-500">
+                      <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500">
                         <tr>
                           <th className="px-4 py-4">в„–</th>
                           <th className="px-4 py-4">Mahsulot</th>
@@ -494,7 +494,7 @@ export default function Inventarizatsiya() {
               </section>
             </div>
 
-            <footer className="flex shrink-0 flex-col-reverse gap-3 border-t border-orange-100 bg-[#fffaf5] px-7 py-4 sm:flex-row sm:justify-end">
+            <footer className="flex shrink-0 flex-col-reverse gap-3 border-t border-orange-100 bg-[#F8FAFC] px-7 py-4 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={formaniYopish}

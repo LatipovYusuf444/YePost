@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import YonPanel from "./YonPanel";
@@ -11,14 +12,20 @@ const sahifaVariantlari = {
 
 export default function AsosiyLayout() {
   const location = useLocation();
+  // Yon panel faqat navbar tugmasi bilan ochiladi/yopiladi (hover emas); holat shu yerda bitta joyda.
+  const [sidebarAcik, setSidebarAcik] = useState(false);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-cream-50 via-cream-200 to-gold-150">
-      <YonPanel />
+      <YonPanel acik={sidebarAcik} />
 
-      <main className="min-h-screen pl-20 pr-6 pt-6 transition-[padding-left] duration-200 ease-in-out peer-hover/sidebar:pl-[270px]">
-        <YuqoriPanel />
-        <div className="min-h-[calc(100vh-48px)] rounded-[34px] border border-gold-200/60 bg-white/80 p-7 shadow-gold-medium backdrop-blur-xl">
+      <main
+        className={`min-h-screen w-full min-w-0 max-w-full overflow-x-clip pl-20 pr-6 pt-6 transition-[padding-left] duration-200 ease-in-out ${
+          sidebarAcik ? "md:pl-74" : ""
+        }`}
+      >
+        <YuqoriPanel sidebarAcik={sidebarAcik} onSidebarToggle={() => setSidebarAcik((joriy) => !joriy)} />
+        <div className="@container min-h-[calc(100vh-48px)] min-w-0 max-w-full rounded-[34px] border border-gold-200/60 bg-white/80 p-7 shadow-gold-medium backdrop-blur-xl">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}

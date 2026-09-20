@@ -1,7 +1,7 @@
 import type { KirimHolati, SavdoHolati, TolovTuri, Xaridor, XaridorKompaniyasi } from "./types";
 
 export const maydonKlass =
-  "h-11 w-full rounded-2xl border border-slate-200 bg-white px-3.5 text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100";
+  "h-11 w-full rounded-2xl border border-slate-200 bg-white px-3.5 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100";
 
 export function yangiId(prefix: string) {
   return `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
@@ -53,7 +53,7 @@ export const savdoHolatMatni: Record<SavdoHolati, string> = {
 export const savdoHolatRangi: Record<SavdoHolati, string> = {
   qoralama: "bg-slate-100 text-slate-600",
   tolangan: "bg-emerald-50 text-emerald-600",
-  qarzdor: "bg-orange-50 text-orange-600",
+  qarzdor: "bg-amber-50 text-amber-600",
   bekor: "bg-red-50 text-red-500",
 };
 
@@ -71,6 +71,6 @@ export const kirimHolatMatni: Record<KirimHolati, string> = {
 
 export const kirimHolatRangi: Record<KirimHolati, string> = {
   qabul: "bg-emerald-50 text-emerald-600",
-  kutilmoqda: "bg-orange-50 text-orange-600",
+  kutilmoqda: "bg-amber-50 text-amber-600",
   bekor: "bg-red-50 text-red-500",
 };

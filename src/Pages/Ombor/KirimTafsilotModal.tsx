@@ -81,7 +81,7 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
   }
 
   return <AppModal onClose={onClose} className="sidebar-aligned-document-modal items-stretch p-3 sm:p-5">
-    <div className="flex min-h-0 w-full flex-col overflow-hidden rounded-[32px] border border-orange-100 bg-[#fff9f2] shadow-[0_28px_90px_rgba(69,35,13,.34)]">
+    <div className="flex min-h-0 w-full flex-col overflow-hidden rounded-[32px] border border-orange-100 bg-[#F8FAFC] shadow-[0_28px_90px_rgba(15,23,42,.34)]">
       <header className="flex shrink-0 flex-col gap-3 border-b border-orange-100 bg-white/75 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <h2 className="truncate text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
@@ -122,7 +122,7 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
             <SectionTitle icon={<FileText size={18}/>} text="Tovarlar" />
             <div className="scrollbar-orange overflow-x-auto">
               <table className="w-full min-w-[1050px] text-left text-sm">
-                <thead className="bg-orange-50/70 text-[11px] font-black uppercase tracking-wide text-slate-500"><tr><th className="rounded-l-2xl px-4 py-4">№</th><th className="px-4 py-4">Mahsulot</th><th className="px-4 py-4">Shtrix kod</th><th className="px-4 py-4">Tan narxi</th><th className="px-4 py-4">Sotuv narxi</th><th className="px-4 py-4">Ulgurji narxi</th><th className="px-4 py-4">Soni</th><th className="px-4 py-4">Ombor</th><th className="rounded-r-2xl px-4 py-4">Summa</th></tr></thead>
+                <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-500"><tr><th className="rounded-l-2xl px-4 py-4">№</th><th className="px-4 py-4">Mahsulot</th><th className="px-4 py-4">Shtrix kod</th><th className="px-4 py-4">Tan narxi</th><th className="px-4 py-4">Sotuv narxi</th><th className="px-4 py-4">Ulgurji narxi</th><th className="px-4 py-4">Soni</th><th className="px-4 py-4">Ombor</th><th className="rounded-r-2xl px-4 py-4">Summa</th></tr></thead>
                 <tbody className="divide-y divide-orange-100">
                   {(hujjat.items ?? []).map((item, index) => {
                     const mod: MahsulotModifikatsiyasi | undefined = item.modification ?? modMap.get(item.modificationId);

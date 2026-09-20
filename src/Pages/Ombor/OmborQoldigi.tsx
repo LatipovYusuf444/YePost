@@ -441,7 +441,7 @@ export default function OmborQoldigi() {
 
       <OmborJadval className="[&_thead_th]:!h-auto [&_thead_th]:!py-3">
           <table className="w-full min-w-[900px] text-sm">
-            <thead className="bg-orange-50/60 text-xs font-black uppercase tracking-wide text-orange-500">
+            <thead className="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-500">
               <tr>
                 <th rowSpan={2} className="px-5 py-3 text-left">Nomi</th>
                 {qollangan.shtrixKodniKorsatish && <th rowSpan={2} className="px-5 py-3 text-left">Shtrix kod</th>}

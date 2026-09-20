@@ -24,6 +24,17 @@ export type OlchovBirligiMalumoti = {
   shortName?: string;
 };
 
+export type StandardUnit = {
+  id: number;
+  code: string | null;
+  nameUz: string;
+  nameRu: string;
+  shortNameUz: string;
+  shortNameRu: string;
+  category: string;
+  type: "STANDARD" | "LOCAL";
+};
+
 export type MahsulotNarxi = {
   id?: string;
   modificationId?: string;

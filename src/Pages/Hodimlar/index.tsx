@@ -596,7 +596,7 @@ function Foydalanuvchilar() {
       {korinish === "jadval" && (
         <div className="overflow-x-auto rounded-2xl border border-orange-100 bg-white">
           <table className="w-full min-w-[880px] text-left text-sm">
-            <thead className="bg-orange-50 text-gray-500">
+            <thead className="bg-slate-50 text-gray-500">
               <tr>
                 <th className="px-5 py-4">Foydalanuvchi</th>
                 <th className="px-5 py-4">Rol</th>
@@ -627,7 +627,7 @@ function Foydalanuvchilar() {
                         </div>
                         <div>
                           <p className="font-black">{item.fullName || item.username}</p>
-                          <p className="text-xs font-semibold text-orange-600">@{item.username}</p>
+                          <p className="text-xs font-semibold text-slate-500">@{item.username}</p>
                         </div>
                       </div>
                     </td>

@@ -33,7 +33,7 @@ export default function KartaSozlama({
         className={`flex h-9 w-9 items-center justify-center rounded-xl transition ${
           ochiq
             ? "bg-orange-500 text-white"
-            : "bg-[#FFF3E2] text-[#FF6A00] hover:bg-orange-500 hover:text-white"
+            : "bg-[#EFF6FF] text-[#2563EB] hover:bg-orange-500 hover:text-white"
         }`}
       >
         <Settings size={16} />
@@ -50,7 +50,7 @@ export default function KartaSozlama({
             }}
             className="fixed inset-0 z-40 cursor-default"
           />
-          <div className="absolute right-0 top-11 z-50 w-56 rounded-2xl border border-orange-100 bg-white p-1.5 text-left shadow-[0_18px_50px_rgba(92,38,8,.16)]">
+          <div className="absolute right-0 top-11 z-50 w-56 rounded-2xl border border-orange-100 bg-white p-1.5 text-left shadow-[0_18px_50px_rgba(15,23,42,.16)]">
             <p className="px-3 py-1.5 text-xs font-black uppercase tracking-wide text-slate-400">
               Maydonlar
             </p>
@@ -69,7 +69,7 @@ export default function KartaSozlama({
                   <span className="truncate">{maydon.nom}</span>
                   <span
                     className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
-                      korinmoqda ? "bg-[#FF6A00] text-white" : "bg-slate-100 text-slate-300"
+                      korinmoqda ? "bg-[#2563EB] text-white" : "bg-slate-100 text-slate-300"
                     }`}
                   >
                     {korinmoqda && <Check size={13} />}

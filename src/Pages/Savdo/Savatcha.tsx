@@ -250,7 +250,7 @@ export default function Savatcha({
 
   return (
     <div className="space-y-5">
-      <section className="overflow-hidden rounded-[30px] border border-orange-100/80 bg-white shadow-[0_18px_60px_rgba(249,115,22,0.08)]">
+      <section className="overflow-hidden rounded-[30px] border border-orange-100/80 bg-white shadow-[0_18px_60px_rgba(37,99,235,0.08)]">
         <div className="flex flex-col gap-4 border-b border-orange-100/80 px-6 py-6 lg:flex-row lg:items-start lg:justify-between xl:px-10">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-500">Savdo</p>
@@ -262,15 +262,15 @@ export default function Savatcha({
           <button
             type="button"
             onClick={onQoshish}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-[0_14px_30px_rgba(249,115,22,.24)] transition hover:-translate-y-0.5 hover:bg-orange-600"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-[0_14px_30px_rgba(37,99,235,.24)] transition hover:-translate-y-0.5 hover:bg-orange-600"
           >
             <Plus size={17} />
             Qo'shish
           </button>
         </div>
 
-        <div className="grid gap-3 px-6 py-5 xl:grid-cols-[minmax(240px,1.2fr)_160px_170px_190px_190px] xl:px-10">
-          <label className="flex h-11 items-center gap-2 rounded-2xl border border-orange-100 bg-[#FFF8EF]/70 px-4 transition focus-within:border-orange-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-orange-100">
+        <div className="grid gap-3 px-6 py-5 @min-[1090px]:grid-cols-[minmax(240px,1.2fr)_160px_170px_190px_190px] xl:px-10">
+          <label className="flex h-11 items-center gap-2 rounded-2xl border border-orange-100 bg-[#F8FAFC]/70 px-4 transition focus-within:border-orange-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-orange-100">
             <Search size={18} className="shrink-0 text-orange-300" />
             <input
               value={qidiruv}
@@ -360,7 +360,7 @@ export default function Savatcha({
                 <col className="w-[170px]" />
                 <col className="w-[100px]" />
               </colgroup>
-              <thead className="bg-[#FFF8EF] text-xs font-black uppercase tracking-wide text-orange-600">
+              <thead className="bg-[#F8FAFC] text-xs font-black uppercase tracking-wide text-slate-500">
                 <tr>
                   {[
                     "T/r",
@@ -388,9 +388,11 @@ export default function Savatcha({
                   const statusTone =
                     draft.status === "cancelled"
                       ? "bg-red-50 text-red-600 ring-red-100"
-                      : draft.status === "editing"
+                      : draft.status === "editing" || draft.status === "waiting"
                         ? "bg-amber-50 text-amber-700 ring-amber-100"
-                        : "bg-orange-50 text-orange-600 ring-orange-100";
+                        : draft.status === "paid"
+                          ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
+                          : "bg-slate-100 text-slate-600 ring-slate-200";
 
                   return (
                     <tr
@@ -437,7 +439,7 @@ export default function Savatcha({
                           menuJoylashuvi &&
                           createPortal(
                             <div
-                              className="fixed z-[100020] w-[190px] rounded-xl bg-white p-1.5 shadow-[0_18px_42px_rgba(92,38,8,.18)] ring-1 ring-orange-100"
+                              className="fixed z-[100020] w-[190px] rounded-xl bg-white p-1.5 shadow-[0_18px_42px_rgba(15,23,42,.18)] ring-1 ring-orange-100"
                               style={menuJoylashuvi}
                             >
                               {[
@@ -489,7 +491,7 @@ export default function Savatcha({
                       <button
                         type="button"
                         onClick={onQoshish}
-                        className="mt-5 inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-[0_14px_30px_rgba(249,115,22,.22)] transition hover:bg-orange-600"
+                        className="mt-5 inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-[0_14px_30px_rgba(37,99,235,.22)] transition hover:bg-orange-600"
                       >
                         <Plus size={17} />
                         Qoralama yaratish

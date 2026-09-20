@@ -55,21 +55,21 @@ export default function BolimModal({
   }
 
   return (
-    <AppModal className="items-center justify-center bg-[rgba(54,22,8,.45)] p-4 backdrop-blur-[3px]">
+    <AppModal className="items-center justify-center bg-[rgba(15,23,42,.45)] p-4 backdrop-blur-[3px]">
       <form
         onSubmit={saqlash}
-        className="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-[28px] bg-gradient-to-br from-[#FFF8EF] via-[#FFFDF9] to-[#FFE8D2] text-[#253044] shadow-[0_34px_120px_rgba(92,38,8,.42)] ring-1 ring-white/80"
+        className="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-[28px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80"
       >
-        <header className="flex items-center justify-between gap-4 border-b border-orange-100/80 bg-[#FFF8EF]/90 px-7 py-5 backdrop-blur-xl">
+        <header className="flex items-center justify-between gap-4 border-b border-orange-100/80 bg-[#F8FAFC]/90 px-7 py-5 backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <span className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#FFF3E2] text-[#FF6A00]">
+            <span className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#EFF6FF] text-[#2563EB]">
               <Building2 size={22} />
             </span>
             <div>
               <h1 className="text-lg font-bold text-slate-900">
                 {boshlangich ? "Bo'limni tahrirlash" : "Yangi bo'lim"}
               </h1>
-              <span className="text-xs font-black uppercase tracking-wider text-[#FF6A00]">
+              <span className="text-xs font-black uppercase tracking-wider text-[#2563EB]">
                 {boshlangich ? "Bo'lim ma'lumotlari" : `${otaNomi} ostida`}
               </span>
             </div>
@@ -89,7 +89,7 @@ export default function BolimModal({
             <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>
           )}
 
-          <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80">
+          <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80">
             <label className="grid gap-2">
               <span className="text-sm font-bold text-slate-400">Bo'lim nomi *</span>
               <input
@@ -101,7 +101,7 @@ export default function BolimModal({
             </label>
           </section>
 
-          <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80">
+          <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80">
             <h2 className="border-b border-orange-100/80 pb-3 text-sm font-black uppercase tracking-wide text-slate-600">
               Rahbarlar
             </h2>
@@ -119,7 +119,7 @@ export default function BolimModal({
                     type="checkbox"
                     checked={rahbarlar.has(xodim.id)}
                     onChange={() => toggle(xodim.id)}
-                    className="h-5 w-5 shrink-0 accent-[#FF6A00]"
+                    className="h-5 w-5 shrink-0 accent-[#2563EB]"
                   />
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-xs font-black text-orange-500">
                     {bosHarflar(xodim)}
@@ -144,7 +144,7 @@ export default function BolimModal({
           </section>
         </div>
 
-        <footer className="flex justify-end gap-3 border-t border-orange-100 bg-[#FFF8EF]/90 px-7 py-4 backdrop-blur-xl">
+        <footer className="flex justify-end gap-3 border-t border-orange-100 bg-[#F8FAFC]/90 px-7 py-4 backdrop-blur-xl">
           <button
             type="button"
             onClick={onYopish}
@@ -152,7 +152,7 @@ export default function BolimModal({
           >
             Bekor qilish
           </button>
-          <button className="rounded-2xl bg-[#FF6A00] px-6 py-2.5 text-sm font-black text-white shadow-[0_14px_32px_rgba(255,106,0,.24)] transition hover:-translate-y-0.5 hover:bg-[#EA580C]">
+          <button className="rounded-2xl bg-[#2563EB] px-6 py-2.5 text-sm font-black text-white shadow-[0_14px_32px_rgba(37,99,235,.24)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8]">
             Saqlash
           </button>
         </footer>

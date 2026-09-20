@@ -317,9 +317,9 @@ export default function QaytarishTafsilotlariModal({
   );
 
   return (
-    <AppModal className="items-start justify-start bg-[rgba(54,22,8,.50)] p-3 backdrop-blur-[3px] lg:py-4 lg:pl-[88px] lg:pr-4">
-      <section className="scrollbar-hidden h-[calc(100vh-24px)] w-full overflow-y-auto rounded-[34px] border border-orange-100 bg-gradient-to-br from-[#FFF8EF] via-[#FFFDF9] to-[#FFE8D2] text-[#253044] shadow-[0_34px_120px_rgba(92,38,8,.42)] ring-1 ring-white/80 lg:h-[calc(100vh-32px)] lg:rounded-l-[46px] lg:rounded-r-[36px]">
-        <header className="sticky top-0 z-20 flex items-start justify-between gap-4 border-b border-orange-100/80 bg-[#FFF8EF]/90 px-6 py-5 backdrop-blur-xl lg:px-10 lg:py-6">
+    <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-3 backdrop-blur-[3px] lg:py-4 lg:pl-[88px] lg:pr-4">
+      <section className="scrollbar-hidden h-[calc(100vh-24px)] w-full overflow-y-auto rounded-[34px] border border-orange-100 bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80 lg:h-[calc(100vh-32px)] lg:rounded-l-[46px] lg:rounded-r-[36px]">
+        <header className="sticky top-0 z-20 flex items-start justify-between gap-4 border-b border-orange-100/80 bg-[#F8FAFC]/90 px-6 py-5 backdrop-blur-xl lg:px-10 lg:py-6">
           <div className="flex items-start gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-200">
               <RotateCcw size={22} />
@@ -425,9 +425,9 @@ export default function QaytarishTafsilotlariModal({
                   />
                 </div>
 
-                <div className="mt-7 overflow-hidden rounded-[26px] border border-orange-100 bg-white shadow-[0_16px_45px_rgba(249,115,22,.07)]">
+                <div className="mt-7 overflow-x-auto rounded-[26px] border border-orange-100 bg-white shadow-[0_16px_45px_rgba(37,99,235,.07)]">
                   <table className="w-full min-w-[650px] text-left text-sm">
-                    <thead className="bg-[#FFF3E4] text-xs font-black uppercase tracking-wide text-orange-700/70">
+                    <thead className="bg-[#EFF6FF] text-xs font-black uppercase tracking-wide text-slate-500">
                       <tr>
                         <th className="px-4 py-3">Mahsulot</th>
                         <th className="px-4 py-3">Miqdor</th>
@@ -693,7 +693,7 @@ export default function QaytarishTafsilotlariModal({
 
 function Malumot({ nom, qiymat }: { nom: string; qiymat: string }) {
   return (
-    <div className="group min-h-[112px] rounded-[24px] border border-orange-100 bg-white/80 p-5 shadow-[0_12px_35px_rgba(249,115,22,.06)] transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-[0_18px_45px_rgba(249,115,22,.10)]">
+    <div className="group min-h-[112px] rounded-[24px] border border-orange-100 bg-white/80 p-5 shadow-[0_12px_35px_rgba(37,99,235,.06)] transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-[0_18px_45px_rgba(37,99,235,.10)]">
       <div className="flex items-center gap-2 text-slate-400">
         <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-50 text-orange-500 transition group-hover:bg-orange-500 group-hover:text-white">
           <Package size={15} />

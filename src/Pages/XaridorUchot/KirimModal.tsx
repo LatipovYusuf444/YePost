@@ -20,7 +20,7 @@ export default function KirimModal({ kirim, beruvchiNomi, onYopish }: Props) {
   const [faolTab, setFaolTab] = useState<Tab>("Umumiy");
 
   return (
-    <AppModal className="items-start justify-start bg-[rgba(54,22,8,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
+    <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
       <div className="relative h-[calc(100vh-32px)] w-full">
         <TezkorPanel
           havolaId={kirim.id}
@@ -29,9 +29,9 @@ export default function KirimModal({ kirim, beruvchiNomi, onYopish }: Props) {
           onYopish={onYopish}
         />
 
-        <section className="relative h-full w-full overflow-hidden rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#FFF8EF] via-[#FFFDF9] to-[#FFE8D2] text-[#253044] shadow-[0_34px_120px_rgba(92,38,8,.42)] ring-1 ring-white/80">
+        <section className="relative h-full w-full overflow-hidden rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80">
           <div className="scrollbar-orange h-full overflow-y-auto">
-            <header className="sticky top-0 z-30 border-b border-orange-100/80 bg-[#FFF8EF]/90 px-9 py-6 backdrop-blur-xl">
+            <header className="sticky top-0 z-30 border-b border-orange-100/80 bg-[#F8FAFC]/90 px-9 py-6 backdrop-blur-xl">
               <div className="flex items-center justify-between gap-4">
                 <h1 className="truncate text-2xl font-bold text-slate-900">{kirim.raqam}</h1>
 
@@ -53,8 +53,8 @@ export default function KirimModal({ kirim, beruvchiNomi, onYopish }: Props) {
                     onClick={() => setFaolTab(tab)}
                     className={`shrink-0 rounded-xl px-3 py-2 text-sm transition ${
                       faolTab === tab
-                        ? "border border-orange-200 bg-white text-[#FF6A00]"
-                        : "text-slate-500 hover:bg-white hover:text-[#FF6A00]"
+                        ? "border border-orange-200 bg-white text-[#2563EB]"
+                        : "text-slate-500 hover:bg-white hover:text-[#2563EB]"
                     }`}
                   >
                     {tab}
@@ -66,7 +66,7 @@ export default function KirimModal({ kirim, beruvchiNomi, onYopish }: Props) {
             {faolTab === "Umumiy" ? (
               <div className="grid gap-8 px-9 py-9 xl:grid-cols-[43%_36px_minmax(0,1fr)]">
                 <aside className="space-y-6">
-                  <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(255,106,0,.08)] backdrop-blur">
+                  <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(37,99,235,.08)] backdrop-blur">
                     <CardTitle title="Kirim haqida" />
                     <Info label="Nomi" value={kirim.nomi} />
 
@@ -85,7 +85,7 @@ export default function KirimModal({ kirim, beruvchiNomi, onYopish }: Props) {
                     </div>
                   </section>
 
-                  <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(255,106,0,.08)] backdrop-blur">
+                  <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(37,99,235,.08)] backdrop-blur">
                     <CardTitle title="Qo'shimcha ma'lumotlar" />
                     <Info label="Yetkazib beruvchi" value={beruvchiNomi} />
                     <Info label="Mas'ul shaxs" value={kirim.masul} />
@@ -123,7 +123,7 @@ export default function KirimModal({ kirim, beruvchiNomi, onYopish }: Props) {
 function TimelineRail() {
   return (
     <div className="hidden flex-col items-center xl:flex">
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FF6A00] text-white shadow-[0_12px_28px_rgba(249,115,22,.28)]">
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2563EB] text-white shadow-[0_12px_28px_rgba(37,99,235,.28)]">
         <MessageSquare size={18} />
       </div>
       <div className="h-32 w-px bg-orange-200" />
@@ -131,7 +131,7 @@ function TimelineRail() {
         <Bell size={18} />
       </div>
       <div className="h-28 w-px bg-orange-200" />
-      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#FF6A00] shadow-sm ring-1 ring-orange-100">
+      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#2563EB] shadow-sm ring-1 ring-orange-100">
         <Package size={17} />
       </div>
     </div>
@@ -142,7 +142,7 @@ function Divider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-4">
       <div className="h-px flex-1 bg-orange-200" />
-      <span className="rounded-full bg-orange-100 px-6 py-1 text-sm font-semibold text-[#FF6A00] ring-1 ring-orange-200">
+      <span className="rounded-full bg-orange-100 px-6 py-1 text-sm font-semibold text-[#2563EB] ring-1 ring-orange-200">
         {label}
       </span>
       <div className="h-px flex-1 bg-orange-200" />
@@ -169,7 +169,7 @@ function Info({ label, value }: { label: string; value: string }) {
 
 function FeedCard({ title, time, text }: { title: string; time: string; text: string }) {
   return (
-    <article className="group relative overflow-hidden rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_14px_38px_rgba(255,106,0,.08)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(255,106,0,.12)]">
+    <article className="group relative overflow-hidden rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_14px_38px_rgba(37,99,235,.08)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(37,99,235,.12)]">
       <span className="absolute inset-y-5 left-0 w-1 rounded-r-full bg-gradient-to-b from-orange-400 to-orange-600 opacity-80" />
       <div className="flex items-start justify-between gap-4">
         <div className="pl-2">
@@ -181,7 +181,7 @@ function FeedCard({ title, time, text }: { title: string; time: string; text: st
           </div>
           <p className="mt-3 text-sm font-medium leading-6 text-slate-600">{text}</p>
         </div>
-        <div className="h-9 w-9 shrink-0 rounded-full bg-gradient-to-br from-orange-50 to-[#FFF8EF] ring-1 ring-orange-100" />
+        <div className="h-9 w-9 shrink-0 rounded-full bg-gradient-to-br from-orange-50 to-[#F8FAFC] ring-1 ring-orange-100" />
       </div>
     </article>
   );

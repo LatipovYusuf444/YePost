@@ -217,9 +217,9 @@ export default function MahsulotQaytarishModal({
   }
 
   return (
-    <AppModal className="items-start justify-start bg-[rgba(54,22,8,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
-      <div className="scrollbar-hidden h-[calc(100vh-32px)] w-[calc(100vw-104px)] overflow-y-auto rounded-[34px] border border-orange-100 bg-[#fffaf4] shadow-[0_30px_90px_rgba(15,23,42,.25)]">
-        <div className="sticky top-0 z-20 flex items-start justify-between gap-4 border-b border-orange-100 bg-[#fffaf4]/95 px-11 py-7 backdrop-blur">
+    <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
+      <div className="scrollbar-hidden h-[calc(100vh-32px)] w-[calc(100vw-104px)] overflow-y-auto rounded-[34px] border border-orange-100 bg-[#F8FAFC] shadow-[0_30px_90px_rgba(15,23,42,.25)]">
+        <div className="sticky top-0 z-20 flex items-start justify-between gap-4 border-b border-orange-100 bg-[#F8FAFC]/95 px-11 py-7 backdrop-blur">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.22em] text-orange-500">
               Mahsulot qaytarish
@@ -250,7 +250,7 @@ export default function MahsulotQaytarishModal({
             <div className="overflow-hidden rounded-3xl border border-orange-100 bg-white shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[920px] text-left text-sm">
-                  <thead className="bg-orange-50/70 text-xs uppercase tracking-wide text-orange-600">
+                  <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                     <tr>
                       <th className="px-5 py-4">Mahsulot</th>
                       <th className="px-4 py-4">Sotilgan</th>
@@ -303,7 +303,7 @@ export default function MahsulotQaytarishModal({
             </div>
           </div>
 
-          <aside className="space-y-4 border-l border-orange-100 bg-white/75 p-6 shadow-[-18px_0_50px_rgba(249,115,22,.06)]">
+          <aside className="space-y-4 border-l border-orange-100 bg-white/75 p-6 shadow-[-18px_0_50px_rgba(37,99,235,.06)]">
             <div className="rounded-2xl bg-orange-50 p-4 text-sm font-semibold text-orange-700">
               Tasdiqlangan qaytarish tovarni omborga qaytaradi. Pul qaytarish turi tanlanganiga qarab naqd/karta kassadan chiqadi, mijoz balansiga yoziladi yoki umuman qaytarilmaydi.
             </div>

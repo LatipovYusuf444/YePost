@@ -88,7 +88,7 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
   }
 
   return (
-    <section className="rounded-[32px] border border-orange-100/70 bg-white/95 p-5 shadow-[0_24px_70px_rgba(249,115,22,.08)] sm:p-7">
+    <section className="rounded-[32px] border border-orange-100/70 bg-white/95 p-5 shadow-[0_24px_70px_rgba(37,99,235,.08)] sm:p-7">
       <div className="flex flex-col gap-4 border-b border-orange-100/80 pb-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-500">Savdo</p>
@@ -108,8 +108,8 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
         </button>
       </div>
 
-      <div className="grid gap-3 py-5 lg:grid-cols-[minmax(220px,1fr)_150px_170px_170px_150px_150px]">
-        <label className="flex h-11 items-center gap-2 rounded-2xl border border-orange-100 bg-[#FFF8EF]/70 px-4 transition focus-within:border-orange-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-orange-100">
+      <div className="grid gap-3 py-5 @min-[1130px]:grid-cols-[minmax(220px,1fr)_150px_170px_170px_150px_150px]">
+        <label className="flex h-11 items-center gap-2 rounded-2xl border border-orange-100 bg-[#F8FAFC]/70 px-4 transition focus-within:border-orange-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-orange-100">
           <Search size={18} className="shrink-0 text-orange-300" />
           <input
             value={filtrlar.search}
@@ -162,7 +162,7 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
       <div className="hidden overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-sm md:block">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[920px] border-collapse text-left text-sm">
-            <thead className="bg-[#FFF8EF] text-xs font-black uppercase tracking-wide text-orange-700/70">
+            <thead className="bg-[#F8FAFC] text-xs font-black uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-6 py-4">Sotuv ID</th>
                 <th className="px-6 py-4">Mijoz</th>
@@ -183,7 +183,7 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
                     className="cursor-pointer transition hover:bg-orange-50/55"
                     title={tolov.sotuv ? "Sotuv tafsilotlarini ochish" : "To'lov tafsilotlarini ochish"}
                   >
-                    <td className="px-6 py-5 font-black text-orange-600">{tolov.sotuvId}</td>
+                    <td className="px-6 py-5 font-semibold text-slate-900">{tolov.sotuvId}</td>
                     <td className="px-6 py-5 font-bold">{tolov.mijoz}</td>
                     <td className="px-6 py-5">{turiBadge(tolov)}</td>
                     <td className="px-6 py-5 font-semibold text-slate-700">{tolovUsuliMatni(tolov.tolovTuri)}</td>
@@ -304,7 +304,7 @@ function TolovTafsilotlariModal({
 }) {
   return (
     <AppModal>
-      <div className="w-full max-w-2xl overflow-hidden rounded-[32px] border border-orange-100 bg-[#FFF8EF] shadow-[0_30px_90px_rgba(15,23,42,.24)]">
+      <div className="w-full max-w-2xl overflow-hidden rounded-[32px] border border-orange-100 bg-[#F8FAFC] shadow-[0_30px_90px_rgba(15,23,42,.24)]">
         <div className="flex items-start justify-between gap-4 border-b border-orange-100 bg-white/70 px-6 py-5">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-500">To'lov tafsilotlari</p>
@@ -368,7 +368,7 @@ function TolovTafsilotlariModal({
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl bg-[#FFF8EF]/70 px-4 py-3">
+    <div className="rounded-2xl bg-[#F8FAFC]/70 px-4 py-3">
       <p className="text-xs font-black uppercase text-slate-400">{label}</p>
       <p className="mt-1 font-bold text-slate-800">{value}</p>
     </div>

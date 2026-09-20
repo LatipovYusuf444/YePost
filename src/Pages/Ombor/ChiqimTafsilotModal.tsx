@@ -111,7 +111,7 @@ export default function ChiqimTafsilotModal({ id, onClose }: Props) {
 
   return (
     <AppModal onClose={onClose} className="sidebar-aligned-document-modal items-stretch p-3 sm:p-5">
-      <div className="relative flex min-h-0 w-full flex-col overflow-hidden rounded-[34px] border border-orange-100 bg-[#fff8ef] shadow-[0_28px_90px_rgba(69,35,13,.34)]">
+      <div className="relative flex min-h-0 w-full flex-col overflow-hidden rounded-[34px] border border-orange-100 bg-[#F8FAFC] shadow-[0_28px_90px_rgba(15,23,42,.34)]">
         <header className="flex shrink-0 items-center justify-between gap-4 border-b border-orange-100 bg-white/80 px-5 py-4 sm:px-8">
           <div className="flex min-w-0 items-center gap-3">
             <h2 className="truncate text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
@@ -155,7 +155,7 @@ export default function ChiqimTafsilotModal({ id, onClose }: Props) {
               <SectionTitle icon={<PackageMinus size={18} />} text="Tovarlar" />
               <div className="overflow-x-auto rounded-[22px] border border-orange-100">
                 <table className="w-full min-w-[960px] text-left text-sm">
-                  <thead className="bg-[#fff9f3] text-[11px] font-black uppercase tracking-wide text-slate-500">
+                  <thead className="bg-[#F8FAFC] text-[11px] font-black uppercase tracking-wide text-slate-500">
                     <tr><th className="px-4 py-4">№</th><th className="px-4 py-4">Mahsulot</th><th className="px-4 py-4">Shtrix kod</th><th className="px-4 py-4">Tan narxi</th><th className="px-4 py-4">Soni</th><th className="px-4 py-4">Ombor</th><th className="px-4 py-4">Summa</th><th className="w-14 px-4 py-4 text-right"><Settings size={16} className="ml-auto text-slate-400" /></th></tr>
                   </thead>
                   <tbody className="divide-y divide-orange-100">

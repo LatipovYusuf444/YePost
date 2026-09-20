@@ -382,12 +382,12 @@ export default function SotuvTafsilotlariModal({
   }
 
   return (
-    <AppModal className="items-start justify-start bg-[rgba(54,22,8,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
+    <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
       <div className="relative h-[calc(100vh-32px)] w-full">
         <ModalTezkorPanel sotuv={sotuv} onYopish={onYopish} />
-        <section className="relative h-full w-full overflow-hidden rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#FFF8EF] via-[#FFFDF9] to-[#FFE8D2] text-[#253044] shadow-[0_34px_120px_rgba(92,38,8,.42)] ring-1 ring-white/80">
+        <section className="relative h-full w-full overflow-hidden rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80">
         <div className={`scrollbar-hidden h-full ${activeTab === "Hisob-fakturalar" ? "overflow-hidden" : "overflow-y-auto"}`}>
-          <header className="sticky top-0 z-30 border-b border-orange-100/80 bg-[#FFF8EF]/90 px-9 py-6 backdrop-blur-xl">
+          <header className="sticky top-0 z-30 border-b border-orange-100/80 bg-[#F8FAFC]/90 px-9 py-6 backdrop-blur-xl">
             <div className="flex items-center justify-between gap-4">
               <h1 className="truncate text-2xl font-bold text-slate-900">{sotuvJadvalId(sotuv)}</h1>
               <div className="flex shrink-0 items-center gap-2">
@@ -461,7 +461,7 @@ export default function SotuvTafsilotlariModal({
                   <button
                     disabled={amalBajarilmoqda}
                     onClick={() => setTolovModalOchiq(true)}
-                    className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#FF6A00] px-4 text-sm font-bold text-white shadow-[0_10px_24px_rgba(249,115,22,.24)] transition hover:bg-[#EA580C] disabled:opacity-50"
+                    className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#2563EB] px-4 text-sm font-bold text-white shadow-[0_10px_24px_rgba(37,99,235,.24)] transition hover:bg-[#1D4ED8] disabled:opacity-50"
                   >
                     {amalBajarilmoqda ? <LoaderCircle size={16} className="animate-spin" /> : "To'lovni qabul qilish"}
                     <ChevronDown size={15} />
@@ -477,7 +477,7 @@ export default function SotuvTafsilotlariModal({
                   type="button"
                   onClick={() => setActiveTab(tab)}
                   className={`shrink-0 rounded-xl px-3 py-2 text-sm transition ${
-                    activeTab === tab ? "border border-orange-200 bg-white text-[#FF6A00]" : "text-slate-500 hover:bg-white hover:text-[#FF6A00]"
+                    activeTab === tab ? "border border-orange-200 bg-white text-[#2563EB]" : "text-slate-500 hover:bg-white hover:text-[#2563EB]"
                   }`}
                 >
                   {tab}
@@ -585,8 +585,8 @@ function ModalTezkorPanel({ sotuv, onYopish }: { sotuv: Sotuv; onYopish: () => v
             title={amal.label}
             className={`flex h-11 w-11 items-center justify-center rounded-[15px] shadow-[0_10px_24px_rgba(15,23,42,.18)] ring-1 ring-white/70 transition duration-300 hover:-translate-x-0.5 hover:scale-105 active:scale-95 ${
               close
-                ? "bg-[#FF6A00] text-white hover:bg-[#EA580C] hover:shadow-[0_16px_34px_rgba(234,88,12,.36)]"
-                : "bg-white text-[#FF6A00] hover:bg-[#FFF3E2] hover:text-[#EA580C]"
+                ? "bg-[#2563EB] text-white hover:bg-[#1D4ED8] hover:shadow-[0_16px_34px_rgba(37,99,235,.36)]"
+                : "bg-white text-[#2563EB] hover:bg-[#EFF6FF] hover:text-[#1D4ED8]"
             }`}
             aria-label={amal.label}
           >
@@ -718,7 +718,7 @@ function YukXatiGeneratorModal({
             .box { border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px; }
             table { width: 100%; border-collapse: collapse; margin-top: 18px; }
             th, td { border-bottom: 1px solid #e5e7eb; padding: 12px; text-align: left; }
-            th { background: #fff7ed; color: #ea580c; }
+            th { background: #EFF6FF; color: #1D4ED8; }
             .total { margin-top: 24px; text-align: right; font-size: 20px; font-weight: 800; }
           </style>
         </head>
@@ -854,7 +854,7 @@ function YukXatiGeneratorModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#FF6A00] text-white shadow-[0_12px_28px_rgba(255,106,0,.35)] ring-1 ring-white/60 transition duration-200 hover:-translate-y-0.5 hover:bg-[#E45A0C]"
+            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#2563EB] text-white shadow-[0_12px_28px_rgba(37,99,235,.35)] ring-1 ring-white/60 transition duration-200 hover:-translate-y-0.5 hover:bg-[#1D4ED8]"
             aria-label="Nakladnoy oynasini yopish"
             title="Yopish"
           >
@@ -863,7 +863,7 @@ function YukXatiGeneratorModal({
           <button
             type="button"
             onClick={chopEtish}
-            className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-[#FF6A00] shadow-[0_10px_24px_rgba(15,23,42,.16)] ring-1 ring-orange-100 transition duration-200 hover:-translate-y-0.5 hover:bg-[#FFF3E2]"
+            className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-[#2563EB] shadow-[0_10px_24px_rgba(15,23,42,.16)] ring-1 ring-orange-100 transition duration-200 hover:-translate-y-0.5 hover:bg-[#EFF6FF]"
             aria-label="Nakladnoyni chop etish"
             title="Chop etish"
           >
@@ -872,7 +872,7 @@ function YukXatiGeneratorModal({
           <button
             type="button"
             onClick={pdfYuklash}
-            className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-[#FF6A00] shadow-[0_10px_24px_rgba(15,23,42,.16)] ring-1 ring-orange-100 transition duration-200 hover:-translate-y-0.5 hover:bg-[#FFF3E2]"
+            className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-[#2563EB] shadow-[0_10px_24px_rgba(15,23,42,.16)] ring-1 ring-orange-100 transition duration-200 hover:-translate-y-0.5 hover:bg-[#EFF6FF]"
             aria-label="Nakladnoy PDF yuklab olish"
             title="PDF yuklab olish"
           >
@@ -1229,7 +1229,7 @@ function UmumiyTab({
           onOmbordanChiqarish={onOmbordanChiqarish}
         />
 
-        <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(255,106,0,.08)] backdrop-blur">
+        <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(37,99,235,.08)] backdrop-blur">
           <CardTitle title="Qo'shimcha ma'lumotlar" action="o'zgartirish" />
           <Info label="Qaytarilgan savdo" value="Tanlanmagan" pill />
           <Info label="Mas'ul shaxs" value={masulNomi(sotuv)} />
@@ -1249,7 +1249,7 @@ function UmumiyTab({
           <FaoliyatPanel xodimlar={xodimlar} onSaqlash={faoliyatniSaqlash} />
         <Divider label="Bugun" />
         {crmYuklanmoqda && (
-          <div className="flex h-24 items-center justify-center rounded-2xl bg-white/92 shadow-[0_18px_46px_rgba(255,106,0,.08)]">
+          <div className="flex h-24 items-center justify-center rounded-2xl bg-white/92 shadow-[0_18px_46px_rgba(37,99,235,.08)]">
             <LoaderCircle className="animate-spin text-orange-500" size={24} />
           </div>
         )}
@@ -1333,7 +1333,7 @@ function KelishuvCard({
   }
 
   return (
-    <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(255,106,0,.08)] backdrop-blur">
+    <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(37,99,235,.08)] backdrop-blur">
       <CardTitle title="Kelishuv haqida" action="o'zgartirish" />
       <Info label="Bosqich" value={sotuvHolatiMatni[holat]} />
 
@@ -1346,7 +1346,7 @@ function KelishuvCard({
           <button
             disabled={amalBajarilmoqda}
             onClick={onTolovOchish}
-            className="h-10 rounded-xl bg-[#FF6A00] px-4 text-xs font-black uppercase text-white shadow-[0_10px_24px_rgba(249,115,22,.22)] transition hover:bg-[#EA580C] disabled:opacity-50"
+            className="h-10 rounded-xl bg-[#2563EB] px-4 text-xs font-black uppercase text-white shadow-[0_10px_24px_rgba(37,99,235,.22)] transition hover:bg-[#1D4ED8] disabled:opacity-50"
           >
             To'lovni qabul qilish
           </button>
@@ -1355,7 +1355,7 @@ function KelishuvCard({
         )}
       </div>
 
-      <div className="mt-5 rounded-2xl border border-orange-100 bg-gradient-to-br from-[#FFF8EF] to-white p-4">
+      <div className="mt-5 rounded-2xl border border-orange-100 bg-gradient-to-br from-[#F8FAFC] to-white p-4">
         <p className="text-sm text-slate-500">{tanlanganBolim}</p>
         <p className="mt-3 text-sm text-slate-400">Bu yerda to'lov, yetkazish va ombordan chiqarish ma'lumotlari ko'rsatiladi.</p>
         <div className="mt-4 border-t border-slate-100 pt-3">
@@ -1363,13 +1363,13 @@ function KelishuvCard({
             <button
               type="button"
               onClick={() => setMenuOpen((current) => !current)}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#FF6A00] px-4 text-sm font-black text-white shadow-[0_10px_24px_rgba(249,115,22,.22)] transition hover:-translate-y-0.5 hover:bg-[#EA580C]"
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#2563EB] px-4 text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,235,.22)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8]"
             >
               <Plus size={16} />
               Qo'shish
             </button>
             {menuOpen && (
-              <div className="absolute left-0 top-12 z-40 w-[238px] rounded-[22px] bg-white py-3 shadow-[0_18px_50px_rgba(92,38,8,.16)] ring-1 ring-orange-100">
+              <div className="absolute left-0 top-12 z-40 w-[238px] rounded-[22px] bg-white py-3 shadow-[0_18px_50px_rgba(15,23,42,.16)] ring-1 ring-orange-100">
                 {bolimlar.map((bolim) => {
                   const faol = faolBolimlar.has(bolim);
                   return (
@@ -1381,7 +1381,7 @@ function KelishuvCard({
                       title={faol ? undefined : "Tez orada qo'shiladi"}
                       className={`flex h-11 w-full items-center gap-3 px-5 text-left text-[15px] transition ${
                         faol
-                          ? "text-slate-700 hover:bg-orange-50 hover:text-[#FF6A00]"
+                          ? "text-slate-700 hover:bg-orange-50 hover:text-[#2563EB]"
                           : "cursor-not-allowed text-slate-300"
                       }`}
                     >
@@ -1404,7 +1404,7 @@ function KelishuvCard({
           {(sotuv.payments ?? []).length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">
               {sotuv.payments?.map((tolov, index) => (
-                <span key={tolov.id ?? `${tolov.paymentType}-${index}`} className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-[#FF6A00]">
+                <span key={tolov.id ?? `${tolov.paymentType}-${index}`} className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-[#2563EB]">
                   {tolovTuriMatni[tolov.paymentType]}: {pulniFormatlash(tolov.amount)}
                 </span>
               ))}
@@ -1415,7 +1415,7 @@ function KelishuvCard({
               <span>Sotuv jami</span>
               <span>{pulniFormatlash(jami)}</span>
             </div>
-            <div className="flex justify-between text-[#FF6A00]">
+            <div className="flex justify-between text-[#2563EB]">
               <span>Qabul qilingan to'lov</span>
               <span className="font-bold">{pulniFormatlash(tolanganSumma)}</span>
             </div>
@@ -1539,11 +1539,11 @@ function TolovQabulQilishModal({
       <div className="w-full max-w-2xl rounded-[32px] bg-white p-8 shadow-2xl">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
-            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-[#FF6A00]">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-[#2563EB]">
               <CreditCard size={26} />
             </span>
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#FF6A00]">To'lov</p>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#2563EB]">To'lov</p>
               <h2 className="mt-1 text-2xl font-black text-slate-900">To'lovni qabul qilish</h2>
             </div>
           </div>
@@ -1559,7 +1559,7 @@ function TolovQabulQilishModal({
                   {mavjudTolovlar.map((tolov, index) => (
                     <span
                       key={tolov.id ?? `${tolov.paymentType}-${index}`}
-                      className="rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold text-[#FF6A00]"
+                      className="rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold text-[#2563EB]"
                     >
                       {tolovTuriMatni[tolov.paymentType]}: {pulniFormatlash(tolov.amount)}
                     </span>
@@ -1587,7 +1587,7 @@ function TolovQabulQilishModal({
                   max={boshlangichQarz || undefined}
                   value={summa}
                   onChange={(event) => setSumma(event.target.value)}
-                  className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100"
+                  className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
                   placeholder="0"
                 />
               </label>
@@ -1597,7 +1597,7 @@ function TolovQabulQilishModal({
               <button
                 type="button"
                 onClick={() => setSumma(String(boshlangichQarz))}
-                className="rounded-xl bg-orange-50 px-4 py-2.5 text-xs font-bold text-[#FF6A00] transition hover:bg-orange-100"
+                className="rounded-xl bg-orange-50 px-4 py-2.5 text-xs font-bold text-[#2563EB] transition hover:bg-orange-100"
               >
                 To'liq to'lash ({pulniFormatlash(boshlangichQarz)})
               </button>
@@ -1619,7 +1619,7 @@ function TolovQabulQilishModal({
                 <p className="text-xs font-black uppercase tracking-wide text-slate-400">
                   Jami to'lov
                 </p>
-                <p className="mt-1.5 text-lg font-black text-[#FF6A00]">{pulniFormatlash(yakuniyTolangan)}</p>
+                <p className="mt-1.5 text-lg font-black text-[#2563EB]">{pulniFormatlash(yakuniyTolangan)}</p>
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-wide text-slate-400">
@@ -1647,7 +1647,7 @@ function TolovQabulQilishModal({
                 type="button"
                 disabled={amalBajarilmoqda}
                 onClick={() => void submit()}
-                className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#FF6A00] px-6 text-sm font-black text-white shadow-[0_10px_24px_rgba(249,115,22,.24)] transition hover:bg-[#EA580C] disabled:opacity-50"
+                className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#2563EB] px-6 text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,235,.24)] transition hover:bg-[#1D4ED8] disabled:opacity-50"
               >
                 {amalBajarilmoqda && <LoaderCircle size={16} className="animate-spin" />}
                 {draft ? "To'lovni saqlash" : "To'lovni qo'shish"}
@@ -1716,7 +1716,7 @@ function HisobFakturalarTab({ sotuv }: { sotuv: Sotuv }) {
                     </div>
                   </td>
                   <td className="px-3 py-5 font-medium text-slate-700">1</td>
-                  <td className="truncate px-3 py-5 font-medium text-blue-600">{invoiceNomi}</td>
+                  <td className="truncate px-3 py-5 font-medium text-slate-900">{invoiceNomi}</td>
                   <td className="truncate px-3 py-5">{sotuvId}</td>
                   <td className="px-3 py-5">
                     <div className="flex items-center gap-2">
@@ -1783,7 +1783,7 @@ type TarixQatori = {
   avtor: string;
   tip: string;
   tavsif: string;
-  accent?: "green" | "blue" | "orange";
+  accent?: "green" | "blue" | "orange" | "red";
 };
 
 const TARIX_MAYDON_NOMLARI: Record<string, string> = {
@@ -1875,8 +1875,8 @@ function tarixTavsifiniYasash(item: SaleAuditLog): string {
   return qismlar.length > 0 ? qismlar.join(" · ") : "Sotuv ma'lumotlari yangilandi.";
 }
 
-function tarixTipiniAniqlash(item: SaleAuditLog): { tip: string; accent: "green" | "blue" | "orange" } {
-  if (item.action === "DELETE") return { tip: "Sotuv o'chirildi", accent: "orange" };
+function tarixTipiniAniqlash(item: SaleAuditLog): { tip: string; accent: "green" | "blue" | "orange" | "red" } {
+  if (item.action === "DELETE") return { tip: "Sotuv o'chirildi", accent: "red" };
 
   const diff = (item.diff ?? {}) as Record<string, unknown>;
   if ("payments" in diff) return { tip: "To'lov qabul qilindi", accent: "green" };
@@ -1887,7 +1887,7 @@ function tarixTipiniAniqlash(item: SaleAuditLog): { tip: string; accent: "green"
       ""
   ).toUpperCase();
   if (yangiHolat === "CONFIRMED") return { tip: "Sotuv tasdiqlandi", accent: "green" };
-  if (yangiHolat === "CANCELLED") return { tip: "Sotuv bekor qilindi", accent: "orange" };
+  if (yangiHolat === "CANCELLED") return { tip: "Sotuv bekor qilindi", accent: "red" };
   if (item.action === "CREATE") return { tip: "Sotuv yaratildi", accent: "blue" };
   return { tip: "Sotuv yangilandi", accent: "orange" };
 }
@@ -1941,7 +1941,7 @@ function TarixTab({ sotuv }: { sotuv: Sotuv }) {
       </div>
 
       {sotuv.items && sotuv.items.length > 0 && (
-        <div className="mb-6 rounded-[24px] border border-orange-100 bg-[#FFF8EF] p-5">
+        <div className="mb-6 rounded-[24px] border border-orange-100 bg-[#F8FAFC] p-5">
           <p className="text-xs font-black uppercase tracking-wide text-orange-600">
             Sotilgan mahsulotlar ({sotuv.items.length} ta)
           </p>
@@ -2003,9 +2003,11 @@ function TarixTab({ sotuv }: { sotuv: Sotuv }) {
                 className={`font-medium ${
                   qator.accent === "green"
                     ? "text-green-700"
-                    : qator.accent === "orange"
-                      ? "text-orange-600"
-                      : "text-slate-700"
+                    : qator.accent === "red"
+                      ? "text-red-600"
+                      : qator.accent === "orange"
+                        ? "text-orange-600"
+                        : "text-slate-700"
                 }`}
               >
                 {qator.tip}
@@ -2235,12 +2237,12 @@ function TovarlarTab({
           <button
             type="button"
             onClick={yangiMahsulotQatoriQoshish}
-            className="rounded-xl bg-[#FF6A00] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#EA580C] hover:shadow-lg hover:shadow-orange-500/20"
+            className="rounded-xl bg-[#2563EB] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] hover:shadow-lg hover:shadow-orange-500/20"
           >
             Mahsulot qo'shish
           </button>
         </div>
-        <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm transition hover:text-[#FF6A00]">
+        <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm transition hover:text-[#2563EB]">
           <MoreHorizontal size={20} />
         </button>
         {yangiQatorlar.length > 0 && (
@@ -2320,11 +2322,11 @@ function TovarlarTab({
                     <Search size={18} className="text-slate-500" />
                   </button>
 
-                  <span className="text-[#FF6A00] underline underline-offset-4">{Math.max(mavjudQoldiq, 0)} dona</span>
+                  <span className="text-[#2563EB] underline underline-offset-4">{Math.max(mavjudQoldiq, 0)} dona</span>
 
                   <div>
                     <div className="flex h-12 items-center justify-end rounded-md border border-slate-300 bg-white px-3">{rezerv}</div>
-                    {!tasdiqlangan && <span className="mt-1 block text-right text-xs text-[#FF6A00] underline underline-offset-4">qoralama</span>}
+                    {!tasdiqlangan && <span className="mt-1 block text-right text-xs text-[#2563EB] underline underline-offset-4">qoralama</span>}
                   </div>
 
                   <span>{ombordanChiqdi} dona</span>
@@ -2444,7 +2446,7 @@ function TovarlarTab({
                     )}
                   </div>
 
-                  <span className="text-[#FF6A00] underline underline-offset-4">{Math.max(qator.availableQty, 0)} dona</span>
+                  <span className="text-[#2563EB] underline underline-offset-4">{Math.max(qator.availableQty, 0)} dona</span>
                   <div className="flex h-12 items-center justify-end rounded-md border border-slate-300 bg-white px-3">0</div>
                   <span>0 dona</span>
                   <div className="flex items-center justify-between gap-3">
@@ -2523,7 +2525,7 @@ function TovarlarTab({
                       onClick={() => qoldiqniTanlash(mahsulotPopover.key, qoldiq)}
                       className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-orange-50"
                     >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-50 text-[#FF6A00]">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-50 text-[#2563EB]">
                         <Package size={18} />
                       </span>
                       <span className="min-w-0 flex-1">
@@ -2621,14 +2623,14 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
     <div className="px-7 py-7">
       <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-4">
-          <button className="rounded-xl bg-[#FF6A00] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#EA580C]">
+          <button className="rounded-xl bg-[#2563EB] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#1D4ED8]">
             Mahsulot qo'shish
           </button>
-          <button className="rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-600 shadow-sm transition hover:text-[#FF6A00]">
+          <button className="rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-600 shadow-sm transition hover:text-[#2563EB]">
             Mahsulot tanlash
           </button>
         </div>
-        <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm transition hover:text-[#FF6A00]">
+        <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm transition hover:text-[#2563EB]">
           <MoreHorizontal size={20} />
         </button>
       </div>
@@ -2708,7 +2710,7 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
                     <Search size={18} className="text-slate-500" />
                   </button>
 
-                  <a className="text-[#FF6A00] underline underline-offset-4" href="#">
+                  <a className="text-[#2563EB] underline underline-offset-4" href="#">
                     {Math.max(son(item.quantity), 0)} dona
                   </a>
 
@@ -2717,7 +2719,7 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
                       {rezerv}
                     </div>
                     {!tasdiqlangan && (
-                      <a className="mt-1 block text-right text-xs text-[#FF6A00] underline underline-offset-4" href="#">
+                      <a className="mt-1 block text-right text-xs text-[#2563EB] underline underline-offset-4" href="#">
                         qoralama
                       </a>
                     )}
@@ -3013,7 +3015,7 @@ function YetkazishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; 
 
 function OmbordanChiqarishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; onClose: () => void }) {
   return (
-    <div className="absolute inset-0 z-[60] bg-[rgba(54,22,8,.45)] backdrop-blur-[1px]">
+    <div className="absolute inset-0 z-[60] bg-[rgba(15,23,42,.45)] backdrop-blur-[1px]">
       <OmbordanChiqarishHujjatMazmuni sotuv={sotuv} jami={jami} onClose={onClose} />
     </div>
   );
@@ -3021,7 +3023,7 @@ function OmbordanChiqarishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: 
 
 export function OmbordanChiqarishHujjatModal({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; onClose: () => void }) {
   return (
-    <AppModal className="items-start justify-start bg-[rgba(54,22,8,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
+    <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
       <div className="relative h-[calc(100vh-32px)] w-full">
         <ModalTezkorPanel sotuv={sotuv} onYopish={onClose} />
         <OmbordanChiqarishHujjatMazmuni sotuv={sotuv} jami={jami} onClose={onClose} ikkinchiYopishTugmasi={false} />
@@ -3109,7 +3111,7 @@ function OmbordanChiqarishHujjatMazmuni({
   }
 
   return (
-      <div className="scrollbar-hidden h-full overflow-y-auto rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#FFF8EF] via-[#FFFDF9] to-[#FFE8D2] px-7 py-7 shadow-[0_34px_120px_rgba(92,38,8,.42)] ring-1 ring-white/80">
+      <div className="scrollbar-hidden h-full overflow-y-auto rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] px-7 py-7 shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80">
         <div className="flex items-start justify-between gap-4 border-b border-orange-100/80 pb-6">
           <div>
             <h2 className="text-3xl font-semibold text-slate-900">Ombordan chiqarish hujjati</h2>
@@ -3118,7 +3120,7 @@ function OmbordanChiqarishHujjatMazmuni({
             </p>
           </div>
           {ikkinchiYopishTugmasi && (
-            <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-[#FF6A00] hover:text-white">
+            <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-[#2563EB] hover:text-white">
               <X size={19} />
             </button>
           )}
@@ -3132,8 +3134,8 @@ function OmbordanChiqarishHujjatMazmuni({
               onClick={() => setFaolBolim(bolim)}
               className={`-mb-px rounded-t-xl border border-b-0 px-4 py-2.5 text-sm font-bold transition ${
                 faolBolim === bolim
-                  ? "border-orange-200 bg-white text-[#FF6A00]"
-                  : "border-transparent text-slate-500 hover:text-[#FF6A00]"
+                  ? "border-orange-200 bg-white text-[#2563EB]"
+                  : "border-transparent text-slate-500 hover:text-[#2563EB]"
               }`}
             >
               {bolim}
@@ -3189,7 +3191,7 @@ function OmbordanChiqarishHujjatMazmuni({
                           <span className="min-w-0 flex-1 truncate">{omborNomi}</span>
                         </div>
 
-                        <span className="text-[#FF6A00]">{Math.max(mavjudQoldiq, 0)} dona</span>
+                        <span className="text-[#2563EB]">{Math.max(mavjudQoldiq, 0)} dona</span>
 
                         <div className="flex h-12 items-center justify-end rounded-md border border-slate-200 bg-slate-50 px-3">{rezerv}</div>
 
@@ -3275,7 +3277,7 @@ function OmbordanChiqarishHujjatMazmuni({
                           type="button"
                           disabled={ombordanChiqarishTasdiqlanmoqda}
                           onClick={() => void ombordanChiqarishniTasdiqlash()}
-                          className="mt-4 inline-flex h-11 items-center gap-2 rounded-xl bg-[#FF6A00] px-5 text-sm font-black text-white shadow-[0_10px_24px_rgba(249,115,22,.22)] transition hover:bg-[#EA580C] disabled:opacity-50"
+                          className="mt-4 inline-flex h-11 items-center gap-2 rounded-xl bg-[#2563EB] px-5 text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,235,.22)] transition hover:bg-[#1D4ED8] disabled:opacity-50"
                         >
                           {ombordanChiqarishTasdiqlanmoqda && <LoaderCircle size={16} className="animate-spin" />}
                           Tasdiqlash
@@ -3329,7 +3331,7 @@ function ProductsCard({ sotuv }: { sotuv: Sotuv }) {
         {(sotuv.items ?? []).map((item, index) => (
           <div
             key={item.id ?? `${item.modificationId}-${index}`}
-            className="grid gap-4 rounded-2xl border border-slate-100 bg-gradient-to-r from-[#FFF7ED] via-white to-[#F8FAFC] p-4 text-sm transition hover:border-orange-100 hover:shadow-[0_12px_28px_rgba(249,115,22,.10)] md:grid-cols-[1fr_90px_130px_140px]"
+            className="grid gap-4 rounded-2xl border border-slate-100 bg-gradient-to-r from-[#EFF6FF] via-white to-[#F8FAFC] p-4 text-sm transition hover:border-orange-100 hover:shadow-[0_12px_28px_rgba(37,99,235,.10)] md:grid-cols-[1fr_90px_130px_140px]"
           >
             <div className="flex min-w-0 items-center gap-3">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-100 text-orange-600">
@@ -3473,7 +3475,7 @@ function FaoliyatPanel({
   }
 
   return (
-    <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(255,106,0,.08)] backdrop-blur transition-all duration-300">
+    <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(37,99,235,.08)] backdrop-blur transition-all duration-300">
       <nav className="mb-5 flex flex-wrap items-center gap-5 text-sm text-slate-500">
         {faoliyatTablari.map((tab) => (
           <button
@@ -3482,8 +3484,8 @@ function FaoliyatPanel({
             onClick={() => tabniTanlash(tab.key)}
             className={`rounded-lg px-3 py-2 transition ${
               activeTab === tab.key && ochiq
-                ? "border border-orange-200 bg-orange-50 text-[#FF6A00]"
-                : "hover:bg-orange-50 hover:text-[#FF6A00]"
+                ? "border border-orange-200 bg-orange-50 text-[#2563EB]"
+                : "hover:bg-orange-50 hover:text-[#2563EB]"
             }`}
           >
             {tab.label}
@@ -3508,7 +3510,7 @@ function FaoliyatPanel({
           onClick={() => {
             setOchiq(true);
           }}
-          className="flex h-14 w-full items-center justify-between rounded-xl border border-orange-100 bg-[#FFF8EF]/60 px-5 text-left text-slate-400 transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50 hover:shadow-sm"
+          className="flex h-14 w-full items-center justify-between rounded-xl border border-orange-100 bg-[#F8FAFC]/60 px-5 text-left text-slate-400 transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50 hover:shadow-sm"
         >
           <span>Nima qilish kerak</span>
         </button>
@@ -3519,13 +3521,13 @@ function FaoliyatPanel({
               <button
                 type="button"
                 onClick={() => setKanalModalOchiq(true)}
-                className="mb-4 inline-flex h-11 items-center gap-2 rounded-xl bg-[#FF6A00] px-4 text-sm font-bold text-white shadow-[0_10px_26px_rgba(249,115,22,.25)] transition hover:-translate-y-0.5 hover:bg-[#EA580C] hover:shadow-[0_14px_32px_rgba(249,115,22,.32)] active:scale-[.98]"
+                className="mb-4 inline-flex h-11 items-center gap-2 rounded-xl bg-[#2563EB] px-4 text-sm font-bold text-white shadow-[0_10px_26px_rgba(37,99,235,.25)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] hover:shadow-[0_14px_32px_rgba(37,99,235,.32)] active:scale-[.98]"
               >
                 <MessageSquare size={18} />
                 Xabar yuborishni ulash
               </button>
 
-              <div className="rounded-2xl border border-orange-100 bg-gradient-to-br from-white to-[#FFF8EF] p-4 transition focus-within:border-[#FF6A00] focus-within:shadow-[0_0_0_4px_rgba(255,106,0,.10)]">
+              <div className="rounded-2xl border border-orange-100 bg-gradient-to-br from-white to-[#F8FAFC] p-4 transition focus-within:border-[#2563EB] focus-within:shadow-[0_0_0_4px_rgba(37,99,235,.10)]">
                 <textarea
                   value={tafsilot}
                   onChange={(event) => setTafsilot(event.target.value.slice(0, 200))}
@@ -3540,7 +3542,7 @@ function FaoliyatPanel({
                         type="button"
                         onClick={() => setXabarQoshishOchiq((joriy) => !joriy)}
                         className={`inline-flex h-10 items-center gap-2 rounded-xl px-3 transition ${
-                          xabarQoshishOchiq ? "bg-orange-50 text-[#FF6A00]" : "hover:bg-orange-50 hover:text-[#FF6A00]"
+                          xabarQoshishOchiq ? "bg-orange-50 text-[#2563EB]" : "hover:bg-orange-50 hover:text-[#2563EB]"
                         }`}
                       >
                         <Plus size={18} />
@@ -3548,7 +3550,7 @@ function FaoliyatPanel({
                       </button>
 
                       {xabarQoshishOchiq && (
-                        <div className="animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 absolute left-0 top-12 z-[90] w-[245px] rounded-[22px] bg-white p-3 text-left shadow-[0_18px_55px_rgba(92,38,8,.16)] ring-1 ring-orange-100 duration-200">
+                        <div className="animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 absolute left-0 top-12 z-[90] w-[245px] rounded-[22px] bg-white p-3 text-left shadow-[0_18px_55px_rgba(15,23,42,.16)] ring-1 ring-orange-100 duration-200">
                           {[
                             { label: "Fayl", icon: Paperclip, arrow: true },
                             { label: "To'lovni qabul qilish", icon: CreditCard },
@@ -3562,7 +3564,7 @@ function FaoliyatPanel({
                                 <button
                                   type="button"
                                   onClick={() => xabarQoshimchaTanlash(item.label)}
-                                  className="flex h-11 w-full items-center justify-between rounded-xl px-2 text-sm font-medium text-slate-700 transition hover:bg-orange-50 hover:text-[#FF6A00]"
+                                  className="flex h-11 w-full items-center justify-between rounded-xl px-2 text-sm font-medium text-slate-700 transition hover:bg-orange-50 hover:text-[#2563EB]"
                                 >
                                   <span>{item.label}</span>
                                   <span className="flex items-center gap-2 text-slate-300">
@@ -3580,7 +3582,7 @@ function FaoliyatPanel({
                       ◎
                     </button>
                   </div>
-                  <button type="button" className="text-slate-400 transition hover:text-[#FF6A00]" aria-label="Emoji tanlash">
+                  <button type="button" className="text-slate-400 transition hover:text-[#2563EB]" aria-label="Emoji tanlash">
                     <Smile size={20} />
                   </button>
                 </div>
@@ -3598,7 +3600,7 @@ function FaoliyatPanel({
                   type="button"
                   onClick={saqlash}
                   disabled={!tafsilot.trim() || saqlanmoqda}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#FF6A00] px-5 py-2 text-xs font-bold uppercase text-white transition hover:-translate-y-0.5 hover:bg-[#EA580C] hover:shadow-md disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                  className="inline-flex items-center gap-2 rounded-full bg-[#2563EB] px-5 py-2 text-xs font-bold uppercase text-white transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] hover:shadow-md disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:hover:translate-y-0 disabled:hover:shadow-none"
                 >
                   <Send size={14} />
                   {saqlanmoqda ? "Yuborilmoqda..." : "Yuborish"}
@@ -3624,7 +3626,7 @@ function FaoliyatPanel({
 
               <div className="mt-3 flex flex-wrap items-center justify-between gap-4 text-sm text-slate-400">
                 <div className="flex flex-wrap items-center gap-7">
-                  <label className="inline-flex cursor-pointer items-center gap-2 transition hover:text-[#FF6A00]">
+                  <label className="inline-flex cursor-pointer items-center gap-2 transition hover:text-[#2563EB]">
                     <Paperclip size={18} />
                     Fayl
                     <input
@@ -3636,7 +3638,7 @@ function FaoliyatPanel({
                   <button
                     type="button"
                     onClick={() => setPanelXatosi("CRM izohidan hujjat yaratish endpointi backendda mavjud emas.")}
-                    className="inline-flex items-center gap-2 transition hover:text-[#FF6A00]"
+                    className="inline-flex items-center gap-2 transition hover:text-[#2563EB]"
                   >
                     <FileText size={18} />
                     Hujjat yaratish
@@ -3645,7 +3647,7 @@ function FaoliyatPanel({
                     <button
                       type="button"
                       onClick={() => setXodimTanlashJoy((joriy) => (joriy === "mention" ? null : "mention"))}
-                      className="inline-flex items-center gap-2 transition hover:text-[#FF6A00]"
+                      className="inline-flex items-center gap-2 transition hover:text-[#2563EB]"
                     >
                       <span className="text-xl leading-none">@</span>
                       Odamni belgilash
@@ -3669,7 +3671,7 @@ function FaoliyatPanel({
                 </div>
                 <button
                   type="button"
-                  className="text-lg font-bold text-slate-300 transition hover:text-[#FF6A00]"
+                  className="text-lg font-bold text-slate-300 transition hover:text-[#2563EB]"
                   aria-label="Matn uslubi"
                 >
                   A
@@ -3688,7 +3690,7 @@ function FaoliyatPanel({
                   type="button"
                   onClick={saqlash}
                   disabled={saqlanmoqda}
-                  className="rounded-full bg-[#FF6A00] px-5 py-2 text-xs font-bold uppercase text-white transition hover:-translate-y-0.5 hover:bg-[#EA580C] hover:shadow-md disabled:opacity-50"
+                  className="rounded-full bg-[#2563EB] px-5 py-2 text-xs font-bold uppercase text-white transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] hover:shadow-md disabled:opacity-50"
                 >
                   {saqlanmoqda ? "Saqlanmoqda..." : "Yuborish"}
                 </button>
@@ -3703,7 +3705,7 @@ function FaoliyatPanel({
             </div>
           ) : (
             <>
-          <div className="rounded-2xl border border-orange-300 bg-gradient-to-br from-white to-[#FFF8EF] p-4 shadow-inner transition-all duration-300 ease-in-out focus-within:ring-4 focus-within:ring-orange-100">
+          <div className="rounded-2xl border border-orange-300 bg-gradient-to-br from-white to-[#F8FAFC] p-4 shadow-inner transition-all duration-300 ease-in-out focus-within:ring-4 focus-within:ring-orange-100">
             <div className="flex items-start gap-4">
               <div className="min-w-0 flex-1">
                 <input
@@ -3728,8 +3730,8 @@ function FaoliyatPanel({
                     onClick={() => setXodimTanlashJoy((joriy) => (joriy === "forma" ? null : "forma"))}
                     className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold leading-none transition ${
                       tanlanganXodim
-                        ? "bg-[#FF6A00] text-white ring-2 ring-orange-100"
-                        : "bg-orange-100 text-[#FF6A00] hover:bg-orange-200"
+                        ? "bg-[#2563EB] text-white ring-2 ring-orange-100"
+                        : "bg-orange-100 text-[#2563EB] hover:bg-orange-200"
                     }`}
                     title={xodimNomi(tanlanganXodim)}
                     aria-label="Xodim tanlash"
@@ -3739,7 +3741,7 @@ function FaoliyatPanel({
 
                   {xodimTanlashJoy === "forma" && (
                     <div
-                      className="animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 absolute top-12 z-[120] w-[min(280px,calc(100vw-32px))] overflow-hidden rounded-2xl bg-white p-2 text-left shadow-[0_20px_60px_rgba(92,38,8,.22)] ring-1 ring-orange-100 duration-200"
+                      className="animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 absolute top-12 z-[120] w-[min(280px,calc(100vw-32px))] overflow-hidden rounded-2xl bg-white p-2 text-left shadow-[0_20px_60px_rgba(15,23,42,.22)] ring-1 ring-orange-100 duration-200"
                       style={{ right: 0 }}
                     >
                       <div className="px-3 py-2 text-xs font-bold uppercase text-slate-400">
@@ -3753,8 +3755,8 @@ function FaoliyatPanel({
                         }}
                         className={`flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold transition ${
                           !tanlanganXodimId
-                            ? "bg-orange-50 text-[#FF6A00]"
-                            : "text-slate-600 hover:bg-orange-50 hover:text-[#FF6A00]"
+                            ? "bg-orange-50 text-[#2563EB]"
+                            : "text-slate-600 hover:bg-orange-50 hover:text-[#2563EB]"
                         }`}
                       >
                         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-400">
@@ -3775,13 +3777,13 @@ function FaoliyatPanel({
                               }}
                               className={`flex h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-sm transition ${
                                 active
-                                  ? "bg-[#FF6A00] font-bold text-white"
-                                  : "text-slate-700 hover:bg-orange-50 hover:text-[#FF6A00]"
+                                  ? "bg-[#2563EB] font-bold text-white"
+                                  : "text-slate-700 hover:bg-orange-50 hover:text-[#2563EB]"
                               }`}
                             >
                               <span
                                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                                  active ? "bg-white/20 text-white" : "bg-orange-100 text-[#FF6A00]"
+                                  active ? "bg-white/20 text-white" : "bg-orange-100 text-[#2563EB]"
                                 }`}
                               >
                                 {xodimBoshHarflari(xodim) || <UserRound size={15} />}
@@ -3809,7 +3811,7 @@ function FaoliyatPanel({
                   onClick={() => {
                     setKalendarOchiq((joriy) => !joriy);
                   }}
-                  className="inline-flex h-10 items-center gap-2 rounded-xl border border-orange-200 bg-white px-3 text-sm text-slate-600 transition hover:border-[#FF6A00] hover:text-[#FF6A00]"
+                  className="inline-flex h-10 items-center gap-2 rounded-xl border border-orange-200 bg-white px-3 text-sm text-slate-600 transition hover:border-[#2563EB] hover:text-[#2563EB]"
                 >
                   {kalendarMatni(tanlanganSana)}
                   <ChevronDown size={14} className={`transition ${kalendarOchiq ? "rotate-180" : ""}`} />
@@ -3826,12 +3828,12 @@ function FaoliyatPanel({
                   <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
                     <CalendarDays size={18} className="text-slate-500" />
                     <span className="font-semibold">Kalendariga qo'shildi</span>
-                    <span className="truncate text-[#FF6A00]">{xodimNomi(tanlanganXodim)}</span>
-                    <button type="button" className="text-xs uppercase text-slate-400 transition hover:text-[#FF6A00]">
+                    <span className="truncate text-[#2563EB]">{xodimNomi(tanlanganXodim)}</span>
+                    <button type="button" className="text-xs uppercase text-slate-400 transition hover:text-[#2563EB]">
                       o'zgartirish
                     </button>
                   </div>
-                  <button type="button" className="mt-2 text-sm text-slate-400 underline underline-offset-4 hover:text-[#FF6A00]">
+                  <button type="button" className="mt-2 text-sm text-slate-400 underline underline-offset-4 hover:text-[#2563EB]">
                     ishtirokchilar (1)
                   </button>
                 </div>
@@ -3854,8 +3856,8 @@ function FaoliyatPanel({
                     onClick={() => setXodimTanlashJoy((joriy) => (joriy === "kalendar" ? null : "kalendar"))}
                     className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold transition ${
                       tanlanganXodim
-                        ? "bg-[#FF6A00] text-white ring-2 ring-orange-100"
-                        : "bg-orange-100 text-[#FF6A00] hover:bg-orange-200"
+                        ? "bg-[#2563EB] text-white ring-2 ring-orange-100"
+                        : "bg-orange-100 text-[#2563EB] hover:bg-orange-200"
                     }`}
                     title={xodimNomi(tanlanganXodim)}
                     aria-label="Kalendar xodimini tanlash"
@@ -3864,7 +3866,7 @@ function FaoliyatPanel({
                   </button>
 
                   {xodimTanlashJoy === "kalendar" && (
-                    <div className="animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 absolute left-0 top-11 z-[120] w-[min(280px,calc(100vw-32px))] overflow-hidden rounded-2xl bg-white p-2 text-left shadow-[0_20px_60px_rgba(92,38,8,.22)] ring-1 ring-orange-100 duration-200">
+                    <div className="animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 absolute left-0 top-11 z-[120] w-[min(280px,calc(100vw-32px))] overflow-hidden rounded-2xl bg-white p-2 text-left shadow-[0_20px_60px_rgba(15,23,42,.22)] ring-1 ring-orange-100 duration-200">
                       <div className="px-3 py-2 text-xs font-bold uppercase text-slate-400">
                         Xodim tanlash
                       </div>
@@ -3876,8 +3878,8 @@ function FaoliyatPanel({
                         }}
                         className={`flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold transition ${
                           !tanlanganXodimId
-                            ? "bg-orange-50 text-[#FF6A00]"
-                            : "text-slate-600 hover:bg-orange-50 hover:text-[#FF6A00]"
+                            ? "bg-orange-50 text-[#2563EB]"
+                            : "text-slate-600 hover:bg-orange-50 hover:text-[#2563EB]"
                         }`}
                       >
                         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-400">
@@ -3898,13 +3900,13 @@ function FaoliyatPanel({
                               }}
                               className={`flex h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-sm transition ${
                                 active
-                                  ? "bg-[#FF6A00] font-bold text-white"
-                                  : "text-slate-700 hover:bg-orange-50 hover:text-[#FF6A00]"
+                                  ? "bg-[#2563EB] font-bold text-white"
+                                  : "text-slate-700 hover:bg-orange-50 hover:text-[#2563EB]"
                               }`}
                             >
                               <span
                                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                                  active ? "bg-white/20 text-white" : "bg-orange-100 text-[#FF6A00]"
+                                  active ? "bg-white/20 text-white" : "bg-orange-100 text-[#2563EB]"
                                 }`}
                               >
                                 {xodimBoshHarflari(xodim) || <UserRound size={15} />}
@@ -3947,7 +3949,7 @@ function FaoliyatPanel({
                       <div key={kun.kun} className="min-w-[500px] border-l border-slate-200 pl-3">
                         <div className="mb-2 flex items-center gap-2 text-xs text-slate-700">
                           <span>{kun.kun}</span>
-                          {kun.bugun && <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[11px] text-[#FF6A00]">bugun</span>}
+                          {kun.bugun && <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[11px] text-[#2563EB]">bugun</span>}
                         </div>
                         <div className="grid grid-cols-10 text-xs text-slate-700">
                           {kun.soatlar.map((soat) => (
@@ -3962,7 +3964,7 @@ function FaoliyatPanel({
                               onClick={() => kalendarSanasiniTanlash(kun.sana, soat)}
                               className={`border-l border-orange-100 transition hover:bg-orange-100 ${
                                 kun.dateKey === tanlanganSanaKaliti && soat === tanlanganSoat
-                                  ? "bg-[#FF6A00] shadow-inner"
+                                  ? "bg-[#2563EB] shadow-inner"
                                   : soatIndex >= 2 && soatIndex <= 4
                                     ? "bg-orange-50"
                                     : "bg-white"
@@ -3985,7 +3987,7 @@ function FaoliyatPanel({
               type="button"
               onClick={saqlash}
               disabled={saqlanmoqda}
-              className="rounded-full bg-[#FF6A00] px-5 py-2 text-xs font-bold uppercase text-white transition hover:bg-[#EA580C] disabled:opacity-50"
+              className="rounded-full bg-[#2563EB] px-5 py-2 text-xs font-bold uppercase text-white transition hover:bg-[#1D4ED8] disabled:opacity-50"
             >
               {saqlanmoqda ? "Saqlanmoqda..." : "Saqlash"}
             </button>
@@ -4099,11 +4101,11 @@ function AloqaKanallariModal({ onClose }: { onClose: () => void }) {
 function TimelineRail() {
   return (
     <div className="hidden flex-col items-center xl:flex">
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FF6A00] text-white shadow-[0_12px_28px_rgba(249,115,22,.28)]"><MessageSquare size={18} /></div>
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2563EB] text-white shadow-[0_12px_28px_rgba(37,99,235,.28)]"><MessageSquare size={18} /></div>
       <div className="h-32 w-px bg-orange-200" />
       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white shadow-[0_12px_28px_rgba(16,185,129,.22)]"><Bell size={18} /></div>
       <div className="h-28 w-px bg-orange-200" />
-      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#FF6A00] shadow-sm ring-1 ring-orange-100"><Package size={17} /></div>
+      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#2563EB] shadow-sm ring-1 ring-orange-100"><Package size={17} /></div>
     </div>
   );
 }
@@ -4112,7 +4114,7 @@ function Divider({ label, green }: { label: string; green?: boolean }) {
   return (
     <div className="flex items-center gap-4">
       <div className="h-px flex-1 bg-orange-200" />
-      <span className={`rounded-full px-6 py-1 text-sm ${green ? "bg-emerald-500 font-bold text-white" : "bg-orange-100 font-semibold text-[#FF6A00] ring-1 ring-orange-200"}`}>{label}</span>
+      <span className={`rounded-full px-6 py-1 text-sm ${green ? "bg-emerald-500 font-bold text-white" : "bg-orange-100 font-semibold text-[#2563EB] ring-1 ring-orange-200"}`}>{label}</span>
       <div className="h-px flex-1 bg-orange-200" />
     </div>
   );
@@ -4122,7 +4124,7 @@ function CardTitle({ title, action }: { title: string; action?: string }) {
   return (
     <div className="flex items-center justify-between border-b border-orange-100 pb-3">
       <h2 className="text-xs font-black uppercase tracking-wide text-slate-600">{title}</h2>
-      {action && <button className="text-xs font-semibold text-slate-400 transition hover:text-[#FF6A00]">{action}</button>}
+      {action && <button className="text-xs font-semibold text-slate-400 transition hover:text-[#2563EB]">{action}</button>}
     </div>
   );
 }
@@ -4146,14 +4148,14 @@ function HujjatFeedCard({
   onOchish: () => void;
 }) {
   return (
-    <article className="group relative overflow-visible rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_14px_38px_rgba(255,106,0,.08)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(255,106,0,.12)]">
-      <div className="absolute -left-[70px] top-5 hidden h-11 w-11 items-center justify-center rounded-full bg-[#FF6A00] text-white shadow-[0_12px_30px_rgba(249,115,22,.30)] xl:flex">
+    <article className="group relative overflow-visible rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_14px_38px_rgba(37,99,235,.08)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(37,99,235,.12)]">
+      <div className="absolute -left-[70px] top-5 hidden h-11 w-11 items-center justify-center rounded-full bg-[#2563EB] text-white shadow-[0_12px_30px_rgba(37,99,235,.30)] xl:flex">
         <FileText size={21} />
       </div>
 
       <div className="flex items-start justify-between gap-5">
         <div className="flex min-w-0 items-start gap-4">
-          <div className="flex h-[96px] w-[108px] shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-[#FF6A00] ring-1 ring-orange-100">
+          <div className="flex h-[96px] w-[108px] shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-[#2563EB] ring-1 ring-orange-100">
             <FileText size={42} strokeWidth={1.8} />
           </div>
           <div className="min-w-0">
@@ -4182,7 +4184,7 @@ function HujjatFeedCard({
         <button
           type="button"
           onClick={onOchish}
-          className="inline-flex h-10 min-w-[150px] items-center justify-center rounded-xl border border-orange-100 bg-white px-5 text-sm font-bold text-slate-700 transition hover:border-[#FF6A00] hover:text-[#FF6A00]"
+          className="inline-flex h-10 min-w-[150px] items-center justify-center rounded-xl border border-orange-100 bg-white px-5 text-sm font-bold text-slate-700 transition hover:border-[#2563EB] hover:text-[#2563EB]"
         >
           Ochiq
         </button>
@@ -4216,7 +4218,7 @@ function OmbordanChiqarishHujjatFeedCard({
   const omborNomi = sotuvOmborNomi(sotuv, omborlar);
 
   return (
-    <article className="group relative overflow-visible rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_14px_38px_rgba(255,106,0,.08)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(255,106,0,.12)]">
+    <article className="group relative overflow-visible rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_14px_38px_rgba(37,99,235,.08)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(37,99,235,.12)]">
       <div className="absolute -left-[70px] top-5 hidden h-11 w-11 items-center justify-center rounded-full bg-emerald-500 text-white shadow-[0_12px_30px_rgba(16,185,129,.30)] xl:flex">
         <Package size={21} />
       </div>
@@ -4253,7 +4255,7 @@ function OmbordanChiqarishHujjatFeedCard({
         <button
           type="button"
           onClick={onOchish}
-          className="inline-flex h-10 min-w-[150px] items-center justify-center rounded-xl border border-orange-100 bg-white px-5 text-sm font-bold text-slate-700 transition hover:border-[#FF6A00] hover:text-[#FF6A00]"
+          className="inline-flex h-10 min-w-[150px] items-center justify-center rounded-xl border border-orange-100 bg-white px-5 text-sm font-bold text-slate-700 transition hover:border-[#2563EB] hover:text-[#2563EB]"
         >
           Hujjatni ko'rish
         </button>
@@ -4274,7 +4276,7 @@ function FeedCard({
   onOchirish?: () => void;
 }) {
   return (
-    <article className="group relative overflow-hidden rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_14px_38px_rgba(255,106,0,.08)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(255,106,0,.12)]">
+    <article className="group relative overflow-hidden rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_14px_38px_rgba(37,99,235,.08)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(37,99,235,.12)]">
       <span className="absolute inset-y-5 left-0 w-1 rounded-r-full bg-gradient-to-b from-orange-400 to-orange-600 opacity-80" />
       <div className="flex items-start justify-between gap-4">
         <div className="pl-2">
@@ -4295,7 +4297,7 @@ function FeedCard({
               <Trash2 size={16} />
             </button>
           )}
-          <div className="h-9 w-9 rounded-full bg-gradient-to-br from-orange-50 to-[#FFF8EF] ring-1 ring-orange-100" />
+          <div className="h-9 w-9 rounded-full bg-gradient-to-br from-orange-50 to-[#F8FAFC] ring-1 ring-orange-100" />
         </div>
       </div>
     </article>
@@ -4350,7 +4352,7 @@ function CalendarFeedCard({
             type="button"
             onClick={bajarildiHolatiniAlmashtirish}
             className={`mt-0.5 flex h-5 w-5 items-center justify-center rounded border transition ${
-              bajarildi ? "border-[#FF6A00] bg-[#FF6A00] text-white" : "border-orange-200 bg-white"
+              bajarildi ? "border-[#2563EB] bg-[#2563EB] text-white" : "border-orange-200 bg-white"
             }`}
             aria-label={bajarildi ? "Bajarilgan belgini olib tashlash" : "Vazifani bajarildi qilish"}
           >
@@ -4361,7 +4363,7 @@ function CalendarFeedCard({
               <h3 className={`font-bold ${bajarildi ? "text-slate-900" : "text-slate-800"}`}>{faoliyat.sarlavha}</h3>
               <span className="text-sm text-slate-400">bugun, {vaqt}</span>
               {faoliyat.pinned && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-bold text-[#FF6A00]">
+                <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-bold text-[#2563EB]">
                   <Pin size={12} />
                   Zakrepit
                 </span>
@@ -4370,20 +4372,20 @@ function CalendarFeedCard({
 
             <div className={`mt-5 flex flex-wrap items-center gap-5 transition-all duration-500 ${bajarildi ? "translate-y-1" : ""}`}>
               <div className={`relative flex h-24 w-[84px] shrink-0 items-center justify-center rounded-xl text-center shadow-sm transition ${bajarildi ? "bg-orange-50" : "bg-orange-100"}`}>
-                <div className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-lg bg-[#FF6A00] text-white shadow-sm">
+                <div className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-lg bg-[#2563EB] text-white shadow-sm">
                   <CalendarDays size={16} />
                 </div>
                 <div className="rounded-lg border border-sky-200 bg-white px-3 py-2">
                   <p className="text-2xl font-black leading-5 text-slate-700">{kun}</p>
                   <p className="mt-1 text-[10px] uppercase text-slate-500">{oy}</p>
-                  <p className="text-[9px] font-bold text-[#FF6A00]">{vaqt}</p>
+                  <p className="text-[9px] font-bold text-[#2563EB]">{vaqt}</p>
                 </div>
               </div>
 
               <div className="min-w-[240px] flex-1">
                 <p className="text-sm text-slate-500">
                   Rejalashtirilgan voqea{" "}
-                  <span className="font-medium text-[#FF6A00]">{faoliyat.sarlavha}</span>
+                  <span className="font-medium text-[#2563EB]">{faoliyat.sarlavha}</span>
                 </p>
                 <button
                   type="button"
@@ -4420,8 +4422,8 @@ function CalendarFeedCard({
                 onClick={bajarildiHolatiniAlmashtirish}
                 className={`rounded-xl px-6 py-3 text-sm font-bold shadow-sm transition ${
                   bajarildi
-                    ? "border border-orange-100 bg-white text-slate-600 hover:border-[#FF6A00] hover:text-[#FF6A00]"
-                    : "bg-[#FF6A00] text-white hover:bg-[#EA580C]"
+                    ? "border border-orange-100 bg-white text-slate-600 hover:border-[#2563EB] hover:text-[#2563EB]"
+                    : "bg-[#2563EB] text-white hover:bg-[#1D4ED8]"
                 }`}
               >
                 {bajarildi ? "Takrorlash" : "Bajarildi"}
@@ -4429,7 +4431,7 @@ function CalendarFeedCard({
               {!bajarildi && <button
                 type="button"
                 onClick={() => setTahrirOchiq(true)}
-                className="rounded-xl border border-orange-100 bg-white px-5 py-3 text-sm font-semibold text-slate-600 transition hover:border-[#FF6A00] hover:text-[#FF6A00]"
+                className="rounded-xl border border-orange-100 bg-white px-5 py-3 text-sm font-semibold text-slate-600 transition hover:border-[#2563EB] hover:text-[#2563EB]"
               >
                 Tahrirlash
               </button>}
@@ -4439,10 +4441,10 @@ function CalendarFeedCard({
 
         <div className="flex shrink-0 items-center gap-3">
           <span className="h-3 w-3 rounded-sm bg-amber-400" />
-          {bajarildi && faoliyat.pinned && <Pin size={16} className="fill-[#FF6A00] text-[#FF6A00]" />}
+          {bajarildi && faoliyat.pinned && <Pin size={16} className="fill-[#2563EB] text-[#2563EB]" />}
           <span
             className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-              xodim ? "bg-[#FF6A00] text-white" : "bg-orange-100 text-[#FF6A00]"
+              xodim ? "bg-[#2563EB] text-white" : "bg-orange-100 text-[#2563EB]"
             }`}
             title={xodimNomi(xodim)}
           >

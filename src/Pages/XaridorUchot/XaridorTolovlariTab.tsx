@@ -96,7 +96,7 @@ export default function XaridorTolovlariTab({ xaridorId }: { xaridorId: string }
       nom: "Turi",
       kenglik: 220,
       katak: (a) => (
-        <span className="inline-block rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-[#FF6A00]">
+        <span className="inline-block rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-[#2563EB]">
           {amaliyotTuriMatni[a.turi]}
         </span>
       ),

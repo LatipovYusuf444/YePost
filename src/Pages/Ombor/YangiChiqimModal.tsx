@@ -135,7 +135,7 @@ export default function YangiChiqimModal({ onClose }: Props) {
 
   return (
     <AppModal onClose={onClose} className="sidebar-aligned-document-modal items-stretch p-3 sm:p-5">
-      <div className="flex min-h-0 w-full flex-col overflow-hidden rounded-[34px] border border-orange-100 bg-[#fff8ef] shadow-[0_28px_90px_rgba(69,35,13,.32)]">
+      <div className="flex min-h-0 w-full flex-col overflow-hidden rounded-[34px] border border-orange-100 bg-[#F8FAFC] shadow-[0_28px_90px_rgba(15,23,42,.32)]">
         <header className="flex shrink-0 items-center border-b border-orange-100 bg-white/80 px-5 py-4 sm:px-8">
           <div className="flex items-center gap-3">
             <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">Yangi chiqim</h2>
@@ -212,7 +212,7 @@ export default function YangiChiqimModal({ onClose }: Props) {
 
             <div className="scrollbar-orange overflow-x-auto pb-2">
               <div className="min-w-[1220px] space-y-3">
-                <div className="grid grid-cols-[42px_76px_2.1fr_1fr_1fr_1fr_1.35fr_1fr_1fr_48px] gap-3 px-3 text-[11px] font-black uppercase tracking-wide text-slate-400">
+                <div className="grid grid-cols-[42px_76px_2.1fr_1fr_1fr_1fr_1.35fr_1fr_1fr_48px] gap-3 px-3 text-[13px] font-semibold text-slate-600">
                   <span>в„–</span><span /><span>Mahsulot</span><span>Shtrix kod</span><span>Tan narxi</span><span>Soni</span><span>Ombor</span><span>Qoldiq</span><span>Summa</span><span />
                 </div>
                 {qatorlar.map((row, index) => {
@@ -221,7 +221,7 @@ export default function YangiChiqimModal({ onClose }: Props) {
                   const mavjud = Number(stock ? qoldiqMiqdori(stock) : 0);
                   const narx = Number(mod?.price?.costPrice ?? 0);
                   return (
-                    <div key={row.id} className="grid grid-cols-[42px_76px_2.1fr_1fr_1fr_1fr_1.35fr_1fr_1fr_48px] items-center gap-3 rounded-2xl border border-orange-100 bg-[#fffdfa] p-3">
+                    <div key={row.id} className="grid grid-cols-[42px_76px_2.1fr_1fr_1fr_1fr_1.35fr_1fr_1fr_48px] items-center gap-3 rounded-2xl border border-orange-100 bg-[#FFFFFF] p-3">
                       <span className="text-center text-sm font-black text-slate-400">{index + 1}</span>
                       <div className="flex h-12 items-center justify-center rounded-xl border border-dashed border-orange-200 bg-white text-slate-300"><Image size={20} /></div>
                       <AppSelect value={row.modificationId} onChange={(event) => qatorniYangilash(row.id, { modificationId: event.target.value })} className={`${input} min-w-0`}>

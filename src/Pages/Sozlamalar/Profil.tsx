@@ -75,7 +75,7 @@ export default function Profil() {
 
       <div className="overflow-x-auto rounded-2xl border border-orange-100 bg-white">
         <table className="w-full min-w-[850px] text-left text-sm">
-          <thead className="bg-orange-50">
+          <thead className="bg-slate-50">
             <tr>
               <th className="px-5 py-4">Ish maydoni</th>
               <th className="px-5 py-4">Tarif</th>

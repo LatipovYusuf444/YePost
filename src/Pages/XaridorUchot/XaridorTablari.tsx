@@ -31,7 +31,7 @@ function BosiladiganKatak({
     <button
       type="button"
       onClick={onClick}
-      className={`max-w-full truncate text-left transition hover:text-[#FF6A00] hover:underline ${className}`}
+      className={`max-w-full truncate text-left transition hover:text-[#2563EB] hover:underline ${className}`}
     >
       {children}
     </button>
@@ -241,7 +241,7 @@ export function TolovlarTab({ tolovlar }: { tolovlar: XaridorTolovi[] }) {
       nom: "Turi",
       kenglik: 160,
       katak: (tolov) => (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-[#FF6A00]">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-[#2563EB]">
           <Wallet size={13} />
           {tolovTuriMatni[tolov.turi]}
         </span>
@@ -278,13 +278,13 @@ export function TarixTab({ tarix }: { tarix: TarixYozuvi[] }) {
       <ol className="relative space-y-5 border-l-2 border-orange-100 pl-8">
         {tarix.map((yozuv) => (
           <li key={yozuv.id} className="relative">
-            <span className="absolute -left-[41px] flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#FF6A00] ring-2 ring-orange-100">
+            <span className="absolute -left-[41px] flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#2563EB] ring-2 ring-orange-100">
               <TarixIkonka turi={yozuv.turi} />
             </span>
-            <div className="rounded-[22px] bg-white/92 p-5 shadow-[0_14px_36px_rgba(255,106,0,.07)] ring-1 ring-orange-100/70">
+            <div className="rounded-[22px] bg-white/92 p-5 shadow-[0_14px_36px_rgba(37,99,235,.07)] ring-1 ring-orange-100/70">
               <div className="flex flex-wrap items-center gap-3">
                 <h3 className="text-base font-black text-slate-900">{yozuv.sarlavha}</h3>
-                <span className="rounded-lg bg-orange-50 px-2 py-0.5 text-xs font-bold text-[#FF6A00]">
+                <span className="rounded-lg bg-orange-50 px-2 py-0.5 text-xs font-bold text-[#2563EB]">
                   {sanaFormat(yozuv.sana)} · {qisqaVaqt(yozuv.sana)}
                 </span>
               </div>

@@ -208,14 +208,14 @@ export default function KassaAmaliyotModal({
           type="button"
           onClick={onYopish}
           aria-label="Yopish"
-          className="absolute -left-[58px] top-3 z-50 flex h-12 w-12 items-center justify-center rounded-[15px] bg-[#FF6A00] text-white shadow-[0_10px_24px_rgba(15,23,42,.18)] ring-1 ring-white/70 transition hover:-translate-x-0.5 hover:bg-[#EA580C]"
+          className="absolute -left-[58px] top-3 z-50 flex h-12 w-12 items-center justify-center rounded-[15px] bg-[#2563EB] text-white shadow-[0_10px_24px_rgba(15,23,42,.18)] ring-1 ring-white/70 transition hover:-translate-x-0.5 hover:bg-[#1D4ED8]"
         >
           <X size={21} strokeWidth={2.3} />
         </button>
 
         <form
           onSubmit={(event) => event.preventDefault()}
-          className="flex min-h-0 w-full flex-col overflow-hidden rounded-[32px] border border-orange-100 bg-[#fffaf4] shadow-[0_28px_90px_rgba(69,35,13,.32)]"
+          className="flex min-h-0 w-full flex-col overflow-hidden rounded-[32px] border border-orange-100 bg-[#F8FAFC] shadow-[0_28px_90px_rgba(15,23,42,.32)]"
         >
         <header className="flex shrink-0 items-center justify-between border-b border-orange-100 bg-white/75 px-5 py-4 sm:px-8">
           {/* Chapda: sarlavha (X modaldan tashqarida) */}
@@ -254,7 +254,7 @@ export default function KassaAmaliyotModal({
               <button
                 type="button"
                 onClick={() => setTahrirRejim(true)}
-                className="h-12 rounded-2xl bg-[#FF6A00] px-6 text-sm font-black text-white shadow-lg shadow-orange-100 hover:bg-orange-600"
+                className="h-12 rounded-2xl bg-[#2563EB] px-6 text-sm font-black text-white shadow-lg shadow-orange-100 hover:bg-orange-600"
               >
                 Tahrirlash
               </button>
@@ -497,7 +497,7 @@ export default function KassaAmaliyotModal({
 function SectionTitle({ icon, text }: { icon: ReactNode; text: string }) {
   return (
     <div className="mb-4 flex items-center gap-2 border-b border-orange-100 pb-3">
-      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-50 text-[#FF6A00]">
+      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-50 text-[#2563EB]">
         {icon}
       </span>
       <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">{text}</h3>

@@ -334,7 +334,7 @@ function XarajatlarJadvali({
     <FinanceTable empty="Xarajatlar mavjud emas">
       {items.map((item) => (
         <tr key={item.id} className="hover:bg-orange-50/50">
-          <td className="px-5 py-4 font-bold text-orange-600">{item.id.slice(0, 8)}</td>
+          <td className="px-5 py-4 font-semibold text-slate-900">{item.id.slice(0, 8)}</td>
           <td className="px-5 py-4">{xarajatMatni[item.category as XarajatKategoriyasi] ?? item.category}</td>
           <td className="px-5 py-4 font-black">{pul(item.amount)}</td>
           <td className="px-5 py-4">{tolovMatni[item.paymentMethod as TolovUsuli] ?? item.paymentMethod ?? "Naqd"}</td>
@@ -357,7 +357,7 @@ function QarzlarJadvali({ items, onEdit }: { items: Qarz[]; onEdit: (item: Qarz)
     <FinanceTable empty="Qarzlar mavjud emas">
       {items.map((item) => (
         <tr key={item.id} className="hover:bg-orange-50/50">
-          <td className="px-5 py-4 font-bold text-orange-600">{item.id.slice(0, 8)}</td>
+          <td className="px-5 py-4 font-semibold text-slate-900">{item.id.slice(0, 8)}</td>
           <td className="px-5 py-4">{qarzYonlishiMatni[item.direction as QarzYonlishi] ?? item.direction}</td>
           <td className="px-5 py-4 font-bold">{item.counterparty}</td>
           <td className="px-5 py-4 font-black">{pul(item.amount)}</td>
@@ -390,7 +390,7 @@ function KirimlarJadvali({
     <FinanceTable empty="Kirimlar mavjud emas">
       {items.map((item) => (
         <tr key={item.id} className="hover:bg-orange-50/50">
-          <td className="px-5 py-4 font-bold text-orange-600">{item.id.slice(0, 8)}</td>
+          <td className="px-5 py-4 font-semibold text-slate-900">{item.id.slice(0, 8)}</td>
           <td className="px-5 py-4">{kassaKirimManbasiMatni[item.source as KassaKirimManbasi] ?? item.source}</td>
           <td className="px-5 py-4 font-black">{pul(item.amount)}</td>
           <td className="px-5 py-4">{tolovMatni[item.paymentMethod as TolovUsuli] ?? item.paymentMethod ?? "Naqd"}</td>
@@ -412,7 +412,7 @@ function FinanceTable({ children }: { children: React.ReactNode; empty: string }
   return (
     <div className="overflow-x-auto rounded-2xl border border-orange-100">
       <table className="w-full min-w-[900px] text-left text-sm">
-        <thead className="bg-orange-50 text-xs uppercase tracking-wide text-orange-900/60">
+        <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
             <th className="px-5 py-4">ID</th>
             <th className="px-5 py-4">Turi</th>

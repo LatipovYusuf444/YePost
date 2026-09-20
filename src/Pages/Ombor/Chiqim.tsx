@@ -266,7 +266,7 @@ export default function Chiqim() {
   function katak(item: ChiqimHujjati, id: Ustun) {
     switch (id) {
       case "nomi":
-        return <div><p className="font-black text-slate-950">Chiqim hujjati</p><p className="mt-0.5 text-xs font-black text-orange-500">{hujjatRaqami(item)}</p></div>;
+        return <div><p className="font-black text-slate-950">Chiqim hujjati</p><p className="mt-0.5 text-xs font-semibold text-slate-500">{hujjatRaqami(item)}</p></div>;
       case "status":
         return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${statusSinfi(item.status)}`}>{holat(item.status)}</span>;
       case "yaratilgan":
@@ -321,7 +321,7 @@ export default function Chiqim() {
           <h1 className="text-3xl font-black tracking-tight text-slate-950">Chiqim</h1>
           <p className="mt-1 text-sm font-medium text-slate-500">Ombordan tovar chiqim qilish hujjatlari.</p>
         </div>
-        <button onClick={() => setModal(true)} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-6 text-sm font-black text-white shadow-[0_12px_28px_rgba(249,115,22,.24)] transition hover:-translate-y-0.5 hover:bg-orange-600">
+        <button onClick={() => setModal(true)} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-6 text-sm font-black text-white shadow-[0_12px_28px_rgba(37,99,235,.24)] transition hover:-translate-y-0.5 hover:bg-orange-600">
           <Plus size={18} /> Yaratish
         </button>
       </header>
@@ -344,7 +344,7 @@ export default function Chiqim() {
               {faolUstunlar.map((column) => <col key={column.id} style={{ width: ustunKengliklari[column.id] }} />)}
               <col style={{ width: 80 }} />
             </colgroup>
-            <thead className="bg-[#fff9f3] text-[11px] font-black uppercase tracking-wide text-orange-500">
+            <thead className="bg-[#F8FAFC] text-[11px] font-black uppercase tracking-wide text-slate-500">
               <tr>
                 {faolUstunlar.map((column) => (
                   <th key={column.id} className="relative h-[58px] border-r border-orange-200/80 px-7 py-3">
@@ -357,7 +357,7 @@ export default function Chiqim() {
                     />
                   </th>
                 ))}
-                <th className="sticky right-0 z-10 w-20 min-w-20 bg-[#fff9f3] px-5 py-3">
+                <th className="sticky right-0 z-10 w-20 min-w-20 bg-[#F8FAFC] px-5 py-3">
                   <div className="relative flex justify-end">
                     <button
                       ref={sozlamaTugmaRef}
@@ -399,7 +399,7 @@ export default function Chiqim() {
               type="button"
               aria-label="Jadvalni chap-o'ngga surish"
               onPointerDown={scrollTutqichiniTortishniBoshlash}
-              className="absolute top-0 h-3 cursor-grab touch-none rounded-full bg-orange-500 shadow-[0_2px_8px_rgba(249,115,22,.28)] active:cursor-grabbing"
+              className="absolute top-0 h-3 cursor-grab touch-none rounded-full bg-orange-500 shadow-[0_2px_8px_rgba(37,99,235,.28)] active:cursor-grabbing"
               style={{ left: scrollHolati.chap, width: scrollHolati.kenglik }}
             />
           </div>

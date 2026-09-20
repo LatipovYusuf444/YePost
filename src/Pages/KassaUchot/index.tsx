@@ -333,7 +333,7 @@ export default function KassaUchot() {
       nom: "Tur",
       kenglik: 160,
       katak: (a) => (
-        <span className="inline-block rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-[#FF6A00]">
+        <span className="inline-block rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-[#2563EB]">
           {amaliyotTuriMatni[a.turi]}
         </span>
       ),
@@ -419,7 +419,7 @@ export default function KassaUchot() {
                     onClick={() => setOchiqMenyu(null)}
                     className="fixed inset-0 z-40 cursor-default"
                   />
-                  <div className="absolute left-0 top-12 z-50 w-60 rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_50px_rgba(92,38,8,.16)]">
+                  <div className="absolute left-0 top-12 z-50 w-60 rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_50px_rgba(15,23,42,.16)]">
                     {guruh.bolimlar.map((bolim) => {
                       const faolBolim = faolGuruh && yonalish === bolim.yonalish;
                       return (
@@ -429,8 +429,8 @@ export default function KassaUchot() {
                           onClick={() => bolimniTanlash(guruh.kanal, bolim.yonalish)}
                           className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${
                             faolBolim
-                              ? "bg-orange-50 text-[#FF6A00]"
-                              : "text-slate-600 hover:bg-orange-50 hover:text-[#FF6A00]"
+                              ? "bg-orange-50 text-[#2563EB]"
+                              : "text-slate-600 hover:bg-orange-50 hover:text-[#2563EB]"
                           }`}
                         >
                           {bolim.yonalish === "tushum" ? (

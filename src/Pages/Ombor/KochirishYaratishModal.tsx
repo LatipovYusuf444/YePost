@@ -178,20 +178,20 @@ export default function KochirishYaratishModal({ onClose }: Props) {
     <AppModal className="items-start justify-start overflow-hidden bg-slate-950/60 p-0 py-4 pl-[92px] pr-4 backdrop-blur-[3px]">
       <div className="relative h-[calc(100dvh-32px)] w-full">
         <aside className="absolute -left-[58px] top-6 z-30 flex flex-col items-center gap-3">
-          <button type="button" onClick={onClose} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FF5A00] text-white shadow-xl ring-1 ring-white/80" aria-label="Yopish">
+          <button type="button" onClick={onClose} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#2563EB] text-white shadow-xl ring-1 ring-white/80" aria-label="Yopish">
             <X size={21} />
           </button>
-          <button type="button" onClick={() => window.print()} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#FF5A00] shadow-lg ring-1 ring-orange-100" aria-label="Chop etish">
+          <button type="button" onClick={() => window.print()} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#2563EB] shadow-lg ring-1 ring-orange-100" aria-label="Chop etish">
             <Printer size={18} />
           </button>
         </aside>
 
-        <div className="flex h-full flex-col overflow-hidden rounded-l-[44px] rounded-r-[36px] border border-orange-100 bg-gradient-to-br from-[#FFF9F2] via-[#FFFDF9] to-[#FFE8D2] shadow-[0_35px_110px_rgba(43,22,12,.42)]">
-          <header className="flex min-h-[92px] shrink-0 items-center gap-4 border-b border-orange-100 bg-[#FFF9F2]/95 px-8 py-4 backdrop-blur-xl">
+        <div className="flex h-full flex-col overflow-hidden rounded-l-[44px] rounded-r-[36px] border border-orange-100 bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] shadow-[0_35px_110px_rgba(15,23,42,.42)]">
+          <header className="flex min-h-[92px] shrink-0 items-center gap-4 border-b border-orange-100 bg-[#F8FAFC]/95 px-8 py-4 backdrop-blur-xl">
             <div className="flex items-center gap-4">
               <h2 className="text-3xl font-black tracking-tight text-slate-950 sm:text-[38px]">Yangi ko'chirma</h2>
               <Copy size={19} className="text-slate-300" />
-              <span className="rounded-full bg-orange-50 px-4 py-1.5 text-xs font-black uppercase text-[#FF5A00]">Yangi</span>
+              <span className="rounded-full bg-orange-50 px-4 py-1.5 text-xs font-black uppercase text-[#2563EB]">Yangi</span>
             </div>
           </header>
 
@@ -232,12 +232,12 @@ export default function KochirishYaratishModal({ onClose }: Props) {
 
               <div className="space-y-6">
                 <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm sm:p-6">
-                  <div className="flex items-center gap-2 border-b border-orange-100 pb-4"><MessageSquare size={18} className="text-[#FF5A00]" /><h3 className="font-black uppercase text-slate-600">Izoh</h3></div>
+                  <div className="flex items-center gap-2 border-b border-orange-100 pb-4"><MessageSquare size={18} className="text-[#2563EB]" /><h3 className="font-black uppercase text-slate-600">Izoh</h3></div>
                   <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={4} className="mt-5 w-full resize-none rounded-2xl border border-slate-200 p-4 font-semibold outline-none focus:border-orange-300 focus:ring-4 focus:ring-orange-100" placeholder="Izoh yozing..." />
                 </section>
                 <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm sm:p-6">
-                  <div className="flex items-center gap-2 border-b border-orange-100 pb-4"><Clock3 size={18} className="text-[#FF5A00]" /><h3 className="font-black uppercase text-slate-600">Tarix</h3></div>
-                  <div className="mt-5 flex gap-3"><span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-[#FF5A00]" /><div><p className="font-black text-slate-700">Yangi hujjat qoralamasi ochildi</p><p className="text-sm font-bold text-slate-400">{hozirgiVaqt()}</p></div></div>
+                  <div className="flex items-center gap-2 border-b border-orange-100 pb-4"><Clock3 size={18} className="text-[#2563EB]" /><h3 className="font-black uppercase text-slate-600">Tarix</h3></div>
+                  <div className="mt-5 flex gap-3"><span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-[#2563EB]" /><div><p className="font-black text-slate-700">Yangi hujjat qoralamasi ochildi</p><p className="text-sm font-bold text-slate-400">{hozirgiVaqt()}</p></div></div>
                 </section>
               </div>
             </div>
@@ -245,14 +245,14 @@ export default function KochirishYaratishModal({ onClose }: Props) {
             <section className="mt-6 rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm sm:p-6">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-orange-100 pb-4">
                 <h3 className="font-black uppercase text-slate-600">Tovarlar</h3>
-                <button type="button" onClick={() => setItems((oldingi) => [...oldingi, yangiQator()])} disabled={!sourceWarehouseId} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-[#FF5A00] px-5 text-sm font-black uppercase text-white shadow-lg shadow-orange-100 disabled:opacity-40">
+                <button type="button" onClick={() => setItems((oldingi) => [...oldingi, yangiQator()])} disabled={!sourceWarehouseId} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-[#2563EB] px-5 text-sm font-black uppercase text-white shadow-lg shadow-orange-100 disabled:opacity-40">
                   <Plus size={17} /> Qator qo'shish
                 </button>
               </div>
 
               <div className="mt-5 overflow-x-auto rounded-2xl border border-orange-100">
                 <table className="w-full min-w-[1150px] table-fixed text-left text-sm">
-                  <thead className="bg-[#FFF9F3] text-xs font-black uppercase text-slate-500">
+                  <thead className="bg-[#F8FAFC] text-xs font-black uppercase text-slate-500">
                     <tr><th className="w-12 px-3 py-4">в„–</th><th className="w-[310px] px-3 py-4">Mahsulot</th><th className="w-44 px-3 py-4">Shtrix kod</th><th className="w-36 px-3 py-4">Narxi</th><th className="w-36 px-3 py-4">Soni</th><th className="w-44 px-3 py-4">Ombordagi qoldiq</th><th className="w-40 px-3 py-4">Summa</th><th className="w-16 px-3 py-4"><Package size={16} /></th></tr>
                   </thead>
                   <tbody className="divide-y divide-orange-100">
@@ -277,10 +277,10 @@ export default function KochirishYaratishModal({ onClose }: Props) {
             {(xato || store.xatolik) && <p className="mt-5 rounded-2xl bg-red-50 px-5 py-4 text-sm font-bold text-red-600">{xato || store.xatolik}</p>}
           </div>
 
-          <footer className="flex shrink-0 justify-end gap-3 border-t border-orange-100 bg-[#FFF9F2]/95 px-8 py-4 backdrop-blur-xl">
+          <footer className="flex shrink-0 justify-end gap-3 border-t border-orange-100 bg-[#F8FAFC]/95 px-8 py-4 backdrop-blur-xl">
             <button type="button" onClick={onClose} disabled={store.amalBajarilmoqda} className="h-12 rounded-2xl bg-slate-100 px-7 font-black text-slate-600 disabled:opacity-50">Bekor qilish</button>
-            <button type="button" onClick={() => void saqlashVaYopish(false)} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-300 bg-white px-7 font-black text-[#FF5A00] disabled:opacity-50">{store.amalBajarilmoqda && !jonatilmoqda ? <LoaderCircle size={17} className="animate-spin" /> : <Save size={17} />} Saqlash</button>
-            <button type="button" onClick={() => void saqlashVaYopish(true)} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#FF5A00] px-7 font-black text-white shadow-lg shadow-orange-100 disabled:opacity-50">{store.amalBajarilmoqda && jonatilmoqda ? <LoaderCircle size={17} className="animate-spin" /> : <Send size={17} />} Saqlash va jo'natish</button>
+            <button type="button" onClick={() => void saqlashVaYopish(false)} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-300 bg-white px-7 font-black text-[#2563EB] disabled:opacity-50">{store.amalBajarilmoqda && !jonatilmoqda ? <LoaderCircle size={17} className="animate-spin" /> : <Save size={17} />} Saqlash</button>
+            <button type="button" onClick={() => void saqlashVaYopish(true)} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#2563EB] px-7 font-black text-white shadow-lg shadow-orange-100 disabled:opacity-50">{store.amalBajarilmoqda && jonatilmoqda ? <LoaderCircle size={17} className="animate-spin" /> : <Send size={17} />} Saqlash va jo'natish</button>
           </footer>
         </div>
       </div>

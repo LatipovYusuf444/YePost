@@ -1,7 +1,7 @@
 import type { DavomatHolati, Lavozim, Xodim, XodimHolati } from "./types";
 
 export const maydonKlass =
-  "h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold outline-none transition focus:border-[#FF6A00] focus:ring-4 focus:ring-orange-100";
+  "h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100";
 
 export function yangiId(prefix: string) {
   return `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
@@ -70,7 +70,7 @@ export const holatMatni: Record<XodimHolati, string> = {
 
 export const holatRangi: Record<XodimHolati, string> = {
   faol: "bg-emerald-50 text-emerald-600",
-  tatilda: "bg-orange-50 text-orange-600",
+  tatilda: "bg-sky-50 text-sky-600",
   "ishdan-ketgan": "bg-slate-100 text-slate-500",
 };
 
@@ -83,7 +83,7 @@ export const davomatMatni: Record<DavomatHolati, string> = {
 
 export const davomatRangi: Record<DavomatHolati, string> = {
   keldi: "bg-emerald-50 text-emerald-600",
-  kechikdi: "bg-orange-50 text-orange-600",
+  kechikdi: "bg-amber-50 text-amber-600",
   kelmadi: "bg-red-50 text-red-500",
   tatil: "bg-sky-50 text-sky-600",
 };

@@ -183,7 +183,7 @@ export default function SavdoSelect({
               }}
               className={`flex min-h-9 w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold transition ${
                 active
-                  ? "bg-orange-500 text-white shadow-[0_8px_18px_rgba(249,115,22,.20)]"
+                  ? "bg-orange-500 text-white shadow-[0_8px_18px_rgba(37,99,235,.20)]"
                   : "text-slate-700 hover:bg-orange-50 hover:text-orange-600"
               } ${option.disabled ? "cursor-not-allowed opacity-40" : ""}`}
             >
@@ -208,7 +208,7 @@ export default function SavdoSelect({
           window.requestAnimationFrame(updateDropdownPosition);
         }}
         className={cn(
-          "group flex h-14 w-full items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-5 text-left text-base font-medium text-slate-800 shadow-[0_8px_24px_rgba(15,23,42,.04)] outline-none transition hover:border-orange-200 hover:shadow-[0_12px_28px_rgba(249,115,22,.08)] focus:border-orange-400 focus:ring-4 focus:ring-orange-100 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400",
+          "group flex h-14 w-full items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-5 text-left text-base font-medium text-slate-800 shadow-[0_8px_24px_rgba(15,23,42,.04)] outline-none transition hover:border-orange-200 hover:shadow-[0_12px_28px_rgba(37,99,235,.08)] focus:border-orange-400 focus:ring-4 focus:ring-orange-100 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400",
           buttonClassName
         )}
       >

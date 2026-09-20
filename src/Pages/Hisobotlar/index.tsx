@@ -521,7 +521,7 @@ function HisobotNatija({ data }: { data: HisobotJavobi | null }) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-orange-100">
       <table className="w-full min-w-[900px] text-left text-sm">
-        <thead className="bg-orange-50 text-xs uppercase tracking-wide text-orange-900/60">
+        <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
             {columns.map((column) => (
               <th key={column} className="px-5 py-4">

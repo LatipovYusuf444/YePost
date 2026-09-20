@@ -52,8 +52,8 @@ export default function ModalActionRail({ top, left, onClose, onDownload, onOpen
           aria-label={label}
           className={`flex h-10 w-10 items-center justify-center rounded-[14px] shadow-[0_8px_20px_rgba(15,23,42,.2)] ring-1 ring-white/80 transition duration-200 hover:-translate-x-0.5 hover:scale-105 active:scale-95 ${
             close
-              ? "bg-[#FF5A00] text-white hover:bg-[#E95200]"
-              : "bg-white text-[#FF5A00] hover:bg-orange-50"
+              ? "bg-[#2563EB] text-white hover:bg-[#1D4ED8]"
+              : "bg-white text-[#2563EB] hover:bg-orange-50"
           }`}
         >
           <Icon size={close ? 18 : 17} strokeWidth={2.2} />

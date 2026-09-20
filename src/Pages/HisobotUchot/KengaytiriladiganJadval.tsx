@@ -137,7 +137,7 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
           ))}
           {amallarUstuni && <col style={{ width: SOZLAMA_KENGLIK }} />}
         </colgroup>
-        <thead className="bg-orange-50 text-xs uppercase tracking-wide text-orange-900/60">
+        <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
             {korinadigan.map((u) => (
               <th
@@ -196,7 +196,7 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
                       onClick={() => setSozlamaOchiq(false)}
                       className="fixed inset-0 z-40 cursor-default"
                     />
-                    <div className="absolute right-2 top-12 z-50 w-56 rounded-2xl border border-orange-100 bg-white p-1.5 text-left normal-case tracking-normal shadow-[0_18px_50px_rgba(92,38,8,.16)]">
+                    <div className="absolute right-2 top-12 z-50 w-56 rounded-2xl border border-orange-100 bg-white p-1.5 text-left normal-case tracking-normal shadow-[0_18px_50px_rgba(15,23,42,.16)]">
                       <p className="px-3 py-1.5 text-xs font-black uppercase tracking-wide text-slate-400">
                         Ustunlar
                       </p>
@@ -220,7 +220,7 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
                             <span
                               className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md ${
                                 korinmoqda
-                                  ? "bg-[#FF6A00] text-white"
+                                  ? "bg-[#2563EB] text-white"
                                   : "bg-slate-100 text-slate-300"
                               }`}
                             >

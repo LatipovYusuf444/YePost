@@ -202,7 +202,7 @@ export default function Qaytarish({
       <div className="overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] text-left text-sm">
-            <thead className="bg-orange-50 text-xs uppercase tracking-wide text-orange-900/60">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-5 py-4">Hujjat</th>
                 <th className="px-5 py-4">Sotuv va mijoz</th>
@@ -222,7 +222,7 @@ export default function Qaytarish({
                     onClick={() => setTanlanganId(qaytarish.id)}
                     className="cursor-pointer transition hover:bg-orange-50/60"
                   >
-                    <td className="px-5 py-4 font-bold text-orange-600">
+                    <td className="px-5 py-4 font-semibold text-slate-900">
                       {qaytarish.id.slice(0, 8).toUpperCase()}
                     </td>
                     <td className="px-5 py-4">

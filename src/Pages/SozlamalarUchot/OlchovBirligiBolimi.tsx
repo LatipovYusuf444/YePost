@@ -97,7 +97,7 @@ export default function OlchovBirligiBolimi() {
           <button
             type="button"
             onClick={() => boshla()}
-            className="inline-flex h-11 shrink-0 items-center gap-2 rounded-2xl bg-[#FF6A00] px-5 text-sm font-black text-white shadow-[0_14px_32px_rgba(255,106,0,.24)] transition hover:-translate-y-0.5 hover:bg-[#EA580C]"
+            className="inline-flex h-11 shrink-0 items-center gap-2 rounded-2xl bg-[#2563EB] px-5 text-sm font-black text-white shadow-[0_14px_32px_rgba(37,99,235,.24)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8]"
           >
             <Plus size={16} />
             Qo'shish
@@ -115,7 +115,7 @@ export default function OlchovBirligiBolimi() {
       {xato && <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
 
       {formOchiq && direktor && (
-        <div className="mb-5 rounded-2xl border border-orange-100 bg-[#FFF8EF]/70 p-4">
+        <div className="mb-5 rounded-2xl border border-orange-100 bg-[#F8FAFC]/70 p-4">
           <div className="flex items-start justify-between gap-3">
             <p className="text-sm font-black text-gray-800">{tahrir ? "Birlikni tahrirlash" : "Yangi o'lchov birligi"}</p>
             <button
@@ -150,7 +150,7 @@ export default function OlchovBirligiBolimi() {
               type="button"
               disabled={saqlanmoqda}
               onClick={() => void saqlash()}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#FF6A00] px-5 text-sm font-black text-white transition hover:bg-[#EA580C] disabled:opacity-50"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#2563EB] px-5 text-sm font-black text-white transition hover:bg-[#1D4ED8] disabled:opacity-50"
             >
               {saqlanmoqda && <LoaderCircle size={15} className="animate-spin" />}
               {tahrir ? "Yangilash" : "Qo'shish"}
@@ -172,7 +172,7 @@ export default function OlchovBirligiBolimi() {
               className="group rounded-[20px] border border-orange-100 bg-white p-4 shadow-sm transition hover:border-orange-200 hover:shadow-md"
             >
               <div className="flex items-start justify-between">
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-[#FF6A00]">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-[#2563EB]">
                   <Ruler size={20} />
                 </span>
                 {direktor && (
@@ -180,7 +180,7 @@ export default function OlchovBirligiBolimi() {
                     <button
                       type="button"
                       onClick={() => boshla(birlik)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-[#FF6A00] hover:bg-orange-100"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-[#2563EB] hover:bg-orange-100"
                       aria-label="Tahrirlash"
                     >
                       <Edit3 size={14} />
@@ -202,7 +202,7 @@ export default function OlchovBirligiBolimi() {
                   {birlik.shortName || "Qisqa nom yo'q"}
                 </span>
                 {birlik.code && (
-                  <span className="rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-[#FF6A00]">
+                  <span className="rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-[#2563EB]">
                     Kod: {birlik.code}
                   </span>
                 )}

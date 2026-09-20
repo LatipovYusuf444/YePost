@@ -26,6 +26,8 @@ import type {
   Kategoriya,
   Mahsulot,
   MahsulotModifikatsiyasi,
+  OlchovBirligi,
+  StandardUnit,
 } from "@/types/catalog";
 import type { Ombor } from "@/types/ombor";
 
@@ -70,6 +72,62 @@ type OptionalFeatureField = {
   name: string;
   value: string;
 };
+
+const STANDARD_UNIT_PREFIX = "standard:";
+
+// Mahsulot uchun faqat miqdor/massa/uzunlik/yuza/hajm birliklari; vaqt, quvvat, qadoq va h.k. chiqarilmaydi.
+const PRODUCT_UNIT_CATEGORIES = new Set([
+  "QUANTITY",
+  "MASS",
+  "LENGTH",
+  "AREA",
+  "VOLUME",
+]);
+
+function unitKey(value?: string | null) {
+  return value?.trim().toLocaleLowerCase() ?? "";
+}
+
+// Faqat ko'rsatish uchun: workspace birligi standart katalogdagi mahsulotga mos bo'lmagan
+// kategoriyaga (masalan TIME) tegishli bo'lsa, Mahsulot selectida yashiriladi. Ma'lumot o'chirilmaydi.
+// Moslik ustuvorligi: code -> shortName -> name; mos standart topilmasa (mahalliy birlik) ko'rsatiladi.
+function isProductUnit(unit: OlchovBirligi, standardUnits: StandardUnit[]) {
+  const ownCategory = (unit as { category?: unknown }).category;
+  if (typeof ownCategory === "string") return PRODUCT_UNIT_CATEGORIES.has(ownCategory);
+
+  const code = unitKey(unit.code);
+  const shortName = unitKey(unit.shortName);
+  const name = unitKey(unit.name);
+  const levels: StandardUnit[][] = [
+    code ? standardUnits.filter((s) => unitKey(s.code) === code) : [],
+    shortName
+      ? standardUnits.filter((s) => [s.shortNameUz, s.shortNameRu].some((v) => unitKey(v) === shortName))
+      : [],
+    name ? standardUnits.filter((s) => [s.nameUz, s.nameRu].some((v) => unitKey(v) === name)) : [],
+  ];
+  const matches = levels.find((level) => level.length > 0);
+  return matches ? matches.some((s) => PRODUCT_UNIT_CATEGORIES.has(s.category)) : true;
+}
+
+// Standart birlik workspace ro'yxatida allaqachon bormi (code -> shortName -> name, saqlash oqimidagi
+// moslik bilan bir xil). Faqat Mahsulot selectida takror ko'rsatmaslik uchun ishlatiladi.
+function standardUnitInWorkspace(standard: StandardUnit, units: OlchovBirligi[]) {
+  const code = unitKey(standard.code);
+  if (code && units.some((unit) => unitKey(unit.code) === code)) return true;
+
+  const shortNames = [standard.shortNameUz, standard.shortNameRu].map(unitKey).filter(Boolean);
+  if (units.some((unit) => shortNames.includes(unitKey(unit.shortName)))) return true;
+
+  const names = [standard.nameUz, standard.nameRu].map(unitKey).filter(Boolean);
+  return units.some((unit) => names.includes(unitKey(unit.name)));
+}
+
+function standardUnitLabel(unit: StandardUnit) {
+  const shortName = unit.shortNameUz?.trim();
+  return shortName && unitKey(shortName) !== unitKey(unit.nameUz)
+    ? `${unit.nameUz} (${shortName})`
+    : unit.nameUz;
+}
 
 const korinishlar: Array<{ id: Korinish; nom: string; icon: typeof Boxes }> = [
   { id: "kartochka", nom: "Kartochka", icon: LayoutGrid },
@@ -205,7 +263,7 @@ export default function Mahsulotlar() {
             <div className="overflow-hidden rounded-[26px] border border-orange-100 bg-white shadow-sm">
               <div className="overflow-x-auto">
                 <table className="min-w-full text-left text-sm">
-                  <thead className="bg-orange-50 text-xs font-black uppercase tracking-[0.12em] text-orange-600">
+                  <thead className="bg-slate-50 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
                     <tr>
                       <th className="px-5 py-4">Mahsulot</th>
                       <th className="px-5 py-4">Kategoriya</th>
@@ -314,7 +372,8 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
   const editing=item!=="new";
   const [name,setName]=useState(editing?item.name:"");
   const [categoryId,setCategoryId]=useState(editing?item.categoryId:store.kategoriyalar[0]?.id??"");
-  const [unitId,setUnitId]=useState(editing?item.unitId:store.birliklar[0]?.id??"");
+  const [unitId,setUnitId]=useState(editing?item.unitId:store.birliklar.find((unit)=>isProductUnit(unit,store.standardBirliklar))?.id??"");
+  const [unitResolving,setUnitResolving]=useState(false);
   const [barcode,setBarcode]=useState(editing?item.barcode??"":"");
   const [article,setArticle]=useState(editing?item.article??"":"");
   const [imageUrl,setImageUrl]=useState(editing?item.imageUrl??"":"");
@@ -403,6 +462,17 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
       :store.kategoriyalar;
   },[categorySearch,store.kategoriyalar]);
 
+  // Tahrirlashda mahsulotning joriy birligi (agar mahsulotga mos bo'lmasa ham) ko'rinib turishi uchun saqlanadi.
+  const productWorkspaceUnits=useMemo(
+    ()=>store.birliklar.filter((unit)=>(editing&&unit.id===item.unitId)||isProductUnit(unit,store.standardBirliklar)),
+    [store.birliklar,store.standardBirliklar,editing,item]
+  );
+  // Standart katalogda faqat mahsulotga mos va workspace'da hali ko'rinmaydigan birliklar qoladi.
+  const productStandardUnits=useMemo(
+    ()=>store.standardBirliklar.filter((unit)=>PRODUCT_UNIT_CATEGORIES.has(unit.category)&&!standardUnitInWorkspace(unit,productWorkspaceUnits)),
+    [store.standardBirliklar,productWorkspaceUnits]
+  );
+
   useEffect(() => {
     setVariantStockDrafts((drafts) => {
       const next: Record<string, VariantStockDraft> = {};
@@ -455,8 +525,20 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
         },
       }));
     if(!name.trim()||!categoryId||!unitId||(!editing&&generatedVariants.length===0&&!barcode.trim()))return;
+    let productUnitId=unitId;
+    if(unitId.startsWith(STANDARD_UNIT_PREFIX)){
+      const standardId=Number(unitId.slice(STANDARD_UNIT_PREFIX.length));
+      const standardUnit=store.standardBirliklar.find((unit)=>unit.id===standardId);
+      if(!standardUnit)return;
+      setUnitResolving(true);
+      const workspaceUnitId=await store.standardBirlikniWorkspacegaOtkazish(standardUnit);
+      setUnitResolving(false);
+      if(!workspaceUnitId)return;
+      productUnitId=workspaceUnitId;
+      setUnitId(workspaceUnitId);
+    }
     const safeImageUrl=cleanRemoteImage(imageUrl);
-    const data={name:name.trim(),categoryId,unitId,barcode:barcode.trim()||undefined,article:article.trim()||undefined,imageUrl:safeImageUrl||undefined,isActive};
+    const data={name:name.trim(),categoryId,unitId:productUnitId,barcode:barcode.trim()||undefined,article:article.trim()||undefined,imageUrl:safeImageUrl||undefined,isActive};
     const ok=editing
       ?await store.mahsulotSaqlash(item.id,data)
       :generatedVariants.length>0
@@ -778,7 +860,15 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
                 <div className="block text-sm font-black text-gray-500">
                   <p>O'lchov birligi *</p>
                   <div className="mt-2 flex items-center gap-3">
-                    <AppSelect value={unitId} onChange={e=>setUnitId(e.target.value)} className="input min-w-0 flex-1"><option value="">O'lchov birligi tanlang</option>{store.birliklar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</AppSelect>
+                    <AppSelect value={unitId} onChange={e=>setUnitId(e.target.value)} className="input min-w-0 flex-1">
+                      <option value="">O'lchov birligi tanlang</option>
+                      <optgroup label="Workspace birliklari">
+                        {productWorkspaceUnits.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}
+                      </optgroup>
+                      {productStandardUnits.length>0&&<optgroup label="Standart katalog">
+                        {productStandardUnits.map(x=><option key={x.id} value={`${STANDARD_UNIT_PREFIX}${x.id}`}>{standardUnitLabel(x)}</option>)}
+                      </optgroup>}
+                    </AppSelect>
                     <button type="button" onClick={()=>setIsActive(!isActive)} aria-label="Mahsulot holatini o'zgartirish" className={`flex h-8 w-14 shrink-0 items-center rounded-full p-1 transition ${isActive?"bg-orange-500 shadow-sm shadow-orange-100":"bg-gray-200"}`}>
                       <span className={`h-6 w-6 rounded-full bg-white shadow transition ${isActive?"translate-x-6":"translate-x-0"}`}/>
                     </button>
@@ -843,7 +933,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
               </div>
             </div>
             {variantCombinations.length>0&&<div className="overflow-hidden rounded-[24px] border border-gray-100 bg-white">
-              <div className="grid grid-cols-[70px_1fr_220px_90px] border-b border-gray-100 px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-gray-500">
+              <div className="grid grid-cols-[70px_1fr_220px_90px] border-b border-gray-100 px-4 py-3 text-sm font-semibold text-slate-600">
                 <span>Foto</span>
                 <span>Variatsiya</span>
                 <span>Barkod *</span>
@@ -870,7 +960,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
               </div>
             </div>}
             {variantCombinations.length>0&&<div className="overflow-x-auto rounded-[24px] border border-gray-100 bg-white">
-              <div className="grid min-w-[1080px] grid-cols-[1fr_230px_150px_230px_230px] border-b border-gray-100 px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-gray-500">
+              <div className="grid min-w-[1080px] grid-cols-[1fr_230px_150px_230px_230px] border-b border-gray-100 px-4 py-3 text-sm font-semibold text-slate-600">
                 <span>Variatsiya</span>
                 <span>Kelish narxi *</span>
                 <span>Ustama</span>
@@ -922,7 +1012,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
                     <span className="truncate">{name.trim()||"Mahsulot"} / {combo.label}</span>
                   </button>
                   {stock.open&&<div className="px-5 pb-5 pt-4">
-                    <div className="grid grid-cols-[minmax(180px,1fr)_190px_190px] gap-4 border-b border-gray-200 pb-3 text-xs font-black uppercase tracking-[0.08em] text-gray-500">
+                    <div className="grid grid-cols-[minmax(180px,1fr)_190px_190px] gap-4 border-b border-gray-200 pb-3 text-sm font-semibold text-slate-600">
                       <span>Do'kon / Ombor</span>
                       <span>Miqdor</span>
                       <span>Minimal qoldiq</span>
@@ -1017,7 +1107,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
 
     <div className="flex justify-end gap-3 border-t border-gray-100 px-6 py-4">
       <button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">Bekor qilish</button>
-      <button disabled={store.amalBajarilmoqda} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{store.amalBajarilmoqda&&<LoaderCircle size={16} className="animate-spin"/>}{editing?"Saqlash":"Yaratish"}</button>
+      <button disabled={store.amalBajarilmoqda||unitResolving} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{(store.amalBajarilmoqda||unitResolving)&&<LoaderCircle size={16} className="animate-spin"/>}{editing?"Saqlash":"Yaratish"}</button>
     </div>
   </form></AppModal>
 }

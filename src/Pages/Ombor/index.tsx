@@ -371,7 +371,7 @@ export default function Ombor() {
       ) : korinish === "jadval" ? (
         <OmborJadval>
             <table className="w-full min-w-[1480px] text-left">
-              <thead className="bg-orange-50/70 text-xs font-black uppercase text-orange-600">
+              <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500">
                 <tr>
                   <th className="min-w-52 px-6 py-4">Nomi</th>
                   <th className="min-w-56 px-6 py-4">Joylashuv</th>
@@ -619,7 +619,7 @@ export default function Ombor() {
         <AppModal>
           <form
             onSubmit={saqlash}
-            className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[34px] border border-orange-100 bg-[#FFF9F1] shadow-2xl"
+            className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[34px] border border-orange-100 bg-[#F8FAFC] shadow-2xl"
           >
             <header className="flex shrink-0 items-center justify-between border-b border-orange-100 px-7 py-6 sm:px-9">
               <div className="flex items-center gap-4">
@@ -807,7 +807,7 @@ export default function Ombor() {
               </div>
             </div>
 
-            <footer className="flex shrink-0 justify-end gap-3 border-t border-orange-100 bg-[#FFF9F1]/95 px-7 py-5 backdrop-blur sm:px-9">
+            <footer className="flex shrink-0 justify-end gap-3 border-t border-orange-100 bg-[#F8FAFC]/95 px-7 py-5 backdrop-blur sm:px-9">
               <button
                 type="button"
                 onClick={() => setModalOchiq(false)}
@@ -817,7 +817,7 @@ export default function Ombor() {
               </button>
               <button
                 disabled={amalBajarilmoqda || !name.trim()}
-                className="inline-flex h-12 min-w-32 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-7 text-sm font-black text-white shadow-[0_12px_28px_rgba(249,115,22,.24)] transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-12 min-w-32 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-7 text-sm font-black text-white shadow-[0_12px_28px_rgba(37,99,235,.24)] transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {amalBajarilmoqda && <LoaderCircle size={16} className="animate-spin" />}
                 Saqlash

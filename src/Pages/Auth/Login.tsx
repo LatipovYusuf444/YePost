@@ -96,13 +96,13 @@ export default function Login() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#14120F] text-slate-950">
+    <main className="relative min-h-screen overflow-hidden bg-[#0F172A] text-slate-950">
       <img
         src={loginHero}
         alt="YePost savdo, ombor va yetkazib berish boshqaruvi"
         className="login-bg-enter absolute inset-0 h-full w-full object-cover"
       />
-      <div className="login-overlay-enter absolute inset-0 bg-[linear-gradient(90deg,rgba(14,12,9,.70),rgba(14,12,9,.26)_54%,rgba(255,248,239,.34))]" />
+      <div className="login-overlay-enter absolute inset-0 bg-[linear-gradient(90deg,rgba(15,23,42,.70),rgba(15,23,42,.26)_54%,rgba(248,250,252,.34))]" />
       <div className="login-aura-enter pointer-events-none absolute right-[7%] top-[15%] hidden h-44 w-44 rounded-full bg-orange-400/25 blur-[72px] lg:block" />
 
       <section className="relative grid min-h-screen lg:grid-cols-[minmax(0,1fr)_minmax(480px,560px)]">
@@ -131,7 +131,7 @@ export default function Login() {
               className="login-panel-enter relative overflow-hidden rounded-[42px] border border-white/55 bg-[rgba(255,255,255,.16)] p-7 shadow-[inset_0_1px_1px_rgba(255,255,255,.78),inset_0_-36px_70px_rgba(255,255,255,.13),0_34px_110px_rgba(15,23,42,.34)] backdrop-blur-[34px] backdrop-saturate-200 transition-transform duration-500 ease-out hover:-translate-y-1 sm:p-10"
               style={{ WebkitBackdropFilter: "blur(34px) saturate(200%)" }}
             >
-              <div className="login-liquid-sheen pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_14%_6%,rgba(255,255,255,.82),transparent_30%),radial-gradient(circle_at_92%_10%,rgba(96,165,250,.42),transparent_38%),radial-gradient(circle_at_4%_88%,rgba(249,115,22,.34),transparent_40%),linear-gradient(135deg,rgba(255,255,255,.42),rgba(255,255,255,.08)_42%,rgba(255,255,255,.20))]" />
+              <div className="login-liquid-sheen pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_14%_6%,rgba(255,255,255,.82),transparent_30%),radial-gradient(circle_at_92%_10%,rgba(96,165,250,.42),transparent_38%),radial-gradient(circle_at_4%_88%,rgba(37,99,235,.34),transparent_40%),linear-gradient(135deg,rgba(255,255,255,.42),rgba(255,255,255,.08)_42%,rgba(255,255,255,.20))]" />
               <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-white/85" />
               <div className="login-float-blue pointer-events-none absolute -right-16 top-0 h-56 w-56 rounded-full bg-blue-400/35 blur-[64px]" />
               <div className="login-float-orange pointer-events-none absolute -left-16 bottom-0 h-52 w-52 rounded-full bg-orange-400/28 blur-[60px]" />
@@ -250,7 +250,7 @@ export default function Login() {
                   style={{ animationDelay: "960ms" }}
                   type="submit"
                   disabled={isSubmitting}
-                  className="login-item-enter group flex h-16 w-full items-center justify-center gap-2 rounded-[22px] bg-gradient-to-r from-orange-600 to-orange-500 px-5 text-sm font-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,.35),0_20px_44px_rgba(234,88,12,.34)] transition duration-300 hover:-translate-y-1 hover:from-orange-700 hover:to-orange-600 hover:shadow-[inset_0_1px_0_rgba(255,255,255,.35),0_26px_54px_rgba(234,88,12,.42)] active:scale-[.98] disabled:cursor-not-allowed disabled:translate-y-0 disabled:from-orange-300 disabled:to-orange-300"
+                  className="login-item-enter group flex h-16 w-full items-center justify-center gap-2 rounded-[22px] bg-gradient-to-r from-orange-600 to-orange-500 px-5 text-sm font-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,.35),0_20px_44px_rgba(37,99,235,.34)] transition duration-300 hover:-translate-y-1 hover:from-orange-700 hover:to-orange-600 hover:shadow-[inset_0_1px_0_rgba(255,255,255,.35),0_26px_54px_rgba(37,99,235,.42)] active:scale-[.98] disabled:cursor-not-allowed disabled:translate-y-0 disabled:from-orange-300 disabled:to-orange-300"
                 >
                   {isSubmitting ? (
                     <LoaderCircle size={19} className="animate-spin" />

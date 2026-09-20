@@ -52,7 +52,7 @@ export function Switch({
       disabled={disabled}
       aria-pressed={yoniq}
       className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50 ${
-        yoniq ? "bg-[#FF6A00]" : "bg-slate-200"
+        yoniq ? "bg-[#2563EB]" : "bg-slate-200"
       }`}
     >
       <span
@@ -70,7 +70,7 @@ export function SaqlashTugma({ onClick, disabled = false }: { onClick: () => voi
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex h-11 items-center gap-2 rounded-2xl bg-[#FF6A00] px-6 text-sm font-black text-white shadow-[0_14px_32px_rgba(255,106,0,.24)] transition hover:-translate-y-0.5 hover:bg-[#EA580C] disabled:cursor-not-allowed disabled:opacity-50"
+      className="inline-flex h-11 items-center gap-2 rounded-2xl bg-[#2563EB] px-6 text-sm font-black text-white shadow-[0_14px_32px_rgba(37,99,235,.24)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-50"
     >
       Saqlash
     </button>

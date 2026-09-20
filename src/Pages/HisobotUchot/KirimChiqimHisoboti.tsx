@@ -298,11 +298,11 @@ export default function KirimChiqimHisoboti() {
     <div className="space-y-5">
       {/* Oval to'q sariq scroll */}
       <style>{`
-        .aylanma-scroll{scrollbar-width:thin;scrollbar-color:#fb923c #fff7ed}
+        .aylanma-scroll{scrollbar-width:thin;scrollbar-color:#60A5FA #EFF6FF}
         .aylanma-scroll::-webkit-scrollbar{height:10px;width:10px}
-        .aylanma-scroll::-webkit-scrollbar-track{background:#fff7ed;border-radius:9999px}
-        .aylanma-scroll::-webkit-scrollbar-thumb{background:#fb923c;border-radius:9999px}
-        .aylanma-scroll::-webkit-scrollbar-thumb:hover{background:#f97316}
+        .aylanma-scroll::-webkit-scrollbar-track{background:#EFF6FF;border-radius:9999px}
+        .aylanma-scroll::-webkit-scrollbar-thumb{background:#60A5FA;border-radius:9999px}
+        .aylanma-scroll::-webkit-scrollbar-thumb:hover{background:#2563EB}
       `}</style>
 
       {/* Filter paneli */}

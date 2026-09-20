@@ -149,7 +149,7 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
   return (
     <div className="space-y-5">
       {xatolik && <div className="rounded-2xl border border-red-100 bg-red-50 p-3 text-sm font-bold text-red-600">{xatolik}</div>}
-      <section className="overflow-hidden rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(255,106,0,.08)] ring-1 ring-orange-100/80 backdrop-blur">
+      <section className="overflow-hidden rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80 backdrop-blur">
         <div className="flex flex-wrap items-center gap-2">
           {yozishTablari.map((tab) => (
             <button
@@ -158,8 +158,8 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
               onClick={() => setFaoliyatTab(tab.kalit)}
               className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-bold transition ${
                 faoliyatTab === tab.kalit
-                  ? "border border-orange-200 bg-orange-50 text-[#FF6A00]"
-                  : "text-slate-500 hover:bg-orange-50 hover:text-[#FF6A00]"
+                  ? "border border-orange-200 bg-orange-50 text-[#2563EB]"
+                  : "text-slate-500 hover:bg-orange-50 hover:text-[#2563EB]"
               }`}
             >
               {tab.nom}
@@ -167,13 +167,13 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
           ))}
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-bold text-slate-500 transition hover:bg-orange-50 hover:text-[#FF6A00]"
+            className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-bold text-slate-500 transition hover:bg-orange-50 hover:text-[#2563EB]"
           >
             Ko'proq <ChevronDown size={14} />
           </button>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-orange-300 bg-gradient-to-br from-white to-[#FFF7EC] p-4 shadow-inner transition focus-within:ring-4 focus-within:ring-orange-100">
+        <div className="mt-4 rounded-2xl border border-orange-300 bg-gradient-to-br from-white to-[#EFF6FF] p-4 shadow-inner transition focus-within:ring-4 focus-within:ring-orange-100">
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1 space-y-3">
               <input
@@ -193,7 +193,7 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
             <div className="flex shrink-0 items-center gap-3 pt-1">
               <span className="h-3.5 w-3.5 rounded-full bg-amber-400" title="Muhimlik" />
               <span
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-[#FF6A00]"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-[#2563EB]"
                 title="Mas'ul"
               >
                 <UserRound size={18} />
@@ -203,24 +203,24 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <div className="inline-flex min-h-11 flex-wrap items-center gap-2 rounded-xl border border-orange-200 bg-orange-50/80 px-3 py-2 text-sm font-semibold text-slate-700">
-              <CalendarDays size={16} className="shrink-0 text-[#FF6A00]" />
+              <CalendarDays size={16} className="shrink-0 text-[#2563EB]" />
               <span className="shrink-0">{muddatMatni(sana, vaqt)}</span>
               <input
                 type="date"
                 value={sana}
                 onChange={(event) => setSana(event.target.value)}
-                className="h-7 rounded-lg border border-orange-100 bg-white px-2 text-xs font-bold text-slate-600 outline-none focus:border-[#FF6A00]"
+                className="h-7 rounded-lg border border-orange-100 bg-white px-2 text-xs font-bold text-slate-600 outline-none focus:border-[#2563EB]"
               />
               <input
                 type="time"
                 value={vaqt}
                 onChange={(event) => setVaqt(event.target.value)}
-                className="h-7 rounded-lg border border-orange-100 bg-white px-2 text-xs font-bold text-slate-600 outline-none focus:border-[#FF6A00]"
+                className="h-7 rounded-lg border border-orange-100 bg-white px-2 text-xs font-bold text-slate-600 outline-none focus:border-[#2563EB]"
               />
             </div>
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-orange-50 hover:text-[#FF6A00]"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-orange-50 hover:text-[#2563EB]"
               title="Eslatma"
             >
               <Bell size={18} />
@@ -232,14 +232,14 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
               type="button"
               onClick={() => void saqlash()}
               disabled={!sarlavha.trim() || saqlanmoqda || !partnerId}
-              className="inline-flex h-10 items-center justify-center rounded-2xl bg-[#FF6A00] px-6 text-sm font-black uppercase text-white shadow-[0_12px_28px_rgba(255,106,0,.22)] transition hover:-translate-y-0.5 hover:bg-[#EA580C] disabled:cursor-not-allowed disabled:bg-orange-200 disabled:shadow-none disabled:hover:translate-y-0"
+              className="inline-flex h-10 items-center justify-center rounded-2xl bg-[#2563EB] px-6 text-sm font-black uppercase text-white shadow-[0_12px_28px_rgba(37,99,235,.22)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-orange-200 disabled:shadow-none disabled:hover:translate-y-0"
             >
               {saqlanmoqda ? "Saqlanmoqda..." : "Saqlash"}
             </button>
             <button
               type="button"
               onClick={tozalash}
-              className="inline-flex h-10 items-center justify-center rounded-2xl px-4 text-sm font-black uppercase text-slate-600 transition hover:bg-orange-50 hover:text-[#FF6A00]"
+              className="inline-flex h-10 items-center justify-center rounded-2xl px-4 text-sm font-black uppercase text-slate-600 transition hover:bg-orange-50 hover:text-[#2563EB]"
             >
               Bekor qilish
             </button>
@@ -248,7 +248,7 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
       </section>
 
       <div className="flex justify-center">
-        <span className="rounded-full bg-orange-50 px-5 py-1.5 text-sm font-bold text-[#FF6A00]">
+        <span className="rounded-full bg-orange-50 px-5 py-1.5 text-sm font-bold text-[#2563EB]">
           Faoliyat
         </span>
       </div>
@@ -258,15 +258,15 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
         {yozuvlar.map((yozuv) => (
           <article
             key={yozuv.id}
-            className="relative overflow-hidden rounded-[22px] bg-white/92 p-5 shadow-[0_14px_36px_rgba(255,106,0,.07)] ring-1 ring-orange-100/70"
+            className="relative overflow-hidden rounded-[22px] bg-white/92 p-5 shadow-[0_14px_36px_rgba(37,99,235,.07)] ring-1 ring-orange-100/70"
           >
-            <span className="absolute inset-y-0 left-0 w-1.5 bg-[#FF6A00]" />
+            <span className="absolute inset-y-0 left-0 w-1.5 bg-[#2563EB]" />
             <div className="flex items-center gap-3">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-50 text-[#FF6A00]">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-50 text-[#2563EB]">
                 <FaoliyatIkonka turi={yozuv.turi} />
               </span>
               <h3 className="text-base font-black text-slate-900">{yozuv.sarlavha}</h3>
-              <span className="rounded-lg bg-orange-50 px-2 py-0.5 text-xs font-bold text-[#FF6A00]">
+              <span className="rounded-lg bg-orange-50 px-2 py-0.5 text-xs font-bold text-[#2563EB]">
                 {qisqaVaqt(yozuv.sana)}
               </span>
             </div>

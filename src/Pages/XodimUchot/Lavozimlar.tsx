@@ -159,7 +159,7 @@ export default function Lavozimlar({ lavozimlar, xodimlar, onSaqlash, onOchirish
                 {lavozim.vakolatlar.slice(0, 4).map((kod) => (
                   <span
                     key={kod}
-                    className="rounded-lg bg-orange-50 px-2 py-1 text-xs font-black text-[#FF6A00]"
+                    className="rounded-lg bg-orange-50 px-2 py-1 text-xs font-black text-[#2563EB]"
                   >
                     {backendVakolatlar.find((vakolat) => vakolat.kod === kod)?.nom ?? kod}
                   </span>

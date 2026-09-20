@@ -260,7 +260,7 @@ export default function YangiKirimModal({ onClose }: Props) {
 
   return (
     <AppModal onClose={onClose} className="sidebar-aligned-document-modal items-stretch p-3 sm:p-5">
-      <div className="flex min-h-0 w-full flex-col overflow-hidden rounded-[32px] border border-orange-100 bg-[#fffaf4] shadow-[0_28px_90px_rgba(69,35,13,.32)]">
+      <div className="flex min-h-0 w-full flex-col overflow-hidden rounded-[32px] border border-orange-100 bg-[#F8FAFC] shadow-[0_28px_90px_rgba(15,23,42,.32)]">
         <header className="flex shrink-0 items-center border-b border-orange-100 bg-white/75 px-5 py-4 sm:px-8">
           <div className="flex items-center gap-3">
             <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">Yangi kirim</h2>
@@ -413,7 +413,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                 {fayllar.map((fayl) => (
                   <div
                     key={fayl.id}
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-orange-100 bg-[#fffdfa] px-4 py-3"
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-orange-100 bg-[#FFFFFF] px-4 py-3"
                   >
                     <div className="flex min-w-0 items-center gap-2">
                       <FileText size={16} className="shrink-0 text-orange-500" />
@@ -463,7 +463,7 @@ export default function YangiKirimModal({ onClose }: Props) {
 
             <div className="scrollbar-orange overflow-x-auto pb-2">
               <div className="min-w-[1280px] space-y-3">
-                <div className="grid grid-cols-[28px_38px_2fr_1fr_1fr_1fr_1fr_1fr_1.2fr_1fr_48px] gap-3 px-3 text-[11px] font-black uppercase tracking-wide text-slate-400">
+                <div className="grid grid-cols-[28px_38px_2fr_1fr_1fr_1fr_1fr_1fr_1.2fr_1fr_48px] gap-3 px-3 text-[13px] font-semibold text-slate-600">
                   <button type="button" onClick={barchasiniBelgilash} aria-label="Hammasini belgilash">
                     {tanlangan.size === qatorlar.length && qatorlar.length > 0 ? (
                       <CheckSquare size={16} className="text-orange-500" />
@@ -490,7 +490,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                   return (
                     <div
                       key={row.id}
-                      className="grid grid-cols-[28px_38px_2fr_1fr_1fr_1fr_1fr_1fr_1.2fr_1fr_48px] items-center gap-3 rounded-2xl border border-orange-100 bg-[#fffdfa] p-3"
+                      className="grid grid-cols-[28px_38px_2fr_1fr_1fr_1fr_1fr_1fr_1.2fr_1fr_48px] items-center gap-3 rounded-2xl border border-orange-100 bg-[#FFFFFF] p-3"
                     >
                       <button
                         type="button"

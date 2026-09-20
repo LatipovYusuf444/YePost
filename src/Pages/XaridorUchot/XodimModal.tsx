@@ -10,16 +10,16 @@ type Props = {
 // Savdolar jadvalidagi "Mas'ul shaxs"ni bosganda ochiladigan xodim ma'lumoti (mock).
 export default function XodimModal({ xodim, onYopish }: Props) {
   return (
-    <AppModal className="bg-[rgba(54,22,8,.45)] p-4 backdrop-blur-[3px]">
-      <div className="w-full max-w-md overflow-hidden rounded-[28px] bg-gradient-to-br from-[#FFF8EF] via-[#FFFDF9] to-[#FFE8D2] text-[#253044] shadow-[0_34px_120px_rgba(92,38,8,.42)] ring-1 ring-white/80">
-        <header className="flex items-center justify-between gap-4 border-b border-orange-100/80 bg-[#FFF8EF]/90 px-7 py-5 backdrop-blur-xl">
+    <AppModal className="bg-[rgba(15,23,42,.45)] p-4 backdrop-blur-[3px]">
+      <div className="w-full max-w-md overflow-hidden rounded-[28px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80">
+        <header className="flex items-center justify-between gap-4 border-b border-orange-100/80 bg-[#F8FAFC]/90 px-7 py-5 backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <span className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#FFF3E2] text-[#FF6A00]">
+            <span className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#EFF6FF] text-[#2563EB]">
               <UserRound size={22} />
             </span>
             <div>
               <h1 className="text-lg font-bold text-slate-900">{xodim.ism}</h1>
-              <span className="text-xs font-black uppercase tracking-wider text-[#FF6A00]">
+              <span className="text-xs font-black uppercase tracking-wider text-[#2563EB]">
                 Mas'ul xodim
               </span>
             </div>
@@ -47,7 +47,7 @@ function Qator({ icon, nom, qiymat }: { icon: React.ReactNode; nom: string; qiym
   return (
     <div>
       <dt className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
-        <span className="text-[#FF6A00]">{icon}</span>
+        <span className="text-[#2563EB]">{icon}</span>
         {nom}
       </dt>
       <dd className="mt-0.5 text-base font-semibold text-slate-800">{qiymat || "—"}</dd>
