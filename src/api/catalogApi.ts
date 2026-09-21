@@ -4,6 +4,8 @@ import type {
   Kategoriya,
   KategoriyaMalumoti,
   Mahsulot,
+  MahsulotExportFiltrlari,
+  MahsulotImportNatijasi,
   MahsulotMalumoti,
   MahsulotModifikatsiyasi,
   ModifikatsiyaMalumoti,
@@ -110,6 +112,35 @@ export const mahsulotlarApi = {
     ),
   ochirish: async (id: string) =>
     apiData((await apiClient.delete<Mahsulot | ApiEnvelope<Mahsulot>>(`/catalog/products/${id}`)).data),
+  importQilish: async (file: File, dryRun = false) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await apiClient.post<
+      MahsulotImportNatijasi | ApiEnvelope<MahsulotImportNatijasi>
+    >("/catalog/products/import", formData, {
+      params: dryRun ? { dryRun: true } : undefined,
+    });
+    return apiData(response.data);
+  },
+  importShabloniniOlish: async () => {
+    const response = await apiClient.get<Blob>("/catalog/products/import/template", {
+      responseType: "blob",
+    });
+    return {
+      blob: response.data,
+      contentDisposition: String(response.headers["content-disposition"] ?? ""),
+    };
+  },
+  exportQilish: async (filters?: MahsulotExportFiltrlari) => {
+    const response = await apiClient.get<Blob>("/catalog/products/export", {
+      params: filters,
+      responseType: "blob",
+    });
+    return {
+      blob: response.data,
+      contentDisposition: String(response.headers["content-disposition"] ?? ""),
+    };
+  },
 };
 
 // Mahsulot tafsiloti: modifikatsiyalar CRUD va alohida narx endpointlari.

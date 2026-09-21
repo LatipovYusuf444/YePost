@@ -4,8 +4,10 @@ import {
   Boxes,
   ChevronDown,
   ChevronUp,
+  Download,
   Edit3,
   Eye,
+  FileSpreadsheet,
   ImagePlus,
   Layers3,
   LayoutGrid,
@@ -17,14 +19,20 @@ import {
   Table2,
   Tags,
   Trash2,
+  Upload,
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import { mahsulotlarApi } from "@/api/catalogApi";
 import { omborlarApi } from "@/api/omborApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { rolniNormallashtirish } from "@/lib/roles";
+import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useMahsulotlarStore } from "@/store/mahsulotlarStore";
 import type {
   Kategoriya,
   Mahsulot,
+  MahsulotImportNatijasi,
   MahsulotModifikatsiyasi,
   OlchovBirligi,
   StandardUnit,
@@ -136,6 +144,7 @@ const korinishlar: Array<{ id: Korinish; nom: string; icon: typeof Boxes }> = [
 
 export default function Mahsulotlar() {
   const store = useMahsulotlarStore();
+  const profil = useAuthProfileStore((state) => state.profil);
   const yuklash = store.yuklash;
   const [tab, setTab] = useState<Tab>("mahsulotlar");
   const [qidiruv, setQidiruv] = useState("");
@@ -144,6 +153,9 @@ export default function Mahsulotlar() {
   const [mahsulotModal, setMahsulotModal] = useState<Mahsulot | "new" | null>(null);
   const [oddiyModal, setOddiyModal] = useState<Kategoriya | "new" | null>(null);
   const [modProduct, setModProduct] = useState<Mahsulot | null>(null);
+  const [importModalOchiq, setImportModalOchiq] = useState(false);
+  const [excelAmali, setExcelAmali] = useState<"template" | "export" | null>(null);
+  const [excelXatolik, setExcelXatolik] = useState("");
 
   useEffect(() => { void yuklash(); }, [yuklash]);
 
@@ -178,6 +190,40 @@ export default function Mahsulotlar() {
 
   const tanlanganKorinish = korinishlar.find((item) => item.id === korinish) ?? korinishlar[0];
   const TanlanganIcon = tanlanganKorinish.icon;
+  const rol = rolniNormallashtirish(profil?.role);
+  const excelAmallariMumkin = rol === "ADMIN" || rol === "DIREKTOR";
+
+  async function importShabloniniYuklash() {
+    if (excelAmali) return;
+    setExcelAmali("template");
+    setExcelXatolik("");
+    try {
+      const fayl = await mahsulotlarApi.importShabloniniOlish();
+      excelFaylniSaqlash(
+        fayl.blob,
+        fayl.contentDisposition,
+        "mahsulot-import-shablon.xlsx"
+      );
+    } catch (error) {
+      setExcelXatolik(await excelXatoXabariniOlish(error));
+    } finally {
+      setExcelAmali(null);
+    }
+  }
+
+  async function mahsulotlarniExportQilish() {
+    if (excelAmali) return;
+    setExcelAmali("export");
+    setExcelXatolik("");
+    try {
+      const fayl = await mahsulotlarApi.exportQilish();
+      excelFaylniSaqlash(fayl.blob, fayl.contentDisposition, "mahsulotlar.xlsx");
+    } catch (error) {
+      setExcelXatolik(await excelXatoXabariniOlish(error));
+    } finally {
+      setExcelAmali(null);
+    }
+  }
 
   function kategoriyaNomi(item: Mahsulot) {
     return item.category?.name ?? store.kategoriyalar.find((x) => x.id === item.categoryId)?.name ?? "Kategoriya";
@@ -211,6 +257,7 @@ export default function Mahsulotlar() {
       </header>
 
       {store.xatolik && <div className="flex justify-between rounded-2xl bg-red-50 p-4 font-bold text-red-600"><span>{store.xatolik}</span><button onClick={store.xatolikniTozalash}>Yopish</button></div>}
+      {excelXatolik && <div className="flex justify-between gap-4 rounded-2xl bg-red-50 p-4 font-bold text-red-600"><span>{excelXatolik}</span><button onClick={()=>setExcelXatolik("")}>Yopish</button></div>}
 
       <nav className="flex gap-2 overflow-x-auto rounded-2xl border border-orange-100 bg-white p-2">
         {[
@@ -224,8 +271,13 @@ export default function Mahsulotlar() {
 
       {store.yuklanmoqda ? <div className="flex h-72 items-center justify-center"><LoaderCircle className="animate-spin text-orange-500" size={34}/></div> : tab === "mahsulotlar" ? (
         <section className="space-y-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
-            <label className="flex h-11 w-full max-w-xl items-center gap-2 rounded-2xl border bg-white px-4 lg:flex-none"><Search size={17} className="text-gray-400"/><input value={qidiruv} onChange={e=>setQidiruv(e.target.value)} className="min-w-0 flex-1 outline-none" placeholder="Mahsulot, shtrix-kod yoki artikul..."/></label>
+          <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:gap-3">
+            <label className="flex h-11 w-full max-w-xl items-center gap-2 rounded-2xl border bg-white px-4 lg:flex-1"><Search size={17} className="text-gray-400"/><input value={qidiruv} onChange={e=>setQidiruv(e.target.value)} className="min-w-0 flex-1 outline-none" placeholder="Mahsulot, shtrix-kod yoki artikul..."/></label>
+            {excelAmallariMumkin&&<>
+              <button type="button" onClick={()=>setImportModalOchiq(true)} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-blue-100 bg-white px-4 font-bold text-blue-600 hover:border-blue-200 hover:bg-blue-50"><Upload size={17}/>Import</button>
+              <button type="button" disabled={excelAmali!==null} onClick={()=>void mahsulotlarniExportQilish()} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-blue-100 bg-white px-4 font-bold text-blue-600 disabled:opacity-50 hover:border-blue-200 hover:bg-blue-50">{excelAmali==="export"?<LoaderCircle size={17} className="animate-spin"/>:<Download size={17}/>}Export</button>
+              <button type="button" disabled={excelAmali!==null} onClick={()=>void importShabloniniYuklash()} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 font-bold text-slate-600 disabled:opacity-50 hover:border-blue-200 hover:text-blue-600">{excelAmali==="template"?<LoaderCircle size={17} className="animate-spin"/>:<FileSpreadsheet size={17}/>}Shablon yuklab olish</button>
+            </>}
             <div className="relative">
               <button type="button" onClick={()=>setKorinishMenu((value)=>!value)} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 font-bold text-gray-600 shadow-sm hover:border-orange-200 hover:text-orange-600 lg:w-auto">
                 <TanlanganIcon size={17} className="text-orange-500"/>
@@ -314,12 +366,174 @@ export default function Mahsulotlar() {
       {mahsulotModal&&<MahsulotModalKeng item={mahsulotModal} onClose={()=>setMahsulotModal(null)}/>}
       {oddiyModal&&<OddiyModal item={oddiyModal} onClose={()=>setOddiyModal(null)}/>}
       {modProduct&&<ModifikatsiyalarModal product={modProduct} onClose={()=>setModProduct(null)}/>}
+      {importModalOchiq&&<MahsulotImportModal onClose={()=>setImportModalOchiq(false)} onImported={yuklash}/>}
     </div>
   );
 }
 
 function Empty({matn}:{matn:string}) {
   return <div className="col-span-full rounded-[24px] border border-dashed border-orange-200 p-12 text-center text-gray-400">{matn}</div>;
+}
+
+function dispositionFaylNomi(disposition: string) {
+  const utf8 = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+  const oddiy = disposition.match(/filename="?([^";]+)"?/i)?.[1];
+  const qiymat = utf8 ?? oddiy;
+  if (!qiymat) return "";
+  try {
+    return decodeURIComponent(qiymat).split(/[\\/]/).pop()?.trim() ?? "";
+  } catch {
+    return qiymat.split(/[\\/]/).pop()?.trim() ?? "";
+  }
+}
+
+function excelFaylniSaqlash(blob: Blob, disposition: string, fallback: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = dispositionFaylNomi(disposition) || fallback;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function excelXatoXabariniOlish(error: unknown) {
+  const data = (error as { response?: { data?: unknown } })?.response?.data;
+  if (data instanceof Blob) {
+    try {
+      const body = JSON.parse(await data.text()) as {
+        message?: string | string[];
+        detail?: string;
+        error?: string;
+      };
+      if (Array.isArray(body.message)) return body.message.join(" ");
+      if (body.message) return body.message;
+      if (body.detail) return body.detail;
+      if (body.error) return body.error;
+    } catch {
+      // JSON bo'lmagan binary xato javobida loyihaning standart handleriga o'tiladi.
+    }
+  }
+  return getApiErrorMessage(error);
+}
+
+function MahsulotImportModal({onClose,onImported}:{onClose:()=>void;onImported:()=>Promise<void>}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [natija, setNatija] = useState<MahsulotImportNatijasi | null>(null);
+  const [bosqich, setBosqich] = useState<"preview" | "result">("preview");
+  const [amal, setAmal] = useState<"dryRun" | "import" | null>(null);
+  const [xatolik, setXatolik] = useState("");
+  const band = amal !== null;
+
+  async function dryRun(chosenFile: File) {
+    if (band) return;
+    setAmal("dryRun");
+    setXatolik("");
+    setNatija(null);
+    setBosqich("preview");
+    try {
+      setNatija(await mahsulotlarApi.importQilish(chosenFile, true));
+    } catch (error) {
+      setXatolik(getApiErrorMessage(error));
+    } finally {
+      setAmal(null);
+    }
+  }
+
+  async function faylTanlandi(event: ChangeEvent<HTMLInputElement>) {
+    const chosenFile = event.target.files?.[0];
+    event.target.value = "";
+    if (!chosenFile) return;
+    if (!chosenFile.name.toLocaleLowerCase().endsWith(".xlsx")) {
+      setFile(null);
+      setNatija(null);
+      setXatolik("Faqat .xlsx formatidagi faylni tanlang.");
+      return;
+    }
+    if (chosenFile.size > 2 * 1024 * 1024) {
+      setFile(null);
+      setNatija(null);
+      setXatolik("Fayl hajmi 2 MB dan oshmasligi kerak.");
+      return;
+    }
+    setFile(chosenFile);
+    await dryRun(chosenFile);
+  }
+
+  async function importniTasdiqlash() {
+    if (!file || band) return;
+    setAmal("import");
+    setXatolik("");
+    try {
+      const result = await mahsulotlarApi.importQilish(file);
+      setNatija(result);
+      setBosqich("result");
+      await onImported();
+    } catch (error) {
+      setXatolik(getApiErrorMessage(error));
+    } finally {
+      setAmal(null);
+    }
+  }
+
+  function boshidanBoshlash() {
+    setFile(null);
+    setNatija(null);
+    setBosqich("preview");
+    setXatolik("");
+    inputRef.current?.click();
+  }
+
+  const preview = bosqich === "preview";
+  return <AppModal><div className="scrollbar-hidden max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-[30px] bg-white shadow-2xl">
+    <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+      <div><p className="text-sm font-bold uppercase tracking-[0.16em] text-blue-600">Excel import</p><h2 className="mt-1 text-2xl font-black text-slate-900">Mahsulotlarni import qilish</h2><p className="mt-1 text-sm text-slate-500">.xlsx fayl avval xavfsiz dry-run tekshiruvidan o'tadi.</p></div>
+      <button type="button" disabled={band} onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 disabled:opacity-50 hover:bg-slate-200"><X size={18}/></button>
+    </div>
+    <div className="space-y-5 p-6">
+      <input ref={inputRef} type="file" accept=".xlsx" disabled={band} onChange={(event)=>void faylTanlandi(event)} className="sr-only"/>
+      <button type="button" disabled={band} onClick={()=>inputRef.current?.click()} className="flex w-full items-center justify-center gap-3 rounded-2xl border border-dashed border-blue-200 bg-blue-50/60 px-5 py-5 font-black text-blue-700 disabled:opacity-50 hover:bg-blue-50">
+        {amal==="dryRun"?<LoaderCircle size={21} className="animate-spin"/>:<FileSpreadsheet size={21}/>}
+        {amal==="dryRun"?"Fayl tekshirilmoqda...":file?file.name:".xlsx faylni tanlash"}
+      </button>
+      <p className="text-center text-xs font-bold text-slate-400">Maksimal hajm: 2 MB. Fayldagi ma'lumotni frontend o'qimaydi yoki o'zgartirmaydi.</p>
+
+      {xatolik&&<div className="rounded-2xl bg-red-50 p-4 font-bold text-red-600">{xatolik}</div>}
+
+      {natija&&<>
+        <div className={`rounded-2xl border p-4 ${preview?"border-blue-100 bg-blue-50/50":"border-emerald-100 bg-emerald-50/60"}`}>
+          <p className={`font-black ${preview?"text-blue-700":"text-emerald-700"}`}>{preview?"Dry-run yakunlandi. Tasdiqlamaguningizcha o'zgarish saqlanmaydi.":"Import yakunlandi. Mahsulotlar ro'yxati yangilandi."}</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {[
+            ["Jami",natija.totalRows,"bg-slate-50 text-slate-700"],
+            [preview?"Yaratiladi":"Yaratildi",natija.created,"bg-emerald-50 text-emerald-700"],
+            [preview?"Yangilanadi":"Yangilandi",natija.updated,"bg-blue-50 text-blue-700"],
+            [preview?"O'tkaziladi":"O'tkazildi",natija.skipped,"bg-amber-50 text-amber-700"],
+            ["Xatolar",natija.errors.length,"bg-red-50 text-red-700"],
+          ].map(([label,value,color])=><div key={String(label)} className={`rounded-2xl p-4 ${color}`}><p className="text-xs font-black uppercase tracking-[0.12em] opacity-70">{label}</p><p className="mt-1 text-2xl font-black">{value}</p></div>)}
+        </div>
+
+        {(natija.createdCategories.length>0||natija.createdUnits.length>0)&&<div className="grid gap-4 md:grid-cols-2">
+          {natija.createdCategories.length>0&&<div className="rounded-2xl border border-emerald-100 p-4"><h3 className="font-black text-slate-800">Yangi kategoriyalar</h3><div className="mt-3 flex flex-wrap gap-2">{natija.createdCategories.map((item,index)=><span key={`${item.id??item.name}-${index}`} className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700">{item.name}</span>)}</div></div>}
+          {natija.createdUnits.length>0&&<div className="rounded-2xl border border-blue-100 p-4"><h3 className="font-black text-slate-800">Yangi o'lchov birliklari</h3><div className="mt-3 flex flex-wrap gap-2">{natija.createdUnits.map((item,index)=><span key={`${item.id??item.name}-${index}`} className="rounded-full bg-blue-50 px-3 py-1 text-sm font-bold text-blue-700">{item.name}</span>)}</div></div>}
+        </div>}
+
+        {natija.errorsTruncated&&<div className="rounded-2xl bg-amber-50 p-4 font-bold text-amber-800">Xatolar soni ko'p. Faqat dastlabki 500 ta xato ko'rsatildi.</div>}
+        {natija.errors.length>0&&<div className="overflow-hidden rounded-2xl border border-red-100">
+          <div className="border-b border-red-100 bg-red-50 px-4 py-3"><h3 className="font-black text-red-700">Qator xatolari</h3></div>
+          <div className="max-h-80 overflow-auto"><table className="min-w-full text-left text-sm"><thead className="sticky top-0 bg-slate-50 text-xs font-black uppercase tracking-[0.1em] text-slate-500"><tr><th className="px-4 py-3">Excel qatori</th><th className="px-4 py-3">Ustun</th><th className="px-4 py-3">Xabar</th><th className="px-4 py-3">Qiymat</th></tr></thead><tbody className="divide-y divide-slate-100">{natija.errors.map((error,index)=><tr key={`${error.row}-${error.column??""}-${index}`}><td className="px-4 py-3 font-black text-slate-800">{error.row}</td><td className="px-4 py-3 font-bold text-slate-600">{error.column??"—"}</td><td className="min-w-72 px-4 py-3 text-slate-700">{error.message}</td><td className="max-w-64 break-all px-4 py-3 text-slate-500">{error.value??"—"}</td></tr>)}</tbody></table></div>
+        </div>}
+      </>}
+    </div>
+    <div className="flex flex-col-reverse gap-3 border-t border-slate-100 px-6 py-4 sm:flex-row sm:justify-end">
+      <button type="button" disabled={band} onClick={onClose} className="h-11 rounded-2xl bg-slate-100 px-5 font-bold text-slate-700 disabled:opacity-50">Yopish</button>
+      {natija&&<button type="button" disabled={band} onClick={boshidanBoshlash} className="h-11 rounded-2xl border border-slate-200 bg-white px-5 font-bold text-slate-700 disabled:opacity-50">Boshqa fayl tanlash</button>}
+      {natija&&preview&&<button type="button" disabled={band||!file} onClick={()=>void importniTasdiqlash()} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 font-black text-white disabled:opacity-50">{amal==="import"&&<LoaderCircle size={17} className="animate-spin"/>}Importni tasdiqlash</button>}
+    </div>
+  </div></AppModal>;
 }
 
 function formatNumberInput(value:string) {

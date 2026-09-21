@@ -107,9 +107,9 @@ const rolMatni: Record<string, string> = {
 
 // Yopiq holatda (64px) faqat ikonka ko'rinadi: qator 48px kenglikda, ikonka 18px va 15px chetlari.
 const qatorKlass =
-  "relative flex h-[46px] w-full items-center gap-3 rounded-[10px] px-[15px] text-[14.5px] transition-colors duration-200";
-const qatorFaolKlass = "bg-[#123A55] font-semibold text-white";
-const qatorOddiyKlass = "font-medium text-[#8391A7] hover:bg-[#122036] hover:text-slate-100";
+  "relative flex h-[46px] w-full items-center gap-3 px-[15px] text-[14.5px] transition-colors duration-200";
+const qatorFaolKlass = "rounded-none bg-[#123A55] font-semibold text-white";
+const qatorOddiyKlass = "rounded-[10px] font-medium text-[#8391A7] hover:bg-[#122036] hover:text-slate-100";
 // Matn faqat sidebar ochiq (toggle) bo'lganda ko'rinadi.
 const yorliqKlass =
   "min-w-0 truncate whitespace-nowrap transition-opacity duration-200";
@@ -230,10 +230,10 @@ export default function YonPanel({ acik }: { acik: boolean }) {
                             key={bola.path}
                             to={bola.path}
                             tabIndex={ochiq ? 0 : -1}
-                            className={`relative flex h-10 items-center gap-2.5 truncate whitespace-nowrap rounded-lg px-3 text-[14px] transition-colors duration-200 ${
+                            className={`relative flex h-10 items-center gap-2.5 truncate whitespace-nowrap px-3 text-[14px] transition-colors duration-200 ${
                               faol
-                                ? "bg-[#15506F] font-semibold text-sky-100 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-[3px] before:rounded-full before:bg-sky-400"
-                                : "font-medium text-[#8391A7] hover:bg-[#122036] hover:text-slate-100"
+                                ? "rounded-none bg-[#15506F] font-semibold text-sky-100 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-[3px] before:rounded-full before:bg-sky-400"
+                                : "rounded-lg font-medium text-[#8391A7] hover:bg-[#122036] hover:text-slate-100"
                             }`}
                           >
                             <BolaIcon

@@ -101,6 +101,35 @@ export type MahsulotMalumoti = {
   isActive?: boolean;
 };
 
+export type MahsulotImportNatijasi = {
+  dryRun: boolean;
+  totalRows: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  createdCategories: Array<{
+    id: string | null;
+    name: string;
+  }>;
+  createdUnits: Array<{
+    id: string | null;
+    name: string;
+  }>;
+  errors: Array<{
+    row: number;
+    column: string | null;
+    code: string;
+    message: string;
+    value: string | null;
+  }>;
+  errorsTruncated: boolean;
+};
+
+export type MahsulotExportFiltrlari = {
+  categoryId?: string;
+  isActive?: boolean;
+};
+
 export type NarxMalumoti = {
   costPrice?: number;
   retailPrice?: number;
