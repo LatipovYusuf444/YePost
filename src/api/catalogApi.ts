@@ -119,6 +119,10 @@ export const mahsulotlarApi = {
       MahsulotImportNatijasi | ApiEnvelope<MahsulotImportNatijasi>
     >("/catalog/products/import", formData, {
       params: dryRun ? { dryRun: true } : undefined,
+      // apiClient bazaviy "Content-Type: application/json" headerini o'zida saqlaydi.
+      // Buni shu so'rovda bekor qilmasak, axios FormData'ni multipart o'rniga
+      // JSON'ga aylantirib yuboradi (backend "Bad request" bilan javob beradi).
+      headers: { "Content-Type": null },
     });
     return apiData(response.data);
   },
