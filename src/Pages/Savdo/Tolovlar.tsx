@@ -261,7 +261,7 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
         )}
       </div>
 
-      <div className="mt-5 flex flex-col gap-3 text-sm font-semibold text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+      <div className="table-pagination mt-5 flex flex-col gap-3 text-sm font-semibold text-slate-500 sm:flex-row sm:items-center sm:justify-between">
         <span>
           Jami: {jami} ta to'lov. Sahifa {currentPage}/{totalPages}
         </span>

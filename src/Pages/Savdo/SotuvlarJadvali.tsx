@@ -241,7 +241,7 @@ export default function SotuvlarJadvali({
       </div>
 
       {sotuvlar.length > pageSize && (
-        <div className="mt-5 flex flex-col gap-3 border-t border-gray-100 pt-5 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+        <div className="table-pagination mt-5 flex flex-col gap-3 border-t border-gray-100 pt-5 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between">
           <span>
             {sotuvlar.length} ta yozuvdan {(currentPage - 1) * pageSize + 1}-
             {Math.min(currentPage * pageSize, sotuvlar.length)} ko'rsatilmoqda

@@ -293,7 +293,7 @@ export default function BoshSahifa() {
   }
 
   return (
-    <div className="mx-auto grid min-h-[calc(100vh-214px)] w-full max-w-[1560px] grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_390px]">
+    <div className="grid min-h-[calc(100vh-214px)] w-full min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_minmax(390px,24%)]">
       <section className="flex min-h-[520px] flex-col rounded-[26px] border-2 border-gold-200 bg-white/86 p-4 shadow-gold-soft sm:p-5 xl:p-6">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div>

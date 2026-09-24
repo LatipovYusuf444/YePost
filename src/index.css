@@ -326,9 +326,10 @@ table:not(:where(.font-serif *)) {
   font-size: 14px;
   line-height: 20px;
   font-variant-numeric: tabular-nums;
+  background-color: #FFFFFF;
 }
 
-table:not(:where(.font-serif *)) :is(thead, thead tr, thead th) {
+table:not(:where(.font-serif *)) :is(thead, thead tr, thead th:not([class*="bg-"])) {
   background-color: #F8FAFC;
 }
 
@@ -340,19 +341,29 @@ table:not(:where(.font-serif *)) thead th {
   letter-spacing: normal !important;
   text-transform: none !important;
   color: #475569 !important;
+  border-bottom: 1px solid #E2E8F0;
+  padding-top: 12px;
+  padding-bottom: 12px;
 }
 
 table:not(:where(.font-serif *)) :is(thead, tbody, tr, th, td) {
   border-color: #E2E8F0;
 }
 
-table:not(:where(.font-serif *)) tbody,
-table:not(:where(.font-serif *)) tbody td {
+table:not(:where(.font-serif *)) tbody {
   font-family: inherit;
   font-size: 14px !important;
   font-weight: 500;
   line-height: 20px;
   color: #1E293B;
+}
+
+table:not(:where(.font-serif *)) tbody td:not([colspan]) {
+  font-family: inherit;
+  font-size: 14px !important;
+  line-height: 20px;
+  padding-top: 12px;
+  padding-bottom: 12px;
 }
 
 /* Katakcha ichidagi ikkilamchi (kulrang) va asosiy (to'q) matn ranglari bir xil. Fonli elementlar
@@ -370,9 +381,49 @@ table:not(:where(.font-serif *)) tbody :is(p, span, div):is(.text-orange-500, .t
   color: #1E293B;
 }
 
-table:not(:where(.font-serif *)) tbody :is(.font-black, .font-extrabold, .font-bold),
+table:not(:where(.font-serif *)) tbody :is(.font-black, .font-extrabold, .font-bold):not([class*="bg-"]),
 table:not(:where(.font-serif *)) thead :is(.font-black, .font-extrabold, .font-bold, .font-medium) {
   font-weight: 600;
+}
+
+/* Mavjud table actionlari saqlanadi; faqat ikonli tugmalarning ko'rinishi bir xil. */
+table:not(:where(.font-serif *)) tbody td:not([colspan]) button:has(svg) {
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 12px;
+  gap: 6px;
+}
+
+table:not(:where(.font-serif *)) tbody td:not([colspan]) button:has(svg.lucide-eye) {
+  background-color: #F1F5F9;
+  color: #475569;
+}
+
+table:not(:where(.font-serif *)) tbody td:not([colspan]) button:has(:is(svg.lucide-pen-line, svg.lucide-pencil, svg.lucide-square-pen)) {
+  background-color: #EFF6FF;
+  color: #2563EB;
+}
+
+table:not(:where(.font-serif *)) tbody td:not([colspan]) button:has(:is(svg.lucide-trash-2, svg.lucide-trash)) {
+  background-color: #FEF2F2;
+  color: #DC2626;
+}
+
+table:not(:where(.font-serif *)) tbody td:not([colspan]) button:has(svg.lucide-eye):hover {
+  background-color: #E2E8F0;
+}
+
+table:not(:where(.font-serif *)) tbody td:not([colspan]) button:has(:is(svg.lucide-pen-line, svg.lucide-pencil, svg.lucide-square-pen)):hover {
+  background-color: #DBEAFE;
+}
+
+table:not(:where(.font-serif *)) tbody td:not([colspan]) button:has(:is(svg.lucide-trash-2, svg.lucide-trash)):hover {
+  background-color: #FEE2E2;
+}
+
+table:not(:where(.font-serif *)) tbody td:not([colspan]) button:has(svg):focus-visible {
+  outline: 2px solid #93C5FD;
+  outline-offset: 2px;
 }
 
 /* Mavjud qator hoveri bo'lsa, rangi bir xil och kulrang. */
@@ -385,6 +436,29 @@ table:not(:where(.font-serif *)) input,
 table:not(:where(.font-serif *)) select,
 table:not(:where(.font-serif *)) textarea {
   font-family: inherit;
+}
+
+.table-pagination {
+  font-family: "Geist Variable", Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748B;
+}
+
+.table-pagination button {
+  min-height: 40px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.table-pagination button[class*="border"] {
+  border-color: #E2E8F0;
+}
+
+.table-pagination button[class*="border"]:not(:disabled):hover {
+  border-color: #93C5FD;
+  color: #1D4ED8;
 }
 
 /* Savdo bo'limining barcha tablarida jadval tipografiyasi yagona ko'rinishda. */

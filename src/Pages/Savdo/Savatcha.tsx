@@ -503,7 +503,7 @@ export default function Savatcha({
             </table>
           </div>
 
-          <div className="mt-4 flex flex-col gap-3 text-sm font-semibold text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+          <div className="table-pagination mt-4 flex flex-col gap-3 text-sm font-semibold text-slate-500 sm:flex-row sm:items-center sm:justify-between">
             <span>
               Jami: {filtered.length} ta qoralama. Sahifa {currentPage}/{totalPages}
             </span>
