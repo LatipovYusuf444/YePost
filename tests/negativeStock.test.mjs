@@ -140,11 +140,11 @@ test('settings toggle is enabled for admin/director once loaded and read-only fo
   }
 });
 
-test('grant codes use the documented PUT user endpoint, retain unknown codes and refresh server records', async () => {
+test('grant codes use the documented PUT user endpoint, retain unknown codes and take server records from its response', async () => {
   const calls = [];
   const grants = [{ id: 'g', userId: 'employee', code: 'NEGATIVE_STOCK_SALE', isActive: true }];
   const api = compile('../src/api/accountsApi.ts', {
-    './axios': { __esModule: true, default: { put: async (...args) => calls.push(args), get: async () => ({ data: grants }) } },
+    './axios': { __esModule: true, default: { put: async (...args) => { calls.push(args); return { data: grants }; }, get: async () => { throw new Error('PUT javobi yetadi, butun ro\'yxat qayta olinmaydi'); } } },
     './response': { apiList: response => response, apiData: response => response, ruxsatsizBulsaBosh: callback => callback() },
     '@/lib/malumotnomaKeshi': { malumotnomaniOlish: (guruh, nom, yuklash) => yuklash(), ozgartirishdanKeyinTozalash: (guruh, amal) => amal() },
   });
