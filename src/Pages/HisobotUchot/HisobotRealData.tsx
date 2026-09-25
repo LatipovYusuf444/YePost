@@ -60,7 +60,11 @@ type MovementRow = {
   modificationId?: string;
 };
 
-type CounterpartySummary = { total?: number | string; paid?: number | string; debt?: number | string };
+type BalanceRow = {
+  counterpartyId: string;
+  debit?: number | string;
+  credit?: number | string;
+};
 type ProfitRow = {
   productId?: string;
   productName?: string;
@@ -180,42 +184,32 @@ export function HisobotRealDataProvider({ children }: { children: ReactNode }) {
         const suppliers = selections.suppliers as ApiTanlov[];
         const companies = selections.companies as ApiTanlov[];
 
-        const movementRequests = modifications.flatMap((modification) => {
-          const targets = warehouses.length ? warehouses : [null];
-          return targets.map(async (warehouse) => ({
-            modification,
-            warehouse,
-            rows: list<MovementRow>(
-              await stockMovementReportApi.olish({
-                modificationIds: modification.id,
-                warehouseIds: warehouse?.id,
-                page: 1,
-                pageSize: 500,
-              })
-            ),
-          }));
-        });
-
-        const [movementGroups, balances, profitRaw, incomeRaw, auditRaw, transactionsResponse] =
+        // Butun workspace harakati va balanslari har biri bitta (sahifalangan) so'rovda —
+        // variant × ombor yoki har bir kontragent uchun alohida so'rov (N+1) o'rniga.
+        const warehouseIds = warehouses.map((warehouse) => warehouse.id).join(",");
+        const [movementRaw, customerBalanceRaw, supplierBalanceRaw, profitRaw, incomeRaw, auditRaw, transactionsResponse] =
           await Promise.all([
-            Promise.all(movementRequests),
-            Promise.all([
-              ...customers.map(async (item) => ({
-                item,
-                turi: "mijoz" as const,
-                summary: (await counterpartyBalanceReportApi.olish({ customerId: item.id })) as CounterpartySummary,
-              })),
-              ...suppliers.map(async (item) => ({
-                item,
-                turi: "yetkazibBeruvchi" as const,
-                summary: (await counterpartyBalanceReportApi.olish({ supplierId: item.id })) as CounterpartySummary,
-              })),
-            ]),
+            warehouseIds ? stockMovementReportApi.barchasi({ warehouseIds }) : Promise.resolve([]),
+            customers.length ? counterpartyBalanceReportApi.barchasi({ counterpartyType: "CUSTOMER" }) : Promise.resolve([]),
+            suppliers.length ? counterpartyBalanceReportApi.barchasi({ counterpartyType: "SUPPLIER" }) : Promise.resolve([]),
             productProfitReportApi.olish({}),
             incomeExpenseReportApi.olish({}),
             auditLogsOlish({ page: 1, pageSize: 100 }),
             apiClient.get("/finance/transactions", { params: { page: 1, pageSize: 100 } }),
           ]);
+
+        const balansXaritasi = (raw: unknown) =>
+          new Map(list<BalanceRow>(raw).map((row) => [row.counterpartyId, row]));
+        const mijozBalanslari = balansXaritasi(customerBalanceRaw);
+        const taminotchiBalanslari = balansXaritasi(supplierBalanceRaw);
+        const balances = [
+          ...customers.map((item) => ({ item, turi: "mijoz" as const, balans: mijozBalanslari.get(item.id) })),
+          ...suppliers.map((item) => ({
+            item,
+            turi: "yetkazibBeruvchi" as const,
+            balans: taminotchiBalanslari.get(item.id),
+          })),
+        ];
 
         const maxsulotlar: Maxsulot[] = products.map((product) => {
           const modification = modifications.find((item) => item.product?.id === product.id);
@@ -233,39 +227,44 @@ export function HisobotRealDataProvider({ children }: { children: ReactNode }) {
           };
         });
 
-        const tovarHarakati: TovarHarakati[] = movementGroups.flatMap(
-          ({ modification, warehouse, rows }) =>
-            rows.map((row, index) => ({
-              id: `${modification.id}-${warehouse?.id ?? "all"}-${row.refId ?? index}-${row.date ?? index}-${row.type ?? ""}`,
-              sana: row.date ?? "",
-              hujjatTuri: movementType(row.type),
-              hujjatRaqam: row.docNumber ?? row.refId ?? "",
-              productId: row.productId ?? modification.product?.id ?? "",
-              xarakteristikaId: row.modificationId ?? modification.id,
-              categoryId:
-                row.categoryId ??
-                products.find((product) => product.id === modification.product?.id)?.category?.id ??
-                "",
-              warehouseId: row.warehouseId ?? warehouse?.id ?? "",
-              filialId: row.branchId ?? warehouse?.branchId ?? "",
-              miqdor: Math.abs(number(row.quantity)),
-              customerId: "",
-              supplierId: "",
-            }))
-        );
+        const variantXaritasi = new Map(modifications.map((item) => [item.id, item]));
+        const omborXaritasi = new Map(warehouses.map((item) => [item.id, item]));
+        const tovarHarakati: TovarHarakati[] = list<MovementRow>(movementRaw).map((row, index) => {
+          const modification = row.modificationId ? variantXaritasi.get(row.modificationId) : undefined;
+          const warehouse = row.warehouseId ? omborXaritasi.get(row.warehouseId) : undefined;
+          return {
+            id: `${row.modificationId ?? "variant"}-${row.warehouseId ?? "all"}-${row.refId ?? ""}-${row.date ?? ""}-${row.type ?? ""}-${index}`,
+            sana: row.date ?? "",
+            hujjatTuri: movementType(row.type),
+            hujjatRaqam: row.docNumber ?? row.refId ?? "",
+            productId: row.productId ?? modification?.product?.id ?? "",
+            xarakteristikaId: row.modificationId ?? "",
+            categoryId:
+              row.categoryId ??
+              products.find((product) => product.id === modification?.product?.id)?.category?.id ??
+              "",
+            warehouseId: row.warehouseId ?? "",
+            filialId: row.branchId ?? warehouse?.branchId ?? "",
+            miqdor: Math.abs(number(row.quantity)),
+            customerId: "",
+            supplierId: "",
+          };
+        });
 
         const kontragentlar: Kontragent[] = balances.map(({ item, turi }) => ({
           refId: item.id,
           turi,
         }));
-        const hisobKitob: HisobKitobHujjati[] = balances.map(({ item, turi, summary }) => ({
+        // Backend konvensiyasi: debit kontragent qarzini oshiradi, credit kamaytiradi.
+        // Mijozda to'lov = credit, sotuv = debit; ta'minotchida to'lov = debit, xarid = credit.
+        const hisobKitob: HisobKitobHujjati[] = balances.map(({ item, turi, balans }) => ({
           id: `balance-${item.id}`,
           refId: item.id,
           sana: new Date().toISOString(),
           hujjat: turi === "mijoz" ? "Backend mijoz balansi" : "Backend ta'minotchi balansi",
           turi: turi === "mijoz" ? "realizatsiya" : "xarid",
-          prixod: number(summary.paid),
-          rasxod: number(summary.total),
+          prixod: number(turi === "mijoz" ? balans?.credit : balans?.debit),
+          rasxod: number(turi === "mijoz" ? balans?.debit : balans?.credit),
         }));
 
         const mahsulotFoydasi: MahsulotFoydasi[] = list<ProfitRow>(profitRaw).map((row, index) => ({

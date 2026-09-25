@@ -56,6 +56,7 @@ export type MahsulotModifikatsiyasi = {
   imageUrl?: string | null;
   minStock?: number | string | null;
   price?: MahsulotNarxi | null;
+  product?: (Pick<Mahsulot, "id" | "name"> & Partial<Mahsulot>) | null;
   createdAt?: string;
   updatedAt?: string;
 };

@@ -1,5 +1,6 @@
 import apiClient from "./axios";
 import axios from "axios";
+import { modifikatsiyalarApi } from "./catalogApi";
 import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import type {
   MijozTanlovi,
@@ -261,63 +262,44 @@ export async function qoldiqNomlariniBoyitish(qoldiqlar: QoldiqTanlovi[]) {
 
 // YangiSotuvModal.tsx: ombor qoldig'ida bo'lmasa ham katalogdagi real mahsulot
 // modifikatsiyalarini sotuv tanlovida ko'rsatish uchun ishlatiladi.
-export async function katalogModifikatsiyalariniQoldiqTanlovigaOlish() {
-  const products = royxatniAjratish(
-    (await apiClient.get<RoyxatJavobi<Mahsulot>>("/catalog/products")).data
-  );
-  const faolProducts = products.filter((product) => product.isActive !== false);
-  const qoldiqTanlovlari: QoldiqTanlovi[] = [];
+export async function katalogModifikatsiyalariniQoldiqTanlovigaOlish(): Promise<QoldiqTanlovi[]> {
+  const modifications = await modifikatsiyalarApi.barchasi();
 
-  await Promise.all(
-    faolProducts.map(async (product) => {
-      try {
-        const modifications = royxatniAjratish(
-          (
-          await apiClient.get<RoyxatJavobi<MahsulotModifikatsiyasi>>(
-            `/catalog/products/${product.id}/modifications`
-          )
-          ).data
-        );
-
-        qoldiqTanlovlari.push(
-          ...modifications.map((modification) => ({
-            productId: product.id,
-            modificationId: modification.id,
-            quantity: 0,
-            balance: 0,
-            sellingPrice: Number(
-              modification.price?.retailPrice ??
-                modification.price?.wholesalePrice ??
-                0
-            ),
-            price: Number(
-              modification.price?.retailPrice ??
-                modification.price?.wholesalePrice ??
-                0
-            ),
-            modification: {
-              id: modification.id,
-              name: modification.name ?? "Asosiy variant",
-              barcode: modification.barcode,
-              article: modification.article,
-              product: {
-                id: product.id,
-                name: product.name,
-              },
-              price: {
-                costPrice: Number(modification.price?.costPrice ?? 0),
-                retailPrice: Number(modification.price?.retailPrice ?? 0),
-                wholesalePrice: Number(modification.price?.wholesalePrice ?? 0),
-                sellingPrice: Number(modification.price?.retailPrice ?? 0),
-              },
-            },
-          }))
-        );
-      } catch {
-        // Bitta mahsulot varianti olinmasa, qolgan mahsulotlar sotuvda chiqishda davom etadi.
-      }
-    })
-  );
-
-  return qoldiqTanlovlari;
+  return modifications
+    .filter((modification) => modification.product?.isActive !== false)
+    .map((modification) => {
+      const productId = modification.productId ?? modification.product?.id;
+      return {
+        productId,
+        modificationId: modification.id,
+        quantity: 0,
+        balance: 0,
+        sellingPrice: Number(
+          modification.price?.retailPrice ??
+            modification.price?.wholesalePrice ??
+            0
+        ),
+        price: Number(
+          modification.price?.retailPrice ??
+            modification.price?.wholesalePrice ??
+            0
+        ),
+        modification: {
+          id: modification.id,
+          name: modification.name ?? "Asosiy variant",
+          barcode: modification.barcode,
+          article: modification.article,
+          product: {
+            id: productId ?? "",
+            name: modification.product?.name ?? "",
+          },
+          price: {
+            costPrice: Number(modification.price?.costPrice ?? 0),
+            retailPrice: Number(modification.price?.retailPrice ?? 0),
+            wholesalePrice: Number(modification.price?.wholesalePrice ?? 0),
+            sellingPrice: Number(modification.price?.retailPrice ?? 0),
+          },
+        },
+      };
+    });
 }

@@ -148,7 +148,7 @@ export default function Mahsulotlar() {
   const store = useMahsulotlarStore();
   const profil = useAuthProfileStore((state) => state.profil);
   const yuklash = store.yuklash;
-  const modifikatsiyalarniYuklash = store.modifikatsiyalarniYuklash;
+  const barchaModifikatsiyalarniYuklash = store.barchaModifikatsiyalarniYuklash;
   const [tab, setTab] = useState<Tab>("mahsulotlar");
   const [qidiruv, setQidiruv] = useState("");
   const [korinish, setKorinish] = useState<Korinish>("jadval");
@@ -173,10 +173,8 @@ export default function Mahsulotlar() {
       : store.mahsulotlar;
   }, [qidiruv, store.mahsulotlar]);
   useEffect(() => {
-    store.mahsulotlar.forEach((item) => {
-      if (!useMahsulotlarStore.getState().modifikatsiyalar[item.id]) void modifikatsiyalarniYuklash(item.id);
-    });
-  }, [store.mahsulotlar, modifikatsiyalarniYuklash]);
+    if (store.mahsulotlar.length) void barchaModifikatsiyalarniYuklash();
+  }, [store.mahsulotlar, barchaModifikatsiyalarniYuklash]);
   const pageCount = Math.max(1, Math.ceil(mahsulotlar.length / pageSize));
   const currentPage = Math.min(page, pageCount);
   const paginatedMahsulotlar = mahsulotlar.slice((currentPage - 1) * pageSize, currentPage * pageSize);
