@@ -1,0 +1,59 @@
+{
+  "searchPlaceholder": "Qidirish...",
+  "sidebarOpen": "Yon panelni ochish",
+  "sidebarClose": "Yon panelni yopish",
+  "addProduct": "Mahsulot qo'shish",
+  "notifications": {
+    "title": "Bildirishnomalar",
+    "aria": "Bildirishnomalar",
+    "unreadCount": "{{count}} ta o'qilmagan",
+    "markAllRead": "Hammasi o'qildi",
+    "empty": "Bildirishnomalar yo'q",
+    "defaultTitle": "Bildirishnoma",
+    "defaultMessage": "Yangi CRM hodisasi",
+    "closeAria": "Bildirishnomalarni yopish"
+  },
+  "profile": {
+    "menuAria": "Profil menyusi",
+    "closeAria": "Profil menyusini yopish",
+    "myProfile": "Mening profilim",
+    "settings": "Sozlamalar",
+    "logout": "Tizimdan chiqish",
+    "defaultName": "Foydalanuvchi",
+    "unknownRole": "..."
+  },
+  "posModal": {
+    "title": "Mahsulot tanlash",
+    "closeAria": "Yopish",
+    "refreshAria": "Yangilash",
+    "clearSearchAria": "Qidiruvni tozalash",
+    "productsAria": "Mahsulotlar",
+    "searchPlaceholder": "Mahsulot, shtrix-kod yoki artikul...",
+    "selectWarehouse": "Omborni tanlang",
+    "warehouseNotFound": "Ombor topilmadi",
+    "retail": "Chakana",
+    "wholesale": "Ulgurji",
+    "loading": "Mahsulotlar yuklanmoqda...",
+    "noProducts": "Tanlangan omborda sotuv uchun mavjud mahsulot yo'q",
+    "noCode": "Kod kiritilmagan",
+    "decreaseAria": "Kamaytirish",
+    "increaseAria": "Ko'paytirish",
+    "selectAria": "Tanlash",
+    "stock": "Qoldiq",
+    "price": "Narx",
+    "noStock": "Bu omborda qoldiq yo'q",
+    "noPrice": "Narx kiritilmagan",
+    "selectedProducts": "Tanlangan mahsulotlar",
+    "unit": "dona",
+    "addToCart": "Savatchaga qo'shish",
+    "errors": {
+      "warehousesLoadFailed": "Omborlar ro'yxati olinmadi",
+      "stockLoadFailed": "Mahsulot qoldiqlari olinmadi",
+      "warehouseStockLoadFailed": "Tanlangan ombor qoldig'i backenddan olinmadi",
+      "catalogLoadFailed": "Katalog olinmadi, ombordagi mavjud qoldiqlar ko'rsatildi",
+      "noStock": "Bu mahsulot bo'yicha qoldiq yo'q",
+      "noPrice": "Bu mahsulot narxi backendda kiritilmagan",
+      "mixedWarehouse": "Savatchada boshqa ombor mahsuloti bor. Bitta sotuv faqat bitta ombordan qilinadi."
+    }
+  }
+}

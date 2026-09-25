@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 type OmborJadvalProps = {
   children: ReactNode;
@@ -26,6 +27,7 @@ const BOSHLANGICH_SCROLL = { left: 0, clientWidth: 0, scrollWidth: 0 };
  * Jadvalning o'z ma'lumoti va actionlari children ichida o'zgarishsiz qoladi.
  */
 export default function OmborJadval({ children, className = "" }: OmborJadvalProps) {
+  const { t } = useTranslation("ombor_kichik");
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [scroll, setScroll] = useState<ScrollHolati>(BOSHLANGICH_SCROLL);
@@ -179,7 +181,7 @@ export default function OmborJadval({ children, className = "" }: OmborJadvalPro
           onClick={() => yonTomongaYurish(-1)}
           disabled={scroll.left <= 1}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-white text-orange-500 shadow-sm transition hover:bg-orange-50 disabled:cursor-default disabled:opacity-40"
-          aria-label="Jadvalni chapga surish"
+          aria-label={t("omborJadval.scrollLeftAria")}
         >
           <ChevronLeft size={22} />
         </button>
@@ -195,7 +197,7 @@ export default function OmborJadval({ children, className = "" }: OmborJadvalPro
           onClick={() => yonTomongaYurish(1)}
           disabled={scroll.left >= maksimalScroll - 1}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-white text-orange-500 shadow-sm transition hover:bg-orange-50 disabled:cursor-default disabled:opacity-40"
-          aria-label="Jadvalni o'ngga surish"
+          aria-label={t("omborJadval.scrollRightAria")}
         >
           <ChevronRight size={22} />
         </button>

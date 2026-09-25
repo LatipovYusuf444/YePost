@@ -1,0 +1,249 @@
+{
+  "header": {
+    "eyebrow": "Mahsulot katalogi",
+    "title": "Katalog boshqaruvi",
+    "subtitle": "Kategoriya, birlik, mahsulot, modifikatsiya va narxlar real backendda saqlanadi.",
+    "refresh": "Yangilash"
+  },
+  "tabs": {
+    "products": "Mahsulotlar",
+    "categories": "Kategoriyalar"
+  },
+  "toolbar": {
+    "searchPlaceholder": "Mahsulot, shtrix-kod yoki artikul...",
+    "import": "Import",
+    "export": "Export",
+    "downloadTemplate": "Shablon yuklab olish",
+    "view": "Ko'rinish",
+    "addProduct": "Mahsulot qo'shish"
+  },
+  "views": {
+    "kartochka": "Kartochka",
+    "jadval": "Jadval"
+  },
+  "warnings": {
+    "needCategoryAndUnit": "Mahsulot yaratishdan oldin kamida bitta kategoriya va o'lchov birligi yarating."
+  },
+  "status": {
+    "active": "Faol",
+    "inactive": "Faol emas"
+  },
+  "empty": {
+    "products": "Mahsulotlar mavjud emas",
+    "noData": "Ma'lumot mavjud emas",
+    "variants": "Variantlar mavjud emas"
+  },
+  "notEntered": "Kiritilmagan",
+  "confirm": {
+    "deleteCategory": "Ushbu ma'lumotni o'chirasizmi?",
+    "deleteProduct": "Mahsulotni o'chirasizmi?",
+    "deleteVariant": "Variantni o'chirasizmi?"
+  },
+  "actions": {
+    "close": "Yopish",
+    "edit": "Tahrirlash",
+    "variants": "Variantlar",
+    "cancel": "Bekor qilish",
+    "save": "Saqlash",
+    "create": "Yaratish"
+  },
+  "card": {
+    "salePrice": "Sotuv narxi",
+    "costPrice": "Tan/kelish narxi",
+    "noPrice": "Narx mavjud emas",
+    "defaultVariant": "Variant"
+  },
+  "table": {
+    "index": "№",
+    "product": "Mahsulot",
+    "category": "Kategoriya",
+    "unit": "Birlik",
+    "barcode": "Shtrix-kod",
+    "article": "Artikul",
+    "status": "Holat",
+    "action": "Amal",
+    "perPage": "Sahifada",
+    "totalItems": "Jami {{count}} ta",
+    "prev": "Oldingi",
+    "next": "Keyingi"
+  },
+  "categoriesTab": {
+    "title": "Kategoriyalar",
+    "subtitle": "Mahsulotlar uchun asosiy ma'lumotnoma.",
+    "add": "Qo'shish"
+  },
+  "fallback": {
+    "category": "Kategoriya",
+    "unit": "Birlik"
+  },
+  "excelImport": {
+    "eyebrow": "Excel import",
+    "title": "Mahsulotlarni import qilish",
+    "subtitle": ".xlsx fayl avval xavfsiz dry-run tekshiruvidan o'tadi.",
+    "checking": "Fayl tekshirilmoqda...",
+    "chooseFile": ".xlsx faylni tanlash",
+    "maxSizeHint": "Maksimal hajm: 2 MB. Fayldagi ma'lumotni frontend o'qimaydi yoki o'zgartirmaydi.",
+    "onlyXlsx": "Faqat .xlsx formatidagi faylni tanlang.",
+    "maxSizeError": "Fayl hajmi 2 MB dan oshmasligi kerak.",
+    "dryRunDone": "Dry-run yakunlandi. Tasdiqlamaguningizcha o'zgarish saqlanmaydi.",
+    "importDone": "Import yakunlandi. Mahsulotlar ro'yxati yangilandi.",
+    "stats": {
+      "total": "Jami",
+      "willCreate": "Yaratiladi",
+      "created": "Yaratildi",
+      "willUpdate": "Yangilanadi",
+      "updated": "Yangilandi",
+      "willSkip": "O'tkaziladi",
+      "skipped": "O'tkazildi",
+      "errors": "Xatolar"
+    },
+    "newCategories": "Yangi kategoriyalar",
+    "newUnits": "Yangi o'lchov birliklari",
+    "errorsTruncated": "Xatolar soni ko'p. Faqat dastlabki 500 ta xato ko'rsatildi.",
+    "rowErrorsTitle": "Qator xatolari",
+    "table": {
+      "row": "Excel qatori",
+      "column": "Ustun",
+      "message": "Xabar",
+      "value": "Qiymat"
+    },
+    "close": "Yopish",
+    "chooseAnotherFile": "Boshqa fayl tanlash",
+    "confirmImport": "Importni tasdiqlash"
+  },
+  "moneyInput": {
+    "applyToAll": "Hammaga qo'llash"
+  },
+  "stockInput": {
+    "unit": "dona"
+  },
+  "productModal": {
+    "editTitle": "Mahsulotni tahrirlash",
+    "createTitle": "Yangi mahsulot",
+    "sectionMain": "Asosiy",
+    "nameLabel": "Nomi *",
+    "namePlaceholder": "Nomi kiriting",
+    "quickFill": "Tez",
+    "articleLabel": "Artikul *",
+    "articlePlaceholder": "Artikul",
+    "generate": "Gen",
+    "barcodeLabel": "Barkod",
+    "barcodePlaceholder": "Barkod",
+    "categoryLabel": "Kategoriya *",
+    "categoryPlaceholder": "Kategoriya",
+    "unitLabel": "O'lchov birligi *",
+    "unitPlaceholder": "O'lchov birligi tanlang",
+    "unitGroupWorkspace": "Workspace birliklari",
+    "unitGroupStandard": "Standart katalog",
+    "toggleActiveAria": "Mahsulot holatini o'zgartirish",
+    "photoLabel": "Foto",
+    "photoAlt": "Mahsulot rasmi",
+    "photoDrop": "Rasmni tashlang",
+    "photoBrowse": "Tanlash uchun bosing",
+    "sectionVariations": "Variatsiyalar",
+    "variationAttributeLabel": "Variatsiya atributini tanlang *",
+    "variationAttributeHint": "Masalan: Rang",
+    "attributePlaceholder": "Atribut kiriting",
+    "addAttribute": "Qo'shish \"{{value}}\"",
+    "noVariants": "Variantlar yo'q",
+    "optionPlaceholderMore": "Yana qo'shish",
+    "optionPlaceholder": "{{attribute}} qiymatini kiriting",
+    "addOption": "Qo'shish \"{{value}}\"",
+    "variantTable": {
+      "photo": "Foto",
+      "variation": "Variatsiya",
+      "barcode": "Barkod *",
+      "status": "Holat"
+    },
+    "generateShort": "Generatsiya",
+    "priceTable": {
+      "variation": "Variatsiya",
+      "costPrice": "Kelish narxi *",
+      "markup": "Ustama",
+      "retailPrice": "Sotuv narxi *",
+      "wholesalePrice": "Ulgurji narx"
+    },
+    "baseVariant": {
+      "title": "Asosiy variant narxlari",
+      "subtitle": "Variatsiya kiritilmasa, mahsulot uchun bitta asosiy variant yaratiladi.",
+      "costPrice": "Kelish narxi",
+      "markup": "Ustama",
+      "retailPrice": "Sotuv narxi",
+      "wholesalePrice": "Ulgurji narx",
+      "minStock": "Minimal qoldiq"
+    },
+    "stock": {
+      "defaultProductName": "Mahsulot",
+      "warehouseColumn": "Do'kon / Ombor",
+      "quantityColumn": "Miqdor",
+      "minStockColumn": "Minimal qoldiq",
+      "defaultWarehouse": "Store Shop"
+    },
+    "sectionCharacteristics": "Xarakteristikalar",
+    "brandLabel": "Brend",
+    "brandPlaceholder": "Brend kiriting",
+    "addBrand": "Qo'shish \"{{value}}\"",
+    "optionalField": {
+      "title": "Qo'shimcha maydon",
+      "subtitle": "Mahsulotga kerakli qo'shimcha xarakteristika qo'shing",
+      "add": "Maydon qo'shish",
+      "namePlaceholder": "Maydon nomi",
+      "valuePlaceholder": "Qiymat"
+    },
+    "categorySection": {
+      "title": "Kategoriya",
+      "searchPlaceholder": "Kategoriya nomi",
+      "newNamePlaceholder": "Yangi kategoriya nomi",
+      "notFound": "Kategoriya topilmadi",
+      "addNew": "Yangi kategoriya qo'shish"
+    },
+    "cancel": "Bekor qilish",
+    "save": "Saqlash",
+    "create": "Yaratish"
+  },
+  "simpleProductModal": {
+    "namePlaceholder": "Mahsulot nomi *",
+    "categoryPlaceholder": "Kategoriya *",
+    "unitPlaceholder": "O'lchov birligi *",
+    "barcodePlaceholder": "Shtrix-kod",
+    "barcodePlaceholderRequired": "Shtrix-kod *",
+    "articlePlaceholder": "Artikul",
+    "initialPrices": {
+      "title": "Boshlang'ich narxlar",
+      "subtitle": "Mahsulot bilan birga \"Asosiy variant\" va uning narxlari yaratiladi.",
+      "costLabel": "Kelish (tan) narxi",
+      "costPlaceholder": "Kelish narxini kiriting",
+      "retailLabel": "Sotuv narxi",
+      "retailPlaceholder": "Sotuv narxini kiriting",
+      "currencySuffix": "so'm",
+      "belowCostWarning": "Sotuv narxi kelish narxidan past kiritilgan."
+    },
+    "imagePlaceholder": "Rasm manzili (URL)",
+    "activeLabel": "Mahsulot faol"
+  },
+  "categoryModal": {
+    "editTitle": "Tahrirlash kategoriya",
+    "createTitle": "Yangi kategoriya",
+    "namePlaceholder": "Nomi *"
+  },
+  "variantsModal": {
+    "title": "{{product}} — variantlar va narxlar",
+    "addVariant": "Variant qo'shish",
+    "defaultVariant": "Asosiy variant",
+    "barcodeLine": "Shtrix-kod: {{barcode}} · Artikul: {{article}}",
+    "priceLine": "Tan narx: {{cost}} · Chakana: {{retail}} · Ulgurji: {{wholesale}}",
+    "edit": "Tahrirlash"
+  },
+  "modForm": {
+    "editTitle": "Variantni tahrirlash",
+    "createTitle": "Yangi variant",
+    "namePlaceholder": "Variant nomi",
+    "barcodePlaceholder": "Shtrix-kod *",
+    "articlePlaceholder": "Artikul",
+    "paramsPlaceholder": "Parametrlar JSON: {\"rang\":\"qizil\"}",
+    "costPlaceholder": "Tan narx",
+    "retailPlaceholder": "Chakana narx",
+    "wholesalePlaceholder": "Ulgurji narx",
+    "invalidJson": "Parametrlar JSON formati noto'g'ri."
+  }
+}

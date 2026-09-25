@@ -17,6 +17,8 @@ import {
   Settings,
   X,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { useOmborStore } from "@/store/omborStore";
 import type {
   KochirishHujjati,
@@ -44,15 +46,15 @@ type UstunKaliti =
   | "summa";
 
 const USTUNLAR: Array<{ kalit: UstunKaliti; nom: string; kenglik: number }> = [
-  { kalit: "nomi", nom: "Nomi", kenglik: 240 },
-  { kalit: "status", nom: "Status", kenglik: 190 },
-  { kalit: "yaratgan", nom: "Yaratgan mas'ul shaxs", kenglik: 230 },
-  { kalit: "yaratilgan", nom: "Yaratilgan sana", kenglik: 195 },
-  { kalit: "ombordan", nom: "Ombordan", kenglik: 220 },
-  { kalit: "omborga", nom: "Omborga", kenglik: 220 },
-  { kalit: "ozgartirgan", nom: "O'zgartirgan mas'ul", kenglik: 230 },
-  { kalit: "ozgartirilgan", nom: "O'zgartirilgan sana", kenglik: 205 },
-  { kalit: "summa", nom: "Summa", kenglik: 190 },
+  { kalit: "nomi", nom: "kochirish.columns.nomi", kenglik: 240 },
+  { kalit: "status", nom: "kochirish.columns.status", kenglik: 190 },
+  { kalit: "yaratgan", nom: "kochirish.columns.yaratgan", kenglik: 230 },
+  { kalit: "yaratilgan", nom: "kochirish.columns.yaratilgan", kenglik: 195 },
+  { kalit: "ombordan", nom: "kochirish.columns.ombordan", kenglik: 220 },
+  { kalit: "omborga", nom: "kochirish.columns.omborga", kenglik: 220 },
+  { kalit: "ozgartirgan", nom: "kochirish.columns.ozgartirgan", kenglik: 230 },
+  { kalit: "ozgartirilgan", nom: "kochirish.columns.ozgartirilgan", kenglik: 205 },
+  { kalit: "summa", nom: "kochirish.columns.summa", kenglik: 190 },
 ];
 
 function boglanganId(qiymat: unknown) {
@@ -89,11 +91,11 @@ function omborNomi(
 ) {
   const obyekt = typeof ombor === "object" ? ombor : undefined;
   const id = omborId || boglanganId(ombor);
-  return obyekt?.name || (id ? omborMap.get(id)?.name : undefined) || "Noma'lum ombor";
+  return obyekt?.name || (id ? omborMap.get(id)?.name : undefined) || null;
 }
 
-function hujjatNomi(hujjat: KochirishHujjati) {
-  return `Ko'chirma hujjati #${hujjatRaqami(hujjat)}`;
+function hujjatNomi(hujjat: KochirishHujjati, t: TFunction) {
+  return t("kochirish.documentName", { number: hujjatRaqami(hujjat) });
 }
 
 function qisqaSana(value?: string) {
@@ -146,6 +148,7 @@ function statusKlasi(status?: string) {
 }
 
 export default function Kochirish() {
+  const { t } = useTranslation("ombor_harakat");
   const store = useOmborStore();
   const jadvalRef = useRef<HTMLDivElement | null>(null);
   const scrollTrackRef = useRef<HTMLDivElement | null>(null);
@@ -203,13 +206,13 @@ export default function Kochirish() {
   );
   const manbaOmborNomi = useCallback(
     (hujjat: KochirishHujjati) =>
-      omborNomi(hujjat.sourceWarehouse, hujjat.sourceWarehouseId, omborMap),
-    [omborMap]
+      omborNomi(hujjat.sourceWarehouse, hujjat.sourceWarehouseId, omborMap) ?? t("kochirish.unknownWarehouse"),
+    [omborMap, t]
   );
   const qabulOmborNomi = useCallback(
     (hujjat: KochirishHujjati) =>
-      omborNomi(hujjat.destWarehouse, hujjat.destWarehouseId, omborMap),
-    [omborMap]
+      omborNomi(hujjat.destWarehouse, hujjat.destWarehouseId, omborMap) ?? t("kochirish.unknownWarehouse"),
+    [omborMap, t]
   );
 
   useEffect(() => {
@@ -260,7 +263,7 @@ export default function Kochirish() {
     if (!qiymat) return store.kochirishlar;
     return store.kochirishlar.filter((hujjat) =>
       [
-        hujjatNomi(hujjat),
+        hujjatNomi(hujjat, t),
         holat(hujjat.status),
         yaratganNomi(hujjat),
         ozgartirganNomi(hujjat),
@@ -275,7 +278,7 @@ export default function Kochirish() {
         .toLocaleLowerCase("uz")
         .includes(qiymat)
     );
-  }, [manbaOmborNomi, modifikatsiyaMap, ozgartirganNomi, qabulOmborNomi, qidiruv, store.kochirishlar, yaratganNomi]);
+  }, [manbaOmborNomi, modifikatsiyaMap, ozgartirganNomi, qabulOmborNomi, qidiruv, store.kochirishlar, t, yaratganNomi]);
 
   const korinadiganUstunlarRoyxati = USTUNLAR.filter(
     (ustun) => korinadiganUstunlar[ustun.kalit]
@@ -394,7 +397,7 @@ export default function Kochirish() {
   function hujayra(hujjat: KochirishHujjati, kalit: UstunKaliti) {
     switch (kalit) {
       case "nomi":
-        return <span className="font-black text-slate-900">{hujjatNomi(hujjat)}</span>;
+        return <span className="font-black text-slate-900">{hujjatNomi(hujjat, t)}</span>;
       case "status":
         return (
           <span className={`inline-flex rounded-full px-4 py-1.5 text-sm font-black ${statusKlasi(hujjat.status)}`}>
@@ -422,15 +425,15 @@ export default function Kochirish() {
     <div className="min-h-[calc(100vh-245px)] space-y-6">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-[38px] font-black leading-none tracking-tight text-slate-950">Ko'chirma</h1>
-          <p className="mt-2 text-lg text-slate-500">Omborlar orasida tovar ko'chirish hujjatlari.</p>
+          <h1 className="text-[38px] font-black leading-none tracking-tight text-slate-950">{t("kochirish.pageTitle")}</h1>
+          <p className="mt-2 text-lg text-slate-500">{t("kochirish.pageSubtitle")}</p>
         </div>
         <button
           type="button"
           onClick={() => setModal(true)}
           className="inline-flex h-14 items-center justify-center gap-2 self-start rounded-[22px] bg-[#2563EB] px-6 text-base font-black text-white shadow-[0_12px_28px_rgba(37,99,235,.22)] transition hover:-translate-y-0.5 hover:bg-orange-600"
         >
-          <Plus size={20} /> Yaratish
+          <Plus size={20} /> {t("kochirish.createButton")}
         </button>
       </header>
 
@@ -439,11 +442,11 @@ export default function Kochirish() {
         <input
           value={qidiruv}
           onChange={(event) => setQidiruv(event.target.value)}
-          placeholder="Nomi, mas'ul shaxs, ombor, sana yoki holati bo'yicha"
+          placeholder={t("kochirish.searchPlaceholder")}
           className="min-w-0 flex-1 bg-transparent text-base text-slate-700 outline-none placeholder:text-slate-400"
         />
         {qidiruv && (
-          <button type="button" onClick={() => setQidiruv("")} aria-label="Qidiruvni tozalash">
+          <button type="button" onClick={() => setQidiruv("")} aria-label={t("kochirish.clearSearchAria")}>
             <X size={17} className="text-slate-400" />
           </button>
         )}
@@ -452,7 +455,7 @@ export default function Kochirish() {
       {store.xatolik && (
         <div className="flex items-center justify-between rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-sm font-bold text-red-600">
           <span>{store.xatolik}</span>
-          <button type="button" onClick={store.xatolikniTozalash}>Yopish</button>
+          <button type="button" onClick={store.xatolikniTozalash}>{t("kochirish.closeError")}</button>
         </div>
       )}
 
@@ -476,11 +479,11 @@ export default function Kochirish() {
               <tr>
                 {korinadiganUstunlarRoyxati.map((ustun) => (
                   <th key={ustun.kalit} className="relative h-[58px] overflow-visible px-7 py-3">
-                    <span className="block max-w-[190px] truncate">{ustun.nom}</span>
+                    <span className="block max-w-[190px] truncate">{t(ustun.nom)}</span>
                     <span
                       role="separator"
                       aria-orientation="vertical"
-                      aria-label={`${ustun.nom} ustuni kengligini o'zgartirish`}
+                      aria-label={t("kochirish.columnResizeAria", { name: t(ustun.nom) })}
                       onMouseDown={(event) => ustunOlchaminiOzgartirish(ustun.kalit, event)}
                       className="group/resize absolute -right-1.5 top-0 z-20 flex h-full w-3 cursor-col-resize select-none items-center justify-center"
                     >
@@ -498,7 +501,7 @@ export default function Kochirish() {
                         setUstunlarMenyusi((oldingi) => !oldingi);
                       }}
                       className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#2563EB] hover:bg-orange-100"
-                      aria-label="Ustunlarni sozlash"
+                      aria-label={t("kochirish.columnsMenuAria")}
                       aria-expanded={ustunlarMenyusi}
                     >
                       <Settings size={19} />
@@ -547,7 +550,7 @@ export default function Kochirish() {
                           setTanlanganId(hujjat.id);
                         }}
                         className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-[#2563EB] transition hover:bg-[#2563EB] hover:text-white"
-                        aria-label={`${hujjatNomi(hujjat)}ni ko'rish`}
+                        aria-label={t("kochirish.viewAria", { name: hujjatNomi(hujjat, t) })}
                       >
                         <Eye size={18} />
                       </button>
@@ -562,7 +565,7 @@ export default function Kochirish() {
                       className="sticky left-0 flex h-40 items-center justify-center px-6 text-center font-semibold text-slate-400"
                       style={{ width: scrollHolati.viewport || "100%" }}
                     >
-                      {qidiruv ? "Qidiruv bo'yicha ko'chirma topilmadi" : "Ko'chirma hujjatlari mavjud emas"}
+                      {qidiruv ? t("kochirish.emptySearch") : t("kochirish.emptyList")}
                     </div>
                   </td>
                 </tr>
@@ -571,14 +574,14 @@ export default function Kochirish() {
           </table>
         </div>
         <div className="flex h-[70px] items-center gap-4 border-t border-orange-100 px-5">
-          <button type="button" onClick={() => jadvalniSurish(-1)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-white text-[#2563EB] shadow-sm hover:bg-orange-50" aria-label="Chapga surish">
+          <button type="button" onClick={() => jadvalniSurish(-1)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-white text-[#2563EB] shadow-sm hover:bg-orange-50" aria-label={t("kochirish.scrollLeftAria")}>
             <ChevronLeft size={20} />
           </button>
           <div
             ref={scrollTrackRef}
             onMouseDown={scrollTrekkaBosish}
             className={`relative h-3 flex-1 rounded-full bg-orange-50 ${scrollHolati.mavjud ? "cursor-pointer" : "opacity-55"}`}
-            aria-label="Jadval gorizontal scrolli"
+            aria-label={t("kochirish.scrollTrackAria")}
           >
             <div
               onMouseDown={scrollThumbniSurish}
@@ -589,7 +592,7 @@ export default function Kochirish() {
               }}
             />
           </div>
-          <button type="button" onClick={() => jadvalniSurish(1)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-white text-[#2563EB] shadow-sm hover:bg-orange-50" aria-label="O'ngga surish">
+          <button type="button" onClick={() => jadvalniSurish(1)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-white text-[#2563EB] shadow-sm hover:bg-orange-50" aria-label={t("kochirish.scrollRightAria")}>
             <ChevronRight size={20} />
           </button>
         </div>
@@ -603,7 +606,7 @@ export default function Kochirish() {
             className="fixed z-[99990] w-72 overflow-hidden rounded-[22px] border border-orange-100 bg-white p-3 text-left shadow-[0_22px_70px_rgba(15,23,42,.22)]"
             style={{ top: sozlamalarJoylashuvi.top, left: sozlamalarJoylashuvi.left }}
           >
-            <p className="px-2 pb-2 text-xs font-black uppercase text-slate-400">Ustunlar</p>
+            <p className="px-2 pb-2 text-xs font-black uppercase text-slate-400">{t("kochirish.columnsMenuTitle")}</p>
             <div className="scrollbar-orange max-h-[330px] overflow-y-auto pr-1">
               {USTUNLAR.map((ustun) => (
                 <label
@@ -621,7 +624,7 @@ export default function Kochirish() {
                     }
                     className="h-4 w-4 accent-orange-500"
                   />
-                  {ustun.nom}
+                  {t(ustun.nom)}
                 </label>
               ))}
             </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
+import { useTranslation } from "react-i18next";
 import {
   ArrowDownToLine,
   ArrowLeftRight,
@@ -33,56 +34,57 @@ import {
 import { useAuthStore } from "@/store/authStore";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 
-type MenyuBolasi = { nom: string; path: string; icon: LucideIcon };
-type Menyu = { nom: string; path: string; icon: LucideIcon; bolalar?: MenyuBolasi[] };
+type MenyuBolasi = { key: string; path: string; icon: LucideIcon };
+type Menyu = { key: string; path: string; icon: LucideIcon; bolalar?: MenyuBolasi[] };
 
 // bolalar bo'lsa menyu sidebar ichida ochiladigan (accordion) bo'lim bo'ladi.
 // Bolalarning yo'llari AppRouter va Savdo sahifasidagi ?tab= qiymatlari bilan bir xil.
+// nom o'rniga `key` ishlatiladi: matn "nav" i18n namespace'idan `menu.<key>` orqali olinadi.
 const menyular: Menyu[] = [
-  { nom: "Bosh sahifa", path: "/", icon: Home },
+  { key: "boshSahifa", path: "/", icon: Home },
   {
-    nom: "Savdo",
+    key: "savdo",
     path: "/savdo",
     icon: ShoppingCart,
     bolalar: [
-      { nom: "Barcha sotuvlar", path: "/savdo", icon: ReceiptText },
-      { nom: "Qoralamalar", path: "/savdo?tab=savatcha", icon: FileText },
-      { nom: "Savdo tarixi", path: "/savdo?tab=tarix", icon: History },
-      { nom: "To'lovlar", path: "/savdo?tab=tolovlar", icon: CreditCard },
-      { nom: "Qarzdorliklar", path: "/savdo?tab=qarzdorliklar", icon: HandCoins },
-      { nom: "Qaytarish", path: "/savdo?tab=qaytarish", icon: Undo2 },
-      { nom: "Bekor qilinganlar", path: "/savdo?tab=bekor-qilingan", icon: Ban },
+      { key: "savdoBarchaSotuvlar", path: "/savdo", icon: ReceiptText },
+      { key: "savdoQoralamalar", path: "/savdo?tab=savatcha", icon: FileText },
+      { key: "savdoTarixi", path: "/savdo?tab=tarix", icon: History },
+      { key: "tolovlar", path: "/savdo?tab=tolovlar", icon: CreditCard },
+      { key: "qarzdorliklar", path: "/savdo?tab=qarzdorliklar", icon: HandCoins },
+      { key: "qaytarish", path: "/savdo?tab=qaytarish", icon: Undo2 },
+      { key: "bekorQilinganlar", path: "/savdo?tab=bekor-qilingan", icon: Ban },
     ],
   },
-  { nom: "Mahsulotlar", path: "/mahsulotlar", icon: PackageSearch },
+  { key: "mahsulotlar", path: "/mahsulotlar", icon: PackageSearch },
   {
-    nom: "Ombor",
+    key: "ombor",
     path: "/ombor",
     icon: Warehouse,
     bolalar: [
-      { nom: "Inventarizatsiya", path: "/ombor/inventarizatsiya", icon: ClipboardList },
-      { nom: "Kirim", path: "/ombor/kirimlar", icon: ArrowDownToLine },
-      { nom: "Chiqim", path: "/ombor/chiqimlar", icon: ArrowUpFromLine },
-      { nom: "Ko'chirish", path: "/ombor/kochirishlar", icon: ArrowLeftRight },
-      { nom: "Qoldiq", path: "/ombor/qoldiq", icon: Boxes },
-      { nom: "Amalga oshirilganlar", path: "/ombor/amalga-oshirilganlar", icon: CheckCircle2 },
-      { nom: "Omborlar", path: "/ombor/omborlar", icon: Warehouse },
+      { key: "inventarizatsiya", path: "/ombor/inventarizatsiya", icon: ClipboardList },
+      { key: "kirim", path: "/ombor/kirimlar", icon: ArrowDownToLine },
+      { key: "chiqim", path: "/ombor/chiqimlar", icon: ArrowUpFromLine },
+      { key: "kochirish", path: "/ombor/kochirishlar", icon: ArrowLeftRight },
+      { key: "qoldiq", path: "/ombor/qoldiq", icon: Boxes },
+      { key: "amalgaOshirilganlar", path: "/ombor/amalga-oshirilganlar", icon: CheckCircle2 },
+      { key: "omborlar", path: "/ombor/omborlar", icon: Warehouse },
     ],
   },
   {
-    nom: "Xaridorlar",
+    key: "xaridorlar",
     path: "/mijozlar",
     icon: Users,
     bolalar: [
-      { nom: "Xaridorlar", path: "/mijozlar", icon: Users },
-      { nom: "Kompaniya", path: "/mijozlar/kompaniya", icon: Building2 },
-      { nom: "Yetkazib beruvchilar", path: "/mijozlar/yetkazib-beruvchilar", icon: Truck },
+      { key: "xaridorlar", path: "/mijozlar", icon: Users },
+      { key: "kompaniya", path: "/mijozlar/kompaniya", icon: Building2 },
+      { key: "yetkazibBeruvchilar", path: "/mijozlar/yetkazib-beruvchilar", icon: Truck },
     ],
   },
-  { nom: "Kassa", path: "/kassa", icon: Wallet },
-  { nom: "Hisobotlar", path: "/hisobotlar", icon: BarChart3 },
-  { nom: "Xodimlar", path: "/hodimlar", icon: UserCog },
-  { nom: "Sozlamalar", path: "/sozlamalar", icon: Settings },
+  { key: "kassa", path: "/kassa", icon: Wallet },
+  { key: "hisobotlar", path: "/hisobotlar", icon: BarChart3 },
+  { key: "xodimlar", path: "/hodimlar", icon: UserCog },
+  { key: "sozlamalar", path: "/sozlamalar", icon: Settings },
 ];
 
 function yolIchida(pathname: string, path: string) {
@@ -98,13 +100,6 @@ function bolaFaolmi(bola: MenyuBolasi, pathname: string, search: string) {
   return joriyTab === bolaTabi;
 }
 
-const rolMatni: Record<string, string> = {
-  DIREKTOR: "Direktor",
-  ADMIN: "Administrator",
-  KASSIR: "Kassir",
-  OMBORCHI: "Omborchi",
-};
-
 // Yopiq holatda (64px) faqat ikonka ko'rinadi: qator 48px kenglikda, ikonka 18px va 15px chetlari.
 const qatorKlass =
   "relative flex h-[46px] w-full items-center gap-3 px-[15px] text-[14.5px] transition-colors duration-200";
@@ -115,6 +110,7 @@ const yorliqKlass =
   "min-w-0 truncate whitespace-nowrap transition-opacity duration-200";
 
 export default function YonPanel({ acik }: { acik: boolean }) {
+  const { t } = useTranslation("nav");
   const navigate = useNavigate();
   const { pathname, search } = useLocation();
   const logout = useAuthStore((state) => state.logout);
@@ -147,7 +143,7 @@ export default function YonPanel({ acik }: { acik: boolean }) {
   }
 
   const ism = profil?.fullName?.trim() || profil?.username || username || "";
-  const rolNomi = profil ? rolMatni[profil.role] ?? profil.role : "";
+  const rolNomi = profil ? t(`roles.${profil.role}`, { defaultValue: profil.role }) : "";
   const rasmUrl = profil?.avatarUrl || "";
 
   async function handleLogout() {
@@ -174,8 +170,8 @@ export default function YonPanel({ acik }: { acik: boolean }) {
           Y
         </motion.div>
         <div className={`min-w-0 transition-opacity duration-200 ${acik ? "opacity-100" : "opacity-0"}`}>
-          <h2 className="truncate text-[17px] font-bold leading-6 tracking-wide text-white">YEPOST</h2>
-          <p className="truncate text-[12.5px] font-medium leading-4 text-[#8391A7]">Savdo tizimi</p>
+          <h2 className="truncate text-[17px] font-bold leading-6 tracking-wide text-white">{t("brand")}</h2>
+          <p className="truncate text-[12.5px] font-medium leading-4 text-[#8391A7]">{t("brandTagline")}</p>
         </div>
       </div>
 
@@ -200,11 +196,11 @@ export default function YonPanel({ acik }: { acik: boolean }) {
                   type="button"
                   onClick={() => bolimniBosish(menu)}
                   aria-expanded={ochiq}
-                  title={menu.nom}
+                  title={t(`menu.${menu.key}`)}
                   className={`${qatorKlass} ${guruhFaol ? qatorFaolKlass : qatorOddiyKlass}`}
                 >
                   <Icon size={18} strokeWidth={2} className={`shrink-0 ${guruhFaol ? "text-sky-300" : ""}`} />
-                  <span className={`${yorliqKlass} ${acik ? "opacity-100" : "opacity-0"} flex-1 text-left`}>{menu.nom}</span>
+                  <span className={`${yorliqKlass} ${acik ? "opacity-100" : "opacity-0"} flex-1 text-left`}>{t(`menu.${menu.key}`)}</span>
                   <ChevronDown
                     size={16}
                     className={`shrink-0 transition-[transform,opacity] duration-200 ${acik ? "opacity-100" : "opacity-0"} ${
@@ -241,7 +237,7 @@ export default function YonPanel({ acik }: { acik: boolean }) {
                               strokeWidth={2}
                               className={`shrink-0 ${faol ? "text-sky-300" : ""}`}
                             />
-                            <span className="truncate">{bola.nom}</span>
+                            <span className="truncate">{t(`menu.${bola.key}`)}</span>
                           </Link>
                         );
                       })}
@@ -261,7 +257,7 @@ export default function YonPanel({ acik }: { acik: boolean }) {
             >
               <NavLink
                 to={menu.path}
-                title={menu.nom}
+                title={t(`menu.${menu.key}`)}
                 className={({ isActive }) => `${qatorKlass} ${isActive ? qatorFaolKlass : qatorOddiyKlass}`}
               >
                 {({ isActive }) => (
@@ -271,7 +267,7 @@ export default function YonPanel({ acik }: { acik: boolean }) {
                       strokeWidth={2}
                       className={`shrink-0 ${isActive ? "text-sky-300" : ""}`}
                     />
-                    <span className={`${yorliqKlass} ${acik ? "opacity-100" : "opacity-0"}`}>{menu.nom}</span>
+                    <span className={`${yorliqKlass} ${acik ? "opacity-100" : "opacity-0"}`}>{t(`menu.${menu.key}`)}</span>
                   </>
                 )}
               </NavLink>
@@ -303,8 +299,8 @@ export default function YonPanel({ acik }: { acik: boolean }) {
           )}
           <button
             onClick={() => void handleLogout()}
-            title="Tizimdan chiqish"
-            aria-label="Tizimdan chiqish"
+            title={t("logout")}
+            aria-label={t("logout")}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#8391A7] transition-colors duration-200 hover:bg-red-500/10 hover:text-red-300"
           >
             <LogOut size={18} strokeWidth={2} />

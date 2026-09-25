@@ -1,0 +1,249 @@
+{
+  "header": {
+    "eyebrow": "Каталог товаров",
+    "title": "Управление каталогом",
+    "subtitle": "Категории, единицы измерения, товары, модификации и цены сохраняются на реальном бэкенде.",
+    "refresh": "Обновить"
+  },
+  "tabs": {
+    "products": "Товары",
+    "categories": "Категории"
+  },
+  "toolbar": {
+    "searchPlaceholder": "Товар, штрих-код или артикул...",
+    "import": "Импорт",
+    "export": "Экспорт",
+    "downloadTemplate": "Скачать шаблон",
+    "view": "Вид",
+    "addProduct": "Добавить товар"
+  },
+  "views": {
+    "kartochka": "Карточки",
+    "jadval": "Таблица"
+  },
+  "warnings": {
+    "needCategoryAndUnit": "Перед созданием товара создайте хотя бы одну категорию и единицу измерения."
+  },
+  "status": {
+    "active": "Активен",
+    "inactive": "Неактивен"
+  },
+  "empty": {
+    "products": "Товары отсутствуют",
+    "noData": "Данные отсутствуют",
+    "variants": "Варианты отсутствуют"
+  },
+  "notEntered": "Не указано",
+  "confirm": {
+    "deleteCategory": "Удалить эту запись?",
+    "deleteProduct": "Удалить товар?",
+    "deleteVariant": "Удалить вариант?"
+  },
+  "actions": {
+    "close": "Закрыть",
+    "edit": "Изменить",
+    "variants": "Варианты",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "create": "Создать"
+  },
+  "card": {
+    "salePrice": "Цена продажи",
+    "costPrice": "Себестоимость/цена закупки",
+    "noPrice": "Цена не указана",
+    "defaultVariant": "Вариант"
+  },
+  "table": {
+    "index": "№",
+    "product": "Товар",
+    "category": "Категория",
+    "unit": "Единица",
+    "barcode": "Штрих-код",
+    "article": "Артикул",
+    "status": "Статус",
+    "action": "Действие",
+    "perPage": "На странице",
+    "totalItems": "Всего {{count}} шт.",
+    "prev": "Назад",
+    "next": "Далее"
+  },
+  "categoriesTab": {
+    "title": "Категории",
+    "subtitle": "Основной справочник для товаров.",
+    "add": "Добавить"
+  },
+  "fallback": {
+    "category": "Категория",
+    "unit": "Единица"
+  },
+  "excelImport": {
+    "eyebrow": "Импорт Excel",
+    "title": "Импорт товаров",
+    "subtitle": "Файл .xlsx сначала проходит безопасную проверку dry-run.",
+    "checking": "Проверка файла...",
+    "chooseFile": "Выбрать файл .xlsx",
+    "maxSizeHint": "Максимальный размер: 2 МБ. Фронтенд не читает и не изменяет данные файла.",
+    "onlyXlsx": "Выберите файл только формата .xlsx.",
+    "maxSizeError": "Размер файла не должен превышать 2 МБ.",
+    "dryRunDone": "Пробный запуск завершён. Изменения не сохранятся, пока вы их не подтвердите.",
+    "importDone": "Импорт завершён. Список товаров обновлён.",
+    "stats": {
+      "total": "Всего",
+      "willCreate": "Будет создано",
+      "created": "Создано",
+      "willUpdate": "Будет обновлено",
+      "updated": "Обновлено",
+      "willSkip": "Будет пропущено",
+      "skipped": "Пропущено",
+      "errors": "Ошибки"
+    },
+    "newCategories": "Новые категории",
+    "newUnits": "Новые единицы измерения",
+    "errorsTruncated": "Слишком много ошибок. Показаны только первые 500.",
+    "rowErrorsTitle": "Ошибки в строках",
+    "table": {
+      "row": "Строка Excel",
+      "column": "Столбец",
+      "message": "Сообщение",
+      "value": "Значение"
+    },
+    "close": "Закрыть",
+    "chooseAnotherFile": "Выбрать другой файл",
+    "confirmImport": "Подтвердить импорт"
+  },
+  "moneyInput": {
+    "applyToAll": "Применить ко всем"
+  },
+  "stockInput": {
+    "unit": "шт."
+  },
+  "productModal": {
+    "editTitle": "Редактирование товара",
+    "createTitle": "Новый товар",
+    "sectionMain": "Основное",
+    "nameLabel": "Название *",
+    "namePlaceholder": "Введите название",
+    "quickFill": "Быстро",
+    "articleLabel": "Артикул *",
+    "articlePlaceholder": "Артикул",
+    "generate": "Ген",
+    "barcodeLabel": "Штрих-код",
+    "barcodePlaceholder": "Штрих-код",
+    "categoryLabel": "Категория *",
+    "categoryPlaceholder": "Категория",
+    "unitLabel": "Единица измерения *",
+    "unitPlaceholder": "Выберите единицу измерения",
+    "unitGroupWorkspace": "Единицы рабочего пространства",
+    "unitGroupStandard": "Стандартный каталог",
+    "toggleActiveAria": "Изменить статус товара",
+    "photoLabel": "Фото",
+    "photoAlt": "Фото товара",
+    "photoDrop": "Перетащите изображение",
+    "photoBrowse": "Нажмите, чтобы выбрать",
+    "sectionVariations": "Вариации",
+    "variationAttributeLabel": "Выберите атрибут вариации *",
+    "variationAttributeHint": "Например: Цвет",
+    "attributePlaceholder": "Введите атрибут",
+    "addAttribute": "Добавить \"{{value}}\"",
+    "noVariants": "Вариантов нет",
+    "optionPlaceholderMore": "Добавить ещё",
+    "optionPlaceholder": "Введите значение {{attribute}}",
+    "addOption": "Добавить \"{{value}}\"",
+    "variantTable": {
+      "photo": "Фото",
+      "variation": "Вариация",
+      "barcode": "Штрих-код *",
+      "status": "Статус"
+    },
+    "generateShort": "Сгенерировать",
+    "priceTable": {
+      "variation": "Вариация",
+      "costPrice": "Цена закупки *",
+      "markup": "Наценка",
+      "retailPrice": "Цена продажи *",
+      "wholesalePrice": "Оптовая цена"
+    },
+    "baseVariant": {
+      "title": "Цены основного варианта",
+      "subtitle": "Если вариации не заданы, для товара будет создан один основной вариант.",
+      "costPrice": "Цена закупки",
+      "markup": "Наценка",
+      "retailPrice": "Цена продажи",
+      "wholesalePrice": "Оптовая цена",
+      "minStock": "Минимальный остаток"
+    },
+    "stock": {
+      "defaultProductName": "Товар",
+      "warehouseColumn": "Магазин / Склад",
+      "quantityColumn": "Количество",
+      "minStockColumn": "Минимальный остаток",
+      "defaultWarehouse": "Store Shop"
+    },
+    "sectionCharacteristics": "Характеристики",
+    "brandLabel": "Бренд",
+    "brandPlaceholder": "Введите бренд",
+    "addBrand": "Добавить \"{{value}}\"",
+    "optionalField": {
+      "title": "Дополнительное поле",
+      "subtitle": "Добавьте нужную дополнительную характеристику товара",
+      "add": "Добавить поле",
+      "namePlaceholder": "Название поля",
+      "valuePlaceholder": "Значение"
+    },
+    "categorySection": {
+      "title": "Категория",
+      "searchPlaceholder": "Название категории",
+      "newNamePlaceholder": "Название новой категории",
+      "notFound": "Категория не найдена",
+      "addNew": "Добавить новую категорию"
+    },
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "create": "Создать"
+  },
+  "simpleProductModal": {
+    "namePlaceholder": "Название товара *",
+    "categoryPlaceholder": "Категория *",
+    "unitPlaceholder": "Единица измерения *",
+    "barcodePlaceholder": "Штрих-код",
+    "barcodePlaceholderRequired": "Штрих-код *",
+    "articlePlaceholder": "Артикул",
+    "initialPrices": {
+      "title": "Начальные цены",
+      "subtitle": "Вместе с товаром будет создан \"Основной вариант\" и его цены.",
+      "costLabel": "Цена закупки (себестоимость)",
+      "costPlaceholder": "Введите цену закупки",
+      "retailLabel": "Цена продажи",
+      "retailPlaceholder": "Введите цену продажи",
+      "currencySuffix": "сум",
+      "belowCostWarning": "Цена продажи указана ниже цены закупки."
+    },
+    "imagePlaceholder": "Ссылка на изображение (URL)",
+    "activeLabel": "Товар активен"
+  },
+  "categoryModal": {
+    "editTitle": "Редактирование категории",
+    "createTitle": "Новая категория",
+    "namePlaceholder": "Название *"
+  },
+  "variantsModal": {
+    "title": "{{product}} — варианты и цены",
+    "addVariant": "Добавить вариант",
+    "defaultVariant": "Основной вариант",
+    "barcodeLine": "Штрих-код: {{barcode}} · Артикул: {{article}}",
+    "priceLine": "Себестоимость: {{cost}} · Розница: {{retail}} · Опт: {{wholesale}}",
+    "edit": "Изменить"
+  },
+  "modForm": {
+    "editTitle": "Редактирование варианта",
+    "createTitle": "Новый вариант",
+    "namePlaceholder": "Название варианта",
+    "barcodePlaceholder": "Штрих-код *",
+    "articlePlaceholder": "Артикул",
+    "paramsPlaceholder": "Параметры JSON: {\"цвет\":\"красный\"}",
+    "costPlaceholder": "Цена закупки",
+    "retailPlaceholder": "Розничная цена",
+    "wholesalePlaceholder": "Оптовая цена",
+    "invalidJson": "Неверный формат JSON параметров."
+  }
+}

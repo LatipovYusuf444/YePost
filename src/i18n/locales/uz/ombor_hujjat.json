@@ -1,0 +1,83 @@
+{
+  "documentTitles": {
+    "kirim": "Kirim hujjati",
+    "chiqim": "Chiqim hujjati",
+    "kochirish": "Ko'chirish hujjati",
+    "inventarizatsiya": "Inventarizatsiya hujjati"
+  },
+  "reasons": {
+    "damage": "Shikastlangan",
+    "expiry": "Muddati o'tgan",
+    "theft": "Yo'qolgan yoki o'g'irlangan",
+    "other": "Boshqa"
+  },
+  "stockTakeType": {
+    "full": "To'liq",
+    "partial": "Qisman"
+  },
+  "errors": {
+    "invalidStockTakeQuantity": "Har bir mahsulot uchun haqiqiy miqdor 0 yoki undan katta raqam bo'lishi kerak.",
+    "invalidItems": "Mahsulot, miqdor va narx qiymatlarini to'g'ri kiriting."
+  },
+  "confirm": {
+    "cancelStockTake": "Tasdiqlangan inventarizatsiyani bekor qilasizmi? Ombor qoldiqlari qayta hisoblanadi."
+  },
+  "header": {
+    "detailsLabel": "Hujjat tafsilotlari",
+    "aboutTitle": "{{title}} haqida",
+    "loadError": "Hujjat ma'lumotlarini olib bo'lmadi."
+  },
+  "actions": {
+    "cancel": "Bekor qilish",
+    "send": "Jo'natish",
+    "receive": "Qabul qilish",
+    "edit": "Tahrirlash",
+    "confirmStockTake": "Tasdiqlash",
+    "addProduct": "Mahsulot qo'shish",
+    "saveChanges": "O'zgarishlarni saqlash"
+  },
+  "view": {
+    "totalAmount": "Umumiy summa",
+    "status": "Holat",
+    "createdAt": "Yaratilgan sana",
+    "responsible": "Mas'ul xodim",
+    "unassigned": "Biriktirilmagan",
+    "products": "Mahsulotlar",
+    "productsCount": "{{count}} ta",
+    "supplier": "Yetkazib beruvchi",
+    "unknownSupplier": "Noma'lum yetkazib beruvchi",
+    "warehouse": "Ombor",
+    "unknownWarehouse": "Noma'lum ombor",
+    "writeOffReason": "Chiqim sababi",
+    "sourceWarehouse": "Manba ombor",
+    "destWarehouse": "Qabul qiluvchi ombor",
+    "stockTakeType": "Tekshiruv turi",
+    "note": "Izoh",
+    "documentTotal": "Hujjat summasi: {{amount}}"
+  },
+  "table": {
+    "sectionTitle": "Tovarlar",
+    "product": "Mahsulot",
+    "barcode": "Shtrix kod",
+    "warehouse": "Ombor",
+    "systemQuantity": "Tizimdagi miqdor",
+    "actualQuantity": "Haqiqiy miqdor",
+    "difference": "Farq",
+    "quantity": "Miqdor",
+    "price": "Narx",
+    "total": "Jami",
+    "empty": "Mahsulotlar mavjud emas"
+  },
+  "form": {
+    "supplierPlaceholder": "Yetkazib beruvchi *",
+    "warehousePlaceholder": "Ombor *",
+    "sourceWarehousePlaceholder": "Manba ombor *",
+    "destWarehousePlaceholder": "Qabul qiluvchi ombor *",
+    "responsibleUnassigned": "Mas'ul xodim biriktirilmagan",
+    "productPlaceholder": "Mahsulot *",
+    "quantityPlaceholder": "Miqdor",
+    "actualQuantityPlaceholder": "Haqiqiy miqdor",
+    "costPricePlaceholder": "Tan narx",
+    "notePlaceholder": "Izoh"
+  }
+}

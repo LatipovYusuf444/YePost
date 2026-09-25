@@ -1,0 +1,38 @@
+{
+  "brand": "YEPOST",
+  "brandTagline": "Savdo tizimi",
+  "menu": {
+    "boshSahifa": "Bosh sahifa",
+    "savdo": "Savdo",
+    "savdoBarchaSotuvlar": "Barcha sotuvlar",
+    "savdoQoralamalar": "Qoralamalar",
+    "savdoTarixi": "Savdo tarixi",
+    "tolovlar": "To'lovlar",
+    "qarzdorliklar": "Qarzdorliklar",
+    "qaytarish": "Qaytarish",
+    "bekorQilinganlar": "Bekor qilinganlar",
+    "mahsulotlar": "Mahsulotlar",
+    "ombor": "Ombor",
+    "inventarizatsiya": "Inventarizatsiya",
+    "kirim": "Kirim",
+    "chiqim": "Chiqim",
+    "kochirish": "Ko'chirish",
+    "qoldiq": "Qoldiq",
+    "amalgaOshirilganlar": "Amalga oshirilganlar",
+    "omborlar": "Omborlar",
+    "xaridorlar": "Xaridorlar",
+    "kompaniya": "Kompaniya",
+    "yetkazibBeruvchilar": "Yetkazib beruvchilar",
+    "kassa": "Kassa",
+    "hisobotlar": "Hisobotlar",
+    "xodimlar": "Xodimlar",
+    "sozlamalar": "Sozlamalar"
+  },
+  "roles": {
+    "DIREKTOR": "Direktor",
+    "ADMIN": "Administrator",
+    "KASSIR": "Kassir",
+    "OMBORCHI": "Omborchi"
+  },
+  "logout": "Tizimdan chiqish"
+}

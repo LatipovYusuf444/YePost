@@ -19,6 +19,7 @@ import {
   Warehouse,
   X,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useOmborStore } from "@/store/omborStore";
@@ -69,11 +70,14 @@ const inputSm =
   "h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100";
 
 export default function YangiKirimModal({ onClose }: Props) {
+  const { t } = useTranslation("ombor_bosh");
   const store = useOmborStore();
   const birinchiOmbor =
     store.omborlar.find((item) => item.isActive !== false)?.id ?? store.omborlar[0]?.id ?? "";
 
-  const [kirimNomi, setKirimNomi] = useState(`Kirim hujjati #${store.kirimlar.length + 1}`);
+  const [kirimNomi, setKirimNomi] = useState(
+    t("yangiKirim.defaultName", { number: store.kirimlar.length + 1 })
+  );
   const [supplierQuery, setSupplierQuery] = useState("");
   const [supplierId, setSupplierId] = useState("");
   const [supplierOchiq, setSupplierOchiq] = useState(false);
@@ -212,11 +216,11 @@ export default function YangiKirimModal({ onClose }: Props) {
     const valid = qatorlar.filter(
       (row) => row.modificationId && row.warehouseId && row.quantity > 0 && Number(row.price) >= 0
     );
-    if (!supplierId) return setXato("Yetkazib beruvchini ro'yxatdan tanlang yoki yangi qo'shing.");
+    if (!supplierId) return setXato("yangiKirim.errors.supplierRequired");
     if (!valid.length || valid.length !== qatorlar.length)
-      return setXato("Har bir qatorda mahsulot, ombor, miqdor va tan narxni to'liq kiriting.");
+      return setXato("yangiKirim.errors.rowsIncomplete");
     if (new Set(valid.map((row) => row.warehouseId)).size !== 1)
-      return setXato("Barcha qatorlarda bir xil omborni tanlang.");
+      return setXato("yangiKirim.errors.mixedWarehouse");
 
     const izohQismlari = [`Nomi: ${kirimNomi.trim() || "Kirim hujjati"}`];
     if (note.trim()) izohQismlari.push(note.trim());
@@ -263,15 +267,15 @@ export default function YangiKirimModal({ onClose }: Props) {
       <div className="flex min-h-0 w-full flex-col overflow-hidden rounded-[32px] border border-orange-100 bg-[#F8FAFC] shadow-[0_28px_90px_rgba(15,23,42,.32)]">
         <header className="flex shrink-0 items-center border-b border-orange-100 bg-white/75 px-5 py-4 sm:px-8">
           <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">Yangi kirim</h2>
-            <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-black text-orange-500">YANGI</span>
+            <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{t("yangiKirim.title")}</h2>
+            <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-black text-orange-500">{t("yangiKirim.badgeNew")}</span>
           </div>
         </header>
 
         <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-8">
           {(xato || store.xatolik) && (
             <div className="mb-4 flex justify-between gap-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
-              <span>{xato || store.xatolik}</span>
+              <span>{xato ? t(xato) : store.xatolik}</span>
               <button
                 type="button"
                 onClick={() => {
@@ -279,27 +283,27 @@ export default function YangiKirimModal({ onClose }: Props) {
                   store.xatolikniTozalash();
                 }}
               >
-                Yopish
+                {t("yangiKirim.close")}
               </button>
             </div>
           )}
 
           <div className="grid gap-5 xl:grid-cols-2">
             <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
-              <SectionTitle icon={<PackagePlus size={18} />} text="Kirim haqida" />
+              <SectionTitle icon={<PackagePlus size={18} />} text={t("yangiKirim.sectionAbout")} />
               <div className="grid gap-4">
                 <label className="space-y-2 text-sm font-bold text-slate-500">
-                  <span>Kirimni nomi</span>
+                  <span>{t("yangiKirim.nameLabel")}</span>
                   <input
                     value={kirimNomi}
                     onChange={(event) => setKirimNomi(event.target.value)}
                     className={input}
-                    placeholder="Masalan: Yangi partiya"
+                    placeholder={t("yangiKirim.namePlaceholder")}
                   />
                 </label>
 
                 <div ref={supplierRef} className="relative space-y-2 text-sm font-bold text-slate-500">
-                  <span>Yetkazib beruvchi *</span>
+                  <span>{t("yangiKirim.supplierLabel")}</span>
                   <input
                     value={supplierQuery}
                     onChange={(event) => {
@@ -309,7 +313,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                     }}
                     onFocus={() => setSupplierOchiq(true)}
                     className={input}
-                    placeholder="Yetkazib beruvchi nomini yozing"
+                    placeholder={t("yangiKirim.supplierPlaceholder")}
                   />
                   {supplierOchiq && (
                     <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 max-h-56 overflow-y-auto rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_44px_rgba(15,23,42,.16)]">
@@ -332,12 +336,12 @@ export default function YangiKirimModal({ onClose }: Props) {
                           className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-black text-orange-600 hover:bg-orange-50 disabled:opacity-50"
                         >
                           <UserPlus size={15} />
-                          "{supplierQuery.trim()}" — yangi yetkazib beruvchi qo'shish
+                          {t("yangiKirim.addSupplier", { name: supplierQuery.trim() })}
                         </button>
                       )}
                       {supplierMoslari.length === 0 && !supplierQuery.trim() && (
                         <p className="px-3 py-2.5 text-xs font-semibold text-slate-400">
-                          Yetkazib beruvchilar ro'yxati bo'sh.
+                          {t("yangiKirim.supplierListEmpty")}
                         </p>
                       )}
                     </div>
@@ -345,10 +349,10 @@ export default function YangiKirimModal({ onClose }: Props) {
                 </div>
 
                 <SelectField
-                  label="Mas'ul shaxs"
+                  label={t("yangiKirim.responsibleLabel")}
                   value={responsibleId}
                   onChange={setResponsibleId}
-                  placeholder="Mas'ul shaxsni tanlang"
+                  placeholder={t("yangiKirim.responsiblePlaceholder")}
                   options={store.xodimlar.map((item) => ({
                     id: item.id,
                     name: item.fullName ?? item.name ?? item.username ?? item.id,
@@ -356,13 +360,13 @@ export default function YangiKirimModal({ onClose }: Props) {
                 />
 
                 <label className="space-y-2 text-sm font-bold text-slate-500">
-                  <span>Qachon kirim qilingan</span>
+                  <span>{t("yangiKirim.dateLabel")}</span>
                   <div className="relative">
                     <input value={bugun} readOnly className={`${input} pr-11 text-slate-400`} />
                     <CalendarDays size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
                   </div>
                   <span className="block text-xs font-semibold text-slate-400">
-                    Backend hujjat sanasini avtomatik belgilaydi.
+                    {t("yangiKirim.dateHint")}
                   </span>
                 </label>
               </div>
@@ -370,21 +374,21 @@ export default function YangiKirimModal({ onClose }: Props) {
 
             <div className="space-y-5">
               <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
-                <SectionTitle icon={<MessageSquare size={18} />} text="Kommentariya" />
+                <SectionTitle icon={<MessageSquare size={18} />} text={t("yangiKirim.commentSection")} />
                 <textarea
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   rows={3}
-                  placeholder="Izoh yozing..."
+                  placeholder={t("yangiKirim.commentPlaceholder")}
                   className="w-full resize-none rounded-2xl border border-slate-200 p-4 text-sm font-medium outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                 />
               </section>
               <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
-                <SectionTitle icon={<Clock3 size={18} />} text="Tarix" />
+                <SectionTitle icon={<Clock3 size={18} />} text={t("yangiKirim.historySection")} />
                 <div className="flex items-start gap-3 text-sm">
                   <span className="mt-1.5 h-2.5 w-2.5 rounded-full bg-orange-500" />
                   <div>
-                    <p className="font-bold text-slate-700">Yangi hujjat qoralamasi ochildi</p>
+                    <p className="font-bold text-slate-700">{t("yangiKirim.historyDraftCreated")}</p>
                     <p className="text-xs font-semibold text-slate-400">{bugun}</p>
                   </div>
                 </div>
@@ -394,7 +398,7 @@ export default function YangiKirimModal({ onClose }: Props) {
 
           <section className="mt-5 rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
-              <SectionTitle icon={<Paperclip size={18} />} text="Fayllar" />
+              <SectionTitle icon={<Paperclip size={18} />} text={t("yangiKirim.filesSection")} />
               <input ref={faylInputRef} type="file" onChange={(event) => void faylTanlandi(event)} className="hidden" />
               <button
                 type="button"
@@ -403,11 +407,11 @@ export default function YangiKirimModal({ onClose }: Props) {
                 className="mb-4 inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-lg shadow-orange-100 hover:bg-orange-600 disabled:opacity-50"
               >
                 {faylYuklanmoqda ? <LoaderCircle size={17} className="animate-spin" /> : <Paperclip size={17} />}
-                Fayl yuklash
+                {t("yangiKirim.uploadFile")}
               </button>
             </div>
             {fayllar.length === 0 ? (
-              <p className="py-4 text-center text-sm font-semibold text-slate-400">Fayl yuklanmagan</p>
+              <p className="py-4 text-center text-sm font-semibold text-slate-400">{t("yangiKirim.noFiles")}</p>
             ) : (
               <div className="space-y-2">
                 {fayllar.map((fayl) => (
@@ -422,7 +426,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                     <button
                       type="button"
                       onClick={() => faylniOchirish(fayl.id)}
-                      aria-label="Faylni o'chirish"
+                      aria-label={t("yangiKirim.deleteFileAria")}
                       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100"
                     >
                       <Trash2 size={14} />
@@ -436,9 +440,9 @@ export default function YangiKirimModal({ onClose }: Props) {
           <section className="mt-5 rounded-[26px] border border-orange-100 bg-white p-4 shadow-sm sm:p-5">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">Tovarlar</h3>
+                <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">{t("yangiKirim.productsTitle")}</h3>
                 <p className="mt-1 text-xs font-medium text-slate-400">
-                  Mahsulotlar, miqdor va real omborni kiriting.
+                  {t("yangiKirim.productsSubtitle")}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -447,7 +451,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                   onClick={() => setYaratishOchiqUchun(qatorlar[qatorlar.length - 1]?.id ?? null)}
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-orange-300 bg-white px-5 text-sm font-black text-orange-600 hover:bg-orange-50"
                 >
-                  <Plus size={18} /> Mahsulot yaratish
+                  <Plus size={18} /> {t("yangiKirim.createProduct")}
                 </button>
                 <button
                   type="button"
@@ -456,7 +460,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                   }
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-lg shadow-orange-100 hover:bg-orange-600"
                 >
-                  <Plus size={18} /> Qator qo'shish
+                  <Plus size={18} /> {t("yangiKirim.addRow")}
                 </button>
               </div>
             </div>
@@ -464,22 +468,22 @@ export default function YangiKirimModal({ onClose }: Props) {
             <div className="scrollbar-orange overflow-x-auto pb-2">
               <div className="min-w-[1280px] space-y-3">
                 <div className="grid grid-cols-[28px_38px_2fr_1fr_1fr_1fr_1fr_1fr_1.2fr_1fr_48px] gap-3 px-3 text-[13px] font-semibold text-slate-600">
-                  <button type="button" onClick={barchasiniBelgilash} aria-label="Hammasini belgilash">
+                  <button type="button" onClick={barchasiniBelgilash} aria-label={t("yangiKirim.table.selectAllAria")}>
                     {tanlangan.size === qatorlar.length && qatorlar.length > 0 ? (
                       <CheckSquare size={16} className="text-orange-500" />
                     ) : (
                       <Square size={16} />
                     )}
                   </button>
-                  <span>в„–</span>
-                  <span>Mahsulot</span>
-                  <span>Shtrix kod</span>
-                  <span>Tan narxi</span>
-                  <span>Sotuv narxi</span>
-                  <span>Ulgurji narxi</span>
-                  <span>Soni</span>
-                  <span>Ombor</span>
-                  <span>Qoldiq</span>
+                  <span>{t("yangiKirim.table.numberHeader")}</span>
+                  <span>{t("yangiKirim.table.productHeader")}</span>
+                  <span>{t("yangiKirim.table.barcodeHeader")}</span>
+                  <span>{t("yangiKirim.table.costPriceHeader")}</span>
+                  <span>{t("yangiKirim.table.retailPriceHeader")}</span>
+                  <span>{t("yangiKirim.table.wholesalePriceHeader")}</span>
+                  <span>{t("yangiKirim.table.quantityHeader")}</span>
+                  <span>{t("yangiKirim.table.warehouseHeader")}</span>
+                  <span>{t("yangiKirim.table.stockHeader")}</span>
                   <span />
                 </div>
                 {qatorlar.map((row, index) => {
@@ -495,7 +499,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                       <button
                         type="button"
                         onClick={() => belgilashniAlmashtirish(row.id)}
-                        aria-label="Qatorni belgilash"
+                        aria-label={t("yangiKirim.table.selectRowAria")}
                       >
                         {tanlangan.has(row.id) ? (
                           <CheckSquare size={16} className="text-orange-500" />
@@ -509,7 +513,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                         onChange={(event) => mahsulotTanlash(row.id, event.target.value)}
                         className={`${inputSm} min-w-0`}
                       >
-                        <option value="">Mahsulotni tanlang</option>
+                        <option value="">{t("yangiKirim.table.selectProductOption")}</option>
                         {store.modifikatsiyalar.map((item) => (
                           <option key={item.id} value={item.id}>
                             {modificationNomi(item)}
@@ -518,14 +522,14 @@ export default function YangiKirimModal({ onClose }: Props) {
                       </AppSelect>
                       <div className="relative">
                         <Barcode size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input value={mod?.barcode ?? ""} readOnly placeholder="Shtrix kod" className={`${inputSm} pl-8`} />
+                        <input value={mod?.barcode ?? ""} readOnly placeholder={t("yangiKirim.table.barcodePlaceholder")} className={`${inputSm} pl-8`} />
                       </div>
                       <input
                         type="number"
                         min="0"
                         value={row.price}
                         onChange={(event) => yangilash(row.id, { price: event.target.value })}
-                        placeholder="0"
+                        placeholder={t("yangiKirim.table.pricePlaceholder")}
                         className={inputSm}
                       />
                       <input
@@ -533,7 +537,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                         min="0"
                         value={row.retailPrice}
                         onChange={(event) => yangilash(row.id, { retailPrice: event.target.value })}
-                        placeholder="0"
+                        placeholder={t("yangiKirim.table.pricePlaceholder")}
                         className={inputSm}
                       />
                       <input
@@ -541,7 +545,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                         min="0"
                         value={row.wholesalePrice}
                         onChange={(event) => yangilash(row.id, { wholesalePrice: event.target.value })}
-                        placeholder="0"
+                        placeholder={t("yangiKirim.table.pricePlaceholder")}
                         className={inputSm}
                       />
                       <input
@@ -559,7 +563,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                           onChange={(event) => yangilash(row.id, { warehouseId: event.target.value })}
                           className={`${inputSm} appearance-none pl-8 pr-7`}
                         >
-                          <option value="">Omborni tanlang</option>
+                          <option value="">{t("yangiKirim.table.selectWarehouseOption")}</option>
                           {store.omborlar
                             .filter((item) => item.isActive !== false)
                             .map((item) => (
@@ -577,7 +581,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                         type="button"
                         disabled={qatorlar.length === 1}
                         onClick={() => setQatorlar((rows) => rows.filter((item) => item.id !== row.id))}
-                        aria-label="Qatorni o'chirish"
+                        aria-label={t("yangiKirim.table.deleteRowAria")}
                         className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-100 disabled:opacity-30"
                       >
                         <Trash2 size={17} />
@@ -595,10 +599,10 @@ export default function YangiKirimModal({ onClose }: Props) {
                 disabled={tanlangan.size === 0}
                 className="inline-flex items-center gap-2 self-start rounded-xl bg-red-50 px-4 py-2.5 text-xs font-black text-red-500 hover:bg-red-100 disabled:opacity-30"
               >
-                <Trash2 size={14} /> Belgilanganlarni o'chirish ({tanlangan.size})
+                <Trash2 size={14} /> {t("yangiKirim.deleteSelected", { count: tanlangan.size })}
               </button>
               <div className="text-right">
-                <p className="text-xs font-black uppercase text-slate-400">Umumiy summa</p>
+                <p className="text-xs font-black uppercase text-slate-400">{t("yangiKirim.totalLabel")}</p>
                 <p className="mt-1 text-2xl font-black text-slate-950">{pul(jami)}</p>
               </div>
             </div>
@@ -607,13 +611,13 @@ export default function YangiKirimModal({ onClose }: Props) {
 
         <footer className="flex shrink-0 flex-col-reverse gap-3 border-t border-orange-100 bg-white/75 px-5 py-4 sm:flex-row sm:justify-end sm:px-8">
           <button type="button" onClick={onClose} className="h-12 rounded-2xl bg-slate-100 px-7 text-sm font-black text-slate-600 hover:bg-slate-200">
-            Bekor qilish
+            {t("yangiKirim.cancel")}
           </button>
           <ActionButton busy={store.amalBajarilmoqda} outline onClick={() => void saqlash(false)}>
-            Saqlash
+            {t("yangiKirim.save")}
           </ActionButton>
           <ActionButton busy={store.amalBajarilmoqda} onClick={() => void saqlash(true)}>
-            Saqlash va tasdiqlash
+            {t("yangiKirim.saveAndConfirm")}
           </ActionButton>
         </footer>
       </div>
@@ -638,6 +642,7 @@ function MahsulotYaratishPanel({
   onClose: () => void;
   onYaratildi: (modification: { id: string }) => void;
 }) {
+  const { t } = useTranslation("ombor_bosh");
   const store = useOmborStore();
   const [kategoriyalar, setKategoriyalar] = useState<Kategoriya[]>([]);
   const [birliklar, setBirliklar] = useState<OlchovBirligi[]>([]);
@@ -675,7 +680,7 @@ function MahsulotYaratishPanel({
   async function saqlash() {
     setXato("");
     if (!nomi.trim() || !barcode.trim() || !categoryId || !unitId) {
-      setXato("Nomi, shtrix kod, kategoriya va o'lchov birligini to'ldiring.");
+      setXato("mahsulotYaratish.errors.required");
       return;
     }
     setSaqlanmoqda(true);
@@ -707,7 +712,7 @@ function MahsulotYaratishPanel({
     <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-black/30 p-4">
       <div className="w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl">
         <div className="flex items-center justify-between">
-          <h3 className="text-xl font-black text-slate-950">Yangi mahsulot yaratish</h3>
+          <h3 className="text-xl font-black text-slate-950">{t("mahsulotYaratish.title")}</h3>
           <button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
             <X size={18} />
           </button>
@@ -719,34 +724,34 @@ function MahsulotYaratishPanel({
           </div>
         ) : (
           <div className="mt-5 space-y-4">
-            {xato && <div className="rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-600">{xato}</div>}
+            {xato && <div className="rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-600">{t(xato)}</div>}
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="space-y-2 text-sm font-bold text-slate-500 sm:col-span-2">
-                <span>Mahsulot nomi *</span>
-                <input value={nomi} onChange={(event) => setNomi(event.target.value)} className={inputSm} placeholder="Masalan: Coca-Cola 1.5L" />
+                <span>{t("mahsulotYaratish.nameLabel")}</span>
+                <input value={nomi} onChange={(event) => setNomi(event.target.value)} className={inputSm} placeholder={t("mahsulotYaratish.namePlaceholder")} />
               </label>
               <label className="space-y-2 text-sm font-bold text-slate-500">
-                <span>Shtrix kod *</span>
-                <input value={barcode} onChange={(event) => setBarcode(event.target.value)} className={inputSm} placeholder="4870..." />
+                <span>{t("mahsulotYaratish.barcodeLabel")}</span>
+                <input value={barcode} onChange={(event) => setBarcode(event.target.value)} className={inputSm} placeholder={t("mahsulotYaratish.barcodePlaceholder")} />
               </label>
-              <SelectField label="Kategoriya *" value={categoryId} onChange={setCategoryId} placeholder="Tanlang" options={kategoriyalar.map((item) => ({ id: item.id, name: item.name }))} />
-              <SelectField label="O'lchov birligi *" value={unitId} onChange={setUnitId} placeholder="Tanlang" options={birliklar.map((item) => ({ id: item.id, name: item.shortName ? `${item.name} (${item.shortName})` : item.name }))} />
+              <SelectField label={t("mahsulotYaratish.categoryLabel")} value={categoryId} onChange={setCategoryId} placeholder={t("mahsulotYaratish.selectPlaceholder")} options={kategoriyalar.map((item) => ({ id: item.id, name: item.name }))} />
+              <SelectField label={t("mahsulotYaratish.unitLabel")} value={unitId} onChange={setUnitId} placeholder={t("mahsulotYaratish.selectPlaceholder")} options={birliklar.map((item) => ({ id: item.id, name: item.shortName ? `${item.name} (${item.shortName})` : item.name }))} />
               <label className="space-y-2 text-sm font-bold text-slate-500">
-                <span>Tan narx</span>
-                <input type="number" min="0" value={costPrice} onChange={(event) => setCostPrice(event.target.value)} className={inputSm} placeholder="0" />
-              </label>
-              <label className="space-y-2 text-sm font-bold text-slate-500">
-                <span>Sotuv narxi</span>
-                <input type="number" min="0" value={retailPrice} onChange={(event) => setRetailPrice(event.target.value)} className={inputSm} placeholder="0" />
+                <span>{t("mahsulotYaratish.costPriceLabel")}</span>
+                <input type="number" min="0" value={costPrice} onChange={(event) => setCostPrice(event.target.value)} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
               </label>
               <label className="space-y-2 text-sm font-bold text-slate-500">
-                <span>Ulgurji narxi</span>
-                <input type="number" min="0" value={wholesalePrice} onChange={(event) => setWholesalePrice(event.target.value)} className={inputSm} placeholder="0" />
+                <span>{t("mahsulotYaratish.retailPriceLabel")}</span>
+                <input type="number" min="0" value={retailPrice} onChange={(event) => setRetailPrice(event.target.value)} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
+              </label>
+              <label className="space-y-2 text-sm font-bold text-slate-500">
+                <span>{t("mahsulotYaratish.wholesalePriceLabel")}</span>
+                <input type="number" min="0" value={wholesalePrice} onChange={(event) => setWholesalePrice(event.target.value)} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
               </label>
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <button type="button" onClick={onClose} className="h-11 rounded-2xl bg-slate-100 px-5 text-sm font-bold text-slate-600">
-                Bekor qilish
+                {t("mahsulotYaratish.cancel")}
               </button>
               <button
                 type="button"
@@ -755,7 +760,7 @@ function MahsulotYaratishPanel({
                 className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 text-sm font-black text-white disabled:opacity-50"
               >
                 {saqlanmoqda && <LoaderCircle size={16} className="animate-spin" />}
-                Yaratish
+                {t("mahsulotYaratish.create")}
               </button>
             </div>
           </div>

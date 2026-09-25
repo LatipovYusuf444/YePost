@@ -1,0 +1,93 @@
+{
+  "inventarizatsiya": {
+    "pageTitle": "Inventarizatsiya",
+    "pageSubtitle": "Ombordagi haqiqiy qoldiqlarni tekshirish hujjatlari.",
+    "createButton": "Yaratish",
+    "searchPlaceholder": "Nomi, mas'ul shaxs, sana yoki holati bo'yicha qidirish",
+    "columns": {
+      "nomi": "Nomi",
+      "status": "Status",
+      "yaratilgan": "Yaratilgan vaqt",
+      "ombor": "Ombor",
+      "masul": "Mas'ul shaxs",
+      "turi": "Turi"
+    },
+    "columnsMenuAria": "Ustunlarni sozlash",
+    "typeFull": "To'liq",
+    "typePartial": "Qisman",
+    "unknownWarehouse": "Noma'lum ombor",
+    "unassigned": "Biriktirilmagan",
+    "loadingDocuments": "Hujjatlar yuklanmoqda...",
+    "emptySearch": "Qidiruv bo'yicha hujjat topilmadi",
+    "emptyList": "Inventarizatsiya hujjatlari mavjud emas",
+    "createModal": {
+      "title": "Yangi inventarizatsiya",
+      "newBadge": "Yangi",
+      "closeAria": "Yopish",
+      "aboutTitle": "Inventarizatsiya haqida",
+      "warehouseLabel": "Ombor *",
+      "selectWarehouse": "Omborni tanlang",
+      "typeLabel": "Tekshiruv turi *",
+      "responsibleLabel": "Mas'ul shaxs",
+      "responsibleUnassigned": "Mas'ul biriktirilmagan",
+      "unknownEmployee": "Noma'lum xodim",
+      "noteTitle": "Izoh",
+      "notePlaceholder": "Inventarizatsiya haqida izoh yozing...",
+      "noteHelper": "Saqlanganda backendda inventarizatsiya qoralamasi yaratiladi. Tasdiqlash ombor qoldiqlarini aniqlangan farqlar bo'yicha yangilaydi.",
+      "itemsTitle": "Tovarlar",
+      "itemsSubtitle": "Tanlangan ombordagi real qoldiqlar",
+      "itemsCount": "{{count}} ta",
+      "stockLoading": "Qoldiqlar yuklanmoqda...",
+      "selectWarehouseHint": "Mahsulotlarni ko'rish uchun omborni tanlang",
+      "noStock": "Bu omborda qoldiq mavjud emas",
+      "table": {
+        "number": "№",
+        "product": "Mahsulot",
+        "barcode": "Shtrix kod",
+        "warehouse": "Ombor",
+        "systemStock": "Tizimdagi qoldiq",
+        "actualQuantity": "Haqiqiy miqdor",
+        "difference": "Farq"
+      },
+      "actualQuantityAria": "{{name}} haqiqiy miqdori",
+      "cancel": "Bekor qilish",
+      "save": "Saqlash",
+      "saveAndConfirm": "Saqlash va tasdiqlash",
+      "errors": {
+        "selectWarehouse": "Omborni tanlang.",
+        "noStockInWarehouse": "Tanlangan omborda inventarizatsiya qilinadigan qoldiq mavjud emas.",
+        "invalidQuantity": "{{name}} uchun haqiqiy miqdor 0 yoki undan katta raqam bo'lishi kerak."
+      }
+    }
+  },
+  "kochirish": {
+    "pageTitle": "Ko'chirma",
+    "pageSubtitle": "Omborlar orasida tovar ko'chirish hujjatlari.",
+    "createButton": "Yaratish",
+    "searchPlaceholder": "Nomi, mas'ul shaxs, ombor, sana yoki holati bo'yicha",
+    "clearSearchAria": "Qidiruvni tozalash",
+    "closeError": "Yopish",
+    "columns": {
+      "nomi": "Nomi",
+      "status": "Status",
+      "yaratgan": "Yaratgan mas'ul shaxs",
+      "yaratilgan": "Yaratilgan sana",
+      "ombordan": "Ombordan",
+      "omborga": "Omborga",
+      "ozgartirgan": "O'zgartirgan mas'ul",
+      "ozgartirilgan": "O'zgartirilgan sana",
+      "summa": "Summa"
+    },
+    "columnResizeAria": "{{name}} ustuni kengligini o'zgartirish",
+    "columnsMenuAria": "Ustunlarni sozlash",
+    "columnsMenuTitle": "Ustunlar",
+    "viewAria": "{{name}}ni ko'rish",
+    "scrollLeftAria": "Chapga surish",
+    "scrollRightAria": "O'ngga surish",
+    "scrollTrackAria": "Jadval gorizontal scrolli",
+    "emptySearch": "Qidiruv bo'yicha ko'chirma topilmadi",
+    "emptyList": "Ko'chirma hujjatlari mavjud emas",
+    "unknownWarehouse": "Noma'lum ombor",
+    "documentName": "Ko'chirma hujjati #{{number}}"
+  }
+}

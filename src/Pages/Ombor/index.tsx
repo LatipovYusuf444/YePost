@@ -18,6 +18,7 @@ import {
   Warehouse,
   X,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import { manzilniKoordinatadanAniqlash } from "@/api/omborApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
@@ -32,6 +33,7 @@ import OmborJadval from "./OmborJadval";
 type Korinish = "jadval" | "kartochka";
 
 export default function Ombor() {
+  const { t } = useTranslation("ombor_bosh");
   const {
     omborlar,
     filiallar,
@@ -63,6 +65,7 @@ export default function Ombor() {
   const [isActive, setIsActive] = useState(true);
   const [gpsYuklanmoqda, setGpsYuklanmoqda] = useState(false);
   const [formaXatosi, setFormaXatosi] = useState<string | null>(null);
+  const [gpsXatoTafsiloti, setGpsXatoTafsiloti] = useState("");
   const korinishMenuRef = useRef<HTMLDivElement | null>(null);
   const joriyProfil = useAuthProfileStore((state) => state.profil);
   const profilniYuklash = useAuthProfileStore((state) => state.profilniYuklash);
@@ -155,6 +158,7 @@ export default function Ombor() {
     setIsActive(toliqOmbor?.isActive ?? true);
     setGpsYuklanmoqda(false);
     setFormaXatosi(null);
+    setGpsXatoTafsiloti("");
     setModalOchiq(true);
   }
 
@@ -174,7 +178,7 @@ export default function Ombor() {
         koordinatalar[1] < -180 ||
         koordinatalar[1] > 180)
     ) {
-      setFormaXatosi("GPS koordinatasini latitude, longitude formatida kiriting.");
+      setFormaXatosi("omborModali.errors.gpsFormat");
       return;
     }
 
@@ -200,7 +204,7 @@ export default function Ombor() {
   function gpsniAniqlash() {
     setFormaXatosi(null);
     if (!navigator.geolocation) {
-      setFormaXatosi("Brauzeringiz GPS aniqlashni qo'llab-quvvatlamaydi.");
+      setFormaXatosi("omborModali.errors.geoUnsupported");
       return;
     }
 
@@ -215,15 +219,14 @@ export default function Ombor() {
           const natija = await manzilniKoordinatadanAniqlash(latitude, longitude);
           if (natija.address?.trim()) setAddress(natija.address.trim());
         } catch (error) {
-          setFormaXatosi(
-            `GPS aniqlandi, lekin yozma manzil olinmadi: ${getApiErrorMessage(error)}`
-          );
+          setGpsXatoTafsiloti(getApiErrorMessage(error));
+          setFormaXatosi("omborModali.errors.gpsAddressFailed");
         } finally {
           setGpsYuklanmoqda(false);
         }
       },
       () => {
-        setFormaXatosi("GPS joylashuvini aniqlab bo'lmadi. Brauzer ruxsatini tekshiring.");
+        setFormaXatosi("omborModali.errors.geoFailed");
         setGpsYuklanmoqda(false);
       },
       { enableHighAccuracy: true, timeout: 15_000, maximumAge: 30_000 }
@@ -231,7 +234,7 @@ export default function Ombor() {
   }
 
   async function ochirish(id: string) {
-    if (!window.confirm("Omborni o'chirasizmi?")) return;
+    if (!window.confirm(t("omborlarSahifasi.confirmDelete"))) return;
     await omborOchirish(id);
   }
 
@@ -242,7 +245,7 @@ export default function Ombor() {
         {xatolik && (
           <div className="flex justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">
             <span>{xatolik}</span>
-            <button onClick={xatolikniTozalash}>Yopish</button>
+            <button onClick={xatolikniTozalash}>{t("omborlarSahifasi.close")}</button>
           </div>
         )}
         <Kompaniyalar />
@@ -257,7 +260,7 @@ export default function Ombor() {
         {xatolik && (
           <div className="flex justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">
             <span>{xatolik}</span>
-            <button onClick={xatolikniTozalash}>Yopish</button>
+            <button onClick={xatolikniTozalash}>{t("omborlarSahifasi.close")}</button>
           </div>
         )}
         <FiliallarBoshqaruvi />
@@ -271,11 +274,11 @@ export default function Ombor() {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-500">
-            Ombor boshqaruvi
+            {t("omborlarSahifasi.eyebrow")}
           </p>
-          <h1 className="mt-1 text-3xl font-black text-gray-950">Omborlar</h1>
+          <h1 className="mt-1 text-3xl font-black text-gray-950">{t("omborlarSahifasi.title")}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Ombor punktlarini yaratish va tahrirlash.
+            {t("omborlarSahifasi.subtitle")}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -292,7 +295,7 @@ export default function Ombor() {
               ) : (
                 <LayoutGrid size={17} className="text-orange-500" />
               )}
-              Ko'rinish
+              {t("omborlarSahifasi.viewToggle")}
               {korinishMenuOchiq ? (
                 <ChevronUp size={16} className="text-orange-500" />
               ) : (
@@ -319,7 +322,7 @@ export default function Ombor() {
                   }`}
                 >
                   <Table2 size={18} />
-                  Jadval
+                  {t("omborlarSahifasi.viewTable")}
                 </button>
                 <button
                   type="button"
@@ -335,7 +338,7 @@ export default function Ombor() {
                   }`}
                 >
                   <LayoutGrid size={18} />
-                  Kartochka
+                  {t("omborlarSahifasi.viewCards")}
                 </button>
               </div>
             )}
@@ -345,14 +348,14 @@ export default function Ombor() {
             className="inline-flex h-11 items-center gap-2 rounded-2xl bg-white px-4 text-sm font-bold text-gray-600 ring-1 ring-orange-100"
           >
             <RefreshCw size={16} className={yuklanmoqda ? "animate-spin" : ""} />
-            Yangilash
+            {t("omborlarSahifasi.refresh")}
           </button>
           <button
             onClick={() => void modalniOchish()}
             className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-4 text-sm font-black text-white"
           >
             <Plus size={17} />
-            Ombor qo'shish
+            {t("omborlarSahifasi.addWarehouse")}
           </button>
         </div>
       </header>
@@ -360,7 +363,7 @@ export default function Ombor() {
       {xatolik && (
         <div className="flex justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">
           <span>{xatolik}</span>
-          <button onClick={xatolikniTozalash}>Yopish</button>
+          <button onClick={xatolikniTozalash}>{t("omborlarSahifasi.close")}</button>
         </div>
       )}
 
@@ -373,16 +376,16 @@ export default function Ombor() {
             <table className="w-full min-w-[1480px] text-left">
               <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500">
                 <tr>
-                  <th className="min-w-52 px-6 py-4">Nomi</th>
-                  <th className="min-w-56 px-6 py-4">Joylashuv</th>
-                  <th className="min-w-36 px-6 py-4">Ishlash vaqti</th>
-                  <th className="min-w-48 px-6 py-4">Kim tomonidan yaratilgan</th>
-                  <th className="min-w-40 px-6 py-4">Yaratilgan sana</th>
-                  <th className="min-w-44 px-6 py-4">Mas'ul shaxs</th>
-                  <th className="min-w-48 px-6 py-4">Mas'ul shaxs nomeri</th>
-                  <th className="min-w-28 px-6 py-4">Status</th>
+                  <th className="min-w-52 px-6 py-4">{t("omborlarSahifasi.table.headers.name")}</th>
+                  <th className="min-w-56 px-6 py-4">{t("omborlarSahifasi.table.headers.location")}</th>
+                  <th className="min-w-36 px-6 py-4">{t("omborlarSahifasi.table.headers.workingHours")}</th>
+                  <th className="min-w-48 px-6 py-4">{t("omborlarSahifasi.table.headers.createdBy")}</th>
+                  <th className="min-w-40 px-6 py-4">{t("omborlarSahifasi.table.headers.createdAt")}</th>
+                  <th className="min-w-44 px-6 py-4">{t("omborlarSahifasi.table.headers.responsible")}</th>
+                  <th className="min-w-48 px-6 py-4">{t("omborlarSahifasi.table.headers.responsiblePhone")}</th>
+                  <th className="min-w-28 px-6 py-4">{t("omborlarSahifasi.table.headers.status")}</th>
                   <th className="w-20 px-6 py-4 text-right">
-                    <span className="sr-only">Amallar</span>
+                    <span className="sr-only">{t("omborlarSahifasi.table.headers.actions")}</span>
                   </th>
                 </tr>
               </thead>
@@ -399,7 +402,7 @@ export default function Ombor() {
               }}
               tabIndex={0}
               className="cursor-pointer transition hover:bg-orange-50/50 focus:bg-orange-50/50 focus:outline-none"
-              aria-label={`${ombor.name} omborini ochish`}
+              aria-label={t("omborlarSahifasi.table.openAria", { name: ombor.name })}
             >
               <td className="px-6 py-5">
                 <div className="flex items-center gap-3">
@@ -410,7 +413,7 @@ export default function Ombor() {
                 </div>
               </td>
               <td className="px-6 py-5 text-sm font-semibold text-gray-600">
-                <p className="max-w-56 leading-5">{ombor.address || "Manzil kiritilmagan"}</p>
+                <p className="max-w-56 leading-5">{ombor.address || t("omborlarSahifasi.table.noAddress")}</p>
                 {ombor.latitude != null && ombor.longitude != null && (
                   <p className="mt-1 flex items-start gap-1 text-xs font-bold text-slate-400">
                     <MapPin size={13} className="mt-0.5 shrink-0" />
@@ -428,14 +431,14 @@ export default function Ombor() {
                     {ombor.closingTime}
                   </>
                 ) : (
-                  "Ish vaqti kiritilmagan"
+                  t("omborlarSahifasi.table.noWorkingHours")
                 )}
               </td>
               <td className="px-6 py-5 text-sm text-gray-600">
                 {(() => {
                   const yaratuvchi = omborYaratuvchisi(ombor);
-                  if (!yaratuvchi) return <span className="font-semibold text-slate-400">Backendda creator mavjud emas</span>;
-                  const nomi = yaratuvchi.fullName || yaratuvchi.name || yaratuvchi.username || "Foydalanuvchi";
+                  if (!yaratuvchi) return <span className="font-semibold text-slate-400">{t("omborlarSahifasi.table.noCreator")}</span>;
+                  const nomi = yaratuvchi.fullName || yaratuvchi.name || yaratuvchi.username || t("omborlarSahifasi.table.defaultUserName");
                   return (
                     <div className="flex items-center gap-3">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500 ring-1 ring-orange-100">
@@ -460,12 +463,12 @@ export default function Ombor() {
                   ombor.responsible?.name ??
                   (ombor.responsibleId ? xodimMap.get(ombor.responsibleId)?.fullName : undefined) ??
                   (ombor.responsibleId ? xodimMap.get(ombor.responsibleId)?.username : undefined) ??
-                  "Mas'ul biriktirilmagan"}
+                  t("omborlarSahifasi.table.noResponsible")}
               </td>
               <td className="px-6 py-5 text-sm font-black text-gray-600">
                 {ombor.responsible?.phone ??
                   (ombor.responsibleId ? xodimMap.get(ombor.responsibleId)?.phone : undefined) ??
-                  "Telefon kiritilmagan"}
+                  t("omborlarSahifasi.table.noPhone")}
               </td>
               <td className="px-6 py-5 text-right">
                 <span
@@ -475,7 +478,7 @@ export default function Ombor() {
                       : "bg-emerald-50 text-emerald-600"
                   }`}
                 >
-                  {ombor.isActive === false ? "Faol emas" : "Faol"}
+                  {ombor.isActive === false ? t("omborlarSahifasi.table.statusInactive") : t("omborlarSahifasi.table.statusActive")}
                 </span>
               </td>
               <td className="px-6 py-5">
@@ -489,8 +492,8 @@ export default function Ombor() {
                     onKeyDown={(event) => event.stopPropagation()}
                     disabled={amalBajarilmoqda}
                     className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100 disabled:opacity-50"
-                    aria-label={`${ombor.name} omborini o'chirish`}
-                    title="O'chirish"
+                    aria-label={t("omborlarSahifasi.table.deleteAria", { name: ombor.name })}
+                    title={t("omborlarSahifasi.table.deleteTitle")}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -502,9 +505,9 @@ export default function Ombor() {
             <tr>
               <td colSpan={9} className="px-6 py-14 text-center">
                 <Warehouse className="mx-auto text-orange-200" size={42} />
-                <p className="mt-3 font-bold text-gray-500">Ombor mavjud emas</p>
+                <p className="mt-3 font-bold text-gray-500">{t("omborlarSahifasi.emptyState.title")}</p>
                 <p className="mt-1 text-sm text-gray-400">
-                  "Ombor qo'shish" tugmasi orqali birinchi omborni yarating.
+                  {t("omborlarSahifasi.emptyState.hint")}
                 </p>
               </td>
             </tr>
@@ -538,13 +541,13 @@ export default function Ombor() {
                           : "bg-emerald-50 text-emerald-600"
                       }`}
                     >
-                      {ombor.isActive === false ? "Faol emas" : "Faol"}
+                      {ombor.isActive === false ? t("omborlarSahifasi.table.statusInactive") : t("omborlarSahifasi.table.statusActive")}
                     </span>
                   </div>
 
                   <h2 className="mt-4 truncate text-xl font-black text-slate-950">{ombor.name}</h2>
                   <p className="mt-1 truncate text-sm font-semibold text-slate-500">
-                    {ombor.address || "Manzil kiritilmagan"}
+                    {ombor.address || t("omborlarSahifasi.table.noAddress")}
                   </p>
 
                   <div className="mt-4 space-y-2 text-sm text-slate-500">
@@ -565,7 +568,7 @@ export default function Ombor() {
                     <p className="flex items-center gap-2">
                       <UserRound size={15} className="shrink-0 text-orange-500" />
                       <span className="truncate">
-                        {masul?.fullName ?? masul?.username ?? masul?.name ?? "Biriktirilmagan"}
+                        {masul?.fullName ?? masul?.username ?? masul?.name ?? t("omborlarSahifasi.cards.noResponsible")}
                       </span>
                     </p>
                     <p className="flex items-center gap-2">
@@ -574,7 +577,7 @@ export default function Ombor() {
                     </p>
                     {filialNomi && (
                       <p className="truncate text-xs font-bold text-slate-400">
-                        Filial: {filialNomi}
+                        {t("omborlarSahifasi.cards.branchLabel", { name: filialNomi })}
                       </p>
                     )}
                   </div>
@@ -587,14 +590,14 @@ export default function Ombor() {
                     className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-orange-600 ring-1 ring-orange-100 transition hover:bg-orange-100"
                   >
                     <Edit3 size={16} />
-                    Tahrirlash
+                    {t("omborlarSahifasi.cards.edit")}
                   </button>
                   <button
                     type="button"
                     onClick={() => void ochirish(ombor.id)}
                     disabled={amalBajarilmoqda}
                     className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100 disabled:opacity-50"
-                    aria-label={`${ombor.name} omborini o'chirish`}
+                    aria-label={t("omborlarSahifasi.cards.deleteAria", { name: ombor.name })}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -606,9 +609,9 @@ export default function Ombor() {
           {omborlar.length === 0 && (
             <div className="col-span-full rounded-[24px] border border-dashed border-orange-200 bg-white px-6 py-14 text-center">
               <Warehouse className="mx-auto text-orange-200" size={42} />
-              <p className="mt-3 font-bold text-gray-500">Ombor mavjud emas</p>
+              <p className="mt-3 font-bold text-gray-500">{t("omborlarSahifasi.emptyState.title")}</p>
               <p className="mt-1 text-sm text-gray-400">
-                "Ombor qo'shish" tugmasi orqali birinchi omborni yarating.
+                {t("omborlarSahifasi.emptyState.hint")}
               </p>
             </div>
           )}
@@ -628,10 +631,10 @@ export default function Ombor() {
                 </span>
                 <div>
                   <h2 className="text-2xl font-black tracking-tight text-gray-950">
-                    {tahrirOmbor ? "Omborni tahrirlash" : "Yangi ombor"}
+                    {tahrirOmbor ? t("omborModali.editTitle") : t("omborModali.createTitle")}
                   </h2>
                   <p className="mt-1 text-xs font-black uppercase tracking-[0.14em] text-orange-500">
-                    {tahrirOmbor ? "Tahrirlash" : "Yangi"}
+                    {tahrirOmbor ? t("omborModali.editBadge") : t("omborModali.createBadge")}
                   </p>
                 </div>
               </div>
@@ -639,7 +642,7 @@ export default function Ombor() {
                 type="button"
                 onClick={() => setModalOchiq(false)}
                 className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-orange-200 hover:text-orange-600"
-                aria-label="Modalni yopish"
+                aria-label={t("omborModali.closeAria")}
               >
                 <X size={22} />
               </button>
@@ -650,15 +653,15 @@ export default function Ombor() {
                 <div className="mb-4 flex items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">
                   <span>{xatolik}</span>
                   <button type="button" onClick={xatolikniTozalash} className="text-xs uppercase">
-                    Yopish
+                    {t("omborModali.close")}
                   </button>
                 </div>
               )}
               {formaXatosi && (
                 <div className="mb-4 flex items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">
-                  <span>{formaXatosi}</span>
+                  <span>{t(formaXatosi, { error: gpsXatoTafsiloti })}</span>
                   <button type="button" onClick={() => setFormaXatosi(null)} className="text-xs uppercase">
-                    Yopish
+                    {t("omborModali.close")}
                   </button>
                 </div>
               )}
@@ -666,33 +669,33 @@ export default function Ombor() {
               <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
                 <section className="rounded-[26px] border border-orange-100 bg-white p-5 sm:p-6">
                   <h3 className="border-b border-orange-100 pb-4 text-sm font-black uppercase tracking-wide text-slate-600">
-                    Ombor haqida
+                    {t("omborModali.sectionAbout")}
                   </h3>
 
                   <div className="mt-5 grid gap-5 sm:grid-cols-2">
                     <label className="grid gap-2 sm:col-span-2">
-                      <span className="text-sm font-bold text-slate-500">Ombor nomi *</span>
+                      <span className="text-sm font-bold text-slate-500">{t("omborModali.nameLabel")}</span>
                       <input
                         value={name}
                         onChange={(event) => setName(event.target.value)}
                         required
                         autoFocus
                         className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
-                        placeholder="Masalan: Markaziy ombor"
+                        placeholder={t("omborModali.namePlaceholder")}
                       />
                     </label>
 
                     <div className="grid gap-2 sm:col-span-2">
                       <span className="flex items-center gap-2 text-sm font-bold text-slate-500">
                         <MapPin size={16} className="text-orange-500" />
-                        Joylashuvi (GPS)
+                        {t("omborModali.gpsLabel")}
                       </span>
                       <div className="flex gap-2">
                         <input
                           value={gps}
                           onChange={(event) => setGps(event.target.value)}
                           className="h-14 min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
-                          placeholder="41.311081, 69.240562"
+                          placeholder={t("omborModali.gpsPlaceholder")}
                         />
                         <button
                           type="button"
@@ -705,25 +708,25 @@ export default function Ombor() {
                           ) : (
                             <MapPin size={17} />
                           )}
-                          Aniqlash
+                          {t("omborModali.detect")}
                         </button>
                       </div>
                     </div>
 
                     <label className="grid gap-2 sm:col-span-2">
-                      <span className="text-sm font-bold text-slate-500">Manzil</span>
+                      <span className="text-sm font-bold text-slate-500">{t("omborModali.addressLabel")}</span>
                       <input
                         value={address}
                         onChange={(event) => setAddress(event.target.value)}
                         className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
-                        placeholder="Toshkent, Chilonzor tumani, 12-uy"
+                        placeholder={t("omborModali.addressPlaceholder")}
                       />
                     </label>
 
                     <div className="grid gap-2">
                       <span className="flex items-center gap-2 text-sm font-bold text-slate-500">
                         <Clock3 size={16} className="text-orange-500" />
-                        Ishlash vaqti
+                        {t("omborModali.workingHoursLabel")}
                       </span>
                       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
                         <input
@@ -745,7 +748,7 @@ export default function Ombor() {
                     <label className="grid gap-2">
                       <span className="flex items-center gap-2 text-sm font-bold text-slate-500">
                         <CalendarDays size={16} className="text-orange-500" />
-                        Yaratilgan sana
+                        {t("omborModali.createdAtLabel")}
                       </span>
                       <input
                         type="date"
@@ -761,17 +764,17 @@ export default function Ombor() {
                   <section className="rounded-[26px] border border-orange-100 bg-orange-50/40 p-5 sm:p-6">
                     <div className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-600">
                       <UserRound size={17} className="text-orange-500" />
-                      Mas'ul shaxs
+                      {t("omborModali.sectionResponsible")}
                     </div>
                     <div className="mt-4 space-y-4">
                       <label className="grid gap-2">
-                        <span className="text-sm font-bold text-slate-500">Ismi</span>
+                        <span className="text-sm font-bold text-slate-500">{t("omborModali.responsibleNameLabel")}</span>
                         <AppSelect
                           value={responsibleId}
                           onChange={(event) => setResponsibleId(event.target.value)}
                           className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                         >
-                          <option value="">Mas'ul shaxsni tanlang</option>
+                          <option value="">{t("omborModali.responsiblePlaceholder")}</option>
                           {masulTanlovlari.map((xodim) => (
                             <option key={xodim.id} value={xodim.id}>
                               {xodim.fullName ?? xodim.username ?? xodim.name ?? xodim.id}
@@ -782,13 +785,13 @@ export default function Ombor() {
                       <label className="grid gap-2">
                         <span className="flex items-center gap-2 text-sm font-bold text-slate-500">
                           <Phone size={16} className="text-orange-500" />
-                          Tel nomer
+                          {t("omborModali.phoneLabel")}
                         </span>
                         <input
                           value={tanlanganMasul?.phone ?? ""}
                           readOnly
                           className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base font-semibold text-slate-700 outline-none placeholder:text-slate-400"
-                          placeholder="+998 90 123 45 67"
+                          placeholder={t("omborModali.phonePlaceholder")}
                         />
                       </label>
                     </div>
@@ -801,7 +804,7 @@ export default function Ombor() {
                       onChange={(event) => setIsActive(event.target.checked)}
                       className="h-5 w-5 accent-orange-500"
                     />
-                    Ombor faol
+                    {t("omborModali.activeLabel")}
                   </label>
                 </div>
               </div>
@@ -813,14 +816,14 @@ export default function Ombor() {
                 onClick={() => setModalOchiq(false)}
                 className="h-12 rounded-2xl bg-slate-100 px-6 text-sm font-black text-slate-600 transition hover:bg-slate-200"
               >
-                Bekor qilish
+                {t("omborModali.cancel")}
               </button>
               <button
                 disabled={amalBajarilmoqda || !name.trim()}
                 className="inline-flex h-12 min-w-32 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-7 text-sm font-black text-white shadow-[0_12px_28px_rgba(37,99,235,.24)] transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {amalBajarilmoqda && <LoaderCircle size={16} className="animate-spin" />}
-                Saqlash
+                {t("omborModali.save")}
               </button>
             </footer>
           </form>

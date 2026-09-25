@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Ban, CheckCircle2, FileText, LoaderCircle, RotateCcw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
 import type { KirimHujjati, MahsulotModifikatsiyasi } from "@/types/ombor";
@@ -34,6 +35,7 @@ function notedanQismlar(note?: string) {
 }
 
 export default function KirimTafsilotModal({ id, onClose }: Props) {
+  const { t } = useTranslation("ombor_kichik");
   const store = useOmborStore();
   const kirimOlish = useOmborStore((state) => state.kirimOlish);
   const xatolikniTozalash = useOmborStore((state) => state.xatolikniTozalash);
@@ -85,33 +87,33 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
       <header className="flex shrink-0 flex-col gap-3 border-b border-orange-100 bg-white/75 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <h2 className="truncate text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-            {hujjat ? `Kirim hujjati ${hujjatRaqami(hujjat)}` : "Kirim hujjati"}
+            {hujjat ? t("kirimTafsilotModal.titleWithNumber", { number: hujjatRaqami(hujjat) }) : t("kirimTafsilotModal.title")}
           </h2>
           {hujjat && <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-black uppercase ${statusSinfi(hujjat.status)}`}>{holat(hujjat.status)}</span>}
         </div>
         <div className="flex items-center justify-end gap-2">
-          {hujjat && status === "DRAFT" && <button type="button" onClick={() => void tasdiqlash()} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-emerald-600 px-5 text-sm font-black text-white shadow-lg shadow-emerald-100 disabled:opacity-50">{store.amalBajarilmoqda ? <LoaderCircle size={17} className="animate-spin"/> : <CheckCircle2 size={17}/>}Tasdiqlash</button>}
-          {hujjat && status === "CONFIRMED" && <button type="button" onClick={() => setBekorSorash(true)} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-slate-700 px-5 text-sm font-black text-white shadow-lg shadow-slate-200 disabled:opacity-50"><RotateCcw size={17}/>Bekor qilish</button>}
+          {hujjat && status === "DRAFT" && <button type="button" onClick={() => void tasdiqlash()} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-emerald-600 px-5 text-sm font-black text-white shadow-lg shadow-emerald-100 disabled:opacity-50">{store.amalBajarilmoqda ? <LoaderCircle size={17} className="animate-spin"/> : <CheckCircle2 size={17}/>}{t("kirimTafsilotModal.confirmButton")}</button>}
+          {hujjat && status === "CONFIRMED" && <button type="button" onClick={() => setBekorSorash(true)} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-slate-700 px-5 text-sm font-black text-white shadow-lg shadow-slate-200 disabled:opacity-50"><RotateCcw size={17}/>{t("kirimTafsilotModal.cancelButton")}</button>}
         </div>
       </header>
 
       <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto p-4 sm:p-8">
-        {yuklanmoqda ? <div className="flex h-80 items-center justify-center"><LoaderCircle className="animate-spin text-orange-500" size={36}/></div> : !hujjat ? <div className="rounded-3xl bg-white p-14 text-center text-slate-500"><FileText className="mx-auto mb-3 text-orange-200" size={42}/>{store.xatolik || "Kirim hujjatini backenddan olib bo'lmadi."}</div> : <>
-          {store.xatolik && <div className="mb-5 flex justify-between gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600"><span>{store.xatolik}</span><button onClick={store.xatolikniTozalash}>Yopish</button></div>}
+        {yuklanmoqda ? <div className="flex h-80 items-center justify-center"><LoaderCircle className="animate-spin text-orange-500" size={36}/></div> : !hujjat ? <div className="rounded-3xl bg-white p-14 text-center text-slate-500"><FileText className="mx-auto mb-3 text-orange-200" size={42}/>{store.xatolik || t("kirimTafsilotModal.loadError")}</div> : <>
+          {store.xatolik && <div className="mb-5 flex justify-between gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600"><span>{store.xatolik}</span><button onClick={store.xatolikniTozalash}>{t("kirimTafsilotModal.closeButton")}</button></div>}
 
           <div className="grid gap-5 xl:grid-cols-2">
             <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
-              <SectionTitle icon={<FileText size={18}/>} text="Kirim haqida" />
+              <SectionTitle icon={<FileText size={18}/>} text={t("kirimTafsilotModal.aboutSection")} />
               <div className="rounded-[24px] bg-gradient-to-br from-orange-50 to-orange-100/70 p-6 sm:p-8">
-                <p className="text-sm font-black uppercase tracking-wide text-orange-600">Umumiy summa</p>
+                <p className="text-sm font-black uppercase tracking-wide text-orange-600">{t("kirimTafsilotModal.totalAmount")}</p>
                 <p className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-5xl">{pul(jami)}</p>
               </div>
               <div className="mt-5 grid gap-5 sm:grid-cols-2">
-                <Info label="Kirimni nomi" value={nomi || hujjatRaqami(hujjat)}/>
-                <Info label="Yetkazib beruvchi" value={supplier?.name ?? supplier?.fullName ?? hujjat.supplierId}/>
-                <Info label="Ombor" value={warehouse?.name ?? hujjat.warehouseId}/>
-                <Info label="Qachon kirim qilingan" value={faqatSana(hujjat.createdAt)}/>
-                <Info label="Mas'ul shaxs" value={responsible?.fullName ?? responsible?.name ?? responsible?.username ?? "Biriktirilmagan"}/>
+                <Info label={t("kirimTafsilotModal.nameLabel")} value={nomi || hujjatRaqami(hujjat)}/>
+                <Info label={t("kirimTafsilotModal.supplierLabel")} value={supplier?.name ?? supplier?.fullName ?? hujjat.supplierId}/>
+                <Info label={t("kirimTafsilotModal.warehouseLabel")} value={warehouse?.name ?? hujjat.warehouseId}/>
+                <Info label={t("kirimTafsilotModal.dateLabel")} value={faqatSana(hujjat.createdAt)}/>
+                <Info label={t("kirimTafsilotModal.responsibleLabel")} value={responsible?.fullName ?? responsible?.name ?? responsible?.username ?? t("kirimTafsilotModal.unassigned")}/>
               </div>
             </section>
 
@@ -119,10 +121,10 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
           </div>
 
           <section className="mt-5 rounded-[26px] border border-orange-100 bg-white p-4 shadow-sm sm:p-5">
-            <SectionTitle icon={<FileText size={18}/>} text="Tovarlar" />
+            <SectionTitle icon={<FileText size={18}/>} text={t("kirimTafsilotModal.itemsSection")} />
             <div className="scrollbar-orange overflow-x-auto">
               <table className="w-full min-w-[1050px] text-left text-sm">
-                <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-500"><tr><th className="rounded-l-2xl px-4 py-4">№</th><th className="px-4 py-4">Mahsulot</th><th className="px-4 py-4">Shtrix kod</th><th className="px-4 py-4">Tan narxi</th><th className="px-4 py-4">Sotuv narxi</th><th className="px-4 py-4">Ulgurji narxi</th><th className="px-4 py-4">Soni</th><th className="px-4 py-4">Ombor</th><th className="rounded-r-2xl px-4 py-4">Summa</th></tr></thead>
+                <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-500"><tr><th className="rounded-l-2xl px-4 py-4">{t("kirimTafsilotModal.table.number")}</th><th className="px-4 py-4">{t("kirimTafsilotModal.table.product")}</th><th className="px-4 py-4">{t("kirimTafsilotModal.table.barcode")}</th><th className="px-4 py-4">{t("kirimTafsilotModal.table.costPrice")}</th><th className="px-4 py-4">{t("kirimTafsilotModal.table.retailPrice")}</th><th className="px-4 py-4">{t("kirimTafsilotModal.table.wholesalePrice")}</th><th className="px-4 py-4">{t("kirimTafsilotModal.table.quantity")}</th><th className="px-4 py-4">{t("kirimTafsilotModal.table.warehouse")}</th><th className="rounded-r-2xl px-4 py-4">{t("kirimTafsilotModal.table.amount")}</th></tr></thead>
                 <tbody className="divide-y divide-orange-100">
                   {(hujjat.items ?? []).map((item, index) => {
                     const mod: MahsulotModifikatsiyasi | undefined = item.modification ?? modMap.get(item.modificationId);
@@ -134,13 +136,13 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
                 </tbody>
               </table>
             </div>
-            {(!hujjat.items || hujjat.items.length === 0) && <div className="py-12 text-center text-sm font-bold text-slate-400">Hujjatda mahsulotlar mavjud emas.</div>}
+            {(!hujjat.items || hujjat.items.length === 0) && <div className="py-12 text-center text-sm font-bold text-slate-400">{t("kirimTafsilotModal.emptyItems")}</div>}
           </section>
         </>}
       </div>
     </div>
 
-    {bekorSorash && <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-black/30 p-4"><div className="w-full max-w-sm rounded-[26px] bg-white p-6 shadow-2xl"><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-500"><Ban size={22}/></div><h3 className="mt-4 text-center text-lg font-black text-slate-950">Kirimni bekor qilasizmi?</h3><p className="mt-2 text-center text-sm text-slate-500">Tasdiqlangan kirim bekor qilinsa, ombor qoldig‘i backend orqali qayta hisoblanadi.</p><div className="mt-6 flex gap-3"><button type="button" onClick={() => setBekorSorash(false)} className="h-11 flex-1 rounded-2xl bg-slate-100 text-sm font-bold text-slate-600">Yo‘q</button><button type="button" onClick={() => void bekorQilish()} disabled={store.amalBajarilmoqda} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-red-500 text-sm font-black text-white disabled:opacity-50">{store.amalBajarilmoqda && <LoaderCircle size={16} className="animate-spin"/>}Ha, bekor qilish</button></div></div></div>}
+    {bekorSorash && <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-black/30 p-4"><div className="w-full max-w-sm rounded-[26px] bg-white p-6 shadow-2xl"><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-500"><Ban size={22}/></div><h3 className="mt-4 text-center text-lg font-black text-slate-950">{t("kirimTafsilotModal.cancelConfirm.title")}</h3><p className="mt-2 text-center text-sm text-slate-500">{t("kirimTafsilotModal.cancelConfirm.description")}</p><div className="mt-6 flex gap-3"><button type="button" onClick={() => setBekorSorash(false)} className="h-11 flex-1 rounded-2xl bg-slate-100 text-sm font-bold text-slate-600">{t("kirimTafsilotModal.cancelConfirm.no")}</button><button type="button" onClick={() => void bekorQilish()} disabled={store.amalBajarilmoqda} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-red-500 text-sm font-black text-white disabled:opacity-50">{store.amalBajarilmoqda && <LoaderCircle size={16} className="animate-spin"/>}{t("kirimTafsilotModal.cancelConfirm.yes")}</button></div></div></div>}
   </AppModal>;
 }
 

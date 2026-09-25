@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { FileText, LoaderCircle, Plus, Search, Settings } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useOmborStore } from "@/store/omborStore";
 import type { KirimHujjati } from "@/types/ombor";
 import { holat, hujjatRaqami, pul, sana } from "./omborYordamchilari";
@@ -18,15 +19,15 @@ type UstunKaliti =
   | "ozgartirilgan"
   | "summa";
 
-const USTUNLAR: Array<{ kalit: UstunKaliti; nom: string; kenglik: number }> = [
-  { kalit: "nomi", nom: "Nomi", kenglik: 250 },
-  { kalit: "yetkazibBeruvchi", nom: "Yetkazib beruvchi", kenglik: 260 },
-  { kalit: "ombor", nom: "Ombor", kenglik: 220 },
-  { kalit: "yaratilgan", nom: "Yaratilgan vaqt", kenglik: 220 },
-  { kalit: "masul", nom: "Mas'ul shaxs", kenglik: 230 },
-  { kalit: "status", nom: "Status", kenglik: 210 },
-  { kalit: "ozgartirilgan", nom: "O'zgartirilgan vaqt", kenglik: 220 },
-  { kalit: "summa", nom: "Summa", kenglik: 220 },
+const USTUN_KALITLARI: Array<{ kalit: UstunKaliti; kenglik: number }> = [
+  { kalit: "nomi", kenglik: 250 },
+  { kalit: "yetkazibBeruvchi", kenglik: 260 },
+  { kalit: "ombor", kenglik: 220 },
+  { kalit: "yaratilgan", kenglik: 220 },
+  { kalit: "masul", kenglik: 230 },
+  { kalit: "status", kenglik: 210 },
+  { kalit: "ozgartirilgan", kenglik: 220 },
+  { kalit: "summa", kenglik: 220 },
 ];
 
 function holatBadgeSinfi(status?: string) {
@@ -37,8 +38,13 @@ function holatBadgeSinfi(status?: string) {
 }
 
 export default function Xaridlar() {
+  const { t } = useTranslation("ombor_modal");
   const store = useOmborStore();
   const malumotlarniYuklash = store.malumotlarniYuklash;
+  const USTUNLAR = useMemo(
+    () => USTUN_KALITLARI.map((ustun) => ({ ...ustun, nom: t(`xaridlar.columns.${ustun.kalit}`) })),
+    [t]
+  );
   const [qidiruv, setQidiruv] = useState("");
   const [modal, setModal] = useState(false);
   const [tanlanganId, setTanlanganId] = useState<string | null>(null);
@@ -47,7 +53,7 @@ export default function Xaridlar() {
   const sozlamaTugmaRef = useRef<HTMLButtonElement | null>(null);
   const sozlamaRef = useRef<HTMLDivElement | null>(null);
   const [korinadiganUstunlar, setKorinadiganUstunlar] = useState<Record<UstunKaliti, boolean>>(
-    () => Object.fromEntries(USTUNLAR.map((ustun) => [ustun.kalit, true])) as Record<UstunKaliti, boolean>
+    () => Object.fromEntries(USTUN_KALITLARI.map((ustun) => [ustun.kalit, true])) as Record<UstunKaliti, boolean>
   );
 
   const faolUstunlar = USTUNLAR.filter((ustun) => korinadiganUstunlar[ustun.kalit]);
@@ -114,7 +120,7 @@ export default function Xaridlar() {
       hujjat.responsible?.username ??
       xodim?.fullName ??
       xodim?.username ??
-      "Biriktirilmagan"
+      t("xaridlar.unassigned")
     );
   }
 
@@ -129,7 +135,7 @@ export default function Xaridlar() {
 
   function kirimNomi(hujjat: KirimHujjati) {
     const match = (hujjat.note ?? "").trim().match(/^Nomi:\s*(.+?)\s*(?:\|.*)?$/);
-    return match?.[1]?.trim() || "Kirim hujjati";
+    return match?.[1]?.trim() || t("xaridlar.defaultDocName");
   }
 
   const royxat = useMemo(() => {
@@ -173,7 +179,7 @@ export default function Xaridlar() {
       case "yetkazibBeruvchi":
         return supplierNomi(hujjat.supplierId, hujjat.supplier?.name);
       case "ombor":
-        return hujjat.warehouse?.name ?? omborlarMap.get(hujjat.warehouseId) ?? "Noma'lum ombor";
+        return hujjat.warehouse?.name ?? omborlarMap.get(hujjat.warehouseId) ?? t("xaridlar.unknownWarehouse");
       case "yaratilgan":
         return sana(hujjat.createdAt);
       case "masul":
@@ -195,15 +201,15 @@ export default function Xaridlar() {
     <div className="space-y-5">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-3xl font-black text-gray-950">Kirim</h1>
-          <p className="mt-1 text-sm text-gray-500">Omborga tovar kirim qilish hujjatlari.</p>
+          <h1 className="text-3xl font-black text-gray-950">{t("xaridlar.title")}</h1>
+          <p className="mt-1 text-sm text-gray-500">{t("xaridlar.subtitle")}</p>
         </div>
         <button
           onClick={() => setModal(true)}
           className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-4 text-sm font-black text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600"
         >
           <Plus size={17} />
-          Yaratish
+          {t("xaridlar.createButton")}
         </button>
       </header>
 
@@ -212,7 +218,7 @@ export default function Xaridlar() {
         <input
           value={qidiruv}
           onChange={(event) => setQidiruv(event.target.value)}
-          placeholder="Nomi, yetkazib beruvchi, mas'ul shaxs, sana yoki holati bo'yicha qidirish"
+          placeholder={t("xaridlar.searchPlaceholder")}
           className="h-11 w-full rounded-2xl border border-gray-200 bg-white pl-10 pr-4 text-sm outline-none focus:border-orange-400"
         />
       </div>
@@ -221,7 +227,7 @@ export default function Xaridlar() {
         <div className="flex items-start justify-between gap-3 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">
           <span>{store.xatolik}</span>
           <button onClick={store.xatolikniTozalash} className="shrink-0 text-red-400 hover:text-red-600">
-            Yopish
+            {t("xaridlar.errorClose")}
           </button>
         </div>
       )}
@@ -247,7 +253,7 @@ export default function Xaridlar() {
                       setSozlamaOchiq((oldingi) => !oldingi);
                     }}
                     className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-500 transition hover:bg-orange-100"
-                    aria-label="Ko'rinadigan ustunlarni sozlash"
+                    aria-label={t("xaridlar.columnSettingsAria")}
                     aria-expanded={sozlamaOchiq}
                   >
                     <Settings size={18} />
@@ -284,9 +290,9 @@ export default function Xaridlar() {
                 <tr>
                   <td colSpan={faolUstunlar.length + 1} className="p-14 text-center">
                     <FileText className="mx-auto text-orange-200" size={42} />
-                    <p className="mt-3 font-bold text-gray-500">Kirim hujjati topilmadi</p>
+                    <p className="mt-3 font-bold text-gray-500">{t("xaridlar.emptyTitle")}</p>
                     <p className="mt-1 text-sm text-gray-400">
-                      "Yaratish" tugmasi orqali yangi kirim qo'shing.
+                      {t("xaridlar.emptyHint")}
                     </p>
                   </td>
                 </tr>
@@ -304,7 +310,7 @@ export default function Xaridlar() {
             style={{ top: sozlamaJoylashuvi.top, left: sozlamaJoylashuvi.left }}
           >
             <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">
-              Ko'rinadigan ustunlar
+              {t("xaridlar.columnSettingsTitle")}
             </p>
             {USTUNLAR.map((ustun) => (
               <label

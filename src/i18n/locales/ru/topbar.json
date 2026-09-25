@@ -1,0 +1,59 @@
+{
+  "searchPlaceholder": "Поиск...",
+  "sidebarOpen": "Открыть боковую панель",
+  "sidebarClose": "Закрыть боковую панель",
+  "addProduct": "Добавить товар",
+  "notifications": {
+    "title": "Уведомления",
+    "aria": "Уведомления",
+    "unreadCount": "Непрочитанных: {{count}}",
+    "markAllRead": "Все прочитано",
+    "empty": "Уведомлений нет",
+    "defaultTitle": "Уведомление",
+    "defaultMessage": "Новое событие CRM",
+    "closeAria": "Закрыть уведомления"
+  },
+  "profile": {
+    "menuAria": "Меню профиля",
+    "closeAria": "Закрыть меню профиля",
+    "myProfile": "Мой профиль",
+    "settings": "Настройки",
+    "logout": "Выйти из системы",
+    "defaultName": "Пользователь",
+    "unknownRole": "..."
+  },
+  "posModal": {
+    "title": "Выбор товара",
+    "closeAria": "Закрыть",
+    "refreshAria": "Обновить",
+    "clearSearchAria": "Очистить поиск",
+    "productsAria": "Товары",
+    "searchPlaceholder": "Товар, штрих-код или артикул...",
+    "selectWarehouse": "Выберите склад",
+    "warehouseNotFound": "Склад не найден",
+    "retail": "Розница",
+    "wholesale": "Оптом",
+    "loading": "Загрузка товаров...",
+    "noProducts": "На выбранном складе нет товаров для продажи",
+    "noCode": "Код не указан",
+    "decreaseAria": "Уменьшить",
+    "increaseAria": "Увеличить",
+    "selectAria": "Выбрать",
+    "stock": "Остаток",
+    "price": "Цена",
+    "noStock": "На этом складе нет остатка",
+    "noPrice": "Цена не указана",
+    "selectedProducts": "Выбранные товары",
+    "unit": "шт.",
+    "addToCart": "Добавить в корзину",
+    "errors": {
+      "warehousesLoadFailed": "Не удалось получить список складов",
+      "stockLoadFailed": "Не удалось получить остатки товаров",
+      "warehouseStockLoadFailed": "Остаток выбранного склада не получен с сервера",
+      "catalogLoadFailed": "Каталог не получен, показаны остатки со склада",
+      "noStock": "По этому товару нет остатка",
+      "noPrice": "Цена этого товара не указана в системе",
+      "mixedWarehouse": "В корзине есть товар с другого склада. Одна продажа оформляется только с одного склада."
+    }
+  }
+}

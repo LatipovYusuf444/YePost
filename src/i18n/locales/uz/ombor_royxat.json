@@ -1,0 +1,134 @@
+{
+  "umumiy": {
+    "biriktirilmagan": "Biriktirilmagan",
+    "yopish": "Yopish",
+    "ustunlarniSozlash": "Ustunlarni sozlash",
+    "hujjatniKorish": "Hujjatni ko'rish",
+    "status": {
+      "DRAFT": "Qoralama",
+      "CONFIRMED": "Tasdiqlangan",
+      "CANCELLED": "Bekor qilingan",
+      "CANCELED": "Bekor qilingan",
+      "SENT": "Jo'natilgan",
+      "RECEIVED": "Qabul qilingan"
+    }
+  },
+  "amalgaOshirilganlar": {
+    "title": "Amalga oshirilganlar",
+    "subtitle": "Omborda amalga oshirilgan realizatsiya (sotuv) hujjatlari.",
+    "createButton": "Yaratish",
+    "createOptions": {
+      "sotuvYaratish": "Sotuv yaratish"
+    },
+    "searchPlaceholder": "Nomi, kontragent, ombor, mas'ul shaxs yoki holati",
+    "columns": {
+      "nomi": "Nomi",
+      "kontragent": "Kontragent",
+      "ombor": "Ombor",
+      "sana": "Sana",
+      "masul": "Mas'ul shaxs",
+      "status": "Status",
+      "summa": "Summa",
+      "tolangan": "To'langan",
+      "qarz": "Qarz"
+    },
+    "visibleColumns": "Ko'rinadigan ustunlar",
+    "loading": "Hujjatlar yuklanmoqda...",
+    "emptySearch": "Qidiruv bo'yicha hujjat topilmadi",
+    "emptyList": "Amalga oshirilgan hujjatlar mavjud emas",
+    "unknownWarehouse": "Noma'lum ombor"
+  },
+  "chiqim": {
+    "title": "Chiqim",
+    "subtitle": "Ombordan tovar chiqim qilish hujjatlari.",
+    "createButton": "Yaratish",
+    "searchPlaceholder": "Nomi, sabab, mas'ul shaxs, sana yoki holati bo'yicha",
+    "documentLabel": "Chiqim hujjati",
+    "columns": {
+      "nomi": "Nomi",
+      "status": "Status",
+      "yaratilgan": "Yaratilgan vaqti",
+      "ombor": "Ombor",
+      "yaratgan": "Yaratgan mas'ul shaxs",
+      "ozgartirilgan": "O'zgartirilgan vaqti",
+      "ozgartirgan": "O'zgartirgan mas'ul shaxs",
+      "summa": "Summa"
+    },
+    "columnResizeAria": "{{column}} ustuni kengligini o'zgartirish",
+    "reasons": {
+      "DAMAGE": "Shikastlangan",
+      "EXPIRY": "Muddati o'tgan",
+      "THEFT": "Yo'qolgan yoki o'g'irlangan",
+      "OTHER": "Boshqa"
+    },
+    "emptyTitle": "Chiqim hujjati topilmadi",
+    "emptyHint": "“Yaratish” tugmasi orqali yangi chiqim qo'shing.",
+    "scrollLeftAria": "Jadvalni chapga surish",
+    "scrollDragAria": "Jadvalni chap-o'ngga surish",
+    "scrollRightAria": "Jadvalni o'ngga surish"
+  },
+  "omborQoldigi": {
+    "eyebrow": "Ombor",
+    "title": "Ombordagi qoldiqlar",
+    "subtitle": "Kirim, realizatsiya, chiqim va ko'chirma hujjatlari asosida hisoblangan qoldiqlar hisoboti.",
+    "retry": "Qayta urinish",
+    "filters": {
+      "byDate": "Sana bo'yicha",
+      "today": "Bugun",
+      "warehouse": "Ombor",
+      "warehouseSearchPlaceholder": "Ombor qidirish",
+      "branch": "Filial",
+      "branchSearchPlaceholder": "Filial qidirish",
+      "category": "Mahsulot kategoriyasi",
+      "categorySearchPlaceholder": "Kategoriya qidirish",
+      "product": "Mahsulot",
+      "productSearchPlaceholder": "Mahsulot qidirish",
+      "priceType": "Narx turi",
+      "variations": "Variatsiyalar",
+      "variationsSearchPlaceholder": "Variatsiya qidirish",
+      "characteristics": "Xarakteristika",
+      "characteristicsSearchPlaceholder": "Xarakteristika qidirish",
+      "stockType": "Qoldiqlar",
+      "stockOptions": {
+        "hammasi": "Hammasi",
+        "musbat": "Musbat qoldiq",
+        "nol": "Nol qoldiq",
+        "manfiy": "Manfiy qoldiq"
+      },
+      "groupByWarehouse": "Omborlar bo'yicha ajratish",
+      "showBarcode": "Shtrix kodni ko'rsatish",
+      "showVariations": "Variatsiyalarni ko'rsatish"
+    },
+    "priceTypes": {
+      "costPrice": "Tan narhi",
+      "retailPrice": "Sotuv narhi",
+      "wholesalePrice": "Ulgurji narhi",
+      "default": "Narx"
+    },
+    "actions": {
+      "generateReport": "Hisobotni shakllantirish",
+      "print": "Chop etish",
+      "exportExcel": "Excelga yuklash"
+    },
+    "asOfStatus": "{{date}} holatiga (shakllantirilgan: {{generatedAt}})",
+    "tableSearchPlaceholder": "Jadval bo'yicha qidirish",
+    "reportNotice": "Hisobot backenddagi tanlangan sana va joriy filterlar asosida shakllantirildi.",
+    "columns": {
+      "name": "Nomi",
+      "barcode": "Shtrix kod",
+      "variation": "Variatsiya",
+      "warehouse": "Ombor",
+      "unit": "O'lchov birligi",
+      "totalStock": "Umumiy qoldiq",
+      "total": "Jami",
+      "available": "Bo'sh",
+      "unitPrice": "Birlik",
+      "totalAmount": "Umumiy"
+    },
+    "summaryLine": "Jami: {{count}} ta pozitsiya",
+    "emptyState": "Tanlangan filtrlar bo'yicha qoldiq topilmadi",
+    "unknownProduct": "Noma'lum mahsulot",
+    "baseVariant": "Asosiy variant",
+    "allWarehouses": "Barcha omborlar"
+  }
+}

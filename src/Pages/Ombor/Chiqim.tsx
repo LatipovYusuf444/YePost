@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import {
   ChevronLeft,
   ChevronRight,
@@ -20,13 +21,6 @@ import { holat, hujjatRaqami, pul, sana } from "./omborYordamchilari";
 import ChiqimTafsilotModal from "./ChiqimTafsilotModal";
 import YangiChiqimModal from "./YangiChiqimModal";
 
-const chiqimSabablari: Record<ChiqimSababi, string> = {
-  DAMAGE: "Shikastlangan",
-  EXPIRY: "Muddati o'tgan",
-  THEFT: "Yo'qolgan yoki o'g'irlangan",
-  OTHER: "Boshqa",
-};
-
 type Ustun =
   | "nomi"
   | "status"
@@ -37,15 +31,15 @@ type Ustun =
   | "ozgartirgan"
   | "summa";
 
-const ustunlar: Array<{ id: Ustun; nom: string; width: number }> = [
-  { id: "nomi", nom: "Nomi", width: 190 },
-  { id: "status", nom: "Status", width: 160 },
-  { id: "yaratilgan", nom: "Yaratilgan vaqti", width: 190 },
-  { id: "ombor", nom: "Ombor", width: 190 },
-  { id: "yaratgan", nom: "Yaratgan mas'ul shaxs", width: 210 },
-  { id: "ozgartirilgan", nom: "O'zgartirilgan vaqti", width: 210 },
-  { id: "ozgartirgan", nom: "O'zgartirgan mas'ul shaxs", width: 220 },
-  { id: "summa", nom: "Summa", width: 170 },
+const ustunlar: Array<{ id: Ustun; width: number }> = [
+  { id: "nomi", width: 190 },
+  { id: "status", width: 160 },
+  { id: "yaratilgan", width: 190 },
+  { id: "ombor", width: 190 },
+  { id: "yaratgan", width: 210 },
+  { id: "ozgartirilgan", width: 210 },
+  { id: "ozgartirgan", width: 220 },
+  { id: "summa", width: 170 },
 ];
 
 function statusSinfi(status?: string) {
@@ -60,8 +54,15 @@ function shaxsNomi(shaxs?: NomliEntity) {
 }
 
 export default function Chiqim() {
+  const { t } = useTranslation("ombor_royxat");
   const store = useOmborStore();
   const malumotlarniYuklash = store.malumotlarniYuklash;
+  const chiqimSabablari: Record<ChiqimSababi, string> = {
+    DAMAGE: t("chiqim.reasons.DAMAGE"),
+    EXPIRY: t("chiqim.reasons.EXPIRY"),
+    THEFT: t("chiqim.reasons.THEFT"),
+    OTHER: t("chiqim.reasons.OTHER"),
+  };
   const [qidiruv, setQidiruv] = useState("");
   const [modal, setModal] = useState(false);
   const [tanlanganId, setTanlanganId] = useState<string | null>(null);
@@ -136,7 +137,7 @@ export default function Chiqim() {
 
   function masulNomi(item: ChiqimHujjati) {
     const user = item.responsibleId ? xodimMap.get(item.responsibleId) : undefined;
-    return shaxsNomi(item.responsible) ?? shaxsNomi(user) ?? "Biriktirilmagan";
+    return shaxsNomi(item.responsible) ?? shaxsNomi(user) ?? t("umumiy.biriktirilmagan");
   }
 
   function yaratganNomi(item: ChiqimHujjati) {
@@ -184,7 +185,7 @@ export default function Chiqim() {
     );
     // Qidiruv real backend ma'lumotlari va maplarga bog'liq.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qidiruv, store.chiqimlar, omborMap, xodimMap]);
+  }, [qidiruv, store.chiqimlar, omborMap, xodimMap, t]);
 
   function ustunniAlmashtirish(id: Ustun) {
     setKorinadigan((old) => {
@@ -266,7 +267,7 @@ export default function Chiqim() {
   function katak(item: ChiqimHujjati, id: Ustun) {
     switch (id) {
       case "nomi":
-        return <div><p className="font-black text-slate-950">Chiqim hujjati</p><p className="mt-0.5 text-xs font-semibold text-slate-500">{hujjatRaqami(item)}</p></div>;
+        return <div><p className="font-black text-slate-950">{t("chiqim.documentLabel")}</p><p className="mt-0.5 text-xs font-semibold text-slate-500">{hujjatRaqami(item)}</p></div>;
       case "status":
         return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${statusSinfi(item.status)}`}>{holat(item.status)}</span>;
       case "yaratilgan":
@@ -318,22 +319,22 @@ export default function Chiqim() {
     <div className="space-y-6">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-950">Chiqim</h1>
-          <p className="mt-1 text-sm font-medium text-slate-500">Ombordan tovar chiqim qilish hujjatlari.</p>
+          <h1 className="text-3xl font-black tracking-tight text-slate-950">{t("chiqim.title")}</h1>
+          <p className="mt-1 text-sm font-medium text-slate-500">{t("chiqim.subtitle")}</p>
         </div>
         <button onClick={() => setModal(true)} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-6 text-sm font-black text-white shadow-[0_12px_28px_rgba(37,99,235,.24)] transition hover:-translate-y-0.5 hover:bg-orange-600">
-          <Plus size={18} /> Yaratish
+          <Plus size={18} /> {t("chiqim.createButton")}
         </button>
       </header>
 
       <div className="relative w-full max-w-[480px]">
         <Search size={18} className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input value={qidiruv} onChange={(event) => setQidiruv(event.target.value)} placeholder="Nomi, sabab, mas'ul shaxs, sana yoki holati bo'yicha" className="h-14 w-full rounded-2xl border border-slate-200 bg-white pl-13 pr-5 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100" />
+        <input value={qidiruv} onChange={(event) => setQidiruv(event.target.value)} placeholder={t("chiqim.searchPlaceholder")} className="h-14 w-full rounded-2xl border border-slate-200 bg-white pl-13 pr-5 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100" />
       </div>
 
       {store.xatolik && (
         <div className="flex items-start justify-between gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">
-          <span>{store.xatolik}</span><button onClick={store.xatolikniTozalash}>Yopish</button>
+          <span>{store.xatolik}</span><button onClick={store.xatolikniTozalash}>{t("umumiy.yopish")}</button>
         </div>
       )}
 
@@ -348,10 +349,10 @@ export default function Chiqim() {
               <tr>
                 {faolUstunlar.map((column) => (
                   <th key={column.id} className="relative h-[58px] border-r border-orange-200/80 px-7 py-3">
-                    <span className="block truncate">{column.nom}</span>
+                    <span className="block truncate">{t(`chiqim.columns.${column.id}`)}</span>
                     <button
                       type="button"
-                      aria-label={`${column.nom} ustuni kengligini o'zgartirish`}
+                      aria-label={t("chiqim.columnResizeAria", { column: t(`chiqim.columns.${column.id}`) })}
                       onPointerDown={(event) => ustunniTortishniBoshlash(event, column.id)}
                       className="absolute -right-1 top-0 z-20 h-full w-2 cursor-col-resize touch-none bg-transparent transition hover:bg-orange-300/60 active:bg-orange-400/70"
                     />
@@ -366,7 +367,7 @@ export default function Chiqim() {
                         if (!sozlama) sozlamaJoylashuviniYangilash();
                         setSozlama((value) => !value);
                       }}
-                      aria-label="Ustunlarni sozlash"
+                      aria-label={t("umumiy.ustunlarniSozlash")}
                       aria-expanded={sozlama}
                       className="flex h-9 w-9 items-center justify-center rounded-xl text-orange-500 transition hover:bg-orange-100"
                     >
@@ -388,22 +389,22 @@ export default function Chiqim() {
             </tbody>
           </table>
           {!store.yuklanmoqda && royxat.length === 0 && (
-            <div className="p-14 text-center"><FileText className="mx-auto text-orange-200" size={42} /><p className="mt-3 font-bold text-slate-500">Chiqim hujjati topilmadi</p><p className="mt-1 text-sm text-slate-400">“Yaratish” tugmasi orqali yangi chiqim qo'shing.</p></div>
+            <div className="p-14 text-center"><FileText className="mx-auto text-orange-200" size={42} /><p className="mt-3 font-bold text-slate-500">{t("chiqim.emptyTitle")}</p><p className="mt-1 text-sm text-slate-400">{t("chiqim.emptyHint")}</p></div>
           )}
         </div>
 
         <div className="flex h-[70px] items-center gap-4 border-t border-orange-100 px-5">
-          <button type="button" onClick={() => jadvalniSurish(-1)} aria-label="Jadvalni chapga surish" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-white text-orange-500 shadow-sm transition hover:bg-orange-50"><ChevronLeft size={20} /></button>
+          <button type="button" onClick={() => jadvalniSurish(-1)} aria-label={t("chiqim.scrollLeftAria")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-white text-orange-500 shadow-sm transition hover:bg-orange-50"><ChevronLeft size={20} /></button>
           <div ref={scrollYoliRef} onPointerDown={scrollYoliniBosish} className="relative h-3 flex-1 cursor-pointer touch-none rounded-full bg-orange-50">
             <button
               type="button"
-              aria-label="Jadvalni chap-o'ngga surish"
+              aria-label={t("chiqim.scrollDragAria")}
               onPointerDown={scrollTutqichiniTortishniBoshlash}
               className="absolute top-0 h-3 cursor-grab touch-none rounded-full bg-orange-500 shadow-[0_2px_8px_rgba(37,99,235,.28)] active:cursor-grabbing"
               style={{ left: scrollHolati.chap, width: scrollHolati.kenglik }}
             />
           </div>
-          <button type="button" onClick={() => jadvalniSurish(1)} aria-label="Jadvalni o'ngga surish" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-white text-orange-500 shadow-sm transition hover:bg-orange-50"><ChevronRight size={20} /></button>
+          <button type="button" onClick={() => jadvalniSurish(1)} aria-label={t("chiqim.scrollRightAria")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-white text-orange-500 shadow-sm transition hover:bg-orange-50"><ChevronRight size={20} /></button>
         </div>
       </div>
 
@@ -419,7 +420,7 @@ export default function Chiqim() {
               {ustunlar.map((column) => (
                 <label key={column.id} className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold hover:bg-orange-50">
                   <input type="checkbox" checked={korinadigan.has(column.id)} onChange={() => ustunniAlmashtirish(column.id)} className="accent-orange-500" />
-                  {column.nom}
+                  {t(`chiqim.columns.${column.id}`)}
                 </label>
               ))}
             </div>

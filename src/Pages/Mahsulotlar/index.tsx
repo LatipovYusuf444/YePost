@@ -22,6 +22,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import { mahsulotlarApi } from "@/api/catalogApi";
 import { omborlarApi } from "@/api/omborApi";
@@ -143,12 +144,16 @@ const korinishlar: Array<{ id: Korinish; nom: string; icon: typeof Boxes }> = [
 ];
 
 export default function Mahsulotlar() {
+  const { t } = useTranslation("mahsulotlar");
   const store = useMahsulotlarStore();
   const profil = useAuthProfileStore((state) => state.profil);
   const yuklash = store.yuklash;
+  const modifikatsiyalarniYuklash = store.modifikatsiyalarniYuklash;
   const [tab, setTab] = useState<Tab>("mahsulotlar");
   const [qidiruv, setQidiruv] = useState("");
-  const [korinish, setKorinish] = useState<Korinish>("kartochka");
+  const [korinish, setKorinish] = useState<Korinish>("jadval");
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(1);
   const [korinishMenu, setKorinishMenu] = useState(false);
   const [mahsulotModal, setMahsulotModal] = useState<Mahsulot | "new" | null>(null);
   const [oddiyModal, setOddiyModal] = useState<Kategoriya | "new" | null>(null);
@@ -167,9 +172,17 @@ export default function Mahsulotlar() {
         )
       : store.mahsulotlar;
   }, [qidiruv, store.mahsulotlar]);
+  useEffect(() => {
+    store.mahsulotlar.forEach((item) => {
+      if (!useMahsulotlarStore.getState().modifikatsiyalar[item.id]) void modifikatsiyalarniYuklash(item.id);
+    });
+  }, [store.mahsulotlar, modifikatsiyalarniYuklash]);
+  const pageCount = Math.max(1, Math.ceil(mahsulotlar.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const paginatedMahsulotlar = mahsulotlar.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   async function oddiyOchirish(id: string) {
-    if (!window.confirm("Ushbu ma'lumotni o'chirasizmi?")) return;
+    if (!window.confirm(t("confirm.deleteCategory"))) return;
     await store.kategoriyaOchirish(id);
   }
 
@@ -184,7 +197,7 @@ export default function Mahsulotlar() {
   }
 
   async function mahsulotOchirish(id: string) {
-    if (!window.confirm("Mahsulotni o'chirasizmi?")) return;
+    if (!window.confirm(t("confirm.deleteProduct"))) return;
     await store.mahsulotOchirish(id);
   }
 
@@ -226,18 +239,18 @@ export default function Mahsulotlar() {
   }
 
   function kategoriyaNomi(item: Mahsulot) {
-    return item.category?.name ?? store.kategoriyalar.find((x) => x.id === item.categoryId)?.name ?? "Kategoriya";
+    return item.category?.name ?? store.kategoriyalar.find((x) => x.id === item.categoryId)?.name ?? t("fallback.category");
   }
 
   function birlikNomi(item: Mahsulot) {
-    return item.unit?.shortName ?? item.unit?.name ?? store.birliklar.find((x) => x.id === item.unitId)?.shortName ?? "Birlik";
+    return item.unit?.shortName ?? item.unit?.name ?? store.birliklar.find((x) => x.id === item.unitId)?.shortName ?? t("fallback.unit");
   }
 
   function mahsulotAmallari(item: Mahsulot, ixcham = false) {
     return (
       <div className={ixcham ? "flex justify-end gap-2" : "mt-5 grid grid-cols-[1fr_1fr_42px] gap-2 border-t pt-4"}>
-        <button onClick={()=>{setModProduct(item);void store.modifikatsiyalarniYuklash(item.id)}} className={`inline-flex items-center justify-center gap-1 rounded-xl bg-slate-50 font-bold text-slate-600 ${ixcham ? "h-10 px-3 text-sm" : "py-2.5 text-sm"}`}><Eye size={15}/>{!ixcham&&"Variantlar"}</button>
-        <button onClick={()=>void mahsulotTahrirlash(item)} className={`inline-flex items-center justify-center gap-1 rounded-xl bg-orange-50 font-bold text-orange-600 ${ixcham ? "h-10 px-3 text-sm" : "py-2.5 text-sm"}`}><Edit3 size={15}/>{!ixcham&&"Tahrirlash"}</button>
+        <button onClick={()=>{setModProduct(item);void store.modifikatsiyalarniYuklash(item.id)}} className={`inline-flex items-center justify-center gap-1 rounded-xl bg-slate-50 font-bold text-slate-600 ${ixcham ? "h-10 px-3 text-sm" : "py-2.5 text-sm"}`}><Eye size={15}/>{!ixcham&&t("actions.variants")}</button>
+        <button onClick={()=>void mahsulotTahrirlash(item)} className={`inline-flex items-center justify-center gap-1 rounded-xl bg-orange-50 font-bold text-orange-600 ${ixcham ? "h-10 px-3 text-sm" : "py-2.5 text-sm"}`}><Edit3 size={15}/>{!ixcham&&t("actions.edit")}</button>
         <button onClick={()=>void mahsulotOchirish(item.id)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500"><Trash2 size={16}/></button>
       </div>
     );
@@ -247,22 +260,22 @@ export default function Mahsulotlar() {
     <div className="space-y-5">
       <header className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
         <div>
-          <p className="text-sm font-bold uppercase tracking-[0.18em] text-orange-500">Mahsulot katalogi</p>
-          <h1 className="mt-1 text-3xl font-black">Katalog boshqaruvi</h1>
-          <p className="mt-1 text-sm text-gray-500">Kategoriya, birlik, mahsulot, modifikatsiya va narxlar real backendda saqlanadi.</p>
+          <p className="text-sm font-bold uppercase tracking-[0.18em] text-orange-500">{t("header.eyebrow")}</p>
+          <h1 className="mt-1 text-3xl font-black">{t("header.title")}</h1>
+          <p className="mt-1 text-sm text-gray-500">{t("header.subtitle")}</p>
         </div>
         <button onClick={() => void yuklash()} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 font-bold text-gray-600">
-          <RefreshCw size={17}/>Yangilash
+          <RefreshCw size={17}/>{t("header.refresh")}
         </button>
       </header>
 
-      {store.xatolik && <div className="flex justify-between rounded-2xl bg-red-50 p-4 font-bold text-red-600"><span>{store.xatolik}</span><button onClick={store.xatolikniTozalash}>Yopish</button></div>}
-      {excelXatolik && <div className="flex justify-between gap-4 rounded-2xl bg-red-50 p-4 font-bold text-red-600"><span>{excelXatolik}</span><button onClick={()=>setExcelXatolik("")}>Yopish</button></div>}
+      {store.xatolik && <div className="flex justify-between rounded-2xl bg-red-50 p-4 font-bold text-red-600"><span>{store.xatolik}</span><button onClick={store.xatolikniTozalash}>{t("actions.close")}</button></div>}
+      {excelXatolik && <div className="flex justify-between gap-4 rounded-2xl bg-red-50 p-4 font-bold text-red-600"><span>{excelXatolik}</span><button onClick={()=>setExcelXatolik("")}>{t("actions.close")}</button></div>}
 
       <nav className="flex gap-2 overflow-x-auto rounded-2xl border border-orange-100 bg-white p-2">
         {[
-          ["mahsulotlar","Mahsulotlar",Boxes],
-          ["kategoriyalar","Kategoriyalar",Layers3],
+          ["mahsulotlar",t("tabs.products"),Boxes],
+          ["kategoriyalar",t("tabs.categories"),Layers3],
         ].map(([id,nom,Icon]) => {
           const IconComponent = Icon as typeof Boxes;
           return <button key={String(id)} onClick={()=>setTab(id as Tab)} className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-5 py-2.5 font-bold ${tab===id?"bg-orange-500 text-white":"text-gray-500 hover:bg-orange-50"}`}><IconComponent size={17}/>{String(nom)}</button>;
@@ -272,44 +285,61 @@ export default function Mahsulotlar() {
       {store.yuklanmoqda ? <div className="flex h-72 items-center justify-center"><LoaderCircle className="animate-spin text-orange-500" size={34}/></div> : tab === "mahsulotlar" ? (
         <section className="space-y-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:gap-3">
-            <label className="flex h-11 w-full max-w-xl items-center gap-2 rounded-2xl border bg-white px-4 lg:flex-1"><Search size={17} className="text-gray-400"/><input value={qidiruv} onChange={e=>setQidiruv(e.target.value)} className="min-w-0 flex-1 outline-none" placeholder="Mahsulot, shtrix-kod yoki artikul..."/></label>
+            <label className="flex h-11 w-full max-w-xl items-center gap-2 rounded-2xl border bg-white px-4 lg:flex-1"><Search size={17} className="text-gray-400"/><input value={qidiruv} onChange={e=>{setQidiruv(e.target.value);setPage(1)}} className="min-w-0 flex-1 outline-none" placeholder={t("toolbar.searchPlaceholder")}/></label>
             {excelAmallariMumkin&&<>
-              <button type="button" onClick={()=>setImportModalOchiq(true)} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-blue-100 bg-white px-4 font-bold text-blue-600 hover:border-blue-200 hover:bg-blue-50"><Upload size={17}/>Import</button>
-              <button type="button" disabled={excelAmali!==null} onClick={()=>void mahsulotlarniExportQilish()} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-blue-100 bg-white px-4 font-bold text-blue-600 disabled:opacity-50 hover:border-blue-200 hover:bg-blue-50">{excelAmali==="export"?<LoaderCircle size={17} className="animate-spin"/>:<Download size={17}/>}Export</button>
-              <button type="button" disabled={excelAmali!==null} onClick={()=>void importShabloniniYuklash()} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 font-bold text-slate-600 disabled:opacity-50 hover:border-blue-200 hover:text-blue-600">{excelAmali==="template"?<LoaderCircle size={17} className="animate-spin"/>:<FileSpreadsheet size={17}/>}Shablon yuklab olish</button>
+              <button type="button" onClick={()=>setImportModalOchiq(true)} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-blue-100 bg-white px-4 font-bold text-blue-600 hover:border-blue-200 hover:bg-blue-50"><Upload size={17}/>{t("toolbar.import")}</button>
+              <button type="button" disabled={excelAmali!==null} onClick={()=>void mahsulotlarniExportQilish()} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-blue-100 bg-white px-4 font-bold text-blue-600 disabled:opacity-50 hover:border-blue-200 hover:bg-blue-50">{excelAmali==="export"?<LoaderCircle size={17} className="animate-spin"/>:<Download size={17}/>}{t("toolbar.export")}</button>
+              <button type="button" disabled={excelAmali!==null} onClick={()=>void importShabloniniYuklash()} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 font-bold text-slate-600 disabled:opacity-50 hover:border-blue-200 hover:text-blue-600">{excelAmali==="template"?<LoaderCircle size={17} className="animate-spin"/>:<FileSpreadsheet size={17}/>}{t("toolbar.downloadTemplate")}</button>
             </>}
             <div className="relative">
               <button type="button" onClick={()=>setKorinishMenu((value)=>!value)} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 font-bold text-gray-600 shadow-sm hover:border-orange-200 hover:text-orange-600 lg:w-auto">
                 <TanlanganIcon size={17} className="text-orange-500"/>
-                Ko'rinish
+                {t("toolbar.view")}
                 {korinishMenu ? <ChevronUp size={16} className="text-orange-500"/> : <ChevronDown size={16} className="text-orange-500"/>}
               </button>
               {korinishMenu&&(
                 <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-2xl border border-orange-100 bg-white p-2 shadow-xl">
                   {korinishlar.map((item)=>{
                     const Icon=item.icon;
-                    return <button key={item.id} type="button" onClick={()=>{setKorinish(item.id);setKorinishMenu(false)}} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold ${korinish===item.id?"bg-orange-500 text-white":"text-gray-600 hover:bg-orange-50 hover:text-orange-600"}`}><Icon size={17}/>{item.nom}</button>
+                    return <button key={item.id} type="button" onClick={()=>{setKorinish(item.id);setKorinishMenu(false)}} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold ${korinish===item.id?"bg-orange-500 text-white":"text-gray-600 hover:bg-orange-50 hover:text-orange-600"}`}><Icon size={17}/>{t(`views.${item.id}`)}</button>
                   })}
                 </div>
               )}
             </div>
-            <button disabled={store.kategoriyalar.length===0||store.birliklar.length===0} onClick={()=>setMahsulotModal("new")} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 font-black text-white disabled:opacity-50"><Plus size={17}/>Mahsulot qo'shish</button>
+            <button disabled={store.kategoriyalar.length===0||store.birliklar.length===0} onClick={()=>setMahsulotModal("new")} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 font-black text-white disabled:opacity-50"><Plus size={17}/>{t("toolbar.addProduct")}</button>
           </div>
-          {(store.kategoriyalar.length===0||store.birliklar.length===0)&&<div className="rounded-2xl bg-amber-50 p-4 text-sm font-bold text-amber-700">Mahsulot yaratishdan oldin kamida bitta kategoriya va o'lchov birligi yarating.</div>}
+          {(store.kategoriyalar.length===0||store.birliklar.length===0)&&<div className="rounded-2xl bg-amber-50 p-4 text-sm font-bold text-amber-700">{t("warnings.needCategoryAndUnit")}</div>}
           {korinish==="kartochka" ? (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {mahsulotlar.map(item=><article key={item.id} className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
-              <div className="flex justify-between"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-600"><Boxes size={22}/></div><span className={`rounded-full px-3 py-1 text-xs font-bold ${item.isActive?"bg-emerald-50 text-emerald-600":"bg-gray-100 text-gray-500"}`}>{item.isActive?"Faol":"Faol emas"}</span></div>
+              <div className="flex justify-between"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-600"><Boxes size={22}/></div><span className={`rounded-full px-3 py-1 text-xs font-bold ${item.isActive?"bg-emerald-50 text-emerald-600":"bg-gray-100 text-gray-500"}`}>{item.isActive?t("status.active"):t("status.inactive")}</span></div>
               <h2 className="mt-4 text-xl font-black">{item.name}</h2>
-              <p className="mt-1 text-sm text-gray-500">{item.category?.name??store.kategoriyalar.find(x=>x.id===item.categoryId)?.name??"Kategoriya"} В· {item.unit?.shortName??item.unit?.name??store.birliklar.find(x=>x.id===item.unitId)?.shortName??"Birlik"}</p>
-              <p className="mt-2 text-xs text-gray-400">Shtrix-kod: {item.barcode||"Kiritilmagan"} В· Artikul: {item.article||"Kiritilmagan"}</p>
-              <div className="mt-5 grid grid-cols-[1fr_1fr_42px] gap-2 border-t pt-4">
-                <button onClick={()=>{setModProduct(item);void store.modifikatsiyalarniYuklash(item.id)}} className="inline-flex items-center justify-center gap-1 rounded-xl bg-slate-50 py-2.5 text-sm font-bold text-slate-600"><Eye size={15}/>Variantlar</button>
-                <button onClick={()=>void mahsulotTahrirlash(item)} className="inline-flex items-center justify-center gap-1 rounded-xl bg-orange-50 py-2.5 text-sm font-bold text-orange-600"><Edit3 size={15}/>Tahrirlash</button>
+              <p className="mt-1 text-sm text-gray-500">{item.category?.name??store.kategoriyalar.find(x=>x.id===item.categoryId)?.name??t("fallback.category")} В· {item.unit?.shortName??item.unit?.name??store.birliklar.find(x=>x.id===item.unitId)?.shortName??t("fallback.unit")}</p>
+              <p className="mt-2 text-xs text-gray-400">{t("table.barcode")}: {item.barcode||t("notEntered")} В· {t("table.article")}: {item.article||t("notEntered")}</p>
+              {store.modifikatsiyalar[item.id]?.length ? (
+                <div className="mt-4 max-h-40 space-y-2 overflow-y-auto">
+                  {store.modifikatsiyalar[item.id].map((modification) => (
+                    <div key={modification.id} className="rounded-xl bg-slate-50 px-3 py-2">
+                      {store.modifikatsiyalar[item.id].length > 1 && <p className="mb-1 truncate text-xs font-bold text-gray-500">{modification.name || modification.barcode || t("card.defaultVariant")}</p>}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="rounded-lg bg-orange-50 px-2 py-1.5"><p className="text-[10px] font-bold uppercase tracking-wide text-orange-600">{t("card.salePrice")}</p><p className="text-sm font-black text-orange-700">{modification.price?.retailPrice == null ? t("card.noPrice") : money(modification.price.retailPrice)}</p></div>
+                        <div className="rounded-lg bg-emerald-50 px-2 py-1.5"><p className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">{t("card.costPrice")}</p><p className="text-sm font-black text-emerald-700">{modification.price?.costPrice == null ? t("card.noPrice") : money(modification.price.costPrice)}</p></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="rounded-xl bg-orange-50 px-3 py-2"><p className="text-[10px] font-bold uppercase tracking-wide text-orange-600">{t("card.salePrice")}</p><p className="text-sm font-black text-orange-700">{t("card.noPrice")}</p></div>
+                  <div className="rounded-xl bg-emerald-50 px-3 py-2"><p className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">{t("card.costPrice")}</p><p className="text-sm font-black text-emerald-700">{t("card.noPrice")}</p></div>
+                </div>
+              )}\n              <div className="mt-5 grid grid-cols-[1fr_1fr_42px] gap-2 border-t pt-4">
+                <button onClick={()=>{setModProduct(item);void store.modifikatsiyalarniYuklash(item.id)}} className="inline-flex items-center justify-center gap-1 rounded-xl bg-slate-50 py-2.5 text-sm font-bold text-slate-600"><Eye size={15}/>{t("actions.variants")}</button>
+                <button onClick={()=>void mahsulotTahrirlash(item)} className="inline-flex items-center justify-center gap-1 rounded-xl bg-orange-50 py-2.5 text-sm font-bold text-orange-600"><Edit3 size={15}/>{t("actions.edit")}</button>
                 <button onClick={()=>void mahsulotOchirish(item.id)} className="flex items-center justify-center rounded-xl bg-red-50 text-red-500"><Trash2 size={16}/></button>
               </div>
             </article>)}
-            {mahsulotlar.length===0&&<Empty matn="Mahsulotlar mavjud emas"/>}
+            {mahsulotlar.length===0&&<Empty matn={t("empty.products")}/>}
           </div>
           ) : (
             <div className="overflow-hidden rounded-[26px] border border-orange-100 bg-white shadow-sm">
@@ -317,48 +347,51 @@ export default function Mahsulotlar() {
                 <table className="min-w-full text-left text-sm">
                   <thead className="bg-slate-50 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
                     <tr>
-                      <th className="px-5 py-4">Mahsulot</th>
-                      <th className="px-5 py-4">Kategoriya</th>
-                      <th className="px-5 py-4">Birlik</th>
-                      <th className="px-5 py-4">Shtrix-kod</th>
-                      <th className="px-5 py-4">Artikul</th>
-                      <th className="px-5 py-4">Holat</th>
-                      <th className="px-5 py-4 text-right">Amal</th>
+                      <th className="px-5 py-4">{t("table.index")}</th>
+                      <th className="px-5 py-4">{t("table.product")}</th>
+                      <th className="px-5 py-4">{t("table.category")}</th>
+                      <th className="px-5 py-4">{t("table.unit")}</th>
+                      <th className="px-5 py-4">{t("table.barcode")}</th>
+                      <th className="px-5 py-4">{t("table.article")}</th>
+                      <th className="px-5 py-4">{t("table.status")}</th>
+                      <th className="px-5 py-4 text-right">{t("table.action")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-orange-100">
-                    {mahsulotlar.map((item)=>(
+                    {paginatedMahsulotlar.map((item,index)=>(
                       <tr key={item.id} className="hover:bg-orange-50/40">
+                        <td className="px-5 py-4 font-bold text-gray-500">{(currentPage - 1) * pageSize + index + 1}</td>
                         <td className="px-5 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-orange-600"><Boxes size={19}/></div>
-                            <span className="font-black text-gray-900">{item.name}</span>
-                          </div>
+                          <span className="font-black text-gray-900">{item.name}</span>
                         </td>
                         <td className="px-5 py-4 font-bold text-gray-600">{kategoriyaNomi(item)}</td>
                         <td className="px-5 py-4 font-bold text-gray-600">{birlikNomi(item)}</td>
-                        <td className="px-5 py-4 text-gray-500">{item.barcode||"Kiritilmagan"}</td>
-                        <td className="px-5 py-4 text-gray-500">{item.article||"Kiritilmagan"}</td>
-                        <td className="px-5 py-4"><span className={`rounded-full px-3 py-1 text-xs font-bold ${item.isActive?"bg-emerald-50 text-emerald-600":"bg-gray-100 text-gray-500"}`}>{item.isActive?"Faol":"Faol emas"}</span></td>
+                        <td className="px-5 py-4 text-gray-500">{item.barcode||t("notEntered")}</td>
+                        <td className="px-5 py-4 text-gray-500">{item.article||t("notEntered")}</td>
+                        <td className="px-5 py-4"><span className={`rounded-full px-3 py-1 text-xs font-bold ${item.isActive?"bg-emerald-50 text-emerald-600":"bg-gray-100 text-gray-500"}`}>{item.isActive?t("status.active"):t("status.inactive")}</span></td>
                         <td className="px-5 py-4">{mahsulotAmallari(item,true)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              {mahsulotlar.length===0&&<Empty matn="Mahsulotlar mavjud emas"/>}
+              {mahsulotlar.length===0&&<Empty matn={t("empty.products")}/>}
+              {mahsulotlar.length>0&&<div className="flex flex-col gap-3 border-t border-orange-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2 text-sm text-gray-500"><span>{t("table.perPage")}</span><select value={pageSize} onChange={e=>{setPageSize(Number(e.target.value));setPage(1)}} className="rounded-lg border border-orange-100 bg-white px-2 py-1 font-bold text-gray-700">{[10,20,30,50,100].map(size=><option key={size} value={size}>{size}</option>)}</select><span>· {t("table.totalItems",{count:mahsulotlar.length})}</span></div>
+                <div className="flex items-center justify-between gap-3 sm:justify-end"><button type="button" onClick={()=>setPage(currentPage-1)} disabled={currentPage<=1} className="rounded-lg border border-orange-100 px-3 py-1.5 text-sm font-bold text-gray-600 disabled:opacity-40">{t("table.prev")}</button><span className="text-sm font-bold text-gray-600">{currentPage} / {pageCount}</span><button type="button" onClick={()=>setPage(currentPage+1)} disabled={currentPage>=pageCount} className="rounded-lg border border-orange-100 px-3 py-1.5 text-sm font-bold text-gray-600 disabled:opacity-40">{t("table.next")}</button></div>
+              </div>}
             </div>
           )}
         </section>
       ) : (
         <section className="space-y-4">
-          <div className="flex items-end justify-between"><div><h2 className="text-2xl font-black">Kategoriyalar</h2><p className="text-sm text-gray-500">Mahsulotlar uchun asosiy ma'lumotnoma.</p></div><button onClick={()=>setOddiyModal("new")} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-5 font-black text-white"><Plus size={17}/>Qo'shish</button></div>
+          <div className="flex items-end justify-between"><div><h2 className="text-2xl font-black">{t("categoriesTab.title")}</h2><p className="text-sm text-gray-500">{t("categoriesTab.subtitle")}</p></div><button onClick={()=>setOddiyModal("new")} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-5 font-black text-white"><Plus size={17}/>{t("categoriesTab.add")}</button></div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {store.kategoriyalar.map(item=><article key={item.id} className="rounded-[24px] border border-orange-100 bg-white p-5">
               <div className="flex items-start justify-between"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-orange-600"><Tags size={21}/></div><div className="flex gap-2"><button onClick={()=>void oddiyTahrirlash(item)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-600"><Edit3 size={15}/></button><button onClick={()=>void oddiyOchirish(item.id)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500"><Trash2 size={15}/></button></div></div>
               <h3 className="mt-4 text-lg font-black">{item.name}</h3>
             </article>)}
-            {store.kategoriyalar.length===0&&<Empty matn="Ma'lumot mavjud emas"/>}
+            {store.kategoriyalar.length===0&&<Empty matn={t("empty.noData")}/>}
           </div>
         </section>
       )}
@@ -419,6 +452,7 @@ async function excelXatoXabariniOlish(error: unknown) {
 }
 
 function MahsulotImportModal({onClose,onImported}:{onClose:()=>void;onImported:()=>Promise<void>}) {
+  const { t } = useTranslation("mahsulotlar");
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [natija, setNatija] = useState<MahsulotImportNatijasi | null>(null);
@@ -449,13 +483,13 @@ function MahsulotImportModal({onClose,onImported}:{onClose:()=>void;onImported:(
     if (!chosenFile.name.toLocaleLowerCase().endsWith(".xlsx")) {
       setFile(null);
       setNatija(null);
-      setXatolik("Faqat .xlsx formatidagi faylni tanlang.");
+      setXatolik("excelImport.onlyXlsx");
       return;
     }
     if (chosenFile.size > 2 * 1024 * 1024) {
       setFile(null);
       setNatija(null);
-      setXatolik("Fayl hajmi 2 MB dan oshmasligi kerak.");
+      setXatolik("excelImport.maxSizeError");
       return;
     }
     setFile(chosenFile);
@@ -489,49 +523,49 @@ function MahsulotImportModal({onClose,onImported}:{onClose:()=>void;onImported:(
   const preview = bosqich === "preview";
   return <AppModal><div className="scrollbar-hidden max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-[30px] bg-white shadow-2xl">
     <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
-      <div><p className="text-sm font-bold uppercase tracking-[0.16em] text-blue-600">Excel import</p><h2 className="mt-1 text-2xl font-black text-slate-900">Mahsulotlarni import qilish</h2><p className="mt-1 text-sm text-slate-500">.xlsx fayl avval xavfsiz dry-run tekshiruvidan o'tadi.</p></div>
+      <div><p className="text-sm font-bold uppercase tracking-[0.16em] text-blue-600">{t("excelImport.eyebrow")}</p><h2 className="mt-1 text-2xl font-black text-slate-900">{t("excelImport.title")}</h2><p className="mt-1 text-sm text-slate-500">{t("excelImport.subtitle")}</p></div>
       <button type="button" disabled={band} onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 disabled:opacity-50 hover:bg-slate-200"><X size={18}/></button>
     </div>
     <div className="space-y-5 p-6">
       <input ref={inputRef} type="file" accept=".xlsx" disabled={band} onChange={(event)=>void faylTanlandi(event)} className="sr-only"/>
       <button type="button" disabled={band} onClick={()=>inputRef.current?.click()} className="flex w-full items-center justify-center gap-3 rounded-2xl border border-dashed border-blue-200 bg-blue-50/60 px-5 py-5 font-black text-blue-700 disabled:opacity-50 hover:bg-blue-50">
         {amal==="dryRun"?<LoaderCircle size={21} className="animate-spin"/>:<FileSpreadsheet size={21}/>}
-        {amal==="dryRun"?"Fayl tekshirilmoqda...":file?file.name:".xlsx faylni tanlash"}
+        {amal==="dryRun"?t("excelImport.checking"):file?file.name:t("excelImport.chooseFile")}
       </button>
-      <p className="text-center text-xs font-bold text-slate-400">Maksimal hajm: 2 MB. Fayldagi ma'lumotni frontend o'qimaydi yoki o'zgartirmaydi.</p>
+      <p className="text-center text-xs font-bold text-slate-400">{t("excelImport.maxSizeHint")}</p>
 
-      {xatolik&&<div className="rounded-2xl bg-red-50 p-4 font-bold text-red-600">{xatolik}</div>}
+      {xatolik&&<div className="rounded-2xl bg-red-50 p-4 font-bold text-red-600">{t(xatolik)}</div>}
 
       {natija&&<>
         <div className={`rounded-2xl border p-4 ${preview?"border-blue-100 bg-blue-50/50":"border-emerald-100 bg-emerald-50/60"}`}>
-          <p className={`font-black ${preview?"text-blue-700":"text-emerald-700"}`}>{preview?"Dry-run yakunlandi. Tasdiqlamaguningizcha o'zgarish saqlanmaydi.":"Import yakunlandi. Mahsulotlar ro'yxati yangilandi."}</p>
+          <p className={`font-black ${preview?"text-blue-700":"text-emerald-700"}`}>{preview?t("excelImport.dryRunDone"):t("excelImport.importDone")}</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {[
-            ["Jami",natija.totalRows,"bg-slate-50 text-slate-700"],
-            [preview?"Yaratiladi":"Yaratildi",natija.created,"bg-emerald-50 text-emerald-700"],
-            [preview?"Yangilanadi":"Yangilandi",natija.updated,"bg-blue-50 text-blue-700"],
-            [preview?"O'tkaziladi":"O'tkazildi",natija.skipped,"bg-amber-50 text-amber-700"],
-            ["Xatolar",natija.errors.length,"bg-red-50 text-red-700"],
+            [t("excelImport.stats.total"),natija.totalRows,"bg-slate-50 text-slate-700"],
+            [preview?t("excelImport.stats.willCreate"):t("excelImport.stats.created"),natija.created,"bg-emerald-50 text-emerald-700"],
+            [preview?t("excelImport.stats.willUpdate"):t("excelImport.stats.updated"),natija.updated,"bg-blue-50 text-blue-700"],
+            [preview?t("excelImport.stats.willSkip"):t("excelImport.stats.skipped"),natija.skipped,"bg-amber-50 text-amber-700"],
+            [t("excelImport.stats.errors"),natija.errors.length,"bg-red-50 text-red-700"],
           ].map(([label,value,color])=><div key={String(label)} className={`rounded-2xl p-4 ${color}`}><p className="text-xs font-black uppercase tracking-[0.12em] opacity-70">{label}</p><p className="mt-1 text-2xl font-black">{value}</p></div>)}
         </div>
 
         {(natija.createdCategories.length>0||natija.createdUnits.length>0)&&<div className="grid gap-4 md:grid-cols-2">
-          {natija.createdCategories.length>0&&<div className="rounded-2xl border border-emerald-100 p-4"><h3 className="font-black text-slate-800">Yangi kategoriyalar</h3><div className="mt-3 flex flex-wrap gap-2">{natija.createdCategories.map((item,index)=><span key={`${item.id??item.name}-${index}`} className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700">{item.name}</span>)}</div></div>}
-          {natija.createdUnits.length>0&&<div className="rounded-2xl border border-blue-100 p-4"><h3 className="font-black text-slate-800">Yangi o'lchov birliklari</h3><div className="mt-3 flex flex-wrap gap-2">{natija.createdUnits.map((item,index)=><span key={`${item.id??item.name}-${index}`} className="rounded-full bg-blue-50 px-3 py-1 text-sm font-bold text-blue-700">{item.name}</span>)}</div></div>}
+          {natija.createdCategories.length>0&&<div className="rounded-2xl border border-emerald-100 p-4"><h3 className="font-black text-slate-800">{t("excelImport.newCategories")}</h3><div className="mt-3 flex flex-wrap gap-2">{natija.createdCategories.map((item,index)=><span key={`${item.id??item.name}-${index}`} className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700">{item.name}</span>)}</div></div>}
+          {natija.createdUnits.length>0&&<div className="rounded-2xl border border-blue-100 p-4"><h3 className="font-black text-slate-800">{t("excelImport.newUnits")}</h3><div className="mt-3 flex flex-wrap gap-2">{natija.createdUnits.map((item,index)=><span key={`${item.id??item.name}-${index}`} className="rounded-full bg-blue-50 px-3 py-1 text-sm font-bold text-blue-700">{item.name}</span>)}</div></div>}
         </div>}
 
-        {natija.errorsTruncated&&<div className="rounded-2xl bg-amber-50 p-4 font-bold text-amber-800">Xatolar soni ko'p. Faqat dastlabki 500 ta xato ko'rsatildi.</div>}
+        {natija.errorsTruncated&&<div className="rounded-2xl bg-amber-50 p-4 font-bold text-amber-800">{t("excelImport.errorsTruncated")}</div>}
         {natija.errors.length>0&&<div className="overflow-hidden rounded-2xl border border-red-100">
-          <div className="border-b border-red-100 bg-red-50 px-4 py-3"><h3 className="font-black text-red-700">Qator xatolari</h3></div>
-          <div className="max-h-80 overflow-auto"><table className="min-w-full text-left text-sm"><thead className="sticky top-0 bg-slate-50 text-xs font-black uppercase tracking-[0.1em] text-slate-500"><tr><th className="px-4 py-3">Excel qatori</th><th className="px-4 py-3">Ustun</th><th className="px-4 py-3">Xabar</th><th className="px-4 py-3">Qiymat</th></tr></thead><tbody className="divide-y divide-slate-100">{natija.errors.map((error,index)=><tr key={`${error.row}-${error.column??""}-${index}`}><td className="px-4 py-3 font-black text-slate-800">{error.row}</td><td className="px-4 py-3 font-bold text-slate-600">{error.column??"—"}</td><td className="min-w-72 px-4 py-3 text-slate-700">{error.message}</td><td className="max-w-64 break-all px-4 py-3 text-slate-500">{error.value??"—"}</td></tr>)}</tbody></table></div>
+          <div className="border-b border-red-100 bg-red-50 px-4 py-3"><h3 className="font-black text-red-700">{t("excelImport.rowErrorsTitle")}</h3></div>
+          <div className="max-h-80 overflow-auto"><table className="min-w-full text-left text-sm"><thead className="sticky top-0 bg-slate-50 text-xs font-black uppercase tracking-[0.1em] text-slate-500"><tr><th className="px-4 py-3">{t("excelImport.table.row")}</th><th className="px-4 py-3">{t("excelImport.table.column")}</th><th className="px-4 py-3">{t("excelImport.table.message")}</th><th className="px-4 py-3">{t("excelImport.table.value")}</th></tr></thead><tbody className="divide-y divide-slate-100">{natija.errors.map((error,index)=><tr key={`${error.row}-${error.column??""}-${index}`}><td className="px-4 py-3 font-black text-slate-800">{error.row}</td><td className="px-4 py-3 font-bold text-slate-600">{error.column??"—"}</td><td className="min-w-72 px-4 py-3 text-slate-700">{error.message}</td><td className="max-w-64 break-all px-4 py-3 text-slate-500">{error.value??"—"}</td></tr>)}</tbody></table></div>
         </div>}
       </>}
     </div>
     <div className="flex flex-col-reverse gap-3 border-t border-slate-100 px-6 py-4 sm:flex-row sm:justify-end">
-      <button type="button" disabled={band} onClick={onClose} className="h-11 rounded-2xl bg-slate-100 px-5 font-bold text-slate-700 disabled:opacity-50">Yopish</button>
-      {natija&&<button type="button" disabled={band} onClick={boshidanBoshlash} className="h-11 rounded-2xl border border-slate-200 bg-white px-5 font-bold text-slate-700 disabled:opacity-50">Boshqa fayl tanlash</button>}
-      {natija&&preview&&<button type="button" disabled={band||!file} onClick={()=>void importniTasdiqlash()} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 font-black text-white disabled:opacity-50">{amal==="import"&&<LoaderCircle size={17} className="animate-spin"/>}Importni tasdiqlash</button>}
+      <button type="button" disabled={band} onClick={onClose} className="h-11 rounded-2xl bg-slate-100 px-5 font-bold text-slate-700 disabled:opacity-50">{t("excelImport.close")}</button>
+      {natija&&<button type="button" disabled={band} onClick={boshidanBoshlash} className="h-11 rounded-2xl border border-slate-200 bg-white px-5 font-bold text-slate-700 disabled:opacity-50">{t("excelImport.chooseAnotherFile")}</button>}
+      {natija&&preview&&<button type="button" disabled={band||!file} onClick={()=>void importniTasdiqlash()} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 font-black text-white disabled:opacity-50">{amal==="import"&&<LoaderCircle size={17} className="animate-spin"/>}{t("excelImport.confirmImport")}</button>}
     </div>
   </div></AppModal>;
 }
@@ -543,18 +577,20 @@ function formatNumberInput(value:string) {
 }
 
 function MoneyInput({value,suffix,onChange,currency,onCurrencyChange,onApplyAll}:{value:string;suffix?:string;onChange:(value:string)=>void;currency?:"UZS"|"USD";onCurrencyChange?:(value:"UZS"|"USD")=>void;onApplyAll?:()=>void}) {
+  const { t } = useTranslation("mahsulotlar");
   return <div className="group relative">
     <input value={formatNumberInput(value)} onChange={(e)=>onChange(e.target.value)} className={`h-12 w-full rounded-2xl border-0 bg-gray-100 px-4 text-sm font-black text-gray-700 outline-none focus:ring-2 focus:ring-orange-100 ${currency?"pr-32":"pr-12"}`} placeholder="0"/>
     {currency&&onCurrencyChange?<AppSelect value={currency} onChange={(e)=>onCurrencyChange(e.target.value as "UZS"|"USD")} className="absolute right-2 top-1/2 h-9 min-w-[76px] -translate-y-1/2 rounded-xl border border-gray-200 bg-white px-2 text-xs font-black text-gray-600 outline-none hover:border-orange-200 focus:border-orange-300"><option value="UZS">UZS</option><option value="USD">USD</option></AppSelect>:<span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-gray-400">{suffix}</span>}
-    {onApplyAll&&value&&<button type="button" onClick={onApplyAll} className="absolute left-0 top-[calc(100%+4px)] z-20 hidden rounded-lg bg-blue-600 px-2 py-1 text-[10px] font-black text-white shadow-lg group-focus-within:block hover:bg-blue-700">Hammaga qo'llash</button>}
+    {onApplyAll&&value&&<button type="button" onClick={onApplyAll} className="absolute left-0 top-[calc(100%+4px)] z-20 hidden rounded-lg bg-blue-600 px-2 py-1 text-[10px] font-black text-white shadow-lg group-focus-within:block hover:bg-blue-700">{t("moneyInput.applyToAll")}</button>}
   </div>;
 }
 
 function StockInput({value,onChange,warning}:{value:string;onChange:(value:string)=>void;warning?:boolean}) {
+  const { t } = useTranslation("mahsulotlar");
   return <div className="relative max-w-[170px]">
     {warning&&<span className="absolute left-4 top-1/2 z-10 flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full bg-yellow-400 text-[10px] font-black text-white">!</span>}
     <input value={formatNumberInput(value)} onChange={(e)=>onChange(e.target.value.replace(/[^\d.]/g,""))} className={`h-11 w-full rounded-2xl border border-transparent bg-white px-4 text-sm font-black text-gray-700 outline-none focus:border-orange-200 focus:ring-2 focus:ring-orange-100 ${warning?"pl-10":"pl-4"} pr-14`} placeholder="0"/>
-    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-gray-400">dona</span>
+    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-gray-400">{t("stockInput.unit")}</span>
   </div>;
 }
 
@@ -582,6 +618,7 @@ function numericOrZero(value: string) {
 }
 
 function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}) {
+  const { t } = useTranslation("mahsulotlar");
   const store=useMahsulotlarStore();
   const editing=item!=="new";
   const [name,setName]=useState(editing?item.name:"");
@@ -1035,7 +1072,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
     <div className="flex items-center justify-between gap-4 border-b border-gray-100 px-6 py-5">
       <div className="flex min-w-0 items-center gap-4">
         <button type="button" onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white"><X size={18}/></button>
-        <h2 className="truncate text-2xl font-black">{editing?"Mahsulotni tahrirlash":"Yangi mahsulot"}</h2>
+        <h2 className="truncate text-2xl font-black">{editing?t("productModal.editTitle"):t("productModal.createTitle")}</h2>
       </div>
     </div>
 
@@ -1043,53 +1080,53 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
       <main className="min-w-0 space-y-8">
         {store.xatolik&&<div className="mb-4"><ErrorBox/></div>}
         <section className="space-y-5">
-          <div className="flex items-center gap-4"><h3 className="text-xl font-black">Asosiy</h3><div className="h-px flex-1 bg-gray-100"/></div>
+          <div className="flex items-center gap-4"><h3 className="text-xl font-black">{t("productModal.sectionMain")}</h3><div className="h-px flex-1 bg-gray-100"/></div>
           <div className="grid gap-5 xl:grid-cols-3">
             <div className="space-y-4">
-                <label className="block text-sm font-black text-gray-500">Nomi *
+                <label className="block text-sm font-black text-gray-500">{t("productModal.nameLabel")}
                   <div className="relative mt-2">
-                    <input value={name} onChange={e=>setName(e.target.value)} className="input pr-28" placeholder="Nomi kiriting"/>
-                    <button type="button" onClick={quickFill} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1.5 text-xs font-black text-orange-600 hover:bg-orange-50">Tez</button>
+                    <input value={name} onChange={e=>setName(e.target.value)} className="input pr-28" placeholder={t("productModal.namePlaceholder")}/>
+                    <button type="button" onClick={quickFill} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1.5 text-xs font-black text-orange-600 hover:bg-orange-50">{t("productModal.quickFill")}</button>
                   </div>
                 </label>
-                <label className="block text-sm font-black text-gray-500">Artikul *
+                <label className="block text-sm font-black text-gray-500">{t("productModal.articleLabel")}
                   <div className="relative mt-2">
-                    <input value={article} onChange={e=>setArticle(e.target.value)} className="input pr-24" placeholder="Artikul"/>
-                    <button type="button" onClick={generateArticle} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1.5 text-xs font-black text-orange-600 hover:bg-orange-50">Gen</button>
+                    <input value={article} onChange={e=>setArticle(e.target.value)} className="input pr-24" placeholder={t("productModal.articlePlaceholder")}/>
+                    <button type="button" onClick={generateArticle} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1.5 text-xs font-black text-orange-600 hover:bg-orange-50">{t("productModal.generate")}</button>
                   </div>
                 </label>
             </div>
             <div className="space-y-4">
-                <label className="block text-sm font-black text-gray-500">Barkod{editing?"":" *"}
+                <label className="block text-sm font-black text-gray-500">{t("productModal.barcodeLabel")}{editing?"":" *"}
                   <div className="relative mt-2">
-                    <input value={barcode} onChange={e=>setBarcode(e.target.value)} className="input pr-24" placeholder="Barkod"/>
-                    <button type="button" onClick={generateBarcode} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1.5 text-xs font-black text-orange-600 hover:bg-orange-50">Gen</button>
+                    <input value={barcode} onChange={e=>setBarcode(e.target.value)} className="input pr-24" placeholder={t("productModal.barcodePlaceholder")}/>
+                    <button type="button" onClick={generateBarcode} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1.5 text-xs font-black text-orange-600 hover:bg-orange-50">{t("productModal.generate")}</button>
                   </div>
                 </label>
-                <label className="block text-sm font-black text-gray-500">Kategoriya *
-                  <AppSelect value={categoryId} onChange={e=>setCategoryId(e.target.value)} className="input mt-2"><option value="">Kategoriya</option>{store.kategoriyalar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</AppSelect>
+                <label className="block text-sm font-black text-gray-500">{t("productModal.categoryLabel")}
+                  <AppSelect value={categoryId} onChange={e=>setCategoryId(e.target.value)} className="input mt-2"><option value="">{t("productModal.categoryPlaceholder")}</option>{store.kategoriyalar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</AppSelect>
                 </label>
             </div>
             <div className="space-y-4">
                 <div className="block text-sm font-black text-gray-500">
-                  <p>O'lchov birligi *</p>
+                  <p>{t("productModal.unitLabel")}</p>
                   <div className="mt-2 flex items-center gap-3">
                     <AppSelect value={unitId} onChange={e=>setUnitId(e.target.value)} className="input min-w-0 flex-1">
-                      <option value="">O'lchov birligi tanlang</option>
-                      <optgroup label="Workspace birliklari">
+                      <option value="">{t("productModal.unitPlaceholder")}</option>
+                      <optgroup label={t("productModal.unitGroupWorkspace")}>
                         {productWorkspaceUnits.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}
                       </optgroup>
-                      {productStandardUnits.length>0&&<optgroup label="Standart katalog">
+                      {productStandardUnits.length>0&&<optgroup label={t("productModal.unitGroupStandard")}>
                         {productStandardUnits.map(x=><option key={x.id} value={`${STANDARD_UNIT_PREFIX}${x.id}`}>{standardUnitLabel(x)}</option>)}
                       </optgroup>}
                     </AppSelect>
-                    <button type="button" onClick={()=>setIsActive(!isActive)} aria-label="Mahsulot holatini o'zgartirish" className={`flex h-8 w-14 shrink-0 items-center rounded-full p-1 transition ${isActive?"bg-orange-500 shadow-sm shadow-orange-100":"bg-gray-200"}`}>
+                    <button type="button" onClick={()=>setIsActive(!isActive)} aria-label={t("productModal.toggleActiveAria")} className={`flex h-8 w-14 shrink-0 items-center rounded-full p-1 transition ${isActive?"bg-orange-500 shadow-sm shadow-orange-100":"bg-gray-200"}`}>
                       <span className={`h-6 w-6 rounded-full bg-white shadow transition ${isActive?"translate-x-6":"translate-x-0"}`}/>
                     </button>
                   </div>
                 </div>
               <div className="space-y-2">
-                <p className="text-sm font-black text-gray-500">Foto</p>
+                <p className="text-sm font-black text-gray-500">{t("productModal.photoLabel")}</p>
                 <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden"/>
                 <div
                   role="button"
@@ -1101,38 +1138,38 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
                   className="flex min-h-[108px] cursor-pointer flex-col items-center justify-center rounded-[24px] border border-dashed border-gray-200 bg-gray-100 px-4 py-4 text-center transition hover:border-orange-200 hover:bg-orange-50/40"
                 >
                   {imageUrl ? <div className="relative">
-                    <img src={imageUrl} alt="Mahsulot rasmi" className="max-h-24 rounded-2xl object-contain"/>
+                    <img src={imageUrl} alt={t("productModal.photoAlt")} className="max-h-24 rounded-2xl object-contain"/>
                     <button type="button" onClick={(event)=>{event.stopPropagation();setImageUrl("")}} className="absolute -right-3 -top-3 flex h-7 w-7 items-center justify-center rounded-full bg-white text-red-500 shadow-lg ring-1 ring-red-100 hover:bg-red-500 hover:text-white"><X size={15}/></button>
                   </div> : <>
                     <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-orange-500 shadow-sm"><ImagePlus size={20}/></div>
-                    <p className="text-sm font-black text-gray-600">Rasmni tashlang</p>
-                    <p className="text-sm font-black text-orange-600">Tanlash uchun bosing</p>
+                    <p className="text-sm font-black text-gray-600">{t("productModal.photoDrop")}</p>
+                    <p className="text-sm font-black text-orange-600">{t("productModal.photoBrowse")}</p>
                   </>}
                 </div>
               </div>
             </div>
           </div>
           <div className="space-y-4 pt-2">
-            <div className="flex items-center gap-4"><h3 className="text-xl font-black">Variatsiyalar</h3><div className="h-px flex-1 bg-gray-100"/></div>
+            <div className="flex items-center gap-4"><h3 className="text-xl font-black">{t("productModal.sectionVariations")}</h3><div className="h-px flex-1 bg-gray-100"/></div>
             <div>
-              <p className="text-sm font-black text-gray-500">Variatsiya atributini tanlang *</p>
-              <p className="mt-1 text-xs font-bold text-gray-400">Masalan: Rang</p>
+              <p className="text-sm font-black text-gray-500">{t("productModal.variationAttributeLabel")}</p>
+              <p className="mt-1 text-xs font-bold text-gray-400">{t("productModal.variationAttributeHint")}</p>
               <div className="mt-3 space-y-4">
                 {variationRows.map((row)=>(
                   <div key={row.id} className={`grid gap-4 ${row.attributeAdded?"md:grid-cols-2":"md:grid-cols-[minmax(260px,420px)]"}`}>
                     <div className="space-y-2">
                       <div className="relative">
-                        <input value={row.attribute} onChange={e=>updateVariationRow(row.id,{attribute:e.target.value,attributeAdded:false,value:"",options:[]})} className="input pr-12" placeholder="Atribut kiriting"/>
+                        <input value={row.attribute} onChange={e=>updateVariationRow(row.id,{attribute:e.target.value,attributeAdded:false,value:"",options:[]})} className="input pr-12" placeholder={t("productModal.attributePlaceholder")}/>
                         <ChevronDown size={17} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"/>
                       </div>
-                      {!row.attributeAdded&&row.attribute.trim()&&<button type="button" onClick={()=>addVariationAttribute(row.id)} className="flex w-full items-center gap-2 rounded-2xl bg-gray-100 px-4 py-3 text-left text-sm font-black text-gray-600 hover:bg-orange-50 hover:text-orange-600"><Plus size={16}/>Qo'shish "{row.attribute.trim()}"</button>}
-                      {!row.attribute.trim()&&<div className="rounded-2xl bg-gray-50 px-4 py-3 text-center text-sm font-bold text-gray-400">Variantlar yo'q</div>}
+                      {!row.attributeAdded&&row.attribute.trim()&&<button type="button" onClick={()=>addVariationAttribute(row.id)} className="flex w-full items-center gap-2 rounded-2xl bg-gray-100 px-4 py-3 text-left text-sm font-black text-gray-600 hover:bg-orange-50 hover:text-orange-600"><Plus size={16}/>{t("productModal.addAttribute",{value:row.attribute.trim()})}</button>}
+                      {!row.attribute.trim()&&<div className="rounded-2xl bg-gray-50 px-4 py-3 text-center text-sm font-bold text-gray-400">{t("productModal.noVariants")}</div>}
                     </div>
                     {row.attributeAdded&&<div className="relative space-y-2">
                       <div className="flex min-h-12 items-center gap-2 rounded-2xl border bg-white px-3 py-2 focus-within:border-orange-300 focus-within:ring-2 focus-within:ring-orange-100">
                         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                           {row.options.map((option)=><span key={option} className="inline-flex max-w-full items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-sm font-black text-orange-600"><span className="truncate">{option}</span><button type="button" onClick={()=>removeVariationOption(row.id,option)} className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-white"><X size={12}/></button></span>)}
-                          <input value={row.value} onFocus={()=>setActiveVariationRow(row.id)} onChange={e=>{updateVariationRow(row.id,{value:e.target.value});setActiveVariationRow(row.id)}} onKeyDown={e=>{if(e.key==="Enter"||e.key===","){e.preventDefault();addVariationOption(row.id)}}} className="h-8 min-w-28 flex-1 bg-transparent text-sm font-bold text-gray-700 outline-none" placeholder={row.options.length?"Yana qo'shish":`${row.attribute} qiymatini kiriting`}/>
+                          <input value={row.value} onFocus={()=>setActiveVariationRow(row.id)} onChange={e=>{updateVariationRow(row.id,{value:e.target.value});setActiveVariationRow(row.id)}} onKeyDown={e=>{if(e.key==="Enter"||e.key===","){e.preventDefault();addVariationOption(row.id)}}} className="h-8 min-w-28 flex-1 bg-transparent text-sm font-bold text-gray-700 outline-none" placeholder={row.options.length?t("productModal.optionPlaceholderMore"):t("productModal.optionPlaceholder",{attribute:row.attribute})}/>
                         </div>
                         <span className="shrink-0 text-gray-300">в‹®в‹®</span>
                         <button type="button" onClick={()=>removeVariationRow(row.id)} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-500"><X size={14}/></button>
@@ -1140,7 +1177,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
                       {activeVariationRow===row.id&&savedOptionsFor(row).length>0&&<div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-gray-100">
                         {savedOptionsFor(row).map((option)=><button key={option} type="button" onMouseDown={(e)=>{e.preventDefault();selectSavedVariationOption(row.id,option)}} className="block w-full px-5 py-3 text-left text-sm font-black text-gray-600 hover:bg-orange-50 hover:text-orange-600">{option}</button>)}
                       </div>}
-                      {row.value.trim()&&<button type="button" onClick={()=>addVariationOption(row.id)} className="flex w-full items-center gap-2 rounded-2xl bg-gray-100 px-4 py-3 text-left text-sm font-black text-gray-600 hover:bg-orange-50 hover:text-orange-600"><Plus size={16}/>Qo'shish "{row.value.trim()}"</button>}
+                      {row.value.trim()&&<button type="button" onClick={()=>addVariationOption(row.id)} className="flex w-full items-center gap-2 rounded-2xl bg-gray-100 px-4 py-3 text-left text-sm font-black text-gray-600 hover:bg-orange-50 hover:text-orange-600"><Plus size={16}/>{t("productModal.addOption",{value:row.value.trim()})}</button>}
                     </div>}
                   </div>
                 ))}
@@ -1148,10 +1185,10 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
             </div>
             {variantCombinations.length>0&&<div className="overflow-hidden rounded-[24px] border border-gray-100 bg-white">
               <div className="grid grid-cols-[70px_1fr_220px_90px] border-b border-gray-100 px-4 py-3 text-sm font-semibold text-slate-600">
-                <span>Foto</span>
-                <span>Variatsiya</span>
-                <span>Barkod *</span>
-                <span className="text-right">Holat</span>
+                <span>{t("productModal.variantTable.photo")}</span>
+                <span>{t("productModal.variantTable.variation")}</span>
+                <span>{t("productModal.variantTable.barcode")}</span>
+                <span className="text-right">{t("productModal.variantTable.status")}</span>
               </div>
               <div className="divide-y divide-gray-100">
                 {variantCombinations.map((combo)=>{
@@ -1163,8 +1200,8 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
                     </label>
                     <div className="font-black text-gray-600">{combo.label}</div>
                     <div className="relative">
-                      <input value={draft.barcode} onChange={(e)=>updateVariantDraft(combo.key,{barcode:e.target.value})} className="input h-11 pr-24" placeholder="Barkod"/>
-                      <button type="button" onClick={()=>updateVariantDraft(combo.key,{barcode:generateBarcodeValue()})} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1 text-xs font-black text-orange-600 hover:bg-orange-50">Generatsiya</button>
+                      <input value={draft.barcode} onChange={(e)=>updateVariantDraft(combo.key,{barcode:e.target.value})} className="input h-11 pr-24" placeholder={t("productModal.barcodePlaceholder")}/>
+                      <button type="button" onClick={()=>updateVariantDraft(combo.key,{barcode:generateBarcodeValue()})} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1 text-xs font-black text-orange-600 hover:bg-orange-50">{t("productModal.generateShort")}</button>
                     </div>
                     <button type="button" onClick={()=>updateVariantDraft(combo.key,{active:!draft.active})} className={`ml-auto flex h-8 w-14 items-center rounded-full p-1 transition ${draft.active?"bg-blue-500":"bg-gray-200"}`}>
                       <span className={`h-6 w-6 rounded-full bg-white shadow transition ${draft.active?"translate-x-6":"translate-x-0"}`}/>
@@ -1175,11 +1212,11 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
             </div>}
             {variantCombinations.length>0&&<div className="overflow-x-auto rounded-[24px] border border-gray-100 bg-white">
               <div className="grid min-w-[1080px] grid-cols-[1fr_230px_150px_230px_230px] border-b border-gray-100 px-4 py-3 text-sm font-semibold text-slate-600">
-                <span>Variatsiya</span>
-                <span>Kelish narxi *</span>
-                <span>Ustama</span>
-                <span>Sotuv narxi *</span>
-                <span>Ulgurji narx</span>
+                <span>{t("productModal.priceTable.variation")}</span>
+                <span>{t("productModal.priceTable.costPrice")}</span>
+                <span>{t("productModal.priceTable.markup")}</span>
+                <span>{t("productModal.priceTable.retailPrice")}</span>
+                <span>{t("productModal.priceTable.wholesalePrice")}</span>
               </div>
               <div className="divide-y divide-gray-100">
                 {variantCombinations.map((combo)=>{
@@ -1196,23 +1233,23 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
             </div>}
             {variantCombinations.length===0&&<div className="rounded-[24px] border border-orange-100 bg-orange-50/30 p-4">
               <div className="mb-4">
-                <p className="text-base font-black text-gray-700">Asosiy variant narxlari</p>
-                <p className="mt-1 text-sm font-bold text-gray-400">Variatsiya kiritilmasa, mahsulot uchun bitta asosiy variant yaratiladi.</p>
+                <p className="text-base font-black text-gray-700">{t("productModal.baseVariant.title")}</p>
+                <p className="mt-1 text-sm font-bold text-gray-400">{t("productModal.baseVariant.subtitle")}</p>
               </div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-                <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">Kelish narxi
+                <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">{t("productModal.baseVariant.costPrice")}
                   <div className="mt-2"><MoneyInput value={baseDraft.costPrice} currency={baseDraft.costCurrency} onChange={(value)=>updateBasePrice("costPrice",value)} onCurrencyChange={(value)=>setBaseDraft((draft)=>({...draft,costCurrency:value}))}/></div>
                 </label>
-                <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">Ustama
+                <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">{t("productModal.baseVariant.markup")}
                   <div className="mt-2"><MoneyInput value={baseDraft.markup} suffix="%" onChange={(value)=>updateBasePrice("markup",value)}/></div>
                 </label>
-                <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">Sotuv narxi
+                <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">{t("productModal.baseVariant.retailPrice")}
                   <div className="mt-2"><MoneyInput value={baseDraft.retailPrice} currency={baseDraft.retailCurrency} onChange={(value)=>updateBasePrice("retailPrice",value)} onCurrencyChange={(value)=>setBaseDraft((draft)=>({...draft,retailCurrency:value}))}/></div>
                 </label>
-                <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">Ulgurji narx
+                <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">{t("productModal.baseVariant.wholesalePrice")}
                   <div className="mt-2"><MoneyInput value={baseDraft.wholesalePrice} currency={baseDraft.wholesaleCurrency} onChange={(value)=>updateBasePrice("wholesalePrice",value)} onCurrencyChange={(value)=>setBaseDraft((draft)=>({...draft,wholesaleCurrency:value}))}/></div>
                 </label>
-                <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">Minimal qoldiq
+                <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">{t("productModal.baseVariant.minStock")}
                   <div className="mt-2"><StockInput value={baseStock.minStock} onChange={(value)=>setBaseStock((stock)=>({...stock,minStock:value}))} warning/></div>
                 </label>
               </div>
@@ -1223,18 +1260,18 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
                 return <div key={combo.key} className="overflow-hidden rounded-[24px] bg-gray-50 ring-1 ring-gray-100">
                   <button type="button" onClick={()=>updateVariantStockDraft(combo.key,{open:!stock.open})} className="flex w-full items-center gap-2 border-b border-gray-100 px-5 py-4 text-left text-sm font-black text-gray-600 hover:bg-orange-50/50">
                     {stock.open?<ChevronUp size={16}/>:<ChevronDown size={16}/>}
-                    <span className="truncate">{name.trim()||"Mahsulot"} / {combo.label}</span>
+                    <span className="truncate">{name.trim()||t("productModal.stock.defaultProductName")} / {combo.label}</span>
                   </button>
                   {stock.open&&<div className="px-5 pb-5 pt-4">
                     <div className="grid grid-cols-[minmax(180px,1fr)_190px_190px] gap-4 border-b border-gray-200 pb-3 text-sm font-semibold text-slate-600">
-                      <span>Do'kon / Ombor</span>
-                      <span>Miqdor</span>
-                      <span>Minimal qoldiq</span>
+                      <span>{t("productModal.stock.warehouseColumn")}</span>
+                      <span>{t("productModal.stock.quantityColumn")}</span>
+                      <span>{t("productModal.stock.minStockColumn")}</span>
                     </div>
                     <div className="grid grid-cols-[minmax(180px,1fr)_190px_190px] items-center gap-4 pt-3">
                       {omborlar.length>0?<AppSelect value={stock.warehouseId} onChange={(e)=>updateVariantStockDraft(combo.key,{warehouseId:e.target.value})} className="h-11 rounded-2xl border border-transparent bg-white px-4 text-sm font-black text-gray-600 outline-none focus:border-orange-200 focus:ring-2 focus:ring-orange-100">
                         {omborlar.map((ombor)=><option key={ombor.id} value={ombor.id}>{ombor.name}</option>)}
-                      </AppSelect>:<div className="h-11 rounded-2xl bg-white px-4 py-3 text-sm font-black text-gray-600">Store Shop</div>}
+                      </AppSelect>:<div className="h-11 rounded-2xl bg-white px-4 py-3 text-sm font-black text-gray-600">{t("productModal.stock.defaultWarehouse")}</div>}
                       <StockInput value={stock.quantity} onChange={(value)=>updateVariantStockDraft(combo.key,{quantity:value})}/>
                       <StockInput value={stock.minStock} onChange={(value)=>updateVariantStockDraft(combo.key,{minStock:value})} warning/>
                     </div>
@@ -1243,45 +1280,45 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
               })}
             </div>}
             <div className="space-y-5 pt-2">
-              <div className="flex items-center gap-4"><h3 className="text-xl font-black">Xarakteristikalar</h3><div className="h-px flex-1 border-t border-dashed border-gray-200"/></div>
+              <div className="flex items-center gap-4"><h3 className="text-xl font-black">{t("productModal.sectionCharacteristics")}</h3><div className="h-px flex-1 border-t border-dashed border-gray-200"/></div>
               <div>
-                <label className="block text-sm font-black text-gray-500">Brend
+                <label className="block text-sm font-black text-gray-500">{t("productModal.brandLabel")}
                   <div className="relative mt-2 space-y-2">
                     <div className="relative">
-                      <input value={brandInput} onFocus={()=>setBrandMenuOpen(true)} onChange={(e)=>{setBrandInput(e.target.value);setBrand(e.target.value.trim());setBrandMenuOpen(true)}} onKeyDown={(e)=>{if(e.key==="Enter"){e.preventDefault();addBrand()}}} className="input bg-gray-100 pr-12 focus:border-blue-400 focus:ring-blue-100" placeholder="Brend kiriting"/>
+                      <input value={brandInput} onFocus={()=>setBrandMenuOpen(true)} onChange={(e)=>{setBrandInput(e.target.value);setBrand(e.target.value.trim());setBrandMenuOpen(true)}} onKeyDown={(e)=>{if(e.key==="Enter"){e.preventDefault();addBrand()}}} className="input bg-gray-100 pr-12 focus:border-blue-400 focus:ring-blue-100" placeholder={t("productModal.brandPlaceholder")}/>
                       <ChevronDown size={17} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"/>
                     </div>
                     {brandMenuOpen&&filteredBrands().length>0&&<div className="absolute left-0 right-0 top-[52px] z-30 overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-gray-100">
                       {filteredBrands().map((item)=><button key={item} type="button" onMouseDown={(e)=>{e.preventDefault();addBrand(item)}} className="block w-full px-5 py-3 text-left text-sm font-black text-gray-600 hover:bg-orange-50 hover:text-orange-600">{item}</button>)}
                     </div>}
-                    {brandInput.trim()&&!savedBrands.includes(brandInput.trim())&&<button type="button" onClick={()=>addBrand()} className="flex w-full items-center gap-2 rounded-2xl bg-gray-100 px-4 py-3 text-left text-sm font-black text-gray-600 hover:bg-orange-50 hover:text-orange-600"><Plus size={16}/>Qo'shish "{brandInput.trim()}"</button>}
+                    {brandInput.trim()&&!savedBrands.includes(brandInput.trim())&&<button type="button" onClick={()=>addBrand()} className="flex w-full items-center gap-2 rounded-2xl bg-gray-100 px-4 py-3 text-left text-sm font-black text-gray-600 hover:bg-orange-50 hover:text-orange-600"><Plus size={16}/>{t("productModal.addBrand",{value:brandInput.trim()})}</button>}
                   </div>
                 </label>
               </div>
               <div className="rounded-[24px] border border-dashed border-gray-200 px-5 py-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-base font-black text-gray-600">Qo'shimcha maydon</p>
-                    <p className="mt-1 text-sm font-bold text-gray-400">Mahsulotga kerakli qo'shimcha xarakteristika qo'shing</p>
+                    <p className="text-base font-black text-gray-600">{t("productModal.optionalField.title")}</p>
+                    <p className="mt-1 text-sm font-bold text-gray-400">{t("productModal.optionalField.subtitle")}</p>
                   </div>
-                  <button type="button" onClick={addOptionalField} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-gray-100 px-4 text-sm font-black text-blue-500 hover:bg-orange-50 hover:text-orange-600"><Plus size={17}/>Maydon qo'shish</button>
+                  <button type="button" onClick={addOptionalField} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-gray-100 px-4 text-sm font-black text-blue-500 hover:bg-orange-50 hover:text-orange-600"><Plus size={17}/>{t("productModal.optionalField.add")}</button>
                 </div>
                 {optionalFields.length>0&&<div className="mt-4 space-y-3">
                   {optionalFields.map((field)=>(
                     <div key={field.id} className="grid gap-3 md:grid-cols-[1fr_1fr_44px]">
-                      <input value={field.name} onChange={(e)=>updateOptionalField(field.id,{name:e.target.value})} className="input bg-gray-100" placeholder="Maydon nomi"/>
-                      <input value={field.value} onChange={(e)=>updateOptionalField(field.id,{value:e.target.value})} className="input bg-gray-100" placeholder="Qiymat"/>
+                      <input value={field.name} onChange={(e)=>updateOptionalField(field.id,{name:e.target.value})} className="input bg-gray-100" placeholder={t("productModal.optionalField.namePlaceholder")}/>
+                      <input value={field.value} onChange={(e)=>updateOptionalField(field.id,{value:e.target.value})} className="input bg-gray-100" placeholder={t("productModal.optionalField.valuePlaceholder")}/>
                       <button type="button" onClick={()=>removeOptionalField(field.id)} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white"><X size={18}/></button>
                     </div>
                   ))}
                 </div>}
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-black text-gray-500">Kategoriya</p>
+                <p className="text-sm font-black text-gray-500">{t("productModal.categorySection.title")}</p>
                 <div className="rounded-[24px] border border-gray-200 p-4">
                   <div className="relative">
                     <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
-                    <input value={categorySearch} onChange={(e)=>setCategorySearch(e.target.value)} onKeyDown={(e)=>{if(e.key==="Enter"){e.preventDefault();void createCategoryFromCharacteristics()}}} className="input bg-gray-100 pl-11" placeholder="Kategoriya nomi"/>
+                    <input value={categorySearch} onChange={(e)=>setCategorySearch(e.target.value)} onKeyDown={(e)=>{if(e.key==="Enter"){e.preventDefault();void createCategoryFromCharacteristics()}}} className="input bg-gray-100 pl-11" placeholder={t("productModal.categorySection.searchPlaceholder")}/>
                   </div>
                   <div className="scrollbar-hidden mt-3 max-h-40 space-y-2 overflow-y-auto">
                     {filteredCategories.map((kategoriya)=>(
@@ -1301,13 +1338,13 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
                           <button type="button" onClick={()=>startCategoryEdit(kategoriya)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-blue-500 hover:bg-white hover:text-orange-500"><Edit3 size={16}/></button>
                         </div>
                     ))}
-                    {filteredCategories.length===0&&<div className="rounded-2xl bg-gray-50 px-4 py-3 text-center text-sm font-bold text-gray-400">Kategoriya topilmadi</div>}
+                    {filteredCategories.length===0&&<div className="rounded-2xl bg-gray-50 px-4 py-3 text-center text-sm font-bold text-gray-400">{t("productModal.categorySection.notFound")}</div>}
                   </div>
                   <div className="mt-3">
-                    <input value={newCategoryName} onChange={(e)=>setNewCategoryName(e.target.value)} onKeyDown={(e)=>{if(e.key==="Enter"){e.preventDefault();void createCategoryFromCharacteristics()}}} className="sr-only" placeholder="Yangi kategoriya nomi"/>
+                    <input value={newCategoryName} onChange={(e)=>setNewCategoryName(e.target.value)} onKeyDown={(e)=>{if(e.key==="Enter"){e.preventDefault();void createCategoryFromCharacteristics()}}} className="sr-only" placeholder={t("productModal.categorySection.newNamePlaceholder")}/>
                     <button type="button" disabled={categoryCreating||!(newCategoryName.trim()||categorySearch.trim())} onClick={()=>void createCategoryFromCharacteristics()} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gray-100 px-5 text-sm font-black text-blue-500 disabled:opacity-50 hover:bg-orange-50 hover:text-orange-600">
                       {categoryCreating?<LoaderCircle size={16} className="animate-spin"/>:<Plus size={17}/>}
-                      Yangi kategoriya qo'shish
+                      {t("productModal.categorySection.addNew")}
                     </button>
                   </div>
                 </div>
@@ -1320,13 +1357,14 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
     </div>
 
     <div className="flex justify-end gap-3 border-t border-gray-100 px-6 py-4">
-      <button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">Bekor qilish</button>
-      <button disabled={store.amalBajarilmoqda||unitResolving} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{(store.amalBajarilmoqda||unitResolving)&&<LoaderCircle size={16} className="animate-spin"/>}{editing?"Saqlash":"Yaratish"}</button>
+      <button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t("productModal.cancel")}</button>
+      <button disabled={store.amalBajarilmoqda||unitResolving} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{(store.amalBajarilmoqda||unitResolving)&&<LoaderCircle size={16} className="animate-spin"/>}{editing?t("productModal.save"):t("productModal.create")}</button>
     </div>
   </form></AppModal>
 }
 
 function MahsulotModal({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}) {
+  const { t } = useTranslation("mahsulotlar");
   const store=useMahsulotlarStore();
   const editing=item!=="new";
   const [name,setName]=useState(editing?item.name:"");
@@ -1345,7 +1383,7 @@ function MahsulotModal({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}) {
     const ok=editing
       ?await store.mahsulotSaqlash(item.id,data)
       :await store.mahsulotNarxBilanYaratish(data,{
-          name:"Asosiy variant",
+          name:t("variantsModal.defaultVariant"),
           barcode:barcode.trim(),
           article:article.trim()||undefined,
           price:{
@@ -1356,23 +1394,23 @@ function MahsulotModal({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}) {
         });
     if(ok)onClose()
   }
-  return <Modal title={editing?"Mahsulotni tahrirlash":"Yangi mahsulot"} onClose={onClose}><form onSubmit={save} className="space-y-4">
-    {store.xatolik&&<ErrorBox/>}<input value={name} onChange={e=>setName(e.target.value)} className="input" placeholder="Mahsulot nomi *"/>
-    <div className="grid gap-4 sm:grid-cols-2"><AppSelect value={categoryId} onChange={e=>setCategoryId(e.target.value)} className="input"><option value="">Kategoriya *</option>{store.kategoriyalar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</AppSelect><AppSelect value={unitId} onChange={e=>setUnitId(e.target.value)} className="input"><option value="">O'lchov birligi *</option>{store.birliklar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</AppSelect><input value={barcode} onChange={e=>setBarcode(e.target.value)} className="input" placeholder={`Shtrix-kod${editing?"":" *"}`}/><input value={article} onChange={e=>setArticle(e.target.value)} className="input" placeholder="Artikul"/></div>
+  return <Modal title={editing?t("productModal.editTitle"):t("productModal.createTitle")} onClose={onClose}><form onSubmit={save} className="space-y-4">
+    {store.xatolik&&<ErrorBox/>}<input value={name} onChange={e=>setName(e.target.value)} className="input" placeholder={t("simpleProductModal.namePlaceholder")}/>
+    <div className="grid gap-4 sm:grid-cols-2"><AppSelect value={categoryId} onChange={e=>setCategoryId(e.target.value)} className="input"><option value="">{t("simpleProductModal.categoryPlaceholder")}</option>{store.kategoriyalar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</AppSelect><AppSelect value={unitId} onChange={e=>setUnitId(e.target.value)} className="input"><option value="">{t("simpleProductModal.unitPlaceholder")}</option>{store.birliklar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</AppSelect><input value={barcode} onChange={e=>setBarcode(e.target.value)} className="input" placeholder={editing?t("simpleProductModal.barcodePlaceholder"):t("simpleProductModal.barcodePlaceholderRequired")}/><input value={article} onChange={e=>setArticle(e.target.value)} className="input" placeholder={t("simpleProductModal.articlePlaceholder")}/></div>
     {!editing&&<div className="rounded-[22px] border border-orange-100 bg-orange-50/60 p-4">
-      <div className="mb-4"><p className="font-black text-orange-800">Boshlang'ich narxlar</p><p className="mt-1 text-xs text-orange-700/70">Mahsulot bilan birga "Asosiy variant" va uning narxlari yaratiladi.</p></div>
+      <div className="mb-4"><p className="font-black text-orange-800">{t("simpleProductModal.initialPrices.title")}</p><p className="mt-1 text-xs text-orange-700/70">{t("simpleProductModal.initialPrices.subtitle")}</p></div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="text-sm font-bold text-gray-700">Kelish (tan) narxi
-          <div className="relative mt-2"><input type="number" min="0" step="0.01" value={costPrice} onChange={e=>setCostPrice(e.target.value)} className="input pr-16" placeholder="Kelish narxini kiriting"/><span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">so'm</span></div>
+        <label className="text-sm font-bold text-gray-700">{t("simpleProductModal.initialPrices.costLabel")}
+          <div className="relative mt-2"><input type="number" min="0" step="0.01" value={costPrice} onChange={e=>setCostPrice(e.target.value)} className="input pr-16" placeholder={t("simpleProductModal.initialPrices.costPlaceholder")}/><span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">{t("simpleProductModal.initialPrices.currencySuffix")}</span></div>
         </label>
-        <label className="text-sm font-bold text-gray-700">Sotuv narxi
-          <div className="relative mt-2"><input type="number" min="0" step="0.01" value={retailPrice} onChange={e=>setRetailPrice(e.target.value)} className="input pr-16" placeholder="Sotuv narxini kiriting"/><span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">so'm</span></div>
+        <label className="text-sm font-bold text-gray-700">{t("simpleProductModal.initialPrices.retailLabel")}
+          <div className="relative mt-2"><input type="number" min="0" step="0.01" value={retailPrice} onChange={e=>setRetailPrice(e.target.value)} className="input pr-16" placeholder={t("simpleProductModal.initialPrices.retailPlaceholder")}/><span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">{t("simpleProductModal.initialPrices.currencySuffix")}</span></div>
         </label>
       </div>
-      {retailPrice!==""&&costPrice!==""&&Number(costPrice)>Number(retailPrice)&&<p className="mt-3 text-sm font-bold text-amber-700">Sotuv narxi kelish narxidan past kiritilgan.</p>}
+      {retailPrice!==""&&costPrice!==""&&Number(costPrice)>Number(retailPrice)&&<p className="mt-3 text-sm font-bold text-amber-700">{t("simpleProductModal.initialPrices.belowCostWarning")}</p>}
     </div>}
-    <input value={imageUrl} onChange={e=>setImageUrl(e.target.value)} className="input" placeholder="Rasm manzili (URL)"/>
-    <label className="flex items-center gap-3 rounded-2xl bg-orange-50 p-4 font-bold"><input type="checkbox" checked={isActive} onChange={e=>setIsActive(e.target.checked)} className="h-5 w-5 accent-orange-500"/>Mahsulot faol</label>
+    <input value={imageUrl} onChange={e=>setImageUrl(e.target.value)} className="input" placeholder={t("simpleProductModal.imagePlaceholder")}/>
+    <label className="flex items-center gap-3 rounded-2xl bg-orange-50 p-4 font-bold"><input type="checkbox" checked={isActive} onChange={e=>setIsActive(e.target.checked)} className="h-5 w-5 accent-orange-500"/>{t("simpleProductModal.activeLabel")}</label>
     <Actions loading={store.amalBajarilmoqda} onClose={onClose}/>
   </form></Modal>
 }
@@ -1380,29 +1418,32 @@ function MahsulotModal({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}) {
 void MahsulotModal;
 
 function OddiyModal({item,onClose}:{item:Kategoriya|"new";onClose:()=>void}) {
+  const { t } = useTranslation("mahsulotlar");
   const store=useMahsulotlarStore();const editing=item!=="new";const [name,setName]=useState(editing?item.name:"");
   async function save(e:FormEvent){e.preventDefault();if(!name.trim())return;const ok=await store.kategoriyaSaqlash(editing?item.id:null,{name:name.trim()});if(ok)onClose()}
-  return <Modal title={`${editing?"Tahrirlash":"Yangi"} kategoriya`} onClose={onClose}><form onSubmit={save} className="space-y-4">{store.xatolik&&<ErrorBox/>}<input value={name} onChange={e=>setName(e.target.value)} className="input" placeholder="Nomi *"/><Actions loading={store.amalBajarilmoqda} onClose={onClose}/></form></Modal>
+  return <Modal title={editing?t("categoryModal.editTitle"):t("categoryModal.createTitle")} onClose={onClose}><form onSubmit={save} className="space-y-4">{store.xatolik&&<ErrorBox/>}<input value={name} onChange={e=>setName(e.target.value)} className="input" placeholder={t("categoryModal.namePlaceholder")}/><Actions loading={store.amalBajarilmoqda} onClose={onClose}/></form></Modal>
 }
 
 function ModifikatsiyalarModal({product,onClose}:{product:Mahsulot;onClose:()=>void}) {
+  const { t } = useTranslation("mahsulotlar");
   const store=useMahsulotlarStore();const items=store.modifikatsiyalar[product.id]??[];const [editing,setEditing]=useState<MahsulotModifikatsiyasi|"new"|null>(null);
-  async function remove(id:string){if(window.confirm("Variantni o'chirasizmi?"))await store.modifikatsiyaOchirish(product.id,id)}
+  async function remove(id:string){if(window.confirm(t("confirm.deleteVariant")))await store.modifikatsiyaOchirish(product.id,id)}
   async function edit(item:MahsulotModifikatsiyasi){const [toliq,narx]=await Promise.all([store.modifikatsiyaOlish(item.id),store.narxOlish(item.id)]);if(toliq)setEditing({...toliq,price:narx??toliq.price})}
-  return <Modal wide title={`${product.name} — variantlar va narxlar`} onClose={onClose}>
-    <div className="flex justify-end"><button onClick={()=>setEditing("new")} className="inline-flex h-10 items-center gap-2 rounded-xl bg-orange-500 px-4 font-black text-white"><PackagePlus size={16}/>Variant qo'shish</button></div>
-    <div className="mt-4 space-y-3">{items.map(item=><div key={item.id} className="rounded-2xl border border-orange-100 p-4"><div className="flex flex-col justify-between gap-3 md:flex-row"><div><h3 className="font-black">{item.name||"Asosiy variant"}</h3><p className="text-sm text-gray-500">Shtrix-kod: {item.barcode} В· Artikul: {item.article||"—"}</p><p className="mt-2 text-sm font-bold text-orange-600">Tan narx: {money(item.price?.costPrice)} В· Chakana: {money(item.price?.retailPrice)} В· Ulgurji: {money(item.price?.wholesalePrice)}</p></div><div className="flex gap-2"><button onClick={()=>void edit(item)} className="rounded-xl bg-orange-50 px-3 py-2 font-bold text-orange-600">Tahrirlash</button><button onClick={()=>void remove(item.id)} className="rounded-xl bg-red-50 px-3 py-2 text-red-500"><Trash2 size={16}/></button></div></div></div>)}{items.length===0&&<Empty matn="Variantlar mavjud emas"/>}</div>
+  return <Modal wide title={t("variantsModal.title",{product:product.name})} onClose={onClose}>
+    <div className="flex justify-end"><button onClick={()=>setEditing("new")} className="inline-flex h-10 items-center gap-2 rounded-xl bg-orange-500 px-4 font-black text-white"><PackagePlus size={16}/>{t("variantsModal.addVariant")}</button></div>
+    <div className="mt-4 space-y-3">{items.map(item=><div key={item.id} className="rounded-2xl border border-orange-100 p-4"><div className="flex flex-col justify-between gap-3 md:flex-row"><div><h3 className="font-black">{item.name||t("variantsModal.defaultVariant")}</h3><p className="text-sm text-gray-500">{t("variantsModal.barcodeLine",{barcode:item.barcode,article:item.article||"—"})}</p><p className="mt-2 text-sm font-bold text-orange-600">{t("variantsModal.priceLine",{cost:money(item.price?.costPrice),retail:money(item.price?.retailPrice),wholesale:money(item.price?.wholesalePrice)})}</p></div><div className="flex gap-2"><button onClick={()=>void edit(item)} className="rounded-xl bg-orange-50 px-3 py-2 font-bold text-orange-600">{t("variantsModal.edit")}</button><button onClick={()=>void remove(item.id)} className="rounded-xl bg-red-50 px-3 py-2 text-red-500"><Trash2 size={16}/></button></div></div></div>)}{items.length===0&&<Empty matn={t("empty.variants")}/>}</div>
     {editing&&<ModForm productId={product.id} item={editing} onClose={()=>setEditing(null)}/>}
   </Modal>
 }
 
 function ModForm({productId,item,onClose}:{productId:string;item:MahsulotModifikatsiyasi|"new";onClose:()=>void}) {
+  const { t } = useTranslation("mahsulotlar");
   const store=useMahsulotlarStore();const editing=item!=="new";const [name,setName]=useState(editing?item.name??"":"");const [barcode,setBarcode]=useState(editing?item.barcode:"");const [article,setArticle]=useState(editing?item.article??"":"");const [params,setParams]=useState(editing&&item.params?JSON.stringify(item.params):"");const [cost,setCost]=useState(Number(editing?item.price?.costPrice??0:0));const [retail,setRetail]=useState(Number(editing?item.price?.retailPrice??0:0));const [wholesale,setWholesale]=useState(Number(editing?item.price?.wholesalePrice??0:0));const [jsonError,setJsonError]=useState("");
-  async function save(e:FormEvent){e.preventDefault();if(!barcode.trim())return;let parsed:Record<string,unknown>|undefined;try{parsed=params.trim()?JSON.parse(params):undefined;setJsonError("")}catch{setJsonError("Parametrlar JSON formati noto'g'ri.");return}const ok=await store.modifikatsiyaSaqlash(productId,editing?item.id:null,{name:name.trim()||undefined,barcode:barcode.trim(),article:article.trim()||undefined,params:parsed,price:{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale}});if(ok&&editing)await store.narxYangilash(productId,item.id,{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale});if(ok)onClose()}
-  return <AppModal><form onSubmit={save} className="w-full max-w-2xl rounded-[28px] bg-white p-6 shadow-2xl"><div className="flex justify-between"><h2 className="text-2xl font-black">{editing?"Variantni tahrirlash":"Yangi variant"}</h2><button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100"><X size={18}/></button></div><div className="mt-5 grid gap-3 sm:grid-cols-2"><input value={name} onChange={e=>setName(e.target.value)} className="input" placeholder="Variant nomi"/><input value={barcode} onChange={e=>setBarcode(e.target.value)} className="input" placeholder="Shtrix-kod *"/><input value={article} onChange={e=>setArticle(e.target.value)} className="input" placeholder="Artikul"/><input value={params} onChange={e=>setParams(e.target.value)} className="input" placeholder='Parametrlar JSON: {"rang":"qizil"}'/><input type="number" min="0" value={cost} onChange={e=>setCost(Number(e.target.value))} className="input" placeholder="Tan narx"/><input type="number" min="0" value={retail} onChange={e=>setRetail(Number(e.target.value))} className="input" placeholder="Chakana narx"/><input type="number" min="0" value={wholesale} onChange={e=>setWholesale(Number(e.target.value))} className="input" placeholder="Ulgurji narx"/></div>{jsonError&&<p className="mt-3 text-sm font-bold text-red-500">{jsonError}</p>}<Actions loading={store.amalBajarilmoqda} onClose={onClose}/></form></AppModal>
+  async function save(e:FormEvent){e.preventDefault();if(!barcode.trim())return;let parsed:Record<string,unknown>|undefined;try{parsed=params.trim()?JSON.parse(params):undefined;setJsonError("")}catch{setJsonError("modForm.invalidJson");return}const ok=await store.modifikatsiyaSaqlash(productId,editing?item.id:null,{name:name.trim()||undefined,barcode:barcode.trim(),article:article.trim()||undefined,params:parsed,price:{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale}});if(ok&&editing)await store.narxYangilash(productId,item.id,{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale});if(ok)onClose()}
+  return <AppModal><form onSubmit={save} className="w-full max-w-2xl rounded-[28px] bg-white p-6 shadow-2xl"><div className="flex justify-between"><h2 className="text-2xl font-black">{editing?t("modForm.editTitle"):t("modForm.createTitle")}</h2><button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100"><X size={18}/></button></div><div className="mt-5 grid gap-3 sm:grid-cols-2"><input value={name} onChange={e=>setName(e.target.value)} className="input" placeholder={t("modForm.namePlaceholder")}/><input value={barcode} onChange={e=>setBarcode(e.target.value)} className="input" placeholder={t("modForm.barcodePlaceholder")}/><input value={article} onChange={e=>setArticle(e.target.value)} className="input" placeholder={t("modForm.articlePlaceholder")}/><input value={params} onChange={e=>setParams(e.target.value)} className="input" placeholder={t("modForm.paramsPlaceholder")}/><input type="number" min="0" value={cost} onChange={e=>setCost(Number(e.target.value))} className="input" placeholder={t("modForm.costPlaceholder")}/><input type="number" min="0" value={retail} onChange={e=>setRetail(Number(e.target.value))} className="input" placeholder={t("modForm.retailPlaceholder")}/><input type="number" min="0" value={wholesale} onChange={e=>setWholesale(Number(e.target.value))} className="input" placeholder={t("modForm.wholesalePlaceholder")}/></div>{jsonError&&<p className="mt-3 text-sm font-bold text-red-500">{t(jsonError)}</p>}<Actions loading={store.amalBajarilmoqda} onClose={onClose}/></form></AppModal>
 }
 
 function Modal({title,onClose,children,wide=false}:{title:string;onClose:()=>void;children:React.ReactNode;wide?:boolean}){return <AppModal><div className={`scrollbar-hidden max-h-[94vh] w-full overflow-y-auto rounded-[30px] bg-white p-6 shadow-2xl ${wide?"max-w-5xl":"max-w-xl"}`}><div className="mb-5 flex justify-between gap-4"><h2 className="text-2xl font-black">{title}</h2><button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 hover:bg-orange-500 hover:text-white"><X size={18}/></button></div>{children}</div></AppModal>}
-function Actions({loading,onClose}:{loading:boolean;onClose:()=>void}){return <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">Bekor qilish</button><button disabled={loading} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{loading&&<LoaderCircle size={16} className="animate-spin"/>}Saqlash</button></div>}
+function Actions({loading,onClose}:{loading:boolean;onClose:()=>void}){const { t } = useTranslation("mahsulotlar");return <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t("actions.cancel")}</button><button disabled={loading} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{loading&&<LoaderCircle size={16} className="animate-spin"/>}{t("actions.save")}</button></div>}
 function ErrorBox(){const x=useMahsulotlarStore(s=>s.xatolik);return <div className="rounded-xl bg-red-50 p-3 font-bold text-red-600">{x}</div>}
 function money(value:number|string|undefined){return `${Number(value??0).toLocaleString("uz-UZ")} so'm`}

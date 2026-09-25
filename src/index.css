@@ -616,6 +616,21 @@ table:not(:where(.font-serif *)) textarea {
     will-change: transform, opacity;
   }
 
+  .login-dash-flow {
+    stroke-dasharray: 3 3;
+    animation: login-dash-flow 1600ms linear infinite;
+  }
+
+  .login-orbit {
+    animation: login-orbit-spin 42000ms linear infinite;
+    transform-origin: center;
+  }
+
+  .login-orbit-reverse {
+    animation: login-orbit-spin 56000ms linear infinite reverse;
+    transform-origin: center;
+  }
+
   html {
     @apply font-sans;
   }
@@ -731,6 +746,18 @@ table:not(:where(.font-serif *)) textarea {
   }
 }
 
+@keyframes login-dash-flow {
+  to {
+    stroke-dashoffset: -12;
+  }
+}
+
+@keyframes login-orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .login-bg-enter,
   .login-overlay-enter,
@@ -740,7 +767,10 @@ table:not(:where(.font-serif *)) textarea {
   .login-item-enter,
   .login-liquid-sheen,
   .login-float-blue,
-  .login-float-orange {
+  .login-float-orange,
+  .login-dash-flow,
+  .login-orbit,
+  .login-orbit-reverse {
     animation: none;
     opacity: 1;
     transform: none;

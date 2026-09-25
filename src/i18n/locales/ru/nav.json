@@ -1,0 +1,38 @@
+{
+  "brand": "YEPOST",
+  "brandTagline": "Система продаж",
+  "menu": {
+    "boshSahifa": "Главная",
+    "savdo": "Продажи",
+    "savdoBarchaSotuvlar": "Все продажи",
+    "savdoQoralamalar": "Черновики",
+    "savdoTarixi": "История продаж",
+    "tolovlar": "Платежи",
+    "qarzdorliklar": "Задолженности",
+    "qaytarish": "Возврат",
+    "bekorQilinganlar": "Отменённые",
+    "mahsulotlar": "Товары",
+    "ombor": "Склад",
+    "inventarizatsiya": "Инвентаризация",
+    "kirim": "Приход",
+    "chiqim": "Расход",
+    "kochirish": "Перемещение",
+    "qoldiq": "Остатки",
+    "amalgaOshirilganlar": "Выполненные",
+    "omborlar": "Склады",
+    "xaridorlar": "Клиенты",
+    "kompaniya": "Компания",
+    "yetkazibBeruvchilar": "Поставщики",
+    "kassa": "Касса",
+    "hisobotlar": "Отчёты",
+    "xodimlar": "Сотрудники",
+    "sozlamalar": "Настройки"
+  },
+  "roles": {
+    "DIREKTOR": "Директор",
+    "ADMIN": "Администратор",
+    "KASSIR": "Кассир",
+    "OMBORCHI": "Кладовщик"
+  },
+  "logout": "Выйти из системы"
+}

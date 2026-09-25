@@ -13,6 +13,7 @@ import {
   Send,
   Trash2,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
@@ -57,28 +58,18 @@ type Qator = {
   price: number;
 };
 
-const sarlavhalar: Record<InventoryHujjatTuri, string> = {
-  kirim: "Kirim hujjati",
-  chiqim: "Chiqim hujjati",
-  kochirish: "Ko'chirish hujjati",
-  inventarizatsiya: "Inventarizatsiya hujjati",
-};
 const documentTypes: Record<InventoryHujjatTuri, InventoryDocumentType> = {
   kirim: "PURCHASE", chiqim: "WRITE_OFF", kochirish: "TRANSFER", inventarizatsiya: "STOCK_TAKE",
 };
 
-const sabablar: Record<ChiqimSababi, string> = {
-  DAMAGE: "Shikastlangan",
-  EXPIRY: "Muddati o'tgan",
-  THEFT: "Yo'qolgan yoki o'g'irlangan",
-  OTHER: "Boshqa",
-};
+const chiqimSabablari: ChiqimSababi[] = ["DAMAGE", "EXPIRY", "THEFT", "OTHER"];
 
 function hujjatHolati(hujjat: Hujjat | null) {
   return String(hujjat?.status ?? "DRAFT").toUpperCase();
 }
 
 export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
+  const { t } = useTranslation("ombor_hujjat");
   const store = useOmborStore();
   const kirimOlish = useOmborStore((state) => state.kirimOlish);
   const chiqimOlish = useOmborStore((state) => state.chiqimOlish);
@@ -235,8 +226,8 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
     if (items.length === 0 || yaroqsizQator) {
       setValidatsiyaXatosi(
         tur === "inventarizatsiya"
-          ? "Har bir mahsulot uchun haqiqiy miqdor 0 yoki undan katta raqam bo'lishi kerak."
-          : "Mahsulot, miqdor va narx qiymatlarini to'g'ri kiriting."
+          ? "errors.invalidStockTakeQuantity"
+          : "errors.invalidItems"
       );
       return;
     }
@@ -343,7 +334,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
 
   async function inventarizatsiyaniBekorQilish() {
     if (tur !== "inventarizatsiya" || !hujjat || hujjatHolati(hujjat) !== "CONFIRMED") return;
-    if (!window.confirm("Tasdiqlangan inventarizatsiyani bekor qilasizmi? Ombor qoldiqlari qayta hisoblanadi.")) return;
+    if (!window.confirm(t("confirm.cancelStockTake"))) return;
     setValidatsiyaXatosi("");
     store.xatolikniTozalash();
     const ok = await store.inventarizatsiyaBekorQilish(id);
@@ -379,11 +370,11 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
             </div>
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-orange-500">
-                Hujjat tafsilotlari
+                {t("header.detailsLabel")}
               </p>
               <h2 className="text-2xl font-black text-slate-950 sm:text-3xl">
-                {sarlavhalar[tur]}
-                {hujjat ? ` В· ${hujjatRaqami(hujjat)}` : ""}
+                {t(`documentTitles.${tur}`)}
+                {hujjat ? ` · ${hujjatRaqami(hujjat)}` : ""}
               </h2>
               {hujjat && (
                 <span
@@ -411,7 +402,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                   disabled={store.amalBajarilmoqda}
                   className="inline-flex h-12 items-center gap-2 rounded-2xl bg-red-50 px-4 font-black text-red-500 transition hover:bg-red-100 disabled:opacity-50"
                 >
-                  <Ban size={17} /> Bekor qilish
+                  <Ban size={17} /> {t("actions.cancel")}
                 </button>
                 <button
                   type="button"
@@ -419,7 +410,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                   disabled={store.amalBajarilmoqda}
                   className="inline-flex h-12 items-center gap-2 rounded-2xl bg-sky-500 px-4 font-black text-white transition hover:bg-sky-600 disabled:opacity-50"
                 >
-                  <Send size={17} /> Jo'natish
+                  <Send size={17} /> {t("actions.send")}
                 </button>
               </>
             )}
@@ -430,7 +421,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                 disabled={store.amalBajarilmoqda}
                 className="inline-flex h-12 items-center gap-2 rounded-2xl bg-emerald-500 px-4 font-black text-white transition hover:bg-emerald-600 disabled:opacity-50"
               >
-                <PackageCheck size={18} /> Qabul qilish
+                <PackageCheck size={18} /> {t("actions.receive")}
               </button>
             )}
             {hujjat && qoralama && !tahrir && (
@@ -439,7 +430,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                 onClick={tahrirlashniBoshlash}
                 className="inline-flex h-12 items-center gap-2 rounded-2xl bg-orange-500 px-5 font-black text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600"
               >
-                <Edit3 size={18} /> Tahrirlash
+                <Edit3 size={18} /> {t("actions.edit")}
               </button>
             )}
           </div>
@@ -451,13 +442,13 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
           </div>
         ) : !hujjat ? (
           <div className="p-12 text-center text-gray-500">
-            Hujjat ma'lumotlarini olib bo'lmadi.
+            {t("header.loadError")}
           </div>
         ) : (
           <div className="p-5 sm:p-7">
             {(store.xatolik || validatsiyaXatosi) && (
               <div className="mb-5 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">
-                {validatsiyaXatosi || store.xatolik}
+                {validatsiyaXatosi ? t(validatsiyaXatosi) : store.xatolik}
               </div>
             )}
 
@@ -465,54 +456,54 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
               <>
                 <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm sm:p-6">
                   <h3 className="border-b border-orange-100 pb-4 text-sm font-black uppercase tracking-wide text-slate-600">
-                    {sarlavhalar[tur]} haqida
+                    {t("header.aboutTitle", { title: t(`documentTitles.${tur}`) })}
                   </h3>
                   {korishJami != null && (
                     <div className="mt-5 rounded-[24px] bg-gradient-to-br from-orange-50 to-orange-100/70 px-7 py-8">
-                      <p className="text-xs font-black uppercase tracking-wider text-orange-600">Umumiy summa</p>
+                      <p className="text-xs font-black uppercase tracking-wider text-orange-600">{t("view.totalAmount")}</p>
                       <p className="mt-2 text-4xl font-black tracking-tight text-slate-950">{pul(korishJami)}</p>
                     </div>
                   )}
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <Malumot nom="Holat" qiymat={holat(hujjat.status)} />
-                  <Malumot nom="Yaratilgan sana" qiymat={sana(hujjat.createdAt)} />
+                  <Malumot nom={t("view.status")} qiymat={holat(hujjat.status)} />
+                  <Malumot nom={t("view.createdAt")} qiymat={sana(hujjat.createdAt)} />
                   <Malumot
-                    nom="Mas'ul xodim"
+                    nom={t("view.responsible")}
                     qiymat={
                       hujjat.responsible?.fullName ??
                       hujjat.responsible?.username ??
                       store.xodimlar.find(
                         (item) => item.id === hujjat.responsibleId
                       )?.fullName ??
-                      "Biriktirilmagan"
+                      t("view.unassigned")
                     }
                   />
-                  <Malumot nom="Mahsulotlar" qiymat={`${hujjat.items?.length ?? 0} ta`} />
+                  <Malumot nom={t("view.products")} qiymat={t("view.productsCount", { count: hujjat.items?.length ?? 0 })} />
                 </div>
 
                 <div className="mt-3 grid gap-3 md:grid-cols-2">
                   {tur === "kirim" && (
                     <>
                       <Malumot
-                        nom="Yetkazib beruvchi"
+                        nom={t("view.supplier")}
                         qiymat={
                           (hujjat as KirimHujjati).supplier?.name ??
                           store.yetkazibBeruvchilar.find(
                             (item) =>
                               item.id === (hujjat as KirimHujjati).supplierId
                           )?.name ??
-                          "Noma'lum yetkazib beruvchi"
+                          t("view.unknownSupplier")
                         }
                       />
                       <Malumot
-                        nom="Ombor"
+                        nom={t("view.warehouse")}
                         qiymat={
                           (hujjat as KirimHujjati).warehouse?.name ??
                           store.omborlar.find(
                             (item) =>
                               item.id === (hujjat as KirimHujjati).warehouseId
                           )?.name ??
-                          "Noma'lum ombor"
+                          t("view.unknownWarehouse")
                         }
                       />
                     </>
@@ -520,30 +511,29 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                   {tur === "chiqim" && (
                     <>
                       <Malumot
-                        nom="Ombor"
+                        nom={t("view.warehouse")}
                         qiymat={
                           (hujjat as ChiqimHujjati).warehouse?.name ??
                           store.omborlar.find(
                             (item) =>
                               item.id === (hujjat as ChiqimHujjati).warehouseId
                           )?.name ??
-                          "Noma'lum ombor"
+                          t("view.unknownWarehouse")
                         }
                       />
                       <Malumot
-                        nom="Chiqim sababi"
-                        qiymat={
-                          sabablar[
-                            (hujjat as ChiqimHujjati).reason as ChiqimSababi
-                          ] ?? (hujjat as ChiqimHujjati).reason
-                        }
+                        nom={t("view.writeOffReason")}
+                        qiymat={t(
+                          `reasons.${String((hujjat as ChiqimHujjati).reason ?? "").toLowerCase()}`,
+                          { defaultValue: (hujjat as ChiqimHujjati).reason }
+                        )}
                       />
                     </>
                   )}
                   {tur === "kochirish" && (
                     <>
                       <Malumot
-                        nom="Manba ombor"
+                        nom={t("view.sourceWarehouse")}
                         qiymat={
                           (hujjat as KochirishHujjati).sourceWarehouse?.name ??
                           store.omborlar.find(
@@ -551,11 +541,11 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                               item.id ===
                               (hujjat as KochirishHujjati).sourceWarehouseId
                           )?.name ??
-                          "Noma'lum ombor"
+                          t("view.unknownWarehouse")
                         }
                       />
                       <Malumot
-                        nom="Qabul qiluvchi ombor"
+                        nom={t("view.destWarehouse")}
                         qiymat={
                           (hujjat as KochirishHujjati).destWarehouse?.name ??
                           store.omborlar.find(
@@ -563,7 +553,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                               item.id ===
                               (hujjat as KochirishHujjati).destWarehouseId
                           )?.name ??
-                          "Noma'lum ombor"
+                          t("view.unknownWarehouse")
                         }
                       />
                     </>
@@ -571,7 +561,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                   {tur === "inventarizatsiya" && (
                     <>
                       <Malumot
-                        nom="Ombor"
+                        nom={t("view.warehouse")}
                         qiymat={
                           (hujjat as InventarizatsiyaHujjati).warehouse?.name ??
                           store.omborlar.find(
@@ -579,15 +569,15 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                               item.id ===
                               (hujjat as InventarizatsiyaHujjati).warehouseId
                           )?.name ??
-                          "Noma'lum ombor"
+                          t("view.unknownWarehouse")
                         }
                       />
                       <Malumot
-                        nom="Tekshiruv turi"
+                        nom={t("view.stockTakeType")}
                         qiymat={
                           (hujjat as InventarizatsiyaHujjati).type === "PARTIAL"
-                            ? "Qisman"
-                            : "To'liq"
+                            ? t("stockTakeType.partial")
+                            : t("stockTakeType.full")
                         }
                       />
                     </>
@@ -596,27 +586,27 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                 </section>
 
                 <section className="mt-5 rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm sm:p-6">
-                  <h3 className="border-b border-orange-100 pb-4 text-sm font-black uppercase tracking-wide text-slate-600">Tovarlar</h3>
+                  <h3 className="border-b border-orange-100 pb-4 text-sm font-black uppercase tracking-wide text-slate-600">{t("table.sectionTitle")}</h3>
                 <div className="mt-5 overflow-x-auto rounded-2xl border border-orange-100">
                   <table className="w-full min-w-[700px] text-left text-sm">
                     <thead className="bg-slate-50 text-gray-600">
                       <tr>
-                        <th className="px-4 py-3">Mahsulot</th>
+                        <th className="px-4 py-3">{t("table.product")}</th>
                         {tur === "inventarizatsiya" ? (
                           <>
-                            <th className="px-4 py-3">Shtrix kod</th>
-                            <th className="px-4 py-3">Ombor</th>
-                            <th className="px-4 py-3">Tizimdagi miqdor</th>
-                            <th className="px-4 py-3">Haqiqiy miqdor</th>
-                            <th className="px-4 py-3">Farq</th>
+                            <th className="px-4 py-3">{t("table.barcode")}</th>
+                            <th className="px-4 py-3">{t("table.warehouse")}</th>
+                            <th className="px-4 py-3">{t("table.systemQuantity")}</th>
+                            <th className="px-4 py-3">{t("table.actualQuantity")}</th>
+                            <th className="px-4 py-3">{t("table.difference")}</th>
                           </>
                         ) : (
                           <>
-                            <th className="px-4 py-3">Miqdor</th>
+                            <th className="px-4 py-3">{t("table.quantity")}</th>
                             {tur === "kirim" && (
                               <>
-                                <th className="px-4 py-3">Narx</th>
-                                <th className="px-4 py-3">Jami</th>
+                                <th className="px-4 py-3">{t("table.price")}</th>
+                                <th className="px-4 py-3">{t("table.total")}</th>
                               </>
                             )}
                           </>
@@ -645,7 +635,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                                 (warehouse) =>
                                   warehouse.id === (hujjat as InventarizatsiyaHujjati).warehouseId
                               )?.name ??
-                              "Noma'lum ombor"
+                              t("view.unknownWarehouse")
                             : "";
                         return (
                           <tr key={item.id ?? `${item.modificationId}-${index}`}>
@@ -698,7 +688,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                             colSpan={tur === "inventarizatsiya" ? 6 : tur === "kirim" ? 4 : 2}
                             className="px-5 py-12 text-center font-bold text-slate-400"
                           >
-                            Mahsulotlar mavjud emas
+                            {t("table.empty")}
                           </td>
                         </tr>
                       )}
@@ -710,7 +700,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                 {hujjat.note && (
                   <div className="mt-5 rounded-2xl bg-slate-50 p-4">
                     <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                      Izoh
+                      {t("view.note")}
                     </p>
                     <p className="mt-1 text-sm font-medium text-gray-700">
                       {hujjat.note}
@@ -735,7 +725,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                       ) : (
                         <Ban size={18} />
                       )}
-                      Bekor qilish
+                      {t("actions.cancel")}
                     </button>
                   )}
                   {qoralama && tur === "inventarizatsiya" && (
@@ -750,7 +740,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                       ) : (
                         <CheckCircle2 size={18} />
                       )}
-                      Tasdiqlash
+                      {t("actions.confirmStockTake")}
                     </button>
                   )}
                 </div>
@@ -764,7 +754,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                       onChange={(event) => setSupplierId(event.target.value)}
                       className="h-12 rounded-2xl border px-4"
                     >
-                      <option value="">Yetkazib beruvchi *</option>
+                      <option value="">{t("form.supplierPlaceholder")}</option>
                       {store.yetkazibBeruvchilar.map((item) => (
                         <option key={item.id} value={item.id}>
                           {item.name ?? item.id}
@@ -780,7 +770,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                       onChange={(event) => setWarehouseId(event.target.value)}
                       className="h-12 rounded-2xl border px-4"
                     >
-                      <option value="">Ombor *</option>
+                      <option value="">{t("form.warehousePlaceholder")}</option>
                       {store.omborlar.map((item) => (
                         <option key={item.id} value={item.id}>
                           {item.name}
@@ -797,7 +787,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                         }
                         className="h-12 rounded-2xl border px-4"
                       >
-                        <option value="">Manba ombor *</option>
+                        <option value="">{t("form.sourceWarehousePlaceholder")}</option>
                         {store.omborlar.map((item) => (
                           <option key={item.id} value={item.id}>
                             {item.name}
@@ -811,7 +801,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                         }
                         className="h-12 rounded-2xl border px-4"
                       >
-                        <option value="">Qabul qiluvchi ombor *</option>
+                        <option value="">{t("form.destWarehousePlaceholder")}</option>
                         {store.omborlar
                           .filter((item) => item.id !== sourceWarehouseId)
                           .map((item) => (
@@ -830,9 +820,9 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                       }
                       className="h-12 rounded-2xl border px-4"
                     >
-                      {Object.entries(sabablar).map(([value, label]) => (
+                      {chiqimSabablari.map((value) => (
                         <option key={value} value={value}>
-                          {label}
+                          {t(`reasons.${value.toLowerCase()}`)}
                         </option>
                       ))}
                     </AppSelect>
@@ -847,8 +837,8 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                       }
                       className="h-12 rounded-2xl border px-4"
                     >
-                      <option value="FULL">To'liq</option>
-                      <option value="PARTIAL">Qisman</option>
+                      <option value="FULL">{t("stockTakeType.full")}</option>
+                      <option value="PARTIAL">{t("stockTakeType.partial")}</option>
                     </AppSelect>
                   )}
                   <AppSelect
@@ -856,7 +846,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                     onChange={(event) => setResponsibleId(event.target.value)}
                     className="h-12 rounded-2xl border px-4"
                   >
-                    <option value="">Mas'ul xodim biriktirilmagan</option>
+                    <option value="">{t("form.responsibleUnassigned")}</option>
                     {store.xodimlar.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.fullName ?? item.username ?? item.id}
@@ -884,7 +874,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                         }
                         className="h-11 rounded-xl border bg-white px-3"
                       >
-                        <option value="">Mahsulot *</option>
+                        <option value="">{t("form.productPlaceholder")}</option>
                         {store.modifikatsiyalar.map((modification) => (
                           <option key={modification.id} value={modification.id}>
                             {modificationNomi(modification)}
@@ -907,8 +897,8 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                         className="h-11 rounded-xl border bg-white px-3"
                         placeholder={
                           tur === "inventarizatsiya"
-                            ? "Haqiqiy miqdor"
-                            : "Miqdor"
+                            ? t("form.actualQuantityPlaceholder")
+                            : t("form.quantityPlaceholder")
                         }
                       />
                       {tur === "kirim" && (
@@ -923,7 +913,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                             })
                           }
                           className="h-11 rounded-xl border bg-white px-3"
-                          placeholder="Tan narx"
+                          placeholder={t("form.costPricePlaceholder")}
                         />
                       )}
                       <button
@@ -948,14 +938,14 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                     className="inline-flex items-center gap-2 rounded-xl bg-orange-50 px-4 py-2.5 text-sm font-bold text-orange-600"
                   >
                     <Plus size={16} />
-                    Mahsulot qo'shish
+                    {t("actions.addProduct")}
                   </button>
                 </div>
 
                 {tur === "kirim" && (
                   <div className="mt-4 flex justify-end rounded-2xl bg-orange-50 p-4">
                     <span className="font-black text-orange-700">
-                      Hujjat summasi: {pul(jami)}
+                      {t("view.documentTotal", { amount: pul(jami) })}
                     </span>
                   </div>
                 )}
@@ -964,7 +954,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   className="mt-5 min-h-24 w-full rounded-2xl border p-4 outline-none focus:border-orange-300"
-                  placeholder="Izoh"
+                  placeholder={t("form.notePlaceholder")}
                 />
 
                 <div className="mt-6 flex justify-end gap-3">
@@ -973,7 +963,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                     onClick={() => setTahrir(false)}
                     className="h-11 rounded-2xl bg-gray-100 px-5 font-bold text-gray-600"
                   >
-                    Bekor qilish
+                    {t("actions.cancel")}
                   </button>
                   <button
                     type="button"
@@ -986,7 +976,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                     ) : (
                       <Save size={17} />
                     )}
-                    O'zgarishlarni saqlash
+                    {t("actions.saveChanges")}
                   </button>
                 </div>
               </div>

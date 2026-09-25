@@ -1,0 +1,134 @@
+{
+  "umumiy": {
+    "biriktirilmagan": "Не назначено",
+    "yopish": "Закрыть",
+    "ustunlarniSozlash": "Настроить столбцы",
+    "hujjatniKorish": "Просмотреть документ",
+    "status": {
+      "DRAFT": "Черновик",
+      "CONFIRMED": "Подтверждено",
+      "CANCELLED": "Отменено",
+      "CANCELED": "Отменено",
+      "SENT": "Отправлено",
+      "RECEIVED": "Принято"
+    }
+  },
+  "amalgaOshirilganlar": {
+    "title": "Выполненные",
+    "subtitle": "Документы реализации (продажи), выполненные на складе.",
+    "createButton": "Создать",
+    "createOptions": {
+      "sotuvYaratish": "Создать продажу"
+    },
+    "searchPlaceholder": "Название, контрагент, склад, ответственное лицо или статус",
+    "columns": {
+      "nomi": "Название",
+      "kontragent": "Контрагент",
+      "ombor": "Склад",
+      "sana": "Дата",
+      "masul": "Ответственное лицо",
+      "status": "Статус",
+      "summa": "Сумма",
+      "tolangan": "Оплачено",
+      "qarz": "Долг"
+    },
+    "visibleColumns": "Видимые столбцы",
+    "loading": "Загрузка документов...",
+    "emptySearch": "По запросу документы не найдены",
+    "emptyList": "Выполненные документы отсутствуют",
+    "unknownWarehouse": "Неизвестный склад"
+  },
+  "chiqim": {
+    "title": "Расход",
+    "subtitle": "Документы расхода товара со склада.",
+    "createButton": "Создать",
+    "searchPlaceholder": "По названию, причине, ответственному лицу, дате или статусу",
+    "documentLabel": "Документ расхода",
+    "columns": {
+      "nomi": "Название",
+      "status": "Статус",
+      "yaratilgan": "Дата создания",
+      "ombor": "Склад",
+      "yaratgan": "Создал (ответственное лицо)",
+      "ozgartirilgan": "Дата изменения",
+      "ozgartirgan": "Изменил (ответственное лицо)",
+      "summa": "Сумма"
+    },
+    "columnResizeAria": "Изменить ширину столбца «{{column}}»",
+    "reasons": {
+      "DAMAGE": "Повреждён",
+      "EXPIRY": "Истёк срок годности",
+      "THEFT": "Утерян или украден",
+      "OTHER": "Другое"
+    },
+    "emptyTitle": "Документ расхода не найден",
+    "emptyHint": "Добавьте новый расход с помощью кнопки «Создать».",
+    "scrollLeftAria": "Прокрутить таблицу влево",
+    "scrollDragAria": "Прокрутить таблицу влево-вправо",
+    "scrollRightAria": "Прокрутить таблицу вправо"
+  },
+  "omborQoldigi": {
+    "eyebrow": "Склад",
+    "title": "Остатки на складе",
+    "subtitle": "Отчёт по остаткам, рассчитанный на основе документов прихода, реализации, расхода и перемещения.",
+    "retry": "Повторить попытку",
+    "filters": {
+      "byDate": "По дате",
+      "today": "Сегодня",
+      "warehouse": "Склад",
+      "warehouseSearchPlaceholder": "Поиск склада",
+      "branch": "Филиал",
+      "branchSearchPlaceholder": "Поиск филиала",
+      "category": "Категория товара",
+      "categorySearchPlaceholder": "Поиск категории",
+      "product": "Товар",
+      "productSearchPlaceholder": "Поиск товара",
+      "priceType": "Тип цены",
+      "variations": "Вариации",
+      "variationsSearchPlaceholder": "Поиск вариации",
+      "characteristics": "Характеристика",
+      "characteristicsSearchPlaceholder": "Поиск характеристики",
+      "stockType": "Остатки",
+      "stockOptions": {
+        "hammasi": "Все",
+        "musbat": "Положительный остаток",
+        "nol": "Нулевой остаток",
+        "manfiy": "Отрицательный остаток"
+      },
+      "groupByWarehouse": "Разделить по складам",
+      "showBarcode": "Показывать штрихкод",
+      "showVariations": "Показывать вариации"
+    },
+    "priceTypes": {
+      "costPrice": "Себестоимость",
+      "retailPrice": "Розничная цена",
+      "wholesalePrice": "Оптовая цена",
+      "default": "Цена"
+    },
+    "actions": {
+      "generateReport": "Сформировать отчёт",
+      "print": "Печать",
+      "exportExcel": "Выгрузить в Excel"
+    },
+    "asOfStatus": "по состоянию на {{date}} (сформировано: {{generatedAt}})",
+    "tableSearchPlaceholder": "Поиск по таблице",
+    "reportNotice": "Отчёт сформирован на основе выбранной даты и текущих фильтров на сервере.",
+    "columns": {
+      "name": "Название",
+      "barcode": "Штрихкод",
+      "variation": "Вариация",
+      "warehouse": "Склад",
+      "unit": "Единица измерения",
+      "totalStock": "Общий остаток",
+      "total": "Всего",
+      "available": "Свободно",
+      "unitPrice": "За единицу",
+      "totalAmount": "Итого"
+    },
+    "summaryLine": "Итого: {{count}} позиций",
+    "emptyState": "По выбранным фильтрам остатки не найдены",
+    "unknownProduct": "Неизвестный товар",
+    "baseVariant": "Основная вариация",
+    "allWarehouses": "Все склады"
+  }
+}

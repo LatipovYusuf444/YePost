@@ -1,0 +1,21 @@
+{
+  "actions": {
+    "save": "Saqlash",
+    "cancel": "Bekor qilish",
+    "close": "Yopish",
+    "delete": "O'chirish",
+    "edit": "Tahrirlash",
+    "add": "Qo'shish",
+    "search": "Qidirish",
+    "refresh": "Yangilash",
+    "loading": "Yuklanmoqda...",
+    "noData": "Ma'lumot topilmadi",
+    "confirm": "Tasdiqlash",
+    "back": "Orqaga",
+    "yes": "Ha",
+    "no": "Yo'q",
+    "print": "Chop etish",
+    "export": "Eksport",
+    "import": "Import"
+  }
+}

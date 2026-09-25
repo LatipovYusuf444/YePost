@@ -1,0 +1,192 @@
+{
+  "yangiChiqimModal": {
+    "title": "Yangi chiqim",
+    "badge": "YANGI",
+    "docNameTemplate": "Chiqim hujjati #{{number}}",
+    "reasons": {
+      "damage": "Shikastlangan",
+      "expiry": "Muddati o'tgan",
+      "theft": "Yo'qolgan yoki o'g'irlangan",
+      "other": "Boshqa"
+    },
+    "errors": {
+      "close": "Yopish",
+      "reasonRequired": "Chiqim sababini tanlang.",
+      "warehouseRequired": "Omborni tanlang.",
+      "rowsInvalid": "Har bir qatorda mahsulot va to'g'ri miqdorni kiriting.",
+      "duplicateProduct": "Bir mahsulotni bir necha marta kiritmang; miqdorini bitta qatorda yozing.",
+      "exceedsStock": "Chiqim miqdori ombordagi mavjud qoldiqdan oshib ketdi."
+    },
+    "sections": {
+      "about": "Chiqim haqida",
+      "comment": "Kommentariya",
+      "history": "Tarix",
+      "items": "Tovarlar"
+    },
+    "fields": {
+      "docName": "Chiqim nomi",
+      "reason": "Sabab *",
+      "reasonPlaceholder": "Chiqim sababini tanlang",
+      "docDate": "Qachon chiqim qilingan",
+      "responsible": "Mas'ul shaxs",
+      "responsiblePlaceholder": "Mas'ul shaxsni tanlang",
+      "commentPlaceholder": "Izoh yozing..."
+    },
+    "history": {
+      "draftCreated": "Yangi hujjat qoralamasi ochildi"
+    },
+    "items": {
+      "hint": "Tanlangan ombordagi real qoldiqdan chiqim qiling.",
+      "addRow": "Qator qo'shish",
+      "columns": {
+        "number": "№",
+        "product": "Mahsulot",
+        "barcode": "Shtrix kod",
+        "costPrice": "Tan narxi",
+        "quantity": "Soni",
+        "warehouse": "Ombor",
+        "stock": "Qoldiq",
+        "amount": "Summa"
+      },
+      "selectProduct": "Mahsulotni tanlang",
+      "barcodePlaceholder": "Shtrix kod",
+      "unit": "dona",
+      "selectWarehouse": "Omborni tanlang",
+      "warehouseFallback": "Ombor",
+      "removeRowAria": "Qatorni o'chirish",
+      "total": "Umumiy summa"
+    },
+    "footer": {
+      "cancel": "Bekor qilish",
+      "save": "Saqlash",
+      "saveAndConfirm": "Saqlash va tasdiqlash"
+    }
+  },
+  "kochirishYaratishModal": {
+    "title": "Yangi ko'chirma",
+    "badge": "Yangi",
+    "closeAria": "Yopish",
+    "printAria": "Chop etish",
+    "sections": {
+      "about": "Ko'chirma haqida",
+      "comment": "Izoh",
+      "history": "Tarix",
+      "items": "Tovarlar"
+    },
+    "fields": {
+      "sourceWarehouse": "Ombordan *",
+      "sourceWarehousePlaceholder": "Manba omborni tanlang",
+      "destWarehouse": "Omborga *",
+      "destWarehousePlaceholder": "Qabul qiluvchi omborni tanlang",
+      "createdDate": "Yaratilish sanasi",
+      "responsible": "Mas'ul shaxs",
+      "responsiblePlaceholder": "Mas'ul shaxsni tanlang",
+      "commentPlaceholder": "Izoh yozing..."
+    },
+    "history": {
+      "draftCreated": "Yangi hujjat qoralamasi ochildi"
+    },
+    "items": {
+      "addRow": "Qator qo'shish",
+      "columns": {
+        "number": "№",
+        "product": "Mahsulot",
+        "barcode": "Shtrix kod",
+        "price": "Narxi",
+        "quantity": "Soni",
+        "stockAtWarehouse": "Ombordagi qoldiq",
+        "amount": "Summa"
+      },
+      "selectProduct": "Mahsulotni tanlang",
+      "selectWarehouseFirst": "Avval omborni tanlang",
+      "unit": "dona",
+      "removeRowAria": "Qatorni o'chirish",
+      "total": "Umumiy summa"
+    },
+    "errors": {
+      "warehousesRequired": "Manba va qabul qiluvchi omborni tanlang.",
+      "sameWarehouse": "Manba va qabul qiluvchi ombor bir xil bo'lishi mumkin emas.",
+      "rowsInvalid": "Har bir qatorda mahsulot va musbat miqdor kiriting.",
+      "duplicateProduct": "Bir mahsulotni faqat bitta qatorda kiriting.",
+      "exceedsStock": "Ko'chirish miqdori manba ombordagi qoldiqdan oshmasligi kerak."
+    },
+    "footer": {
+      "cancel": "Bekor qilish",
+      "save": "Saqlash",
+      "saveAndSend": "Saqlash va jo'natish"
+    }
+  },
+  "kochirishKorishModal": {
+    "title": "Ko'chirma hujjati #{{number}}",
+    "closeAria": "Yopish",
+    "printAria": "Chop etish",
+    "actions": {
+      "edit": "Tahrirlash",
+      "send": "Jo'natish",
+      "cancel": "Bekor qilish",
+      "receive": "Qabul qilish"
+    },
+    "states": {
+      "loadFailed": "Hujjat ma'lumotlarini olib bo'lmadi.",
+      "noItems": "Mahsulotlar mavjud emas"
+    },
+    "edit": {
+      "title": "Ko'chirmani tahrirlash",
+      "sourceWarehouse": "Ombordan *",
+      "destWarehouse": "Omborga *",
+      "responsible": "Mas'ul shaxs",
+      "productPlaceholder": "Mahsulot *",
+      "addItem": "+ Mahsulot qo'shish",
+      "commentPlaceholder": "Izoh",
+      "cancel": "Bekor qilish",
+      "save": "Saqlash"
+    },
+    "errors": {
+      "warehousesInvalid": "Manba va qabul qiluvchi omborlarni to'g'ri tanlang.",
+      "rowsIncomplete": "Mahsulot va miqdorlarni to'liq kiriting.",
+      "exceedsStock": "Miqdor manba ombordagi mavjud qoldiqdan oshib ketdi."
+    },
+    "view": {
+      "about": "Ko'chirma haqida",
+      "totalAmount": "Umumiy summa",
+      "direction": "Yo'nalish",
+      "movedDate": "Qachon ko'chirilgan",
+      "responsible": "Mas'ul shaxs",
+      "items": "Tovarlar",
+      "unknownWarehouse": "Noma'lum ombor",
+      "unit": "dona",
+      "columns": {
+        "number": "№",
+        "product": "Mahsulot",
+        "barcode": "Shtrix kod",
+        "price": "Narxi",
+        "quantity": "Soni",
+        "amount": "Summa"
+      }
+    }
+  },
+  "xaridlar": {
+    "title": "Kirim",
+    "subtitle": "Omborga tovar kirim qilish hujjatlari.",
+    "createButton": "Yaratish",
+    "searchPlaceholder": "Nomi, yetkazib beruvchi, mas'ul shaxs, sana yoki holati bo'yicha qidirish",
+    "errorClose": "Yopish",
+    "unknownWarehouse": "Noma'lum ombor",
+    "unassigned": "Biriktirilmagan",
+    "defaultDocName": "Kirim hujjati",
+    "columnSettingsAria": "Ko'rinadigan ustunlarni sozlash",
+    "columnSettingsTitle": "Ko'rinadigan ustunlar",
+    "emptyTitle": "Kirim hujjati topilmadi",
+    "emptyHint": "\"Yaratish\" tugmasi orqali yangi kirim qo'shing.",
+    "columns": {
+      "nomi": "Nomi",
+      "yetkazibBeruvchi": "Yetkazib beruvchi",
+      "ombor": "Ombor",
+      "yaratilgan": "Yaratilgan vaqt",
+      "masul": "Mas'ul shaxs",
+      "status": "Status",
+      "ozgartirilgan": "O'zgartirilgan vaqt",
+      "summa": "Summa"
+    }
+  }
+}

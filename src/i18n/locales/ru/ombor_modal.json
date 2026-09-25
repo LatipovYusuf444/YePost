@@ -1,0 +1,192 @@
+{
+  "yangiChiqimModal": {
+    "title": "Новый расход",
+    "badge": "НОВЫЙ",
+    "docNameTemplate": "Расходный документ #{{number}}",
+    "reasons": {
+      "damage": "Повреждён",
+      "expiry": "Истёк срок годности",
+      "theft": "Утерян или украден",
+      "other": "Другое"
+    },
+    "errors": {
+      "close": "Закрыть",
+      "reasonRequired": "Выберите причину расхода.",
+      "warehouseRequired": "Выберите склад.",
+      "rowsInvalid": "Укажите товар и корректное количество в каждой строке.",
+      "duplicateProduct": "Не добавляйте один и тот же товар несколько раз — укажите его количество в одной строке.",
+      "exceedsStock": "Количество расхода превышает остаток на складе."
+    },
+    "sections": {
+      "about": "О расходе",
+      "comment": "Комментарий",
+      "history": "История",
+      "items": "Товары"
+    },
+    "fields": {
+      "docName": "Название расхода",
+      "reason": "Причина *",
+      "reasonPlaceholder": "Выберите причину расхода",
+      "docDate": "Дата оформления расхода",
+      "responsible": "Ответственное лицо",
+      "responsiblePlaceholder": "Выберите ответственное лицо",
+      "commentPlaceholder": "Напишите комментарий..."
+    },
+    "history": {
+      "draftCreated": "Открыт новый черновик документа"
+    },
+    "items": {
+      "hint": "Оформляйте расход по фактическому остатку на выбранном складе.",
+      "addRow": "Добавить строку",
+      "columns": {
+        "number": "№",
+        "product": "Товар",
+        "barcode": "Штрих-код",
+        "costPrice": "Себестоимость",
+        "quantity": "Количество",
+        "warehouse": "Склад",
+        "stock": "Остаток",
+        "amount": "Сумма"
+      },
+      "selectProduct": "Выберите товар",
+      "barcodePlaceholder": "Штрих-код",
+      "unit": "шт.",
+      "selectWarehouse": "Выберите склад",
+      "warehouseFallback": "Склад",
+      "removeRowAria": "Удалить строку",
+      "total": "Итоговая сумма"
+    },
+    "footer": {
+      "cancel": "Отмена",
+      "save": "Сохранить",
+      "saveAndConfirm": "Сохранить и подтвердить"
+    }
+  },
+  "kochirishYaratishModal": {
+    "title": "Новое перемещение",
+    "badge": "Новое",
+    "closeAria": "Закрыть",
+    "printAria": "Печать",
+    "sections": {
+      "about": "О перемещении",
+      "comment": "Комментарий",
+      "history": "История",
+      "items": "Товары"
+    },
+    "fields": {
+      "sourceWarehouse": "Со склада *",
+      "sourceWarehousePlaceholder": "Выберите склад-источник",
+      "destWarehouse": "На склад *",
+      "destWarehousePlaceholder": "Выберите склад-получатель",
+      "createdDate": "Дата создания",
+      "responsible": "Ответственное лицо",
+      "responsiblePlaceholder": "Выберите ответственное лицо",
+      "commentPlaceholder": "Напишите комментарий..."
+    },
+    "history": {
+      "draftCreated": "Открыт новый черновик документа"
+    },
+    "items": {
+      "addRow": "Добавить строку",
+      "columns": {
+        "number": "№",
+        "product": "Товар",
+        "barcode": "Штрих-код",
+        "price": "Цена",
+        "quantity": "Количество",
+        "stockAtWarehouse": "Остаток на складе",
+        "amount": "Сумма"
+      },
+      "selectProduct": "Выберите товар",
+      "selectWarehouseFirst": "Сначала выберите склад",
+      "unit": "шт.",
+      "removeRowAria": "Удалить строку",
+      "total": "Итоговая сумма"
+    },
+    "errors": {
+      "warehousesRequired": "Выберите склад-источник и склад-получатель.",
+      "sameWarehouse": "Склад-источник и склад-получатель не могут совпадать.",
+      "rowsInvalid": "Укажите товар и положительное количество в каждой строке.",
+      "duplicateProduct": "Указывайте один товар только в одной строке.",
+      "exceedsStock": "Количество перемещения не должно превышать остаток на складе-источнике."
+    },
+    "footer": {
+      "cancel": "Отмена",
+      "save": "Сохранить",
+      "saveAndSend": "Сохранить и отправить"
+    }
+  },
+  "kochirishKorishModal": {
+    "title": "Документ перемещения #{{number}}",
+    "closeAria": "Закрыть",
+    "printAria": "Печать",
+    "actions": {
+      "edit": "Редактировать",
+      "send": "Отправить",
+      "cancel": "Отменить",
+      "receive": "Принять"
+    },
+    "states": {
+      "loadFailed": "Не удалось загрузить данные документа.",
+      "noItems": "Товары отсутствуют"
+    },
+    "edit": {
+      "title": "Редактирование перемещения",
+      "sourceWarehouse": "Со склада *",
+      "destWarehouse": "На склад *",
+      "responsible": "Ответственное лицо",
+      "productPlaceholder": "Товар *",
+      "addItem": "+ Добавить товар",
+      "commentPlaceholder": "Комментарий",
+      "cancel": "Отмена",
+      "save": "Сохранить"
+    },
+    "errors": {
+      "warehousesInvalid": "Правильно выберите склад-источник и склад-получатель.",
+      "rowsIncomplete": "Полностью укажите товары и количества.",
+      "exceedsStock": "Количество превышает доступный остаток на складе-источнике."
+    },
+    "view": {
+      "about": "О перемещении",
+      "totalAmount": "Итоговая сумма",
+      "direction": "Направление",
+      "movedDate": "Дата перемещения",
+      "responsible": "Ответственное лицо",
+      "items": "Товары",
+      "unknownWarehouse": "Неизвестный склад",
+      "unit": "шт.",
+      "columns": {
+        "number": "№",
+        "product": "Товар",
+        "barcode": "Штрих-код",
+        "price": "Цена",
+        "quantity": "Количество",
+        "amount": "Сумма"
+      }
+    }
+  },
+  "xaridlar": {
+    "title": "Приход",
+    "subtitle": "Документы прихода товара на склад.",
+    "createButton": "Создать",
+    "searchPlaceholder": "Поиск по названию, поставщику, ответственному лицу, дате или статусу",
+    "errorClose": "Закрыть",
+    "unknownWarehouse": "Неизвестный склад",
+    "unassigned": "Не назначен",
+    "defaultDocName": "Приходный документ",
+    "columnSettingsAria": "Настроить видимые столбцы",
+    "columnSettingsTitle": "Видимые столбцы",
+    "emptyTitle": "Приходные документы не найдены",
+    "emptyHint": "Добавьте новый приход с помощью кнопки «Создать».",
+    "columns": {
+      "nomi": "Название",
+      "yetkazibBeruvchi": "Поставщик",
+      "ombor": "Склад",
+      "yaratilgan": "Дата создания",
+      "masul": "Ответственное лицо",
+      "status": "Статус",
+      "ozgartirilgan": "Дата изменения",
+      "summa": "Сумма"
+    }
+  }
+}

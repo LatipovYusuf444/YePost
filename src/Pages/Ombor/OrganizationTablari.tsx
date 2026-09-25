@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 export type OrganizationTab = "kompaniyalar" | "filiallar" | "omborlar";
 
 type Props = {
@@ -5,13 +7,14 @@ type Props = {
   onTab: (tab: OrganizationTab) => void;
 };
 
-const tablar: Array<{ id: OrganizationTab; nom: string }> = [
-  { id: "kompaniyalar", nom: "Kompaniyalar" },
-  { id: "filiallar", nom: "Filiallar" },
-  { id: "omborlar", nom: "Omborlar" },
+const tablar: Array<{ id: OrganizationTab; nomKaliti: string }> = [
+  { id: "kompaniyalar", nomKaliti: "organizationTablari.tabs.kompaniyalar" },
+  { id: "filiallar", nomKaliti: "organizationTablari.tabs.filiallar" },
+  { id: "omborlar", nomKaliti: "organizationTablari.tabs.omborlar" },
 ];
 
 export default function OrganizationTablari({ faolTab, onTab }: Props) {
+  const { t } = useTranslation("ombor_kichik");
   return (
     <div className="flex gap-2 overflow-x-auto rounded-2xl border border-orange-100 bg-white p-2 shadow-sm">
       {tablar.map((tab) => (
@@ -24,7 +27,7 @@ export default function OrganizationTablari({ faolTab, onTab }: Props) {
               : "text-gray-500 hover:bg-orange-50 hover:text-orange-600"
           }`}
         >
-          {tab.nom}
+          {t(tab.nomKaliti)}
         </button>
       ))}
     </div>

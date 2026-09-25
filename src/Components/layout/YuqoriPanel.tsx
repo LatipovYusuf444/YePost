@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "motion/react";
 import { Bell, ChevronDown, LoaderCircle, LogOut, Menu, Minus, PackagePlus, Plus, RefreshCw, Search, Settings, ShoppingCart, UserRound, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import LanguageSwitcher from "@/Components/common/LanguageSwitcher";
 import { crmApi } from "@/api/crmApi";
 import {
   katalogModifikatsiyalariniQoldiqTanlovigaOlish,
@@ -14,14 +16,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import type { Bildirishnoma } from "@/types/crm";
 import type { OmborTanlovi, QoldiqTanlovi } from "@/types/savdo";
-import type { FoydalanuvchiRoli, JoriyFoydalanuvchi } from "@/types/tenant";
-
-const rolMatni: Record<FoydalanuvchiRoli, string> = {
-  DIREKTOR: "Direktor",
-  ADMIN: "Administrator",
-  KASSIR: "Kassir",
-  OMBORCHI: "Omborchi",
-};
+import type { JoriyFoydalanuvchi } from "@/types/tenant";
 
 export default function YuqoriPanel({
   sidebarAcik,
@@ -30,6 +25,7 @@ export default function YuqoriPanel({
   sidebarAcik: boolean;
   onSidebarToggle: () => void;
 }) {
+  const { t } = useTranslation("topbar");
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [bildirishnomalar, setBildirishnomalar] = useState<Bildirishnoma[]>([]);
@@ -100,7 +96,7 @@ export default function YuqoriPanel({
         <button
           type="button"
           onClick={onSidebarToggle}
-          aria-label={sidebarAcik ? "Yon panelni yopish" : "Yon panelni ochish"}
+          aria-label={sidebarAcik ? t("sidebarClose") : t("sidebarOpen")}
           aria-expanded={sidebarAcik}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
         >
@@ -109,7 +105,7 @@ export default function YuqoriPanel({
         <div className="flex h-13 flex-1 items-center rounded-[18px] border border-gold-200/60 bg-white/75 px-5 shadow-gold-soft transition focus-within:border-gold-400 focus-within:shadow-[0_0_0_4px_rgba(37,99,235,0.10)]">
           <Search size={18} className="mr-3 shrink-0 text-[#94A3B8]" />
           <input
-            placeholder="Qidirish..."
+            placeholder={t("searchPlaceholder")}
             className="min-w-0 flex-1 bg-transparent text-sm text-[#0F172A] outline-none placeholder:text-[#94A3B8]"
           />
         </div>
@@ -117,10 +113,11 @@ export default function YuqoriPanel({
           type="button"
           onClick={() => setMahsulotModalOchiq(true)}
           className="flex h-13 w-13 items-center justify-center rounded-2xl border border-gold-200/60 bg-white text-[#0F172A] shadow-gold-soft transition-all duration-200 hover:-translate-y-0.5 hover:border-gold-300 hover:bg-gold-100 hover:text-gold-600 hover:shadow-gold-medium active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2"
-          aria-label="Mahsulot qo'shish"
+          aria-label={t("addProduct")}
         >
           <PackagePlus size={20} />
         </button>
+        <LanguageSwitcher variant="light" />
         <BildirishnomaTugmasi
           ochiq={bildirishnomaOchiq}
           setOchiq={setBildirishnomaOchiq}
@@ -154,13 +151,14 @@ export default function YuqoriPanel({
       <button
         type="button"
         onClick={onSidebarToggle}
-        aria-label={sidebarAcik ? "Yon panelni yopish" : "Yon panelni ochish"}
+        aria-label={sidebarAcik ? t("sidebarClose") : t("sidebarOpen")}
         aria-expanded={sidebarAcik}
         className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
       >
         <Menu size={20} />
       </button>
       <div className="flex items-center gap-2">
+        <LanguageSwitcher variant="light" />
         <BildirishnomaTugmasi
         ochiq={bildirishnomaOchiq}
         setOchiq={setBildirishnomaOchiq}
@@ -247,6 +245,7 @@ function qoldiqBirlashtirish(omborQoldiq: QoldiqTanlovi[], katalog: QoldiqTanlov
 }
 
 function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation("topbar");
   const addToCart = usePosStore((state) => state.addToCart);
   const cart = usePosStore((state) => state.cart);
   const [omborlar, setOmborlar] = useState<OmborTanlovi[]>([]);
@@ -272,7 +271,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
         setOmborlar(warehouses);
         setWarehouseId(String(warehouses[0]?.id ?? ""));
       } catch {
-        if (active) setXabar("Omborlar ro'yxati olinmadi");
+        if (active) setXabar("posModal.errors.warehousesLoadFailed");
       } finally {
         if (active) setYuklanmoqda(false);
       }
@@ -306,11 +305,11 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
 
       setMahsulotlar(qoldiqBirlashtirish(stock, catalog));
       if (stockResult.status === "rejected" && catalogResult.status === "rejected") {
-        setXabar("Mahsulot qoldiqlari olinmadi");
+        setXabar("posModal.errors.stockLoadFailed");
       } else if (stockResult.status === "rejected") {
-        setXabar("Tanlangan ombor qoldig'i backenddan olinmadi");
+        setXabar("posModal.errors.warehouseStockLoadFailed");
       } else if (catalogResult.status === "rejected") {
-        setXabar("Katalog olinmadi, ombordagi mavjud qoldiqlar ko'rsatildi");
+        setXabar("posModal.errors.catalogLoadFailed");
       }
 
       setYuklanmoqda(false);
@@ -350,12 +349,12 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
     const narx = qoldiqNarxi(item, narxTuri);
 
     if (qoldiq <= 0) {
-      setXabar("Bu mahsulot bo'yicha qoldiq yo'q");
+      setXabar("posModal.errors.noStock");
       return;
     }
 
     if (narx <= 0) {
-      setXabar("Bu mahsulot narxi backendda kiritilmagan");
+      setXabar("posModal.errors.noPrice");
       return;
     }
 
@@ -381,7 +380,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
       (item) => item.warehouseId && String(item.warehouseId) !== warehouseId
     );
     if (boshqaOmborBor) {
-      setXabar("Savatchada boshqa ombor mahsuloti bor. Bitta sotuv faqat bitta ombordan qilinadi.");
+      setXabar("posModal.errors.mixedWarehouse");
       return;
     }
     tanlanganlar.forEach((item) => {
@@ -409,7 +408,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
             type="button"
             onClick={onClose}
             className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gold-500 text-white shadow-lg shadow-gold-200 transition hover:bg-gold-600"
-            aria-label="Yopish"
+            aria-label={t("posModal.closeAria")}
           >
             <X size={24} />
           </button>
@@ -417,7 +416,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
             type="button"
             onClick={() => setReloadKey((value) => value + 1)}
             className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-gold-500 shadow-md ring-1 ring-gold-100 transition hover:bg-gold-50"
-            aria-label="Yangilash"
+            aria-label={t("posModal.refreshAria")}
           >
             <RefreshCw size={22} className={yuklanmoqda ? "animate-spin" : ""} />
           </button>
@@ -425,14 +424,14 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
             type="button"
             onClick={() => setQidiruv("")}
             className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-gold-500 shadow-md ring-1 ring-gold-100 transition hover:bg-gold-50"
-            aria-label="Qidiruvni tozalash"
+            aria-label={t("posModal.clearSearchAria")}
           >
             <Search size={22} />
           </button>
           <button
             type="button"
             className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-gold-500 shadow-md ring-1 ring-gold-100"
-            aria-label="Mahsulotlar"
+            aria-label={t("posModal.productsAria")}
           >
             <PackagePlus size={22} />
           </button>
@@ -442,13 +441,13 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-between border-b border-gold-50 bg-[#F8FAFC] px-7 py-6">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.22em] text-gold-500">YePost</p>
-            <h2 className="mt-1 text-2xl font-black text-slate-950">Mahsulot tanlash</h2>
+            <h2 className="mt-1 text-2xl font-black text-slate-950">{t("posModal.title")}</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm ring-1 ring-gold-100 transition hover:bg-gold-500 hover:text-white"
-            aria-label="Yopish"
+            aria-label={t("posModal.closeAria")}
           >
             <X size={22} />
           </button>
@@ -460,7 +459,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
             <input
               value={qidiruv}
               onChange={(event) => setQidiruv(event.target.value)}
-              placeholder="Mahsulot, shtrix-kod yoki artikul..."
+              placeholder={t("posModal.searchPlaceholder")}
               className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none placeholder:text-slate-400"
             />
           </label>
@@ -474,7 +473,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
               }`}
             >
               <span className={tanlanganOmbor ? "text-slate-700" : "text-slate-400"}>
-                {tanlanganOmbor ? nomniOlish(tanlanganOmbor) : "Omborni tanlang"}
+                {tanlanganOmbor ? nomniOlish(tanlanganOmbor) : t("posModal.selectWarehouse")}
               </span>
               <ChevronDown
                 size={18}
@@ -486,7 +485,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
               <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[260] max-h-72 overflow-auto rounded-2xl border border-gold-100 bg-white p-2 shadow-[0_18px_55px_rgba(15,23,42,.18)]">
                 {omborlar.length === 0 ? (
                   <div className="rounded-xl px-3 py-3 text-sm font-bold text-slate-400">
-                    Ombor topilmadi
+                    {t("posModal.warehouseNotFound")}
                   </div>
                 ) : (
                   omborlar.map((ombor) => {
@@ -522,7 +521,7 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
                 narxTuri === "chakana" ? "bg-gold-500 text-white shadow-sm" : "text-slate-500"
               }`}
             >
-              Chakana
+              {t("posModal.retail")}
             </button>
             <button
               type="button"
@@ -531,14 +530,14 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
                 narxTuri === "ulgurji" ? "bg-gold-500 text-white shadow-sm" : "text-slate-500"
               }`}
             >
-              Ulgurji
+              {t("posModal.wholesale")}
             </button>
           </div>
         </div>
 
         {xabar && (
           <div className="mx-7 mt-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
-            {xabar}
+            {t(xabar)}
           </div>
         )}
 
@@ -546,11 +545,11 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
           {yuklanmoqda ? (
             <div className="flex h-full min-h-[360px] items-center justify-center text-slate-500">
               <LoaderCircle className="mr-2 animate-spin text-gold-500" size={24} />
-              Mahsulotlar yuklanmoqda...
+              {t("posModal.loading")}
             </div>
           ) : filteredProducts.length === 0 ? (
             <div className="flex h-full min-h-[360px] items-center justify-center rounded-[26px] border border-dashed border-slate-200 text-center text-sm font-semibold text-slate-400">
-              Tanlangan omborda sotuv uchun mavjud mahsulot yo'q
+              {t("posModal.noProducts")}
             </div>
           ) : (
             <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
@@ -572,38 +571,38 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
                           {qoldiqNomi(item)}
                         </h3>
                         <p className="mt-1 text-xs font-semibold text-slate-400">
-                          {item.modification?.barcode || item.modification?.article || "Kod kiritilmagan"}
+                          {item.modification?.barcode || item.modification?.article || t("posModal.noCode")}
                         </p>
                       </div>
                       <div className={`flex shrink-0 items-center rounded-2xl p-1 ${tanlanganMiqdorlar[item.modificationId] ? "bg-gold-500 text-white shadow-lg shadow-gold-100" : "bg-slate-100 text-slate-500"}`}>
                         {tanlanganMiqdorlar[item.modificationId] ? (
                           <>
-                            <button type="button" onClick={() => miqdorniYangilash(item, -1)} className="flex h-8 w-8 items-center justify-center rounded-xl hover:bg-white/15" aria-label="Kamaytirish"><Minus size={16}/></button>
+                            <button type="button" onClick={() => miqdorniYangilash(item, -1)} className="flex h-8 w-8 items-center justify-center rounded-xl hover:bg-white/15" aria-label={t("posModal.decreaseAria")}><Minus size={16}/></button>
                             <span className="min-w-9 text-center text-sm font-black">{tanlanganMiqdorlar[item.modificationId]}</span>
-                            <button type="button" onClick={() => miqdorniYangilash(item, 1)} disabled={!sotishMumkin || tanlanganMiqdorlar[item.modificationId] >= qoldiq} className="flex h-8 w-8 items-center justify-center rounded-xl hover:bg-white/15 disabled:opacity-40" aria-label="Ko'paytirish"><Plus size={16}/></button>
+                            <button type="button" onClick={() => miqdorniYangilash(item, 1)} disabled={!sotishMumkin || tanlanganMiqdorlar[item.modificationId] >= qoldiq} className="flex h-8 w-8 items-center justify-center rounded-xl hover:bg-white/15 disabled:opacity-40" aria-label={t("posModal.increaseAria")}><Plus size={16}/></button>
                           </>
                         ) : (
-                          <button type="button" onClick={() => miqdorniYangilash(item, 1)} disabled={!sotishMumkin} className="flex h-9 w-9 items-center justify-center rounded-xl bg-gold-500 text-white disabled:bg-slate-200 disabled:text-slate-400" aria-label="Tanlash"><Plus size={19}/></button>
+                          <button type="button" onClick={() => miqdorniYangilash(item, 1)} disabled={!sotishMumkin} className="flex h-9 w-9 items-center justify-center rounded-xl bg-gold-500 text-white disabled:bg-slate-200 disabled:text-slate-400" aria-label={t("posModal.selectAria")}><Plus size={19}/></button>
                         )}
                       </div>
                     </div>
 
                     <div className="mt-4 grid grid-cols-2 gap-2">
                       <div className="rounded-2xl bg-slate-50 px-3 py-3">
-                        <p className="text-[11px] font-black uppercase text-slate-400">Qoldiq</p>
+                        <p className="text-[11px] font-black uppercase text-slate-400">{t("posModal.stock")}</p>
                         <p className={`mt-1 text-base font-black ${qoldiq > 0 ? "text-slate-800" : "text-red-500"}`}>
                           {qoldiq.toLocaleString("uz-UZ")}
                         </p>
                       </div>
                       <div className="rounded-2xl bg-gold-50 px-3 py-3">
-                        <p className="text-[11px] font-black uppercase text-gold-400">Narx</p>
+                        <p className="text-[11px] font-black uppercase text-gold-400">{t("posModal.price")}</p>
                         <p className="mt-1 text-base font-black text-gold-600">{formatSumma(narx)}</p>
                       </div>
                     </div>
 
                     {!sotishMumkin && (
                       <p className="mt-3 rounded-2xl bg-red-50 px-3 py-2 text-xs font-bold text-red-500">
-                        {qoldiq <= 0 ? "Bu omborda qoldiq yo'q" : "Narx kiritilmagan"}
+                        {qoldiq <= 0 ? t("posModal.noStock") : t("posModal.noPrice")}
                       </p>
                     )}
                   </article>
@@ -615,9 +614,9 @@ function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
         <footer className="flex flex-col gap-4 border-t border-gold-100 bg-[#F8FAFC] px-7 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gold-100 text-gold-600"><ShoppingCart size={22}/></span>
-            <div><p className="text-xs font-black uppercase tracking-wide text-slate-400">Tanlangan mahsulotlar</p><p className="mt-1 font-black text-slate-900">{tanlanganSoni} dona · {formatSumma(tanlanganJami)}</p></div>
+            <div><p className="text-xs font-black uppercase tracking-wide text-slate-400">{t("posModal.selectedProducts")}</p><p className="mt-1 font-black text-slate-900">{tanlanganSoni} {t("posModal.unit")} · {formatSumma(tanlanganJami)}</p></div>
           </div>
-          <button type="button" onClick={savatchagaQoshish} disabled={tanlanganSoni === 0} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-gold-500 px-7 text-sm font-black text-white shadow-lg shadow-gold-200 transition hover:bg-gold-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"><ShoppingCart size={18}/> Savatchaga qo'shish {tanlanganSoni > 0 ? `(${tanlanganSoni})` : ""}</button>
+          <button type="button" onClick={savatchagaQoshish} disabled={tanlanganSoni === 0} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-gold-500 px-7 text-sm font-black text-white shadow-lg shadow-gold-200 transition hover:bg-gold-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"><ShoppingCart size={18}/> {t("posModal.addToCart")} {tanlanganSoni > 0 ? `(${tanlanganSoni})` : ""}</button>
         </footer>
       </section>
       </div>
@@ -645,6 +644,7 @@ function BildirishnomaTugmasi({
   onRead: (id: string) => void;
   onReadAll: () => void;
 }) {
+  const { t } = useTranslation("topbar");
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [position, setPosition] = useState({ top: 0, right: 24 });
 
@@ -686,7 +686,7 @@ function BildirishnomaTugmasi({
           if (!ochiq) onReload();
         }}
         className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-gold-100 bg-white/60 text-gray-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-gold-200 hover:bg-gold-50 hover:text-gold-600 hover:shadow-md active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2"
-        aria-label="Bildirishnomalar"
+        aria-label={t("notifications.aria")}
       >
         <Bell size={18} />
         {oqilmaganSoni > 0 && (
@@ -702,7 +702,7 @@ function BildirishnomaTugmasi({
             <button
               type="button"
               className="fixed inset-0 z-[190] cursor-default bg-transparent"
-              aria-label="Bildirishnomalarni yopish"
+              aria-label={t("notifications.closeAria")}
               onClick={() => setOchiq(false)}
             />
             <div
@@ -711,15 +711,15 @@ function BildirishnomaTugmasi({
             >
           <div className="flex items-center justify-between border-b border-gold-50 px-4 py-3">
             <div>
-              <p className="font-black text-gray-900">Bildirishnomalar</p>
-              <p className="text-xs text-gray-400">{oqilmaganSoni} ta o'qilmagan</p>
+              <p className="font-black text-gray-900">{t("notifications.title")}</p>
+              <p className="text-xs text-gray-400">{t("notifications.unreadCount", { count: oqilmaganSoni })}</p>
             </div>
             <button
               type="button"
               onClick={onReadAll}
               className="rounded-xl bg-gold-50 px-3 py-2 text-xs font-bold text-gold-600"
             >
-              Hammasi o'qildi
+              {t("notifications.markAllRead")}
             </button>
           </div>
 
@@ -730,7 +730,7 @@ function BildirishnomaTugmasi({
               </div>
             ) : items.length === 0 ? (
               <p className="px-4 py-10 text-center text-sm font-medium text-gray-400">
-                Bildirishnomalar yo'q
+                {t("notifications.empty")}
               </p>
             ) : (
               items.map((item) => (
@@ -748,10 +748,10 @@ function BildirishnomaTugmasi({
                     />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-black text-gray-800">
-                        {item.title ?? "Bildirishnoma"}
+                        {item.title ?? t("notifications.defaultTitle")}
                       </p>
                       <p className="mt-1 line-clamp-2 text-xs leading-5 text-gray-500">
-                        {item.text ?? item.message ?? "Yangi CRM hodisasi"}
+                        {item.text ?? item.message ?? t("notifications.defaultMessage")}
                       </p>
                       {item.createdAt && (
                         <p className="mt-1 text-[11px] font-bold text-gold-500">
@@ -785,6 +785,7 @@ function ProfilTugmasi({
   onLogout: () => void;
   bosHarfBilan?: boolean;
 }) {
+  const { t } = useTranslation(["topbar", "nav"]);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [position, setPosition] = useState({ top: 0, right: 24 });
 
@@ -810,7 +811,7 @@ function ProfilTugmasi({
   }, [ochiq]);
 
   const ism = profil?.fullName?.trim() || profil?.username || "";
-  const rolNomi = profil ? rolMatni[profil.role as FoydalanuvchiRoli] ?? profil.role : "";
+  const rolNomi = profil ? t(`roles.${profil.role}`, { ns: "nav", defaultValue: profil.role }) : "";
   const rasmUrl = profil?.avatarUrl || "";
   // Rasm bo'lmasa ism bosh harfi (faqat bosHarfBilan berilgan navbarda); ism yo'q bo'lsa avvalgi ikonka.
   const bosHarf = bosHarfBilan && ism ? ism.charAt(0).toUpperCase() : "";
@@ -822,10 +823,10 @@ function ProfilTugmasi({
         type="button"
         onClick={() => setOchiq(!ochiq)}
         className={`flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2 ${bosHarf ? "border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100" : "border-gray-200 bg-white/60 text-gray-700 hover:border-gold-200 hover:bg-gold-50 hover:text-gold-600"}`}
-        aria-label="Profil menyusi"
+        aria-label={t("profile.menuAria")}
       >
         {rasmUrl ? (
-          <img src={rasmUrl} alt={ism || "Profil"} className="h-full w-full object-cover" />
+          <img src={rasmUrl} alt={ism || t("profile.defaultName")} className="h-full w-full object-cover" />
         ) : bosHarf ? (
           <span className="text-sm font-bold">{bosHarf}</span>
         ) : (
@@ -839,7 +840,7 @@ function ProfilTugmasi({
             <button
               type="button"
               className="fixed inset-0 z-[190] cursor-default bg-transparent"
-              aria-label="Profil menyusini yopish"
+              aria-label={t("profile.closeAria")}
               onClick={() => setOchiq(false)}
             />
             <div
@@ -849,7 +850,7 @@ function ProfilTugmasi({
               <div className="flex items-center gap-3 border-b border-gray-100 bg-gray-50/70 p-4">
                 <span className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border shadow-sm ${bosHarf ? "border-blue-100 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-600"}`}>
                   {rasmUrl ? (
-                    <img src={rasmUrl} alt={ism || "Profil"} className="h-full w-full object-cover" />
+                    <img src={rasmUrl} alt={ism || t("profile.defaultName")} className="h-full w-full object-cover" />
                   ) : bosHarf ? (
                     <span className="text-base font-bold">{bosHarf}</span>
                   ) : (
@@ -857,8 +858,8 @@ function ProfilTugmasi({
                   )}
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate font-black text-slate-900">{ism || "Foydalanuvchi"}</p>
-                  <p className="truncate text-xs font-bold text-gray-500">{rolNomi || "..."}</p>
+                  <p className="truncate font-black text-slate-900">{ism || t("profile.defaultName")}</p>
+                  <p className="truncate text-xs font-bold text-gray-500">{rolNomi || t("profile.unknownRole")}</p>
                 </div>
               </div>
               <div className="p-2">
@@ -867,14 +868,14 @@ function ProfilTugmasi({
                   onClick={() => setOchiq(false)}
                   className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-gold-50 hover:text-gold-600"
                 >
-                  <UserRound size={17} /> Mening profilim
+                  <UserRound size={17} /> {t("profile.myProfile")}
                 </Link>
                 <Link
                   to="/sozlamalar"
                   onClick={() => setOchiq(false)}
                   className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-gold-50 hover:text-gold-600"
                 >
-                  <Settings size={17} /> Sozlamalar
+                  <Settings size={17} /> {t("profile.settings")}
                 </Link>
               </div>
               <div className="border-t border-gold-100 p-2">
@@ -886,7 +887,7 @@ function ProfilTugmasi({
                   }}
                   className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold text-red-500 transition hover:bg-red-50"
                 >
-                  <LogOut size={17} /> Tizimdan chiqish
+                  <LogOut size={17} /> {t("profile.logout")}
                 </button>
               </div>
             </div>

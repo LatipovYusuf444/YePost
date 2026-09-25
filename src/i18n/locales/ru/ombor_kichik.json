@@ -1,0 +1,180 @@
+{
+  "filiallarBoshqaruvi": {
+    "confirmDelete": "Выполнить мягкое удаление филиала?",
+    "eyebrow": "Управление филиалами",
+    "title": "Филиалы",
+    "addButton": "Добавить филиал",
+    "statusActive": "Активен",
+    "statusInactive": "Неактивен",
+    "noAddress": "Адрес не указан",
+    "responsibleLabel": "Ответственный:",
+    "unassigned": "Не назначен",
+    "editButton": "Редактировать",
+    "empty": "Филиалов нет",
+    "modalEditTitle": "Редактирование филиала",
+    "modalNewTitle": "Новый филиал",
+    "namePlaceholder": "Название филиала *",
+    "addressPlaceholder": "Адрес",
+    "responsiblePlaceholder": "Ответственный не назначен",
+    "closeButton": "Закрыть",
+    "saveButton": "Сохранить"
+  },
+  "inventoryDocumentActivity": {
+    "system": "Система",
+    "history": {
+      "title": "История",
+      "empty": "История отсутствует",
+      "actions": {
+        "CREATED": "Документ создан",
+        "UPDATED": "Документ обновлён",
+        "CONFIRMED": "Документ подтверждён",
+        "CANCELLED": "Документ отменён",
+        "SENT": "Документ отправлен",
+        "RECEIVED": "Документ получен",
+        "COMMENT_ADDED": "Комментарий добавлен",
+        "COMMENT_UPDATED": "Комментарий обновлён",
+        "COMMENT_DELETED": "Комментарий удалён",
+        "ATTACHMENT_UPLOADED": "Файл загружен",
+        "ATTACHMENT_DELETED": "Файл удалён"
+      },
+      "fields": {
+        "product": "Товар ",
+        "actualQuantity": "фактическое количество",
+        "quantity": "количество",
+        "price": "цена"
+      },
+      "added": "{{field}} добавлено: {{value}}",
+      "removed": "{{field}} удалено",
+      "changed": "{{field}}: {{oldValue}} → {{newValue}}"
+    },
+    "comments": {
+      "title": "Комментарии",
+      "placeholder": "Напишите комментарий...",
+      "empty": "Комментариев нет",
+      "confirmDelete": "Удалить комментарий?"
+    },
+    "attachments": {
+      "title": "Прикреплённые файлы",
+      "uploadButton": "Загрузить файл",
+      "empty": "Файлов нет",
+      "confirmDelete": "Удалить файл?"
+    },
+    "errors": {
+      "maxSize": "Размер файла не должен превышать 10 МБ.",
+      "invalidFormat": "Этот формат файла не разрешён."
+    },
+    "units": {
+      "mb": "МБ",
+      "kb": "КБ"
+    }
+  },
+  "organizationTablari": {
+    "tabs": {
+      "kompaniyalar": "Компании",
+      "filiallar": "Филиалы",
+      "omborlar": "Склады"
+    }
+  },
+  "kopTanlov": {
+    "searchPlaceholder": "Поиск",
+    "addButton": "Добавить",
+    "removeAria": "Убрать {{label}}",
+    "notFound": "Не найдено"
+  },
+  "kompaniyalar": {
+    "confirmDelete": "Выполнить мягкое удаление компании?",
+    "eyebrow": "Управление организацией",
+    "title": "Компании",
+    "addButton": "Добавить компанию",
+    "innLabel": "ИНН:",
+    "phoneLabel": "Телефон:",
+    "addressLabel": "Адрес:",
+    "editButton": "Редактировать",
+    "empty": "Компаний нет",
+    "modalEditTitle": "Редактирование компании",
+    "modalNewTitle": "Новая компания",
+    "namePlaceholder": "Название компании *",
+    "innPlaceholder": "ИНН",
+    "phonePlaceholder": "+998...",
+    "addressPlaceholder": "Адрес",
+    "closeButton": "Закрыть",
+    "saveButton": "Сохранить"
+  },
+  "kirimTafsilotModal": {
+    "title": "Приходный документ",
+    "titleWithNumber": "Приходный документ {{number}}",
+    "confirmButton": "Подтвердить",
+    "cancelButton": "Отменить",
+    "loadError": "Не удалось получить приходный документ с сервера.",
+    "closeButton": "Закрыть",
+    "aboutSection": "О приходе",
+    "totalAmount": "Общая сумма",
+    "nameLabel": "Название прихода",
+    "supplierLabel": "Поставщик",
+    "warehouseLabel": "Склад",
+    "dateLabel": "Дата прихода",
+    "responsibleLabel": "Ответственное лицо",
+    "unassigned": "Не назначен",
+    "itemsSection": "Товары",
+    "table": {
+      "number": "№",
+      "product": "Товар",
+      "barcode": "Штрих-код",
+      "costPrice": "Себестоимость",
+      "retailPrice": "Розничная цена",
+      "wholesalePrice": "Оптовая цена",
+      "quantity": "Количество",
+      "warehouse": "Склад",
+      "amount": "Сумма"
+    },
+    "emptyItems": "В документе нет товаров.",
+    "cancelConfirm": {
+      "title": "Отменить приход?",
+      "description": "При отмене подтверждённого прихода остаток склада будет пересчитан на сервере.",
+      "no": "Нет",
+      "yes": "Да, отменить"
+    }
+  },
+  "chiqimTafsilotModal": {
+    "reasons": {
+      "damage": "Повреждён",
+      "expiry": "Истёк срок годности",
+      "theft": "Утерян или украден",
+      "other": "Другое"
+    },
+    "title": "Расходный документ",
+    "titleWithNumber": "Расходный документ {{number}}",
+    "confirmButton": "Подтвердить",
+    "cancelButton": "Отменить",
+    "loadError": "Не удалось получить данные расходного документа.",
+    "closeButton": "Закрыть",
+    "aboutSection": "О расходе",
+    "totalAmount": "Общая сумма",
+    "reasonLabel": "Причина",
+    "dateLabel": "Дата расхода",
+    "responsibleLabel": "Ответственное лицо",
+    "warehouseLabel": "Склад",
+    "unassigned": "Не назначен",
+    "itemsSection": "Товары",
+    "table": {
+      "number": "№",
+      "product": "Товар",
+      "barcode": "Штрих-код",
+      "costPrice": "Себестоимость",
+      "quantity": "Количество",
+      "warehouse": "Склад",
+      "amount": "Сумма"
+    },
+    "emptyItems": "В документе нет товаров.",
+    "cancelConfirm": {
+      "title": "Отменить расход?",
+      "description": "Подтверждённый документ будет отменён, остаток склада будет восстановлен на сервере.",
+      "no": "Нет",
+      "yes": "Да, отменить"
+    }
+  },
+  "omborJadval": {
+    "scrollLeftAria": "Прокрутить таблицу влево",
+    "scrollRightAria": "Прокрутить таблицу вправо"
+  }
+}

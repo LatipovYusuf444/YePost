@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import { useTranslation } from "react-i18next";
 import { useOmborStore } from "@/store/omborStore";
 import type { KochirishHujjati, MahsulotModifikatsiyasi, NomliEntity } from "@/types/ombor";
 import { holat, hujjatRaqami, modificationNomi, pul, qoldiqMiqdori } from "./omborYordamchilari";
@@ -69,6 +70,7 @@ function statusKlasi(value: string) {
 }
 
 export default function KochirishKorishModal({ id, onClose }: Props) {
+  const { t } = useTranslation("ombor_modal");
   const store = useOmborStore();
   const [hujjat, setHujjat] = useState<KochirishHujjati | null>(null);
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
@@ -125,11 +127,11 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
   const manbaNomi =
     hujjat?.sourceWarehouse?.name ??
     store.omborlar.find((ombor) => ombor.id === hujjat?.sourceWarehouseId)?.name ??
-    "Noma'lum ombor";
+    t("kochirishKorishModal.view.unknownWarehouse");
   const qabulNomi =
     hujjat?.destWarehouse?.name ??
     store.omborlar.find((ombor) => ombor.id === hujjat?.destWarehouseId)?.name ??
-    "Noma'lum ombor";
+    t("kochirishKorishModal.view.unknownWarehouse");
   const masulObyekti = hujjat?.responsible ?? hujjat?.createdBy;
   const masulRoyxatdan = store.xodimlar.find(
     (xodim) =>
@@ -180,11 +182,11 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
   async function saqlash() {
     const tozaItems = items.filter((item) => item.modificationId && item.quantity > 0);
     if (!sourceWarehouseId || !destWarehouseId || sourceWarehouseId === destWarehouseId) {
-      setXato("Manba va qabul qiluvchi omborlarni to'g'ri tanlang.");
+      setXato("kochirishKorishModal.errors.warehousesInvalid");
       return;
     }
     if (!tozaItems.length || tozaItems.length !== items.length) {
-      setXato("Mahsulot va miqdorlarni to'liq kiriting.");
+      setXato("kochirishKorishModal.errors.rowsIncomplete");
       return;
     }
     const ortiqcha = tozaItems.some((item) => {
@@ -193,7 +195,7 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
       return qoldiq && item.quantity > qoldiqMiqdori(qoldiq) + Number(avvalgi?.quantity ?? 0);
     });
     if (ortiqcha) {
-      setXato("Miqdor manba ombordagi mavjud qoldiqdan oshib ketdi.");
+      setXato("kochirishKorishModal.errors.exceedsStock");
       return;
     }
     const ok = await store.kochirishYangilash(id, {
@@ -212,10 +214,10 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
     <AppModal className="items-start justify-start overflow-hidden bg-slate-950/60 p-0 py-4 pl-[92px] pr-4 backdrop-blur-[3px]">
       <div className="relative h-[calc(100dvh-32px)] w-full">
         <aside className="absolute -left-[58px] top-6 z-30 flex flex-col items-center gap-3">
-          <button type="button" onClick={onClose} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#2563EB] text-white shadow-xl ring-1 ring-white/80" aria-label="Yopish">
+          <button type="button" onClick={onClose} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#2563EB] text-white shadow-xl ring-1 ring-white/80" aria-label={t("kochirishKorishModal.closeAria")}>
             <X size={21} />
           </button>
-          <button type="button" onClick={() => window.print()} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#2563EB] shadow-lg ring-1 ring-orange-100" aria-label="Chop etish">
+          <button type="button" onClick={() => window.print()} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#2563EB] shadow-lg ring-1 ring-orange-100" aria-label={t("kochirishKorishModal.printAria")}>
             <Printer size={18} />
           </button>
         </aside>
@@ -224,7 +226,7 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
           <header className="sticky top-0 z-20 flex min-h-[92px] items-center justify-between gap-4 border-b border-orange-100 bg-[#F8FAFC]/95 px-8 py-4 backdrop-blur-xl">
             <div className="flex min-w-0 flex-wrap items-center gap-4">
               <h2 className="truncate text-3xl font-black tracking-tight text-slate-950 sm:text-[36px]">
-                Ko'chirma hujjati #{hujjat ? hujjatRaqami(hujjat) : "..."}
+                {t("kochirishKorishModal.title", { number: hujjat ? hujjatRaqami(hujjat) : "..." })}
               </h2>
               {hujjat && <span className={`rounded-full px-4 py-1.5 text-xs font-black uppercase ${statusKlasi(joriyStatus)}`}>{holat(joriyStatus)}</span>}
             </div>
@@ -232,19 +234,19 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
               {hujjat && joriyStatus === "DRAFT" && !tahrir && (
                 <>
                   <button type="button" onClick={() => void tahrirlashniOchish()} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-white px-4 font-black text-slate-700 shadow-sm ring-1 ring-slate-200">
-                    <Edit3 size={17} /> Tahrirlash
+                    <Edit3 size={17} /> {t("kochirishKorishModal.actions.edit")}
                   </button>
                   <button type="button" onClick={() => void amalBajarish("send")} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#2563EB] px-5 font-black text-white disabled:opacity-50">
-                    <Send size={17} /> Jo'natish
+                    <Send size={17} /> {t("kochirishKorishModal.actions.send")}
                   </button>
                   <button type="button" onClick={() => void amalBajarish("cancel")} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-slate-700 px-5 font-black text-white disabled:opacity-50">
-                    <Ban size={17} /> Bekor qilish
+                    <Ban size={17} /> {t("kochirishKorishModal.actions.cancel")}
                   </button>
                 </>
               )}
               {hujjat && joriyStatus === "SENT" && (
                 <button type="button" onClick={() => void amalBajarish("receive")} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-emerald-500 px-5 font-black text-white disabled:opacity-50">
-                  <PackageCheck size={18} /> Qabul qilish
+                  <PackageCheck size={18} /> {t("kochirishKorishModal.actions.receive")}
                 </button>
               )}
             </div>
@@ -254,44 +256,44 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
             {yuklanmoqda ? (
               <div className="flex h-full items-center justify-center"><LoaderCircle className="animate-spin text-orange-500" size={36} /></div>
             ) : !hujjat ? (
-              <div className="flex h-full items-center justify-center text-lg font-bold text-slate-500">Hujjat ma'lumotlarini olib bo'lmadi.</div>
+              <div className="flex h-full items-center justify-center text-lg font-bold text-slate-500">{t("kochirishKorishModal.states.loadFailed")}</div>
             ) : tahrir ? (
               <section className="mx-auto max-w-5xl rounded-[28px] border border-orange-100 bg-white p-6 shadow-sm">
-                <h3 className="border-b border-orange-100 pb-4 text-lg font-black text-slate-700">Ko'chirmani tahrirlash</h3>
+                <h3 className="border-b border-orange-100 pb-4 text-lg font-black text-slate-700">{t("kochirishKorishModal.edit.title")}</h3>
                 <div className="mt-5 grid gap-4 md:grid-cols-3">
-                  <AppSelect value={sourceWarehouseId} onChange={(event) => void manbaniAlmashtirish(event.target.value)} className="input"><option value="">Ombordan *</option>{store.omborlar.map((ombor) => <option key={ombor.id} value={ombor.id}>{ombor.name}</option>)}</AppSelect>
-                  <AppSelect value={destWarehouseId} onChange={(event) => setDest(event.target.value)} className="input"><option value="">Omborga *</option>{store.omborlar.filter((ombor) => ombor.id !== sourceWarehouseId).map((ombor) => <option key={ombor.id} value={ombor.id}>{ombor.name}</option>)}</AppSelect>
-                  <AppSelect value={responsibleId} onChange={(event) => setResponsible(event.target.value)} className="input"><option value="">Mas'ul shaxs</option>{store.xodimlar.map((xodim) => <option key={xodim.id} value={xodim.id}>{shaxsNomi(xodim)}</option>)}</AppSelect>
+                  <AppSelect value={sourceWarehouseId} onChange={(event) => void manbaniAlmashtirish(event.target.value)} className="input"><option value="">{t("kochirishKorishModal.edit.sourceWarehouse")}</option>{store.omborlar.map((ombor) => <option key={ombor.id} value={ombor.id}>{ombor.name}</option>)}</AppSelect>
+                  <AppSelect value={destWarehouseId} onChange={(event) => setDest(event.target.value)} className="input"><option value="">{t("kochirishKorishModal.edit.destWarehouse")}</option>{store.omborlar.filter((ombor) => ombor.id !== sourceWarehouseId).map((ombor) => <option key={ombor.id} value={ombor.id}>{ombor.name}</option>)}</AppSelect>
+                  <AppSelect value={responsibleId} onChange={(event) => setResponsible(event.target.value)} className="input"><option value="">{t("kochirishKorishModal.edit.responsible")}</option>{store.xodimlar.map((xodim) => <option key={xodim.id} value={xodim.id}>{shaxsNomi(xodim)}</option>)}</AppSelect>
                 </div>
                 <div className="mt-5 space-y-3">
                   {items.map((item, index) => (
                     <div key={`${item.modificationId}-${index}`} className="grid gap-3 rounded-2xl bg-orange-50/60 p-3 md:grid-cols-[1fr_160px_44px]">
-                      <AppSelect value={item.modificationId} onChange={(event) => setItems((oldingi) => oldingi.map((qator, i) => i === index ? { ...qator, modificationId: event.target.value } : qator))} className="input"><option value="">Mahsulot *</option>{store.qoldiqlar.map((qoldiq) => <option key={`${qoldiq.modificationId}-${qoldiq.id ?? "q"}`} value={qoldiq.modificationId}>{modificationNomi(qoldiq.modification)} — {qoldiqMiqdori(qoldiq)}</option>)}</AppSelect>
+                      <AppSelect value={item.modificationId} onChange={(event) => setItems((oldingi) => oldingi.map((qator, i) => i === index ? { ...qator, modificationId: event.target.value } : qator))} className="input"><option value="">{t("kochirishKorishModal.edit.productPlaceholder")}</option>{store.qoldiqlar.map((qoldiq) => <option key={`${qoldiq.modificationId}-${qoldiq.id ?? "q"}`} value={qoldiq.modificationId}>{modificationNomi(qoldiq.modification)} — {qoldiqMiqdori(qoldiq)}</option>)}</AppSelect>
                       <input type="number" min="0.001" step="0.001" value={item.quantity} onChange={(event) => setItems((oldingi) => oldingi.map((qator, i) => i === index ? { ...qator, quantity: Number(event.target.value) } : qator))} className="input" />
                       <button type="button" disabled={items.length === 1} onClick={() => setItems((oldingi) => oldingi.filter((_, i) => i !== index))} className="flex h-12 items-center justify-center rounded-2xl bg-red-50 text-red-500 disabled:opacity-30"><Trash2 size={17} /></button>
                     </div>
                   ))}
-                  <button type="button" onClick={() => setItems((oldingi) => [...oldingi, { modificationId: "", quantity: 1 }])} className="rounded-xl bg-orange-50 px-4 py-2.5 text-sm font-black text-orange-600">+ Mahsulot qo'shish</button>
+                  <button type="button" onClick={() => setItems((oldingi) => [...oldingi, { modificationId: "", quantity: 1 }])} className="rounded-xl bg-orange-50 px-4 py-2.5 text-sm font-black text-orange-600">{t("kochirishKorishModal.edit.addItem")}</button>
                 </div>
-                <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={3} className="mt-5 w-full rounded-2xl border border-slate-200 p-4 outline-none focus:border-orange-300" placeholder="Izoh" />
-                {(xato || store.xatolik) && <p className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">{xato || store.xatolik}</p>}
+                <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={3} className="mt-5 w-full rounded-2xl border border-slate-200 p-4 outline-none focus:border-orange-300" placeholder={t("kochirishKorishModal.edit.commentPlaceholder")} />
+                {(xato || store.xatolik) && <p className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">{xato ? t(xato) : store.xatolik}</p>}
                 <div className="mt-6 flex justify-end gap-3">
-                  <button type="button" onClick={() => setTahrir(false)} className="h-12 rounded-2xl bg-slate-100 px-6 font-black text-slate-600">Bekor qilish</button>
-                  <button type="button" onClick={() => void saqlash()} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#2563EB] px-6 font-black text-white disabled:opacity-50"><Save size={17} /> Saqlash</button>
+                  <button type="button" onClick={() => setTahrir(false)} className="h-12 rounded-2xl bg-slate-100 px-6 font-black text-slate-600">{t("kochirishKorishModal.edit.cancel")}</button>
+                  <button type="button" onClick={() => void saqlash()} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#2563EB] px-6 font-black text-white disabled:opacity-50"><Save size={17} /> {t("kochirishKorishModal.edit.save")}</button>
                 </div>
               </section>
             ) : (
               <>
-                {(store.xatolik || xato) && <div className="mb-5 rounded-2xl bg-red-50 p-4 font-bold text-red-600">{xato || store.xatolik}</div>}
+                {(store.xatolik || xato) && <div className="mb-5 rounded-2xl bg-red-50 p-4 font-bold text-red-600">{xato ? t(xato) : store.xatolik}</div>}
                 <div className="grid gap-6 xl:grid-cols-2">
                   <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm sm:p-6">
-                    <h3 className="border-b border-orange-100 pb-4 text-base font-black uppercase text-slate-600">Ko'chirma haqida</h3>
+                    <h3 className="border-b border-orange-100 pb-4 text-base font-black uppercase text-slate-600">{t("kochirishKorishModal.view.about")}</h3>
                     <div className="mt-5 flex min-h-48 flex-col justify-center rounded-[24px] bg-gradient-to-br from-[#EFF6FF] to-[#E8EEF7] p-8">
-                      <p className="text-sm font-black uppercase tracking-wide text-[#2563EB]">Umumiy summa</p>
+                      <p className="text-sm font-black uppercase tracking-wide text-[#2563EB]">{t("kochirishKorishModal.view.totalAmount")}</p>
                       <p className="mt-2 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">{pul(jami)}</p>
                     </div>
                     <div className="mt-5">
-                      <p className="text-sm font-bold text-slate-400">Yo'nalish</p>
+                      <p className="text-sm font-bold text-slate-400">{t("kochirishKorishModal.view.direction")}</p>
                       <div className="mt-2 flex flex-wrap items-center gap-3 font-black">
                         <span className="rounded-xl bg-orange-50 px-3 py-2 text-orange-600">{manbaNomi}</span>
                         <ArrowRight size={18} className="text-slate-400" />
@@ -299,8 +301,8 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
                       </div>
                     </div>
                     <div className="mt-6 grid grid-cols-2 gap-5 border-t border-orange-100 pt-5">
-                      <div><p className="text-sm font-bold text-slate-400">Qachon ko'chirilgan</p><p className="mt-1 text-lg font-black text-slate-800">{sana(hujjat.createdAt)}</p></div>
-                      <div><p className="text-sm font-bold text-slate-400">Mas'ul shaxs</p><p className="mt-1 text-lg font-black text-slate-800">{masulNomi}</p></div>
+                      <div><p className="text-sm font-bold text-slate-400">{t("kochirishKorishModal.view.movedDate")}</p><p className="mt-1 text-lg font-black text-slate-800">{sana(hujjat.createdAt)}</p></div>
+                      <div><p className="text-sm font-bold text-slate-400">{t("kochirishKorishModal.view.responsible")}</p><p className="mt-1 text-lg font-black text-slate-800">{masulNomi}</p></div>
                     </div>
                   </section>
 
@@ -308,11 +310,11 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
                 </div>
 
                 <section className="mt-6 rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm sm:p-6">
-                  <div className="flex items-center gap-2 border-b border-orange-100 pb-4"><FileText size={18} className="text-[#2563EB]" /><h3 className="font-black uppercase text-slate-600">Tovarlar</h3></div>
+                  <div className="flex items-center gap-2 border-b border-orange-100 pb-4"><FileText size={18} className="text-[#2563EB]" /><h3 className="font-black uppercase text-slate-600">{t("kochirishKorishModal.view.items")}</h3></div>
                   <div className="mt-5 overflow-x-auto rounded-2xl border border-orange-100">
                     <table className="w-full min-w-[900px] text-left text-sm">
-                      <thead className="bg-[#F8FAFC] text-xs font-black uppercase text-slate-500"><tr><th className="px-4 py-4">в„–</th><th className="px-4 py-4">Mahsulot</th><th className="px-4 py-4">Shtrix kod</th><th className="px-4 py-4">Narxi</th><th className="px-4 py-4">Soni</th><th className="px-4 py-4">Summa</th></tr></thead>
-                      <tbody className="divide-y divide-orange-100">{toliqItems.map(({ item, mod }, index) => { const narx = narxniOlish(item, mod); return <tr key={item.id ?? `${item.modificationId}-${index}`}><td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td><td className="px-4 py-4 font-black text-slate-800">{modificationNomi(mod)}</td><td className="px-4 py-4 text-slate-500">{mod?.barcode ?? "—"}</td><td className="px-4 py-4">{pul(narx)}</td><td className="px-4 py-4">{item.quantity} {item.unit ?? "dona"}</td><td className="px-4 py-4 font-black text-emerald-600">{pul(Number(item.quantity) * narx)}</td></tr>; })}{!toliqItems.length && <tr><td colSpan={6} className="px-5 py-12 text-center font-bold text-slate-400">Mahsulotlar mavjud emas</td></tr>}</tbody>
+                      <thead className="bg-[#F8FAFC] text-xs font-black uppercase text-slate-500"><tr><th className="px-4 py-4">{t("kochirishKorishModal.view.columns.number")}</th><th className="px-4 py-4">{t("kochirishKorishModal.view.columns.product")}</th><th className="px-4 py-4">{t("kochirishKorishModal.view.columns.barcode")}</th><th className="px-4 py-4">{t("kochirishKorishModal.view.columns.price")}</th><th className="px-4 py-4">{t("kochirishKorishModal.view.columns.quantity")}</th><th className="px-4 py-4">{t("kochirishKorishModal.view.columns.amount")}</th></tr></thead>
+                      <tbody className="divide-y divide-orange-100">{toliqItems.map(({ item, mod }, index) => { const narx = narxniOlish(item, mod); return <tr key={item.id ?? `${item.modificationId}-${index}`}><td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td><td className="px-4 py-4 font-black text-slate-800">{modificationNomi(mod)}</td><td className="px-4 py-4 text-slate-500">{mod?.barcode ?? "—"}</td><td className="px-4 py-4">{pul(narx)}</td><td className="px-4 py-4">{item.quantity} {item.unit ?? t("kochirishKorishModal.view.unit")}</td><td className="px-4 py-4 font-black text-emerald-600">{pul(Number(item.quantity) * narx)}</td></tr>; })}{!toliqItems.length && <tr><td colSpan={6} className="px-5 py-12 text-center font-bold text-slate-400">{t("kochirishKorishModal.states.noItems")}</td></tr>}</tbody>
                     </table>
                   </div>
                 </section>

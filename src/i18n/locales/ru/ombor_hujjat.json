@@ -1,0 +1,83 @@
+{
+  "documentTitles": {
+    "kirim": "Приходный документ",
+    "chiqim": "Расходный документ",
+    "kochirish": "Документ перемещения",
+    "inventarizatsiya": "Документ инвентаризации"
+  },
+  "reasons": {
+    "damage": "Повреждён",
+    "expiry": "Истёк срок годности",
+    "theft": "Утерян или украден",
+    "other": "Другое"
+  },
+  "stockTakeType": {
+    "full": "Полная",
+    "partial": "Частичная"
+  },
+  "errors": {
+    "invalidStockTakeQuantity": "Фактическое количество по каждому товару должно быть числом 0 или больше.",
+    "invalidItems": "Правильно укажите товар, количество и цену."
+  },
+  "confirm": {
+    "cancelStockTake": "Отменить подтверждённую инвентаризацию? Остатки склада будут пересчитаны."
+  },
+  "header": {
+    "detailsLabel": "Детали документа",
+    "aboutTitle": "Информация о документе «{{title}}»",
+    "loadError": "Не удалось получить данные документа."
+  },
+  "actions": {
+    "cancel": "Отмена",
+    "send": "Отправить",
+    "receive": "Принять",
+    "edit": "Редактировать",
+    "confirmStockTake": "Подтвердить",
+    "addProduct": "Добавить товар",
+    "saveChanges": "Сохранить изменения"
+  },
+  "view": {
+    "totalAmount": "Общая сумма",
+    "status": "Статус",
+    "createdAt": "Дата создания",
+    "responsible": "Ответственный сотрудник",
+    "unassigned": "Не назначен",
+    "products": "Товары",
+    "productsCount": "{{count}} шт.",
+    "supplier": "Поставщик",
+    "unknownSupplier": "Неизвестный поставщик",
+    "warehouse": "Склад",
+    "unknownWarehouse": "Неизвестный склад",
+    "writeOffReason": "Причина списания",
+    "sourceWarehouse": "Склад-отправитель",
+    "destWarehouse": "Склад-получатель",
+    "stockTakeType": "Тип проверки",
+    "note": "Примечание",
+    "documentTotal": "Сумма документа: {{amount}}"
+  },
+  "table": {
+    "sectionTitle": "Товары",
+    "product": "Товар",
+    "barcode": "Штрих-код",
+    "warehouse": "Склад",
+    "systemQuantity": "Количество в системе",
+    "actualQuantity": "Фактическое количество",
+    "difference": "Разница",
+    "quantity": "Количество",
+    "price": "Цена",
+    "total": "Итого",
+    "empty": "Товары отсутствуют"
+  },
+  "form": {
+    "supplierPlaceholder": "Поставщик *",
+    "warehousePlaceholder": "Склад *",
+    "sourceWarehousePlaceholder": "Склад-отправитель *",
+    "destWarehousePlaceholder": "Склад-получатель *",
+    "responsibleUnassigned": "Ответственный сотрудник не назначен",
+    "productPlaceholder": "Товар *",
+    "quantityPlaceholder": "Количество",
+    "actualQuantityPlaceholder": "Фактическое количество",
+    "costPricePlaceholder": "Себестоимость",
+    "notePlaceholder": "Примечание"
+  }
+}

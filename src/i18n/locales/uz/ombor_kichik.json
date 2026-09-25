@@ -1,0 +1,180 @@
+{
+  "filiallarBoshqaruvi": {
+    "confirmDelete": "Filialni soft delete qilasizmi?",
+    "eyebrow": "Filial boshqaruvi",
+    "title": "Filiallar",
+    "addButton": "Filial qo'shish",
+    "statusActive": "Faol",
+    "statusInactive": "Faol emas",
+    "noAddress": "Manzil kiritilmagan",
+    "responsibleLabel": "Mas'ul:",
+    "unassigned": "Biriktirilmagan",
+    "editButton": "Tahrirlash",
+    "empty": "Filial mavjud emas",
+    "modalEditTitle": "Filialni tahrirlash",
+    "modalNewTitle": "Yangi filial",
+    "namePlaceholder": "Filial nomi *",
+    "addressPlaceholder": "Manzil",
+    "responsiblePlaceholder": "Mas'ul biriktirilmagan",
+    "closeButton": "Yopish",
+    "saveButton": "Saqlash"
+  },
+  "inventoryDocumentActivity": {
+    "system": "Tizim",
+    "history": {
+      "title": "Tarix",
+      "empty": "Tarix mavjud emas",
+      "actions": {
+        "CREATED": "Hujjat yaratildi",
+        "UPDATED": "Hujjat yangilandi",
+        "CONFIRMED": "Hujjat tasdiqlandi",
+        "CANCELLED": "Hujjat bekor qilindi",
+        "SENT": "Hujjat jo'natildi",
+        "RECEIVED": "Hujjat qabul qilindi",
+        "COMMENT_ADDED": "Izoh qo'shildi",
+        "COMMENT_UPDATED": "Izoh yangilandi",
+        "COMMENT_DELETED": "Izoh o'chirildi",
+        "ATTACHMENT_UPLOADED": "Fayl yuklandi",
+        "ATTACHMENT_DELETED": "Fayl o'chirildi"
+      },
+      "fields": {
+        "product": "Mahsulot ",
+        "actualQuantity": "haqiqiy miqdori",
+        "quantity": "miqdori",
+        "price": "narxi"
+      },
+      "added": "{{field}} qo'shildi: {{value}}",
+      "removed": "{{field}} o'chirildi",
+      "changed": "{{field}}: {{oldValue}} → {{newValue}}"
+    },
+    "comments": {
+      "title": "Kommentariya",
+      "placeholder": "Izoh yozing...",
+      "empty": "Izohlar mavjud emas",
+      "confirmDelete": "Izoh o'chirilsinmi?"
+    },
+    "attachments": {
+      "title": "Biriktirilgan fayllar",
+      "uploadButton": "Fayl yuklash",
+      "empty": "Fayllar mavjud emas",
+      "confirmDelete": "Fayl o'chirilsinmi?"
+    },
+    "errors": {
+      "maxSize": "Fayl hajmi 10 MB dan oshmasligi kerak.",
+      "invalidFormat": "Bu fayl formatiga ruxsat berilmagan."
+    },
+    "units": {
+      "mb": "MB",
+      "kb": "KB"
+    }
+  },
+  "organizationTablari": {
+    "tabs": {
+      "kompaniyalar": "Kompaniyalar",
+      "filiallar": "Filiallar",
+      "omborlar": "Omborlar"
+    }
+  },
+  "kopTanlov": {
+    "searchPlaceholder": "Qidirish",
+    "addButton": "Qo'shish",
+    "removeAria": "{{label}} ni olib tashlash",
+    "notFound": "Topilmadi"
+  },
+  "kompaniyalar": {
+    "confirmDelete": "Kompaniyani soft delete qilasizmi?",
+    "eyebrow": "Tashkilot boshqaruvi",
+    "title": "Kompaniyalar",
+    "addButton": "Kompaniya qo'shish",
+    "innLabel": "STIR:",
+    "phoneLabel": "Telefon:",
+    "addressLabel": "Manzil:",
+    "editButton": "Tahrirlash",
+    "empty": "Kompaniya mavjud emas",
+    "modalEditTitle": "Kompaniyani tahrirlash",
+    "modalNewTitle": "Yangi kompaniya",
+    "namePlaceholder": "Kompaniya nomi *",
+    "innPlaceholder": "STIR",
+    "phonePlaceholder": "+998...",
+    "addressPlaceholder": "Manzil",
+    "closeButton": "Yopish",
+    "saveButton": "Saqlash"
+  },
+  "kirimTafsilotModal": {
+    "title": "Kirim hujjati",
+    "titleWithNumber": "Kirim hujjati {{number}}",
+    "confirmButton": "Tasdiqlash",
+    "cancelButton": "Bekor qilish",
+    "loadError": "Kirim hujjatini backenddan olib bo'lmadi.",
+    "closeButton": "Yopish",
+    "aboutSection": "Kirim haqida",
+    "totalAmount": "Umumiy summa",
+    "nameLabel": "Kirimni nomi",
+    "supplierLabel": "Yetkazib beruvchi",
+    "warehouseLabel": "Ombor",
+    "dateLabel": "Qachon kirim qilingan",
+    "responsibleLabel": "Mas'ul shaxs",
+    "unassigned": "Biriktirilmagan",
+    "itemsSection": "Tovarlar",
+    "table": {
+      "number": "№",
+      "product": "Mahsulot",
+      "barcode": "Shtrix kod",
+      "costPrice": "Tan narxi",
+      "retailPrice": "Sotuv narxi",
+      "wholesalePrice": "Ulgurji narxi",
+      "quantity": "Soni",
+      "warehouse": "Ombor",
+      "amount": "Summa"
+    },
+    "emptyItems": "Hujjatda mahsulotlar mavjud emas.",
+    "cancelConfirm": {
+      "title": "Kirimni bekor qilasizmi?",
+      "description": "Tasdiqlangan kirim bekor qilinsa, ombor qoldig‘i backend orqali qayta hisoblanadi.",
+      "no": "Yo‘q",
+      "yes": "Ha, bekor qilish"
+    }
+  },
+  "chiqimTafsilotModal": {
+    "reasons": {
+      "damage": "Shikastlangan",
+      "expiry": "Muddati o'tgan",
+      "theft": "Yo'qolgan yoki o'g'irlangan",
+      "other": "Boshqa"
+    },
+    "title": "Chiqim hujjati",
+    "titleWithNumber": "Chiqim hujjati {{number}}",
+    "confirmButton": "Tasdiqlash",
+    "cancelButton": "Bekor qilish",
+    "loadError": "Chiqim hujjati ma'lumotlarini olib bo'lmadi.",
+    "closeButton": "Yopish",
+    "aboutSection": "Chiqim haqida",
+    "totalAmount": "Umumiy summa",
+    "reasonLabel": "Sabab",
+    "dateLabel": "Qachon chiqim qilingan",
+    "responsibleLabel": "Mas'ul shaxs",
+    "warehouseLabel": "Ombor",
+    "unassigned": "Biriktirilmagan",
+    "itemsSection": "Tovarlar",
+    "table": {
+      "number": "№",
+      "product": "Mahsulot",
+      "barcode": "Shtrix kod",
+      "costPrice": "Tan narxi",
+      "quantity": "Soni",
+      "warehouse": "Ombor",
+      "amount": "Summa"
+    },
+    "emptyItems": "Hujjatda tovarlar mavjud emas.",
+    "cancelConfirm": {
+      "title": "Chiqimni bekor qilasizmi?",
+      "description": "Tasdiqlangan hujjat bekor qilinadi va ombor qoldig'i backend orqali tiklanadi.",
+      "no": "Yo'q",
+      "yes": "Ha, bekor qilish"
+    }
+  },
+  "omborJadval": {
+    "scrollLeftAria": "Jadvalni chapga surish",
+    "scrollRightAria": "Jadvalni o'ngga surish"
+  }
+}

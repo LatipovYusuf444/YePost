@@ -1,0 +1,93 @@
+{
+  "inventarizatsiya": {
+    "pageTitle": "Инвентаризация",
+    "pageSubtitle": "Документы проверки фактических остатков на складе.",
+    "createButton": "Создать",
+    "searchPlaceholder": "Поиск по названию, ответственному, дате или статусу",
+    "columns": {
+      "nomi": "Название",
+      "status": "Статус",
+      "yaratilgan": "Дата создания",
+      "ombor": "Склад",
+      "masul": "Ответственное лицо",
+      "turi": "Тип"
+    },
+    "columnsMenuAria": "Настроить столбцы",
+    "typeFull": "Полная",
+    "typePartial": "Частичная",
+    "unknownWarehouse": "Неизвестный склад",
+    "unassigned": "Не назначено",
+    "loadingDocuments": "Загрузка документов...",
+    "emptySearch": "По запросу документы не найдены",
+    "emptyList": "Документы инвентаризации отсутствуют",
+    "createModal": {
+      "title": "Новая инвентаризация",
+      "newBadge": "Новая",
+      "closeAria": "Закрыть",
+      "aboutTitle": "Об инвентаризации",
+      "warehouseLabel": "Склад *",
+      "selectWarehouse": "Выберите склад",
+      "typeLabel": "Тип проверки *",
+      "responsibleLabel": "Ответственное лицо",
+      "responsibleUnassigned": "Ответственный не назначен",
+      "unknownEmployee": "Неизвестный сотрудник",
+      "noteTitle": "Комментарий",
+      "notePlaceholder": "Напишите комментарий об инвентаризации...",
+      "noteHelper": "При сохранении в системе создаётся черновик инвентаризации. Подтверждение обновит остатки склада согласно выявленным расхождениям.",
+      "itemsTitle": "Товары",
+      "itemsSubtitle": "Фактические остатки на выбранном складе",
+      "itemsCount": "{{count}} шт.",
+      "stockLoading": "Загрузка остатков...",
+      "selectWarehouseHint": "Выберите склад, чтобы увидеть товары",
+      "noStock": "На этом складе остатков нет",
+      "table": {
+        "number": "№",
+        "product": "Товар",
+        "barcode": "Штрих-код",
+        "warehouse": "Склад",
+        "systemStock": "Остаток в системе",
+        "actualQuantity": "Фактическое количество",
+        "difference": "Разница"
+      },
+      "actualQuantityAria": "Фактическое количество: {{name}}",
+      "cancel": "Отмена",
+      "save": "Сохранить",
+      "saveAndConfirm": "Сохранить и подтвердить",
+      "errors": {
+        "selectWarehouse": "Выберите склад.",
+        "noStockInWarehouse": "На выбранном складе нет остатков для инвентаризации.",
+        "invalidQuantity": "Фактическое количество для {{name}} должно быть числом 0 или больше."
+      }
+    }
+  },
+  "kochirish": {
+    "pageTitle": "Перемещение",
+    "pageSubtitle": "Документы перемещения товаров между складами.",
+    "createButton": "Создать",
+    "searchPlaceholder": "Поиск по названию, ответственному, складу, дате или статусу",
+    "clearSearchAria": "Очистить поиск",
+    "closeError": "Закрыть",
+    "columns": {
+      "nomi": "Название",
+      "status": "Статус",
+      "yaratgan": "Ответственный за создание",
+      "yaratilgan": "Дата создания",
+      "ombordan": "Со склада",
+      "omborga": "На склад",
+      "ozgartirgan": "Ответственный за изменение",
+      "ozgartirilgan": "Дата изменения",
+      "summa": "Сумма"
+    },
+    "columnResizeAria": "Изменить ширину столбца «{{name}}»",
+    "columnsMenuAria": "Настроить столбцы",
+    "columnsMenuTitle": "Столбцы",
+    "viewAria": "Просмотреть {{name}}",
+    "scrollLeftAria": "Прокрутить влево",
+    "scrollRightAria": "Прокрутить вправо",
+    "scrollTrackAria": "Горизонтальная прокрутка таблицы",
+    "emptySearch": "По запросу перемещения не найдены",
+    "emptyList": "Документы перемещения отсутствуют",
+    "unknownWarehouse": "Неизвестный склад",
+    "documentName": "Документ перемещения №{{number}}"
+  }
+}

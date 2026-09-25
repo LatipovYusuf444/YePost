@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Plus, Search, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 type Variant = { id: string; label: string };
 
@@ -16,8 +17,10 @@ export default function KopTanlov({
   variantlar,
   tanlangan,
   onOzgarish,
-  qidiruvPlaceholder = "Qidirish",
+  qidiruvPlaceholder: qidiruvPlaceholderProp,
 }: Props) {
+  const { t } = useTranslation("ombor_kichik");
+  const qidiruvPlaceholder = qidiruvPlaceholderProp ?? t("kopTanlov.searchPlaceholder");
   const [ochiq, setOchiq] = useState(false);
   const [qidiruv, setQidiruv] = useState("");
   const konteynerRef = useRef<HTMLDivElement | null>(null);
@@ -55,14 +58,14 @@ export default function KopTanlov({
             return (
               <span key={id} className="inline-flex items-center gap-1 rounded-lg bg-orange-100 px-2 py-1 text-xs font-bold text-orange-700">
                 {variant.label}
-                <button type="button" onClick={() => almashtirish(id)} className="text-orange-500 hover:text-orange-800" aria-label={`${variant.label} ni olib tashlash`}>
+                <button type="button" onClick={() => almashtirish(id)} className="text-orange-500 hover:text-orange-800" aria-label={t("kopTanlov.removeAria", { label: variant.label })}>
                   <X size={12} />
                 </button>
               </span>
             );
           })}
           <button type="button" onClick={() => setOchiq((old) => !old)} className="inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-xs font-bold text-gray-400 hover:text-orange-600">
-            <Plus size={13} /> Qo'shish
+            <Plus size={13} /> {t("kopTanlov.addButton")}
           </button>
         </div>
 
@@ -73,7 +76,7 @@ export default function KopTanlov({
               <input value={qidiruv} onChange={(event) => setQidiruv(event.target.value)} placeholder={qidiruvPlaceholder} className="h-9 w-full rounded-xl border border-gray-200 pl-8 pr-2 text-sm outline-none focus:border-orange-400" />
             </div>
             <div className="max-h-52 overflow-y-auto p-1.5">
-              {natijalar.length === 0 && <p className="px-2 py-3 text-center text-xs font-semibold text-gray-400">Topilmadi</p>}
+              {natijalar.length === 0 && <p className="px-2 py-3 text-center text-xs font-semibold text-gray-400">{t("kopTanlov.notFound")}</p>}
               {natijalar.map((variant) => (
                 <label key={variant.id} className="flex cursor-pointer items-center gap-2 rounded-xl px-2 py-1.5 text-sm font-semibold text-gray-700 hover:bg-orange-50">
                   <input type="checkbox" checked={tanlangan.includes(variant.id)} onChange={() => almashtirish(variant.id)} className="h-4 w-4 accent-orange-500" />

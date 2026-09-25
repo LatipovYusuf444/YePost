@@ -7,6 +7,8 @@ import path from 'node:path'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
+    port: 5173,
+    strictPort: true,
     proxy: {
       // Backend CORS yoqmaganligi uchun brauzer so'rovlarini Vite orqali uzatamiz.
       '/backend-api': {
