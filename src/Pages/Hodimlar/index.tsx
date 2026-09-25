@@ -275,23 +275,11 @@ function Foydalanuvchilar() {
   }
 
   async function vakolatlarniSinxronlash(userId: string) {
-    const mavjudVakolatlar = store.vakolatlar.filter((item) => item.userId === userId);
-    let hammasiOk = true;
-
-    for (const code of vakolatKodlari) {
-      const mavjud = mavjudVakolatlar.find((item) => item.code === code);
-      const tanlangan = tanlanganVakolatlar.has(code);
-
-      if (tanlangan && !mavjud) {
-        hammasiOk = (await store.vakolatYaratish({ userId, code, isActive: true })) && hammasiOk;
-      } else if (tanlangan && mavjud && !mavjud.isActive) {
-        hammasiOk = (await store.vakolatYangilash(mavjud.id, { isActive: true })) && hammasiOk;
-      } else if (!tanlangan && mavjud) {
-        hammasiOk = (await store.vakolatOchirish(mavjud.id)) && hammasiOk;
-      }
-    }
-
-    return hammasiOk;
+    return store.vakolatlarniSinxronlash(
+      userId,
+      vakolatKodlari.filter((code) => tanlanganVakolatlar.has(code)),
+      vakolatKodlari
+    );
   }
 
   useEffect(() => kameraniYopish, []);

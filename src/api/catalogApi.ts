@@ -213,6 +213,25 @@ export const modifikatsiyalarApi = {
         )
       ).data
     ),
+  // Bir nechta variant bitta tranzaksiyada: biri xato bo'lsa hech biri yaratilmaydi.
+  yaratishKoplab: async (productId: string, items: ModifikatsiyaMalumoti[]) =>
+    apiList(
+      (
+        await apiClient.post<
+          MahsulotModifikatsiyasi[] | ApiListEnvelope<MahsulotModifikatsiyasi>
+        >(`/catalog/products/${productId}/modifications/bulk`, { items })
+      ).data
+    ),
+  // Bir nechta narx bitta tranzaksiyada (har bir variant uchun alohida PATCH o'rniga).
+  narxlarniYangilash: async (items: Array<NarxMalumoti & { modificationId: string }>) =>
+    apiList(
+      (
+        await apiClient.patch<MahsulotNarxi[] | ApiListEnvelope<MahsulotNarxi>>(
+          "/catalog/modifications/prices",
+          { items }
+        )
+      ).data
+    ),
   narxYangilash: async (id: string, data: NarxMalumoti) =>
     apiData(
       (
