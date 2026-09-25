@@ -10,7 +10,8 @@ import {
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import { sotuvTafsilotiniOlish } from "@/api/savdoApi";
-import { mahsulotlarApi, modifikatsiyalarApi } from "@/api/catalogApi";
+import { modifikatsiyalarApi } from "@/api/catalogApi";
+import type { MahsulotModifikatsiyasi } from "@/types/catalog";
 import { useSavdoStore } from "@/store/savdoStore";
 import type {
   Qaytarish,
@@ -130,39 +131,31 @@ export default function QaytarishTafsilotlariModal({
             );
             return { ...returnItem, modification: returnItem.modification ?? saleItem?.modification };
           });
-          const boyitilganItems = await Promise.all(
-            sotuvdanBoyitilgan.map(async (returnItem) => {
-              if (returnItem.modification?.product?.name) return returnItem;
-              try {
-                const modification = await modifikatsiyalarApi.olish(returnItem.modificationId);
-                const nestedProduct = (modification as typeof modification & { product?: { id: string; name?: string } }).product;
-                const productId = modification.productId ?? nestedProduct?.id;
-                let product = null;
-                if (productId) {
-                  try {
-                    product = await mahsulotlarApi.olish(productId);
-                  } catch {
-                    product = null;
-                  }
-                }
-                return {
-                  ...returnItem,
-                  modification: {
-                    ...returnItem.modification,
-                    id: modification.id,
-                    name: modification.name ?? returnItem.modification?.name,
-                    product: product
-                      ? { id: product.id, name: product.name }
-                      : nestedProduct?.name
-                        ? { id: nestedProduct.id, name: nestedProduct.name }
-                        : returnItem.modification?.product,
-                  },
-                };
-              } catch {
-                return returnItem;
-              }
-            })
-          );
+          // Sotuvdan topilmagan nomlar uchun katalog bitta so'rovda olinadi (har bir qator uchun emas).
+          const katalog = sotuvdanBoyitilgan.every((returnItem) => returnItem.modification?.product?.name)
+            ? new Map<string, MahsulotModifikatsiyasi>()
+            : new Map(
+                (await modifikatsiyalarApi.barchasi().catch(() => [])).map((modification) => [
+                  modification.id,
+                  modification,
+                ])
+              );
+          const boyitilganItems = sotuvdanBoyitilgan.map((returnItem) => {
+            if (returnItem.modification?.product?.name) return returnItem;
+            const modification = katalog.get(returnItem.modificationId);
+            if (!modification) return returnItem;
+            return {
+              ...returnItem,
+              modification: {
+                ...returnItem.modification,
+                id: modification.id,
+                name: modification.name ?? returnItem.modification?.name,
+                product: modification.product?.name
+                  ? { id: modification.product.id, name: modification.product.name }
+                  : returnItem.modification?.product,
+              },
+            };
+          });
           if (!faol) return;
           setQaytarish({ ...item, sale, items: boyitilganItems });
         } catch {
