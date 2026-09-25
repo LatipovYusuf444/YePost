@@ -149,6 +149,16 @@ export const mahsulotlarApi = {
 
 // Mahsulot tafsiloti: modifikatsiyalar CRUD va alohida narx endpointlari.
 export const modifikatsiyalarApi = {
+  // Barcha mahsulotlar variantlari narx va mahsulot bilan bitta so'rovda —
+  // har bir mahsulot uchun alohida royxat() chaqirishning (N+1) o'rniga.
+  barchasi: async (productIds?: string[]) => {
+    const response = await apiClient.get<
+      MahsulotModifikatsiyasi[] | ApiListEnvelope<MahsulotModifikatsiyasi>
+    >("/catalog/modifications", {
+      params: productIds?.length ? { productIds: productIds.join(",") } : undefined,
+    });
+    return apiList(response.data);
+  },
   royxat: async (productId: string) => {
     const response = await apiClient.get<
       MahsulotModifikatsiyasi[] | ApiListEnvelope<MahsulotModifikatsiyasi>

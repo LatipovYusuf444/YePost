@@ -403,32 +403,10 @@ export async function manzilniKoordinatadanAniqlash(
 }
 
 // Kirim formasida hali qoldiqda bo'lmagan mahsulotlarni ham tanlash uchun katalog olinadi.
+// GET /catalog/modifications barcha variantlarni narx va mahsulot bilan bitta so'rovda qaytaradi.
 export async function barchaModifikatsiyalar() {
-  const mahsulotlar = apiList(
-    (
-      await apiClient.get<
-        Array<{ id: string; name?: string }> | ApiListEnvelope<{ id: string; name?: string }>
-      >("/catalog/products")
-    ).data
-  );
-
-  const royxatlar = await Promise.all(
-    mahsulotlar.map(async (mahsulot) => {
-      const modifications = apiList(
-        (
-          await apiClient.get<MahsulotModifikatsiyasi[] | ApiListEnvelope<MahsulotModifikatsiyasi>>(
-            `/catalog/products/${mahsulot.id}/modifications`
-          )
-        ).data
-      );
-
-      return modifications.map((modification) => ({
-        ...modification,
-        productId: modification.productId ?? mahsulot.id,
-        product: modification.product ?? mahsulot,
-      }));
-    })
-  );
-
-  return royxatlar.flat();
+  const response = await apiClient.get<
+    MahsulotModifikatsiyasi[] | ApiListEnvelope<MahsulotModifikatsiyasi>
+  >("/catalog/modifications");
+  return apiList(response.data);
 }

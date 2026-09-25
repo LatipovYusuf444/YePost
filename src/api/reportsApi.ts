@@ -301,8 +301,16 @@ export async function auditLogsOlish(params: AuditFilter) {
 
 // Hisobot filter tanlovlari.
 export async function hisobotTanlovlariniOlish() {
-  const [products, warehouses, branches, categories, customers, suppliers, companies] = await Promise.all([
+  const [products, modificationRows, warehouses, branches, categories, customers, suppliers, companies] = await Promise.all([
     apiClient.get<RoyxatJavobi<Tanlov>>("/catalog/products"),
+    // Variantlar olinmasa ham boshqa tanlovlarni ko'rsatamiz.
+    apiClient
+      .get<RoyxatJavobi<Tanlov>>("/catalog/modifications")
+      .then((response) => royxatniAjratish(response.data))
+      .catch((error: unknown) => {
+        console.warn(getApiErrorMessage(error));
+        return [] as Tanlov[];
+      }),
     apiClient.get<RoyxatJavobi<Tanlov>>("/organization/warehouses"),
     apiClient.get<RoyxatJavobi<Tanlov>>("/organization/branches"),
     apiClient.get<RoyxatJavobi<Tanlov>>("/catalog/categories"),
@@ -312,26 +320,7 @@ export async function hisobotTanlovlariniOlish() {
   ]);
 
   const productRows = royxatniAjratish(products.data);
-  const modifications: Tanlov[] = [];
-  await Promise.all(
-    productRows.map(async (product) => {
-      try {
-        const response = await apiClient.get<RoyxatJavobi<Tanlov>>(
-          `/catalog/products/${product.id}/modifications`
-        );
-        const rows = royxatniAjratish(response.data);
-        modifications.push(
-          ...rows.map((item) => ({
-            ...item,
-            product: item.product ?? { id: product.id, name: product.name },
-          }))
-        );
-      } catch (error) {
-        console.warn(getApiErrorMessage(error));
-        // Bitta mahsulot varianti olinmasa ham boshqa tanlovlarni ko'rsatamiz.
-      }
-    })
-  );
+  const modifications: Tanlov[] = modificationRows;
 
   return {
     products: productRows,
