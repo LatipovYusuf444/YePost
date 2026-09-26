@@ -56,6 +56,7 @@ type OmborState = {
   amalBajarilmoqda: boolean;
   xatolik: string | null;
   malumotlarniYuklash: () => Promise<void>;
+  malumotlarniYuklashAgarKerak: () => Promise<void>;
   amalgaOshirilganlarniYuklash: () => Promise<void>;
   omborMalumotlariniYuklash: () => Promise<void>;
   kochirishMalumotlariniYuklash: () => Promise<void>;
@@ -164,6 +165,9 @@ export const useOmborStore = create<OmborState>((set, get) => ({
   xatolik: null,
 
   malumotlarniYuklash: async () => {
+    // Bir vaqtning o'zida bir nechta sahifa (Inventarizatsiya, Chiqim, Xaridlar va h.k.)
+    // xuddi shu ma'lumotni so'rasa, ustma-ust tushgan takroriy so'rovlarning oldini oladi.
+    if (get().yuklanmoqda) return;
     set({ yuklanmoqda: true, xatolik: null });
     try {
       const [
@@ -208,6 +212,16 @@ export const useOmborStore = create<OmborState>((set, get) => ({
     } catch (error) {
       set({ yuklanmoqda: false, xatolik: getApiErrorMessage(error) });
     }
+  },
+
+  // Inventarizatsiya, Chiqim, Xaridlar va Ombor bosh sahifasi kabi bir nechta sahifa
+  // mount bo'lganda shu funksiyani chaqiradi. Asosiy ma'lumotlar (omborlar, modifikatsiyalar)
+  // allaqachon yuklangan bo'lsa, sahifalar orasida o'tishda 11 talik so'rov to'plamini
+  // qayta yubormaslik uchun qayta yuklashni o'tkazib yuboradi.
+  malumotlarniYuklashAgarKerak: async () => {
+    const { omborlar, modifikatsiyalar, yuklanmoqda } = get();
+    if (yuklanmoqda || (omborlar.length > 0 && modifikatsiyalar.length > 0)) return;
+    await get().malumotlarniYuklash();
   },
 
   amalgaOshirilganlarniYuklash: async () => {

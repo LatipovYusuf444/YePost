@@ -26,7 +26,7 @@ type FormaXatosi = { key: string; params?: Record<string, string | number> } | n
 export default function Inventarizatsiya() {
   const { t } = useTranslation("ombor_harakat");
   const store = useOmborStore();
-  const malumotlarniYuklash = store.malumotlarniYuklash;
+  const malumotlarniYuklashAgarKerak = store.malumotlarniYuklashAgarKerak;
   const [modal, setModal] = useState(false);
   const [tanlanganId, setTanlanganId] = useState<string | null>(null);
   const [warehouseId, setWarehouseId] = useState("");
@@ -46,8 +46,8 @@ export default function Inventarizatsiya() {
   const sozlamaRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    void malumotlarniYuklash();
-  }, [malumotlarniYuklash]);
+    void malumotlarniYuklashAgarKerak();
+  }, [malumotlarniYuklashAgarKerak]);
 
   const sozlamaJoylashuviniYangilash = useCallback(() => {
     const rect = sozlamaTugmaRef.current?.getBoundingClientRect();

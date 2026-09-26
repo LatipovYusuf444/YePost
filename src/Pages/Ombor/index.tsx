@@ -42,7 +42,7 @@ export default function Ombor() {
     yuklanmoqda,
     amalBajarilmoqda,
     xatolik,
-    malumotlarniYuklash,
+    malumotlarniYuklashAgarKerak,
     omborMalumotlariniYuklash,
     omborYaratish,
     omborOlish,
@@ -103,8 +103,8 @@ export default function Ombor() {
       void omborMalumotlariniYuklash();
       return;
     }
-    void malumotlarniYuklash();
-  }, [malumotlarniYuklash, omborMalumotlariniYuklash, organizationTab]);
+    void malumotlarniYuklashAgarKerak();
+  }, [malumotlarniYuklashAgarKerak, omborMalumotlariniYuklash, organizationTab]);
 
   useEffect(() => {
     if (!korinishMenuOchiq) return;
