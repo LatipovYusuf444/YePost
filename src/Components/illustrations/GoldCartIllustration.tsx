@@ -9,13 +9,13 @@ export default function GoldCartIllustration({ className = "" }: { className?: s
     >
       <defs>
         <radialGradient id="cart-glow" cx="50%" cy="46%" r="55%">
-          <stop offset="0%" stopColor="#60A5FA" stopOpacity="0.28" />
-          <stop offset="100%" stopColor="#60A5FA" stopOpacity="0" />
+          <stop offset="0%" stopColor="var(--theme-primary-light)" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="var(--theme-primary-light)" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="cart-gold" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#93C5FD" />
-          <stop offset="45%" stopColor="#2563EB" />
-          <stop offset="100%" stopColor="#1E40AF" />
+          <stop offset="0%" stopColor="var(--theme-cart-start)" />
+          <stop offset="45%" stopColor="var(--theme-primary)" />
+          <stop offset="100%" stopColor="var(--theme-primary-dark)" />
         </linearGradient>
         <linearGradient id="podium-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor="#FFFFFF" />
@@ -31,14 +31,14 @@ export default function GoldCartIllustration({ className = "" }: { className?: s
       <path d="M62 172v7c0 8 26 15 58 15s58-7 58-15v-7" fill="none" stroke="#D6E2F2" strokeWidth="1.5" />
 
       {/* sparkles */}
-      <g stroke="#3B82F6" strokeWidth="2.4" strokeLinecap="round" opacity="0.85">
+      <g stroke="var(--theme-cart-sparkle)" strokeWidth="2.4" strokeLinecap="round" opacity="0.85">
         <path d="M52 84v14M45 91h14" />
         <path d="M188 66v11M182.5 71.5h11" />
         <path d="M196 118v10M191 123h10" />
         <path d="M44 138v9M39.5 142.5h9" />
       </g>
-      <circle cx="70" cy="60" r="2.4" fill="#60A5FA" />
-      <circle cx="172" cy="150" r="2.2" fill="#60A5FA" />
+      <circle cx="70" cy="60" r="2.4" fill="var(--theme-primary-light)" />
+      <circle cx="172" cy="150" r="2.2" fill="var(--theme-primary-light)" />
 
       {/* cart wheels */}
       <circle cx="103" cy="158" r="8.5" fill="url(#cart-gold)" />

@@ -301,7 +301,7 @@ export default function BoshSahifa() {
               <h1 className="text-2xl font-bold leading-tight text-[#0F172A] sm:text-3xl">
                 Savatcha
               </h1>
-              <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-linear-to-br from-gold-300 to-gold-600 px-2 text-xs font-bold text-white shadow-gold-soft">
+              <span className="theme-primary-gradient flex h-6 min-w-6 items-center justify-center rounded-full bg-linear-to-br from-gold-300 to-gold-600 px-2 text-xs font-bold text-white shadow-gold-soft">
                 {cart.length}
               </span>
             </div>
@@ -410,7 +410,7 @@ export default function BoshSahifa() {
               className={[
                 "h-10 rounded-xl text-xs font-bold transition sm:text-sm",
                 mijozTuri === value
-                  ? "bg-linear-to-br from-gold-300 to-gold-600 text-white shadow-gold-soft"
+                  ? "theme-primary-gradient bg-linear-to-br from-gold-300 to-gold-600 text-white shadow-gold-soft"
                   : "text-[#64748B] hover:bg-white/70 hover:text-gold-600",
               ].join(" ")}
             >
@@ -465,7 +465,7 @@ export default function BoshSahifa() {
                     className={[
                       "h-9 rounded-full text-xs font-bold transition",
                       discountPercent === item
-                        ? "bg-linear-to-br from-gold-300 to-gold-600 text-white"
+                        ? "theme-primary-gradient bg-linear-to-br from-gold-300 to-gold-600 text-white"
                         : "bg-gold-100 text-[#64748B] hover:bg-gold-150",
                     ].join(" ")}
                   >
@@ -477,7 +477,7 @@ export default function BoshSahifa() {
 
             <button
               onClick={() => setNoteOpen((value) => !value)}
-              className="mb-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-br from-gold-300 to-gold-600 text-xs font-bold text-white shadow-gold-soft transition hover:-translate-y-0.5 active:translate-y-0"
+              className="theme-primary-gradient mb-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-br from-gold-300 to-gold-600 text-xs font-bold text-white shadow-gold-soft transition hover:-translate-y-0.5 active:translate-y-0"
             >
               <Paperclip size={14} />
               Eslatma qo'shish
@@ -562,7 +562,7 @@ export default function BoshSahifa() {
               <button
                 onClick={handlePay}
                 disabled={saving || loading || cart.length === 0}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-br from-gold-300 to-gold-600 text-xs font-bold text-white shadow-gold-soft transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:translate-y-0 disabled:bg-gray-300 disabled:shadow-none"
+                className="theme-primary-gradient flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-br from-gold-300 to-gold-600 text-xs font-bold text-white shadow-gold-soft transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:translate-y-0 disabled:bg-gray-300 disabled:shadow-none"
               >
                 {saving && <LoaderCircle size={15} className="animate-spin" />}
                 To'lash

@@ -824,8 +824,11 @@ table:not(:where(.font-serif *)) textarea {
 /* YePost frontend theme tokens. Existing blue values above remain the default theme. */
 :root {
   --theme-primary: #2563EB;
+  --theme-primary-light: #60A5FA;
   --theme-primary-hover: #1D4ED8;
   --theme-primary-dark: #1E40AF;
+  --theme-cart-start: #93C5FD;
+  --theme-cart-sparkle: #3B82F6;
   --theme-primary-soft: #DBEAFE;
   --theme-primary-faint: #EFF6FF;
   --theme-background: #F5F8FC;
@@ -875,13 +878,16 @@ svg {
 html[data-theme="green"] {
   color-scheme: light;
   --theme-primary: #10B981;
+  --theme-primary-light: #34D399;
   --theme-primary-hover: #059669;
   --theme-primary-dark: #047857;
-  --theme-primary-soft: #D1FAE5;
-  --theme-primary-faint: #ECFDF5;
-  --theme-background: #F3F9F7;
+  --theme-primary-soft: #DDF3E8;
+  --theme-primary-faint: #F1FAF5;
+  --theme-background: #F7FAF8;
   --theme-surface: #FCFEFD;
-  --theme-surface-muted: #F3F9F7;
+  --theme-surface-muted: #F6FAF8;
+  --theme-cart-start: #6EE7B7;
+  --theme-cart-sparkle: #10B981;
   --theme-sidebar: #061713;
   --theme-sidebar-hover: #0A2821;
   --theme-sidebar-active: #0B4F3A;
@@ -913,7 +919,7 @@ html[data-theme="green"] {
   --theme-chart-series-5: #047857;
   --theme-chart-series-6: #A7F3D0;
   --theme-sidebar-subactive: #0A6147;
-  --background: #F3F9F7;
+  --background: #F7FAF8;
   --foreground: #10251E;
   --card: #FFFFFF;
   --card-foreground: #10251E;
@@ -921,12 +927,12 @@ html[data-theme="green"] {
   --popover-foreground: #10251E;
   --primary: #10B981;
   --primary-foreground: #FFFFFF;
-  --accent: #ECFDF5;
+  --accent: #F1FAF5;
   --accent-foreground: #047857;
   --border: #D5EAE2;
   --input: #D5EAE2;
   --ring: #34D399;
-  --color-orange-50: #ECFDF5;
+  --color-orange-50: #F1FAF5;
   --color-orange-100: #D5EAE2;
   --color-orange-200: #A7DCC8;
   --color-orange-300: #6EE7B7;
@@ -937,7 +943,7 @@ html[data-theme="green"] {
   --color-orange-800: #065F46;
   --color-orange-900: #064E3B;
   --color-orange-950: #022C22;
-  --color-gold-50: #ECFDF5;
+  --color-gold-50: #F1FAF5;
   --color-gold-100: #D5EAE2;
   --color-gold-150: #E5F4EE;
   --color-gold-200: #D5EAE2;
@@ -946,10 +952,10 @@ html[data-theme="green"] {
   --color-gold-500: #10B981;
   --color-gold-600: #059669;
   --color-gold-700: #047857;
-  --color-cream-50: #F3F9F7;
-  --color-cream-100: #F3F9F7;
+  --color-cream-50: #F7FAF8;
+  --color-cream-100: #F7FAF8;
   --color-cream-200: #EAF5F0;
-  --color-blue-50: #ECFDF5;
+  --color-blue-50: #F1FAF5;
   --color-blue-100: #D1FAE5;
   --color-blue-200: #A7F3D0;
   --color-blue-300: #6EE7B7;
@@ -965,8 +971,11 @@ html[data-theme="green"] {
 html[data-theme="purple"] {
   color-scheme: light;
   --theme-primary: #8B5CF6;
+  --theme-primary-light: #A78BFA;
   --theme-primary-hover: #7C3AED;
   --theme-primary-dark: #6D28D9;
+  --theme-cart-start: #C4B5FD;
+  --theme-cart-sparkle: #A78BFA;
   --theme-primary-soft: #EDE9FE;
   --theme-primary-faint: #F5F3FF;
   --theme-background: #F7F5FC;
@@ -1273,6 +1282,16 @@ html[data-theme="purple"] {
 }
 html[data-theme="green"] { --theme-primary-light: #34D399; }
 html[data-theme="purple"] { --theme-primary-light: #A78BFA; }
+
+/* Keep high emphasis controls clearly tied to the selected theme. */
+.theme-primary-gradient {
+  background-color: var(--theme-primary) !important;
+  background-image: linear-gradient(135deg, var(--theme-primary-light), var(--theme-primary-hover)) !important;
+}
+.theme-primary-gradient:disabled {
+  background-color: #D1D5DB !important;
+  background-image: none !important;
+}
 
 html[data-theme="green"] .app-shell,
 html[data-theme="purple"] .app-shell {
