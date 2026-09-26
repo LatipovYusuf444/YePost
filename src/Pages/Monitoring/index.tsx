@@ -2054,7 +2054,13 @@ function ChartCard({
   );
 }
 
-const OMBOR_RANGLARI = ["#6366F1", "#818CF8", "#A5B4FC", "#C7D2FE", "#E0E7FF"];
+const OMBOR_RANGLARI = [
+  "var(--theme-chart-series-1)",
+  "var(--theme-chart-series-2)",
+  "var(--theme-chart-series-3)",
+  "var(--theme-chart-series-4)",
+  "var(--theme-chart-series-5)",
+];
 
 // Grafik + "Jami" summasi + har bir element ulushi (%) ro'yxatini birga ko'rsatadigan
 // taqsimot kartochkasi (referens dizayndagi "Energiya resurslari sarfi" bo'limi uslubida).
