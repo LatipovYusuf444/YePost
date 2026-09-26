@@ -54,19 +54,45 @@
     "lowStock": "Kam qolgan mahsulotlar"
   },
   "charts": {
-    "salesTrend": { "title": "Savdo dinamikasi", "subtitle": "Tasdiqlangan sotuvlar bo'yicha, tanlangan sana oralig'ida", "current": "Joriy davr", "previous": "Oldingi davr" },
-    "profitGauge": { "title": "Foyda ko'rsatkichi", "subtitle": "Rentabellik va sof foyda" },
-    "income": { "title": "Kirim dinamikasi", "subtitle": "Tanlangan davr bo'yicha tushgan pul mablag'lari" },
-    "expense": { "title": "Chiqim dinamikasi", "subtitle": "Kassa xarajatlari va ombordan chiqarilgan mahsulotlar" },
-    "paymentMethods": { "title": "To'lov turlari bo'yicha taqsimot", "subtitle": "Kirim summasining to'lov turi bo'yicha ulushi" },
-    "debtors": { "title": "Eng ko'p qarzdor mijozlar", "subtitle": "Joriy holat bo'yicha", "empty": "Qarzdor mijozlar topilmadi" },
+    "salesTrend": {
+      "title": "Savdo dinamikasi",
+      "subtitle": "Tasdiqlangan sotuvlar bo'yicha, tanlangan sana oralig'ida",
+      "current": "Joriy davr",
+      "previous": "Oldingi davr"
+    },
+    "profitGauge": {
+      "title": "Foyda ko'rsatkichi",
+      "subtitle": "Rentabellik va sof foyda"
+    },
+    "income": {
+      "title": "Kirim dinamikasi",
+      "subtitle": "Tanlangan davr bo'yicha tushgan pul mablag'lari"
+    },
+    "expense": {
+      "title": "Chiqim dinamikasi",
+      "subtitle": "Kassa xarajatlari va ombordan chiqarilgan mahsulotlar"
+    },
+    "paymentMethods": {
+      "title": "To'lov turlari bo'yicha taqsimot",
+      "subtitle": "Kirim summasining to'lov turi bo'yicha ulushi"
+    },
+    "debtors": {
+      "title": "Eng ko'p qarzdor mijozlar",
+      "subtitle": "Joriy holat bo'yicha",
+      "empty": "Qarzdor mijozlar topilmadi"
+    },
     "warehouseStock": {
       "title": "Omborlar bo'yicha qoldiq qiymati",
       "subtitle": "Joriy holat bo'yicha",
       "total": "Jami qoldiq qiymati",
       "share": "Omborlar bo'yicha ulushi"
     },
-    "warehouseFlow": { "title": "Omborlar bo'yicha kirim va chiqim", "subtitle": "Tanlangan davrda har bir omborga kirgan va chiqqan mahsulotlar summasi", "income": "Kirim", "expense": "Chiqim" },
+    "warehouseFlow": {
+      "title": "Omborlar bo'yicha kirim va chiqim",
+      "subtitle": "Tanlangan davrda har bir omborga kirgan va chiqqan mahsulotlar summasi",
+      "income": "Kirim",
+      "expense": "Chiqim"
+    },
     "warehouseDetail": {
       "title": "Ombor tafsilotlari",
       "subtitle": "Bitta omborni tanlab, undagi mahsulotlarni ko'ring",
@@ -84,8 +110,29 @@
         "value": "Qiymat"
       }
     },
-    "topProducts": { "title": "Eng ko'p sotilayotgan mahsulotlar", "subtitle": "Tanlangan davr bo'yicha" },
-    "bottomProducts": { "title": "Kam sotilayotgan mahsulotlar", "subtitle": "Tanlangan davr bo'yicha" }
+    "topProducts": {
+      "title": "Eng ko'p sotilayotgan mahsulotlar",
+      "subtitle": "Tanlangan davr bo'yicha"
+    },
+    "bottomProducts": {
+      "title": "Kam sotilayotgan mahsulotlar",
+      "subtitle": "Tanlangan davr bo'yicha"
+    }
   },
-  "units": "dona"
+  "units": "dona",
+  "visuals": {
+    "margin": "Rentabellik",
+    "dialScale": "Shkala: 0–100%",
+    "paymentTypes": "to'lov turi",
+    "topHint": "Eng ko'p sotilgan mahsulotlar — miqdor bo'yicha",
+    "bottomHint": "Kam sotilgan mahsulotlar — har nuqta sotilgan miqdorni bildiradi",
+    "stockComposition": "Ombor tarkibi · qiymati eng yuqori 10 mahsulot",
+    "payment": {
+      "CASH": "Naqd",
+      "CARD": "Karta",
+      "BANK": "Bank",
+      "TRANSFER": "O'tkazma",
+      "ONLINE": "Onlayn"
+    }
+  }
 }
