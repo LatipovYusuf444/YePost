@@ -1,0 +1,111 @@
+{
+  "header": {
+    "eyebrow": "Финансы и касса",
+    "title": "Управление кассой",
+    "subtitle": "Расходы, долги и приходы кассы связаны с реальным сервером.",
+    "refresh": "Обновить",
+    "addXarajat": "Добавить расход",
+    "addQarz": "Добавить долг",
+    "addKirim": "Добавить приход"
+  },
+  "error": {
+    "close": "Закрыть"
+  },
+  "stats": {
+    "totalExpense": "Общий расход",
+    "unpaidDebts": "Невозвращённые долги",
+    "cashIncome": "Приход в кассу"
+  },
+  "tabs": {
+    "xarajatlar": {
+      "nom": "Расходы",
+      "izoh": "Зарплата, аренда, маркетинг и другие расходы."
+    },
+    "qarzlar": {
+      "nom": "Долги",
+      "izoh": "Контроль полученных и выданных долгов."
+    },
+    "kirimlar": {
+      "nom": "Приход в кассу",
+      "izoh": "Приход от владельца, инвестора или других источников."
+    }
+  },
+  "search": {
+    "placeholder": "Поиск..."
+  },
+  "table": {
+    "columns": {
+      "id": "ID",
+      "turi": "Тип",
+      "malumot": "Информация",
+      "summaTolov": "Сумма / Оплата",
+      "sana": "Дата",
+      "holatiFilial": "Статус / Филиал",
+      "amal": "Действие"
+    },
+    "edit": "Редактировать",
+    "biriktirilmagan": "Не назначено",
+    "qaytarilgan": "Возвращено",
+    "ochiq": "Открыто",
+    "empty": {
+      "xarajatlar": "Расходы отсутствуют",
+      "qarzlar": "Долги отсутствуют",
+      "kirimlar": "Приходы отсутствуют",
+      "general": "Данные отсутствуют"
+    }
+  },
+  "categories": {
+    "SALARY": "Зарплата",
+    "RENT": "Аренда",
+    "UTILITIES": "Коммунальные услуги",
+    "LOGISTICS": "Логистика",
+    "MARKETING": "Маркетинг",
+    "OTHER": "Другое"
+  },
+  "paymentMethods": {
+    "CASH": "Наличные",
+    "CARD": "Карта",
+    "BANK": "Банк"
+  },
+  "debtDirections": {
+    "INCOMING": "Полученный долг",
+    "OUTGOING": "Выданный долг"
+  },
+  "incomeSources": {
+    "OWNER": "Средства владельца",
+    "INVESTOR": "Инвестор",
+    "LOAN": "Займ",
+    "OTHER": "Другое"
+  },
+  "modal": {
+    "eyebrow": "Финансовые данные",
+    "titles": {
+      "editXarajat": "Редактирование расхода",
+      "newXarajat": "Новый расход",
+      "editQarz": "Редактирование долга",
+      "newQarz": "Новый долг",
+      "editKirim": "Редактирование прихода",
+      "newKirim": "Новый приход в кассу"
+    },
+    "fields": {
+      "sana": "Дата",
+      "filial": "Филиал",
+      "filialTanlanmagan": "Филиал не выбран",
+      "xarajatTuri": "Тип расхода *",
+      "qarzTuri": "Тип долга *",
+      "kontragent": "Контрагент *",
+      "kontragentPlaceholder": "От кого или кому",
+      "kirimManbasi": "Источник прихода *",
+      "summa": "Сумма *",
+      "summaPlaceholder": "0",
+      "tolovUsuli": "Способ оплаты",
+      "qaytarishMuddati": "Срок возврата",
+      "qarzQaytarilgan": "Долг возвращён",
+      "izoh": "Примечание",
+      "izohPlaceholder": "Дополнительная информация"
+    },
+    "delete": "Удалить",
+    "cancel": "Отмена",
+    "save": "Сохранить"
+  }
+}

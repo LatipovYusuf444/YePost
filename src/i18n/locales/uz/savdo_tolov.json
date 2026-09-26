@@ -1,0 +1,129 @@
+{
+  "tolovlar": {
+    "eyebrow": "Savdo",
+    "title": "To'lovlar",
+    "subtitle": "Sotuv, qaytarim, kassa kirimi va xarajatlar real backenddan olinadi.",
+    "refreshButton": "Yangilash",
+    "searchPlaceholder": "Sotuv ID, mijoz yoki to'lov turi",
+    "startDateAria": "Boshlanish sanasi",
+    "endDateAria": "Tugash sanasi",
+    "retry": "Qayta urinish",
+    "turiOptions": {
+      "all": "Barcha turlar",
+      "kirim": "Kirim",
+      "chiqim": "Chiqim"
+    },
+    "tolovTuriOptions": {
+      "all": "Barcha to'lovlar",
+      "cash": "Naqd",
+      "card": "Karta",
+      "click": "Click",
+      "payme": "Payme",
+      "bank": "Bank",
+      "other": "Boshqa"
+    },
+    "manbaOptions": {
+      "all": "Barcha manbalar",
+      "sale": "Sotuv",
+      "return": "Qaytarim",
+      "cashIn": "Kassa kirimi",
+      "expense": "Xarajat"
+    },
+    "table": {
+      "columns": {
+        "sotuvId": "Sotuv ID",
+        "mijoz": "Mijoz",
+        "turi": "Turi",
+        "tolovTuri": "To'lov turi",
+        "summa": "Summa",
+        "sana": "Sana"
+      },
+      "rowTitleSotuv": "Sotuv tafsilotlarini ochish",
+      "rowTitleTolov": "To'lov tafsilotlarini ochish",
+      "emptyTitle": "To'lovlar topilmadi",
+      "emptyHint": "Filterlarni o'zgartiring yoki backendda to'lov yozuvlari yaratilishini kuting."
+    },
+    "mobile": {
+      "tolovTuri": "To'lov turi",
+      "summa": "Summa",
+      "sana": "Sana: {{sana}}",
+      "emptyTitle": "To'lovlar topilmadi"
+    },
+    "pagination": {
+      "summary": "Jami: {{jami}} ta to'lov. Sahifa {{currentPage}}/{{totalPages}}",
+      "prev": "Oldingi",
+      "next": "Keyingi"
+    },
+    "modal": {
+      "eyebrow": "To'lov tafsilotlari",
+      "closeAria": "Modalni yopish",
+      "amountLabel": "Miqdor va valyuta",
+      "manbaLabel": "Manba",
+      "sanaLabel": "Sana",
+      "summaryLabel": "Umumiy ma'lumot",
+      "manba": {
+        "cashIn": "Kassa kirimi",
+        "expense": "Xarajat",
+        "return": "Qaytarim",
+        "sale": "Sotuv"
+      },
+      "info": {
+        "sotuvId": "Sotuv / hujjat ID",
+        "mijoz": "Mijoz / manba",
+        "turi": "Turi",
+        "tolovTuri": "To'lov turi"
+      }
+    }
+  },
+  "qaytarishModal": {
+    "eyebrow": "Mahsulot qaytarish",
+    "infoCards": {
+      "tolovTuri": "To'lov turi",
+      "sotuvJami": "Sotuv jami",
+      "oldinQaytarilgan": "Oldin qaytarilgan",
+      "qaytariladigan": "Qaytariladigan"
+    },
+    "table": {
+      "columns": {
+        "mahsulot": "Mahsulot",
+        "sotilgan": "Sotilgan",
+        "oldinQaytarilgan": "Oldin qaytarilgan",
+        "qaytarishMumkin": "Qaytarish mumkin",
+        "narxi": "Narxi",
+        "qaytariladiganSon": "Qaytariladigan son",
+        "ombor": "Ombor"
+      },
+      "qaytadi": "Qaytadi",
+      "emptyRow": "Bu sotuvda mahsulotlar topilmadi.",
+      "productFallback": "Mahsulot"
+    },
+    "sababOptions": {
+      "customerChangedMind": "Xaridor fikridan qaytdi",
+      "defect": "Mahsulot nuqsonli",
+      "wrong": "Noto'g'ri sotilgan",
+      "operatorError": "Operator xatosi",
+      "other": "Boshqa"
+    },
+    "refundOptions": {
+      "cash": "Naqd",
+      "card": "Karta",
+      "balance": "Mijoz balansiga",
+      "none": "Pul qaytarilmaydi"
+    },
+    "sidebar": {
+      "infoNote": "Tasdiqlangan qaytarish tovarni omborga qaytaradi. Pul qaytarish turi tanlanganiga qarab naqd/karta kassadan chiqadi, mijoz balansiga yoziladi yoki umuman qaytarilmaydi.",
+      "sababLabel": "Qaytarish sababi",
+      "refundLabel": "Pul qaytarish turi",
+      "noteLabel": "Izoh",
+      "notePlaceholder": "Qo'shimcha izoh",
+      "submitButton": "Qaytarishni tasdiqlash",
+      "submitHint": "Submitdan keyin return yaratiladi va real backendda tasdiqlanadi."
+    },
+    "errors": {
+      "warehouseMissing": "Sotuv ombori topilmadi. Backend qaytarish uchun warehouseId talab qiladi.",
+      "noteRequired": "Boshqa sabab tanlanganda izoh yozish majburiy.",
+      "noItemsSelected": "Kamida bitta mahsulot uchun qaytariladigan son kiriting.",
+      "exceedsRemaining": "Qaytariladigan son qolgan miqdordan oshmasligi kerak."
+    }
+  }
+}

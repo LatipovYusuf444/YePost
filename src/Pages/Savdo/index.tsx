@@ -8,6 +8,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { sotuvTafsilotiniOlish } from "@/api/savdoApi";
 import { useSavdoStore } from "@/store/savdoStore";
 import type { Sotuv, SotuvHolati, SotuvYaratishMalumoti, TolovTuri } from "@/types/savdo";
@@ -34,32 +35,8 @@ type SavdoTabi =
   | "qaytarish"
   | "bekor-qilingan";
 
-const tablar: Array<{ id: SavdoTabi; nomi: string }> = [
-  { id: "barchasi", nomi: "Barcha sotuvlar" },
-  { id: "savatcha", nomi: "Qoralamalar" },
-  { id: "tarix", nomi: "Savdo tarixi" },
-  { id: "tolovlar", nomi: "To'lovlar" },
-  { id: "qarzdorliklar", nomi: "Qarzdorliklar" },
-  { id: "qaytarish", nomi: "Qaytarish" },
-  { id: "bekor-qilingan", nomi: "Bekor qilinganlar" },
-];
-
-const statusFilterlari: Array<{ value: SotuvHolati | "barchasi"; label: string }> = [
-  { value: "barchasi", label: "Holat: barchasi" },
-  { value: "DRAFT", label: "Qoralama" },
-  { value: "CONFIRMED", label: "Tasdiqlangan" },
-  { value: "CANCELLED", label: "Bekor qilingan" },
-];
-
-const tolovFilterlari: Array<{ value: TolovTuri | "barchasi"; label: string }> = [
-  { value: "barchasi", label: "To'lov: barchasi" },
-  { value: "CASH", label: "Naqd" },
-  { value: "CARD", label: "Karta" },
-  { value: "BANK", label: "Bank o'tkazmasi" },
-  { value: "DEBT", label: "Qarz" },
-];
-
 export default function Savdo() {
+  const { t } = useTranslation("savdo_bosh");
   const {
     sotuvlar,
     qaytarishlar,
@@ -97,16 +74,50 @@ export default function Savdo() {
   const [qaytarishModalSotuv, setQaytarishModalSotuv] = useState<Sotuv | null>(null);
   const [xabar, setXabar] = useState("");
 
+  const tablar = useMemo<Array<{ id: SavdoTabi; nomi: string }>>(
+    () => [
+      { id: "barchasi", nomi: t("savdoSahifasi.tabs.barchasi") },
+      { id: "savatcha", nomi: t("savdoSahifasi.tabs.savatcha") },
+      { id: "tarix", nomi: t("savdoSahifasi.tabs.tarix") },
+      { id: "tolovlar", nomi: t("savdoSahifasi.tabs.tolovlar") },
+      { id: "qarzdorliklar", nomi: t("savdoSahifasi.tabs.qarzdorliklar") },
+      { id: "qaytarish", nomi: t("savdoSahifasi.tabs.qaytarish") },
+      { id: "bekor-qilingan", nomi: t("savdoSahifasi.tabs.bekorQilingan") },
+    ],
+    [t]
+  );
+
+  const statusFilterlari = useMemo<Array<{ value: SotuvHolati | "barchasi"; label: string }>>(
+    () => [
+      { value: "barchasi", label: t("savdoSahifasi.statusFilter.barchasi") },
+      { value: "DRAFT", label: t("savdoSahifasi.statusFilter.draft") },
+      { value: "CONFIRMED", label: t("savdoSahifasi.statusFilter.confirmed") },
+      { value: "CANCELLED", label: t("savdoSahifasi.statusFilter.cancelled") },
+    ],
+    [t]
+  );
+
+  const tolovFilterlari = useMemo<Array<{ value: TolovTuri | "barchasi"; label: string }>>(
+    () => [
+      { value: "barchasi", label: t("savdoSahifasi.paymentFilter.barchasi") },
+      { value: "CASH", label: t("savdoSahifasi.paymentFilter.cash") },
+      { value: "CARD", label: t("savdoSahifasi.paymentFilter.card") },
+      { value: "BANK", label: t("savdoSahifasi.paymentFilter.bank") },
+      { value: "DEBT", label: t("savdoSahifasi.paymentFilter.debt") },
+    ],
+    [t]
+  );
+
   const urlTab = searchParams.get("tab") as SavdoTabi | null;
   const faolTab: SavdoTabi = tablar.some((tab) => tab.id === urlTab)
     ? (urlTab as SavdoTabi)
     : "barchasi";
   const sahifaSarlavhasi =
     faolTab === "tarix"
-      ? "Savdo tarixi"
+      ? t("savdoSahifasi.titles.tarix")
       : faolTab === "bekor-qilingan"
-        ? "Bekor qilingan sotuvlar"
-        : "Barcha sotuvlar";
+        ? t("savdoSahifasi.titles.bekorQilingan")
+        : t("savdoSahifasi.titles.barchasi");
   const statusFilterKorinsin = faolTab !== "tarix" && faolTab !== "bekor-qilingan";
   const yangiSotuvKorinsin = faolTab === "barchasi";
 
@@ -189,26 +200,24 @@ export default function Savdo() {
     if (!sotuv) return false;
     setXabar(
       yangiSotuvVarianti === "draft"
-        ? "Yangi qoralama saqlandi."
-        : "Yangi sotuv qoralama holatida yaratildi."
+        ? "savdoSahifasi.messages.draftSaved"
+        : "savdoSahifasi.messages.draftCreated"
     );
     return true;
   }
 
   async function tasdiqlash(sotuvId: string) {
     const muvaffaqiyatli = await sotuvniTasdiqlash(sotuvId);
-    if (muvaffaqiyatli) setXabar("To'lov qabul qilindi. Qoralama savdoga aylantirildi.");
+    if (muvaffaqiyatli) setXabar("savdoSahifasi.messages.paymentConfirmed");
     return muvaffaqiyatli;
   }
 
   async function bekorQilish(sotuvId: string) {
-    const rozilik = window.confirm(
-      "Sotuvni bekor qilasizmi? Tasdiqlangan bo'lsa ombor qoldig'i tiklanadi."
-    );
+    const rozilik = window.confirm(t("savdoSahifasi.confirmCancel"));
     if (!rozilik) return;
 
     const muvaffaqiyatli = await sotuvniBekorQilish(sotuvId);
-    if (muvaffaqiyatli) setXabar("Sotuv bekor qilindi.");
+    if (muvaffaqiyatli) setXabar("savdoSahifasi.messages.saleCancelled");
   }
 
   return (
@@ -222,7 +231,7 @@ export default function Savdo() {
             <span>{xatolik}</span>
           </div>
           <button onClick={xatolikniTozalash} className="font-black">
-            Yopish
+            {t("savdoSahifasi.closeError")}
           </button>
         </div>
       )}
@@ -233,8 +242,8 @@ export default function Savdo() {
             <CheckCircle2 size={20} />
           </span>
           <div>
-            <p className="font-black text-emerald-700">Muvaffaqiyatli</p>
-            <p className="mt-0.5 leading-5 text-slate-500">{xabar}</p>
+            <p className="font-black text-emerald-700">{t("savdoSahifasi.successTitle")}</p>
+            <p className="mt-0.5 leading-5 text-slate-500">{t(xabar)}</p>
           </div>
         </div>
       )}
@@ -244,7 +253,7 @@ export default function Savdo() {
           <div className="text-center">
             <LoaderCircle className="mx-auto animate-spin text-orange-500" size={34} />
             <p className="mt-3 text-sm font-semibold text-gray-500">
-              Ma'lumotlar serverdan yuklanmoqda...
+              {t("savdoSahifasi.loading")}
             </p>
           </div>
         </div>
@@ -287,7 +296,7 @@ export default function Savdo() {
                       className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md bg-orange-500 px-4 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-500/20"
                     >
                       <Plus size={16} />
-                      Qo'shish
+                      {t("savdoSahifasi.add")}
                     </button>
                   )}
 
@@ -295,7 +304,7 @@ export default function Savdo() {
                     <input
                       value={qidiruv}
                       onChange={(event) => setQidiruv(event.target.value)}
-                      placeholder={faolTab === "tarix" ? "Savdo tarixidan qidirish" : "Qidirish"}
+                      placeholder={faolTab === "tarix" ? t("savdoSahifasi.searchPlaceholderHistory") : t("savdoSahifasi.searchPlaceholder")}
                       className="min-w-0 flex-1 bg-transparent text-sm text-gray-700 outline-none placeholder:text-gray-400"
                     />
                     <Search size={18} className="shrink-0 text-gray-300" />
@@ -393,11 +402,9 @@ export default function Savdo() {
         <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
           <ShoppingCart size={20} className="mt-0.5 shrink-0" />
           <div>
-            <p className="font-black">Serverda hozir ma'lumot yo'q</p>
+            <p className="font-black">{t("savdoSahifasi.emptyState.title")}</p>
             <p className="mt-1">
-              Test akkauntda ombor, mahsulot va mijoz ma'lumotlari hali yaratilmagan.
-              Integratsiya ishlayapti, lekin yangi sotuv uchun avval ombor va mahsulot
-              qoldig'i kiritilishi kerak.
+              {t("savdoSahifasi.emptyState.description")}
             </p>
           </div>
         </div>
@@ -443,7 +450,7 @@ export default function Savdo() {
           onYopish={() => setQaytarishModalSotuv(null)}
           onYaratish={yangiQaytarishYaratish}
           onTasdiqlash={qaytarishniTasdiqlash}
-          onMuvaffaqiyat={() => setXabar("Qaytarish tasdiqlandi. Ombor qoldig'i yangilandi.")}
+          onMuvaffaqiyat={() => setXabar("savdoSahifasi.messages.returnConfirmed")}
         />
       )}
     </div>

@@ -23,6 +23,20 @@ import omborHujjatUz from "./locales/uz/ombor_hujjat.json";
 import omborHujjatRu from "./locales/ru/ombor_hujjat.json";
 import mahsulotlarUz from "./locales/uz/mahsulotlar.json";
 import mahsulotlarRu from "./locales/ru/mahsulotlar.json";
+import savdoKichikUz from "./locales/uz/savdo_kichik.json";
+import savdoKichikRu from "./locales/ru/savdo_kichik.json";
+import savdoTolovUz from "./locales/uz/savdo_tolov.json";
+import savdoTolovRu from "./locales/ru/savdo_tolov.json";
+import savdoBoshUz from "./locales/uz/savdo_bosh.json";
+import savdoBoshRu from "./locales/ru/savdo_bosh.json";
+import savdoQaytarishUz from "./locales/uz/savdo_qaytarish.json";
+import savdoQaytarishRu from "./locales/ru/savdo_qaytarish.json";
+import kassaUz from "./locales/uz/kassa.json";
+import kassaRu from "./locales/ru/kassa.json";
+import savdoYangiUz from "./locales/uz/savdo_yangi.json";
+import savdoYangiRu from "./locales/ru/savdo_yangi.json";
+import savdoTafsilotUz from "./locales/uz/savdo_tafsilot.json";
+import savdoTafsilotRu from "./locales/ru/savdo_tafsilot.json";
 
 export const LANG_STORAGE_KEY = "yepost-lang";
 export const SUPPORTED_LANGUAGES = ["uz", "ru"] as const;
@@ -48,6 +62,13 @@ void i18n.use(initReactI18next).init({
       ombor_bosh: omborBoshUz,
       ombor_hujjat: omborHujjatUz,
       mahsulotlar: mahsulotlarUz,
+      savdo_kichik: savdoKichikUz,
+      savdo_tolov: savdoTolovUz,
+      savdo_bosh: savdoBoshUz,
+      savdo_qaytarish: savdoQaytarishUz,
+      kassa: kassaUz,
+      savdo_yangi: savdoYangiUz,
+      savdo_tafsilot: savdoTafsilotUz,
     },
     ru: {
       common: commonRu,
@@ -61,6 +82,13 @@ void i18n.use(initReactI18next).init({
       ombor_bosh: omborBoshRu,
       ombor_hujjat: omborHujjatRu,
       mahsulotlar: mahsulotlarRu,
+      savdo_kichik: savdoKichikRu,
+      savdo_tolov: savdoTolovRu,
+      savdo_bosh: savdoBoshRu,
+      savdo_qaytarish: savdoQaytarishRu,
+      kassa: kassaRu,
+      savdo_yangi: savdoYangiRu,
+      savdo_tafsilot: savdoTafsilotRu,
     },
   },
   lng: getStoredLanguage(),
@@ -77,6 +105,13 @@ void i18n.use(initReactI18next).init({
     "ombor_bosh",
     "ombor_hujjat",
     "mahsulotlar",
+    "savdo_kichik",
+    "savdo_tolov",
+    "savdo_bosh",
+    "savdo_qaytarish",
+    "kassa",
+    "savdo_yangi",
+    "savdo_tafsilot",
   ],
   defaultNS: "common",
   interpolation: { escapeValue: false },

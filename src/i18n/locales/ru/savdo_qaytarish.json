@@ -1,0 +1,66 @@
+{
+  "header": {
+    "eyebrow": "Детали возврата",
+    "titleWithId": "Возврат · {{id}}",
+    "titleFallback": "Документ возврата",
+    "closeAria": "Закрыть окно",
+    "loadError": "Не удалось получить данные возврата."
+  },
+  "view": {
+    "status": "Статус",
+    "sale": "Продажа",
+    "amount": "Сумма",
+    "createdAt": "Дата создания",
+    "customer": "Клиент",
+    "customerUnknown": "Данные отсутствуют",
+    "warehouse": "Склад",
+    "reason": "Причина",
+    "responsible": "Ответственный сотрудник",
+    "responsibleUnassigned": "Не назначен",
+    "refundMethod": "Способ возврата",
+    "note": "Примечание",
+    "editButton": "Редактировать возврат",
+    "onlyDraftEditable": "Редактировать можно только черновик возврата."
+  },
+  "table": {
+    "product": "Товар",
+    "quantity": "Количество",
+    "price": "Цена",
+    "total": "Итого",
+    "empty": "Товары отсутствуют"
+  },
+  "form": {
+    "saleLabel": "Подтверждённая продажа *",
+    "salePlaceholder": "Выберите продажу",
+    "warehouseLabel": "Склад *",
+    "warehousePlaceholder": "Выберите склад",
+    "reasonLabel": "Причина возврата",
+    "responsibleLabel": "Ответственный сотрудник",
+    "responsiblePlaceholder": "Не назначен",
+    "itemsTitle": "Возвращаемые товары",
+    "itemsHint": "Установка количества на 0 исключает товар из возврата.",
+    "soldQuantity": "Продано: {{count}}",
+    "removeItemAria": "Исключить товар из возврата",
+    "itemsEmpty": "Товары продажи не найдены.",
+    "notePlaceholder": "Примечание к возврату",
+    "totalAmount": "Сумма возврата: {{amount}}",
+    "cancel": "Отмена",
+    "save": "Сохранить изменения"
+  },
+  "reasons": {
+    "defect": "Бракованный товар",
+    "wrong": "Неверный товар",
+    "other": "Другая причина"
+  },
+  "refundMethods": {
+    "cash": "Наличные",
+    "card": "Карта",
+    "balance": "На баланс клиента",
+    "none": "Без возврата денег"
+  },
+  "status": {
+    "confirmed": "Подтверждён",
+    "cancelled": "Отменён",
+    "draft": "Черновик"
+  }
+}

@@ -1,5 +1,6 @@
 import { type MouseEvent, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import {
   Copy,
   Edit3,
@@ -29,29 +30,6 @@ type SavatchaProps = {
   onDavomEttirish: (sotuv: Sotuv) => Promise<void> | void;
   onRefresh: () => Promise<void> | void;
   onXabar: (xabar: string) => void;
-};
-
-const statusOptions: Array<{ value: DraftStatus | "all"; label: string }> = [
-  { value: "all", label: "Barchasi" },
-  { value: "draft", label: "Qoralama" },
-  { value: "waiting", label: "Kutilmoqda" },
-  { value: "editing", label: "Tahrirlanmoqda" },
-  { value: "cancelled", label: "Bekor qilingan" },
-];
-
-const sanaOptions = [
-  { value: "today", label: "Bugun" },
-  { value: "yesterday", label: "Kecha" },
-  { value: "7", label: "Oxirgi 7 kun" },
-  { value: "30", label: "Oxirgi 30 kun" },
-];
-
-const statusMatni: Record<DraftStatus, string> = {
-  draft: "Qoralama",
-  waiting: "Kutilmoqda",
-  editing: "Tahrirlanmoqda",
-  paid: "To'lov qilindi",
-  cancelled: "Bekor qilingan",
 };
 
 function sanaMatni(value?: string) {
@@ -113,6 +91,7 @@ export default function Savatcha({
   onRefresh,
   onXabar,
 }: SavatchaProps) {
+  const { t } = useTranslation("savdo_bosh");
   const [qidiruv, setQidiruv] = useState("");
   const [statusFilter, setStatusFilter] = useState<DraftStatus | "all">("all");
   const [sanaFilter, setSanaFilter] = useState("30");
@@ -123,6 +102,38 @@ export default function Savatcha({
   const [amalId, setAmalId] = useState<string | null>(null);
   const [sahifa, setSahifa] = useState(1);
   const pageSize = 10;
+
+  const statusOptions = useMemo<Array<{ value: DraftStatus | "all"; label: string }>>(
+    () => [
+      { value: "all", label: t("savatcha.statusOptions.all") },
+      { value: "draft", label: t("savatcha.statusOptions.draft") },
+      { value: "waiting", label: t("savatcha.statusOptions.waiting") },
+      { value: "editing", label: t("savatcha.statusOptions.editing") },
+      { value: "cancelled", label: t("savatcha.statusOptions.cancelled") },
+    ],
+    [t]
+  );
+
+  const sanaOptions = useMemo(
+    () => [
+      { value: "today", label: t("savatcha.dateOptions.today") },
+      { value: "yesterday", label: t("savatcha.dateOptions.yesterday") },
+      { value: "7", label: t("savatcha.dateOptions.last7") },
+      { value: "30", label: t("savatcha.dateOptions.last30") },
+    ],
+    [t]
+  );
+
+  const statusMatni = useMemo<Record<DraftStatus, string>>(
+    () => ({
+      draft: t("savatcha.statusLabels.draft"),
+      waiting: t("savatcha.statusLabels.waiting"),
+      editing: t("savatcha.statusLabels.editing"),
+      paid: t("savatcha.statusLabels.paid"),
+      cancelled: t("savatcha.statusLabels.cancelled"),
+    }),
+    [t]
+  );
 
   const qoralamaSotuvlar = useMemo(
     () => sotuvlar.filter((sotuv) => sotuvHolati(sotuv) === "DRAFT" || sotuvHolati(sotuv) === "CANCELLED"),
@@ -209,15 +220,15 @@ export default function Savatcha({
 
     if (action === "continue") {
       if (ochirilganMahsulotBormi(sotuv, qoldiqlar)) {
-        window.alert("Qoralamadagi ayrim mahsulotlar o'chirilgan. Mahsulotni qayta tanlang.");
+        window.alert(t("savatcha.alerts.removedItems"));
       }
       if (!qoldiqYetarlimi(sotuv, qoldiqlar)) {
-        window.alert("Omborda yetarli mahsulot mavjud emas.");
+        window.alert(t("savatcha.alerts.notEnoughStock"));
         return;
       }
       await draftSalesService.continueDraft(sotuv.id);
       await onDavomEttirish(sotuv);
-      onXabar("Qoralama savdo oynasiga yuklandi.");
+      onXabar("savatcha.messages.continued");
       return;
     }
 
@@ -230,17 +241,17 @@ export default function Savatcha({
     try {
       if (action === "duplicate") {
         await draftSalesService.duplicateDraft(sotuv.id);
-        onXabar("Qoralama nusxasi yaratildi.");
+        onXabar("savatcha.messages.duplicated");
       } else if (action === "cancel") {
-        const reason = window.prompt("Bekor qilish sababini kiriting:");
+        const reason = window.prompt(t("savatcha.alerts.cancelPrompt"));
         if (reason === null) return;
-        await draftSalesService.cancelDraft(sotuv.id, reason.trim() || "Sabab kiritilmagan");
-        onXabar("Qoralama bekor qilindi.");
+        await draftSalesService.cancelDraft(sotuv.id, reason.trim() || t("savatcha.alerts.cancelReasonMissing"));
+        onXabar("savatcha.messages.cancelled");
       } else if (action === "delete") {
-        const ok = window.confirm("Qoralamani o'chirasizmi? Audit backendda saqlanadi.");
+        const ok = window.confirm(t("savatcha.alerts.deleteConfirm"));
         if (!ok) return;
         await draftSalesService.deleteDraft(sotuv.id);
-        onXabar("Qoralama o'chirildi yoki bekor qilindi.");
+        onXabar("savatcha.messages.deleted");
       }
       await onRefresh();
     } finally {
@@ -253,10 +264,10 @@ export default function Savatcha({
       <section className="overflow-hidden rounded-[30px] border border-orange-100/80 bg-white shadow-[0_18px_60px_rgba(37,99,235,0.08)]">
         <div className="flex flex-col gap-4 border-b border-orange-100/80 px-6 py-6 lg:flex-row lg:items-start lg:justify-between xl:px-10">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-500">Savdo</p>
-            <h1 className="savdo-section-title mt-1">Qoralamalar</h1>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-500">{t("savatcha.eyebrow")}</p>
+            <h1 className="savdo-section-title mt-1">{t("savatcha.title")}</h1>
             <p className="mt-1 text-sm font-semibold text-slate-400">
-              Qoralama saqlanganda ombor va kassa o'zgarmaydi. To'lovdan keyin savdoga aylanadi.
+              {t("savatcha.subtitle")}
             </p>
           </div>
           <button
@@ -265,7 +276,7 @@ export default function Savatcha({
             className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-[0_14px_30px_rgba(37,99,235,.24)] transition hover:-translate-y-0.5 hover:bg-orange-600"
           >
             <Plus size={17} />
-            Qo'shish
+            {t("savatcha.add")}
           </button>
         </div>
 
@@ -279,7 +290,7 @@ export default function Savatcha({
                 setSahifa(1);
               }}
               className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-700 outline-none placeholder:text-slate-400"
-              placeholder="Qoralama ID, mijoz, telefon, mas'ul, summa"
+              placeholder={t("savatcha.searchPlaceholder")}
             />
           </label>
 
@@ -312,7 +323,7 @@ export default function Savatcha({
               setSahifa(1);
             }}
             options={[
-              { value: "all", label: "Barcha xodimlar" },
+              { value: "all", label: t("savatcha.allEmployees") },
               ...xodimlar.map((xodim) => ({
                 value: xodim.id,
                 label: xodim.fullName || xodim.name || xodim.username || xodim.id,
@@ -329,7 +340,7 @@ export default function Savatcha({
               setSahifa(1);
             }}
             options={[
-              { value: "all", label: "Barcha mijozlar" },
+              { value: "all", label: t("savatcha.allCustomers") },
               ...mijozlar.map((mijoz) => ({
                 value: mijoz.id,
                 label:
@@ -363,16 +374,16 @@ export default function Savatcha({
               <thead className="bg-[#F8FAFC] text-xs font-black uppercase tracking-wide text-slate-500">
                 <tr>
                   {[
-                    "T/r",
-                    "Mijoz nomi",
-                    "Telefon raqam",
-                    "Mahsulotlar soni",
-                    "Summa",
-                    "Holat",
-                    "Mas'ul shaxs",
-                    "Sana",
-                    "Oxirgi tahrir",
-                    "Amallar",
+                    t("savatcha.table.headers.number"),
+                    t("savatcha.table.headers.customerName"),
+                    t("savatcha.table.headers.phone"),
+                    t("savatcha.table.headers.itemsCount"),
+                    t("savatcha.table.headers.amount"),
+                    t("savatcha.table.headers.status"),
+                    t("savatcha.table.headers.responsible"),
+                    t("savatcha.table.headers.date"),
+                    t("savatcha.table.headers.lastEdit"),
+                    t("savatcha.table.headers.actions"),
                   ].map((title) => (
                     <th key={title} className="whitespace-nowrap border-b border-orange-100 px-4 py-3 align-middle font-black">
                       {title}
@@ -399,7 +410,7 @@ export default function Savatcha({
                       key={draft.id}
                       onClick={() => onSotuvniOchish(sotuv)}
                       className="cursor-pointer transition hover:bg-orange-50/45"
-                      title="Qoralama tafsilotlarini ochish"
+                      title={t("savatcha.table.rowTitle")}
                     >
                       <td className="whitespace-nowrap border-b border-orange-50 px-4 py-4 align-middle font-black text-slate-700">
                         {mijozRaqami}
@@ -431,7 +442,7 @@ export default function Savatcha({
                             amallarMenyusiniOchish(event, draft.id);
                           }}
                           className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-600 transition hover:bg-orange-100"
-                          aria-label="Qoralama amallari"
+                          aria-label={t("savatcha.table.actionsAria")}
                         >
                           {amalId === draft.id || amalBajarilmoqda ? <LoaderCircle size={16} className="animate-spin" /> : <MoreHorizontal size={18} />}
                         </button>
@@ -443,12 +454,12 @@ export default function Savatcha({
                               style={menuJoylashuvi}
                             >
                               {[
-                                { key: "continue", label: "Davom ettirish", icon: PlayCircle },
-                                { key: "edit", label: "Tahrirlash", icon: Edit3 },
-                                { key: "duplicate", label: "Nusxa olish", icon: Copy },
-                                { key: "print", label: "Chop etish", icon: Printer },
-                                { key: "cancel", label: "Bekor qilish", icon: XCircle },
-                                { key: "delete", label: "O'chirish", icon: Trash2, danger: true },
+                                { key: "continue", label: t("savatcha.table.actions.continue"), icon: PlayCircle },
+                                { key: "edit", label: t("savatcha.table.actions.edit"), icon: Edit3 },
+                                { key: "duplicate", label: t("savatcha.table.actions.duplicate"), icon: Copy },
+                                { key: "print", label: t("savatcha.table.actions.print"), icon: Printer },
+                                { key: "cancel", label: t("savatcha.table.actions.cancel"), icon: XCircle },
+                                { key: "delete", label: t("savatcha.table.actions.delete"), icon: Trash2, danger: true },
                               ].map((item) => {
                                 const Icon = item.icon;
                                 return (
@@ -484,9 +495,9 @@ export default function Savatcha({
                       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[24px] bg-orange-50 text-orange-500">
                         <PackageOpen size={32} />
                       </div>
-                      <p className="mt-4 text-lg font-black text-slate-700">Qoralama sotuvlar mavjud emas</p>
+                      <p className="mt-4 text-lg font-black text-slate-700">{t("savatcha.table.empty.title")}</p>
                       <p className="mt-1 text-sm font-semibold text-slate-400">
-                        Serverdan ma'lumot kelganda shu yerda ko'rinadi.
+                        {t("savatcha.table.empty.description")}
                       </p>
                       <button
                         type="button"
@@ -494,7 +505,7 @@ export default function Savatcha({
                         className="mt-5 inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-[0_14px_30px_rgba(37,99,235,.22)] transition hover:bg-orange-600"
                       >
                         <Plus size={17} />
-                        Qoralama yaratish
+                        {t("savatcha.table.empty.create")}
                       </button>
                     </td>
                   </tr>
@@ -505,7 +516,7 @@ export default function Savatcha({
 
           <div className="table-pagination mt-4 flex flex-col gap-3 text-sm font-semibold text-slate-500 sm:flex-row sm:items-center sm:justify-between">
             <span>
-              Jami: {filtered.length} ta qoralama. Sahifa {currentPage}/{totalPages}
+              {t("savatcha.pagination.summary", { count: filtered.length, current: currentPage, total: totalPages })}
             </span>
             <div className="flex items-center gap-2">
               <button
@@ -514,7 +525,7 @@ export default function Savatcha({
                 onClick={() => setSahifa((page) => Math.max(page - 1, 1))}
                 className="h-10 rounded-xl border border-orange-100 bg-white px-4 transition hover:border-orange-300 hover:text-orange-600 disabled:opacity-40"
               >
-                Oldingi
+                {t("savatcha.pagination.prev")}
               </button>
               <button
                 type="button"
@@ -522,7 +533,7 @@ export default function Savatcha({
                 onClick={() => setSahifa((page) => Math.min(page + 1, totalPages))}
                 className="h-10 rounded-xl border border-orange-100 bg-white px-4 transition hover:border-orange-300 hover:text-orange-600 disabled:opacity-40"
               >
-                Keyingi
+                {t("savatcha.pagination.next")}
               </button>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { LoaderCircle, RotateCcw } from "lucide-react";
 import type {
   Qaytarish as QaytarishTuri,
@@ -33,19 +34,19 @@ type QaytarishProps = {
 };
 
 const sababMatni: Record<QaytarishSababi, string> = {
-  DEFECT: "Nuqsonli mahsulot",
-  WRONG: "Noto'g'ri mahsulot",
-  OTHER: "Boshqa sabab",
+  DEFECT: "qaytarish.sabablar.DEFECT",
+  WRONG: "qaytarish.sabablar.WRONG",
+  OTHER: "qaytarish.sabablar.OTHER",
 };
 
 function sababniOzbekcha(reason?: string) {
-  return sababMatni[String(reason ?? "OTHER").toUpperCase() as QaytarishSababi] ?? "Boshqa sabab";
+  return sababMatni[String(reason ?? "OTHER").toUpperCase() as QaytarishSababi] ?? "qaytarish.sabablar.OTHER";
 }
 
 function holatniOzbekcha(holat: string) {
-  if (holat === "CONFIRMED") return "Tasdiqlangan";
-  if (holat === "CANCELLED" || holat === "CANCELED") return "Bekor qilingan";
-  return "Qoralama";
+  if (holat === "CONFIRMED") return "qaytarish.holatlar.CONFIRMED";
+  if (holat === "CANCELLED" || holat === "CANCELED") return "qaytarish.holatlar.CANCELLED";
+  return "qaytarish.holatlar.DRAFT";
 }
 
 export default function Qaytarish({
@@ -57,6 +58,7 @@ export default function Qaytarish({
   onYaratish,
   onTasdiqlash,
 }: QaytarishProps) {
+  const { t } = useTranslation("savdo_kichik");
   const qaytarishMumkinSotuvlar = useMemo(
     () =>
       sotuvlar.filter(
@@ -82,7 +84,7 @@ export default function Qaytarish({
     const royxatdagiSotuv = sotuvlar.find((item) => item.id === saleId);
 
     if (!royxatdagiSotuv) {
-      setXatolik("Qaytariladigan sotuvni tanlang.");
+      setXatolik("qaytarish.xatoliklar.sotuvTanlanmagan");
       return;
     }
 
@@ -90,7 +92,7 @@ export default function Qaytarish({
     const warehouseId = toliqSotuv.warehouseId ?? toliqSotuv.warehouse?.id ?? "";
 
     if (!warehouseId) {
-      setXatolik("Sotuv ombori topilmadi. Qaytarish uchun ombor kerak.");
+      setXatolik("qaytarish.xatoliklar.omborTopilmadi");
       return;
     }
 
@@ -112,7 +114,7 @@ export default function Qaytarish({
       );
 
     if (items.length === 0) {
-      setXatolik("Bu sotuvda qaytarish uchun yaroqli mahsulot qatori topilmadi.");
+      setXatolik("qaytarish.xatoliklar.yaroqliQatorYoq");
       return;
     }
 
@@ -129,9 +131,7 @@ export default function Qaytarish({
 
     const tasdiqlandi = await onTasdiqlash(yaratilganQaytarish.id);
     if (!tasdiqlandi) {
-      setXatolik(
-        "Qaytarish yaratildi, lekin tasdiqlashda xatolik yuz berdi. Ro'yxatdan qaytarishni tanlab qayta tasdiqlang."
-      );
+      setXatolik("qaytarish.xatoliklar.tasdiqlashXato");
       return;
     }
 
@@ -145,11 +145,11 @@ export default function Qaytarish({
       <section className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
           <label className="flex-1 space-y-2 text-sm font-bold text-gray-700">
-            <span>Tasdiqlangan sotuv</span>
+            <span>{t("qaytarish.tasdiqlanganSotuv")}</span>
             <SavdoSelect
               value={saleId}
               onChange={setSaleId}
-              placeholder="Sotuvni tanlang"
+              placeholder={t("qaytarish.sotuvniTanlang")}
               buttonClassName="h-12"
               options={qaytarishMumkinSotuvlar.map((sotuv) => ({
                 value: sotuv.id,
@@ -158,24 +158,24 @@ export default function Qaytarish({
             />
           </label>
           <label className="space-y-2 text-sm font-bold text-gray-700">
-            <span>Sabab</span>
+            <span>{t("qaytarish.sabab")}</span>
             <SavdoSelect
               value={reason}
               onChange={(value) => setReason(value as QaytarishSababi)}
               buttonClassName="h-12"
               options={Object.entries(sababMatni).map(([value, label]) => ({
                 value,
-                label,
+                label: t(label),
               }))}
             />
           </label>
           <label className="flex-1 space-y-2 text-sm font-bold text-gray-700">
-            <span>Izoh</span>
+            <span>{t("qaytarish.izoh")}</span>
             <input
               value={note}
               onChange={(event) => setNote(event.target.value)}
               className="h-12 w-full rounded-2xl border border-gray-200 px-4 outline-none focus:border-orange-400"
-              placeholder="Qaytarish sababi bo'yicha izoh"
+              placeholder={t("qaytarish.izohPlaceholder")}
             />
           </label>
           <button
@@ -188,13 +188,13 @@ export default function Qaytarish({
             ) : (
               <RotateCcw size={17} />
             )}
-            To'liq qaytarish
+            {t("qaytarish.toliqQaytarish")}
           </button>
         </div>
-        {xatolik && <p className="mt-3 text-sm font-bold text-red-600">{xatolik}</p>}
+        {xatolik && <p className="mt-3 text-sm font-bold text-red-600">{t(xatolik)}</p>}
         {qaytarishMumkinSotuvlar.length === 0 && (
           <p className="mt-3 text-sm text-amber-600">
-            Qaytarish uchun mahsulotli va tasdiqlangan sotuv mavjud emas.
+            {t("qaytarish.mahsulotYoqOgohlantirish")}
           </p>
         )}
       </section>
@@ -204,12 +204,12 @@ export default function Qaytarish({
           <table className="w-full min-w-[900px] text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                <th className="px-5 py-4">Hujjat</th>
-                <th className="px-5 py-4">Sotuv va mijoz</th>
-                <th className="px-5 py-4">Sabab</th>
-                <th className="px-5 py-4">Summa</th>
-                <th className="px-5 py-4">Sana</th>
-                <th className="px-5 py-4">Holati</th>
+                <th className="px-5 py-4">{t("qaytarish.columns.hujjat")}</th>
+                <th className="px-5 py-4">{t("qaytarish.columns.sotuvVaMijoz")}</th>
+                <th className="px-5 py-4">{t("qaytarish.columns.sabab")}</th>
+                <th className="px-5 py-4">{t("qaytarish.columns.summa")}</th>
+                <th className="px-5 py-4">{t("qaytarish.columns.sana")}</th>
+                <th className="px-5 py-4">{t("qaytarish.columns.holati")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-orange-100/70">
@@ -234,7 +234,7 @@ export default function Qaytarish({
                       </p>
                     </td>
                     <td className="px-5 py-4">
-                      {sababniOzbekcha(qaytarish.reason)}
+                      {t(sababniOzbekcha(qaytarish.reason))}
                     </td>
                     <td className="px-5 py-4 font-bold">
                       {pulniFormatlash(qaytarishSummasi(qaytarish))}
@@ -242,7 +242,7 @@ export default function Qaytarish({
                     <td className="px-5 py-4">{sananiFormatlash(qaytarish.createdAt)}</td>
                     <td className="px-5 py-4">
                       <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${holat === "CONFIRMED" ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100" : holat === "CANCELLED" || holat === "CANCELED" ? "bg-red-50 text-red-600 ring-1 ring-red-100" : "bg-amber-50 text-amber-700 ring-1 ring-amber-100"}`}>
-                        {holatniOzbekcha(holat)}
+                        {t(holatniOzbekcha(holat))}
                       </span>
                     </td>
                   </tr>
@@ -251,7 +251,7 @@ export default function Qaytarish({
               {qaytarishlar.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-6 py-16 text-center text-gray-400">
-                    Qaytarish hujjatlari mavjud emas
+                    {t("qaytarish.emptyList")}
                   </td>
                 </tr>
               )}

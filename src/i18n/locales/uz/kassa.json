@@ -1,0 +1,111 @@
+{
+  "header": {
+    "eyebrow": "Moliya va kassa",
+    "title": "Kassa boshqaruvi",
+    "subtitle": "Xarajatlar, qarzlar va kassaga kirim amallari real backend bilan ulangan.",
+    "refresh": "Yangilash",
+    "addXarajat": "Xarajat qo'shish",
+    "addQarz": "Qarz qo'shish",
+    "addKirim": "Kirim qo'shish"
+  },
+  "error": {
+    "close": "Yopish"
+  },
+  "stats": {
+    "totalExpense": "Jami xarajat",
+    "unpaidDebts": "Qaytarilmagan qarzlar",
+    "cashIncome": "Kassaga kirim"
+  },
+  "tabs": {
+    "xarajatlar": {
+      "nom": "Xarajatlar",
+      "izoh": "Oylik, ijara, marketing va boshqa chiqimlar."
+    },
+    "qarzlar": {
+      "nom": "Qarzlar",
+      "izoh": "Olingan va berilgan qarzlar nazorati."
+    },
+    "kirimlar": {
+      "nom": "Kassaga kirim",
+      "izoh": "Ega, investor yoki boshqa manbalardan kirim."
+    }
+  },
+  "search": {
+    "placeholder": "Qidirish..."
+  },
+  "table": {
+    "columns": {
+      "id": "ID",
+      "turi": "Turi",
+      "malumot": "Ma'lumot",
+      "summaTolov": "Summa / To'lov",
+      "sana": "Sana",
+      "holatiFilial": "Holati / Filial",
+      "amal": "Amal"
+    },
+    "edit": "Tahrirlash",
+    "biriktirilmagan": "Biriktirilmagan",
+    "qaytarilgan": "Qaytarilgan",
+    "ochiq": "Ochiq",
+    "empty": {
+      "xarajatlar": "Xarajatlar mavjud emas",
+      "qarzlar": "Qarzlar mavjud emas",
+      "kirimlar": "Kirimlar mavjud emas",
+      "general": "Ma'lumot mavjud emas"
+    }
+  },
+  "categories": {
+    "SALARY": "Oylik maosh",
+    "RENT": "Ijara",
+    "UTILITIES": "Kommunal",
+    "LOGISTICS": "Logistika",
+    "MARKETING": "Marketing",
+    "OTHER": "Boshqa"
+  },
+  "paymentMethods": {
+    "CASH": "Naqd",
+    "CARD": "Karta",
+    "BANK": "Bank"
+  },
+  "debtDirections": {
+    "INCOMING": "Olingan qarz",
+    "OUTGOING": "Berilgan qarz"
+  },
+  "incomeSources": {
+    "OWNER": "Ega mablag'i",
+    "INVESTOR": "Investor",
+    "LOAN": "Qarz",
+    "OTHER": "Boshqa"
+  },
+  "modal": {
+    "eyebrow": "Finance ma'lumotlari",
+    "titles": {
+      "editXarajat": "Xarajatni tahrirlash",
+      "newXarajat": "Yangi xarajat",
+      "editQarz": "Qarzni tahrirlash",
+      "newQarz": "Yangi qarz",
+      "editKirim": "Kirimni tahrirlash",
+      "newKirim": "Yangi kassa kirimi"
+    },
+    "fields": {
+      "sana": "Sana",
+      "filial": "Filial",
+      "filialTanlanmagan": "Filial tanlanmagan",
+      "xarajatTuri": "Xarajat turi *",
+      "qarzTuri": "Qarz turi *",
+      "kontragent": "Kontragent *",
+      "kontragentPlaceholder": "Kimdan yoki kimga",
+      "kirimManbasi": "Kirim manbasi *",
+      "summa": "Summa *",
+      "summaPlaceholder": "0",
+      "tolovUsuli": "To'lov usuli",
+      "qaytarishMuddati": "Qaytarish muddati",
+      "qarzQaytarilgan": "Qarz qaytarilgan",
+      "izoh": "Izoh",
+      "izohPlaceholder": "Qo'shimcha ma'lumot"
+    },
+    "delete": "O'chirish",
+    "cancel": "Bekor qilish",
+    "save": "Saqlash"
+  }
+}

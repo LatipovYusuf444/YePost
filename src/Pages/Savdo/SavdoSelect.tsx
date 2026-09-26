@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { Check, ChevronDown, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -43,7 +44,7 @@ export default function SavdoSelect({
   value,
   options,
   onChange,
-  placeholder = "Tanlang",
+  placeholder,
   className = "",
   buttonClassName = "",
   dropdownClassName = "",
@@ -52,8 +53,11 @@ export default function SavdoSelect({
   selectedLabel,
   hideChevron = false,
   qidirish = false,
-  qidiruvPlaceholder = "Qidirish...",
+  qidiruvPlaceholder,
 }: SavdoSelectProps) {
+  const { t } = useTranslation("savdo_kichik");
+  const effectivePlaceholder = placeholder ?? t("savdoSelect.tanlang");
+  const effectiveQidiruvPlaceholder = qidiruvPlaceholder ?? t("savdoSelect.qidirish");
   const [open, setOpen] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({});
   const [qidiruvMatni, setQidiruvMatni] = useState("");
@@ -156,7 +160,7 @@ export default function SavdoSelect({
               value={qidiruvMatni}
               onChange={(event) => setQidiruvMatni(event.target.value)}
               onKeyDown={(event) => event.stopPropagation()}
-              placeholder={qidiruvPlaceholder}
+              placeholder={effectiveQidiruvPlaceholder}
               className="h-8 w-full rounded-lg border border-slate-200 bg-white pl-7 pr-2 text-sm font-semibold outline-none focus:border-orange-400"
             />
           </div>
@@ -165,7 +169,7 @@ export default function SavdoSelect({
       <div className="overflow-y-auto p-1">
         {korinadiganOptions.length === 0 ? (
           <div className="px-4 py-3 text-sm font-semibold text-slate-400">
-            Ma'lumot topilmadi
+            {t("savdoSelect.malumotTopilmadi")}
           </div>
         ) : (
           korinadiganOptions.map((option) => {
@@ -213,7 +217,7 @@ export default function SavdoSelect({
         )}
       >
         <span className={`min-w-0 truncate ${selected ? "" : "text-slate-400"}`}>
-          {selectedLabel ?? selected?.label ?? placeholder}
+          {selectedLabel ?? selected?.label ?? effectivePlaceholder}
         </span>
         {!hideChevron && (
           <ChevronDown

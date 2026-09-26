@@ -1,4 +1,5 @@
 {
+  "dateLocale": "ru-RU",
   "actions": {
     "save": "Сохранить",
     "cancel": "Отмена",

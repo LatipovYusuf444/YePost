@@ -1,0 +1,458 @@
+{
+  "tabs": {
+    "umumiy": "Umumiy",
+    "tovarlar": "Tovarlar",
+    "hisobFakturalar": "Hisob-fakturalar",
+    "tarix": "Tarix"
+  },
+  "bolimlar": {
+    "tolov": "To'lov",
+    "tolovVaYetkazish": "To'lov va yetkazish",
+    "terminalTolov": "Terminal orqali to'lov",
+    "yetkazish": "Yetkazish",
+    "ombordanChiqarish": "Ombordan chiqarish"
+  },
+  "common": {
+    "dona": "dona",
+    "bekorQilish": "Bekor qilish",
+    "saqlash": "Saqlash",
+    "saqlanmoqda": "Saqlanmoqda...",
+    "yuborish": "Yuborish",
+    "yuborilmoqda": "Yuborilmoqda...",
+    "ochirish": "O'chirish",
+    "tasdiqlash": "Tasdiqlash",
+    "qoshish": "Qo'shish",
+    "ozgartirish": "o'zgartirish",
+    "tezOrada": "Tez orada",
+    "tezOradaQoshiladi": "Tez orada qo'shiladi",
+    "fayl": "Fayl",
+    "tolovTuri": {
+      "naqd": "Naqd",
+      "karta": "Karta",
+      "bank": "Bank o'tkazmasi"
+    },
+    "faoliyatTuri": {
+      "ish": "Ish",
+      "izoh": "Izoh",
+      "xabar": "Xabar",
+      "vazifa": "Vazifa"
+    },
+    "info": {
+      "mijoz": "Mijoz",
+      "telefon": "Telefon",
+      "manzil": "Manzil",
+      "masulShaxs": "Mas'ul shaxs",
+      "ombor": "Ombor",
+      "kompaniya": "Kompaniya",
+      "kompaniyaTanlanmagan": "Kompaniya tanlanmagan"
+    },
+    "jadval": {
+      "mahsulot": "Mahsulot",
+      "narx": "Narx",
+      "miqdor": "Miqdor",
+      "ombor": "Ombor",
+      "mavjudQoldiq": "Mavjud qoldiq",
+      "rezervda": "Rezervda",
+      "ombordanChiqdi": "Ombordan chiqdi",
+      "summa": "Summa"
+    },
+    "totals": {
+      "chegirmaSoliqsiz": "Chegirma va soliqlarsiz summa:",
+      "yetkazishSummasi": "Yetkazish summasi:",
+      "chegirmaSummasi": "Chegirma summasi:",
+      "soliqsizSumma": "Soliqsiz summa:",
+      "soliqSummasi": "Soliq summasi:",
+      "umumiySumma": "Umumiy summa:",
+      "jami": "Jami:"
+    },
+    "tovarlarYoq": "Tovarlar mavjud emas",
+    "xodimTanlanmagan": "Xodim tanlanmagan",
+    "omborTanlanmagan": "Ombor tanlanmagan",
+    "tizim": "Tizim",
+    "mahsulotNomiTopilmadi": "Mahsulot nomi topilmadi",
+    "manzilKiritilmagan": "Manzil kiritilmagan",
+    "soatTitle": "{{kun}}, soat {{soat}}:00"
+  },
+  "header": {
+    "hujjat": "Hujjat",
+    "hujjatTurlari": {
+      "akt": "Akt",
+      "hisob": "Hisob",
+      "hisobFaktura": "Hisob-faktura",
+      "nakladnoy": "Nakladnoy",
+      "ishonchnoma": "Ishonchnoma",
+      "tijoratTaklifi": "Tijorat taklifi",
+      "pudratShartnomasi": "Pudrat shartnomasi",
+      "yetkazibBerishShartnomasi": "Yetkazib berish shartnomasi",
+      "xizmatShartnomasi": "Xizmat ko'rsatish shartnomasi",
+      "universalHujjat": "Universal topshirish hujjati",
+      "ediJismoniy": "EDI jismoniy shaxs kelishuvi",
+      "ediYuridik": "EDI yuridik shaxs kelishuvi"
+    },
+    "hujjatlarRoyxati": "Hujjatlar ro'yxati",
+    "yangiShablon": "Yangi shablon qo'shish",
+    "kengaytmalar": "Kengaytmalar",
+    "tolovniQabulQilish": "To'lovni qabul qilish"
+  },
+  "tezkorPanel": {
+    "yopish": "Yopish",
+    "havolaNusxalash": "Havolani nusxalash",
+    "malumotYuklab": "Ma'lumotni yuklab olish",
+    "alohidaOyna": "Alohida oynada ochish"
+  },
+  "nakladnoy": {
+    "oynaniYopish": "Nakladnoy oynasini yopish",
+    "chopEtish": "Chop etish",
+    "chopEtishTitle": "Nakladnoyni chop etish",
+    "pdfYuklab": "PDF yuklab olish",
+    "pdfYuklabTitle": "Nakladnoy PDF yuklab olish",
+    "yaratilmoqdaSarlavha": "PDF faylini yaratish",
+    "yaratilmoqdaTavsif": "Hujjat sotuvdagi real mahsulot, mijoz va summa ma'lumotlari asosida tayyorlanmoqda.",
+    "generatorTavsif": "Sotuv ma'lumotlari asosida hujjat generatsiya qilinmoqda.",
+    "printTitle": "Nakladnoy {{raqam}}",
+    "sarlavha": "Chiqim nakladnoyi № {{raqam}} от {{sana}}",
+    "yetkazuvchi": "Yetkazuvchi",
+    "xaridor": "Xaridor",
+    "tolovTuri": "To'lov turi",
+    "tel": "tel.:",
+    "jadval": {
+      "raqam": "No",
+      "nomi": "Nomi",
+      "birlik": "Birlik",
+      "miqdor": "Miqdor",
+      "narx": "Narx",
+      "summa": "Summa"
+    },
+    "mahsulotYoq": "Mahsulotlar mavjud emas",
+    "jami": "Jami",
+    "topshirdi": "Topshirdi",
+    "oldi": "Oldi"
+  },
+  "umumiyTab": {
+    "qoshimchaMalumotlar": "Qo'shimcha ma'lumotlar",
+    "qaytarilganSavdo": "Qaytarilgan savdo",
+    "tanlanmagan": "Tanlanmagan",
+    "sana": "Sana",
+    "qoshimchaIzoh": "Qo'shimcha izoh",
+    "izohYoq": "Izoh yo'q",
+    "errors": {
+      "mijozBiriktirilmagan": "Bu sotuvga mijoz yoki kompaniya biriktirilmagan.",
+      "partnerIdKerak": "Faoliyatni backendga saqlash uchun sotuvda real partner ID bo'lishi kerak.",
+      "masulXodimKerak": "CRM ish yaratish uchun mas'ul xodim tanlanishi kerak.",
+      "tahrirEndpointYoq": "Bu yozuv turi uchun backend tahrirlash endpointi mavjud emas.",
+      "xabarniOchirishYoq": "Yuborilgan xabarni o'chirish endpointi backendda mavjud emas."
+    },
+    "faoliyat": {
+      "crmVazifa": "CRM vazifa",
+      "izoh": "Izoh",
+      "mijozdanXabar": "Mijozdan xabar",
+      "xabarYuborildi": "Xabar yuborildi"
+    },
+    "feed": {
+      "hisoblashRejimi": "Hisoblash rejimi o'zgartirildi",
+      "hisoblashRejimiTavsif": "Tovarlar narxiga asoslanib → {{summa}}",
+      "sotuvYaratildi": "Sotuv yaratildi",
+      "sotuvYaratildiTavsif": "{{mijoz}} uchun {{raqam}} sotuv yaratildi.",
+      "bugun": "Bugun"
+    }
+  },
+  "kelishuvCard": {
+    "sarlavha": "Kelishuv haqida",
+    "bosqich": "Bosqich",
+    "miqdorVaValyuta": "Miqdor va valyuta",
+    "bolimTavsif": "Bu yerda to'lov, yetkazish va ombordan chiqarish ma'lumotlari ko'rsatiladi.",
+    "sotuvJami": "Sotuv jami",
+    "qabulQilinganTolov": "Qabul qilingan to'lov",
+    "qarzdorlikQoldigi": "Qarzdorlik qoldig'i",
+    "qarzdorlikYoq": "Qarzdorlik yo'q",
+    "ortiqchaTolov": "Ortiqcha to'lov / qaytim",
+    "maydonniTanlang": "Maydonni tanlang",
+    "maydonYarating": "Maydon yarating",
+    "sotuvniBekorQilish": "Sotuvni bekor qilish"
+  },
+  "tolovModal": {
+    "belgisi": "To'lov",
+    "sarlavha": "To'lovni qabul qilish",
+    "avvalgiTolovlar": "Avvalgi to'lovlar",
+    "tolovTuri": "To'lov turi",
+    "tolovSummasi": "To'lov summasi",
+    "tolashToliq": "To'liq to'lash ({{summa}})",
+    "qarzgaQoldirish": "Qarzga qoldirish",
+    "sotuvJami": "Sotuv jami",
+    "jamiTolov": "Jami to'lov",
+    "qarzdorlikQoldigi": "Qarzdorlik qoldig'i",
+    "qarzdorlik": "Qarzdorlik",
+    "yoq": "Yo'q",
+    "errors": {
+      "manfiyBolmasin": "To'lov summasi manfiy bo'lishi mumkin emas.",
+      "nolDanKatta": "To'lov summasi 0 dan katta bo'lishi kerak.",
+      "qarzdorlikdanOshmasin": "To'lov summasi qarzdorlikdan oshmasligi kerak. Maksimal: {{maksimal}}.",
+      "saqlanmadi": "To'lov saqlanmadi. Qaytadan urinib ko'ring."
+    },
+    "tolovniSaqlash": "To'lovni saqlash",
+    "tolovniQoshish": "To'lovni qo'shish"
+  },
+  "hisobFakturalarTab": {
+    "id": "ID",
+    "nomi": "Nomi",
+    "hisobRaqami": "Hisob raqami",
+    "kimYaratgan": "Kim yaratgan",
+    "masul": "Mas'ul",
+    "berilganSana": "Berilgan sana",
+    "tolovMuddati": "To'lov muddati",
+    "bosqich": "Bosqich",
+    "kiritilmagan": "Kiritilmagan",
+    "yangi": "Yangi",
+    "topilmadi": "Qidiruv bo'yicha hisob-faktura topilmadi",
+    "tanlangan": "Tanlangan: 0 / 1",
+    "jamiHisob": "Jami: 1 ta hisob",
+    "sahifada": "Sahifada:"
+  },
+  "tarix": {
+    "sarlavha": "Sotuv tarixi",
+    "tavsif": "Sotuv bo'yicha mahsulotlar, to'lovlar, hujjatlar va bajarilgan ishlar shu yerda jamlanadi.",
+    "filtr": "Filtr",
+    "sotilganMahsulotlar": "Sotilgan mahsulotlar ({{count}} ta)",
+    "sana": "Sana",
+    "avtor": "Avtor",
+    "tipHodisa": "Tip hodisa",
+    "tavsifUstuni": "Tavsif",
+    "tartiblashEskidan": "Eski sanadan yangisiga tartiblash",
+    "tartiblashYangidan": "Yangi sanadan eskisiga tartiblash",
+    "sanaBoyichaTartiblash": "Sana bo'yicha tartiblash",
+    "topilmadi": "Tarix bo'yicha ma'lumot topilmadi",
+    "vaqt": {
+      "sanaYoq": "Sana yo'q",
+      "minutAvval": "{{count}} minut avval",
+      "soatAvval": "{{count}} soat avval",
+      "bugun": "bugun, {{vaqt}}"
+    },
+    "maydonlar": {
+      "holat": "Holat",
+      "qarzdorlik": "Qarzdorlik",
+      "tolanganSumma": "To'langan summa",
+      "jamiSumma": "Jami summa",
+      "chegirma": "Chegirma",
+      "izoh": "Izoh",
+      "ombor": "Ombor",
+      "masulShaxs": "Mas'ul shaxs",
+      "mijoz": "Mijoz",
+      "mijozKompaniyasi": "Mijoz kompaniyasi",
+      "tolovTuri": "To'lov turi",
+      "saleType": "Sotuv turi"
+    },
+    "qiymat": {
+      "taSoni": "{{count}} ta"
+    },
+    "tavsifMatni": {
+      "holatOzgardi": "Holat: {{eski}} → {{yangi}}",
+      "malumotYangilandi": "Sotuv ma'lumotlari yangilandi.",
+      "tolovQoshildi": "To'lov qo'shildi: {{qiymat}}"
+    },
+    "tip": {
+      "ochirildi": "Sotuv o'chirildi",
+      "tolovQabulQilindi": "To'lov qabul qilindi",
+      "tasdiqlandi": "Sotuv tasdiqlandi",
+      "bekorQilindi": "Sotuv bekor qilindi",
+      "yaratildi": "Sotuv yaratildi",
+      "yangilandi": "Sotuv yangilandi"
+    }
+  },
+  "tovarlarTab": {
+    "mahsulotQoshish": "Mahsulot qo'shish",
+    "saqlash": "Saqlash",
+    "sozlama": "Sozlama",
+    "mahsulotYoq": "Bu sotuvda mahsulot mavjud emas",
+    "mahsulotToping": "Mahsulotni toping yoki yangi yarating",
+    "omborPlaceholder": "Ombor",
+    "qoldiqdaTopilmadi": "Ombor qoldig'ida mahsulot topilmadi",
+    "mahsulotOynasiniYopish": "Mahsulot oynasini yopish",
+    "omborOynasiniYopish": "Ombor oynasini yopish",
+    "qoralama": "qoralama",
+    "ochirish": "O'chirish",
+    "errors": {
+      "mahsulotniTanlang": "Mahsulotni tanlang.",
+      "narxKatta": "Narx 0 dan katta bo'lishi kerak.",
+      "miqdorKatta": "Miqdor 0 dan katta bo'lishi kerak.",
+      "miqdorOshmasin": "Miqdor qoldiqdan oshmasin: {{qty}} dona.",
+      "omborniTanlang": "Omborni tanlang."
+    },
+    "shtrixKod": "Shtrix-kod: {{value}}",
+    "artikul": "Artikul: {{value}}"
+  },
+  "eskiTovarlarTab": {
+    "mahsulotQoshish": "Mahsulot qo'shish",
+    "mahsulotTanlash": "Mahsulot tanlash",
+    "mahsulotYoq": "Bu sotuvda mahsulot mavjud emas",
+    "omborOynasiniYopish": "Ombor oynasini yopish",
+    "omborPlaceholder": "Ombor",
+    "qoralama": "qoralama",
+    "biriktirilganOmborTopilmadi": "Bu sotuvga biriktirilgan ombor topilmadi"
+  },
+  "yetkazishPanel": {
+    "oynaniYopish": "Yetkazish oynasini yopish",
+    "sarlavha": "Tovarlarni yetkazib berishni tashkil qilish",
+    "buyurtmaniSozlash": "Buyurtmani sozlash",
+    "fikrMulohaza": "Fikr-mulohaza",
+    "badge": "Yetkazish",
+    "sidebar": {
+      "kompaniyaAloqalari": "Kompaniya aloqalarini taqdim etish",
+      "skriptTaklif": "Skript taklif qilish",
+      "qandayIshlaydi": "Qanday ishlaydi",
+      "buyurtmaniSozlash": "Buyurtmani sozlash"
+    },
+    "qadamTovarlar": "Tovarlar",
+    "qadamYetkazish": "Yetkazish",
+    "qoshish": "Qo'shish",
+    "katalogdanTanlash": "Katalogdan tanlash",
+    "mahsulot": "Mahsulot",
+    "narxi": "Narxi",
+    "miqdori": "Miqdori",
+    "natija": "Natija",
+    "tovarlarSummasi": "Tovarlar summasi:",
+    "mijozFoydasiLabel": "Mijoz foydasi:",
+    "jami": "Jami:",
+    "malumotYuklanmoqda": "Ma'lumot yuklanmoqda...",
+    "malumotBor": "Yetkazib berish ma'lumoti",
+    "malumotYoq": "Yetkazib berish ma'lumoti mavjud emas",
+    "forma": {
+      "qabulQiluvchi": "Qabul qiluvchi",
+      "telefon": "Telefon",
+      "manzil": "Manzil",
+      "kuryer": "Kuryer",
+      "yetkazishNarxi": "Yetkazish narxi",
+      "rejalashtirilganVaqt": "Rejalashtirilgan vaqt",
+      "izoh": "Izoh"
+    },
+    "saqlash": "Saqlash",
+    "yetkazishniYaratish": "Yetkazishni yaratish",
+    "jonatish": "Jo'natish",
+    "yetkazildi": "Yetkazildi",
+    "bekorQilish": "Bekor qilish",
+    "faqatTasdiqlangan": "Yetkazish faqat tasdiqlangan sotuv uchun yaratiladi."
+  },
+  "ombordanChiqarish": {
+    "sarlavha": "Ombordan chiqarish hujjati",
+    "tavsifBajarilgan": "Real sotuv: {{raqam}} · mahsulot ombordan chiqarilgan",
+    "tavsifKutilmoqda": "Real sotuv: {{raqam}} · tasdiqlanganda ombordan chiqadi",
+    "asosiyMalumotlar": "Asosiy ma'lumotlar",
+    "koryapsiz": "Hozir siz {{mijoz}} uchun ombordan chiqarish hujjatini ko'ryapsiz.",
+    "tasdiqlandiXabar": "Tasdiqlandi! Mahsulot ombordan chiqarildi va sotuv \"Amalga oshirilganlar\" bo'limiga tushdi.",
+    "amaliBajarilgan": "Ombor amali bajarilgan",
+    "amaliKutilmoqda": "Ombor amali kutilmoqda",
+    "amaliTavsif": "{{count}} ta tovar, summa {{summa}}. Ombor: {{ombor}}.",
+    "tasdiqlanmaguncha": "Tasdiqlanmaguncha bu sotuv \"Amalga oshirilganlar\" bo'limiga tushmaydi va ombor qoldig'i o'zgarmaydi.",
+    "tasdiqlabBolmadi": "Sotuvni ombordan chiqarish uchun tasdiqlab bo'lmadi.",
+    "tasdiqlash": "Tasdiqlash",
+    "errors": {
+      "partnerIdKerak": "Faoliyatni saqlash uchun sotuvda real partner ID bo'lishi kerak.",
+      "masulXodimKerak": "Ish yoki vazifa yaratish uchun mas'ul xodim kerak."
+    }
+  },
+  "productsCard": {
+    "kicker": "Sotuv tarkibi",
+    "sarlavha": "Tovarlar",
+    "qatorSoni": "{{count}} qator",
+    "mahsulotTavsifi": "Mahsulot ma'lumoti katalogdan olinadi"
+  },
+  "faoliyatPanel": {
+    "tablar": {
+      "ish": { "label": "Ish", "title": "Mijoz bilan bog'lanish", "placeholder": "Vazifa haqida batafsil yozing..." },
+      "izoh": { "label": "Izoh", "title": "Izoh yozish", "placeholder": "Izoh matnini kiriting..." },
+      "xabar": { "label": "Xabar", "title": "Xabar yuborish", "placeholder": "Xabar matnini kiriting..." },
+      "vazifa": { "label": "Vazifa", "title": "Vazifa yaratish", "placeholder": "Vazifa tavsifini yozing..." }
+    },
+    "koprok": "Ko'proq",
+    "nimaQilishKerak": "Nima qilish kerak",
+    "xabarYuborishniUlash": "Xabar yuborishni ulash",
+    "xabarMatniniYozing": "Xabar matnini yozing",
+    "qoshishMenyu": {
+      "fayl": "Fayl",
+      "tolovniQabulQilish": "To'lovni qabul qilish",
+      "hujjat": "Hujjat",
+      "crmMalumotlari": "CRM ma'lumotlari"
+    },
+    "mijozKoradiganXabar": "Mijoz ko'radigan xabar",
+    "belgilar": "Belgilar {{count}}/200",
+    "hujjatYaratish": "Hujjat yaratish",
+    "odamniBelgilash": "Odamni belgilash",
+    "xodimTopilmadi": "Backenddan xodim topilmadi.",
+    "xodimTanlash": "Xodim tanlash",
+    "kalendarXodimiTanlash": "Kalendar xodimini tanlash",
+    "biriktirilmagan": "Biriktirilmagan",
+    "aiYordamchi": "AI yordamchi",
+    "emojiTanlash": "Emoji tanlash",
+    "matnUslubi": "Matn uslubi",
+    "sanaVaVaqt": "Sana va vaqt",
+    "kalendariniYopish": "Kalendar panelini yopish",
+    "kalendarigaQoshildi": "Kalendariga qo'shildi",
+    "ishtirokchilar": "ishtirokchilar (1)",
+    "errors": {
+      "saqlanmadi": "Ma'lumot backendga saqlanmadi.",
+      "biriktirishYoq": "{{label}}ni chat xabariga biriktirish endpointi backendda mavjud emas.",
+      "hujjatYaratishYoq": "CRM izohidan hujjat yaratish endpointi backendda mavjud emas."
+    }
+  },
+  "aloqaKanallari": {
+    "sarlavha": "Aloqa kanallarini ulash",
+    "tavsif": "Telegram, WhatsApp, SMS yoki web chatni sotuv xabarlari uchun ulang.",
+    "tabs": {
+      "xabarchilar": "Xabarchilar",
+      "sms": "SMS",
+      "barchaUlanishlar": "Barcha ulanishlar",
+      "bozor": "Bozor"
+    },
+    "wazzupTavsif": "WhatsApp va Telegram kabi xabar almashish kanallarini yagona sotuv oynasiga ulash uchun qulay integratsiya.",
+    "ulanish": "Ulanish",
+    "kanallar": {
+      "telegram": "Mijozlarga Telegram orqali tezkor xabar yuborish uchun ulanish.",
+      "whatsapp": "WhatsApp orqali mijozlar bilan yozishmalarni boshqarish.",
+      "sms": "Telefon raqamiga qisqa xabarlarni yuborish kanalini sozlash.",
+      "webChat": "Saytdan kelgan xabarlarni sotuv kartasida kuzatish."
+    }
+  },
+  "hujjatFeedCard": {
+    "tayyorlandi": "Hujjat tayyorlandi",
+    "ism": "Ism:",
+    "kompaniyangiz": "Sizning kompaniyangiz",
+    "toldirilmagan": "To'ldirilmagan",
+    "mijoz": "Mijoz",
+    "ochiq": "Ochiq",
+    "obunaBolish": "Obuna bo'lish"
+  },
+  "ombordanChiqarishFeedCard": {
+    "qoshildi": "Ombordan chiqarish hujjati qo'shildi",
+    "sotuv": "Sotuv",
+    "mijoz": "Mijoz",
+    "ombor": "Ombor",
+    "korish": "Hujjatni ko'rish"
+  },
+  "feedCard": {
+    "ochirishAria": "{{title}}ni o'chirish"
+  },
+  "calendarFeedCard": {
+    "bajarildiBelgisiniOlish": "Bajarilgan belgini olib tashlash",
+    "bajarildiQilish": "Vazifani bajarildi qilish",
+    "zakrepit": "Zakrepit",
+    "bugunVaqt": "bugun, {{vaqt}}",
+    "rejalashtirilganVoqea": "Rejalashtirilgan voqea",
+    "sanaVaVaqt": "Sana va vaqt",
+    "takrorlash": "Takrorlash",
+    "bajarildi": "Bajarildi",
+    "tahrirlash": "Tahrirlash",
+    "ochirishAria": "Kalendar vazifasini o'chirish",
+    "ochirishTitle": "O'chirish",
+    "amallarAria": "Kalendar amallari",
+    "kengaytmalar": "Kengaytmalar",
+    "zakrepitdanOlish": "Zakrepitdan olish",
+    "zakrepitQilish": "Zakrepit qilish",
+    "boglanganIshlar": "Bog'langan ishlar",
+    "ochirish": "O'chirish"
+  },
+  "kalendarTanlash": {
+    "qoshildi": "Kalendariga qo'shildi",
+    "ishtirokchilar": "ishtirokchilar (1)",
+    "yopishAria": "Kalendar panelini yopish",
+    "bugun": "bugun"
+  }
+}

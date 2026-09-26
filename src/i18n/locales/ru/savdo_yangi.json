@@ -1,0 +1,158 @@
+{
+  "common": {
+    "unknownProduct": "Название товара не указано",
+    "selectedProductFallback": "Выбранный товар",
+    "unit": "шт.",
+    "client": "Клиент",
+    "employee": "Сотрудник",
+    "loading": "Загрузка...",
+    "dateLocale": "ru-RU"
+  },
+  "header": {
+    "closeButtonTitle": "Закрыть",
+    "copyLinkTitle": "Скопировать ссылку",
+    "downloadDraftTitle": "Скачать черновик",
+    "openNewWindowTitle": "Открыть в новом окне",
+    "printTitle": "Печать",
+    "closeAriaLabel": "Закрыть окно"
+  },
+  "errors": {
+    "dismiss": "Закрыть",
+    "selectClientForActivity": "Чтобы сохранить активность CRM, выберите клиента.",
+    "selectResponsibleForTask": "Чтобы создать дело или задачу, выберите ответственного сотрудника.",
+    "selectWarehouseFirst": "Сначала выберите склад.",
+    "endDateBeforeStart": "Дата окончания не может быть раньше даты начала.",
+    "selectAtLeastOneProduct": "Выберите хотя бы один товар.",
+    "insufficientStock": "Для «{{name}}» на складе доступно только {{available}} шт. — вы не можете продать {{requested}} шт.",
+    "totalMustBePositive": "Сумма продажи должна быть больше 0."
+  },
+  "activity": {
+    "today": "Сегодня",
+    "defaultDateTime": "Сегодня, в 15:00",
+    "dateAtTime": "{{date}}, в {{time}}",
+    "reminderTitle": "Напоминание",
+    "namePlaceholderFallback": "Название активности",
+    "detailsPlaceholderFallback": "Опишите активность подробно...",
+    "savedNotice": "Активность добавлена в черновик",
+    "fallbackName": "Активность"
+  },
+  "activityTabs": {
+    "work": "Дело",
+    "comment": "Комментарий",
+    "message": "Сообщение",
+    "task": "Задача",
+    "meeting": "Встреча"
+  },
+  "activityContent": {
+    "work": {
+      "title": "Связаться с клиентом",
+      "placeholder": "Опишите задачу подробно..."
+    },
+    "comment": {
+      "title": "Написать комментарий",
+      "placeholder": "Введите текст комментария..."
+    },
+    "message": {
+      "title": "Отправить сообщение",
+      "placeholder": "Введите текст сообщения..."
+    },
+    "task": {
+      "title": "Создать задачу",
+      "placeholder": "Опишите задачу подробно..."
+    },
+    "meeting": {
+      "title": "Назначить встречу",
+      "placeholder": "Опишите встречу подробно..."
+    }
+  },
+  "stages": {
+    "new": "Новый",
+    "preparingDocument": "Подготовка документа",
+    "prepaymentInvoice": "Счёт на предоплату",
+    "inProgress": "В работе",
+    "finalInvoice": "Итоговый счёт",
+    "saleSuccessful": "Продажа успешна",
+    "saleCancelled": "Продажа отменена",
+    "cancelReasonAnalysis": "Анализ причины отмены"
+  },
+  "currencies": {
+    "uzs": "Узбекский сум",
+    "usd": "Доллар США"
+  },
+  "modal": {
+    "draftTitle": "Добавить черновик",
+    "draftBadge": "Черновик",
+    "draftSectionTitle": "О черновике",
+    "draftNameLabel": "Название черновика",
+    "draftNamePlaceholder": "Черновик №",
+    "draftAmountLabel": "Сумма черновика",
+    "draftNotePrefix": "Название черновика",
+    "draftStockWarning": "На сервере нет склада. Прежде чем создать черновик, создайте склад в разделе Настройки - Склад.",
+    "draftSubmitLabel": "Сохранить черновик",
+    "saleTitle": "Создать продажу",
+    "saleBadge": "Новая",
+    "saleSectionTitle": "О продаже",
+    "saleNameLabel": "Название продажи",
+    "saleNamePlaceholder": "Продажа №",
+    "saleAmountLabel": "Сумма продажи",
+    "saleNotePrefix": "Название продажи",
+    "saleStockWarning": "На сервере нет склада. Прежде чем создать продажу, создайте склад в разделе Настройки - Склад.",
+    "saleSubmitLabel": "Сохранить черновик"
+  },
+  "preview": {
+    "autoName": "Новая {{type}} для {{client}}",
+    "typeDraft": "черновик",
+    "typeSale": "продажа"
+  },
+  "note": {
+    "stageLabel": "Этап",
+    "currencyLabel": "Валюта",
+    "startDateLabel": "Дата начала",
+    "endDateLabel": "Дата окончания"
+  },
+  "labels": {
+    "zeroAmountPlaceholder": "0 сум",
+    "contact": "Контакт",
+    "company": "Компания",
+    "responsible": "Ответственный сотрудник",
+    "warehouse": "Склад",
+    "availableStock": "Доступный остаток",
+    "rowTotal": "Итого по строке"
+  },
+  "placeholders": {
+    "clientSearch": "Имя клиента, телефон или email",
+    "companySearch": "Название компании, телефон или email",
+    "selectProduct": "Выберите товар",
+    "price": "Цена",
+    "quantity": "Количество",
+    "discount": "Скидка",
+    "selectWarehouse": "Выберите склад"
+  },
+  "sections": {
+    "clientAndCompany": "Клиент и компания",
+    "additional": "Дополнительно",
+    "products": "Товары"
+  },
+  "messages": {
+    "clientAutoAttachedToCompany": "Клиент автоматически привязан к компании: {{company}}",
+    "companyRepAutoSelected": "Представитель компании выбран автоматически: {{client}}"
+  },
+  "hints": {
+    "saleCreatedByCurrentUser": "Продажа всегда создаётся от имени пользователя, вошедшего в систему."
+  },
+  "actions": {
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "addRow": "Добавить"
+  },
+  "products": {
+    "removeRowAriaLabel": "Удалить строку товара",
+    "imageButtonTitle": "Изображение",
+    "stockLabelShort": "остаток",
+    "priceLabelShort": "цена"
+  },
+  "summary": {
+    "totalLabel": "Итого по продаже",
+    "paymentHint": "Оплата здесь не принимается — после сохранения продажи как черновика вы примете оплату отдельно на странице продажи."
+  }
+}

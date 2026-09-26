@@ -1,0 +1,99 @@
+{
+  "tarix": {
+    "boshMatn": "Tasdiqlangan sotuvlar mavjud emas"
+  },
+  "bekorQilinganlar": {
+    "eyebrow": "Savdo nazorati",
+    "title": "Bekor qilingan sotuvlar",
+    "refresh": "Yangilash",
+    "searchPlaceholder": "Sotuv raqami, mijoz, telefon yoki mas'ul...",
+    "telefonKiritilmagan": "Telefon kiritilmagan",
+    "columns": {
+      "sotuv": "Sotuv",
+      "mijoz": "Mijoz",
+      "summa": "Summa",
+      "bekorSana": "Bekor qilingan sana",
+      "masul": "Mas'ul",
+      "holati": "Holati"
+    },
+    "izohYoq": "Izoh mavjud emas",
+    "statusBekor": "Bekor qilingan",
+    "emptyTitle": "Bekor qilingan sotuv topilmadi",
+    "emptySubtitle": "Backendda bekor qilingan sotuv paydo bo'lsa, shu yerga avtomatik tushadi.",
+    "footerCount": "{{count}} ta yozuv ko'rsatildi",
+    "footerHint": "Qatorni bosing — real sotuv tafsilotlari ochiladi"
+  },
+  "savdoSelect": {
+    "tanlang": "Tanlang",
+    "qidirish": "Qidirish...",
+    "malumotTopilmadi": "Ma'lumot topilmadi"
+  },
+  "qaytarish": {
+    "sabablar": {
+      "DEFECT": "Nuqsonli mahsulot",
+      "WRONG": "Noto'g'ri mahsulot",
+      "OTHER": "Boshqa sabab"
+    },
+    "holatlar": {
+      "CONFIRMED": "Tasdiqlangan",
+      "CANCELLED": "Bekor qilingan",
+      "DRAFT": "Qoralama"
+    },
+    "xatoliklar": {
+      "sotuvTanlanmagan": "Qaytariladigan sotuvni tanlang.",
+      "omborTopilmadi": "Sotuv ombori topilmadi. Qaytarish uchun ombor kerak.",
+      "yaroqliQatorYoq": "Bu sotuvda qaytarish uchun yaroqli mahsulot qatori topilmadi.",
+      "tasdiqlashXato": "Qaytarish yaratildi, lekin tasdiqlashda xatolik yuz berdi. Ro'yxatdan qaytarishni tanlab qayta tasdiqlang."
+    },
+    "tasdiqlanganSotuv": "Tasdiqlangan sotuv",
+    "sotuvniTanlang": "Sotuvni tanlang",
+    "sabab": "Sabab",
+    "izoh": "Izoh",
+    "izohPlaceholder": "Qaytarish sababi bo'yicha izoh",
+    "toliqQaytarish": "To'liq qaytarish",
+    "mahsulotYoqOgohlantirish": "Qaytarish uchun mahsulotli va tasdiqlangan sotuv mavjud emas.",
+    "columns": {
+      "hujjat": "Hujjat",
+      "sotuvVaMijoz": "Sotuv va mijoz",
+      "sabab": "Sabab",
+      "summa": "Summa",
+      "sana": "Sana",
+      "holati": "Holati"
+    },
+    "emptyList": "Qaytarish hujjatlari mavjud emas"
+  },
+  "sotuvlarJadvali": {
+    "boshMatn": "Sotuv topilmadi",
+    "tolovTuri": {
+      "CASH": "Naqd",
+      "CARD": "Karta",
+      "BANK": "Bank o'tkazmasi",
+      "DEBT": "Qarz"
+    },
+    "holatlar": {
+      "SOLD": "Sotilgan",
+      "PARTIALLY_RETURNED": "Qisman qaytarilgan",
+      "FULLY_RETURNED": "To'liq qaytarilgan"
+    },
+    "columns": {
+      "savdoRaqami": "Savdo raqami",
+      "mijozNomi": "Mijoz nomi",
+      "tolovTuri": "To'lov turi",
+      "summa": "Summa",
+      "holati": "Holati",
+      "qaytarilganSumma": "Qaytarilgan summa",
+      "sana": "Sana",
+      "masulShaxs": "Mas'ul shaxs",
+      "telefonRaqam": "Telefon raqam",
+      "amallar": "Amallar"
+    },
+    "rowTitle": "{{raqam}} sotuvini ko'rish",
+    "qaytarish": "Qaytarish",
+    "emptySubtitle": "Serverdan ma'lumot kelganda shu yerda ko'rinadi.",
+    "pagination": {
+      "info": "{{jami}} ta yozuvdan {{dan}}-{{gacha}} ko'rsatilmoqda",
+      "oldingi": "Oldingi",
+      "keyingi": "Keyingi"
+    }
+  }
+}

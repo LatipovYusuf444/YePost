@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { AlertCircle, CheckCircle2, LoaderCircle, RotateCcw, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import AppModal from "@/Components/common/AppModal";
 import type {
   Qaytarish,
@@ -40,20 +42,24 @@ type UiSabab =
   | "OPERATOR_ERROR"
   | "OTHER";
 
-const sababOptions: Array<{ value: UiSabab; label: string }> = [
-  { value: "CUSTOMER_CHANGED_MIND", label: "Xaridor fikridan qaytdi" },
-  { value: "DEFECT", label: "Mahsulot nuqsonli" },
-  { value: "WRONG", label: "Noto'g'ri sotilgan" },
-  { value: "OPERATOR_ERROR", label: "Operator xatosi" },
-  { value: "OTHER", label: "Boshqa" },
-];
+function sababOptionsRoyxati(t: TFunction): Array<{ value: UiSabab; label: string }> {
+  return [
+    { value: "CUSTOMER_CHANGED_MIND", label: t("qaytarishModal.sababOptions.customerChangedMind") },
+    { value: "DEFECT", label: t("qaytarishModal.sababOptions.defect") },
+    { value: "WRONG", label: t("qaytarishModal.sababOptions.wrong") },
+    { value: "OPERATOR_ERROR", label: t("qaytarishModal.sababOptions.operatorError") },
+    { value: "OTHER", label: t("qaytarishModal.sababOptions.other") },
+  ];
+}
 
-const refundOptions: Array<{ value: RefundMethod; label: string }> = [
-  { value: "CASH", label: "Naqd" },
-  { value: "CARD", label: "Karta" },
-  { value: "BALANCE", label: "Mijoz balansiga" },
-  { value: "NONE", label: "Pul qaytarilmaydi" },
-];
+function refundOptionsRoyxati(t: TFunction): Array<{ value: RefundMethod; label: string }> {
+  return [
+    { value: "CASH", label: t("qaytarishModal.refundOptions.cash") },
+    { value: "CARD", label: t("qaytarishModal.refundOptions.card") },
+    { value: "BALANCE", label: t("qaytarishModal.refundOptions.balance") },
+    { value: "NONE", label: t("qaytarishModal.refundOptions.none") },
+  ];
+}
 
 const uiSababMatni: Record<UiSabab, string> = {
   CUSTOMER_CHANGED_MIND: "Xaridor fikridan qaytdi",
@@ -69,12 +75,12 @@ function backendSabab(sabab: UiSabab): QaytarishSababi {
   return "OTHER";
 }
 
-function mahsulotNomi(item: NonNullable<Sotuv["items"]>[number]) {
+function mahsulotNomi(item: NonNullable<Sotuv["items"]>[number], t: TFunction) {
   return (
     item.modification?.product?.name ||
     item.modification?.name ||
     sotuvMahsulotiModifikatsiyaId(item) ||
-    "Mahsulot"
+    t("qaytarishModal.table.productFallback")
   );
 }
 
@@ -91,11 +97,15 @@ export default function MahsulotQaytarishModal({
   onTasdiqlash,
   onMuvaffaqiyat,
 }: MahsulotQaytarishModalProps) {
+  const { t } = useTranslation("savdo_tolov");
   const [sabab, setSabab] = useState<UiSabab>("CUSTOMER_CHANGED_MIND");
   const [refundMethod, setRefundMethod] = useState<RefundMethod>("CASH");
   const [note, setNote] = useState("");
   const [xatolik, setXatolik] = useState("");
   const [miqdorlar, setMiqdorlar] = useState<Record<string, string>>({});
+
+  const sababOptions = useMemo(() => sababOptionsRoyxati(t), [t]);
+  const refundOptions = useMemo(() => refundOptionsRoyxati(t), [t]);
 
   const sotuvQaytarishlari = useMemo(
     () =>
@@ -123,7 +133,7 @@ export default function MahsulotQaytarishModal({
           item,
           saleItemId,
           modificationId: sotuvMahsulotiModifikatsiyaId(item),
-          nomi: mahsulotNomi(item),
+          nomi: mahsulotNomi(item, t),
           sotilgan,
           oldinQaytarilgan,
           qolgan,
@@ -131,7 +141,7 @@ export default function MahsulotQaytarishModal({
           tanlangan: Number.isFinite(tanlangan) ? tanlangan : 0,
         };
       }),
-    [miqdorlar, sotuv.items, sotuvQaytarishlari]
+    [miqdorlar, sotuv.items, sotuvQaytarishlari, t]
   );
 
   const qaytariladiganSumma = qatorlar.reduce(
@@ -153,12 +163,12 @@ export default function MahsulotQaytarishModal({
     setXatolik("");
 
     if (!warehouseId) {
-      setXatolik("Sotuv ombori topilmadi. Backend qaytarish uchun warehouseId talab qiladi.");
+      setXatolik("qaytarishModal.errors.warehouseMissing");
       return;
     }
 
     if (sabab === "OTHER" && note.trim().length < 3) {
-      setXatolik("Boshqa sabab tanlanganda izoh yozish majburiy.");
+      setXatolik("qaytarishModal.errors.noteRequired");
       return;
     }
 
@@ -173,7 +183,7 @@ export default function MahsulotQaytarishModal({
       }));
 
     if (items.length === 0) {
-      setXatolik("Kamida bitta mahsulot uchun qaytariladigan son kiriting.");
+      setXatolik("qaytarishModal.errors.noItemsSelected");
       return;
     }
 
@@ -187,7 +197,7 @@ export default function MahsulotQaytarishModal({
     );
 
     if (notogriQator) {
-      setXatolik("Qaytariladigan son qolgan miqdordan oshmasligi kerak.");
+      setXatolik("qaytarishModal.errors.exceedsRemaining");
       return;
     }
 
@@ -222,7 +232,7 @@ export default function MahsulotQaytarishModal({
         <div className="sticky top-0 z-20 flex items-start justify-between gap-4 border-b border-orange-100 bg-[#F8FAFC]/95 px-11 py-7 backdrop-blur">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.22em] text-orange-500">
-              Mahsulot qaytarish
+              {t("qaytarishModal.eyebrow")}
             </p>
             <h2 className="mt-1 text-2xl font-black text-slate-900">{sotuvRaqami(sotuv)}</h2>
             <p className="mt-1 text-sm font-semibold text-slate-500">
@@ -241,10 +251,10 @@ export default function MahsulotQaytarishModal({
         <div className="grid min-h-[calc(100vh-170px)] gap-0 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-6 px-11 py-7">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <InfoCard label="To'lov turi" value={paymentType ? tolovTuriMatni[paymentType] : "-"} />
-              <InfoCard label="Sotuv jami" value={pulniFormatlash(sotuvSummasi(sotuv))} />
-              <InfoCard label="Oldin qaytarilgan" value={pulniFormatlash(jamiQaytarilgan)} />
-              <InfoCard label="Qaytariladigan" value={pulniFormatlash(qaytariladiganSumma)} accent />
+              <InfoCard label={t("qaytarishModal.infoCards.tolovTuri")} value={paymentType ? tolovTuriMatni[paymentType] : "-"} />
+              <InfoCard label={t("qaytarishModal.infoCards.sotuvJami")} value={pulniFormatlash(sotuvSummasi(sotuv))} />
+              <InfoCard label={t("qaytarishModal.infoCards.oldinQaytarilgan")} value={pulniFormatlash(jamiQaytarilgan)} />
+              <InfoCard label={t("qaytarishModal.infoCards.qaytariladigan")} value={pulniFormatlash(qaytariladiganSumma)} accent />
             </div>
 
             <div className="overflow-hidden rounded-3xl border border-orange-100 bg-white shadow-sm">
@@ -252,13 +262,13 @@ export default function MahsulotQaytarishModal({
                 <table className="w-full min-w-[920px] text-left text-sm">
                   <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                     <tr>
-                      <th className="px-5 py-4">Mahsulot</th>
-                      <th className="px-4 py-4">Sotilgan</th>
-                      <th className="px-4 py-4">Oldin qaytarilgan</th>
-                      <th className="px-4 py-4">Qaytarish mumkin</th>
-                      <th className="px-4 py-4">Narxi</th>
-                      <th className="px-4 py-4">Qaytariladigan son</th>
-                      <th className="px-4 py-4">Ombor</th>
+                      <th className="px-5 py-4">{t("qaytarishModal.table.columns.mahsulot")}</th>
+                      <th className="px-4 py-4">{t("qaytarishModal.table.columns.sotilgan")}</th>
+                      <th className="px-4 py-4">{t("qaytarishModal.table.columns.oldinQaytarilgan")}</th>
+                      <th className="px-4 py-4">{t("qaytarishModal.table.columns.qaytarishMumkin")}</th>
+                      <th className="px-4 py-4">{t("qaytarishModal.table.columns.narxi")}</th>
+                      <th className="px-4 py-4">{t("qaytarishModal.table.columns.qaytariladiganSon")}</th>
+                      <th className="px-4 py-4">{t("qaytarishModal.table.columns.ombor")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-orange-100/70 text-slate-700">
@@ -285,7 +295,7 @@ export default function MahsulotQaytarishModal({
                         <td className="px-4 py-4">
                           <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-500">
                             <input type="checkbox" checked disabled className="h-4 w-4 accent-orange-500" />
-                            Qaytadi
+                            {t("qaytarishModal.table.qaytadi")}
                           </label>
                         </td>
                       </tr>
@@ -293,7 +303,7 @@ export default function MahsulotQaytarishModal({
                     {qatorlar.length === 0 && (
                       <tr>
                         <td colSpan={7} className="px-6 py-16 text-center font-semibold text-slate-400">
-                          Bu sotuvda mahsulotlar topilmadi.
+                          {t("qaytarishModal.table.emptyRow")}
                         </td>
                       </tr>
                     )}
@@ -305,10 +315,10 @@ export default function MahsulotQaytarishModal({
 
           <aside className="space-y-4 border-l border-orange-100 bg-white/75 p-6 shadow-[-18px_0_50px_rgba(37,99,235,.06)]">
             <div className="rounded-2xl bg-orange-50 p-4 text-sm font-semibold text-orange-700">
-              Tasdiqlangan qaytarish tovarni omborga qaytaradi. Pul qaytarish turi tanlanganiga qarab naqd/karta kassadan chiqadi, mijoz balansiga yoziladi yoki umuman qaytarilmaydi.
+              {t("qaytarishModal.sidebar.infoNote")}
             </div>
             <label className="space-y-2 text-sm font-black text-slate-700">
-              <span>Qaytarish sababi</span>
+              <span>{t("qaytarishModal.sidebar.sababLabel")}</span>
               <SavdoSelect
                 value={sabab}
                 onChange={(value) => setSabab(value as UiSabab)}
@@ -318,7 +328,7 @@ export default function MahsulotQaytarishModal({
               />
             </label>
             <label className="space-y-2 text-sm font-black text-slate-700">
-              <span>Pul qaytarish turi</span>
+              <span>{t("qaytarishModal.sidebar.refundLabel")}</span>
               <SavdoSelect
                 value={refundMethod}
                 onChange={(value) => setRefundMethod(value as RefundMethod)}
@@ -328,20 +338,20 @@ export default function MahsulotQaytarishModal({
               />
             </label>
             <label className="space-y-2 text-sm font-black text-slate-700">
-              <span>Izoh</span>
+              <span>{t("qaytarishModal.sidebar.noteLabel")}</span>
               <textarea
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
                 rows={4}
                 className="w-full rounded-2xl border border-orange-100 bg-white p-4 text-sm font-semibold outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
-                placeholder="Qo'shimcha izoh"
+                placeholder={t("qaytarishModal.sidebar.notePlaceholder")}
               />
             </label>
 
             {xatolik && (
               <div className="flex items-start gap-2 rounded-2xl border border-red-100 bg-red-50 p-3 text-sm font-bold text-red-600">
                 <AlertCircle size={18} className="mt-0.5 shrink-0" />
-                <span>{xatolik}</span>
+                <span>{t(xatolik)}</span>
               </div>
             )}
 
@@ -356,11 +366,11 @@ export default function MahsulotQaytarishModal({
               ) : (
                 <RotateCcw size={18} />
               )}
-              Qaytarishni tasdiqlash
+              {t("qaytarishModal.sidebar.submitButton")}
             </button>
             <div className="flex items-start gap-2 text-xs font-semibold text-emerald-700">
               <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
-              <span>Submitdan keyin return yaratiladi va real backendda tasdiqlanadi.</span>
+              <span>{t("qaytarishModal.sidebar.submitHint")}</span>
             </div>
           </aside>
         </div>

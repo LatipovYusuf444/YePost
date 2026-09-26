@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ReceiptText, RotateCcw } from "lucide-react";
-import type { Qaytarish, Sotuv } from "@/types/savdo";
+import type { Qaytarish, Sotuv, TolovTuri } from "@/types/savdo";
 import {
   masulNomi,
   mijozNomi,
@@ -11,7 +12,6 @@ import {
   sotuvMahsulotiMiqdori,
   sotuvRaqami,
   sotuvSummasi,
-  tolovTuriMatni,
 } from "./savdoYordamchilari";
 
 type SotuvlarJadvaliProps = {
@@ -73,10 +73,17 @@ function qaytarishStatistikasi(sotuv: Sotuv, qaytarishlar: Qaytarish[]) {
 }
 
 const tarixHolatMatni = {
-  SOLD: "Sotilgan",
-  PARTIALLY_RETURNED: "Qisman qaytarilgan",
-  FULLY_RETURNED: "To'liq qaytarilgan",
+  SOLD: "sotuvlarJadvali.holatlar.SOLD",
+  PARTIALLY_RETURNED: "sotuvlarJadvali.holatlar.PARTIALLY_RETURNED",
+  FULLY_RETURNED: "sotuvlarJadvali.holatlar.FULLY_RETURNED",
 } as const;
+
+const tolovTuriKaliti: Record<TolovTuri, string> = {
+  CASH: "sotuvlarJadvali.tolovTuri.CASH",
+  CARD: "sotuvlarJadvali.tolovTuri.CARD",
+  BANK: "sotuvlarJadvali.tolovTuri.BANK",
+  DEBT: "sotuvlarJadvali.tolovTuri.DEBT",
+};
 
 const tarixHolatClass = {
   SOLD: "bg-emerald-50 text-emerald-700 ring-emerald-100",
@@ -109,8 +116,10 @@ export default function SotuvlarJadvali({
   qaytarishlar = [],
   onQaytarish,
   tarixKorinish = false,
-  boshMatn = "Sotuv topilmadi",
+  boshMatn,
 }: SotuvlarJadvaliProps) {
+  const { t } = useTranslation("savdo_kichik");
+  const effectiveBoshMatn = boshMatn ?? t("sotuvlarJadvali.boshMatn");
   const pageSize = 10;
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.max(Math.ceil(sotuvlar.length / pageSize), 1);
@@ -130,23 +139,23 @@ export default function SotuvlarJadvali({
         <table className={`w-full border-collapse text-left text-sm ${tarixKorinish ? "min-w-[1180px]" : "min-w-[900px]"}`}>
           <thead className="text-[13px] font-medium text-slate-500">
             <tr>
-              <th className="border-b border-gray-200 px-4 py-3 font-medium">Savdo raqami</th>
-              <th className="border-b border-gray-200 px-4 py-3 font-medium">Mijoz nomi</th>
+              <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.savdoRaqami")}</th>
+              <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.mijozNomi")}</th>
               {tarixKorinish && (
-                <th className="border-b border-gray-200 px-4 py-3 font-medium">To'lov turi</th>
+                <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.tolovTuri")}</th>
               )}
-              <th className="border-b border-gray-200 px-4 py-3 font-medium">Summa</th>
+              <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.summa")}</th>
               {tarixKorinish && (
                 <>
-                  <th className="border-b border-gray-200 px-4 py-3 font-medium">Holati</th>
-                  <th className="border-b border-gray-200 px-4 py-3 font-medium">Qaytarilgan summa</th>
+                  <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.holati")}</th>
+                  <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.qaytarilganSumma")}</th>
                 </>
               )}
-              <th className="border-b border-gray-200 px-4 py-3 font-medium">Sana</th>
-              <th className="border-b border-gray-200 px-4 py-3 font-medium">Mas'ul shaxs</th>
-              <th className="border-b border-gray-200 px-4 py-3 font-medium">Telefon raqam</th>
+              <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.sana")}</th>
+              <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.masulShaxs")}</th>
+              <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.telefonRaqam")}</th>
               {tarixKorinish && (
-                <th className="border-b border-gray-200 px-4 py-3 text-right font-medium">Amallar</th>
+                <th className="border-b border-gray-200 px-4 py-3 text-right font-medium">{t("sotuvlarJadvali.columns.amallar")}</th>
               )}
             </tr>
           </thead>
@@ -161,7 +170,7 @@ export default function SotuvlarJadvali({
                   key={sotuv.id}
                   onClick={() => onSotuvniOchish(sotuv)}
                   className="cursor-pointer transition hover:bg-orange-50/45"
-                  title={`${sotuvRaqami(sotuv)} sotuvini ko'rish`}
+                  title={t("sotuvlarJadvali.rowTitle", { raqam: sotuvRaqami(sotuv) })}
                 >
                   <td className="border-b border-gray-100 px-4 py-3.5">
                     {sotuvJadvalId(sotuv)}
@@ -171,7 +180,7 @@ export default function SotuvlarJadvali({
                   </td>
                   {tarixKorinish && (
                     <td className="border-b border-gray-100 px-4 py-3.5">
-                      {paymentType ? tolovTuriMatni[paymentType] : "-"}
+                      {paymentType ? t(tolovTuriKaliti[paymentType]) : "-"}
                     </td>
                   )}
                   <td className="border-b border-gray-100 px-4 py-3.5 font-semibold text-emerald-700">
@@ -181,7 +190,7 @@ export default function SotuvlarJadvali({
                     <>
                       <td className="border-b border-gray-100 px-4 py-3.5">
                         <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ring-1 ${tarixHolatClass[stat.holat]}`}>
-                          {tarixHolatMatni[stat.holat]}
+                          {t(tarixHolatMatni[stat.holat])}
                         </span>
                       </td>
                       <td className="border-b border-gray-100 px-4 py-3.5 font-semibold text-slate-900">
@@ -216,7 +225,7 @@ export default function SotuvlarJadvali({
                           className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-emerald-50 px-3 text-xs font-black text-emerald-700 transition hover:bg-emerald-600 hover:text-white disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                         >
                           <RotateCcw size={14} />
-                          Qaytarish
+                          {t("sotuvlarJadvali.qaytarish")}
                         </button>
                       </div>
                     </td>
@@ -229,9 +238,9 @@ export default function SotuvlarJadvali({
               <tr>
                 <td colSpan={tarixKorinish ? 10 : 6} className="px-6 py-20 text-center">
                   <ReceiptText className="mx-auto text-orange-200" size={40} />
-                  <p className="mt-3 font-semibold text-gray-500">{boshMatn}</p>
+                  <p className="mt-3 font-semibold text-gray-500">{effectiveBoshMatn}</p>
                   <p className="mt-1 text-sm text-gray-400">
-                    Serverdan ma'lumot kelganda shu yerda ko'rinadi.
+                    {t("sotuvlarJadvali.emptySubtitle")}
                   </p>
                 </td>
               </tr>
@@ -243,8 +252,11 @@ export default function SotuvlarJadvali({
       {sotuvlar.length > pageSize && (
         <div className="table-pagination mt-5 flex flex-col gap-3 border-t border-gray-100 pt-5 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between">
           <span>
-            {sotuvlar.length} ta yozuvdan {(currentPage - 1) * pageSize + 1}-
-            {Math.min(currentPage * pageSize, sotuvlar.length)} ko'rsatilmoqda
+            {t("sotuvlarJadvali.pagination.info", {
+              jami: sotuvlar.length,
+              dan: (currentPage - 1) * pageSize + 1,
+              gacha: Math.min(currentPage * pageSize, sotuvlar.length),
+            })}
           </span>
           <div className="flex items-center gap-2">
             <button
@@ -253,7 +265,7 @@ export default function SotuvlarJadvali({
               disabled={currentPage === 1}
               className="h-9 rounded-lg border border-gray-200 px-3 font-semibold text-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Oldingi
+              {t("sotuvlarJadvali.pagination.oldingi")}
             </button>
             <span className="min-w-16 text-center font-semibold text-gray-700">
               {currentPage}/{totalPages}
@@ -264,7 +276,7 @@ export default function SotuvlarJadvali({
               disabled={currentPage === totalPages}
               className="h-9 rounded-lg border border-gray-200 px-3 font-semibold text-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Keyingi
+              {t("sotuvlarJadvali.pagination.keyingi")}
             </button>
           </div>
         </div>

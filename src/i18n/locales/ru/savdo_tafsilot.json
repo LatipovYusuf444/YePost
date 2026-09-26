@@ -1,0 +1,458 @@
+{
+  "tabs": {
+    "umumiy": "Основное",
+    "tovarlar": "Товары",
+    "hisobFakturalar": "Счета-фактуры",
+    "tarix": "История"
+  },
+  "bolimlar": {
+    "tolov": "Оплата",
+    "tolovVaYetkazish": "Оплата и доставка",
+    "terminalTolov": "Оплата через терминал",
+    "yetkazish": "Доставка",
+    "ombordanChiqarish": "Списание со склада"
+  },
+  "common": {
+    "dona": "шт.",
+    "bekorQilish": "Отмена",
+    "saqlash": "Сохранить",
+    "saqlanmoqda": "Сохранение...",
+    "yuborish": "Отправить",
+    "yuborilmoqda": "Отправка...",
+    "ochirish": "Удалить",
+    "tasdiqlash": "Подтвердить",
+    "qoshish": "Добавить",
+    "ozgartirish": "изменить",
+    "tezOrada": "Скоро",
+    "tezOradaQoshiladi": "Скоро будет добавлено",
+    "fayl": "Файл",
+    "tolovTuri": {
+      "naqd": "Наличные",
+      "karta": "Карта",
+      "bank": "Банковский перевод"
+    },
+    "faoliyatTuri": {
+      "ish": "Дело",
+      "izoh": "Комментарий",
+      "xabar": "Сообщение",
+      "vazifa": "Задача"
+    },
+    "info": {
+      "mijoz": "Клиент",
+      "telefon": "Телефон",
+      "manzil": "Адрес",
+      "masulShaxs": "Ответственное лицо",
+      "ombor": "Склад",
+      "kompaniya": "Компания",
+      "kompaniyaTanlanmagan": "Компания не выбрана"
+    },
+    "jadval": {
+      "mahsulot": "Товар",
+      "narx": "Цена",
+      "miqdor": "Количество",
+      "ombor": "Склад",
+      "mavjudQoldiq": "Доступный остаток",
+      "rezervda": "В резерве",
+      "ombordanChiqdi": "Списано со склада",
+      "summa": "Сумма"
+    },
+    "totals": {
+      "chegirmaSoliqsiz": "Сумма без скидки и налогов:",
+      "yetkazishSummasi": "Стоимость доставки:",
+      "chegirmaSummasi": "Сумма скидки:",
+      "soliqsizSumma": "Сумма без налога:",
+      "soliqSummasi": "Сумма налога:",
+      "umumiySumma": "Итоговая сумма:",
+      "jami": "Итого:"
+    },
+    "tovarlarYoq": "Товары отсутствуют",
+    "xodimTanlanmagan": "Сотрудник не назначен",
+    "omborTanlanmagan": "Склад не выбран",
+    "tizim": "Система",
+    "mahsulotNomiTopilmadi": "Название товара не найдено",
+    "manzilKiritilmagan": "Адрес не указан",
+    "soatTitle": "{{kun}}, {{soat}}:00"
+  },
+  "header": {
+    "hujjat": "Документ",
+    "hujjatTurlari": {
+      "akt": "Акт",
+      "hisob": "Счёт",
+      "hisobFaktura": "Счёт-фактура",
+      "nakladnoy": "Накладная",
+      "ishonchnoma": "Доверенность",
+      "tijoratTaklifi": "Коммерческое предложение",
+      "pudratShartnomasi": "Договор подряда",
+      "yetkazibBerishShartnomasi": "Договор поставки",
+      "xizmatShartnomasi": "Договор оказания услуг",
+      "universalHujjat": "Универсальный передаточный документ",
+      "ediJismoniy": "Соглашение ЭДО с физлицом",
+      "ediYuridik": "Соглашение ЭДО с юрлицом"
+    },
+    "hujjatlarRoyxati": "Список документов",
+    "yangiShablon": "Добавить новый шаблон",
+    "kengaytmalar": "Расширения",
+    "tolovniQabulQilish": "Принять оплату"
+  },
+  "tezkorPanel": {
+    "yopish": "Закрыть",
+    "havolaNusxalash": "Скопировать ссылку",
+    "malumotYuklab": "Скачать данные",
+    "alohidaOyna": "Открыть в отдельном окне"
+  },
+  "nakladnoy": {
+    "oynaniYopish": "Закрыть окно накладной",
+    "chopEtish": "Печать",
+    "chopEtishTitle": "Печать накладной",
+    "pdfYuklab": "Скачать PDF",
+    "pdfYuklabTitle": "Скачать PDF накладной",
+    "yaratilmoqdaSarlavha": "Формирование PDF-файла",
+    "yaratilmoqdaTavsif": "Документ формируется на основе реальных данных о товарах, клиенте и сумме продажи.",
+    "generatorTavsif": "Документ формируется на основе данных продажи.",
+    "printTitle": "Накладная {{raqam}}",
+    "sarlavha": "Расходная накладная № {{raqam}} от {{sana}}",
+    "yetkazuvchi": "Поставщик",
+    "xaridor": "Покупатель",
+    "tolovTuri": "Способ оплаты",
+    "tel": "тел.:",
+    "jadval": {
+      "raqam": "№",
+      "nomi": "Наименование",
+      "birlik": "Ед. изм.",
+      "miqdor": "Кол-во",
+      "narx": "Цена",
+      "summa": "Сумма"
+    },
+    "mahsulotYoq": "Товары отсутствуют",
+    "jami": "Итого",
+    "topshirdi": "Сдал",
+    "oldi": "Принял"
+  },
+  "umumiyTab": {
+    "qoshimchaMalumotlar": "Дополнительная информация",
+    "qaytarilganSavdo": "Возвращённая продажа",
+    "tanlanmagan": "Не выбрано",
+    "sana": "Дата",
+    "qoshimchaIzoh": "Дополнительный комментарий",
+    "izohYoq": "Нет комментария",
+    "errors": {
+      "mijozBiriktirilmagan": "К этой продаже не привязан клиент или компания.",
+      "partnerIdKerak": "Для сохранения активности на сервере у продажи должен быть реальный ID партнёра.",
+      "masulXodimKerak": "Для создания задачи в CRM необходимо выбрать ответственного сотрудника.",
+      "tahrirEndpointYoq": "Для этого типа записи нет эндпоинта редактирования на сервере.",
+      "xabarniOchirishYoq": "На сервере нет эндпоинта для удаления отправленного сообщения."
+    },
+    "faoliyat": {
+      "crmVazifa": "Задача CRM",
+      "izoh": "Комментарий",
+      "mijozdanXabar": "Сообщение от клиента",
+      "xabarYuborildi": "Сообщение отправлено"
+    },
+    "feed": {
+      "hisoblashRejimi": "Режим расчёта изменён",
+      "hisoblashRejimiTavsif": "На основе цен товаров → {{summa}}",
+      "sotuvYaratildi": "Продажа создана",
+      "sotuvYaratildiTavsif": "Продажа {{raqam}} создана для клиента {{mijoz}}.",
+      "bugun": "Сегодня"
+    }
+  },
+  "kelishuvCard": {
+    "sarlavha": "О сделке",
+    "bosqich": "Этап",
+    "miqdorVaValyuta": "Сумма и валюта",
+    "bolimTavsif": "Здесь отображаются данные об оплате, доставке и списании со склада.",
+    "sotuvJami": "Итого по продаже",
+    "qabulQilinganTolov": "Принятая оплата",
+    "qarzdorlikQoldigi": "Остаток задолженности",
+    "qarzdorlikYoq": "Задолженности нет",
+    "ortiqchaTolov": "Излишек оплаты / возврат",
+    "maydonniTanlang": "Выберите поле",
+    "maydonYarating": "Создать поле",
+    "sotuvniBekorQilish": "Отменить продажу"
+  },
+  "tolovModal": {
+    "belgisi": "Оплата",
+    "sarlavha": "Принять оплату",
+    "avvalgiTolovlar": "Предыдущие оплаты",
+    "tolovTuri": "Способ оплаты",
+    "tolovSummasi": "Сумма оплаты",
+    "tolashToliq": "Оплатить полностью ({{summa}})",
+    "qarzgaQoldirish": "Оставить в долг",
+    "sotuvJami": "Итого по продаже",
+    "jamiTolov": "Итого оплачено",
+    "qarzdorlikQoldigi": "Остаток задолженности",
+    "qarzdorlik": "Задолженность",
+    "yoq": "Нет",
+    "errors": {
+      "manfiyBolmasin": "Сумма оплаты не может быть отрицательной.",
+      "nolDanKatta": "Сумма оплаты должна быть больше 0.",
+      "qarzdorlikdanOshmasin": "Сумма оплаты не должна превышать задолженность. Максимум: {{maksimal}}.",
+      "saqlanmadi": "Оплата не сохранена. Попробуйте ещё раз."
+    },
+    "tolovniSaqlash": "Сохранить оплату",
+    "tolovniQoshish": "Добавить оплату"
+  },
+  "hisobFakturalarTab": {
+    "id": "ID",
+    "nomi": "Наименование",
+    "hisobRaqami": "Номер счёта",
+    "kimYaratgan": "Кем создано",
+    "masul": "Ответственный",
+    "berilganSana": "Дата выдачи",
+    "tolovMuddati": "Срок оплаты",
+    "bosqich": "Этап",
+    "kiritilmagan": "Не указано",
+    "yangi": "Новый",
+    "topilmadi": "По запросу счёт-фактура не найдена",
+    "tanlangan": "Выбрано: 0 / 1",
+    "jamiHisob": "Всего: 1 счёт",
+    "sahifada": "На странице:"
+  },
+  "tarix": {
+    "sarlavha": "История продажи",
+    "tavsif": "Здесь собираются товары, оплаты, документы и выполненные действия по продаже.",
+    "filtr": "Фильтр",
+    "sotilganMahsulotlar": "Проданные товары ({{count}} шт.)",
+    "sana": "Дата",
+    "avtor": "Автор",
+    "tipHodisa": "Тип события",
+    "tavsifUstuni": "Описание",
+    "tartiblashEskidan": "Сортировать от старой даты к новой",
+    "tartiblashYangidan": "Сортировать от новой даты к старой",
+    "sanaBoyichaTartiblash": "Сортировка по дате",
+    "topilmadi": "Данные по истории не найдены",
+    "vaqt": {
+      "sanaYoq": "Дата отсутствует",
+      "minutAvval": "{{count}} мин. назад",
+      "soatAvval": "{{count}} ч. назад",
+      "bugun": "сегодня, {{vaqt}}"
+    },
+    "maydonlar": {
+      "holat": "Статус",
+      "qarzdorlik": "Задолженность",
+      "tolanganSumma": "Оплаченная сумма",
+      "jamiSumma": "Общая сумма",
+      "chegirma": "Скидка",
+      "izoh": "Комментарий",
+      "ombor": "Склад",
+      "masulShaxs": "Ответственное лицо",
+      "mijoz": "Клиент",
+      "mijozKompaniyasi": "Компания клиента",
+      "tolovTuri": "Способ оплаты",
+      "saleType": "Тип продажи"
+    },
+    "qiymat": {
+      "taSoni": "{{count}} шт."
+    },
+    "tavsifMatni": {
+      "holatOzgardi": "Статус: {{eski}} → {{yangi}}",
+      "malumotYangilandi": "Данные продажи обновлены.",
+      "tolovQoshildi": "Оплата добавлена: {{qiymat}}"
+    },
+    "tip": {
+      "ochirildi": "Продажа удалена",
+      "tolovQabulQilindi": "Оплата принята",
+      "tasdiqlandi": "Продажа подтверждена",
+      "bekorQilindi": "Продажа отменена",
+      "yaratildi": "Продажа создана",
+      "yangilandi": "Продажа обновлена"
+    }
+  },
+  "tovarlarTab": {
+    "mahsulotQoshish": "Добавить товар",
+    "saqlash": "Сохранить",
+    "sozlama": "Настройка",
+    "mahsulotYoq": "В этой продаже нет товаров",
+    "mahsulotToping": "Найдите товар или создайте новый",
+    "omborPlaceholder": "Склад",
+    "qoldiqdaTopilmadi": "Товар не найден в остатках склада",
+    "mahsulotOynasiniYopish": "Закрыть окно выбора товара",
+    "omborOynasiniYopish": "Закрыть окно выбора склада",
+    "qoralama": "черновик",
+    "ochirish": "Удалить",
+    "errors": {
+      "mahsulotniTanlang": "Выберите товар.",
+      "narxKatta": "Цена должна быть больше 0.",
+      "miqdorKatta": "Количество должно быть больше 0.",
+      "miqdorOshmasin": "Количество не должно превышать остаток: {{qty}} шт.",
+      "omborniTanlang": "Выберите склад."
+    },
+    "shtrixKod": "Штрих-код: {{value}}",
+    "artikul": "Артикул: {{value}}"
+  },
+  "eskiTovarlarTab": {
+    "mahsulotQoshish": "Добавить товар",
+    "mahsulotTanlash": "Выбрать товар",
+    "mahsulotYoq": "В этой продаже нет товаров",
+    "omborOynasiniYopish": "Закрыть окно выбора склада",
+    "omborPlaceholder": "Склад",
+    "qoralama": "черновик",
+    "biriktirilganOmborTopilmadi": "Склад, привязанный к этой продаже, не найден"
+  },
+  "yetkazishPanel": {
+    "oynaniYopish": "Закрыть окно доставки",
+    "sarlavha": "Организация доставки товаров",
+    "buyurtmaniSozlash": "Настроить заказ",
+    "fikrMulohaza": "Обратная связь",
+    "badge": "Доставка",
+    "sidebar": {
+      "kompaniyaAloqalari": "Показать контакты компании",
+      "skriptTaklif": "Предложить скрипт",
+      "qandayIshlaydi": "Как это работает",
+      "buyurtmaniSozlash": "Настроить заказ"
+    },
+    "qadamTovarlar": "Товары",
+    "qadamYetkazish": "Доставка",
+    "qoshish": "Добавить",
+    "katalogdanTanlash": "Выбрать из каталога",
+    "mahsulot": "Товар",
+    "narxi": "Цена",
+    "miqdori": "Количество",
+    "natija": "Итог",
+    "tovarlarSummasi": "Сумма по товарам:",
+    "mijozFoydasiLabel": "Выгода клиента:",
+    "jami": "Итого:",
+    "malumotYuklanmoqda": "Загрузка данных...",
+    "malumotBor": "Данные о доставке",
+    "malumotYoq": "Данные о доставке отсутствуют",
+    "forma": {
+      "qabulQiluvchi": "Получатель",
+      "telefon": "Телефон",
+      "manzil": "Адрес",
+      "kuryer": "Курьер",
+      "yetkazishNarxi": "Стоимость доставки",
+      "rejalashtirilganVaqt": "Запланированное время",
+      "izoh": "Комментарий"
+    },
+    "saqlash": "Сохранить",
+    "yetkazishniYaratish": "Создать доставку",
+    "jonatish": "Отправить",
+    "yetkazildi": "Доставлено",
+    "bekorQilish": "Отменить",
+    "faqatTasdiqlangan": "Доставка создаётся только для подтверждённой продажи."
+  },
+  "ombordanChiqarish": {
+    "sarlavha": "Документ списания со склада",
+    "tavsifBajarilgan": "Реальная продажа: {{raqam}} · товар списан со склада",
+    "tavsifKutilmoqda": "Реальная продажа: {{raqam}} · спишется со склада при подтверждении",
+    "asosiyMalumotlar": "Основная информация",
+    "koryapsiz": "Сейчас вы просматриваете документ списания со склада для {{mijoz}}.",
+    "tasdiqlandiXabar": "Подтверждено! Товар списан со склада, и продажа перешла в раздел \"Выполненные\".",
+    "amaliBajarilgan": "Складская операция выполнена",
+    "amaliKutilmoqda": "Складская операция ожидается",
+    "amaliTavsif": "{{count}} товар(ов), сумма {{summa}}. Склад: {{ombor}}.",
+    "tasdiqlanmaguncha": "Пока не подтверждено, эта продажа не попадёт в раздел \"Выполненные\", и остаток склада не изменится.",
+    "tasdiqlabBolmadi": "Не удалось подтвердить списание продажи со склада.",
+    "tasdiqlash": "Подтвердить",
+    "errors": {
+      "partnerIdKerak": "Для сохранения активности у продажи должен быть реальный ID партнёра.",
+      "masulXodimKerak": "Для создания дела или задачи нужен ответственный сотрудник."
+    }
+  },
+  "productsCard": {
+    "kicker": "Состав продажи",
+    "sarlavha": "Товары",
+    "qatorSoni": "{{count}} строк",
+    "mahsulotTavsifi": "Информация о товаре берётся из каталога"
+  },
+  "faoliyatPanel": {
+    "tablar": {
+      "ish": { "label": "Дело", "title": "Связь с клиентом", "placeholder": "Опишите задачу подробно..." },
+      "izoh": { "label": "Комментарий", "title": "Написать комментарий", "placeholder": "Введите текст комментария..." },
+      "xabar": { "label": "Сообщение", "title": "Отправить сообщение", "placeholder": "Введите текст сообщения..." },
+      "vazifa": { "label": "Задача", "title": "Создать задачу", "placeholder": "Опишите задачу..." }
+    },
+    "koprok": "Ещё",
+    "nimaQilishKerak": "Что нужно сделать",
+    "xabarYuborishniUlash": "Подключить отправку сообщений",
+    "xabarMatniniYozing": "Напишите текст сообщения",
+    "qoshishMenyu": {
+      "fayl": "Файл",
+      "tolovniQabulQilish": "Принять оплату",
+      "hujjat": "Документ",
+      "crmMalumotlari": "Данные CRM"
+    },
+    "mijozKoradiganXabar": "Сообщение, видимое клиенту",
+    "belgilar": "Символы {{count}}/200",
+    "hujjatYaratish": "Создать документ",
+    "odamniBelgilash": "Отметить человека",
+    "xodimTopilmadi": "Сотрудники не найдены на сервере.",
+    "xodimTanlash": "Выбор сотрудника",
+    "kalendarXodimiTanlash": "Выбор сотрудника календаря",
+    "biriktirilmagan": "Не назначен",
+    "aiYordamchi": "ИИ-помощник",
+    "emojiTanlash": "Выбор эмодзи",
+    "matnUslubi": "Стиль текста",
+    "sanaVaVaqt": "Дата и время",
+    "kalendariniYopish": "Закрыть панель календаря",
+    "kalendarigaQoshildi": "Добавлено в календарь",
+    "ishtirokchilar": "участники (1)",
+    "errors": {
+      "saqlanmadi": "Данные не сохранены на сервере.",
+      "biriktirishYoq": "На сервере нет эндпоинта для прикрепления «{{label}}» к сообщению чата.",
+      "hujjatYaratishYoq": "На сервере нет эндпоинта для создания документа из комментария CRM."
+    }
+  },
+  "aloqaKanallari": {
+    "sarlavha": "Подключение каналов связи",
+    "tavsif": "Подключите Telegram, WhatsApp, SMS или веб-чат для сообщений по продаже.",
+    "tabs": {
+      "xabarchilar": "Мессенджеры",
+      "sms": "SMS",
+      "barchaUlanishlar": "Все подключения",
+      "bozor": "Маркетплейс"
+    },
+    "wazzupTavsif": "Удобная интеграция для подключения таких каналов сообщений, как WhatsApp и Telegram, в единое окно продажи.",
+    "ulanish": "Подключить",
+    "kanallar": {
+      "telegram": "Подключение для быстрой отправки сообщений клиентам через Telegram.",
+      "whatsapp": "Управление перепиской с клиентами через WhatsApp.",
+      "sms": "Настройка канала для отправки коротких сообщений на номер телефона.",
+      "webChat": "Отслеживание сообщений с сайта в карточке продажи."
+    }
+  },
+  "hujjatFeedCard": {
+    "tayyorlandi": "Документ подготовлен",
+    "ism": "Название:",
+    "kompaniyangiz": "Ваша компания",
+    "toldirilmagan": "Не заполнено",
+    "mijoz": "Клиент",
+    "ochiq": "Открыть",
+    "obunaBolish": "Подписаться"
+  },
+  "ombordanChiqarishFeedCard": {
+    "qoshildi": "Добавлен документ списания со склада",
+    "sotuv": "Продажа",
+    "mijoz": "Клиент",
+    "ombor": "Склад",
+    "korish": "Просмотреть документ"
+  },
+  "feedCard": {
+    "ochirishAria": "Удалить «{{title}}»"
+  },
+  "calendarFeedCard": {
+    "bajarildiBelgisiniOlish": "Снять отметку о выполнении",
+    "bajarildiQilish": "Отметить задачу выполненной",
+    "zakrepit": "Закреплено",
+    "bugunVaqt": "сегодня, {{vaqt}}",
+    "rejalashtirilganVoqea": "Запланированное событие",
+    "sanaVaVaqt": "Дата и время",
+    "takrorlash": "Повторить",
+    "bajarildi": "Выполнено",
+    "tahrirlash": "Редактировать",
+    "ochirishAria": "Удалить задачу календаря",
+    "ochirishTitle": "Удалить",
+    "amallarAria": "Действия календаря",
+    "kengaytmalar": "Расширения",
+    "zakrepitdanOlish": "Открепить",
+    "zakrepitQilish": "Закрепить",
+    "boglanganIshlar": "Связанные дела",
+    "ochirish": "Удалить"
+  },
+  "kalendarTanlash": {
+    "qoshildi": "Добавлено в календарь",
+    "ishtirokchilar": "участники (1)",
+    "yopishAria": "Закрыть панель календаря",
+    "bugun": "сегодня"
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "header": {
+    "eyebrow": "Qaytarish tafsilotlari",
+    "titleWithId": "Qaytarish · {{id}}",
+    "titleFallback": "Qaytarish hujjati",
+    "closeAria": "Oynani yopish",
+    "loadError": "Qaytarish ma'lumotlarini olib bo'lmadi."
+  },
+  "view": {
+    "status": "Holat",
+    "sale": "Sotuv",
+    "amount": "Summa",
+    "createdAt": "Yaratilgan sana",
+    "customer": "Mijoz",
+    "customerUnknown": "Ma'lumot mavjud emas",
+    "warehouse": "Ombor",
+    "reason": "Sabab",
+    "responsible": "Mas'ul xodim",
+    "responsibleUnassigned": "Biriktirilmagan",
+    "refundMethod": "Pul qaytarish turi",
+    "note": "Izoh",
+    "editButton": "Qaytarishni tahrirlash",
+    "onlyDraftEditable": "Faqat qoralama qaytarishni tahrirlash mumkin."
+  },
+  "table": {
+    "product": "Mahsulot",
+    "quantity": "Miqdor",
+    "price": "Narx",
+    "total": "Jami",
+    "empty": "Mahsulotlar mavjud emas"
+  },
+  "form": {
+    "saleLabel": "Tasdiqlangan sotuv *",
+    "salePlaceholder": "Sotuvni tanlang",
+    "warehouseLabel": "Ombor *",
+    "warehousePlaceholder": "Omborni tanlang",
+    "reasonLabel": "Qaytarish sababi",
+    "responsibleLabel": "Mas'ul xodim",
+    "responsiblePlaceholder": "Biriktirilmagan",
+    "itemsTitle": "Qaytariladigan mahsulotlar",
+    "itemsHint": "Miqdorni 0 qilish mahsulotni qaytarishdan chiqaradi.",
+    "soldQuantity": "Sotilgan miqdor: {{count}}",
+    "removeItemAria": "Mahsulotni qaytarishdan chiqarish",
+    "itemsEmpty": "Sotuv mahsulotlari topilmadi.",
+    "notePlaceholder": "Qaytarish bo'yicha izoh",
+    "totalAmount": "Qaytarish summasi: {{amount}}",
+    "cancel": "Bekor qilish",
+    "save": "O'zgarishlarni saqlash"
+  },
+  "reasons": {
+    "defect": "Nuqsonli mahsulot",
+    "wrong": "Noto'g'ri mahsulot",
+    "other": "Boshqa sabab"
+  },
+  "refundMethods": {
+    "cash": "Naqd",
+    "card": "Karta",
+    "balance": "Mijoz balansiga",
+    "none": "Pul qaytarilmaydi"
+  },
+  "status": {
+    "confirmed": "Tasdiqlangan",
+    "cancelled": "Bekor qilingan",
+    "draft": "Qoralama"
+  }
+}

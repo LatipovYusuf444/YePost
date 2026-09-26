@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Edit3,
   LoaderCircle,
@@ -45,16 +46,16 @@ type Qator = {
 };
 
 const sababMatni: Record<QaytarishSababi, string> = {
-  DEFECT: "Nuqsonli mahsulot",
-  WRONG: "Noto'g'ri mahsulot",
-  OTHER: "Boshqa sabab",
+  DEFECT: "reasons.defect",
+  WRONG: "reasons.wrong",
+  OTHER: "reasons.other",
 };
 
 const refundMethodMatni: Record<RefundMethod, string> = {
-  CASH: "Naqd",
-  CARD: "Karta",
-  BALANCE: "Mijoz balansiga",
-  NONE: "Pul qaytarilmaydi",
+  CASH: "refundMethods.cash",
+  CARD: "refundMethods.card",
+  BALANCE: "refundMethods.balance",
+  NONE: "refundMethods.none",
 };
 
 function mahsulotNomi(item: {
@@ -72,17 +73,18 @@ function mahsulotNomi(item: {
 }
 
 function sababniOzbekcha(reason?: string) {
-  return sababMatni[String(reason ?? "OTHER").toUpperCase() as QaytarishSababi] ?? "Boshqa sabab";
+  return sababMatni[String(reason ?? "OTHER").toUpperCase() as QaytarishSababi] ?? "reasons.other";
 }
 
 function refundMethodniOzbekcha(method?: string) {
-  return refundMethodMatni[String(method ?? "CASH").toUpperCase() as RefundMethod] ?? "Naqd";
+  return refundMethodMatni[String(method ?? "CASH").toUpperCase() as RefundMethod] ?? "refundMethods.cash";
 }
 
 export default function QaytarishTafsilotlariModal({
   qaytarishId,
   onYopish,
 }: Props) {
+  const { t } = useTranslation("savdo_qaytarish");
   const qaytarishTafsilotiniYuklash = useSavdoStore(
     (state) => state.qaytarishTafsilotiniYuklash
   );
@@ -326,19 +328,21 @@ export default function QaytarishTafsilotlariModal({
             </div>
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-orange-500">
-                Qaytarish tafsilotlari
+                {t("header.eyebrow")}
               </p>
               <h2 className="mt-1 text-2xl font-black text-slate-950">
                 {qaytarish
-                  ? `Qaytarish В· ${qaytarish.id.slice(0, 8).toUpperCase()}`
-                  : "Qaytarish hujjati"}
+                  ? t("header.titleWithId", {
+                      id: qaytarish.id.slice(0, 8).toUpperCase(),
+                    })
+                  : t("header.titleFallback")}
               </h2>
             </div>
           </div>
           <button
             onClick={onYopish}
             className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm ring-1 ring-orange-100 transition hover:bg-orange-500 hover:text-white"
-            aria-label="Oynani yopish"
+            aria-label={t("header.closeAria")}
           >
             <X size={19} />
           </button>
@@ -350,7 +354,7 @@ export default function QaytarishTafsilotlariModal({
           </div>
         ) : !qaytarish ? (
           <div className="p-12 text-center text-gray-500">
-            Qaytarish ma'lumotlarini olib bo'lmadi.
+            {t("header.loadError")}
           </div>
         ) : (
           <div className="p-5 lg:p-9">
@@ -363,9 +367,9 @@ export default function QaytarishTafsilotlariModal({
             {!tahrir ? (
               <>
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  <Malumot nom="Holat" qiymat={holatMatni(holat)} />
+                  <Malumot nom={t("view.status")} qiymat={t(holatMatni(holat))} />
                   <Malumot
-                    nom="Sotuv"
+                    nom={t("view.sale")}
                     qiymat={
                       qaytarish.sale
                         ? sotuvRaqami(qaytarish.sale)
@@ -373,26 +377,26 @@ export default function QaytarishTafsilotlariModal({
                     }
                   />
                   <Malumot
-                    nom="Summa"
+                    nom={t("view.amount")}
                     qiymat={pulniFormatlash(qaytarishSummasi(qaytarish))}
                   />
                   <Malumot
-                    nom="Yaratilgan sana"
+                    nom={t("view.createdAt")}
                     qiymat={sananiFormatlash(qaytarish.createdAt)}
                   />
                 </div>
 
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                   <Malumot
-                    nom="Mijoz"
+                    nom={t("view.customer")}
                     qiymat={
                       qaytarish.sale
                         ? mijozNomi(qaytarish.sale)
-                        : "Ma'lumot mavjud emas"
+                        : t("view.customerUnknown")
                     }
                   />
                   <Malumot
-                    nom="Ombor"
+                    nom={t("view.warehouse")}
                     qiymat={
                       qaytarish.warehouse?.name ??
                       omborlar.find(
@@ -402,25 +406,25 @@ export default function QaytarishTafsilotlariModal({
                     }
                   />
                   <Malumot
-                    nom="Sabab"
+                    nom={t("view.reason")}
                     qiymat={
-                      sababniOzbekcha(qaytarish.reason)
+                      t(sababniOzbekcha(qaytarish.reason))
                     }
                   />
                   <Malumot
-                    nom="Mas'ul xodim"
+                    nom={t("view.responsible")}
                     qiymat={
                       qaytarish.responsible?.fullName ??
                       xodimlar.find(
                         (item) => item.id === qaytarish.responsibleId
                       )?.fullName ??
-                      "Biriktirilmagan"
+                      t("view.responsibleUnassigned")
                     }
                   />
                   <Malumot
-                    nom="Pul qaytarish turi"
+                    nom={t("view.refundMethod")}
                     qiymat={
-                      refundMethodniOzbekcha(qaytarish.refundMethod)
+                      t(refundMethodniOzbekcha(qaytarish.refundMethod))
                     }
                   />
                 </div>
@@ -429,10 +433,10 @@ export default function QaytarishTafsilotlariModal({
                   <table className="w-full min-w-[650px] text-left text-sm">
                     <thead className="bg-[#EFF6FF] text-xs font-black uppercase tracking-wide text-slate-500">
                       <tr>
-                        <th className="px-4 py-3">Mahsulot</th>
-                        <th className="px-4 py-3">Miqdor</th>
-                        <th className="px-4 py-3">Narx</th>
-                        <th className="px-4 py-3">Jami</th>
+                        <th className="px-4 py-3">{t("table.product")}</th>
+                        <th className="px-4 py-3">{t("table.quantity")}</th>
+                        <th className="px-4 py-3">{t("table.price")}</th>
+                        <th className="px-4 py-3">{t("table.total")}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-orange-100">
@@ -456,7 +460,7 @@ export default function QaytarishTafsilotlariModal({
                             colSpan={4}
                             className="px-4 py-10 text-center text-gray-400"
                           >
-                            Mahsulotlar mavjud emas
+                            {t("table.empty")}
                           </td>
                         </tr>
                       )}
@@ -467,7 +471,7 @@ export default function QaytarishTafsilotlariModal({
                 {qaytarish.note && (
                   <div className="mt-5 rounded-[24px] border border-slate-100 bg-white/80 p-5 shadow-sm">
                     <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                      Izoh
+                      {t("view.note")}
                     </p>
                     <p className="mt-1 text-sm font-medium text-gray-700">
                       {qaytarish.note}
@@ -482,11 +486,11 @@ export default function QaytarishTafsilotlariModal({
                       className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-5 font-black text-white"
                     >
                       <Edit3 size={17} />
-                      Qaytarishni tahrirlash
+                      {t("view.editButton")}
                     </button>
                   ) : (
                     <p className="rounded-2xl bg-gray-100 px-4 py-3 text-sm font-bold text-gray-500">
-                      Faqat qoralama qaytarishni tahrirlash mumkin.
+                      {t("view.onlyDraftEditable")}
                     </p>
                   )}
                 </div>
@@ -495,11 +499,11 @@ export default function QaytarishTafsilotlariModal({
               <div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <label className="text-sm font-bold">
-                    Tasdiqlangan sotuv *
+                    {t("form.saleLabel")}
                     <SavdoSelect
                       value={saleId}
                       onChange={(value) => void sotuvniTanlash(value)}
-                      placeholder="Sotuvni tanlang"
+                      placeholder={t("form.salePlaceholder")}
                       className="mt-2"
                       buttonClassName="h-12"
                       options={[
@@ -519,11 +523,11 @@ export default function QaytarishTafsilotlariModal({
                     />
                   </label>
                   <label className="text-sm font-bold">
-                    Ombor *
+                    {t("form.warehouseLabel")}
                     <SavdoSelect
                       value={warehouseId}
                       onChange={setWarehouseId}
-                      placeholder="Omborni tanlang"
+                      placeholder={t("form.warehousePlaceholder")}
                       className="mt-2"
                       buttonClassName="h-12"
                       options={omborlar.map((item) => ({
@@ -533,24 +537,24 @@ export default function QaytarishTafsilotlariModal({
                     />
                   </label>
                   <label className="text-sm font-bold">
-                    Qaytarish sababi
+                    {t("form.reasonLabel")}
                     <SavdoSelect
                       value={reason}
                       onChange={(value) => setReason(value as QaytarishSababi)}
                       className="mt-2"
                       buttonClassName="h-12"
-                      options={Object.entries(sababMatni).map(([value, label]) => ({
+                      options={Object.entries(sababMatni).map(([value, key]) => ({
                         value,
-                        label,
+                        label: t(key),
                       }))}
                     />
                   </label>
                   <label className="text-sm font-bold">
-                    Mas'ul xodim
+                    {t("form.responsibleLabel")}
                     <SavdoSelect
                       value={responsibleId}
                       onChange={setResponsibleId}
-                      placeholder="Biriktirilmagan"
+                      placeholder={t("form.responsiblePlaceholder")}
                       className="mt-2"
                       buttonClassName="h-12"
                       options={xodimlar.map((item) => ({
@@ -564,9 +568,9 @@ export default function QaytarishTafsilotlariModal({
                 <div className="mt-6">
                   <div className="mb-3 flex items-center justify-between">
                     <div>
-                      <h3 className="font-black">Qaytariladigan mahsulotlar</h3>
+                      <h3 className="font-black">{t("form.itemsTitle")}</h3>
                       <p className="text-xs text-gray-400">
-                        Miqdorni 0 qilish mahsulotni qaytarishdan chiqaradi.
+                        {t("form.itemsHint")}
                       </p>
                     </div>
                     {sotuvYuklanmoqda && (
@@ -585,7 +589,7 @@ export default function QaytarishTafsilotlariModal({
                         <div>
                           <p className="font-bold">{item.nom}</p>
                           <p className="mt-1 text-xs text-gray-400">
-                            Sotilgan miqdor: {item.maxQuantity}
+                            {t("form.soldQuantity", { count: item.maxQuantity })}
                           </p>
                         </div>
                         <input
@@ -627,7 +631,7 @@ export default function QaytarishTafsilotlariModal({
                             )
                           }
                           className="flex h-11 items-center justify-center rounded-xl bg-red-50 text-red-500"
-                          aria-label="Mahsulotni qaytarishdan chiqarish"
+                          aria-label={t("form.removeItemAria")}
                         >
                           <Trash2 size={16} />
                         </button>
@@ -635,7 +639,7 @@ export default function QaytarishTafsilotlariModal({
                     ))}
                     {!sotuvYuklanmoqda && items.length === 0 && (
                       <div className="rounded-2xl border border-dashed p-10 text-center text-gray-400">
-                        Sotuv mahsulotlari topilmadi.
+                        {t("form.itemsEmpty")}
                       </div>
                     )}
                   </div>
@@ -645,12 +649,12 @@ export default function QaytarishTafsilotlariModal({
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   className="mt-5 min-h-24 w-full rounded-2xl border p-4 outline-none focus:border-orange-300"
-                  placeholder="Qaytarish bo'yicha izoh"
+                  placeholder={t("form.notePlaceholder")}
                 />
 
                 <div className="mt-4 flex justify-end rounded-2xl bg-orange-50 p-4">
                   <span className="font-black text-orange-700">
-                    Qaytarish summasi: {pulniFormatlash(jami)}
+                    {t("form.totalAmount", { amount: pulniFormatlash(jami) })}
                   </span>
                 </div>
 
@@ -660,7 +664,7 @@ export default function QaytarishTafsilotlariModal({
                     onClick={() => setTahrir(false)}
                     className="h-11 rounded-2xl bg-gray-100 px-5 font-bold text-gray-600"
                   >
-                    Bekor qilish
+                    {t("form.cancel")}
                   </button>
                   <button
                     type="button"
@@ -679,7 +683,7 @@ export default function QaytarishTafsilotlariModal({
                     ) : (
                       <Save size={17} />
                     )}
-                    O'zgarishlarni saqlash
+                    {t("form.save")}
                   </button>
                 </div>
               </div>
@@ -706,8 +710,8 @@ function Malumot({ nom, qiymat }: { nom: string; qiymat: string }) {
 }
 
 function holatMatni(holat: string) {
-  if (holat === "CONFIRMED") return "Tasdiqlangan";
+  if (holat === "CONFIRMED") return "status.confirmed";
   if (holat === "CANCELLED" || holat === "CANCELED")
-    return "Bekor qilingan";
-  return "Qoralama";
+    return "status.cancelled";
+  return "status.draft";
 }

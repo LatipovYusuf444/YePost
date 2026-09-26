@@ -1,4 +1,6 @@
 ﻿import { useEffect, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import {
   Bell,
   CalendarDays,
@@ -121,17 +123,50 @@ type SaqlanganHujjat = {
   sana: string;
 };
 
+// Bu identifikatorlar activeTab/tanlanganBolim state qiymatlari sifatida ham
+// ishlatiladi (bir nechta joyda taqqoslanadi) — shuning uchun o'zi o'zgarmaydi,
+// faqat TAB_LABEL_KEYS/BOLIM_LABEL_KEYS orqali ekranda tarjima qilinadi.
 const tabs = ["Umumiy", "Tovarlar", "Hisob-fakturalar", "Tarix"];
 const bolimlar = ["To'lov", "To'lov va yetkazish", "Terminal orqali to'lov", "Yetkazish", "Ombordan chiqarish"];
 // Real backend bilan hozircha faqat shu ikkisi ishlaydi — qolganlari
 // tayyor bo'lguncha "Qo'shish" menyusida o'chiq (bosib bo'lmaydigan) holatda turadi.
 const faolBolimlar = new Set(["To'lov", "Ombordan chiqarish"]);
 
-function crmActivityniFaoliyatga(activity: Activity): SaqlanganFaoliyat {
+const TAB_LABEL_KEYS: Record<string, string> = {
+  Umumiy: "tabs.umumiy",
+  Tovarlar: "tabs.tovarlar",
+  "Hisob-fakturalar": "tabs.hisobFakturalar",
+  Tarix: "tabs.tarix",
+};
+
+const BOLIM_LABEL_KEYS: Record<string, string> = {
+  "To'lov": "bolimlar.tolov",
+  "To'lov va yetkazish": "bolimlar.tolovVaYetkazish",
+  "Terminal orqali to'lov": "bolimlar.terminalTolov",
+  Yetkazish: "bolimlar.yetkazish",
+  "Ombordan chiqarish": "bolimlar.ombordanChiqarish",
+};
+
+const HUJJAT_MENU_LABEL_KEYS: Record<string, string> = {
+  Akt: "header.hujjatTurlari.akt",
+  Hisob: "header.hujjatTurlari.hisob",
+  "Hisob-faktura": "header.hujjatTurlari.hisobFaktura",
+  Nakladnoy: "header.hujjatTurlari.nakladnoy",
+  Ishonchnoma: "header.hujjatTurlari.ishonchnoma",
+  "Tijorat taklifi": "header.hujjatTurlari.tijoratTaklifi",
+  "Pudrat shartnomasi": "header.hujjatTurlari.pudratShartnomasi",
+  "Yetkazib berish shartnomasi": "header.hujjatTurlari.yetkazibBerishShartnomasi",
+  "Xizmat ko'rsatish shartnomasi": "header.hujjatTurlari.xizmatShartnomasi",
+  "Universal topshirish hujjati": "header.hujjatTurlari.universalHujjat",
+  "EDI jismoniy shaxs kelishuvi": "header.hujjatTurlari.ediJismoniy",
+  "EDI yuridik shaxs kelishuvi": "header.hujjatTurlari.ediYuridik",
+};
+
+function crmActivityniFaoliyatga(activity: Activity, t: TFunction): SaqlanganFaoliyat {
   return {
     id: activity.id,
     turi: activity.type === "TASK" ? "Vazifa" : activity.type === "MEETING" ? "Ish" : "Ish",
-    sarlavha: activity.subject ?? "CRM vazifa",
+    sarlavha: activity.subject ?? t("umumiyTab.faoliyat.crmVazifa"),
     matn: activity.description ?? activity.result ?? "",
     sana: activity.dueAt ?? activity.createdAt ?? new Date().toISOString(),
     xodimId: activity.assigneeId,
@@ -140,11 +175,11 @@ function crmActivityniFaoliyatga(activity: Activity): SaqlanganFaoliyat {
   };
 }
 
-function crmCommentniFaoliyatga(comment: Comment): SaqlanganFaoliyat {
+function crmCommentniFaoliyatga(comment: Comment, t: TFunction): SaqlanganFaoliyat {
   return {
     id: comment.id,
     turi: "Izoh",
-    sarlavha: "Izoh",
+    sarlavha: t("umumiyTab.faoliyat.izoh"),
     matn: comment.text ?? "",
     sana: comment.createdAt ?? new Date().toISOString(),
     pinned: Boolean(comment.pinned ?? comment.isPinned),
@@ -183,11 +218,11 @@ function mijozManzili(sotuv: Sotuv) {
   return tozaManzil(sotuv.customer?.address) || tozaManzil(sotuv.clientCompany?.address) || "—";
 }
 
-function sotuvOmborNomi(sotuv: Sotuv, omborlar: Ombor[]) {
+function sotuvOmborNomi(sotuv: Sotuv, omborlar: Ombor[], t: TFunction) {
   return (
     sotuv.warehouse?.name ||
     omborlar.find((ombor) => ombor.id === sotuv.warehouseId)?.name ||
-    "Ombor tanlanmagan"
+    t("common.omborTanlanmagan")
   );
 }
 
@@ -198,14 +233,14 @@ function qisqaVaqt(value?: string) {
   return new Intl.DateTimeFormat("uz-UZ", { hour: "2-digit", minute: "2-digit" }).format(date);
 }
 
-function xodimNomi(xodim?: XodimTanlovi | null) {
-  if (!xodim) return "Xodim tanlanmagan";
+function xodimNomi(xodim: XodimTanlovi | null | undefined, t: TFunction) {
+  if (!xodim) return t("common.xodimTanlanmagan");
   return xodim.fullName || xodim.name || xodim.username || xodim.email || xodim.id;
 }
 
 function xodimBoshHarflari(xodim?: XodimTanlovi | null) {
-  const nom = xodimNomi(xodim);
-  if (nom === "Xodim tanlanmagan") return "";
+  if (!xodim) return "";
+  const nom = xodim.fullName || xodim.name || xodim.username || xodim.email || xodim.id;
   return nom
     .split(" ")
     .filter(Boolean)
@@ -214,22 +249,22 @@ function xodimBoshHarflari(xodim?: XodimTanlovi | null) {
     .join("");
 }
 
-function tarixVaqti(value?: string) {
-  if (!value) return "Sana yo'q";
+function tarixVaqti(value: string | undefined, t: TFunction) {
+  if (!value) return t("tarix.vaqt.sanaYoq");
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return sananiFormatlash(value);
   const diff = Date.now() - date.getTime();
   const minute = Math.floor(diff / 60000);
-  if (minute >= 0 && minute < 60) return `${Math.max(minute, 1)} minut avval`;
+  if (minute >= 0 && minute < 60) return t("tarix.vaqt.minutAvval", { count: Math.max(minute, 1) });
   const hour = Math.floor(minute / 60);
-  if (hour >= 1 && hour < 24) return `${hour} soat avval`;
+  if (hour >= 1 && hour < 24) return t("tarix.vaqt.soatAvval", { count: hour });
   const today = new Date();
   if (
     date.getFullYear() === today.getFullYear() &&
     date.getMonth() === today.getMonth() &&
     date.getDate() === today.getDate()
   ) {
-    return `bugun, ${qisqaVaqt(value)}`;
+    return t("tarix.vaqt.bugun", { vaqt: qisqaVaqt(value) });
   }
   return sananiFormatlash(value);
 }
@@ -286,13 +321,13 @@ function yilKunlari(year = new Date().getFullYear()) {
   return kunlar;
 }
 
-function mahsulotNomi(item: SotuvItem) {
-  return item.modification?.product?.name ?? item.modification?.name ?? "Mahsulot nomi topilmadi";
+function mahsulotNomi(item: SotuvItem, t: TFunction) {
+  return item.modification?.product?.name ?? item.modification?.name ?? t("common.mahsulotNomiTopilmadi");
 }
 
-function mahsulotTavsifi(item: SotuvItem) {
+function mahsulotTavsifi(item: SotuvItem, t: TFunction) {
   if (item.modification?.product?.name && item.modification?.name) return item.modification.name;
-  return "Mahsulot ma'lumoti katalogdan olinadi";
+  return t("productsCard.mahsulotTavsifi");
 }
 
 function son(value: unknown) {
@@ -323,10 +358,13 @@ function qoldiqNomi(qoldiq: QoldiqTanlovi) {
   return qoldiq.modification?.product?.name ?? qoldiq.modification?.name ?? qoldiq.modificationId;
 }
 
-function qoldiqTavsifi(qoldiq: QoldiqTanlovi) {
+function qoldiqTavsifi(qoldiq: QoldiqTanlovi, t: TFunction) {
   const barcode = qoldiq.modification?.barcode;
   const article = qoldiq.modification?.article;
-  return [barcode ? `Shtrix-kod: ${barcode}` : "", article ? `Artikul: ${article}` : ""]
+  return [
+    barcode ? t("tovarlarTab.shtrixKod", { value: barcode }) : "",
+    article ? t("tovarlarTab.artikul", { value: article }) : "",
+  ]
     .filter(Boolean)
     .join(" · ");
 }
@@ -341,6 +379,7 @@ export default function SotuvTafsilotlariModal({
   onTolovQoshish,
   onBekorQilish,
 }: SotuvTafsilotlariModalProps) {
+  const { t } = useTranslation("savdo_tafsilot");
   const [activeTab, setActiveTab] = useState("Umumiy");
   const [yetkazishOchiq, setYetkazishOchiq] = useState(false);
   const [ombordanChiqarishOchiq, setOmbordanChiqarishOchiq] = useState(false);
@@ -400,7 +439,7 @@ export default function SotuvTafsilotlariModal({
                       hujjatMenuOchiq ? "text-orange-600 ring-1 ring-orange-100" : "text-slate-600 hover:text-orange-600"
                     }`}
                   >
-                    Hujjat <ChevronDown size={15} className={`transition ${hujjatMenuOchiq ? "rotate-180" : ""}`} />
+                    {t("header.hujjat")} <ChevronDown size={15} className={`transition ${hujjatMenuOchiq ? "rotate-180" : ""}`} />
                   </button>
 
                   {hujjatMenuOchiq && (
@@ -429,12 +468,12 @@ export default function SotuvTafsilotlariModal({
                             }}
                             className="flex h-10 w-full items-center rounded-xl px-2 text-sm font-medium text-slate-700 transition hover:bg-orange-50 hover:text-orange-600"
                           >
-                            {nom}
+                            {t(HUJJAT_MENU_LABEL_KEYS[nom] ?? nom)}
                           </button>
                         ))}
 
                         <div className="my-3 h-px bg-slate-100" />
-                        {["Hujjatlar ro'yxati", "Yangi shablon qo'shish"].map((nom) => (
+                        {[t("header.hujjatlarRoyxati"), t("header.yangiShablon")].map((nom) => (
                           <button
                             key={nom}
                             type="button"
@@ -450,7 +489,7 @@ export default function SotuvTafsilotlariModal({
                           onClick={() => setHujjatMenuOchiq(false)}
                           className="flex h-10 w-full items-center justify-between rounded-xl px-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-blue-600"
                         >
-                          <span>Kengaytmalar</span>
+                          <span>{t("header.kengaytmalar")}</span>
                           <ChevronRight size={17} className="text-slate-300" />
                         </button>
                       </div>
@@ -463,7 +502,7 @@ export default function SotuvTafsilotlariModal({
                     onClick={() => setTolovModalOchiq(true)}
                     className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#2563EB] px-4 text-sm font-bold text-white shadow-[0_10px_24px_rgba(37,99,235,.24)] transition hover:bg-[#1D4ED8] disabled:opacity-50"
                   >
-                    {amalBajarilmoqda ? <LoaderCircle size={16} className="animate-spin" /> : "To'lovni qabul qilish"}
+                    {amalBajarilmoqda ? <LoaderCircle size={16} className="animate-spin" /> : t("header.tolovniQabulQilish")}
                     <ChevronDown size={15} />
                   </button>
                 )}
@@ -480,7 +519,7 @@ export default function SotuvTafsilotlariModal({
                     activeTab === tab ? "border border-orange-200 bg-white text-[#2563EB]" : "text-slate-500 hover:bg-white hover:text-[#2563EB]"
                   }`}
                 >
-                  {tab}
+                  {t(TAB_LABEL_KEYS[tab] ?? tab)}
                 </button>
               ))}
             </nav>
@@ -543,6 +582,7 @@ export default function SotuvTafsilotlariModal({
 }
 
 function ModalTezkorPanel({ sotuv, onYopish }: { sotuv: Sotuv; onYopish: () => void }) {
+  const { t } = useTranslation("savdo_tafsilot");
   function havolaniNusxalash() {
     if (typeof window === "undefined") return;
     const url = `${window.location.origin}${window.location.pathname}?sotuv=${sotuv.id}`;
@@ -566,10 +606,10 @@ function ModalTezkorPanel({ sotuv, onYopish }: { sotuv: Sotuv; onYopish: () => v
   }
 
   const amallar = [
-    { label: "Yopish", icon: X, onClick: onYopish },
-    { label: "Havolani nusxalash", icon: Link, onClick: havolaniNusxalash },
-    { label: "Ma'lumotni yuklab olish", icon: Download, onClick: jsonYuklash },
-    { label: "Alohida oynada ochish", icon: ExternalLink, onClick: alohidaOynadaOchish },
+    { label: t("tezkorPanel.yopish"), icon: X, onClick: onYopish },
+    { label: t("tezkorPanel.havolaNusxalash"), icon: Link, onClick: havolaniNusxalash },
+    { label: t("tezkorPanel.malumotYuklab"), icon: Download, onClick: jsonYuklash },
+    { label: t("tezkorPanel.alohidaOyna"), icon: ExternalLink, onClick: alohidaOynadaOchish },
   ];
 
   return (
@@ -607,9 +647,11 @@ function YukXatiGeneratorModal({
   hujjatTuri: HujjatTuri;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("savdo_tafsilot");
   const [tayyor, setTayyor] = useState(false);
   const hujjatRaqam = `${sotuvJadvalId(sotuv)}-${hujjatTuri === "Nakladnoy" ? "YX" : "HF"}`;
   const hujjatSarlavha = hujjatTuri === "Nakladnoy" ? "Nakladnoy" : "Hisob-faktura";
+  const hujjatSarlavhaKorinishi = t(HUJJAT_MENU_LABEL_KEYS[hujjatSarlavha] ?? hujjatSarlavha);
   const mijoz = mijozNomi(sotuv);
   const jami = pulniFormatlash(sotuvSummasi(sotuv));
   const mahsulotlar = sotuv.items ?? [];
@@ -638,8 +680,8 @@ function YukXatiGeneratorModal({
         (item, index) => `
           <tr>
             <td>${index + 1}</td>
-            <td>${mahsulotNomi(item)}</td>
-            <td>dona</td>
+            <td>${mahsulotNomi(item, t)}</td>
+            <td>${t("common.dona")}</td>
             <td>${item.quantity}</td>
             <td>${pulniFormatlash(item.price)}</td>
             <td>${pulniFormatlash(mahsulotJami(item))}</td>
@@ -651,7 +693,7 @@ function YukXatiGeneratorModal({
     printWindow?.document.write(`
       <html>
         <head>
-          <title>Nakladnoy ${hujjatRaqam}</title>
+          <title>${t("nakladnoy.printTitle", { raqam: hujjatRaqam })}</title>
           <style>
             body { font-family: "Times New Roman", Arial, sans-serif; color: #000; padding: 36px 46px; }
             h1 { margin: 0 0 18px; text-align: center; font-size: 24px; font-weight: 800; }
@@ -669,35 +711,35 @@ function YukXatiGeneratorModal({
           </style>
         </head>
         <body>
-          <h1>Chiqim nakladnoyi № ${hujjatRaqam} от ${qisqaSana}</h1>
+          <h1>${t("nakladnoy.sarlavha", { raqam: hujjatRaqam, sana: qisqaSana })}</h1>
           <table class="info">
             <tr>
-              <td class="label">Yetkazuvchi</td>
+              <td class="label">${t("nakladnoy.yetkazuvchi")}</td>
               <td>${yetkazuvchi}, ${yetkazuvchiManzil}</td>
             </tr>
             <tr>
-              <td class="label">Xaridor</td>
-              <td style="text-align:center;font-size:20px;font-weight:800;">${mijoz} tel.: ${xaridorTelefon}</td>
+              <td class="label">${t("nakladnoy.xaridor")}</td>
+              <td style="text-align:center;font-size:20px;font-weight:800;">${mijoz} ${t("nakladnoy.tel")} ${xaridorTelefon}</td>
             </tr>
             <tr class="pay">
-              <td class="label">To'lov turi</td>
+              <td class="label">${t("nakladnoy.tolovTuri")}</td>
               <td>
-                Naqd ${tolovBor("CASH") ? "✓" : "_____"} &nbsp;&nbsp;&nbsp;&nbsp;
-                Karta ${tolovBor("CARD") ? "✓" : "_____"} &nbsp;&nbsp;&nbsp;&nbsp;
-                Bank o'tkazmasi ${tolovBor("BANK") ? "✓" : "_____"}
+                ${t("common.tolovTuri.naqd")} ${tolovBor("CASH") ? "✓" : "_____"} &nbsp;&nbsp;&nbsp;&nbsp;
+                ${t("common.tolovTuri.karta")} ${tolovBor("CARD") ? "✓" : "_____"} &nbsp;&nbsp;&nbsp;&nbsp;
+                ${t("common.tolovTuri.bank")} ${tolovBor("BANK") ? "✓" : "_____"}
               </td>
             </tr>
           </table>
           <table class="items">
-            <thead><tr><th>№</th><th>Nomi</th><th>Birlik</th><th>Miqdor</th><th>Narx</th><th>Summa</th></tr></thead>
-            <tbody>${rows || `<tr><td colspan="6">Mahsulotlar mavjud emas</td></tr>`}</tbody>
+            <thead><tr><th>${t("nakladnoy.jadval.raqam")}</th><th>${t("nakladnoy.jadval.nomi")}</th><th>${t("nakladnoy.jadval.birlik")}</th><th>${t("nakladnoy.jadval.miqdor")}</th><th>${t("nakladnoy.jadval.narx")}</th><th>${t("nakladnoy.jadval.summa")}</th></tr></thead>
+            <tbody>${rows || `<tr><td colspan="6">${t("nakladnoy.mahsulotYoq")}</td></tr>`}</tbody>
             <tfoot>
-              <tr class="total-row"><td colspan="5" style="text-align:right;">Jami</td><td style="text-align:center;">${jami}</td></tr>
+              <tr class="total-row"><td colspan="5" style="text-align:right;">${t("nakladnoy.jami")}</td><td style="text-align:center;">${jami}</td></tr>
             </tfoot>
           </table>
           <div class="signs">
-            <div>Topshirdi <span class="line"></span></div>
-            <div>Oldi <span class="line"></span></div>
+            <div>${t("nakladnoy.topshirdi")} <span class="line"></span></div>
+            <div>${t("nakladnoy.oldi")} <span class="line"></span></div>
           </div>
           <script>window.onload = () => window.print();</script>
         </body>
@@ -792,7 +834,7 @@ function YukXatiGeneratorModal({
       rect(45, y, 505, rowHeight);
       colX.slice(1, -1).forEach((x) => line(x, y, x, y + rowHeight));
       text(String(index + 1), 55, y + 8, 9, "F2");
-      text(mahsulotNomi(item).slice(0, 26), 82, y + 8, 9);
+      text(mahsulotNomi(item, t).slice(0, 26), 82, y + 8, 9);
       text("dona", 254, y + 8, 9);
       text(String(item.quantity), 310, y + 8, 9);
       text(pulniFormatlash(item.price), 360, y + 8, 9);
@@ -855,8 +897,8 @@ function YukXatiGeneratorModal({
             type="button"
             onClick={onClose}
             className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#2563EB] text-white shadow-[0_12px_28px_rgba(37,99,235,.35)] ring-1 ring-white/60 transition duration-200 hover:-translate-y-0.5 hover:bg-[#1D4ED8]"
-            aria-label="Nakladnoy oynasini yopish"
-            title="Yopish"
+            aria-label={t("nakladnoy.oynaniYopish")}
+            title={t("tezkorPanel.yopish")}
           >
             <X size={19} />
           </button>
@@ -864,8 +906,8 @@ function YukXatiGeneratorModal({
             type="button"
             onClick={chopEtish}
             className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-[#2563EB] shadow-[0_10px_24px_rgba(15,23,42,.16)] ring-1 ring-orange-100 transition duration-200 hover:-translate-y-0.5 hover:bg-[#EFF6FF]"
-            aria-label="Nakladnoyni chop etish"
-            title="Chop etish"
+            aria-label={t("nakladnoy.chopEtishTitle")}
+            title={t("nakladnoy.chopEtish")}
           >
             <Printer size={17} />
           </button>
@@ -873,8 +915,8 @@ function YukXatiGeneratorModal({
             type="button"
             onClick={pdfYuklash}
             className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-[#2563EB] shadow-[0_10px_24px_rgba(15,23,42,.16)] ring-1 ring-orange-100 transition duration-200 hover:-translate-y-0.5 hover:bg-[#EFF6FF]"
-            aria-label="Nakladnoy PDF yuklab olish"
-            title="PDF yuklab olish"
+            aria-label={t("nakladnoy.pdfYuklabTitle")}
+            title={t("nakladnoy.pdfYuklab")}
           >
             <Download size={17} />
           </button>
@@ -883,16 +925,16 @@ function YukXatiGeneratorModal({
         <div className="scrollbar-hidden h-full overflow-y-auto px-6 py-5">
           <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-black text-slate-900">{hujjatSarlavha} {hujjatRaqam}</h2>
-              <p className="mt-1 text-[13px] text-slate-500">Sotuv ma'lumotlari asosida hujjat generatsiya qilinmoqda.</p>
+              <h2 className="text-2xl font-black text-slate-900">{hujjatSarlavhaKorinishi} {hujjatRaqam}</h2>
+              <p className="mt-1 text-[13px] text-slate-500">{t("nakladnoy.generatorTavsif")}</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <button onClick={chopEtish} type="button" className="inline-flex h-10 items-center gap-2 rounded-xl bg-white px-3.5 text-[13px] font-bold text-slate-600 shadow-sm transition hover:text-orange-600">
                 <Printer size={16} />
-                Chop etish
+                {t("nakladnoy.chopEtish")}
               </button>
               <button onClick={pdfYuklash} type="button" className="inline-flex h-10 items-center gap-2 rounded-xl bg-white px-3.5 text-[13px] font-bold text-slate-600 shadow-sm transition hover:text-blue-600">
-                PDF yuklab olish <ChevronDown size={15} />
+                {t("nakladnoy.pdfYuklab")} <ChevronDown size={15} />
               </button>
             </div>
           </header>
@@ -904,9 +946,9 @@ function YukXatiGeneratorModal({
                   <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-sky-50 text-sky-500">
                     <FileText size={48} />
                   </div>
-                  <h3 className="mt-6 text-xl font-semibold text-slate-900">PDF faylini yaratish</h3>
+                  <h3 className="mt-6 text-xl font-semibold text-slate-900">{t("nakladnoy.yaratilmoqdaSarlavha")}</h3>
                   <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-500">
-                    Hujjat sotuvdagi real mahsulot, mijoz va summa ma'lumotlari asosida tayyorlanmoqda.
+                    {t("nakladnoy.yaratilmoqdaTavsif")}
                   </p>
                   <div className="mx-auto mt-6 h-2 w-60 overflow-hidden rounded-full bg-slate-100">
                     <div className="h-full w-2/3 animate-pulse rounded-full bg-sky-400" />
@@ -914,27 +956,27 @@ function YukXatiGeneratorModal({
                 </div>
               ) : (
                 <div className="w-full max-w-3xl rounded-2xl border border-slate-100 bg-white p-6 font-serif text-slate-950 shadow-[0_16px_45px_rgba(15,23,42,.07)]">
-                  <h3 className="text-center text-[22px] font-black">Chiqim nakladnoyi № {hujjatRaqam} от {qisqaSana}</h3>
+                  <h3 className="text-center text-[22px] font-black">{t("nakladnoy.sarlavha", { raqam: hujjatRaqam, sana: qisqaSana })}</h3>
 
                   <div className="mt-5 overflow-hidden border border-slate-950">
                     <div className="grid grid-cols-[150px_1fr] border-b border-slate-950">
-                      <div className="flex items-center justify-center border-r border-slate-950 px-3 py-2 text-sm font-black">Yetkazuvchi</div>
+                      <div className="flex items-center justify-center border-r border-slate-950 px-3 py-2 text-sm font-black">{t("nakladnoy.yetkazuvchi")}</div>
                       <div className="px-3 py-2 text-center text-sm leading-5">
                         <b>{yetkazuvchi}</b>, {yetkazuvchiManzil}
                       </div>
                     </div>
                     <div className="grid grid-cols-[150px_1fr] border-b border-slate-950">
-                      <div className="flex items-center justify-center border-r border-slate-950 px-3 py-3 text-sm font-black">Xaridor</div>
+                      <div className="flex items-center justify-center border-r border-slate-950 px-3 py-3 text-sm font-black">{t("nakladnoy.xaridor")}</div>
                       <div className="px-3 py-3 text-center text-lg font-black">
-                        {mijoz} <span className="font-semibold">tel.: {xaridorTelefon}</span>
+                        {mijoz} <span className="font-semibold">{t("nakladnoy.tel")} {xaridorTelefon}</span>
                       </div>
                     </div>
                     <div className="grid grid-cols-[150px_1fr]">
-                      <div className="flex items-center justify-center border-r border-slate-950 px-3 py-2 text-sm font-black">To'lov turi</div>
+                      <div className="flex items-center justify-center border-r border-slate-950 px-3 py-2 text-sm font-black">{t("nakladnoy.tolovTuri")}</div>
                       <div className="flex flex-wrap items-center justify-around gap-3 px-3 py-2 text-sm font-bold">
-                        <span>Naqd {tolovBor("CASH") ? "✓" : "_____"}</span>
-                        <span>Karta {tolovBor("CARD") ? "✓" : "_____"}</span>
-                        <span>Bank o'tkazmasi {tolovBor("BANK") ? "✓" : "_____"}</span>
+                        <span>{t("common.tolovTuri.naqd")} {tolovBor("CASH") ? "✓" : "_____"}</span>
+                        <span>{t("common.tolovTuri.karta")} {tolovBor("CARD") ? "✓" : "_____"}</span>
+                        <span>{t("common.tolovTuri.bank")} {tolovBor("BANK") ? "✓" : "_____"}</span>
                       </div>
                     </div>
                   </div>
@@ -943,20 +985,20 @@ function YukXatiGeneratorModal({
                     <table className="w-full border-collapse text-left text-[13px]">
                       <thead>
                         <tr>
-                          <th className="border-r border-slate-950 px-3 py-2 text-center">№</th>
-                          <th className="border-r border-slate-950 px-3 py-2 text-center">Nomi</th>
-                          <th className="border-r border-slate-950 px-3 py-2 text-center">Birlik</th>
-                          <th className="border-r border-slate-950 px-3 py-2 text-center">Miqdor</th>
-                          <th className="border-r border-slate-950 px-3 py-2 text-center">Narx</th>
-                          <th className="px-3 py-2 text-center">Summa</th>
+                          <th className="border-r border-slate-950 px-3 py-2 text-center">{t("nakladnoy.jadval.raqam")}</th>
+                          <th className="border-r border-slate-950 px-3 py-2 text-center">{t("nakladnoy.jadval.nomi")}</th>
+                          <th className="border-r border-slate-950 px-3 py-2 text-center">{t("nakladnoy.jadval.birlik")}</th>
+                          <th className="border-r border-slate-950 px-3 py-2 text-center">{t("nakladnoy.jadval.miqdor")}</th>
+                          <th className="border-r border-slate-950 px-3 py-2 text-center">{t("nakladnoy.jadval.narx")}</th>
+                          <th className="px-3 py-2 text-center">{t("nakladnoy.jadval.summa")}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {mahsulotlar.map((item, index) => (
                           <tr key={item.id ?? `${item.modificationId}-${index}`}>
                             <td className="border-t border-r border-slate-950 px-3 py-1.5 text-center font-bold">{index + 1}</td>
-                            <td className="border-t border-r border-slate-950 px-3 py-1.5 font-semibold">{mahsulotNomi(item)}</td>
-                            <td className="border-t border-r border-slate-950 px-3 py-1.5 text-center">dona</td>
+                            <td className="border-t border-r border-slate-950 px-3 py-1.5 font-semibold">{mahsulotNomi(item, t)}</td>
+                            <td className="border-t border-r border-slate-950 px-3 py-1.5 text-center">{t("common.dona")}</td>
                             <td className="border-t border-r border-slate-950 px-3 py-1.5 text-center">{item.quantity}</td>
                             <td className="border-t border-r border-slate-950 px-3 py-1.5 text-center">{pulniFormatlash(item.price)}</td>
                             <td className="border-t border-slate-950 px-3 py-1.5 text-center font-bold">{pulniFormatlash(mahsulotJami(item))}</td>
@@ -965,7 +1007,7 @@ function YukXatiGeneratorModal({
                         {mahsulotlar.length === 0 && (
                           <tr>
                             <td className="border-t border-slate-950 px-3 py-5 text-center text-slate-500" colSpan={6}>
-                              Mahsulotlar mavjud emas
+                              {t("nakladnoy.mahsulotYoq")}
                             </td>
                           </tr>
                         )}
@@ -973,7 +1015,7 @@ function YukXatiGeneratorModal({
                       <tfoot>
                         <tr>
                           <td colSpan={5} className="border-t border-r border-slate-950 px-3 py-2 text-right font-black">
-                            Jami
+                            {t("nakladnoy.jami")}
                           </td>
                           <td className="border-t border-slate-950 px-3 py-2 text-center font-black">{jami}</td>
                         </tr>
@@ -983,11 +1025,11 @@ function YukXatiGeneratorModal({
 
                   <div className="mt-7 grid grid-cols-2 gap-8 text-base">
                     <div className="flex items-end gap-3">
-                      <span>Topshirdi</span>
+                      <span>{t("nakladnoy.topshirdi")}</span>
                       <span className="h-px flex-1 bg-slate-950" />
                     </div>
                     <div className="flex items-end gap-3">
-                      <span>Oldi</span>
+                      <span>{t("nakladnoy.oldi")}</span>
                       <span className="h-px flex-1 bg-slate-950" />
                     </div>
                   </div>
@@ -1030,6 +1072,7 @@ function UmumiyTab({
   hujjatlar: SaqlanganHujjat[];
   onHujjatOchish: (hujjat: SaqlanganHujjat) => void;
 }) {
+  const { t } = useTranslation("savdo_tafsilot");
   const [saqlanganFaoliyatlar, setSaqlanganFaoliyatlar] = useState<SaqlanganFaoliyat[]>([]);
   const [crmYuklanmoqda, setCrmYuklanmoqda] = useState(false);
   const [crmXatolik, setCrmXatolik] = useState("");
@@ -1060,7 +1103,7 @@ function UmumiyTab({
       setCrmXatolik("");
       if (!partnerId) {
         setSaqlanganFaoliyatlar([]);
-        if (!customerId && !sotuv.clientCompanyId) setCrmXatolik("Bu sotuvga mijoz yoki kompaniya biriktirilmagan.");
+        if (!customerId && !sotuv.clientCompanyId) setCrmXatolik(t("umumiyTab.errors.mijozBiriktirilmagan"));
         return;
       }
 
@@ -1073,9 +1116,9 @@ function UmumiyTab({
         ]);
         if (!active) return;
         setSaqlanganFaoliyatlar([
-          ...activities.map(crmActivityniFaoliyatga),
-          ...royxatniAjratish(comments).map(crmCommentniFaoliyatga),
-          ...royxatniAjratish(messages).map(crmXabarniFaoliyatga),
+          ...activities.map((activity) => crmActivityniFaoliyatga(activity, t)),
+          ...royxatniAjratish(comments).map((comment) => crmCommentniFaoliyatga(comment, t)),
+          ...royxatniAjratish(messages).map((message) => crmXabarniFaoliyatga(message, t)),
         ]);
       } catch (error) {
         if (!active) return;
@@ -1090,13 +1133,13 @@ function UmumiyTab({
     return () => {
       active = false;
     };
-  }, [customerId, partnerId, sotuv.clientCompanyId, sotuv.id]);
+  }, [customerId, partnerId, sotuv.clientCompanyId, sotuv.id, t]);
 
   async function faoliyatniSaqlash(faoliyat: Omit<SaqlanganFaoliyat, "id" | "sana"> & { sana?: string }) {
     try {
       setCrmXatolik("");
       if (!partnerId) {
-        setCrmXatolik("Faoliyatni backendga saqlash uchun sotuvda real partner ID bo'lishi kerak.");
+        setCrmXatolik(t("umumiyTab.errors.partnerIdKerak"));
         return false;
       }
       if (partnerId) {
@@ -1106,20 +1149,20 @@ function UmumiyTab({
             attachmentIds: faoliyat.attachmentIds,
             mentionUserIds: faoliyat.mentionUserIds,
           });
-          setSaqlanganFaoliyatlar((joriy) => [crmCommentniFaoliyatga(comment), ...joriy]);
+          setSaqlanganFaoliyatlar((joriy) => [crmCommentniFaoliyatga(comment, t), ...joriy]);
           return true;
         }
 
         if (faoliyat.turi === "Xabar") {
           const text = faoliyat.matn || faoliyat.sarlavha;
           const message = await crmApi.partnerChatXabarYuborish(partnerId, text);
-          setSaqlanganFaoliyatlar((joriy) => [crmXabarniFaoliyatga(message), ...joriy]);
+          setSaqlanganFaoliyatlar((joriy) => [crmXabarniFaoliyatga(message, t), ...joriy]);
           return true;
         }
 
         const assigneeId = faoliyat.xodimId || sotuv.responsibleId;
         if (!assigneeId) {
-          setCrmXatolik("CRM ish yaratish uchun mas'ul xodim tanlanishi kerak.");
+          setCrmXatolik(t("umumiyTab.errors.masulXodimKerak"));
           return false;
         }
 
@@ -1131,7 +1174,7 @@ function UmumiyTab({
           dueAt: faoliyat.sana ?? new Date().toISOString(),
           assigneeId,
         });
-        setSaqlanganFaoliyatlar((joriy) => [crmActivityniFaoliyatga(activity), ...joriy]);
+        setSaqlanganFaoliyatlar((joriy) => [crmActivityniFaoliyatga(activity, t), ...joriy]);
         return true;
       }
     } catch (error) {
@@ -1147,7 +1190,7 @@ function UmumiyTab({
       if (partnerId && joriyFaoliyat?.turi === "Izoh" && malumot.matn !== undefined) {
         const comment = await crmApi.commentYangilash(id, malumot.matn);
         setSaqlanganFaoliyatlar((joriy) =>
-          joriy.map((faoliyat) => (faoliyat.id === id ? crmCommentniFaoliyatga(comment) : faoliyat))
+          joriy.map((faoliyat) => (faoliyat.id === id ? crmCommentniFaoliyatga(comment, t) : faoliyat))
         );
         return;
       }
@@ -1162,18 +1205,18 @@ function UmumiyTab({
             ? await crmApi.activityYakunlash(id)
             : await crmApi.activityYangilash(id, { dueAt: joriyFaoliyat?.sana });
           setSaqlanganFaoliyatlar((joriy) =>
-            joriy.map((faoliyat) => (faoliyat.id === id ? crmActivityniFaoliyatga(activity) : faoliyat))
+            joriy.map((faoliyat) => (faoliyat.id === id ? crmActivityniFaoliyatga(activity, t) : faoliyat))
           );
           return;
         }
         const activity = await crmApi.activityYangilash(id, data);
         setSaqlanganFaoliyatlar((joriy) =>
-          joriy.map((faoliyat) => (faoliyat.id === id ? crmActivityniFaoliyatga(activity) : faoliyat))
+          joriy.map((faoliyat) => (faoliyat.id === id ? crmActivityniFaoliyatga(activity, t) : faoliyat))
         );
         return;
       }
 
-      setCrmXatolik("Bu yozuv turi uchun backend tahrirlash endpointi mavjud emas.");
+      setCrmXatolik(t("umumiyTab.errors.tahrirEndpointYoq"));
     } catch (error) {
       setCrmXatolik(getApiErrorMessage(error));
     }
@@ -1183,7 +1226,7 @@ function UmumiyTab({
     try {
       const joriyFaoliyat = saqlanganFaoliyatlar.find((faoliyat) => faoliyat.id === id);
       if (joriyFaoliyat?.turi === "Xabar") {
-        setCrmXatolik("Yuborilgan xabarni o‘chirish endpointi backendda mavjud emas.");
+        setCrmXatolik(t("umumiyTab.errors.xabarniOchirishYoq"));
         return;
       }
       if (partnerId && joriyFaoliyat?.turi === "Izoh") {
@@ -1204,13 +1247,30 @@ function UmumiyTab({
           ? await crmApi.commentUnpin(faoliyat.id)
           : await crmApi.commentPin(faoliyat.id);
         setSaqlanganFaoliyatlar((joriy) =>
-          joriy.map((item) => (item.id === faoliyat.id ? crmCommentniFaoliyatga(comment) : item))
+          joriy.map((item) => (item.id === faoliyat.id ? crmCommentniFaoliyatga(comment, t) : item))
         );
         return;
       }
       await faoliyatniYangilash(faoliyat.id, { pinned: !faoliyat.pinned });
     } catch (error) {
       setCrmXatolik(getApiErrorMessage(error));
+    }
+  }
+
+  // faoliyat.turi qiymati ("Ish"/"Izoh"/"Xabar"/"Vazifa") state va taqqoslashlarda
+  // ishlatilgani uchun o'zi o'zgarmaydi — bu faqat ekranda ko'rsatish uchun tarjima.
+  function faoliyatTuriKorinishi(turi: string) {
+    switch (turi) {
+      case "Ish":
+        return t("common.faoliyatTuri.ish");
+      case "Izoh":
+        return t("common.faoliyatTuri.izoh");
+      case "Xabar":
+        return t("common.faoliyatTuri.xabar");
+      case "Vazifa":
+        return t("common.faoliyatTuri.vazifa");
+      default:
+        return turi;
     }
   }
 
@@ -1230,11 +1290,11 @@ function UmumiyTab({
         />
 
         <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(37,99,235,.08)] backdrop-blur">
-          <CardTitle title="Qo'shimcha ma'lumotlar" action="o'zgartirish" />
-          <Info label="Qaytarilgan savdo" value="Tanlanmagan" pill />
-          <Info label="Mas'ul shaxs" value={masulNomi(sotuv)} />
-          <Info label="Sana" value={sananiFormatlash(sotuv.createdAt)} />
-          <Info label="Qo'shimcha izoh" value={sotuv.note || "Izoh yo'q"} />
+          <CardTitle title={t("umumiyTab.qoshimchaMalumotlar")} action={t("common.ozgartirish")} />
+          <Info label={t("umumiyTab.qaytarilganSavdo")} value={t("umumiyTab.tanlanmagan")} pill />
+          <Info label={t("common.info.masulShaxs")} value={masulNomi(sotuv)} />
+          <Info label={t("umumiyTab.sana")} value={sananiFormatlash(sotuv.createdAt)} />
+          <Info label={t("umumiyTab.qoshimchaIzoh")} value={sotuv.note || t("umumiyTab.izohYoq")} />
         </section>
       </aside>
 
@@ -1247,7 +1307,7 @@ function UmumiyTab({
             </div>
           )}
           <FaoliyatPanel xodimlar={xodimlar} onSaqlash={faoliyatniSaqlash} />
-        <Divider label="Bugun" />
+        <Divider label={t("umumiyTab.feed.bugun")} />
         {crmYuklanmoqda && (
           <div className="flex h-24 items-center justify-center rounded-2xl bg-white/92 shadow-[0_18px_46px_rgba(37,99,235,.08)]">
             <LoaderCircle className="animate-spin text-orange-500" size={24} />
@@ -1276,7 +1336,7 @@ function UmumiyTab({
           ) : (
               <FeedCard
                 key={faoliyat.id}
-                title={faoliyat.turi}
+                title={faoliyatTuriKorinishi(faoliyat.turi)}
                 time={qisqaVaqt(faoliyat.sana)}
                 text={`${faoliyat.sarlavha}${faoliyat.matn ? ` — ${faoliyat.matn}` : ""}`}
                 onOchirish={faoliyat.turi === "Xabar" ? undefined : () => faoliyatniOchirish(faoliyat.id)}
@@ -1290,8 +1350,8 @@ function UmumiyTab({
             onOchish={onOmbordanChiqarish}
           />
         )}
-        <FeedCard title="Hisoblash rejimi o'zgartirildi" time={vaqt} text={`Tovarlar narxiga asoslanib → ${pulniFormatlash(jami)}`} />
-        <FeedCard title="Sotuv yaratildi" time={vaqt} text={`${mijozNomi(sotuv)} uchun ${sotuvRaqami(sotuv)} sotuv yaratildi.`} />
+        <FeedCard title={t("umumiyTab.feed.hisoblashRejimi")} time={vaqt} text={t("umumiyTab.feed.hisoblashRejimiTavsif", { summa: pulniFormatlash(jami) })} />
+        <FeedCard title={t("umumiyTab.feed.sotuvYaratildi")} time={vaqt} text={t("umumiyTab.feed.sotuvYaratildiTavsif", { mijoz: mijozNomi(sotuv), raqam: sotuvRaqami(sotuv) })} />
         <ProductsCard sotuv={sotuv} />
       </main>
     </div>
@@ -1319,6 +1379,7 @@ function KelishuvCard({
   onYetkazish: () => void;
   onOmbordanChiqarish: () => void;
 }) {
+  const { t } = useTranslation("savdo_tafsilot");
   const [menuOpen, setMenuOpen] = useState(false);
   const [tanlanganBolim, setTanlanganBolim] = useState("To'lov va yetkazish");
   const tolanganSumma = sotuvTolanganSummasi(sotuv);
@@ -1334,12 +1395,12 @@ function KelishuvCard({
 
   return (
     <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(37,99,235,.08)] backdrop-blur">
-      <CardTitle title="Kelishuv haqida" action="o'zgartirish" />
-      <Info label="Bosqich" value={sotuvHolatiMatni[holat]} />
+      <CardTitle title={t("kelishuvCard.sarlavha")} action={t("common.ozgartirish")} />
+      <Info label={t("kelishuvCard.bosqich")} value={sotuvHolatiMatni[holat]} />
 
       <div className="mt-4 flex items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-slate-400">Miqdor va valyuta</p>
+          <p className="text-sm text-slate-400">{t("kelishuvCard.miqdorVaValyuta")}</p>
           <h2 className="mt-1 text-4xl font-light tracking-wide text-slate-700">{pulniFormatlash(jami)}</h2>
         </div>
         {draft ? (
@@ -1348,7 +1409,7 @@ function KelishuvCard({
             onClick={onTolovOchish}
             className="h-10 rounded-xl bg-[#2563EB] px-4 text-xs font-black uppercase text-white shadow-[0_10px_24px_rgba(37,99,235,.22)] transition hover:bg-[#1D4ED8] disabled:opacity-50"
           >
-            To'lovni qabul qilish
+            {t("header.tolovniQabulQilish")}
           </button>
         ) : (
           <span className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100">{sotuvHolatiMatni[holat]}</span>
@@ -1356,8 +1417,8 @@ function KelishuvCard({
       </div>
 
       <div className="mt-5 rounded-2xl border border-orange-100 bg-gradient-to-br from-[#F8FAFC] to-white p-4">
-        <p className="text-sm text-slate-500">{tanlanganBolim}</p>
-        <p className="mt-3 text-sm text-slate-400">Bu yerda to'lov, yetkazish va ombordan chiqarish ma'lumotlari ko'rsatiladi.</p>
+        <p className="text-sm text-slate-500">{t(BOLIM_LABEL_KEYS[tanlanganBolim] ?? tanlanganBolim)}</p>
+        <p className="mt-3 text-sm text-slate-400">{t("kelishuvCard.bolimTavsif")}</p>
         <div className="mt-4 border-t border-slate-100 pt-3">
           <div className="relative">
             <button
@@ -1366,7 +1427,7 @@ function KelishuvCard({
               className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#2563EB] px-4 text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,235,.22)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8]"
             >
               <Plus size={16} />
-              Qo'shish
+              {t("common.qoshish")}
             </button>
             {menuOpen && (
               <div className="absolute left-0 top-12 z-40 w-[238px] rounded-[22px] bg-white py-3 shadow-[0_18px_50px_rgba(15,23,42,.16)] ring-1 ring-orange-100">
@@ -1378,7 +1439,7 @@ function KelishuvCard({
                       type="button"
                       disabled={!faol}
                       onClick={() => bolimniTanlash(bolim)}
-                      title={faol ? undefined : "Tez orada qo'shiladi"}
+                      title={faol ? undefined : t("common.tezOradaQoshiladi")}
                       className={`flex h-11 w-full items-center gap-3 px-5 text-left text-[15px] transition ${
                         faol
                           ? "text-slate-700 hover:bg-orange-50 hover:text-[#2563EB]"
@@ -1388,10 +1449,10 @@ function KelishuvCard({
                       {bolim === "Ombordan chiqarish" && (
                         <Package size={15} className={faol ? "text-sky-500" : "text-slate-300"} />
                       )}
-                      <span className="flex-1">{bolim}</span>
+                      <span className="flex-1">{t(BOLIM_LABEL_KEYS[bolim] ?? bolim)}</span>
                       {!faol && (
                         <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase text-slate-400">
-                          Tez orada
+                          {t("common.tezOrada")}
                         </span>
                       )}
                     </button>
@@ -1412,20 +1473,20 @@ function KelishuvCard({
           )}
           <div className="mt-6 space-y-2 text-sm">
             <div className="flex justify-between text-slate-400">
-              <span>Sotuv jami</span>
+              <span>{t("kelishuvCard.sotuvJami")}</span>
               <span>{pulniFormatlash(jami)}</span>
             </div>
             <div className="flex justify-between text-[#2563EB]">
-              <span>Qabul qilingan to'lov</span>
+              <span>{t("kelishuvCard.qabulQilinganTolov")}</span>
               <span className="font-bold">{pulniFormatlash(tolanganSumma)}</span>
             </div>
             <div className={`flex justify-between ${qarzdorlikSumma > 0 ? "text-red-500" : "text-emerald-600"}`}>
-              <span>{qarzdorlikSumma > 0 ? "Qarzdorlik qoldig'i" : "Qarzdorlik yo'q"}</span>
+              <span>{qarzdorlikSumma > 0 ? t("kelishuvCard.qarzdorlikQoldigi") : t("kelishuvCard.qarzdorlikYoq")}</span>
               <span className="font-bold">{pulniFormatlash(qarzdorlikSumma)}</span>
             </div>
             {ortiqchaTolovSumma > 0 && (
               <div className="flex justify-between text-amber-600">
-                <span>Ortiqcha to'lov / qaytim</span>
+                <span>{t("kelishuvCard.ortiqchaTolov")}</span>
                 <span className="font-bold">{pulniFormatlash(ortiqchaTolovSumma)}</span>
               </div>
             )}
@@ -1433,28 +1494,22 @@ function KelishuvCard({
         </div>
       </div>
 
-      <Info label="Mijoz" value={modalMijozNomi(sotuv)} />
-      <Info label="Telefon" value={mijozTelefon(sotuv)} />
-      <Info label="Manzil" value={mijozManzili(sotuv)} />
-      <Info label="Mas'ul shaxs" value={masulNomi(sotuv)} />
+      <Info label={t("common.info.mijoz")} value={modalMijozNomi(sotuv)} />
+      <Info label={t("common.info.telefon")} value={mijozTelefon(sotuv)} />
+      <Info label={t("common.info.manzil")} value={mijozManzili(sotuv)} />
+      <Info label={t("common.info.masulShaxs")} value={masulNomi(sotuv)} />
       <div className="mt-5 flex flex-wrap justify-between gap-3 text-xs text-slate-500">
-        <span>Maydonni tanlang</span>
-        <span>Maydon yarating</span>
+        <span>{t("kelishuvCard.maydonniTanlang")}</span>
+        <span>{t("kelishuvCard.maydonYarating")}</span>
         {draft && (
           <button disabled={amalBajarilmoqda} onClick={() => onBekorQilish(sotuv.id)} className="text-red-500 disabled:opacity-50">
-            Sotuvni bekor qilish
+            {t("kelishuvCard.sotuvniBekorQilish")}
           </button>
         )}
       </div>
     </section>
   );
 }
-
-const tolovTuriOptions: Array<{ value: TolovTuri; label: string }> = [
-  { value: "CASH", label: "Naqd" },
-  { value: "CARD", label: "Karta" },
-  { value: "BANK", label: "Bank o'tkazmasi" },
-];
 
 function TolovQabulQilishModal({
   sotuv,
@@ -1479,6 +1534,12 @@ function TolovQabulQilishModal({
   ) => Promise<boolean>;
   onYopish: () => void;
 }) {
+  const { t } = useTranslation("savdo_tafsilot");
+  const tolovTuriOptions: Array<{ value: TolovTuri; label: string }> = [
+    { value: "CASH", label: t("common.tolovTuri.naqd") },
+    { value: "CARD", label: t("common.tolovTuri.karta") },
+    { value: "BANK", label: t("common.tolovTuri.bank") },
+  ];
   const mavjudTolovlar = sotuv.payments ?? [];
   const mavjudYigindisi = mavjudTolovlar.reduce((jami2, tolov) => jami2 + Number(tolov.amount ?? 0), 0);
   const boshlangichQarz = Math.max(jami - mavjudYigindisi, 0);
@@ -1495,12 +1556,12 @@ function TolovQabulQilishModal({
     setXatolik("");
 
     if (yangiSumma < 0 || (!draft && yangiSumma <= 0)) {
-      setXatolik(draft ? "To'lov summasi manfiy bo'lishi mumkin emas." : "To'lov summasi 0 dan katta bo'lishi kerak.");
+      setXatolik(draft ? t("tolovModal.errors.manfiyBolmasin") : t("tolovModal.errors.nolDanKatta"));
       return;
     }
 
     if (yakuniyTolangan > jami) {
-      setXatolik(`To'lov summasi qarzdorlikdan oshmasligi kerak. Maksimal: ${pulniFormatlash(boshlangichQarz)}.`);
+      setXatolik(t("tolovModal.errors.qarzdorlikdanOshmasin", { maksimal: pulniFormatlash(boshlangichQarz) }));
       return;
     }
 
@@ -1510,7 +1571,7 @@ function TolovQabulQilishModal({
         amount: yangiSumma,
       });
       if (!saqlandi) {
-        setXatolik("To'lov saqlanmadi. Qaytadan urinib ko'ring.");
+        setXatolik(t("tolovModal.errors.saqlanmadi"));
         return;
       }
       onYopish();
@@ -1524,7 +1585,7 @@ function TolovQabulQilishModal({
 
     const saqlandi = await onYangilash(sotuv.id, { payments: yangiTolovlar });
     if (!saqlandi) {
-      setXatolik("To'lov saqlanmadi. Qaytadan urinib ko'ring.");
+      setXatolik(t("tolovModal.errors.saqlanmadi"));
       return;
     }
 
@@ -1543,8 +1604,8 @@ function TolovQabulQilishModal({
               <CreditCard size={26} />
             </span>
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#2563EB]">To'lov</p>
-              <h2 className="mt-1 text-2xl font-black text-slate-900">To'lovni qabul qilish</h2>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#2563EB]">{t("tolovModal.belgisi")}</p>
+              <h2 className="mt-1 text-2xl font-black text-slate-900">{t("tolovModal.sarlavha")}</h2>
             </div>
           </div>
         </div>
@@ -1553,7 +1614,7 @@ function TolovQabulQilishModal({
             {mavjudTolovlar.length > 0 && (
               <div>
                 <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">
-                  Avvalgi to'lovlar
+                  {t("tolovModal.avvalgiTolovlar")}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {mavjudTolovlar.map((tolov, index) => (
@@ -1570,7 +1631,7 @@ function TolovQabulQilishModal({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-400">To'lov turi</span>
+                <span className="text-sm font-bold text-slate-400">{t("tolovModal.tolovTuri")}</span>
                 <SavdoSelect
                   value={tolovTuri}
                   onChange={(value) => setTolovTuri(value as TolovTuri)}
@@ -1580,7 +1641,7 @@ function TolovQabulQilishModal({
                 />
               </label>
               <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-400">To'lov summasi</span>
+                <span className="text-sm font-bold text-slate-400">{t("tolovModal.tolovSummasi")}</span>
                 <input
                   type="number"
                   min="0"
@@ -1599,34 +1660,34 @@ function TolovQabulQilishModal({
                 onClick={() => setSumma(String(boshlangichQarz))}
                 className="rounded-xl bg-orange-50 px-4 py-2.5 text-xs font-bold text-[#2563EB] transition hover:bg-orange-100"
               >
-                To'liq to'lash ({pulniFormatlash(boshlangichQarz)})
+                {t("tolovModal.tolashToliq", { summa: pulniFormatlash(boshlangichQarz) })}
               </button>
               <button
                 type="button"
                 onClick={() => setSumma("0")}
                 className="rounded-xl bg-gray-100 px-4 py-2.5 text-xs font-bold text-gray-500 transition hover:bg-gray-200"
               >
-                Qarzga qoldirish
+                {t("tolovModal.qarzgaQoldirish")}
               </button>
             </div>
 
             <div className="grid gap-4 rounded-2xl bg-gradient-to-br from-orange-50/70 to-white p-5 ring-1 ring-orange-100 sm:grid-cols-3">
               <div>
-                <p className="text-xs font-black uppercase tracking-wide text-slate-400">Sotuv jami</p>
+                <p className="text-xs font-black uppercase tracking-wide text-slate-400">{t("tolovModal.sotuvJami")}</p>
                 <p className="mt-1.5 text-lg font-black text-slate-800">{pulniFormatlash(jami)}</p>
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-wide text-slate-400">
-                  Jami to'lov
+                  {t("tolovModal.jamiTolov")}
                 </p>
                 <p className="mt-1.5 text-lg font-black text-[#2563EB]">{pulniFormatlash(yakuniyTolangan)}</p>
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-wide text-slate-400">
-                  {qolganQarz > 0 ? "Qarzdorlik qoldig'i" : "Qarzdorlik"}
+                  {qolganQarz > 0 ? t("tolovModal.qarzdorlikQoldigi") : t("tolovModal.qarzdorlik")}
                 </p>
                 <p className={`mt-1.5 text-lg font-black ${qolganQarz > 0 ? "text-red-500" : "text-emerald-600"}`}>
-                  {qolganQarz > 0 ? pulniFormatlash(qolganQarz) : "Yo'q"}
+                  {qolganQarz > 0 ? pulniFormatlash(qolganQarz) : t("tolovModal.yoq")}
                 </p>
               </div>
             </div>
@@ -1641,7 +1702,7 @@ function TolovQabulQilishModal({
                 onClick={onYopish}
                 className="h-12 rounded-2xl bg-gray-100 px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-200"
               >
-                Bekor qilish
+                {t("common.bekorQilish")}
               </button>
               <button
                 type="button"
@@ -1650,7 +1711,7 @@ function TolovQabulQilishModal({
                 className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#2563EB] px-6 text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,235,.24)] transition hover:bg-[#1D4ED8] disabled:opacity-50"
               >
                 {amalBajarilmoqda && <LoaderCircle size={16} className="animate-spin" />}
-                {draft ? "To'lovni saqlash" : "To'lovni qo'shish"}
+                {draft ? t("tolovModal.tolovniSaqlash") : t("tolovModal.tolovniQoshish")}
               </button>
             </div>
         </div>
@@ -1660,6 +1721,7 @@ function TolovQabulQilishModal({
 }
 
 function HisobFakturalarTab({ sotuv }: { sotuv: Sotuv }) {
+  const { t } = useTranslation("savdo_tafsilot");
   const [sahifaHajmi, setSahifaHajmi] = useState("10");
   const sotuvId = sotuvJadvalId(sotuv);
   const invoiceNomi = mijozNomi(sotuv);
@@ -1694,14 +1756,14 @@ function HisobFakturalarTab({ sotuv }: { sotuv: Sotuv }) {
                 <th className="w-9 px-2 py-4">
                   <Settings size={16} className="text-slate-400" />
                 </th>
-                <th className="w-12 px-3 py-4 font-medium">ID</th>
-                <th className="w-[12%] px-3 py-4 font-medium">Nomi</th>
-                <th className="w-[12%] px-3 py-4 font-medium">Hisob raqami</th>
-                <th className="w-[18%] px-3 py-4 font-medium">Kim yaratgan</th>
-                <th className="w-[18%] px-3 py-4 font-medium">Mas'ul</th>
-                <th className="w-[12%] px-3 py-4 font-medium">Berilgan sana</th>
-                <th className="w-[12%] px-3 py-4 font-medium">To'lov muddati</th>
-                <th className="w-[12%] px-3 py-4 font-medium">Bosqich</th>
+                <th className="w-12 px-3 py-4 font-medium">{t("hisobFakturalarTab.id")}</th>
+                <th className="w-[12%] px-3 py-4 font-medium">{t("hisobFakturalarTab.nomi")}</th>
+                <th className="w-[12%] px-3 py-4 font-medium">{t("hisobFakturalarTab.hisobRaqami")}</th>
+                <th className="w-[18%] px-3 py-4 font-medium">{t("hisobFakturalarTab.kimYaratgan")}</th>
+                <th className="w-[18%] px-3 py-4 font-medium">{t("hisobFakturalarTab.masul")}</th>
+                <th className="w-[12%] px-3 py-4 font-medium">{t("hisobFakturalarTab.berilganSana")}</th>
+                <th className="w-[12%] px-3 py-4 font-medium">{t("hisobFakturalarTab.tolovMuddati")}</th>
+                <th className="w-[12%] px-3 py-4 font-medium">{t("hisobFakturalarTab.bosqich")}</th>
               </tr>
             </thead>
             <tbody>
@@ -1723,7 +1785,7 @@ function HisobFakturalarTab({ sotuv }: { sotuv: Sotuv }) {
                       <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-400 text-white">
                         <UserRound size={15} />
                       </span>
-                      <span>{masul === "—" ? "Kiritilmagan" : masul}</span>
+                      <span>{masul === "—" ? t("hisobFakturalarTab.kiritilmagan") : masul}</span>
                     </div>
                   </td>
                   <td className="px-3 py-5">
@@ -1731,7 +1793,7 @@ function HisobFakturalarTab({ sotuv }: { sotuv: Sotuv }) {
                       <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-400 text-white">
                         <UserRound size={15} />
                       </span>
-                      <span>{masul === "—" ? "Kiritilmagan" : masul}</span>
+                      <span>{masul === "—" ? t("hisobFakturalarTab.kiritilmagan") : masul}</span>
                     </div>
                   </td>
                   <td className="px-3 py-5">{sanaFormat(yaratilganSana)}</td>
@@ -1740,13 +1802,13 @@ function HisobFakturalarTab({ sotuv }: { sotuv: Sotuv }) {
                     <div className="h-2 w-full max-w-24 overflow-hidden rounded-full bg-slate-100">
                       <div className="h-full w-2/3 rounded-full bg-sky-400" />
                     </div>
-                    <p className="mt-2 text-xs text-slate-400">Yangi</p>
+                    <p className="mt-2 text-xs text-slate-400">{t("hisobFakturalarTab.yangi")}</p>
                   </td>
                 </tr>
               ) : (
                 <tr>
                   <td colSpan={10} className="px-4 py-16 text-center text-slate-400">
-                    Qidiruv bo'yicha hisob-faktura topilmadi
+                    {t("hisobFakturalarTab.topilmadi")}
                   </td>
                 </tr>
               )}
@@ -1754,10 +1816,10 @@ function HisobFakturalarTab({ sotuv }: { sotuv: Sotuv }) {
           </table>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 px-5 py-4 text-xs font-semibold uppercase text-slate-500">
-          <span>Tanlangan: 0 / 1</span>
-          <span>Jami: 1 ta hisob</span>
+          <span>{t("hisobFakturalarTab.tanlangan")}</span>
+          <span>{t("hisobFakturalarTab.jamiHisob")}</span>
           <div className="flex items-center gap-2">
-            <span>Sahifada:</span>
+            <span>{t("hisobFakturalarTab.sahifada")}</span>
             <SavdoSelect
               value={sahifaHajmi}
               onChange={setSahifaHajmi}
@@ -1787,18 +1849,18 @@ type TarixQatori = {
 };
 
 const TARIX_MAYDON_NOMLARI: Record<string, string> = {
-  status: "Holat",
-  debtAmount: "Qarzdorlik",
-  paidAmount: "To'langan summa",
-  totalAmount: "Jami summa",
-  discountAmount: "Chegirma",
-  note: "Izoh",
-  warehouseId: "Ombor",
-  responsibleId: "Mas'ul shaxs",
-  customerId: "Mijoz",
-  clientCompanyId: "Mijoz kompaniyasi",
-  paymentType: "To'lov turi",
-  saleType: "Sotuv turi",
+  status: "tarix.maydonlar.holat",
+  debtAmount: "tarix.maydonlar.qarzdorlik",
+  paidAmount: "tarix.maydonlar.tolanganSumma",
+  totalAmount: "tarix.maydonlar.jamiSumma",
+  discountAmount: "tarix.maydonlar.chegirma",
+  note: "tarix.maydonlar.izoh",
+  warehouseId: "tarix.maydonlar.ombor",
+  responsibleId: "tarix.maydonlar.masulShaxs",
+  customerId: "tarix.maydonlar.mijoz",
+  clientCompanyId: "tarix.maydonlar.mijozKompaniyasi",
+  paymentType: "tarix.maydonlar.tolovTuri",
+  saleType: "tarix.maydonlar.saleType",
 };
 
 const TARIX_PUL_MAYDONLARI = new Set(["debtAmount", "paidAmount", "totalAmount", "discountAmount", "amount"]);
@@ -1808,14 +1870,14 @@ function tarixHolatMatni(value: unknown) {
   return sotuvHolatiMatni[kalit as keyof typeof sotuvHolatiMatni] ?? (kalit || "—");
 }
 
-function tarixMaydonNomi(maydon: string) {
-  return (
-    TARIX_MAYDON_NOMLARI[maydon] ??
-    maydon.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/^./, (harf) => harf.toUpperCase())
-  );
+function tarixMaydonNomi(maydon: string, t: TFunction) {
+  const kalit = TARIX_MAYDON_NOMLARI[maydon];
+  return kalit
+    ? t(kalit)
+    : maydon.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/^./, (harf) => harf.toUpperCase());
 }
 
-function tarixQiymatMatni(maydon: string, value: unknown): string {
+function tarixQiymatMatni(maydon: string, value: unknown, t: TFunction): string {
   if (value === null || value === undefined || value === "") return "—";
   if (maydon === "status") return tarixHolatMatni(value);
   if (TARIX_PUL_MAYDONLARI.has(maydon)) return pulniFormatlash(value as number | string);
@@ -1831,13 +1893,13 @@ function tarixQiymatMatni(maydon: string, value: unknown): string {
         })
         .join(", ");
     }
-    return `${value.length} ta`;
+    return t("tarix.qiymat.taSoni", { count: value.length });
   }
   if (typeof value === "object") return "";
   return String(value);
 }
 
-function tarixTavsifiniYasash(item: SaleAuditLog): string {
+function tarixTavsifiniYasash(item: SaleAuditLog, t: TFunction): string {
   const diff = (item.diff ?? {}) as Record<string, unknown>;
   const before = (diff.before ?? null) as Record<string, unknown> | null;
   const after = (diff.after ?? null) as Record<string, unknown> | null;
@@ -1847,52 +1909,58 @@ function tarixTavsifiniYasash(item: SaleAuditLog): string {
     const yangiHolat = after?.status;
     const qismlar: string[] = [];
     if (yangiHolat && eskiHolat !== yangiHolat) {
-      qismlar.push(`Holat: ${eskiHolat ? tarixHolatMatni(eskiHolat) : "—"} → ${tarixHolatMatni(yangiHolat)}`);
+      qismlar.push(
+        t("tarix.tavsifMatni.holatOzgardi", {
+          eski: eskiHolat ? tarixHolatMatni(eskiHolat) : "—",
+          yangi: tarixHolatMatni(yangiHolat),
+        })
+      );
     }
     for (const maydon of ["totalAmount", "paidAmount", "debtAmount"]) {
       const qiymat = after?.[maydon];
       if (qiymat !== undefined && qiymat !== null) {
-        qismlar.push(`${tarixMaydonNomi(maydon)}: ${tarixQiymatMatni(maydon, qiymat)}`);
+        qismlar.push(`${tarixMaydonNomi(maydon, t)}: ${tarixQiymatMatni(maydon, qiymat, t)}`);
       }
     }
-    return qismlar.length > 0 ? qismlar.join(" · ") : "Sotuv ma'lumotlari yangilandi.";
+    return qismlar.length > 0 ? qismlar.join(" · ") : t("tarix.tavsifMatni.malumotYangilandi");
   }
 
   const qismlar = Object.entries(diff)
     .filter(([maydon]) => maydon !== "before" && maydon !== "after")
     .map(([maydon, qiymat]) => {
       const record = qiymat as { from?: unknown; to?: unknown } | null;
-      const yangi = tarixQiymatMatni(maydon, record && "to" in record ? record.to : qiymat);
+      const yangi = tarixQiymatMatni(maydon, record && "to" in record ? record.to : qiymat, t);
       if (!yangi) return null;
-      if (maydon === "payments") return `To'lov qo'shildi: ${yangi}`;
-      const eski = record && "from" in record ? tarixQiymatMatni(maydon, record.from) : null;
+      if (maydon === "payments") return t("tarix.tavsifMatni.tolovQoshildi", { qiymat: yangi });
+      const eski = record && "from" in record ? tarixQiymatMatni(maydon, record.from, t) : null;
       return eski && eski !== "—" && eski !== yangi
-        ? `${tarixMaydonNomi(maydon)}: ${eski} → ${yangi}`
-        : `${tarixMaydonNomi(maydon)}: ${yangi}`;
+        ? `${tarixMaydonNomi(maydon, t)}: ${eski} → ${yangi}`
+        : `${tarixMaydonNomi(maydon, t)}: ${yangi}`;
     })
     .filter((matn): matn is string => Boolean(matn));
 
-  return qismlar.length > 0 ? qismlar.join(" · ") : "Sotuv ma'lumotlari yangilandi.";
+  return qismlar.length > 0 ? qismlar.join(" · ") : t("tarix.tavsifMatni.malumotYangilandi");
 }
 
-function tarixTipiniAniqlash(item: SaleAuditLog): { tip: string; accent: "green" | "blue" | "orange" | "red" } {
-  if (item.action === "DELETE") return { tip: "Sotuv o'chirildi", accent: "red" };
+function tarixTipiniAniqlash(item: SaleAuditLog, t: TFunction): { tip: string; accent: "green" | "blue" | "orange" | "red" } {
+  if (item.action === "DELETE") return { tip: t("tarix.tip.ochirildi"), accent: "red" };
 
   const diff = (item.diff ?? {}) as Record<string, unknown>;
-  if ("payments" in diff) return { tip: "To'lov qabul qilindi", accent: "green" };
+  if ("payments" in diff) return { tip: t("tarix.tip.tolovQabulQilindi"), accent: "green" };
 
   const yangiHolat = String(
     (diff.status as { to?: unknown } | undefined)?.to ??
       (diff.after as Record<string, unknown> | undefined)?.status ??
       ""
   ).toUpperCase();
-  if (yangiHolat === "CONFIRMED") return { tip: "Sotuv tasdiqlandi", accent: "green" };
-  if (yangiHolat === "CANCELLED") return { tip: "Sotuv bekor qilindi", accent: "red" };
-  if (item.action === "CREATE") return { tip: "Sotuv yaratildi", accent: "blue" };
-  return { tip: "Sotuv yangilandi", accent: "orange" };
+  if (yangiHolat === "CONFIRMED") return { tip: t("tarix.tip.tasdiqlandi"), accent: "green" };
+  if (yangiHolat === "CANCELLED") return { tip: t("tarix.tip.bekorQilindi"), accent: "red" };
+  if (item.action === "CREATE") return { tip: t("tarix.tip.yaratildi"), accent: "blue" };
+  return { tip: t("tarix.tip.yangilandi"), accent: "orange" };
 }
 
 function TarixTab({ sotuv }: { sotuv: Sotuv }) {
+  const { t } = useTranslation("savdo_tafsilot");
   const [filter, setFilter] = useState("");
   const [sanaTartibi, setSanaTartibi] = useState<"desc" | "asc">("desc");
   const [backendTarix,setBackendTarix]=useState<SaleAuditLog[]>([]);
@@ -1904,7 +1972,7 @@ function TarixTab({ sotuv }: { sotuv: Sotuv }) {
     void sotuvTarixiniOlish(sotuv.id).then(data=>{if(active)setBackendTarix(data)}).catch(error=>{if(active)setTarixXatosi(getApiErrorMessage(error))}).finally(()=>{if(active)setTarixYuklanmoqda(false)});
     return()=>{active=false};
   }, [sotuv.id]);
-  const qatorlar:TarixQatori[]=backendTarix.map((item):TarixQatori=>{const {tip,accent}=tarixTipiniAniqlash(item);return{id:item.id,sana:item.createdAt,avtor:item.actor?.fullName||item.actor?.username||item.user?.fullName||item.user?.username||"Tizim",tip,tavsif:tarixTavsifiniYasash(item),accent}}).sort((a, b) => {
+  const qatorlar:TarixQatori[]=backendTarix.map((item):TarixQatori=>{const {tip,accent}=tarixTipiniAniqlash(item, t);return{id:item.id,sana:item.createdAt,avtor:item.actor?.fullName||item.actor?.username||item.user?.fullName||item.user?.username||t("common.tizim"),tip,tavsif:tarixTavsifiniYasash(item, t),accent}}).sort((a, b) => {
     const aVaqt = new Date(a.sana).getTime();
     const bVaqt = new Date(b.sana).getTime();
     return sanaTartibi === "desc" ? bVaqt - aVaqt : aVaqt - bVaqt;
@@ -1913,7 +1981,7 @@ function TarixTab({ sotuv }: { sotuv: Sotuv }) {
   const qidiruv = filter.trim().toLowerCase();
   const korinadiganQatorlar = qidiruv
     ? qatorlar.filter((qator) =>
-        [qator.avtor, qator.tip, qator.tavsif, tarixVaqti(qator.sana)]
+        [qator.avtor, qator.tip, qator.tavsif, tarixVaqti(qator.sana, t)]
           .join(" ")
           .toLowerCase()
           .includes(qidiruv)
@@ -1924,9 +1992,9 @@ function TarixTab({ sotuv }: { sotuv: Sotuv }) {
     <div className="px-9 py-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-slate-900">Sotuv tarixi</h2>
+          <h2 className="text-2xl font-black text-slate-900">{t("tarix.sarlavha")}</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Sotuv bo'yicha mahsulotlar, to'lovlar, hujjatlar va bajarilgan ishlar shu yerda jamlanadi.
+            {t("tarix.tavsif")}
           </p>
         </div>
         <label className="relative block w-full max-w-[360px]">
@@ -1934,7 +2002,7 @@ function TarixTab({ sotuv }: { sotuv: Sotuv }) {
           <input
             value={filter}
             onChange={(event) => setFilter(event.target.value)}
-            placeholder="Filtr"
+            placeholder={t("tarix.filtr")}
             className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-12 pr-4 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
           />
         </label>
@@ -1943,7 +2011,7 @@ function TarixTab({ sotuv }: { sotuv: Sotuv }) {
       {sotuv.items && sotuv.items.length > 0 && (
         <div className="mb-6 rounded-[24px] border border-orange-100 bg-[#F8FAFC] p-5">
           <p className="text-xs font-black uppercase tracking-wide text-orange-600">
-            Sotilgan mahsulotlar ({sotuv.items.length} ta)
+            {t("tarix.sotilganMahsulotlar", { count: sotuv.items.length })}
           </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {sotuv.items.map((item, index) => (
@@ -1951,7 +2019,7 @@ function TarixTab({ sotuv }: { sotuv: Sotuv }) {
                 key={item.id ?? item.saleItemId ?? index}
                 className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2 text-sm shadow-sm"
               >
-                <span className="min-w-0 truncate font-semibold text-slate-700">{mahsulotNomi(item)}</span>
+                <span className="min-w-0 truncate font-semibold text-slate-700">{mahsulotNomi(item, t)}</span>
                 <span className="shrink-0 text-xs font-bold text-slate-500">
                   {son(item.quantity)} x {pulniFormatlash(item.price)}
                 </span>
@@ -1970,15 +2038,15 @@ function TarixTab({ sotuv }: { sotuv: Sotuv }) {
             type="button"
             onClick={() => setSanaTartibi((joriy) => (joriy === "desc" ? "asc" : "desc"))}
             className="flex h-14 items-center gap-2 text-left transition hover:text-sky-600"
-            title={sanaTartibi === "desc" ? "Eski sanadan yangisiga tartiblash" : "Yangi sanadan eskisiga tartiblash"}
-            aria-label="Sana bo'yicha tartiblash"
+            title={sanaTartibi === "desc" ? t("tarix.tartiblashEskidan") : t("tarix.tartiblashYangidan")}
+            aria-label={t("tarix.sanaBoyichaTartiblash")}
           >
-            Sana
+            {t("tarix.sana")}
             <ChevronDown size={15} className={`transition ${sanaTartibi === "asc" ? "rotate-180" : ""}`} />
           </button>
-          <div className="flex h-14 items-center">Avtor</div>
-          <div className="flex h-14 items-center">Tip hodisa</div>
-          <div className="flex h-14 items-center">Tavsif</div>
+          <div className="flex h-14 items-center">{t("tarix.avtor")}</div>
+          <div className="flex h-14 items-center">{t("tarix.tipHodisa")}</div>
+          <div className="flex h-14 items-center">{t("tarix.tavsifUstuni")}</div>
         </div>
 
         <div className="divide-y divide-slate-100">
@@ -1991,7 +2059,7 @@ function TarixTab({ sotuv }: { sotuv: Sotuv }) {
                 <input type="checkbox" className="h-4 w-4 rounded border-slate-300" readOnly />
               </div>
               <div className="flex items-center gap-3 text-slate-600">
-                <span>{tarixVaqti(qator.sana)}</span>
+                <span>{tarixVaqti(qator.sana, t)}</span>
               </div>
               <div className="flex min-w-0 items-center gap-3 text-slate-700">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-400 text-xs text-white">
@@ -2022,7 +2090,7 @@ function TarixTab({ sotuv }: { sotuv: Sotuv }) {
           {tarixXatosi && <div className="p-6 text-center text-sm font-semibold text-red-600">{tarixXatosi}</div>}
           {!tarixYuklanmoqda && !tarixXatosi && korinadiganQatorlar.length === 0 && (
             <div className="flex h-48 items-center justify-center text-sm font-medium text-slate-400">
-              Tarix bo'yicha ma'lumot topilmadi
+              {t("tarix.topilmadi")}
             </div>
           )}
         </div>
@@ -2045,13 +2113,14 @@ function TovarlarTab({
     malumot: Partial<SotuvYaratishMalumoti>
   ) => Promise<boolean>;
 }) {
+  const { t } = useTranslation("savdo_tafsilot");
   const items = sotuv.items ?? [];
   const backendJami = sotuvSummasi(sotuv);
   const qatorlarJami = items.reduce((summa, item) => summa + mahsulotJami(item), 0);
   const jami = items.length > 0 ? qatorlarJami : backendJami;
   const tasdiqlangan = sotuvHolati(sotuv) === "CONFIRMED";
-  const omborNomi = sotuv.warehouse?.name || "Ombor";
-  const omborManzili = sotuv.warehouse?.address || "Manzil kiritilmagan";
+  const omborNomi = sotuv.warehouse?.name || t("common.info.ombor");
+  const omborManzili = sotuv.warehouse?.address || t("common.manzilKiritilmagan");
   const [skladQidiruv, setSkladQidiruv] = useState("");
   const [mahsulotQidiruv, setMahsulotQidiruv] = useState("");
   const [yangiQatorlar, setYangiQatorlar] = useState<YangiTovarQatori[]>([]);
@@ -2141,15 +2210,15 @@ function TovarlarTab({
 
   function yangiQatorXatolari(qator: YangiTovarQatori) {
     return {
-      mahsulot: !qator.modificationId ? "Mahsulotni tanlang." : "",
-      narx: qator.price <= 0 ? "Narx 0 dan katta bo'lishi kerak." : "",
+      mahsulot: !qator.modificationId ? t("tovarlarTab.errors.mahsulotniTanlang") : "",
+      narx: qator.price <= 0 ? t("tovarlarTab.errors.narxKatta") : "",
       miqdor:
         qator.quantity <= 0
-          ? "Miqdor 0 dan katta bo'lishi kerak."
+          ? t("tovarlarTab.errors.miqdorKatta")
           : qator.availableQty > 0 && qator.quantity > qator.availableQty
-            ? `Miqdor qoldiqdan oshmasin: ${formatlanganRaqam(qator.availableQty)} dona.`
+            ? t("tovarlarTab.errors.miqdorOshmasin", { qty: formatlanganRaqam(qator.availableQty) })
             : "",
-      ombor: !qator.warehouseName ? "Omborni tanlang." : "",
+      ombor: !qator.warehouseName ? t("tovarlarTab.errors.omborniTanlang") : "",
     };
   }
 
@@ -2239,7 +2308,7 @@ function TovarlarTab({
             onClick={yangiMahsulotQatoriQoshish}
             className="rounded-xl bg-[#2563EB] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] hover:shadow-lg hover:shadow-orange-500/20"
           >
-            Mahsulot qo'shish
+            {t("tovarlarTab.mahsulotQoshish")}
           </button>
         </div>
         <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm transition hover:text-[#2563EB]">
@@ -2253,7 +2322,7 @@ function TovarlarTab({
             className="inline-flex h-11 items-center gap-2 rounded-xl bg-emerald-600 px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {amalBajarilmoqda && <LoaderCircle size={16} className="animate-spin" />}
-            Saqlash
+            {t("tovarlarTab.saqlash")}
           </button>
         )}
       </div>
@@ -2262,15 +2331,15 @@ function TovarlarTab({
         <div className="overflow-x-auto">
           <div className="min-w-[1870px]">
             <div className={`grid ${jadvalUstunlari} gap-x-5 border-b border-slate-200 bg-white px-7 py-5 text-sm text-slate-600`}>
-              <span>Sozlama</span>
-              <span>Mahsulot</span>
-              <span>Narx</span>
-              <span>Miqdor</span>
-              <span>Ombor</span>
-              <span>Mavjud qoldiq</span>
-              <span>Rezervda</span>
-              <span>Ombordan chiqdi</span>
-              <span>Summa</span>
+              <span>{t("tovarlarTab.sozlama")}</span>
+              <span>{t("common.jadval.mahsulot")}</span>
+              <span>{t("common.jadval.narx")}</span>
+              <span>{t("common.jadval.miqdor")}</span>
+              <span>{t("common.jadval.ombor")}</span>
+              <span>{t("common.jadval.mavjudQoldiq")}</span>
+              <span>{t("common.jadval.rezervda")}</span>
+              <span>{t("common.jadval.ombordanChiqdi")}</span>
+              <span>{t("common.jadval.summa")}</span>
             </div>
 
             {items.map((item, index) => {
@@ -2296,7 +2365,7 @@ function TovarlarTab({
 
                   <div className="flex items-center gap-3">
                     <div className="flex h-12 min-w-0 flex-1 items-center rounded-md border border-slate-300 bg-white px-3">
-                      <span className="min-w-0 flex-1 truncate text-slate-800">{mahsulotNomi(item)}</span>
+                      <span className="min-w-0 flex-1 truncate text-slate-800">{mahsulotNomi(item, t)}</span>
                       <ChevronDown size={18} className="-rotate-90 text-slate-400" />
                     </div>
                     <div className="flex h-12 w-12 items-center justify-center rounded-md border border-dashed border-sky-300 text-slate-400">
@@ -2310,7 +2379,7 @@ function TovarlarTab({
 
                   <div className="flex h-12 items-center justify-end gap-2 rounded-md border border-slate-300 bg-white px-3">
                     <span>{item.quantity}</span>
-                    <span className="text-slate-400">dona</span>
+                    <span className="text-slate-400">{t("common.dona")}</span>
                   </div>
 
                   <button
@@ -2322,14 +2391,14 @@ function TovarlarTab({
                     <Search size={18} className="text-slate-500" />
                   </button>
 
-                  <span className="text-[#2563EB] underline underline-offset-4">{Math.max(mavjudQoldiq, 0)} dona</span>
+                  <span className="text-[#2563EB] underline underline-offset-4">{Math.max(mavjudQoldiq, 0)} {t("common.dona")}</span>
 
                   <div>
                     <div className="flex h-12 items-center justify-end rounded-md border border-slate-300 bg-white px-3">{rezerv}</div>
-                    {!tasdiqlangan && <span className="mt-1 block text-right text-xs text-[#2563EB] underline underline-offset-4">qoralama</span>}
+                    {!tasdiqlangan && <span className="mt-1 block text-right text-xs text-[#2563EB] underline underline-offset-4">{t("tovarlarTab.qoralama")}</span>}
                   </div>
 
-                  <span>{ombordanChiqdi} dona</span>
+                  <span>{ombordanChiqdi} {t("common.dona")}</span>
                   <span className="font-bold text-emerald-600">{pulniFormatlash(itemJami)}</span>
                 </div>
               );
@@ -2370,7 +2439,7 @@ function TovarlarTab({
                         }`}
                       >
                         <span className={`min-w-0 flex-1 truncate ${qatorNomi ? "text-slate-800" : "text-slate-400"}`}>
-                          {qatorNomi || "Mahsulotni toping yoki yangi yarating"}
+                          {qatorNomi || t("tovarlarTab.mahsulotToping")}
                         </span>
                         <Search size={18} className="text-slate-500" />
                       </button>
@@ -2415,7 +2484,7 @@ function TovarlarTab({
                         placeholder="1"
                         className="min-w-0 flex-1 bg-transparent text-right outline-none"
                       />
-                      <span className="text-slate-400">dona</span>
+                      <span className="text-slate-400">{t("common.dona")}</span>
                     </div>
                     {xatoKorsatish && xatolar.miqdor && (
                       <p className="mt-1.5 text-xs font-semibold text-red-500">{xatolar.miqdor}</p>
@@ -2446,9 +2515,9 @@ function TovarlarTab({
                     )}
                   </div>
 
-                  <span className="text-[#2563EB] underline underline-offset-4">{Math.max(qator.availableQty, 0)} dona</span>
+                  <span className="text-[#2563EB] underline underline-offset-4">{Math.max(qator.availableQty, 0)} {t("common.dona")}</span>
                   <div className="flex h-12 items-center justify-end rounded-md border border-slate-300 bg-white px-3">0</div>
-                  <span>0 dona</span>
+                  <span>0 {t("common.dona")}</span>
                   <div className="flex items-center justify-between gap-3">
                     <span className="font-bold text-emerald-600">{pulniFormatlash(qatorJami)}</span>
                     <button
@@ -2456,7 +2525,7 @@ function TovarlarTab({
                       onClick={() => setYangiQatorlar((rows) => rows.filter((row) => row.id !== qator.id))}
                       className="rounded-lg bg-red-50 px-3 py-2 text-xs font-bold text-red-500 transition hover:bg-red-100"
                     >
-                      O'chirish
+                      {t("tovarlarTab.ochirish")}
                     </button>
                   </div>
                 </div>
@@ -2464,20 +2533,20 @@ function TovarlarTab({
             })}
 
             {items.length === 0 && yangiQatorlar.length === 0 && (
-              <div className="px-7 py-20 text-center text-slate-400">Bu sotuvda mahsulot mavjud emas</div>
+              <div className="px-7 py-20 text-center text-slate-400">{t("tovarlarTab.mahsulotYoq")}</div>
             )}
           </div>
         </div>
 
         <div className="border-t border-slate-100 px-7 py-8">
           <div className="ml-auto max-w-md space-y-4 text-right text-slate-600">
-            <p>Chegirma va soliqlarsiz summa: <span className="ml-8">{pulniFormatlash(umumiyJami)}</span></p>
-            <p>Yetkazish summasi: <span className="ml-8">{pulniFormatlash(0)}</span></p>
-            <p className="text-lime-700">Chegirma summasi: <span className="ml-8">{pulniFormatlash(0)}</span></p>
-            <p>Soliqsiz summa: <span className="ml-8">{pulniFormatlash(umumiyJami)}</span></p>
-            <p>Soliq summasi: <span className="ml-8">{pulniFormatlash(0)}</span></p>
+            <p>{t("common.totals.chegirmaSoliqsiz")} <span className="ml-8">{pulniFormatlash(umumiyJami)}</span></p>
+            <p>{t("common.totals.yetkazishSummasi")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
+            <p className="text-lime-700">{t("common.totals.chegirmaSummasi")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
+            <p>{t("common.totals.soliqsizSumma")} <span className="ml-8">{pulniFormatlash(umumiyJami)}</span></p>
+            <p>{t("common.totals.soliqSummasi")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
             <div className="border-t border-slate-200 pt-5 text-2xl font-bold text-slate-700">
-              Umumiy summa: <span className="ml-8">{pulniFormatlash(umumiyJami)}</span>
+              {t("common.totals.umumiySumma")} <span className="ml-8">{pulniFormatlash(umumiyJami)}</span>
             </div>
           </div>
         </div>
@@ -2487,7 +2556,7 @@ function TovarlarTab({
         <>
           <button
             type="button"
-            aria-label="Mahsulot oynasini yopish"
+            aria-label={t("tovarlarTab.mahsulotOynasiniYopish")}
             className="fixed inset-0 z-[100000] cursor-default bg-transparent"
             onClick={() => setMahsulotPopover(null)}
           />
@@ -2499,7 +2568,7 @@ function TovarlarTab({
               <input
                 value={mahsulotQidiruv}
                 onChange={(event) => setMahsulotQidiruv(event.target.value)}
-                placeholder="Mahsulotni toping yoki yangi yarating"
+                placeholder={t("tovarlarTab.mahsulotToping")}
                 className="min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
                 autoFocus
               />
@@ -2530,11 +2599,11 @@ function TovarlarTab({
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[15px] font-semibold text-slate-800">
-                          {nom} <span className="font-normal text-slate-400">{miqdor} dona</span>
+                          {nom} <span className="font-normal text-slate-400">{miqdor} {t("common.dona")}</span>
                         </span>
                         <span className="mt-0.5 block truncate text-xs text-slate-400">
                           {qoldiq.warehouse?.name || omborNomi}
-                          {qoldiqTavsifi(qoldiq) ? ` · ${qoldiqTavsifi(qoldiq)}` : ""}
+                          {qoldiqTavsifi(qoldiq, t) ? ` · ${qoldiqTavsifi(qoldiq, t)}` : ""}
                         </span>
                       </span>
                       <span className="shrink-0 text-sm font-bold text-slate-700">{pulniFormatlash(narx)}</span>
@@ -2542,7 +2611,7 @@ function TovarlarTab({
                   );
                 })
               ) : (
-                <div className="px-3 py-10 text-center text-sm text-slate-400">Ombor qoldig'ida mahsulot topilmadi</div>
+                <div className="px-3 py-10 text-center text-sm text-slate-400">{t("tovarlarTab.qoldiqdaTopilmadi")}</div>
               )}
             </div>
           </div>
@@ -2553,7 +2622,7 @@ function TovarlarTab({
         <>
           <button
             type="button"
-            aria-label="Ombor oynasini yopish"
+            aria-label={t("tovarlarTab.omborOynasiniYopish")}
             className="fixed inset-0 z-[100000] cursor-default bg-transparent"
             onClick={() => setOmborPopover(null)}
           />
@@ -2565,7 +2634,7 @@ function TovarlarTab({
               <input
                 value={skladQidiruv}
                 onChange={(event) => setSkladQidiruv(event.target.value)}
-                placeholder="Ombor"
+                placeholder={t("tovarlarTab.omborPlaceholder")}
                 className="min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
                 autoFocus
               />
@@ -2589,7 +2658,7 @@ function TovarlarTab({
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[15px] font-semibold text-slate-800">
-                  {omborPopover.title} <span className="font-normal text-slate-400">{omborPopover.quantity} dona</span>
+                  {omborPopover.title} <span className="font-normal text-slate-400">{omborPopover.quantity} {t("common.dona")}</span>
                 </span>
                 <span className="mt-0.5 block truncate text-xs text-slate-400">{omborPopover.subtitle}</span>
               </span>
@@ -2602,11 +2671,12 @@ function TovarlarTab({
 }
 
 export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
+  const { t } = useTranslation("savdo_tafsilot");
   const items = sotuv.items ?? [];
   const jami = sotuvSummasi(sotuv);
   const tasdiqlangan = sotuvHolati(sotuv) === "CONFIRMED";
-  const omborNomi = sotuv.warehouse?.name || "Ombor";
-  const omborManzili = sotuv.warehouse?.address || "Manzil kiritilmagan";
+  const omborNomi = sotuv.warehouse?.name || t("common.info.ombor");
+  const omborManzili = sotuv.warehouse?.address || t("common.manzilKiritilmagan");
   const [skladQidiruv, setSkladQidiruv] = useState("");
   const [omborPopover, setOmborPopover] = useState<{
     key: string;
@@ -2624,10 +2694,10 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
       <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-4">
           <button className="rounded-xl bg-[#2563EB] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#1D4ED8]">
-            Mahsulot qo'shish
+            {t("eskiTovarlarTab.mahsulotQoshish")}
           </button>
           <button className="rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-600 shadow-sm transition hover:text-[#2563EB]">
-            Mahsulot tanlash
+            {t("eskiTovarlarTab.mahsulotTanlash")}
           </button>
         </div>
         <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm transition hover:text-[#2563EB]">
@@ -2640,14 +2710,14 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
           <div className="min-w-[1380px]">
             <div className="grid grid-cols-[70px_420px_170px_190px_240px_180px_220px_170px_180px] gap-x-4 border-b border-slate-200 bg-white px-7 py-5 text-sm text-slate-600">
               <span>⚙</span>
-              <span>Mahsulot</span>
-              <span>Narx</span>
-              <span>Miqdor</span>
-              <span>Ombor</span>
-              <span>Mavjud qoldiq</span>
-              <span>Rezervda</span>
-              <span>Ombordan chiqdi</span>
-              <span>Summa</span>
+              <span>{t("common.jadval.mahsulot")}</span>
+              <span>{t("common.jadval.narx")}</span>
+              <span>{t("common.jadval.miqdor")}</span>
+              <span>{t("common.jadval.ombor")}</span>
+              <span>{t("common.jadval.mavjudQoldiq")}</span>
+              <span>{t("common.jadval.rezervda")}</span>
+              <span>{t("common.jadval.ombordanChiqdi")}</span>
+              <span>{t("common.jadval.summa")}</span>
             </div>
 
             {items.map((item, index) => {
@@ -2669,7 +2739,7 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
 
                   <div className="flex items-center gap-3">
                     <div className="flex h-12 min-w-0 flex-1 items-center rounded-md border border-slate-300 bg-white px-3">
-                      <span className="min-w-0 flex-1 truncate text-slate-800">{mahsulotNomi(item)}</span>
+                      <span className="min-w-0 flex-1 truncate text-slate-800">{mahsulotNomi(item, t)}</span>
                       <ChevronDown size={18} className="-rotate-90 text-slate-400" />
                     </div>
                     <div className="flex h-12 w-12 items-center justify-center rounded-md border border-dashed border-sky-300 text-slate-400">
@@ -2683,7 +2753,7 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
 
                   <div className="flex h-12 items-center justify-end gap-2 rounded-md border border-slate-300 bg-white px-3">
                     <span>{item.quantity}</span>
-                    <span className="text-slate-400">dona</span>
+                    <span className="text-slate-400">{t("common.dona")}</span>
                   </div>
 
                   <button
@@ -2711,7 +2781,7 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
                   </button>
 
                   <a className="text-[#2563EB] underline underline-offset-4" href="#">
-                    {Math.max(son(item.quantity), 0)} dona
+                    {Math.max(son(item.quantity), 0)} {t("common.dona")}
                   </a>
 
                   <div>
@@ -2720,12 +2790,12 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
                     </div>
                     {!tasdiqlangan && (
                       <a className="mt-1 block text-right text-xs text-[#2563EB] underline underline-offset-4" href="#">
-                        qoralama
+                        {t("eskiTovarlarTab.qoralama")}
                       </a>
                     )}
                   </div>
 
-                  <span>{ombordanChiqdi} dona</span>
+                  <span>{ombordanChiqdi} {t("common.dona")}</span>
                   <span className="font-bold text-emerald-600">{pulniFormatlash(itemJami)}</span>
                 </div>
               );
@@ -2733,7 +2803,7 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
 
             {items.length === 0 && (
               <div className="px-7 py-20 text-center text-slate-400">
-                Bu sotuvda mahsulot mavjud emas
+                {t("eskiTovarlarTab.mahsulotYoq")}
               </div>
             )}
           </div>
@@ -2741,13 +2811,13 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
 
         <div className="border-t border-slate-100 px-7 py-8">
           <div className="ml-auto max-w-md space-y-4 text-right text-slate-600">
-            <p>Chegirma va soliqlarsiz summa: <span className="ml-8">{pulniFormatlash(jami)}</span></p>
-            <p>Yetkazish summasi: <span className="ml-8">{pulniFormatlash(0)}</span></p>
-            <p className="text-lime-700">Chegirma summasi: <span className="ml-8">{pulniFormatlash(0)}</span></p>
-            <p>Soliqsiz summa: <span className="ml-8">{pulniFormatlash(jami)}</span></p>
-            <p>Soliq summasi: <span className="ml-8">{pulniFormatlash(0)}</span></p>
+            <p>{t("common.totals.chegirmaSoliqsiz")} <span className="ml-8">{pulniFormatlash(jami)}</span></p>
+            <p>{t("common.totals.yetkazishSummasi")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
+            <p className="text-lime-700">{t("common.totals.chegirmaSummasi")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
+            <p>{t("common.totals.soliqsizSumma")} <span className="ml-8">{pulniFormatlash(jami)}</span></p>
+            <p>{t("common.totals.soliqSummasi")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
             <div className="border-t border-slate-200 pt-5 text-2xl font-bold text-slate-700">
-              Umumiy summa: <span className="ml-8">{pulniFormatlash(jami)}</span>
+              {t("common.totals.umumiySumma")} <span className="ml-8">{pulniFormatlash(jami)}</span>
             </div>
           </div>
         </div>
@@ -2757,7 +2827,7 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
         <>
           <button
             type="button"
-            aria-label="Ombor oynasini yopish"
+            aria-label={t("eskiTovarlarTab.omborOynasiniYopish")}
             className="fixed inset-0 z-[100000] cursor-default bg-transparent"
             onClick={() => setOmborPopover(null)}
           />
@@ -2769,7 +2839,7 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
               <input
                 value={skladQidiruv}
                 onChange={(event) => setSkladQidiruv(event.target.value)}
-                placeholder="Ombor"
+                placeholder={t("eskiTovarlarTab.omborPlaceholder")}
                 className="min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
                 autoFocus
               />
@@ -2795,14 +2865,14 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[15px] font-semibold text-slate-800">
-                      {omborNomi} <span className="font-normal text-slate-400">{omborPopover.quantity} dona</span>
+                      {omborNomi} <span className="font-normal text-slate-400">{omborPopover.quantity} {t("common.dona")}</span>
                     </span>
                     <span className="mt-0.5 block truncate text-xs text-slate-400">{omborManzili}</span>
                   </span>
                 </button>
               ) : (
                 <div className="px-3 py-8 text-center text-sm text-slate-400">
-                  Bu sotuvga biriktirilgan ombor topilmadi
+                  {t("eskiTovarlarTab.biriktirilganOmborTopilmadi")}
                 </div>
               )}
             </div>
@@ -2825,17 +2895,18 @@ function yetkazishFormasiniYigish(data: YetkazishMalumoti | null, sotuv: Sotuv) 
   };
 }
 
-function crmXabarniFaoliyatga(message: ChatMessage): SaqlanganFaoliyat {
+function crmXabarniFaoliyatga(message: ChatMessage, t: TFunction): SaqlanganFaoliyat {
   return {
     id: message.id ?? `chat-${message.createdAt ?? "unknown"}`,
     turi: "Xabar",
-    sarlavha: message.direction === "IN" ? "Mijozdan xabar" : "Xabar yuborildi",
+    sarlavha: message.direction === "IN" ? t("umumiyTab.faoliyat.mijozdanXabar") : t("umumiyTab.faoliyat.xabarYuborildi"),
     matn: message.text ?? "",
     sana: message.createdAt ?? new Date().toISOString(),
   };
 }
 
 function YetkazishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; onClose: () => void }) {
+  const { t } = useTranslation("savdo_tafsilot");
   const items = sotuv.items ?? [];
   const [yetkazish, setYetkazish] = useState<YetkazishMalumoti | null>(null);
   const [forma, setForma] = useState({ recipientName: "", recipientPhone: "", address: "", courierName: "", cost: "", scheduledAt: "", note: "" });
@@ -2905,24 +2976,29 @@ function YetkazishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; 
       <button
         onClick={onClose}
         className="absolute left-[280px] top-7 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-sky-500 text-white shadow-xl hover:bg-sky-600"
-        aria-label="Yetkazish oynasini yopish"
+        aria-label={t("yetkazishPanel.oynaniYopish")}
       >
         <X size={20} />
       </button>
       <div className="scrollbar-hidden ml-[338px] h-full overflow-y-auto rounded-l-3xl bg-[#eef3f6] p-6 shadow-2xl">
         <div className="flex items-start justify-between gap-4">
-          <h2 className="text-3xl font-semibold text-slate-900">Tovarlarni yetkazib berishni tashkil qilish</h2>
+          <h2 className="text-3xl font-semibold text-slate-900">{t("yetkazishPanel.sarlavha")}</h2>
           <div className="flex gap-3">
-            <button className="rounded-lg bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">Buyurtmani sozlash</button>
-            <button className="rounded-lg bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">Fikr-mulohaza</button>
+            <button className="rounded-lg bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">{t("yetkazishPanel.buyurtmaniSozlash")}</button>
+            <button className="rounded-lg bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">{t("yetkazishPanel.fikrMulohaza")}</button>
           </div>
         </div>
 
         <div className="mt-8 grid gap-7 lg:grid-cols-[270px_minmax(0,1fr)]">
           <aside className="space-y-4">
-            <span className="inline-flex rounded-full bg-slate-500 px-4 py-1.5 text-sm font-bold text-white">Yetkazish</span>
+            <span className="inline-flex rounded-full bg-slate-500 px-4 py-1.5 text-sm font-bold text-white">{t("yetkazishPanel.badge")}</span>
             <div className="h-px bg-slate-300" />
-            {["Kompaniya aloqalarini taqdim etish", "Skript taklif qilish", "Qanday ishlaydi", "Buyurtmani sozlash"].map((item) => (
+            {[
+              t("yetkazishPanel.sidebar.kompaniyaAloqalari"),
+              t("yetkazishPanel.sidebar.skriptTaklif"),
+              t("yetkazishPanel.sidebar.qandayIshlaydi"),
+              t("yetkazishPanel.sidebar.buyurtmaniSozlash"),
+            ].map((item) => (
               <button key={item} className="block text-left text-sm text-slate-500 hover:text-sky-600">
                 {item}
               </button>
@@ -2930,79 +3006,79 @@ function YetkazishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; 
           </aside>
 
           <main className="space-y-3">
-            <Qadam number={1} active title="Tovarlar">
+            <Qadam number={1} active title={t("yetkazishPanel.qadamTovarlar")}>
               <div className="mt-6 flex items-center gap-6 text-sm">
-                <button className="text-blue-600 underline underline-offset-4">Qo'shish</button>
-                <button className="text-slate-500">Katalogdan tanlash</button>
+                <button className="text-blue-600 underline underline-offset-4">{t("yetkazishPanel.qoshish")}</button>
+                <button className="text-slate-500">{t("yetkazishPanel.katalogdanTanlash")}</button>
               </div>
               <div className="mt-8 space-y-4">
                 {items.length > 0 ? (
                   items.map((item, index) => (
                     <div key={item.id ?? `${item.modificationId}-${index}`} className="grid gap-5 lg:grid-cols-[1fr_84px_120px_90px_120px]">
                       <label className="text-sm text-slate-600">
-                        Mahsulot
+                        {t("yetkazishPanel.mahsulot")}
                         <div className="mt-2 flex h-12 items-center rounded-md border border-slate-300 bg-white px-3">
-                          <span className="min-w-0 flex-1 truncate text-slate-600">{mahsulotNomi(item)}</span>
+                          <span className="min-w-0 flex-1 truncate text-slate-600">{mahsulotNomi(item, t)}</span>
                           <Search size={19} className="text-slate-500" />
                         </div>
                       </label>
                       <div className="mt-7 flex h-12 items-center justify-center rounded-md border border-dashed border-slate-300 text-slate-400">
                         <ImageIcon size={20} />
                       </div>
-                      <Maydon label="Narxi" value={pulniFormatlash(item.price)} />
-                      <Maydon label="Miqdori" value={String(item.quantity)} />
-                      <Maydon label="Natija" value={pulniFormatlash(mahsulotJami(item))} />
+                      <Maydon label={t("yetkazishPanel.narxi")} value={pulniFormatlash(item.price)} />
+                      <Maydon label={t("yetkazishPanel.miqdori")} value={String(item.quantity)} />
+                      <Maydon label={t("yetkazishPanel.natija")} value={pulniFormatlash(mahsulotJami(item))} />
                     </div>
                   ))
                 ) : (
-                  <p className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-slate-400">Tovarlar mavjud emas</p>
+                  <p className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-slate-400">{t("common.tovarlarYoq")}</p>
                 )}
               </div>
               <div className="mt-10 border-t border-slate-200 pt-8">
                 <div className="ml-auto max-w-md space-y-4 text-right text-slate-600">
-                  <p>Tovarlar summasi: <span className="ml-8">{pulniFormatlash(jami)}</span></p>
-                  <p className="text-lime-700">Mijoz foydasi: <span className="ml-8">0 so'm</span></p>
+                  <p>{t("yetkazishPanel.tovarlarSummasi")} <span className="ml-8">{pulniFormatlash(jami)}</span></p>
+                  <p className="text-lime-700">{t("yetkazishPanel.mijozFoydasiLabel")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
                   <div className="border-t border-slate-200 pt-4 text-2xl font-bold">
-                    Jami: <span className="ml-8">{pulniFormatlash(jami)}</span>
+                    {t("yetkazishPanel.jami")} <span className="ml-8">{pulniFormatlash(jami)}</span>
                   </div>
                 </div>
               </div>
             </Qadam>
 
-            <Qadam number={2} title="Yetkazish">
+            <Qadam number={2} title={t("yetkazishPanel.qadamYetkazish")}>
               {yuklanmoqda ? (
-                <div className="mt-8 flex items-center gap-3 text-slate-500"><LoaderCircle className="animate-spin" size={20} /> Ma'lumot yuklanmoqda...</div>
+                <div className="mt-8 flex items-center gap-3 text-slate-500"><LoaderCircle className="animate-spin" size={20} /> {t("yetkazishPanel.malumotYuklanmoqda")}</div>
               ) : (
                 <div className="mt-6 max-w-3xl space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm font-semibold text-slate-500">
-                      {yetkazish ? "Yetkazib berish ma'lumoti" : "Yetkazib berish ma'lumoti mavjud emas"}
+                      {yetkazish ? t("yetkazishPanel.malumotBor") : t("yetkazishPanel.malumotYoq")}
                     </p>
                     {yetkazish && <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-orange-600">{yetkazish.status}</span>}
                   </div>
                   {xato && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{xato}</p>}
                   <div className="grid gap-4 md:grid-cols-2">
                     {([
-                      ["recipientName", "Qabul qiluvchi", "text"], ["recipientPhone", "Telefon", "tel"],
-                      ["address", "Manzil", "text"], ["courierName", "Kuryer", "text"],
-                      ["cost", "Yetkazish narxi", "number"], ["scheduledAt", "Rejalashtirilgan vaqt", "datetime-local"],
+                      ["recipientName", t("yetkazishPanel.forma.qabulQiluvchi"), "text"], ["recipientPhone", t("yetkazishPanel.forma.telefon"), "tel"],
+                      ["address", t("yetkazishPanel.forma.manzil"), "text"], ["courierName", t("yetkazishPanel.forma.kuryer"), "text"],
+                      ["cost", t("yetkazishPanel.forma.yetkazishNarxi"), "number"], ["scheduledAt", t("yetkazishPanel.forma.rejalashtirilganVaqt"), "datetime-local"],
                     ] as const).map(([key, label, type]) => (
                       <label key={key} className="text-sm font-semibold text-slate-600">{label}
                         <input type={type} min={type === "number" ? 0 : undefined} value={forma[key]} onChange={(event) => setForma((old) => ({ ...old, [key]: event.target.value }))} disabled={yetkazish?.status === "DELIVERED" || yetkazish?.status === "CANCELLED"} className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 outline-none focus:border-orange-400 disabled:bg-slate-100" />
                       </label>
                     ))}
                   </div>
-                  <label className="block text-sm font-semibold text-slate-600">Izoh
+                  <label className="block text-sm font-semibold text-slate-600">{t("yetkazishPanel.forma.izoh")}
                     <textarea value={forma.note} onChange={(event) => setForma((old) => ({ ...old, note: event.target.value }))} disabled={yetkazish?.status === "DELIVERED" || yetkazish?.status === "CANCELLED"} rows={3} className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-white p-3 outline-none focus:border-orange-400 disabled:bg-slate-100" />
                   </label>
                   <div className="flex flex-wrap gap-3">
-                    {(!yetkazish || (yetkazish.status !== "DELIVERED" && yetkazish.status !== "CANCELLED")) && <button type="button" onClick={() => void saqlash()} disabled={saqlanmoqda || (!yetkazish && sotuvHolati(sotuv) !== "CONFIRMED")} className="rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-black text-white disabled:opacity-40">{yetkazish ? "Saqlash" : "Yetkazishni yaratish"}</button>}
-                    {yetkazish?.status === "PENDING" && <button type="button" onClick={() => void holatAmali("dispatch")} disabled={saqlanmoqda} className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white">Jo'natish</button>}
-                    {yetkazish?.status === "DISPATCHED" && <button type="button" onClick={() => void holatAmali("complete")} disabled={saqlanmoqda} className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-black text-white">Yetkazildi</button>}
-                    {(yetkazish?.status === "PENDING" || yetkazish?.status === "DISPATCHED") && <button type="button" onClick={() => void holatAmali("cancel")} disabled={saqlanmoqda} className="rounded-xl bg-red-50 px-5 py-2.5 text-sm font-black text-red-600">Bekor qilish</button>}
+                    {(!yetkazish || (yetkazish.status !== "DELIVERED" && yetkazish.status !== "CANCELLED")) && <button type="button" onClick={() => void saqlash()} disabled={saqlanmoqda || (!yetkazish && sotuvHolati(sotuv) !== "CONFIRMED")} className="rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-black text-white disabled:opacity-40">{yetkazish ? t("yetkazishPanel.saqlash") : t("yetkazishPanel.yetkazishniYaratish")}</button>}
+                    {yetkazish?.status === "PENDING" && <button type="button" onClick={() => void holatAmali("dispatch")} disabled={saqlanmoqda} className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white">{t("yetkazishPanel.jonatish")}</button>}
+                    {yetkazish?.status === "DISPATCHED" && <button type="button" onClick={() => void holatAmali("complete")} disabled={saqlanmoqda} className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-black text-white">{t("yetkazishPanel.yetkazildi")}</button>}
+                    {(yetkazish?.status === "PENDING" || yetkazish?.status === "DISPATCHED") && <button type="button" onClick={() => void holatAmali("cancel")} disabled={saqlanmoqda} className="rounded-xl bg-red-50 px-5 py-2.5 text-sm font-black text-red-600">{t("yetkazishPanel.bekorQilish")}</button>}
                     {saqlanmoqda && <LoaderCircle className="animate-spin self-center text-orange-500" size={20} />}
                   </div>
-                  {!yetkazish && sotuvHolati(sotuv) !== "CONFIRMED" && <p className="text-xs font-semibold text-amber-600">Yetkazish faqat tasdiqlangan sotuv uchun yaratiladi.</p>}
+                  {!yetkazish && sotuvHolati(sotuv) !== "CONFIRMED" && <p className="text-xs font-semibold text-amber-600">{t("yetkazishPanel.faqatTasdiqlangan")}</p>}
                 </div>
               )}
             </Qadam>
@@ -3043,10 +3119,11 @@ function OmbordanChiqarishHujjatMazmuni({
   onClose: () => void;
   ikkinchiYopishTugmasi?: boolean;
 }) {
+  const { t } = useTranslation("savdo_tafsilot");
   const items = sotuv.items ?? [];
   const tasdiqlangan = sotuvHolati(sotuv) === "CONFIRMED";
   const omborlar = useOmborStore((state) => state.omborlar);
-  const omborNomi = sotuvOmborNomi(sotuv, omborlar);
+  const omborNomi = sotuvOmborNomi(sotuv, omborlar, t);
   const qoldiqlar = useSavdoStore((state) => state.qoldiqlar);
   const mahsulotlarJami = items.reduce((yigindi, item) => yigindi + son(item.quantity) * son(item.price), 0);
   const chegirmaSummasi = sotuvChegirmaSummasi(sotuv);
@@ -3076,7 +3153,7 @@ function OmbordanChiqarishHujjatMazmuni({
     setOmbordanChiqarishTasdiqlanmoqda(false);
     if (!muvaffaqiyatli) {
       setOmbordanChiqarishXatosi(
-        useSavdoStore.getState().xatolik || "Sotuvni ombordan chiqarish uchun tasdiqlab bo'lmadi."
+        useSavdoStore.getState().xatolik || t("ombordanChiqarish.tasdiqlabBolmadi")
       );
       return;
     }
@@ -3086,7 +3163,7 @@ function OmbordanChiqarishHujjatMazmuni({
   async function faoliyatniBackendgaSaqlash(faoliyat: Omit<SaqlanganFaoliyat, "id" | "sana"> & { sana?: string }) {
     const partnerId = sotuv.customer?.partner?.id ?? sotuv.clientCompany?.partner?.id;
     if (!partnerId) {
-      setFaoliyatXatosi("Faoliyatni saqlash uchun sotuvda real partner ID bo'lishi kerak.");
+      setFaoliyatXatosi(t("ombordanChiqarish.errors.partnerIdKerak"));
       return false;
     }
     setFaoliyatXatosi("");
@@ -3098,7 +3175,7 @@ function OmbordanChiqarishHujjatMazmuni({
       } else {
         const assigneeId = faoliyat.xodimId || sotuv.responsibleId;
         if (!assigneeId) {
-          setFaoliyatXatosi("Ish yoki vazifa yaratish uchun mas’ul xodim kerak.");
+          setFaoliyatXatosi(t("ombordanChiqarish.errors.masulXodimKerak"));
           return false;
         }
         await crmApi.activityYaratish({ type: faoliyat.turi === "Vazifa" ? "TASK" : "CALL", partnerId, subject: faoliyat.sarlavha, description: faoliyat.matn || undefined, dueAt: faoliyat.sana ?? new Date().toISOString(), assigneeId });
@@ -3114,9 +3191,11 @@ function OmbordanChiqarishHujjatMazmuni({
       <div className="scrollbar-hidden h-full overflow-y-auto rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] px-7 py-7 shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80">
         <div className="flex items-start justify-between gap-4 border-b border-orange-100/80 pb-6">
           <div>
-            <h2 className="text-3xl font-semibold text-slate-900">Ombordan chiqarish hujjati</h2>
+            <h2 className="text-3xl font-semibold text-slate-900">{t("ombordanChiqarish.sarlavha")}</h2>
             <p className="mt-2 text-sm text-slate-500">
-              Real sotuv: {sotuvRaqami(sotuv)} · {tasdiqlangan ? "mahsulot ombordan chiqarilgan" : "tasdiqlanganda ombordan chiqadi"}
+              {tasdiqlangan
+                ? t("ombordanChiqarish.tavsifBajarilgan", { raqam: sotuvRaqami(sotuv) })
+                : t("ombordanChiqarish.tavsifKutilmoqda", { raqam: sotuvRaqami(sotuv) })}
             </p>
           </div>
           {ikkinchiYopishTugmasi && (
@@ -3138,7 +3217,7 @@ function OmbordanChiqarishHujjatMazmuni({
                   : "border-transparent text-slate-500 hover:text-[#2563EB]"
               }`}
             >
-              {bolim}
+              {t(TAB_LABEL_KEYS[bolim] ?? bolim)}
             </button>
           ))}
         </nav>
@@ -3150,14 +3229,14 @@ function OmbordanChiqarishHujjatMazmuni({
                 <div className="min-w-[1560px]">
                   <div className={`grid ${hujjatTovarUstunlari} gap-x-5 border-b border-slate-200 bg-white px-7 py-5 text-sm text-slate-600`}>
                     <span>#</span>
-                    <span>Mahsulot</span>
-                    <span>Narx</span>
-                    <span>Miqdor</span>
-                    <span>Ombor</span>
-                    <span>Mavjud qoldiq</span>
-                    <span>Rezervda</span>
-                    <span>Ombordan chiqdi</span>
-                    <span>Summa</span>
+                    <span>{t("common.jadval.mahsulot")}</span>
+                    <span>{t("common.jadval.narx")}</span>
+                    <span>{t("common.jadval.miqdor")}</span>
+                    <span>{t("common.jadval.ombor")}</span>
+                    <span>{t("common.jadval.mavjudQoldiq")}</span>
+                    <span>{t("common.jadval.rezervda")}</span>
+                    <span>{t("common.jadval.ombordanChiqdi")}</span>
+                    <span>{t("common.jadval.summa")}</span>
                   </div>
 
                   {items.map((item, index) => {
@@ -3175,7 +3254,7 @@ function OmbordanChiqarishHujjatMazmuni({
                         <span className="text-slate-400">{index + 1}.</span>
 
                         <div className="flex h-12 items-center rounded-md border border-slate-200 bg-slate-50 px-3">
-                          <span className="min-w-0 flex-1 truncate text-slate-800">{mahsulotNomi(item)}</span>
+                          <span className="min-w-0 flex-1 truncate text-slate-800">{mahsulotNomi(item, t)}</span>
                         </div>
 
                         <div className="flex h-12 items-center justify-end rounded-md border border-slate-200 bg-slate-50 px-3">
@@ -3184,18 +3263,18 @@ function OmbordanChiqarishHujjatMazmuni({
 
                         <div className="flex h-12 items-center justify-end gap-2 rounded-md border border-slate-200 bg-slate-50 px-3">
                           <span>{item.quantity}</span>
-                          <span className="text-slate-400">dona</span>
+                          <span className="text-slate-400">{t("common.dona")}</span>
                         </div>
 
                         <div className="flex h-12 items-center rounded-md border border-slate-200 bg-slate-50 px-3">
                           <span className="min-w-0 flex-1 truncate">{omborNomi}</span>
                         </div>
 
-                        <span className="text-[#2563EB]">{Math.max(mavjudQoldiq, 0)} dona</span>
+                        <span className="text-[#2563EB]">{Math.max(mavjudQoldiq, 0)} {t("common.dona")}</span>
 
                         <div className="flex h-12 items-center justify-end rounded-md border border-slate-200 bg-slate-50 px-3">{rezerv}</div>
 
-                        <span>{ombordanChiqdi} dona</span>
+                        <span>{ombordanChiqdi} {t("common.dona")}</span>
 
                         <span className="font-bold text-emerald-600">{pulniFormatlash(itemJami)}</span>
                       </div>
@@ -3204,19 +3283,19 @@ function OmbordanChiqarishHujjatMazmuni({
                 </div>
               </div>
             ) : (
-              <p className="px-7 py-16 text-center text-sm text-slate-400">Tovarlar mavjud emas</p>
+              <p className="px-7 py-16 text-center text-sm text-slate-400">{t("common.tovarlarYoq")}</p>
             )}
 
             {items.length > 0 && (
               <div className="border-t border-slate-100 px-7 py-8">
                 <div className="ml-auto max-w-md space-y-4 text-right text-slate-600">
-                  <p>Chegirma va soliqlarsiz summa: <span className="ml-8">{pulniFormatlash(mahsulotlarJami)}</span></p>
-                  <p>Yetkazish summasi: <span className="ml-8">{pulniFormatlash(0)}</span></p>
-                  <p className="text-lime-700">Chegirma summasi: <span className="ml-8">{pulniFormatlash(chegirmaSummasi)}</span></p>
-                  <p>Soliqsiz summa: <span className="ml-8">{pulniFormatlash(mahsulotlarJami - chegirmaSummasi)}</span></p>
-                  <p>Soliq summasi: <span className="ml-8">{pulniFormatlash(0)}</span></p>
+                  <p>{t("common.totals.chegirmaSoliqsiz")} <span className="ml-8">{pulniFormatlash(mahsulotlarJami)}</span></p>
+                  <p>{t("common.totals.yetkazishSummasi")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
+                  <p className="text-lime-700">{t("common.totals.chegirmaSummasi")} <span className="ml-8">{pulniFormatlash(chegirmaSummasi)}</span></p>
+                  <p>{t("common.totals.soliqsizSumma")} <span className="ml-8">{pulniFormatlash(mahsulotlarJami - chegirmaSummasi)}</span></p>
+                  <p>{t("common.totals.soliqSummasi")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
                   <div className="border-t border-slate-200 pt-5 text-2xl font-bold text-slate-700">
-                    Umumiy summa: <span className="ml-8">{pulniFormatlash(jami)}</span>
+                    {t("common.totals.umumiySumma")} <span className="ml-8">{pulniFormatlash(jami)}</span>
                   </div>
                 </div>
               </div>
@@ -3226,13 +3305,13 @@ function OmbordanChiqarishHujjatMazmuni({
           <div className="mt-6 grid gap-6 xl:grid-cols-[42%_34px_minmax(0,1fr)]">
             <aside className="space-y-4">
               <section className="rounded-2xl bg-white p-5 shadow-sm">
-                <CardTitle title="Asosiy ma'lumotlar" />
-                <Info label="Mijoz" value={mijozNomi(sotuv)} pill />
-                <Info label="Telefon" value={mijozTelefon(sotuv)} />
-                <Info label="Manzil" value={mijozManzili(sotuv)} />
-                <Info label="Kompaniya" value={sotuv.clientCompany?.name || "Kompaniya tanlanmagan"} />
-                <Info label="Ombor" value={omborNomi} />
-                <Info label="Mas'ul shaxs" value={masulNomi(sotuv)} />
+                <CardTitle title={t("ombordanChiqarish.asosiyMalumotlar")} />
+                <Info label={t("common.info.mijoz")} value={mijozNomi(sotuv)} pill />
+                <Info label={t("common.info.telefon")} value={mijozTelefon(sotuv)} />
+                <Info label={t("common.info.manzil")} value={mijozManzili(sotuv)} />
+                <Info label={t("common.info.kompaniya")} value={sotuv.clientCompany?.name || t("common.info.kompaniyaTanlanmagan")} />
+                <Info label={t("common.info.ombor")} value={omborNomi} />
+                <Info label={t("common.info.masulShaxs")} value={masulNomi(sotuv)} />
               </section>
             </aside>
 
@@ -3241,15 +3320,15 @@ function OmbordanChiqarishHujjatMazmuni({
             <main className="space-y-5">
               {faoliyatXatosi && <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">{faoliyatXatosi}</div>}
               <FaoliyatPanel onSaqlash={faoliyatniBackendgaSaqlash} />
-              <Divider label="Bugun" />
+              <Divider label={t("umumiyTab.feed.bugun")} />
               <article className="rounded-2xl bg-white/80 p-5 text-slate-700 shadow-sm">
-                Hozir siz {mijozNomi(sotuv)} uchun ombordan chiqarish hujjatini ko'ryapsiz.
+                {t("ombordanChiqarish.koryapsiz", { mijoz: mijozNomi(sotuv) })}
               </article>
 
               {yaqindaTasdiqlandi && (
                 <article className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-700 shadow-sm">
                   <CheckCircle2 size={20} className="shrink-0" />
-                  Tasdiqlandi! Mahsulot ombordan chiqarildi va sotuv "Amalga oshirilganlar" bo'limiga tushdi.
+                  {t("ombordanChiqarish.tasdiqlandiXabar")}
                 </article>
               )}
 
@@ -3259,14 +3338,14 @@ function OmbordanChiqarishHujjatMazmuni({
                     <Package size={20} />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-lg font-semibold text-slate-700">{tasdiqlangan ? "Ombor amali bajarilgan" : "Ombor amali kutilmoqda"}</h3>
+                    <h3 className="text-lg font-semibold text-slate-700">{tasdiqlangan ? t("ombordanChiqarish.amaliBajarilgan") : t("ombordanChiqarish.amaliKutilmoqda")}</h3>
                     <p className="mt-2 text-sm text-slate-500">
-                      {items.length} ta tovar, summa {pulniFormatlash(jami)}. Ombor: {omborNomi}.
+                      {t("ombordanChiqarish.amaliTavsif", { count: items.length, summa: pulniFormatlash(jami), ombor: omborNomi })}
                     </p>
                     {!tasdiqlangan && (
                       <>
                         <p className="mt-2 text-xs text-slate-400">
-                          Tasdiqlanmaguncha bu sotuv "Amalga oshirilganlar" bo'limiga tushmaydi va ombor qoldig'i o'zgarmaydi.
+                          {t("ombordanChiqarish.tasdiqlanmaguncha")}
                         </p>
                         {ombordanChiqarishXatosi && (
                           <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-600">
@@ -3280,7 +3359,7 @@ function OmbordanChiqarishHujjatMazmuni({
                           className="mt-4 inline-flex h-11 items-center gap-2 rounded-xl bg-[#2563EB] px-5 text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,235,.22)] transition hover:bg-[#1D4ED8] disabled:opacity-50"
                         >
                           {ombordanChiqarishTasdiqlanmoqda && <LoaderCircle size={16} className="animate-spin" />}
-                          Tasdiqlash
+                          {t("ombordanChiqarish.tasdiqlash")}
                         </button>
                       </>
                     )}
@@ -3316,15 +3395,16 @@ function Maydon({ label, value }: { label: string; value: string }) {
 }
 
 function ProductsCard({ sotuv }: { sotuv: Sotuv }) {
+  const { t } = useTranslation("savdo_tafsilot");
   return (
     <section className="rounded-[26px] border border-white/70 bg-white p-5 shadow-[0_16px_42px_rgba(15,23,42,.07)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(15,23,42,.10)]">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-500">Sotuv tarkibi</p>
-          <h3 className="mt-1 text-lg font-black text-slate-800">Tovarlar</h3>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-500">{t("productsCard.kicker")}</p>
+          <h3 className="mt-1 text-lg font-black text-slate-800">{t("productsCard.sarlavha")}</h3>
         </div>
         <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-600">
-          {(sotuv.items ?? []).length} qator
+          {t("productsCard.qatorSoni", { count: (sotuv.items ?? []).length })}
         </span>
       </div>
       <div className="space-y-3">
@@ -3338,16 +3418,16 @@ function ProductsCard({ sotuv }: { sotuv: Sotuv }) {
                 <Package size={20} />
               </span>
               <div className="min-w-0">
-                <p className="truncate font-black text-slate-800">{mahsulotNomi(item)}</p>
-                <p className="mt-1 truncate text-xs font-medium text-slate-400">{mahsulotTavsifi(item)}</p>
+                <p className="truncate font-black text-slate-800">{mahsulotNomi(item, t)}</p>
+                <p className="mt-1 truncate text-xs font-medium text-slate-400">{mahsulotTavsifi(item, t)}</p>
               </div>
             </div>
-            <SmallMetric label="Miqdor" value={String(item.quantity)} />
-            <SmallMetric label="Narx" value={pulniFormatlash(item.price)} />
-            <SmallMetric label="Jami" value={pulniFormatlash(mahsulotJami(item))} accent />
+            <SmallMetric label={t("common.jadval.miqdor")} value={String(item.quantity)} />
+            <SmallMetric label={t("common.jadval.narx")} value={pulniFormatlash(item.price)} />
+            <SmallMetric label={t("nakladnoy.jami")} value={pulniFormatlash(mahsulotJami(item))} accent />
           </div>
         ))}
-        {(sotuv.items ?? []).length === 0 && <p className="rounded-xl bg-slate-50 p-5 text-center text-sm text-slate-400">Tovarlar mavjud emas</p>}
+        {(sotuv.items ?? []).length === 0 && <p className="rounded-xl bg-slate-50 p-5 text-center text-sm text-slate-400">{t("common.tovarlarYoq")}</p>}
       </div>
     </section>
   );
@@ -3360,6 +3440,7 @@ function FaoliyatPanel({
   xodimlar?: XodimTanlovi[];
   onSaqlash?: (faoliyat: Omit<SaqlanganFaoliyat, "id" | "sana"> & { sana?: string }) => Promise<boolean>;
 }) {
+  const { t } = useTranslation("savdo_tafsilot");
   const [activeTab, setActiveTab] = useState("Ish");
   const [ochiq, setOchiq] = useState(false);
   const [matn, setMatn] = useState("");
@@ -3381,10 +3462,10 @@ function FaoliyatPanel({
   }>({ active: false, startX: 0, scrollLeft: 0 });
 
   const faoliyatTablari = [
-    { key: "Ish", label: "Ish", title: "Mijoz bilan bog'lanish", placeholder: "Vazifa haqida batafsil yozing..." },
-    { key: "Izoh", label: "Izoh", title: "Izoh yozish", placeholder: "Izoh matnini kiriting..." },
-    { key: "Xabar", label: "Xabar", title: "Xabar yuborish", placeholder: "Xabar matnini kiriting..." },
-    { key: "Vazifa", label: "Vazifa", title: "Vazifa yaratish", placeholder: "Vazifa tavsifini yozing..." },
+    { key: "Ish", label: t("common.faoliyatTuri.ish"), title: t("faoliyatPanel.tablar.ish.title"), placeholder: t("faoliyatPanel.tablar.ish.placeholder") },
+    { key: "Izoh", label: t("common.faoliyatTuri.izoh"), title: t("faoliyatPanel.tablar.izoh.title"), placeholder: t("faoliyatPanel.tablar.izoh.placeholder") },
+    { key: "Xabar", label: t("common.faoliyatTuri.xabar"), title: t("faoliyatPanel.tablar.xabar.title"), placeholder: t("faoliyatPanel.tablar.xabar.placeholder") },
+    { key: "Vazifa", label: t("common.faoliyatTuri.vazifa"), title: t("faoliyatPanel.tablar.vazifa.title"), placeholder: t("faoliyatPanel.tablar.vazifa.placeholder") },
   ];
   const tanlanganTab = faoliyatTablari.find((tab) => tab.key === activeTab) ?? faoliyatTablari[0];
   const ishTabi = activeTab === "Ish";
@@ -3427,7 +3508,7 @@ function FaoliyatPanel({
     });
     setSaqlanmoqda(false);
     if (!saqlandi) {
-      setPanelXatosi("Ma’lumot backendga saqlanmadi.");
+      setPanelXatosi(t("faoliyatPanel.errors.saqlanmadi"));
       return;
     }
     setMatn("");
@@ -3470,7 +3551,7 @@ function FaoliyatPanel({
   }
 
   function xabarQoshimchaTanlash(label: string) {
-    setPanelXatosi(`${label}ni chat xabariga biriktirish endpointi backendda mavjud emas.`);
+    setPanelXatosi(t("faoliyatPanel.errors.biriktirishYoq", { label }));
     setXabarQoshishOchiq(false);
   }
 
@@ -3498,7 +3579,7 @@ function FaoliyatPanel({
           }}
           className="inline-flex items-center gap-1 rounded-lg px-3 py-2 transition hover:bg-slate-50 hover:text-blue-600"
         >
-          Ko'proq <ChevronDown size={14} />
+          {t("faoliyatPanel.koprok")} <ChevronDown size={14} />
         </button>
       </nav>
 
@@ -3512,7 +3593,7 @@ function FaoliyatPanel({
           }}
           className="flex h-14 w-full items-center justify-between rounded-xl border border-orange-100 bg-[#F8FAFC]/60 px-5 text-left text-slate-400 transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50 hover:shadow-sm"
         >
-          <span>Nima qilish kerak</span>
+          <span>{t("faoliyatPanel.nimaQilishKerak")}</span>
         </button>
       ) : (
         <div className="animate-in slide-in-from-top-2 fade-in-0 overflow-visible duration-300">
@@ -3524,14 +3605,14 @@ function FaoliyatPanel({
                 className="mb-4 inline-flex h-11 items-center gap-2 rounded-xl bg-[#2563EB] px-4 text-sm font-bold text-white shadow-[0_10px_26px_rgba(37,99,235,.25)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] hover:shadow-[0_14px_32px_rgba(37,99,235,.32)] active:scale-[.98]"
               >
                 <MessageSquare size={18} />
-                Xabar yuborishni ulash
+                {t("faoliyatPanel.xabarYuborishniUlash")}
               </button>
 
               <div className="rounded-2xl border border-orange-100 bg-gradient-to-br from-white to-[#F8FAFC] p-4 transition focus-within:border-[#2563EB] focus-within:shadow-[0_0_0_4px_rgba(37,99,235,.10)]">
                 <textarea
                   value={tafsilot}
                   onChange={(event) => setTafsilot(event.target.value.slice(0, 200))}
-                  placeholder="Xabar matnini yozing"
+                  placeholder={t("faoliyatPanel.xabarMatniniYozing")}
                   className="min-h-[86px] w-full resize-none bg-transparent text-base text-slate-700 outline-none placeholder:text-slate-400"
                   autoFocus
                 />
@@ -3546,16 +3627,16 @@ function FaoliyatPanel({
                         }`}
                       >
                         <Plus size={18} />
-                        Qo'shish
+                        {t("common.qoshish")}
                       </button>
 
                       {xabarQoshishOchiq && (
                         <div className="animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 absolute left-0 top-12 z-[90] w-[245px] rounded-[22px] bg-white p-3 text-left shadow-[0_18px_55px_rgba(15,23,42,.16)] ring-1 ring-orange-100 duration-200">
                           {[
-                            { label: "Fayl", icon: Paperclip, arrow: true },
-                            { label: "To'lovni qabul qilish", icon: CreditCard },
-                            { label: "Hujjat", icon: FileText },
-                            { label: "CRM ma'lumotlari", icon: Database },
+                            { label: t("faoliyatPanel.qoshishMenyu.fayl"), icon: Paperclip, arrow: true },
+                            { label: t("faoliyatPanel.qoshishMenyu.tolovniQabulQilish"), icon: CreditCard },
+                            { label: t("faoliyatPanel.qoshishMenyu.hujjat"), icon: FileText },
+                            { label: t("faoliyatPanel.qoshishMenyu.crmMalumotlari"), icon: Database },
                           ].map((item, index) => {
                             const Icon = item.icon;
                             return (
@@ -3578,20 +3659,20 @@ function FaoliyatPanel({
                         </div>
                       )}
                     </div>
-                    <button type="button" className="flex h-8 w-8 items-center justify-center rounded-full text-purple-500 transition hover:bg-purple-50" aria-label="AI yordamchi">
+                    <button type="button" className="flex h-8 w-8 items-center justify-center rounded-full text-purple-500 transition hover:bg-purple-50" aria-label={t("faoliyatPanel.aiYordamchi")}>
                       ◎
                     </button>
                   </div>
-                  <button type="button" className="text-slate-400 transition hover:text-[#2563EB]" aria-label="Emoji tanlash">
+                  <button type="button" className="text-slate-400 transition hover:text-[#2563EB]" aria-label={t("faoliyatPanel.emojiTanlash")}>
                     <Smile size={20} />
                   </button>
                 </div>
               </div>
 
               <div className="mt-3 flex items-center justify-between text-sm">
-                <span className="text-slate-200">Mijoz ko'radigan xabar</span>
+                <span className="text-slate-200">{t("faoliyatPanel.mijozKoradiganXabar")}</span>
                 <span className={tafsilot.length >= 190 ? "font-semibold text-orange-500" : "text-slate-300"}>
-                  Belgilar {tafsilot.length}/200
+                  {t("faoliyatPanel.belgilar", { count: tafsilot.length })}
                 </span>
               </div>
 
@@ -3603,14 +3684,14 @@ function FaoliyatPanel({
                   className="inline-flex items-center gap-2 rounded-full bg-[#2563EB] px-5 py-2 text-xs font-bold uppercase text-white transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] hover:shadow-md disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:hover:translate-y-0 disabled:hover:shadow-none"
                 >
                   <Send size={14} />
-                  {saqlanmoqda ? "Yuborilmoqda..." : "Yuborish"}
+                  {saqlanmoqda ? t("common.yuborilmoqda") : t("common.yuborish")}
                 </button>
                 <button
                   type="button"
                   onClick={bekorQilish}
                   className="text-xs font-bold uppercase text-slate-600 transition hover:text-slate-900"
                 >
-                  Bekor qilish
+                  {t("common.bekorQilish")}
                 </button>
               </div>
             </div>
@@ -3628,7 +3709,7 @@ function FaoliyatPanel({
                 <div className="flex flex-wrap items-center gap-7">
                   <label className="inline-flex cursor-pointer items-center gap-2 transition hover:text-[#2563EB]">
                     <Paperclip size={18} />
-                    Fayl
+                    {t("common.fayl")}
                     <input
                       type="file"
                       className="hidden"
@@ -3637,11 +3718,11 @@ function FaoliyatPanel({
                   </label>
                   <button
                     type="button"
-                    onClick={() => setPanelXatosi("CRM izohidan hujjat yaratish endpointi backendda mavjud emas.")}
+                    onClick={() => setPanelXatosi(t("faoliyatPanel.errors.hujjatYaratishYoq"))}
                     className="inline-flex items-center gap-2 transition hover:text-[#2563EB]"
                   >
                     <FileText size={18} />
-                    Hujjat yaratish
+                    {t("faoliyatPanel.hujjatYaratish")}
                   </button>
                   <div className="relative">
                     <button
@@ -3650,7 +3731,7 @@ function FaoliyatPanel({
                       className="inline-flex items-center gap-2 transition hover:text-[#2563EB]"
                     >
                       <span className="text-xl leading-none">@</span>
-                      Odamni belgilash
+                      {t("faoliyatPanel.odamniBelgilash")}
                     </button>
                     {xodimTanlashJoy === "mention" && (
                       <div className="absolute left-0 top-8 z-[100] max-h-52 w-64 overflow-y-auto rounded-2xl bg-white p-2 shadow-xl ring-1 ring-orange-100">
@@ -3662,7 +3743,7 @@ function FaoliyatPanel({
                               onChange={() => setMentionUserIds((joriy) => joriy.includes(xodim.id) ? joriy.filter((id) => id !== xodim.id) : [...joriy, xodim.id])}
                               className="accent-orange-500"
                             />
-                            {xodimNomi(xodim)}
+                            {xodimNomi(xodim, t)}
                           </label>
                         ))}
                       </div>
@@ -3672,7 +3753,7 @@ function FaoliyatPanel({
                 <button
                   type="button"
                   className="text-lg font-bold text-slate-300 transition hover:text-[#2563EB]"
-                  aria-label="Matn uslubi"
+                  aria-label={t("faoliyatPanel.matnUslubi")}
                 >
                   A
                 </button>
@@ -3680,8 +3761,8 @@ function FaoliyatPanel({
 
               {(biriktirmalar.length > 0 || mentionUserIds.length > 0) && (
                 <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
-                  {biriktirmalar.map((fayl) => <span key={fayl.id} className="rounded-lg bg-orange-50 px-2 py-1">{fayl.originalName || fayl.fileName || "Fayl"}</span>)}
-                  {mentionUserIds.map((id) => <span key={id} className="rounded-lg bg-blue-50 px-2 py-1">@{xodimNomi(xodimlar.find((item) => item.id === id))}</span>)}
+                  {biriktirmalar.map((fayl) => <span key={fayl.id} className="rounded-lg bg-orange-50 px-2 py-1">{fayl.originalName || fayl.fileName || t("common.fayl")}</span>)}
+                  {mentionUserIds.map((id) => <span key={id} className="rounded-lg bg-blue-50 px-2 py-1">@{xodimNomi(xodimlar.find((item) => item.id === id), t)}</span>)}
                 </div>
               )}
 
@@ -3692,14 +3773,14 @@ function FaoliyatPanel({
                   disabled={saqlanmoqda}
                   className="rounded-full bg-[#2563EB] px-5 py-2 text-xs font-bold uppercase text-white transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] hover:shadow-md disabled:opacity-50"
                 >
-                  {saqlanmoqda ? "Saqlanmoqda..." : "Yuborish"}
+                  {saqlanmoqda ? t("common.saqlanmoqda") : t("common.yuborish")}
                 </button>
                 <button
                   type="button"
                   onClick={bekorQilish}
                   className="text-xs font-bold uppercase text-slate-600 transition hover:text-slate-900"
                 >
-                  Bekor qilish
+                  {t("common.bekorQilish")}
                 </button>
               </div>
             </div>
@@ -3733,8 +3814,8 @@ function FaoliyatPanel({
                         ? "bg-[#2563EB] text-white ring-2 ring-orange-100"
                         : "bg-orange-100 text-[#2563EB] hover:bg-orange-200"
                     }`}
-                    title={xodimNomi(tanlanganXodim)}
-                    aria-label="Xodim tanlash"
+                    title={xodimNomi(tanlanganXodim, t)}
+                    aria-label={t("faoliyatPanel.xodimTanlash")}
                   >
                     {tanlanganXodim ? xodimBoshHarflari(tanlanganXodim) : <UserRound size={17} />}
                   </button>
@@ -3745,7 +3826,7 @@ function FaoliyatPanel({
                       style={{ right: 0 }}
                     >
                       <div className="px-3 py-2 text-xs font-bold uppercase text-slate-400">
-                        Xodim tanlash
+                        {t("faoliyatPanel.xodimTanlash")}
                       </div>
                       <button
                         type="button"
@@ -3762,7 +3843,7 @@ function FaoliyatPanel({
                         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-400">
                           <UserRound size={15} />
                         </span>
-                        <span>Biriktirilmagan</span>
+                        <span>{t("faoliyatPanel.biriktirilmagan")}</span>
                       </button>
                       <div className="max-h-64 overflow-y-auto py-1">
                         {xodimlar.map((xodim) => {
@@ -3788,13 +3869,13 @@ function FaoliyatPanel({
                               >
                                 {xodimBoshHarflari(xodim) || <UserRound size={15} />}
                               </span>
-                              <span className="min-w-0 flex-1 truncate">{xodimNomi(xodim)}</span>
+                              <span className="min-w-0 flex-1 truncate">{xodimNomi(xodim, t)}</span>
                             </button>
                           );
                         })}
                         {xodimlar.length === 0 && (
                           <div className="px-3 py-4 text-sm font-semibold text-slate-400">
-                            Backenddan xodim topilmadi.
+                            {t("faoliyatPanel.xodimTopilmadi")}
                           </div>
                         )}
                       </div>
@@ -3827,14 +3908,14 @@ function FaoliyatPanel({
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
                     <CalendarDays size={18} className="text-slate-500" />
-                    <span className="font-semibold">Kalendariga qo'shildi</span>
-                    <span className="truncate text-[#2563EB]">{xodimNomi(tanlanganXodim)}</span>
+                    <span className="font-semibold">{t("faoliyatPanel.kalendarigaQoshildi")}</span>
+                    <span className="truncate text-[#2563EB]">{xodimNomi(tanlanganXodim, t)}</span>
                     <button type="button" className="text-xs uppercase text-slate-400 transition hover:text-[#2563EB]">
-                      o'zgartirish
+                      {t("common.ozgartirish")}
                     </button>
                   </div>
                   <button type="button" className="mt-2 text-sm text-slate-400 underline underline-offset-4 hover:text-[#2563EB]">
-                    ishtirokchilar (1)
+                    {t("faoliyatPanel.ishtirokchilar")}
                   </button>
                 </div>
                 <button
@@ -3843,7 +3924,7 @@ function FaoliyatPanel({
                     setKalendarOchiq(false);
                   }}
                   className="rounded-full p-1 text-slate-400 transition hover:bg-white hover:text-slate-700"
-                  aria-label="Kalendar panelini yopish"
+                  aria-label={t("faoliyatPanel.kalendariniYopish")}
                 >
                   <X size={17} />
                 </button>
@@ -3859,8 +3940,8 @@ function FaoliyatPanel({
                         ? "bg-[#2563EB] text-white ring-2 ring-orange-100"
                         : "bg-orange-100 text-[#2563EB] hover:bg-orange-200"
                     }`}
-                    title={xodimNomi(tanlanganXodim)}
-                    aria-label="Kalendar xodimini tanlash"
+                    title={xodimNomi(tanlanganXodim, t)}
+                    aria-label={t("faoliyatPanel.kalendarXodimiTanlash")}
                   >
                     {tanlanganXodim ? xodimBoshHarflari(tanlanganXodim) : <UserRound size={17} />}
                   </button>
@@ -3868,7 +3949,7 @@ function FaoliyatPanel({
                   {xodimTanlashJoy === "kalendar" && (
                     <div className="animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 absolute left-0 top-11 z-[120] w-[min(280px,calc(100vw-32px))] overflow-hidden rounded-2xl bg-white p-2 text-left shadow-[0_20px_60px_rgba(15,23,42,.22)] ring-1 ring-orange-100 duration-200">
                       <div className="px-3 py-2 text-xs font-bold uppercase text-slate-400">
-                        Xodim tanlash
+                        {t("faoliyatPanel.xodimTanlash")}
                       </div>
                       <button
                         type="button"
@@ -3885,7 +3966,7 @@ function FaoliyatPanel({
                         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-400">
                           <UserRound size={15} />
                         </span>
-                        <span>Biriktirilmagan</span>
+                        <span>{t("faoliyatPanel.biriktirilmagan")}</span>
                       </button>
                       <div className="max-h-64 overflow-y-auto py-1">
                         {xodimlar.map((xodim) => {
@@ -3911,13 +3992,13 @@ function FaoliyatPanel({
                               >
                                 {xodimBoshHarflari(xodim) || <UserRound size={15} />}
                               </span>
-                              <span className="min-w-0 flex-1 truncate">{xodimNomi(xodim)}</span>
+                              <span className="min-w-0 flex-1 truncate">{xodimNomi(xodim, t)}</span>
                             </button>
                           );
                         })}
                         {xodimlar.length === 0 && (
                           <div className="px-3 py-4 text-sm font-semibold text-slate-400">
-                            Backenddan xodim topilmadi.
+                            {t("faoliyatPanel.xodimTopilmadi")}
                           </div>
                         )}
                       </div>
@@ -3949,7 +4030,7 @@ function FaoliyatPanel({
                       <div key={kun.kun} className="min-w-[500px] border-l border-slate-200 pl-3">
                         <div className="mb-2 flex items-center gap-2 text-xs text-slate-700">
                           <span>{kun.kun}</span>
-                          {kun.bugun && <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[11px] text-[#2563EB]">bugun</span>}
+                          {kun.bugun && <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[11px] text-[#2563EB]">{t("kalendarTanlash.bugun")}</span>}
                         </div>
                         <div className="grid grid-cols-10 text-xs text-slate-700">
                           {kun.soatlar.map((soat) => (
@@ -3969,7 +4050,7 @@ function FaoliyatPanel({
                                     ? "bg-orange-50"
                                     : "bg-white"
                               }`}
-                              title={`${kun.kun}, soat ${soat}:00`}
+                              title={t("common.soatTitle", { kun: kun.kun, soat })}
                             />
                           ))}
                         </div>
@@ -3989,14 +4070,14 @@ function FaoliyatPanel({
               disabled={saqlanmoqda}
               className="rounded-full bg-[#2563EB] px-5 py-2 text-xs font-bold uppercase text-white transition hover:bg-[#1D4ED8] disabled:opacity-50"
             >
-              {saqlanmoqda ? "Saqlanmoqda..." : "Saqlash"}
+              {saqlanmoqda ? t("common.saqlanmoqda") : t("common.saqlash")}
             </button>
             <button
               type="button"
               onClick={bekorQilish}
               className="text-xs font-bold uppercase text-slate-600 transition hover:text-slate-900"
             >
-              Bekor qilish
+              {t("common.bekorQilish")}
             </button>
           </div>
             </>
@@ -4009,28 +4090,29 @@ function FaoliyatPanel({
 }
 
 function AloqaKanallariModal({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation("savdo_tafsilot");
   const kanallar = [
     {
       name: "Telegram",
-      description: "Mijozlarga Telegram orqali tezkor xabar yuborish uchun ulanish.",
+      description: t("aloqaKanallari.kanallar.telegram"),
       icon: "✈",
       color: "from-sky-500 to-blue-600",
     },
     {
       name: "WhatsApp",
-      description: "WhatsApp orqali mijozlar bilan yozishmalarni boshqarish.",
+      description: t("aloqaKanallari.kanallar.whatsapp"),
       icon: "☘",
       color: "from-emerald-400 to-green-600",
     },
     {
       name: "SMS",
-      description: "Telefon raqamiga qisqa xabarlarni yuborish kanalini sozlash.",
+      description: t("aloqaKanallari.kanallar.sms"),
       icon: "SMS",
       color: "from-orange-400 to-orange-600",
     },
     {
       name: "Web chat",
-      description: "Saytdan kelgan xabarlarni sotuv kartasida kuzatish.",
+      description: t("aloqaKanallari.kanallar.webChat"),
       icon: "💬",
       color: "from-violet-400 to-fuchsia-500",
     },
@@ -4041,14 +4123,19 @@ function AloqaKanallariModal({ onClose }: { onClose: () => void }) {
       <div className="animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 max-h-[86vh] w-full max-w-[980px] overflow-hidden rounded-[28px] bg-[#EEF3F7] shadow-[0_30px_90px_rgba(15,23,42,.35)] duration-300">
         <div className="flex items-start justify-between gap-4 border-b border-slate-200/70 bg-white/60 px-6 py-5">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900">Aloqa kanallarini ulash</h2>
-            <p className="mt-1 text-sm text-slate-500">Telegram, WhatsApp, SMS yoki web chatni sotuv xabarlari uchun ulang.</p>
+            <h2 className="text-2xl font-bold text-slate-900">{t("aloqaKanallari.sarlavha")}</h2>
+            <p className="mt-1 text-sm text-slate-500">{t("aloqaKanallari.tavsif")}</p>
           </div>
         </div>
 
         <div className="max-h-[calc(86vh-96px)] overflow-y-auto px-6 py-5">
           <nav className="mb-5 flex flex-wrap gap-2 text-sm">
-            {["Xabarchilar", "SMS", "Barcha ulanishlar", "Bozor"].map((tab, index) => (
+            {[
+              t("aloqaKanallari.tabs.xabarchilar"),
+              t("aloqaKanallari.tabs.sms"),
+              t("aloqaKanallari.tabs.barchaUlanishlar"),
+              t("aloqaKanallari.tabs.bozor"),
+            ].map((tab, index) => (
               <button
                 key={tab}
                 type="button"
@@ -4066,7 +4153,7 @@ function AloqaKanallariModal({ onClose }: { onClose: () => void }) {
           <section className="rounded-[26px] bg-gradient-to-br from-emerald-400 to-green-600 p-6 text-white shadow-[0_18px_50px_rgba(34,197,94,.22)]">
             <h3 className="text-4xl font-black tracking-tight">Wazzup</h3>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-white/95">
-              WhatsApp va Telegram kabi xabar almashish kanallarini yagona sotuv oynasiga ulash uchun qulay integratsiya.
+              {t("aloqaKanallari.wazzupTavsif")}
             </p>
 
             <div className="mt-7 grid gap-4 md:grid-cols-2">
@@ -4083,7 +4170,7 @@ function AloqaKanallariModal({ onClose }: { onClose: () => void }) {
                       type="button"
                       className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition group-hover:bg-blue-700"
                     >
-                      Ulanish
+                      {t("aloqaKanallari.ulanish")}
                     </button>
                   </div>
                   <h4 className="mt-5 text-xl font-bold">{kanal.name}</h4>
@@ -4147,6 +4234,7 @@ function HujjatFeedCard({
   sotuv: Sotuv;
   onOchish: () => void;
 }) {
+  const { t } = useTranslation("savdo_tafsilot");
   return (
     <article className="group relative overflow-visible rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_14px_38px_rgba(37,99,235,.08)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(37,99,235,.12)]">
       <div className="absolute -left-[70px] top-5 hidden h-11 w-11 items-center justify-center rounded-full bg-[#2563EB] text-white shadow-[0_12px_30px_rgba(37,99,235,.30)] xl:flex">
@@ -4160,18 +4248,18 @@ function HujjatFeedCard({
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
-              <h3 className="font-black text-slate-900">Hujjat tayyorlandi</h3>
+              <h3 className="font-black text-slate-900">{t("hujjatFeedCard.tayyorlandi")}</h3>
               <span className="text-sm font-medium text-slate-400">{qisqaVaqt(hujjat.sana)}</span>
             </div>
             <div className="mt-3 space-y-1.5 text-sm">
               <p className="text-slate-500">
-                Ism: <span className="font-semibold text-slate-800">{hujjat.nomi}</span>
+                {t("hujjatFeedCard.ism")} <span className="font-semibold text-slate-800">{hujjat.nomi}</span>
               </p>
               <p className="text-slate-400">
-                Sizning kompaniyangiz <span className="font-semibold text-slate-700">To'ldirilmagan</span>
+                {t("hujjatFeedCard.kompaniyangiz")} <span className="font-semibold text-slate-700">{t("hujjatFeedCard.toldirilmagan")}</span>
               </p>
               <p className="text-slate-500">
-                Mijoz <span className="font-semibold text-slate-800">{mijozNomi(sotuv)}</span>
+                {t("hujjatFeedCard.mijoz")} <span className="font-semibold text-slate-800">{mijozNomi(sotuv)}</span>
               </p>
             </div>
           </div>
@@ -4186,13 +4274,13 @@ function HujjatFeedCard({
           onClick={onOchish}
           className="inline-flex h-10 min-w-[150px] items-center justify-center rounded-xl border border-orange-100 bg-white px-5 text-sm font-bold text-slate-700 transition hover:border-[#2563EB] hover:text-[#2563EB]"
         >
-          Ochiq
+          {t("hujjatFeedCard.ochiq")}
         </button>
         <button
           type="button"
           className="inline-flex h-10 min-w-[150px] items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 transition hover:border-orange-200 hover:text-orange-600"
         >
-          Obuna bo'lish
+          {t("hujjatFeedCard.obunaBolish")}
         </button>
 
         <div className="ml-auto flex items-center gap-3 text-slate-300">
@@ -4214,8 +4302,9 @@ function OmbordanChiqarishHujjatFeedCard({
   vaqt: string;
   onOchish: () => void;
 }) {
+  const { t } = useTranslation("savdo_tafsilot");
   const omborlar = useOmborStore((state) => state.omborlar);
-  const omborNomi = sotuvOmborNomi(sotuv, omborlar);
+  const omborNomi = sotuvOmborNomi(sotuv, omborlar, t);
 
   return (
     <article className="group relative overflow-visible rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_14px_38px_rgba(37,99,235,.08)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(37,99,235,.12)]">
@@ -4230,18 +4319,18 @@ function OmbordanChiqarishHujjatFeedCard({
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
-              <h3 className="font-black text-slate-900">Ombordan chiqarish hujjati qo'shildi</h3>
+              <h3 className="font-black text-slate-900">{t("ombordanChiqarishFeedCard.qoshildi")}</h3>
               <span className="text-sm font-medium text-slate-400">{vaqt}</span>
             </div>
             <div className="mt-3 space-y-1.5 text-sm">
               <p className="text-slate-500">
-                Sotuv <span className="font-semibold text-slate-800">{sotuvRaqami(sotuv)}</span>
+                {t("ombordanChiqarishFeedCard.sotuv")} <span className="font-semibold text-slate-800">{sotuvRaqami(sotuv)}</span>
               </p>
               <p className="text-slate-500">
-                Mijoz <span className="font-semibold text-slate-800">{mijozNomi(sotuv)}</span>
+                {t("ombordanChiqarishFeedCard.mijoz")} <span className="font-semibold text-slate-800">{mijozNomi(sotuv)}</span>
               </p>
               <p className="text-slate-400">
-                Ombor{" "}
+                {t("ombordanChiqarishFeedCard.ombor")}{" "}
                 <span className="font-semibold text-slate-700">{omborNomi}</span>
               </p>
             </div>
@@ -4257,7 +4346,7 @@ function OmbordanChiqarishHujjatFeedCard({
           onClick={onOchish}
           className="inline-flex h-10 min-w-[150px] items-center justify-center rounded-xl border border-orange-100 bg-white px-5 text-sm font-bold text-slate-700 transition hover:border-[#2563EB] hover:text-[#2563EB]"
         >
-          Hujjatni ko'rish
+          {t("ombordanChiqarishFeedCard.korish")}
         </button>
       </div>
     </article>
@@ -4275,6 +4364,7 @@ function FeedCard({
   text: string;
   onOchirish?: () => void;
 }) {
+  const { t } = useTranslation("savdo_tafsilot");
   return (
     <article className="group relative overflow-hidden rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_14px_38px_rgba(37,99,235,.08)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(37,99,235,.12)]">
       <span className="absolute inset-y-5 left-0 w-1 rounded-r-full bg-gradient-to-b from-orange-400 to-orange-600 opacity-80" />
@@ -4292,7 +4382,7 @@ function FeedCard({
               type="button"
               onClick={onOchirish}
               className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-red-400 opacity-0 transition hover:bg-red-100 hover:text-red-600 group-hover:opacity-100"
-              aria-label={`${title}ni o'chirish`}
+              aria-label={t("feedCard.ochirishAria", { title })}
             >
               <Trash2 size={16} />
             </button>
@@ -4317,6 +4407,7 @@ function CalendarFeedCard({
   onYangilash: (id: string, malumot: Partial<SaqlanganFaoliyat>) => void;
   onZakrepit: (id: string) => void;
 }) {
+  const { t } = useTranslation("savdo_tafsilot");
   const sana = new Date(faoliyat.sana);
   const vaqt = qisqaVaqt(faoliyat.sana);
   const kun = Number.isNaN(sana.getTime()) ? "--" : String(sana.getDate()).padStart(2, "0");
@@ -4354,18 +4445,18 @@ function CalendarFeedCard({
             className={`mt-0.5 flex h-5 w-5 items-center justify-center rounded border transition ${
               bajarildi ? "border-[#2563EB] bg-[#2563EB] text-white" : "border-orange-200 bg-white"
             }`}
-            aria-label={bajarildi ? "Bajarilgan belgini olib tashlash" : "Vazifani bajarildi qilish"}
+            aria-label={bajarildi ? t("calendarFeedCard.bajarildiBelgisiniOlish") : t("calendarFeedCard.bajarildiQilish")}
           >
             {bajarildi && <span className="text-xs leading-none">✓</span>}
           </button>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-3">
               <h3 className={`font-bold ${bajarildi ? "text-slate-900" : "text-slate-800"}`}>{faoliyat.sarlavha}</h3>
-              <span className="text-sm text-slate-400">bugun, {vaqt}</span>
+              <span className="text-sm text-slate-400">{t("calendarFeedCard.bugunVaqt", { vaqt })}</span>
               {faoliyat.pinned && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-bold text-[#2563EB]">
                   <Pin size={12} />
-                  Zakrepit
+                  {t("calendarFeedCard.zakrepit")}
                 </span>
               )}
             </div>
@@ -4384,7 +4475,7 @@ function CalendarFeedCard({
 
               <div className="min-w-[240px] flex-1">
                 <p className="text-sm text-slate-500">
-                  Rejalashtirilgan voqea{" "}
+                  {t("calendarFeedCard.rejalashtirilganVoqea")}{" "}
                   <span className="font-medium text-[#2563EB]">{faoliyat.sarlavha}</span>
                 </p>
                 <button
@@ -4394,7 +4485,7 @@ function CalendarFeedCard({
                     bajarildi ? "bg-slate-50 hover:bg-slate-100" : "bg-orange-100 hover:bg-orange-200"
                   }`}
                 >
-                  <span>Sana va vaqt</span>
+                  <span>{t("calendarFeedCard.sanaVaVaqt")}</span>
                   <span className="font-semibold text-slate-900">{kalendarMatni(faoliyat.sana, true)}</span>
                   <ChevronDown size={14} className={`transition ${tahrirOchiq ? "rotate-180" : ""}`} />
                 </button>
@@ -4426,14 +4517,14 @@ function CalendarFeedCard({
                     : "bg-[#2563EB] text-white hover:bg-[#1D4ED8]"
                 }`}
               >
-                {bajarildi ? "Takrorlash" : "Bajarildi"}
+                {bajarildi ? t("calendarFeedCard.takrorlash") : t("calendarFeedCard.bajarildi")}
               </button>
               {!bajarildi && <button
                 type="button"
                 onClick={() => setTahrirOchiq(true)}
                 className="rounded-xl border border-orange-100 bg-white px-5 py-3 text-sm font-semibold text-slate-600 transition hover:border-[#2563EB] hover:text-[#2563EB]"
               >
-                Tahrirlash
+                {t("calendarFeedCard.tahrirlash")}
               </button>}
             </div>
           </div>
@@ -4446,7 +4537,7 @@ function CalendarFeedCard({
             className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
               xodim ? "bg-[#2563EB] text-white" : "bg-orange-100 text-[#2563EB]"
             }`}
-            title={xodimNomi(xodim)}
+            title={xodimNomi(xodim, t)}
           >
             {xodim ? xodimBoshHarflari(xodim) : <UserRound size={15} />}
           </span>
@@ -4454,8 +4545,8 @@ function CalendarFeedCard({
             type="button"
             onClick={() => onOchirish(faoliyat.id)}
             className="flex h-9 w-9 items-center justify-center rounded-full bg-red-50 text-red-400 transition hover:bg-red-100 hover:text-red-600 active:scale-95"
-            aria-label="Kalendar vazifasini o'chirish"
-            title="O'chirish"
+            aria-label={t("calendarFeedCard.ochirishAria")}
+            title={t("calendarFeedCard.ochirishTitle")}
           >
             <Trash2 size={17} />
           </button>
@@ -4465,7 +4556,7 @@ function CalendarFeedCard({
                 type="button"
                 onClick={() => setMenuOchiq((joriy) => !joriy)}
                 className="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 active:scale-95"
-                aria-label="Kalendar amallari"
+                aria-label={t("calendarFeedCard.amallarAria")}
               >
                 <MoreHorizontal size={22} />
               </button>
@@ -4476,7 +4567,7 @@ function CalendarFeedCard({
                     type="button"
                     className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-left font-medium text-slate-600 transition hover:bg-slate-50"
                   >
-                    <span>Kengaytmalar</span>
+                    <span>{t("calendarFeedCard.kengaytmalar")}</span>
                     <ChevronDown size={17} className="-rotate-90 text-slate-300" />
                   </button>
                   <div className="my-2 h-px bg-slate-100" />
@@ -4488,14 +4579,14 @@ function CalendarFeedCard({
                     }}
                     className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-left font-medium text-slate-600 transition hover:bg-blue-50 hover:text-blue-600"
                   >
-                    <span>{faoliyat.pinned ? "Zakrepitdan olish" : "Zakrepit qilish"}</span>
+                    <span>{faoliyat.pinned ? t("calendarFeedCard.zakrepitdanOlish") : t("calendarFeedCard.zakrepitQilish")}</span>
                     <Pin size={17} className={faoliyat.pinned ? "fill-blue-500 text-blue-500" : "text-slate-300"} />
                   </button>
                   <button
                     type="button"
                     className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-left font-medium text-slate-600 transition hover:bg-slate-50"
                   >
-                    <span>Bog'langan ishlar</span>
+                    <span>{t("calendarFeedCard.boglanganIshlar")}</span>
                     <SlidersHorizontal size={17} className="text-slate-300" />
                   </button>
                   <div className="my-2 h-px bg-slate-100" />
@@ -4507,7 +4598,7 @@ function CalendarFeedCard({
                     }}
                     className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-left font-semibold text-red-500 transition hover:bg-red-50"
                   >
-                    <span>O'chirish</span>
+                    <span>{t("calendarFeedCard.ochirish")}</span>
                     <Trash2 size={17} className="text-red-300" />
                   </button>
                 </div>
@@ -4529,6 +4620,7 @@ function KalendarTanlashPanel({
   onSelect: (date: Date) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("savdo_tafsilot");
   const [drag, setDrag] = useState({ active: false, startX: 0, scrollLeft: 0 });
   const joriySana = Number.isNaN(selectedDate.getTime()) ? boshlangichKalendarSanasi() : selectedDate;
   const selectedDateKey = sanaKaliti(joriySana);
@@ -4547,21 +4639,21 @@ function KalendarTanlashPanel({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
             <CalendarDays size={18} className="text-slate-500" />
-            <span className="font-semibold">Kalendariga qo'shildi</span>
+            <span className="font-semibold">{t("kalendarTanlash.qoshildi")}</span>
             <span className="truncate text-blue-600">abdulaziz001969@gmail.com</span>
             <button type="button" className="text-xs uppercase text-slate-400 transition hover:text-blue-600">
-              o'zgartirish
+              {t("common.ozgartirish")}
             </button>
           </div>
           <button type="button" className="mt-2 text-sm text-slate-400 underline underline-offset-4 hover:text-blue-600">
-            ishtirokchilar (1)
+            {t("kalendarTanlash.ishtirokchilar")}
           </button>
         </div>
         <button
           type="button"
           onClick={onClose}
           className="rounded-full p-1 text-slate-400 transition hover:bg-white hover:text-slate-700"
-          aria-label="Kalendar panelini yopish"
+          aria-label={t("kalendarTanlash.yopishAria")}
         >
           <X size={17} />
         </button>
@@ -4600,7 +4692,7 @@ function KalendarTanlashPanel({
               >
                 <div className="mb-2 flex items-center gap-2 text-xs text-slate-700">
                   <span className="capitalize">{kun.kun}</span>
-                  {kun.bugun && <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] text-sky-600">bugun</span>}
+                  {kun.bugun && <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] text-sky-600">{t("kalendarTanlash.bugun")}</span>}
                 </div>
                 <div className="grid grid-cols-10 text-xs text-slate-700">
                   {kun.soatlar.map((soat) => (
@@ -4620,7 +4712,7 @@ function KalendarTanlashPanel({
                             ? "bg-slate-100"
                             : "bg-white"
                       }`}
-                      title={`${kun.kun}, soat ${soat}:00`}
+                      title={t("common.soatTitle", { kun: kun.kun, soat })}
                     />
                   ))}
                 </div>

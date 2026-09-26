@@ -1,0 +1,158 @@
+{
+  "common": {
+    "unknownProduct": "Nomi aniqlanmagan mahsulot",
+    "selectedProductFallback": "Tanlangan mahsulot",
+    "unit": "dona",
+    "client": "Mijoz",
+    "employee": "Xodim",
+    "loading": "Yuklanmoqda...",
+    "dateLocale": "uz-UZ"
+  },
+  "header": {
+    "closeButtonTitle": "Yopish",
+    "copyLinkTitle": "Havolani nusxalash",
+    "downloadDraftTitle": "Qoralamani yuklash",
+    "openNewWindowTitle": "Yangi oynada ochish",
+    "printTitle": "Chop etish",
+    "closeAriaLabel": "Oynani yopish"
+  },
+  "errors": {
+    "dismiss": "Yopish",
+    "selectClientForActivity": "CRM faoliyatini saqlash uchun mijozni tanlang.",
+    "selectResponsibleForTask": "Ish yoki vazifa yaratish uchun mas'ul xodimni tanlang.",
+    "selectWarehouseFirst": "Avval omborni tanlang.",
+    "endDateBeforeStart": "Tugash sanasi boshlanish sanasidan oldin bo'lmasligi kerak.",
+    "selectAtLeastOneProduct": "Kamida bitta mahsulot tanlang.",
+    "insufficientStock": "\"{{name}}\" uchun omborda faqat {{available}} dona qoldiq bor — {{requested}} dona sota olmaysiz.",
+    "totalMustBePositive": "Sotuv summasi 0 dan katta bo'lishi kerak."
+  },
+  "activity": {
+    "today": "Bugun",
+    "defaultDateTime": "Bugun, soat 15:00",
+    "dateAtTime": "{{date}}, soat {{time}}",
+    "reminderTitle": "Eslatma",
+    "namePlaceholderFallback": "Faoliyat nomi",
+    "detailsPlaceholderFallback": "Faoliyat haqida batafsil yozing...",
+    "savedNotice": "Faoliyat qoralamaga qo'shildi",
+    "fallbackName": "Faoliyat"
+  },
+  "activityTabs": {
+    "work": "Ish",
+    "comment": "Izoh",
+    "message": "Xabar",
+    "task": "Vazifa",
+    "meeting": "Uchrashuv"
+  },
+  "activityContent": {
+    "work": {
+      "title": "Mijoz bilan bog'lanish",
+      "placeholder": "Vazifa haqida batafsil yozing..."
+    },
+    "comment": {
+      "title": "Izoh yozish",
+      "placeholder": "Izoh matnini kiriting..."
+    },
+    "message": {
+      "title": "Xabar yuborish",
+      "placeholder": "Xabar matnini kiriting..."
+    },
+    "task": {
+      "title": "Vazifa yaratish",
+      "placeholder": "Vazifa haqida batafsil yozing..."
+    },
+    "meeting": {
+      "title": "Uchrashuv belgilash",
+      "placeholder": "Uchrashuv haqida batafsil yozing..."
+    }
+  },
+  "stages": {
+    "new": "Yangi",
+    "preparingDocument": "Hujjat tayyorlash",
+    "prepaymentInvoice": "Oldindan to'lov hisobi",
+    "inProgress": "Ish jarayonida",
+    "finalInvoice": "Yakuniy hisob",
+    "saleSuccessful": "Sotuv muvaffaqiyatli",
+    "saleCancelled": "Sotuv bekor bo'ldi",
+    "cancelReasonAnalysis": "Bekor sababini tahlil qilish"
+  },
+  "currencies": {
+    "uzs": "O'zbek so'mi",
+    "usd": "AQSH dollari"
+  },
+  "modal": {
+    "draftTitle": "Qoralama qo'shish",
+    "draftBadge": "Qoralama",
+    "draftSectionTitle": "Qoralama haqida",
+    "draftNameLabel": "Qoralama nomi",
+    "draftNamePlaceholder": "Qoralama #",
+    "draftAmountLabel": "Qoralama summasi",
+    "draftNotePrefix": "Qoralama nomi",
+    "draftStockWarning": "Serverda ombor mavjud emas. Qoralama yaratishdan oldin Sozlamalar - Ombor bo'limida ombor yaratilishi kerak.",
+    "draftSubmitLabel": "Qoralama saqlash",
+    "saleTitle": "Sotuv yaratish",
+    "saleBadge": "Yangi",
+    "saleSectionTitle": "Sotuv haqida",
+    "saleNameLabel": "Sotuv nomi",
+    "saleNamePlaceholder": "Sotuv #",
+    "saleAmountLabel": "Sotuv summasi",
+    "saleNotePrefix": "Sotuv nomi",
+    "saleStockWarning": "Serverda ombor mavjud emas. Sotuv yaratishdan oldin Sozlamalar - Ombor bo'limida ombor yaratilishi kerak.",
+    "saleSubmitLabel": "Qoralama saqlash"
+  },
+  "preview": {
+    "autoName": "{{client}} uchun yangi {{type}}",
+    "typeDraft": "qoralama",
+    "typeSale": "sotuv"
+  },
+  "note": {
+    "stageLabel": "Bosqich",
+    "currencyLabel": "Valyuta",
+    "startDateLabel": "Boshlanish sanasi",
+    "endDateLabel": "Tugash sanasi"
+  },
+  "labels": {
+    "zeroAmountPlaceholder": "0 so'm",
+    "contact": "Kontakt",
+    "company": "Kompaniya",
+    "responsible": "Mas'ul xodim",
+    "warehouse": "Ombor",
+    "availableStock": "Mavjud qoldiq",
+    "rowTotal": "Qator jami"
+  },
+  "placeholders": {
+    "clientSearch": "Mijoz ismi, telefon yoki email",
+    "companySearch": "Kompaniya nomi, telefon yoki email",
+    "selectProduct": "Mahsulotni tanlang",
+    "price": "Narx",
+    "quantity": "Miqdor",
+    "discount": "Chegirma",
+    "selectWarehouse": "Omborni tanlang"
+  },
+  "sections": {
+    "clientAndCompany": "Mijoz va kompaniya",
+    "additional": "Qo'shimcha",
+    "products": "Tovarlar"
+  },
+  "messages": {
+    "clientAutoAttachedToCompany": "Mijoz kompaniyaga avtomatik biriktirildi: {{company}}",
+    "companyRepAutoSelected": "Kompaniya vakili avtomatik tanlandi: {{client}}"
+  },
+  "hints": {
+    "saleCreatedByCurrentUser": "Sotuv har doim tizimga kirgan foydalanuvchi nomidan yaratiladi."
+  },
+  "actions": {
+    "save": "Saqlash",
+    "cancel": "Bekor qilish",
+    "addRow": "Qo'shish"
+  },
+  "products": {
+    "removeRowAriaLabel": "Mahsulot qatorini o'chirish",
+    "imageButtonTitle": "Rasm",
+    "stockLabelShort": "qoldiq",
+    "priceLabelShort": "narx"
+  },
+  "summary": {
+    "totalLabel": "Sotuv jami",
+    "paymentHint": "To'lov shu yerda qabul qilinmaydi — sotuv qoralama sifatida saqlangach, to'lovni sotuv sahifasidan alohida qabul qilasiz."
+  }
+}

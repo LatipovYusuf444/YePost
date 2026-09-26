@@ -12,6 +12,7 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import { useFinanceStore } from "@/store/financeStore";
 import type {
@@ -36,49 +37,49 @@ type ModalItem =
 const tablar: Array<{ id: Tab; nom: string; izoh: string; icon: typeof Banknote }> = [
   {
     id: "xarajatlar",
-    nom: "Xarajatlar",
-    izoh: "Oylik, ijara, marketing va boshqa chiqimlar.",
+    nom: "tabs.xarajatlar.nom",
+    izoh: "tabs.xarajatlar.izoh",
     icon: ArrowDownCircle,
   },
   {
     id: "qarzlar",
-    nom: "Qarzlar",
-    izoh: "Olingan va berilgan qarzlar nazorati.",
+    nom: "tabs.qarzlar.nom",
+    izoh: "tabs.qarzlar.izoh",
     icon: WalletCards,
   },
   {
     id: "kirimlar",
-    nom: "Kassaga kirim",
-    izoh: "Ega, investor yoki boshqa manbalardan kirim.",
+    nom: "tabs.kirimlar.nom",
+    izoh: "tabs.kirimlar.izoh",
     icon: Banknote,
   },
 ];
 
 const xarajatMatni: Record<XarajatKategoriyasi, string> = {
-  SALARY: "Oylik maosh",
-  RENT: "Ijara",
-  UTILITIES: "Kommunal",
-  LOGISTICS: "Logistika",
-  MARKETING: "Marketing",
-  OTHER: "Boshqa",
+  SALARY: "categories.SALARY",
+  RENT: "categories.RENT",
+  UTILITIES: "categories.UTILITIES",
+  LOGISTICS: "categories.LOGISTICS",
+  MARKETING: "categories.MARKETING",
+  OTHER: "categories.OTHER",
 };
 
 const tolovMatni: Record<TolovUsuli, string> = {
-  CASH: "Naqd",
-  CARD: "Karta",
-  BANK: "Bank",
+  CASH: "paymentMethods.CASH",
+  CARD: "paymentMethods.CARD",
+  BANK: "paymentMethods.BANK",
 };
 
 const qarzYonlishiMatni: Record<QarzYonlishi, string> = {
-  INCOMING: "Olingan qarz",
-  OUTGOING: "Berilgan qarz",
+  INCOMING: "debtDirections.INCOMING",
+  OUTGOING: "debtDirections.OUTGOING",
 };
 
 const kassaKirimManbasiMatni: Record<KassaKirimManbasi, string> = {
-  OWNER: "Ega mablag'i",
-  INVESTOR: "Investor",
-  LOAN: "Qarz",
-  OTHER: "Boshqa",
+  OWNER: "incomeSources.OWNER",
+  INVESTOR: "incomeSources.INVESTOR",
+  LOAN: "incomeSources.LOAN",
+  OTHER: "incomeSources.OTHER",
 };
 
 function pul(value?: number | string) {
@@ -100,6 +101,7 @@ function toDateInput(value?: string | null) {
 }
 
 export default function Kassa() {
+  const { t } = useTranslation("kassa");
   const store = useFinanceStore();
   const yuklash = store.yuklash;
   const [tab, setTab] = useState<Tab>("xarajatlar");
@@ -115,7 +117,7 @@ export default function Kassa() {
     if (!q) return store.xarajatlar;
     return store.xarajatlar.filter((item) =>
       [
-        xarajatMatni[item.category as XarajatKategoriyasi] ?? item.category,
+        t(xarajatMatni[item.category as XarajatKategoriyasi] ?? item.category),
         item.amount,
         item.note,
         item.branch?.name,
@@ -124,7 +126,7 @@ export default function Kassa() {
         .toLowerCase()
         .includes(q)
     );
-  }, [qidiruv, store.xarajatlar]);
+  }, [qidiruv, store.xarajatlar, t]);
 
   const qarzlar = useMemo(() => {
     const q = qidiruv.trim().toLowerCase();
@@ -142,7 +144,7 @@ export default function Kassa() {
     if (!q) return store.kassaKirimlari;
     return store.kassaKirimlari.filter((item) =>
       [
-        kassaKirimManbasiMatni[item.source as KassaKirimManbasi] ?? item.source,
+        t(kassaKirimManbasiMatni[item.source as KassaKirimManbasi] ?? item.source),
         item.amount,
         item.note,
         item.branch?.name,
@@ -151,7 +153,7 @@ export default function Kassa() {
         .toLowerCase()
         .includes(q)
     );
-  }, [qidiruv, store.kassaKirimlari]);
+  }, [qidiruv, store.kassaKirimlari, t]);
 
   const chiqimJami = store.xarajatlar.reduce((sum, item) => sum + Number(item.amount), 0);
   const qarzJami = store.qarzlar
@@ -178,11 +180,11 @@ export default function Kassa() {
       <header className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.18em] text-orange-500">
-            Moliya va kassa
+            {t("header.eyebrow")}
           </p>
-          <h1 className="mt-1 text-3xl font-black text-gray-950">Kassa boshqaruvi</h1>
+          <h1 className="mt-1 text-3xl font-black text-gray-950">{t("header.title")}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Xarajatlar, qarzlar va kassaga kirim amallari real backend bilan ulangan.
+            {t("header.subtitle")}
           </p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row">
@@ -192,7 +194,7 @@ export default function Kassa() {
             className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 font-bold text-gray-600 shadow-sm disabled:opacity-50"
           >
             <RefreshCw size={17} className={store.yuklanmoqda ? "animate-spin" : ""} />
-            Yangilash
+            {t("header.refresh")}
           </button>
           <button
             onClick={() =>
@@ -205,10 +207,10 @@ export default function Kassa() {
           >
             <Plus size={17} />
             {tab === "xarajatlar"
-              ? "Xarajat qo'shish"
+              ? t("header.addXarajat")
               : tab === "qarzlar"
-                ? "Qarz qo'shish"
-                : "Kirim qo'shish"}
+                ? t("header.addQarz")
+                : t("header.addKirim")}
           </button>
         </div>
       </header>
@@ -216,14 +218,14 @@ export default function Kassa() {
       {store.xatolik && (
         <div className="flex justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">
           <span>{store.xatolik}</span>
-          <button onClick={store.xatolikniTozalash}>Yopish</button>
+          <button onClick={store.xatolikniTozalash}>{t("error.close")}</button>
         </div>
       )}
 
       <section className="grid gap-4 lg:grid-cols-3">
-        <StatCard title="Jami xarajat" value={pul(chiqimJami)} tone="red" />
-        <StatCard title="Qaytarilmagan qarzlar" value={pul(qarzJami)} tone="amber" />
-        <StatCard title="Kassaga kirim" value={pul(kirimJami)} tone="green" />
+        <StatCard title={t("stats.totalExpense")} value={pul(chiqimJami)} tone="red" />
+        <StatCard title={t("stats.unpaidDebts")} value={pul(qarzJami)} tone="amber" />
+        <StatCard title={t("stats.cashIncome")} value={pul(kirimJami)} tone="green" />
       </section>
 
       <nav className="grid gap-3 lg:grid-cols-3">
@@ -249,9 +251,9 @@ export default function Kassa() {
                   <Icon size={22} />
                 </span>
                 <div>
-                  <h2 className="font-black">{item.nom}</h2>
+                  <h2 className="font-black">{t(item.nom)}</h2>
                   <p className={`mt-1 text-sm ${active ? "text-white/80" : "text-gray-500"}`}>
-                    {item.izoh}
+                    {t(item.izoh)}
                   </p>
                 </div>
               </div>
@@ -268,7 +270,7 @@ export default function Kassa() {
               value={qidiruv}
               onChange={(event) => setQidiruv(event.target.value)}
               className="min-w-0 flex-1 outline-none"
-              placeholder="Qidirish..."
+              placeholder={t("search.placeholder")}
             />
           </label>
         </div>
@@ -330,19 +332,20 @@ function XarajatlarJadvali({
   items: Xarajat[];
   onEdit: (item: Xarajat) => void;
 }) {
+  const { t } = useTranslation("kassa");
   return (
-    <FinanceTable empty="Xarajatlar mavjud emas">
+    <FinanceTable empty={t("table.empty.xarajatlar")}>
       {items.map((item) => (
         <tr key={item.id} className="hover:bg-orange-50/50">
           <td className="px-5 py-4 font-semibold text-slate-900">{item.id.slice(0, 8)}</td>
-          <td className="px-5 py-4">{xarajatMatni[item.category as XarajatKategoriyasi] ?? item.category}</td>
+          <td className="px-5 py-4">{t(xarajatMatni[item.category as XarajatKategoriyasi] ?? item.category)}</td>
           <td className="px-5 py-4 font-black">{pul(item.amount)}</td>
-          <td className="px-5 py-4">{tolovMatni[item.paymentMethod as TolovUsuli] ?? item.paymentMethod ?? "Naqd"}</td>
+          <td className="px-5 py-4">{t(tolovMatni[item.paymentMethod as TolovUsuli] ?? item.paymentMethod ?? "paymentMethods.CASH")}</td>
           <td className="px-5 py-4">{sana(item.date ?? item.createdAt)}</td>
-          <td className="px-5 py-4">{item.branch?.name ?? "Biriktirilmagan"}</td>
+          <td className="px-5 py-4">{item.branch?.name ?? t("table.biriktirilmagan")}</td>
           <td className="px-5 py-4 text-right">
             <button onClick={() => onEdit(item)} className="inline-flex items-center gap-2 rounded-xl bg-orange-50 px-3 py-2 text-xs font-bold text-orange-600">
-              <Edit3 size={14} /> Tahrirlash
+              <Edit3 size={14} /> {t("table.edit")}
             </button>
           </td>
         </tr>
@@ -353,23 +356,24 @@ function XarajatlarJadvali({
 }
 
 function QarzlarJadvali({ items, onEdit }: { items: Qarz[]; onEdit: (item: Qarz) => void }) {
+  const { t } = useTranslation("kassa");
   return (
-    <FinanceTable empty="Qarzlar mavjud emas">
+    <FinanceTable empty={t("table.empty.qarzlar")}>
       {items.map((item) => (
         <tr key={item.id} className="hover:bg-orange-50/50">
           <td className="px-5 py-4 font-semibold text-slate-900">{item.id.slice(0, 8)}</td>
-          <td className="px-5 py-4">{qarzYonlishiMatni[item.direction as QarzYonlishi] ?? item.direction}</td>
+          <td className="px-5 py-4">{t(qarzYonlishiMatni[item.direction as QarzYonlishi] ?? item.direction)}</td>
           <td className="px-5 py-4 font-bold">{item.counterparty}</td>
           <td className="px-5 py-4 font-black">{pul(item.amount)}</td>
           <td className="px-5 py-4">{sana(item.dueDate)}</td>
           <td className="px-5 py-4">
             <span className={`rounded-full px-3 py-1 text-xs font-bold ${item.isReturned ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}>
-              {item.isReturned ? "Qaytarilgan" : "Ochiq"}
+              {item.isReturned ? t("table.qaytarilgan") : t("table.ochiq")}
             </span>
           </td>
           <td className="px-5 py-4 text-right">
             <button onClick={() => onEdit(item)} className="inline-flex items-center gap-2 rounded-xl bg-orange-50 px-3 py-2 text-xs font-bold text-orange-600">
-              <Edit3 size={14} /> Tahrirlash
+              <Edit3 size={14} /> {t("table.edit")}
             </button>
           </td>
         </tr>
@@ -386,19 +390,20 @@ function KirimlarJadvali({
   items: KassaKirim[];
   onEdit: (item: KassaKirim) => void;
 }) {
+  const { t } = useTranslation("kassa");
   return (
-    <FinanceTable empty="Kirimlar mavjud emas">
+    <FinanceTable empty={t("table.empty.kirimlar")}>
       {items.map((item) => (
         <tr key={item.id} className="hover:bg-orange-50/50">
           <td className="px-5 py-4 font-semibold text-slate-900">{item.id.slice(0, 8)}</td>
-          <td className="px-5 py-4">{kassaKirimManbasiMatni[item.source as KassaKirimManbasi] ?? item.source}</td>
+          <td className="px-5 py-4">{t(kassaKirimManbasiMatni[item.source as KassaKirimManbasi] ?? item.source)}</td>
           <td className="px-5 py-4 font-black">{pul(item.amount)}</td>
-          <td className="px-5 py-4">{tolovMatni[item.paymentMethod as TolovUsuli] ?? item.paymentMethod ?? "Naqd"}</td>
+          <td className="px-5 py-4">{t(tolovMatni[item.paymentMethod as TolovUsuli] ?? item.paymentMethod ?? "paymentMethods.CASH")}</td>
           <td className="px-5 py-4">{sana(item.date ?? item.createdAt)}</td>
-          <td className="px-5 py-4">{item.branch?.name ?? "Biriktirilmagan"}</td>
+          <td className="px-5 py-4">{item.branch?.name ?? t("table.biriktirilmagan")}</td>
           <td className="px-5 py-4 text-right">
             <button onClick={() => onEdit(item)} className="inline-flex items-center gap-2 rounded-xl bg-orange-50 px-3 py-2 text-xs font-bold text-orange-600">
-              <Edit3 size={14} /> Tahrirlash
+              <Edit3 size={14} /> {t("table.edit")}
             </button>
           </td>
         </tr>
@@ -409,18 +414,19 @@ function KirimlarJadvali({
 }
 
 function FinanceTable({ children }: { children: React.ReactNode; empty: string }) {
+  const { t } = useTranslation("kassa");
   return (
     <div className="overflow-x-auto rounded-2xl border border-orange-100">
       <table className="w-full min-w-[900px] text-left text-sm">
         <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
-            <th className="px-5 py-4">ID</th>
-            <th className="px-5 py-4">Turi</th>
-            <th className="px-5 py-4">Ma'lumot</th>
-            <th className="px-5 py-4">Summa / To'lov</th>
-            <th className="px-5 py-4">Sana</th>
-            <th className="px-5 py-4">Holati / Filial</th>
-            <th className="px-5 py-4 text-right">Amal</th>
+            <th className="px-5 py-4">{t("table.columns.id")}</th>
+            <th className="px-5 py-4">{t("table.columns.turi")}</th>
+            <th className="px-5 py-4">{t("table.columns.malumot")}</th>
+            <th className="px-5 py-4">{t("table.columns.summaTolov")}</th>
+            <th className="px-5 py-4">{t("table.columns.sana")}</th>
+            <th className="px-5 py-4">{t("table.columns.holatiFilial")}</th>
+            <th className="px-5 py-4 text-right">{t("table.columns.amal")}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-orange-100/70">{children}</tbody>
@@ -430,10 +436,11 @@ function FinanceTable({ children }: { children: React.ReactNode; empty: string }
 }
 
 function EmptyRow() {
+  const { t } = useTranslation("kassa");
   return (
     <tr>
       <td colSpan={7} className="px-6 py-16 text-center text-gray-400">
-        Ma'lumot mavjud emas
+        {t("table.empty.general")}
       </td>
     </tr>
   );
@@ -448,6 +455,7 @@ function FinanceModal({
   onClose: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation("kassa");
   const store = useFinanceStore();
   const editing = modal.item !== "new";
   const xarajat: Xarajat | null =
@@ -523,15 +531,15 @@ function FinanceModal({
   const title =
     modal.tur === "xarajat"
       ? editing
-        ? "Xarajatni tahrirlash"
-        : "Yangi xarajat"
+        ? t("modal.titles.editXarajat")
+        : t("modal.titles.newXarajat")
       : modal.tur === "qarz"
         ? editing
-          ? "Qarzni tahrirlash"
-          : "Yangi qarz"
+          ? t("modal.titles.editQarz")
+          : t("modal.titles.newQarz")
         : editing
-          ? "Kirimni tahrirlash"
-          : "Yangi kassa kirimi";
+          ? t("modal.titles.editKirim")
+          : t("modal.titles.newKirim");
 
   return (
     <AppModal>
@@ -542,7 +550,7 @@ function FinanceModal({
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-500">
-              Finance ma'lumotlari
+              {t("modal.eyebrow")}
             </p>
             <h2 className="mt-1 text-2xl font-black">{title}</h2>
           </div>
@@ -563,7 +571,7 @@ function FinanceModal({
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <label className="text-sm font-bold">
-            Sana
+            {t("modal.fields.sana")}
             <input
               type="date"
               value={date}
@@ -574,13 +582,13 @@ function FinanceModal({
 
           {modal.tur !== "qarz" && (
             <label className="text-sm font-bold">
-              Filial
+              {t("modal.fields.filial")}
               <AppSelect
                 value={branchId}
                 onChange={(event) => setBranchId(event.target.value)}
                 className="mt-2 h-12 w-full rounded-2xl border bg-white px-4"
               >
-                <option value="">Filial tanlanmagan</option>
+                <option value="">{t("modal.fields.filialTanlanmagan")}</option>
                 {store.filiallar.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name}
@@ -592,7 +600,7 @@ function FinanceModal({
 
           {modal.tur === "xarajat" && (
             <label className="text-sm font-bold">
-              Xarajat turi *
+              {t("modal.fields.xarajatTuri")}
               <AppSelect
                 value={category}
                 onChange={(event) => setCategory(event.target.value as XarajatKategoriyasi)}
@@ -600,7 +608,7 @@ function FinanceModal({
               >
                 {Object.entries(xarajatMatni).map(([value, label]) => (
                   <option key={value} value={value}>
-                    {label}
+                    {t(label)}
                   </option>
                 ))}
               </AppSelect>
@@ -610,7 +618,7 @@ function FinanceModal({
           {modal.tur === "qarz" && (
             <>
               <label className="text-sm font-bold">
-                Qarz turi *
+                {t("modal.fields.qarzTuri")}
                 <AppSelect
                   value={direction}
                   onChange={(event) => setDirection(event.target.value as QarzYonlishi)}
@@ -618,18 +626,18 @@ function FinanceModal({
                 >
                   {Object.entries(qarzYonlishiMatni).map(([value, label]) => (
                     <option key={value} value={value}>
-                      {label}
+                      {t(label)}
                     </option>
                   ))}
                 </AppSelect>
               </label>
               <label className="text-sm font-bold">
-                Kontragent *
+                {t("modal.fields.kontragent")}
                 <input
                   value={counterparty}
                   onChange={(event) => setCounterparty(event.target.value)}
                   className="mt-2 h-12 w-full rounded-2xl border px-4"
-                  placeholder="Kimdan yoki kimga"
+                  placeholder={t("modal.fields.kontragentPlaceholder")}
                 />
               </label>
             </>
@@ -637,7 +645,7 @@ function FinanceModal({
 
           {modal.tur === "kirim" && (
             <label className="text-sm font-bold">
-              Kirim manbasi *
+              {t("modal.fields.kirimManbasi")}
               <AppSelect
                 value={source}
                 onChange={(event) => setSource(event.target.value as KassaKirimManbasi)}
@@ -645,7 +653,7 @@ function FinanceModal({
               >
                 {Object.entries(kassaKirimManbasiMatni).map(([value, label]) => (
                   <option key={value} value={value}>
-                    {label}
+                    {t(label)}
                   </option>
                 ))}
               </AppSelect>
@@ -653,19 +661,19 @@ function FinanceModal({
           )}
 
           <label className="text-sm font-bold">
-            Summa *
+            {t("modal.fields.summa")}
             <input
               type="number"
               min="0"
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
               className="mt-2 h-12 w-full rounded-2xl border px-4"
-              placeholder="0"
+              placeholder={t("modal.fields.summaPlaceholder")}
             />
           </label>
 
           <label className="text-sm font-bold">
-            To'lov usuli
+            {t("modal.fields.tolovUsuli")}
             <AppSelect
               value={paymentMethod}
               onChange={(event) => setPaymentMethod(event.target.value as TolovUsuli)}
@@ -673,7 +681,7 @@ function FinanceModal({
             >
               {Object.entries(tolovMatni).map(([value, label]) => (
                 <option key={value} value={value}>
-                  {label}
+                  {t(label)}
                 </option>
               ))}
             </AppSelect>
@@ -682,7 +690,7 @@ function FinanceModal({
           {modal.tur === "qarz" && (
             <>
               <label className="text-sm font-bold">
-                Qaytarish muddati
+                {t("modal.fields.qaytarishMuddati")}
                 <input
                   type="date"
                   value={dueDate}
@@ -697,18 +705,18 @@ function FinanceModal({
                   onChange={(event) => setIsReturned(event.target.checked)}
                   className="h-5 w-5 accent-orange-500"
                 />
-                Qarz qaytarilgan
+                {t("modal.fields.qarzQaytarilgan")}
               </label>
             </>
           )}
 
           <label className="text-sm font-bold sm:col-span-2">
-            Izoh
+            {t("modal.fields.izoh")}
             <textarea
               value={note}
               onChange={(event) => setNote(event.target.value)}
               className="mt-2 min-h-24 w-full rounded-2xl border p-4"
-              placeholder="Qo'shimcha ma'lumot"
+              placeholder={t("modal.fields.izohPlaceholder")}
             />
           </label>
         </div>
@@ -723,7 +731,7 @@ function FinanceModal({
                 className="inline-flex h-11 items-center gap-2 rounded-2xl bg-red-50 px-5 font-bold text-red-600 disabled:opacity-50"
               >
                 <Trash2 size={16} />
-                O'chirish
+                {t("modal.delete")}
               </button>
             )}
           </div>
@@ -733,7 +741,7 @@ function FinanceModal({
               onClick={onClose}
               className="h-11 rounded-2xl bg-gray-100 px-5 font-bold"
             >
-              Bekor qilish
+              {t("modal.cancel")}
             </button>
             <button
               disabled={store.amalBajarilmoqda}
@@ -742,7 +750,7 @@ function FinanceModal({
               {store.amalBajarilmoqda && (
                 <LoaderCircle size={16} className="animate-spin" />
               )}
-              Saqlash
+              {t("modal.save")}
             </button>
           </div>
         </div>

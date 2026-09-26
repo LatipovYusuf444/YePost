@@ -1,0 +1,129 @@
+{
+  "tolovlar": {
+    "eyebrow": "Продажи",
+    "title": "Оплаты",
+    "subtitle": "Продажи, возвраты, приход в кассу и расходы загружаются с реального бэкенда.",
+    "refreshButton": "Обновить",
+    "searchPlaceholder": "ID продажи, клиент или тип оплаты",
+    "startDateAria": "Дата начала",
+    "endDateAria": "Дата окончания",
+    "retry": "Повторить попытку",
+    "turiOptions": {
+      "all": "Все типы",
+      "kirim": "Приход",
+      "chiqim": "Расход"
+    },
+    "tolovTuriOptions": {
+      "all": "Все оплаты",
+      "cash": "Наличные",
+      "card": "Карта",
+      "click": "Click",
+      "payme": "Payme",
+      "bank": "Банк",
+      "other": "Другое"
+    },
+    "manbaOptions": {
+      "all": "Все источники",
+      "sale": "Продажа",
+      "return": "Возврат",
+      "cashIn": "Приход в кассу",
+      "expense": "Расход"
+    },
+    "table": {
+      "columns": {
+        "sotuvId": "ID продажи",
+        "mijoz": "Клиент",
+        "turi": "Тип",
+        "tolovTuri": "Тип оплаты",
+        "summa": "Сумма",
+        "sana": "Дата"
+      },
+      "rowTitleSotuv": "Открыть детали продажи",
+      "rowTitleTolov": "Открыть детали оплаты",
+      "emptyTitle": "Оплаты не найдены",
+      "emptyHint": "Измените фильтры или дождитесь появления записей об оплате на бэкенде."
+    },
+    "mobile": {
+      "tolovTuri": "Тип оплаты",
+      "summa": "Сумма",
+      "sana": "Дата: {{sana}}",
+      "emptyTitle": "Оплаты не найдены"
+    },
+    "pagination": {
+      "summary": "Всего: {{jami}} оплат. Страница {{currentPage}}/{{totalPages}}",
+      "prev": "Предыдущая",
+      "next": "Следующая"
+    },
+    "modal": {
+      "eyebrow": "Детали оплаты",
+      "closeAria": "Закрыть окно",
+      "amountLabel": "Сумма и валюта",
+      "manbaLabel": "Источник",
+      "sanaLabel": "Дата",
+      "summaryLabel": "Общая информация",
+      "manba": {
+        "cashIn": "Приход в кассу",
+        "expense": "Расход",
+        "return": "Возврат",
+        "sale": "Продажа"
+      },
+      "info": {
+        "sotuvId": "ID продажи / документа",
+        "mijoz": "Клиент / источник",
+        "turi": "Тип",
+        "tolovTuri": "Тип оплаты"
+      }
+    }
+  },
+  "qaytarishModal": {
+    "eyebrow": "Возврат товара",
+    "infoCards": {
+      "tolovTuri": "Тип оплаты",
+      "sotuvJami": "Сумма продажи",
+      "oldinQaytarilgan": "Ранее возвращено",
+      "qaytariladigan": "К возврату"
+    },
+    "table": {
+      "columns": {
+        "mahsulot": "Товар",
+        "sotilgan": "Продано",
+        "oldinQaytarilgan": "Ранее возвращено",
+        "qaytarishMumkin": "Можно вернуть",
+        "narxi": "Цена",
+        "qaytariladiganSon": "Возвращаемое количество",
+        "ombor": "Склад"
+      },
+      "qaytadi": "Возвращается",
+      "emptyRow": "В этой продаже товары не найдены.",
+      "productFallback": "Товар"
+    },
+    "sababOptions": {
+      "customerChangedMind": "Покупатель передумал",
+      "defect": "Товар с браком",
+      "wrong": "Продано неверно",
+      "operatorError": "Ошибка оператора",
+      "other": "Другое"
+    },
+    "refundOptions": {
+      "cash": "Наличные",
+      "card": "Пластиковая карта",
+      "balance": "На баланс клиента",
+      "none": "Деньги не возвращаются"
+    },
+    "sidebar": {
+      "infoNote": "Подтверждённый возврат возвращает товар на склад. В зависимости от выбранного способа возврата деньги списываются из кассы наличными/картой, зачисляются на баланс клиента или не возвращаются вовсе.",
+      "sababLabel": "Причина возврата",
+      "refundLabel": "Способ возврата денег",
+      "noteLabel": "Комментарий",
+      "notePlaceholder": "Дополнительный комментарий",
+      "submitButton": "Подтвердить возврат",
+      "submitHint": "После отправки будет создан возврат и подтверждён на реальном бэкенде."
+    },
+    "errors": {
+      "warehouseMissing": "Склад продажи не найден. Бэкенду для возврата требуется warehouseId.",
+      "noteRequired": "При выборе причины «Другое» комментарий обязателен.",
+      "noItemsSelected": "Укажите возвращаемое количество хотя бы для одного товара.",
+      "exceedsRemaining": "Возвращаемое количество не должно превышать оставшееся."
+    }
+  }
+}

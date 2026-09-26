@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { Qaytarish, Sotuv } from "@/types/savdo";
 import SotuvlarJadvali from "./SotuvlarJadvali";
 import { sotuvHolati } from "./savdoYordamchilari";
@@ -15,6 +16,7 @@ export default function Tarix({
   onSotuvniOchish,
   onQaytarish,
 }: TarixProps) {
+  const { t } = useTranslation("savdo_kichik");
   const tasdiqlanganlar = sotuvlar.filter(
     (sotuv) => sotuvHolati(sotuv) === "CONFIRMED"
   );
@@ -26,7 +28,7 @@ export default function Tarix({
       qaytarishlar={qaytarishlar}
       onQaytarish={onQaytarish}
       tarixKorinish
-      boshMatn="Tasdiqlangan sotuvlar mavjud emas"
+      boshMatn={t("tarix.boshMatn")}
     />
   );
 }

@@ -17,6 +17,8 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+import type { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import { crmApi } from "@/api/crmApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
@@ -54,43 +56,51 @@ type MahsulotQatori = {
 
 const faoliyatTablar = ["Ish", "Izoh", "Xabar", "Vazifa", "Uchrashuv"];
 
+const faoliyatTabKalitlari: Record<string, string> = {
+  Ish: "activityTabs.work",
+  Izoh: "activityTabs.comment",
+  Xabar: "activityTabs.message",
+  Vazifa: "activityTabs.task",
+  Uchrashuv: "activityTabs.meeting",
+};
+
 const faoliyatMatnlari: Record<string, { title: string; placeholder: string }> = {
   Ish: {
-    title: "Mijoz bilan bog'lanish",
-    placeholder: "Vazifa haqida batafsil yozing...",
+    title: "activityContent.work.title",
+    placeholder: "activityContent.work.placeholder",
   },
   Izoh: {
-    title: "Izoh yozish",
-    placeholder: "Izoh matnini kiriting...",
+    title: "activityContent.comment.title",
+    placeholder: "activityContent.comment.placeholder",
   },
   Xabar: {
-    title: "Xabar yuborish",
-    placeholder: "Xabar matnini kiriting...",
+    title: "activityContent.message.title",
+    placeholder: "activityContent.message.placeholder",
   },
   Vazifa: {
-    title: "Vazifa yaratish",
-    placeholder: "Vazifa haqida batafsil yozing...",
+    title: "activityContent.task.title",
+    placeholder: "activityContent.task.placeholder",
   },
   Uchrashuv: {
-    title: "Uchrashuv belgilash",
-    placeholder: "Uchrashuv haqida batafsil yozing...",
+    title: "activityContent.meeting.title",
+    placeholder: "activityContent.meeting.placeholder",
   },
 };
 
-const bosqichlar = [
-  { value: "Yangi", label: "Yangi" },
-  { value: "Hujjat tayyorlash", label: "Hujjat tayyorlash" },
-  { value: "Oldindan to'lov hisobi", label: "Oldindan to'lov hisobi" },
-  { value: "Ish jarayonida", label: "Ish jarayonida" },
-  { value: "Yakuniy hisob", label: "Yakuniy hisob" },
-  { value: "Sotuv muvaffaqiyatli", label: "Sotuv muvaffaqiyatli" },
-  { value: "Sotuv bekor bo'ldi", label: "Sotuv bekor bo'ldi" },
-  { value: "Bekor sababini tahlil qilish", label: "Bekor sababini tahlil qilish" },
+const bosqichKodlari = [
+  { value: "Yangi", labelKey: "stages.new" },
+  { value: "Hujjat tayyorlash", labelKey: "stages.preparingDocument" },
+  { value: "Oldindan to'lov hisobi", labelKey: "stages.prepaymentInvoice" },
+  { value: "Ish jarayonida", labelKey: "stages.inProgress" },
+  { value: "Yakuniy hisob", labelKey: "stages.finalInvoice" },
+  { value: "Sotuv muvaffaqiyatli", labelKey: "stages.saleSuccessful" },
+  { value: "Sotuv bekor bo'ldi", labelKey: "stages.saleCancelled" },
+  { value: "Bekor sababini tahlil qilish", labelKey: "stages.cancelReasonAnalysis" },
 ];
 
-const valyutalar = [
-  { value: "UZS", label: "O'zbek so'mi" },
-  { value: "USD", label: "AQSH dollari" },
+const valyutaKodlari = [
+  { value: "UZS", labelKey: "currencies.uzs" },
+  { value: "USD", labelKey: "currencies.usd" },
 ];
 
 function bugungiSana() {
@@ -106,26 +116,26 @@ function kelasiHafta() {
   return offsetDate.toISOString().slice(0, 10);
 }
 
-function faoliyatSanasiMatni(dateValue: string, timeValue: string) {
+function faoliyatSanasiMatni(dateValue: string, timeValue: string, t: TFunction) {
   const parsed = new Date(`${dateValue || bugungiSana()}T${timeValue || "00:00"}`);
 
   if (Number.isNaN(parsed.getTime())) {
-    return "Bugun, soat 15:00";
+    return t("activity.defaultDateTime");
   }
 
   const sanaMatni =
     dateValue === bugungiSana()
-      ? "Bugun"
-      : new Intl.DateTimeFormat("uz-UZ", {
+      ? t("activity.today")
+      : new Intl.DateTimeFormat(t("common:dateLocale"), {
           weekday: "short",
           day: "numeric",
           month: "short",
         }).format(parsed);
 
-  return `${sanaMatni}, soat ${timeValue || "15:00"}`;
+  return t("activity.dateAtTime", { date: sanaMatni, time: timeValue || "15:00" });
 }
 
-function qoldiqNomi(qoldiq: QoldiqTanlovi) {
+function qoldiqNomi(qoldiq: QoldiqTanlovi, t: TFunction) {
   const productName = qoldiq.modification?.product?.name;
   const variantName = qoldiq.modification?.name;
 
@@ -133,15 +143,15 @@ function qoldiqNomi(qoldiq: QoldiqTanlovi) {
     return `${productName} - ${variantName}`;
   }
 
-  return productName ?? variantName ?? "Nomi aniqlanmagan mahsulot";
+  return productName ?? variantName ?? t("common.unknownProduct");
 }
 
 function qoldiqMiqdori(qoldiq?: QoldiqTanlovi) {
   return Number(qoldiq?.quantity ?? qoldiq?.balance ?? 0);
 }
 
-function qoldiqBirligi(qoldiq?: QoldiqTanlovi) {
-  return qoldiq?.modification?.product?.name ? "dona" : "dona";
+function qoldiqBirligi(qoldiq: QoldiqTanlovi | undefined, t: TFunction) {
+  return qoldiq?.modification?.product?.name ? t("common.unit") : t("common.unit");
 }
 
 function qoldiqNarxi(qoldiq?: QoldiqTanlovi) {
@@ -164,13 +174,13 @@ function raqamgaAylantirish(value: string) {
   return Number.isFinite(number) ? number : 0;
 }
 
-function mijozKorinishi(mijoz?: MijozTanlovi) {
+function mijozKorinishi(mijoz: MijozTanlovi | undefined, t: TFunction) {
   return (
     [mijoz?.firstName, mijoz?.lastName].filter(Boolean).join(" ") ||
     mijoz?.fullName ||
     mijoz?.name ||
     mijoz?.id ||
-    "Mijoz"
+    t("common.client")
   );
 }
 
@@ -182,12 +192,12 @@ function kompaniyaNomi(kompaniya?: MijozTanlovi) {
   return kompaniya?.name || kompaniya?.fullName || kompaniya?.id || "";
 }
 
-function xodimNomi(xodim?: XodimTanlovi) {
-  return xodim?.fullName || xodim?.name || xodim?.username || xodim?.email || xodim?.id || "Xodim";
+function xodimNomi(xodim: XodimTanlovi | undefined, t: TFunction) {
+  return xodim?.fullName || xodim?.name || xodim?.username || xodim?.email || xodim?.id || t("common.employee");
 }
 
-function xodimBoshHarflari(xodim?: XodimTanlovi) {
-  const nom = xodimNomi(xodim);
+function xodimBoshHarflari(xodim: XodimTanlovi | undefined, t: TFunction) {
+  const nom = xodimNomi(xodim, t);
   const qismlar = nom.split(/\s+/).filter(Boolean);
   return qismlar
     .slice(0, 2)
@@ -212,6 +222,7 @@ export default function YangiSotuvModal({
   onSaqlash,
   onYopish,
 }: YangiSotuvModalProps) {
+  const { t } = useTranslation("savdo_yangi");
   const [warehouseId, setWarehouseId] = useState("");
   const [customerId, setCustomerId] = useState("");
   const [clientCompanyId, setClientCompanyId] = useState("");
@@ -257,46 +268,57 @@ export default function YangiSotuvModal({
       ),
     [mahsulotlar]
   );
+  const bosqichlar = useMemo(
+    () => bosqichKodlari.map((item) => ({ value: item.value, label: t(item.labelKey) })),
+    [t]
+  );
+  const valyutalar = useMemo(
+    () => valyutaKodlari.map((item) => ({ value: item.value, label: t(item.labelKey) })),
+    [t]
+  );
   const tanlanganMijoz = mijozlar.find((item) => item.id === customerId);
   const tanlanganKompaniya = mijozKompaniyalari.find((item) => item.id === clientCompanyId);
   const tanlanganXodim = xodimlar.find((item) => item.id === responsibleId);
   const draftMode = variant === "draft";
   const modalMatnlari = draftMode
     ? {
-        title: "Qoralama qo'shish",
-        badge: "Qoralama",
-        sectionTitle: "Qoralama haqida",
-        nameLabel: "Qoralama nomi",
-        namePlaceholder: "Qoralama #",
-        amountLabel: "Qoralama summasi",
-        notePrefix: "Qoralama nomi",
-        stockWarning: "Serverda ombor mavjud emas. Qoralama yaratishdan oldin Sozlamalar - Ombor bo'limida ombor yaratilishi kerak.",
-        submitLabel: "Qoralama saqlash",
+        title: t("modal.draftTitle"),
+        badge: t("modal.draftBadge"),
+        sectionTitle: t("modal.draftSectionTitle"),
+        nameLabel: t("modal.draftNameLabel"),
+        namePlaceholder: t("modal.draftNamePlaceholder"),
+        amountLabel: t("modal.draftAmountLabel"),
+        notePrefix: t("modal.draftNotePrefix"),
+        stockWarning: t("modal.draftStockWarning"),
+        submitLabel: t("modal.draftSubmitLabel"),
       }
     : {
-        title: "Sotuv yaratish",
-        badge: "Yangi",
-        sectionTitle: "Sotuv haqida",
-        nameLabel: "Sotuv nomi",
-        namePlaceholder: "Sotuv #",
-        amountLabel: "Sotuv summasi",
-        notePrefix: "Sotuv nomi",
-        stockWarning: "Serverda ombor mavjud emas. Sotuv yaratishdan oldin Sozlamalar - Ombor bo'limida ombor yaratilishi kerak.",
-        submitLabel: "Qoralama saqlash",
+        title: t("modal.saleTitle"),
+        badge: t("modal.saleBadge"),
+        sectionTitle: t("modal.saleSectionTitle"),
+        nameLabel: t("modal.saleNameLabel"),
+        namePlaceholder: t("modal.saleNamePlaceholder"),
+        amountLabel: t("modal.saleAmountLabel"),
+        notePrefix: t("modal.saleNotePrefix"),
+        stockWarning: t("modal.saleStockWarning"),
+        submitLabel: t("modal.saleSubmitLabel"),
       };
   const korsatiladiganSotuvNomi =
     sotuvNomi.trim() ||
     (tanlanganMijoz
-      ? `${mijozKorinishi(tanlanganMijoz)} uchun yangi ${draftMode ? "qoralama" : "sotuv"}`
+      ? t("preview.autoName", {
+          client: mijozKorinishi(tanlanganMijoz, t),
+          type: draftMode ? t("preview.typeDraft") : t("preview.typeSale"),
+        })
       : "");
 
   function backendIzohiniYigish() {
     const metadata = [
       korsatiladiganSotuvNomi ? `${modalMatnlari.notePrefix}: ${korsatiladiganSotuvNomi}` : "",
-      bosqich ? `Bosqich: ${bosqich}` : "",
-      `Valyuta: ${valyutalar.find((item) => item.value === valyuta)?.label ?? valyuta}`,
-      boshlanishSanasi ? `Boshlanish sanasi: ${boshlanishSanasi}` : "",
-      tugashSanasi ? `Tugash sanasi: ${tugashSanasi}` : "",
+      bosqich ? `${t("note.stageLabel")}: ${bosqich}` : "",
+      `${t("note.currencyLabel")}: ${valyutalar.find((item) => item.value === valyuta)?.label ?? valyuta}`,
+      boshlanishSanasi ? `${t("note.startDateLabel")}: ${boshlanishSanasi}` : "",
+      tugashSanasi ? `${t("note.endDateLabel")}: ${tugashSanasi}` : "",
     ].filter(Boolean);
 
     return metadata.join("\n");
@@ -307,11 +329,12 @@ export default function YangiSotuvModal({
     if (!faoliyatOzgarilgan) return true;
     const partnerId = tanlanganMijoz?.partner?.id;
     if (!partnerId) {
-      setXatolik("CRM faoliyatini saqlash uchun mijozni tanlang.");
+      setXatolik("errors.selectClientForActivity");
       return false;
     }
     try {
-      const sarlavha = faoliyatSarlavha.trim() || faoliyatMatnlari[faolTab]?.title || "Faoliyat";
+      const faolTabMatni = faoliyatMatnlari[faolTab];
+      const sarlavha = faoliyatSarlavha.trim() || (faolTabMatni ? t(faolTabMatni.title) : "") || t("activity.fallbackName");
       const matn = faoliyatTafsilot.trim() || sarlavha;
       if (faolTab === "Izoh") {
         await crmApi.partnerCommentYaratish(partnerId, { text: matn });
@@ -319,7 +342,7 @@ export default function YangiSotuvModal({
         await crmApi.partnerChatXabarYuborish(partnerId, matn);
       } else {
         if (!responsibleId) {
-          setXatolik("Ish yoki vazifa yaratish uchun mas’ul xodimni tanlang.");
+          setXatolik("errors.selectResponsibleForTask");
           return false;
         }
         const dueAt = new Date(`${faoliyatSana}T${faoliyatSoat || "00:00"}`).toISOString();
@@ -457,17 +480,17 @@ export default function YangiSotuvModal({
       );
 
     if (!warehouseId) {
-      setXatolik("Avval omborni tanlang.");
+      setXatolik("errors.selectWarehouseFirst");
       return;
     }
 
     if (boshlanishSanasi && tugashSanasi && tugashSanasi < boshlanishSanasi) {
-      setXatolik("Tugash sanasi boshlanish sanasidan oldin bo'lmasligi kerak.");
+      setXatolik("errors.endDateBeforeStart");
       return;
     }
 
     if (tozaMahsulotlar.length === 0) {
-      setXatolik("Kamida bitta mahsulot tanlang.");
+      setXatolik("errors.selectAtLeastOneProduct");
       return;
     }
 
@@ -478,14 +501,18 @@ export default function YangiSotuvModal({
       const mavjudMiqdor = tanlanganQoldiq ? qoldiqMiqdori(tanlanganQoldiq) : 0;
       if (soralganMiqdor > mavjudMiqdor) {
         setXatolik(
-          `"${tanlanganQoldiq ? qoldiqNomi(tanlanganQoldiq) : "Tanlangan mahsulot"}" uchun omborda faqat ${mavjudMiqdor} dona qoldiq bor — ${soralganMiqdor} dona sota olmaysiz.`
+          t("errors.insufficientStock", {
+            name: tanlanganQoldiq ? qoldiqNomi(tanlanganQoldiq, t) : t("common.selectedProductFallback"),
+            available: mavjudMiqdor,
+            requested: soralganMiqdor,
+          })
         );
         return;
       }
     }
 
     if (jami <= 0) {
-      setXatolik("Sotuv summasi 0 dan katta bo'lishi kerak.");
+      setXatolik("errors.totalMustBePositive");
       return;
     }
 
@@ -513,7 +540,7 @@ export default function YangiSotuvModal({
           <button
             type="button"
             onClick={onYopish}
-            title="Yopish"
+            title={t("header.closeButtonTitle")}
             className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[#2563EB] text-white shadow-[0_10px_22px_rgba(37,99,235,.32)] ring-1 ring-white/80 transition duration-300 hover:-translate-x-0.5 hover:scale-105 active:scale-95"
           >
             <X size={18} />
@@ -521,7 +548,7 @@ export default function YangiSotuvModal({
           <button
             type="button"
             onClick={nusxaOlish}
-            title="Havolani nusxalash"
+            title={t("header.copyLinkTitle")}
             className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#2563EB] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
           >
             <Link size={15} />
@@ -529,7 +556,7 @@ export default function YangiSotuvModal({
           <button
             type="button"
             onClick={qoralamaniYuklash}
-            title="Qoralamani yuklash"
+            title={t("header.downloadDraftTitle")}
             className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#2563EB] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
           >
             <Download size={15} />
@@ -537,7 +564,7 @@ export default function YangiSotuvModal({
           <button
             type="button"
             onClick={() => window.open(window.location.href, "_blank", "noopener,noreferrer")}
-            title="Yangi oynada ochish"
+            title={t("header.openNewWindowTitle")}
             className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#2563EB] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
           >
             <ExternalLink size={15} />
@@ -545,7 +572,7 @@ export default function YangiSotuvModal({
           <button
             type="button"
             onClick={() => window.print()}
-            title="Chop etish"
+            title={t("header.printTitle")}
             className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#2563EB] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
           >
             <Printer size={15} />
@@ -574,7 +601,7 @@ export default function YangiSotuvModal({
                 type="button"
                 onClick={onYopish}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[15px] bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 hover:text-slate-900"
-                aria-label="Oynani yopish"
+                aria-label={t("header.closeAriaLabel")}
               >
                 <X size={19} />
               </button>
@@ -584,13 +611,13 @@ export default function YangiSotuvModal({
 
           {xatolik && (
             <div className="mx-7 mt-4 flex items-start justify-between gap-4 rounded-2xl border border-red-200 bg-red-50 px-5 py-3.5 text-sm font-bold text-red-600 shadow-sm">
-              <span>{xatolik}</span>
+              <span>{t(xatolik)}</span>
               <button
                 type="button"
                 onClick={() => setXatolik("")}
                 className="shrink-0 text-xs font-black uppercase text-red-500 hover:text-red-700"
               >
-                Yopish
+                {t("errors.dismiss")}
               </button>
             </div>
           )}
@@ -620,7 +647,7 @@ export default function YangiSotuvModal({
                     </label>
 
                     <label className="grid gap-2">
-                      <span className="text-sm font-semibold text-slate-600">Bosqich</span>
+                      <span className="text-sm font-semibold text-slate-600">{t("note.stageLabel")}</span>
                       <div className="flex items-center gap-2">
                         <SavdoSelect
                           value={bosqich}
@@ -643,12 +670,12 @@ export default function YangiSotuvModal({
                             value={jami > 0 ? pulniFormatlash(jami) : ""}
                             readOnly
                             className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-sm font-black text-slate-900 outline-none"
-                            placeholder="0 so'm"
+                            placeholder={t("labels.zeroAmountPlaceholder")}
                           />
                         </div>
                       </label>
                       <label className="grid gap-2">
-                        <span className="text-sm font-semibold text-slate-600">Valyuta</span>
+                        <span className="text-sm font-semibold text-slate-600">{t("note.currencyLabel")}</span>
                         <SavdoSelect
                           value={valyuta}
                           onChange={setValyuta}
@@ -662,7 +689,7 @@ export default function YangiSotuvModal({
 
                     <div className="grid gap-3 md:grid-cols-2">
                       <label className="grid gap-2">
-                        <span className="text-sm font-semibold text-slate-600">Boshlanish sanasi</span>
+                        <span className="text-sm font-semibold text-slate-600">{t("note.startDateLabel")}</span>
                         <div className="relative">
                           <input
                             type="date"
@@ -677,7 +704,7 @@ export default function YangiSotuvModal({
                         </div>
                       </label>
                       <label className="grid gap-2">
-                        <span className="text-sm font-semibold text-slate-600">Tugash sanasi</span>
+                        <span className="text-sm font-semibold text-slate-600">{t("note.endDateLabel")}</span>
                         <div className="relative">
                           <input
                             type="date"
@@ -698,14 +725,14 @@ export default function YangiSotuvModal({
                 <section className="overflow-hidden rounded-2xl bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,.04)] ring-1 ring-[#DCE5F0]">
                   <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
                     <h3 className="text-sm font-bold uppercase tracking-wide text-slate-700">
-                      Mijoz va kompaniya
+                      {t("sections.clientAndCompany")}
                     </h3>
                     <FieldSettings />
                   </div>
 
                   <div className="space-y-4">
                     <label className="grid gap-2">
-                      <span className="text-sm font-semibold text-slate-600">Kontakt</span>
+                      <span className="text-sm font-semibold text-slate-600">{t("labels.contact")}</span>
                       <div className="relative">
                         <UserRound
                           size={18}
@@ -714,12 +741,12 @@ export default function YangiSotuvModal({
                         <SavdoSelect
                           value={customerId}
                           onChange={mijozniTanlash}
-                          placeholder="Mijoz ismi, telefon yoki email"
+                          placeholder={t("placeholders.clientSearch")}
                           className="w-full"
                           buttonClassName="h-11 rounded-xl border-slate-200 shadow-none hover:shadow-none focus:border-[#2563EB] pl-10 pr-3.5 text-sm"
                           options={mijozlar.map((mijoz) => ({
                             value: mijoz.id,
-                            label: `${mijozKorinishi(mijoz)}${mijoz.phone ? ` - ${mijoz.phone}` : ""}`,
+                            label: `${mijozKorinishi(mijoz, t)}${mijoz.phone ? ` - ${mijoz.phone}` : ""}`,
                           }))}
                           dropdownClassName="[&>div>div]:text-center min-w-[360px]"
                           portal
@@ -727,14 +754,15 @@ export default function YangiSotuvModal({
                       </div>
                       {customerId && clientCompanyId && (
                         <p className="text-xs font-semibold text-emerald-600">
-                          Mijoz kompaniyaga avtomatik biriktirildi:{" "}
-                          {kompaniyaNomi(tanlanganKompaniya)}
+                          {t("messages.clientAutoAttachedToCompany", {
+                            company: kompaniyaNomi(tanlanganKompaniya),
+                          })}
                         </p>
                       )}
                     </label>
 
                     <label className="grid gap-2">
-                      <span className="text-sm font-semibold text-slate-600">Kompaniya</span>
+                      <span className="text-sm font-semibold text-slate-600">{t("labels.company")}</span>
                       <div className="relative">
                         <Search
                           size={18}
@@ -743,7 +771,7 @@ export default function YangiSotuvModal({
                         <SavdoSelect
                           value={clientCompanyId}
                           onChange={kompaniyaniTanlash}
-                          placeholder="Kompaniya nomi, telefon yoki email"
+                          placeholder={t("placeholders.companySearch")}
                           buttonClassName="h-11 rounded-xl border-slate-200 shadow-none hover:shadow-none focus:border-[#2563EB] pl-3.5 pr-10 text-sm"
                           options={mijozKompaniyalari.map((kompaniya) => ({
                             value: kompaniya.id,
@@ -755,7 +783,9 @@ export default function YangiSotuvModal({
                       </div>
                       {clientCompanyId && customerId && (
                         <p className="text-xs font-semibold text-emerald-600">
-                          Kompaniya vakili avtomatik tanlandi: {mijozKorinishi(tanlanganMijoz)}
+                          {t("messages.companyRepAutoSelected", {
+                            client: mijozKorinishi(tanlanganMijoz, t),
+                          })}
                         </p>
                       )}
                     </label>
@@ -765,19 +795,19 @@ export default function YangiSotuvModal({
                 <section className="overflow-hidden rounded-2xl bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,.04)] ring-1 ring-[#DCE5F0]">
                   <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
                     <h3 className="text-sm font-bold uppercase tracking-wide text-slate-700">
-                      Qo'shimcha
+                      {t("sections.additional")}
                     </h3>
                     <FieldSettings />
                   </div>
                   <div className="grid gap-3">
                     <label className="grid gap-2">
-                      <span className="text-sm font-semibold text-slate-600">Mas'ul xodim</span>
+                      <span className="text-sm font-semibold text-slate-600">{t("labels.responsible")}</span>
                       <div className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-sm font-semibold text-slate-600">
                         <UserRound size={16} className="shrink-0 text-slate-400" />
                         <span className="truncate">
                           {joriyProfil
                             ? joriyProfil.fullName?.trim() || joriyProfil.username
-                            : "Yuklanmoqda..."}
+                            : t("common.loading")}
                         </span>
                         {joriyProfil?.role && (
                           <span className="ml-auto shrink-0 rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-black uppercase text-[#2563EB]">
@@ -786,7 +816,7 @@ export default function YangiSotuvModal({
                         )}
                       </div>
                       <p className="text-xs text-slate-400">
-                        Sotuv har doim tizimga kirgan foydalanuvchi nomidan yaratiladi.
+                        {t("hints.saleCreatedByCurrentUser")}
                       </p>
                     </label>
                   </div>
@@ -810,7 +840,7 @@ export default function YangiSotuvModal({
                             : "text-slate-500 hover:bg-orange-50 hover:text-[#2563EB]"
                         }`}
                       >
-                        {tab}
+                        {t(faoliyatTabKalitlari[tab] ?? tab)}
                       </button>
                     ))}
                   </div>
@@ -824,7 +854,9 @@ export default function YangiSotuvModal({
                             setFaoliyatSarlavha(event.target.value);
                             setFaoliyatSaqlangan(false);
                           }}
-                          placeholder={faoliyatMatnlari[faolTab]?.title ?? "Faoliyat nomi"}
+                          placeholder={
+                            faoliyatMatnlari[faolTab] ? t(faoliyatMatnlari[faolTab].title) : t("activity.namePlaceholderFallback")
+                          }
                           className="h-9 w-full border-0 bg-transparent text-base font-semibold text-slate-700 outline-none placeholder:text-slate-700"
                         />
                         <textarea
@@ -835,8 +867,9 @@ export default function YangiSotuvModal({
                           }}
                           rows={4}
                           placeholder={
-                            faoliyatMatnlari[faolTab]?.placeholder ??
-                            "Faoliyat haqida batafsil yozing..."
+                            faoliyatMatnlari[faolTab]
+                              ? t(faoliyatMatnlari[faolTab].placeholder)
+                              : t("activity.detailsPlaceholderFallback")
                           }
                           className="w-full resize-none border-0 bg-transparent text-sm font-semibold leading-6 text-slate-600 outline-none placeholder:text-slate-400"
                         />
@@ -849,23 +882,23 @@ export default function YangiSotuvModal({
                             setResponsibleId(value);
                             setFaoliyatSaqlangan(false);
                           }}
-                          placeholder="Mas'ul xodim"
+                          placeholder={t("labels.responsible")}
                           options={xodimlar.map((xodim) => ({
                             value: xodim.id,
-                            searchLabel: xodimNomi(xodim),
+                            searchLabel: xodimNomi(xodim, t),
                             label: (
                               <span className="flex min-w-0 items-center gap-3">
                                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xs font-black text-[#2563EB]">
-                                  {xodimBoshHarflari(xodim) || <UserRound size={15} />}
+                                  {xodimBoshHarflari(xodim, t) || <UserRound size={15} />}
                                 </span>
-                                <span className="min-w-0 flex-1 truncate">{xodimNomi(xodim)}</span>
+                                <span className="min-w-0 flex-1 truncate">{xodimNomi(xodim, t)}</span>
                               </span>
                             ),
                           }))}
                           selectedLabel={
                             tanlanganXodim ? (
                               <span className="flex h-9 w-9 shrink-0 items-center justify-center text-center text-xs font-black leading-none">
-                                {xodimBoshHarflari(tanlanganXodim)}
+                                {xodimBoshHarflari(tanlanganXodim, t)}
                               </span>
                             ) : (
                               <span className="flex h-9 w-9 shrink-0 items-center justify-center leading-none">
@@ -886,7 +919,7 @@ export default function YangiSotuvModal({
                       <div className="inline-flex min-h-11 flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700">
                         <CalendarDays size={16} className="shrink-0" />
                         <span className="shrink-0">
-                          {faoliyatSanasiMatni(faoliyatSana, faoliyatSoat)}
+                          {faoliyatSanasiMatni(faoliyatSana, faoliyatSoat, t)}
                         </span>
                         <input
                           type="date"
@@ -910,7 +943,7 @@ export default function YangiSotuvModal({
                       <button
                         type="button"
                         className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-orange-50 hover:text-[#2563EB]"
-                        title="Eslatma"
+                        title={t("activity.reminderTitle")}
                       >
                         <Bell size={18} />
                       </button>
@@ -918,7 +951,7 @@ export default function YangiSotuvModal({
                         <button
                           type="button"
                           className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-orange-50 hover:text-[#2563EB]"
-                          title="Xabar"
+                          title={t(faoliyatTabKalitlari.Xabar)}
                         >
                           <MessageSquare size={18} />
                         </button>
@@ -930,13 +963,14 @@ export default function YangiSotuvModal({
                         type="button"
                         onClick={() => {
                           if (!faoliyatSarlavha.trim()) {
-                            setFaoliyatSarlavha(faoliyatMatnlari[faolTab]?.title ?? "");
+                            const faolTabMatni = faoliyatMatnlari[faolTab];
+                            setFaoliyatSarlavha(faolTabMatni ? t(faolTabMatni.title) : "");
                           }
                           setFaoliyatSaqlangan(true);
                         }}
                         className="inline-flex h-10 items-center justify-center rounded-xl bg-[#2563EB] px-6 text-sm font-black uppercase text-white shadow-sm transition hover:bg-[#1D4ED8]"
                       >
-                        Saqlash
+                        {t("actions.save")}
                       </button>
                       <button
                         type="button"
@@ -949,11 +983,11 @@ export default function YangiSotuvModal({
                         }}
                         className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-black uppercase text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
                       >
-                        Bekor qilish
+                        {t("actions.cancel")}
                       </button>
                       {faoliyatSaqlangan && (
                         <span className="text-xs font-bold text-emerald-600">
-                          Faoliyat qoralamaga qo'shildi
+                          {t("activity.savedNotice")}
                         </span>
                       )}
                     </div>
@@ -963,7 +997,7 @@ export default function YangiSotuvModal({
                 <section className="overflow-hidden rounded-2xl bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,.04)] ring-1 ring-[#DCE5F0]">
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <h3 className="text-sm font-bold uppercase tracking-wide text-slate-700">
-                      Tovarlar
+                      {t("sections.products")}
                     </h3>
                     <button
                       type="button"
@@ -971,7 +1005,7 @@ export default function YangiSotuvModal({
                       className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#2563EB] px-3.5 text-sm font-black text-white shadow-sm transition hover:bg-[#1D4ED8]"
                     >
                       <Plus size={16} />
-                      Qo'shish
+                      {t("actions.addRow")}
                     </button>
                   </div>
 
@@ -1003,7 +1037,7 @@ export default function YangiSotuvModal({
                                 )
                               }
                               className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100 disabled:opacity-30"
-                              aria-label="Mahsulot qatorini o'chirish"
+                              aria-label={t("products.removeRowAriaLabel")}
                             >
                               <Trash2 size={15} />
                             </button>
@@ -1013,7 +1047,7 @@ export default function YangiSotuvModal({
                             <SavdoSelect
                               value={mahsulot.qoldiqKaliti}
                               onChange={(value) => modifikatsiyaniTanlash(index, value)}
-                              placeholder="Mahsulotni tanlang"
+                              placeholder={t("placeholders.selectProduct")}
                               options={qoldiqlar
                                 .filter((item) => qoldiqMiqdori(item) > 0)
                                 .map((item) => {
@@ -1021,7 +1055,7 @@ export default function YangiSotuvModal({
                                     item.warehouse?.name ?? omborlar.find((ombor) => ombor.id === item.warehouseId)?.name;
                                   return {
                                     value: qoldiqKaliti(item),
-                                    label: `${qoldiqNomi(item)}${itemOmborNomi ? ` (${itemOmborNomi})` : ""} - qoldiq: ${qoldiqMiqdori(item)} - narx: ${pulniFormatlash(qoldiqNarxi(item))}`,
+                                    label: `${qoldiqNomi(item, t)}${itemOmborNomi ? ` (${itemOmborNomi})` : ""} - ${t("products.stockLabelShort")}: ${qoldiqMiqdori(item)} - ${t("products.priceLabelShort")}: ${pulniFormatlash(qoldiqNarxi(item))}`,
                                   };
                                 })}
                               buttonClassName="h-11 rounded-xl border-slate-200 shadow-none hover:shadow-none focus:border-[#2563EB] px-3.5 text-sm"
@@ -1032,7 +1066,7 @@ export default function YangiSotuvModal({
                             <button
                               type="button"
                               className="flex h-11 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white text-slate-400 transition hover:border-[#2563EB] hover:text-[#2563EB]"
-                              title="Rasm"
+                              title={t("products.imageButtonTitle")}
                             >
                               <ImageIcon size={18} />
                             </button>
@@ -1045,7 +1079,7 @@ export default function YangiSotuvModal({
                                 mahsulotniYangilash(index, { price: event.target.value })
                               }
                               className="h-11 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100 text-slate-900 placeholder:text-slate-400"
-                              placeholder="Narx"
+                              placeholder={t("placeholders.price")}
                             />
 
                             <input
@@ -1057,7 +1091,7 @@ export default function YangiSotuvModal({
                                 mahsulotniYangilash(index, { quantity: event.target.value })
                               }
                               className="h-11 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100 text-slate-900 placeholder:text-slate-400"
-                              placeholder="Miqdor"
+                              placeholder={t("placeholders.quantity")}
                             />
 
                             <input
@@ -1068,14 +1102,14 @@ export default function YangiSotuvModal({
                                 mahsulotniYangilash(index, { discount: event.target.value })
                               }
                               className="h-11 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100 text-slate-900 placeholder:text-slate-400"
-                              placeholder="Chegirma"
+                              placeholder={t("placeholders.discount")}
                             />
                           </div>
 
                           <div className="mt-3 grid gap-2 md:grid-cols-3">
                             <div>
                               <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                                Ombor
+                                {t("labels.warehouse")}
                               </p>
                               <SavdoSelect
                                 className="mt-1.5"
@@ -1084,7 +1118,7 @@ export default function YangiSotuvModal({
                                   setWarehouseId(value);
                                   onOmborTanlash(value);
                                 }}
-                                placeholder="Omborni tanlang"
+                                placeholder={t("placeholders.selectWarehouse")}
                                 options={omborlar.map((ombor) => ({
                                   value: ombor.id,
                                   label: ombor.name ?? ombor.id,
@@ -1096,17 +1130,17 @@ export default function YangiSotuvModal({
                             </div>
                             <div>
                               <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                                Mavjud qoldiq
+                                {t("labels.availableStock")}
                               </p>
                               <div className="mt-1.5 flex h-11 items-center rounded-xl border border-slate-200 bg-white px-3.5">
                                 <p className="truncate text-sm font-bold text-[#2563EB]">
-                                  {qoldiq ? `${qoldiqMiqdori(qoldiq)} ${qoldiqBirligi(qoldiq)}` : "—"}
+                                  {qoldiq ? `${qoldiqMiqdori(qoldiq)} ${qoldiqBirligi(qoldiq, t)}` : "—"}
                                 </p>
                               </div>
                             </div>
                             <div>
                               <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                                Qator jami
+                                {t("labels.rowTotal")}
                               </p>
                               <div className="mt-1.5 flex h-11 items-center rounded-xl border border-slate-200 bg-white px-3.5">
                                 <p className="truncate text-sm font-black text-emerald-600">
@@ -1124,15 +1158,14 @@ export default function YangiSotuvModal({
                 <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-[#EFF6FF] p-5 ring-1 ring-blue-100">
                   <div>
                     <p className="text-xs font-black uppercase tracking-wide text-[#1D4ED8]">
-                      Sotuv jami
+                      {t("summary.totalLabel")}
                     </p>
                     <p className="mt-1 text-3xl font-black text-slate-950">
                       {pulniFormatlash(jami)}
                     </p>
                   </div>
                   <p className="max-w-[300px] text-xs font-semibold leading-5 text-[#1E40AF]">
-                    To'lov shu yerda qabul qilinmaydi — sotuv qoralama sifatida saqlangach,
-                    to'lovni sotuv sahifasidan alohida qabul qilasiz.
+                    {t("summary.paymentHint")}
                   </p>
                 </section>
 
@@ -1151,7 +1184,7 @@ export default function YangiSotuvModal({
               onClick={onYopish}
               className="rounded-xl bg-white px-6 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
             >
-              Bekor qilish
+              {t("actions.cancel")}
             </button>
             <button
               type="submit"

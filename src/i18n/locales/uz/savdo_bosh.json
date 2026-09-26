@@ -1,0 +1,125 @@
+{
+  "savdoSahifasi": {
+    "tabs": {
+      "barchasi": "Barcha sotuvlar",
+      "savatcha": "Qoralamalar",
+      "tarix": "Savdo tarixi",
+      "tolovlar": "To'lovlar",
+      "qarzdorliklar": "Qarzdorliklar",
+      "qaytarish": "Qaytarish",
+      "bekorQilingan": "Bekor qilinganlar"
+    },
+    "statusFilter": {
+      "barchasi": "Holat: barchasi",
+      "draft": "Qoralama",
+      "confirmed": "Tasdiqlangan",
+      "cancelled": "Bekor qilingan"
+    },
+    "paymentFilter": {
+      "barchasi": "To'lov: barchasi",
+      "cash": "Naqd",
+      "card": "Karta",
+      "bank": "Bank o'tkazmasi",
+      "debt": "Qarz"
+    },
+    "titles": {
+      "tarix": "Savdo tarixi",
+      "bekorQilingan": "Bekor qilingan sotuvlar",
+      "barchasi": "Barcha sotuvlar"
+    },
+    "closeError": "Yopish",
+    "successTitle": "Muvaffaqiyatli",
+    "loading": "Ma'lumotlar serverdan yuklanmoqda...",
+    "add": "Qo'shish",
+    "searchPlaceholder": "Qidirish",
+    "searchPlaceholderHistory": "Savdo tarixidan qidirish",
+    "emptyState": {
+      "title": "Serverda hozir ma'lumot yo'q",
+      "description": "Test akkauntda ombor, mahsulot va mijoz ma'lumotlari hali yaratilmagan. Integratsiya ishlayapti, lekin yangi sotuv uchun avval ombor va mahsulot qoldig'i kiritilishi kerak."
+    },
+    "confirmCancel": "Sotuvni bekor qilasizmi? Tasdiqlangan bo'lsa ombor qoldig'i tiklanadi.",
+    "messages": {
+      "draftSaved": "Yangi qoralama saqlandi.",
+      "draftCreated": "Yangi sotuv qoralama holatida yaratildi.",
+      "paymentConfirmed": "To'lov qabul qilindi. Qoralama savdoga aylantirildi.",
+      "saleCancelled": "Sotuv bekor qilindi.",
+      "returnConfirmed": "Qaytarish tasdiqlandi. Ombor qoldig'i yangilandi."
+    }
+  },
+  "savatcha": {
+    "eyebrow": "Savdo",
+    "title": "Qoralamalar",
+    "subtitle": "Qoralama saqlanganda ombor va kassa o'zgarmaydi. To'lovdan keyin savdoga aylanadi.",
+    "add": "Qo'shish",
+    "searchPlaceholder": "Qoralama ID, mijoz, telefon, mas'ul, summa",
+    "statusOptions": {
+      "all": "Barchasi",
+      "draft": "Qoralama",
+      "waiting": "Kutilmoqda",
+      "editing": "Tahrirlanmoqda",
+      "cancelled": "Bekor qilingan"
+    },
+    "dateOptions": {
+      "today": "Bugun",
+      "yesterday": "Kecha",
+      "last7": "Oxirgi 7 kun",
+      "last30": "Oxirgi 30 kun"
+    },
+    "statusLabels": {
+      "draft": "Qoralama",
+      "waiting": "Kutilmoqda",
+      "editing": "Tahrirlanmoqda",
+      "paid": "To'lov qilindi",
+      "cancelled": "Bekor qilingan"
+    },
+    "allEmployees": "Barcha xodimlar",
+    "allCustomers": "Barcha mijozlar",
+    "table": {
+      "headers": {
+        "number": "T/r",
+        "customerName": "Mijoz nomi",
+        "phone": "Telefon raqam",
+        "itemsCount": "Mahsulotlar soni",
+        "amount": "Summa",
+        "status": "Holat",
+        "responsible": "Mas'ul shaxs",
+        "date": "Sana",
+        "lastEdit": "Oxirgi tahrir",
+        "actions": "Amallar"
+      },
+      "rowTitle": "Qoralama tafsilotlarini ochish",
+      "actionsAria": "Qoralama amallari",
+      "actions": {
+        "continue": "Davom ettirish",
+        "edit": "Tahrirlash",
+        "duplicate": "Nusxa olish",
+        "print": "Chop etish",
+        "cancel": "Bekor qilish",
+        "delete": "O'chirish"
+      },
+      "empty": {
+        "title": "Qoralama sotuvlar mavjud emas",
+        "description": "Serverdan ma'lumot kelganda shu yerda ko'rinadi.",
+        "create": "Qoralama yaratish"
+      }
+    },
+    "pagination": {
+      "summary": "Jami: {{count}} ta qoralama. Sahifa {{current}}/{{total}}",
+      "prev": "Oldingi",
+      "next": "Keyingi"
+    },
+    "alerts": {
+      "removedItems": "Qoralamadagi ayrim mahsulotlar o'chirilgan. Mahsulotni qayta tanlang.",
+      "notEnoughStock": "Omborda yetarli mahsulot mavjud emas.",
+      "cancelPrompt": "Bekor qilish sababini kiriting:",
+      "cancelReasonMissing": "Sabab kiritilmagan",
+      "deleteConfirm": "Qoralamani o'chirasizmi? Audit backendda saqlanadi."
+    },
+    "messages": {
+      "continued": "Qoralama savdo oynasiga yuklandi.",
+      "duplicated": "Qoralama nusxasi yaratildi.",
+      "cancelled": "Qoralama bekor qilindi.",
+      "deleted": "Qoralama o'chirildi yoki bekor qilindi."
+    }
+  }
+}
