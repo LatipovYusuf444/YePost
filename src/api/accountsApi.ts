@@ -5,6 +5,7 @@ import type {
   AccountVakolati,
   FoydalanuvchiYangilashMalumoti,
   FoydalanuvchiYaratishMalumoti,
+  VakolatKodi,
   VakolatYangilashMalumoti,
   VakolatYaratishMalumoti,
 } from "@/types/account";
@@ -53,6 +54,18 @@ export const foydalanuvchilarApi = {
 
 // Hodimlar/Ruxsatlar.tsx: Swagger accounts/grants bo'limining to'liq CRUD amallari.
 export const vakolatlarApi = {
+  // Foydalanuvchining faol vakolatlari to'liq ro'yxatini bitta so'rovda o'rnatadi:
+  // yo'qlari yaratiladi, tanlanmaganlari o'chiriladi (har bir kod uchun alohida so'rov o'rniga).
+  // `scope` berilsa faqat shu kodlarga tegiladi — UI bilmaydigan kodlar (masalan,
+  // EMPLOYEE_SALARY_*) o'chib ketmaydi.
+  sinxronlash: async (userId: string, codes: VakolatKodi[], scope?: VakolatKodi[]) => {
+    const response = await apiClient.put<AccountVakolati[] | ApiListEnvelope<AccountVakolati>>(
+      `/accounts/grants/users/${userId}`,
+      { codes, scope }
+    );
+
+    return apiList(response.data);
+  },
   royxat: async () => {
     const response = await apiClient.get<AccountVakolati[] | ApiListEnvelope<AccountVakolati>>(
       "/accounts/grants"

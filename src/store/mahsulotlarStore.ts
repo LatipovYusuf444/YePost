@@ -327,11 +327,7 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
       mahsulotIdTekshirish(mahsulot);
 
       try {
-        const modifikatsiyalar = await Promise.all(
-          variantlar.map((variant) =>
-            modifikatsiyalarApi.yaratish(mahsulot.id, variant)
-          )
-        );
+        const modifikatsiyalar = await modifikatsiyalarApi.yaratishKoplab(mahsulot.id, variantlar);
         set((state) => ({
           mahsulotlar: [mahsulot, ...state.mahsulotlar],
           modifikatsiyalar: {

@@ -11,6 +11,7 @@ import type {
   AccountFoydalanuvchi,
   AccountVakolati,
   FoydalanuvchiYangilashMalumoti,
+  VakolatKodi,
   FoydalanuvchiYaratishMalumoti,
   VakolatYangilashMalumoti,
   VakolatYaratishMalumoti,
@@ -43,6 +44,11 @@ type AccountState = {
     data: VakolatYangilashMalumoti
   ) => Promise<boolean>;
   vakolatOchirish: (id: string) => Promise<boolean>;
+  vakolatlarniSinxronlash: (
+    userId: string,
+    codes: VakolatKodi[],
+    scope?: VakolatKodi[]
+  ) => Promise<boolean>;
   xatolikniTozalash: () => void;
 };
 
@@ -179,6 +185,20 @@ export const useAccountStore = create<AccountState>((set) => ({
       await vakolatlarApi.ochirish(id);
       set((state) => ({
         vakolatlar: state.vakolatlar.filter((item) => item.id !== id),
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+  vakolatlarniSinxronlash: async (userId, codes, scope) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const items = await vakolatlarApi.sinxronlash(userId, codes, scope);
+      set((state) => ({
+        vakolatlar: [...state.vakolatlar.filter((item) => item.userId !== userId), ...items],
         amalBajarilmoqda: false,
       }));
       return true;

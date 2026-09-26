@@ -114,19 +114,6 @@ function kochirishHujjatiniAlmashtirish(
   );
 }
 
-async function omborlarniToliqlash(omborlar: Ombor[]) {
-  return Promise.all(
-    omborlar.map(async (ombor) => {
-      try {
-        const tafsilot = await omborlarApi.olish(ombor.id);
-        return { ...ombor, ...tafsilot };
-      } catch {
-        return ombor;
-      }
-    })
-  );
-}
-
 function qoldiqlarniBoglash(
   qoldiqlar: OmborQoldigi[],
   omborlar: Ombor[],
@@ -270,9 +257,8 @@ export const useOmborStore = create<OmborState>((set, get) => ({
         xodimlar(),
         omborMasullariApi(),
       ]);
-      const toliqOmborlar = await omborlarniToliqlash(omborlar);
       set({
-        omborlar: toliqOmborlar,
+        omborlar,
         filiallar,
         xodimlar: users,
         omborMasullari: masullar,
@@ -292,18 +278,7 @@ export const useOmborStore = create<OmborState>((set, get) => ({
         xodimlar(),
         barchaModifikatsiyalar().catch(() => []),
       ]);
-      const toliqKochirishlar = await Promise.all(
-        kochirishlar.map(async (hujjat) => {
-          if (hujjat.items?.length) return hujjat;
-          try {
-            const tafsilot = await kochirishApi.olish(hujjat.id);
-            return { ...hujjat, ...tafsilot, items: tafsilot.items ?? hujjat.items };
-          } catch {
-            return hujjat;
-          }
-        })
-      );
-      set({ kochirishlar: toliqKochirishlar, omborlar, xodimlar: users, modifikatsiyalar, yuklanmoqda: false });
+      set({ kochirishlar, omborlar, xodimlar: users, modifikatsiyalar, yuklanmoqda: false });
     } catch (error) {
       set({ yuklanmoqda: false, xatolik: getApiErrorMessage(error) });
     }
