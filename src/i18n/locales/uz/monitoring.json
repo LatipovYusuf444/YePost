@@ -4,6 +4,28 @@
   "subtitle": "Savdo, moliya, qarzdorlik va ombor holati — real vaqtda",
   "refresh": "Yangilash",
   "noData": "Tanlangan davrda ma'lumot topilmadi",
+  "dynamics": {
+    "total": "Tanlangan davr jami",
+    "average": "Bir davrga o'rtacha",
+    "peak": "Eng yuqori natija",
+    "activePeriods": "{{count}} ta faol davr",
+    "grouping": "Guruhlash",
+    "averageLine": "O'rtacha chiziq",
+    "cashExpense": "Kassa xarajatlari",
+    "stockExpense": "Ombor chiqimi",
+    "salesLegend": "Tasdiqlangan savdo",
+    "incomeLegend": "Har bir davr kirimi",
+    "expenseLegend": "Kassa va ombor chiqimi jami",
+    "confirmedOnly": "Faqat tasdiqlangan sotuvlar hisoblangan",
+    "noForecast": "Haqiqiy natijalar",
+    "emptyHint": "Boshqa sana oralig'ini tanlang yoki ma'lumotlarni yangilang.",
+    "loadError": "Grafik ma'lumotlarini yuklab bo'lmadi",
+    "loading": "Grafik yuklanmoqda",
+    "currency": "so'm",
+    "million": "mln",
+    "billion": "mlrd",
+    "thousand": "ming"
+  },
   "tabs": {
     "savdo": "Savdo va moliya",
     "ombor": "Ombor va mahsulotlar"

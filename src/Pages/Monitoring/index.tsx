@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Area,
-  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
@@ -54,6 +52,7 @@ import type { ChiqimHujjati, KirimHujjati, Ombor } from "@/types/ombor";
 import type { FinanceTransaction } from "@/types/tolov";
 import MuddatTanlov from "@/Pages/HisobotUchot/MuddatTanlov";
 import { bugun, bugunMinus } from "@/Pages/HisobotUchot/yordamchilar";
+import DynamicsChart from "./DynamicsChart";
 
 type Davr = "kunlik" | "oylik" | "yillik";
 type Tab = "savdo" | "ombor";
@@ -475,13 +474,16 @@ export default function Monitoring() {
   const sotuvNuqtalar = useMemo(
     () =>
       nuqtalarGaGuruhlash(
-        barchaSotuvlar.filter((sotuv) => sotuvHolati(sotuv) === "CONFIRMED"),
+        barchaSotuvlar.filter((sotuv) => {
+          const sana = sotuvSanasi(sotuv).slice(0, 10);
+          return sotuvHolati(sotuv) === "CONFIRMED" && sana >= dateFrom && sana <= dateTo;
+        }),
         sotuvSanasi,
         sotuvSummasi,
         savdoOraliqlari,
         savdoDavr
       ),
-    [barchaSotuvlar, savdoOraliqlari, savdoDavr]
+    [barchaSotuvlar, savdoOraliqlari, savdoDavr, dateFrom, dateTo]
   );
 
   const kirimNuqtalar = useMemo(
@@ -509,7 +511,10 @@ export default function Monitoring() {
       chiqimDavr
     );
     const omborChiqimi = nuqtalarGaGuruhlash(
-      chiqimHujjatlari.filter(hujjatTasdiqlanganmi),
+      chiqimHujjatlari.filter((hujjat) => {
+        const sana = hujjatSanasi(hujjat).slice(0, 10);
+        return hujjatTasdiqlanganmi(hujjat) && sana >= dateFrom && sana <= dateTo;
+      }),
       hujjatSanasi,
       hujjatSummasi,
       chiqimOraliqlari,
@@ -518,8 +523,10 @@ export default function Monitoring() {
     return chiqimOraliqlari.map((bucket, index) => ({
       nom: bucket.nom,
       summa: (moliyaviy[index]?.summa ?? 0) + (omborChiqimi[index]?.summa ?? 0),
+      kassa: moliyaviy[index]?.summa ?? 0,
+      ombor: omborChiqimi[index]?.summa ?? 0,
     }));
-  }, [financeTx, chiqimHujjatlari, chiqimOraliqlari, chiqimDavr]);
+  }, [financeTx, chiqimHujjatlari, chiqimOraliqlari, chiqimDavr, dateFrom, dateTo]);
 
   // To'lov turlari taqsimoti ham o'z mustaqil davriga (tolovDavr) ega — tanlangan sana
   // oralig'i ichida shu davr bo'yicha "oxirgi oyna"dagi kirim tranzaksiyalaridan hisoblanadi.
@@ -792,85 +799,39 @@ export default function Monitoring() {
 
       {tab === "savdo" ? (
         <div className="space-y-6">
-          <ChartCard
-            title={t("charts.salesTrend.title")}
-            subtitle={t("charts.salesTrend.subtitle")}
-            icon={TrendingUp}
-            accent="blue"
-            headerExtra={<DavrToggle value={savdoDavr} onChange={setSavdoDavr} />}
-            xato={sotuvXato}
-            yuklanmoqda={sotuvYuklanmoqda}
-            bosh={jamiSumma(sotuvNuqtalar) === 0 ? t("noData") : undefined}
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              {savdoDavr === "kunlik" ? (
-                <AreaChart data={sotuvNuqtalar}>
-                  <defs>
-                    <linearGradient id="monitoringSalesGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3478F6" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="#3478F6" stopOpacity={0.01} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="2 5" vertical={false} stroke="#E9EEF5" />
-                  <XAxis dataKey="nom" axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 11 }} tickMargin={10} minTickGap={24} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 11 }} tickFormatter={compactSum} width={64} />
-                  <Tooltip formatter={(value) => [pul(Number(value)), t("charts.salesTrend.title")]} labelFormatter={(label) => String(label)} contentStyle={tooltipStyle} />
-                  <Area type="monotone" dataKey="summa" stroke="#3478F6" strokeWidth={2.5} fill="url(#monitoringSalesGradient)" activeDot={{ r: 5, strokeWidth: 2, stroke: "#fff" }} />
-                </AreaChart>
-              ) : (
-                <BarChart data={sotuvNuqtalar}>
-                  <CartesianGrid strokeDasharray="2 5" vertical={false} stroke="#E9EEF5" />
-                  <XAxis dataKey="nom" axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 11 }} tickMargin={10} minTickGap={24} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 11 }} tickFormatter={compactSum} width={64} />
-                  <Tooltip formatter={(value) => [pul(Number(value)), t("charts.salesTrend.title")]} labelFormatter={(label) => String(label)} contentStyle={tooltipStyle} />
-                  <Bar dataKey="summa" fill="#3478F6" radius={[5, 5, 0, 0]} maxBarSize={28} />
-                </BarChart>
-              )}
-            </ResponsiveContainer>
-          </ChartCard>
+          <DynamicsChart
+            variant="sales"
+            data={sotuvNuqtalar}
+            period={savdoDavr}
+            onPeriodChange={setSavdoDavr}
+            error={sotuvXato}
+            loading={sotuvYuklanmoqda}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+          />
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <ChartCard
-              title={t("charts.income.title")}
-              subtitle={t("charts.income.subtitle")}
-              icon={ArrowDownLeft}
-              accent="green"
-              headerExtra={<DavrToggle value={kirimDavr} onChange={setKirimDavr} />}
-              xato={financeXato}
-              yuklanmoqda={financeYuklanmoqda}
-              bosh={jamiSumma(kirimNuqtalar) === 0 ? t("noData") : undefined}
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={kirimNuqtalar}>
-                  <CartesianGrid strokeDasharray="2 5" vertical={false} stroke="#E9EEF5" />
-                  <XAxis dataKey="nom" axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 11 }} tickMargin={10} minTickGap={24} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 11 }} tickFormatter={compactSum} width={64} />
-                  <Tooltip formatter={(value) => [pul(Number(value)), t("charts.income.title")]} labelFormatter={(label) => String(label)} contentStyle={tooltipStyle} />
-                  <Line type="monotone" dataKey="summa" stroke="#10B981" strokeWidth={2.5} dot={false} activeDot={{ r: 5, fill: "#10B981", strokeWidth: 2, stroke: "#fff" }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartCard>
+            <DynamicsChart
+              variant="income"
+              data={kirimNuqtalar}
+              period={kirimDavr}
+              onPeriodChange={setKirimDavr}
+              error={financeXato}
+              loading={financeYuklanmoqda}
+              dateFrom={dateFrom}
+              dateTo={dateTo}
+            />
 
-            <ChartCard
-              title={t("charts.expense.title")}
-              subtitle={t("charts.expense.subtitle")}
-              icon={ArrowUpRight}
-              accent="rose"
-              headerExtra={<DavrToggle value={chiqimDavr} onChange={setChiqimDavr} />}
-              xato={financeXato}
-              yuklanmoqda={financeYuklanmoqda}
-              bosh={jamiSumma(chiqimNuqtalar) === 0 ? t("noData") : undefined}
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chiqimNuqtalar}>
-                  <CartesianGrid strokeDasharray="2 5" vertical={false} stroke="#E9EEF5" />
-                  <XAxis dataKey="nom" axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 11 }} tickMargin={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 11 }} tickFormatter={compactSum} width={64} />
-                  <Tooltip formatter={(value) => [pul(Number(value)), t("charts.expense.title")]} labelFormatter={(label) => String(label)} contentStyle={tooltipStyle} />
-                  <Bar dataKey="summa" fill="#EF4444" radius={[5, 5, 0, 0]} maxBarSize={28} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartCard>
+            <DynamicsChart
+              variant="expense"
+              data={chiqimNuqtalar}
+              period={chiqimDavr}
+              onPeriodChange={setChiqimDavr}
+              error={[financeXato, omborHarakatiXato].filter(Boolean).join(" · ")}
+              loading={financeYuklanmoqda || omborHarakatiYuklanmoqda}
+              dateFrom={dateFrom}
+              dateTo={dateTo}
+            />
           </div>
 
           <div className="grid gap-6 xl:grid-cols-3">
