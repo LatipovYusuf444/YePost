@@ -16,7 +16,7 @@ export default function AsosiyLayout() {
   const [sidebarAcik, setSidebarAcik] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cream-50 via-cream-200 to-gold-150">
+    <div className="app-shell min-h-screen bg-gradient-to-br from-cream-50 via-cream-200 to-gold-150">
       <YonPanel acik={sidebarAcik} />
 
       <main
@@ -25,7 +25,7 @@ export default function AsosiyLayout() {
         }`}
       >
         <YuqoriPanel sidebarAcik={sidebarAcik} onSidebarToggle={() => setSidebarAcik((joriy) => !joriy)} />
-        <div className="@container min-h-[calc(100vh-48px)] min-w-0 max-w-full rounded-[34px] border border-gold-200/60 bg-white/80 p-7 shadow-gold-medium backdrop-blur-xl">
+        <div className="app-main-surface @container min-h-[calc(100vh-48px)] min-w-0 max-w-full rounded-[34px] border border-gold-200/60 bg-white/80 p-7 shadow-gold-medium backdrop-blur-xl">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}

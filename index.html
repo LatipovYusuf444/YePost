@@ -5,6 +5,14 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite + React + TS</title>
+    <script>
+      try {
+        const theme = localStorage.getItem("yepost-theme");
+        document.documentElement.dataset.theme = theme === "green" || theme === "purple" ? theme : "default";
+      } catch {
+        document.documentElement.dataset.theme = "default";
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

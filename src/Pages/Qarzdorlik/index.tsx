@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Building2, CircleDollarSign, RefreshCw, Search, UserRound } from "lucide-react";
 import type { Sotuv } from "@/types/savdo";
 import { mijozNomi, pulniFormatlash, sananiFormatlash, sotuvHolati, sotuvQarzdorlikSummasi, sotuvRaqami, sotuvSummasi, sotuvTolanganSummasi } from "@/Pages/Savdo/savdoYordamchilari";
+import TablePagination from "@/Components/common/TablePagination";
 
 type Props = {
   sotuvlar: Sotuv[];
@@ -17,6 +18,8 @@ export default function Qarzdorliklar({ sotuvlar, onSotuvniOchish, onYangilash }
   const [qidiruv, setQidiruv] = useState("");
   const [tur, setTur] = useState<Tur>("BARCHASI");
   const [yangilanmoqda, setYangilanmoqda] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const qarzlar = useMemo(() => sotuvlar
     .filter((sotuv) => sotuvHolati(sotuv) === "CONFIRMED" && sotuvQarzdorlikSummasi(sotuv) > 0)
     .sort((a, b) => sotuvQarzdorlikSummasi(b) - sotuvQarzdorlikSummasi(a)), [sotuvlar]);
@@ -27,6 +30,8 @@ export default function Qarzdorliklar({ sotuvlar, onSotuvniOchish, onYangilash }
       return turMos && (!q || [mijozNomi(sotuv), telefon(sotuv), sotuvRaqami(sotuv)].join(" ").toLowerCase().includes(q));
     });
   }, [qarzlar, qidiruv, tur]);
+  const visibleRows = useMemo(() => rows.slice((page - 1) * pageSize, page * pageSize), [rows, page, pageSize]);
+  useEffect(() => { setPage(1); }, [rows, pageSize]);
   async function yangilash() {
     setYangilanmoqda(true);
     try { await onYangilash(); } finally { setYangilanmoqda(false); }
@@ -55,11 +60,12 @@ export default function Qarzdorliklar({ sotuvlar, onSotuvniOchish, onYangilash }
     </div>
     <div className="overflow-x-auto"><table className="w-full min-w-[950px] text-left text-sm">
       <thead className="bg-[#F8FAFC] text-xs font-black uppercase text-slate-400"><tr><th className="px-8 py-4">Mijoz</th><th className="px-5 py-4">Sotuv</th><th className="px-5 py-4">Jami</th><th className="px-5 py-4">To'langan</th><th className="px-5 py-4">Qarz qoldig'i</th><th className="px-5 py-4">Sana</th></tr></thead>
-      <tbody className="divide-y divide-orange-100/70">{rows.map((sotuv) => <tr key={sotuv.id} onClick={() => void onSotuvniOchish(sotuv)} className="cursor-pointer hover:bg-orange-50/50">
+      <tbody className="divide-y divide-orange-100/70">{visibleRows.map((sotuv) => <tr key={sotuv.id} onClick={() => void onSotuvniOchish(sotuv)} className="cursor-pointer hover:bg-orange-50/50">
         <td className="px-8 py-5"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-50 text-orange-500 ring-1 ring-orange-100">{kompaniyami(sotuv) ? <Building2 size={18}/> : <UserRound size={18}/>}</span><div><p className="font-black text-slate-900">{mijozNomi(sotuv)}</p><p className="mt-0.5 text-xs font-semibold text-slate-400">{telefon(sotuv)}</p></div></div></td>
         <td className="px-5 py-5 font-semibold text-slate-900">{sotuvRaqami(sotuv)}</td><td className="px-5 py-5 font-bold text-slate-700">{pulniFormatlash(sotuvSummasi(sotuv))}</td><td className="px-5 py-5 font-bold text-emerald-600">{pulniFormatlash(sotuvTolanganSummasi(sotuv))}</td><td className="px-5 py-5"><span className="rounded-xl bg-red-50 px-3 py-2 font-black text-red-600 ring-1 ring-red-100">{pulniFormatlash(sotuvQarzdorlikSummasi(sotuv))}</span></td><td className="px-5 py-5 font-semibold text-slate-500">{sananiFormatlash(sotuv.confirmedAt ?? sotuv.createdAt ?? sotuv.date)}</td>
       </tr>)}</tbody>
     </table></div>
+    <TablePagination page={page} pageSize={pageSize} totalItems={rows.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
     {rows.length === 0 && <div className="px-6 py-20 text-center"><CircleDollarSign className="mx-auto text-orange-200" size={42}/><h2 className="mt-3 text-lg font-black text-slate-800">Qarzdorlik topilmadi</h2><p className="mt-1 text-sm font-semibold text-slate-400">Qidiruvni o'zgartiring yoki barcha qarzlar yopilgan.</p></div>}
     <div className="flex justify-between border-t border-orange-100 bg-[#F8FAFC] px-8 py-4 text-xs font-bold text-slate-500"><span>{rows.length} ta qarzdor savdo</span><span>Qatorni bosing — sotuv tafsilotlari ochiladi</span></div>
   </section>;

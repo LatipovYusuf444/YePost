@@ -5,6 +5,8 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Gauge,
+  LoaderCircle,
+  FlaskConical,
   Package,
   Receipt,
   RefreshCw,
@@ -18,7 +20,7 @@ import {
 } from "lucide-react";
 import AppSelect from "@/Components/ui/AppSelect";
 import { sotuvlarRoyxatiniOlish } from "@/api/savdoApi";
-import { chiqimApi, kirimApi, omborlarApi } from "@/api/omborApi";
+import { barchaModifikatsiyalar, chiqimApi, kirimApi, kochirishApi, omborlarApi } from "@/api/omborApi";
 import {
   counterpartyBalanceReportApi,
   incomeExpenseReportApi,
@@ -30,7 +32,7 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { sotuvHolati, sotuvSummasi } from "@/Pages/Savdo/savdoYordamchilari";
 import type { Sotuv } from "@/types/savdo";
 import type { StockBalanceItem } from "@/api/reportsApi";
-import type { ChiqimHujjati, KirimHujjati, Ombor } from "@/types/ombor";
+import type { ChiqimHujjati, KirimHujjati, KochirishHujjati, MahsulotModifikatsiyasi, Ombor } from "@/types/ombor";
 import type { FinanceTransaction } from "@/types/tolov";
 import MuddatTanlov from "@/Pages/HisobotUchot/MuddatTanlov";
 import { bugun, bugunMinus } from "@/Pages/HisobotUchot/yordamchilar";
@@ -51,6 +53,43 @@ type Tab = "savdo" | "ombor";
 type Nuqta = { nom: string; summa: number };
 type Bucket = { key: string; nom: string };
 type OmborHarakatNuqtasi = { nom: string; kirim: number; chiqim: number };
+type ChiqimMahsulotQatori = {
+  id: string;
+  sana: string;
+  hujjat: string;
+  ombor: string;
+  mahsulot: string;
+  miqdor: number;
+  birlikNarxi: number;
+  summa: number;
+};
+type KochirmaMahsulotQatori = {
+  id: string;
+  sana: string;
+  hujjat: string;
+  holat: string;
+  manba: string;
+  qabul: string;
+  mahsulot: string;
+  miqdor: number;
+  narx: number;
+  summa: number;
+  manbaQoldiq: number;
+  qabulQoldiq: number;
+};
+
+const DEMO_OMBORLAR = [
+  { id: "demo-toshkent", name: "Toshkent ombor" },
+  { id: "demo-samarqand", name: "Samarqand ombor" },
+  { id: "demo-buxoro", name: "Buxoro ombor" },
+];
+
+function demoNuqtalar(oraliqlar: Bucket[], asos: number, faza = 0): Nuqta[] {
+  return oraliqlar.map((oraliq, index) => ({
+    nom: oraliq.nom,
+    summa: Math.round(asos * (0.25 + Math.abs(Math.sin(index * 0.67 + faza)) * 0.75)),
+  }));
+}
 
 type ProfitRow = {
   productId?: string;
@@ -104,6 +143,25 @@ function pul(value: unknown) {
   return `${Math.round(son(value)).toLocaleString("uz-UZ")} so'm`;
 }
 
+function MarkaziyYuklanish({
+  text,
+  className = "",
+}: {
+  text: string;
+  className?: string;
+}) {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className={`flex min-w-0 flex-col items-center justify-center gap-2 text-center font-semibold text-slate-400 ${className}`}
+    >
+      <LoaderCircle size={21} className="shrink-0 animate-spin text-blue-500" />
+      <span>{text}</span>
+    </div>
+  );
+}
+
 function kunKaliti(date: Date) {
   return date.toISOString().slice(0, 10);
 }
@@ -127,25 +185,48 @@ function hujjatTasdiqlanganmi(hujjat: KirimHujjati | ChiqimHujjati) {
 // Ro'yxat (list) endpointlari ko'pincha totalAmount/total maydonini bo'sh qaytaradi —
 // bu holatda mahsulotlar (items) bo'yicha qo'lda hisoblanadi. Xuddi shu naqsh
 // Xaridlar.tsx (kirimSummasi) va Chiqim.tsx (hujjatSummasi) sahifalarida ham ishlatilgan.
-function hujjatSummasi(hujjat: KirimHujjati | ChiqimHujjati) {
+function hujjatSummasi(
+  hujjat: KirimHujjati | ChiqimHujjati,
+  modifikatsiyalar = new Map<string, MahsulotModifikatsiyasi>(),
+) {
   const backend = son(hujjat.totalAmount ?? hujjat.total);
   if (backend > 0) return backend;
   return (hujjat.items ?? []).reduce((jami, item) => {
-    const kengItem = item as {
+    const satr = item as {
       quantity?: number | string;
+      modificationId?: string;
       price?: number | string;
       unitPrice?: number | string;
       costPrice?: number | string;
-      modification?: { price?: { costPrice?: number | string } };
+      modification?: MahsulotModifikatsiyasi;
     };
+    const modifikatsiya = satr.modification ??
+      modifikatsiyalar.get(String(satr.modificationId ?? ""));
     const narx = son(
-      kengItem.price ??
-        kengItem.unitPrice ??
-        kengItem.costPrice ??
-        kengItem.modification?.price?.costPrice,
+      satr.price ??
+        satr.unitPrice ??
+        satr.costPrice ??
+        modifikatsiya?.price?.costPrice,
     );
-    return jami + son(kengItem.quantity) * narx;
+    return jami + son(satr.quantity) * narx;
   }, 0);
+}
+
+function kochirmaSanasi(hujjat: KochirishHujjati, tomon: "manba" | "qabul" = "manba") {
+  if (tomon === "qabul") return hujjat.receivedAt || hujjat.updatedAt || hujjat.createdAt || "";
+  return hujjat.sentAt || (String(hujjat.status).toUpperCase() === "RECEIVED" ? hujjat.receivedAt : undefined) || hujjat.updatedAt || hujjat.createdAt || "";
+}
+
+function kochirmaSummasi(
+  hujjat: KochirishHujjati,
+  modifikatsiyalar: Map<string, MahsulotModifikatsiyasi>,
+) {
+  const qatorJami = (hujjat.items ?? []).reduce((jami, item) => {
+    const mod = item.modification ?? modifikatsiyalar.get(item.modificationId);
+    const narx = son(item.unitPrice ?? item.price ?? item.costPrice ?? mod?.price?.costPrice ?? mod?.price?.retailPrice);
+    return jami + son(item.quantity) * narx;
+  }, 0);
+  return qatorJami || son(hujjat.totalAmount ?? hujjat.total);
 }
 
 const OY_QISQA = [
@@ -326,6 +407,7 @@ function isoDateTo(value: string) {
 export default function Monitoring() {
   const { t } = useTranslation("monitoring");
   const [tab, setTab] = useState<Tab>("savdo");
+  const [demoMode, setDemoMode] = useState(false);
   // Har bir vaqt-grafigi o'zining mustaqil Kunlik/Oylik/Yillik holatiga ega —
   // bittasini o'zgartirish boshqalariga ta'sir qilmaydi.
   const [savdoDavr, setSavdoDavr] = useState<Davr>("kunlik");
@@ -374,6 +456,9 @@ export default function Monitoring() {
 
   const [kirimHujjatlari, setKirimHujjatlari] = useState<KirimHujjati[]>([]);
   const [chiqimHujjatlari, setChiqimHujjatlari] = useState<ChiqimHujjati[]>([]);
+  const [kochirmaHujjatlari, setKochirmaHujjatlari] = useState<KochirishHujjati[]>([]);
+  const [mahsulotModifikatsiyalari, setMahsulotModifikatsiyalari] =
+    useState<MahsulotModifikatsiyasi[]>([]);
   const [omborHarakatiYuklanmoqda, setOmborHarakatiYuklanmoqda] =
     useState(true);
   const [omborHarakatiXato, setOmborHarakatiXato] = useState("");
@@ -568,7 +653,7 @@ export default function Monitoring() {
     setOmborYuklanmoqda(true);
     setOmborXato("");
     Promise.all([
-      stockBalanceReportAll({ balanceStatus: "POSITIVE" }),
+      stockBalanceReportAll({ balanceStatus: "ALL" }),
       omborlarApi.royxat(),
     ])
       .then(([items, omborRoyxati]) => {
@@ -592,11 +677,42 @@ export default function Monitoring() {
     let active = true;
     setOmborHarakatiYuklanmoqda(true);
     setOmborHarakatiXato("");
-    Promise.all([kirimApi.royxat(), chiqimApi.royxat()])
-      .then(([kirimlar, chiqimlar]) => {
+    Promise.all([kirimApi.royxat(), chiqimApi.royxat(), kochirishApi.royxat()])
+      .then(async ([kirimlar, chiqimlar, kochirmalar]) => {
+        if (!active) return;
+        const modifikatsiyalar = await barchaModifikatsiyalar().catch(() => []);
+        const toliqChiqimlar = await Promise.all(
+          chiqimlar.map(async (hujjat) => {
+            if (
+              String(hujjat.status ?? "").toUpperCase() !== "CONFIRMED" ||
+              (hujjat.items?.length ?? 0) > 0
+            ) {
+              return hujjat;
+            }
+            try {
+              const tafsilot = await chiqimApi.olish(hujjat.id);
+              return { ...hujjat, ...tafsilot, items: tafsilot.items ?? hujjat.items };
+            } catch {
+              return hujjat;
+            }
+          }),
+        );
+        const toliqKochirmalar = await Promise.all(
+          kochirmalar.map(async (hujjat) => {
+            if ((hujjat.items?.length ?? 0) > 0) return hujjat;
+            try {
+              const tafsilot = await kochirishApi.olish(hujjat.id);
+              return { ...hujjat, ...tafsilot, items: tafsilot.items ?? hujjat.items };
+            } catch {
+              return hujjat;
+            }
+          }),
+        );
         if (!active) return;
         setKirimHujjatlari(kirimlar);
-        setChiqimHujjatlari(chiqimlar);
+        setChiqimHujjatlari(toliqChiqimlar);
+        setKochirmaHujjatlari(toliqKochirmalar);
+        setMahsulotModifikatsiyalari(modifikatsiyalar);
       })
       .catch((error) => {
         if (active) setOmborHarakatiXato(getApiErrorMessage(error));
@@ -653,45 +769,18 @@ export default function Monitoring() {
     [financeTx, kirimOraliqlari, kirimDavr],
   );
 
-  // "Chiqim" ikki xil manbadan yig'iladi: (1) Kassa orqali qayd etilgan moliyaviy
-  // xarajatlar (/finance/transactions, type=EXPENSE) va (2) Ombor > Chiqim
-  // bo'limidagi mahsulot hisobdan chiqarish hujjatlari (/inventory/write-offs) —
-  // ikkalasi ham real "chiqim" hisoblanadi, shuning uchun grafikda jamlanadi.
-  const chiqimNuqtalar = useMemo(() => {
-    const moliyaviy = nuqtalarGaGuruhlash(
+  // Kassa chiqim grafigi faqat moliyaviy EXPENSE tranzaksiyalarini ko'rsatadi.
+  // Ombor hisobdan chiqarishlari alohida mahsulot jadvali va ombor grafigida turadi.
+  const chiqimNuqtalar = useMemo(
+    () => nuqtalarGaGuruhlash(
       financeTx.filter((item) => item.type === "EXPENSE"),
       (item) => item.date,
       (item) => son(item.amount),
       chiqimOraliqlari,
       chiqimDavr,
-    );
-    const omborChiqimi = nuqtalarGaGuruhlash(
-      chiqimHujjatlari.filter((hujjat) => {
-        const sana = hujjatSanasi(hujjat).slice(0, 10);
-        return (
-          hujjatTasdiqlanganmi(hujjat) && sana >= dateFrom && sana <= dateTo
-        );
-      }),
-      hujjatSanasi,
-      hujjatSummasi,
-      chiqimOraliqlari,
-      chiqimDavr,
-    );
-    return chiqimOraliqlari.map((bucket, index) => ({
-      nom: bucket.nom,
-      summa: (moliyaviy[index]?.summa ?? 0) + (omborChiqimi[index]?.summa ?? 0),
-      kassa: moliyaviy[index]?.summa ?? 0,
-      ombor: omborChiqimi[index]?.summa ?? 0,
-    }));
-  }, [
-    financeTx,
-    chiqimHujjatlari,
-    chiqimOraliqlari,
-    chiqimDavr,
-    dateFrom,
-    dateTo,
-  ]);
-
+    ),
+    [financeTx, chiqimOraliqlari, chiqimDavr],
+  );
   // To'lov turlari taqsimoti ham o'z mustaqil davriga (tolovDavr) ega — tanlangan sana
   // oralig'i ichida shu davr bo'yicha "oxirgi oyna"dagi kirim tranzaksiyalaridan hisoblanadi.
   const tolovOraliq = useMemo(
@@ -809,6 +898,14 @@ export default function Monitoring() {
     () => new Map(omborlar.map((ombor) => [ombor.id, ombor.name])),
     [omborlar],
   );
+  const modifikatsiyaXaritasi = useMemo(
+    () => new Map(mahsulotModifikatsiyalari.map((item) => [item.id, item])),
+    [mahsulotModifikatsiyalari],
+  );
+  const stockMiqdorXaritasi = useMemo(
+    () => new Map(stockItems.map((item) => [`${item.warehouseId ?? ""}:${item.modificationId}`, son(item.quantity)])),
+    [stockItems],
+  );
 
   // Har doim BARCHA haqiqiy omborlar (omborlarApi.royxat()) ro'yxatidan quriladi — shu bilan
   // hech qaysi ombor tushib qolmaydi, hatto hozircha qoldig'i bo'lmagan bo'lsa ham (0 bilan ko'rinadi).
@@ -838,7 +935,10 @@ export default function Monitoring() {
       (item) =>
         son(item.availableQuantity) > 0 && son(item.availableQuantity) < 5,
     ).length;
-    return { qiymat, omborlarSoni: omborlar.length, kamQolgan };
+    const manfiyQoldiq = stockItems.filter(
+      (item) => son(item.quantity) < 0 || son(item.availableQuantity) < 0,
+    ).length;
+    return { qiymat, omborlarSoni: omborlar.length, kamQolgan, manfiyQoldiq };
   }, [stockItems, omborlar]);
 
   // Omborlar bo'yicha kirim/chiqim grafigi ham o'z mustaqil davriga (omborHarakatDavr) ega.
@@ -862,7 +962,7 @@ export default function Monitoring() {
         kirim: 0,
         chiqim: 0,
       };
-      joriy.kirim += hujjatSummasi(hujjat);
+      joriy.kirim += hujjatSummasi(hujjat, modifikatsiyaXaritasi);
       xarita.set(hujjat.warehouseId, joriy);
     });
     chiqimHujjatlari.forEach((hujjat) => {
@@ -879,13 +979,91 @@ export default function Monitoring() {
         kirim: 0,
         chiqim: 0,
       };
-      joriy.chiqim += hujjatSummasi(hujjat);
+      joriy.chiqim += hujjatSummasi(hujjat, modifikatsiyaXaritasi);
       xarita.set(hujjat.warehouseId, joriy);
+    });
+    const qoshKochirma = (warehouseId: string, nom: string, turi: "kirim" | "chiqim", summa: number) => {
+      const joriy = xarita.get(warehouseId) ?? { nom, kirim: 0, chiqim: 0 };
+      joriy[turi] += summa;
+      xarita.set(warehouseId, joriy);
+    };
+    kochirmaHujjatlari.forEach((hujjat) => {
+      const status = String(hujjat.status ?? "").toUpperCase();
+      if (!["SENT", "RECEIVED", "CONFIRMED"].includes(status)) return;
+      const summa = kochirmaSummasi(hujjat, modifikatsiyaXaritasi);
+      const chiqimKun = kochirmaSanasi(hujjat, "manba").slice(0, 10);
+      if (chiqimKun >= omborHarakatOraliq.from && chiqimKun <= omborHarakatOraliq.to) {
+        const nom = hujjat.sourceWarehouse?.name ?? omborNomXaritasi.get(hujjat.sourceWarehouseId) ?? "-";
+        qoshKochirma(hujjat.sourceWarehouseId, nom, "chiqim", summa);
+      }
+      if (["RECEIVED", "CONFIRMED"].includes(status)) {
+        const kirimKun = kochirmaSanasi(hujjat, "qabul").slice(0, 10);
+        if (kirimKun >= omborHarakatOraliq.from && kirimKun <= omborHarakatOraliq.to) {
+          const nom = hujjat.destWarehouse?.name ?? omborNomXaritasi.get(hujjat.destWarehouseId) ?? "-";
+          qoshKochirma(hujjat.destWarehouseId, nom, "kirim", summa);
+        }
+      }
     });
     return Array.from(xarita.values()).sort(
       (a, b) => b.kirim + b.chiqim - (a.kirim + a.chiqim),
     );
-  }, [kirimHujjatlari, chiqimHujjatlari, omborHarakatOraliq, omborNomXaritasi]);
+  }, [kirimHujjatlari, chiqimHujjatlari, kochirmaHujjatlari, omborHarakatOraliq, omborNomXaritasi, modifikatsiyaXaritasi]);
+
+  const chiqimMahsulotQatorlari = useMemo<ChiqimMahsulotQatori[]>(() => {
+    return chiqimHujjatlari
+      .filter((hujjat) => {
+        const sana = hujjatSanasi(hujjat).slice(0, 10);
+        return hujjatTasdiqlanganmi(hujjat) && sana >= dateFrom && sana <= dateTo;
+      })
+      .flatMap((hujjat) =>
+        (hujjat.items ?? []).map((item, index) => {
+          const modification = item.modification ?? modifikatsiyaXaritasi.get(item.modificationId);
+          const miqdor = son(item.quantity);
+          const birlikNarxi = son(
+            item.price ?? item.unitPrice ?? item.costPrice ?? modification?.price?.costPrice,
+          );
+          return {
+            id: `${hujjat.id}-${item.id ?? item.modificationId}-${index}`,
+            sana: hujjatSanasi(hujjat).slice(0, 10),
+            hujjat: hujjat.documentNumber ?? hujjat.number ?? hujjat.docNumber ?? hujjat.id,
+            ombor: hujjat.warehouse?.name ?? omborNomXaritasi.get(hujjat.warehouseId) ?? "-",
+            mahsulot: modification?.product?.name ?? modification?.name ?? item.modificationId,
+            miqdor,
+            birlikNarxi,
+            summa: miqdor * birlikNarxi,
+          };
+        }),
+      )
+      .sort((a, b) => b.sana.localeCompare(a.sana));
+  }, [chiqimHujjatlari, dateFrom, dateTo, modifikatsiyaXaritasi, omborNomXaritasi]);
+
+  const kochirmaMahsulotQatorlari = useMemo<KochirmaMahsulotQatori[]>(() => {
+    return kochirmaHujjatlari
+      .filter((hujjat) => !["CANCELLED", "CANCELED"].includes(String(hujjat.status ?? "").toUpperCase()))
+      .flatMap((hujjat) => {
+        const sana = kochirmaSanasi(hujjat).slice(0, 10);
+        if (!sana || sana < dateFrom || sana > dateTo) return [];
+        return (hujjat.items ?? []).map((item, index) => {
+          const mod = item.modification ?? modifikatsiyaXaritasi.get(item.modificationId);
+          const narx = son(item.unitPrice ?? item.price ?? item.costPrice ?? mod?.price?.costPrice ?? mod?.price?.retailPrice);
+          return {
+            id: `${hujjat.id}-${item.id ?? item.modificationId}-${index}`,
+            sana,
+            hujjat: hujjat.documentNumber ?? hujjat.number ?? hujjat.docNumber ?? hujjat.id,
+            holat: String(hujjat.status ?? "DRAFT").toUpperCase(),
+            manba: hujjat.sourceWarehouse?.name ?? omborNomXaritasi.get(hujjat.sourceWarehouseId) ?? hujjat.sourceWarehouseId,
+            qabul: hujjat.destWarehouse?.name ?? omborNomXaritasi.get(hujjat.destWarehouseId) ?? hujjat.destWarehouseId,
+            mahsulot: mod?.product?.name ?? mod?.name ?? item.modificationId,
+            miqdor: son(item.quantity),
+            narx,
+            summa: son(item.quantity) * narx,
+            manbaQoldiq: stockMiqdorXaritasi.get(`${hujjat.sourceWarehouseId}:${item.modificationId}`) ?? 0,
+            qabulQoldiq: stockMiqdorXaritasi.get(`${hujjat.destWarehouseId}:${item.modificationId}`) ?? 0,
+          };
+        });
+      })
+      .sort((a, b) => b.sana.localeCompare(a.sana));
+  }, [kochirmaHujjatlari, dateFrom, dateTo, modifikatsiyaXaritasi, omborNomXaritasi, stockMiqdorXaritasi]);
 
   const tanlanganOmborMahsulotlari = useMemo(
     () =>
@@ -907,9 +1085,9 @@ export default function Monitoring() {
   );
 
   const tanlanganOmborKirim = useMemo(
-    () =>
-      tanlanganOmborId
-        ? nuqtalarGaGuruhlash(
+    () => {
+      if (!tanlanganOmborId) return [];
+      const kirimlar = nuqtalarGaGuruhlash(
             kirimHujjatlari.filter((h) => {
               const sana = hujjatSanasi(h).slice(0, 10);
               return (
@@ -920,25 +1098,35 @@ export default function Monitoring() {
               );
             }),
             hujjatSanasi,
-            hujjatSummasi,
+            (hujjat) => hujjatSummasi(hujjat, modifikatsiyaXaritasi),
             omborKirimOraliqlari,
             omborKirimDavr,
-          )
-        : [],
+          );
+      const transferlar = nuqtalarGaGuruhlash(
+        kochirmaHujjatlari.filter((h) => ["RECEIVED", "CONFIRMED"].includes(String(h.status ?? "").toUpperCase()) && h.destWarehouseId === tanlanganOmborId && kochirmaSanasi(h, "qabul").slice(0, 10) >= dateFrom && kochirmaSanasi(h, "qabul").slice(0, 10) <= dateTo),
+        (h) => kochirmaSanasi(h, "qabul"),
+        (h) => kochirmaSummasi(h, modifikatsiyaXaritasi),
+        omborKirimOraliqlari,
+        omborKirimDavr,
+      );
+      return kirimlar.map((point, index) => ({ ...point, summa: point.summa + (transferlar[index]?.summa ?? 0) }));
+    },
     [
       kirimHujjatlari,
+      kochirmaHujjatlari,
       tanlanganOmborId,
       omborKirimOraliqlari,
       omborKirimDavr,
       dateFrom,
       dateTo,
+      modifikatsiyaXaritasi,
     ],
   );
 
   const tanlanganOmborChiqim = useMemo(
-    () =>
-      tanlanganOmborId
-        ? nuqtalarGaGuruhlash(
+    () => {
+      if (!tanlanganOmborId) return [];
+      const chiqimlar = nuqtalarGaGuruhlash(
             chiqimHujjatlari.filter((h) => {
               const sana = hujjatSanasi(h).slice(0, 10);
               return (
@@ -949,27 +1137,112 @@ export default function Monitoring() {
               );
             }),
             hujjatSanasi,
-            hujjatSummasi,
+            (hujjat) => hujjatSummasi(hujjat, modifikatsiyaXaritasi),
             omborChiqimOraliqlari,
             omborChiqimDavr,
-          )
-        : [],
+          );
+      const transferlar = nuqtalarGaGuruhlash(
+        kochirmaHujjatlari.filter((h) => ["SENT", "RECEIVED", "CONFIRMED"].includes(String(h.status ?? "").toUpperCase()) && h.sourceWarehouseId === tanlanganOmborId && kochirmaSanasi(h, "manba").slice(0, 10) >= dateFrom && kochirmaSanasi(h, "manba").slice(0, 10) <= dateTo),
+        (h) => kochirmaSanasi(h, "manba"),
+        (h) => kochirmaSummasi(h, modifikatsiyaXaritasi),
+        omborChiqimOraliqlari,
+        omborChiqimDavr,
+      );
+      return chiqimlar.map((point, index) => ({ ...point, summa: point.summa + (transferlar[index]?.summa ?? 0) }));
+    },
     [
       chiqimHujjatlari,
+      kochirmaHujjatlari,
       tanlanganOmborId,
       omborChiqimOraliqlari,
       omborChiqimDavr,
       dateFrom,
       dateTo,
+      modifikatsiyaXaritasi,
     ],
   );
+
+  // Demo values live only in this page's presentation state. No sample is sent to APIs.
+  const demoSavdoNuqtalar = useMemo(
+    () => demoNuqtalar(savdoOraliqlari, 460_000, 1.2),
+    [savdoOraliqlari],
+  );
+  const demoKirimNuqtalar = useMemo(
+    () => demoNuqtalar(kirimOraliqlari, 185_000, 2.1),
+    [kirimOraliqlari],
+  );
+  const demoChiqimNuqtalar = useMemo(
+    () => demoNuqtalar(chiqimOraliqlari, 122_000, 3.4),
+    [chiqimOraliqlari],
+  );
+  const demoSofFoyda = 2_860_000;
+  const demoTolovTurlari: Nuqta[] = [
+    { nom: "CASH", summa: 6_420_000 },
+    { nom: "CARD", summa: 3_780_000 },
+    { nom: "CLICK", summa: 1_860_000 },
+    { nom: "PAYME", summa: 1_240_000 },
+  ];
+  const demoQarzdorlar: Nuqta[] = [
+    { nom: "Baraka Savdo", summa: 4_250_000 },
+    { nom: "Orzu Market", summa: 2_780_000 },
+    { nom: "Sahovat Do'kon", summa: 1_640_000 },
+    { nom: "Ziyo Trade", summa: 920_000 },
+  ];
+  const demoTopMahsulotlar: Nuqta[] = [
+    { nom: "Osh yog'i 1L", summa: 148 },
+    { nom: "Un 1-nav 5kg", summa: 126 },
+    { nom: "Shakar 1kg", summa: 104 },
+    { nom: "Guruch lazer", summa: 88 },
+    { nom: "Choy qora 250g", summa: 73 },
+  ];
+  const demoKamMahsulotlar: Nuqta[] = [
+    { nom: "Salfetka premium", summa: 3 },
+    { nom: "Sovun aloe", summa: 7 },
+    { nom: "Sharbat olcha", summa: 11 },
+    { nom: "Makaron 500g", summa: 16 },
+    { nom: "Suv 1.5L", summa: 21 },
+  ];
+  const demoOmborQoldiqlari: Nuqta[] = [
+    { nom: "Toshkent ombor", summa: 24_800_000 },
+    { nom: "Samarqand ombor", summa: 17_250_000 },
+    { nom: "Buxoro ombor", summa: 11_640_000 },
+  ];
+  const demoOmborHarakati: OmborHarakatNuqtasi[] = [
+    { nom: "Toshkent", kirim: 8_450_000, chiqim: 5_120_000 },
+    { nom: "Samarqand", kirim: 5_800_000, chiqim: 3_460_000 },
+    { nom: "Buxoro", kirim: 3_250_000, chiqim: 2_180_000 },
+  ];
+  const demoChiqimMahsulotQatorlari: ChiqimMahsulotQatori[] = [
+    { id: "demo-ch-1", sana: dateTo, hujjat: "CHIQ-000124", ombor: "Toshkent ombor", mahsulot: "Osh yog'i 1L", miqdor: 4, birlikNarxi: 35_000, summa: 140_000 },
+    { id: "demo-ch-2", sana: dateTo, hujjat: "CHIQ-000124", ombor: "Toshkent ombor", mahsulot: "Un 1-nav 5kg", miqdor: 2, birlikNarxi: 40_000, summa: 80_000 },
+    { id: "demo-ch-3", sana: dateFrom, hujjat: "CHIQ-000119", ombor: "Samarqand ombor", mahsulot: "Shakar 1kg", miqdor: 8, birlikNarxi: 14_000, summa: 112_000 },
+  ];
+  const demoKochirmaMahsulotQatorlari: KochirmaMahsulotQatori[] = [
+    { id: "demo-transfer-1", sana: dateTo, hujjat: "KOCH-000031", holat: "RECEIVED", manba: "Toshkent ombor", qabul: "Samarqand ombor", mahsulot: "Osh yog'i 1L", miqdor: 12, narx: 35_000, summa: 420_000, manbaQoldiq: 114, qabulQoldiq: 36 },
+    { id: "demo-transfer-2", sana: dateTo, hujjat: "KOCH-000032", holat: "SENT", manba: "Toshkent ombor", qabul: "Buxoro ombor", mahsulot: "Un 1-nav 5kg", miqdor: 6, narx: 40_000, summa: 240_000, manbaQoldiq: 78, qabulQoldiq: 0 },
+  ];
+  const demoOmborTanlovi = DEMO_OMBORLAR.find((ombor) => ombor.id === tanlanganOmborId) ?? DEMO_OMBORLAR[0];
+  const demoTafsilotKirim = useMemo(
+    () => demoNuqtalar(omborKirimOraliqlari, 175_000, 1.7),
+    [omborKirimOraliqlari],
+  );
+  const demoTafsilotChiqim = useMemo(
+    () => demoNuqtalar(omborChiqimOraliqlari, 118_000, 2.8),
+    [omborChiqimOraliqlari],
+  );
+  const demoOmborMahsulotlari = [
+    { id: "demo-p1", name: "Osh yog'i 1L", quantity: 126, value: 4_410_000 },
+    { id: "demo-p2", name: "Un 1-nav 5kg", quantity: 84, value: 3_360_000 },
+    { id: "demo-p3", name: "Shakar 1kg", quantity: 210, value: 2_940_000 },
+    { id: "demo-p4", name: "Guruch lazer", quantity: 58, value: 1_740_000 },
+  ];
 
   function yangilash() {
     setYangilanish((value) => value + 1);
   }
 
   return (
-    <div className="space-y-6">
+    <div className="monitoring-page space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.18em] text-orange-500">
@@ -980,15 +1253,36 @@ export default function Monitoring() {
           </h1>
           <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
         </div>
-        <button
-          type="button"
-          onClick={yangilash}
-          className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-5 text-sm font-black text-orange-600 shadow-sm transition hover:bg-orange-50"
-        >
-          <RefreshCw size={17} />
-          {t("refresh")}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            aria-pressed={demoMode}
+            onClick={() => {
+              setDemoMode((current) => !current);
+              setTanlanganOmborId(demoMode ? "" : DEMO_OMBORLAR[0].id);
+            }}
+            className={`inline-flex h-12 items-center gap-2 rounded-2xl border px-5 text-sm font-black shadow-sm transition ${demoMode ? "border-violet-200 bg-violet-600 text-white hover:bg-violet-700" : "border-violet-100 bg-white text-violet-700 hover:bg-violet-50"}`}
+          >
+            <FlaskConical size={17} />
+            {demoMode ? "Demo yoqilgan" : "Demo ko'rinish"}
+          </button>
+          <button
+            type="button"
+            onClick={yangilash}
+            className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-5 text-sm font-black text-orange-600 shadow-sm transition hover:bg-orange-50"
+          >
+            <RefreshCw size={17} />
+            {t("refresh")}
+          </button>
+        </div>
       </header>
+
+      {demoMode && (
+        <div className="flex items-center gap-2 rounded-2xl border border-violet-100 bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-800" role="status">
+          <FlaskConical size={17} className="shrink-0" />
+          Namuna ma'lumotlari ko'rsatilmoqda. Demo qiymatlar faqat shu ekranda ishlaydi, backendga yuborilmaydi.
+        </div>
+      )}
 
       <nav className="flex flex-wrap items-center gap-3">
         {(["savdo", "ombor"] as Tab[]).map((item) => (
@@ -1021,53 +1315,53 @@ export default function Monitoring() {
         <KpiCard
           icon={ShoppingCart}
           label={t("kpi.periodSales")}
-          value={pul(davrSavdosi.summa)}
-          sub={t("kpi.periodSalesSub", { count: davrSavdosi.soni })}
-          yuklanmoqda={sotuvYuklanmoqda}
-          trend={savdoTrendi}
-          xato={sotuvXato}
+          value={pul(demoMode ? jamiSumma(demoSavdoNuqtalar) : davrSavdosi.summa)}
+          sub={t("kpi.periodSalesSub", { count: demoMode ? 23 : davrSavdosi.soni })}
+          yuklanmoqda={!demoMode && sotuvYuklanmoqda}
+          trend={demoMode ? { foiz: 12.5, yangi: false } : savdoTrendi}
+          xato={demoMode ? "" : sotuvXato}
         />
         <KpiCard
-          icon={foydaKorsatkichlari.sofFoyda >= 0 ? TrendingUp : TrendingDown}
+          icon={(demoMode ? demoSofFoyda : foydaKorsatkichlari.sofFoyda) >= 0 ? TrendingUp : TrendingDown}
           label={t("kpi.netProfit")}
-          value={pul(foydaKorsatkichlari.sofFoyda)}
+          value={pul(demoMode ? demoSofFoyda : foydaKorsatkichlari.sofFoyda)}
           sub={t("kpi.netProfitSub", {
-            percent: foydaKorsatkichlari.rentabellik.toFixed(1),
+            percent: (demoMode ? 14.2 : foydaKorsatkichlari.rentabellik).toFixed(1),
           })}
-          yuklanmoqda={foydaYuklanmoqda}
-          xato={foydaXato}
-          rang={foydaKorsatkichlari.sofFoyda >= 0 ? "emerald" : "red"}
-          trend={foydaTrendi}
+          yuklanmoqda={!demoMode && foydaYuklanmoqda}
+          xato={demoMode ? "" : foydaXato}
+          rang={(demoMode ? demoSofFoyda : foydaKorsatkichlari.sofFoyda) >= 0 ? "emerald" : "red"}
+          trend={demoMode ? { foiz: 8.4, yangi: false } : foydaTrendi}
         />
         <KpiCard
           icon={Receipt}
           label={t("kpi.salesCount")}
-          value={String(davrSavdosi.soni)}
-          sub={t("kpi.salesCountSub", { avg: pul(ortachaChek) })}
-          yuklanmoqda={sotuvYuklanmoqda}
-          trend={sotuvlarSoniTrendi}
-          xato={sotuvXato}
+          value={String(demoMode ? 23 : davrSavdosi.soni)}
+          sub={t("kpi.salesCountSub", { avg: pul(demoMode ? 425_000 : ortachaChek) })}
+          yuklanmoqda={!demoMode && sotuvYuklanmoqda}
+          trend={demoMode ? { foiz: 6.8, yangi: false } : sotuvlarSoniTrendi}
+          xato={demoMode ? "" : sotuvXato}
           rang="violet"
         />
         <KpiCard
           icon={Users}
           label={t("kpi.totalDebt")}
           value={pul(
-            debtors.reduce((jami, item) => jami + son(item.closingBalance), 0),
+            demoMode ? jamiSumma(demoQarzdorlar) : debtors.reduce((jami, item) => jami + son(item.closingBalance), 0),
           )}
-          sub={t("kpi.totalDebtSub", { count: debtors.length })}
-          yuklanmoqda={debtorlarYuklanmoqda}
+          sub={t("kpi.totalDebtSub", { count: demoMode ? demoQarzdorlar.length : debtors.length })}
+          yuklanmoqda={!demoMode && debtorlarYuklanmoqda}
           rang="red"
-          xato={debtorlarXato}
+          xato={demoMode ? "" : debtorlarXato}
           belgi={t("kpi.trendCurrent")}
         />
         <KpiCard
           icon={Warehouse}
           label={t("kpi.stockValue")}
-          value={pul(omborJami.qiymat)}
-          sub={t("kpi.stockValueSub", { count: omborJami.omborlarSoni })}
-          yuklanmoqda={omborYuklanmoqda}
-          xato={omborXato}
+          value={pul(demoMode ? jamiSumma(demoOmborQoldiqlari) : omborJami.qiymat)}
+          sub={t("kpi.stockValueSub", { count: demoMode ? DEMO_OMBORLAR.length : omborJami.omborlarSoni })}
+          yuklanmoqda={!demoMode && omborYuklanmoqda}
+          xato={demoMode ? "" : omborXato}
           rang="slate"
           belgi={t("kpi.trendCurrent")}
         />
@@ -1077,11 +1371,11 @@ export default function Monitoring() {
         <div className="space-y-6">
           <DynamicsChart
             variant="sales"
-            data={sotuvNuqtalar}
+            data={demoMode ? demoSavdoNuqtalar : sotuvNuqtalar}
             period={savdoDavr}
             onPeriodChange={setSavdoDavr}
-            error={sotuvXato}
-            loading={sotuvYuklanmoqda}
+            error={demoMode ? "" : sotuvXato}
+            loading={!demoMode && sotuvYuklanmoqda}
             dateFrom={dateFrom}
             dateTo={dateTo}
           />
@@ -1089,24 +1383,22 @@ export default function Monitoring() {
           <div className="grid gap-6 lg:grid-cols-2">
             <DynamicsChart
               variant="income"
-              data={kirimNuqtalar}
+              data={demoMode ? demoKirimNuqtalar : kirimNuqtalar}
               period={kirimDavr}
               onPeriodChange={setKirimDavr}
-              error={financeXato}
-              loading={financeYuklanmoqda}
+              error={demoMode ? "" : financeXato}
+              loading={!demoMode && financeYuklanmoqda}
               dateFrom={dateFrom}
               dateTo={dateTo}
             />
 
             <DynamicsChart
               variant="expense"
-              data={chiqimNuqtalar}
+              data={demoMode ? demoChiqimNuqtalar : chiqimNuqtalar}
               period={chiqimDavr}
               onPeriodChange={setChiqimDavr}
-              error={[financeXato, omborHarakatiXato]
-                .filter(Boolean)
-                .join(" · ")}
-              loading={financeYuklanmoqda || omborHarakatiYuklanmoqda}
+              error={demoMode ? "" : financeXato}
+              loading={!demoMode && financeYuklanmoqda}
               dateFrom={dateFrom}
               dateTo={dateTo}
             />
@@ -1117,15 +1409,15 @@ export default function Monitoring() {
               title={t("charts.profitGauge.title")}
               subtitle={t("charts.profitGauge.subtitle")}
               icon={Gauge}
-              accent={foydaKorsatkichlari.sofFoyda >= 0 ? "green" : "rose"}
-              xato={foydaXato}
-              yuklanmoqda={foydaYuklanmoqda}
+              accent={(demoMode ? demoSofFoyda : foydaKorsatkichlari.sofFoyda) >= 0 ? "green" : "rose"}
+              xato={demoMode ? "" : foydaXato}
+              yuklanmoqda={!demoMode && foydaYuklanmoqda}
               height={330}
               appearance="dark"
             >
               <ProfitDial
-                profit={foydaKorsatkichlari.sofFoyda}
-                margin={foydaKorsatkichlari.rentabellik}
+                profit={demoMode ? demoSofFoyda : foydaKorsatkichlari.sofFoyda}
+                margin={demoMode ? 14.2 : foydaKorsatkichlari.rentabellik}
               />
             </ChartCard>
 
@@ -1137,12 +1429,12 @@ export default function Monitoring() {
               headerExtra={
                 <DavrToggle value={tolovDavr} onChange={setTolovDavr} />
               }
-              xato={financeXato}
-              yuklanmoqda={financeYuklanmoqda}
+              xato={demoMode ? "" : financeXato}
+              yuklanmoqda={!demoMode && financeYuklanmoqda}
               height={400}
-              bosh={tolovTurlariBoyicha.length === 0 ? t("noData") : undefined}
+              bosh={!demoMode && tolovTurlariBoyicha.length === 0 ? t("noData") : undefined}
             >
-              <PaymentRing items={tolovTurlariBoyicha} />
+              <PaymentRing items={demoMode ? demoTolovTurlari : tolovTurlariBoyicha} />
             </ChartCard>
 
             <ListCard
@@ -1150,17 +1442,17 @@ export default function Monitoring() {
               subtitle={t("charts.debtors.subtitle")}
               icon={Users}
               accent="rose"
-              xato={debtorlarXato}
-              yuklanmoqda={debtorlarYuklanmoqda}
+              xato={demoMode ? "" : debtorlarXato}
+              yuklanmoqda={!demoMode && debtorlarYuklanmoqda}
               bosh={t("charts.debtors.empty")}
-              items={debtors
+              items={demoMode ? demoQarzdorlar : debtors
                 .slice(0, 6)
                 .map((item) => ({
                   nom: item.counterpartyName,
                   summa: son(item.closingBalance),
                 }))}
               rang="red"
-              total={debtors.reduce(
+              total={demoMode ? jamiSumma(demoQarzdorlar) : debtors.reduce(
                 (sum, item) => sum + son(item.closingBalance),
                 0,
               )}
@@ -1169,21 +1461,31 @@ export default function Monitoring() {
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <MiniStat
               icon={Package}
               label={t("kpi.stockValue")}
-              value={pul(omborJami.qiymat)}
+              value={pul(demoMode ? jamiSumma(demoOmborQoldiqlari) : omborJami.qiymat)}
+              yuklanmoqda={!demoMode && omborYuklanmoqda}
             />
             <MiniStat
               icon={Warehouse}
               label={t("mini.warehouses")}
-              value={String(omborJami.omborlarSoni)}
+              value={String(demoMode ? DEMO_OMBORLAR.length : omborJami.omborlarSoni)}
+              yuklanmoqda={!demoMode && omborYuklanmoqda}
             />
             <MiniStat
               icon={AlertTriangle}
               label={t("mini.lowStock")}
-              value={String(omborJami.kamQolgan)}
+              value={String(demoMode ? 7 : omborJami.kamQolgan)}
+              yuklanmoqda={!demoMode && omborYuklanmoqda}
+              rang="red"
+            />
+            <MiniStat
+              icon={AlertTriangle}
+              label="Manfiy qoldiqli mahsulotlar"
+              value={String(demoMode ? 0 : omborJami.manfiyQoldiq)}
+              yuklanmoqda={!demoMode && omborYuklanmoqda}
               rang="red"
             />
           </div>
@@ -1194,10 +1496,10 @@ export default function Monitoring() {
             icon={Warehouse}
             jamiLabel={t("charts.warehouseStock.total")}
             shareLabel={t("charts.warehouseStock.share")}
-            xato={omborXato}
-            yuklanmoqda={omborYuklanmoqda}
-            bosh={jamiSumma(omborlarBoyicha) === 0 ? t("noData") : undefined}
-            items={omborlarBoyicha}
+            xato={demoMode ? "" : omborXato}
+            yuklanmoqda={!demoMode && omborYuklanmoqda}
+            bosh={!demoMode && jamiSumma(omborlarBoyicha) === 0 ? t("noData") : undefined}
+            items={demoMode ? demoOmborQoldiqlari : omborlarBoyicha}
           />
 
           <ChartCard
@@ -1211,14 +1513,86 @@ export default function Monitoring() {
                 onChange={setOmborHarakatDavr}
               />
             }
-            xato={omborHarakatiXato}
-            yuklanmoqda={omborHarakatiYuklanmoqda}
-            bosh={omborHarakati.length === 0 ? t("noData") : undefined}
+            xato={demoMode ? "" : omborHarakatiXato}
+            yuklanmoqda={!demoMode && omborHarakatiYuklanmoqda}
+            bosh={!demoMode && omborHarakati.length === 0 ? t("noData") : undefined}
           >
-            <WarehouseFlow items={omborHarakati} />
+            <WarehouseFlow items={demoMode ? demoOmborHarakati : omborHarakati} />
           </ChartCard>
 
-          <div className="min-w-0 rounded-[24px] border border-cyan-100 bg-gradient-to-br from-cyan-50/50 via-white to-white p-5 shadow-sm sm:p-6">
+          <section className="monitoring-enter min-w-0 overflow-hidden rounded-[24px] border border-rose-100 bg-gradient-to-br from-rose-50/50 via-white to-white p-5 shadow-sm sm:p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-600"><Package size={20} /></span>
+              <div>
+                <h2 className="text-lg font-black text-gray-900">Ombordan chiqarilgan mahsulotlar</h2>
+                <p className="mt-1 text-sm text-gray-500">Tasdiqlangan chiqim hujjatlari va mahsulotlar kesimida</p>
+              </div>
+              <span className="ml-auto rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-600">{demoMode ? demoChiqimMahsulotQatorlari.length : chiqimMahsulotQatorlari.length} ta qator</span>
+            </div>
+            {(!demoMode && omborHarakatiXato) ? (
+              <p role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-600">{omborHarakatiXato}</p>
+            ) : (!demoMode && omborHarakatiYuklanmoqda) ? (
+              <div className="flex h-48 items-center justify-center"><MarkaziyYuklanish text={t("dynamics.loading")} /></div>
+            ) : (demoMode ? demoChiqimMahsulotQatorlari : chiqimMahsulotQatorlari).length === 0 ? (
+              <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-rose-100 text-sm font-semibold text-slate-400">Tanlangan davrda tasdiqlangan mahsulot chiqimi topilmadi.</div>
+            ) : (
+              <div className="max-h-[360px] overflow-auto rounded-2xl border border-slate-100">
+                <table className="w-full min-w-[850px] text-left text-sm">
+                  <thead className="sticky top-0 z-10 bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500">
+                    <tr><th className="px-4 py-3">Sana</th><th className="px-4 py-3">Hujjat</th><th className="px-4 py-3">Ombor</th><th className="px-4 py-3">Mahsulot</th><th className="px-4 py-3 text-right">Miqdor</th><th className="px-4 py-3 text-right">Birlik narxi</th><th className="px-4 py-3 text-right">Jami</th></tr>
+                  </thead>
+                  <tbody>
+                    {(demoMode ? demoChiqimMahsulotQatorlari : chiqimMahsulotQatorlari).map((row) => (
+                      <tr key={row.id} className="border-t border-slate-100 bg-white/80 hover:bg-rose-50/40">
+                        <td className="whitespace-nowrap px-4 py-3 text-slate-500">{row.sana}</td><td className="px-4 py-3 font-semibold text-slate-700">{row.hujjat}</td><td className="px-4 py-3 text-slate-600">{row.ombor}</td><td className="px-4 py-3 font-bold text-slate-800">{row.mahsulot}</td><td className="px-4 py-3 text-right tabular-nums text-slate-700">{row.miqdor.toLocaleString("uz-UZ")}</td><td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-600">{pul(row.birlikNarxi)}</td><td className="whitespace-nowrap px-4 py-3 text-right font-black tabular-nums text-rose-600">{pul(row.summa)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
+          <section className="monitoring-enter min-w-0 overflow-hidden rounded-[24px] border border-blue-100 bg-gradient-to-br from-blue-50/50 via-white to-white p-5 shadow-sm sm:p-6">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-black text-gray-900">Omborlararo ko‘chirmalar</h2>
+                <p className="mt-1 text-sm text-gray-500">Manba va qabul ombori, mahsulot qiymati hamda joriy qoldiqlar</p>
+              </div>
+              <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">{demoMode ? demoKochirmaMahsulotQatorlari.length : kochirmaMahsulotQatorlari.length} ta mahsulot qatori</span>
+            </div>
+            <p className="mb-4 rounded-xl border border-sky-100 bg-sky-50/80 px-4 py-3 text-xs font-medium text-sky-800">
+              Jo‘natish manba qoldig‘ini kamaytiradi. Qabul omborida qoldiq ko‘rinishi uchun hujjatni alohida “Qabul qilish” kerak.
+            </p>
+            {(!demoMode && omborHarakatiXato) ? (
+              <p role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-600">{omborHarakatiXato}</p>
+            ) : (!demoMode && (omborHarakatiYuklanmoqda || omborYuklanmoqda)) ? (
+              <div className="flex h-48 items-center justify-center"><MarkaziyYuklanish text={t("dynamics.loading")} /></div>
+            ) : (demoMode ? demoKochirmaMahsulotQatorlari : kochirmaMahsulotQatorlari).length === 0 ? (
+              <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-blue-100 text-sm font-semibold text-slate-400">Tanlangan davrda omborlararo ko‘chirma yo‘q.</div>
+            ) : (
+              <div className="max-h-[380px] overflow-auto rounded-2xl border border-slate-100">
+                <table className="w-full min-w-[1250px] text-left text-sm">
+                  <thead className="sticky top-0 z-10 bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500">
+                    <tr><th className="px-3 py-3">Sana</th><th className="px-3 py-3">Hujjat</th><th className="px-3 py-3">Holat</th><th className="px-3 py-3">Qayerdan</th><th className="px-3 py-3">Qayerga</th><th className="px-3 py-3">Mahsulot</th><th className="px-3 py-3 text-right">Miqdor</th><th className="px-3 py-3 text-right">Birlik narxi</th><th className="px-3 py-3 text-right">Summa</th><th className="px-3 py-3 text-right">Manba qoldig‘i</th><th className="px-3 py-3 text-right">Qabul qoldig‘i</th></tr>
+                  </thead>
+                  <tbody>
+                    {(demoMode ? demoKochirmaMahsulotQatorlari : kochirmaMahsulotQatorlari).map((row) => (
+                      <tr key={row.id} className="border-t border-slate-100 bg-white/80 hover:bg-blue-50/40">
+                        <td className="whitespace-nowrap px-3 py-3 text-slate-500">{row.sana}</td><td className="px-3 py-3 font-semibold text-slate-700">{row.hujjat}</td>
+                        <td className="px-3 py-3"><span className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold ${row.holat === "RECEIVED" || row.holat === "CONFIRMED" ? "bg-emerald-50 text-emerald-700" : row.holat === "SENT" ? "bg-sky-50 text-sky-700" : "bg-amber-50 text-amber-700"}`}>{row.holat === "SENT" ? "Jo‘natilgan · qabul kutilmoqda" : row.holat === "RECEIVED" || row.holat === "CONFIRMED" ? "Qabul qilingan" : "Qoralama"}</span></td>
+                        <td className="px-3 py-3 text-slate-600">{row.manba}</td><td className="px-3 py-3 text-slate-600">{row.qabul}</td><td className="px-3 py-3 font-bold text-slate-800">{row.mahsulot}</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-slate-700">{row.miqdor.toLocaleString("uz-UZ")}</td><td className="whitespace-nowrap px-3 py-3 text-right tabular-nums text-slate-600">{pul(row.narx)}</td><td className="whitespace-nowrap px-3 py-3 text-right font-black tabular-nums text-blue-700">{pul(row.summa)}</td>
+                        <td className={`px-3 py-3 text-right font-bold tabular-nums ${row.manbaQoldiq < 0 ? "text-rose-600" : "text-slate-700"}`}>{row.manbaQoldiq.toLocaleString("uz-UZ")}</td><td className={`px-3 py-3 text-right font-bold tabular-nums ${row.qabulQoldiq < 0 ? "text-rose-600" : "text-slate-700"}`}>{row.qabulQoldiq.toLocaleString("uz-UZ")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
+          <div className="monitoring-enter min-w-0 rounded-[24px] border border-cyan-100 bg-gradient-to-br from-cyan-50/50 via-white to-white p-5 shadow-sm sm:p-6">
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-lg font-black text-gray-900">
@@ -1229,12 +1603,12 @@ export default function Monitoring() {
                 </p>
               </div>
               <AppSelect
-                value={tanlanganOmborId}
+                value={demoMode ? demoOmborTanlovi.id : tanlanganOmborId}
                 onChange={(event) => setTanlanganOmborId(event.target.value)}
                 className="h-11 w-full rounded-2xl border border-cyan-200 bg-white px-4 text-sm font-semibold outline-none focus:border-cyan-400 sm:w-56"
               >
                 <option value="">{t("charts.warehouseDetail.all")}</option>
-                {omborlar.map((ombor) => (
+                {(demoMode ? DEMO_OMBORLAR : omborlar).map((ombor) => (
                   <option key={ombor.id} value={ombor.id}>
                     {ombor.name}
                   </option>
@@ -1242,7 +1616,7 @@ export default function Monitoring() {
               </AppSelect>
             </div>
 
-            {!tanlanganOmborId ? (
+            {(!demoMode && !tanlanganOmborId) ? (
               <p className="flex h-32 items-center justify-center text-center text-sm font-bold text-gray-400">
                 {t("charts.warehouseDetail.hint")}
               </p>
@@ -1260,17 +1634,17 @@ export default function Monitoring() {
                         onChange={setOmborKirimDavr}
                       />
                     }
-                    xato={omborHarakatiXato}
-                    yuklanmoqda={omborHarakatiYuklanmoqda}
+                    xato={demoMode ? "" : omborHarakatiXato}
+                    yuklanmoqda={!demoMode && omborHarakatiYuklanmoqda}
                     height={280}
                     bosh={
-                      jamiSumma(tanlanganOmborKirim) === 0
+                      !demoMode && jamiSumma(tanlanganOmborKirim) === 0
                         ? t("noData")
                         : undefined
                     }
                   >
                     <WarehouseTimeline
-                      items={tanlanganOmborKirim}
+                      items={demoMode ? demoTafsilotKirim : tanlanganOmborKirim}
                       kind="income"
                     />
                   </ChartCard>
@@ -1286,48 +1660,55 @@ export default function Monitoring() {
                         onChange={setOmborChiqimDavr}
                       />
                     }
-                    xato={omborHarakatiXato}
-                    yuklanmoqda={omborHarakatiYuklanmoqda}
+                    xato={demoMode ? "" : omborHarakatiXato}
+                    yuklanmoqda={!demoMode && omborHarakatiYuklanmoqda}
                     height={280}
                     bosh={
-                      jamiSumma(tanlanganOmborChiqim) === 0
+                      !demoMode && jamiSumma(tanlanganOmborChiqim) === 0
                         ? t("noData")
                         : undefined
                     }
                   >
                     <WarehouseTimeline
-                      items={tanlanganOmborChiqim}
+                      items={demoMode ? demoTafsilotChiqim : tanlanganOmborChiqim}
                       kind="expense"
                     />
                   </ChartCard>
                 </div>
 
-                {omborXato ? (
+                {!demoMode && omborXato ? (
                   <p
                     role="alert"
                     className="rounded-xl bg-rose-50 p-4 text-sm text-rose-600"
                   >
                     {omborXato}
                   </p>
-                ) : omborYuklanmoqda ? (
-                  <div className="flex h-32 items-center justify-center font-bold text-gray-400">
-                    ...
+                ) : !demoMode && omborYuklanmoqda ? (
+                  <div className="flex h-32 items-center justify-center">
+                    <MarkaziyYuklanish text={t("dynamics.loading")} />
                   </div>
-                ) : tanlanganOmborMahsulotlari.length === 0 ? (
+                ) : !demoMode && tanlanganOmborMahsulotlari.length === 0 ? (
                   <p className="flex h-32 items-center justify-center text-center text-sm font-bold text-gray-400">
                     {t("charts.warehouseDetail.empty")}
                   </p>
                 ) : (
                   <div className="space-y-6">
                     <StockQuantityTiles
-                      items={tanlanganOmborMahsulotlari
-                        .slice(0, 10)
-                        .map((item) => ({
-                          id: item.modificationId,
-                          name: item.productName,
-                          quantity: son(item.quantity),
-                          value: son(item.totalAmount),
-                        }))}
+                      items={
+                        demoMode
+                          ? demoOmborMahsulotlari.map((item) => ({
+                              id: item.id,
+                              name: item.name,
+                              quantity: item.quantity,
+                              value: item.value,
+                            }))
+                          : tanlanganOmborMahsulotlari.slice(0, 10).map((item) => ({
+                              id: item.modificationId,
+                              name: item.productName,
+                              quantity: son(item.quantity),
+                              value: son(item.totalAmount),
+                            }))
+                      }
                     />
 
                     <div className="overflow-x-auto rounded-2xl border border-gray-100">
@@ -1346,7 +1727,7 @@ export default function Monitoring() {
                           </tr>
                         </thead>
                         <tbody>
-                          {tanlanganOmborMahsulotlari.map((item) => (
+                          {(demoMode ? demoOmborMahsulotlari.map((item) => ({ modificationId: item.id, productName: item.name, quantity: item.quantity, totalAmount: item.value })) : tanlanganOmborMahsulotlari).map((item) => (
                             <tr
                               key={item.modificationId}
                               className="border-b border-gray-50 last:border-0"
@@ -1379,12 +1760,12 @@ export default function Monitoring() {
               icon={Trophy}
               accent="amber"
               headerExtra={<DavrToggle value={topDavr} onChange={setTopDavr} />}
-              xato={topXato}
-              yuklanmoqda={topYuklanmoqda}
-              height={Math.max(280, engKopSotilgan.length * 44 + 60)}
-              bosh={engKopSotilgan.length === 0 ? t("noData") : undefined}
+              xato={demoMode ? "" : topXato}
+              yuklanmoqda={!demoMode && topYuklanmoqda}
+              height={Math.max(280, (demoMode ? demoTopMahsulotlar.length : engKopSotilgan.length) * 44 + 60)}
+              bosh={!demoMode && engKopSotilgan.length === 0 ? t("noData") : undefined}
             >
-              <ProductRanking items={engKopSotilgan} kind="top" />
+              <ProductRanking items={demoMode ? demoTopMahsulotlar : engKopSotilgan} kind="top" />
             </ChartCard>
 
             <ChartCard
@@ -1395,12 +1776,12 @@ export default function Monitoring() {
               headerExtra={
                 <DavrToggle value={bottomDavr} onChange={setBottomDavr} />
               }
-              xato={bottomXato}
-              yuklanmoqda={bottomYuklanmoqda}
-              height={Math.max(280, engKamSotilgan.length * 44 + 60)}
-              bosh={engKamSotilgan.length === 0 ? t("noData") : undefined}
+              xato={demoMode ? "" : bottomXato}
+              yuklanmoqda={!demoMode && bottomYuklanmoqda}
+              height={Math.max(280, (demoMode ? demoKamMahsulotlar.length : engKamSotilgan.length) * 44 + 60)}
+              bosh={!demoMode && engKamSotilgan.length === 0 ? t("noData") : undefined}
             >
-              <ProductRanking items={engKamSotilgan} kind="bottom" />
+              <ProductRanking items={demoMode ? demoKamMahsulotlar : engKamSotilgan} kind="bottom" />
             </ChartCard>
           </div>
         </div>
@@ -1447,7 +1828,7 @@ function KpiCard({
   };
   return (
     <div
-      className={`relative min-w-0 overflow-hidden rounded-[22px] border bg-gradient-to-br ${backgrounds[rang]} to-white p-5 shadow-sm`}
+      className={`monitoring-enter relative min-w-0 overflow-hidden rounded-[22px] border bg-gradient-to-br ${backgrounds[rang]} to-white p-5 shadow-sm`}
     >
       <div className="flex items-center justify-between gap-2">
         <span
@@ -1483,17 +1864,21 @@ function KpiCard({
       </div>
       <p className="mt-3 text-sm font-semibold text-slate-500">{label}</p>
       {yuklanmoqda ? (
-        <div className="mt-2 h-7 w-2/3 animate-pulse rounded-lg bg-slate-100" />
+        <MarkaziyYuklanish
+          text={t("dynamics.loading")}
+          className="mt-3 min-h-12 flex-row gap-2 rounded-xl bg-white/70 text-xs"
+        />
       ) : (
         <p className="mt-1 break-words text-xl font-bold tabular-nums text-slate-950">
           {xato ? "—" : value}
         </p>
       )}
-      {xato ? (
-        <p className="mt-1 text-xs font-bold text-red-500">{xato}</p>
-      ) : (
-        <p className="mt-1 text-xs text-slate-400">{sub}</p>
-      )}
+      {!yuklanmoqda &&
+        (xato ? (
+          <p className="mt-1 text-xs font-bold text-red-500">{xato}</p>
+        ) : (
+          <p className="mt-1 text-xs text-slate-400">{sub}</p>
+        ))}
     </div>
   );
 }
@@ -1502,20 +1887,23 @@ function MiniStat({
   icon: Icon,
   label,
   value,
+  yuklanmoqda,
   rang = "orange",
 }: {
   icon: typeof Package;
   label: string;
   value: string;
+  yuklanmoqda: boolean;
   rang?: "orange" | "red";
 }) {
+  const { t } = useTranslation("monitoring");
   const ranglar = {
     orange: "bg-orange-50 text-orange-500",
     red: "bg-red-50 text-red-500",
   } as const;
   return (
     <div
-      className={`flex min-w-0 items-center gap-3 rounded-[22px] border p-5 shadow-sm ${rang === "red" ? "border-amber-100 bg-amber-50/60" : "border-indigo-100 bg-indigo-50/50"}`}
+      className={`monitoring-enter flex min-w-0 items-center gap-3 rounded-[22px] border p-5 shadow-sm ${rang === "red" ? "border-amber-100 bg-amber-50/60" : "border-indigo-100 bg-indigo-50/50"}`}
     >
       <span
         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${ranglar[rang]}`}
@@ -1524,9 +1912,16 @@ function MiniStat({
       </span>
       <div>
         <p className="text-xs font-bold text-slate-400">{label}</p>
-        <p className="break-words text-lg font-semibold tabular-nums text-slate-950">
-          {value}
-        </p>
+        {yuklanmoqda ? (
+          <MarkaziyYuklanish
+            text={t("dynamics.loading")}
+            className="mt-1 min-h-7 flex-row justify-start gap-2 text-xs"
+          />
+        ) : (
+          <p className="break-words text-lg font-semibold tabular-nums text-slate-950">
+            {value}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -1601,7 +1996,7 @@ function ChartCard({
   return (
     <section
       aria-label={title}
-      className={`min-w-0 overflow-hidden rounded-[24px] border p-5 shadow-[0_4px_24px_-12px_rgba(15,23,42,0.15)] sm:p-6 ${appearance === "dark" ? "border-slate-800 bg-slate-950" : "border-slate-200/80 bg-gradient-to-br from-slate-50/70 via-white to-white"}`}
+      className={`monitoring-enter min-w-0 overflow-hidden rounded-[24px] border p-5 shadow-[0_4px_24px_-12px_rgba(15,23,42,0.15)] sm:p-6 ${appearance === "dark" ? "border-slate-800 bg-slate-950" : "border-slate-200/80 bg-gradient-to-br from-slate-50/70 via-white to-white"}`}
     >
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 sm:mb-5">
         <div className="flex min-w-0 items-center gap-3">
@@ -1637,9 +2032,7 @@ function ChartCard({
         style={{ height }}
       >
         {yuklanmoqda ? (
-          <div className="flex h-full items-center justify-center font-bold text-gray-400">
-            ...
-          </div>
+          <MarkaziyYuklanish text={t("dynamics.loading")} className="h-full rounded-2xl bg-slate-50/70 text-sm" />
         ) : xato ? (
           <div className="flex h-full items-center justify-center text-sm text-slate-400">
             {t("dynamics.loadError")}
@@ -1690,7 +2083,7 @@ function TaqsimotCard({
   return (
     <section
       aria-label={title}
-      className="min-w-0 overflow-hidden rounded-[24px] border border-indigo-100 bg-gradient-to-br from-indigo-50/70 via-white to-white p-5 shadow-sm sm:p-6"
+      className="monitoring-enter min-w-0 overflow-hidden rounded-[24px] border border-indigo-100 bg-gradient-to-br from-indigo-50/70 via-white to-white p-5 shadow-sm sm:p-6"
     >
       <div className="mb-5 flex items-center gap-3">
         {Icon && (
@@ -1711,7 +2104,7 @@ function TaqsimotCard({
           {xato}
         </p>
       ) : yuklanmoqda ? (
-        <div className="h-64 animate-pulse rounded-2xl bg-indigo-100/40" />
+        <MarkaziyYuklanish text="Yuklanmoqda..." className="h-64 rounded-2xl bg-indigo-50/80 text-sm" />
       ) : (
         <>
           <div className="mb-5">
@@ -1798,7 +2191,7 @@ function ListCard({
   return (
     <section
       aria-label={title}
-      className="min-w-0 rounded-[24px] border border-rose-100 bg-gradient-to-br from-rose-50 via-white to-white p-5 shadow-sm sm:p-6"
+      className="monitoring-enter min-w-0 rounded-[24px] border border-rose-100 bg-gradient-to-br from-rose-50 via-white to-white p-5 shadow-sm sm:p-6"
     >
       <div className="flex items-center gap-3">
         {Icon && (
@@ -1819,7 +2212,7 @@ function ListCard({
           {xato}
         </p>
       ) : yuklanmoqda ? (
-        <div className="mt-5 h-64 animate-pulse rounded-2xl bg-rose-100/50" />
+        <MarkaziyYuklanish text="Yuklanmoqda..." className="mt-5 h-64 rounded-2xl bg-rose-50/80 text-sm" />
       ) : (
         <>
           <p className="mt-5 text-xs text-slate-400">{t("kpi.totalDebt")}</p>

@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Ban, RefreshCw, Search, ShieldX, UserRound } from "lucide-react";
 import type { Sotuv } from "@/types/savdo";
 import { masulNomi, mijozNomi, pulniFormatlash, sananiFormatlash, sotuvHolati, sotuvRaqami, sotuvSummasi } from "./savdoYordamchilari";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
+import TablePagination from "@/Components/common/TablePagination";
 
 type Props = {
   sotuvlar: Sotuv[];
@@ -21,6 +22,8 @@ export default function BekorQilinganlar({ sotuvlar, onSotuvniOchish, onYangilas
   const [sanaDan, setSanaDan] = useState("");
   const [sanaGacha, setSanaGacha] = useState("");
   const [yangilanmoqda, setYangilanmoqda] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   function telefon(sotuv: Sotuv) {
     return sotuv.customer?.phone || sotuv.clientCompany?.phone || t("bekorQilinganlar.telefonKiritilmagan");
@@ -42,6 +45,8 @@ export default function BekorQilinganlar({ sotuvlar, onSotuvniOchish, onYangilas
     // Qidiruv real backend ma'lumotlari va tarjima matniga bog'liq.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bekorQilinganlar, qidiruv, sanaDan, sanaGacha, t]);
+  const visibleRows = useMemo(() => rows.slice((page - 1) * pageSize, page * pageSize), [rows, page, pageSize]);
+  useEffect(() => { setPage(1); }, [rows, pageSize]);
 
   async function yangilash() {
     setYangilanmoqda(true);
@@ -64,12 +69,13 @@ export default function BekorQilinganlar({ sotuvlar, onSotuvniOchish, onYangilas
 
     <div className="overflow-x-auto bg-white/70"><table className="w-full min-w-[900px] text-left text-sm">
       <thead className="bg-[#EFF6FF] text-xs font-black uppercase tracking-wide text-slate-500"><tr><th className="px-8 py-4">{t("bekorQilinganlar.columns.sotuv")}</th><th className="px-5 py-4">{t("bekorQilinganlar.columns.mijoz")}</th><th className="px-5 py-4">{t("bekorQilinganlar.columns.summa")}</th><th className="px-5 py-4">{t("bekorQilinganlar.columns.bekorSana")}</th><th className="px-5 py-4">{t("bekorQilinganlar.columns.masul")}</th><th className="px-8 py-4">{t("bekorQilinganlar.columns.holati")}</th></tr></thead>
-      <tbody className="divide-y divide-orange-100/70">{rows.map((sotuv) => <tr key={sotuv.id} onClick={() => onSotuvniOchish(sotuv)} className="group cursor-pointer transition hover:bg-orange-50/65">
+      <tbody className="divide-y divide-orange-100/70">{visibleRows.map((sotuv) => <tr key={sotuv.id} onClick={() => onSotuvniOchish(sotuv)} className="group cursor-pointer transition hover:bg-orange-50/65">
         <td className="px-8 py-5"><p className="font-semibold text-slate-900">#{sotuvRaqami(sotuv)}</p><p className="mt-1 text-xs font-semibold text-slate-400">{sotuv.note || t("bekorQilinganlar.izohYoq")}</p></td>
         <td className="px-5 py-5"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-50 text-orange-500 ring-1 ring-orange-100"><UserRound size={18}/></span><div><p className="font-black text-slate-900">{mijozNomi(sotuv)}</p><p className="mt-0.5 text-xs font-semibold text-slate-400">{telefon(sotuv)}</p></div></div></td>
         <td className="px-5 py-5 font-black text-slate-900">{pulniFormatlash(sotuvSummasi(sotuv))}</td><td className="px-5 py-5 font-semibold text-slate-600">{sananiFormatlash(bekorSana(sotuv))}</td><td className="px-5 py-5 font-bold text-slate-700">{masulNomi(sotuv)}</td><td className="px-8 py-5"><span className="inline-flex rounded-full bg-red-50 px-3 py-1.5 text-xs font-black text-red-600 ring-1 ring-red-100">{t("bekorQilinganlar.statusBekor")}</span></td>
       </tr>)}</tbody>
     </table></div>
+    <TablePagination page={page} pageSize={pageSize} totalItems={rows.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
     {rows.length === 0 && <div className="bg-white/70 px-6 py-20 text-center"><span className="mx-auto flex h-16 w-16 items-center justify-center rounded-[24px] bg-orange-50 text-orange-300"><Ban size={31}/></span><h2 className="mt-4 text-lg font-black text-slate-800">{t("bekorQilinganlar.emptyTitle")}</h2><p className="mt-1 text-sm font-semibold text-slate-400">{t("bekorQilinganlar.emptySubtitle")}</p></div>}
     <div className="flex justify-between border-t border-orange-100 bg-[#F8FAFC] px-8 py-4 text-xs font-bold text-slate-500"><span>{t("bekorQilinganlar.footerCount", { count: rows.length })}</span><span>{t("bekorQilinganlar.footerHint")}</span></div>
   </section>;

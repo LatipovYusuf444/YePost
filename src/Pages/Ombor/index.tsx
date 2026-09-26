@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import TablePagination from "@/Components/common/TablePagination";
 import { manzilniKoordinatadanAniqlash } from "@/api/omborApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
@@ -52,6 +53,8 @@ export default function Ombor() {
   } = useOmborStore();
   const [organizationTab, setOrganizationTab] = useState<OrganizationTab>("omborlar");
   const [korinish, setKorinish] = useState<Korinish>("jadval");
+  const [tablePage, setTablePage] = useState(1);
+  const [tablePageSize, setTablePageSize] = useState(10);
   const [korinishMenuOchiq, setKorinishMenuOchiq] = useState(false);
   const [modalOchiq, setModalOchiq] = useState(false);
   const [tahrirOmbor, setTahrirOmbor] = useState<Ombor | null>(null);
@@ -66,6 +69,8 @@ export default function Ombor() {
   const [gpsYuklanmoqda, setGpsYuklanmoqda] = useState(false);
   const [formaXatosi, setFormaXatosi] = useState<string | null>(null);
   const [gpsXatoTafsiloti, setGpsXatoTafsiloti] = useState("");
+  const sahifadagiOmborlar = useMemo(() => omborlar.slice((tablePage - 1) * tablePageSize, tablePage * tablePageSize), [omborlar, tablePage, tablePageSize]);
+  useEffect(() => setTablePage(1), [omborlar, tablePageSize]);
   const korinishMenuRef = useRef<HTMLDivElement | null>(null);
   const joriyProfil = useAuthProfileStore((state) => state.profil);
   const profilniYuklash = useAuthProfileStore((state) => state.profilniYuklash);
@@ -372,6 +377,7 @@ export default function Ombor() {
           <LoaderCircle className="animate-spin text-orange-500" size={32} />
         </div>
       ) : korinish === "jadval" ? (
+        <>
         <OmborJadval>
             <table className="w-full min-w-[1480px] text-left">
               <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500">
@@ -390,7 +396,7 @@ export default function Ombor() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-          {omborlar.map((ombor) => (
+          {sahifadagiOmborlar.map((ombor) => (
             <tr
               key={ombor.id}
               onClick={() => void modalniOchish(ombor)}
@@ -515,6 +521,8 @@ export default function Ombor() {
               </tbody>
             </table>
         </OmborJadval>
+        <TablePagination page={tablePage} pageSize={tablePageSize} totalItems={omborlar.length} onPageChange={setTablePage} onPageSizeChange={setTablePageSize} />
+        </>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {omborlar.map((ombor) => {

@@ -23,6 +23,7 @@ type OptionProps = {
 
 type AppSelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "multiple" | "size"> & {
   children?: ReactNode;
+  dropdownMinWidth?: number;
 };
 
 type SelectOption = {
@@ -68,6 +69,7 @@ export default function AppSelect({
   name,
   id,
   "aria-label": ariaLabel,
+  dropdownMinWidth = 220,
   ...rest
 }: AppSelectProps) {
   const options = optionsFromChildren(children);
@@ -86,7 +88,7 @@ export default function AppSelect({
     const rect = button.getBoundingClientRect();
     const gap = 6;
     const padding = 10;
-    const width = Math.min(rect.width, window.innerWidth - padding * 2);
+    const width = Math.min(Math.max(rect.width, dropdownMinWidth), window.innerWidth - padding * 2);
     const desiredHeight = Math.min(256, options.length * 40 + 10);
     const below = window.innerHeight - rect.bottom - gap - padding;
     const above = rect.top - gap - padding;
@@ -100,7 +102,7 @@ export default function AppSelect({
       width,
       maxHeight,
     });
-  }, [options.length]);
+  }, [dropdownMinWidth, options.length]);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -185,12 +187,12 @@ export default function AppSelect({
                 aria-selected={active}
                 disabled={option.disabled}
                 onClick={() => choose(option.value)}
-                className={`flex min-h-9 w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${
+                className={`flex min-h-9 w-full items-start justify-between gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${
                   active ? "bg-orange-500 text-white" : "text-slate-700 hover:bg-orange-50 hover:text-orange-600"
                 } disabled:cursor-not-allowed disabled:opacity-40`}
               >
-                <span className="min-w-0 truncate">{option.label}</span>
-                {active && <Check size={15} className="shrink-0" />}
+                <span className="min-w-0 flex-1 whitespace-normal break-words">{option.label}</span>
+                {active && <Check size={15} className="mt-0.5 shrink-0" />}
               </button>
             );
           })}

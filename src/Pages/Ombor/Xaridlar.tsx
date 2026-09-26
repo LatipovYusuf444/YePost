@@ -8,6 +8,7 @@ import { holat, hujjatRaqami, pul, sana } from "./omborYordamchilari";
 import KirimTafsilotModal from "./KirimTafsilotModal";
 import YangiKirimModal from "./YangiKirimModal";
 import OmborJadval from "./OmborJadval";
+import TablePagination from "@/Components/common/TablePagination";
 
 type UstunKaliti =
   | "nomi"
@@ -46,6 +47,8 @@ export default function Xaridlar() {
     [t]
   );
   const [qidiruv, setQidiruv] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [modal, setModal] = useState(false);
   const [tanlanganId, setTanlanganId] = useState<string | null>(null);
   const [sozlamaOchiq, setSozlamaOchiq] = useState(false);
@@ -158,6 +161,8 @@ export default function Xaridlar() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store.kirimlar, qidiruv, suppliersMap, store.xodimlar, omborlarMap]);
+  const sahifadagiKirimlar = useMemo(() => royxat.slice((page - 1) * pageSize, page * pageSize), [royxat, page, pageSize]);
+  useEffect(() => setPage(1), [royxat, pageSize]);
 
   function ustunniAlmashtirish(kalit: UstunKaliti) {
     setKorinadiganUstunlar((oldingi) => {
@@ -269,7 +274,7 @@ export default function Xaridlar() {
                   </td>
                 </tr>
               ) : (
-                royxat.map((hujjat) => {
+                sahifadagiKirimlar.map((hujjat) => {
                   return (
                     <tr
                       key={hujjat.id}
@@ -300,6 +305,7 @@ export default function Xaridlar() {
             </tbody>
           </table>
       </OmborJadval>
+      {!store.yuklanmoqda && <TablePagination page={page} pageSize={pageSize} totalItems={royxat.length} onPageChange={setPage} onPageSizeChange={setPageSize} />}
 
       {sozlamaOchiq &&
         createPortal(

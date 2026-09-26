@@ -9,6 +9,7 @@ import type { InventarizatsiyaTuri } from "@/types/ombor";
 import { holat, hujjatRaqami, modificationNomi, qoldiqMiqdori, sana } from "./omborYordamchilari";
 import InventoryHujjatModal from "./InventoryHujjatModal";
 import OmborJadval from "./OmborJadval";
+import TablePagination from "@/Components/common/TablePagination";
 
 type InventarizatsiyaUstuni = "nomi" | "status" | "yaratilgan" | "ombor" | "masul" | "turi";
 
@@ -37,6 +38,8 @@ export default function Inventarizatsiya() {
   const [formaXatosi, setFormaXatosi] = useState<FormaXatosi>(null);
   const [qoldiqYuklanmoqda, setQoldiqYuklanmoqda] = useState(false);
   const [qidiruv, setQidiruv] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [ustunlarMenyusi, setUstunlarMenyusi] = useState(false);
   const [korinadiganUstunlar, setKorinadiganUstunlar] = useState<Set<InventarizatsiyaUstuni>>(
     () => new Set(INVENTARIZATSIYA_USTUNLARI.map((ustun) => ustun.id))
@@ -119,6 +122,8 @@ export default function Inventarizatsiya() {
         .includes(query);
     });
   }, [omborMap, qidiruv, store.inventarizatsiyalar, t, xodimMap]);
+  const sahifadagiHujjatlar = useMemo(() => korinadiganHujjatlar.slice((page - 1) * pageSize, page * pageSize), [korinadiganHujjatlar, page, pageSize]);
+  useEffect(() => setPage(1), [korinadiganHujjatlar, pageSize]);
 
   const faolUstunlar = INVENTARIZATSIYA_USTUNLARI.filter((ustun) => korinadiganUstunlar.has(ustun.id));
 
@@ -292,7 +297,7 @@ export default function Inventarizatsiya() {
             </tr>
           </thead>
           <tbody className="divide-y divide-orange-100">
-            {korinadiganHujjatlar.map((item) => {
+            {sahifadagiHujjatlar.map((item) => {
               return (
               <tr key={item.id} onClick={() => setTanlanganId(item.id)} className="cursor-pointer text-slate-600 transition hover:bg-orange-50/40">
                 {faolUstunlar.map((ustun) => <td key={ustun.id}>{jadvalKatagi(item, ustun.id)}</td>)}
@@ -317,6 +322,7 @@ export default function Inventarizatsiya() {
           </tbody>
         </table>
       </OmborJadval>
+      {!store.yuklanmoqda && <TablePagination page={page} pageSize={pageSize} totalItems={korinadiganHujjatlar.length} onPageChange={setPage} onPageSizeChange={setPageSize} />}
 
       {ustunlarMenyusi &&
         createPortal(

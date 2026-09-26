@@ -22,6 +22,7 @@ import { stockBalanceExport, stockBalanceReport, type StockBalanceParams, type S
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import KopTanlov from "./KopTanlov";
 import OmborJadval from "./OmborJadval";
+import TablePagination from "@/Components/common/TablePagination";
 import type {
   Kategoriya,
   Mahsulot,
@@ -120,7 +121,7 @@ function variantNomi(modification: MahsulotModifikatsiyasi, asosiyVariantMatni: 
   return modification.name?.trim() || params || asosiyVariantMatni;
 }
 
-function reportParams(value:Filtr,search=""):StockBalanceParams{return {asOf:value.sana||undefined,warehouseIds:value.omborlar.length?value.omborlar.join(","):undefined,branchIds:value.filiallar.length?value.filiallar.join(","):undefined,categoryIds:value.kategoriyalar.length?value.kategoriyalar.join(","):undefined,productIds:value.mahsulotlar.length?value.mahsulotlar.join(","):undefined,modificationIds:value.variatsiyalar.length?value.variatsiyalar.join(","):undefined,balanceStatus:value.qoldiqTuri==="musbat"?"POSITIVE":value.qoldiqTuri==="nol"?"ZERO":value.qoldiqTuri==="manfiy"?"NEGATIVE":"ALL",priceType:value.narxTuri==="retailPrice"?"RETAIL":value.narxTuri==="wholesalePrice"?"WHOLESALE":"COST",groupByWarehouse:value.omborlarBoyichaAjratish,search:search.trim()||undefined,page:1,pageSize:1000}}
+function reportParams(value:Filtr,search="",page=1,pageSize=10):StockBalanceParams{return {asOf:value.sana||undefined,warehouseIds:value.omborlar.length?value.omborlar.join(","):undefined,branchIds:value.filiallar.length?value.filiallar.join(","):undefined,categoryIds:value.kategoriyalar.length?value.kategoriyalar.join(","):undefined,productIds:value.mahsulotlar.length?value.mahsulotlar.join(","):undefined,modificationIds:value.variatsiyalar.length?value.variatsiyalar.join(","):undefined,balanceStatus:value.qoldiqTuri==="musbat"?"POSITIVE":value.qoldiqTuri==="nol"?"ZERO":value.qoldiqTuri==="manfiy"?"NEGATIVE":"ALL",priceType:value.narxTuri==="retailPrice"?"RETAIL":value.narxTuri==="wholesalePrice"?"WHOLESALE":"COST",groupByWarehouse:value.omborlarBoyichaAjratish,search:search.trim()||undefined,page,pageSize}}
 
 export default function OmborQoldigi() {
   const { t } = useTranslation("ombor_royxat");
@@ -129,7 +130,9 @@ export default function OmborQoldigi() {
   const [kategoriyalar, setKategoriyalar] = useState<Kategoriya[]>([]);
   const [mahsulotlar, setMahsulotlar] = useState<Mahsulot[]>([]);
   const [modifikatsiyalar, setModifikatsiyalar] = useState<MahsulotModifikatsiyasi[]>([]);
-  const [report,setReport]=useState<StockBalanceResponse>({items:[],total:0,page:1,pageSize:1000,totalPages:1,summary:{quantity:0,reservedQuantity:0,availableQuantity:0,totalAmount:0}});
+  const [report,setReport]=useState<StockBalanceResponse>({items:[],total:0,page:1,pageSize:10,totalPages:1,summary:{quantity:0,reservedQuantity:0,availableQuantity:0,totalAmount:0}});
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [exportYuklanmoqda,setExportYuklanmoqda]=useState(false);
   const [filtr, setFiltr] = useState<Filtr>(BOSHLANGICH_FILTR);
   const [qollangan, setQollangan] = useState<Filtr>(BOSHLANGICH_FILTR);
@@ -177,8 +180,15 @@ export default function OmborQoldigi() {
 
   async function hisobotniShakllantirish() {
     setYuklanmoqda(true);setXatolik(null);
-    try{const applied={...filtr};setReport(await stockBalanceReport(reportParams(applied,jadvalQidiruvi)));setQollangan(applied)}catch(error){setXatolik(getApiErrorMessage(error))}finally{setYuklanmoqda(false)}
+    try{const applied={...filtr};setPage(1);setReport(await stockBalanceReport(reportParams(applied,jadvalQidiruvi,1,pageSize)));setQollangan(applied)}catch(error){setXatolik(getApiErrorMessage(error))}finally{setYuklanmoqda(false)}
     setShakllantirilgan(bugun());
+  }
+
+  async function sahifaniOlish(nextPage:number,nextSize=pageSize) {
+    setPage(nextPage);setPageSize(nextSize);setYuklanmoqda(true);
+    try { setReport(await stockBalanceReport(reportParams(qollangan,jadvalQidiruvi,nextPage,nextSize))); }
+    catch(error) { setXatolik(getApiErrorMessage(error)); }
+    finally { setYuklanmoqda(false); }
   }
 
   const productMap = useMemo(
@@ -308,7 +318,7 @@ export default function OmborQoldigi() {
   async function excelgaYuklash() {
     if (exportYuklanmoqda) return;
     setExportYuklanmoqda(true); setXatolik(null);
-    try { await stockBalanceExport(reportParams(qollangan, jadvalQidiruvi)); }
+    try { await stockBalanceExport(reportParams(qollangan, jadvalQidiruvi, 1, 1000)); }
     catch (error) { setXatolik(getApiErrorMessage(error)); }
     finally { setExportYuklanmoqda(false); }
     return;
@@ -493,7 +503,7 @@ export default function OmborQoldigi() {
         {!yuklanmoqda && satrlar.length === 0 && <div className="p-14 text-center font-semibold text-gray-400">{t("omborQoldigi.emptyState")}</div>}
         {yuklanmoqda && satrlar.length === 0 && <div className="p-14 text-center"><LoaderCircle className="mx-auto animate-spin text-orange-500" size={28} /></div>}
       </OmborJadval>
+      <TablePagination page={page} pageSize={pageSize} totalItems={report.total} onPageChange={(value) => void sahifaniOlish(value)} onPageSizeChange={(value) => void sahifaniOlish(1,value)} />
     </div>
   );
 }
-

@@ -105,8 +105,8 @@ function bolaFaolmi(bola: MenyuBolasi, pathname: string, search: string) {
 // Yopiq holatda (64px) faqat ikonka ko'rinadi: qator 48px kenglikda, ikonka 18px va 15px chetlari.
 const qatorKlass =
   "relative flex h-[46px] w-full items-center gap-3 px-[15px] text-[14.5px] transition-colors duration-200";
-const qatorFaolKlass = "rounded-none bg-[#123A55] font-semibold text-white";
-const qatorOddiyKlass = "rounded-[10px] font-medium text-[#8391A7] hover:bg-[#122036] hover:text-slate-100";
+const qatorFaolKlass = "theme-sidebar-active rounded-none font-semibold text-white";
+const qatorOddiyKlass = "theme-sidebar-item rounded-[10px] font-medium text-[#8391A7] hover:bg-[#122036] hover:text-slate-100";
 // Matn faqat sidebar ochiq (toggle) bo'lganda ko'rinadi.
 const yorliqKlass =
   "min-w-0 truncate whitespace-nowrap transition-opacity duration-200";
@@ -158,7 +158,7 @@ export default function YonPanel({ acik }: { acik: boolean }) {
       initial={{ x: -64, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
-      className={`fixed left-0 top-0 z-50 flex h-screen flex-col overflow-hidden border-r border-white/5 bg-[#0B1424] text-[#8391A7] transition-[width] duration-200 ease-in-out ${
+      className={`theme-sidebar fixed left-0 top-0 z-50 flex h-screen flex-col overflow-hidden border-r border-white/5 bg-[#0B1424] text-[#8391A7] transition-[width] duration-200 ease-in-out ${
         acik ? "w-70" : "w-16"
       }`}
     >
@@ -167,7 +167,7 @@ export default function YonPanel({ acik }: { acik: boolean }) {
           initial={{ opacity: 0, scale: 0.7 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[10px] bg-linear-to-br from-sky-400 to-blue-600 text-lg font-black text-white"
+          className="theme-logo flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[10px] bg-linear-to-br from-sky-400 to-blue-600 text-lg font-black text-white"
         >
           Y
         </motion.div>
@@ -218,7 +218,7 @@ export default function YonPanel({ acik }: { acik: boolean }) {
                   }`}
                 >
                   <div className="min-h-0 overflow-hidden">
-                    <div className="ml-6 mt-1.5 grid gap-1 border-l border-white/10 pl-0.5">
+                  <div className="theme-sidebar-children ml-6 mt-1.5 grid gap-1 border-l border-white/10 pl-0.5">
                       {menu.bolalar.map((bola) => {
                         const faol = bolaFaolmi(bola, pathname, search);
                         const BolaIcon = bola.icon;
@@ -230,8 +230,8 @@ export default function YonPanel({ acik }: { acik: boolean }) {
                             tabIndex={ochiq ? 0 : -1}
                             className={`relative flex h-10 items-center gap-2.5 truncate whitespace-nowrap px-3 text-[14px] transition-colors duration-200 ${
                               faol
-                                ? "rounded-none bg-[#15506F] font-semibold text-sky-100 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-[3px] before:rounded-full before:bg-sky-400"
-                                : "rounded-lg font-medium text-[#8391A7] hover:bg-[#122036] hover:text-slate-100"
+                              ? "theme-sidebar-subactive rounded-none font-semibold text-sky-100 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-[3px] before:rounded-full before:bg-sky-400"
+                                : "theme-sidebar-item rounded-lg font-medium text-[#8391A7] hover:bg-[#122036] hover:text-slate-100"
                             }`}
                           >
                             <BolaIcon
@@ -280,13 +280,13 @@ export default function YonPanel({ acik }: { acik: boolean }) {
 
       <div className="shrink-0 border-t border-white/10 p-2">
         <div
-          className={`flex overflow-hidden rounded-[10px] bg-[#111C30] ring-1 ring-white/5 ${
+          className={`theme-sidebar-profile flex overflow-hidden rounded-[10px] bg-[#111C30] ring-1 ring-white/5 ${
             acik ? "items-center gap-3 p-2.5" : "flex-col items-center gap-1 p-1.5"
           }`}
         >
           {ism && (
             <>
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#123A55] text-[15px] font-bold text-sky-200">
+              <span className="theme-sidebar-avatar flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#123A55] text-[15px] font-bold text-sky-200">
                 {rasmUrl ? (
                   <img src={rasmUrl} alt="" className="h-full w-full object-cover" />
                 ) : (

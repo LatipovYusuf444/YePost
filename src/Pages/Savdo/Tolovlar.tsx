@@ -8,6 +8,7 @@ import type { TolovYozuvi } from "@/types/tolov";
 import { tolovSanasiniFormatlash, tolovSummasiniFormatlash, tolovUsuliMatni } from "@/utils/tolovFormatters";
 import AppModal from "@/Components/common/AppModal";
 import SavdoSelect from "./SavdoSelect";
+import TablePagination from "@/Components/common/TablePagination";
 
 type TolovlarProps = {
   sotuvlar: Sotuv[];
@@ -77,7 +78,6 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
     rows,
     jami,
     currentPage,
-    totalPages,
     filtrlar,
     yuklanmoqda,
     xatolik,
@@ -268,28 +268,8 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
         )}
       </div>
 
-      <div className="table-pagination mt-5 flex flex-col gap-3 text-sm font-semibold text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-        <span>
-          {t("tolovlar.pagination.summary", { jami, currentPage, totalPages })}
-        </span>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            disabled={currentPage <= 1}
-            onClick={() => filtrniYangilash({ page: Math.max(currentPage - 1, 1) })}
-            className="h-10 rounded-xl border border-orange-100 bg-white px-4 transition hover:border-orange-300 hover:text-orange-600 disabled:opacity-40"
-          >
-            {t("tolovlar.pagination.prev")}
-          </button>
-          <button
-            type="button"
-            disabled={currentPage >= totalPages}
-            onClick={() => filtrniYangilash({ page: Math.min(currentPage + 1, totalPages) })}
-            className="h-10 rounded-xl border border-orange-100 bg-white px-4 transition hover:border-orange-300 hover:text-orange-600 disabled:opacity-40"
-          >
-            {t("tolovlar.pagination.next")}
-          </button>
-        </div>
+      <div className="mt-5 rounded-2xl border border-orange-100 bg-white">
+        <TablePagination page={currentPage} pageSize={filtrlar.pageSize} totalItems={jami} onPageChange={(page) => filtrniYangilash({ page })} onPageSizeChange={(pageSize) => filtrniYangilash({ pageSize, page: 1 })} />
       </div>
 
       {tanlanganTolov && (

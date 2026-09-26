@@ -33,6 +33,7 @@ import {
 } from "./omborYordamchilari";
 import KochirishKorishModal from "./KochirishKorishModal";
 import KochirishYaratishModal from "./KochirishYaratishModal";
+import TablePagination from "@/Components/common/TablePagination";
 
 type UstunKaliti =
   | "nomi"
@@ -157,6 +158,8 @@ export default function Kochirish() {
   const [modal, setModal] = useState(false);
   const [tanlanganId, setTanlanganId] = useState<string | null>(null);
   const [qidiruv, setQidiruv] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [ustunlarMenyusi, setUstunlarMenyusi] = useState(false);
   const [sozlamalarJoylashuvi, setSozlamalarJoylashuvi] = useState({ top: 0, left: 0 });
   const [ustunKengliklari, setUstunKengliklari] = useState<Record<UstunKaliti, number>>(
@@ -279,6 +282,8 @@ export default function Kochirish() {
         .includes(qiymat)
     );
   }, [manbaOmborNomi, modifikatsiyaMap, ozgartirganNomi, qabulOmborNomi, qidiruv, store.kochirishlar, t, yaratganNomi]);
+  const sahifadagiHujjatlar = useMemo(() => filtrlangan.slice((page - 1) * pageSize, page * pageSize), [filtrlangan, page, pageSize]);
+  useEffect(() => setPage(1), [filtrlangan, pageSize]);
 
   const korinadiganUstunlarRoyxati = USTUNLAR.filter(
     (ustun) => korinadiganUstunlar[ustun.kalit]
@@ -523,7 +528,7 @@ export default function Kochirish() {
                   </td>
                 </tr>
               ) : (
-                filtrlangan.map((hujjat) => (
+                sahifadagiHujjatlar.map((hujjat) => (
                   <tr
                     key={hujjat.id}
                     tabIndex={0}
@@ -596,6 +601,7 @@ export default function Kochirish() {
             <ChevronRight size={20} />
           </button>
         </div>
+        <TablePagination page={page} pageSize={pageSize} totalItems={filtrlangan.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
       </section>
 
       {ustunlarMenyusi &&

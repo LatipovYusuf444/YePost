@@ -21,6 +21,7 @@ import {
 import { OmbordanChiqarishHujjatModal } from "@/Pages/Savdo/SotuvTafsilotlariModal";
 import { hujjatRaqami, pul, sana } from "./omborYordamchilari";
 import OmborJadval from "./OmborJadval";
+import TablePagination from "@/Components/common/TablePagination";
 
 type JadvalQatori = {
   id: string;
@@ -118,6 +119,8 @@ export default function AmalgaOshirilganlar() {
   const { t } = useTranslation("ombor_royxat");
   const amalgaOshirilganlarniYuklash = store.amalgaOshirilganlarniYuklash;
   const [qidiruv, setQidiruv] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [yaratishOchiq, setYaratishOchiq] = useState(false);
   const [sozlamaOchiq, setSozlamaOchiq] = useState(false);
   const [korinadiganUstunlar, setKorinadiganUstunlar] = useState<UstunKaliti[]>(
@@ -202,6 +205,8 @@ export default function AmalgaOshirilganlar() {
         .includes(query)
     );
   }, [qidiruv, rows, t]);
+  const sahifadagiRows = useMemo(() => filtrlanganRows.slice((page - 1) * pageSize, page * pageSize), [filtrlanganRows, page, pageSize]);
+  useEffect(() => setPage(1), [filtrlanganRows, pageSize]);
 
   function ustunniAlmashtirish(kalit: UstunKaliti) {
     setKorinadiganUstunlar((oldingi) =>
@@ -323,7 +328,7 @@ export default function AmalgaOshirilganlar() {
               </tr>
             </thead>
             <tbody className="divide-y divide-orange-100">
-              {filtrlanganRows.map((item) => (
+              {sahifadagiRows.map((item) => (
                 <tr
                   key={item.id}
                   onClick={() => realizatsiyaniOchish(item.id)}
@@ -365,6 +370,7 @@ export default function AmalgaOshirilganlar() {
             </tbody>
           </table>
         </OmborJadval>
+        {!store.yuklanmoqda && <TablePagination page={page} pageSize={pageSize} totalItems={filtrlanganRows.length} onPageChange={setPage} onPageSizeChange={setPageSize} />}
 
         {sozlamaOchiq && (
           <div className="absolute right-4 top-14 z-40 w-56 rounded-2xl border border-orange-100 bg-white p-3 shadow-xl">

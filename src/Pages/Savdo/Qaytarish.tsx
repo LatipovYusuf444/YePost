@@ -21,6 +21,7 @@ import {
 } from "./savdoYordamchilari";
 import QaytarishTafsilotlariModal from "./QaytarishTafsilotlariModal";
 import SavdoSelect from "./SavdoSelect";
+import TablePagination from "@/Components/common/TablePagination";
 
 type QaytarishProps = {
   sotuvlar: Sotuv[];
@@ -74,6 +75,10 @@ export default function Qaytarish({
   const [note, setNote] = useState("");
   const [xatolik, setXatolik] = useState("");
   const [tanlanganId, setTanlanganId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const visibleRows = qaytarishlar.slice((page - 1) * pageSize, page * pageSize);
+  useEffect(() => setPage(1), [pageSize, qaytarishlar]);
 
   useEffect(() => {
     if (boshlangichSotuvId) setSaleId(boshlangichSotuvId);
@@ -213,7 +218,7 @@ export default function Qaytarish({
               </tr>
             </thead>
             <tbody className="divide-y divide-orange-100/70">
-              {qaytarishlar.map((qaytarish) => {
+              {visibleRows.map((qaytarish) => {
                 const holat = String(qaytarish.status ?? "DRAFT").toUpperCase();
 
                 return (
@@ -259,6 +264,7 @@ export default function Qaytarish({
           </table>
         </div>
       </div>
+      <TablePagination page={page} pageSize={pageSize} totalItems={qaytarishlar.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
       {tanlanganId && (
         <QaytarishTafsilotlariModal
           qaytarishId={tanlanganId}

@@ -5,6 +5,7 @@ import { Bell, ChevronDown, LoaderCircle, LogOut, Menu, Minus, PackagePlus, Plus
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import LanguageSwitcher from "@/Components/common/LanguageSwitcher";
+import ThemeSwitcher from "@/Components/theme/ThemeSwitcher";
 import { crmApi } from "@/api/crmApi";
 import {
   katalogModifikatsiyalariniQoldiqTanlovigaOlish,
@@ -102,7 +103,7 @@ export default function YuqoriPanel({
         >
           <Menu size={20} />
         </button>
-        <div className="flex h-13 flex-1 items-center rounded-[18px] border border-gold-200/60 bg-white/75 px-5 shadow-gold-soft transition focus-within:border-gold-400 focus-within:shadow-[0_0_0_4px_rgba(37,99,235,0.10)]">
+        <div className="theme-search flex h-13 min-w-0 flex-1 items-center rounded-[18px] border border-gold-200/60 bg-white/75 px-5 shadow-gold-soft transition focus-within:border-gold-400">
           <Search size={18} className="mr-3 shrink-0 text-[#94A3B8]" />
           <input
             placeholder={t("searchPlaceholder")}
@@ -117,6 +118,7 @@ export default function YuqoriPanel({
         >
           <PackagePlus size={20} />
         </button>
+        <ThemeSwitcher />
         <LanguageSwitcher variant="light" />
         <BildirishnomaTugmasi
           ochiq={bildirishnomaOchiq}
@@ -158,6 +160,7 @@ export default function YuqoriPanel({
         <Menu size={20} />
       </button>
       <div className="flex items-center gap-2">
+        <ThemeSwitcher />
         <LanguageSwitcher variant="light" />
         <BildirishnomaTugmasi
         ochiq={bildirishnomaOchiq}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ReceiptText, RotateCcw } from "lucide-react";
+import TablePagination from "@/Components/common/TablePagination";
 import type { Qaytarish, Sotuv, TolovTuri } from "@/types/savdo";
 import {
   masulNomi,
@@ -120,13 +121,11 @@ export default function SotuvlarJadvali({
 }: SotuvlarJadvaliProps) {
   const { t } = useTranslation("savdo_kichik");
   const effectiveBoshMatn = boshMatn ?? t("sotuvlarJadvali.boshMatn");
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.max(Math.ceil(sotuvlar.length / pageSize), 1);
-
   useEffect(() => {
     setCurrentPage(1);
-  }, [sotuvlar]);
+  }, [sotuvlar, pageSize]);
 
   const visibleRows = useMemo(
     () => sotuvlar.slice((currentPage - 1) * pageSize, currentPage * pageSize),
@@ -249,38 +248,7 @@ export default function SotuvlarJadvali({
         </table>
       </div>
 
-      {sotuvlar.length > pageSize && (
-        <div className="table-pagination mt-5 flex flex-col gap-3 border-t border-gray-100 pt-5 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between">
-          <span>
-            {t("sotuvlarJadvali.pagination.info", {
-              jami: sotuvlar.length,
-              dan: (currentPage - 1) * pageSize + 1,
-              gacha: Math.min(currentPage * pageSize, sotuvlar.length),
-            })}
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}
-              disabled={currentPage === 1}
-              className="h-9 rounded-lg border border-gray-200 px-3 font-semibold text-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {t("sotuvlarJadvali.pagination.oldingi")}
-            </button>
-            <span className="min-w-16 text-center font-semibold text-gray-700">
-              {currentPage}/{totalPages}
-            </span>
-            <button
-              type="button"
-              onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="h-9 rounded-lg border border-gray-200 px-3 font-semibold text-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {t("sotuvlarJadvali.pagination.keyingi")}
-            </button>
-          </div>
-        </div>
-      )}
+      <TablePagination page={currentPage} pageSize={pageSize} totalItems={sotuvlar.length} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
     </div>
   );
 }

@@ -1,10 +1,11 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowDownLeft,
   ArrowUpRight,
   BarChart3,
   Check,
+  LoaderCircle,
   TrendingUp,
 } from "lucide-react";
 import {
@@ -41,8 +42,8 @@ type Props = {
 
 const themes = {
   sales: {
-    color: "#2563eb",
-    pale: "#eff6ff",
+    color: "var(--theme-chart)",
+    pale: "var(--theme-chart-faint)",
     icon: TrendingUp,
     key: "salesTrend",
     label: "text-blue-600",
@@ -76,6 +77,7 @@ function MoneyTooltip({
   color,
   title,
   format,
+  items,
 }: {
   active?: boolean;
   payload?: ReadonlyArray<{ payload?: Point }>;
@@ -83,9 +85,10 @@ function MoneyTooltip({
   color: string;
   title: string;
   format: (value: number) => string;
+  items: Point[];
 }) {
   const { t } = useTranslation("monitoring");
-  const point = payload?.[0]?.payload;
+  const point = items.find((item) => item.nom === String(label)) ?? payload?.[0]?.payload;
   if (!active || !point) return null;
   return (
     <div className="min-w-48 rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xl shadow-slate-900/10">
@@ -129,6 +132,15 @@ export default function DynamicsChart({
 }: Props) {
   const { t, i18n } = useTranslation("monitoring");
   const [showAverage, setShowAverage] = useState(true);
+  const [reducedMotion, setReducedMotion] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(query.matches);
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
   const id = useId().replace(/:/g, "");
   const gradientId = `${id}-${variant}`;
   const { color, pale, icon: Icon, key, label, tint, active } = themes[variant];
@@ -179,11 +191,11 @@ export default function DynamicsChart({
       />
     ),
     grid: (
-      <CartesianGrid strokeDasharray="3 6" vertical={false} stroke="#e2e8f0" />
+      <CartesianGrid strokeDasharray="3 6" vertical={false} stroke="var(--theme-chart-grid)" />
     ),
     tooltip: (
       <Tooltip
-        content={<MoneyTooltip color={color} title={title} format={format} />}
+        content={<MoneyTooltip color={color} title={title} format={format} items={data} />}
         cursor={
           variant === "income"
             ? { fill: pale, radius: 8 }
@@ -196,7 +208,7 @@ export default function DynamicsChart({
   return (
     <section
       aria-label={title}
-      className={`min-w-0 overflow-hidden rounded-[24px] border border-slate-200/80 bg-gradient-to-br ${tint} via-white to-white shadow-[0_4px_24px_-12px_rgba(15,23,42,0.15)]`}
+      className={`monitoring-enter min-w-0 overflow-hidden rounded-[24px] border border-slate-200/80 bg-gradient-to-br ${tint} via-white to-white shadow-[0_4px_24px_-12px_rgba(15,23,42,0.15)]`}
     >
       <div className="flex flex-wrap items-start justify-between gap-4 px-5 pt-5 sm:px-6 sm:pt-6">
         <div className="flex min-w-0 items-center gap-3">
@@ -273,13 +285,12 @@ export default function DynamicsChart({
               <div className="h-[260px]" aria-busy={loading}>
                 {loading ? (
                   <div
-                    className="flex h-full items-end gap-3 rounded-2xl bg-slate-50/60 p-6"
-                    aria-label={t("dynamics.loading")}
+                    role="status"
+                    aria-live="polite"
+                    className="flex h-full flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-blue-100 bg-slate-50/60 text-sm font-semibold text-slate-400"
                   >
-                    <div className="h-1/3 flex-1 animate-pulse rounded-t-lg bg-slate-200/50" />
-                    <div className="h-2/3 flex-1 animate-pulse rounded-t-lg bg-slate-200/50" />
-                    <div className="h-1/2 flex-1 animate-pulse rounded-t-lg bg-slate-200/50" />
-                    <div className="h-3/4 flex-1 animate-pulse rounded-t-lg bg-slate-200/50" />
+                    <LoaderCircle size={24} className="animate-spin text-blue-500" />
+                    <span>{t("dynamics.loading")}</span>
                   </div>
                 ) : !hasData ? (
                   <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white/50 px-5 text-center">
@@ -340,7 +351,9 @@ export default function DynamicsChart({
                           stroke={color}
                           strokeWidth={3}
                           fill={`url(#${gradientId})`}
-                          isAnimationActive={false}
+                          isAnimationActive={!reducedMotion}
+                          animationDuration={720}
+                          animationEasing="ease-out"
                           activeDot={{
                             r: 6,
                             fill: color,
@@ -359,7 +372,7 @@ export default function DynamicsChart({
                           />
                         )}
                       </AreaChart>
-                    ) : variant === "income" ? (
+            ) : variant === "income" ? (
                       <BarChart
                         data={data}
                         margin={{ top: 20, right: 8, left: 0, bottom: 8 }}
@@ -386,7 +399,9 @@ export default function DynamicsChart({
                           fill={`url(#${gradientId})`}
                           radius={[6, 6, 0, 0]}
                           maxBarSize={42}
-                          isAnimationActive={false}
+                          isAnimationActive={!reducedMotion}
+                          animationDuration={650}
+                          animationEasing="ease-out"
                         >
                           {data.map((point, index) => (
                             <Cell
@@ -412,7 +427,9 @@ export default function DynamicsChart({
                           dataKey="summa"
                           stroke={color}
                           strokeWidth={2.5}
-                          isAnimationActive={false}
+                          isAnimationActive={!reducedMotion}
+                          animationDuration={650}
+                          animationEasing="ease-out"
                           dot={(props) =>
                             props.payload.summa !== 0 ? (
                               <circle
@@ -489,36 +506,13 @@ export default function DynamicsChart({
 
           <div className="mx-5 mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 py-4 text-xs sm:mx-6">
             {variant === "expense" ? (
-              <>
-                <span className="inline-flex flex-wrap items-center gap-1.5 text-slate-500">
-                  <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-                  {t("dynamics.cashExpense")}
-                  <strong className="font-semibold tabular-nums text-slate-800">
-                    {loading
-                      ? "—"
-                      : format(
-                          data.reduce(
-                            (sum, point) => sum + (point.kassa ?? 0),
-                            0,
-                          ),
-                        )}
-                  </strong>
-                </span>
-                <span className="inline-flex flex-wrap items-center gap-1.5 text-slate-500">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                  {t("dynamics.stockExpense")}
-                  <strong className="font-semibold tabular-nums text-slate-800">
-                    {loading
-                      ? "—"
-                      : format(
-                          data.reduce(
-                            (sum, point) => sum + (point.ombor ?? 0),
-                            0,
-                          ),
-                        )}
-                  </strong>
-                </span>
-              </>
+              <span className="inline-flex flex-wrap items-center gap-1.5 text-slate-500">
+                <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                {t("dynamics.cashExpense")}
+                <strong className="font-semibold tabular-nums text-slate-800">
+                  {loading ? "—" : format(data.reduce((sum, point) => sum + point.summa, 0))}
+                </strong>
+              </span>
             ) : variant === "income" ? (
               <>
                 <span className="text-slate-500">

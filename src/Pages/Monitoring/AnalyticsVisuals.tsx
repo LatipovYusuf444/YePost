@@ -25,16 +25,16 @@ import {
 
 type Point = { nom: string; summa: number };
 const COLORS = [
-  "#6366f1",
-  "#14b8a6",
-  "#f59e0b",
-  "#ec4899",
-  "#38bdf8",
-  "#a78bfa",
+  "var(--theme-chart-series-1)",
+  "var(--theme-chart-series-2)",
+  "var(--theme-chart-series-3)",
+  "var(--theme-chart-series-4)",
+  "var(--theme-chart-series-5)",
+  "var(--theme-chart-series-6)",
 ];
 const tooltipStyle = {
   borderRadius: 16,
-  border: "1px solid #e2e8f0",
+  border: "1px solid var(--theme-chart-grid)",
   boxShadow: "0 12px 32px #0f172a15",
   padding: "12px 16px",
 };
@@ -302,7 +302,7 @@ export function WarehouseFlow({
           >
             <CartesianGrid
               horizontal={false}
-              stroke="#e2e8f0"
+              stroke="var(--theme-chart-grid)"
               strokeDasharray="3 6"
             />
             <XAxis
@@ -362,6 +362,29 @@ export function WarehouseFlow({
   );
 }
 
+function WarehouseTimelineTooltip({
+  active,
+  label,
+  items,
+  kind,
+}: {
+  active?: boolean;
+  label?: string | number;
+  items: Point[];
+  kind: "income" | "expense";
+}) {
+  const { t, money } = useFormat();
+  const point = items.find((item) => item.nom === String(label));
+  if (!active || !point) return null;
+  return (
+    <div className="min-w-40 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl shadow-slate-900/10">
+      <p className="text-xs font-medium text-slate-500">{point.nom}</p>
+      <p className="mt-1 text-xs text-slate-500">{t(`charts.warehouseDetail.${kind}`)}</p>
+      <p className="mt-1 text-base font-bold tabular-nums text-slate-950">{money(point.summa)}</p>
+    </div>
+  );
+}
+
 export function WarehouseTimeline({
   items,
   kind,
@@ -369,17 +392,9 @@ export function WarehouseTimeline({
   items: Point[];
   kind: "income" | "expense";
 }) {
-  const { t, money, compact } = useFormat();
+  const { money, compact } = useFormat();
   const id = useId().replace(/:/g, "");
-  const tooltip = (
-    <Tooltip
-      formatter={(value) => [
-        money(Number(value)),
-        t(`charts.warehouseDetail.${kind}`),
-      ]}
-      contentStyle={tooltipStyle}
-    />
-  );
+  const tooltip = <Tooltip content={<WarehouseTimelineTooltip items={items} kind={kind} />} cursor={{ stroke: kind === "income" ? "#06b6d4" : "#e11d48", strokeDasharray: "4 4", strokeOpacity: 0.3 }} />;
   const x = (
     <XAxis
       dataKey="nom"
@@ -416,13 +431,13 @@ export function WarehouseTimeline({
             <AreaChart data={items} margin={{ top: 8, right: 12, bottom: 8 }}>
               <defs>
                 <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.02} />
+                  <stop offset="0%" stopColor="var(--theme-chart)" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="var(--theme-chart)" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
               <CartesianGrid
                 vertical={false}
-                stroke="#cffafe"
+                stroke="var(--theme-chart-grid-income)"
                 strokeDasharray="3 6"
               />
               {x}
@@ -431,7 +446,7 @@ export function WarehouseTimeline({
               <Area
                 type="stepAfter"
                 dataKey="summa"
-                stroke="#0891b2"
+                stroke="var(--theme-chart-income)"
                 fill={`url(#${id})`}
                 strokeWidth={2.5}
                 isAnimationActive={false}
@@ -442,7 +457,7 @@ export function WarehouseTimeline({
             <LineChart data={items} margin={{ top: 8, right: 12, bottom: 8 }}>
               <CartesianGrid
                 vertical={false}
-                stroke="#ffe4e6"
+                stroke="var(--theme-chart-grid-expense)"
                 strokeDasharray="3 6"
               />
               {x}
@@ -559,7 +574,7 @@ export function ProductRanking({
           >
             <CartesianGrid
               horizontal={false}
-              stroke="#e2e8f0"
+              stroke="var(--theme-chart-grid)"
               strokeDasharray="3 6"
             />
             <XAxis

@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import TablePagination from "@/Components/common/TablePagination";
+import { Children, isValidElement } from "react";
 import { useFinanceStore } from "@/store/financeStore";
 import type {
   KassaKirim,
@@ -415,8 +417,16 @@ function KirimlarJadvali({
 
 function FinanceTable({ children }: { children: React.ReactNode; empty: string }) {
   const { t } = useTranslation("kassa");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const allRows = Children.toArray(children);
+  const emptyOnly = allRows.length === 1 && isValidElement(allRows[0]) && allRows[0].type === EmptyRow;
+  const rows = emptyOnly ? [] : allRows;
+  const visibleRows = rows.slice((page - 1) * pageSize, page * pageSize);
+  useEffect(() => setPage(1), [children, pageSize]);
   return (
-    <div className="overflow-x-auto rounded-2xl border border-orange-100">
+    <div className="overflow-hidden rounded-2xl border border-orange-100">
+      <div className="overflow-x-auto">
       <table className="w-full min-w-[900px] text-left text-sm">
         <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
@@ -429,8 +439,10 @@ function FinanceTable({ children }: { children: React.ReactNode; empty: string }
             <th className="px-5 py-4 text-right">{t("table.columns.amal")}</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-orange-100/70">{children}</tbody>
+        <tbody className="divide-y divide-orange-100/70">{emptyOnly ? allRows : visibleRows}</tbody>
       </table>
+      </div>
+      <TablePagination page={page} pageSize={pageSize} totalItems={rows.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
     </div>
   );
 }
@@ -758,4 +770,3 @@ function FinanceModal({
     </AppModal>
   );
 }
-

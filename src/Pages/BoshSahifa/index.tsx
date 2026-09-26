@@ -311,6 +311,7 @@ export default function BoshSahifa() {
             <AppSelect
               value={warehouseId}
               onChange={(event) => setWarehouseId(event.target.value)}
+              dropdownMinWidth={280}
               className="h-10 rounded-xl border border-gold-200/60 bg-gold-50 px-3 text-sm font-semibold text-[#0F172A] outline-none focus:border-gold-400"
             >
               {omborlar.map((ombor) => (

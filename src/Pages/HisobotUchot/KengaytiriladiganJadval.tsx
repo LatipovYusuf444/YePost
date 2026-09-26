@@ -1,5 +1,6 @@
 import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { Check, Settings, Trash2 } from "lucide-react";
+import TablePagination from "@/Components/common/TablePagination";
 
 // Ustun kengligini sichqoncha bilan o'zgartirsa (resize) va sudrab joyini
 // almashtirsa (reorder) bo'ladigan umumiy hisobot jadvali.
@@ -47,6 +48,8 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
   const [nishon, setNishon] = useState<string | null>(null);
   const [yashirin, setYashirin] = useState<Set<string>>(() => new Set());
   const [sozlamaOchiq, setSozlamaOchiq] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const SOZLAMA_KENGLIK = 52;
 
   // Ustunlar ro'yxati o'zgarsa (qo'shildi/olib tashlandi) tartib va kengliklarni moslaymiz.
@@ -74,6 +77,8 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
     .filter((u): u is Ustun<T> => Boolean(u));
 
   const korinadigan = tartiblangan.filter((u) => !yashirin.has(u.id));
+  const visibleRows = qatorlar.slice((page - 1) * pageSize, page * pageSize);
+  useEffect(() => setPage(1), [qatorlar, pageSize]);
 
   // Oxirgi (amallar) ustuni: header'da ⚙, qatorlarda o'chirish tugmasi.
   const amallarUstuni = sozlamaBor || Boolean(onQatorOchirish);
@@ -237,7 +242,7 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
           </tr>
         </thead>
         <tbody className="divide-y divide-orange-100/70">
-          {qatorlar.map((row) => (
+          {visibleRows.map((row) => (
             <tr
               key={row.id}
               onClick={onQatorBosildi ? () => onQatorBosildi(row) : undefined}
@@ -285,6 +290,7 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
           </tfoot>
         )}
       </table>
+      <TablePagination page={page} pageSize={pageSize} totalItems={qatorlar.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
     </div>
   );
 }

@@ -100,26 +100,26 @@ export default function SavdoGrafiki() {
             <AreaChart data={activeData}>
               <defs>
                 <linearGradient id="orangeGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#2563EB" stopOpacity={0.35} />
-                  <stop offset="95%" stopColor="#2563EB" stopOpacity={0.02} />
+                  <stop offset="5%" stopColor="var(--theme-chart)" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="var(--theme-chart)" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
 
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#BFDBFE" />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--theme-chart-grid-sales)" />
               <XAxis dataKey="nom" axisLine={false} tickLine={false} tick={{ fill: "#9CA3AF", fontSize: 12 }} />
               <YAxis axisLine={false} tickLine={false} tick={{ fill: "#9CA3AF", fontSize: 12 }} tickFormatter={formatSumma} />
               <Tooltip
                 formatter={(value) => [`${Number(value).toLocaleString("ru-RU")} so‘m`, "Savdo"]}
                 contentStyle={{
                   borderRadius: "16px",
-                  border: "1px solid #BFDBFE",
-                  boxShadow: "0 10px 30px rgba(37,99,235,0.15)",
+                  border: "1px solid var(--theme-chart-grid-sales)",
+                  boxShadow: "0 10px 30px var(--theme-chart-shadow)",
                 }}
               />
               <Area
                 type="monotone"
                 dataKey="savdo"
-                stroke="#2563EB"
+                stroke="var(--theme-chart)"
                 strokeWidth={4}
                 fill="url(#orangeGradient)"
                 activeDot={{ r: 7 }}
@@ -127,18 +127,18 @@ export default function SavdoGrafiki() {
             </AreaChart>
           ) : (
             <BarChart data={activeData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#BFDBFE" />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--theme-chart-grid-sales)" />
               <XAxis dataKey="nom" axisLine={false} tickLine={false} tick={{ fill: "#9CA3AF", fontSize: 12 }} />
               <YAxis axisLine={false} tickLine={false} tick={{ fill: "#9CA3AF", fontSize: 12 }} tickFormatter={formatSumma} />
               <Tooltip
                 formatter={(value) => [`${Number(value).toLocaleString("ru-RU")} so‘m`, "Savdo"]}
                 contentStyle={{
                   borderRadius: "16px",
-                  border: "1px solid #BFDBFE",
-                  boxShadow: "0 10px 30px rgba(37,99,235,0.15)",
+                  border: "1px solid var(--theme-chart-grid-sales)",
+                  boxShadow: "0 10px 30px var(--theme-chart-shadow)",
                 }}
               />
-              <Bar dataKey="savdo" fill="#2563EB" radius={[14, 14, 0, 0]} />
+              <Bar dataKey="savdo" fill="var(--theme-chart)" radius={[14, 14, 0, 0]} />
             </BarChart>
           )}
         </ResponsiveContainer>

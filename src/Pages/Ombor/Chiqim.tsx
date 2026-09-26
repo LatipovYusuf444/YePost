@@ -20,6 +20,7 @@ import type {
 import { holat, hujjatRaqami, pul, sana } from "./omborYordamchilari";
 import ChiqimTafsilotModal from "./ChiqimTafsilotModal";
 import YangiChiqimModal from "./YangiChiqimModal";
+import TablePagination from "@/Components/common/TablePagination";
 
 type Ustun =
   | "nomi"
@@ -64,6 +65,8 @@ export default function Chiqim() {
     OTHER: t("chiqim.reasons.OTHER"),
   };
   const [qidiruv, setQidiruv] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [modal, setModal] = useState(false);
   const [tanlanganId, setTanlanganId] = useState<string | null>(null);
   const [sozlama, setSozlama] = useState(false);
@@ -186,6 +189,8 @@ export default function Chiqim() {
     // Qidiruv real backend ma'lumotlari va maplarga bog'liq.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qidiruv, store.chiqimlar, omborMap, xodimMap, t]);
+  const sahifadagiRoyxat = useMemo(() => royxat.slice((page - 1) * pageSize, page * pageSize), [royxat, page, pageSize]);
+  useEffect(() => setPage(1), [royxat, pageSize]);
 
   function ustunniAlmashtirish(id: Ustun) {
     setKorinadigan((old) => {
@@ -380,7 +385,7 @@ export default function Chiqim() {
             <tbody className="divide-y divide-orange-100">
               {store.yuklanmoqda ? (
                 <tr><td colSpan={faolUstunlar.length + 1} className="py-20 text-center"><LoaderCircle className="mx-auto animate-spin text-orange-500" size={30} /></td></tr>
-              ) : royxat.map((item) => (
+              ) : sahifadagiRoyxat.map((item) => (
                   <tr key={item.id} onClick={() => setTanlanganId(item.id)} className="cursor-pointer transition hover:bg-orange-50/40">
                     {faolUstunlar.map((column) => <td key={column.id} className="overflow-hidden px-6 py-5">{katak(item, column.id)}</td>)}
                     <td className="sticky right-0 bg-white px-5 py-4 group-hover:bg-orange-50/40" />
@@ -406,6 +411,7 @@ export default function Chiqim() {
           </div>
           <button type="button" onClick={() => jadvalniSurish(1)} aria-label={t("chiqim.scrollRightAria")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-white text-orange-500 shadow-sm transition hover:bg-orange-50"><ChevronRight size={20} /></button>
         </div>
+        {!store.yuklanmoqda && <TablePagination page={page} pageSize={pageSize} totalItems={royxat.length} onPageChange={setPage} onPageSizeChange={setPageSize} />}
       </div>
 
       {sozlama &&

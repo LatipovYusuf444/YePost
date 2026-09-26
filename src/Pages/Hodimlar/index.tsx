@@ -30,6 +30,7 @@ import {
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import TablePagination from "@/Components/common/TablePagination";
 import { useAccountStore } from "@/store/accountStore";
 import { foydalanuvchiDirektormi } from "@/lib/roles";
 import type { AccountFoydalanuvchi, AccountRoli, VakolatKodi } from "@/types/account";
@@ -107,6 +108,8 @@ function xodimRasmi(item?: AccountFoydalanuvchi | null) {
 function Foydalanuvchilar() {
   const store = useAccountStore();
   const [qidiruv, setQidiruv] = useState("");
+  const [tablePage, setTablePage] = useState(1);
+  const [tablePageSize, setTablePageSize] = useState(10);
   const [korinish, setKorinish] = useState<Korinish>("kartochka");
   const [korinishMenu, setKorinishMenu] = useState(false);
   const [modal, setModal] = useState(false);
@@ -137,6 +140,8 @@ function Foydalanuvchilar() {
         .some((value) => value?.toLowerCase().includes(query))
     );
   }, [qidiruv, store.foydalanuvchilar]);
+  const sahifadagiFoydalanuvchilar = useMemo(() => korsatiladiganlar.slice((tablePage - 1) * tablePageSize, tablePage * tablePageSize), [korsatiladiganlar, tablePage, tablePageSize]);
+  useEffect(() => setTablePage(1), [korsatiladiganlar, tablePageSize]);
 
   function yangi() {
     setEditing(null);
@@ -607,7 +612,7 @@ function Foydalanuvchilar() {
               </tr>
             </thead>
             <tbody className="divide-y divide-orange-100">
-              {korsatiladiganlar.map((item) => {
+              {sahifadagiFoydalanuvchilar.map((item) => {
                 const filial = store.filiallar.find((filialItem) => filialItem.id === item.branchId);
                 const joriy = item.id === store.profil?.id;
                 return (
@@ -645,6 +650,8 @@ function Foydalanuvchilar() {
           </table>
         </div>
       )}
+
+      {korinish === "jadval" && <TablePagination page={tablePage} pageSize={tablePageSize} totalItems={korsatiladiganlar.length} onPageChange={setTablePage} onPageSizeChange={setTablePageSize} />}
 
       {korsatiladiganlar.length === 0 && (
         <div className="rounded-[26px] border border-dashed border-orange-200 bg-orange-50/30 p-12 text-center text-gray-500">
@@ -1129,4 +1136,3 @@ export default function Hodimlar() {
     </div>
   );
 }
-
