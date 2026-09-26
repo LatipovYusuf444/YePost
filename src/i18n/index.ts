@@ -37,6 +37,8 @@ import savdoYangiUz from "./locales/uz/savdo_yangi.json";
 import savdoYangiRu from "./locales/ru/savdo_yangi.json";
 import savdoTafsilotUz from "./locales/uz/savdo_tafsilot.json";
 import savdoTafsilotRu from "./locales/ru/savdo_tafsilot.json";
+import monitoringUz from "./locales/uz/monitoring.json";
+import monitoringRu from "./locales/ru/monitoring.json";
 
 export const LANG_STORAGE_KEY = "yepost-lang";
 export const SUPPORTED_LANGUAGES = ["uz", "ru"] as const;
@@ -69,6 +71,7 @@ void i18n.use(initReactI18next).init({
       kassa: kassaUz,
       savdo_yangi: savdoYangiUz,
       savdo_tafsilot: savdoTafsilotUz,
+      monitoring: monitoringUz,
     },
     ru: {
       common: commonRu,
@@ -89,6 +92,7 @@ void i18n.use(initReactI18next).init({
       kassa: kassaRu,
       savdo_yangi: savdoYangiRu,
       savdo_tafsilot: savdoTafsilotRu,
+      monitoring: monitoringRu,
     },
   },
   lng: getStoredLanguage(),
@@ -112,6 +116,7 @@ void i18n.use(initReactI18next).init({
     "kassa",
     "savdo_yangi",
     "savdo_tafsilot",
+    "monitoring",
   ],
   defaultNS: "common",
   interpolation: { escapeValue: false },

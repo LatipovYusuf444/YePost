@@ -40,7 +40,7 @@ function holatBadgeSinfi(status?: string) {
 export default function Xaridlar() {
   const { t } = useTranslation("ombor_modal");
   const store = useOmborStore();
-  const malumotlarniYuklash = store.malumotlarniYuklash;
+  const malumotlarniYuklashAgarKerak = store.malumotlarniYuklashAgarKerak;
   const USTUNLAR = useMemo(
     () => USTUN_KALITLARI.map((ustun) => ({ ...ustun, nom: t(`xaridlar.columns.${ustun.kalit}`) })),
     [t]
@@ -91,8 +91,8 @@ export default function Xaridlar() {
   }, [sozlamaJoylashuviniYangilash, sozlamaOchiq]);
 
   useEffect(() => {
-    void malumotlarniYuklash();
-  }, [malumotlarniYuklash]);
+    void malumotlarniYuklashAgarKerak();
+  }, [malumotlarniYuklashAgarKerak]);
 
   const suppliersMap = useMemo(
     () => new Map(store.yetkazibBeruvchilar.map((item) => [item.id, item])),

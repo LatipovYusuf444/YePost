@@ -15,6 +15,7 @@ import {
   ClipboardList,
   CreditCard,
   FileText,
+  Gauge,
   HandCoins,
   History,
   Home,
@@ -42,6 +43,7 @@ type Menyu = { key: string; path: string; icon: LucideIcon; bolalar?: MenyuBolas
 // nom o'rniga `key` ishlatiladi: matn "nav" i18n namespace'idan `menu.<key>` orqali olinadi.
 const menyular: Menyu[] = [
   { key: "boshSahifa", path: "/", icon: Home },
+  { key: "monitoring", path: "/monitoring", icon: Gauge },
   {
     key: "savdo",
     path: "/savdo",

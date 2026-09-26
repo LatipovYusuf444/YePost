@@ -339,3 +339,16 @@ export type StockBalanceItem={warehouseId:string|null;warehouseName:string|null;
 export type StockBalanceResponse={items:StockBalanceItem[];total:number;page:number;pageSize:number;totalPages:number;summary:{quantity:number|string;reservedQuantity:number|string;availableQuantity:number|string;totalAmount:number|string}};
 export async function stockBalanceReport(params:StockBalanceParams){return (await apiClient.get<StockBalanceResponse>("/reports/stock-balance",{params})).data}
 export async function stockBalanceExport(params:StockBalanceParams){const response=await apiClient.get<Blob>("/reports/stock-balance/export",{params,responseType:"blob"});faylniSaqlash(response.data,String(response.headers["content-disposition"]??""),`stock-balance-${new Date().toISOString().slice(0,10)}.xlsx`)}
+
+// Monitoring sahifasi: barcha sahifalarni yig'ib, to'liq qoldiq ro'yxatini oladi.
+export async function stockBalanceReportAll(params: StockBalanceParams, pageSize = 500) {
+  const first = await stockBalanceReport({ ...params, page: 1, pageSize });
+  const totalPages = Number(first.totalPages ?? 1);
+  if (totalPages <= 1) return first.items;
+  const pages = await Promise.all(
+    Array.from({ length: totalPages - 1 }, (_, index) =>
+      stockBalanceReport({ ...params, page: index + 2, pageSize })
+    )
+  );
+  return [first.items, ...pages.map((page) => page.items)].flat();
+}

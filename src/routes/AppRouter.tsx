@@ -1,6 +1,7 @@
 import AsosiyLayout from "@/Components/layout/AsosiyPanel"
 import Login from "@/Pages/Auth/Login"
 import BoshSahifa from "@/Pages/BoshSahifa"
+import Monitoring from "@/Pages/Monitoring"
 import KassaUchot from "@/Pages/KassaUchot"
 import HisobotUchot from "@/Pages/HisobotUchot"
 import XodimUchot from "@/Pages/XodimUchot"
@@ -31,6 +32,7 @@ export default function AppRouter() {
         }
       >
         <Route path="/" element={<BoshSahifa />} />
+        <Route path="/monitoring" element={<Monitoring />} />
         <Route path="/savdo" element={<Savdo />} />
         {/* <Route path="/pos" element={<Savdo />} /> */}
         <Route path="/mahsulotlar" element={<Mahsulotlar />} />

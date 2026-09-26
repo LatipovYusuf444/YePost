@@ -56,7 +56,7 @@ function shaxsNomi(shaxs?: NomliEntity) {
 export default function Chiqim() {
   const { t } = useTranslation("ombor_royxat");
   const store = useOmborStore();
-  const malumotlarniYuklash = store.malumotlarniYuklash;
+  const malumotlarniYuklashAgarKerak = store.malumotlarniYuklashAgarKerak;
   const chiqimSabablari: Record<ChiqimSababi, string> = {
     DAMAGE: t("chiqim.reasons.DAMAGE"),
     EXPIRY: t("chiqim.reasons.EXPIRY"),
@@ -80,7 +80,7 @@ export default function Chiqim() {
   const jadvalRef = useRef<HTMLDivElement | null>(null);
   const scrollYoliRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => { void malumotlarniYuklash(); }, [malumotlarniYuklash]);
+  useEffect(() => { void malumotlarniYuklashAgarKerak(); }, [malumotlarniYuklashAgarKerak]);
 
   const sozlamaJoylashuviniYangilash = useCallback(() => {
     const rect = sozlamaTugmaRef.current?.getBoundingClientRect();
