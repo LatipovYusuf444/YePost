@@ -1,0 +1,29 @@
+{
+  "eyebrow": "Savdo nazorati",
+  "title": "Qarzdorliklar",
+  "subtitle": "Tasdiqlangan savdolardagi to'lanmagan qoldiqlar real backenddan olinadi.",
+  "refresh": "Yangilash",
+  "searchPlaceholder": "Mijoz, telefon yoki sotuv raqami...",
+  "noPhone": "Telefon kiritilmagan",
+  "types": {
+    "all": "Barchasi",
+    "customer": "Mijozlar",
+    "company": "Kompaniyalar"
+  },
+  "table": {
+    "customer": "Mijoz",
+    "sale": "Sotuv",
+    "total": "Jami",
+    "paid": "To'langan",
+    "debt": "Qarz qoldig'i",
+    "date": "Sana"
+  },
+  "empty": {
+    "title": "Qarzdorlik topilmadi",
+    "subtitle": "Qidiruvni o'zgartiring yoki barcha qarzlar yopilgan."
+  },
+  "footer": {
+    "count": "{{count}} ta qarzdor savdo",
+    "hint": "Qatorni bosing — sotuv tafsilotlari ochiladi"
+  }
+}

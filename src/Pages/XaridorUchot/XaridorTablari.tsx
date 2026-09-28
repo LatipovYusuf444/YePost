@@ -1,17 +1,16 @@
 import { useState } from "react";
 import { Bell, MessageSquare, Package, Wallet } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
 import KirimModal from "./KirimModal";
 import XaridorSavdoModal from "./XaridorSavdoModal";
 import XaridorTafsilotlariModal from "./XaridorTafsilotlariModal";
 import type { Kirim, TarixYozuvi, Xaridor, XaridorKompaniyasi, XaridorSavdosi, XaridorTolovi } from "./types";
 import {
-  kirimHolatMatni,
   kirimHolatRangi,
   qisqaVaqt,
   sanaFormat,
   summaFormat,
-  tolovTuriMatni,
 } from "./yordamchilar";
 
 // Tafsilotlar va yaratish (tahrirlash) modalkalari uchun umumiy jadval tablari.
@@ -55,18 +54,19 @@ export function SavdolarTab({
   kompaniyalar?: XaridorKompaniyasi[];
   barchaSavdolar?: XaridorSavdosi[];
 }) {
+  const { t } = useTranslation("xaridor_uchot");
   const [korilayotganSavdo, setKorilayotganSavdo] = useState<XaridorSavdosi | null>(null);
   const [korilayotganXaridor, setKorilayotganXaridor] = useState<Xaridor | null>(null);
 
   const nomOlish = (savdo: XaridorSavdosi) =>
     xaridorNomiOlish ? xaridorNomiOlish(savdo) : xaridorNomi;
 
-  if (savdolar.length === 0) return <BoshHolat matn="Savdolar yo'q" />;
+  if (savdolar.length === 0) return <BoshHolat matn={t("tablari.emptySavdolar")} />;
 
   const ustunlar: Ustun<XaridorSavdosi>[] = [
     {
       id: "nomi",
-      nom: "Nomi",
+      nom: t("tablari.nomi"),
       kenglik: 200,
       katak: (savdo) => (
         <BosiladiganKatak
@@ -79,7 +79,7 @@ export function SavdolarTab({
     },
     {
       id: "xaridor",
-      nom: "Xaridor",
+      nom: t("tablari.xaridor"),
       kenglik: 170,
       katak: (savdo) => (
         <BosiladiganKatak
@@ -95,19 +95,19 @@ export function SavdolarTab({
     },
     {
       id: "masul",
-      nom: "Mas'ul shaxs",
+      nom: t("tablari.masul"),
       kenglik: 170,
       katak: (savdo) => <span className="text-slate-500">{savdo.masul}</span>,
     },
     {
       id: "sana",
-      nom: "Yaratilgan sana",
+      nom: t("tablari.yaratilganSana"),
       kenglik: 150,
       katak: (savdo) => <span className="text-slate-500">{sanaFormat(savdo.sana)}</span>,
     },
     {
       id: "summa",
-      nom: "Summa",
+      nom: t("tablari.summa"),
       kenglik: 140,
       katak: (savdo) => <span className="font-bold text-slate-700">{summaFormat(savdo.summa)}</span>,
     },
@@ -148,14 +148,15 @@ export function KirimTab({
   kirimlar: Kirim[];
   beruvchiNomi?: string;
 }) {
+  const { t } = useTranslation("xaridor_uchot");
   const [korilayotganKirim, setKorilayotganKirim] = useState<Kirim | null>(null);
 
-  if (kirimlar.length === 0) return <BoshHolat matn="Kirimlar yo'q" />;
+  if (kirimlar.length === 0) return <BoshHolat matn={t("tablari.emptyKirimlar")} />;
 
   const ustunlar: Ustun<Kirim>[] = [
     {
       id: "nomi",
-      nom: "Nomi",
+      nom: t("tablari.nomi"),
       kenglik: 200,
       katak: (kirim) => (
         <BosiladiganKatak
@@ -168,37 +169,37 @@ export function KirimTab({
     },
     {
       id: "ombor",
-      nom: "Ombor",
+      nom: t("tablari.ombor"),
       kenglik: 170,
       katak: (kirim) => <span className="text-slate-500">{kirim.ombor}</span>,
     },
     {
       id: "masul",
-      nom: "Mas'ul shaxs",
+      nom: t("tablari.masul"),
       kenglik: 170,
       katak: (kirim) => <span className="text-slate-500">{kirim.masul}</span>,
     },
     {
       id: "holat",
-      nom: "Holat",
+      nom: t("tablari.holat"),
       kenglik: 150,
       katak: (kirim) => (
         <span
           className={`inline-block rounded-full px-3 py-1 text-xs font-bold ${kirimHolatRangi[kirim.holat]}`}
         >
-          {kirimHolatMatni[kirim.holat]}
+          {t(`statuses.kirimHolat.${kirim.holat}`)}
         </span>
       ),
     },
     {
       id: "sana",
-      nom: "Yaratilgan sana",
+      nom: t("tablari.yaratilganSana"),
       kenglik: 150,
       katak: (kirim) => <span className="text-slate-500">{sanaFormat(kirim.sana)}</span>,
     },
     {
       id: "summa",
-      nom: "Summa",
+      nom: t("tablari.summa"),
       kenglik: 140,
       katak: (kirim) => <span className="font-bold text-slate-700">{summaFormat(kirim.summa)}</span>,
     },
@@ -221,41 +222,42 @@ export function KirimTab({
 }
 
 export function TolovlarTab({ tolovlar }: { tolovlar: XaridorTolovi[] }) {
-  if (tolovlar.length === 0) return <BoshHolat matn="Bu xaridorda to'lovlar yo'q" />;
+  const { t } = useTranslation("xaridor_uchot");
+  if (tolovlar.length === 0) return <BoshHolat matn={t("tablari.emptyTolovlar")} />;
 
   const ustunlar: Ustun<XaridorTolovi>[] = [
     {
       id: "sana",
-      nom: "Sana",
+      nom: t("tablari.sana"),
       kenglik: 120,
       katak: (tolov) => <span className="text-slate-500">{sanaFormat(tolov.sana)}</span>,
     },
     {
       id: "savdo",
-      nom: "Savdo",
+      nom: t("tablari.savdo"),
       kenglik: 130,
       katak: (tolov) => <span className="font-black text-slate-900">{tolov.savdoRaqami}</span>,
     },
     {
       id: "turi",
-      nom: "Turi",
+      nom: t("tablari.turi"),
       kenglik: 160,
       katak: (tolov) => (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-[#2563EB]">
           <Wallet size={13} />
-          {tolovTuriMatni[tolov.turi]}
+          {t(`statuses.tolovTuri.${tolov.turi}`)}
         </span>
       ),
     },
     {
       id: "izoh",
-      nom: "Izoh",
+      nom: t("tablari.izoh"),
       kenglik: 190,
       katak: (tolov) => <span className="text-slate-500">{tolov.izoh || "—"}</span>,
     },
     {
       id: "summa",
-      nom: "Summa",
+      nom: t("tablari.summa"),
       kenglik: 140,
       katak: (tolov) => (
         <span className="font-black text-emerald-600">{summaFormat(tolov.summa)}</span>
@@ -271,7 +273,8 @@ export function TolovlarTab({ tolovlar }: { tolovlar: XaridorTolovi[] }) {
 }
 
 export function TarixTab({ tarix }: { tarix: TarixYozuvi[] }) {
-  if (tarix.length === 0) return <BoshHolat matn="Tarix bo'sh" />;
+  const { t } = useTranslation("xaridor_uchot");
+  if (tarix.length === 0) return <BoshHolat matn={t("tablari.emptyTarix")} />;
 
   return (
     <div className="px-9 py-7">

@@ -1,0 +1,103 @@
+{
+  "eyebrow": "Учёт кассы",
+  "title": "Касса",
+  "subtitle": "Контроль прихода и расхода наличными, через банк и приложение.",
+  "loading": "Загрузка данных backend...",
+  "groups": {
+    "naqd": { "name": "Наличные", "tushum": "Приход наличных", "chiqim": "Расход наличных" },
+    "bank": { "name": "Банк", "tushum": "Входящие банковские платежи", "chiqim": "Исходящие банковские платежи" },
+    "ilova": { "name": "Через приложение", "tushum": "Приход через приложение", "chiqim": "Расход через приложение" }
+  },
+  "channels": {
+    "naqd": "Наличные",
+    "bank": "Банк",
+    "ilova": "Приложение"
+  },
+  "searchPlaceholder": "Номер, название, контрагент или ответственный...",
+  "totalLabel": "Итого: {{value}}",
+  "createButton": "Создать операцию",
+  "emptyList": "Записей по разделу «{{section}}» нет",
+  "cancelConfirm": "Отменить операцию {{number}}?",
+  "deleteConfirm": "Удалить операцию {{number}}?",
+  "systemFallback": "Система",
+  "table": {
+    "raqam": "Номер",
+    "nomi": "Название",
+    "kontragentFrom": "От кого",
+    "kontragentTo": "Кому",
+    "tur": "Тип",
+    "masul": "Ответственное лицо",
+    "izoh": "Комментарий",
+    "sana": "Дата",
+    "summa": "Сумма"
+  },
+  "types": {
+    "xaridor_tolovi": "Оплата от клиента",
+    "hisobdor_qaytardi": "Возврат средств подотчётным лицом",
+    "taminotchi_qaytardi": "Возврат средств поставщиком",
+    "boshqa_kirim": "Прочие денежные поступления",
+    "donalik_savdo": "Разовая продажа",
+    "taminot_tolovi": "Оплата поставщику",
+    "xaridorga_qaytarish": "Возврат средств клиенту",
+    "ish_haqi": "Выплата зарплаты",
+    "boshqa_chiqim": "Прочие денежные расходы",
+    "xarajat": "Расход"
+  },
+  "xaridorTab": {
+    "loading": "Загрузка платежей из backend...",
+    "empty": "У этого клиента нет платежей по кассе",
+    "salePayment": "Оплата продажи",
+    "columns": {
+      "sana": "Дата",
+      "hujjat": "Документ",
+      "turi": "Тип",
+      "kanal": "Способ оплаты",
+      "izoh": "Комментарий",
+      "summa": "Сумма"
+    }
+  },
+  "modal": {
+    "titleExisting": "Операция",
+    "titleNewIncome": "Новый приход",
+    "titleNewExpense": "Новый расход",
+    "badgeNew": "НОВОЕ",
+    "badgeDraft": "ЧЕРНОВИК",
+    "badgeCancelled": "ОТМЕНЕНО",
+    "badgeConfirmed": "ПОДТВЕРЖДЕНО",
+    "incomeSectionTitle": "О поступлении средств",
+    "expenseSectionTitle": "О расходе средств",
+    "incomeNameLabel": "Название поступления",
+    "expenseNameLabel": "Название расхода",
+    "incomeTypeLabel": "Тип поступления *",
+    "expenseTypeLabel": "Тип расхода *",
+    "customerLabel": "Клиент *",
+    "customerPlaceholder": "Выберите клиента",
+    "currentDebtLabel": "Текущий долг",
+    "employeeLabel": "Сотрудник *",
+    "employeePlaceholder": "Выберите сотрудника",
+    "supplierLabel": "Поставщик *",
+    "supplierPlaceholder": "Выберите поставщика",
+    "counterpartyLabel": "Контрагент",
+    "counterpartyPlaceholder": "Необязательно — от кого/кому",
+    "amountLabel": "Сумма (сум) *",
+    "paymentTypeLabel": "Способ оплаты",
+    "responsibleLabel": "Ответственное лицо",
+    "responsiblePlaceholder": "Выберите ответственное лицо",
+    "incomeDateLabel": "Когда поступило",
+    "expenseDateLabel": "Когда списано",
+    "commentTitleRequired": "Комментарий *",
+    "commentTitle": "Комментарий",
+    "commentPlaceholderRequired": "Напишите причину расхода...",
+    "commentPlaceholder": "Напишите комментарий...",
+    "historyTitle": "История",
+    "historyDraftCreated": "Открыт черновик нового документа",
+    "saveAndConfirm": "Сохранить и подтвердить",
+    "errors": {
+      "selectCustomer": "Для оплаты от клиента нужно выбрать клиента.",
+      "selectEmployee": "Необходимо выбрать сотрудника.",
+      "selectSupplier": "Необходимо выбрать поставщика.",
+      "invalidAmount": "Сумма должна быть числом больше 0.",
+      "commentRequired": "Для прочих расходов необходимо заполнить комментарий (причину расхода)."
+    }
+  }
+}

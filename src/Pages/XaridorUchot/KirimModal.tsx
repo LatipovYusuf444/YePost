@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Bell, ChevronDown, MessageSquare, Package } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import FaoliyatPaneli from "./FaoliyatPaneli";
 import TezkorPanel from "./TezkorPanel";
 import type { Kirim } from "./types";
-import { kirimHolatMatni, kirimHolatRangi, qisqaVaqt, sanaFormat, summaFormat } from "./yordamchilar";
+import { kirimHolatRangi, qisqaVaqt, sanaFormat, summaFormat } from "./yordamchilar";
 
 type Props = {
   kirim: Kirim;
@@ -12,12 +13,14 @@ type Props = {
   onYopish: () => void;
 };
 
-const tablar = ["Umumiy", "Tovarlar", "Hujjatlar", "Tarix"] as const;
-type Tab = (typeof tablar)[number];
+type Tab = "umumiy" | "tovarlar" | "hujjatlar" | "tarix";
+const tabKalitlari: Tab[] = ["umumiy", "tovarlar", "hujjatlar", "tarix"];
 
 // Kirim jadvalidagi qatorni bosganda ochiladigan kirim tafsilotlari oynasi (mock).
 export default function KirimModal({ kirim, beruvchiNomi, onYopish }: Props) {
-  const [faolTab, setFaolTab] = useState<Tab>("Umumiy");
+  const { t } = useTranslation("xaridor_uchot");
+  const tablar = tabKalitlari.map((kalit) => ({ kalit, nom: t(`kirimModal.tabs.${kalit}`) }));
+  const [faolTab, setFaolTab] = useState<Tab>("umumiy");
 
   return (
     <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
@@ -40,7 +43,7 @@ export default function KirimModal({ kirim, beruvchiNomi, onYopish }: Props) {
                     type="button"
                     className="inline-flex h-9 items-center gap-2 rounded-xl bg-white px-3 text-sm text-slate-600 shadow-sm transition hover:text-orange-600"
                   >
-                    Hujjat <ChevronDown size={15} />
+                    {t("shared.documentButton")} <ChevronDown size={15} />
                   </button>
                 </div>
               </div>
@@ -48,31 +51,31 @@ export default function KirimModal({ kirim, beruvchiNomi, onYopish }: Props) {
               <nav className="mt-6 flex items-center gap-3 overflow-x-auto">
                 {tablar.map((tab) => (
                   <button
-                    key={tab}
+                    key={tab.kalit}
                     type="button"
-                    onClick={() => setFaolTab(tab)}
+                    onClick={() => setFaolTab(tab.kalit)}
                     className={`shrink-0 rounded-xl px-3 py-2 text-sm transition ${
-                      faolTab === tab
+                      faolTab === tab.kalit
                         ? "border border-orange-200 bg-white text-[#2563EB]"
                         : "text-slate-500 hover:bg-white hover:text-[#2563EB]"
                     }`}
                   >
-                    {tab}
+                    {tab.nom}
                   </button>
                 ))}
               </nav>
             </header>
 
-            {faolTab === "Umumiy" ? (
+            {faolTab === "umumiy" ? (
               <div className="grid gap-8 px-9 py-9 xl:grid-cols-[43%_36px_minmax(0,1fr)]">
                 <aside className="space-y-6">
                   <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(37,99,235,.08)] backdrop-blur">
-                    <CardTitle title="Kirim haqida" />
-                    <Info label="Nomi" value={kirim.nomi} />
+                    <CardTitle title={t("kirimModal.aboutTitle")} />
+                    <Info label={t("tablari.nomi")} value={kirim.nomi} />
 
                     <div className="mt-4 flex items-end justify-between gap-4">
                       <div>
-                        <p className="text-sm text-slate-400">Miqdor va valyuta</p>
+                        <p className="text-sm text-slate-400">{t("savdoModal.amountCurrencyLabel")}</p>
                         <h2 className="mt-1 text-4xl font-light tracking-wide text-slate-700">
                           {summaFormat(kirim.summa)}
                         </h2>
@@ -80,17 +83,17 @@ export default function KirimModal({ kirim, beruvchiNomi, onYopish }: Props) {
                       <span
                         className={`rounded-xl px-3 py-2 text-xs font-bold ${kirimHolatRangi[kirim.holat]}`}
                       >
-                        {kirimHolatMatni[kirim.holat]}
+                        {t(`statuses.kirimHolat.${kirim.holat}`)}
                       </span>
                     </div>
                   </section>
 
                   <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(37,99,235,.08)] backdrop-blur">
-                    <CardTitle title="Qo'shimcha ma'lumotlar" />
-                    <Info label="Yetkazib beruvchi" value={beruvchiNomi} />
-                    <Info label="Mas'ul shaxs" value={kirim.masul} />
-                    <Info label="Ombor" value={kirim.ombor} />
-                    <Info label="Sana" value={sanaFormat(kirim.sana)} />
+                    <CardTitle title={t("savdoModal.additionalInfoTitle")} />
+                    <Info label={t("kirimModal.supplierLabel")} value={beruvchiNomi} />
+                    <Info label={t("tablari.masul")} value={kirim.masul} />
+                    <Info label={t("tablari.ombor")} value={kirim.ombor} />
+                    <Info label={t("tablari.sana")} value={sanaFormat(kirim.sana)} />
                   </section>
                 </aside>
 
@@ -98,18 +101,18 @@ export default function KirimModal({ kirim, beruvchiNomi, onYopish }: Props) {
 
                 <main className="space-y-6">
                   <FaoliyatPaneli />
-                  <Divider label="Bugun" />
+                  <Divider label={t("savdoModal.todayLabel")} />
                   <FeedCard
-                    title="Kirim yaratildi"
+                    title={t("kirimModal.kirimCreated")}
                     time={qisqaVaqt(kirim.sana)}
-                    text={`${beruvchiNomi} dan ${kirim.raqam} kirim qabul qilindi.`}
+                    text={t("kirimModal.kirimCreatedText", { supplier: beruvchiNomi, number: kirim.raqam })}
                   />
                 </main>
               </div>
             ) : (
               <div className="px-9 py-9">
                 <p className="rounded-[24px] border border-dashed border-orange-200 bg-white/60 p-16 text-center font-bold text-slate-400">
-                  {faolTab} bo'limi bo'sh
+                  {t("savdoModal.emptySection", { tab: tablar.find((tab) => tab.kalit === faolTab)?.nom })}
                 </p>
               </div>
             )}

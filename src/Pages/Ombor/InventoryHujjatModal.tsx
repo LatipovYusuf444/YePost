@@ -627,7 +627,13 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                             : item.quantity;
                         const price = "price" in item ? item.price : 0;
                         const expectedQuantity =
-                          "expectedQuantity" in item ? item.expectedQuantity : undefined;
+                          "actualQuantity" in item
+                            ? item.systemQuantity ?? item.expectedQuantity
+                            : undefined;
+                        const difference =
+                          expectedQuantity == null
+                            ? null
+                            : Number(quantity) - Number(expectedQuantity);
                         const inventarizatsiyaOmbori =
                           tur === "inventarizatsiya"
                             ? (hujjat as InventarizatsiyaHujjati).warehouse?.name ??
@@ -650,18 +656,18 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                                 <td className="px-4 py-3 font-black text-slate-900">{quantity}</td>
                                 <td
                                   className={`px-4 py-3 font-black ${
-                                    expectedQuantity == null || Number(quantity) === Number(expectedQuantity)
+                                    difference == null || difference === 0
                                       ? "text-slate-500"
-                                      : Number(quantity) > Number(expectedQuantity)
+                                      : difference > 0
                                         ? "text-emerald-600"
                                         : "text-red-500"
                                   }`}
                                 >
-                                  {expectedQuantity == null
+                                  {difference == null
                                     ? "—"
-                                    : Number(quantity) - Number(expectedQuantity) > 0
-                                      ? `+${Number(quantity) - Number(expectedQuantity)}`
-                                      : Number(quantity) - Number(expectedQuantity)}
+                                    : difference > 0
+                                      ? `+${difference}`
+                                      : difference}
                                 </td>
                               </>
                             ) : (

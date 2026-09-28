@@ -21,6 +21,7 @@ import { holat, hujjatRaqami, pul, sana } from "./omborYordamchilari";
 import ChiqimTafsilotModal from "./ChiqimTafsilotModal";
 import YangiChiqimModal from "./YangiChiqimModal";
 import TablePagination from "@/Components/common/TablePagination";
+import HujjatStatistikaKartalari from "./HujjatStatistikaKartalari";
 
 type Ustun =
   | "nomi"
@@ -65,6 +66,7 @@ export default function Chiqim() {
     OTHER: t("chiqim.reasons.OTHER"),
   };
   const [qidiruv, setQidiruv] = useState("");
+  const [statusFiltri, setStatusFiltri] = useState("ALL");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [modal, setModal] = useState(false);
@@ -169,9 +171,9 @@ export default function Chiqim() {
 
   const royxat = useMemo(() => {
     const query = qidiruv.trim().toLowerCase();
-    if (!query) return store.chiqimlar;
     return store.chiqimlar.filter((item) =>
-      [
+      (statusFiltri === "ALL" || String(item.status ?? "DRAFT").toUpperCase() === statusFiltri || (statusFiltri === "CANCELLED" && String(item.status ?? "").toUpperCase() === "CANCELED")) &&
+      (!query || [
         hujjatRaqami(item),
         omborNomi(item),
         sababNomi(item),
@@ -184,11 +186,18 @@ export default function Chiqim() {
       ]
         .join(" ")
         .toLowerCase()
-        .includes(query)
+        .includes(query))
     );
     // Qidiruv real backend ma'lumotlari va maplarga bog'liq.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qidiruv, store.chiqimlar, omborMap, xodimMap, t]);
+  }, [qidiruv, statusFiltri, store.chiqimlar, omborMap, xodimMap, t]);
+  const statistika = useMemo(() => {
+    const jami = store.chiqimlar.length;
+    const tasdiqlangan = store.chiqimlar.filter((item) => String(item.status ?? "").toUpperCase() === "CONFIRMED").length;
+    const bekorQilingan = store.chiqimlar.filter((item) => ["CANCELLED", "CANCELED"].includes(String(item.status ?? "").toUpperCase())).length;
+    const jarayonda = jami - tasdiqlangan - bekorQilingan;
+    return [jami, tasdiqlangan, jarayonda, bekorQilingan] as [number, number, number, number];
+  }, [store.chiqimlar]);
   const sahifadagiRoyxat = useMemo(() => royxat.slice((page - 1) * pageSize, page * pageSize), [royxat, page, pageSize]);
   useEffect(() => setPage(1), [royxat, pageSize]);
 
@@ -331,6 +340,14 @@ export default function Chiqim() {
           <Plus size={18} /> {t("chiqim.createButton")}
         </button>
       </header>
+
+      <HujjatStatistikaKartalari
+        labels={[t("chiqim.stats.total"), t("chiqim.stats.completed"), t("chiqim.stats.inProgress"), t("chiqim.stats.cancelled")]}
+        values={statistika}
+        selected={statusFiltri}
+        onSelect={(status) => { setStatusFiltri(status); setPage(1); }}
+        ariaLabel={t("chiqim.statsAria")}
+      />
 
       <div className="relative w-full max-w-[480px]">
         <Search size={18} className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" />

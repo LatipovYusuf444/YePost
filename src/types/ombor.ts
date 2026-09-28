@@ -251,7 +251,8 @@ export type InventarizatsiyaHujjati = {
   items?: Array<{
     id?: string;
     modificationId: string;
-    actualQuantity: number;
+    actualQuantity: number | string;
+    systemQuantity?: number | string;
     expectedQuantity?: number;
     modification?: MahsulotModifikatsiyasi;
   }>;

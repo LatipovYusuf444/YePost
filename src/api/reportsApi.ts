@@ -299,39 +299,36 @@ export async function auditLogsOlish(params: AuditFilter) {
   };
 }
 
-// Hisobot filter tanlovlari.
-export async function hisobotTanlovlariniOlish() {
-  const [products, modificationRows, warehouses, branches, categories, customers, suppliers, companies] = await Promise.all([
-    apiClient.get<RoyxatJavobi<Tanlov>>("/catalog/products"),
-    // Variantlar olinmasa ham boshqa tanlovlarni ko'rsatamiz.
-    apiClient
-      .get<RoyxatJavobi<Tanlov>>("/catalog/modifications")
-      .then((response) => royxatniAjratish(response.data))
-      .catch((error: unknown) => {
-        console.warn(getApiErrorMessage(error));
-        return [] as Tanlov[];
-      }),
-    apiClient.get<RoyxatJavobi<Tanlov>>("/organization/warehouses"),
-    apiClient.get<RoyxatJavobi<Tanlov>>("/organization/branches"),
-    apiClient.get<RoyxatJavobi<Tanlov>>("/catalog/categories"),
-    apiClient.get<RoyxatJavobi<Tanlov>>("/partners/customers"),
-    apiClient.get<RoyxatJavobi<Tanlov>>("/partners/suppliers"),
-    apiClient.get<RoyxatJavobi<Tanlov>>("/partners/client-companies"),
-  ]);
+// Hisobot filtrlari uchun faqat ayni sahifaga kerakli tanlovlarni yuklaymiz.
+export type HisobotTanlovTuri = "all" | "stock" | "qoldiq" | "counterparty" | "profit" | "foydaxarajat" | "income" | "audit";
 
-  const productRows = royxatniAjratish(products.data);
-  const modifications: Tanlov[] = modificationRows;
-
-  return {
-    products: productRows,
-    modifications,
-    warehouses: royxatniAjratish(warehouses.data),
-    branches: royxatniAjratish(branches.data),
-    categories: royxatniAjratish(categories.data),
-    customers: royxatniAjratish(customers.data),
-    suppliers: royxatniAjratish(suppliers.data),
-    companies: royxatniAjratish(companies.data),
+export async function hisobotTanlovlariniOlish(turi: HisobotTanlovTuri = "all") {
+  const kerak = {
+    products: turi === "all" || turi === "stock" || turi === "qoldiq",
+    modifications: turi === "all" || turi === "stock" || turi === "qoldiq",
+    warehouses: turi === "all" || turi === "stock" || turi === "qoldiq",
+    branches: turi === "all" || turi === "stock" || turi === "qoldiq" || turi === "foydaxarajat" || turi === "income",
+    categories: turi === "all" || turi === "stock" || turi === "qoldiq" || turi === "profit",
+    customers: turi === "all" || turi === "stock" || turi === "counterparty",
+    suppliers: turi === "all" || turi === "stock" || turi === "counterparty",
   };
+  const olish = (path: string, enabled: boolean) => enabled
+    ? apiClient.get<RoyxatJavobi<Tanlov>>(path).then((response) => royxatniAjratish(response.data))
+    : Promise.resolve([] as Tanlov[]);
+  const [products, modifications, warehouses, branches, categories, customers, suppliers] = await Promise.all([
+    olish("/catalog/products", kerak.products),
+    kerak.modifications
+      ? apiClient.get<RoyxatJavobi<Tanlov>>("/catalog/modifications")
+          .then((response) => royxatniAjratish(response.data))
+          .catch((error: unknown) => { console.warn(getApiErrorMessage(error)); return [] as Tanlov[]; })
+      : Promise.resolve([] as Tanlov[]),
+    olish("/organization/warehouses", kerak.warehouses),
+    olish("/organization/branches", kerak.branches),
+    olish("/catalog/categories", kerak.categories),
+    olish("/partners/customers", kerak.customers),
+    olish("/partners/suppliers", kerak.suppliers),
+  ]);
+  return { products, modifications, warehouses, branches, categories, customers, suppliers, companies: [] as Tanlov[] };
 }
 
 export type StockBalanceParams={asOf?:string;warehouseIds?:string;branchIds?:string;categoryIds?:string;productIds?:string;modificationIds?:string;balanceStatus?:"ALL"|"POSITIVE"|"ZERO"|"NEGATIVE";priceType?:"COST"|"RETAIL"|"WHOLESALE";groupByWarehouse?:boolean;includeReserved?:boolean;search?:string;page?:number;pageSize?:number};

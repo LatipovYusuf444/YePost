@@ -53,7 +53,14 @@ export default function AppRouter() {
         {/* Mock Kassa uchoti eski backendli Kassa sahifasi o'rnida
             (backend kodi Pages/Kassa da tegilmagan holda qoladi). */}
         <Route path="/kassa" element={<KassaUchot />} />
-        <Route path="/hisobotlar" element={<HisobotUchot />} />
+        <Route path="/hisobotlar" element={<Navigate to="/hisobotlar/tovar-harakati" replace />} />
+        <Route path="/hisobotlar/tovar-harakati" element={<HisobotUchot tab="stock" />} />
+        <Route path="/hisobotlar/ombor-qoldigi" element={<HisobotUchot tab="qoldiq" />} />
+        <Route path="/hisobotlar/ozaro-hisob-kitob" element={<HisobotUchot tab="counterparty" />} />
+        <Route path="/hisobotlar/foyda" element={<HisobotUchot tab="profit" />} />
+        <Route path="/hisobotlar/foyda-xarajat" element={<HisobotUchot tab="foydaxarajat" />} />
+        <Route path="/hisobotlar/kirim-chiqim" element={<HisobotUchot tab="income" />} />
+        <Route path="/hisobotlar/audit-loglari" element={<HisobotUchot tab="audit" />} />
         {/* Mock Xodim uchoti eski backendli Hodimlar sahifasi o'rnida
             (backend kodi Pages/Hodimlar + accountStore da tegilmagan holda qoladi). */}
         <Route path="/hodimlar" element={<XodimUchot />} />

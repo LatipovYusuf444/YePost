@@ -178,6 +178,8 @@
     "columnSettingsTitle": "Ko'rinadigan ustunlar",
     "emptyTitle": "Kirim hujjati topilmadi",
     "emptyHint": "\"Yaratish\" tugmasi orqali yangi kirim qo'shing.",
+    "stats": { "total": "Jami hujjatlar", "completed": "Tasdiqlangan", "inProgress": "Jarayonda", "cancelled": "Bekor qilingan" },
+    "statsAria": "Hujjatlar statistikasi",
     "columns": {
       "nomi": "Nomi",
       "yetkazibBeruvchi": "Yetkazib beruvchi",

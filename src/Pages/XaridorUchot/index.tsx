@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { LoaderCircle, RefreshCw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { mijozKompaniyalariApi, mijozlarApi, yetkazibBeruvchilarApi } from "@/api/partnersApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { sotuvlarRoyxatiniOlish } from "@/api/savdoApi";
@@ -17,15 +18,17 @@ type Props = {
   faolTab?: Tab;
 };
 
-function customFieldsniTekshir(customFields: Record<string, unknown> | undefined) {
-  const value = customFields ?? {};
-  if (new TextEncoder().encode(JSON.stringify(value)).byteLength > 2048) {
-    throw new Error("Maxsus maydonlar hajmi 2KB dan oshmasligi kerak.");
-  }
-  return value;
-}
-
 export default function XaridorUchot({ faolTab = "xaridorlar" }: Props) {
+  const { t } = useTranslation("xaridor_uchot");
+
+  function customFieldsniTekshir(customFields: Record<string, unknown> | undefined) {
+    const value = customFields ?? {};
+    if (new TextEncoder().encode(JSON.stringify(value)).byteLength > 2048) {
+      throw new Error(t("root.customFieldsTooLarge"));
+    }
+    return value;
+  }
+
   const [xaridorlar, setXaridorlar] = useState<Xaridor[]>([]);
   const [kompaniyalar, setKompaniyalar] = useState<XaridorKompaniyasi[]>([]);
   const [yetkazibBeruvchilar, setYetkazibBeruvchilar] = useState<YetkazibBeruvchi[]>([]);
@@ -178,8 +181,8 @@ export default function XaridorUchot({ faolTab = "xaridorlar" }: Props) {
 
   return (
     <div className="space-y-5">
-      {xatolik && <div className="flex items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600"><span>{xatolik}</span><button onClick={() => void yuklash()} className="inline-flex items-center gap-2"><RefreshCw size={16}/>Qayta urinish</button></div>}
-      {(yuklanmoqda || amalBajarilmoqda) && <div className="flex items-center justify-center gap-2 rounded-2xl bg-white p-3 text-sm font-bold text-slate-500"><LoaderCircle className="animate-spin" size={18}/>{yuklanmoqda ? "Backend ma’lumotlari yuklanmoqda..." : "Saqlanmoqda..."}</div>}
+      {xatolik && <div className="flex items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600"><span>{xatolik}</span><button onClick={() => void yuklash()} className="inline-flex items-center gap-2"><RefreshCw size={16}/>{t("root.retry")}</button></div>}
+      {(yuklanmoqda || amalBajarilmoqda) && <div className="flex items-center justify-center gap-2 rounded-2xl bg-white p-3 text-sm font-bold text-slate-500"><LoaderCircle className="animate-spin" size={18}/>{yuklanmoqda ? t("root.loading") : t("root.saving")}</div>}
 
       {!yuklanmoqda && faolTab === "xaridorlar" && (
         <Xaridorlar xaridorlar={xaridorlar} kompaniyalar={kompaniyalar} savdolar={savdolar} onSaqlash={xaridorSaqlash} onOchirish={xaridorOchirish}/>

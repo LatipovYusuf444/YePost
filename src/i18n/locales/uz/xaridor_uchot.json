@@ -1,0 +1,332 @@
+{
+  "xodimModal": {
+    "badge": "Mas'ul xodim",
+    "position": "Lavozim",
+    "phone": "Telefon"
+  },
+  "tezkorPanel": {
+    "close": "Yopish",
+    "copyLink": "Havolani nusxalash",
+    "downloadData": "Ma'lumotni yuklab olish",
+    "openInNewTab": "Alohida oynada ochish"
+  },
+  "korinishTanlov": {
+    "button": "Ko'rinish",
+    "card": "Kartochka",
+    "table": "Jadval"
+  },
+  "kartaSozlama": {
+    "settingsAria": "Maydonlarni sozlash",
+    "fieldsTitle": "Maydonlar"
+  },
+  "ijtimoiyTanlov": {
+    "label": "Ijtimoiy tarmoqlar"
+  },
+  "ijtimoiyIkonlar": {
+    "filled": "{{network}}: {{value}}",
+    "empty": "{{network}} kiritilmagan",
+    "openLink": "{{network}} havolasini ochish",
+    "dialogAria": "{{network}} havolasi",
+    "open": "Ochish · {{link}}",
+    "copied": "Nusxalandi ✓",
+    "copy": "Nusxalash"
+  },
+  "faoliyatPaneli": {
+    "tabs": { "ish": "Ish", "izoh": "Izoh", "xabar": "Xabar", "vazifa": "Vazifa" },
+    "more": "Ko'proq",
+    "titlePlaceholders": {
+      "ish": "Mijoz bilan bog'lanish",
+      "izoh": "Izoh sarlavhasi",
+      "xabar": "Xabar mavzusi",
+      "vazifa": "Vazifa nomi"
+    },
+    "detailPlaceholders": {
+      "ish": "Vazifa haqida batafsil yozing...",
+      "izoh": "Izoh matnini yozing...",
+      "xabar": "Xabar matnini yozing...",
+      "vazifa": "Vazifa haqida batafsil yozing..."
+    },
+    "today": "Bugun",
+    "dueLabel": "{{day}}, soat {{time}}",
+    "priorityTitle": "Muhimlik",
+    "responsibleTitle": "Mas'ul",
+    "reminderTitle": "Eslatma",
+    "saving": "Saqlanmoqda...",
+    "sectionBadge": "Faoliyat",
+    "loading": "CRM ma'lumotlari yuklanmoqda...",
+    "empty": "Faoliyat yozuvlari yo'q",
+    "defaultActivitySubject": "CRM faoliyati",
+    "commentSubject": "Izoh",
+    "chatFromCustomer": "Mijozdan xabar",
+    "chatSent": "Xabar yuborildi",
+    "errors": {
+      "noPartnerId": "CRM faoliyatini saqlash uchun real partner ID mavjud emas.",
+      "noAssignee": "Joriy mas'ul foydalanuvchi aniqlanmadi."
+    }
+  },
+  "shared": {
+    "eyebrow": "Xaridor uchoti",
+    "deleteAria": "O'chirish",
+    "createdLabel": "Yaratilgan sana",
+    "createdByLabel": "Yaratgan",
+    "registeredDateLabel": "Ro'yxatga olingan sana",
+    "defaultResponsible": "Administrator",
+    "tabs": {
+      "malumotlar": "Ma'lumotlar",
+      "savdolar": "Savdolar",
+      "kirim": "Kirim",
+      "tolovlar": "To'lovlar",
+      "tarix": "Tarix"
+    },
+    "notEntered": "Kiritilmagan",
+    "socialNetworksLabel": "Ijtimoiy tarmoqlar",
+    "editButton": "Ma'lumotni o'zgartirish",
+    "documentButton": "Hujjat",
+    "currencySuffix": "so'm",
+    "detailFields": {
+      "stir": "STIR",
+      "phone": "Telefon",
+      "position": "Lavozim",
+      "createdBy": "Yaratgan mas'ul shaxs",
+      "createdDate": "Sana yaratilgan",
+      "modifiedDate": "O'zgartirilgan sana",
+      "modifiedBy": "O'zgartirgan mas'ul shaxs"
+    }
+  },
+  "xaridorlar": {
+    "title": "Xaridorlar",
+    "subtitle": "Jismoniy xaridorlarni yaratish va tahrirlash.",
+    "searchPlaceholder": "Ism, telefon, kompaniya yoki manzil...",
+    "addButton": "Xaridor qo'shish",
+    "deleteConfirm": "{{name}} ma'lumotini o'chirasizmi?",
+    "empty": "Xaridor mavjud emas",
+    "cardFields": {
+      "ismFamiliya": "Ism Familiya",
+      "tel": "Tel nomer",
+      "ijtimoiy": "Ijtimoiy tarmoq",
+      "kompaniya": "Kompaniya",
+      "yaratilgan": "Yaratilgan sana",
+      "yaratgan": "Yaratgan mas'ul shaxs"
+    },
+    "columns": {
+      "ismi": "Ismi",
+      "familiya": "Familiya",
+      "tel": "Tel nomer",
+      "lavozim": "Lavozim",
+      "ijtimoiy": "Ijtimoiy tarmoq",
+      "yaratgan": "Mas'ul shaxs yaratgan",
+      "yaratilgan": "Sana yaratilgan",
+      "ozgartirilgan": "O'zgartirilgan sana",
+      "kompaniya": "Kompaniya"
+    }
+  },
+  "kompaniyalar": {
+    "title": "Kompaniya",
+    "subtitle": "Xaridorlar biriktiriladigan yuridik shaxslar ro'yxati.",
+    "searchPlaceholder": "Nomi, STIR yoki telefon...",
+    "addButton": "Kompaniya qo'shish",
+    "deleteConfirm": "{{name}} kompaniyasini o'chirasizmi?",
+    "empty": "Kompaniya mavjud emas",
+    "stirPrefix": "STIR: {{value}}",
+    "cardFields": {
+      "nomi": "Nomi",
+      "stir": "STIR",
+      "tel": "Tel nomer",
+      "ijtimoiy": "Ijtimoiy tarmoq",
+      "aloqa": "Mas'ul shaxs",
+      "yaratilgan": "Yaratilgan sana",
+      "yaratgan": "Yaratgan mas'ul shaxs"
+    },
+    "columns": {
+      "nomi": "Nomi",
+      "stir": "STIR",
+      "tel": "Tel nomer",
+      "aloqa": "Mas'ul shaxs",
+      "lavozim": "Lavozim",
+      "aloqaTel": "Mas'ul tel nomer",
+      "ijtimoiy": "Ijtimoiy tarmoq",
+      "yaratgan": "Mas'ul shaxs yaratgan",
+      "yaratilgan": "Sana yaratilgan",
+      "ozgartirilgan": "O'zgartirilgan sana",
+      "ozgartgan": "O'zgartirgan mas'ul shaxs"
+    }
+  },
+  "yetkazibBeruvchilar": {
+    "title": "Yetkazib beruvchilar",
+    "subtitle": "Mahsulot yetkazib beruvchi hamkorlarni yaratish va tahrirlash.",
+    "searchPlaceholder": "Nomi yoki telefon...",
+    "addButton": "Yetkazib beruvchi qo'shish",
+    "deleteConfirm": "{{name}} ma'lumotini o'chirasizmi?",
+    "empty": "Yetkazib beruvchi mavjud emas",
+    "stirPrefix": "STIR: {{value}}",
+    "cardFields": {
+      "nomi": "Nomi",
+      "stir": "STIR",
+      "tel": "Tel nomer",
+      "ijtimoiy": "Ijtimoiy tarmoq",
+      "aloqa": "Aloqa shaxs",
+      "yaratilgan": "Yaratilgan sana",
+      "yaratgan": "Yaratgan mas'ul shaxs"
+    },
+    "columns": {
+      "nomi": "Nomi",
+      "stir": "STIR",
+      "aloqa": "Aloqa shaxs",
+      "tel": "Tel nomer",
+      "ijtimoiy": "Ijtimoiy tarmoq",
+      "yaratgan": "Mas'ul shaxs yaratgan",
+      "yaratilgan": "Sana yaratilgan",
+      "ozgartirilgan": "O'zgartirilgan sana",
+      "ozgartgan": "O'zgartirgan mas'ul shaxs"
+    }
+  },
+  "xaridorModal": {
+    "editTitle": "Xaridorni tahrirlash",
+    "newTitle": "Yangi xaridor",
+    "badge": "Xaridor ma'lumotlari",
+    "requiredError": "Ism, familiya va kamida bitta telefon to'ldirilishi shart.",
+    "personalInfoTitle": "Shaxsiy ma'lumotlar",
+    "firstName": "Ism *",
+    "firstNamePlaceholder": "Sardor",
+    "lastName": "Familiya *",
+    "lastNamePlaceholder": "Rahimov",
+    "phone": "Telefon *",
+    "phonePlaceholder": "+998 90 123 45 67",
+    "removePhoneAria": "Telefonni o'chirish",
+    "addPhone": "Telefon qo'shish",
+    "address": "Manzil",
+    "addressPlaceholder": "Toshkent sh., Chilonzor tumani, 12-kvartal",
+    "workSectionTitle": "Aloqa va ish",
+    "company": "Kompaniya",
+    "companyUnassigned": "Biriktirilmagan",
+    "position": "Lavozim",
+    "positionPlaceholder": "Bo'lim boshlig'i"
+  },
+  "kompaniyaModal": {
+    "editTitle": "Kompaniyani tahrirlash",
+    "newTitle": "Yangi kompaniya",
+    "badge": "Kompaniya ma'lumotlari",
+    "requiredError": "Kompaniya nomi to'ldirilishi shart.",
+    "sectionTitle": "Kompaniya ma'lumotlari",
+    "name": "Kompaniya nomi *",
+    "namePlaceholder": "Oq Yo'l Savdo MChJ",
+    "stir": "STIR",
+    "stirPlaceholder": "301234567",
+    "phone": "Telefon",
+    "phonePlaceholder": "+998 71 200 10 10",
+    "contactPerson": "Xaridor ulangan shaxs",
+    "contactPersonPlaceholder": "Sardor Rahimov",
+    "contactPhone": "Xaridor tel raqami",
+    "contactPhonePlaceholder": "+998 90 123 45 67",
+    "position": "Lavozim",
+    "positionPlaceholder": "Ta'minot bo'limi boshlig'i"
+  },
+  "yetkazibModal": {
+    "editTitle": "Yetkazib beruvchini tahrirlash",
+    "newTitle": "Yangi yetkazib beruvchi",
+    "badge": "Yetkazib beruvchi ma'lumotlari",
+    "requiredError": "Yetkazib beruvchi nomi to'ldirilishi shart.",
+    "sectionTitle": "Yetkazib beruvchi ma'lumotlari",
+    "name": "Nomi *",
+    "namePlaceholder": "Nestle Uzbekistan",
+    "stir": "STIR",
+    "stirPlaceholder": "201112223",
+    "phone": "Telefon",
+    "phonePlaceholder": "+998 71 200 10 10",
+    "contactPerson": "Aloqa shaxsi",
+    "contactPersonPlaceholder": "Aziz Tursunov",
+    "contactPhone": "Aloqa tel raqami",
+    "contactPhonePlaceholder": "+998 90 123 45 67",
+    "position": "Lavozim",
+    "positionPlaceholder": "Savdo vakili"
+  },
+  "xaridorDetails": {
+    "aboutTitle": "Xaridor haqida",
+    "companyLabel": "Kompaniya",
+    "companyUnassigned": "Biriktirilmagan",
+    "totalSales": "Jami realizatsiya",
+    "totalPaid": "Jami to'langan",
+    "debtorYes": "Qarzdor: HA",
+    "debtorNo": "Qarzdor emas"
+  },
+  "kompaniyaDetails": {
+    "aboutTitle": "Kompaniya haqida",
+    "contactPerson": "Mas'ul shaxs",
+    "contactPhone": "Mas'ul tel raqami"
+  },
+  "yetkazibDetails": {
+    "aboutTitle": "Yetkazib beruvchi haqida",
+    "contactPerson": "Aloqa shaxs",
+    "contactPhone": "Aloqa tel raqami"
+  },
+  "statuses": {
+    "savdoHolat": {
+      "qoralama": "Qoralama",
+      "tolangan": "To'langan",
+      "qarzdor": "Qarzdorlik",
+      "bekor": "Bekor qilingan"
+    },
+    "tolovTuri": {
+      "naqd": "Naqd",
+      "karta": "Karta",
+      "bank": "Bank o'tkazmasi"
+    },
+    "kirimHolat": {
+      "qabul": "Qabul qilingan",
+      "kutilmoqda": "Kutilmoqda",
+      "bekor": "Bekor qilingan"
+    }
+  },
+  "tablari": {
+    "nomi": "Nomi",
+    "xaridor": "Xaridor",
+    "masul": "Mas'ul shaxs",
+    "yaratilganSana": "Yaratilgan sana",
+    "summa": "Summa",
+    "ombor": "Ombor",
+    "holat": "Holat",
+    "sana": "Sana",
+    "savdo": "Savdo",
+    "turi": "Turi",
+    "izoh": "Izoh",
+    "emptySavdolar": "Savdolar yo'q",
+    "emptyKirimlar": "Kirimlar yo'q",
+    "emptyTolovlar": "Bu xaridorda to'lovlar yo'q",
+    "emptyTarix": "Tarix bo'sh"
+  },
+  "savdoModal": {
+    "tabs": { "umumiy": "Umumiy", "tovarlar": "Tovarlar", "hisobFakturalar": "Hisob-fakturalar", "tarix": "Tarix" },
+    "emptySection": "{{tab}} bo'limi bo'sh",
+    "dealTitle": "Kelishuv haqida",
+    "stageLabel": "Bosqich",
+    "amountCurrencyLabel": "Miqdor va valyuta",
+    "paymentDeliveryTitle": "To'lov va yetkazish",
+    "paymentDeliveryHint": "Bu yerda to'lov, yetkazish va ombordan chiqarish ma'lumotlari ko'rsatiladi.",
+    "addButton": "Qo'shish",
+    "cardPayment": "Karta: {{amount}}",
+    "saleTotal": "Sotuv jami",
+    "paymentReceived": "Qabul qilingan to'lov",
+    "debtRemaining": "Qarzdorlik qoldig'i",
+    "noDebt": "Qarzdorlik yo'q",
+    "additionalInfoTitle": "Qo'shimcha ma'lumotlar",
+    "customerLabel": "Xaridor",
+    "todayLabel": "Bugun",
+    "calcModeChanged": "Hisoblash rejimi o'zgartirildi",
+    "calcModeText": "Tovarlar narxiga asoslanib → {{amount}}",
+    "saleCreated": "Sotuv yaratildi",
+    "saleCreatedText": "{{customer}} uchun {{number}} sotuv yaratildi."
+  },
+  "kirimModal": {
+    "tabs": { "umumiy": "Umumiy", "tovarlar": "Tovarlar", "hujjatlar": "Hujjatlar", "tarix": "Tarix" },
+    "aboutTitle": "Kirim haqida",
+    "supplierLabel": "Yetkazib beruvchi",
+    "kirimCreated": "Kirim yaratildi",
+    "kirimCreatedText": "{{supplier}} dan {{number}} kirim qabul qilindi."
+  },
+  "root": {
+    "retry": "Qayta urinish",
+    "loading": "Backend ma'lumotlari yuklanmoqda...",
+    "saving": "Saqlanmoqda...",
+    "customFieldsTooLarge": "Maxsus maydonlar hajmi 2KB dan oshmasligi kerak."
+  }
+}

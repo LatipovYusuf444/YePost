@@ -44,6 +44,8 @@
     "createButton": "Yaratish",
     "searchPlaceholder": "Nomi, sabab, mas'ul shaxs, sana yoki holati bo'yicha",
     "documentLabel": "Chiqim hujjati",
+    "stats": { "total": "Jami hujjatlar", "completed": "Tasdiqlangan", "inProgress": "Jarayonda", "cancelled": "Bekor qilingan" },
+    "statsAria": "Hujjatlar statistikasi",
     "columns": {
       "nomi": "Nomi",
       "status": "Status",

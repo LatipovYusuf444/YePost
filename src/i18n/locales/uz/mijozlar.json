@@ -1,0 +1,53 @@
+{
+  "tabs": {
+    "xaridorlar": "Xaridorlar",
+    "kompaniyalar": "Xaridor kompaniyalari",
+    "yetkazib-beruvchilar": "Yetkazib beruvchilar"
+  },
+  "addUnit": {
+    "xaridorlar": "Xaridor",
+    "kompaniyalar": "Kompaniya",
+    "yetkazib-beruvchilar": "Yetkazib beruvchi"
+  },
+  "modalTitles": {
+    "xaridorlar": { "new": "Yangi xaridor", "edit": "Xaridorni tahrirlash" },
+    "kompaniyalar": { "new": "Yangi kompaniya", "edit": "Kompaniyani tahrirlash" },
+    "yetkazib-beruvchilar": { "new": "Yangi yetkazib beruvchi", "edit": "Yetkazib beruvchini tahrirlash" }
+  },
+  "eyebrow": "Hamkorlar bazasi",
+  "title": "Xaridorlar va yetkazib beruvchilar",
+  "subtitle": "Jismoniy xaridorlar, xaridor kompaniyalari va yetkazib beruvchilar backenddan olinadi.",
+  "refresh": "Yangilash",
+  "close": "Yopish",
+  "searchPlaceholder": "Ism, telefon, kompaniya yoki STIR...",
+  "addButton": "{{unit}} qo'shish",
+  "noPhone": "Telefon kiritilmagan",
+  "card": {
+    "address": "Manzil: {{value}}",
+    "company": "Kompaniya: {{value}}",
+    "balance": "Balans: {{value}}",
+    "inn": "STIR: {{value}}",
+    "notEntered": "Kiritilmagan",
+    "notAssigned": "Biriktirilmagan",
+    "edit": "Ko'rish va tahrirlash"
+  },
+  "empty": "Ma'lumot mavjud emas",
+  "deleteConfirm": "{{name}} ma'lumotini o'chirasizmi?",
+  "modal": {
+    "eyebrow": "Hamkor ma'lumotlari",
+    "companyUnassigned": "Kompaniya biriktirilmagan",
+    "placeholders": {
+      "firstName": "Ism *",
+      "lastName": "Familiya *",
+      "middleName": "Otasining ismi",
+      "phoneRequired": "Telefon *",
+      "phone": "Telefon",
+      "telegramId": "Telegram ID",
+      "address": "Manzil",
+      "nameRequired": "Nomi *",
+      "inn": "STIR"
+    },
+    "cancel": "Bekor qilish",
+    "save": "Saqlash"
+  }
+}

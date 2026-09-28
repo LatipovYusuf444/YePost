@@ -9,6 +9,7 @@ import {
   Smartphone,
   X,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import Tanlov from "@/Pages/XaridorUchot/Tanlov";
 import { foydalanuvchilarApi } from "@/api/accountsApi";
@@ -26,11 +27,11 @@ import {
   yangiId,
 } from "./yordamchilar";
 
-const kanallar: { kalit: KassaKanali; nom: string; icon: typeof Banknote }[] = [
-  { kalit: "naqd", nom: "Naqd", icon: Banknote },
-  { kalit: "bank", nom: "Bank", icon: Landmark },
-  { kalit: "ilova", nom: "Ilova", icon: Smartphone },
-];
+const kanalIkonlari: Record<KassaKanali, typeof Banknote> = {
+  naqd: Banknote,
+  bank: Landmark,
+  ilova: Smartphone,
+};
 
 // Qo'lda yaratiladigan turlar (donalik_savdo savdodan avtomat keladi).
 const tushumTurlari: KassaAmaliyotTuri[] = [
@@ -45,19 +46,6 @@ const chiqimTurlari: KassaAmaliyotTuri[] = [
   "ish_haqi",
   "boshqa_chiqim",
 ];
-
-const turNomi: Record<KassaAmaliyotTuri, string> = {
-  xaridor_tolovi: "Mijozdan to'lov",
-  hisobdor_qaytardi: "Hisobdor shaxs mablag'ini qaytarish",
-  taminotchi_qaytardi: "Yetkazib beruvchi mablag'ini qaytarishi",
-  boshqa_kirim: "Boshqa pul mablag'lari tushumi",
-  donalik_savdo: "Donalik savdo",
-  taminot_tolovi: "Yetkazib beruvchiga to'lov",
-  xaridorga_qaytarish: "Xaridorga pul mablag'larini qaytarish",
-  ish_haqi: "Ish haqini to'lash",
-  boshqa_chiqim: "Boshqa pul xarajatlari",
-  xarajat: "Xarajat",
-};
 
 type Props = {
   boshlangich: KassaAmaliyoti | null;
@@ -79,6 +67,11 @@ export default function KassaAmaliyotModal({
   onYopish,
   onSaqlash,
 }: Props) {
+  const { t } = useTranslation(["kassa_uchot", "common"]);
+  const kanallar: { kalit: KassaKanali; nom: string; icon: typeof Banknote }[] = (
+    ["naqd", "bank", "ilova"] as KassaKanali[]
+  ).map((kalit) => ({ kalit, nom: t(`channels.${kalit}`), icon: kanalIkonlari[kalit] }));
+
   const [xaridorlar, setXaridorlar] = useState<XaridorTanlov[]>([]);
   const [xodimlar, setXodimlar] = useState<OddiyTanlov[]>([]);
   const [yetkazibBeruvchilar, setYetkazibBeruvchilar] = useState<OddiyTanlov[]>([]);
@@ -151,19 +144,19 @@ export default function KassaAmaliyotModal({
 
   function yubor(tasdiqla: boolean) {
     if (partiya === "xaridor" && !xaridorId) {
-      setXato("Mijozdan to'lov uchun mijoz tanlanishi shart.");
+      setXato(t("modal.errors.selectCustomer"));
       return;
     }
     if ((partiya === "xodim" && !employeeId) || (partiya === "yetkazib" && !supplierId)) {
-      setXato(partiya === "xodim" ? "Xodim tanlanishi shart." : "Yetkazib beruvchi tanlanishi shart.");
+      setXato(partiya === "xodim" ? t("modal.errors.selectEmployee") : t("modal.errors.selectSupplier"));
       return;
     }
     if (!summa.trim() || Number.isNaN(Number(summa)) || Number(summa) <= 0) {
-      setXato("Summa 0 dan katta son bo'lishi kerak.");
+      setXato(t("modal.errors.invalidAmount"));
       return;
     }
     if (izohMajburiy(turi) && !izoh.trim()) {
-      setXato("Boshqa pul xarajatlari uchun kommentariya (nega chiqim) to'ldirilishi shart.");
+      setXato(t("modal.errors.commentRequired"));
       return;
     }
 
@@ -186,7 +179,7 @@ export default function KassaAmaliyotModal({
       employeeId: partiya === "xodim" ? employeeId : undefined,
       responsibleId: responsibleId || undefined,
       raqam: boshlangich?.raqam ?? keyingiRaqam([]),
-      nomi: nomi.trim() || turNomi[turi],
+      nomi: nomi.trim() || t(`types.${turi}`),
       kontragent: yakuniyKontragent,
       summa: Number(summa),
       sana: new Date(`${sana}T${new Date().toISOString().slice(11, 16)}`).toISOString(),
@@ -207,7 +200,7 @@ export default function KassaAmaliyotModal({
         <button
           type="button"
           onClick={onYopish}
-          aria-label="Yopish"
+          aria-label={t("common:actions.close")}
           className="absolute -left-[58px] top-3 z-50 flex h-12 w-12 items-center justify-center rounded-[15px] bg-[#2563EB] text-white shadow-[0_10px_24px_rgba(15,23,42,.18)] ring-1 ring-white/70 transition hover:-translate-x-0.5 hover:bg-[#1D4ED8]"
         >
           <X size={21} strokeWidth={2.3} />
@@ -221,11 +214,11 @@ export default function KassaAmaliyotModal({
           {/* Chapda: sarlavha (X modaldan tashqarida) */}
           <div className="flex items-center gap-3">
             <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-              {boshlangich ? "Amaliyot" : tushum ? "Yangi tushum" : "Yangi chiqim"}
+              {boshlangich ? t("modal.titleExisting") : tushum ? t("modal.titleNewIncome") : t("modal.titleNewExpense")}
             </h2>
             {!boshlangich ? (
               <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-black text-orange-500">
-                YANGI
+                {t("modal.badgeNew")}
               </span>
             ) : (
               <span
@@ -238,10 +231,10 @@ export default function KassaAmaliyotModal({
                 }`}
               >
                 {mavjudHolat === "qoralama"
-                  ? "QORALAMA"
+                  ? t("modal.badgeDraft")
                   : mavjudHolat === "bekor_qilingan"
-                    ? "BEKOR QILINGAN"
-                    : "TASDIQLANGAN"}
+                    ? t("modal.badgeCancelled")
+                    : t("modal.badgeConfirmed")}
               </span>
             )}
           </div>
@@ -256,7 +249,7 @@ export default function KassaAmaliyotModal({
                 onClick={() => setTahrirRejim(true)}
                 className="h-12 rounded-2xl bg-[#2563EB] px-6 text-sm font-black text-white shadow-lg shadow-orange-100 hover:bg-orange-600"
               >
-                Tahrirlash
+                {t("common:actions.edit")}
               </button>
             )}
         </header>
@@ -266,7 +259,7 @@ export default function KassaAmaliyotModal({
             <div className="mb-4 flex justify-between gap-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
               <span>{xato}</span>
               <button type="button" onClick={() => setXato("")}>
-                Yopish
+                {t("common:actions.close")}
               </button>
             </div>
           )}
@@ -276,38 +269,38 @@ export default function KassaAmaliyotModal({
             <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
               <SectionTitle
                 icon={<PackagePlus size={18} />}
-                text={tushum ? "Pul tushumi haqida" : "Pul chiqimi haqida"}
+                text={tushum ? t("modal.incomeSectionTitle") : t("modal.expenseSectionTitle")}
               />
               <div className="grid gap-4">
                 {/* 1. Nomi */}
-                <Maydon label={tushum ? "Pul tushumni nomi" : "Chiqim nomi"}>
+                <Maydon label={tushum ? t("modal.incomeNameLabel") : t("modal.expenseNameLabel")}>
                   <input
                     value={nomi}
                     onChange={(event) => setNomi(event.target.value)}
-                    placeholder={turNomi[turi]}
+                    placeholder={t(`types.${turi}`)}
                     className={maydonKlass}
                   />
                 </Maydon>
 
                 {/* 2. Tur */}
-                <Maydon label={tushum ? "Tushum turi *" : "Chiqim turi *"}>
+                <Maydon label={tushum ? t("modal.incomeTypeLabel") : t("modal.expenseTypeLabel")}>
                   <Tanlov
                     qiymat={turi}
                     onChange={(v) => turniOzgartir(v as KassaAmaliyotTuri)}
-                    variantlar={(tushum ? tushumTurlari : chiqimTurlari).map((t) => ({
-                      value: t,
-                      label: turNomi[t],
+                    variantlar={(tushum ? tushumTurlari : chiqimTurlari).map((turKodi) => ({
+                      value: turKodi,
+                      label: t(`types.${turKodi}`),
                     }))}
                   />
                 </Maydon>
 
                 {/* 3. Partiya — turga qarab: mijoz / xodim / yetkazib */}
                 {partiya === "xaridor" && (
-                  <Maydon label="Mijoz *">
+                  <Maydon label={t("modal.customerLabel")}>
                     <Tanlov
                       qiymat={xaridorId}
                       onChange={setXaridorId}
-                      placeholder="Mijozni tanlang"
+                      placeholder={t("modal.customerPlaceholder")}
                       qidiruv
                       variantlar={xaridorlar.map((x) => ({
                         value: x.id,
@@ -316,7 +309,7 @@ export default function KassaAmaliyotModal({
                     />
                     {tanlanganXaridor && (
                       <div className="mt-2 flex items-center justify-between rounded-xl bg-orange-50 px-3.5 py-2.5 text-sm">
-                        <span className="font-bold text-slate-500">Joriy qarzi</span>
+                        <span className="font-bold text-slate-500">{t("modal.currentDebtLabel")}</span>
                         <span
                           className={`font-black ${
                             tanlanganXaridor.balans < 0 ? "text-red-500" : "text-emerald-600"
@@ -335,11 +328,11 @@ export default function KassaAmaliyotModal({
                 )}
 
                 {partiya === "xodim" && (
-                  <Maydon label="Xodim *">
+                  <Maydon label={t("modal.employeeLabel")}>
                     <Tanlov
                       qiymat={employeeId}
                       onChange={setEmployeeId}
-                      placeholder="Xodimni tanlang"
+                      placeholder={t("modal.employeePlaceholder")}
                       qidiruv
                       variantlar={xodimlar.map((x) => ({
                         value: x.id,
@@ -350,11 +343,11 @@ export default function KassaAmaliyotModal({
                 )}
 
                 {partiya === "yetkazib" && (
-                  <Maydon label="Yetkazib beruvchi *">
+                  <Maydon label={t("modal.supplierLabel")}>
                     <Tanlov
                       qiymat={supplierId}
                       onChange={setSupplierId}
-                      placeholder="Yetkazib beruvchini tanlang"
+                      placeholder={t("modal.supplierPlaceholder")}
                       qidiruv
                       variantlar={yetkazibBeruvchilar.map((b) => ({
                         value: b.id,
@@ -365,18 +358,18 @@ export default function KassaAmaliyotModal({
                 )}
 
                 {partiya === null && (
-                  <Maydon label="Kontragent">
+                  <Maydon label={t("modal.counterpartyLabel")}>
                     <input
                       value={kontragent}
                       onChange={(event) => setKontragent(event.target.value)}
-                      placeholder="Ixtiyoriy — kimdan/kimga"
+                      placeholder={t("modal.counterpartyPlaceholder")}
                       className={maydonKlass}
                     />
                   </Maydon>
                 )}
 
                 {/* Summa */}
-                <Maydon label="Summa (so'm) *">
+                <Maydon label={t("modal.amountLabel")}>
                   <input
                     type="number"
                     min="0"
@@ -388,7 +381,7 @@ export default function KassaAmaliyotModal({
                 </Maydon>
 
                 {/* To'lov turi / hisob */}
-                <Maydon label="To'lov turi">
+                <Maydon label={t("modal.paymentTypeLabel")}>
                   <div className="grid grid-cols-3 gap-2">
                     {kanallar.map(({ kalit, nom, icon: Ikonka }) => (
                       <button
@@ -409,20 +402,20 @@ export default function KassaAmaliyotModal({
                 </Maydon>
 
                 {/* Mas'ul shaxs */}
-                <Maydon label="Mas'ul shaxs">
+                <Maydon label={t("modal.responsibleLabel")}>
                   <Tanlov
                     qiymat={responsibleId}
                     onChange={(value) => {
                       setResponsibleId(value);
                       setMasul(xodimlar.find((item) => item.id === value)?.nomi ?? "");
                     }}
-                    placeholder="Mas'ul shaxsni tanlang"
+                    placeholder={t("modal.responsiblePlaceholder")}
                     variantlar={xodimlar.map((x) => ({ value: x.id, label: x.nomi }))}
                   />
                 </Maydon>
 
                 {/* Sana */}
-                <Maydon label={tushum ? "Qachon tushdi" : "Qachon chiqdi"}>
+                <Maydon label={tushum ? t("modal.incomeDateLabel") : t("modal.expenseDateLabel")}>
                   <div className="relative">
                     <input
                       type="date"
@@ -444,24 +437,24 @@ export default function KassaAmaliyotModal({
               <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
                 <SectionTitle
                   icon={<MessageSquare size={18} />}
-                  text={izohMajburiy(turi) ? "Kommentariya *" : "Kommentariya"}
+                  text={izohMajburiy(turi) ? t("modal.commentTitleRequired") : t("modal.commentTitle")}
                 />
                 <textarea
                   value={izoh}
                   onChange={(event) => setIzoh(event.target.value)}
                   rows={4}
                   placeholder={
-                    izohMajburiy(turi) ? "Nega chiqim bo'layotganini yozing..." : "Izoh yozing..."
+                    izohMajburiy(turi) ? t("modal.commentPlaceholderRequired") : t("modal.commentPlaceholder")
                   }
                   className="w-full resize-none rounded-2xl border border-slate-200 p-4 text-sm font-medium outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                 />
               </section>
               <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
-                <SectionTitle icon={<Clock3 size={18} />} text="Tarix" />
+                <SectionTitle icon={<Clock3 size={18} />} text={t("modal.historyTitle")} />
                 <div className="flex items-start gap-3 text-sm">
                   <span className="mt-1.5 h-2.5 w-2.5 rounded-full bg-orange-500" />
                   <div>
-                    <p className="font-bold text-slate-700">Yangi hujjat qoralamasi ochildi</p>
+                    <p className="font-bold text-slate-700">{t("modal.historyDraftCreated")}</p>
                     <p className="text-xs font-semibold text-slate-400">{bugungi}</p>
                   </div>
                 </div>
@@ -477,14 +470,14 @@ export default function KassaAmaliyotModal({
               onClick={() => yubor(false)}
               className="h-12 rounded-2xl border border-orange-300 bg-white px-7 text-sm font-black text-orange-600 hover:bg-orange-50"
             >
-              Saqlash
+              {t("common:actions.save")}
             </button>
             <button
               type="button"
               onClick={() => yubor(true)}
               className="h-12 rounded-2xl bg-orange-500 px-7 text-sm font-black text-white shadow-lg shadow-orange-100 hover:bg-orange-600"
             >
-              Saqlash va tasdiqlash
+              {t("modal.saveAndConfirm")}
             </button>
           </footer>
         )}

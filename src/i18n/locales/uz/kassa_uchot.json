@@ -1,0 +1,103 @@
+{
+  "eyebrow": "Kassa uchoti",
+  "title": "Kassa",
+  "subtitle": "Naqd, bank va ilova orqali tushum va chiqimlar nazorati.",
+  "loading": "Backend ma'lumotlari yuklanmoqda...",
+  "groups": {
+    "naqd": { "name": "Naqd", "tushum": "Naqd tushumlari", "chiqim": "Naqd chiqimlari" },
+    "bank": { "name": "Bank", "tushum": "Kiruvchi bank to'lovlari", "chiqim": "Chiquvchi bank to'lovlari" },
+    "ilova": { "name": "Ilova orqali", "tushum": "Ilova orqali tushumlar", "chiqim": "Ilova orqali chiqimlar" }
+  },
+  "channels": {
+    "naqd": "Naqd",
+    "bank": "Bank",
+    "ilova": "Ilova"
+  },
+  "searchPlaceholder": "Raqam, nomi, kontragent yoki mas'ul...",
+  "totalLabel": "Jami: {{value}}",
+  "createButton": "Amaliyot yaratish",
+  "emptyList": "{{section}} bo'yicha yozuv yo'q",
+  "cancelConfirm": "{{number}} amaliyotini bekor qilasizmi?",
+  "deleteConfirm": "{{number}} amaliyotini o'chirasizmi?",
+  "systemFallback": "Tizim",
+  "table": {
+    "raqam": "Raqam",
+    "nomi": "Nomi",
+    "kontragentFrom": "Kimdan",
+    "kontragentTo": "Kimga",
+    "tur": "Tur",
+    "masul": "Mas'ul shaxs",
+    "izoh": "Izoh",
+    "sana": "Sana",
+    "summa": "Summa"
+  },
+  "types": {
+    "xaridor_tolovi": "Mijozdan to'lov",
+    "hisobdor_qaytardi": "Hisobdor shaxs mablag'ini qaytarish",
+    "taminotchi_qaytardi": "Yetkazib beruvchi mablag'ini qaytarishi",
+    "boshqa_kirim": "Boshqa pul mablag'lari tushumi",
+    "donalik_savdo": "Donalik savdo",
+    "taminot_tolovi": "Yetkazib beruvchiga to'lov",
+    "xaridorga_qaytarish": "Xaridorga pul mablag'larini qaytarish",
+    "ish_haqi": "Ish haqini to'lash",
+    "boshqa_chiqim": "Boshqa pul xarajatlari",
+    "xarajat": "Xarajat"
+  },
+  "xaridorTab": {
+    "loading": "To'lovlar backenddan yuklanmoqda...",
+    "empty": "Bu mijozda kassa to'lovlari yo'q",
+    "salePayment": "Sotuv to'lovi",
+    "columns": {
+      "sana": "Sana",
+      "hujjat": "Hujjat",
+      "turi": "Turi",
+      "kanal": "To'lov turi",
+      "izoh": "Izoh",
+      "summa": "Summa"
+    }
+  },
+  "modal": {
+    "titleExisting": "Amaliyot",
+    "titleNewIncome": "Yangi tushum",
+    "titleNewExpense": "Yangi chiqim",
+    "badgeNew": "YANGI",
+    "badgeDraft": "QORALAMA",
+    "badgeCancelled": "BEKOR QILINGAN",
+    "badgeConfirmed": "TASDIQLANGAN",
+    "incomeSectionTitle": "Pul tushumi haqida",
+    "expenseSectionTitle": "Pul chiqimi haqida",
+    "incomeNameLabel": "Pul tushumni nomi",
+    "expenseNameLabel": "Chiqim nomi",
+    "incomeTypeLabel": "Tushum turi *",
+    "expenseTypeLabel": "Chiqim turi *",
+    "customerLabel": "Mijoz *",
+    "customerPlaceholder": "Mijozni tanlang",
+    "currentDebtLabel": "Joriy qarzi",
+    "employeeLabel": "Xodim *",
+    "employeePlaceholder": "Xodimni tanlang",
+    "supplierLabel": "Yetkazib beruvchi *",
+    "supplierPlaceholder": "Yetkazib beruvchini tanlang",
+    "counterpartyLabel": "Kontragent",
+    "counterpartyPlaceholder": "Ixtiyoriy — kimdan/kimga",
+    "amountLabel": "Summa (so'm) *",
+    "paymentTypeLabel": "To'lov turi",
+    "responsibleLabel": "Mas'ul shaxs",
+    "responsiblePlaceholder": "Mas'ul shaxsni tanlang",
+    "incomeDateLabel": "Qachon tushdi",
+    "expenseDateLabel": "Qachon chiqdi",
+    "commentTitleRequired": "Kommentariya *",
+    "commentTitle": "Kommentariya",
+    "commentPlaceholderRequired": "Nega chiqim bo'layotganini yozing...",
+    "commentPlaceholder": "Izoh yozing...",
+    "historyTitle": "Tarix",
+    "historyDraftCreated": "Yangi hujjat qoralamasi ochildi",
+    "saveAndConfirm": "Saqlash va tasdiqlash",
+    "errors": {
+      "selectCustomer": "Mijozdan to'lov uchun mijoz tanlanishi shart.",
+      "selectEmployee": "Xodim tanlanishi shart.",
+      "selectSupplier": "Yetkazib beruvchi tanlanishi shart.",
+      "invalidAmount": "Summa 0 dan katta son bo'lishi kerak.",
+      "commentRequired": "Boshqa pul xarajatlari uchun kommentariya (nega chiqim) to'ldirilishi shart."
+    }
+  }
+}

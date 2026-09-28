@@ -175,7 +175,7 @@ export default function AppSelect({
           ref={menuRef}
           role="listbox"
           style={menuStyle}
-          className="overflow-y-auto rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_50px_rgba(15,23,42,.18)] ring-1 ring-white/80"
+          className="overflow-y-auto rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_50px_rgba(15,23,42,.18)]"
         >
           {options.map((option, index) => {
             const active = option.value === currentValue;

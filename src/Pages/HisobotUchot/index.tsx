@@ -49,58 +49,33 @@ const boshFilterlar: Filterlar = {
   auditResource: "",
 };
 
-export default function HisobotUchot() {
+export default function HisobotUchot({ tab }: { tab: HisobotTab }) {
   return (
-    <HisobotRealDataProvider>
-      <HisobotSahifasi />
+    <HisobotRealDataProvider tab={tab}>
+      <HisobotSahifasi tab={tab} />
     </HisobotRealDataProvider>
   );
 }
 
-function HisobotSahifasi() {
-  const [tab, setTab] = useState<HisobotTab>("stock");
+function HisobotSahifasi({ tab }: { tab: HisobotTab }) {
   const { yuklanmoqda, xato } = useHisobotRealData();
+  const joriyTab = tablar.find((item) => item.id === tab) ?? tablar[0];
 
   return (
     <div className="space-y-6">
       <header>
-        <p className="text-sm font-bold uppercase tracking-[0.18em] text-orange-500">
-          Hisobot va audit
-        </p>
+        <p className="text-sm font-bold uppercase tracking-[0.18em] text-blue-600">Hisobotlar / Alohida hisobot</p>
         <div className="mt-1 flex flex-wrap items-center gap-3">
-          <h1 className="text-3xl font-black text-gray-950">Hisobotlar</h1>
+          <h1 className="text-3xl font-black text-gray-950">{joriyTab.nom}</h1>
           <span className="inline-flex h-8 items-center gap-2 rounded-full bg-emerald-50 px-3 text-sm font-bold text-emerald-600">
             <span className="h-2 w-2 rounded-full bg-emerald-400" />
             {yuklanmoqda ? "Backend yuklanmoqda" : "Real backend"}
           </span>
         </div>
-        <p className="mt-1 text-sm text-gray-500">
-          Tovar harakati, kontragent balansi, foyda, kirim-chiqim va tizim loglari real backenddan olinadi.
-        </p>
+        <p className="mt-1 text-sm text-gray-500">Ushbu hisobot o‘ziga tegishli real backend ma’lumotlarini ko‘rsatadi.</p>
       </header>
 
       {xato && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
-
-      <nav className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-        {tablar.map((item) => {
-          const Icon = item.icon;
-          const active = tab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setTab(item.id)}
-              className={`rounded-[24px] border p-4 text-left transition hover:-translate-y-0.5 ${
-                active
-                  ? "border-orange-200 bg-orange-500 text-white shadow-lg shadow-orange-200"
-                  : "border-orange-100 bg-white text-gray-700 hover:bg-orange-50"
-              }`}
-            >
-              <Icon size={22} className={active ? "text-white" : "text-orange-500"} />
-              <p className="mt-3 font-black">{item.nom}</p>
-            </button>
-          );
-        })}
-      </nav>
 
       {tab === "stock" ? (
         <TovarHarakati />
@@ -344,4 +319,3 @@ function Bosh({ text }: { text: string }) {
     </div>
   );
 }
-

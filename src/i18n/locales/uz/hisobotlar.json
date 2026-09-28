@@ -1,0 +1,62 @@
+{
+  "eyebrow": "Hisobot va audit",
+  "title": "Real backend hisobotlari",
+  "subtitle": "Tovar harakati, kontragent balansi, foyda, kirim-chiqim va tizim loglari.",
+  "refresh": "Yangilash",
+  "close": "Yopish",
+  "currencySuffix": "so'm",
+  "tabs": {
+    "stock": "Tovar harakati",
+    "counterparty": "Kontragent balansi",
+    "profit": "Mahsulot foydasi",
+    "income": "Kirim-chiqim",
+    "audit": "Audit loglari"
+  },
+  "keys": {
+    "total": "Jami",
+    "paid": "To'langan",
+    "debt": "Qarz",
+    "saleRevenue": "Sotuv tushumi",
+    "saleProfit": "Sotuv foydasi",
+    "expenseTotal": "Xarajatlar",
+    "cashinTotal": "Kassa kirimi",
+    "netIncome": "Sof daromad"
+  },
+  "filters": {
+    "dateFrom": "Boshlanish sanasi",
+    "dateTo": "Tugash sanasi",
+    "modification": "Mahsulot varianti *",
+    "selectModification": "Variant tanlang",
+    "warehouse": "Ombor",
+    "allWarehouses": "Barcha omborlar",
+    "customer": "Mijoz",
+    "customerUnselected": "Mijoz tanlanmagan",
+    "supplier": "Yetkazib beruvchi",
+    "supplierUnselected": "Yetkazib beruvchi tanlanmagan",
+    "category": "Kategoriya",
+    "allCategories": "Barcha kategoriyalar",
+    "branch": "Filial",
+    "allBranches": "Barcha filiallar",
+    "actionType": "Amal turi",
+    "all": "Barchasi",
+    "resource": "Resurs",
+    "resourcePlaceholder": "Masalan: Product",
+    "apply": "Ko'rish"
+  },
+  "export": {
+    "button": "{{label}} yuklash"
+  },
+  "empty": {
+    "selectFilters": "Hisobotni ko'rish uchun filterlarni tanlang.",
+    "noData": "Hisobot bo'yicha ma'lumot topilmadi.",
+    "noAuditLogs": "Audit loglari mavjud emas."
+  },
+  "audit": {
+    "totalLogs": "Jami loglar: {{total}}",
+    "prev": "Oldingi",
+    "next": "Keyingi",
+    "actionResource": "{{action}} — {{resource}}",
+    "user": "Foydalanuvchi: {{value}}",
+    "detailsJson": "Batafsil JSON"
+  }
+}

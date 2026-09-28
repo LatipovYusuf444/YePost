@@ -9,6 +9,7 @@ import {
   Trash2,
   UserRound,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import FaoliyatPaneli from "./FaoliyatPaneli";
@@ -25,8 +26,8 @@ import type {
 } from "./types";
 import { bugun, maydonKlass, xaridorNomi, yangiId } from "./yordamchilar";
 
-const malumotTablari = ["Ma'lumotlar", "Savdolar", "To'lovlar", "Tarix"] as const;
-type MalumotTab = (typeof malumotTablari)[number];
+type MalumotTab = "malumotlar" | "savdolar" | "tolovlar" | "tarix";
+const malumotTabKalitlari: MalumotTab[] = ["malumotlar", "savdolar", "tolovlar", "tarix"];
 
 type Props = {
   boshlangich: Xaridor | null;
@@ -47,6 +48,8 @@ export default function XaridorModal({
   onYopish,
   onSaqlash,
 }: Props) {
+  const { t } = useTranslation(["xaridor_uchot", "common"]);
+  const malumotTablari = malumotTabKalitlari.map((kalit) => ({ kalit, nom: t(`shared.tabs.${kalit}`) }));
   const [ism, setIsm] = useState(boshlangich?.ism ?? "");
   const [familiya, setFamiliya] = useState(boshlangich?.familiya ?? "");
   const [telefonlar, setTelefonlar] = useState<string[]>(
@@ -61,7 +64,7 @@ export default function XaridorModal({
   const [yaratilganSana, setYaratilganSana] = useState(boshlangich?.yaratilganSana ?? bugun());
   const [xato, setXato] = useState("");
   const [saqlanmoqda, setSaqlanmoqda] = useState(false);
-  const [faolTab, setFaolTab] = useState<MalumotTab>("Ma'lumotlar");
+  const [faolTab, setFaolTab] = useState<MalumotTab>("malumotlar");
 
   const xaridorSavdolari = useMemo(
     () => savdolar.filter((savdo) => savdo.xaridorId === boshlangich?.id),
@@ -97,7 +100,7 @@ export default function XaridorModal({
     const tozaTelefonlar = telefonlar.map((telefon) => telefon.trim()).filter(Boolean);
 
     if (!ism.trim() || !familiya.trim() || tozaTelefonlar.length === 0) {
-      setXato("Ism, familiya va kamida bitta telefon to'ldirilishi shart.");
+      setXato(t("xaridorModal.requiredError"));
       return;
     }
 
@@ -118,7 +121,7 @@ export default function XaridorModal({
       kompaniyaId,
       lavozim: lavozim.trim(),
       balans: boshlangich?.balans ?? 0,
-      yaratganMasul: boshlangich?.yaratganMasul ?? "Administrator",
+      yaratganMasul: boshlangich?.yaratganMasul ?? t("shared.defaultResponsible"),
       yaratilganSana,
       ozgartirilganSana: bugun(),
       customFields: boshlangich?.customFields ?? {},
@@ -152,10 +155,10 @@ export default function XaridorModal({
                 </span>
                 <div>
                   <h1 className="text-2xl font-bold text-slate-900">
-                    {boshlangich ? "Xaridorni tahrirlash" : "Yangi xaridor"}
+                    {boshlangich ? t("xaridorModal.editTitle") : t("xaridorModal.newTitle")}
                   </h1>
                   <span className="text-xs font-black uppercase tracking-wider text-[#2563EB]">
-                    Xaridor ma'lumotlari
+                    {t("xaridorModal.badge")}
                   </span>
                 </div>
               </div>
@@ -164,23 +167,23 @@ export default function XaridorModal({
             <nav className="mt-6 flex items-center gap-3 overflow-x-auto">
               {malumotTablari.map((tab) => (
                 <button
-                  key={tab}
+                  key={tab.kalit}
                   type="button"
-                  onClick={() => setFaolTab(tab)}
+                  onClick={() => setFaolTab(tab.kalit)}
                   className={`shrink-0 rounded-xl px-3 py-2 text-sm transition ${
-                    faolTab === tab
+                    faolTab === tab.kalit
                       ? "border border-orange-200 bg-white text-[#2563EB]"
                       : "text-slate-500 hover:bg-white hover:text-[#2563EB]"
                   }`}
                 >
-                  {tab}
+                  {tab.nom}
                 </button>
               ))}
             </nav>
           </header>
 
           <div className="scrollbar-orange flex-1 overflow-y-auto">
-            {faolTab === "Ma'lumotlar" && (
+            {faolTab === "malumotlar" && (
             <div className="px-9 py-7">
             {xato && (
               <p className="mb-5 rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
@@ -193,26 +196,26 @@ export default function XaridorModal({
               <div className="space-y-6">
                 <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80">
                   <h2 className="border-b border-orange-100/80 pb-3 text-sm font-black uppercase tracking-wide text-slate-600">
-                    Shaxsiy ma'lumotlar
+                    {t("xaridorModal.personalInfoTitle")}
                   </h2>
 
                   <div className="mt-5 space-y-4">
                     <label className="grid gap-2">
-                      <span className="text-sm font-bold text-slate-400">Ism *</span>
+                      <span className="text-sm font-bold text-slate-400">{t("xaridorModal.firstName")}</span>
                       <input
                         value={ism}
                         onChange={(event) => setIsm(event.target.value)}
-                        placeholder="Sardor"
+                        placeholder={t("xaridorModal.firstNamePlaceholder")}
                         className={maydonKlass}
                       />
                     </label>
 
                     <label className="grid gap-2">
-                      <span className="text-sm font-bold text-slate-400">Familiya *</span>
+                      <span className="text-sm font-bold text-slate-400">{t("xaridorModal.lastName")}</span>
                       <input
                         value={familiya}
                         onChange={(event) => setFamiliya(event.target.value)}
-                        placeholder="Rahimov"
+                        placeholder={t("xaridorModal.lastNamePlaceholder")}
                         className={maydonKlass}
                       />
                     </label>
@@ -220,7 +223,7 @@ export default function XaridorModal({
                     <div className="grid gap-2">
                       <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                         <Phone size={14} className="text-[#2563EB]" />
-                        Telefon *
+                        {t("xaridorModal.phone")}
                       </span>
 
                       {telefonlar.map((telefon, index) => (
@@ -229,14 +232,14 @@ export default function XaridorModal({
                             type="tel"
                             value={telefon}
                             onChange={(event) => telefonYangilash(index, event.target.value)}
-                            placeholder="+998 90 123 45 67"
+                            placeholder={t("xaridorModal.phonePlaceholder")}
                             className={maydonKlass}
                           />
                           <button
                             type="button"
                             onClick={() => telefonOchirish(index)}
                             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100"
-                            aria-label="Telefonni o'chirish"
+                            aria-label={t("xaridorModal.removePhoneAria")}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -249,19 +252,19 @@ export default function XaridorModal({
                         className="inline-flex h-10 w-fit items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-3.5 text-xs font-black uppercase text-[#2563EB] transition hover:bg-orange-100"
                       >
                         <Plus size={15} />
-                        Telefon qo'shish
+                        {t("xaridorModal.addPhone")}
                       </button>
                     </div>
 
                     <label className="grid gap-2">
                       <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                         <MapPin size={14} className="text-[#2563EB]" />
-                        Manzil
+                        {t("xaridorModal.address")}
                       </span>
                       <textarea
                         value={manzil}
                         onChange={(event) => setManzil(event.target.value)}
-                        placeholder="Toshkent sh., Chilonzor tumani, 12-kvartal"
+                        placeholder={t("xaridorModal.addressPlaceholder")}
                         className="min-h-24 w-full rounded-xl border border-slate-200 bg-white p-3.5 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
                       />
                     </label>
@@ -270,7 +273,7 @@ export default function XaridorModal({
 
                 <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80">
                   <h2 className="border-b border-orange-100/80 pb-3 text-sm font-black uppercase tracking-wide text-slate-600">
-                    Aloqa va ish
+                    {t("xaridorModal.workSectionTitle")}
                   </h2>
 
                   <div className="mt-5 space-y-4">
@@ -286,14 +289,14 @@ export default function XaridorModal({
                     <label className="grid gap-2">
                       <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                         <Building2 size={14} className="text-[#2563EB]" />
-                        Kompaniya
+                        {t("xaridorModal.company")}
                       </span>
                       <Tanlov
                         qiymat={kompaniyaId}
                         onChange={setKompaniyaId}
-                        placeholder="Biriktirilmagan"
+                        placeholder={t("xaridorModal.companyUnassigned")}
                         variantlar={[
-                          { value: "", label: "Biriktirilmagan" },
+                          { value: "", label: t("xaridorModal.companyUnassigned") },
                           ...kompaniyalar.map((kompaniya) => ({
                             value: kompaniya.id,
                             label: kompaniya.nomi,
@@ -305,12 +308,12 @@ export default function XaridorModal({
                     <label className="grid gap-2">
                       <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                         <Briefcase size={14} className="text-[#2563EB]" />
-                        Lavozim
+                        {t("xaridorModal.position")}
                       </span>
                       <input
                         value={lavozim}
                         onChange={(event) => setLavozim(event.target.value)}
-                        placeholder="Bo'lim boshlig'i"
+                        placeholder={t("xaridorModal.positionPlaceholder")}
                         className={maydonKlass}
                       />
                     </label>
@@ -318,7 +321,7 @@ export default function XaridorModal({
                     <label className="grid gap-2">
                       <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                         <CalendarDays size={14} className="text-[#2563EB]" />
-                        Ro'yxatga olingan sana
+                        {t("shared.registeredDateLabel")}
                       </span>
                       <input
                         type="date"
@@ -336,15 +339,15 @@ export default function XaridorModal({
             </div>
             )}
 
-            {faolTab === "Savdolar" && (
+            {faolTab === "savdolar" && (
               <SavdolarTab
                 savdolar={xaridorSavdolari}
                 xaridorNomi={boshlangich ? xaridorNomi(boshlangich) : ""}
                 xaridorOlish={() => boshlangich ?? undefined}
               />
             )}
-            {faolTab === "To'lovlar" && <TolovlarTab tolovlar={xaridorTolovlari} />}
-            {faolTab === "Tarix" && <TarixTab tarix={xaridorTarixi} />}
+            {faolTab === "tolovlar" && <TolovlarTab tolovlar={xaridorTolovlari} />}
+            {faolTab === "tarix" && <TarixTab tarix={xaridorTarixi} />}
           </div>
 
           <footer className="flex justify-end gap-3 border-t border-orange-100 bg-[#F8FAFC]/90 px-9 py-4 backdrop-blur-xl">
@@ -353,10 +356,10 @@ export default function XaridorModal({
               onClick={onYopish}
               className="rounded-2xl bg-slate-100 px-5 py-2.5 text-sm font-black text-slate-600 transition hover:bg-slate-200"
             >
-              Bekor qilish
+              {t("common:actions.cancel")}
             </button>
             <button disabled={saqlanmoqda} className="rounded-2xl bg-[#2563EB] px-6 py-2.5 text-sm font-black text-white shadow-[0_14px_32px_rgba(37,99,235,.24)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] disabled:opacity-50">
-              {saqlanmoqda ? "Saqlanmoqda..." : "Saqlash"}
+              {saqlanmoqda ? t("root.saving") : t("common:actions.save")}
             </button>
           </footer>
         </form>

@@ -1,0 +1,53 @@
+{
+  "tabs": {
+    "xaridorlar": "Покупатели",
+    "kompaniyalar": "Компании покупателей",
+    "yetkazib-beruvchilar": "Поставщики"
+  },
+  "addUnit": {
+    "xaridorlar": "Покупателя",
+    "kompaniyalar": "Компанию",
+    "yetkazib-beruvchilar": "Поставщика"
+  },
+  "modalTitles": {
+    "xaridorlar": { "new": "Новый покупатель", "edit": "Изменить покупателя" },
+    "kompaniyalar": { "new": "Новая компания", "edit": "Изменить компанию" },
+    "yetkazib-beruvchilar": { "new": "Новый поставщик", "edit": "Изменить поставщика" }
+  },
+  "eyebrow": "База партнёров",
+  "title": "Покупатели и поставщики",
+  "subtitle": "Физические покупатели, компании покупателей и поставщики получаются из backend.",
+  "refresh": "Обновить",
+  "close": "Закрыть",
+  "searchPlaceholder": "Имя, телефон, компания или ИНН...",
+  "addButton": "Добавить {{unit}}",
+  "noPhone": "Телефон не указан",
+  "card": {
+    "address": "Адрес: {{value}}",
+    "company": "Компания: {{value}}",
+    "balance": "Баланс: {{value}}",
+    "inn": "ИНН: {{value}}",
+    "notEntered": "Не указано",
+    "notAssigned": "Не привязано",
+    "edit": "Просмотр и редактирование"
+  },
+  "empty": "Нет данных",
+  "deleteConfirm": "Удалить данные «{{name}}»?",
+  "modal": {
+    "eyebrow": "Данные партнёра",
+    "companyUnassigned": "Компания не привязана",
+    "placeholders": {
+      "firstName": "Имя *",
+      "lastName": "Фамилия *",
+      "middleName": "Отчество",
+      "phoneRequired": "Телефон *",
+      "phone": "Телефон",
+      "telegramId": "Telegram ID",
+      "address": "Адрес",
+      "nameRequired": "Название *",
+      "inn": "ИНН"
+    },
+    "cancel": "Отмена",
+    "save": "Сохранить"
+  }
+}

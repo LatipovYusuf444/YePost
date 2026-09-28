@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { InstagramIkonka, TelegramIkonka, WhatsappIkonka } from "./IjtimoiyIkonkalar";
 import type { IjtimoiyTarmoqlar } from "./types";
 import { maydonKlass } from "./yordamchilar";
@@ -43,12 +44,13 @@ export default function IjtimoiyTanlov({
   qiymatlar: IjtimoiyTarmoqlar;
   onChange: (tarmoq: TarmoqKaliti, qiymat: string) => void;
 }) {
+  const { t } = useTranslation("xaridor_uchot");
   const [faol, setFaol] = useState<TarmoqKaliti | null>(null);
   const tanlangan = tarmoqlar.find((tarmoq) => tarmoq.kalit === faol);
 
   return (
     <div className="grid gap-2">
-      <span className="text-sm font-bold text-slate-400">Ijtimoiy tarmoqlar</span>
+      <span className="text-sm font-bold text-slate-400">{t("ijtimoiyTanlov.label")}</span>
 
       <div className="flex items-center gap-2">
         {tarmoqlar.map((tarmoq) => {

@@ -18,5 +18,10 @@
     "print": "Печать",
     "export": "Экспорт",
     "import": "Импорт"
+  },
+  "select": {
+    "placeholder": "Выберите",
+    "searchPlaceholder": "Поиск...",
+    "notFound": "Не найдено"
   }
 }

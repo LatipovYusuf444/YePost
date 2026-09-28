@@ -12,6 +12,8 @@
       "masul": "Ответственное лицо",
       "turi": "Тип"
     },
+    "stats": { "total": "Всего документов", "completed": "Завершено", "inProgress": "В процессе", "cancelled": "Отменено" },
+    "filters": { "dateFrom": "С даты", "dateTo": "По дату", "status": "Фильтр по статусу", "allStatuses": "Все статусы", "warehouse": "Фильтр по складу", "allWarehouses": "Все склады" },
     "columnsMenuAria": "Настроить столбцы",
     "typeFull": "Полная",
     "typePartial": "Частичная",
@@ -37,6 +39,8 @@
       "itemsTitle": "Товары",
       "itemsSubtitle": "Фактические остатки на выбранном складе",
       "itemsCount": "{{count}} шт.",
+      "selectProduct": "Выберите товар...",
+      "addNextProductHint": "После выбора товара автоматически появится следующая строка",
       "stockLoading": "Загрузка остатков...",
       "selectWarehouseHint": "Выберите склад, чтобы увидеть товары",
       "noStock": "На этом складе остатков нет",
@@ -50,12 +54,14 @@
         "difference": "Разница"
       },
       "actualQuantityAria": "Фактическое количество: {{name}}",
+      "removeRowAria": "Удалить строку",
       "cancel": "Отмена",
       "save": "Сохранить",
       "saveAndConfirm": "Сохранить и подтвердить",
       "errors": {
         "selectWarehouse": "Выберите склад.",
         "noStockInWarehouse": "На выбранном складе нет остатков для инвентаризации.",
+        "selectAtLeastOne": "Добавьте хотя бы один товар в инвентаризацию.",
         "invalidQuantity": "Фактическое количество для {{name}} должно быть числом 0 или больше."
       }
     }

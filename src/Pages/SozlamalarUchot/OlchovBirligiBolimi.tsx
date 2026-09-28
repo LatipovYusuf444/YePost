@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Edit3, LoaderCircle, Lock, Plus, Ruler, Trash2, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { birliklarApi } from "@/api/catalogApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
@@ -9,6 +10,7 @@ import { BolimKarta } from "./UmumiyUI";
 import { maydonKlass } from "./yordamchilar";
 
 export default function OlchovBirligiBolimi() {
+  const { t } = useTranslation(["sozlamalar_uchot", "common"]);
   const profil = useAuthProfileStore((s) => s.profil);
   const direktor = foydalanuvchiDirektormi(profil);
 
@@ -57,7 +59,7 @@ export default function OlchovBirligiBolimi() {
   async function saqlash() {
     if (!direktor) return;
     if (!nomi.trim()) {
-      setXato("O'lchov birligi nomi majburiy.");
+      setXato(t("birliklar.nameRequired"));
       return;
     }
     setSaqlanmoqda(true);
@@ -78,7 +80,7 @@ export default function OlchovBirligiBolimi() {
 
   async function ochirish(birlik: OlchovBirligi) {
     if (!direktor) return;
-    if (!window.confirm(`"${birlik.name}" o'lchov birligini o'chirasizmi?`)) return;
+    if (!window.confirm(t("birliklar.deleteConfirm", { name: birlik.name }))) return;
     setXato("");
     try {
       await birliklarApi.ochirish(birlik.id);
@@ -90,8 +92,8 @@ export default function OlchovBirligiBolimi() {
 
   return (
     <BolimKarta
-      sarlavha="O'lchov birligi"
-      izoh="Mahsulot qo'shishda tanlanadigan birliklar (dona, kg, litr va h.k.) — real katalogdan olinadi."
+      sarlavha={t("birliklar.title")}
+      izoh={t("birliklar.subtitle")}
       amal={
         direktor && !formOchiq ? (
           <button
@@ -100,7 +102,7 @@ export default function OlchovBirligiBolimi() {
             className="inline-flex h-11 shrink-0 items-center gap-2 rounded-2xl bg-[#2563EB] px-5 text-sm font-black text-white shadow-[0_14px_32px_rgba(37,99,235,.24)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8]"
           >
             <Plus size={16} />
-            Qo'shish
+            {t("common:actions.add")}
           </button>
         ) : undefined
       }
@@ -108,7 +110,7 @@ export default function OlchovBirligiBolimi() {
       {!direktor && (
         <p className="mb-4 flex items-center gap-2 rounded-xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-500">
           <Lock size={15} className="shrink-0 text-slate-400" />
-          O'lchov birliklarini faqat direktor qo'sha, tahrirlay va o'chira oladi. Siz ro'yxatni faqat ko'rishingiz mumkin.
+          {t("birliklar.readOnlyNotice")}
         </p>
       )}
 
@@ -117,26 +119,26 @@ export default function OlchovBirligiBolimi() {
       {formOchiq && direktor && (
         <div className="mb-5 rounded-2xl border border-orange-100 bg-[#F8FAFC]/70 p-4">
           <div className="flex items-start justify-between gap-3">
-            <p className="text-sm font-black text-gray-800">{tahrir ? "Birlikni tahrirlash" : "Yangi o'lchov birligi"}</p>
+            <p className="text-sm font-black text-gray-800">{tahrir ? t("birliklar.editTitle") : t("birliklar.newTitle")}</p>
             <button
               type="button"
               onClick={yopish}
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-slate-400 shadow-sm transition hover:bg-orange-500 hover:text-white"
-              aria-label="Formani yopish"
+              aria-label={t("birliklar.closeFormAria")}
             >
               <X size={15} />
             </button>
           </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-[110px_minmax(0,1fr)_140px]">
-            <input value={kod} onChange={(e) => setKod(e.target.value)} placeholder="Kod (796)" className={maydonKlass} />
+            <input value={kod} onChange={(e) => setKod(e.target.value)} placeholder={t("birliklar.codePlaceholder")} className={maydonKlass} />
             <input
               value={nomi}
               onChange={(e) => setNomi(e.target.value)}
-              placeholder="Nomi (masalan: Dona)"
+              placeholder={t("birliklar.namePlaceholder")}
               className={maydonKlass}
               autoFocus
             />
-            <input value={qisqa} onChange={(e) => setQisqa(e.target.value)} placeholder="Qisqa (dona)" className={maydonKlass} />
+            <input value={qisqa} onChange={(e) => setQisqa(e.target.value)} placeholder={t("birliklar.shortNamePlaceholder")} className={maydonKlass} />
           </div>
           <div className="mt-3 flex justify-end gap-2">
             <button
@@ -144,7 +146,7 @@ export default function OlchovBirligiBolimi() {
               onClick={yopish}
               className="h-10 rounded-xl bg-white px-4 text-sm font-bold text-gray-600 ring-1 ring-slate-200 transition hover:bg-slate-50"
             >
-              Bekor qilish
+              {t("common:actions.cancel")}
             </button>
             <button
               type="button"
@@ -153,7 +155,7 @@ export default function OlchovBirligiBolimi() {
               className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#2563EB] px-5 text-sm font-black text-white transition hover:bg-[#1D4ED8] disabled:opacity-50"
             >
               {saqlanmoqda && <LoaderCircle size={15} className="animate-spin" />}
-              {tahrir ? "Yangilash" : "Qo'shish"}
+              {tahrir ? t("common:actions.refresh") : t("common:actions.add")}
             </button>
           </div>
         </div>
@@ -162,7 +164,7 @@ export default function OlchovBirligiBolimi() {
       {yuklanmoqda ? (
         <div className="flex h-32 items-center justify-center gap-2 text-sm font-bold text-slate-400">
           <LoaderCircle className="animate-spin" size={18} />
-          Yuklanmoqda...
+          {t("loadingGeneric")}
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -181,7 +183,7 @@ export default function OlchovBirligiBolimi() {
                       type="button"
                       onClick={() => boshla(birlik)}
                       className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-[#2563EB] hover:bg-orange-100"
-                      aria-label="Tahrirlash"
+                      aria-label={t("common:actions.edit")}
                     >
                       <Edit3 size={14} />
                     </button>
@@ -189,7 +191,7 @@ export default function OlchovBirligiBolimi() {
                       type="button"
                       onClick={() => void ochirish(birlik)}
                       className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100"
-                      aria-label="O'chirish"
+                      aria-label={t("common:actions.delete")}
                     >
                       <Trash2 size={14} />
                     </button>
@@ -199,11 +201,11 @@ export default function OlchovBirligiBolimi() {
               <p className="mt-3 text-base font-black text-gray-900">{birlik.name}</p>
               <div className="mt-1.5 flex items-center gap-2">
                 <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500">
-                  {birlik.shortName || "Qisqa nom yo'q"}
+                  {birlik.shortName || t("birliklar.noShortName")}
                 </span>
                 {birlik.code && (
                   <span className="rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-[#2563EB]">
-                    Kod: {birlik.code}
+                    {t("birliklar.codeLabel", { code: birlik.code })}
                   </span>
                 )}
               </div>
@@ -212,9 +214,9 @@ export default function OlchovBirligiBolimi() {
           {olchovlar.length === 0 && (
             <div className="col-span-full rounded-[20px] border border-dashed border-orange-200 bg-orange-50/30 p-10 text-center">
               <Ruler className="mx-auto text-orange-300" size={30} />
-              <p className="mt-3 text-sm font-bold text-slate-500">Backendda hali o'lchov birligi yo'q</p>
+              <p className="mt-3 text-sm font-bold text-slate-500">{t("birliklar.empty")}</p>
               {direktor && (
-                <p className="mt-1 text-xs text-slate-400">Yuqoridagi "Qo'shish" tugmasi orqali birinchi birlikni yarating.</p>
+                <p className="mt-1 text-xs text-slate-400">{t("birliklar.emptyHint")}</p>
               )}
             </div>
           )}

@@ -178,6 +178,8 @@
     "columnSettingsTitle": "Видимые столбцы",
     "emptyTitle": "Приходные документы не найдены",
     "emptyHint": "Добавьте новый приход с помощью кнопки «Создать».",
+    "stats": { "total": "Всего документов", "completed": "Подтверждено", "inProgress": "В процессе", "cancelled": "Отменено" },
+    "statsAria": "Статистика документов",
     "columns": {
       "nomi": "Название",
       "yetkazibBeruvchi": "Поставщик",

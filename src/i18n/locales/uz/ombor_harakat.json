@@ -12,6 +12,8 @@
       "masul": "Mas'ul shaxs",
       "turi": "Turi"
     },
+    "stats": { "total": "Jami hujjatlar", "completed": "Tugallangan", "inProgress": "Jarayonda", "cancelled": "Bekor qilingan" },
+    "filters": { "dateFrom": "Sanadan", "dateTo": "Sanagacha", "status": "Holat bo'yicha filtr", "allStatuses": "Barcha holatlar", "warehouse": "Ombor bo'yicha filtr", "allWarehouses": "Barcha omborlar" },
     "columnsMenuAria": "Ustunlarni sozlash",
     "typeFull": "To'liq",
     "typePartial": "Qisman",
@@ -37,6 +39,8 @@
       "itemsTitle": "Tovarlar",
       "itemsSubtitle": "Tanlangan ombordagi real qoldiqlar",
       "itemsCount": "{{count}} ta",
+      "selectProduct": "Mahsulot tanlang...",
+      "addNextProductHint": "Mahsulot tanlanganda keyingi qator avtomatik qo‘shiladi",
       "stockLoading": "Qoldiqlar yuklanmoqda...",
       "selectWarehouseHint": "Mahsulotlarni ko'rish uchun omborni tanlang",
       "noStock": "Bu omborda qoldiq mavjud emas",
@@ -50,12 +54,14 @@
         "difference": "Farq"
       },
       "actualQuantityAria": "{{name}} haqiqiy miqdori",
+      "removeRowAria": "Qatorni o'chirish",
       "cancel": "Bekor qilish",
       "save": "Saqlash",
       "saveAndConfirm": "Saqlash va tasdiqlash",
       "errors": {
         "selectWarehouse": "Omborni tanlang.",
         "noStockInWarehouse": "Tanlangan omborda inventarizatsiya qilinadigan qoldiq mavjud emas.",
+        "selectAtLeastOne": "Inventarizatsiyaga kamida bitta mahsulot qo‘shing.",
         "invalidQuantity": "{{name}} uchun haqiqiy miqdor 0 yoki undan katta raqam bo'lishi kerak."
       }
     }

@@ -1,0 +1,121 @@
+{
+  "cart": {
+    "title": "Savatcha",
+    "emptyTitle": "Savatcha bo'sh",
+    "emptySubtitle": "Hozircha hech qanday mahsulot tanlanmagan",
+    "removeAria": "Mahsulotni savatchadan o'chirish",
+    "close": "Yopish"
+  },
+  "customerType": {
+    "donalik": "Donalik mijoz",
+    "doimiy": "Doimiy mijozlar"
+  },
+  "paymentTypes": {
+    "payme": "Payme",
+    "click": "Click",
+    "cash": "Naqd",
+    "bank": "Bank"
+  },
+  "customer": {
+    "label": "Mijoz",
+    "namePlaceholder": "Ism, Familiya",
+    "discountLabel": "Chegirma",
+    "discountPlaceholder": "Chegirmani kiriting",
+    "currency": "UZS",
+    "addNote": "Eslatma qo'shish",
+    "notePlaceholder": "Eslatma...",
+    "retailPrice": "Chakana narx",
+    "wholesalePrice": "Ulgurji narx",
+    "choosePaymentType": "To'lov turini tanlang",
+    "subtotal": "Oraliq jami",
+    "total": "Jami",
+    "pay": "To'lash",
+    "postpone": "Kechiktirish",
+    "regularCustomers": "Doimiy mijozlar",
+    "searchPlaceholder": "Doimiy mijozni qidirish",
+    "noPhone": "Telefon kiritilmagan",
+    "customerBadge": "Mijoz",
+    "notFound": "Mijoz topilmadi",
+    "searchHint": "Mijozni qidirish uchun ism yoki familiya kiriting",
+    "next": "Keyingisi"
+  },
+  "customerModal": {
+    "eyebrow": "Doimiy mijoz savdosi",
+    "backToPayment": "To'lovga qaytish",
+    "documentTypes": {
+      "documents": "Hujjatlar",
+      "receipt": "Chek",
+      "invoice": "Nakladnoy",
+      "pdf": "PDF"
+    },
+    "closeAria": "Yopish",
+    "tabs": {
+      "main": "Asosiyisi",
+      "cart": "Savatcha",
+      "history": "Tarix"
+    },
+    "activityTabs": {
+      "task": "Vazifa",
+      "comment": "Kommentariya",
+      "notification": "Habarnoma",
+      "extra": "Qo'shimcha"
+    },
+    "sale": "Savdo",
+    "edit": "Tahrirlash",
+    "amount": "Summa",
+    "paymentAccepted": "To'lov qabul qilindi",
+    "acceptPayment": "To'lov qabul qilish",
+    "paymentDelivery": "To'lov va yetkazib berish",
+    "backendNote": "Doimiy mijoz savdosi real backend orqali saqlanadi.",
+    "fields": {
+      "counterparty": "Kontragent",
+      "phone": "Telefon",
+      "email": "Email",
+      "address": "Manzil",
+      "priceType": "Narx turi"
+    },
+    "notEntered": "Kiritilmagan",
+    "actionPlaceholder": "Nima qilish kerak",
+    "actions": {
+      "call": "Qo'ng'iroq qilish",
+      "remindPayment": "To'lovni eslatish",
+      "newOrder": "Yangi buyurtma olish"
+    },
+    "today": "Bugun",
+    "filter": "Filtr",
+    "activity": {
+      "taskText": "{{name}} bilan keyingi xarid bo'yicha bog'lanish.",
+      "commentText": "{{phone}} bo'yicha izoh qo'shish mumkin.",
+      "notificationText": "Sotuv yakunlanganda hujjat backendda tasdiqlanadi."
+    },
+    "sectionDemo": "{{section}} bo'limi demo holatda"
+  },
+  "paymentModal": {
+    "eyebrow": "To'lovni tasdiqlash",
+    "title": "Sotuv uchun to'lov",
+    "subtitle": "To'lov tasdiqlangandan keyin sotuv backendda yakunlanadi.",
+    "products": "Mahsulotlar",
+    "piecesCount": "{{count}} dona",
+    "selectedWarehouseFallback": "Tanlangan ombor",
+    "payable": "To'lanadi",
+    "totalPayable": "To'lanadigan jami",
+    "selected": "Tanlangan: {{type}}",
+    "acceptedAmount": "Qabul qilinadigan summa",
+    "fullAmount": "To'liq summa",
+    "confirm": "To'lovni tasdiqlash",
+    "apiNote": "Tasdiqlashda `/sales` yaratiladi va `/sales/id/confirm` orqali ombor qoldig'i kamayadi."
+  },
+  "errors": {
+    "loadFailed": "Bosh sahifa ma'lumotlari olinmadi",
+    "warehouseNotFound": "Sotuv uchun ombor topilmadi",
+    "cartEmpty": "Savatcha bo'sh",
+    "cartWarehouseMismatch": "Savatchadagi mahsulotlar boshqa omborga tegishli. Omborni tekshiring.",
+    "amountRange": "To'lov summasi 1 dan {{max}} gacha bo'lishi kerak",
+    "selectDebtCustomer": "Qarzga sotuv uchun xaridorni tanlang.",
+    "createDraftFailed": "Sotuv qoralamasini yaratib bo'lmadi",
+    "confirmFailed": "Sotuvni tasdiqlab bo'lmadi",
+    "paymentSuccess": "To'lov muvaffaqiyatli amalga oshirildi",
+    "finalizeFailed": "Sotuvni yakunlab bo'lmadi",
+    "selectCustomerFirst": "Avval mijoz tanlang"
+  }
+}

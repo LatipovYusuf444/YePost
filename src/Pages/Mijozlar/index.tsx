@@ -14,6 +14,7 @@ import {
   UsersRound,
   X,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import { useMijozlarStore } from "@/store/mijozlarStore";
 import { tolovSummasiniFormatlash } from "@/utils/tolovFormatters";
@@ -22,24 +23,25 @@ import type { Mijoz, MijozKompaniyasi, YetkazibBeruvchi } from "@/types/partner"
 type Tab = "xaridorlar" | "kompaniyalar" | "yetkazib-beruvchilar";
 type Partner = Mijoz | MijozKompaniyasi | YetkazibBeruvchi;
 
-const tablar = [
-  { id: "xaridorlar", nom: "Xaridorlar", icon: UsersRound },
-  { id: "kompaniyalar", nom: "Xaridor kompaniyalari", icon: Building2 },
-  { id: "yetkazib-beruvchilar", nom: "Yetkazib beruvchilar", icon: Truck },
-] as const;
-
-const tabBirligi: Record<Tab, string> = {
-  xaridorlar: "Xaridor",
-  kompaniyalar: "Kompaniya",
-  "yetkazib-beruvchilar": "Yetkazib beruvchi",
-};
+const tabIkonlar = {
+  xaridorlar: UsersRound,
+  kompaniyalar: Building2,
+  "yetkazib-beruvchilar": Truck,
+} as const;
 
 export default function Xaridorlar() {
+  const { t } = useTranslation("mijozlar");
   const store = useMijozlarStore();
   const yuklash = store.yuklash;
   const [tab, setTab] = useState<Tab>("xaridorlar");
   const [qidiruv, setQidiruv] = useState("");
   const [modal, setModal] = useState<Partner | "new" | null>(null);
+
+  const tablar = (["xaridorlar", "kompaniyalar", "yetkazib-beruvchilar"] as const).map((id) => ({
+    id,
+    nom: t(`tabs.${id}`),
+    icon: tabIkonlar[id],
+  }));
 
   useEffect(() => {
     void yuklash();
@@ -69,7 +71,7 @@ export default function Xaridorlar() {
   }
 
   async function ochirish(item: Partner) {
-    if (!window.confirm(`${partnerNomi(item)} ma'lumotini o'chirasizmi?`)) return;
+    if (!window.confirm(t("deleteConfirm", { name: partnerNomi(item) }))) return;
     if (tab === "xaridorlar") await store.mijozOchirish(item.id);
     else if (tab === "kompaniyalar") await store.kompaniyaOchirish(item.id);
     else await store.yetkazibBeruvchiOchirish(item.id);
@@ -80,11 +82,11 @@ export default function Xaridorlar() {
       <header className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.18em] text-orange-500">
-            Hamkorlar bazasi
+            {t("eyebrow")}
           </p>
-          <h1 className="mt-1 text-3xl font-black">Xaridorlar va yetkazib beruvchilar</h1>
+          <h1 className="mt-1 text-3xl font-black">{t("title")}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Jismoniy xaridorlar, xaridor kompaniyalari va yetkazib beruvchilar backenddan olinadi.
+            {t("subtitle")}
           </p>
         </div>
         <button
@@ -92,14 +94,14 @@ export default function Xaridorlar() {
           className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 font-bold text-gray-600"
         >
           <RefreshCw size={17} />
-          Yangilash
+          {t("refresh")}
         </button>
       </header>
 
       {store.xatolik && (
         <div className="flex justify-between rounded-2xl bg-red-50 p-4 font-bold text-red-600">
           <span>{store.xatolik}</span>
-          <button onClick={store.xatolikniTozalash}>Yopish</button>
+          <button onClick={store.xatolikniTozalash}>{t("close")}</button>
         </div>
       )}
 
@@ -126,7 +128,7 @@ export default function Xaridorlar() {
               value={qidiruv}
               onChange={(e) => setQidiruv(e.target.value)}
               className="min-w-0 flex-1 outline-none"
-              placeholder="Ism, telefon, kompaniya yoki STIR..."
+              placeholder={t("searchPlaceholder")}
             />
           </label>
           <button
@@ -134,7 +136,7 @@ export default function Xaridorlar() {
             className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 font-black text-white"
           >
             <Plus size={17} />
-            {tabBirligi[tab]} qo'shish
+            {t("addButton", { unit: t(`addUnit.${tab}`) })}
           </button>
         </div>
 
@@ -161,29 +163,31 @@ export default function Xaridorlar() {
                 <h2 className="mt-4 text-xl font-black">{partnerNomi(item)}</h2>
                 <p className="mt-2 flex items-center gap-2 text-sm text-gray-500">
                   <Phone size={15} />
-                  {"phone" in item && item.phone ? item.phone : "Telefon kiritilmagan"}
+                  {"phone" in item && item.phone ? item.phone : t("noPhone")}
                 </p>
 
                 {tab === "xaridorlar" && (
                   <>
                     <p className="mt-2 text-sm text-gray-500">
-                      Manzil: {(item as Mijoz).address || "Kiritilmagan"}
+                      {t("card.address", { value: (item as Mijoz).address || t("card.notEntered") })}
                     </p>
                     <p className="mt-1 text-sm text-gray-500">
-                      Kompaniya:{" "}
-                      {(item as Mijoz).company?.name ??
-                        store.kompaniyalar.find((x) => x.id === (item as Mijoz).companyId)?.name ??
-                        "Biriktirilmagan"}
+                      {t("card.company", {
+                        value:
+                          (item as Mijoz).company?.name ??
+                          store.kompaniyalar.find((x) => x.id === (item as Mijoz).companyId)?.name ??
+                          t("card.notAssigned"),
+                      })}
                     </p>
                     <p className="mt-1 text-sm font-bold text-emerald-600">
-                      Balans: {tolovSummasiniFormatlash((item as Mijoz).balance)}
+                      {t("card.balance", { value: tolovSummasiniFormatlash((item as Mijoz).balance) })}
                     </p>
                   </>
                 )}
 
                 {tab === "kompaniyalar" && (
                   <p className="mt-2 text-sm text-gray-500">
-                    STIR: {(item as MijozKompaniyasi).inn || "Kiritilmagan"}
+                    {t("card.inn", { value: (item as MijozKompaniyasi).inn || t("card.notEntered") })}
                   </p>
                 )}
 
@@ -193,7 +197,7 @@ export default function Xaridorlar() {
                     className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-50 py-2.5 font-bold text-orange-600"
                   >
                     <Edit3 size={15} />
-                    Ko'rish va tahrirlash
+                    {t("card.edit")}
                   </button>
                   <button
                     onClick={() => void ochirish(item)}
@@ -207,7 +211,7 @@ export default function Xaridorlar() {
 
             {items.length === 0 && (
               <div className="col-span-full rounded-[26px] border border-dashed border-orange-200 p-12 text-center text-gray-400">
-                Ma'lumot mavjud emas
+                {t("empty")}
               </div>
             )}
           </div>
@@ -228,6 +232,7 @@ function PartnerModal({
   item: Partner | "new";
   onClose: () => void;
 }) {
+  const { t } = useTranslation("mijozlar");
   const store = useMijozlarStore();
   const editing = item !== "new";
 
@@ -286,7 +291,7 @@ function PartnerModal({
     if (ok) onClose();
   }
 
-  const title = `${editing ? "Tahrirlash" : "Yangi"} ${tabBirligi[tab].toLowerCase()}`;
+  const title = t(`modalTitles.${tab}.${editing ? "edit" : "new"}`);
 
   return (
     <AppModal>
@@ -297,7 +302,7 @@ function PartnerModal({
         <div className="flex justify-between">
           <div>
             <p className="text-sm font-bold uppercase tracking-wider text-orange-500">
-              Hamkor ma'lumotlari
+              {t("modal.eyebrow")}
             </p>
             <h2 className="text-2xl font-black">{title}</h2>
           </div>
@@ -321,38 +326,38 @@ function PartnerModal({
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 className="input"
-                placeholder="Ism *"
+                placeholder={t("modal.placeholders.firstName")}
               />
               <input
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 className="input"
-                placeholder="Familiya *"
+                placeholder={t("modal.placeholders.lastName")}
               />
               <input
                 value={middleName}
                 onChange={(e) => setMiddleName(e.target.value)}
                 className="input"
-                placeholder="Otasining ismi"
+                placeholder={t("modal.placeholders.middleName")}
               />
               <input
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className="input"
-                placeholder="Telefon *"
+                placeholder={t("modal.placeholders.phoneRequired")}
               />
               <input
                 value={telegramId}
                 onChange={(e) => setTelegramId(e.target.value)}
                 className="input"
-                placeholder="Telegram ID"
+                placeholder={t("modal.placeholders.telegramId")}
               />
               <AppSelect
                 value={companyId}
                 onChange={(e) => setCompanyId(e.target.value)}
                 className="input"
               >
-                <option value="">Kompaniya biriktirilmagan</option>
+                <option value="">{t("modal.companyUnassigned")}</option>
                 {store.kompaniyalar.map((x) => (
                   <option key={x.id} value={x.id}>
                     {x.name}
@@ -363,7 +368,7 @@ function PartnerModal({
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 className="min-h-24 rounded-2xl border p-4 sm:col-span-2"
-                placeholder="Manzil"
+                placeholder={t("modal.placeholders.address")}
               />
             </>
           ) : (
@@ -372,21 +377,21 @@ function PartnerModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="input sm:col-span-2"
-                placeholder="Nomi *"
+                placeholder={t("modal.placeholders.nameRequired")}
               />
               {tab === "kompaniyalar" && (
                 <input
                   value={inn}
                   onChange={(e) => setInn(e.target.value)}
                   className="input"
-                  placeholder="STIR"
+                  placeholder={t("modal.placeholders.inn")}
                 />
               )}
               <input
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className="input"
-                placeholder="Telefon"
+                placeholder={t("modal.placeholders.phone")}
               />
             </>
           )}
@@ -398,14 +403,14 @@ function PartnerModal({
             onClick={onClose}
             className="h-11 rounded-2xl bg-gray-100 px-5 font-bold"
           >
-            Bekor qilish
+            {t("modal.cancel")}
           </button>
           <button
             disabled={store.amalBajarilmoqda}
             className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50"
           >
             {store.amalBajarilmoqda && <LoaderCircle size={16} className="animate-spin" />}
-            Saqlash
+            {t("modal.save")}
           </button>
         </div>
       </form>
@@ -418,4 +423,3 @@ function partnerNomi(item: Partner) {
     return [item.firstName, item.lastName, item.middleName].filter(Boolean).join(" ");
   return item.name;
 }
-

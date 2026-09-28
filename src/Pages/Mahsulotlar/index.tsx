@@ -331,7 +331,8 @@ export default function Mahsulotlar() {
                   <div className="rounded-xl bg-orange-50 px-3 py-2"><p className="text-[10px] font-bold uppercase tracking-wide text-orange-600">{t("card.salePrice")}</p><p className="text-sm font-black text-orange-700">{t("card.noPrice")}</p></div>
                   <div className="rounded-xl bg-emerald-50 px-3 py-2"><p className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">{t("card.costPrice")}</p><p className="text-sm font-black text-emerald-700">{t("card.noPrice")}</p></div>
                 </div>
-              )}\n              <div className="mt-5 grid grid-cols-[1fr_1fr_42px] gap-2 border-t pt-4">
+              )}
+              <div className="mt-5 grid grid-cols-[1fr_1fr_42px] gap-2 border-t pt-4">
                 <button onClick={()=>{setModProduct(item);void store.modifikatsiyalarniYuklash(item.id)}} className="inline-flex items-center justify-center gap-1 rounded-xl bg-slate-50 py-2.5 text-sm font-bold text-slate-600"><Eye size={15}/>{t("actions.variants")}</button>
                 <button onClick={()=>void mahsulotTahrirlash(item)} className="inline-flex items-center justify-center gap-1 rounded-xl bg-orange-50 py-2.5 text-sm font-bold text-orange-600"><Edit3 size={15}/>{t("actions.edit")}</button>
                 <button onClick={()=>void mahsulotOchirish(item.id)} className="flex items-center justify-center rounded-xl bg-red-50 text-red-500"><Trash2 size={16}/></button>
@@ -349,6 +350,8 @@ export default function Mahsulotlar() {
                       <th className="px-5 py-4">{t("table.product")}</th>
                       <th className="px-5 py-4">{t("table.category")}</th>
                       <th className="px-5 py-4">{t("table.unit")}</th>
+                      <th className="px-5 py-4">{t("card.salePrice")}</th>
+                      <th className="px-5 py-4">{t("card.costPrice")}</th>
                       <th className="px-5 py-4">{t("table.barcode")}</th>
                       <th className="px-5 py-4">{t("table.article")}</th>
                       <th className="px-5 py-4">{t("table.status")}</th>
@@ -364,6 +367,24 @@ export default function Mahsulotlar() {
                         </td>
                         <td className="px-5 py-4 font-bold text-gray-600">{kategoriyaNomi(item)}</td>
                         <td className="px-5 py-4 font-bold text-gray-600">{birlikNomi(item)}</td>
+                        <td className="px-5 py-4">
+                          <div className="flex flex-col gap-1.5">
+                            {(store.modifikatsiyalar[item.id] ?? []).length ? (store.modifikatsiyalar[item.id] ?? []).map((modification) => (
+                              <span key={modification.id} className="inline-flex w-fit rounded-lg bg-orange-50 px-2.5 py-1 font-black text-orange-700">
+                                {modification.price?.retailPrice == null ? t("card.noPrice") : money(modification.price.retailPrice)}
+                              </span>
+                            )) : <span className="text-gray-400">{t("card.noPrice")}</span>}
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex flex-col gap-1.5">
+                            {(store.modifikatsiyalar[item.id] ?? []).length ? (store.modifikatsiyalar[item.id] ?? []).map((modification) => (
+                              <span key={modification.id} className="inline-flex w-fit rounded-lg bg-emerald-50 px-2.5 py-1 font-black text-emerald-700">
+                                {modification.price?.costPrice == null ? t("card.noPrice") : money(modification.price.costPrice)}
+                              </span>
+                            )) : <span className="text-gray-400">{t("card.noPrice")}</span>}
+                          </div>
+                        </td>
                         <td className="px-5 py-4 text-gray-500">{item.barcode||t("notEntered")}</td>
                         <td className="px-5 py-4 text-gray-500">{item.article||t("notEntered")}</td>
                         <td className="px-5 py-4"><span className={`rounded-full px-3 py-1 text-xs font-bold ${item.isActive?"bg-emerald-50 text-emerald-600":"bg-gray-100 text-gray-500"}`}>{item.isActive?t("status.active"):t("status.inactive")}</span></td>

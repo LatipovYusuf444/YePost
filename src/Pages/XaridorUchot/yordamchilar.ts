@@ -1,4 +1,4 @@
-import type { KirimHolati, SavdoHolati, TolovTuri, Xaridor, XaridorKompaniyasi } from "./types";
+import type { KirimHolati, SavdoHolati, Xaridor, XaridorKompaniyasi } from "./types";
 
 export const maydonKlass =
   "h-11 w-full rounded-2xl border border-slate-200 bg-white px-3.5 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100";
@@ -43,30 +43,11 @@ export function sanaFormat(sana: string) {
   }).format(vaqt);
 }
 
-export const savdoHolatMatni: Record<SavdoHolati, string> = {
-  qoralama: "Qoralama",
-  tolangan: "To'langan",
-  qarzdor: "Qarzdorlik",
-  bekor: "Bekor qilingan",
-};
-
 export const savdoHolatRangi: Record<SavdoHolati, string> = {
   qoralama: "bg-slate-100 text-slate-600",
   tolangan: "bg-emerald-50 text-emerald-600",
   qarzdor: "bg-amber-50 text-amber-600",
   bekor: "bg-red-50 text-red-500",
-};
-
-export const tolovTuriMatni: Record<TolovTuri, string> = {
-  naqd: "Naqd",
-  karta: "Karta",
-  bank: "Bank o'tkazmasi",
-};
-
-export const kirimHolatMatni: Record<KirimHolati, string> = {
-  qabul: "Qabul qilingan",
-  kutilmoqda: "Kutilmoqda",
-  bekor: "Bekor qilingan",
 };
 
 export const kirimHolatRangi: Record<KirimHolati, string> = {

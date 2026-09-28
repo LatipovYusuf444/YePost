@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { Briefcase, Building2, CalendarDays, Hash, Phone, Truck, UserRound } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import FaoliyatPaneli from "./FaoliyatPaneli";
@@ -9,8 +10,8 @@ import { KirimTab, TarixTab, TolovlarTab } from "./XaridorTablari";
 import type { Kirim, YetkazibBeruvchi } from "./types";
 import { bugun, maydonKlass, yangiId } from "./yordamchilar";
 
-const malumotTablari = ["Ma'lumotlar", "Kirim", "To'lovlar", "Tarix"] as const;
-type MalumotTab = (typeof malumotTablari)[number];
+type MalumotTab = "malumotlar" | "kirim" | "tolovlar" | "tarix";
+const malumotTabKalitlari: MalumotTab[] = ["malumotlar", "kirim", "tolovlar", "tarix"];
 
 type Props = {
   boshlangich: YetkazibBeruvchi | null;
@@ -20,6 +21,8 @@ type Props = {
 };
 
 export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish, onSaqlash }: Props) {
+  const { t } = useTranslation(["xaridor_uchot", "common"]);
+  const malumotTablari = malumotTabKalitlari.map((kalit) => ({ kalit, nom: t(`shared.tabs.${kalit}`) }));
   const [nomi, setNomi] = useState(boshlangich?.nomi ?? "");
   const [stir, setStir] = useState(boshlangich?.stir ?? "");
   const [telefon, setTelefon] = useState(boshlangich?.telefon ?? "");
@@ -32,7 +35,7 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
   const [yaratilganSana, setYaratilganSana] = useState(boshlangich?.yaratilganSana ?? bugun());
   const [xato, setXato] = useState("");
   const [saqlanmoqda, setSaqlanmoqda] = useState(false);
-  const [faolTab, setFaolTab] = useState<MalumotTab>("Ma'lumotlar");
+  const [faolTab, setFaolTab] = useState<MalumotTab>("malumotlar");
 
   const beruvchiKirimlari = useMemo(
     () => kirimlar.filter((kirim) => kirim.yetkazibBeruvchiId === boshlangich?.id),
@@ -43,7 +46,7 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
     event.preventDefault();
 
     if (!nomi.trim()) {
-      setXato("Yetkazib beruvchi nomi to'ldirilishi shart.");
+      setXato(t("yetkazibModal.requiredError"));
       return;
     }
 
@@ -64,10 +67,10 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
         instagram: instagram.trim(),
         website: boshlangich?.ijtimoiy.website ?? "",
       },
-      yaratganMasul: boshlangich?.yaratganMasul ?? "Administrator",
+      yaratganMasul: boshlangich?.yaratganMasul ?? t("shared.defaultResponsible"),
       yaratilganSana,
       ozgartirilganSana: bugun(),
-      ozgartirganMasul: "Administrator",
+      ozgartirganMasul: t("shared.defaultResponsible"),
       customFields: boshlangich?.customFields ?? {},
       });
     } catch (error) {
@@ -99,10 +102,10 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
                 </span>
                 <div>
                   <h1 className="text-2xl font-bold text-slate-900">
-                    {boshlangich ? "Yetkazib beruvchini tahrirlash" : "Yangi yetkazib beruvchi"}
+                    {boshlangich ? t("yetkazibModal.editTitle") : t("yetkazibModal.newTitle")}
                   </h1>
                   <span className="text-xs font-black uppercase tracking-wider text-[#2563EB]">
-                    Yetkazib beruvchi ma'lumotlari
+                    {t("yetkazibModal.badge")}
                   </span>
                 </div>
               </div>
@@ -111,23 +114,23 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
             <nav className="mt-6 flex items-center gap-3 overflow-x-auto">
               {malumotTablari.map((tab) => (
                 <button
-                  key={tab}
+                  key={tab.kalit}
                   type="button"
-                  onClick={() => setFaolTab(tab)}
+                  onClick={() => setFaolTab(tab.kalit)}
                   className={`shrink-0 rounded-xl px-3 py-2 text-sm transition ${
-                    faolTab === tab
+                    faolTab === tab.kalit
                       ? "border border-orange-200 bg-white text-[#2563EB]"
                       : "text-slate-500 hover:bg-white hover:text-[#2563EB]"
                   }`}
                 >
-                  {tab}
+                  {tab.nom}
                 </button>
               ))}
             </nav>
           </header>
 
           <div className="scrollbar-orange flex-1 overflow-y-auto">
-            {faolTab === "Ma'lumotlar" && (
+            {faolTab === "malumotlar" && (
               <div className="px-9 py-7">
                 {xato && (
                   <p className="mb-5 rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
@@ -139,19 +142,19 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
                   <div className="space-y-6">
                     <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80">
                       <h2 className="border-b border-orange-100/80 pb-3 text-sm font-black uppercase tracking-wide text-slate-600">
-                        Yetkazib beruvchi ma'lumotlari
+                        {t("yetkazibModal.sectionTitle")}
                       </h2>
 
                       <div className="mt-5 space-y-4">
                         <label className="grid gap-2">
                           <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                             <Building2 size={14} className="text-[#2563EB]" />
-                            Nomi *
+                            {t("yetkazibModal.name")}
                           </span>
                           <input
                             value={nomi}
                             onChange={(event) => setNomi(event.target.value)}
-                            placeholder="Nestle Uzbekistan"
+                            placeholder={t("yetkazibModal.namePlaceholder")}
                             className={maydonKlass}
                           />
                         </label>
@@ -159,12 +162,12 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
                         <label className="grid gap-2">
                           <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                             <Hash size={14} className="text-[#2563EB]" />
-                            STIR
+                            {t("yetkazibModal.stir")}
                           </span>
                           <input
                             value={stir}
                             onChange={(event) => setStir(event.target.value)}
-                            placeholder="201112223"
+                            placeholder={t("yetkazibModal.stirPlaceholder")}
                             className={maydonKlass}
                           />
                         </label>
@@ -172,13 +175,13 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
                         <label className="grid gap-2">
                           <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                             <Phone size={14} className="text-[#2563EB]" />
-                            Telefon
+                            {t("yetkazibModal.phone")}
                           </span>
                           <input
                             type="tel"
                             value={telefon}
                             onChange={(event) => setTelefon(event.target.value)}
-                            placeholder="+998 71 200 10 10"
+                            placeholder={t("yetkazibModal.phonePlaceholder")}
                             className={maydonKlass}
                           />
                         </label>
@@ -186,12 +189,12 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
                         <label className="grid gap-2">
                           <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                             <UserRound size={14} className="text-[#2563EB]" />
-                            Aloqa shaxsi
+                            {t("yetkazibModal.contactPerson")}
                           </span>
                           <input
                             value={aloqaShaxsi}
                             onChange={(event) => setAloqaShaxsi(event.target.value)}
-                            placeholder="Aziz Tursunov"
+                            placeholder={t("yetkazibModal.contactPersonPlaceholder")}
                             className={maydonKlass}
                           />
                         </label>
@@ -199,13 +202,13 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
                         <label className="grid gap-2">
                           <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                             <Phone size={14} className="text-[#2563EB]" />
-                            Aloqa tel raqami
+                            {t("yetkazibModal.contactPhone")}
                           </span>
                           <input
                             type="tel"
                             value={aloqaTelefoni}
                             onChange={(event) => setAloqaTelefoni(event.target.value)}
-                            placeholder="+998 90 123 45 67"
+                            placeholder={t("yetkazibModal.contactPhonePlaceholder")}
                             className={maydonKlass}
                           />
                         </label>
@@ -213,12 +216,12 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
                         <label className="grid gap-2">
                           <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                             <Briefcase size={14} className="text-[#2563EB]" />
-                            Lavozim
+                            {t("yetkazibModal.position")}
                           </span>
                           <input
                             value={lavozim}
                             onChange={(event) => setLavozim(event.target.value)}
-                            placeholder="Savdo vakili"
+                            placeholder={t("yetkazibModal.positionPlaceholder")}
                             className={maydonKlass}
                           />
                         </label>
@@ -235,7 +238,7 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
                         <label className="grid gap-2">
                           <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                             <CalendarDays size={14} className="text-[#2563EB]" />
-                            Ro'yxatga olingan sana
+                            {t("shared.registeredDateLabel")}
                           </span>
                           <input
                             type="date"
@@ -253,11 +256,11 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
               </div>
             )}
 
-            {faolTab === "Kirim" && (
+            {faolTab === "kirim" && (
               <KirimTab kirimlar={beruvchiKirimlari} beruvchiNomi={nomi || boshlangich?.nomi || "—"} />
             )}
-            {faolTab === "To'lovlar" && <TolovlarTab tolovlar={[]} />}
-            {faolTab === "Tarix" && <TarixTab tarix={[]} />}
+            {faolTab === "tolovlar" && <TolovlarTab tolovlar={[]} />}
+            {faolTab === "tarix" && <TarixTab tarix={[]} />}
           </div>
 
           <footer className="flex justify-end gap-3 border-t border-orange-100 bg-[#F8FAFC]/90 px-9 py-4 backdrop-blur-xl">
@@ -266,10 +269,10 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
               onClick={onYopish}
               className="rounded-2xl bg-slate-100 px-5 py-2.5 text-sm font-black text-slate-600 transition hover:bg-slate-200"
             >
-              Bekor qilish
+              {t("common:actions.cancel")}
             </button>
             <button disabled={saqlanmoqda} className="rounded-2xl bg-[#2563EB] px-6 py-2.5 text-sm font-black text-white shadow-[0_14px_32px_rgba(37,99,235,.24)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] disabled:opacity-50">
-              {saqlanmoqda ? "Saqlanmoqda..." : "Saqlash"}
+              {saqlanmoqda ? t("root.saving") : t("common:actions.save")}
             </button>
           </footer>
         </form>

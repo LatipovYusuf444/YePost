@@ -1,4 +1,5 @@
 import { Briefcase, Phone, UserRound, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import type { Xodim } from "./types";
 
@@ -9,6 +10,7 @@ type Props = {
 
 // Savdolar jadvalidagi "Mas'ul shaxs"ni bosganda ochiladigan xodim ma'lumoti (mock).
 export default function XodimModal({ xodim, onYopish }: Props) {
+  const { t } = useTranslation(["xaridor_uchot", "common"]);
   return (
     <AppModal className="bg-[rgba(15,23,42,.45)] p-4 backdrop-blur-[3px]">
       <div className="w-full max-w-md overflow-hidden rounded-[28px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80">
@@ -20,7 +22,7 @@ export default function XodimModal({ xodim, onYopish }: Props) {
             <div>
               <h1 className="text-lg font-bold text-slate-900">{xodim.ism}</h1>
               <span className="text-xs font-black uppercase tracking-wider text-[#2563EB]">
-                Mas'ul xodim
+                {t("xodimModal.badge")}
               </span>
             </div>
           </div>
@@ -28,15 +30,15 @@ export default function XodimModal({ xodim, onYopish }: Props) {
             type="button"
             onClick={onYopish}
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-600 shadow-sm transition hover:bg-orange-500 hover:text-white"
-            aria-label="Yopish"
+            aria-label={t("common:actions.close")}
           >
             <X size={18} />
           </button>
         </header>
 
         <dl className="space-y-4 px-7 py-6">
-          <Qator icon={<Briefcase size={14} />} nom="Lavozim" qiymat={xodim.lavozim} />
-          <Qator icon={<Phone size={14} />} nom="Telefon" qiymat={xodim.telefon} />
+          <Qator icon={<Briefcase size={14} />} nom={t("xodimModal.position")} qiymat={xodim.lavozim} />
+          <Qator icon={<Phone size={14} />} nom={t("xodimModal.phone")} qiymat={xodim.telefon} />
         </dl>
       </div>
     </AppModal>

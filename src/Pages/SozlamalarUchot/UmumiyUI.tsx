@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 // Sozlamalar bo'limlari uchun umumiy UI qismlari.
 
@@ -65,6 +66,7 @@ export function Switch({
 }
 
 export function SaqlashTugma({ onClick, disabled = false }: { onClick: () => void; disabled?: boolean }) {
+  const { t } = useTranslation("common");
   return (
     <button
       type="button"
@@ -72,7 +74,7 @@ export function SaqlashTugma({ onClick, disabled = false }: { onClick: () => voi
       disabled={disabled}
       className="inline-flex h-11 items-center gap-2 rounded-2xl bg-[#2563EB] px-6 text-sm font-black text-white shadow-[0_14px_32px_rgba(37,99,235,.24)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-50"
     >
-      Saqlash
+      {t("actions.save")}
     </button>
   );
 }

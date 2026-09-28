@@ -9,6 +9,7 @@ import {
   UserRound,
   Wallet,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { crmApi, royxatniAjratish } from "@/api/crmApi";
 import { profilApi } from "@/api/authProfileApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
@@ -27,39 +28,11 @@ export type FaoliyatYozuvi = {
   sana: string; // ISO — rejalashtirilgan muddat yoki qo'shilgan vaqt
 };
 
-const yozishTablari: { kalit: FaoliyatTuri; nom: string }[] = [
-  { kalit: "ish", nom: "Ish" },
-  { kalit: "izoh", nom: "Izoh" },
-  { kalit: "xabar", nom: "Xabar" },
-  { kalit: "vazifa", nom: "Vazifa" },
-];
-
-const sarlavhaPlaceholder: Record<FaoliyatTuri, string> = {
-  ish: "Mijoz bilan bog'lanish",
-  izoh: "Izoh sarlavhasi",
-  xabar: "Xabar mavzusi",
-  vazifa: "Vazifa nomi",
-  tolov: "",
-  ozgarish: "",
-};
-
-const tafsilotPlaceholder: Record<FaoliyatTuri, string> = {
-  ish: "Vazifa haqida batafsil yozing...",
-  izoh: "Izoh matnini yozing...",
-  xabar: "Xabar matnini yozing...",
-  vazifa: "Vazifa haqida batafsil yozing...",
-  tolov: "",
-  ozgarish: "",
-};
+const yozishTabKalitlari: FaoliyatTuri[] = ["ish", "izoh", "xabar", "vazifa"];
 
 function hozirgiVaqt() {
   const sana = new Date();
   return `${String(sana.getHours()).padStart(2, "0")}:${String(sana.getMinutes()).padStart(2, "0")}`;
-}
-
-function muddatMatni(sana: string, vaqt: string) {
-  const kun = sana === bugun() ? "Bugun" : sanaFormat(sana);
-  return `${kun}, soat ${vaqt || "—"}`;
 }
 
 type Props = {
@@ -70,19 +43,43 @@ type Props = {
 
 const BOSH_YOZUVLAR: FaoliyatYozuvi[] = [];
 
-function activityYozuvi(item: Activity): FaoliyatYozuvi {
-  return { id: item.id, turi: item.type === "TASK" ? "vazifa" : "ish", sarlavha: item.subject || "CRM faoliyati", matn: item.description || item.result || "", sana: item.dueAt || item.createdAt || new Date().toISOString() };
-}
-
-function commentYozuvi(item: Comment): FaoliyatYozuvi {
-  return { id: item.id, turi: "izoh", sarlavha: "Izoh", matn: item.text || "", sana: item.createdAt || new Date().toISOString() };
-}
-
-function chatYozuvi(item: ChatMessage, index: number): FaoliyatYozuvi {
-  return { id: item.id || `chat-${item.createdAt || index}`, turi: "xabar", sarlavha: item.direction === "IN" ? "Mijozdan xabar" : "Xabar yuborildi", matn: item.text || "", sana: item.createdAt || new Date().toISOString() };
-}
-
 export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, partnerId }: Props) {
+  const { t } = useTranslation(["xaridor_uchot", "common"]);
+
+  function activityYozuvi(item: Activity): FaoliyatYozuvi {
+    return { id: item.id, turi: item.type === "TASK" ? "vazifa" : "ish", sarlavha: item.subject || t("faoliyatPaneli.defaultActivitySubject"), matn: item.description || item.result || "", sana: item.dueAt || item.createdAt || new Date().toISOString() };
+  }
+
+  function commentYozuvi(item: Comment): FaoliyatYozuvi {
+    return { id: item.id, turi: "izoh", sarlavha: t("faoliyatPaneli.commentSubject"), matn: item.text || "", sana: item.createdAt || new Date().toISOString() };
+  }
+
+  function chatYozuvi(item: ChatMessage, index: number): FaoliyatYozuvi {
+    return { id: item.id || `chat-${item.createdAt || index}`, turi: "xabar", sarlavha: item.direction === "IN" ? t("faoliyatPaneli.chatFromCustomer") : t("faoliyatPaneli.chatSent"), matn: item.text || "", sana: item.createdAt || new Date().toISOString() };
+  }
+
+  const yozishTablari = yozishTabKalitlari.map((kalit) => ({ kalit, nom: t(`faoliyatPaneli.tabs.${kalit}`) }));
+  const sarlavhaPlaceholder: Record<FaoliyatTuri, string> = {
+    ish: t("faoliyatPaneli.titlePlaceholders.ish"),
+    izoh: t("faoliyatPaneli.titlePlaceholders.izoh"),
+    xabar: t("faoliyatPaneli.titlePlaceholders.xabar"),
+    vazifa: t("faoliyatPaneli.titlePlaceholders.vazifa"),
+    tolov: "",
+    ozgarish: "",
+  };
+  const tafsilotPlaceholder: Record<FaoliyatTuri, string> = {
+    ish: t("faoliyatPaneli.detailPlaceholders.ish"),
+    izoh: t("faoliyatPaneli.detailPlaceholders.izoh"),
+    xabar: t("faoliyatPaneli.detailPlaceholders.xabar"),
+    vazifa: t("faoliyatPaneli.detailPlaceholders.vazifa"),
+    tolov: "",
+    ozgarish: "",
+  };
+  function muddatMatni(sana: string, vaqt: string) {
+    const kun = sana === bugun() ? t("faoliyatPaneli.today") : sanaFormat(sana);
+    return t("faoliyatPaneli.dueLabel", { day: kun, time: vaqt || "—" });
+  }
+
   const [faoliyatTab, setFaoliyatTab] = useState<FaoliyatTuri>("ish");
   const [sarlavha, setSarlavha] = useState("");
   const [tafsilot, setTafsilot] = useState("");
@@ -127,7 +124,7 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
   async function saqlash() {
     const tozaSarlavha = sarlavha.trim();
     if (!tozaSarlavha) return;
-    if (!partnerId) { setXatolik("CRM faoliyatini saqlash uchun real partner ID mavjud emas."); return; }
+    if (!partnerId) { setXatolik(t("faoliyatPaneli.errors.noPartnerId")); return; }
     const muddat = new Date(`${sana}T${vaqt || "00:00"}`);
     setSaqlanmoqda(true); setXatolik("");
     try {
@@ -138,7 +135,7 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
         await crmApi.partnerChatXabarYuborish(partnerId, tafsilot.trim() || tozaSarlavha);
       }
       else {
-        if (!assigneeId) throw new Error("Joriy mas’ul foydalanuvchi aniqlanmadi.");
+        if (!assigneeId) throw new Error(t("faoliyatPaneli.errors.noAssignee"));
         await crmApi.activityYaratish({ type: faoliyatTab === "vazifa" ? "TASK" : "CALL", partnerId, subject: tozaSarlavha, description: tafsilot.trim() || undefined, dueAt: Number.isNaN(muddat.getTime()) ? new Date().toISOString() : muddat.toISOString(), assigneeId });
       }
       tozalash(); await yuklash();
@@ -169,7 +166,7 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
             type="button"
             className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-bold text-slate-500 transition hover:bg-orange-50 hover:text-[#2563EB]"
           >
-            Ko'proq <ChevronDown size={14} />
+            {t("faoliyatPaneli.more")} <ChevronDown size={14} />
           </button>
         </div>
 
@@ -191,10 +188,10 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
               />
             </div>
             <div className="flex shrink-0 items-center gap-3 pt-1">
-              <span className="h-3.5 w-3.5 rounded-full bg-amber-400" title="Muhimlik" />
+              <span className="h-3.5 w-3.5 rounded-full bg-amber-400" title={t("faoliyatPaneli.priorityTitle")} />
               <span
                 className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-[#2563EB]"
-                title="Mas'ul"
+                title={t("faoliyatPaneli.responsibleTitle")}
               >
                 <UserRound size={18} />
               </span>
@@ -221,7 +218,7 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
             <button
               type="button"
               className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-orange-50 hover:text-[#2563EB]"
-              title="Eslatma"
+              title={t("faoliyatPaneli.reminderTitle")}
             >
               <Bell size={18} />
             </button>
@@ -234,14 +231,14 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
               disabled={!sarlavha.trim() || saqlanmoqda || !partnerId}
               className="inline-flex h-10 items-center justify-center rounded-2xl bg-[#2563EB] px-6 text-sm font-black uppercase text-white shadow-[0_12px_28px_rgba(37,99,235,.22)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-orange-200 disabled:shadow-none disabled:hover:translate-y-0"
             >
-              {saqlanmoqda ? "Saqlanmoqda..." : "Saqlash"}
+              {saqlanmoqda ? t("faoliyatPaneli.saving") : t("common:actions.save")}
             </button>
             <button
               type="button"
               onClick={tozalash}
               className="inline-flex h-10 items-center justify-center rounded-2xl px-4 text-sm font-black uppercase text-slate-600 transition hover:bg-orange-50 hover:text-[#2563EB]"
             >
-              Bekor qilish
+              {t("common:actions.cancel")}
             </button>
           </div>
         </div>
@@ -249,12 +246,12 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
 
       <div className="flex justify-center">
         <span className="rounded-full bg-orange-50 px-5 py-1.5 text-sm font-bold text-[#2563EB]">
-          Faoliyat
+          {t("faoliyatPaneli.sectionBadge")}
         </span>
       </div>
 
       <div className="space-y-4">
-        {yuklanmoqda && <p className="rounded-[22px] bg-white/70 p-6 text-center text-sm font-semibold text-slate-400">CRM ma’lumotlari yuklanmoqda...</p>}
+        {yuklanmoqda && <p className="rounded-[22px] bg-white/70 p-6 text-center text-sm font-semibold text-slate-400">{t("faoliyatPaneli.loading")}</p>}
         {yozuvlar.map((yozuv) => (
           <article
             key={yozuv.id}
@@ -278,7 +275,7 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
 
         {yozuvlar.length === 0 && (
           <p className="rounded-[22px] border border-dashed border-orange-200 bg-white/60 p-10 text-center text-sm font-semibold text-slate-400">
-            Faoliyat yozuvlari yo'q
+            {t("faoliyatPaneli.empty")}
           </p>
         )}
       </div>

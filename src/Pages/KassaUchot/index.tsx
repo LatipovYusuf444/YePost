@@ -9,6 +9,7 @@ import {
   Search,
   Smartphone,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { barchaFinanceTransactions } from "@/api/tolovApi";
 import { cashOperationsApi } from "@/api/cashOperationsApi";
 import { foydalanuvchilarApi } from "@/api/accountsApi";
@@ -26,40 +27,16 @@ import type {
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
 import KassaAmaliyotModal from "./KassaAmaliyotModal";
 import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali, KassaYonalishi } from "./types";
-import { amaliyotTuriMatni, sanaFormat, summaFormat } from "./yordamchilar";
+import { sanaFormat, summaFormat } from "./yordamchilar";
 
-type Bolim = { yonalish: KassaYonalishi; nom: string };
-type Guruh = { kanal: KassaKanali; nom: string; icon: typeof Banknote; bolimlar: Bolim[] };
+type Bolim = { yonalish: KassaYonalishi };
+type Guruh = { kanal: KassaKanali; icon: typeof Banknote; bolimlar: Bolim[] };
 
 // 3 ta guruh, har birining ichida 2 bo'lim (tushum/chiqim).
 const guruhlar: Guruh[] = [
-  {
-    kanal: "naqd",
-    nom: "Naqd",
-    icon: Banknote,
-    bolimlar: [
-      { yonalish: "tushum", nom: "Naqd tushumlari" },
-      { yonalish: "chiqim", nom: "Naqd chiqimlari" },
-    ],
-  },
-  {
-    kanal: "bank",
-    nom: "Bank",
-    icon: Landmark,
-    bolimlar: [
-      { yonalish: "tushum", nom: "Kiruvchi bank to'lovlari" },
-      { yonalish: "chiqim", nom: "Chiquvchi bank to'lovlari" },
-    ],
-  },
-  {
-    kanal: "ilova",
-    nom: "Ilova orqali",
-    icon: Smartphone,
-    bolimlar: [
-      { yonalish: "tushum", nom: "Ilova orqali tushumlar" },
-      { yonalish: "chiqim", nom: "Ilova orqali chiqimlar" },
-    ],
-  },
+  { kanal: "naqd", icon: Banknote, bolimlar: [{ yonalish: "tushum" }, { yonalish: "chiqim" }] },
+  { kanal: "bank", icon: Landmark, bolimlar: [{ yonalish: "tushum" }, { yonalish: "chiqim" }] },
+  { kanal: "ilova", icon: Smartphone, bolimlar: [{ yonalish: "tushum" }, { yonalish: "chiqim" }] },
 ];
 
 // Kassa uchoti backenddagi yagona finance transaction oqimidan foydalanadi.
@@ -74,37 +51,6 @@ function backendTuriniMoslash(item: FinanceTransaction): KassaAmaliyotTuri {
   if (item.source === "RETURN") return "xaridorga_qaytarish";
   if (item.source === "CASH_IN") return "boshqa_kirim";
   return "xarajat";
-}
-
-function amaliyotgaMoslash(
-  item: FinanceTransaction,
-  users: Map<string, AccountFoydalanuvchi>,
-  branches: Map<string, Filial>
-): KassaAmaliyoti {
-  const responsible = item.responsibleId
-    ? users.get(item.responsibleId)
-    : undefined;
-  const branch = item.branchId
-    ? branches.get(item.branchId)
-    : undefined;
-  return {
-    id: item.id,
-    kanal: kanalniMoslash(item.paymentType),
-    yonalish: item.type === "INCOME" ? "tushum" : "chiqim",
-    turi: backendTuriniMoslash(item),
-    holat: "tasdiqlangan",
-    raqam: item.refDocNumber || item.id.slice(0, 8).toUpperCase(),
-    nomi: item.refDocNumber || item.note || item.source,
-    kontragent: item.counterpartyName || branch?.name || "",
-    summa: Number(item.amount ?? 0),
-    sana: item.date,
-    masul: item.responsibleName || responsible?.fullName || responsible?.username || "Tizim",
-    izoh: item.note ?? "",
-    backendSource: item.source,
-    backendRefId: item.refId ?? item.id,
-    backendBranchId: item.branchId ?? undefined,
-    readonly: true,
-  };
 }
 
 const cashOperationTuri: Record<CashOperationType, KassaAmaliyotTuri> = {
@@ -132,59 +78,92 @@ const uiOperationTuri: Record<KassaAmaliyotTuri, CashOperationType> = {
   xarajat: "OTHER_EXPENSE",
 };
 
-function cashOperationgaMoslash(
-  item: CashOperation,
-  users: Map<string, AccountFoydalanuvchi>,
-  branches: Map<string, Filial>
-): KassaAmaliyoti {
-  const responsible = item.responsibleId ? users.get(item.responsibleId) : undefined;
-  const branch = item.branchId ? branches.get(item.branchId) : undefined;
-  const counterparty =
-    item.counterparty?.name ||
-    item.counterparty?.fullName ||
-    [item.customer?.firstName, item.customer?.lastName].filter(Boolean).join(" ") ||
-    item.supplier?.name ||
-    item.employee?.fullName ||
-    item.employee?.username ||
-    branch?.name ||
-    item.branch?.name ||
-    "";
-  return {
-    id: item.id,
-    kanal: kanalniMoslash(item.paymentMethod),
-    yonalish: item.direction === "INCOME" ? "tushum" : "chiqim",
-    turi: cashOperationTuri[item.type],
-    holat:
-      item.status === "DRAFT"
-        ? "qoralama"
-        : item.status === "CANCELLED"
-          ? "bekor_qilingan"
-          : "tasdiqlangan",
-    xaridorId: item.customerId ?? undefined,
-    supplierId: item.supplierId ?? undefined,
-    employeeId: item.employeeId ?? undefined,
-    responsibleId: item.responsibleId ?? undefined,
-    saleId: item.saleId ?? undefined,
-    purchaseId: item.purchaseId ?? undefined,
-    raqam: item.docNumber,
-    nomi: item.name || amaliyotTuriMatni[cashOperationTuri[item.type]],
-    kontragent: counterparty,
-    summa: Number(item.amount ?? 0),
-    sana: item.date,
-    masul:
-      item.responsible?.fullName ||
-      responsible?.fullName ||
-      responsible?.username ||
-      "Tizim",
-    izoh: item.note || "",
-    backendSource: "CASH_OPERATION",
-    backendRefId: item.id,
-    backendBranchId: item.branchId ?? undefined,
-    readonly: item.status === "CANCELLED",
-  };
-}
-
 export default function KassaUchot() {
+  const { t } = useTranslation(["kassa_uchot", "common"]);
+
+  function amaliyotgaMoslash(
+    item: FinanceTransaction,
+    users: Map<string, AccountFoydalanuvchi>,
+    branches: Map<string, Filial>
+  ): KassaAmaliyoti {
+    const responsible = item.responsibleId
+      ? users.get(item.responsibleId)
+      : undefined;
+    const branch = item.branchId
+      ? branches.get(item.branchId)
+      : undefined;
+    return {
+      id: item.id,
+      kanal: kanalniMoslash(item.paymentType),
+      yonalish: item.type === "INCOME" ? "tushum" : "chiqim",
+      turi: backendTuriniMoslash(item),
+      holat: "tasdiqlangan",
+      raqam: item.refDocNumber || item.id.slice(0, 8).toUpperCase(),
+      nomi: item.refDocNumber || item.note || item.source,
+      kontragent: item.counterpartyName || branch?.name || "",
+      summa: Number(item.amount ?? 0),
+      sana: item.date,
+      masul: item.responsibleName || responsible?.fullName || responsible?.username || t("systemFallback"),
+      izoh: item.note ?? "",
+      backendSource: item.source,
+      backendRefId: item.refId ?? item.id,
+      backendBranchId: item.branchId ?? undefined,
+      readonly: true,
+    };
+  }
+
+  function cashOperationgaMoslash(
+    item: CashOperation,
+    users: Map<string, AccountFoydalanuvchi>,
+    branches: Map<string, Filial>
+  ): KassaAmaliyoti {
+    const responsible = item.responsibleId ? users.get(item.responsibleId) : undefined;
+    const branch = item.branchId ? branches.get(item.branchId) : undefined;
+    const counterparty =
+      item.counterparty?.name ||
+      item.counterparty?.fullName ||
+      [item.customer?.firstName, item.customer?.lastName].filter(Boolean).join(" ") ||
+      item.supplier?.name ||
+      item.employee?.fullName ||
+      item.employee?.username ||
+      branch?.name ||
+      item.branch?.name ||
+      "";
+    return {
+      id: item.id,
+      kanal: kanalniMoslash(item.paymentMethod),
+      yonalish: item.direction === "INCOME" ? "tushum" : "chiqim",
+      turi: cashOperationTuri[item.type],
+      holat:
+        item.status === "DRAFT"
+          ? "qoralama"
+          : item.status === "CANCELLED"
+            ? "bekor_qilingan"
+            : "tasdiqlangan",
+      xaridorId: item.customerId ?? undefined,
+      supplierId: item.supplierId ?? undefined,
+      employeeId: item.employeeId ?? undefined,
+      responsibleId: item.responsibleId ?? undefined,
+      saleId: item.saleId ?? undefined,
+      purchaseId: item.purchaseId ?? undefined,
+      raqam: item.docNumber,
+      nomi: item.name || t(`types.${cashOperationTuri[item.type]}`),
+      kontragent: counterparty,
+      summa: Number(item.amount ?? 0),
+      sana: item.date,
+      masul:
+        item.responsible?.fullName ||
+        responsible?.fullName ||
+        responsible?.username ||
+        t("systemFallback"),
+      izoh: item.note || "",
+      backendSource: "CASH_OPERATION",
+      backendRefId: item.id,
+      backendBranchId: item.branchId ?? undefined,
+      readonly: item.status === "CANCELLED",
+    };
+  }
+
   // Amaliyotlar umumiy store'da — xaridordan to'lov xaridor qarzini kamaytiradi.
   const [amaliyotlar, setAmaliyotlar] = useState<KassaAmaliyoti[]>([]);
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
@@ -220,6 +199,7 @@ export default function KassaUchot() {
     } finally {
       setYuklanmoqda(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => { void yuklash(); }, [yuklash]);
@@ -270,7 +250,7 @@ export default function KassaUchot() {
   async function ochirish(amaliyot: KassaAmaliyoti) {
     if (amaliyot.readonly || amaliyot.backendSource !== "CASH_OPERATION" || !amaliyot.backendRefId) return;
     const cancel = amaliyot.holat === "tasdiqlangan";
-    if (!window.confirm(`${amaliyot.raqam} amaliyotini ${cancel ? "bekor qilasizmi" : "o'chirasizmi"}?`)) return;
+    if (!window.confirm(t(cancel ? "cancelConfirm" : "deleteConfirm", { number: amaliyot.raqam }))) return;
     try {
       if (cancel) await cashOperationsApi.bekorQilish(amaliyot.backendRefId);
       else await cashOperationsApi.ochirish(amaliyot.backendRefId);
@@ -287,6 +267,7 @@ export default function KassaUchot() {
   const joriyGuruh = guruhlar.find((g) => g.kanal === kanal) ?? guruhlar[0];
   const joriyBolim =
     joriyGuruh.bolimlar.find((b) => b.yonalish === yonalish) ?? joriyGuruh.bolimlar[0];
+  const joriyBolimNomi = t(`groups.${joriyGuruh.kanal}.${joriyBolim.yonalish}`);
 
   function bolimniTanlash(yangiKanal: KassaKanali, yangiYonalish: KassaYonalishi) {
     setKanal(yangiKanal);
@@ -312,53 +293,53 @@ export default function KassaUchot() {
   const ustunlar: Ustun<KassaAmaliyoti>[] = [
     {
       id: "raqam",
-      nom: "Raqam",
+      nom: t("table.raqam"),
       kenglik: 130,
       katak: (a) => <span className="font-black text-slate-900">{a.raqam}</span>,
     },
     {
       id: "nomi",
-      nom: "Nomi",
+      nom: t("table.nomi"),
       kenglik: 200,
       katak: (a) => <span className="font-semibold text-slate-700">{a.nomi}</span>,
     },
     {
       id: "kontragent",
-      nom: tushum ? "Kimdan" : "Kimga",
+      nom: tushum ? t("table.kontragentFrom") : t("table.kontragentTo"),
       kenglik: 180,
       katak: (a) => <span className="text-slate-500">{a.kontragent}</span>,
     },
     {
       id: "tur",
-      nom: "Tur",
+      nom: t("table.tur"),
       kenglik: 160,
       katak: (a) => (
         <span className="inline-block rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-[#2563EB]">
-          {amaliyotTuriMatni[a.turi]}
+          {t(`types.${a.turi}`)}
         </span>
       ),
     },
     {
       id: "masul",
-      nom: "Mas'ul shaxs",
+      nom: t("table.masul"),
       kenglik: 160,
       katak: (a) => <span className="text-slate-500">{a.masul}</span>,
     },
     {
       id: "izoh",
-      nom: "Izoh",
+      nom: t("table.izoh"),
       kenglik: 180,
       katak: (a) => <span className="text-slate-500">{a.izoh || "—"}</span>,
     },
     {
       id: "sana",
-      nom: "Sana",
+      nom: t("table.sana"),
       kenglik: 130,
       katak: (a) => <span className="text-slate-500">{sanaFormat(a.sana)}</span>,
     },
     {
       id: "summa",
-      nom: "Summa",
+      nom: t("table.summa"),
       kenglik: 150,
       katak: (a) => (
         <span className={`font-black ${tushum ? "text-emerald-600" : "text-red-500"}`}>
@@ -371,10 +352,10 @@ export default function KassaUchot() {
   return (
     <div className="space-y-5">
       <header>
-        <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-500">Kassa uchoti</p>
-        <h1 className="mt-1 text-3xl font-black text-gray-950">Kassa</h1>
+        <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-500">{t("eyebrow")}</p>
+        <h1 className="mt-1 text-3xl font-black text-gray-950">{t("title")}</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Naqd, bank va ilova orqali tushum va chiqimlar nazorati.
+          {t("subtitle")}
         </p>
       </header>
 
@@ -385,7 +366,7 @@ export default function KassaUchot() {
       )}
       {yuklanmoqda && (
         <div className="rounded-2xl border border-orange-100 bg-white px-4 py-3 text-sm font-bold text-slate-500">
-          Backend ma'lumotlari yuklanmoqda...
+          {t("loading")}
         </div>
       )}
 
@@ -407,7 +388,7 @@ export default function KassaUchot() {
                 }`}
               >
                 <Ikonka size={15} />
-                {guruh.nom}
+                {t(`groups.${guruh.kanal}.name`)}
                 <ChevronDown size={14} className={`transition ${ochiq ? "rotate-180" : ""}`} />
               </button>
 
@@ -415,7 +396,7 @@ export default function KassaUchot() {
                 <>
                   <button
                     type="button"
-                    aria-label="Yopish"
+                    aria-label={t("common:actions.close")}
                     onClick={() => setOchiqMenyu(null)}
                     className="fixed inset-0 z-40 cursor-default"
                   />
@@ -438,7 +419,7 @@ export default function KassaUchot() {
                           ) : (
                             <ArrowUpRight size={15} className="text-red-500" />
                           )}
-                          {bolim.nom}
+                          {t(`groups.${guruh.kanal}.${bolim.yonalish}`)}
                         </button>
                       );
                     })}
@@ -459,7 +440,7 @@ export default function KassaUchot() {
               value={qidiruv}
               onChange={(event) => setQidiruv(event.target.value)}
               className="min-w-0 flex-1 text-sm font-semibold outline-none"
-              placeholder="Raqam, nomi, kontragent yoki mas'ul..."
+              placeholder={t("searchPlaceholder")}
             />
           </label>
 
@@ -469,7 +450,7 @@ export default function KassaUchot() {
             }`}
           >
             {tushum ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
-            Jami: {summaFormat(jami)}
+            {t("totalLabel", { value: summaFormat(jami) })}
           </div>
         </div>
 
@@ -479,16 +460,16 @@ export default function KassaUchot() {
           className="inline-flex h-11 shrink-0 items-center gap-2 rounded-2xl bg-orange-500 px-4 text-sm font-black text-white"
         >
           <Plus size={17} />
-          Amaliyot yaratish
+          {t("createButton")}
         </button>
       </div>
 
       {/* Joriy bo'lim nomi */}
-      <h2 className="text-lg font-black text-gray-800">{joriyBolim.nom}</h2>
+      <h2 className="text-lg font-black text-gray-800">{joriyBolimNomi}</h2>
 
       {royxat.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-orange-200 bg-white p-14 text-center font-bold text-gray-400">
-          {joriyBolim.nom} bo'yicha yozuv yo'q
+          {t("emptyList", { section: joriyBolimNomi })}
         </p>
       ) : (
         <KengaytiriladiganJadval

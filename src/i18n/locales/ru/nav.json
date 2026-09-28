@@ -26,6 +26,13 @@
     "yetkazibBeruvchilar": "Поставщики",
     "kassa": "Касса",
     "hisobotlar": "Отчёты",
+    "hisobotTovarHarakati": "Движение товаров",
+    "hisobotOmborQoldigi": "Остатки склада",
+    "hisobotOzaroHisobKitob": "Взаиморасчёты",
+    "hisobotFoyda": "Отчёт о прибыли",
+    "hisobotFoydaXarajat": "Прибыли и расходы",
+    "hisobotKirimChiqim": "Приход и расход",
+    "hisobotAudit": "Журналы аудита",
     "xodimlar": "Сотрудники",
     "sozlamalar": "Настройки"
   },

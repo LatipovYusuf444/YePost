@@ -15,6 +15,7 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import GoldCartIllustration from "@/Components/illustrations/GoldCartIllustration";
 import {
@@ -38,19 +39,6 @@ type PaymentType = {
 };
 
 const quickDiscounts = [15, 30, 50, 75];
-const paymentTypes: PaymentType[] = [
-  { label: "Payme", apiTuri: "CARD" },
-  { label: "Click", apiTuri: "CARD" },
-  { label: "Naqd", apiTuri: "CASH" },
-  { label: "Bank", apiTuri: "BANK" },
-];
-const customerDetailTabs: CustomerDetailTab[] = ["Asosiyisi", "Savatcha", "Tarix"];
-const customerActivityTabs: CustomerActivityTab[] = [
-  "Vazifa",
-  "Kommentariya",
-  "Habarnoma",
-  "Qo'shimcha",
-];
 
 function formatSumma(value: number) {
   return `${Math.round(Number(value) || 0).toLocaleString("ru-RU")} uzs`;
@@ -74,6 +62,7 @@ function xatoMatni(error: unknown, fallback: string) {
 }
 
 export default function BoshSahifa() {
+  const { t } = useTranslation("bosh_sahifa");
   const cart = usePosStore((state) => state.cart);
   const updateCartQuantity = usePosStore((state) => state.updateQuantity);
   const updatePriceType = usePosStore((state) => state.updatePriceType);
@@ -84,12 +73,33 @@ export default function BoshSahifa() {
   const joriyProfil = useAuthProfileStore((state) => state.profil);
   const profilniYuklash = useAuthProfileStore((state) => state.profilniYuklash);
 
+  const customerDetailTabs: Array<{ id: CustomerDetailTab; label: string }> = [
+    { id: "Asosiyisi", label: t("customerModal.tabs.main") },
+    { id: "Savatcha", label: t("customerModal.tabs.cart") },
+    { id: "Tarix", label: t("customerModal.tabs.history") },
+  ];
+  const customerActivityTabs: Array<{ id: CustomerActivityTab; label: string }> = [
+    { id: "Vazifa", label: t("customerModal.activityTabs.task") },
+    { id: "Kommentariya", label: t("customerModal.activityTabs.comment") },
+    { id: "Habarnoma", label: t("customerModal.activityTabs.notification") },
+    { id: "Qo'shimcha", label: t("customerModal.activityTabs.extra") },
+  ];
+  const paymentTypes: PaymentType[] = useMemo(
+    () => [
+      { label: t("paymentTypes.payme"), apiTuri: "CARD" },
+      { label: t("paymentTypes.click"), apiTuri: "CARD" },
+      { label: t("paymentTypes.cash"), apiTuri: "CASH" },
+      { label: t("paymentTypes.bank"), apiTuri: "BANK" },
+    ],
+    [t]
+  );
+
   const [omborlar, setOmborlar] = useState<OmborTanlovi[]>([]);
   const [mijozlar, setMijozlar] = useState<MijozTanlovi[]>([]);
   const [warehouseId, setWarehouseId] = useState("");
   const [discountPercent, setDiscountPercent] = useState(0);
   const [discountAmount, setDiscountAmount] = useState(0);
-  const [paymentType, setPaymentType] = useState("Payme");
+  const [paymentType, setPaymentType] = useState(t("paymentTypes.payme"));
   const [customerName, setCustomerName] = useState("");
   const [mijozTuri, setMijozTuri] = useState<CustomerType>("donalik");
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
@@ -98,8 +108,8 @@ export default function BoshSahifa() {
   const [selectedCustomerModal, setSelectedCustomerModal] = useState<MijozTanlovi | null>(null);
   const [customerDetailTab, setCustomerDetailTab] = useState<CustomerDetailTab>("Asosiyisi");
   const [customerActivityTab, setCustomerActivityTab] = useState<CustomerActivityTab>("Vazifa");
-  const [customerActionType, setCustomerActionType] = useState("Nima qilish kerak");
-  const [customerDocumentType, setCustomerDocumentType] = useState("Hujjatlar");
+  const [customerActionType, setCustomerActionType] = useState(t("customerModal.actionPlaceholder"));
+  const [customerDocumentType, setCustomerDocumentType] = useState(t("customerModal.documentTypes.documents"));
   const [customerPaymentAccepted, setCustomerPaymentAccepted] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState("");
@@ -123,7 +133,7 @@ export default function BoshSahifa() {
         setMijozlar(customers);
         setWarehouseId((oldValue) => oldValue || String(warehouses[0]?.id ?? ""));
       } catch (error) {
-        if (active) setMessage({ type: "error", text: xatoMatni(error, "Bosh sahifa ma'lumotlari olinmadi") });
+        if (active) setMessage({ type: "error", text: xatoMatni(error, t("errors.loadFailed")) });
       } finally {
         if (active) setLoading(false);
       }
@@ -133,7 +143,7 @@ export default function BoshSahifa() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!joriyProfil) void profilniYuklash();
@@ -162,6 +172,7 @@ export default function BoshSahifa() {
   const discountSum = Math.min(total, discountAmount || percentDiscountSum);
   const payableTotal = Math.max(total - discountSum, 0);
   const selectedPayment = paymentTypes.find((item) => item.label === paymentType) ?? paymentTypes[0];
+  const cartPiecesCount = cart.reduce((sum, item) => sum + item.soni, 0);
 
   const filteredCustomers = useMemo(() => {
     const value = customerSearch.toLowerCase().trim();
@@ -193,15 +204,15 @@ export default function BoshSahifa() {
   function handlePay() {
     setMessage(null);
     if (!warehouseId) {
-      setMessage({ type: "error", text: "Sotuv uchun ombor topilmadi" });
+      setMessage({ type: "error", text: t("errors.warehouseNotFound") });
       return;
     }
     if (cart.length === 0) {
-      setMessage({ type: "error", text: "Savatcha bo'sh" });
+      setMessage({ type: "error", text: t("errors.cartEmpty") });
       return;
     }
     if (cart.some((item) => item.warehouseId && item.warehouseId !== warehouseId)) {
-      setMessage({ type: "error", text: "Savatchadagi mahsulotlar boshqa omborga tegishli. Omborni tekshiring." });
+      setMessage({ type: "error", text: t("errors.cartWarehouseMismatch") });
       return;
     }
     setTolovSummasi(String(payableTotal));
@@ -211,14 +222,14 @@ export default function BoshSahifa() {
   async function tolovniTasdiqlash() {
     const qabulQilinadiganSumma = readNumber(tolovSummasi);
     if (qabulQilinadiganSumma <= 0 || qabulQilinadiganSumma > payableTotal) {
-      setMessage({ type: "error", text: `To'lov summasi 1 dan ${formatSumma(payableTotal)} gacha bo'lishi kerak` });
+      setMessage({ type: "error", text: t("errors.amountRange", { max: formatSumma(payableTotal) }) });
       return;
     }
     if (
       qabulQilinadiganSumma < payableTotal &&
       (mijozTuri !== "doimiy" || !selectedCustomerId)
     ) {
-      setMessage({ type: "error", text: "Qarzga sotuv uchun xaridorni tanlang." });
+      setMessage({ type: "error", text: t("errors.selectDebtCustomer") });
       return;
     }
 
@@ -254,16 +265,16 @@ export default function BoshSahifa() {
         items,
         payments: [{ paymentType: selectedPayment.apiTuri, amount: qabulQilinadiganSumma }],
       });
-      if (!sale) throw new Error("Sotuv qoralamasini yaratib bo'lmadi");
+      if (!sale) throw new Error(t("errors.createDraftFailed"));
       const tasdiqlandi = await sotuvniTasdiqlash(sale.id);
       if (!tasdiqlandi) {
-        throw new Error(useSavdoStore.getState().xatolik || "Sotuvni tasdiqlab bo'lmadi");
+        throw new Error(useSavdoStore.getState().xatolik || t("errors.confirmFailed"));
       }
       clearCart();
       setTolovModalOchiq(false);
-      setMessage({ type: "success", text: "To'lov muvaffaqiyatli amalga oshirildi" });
+      setMessage({ type: "success", text: t("errors.paymentSuccess") });
     } catch (error) {
-      setMessage({ type: "error", text: xatoMatni(error, "Sotuvni yakunlab bo'lmadi") });
+      setMessage({ type: "error", text: xatoMatni(error, t("errors.finalizeFailed")) });
     } finally {
       setSaving(false);
     }
@@ -271,7 +282,7 @@ export default function BoshSahifa() {
 
   function handleNextCustomer() {
     if (!selectedCustomerId) {
-      setMessage({ type: "error", text: "Avval mijoz tanlang" });
+      setMessage({ type: "error", text: t("errors.selectCustomerFirst") });
       return;
     }
 
@@ -282,8 +293,8 @@ export default function BoshSahifa() {
     setSelectedCustomerModal(customer);
     setCustomerDetailTab("Asosiyisi");
     setCustomerActivityTab("Vazifa");
-    setCustomerActionType("Nima qilish kerak");
-    setCustomerDocumentType("Hujjatlar");
+    setCustomerActionType(t("customerModal.actionPlaceholder"));
+    setCustomerDocumentType(t("customerModal.documentTypes.documents"));
     setCustomerPaymentAccepted(false);
   }
 
@@ -292,6 +303,8 @@ export default function BoshSahifa() {
     setCustomerDetailTab("Asosiyisi");
   }
 
+  const activeDetailTabLabel = customerDetailTabs.find((tab) => tab.id === customerDetailTab)?.label ?? "";
+
   return (
     <div className="grid min-h-[calc(100vh-214px)] w-full min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_minmax(390px,24%)]">
       <section className="flex min-h-[520px] flex-col rounded-[26px] border-2 border-gold-200 bg-white/86 p-4 shadow-gold-soft sm:p-5 xl:p-6">
@@ -299,7 +312,7 @@ export default function BoshSahifa() {
           <div>
             <div className="flex items-center gap-2.5">
               <h1 className="text-2xl font-bold leading-tight text-[#0F172A] sm:text-3xl">
-                Savatcha
+                {t("cart.title")}
               </h1>
               <span className="theme-primary-gradient flex h-6 min-w-6 items-center justify-center rounded-full bg-linear-to-br from-gold-300 to-gold-600 px-2 text-xs font-bold text-white shadow-gold-soft">
                 {cart.length}
@@ -334,7 +347,7 @@ export default function BoshSahifa() {
           >
             <span>{message.text}</span>
             <button onClick={() => setMessage(null)} className="font-bold">
-              Yopish
+              {t("cart.close")}
             </button>
           </div>
         )}
@@ -345,10 +358,10 @@ export default function BoshSahifa() {
               <div className="flex flex-col items-center">
                 <GoldCartIllustration className="h-[220px] w-[220px] sm:h-[260px] sm:w-[260px]" />
                 <h2 className="mt-2 text-xl font-bold text-[#0F172A] sm:text-2xl">
-                  Savatcha bo'sh
+                  {t("cart.emptyTitle")}
                 </h2>
                 <p className="mt-2 text-sm text-[#94A3B8]">
-                  Hozircha hech qanday mahsulot tanlanmagan
+                  {t("cart.emptySubtitle")}
                 </p>
               </div>
             </div>
@@ -387,7 +400,7 @@ export default function BoshSahifa() {
                   <button
                     onClick={() => removeFromCart(item.id)}
                     className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-gray-400 shadow-sm transition hover:bg-red-50 hover:text-red-500"
-                    aria-label="Mahsulotni savatchadan o'chirish"
+                    aria-label={t("cart.removeAria")}
                   >
                     <Trash2 size={15} />
                   </button>
@@ -400,10 +413,12 @@ export default function BoshSahifa() {
 
       <aside className="flex flex-col rounded-[26px] border-2 border-gold-200 bg-white/86 p-4 shadow-gold-soft sm:p-5 xl:p-6">
         <div className="mb-5 grid grid-cols-2 rounded-2xl bg-gold-100 p-1">
-          {[
-            ["donalik", "Donalik mijoz"],
-            ["doimiy", "Doimiy mijozlar"],
-          ].map(([value, label]) => (
+          {(
+            [
+              ["donalik", t("customerType.donalik")],
+              ["doimiy", t("customerType.doimiy")],
+            ] as const
+          ).map(([value, label]) => (
             <button
               key={value}
               onClick={() => setMijozTuri(value as CustomerType)}
@@ -423,20 +438,20 @@ export default function BoshSahifa() {
           <>
             <div className="mb-5">
               <div className="mb-2 flex items-center justify-between">
-                <p className="text-sm font-bold text-[#0F172A]">Mijoz</p>
+                <p className="text-sm font-bold text-[#0F172A]">{t("customer.label")}</p>
               </div>
 
               <input
                 value={customerName}
                 onChange={(event) => setCustomerName(event.target.value)}
-                placeholder="Ism, Familiya"
+                placeholder={t("customer.namePlaceholder")}
                 className="h-10 w-full rounded-xl bg-gold-50 px-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-gold-200"
               />
             </div>
 
             <div className="mb-5">
               <div className="mb-2 flex items-center justify-between gap-2">
-                <p className="text-sm font-bold text-[#0F172A]">Chegirma</p>
+                <p className="text-sm font-bold text-[#0F172A]">{t("customer.discountLabel")}</p>
               </div>
 
               <div className="grid grid-cols-[minmax(0,1fr)_74px] gap-2">
@@ -446,11 +461,11 @@ export default function BoshSahifa() {
                     setDiscountAmount(readNumber(event.target.value));
                     setDiscountPercent(0);
                   }}
-                  placeholder="Chegirmani kiriting"
+                  placeholder={t("customer.discountPlaceholder")}
                   className="h-10 min-w-0 rounded-xl bg-gold-50 px-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-gold-200"
                 />
                 <button className="rounded-xl border border-gold-400 bg-white text-xs font-bold text-gold-600">
-                  UZS
+                  {t("customer.currency")}
                 </button>
               </div>
 
@@ -480,14 +495,14 @@ export default function BoshSahifa() {
               className="theme-primary-gradient mb-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-br from-gold-300 to-gold-600 text-xs font-bold text-white shadow-gold-soft transition hover:-translate-y-0.5 active:translate-y-0"
             >
               <Paperclip size={14} />
-              Eslatma qo'shish
+              {t("customer.addNote")}
             </button>
 
             {noteOpen && (
               <textarea
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
-                placeholder="Eslatma..."
+                placeholder={t("customer.notePlaceholder")}
                 className="mb-4 h-20 w-full resize-none rounded-xl bg-gold-50 px-3 py-2 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-gold-200"
               />
             )}
@@ -502,7 +517,7 @@ export default function BoshSahifa() {
                     : "text-[#64748B] hover:text-gold-600",
                 ].join(" ")}
               >
-                Chakana narx
+                {t("customer.retailPrice")}
               </button>
               <button
                 onClick={() => setNarxTuri("ulgurji")}
@@ -513,11 +528,11 @@ export default function BoshSahifa() {
                     : "text-[#64748B] hover:text-gold-600",
                 ].join(" ")}
               >
-                Ulgurji narx
+                {t("customer.wholesalePrice")}
               </button>
             </div>
 
-            <p className="mb-2 text-sm font-bold text-[#0F172A]">To'lov turini tanlang</p>
+            <p className="mb-2 text-sm font-bold text-[#0F172A]">{t("customer.choosePaymentType")}</p>
             <div className="mb-5 grid grid-cols-2 gap-2">
               {paymentTypes.map((item) => (
                 <button
@@ -534,13 +549,11 @@ export default function BoshSahifa() {
                     size={15}
                     className={[
                       "mr-2",
-                      item.label === "Payme"
+                      item.label === t("paymentTypes.payme")
                         ? "text-cyan-500"
-                        : item.label === "Click"
+                        : item.label === t("paymentTypes.click")
                           ? "text-blue-600"
-                          : item.label === "Uzum"
-                            ? "text-violet-600"
-                            : "text-green-600",
+                          : "text-green-600",
                     ].join(" ")}
                   />
                   {item.label}
@@ -550,12 +563,12 @@ export default function BoshSahifa() {
 
             <div className="mt-auto rounded-xl bg-gold-50 p-3">
               <div className="mb-2 flex justify-between text-xs text-[#64748B]">
-                <span>Oraliq jami</span>
+                <span>{t("customer.subtotal")}</span>
                 <span>{formatSumma(total)}</span>
               </div>
 
               <div className="mb-3 flex justify-between text-sm font-black text-[#0F172A]">
-                <span>Jami</span>
+                <span>{t("customer.total")}</span>
                 <span className="text-gold-600">{formatSumma(payableTotal)}</span>
               </div>
 
@@ -565,26 +578,26 @@ export default function BoshSahifa() {
                 className="theme-primary-gradient flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-br from-gold-300 to-gold-600 text-xs font-bold text-white shadow-gold-soft transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:translate-y-0 disabled:bg-gray-300 disabled:shadow-none"
               >
                 {saving && <LoaderCircle size={15} className="animate-spin" />}
-                To'lash
+                {t("customer.pay")}
               </button>
 
               <button
                 onClick={clearCart}
                 className="mt-2 h-10 w-full rounded-xl bg-white text-xs font-bold text-[#64748B] transition hover:text-gold-600"
               >
-                Kechiktirish
+                {t("customer.postpone")}
               </button>
             </div>
           </>
         ) : (
           <>
             <div className="mb-4">
-              <p className="mb-2 text-sm font-bold text-gray-700">Doimiy mijozlar</p>
+              <p className="mb-2 text-sm font-bold text-gray-700">{t("customer.regularCustomers")}</p>
               <div className="flex h-10 items-center gap-2 rounded-lg bg-white px-3 ring-1 ring-gray-100">
                 <input
                   value={customerSearch}
                   onChange={(event) => setCustomerSearch(event.target.value)}
-                  placeholder="Doimiy mijozni qidirish"
+                  placeholder={t("customer.searchPlaceholder")}
                   className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
                 />
                 <Search size={17} className="text-gray-300" />
@@ -612,12 +625,12 @@ export default function BoshSahifa() {
                           {mijozNomi(customer)}
                         </p>
                         <p className="mt-1 text-xs font-medium text-gray-500">
-                          {customer.phone || "Telefon kiritilmagan"}
+                          {customer.phone || t("customer.noPhone")}
                         </p>
                       </div>
 
                       <span className="shrink-0 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-bold text-green-600">
-                        Mijoz
+                        {t("customer.customerBadge")}
                       </span>
                     </div>
                   </button>
@@ -626,7 +639,7 @@ export default function BoshSahifa() {
 
               {filteredCustomers.length === 0 && (
                 <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-400">
-                  {customerSearch.trim() ? "Mijoz topilmadi" : "Mijozni qidirish uchun ism yoki familiya kiriting"}
+                  {customerSearch.trim() ? t("customer.notFound") : t("customer.searchHint")}
                 </div>
               )}
             </div>
@@ -641,7 +654,7 @@ export default function BoshSahifa() {
                     : "text-gray-500 hover:text-gold-600",
                 ].join(" ")}
               >
-                Chakana narx
+                {t("customer.retailPrice")}
               </button>
               <button
                 onClick={() => setNarxTuri("ulgurji")}
@@ -652,7 +665,7 @@ export default function BoshSahifa() {
                     : "text-gray-500 hover:text-gold-600",
                 ].join(" ")}
               >
-                Ulgurji narx
+                {t("customer.wholesalePrice")}
               </button>
             </div>
 
@@ -660,7 +673,7 @@ export default function BoshSahifa() {
               onClick={handleNextCustomer}
               className="mt-auto h-11 w-full rounded-lg bg-gold-500 text-sm font-bold text-white transition hover:bg-gold-600"
             >
-              Keyingisi
+              {t("customer.next")}
             </button>
           </>
         )}
@@ -671,7 +684,7 @@ export default function BoshSahifa() {
           <section className="scrollbar-hidden max-h-[94vh] w-full max-w-[1500px] overflow-y-auto rounded-[34px] bg-[#D8D8D8] p-4 shadow-2xl sm:p-6">
             <div className="mb-6 flex flex-col items-start justify-between gap-5 xl:flex-row xl:items-center">
               <div>
-                <p className="text-sm font-medium text-gray-500">Doimiy mijoz savdosi</p>
+                <p className="text-sm font-medium text-gray-500">{t("customerModal.eyebrow")}</p>
                 <h2 className="mt-1 text-3xl font-bold text-gray-950 sm:text-4xl">
                   {mijozNomi(selectedCustomerModal)}
                 </h2>
@@ -682,7 +695,7 @@ export default function BoshSahifa() {
                   onClick={() => setCustomerPaymentAccepted(false)}
                   className="h-12 rounded-2xl border border-gold-100 bg-white px-5 text-sm font-semibold text-gray-700 transition hover:text-gold-600"
                 >
-                  To'lovga qaytish
+                  {t("customerModal.backToPayment")}
                 </button>
 
                 <AppSelect
@@ -690,16 +703,16 @@ export default function BoshSahifa() {
                   onChange={(event) => setCustomerDocumentType(event.target.value)}
                   className="h-12 rounded-2xl border border-gold-100 bg-white px-5 text-sm font-semibold text-gray-700 outline-none transition hover:border-gold-300"
                 >
-                  <option>Hujjatlar</option>
-                  <option>Chek</option>
-                  <option>Nakladnoy</option>
-                  <option>PDF</option>
+                  <option>{t("customerModal.documentTypes.documents")}</option>
+                  <option>{t("customerModal.documentTypes.receipt")}</option>
+                  <option>{t("customerModal.documentTypes.invoice")}</option>
+                  <option>{t("customerModal.documentTypes.pdf")}</option>
                 </AppSelect>
 
                 <button
                   onClick={closeCustomerModal}
                   className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gold-500 text-white shadow-lg shadow-gold-200 transition hover:bg-gold-600"
-                  aria-label="Yopish"
+                  aria-label={t("customerModal.closeAria")}
                 >
                   <X size={26} />
                 </button>
@@ -710,16 +723,16 @@ export default function BoshSahifa() {
               <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
                 {customerDetailTabs.map((tab) => (
                   <button
-                    key={tab}
-                    onClick={() => setCustomerDetailTab(tab)}
+                    key={tab.id}
+                    onClick={() => setCustomerDetailTab(tab.id)}
                     className={[
                       "shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition",
-                      customerDetailTab === tab
+                      customerDetailTab === tab.id
                         ? "border border-gold-400 bg-gold-50 text-gold-600"
                         : "text-gray-500 hover:bg-gold-50 hover:text-gold-600",
                     ].join(" ")}
                   >
-                    {tab}
+                    {tab.label}
                   </button>
                 ))}
               </div>
@@ -734,13 +747,13 @@ export default function BoshSahifa() {
                 <div className="space-y-5">
                   <section className="rounded-[28px] bg-white p-6 shadow-sm">
                     <div className="mb-5 flex items-center justify-between border-b border-gray-100 pb-4">
-                      <h3 className="text-xl font-bold text-gray-950">Savdo</h3>
+                      <h3 className="text-xl font-bold text-gray-950">{t("customerModal.sale")}</h3>
                       <button className="text-sm font-semibold text-gray-400 transition hover:text-gold-600">
-                        Tahrirlash
+                        {t("customerModal.edit")}
                       </button>
                     </div>
 
-                    <p className="text-sm text-gray-500">Summa</p>
+                    <p className="text-sm text-gray-500">{t("customerModal.amount")}</p>
                     <h4 className="mt-1 text-3xl font-bold text-gray-950">
                       {formatSumma(total)}
                     </h4>
@@ -751,23 +764,23 @@ export default function BoshSahifa() {
                       className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-green-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-green-700 disabled:bg-gray-300"
                     >
                       {saving && <LoaderCircle size={16} className="animate-spin" />}
-                      {customerPaymentAccepted ? "To'lov qabul qilindi" : "To'lov qabul qilish"}
+                      {customerPaymentAccepted ? t("customerModal.paymentAccepted") : t("customerModal.acceptPayment")}
                     </button>
 
                     <div className="mt-6 rounded-3xl bg-gray-50 p-5">
-                      <p className="font-bold text-gray-800">To'lov va yetkazib berish</p>
+                      <p className="font-bold text-gray-800">{t("customerModal.paymentDelivery")}</p>
                       <p className="mt-1 text-sm text-gray-500">
-                        Doimiy mijoz savdosi real backend orqali saqlanadi.
+                        {t("customerModal.backendNote")}
                       </p>
                     </div>
 
                     <div className="mt-6 space-y-5">
                       {[
-                        ["Kontragent", mijozNomi(selectedCustomerModal)],
-                        ["Telefon", selectedCustomerModal.phone || "Telefon kiritilmagan"],
-                        ["Email", selectedCustomerModal.email || "Kiritilmagan"],
-                        ["Manzil", selectedCustomerModal.address || "Kiritilmagan"],
-                        ["Narx turi", narxTuri === "chakana" ? "Chakana narx" : "Ulgurji narx"],
+                        [t("customerModal.fields.counterparty"), mijozNomi(selectedCustomerModal)],
+                        [t("customerModal.fields.phone"), selectedCustomerModal.phone || t("customer.noPhone")],
+                        [t("customerModal.fields.email"), selectedCustomerModal.email || t("customerModal.notEntered")],
+                        [t("customerModal.fields.address"), selectedCustomerModal.address || t("customerModal.notEntered")],
+                        [t("customerModal.fields.priceType"), narxTuri === "chakana" ? t("customer.retailPrice") : t("customer.wholesalePrice")],
                       ].map(([label, value]) => (
                         <div key={label}>
                           <p className="text-sm text-gray-500">{label}</p>
@@ -784,16 +797,16 @@ export default function BoshSahifa() {
                   <div className="mb-5 flex flex-wrap gap-2">
                     {customerActivityTabs.map((tab) => (
                       <button
-                        key={tab}
-                        onClick={() => setCustomerActivityTab(tab)}
+                        key={tab.id}
+                        onClick={() => setCustomerActivityTab(tab.id)}
                         className={[
                           "rounded-full px-4 py-2 text-sm font-semibold transition",
-                          customerActivityTab === tab
+                          customerActivityTab === tab.id
                             ? "border border-gold-400 bg-gold-50 text-gold-600"
                             : "text-gray-600 hover:bg-gold-50 hover:text-gold-600",
                         ].join(" ")}
                       >
-                        {tab}
+                        {tab.label}
                       </button>
                     ))}
                   </div>
@@ -803,20 +816,20 @@ export default function BoshSahifa() {
                     onChange={(event) => setCustomerActionType(event.target.value)}
                     className="h-14 w-full rounded-2xl border border-gray-100 bg-white px-4 text-gray-700 outline-none"
                   >
-                    <option>Nima qilish kerak</option>
-                    <option>Qo'ng'iroq qilish</option>
-                    <option>To'lovni eslatish</option>
-                    <option>Yangi buyurtma olish</option>
+                    <option>{t("customerModal.actionPlaceholder")}</option>
+                    <option>{t("customerModal.actions.call")}</option>
+                    <option>{t("customerModal.actions.remindPayment")}</option>
+                    <option>{t("customerModal.actions.newOrder")}</option>
                   </AppSelect>
 
                   <div className="my-6 flex items-center gap-3">
                     <div className="h-px flex-1 bg-gray-200" />
                     <span className="rounded-full border border-green-300 bg-green-50 px-5 py-2 text-sm font-medium text-green-600">
-                      Bugun
+                      {t("customerModal.today")}
                     </span>
                     <div className="h-px flex-1 bg-gray-200" />
                     <button className="inline-flex h-10 items-center gap-2 rounded-full bg-gray-50 px-4 text-sm font-semibold text-gray-500">
-                      Filtr
+                      {t("customerModal.filter")}
                       <Filter size={14} />
                     </button>
                   </div>
@@ -824,23 +837,23 @@ export default function BoshSahifa() {
                   <div className="space-y-4">
                     {[
                       {
-                        title: "Vazifa",
+                        title: t("customerModal.activityTabs.task"),
                         time: "18:37",
-                        text: `${mijozNomi(selectedCustomerModal)} bilan keyingi xarid bo'yicha bog'lanish.`,
+                        text: t("customerModal.activity.taskText", { name: mijozNomi(selectedCustomerModal) }),
                         icon: CheckCircle,
                         className: "bg-yellow-400",
                       },
                       {
-                        title: "Kommentariya",
+                        title: t("customerModal.activityTabs.comment"),
                         time: "14:00",
-                        text: `${selectedCustomerModal.phone || "Mijoz"} bo'yicha izoh qo'shish mumkin.`,
+                        text: t("customerModal.activity.commentText", { phone: selectedCustomerModal.phone || t("customer.customerBadge") }),
                         icon: MessageSquare,
                         className: "bg-blue-600",
                       },
                       {
-                        title: "Habarnoma",
+                        title: t("customerModal.activityTabs.notification"),
                         time: "14:00",
-                        text: "Sotuv yakunlanganda hujjat backendda tasdiqlanadi.",
+                        text: t("customerModal.activity.notificationText"),
                         icon: Bell,
                         className: "bg-green-500",
                       },
@@ -880,7 +893,7 @@ export default function BoshSahifa() {
 
             {customerDetailTab !== "Asosiyisi" && (
               <div className="rounded-[28px] bg-white p-8 text-center text-sm font-semibold text-gray-400">
-                {customerDetailTab} bo'limi demo holatda
+                {t("customerModal.sectionDemo", { section: activeDetailTabLabel })}
               </div>
             )}
           </section>
@@ -890,26 +903,26 @@ export default function BoshSahifa() {
         <AppModal className="bg-slate-950/60 backdrop-blur-md">
           <section className="max-h-[94vh] w-full max-w-6xl overflow-y-auto rounded-[38px] border border-gold-100 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E8EEF7] shadow-[0_35px_120px_rgba(15,23,42,.38)]">
             <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-gold-100 bg-white/85 px-9 py-7 backdrop-blur-xl">
-              <div><p className="text-xs font-black uppercase tracking-[.22em] text-gold-500">To'lovni tasdiqlash</p><h2 className="mt-1 text-2xl font-black text-slate-950">Sotuv uchun to'lov</h2><p className="mt-1 text-sm font-semibold text-slate-400">To'lov tasdiqlangandan keyin sotuv backendda yakunlanadi.</p></div>
+              <div><p className="text-xs font-black uppercase tracking-[.22em] text-gold-500">{t("paymentModal.eyebrow")}</p><h2 className="mt-1 text-2xl font-black text-slate-950">{t("paymentModal.title")}</h2><p className="mt-1 text-sm font-semibold text-slate-400">{t("paymentModal.subtitle")}</p></div>
               <button type="button" onClick={() => setTolovModalOchiq(false)} disabled={saving} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm ring-1 ring-gold-100 hover:bg-gold-500 hover:text-white disabled:opacity-50"><X size={20}/></button>
             </header>
 
             <div className="grid gap-8 p-9 lg:grid-cols-[minmax(0,1fr)_400px]">
               <div>
-                <div className="mb-4 flex items-center justify-between"><h3 className="font-black text-slate-900">Mahsulotlar</h3><span className="rounded-full bg-gold-50 px-3 py-1 text-xs font-black text-gold-600">{cart.reduce((sum, item) => sum + item.soni, 0)} dona</span></div>
+                <div className="mb-4 flex items-center justify-between"><h3 className="font-black text-slate-900">{t("paymentModal.products")}</h3><span className="rounded-full bg-gold-50 px-3 py-1 text-xs font-black text-gold-600">{t("paymentModal.piecesCount", { count: cartPiecesCount })}</span></div>
                 <div className="max-h-[480px] space-y-3 overflow-y-auto pr-1">
-                  {cart.map((item) => <article key={item.id} className="flex items-center justify-between gap-5 rounded-[24px] border border-gold-100 bg-white p-5 shadow-[0_12px_35px_rgba(37,99,235,.07)]"><div className="min-w-0"><p className="truncate text-base font-black text-slate-900">{item.nom}</p><p className="mt-1.5 text-sm font-semibold text-slate-400">{item.soni} Г— {formatSumma(item.narx)} В· {item.warehouseName || "Tanlangan ombor"}</p></div><p className="shrink-0 text-base font-black text-gold-600">{formatSumma(item.soni * item.narx)}</p></article>)}
+                  {cart.map((item) => <article key={item.id} className="flex items-center justify-between gap-5 rounded-[24px] border border-gold-100 bg-white p-5 shadow-[0_12px_35px_rgba(37,99,235,.07)]"><div className="min-w-0"><p className="truncate text-base font-black text-slate-900">{item.nom}</p><p className="mt-1.5 text-sm font-semibold text-slate-400">{item.soni} × {formatSumma(item.narx)} · {item.warehouseName || t("paymentModal.selectedWarehouseFallback")}</p></div><p className="shrink-0 text-base font-black text-gold-600">{formatSumma(item.soni * item.narx)}</p></article>)}
                 </div>
-                <div className="mt-5 grid grid-cols-3 gap-3 text-sm"><Summary label="Oraliq jami" value={formatSumma(total)}/><Summary label="Chegirma" value={formatSumma(discountSum)}/><Summary label="To'lanadi" value={formatSumma(payableTotal)} accent/></div>
+                <div className="mt-5 grid grid-cols-3 gap-3 text-sm"><Summary label={t("customer.subtotal")} value={formatSumma(total)}/><Summary label={t("customer.discountLabel")} value={formatSumma(discountSum)}/><Summary label={t("paymentModal.payable")} value={formatSumma(payableTotal)} accent/></div>
               </div>
 
               <aside className="flex flex-col rounded-[30px] border border-gold-100 bg-white p-7 shadow-[0_18px_50px_rgba(37,99,235,.10)]">
-                <div className="rounded-[24px] bg-[#F8FAFC] p-5 ring-1 ring-gold-100"><p className="text-xs font-black uppercase tracking-wide text-slate-400">To'lanadigan jami</p><p className="mt-2 text-3xl font-black text-slate-950">{formatSumma(payableTotal)}</p><p className="mt-2 text-sm font-bold text-gold-500">Tanlangan: {paymentType}</p></div>
-                <label className="mt-6 block"><span className="text-xs font-black uppercase tracking-wide text-slate-400">Qabul qilinadigan summa</span><div className="mt-2 flex h-16 items-center rounded-2xl border border-gold-200 bg-[#F8FAFC] px-5 focus-within:ring-4 focus-within:ring-gold-50"><input type="number" min="1" max={payableTotal} value={tolovSummasi} onChange={(e) => setTolovSummasi(e.target.value)} className="min-w-0 flex-1 bg-transparent text-2xl font-black text-slate-900 outline-none"/><span className="text-sm font-black text-gold-500">UZS</span></div></label>
-                <div className="mt-4 flex gap-3"><button type="button" onClick={() => setTolovSummasi(String(payableTotal))} className="flex-1 rounded-2xl bg-gold-50 px-3 py-3 text-xs font-black text-gold-600">To'liq summa</button><button type="button" onClick={() => setTolovSummasi(String(Math.round(payableTotal / 2)))} className="flex-1 rounded-2xl bg-slate-100 px-3 py-3 text-xs font-black text-slate-600">50%</button></div>
+                <div className="rounded-[24px] bg-[#F8FAFC] p-5 ring-1 ring-gold-100"><p className="text-xs font-black uppercase tracking-wide text-slate-400">{t("paymentModal.totalPayable")}</p><p className="mt-2 text-3xl font-black text-slate-950">{formatSumma(payableTotal)}</p><p className="mt-2 text-sm font-bold text-gold-500">{t("paymentModal.selected", { type: paymentType })}</p></div>
+                <label className="mt-6 block"><span className="text-xs font-black uppercase tracking-wide text-slate-400">{t("paymentModal.acceptedAmount")}</span><div className="mt-2 flex h-16 items-center rounded-2xl border border-gold-200 bg-[#F8FAFC] px-5 focus-within:ring-4 focus-within:ring-gold-50"><input type="number" min="1" max={payableTotal} value={tolovSummasi} onChange={(e) => setTolovSummasi(e.target.value)} className="min-w-0 flex-1 bg-transparent text-2xl font-black text-slate-900 outline-none"/><span className="text-sm font-black text-gold-500">{t("customer.currency")}</span></div></label>
+                <div className="mt-4 flex gap-3"><button type="button" onClick={() => setTolovSummasi(String(payableTotal))} className="flex-1 rounded-2xl bg-gold-50 px-3 py-3 text-xs font-black text-gold-600">{t("paymentModal.fullAmount")}</button><button type="button" onClick={() => setTolovSummasi(String(Math.round(payableTotal / 2)))} className="flex-1 rounded-2xl bg-slate-100 px-3 py-3 text-xs font-black text-slate-600">50%</button></div>
                 {message?.type === "error" && <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 p-3 text-xs font-bold leading-5 text-red-600">{message.text}</div>}
-                <button type="button" onClick={() => void tolovniTasdiqlash()} disabled={saving || readNumber(tolovSummasi) <= 0 || readNumber(tolovSummasi) > payableTotal} className="mt-auto flex w-full items-center justify-center gap-2 rounded-2xl bg-gold-500 px-5 py-4 text-sm font-black text-white shadow-lg shadow-gold-200 transition hover:bg-gold-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none">{saving && <LoaderCircle size={17} className="animate-spin"/>} To'lovni tasdiqlash</button>
-                <p className="mt-3 text-center text-xs font-semibold leading-5 text-slate-400">Tasdiqlashda `/sales` yaratiladi va `/sales/id/confirm` orqali ombor qoldig'i kamayadi.</p>
+                <button type="button" onClick={() => void tolovniTasdiqlash()} disabled={saving || readNumber(tolovSummasi) <= 0 || readNumber(tolovSummasi) > payableTotal} className="mt-auto flex w-full items-center justify-center gap-2 rounded-2xl bg-gold-500 px-5 py-4 text-sm font-black text-white shadow-lg shadow-gold-200 transition hover:bg-gold-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none">{saving && <LoaderCircle size={17} className="animate-spin"/>} {t("paymentModal.confirm")}</button>
+                <p className="mt-3 text-center text-xs font-semibold leading-5 text-slate-400">{t("paymentModal.apiNote")}</p>
               </aside>
             </div>
           </section>

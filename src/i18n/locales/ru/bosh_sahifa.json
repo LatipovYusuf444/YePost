@@ -1,0 +1,121 @@
+{
+  "cart": {
+    "title": "Корзина",
+    "emptyTitle": "Корзина пуста",
+    "emptySubtitle": "Пока не выбран ни один товар",
+    "removeAria": "Удалить товар из корзины",
+    "close": "Закрыть"
+  },
+  "customerType": {
+    "donalik": "Разовый клиент",
+    "doimiy": "Постоянные клиенты"
+  },
+  "paymentTypes": {
+    "payme": "Payme",
+    "click": "Click",
+    "cash": "Наличные",
+    "bank": "Банк"
+  },
+  "customer": {
+    "label": "Клиент",
+    "namePlaceholder": "Имя, фамилия",
+    "discountLabel": "Скидка",
+    "discountPlaceholder": "Введите скидку",
+    "currency": "UZS",
+    "addNote": "Добавить примечание",
+    "notePlaceholder": "Примечание...",
+    "retailPrice": "Розничная цена",
+    "wholesalePrice": "Оптовая цена",
+    "choosePaymentType": "Выберите способ оплаты",
+    "subtotal": "Промежуточный итог",
+    "total": "Итого",
+    "pay": "Оплатить",
+    "postpone": "Отложить",
+    "regularCustomers": "Постоянные клиенты",
+    "searchPlaceholder": "Поиск постоянного клиента",
+    "noPhone": "Телефон не указан",
+    "customerBadge": "Клиент",
+    "notFound": "Клиент не найден",
+    "searchHint": "Введите имя или фамилию для поиска клиента",
+    "next": "Далее"
+  },
+  "customerModal": {
+    "eyebrow": "Продажа постоянному клиенту",
+    "backToPayment": "Вернуться к оплате",
+    "documentTypes": {
+      "documents": "Документы",
+      "receipt": "Чек",
+      "invoice": "Накладная",
+      "pdf": "PDF"
+    },
+    "closeAria": "Закрыть",
+    "tabs": {
+      "main": "Основное",
+      "cart": "Корзина",
+      "history": "История"
+    },
+    "activityTabs": {
+      "task": "Задача",
+      "comment": "Комментарий",
+      "notification": "Уведомление",
+      "extra": "Дополнительно"
+    },
+    "sale": "Продажа",
+    "edit": "Редактировать",
+    "amount": "Сумма",
+    "paymentAccepted": "Оплата принята",
+    "acceptPayment": "Принять оплату",
+    "paymentDelivery": "Оплата и доставка",
+    "backendNote": "Продажа постоянному клиенту сохраняется через реальный backend.",
+    "fields": {
+      "counterparty": "Контрагент",
+      "phone": "Телефон",
+      "email": "Email",
+      "address": "Адрес",
+      "priceType": "Тип цены"
+    },
+    "notEntered": "Не указано",
+    "actionPlaceholder": "Что нужно сделать",
+    "actions": {
+      "call": "Позвонить",
+      "remindPayment": "Напомнить об оплате",
+      "newOrder": "Принять новый заказ"
+    },
+    "today": "Сегодня",
+    "filter": "Фильтр",
+    "activity": {
+      "taskText": "Связаться с {{name}} по поводу следующей покупки.",
+      "commentText": "Можно добавить комментарий по {{phone}}.",
+      "notificationText": "При завершении продажи документ подтверждается в backend."
+    },
+    "sectionDemo": "Раздел «{{section}}» в демо-режиме"
+  },
+  "paymentModal": {
+    "eyebrow": "Подтверждение оплаты",
+    "title": "Оплата продажи",
+    "subtitle": "После подтверждения оплаты продажа будет завершена в backend.",
+    "products": "Товары",
+    "piecesCount": "{{count}} шт.",
+    "selectedWarehouseFallback": "Выбранный склад",
+    "payable": "К оплате",
+    "totalPayable": "Итого к оплате",
+    "selected": "Выбрано: {{type}}",
+    "acceptedAmount": "Принимаемая сумма",
+    "fullAmount": "Полная сумма",
+    "confirm": "Подтвердить оплату",
+    "apiNote": "При подтверждении создаётся `/sales`, а через `/sales/id/confirm` уменьшается остаток на складе."
+  },
+  "errors": {
+    "loadFailed": "Не удалось получить данные главной страницы",
+    "warehouseNotFound": "Склад для продажи не найден",
+    "cartEmpty": "Корзина пуста",
+    "cartWarehouseMismatch": "Товары в корзине относятся к другому складу. Проверьте склад.",
+    "amountRange": "Сумма оплаты должна быть от 1 до {{max}}",
+    "selectDebtCustomer": "Выберите покупателя для продажи в долг.",
+    "createDraftFailed": "Не удалось создать черновик продажи",
+    "confirmFailed": "Не удалось подтвердить продажу",
+    "paymentSuccess": "Оплата успешно выполнена",
+    "finalizeFailed": "Не удалось завершить продажу",
+    "selectCustomerFirst": "Сначала выберите клиента"
+  }
+}

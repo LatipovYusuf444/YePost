@@ -48,19 +48,6 @@ export const yonalishMatni: Record<KassaYonalishi, string> = {
   chiqim: "Chiqim",
 };
 
-export const amaliyotTuriMatni: Record<import("./types").KassaAmaliyotTuri, string> = {
-  xaridor_tolovi: "Mijozdan to'lov",
-  hisobdor_qaytardi: "Hisobdor shaxs mablag'ini qaytarish",
-  taminotchi_qaytardi: "Yetkazib beruvchi mablag'ini qaytarishi",
-  boshqa_kirim: "Boshqa pul mablag'lari tushumi",
-  donalik_savdo: "Donalik savdo",
-  taminot_tolovi: "Yetkazib beruvchiga to'lov",
-  xaridorga_qaytarish: "Xaridorga pul mablag'larini qaytarish",
-  ish_haqi: "Ish haqini to'lash",
-  boshqa_chiqim: "Boshqa pul xarajatlari",
-  xarajat: "Xarajat",
-};
-
 // Har turning yo'nalishi (kirim yoki chiqim).
 export const turYonalishi: Record<import("./types").KassaAmaliyotTuri, KassaYonalishi> = {
   xaridor_tolovi: "tushum",

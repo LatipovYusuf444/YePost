@@ -44,6 +44,8 @@
     "createButton": "Создать",
     "searchPlaceholder": "По названию, причине, ответственному лицу, дате или статусу",
     "documentLabel": "Документ расхода",
+    "stats": { "total": "Всего документов", "completed": "Подтверждено", "inProgress": "В процессе", "cancelled": "Отменено" },
+    "statsAria": "Статистика документов",
     "columns": {
       "nomi": "Название",
       "status": "Статус",

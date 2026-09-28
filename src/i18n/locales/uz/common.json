@@ -18,5 +18,10 @@
     "print": "Chop etish",
     "export": "Eksport",
     "import": "Import"
+  },
+  "select": {
+    "placeholder": "Tanlang",
+    "searchPlaceholder": "Qidirish...",
+    "notFound": "Topilmadi"
   }
 }

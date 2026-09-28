@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, Hash, Phone, Trash2, UserRound } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import { crmApi, royxatniAjratish } from "@/api/crmApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
@@ -11,8 +12,8 @@ import { timelineniTarixga, timelineniTolovga } from "./backendAdapters";
 import type { IjtimoiyTarmoqlar, Kirim, TarixYozuvi, XaridorTolovi, YetkazibBeruvchi } from "./types";
 import { sanaFormat } from "./yordamchilar";
 
-type Tab = "Ma'lumotlar" | "Kirim" | "To'lovlar" | "Tarix";
-const tablar: Tab[] = ["Ma'lumotlar", "Kirim", "To'lovlar", "Tarix"];
+type Tab = "malumotlar" | "kirim" | "tolovlar" | "tarix";
+const tabKalitlari: Tab[] = ["malumotlar", "kirim", "tolovlar", "tarix"];
 
 type Props = {
   beruvchi: YetkazibBeruvchi;
@@ -29,7 +30,9 @@ export default function YetkazibTafsilotlariModal({
   onOchirish,
   onYopish,
 }: Props) {
-  const [faolTab, setFaolTab] = useState<Tab>("Ma'lumotlar");
+  const { t } = useTranslation("xaridor_uchot");
+  const tablar = tabKalitlari.map((kalit) => ({ kalit, nom: t(`shared.tabs.${kalit}`) }));
+  const [faolTab, setFaolTab] = useState<Tab>("malumotlar");
   const [tarix, setTarix] = useState<TarixYozuvi[]>([]);
   const [tolovlar, setTolovlar] = useState<XaridorTolovi[]>([]);
   const [xatolik, setXatolik] = useState("");
@@ -79,14 +82,14 @@ export default function YetkazibTafsilotlariModal({
                     type="button"
                     className="inline-flex h-9 items-center gap-2 rounded-xl bg-white px-3 text-sm text-slate-600 shadow-sm transition hover:text-orange-600"
                   >
-                    Hujjat <ChevronDown size={15} />
+                    {t("shared.documentButton")} <ChevronDown size={15} />
                   </button>
                   {onOchirish && (
                     <button
                       type="button"
                       onClick={onOchirish}
                       className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500 shadow-sm transition hover:bg-red-100"
-                      aria-label="O'chirish"
+                      aria-label={t("shared.deleteAria")}
                     >
                       <Trash2 size={17} />
                     </button>
@@ -96,7 +99,7 @@ export default function YetkazibTafsilotlariModal({
                     onClick={onTahrirlash}
                     className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#2563EB] px-4 text-sm font-bold text-white shadow-[0_10px_24px_rgba(37,99,235,.24)] transition hover:bg-[#1D4ED8]"
                   >
-                    Ma'lumotni o'zgartirish
+                    {t("shared.editButton")}
                   </button>
                 </div>
               </div>
@@ -104,40 +107,40 @@ export default function YetkazibTafsilotlariModal({
               <nav className="mt-6 flex items-center gap-3 overflow-x-auto">
                 {tablar.map((tab) => (
                   <button
-                    key={tab}
+                    key={tab.kalit}
                     type="button"
-                    onClick={() => setFaolTab(tab)}
+                    onClick={() => setFaolTab(tab.kalit)}
                     className={`shrink-0 rounded-xl px-3 py-2 text-sm transition ${
-                      faolTab === tab
+                      faolTab === tab.kalit
                         ? "border border-orange-200 bg-white text-[#2563EB]"
                         : "text-slate-500 hover:bg-white hover:text-[#2563EB]"
                     }`}
                   >
-                    {tab}
+                    {tab.nom}
                   </button>
                 ))}
               </nav>
             </header>
 
-            {faolTab === "Ma'lumotlar" && (
+            {faolTab === "malumotlar" && (
               <div className="grid gap-6 px-9 py-7 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                 <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80">
                   <div className="border-b border-orange-100/80 pb-3">
                     <h2 className="text-sm font-black uppercase tracking-wide text-slate-600">
-                      Yetkazib beruvchi haqida
+                      {t("yetkazibDetails.aboutTitle")}
                     </h2>
                   </div>
                   <dl className="mt-5 space-y-4">
-                    <Qator icon={<Hash size={14} />} nom="STIR" qiymat={beruvchi.stir} />
-                    <Qator icon={<Phone size={14} />} nom="Telefon" qiymat={beruvchi.telefon} />
-                    <Qator icon={<UserRound size={14} />} nom="Aloqa shaxs" qiymat={beruvchi.aloqaShaxsi} />
-                    <Qator icon={<Phone size={14} />} nom="Aloqa tel raqami" qiymat={beruvchi.aloqaTelefoni} />
-                    <Qator nom="Lavozim" qiymat={beruvchi.lavozim} />
+                    <Qator icon={<Hash size={14} />} nom={t("shared.detailFields.stir")} qiymat={beruvchi.stir} />
+                    <Qator icon={<Phone size={14} />} nom={t("shared.detailFields.phone")} qiymat={beruvchi.telefon} />
+                    <Qator icon={<UserRound size={14} />} nom={t("yetkazibDetails.contactPerson")} qiymat={beruvchi.aloqaShaxsi} />
+                    <Qator icon={<Phone size={14} />} nom={t("yetkazibDetails.contactPhone")} qiymat={beruvchi.aloqaTelefoni} />
+                    <Qator nom={t("shared.detailFields.position")} qiymat={beruvchi.lavozim} />
                     <IjtimoiyBlok ijtimoiy={beruvchi.ijtimoiy} />
-                    <Qator nom="Yaratgan mas'ul shaxs" qiymat={beruvchi.yaratganMasul} />
-                    <Qator nom="Sana yaratilgan" qiymat={sanaFormat(beruvchi.yaratilganSana)} />
-                    <Qator nom="O'zgartirilgan sana" qiymat={sanaFormat(beruvchi.ozgartirilganSana)} />
-                    <Qator nom="O'zgartirgan mas'ul shaxs" qiymat={beruvchi.ozgartirganMasul} />
+                    <Qator nom={t("shared.detailFields.createdBy")} qiymat={beruvchi.yaratganMasul} />
+                    <Qator nom={t("shared.detailFields.createdDate")} qiymat={sanaFormat(beruvchi.yaratilganSana)} />
+                    <Qator nom={t("shared.detailFields.modifiedDate")} qiymat={sanaFormat(beruvchi.ozgartirilganSana)} />
+                    <Qator nom={t("shared.detailFields.modifiedBy")} qiymat={beruvchi.ozgartirganMasul} />
                   </dl>
                 </section>
 
@@ -145,9 +148,9 @@ export default function YetkazibTafsilotlariModal({
               </div>
             )}
             {xatolik && <div className="mx-9 mt-5 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">{xatolik}</div>}
-            {faolTab === "Kirim" && <KirimTab kirimlar={kirimlar} beruvchiNomi={beruvchi.nomi} />}
-            {faolTab === "To'lovlar" && <TolovlarTab tolovlar={tolovlar} />}
-            {faolTab === "Tarix" && <TarixTab tarix={tarix} />}
+            {faolTab === "kirim" && <KirimTab kirimlar={kirimlar} beruvchiNomi={beruvchi.nomi} />}
+            {faolTab === "tolovlar" && <TolovlarTab tolovlar={tolovlar} />}
+            {faolTab === "tarix" && <TarixTab tarix={tarix} />}
           </div>
         </section>
       </div>
@@ -168,9 +171,10 @@ function Qator({ icon, nom, qiymat }: { icon?: React.ReactNode; nom: string; qiy
 }
 
 function IjtimoiyBlok({ ijtimoiy }: { ijtimoiy: IjtimoiyTarmoqlar }) {
+  const { t } = useTranslation("xaridor_uchot");
   return (
     <div>
-      <dt className="text-sm font-bold text-slate-400">Ijtimoiy tarmoqlar</dt>
+      <dt className="text-sm font-bold text-slate-400">{t("shared.socialNetworksLabel")}</dt>
       <dd className="mt-2 space-y-2">
         <IjtimoiyQator icon={<TelegramIkonka size={16} />} rang="bg-[#E7F3FB] text-[#229ED9]" qiymat={ijtimoiy.telegram} />
         <IjtimoiyQator icon={<WhatsappIkonka size={16} />} rang="bg-[#E6F6EC] text-[#25D366]" qiymat={ijtimoiy.whatsapp} />
@@ -181,13 +185,14 @@ function IjtimoiyBlok({ ijtimoiy }: { ijtimoiy: IjtimoiyTarmoqlar }) {
 }
 
 function IjtimoiyQator({ icon, rang, qiymat }: { icon: React.ReactNode; rang: string; qiymat: string }) {
+  const { t } = useTranslation("xaridor_uchot");
   return (
     <div className="flex items-center gap-2.5">
       <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${qiymat ? rang : "bg-slate-100 text-slate-300"}`}>
         {icon}
       </span>
       <span className={`text-sm font-semibold ${qiymat ? "text-slate-800" : "text-slate-400"}`}>
-        {qiymat || "Kiritilmagan"}
+        {qiymat || t("shared.notEntered")}
       </span>
     </div>
   );

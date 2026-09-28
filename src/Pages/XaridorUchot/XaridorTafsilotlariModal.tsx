@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Briefcase, Building2, Phone, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import FaoliyatPaneli from "./FaoliyatPaneli";
 import { crmApi, royxatniAjratish } from "@/api/crmApi";
@@ -12,9 +13,8 @@ import { timelineniTarixga } from "./backendAdapters";
 import type { TarixYozuvi, Xaridor, XaridorKompaniyasi, XaridorSavdosi } from "./types";
 import { kompaniyaNomi, sanaFormat, xaridorNomi } from "./yordamchilar";
 
-type Tab = "Ma'lumotlar" | "Savdolar" | "To'lovlar" | "Tarix";
-
-const tablar: Tab[] = ["Ma'lumotlar", "Savdolar", "To'lovlar", "Tarix"];
+type Tab = "malumotlar" | "savdolar" | "tolovlar" | "tarix";
+const tabKalitlari: Tab[] = ["malumotlar", "savdolar", "tolovlar", "tarix"];
 
 type Props = {
   xaridor: Xaridor;
@@ -33,7 +33,9 @@ export default function XaridorTafsilotlariModal({
   onOchirish,
   onYopish,
 }: Props) {
-  const [faolTab, setFaolTab] = useState<Tab>("Ma'lumotlar");
+  const { t } = useTranslation("xaridor_uchot");
+  const tablar = tabKalitlari.map((kalit) => ({ kalit, nom: t(`shared.tabs.${kalit}`) }));
+  const [faolTab, setFaolTab] = useState<Tab>("malumotlar");
   const [xaridorTarixi, setXaridorTarixi] = useState<TarixYozuvi[]>([]);
   const [xatolik, setXatolik] = useState("");
 
@@ -80,7 +82,7 @@ export default function XaridorTafsilotlariModal({
                       type="button"
                       onClick={onOchirish}
                       className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500 shadow-sm transition hover:bg-red-100"
-                      aria-label="O'chirish"
+                      aria-label={t("shared.deleteAria")}
                     >
                       <Trash2 size={17} />
                     </button>
@@ -90,7 +92,7 @@ export default function XaridorTafsilotlariModal({
                     onClick={onTahrirlash}
                     className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#2563EB] px-4 text-sm font-bold text-white shadow-[0_10px_24px_rgba(37,99,235,.24)] transition hover:bg-[#1D4ED8]"
                   >
-                    Ma'lumotni o'zgartirish
+                    {t("shared.editButton")}
                   </button>
                 </div>
               </div>
@@ -98,16 +100,16 @@ export default function XaridorTafsilotlariModal({
               <nav className="mt-6 flex items-center gap-3 overflow-x-auto">
                 {tablar.map((tab) => (
                   <button
-                    key={tab}
+                    key={tab.kalit}
                     type="button"
-                    onClick={() => setFaolTab(tab)}
+                    onClick={() => setFaolTab(tab.kalit)}
                     className={`shrink-0 rounded-xl px-3 py-2 text-sm transition ${
-                      faolTab === tab
+                      faolTab === tab.kalit
                         ? "border border-orange-200 bg-white text-[#2563EB]"
                         : "text-slate-500 hover:bg-white hover:text-[#2563EB]"
                     }`}
                   >
-                    {tab}
+                    {tab.nom}
                   </button>
                 ))}
               </nav>
@@ -115,14 +117,14 @@ export default function XaridorTafsilotlariModal({
 
             {xatolik && <div className="mx-9 mt-5 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">{xatolik}</div>}
 
-            {faolTab === "Ma'lumotlar" && (
+            {faolTab === "malumotlar" && (
               <MalumotlarTab
                 xaridor={xaridor}
                 kompaniyalar={kompaniyalar}
                 savdolar={xaridorSavdolari}
               />
             )}
-            {faolTab === "Savdolar" && (
+            {faolTab === "savdolar" && (
               <SavdolarTab
                 savdolar={xaridorSavdolari}
                 xaridorNomi={xaridorNomi(xaridor)}
@@ -131,8 +133,8 @@ export default function XaridorTafsilotlariModal({
                 barchaSavdolar={savdolar}
               />
             )}
-            {faolTab === "To'lovlar" && <XaridorTolovlariTab xaridorId={xaridor.id} />}
-            {faolTab === "Tarix" && <TarixTab tarix={xaridorTarixi} />}
+            {faolTab === "tolovlar" && <XaridorTolovlariTab xaridorId={xaridor.id} />}
+            {faolTab === "tarix" && <TarixTab tarix={xaridorTarixi} />}
           </div>
         </section>
       </div>
@@ -149,9 +151,11 @@ function MalumotlarTab({
   kompaniyalar: XaridorKompaniyasi[];
   savdolar: XaridorSavdosi[];
 }) {
+  const { t } = useTranslation("xaridor_uchot");
   const jamiRealizatsiya = savdolar.reduce((sum, savdo) => sum + savdo.summa, 0);
   const jamiTolangan = savdolar.reduce((sum, savdo) => sum + savdo.tolangan, 0);
   const jamiQarz = savdolar.reduce((sum, savdo) => sum + savdo.qarz, 0);
+  const valyuta = t("shared.currencySuffix");
 
   return (
     <div className="grid gap-6 px-9 py-7 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -159,7 +163,7 @@ function MalumotlarTab({
         <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80">
           <div className="border-b border-orange-100/80 pb-3">
             <h2 className="text-sm font-black uppercase tracking-wide text-slate-600">
-              Xaridor haqida
+              {t("xaridorDetails.aboutTitle")}
             </h2>
           </div>
 
@@ -169,7 +173,7 @@ function MalumotlarTab({
                 <span className="text-[#2563EB]">
                   <Phone size={14} />
                 </span>
-                Telefon
+                {t("shared.detailFields.phone")}
               </dt>
               <dd className="mt-1 space-y-1">
                 {xaridor.telefonlar.length === 0 && (
@@ -184,7 +188,7 @@ function MalumotlarTab({
             </div>
 
             <div>
-              <dt className="text-sm font-bold text-slate-400">Ijtimoiy tarmoqlar</dt>
+              <dt className="text-sm font-bold text-slate-400">{t("shared.socialNetworksLabel")}</dt>
               <dd className="mt-2 space-y-2">
                 <IjtimoiyQator
                   icon={<TelegramIkonka size={16} />}
@@ -204,23 +208,23 @@ function MalumotlarTab({
               </dd>
             </div>
 
-            <Qator nom="Manzil" qiymat={xaridor.manzil || "Kiritilmagan"} />
+            <Qator nom={t("xaridorModal.address")} qiymat={xaridor.manzil || t("shared.notEntered")} />
             <Qator
               icon={<Building2 size={14} />}
-              nom="Kompaniya"
-              qiymat={kompaniyaNomi(kompaniyalar, xaridor.kompaniyaId) || "Biriktirilmagan"}
+              nom={t("xaridorDetails.companyLabel")}
+              qiymat={kompaniyaNomi(kompaniyalar, xaridor.kompaniyaId) || t("xaridorDetails.companyUnassigned")}
             />
             <Qator
               icon={<Briefcase size={14} />}
-              nom="Lavozim"
-              qiymat={xaridor.lavozim || "Kiritilmagan"}
+              nom={t("shared.detailFields.position")}
+              qiymat={xaridor.lavozim || t("shared.notEntered")}
             />
-            <Qator nom="Ro'yxatga olingan sana" qiymat={sanaFormat(xaridor.yaratilganSana)} />
-            <Qator nom="Jami realizatsiya" qiymat={jamiRealizatsiya.toLocaleString("uz-UZ") + " so'm"} />
-            <Qator nom="Jami to'langan" qiymat={jamiTolangan.toLocaleString("uz-UZ") + " so'm"} />
+            <Qator nom={t("shared.registeredDateLabel")} qiymat={sanaFormat(xaridor.yaratilganSana)} />
+            <Qator nom={t("xaridorDetails.totalSales")} qiymat={`${jamiRealizatsiya.toLocaleString("uz-UZ")} ${valyuta}`} />
+            <Qator nom={t("xaridorDetails.totalPaid")} qiymat={`${jamiTolangan.toLocaleString("uz-UZ")} ${valyuta}`} />
             <Qator
-              nom={jamiQarz > 0 ? "Qarzdor: HA" : "Qarzdor emas"}
-              qiymat={jamiQarz.toLocaleString("uz-UZ") + " so'm"}
+              nom={jamiQarz > 0 ? t("xaridorDetails.debtorYes") : t("xaridorDetails.debtorNo")}
+              qiymat={`${jamiQarz.toLocaleString("uz-UZ")} ${valyuta}`}
             />
           </dl>
         </section>
@@ -260,6 +264,7 @@ function IjtimoiyQator({
   rang: string;
   qiymat: string;
 }) {
+  const { t } = useTranslation("xaridor_uchot");
   return (
     <div className="flex items-center gap-2.5">
       <span
@@ -272,7 +277,7 @@ function IjtimoiyQator({
       <span
         className={`text-sm font-semibold ${qiymat ? "text-slate-800" : "text-slate-400"}`}
       >
-        {qiymat || "Kiritilmagan"}
+        {qiymat || t("shared.notEntered")}
       </span>
     </div>
   );

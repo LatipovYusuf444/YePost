@@ -6,6 +6,7 @@ type TablePaginationProps = {
   totalItems: number;
   onPageChange: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
+  accent?: "orange" | "blue";
 };
 
 export const TABLE_PAGE_SIZES = [10, 20, 50, 100, 200] as const;
@@ -27,8 +28,10 @@ export default function TablePagination({
   totalItems,
   onPageChange,
   onPageSizeChange,
+  accent = "orange",
 }: TablePaginationProps) {
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const isBlue = accent === "blue";
 
   const safePage = Math.min(Math.max(page, 1), totalPages);
   const pageItems = getPageItems(safePage, totalPages);
@@ -53,7 +56,7 @@ export default function TablePagination({
         type="button"
         onClick={() => onPageChange(safePage - 1)}
         disabled={safePage === 1}
-        className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition hover:border-orange-200 hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-gray-500"
+        className={`flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition ${isBlue ? "hover:border-blue-200 hover:text-blue-700" : "hover:border-orange-200 hover:text-orange-600"} disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-gray-500`}
         aria-label="Oldingi sahifa"
       >
         <ChevronLeft size={16} />
@@ -75,8 +78,8 @@ export default function TablePagination({
             className={[
               "flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-sm font-bold transition",
               safePage === item
-                ? "bg-orange-500 text-white shadow-sm shadow-orange-100"
-                : "border border-gray-200 bg-white text-gray-600 hover:border-orange-200 hover:text-orange-600",
+                ? isBlue ? "bg-blue-600 text-white shadow-sm shadow-blue-100" : "bg-orange-500 text-white shadow-sm shadow-orange-100"
+                : isBlue ? "border border-gray-200 bg-white text-gray-600 hover:border-blue-200 hover:text-blue-700" : "border border-gray-200 bg-white text-gray-600 hover:border-orange-200 hover:text-orange-600",
             ].join(" ")}
           >
             {item}
@@ -88,7 +91,7 @@ export default function TablePagination({
         type="button"
         onClick={() => onPageChange(safePage + 1)}
         disabled={safePage === totalPages}
-        className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition hover:border-orange-200 hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-gray-500"
+        className={`flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition ${isBlue ? "hover:border-blue-200 hover:text-blue-700" : "hover:border-orange-200 hover:text-orange-600"} disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-gray-500`}
         aria-label="Keyingi sahifa"
       >
         <ChevronRight size={16} />

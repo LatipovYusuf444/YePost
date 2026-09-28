@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Bell, ChevronDown, MessageSquare, Package } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import FaoliyatPaneli from "./FaoliyatPaneli";
 import TezkorPanel from "./TezkorPanel";
@@ -7,7 +8,6 @@ import type { XaridorSavdosi } from "./types";
 import {
   qisqaVaqt,
   sanaFormat,
-  savdoHolatMatni,
   savdoHolatRangi,
   summaFormat,
 } from "./yordamchilar";
@@ -20,13 +20,15 @@ type Props = {
   onYopish: () => void;
 };
 
-const tablar = ["Umumiy", "Tovarlar", "Hisob-fakturalar", "Tarix"] as const;
-type Tab = (typeof tablar)[number];
+type Tab = "umumiy" | "tovarlar" | "hisobFakturalar" | "tarix";
+const tabKalitlari: Tab[] = ["umumiy", "tovarlar", "hisobFakturalar", "tarix"];
 
 // Savdolar jadvalidagi qatorni bosganda ochiladigan savdo tafsilotlari oynasi.
 // Savdo modulidagi SotuvTafsilotlariModal ko'rinishida, mock-first (backendsiz).
 export default function XaridorSavdoModal({ savdo, xaridorNomi, customerId, partnerId, onYopish }: Props) {
-  const [faolTab, setFaolTab] = useState<Tab>("Umumiy");
+  const { t } = useTranslation("xaridor_uchot");
+  const tablar = tabKalitlari.map((kalit) => ({ kalit, nom: t(`savdoModal.tabs.${kalit}`) }));
+  const [faolTab, setFaolTab] = useState<Tab>("umumiy");
 
   const qarzdorlik = savdo.qarz;
 
@@ -51,7 +53,7 @@ export default function XaridorSavdoModal({ savdo, xaridorNomi, customerId, part
                     type="button"
                     className="inline-flex h-9 items-center gap-2 rounded-xl bg-white px-3 text-sm text-slate-600 shadow-sm transition hover:text-orange-600"
                   >
-                    Hujjat <ChevronDown size={15} />
+                    {t("shared.documentButton")} <ChevronDown size={15} />
                   </button>
                 </div>
               </div>
@@ -59,31 +61,31 @@ export default function XaridorSavdoModal({ savdo, xaridorNomi, customerId, part
               <nav className="mt-6 flex items-center gap-3 overflow-x-auto">
                 {tablar.map((tab) => (
                   <button
-                    key={tab}
+                    key={tab.kalit}
                     type="button"
-                    onClick={() => setFaolTab(tab)}
+                    onClick={() => setFaolTab(tab.kalit)}
                     className={`shrink-0 rounded-xl px-3 py-2 text-sm transition ${
-                      faolTab === tab
+                      faolTab === tab.kalit
                         ? "border border-orange-200 bg-white text-[#2563EB]"
                         : "text-slate-500 hover:bg-white hover:text-[#2563EB]"
                     }`}
                   >
-                    {tab}
+                    {tab.nom}
                   </button>
                 ))}
               </nav>
             </header>
 
-            {faolTab === "Umumiy" ? (
+            {faolTab === "umumiy" ? (
               <div className="grid gap-8 px-9 py-9 xl:grid-cols-[43%_36px_minmax(0,1fr)]">
                 <aside className="space-y-6">
                   <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(37,99,235,.08)] backdrop-blur">
-                    <CardTitle title="Kelishuv haqida" />
-                    <Info label="Bosqich" value={savdoHolatMatni[savdo.holat]} />
+                    <CardTitle title={t("savdoModal.dealTitle")} />
+                    <Info label={t("savdoModal.stageLabel")} value={t(`statuses.savdoHolat.${savdo.holat}`)} />
 
                     <div className="mt-4 flex items-end justify-between gap-4">
                       <div>
-                        <p className="text-sm text-slate-400">Miqdor va valyuta</p>
+                        <p className="text-sm text-slate-400">{t("savdoModal.amountCurrencyLabel")}</p>
                         <h2 className="mt-1 text-4xl font-light tracking-wide text-slate-700">
                           {summaFormat(savdo.summa)}
                         </h2>
@@ -91,38 +93,38 @@ export default function XaridorSavdoModal({ savdo, xaridorNomi, customerId, part
                       <span
                         className={`rounded-xl px-3 py-2 text-xs font-bold ${savdoHolatRangi[savdo.holat]}`}
                       >
-                        {savdoHolatMatni[savdo.holat]}
+                        {t(`statuses.savdoHolat.${savdo.holat}`)}
                       </span>
                     </div>
 
                     <div className="mt-5 rounded-2xl border border-orange-100 bg-gradient-to-br from-[#F8FAFC] to-white p-4">
-                      <p className="text-sm text-slate-500">To'lov va yetkazish</p>
+                      <p className="text-sm text-slate-500">{t("savdoModal.paymentDeliveryTitle")}</p>
                       <p className="mt-3 text-sm text-slate-400">
-                        Bu yerda to'lov, yetkazish va ombordan chiqarish ma'lumotlari ko'rsatiladi.
+                        {t("savdoModal.paymentDeliveryHint")}
                       </p>
                       <div className="mt-4 border-t border-slate-100 pt-3">
                         <button
                           type="button"
                           className="text-sm font-semibold text-[#2563EB] transition hover:text-[#1D4ED8] hover:underline"
                         >
-                          Qo'shish
+                          {t("savdoModal.addButton")}
                         </button>
 
                         {savdo.tolangan > 0 && (
                           <div className="mt-4 flex flex-wrap gap-2">
                             <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-[#2563EB]">
-                              Karta: {summaFormat(savdo.tolangan)}
+                              {t("savdoModal.cardPayment", { amount: summaFormat(savdo.tolangan) })}
                             </span>
                           </div>
                         )}
 
                         <div className="mt-6 space-y-2 text-sm">
                           <div className="flex justify-between text-slate-400">
-                            <span>Sotuv jami</span>
+                            <span>{t("savdoModal.saleTotal")}</span>
                             <span>{summaFormat(savdo.summa)}</span>
                           </div>
                           <div className="flex justify-between text-[#2563EB]">
-                            <span>Qabul qilingan to'lov</span>
+                            <span>{t("savdoModal.paymentReceived")}</span>
                             <span className="font-bold">{summaFormat(savdo.tolangan)}</span>
                           </div>
                           <div
@@ -130,7 +132,7 @@ export default function XaridorSavdoModal({ savdo, xaridorNomi, customerId, part
                               qarzdorlik > 0 ? "text-red-500" : "text-emerald-600"
                             }`}
                           >
-                            <span>{qarzdorlik > 0 ? "Qarzdorlik qoldig'i" : "Qarzdorlik yo'q"}</span>
+                            <span>{qarzdorlik > 0 ? t("savdoModal.debtRemaining") : t("savdoModal.noDebt")}</span>
                             <span className="font-bold">{summaFormat(Math.max(qarzdorlik, 0))}</span>
                           </div>
                         </div>
@@ -139,11 +141,11 @@ export default function XaridorSavdoModal({ savdo, xaridorNomi, customerId, part
                   </section>
 
                   <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(37,99,235,.08)] backdrop-blur">
-                    <CardTitle title="Qo'shimcha ma'lumotlar" />
-                    <Info label="Xaridor" value={xaridorNomi} />
-                    <Info label="Mas'ul shaxs" value={savdo.masul} />
-                    <Info label="Ombor" value={savdo.ombor} />
-                    <Info label="Sana" value={sanaFormat(savdo.sana)} />
+                    <CardTitle title={t("savdoModal.additionalInfoTitle")} />
+                    <Info label={t("savdoModal.customerLabel")} value={xaridorNomi} />
+                    <Info label={t("tablari.masul")} value={savdo.masul} />
+                    <Info label={t("tablari.ombor")} value={savdo.ombor} />
+                    <Info label={t("tablari.sana")} value={sanaFormat(savdo.sana)} />
                   </section>
                 </aside>
 
@@ -151,23 +153,23 @@ export default function XaridorSavdoModal({ savdo, xaridorNomi, customerId, part
 
                 <main className="space-y-6">
                   <FaoliyatPaneli partnerId={partnerId} customerId={customerId} />
-                  <Divider label="Bugun" />
+                  <Divider label={t("savdoModal.todayLabel")} />
                   <FeedCard
-                    title="Hisoblash rejimi o'zgartirildi"
+                    title={t("savdoModal.calcModeChanged")}
                     time={qisqaVaqt(savdo.sana)}
-                    text={`Tovarlar narxiga asoslanib → ${summaFormat(savdo.summa)}`}
+                    text={t("savdoModal.calcModeText", { amount: summaFormat(savdo.summa) })}
                   />
                   <FeedCard
-                    title="Sotuv yaratildi"
+                    title={t("savdoModal.saleCreated")}
                     time={qisqaVaqt(savdo.sana)}
-                    text={`${xaridorNomi} uchun ${savdo.raqam} sotuv yaratildi.`}
+                    text={t("savdoModal.saleCreatedText", { customer: xaridorNomi, number: savdo.raqam })}
                   />
                 </main>
               </div>
             ) : (
               <div className="px-9 py-9">
                 <p className="rounded-[24px] border border-dashed border-orange-200 bg-white/60 p-16 text-center font-bold text-slate-400">
-                  {faolTab} bo'limi bo'sh
+                  {t("savdoModal.emptySection", { tab: tablar.find((tab) => tab.kalit === faolTab)?.nom })}
                 </p>
               </div>
             )}

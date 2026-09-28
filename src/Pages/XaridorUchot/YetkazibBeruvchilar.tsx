@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Hash, Phone, Plus, Search, Trash2, Truck, UserRound } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
 import IjtimoiyIkonlar from "./IjtimoiyIkonlar";
 import KartaSozlama, { type Maydon } from "./KartaSozlama";
@@ -22,18 +23,19 @@ export default function YetkazibBeruvchilar({
   onSaqlash,
   onOchirish,
 }: Props) {
+  const { t } = useTranslation("xaridor_uchot");
   const [qidiruv, setQidiruv] = useState("");
   const [korinish, setKorinish] = useState<Korinish>("karta");
   const [yashirinMaydon, setYashirinMaydon] = useState<Set<string>>(() => new Set());
 
   const kartaMaydonlari: Maydon[] = [
-    { id: "nomi", nom: "Nomi" },
-    { id: "stir", nom: "STIR" },
-    { id: "tel", nom: "Tel nomer" },
-    { id: "ijtimoiy", nom: "Ijtimoiy tarmoq" },
-    { id: "aloqa", nom: "Aloqa shaxs" },
-    { id: "yaratilgan", nom: "Yaratilgan sana" },
-    { id: "yaratgan", nom: "Yaratgan mas'ul shaxs" },
+    { id: "nomi", nom: t("yetkazibBeruvchilar.cardFields.nomi") },
+    { id: "stir", nom: t("yetkazibBeruvchilar.cardFields.stir") },
+    { id: "tel", nom: t("yetkazibBeruvchilar.cardFields.tel") },
+    { id: "ijtimoiy", nom: t("yetkazibBeruvchilar.cardFields.ijtimoiy") },
+    { id: "aloqa", nom: t("yetkazibBeruvchilar.cardFields.aloqa") },
+    { id: "yaratilgan", nom: t("yetkazibBeruvchilar.cardFields.yaratilgan") },
+    { id: "yaratgan", nom: t("yetkazibBeruvchilar.cardFields.yaratgan") },
   ];
 
   function maydonToggle(id: string) {
@@ -51,20 +53,20 @@ export default function YetkazibBeruvchilar({
   const [tafsilotBeruvchi, setTafsilotBeruvchi] = useState<YetkazibBeruvchi | null>(null);
 
   const ustunlar: Ustun<YetkazibBeruvchi>[] = [
-    { id: "nomi", nom: "Nomi", kenglik: 180, katak: (b) => <span className="font-black text-slate-900">{b.nomi}</span> },
-    { id: "stir", nom: "STIR", kenglik: 130, katak: (b) => <span className="text-slate-500">{b.stir || "—"}</span> },
-    { id: "aloqa", nom: "Aloqa shaxs", kenglik: 160, katak: (b) => <span className="text-slate-600">{b.aloqaShaxsi || "—"}</span> },
-    { id: "tel", nom: "Tel nomer", kenglik: 150, katak: (b) => <span className="text-slate-500">{b.telefon || "—"}</span> },
-    { id: "ijtimoiy", nom: "Ijtimoiy tarmoq", kenglik: 140, katak: (b) => <IjtimoiyIkonlar ijtimoiy={b.ijtimoiy} /> },
+    { id: "nomi", nom: t("yetkazibBeruvchilar.columns.nomi"), kenglik: 180, katak: (b) => <span className="font-black text-slate-900">{b.nomi}</span> },
+    { id: "stir", nom: t("yetkazibBeruvchilar.columns.stir"), kenglik: 130, katak: (b) => <span className="text-slate-500">{b.stir || "—"}</span> },
+    { id: "aloqa", nom: t("yetkazibBeruvchilar.columns.aloqa"), kenglik: 160, katak: (b) => <span className="text-slate-600">{b.aloqaShaxsi || "—"}</span> },
+    { id: "tel", nom: t("yetkazibBeruvchilar.columns.tel"), kenglik: 150, katak: (b) => <span className="text-slate-500">{b.telefon || "—"}</span> },
+    { id: "ijtimoiy", nom: t("yetkazibBeruvchilar.columns.ijtimoiy"), kenglik: 140, katak: (b) => <IjtimoiyIkonlar ijtimoiy={b.ijtimoiy} /> },
     {
       id: "yaratgan",
-      nom: "Mas'ul shaxs yaratgan",
+      nom: t("yetkazibBeruvchilar.columns.yaratgan"),
       kenglik: 170,
       katak: (b) => <span className="text-slate-500">{b.yaratganMasul}</span>,
     },
-    { id: "yaratilgan", nom: "Sana yaratilgan", kenglik: 140, katak: (b) => <span className="text-slate-500">{sanaFormat(b.yaratilganSana)}</span> },
-    { id: "ozgartirilgan", nom: "O'zgartirilgan sana", kenglik: 150, katak: (b) => <span className="text-slate-500">{sanaFormat(b.ozgartirilganSana)}</span> },
-    { id: "ozgartgan", nom: "O'zgartirgan mas'ul shaxs", kenglik: 180, katak: (b) => <span className="text-slate-500">{b.ozgartirganMasul}</span> },
+    { id: "yaratilgan", nom: t("yetkazibBeruvchilar.columns.yaratilgan"), kenglik: 140, katak: (b) => <span className="text-slate-500">{sanaFormat(b.yaratilganSana)}</span> },
+    { id: "ozgartirilgan", nom: t("yetkazibBeruvchilar.columns.ozgartirilgan"), kenglik: 150, katak: (b) => <span className="text-slate-500">{sanaFormat(b.ozgartirilganSana)}</span> },
+    { id: "ozgartgan", nom: t("yetkazibBeruvchilar.columns.ozgartgan"), kenglik: 180, katak: (b) => <span className="text-slate-500">{b.ozgartirganMasul}</span> },
   ];
 
   const royxat = useMemo(() => {
@@ -81,7 +83,7 @@ export default function YetkazibBeruvchilar({
   }
 
   async function ochirish(beruvchi: YetkazibBeruvchi) {
-    if (!window.confirm(`${beruvchi.nomi} ma'lumotini o'chirasizmi?`)) return;
+    if (!window.confirm(t("yetkazibBeruvchilar.deleteConfirm", { name: beruvchi.nomi }))) return;
     return onOchirish(beruvchi.id);
   }
 
@@ -90,11 +92,11 @@ export default function YetkazibBeruvchilar({
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-500">
-            Xaridor uchoti
+            {t("shared.eyebrow")}
           </p>
-          <h1 className="mt-1 text-3xl font-black text-gray-950">Yetkazib beruvchilar</h1>
+          <h1 className="mt-1 text-3xl font-black text-gray-950">{t("yetkazibBeruvchilar.title")}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Mahsulot yetkazib beruvchi hamkorlarni yaratish va tahrirlash.
+            {t("yetkazibBeruvchilar.subtitle")}
           </p>
         </div>
       </header>
@@ -108,7 +110,7 @@ export default function YetkazibBeruvchilar({
               value={qidiruv}
               onChange={(event) => setQidiruv(event.target.value)}
               className="min-w-0 flex-1 text-sm font-semibold outline-none"
-              placeholder="Nomi yoki telefon..."
+              placeholder={t("yetkazibBeruvchilar.searchPlaceholder")}
             />
           </label>
           <KorinishTanlov qiymat={korinish} onChange={setKorinish} />
@@ -119,7 +121,7 @@ export default function YetkazibBeruvchilar({
           className="inline-flex h-11 shrink-0 items-center gap-2 rounded-2xl bg-orange-500 px-4 text-sm font-black text-white"
         >
           <Plus size={17} />
-          Yetkazib beruvchi qo'shish
+          {t("yetkazibBeruvchilar.addButton")}
         </button>
       </div>
 
@@ -158,8 +160,8 @@ export default function YetkazibBeruvchilar({
                     event.stopPropagation();
                     void ochirish(beruvchi);
                   }}
-                  title="O'chirish"
-                  aria-label="O'chirish"
+                  title={t("shared.deleteAria")}
+                  aria-label={t("shared.deleteAria")}
                   className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100"
                 >
                   <Trash2 size={16} />
@@ -175,7 +177,7 @@ export default function YetkazibBeruvchilar({
             {korinadi("stir") && (
               <p className="mt-2 flex items-center gap-1.5 text-sm font-bold text-gray-500">
                 <Hash size={14} className="text-orange-400" />
-                STIR: {beruvchi.stir || "—"}
+                {t("yetkazibBeruvchilar.stirPrefix", { value: beruvchi.stir || "—" })}
               </p>
             )}
 
@@ -207,7 +209,7 @@ export default function YetkazibBeruvchilar({
             <div className="mt-5 space-y-1 border-t border-gray-100 pt-4 text-sm">
               {korinadi("yaratilgan") && (
               <p className="flex items-center justify-between gap-2">
-                <span className="text-gray-400">Yaratilgan sana</span>
+                <span className="text-gray-400">{t("shared.createdLabel")}</span>
                 <span className="font-semibold text-gray-600">
                   {sanaFormat(beruvchi.yaratilganSana)}
                 </span>
@@ -215,7 +217,7 @@ export default function YetkazibBeruvchilar({
               )}
               {korinadi("yaratgan") && (
               <p className="flex items-center justify-between gap-2">
-                <span className="text-gray-400">Yaratgan</span>
+                <span className="text-gray-400">{t("shared.createdByLabel")}</span>
                 <span className="truncate font-semibold text-gray-600">
                   {beruvchi.yaratganMasul}
                 </span>
@@ -229,7 +231,7 @@ export default function YetkazibBeruvchilar({
         {royxat.length === 0 && (
           <div className="col-span-full rounded-2xl border border-dashed border-orange-200 bg-white p-14 text-center">
             <Truck className="mx-auto text-orange-200" size={42} />
-            <p className="mt-3 font-bold text-gray-500">Yetkazib beruvchi mavjud emas</p>
+            <p className="mt-3 font-bold text-gray-500">{t("yetkazibBeruvchilar.empty")}</p>
           </div>
         )}
       </div>

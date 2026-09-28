@@ -1,12 +1,8 @@
 import { useState } from "react";
 import { ChevronDown, LayoutGrid, Table2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export type Korinish = "karta" | "jadval";
-
-const variantlar = [
-  { kalit: "karta" as const, ikonka: LayoutGrid, nom: "Kartochka" },
-  { kalit: "jadval" as const, ikonka: Table2, nom: "Jadval" },
-];
 
 // Ro'yxatni karta yoki jadval ko'rinishida ko'rsatish uchun ochiluvchi tanlov.
 export default function KorinishTanlov({
@@ -16,6 +12,11 @@ export default function KorinishTanlov({
   qiymat: Korinish;
   onChange: (korinish: Korinish) => void;
 }) {
+  const { t } = useTranslation(["xaridor_uchot", "common"]);
+  const variantlar = [
+    { kalit: "karta" as const, ikonka: LayoutGrid, nom: t("korinishTanlov.card") },
+    { kalit: "jadval" as const, ikonka: Table2, nom: t("korinishTanlov.table") },
+  ];
   const [ochiq, setOchiq] = useState(false);
   const joriy = variantlar.find((v) => v.kalit === qiymat) ?? variantlar[0];
 
@@ -27,7 +28,7 @@ export default function KorinishTanlov({
         className="inline-flex h-11 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-black text-[#2563EB] shadow-sm transition hover:border-orange-200"
       >
         <LayoutGrid size={16} />
-        Ko'rinish
+        {t("korinishTanlov.button")}
         <ChevronDown size={15} className={`transition ${ochiq ? "rotate-180" : ""}`} />
       </button>
 
@@ -35,7 +36,7 @@ export default function KorinishTanlov({
         <>
           <button
             type="button"
-            aria-label="Yopish"
+            aria-label={t("common:actions.close")}
             onClick={() => setOchiq(false)}
             className="fixed inset-0 z-40 cursor-default"
           />

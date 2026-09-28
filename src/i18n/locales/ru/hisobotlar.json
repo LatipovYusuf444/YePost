@@ -1,0 +1,62 @@
+{
+  "eyebrow": "Отчёты и аудит",
+  "title": "Отчёты из реального backend",
+  "subtitle": "Движение товаров, баланс контрагентов, прибыль, приход-расход и системные логи.",
+  "refresh": "Обновить",
+  "close": "Закрыть",
+  "currencySuffix": "сум",
+  "tabs": {
+    "stock": "Движение товаров",
+    "counterparty": "Баланс контрагентов",
+    "profit": "Прибыль по товарам",
+    "income": "Приход-расход",
+    "audit": "Логи аудита"
+  },
+  "keys": {
+    "total": "Итого",
+    "paid": "Оплачено",
+    "debt": "Долг",
+    "saleRevenue": "Выручка от продаж",
+    "saleProfit": "Прибыль от продаж",
+    "expenseTotal": "Расходы",
+    "cashinTotal": "Приход в кассу",
+    "netIncome": "Чистый доход"
+  },
+  "filters": {
+    "dateFrom": "Дата начала",
+    "dateTo": "Дата окончания",
+    "modification": "Вариант товара *",
+    "selectModification": "Выберите вариант",
+    "warehouse": "Склад",
+    "allWarehouses": "Все склады",
+    "customer": "Клиент",
+    "customerUnselected": "Клиент не выбран",
+    "supplier": "Поставщик",
+    "supplierUnselected": "Поставщик не выбран",
+    "category": "Категория",
+    "allCategories": "Все категории",
+    "branch": "Филиал",
+    "allBranches": "Все филиалы",
+    "actionType": "Тип действия",
+    "all": "Все",
+    "resource": "Ресурс",
+    "resourcePlaceholder": "Например: Product",
+    "apply": "Показать"
+  },
+  "export": {
+    "button": "Скачать {{label}}"
+  },
+  "empty": {
+    "selectFilters": "Выберите фильтры, чтобы увидеть отчёт.",
+    "noData": "По отчёту данных не найдено.",
+    "noAuditLogs": "Логи аудита отсутствуют."
+  },
+  "audit": {
+    "totalLogs": "Всего логов: {{total}}",
+    "prev": "Назад",
+    "next": "Далее",
+    "actionResource": "{{action}} — {{resource}}",
+    "user": "Пользователь: {{value}}",
+    "detailsJson": "Подробнее JSON"
+  }
+}

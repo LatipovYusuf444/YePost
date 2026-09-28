@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export type TanlovVarianti = { value: string; label: string };
 
@@ -12,7 +13,7 @@ export default function Tanlov({
   qiymat,
   variantlar,
   onChange,
-  placeholder = "Tanlang",
+  placeholder,
   qidiruv = false,
 }: {
   qiymat: string;
@@ -21,6 +22,7 @@ export default function Tanlov({
   placeholder?: string;
   qidiruv?: boolean;
 }) {
+  const { t } = useTranslation("common");
   const [ochiq, setOchiq] = useState(false);
   const [soz, setSoz] = useState("");
   const joriy = variantlar.find((v) => v.value === qiymat) ?? null;
@@ -40,7 +42,7 @@ export default function Tanlov({
     <div className="relative">
       <button type="button" onClick={() => setOchiq((oldingi) => !oldingi)} className={tugmaKlass}>
         <span className={`truncate ${joriy ? "text-slate-800" : "text-slate-400"}`}>
-          {joriy?.label ?? placeholder}
+          {joriy?.label ?? placeholder ?? t("select.placeholder")}
         </span>
         <ChevronDown
           size={16}
@@ -52,7 +54,7 @@ export default function Tanlov({
         <>
           <button
             type="button"
-            aria-label="Yopish"
+            aria-label={t("actions.close")}
             onClick={yopish}
             className="fixed inset-0 z-40 cursor-default"
           />
@@ -64,7 +66,7 @@ export default function Tanlov({
                   autoFocus
                   value={soz}
                   onChange={(e) => setSoz(e.target.value)}
-                  placeholder="Qidirish..."
+                  placeholder={t("select.searchPlaceholder")}
                   className="h-9 min-w-0 flex-1 text-sm font-semibold outline-none"
                 />
               </div>
@@ -94,7 +96,7 @@ export default function Tanlov({
               })}
               {korinadigan.length === 0 && (
                 <p className="px-3 py-3 text-center text-sm font-semibold text-slate-400">
-                  Topilmadi
+                  {t("select.notFound")}
                 </p>
               )}
             </div>

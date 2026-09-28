@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
 import KassaAmaliyotModal from "../KassaUchot/KassaAmaliyotModal";
 import type { KassaAmaliyoti } from "../KassaUchot/types";
-import { amaliyotTuriMatni, kanalMatni, sanaFormat, summaFormat } from "../KassaUchot/yordamchilar";
+import { sanaFormat, summaFormat } from "../KassaUchot/yordamchilar";
 import { sotuvlarRoyxatiniOlish } from "@/api/savdoApi";
 import { barchaFinanceTransactions } from "@/api/tolovApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
@@ -10,6 +11,7 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 // Mijozning kassadagi to'lovlari (pul tushgan/qaytarilgan). Umumiy store'dan o'qiladi.
 // Qatorni bosganda "pul tushgan" (kassa amaliyoti) oynasi ochiladi.
 export default function XaridorTolovlariTab({ xaridorId }: { xaridorId: string }) {
+  const { t } = useTranslation("kassa_uchot");
   const [tolovlar, setTolovlar] = useState<KassaAmaliyoti[]>([]);
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [xatolik, setXatolik] = useState("");
@@ -43,11 +45,11 @@ export default function XaridorTolovlariTab({ xaridorId }: { xaridorId: string }
             holat: "tasdiqlangan",
             xaridorId,
             raqam: item.refDocNumber || item.id.slice(0, 8).toUpperCase(),
-            nomi: item.refDocNumber || "Sotuv to'lovi",
+            nomi: item.refDocNumber || t("xaridorTab.salePayment"),
             kontragent: "",
             summa: Number(item.amount ?? 0),
             sana: item.date,
-            masul: "Tizim",
+            masul: t("systemFallback"),
             izoh: item.note ?? "",
             backendSource: "SALE",
             backendRefId: item.refId ?? item.id,
@@ -61,7 +63,7 @@ export default function XaridorTolovlariTab({ xaridorId }: { xaridorId: string }
   }, [xaridorId, yangilanish]);
 
   if (yuklanmoqda) {
-    return <div className="px-9 py-7 text-sm font-bold text-slate-500">To'lovlar backenddan yuklanmoqda...</div>;
+    return <div className="px-9 py-7 text-sm font-bold text-slate-500">{t("xaridorTab.loading")}</div>;
   }
 
   if (xatolik) {
@@ -72,7 +74,7 @@ export default function XaridorTolovlariTab({ xaridorId }: { xaridorId: string }
     return (
       <div className="px-9 py-7">
         <p className="rounded-[26px] border border-dashed border-orange-200 bg-white/60 p-16 text-center font-bold text-slate-400">
-          Bu mijozda kassa to'lovlari yo'q
+          {t("xaridorTab.empty")}
         </p>
       </div>
     );
@@ -81,41 +83,41 @@ export default function XaridorTolovlariTab({ xaridorId }: { xaridorId: string }
   const ustunlar: Ustun<KassaAmaliyoti>[] = [
     {
       id: "sana",
-      nom: "Sana",
+      nom: t("xaridorTab.columns.sana"),
       kenglik: 130,
       katak: (a) => <span className="text-slate-500">{sanaFormat(a.sana)}</span>,
     },
     {
       id: "raqam",
-      nom: "Hujjat",
+      nom: t("xaridorTab.columns.hujjat"),
       kenglik: 130,
       katak: (a) => <span className="font-black text-slate-900">{a.raqam}</span>,
     },
     {
       id: "turi",
-      nom: "Turi",
+      nom: t("xaridorTab.columns.turi"),
       kenglik: 220,
       katak: (a) => (
         <span className="inline-block rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-[#2563EB]">
-          {amaliyotTuriMatni[a.turi]}
+          {t(`types.${a.turi}`)}
         </span>
       ),
     },
     {
       id: "kanal",
-      nom: "To'lov turi",
+      nom: t("xaridorTab.columns.kanal"),
       kenglik: 120,
-      katak: (a) => <span className="text-slate-500">{kanalMatni[a.kanal]}</span>,
+      katak: (a) => <span className="text-slate-500">{t(`channels.${a.kanal}`)}</span>,
     },
     {
       id: "izoh",
-      nom: "Izoh",
+      nom: t("xaridorTab.columns.izoh"),
       kenglik: 180,
       katak: (a) => <span className="text-slate-500">{a.izoh || "—"}</span>,
     },
     {
       id: "summa",
-      nom: "Summa",
+      nom: t("xaridorTab.columns.summa"),
       kenglik: 150,
       katak: (a) => (
         <span

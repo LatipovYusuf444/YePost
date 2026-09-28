@@ -1,0 +1,175 @@
+{
+  "eyebrow": "Учёт настроек",
+  "title": "Настройки",
+  "subtitle": "Профиль, компания, филиалы и другое.",
+  "nav": {
+    "profil": "Мой профиль",
+    "kompaniya": "Компания",
+    "filiallar": "Филиалы",
+    "birliklar": "Единицы измерения",
+    "vakolatlar": "Права доступа",
+    "integratsiya": "Интеграции",
+    "chek": "Настройки чека",
+    "bildirishnoma": "Уведомления"
+  },
+  "saved": "Сохранено ✓",
+  "savingToBackend": "Сохраняется в backend...",
+  "loadingGeneric": "Загрузка...",
+  "profil": {
+    "subtitle": "Ваши личные данные берутся из реального аккаунта.",
+    "loading": "Загрузка профиля...",
+    "unknownUser": "Пользователь",
+    "fields": {
+      "firstName": "Имя",
+      "lastName": "Фамилия",
+      "phone": "Телефон",
+      "email": "Email",
+      "position": "Должность",
+      "telegramId": "Telegram ID",
+      "login": "Логин",
+      "role": "Роль в системе"
+    }
+  },
+  "kompaniya": {
+    "title": "Данные компании",
+    "subtitle": "Реальные данные организации, используемые в документах и чеках.",
+    "nameRequired": "Название компании обязательно.",
+    "savedMessage": "Данные компании сохранены в backend.",
+    "fields": {
+      "name": "Название компании",
+      "inn": "ИНН",
+      "phone": "Телефон",
+      "currency": "Валюта",
+      "address": "Адрес"
+    },
+    "currencyOptions": {
+      "uzs": "Узбекский сум (UZS)",
+      "usd": "Доллар США (USD)"
+    }
+  },
+  "filiallar": {
+    "title": "Филиалы",
+    "subtitle": "Филиалы компании получаются из реального backend.",
+    "addButton": "Добавить филиал",
+    "loading": "Загрузка филиалов...",
+    "deleteConfirm": "Удалить филиал «{{name}}»?",
+    "primaryBadge": "Основной",
+    "statusActive": "Активен",
+    "statusInactive": "Неактивен",
+    "makePrimaryTitle": "Сделать основным",
+    "deleteTitle": "Удалить",
+    "unassigned": "Не привязано",
+    "noAddress": "Адрес не указан",
+    "noPhone": "Телефон не указан",
+    "clickToEdit": "Нажмите для редактирования",
+    "empty": "В backend нет филиалов",
+    "nameRequired": "Название филиала обязательно.",
+    "modal": {
+      "editTitle": "Редактирование филиала",
+      "newTitle": "Новый филиал",
+      "nameLabel": "Название филиала *",
+      "addressLabel": "Адрес",
+      "phoneLabel": "Телефон",
+      "responsibleLabel": "Ответственное лицо",
+      "statusLabel": "Статус",
+      "primaryCheckbox": "Основной филиал",
+      "saving": "Сохраняется..."
+    }
+  },
+  "vakolatlar": {
+    "title": "Права доступа",
+    "subtitle": "Дополнительные права сотрудников управляются через реальный accounts/grants.",
+    "searchPlaceholder": "Поиск сотрудника",
+    "loading": "Загрузка прав доступа...",
+    "employeeColumn": "Сотрудник",
+    "notFound": "Сотрудник не найден",
+    "codes": {
+      "delete": "Удаление",
+      "reports": "Отчёты",
+      "expense": "Расход",
+      "cashIn": "Приход в кассу",
+      "returnCancel": "Возврат / отмена"
+    }
+  },
+  "integratsiya": {
+    "title": "Интеграции",
+    "loadingSubtitle": "Загружаются реальные интеграции.",
+    "providers": {
+      "payme": { "name": "Payme", "description": "Приём онлайн-платежей через Payme." },
+      "click": { "name": "Click", "description": "Интеграция платёжной системы Click." },
+      "uzum": { "name": "Uzum Nasiya", "description": "Оплата и рассрочка через Uzum." }
+    },
+    "paymentsTitle": "Платёжные системы",
+    "paymentsSubtitle": "Настройки Payme, Click и Uzum управляются через реальный backend.",
+    "savedProvider": "Интеграция {{provider}} сохранена в backend.",
+    "merchantIdPlaceholder": "Merchant ID",
+    "serviceIdPlaceholder": "Service ID",
+    "secretKeySaved": "Секретный ключ сохранён",
+    "secretKeyPlaceholder": "Секретный ключ",
+    "connected": "Подключено",
+    "disconnected": "Не подключено",
+    "telegramTitle": "Telegram-бот",
+    "telegramSubtitle": "Реальные backend-настройки бота уведомлений и CRM.",
+    "telegramSaved": "Интеграция Telegram сохранена в backend.",
+    "telegramCardDescription": "Токен бота и chat ID берутся из backend.",
+    "botTokenPlaceholder": "Токен бота",
+    "chatIdPlaceholder": "Chat ID",
+    "crmBotEnabled": "CRM-бот активен",
+    "printerTitle": "Принтер чеков",
+    "printerSubtitle": "Реальные backend-настройки сетевого принтера.",
+    "printerSaved": "Интеграция принтера сохранена в backend.",
+    "printerCardDescription": "Подключается через IP-адрес и порт."
+  },
+  "chek": {
+    "title": "Настройки чека",
+    "subtitle": "Реальные backend-настройки, отображаемые на чеке продажи.",
+    "savedMessage": "Настройки чека сохранены в backend.",
+    "fields": {
+      "title": "Заголовок чека",
+      "footerText": "Текст внизу чека"
+    },
+    "toggles": {
+      "showLogo": "Показывать логотип",
+      "showPhone": "Показывать телефон",
+      "showAddress": "Показывать адрес"
+    },
+    "previewLabel": "Предпросмотр",
+    "defaultTitle": "YePost Savdo",
+    "previewProduct": "Товар",
+    "previewTotal": "ИТОГО"
+  },
+  "bildirishnoma": {
+    "rows": {
+      "newSale": { "name": "Новая продажа", "description": "Уведомление о каждой новой продаже." },
+      "lowStock": { "name": "Малый остаток", "description": "Предупреждение при заканчивающемся товаре." },
+      "dailyReport": { "name": "Ежедневный отчёт", "description": "Общий отчёт в конце каждого дня." },
+      "newCustomer": { "name": "Новый покупатель", "description": "Уведомление при добавлении нового клиента." }
+    },
+    "preferencesTitle": "Настройки уведомлений",
+    "preferencesSubtitle": "Каждый выбор сразу сохраняется в реальный backend.",
+    "listTitle": "Уведомления",
+    "listSubtitle": "Реальные сообщения с CRM notification endpoint.",
+    "markAllRead": "Отметить все прочитанными",
+    "defaultTitle": "Уведомление",
+    "noMessageText": "Текст сообщения не указан",
+    "markRead": "Прочитано",
+    "empty": "Уведомлений нет"
+  },
+  "birliklar": {
+    "title": "Единицы измерения",
+    "subtitle": "Единицы (штука, кг, литр и т.д.), выбираемые при добавлении товара — из реального каталога.",
+    "readOnlyNotice": "Добавлять, редактировать и удалять единицы измерения может только директор. Вы можете только просматривать список.",
+    "editTitle": "Редактирование единицы",
+    "newTitle": "Новая единица измерения",
+    "closeFormAria": "Закрыть форму",
+    "codePlaceholder": "Код (796)",
+    "namePlaceholder": "Название (например: Штука)",
+    "shortNamePlaceholder": "Сокращение (шт)",
+    "noShortName": "Нет сокращения",
+    "codeLabel": "Код: {{code}}",
+    "empty": "В backend пока нет единиц измерения",
+    "emptyHint": "Создайте первую единицу с помощью кнопки «Добавить» выше.",
+    "nameRequired": "Название единицы измерения обязательно.",
+    "deleteConfirm": "Удалить единицу измерения «{{name}}»?"
+  }
+}

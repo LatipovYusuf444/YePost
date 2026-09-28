@@ -84,7 +84,7 @@ export const useReportsStore = create<ReportsStore>((set) => ({
   tanlovlarniYuklash: async () => {
     set({ yuklanmoqda: true, xatolik: "" });
     try {
-      const tanlovlar = await hisobotTanlovlariniOlish();
+      const tanlovlar = await hisobotTanlovlariniOlish("all");
       set({ tanlovlar });
     } catch (error) {
       set({ xatolik: getApiErrorMessage(error) });

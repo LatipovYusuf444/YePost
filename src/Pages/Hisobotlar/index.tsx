@@ -12,6 +12,7 @@ import {
   UsersRound,
   WalletCards,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useReportsStore } from "@/store/reportsStore";
 import type {
   AuditFilter,
@@ -26,13 +27,13 @@ import type {
 
 type Tab = "stock" | "counterparty" | "profit" | "income" | "audit";
 
-const tablar: Array<{ id: Tab; nom: string; icon: typeof BarChart3 }> = [
-  { id: "stock", nom: "Tovar harakati", icon: Activity },
-  { id: "counterparty", nom: "Kontragent balansi", icon: UsersRound },
-  { id: "profit", nom: "Mahsulot foydasi", icon: TrendingUp },
-  { id: "income", nom: "Kirim-chiqim", icon: WalletCards },
-  { id: "audit", nom: "Audit loglari", icon: FileClock },
-];
+const tabIkonlar: Record<Tab, typeof BarChart3> = {
+  stock: Activity,
+  counterparty: UsersRound,
+  profit: TrendingUp,
+  income: WalletCards,
+  audit: FileClock,
+};
 
 function bugunMinus(kun: number) {
   const date = new Date();
@@ -40,43 +41,13 @@ function bugunMinus(kun: number) {
   return date.toISOString().slice(0, 10);
 }
 
-function pul(value: unknown) {
-  const number = Number(value ?? 0);
-  if (!Number.isFinite(number)) return String(value ?? "—");
-  return `${number.toLocaleString("uz-UZ")} so'm`;
-}
-
 function nom(item?: Tanlov) {
   if (!item) return "";
   return item.name ?? item.fullName ?? item.username ?? item.id;
 }
 
-function formatKey(key: string) {
-  const map: Record<string, string> = {
-    total: "Jami",
-    paid: "To'langan",
-    debt: "Qarz",
-    saleRevenue: "Sotuv tushumi",
-    saleProfit: "Sotuv foydasi",
-    expenseTotal: "Xarajatlar",
-    cashinTotal: "Kassa kirimi",
-    netIncome: "Sof daromad",
-  };
-  return map[key] ?? key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase());
-}
-
-function valuesFromResponse(data: HisobotJavobi | null): unknown[] {
-  if (!data) return [];
-  if (Array.isArray(data)) return data;
-  if (typeof data === "object" && data) {
-    const obj = data as Record<string, unknown>;
-    const rows = obj.value ?? obj.items ?? obj.results ?? obj.data ?? obj.rows;
-    return Array.isArray(rows) ? rows : [];
-  }
-  return [];
-}
-
 export default function Hisobotlar() {
+  const { t } = useTranslation("hisobotlar");
   const store = useReportsStore();
   const tanlovlarniYuklash = store.tanlovlarniYuklash;
   const [tab, setTab] = useState<Tab>("income");
@@ -91,6 +62,33 @@ export default function Hisobotlar() {
   const [auditAction, setAuditAction] = useState("");
   const [auditResource, setAuditResource] = useState("");
   const [auditPage, setAuditPage] = useState(1);
+
+  const tablar: Array<{ id: Tab; nom: string; icon: typeof BarChart3 }> = (
+    ["stock", "counterparty", "profit", "income", "audit"] as const
+  ).map((id) => ({ id, nom: t(`tabs.${id}`), icon: tabIkonlar[id] }));
+
+  function formatKey(key: string) {
+    const translated = t(`keys.${key}`, { defaultValue: "" });
+    if (translated) return translated;
+    return key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase());
+  }
+
+  function pul(value: unknown) {
+    const number = Number(value ?? 0);
+    if (!Number.isFinite(number)) return String(value ?? "—");
+    return `${number.toLocaleString("uz-UZ")} ${t("currencySuffix")}`;
+  }
+
+  function valuesFromResponse(data: HisobotJavobi | null): unknown[] {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (typeof data === "object" && data) {
+      const obj = data as Record<string, unknown>;
+      const rows = obj.value ?? obj.items ?? obj.results ?? obj.data ?? obj.rows;
+      return Array.isArray(rows) ? rows : [];
+    }
+    return [];
+  }
 
   useEffect(() => {
     void tanlovlarniYuklash();
@@ -153,13 +151,13 @@ export default function Hisobotlar() {
       <header className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.18em] text-orange-500">
-            Hisobot va audit
+            {t("eyebrow")}
           </p>
           <h1 className="mt-1 text-3xl font-black text-gray-950">
-            Real backend hisobotlari
+            {t("title")}
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Tovar harakati, kontragent balansi, foyda, kirim-chiqim va tizim loglari.
+            {t("subtitle")}
           </p>
         </div>
         <button
@@ -168,14 +166,14 @@ export default function Hisobotlar() {
           className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 font-bold text-gray-600 shadow-sm disabled:opacity-50"
         >
           <RefreshCw size={17} className={store.amalBajarilmoqda ? "animate-spin" : ""} />
-          Yangilash
+          {t("refresh")}
         </button>
       </header>
 
       {store.xatolik && (
         <div className="flex justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">
           <span>{store.xatolik}</span>
-          <button onClick={store.xatolikniTozalash}>Yopish</button>
+          <button onClick={store.xatolikniTozalash}>{t("close")}</button>
         </div>
       )}
 
@@ -281,7 +279,7 @@ export default function Hisobotlar() {
             onPage={setAuditPage}
           />
         ) : (
-          <HisobotNatija data={joriyHisobot} />
+          <HisobotNatija data={joriyHisobot} formatKey={formatKey} pul={pul} valuesFromResponse={valuesFromResponse} />
         )}
       </section>
     </div>
@@ -312,20 +310,21 @@ function HisobotFilterlar(props: {
   setAuditResource: (value: string) => void;
   onApply: () => void;
 }) {
+  const { t } = useTranslation("hisobotlar");
   const tanlovlar = useReportsStore((state) => state.tanlovlar);
   return (
     <div className="grid gap-4 lg:grid-cols-4">
       {props.tab !== "counterparty" && (
         <>
-          <Input label="Boshlanish sanasi" type="date" value={props.dateFrom} onChange={props.setDateFrom} />
-          <Input label="Tugash sanasi" type="date" value={props.dateTo} onChange={props.setDateTo} />
+          <Input label={t("filters.dateFrom")} type="date" value={props.dateFrom} onChange={props.setDateFrom} />
+          <Input label={t("filters.dateTo")} type="date" value={props.dateTo} onChange={props.setDateTo} />
         </>
       )}
 
       {props.tab === "stock" && (
         <>
-          <Select label="Mahsulot varianti *" value={props.modificationId} onChange={props.setModificationId}>
-            <option value="">Variant tanlang</option>
+          <Select label={t("filters.modification")} value={props.modificationId} onChange={props.setModificationId}>
+            <option value="">{t("filters.selectModification")}</option>
             {tanlovlar.modifications.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.product?.name ? `${item.product.name} — ` : ""}
@@ -334,8 +333,8 @@ function HisobotFilterlar(props: {
               </option>
             ))}
           </Select>
-          <Select label="Ombor" value={props.warehouseId} onChange={props.setWarehouseId}>
-            <option value="">Barcha omborlar</option>
+          <Select label={t("filters.warehouse")} value={props.warehouseId} onChange={props.setWarehouseId}>
+            <option value="">{t("filters.allWarehouses")}</option>
             {tanlovlar.warehouses.map((item) => (
               <option key={item.id} value={item.id}>
                 {nom(item)}
@@ -347,16 +346,16 @@ function HisobotFilterlar(props: {
 
       {props.tab === "counterparty" && (
         <>
-          <Select label="Mijoz" value={props.customerId} onChange={props.setCustomerId}>
-            <option value="">Mijoz tanlanmagan</option>
+          <Select label={t("filters.customer")} value={props.customerId} onChange={props.setCustomerId}>
+            <option value="">{t("filters.customerUnselected")}</option>
             {tanlovlar.customers.map((item) => (
               <option key={item.id} value={item.id}>
                 {nom(item)}
               </option>
             ))}
           </Select>
-          <Select label="Yetkazib beruvchi" value={props.supplierId} onChange={props.setSupplierId}>
-            <option value="">Yetkazib beruvchi tanlanmagan</option>
+          <Select label={t("filters.supplier")} value={props.supplierId} onChange={props.setSupplierId}>
+            <option value="">{t("filters.supplierUnselected")}</option>
             {tanlovlar.suppliers.map((item) => (
               <option key={item.id} value={item.id}>
                 {nom(item)}
@@ -367,8 +366,8 @@ function HisobotFilterlar(props: {
       )}
 
       {props.tab === "profit" && (
-        <Select label="Kategoriya" value={props.categoryId} onChange={props.setCategoryId}>
-          <option value="">Barcha kategoriyalar</option>
+        <Select label={t("filters.category")} value={props.categoryId} onChange={props.setCategoryId}>
+          <option value="">{t("filters.allCategories")}</option>
           {tanlovlar.categories.map((item) => (
             <option key={item.id} value={item.id}>
               {nom(item)}
@@ -378,8 +377,8 @@ function HisobotFilterlar(props: {
       )}
 
       {props.tab === "income" && (
-        <Select label="Filial" value={props.branchId} onChange={props.setBranchId}>
-          <option value="">Barcha filiallar</option>
+        <Select label={t("filters.branch")} value={props.branchId} onChange={props.setBranchId}>
+          <option value="">{t("filters.allBranches")}</option>
           {tanlovlar.branches.map((item) => (
             <option key={item.id} value={item.id}>
               {nom(item)}
@@ -390,17 +389,17 @@ function HisobotFilterlar(props: {
 
       {props.tab === "audit" && (
         <>
-          <Select label="Amal turi" value={props.auditAction} onChange={props.setAuditAction}>
-            <option value="">Barchasi</option>
+          <Select label={t("filters.actionType")} value={props.auditAction} onChange={props.setAuditAction}>
+            <option value="">{t("filters.all")}</option>
             <option value="CREATE">CREATE</option>
             <option value="UPDATE">UPDATE</option>
             <option value="DELETE">DELETE</option>
           </Select>
           <Input
-            label="Resurs"
+            label={t("filters.resource")}
             value={props.auditResource}
             onChange={props.setAuditResource}
-            placeholder="Masalan: Product"
+            placeholder={t("filters.resourcePlaceholder")}
           />
         </>
       )}
@@ -411,7 +410,7 @@ function HisobotFilterlar(props: {
           className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 font-black text-white"
         >
           <Search size={17} />
-          Ko'rish
+          {t("filters.apply")}
         </button>
       </div>
     </div>
@@ -471,22 +470,34 @@ function Select({
 }
 
 function ExportButton({ label, onClick }: { label: string; onClick: () => void }) {
+  const { t } = useTranslation("hisobotlar");
   return (
     <button
       onClick={onClick}
       className="inline-flex h-10 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-bold text-orange-600 shadow-sm"
     >
       <Download size={16} />
-      {label} yuklash
+      {t("export.button", { label })}
     </button>
   );
 }
 
-function HisobotNatija({ data }: { data: HisobotJavobi | null }) {
+function HisobotNatija({
+  data,
+  formatKey,
+  pul,
+  valuesFromResponse,
+}: {
+  data: HisobotJavobi | null;
+  formatKey: (key: string) => string;
+  pul: (value: unknown) => string;
+  valuesFromResponse: (data: HisobotJavobi | null) => unknown[];
+}) {
+  const { t } = useTranslation("hisobotlar");
   const rows = valuesFromResponse(data);
 
   if (!data) {
-    return <Empty text="Hisobotni ko'rish uchun filterlarni tanlang." />;
+    return <Empty text={t("empty.selectFilters")} />;
   }
 
   if (!Array.isArray(data) && typeof data === "object" && data && rows.length === 0) {
@@ -510,7 +521,7 @@ function HisobotNatija({ data }: { data: HisobotJavobi | null }) {
     }
   }
 
-  if (rows.length === 0) return <Empty text="Hisobot bo'yicha ma'lumot topilmadi." />;
+  if (rows.length === 0) return <Empty text={t("empty.noData")} />;
 
   const objectRows = rows.filter((item) => typeof item === "object" && item) as Record<
     string,
@@ -559,30 +570,31 @@ function AuditTable({
   total: number;
   onPage: (page: number) => void;
 }) {
+  const { t } = useTranslation("hisobotlar");
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm font-bold text-gray-500">Jami loglar: {total}</p>
+        <p className="text-sm font-bold text-gray-500">{t("audit.totalLogs", { total })}</p>
         <div className="flex gap-2">
           <button
             disabled={page <= 1}
             onClick={() => onPage(page - 1)}
             className="h-9 rounded-xl bg-gray-100 px-3 text-sm font-bold disabled:opacity-40"
           >
-            Oldingi
+            {t("audit.prev")}
           </button>
           <button
             disabled={page >= totalPages}
             onClick={() => onPage(page + 1)}
             className="h-9 rounded-xl bg-orange-500 px-3 text-sm font-bold text-white disabled:opacity-40"
           >
-            Keyingi
+            {t("audit.next")}
           </button>
         </div>
       </div>
 
       {logs.length === 0 ? (
-        <Empty text="Audit loglari mavjud emas." />
+        <Empty text={t("empty.noAuditLogs")} />
       ) : (
         <div className="space-y-3">
           {logs.map((log, index) => (
@@ -593,10 +605,13 @@ function AuditTable({
               <div className="flex flex-col justify-between gap-3 md:flex-row">
                 <div>
                   <p className="font-black text-gray-950">
-                    {String(log.action ?? "ACTION")} — {String(log.resource ?? "Resource")}
+                    {t("audit.actionResource", {
+                      action: String(log.action ?? "ACTION"),
+                      resource: String(log.resource ?? "Resource"),
+                    })}
                   </p>
                   <p className="mt-1 text-sm text-gray-500">
-                    Foydalanuvchi: {log.user?.fullName ?? log.user?.username ?? String(log.userId ?? "—")}
+                    {t("audit.user", { value: log.user?.fullName ?? log.user?.username ?? String(log.userId ?? "—") })}
                   </p>
                 </div>
                 <p className="text-sm font-bold text-orange-600">
@@ -605,7 +620,7 @@ function AuditTable({
               </div>
               <details className="mt-3">
                 <summary className="cursor-pointer text-sm font-bold text-gray-500">
-                  Batafsil JSON
+                  {t("audit.detailsJson")}
                 </summary>
                 <pre className="scrollbar-hidden mt-3 max-h-64 overflow-auto rounded-2xl bg-slate-950 p-4 text-xs text-white">
                   {JSON.stringify(log, null, 2)}
@@ -639,4 +654,3 @@ function renderValue(value: unknown): string {
   }
   return String(value);
 }
-

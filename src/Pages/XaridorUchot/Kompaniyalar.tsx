@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Building2, Hash, Phone, Plus, Search, Trash2, UserRound } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
 import IjtimoiyIkonlar from "./IjtimoiyIkonlar";
 import KartaSozlama, { type Maydon } from "./KartaSozlama";
@@ -18,18 +19,19 @@ type Props = {
 };
 
 export default function Kompaniyalar({ kompaniyalar, xaridorlar, savdolar, onSaqlash, onOchirish }: Props) {
+  const { t } = useTranslation("xaridor_uchot");
   const [qidiruv, setQidiruv] = useState("");
   const [korinish, setKorinish] = useState<Korinish>("karta");
   const [yashirinMaydon, setYashirinMaydon] = useState<Set<string>>(() => new Set());
 
   const kartaMaydonlari: Maydon[] = [
-    { id: "nomi", nom: "Nomi" },
-    { id: "stir", nom: "STIR" },
-    { id: "tel", nom: "Tel nomer" },
-    { id: "ijtimoiy", nom: "Ijtimoiy tarmoq" },
-    { id: "aloqa", nom: "Mas'ul shaxs" },
-    { id: "yaratilgan", nom: "Yaratilgan sana" },
-    { id: "yaratgan", nom: "Yaratgan mas'ul shaxs" },
+    { id: "nomi", nom: t("kompaniyalar.cardFields.nomi") },
+    { id: "stir", nom: t("kompaniyalar.cardFields.stir") },
+    { id: "tel", nom: t("kompaniyalar.cardFields.tel") },
+    { id: "ijtimoiy", nom: t("kompaniyalar.cardFields.ijtimoiy") },
+    { id: "aloqa", nom: t("kompaniyalar.cardFields.aloqa") },
+    { id: "yaratilgan", nom: t("kompaniyalar.cardFields.yaratilgan") },
+    { id: "yaratgan", nom: t("kompaniyalar.cardFields.yaratgan") },
   ];
 
   function maydonToggle(id: string) {
@@ -47,22 +49,22 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, savdolar, onSaq
   const [tafsilotKompaniya, setTafsilotKompaniya] = useState<XaridorKompaniyasi | null>(null);
 
   const ustunlar: Ustun<XaridorKompaniyasi>[] = [
-    { id: "nomi", nom: "Nomi", kenglik: 180, katak: (k) => <span className="font-black text-slate-900">{k.nomi}</span> },
-    { id: "stir", nom: "STIR", kenglik: 130, katak: (k) => <span className="text-slate-500">{k.stir || "—"}</span> },
-    { id: "tel", nom: "Tel nomer", kenglik: 150, katak: (k) => <span className="text-slate-500">{k.telefon || "—"}</span> },
-    { id: "aloqa", nom: "Mas'ul shaxs", kenglik: 160, katak: (k) => <span className="text-slate-600">{k.aloqaShaxsi || "—"}</span> },
-    { id: "lavozim", nom: "Lavozim", kenglik: 150, katak: (k) => <span className="text-slate-500">{k.lavozim || "—"}</span> },
-    { id: "aloqaTel", nom: "Mas'ul tel nomer", kenglik: 150, katak: (k) => <span className="text-slate-500">{k.aloqaTelefoni || "—"}</span> },
-    { id: "ijtimoiy", nom: "Ijtimoiy tarmoq", kenglik: 140, katak: (k) => <IjtimoiyIkonlar ijtimoiy={k.ijtimoiy} /> },
+    { id: "nomi", nom: t("kompaniyalar.columns.nomi"), kenglik: 180, katak: (k) => <span className="font-black text-slate-900">{k.nomi}</span> },
+    { id: "stir", nom: t("kompaniyalar.columns.stir"), kenglik: 130, katak: (k) => <span className="text-slate-500">{k.stir || "—"}</span> },
+    { id: "tel", nom: t("kompaniyalar.columns.tel"), kenglik: 150, katak: (k) => <span className="text-slate-500">{k.telefon || "—"}</span> },
+    { id: "aloqa", nom: t("kompaniyalar.columns.aloqa"), kenglik: 160, katak: (k) => <span className="text-slate-600">{k.aloqaShaxsi || "—"}</span> },
+    { id: "lavozim", nom: t("kompaniyalar.columns.lavozim"), kenglik: 150, katak: (k) => <span className="text-slate-500">{k.lavozim || "—"}</span> },
+    { id: "aloqaTel", nom: t("kompaniyalar.columns.aloqaTel"), kenglik: 150, katak: (k) => <span className="text-slate-500">{k.aloqaTelefoni || "—"}</span> },
+    { id: "ijtimoiy", nom: t("kompaniyalar.columns.ijtimoiy"), kenglik: 140, katak: (k) => <IjtimoiyIkonlar ijtimoiy={k.ijtimoiy} /> },
     {
       id: "yaratgan",
-      nom: "Mas'ul shaxs yaratgan",
+      nom: t("kompaniyalar.columns.yaratgan"),
       kenglik: 170,
       katak: (k) => <span className="text-slate-500">{k.yaratganMasul}</span>,
     },
-    { id: "yaratilgan", nom: "Sana yaratilgan", kenglik: 140, katak: (k) => <span className="text-slate-500">{sanaFormat(k.yaratilganSana)}</span> },
-    { id: "ozgartirilgan", nom: "O'zgartirilgan sana", kenglik: 150, katak: (k) => <span className="text-slate-500">{sanaFormat(k.ozgartirilganSana)}</span> },
-    { id: "ozgartgan", nom: "O'zgartirgan mas'ul shaxs", kenglik: 180, katak: (k) => <span className="text-slate-500">{k.ozgartirganMasul}</span> },
+    { id: "yaratilgan", nom: t("kompaniyalar.columns.yaratilgan"), kenglik: 140, katak: (k) => <span className="text-slate-500">{sanaFormat(k.yaratilganSana)}</span> },
+    { id: "ozgartirilgan", nom: t("kompaniyalar.columns.ozgartirilgan"), kenglik: 150, katak: (k) => <span className="text-slate-500">{sanaFormat(k.ozgartirilganSana)}</span> },
+    { id: "ozgartgan", nom: t("kompaniyalar.columns.ozgartgan"), kenglik: 180, katak: (k) => <span className="text-slate-500">{k.ozgartirganMasul}</span> },
   ];
 
   const royxat = useMemo(() => {
@@ -79,7 +81,7 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, savdolar, onSaq
   }
 
   async function ochirish(kompaniya: XaridorKompaniyasi) {
-    if (!window.confirm(`${kompaniya.nomi} kompaniyasini o'chirasizmi?`)) return;
+    if (!window.confirm(t("kompaniyalar.deleteConfirm", { name: kompaniya.nomi }))) return;
     return onOchirish(kompaniya.id);
   }
 
@@ -88,11 +90,11 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, savdolar, onSaq
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-500">
-            Xaridor uchoti
+            {t("shared.eyebrow")}
           </p>
-          <h1 className="mt-1 text-3xl font-black text-gray-950">Kompaniya</h1>
+          <h1 className="mt-1 text-3xl font-black text-gray-950">{t("kompaniyalar.title")}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Xaridorlar biriktiriladigan yuridik shaxslar ro'yxati.
+            {t("kompaniyalar.subtitle")}
           </p>
         </div>
       </header>
@@ -106,7 +108,7 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, savdolar, onSaq
               value={qidiruv}
               onChange={(event) => setQidiruv(event.target.value)}
               className="min-w-0 flex-1 text-sm font-semibold outline-none"
-              placeholder="Nomi, STIR yoki telefon..."
+              placeholder={t("kompaniyalar.searchPlaceholder")}
             />
           </label>
           <KorinishTanlov qiymat={korinish} onChange={setKorinish} />
@@ -117,7 +119,7 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, savdolar, onSaq
           className="inline-flex h-11 shrink-0 items-center gap-2 rounded-2xl bg-orange-500 px-4 text-sm font-black text-white"
         >
           <Plus size={17} />
-          Kompaniya qo'shish
+          {t("kompaniyalar.addButton")}
         </button>
       </div>
 
@@ -156,8 +158,8 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, savdolar, onSaq
                     event.stopPropagation();
                     void ochirish(kompaniya);
                   }}
-                  title="O'chirish"
-                  aria-label="O'chirish"
+                  title={t("shared.deleteAria")}
+                  aria-label={t("shared.deleteAria")}
                   className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100"
                 >
                   <Trash2 size={16} />
@@ -173,7 +175,7 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, savdolar, onSaq
             {korinadi("stir") && (
               <p className="mt-2 flex items-center gap-1.5 text-sm font-bold text-gray-500">
                 <Hash size={14} className="text-orange-400" />
-                STIR: {kompaniya.stir || "—"}
+                {t("kompaniyalar.stirPrefix", { value: kompaniya.stir || "—" })}
               </p>
             )}
 
@@ -205,7 +207,7 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, savdolar, onSaq
             <div className="mt-5 space-y-1 border-t border-gray-100 pt-4 text-sm">
               {korinadi("yaratilgan") && (
               <p className="flex items-center justify-between gap-2">
-                <span className="text-gray-400">Yaratilgan sana</span>
+                <span className="text-gray-400">{t("shared.createdLabel")}</span>
                 <span className="font-semibold text-gray-600">
                   {sanaFormat(kompaniya.yaratilganSana)}
                 </span>
@@ -213,7 +215,7 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, savdolar, onSaq
               )}
               {korinadi("yaratgan") && (
               <p className="flex items-center justify-between gap-2">
-                <span className="text-gray-400">Yaratgan</span>
+                <span className="text-gray-400">{t("shared.createdByLabel")}</span>
                 <span className="truncate font-semibold text-gray-600">
                   {kompaniya.yaratganMasul}
                 </span>
@@ -227,7 +229,7 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, savdolar, onSaq
         {royxat.length === 0 && (
           <div className="col-span-full rounded-2xl border border-dashed border-orange-200 bg-white p-14 text-center">
             <Building2 className="mx-auto text-orange-200" size={42} />
-            <p className="mt-3 font-bold text-gray-500">Kompaniya mavjud emas</p>
+            <p className="mt-3 font-bold text-gray-500">{t("kompaniyalar.empty")}</p>
           </div>
         )}
       </div>

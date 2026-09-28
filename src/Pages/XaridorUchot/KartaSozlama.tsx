@@ -1,5 +1,6 @@
 import { useState, type MouseEvent } from "react";
 import { Check, Settings } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export type Maydon = { id: string; nom: string };
 
@@ -14,6 +15,7 @@ export default function KartaSozlama({
   yashirin: Set<string>;
   onToggle: (id: string) => void;
 }) {
+  const { t } = useTranslation(["xaridor_uchot", "common"]);
   const [ochiq, setOchiq] = useState(false);
 
   function toxtat(event: MouseEvent) {
@@ -28,8 +30,8 @@ export default function KartaSozlama({
           event.stopPropagation();
           setOchiq((oldingi) => !oldingi);
         }}
-        title="Maydonlarni sozlash"
-        aria-label="Maydonlarni sozlash"
+        title={t("kartaSozlama.settingsAria")}
+        aria-label={t("kartaSozlama.settingsAria")}
         className={`flex h-9 w-9 items-center justify-center rounded-xl transition ${
           ochiq
             ? "bg-orange-500 text-white"
@@ -43,7 +45,7 @@ export default function KartaSozlama({
         <>
           <button
             type="button"
-            aria-label="Yopish"
+            aria-label={t("common:actions.close")}
             onClick={(event) => {
               event.stopPropagation();
               setOchiq(false);
@@ -52,7 +54,7 @@ export default function KartaSozlama({
           />
           <div className="absolute right-0 top-11 z-50 w-56 rounded-2xl border border-orange-100 bg-white p-1.5 text-left shadow-[0_18px_50px_rgba(15,23,42,.16)]">
             <p className="px-3 py-1.5 text-xs font-black uppercase tracking-wide text-slate-400">
-              Maydonlar
+              {t("kartaSozlama.fieldsTitle")}
             </p>
             {maydonlar.map((maydon) => {
               const korinmoqda = !yashirin.has(maydon.id);

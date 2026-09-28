@@ -39,6 +39,20 @@ import savdoTafsilotUz from "./locales/uz/savdo_tafsilot.json";
 import savdoTafsilotRu from "./locales/ru/savdo_tafsilot.json";
 import monitoringUz from "./locales/uz/monitoring.json";
 import monitoringRu from "./locales/ru/monitoring.json";
+import boshSahifaUz from "./locales/uz/bosh_sahifa.json";
+import boshSahifaRu from "./locales/ru/bosh_sahifa.json";
+import qarzdorlikUz from "./locales/uz/qarzdorlik.json";
+import qarzdorlikRu from "./locales/ru/qarzdorlik.json";
+import mijozlarUz from "./locales/uz/mijozlar.json";
+import mijozlarRu from "./locales/ru/mijozlar.json";
+import hisobotlarUz from "./locales/uz/hisobotlar.json";
+import hisobotlarRu from "./locales/ru/hisobotlar.json";
+import sozlamalarUchotUz from "./locales/uz/sozlamalar_uchot.json";
+import sozlamalarUchotRu from "./locales/ru/sozlamalar_uchot.json";
+import kassaUchotUz from "./locales/uz/kassa_uchot.json";
+import kassaUchotRu from "./locales/ru/kassa_uchot.json";
+import xaridorUchotUz from "./locales/uz/xaridor_uchot.json";
+import xaridorUchotRu from "./locales/ru/xaridor_uchot.json";
 
 export const LANG_STORAGE_KEY = "yepost-lang";
 export const SUPPORTED_LANGUAGES = ["uz", "ru"] as const;
@@ -72,6 +86,13 @@ void i18n.use(initReactI18next).init({
       savdo_yangi: savdoYangiUz,
       savdo_tafsilot: savdoTafsilotUz,
       monitoring: monitoringUz,
+      bosh_sahifa: boshSahifaUz,
+      qarzdorlik: qarzdorlikUz,
+      mijozlar: mijozlarUz,
+      hisobotlar: hisobotlarUz,
+      sozlamalar_uchot: sozlamalarUchotUz,
+      kassa_uchot: kassaUchotUz,
+      xaridor_uchot: xaridorUchotUz,
     },
     ru: {
       common: commonRu,
@@ -93,6 +114,13 @@ void i18n.use(initReactI18next).init({
       savdo_yangi: savdoYangiRu,
       savdo_tafsilot: savdoTafsilotRu,
       monitoring: monitoringRu,
+      bosh_sahifa: boshSahifaRu,
+      qarzdorlik: qarzdorlikRu,
+      mijozlar: mijozlarRu,
+      hisobotlar: hisobotlarRu,
+      sozlamalar_uchot: sozlamalarUchotRu,
+      kassa_uchot: kassaUchotRu,
+      xaridor_uchot: xaridorUchotRu,
     },
   },
   lng: getStoredLanguage(),
@@ -117,6 +145,13 @@ void i18n.use(initReactI18next).init({
     "savdo_yangi",
     "savdo_tafsilot",
     "monitoring",
+    "bosh_sahifa",
+    "qarzdorlik",
+    "mijozlar",
+    "hisobotlar",
+    "sozlamalar_uchot",
+    "kassa_uchot",
+    "xaridor_uchot",
   ],
   defaultNS: "common",
   interpolation: { escapeValue: false },

@@ -9,6 +9,7 @@ import KirimTafsilotModal from "./KirimTafsilotModal";
 import YangiKirimModal from "./YangiKirimModal";
 import OmborJadval from "./OmborJadval";
 import TablePagination from "@/Components/common/TablePagination";
+import HujjatStatistikaKartalari from "./HujjatStatistikaKartalari";
 
 type UstunKaliti =
   | "nomi"
@@ -47,6 +48,7 @@ export default function Xaridlar() {
     [t]
   );
   const [qidiruv, setQidiruv] = useState("");
+  const [statusFiltri, setStatusFiltri] = useState("ALL");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [modal, setModal] = useState(false);
@@ -143,8 +145,11 @@ export default function Xaridlar() {
 
   const royxat = useMemo(() => {
     const q = qidiruv.trim().toLowerCase();
-    if (!q) return store.kirimlar;
     return store.kirimlar.filter((hujjat) => {
+      const status = String(hujjat.status ?? "DRAFT").toUpperCase();
+      const statusMos = statusFiltri === "ALL" || status === statusFiltri || (statusFiltri === "CANCELLED" && status === "CANCELED");
+      if (!statusMos) return false;
+      if (!q) return true;
       const matn = [
         kirimNomi(hujjat),
         hujjatRaqami(hujjat),
@@ -160,7 +165,14 @@ export default function Xaridlar() {
       return matn.includes(q);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store.kirimlar, qidiruv, suppliersMap, store.xodimlar, omborlarMap]);
+  }, [store.kirimlar, qidiruv, statusFiltri, suppliersMap, store.xodimlar, omborlarMap]);
+  const statistika = useMemo(() => {
+    const jami = store.kirimlar.length;
+    const tasdiqlangan = store.kirimlar.filter((item) => String(item.status ?? "").toUpperCase() === "CONFIRMED").length;
+    const bekorQilingan = store.kirimlar.filter((item) => ["CANCELLED", "CANCELED"].includes(String(item.status ?? "").toUpperCase())).length;
+    const jarayonda = jami - tasdiqlangan - bekorQilingan;
+    return [jami, tasdiqlangan, jarayonda, bekorQilingan] as [number, number, number, number];
+  }, [store.kirimlar]);
   const sahifadagiKirimlar = useMemo(() => royxat.slice((page - 1) * pageSize, page * pageSize), [royxat, page, pageSize]);
   useEffect(() => setPage(1), [royxat, pageSize]);
 
@@ -217,6 +229,14 @@ export default function Xaridlar() {
           {t("xaridlar.createButton")}
         </button>
       </header>
+
+      <HujjatStatistikaKartalari
+        labels={[t("xaridlar.stats.total"), t("xaridlar.stats.completed"), t("xaridlar.stats.inProgress"), t("xaridlar.stats.cancelled")]}
+        values={statistika}
+        selected={statusFiltri}
+        onSelect={(status) => { setStatusFiltri(status); setPage(1); }}
+        ariaLabel={t("xaridlar.statsAria")}
+      />
 
       <div className="relative max-w-sm">
         <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />

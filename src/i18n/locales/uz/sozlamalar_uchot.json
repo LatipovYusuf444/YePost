@@ -1,0 +1,175 @@
+{
+  "eyebrow": "Sozlamalar uchoti",
+  "title": "Sozlamalar",
+  "subtitle": "Profil, kompaniya, filiallar va boshqalar.",
+  "nav": {
+    "profil": "Mening profilim",
+    "kompaniya": "Kompaniya",
+    "filiallar": "Filiallar",
+    "birliklar": "O'lchov birligi",
+    "vakolatlar": "Vakolatlar",
+    "integratsiya": "Integratsiya",
+    "chek": "Chek sozlamalari",
+    "bildirishnoma": "Bildirishnomalar"
+  },
+  "saved": "Saqlandi ✓",
+  "savingToBackend": "Backendga saqlanmoqda...",
+  "loadingGeneric": "Yuklanmoqda...",
+  "profil": {
+    "subtitle": "Shaxsiy ma'lumotlaringiz real hisobdan olinadi.",
+    "loading": "Profil yuklanmoqda...",
+    "unknownUser": "Foydalanuvchi",
+    "fields": {
+      "firstName": "Ism",
+      "lastName": "Familiya",
+      "phone": "Telefon",
+      "email": "Email",
+      "position": "Lavozim",
+      "telegramId": "Telegram ID",
+      "login": "Login",
+      "role": "Tizim roli"
+    }
+  },
+  "kompaniya": {
+    "title": "Kompaniya ma'lumotlari",
+    "subtitle": "Hujjatlar va cheklarda ishlatiladigan real tashkilot ma'lumotlari.",
+    "nameRequired": "Kompaniya nomi majburiy.",
+    "savedMessage": "Kompaniya ma'lumotlari backendga saqlandi.",
+    "fields": {
+      "name": "Kompaniya nomi",
+      "inn": "STIR",
+      "phone": "Telefon",
+      "currency": "Valyuta",
+      "address": "Manzil"
+    },
+    "currencyOptions": {
+      "uzs": "O'zbek so'mi (UZS)",
+      "usd": "AQSH dollari (USD)"
+    }
+  },
+  "filiallar": {
+    "title": "Filiallar",
+    "subtitle": "Kompaniya filiallari real backenddan olinadi.",
+    "addButton": "Filial qo'shish",
+    "loading": "Filiallar yuklanmoqda...",
+    "deleteConfirm": "{{name}} filialini o'chirasizmi?",
+    "primaryBadge": "Asosiy",
+    "statusActive": "Faol",
+    "statusInactive": "Faol emas",
+    "makePrimaryTitle": "Asosiy qilish",
+    "deleteTitle": "O'chirish",
+    "unassigned": "Biriktirilmagan",
+    "noAddress": "Manzil kiritilmagan",
+    "noPhone": "Telefon kiritilmagan",
+    "clickToEdit": "Tahrirlash uchun bosing",
+    "empty": "Backendda filial mavjud emas",
+    "nameRequired": "Filial nomi to'ldirilishi shart.",
+    "modal": {
+      "editTitle": "Filialni tahrirlash",
+      "newTitle": "Yangi filial",
+      "nameLabel": "Filial nomi *",
+      "addressLabel": "Manzil",
+      "phoneLabel": "Telefon",
+      "responsibleLabel": "Mas'ul shaxs",
+      "statusLabel": "Holati",
+      "primaryCheckbox": "Asosiy filial",
+      "saving": "Saqlanmoqda..."
+    }
+  },
+  "vakolatlar": {
+    "title": "Vakolatlar",
+    "subtitle": "Xodimlarning qo'shimcha vakolatlari real accounts/grants orqali boshqariladi.",
+    "searchPlaceholder": "Xodimni qidirish",
+    "loading": "Vakolatlar yuklanmoqda...",
+    "employeeColumn": "Xodim",
+    "notFound": "Xodim topilmadi",
+    "codes": {
+      "delete": "O'chirish",
+      "reports": "Hisobotlar",
+      "expense": "Xarajat",
+      "cashIn": "Kassa kirimi",
+      "returnCancel": "Qaytarish / bekor qilish"
+    }
+  },
+  "integratsiya": {
+    "title": "Integratsiya",
+    "loadingSubtitle": "Real integratsiyalar yuklanmoqda.",
+    "providers": {
+      "payme": { "name": "Payme", "description": "Payme orqali onlayn to'lovlarni qabul qilish." },
+      "click": { "name": "Click", "description": "Click to'lov tizimi integratsiyasi." },
+      "uzum": { "name": "Uzum Nasiya", "description": "Uzum orqali to'lov va bo'lib to'lash." }
+    },
+    "paymentsTitle": "To'lov tizimlari",
+    "paymentsSubtitle": "Payme, Click va Uzum sozlamalari real backend orqali boshqariladi.",
+    "savedProvider": "{{provider}} integratsiyasi backendga saqlandi.",
+    "merchantIdPlaceholder": "Merchant ID",
+    "serviceIdPlaceholder": "Service ID",
+    "secretKeySaved": "Maxfiy kalit saqlangan",
+    "secretKeyPlaceholder": "Maxfiy kalit",
+    "connected": "Ulangan",
+    "disconnected": "Ulanmagan",
+    "telegramTitle": "Telegram bot",
+    "telegramSubtitle": "Bildirishnoma va CRM botining real backend sozlamalari.",
+    "telegramSaved": "Telegram integratsiyasi backendga saqlandi.",
+    "telegramCardDescription": "Bot token va chat ID backenddan olinadi.",
+    "botTokenPlaceholder": "Bot token",
+    "chatIdPlaceholder": "Chat ID",
+    "crmBotEnabled": "CRM bot faol",
+    "printerTitle": "Chek printeri",
+    "printerSubtitle": "Tarmoq printerining real backend sozlamalari.",
+    "printerSaved": "Printer integratsiyasi backendga saqlandi.",
+    "printerCardDescription": "IP manzil va port orqali ulanadi."
+  },
+  "chek": {
+    "title": "Chek sozlamalari",
+    "subtitle": "Sotuv chekida ko'rinadigan real backend sozlamalari.",
+    "savedMessage": "Chek sozlamalari backendga saqlandi.",
+    "fields": {
+      "title": "Chek sarlavhasi",
+      "footerText": "Pastki matn"
+    },
+    "toggles": {
+      "showLogo": "Logotipni ko'rsatish",
+      "showPhone": "Telefonni ko'rsatish",
+      "showAddress": "Manzilni ko'rsatish"
+    },
+    "previewLabel": "Oldindan ko'rish",
+    "defaultTitle": "YePost Savdo",
+    "previewProduct": "Mahsulot",
+    "previewTotal": "JAMI"
+  },
+  "bildirishnoma": {
+    "rows": {
+      "newSale": { "name": "Yangi savdo", "description": "Har yangi sotuv haqida xabar." },
+      "lowStock": { "name": "Kam qoldiq", "description": "Mahsulot tugab qolganda ogohlantirish." },
+      "dailyReport": { "name": "Kunlik hisobot", "description": "Har kun oxirida umumiy hisobot." },
+      "newCustomer": { "name": "Yangi xaridor", "description": "Yangi mijoz qo'shilganda xabar." }
+    },
+    "preferencesTitle": "Bildirishnoma sozlamalari",
+    "preferencesSubtitle": "Har bir tanlov real backendga darhol saqlanadi.",
+    "listTitle": "Bildirishnomalar",
+    "listSubtitle": "CRM notification endpointidan olingan real xabarlar.",
+    "markAllRead": "Barchasini o'qish",
+    "defaultTitle": "Bildirishnoma",
+    "noMessageText": "Xabar matni berilmagan",
+    "markRead": "O'qildi",
+    "empty": "Bildirishnoma mavjud emas"
+  },
+  "birliklar": {
+    "title": "O'lchov birligi",
+    "subtitle": "Mahsulot qo'shishda tanlanadigan birliklar (dona, kg, litr va h.k.) — real katalogdan olinadi.",
+    "readOnlyNotice": "O'lchov birliklarini faqat direktor qo'sha, tahrirlay va o'chira oladi. Siz ro'yxatni faqat ko'rishingiz mumkin.",
+    "editTitle": "Birlikni tahrirlash",
+    "newTitle": "Yangi o'lchov birligi",
+    "closeFormAria": "Formani yopish",
+    "codePlaceholder": "Kod (796)",
+    "namePlaceholder": "Nomi (masalan: Dona)",
+    "shortNamePlaceholder": "Qisqa (dona)",
+    "noShortName": "Qisqa nom yo'q",
+    "codeLabel": "Kod: {{code}}",
+    "empty": "Backendda hali o'lchov birligi yo'q",
+    "emptyHint": "Yuqoridagi \"Qo'shish\" tugmasi orqali birinchi birlikni yarating.",
+    "nameRequired": "O'lchov birligi nomi majburiy.",
+    "deleteConfirm": "\"{{name}}\" o'lchov birligini o'chirasizmi?"
+  }
+}

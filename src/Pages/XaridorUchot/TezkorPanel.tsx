@@ -1,4 +1,5 @@
 import { Download, ExternalLink, Link as LinkIcon, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   havolaId: string;
@@ -9,6 +10,7 @@ type Props = {
 
 // Modalkaning chap chetidagi tezkor amallar ustuni (sotuv modalkasidagi kabi).
 export default function TezkorPanel({ havolaId, faylNomi, malumot, onYopish }: Props) {
+  const { t } = useTranslation("xaridor_uchot");
   const havola = `${window.location.origin}${window.location.pathname}?xaridor=${havolaId}`;
 
   function havolaniNusxalash() {
@@ -26,11 +28,11 @@ export default function TezkorPanel({ havolaId, faylNomi, malumot, onYopish }: P
   }
 
   const amallar = [
-    { label: "Yopish", icon: X, onClick: onYopish },
-    { label: "Havolani nusxalash", icon: LinkIcon, onClick: havolaniNusxalash },
-    { label: "Ma'lumotni yuklab olish", icon: Download, onClick: jsonYuklash },
+    { label: t("tezkorPanel.close"), icon: X, onClick: onYopish },
+    { label: t("tezkorPanel.copyLink"), icon: LinkIcon, onClick: havolaniNusxalash },
+    { label: t("tezkorPanel.downloadData"), icon: Download, onClick: jsonYuklash },
     {
-      label: "Alohida oynada ochish",
+      label: t("tezkorPanel.openInNewTab"),
       icon: ExternalLink,
       onClick: () => window.open(havola, "_blank", "noopener,noreferrer"),
     },

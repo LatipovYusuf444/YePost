@@ -1,0 +1,332 @@
+{
+  "xodimModal": {
+    "badge": "Ответственный сотрудник",
+    "position": "Должность",
+    "phone": "Телефон"
+  },
+  "tezkorPanel": {
+    "close": "Закрыть",
+    "copyLink": "Скопировать ссылку",
+    "downloadData": "Скачать данные",
+    "openInNewTab": "Открыть в новой вкладке"
+  },
+  "korinishTanlov": {
+    "button": "Вид",
+    "card": "Карточки",
+    "table": "Таблица"
+  },
+  "kartaSozlama": {
+    "settingsAria": "Настроить поля",
+    "fieldsTitle": "Поля"
+  },
+  "ijtimoiyTanlov": {
+    "label": "Социальные сети"
+  },
+  "ijtimoiyIkonlar": {
+    "filled": "{{network}}: {{value}}",
+    "empty": "{{network}} не указан",
+    "openLink": "Открыть ссылку {{network}}",
+    "dialogAria": "Ссылка {{network}}",
+    "open": "Открыть · {{link}}",
+    "copied": "Скопировано ✓",
+    "copy": "Скопировать"
+  },
+  "faoliyatPaneli": {
+    "tabs": { "ish": "Дело", "izoh": "Комментарий", "xabar": "Сообщение", "vazifa": "Задача" },
+    "more": "Ещё",
+    "titlePlaceholders": {
+      "ish": "Связаться с клиентом",
+      "izoh": "Заголовок комментария",
+      "xabar": "Тема сообщения",
+      "vazifa": "Название задачи"
+    },
+    "detailPlaceholders": {
+      "ish": "Опишите задачу подробно...",
+      "izoh": "Напишите текст комментария...",
+      "xabar": "Напишите текст сообщения...",
+      "vazifa": "Опишите задачу подробно..."
+    },
+    "today": "Сегодня",
+    "dueLabel": "{{day}}, {{time}}",
+    "priorityTitle": "Важность",
+    "responsibleTitle": "Ответственный",
+    "reminderTitle": "Напоминание",
+    "saving": "Сохраняется...",
+    "sectionBadge": "Активность",
+    "loading": "Загрузка данных CRM...",
+    "empty": "Записей активности нет",
+    "defaultActivitySubject": "Активность CRM",
+    "commentSubject": "Комментарий",
+    "chatFromCustomer": "Сообщение от клиента",
+    "chatSent": "Сообщение отправлено",
+    "errors": {
+      "noPartnerId": "Нет реального partner ID для сохранения активности CRM.",
+      "noAssignee": "Текущий ответственный пользователь не определён."
+    }
+  },
+  "shared": {
+    "eyebrow": "Учёт покупателей",
+    "deleteAria": "Удалить",
+    "createdLabel": "Дата создания",
+    "createdByLabel": "Создал",
+    "registeredDateLabel": "Дата регистрации",
+    "defaultResponsible": "Администратор",
+    "tabs": {
+      "malumotlar": "Данные",
+      "savdolar": "Продажи",
+      "kirim": "Приход",
+      "tolovlar": "Платежи",
+      "tarix": "История"
+    },
+    "notEntered": "Не указано",
+    "socialNetworksLabel": "Соцсети",
+    "editButton": "Изменить данные",
+    "documentButton": "Документ",
+    "currencySuffix": "сум",
+    "detailFields": {
+      "stir": "ИНН",
+      "phone": "Телефон",
+      "position": "Должность",
+      "createdBy": "Ответственный, создавший",
+      "createdDate": "Дата создания",
+      "modifiedDate": "Дата изменения",
+      "modifiedBy": "Ответственный, изменивший"
+    }
+  },
+  "xaridorlar": {
+    "title": "Покупатели",
+    "subtitle": "Создание и редактирование физических покупателей.",
+    "searchPlaceholder": "Имя, телефон, компания или адрес...",
+    "addButton": "Добавить покупателя",
+    "deleteConfirm": "Удалить данные «{{name}}»?",
+    "empty": "Покупателей нет",
+    "cardFields": {
+      "ismFamiliya": "Имя Фамилия",
+      "tel": "Телефон",
+      "ijtimoiy": "Соцсети",
+      "kompaniya": "Компания",
+      "yaratilgan": "Дата создания",
+      "yaratgan": "Ответственный, создавший"
+    },
+    "columns": {
+      "ismi": "Имя",
+      "familiya": "Фамилия",
+      "tel": "Телефон",
+      "lavozim": "Должность",
+      "ijtimoiy": "Соцсети",
+      "yaratgan": "Ответственный, создавший",
+      "yaratilgan": "Дата создания",
+      "ozgartirilgan": "Дата изменения",
+      "kompaniya": "Компания"
+    }
+  },
+  "kompaniyalar": {
+    "title": "Компания",
+    "subtitle": "Список юридических лиц, к которым привязываются покупатели.",
+    "searchPlaceholder": "Название, ИНН или телефон...",
+    "addButton": "Добавить компанию",
+    "deleteConfirm": "Удалить компанию «{{name}}»?",
+    "empty": "Компаний нет",
+    "stirPrefix": "ИНН: {{value}}",
+    "cardFields": {
+      "nomi": "Название",
+      "stir": "ИНН",
+      "tel": "Телефон",
+      "ijtimoiy": "Соцсети",
+      "aloqa": "Ответственное лицо",
+      "yaratilgan": "Дата создания",
+      "yaratgan": "Ответственный, создавший"
+    },
+    "columns": {
+      "nomi": "Название",
+      "stir": "ИНН",
+      "tel": "Телефон",
+      "aloqa": "Ответственное лицо",
+      "lavozim": "Должность",
+      "aloqaTel": "Телефон ответственного",
+      "ijtimoiy": "Соцсети",
+      "yaratgan": "Ответственный, создавший",
+      "yaratilgan": "Дата создания",
+      "ozgartirilgan": "Дата изменения",
+      "ozgartgan": "Ответственный, изменивший"
+    }
+  },
+  "yetkazibBeruvchilar": {
+    "title": "Поставщики",
+    "subtitle": "Создание и редактирование партнёров-поставщиков товаров.",
+    "searchPlaceholder": "Название или телефон...",
+    "addButton": "Добавить поставщика",
+    "deleteConfirm": "Удалить данные «{{name}}»?",
+    "empty": "Поставщиков нет",
+    "stirPrefix": "ИНН: {{value}}",
+    "cardFields": {
+      "nomi": "Название",
+      "stir": "ИНН",
+      "tel": "Телефон",
+      "ijtimoiy": "Соцсети",
+      "aloqa": "Контактное лицо",
+      "yaratilgan": "Дата создания",
+      "yaratgan": "Ответственный, создавший"
+    },
+    "columns": {
+      "nomi": "Название",
+      "stir": "ИНН",
+      "aloqa": "Контактное лицо",
+      "tel": "Телефон",
+      "ijtimoiy": "Соцсети",
+      "yaratgan": "Ответственный, создавший",
+      "yaratilgan": "Дата создания",
+      "ozgartirilgan": "Дата изменения",
+      "ozgartgan": "Ответственный, изменивший"
+    }
+  },
+  "xaridorModal": {
+    "editTitle": "Редактирование покупателя",
+    "newTitle": "Новый покупатель",
+    "badge": "Данные покупателя",
+    "requiredError": "Необходимо заполнить имя, фамилию и хотя бы один телефон.",
+    "personalInfoTitle": "Личные данные",
+    "firstName": "Имя *",
+    "firstNamePlaceholder": "Sardor",
+    "lastName": "Фамилия *",
+    "lastNamePlaceholder": "Rahimov",
+    "phone": "Телефон *",
+    "phonePlaceholder": "+998 90 123 45 67",
+    "removePhoneAria": "Удалить телефон",
+    "addPhone": "Добавить телефон",
+    "address": "Адрес",
+    "addressPlaceholder": "г. Ташкент, Чиланзарский р-н, квартал 12",
+    "workSectionTitle": "Контакты и работа",
+    "company": "Компания",
+    "companyUnassigned": "Не привязано",
+    "position": "Должность",
+    "positionPlaceholder": "Начальник отдела"
+  },
+  "kompaniyaModal": {
+    "editTitle": "Редактирование компании",
+    "newTitle": "Новая компания",
+    "badge": "Данные компании",
+    "requiredError": "Необходимо заполнить название компании.",
+    "sectionTitle": "Данные компании",
+    "name": "Название компании *",
+    "namePlaceholder": "ООО Oq Yo'l Savdo",
+    "stir": "ИНН",
+    "stirPlaceholder": "301234567",
+    "phone": "Телефон",
+    "phonePlaceholder": "+998 71 200 10 10",
+    "contactPerson": "Связанное лицо покупателя",
+    "contactPersonPlaceholder": "Sardor Rahimov",
+    "contactPhone": "Телефон покупателя",
+    "contactPhonePlaceholder": "+998 90 123 45 67",
+    "position": "Должность",
+    "positionPlaceholder": "Начальник отдела снабжения"
+  },
+  "yetkazibModal": {
+    "editTitle": "Редактирование поставщика",
+    "newTitle": "Новый поставщик",
+    "badge": "Данные поставщика",
+    "requiredError": "Необходимо заполнить название поставщика.",
+    "sectionTitle": "Данные поставщика",
+    "name": "Название *",
+    "namePlaceholder": "Nestle Uzbekistan",
+    "stir": "ИНН",
+    "stirPlaceholder": "201112223",
+    "phone": "Телефон",
+    "phonePlaceholder": "+998 71 200 10 10",
+    "contactPerson": "Контактное лицо",
+    "contactPersonPlaceholder": "Aziz Tursunov",
+    "contactPhone": "Телефон контактного лица",
+    "contactPhonePlaceholder": "+998 90 123 45 67",
+    "position": "Должность",
+    "positionPlaceholder": "Торговый представитель"
+  },
+  "xaridorDetails": {
+    "aboutTitle": "О покупателе",
+    "companyLabel": "Компания",
+    "companyUnassigned": "Не привязано",
+    "totalSales": "Всего реализовано",
+    "totalPaid": "Всего оплачено",
+    "debtorYes": "Должник: ДА",
+    "debtorNo": "Не должник"
+  },
+  "kompaniyaDetails": {
+    "aboutTitle": "О компании",
+    "contactPerson": "Ответственное лицо",
+    "contactPhone": "Телефон ответственного"
+  },
+  "yetkazibDetails": {
+    "aboutTitle": "О поставщике",
+    "contactPerson": "Контактное лицо",
+    "contactPhone": "Телефон контактного лица"
+  },
+  "statuses": {
+    "savdoHolat": {
+      "qoralama": "Черновик",
+      "tolangan": "Оплачено",
+      "qarzdor": "Задолженность",
+      "bekor": "Отменено"
+    },
+    "tolovTuri": {
+      "naqd": "Наличные",
+      "karta": "Карта",
+      "bank": "Банковский перевод"
+    },
+    "kirimHolat": {
+      "qabul": "Принято",
+      "kutilmoqda": "Ожидается",
+      "bekor": "Отменено"
+    }
+  },
+  "tablari": {
+    "nomi": "Название",
+    "xaridor": "Покупатель",
+    "masul": "Ответственное лицо",
+    "yaratilganSana": "Дата создания",
+    "summa": "Сумма",
+    "ombor": "Склад",
+    "holat": "Статус",
+    "sana": "Дата",
+    "savdo": "Продажа",
+    "turi": "Тип",
+    "izoh": "Комментарий",
+    "emptySavdolar": "Продаж нет",
+    "emptyKirimlar": "Приходов нет",
+    "emptyTolovlar": "У этого покупателя нет платежей",
+    "emptyTarix": "История пуста"
+  },
+  "savdoModal": {
+    "tabs": { "umumiy": "Общее", "tovarlar": "Товары", "hisobFakturalar": "Счета-фактуры", "tarix": "История" },
+    "emptySection": "Раздел «{{tab}}» пуст",
+    "dealTitle": "О сделке",
+    "stageLabel": "Этап",
+    "amountCurrencyLabel": "Сумма и валюта",
+    "paymentDeliveryTitle": "Оплата и доставка",
+    "paymentDeliveryHint": "Здесь отображаются данные об оплате, доставке и отгрузке со склада.",
+    "addButton": "Добавить",
+    "cardPayment": "Карта: {{amount}}",
+    "saleTotal": "Итого по продаже",
+    "paymentReceived": "Принятая оплата",
+    "debtRemaining": "Остаток задолженности",
+    "noDebt": "Задолженности нет",
+    "additionalInfoTitle": "Дополнительные данные",
+    "customerLabel": "Покупатель",
+    "todayLabel": "Сегодня",
+    "calcModeChanged": "Режим расчёта изменён",
+    "calcModeText": "На основе цен товаров → {{amount}}",
+    "saleCreated": "Продажа создана",
+    "saleCreatedText": "Продажа {{number}} создана для {{customer}}."
+  },
+  "kirimModal": {
+    "tabs": { "umumiy": "Общее", "tovarlar": "Товары", "hujjatlar": "Документы", "tarix": "История" },
+    "aboutTitle": "О приходе",
+    "supplierLabel": "Поставщик",
+    "kirimCreated": "Приход создан",
+    "kirimCreatedText": "Приход {{number}} принят от {{supplier}}."
+  },
+  "root": {
+    "retry": "Повторить",
+    "loading": "Загрузка данных backend...",
+    "saving": "Сохраняется...",
+    "customFieldsTooLarge": "Размер дополнительных полей не должен превышать 2КБ."
+  }
+}

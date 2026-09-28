@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   UserRound,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { foydalanuvchiDirektormi } from "@/lib/roles";
 import BildirishnomaBolimi from "./BildirishnomaBolimi";
@@ -22,20 +23,20 @@ import VakolatlarBolimi from "./VakolatlarBolimi";
 import type { SozlamaBolim } from "./types";
 
 // faqatDirektor: true — bo'lim faqat superadmin/direktor uchun ochiladi.
-const bolimlar: { id: SozlamaBolim; nom: string; icon: typeof UserRound; faqatDirektor?: boolean }[] =
-  [
-    { id: "profil", nom: "Mening profilim", icon: UserRound },
-    { id: "kompaniya", nom: "Kompaniya", icon: Building2 },
-    { id: "filiallar", nom: "Filiallar", icon: MapPin },
-    { id: "birliklar", nom: "O'lchov birligi", icon: Ruler },
-    { id: "vakolatlar", nom: "Vakolatlar", icon: ShieldCheck },
-    { id: "integratsiya", nom: "Integratsiya", icon: PlugZap, faqatDirektor: true },
-    { id: "chek", nom: "Chek sozlamalari", icon: Receipt },
-    { id: "bildirishnoma", nom: "Bildirishnomalar", icon: Bell },
-  ];
+const bolimlar: { id: SozlamaBolim; icon: typeof UserRound; faqatDirektor?: boolean }[] = [
+  { id: "profil", icon: UserRound },
+  { id: "kompaniya", icon: Building2 },
+  { id: "filiallar", icon: MapPin },
+  { id: "birliklar", icon: Ruler },
+  { id: "vakolatlar", icon: ShieldCheck },
+  { id: "integratsiya", icon: PlugZap, faqatDirektor: true },
+  { id: "chek", icon: Receipt },
+  { id: "bildirishnoma", icon: Bell },
+];
 
 // Sozlamalar uchoti: mavjud bo'limlar real backend API'lariga ulangan.
 export default function SozlamalarUchot() {
+  const { t } = useTranslation("sozlamalar_uchot");
   const [bolim, setBolim] = useState<SozlamaBolim>("profil");
 
   // Rol: SUPERADMIN/OWNER ham DIREKTOR sifatida normallashadi (lib/roles).
@@ -47,10 +48,10 @@ export default function SozlamalarUchot() {
     <div className="space-y-5">
       <header>
         <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-500">
-          Sozlamalar uchoti
+          {t("eyebrow")}
         </p>
-        <h1 className="mt-1 text-3xl font-black text-gray-950">Sozlamalar</h1>
-        <p className="mt-1 text-sm text-gray-500">Profil, kompaniya, filiallar va boshqalar.</p>
+        <h1 className="mt-1 text-3xl font-black text-gray-950">{t("title")}</h1>
+        <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
       </header>
 
       <div className="grid gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
@@ -71,7 +72,7 @@ export default function SozlamalarUchot() {
                 }`}
               >
                 <Ikonka size={17} />
-                {b.nom}
+                {t(`nav.${b.id}`)}
               </button>
             );
           })}
