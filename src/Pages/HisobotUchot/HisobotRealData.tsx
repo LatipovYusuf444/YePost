@@ -5,6 +5,7 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { AuditYozuvi, FoydaXarajatYozuvi, HisobKitobHujjati, KassaHujjati, KirimChiqim, Kontragent, MahsulotFoydasi, Maxsulot, Tanlov, TovarHarakati, HisobotTab } from "./types";
 
 type ApiTanlov = Tanlov & {
+  name?: string;
   productId?: string;
   fullName?: string;
   username?: string;
