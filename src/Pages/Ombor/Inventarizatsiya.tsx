@@ -136,13 +136,29 @@ export default function Inventarizatsiya() {
     return [...qoldiqlar, ...yangilari];
   }, [qoldiqlar, store.modifikatsiyalar, warehouseId]);
 
-  const inventarizatsiyaQatorlari = useMemo(() => {
-    if (type === "FULL") return qoldiqlar;
+  // Qo'lda "Mahsulot qo'shish" orqali tanlangan qo'shimcha qatorlar — FULL va PARTIAL
+  // turlarining ikkalasida ham ishlaydi (masalan, hali umuman qoldig'i bo'lmagan
+  // mahsulotni FULL inventarizatsiyaga ham qo'shish mumkin).
+  const qolQoshilganQatorlar = useMemo(() => {
     const tanlovByModification = new Map(barchaTanlovlar.map((qoldiq) => [qoldiq.modificationId, qoldiq]));
     return tanlanganModifikatsiyaIds
       .map((modificationId) => tanlovByModification.get(modificationId))
       .filter((qoldiq): qoldiq is (typeof qoldiqlar)[number] => Boolean(qoldiq));
-  }, [barchaTanlovlar, qoldiqlar, tanlanganModifikatsiyaIds, type]);
+  }, [barchaTanlovlar, tanlanganModifikatsiyaIds]);
+
+  const inventarizatsiyaQatorlari = useMemo(() => {
+    if (type === "PARTIAL") return qolQoshilganQatorlar;
+    // FULL: mavjud barcha qoldiqlar avtomatik + qo'lda qo'shilgan yangi mahsulotlar.
+    const mavjudIds = new Set(qoldiqlar.map((qoldiq) => qoldiq.modificationId));
+    return [...qoldiqlar, ...qolQoshilganQatorlar.filter((qoldiq) => !mavjudIds.has(qoldiq.modificationId))];
+  }, [qoldiqlar, qolQoshilganQatorlar, type]);
+
+  // "Mahsulot qo'shish" ro'yxatida hali qatorga kiritilmagan tanlovlar — FULL turida
+  // avtomatik qoldiqlar ham hisobga olinadi (ularni qayta taklif qilmaslik uchun).
+  const tanlanmaganTanlovlar = useMemo(() => {
+    const kiritilganIds = new Set(inventarizatsiyaQatorlari.map((qoldiq) => qoldiq.modificationId));
+    return barchaTanlovlar.filter((qoldiq) => !kiritilganIds.has(qoldiq.modificationId));
+  }, [barchaTanlovlar, inventarizatsiyaQatorlari]);
 
   const inventarizatsiyaStatistikasi = useMemo(() => {
     const jami = store.inventarizatsiyalar.length;
@@ -255,10 +271,6 @@ export default function Inventarizatsiya() {
     store.xatolikniTozalash();
     if (!warehouseId) {
       setFormaXatosi({ key: "inventarizatsiya.createModal.errors.selectWarehouse" });
-      return;
-    }
-    if (type === "FULL" && qoldiqlar.length === 0) {
-      setFormaXatosi({ key: "inventarizatsiya.createModal.errors.noStockInWarehouse" });
       return;
     }
     if (inventarizatsiyaQatorlari.length === 0) {
@@ -549,7 +561,7 @@ export default function Inventarizatsiya() {
                     <p className="mt-1 text-xs text-slate-400">{t("inventarizatsiya.createModal.itemsSubtitle")}</p>
                   </div>
                   {warehouseId && !qoldiqYuklanmoqda && (
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">{t("inventarizatsiya.createModal.itemsCount", { count: type === "FULL" ? qoldiqlar.length : inventarizatsiyaQatorlari.length })}</span>
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">{t("inventarizatsiya.createModal.itemsCount", { count: inventarizatsiyaQatorlari.length })}</span>
                   )}
                 </div>
 
@@ -559,8 +571,6 @@ export default function Inventarizatsiya() {
                   </div>
                 ) : !warehouseId ? (
                   <div className="flex min-h-40 items-center justify-center text-sm font-bold text-slate-400">{t("inventarizatsiya.createModal.selectWarehouseHint")}</div>
-                ) : type === "FULL" && qoldiqlar.length === 0 ? (
-                  <div className="flex min-h-40 items-center justify-center text-sm font-bold text-slate-400">{t("inventarizatsiya.createModal.noStock")}</div>
                 ) : (
                   <div className="mt-4 overflow-x-auto rounded-2xl border border-blue-100 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-blue-400 [&::-webkit-scrollbar-track]:bg-blue-50">
                     <table className="w-full min-w-[980px] text-left text-sm">
@@ -587,7 +597,7 @@ export default function Inventarizatsiya() {
                               <td className="px-4 py-4 font-black text-slate-900">
                                 <div className="flex items-center justify-between gap-2">
                                   <span>{modificationNomi(qoldiq.modification)}</span>
-                                  {type === "PARTIAL" && <button type="button" onClick={() => { setTanlanganModifikatsiyaIds((oldingi) => oldingi.filter((id) => id !== qoldiq.modificationId)); setActuals((oldingi) => { const keyingi = { ...oldingi }; delete keyingi[qoldiq.modificationId]; return keyingi; }); }} className="rounded-lg p-1 text-slate-400 hover:bg-red-50 hover:text-red-500" aria-label={t("inventarizatsiya.createModal.removeRowAria")}><Trash2 size={15} /></button>}
+                                  {tanlanganModifikatsiyaIds.includes(qoldiq.modificationId) && <button type="button" onClick={() => { setTanlanganModifikatsiyaIds((oldingi) => oldingi.filter((id) => id !== qoldiq.modificationId)); setActuals((oldingi) => { const keyingi = { ...oldingi }; delete keyingi[qoldiq.modificationId]; return keyingi; }); }} className="rounded-lg p-1 text-slate-400 hover:bg-red-50 hover:text-red-500" aria-label={t("inventarizatsiya.createModal.removeRowAria")}><Trash2 size={15} /></button>}
                                 </div>
                               </td>
                               <td className="px-4 py-4 text-slate-500">{qoldiq.modification?.barcode ?? "—"}</td>
@@ -613,7 +623,7 @@ export default function Inventarizatsiya() {
                             </tr>
                           );
                         })}
-                        {type === "PARTIAL" && barchaTanlovlar.some((qoldiq) => !tanlanganModifikatsiyaIds.includes(qoldiq.modificationId)) && (
+                        {tanlanmaganTanlovlar.length > 0 && (
                           <tr>
                             <td className="px-4 py-3 text-slate-400">{inventarizatsiyaQatorlari.length + 1}</td>
                             <td className="px-4 py-3">
@@ -630,7 +640,7 @@ export default function Inventarizatsiya() {
                                 className="h-10 w-full min-w-64 rounded-xl border border-blue-100 bg-white px-3 font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                               >
                                 <option value="">{t("inventarizatsiya.createModal.selectProduct")}</option>
-                                {barchaTanlovlar.filter((qoldiq) => !tanlanganModifikatsiyaIds.includes(qoldiq.modificationId)).map((qoldiq) => (
+                                {tanlanmaganTanlovlar.map((qoldiq) => (
                                   <option key={qoldiq.modificationId} value={qoldiq.modificationId}>{modificationNomi(qoldiq.modification)}</option>
                                 ))}
                               </select>
