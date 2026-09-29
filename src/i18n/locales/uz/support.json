@@ -1,0 +1,21 @@
+{
+  "title": "Qo'llab-quvvatlash",
+  "subtitle": "Savollaringiz bormi? YePost jamoasiga to'g'ridan-to'g'ri yozing.",
+  "supportTeamName": "YePost qo'llab-quvvatlash",
+  "onlineStatus": "Odatda tez javob beramiz",
+  "loading": "Suhbat yuklanmoqda...",
+  "emptyTitle": "Hali xabar yo'q",
+  "emptyText": "Savolingizni pastdagi maydonga yozing — jamoamiz tez orada javob beradi.",
+  "notConnectedBanner": "Qo'llab-quvvatlash bo'limi hali backendga ulanmagan. Bu yerdagi ko'rinish tayyor, lekin xabarlar hozircha yuborilmaydi.",
+  "inputPlaceholder": "Xabaringizni yozing...",
+  "send": "Yuborish",
+  "sendAria": "Xabarni yuborish",
+  "closeErrorAria": "Xatolikni yopish",
+  "status": {
+    "SENT": "Yuborildi",
+    "DELIVERED": "Yetkazildi",
+    "READ": "O'qildi"
+  },
+  "today": "Bugun",
+  "yesterday": "Kecha"
+}

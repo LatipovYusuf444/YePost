@@ -5,6 +5,7 @@ import Monitoring from "@/Pages/Monitoring"
 import KassaUchot from "@/Pages/KassaUchot"
 import HisobotUchot from "@/Pages/HisobotUchot"
 import XodimUchot from "@/Pages/XodimUchot"
+import QollabQuvvatlash from "@/Pages/Support"
 import Mahsulotlar from "@/Pages/Mahsulotlar"
 import AmalgaOshirilganlar from "@/Pages/Ombor/AmalgaOshirilganlar"
 import Chiqimlar from "@/Pages/Ombor/Chiqim"
@@ -64,6 +65,7 @@ export default function AppRouter() {
         {/* Mock Xodim uchoti eski backendli Hodimlar sahifasi o'rnida
             (backend kodi Pages/Hodimlar + accountStore da tegilmagan holda qoladi). */}
         <Route path="/hodimlar" element={<XodimUchot />} />
+        <Route path="/qollab-quvvatlash" element={<QollabQuvvatlash />} />
         {/* Mock Sozlamalar uchoti eski backendli Sozlamalar sahifasi o'rnida
             (backend kodi Pages/Sozlamalar da tegilmagan holda qoladi). */}
         <Route path="/sozlamalar" element={<SozlamalarUchot />} />
