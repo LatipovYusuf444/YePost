@@ -1,6 +1,6 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
 import { API_BASE_URL } from "./apiConfig";
-import { accessTokenniAjratish, accessTokenniYangilash } from "./sozlamalarApi";
+import { accessTokenniAjratish, accessTokenniYangilash, getApiErrorMessage } from "./sozlamalarApi";
 import { apiTiliniOlish } from "./apiLanguage";
 import {
   accessTokenniSaqlash,
@@ -8,6 +8,25 @@ import {
   authTokenlarniOlish,
   authTokenlarniTozalash,
 } from "@/lib/authTokenStorage";
+import { muvaffaqiyatXabari, xatolikXabari } from "@/lib/toast";
+
+// Toast ko'rsatilmaydigan yo'llar: auth oqimi (o'zi navigatsiya qiladi),
+// bildirishnoma o'qilgan deb belgilash va chat/support xabar yuborish
+// (fon jarayoni yoki o'z UI-tasdig'i bor harakatlar, alohida toast shart emas).
+const TOAST_ISTISNOLARI = ["/auth/login", "/auth/refresh", "/auth/logout", "/notifications", "/chat/", "/support/messages"];
+
+function toastKerakmi(url?: string) {
+  if (!url) return true;
+  return !TOAST_ISTISNOLARI.some((yol) => url.includes(yol));
+}
+
+const MUTATSIYA_USULLARI = new Set(["post", "put", "patch", "delete"]);
+
+function muvaffaqiyatMatni(usul?: string) {
+  if (usul === "delete") return "Muvaffaqiyatli o'chirildi";
+  if (usul === "post") return "Muvaffaqiyatli yaratildi";
+  return "Muvaffaqiyatli saqlandi";
+}
 
 export { API_BASE_URL };
 
@@ -46,9 +65,18 @@ apiClient.interceptors.request.use((config) => {
 });
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const usul = response.config.method?.toLowerCase();
+    if (usul && MUTATSIYA_USULLARI.has(usul) && toastKerakmi(response.config.url)) {
+      muvaffaqiyatXabari(muvaffaqiyatMatni(usul));
+    }
+    return response;
+  },
   async (error: unknown) => {
     if (!axios.isAxiosError(error) || error.response?.status !== 401 || !error.config) {
+      if (axios.isAxiosError(error) && toastKerakmi(error.config?.url)) {
+        xatolikXabari(getApiErrorMessage(error));
+      }
       return Promise.reject(error);
     }
 
