@@ -78,6 +78,11 @@ export default function Kompaniyalar() {
           <Plus size={17} /> {t("kompaniyalar.addButton")}
         </button>
       </header>
+      {store.yuklanmoqda && store.kompaniyalar.length === 0 && (
+        <div className="flex min-h-48 items-center justify-center gap-2 text-sm font-bold text-slate-400">
+          <LoaderCircle size={22} className="animate-spin text-orange-500" /> {t("kompaniyalar.loading")}
+        </div>
+      )}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {store.kompaniyalar.map((item) => (
           <article key={item.id} className="rounded-[24px] border border-orange-100 bg-white p-5 shadow-sm">
@@ -94,7 +99,7 @@ export default function Kompaniyalar() {
             </div>
           </article>
         ))}
-        {store.kompaniyalar.length === 0 && <div className="col-span-full rounded-2xl border border-dashed p-12 text-center text-gray-400">{t("kompaniyalar.empty")}</div>}
+        {!store.yuklanmoqda && store.kompaniyalar.length === 0 && <div className="col-span-full rounded-2xl border border-dashed p-12 text-center text-gray-400">{t("kompaniyalar.empty")}</div>}
       </div>
       {modal && (
         <AppModal>

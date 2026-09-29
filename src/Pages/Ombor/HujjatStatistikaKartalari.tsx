@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleX, Clock3, FileText } from "lucide-react";
+import { CheckCircle2, CircleX, Clock3, FileText, LoaderCircle } from "lucide-react";
 
 type Props = {
   labels: [string, string, string, string];
@@ -6,6 +6,8 @@ type Props = {
   selected: string;
   onSelect: (status: string) => void;
   ariaLabel?: string;
+  loading?: boolean;
+  loadingText?: string;
 };
 
 const filters = ["ALL", "CONFIRMED", "DRAFT", "CANCELLED"];
@@ -17,7 +19,7 @@ const tones = [
   { icon: "bg-rose-500 shadow-rose-200", text: "text-rose-700", bar: "bg-rose-500", ring: "ring-rose-300" },
 ];
 
-export default function HujjatStatistikaKartalari({ labels, values, selected, onSelect, ariaLabel }: Props) {
+export default function HujjatStatistikaKartalari({ labels, values, selected, onSelect, ariaLabel, loading, loadingText }: Props) {
   const total = values[0];
 
   return (
@@ -32,23 +34,34 @@ export default function HujjatStatistikaKartalari({ labels, values, selected, on
             key={filters[index]}
             type="button"
             onClick={() => onSelect(filters[index])}
+            disabled={loading}
             aria-pressed={active}
-            className={`group relative isolate flex min-h-[126px] flex-col justify-between overflow-hidden rounded-[22px] border border-blue-100 bg-gradient-to-br from-white to-blue-50/70 p-4 text-left shadow-[0_5px_18px_rgba(37,99,235,.06)] transition duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_14px_30px_rgba(37,99,235,.13)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 sm:p-5 ${active ? `ring-2 ${tone.ring}` : ""}`}
+            aria-busy={loading}
+            className={`group relative isolate flex min-h-[126px] flex-col justify-center overflow-hidden rounded-[22px] border border-blue-100 bg-gradient-to-br from-white to-blue-50/70 p-4 text-left shadow-[0_5px_18px_rgba(37,99,235,.06)] transition duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_14px_30px_rgba(37,99,235,.13)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-default disabled:hover:translate-y-0 disabled:hover:border-blue-100 disabled:hover:shadow-[0_5px_18px_rgba(37,99,235,.06)] sm:p-5 ${active && !loading ? `ring-2 ${tone.ring}` : ""}`}
           >
             <span className="pointer-events-none absolute -right-7 -top-8 -z-10 h-28 w-28 rounded-full bg-blue-200/40 blur-2xl transition duration-500 group-hover:scale-150" />
-            <span className="flex w-full items-center gap-3">
-              <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-md transition duration-300 group-hover:rotate-[-6deg] group-hover:scale-105 ${tone.icon}`}>
-                <Icon size={21} />
+            {loading ? (
+              <span className="flex items-center justify-center gap-2 text-sm font-bold text-slate-400">
+                <LoaderCircle size={18} className="animate-spin text-blue-500" />
+                {loadingText ?? "Yuklanmoqda..."}
               </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-bold text-slate-500">{label}</span>
-                <span className="mt-1 block text-3xl font-black leading-none tracking-tight text-slate-900 tabular-nums transition duration-300 group-hover:translate-x-0.5">{values[index]}</span>
-              </span>
-              <span className={`rounded-full bg-white/80 px-2.5 py-1 text-xs font-black shadow-sm ring-1 ring-white/90 ${tone.text}`}>{percent}%</span>
-            </span>
-            <span className="mt-4 block h-1.5 w-full overflow-hidden rounded-full bg-white/90 shadow-inner">
-              <span className={`block h-full rounded-full transition-[width] duration-700 ease-out ${tone.bar}`} style={{ width: `${percent}%` }} />
-            </span>
+            ) : (
+              <>
+                <span className="flex w-full items-center gap-3">
+                  <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-md transition duration-300 group-hover:rotate-[-6deg] group-hover:scale-105 ${tone.icon}`}>
+                    <Icon size={21} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-bold text-slate-500">{label}</span>
+                    <span className="mt-1 block text-3xl font-black leading-none tracking-tight text-slate-900 tabular-nums transition duration-300 group-hover:translate-x-0.5">{values[index]}</span>
+                  </span>
+                  <span className={`rounded-full bg-white/80 px-2.5 py-1 text-xs font-black shadow-sm ring-1 ring-white/90 ${tone.text}`}>{percent}%</span>
+                </span>
+                <span className="mt-4 block h-1.5 w-full overflow-hidden rounded-full bg-white/90 shadow-inner">
+                  <span className={`block h-full rounded-full transition-[width] duration-700 ease-out ${tone.bar}`} style={{ width: `${percent}%` }} />
+                </span>
+              </>
+            )}
           </button>
         );
       })}

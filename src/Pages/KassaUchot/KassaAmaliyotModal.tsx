@@ -110,7 +110,7 @@ export default function KassaAmaliyotModal({
   }, []);
 
   // Mavjud hujjat: seed'lar tasdiqlangan; yangi hujjat — qoralama.
-  const mavjudHolat = boshlangich?.holat ?? "tasdiqlangan";
+  const mavjudHolat = boshlangich?.holat ?? "qoralama";
   // Yangi hujjat darrov tahrirlanadi; mavjudi avval ko'rish rejimida ochiladi.
   const [tahrirRejim, setTahrirRejim] = useState(boshlangich === null);
   const readonly =

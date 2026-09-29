@@ -243,6 +243,8 @@ export default function Xaridlar() {
         selected={statusFiltri}
         onSelect={(status) => { setStatusFiltri(status); setPage(1); }}
         ariaLabel={t("xaridlar.statsAria")}
+        loading={store.yuklanmoqda && store.kirimlar.length===0}
+        loadingText={t("xaridlar.loadingStats")}
       />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

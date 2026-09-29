@@ -40,6 +40,7 @@
       "itemsSubtitle": "Tanlangan ombordagi real qoldiqlar",
       "itemsCount": "{{count}} ta",
       "selectProduct": "Mahsulot tanlang...",
+      "searchEmpty": "Hech narsa topilmadi",
       "addNextProductHint": "Mahsulot tanlanganda keyingi qator avtomatik qo‘shiladi",
       "stockLoading": "Qoldiqlar yuklanmoqda...",
       "selectWarehouseHint": "Mahsulotlarni ko'rish uchun omborni tanlang",

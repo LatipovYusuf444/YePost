@@ -356,6 +356,8 @@ export default function Chiqim() {
         selected={statusFiltri}
         onSelect={(status) => { setStatusFiltri(status); setPage(1); }}
         ariaLabel={t("chiqim.statsAria")}
+        loading={store.yuklanmoqda && store.chiqimlar.length===0}
+        loadingText={t("chiqim.loadingStats")}
       />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

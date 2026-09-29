@@ -97,6 +97,12 @@ type OmborState = {
   inventarizatsiyaYangilash: (id: string, data: Partial<InventarizatsiyaYaratishMalumoti>) => Promise<boolean>;
   inventarizatsiyaTasdiqlash: (id: string) => Promise<boolean>;
   inventarizatsiyaBekorQilish: (id: string) => Promise<boolean>;
+  // Mahsulotlar sahifasida bir variant narxi tahrirlansa, shu yerdagi
+  // (allaqachon yuklab olingan) nusxa ham darhol yangilanishi uchun.
+  modifikatsiyaNarxiniYangilash: (
+    id: string,
+    narx: { costPrice?: number | string; retailPrice?: number | string; wholesalePrice?: number | string }
+  ) => void;
   xatolikniTozalash: () => void;
 };
 
@@ -817,6 +823,22 @@ export const useOmborStore = create<OmborState>((set, get) => ({
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
       return false;
     }
+  },
+
+  modifikatsiyaNarxiniYangilash: (id, narx) => {
+    set((state) => {
+      const modifikatsiyalar = state.modifikatsiyalar.map((item) =>
+        item.id === id ? { ...item, price: { ...item.price, ...narx } } : item
+      );
+      return {
+        modifikatsiyalar,
+        qoldiqlar: state.qoldiqlar.map((qoldiq) =>
+          qoldiq.modification?.id === id
+            ? { ...qoldiq, modification: { ...qoldiq.modification, price: { ...qoldiq.modification.price, ...narx } } }
+            : qoldiq
+        ),
+      };
+    });
   },
 
   xatolikniTozalash: () => set({ xatolik: null }),

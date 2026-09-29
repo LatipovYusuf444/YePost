@@ -231,19 +231,24 @@
     "addVariant": "Variant qo'shish",
     "defaultVariant": "Asosiy variant",
     "barcodeLine": "Shtrix-kod: {{barcode}} · Artikul: {{article}}",
-    "priceLine": "Tan narx: {{cost}} · Chakana: {{retail}} · Ulgurji: {{wholesale}}",
+    "costLabel": "Tan narx",
+    "retailLabel": "Chakana narx",
+    "wholesaleLabel": "Ulgurji narx",
     "edit": "Tahrirlash"
   },
   "modForm": {
     "editTitle": "Variantni tahrirlash",
     "createTitle": "Yangi variant",
     "namePlaceholder": "Variant nomi",
+    "nameHint": "Bo'sh qoldirilsa, ro'yxatlarda \"{{product}}\" nomi bilan ko'rsatiladi.",
     "barcodePlaceholder": "Shtrix-kod *",
     "articlePlaceholder": "Artikul",
     "paramsPlaceholder": "Parametrlar JSON: {\"rang\":\"qizil\"}",
+    "paramsLabel": "Parametrlar (JSON)",
     "costPlaceholder": "Tan narx",
     "retailPlaceholder": "Chakana narx",
     "wholesalePlaceholder": "Ulgurji narx",
-    "invalidJson": "Parametrlar JSON formati noto'g'ri."
+    "invalidJson": "Parametrlar JSON formati noto'g'ri.",
+    "barcodeRequired": "Shtrix-kod kiritilishi shart — saqlash uchun to'ldiring."
   }
 }

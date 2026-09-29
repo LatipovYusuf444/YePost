@@ -527,6 +527,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                       <input
                         type="number"
                         min="0"
+                        step="0.01"
                         value={row.price}
                         onChange={(event) => yangilash(row.id, { price: event.target.value })}
                         placeholder={t("yangiKirim.table.pricePlaceholder")}
@@ -535,6 +536,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                       <input
                         type="number"
                         min="0"
+                        step="0.01"
                         value={row.retailPrice}
                         onChange={(event) => yangilash(row.id, { retailPrice: event.target.value })}
                         placeholder={t("yangiKirim.table.pricePlaceholder")}
@@ -543,6 +545,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                       <input
                         type="number"
                         min="0"
+                        step="0.01"
                         value={row.wholesalePrice}
                         onChange={(event) => yangilash(row.id, { wholesalePrice: event.target.value })}
                         placeholder={t("yangiKirim.table.pricePlaceholder")}
@@ -738,15 +741,15 @@ function MahsulotYaratishPanel({
               <SelectField label={t("mahsulotYaratish.unitLabel")} value={unitId} onChange={setUnitId} placeholder={t("mahsulotYaratish.selectPlaceholder")} options={birliklar.map((item) => ({ id: item.id, name: item.shortName ? `${item.name} (${item.shortName})` : item.name }))} />
               <label className="space-y-2 text-sm font-bold text-slate-500">
                 <span>{t("mahsulotYaratish.costPriceLabel")}</span>
-                <input type="number" min="0" value={costPrice} onChange={(event) => setCostPrice(event.target.value)} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
+                <input type="number" min="0" step="0.01" value={costPrice} onChange={(event) => setCostPrice(event.target.value)} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
               </label>
               <label className="space-y-2 text-sm font-bold text-slate-500">
                 <span>{t("mahsulotYaratish.retailPriceLabel")}</span>
-                <input type="number" min="0" value={retailPrice} onChange={(event) => setRetailPrice(event.target.value)} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
+                <input type="number" min="0" step="0.01" value={retailPrice} onChange={(event) => setRetailPrice(event.target.value)} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
               </label>
               <label className="space-y-2 text-sm font-bold text-slate-500">
                 <span>{t("mahsulotYaratish.wholesalePriceLabel")}</span>
-                <input type="number" min="0" value={wholesalePrice} onChange={(event) => setWholesalePrice(event.target.value)} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
+                <input type="number" min="0" step="0.01" value={wholesalePrice} onChange={(event) => setWholesalePrice(event.target.value)} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
               </label>
             </div>
             <div className="flex justify-end gap-3 pt-2">

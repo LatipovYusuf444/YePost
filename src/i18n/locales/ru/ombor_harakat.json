@@ -40,6 +40,7 @@
       "itemsSubtitle": "Фактические остатки на выбранном складе",
       "itemsCount": "{{count}} шт.",
       "selectProduct": "Выберите товар...",
+      "searchEmpty": "Ничего не найдено",
       "addNextProductHint": "После выбора товара автоматически появится следующая строка",
       "stockLoading": "Загрузка остатков...",
       "selectWarehouseHint": "Выберите склад, чтобы увидеть товары",

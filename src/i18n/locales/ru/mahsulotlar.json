@@ -231,19 +231,24 @@
     "addVariant": "Добавить вариант",
     "defaultVariant": "Основной вариант",
     "barcodeLine": "Штрих-код: {{barcode}} · Артикул: {{article}}",
-    "priceLine": "Себестоимость: {{cost}} · Розница: {{retail}} · Опт: {{wholesale}}",
+    "costLabel": "Себестоимость",
+    "retailLabel": "Розница",
+    "wholesaleLabel": "Опт",
     "edit": "Изменить"
   },
   "modForm": {
     "editTitle": "Редактирование варианта",
     "createTitle": "Новый вариант",
     "namePlaceholder": "Название варианта",
+    "nameHint": "Если оставить пустым, в списках будет показано название \"{{product}}\".",
     "barcodePlaceholder": "Штрих-код *",
     "articlePlaceholder": "Артикул",
     "paramsPlaceholder": "Параметры JSON: {\"цвет\":\"красный\"}",
+    "paramsLabel": "Параметры (JSON)",
     "costPlaceholder": "Цена закупки",
     "retailPlaceholder": "Розничная цена",
     "wholesalePlaceholder": "Оптовая цена",
-    "invalidJson": "Неверный формат JSON параметров."
+    "invalidJson": "Неверный формат JSON параметров.",
+    "barcodeRequired": "Необходимо ввести штрих-код — заполните поле, чтобы сохранить."
   }
 }

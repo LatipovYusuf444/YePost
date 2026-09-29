@@ -595,6 +595,15 @@ function formatNumberInput(value:string) {
   return decimal !== undefined ? `${formattedInteger}.${decimal}` : formattedInteger;
 }
 
+// "," ham o'nlik ajratkich sifatida kiritiladi (uz/ru klaviatura konvensiyasi) — "." ga
+// normalizatsiya qilinadi, faqat birinchi ajratkich qoldiriladi, qolgan nuqta/vergullar tashlanadi.
+function sanitizeMoneyInput(value:string) {
+  const cleaned=value.replace(",",".").replace(/[^\d.]/g,"");
+  const firstDot=cleaned.indexOf(".");
+  if(firstDot===-1)return cleaned;
+  return cleaned.slice(0,firstDot+1)+cleaned.slice(firstDot+1).replace(/\./g,"");
+}
+
 function MoneyInput({value,suffix,onChange,currency,onCurrencyChange,onApplyAll}:{value:string;suffix?:string;onChange:(value:string)=>void;currency?:"UZS"|"USD";onCurrencyChange?:(value:"UZS"|"USD")=>void;onApplyAll?:()=>void}) {
   const { t } = useTranslation("mahsulotlar");
   return <div className="group relative">
@@ -602,6 +611,13 @@ function MoneyInput({value,suffix,onChange,currency,onCurrencyChange,onApplyAll}
     {currency&&onCurrencyChange?<AppSelect value={currency} onChange={(e)=>onCurrencyChange(e.target.value as "UZS"|"USD")} className="absolute right-2 top-1/2 h-9 min-w-[76px] -translate-y-1/2 rounded-xl border border-gray-200 bg-white px-2 text-xs font-black text-gray-600 outline-none hover:border-orange-200 focus:border-orange-300"><option value="UZS">UZS</option><option value="USD">USD</option></AppSelect>:<span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-gray-400">{suffix}</span>}
     {onApplyAll&&value&&<button type="button" onClick={onApplyAll} className="absolute left-0 top-[calc(100%+4px)] z-20 hidden rounded-lg bg-blue-600 px-2 py-1 text-[10px] font-black text-white shadow-lg group-focus-within:block hover:bg-blue-700">{t("moneyInput.applyToAll")}</button>}
   </div>;
+}
+
+function PriceField({label,value}:{label:string;value:number|string|undefined}) {
+  return <label className="grid gap-1">
+    <span className="truncate text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</span>
+    <input disabled value={`${Number(value??0).toLocaleString("uz-UZ")} so'm`} className="input h-10 px-3 text-xs font-black sm:text-sm"/>
+  </label>;
 }
 
 function StockInput({value,onChange,warning}:{value:string;onChange:(value:string)=>void;warning?:boolean}) {
@@ -655,7 +671,23 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
   const [activeVariationRow,setActiveVariationRow]=useState<number|null>(null);
   const [variantDrafts,setVariantDrafts]=useState<Record<string,VariantDraft>>({});
   const [variantStockDrafts,setVariantStockDrafts]=useState<Record<string,VariantStockDraft>>({});
-  const [baseDraft,setBaseDraft]=useState<VariantDraft>(emptyVariantDraft);
+  // Tahrirlashda (oddiy, variatsiyasiz mahsulot) — mavjud "Asosiy variant"ning
+  // haqiqiy narxlari shu yerga oldindan to'ldiriladi, aks holda doim "0" ko'rinardi.
+  const [baseDraft,setBaseDraft]=useState<VariantDraft>(()=>{
+    if(item==="new")return emptyVariantDraft;
+    const asosiyVariant=store.modifikatsiyalar[item.id]?.[0];
+    if(!asosiyVariant?.price)return emptyVariantDraft;
+    const valyuta=(asosiyVariant.price.currency as "UZS"|"USD")??"UZS";
+    return {
+      ...emptyVariantDraft,
+      costPrice:asosiyVariant.price.costPrice!=null?String(asosiyVariant.price.costPrice):"",
+      costCurrency:valyuta,
+      retailPrice:asosiyVariant.price.retailPrice!=null?String(asosiyVariant.price.retailPrice):"",
+      retailCurrency:valyuta,
+      wholesalePrice:asosiyVariant.price.wholesalePrice!=null?String(asosiyVariant.price.wholesalePrice):"",
+      wholesaleCurrency:valyuta,
+    };
+  });
   const [baseStock,setBaseStock]=useState<VariantStockDraft>({open:true,warehouseId:"",quantity:"",minStock:""});
   const [omborlar,setOmborlar]=useState<Ombor[]>([]);
   const [brand,setBrand]=useState("");
@@ -724,6 +756,28 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
       });
     return ()=>{mounted=false};
   }, []);
+
+  // Modal ochilgan payt "Asosiy variant" narxlari hali yuklanmagan bo'lsa (masalan
+  // ro'yxat endigina ko'rsatilgan bo'lsa), keyinroq kelganda ham to'ldirish uchun —
+  // faqat foydalanuvchi hali hech narsa yozmagan bo'lsa (bo'sh maydonlar) ishlaydi.
+  useEffect(() => {
+    if(item==="new")return;
+    const asosiyVariant=store.modifikatsiyalar[item.id]?.[0];
+    if(!asosiyVariant?.price)return;
+    setBaseDraft((draft)=>{
+      if(draft.costPrice||draft.retailPrice||draft.wholesalePrice)return draft;
+      const valyuta=(asosiyVariant.price!.currency as "UZS"|"USD")??"UZS";
+      return {
+        ...draft,
+        costPrice:asosiyVariant.price!.costPrice!=null?String(asosiyVariant.price!.costPrice):"",
+        costCurrency:valyuta,
+        retailPrice:asosiyVariant.price!.retailPrice!=null?String(asosiyVariant.price!.retailPrice):"",
+        retailCurrency:valyuta,
+        wholesalePrice:asosiyVariant.price!.wholesalePrice!=null?String(asosiyVariant.price!.wholesalePrice):"",
+        wholesaleCurrency:valyuta,
+      };
+    });
+  }, [item, store.modifikatsiyalar]);
 
   const filteredCategories=useMemo(()=>{
     const query=categorySearch.trim().toLowerCase();
@@ -809,7 +863,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
     }
     const safeImageUrl=cleanRemoteImage(imageUrl);
     const data={name:name.trim(),categoryId,unitId:productUnitId,barcode:barcode.trim()||undefined,article:article.trim()||undefined,imageUrl:safeImageUrl||undefined,isActive};
-    const ok=editing
+    let ok=editing
       ?await store.mahsulotSaqlash(item.id,data)
       :generatedVariants.length>0
         ?await store.mahsulotVariantlarBilanYaratish(data,generatedVariants)
@@ -827,6 +881,28 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
             currency:baseDraft.retailCurrency??"UZS",
           },
         });
+    // Tahrirlashda, oddiy (variatsiyasiz) mahsulotning "Asosiy variant narxlari"
+    // bo'limi alohida — mavjud variantga (yoki hali yo'q bo'lsa, yangisiga) saqlanadi,
+    // aks holda mahsulotning o'z maydonlari saqlanib, narx o'zgarishi tashlab ketilardi.
+    if(ok&&editing&&generatedVariants.length===0){
+      const asosiyVariant=store.modifikatsiyalar[item.id]?.[0];
+      const narx={
+        costPrice:Number(baseDraft.costPrice||0),
+        retailPrice:Number(baseDraft.retailPrice||0),
+        wholesalePrice:Number(baseDraft.wholesalePrice||baseDraft.retailPrice||0),
+        currency:baseDraft.retailCurrency??"UZS",
+      };
+      ok=await store.modifikatsiyaSaqlash(item.id,asosiyVariant?.id??null,{
+        name:asosiyVariant?.name||undefined,
+        barcode:asosiyVariant?.barcode||barcode.trim()||generateBarcodeValue(),
+        article:asosiyVariant?.article||article.trim()||undefined,
+        price:narx,
+      });
+      // Mavjud variantni tahrirlashda backend narxni asosiy PATCH orqali qabul qilmaydi —
+      // narx faqat alohida /price endpointi orqali haqiqiy saqlanadi (ModForm'dagi kabi),
+      // aks holda so'rov ketadi-yu, jadvalda eski narx qolib ketaveradi.
+      if(ok&&asosiyVariant)ok=await store.narxYangilash(item.id,asosiyVariant.id,narx);
+    }
     if(ok)onClose()
   }
 
@@ -989,7 +1065,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
   }
 
   function updateVariantPrice(key:string, field:"costPrice"|"markup"|"retailPrice"|"wholesalePrice", value:string) {
-    const numericValue=value.replace(/[^\d.]/g,"");
+    const numericValue=sanitizeMoneyInput(value);
     const current=variantDrafts[key]??{barcode:"",imageUrl:"",active:true,costPrice:"",costCurrency:"UZS",markup:"",retailPrice:"",retailCurrency:"UZS",wholesalePrice:"",wholesaleCurrency:"UZS"};
     const patch:Partial<VariantDraft>={[field]:numericValue};
     if(field==="costPrice"||field==="markup"){
@@ -1006,7 +1082,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
   }
 
   function updateBasePrice(field:"costPrice"|"markup"|"retailPrice"|"wholesalePrice", value:string) {
-    const numericValue=value.replace(/[^\d.]/g,"");
+    const numericValue=sanitizeMoneyInput(value);
     setBaseDraft((current)=>{
       const patch:Partial<VariantDraft>={[field]:numericValue};
       if(field==="costPrice"||field==="markup"){
@@ -1448,9 +1524,25 @@ function ModifikatsiyalarModal({product,onClose}:{product:Mahsulot;onClose:()=>v
   const store=useMahsulotlarStore();const items=store.modifikatsiyalar[product.id]??[];const [editing,setEditing]=useState<MahsulotModifikatsiyasi|"new"|null>(null);
   async function remove(id:string){if(window.confirm(t("confirm.deleteVariant")))await store.modifikatsiyaOchirish(product.id,id)}
   async function edit(item:MahsulotModifikatsiyasi){const [toliq,narx]=await Promise.all([store.modifikatsiyaOlish(item.id),store.narxOlish(item.id)]);if(toliq)setEditing({...toliq,price:narx??toliq.price})}
-  return <Modal wide title={t("variantsModal.title",{product:product.name})} onClose={onClose}>
+  return <Modal size="medium" title={t("variantsModal.title",{product:product.name})} onClose={onClose}>
     <div className="flex justify-end"><button onClick={()=>setEditing("new")} className="inline-flex h-10 items-center gap-2 rounded-xl bg-orange-500 px-4 font-black text-white"><PackagePlus size={16}/>{t("variantsModal.addVariant")}</button></div>
-    <div className="mt-4 space-y-3">{items.map(item=><div key={item.id} className="rounded-2xl border border-orange-100 p-4"><div className="flex flex-col justify-between gap-3 md:flex-row"><div><h3 className="font-black">{item.name||t("variantsModal.defaultVariant")}</h3><p className="text-sm text-gray-500">{t("variantsModal.barcodeLine",{barcode:item.barcode,article:item.article||"—"})}</p><p className="mt-2 text-sm font-bold text-orange-600">{t("variantsModal.priceLine",{cost:money(item.price?.costPrice),retail:money(item.price?.retailPrice),wholesale:money(item.price?.wholesalePrice)})}</p></div><div className="flex gap-2"><button onClick={()=>void edit(item)} className="rounded-xl bg-orange-50 px-3 py-2 font-bold text-orange-600">{t("variantsModal.edit")}</button><button onClick={()=>void remove(item.id)} className="rounded-xl bg-red-50 px-3 py-2 text-red-500"><Trash2 size={16}/></button></div></div></div>)}{items.length===0&&<Empty matn={t("empty.variants")}/>}</div>
+    <div className="mt-4 space-y-3">{items.map(item=><div key={item.id} className="rounded-2xl border border-orange-100 p-4">
+      <div className="grid grid-cols-3 gap-2">
+        <PriceField label={t("variantsModal.costLabel")} value={item.price?.costPrice}/>
+        <PriceField label={t("variantsModal.retailLabel")} value={item.price?.retailPrice}/>
+        <PriceField label={t("variantsModal.wholesaleLabel")} value={item.price?.wholesalePrice}/>
+      </div>
+      <div className="mt-3 flex items-center justify-between gap-3 border-t border-orange-50 pt-3">
+        <div className="min-w-0">
+          <h3 className="truncate font-black">{item.name||t("variantsModal.defaultVariant")}</h3>
+          <p className="truncate text-xs text-gray-500">{t("variantsModal.barcodeLine",{barcode:item.barcode||"—",article:item.article||"—"})}</p>
+        </div>
+        {items.length>1&&<div className="flex shrink-0 gap-2">
+          <button onClick={()=>void edit(item)} className="rounded-xl bg-orange-50 px-3 py-2 text-sm font-bold text-orange-600">{t("variantsModal.edit")}</button>
+          <button onClick={()=>void remove(item.id)} className="rounded-xl bg-red-50 px-3 py-2 text-red-500"><Trash2 size={16}/></button>
+        </div>}
+      </div>
+    </div>)}{items.length===0&&<Empty matn={t("empty.variants")}/>}</div>
     {editing&&<ModForm productId={product.id} item={editing} onClose={()=>setEditing(null)}/>}
   </Modal>
 }
@@ -1458,11 +1550,18 @@ function ModifikatsiyalarModal({product,onClose}:{product:Mahsulot;onClose:()=>v
 function ModForm({productId,item,onClose}:{productId:string;item:MahsulotModifikatsiyasi|"new";onClose:()=>void}) {
   const { t } = useTranslation("mahsulotlar");
   const store=useMahsulotlarStore();const editing=item!=="new";const [name,setName]=useState(editing?item.name??"":"");const [barcode,setBarcode]=useState(editing?item.barcode:"");const [article,setArticle]=useState(editing?item.article??"":"");const [params,setParams]=useState(editing&&item.params?JSON.stringify(item.params):"");const [cost,setCost]=useState(Number(editing?item.price?.costPrice??0:0));const [retail,setRetail]=useState(Number(editing?item.price?.retailPrice??0:0));const [wholesale,setWholesale]=useState(Number(editing?item.price?.wholesalePrice??0:0));const [jsonError,setJsonError]=useState("");
-  async function save(e:FormEvent){e.preventDefault();if(!barcode.trim())return;let parsed:Record<string,unknown>|undefined;try{parsed=params.trim()?JSON.parse(params):undefined;setJsonError("")}catch{setJsonError("modForm.invalidJson");return}const ok=await store.modifikatsiyaSaqlash(productId,editing?item.id:null,{name:name.trim()||undefined,barcode:barcode.trim(),article:article.trim()||undefined,params:parsed,price:{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale}});if(ok&&editing)await store.narxYangilash(productId,item.id,{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale});if(ok)onClose()}
-  return <AppModal><form onSubmit={save} className="w-full max-w-2xl rounded-[28px] bg-white p-6 shadow-2xl"><div className="flex justify-between"><h2 className="text-2xl font-black">{editing?t("modForm.editTitle"):t("modForm.createTitle")}</h2><button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100"><X size={18}/></button></div><div className="mt-5 grid gap-3 sm:grid-cols-2"><input value={name} onChange={e=>setName(e.target.value)} className="input" placeholder={t("modForm.namePlaceholder")}/><input value={barcode} onChange={e=>setBarcode(e.target.value)} className="input" placeholder={t("modForm.barcodePlaceholder")}/><input value={article} onChange={e=>setArticle(e.target.value)} className="input" placeholder={t("modForm.articlePlaceholder")}/><input value={params} onChange={e=>setParams(e.target.value)} className="input" placeholder={t("modForm.paramsPlaceholder")}/><input type="number" min="0" value={cost} onChange={e=>setCost(Number(e.target.value))} className="input" placeholder={t("modForm.costPlaceholder")}/><input type="number" min="0" value={retail} onChange={e=>setRetail(Number(e.target.value))} className="input" placeholder={t("modForm.retailPlaceholder")}/><input type="number" min="0" value={wholesale} onChange={e=>setWholesale(Number(e.target.value))} className="input" placeholder={t("modForm.wholesalePlaceholder")}/></div>{jsonError&&<p className="mt-3 text-sm font-bold text-red-500">{t(jsonError)}</p>}<Actions loading={store.amalBajarilmoqda} onClose={onClose}/></form></AppModal>
+  // Variant nomi bo'sh qoldirilsa, ro'yxatlarda mahsulot nomi ko'rsatiladi (modificationNomi) —
+  // shu haqiqatni maydonda ham ko'rsatish uchun mahsulot nomi placeholder sifatida beriladi.
+  const mahsulotNomi=store.mahsulotlar.find(m=>m.id===productId)?.name??"";
+  // Parametrlar (JSON) — faqat shu variantda avvaldan xarakteristika (rang, o'lcham va h.k.) bo'lsa ko'rsatiladi;
+  // oddiy variantlarda bu texnik maydon shart emas, "Mahsulot" oynasidagi "Xarakteristikalar" bo'limidan boshqariladi.
+  const parametrlarKerak=editing&&Boolean(item.params&&Object.keys(item.params).length>0);
+  async function save(e:FormEvent){e.preventDefault();if(!barcode.trim()){setJsonError("modForm.barcodeRequired");return}let parsed:Record<string,unknown>|undefined;try{parsed=params.trim()?JSON.parse(params):undefined;setJsonError("")}catch{setJsonError("modForm.invalidJson");return}const ok=await store.modifikatsiyaSaqlash(productId,editing?item.id:null,{name:name.trim()||undefined,barcode:barcode.trim(),article:article.trim()||undefined,params:parsed,price:{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale}});if(ok&&editing)await store.narxYangilash(productId,item.id,{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale});if(ok)onClose()}
+  return <AppModal><form onSubmit={save} className="w-full max-w-2xl rounded-[28px] bg-white p-6 shadow-2xl"><div className="flex justify-between"><h2 className="text-2xl font-black">{editing?t("modForm.editTitle"):t("modForm.createTitle")}</h2><button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100"><X size={18}/></button></div><div className="mt-5 grid gap-3 sm:grid-cols-2"><label className="grid gap-1.5 sm:col-span-2"><span className="text-xs font-bold text-slate-400">{t("modForm.namePlaceholder")}</span><input value={name} onChange={e=>setName(e.target.value)} className="input" placeholder={mahsulotNomi||t("modForm.namePlaceholder")}/>{mahsulotNomi&&<span className="text-[11px] font-medium text-slate-400">{t("modForm.nameHint",{product:mahsulotNomi})}</span>}</label><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.barcodePlaceholder")}</span><input value={barcode} onChange={e=>{setBarcode(e.target.value);if(jsonError==="modForm.barcodeRequired")setJsonError("")}} aria-invalid={jsonError==="modForm.barcodeRequired"} className="input" placeholder={t("modForm.barcodePlaceholder")}/></label><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.articlePlaceholder")}</span><input value={article} onChange={e=>setArticle(e.target.value)} className="input" placeholder={t("modForm.articlePlaceholder")}/></label>{parametrlarKerak&&<label className="grid gap-1.5 sm:col-span-2"><span className="text-xs font-bold text-slate-400">{t("modForm.paramsLabel")}</span><input value={params} onChange={e=>setParams(e.target.value)} className="input" placeholder={t("modForm.paramsPlaceholder")}/></label>}<label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.costPlaceholder")}</span><input type="number" min="0" step="0.01" value={cost} onChange={e=>setCost(Number(e.target.value))} className="input" placeholder={t("modForm.costPlaceholder")}/></label><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.retailPlaceholder")}</span><input type="number" min="0" step="0.01" value={retail} onChange={e=>setRetail(Number(e.target.value))} className="input" placeholder={t("modForm.retailPlaceholder")}/></label><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.wholesalePlaceholder")}</span><input type="number" min="0" step="0.01" value={wholesale} onChange={e=>setWholesale(Number(e.target.value))} className="input" placeholder={t("modForm.wholesalePlaceholder")}/></label></div>{jsonError&&<p className="mt-3 text-sm font-bold text-red-500">{t(jsonError)}</p>}<Actions loading={store.amalBajarilmoqda} onClose={onClose}/></form></AppModal>
 }
 
-function Modal({title,onClose,children,wide=false}:{title:string;onClose:()=>void;children:React.ReactNode;wide?:boolean}){return <AppModal><div className={`scrollbar-hidden max-h-[94vh] w-full overflow-y-auto rounded-[30px] bg-white p-6 shadow-2xl ${wide?"max-w-5xl":"max-w-xl"}`}><div className="mb-5 flex justify-between gap-4"><h2 className="text-2xl font-black">{title}</h2><button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 hover:bg-orange-500 hover:text-white"><X size={18}/></button></div>{children}</div></AppModal>}
+const modalSizeClass={normal:"max-w-xl",medium:"max-w-3xl",wide:"max-w-5xl"} as const;
+function Modal({title,onClose,children,size="normal"}:{title:string;onClose:()=>void;children:React.ReactNode;size?:"normal"|"medium"|"wide"}){return <AppModal><div className={`scrollbar-hidden max-h-[94vh] w-full overflow-y-auto rounded-[30px] bg-white p-6 shadow-2xl ${modalSizeClass[size]}`}><div className="mb-5 flex justify-between gap-4"><h2 className="text-2xl font-black">{title}</h2><button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 hover:bg-orange-500 hover:text-white"><X size={18}/></button></div>{children}</div></AppModal>}
 function Actions({loading,onClose}:{loading:boolean;onClose:()=>void}){const { t } = useTranslation("mahsulotlar");return <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t("actions.cancel")}</button><button disabled={loading} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{loading&&<LoaderCircle size={16} className="animate-spin"/>}{t("actions.save")}</button></div>}
 function ErrorBox(){const x=useMahsulotlarStore(s=>s.xatolik);return <div className="rounded-xl bg-red-50 p-3 font-bold text-red-600">{x}</div>}
 function money(value:number|string|undefined){return `${Number(value??0).toLocaleString("uz-UZ")} so'm`}

@@ -1074,6 +1074,7 @@ export default function YangiSotuvModal({
                             <input
                               type="number"
                               min="0"
+                              step="0.01"
                               value={mahsulot.price}
                               onChange={(event) =>
                                 mahsulotniYangilash(index, { price: event.target.value })
@@ -1097,6 +1098,7 @@ export default function YangiSotuvModal({
                             <input
                               type="number"
                               min="0"
+                              step="0.01"
                               value={mahsulot.discount}
                               onChange={(event) =>
                                 mahsulotniYangilash(index, { discount: event.target.value })

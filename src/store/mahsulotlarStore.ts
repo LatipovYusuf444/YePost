@@ -7,6 +7,7 @@ import {
   modifikatsiyalarApi,
 } from "@/api/catalogApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { useOmborStore } from "@/store/omborStore";
 import type {
   Kategoriya,
   KategoriyaMalumoti,
@@ -413,6 +414,10 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
         },
         amalBajarilmoqda: false,
       }));
+      // Ombor moduli (Kirim/Chiqim/Ko'chirish/Inventarizatsiya) o'z modifikatsiyalar
+      // nusxasini alohida saqlaydi — shu yerda narx o'zgargan bo'lsa, u yerda ham
+      // darhol yangilanishi uchun.
+      if (item.price) useOmborStore.getState().modifikatsiyaNarxiniYangilash(item.id, item.price);
       return true;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
@@ -449,6 +454,7 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
         },
         amalBajarilmoqda: false,
       }));
+      useOmborStore.getState().modifikatsiyaNarxiniYangilash(id, price);
       return true;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });

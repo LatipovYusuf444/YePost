@@ -180,6 +180,7 @@
     "emptyHint": "\"Yaratish\" tugmasi orqali yangi kirim qo'shing.",
     "stats": { "total": "Jami hujjatlar", "completed": "Tasdiqlangan", "inProgress": "Jarayonda", "cancelled": "Bekor qilingan" },
     "statsAria": "Hujjatlar statistikasi",
+    "loadingStats": "Yuklanmoqda...",
     "columns": {
       "nomi": "Nomi",
       "yetkazibBeruvchi": "Yetkazib beruvchi",
