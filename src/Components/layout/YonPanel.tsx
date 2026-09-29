@@ -18,6 +18,7 @@ import {
   FileText,
   Gauge,
   HandCoins,
+  Headset,
   History,
   Home,
   LogOut,
@@ -39,6 +40,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useAuthProfileStore } from "@/store/authProfileStore";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/Components/ui/sheet";
 
 type MenyuBolasi = { key: string; path: string; icon: LucideIcon };
 type Menyu = { key: string; path: string; icon: LucideIcon; bolalar?: MenyuBolasi[] };
@@ -104,6 +106,7 @@ const menyular: Menyu[] = [
     ],
   },
   { key: "xodimlar", path: "/hodimlar", icon: UserCog },
+  { key: "qollabQuvvatlash", path: "/qollab-quvvatlash", icon: Headset },
   { key: "sozlamalar", path: "/sozlamalar", icon: Settings },
 ];
 
@@ -129,13 +132,36 @@ const qatorOddiyKlass = "theme-sidebar-item rounded-[10px] font-medium text-[#83
 const yorliqKlass =
   "min-w-0 truncate whitespace-nowrap transition-opacity duration-200";
 
-export default function YonPanel({ acik }: { acik: boolean }) {
+// Mobil (< md) ekranlarda sidebar doimiy panel emas, balki shadcn Sheet orqali
+// qorong'i fon (overlay) bilan chapdan suriladigan panel sifatida ochiladi/yopiladi.
+// Desktopda (md+) xatti-harakat avvalgidek qoladi (ikonka <-> yorliqli panel toggle).
+const MOBIL_QIYINCHILIK = "(max-width: 767px)";
+
+export default function YonPanel({
+  acik,
+  onAcikChange,
+}: {
+  acik: boolean;
+  onAcikChange: (value: boolean) => void;
+}) {
   const { t } = useTranslation("nav");
   const navigate = useNavigate();
   const { pathname, search } = useLocation();
   const logout = useAuthStore((state) => state.logout);
   const username = useAuthStore((state) => state.username);
   const profil = useAuthProfileStore((state) => state.profil);
+
+  const [mobil, setMobil] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia(MOBIL_QIYINCHILIK).matches : false
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(MOBIL_QIYINCHILIK);
+    const tekshirish = () => setMobil(mediaQuery.matches);
+    tekshirish();
+    mediaQuery.addEventListener("change", tekshirish);
+    return () => mediaQuery.removeEventListener("change", tekshirish);
+  }, []);
 
   // Joriy marshrut tegishli bo'lim ochiq turadi (yangilashdan keyin ham); qolganlarini foydalanuvchi ochadi.
   const faolBolim = menyular.find((menu) => menu.bolalar && yolIchida(pathname, menu.path))?.path;
@@ -171,15 +197,8 @@ export default function YonPanel({ acik }: { acik: boolean }) {
     navigate("/login", { replace: true });
   }
 
-  return (
-    <motion.aside
-      initial={{ x: -64, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
-      className={`theme-sidebar fixed left-0 top-0 z-50 flex h-screen flex-col overflow-hidden border-r border-white/5 bg-[#0B1424] text-[#8391A7] transition-[width] duration-200 ease-in-out ${
-        acik ? "w-70" : "w-16"
-      }`}
-    >
+  const panelIchki = (
+    <>
       <div className="flex h-[72px] shrink-0 items-center gap-3 px-[11px]">
         <motion.div
           initial={{ opacity: 0, scale: 0.7 }}
@@ -327,6 +346,35 @@ export default function YonPanel({ acik }: { acik: boolean }) {
           </button>
         </div>
       </div>
-    </motion.aside>
+    </>
+  );
+
+  return (
+    <>
+      <motion.aside
+        initial={{ x: -64, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+        className={`theme-sidebar fixed left-0 top-0 z-50 hidden h-screen flex-col overflow-hidden border-r border-white/5 bg-[#0B1424] text-[#8391A7] transition-[width] duration-200 ease-in-out md:flex ${
+          acik ? "w-70" : "w-16"
+        }`}
+      >
+        {panelIchki}
+      </motion.aside>
+
+      {/* Mobil (< md): sidebar shadcn Sheet (Radix Dialog asosida) yordamida qorong'i fon
+          bilan chapdan suriladigan panel sifatida ochiladi/yopiladi; desktop paneliga tegilmagan. */}
+      <Sheet open={mobil && acik} onOpenChange={onAcikChange}>
+        <SheetContent
+          side="left"
+          showClose={false}
+          className="theme-sidebar w-70 max-w-[80vw] border-none bg-[#0B1424] p-0 text-[#8391A7] md:hidden"
+        >
+          <SheetTitle className="sr-only">{t("brand")}</SheetTitle>
+          <SheetDescription className="sr-only">{t("brandTagline")}</SheetDescription>
+          {panelIchki}
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

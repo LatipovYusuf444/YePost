@@ -17,10 +17,10 @@ export default function AsosiyLayout() {
 
   return (
     <div className="app-shell min-h-screen bg-gradient-to-br from-cream-50 via-cream-200 to-gold-150">
-      <YonPanel acik={sidebarAcik} />
+      <YonPanel acik={sidebarAcik} onAcikChange={setSidebarAcik} />
 
       <main
-        className={`min-h-screen w-full min-w-0 max-w-full overflow-x-clip pl-20 pr-6 pt-6 transition-[padding-left] duration-200 ease-in-out ${
+        className={`min-h-screen w-full min-w-0 max-w-full overflow-x-clip pl-4 pr-6 pt-6 transition-[padding-left] duration-200 ease-in-out md:pl-20 ${
           sidebarAcik ? "md:pl-74" : ""
         }`}
       >

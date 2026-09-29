@@ -6,6 +6,13 @@ import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import LanguageSwitcher from "@/Components/common/LanguageSwitcher";
 import ThemeSwitcher from "@/Components/theme/ThemeSwitcher";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/Components/ui/dropdown-menu";
 import { crmApi } from "@/api/crmApi";
 import {
   katalogModifikatsiyalariniQoldiqTanlovigaOlish,
@@ -33,7 +40,6 @@ export default function YuqoriPanel({
   const [bildirishnomaOchiq, setBildirishnomaOchiq] = useState(false);
   const [bildirishnomaYuklanmoqda, setBildirishnomaYuklanmoqda] = useState(false);
   const [mahsulotModalOchiq, setMahsulotModalOchiq] = useState(false);
-  const [profilOchiq, setProfilOchiq] = useState(false);
 
   const profil = useAuthProfileStore((state) => state.profil);
   const profilniYuklash = useAuthProfileStore((state) => state.profilniYuklash);
@@ -132,8 +138,6 @@ export default function YuqoriPanel({
         />
         <ProfilTugmasi
           profil={profil}
-          ochiq={profilOchiq}
-          setOchiq={setProfilOchiq}
           onLogout={() => void handleLogout()}
         />
         {mahsulotModalOchiq && (
@@ -174,8 +178,6 @@ export default function YuqoriPanel({
       />
       <ProfilTugmasi
         profil={profil}
-        ochiq={profilOchiq}
-        setOchiq={setProfilOchiq}
         onLogout={() => void handleLogout()}
         bosHarfBilan
       />
@@ -688,7 +690,7 @@ function BildirishnomaTugmasi({
           setOchiq(!ochiq);
           if (!ochiq) onReload();
         }}
-        className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-gold-100 bg-white/60 text-gray-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-gold-200 hover:bg-gold-50 hover:text-gold-600 hover:shadow-md active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2"
+        className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-slate-600 shadow-sm transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--theme-primary)]"
         aria-label={t("notifications.aria")}
       >
         <Bell size={18} />
@@ -777,41 +779,14 @@ function BildirishnomaTugmasi({
 
 function ProfilTugmasi({
   profil,
-  ochiq,
-  setOchiq,
   onLogout,
   bosHarfBilan = false,
 }: {
   profil: JoriyFoydalanuvchi | null;
-  ochiq: boolean;
-  setOchiq: (value: boolean) => void;
   onLogout: () => void;
   bosHarfBilan?: boolean;
 }) {
   const { t } = useTranslation(["topbar", "nav"]);
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
-  const [position, setPosition] = useState({ top: 0, right: 24 });
-
-  useEffect(() => {
-    if (!ochiq) return;
-
-    function updatePosition() {
-      const rect = buttonRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      setPosition({
-        top: rect.bottom + 10,
-        right: Math.max(12, window.innerWidth - rect.right),
-      });
-    }
-
-    updatePosition();
-    window.addEventListener("resize", updatePosition);
-    window.addEventListener("scroll", updatePosition, true);
-    return () => {
-      window.removeEventListener("resize", updatePosition);
-      window.removeEventListener("scroll", updatePosition, true);
-    };
-  }, [ochiq]);
 
   const ism = profil?.fullName?.trim() || profil?.username || "";
   const rolNomi = profil ? t(`roles.${profil.role}`, { ns: "nav", defaultValue: profil.role }) : "";
@@ -820,83 +795,57 @@ function ProfilTugmasi({
   const bosHarf = bosHarfBilan && ism ? ism.charAt(0).toUpperCase() : "";
 
   return (
-    <div className="relative">
-      <button
-        ref={buttonRef}
-        type="button"
-        onClick={() => setOchiq(!ochiq)}
-        className={`flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2 ${bosHarf ? "border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100" : "border-gray-200 bg-white/60 text-gray-700 hover:border-gold-200 hover:bg-gold-50 hover:text-gold-600"}`}
-        aria-label={t("profile.menuAria")}
-      >
-        {rasmUrl ? (
-          <img src={rasmUrl} alt={ism || t("profile.defaultName")} className="h-full w-full object-cover" />
-        ) : bosHarf ? (
-          <span className="text-sm font-bold">{bosHarf}</span>
-        ) : (
-          <UserRound size={18} />
-        )}
-      </button>
-
-      {ochiq &&
-        createPortal(
-          <>
-            <button
-              type="button"
-              className="fixed inset-0 z-[190] cursor-default bg-transparent"
-              aria-label={t("profile.closeAria")}
-              onClick={() => setOchiq(false)}
-            />
-            <div
-              className="fixed z-[200] w-[260px] overflow-hidden rounded-[24px] border border-gold-100 bg-white shadow-[0_24px_90px_rgba(15,23,42,.22)]"
-              style={{ top: position.top, right: position.right }}
-            >
-              <div className="flex items-center gap-3 border-b border-gray-100 bg-gray-50/70 p-4">
-                <span className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border shadow-sm ${bosHarf ? "border-blue-100 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-600"}`}>
-                  {rasmUrl ? (
-                    <img src={rasmUrl} alt={ism || t("profile.defaultName")} className="h-full w-full object-cover" />
-                  ) : bosHarf ? (
-                    <span className="text-base font-bold">{bosHarf}</span>
-                  ) : (
-                    <UserRound size={20} />
-                  )}
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate font-black text-slate-900">{ism || t("profile.defaultName")}</p>
-                  <p className="truncate text-xs font-bold text-gray-500">{rolNomi || t("profile.unknownRole")}</p>
-                </div>
-              </div>
-              <div className="p-2">
-                <Link
-                  to="/sozlamalar"
-                  onClick={() => setOchiq(false)}
-                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-gold-50 hover:text-gold-600"
-                >
-                  <UserRound size={17} /> {t("profile.myProfile")}
-                </Link>
-                <Link
-                  to="/sozlamalar"
-                  onClick={() => setOchiq(false)}
-                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-gold-50 hover:text-gold-600"
-                >
-                  <Settings size={17} /> {t("profile.settings")}
-                </Link>
-              </div>
-              <div className="border-t border-gold-100 p-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOchiq(false);
-                    onLogout();
-                  }}
-                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold text-red-500 transition hover:bg-red-50"
-                >
-                  <LogOut size={17} /> {t("profile.logout")}
-                </button>
-              </div>
-            </div>
-          </>,
-          document.body
-        )}
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className={`flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2 ${bosHarf ? "border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100" : "border-gray-200 bg-white/60 text-gray-700 hover:border-gold-200 hover:bg-gold-50 hover:text-gold-600"}`}
+          aria-label={t("profile.menuAria")}
+        >
+          {rasmUrl ? (
+            <img src={rasmUrl} alt={ism || t("profile.defaultName")} className="h-full w-full object-cover" />
+          ) : bosHarf ? (
+            <span className="text-sm font-bold">{bosHarf}</span>
+          ) : (
+            <UserRound size={18} />
+          )}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={10} className="w-65 overflow-hidden rounded-[24px] p-0">
+        <div className="flex items-center gap-3 border-b border-gray-100 bg-gray-50/70 p-4">
+          <span className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border shadow-sm ${bosHarf ? "border-blue-100 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-600"}`}>
+            {rasmUrl ? (
+              <img src={rasmUrl} alt={ism || t("profile.defaultName")} className="h-full w-full object-cover" />
+            ) : bosHarf ? (
+              <span className="text-base font-bold">{bosHarf}</span>
+            ) : (
+              <UserRound size={20} />
+            )}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate font-black text-slate-900">{ism || t("profile.defaultName")}</p>
+            <p className="truncate text-xs font-bold text-gray-500">{rolNomi || t("profile.unknownRole")}</p>
+          </div>
+        </div>
+        <div className="p-2">
+          <DropdownMenuItem asChild className="rounded-2xl px-3 py-2.5 font-bold text-gray-700">
+            <Link to="/sozlamalar">
+              <UserRound size={17} /> {t("profile.myProfile")}
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild className="rounded-2xl px-3 py-2.5 font-bold text-gray-700">
+            <Link to="/sozlamalar">
+              <Settings size={17} /> {t("profile.settings")}
+            </Link>
+          </DropdownMenuItem>
+        </div>
+        <DropdownMenuSeparator className="mx-0 bg-gold-100" />
+        <div className="p-2">
+          <DropdownMenuItem variant="destructive" onClick={onLogout} className="rounded-2xl px-3 py-2.5 font-bold">
+            <LogOut size={17} /> {t("profile.logout")}
+          </DropdownMenuItem>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
