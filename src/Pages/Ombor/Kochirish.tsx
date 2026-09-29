@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
+import DateRangePicker from "@/Components/ui/DateRangePicker";
 import { useOmborStore } from "@/store/omborStore";
 import type {
   KochirishHujjati,
@@ -158,6 +159,8 @@ export default function Kochirish() {
   const [modal, setModal] = useState(false);
   const [tanlanganId, setTanlanganId] = useState<string | null>(null);
   const [qidiruv, setQidiruv] = useState("");
+  const [sanaDan, setSanaDan] = useState("");
+  const [sanaGacha, setSanaGacha] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [ustunlarMenyusi, setUstunlarMenyusi] = useState(false);
@@ -263,9 +266,13 @@ export default function Kochirish() {
 
   const filtrlangan = useMemo(() => {
     const qiymat = qidiruv.trim().toLocaleLowerCase("uz");
-    if (!qiymat) return store.kochirishlar;
-    return store.kochirishlar.filter((hujjat) =>
-      [
+    return store.kochirishlar.filter((hujjat) => {
+      const createdAt = hujjat.createdAt ? new Date(hujjat.createdAt) : null;
+      const hujjatSanasi = createdAt && !Number.isNaN(createdAt.getTime()) ? createdAt.toISOString().slice(0, 10) : "";
+      if (sanaDan && !(hujjatSanasi && hujjatSanasi >= sanaDan)) return false;
+      if (sanaGacha && !(hujjatSanasi && hujjatSanasi <= sanaGacha)) return false;
+      if (!qiymat) return true;
+      return [
         hujjatNomi(hujjat, t),
         holat(hujjat.status),
         yaratganNomi(hujjat),
@@ -279,9 +286,9 @@ export default function Kochirish() {
         .filter(Boolean)
         .join(" ")
         .toLocaleLowerCase("uz")
-        .includes(qiymat)
-    );
-  }, [manbaOmborNomi, modifikatsiyaMap, ozgartirganNomi, qabulOmborNomi, qidiruv, store.kochirishlar, t, yaratganNomi]);
+        .includes(qiymat);
+    });
+  }, [manbaOmborNomi, modifikatsiyaMap, ozgartirganNomi, qabulOmborNomi, qidiruv, sanaDan, sanaGacha, store.kochirishlar, t, yaratganNomi]);
   const sahifadagiHujjatlar = useMemo(() => filtrlangan.slice((page - 1) * pageSize, page * pageSize), [filtrlangan, page, pageSize]);
   useEffect(() => setPage(1), [filtrlangan, pageSize]);
 
@@ -442,20 +449,28 @@ export default function Kochirish() {
         </button>
       </header>
 
-      <label className="flex h-14 w-full max-w-[480px] items-center gap-3 rounded-[22px] border border-slate-200 bg-white px-5 shadow-sm transition focus-within:border-orange-300 focus-within:ring-4 focus-within:ring-orange-100">
-        <Search size={21} className="shrink-0 text-slate-400" />
-        <input
-          value={qidiruv}
-          onChange={(event) => setQidiruv(event.target.value)}
-          placeholder={t("kochirish.searchPlaceholder")}
-          className="min-w-0 flex-1 bg-transparent text-base text-slate-700 outline-none placeholder:text-slate-400"
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <label className="flex h-14 w-full max-w-[480px] items-center gap-3 rounded-[22px] border border-slate-200 bg-white px-5 shadow-sm transition focus-within:border-orange-300 focus-within:ring-4 focus-within:ring-orange-100">
+          <Search size={21} className="shrink-0 text-slate-400" />
+          <input
+            value={qidiruv}
+            onChange={(event) => setQidiruv(event.target.value)}
+            placeholder={t("kochirish.searchPlaceholder")}
+            className="min-w-0 flex-1 bg-transparent text-base text-slate-700 outline-none placeholder:text-slate-400"
+          />
+          {qidiruv && (
+            <button type="button" onClick={() => setQidiruv("")} aria-label={t("kochirish.clearSearchAria")}>
+              <X size={17} className="text-slate-400" />
+            </button>
+          )}
+        </label>
+        <DateRangePicker
+          from={sanaDan}
+          to={sanaGacha}
+          onChange={(from, to) => { setSanaDan(from); setSanaGacha(to); }}
+          className="h-14 w-full sm:w-126"
         />
-        {qidiruv && (
-          <button type="button" onClick={() => setQidiruv("")} aria-label={t("kochirish.clearSearchAria")}>
-            <X size={17} className="text-slate-400" />
-          </button>
-        )}
-      </label>
+      </div>
 
       {store.xatolik && (
         <div className="flex items-center justify-between rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-sm font-bold text-red-600">

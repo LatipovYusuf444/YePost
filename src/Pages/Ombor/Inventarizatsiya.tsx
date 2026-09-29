@@ -1,9 +1,10 @@
 import AppSelect from "@/Components/ui/AppSelect";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { CalendarDays, CheckCircle2, CircleX, ClipboardList, Clock3, FileText, Filter, LoaderCircle, MessageSquareText, Package, Plus, Search, Settings, Trash2, X } from "lucide-react";
+import { CheckCircle2, CircleX, ClipboardList, Clock3, FileText, Filter, LoaderCircle, MessageSquareText, Package, Plus, Search, Settings, Trash2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import DateRangePicker from "@/Components/ui/DateRangePicker";
 import { useOmborStore } from "@/store/omborStore";
 import type { InventarizatsiyaTuri, OmborQoldigi } from "@/types/ombor";
 import { holat, hujjatRaqami, modificationNomi, qoldiqMiqdori, sana } from "./omborYordamchilari";
@@ -366,12 +367,13 @@ export default function Inventarizatsiya() {
             className="h-12 w-full rounded-2xl border border-blue-100 bg-white pl-11 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
           />
         </label>
-        <div className="flex min-w-0 items-center gap-2 rounded-2xl border border-blue-100 px-3 py-1.5">
-          <CalendarDays size={18} className="shrink-0 text-blue-700" />
-          <label className="min-w-0 flex-1"><span className="sr-only">{t("inventarizatsiya.filters.dateFrom")}</span><input aria-label={t("inventarizatsiya.filters.dateFrom")} type="date" value={sanaDan} onChange={(event) => setSanaDan(event.target.value)} className="h-9 w-full min-w-0 border-0 bg-transparent text-xs text-slate-600 outline-none" /></label>
-          <span className="text-xs text-slate-400">—</span>
-          <label className="min-w-0 flex-1"><span className="sr-only">{t("inventarizatsiya.filters.dateTo")}</span><input aria-label={t("inventarizatsiya.filters.dateTo")} type="date" value={sanaGacha} onChange={(event) => setSanaGacha(event.target.value)} className="h-9 w-full min-w-0 border-0 bg-transparent text-xs text-slate-600 outline-none" /></label>
-        </div>
+        <DateRangePicker
+          from={sanaDan}
+          to={sanaGacha}
+          onChange={(from, to) => { setSanaDan(from); setSanaGacha(to); }}
+          className="min-w-0"
+          compact
+        />
         <div className="flex h-12 items-center gap-2 px-1">
           <Filter size={17} className="shrink-0 text-blue-700" />
           <AppSelect value={holatFiltri} onChange={(event) => setHolatFiltri(event.target.value)} aria-label={t("inventarizatsiya.filters.status")} className="h-full min-w-0 flex-1 rounded-xl px-1 text-sm text-slate-600 [&_svg]:!text-blue-600">

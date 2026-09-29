@@ -23,5 +23,19 @@
     "placeholder": "Tanlang",
     "searchPlaceholder": "Qidirish...",
     "notFound": "Topilmadi"
+  },
+  "dateRange": {
+    "placeholder": "Sana bo'yicha filtr",
+    "ariaLabel": "Sana bo'yicha filtr",
+    "from": "Sanadan",
+    "to": "Sanagacha",
+    "fromShort": "dan",
+    "toShort": "gacha",
+    "clear": "Tozalash",
+    "clearChip": "Sana filtrini tozalash",
+    "apply": "Qo'llash",
+    "today": "Bugun",
+    "last7Days": "7 kun",
+    "last30Days": "30 kun"
   }
 }

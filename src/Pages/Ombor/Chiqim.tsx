@@ -10,6 +10,7 @@ import {
   Search,
   Settings,
 } from "lucide-react";
+import DateRangePicker from "@/Components/ui/DateRangePicker";
 import { useOmborStore } from "@/store/omborStore";
 import type {
   ChiqimHujjati,
@@ -67,6 +68,8 @@ export default function Chiqim() {
   };
   const [qidiruv, setQidiruv] = useState("");
   const [statusFiltri, setStatusFiltri] = useState("ALL");
+  const [sanaDan, setSanaDan] = useState("");
+  const [sanaGacha, setSanaGacha] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [modal, setModal] = useState(false);
@@ -171,9 +174,15 @@ export default function Chiqim() {
 
   const royxat = useMemo(() => {
     const query = qidiruv.trim().toLowerCase();
-    return store.chiqimlar.filter((item) =>
-      (statusFiltri === "ALL" || String(item.status ?? "DRAFT").toUpperCase() === statusFiltri || (statusFiltri === "CANCELLED" && String(item.status ?? "").toUpperCase() === "CANCELED")) &&
-      (!query || [
+    return store.chiqimlar.filter((item) => {
+      const status = String(item.status ?? "DRAFT").toUpperCase();
+      const statusMos = statusFiltri === "ALL" || status === statusFiltri || (statusFiltri === "CANCELLED" && status === "CANCELED");
+      if (!statusMos) return false;
+      const createdAt = item.createdAt ? new Date(item.createdAt) : null;
+      const hujjatSanasi = createdAt && !Number.isNaN(createdAt.getTime()) ? createdAt.toISOString().slice(0, 10) : "";
+      if (sanaDan && !(hujjatSanasi && hujjatSanasi >= sanaDan)) return false;
+      if (sanaGacha && !(hujjatSanasi && hujjatSanasi <= sanaGacha)) return false;
+      return !query || [
         hujjatRaqami(item),
         omborNomi(item),
         sababNomi(item),
@@ -186,11 +195,11 @@ export default function Chiqim() {
       ]
         .join(" ")
         .toLowerCase()
-        .includes(query))
-    );
+        .includes(query);
+    });
     // Qidiruv real backend ma'lumotlari va maplarga bog'liq.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qidiruv, statusFiltri, store.chiqimlar, omborMap, xodimMap, t]);
+  }, [qidiruv, statusFiltri, sanaDan, sanaGacha, store.chiqimlar, omborMap, xodimMap, t]);
   const statistika = useMemo(() => {
     const jami = store.chiqimlar.length;
     const tasdiqlangan = store.chiqimlar.filter((item) => String(item.status ?? "").toUpperCase() === "CONFIRMED").length;
@@ -349,9 +358,17 @@ export default function Chiqim() {
         ariaLabel={t("chiqim.statsAria")}
       />
 
-      <div className="relative w-full max-w-[480px]">
-        <Search size={18} className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input value={qidiruv} onChange={(event) => setQidiruv(event.target.value)} placeholder={t("chiqim.searchPlaceholder")} className="h-14 w-full rounded-2xl border border-slate-200 bg-white pl-13 pr-5 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative w-full max-w-[480px]">
+          <Search size={18} className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input value={qidiruv} onChange={(event) => setQidiruv(event.target.value)} placeholder={t("chiqim.searchPlaceholder")} className="h-14 w-full rounded-2xl border border-slate-200 bg-white pl-13 pr-5 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100" />
+        </div>
+        <DateRangePicker
+          from={sanaDan}
+          to={sanaGacha}
+          onChange={(from, to) => { setSanaDan(from); setSanaGacha(to); }}
+          className="h-14 w-full sm:w-126"
+        />
       </div>
 
       {store.xatolik && (

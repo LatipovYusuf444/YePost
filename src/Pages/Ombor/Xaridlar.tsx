@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { createPortal } from "react-dom";
 import { FileText, LoaderCircle, Plus, Search, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import DateRangePicker from "@/Components/ui/DateRangePicker";
 import { useOmborStore } from "@/store/omborStore";
 import type { KirimHujjati } from "@/types/ombor";
 import { holat, hujjatRaqami, pul, sana } from "./omborYordamchilari";
@@ -49,6 +50,8 @@ export default function Xaridlar() {
   );
   const [qidiruv, setQidiruv] = useState("");
   const [statusFiltri, setStatusFiltri] = useState("ALL");
+  const [sanaDan, setSanaDan] = useState("");
+  const [sanaGacha, setSanaGacha] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [modal, setModal] = useState(false);
@@ -149,6 +152,10 @@ export default function Xaridlar() {
       const status = String(hujjat.status ?? "DRAFT").toUpperCase();
       const statusMos = statusFiltri === "ALL" || status === statusFiltri || (statusFiltri === "CANCELLED" && status === "CANCELED");
       if (!statusMos) return false;
+      const createdAt = hujjat.createdAt ? new Date(hujjat.createdAt) : null;
+      const hujjatSanasi = createdAt && !Number.isNaN(createdAt.getTime()) ? createdAt.toISOString().slice(0, 10) : "";
+      if (sanaDan && !(hujjatSanasi && hujjatSanasi >= sanaDan)) return false;
+      if (sanaGacha && !(hujjatSanasi && hujjatSanasi <= sanaGacha)) return false;
       if (!q) return true;
       const matn = [
         kirimNomi(hujjat),
@@ -165,7 +172,7 @@ export default function Xaridlar() {
       return matn.includes(q);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store.kirimlar, qidiruv, statusFiltri, suppliersMap, store.xodimlar, omborlarMap]);
+  }, [store.kirimlar, qidiruv, statusFiltri, sanaDan, sanaGacha, suppliersMap, store.xodimlar, omborlarMap]);
   const statistika = useMemo(() => {
     const jami = store.kirimlar.length;
     const tasdiqlangan = store.kirimlar.filter((item) => String(item.status ?? "").toUpperCase() === "CONFIRMED").length;
@@ -238,13 +245,22 @@ export default function Xaridlar() {
         ariaLabel={t("xaridlar.statsAria")}
       />
 
-      <div className="relative max-w-sm">
-        <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input
-          value={qidiruv}
-          onChange={(event) => setQidiruv(event.target.value)}
-          placeholder={t("xaridlar.searchPlaceholder")}
-          className="h-11 w-full rounded-2xl border border-gray-200 bg-white pl-10 pr-4 text-sm outline-none focus:border-orange-400"
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative max-w-sm flex-1">
+          <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            value={qidiruv}
+            onChange={(event) => setQidiruv(event.target.value)}
+            placeholder={t("xaridlar.searchPlaceholder")}
+            className="h-11 w-full rounded-2xl border border-gray-200 bg-white pl-10 pr-4 text-sm outline-none focus:border-orange-400"
+          />
+        </div>
+        <DateRangePicker
+          from={sanaDan}
+          to={sanaGacha}
+          onChange={(from, to) => { setSanaDan(from); setSanaGacha(to); }}
+          className="w-full sm:w-126"
+          compact
         />
       </div>
 

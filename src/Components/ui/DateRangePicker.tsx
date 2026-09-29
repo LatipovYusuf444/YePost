@@ -1,6 +1,13 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { CalendarDays, Check, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { format } from "date-fns";
+import { ru, uz } from "date-fns/locale";
+import type { DateRange } from "react-day-picker";
+import { CalendarDays, X } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/Components/ui/popover";
+import { Calendar } from "@/Components/ui/calendar";
+import { Button } from "@/Components/ui/button";
+import { cn } from "@/lib/utils";
 
 type Props = {
   from: string;
@@ -10,184 +17,129 @@ type Props = {
   compact?: boolean;
 };
 
-const hafta = ["Du", "Se", "Cho", "Pa", "Ju", "Sha", "Ya"];
-
-function key(date: Date) {
+function toKey(date: Date) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
 
-function parse(value: string) {
-  if (!value) return null;
+function fromKey(value: string): Date | undefined {
+  if (!value) return undefined;
   const [y, m, d] = value.split("-").map(Number);
-  const date = new Date(y, m - 1, d);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function display(value: string) {
-  const date = parse(value);
-  return date ? new Intl.DateTimeFormat("uz-UZ", { day: "2-digit", month: "short", year: "numeric" }).format(date) : "";
+  const date = new Date(y, (m ?? 1) - 1, d ?? 1);
+  return Number.isNaN(date.getTime()) ? undefined : date;
 }
 
 function shiftDay(amount: number) {
   const date = new Date();
   date.setDate(date.getDate() + amount);
-  return key(date);
+  return toKey(date);
 }
 
+// Ombor va savdo sahifalaridagi barcha sana-oraliq filtrlari uchun yagona,
+// shadcn/react-day-picker asosidagi haqiqiy kalendar. Backendda sana bo'yicha
+// so'rov parametri yo'q — filtr to'liq client tomonda ishlaydi.
 export default function DateRangePicker({ from, to, onChange, className = "", compact = false }: Props) {
+  const { t, i18n } = useTranslation("common");
+  const kalendarTili = i18n.resolvedLanguage === "ru" ? ru : uz;
   const [open, setOpen] = useState(false);
-  const [draftFrom, setDraftFrom] = useState(from);
-  const [draftTo, setDraftTo] = useState(to);
-  const [month, setMonth] = useState(() => {
-    const initial = parse(to || from) ?? new Date();
-    return new Date(initial.getFullYear(), initial.getMonth(), 1);
-  });
-  const ref = useRef<HTMLDivElement>(null);
-  const popupRef = useRef<HTMLDivElement>(null);
-  const [popupJoylashuvi, setPopupJoylashuvi] = useState<{
-    top: number;
-    left: number;
-    width: number;
-  } | null>(null);
+  const [draft, setDraft] = useState<DateRange | undefined>({ from: fromKey(from), to: fromKey(to) });
 
   useEffect(() => {
-    if (!open) return;
-    setDraftFrom(from);
-    setDraftTo(to);
-    const close = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (!ref.current?.contains(target) && !popupRef.current?.contains(target)) setOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
+    if (open) setDraft({ from: fromKey(from), to: fromKey(to) });
   }, [open, from, to]);
 
-  useLayoutEffect(() => {
-    if (!open) {
-      setPopupJoylashuvi(null);
-      return;
-    }
+  const tanlangan = Boolean(from || to);
 
-    function joylashtirish() {
-      const trigger = ref.current;
-      if (!trigger) return;
+  const label = useMemo(() => {
+    const fromDate = fromKey(from);
+    const toDate = fromKey(to);
+    if (!fromDate && !toDate) return t("dateRange.placeholder");
+    if (fromDate && toDate && from !== to) return `${format(fromDate, "dd.MM.yyyy")} – ${format(toDate, "dd.MM.yyyy")}`;
+    return format(fromDate ?? toDate!, "dd.MM.yyyy");
+  }, [from, to, t]);
 
-      const rect = trigger.getBoundingClientRect();
-      const chet = 12;
-      const oraliq = 8;
-      const width = Math.min(340, window.innerWidth - chet * 2);
-      const popupHeight = popupRef.current?.offsetHeight ?? 470;
-      const pastdagiJoy = window.innerHeight - rect.bottom - oraliq - chet;
-      const tepadaOchilsin = pastdagiJoy < popupHeight && rect.top > pastdagiJoy;
-      const xomTop = tepadaOchilsin
-        ? rect.top - popupHeight - oraliq
-        : rect.bottom + oraliq;
-      const top = Math.max(chet, Math.min(xomTop, window.innerHeight - popupHeight - chet));
-      const left = Math.max(chet, Math.min(rect.right - width, window.innerWidth - width - chet));
-
-      setPopupJoylashuvi({ top, left, width });
-    }
-
-    joylashtirish();
-    const frame = window.requestAnimationFrame(joylashtirish);
-    window.addEventListener("resize", joylashtirish);
-    window.addEventListener("scroll", joylashtirish, true);
-    return () => {
-      window.cancelAnimationFrame(frame);
-      window.removeEventListener("resize", joylashtirish);
-      window.removeEventListener("scroll", joylashtirish, true);
-    };
-  }, [open, month]);
-
-  const days = useMemo(() => {
-    const firstWeekday = (month.getDay() + 6) % 7;
-    const start = new Date(month.getFullYear(), month.getMonth(), 1 - firstWeekday);
-    return Array.from({ length: 42 }, (_, index) => {
-      const date = new Date(start);
-      date.setDate(start.getDate() + index);
-      return date;
-    });
-  }, [month]);
-
-  function selectDate(value: string) {
-    if (!draftFrom || draftTo) {
-      setDraftFrom(value);
-      setDraftTo("");
-    } else if (value < draftFrom) {
-      setDraftFrom(value);
-      setDraftTo(draftFrom);
-    } else {
-      setDraftTo(value);
-    }
+  function qollash() {
+    onChange(draft?.from ? toKey(draft.from) : "", draft?.to ? toKey(draft.to) : draft?.from ? toKey(draft.from) : "");
+    setOpen(false);
   }
 
-  function quick(start: string, end: string) {
-    setDraftFrom(start);
-    setDraftTo(end);
-    const date = parse(end);
-    if (date) setMonth(new Date(date.getFullYear(), date.getMonth(), 1));
+  function tezOraliq(startOffset: number) {
+    setDraft({ from: fromKey(shiftDay(startOffset)), to: fromKey(shiftDay(0)) });
   }
-
-  const label = !from && !to
-    ? "Sana: barchasi"
-    : from === to
-      ? `Sana: ${display(from)}`
-      : `${display(from)} — ${display(to || from)}`;
 
   return (
-    <div ref={ref} className={`relative ${className}`}>
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        className={`flex w-full items-center justify-between gap-2 rounded-xl border border-orange-500 bg-orange-500 px-3 font-bold text-white shadow-sm transition hover:bg-orange-600 focus:ring-4 focus:ring-orange-100 ${compact ? "h-10 text-sm" : "h-11 text-sm"}`}
-      >
-        <span className="flex min-w-0 items-center gap-2"><CalendarDays size={16} className="shrink-0"/><span className="truncate">{label}</span></span>
-        <CalendarDays size={16} className="shrink-0 opacity-80" />
-      </button>
-
-      {open && typeof document !== "undefined" && createPortal(
-        <div
-          ref={popupRef}
-          className="fixed z-[100100] max-h-[calc(100dvh-24px)] overflow-y-auto rounded-[24px] border border-orange-100 bg-white p-3 shadow-[0_24px_70px_rgba(15,23,42,.22)]"
-          style={{
-            top: popupJoylashuvi?.top ?? 0,
-            left: popupJoylashuvi?.left ?? 0,
-            width: popupJoylashuvi?.width ?? Math.min(340, window.innerWidth - 24),
-            visibility: popupJoylashuvi ? "visible" : "hidden",
-          }}
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          aria-label={t("dateRange.ariaLabel")}
+          className={cn(
+            "w-full cursor-pointer justify-between rounded-xl bg-primary px-3 font-bold text-primary-foreground shadow-sm hover:bg-primary/90",
+            compact ? "h-10 text-sm" : "h-11 text-sm",
+            className
+          )}
         >
-          <div className="flex items-center justify-between px-1 pb-2">
-            <button type="button" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="grid h-9 w-9 place-items-center rounded-xl text-slate-500 hover:bg-orange-50 hover:text-orange-600"><ChevronLeft size={18}/></button>
-            <strong className="text-sm font-black capitalize text-slate-800">{new Intl.DateTimeFormat("uz-UZ", { month: "long", year: "numeric" }).format(month)}</strong>
-            <button type="button" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} className="grid h-9 w-9 place-items-center rounded-xl text-slate-500 hover:bg-orange-50 hover:text-orange-600"><ChevronRight size={18}/></button>
-          </div>
-          <div className="grid grid-cols-7 gap-1 pb-1">{hafta.map((day) => <span key={day} className="py-1 text-center text-[11px] font-black text-slate-400">{day}</span>)}</div>
-          <div className="grid grid-cols-7 gap-1">
-            {days.map((date) => {
-              const value = key(date);
-              const edge = value === draftFrom || value === draftTo;
-              const between = Boolean(draftFrom && draftTo && value > draftFrom && value < draftTo);
-              const muted = date.getMonth() !== month.getMonth();
-              return <button key={value} type="button" onClick={() => selectDate(value)} className={`relative grid h-9 place-items-center rounded-xl text-xs font-bold transition ${edge ? "bg-orange-500 text-white shadow-md shadow-orange-200" : between ? "bg-orange-100 text-orange-700" : muted ? "text-slate-300 hover:bg-orange-50" : "text-slate-700 hover:bg-orange-50 hover:text-orange-600"}`}>{date.getDate()}</button>;
-            })}
-          </div>
-          <div className="mt-3 flex flex-wrap gap-1.5 border-t border-orange-100 pt-3 text-xs font-bold">
-            <button type="button" onClick={() => quick(shiftDay(0), shiftDay(0))} className="rounded-lg bg-orange-50 px-2.5 py-1.5 text-orange-600">Bugun</button>
-            <button type="button" onClick={() => quick(shiftDay(-6), shiftDay(0))} className="rounded-lg bg-orange-50 px-2.5 py-1.5 text-orange-600">7 kun</button>
-            <button type="button" onClick={() => quick(shiftDay(-29), shiftDay(0))} className="rounded-lg bg-orange-50 px-2.5 py-1.5 text-orange-600">30 kun</button>
-            <button type="button" onClick={() => { setDraftFrom(""); setDraftTo(""); }} className="ml-auto rounded-lg px-2 py-1.5 text-slate-400 hover:bg-slate-100"><X size={15}/></button>
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <div className="rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-500">Dan: <span className="text-slate-800">{display(draftFrom) || "—"}</span></div>
-            <div className="rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-500">Gacha: <span className="text-slate-800">{display(draftTo) || "—"}</span></div>
-          </div>
-          <button type="button" onClick={() => { onChange(draftFrom, draftTo || draftFrom); setOpen(false); }} className="mt-2 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-orange-500 text-sm font-black text-white hover:bg-orange-600"><Check size={16}/> Qo‘llash</button>
-        </div>,
-        document.body
-      )}
-    </div>
+          <span className="flex min-w-0 items-center gap-2">
+            <CalendarDays size={16} className="shrink-0" />
+            <span className="truncate">{label}</span>
+          </span>
+          {tanlangan && (
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(event) => {
+                event.stopPropagation();
+                onChange("", "");
+              }}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.stopPropagation();
+                event.preventDefault();
+                onChange("", "");
+              }}
+              aria-label={t("dateRange.clearChip")}
+              className="cursor-pointer rounded-full p-0.5 opacity-80 transition hover:bg-white/20 hover:opacity-100"
+            >
+              <X size={14} />
+            </span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-auto p-3">
+        <Calendar
+          mode="range"
+          numberOfMonths={2}
+          selected={draft}
+          onSelect={setDraft}
+          defaultMonth={draft?.to ?? draft?.from ?? new Date()}
+          locale={kalendarTili}
+          className="[--cell-size:--spacing(8)]"
+        />
+        <div className="flex flex-wrap gap-1.5 border-t border-border pt-3 text-xs font-bold">
+          <button type="button" onClick={() => tezOraliq(0)} className="cursor-pointer rounded-lg bg-muted px-2.5 py-1.5 text-primary hover:bg-muted/70">
+            {t("dateRange.today")}
+          </button>
+          <button type="button" onClick={() => tezOraliq(-6)} className="cursor-pointer rounded-lg bg-muted px-2.5 py-1.5 text-primary hover:bg-muted/70">
+            {t("dateRange.last7Days")}
+          </button>
+          <button type="button" onClick={() => tezOraliq(-29)} className="cursor-pointer rounded-lg bg-muted px-2.5 py-1.5 text-primary hover:bg-muted/70">
+            {t("dateRange.last30Days")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setDraft(undefined)}
+            disabled={!draft?.from && !draft?.to}
+            className="ml-auto cursor-pointer rounded-lg px-2 py-1.5 text-muted-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {t("dateRange.clear")}
+          </button>
+        </div>
+        <Button type="button" onClick={qollash} className="mt-3 w-full cursor-pointer">
+          {t("dateRange.apply")}
+        </Button>
+      </PopoverContent>
+    </Popover>
   );
 }

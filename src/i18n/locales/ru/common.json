@@ -23,5 +23,19 @@
     "placeholder": "Выберите",
     "searchPlaceholder": "Поиск...",
     "notFound": "Не найдено"
+  },
+  "dateRange": {
+    "placeholder": "Фильтр по дате",
+    "ariaLabel": "Фильтр по дате",
+    "from": "С даты",
+    "to": "По дату",
+    "fromShort": "с",
+    "toShort": "по",
+    "clear": "Очистить",
+    "clearChip": "Очистить фильтр по дате",
+    "apply": "Применить",
+    "today": "Сегодня",
+    "last7Days": "7 дней",
+    "last30Days": "30 дней"
   }
 }
