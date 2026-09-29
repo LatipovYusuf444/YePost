@@ -288,7 +288,7 @@ export default function MahsulotQaytarishModal({
                             disabled={qator.qolgan <= 0 || amalBajarilmoqda}
                             value={miqdorlar[qator.saleItemId] ?? ""}
                             onChange={(event) => miqdorniOzgarish(qator.saleItemId, event.target.value)}
-                            className="h-10 w-28 rounded-xl border border-orange-100 bg-white px-3 font-bold outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 disabled:bg-gray-50 disabled:text-gray-400"
+                            className="h-10 w-28 rounded-xl border border-orange-100 bg-white px-3 font-bold outline-none transition-colors focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-gray-50 disabled:text-gray-400 disabled:opacity-70"
                             placeholder="0"
                           />
                         </td>

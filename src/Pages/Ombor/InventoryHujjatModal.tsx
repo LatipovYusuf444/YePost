@@ -878,7 +878,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                             modificationId: event.target.value,
                           })
                         }
-                        className="h-11 rounded-xl border bg-white px-3"
+                        className="h-11 rounded-xl border border-slate-200 bg-white px-3 outline-none transition-colors focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                       >
                         <option value="">{t("form.productPlaceholder")}</option>
                         {store.modifikatsiyalar.map((modification) => (
@@ -900,7 +900,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                             quantity: Number(event.target.value),
                           })
                         }
-                        className="h-11 rounded-xl border bg-white px-3"
+                        className="h-11 rounded-xl border border-slate-200 bg-white px-3 outline-none transition-colors focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                         placeholder={
                           tur === "inventarizatsiya"
                             ? t("form.actualQuantityPlaceholder")
@@ -918,7 +918,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                               price: Number(event.target.value),
                             })
                           }
-                          className="h-11 rounded-xl border bg-white px-3"
+                          className="h-11 rounded-xl border border-slate-200 bg-white px-3 outline-none transition-colors focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                           placeholder={t("form.costPricePlaceholder")}
                         />
                       )}
@@ -959,7 +959,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                 <textarea
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
-                  className="mt-5 min-h-24 w-full rounded-2xl border p-4 outline-none focus:border-orange-300"
+                  className="mt-5 min-h-24 w-full rounded-2xl border border-slate-200 p-4 outline-none transition-colors focus:border-orange-300 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                   placeholder={t("form.notePlaceholder")}
                 />
 

@@ -2,8 +2,12 @@ import { useState, type FormEvent } from "react";
 import { Building2, Edit3, LoaderCircle, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import PhoneInput from "@/Components/ui/PhoneInput";
 import { useOmborStore } from "@/store/omborStore";
 import type { Kompaniya } from "@/types/ombor";
+
+const maydonKlass =
+  "h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 outline-none transition-colors focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70";
 
 export default function Kompaniyalar() {
   const { t } = useTranslation("ombor_kichik");
@@ -98,10 +102,10 @@ export default function Kompaniyalar() {
             <h2 className="text-2xl font-black">{editing ? t("kompaniyalar.modalEditTitle") : t("kompaniyalar.modalNewTitle")}</h2>
             {store.xatolik && <div className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-600">{store.xatolik}</div>}
             <div className="mt-5 space-y-3">
-              <input value={name} onChange={(e)=>setName(e.target.value)} className="h-12 w-full rounded-2xl border px-4" placeholder={t("kompaniyalar.namePlaceholder")}/>
-              <input value={inn} onChange={(e)=>setInn(e.target.value)} className="h-12 w-full rounded-2xl border px-4" placeholder={t("kompaniyalar.innPlaceholder")}/>
-              <input value={phone} onChange={(e)=>setPhone(e.target.value)} className="h-12 w-full rounded-2xl border px-4" placeholder={t("kompaniyalar.phonePlaceholder")}/>
-              <textarea value={address} onChange={(e)=>setAddress(e.target.value)} className="w-full rounded-2xl border p-4" placeholder={t("kompaniyalar.addressPlaceholder")}/>
+              <input value={name} onChange={(e)=>setName(e.target.value)} className={maydonKlass} placeholder={t("kompaniyalar.namePlaceholder")}/>
+              <input value={inn} onChange={(e)=>setInn(e.target.value)} className={maydonKlass} placeholder={t("kompaniyalar.innPlaceholder")}/>
+              <PhoneInput value={phone} onChange={setPhone}/>
+              <textarea value={address} onChange={(e)=>setAddress(e.target.value)} className={`${maydonKlass} h-auto min-h-24 py-3`} placeholder={t("kompaniyalar.addressPlaceholder")}/>
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button type="button" onClick={()=>setModal(false)} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t("kompaniyalar.closeButton")}</button>

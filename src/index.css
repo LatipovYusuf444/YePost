@@ -565,7 +565,7 @@ table:not(:where(.font-serif *)) textarea {
   }
 
   .input {
-    @apply h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 font-medium outline-none focus:border-orange-300;
+    @apply h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 font-medium outline-none transition-colors focus:border-orange-300 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70;
   }
 
   .login-bg-enter {
@@ -1097,8 +1097,6 @@ html[data-theme="green"] .theme-logo,
 html[data-theme="purple"] .theme-logo {
   background-image: linear-gradient(135deg, var(--theme-primary), var(--theme-primary-dark)) !important;
 }
-.theme-menu { box-shadow: 0 16px 40px var(--theme-shadow); }
-.theme-control:hover { border-color: var(--theme-primary) !important; color: var(--theme-primary) !important; }
 .theme-search:focus-within { box-shadow: 0 0 0 4px var(--theme-focus); }
 
 html[data-theme="green"] [class~="bg-[#2563EB]"],

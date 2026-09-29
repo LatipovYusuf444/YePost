@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { Briefcase, Building2, CalendarDays, Hash, Phone, UserRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import PhoneInput from "@/Components/ui/PhoneInput";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import FaoliyatPaneli from "./FaoliyatPaneli";
 import IjtimoiyTanlov from "./IjtimoiyTanlov";
@@ -222,13 +223,7 @@ export default function KompaniyaModal({
                             <Phone size={14} className="text-[#2563EB]" />
                             {t("kompaniyaModal.phone")}
                           </span>
-                          <input
-                            type="tel"
-                            value={telefon}
-                            onChange={(event) => setTelefon(event.target.value)}
-                            placeholder={t("kompaniyaModal.phonePlaceholder")}
-                            className={maydonKlass}
-                          />
+                          <PhoneInput value={telefon} onChange={setTelefon} />
                         </label>
 
                         <label className="grid gap-2">
@@ -249,13 +244,7 @@ export default function KompaniyaModal({
                             <Phone size={14} className="text-[#2563EB]" />
                             {t("kompaniyaModal.contactPhone")}
                           </span>
-                          <input
-                            type="tel"
-                            value={aloqaTelefoni}
-                            onChange={(event) => setAloqaTelefoni(event.target.value)}
-                            placeholder={t("kompaniyaModal.contactPhonePlaceholder")}
-                            className={maydonKlass}
-                          />
+                          <PhoneInput value={aloqaTelefoni} onChange={setAloqaTelefoni} />
                         </label>
 
                         <label className="grid gap-2">

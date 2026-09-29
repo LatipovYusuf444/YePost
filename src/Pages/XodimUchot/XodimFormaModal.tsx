@@ -12,6 +12,7 @@ import {
   Wallet,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import PhoneInput from "@/Components/ui/PhoneInput";
 import FaoliyatPaneli from "../XaridorUchot/FaoliyatPaneli";
 import TezkorPanel from "../XaridorUchot/TezkorPanel";
 import { TarixTab } from "./XodimTablari";
@@ -225,13 +226,7 @@ export default function XodimFormaModal({
 
                           {telefonlar.map((telefon, index) => (
                             <div key={index} className="flex gap-2">
-                              <input
-                                type="tel"
-                                value={telefon}
-                                onChange={(event) => telefonYangilash(index, event.target.value)}
-                                placeholder="+998 90 123 45 67"
-                                className={maydonKlass}
-                              />
+                              <PhoneInput value={telefon} onChange={(qiymat) => telefonYangilash(index, qiymat)} className="min-w-0 flex-1" />
                               <button
                                 type="button"
                                 onClick={() => telefonOchirish(index)}

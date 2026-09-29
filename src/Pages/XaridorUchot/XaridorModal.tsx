@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import PhoneInput from "@/Components/ui/PhoneInput";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import FaoliyatPaneli from "./FaoliyatPaneli";
 import IjtimoiyTanlov from "./IjtimoiyTanlov";
@@ -228,13 +229,7 @@ export default function XaridorModal({
 
                       {telefonlar.map((telefon, index) => (
                         <div key={index} className="flex gap-2">
-                          <input
-                            type="tel"
-                            value={telefon}
-                            onChange={(event) => telefonYangilash(index, event.target.value)}
-                            placeholder={t("xaridorModal.phonePlaceholder")}
-                            className={maydonKlass}
-                          />
+                          <PhoneInput value={telefon} onChange={(qiymat) => telefonYangilash(index, qiymat)} className="min-w-0 flex-1" />
                           <button
                             type="button"
                             onClick={() => telefonOchirish(index)}

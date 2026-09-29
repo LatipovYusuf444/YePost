@@ -235,7 +235,7 @@ export default function KochirishYaratishModal({ onClose }: Props) {
               <div className="space-y-6">
                 <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm sm:p-6">
                   <div className="flex items-center gap-2 border-b border-orange-100 pb-4"><MessageSquare size={18} className="text-[#2563EB]" /><h3 className="font-black uppercase text-slate-600">{t("kochirishYaratishModal.sections.comment")}</h3></div>
-                  <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={4} className="mt-5 w-full resize-none rounded-2xl border border-slate-200 p-4 font-semibold outline-none focus:border-orange-300 focus:ring-4 focus:ring-orange-100" placeholder={t("kochirishYaratishModal.fields.commentPlaceholder")} />
+                  <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={4} className="mt-5 w-full resize-none rounded-2xl border border-slate-200 p-4 font-semibold outline-none transition-colors focus:border-orange-300 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70" placeholder={t("kochirishYaratishModal.fields.commentPlaceholder")} />
                 </section>
                 <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm sm:p-6">
                   <div className="flex items-center gap-2 border-b border-orange-100 pb-4"><Clock3 size={18} className="text-[#2563EB]" /><h3 className="font-black uppercase text-slate-600">{t("kochirishYaratishModal.sections.history")}</h3></div>

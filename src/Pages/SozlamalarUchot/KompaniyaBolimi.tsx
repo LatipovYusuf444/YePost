@@ -1,4 +1,5 @@
 import AppSelect from "@/Components/ui/AppSelect";
+import PhoneInput from "@/Components/ui/PhoneInput";
 import { useEffect, useState } from "react";
 import { LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -40,7 +41,7 @@ export default function KompaniyaBolimi() {
       <div className="grid gap-4 sm:grid-cols-2">
         <Maydon label={t("kompaniya.fields.name")}><input value={nomi} onChange={(e) => setNomi(e.target.value)} className={maydonKlass}/></Maydon>
         <Maydon label={t("kompaniya.fields.inn")}><input value={stir} onChange={(e) => setStir(e.target.value)} className={maydonKlass}/></Maydon>
-        <Maydon label={t("kompaniya.fields.phone")}><input type="tel" value={telefon} onChange={(e) => setTelefon(e.target.value)} className={maydonKlass}/></Maydon>
+        <Maydon label={t("kompaniya.fields.phone")}><PhoneInput value={telefon} onChange={setTelefon}/></Maydon>
         <Maydon label={t("kompaniya.fields.currency")}><AppSelect value={valyuta} onChange={(e) => setValyuta(e.target.value as "UZS" | "USD")} className={maydonKlass}><option value="UZS">{t("kompaniya.currencyOptions.uzs")}</option><option value="USD">{t("kompaniya.currencyOptions.usd")}</option></AppSelect></Maydon>
         <div className="sm:col-span-2"><Maydon label={t("kompaniya.fields.address")}><input value={manzil} onChange={(e) => setManzil(e.target.value)} className={maydonKlass}/></Maydon></div>
       </div>

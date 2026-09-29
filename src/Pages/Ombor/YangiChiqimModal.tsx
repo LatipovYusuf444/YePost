@@ -24,7 +24,7 @@ type Props = { onClose: () => void };
 type Qator = { id: string; modificationId: string; quantity: number };
 
 const input =
-  "h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100 disabled:bg-slate-50";
+  "h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70";
 const yangiQator = (): Qator => ({ id: crypto.randomUUID(), modificationId: "", quantity: 1 });
 
 export default function YangiChiqimModal({ onClose }: Props) {

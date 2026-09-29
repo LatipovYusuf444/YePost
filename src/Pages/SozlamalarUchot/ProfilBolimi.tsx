@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { LoaderCircle } from "lucide-react";
+import PhoneInput from "@/Components/ui/PhoneInput";
 import { useTranslation } from "react-i18next";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { BolimKarta, Maydon, SaqlashTugma } from "./UmumiyUI";
@@ -51,12 +52,12 @@ export default function ProfilBolimi() {
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <Maydon label={t("profil.fields.firstName")}><input value={ism} onChange={(e) => setIsm(e.target.value)} className={maydonKlass}/></Maydon>
         <Maydon label={t("profil.fields.lastName")}><input value={familiya} onChange={(e) => setFamiliya(e.target.value)} className={maydonKlass}/></Maydon>
-        <Maydon label={t("profil.fields.phone")}><input type="tel" value={telefon} onChange={(e) => setTelefon(e.target.value)} className={maydonKlass}/></Maydon>
+        <Maydon label={t("profil.fields.phone")}><PhoneInput value={telefon} onChange={setTelefon}/></Maydon>
         <Maydon label={t("profil.fields.email")}><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={maydonKlass}/></Maydon>
         <Maydon label={t("profil.fields.position")}><input value={lavozim} onChange={(e) => setLavozim(e.target.value)} className={maydonKlass}/></Maydon>
         <Maydon label={t("profil.fields.telegramId")}><input value={telegramId} onChange={(e) => setTelegramId(e.target.value)} className={maydonKlass}/></Maydon>
-        <Maydon label={t("profil.fields.login")}><input value={profil?.username ?? ""} disabled className={`${maydonKlass} bg-slate-50 text-slate-400`}/></Maydon>
-        <Maydon label={t("profil.fields.role")}><input value={profil?.role ?? ""} disabled className={`${maydonKlass} bg-slate-50 text-slate-400`}/></Maydon>
+        <Maydon label={t("profil.fields.login")}><input value={profil?.username ?? ""} disabled className={maydonKlass}/></Maydon>
+        <Maydon label={t("profil.fields.role")}><input value={profil?.role ?? ""} disabled className={maydonKlass}/></Maydon>
       </div>
       <div className="mt-6 flex justify-end"><SaqlashTugma disabled={amalBajarilmoqda} onClick={() => void saqlash()}/></div>
       {amalBajarilmoqda && <p className="mt-3 text-right text-xs font-bold text-slate-400">{t("savingToBackend")}</p>}
