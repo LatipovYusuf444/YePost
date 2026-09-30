@@ -172,7 +172,7 @@ export default function KompaniyaTafsilotlariModal({
                       {t("kompaniyaDetails.aboutTitle")}
                     </h2>
                   </div>
-                  <dl className="mt-5 space-y-4">
+                  <dl className="mt-2 divide-y-2 divide-slate-200 [&>div]:py-4">
                     <Qator icon={<Hash size={14} />} nom={t("shared.detailFields.stir")} qiymat={kompaniya.stir} />
                     <Qator icon={<Phone size={14} />} nom={t("shared.detailFields.phone")} qiymat={kompaniya.telefon} />
                     <Qator icon={<UserRound size={14} />} nom={t("kompaniyaDetails.contactPerson")} qiymat={kompaniya.aloqaShaxsi} />

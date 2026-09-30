@@ -653,65 +653,49 @@ export default function Inventarizatsiya() {
 
             <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-8">
               {!reviewAction ? <>
-              <div className="grid gap-5 md:grid-cols-2">
-                <section className="rounded-[26px] border border-blue-100 bg-white p-5 shadow-sm">
-                  <h3 className="mb-4 flex items-center gap-2 border-b border-blue-100 pb-4 text-sm font-black uppercase tracking-wide text-slate-600">
-                    <ClipboardList size={18} className="text-blue-600" />
-                    {t("inventarizatsiya.createModal.aboutTitle")}
-                  </h3>
-                  <div className="grid gap-4">
-                    <label className="block">
-                      <span className="mb-2 block text-sm font-bold text-slate-500">{t("inventarizatsiya.createModal.warehouseLabel")}</span>
-                      <AppSelect
-                        value={warehouseId}
-                        onChange={(event) => void omborTanlash(event.target.value)}
-                        className="h-12 w-full rounded-2xl border border-blue-100 bg-white px-4 font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                      >
-                        <option value="">{t("inventarizatsiya.createModal.selectWarehouse")}</option>
-                        {store.omborlar.map((ombor) => (
-                          <option key={ombor.id} value={ombor.id}>{ombor.name}</option>
-                        ))}
-                      </AppSelect>
-                    </label>
-                    <label className="block">
-                      <span className="mb-2 block text-sm font-bold text-slate-500">{t("inventarizatsiya.createModal.typeLabel")}</span>
-                      <AppSelect
-                        value={type}
-                        onChange={(event) => { setType(event.target.value as InventarizatsiyaTuri); setTanlanganModifikatsiyaIds([]); setActuals({}); setFormaXatosi(null); }}
-                        className="h-12 w-full rounded-2xl border border-blue-100 bg-white px-4 font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                      >
-                        <option value="FULL">{t("inventarizatsiya.typeFull")}</option>
-                        <option value="PARTIAL">{t("inventarizatsiya.typePartial")}</option>
-                      </AppSelect>
-                    </label>
-                    <label className="block">
-                      <span className="mb-2 block text-sm font-bold text-slate-500">{t("inventarizatsiya.createModal.responsibleLabel")}</span>
-                      <div className="flex h-12 w-full items-center justify-between rounded-2xl border border-blue-100 bg-slate-50 px-4 font-semibold text-slate-700">
-                        <span className="truncate">
-                          {joriyProfil?.fullName ?? joriyProfil?.username ?? t("inventarizatsiya.createModal.unknownEmployee")}
-                        </span>
-                        <Lock size={15} className="shrink-0 text-slate-400" />
-                      </div>
-                    </label>
-                  </div>
-                </section>
-
-                <div className="space-y-5">
-                  <section className="rounded-[26px] border border-blue-100 bg-white p-5 shadow-sm">
-                    <h3 className="mb-4 flex items-center gap-2 border-b border-blue-100 pb-4 text-sm font-black uppercase tracking-wide text-slate-600"><MessageSquareText size={18} className="text-blue-600" />{t("inventarizatsiya.createModal.noteTitle")}</h3>
+              <section className="rounded-[26px] border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
+                <h3 className="mb-5 flex items-center gap-2 border-b border-blue-100 pb-4 text-sm font-black uppercase tracking-wide text-slate-600">
+                  <ClipboardList size={18} className="text-blue-600" />
+                  {t("inventarizatsiya.createModal.aboutTitle")}
+                </h3>
+                <div className="grid gap-5 md:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-bold text-slate-500">{t("inventarizatsiya.createModal.warehouseLabel")}</span>
+                    <AppSelect
+                      value={warehouseId}
+                      onChange={(event) => void omborTanlash(event.target.value)}
+                      className="h-12 w-full rounded-2xl border border-blue-100 bg-white px-4 font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                    >
+                      <option value="">{t("inventarizatsiya.createModal.selectWarehouse")}</option>
+                      {store.omborlar.map((ombor) => (
+                        <option key={ombor.id} value={ombor.id}>{ombor.name}</option>
+                      ))}
+                    </AppSelect>
+                  </label>
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-bold text-slate-500">{t("inventarizatsiya.createModal.responsibleLabel")}</span>
+                    <div className="flex h-12 w-full items-center justify-between rounded-2xl border border-blue-100 bg-slate-50 px-4 font-semibold text-slate-700">
+                      <span className="truncate">
+                        {joriyProfil?.fullName ?? joriyProfil?.username ?? t("inventarizatsiya.createModal.unknownEmployee")}
+                      </span>
+                      <Lock size={15} className="shrink-0 text-slate-400" />
+                    </div>
+                  </label>
+                  <label className="block md:col-span-2">
+                    <span className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-500"><MessageSquareText size={16} className="text-blue-600" />{t("inventarizatsiya.createModal.noteTitle")}</span>
                     <textarea
                       value={note}
                       onChange={(event) => setNote(event.target.value)}
                       rows={3}
-                      className="w-full resize-none rounded-2xl border border-slate-200 p-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                      className="w-full resize-none rounded-2xl border border-blue-100 bg-white p-4 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                       placeholder={t("inventarizatsiya.createModal.notePlaceholder")}
                     />
-                    <p className="mt-4 text-xs font-semibold leading-5 text-slate-400">
+                    <p className="mt-2 text-xs font-semibold leading-5 text-slate-400">
                       {t("inventarizatsiya.createModal.noteHelper")}
                     </p>
-                  </section>
+                  </label>
                 </div>
-              </div>
+              </section>
 
               {(formaXatosi || store.xatolik) && (
                 <div className="mt-5 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">

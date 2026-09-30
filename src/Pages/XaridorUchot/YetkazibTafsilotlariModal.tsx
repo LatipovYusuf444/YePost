@@ -130,7 +130,7 @@ export default function YetkazibTafsilotlariModal({
                       {t("yetkazibDetails.aboutTitle")}
                     </h2>
                   </div>
-                  <dl className="mt-5 space-y-4">
+                  <dl className="mt-2 divide-y-2 divide-slate-200 [&>div]:py-4">
                     <Qator icon={<Hash size={14} />} nom={t("shared.detailFields.stir")} qiymat={beruvchi.stir} />
                     <Qator icon={<Phone size={14} />} nom={t("shared.detailFields.phone")} qiymat={beruvchi.telefon} />
                     <Qator icon={<UserRound size={14} />} nom={t("yetkazibDetails.contactPerson")} qiymat={beruvchi.aloqaShaxsi} />

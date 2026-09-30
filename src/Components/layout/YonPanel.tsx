@@ -127,7 +127,7 @@ function bolaFaolmi(bola: MenyuBolasi, pathname: string, search: string) {
 
 // Yopiq holatda (64px) faqat ikonka ko'rinadi: qator 48px kenglikda, ikonka 18px va 15px chetlari.
 const qatorKlass =
-  "relative flex h-[46px] w-full items-center gap-3 px-[15px] text-[14.5px] transition-colors duration-200";
+  "relative flex h-[46px] max-h-[calc((100vh-230px)/11)] min-h-8 w-full items-center gap-3 px-[15px] text-[14.5px] transition-colors duration-200";
 const qatorFaolKlass = "theme-sidebar-active rounded-none font-semibold text-white";
 const qatorOddiyKlass = "theme-sidebar-item rounded-[10px] font-medium text-[#8391A7] hover:bg-[#122036] hover:text-slate-100";
 // Matn faqat sidebar ochiq (toggle) bo'lganda ko'rinadi.
@@ -243,7 +243,7 @@ export default function YonPanel({
 
       <span className="mx-3 h-px shrink-0 bg-white/10" />
 
-      <nav className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto overflow-x-hidden px-2 py-3 [scrollbar-color:#26364F_transparent] [scrollbar-width:thin]">
+      <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden px-2 py-2 [scrollbar-color:#26364F_transparent] [scrollbar-width:thin]">
         {korinadiganMenyular.map((menu, index) => {
           const Icon = menu.icon;
 

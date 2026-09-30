@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { AUTH_SESSION_CHANGED_EVENT, authTokenlarniOlish, type AuthTokenlar } from "@/lib/authTokenStorage";
 import {
   joriyFoydalanuvchiniOlish,
   obunaApi,
@@ -178,3 +179,15 @@ export const useTenantStore = create<TenantState>((set) => ({
   },
   xatolikniTozalash: () => set({ xatolik: null }),
 }));
+
+// Login/logout bo'lganda oldingi foydalanuvchi profili (va roli) xotirada qolmasligi uchun.
+if (typeof window !== "undefined") {
+  let oldingiFoydalanuvchi = authTokenlarniOlish().username;
+  window.addEventListener(AUTH_SESSION_CHANGED_EVENT, (event) => {
+    const yangiFoydalanuvchi = (event as CustomEvent<AuthTokenlar>).detail.username;
+    if (yangiFoydalanuvchi !== oldingiFoydalanuvchi) {
+      useTenantStore.setState({ profil: null });
+    }
+    oldingiFoydalanuvchi = yangiFoydalanuvchi;
+  });
+}

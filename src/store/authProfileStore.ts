@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { AUTH_SESSION_CHANGED_EVENT, authTokenlarniOlish, type AuthTokenlar } from "@/lib/authTokenStorage";
 import { parolniAlmashtirish, profilApi } from "@/api/authProfileApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type {
@@ -75,3 +76,15 @@ export const useAuthProfileStore = create<AuthProfileState>((set) => ({
 
   xabarlarniTozalash: () => set({ xatolik: null, muvaffaqiyat: null }),
 }));
+
+// Login/logout bo'lganda oldingi foydalanuvchi profili (va roli) xotirada qolmasligi uchun.
+if (typeof window !== "undefined") {
+  let oldingiFoydalanuvchi = authTokenlarniOlish().username;
+  window.addEventListener(AUTH_SESSION_CHANGED_EVENT, (event) => {
+    const yangiFoydalanuvchi = (event as CustomEvent<AuthTokenlar>).detail.username;
+    if (yangiFoydalanuvchi !== oldingiFoydalanuvchi) {
+      useAuthProfileStore.setState({ profil: null, xatolik: null, muvaffaqiyat: null });
+    }
+    oldingiFoydalanuvchi = yangiFoydalanuvchi;
+  });
+}

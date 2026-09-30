@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Briefcase, Building2, Phone, Trash2 } from "lucide-react";
+import { AlertTriangle, Briefcase, Building2, Phone, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import FaoliyatPaneli from "./FaoliyatPaneli";
@@ -167,7 +167,7 @@ function MalumotlarTab({
             </h2>
           </div>
 
-          <dl className="mt-5 space-y-4">
+          <dl className="mt-2 divide-y-2 divide-slate-200 [&>div]:py-4">
             <div>
               <dt className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                 <span className="text-[#2563EB]">
@@ -223,8 +223,10 @@ function MalumotlarTab({
             <Qator nom={t("xaridorDetails.totalSales")} qiymat={`${jamiRealizatsiya.toLocaleString("uz-UZ")} ${valyuta}`} />
             <Qator nom={t("xaridorDetails.totalPaid")} qiymat={`${jamiTolangan.toLocaleString("uz-UZ")} ${valyuta}`} />
             <Qator
+              icon={jamiQarz > 0 ? <AlertTriangle size={14} /> : undefined}
               nom={jamiQarz > 0 ? t("xaridorDetails.debtorYes") : t("xaridorDetails.debtorNo")}
               qiymat={`${jamiQarz.toLocaleString("uz-UZ")} ${valyuta}`}
+              qarz={jamiQarz > 0}
             />
           </dl>
         </section>
@@ -239,18 +241,20 @@ function Qator({
   icon,
   nom,
   qiymat,
+  qarz = false,
 }: {
   icon?: React.ReactNode;
   nom: string;
   qiymat: string;
+  qarz?: boolean;
 }) {
   return (
-    <div>
-      <dt className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
-        {icon && <span className="text-[#2563EB]">{icon}</span>}
+    <div className={qarz ? "!-mx-3 !my-1 rounded-2xl !border-t-0 bg-red-50 !px-3 ring-1 ring-red-200" : undefined}>
+      <dt className={`flex items-center gap-1.5 text-sm font-bold ${qarz ? "text-red-500" : "text-slate-400"}`}>
+        {icon && <span className={qarz ? "text-red-500" : "text-[#2563EB]"}>{icon}</span>}
         {nom}
       </dt>
-      <dd className="mt-0.5 text-base font-semibold text-slate-800">{qiymat}</dd>
+      <dd className={`mt-0.5 text-base ${qarz ? "font-black text-red-600" : "font-semibold text-slate-800"}`}>{qiymat}</dd>
     </div>
   );
 }

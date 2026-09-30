@@ -4,6 +4,7 @@ import {
   CalendarDays,
   Clock3,
   Landmark,
+  Lock,
   MessageSquare,
   PackagePlus,
   Smartphone,
@@ -15,6 +16,7 @@ import Tanlov from "@/Pages/XaridorUchot/Tanlov";
 import { foydalanuvchilarApi } from "@/api/accountsApi";
 import { mijozlarApi, yetkazibBeruvchilarApi } from "@/api/partnersApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { useAuthProfileStore } from "@/store/authProfileStore";
 import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali } from "./types";
 import {
   hozir,
@@ -90,6 +92,20 @@ export default function KassaAmaliyotModal({
   const [sana, setSana] = useState(boshlangich?.sana.slice(0, 10) ?? hozir().slice(0, 10));
   const [izoh, setIzoh] = useState(boshlangich?.izoh ?? "");
   const [xato, setXato] = useState("");
+
+  // Mas'ul shaxs — tizimga kirgan foydalanuvchi; o'zgartirib bo'lmaydi.
+  const joriyProfil = useAuthProfileStore((state) => state.profil);
+  const profilniYuklash = useAuthProfileStore((state) => state.profilniYuklash);
+  useEffect(() => {
+    if (!joriyProfil) void profilniYuklash();
+  }, [joriyProfil, profilniYuklash]);
+  const joriyMasulNomi = joriyProfil?.fullName?.trim() || joriyProfil?.username || "";
+  useEffect(() => {
+    if (boshlangich || !joriyProfil) return;
+    setResponsibleId(joriyProfil.id);
+    setMasul(joriyMasulNomi);
+  }, [boshlangich, joriyProfil, joriyMasulNomi]);
+  const masulKorinishi = boshlangich ? masul || joriyMasulNomi : joriyMasulNomi;
 
   useEffect(() => {
     let active = true;
@@ -371,11 +387,11 @@ export default function KassaAmaliyotModal({
                 {/* Summa */}
                 <Maydon label={t("modal.amountLabel")}>
                   <input
-                    type="number"
-                    min="0"
-                    value={summa}
-                    onChange={(event) => setSumma(event.target.value)}
-                    placeholder="450000"
+                    type="text"
+                    inputMode="numeric"
+                    value={summa ? Number(summa).toLocaleString("ru-RU") : ""}
+                    onChange={(event) => setSumma(event.target.value.replace(/\D/g, "").replace(/^0+(?=\d)/, ""))}
+                    placeholder="450 000"
                     className={maydonKlass}
                   />
                 </Maydon>
@@ -403,15 +419,10 @@ export default function KassaAmaliyotModal({
 
                 {/* Mas'ul shaxs */}
                 <Maydon label={t("modal.responsibleLabel")}>
-                  <Tanlov
-                    qiymat={responsibleId}
-                    onChange={(value) => {
-                      setResponsibleId(value);
-                      setMasul(xodimlar.find((item) => item.id === value)?.nomi ?? "");
-                    }}
-                    placeholder={t("modal.responsiblePlaceholder")}
-                    variantlar={xodimlar.map((x) => ({ value: x.id, label: x.nomi }))}
-                  />
+                  <div className={`${maydonKlass} flex items-center justify-between !bg-slate-50 text-slate-700`}>
+                    <span className="truncate">{masulKorinishi || t("modal.responsiblePlaceholder")}</span>
+                    <Lock size={15} className="shrink-0 text-slate-400" />
+                  </div>
                 </Maydon>
 
                 {/* Sana */}
