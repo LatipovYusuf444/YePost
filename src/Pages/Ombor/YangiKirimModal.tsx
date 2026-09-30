@@ -245,16 +245,15 @@ export default function YangiKirimModal({ onClose }: Props) {
       return retail !== row.boshlangichRetail || wholesale !== row.boshlangichWholesale;
     });
     if (narxOzgarganlar.length > 0) {
-      await Promise.all(
-        narxOzgarganlar.map((row) =>
-          modifikatsiyalarApi
-            .narxYangilash(row.modificationId, {
-              retailPrice: Number(row.retailPrice || 0) || undefined,
-              wholesalePrice: Number(row.wholesalePrice || 0) || undefined,
-            })
-            .catch(() => null)
+      await modifikatsiyalarApi
+        .narxlarniYangilash(
+          narxOzgarganlar.map((row) => ({
+            modificationId: row.modificationId,
+            retailPrice: Number(row.retailPrice || 0) || undefined,
+            wholesalePrice: Number(row.wholesalePrice || 0) || undefined,
+          }))
         )
-      );
+        .catch(() => null);
       await store.malumotlarniYuklash();
     }
 
