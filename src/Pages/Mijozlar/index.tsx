@@ -20,6 +20,7 @@ import { useMijozlarStore } from "@/store/mijozlarStore";
 import { tolovSummasiniFormatlash } from "@/utils/tolovFormatters";
 import type { Mijoz, MijozKompaniyasi, YetkazibBeruvchi } from "@/types/partner";
 
+import ModalTablari from "@/Components/common/ModalTablari";
 type Tab = "xaridorlar" | "kompaniyalar" | "yetkazib-beruvchilar";
 type Partner = Mijoz | MijozKompaniyasi | YetkazibBeruvchi;
 
@@ -105,20 +106,11 @@ export default function Xaridorlar() {
         </div>
       )}
 
-      <nav className="flex gap-2 overflow-x-auto rounded-2xl border border-orange-100 bg-white p-2">
-        {tablar.map(({ id, nom, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-5 py-2.5 font-bold ${
-              tab === id ? "bg-orange-500 text-white" : "text-gray-500 hover:bg-orange-50"
-            }`}
-          >
-            <Icon size={17} />
-            {nom}
-          </button>
-        ))}
-      </nav>
+      <ModalTablari
+        tablar={tablar.map(({ id, nom, icon: Icon }) => ({ id, nom, icon: <Icon size={16} /> }))}
+        faol={tab}
+        onChange={(id) => setTab(id as typeof tab)}
+      />
 
       <section className="space-y-4">
         <div className="flex flex-col justify-between gap-3 sm:flex-row">

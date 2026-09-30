@@ -44,6 +44,7 @@ import { useSupportStore } from "@/store/supportStore";
 import { sahifagaRuxsatBormi } from "@/lib/roles";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/Components/ui/sheet";
 
+import { useAvatarUrl } from "@/store/avatarStore";
 type MenyuBolasi = { key: string; path: string; icon: LucideIcon };
 type Menyu = { key: string; path: string; icon: LucideIcon; bolalar?: MenyuBolasi[] };
 
@@ -235,7 +236,7 @@ export default function YonPanel({
 
   const ism = profil?.fullName?.trim() || profil?.username || username || "";
   const rolNomi = profil ? t(`roles.${profil.role}`, { defaultValue: profil.role }) : "";
-  const rasmUrl = profil?.avatarUrl || "";
+  const rasmUrl = useAvatarUrl(profil?.id, profil?.avatarUrl);
 
   async function handleLogout() {
     await logout();

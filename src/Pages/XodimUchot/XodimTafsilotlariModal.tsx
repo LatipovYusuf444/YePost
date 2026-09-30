@@ -7,6 +7,7 @@ import {
   Network,
   Phone,
   Trash2,
+  UserRound,
   Wallet,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
@@ -14,12 +15,15 @@ import FaoliyatPaneli, { type FaoliyatTuri, type FaoliyatYozuvi } from "../Xarid
 import TezkorPanel from "../XaridorUchot/TezkorPanel";
 import { TarixTab, VakolatlarTab } from "./XodimTablari";
 import type { Bolim, Lavozim, TarixTuri, Xodim, XodimTarixi } from "./types";
+import AvatarRasm from "@/Components/common/AvatarRasm";
+import ModalTablari from "@/Components/common/ModalTablari";
 import {
   holatMatni,
   holatRangi,
   lavozimNomi,
   sanaFormat,
   summaFormat,
+  bosHarflar,
   xodimNomi,
 } from "./yordamchilar";
 
@@ -71,6 +75,11 @@ export default function XodimTafsilotlariModal({
             <header className="sticky top-0 z-30 border-b border-orange-100/80 bg-[#F8FAFC]/90 px-9 py-6 backdrop-blur-xl">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-gold-400 to-gold-600 text-base font-black text-white shadow-md">
+                    <AvatarRasm userId={xodim.id} url={xodim.rasmUrl}>
+                      {bosHarflar(xodim) || <UserRound size={20} />}
+                    </AvatarRasm>
+                  </span>
                   <h1 className="truncate text-2xl font-bold text-slate-900">{xodimNomi(xodim)}</h1>
                   <span
                     className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-black ${holatRangi[xodim.holat]}`}
@@ -100,22 +109,12 @@ export default function XodimTafsilotlariModal({
                 </div>
               </div>
 
-              <nav className="mt-6 flex items-center gap-3 overflow-x-auto">
-                {tablar.map((tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setFaolTab(tab)}
-                    className={`shrink-0 rounded-xl px-3 py-2 text-sm transition ${
-                      faolTab === tab
-                        ? "border border-orange-200 bg-white text-[#2563EB]"
-                        : "text-slate-500 hover:bg-white hover:text-[#2563EB]"
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </nav>
+              <ModalTablari
+                className="mt-6"
+                tablar={tablar.map((tab) => ({ id: tab, nom: tab }))}
+                faol={faolTab}
+                onChange={(id) => setFaolTab(id as typeof faolTab)}
+              />
             </header>
 
             {faolTab === "Ma'lumotlar" && (

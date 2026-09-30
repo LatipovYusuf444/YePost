@@ -95,9 +95,18 @@
     "title": "Integratsiya",
     "loadingSubtitle": "Real integratsiyalar yuklanmoqda.",
     "providers": {
-      "payme": { "name": "Payme", "description": "Payme orqali onlayn to'lovlarni qabul qilish." },
-      "click": { "name": "Click", "description": "Click to'lov tizimi integratsiyasi." },
-      "uzum": { "name": "Uzum Nasiya", "description": "Uzum orqali to'lov va bo'lib to'lash." }
+      "payme": {
+        "name": "Payme",
+        "description": "Payme orqali onlayn to'lovlarni qabul qilish."
+      },
+      "click": {
+        "name": "Click",
+        "description": "Click to'lov tizimi integratsiyasi."
+      },
+      "uzum": {
+        "name": "Uzum Nasiya",
+        "description": "Uzum orqali to'lov va bo'lib to'lash."
+      }
     },
     "paymentsTitle": "To'lov tizimlari",
     "paymentsSubtitle": "Payme, Click va Uzum sozlamalari real backend orqali boshqariladi.",
@@ -140,10 +149,22 @@
   },
   "bildirishnoma": {
     "rows": {
-      "newSale": { "name": "Yangi savdo", "description": "Har yangi sotuv haqida xabar." },
-      "lowStock": { "name": "Kam qoldiq", "description": "Mahsulot tugab qolganda ogohlantirish." },
-      "dailyReport": { "name": "Kunlik hisobot", "description": "Har kun oxirida umumiy hisobot." },
-      "newCustomer": { "name": "Yangi xaridor", "description": "Yangi mijoz qo'shilganda xabar." }
+      "newSale": {
+        "name": "Yangi savdo",
+        "description": "Har yangi sotuv haqida xabar."
+      },
+      "lowStock": {
+        "name": "Kam qoldiq",
+        "description": "Mahsulot tugab qolganda ogohlantirish."
+      },
+      "dailyReport": {
+        "name": "Kunlik hisobot",
+        "description": "Har kun oxirida umumiy hisobot."
+      },
+      "newCustomer": {
+        "name": "Yangi xaridor",
+        "description": "Yangi mijoz qo'shilganda xabar."
+      }
     },
     "preferencesTitle": "Bildirishnoma sozlamalari",
     "preferencesSubtitle": "Har bir tanlov real backendga darhol saqlanadi.",
@@ -171,5 +192,17 @@
     "emptyHint": "Yuqoridagi \"Qo'shish\" tugmasi orqali birinchi birlikni yarating.",
     "nameRequired": "O'lchov birligi nomi majburiy.",
     "deleteConfirm": "\"{{name}}\" o'lchov birligini o'chirasizmi?"
+  },
+  "avatar": {
+    "upload": "Rasm yuklash",
+    "change": "Rasmni o'zgartirish",
+    "remove": "Olib tashlash",
+    "hint": "JPG, PNG yoki WEBP · 5 MB gacha. Saqlash tugmasini bosganda yuklanadi.",
+    "localNote": "Rasm faqat shu qurilmada saqlandi (backend hali rasm yuklashni qo'llamaydi).",
+    "errors": {
+      "type": "Faqat JPG, PNG yoki WEBP rasm yuklash mumkin.",
+      "size": "Rasm hajmi 5 MB dan oshmasligi kerak.",
+      "read": "Rasmni o'qib bo'lmadi. Boshqa rasm tanlang."
+    }
   }
 }

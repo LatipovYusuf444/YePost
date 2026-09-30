@@ -3,6 +3,9 @@ import { useMemo, useState, type FormEvent } from "react";
 import {
   Briefcase,
   CalendarDays,
+  Check,
+  Lock,
+  ShieldCheck,
   MapPin,
   Network,
   Phone,
@@ -20,6 +23,10 @@ import { backendVakolatlar } from "./backendMetadata";
 import type { Bolim, Lavozim, Xodim, XodimHolati, XodimTarixi } from "./types";
 import { bugun, holatMatni, maydonKlass, xodimNomi, yangiId } from "./yordamchilar";
 
+import AvatarYuklash, { type TanlanganRasm } from "@/Components/common/AvatarYuklash";
+import { Checkbox } from "@/Components/ui/checkbox";
+import { useAvatarUrl } from "@/store/avatarStore";
+import ModalTablari from "@/Components/common/ModalTablari";
 const malumotTablari = ["Ma'lumotlar", "Vakolatlar", "Tarix"] as const;
 type MalumotTab = (typeof malumotTablari)[number];
 
@@ -63,6 +70,10 @@ export default function XodimFormaModal({
   const [vakolatlar, setVakolatlar] = useState<Set<string>>(
     () => new Set(boshlangich?.vakolatlar ?? [])
   );
+  const [tanlanganRasm, setTanlanganRasm] = useState<TanlanganRasm | null>(null);
+  const [rasmOlibTashlandi, setRasmOlibTashlandi] = useState(false);
+  const mavjudRasm = useAvatarUrl(boshlangich?.id, boshlangich?.rasmUrl);
+  const korinadiganRasm = tanlanganRasm?.dataUrl ?? (rasmOlibTashlandi ? "" : mavjudRasm);
   const [xato, setXato] = useState("");
   const [faolTab, setFaolTab] = useState<MalumotTab>("Ma'lumotlar");
 
@@ -129,10 +140,25 @@ export default function XodimFormaModal({
       yaratilganSana: boshlangich?.yaratilganSana ?? bugun(),
       ozgartirilganSana: bugun(),
       ozgartirganMasul: "Administrator",
+      rasmUrl: boshlangich?.rasmUrl,
+      rasmFayli: tanlanganRasm,
+      rasmOlibTashlash: rasmOlibTashlandi && !tanlanganRasm,
     });
   }
 
   const guruhlar = [...new Set(backendVakolatlar.map((vakolat) => vakolat.guruh))];
+  const lavozimdanSoni = backendVakolatlar.filter((vakolat) => lavozimVakolatlari.has(vakolat.kod)).length;
+  const shaxsiySoni = backendVakolatlar.filter((vakolat) => !lavozimVakolatlari.has(vakolat.kod) && vakolatlar.has(vakolat.kod)).length;
+  const berilganSoni = lavozimdanSoni + shaxsiySoni;
+
+  function guruhniAlmashtirish(kodlar: string[], yoqish: boolean) {
+    setVakolatlar((oldingi) => {
+      const yangi = new Set(oldingi);
+      kodlar.forEach((kod) => (yoqish ? yangi.add(kod) : yangi.delete(kod)));
+      return yangi;
+    });
+  }
+
 
   return (
     <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
@@ -163,22 +189,12 @@ export default function XodimFormaModal({
               </div>
             </div>
 
-            <nav className="mt-6 flex items-center gap-3 overflow-x-auto">
-              {malumotTablari.map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setFaolTab(tab)}
-                  className={`shrink-0 rounded-xl px-3 py-2 text-sm transition ${
-                    faolTab === tab
-                      ? "border border-orange-200 bg-white text-[#2563EB]"
-                      : "text-slate-500 hover:bg-white hover:text-[#2563EB]"
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </nav>
+            <ModalTablari
+                className="mt-6"
+                tablar={malumotTablari.map((tab) => ({ id: tab, nom: tab }))}
+                faol={faolTab}
+                onChange={(id) => setFaolTab(id as typeof faolTab)}
+              />
           </header>
 
           <div className="scrollbar-orange flex-1 overflow-y-auto">
@@ -198,6 +214,18 @@ export default function XodimFormaModal({
                       </h2>
 
                       <div className="mt-5 space-y-4">
+                        <AvatarYuklash
+                          korinadiganRasm={korinadiganRasm}
+                          bosHarflar={`${familiya[0] ?? ""}${ism[0] ?? ""}`.toUpperCase() || "?"}
+                          onTanlandi={(rasm) => {
+                            setTanlanganRasm(rasm);
+                            setRasmOlibTashlandi(false);
+                          }}
+                          onOlibTashlandi={() => {
+                            setTanlanganRasm(null);
+                            setRasmOlibTashlandi(true);
+                          }}
+                        />
                         <label className="grid gap-2">
                           <span className="text-sm font-bold text-slate-400">Ism *</span>
                           <input
@@ -366,13 +394,17 @@ export default function XodimFormaModal({
                             <Wallet size={14} className="text-[#2563EB]" />
                             Oylik (so'm)
                           </span>
-                          <input
-                            type="number"
-                            value={oylik}
-                            onChange={(event) => setOylik(event.target.value)}
-                            placeholder="5000000"
-                            className={maydonKlass}
-                          />
+                          <div className="relative">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={oylik ? Number(oylik).toLocaleString("ru-RU") : ""}
+                              onChange={(event) => setOylik(event.target.value.replace(/\D/g, "").replace(/^0+(?=\d)/, ""))}
+                              placeholder="5 000 000"
+                              className={`${maydonKlass} pr-16`}
+                            />
+                            <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">so'm</span>
+                          </div>
                         </label>
 
                         <label className="grid gap-2">
@@ -422,58 +454,134 @@ export default function XodimFormaModal({
             )}
 
             {faolTab === "Vakolatlar" && (
-              <div className="space-y-5 px-9 py-7">
-                <p className="rounded-2xl bg-white/92 px-5 py-4 text-sm font-semibold text-slate-500 ring-1 ring-orange-100/80">
-                  Lavozimdan kelgan vakolatlar avtomatik yoqilgan va o'chirilmaydi. Qo'shimcha
-                  vakolatni shu yerdan belgilang.
-                </p>
+              <div className="space-y-6 px-9 py-7">
+                {/* Umumiy holat */}
+                <section className="grid gap-5 rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-center">
+                  <div className="flex items-start gap-4">
+                    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-[#2563EB]">
+                      <ShieldCheck size={26} />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-lg font-black text-slate-900">Xodim vakolatlari</p>
+                      <p className="mt-1 text-sm font-semibold leading-6 text-slate-500">
+                        Lavozimdan kelgan vakolatlar avtomatik yoqilgan va o'chirilmaydi. Qo'shimcha vakolatni shu yerdan belgilang.
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div className="rounded-2xl bg-slate-50 px-3 py-3">
+                        <p className="text-2xl font-black text-slate-900">{berilganSoni}</p>
+                        <p className="mt-0.5 text-xs font-bold text-slate-400">Jami berilgan</p>
+                      </div>
+                      <div className="rounded-2xl bg-slate-50 px-3 py-3">
+                        <p className="text-2xl font-black text-emerald-600">{lavozimdanSoni}</p>
+                        <p className="mt-0.5 text-xs font-bold text-slate-400">Lavozimdan</p>
+                      </div>
+                      <div className="rounded-2xl bg-slate-50 px-3 py-3">
+                        <p className="text-2xl font-black text-[#2563EB]">{shaxsiySoni}</p>
+                        <p className="mt-0.5 text-xs font-bold text-slate-400">Shaxsiy</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex items-center gap-3">
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="h-full rounded-full bg-[#2563EB] transition-all duration-500"
+                          style={{ width: `${backendVakolatlar.length ? Math.round((berilganSoni / backendVakolatlar.length) * 100) : 0}%` }}
+                        />
+                      </div>
+                      <span className="text-xs font-black text-slate-500">{berilganSoni}/{backendVakolatlar.length}</span>
+                    </div>
+                  </div>
+                </section>
 
-                {guruhlar.map((guruh) => (
-                  <section
-                    key={guruh}
-                    className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80"
-                  >
-                    <h2 className="border-b border-orange-100/80 pb-3 text-sm font-black uppercase tracking-wide text-slate-600">
-                      {guruh}
-                    </h2>
-                    <div className="mt-4 space-y-3">
-                            {backendVakolatlar
-                        .filter((vakolat) => vakolat.guruh === guruh)
-                        .map((vakolat) => {
-                          const lavozimda = lavozimVakolatlari.has(vakolat.kod);
-                          return (
-                            <label
-                              key={vakolat.kod}
-                              className={`flex items-start gap-3 rounded-xl px-3 py-2.5 transition ${
-                                lavozimda ? "bg-emerald-50/60" : "cursor-pointer hover:bg-orange-50"
+                <div className="grid gap-5 xl:grid-cols-2">
+                  {guruhlar.map((guruh) => {
+                    const guruhVakolatlari = backendVakolatlar.filter((vakolat) => vakolat.guruh === guruh);
+                    const tanlanadigan = guruhVakolatlari.filter((vakolat) => !lavozimVakolatlari.has(vakolat.kod));
+                    const guruhBerilgan = guruhVakolatlari.filter((vakolat) => lavozimVakolatlari.has(vakolat.kod) || vakolatlar.has(vakolat.kod)).length;
+                    const hammasiTanlangan = tanlanadigan.length > 0 && tanlanadigan.every((vakolat) => vakolatlar.has(vakolat.kod));
+
+                    return (
+                      <section
+                        key={guruh}
+                        className="overflow-hidden rounded-[26px] bg-white/92 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80"
+                      >
+                        <header className="flex items-center justify-between gap-3 border-b-2 border-slate-200 px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <h2 className="text-sm font-black uppercase tracking-wide text-slate-600">{guruh}</h2>
+                            <span
+                              className={`rounded-full px-2.5 py-1 text-xs font-black ${
+                                guruhBerilgan === guruhVakolatlari.length
+                                  ? "bg-emerald-50 text-emerald-600"
+                                  : guruhBerilgan > 0
+                                    ? "bg-blue-50 text-[#2563EB]"
+                                    : "bg-slate-100 text-slate-400"
                               }`}
                             >
-                              <input
-                                type="checkbox"
-                                checked={lavozimda || vakolatlar.has(vakolat.kod)}
-                                disabled={lavozimda}
-                                onChange={() => vakolatToggle(vakolat.kod)}
-                                className="mt-1 h-5 w-5 shrink-0 accent-[#2563EB]"
-                              />
-                              <span className="min-w-0">
-                                <span className="block text-sm font-black text-slate-700">
-                                  {vakolat.nom}
-                                  {lavozimda && (
-                                    <span className="ml-2 rounded-lg bg-emerald-100 px-2 py-0.5 text-[10px] font-black uppercase text-emerald-600">
-                                      Lavozimdan
+                              {guruhBerilgan}/{guruhVakolatlari.length}
+                            </span>
+                          </div>
+                          {tanlanadigan.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => guruhniAlmashtirish(tanlanadigan.map((vakolat) => vakolat.kod), !hammasiTanlangan)}
+                              className="rounded-lg px-2.5 py-1.5 text-xs font-bold text-[#2563EB] transition hover:bg-blue-50"
+                            >
+                              {hammasiTanlangan ? "Hammasini olib tashlash" : "Hammasini tanlash"}
+                            </button>
+                          )}
+                        </header>
+
+                        <ul className="divide-y-2 divide-slate-100">
+                          {guruhVakolatlari.map((vakolat) => {
+                            const lavozimda = lavozimVakolatlari.has(vakolat.kod);
+                            const belgilangan = lavozimda || vakolatlar.has(vakolat.kod);
+                            return (
+                              <li key={vakolat.kod}>
+                                <label
+                                  className={`flex items-center gap-4 px-6 py-4 transition ${
+                                    lavozimda
+                                      ? "cursor-default bg-emerald-50/50"
+                                      : belgilangan
+                                        ? "cursor-pointer bg-blue-50/50"
+                                        : "cursor-pointer hover:bg-slate-50"
+                                  }`}
+                                >
+                                  <span
+                                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition ${
+                                      belgilangan ? (lavozimda ? "bg-emerald-100 text-emerald-600" : "bg-blue-100 text-[#2563EB]") : "bg-slate-100 text-slate-300"
+                                    }`}
+                                  >
+                                    {belgilangan ? <Check size={18} strokeWidth={3} /> : <Lock size={16} />}
+                                  </span>
+                                  <span className="min-w-0 flex-1">
+                                    <span className={`flex flex-wrap items-center gap-2 text-sm font-black ${belgilangan ? "text-slate-800" : "text-slate-500"}`}>
+                                      {vakolat.nom}
+                                      {lavozimda && (
+                                        <span className="rounded-lg bg-emerald-100 px-2 py-0.5 text-[10px] font-black uppercase text-emerald-600">
+                                          Lavozimdan
+                                        </span>
+                                      )}
                                     </span>
-                                  )}
-                                </span>
-                                <span className="mt-0.5 block text-xs font-semibold text-slate-400">
-                                  {vakolat.izoh}
-                                </span>
-                              </span>
-                            </label>
-                          );
-                        })}
-                    </div>
-                  </section>
-                ))}
+                                    <span className="mt-0.5 block text-xs font-semibold text-slate-400">{vakolat.izoh}</span>
+                                  </span>
+                                  <Checkbox
+                                    checked={belgilangan}
+                                    disabled={lavozimda}
+                                    onCheckedChange={() => vakolatToggle(vakolat.kod)}
+                                    aria-label={vakolat.nom}
+                                    className="size-5 shrink-0 rounded-md border-slate-300 data-checked:border-[#2563EB] data-checked:bg-[#2563EB] data-checked:text-white disabled:opacity-100 disabled:data-checked:border-emerald-500 disabled:data-checked:bg-emerald-500"
+                                  />
+                                </label>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </section>
+                    );
+                  })}
+                </div>
               </div>
             )}
 

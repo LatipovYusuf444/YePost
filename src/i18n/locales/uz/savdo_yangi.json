@@ -24,7 +24,8 @@
     "endDateBeforeStart": "Tugash sanasi boshlanish sanasidan oldin bo'lmasligi kerak.",
     "selectAtLeastOneProduct": "Kamida bitta mahsulot tanlang.",
     "insufficientStock": "\"{{name}}\" uchun omborda faqat {{available}} dona qoldiq bor — {{requested}} dona sota olmaysiz.",
-    "totalMustBePositive": "Sotuv summasi 0 dan katta bo'lishi kerak."
+    "totalMustBePositive": "Sotuv summasi 0 dan katta bo'lishi kerak.",
+    "productOtherWarehouse": "Tanlangan mahsulot boshqa ombordan. Bitta sotuv faqat bitta ombordan qilinadi — ombor yoki mahsulotni tekshiring."
   },
   "activity": {
     "today": "Bugun",
@@ -117,7 +118,13 @@
     "responsible": "Mas'ul xodim",
     "warehouse": "Ombor",
     "availableStock": "Mavjud qoldiq",
-    "rowTotal": "Qator jami"
+    "rowTotal": "Qator jami",
+    "product": "Mahsulot",
+    "image": "Rasm",
+    "price": "Narx (so'm)",
+    "quantity": "Miqdor",
+    "discount": "Chegirma (so'm)",
+    "priceLocked": "Narx ombordagi haqiqiy narx bo'yicha belgilanadi va o'zgartirilmaydi"
   },
   "placeholders": {
     "clientSearch": "Mijoz ismi, telefon yoki email",
@@ -149,7 +156,8 @@
     "removeRowAriaLabel": "Mahsulot qatorini o'chirish",
     "imageButtonTitle": "Rasm",
     "stockLabelShort": "qoldiq",
-    "priceLabelShort": "narx"
+    "priceLabelShort": "narx",
+    "outOfStock": "Qoldiq yo'q"
   },
   "summary": {
     "totalLabel": "Sotuv jami",

@@ -37,6 +37,7 @@ import type { FinanceTransaction } from "@/types/tolov";
 import MuddatTanlov from "@/Pages/HisobotUchot/MuddatTanlov";
 import { bugun, bugunMinus } from "@/Pages/HisobotUchot/yordamchilar";
 import DynamicsChart from "./DynamicsChart";
+import ModalTablari from "@/Components/common/ModalTablari";
 import {
   ProfitDial,
   PaymentRing,
@@ -442,6 +443,11 @@ export default function Monitoring() {
   const [bottomXato, setBottomXato] = useState("");
 
   const [financeTx, setFinanceTx] = useState<FinanceTransaction[]>([]);
+  // To'lov turlari taqsimoti uchun alohida: tanlangan oraliqdan qat'i nazar, dateTo yili boshidan yuklanadi,
+  // shunda Kunlik / Oylik / Yillik haqiqiy davrni to'liq qamrab oladi.
+  const [tolovTx, setTolovTx] = useState<FinanceTransaction[]>([]);
+  const [tolovYuklanmoqda, setTolovYuklanmoqda] = useState(true);
+  const [tolovXato, setTolovXato] = useState("");
   const [financeYuklanmoqda, setFinanceYuklanmoqda] = useState(true);
   const [financeXato, setFinanceXato] = useState("");
 
@@ -620,6 +626,29 @@ export default function Monitoring() {
     };
   }, [dateFrom, dateTo, yangilanish]);
 
+  useEffect(() => {
+    let active = true;
+    setTolovYuklanmoqda(true);
+    setTolovXato("");
+    barchaFinanceTransactions({
+      dateFrom: `${dateTo.slice(0, 4)}-01-01`,
+      dateTo,
+      status: "CONFIRMED",
+    })
+      .then((items) => {
+        if (active) setTolovTx(items);
+      })
+      .catch((error) => {
+        if (active) setTolovXato(getApiErrorMessage(error));
+      })
+      .finally(() => {
+        if (active) setTolovYuklanmoqda(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [dateTo, yangilanish]);
+
   // Joriy qarzdorlik holati — davrga bog'liq emas, doim "hozirgi" holatni ko'rsatadi.
   useEffect(() => {
     let active = true;
@@ -783,26 +812,57 @@ export default function Monitoring() {
   );
   // To'lov turlari taqsimoti ham o'z mustaqil davriga (tolovDavr) ega — tanlangan sana
   // oralig'i ichida shu davr bo'yicha "oxirgi oyna"dagi kirim tranzaksiyalaridan hisoblanadi.
-  const tolovOraliq = useMemo(
-    () => anchorOraligi(dateFrom, dateTo, tolovDavr),
-    [dateFrom, dateTo, tolovDavr],
-  );
-  const tolovTurlariBoyicha = useMemo(() => {
+  // Tranzaksiya kunini vaqt zonasi bo'yicha (mahalliy) aniqlaydi: ISO "Z" vaqtni to'g'ridan-to'g'ri
+  // 10 belgiga qirqish tunda qilingan to'lovni oldingi kunga o'tkazib yuborardi.
+  const mahalliyKun = (sana: string) => {
+    const vaqt = new Date(sana);
+    if (Number.isNaN(vaqt.getTime())) return String(sana).slice(0, 10);
+    return `${vaqt.getFullYear()}-${String(vaqt.getMonth() + 1).padStart(2, "0")}-${String(vaqt.getDate()).padStart(2, "0")}`;
+  };
+
+  // Har davr o'z oynasidan hisoblanadi (dateTo bo'yicha):
+  //  Kunlik — dateTo kuni (o'sha kunda kirim bo'lmasa, shu yildagi kirim bor eng oxirgi kun),
+  //  Oylik — dateTo joylashgan oy, Yillik — dateTo joylashgan yil.
+  const tolovTaqsimoti = useMemo(() => {
+    const kirimlar = tolovTx.filter((item) => item.type === "INCOME");
+    const yil = dateTo.slice(0, 4);
+    const oy = dateTo.slice(0, 7);
+    let filtr: (kun: string) => boolean;
+    let yorliq = "";
+
+    if (tolovDavr === "kunlik") {
+      let kun = dateTo;
+      if (!kirimlar.some((item) => mahalliyKun(item.date) === dateTo)) {
+        const oxirgi = kirimlar.map((item) => mahalliyKun(item.date)).filter((k) => k <= dateTo).sort().at(-1);
+        if (oxirgi) kun = oxirgi;
+      }
+      filtr = (k) => k === kun;
+      yorliq = kun.split("-").reverse().join(".");
+    } else if (tolovDavr === "oylik") {
+      filtr = (k) => k.startsWith(oy);
+      yorliq = `${oy.slice(5)}.${oy.slice(0, 4)}`;
+    } else {
+      filtr = (k) => k.startsWith(yil);
+      yorliq = yil;
+    }
+
     const xarita = new Map<string, number>();
-    financeTx
-      .filter((item) => {
-        if (item.type !== "INCOME") return false;
-        const kun = String(item.date).slice(0, 10);
-        return kun >= tolovOraliq.from && kun <= tolovOraliq.to;
-      })
+    kirimlar
+      .filter((item) => filtr(mahalliyKun(item.date)))
       .forEach((item) => {
         const turi = item.paymentType || "-";
         xarita.set(turi, (xarita.get(turi) ?? 0) + son(item.amount));
       });
-    return Array.from(xarita.entries())
-      .map(([nom, summa]) => ({ nom, summa }))
-      .sort((a, b) => b.summa - a.summa);
-  }, [financeTx, tolovOraliq]);
+
+    return {
+      items: Array.from(xarita.entries())
+        .map(([nom, summa]) => ({ nom, summa }))
+        .sort((x, y) => y.summa - x.summa),
+      yorliq,
+    };
+  }, [tolovTx, tolovDavr, dateTo]);
+  const tolovTurlariBoyicha = tolovTaqsimoti.items;
+  const tolovKuniMatni = tolovTaqsimoti.yorliq;
 
   const davrSavdosi = useMemo(() => {
     const tasdiqlangan = barchaSotuvlar.filter((sotuv) => {
@@ -1285,20 +1345,11 @@ export default function Monitoring() {
       )}
 
       <nav className="flex flex-wrap items-center gap-3">
-        {(["savdo", "ombor"] as Tab[]).map((item) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => setTab(item)}
-            className={`rounded-2xl border px-5 py-3 text-sm font-black transition ${
-              tab === item
-                ? "border-orange-200 bg-orange-500 text-white shadow-lg shadow-orange-200"
-                : "border-orange-100 bg-white text-gray-600 hover:bg-orange-50"
-            }`}
-          >
-            {t(`tabs.${item}`)}
-          </button>
-        ))}
+        <ModalTablari
+          tablar={(["savdo", "ombor"] as Tab[]).map((item) => ({ id: item, nom: t(`tabs.${item}`) }))}
+          faol={tab}
+          onChange={(id) => setTab(id as Tab)}
+        />
         <div className="ml-auto">
           <MuddatTanlov
             dateFrom={dateFrom}
@@ -1423,14 +1474,18 @@ export default function Monitoring() {
 
             <ChartCard
               title={t("charts.paymentMethods.title")}
-              subtitle={t("charts.paymentMethods.subtitle")}
+              subtitle={
+                tolovKuniMatni
+                  ? `${t("charts.paymentMethods.subtitle")} · ${tolovKuniMatni}`
+                  : t("charts.paymentMethods.subtitle")
+              }
               icon={Wallet}
               accent="blue"
               headerExtra={
                 <DavrToggle value={tolovDavr} onChange={setTolovDavr} />
               }
-              xato={demoMode ? "" : financeXato}
-              yuklanmoqda={!demoMode && financeYuklanmoqda}
+              xato={demoMode ? "" : tolovXato}
+              yuklanmoqda={!demoMode && tolovYuklanmoqda}
               height={400}
               bosh={!demoMode && tolovTurlariBoyicha.length === 0 ? t("noData") : undefined}
             >

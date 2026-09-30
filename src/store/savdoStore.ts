@@ -104,12 +104,14 @@ function qoldiqlarniKatalogBilanBirlashtirish(
   const map = new Map<string, QoldiqTanlovi>();
 
   for (const item of katalogQoldiqlar) {
+    if (!item.modificationId) continue;
     map.set(qoldiqBirlashtirishKaliti(item), item);
   }
 
   for (const item of stockQoldiqlar) {
     const kalit = qoldiqBirlashtirishKaliti(item);
-    const katalogItem = map.get(kalit) ?? map.get(item.modificationId);
+    // ID'si yo'q qator boshqa mahsulotning katalog yozuvi bilan aralashib ketmasligi uchun izlanmaydi.
+    const katalogItem = item.modificationId ? map.get(kalit) ?? map.get(item.modificationId) : undefined;
     const modification = item.modification ?? katalogItem?.modification;
 
     map.set(kalit, {

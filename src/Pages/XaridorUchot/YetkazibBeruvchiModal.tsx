@@ -11,6 +11,7 @@ import { KirimTab, TarixTab, TolovlarTab } from "./XaridorTablari";
 import type { Kirim, YetkazibBeruvchi } from "./types";
 import { bugun, maydonKlass, yangiId } from "./yordamchilar";
 
+import ModalTablari from "@/Components/common/ModalTablari";
 type MalumotTab = "malumotlar" | "kirim" | "tolovlar" | "tarix";
 const malumotTabKalitlari: MalumotTab[] = ["malumotlar", "kirim", "tolovlar", "tarix"];
 
@@ -112,22 +113,12 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
               </div>
             </div>
 
-            <nav className="mt-6 flex items-center gap-3 overflow-x-auto">
-              {malumotTablari.map((tab) => (
-                <button
-                  key={tab.kalit}
-                  type="button"
-                  onClick={() => setFaolTab(tab.kalit)}
-                  className={`shrink-0 rounded-xl px-3 py-2 text-sm transition ${
-                    faolTab === tab.kalit
-                      ? "border border-orange-200 bg-white text-[#2563EB]"
-                      : "text-slate-500 hover:bg-white hover:text-[#2563EB]"
-                  }`}
-                >
-                  {tab.nom}
-                </button>
-              ))}
-            </nav>
+            <ModalTablari
+                className="mt-6"
+                tablar={malumotTablari.map((tab) => ({ id: tab.kalit, nom: tab.nom }))}
+                faol={faolTab}
+                onChange={(id) => setFaolTab(id as typeof faolTab)}
+              />
           </header>
 
           <div className="scrollbar-orange flex-1 overflow-y-auto">

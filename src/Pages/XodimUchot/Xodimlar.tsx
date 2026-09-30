@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
-import { Briefcase, Building2, Phone, Plus, Search, Trash2, UserRound } from "lucide-react";
+import { motion } from "motion/react";
+import { Briefcase, Building2, CalendarDays, Phone, Plus, Search, Trash2, UserRound, Wallet } from "lucide-react";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
 import KartaSozlama, { type Maydon } from "../XaridorUchot/KartaSozlama";
 import KorinishTanlov, { type Korinish } from "../XaridorUchot/KorinishTanlov";
 import XodimFormaModal from "./XodimFormaModal";
 import XodimTafsilotlariModal from "./XodimTafsilotlariModal";
 import type { Bolim, Lavozim, Xodim } from "./types";
+import AvatarRasm from "@/Components/common/AvatarRasm";
 import {
   asosiyTelefon,
   bosHarflar,
@@ -34,6 +36,13 @@ const kartaMaydonlari: Maydon[] = [
   { id: "oylik", nom: "Oylik" },
   { id: "ishBoshlagan", nom: "Ishga kirgan sana" },
 ];
+
+// Karta bannerining rangi xodim holatiga qarab o'zgaradi.
+const BANNER_RANGI: Record<string, string> = {
+  faol: "from-gold-500 via-gold-600 to-slate-900",
+  tatilda: "from-sky-400 via-sky-500 to-slate-800",
+  "ishdan-ketgan": "from-slate-400 via-slate-500 to-slate-800",
+};
 
 export default function Xodimlar({ xodimlar, lavozimlar, bolimlar, filiallar = [], onSaqlash, onOchirish }: Props) {
   const [qidiruv, setQidiruv] = useState("");
@@ -191,91 +200,124 @@ export default function Xodimlar({ xodimlar, lavozimlar, bolimlar, filiallar = [
 
       {korinish === "karta" && (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {royxat.map((xodim) => (
-            <article
+          {royxat.map((xodim, index) => (
+            <motion.article
               key={xodim.id}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: Math.min(index, 8) * 0.05, ease: [0.16, 1, 0.3, 1] }}
               onClick={() => setTafsilotXodim(xodim)}
-              className="cursor-pointer rounded-[24px] border border-orange-100 bg-white p-5 shadow-sm transition hover:border-orange-200 hover:shadow-md"
+              className="group cursor-pointer overflow-hidden rounded-[28px] border border-slate-100 bg-white shadow-[0_10px_30px_rgba(15,23,42,.06)] transition duration-300 hover:-translate-y-1 hover:border-gold-200 hover:shadow-[0_22px_48px_rgba(37,99,235,.14)]"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-sm font-black text-orange-500">
-                  {bosHarflar(xodim) || <UserRound size={22} />}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`rounded-lg px-2.5 py-1 text-xs font-black ${holatRangi[xodim.holat]}`}>
+              {/* Yuqori qism: gradient fon, holat va amallar */}
+              <div className={`relative h-24 bg-gradient-to-br ${BANNER_RANGI[xodim.holat] ?? BANNER_RANGI.faol}`}>
+                <span aria-hidden className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/10" />
+                <span aria-hidden className="pointer-events-none absolute -bottom-12 left-1/3 h-28 w-28 rounded-full bg-white/5" />
+                <div className="relative flex items-start justify-between gap-2 p-4">
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-black shadow-sm ${holatRangi[xodim.holat]}`}>
+                    <span className="h-1.5 w-1.5 rounded-full bg-current" />
                     {holatMatni[xodim.holat]}
                   </span>
-                  <KartaSozlama
-                    maydonlar={kartaMaydonlari}
-                    yashirin={yashirinMaydon}
-                    onToggle={maydonToggle}
-                  />
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      ochirish(xodim);
-                    }}
-                    title="O'chirish"
-                    aria-label="O'chirish"
-                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <KartaSozlama
+                      maydonlar={kartaMaydonlari}
+                      yashirin={yashirinMaydon}
+                      onToggle={maydonToggle}
+                    />
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        ochirish(xodim);
+                      }}
+                      title="O'chirish"
+                      aria-label="O'chirish"
+                      className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/90 text-red-500 shadow-sm transition hover:bg-red-500 hover:text-white"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {korinadi("ism") && (
-                <h2 className="mt-5 text-xl font-black text-gray-950">{xodimNomi(xodim)}</h2>
-              )}
-
-              {korinadi("lavozim") && (
-                <p className="mt-2 flex items-center gap-1.5 text-sm font-bold text-gray-500">
-                  <Briefcase size={14} className="text-orange-400" />
-                  {lavozimNomi(lavozimlar, xodim.lavozimId, xodim.izoh) || "Lavozim biriktirilmagan"}
-                </p>
-              )}
-
-              {korinadi("tel") && (
-                <p className="mt-2 flex items-center gap-1.5 text-sm font-bold text-gray-500">
-                  <Phone size={14} className="text-orange-400" />
-                  {asosiyTelefon(xodim) || "—"}
-                  {xodim.telefonlar.length > 1 && (
-                    <span className="rounded-lg bg-orange-50 px-1.5 py-0.5 text-xs font-black text-orange-500">
-                      +{xodim.telefonlar.length - 1}
+              <div className="px-5 pb-5">
+                <div className="relative z-10 -mt-10 flex items-end justify-between gap-3">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-[26px] bg-white p-1 shadow-[0_12px_28px_rgba(15,23,42,.18)] transition duration-300 group-hover:scale-105 group-hover:-rotate-3">
+                    <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-[22px] bg-gradient-to-br from-gold-400 to-gold-600 text-2xl font-black tracking-wide text-white">
+                      <AvatarRasm userId={xodim.id} url={xodim.rasmUrl}>
+                        {bosHarflar(xodim) || <UserRound size={28} />}
+                      </AvatarRasm>
                     </span>
-                  )}
-                </p>
-              )}
-
-              {korinadi("filial") && xodim.filial && (
-                <p className="mt-2 flex items-center gap-1.5 text-sm text-gray-500">
-                  <Building2 size={14} className="text-orange-400" />
-                  {xodim.filial}
-                </p>
-              )}
-
-              {(korinadi("oylik") || korinadi("ishBoshlagan")) && (
-                <div className="mt-5 space-y-1 border-t border-gray-100 pt-4 text-sm">
-                  {korinadi("oylik") && (
-                    <p className="flex items-center justify-between gap-2">
-                      <span className="text-gray-400">Oylik</span>
-                      <span className="font-semibold text-gray-600">
-                        {xodim.oylik !== null ? summaFormat(xodim.oylik) : "—"}
-                      </span>
-                    </p>
-                  )}
-                  {korinadi("ishBoshlagan") && (
-                    <p className="flex items-center justify-between gap-2">
-                      <span className="text-gray-400">Ishga kirgan</span>
-                      <span className="font-semibold text-gray-600">
-                        {sanaFormat(xodim.ishBoshlaganSana)}
-                      </span>
-                    </p>
-                  )}
+                  </div>
                 </div>
-              )}
-            </article>
+
+                {korinadi("ism") && (
+                  <h2 className="mt-3 truncate text-xl font-black tracking-tight text-slate-900">{xodimNomi(xodim)}</h2>
+                )}
+
+                {korinadi("lavozim") && (
+                  <p className="mt-1.5 inline-flex max-w-full items-center gap-1.5 rounded-full bg-gold-50 px-3 py-1 text-xs font-bold text-gold-600">
+                    <Briefcase size={13} className="shrink-0" />
+                    <span className="truncate">
+                      {lavozimNomi(lavozimlar, xodim.lavozimId, xodim.izoh) || "Lavozim biriktirilmagan"}
+                    </span>
+                  </p>
+                )}
+
+                {(korinadi("tel") || (korinadi("filial") && xodim.filial)) && (
+                  <ul className="mt-4 space-y-2.5 text-sm">
+                    {korinadi("tel") && (
+                      <li className="flex items-center gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 transition duration-300 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-white">
+                          <Phone size={16} />
+                        </span>
+                        <span className="font-bold text-slate-700">{asosiyTelefon(xodim) || "—"}</span>
+                        {xodim.telefonlar.length > 1 && (
+                          <span className="rounded-lg bg-gold-50 px-1.5 py-0.5 text-xs font-black text-gold-600">
+                            +{xodim.telefonlar.length - 1}
+                          </span>
+                        )}
+                      </li>
+                    )}
+                    {korinadi("filial") && xodim.filial && (
+                      <li className="flex items-center gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600 transition duration-300 group-hover:scale-110 group-hover:bg-violet-500 group-hover:text-white">
+                          <Building2 size={16} />
+                        </span>
+                        <span className="truncate font-semibold text-slate-600">{xodim.filial}</span>
+                      </li>
+                    )}
+                  </ul>
+                )}
+
+                {(korinadi("oylik") || korinadi("ishBoshlagan")) && (
+                  <div className="mt-4 grid grid-cols-2 gap-2.5">
+                    {korinadi("oylik") && (
+                      <div className="rounded-2xl bg-emerald-50/70 px-3.5 py-3 ring-1 ring-emerald-100 transition group-hover:bg-emerald-50">
+                        <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-600">
+                          <Wallet size={12} />
+                          Oylik
+                        </p>
+                        <p className="mt-1 truncate text-sm font-black text-slate-800">
+                          {xodim.oylik !== null ? summaFormat(xodim.oylik) : "—"}
+                        </p>
+                      </div>
+                    )}
+                    {korinadi("ishBoshlagan") && (
+                      <div className="rounded-2xl bg-sky-50/70 px-3.5 py-3 ring-1 ring-sky-100 transition group-hover:bg-sky-50">
+                        <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-sky-600">
+                          <CalendarDays size={12} />
+                          Ishga kirgan
+                        </p>
+                        <p className="mt-1 truncate text-sm font-black text-slate-800">
+                          {sanaFormat(xodim.ishBoshlaganSana)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </motion.article>
           ))}
 
           {royxat.length === 0 && (

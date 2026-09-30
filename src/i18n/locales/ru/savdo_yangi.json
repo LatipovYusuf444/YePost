@@ -24,7 +24,8 @@
     "endDateBeforeStart": "Дата окончания не может быть раньше даты начала.",
     "selectAtLeastOneProduct": "Выберите хотя бы один товар.",
     "insufficientStock": "Для «{{name}}» на складе доступно только {{available}} шт. — вы не можете продать {{requested}} шт.",
-    "totalMustBePositive": "Сумма продажи должна быть больше 0."
+    "totalMustBePositive": "Сумма продажи должна быть больше 0.",
+    "productOtherWarehouse": "Выбранный товар с другого склада. Одна продажа оформляется только с одного склада."
   },
   "activity": {
     "today": "Сегодня",
@@ -117,7 +118,13 @@
     "responsible": "Ответственный сотрудник",
     "warehouse": "Склад",
     "availableStock": "Доступный остаток",
-    "rowTotal": "Итого по строке"
+    "rowTotal": "Итого по строке",
+    "product": "Товар",
+    "image": "Фото",
+    "price": "Цена (сум)",
+    "quantity": "Количество",
+    "discount": "Скидка (сум)",
+    "priceLocked": "Цена берётся с остатка склада и не редактируется"
   },
   "placeholders": {
     "clientSearch": "Имя клиента, телефон или email",
@@ -149,7 +156,8 @@
     "removeRowAriaLabel": "Удалить строку товара",
     "imageButtonTitle": "Изображение",
     "stockLabelShort": "остаток",
-    "priceLabelShort": "цена"
+    "priceLabelShort": "цена",
+    "outOfStock": "Нет в наличии"
   },
   "summary": {
     "totalLabel": "Итого по продаже",

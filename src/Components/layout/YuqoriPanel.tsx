@@ -21,6 +21,7 @@ import { useAuthProfileStore } from "@/store/authProfileStore";
 import type { Bildirishnoma } from "@/types/crm";
 import type { JoriyFoydalanuvchi } from "@/types/tenant";
 
+import { useAvatarUrl } from "@/store/avatarStore";
 export default function YuqoriPanel({
   sidebarAcik,
   onSidebarToggle,
@@ -406,7 +407,7 @@ function ProfilTugmasi({
 
   const ism = profil?.fullName?.trim() || profil?.username || "";
   const rolNomi = profil ? t(`roles.${profil.role}`, { ns: "nav", defaultValue: profil.role }) : "";
-  const rasmUrl = profil?.avatarUrl || "";
+  const rasmUrl = useAvatarUrl(profil?.id, profil?.avatarUrl);
   // Rasm bo'lmasa ism bosh harfi (faqat bosHarfBilan berilgan navbarda); ism yo'q bo'lsa avvalgi ikonka.
   const bosHarf = bosHarfBilan && ism ? ism.charAt(0).toUpperCase() : "";
 

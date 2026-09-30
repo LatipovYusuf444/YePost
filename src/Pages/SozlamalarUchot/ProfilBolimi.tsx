@@ -6,6 +6,10 @@ import { useAuthProfileStore } from "@/store/authProfileStore";
 import { BolimKarta, Maydon, SaqlashTugma } from "./UmumiyUI";
 import { maydonKlass } from "./yordamchilar";
 
+import AvatarYuklash, { type TanlanganRasm } from "@/Components/common/AvatarYuklash";
+import { avatarApi } from "@/api/avatarApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { useAvatarUrl } from "@/store/avatarStore";
 function ismniAjratish(fullName?: string | null) {
   const qismlar = (fullName ?? "").trim().split(/\s+/).filter(Boolean);
   return { ism: qismlar[0] ?? "", familiya: qismlar.slice(1).join(" ") };
@@ -27,6 +31,13 @@ export default function ProfilBolimi() {
   const [email, setEmail] = useState("");
   const [lavozim, setLavozim] = useState("");
   const [telegramId, setTelegramId] = useState("");
+  const [tanlanganRasm, setTanlanganRasm] = useState<TanlanganRasm | null>(null);
+  const [rasmOlibTashlandi, setRasmOlibTashlandi] = useState(false);
+  const [rasmXatosi, setRasmXatosi] = useState("");
+  const [rasmMahalliy, setRasmMahalliy] = useState(false);
+  const [rasmSaqlanmoqda, setRasmSaqlanmoqda] = useState(false);
+  const mavjudRasm = useAvatarUrl(profil?.id, profil?.avatarUrl);
+  const korinadiganRasm = tanlanganRasm?.dataUrl ?? (rasmOlibTashlandi ? "" : mavjudRasm);
 
   useEffect(() => { if (!profil && !yuklanmoqda) void profilniYuklash(); }, [profil, profilniYuklash, yuklanmoqda]);
   useEffect(() => {
@@ -38,17 +49,66 @@ export default function ProfilBolimi() {
 
   async function saqlash() {
     xabarlarniTozalash();
-    await profilniYangilash({
+    setRasmXatosi("");
+    // Faqat o'zgargan maydonlar yuboriladi: o'zgarmagan email qayta yuborilsa, backend uni
+    // "allaqachon ro'yxatdan o'tgan" (409) deb rad etishi mumkin.
+    const yangi = {
       fullName: [ism.trim(), familiya.trim()].filter(Boolean).join(" "),
-      phone: telefon.trim(), email: email.trim(), position: lavozim.trim(), telegramId: telegramId.trim(),
-    });
+      phone: telefon.trim(),
+      email: email.trim(),
+      position: lavozim.trim(),
+      telegramId: telegramId.trim(),
+    };
+    const eski = {
+      fullName: (profil?.fullName ?? "").trim(),
+      phone: (profil?.phone ?? "").trim(),
+      email: (profil?.email ?? "").trim(),
+      position: (profil?.position ?? "").trim(),
+      telegramId: (profil?.telegramId ?? "").trim(),
+    };
+    const ozgargan = Object.fromEntries(
+      Object.entries(yangi).filter(([kalit, qiymat]) => qiymat !== eski[kalit as keyof typeof eski])
+    );
+    const malumotOzgardi = Object.keys(ozgargan).length > 0;
+    const saqlandi = malumotOzgardi ? await profilniYangilash(ozgargan) : true;
+    if (!saqlandi || !profil || (!tanlanganRasm && !rasmOlibTashlandi)) return;
+
+    // Rasm profil ma'lumotlari saqlangandan keyin yuklanadi (yoki o'chiriladi).
+    setRasmSaqlanmoqda(true);
+    try {
+      const natija = tanlanganRasm
+        ? await avatarApi.yuklash(profil.id, tanlanganRasm.blob, tanlanganRasm.dataUrl, true)
+        : await avatarApi.olibTashlash(profil.id, true);
+      setRasmMahalliy(natija.mahalliy);
+      setTanlanganRasm(null);
+      setRasmOlibTashlandi(false);
+      if (!natija.mahalliy) await profilniYuklash();
+    } catch (error) {
+      setRasmXatosi(getApiErrorMessage(error));
+    } finally {
+      setRasmSaqlanmoqda(false);
+    }
   }
 
   const boshHarf = `${familiya[0] ?? ""}${ism[0] ?? ""}`.toUpperCase() || "?";
   return <BolimKarta sarlavha={t("nav.profil")} izoh={t("profil.subtitle")} amal={muvaffaqiyat ? <span className="text-sm font-bold text-emerald-600">{t("saved")}</span> : undefined}>
     {yuklanmoqda && !profil ? <div className="flex h-48 items-center justify-center gap-2 text-sm font-bold text-slate-400"><LoaderCircle className="animate-spin" size={20}/>{t("profil.loading")}</div> : <>
       {xatolik && <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xatolik}</p>}
-      <div className="flex items-center gap-4"><div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-50 text-xl font-black text-[#2563EB]">{boshHarf}</div><div><p className="text-lg font-black text-gray-950">{profil?.fullName || profil?.username || t("profil.unknownUser")}</p><p className="text-sm font-semibold text-gray-400">{profil?.role || "—"}</p></div></div>
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-4 rounded-3xl bg-gradient-to-br from-gold-50/70 to-white p-5 ring-1 ring-gold-100">
+        <AvatarYuklash
+          korinadiganRasm={korinadiganRasm}
+          bosHarflar={boshHarf}
+          disabled={amalBajarilmoqda || rasmSaqlanmoqda}
+          onTanlandi={(rasm) => { setTanlanganRasm(rasm); setRasmOlibTashlandi(false); setRasmMahalliy(false); }}
+          onOlibTashlandi={() => { setTanlanganRasm(null); setRasmOlibTashlandi(true); setRasmMahalliy(false); }}
+        />
+        <div className="min-w-0">
+          <p className="truncate text-xl font-black text-gray-950">{profil?.fullName || profil?.username || t("profil.unknownUser")}</p>
+          <p className="mt-1 inline-flex rounded-full bg-gold-50 px-3 py-1 text-xs font-bold uppercase text-gold-600">{profil?.role || "—"}</p>
+          {rasmMahalliy && <p className="mt-2 text-xs font-bold text-amber-600">{t("avatar.localNote")}</p>}
+          {rasmXatosi && <p className="mt-2 text-xs font-bold text-red-500">{rasmXatosi}</p>}
+        </div>
+      </div>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <Maydon label={t("profil.fields.firstName")}><input value={ism} onChange={(e) => setIsm(e.target.value)} className={maydonKlass}/></Maydon>
         <Maydon label={t("profil.fields.lastName")}><input value={familiya} onChange={(e) => setFamiliya(e.target.value)} className={maydonKlass}/></Maydon>
@@ -59,7 +119,7 @@ export default function ProfilBolimi() {
         <Maydon label={t("profil.fields.login")}><input value={profil?.username ?? ""} disabled className={maydonKlass}/></Maydon>
         <Maydon label={t("profil.fields.role")}><input value={profil?.role ?? ""} disabled className={maydonKlass}/></Maydon>
       </div>
-      <div className="mt-6 flex justify-end"><SaqlashTugma disabled={amalBajarilmoqda} onClick={() => void saqlash()}/></div>
+      <div className="mt-6 flex justify-end"><SaqlashTugma disabled={amalBajarilmoqda || rasmSaqlanmoqda} onClick={() => void saqlash()}/></div>
       {amalBajarilmoqda && <p className="mt-3 text-right text-xs font-bold text-slate-400">{t("savingToBackend")}</p>}
     </>}
   </BolimKarta>;

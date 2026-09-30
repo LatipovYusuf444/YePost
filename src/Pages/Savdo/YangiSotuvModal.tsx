@@ -31,7 +31,7 @@ import type {
   XodimTanlovi,
 } from "@/types/savdo";
 import { pulniFormatlash } from "./savdoYordamchilari";
-import SavdoSelect from "./SavdoSelect";
+import SavdoSelect, { type SavdoSelectOption } from "./SavdoSelect";
 
 type YangiSotuvModalProps = {
   variant?: "sale" | "draft";
@@ -143,7 +143,13 @@ function qoldiqNomi(qoldiq: QoldiqTanlovi, t: TFunction) {
     return `${productName} - ${variantName}`;
   }
 
-  return productName ?? variantName ?? t("common.unknownProduct");
+  return (
+    productName ||
+    variantName ||
+    qoldiq.modification?.barcode ||
+    qoldiq.modification?.article ||
+    t("common.unknownProduct")
+  );
 }
 
 function qoldiqMiqdori(qoldiq?: QoldiqTanlovi) {
@@ -389,6 +395,77 @@ export default function YangiSotuvModal({
     }
   }
 
+  // Mahsulot tanlash ro'yxati: tanlangan ombordagi qoldig'i borlar tanlanadi, qoldig'i yo'qlar
+  // (ombordan tugagan yoki umuman kirim qilinmagan) qizil belgi bilan o'chirilgan holda pastda ko'rsatiladi.
+  function mahsulotOptionlari(): SavdoSelectOption[] {
+    const korinadigan = qoldiqlar.filter(
+      (item) => !warehouseId || !item.warehouseId || item.warehouseId === warehouseId
+    );
+    const omborniBilganlar = new Set(
+      korinadigan.filter((item) => item.warehouseId).map((item) => item.modificationId)
+    );
+    const royxat = korinadigan.filter(
+      // Ombor ma'lumotisiz katalog yozuvi, shu mahsulotning haqiqiy ombor yozuvi bor bo'lsa, takrorlanmaydi.
+      (item) => item.warehouseId || !omborniBilganlar.has(item.modificationId)
+    );
+
+    // Shu mahsulotning boshqa ombordagi yozuvlaridan nom va narx olinadi (qoldig'i yo'q yozuvda ular bo'sh bo'lishi mumkin).
+    const nomlar = new Map<string, string>();
+    const narxlar = new Map<string, number>();
+    for (const item of qoldiqlar) {
+      if (!item.modificationId) continue;
+      const nom = qoldiqNomi(item, t);
+      if (nom !== t("common.unknownProduct") && !nomlar.has(item.modificationId)) nomlar.set(item.modificationId, nom);
+      const narx = Number(qoldiqNarxi(item)) || 0;
+      if (narx > 0 && !narxlar.has(item.modificationId)) narxlar.set(item.modificationId, narx);
+    }
+
+    return royxat
+      .map((item) => {
+        const miqdor = qoldiqMiqdori(item);
+        const mavjud = miqdor > 0;
+        const oziNomi = qoldiqNomi(item, t);
+        const nom =
+          oziNomi !== t("common.unknownProduct")
+            ? oziNomi
+            : (item.modificationId ? nomlar.get(item.modificationId) : undefined) ??
+              `${oziNomi} #${String(item.modificationId ?? "").slice(-6)}`;
+        const itemOmborNomi =
+          item.warehouse?.name ?? omborlar.find((ombor) => ombor.id === item.warehouseId)?.name;
+        const narxMatni = pulniFormatlash(Number(qoldiqNarxi(item)) || (item.modificationId ? narxlar.get(item.modificationId) : 0) || 0);
+
+        return {
+          mavjud,
+          nom,
+          option: mavjud
+            ? {
+                value: qoldiqKaliti(item),
+                searchLabel: nom,
+                label: `${nom}${itemOmborNomi ? ` (${itemOmborNomi})` : ""} - ${t("products.stockLabelShort")}: ${miqdor} - ${t("products.priceLabelShort")}: ${narxMatni}`,
+              }
+            : {
+                value: qoldiqKaliti(item),
+                searchLabel: nom,
+                disabled: true,
+                xavf: true,
+                label: (
+                  <span className="flex w-full min-w-0 items-center justify-between gap-3">
+                    <span className="min-w-0 truncate text-slate-500">
+                      {nom} - {t("products.priceLabelShort")}: {narxMatni}
+                    </span>
+                    <span className="shrink-0 rounded-md bg-red-100 px-2 py-0.5 text-[11px] font-black uppercase text-red-600">
+                      {t("products.outOfStock")}
+                    </span>
+                  </span>
+                ),
+              },
+        };
+      })
+      // Avval qoldig'i borlar, keyin yo'qlar; ichida nom bo'yicha.
+      .sort((x, y) => Number(y.mavjud) - Number(x.mavjud) || x.nom.localeCompare(y.nom, "uz"))
+      .map((x) => x.option);
+  }
+
   function mijozniTanlash(tanlanganCustomerId: string) {
     setCustomerId(tanlanganCustomerId);
 
@@ -498,6 +575,10 @@ export default function YangiSotuvModal({
       const soralganMiqdor = raqamgaAylantirish(mahsulot.quantity);
       if (!mahsulot.modificationId || soralganMiqdor <= 0) continue;
       const tanlanganQoldiq = qoldiqlar.find((item) => qoldiqKaliti(item) === mahsulot.qoldiqKaliti);
+      if (tanlanganQoldiq?.warehouseId && tanlanganQoldiq.warehouseId !== warehouseId) {
+        setXatolik("errors.productOtherWarehouse");
+        return;
+      }
       const mavjudMiqdor = tanlanganQoldiq ? qoldiqMiqdori(tanlanganQoldiq) : 0;
       if (soralganMiqdor > mavjudMiqdor) {
         setXatolik(
@@ -1043,47 +1124,51 @@ export default function YangiSotuvModal({
                             </button>
                           </div>
 
-                          <div className="grid min-w-0 gap-2 xl:grid-cols-[minmax(150px,1fr)_42px_96px_88px_96px] 2xl:grid-cols-[minmax(190px,1fr)_48px_118px_108px_112px]">
-                            <SavdoSelect
+                          <div className="grid min-w-0 gap-3">
+                            <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_64px] gap-3">
+                            <div className="min-w-0">
+                              <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-500">{t("labels.product")}</p>
+                              <SavdoSelect
                               value={mahsulot.qoldiqKaliti}
                               onChange={(value) => modifikatsiyaniTanlash(index, value)}
                               placeholder={t("placeholders.selectProduct")}
-                              options={qoldiqlar
-                                .filter((item) => qoldiqMiqdori(item) > 0)
-                                .map((item) => {
-                                  const itemOmborNomi =
-                                    item.warehouse?.name ?? omborlar.find((ombor) => ombor.id === item.warehouseId)?.name;
-                                  return {
-                                    value: qoldiqKaliti(item),
-                                    label: `${qoldiqNomi(item, t)}${itemOmborNomi ? ` (${itemOmborNomi})` : ""} - ${t("products.stockLabelShort")}: ${qoldiqMiqdori(item)} - ${t("products.priceLabelShort")}: ${pulniFormatlash(qoldiqNarxi(item))}`,
-                                  };
-                                })}
+                              options={mahsulotOptionlari()}
                               buttonClassName="h-11 rounded-xl border-slate-200 shadow-none hover:shadow-none focus:border-[#2563EB] px-3.5 text-sm"
                               dropdownClassName="[&>div>div]:text-center min-w-[520px] max-w-[min(720px,calc(100vw-32px))]"
                               portal
                             />
+                            </div>
 
-                            <button
+                            <div className="min-w-0">
+                              <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-500">{t("labels.image")}</p>
+                              <button
                               type="button"
                               className="flex h-11 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white text-slate-400 transition hover:border-[#2563EB] hover:text-[#2563EB]"
                               title={t("products.imageButtonTitle")}
                             >
                               <ImageIcon size={18} />
                             </button>
+                            </div>
 
-                            <input
+                            </div>
+                            <div className="grid min-w-0 gap-3 sm:grid-cols-3"><div className="min-w-0">
+                              <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-500">{t("labels.price")}</p>
+                              <input
                               type="number"
                               min="0"
                               step="0.01"
                               value={mahsulot.price}
-                              onChange={(event) =>
-                                mahsulotniYangilash(index, { price: event.target.value })
-                              }
-                              className="h-11 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100 text-slate-900 placeholder:text-slate-400 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
+                              readOnly
+                              disabled
+                              title={t("labels.priceLocked")}
+                              className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100 text-slate-900 placeholder:text-slate-400 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                               placeholder={t("placeholders.price")}
                             />
+                            </div>
 
-                            <input
+                            <div className="min-w-0">
+                              <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-500">{t("labels.quantity")}</p>
+                              <input
                               type="number"
                               min="0.001"
                               step="0.001"
@@ -1091,11 +1176,14 @@ export default function YangiSotuvModal({
                               onChange={(event) =>
                                 mahsulotniYangilash(index, { quantity: event.target.value })
                               }
-                              className="h-11 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100 text-slate-900 placeholder:text-slate-400 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
+                              className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100 text-slate-900 placeholder:text-slate-400 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                               placeholder={t("placeholders.quantity")}
                             />
+                            </div>
 
-                            <input
+                            <div className="min-w-0">
+                              <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-500">{t("labels.discount")}</p>
+                              <input
                               type="number"
                               min="0"
                               step="0.01"
@@ -1103,9 +1191,11 @@ export default function YangiSotuvModal({
                               onChange={(event) =>
                                 mahsulotniYangilash(index, { discount: event.target.value })
                               }
-                              className="h-11 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100 text-slate-900 placeholder:text-slate-400 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
+                              className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100 text-slate-900 placeholder:text-slate-400 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                               placeholder={t("placeholders.discount")}
                             />
+                            </div>
+                          </div>
                           </div>
 
                           <div className="mt-3 grid gap-2 md:grid-cols-3">
@@ -1119,6 +1209,15 @@ export default function YangiSotuvModal({
                                 onChange={(value) => {
                                   setWarehouseId(value);
                                   onOmborTanlash(value);
+                                  // Bitta sotuv bitta ombordan bo'ladi: boshqa ombordan tanlangan qatorlar tozalanadi.
+                                  setMahsulotlar((joriy) =>
+                                    joriy.map((qator) => {
+                                      const tanlangan = qoldiqlar.find((item) => qoldiqKaliti(item) === qator.qoldiqKaliti);
+                                      return tanlangan?.warehouseId && tanlangan.warehouseId !== value
+                                        ? { modificationId: "", qoldiqKaliti: "", quantity: "1", price: "", discount: "" }
+                                        : qator;
+                                    })
+                                  );
                                 }}
                                 placeholder={t("placeholders.selectWarehouse")}
                                 options={omborlar.map((ombor) => ({

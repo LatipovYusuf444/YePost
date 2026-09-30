@@ -23,6 +23,10 @@ export type Xodim = {
   yaratilganSana: string;
   ozgartirilganSana: string;
   ozgartirganMasul: string;
+  // Rasm: backenddagi URL; forma orqali yangi rasm tanlansa `rasmFayli` (yuboriladi), o'chirilsa `rasmOlibTashlash`.
+  rasmUrl?: string;
+  rasmFayli?: { blob: Blob; dataUrl: string } | null;
+  rasmOlibTashlash?: boolean;
 };
 
 // Tashkilot tuzilmasi: bo'limlar daraxti (Bitrix "Структура компании" uslubida).

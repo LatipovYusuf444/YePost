@@ -3,7 +3,6 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Banknote,
-  ChevronDown,
   Landmark,
   Plus,
   Search,
@@ -29,6 +28,7 @@ import KassaAmaliyotModal from "./KassaAmaliyotModal";
 import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali, KassaYonalishi } from "./types";
 import { sanaFormat, summaFormat } from "./yordamchilar";
 
+import ModalTablari from "@/Components/common/ModalTablari";
 type Bolim = { yonalish: KassaYonalishi };
 type Guruh = { kanal: KassaKanali; icon: typeof Banknote; bolimlar: Bolim[] };
 
@@ -170,7 +170,6 @@ export default function KassaUchot() {
   const [xatolik, setXatolik] = useState("");
   const [kanal, setKanal] = useState<KassaKanali>("naqd");
   const [yonalish, setYonalish] = useState<KassaYonalishi>("tushum");
-  const [ochiqMenyu, setOchiqMenyu] = useState<KassaKanali | null>(null);
   const [qidiruv, setQidiruv] = useState("");
   const [modalOchiq, setModalOchiq] = useState(false);
   const [tahrirAmaliyot, setTahrirAmaliyot] = useState<KassaAmaliyoti | null>(null);
@@ -272,7 +271,6 @@ export default function KassaUchot() {
   function bolimniTanlash(yangiKanal: KassaKanali, yangiYonalish: KassaYonalishi) {
     setKanal(yangiKanal);
     setYonalish(yangiYonalish);
-    setOchiqMenyu(null);
   }
 
   const royxat = useMemo(() => {
@@ -370,66 +368,22 @@ export default function KassaUchot() {
         </div>
       )}
 
-      {/* 3 guruh — har biri ochiladi (Tushumlar / Chiqimlar) */}
-      <div className="flex flex-wrap gap-2 rounded-2xl border border-orange-100 bg-white p-2 shadow-sm">
-        {guruhlar.map((guruh) => {
+      {/* Har kanal uchun tushum va chiqim alohida tab */}
+      <ModalTablari
+        tablar={guruhlar.flatMap((guruh) => {
           const Ikonka = guruh.icon;
-          const faolGuruh = kanal === guruh.kanal;
-          const ochiq = ochiqMenyu === guruh.kanal;
-          return (
-            <div key={guruh.kanal} className="relative">
-              <button
-                type="button"
-                onClick={() => setOchiqMenyu(ochiq ? null : guruh.kanal)}
-                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition ${
-                  faolGuruh
-                    ? "bg-orange-500 text-white"
-                    : "text-gray-500 hover:bg-orange-50 hover:text-orange-600"
-                }`}
-              >
-                <Ikonka size={15} />
-                {t(`groups.${guruh.kanal}.name`)}
-                <ChevronDown size={14} className={`transition ${ochiq ? "rotate-180" : ""}`} />
-              </button>
-
-              {ochiq && (
-                <>
-                  <button
-                    type="button"
-                    aria-label={t("common:actions.close")}
-                    onClick={() => setOchiqMenyu(null)}
-                    className="fixed inset-0 z-40 cursor-default"
-                  />
-                  <div className="absolute left-0 top-12 z-50 w-60 rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_50px_rgba(15,23,42,.16)]">
-                    {guruh.bolimlar.map((bolim) => {
-                      const faolBolim = faolGuruh && yonalish === bolim.yonalish;
-                      return (
-                        <button
-                          key={bolim.yonalish}
-                          type="button"
-                          onClick={() => bolimniTanlash(guruh.kanal, bolim.yonalish)}
-                          className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${
-                            faolBolim
-                              ? "bg-orange-50 text-[#2563EB]"
-                              : "text-slate-600 hover:bg-orange-50 hover:text-[#2563EB]"
-                          }`}
-                        >
-                          {bolim.yonalish === "tushum" ? (
-                            <ArrowDownLeft size={15} className="text-emerald-500" />
-                          ) : (
-                            <ArrowUpRight size={15} className="text-red-500" />
-                          )}
-                          {t(`groups.${guruh.kanal}.${bolim.yonalish}`)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
-          );
+          return guruh.bolimlar.map((bolim) => ({
+            id: `${guruh.kanal}:${bolim.yonalish}`,
+            nom: t(`groups.${guruh.kanal}.${bolim.yonalish}`),
+            icon: <Ikonka size={15} />,
+          }));
         })}
-      </div>
+        faol={`${kanal}:${yonalish}`}
+        onChange={(id) => {
+          const [yangiKanal, yangiYonalish] = id.split(":");
+          bolimniTanlash(yangiKanal as KassaKanali, yangiYonalish as KassaYonalishi);
+        }}
+      />
 
       {/* Chapda: qidiruv + jami. O'ngda: yaratish tugmasi. */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

@@ -68,6 +68,7 @@ import {
 } from "./savdoYordamchilari";
 import SavdoSelect from "./SavdoSelect";
 
+import ModalTablari from "@/Components/common/ModalTablari";
 type SotuvTafsilotlariModalProps = {
   sotuv: Sotuv;
   qoldiqlar: QoldiqTanlovi[];
@@ -509,20 +510,12 @@ export default function SotuvTafsilotlariModal({
               </div>
             </div>
 
-            <nav className="mt-6 flex items-center gap-3 overflow-x-auto">
-              {tabs.map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setActiveTab(tab)}
-                  className={`shrink-0 rounded-xl px-3 py-2 text-sm transition ${
-                    activeTab === tab ? "border border-orange-200 bg-white text-[#2563EB]" : "text-slate-500 hover:bg-white hover:text-[#2563EB]"
-                  }`}
-                >
-                  {t(TAB_LABEL_KEYS[tab] ?? tab)}
-                </button>
-              ))}
-            </nav>
+            <ModalTablari
+                className="mt-6"
+                tablar={tabs.map((tab) => ({ id: tab, nom: t(TAB_LABEL_KEYS[tab] ?? tab) }))}
+                faol={activeTab}
+                onChange={(id) => setActiveTab(id as typeof activeTab)}
+              />
           </header>
 
           {activeTab === "Tovarlar" ? (

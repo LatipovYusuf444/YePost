@@ -17,6 +17,8 @@ export type SavdoSelectOption = {
   label: ReactNode;
   searchLabel?: string;
   disabled?: boolean;
+  // Qizil (masalan, qoldiq yo'q) o'chirilgan variant: xiralashtirilmaydi, qizil fonda ko'rinadi.
+  xavf?: boolean;
 };
 
 type SavdoSelectProps = {
@@ -189,7 +191,7 @@ export default function SavdoSelect({
                 active
                   ? "bg-orange-500 text-white shadow-[0_8px_18px_rgba(37,99,235,.20)]"
                   : "text-slate-700 hover:bg-orange-50 hover:text-orange-600"
-              } ${option.disabled ? "cursor-not-allowed opacity-40" : ""}`}
+              } ${option.disabled ? (option.xavf ? "cursor-not-allowed bg-red-50/70 hover:bg-red-50/70" : "cursor-not-allowed opacity-40") : ""}`}
             >
               <span className="min-w-0 truncate">{option.label}</span>
               {active && <Check size={16} className="shrink-0" />}

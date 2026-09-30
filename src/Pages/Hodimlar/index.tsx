@@ -37,6 +37,7 @@ import type { AccountFoydalanuvchi, AccountRoli, VakolatKodi } from "@/types/acc
 import Rollar from "./Rollar";
 import Ruxsatlar from "./Ruxsatlar";
 
+import ModalTablari from "@/Components/common/ModalTablari";
 type Tab = "foydalanuvchilar" | "vakolatlar" | "rollar";
 type Korinish = "kartochka" | "kichik" | "royxat" | "jadval";
 
@@ -1110,25 +1111,11 @@ export default function Hodimlar() {
         </div>
       )}
 
-      <nav className="flex gap-2 overflow-x-auto rounded-2xl border border-orange-100 bg-white p-2">
-        {tablar.map((item) => {
-          const Icon = item.icon;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setTab(item.id)}
-              className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 font-bold transition ${
-                tab === item.id
-                  ? "bg-orange-500 text-white shadow-md shadow-orange-500/20"
-                  : "text-gray-500 hover:bg-orange-50"
-              }`}
-            >
-              <Icon size={17} />
-              {item.nom}
-            </button>
-          );
-        })}
-      </nav>
+      <ModalTablari
+        tablar={tablar.map((item) => ({ id: item.id, nom: item.nom, icon: <item.icon size={16} /> }))}
+        faol={tab}
+        onChange={(id) => setTab(id as Tab)}
+      />
 
       {tab === "foydalanuvchilar" && <Foydalanuvchilar />}
       {tab === "vakolatlar" && <Ruxsatlar />}

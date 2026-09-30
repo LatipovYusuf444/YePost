@@ -13,6 +13,7 @@ import { timelineniTarixga } from "./backendAdapters";
 import type { TarixYozuvi, Xaridor, XaridorKompaniyasi, XaridorSavdosi } from "./types";
 import { kompaniyaNomi, sanaFormat, xaridorNomi } from "./yordamchilar";
 
+import ModalTablari from "@/Components/common/ModalTablari";
 type Tab = "malumotlar" | "savdolar" | "tolovlar" | "tarix";
 const tabKalitlari: Tab[] = ["malumotlar", "savdolar", "tolovlar", "tarix"];
 
@@ -97,22 +98,12 @@ export default function XaridorTafsilotlariModal({
                 </div>
               </div>
 
-              <nav className="mt-6 flex items-center gap-3 overflow-x-auto">
-                {tablar.map((tab) => (
-                  <button
-                    key={tab.kalit}
-                    type="button"
-                    onClick={() => setFaolTab(tab.kalit)}
-                    className={`shrink-0 rounded-xl px-3 py-2 text-sm transition ${
-                      faolTab === tab.kalit
-                        ? "border border-orange-200 bg-white text-[#2563EB]"
-                        : "text-slate-500 hover:bg-white hover:text-[#2563EB]"
-                    }`}
-                  >
-                    {tab.nom}
-                  </button>
-                ))}
-              </nav>
+              <ModalTablari
+                className="mt-6"
+                tablar={tablar.map((tab) => ({ id: tab.kalit, nom: tab.nom }))}
+                faol={faolTab}
+                onChange={(id) => setFaolTab(id as typeof faolTab)}
+              />
             </header>
 
             {xatolik && <div className="mx-9 mt-5 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">{xatolik}</div>}

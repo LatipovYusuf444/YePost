@@ -40,6 +40,7 @@ import type {
 } from "@/types/catalog";
 import type { Ombor } from "@/types/ombor";
 
+import ModalTablari from "@/Components/common/ModalTablari";
 type Tab = "mahsulotlar" | "kategoriyalar";
 type Korinish = "kartochka" | "jadval";
 type VariationRow = {
@@ -271,13 +272,14 @@ export default function Mahsulotlar() {
       {excelXatolik && <div className="flex justify-between gap-4 rounded-2xl bg-red-50 p-4 font-bold text-red-600"><span>{excelXatolik}</span><button onClick={()=>setExcelXatolik("")}>{t("actions.close")}</button></div>}
 
       <nav className="flex gap-2 overflow-x-auto rounded-2xl border border-orange-100 bg-white p-2">
-        {[
-          ["mahsulotlar",t("tabs.products"),Boxes],
-          ["kategoriyalar",t("tabs.categories"),Layers3],
-        ].map(([id,nom,Icon]) => {
-          const IconComponent = Icon as typeof Boxes;
-          return <button key={String(id)} onClick={()=>setTab(id as Tab)} className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-5 py-2.5 font-bold ${tab===id?"bg-orange-500 text-white":"text-gray-500 hover:bg-orange-50"}`}><IconComponent size={17}/>{String(nom)}</button>;
-        })}
+        <ModalTablari
+          tablar={[
+            { id: "mahsulotlar", nom: t("tabs.products"), icon: <Boxes size={16} /> },
+            { id: "kategoriyalar", nom: t("tabs.categories"), icon: <Layers3 size={16} /> },
+          ]}
+          faol={tab}
+          onChange={(id) => setTab(id as Tab)}
+        />
       </nav>
 
       {store.yuklanmoqda ? <div className="flex h-72 items-center justify-center"><LoaderCircle className="animate-spin text-orange-500" size={34}/></div> : tab === "mahsulotlar" ? (

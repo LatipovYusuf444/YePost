@@ -7,6 +7,7 @@ import TezkorPanel from "./TezkorPanel";
 import type { Kirim } from "./types";
 import { kirimHolatRangi, qisqaVaqt, sanaFormat, summaFormat } from "./yordamchilar";
 
+import ModalTablari from "@/Components/common/ModalTablari";
 type Props = {
   kirim: Kirim;
   beruvchiNomi: string;
@@ -48,22 +49,12 @@ export default function KirimModal({ kirim, beruvchiNomi, onYopish }: Props) {
                 </div>
               </div>
 
-              <nav className="mt-6 flex items-center gap-3 overflow-x-auto">
-                {tablar.map((tab) => (
-                  <button
-                    key={tab.kalit}
-                    type="button"
-                    onClick={() => setFaolTab(tab.kalit)}
-                    className={`shrink-0 rounded-xl px-3 py-2 text-sm transition ${
-                      faolTab === tab.kalit
-                        ? "border border-orange-200 bg-white text-[#2563EB]"
-                        : "text-slate-500 hover:bg-white hover:text-[#2563EB]"
-                    }`}
-                  >
-                    {tab.nom}
-                  </button>
-                ))}
-              </nav>
+              <ModalTablari
+                className="mt-6"
+                tablar={tablar.map((tab) => ({ id: tab.kalit, nom: tab.nom }))}
+                faol={faolTab}
+                onChange={(id) => setFaolTab(id as typeof faolTab)}
+              />
             </header>
 
             {faolTab === "umumiy" ? (

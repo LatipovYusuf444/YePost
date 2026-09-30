@@ -1,6 +1,7 @@
 import apiClient from "./axios";
 import axios from "axios";
 import { modifikatsiyalarApi } from "./catalogApi";
+import { stockBalanceReportAll } from "./reportsApi";
 import { apiData, apiList, ruxsatsizBulsaBosh, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import type {
   MijozTanlovi,
@@ -198,39 +199,120 @@ export async function xodimlarRoyxatiniOlish() {
 }
 
 // Savdo/index.tsx: ombordagi mavjud modifikatsiya, qoldiq va narxlarni oladi.
+// Backend qatorida variant ID'si turlicha nomlanishi mumkin; hammasi `modificationId` ga keltiriladi.
+function qoldiqIdsiniTiklash(qator: QoldiqTanlovi): QoldiqTanlovi {
+  const xom = qator as QoldiqTanlovi & { variantId?: string; productVariantId?: string; modification_id?: string };
+  const id = xom.modificationId || xom.modification?.id || xom.variantId || xom.productVariantId || xom.modification_id || "";
+  if (!id && import.meta.env.DEV) {
+    console.warn("Ombor qoldig'i yozuvida variant ID topilmadi:", qator);
+  }
+  return id ? { ...qator, modificationId: id } : qator;
+}
+
+// Hisobot endpointi (`/reports/stock-balance`) har qatorda mahsulot va variant nomi, ombor, shtrix kod,
+// mavjud miqdor va narxlarni to'liq beradi, qoldig'i 0 bo'lgan yozuvlarni ham qaytara oladi.
+// Sotuv ro'yxatlari shu manbaga tayanadi; ruxsat bo'lmasa (masalan kassir) oddiy qoldiq endpointiga o'tiladi.
+async function qoldiqlarniHisobotdanOlish(warehouseId?: string): Promise<QoldiqTanlovi[]> {
+  const qatorlar = await stockBalanceReportAll(
+    {
+      warehouseIds: warehouseId || undefined,
+      groupByWarehouse: true,
+      balanceStatus: "ALL",
+      priceType: "RETAIL",
+      includeReserved: true,
+    },
+    500
+  );
+
+  return qatorlar
+    .filter((qator) => qator.modificationId)
+    .map((qator) => {
+      const mavjud = Number(qator.availableQuantity ?? qator.quantity ?? 0);
+      const chakana = Number(qator.retailPrice ?? 0);
+      const ulgurji = Number(qator.wholesalePrice ?? 0);
+      return {
+        warehouseId: qator.warehouseId ?? undefined,
+        productId: qator.productId,
+        modificationId: qator.modificationId,
+        quantity: Number.isFinite(mavjud) ? mavjud : 0,
+        balance: Number.isFinite(mavjud) ? mavjud : 0,
+        sellingPrice: chakana,
+        price: chakana,
+        warehouse: qator.warehouseId ? { id: qator.warehouseId, name: qator.warehouseName ?? undefined } : undefined,
+        modification: {
+          id: qator.modificationId,
+          name: qator.modificationName ?? undefined,
+          barcode: qator.barcode ?? undefined,
+          product: { id: qator.productId, name: qator.productName },
+          price: { retailPrice: chakana, wholesalePrice: ulgurji, sellingPrice: chakana },
+        },
+      } as QoldiqTanlovi;
+    });
+}
+
 export async function omborQoldiqlariniOlish(warehouseId?: string) {
+  try {
+    return await qoldiqlarniHisobotdanOlish(warehouseId);
+  } catch {
+    // Hisobotga ruxsat yo'q yoki endpoint ishlamadi — oddiy qoldiq ro'yxatiga qaytiladi.
+  }
   const response = await apiClient.get<RoyxatJavobi<QoldiqTanlovi> | ApiListEnvelope<QoldiqTanlovi>>("/inventory/stock-balance", {
     params: warehouseId ? { warehouseId } : undefined,
   });
-  return royxatniAjratish(response.data);
+  return royxatniAjratish(response.data).map(qoldiqIdsiniTiklash);
+}
+
+// Modifikatsiya/mahsulot ma'lumotlari sahifalar almashganda qayta-qayta so'ralmasligi uchun
+// qisqa muddatga (5 daqiqa) eslab qolinadi; muvaffaqiyatsiz so'rov ham eslanadi.
+const KESH_MUDDATI = 5 * 60 * 1000;
+type KeshYozuvi<T> = { vaqt: number; qiymat: Promise<T | null> };
+const modifikatsiyaKeshi = new Map<string, KeshYozuvi<MahsulotModifikatsiyasi>>();
+const mahsulotKeshi = new Map<string, KeshYozuvi<Mahsulot>>();
+
+function keshdanOlish<T>(kesh: Map<string, KeshYozuvi<T>>, kalit: string, yuklash: () => Promise<T | null>) {
+  const mavjud = kesh.get(kalit);
+  if (mavjud && Date.now() - mavjud.vaqt < KESH_MUDDATI) return mavjud.qiymat;
+  const qiymat = yuklash().catch(() => null);
+  kesh.set(kalit, { vaqt: Date.now(), qiymat });
+  return qiymat;
+}
+
+function narxBormi(narx?: { retailPrice?: number | string; wholesalePrice?: number | string; sellingPrice?: number | string } | null) {
+  return [narx?.retailPrice, narx?.wholesalePrice, narx?.sellingPrice].some((qiymat) => Number(qiymat) > 0);
 }
 
 // Qoldiq javobida faqat modificationId kelgan yozuvlarning katalogdagi haqiqiy
 // mahsulot nomini tiklaydi. Shu orqali selectda UUID nom o'rnida ko'rinmaydi.
 export async function qoldiqNomlariniBoyitish(qoldiqlar: QoldiqTanlovi[]) {
-  const productCache = new Map<string, Promise<Mahsulot | null>>();
-
   function mahsulotniOlish(productId: string) {
-    const cached = productCache.get(productId);
-    if (cached) return cached;
-
-    const request = apiClient
-      .get<Mahsulot | ApiEnvelope<Mahsulot>>(`/catalog/products/${productId}`)
-      .then((response) => apiData(response.data))
-      .catch(() => null);
-    productCache.set(productId, request);
-    return request;
+    return keshdanOlish(mahsulotKeshi, productId, async () => {
+      try {
+        return apiData((await apiClient.get<Mahsulot | ApiEnvelope<Mahsulot>>(`/catalog/products/${productId}`)).data);
+      } catch {
+        return null;
+      }
+    });
   }
 
   return Promise.all(
     qoldiqlar.map(async (qoldiq) => {
       if (qoldiq.modification?.product?.name) return qoldiq;
 
+      // ID yo'q bo'lsa so'rov yuborilmaydi (aks holda `/catalog/modifications/undefined` → 400).
+      const modificationId = qoldiq.modificationId || qoldiq.modification?.id;
+      if (!modificationId) return qoldiq;
+
       try {
-        const response = await apiClient.get<
-          MahsulotModifikatsiyasi | ApiEnvelope<MahsulotModifikatsiyasi>
-        >(`/catalog/modifications/${qoldiq.modificationId}`);
-        const modification = apiData(response.data);
+        const modification = await keshdanOlish(modifikatsiyaKeshi, modificationId, async () =>
+          apiData(
+            (
+              await apiClient.get<MahsulotModifikatsiyasi | ApiEnvelope<MahsulotModifikatsiyasi>>(
+                `/catalog/modifications/${modificationId}`
+              )
+            ).data
+          )
+        );
+        if (!modification) return qoldiq;
         const productId = modification.productId ?? qoldiq.productId;
         const product = productId ? await mahsulotniOlish(productId) : null;
 
@@ -246,8 +328,9 @@ export async function qoldiqNomlariniBoyitish(qoldiqlar: QoldiqTanlovi[]) {
             product: product
               ? { id: product.id, name: product.name }
               : qoldiq.modification?.product,
-            price: qoldiq.modification?.price ??
-              (modification.price
+            price: narxBormi(qoldiq.modification?.price)
+              ? qoldiq.modification?.price
+              : (modification.price
                 ? {
                     costPrice: modification.price.costPrice,
                     retailPrice: modification.price.retailPrice,
@@ -274,6 +357,12 @@ export async function katalogModifikatsiyalariniQoldiqTanlovigaOlish(): Promise<
 
   return modifications
     .filter((modification) => modification.product?.isActive !== false)
+    .filter((modification) => {
+      // ID'siz yozuvni sotuvga qo'shib bo'lmaydi va boshqa yozuvlar bilan adashib ketadi.
+      const idBor = Boolean(modification.id);
+      if (!idBor && import.meta.env.DEV) console.warn("Katalog qidiruvida ID'siz yozuv:", modification);
+      return idBor;
+    })
     .map((modification) => {
       const productId = modification.productId ?? modification.product?.id;
       return {

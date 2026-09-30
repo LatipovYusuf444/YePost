@@ -12,6 +12,8 @@ import type { Bolim, Lavozim, Xodim } from "./types";
 import type { HrDepartment, HrPosition } from "@/types/hr";
 
 import YuklanmoqdaHolati from "../HisobotUchot/YuklanmoqdaHolati";
+import { avatarApi } from "@/api/avatarApi";
+import ModalTablari from "@/Components/common/ModalTablari";
 // Vakolatlar endi Sozlamalarda (SozlamalarUchot/VakolatlarBolimi).
 // "Tashkilot tuzilmasi" — tab emas: bosilganda to'liq ekranli oyna ochadi.
 type Tab = "xodimlar" | "davomat";
@@ -65,6 +67,7 @@ function accountXodimi(user: AccountFoydalanuvchi, filiallar: Filial[]): Xodim {
     yaratilganSana: user.createdAt ?? "",
     ozgartirilganSana: user.updatedAt ?? user.createdAt ?? "",
     ozgartirganMasul: "Tizim",
+    rasmUrl: user.avatarUrl ?? undefined,
   };
 }
 
@@ -125,6 +128,13 @@ export default function XodimUchot() {
         ? await foydalanuvchilarApi.yangilash(xodim.id, payload)
         : await foydalanuvchilarApi.yaratish({ ...payload, password: xodim.parol ?? "" });
 
+      // Rasm: yangi tanlangan bo'lsa yuklanadi, olib tashlangan bo'lsa o'chiriladi.
+      if (xodim.rasmFayli) {
+        await avatarApi.yuklash(saved.id, xodim.rasmFayli.blob, xodim.rasmFayli.dataUrl);
+      } else if (xodim.rasmOlibTashlash) {
+        await avatarApi.olibTashlash(saved.id);
+      }
+
       const userGrantlari = grantlar.filter((grant) => grant.userId === saved.id);
       const kerakli = new Set(xodim.vakolatlar);
       await Promise.all([
@@ -171,28 +181,16 @@ export default function XodimUchot() {
 
   return (
     <div className="space-y-5">
-      <div className="flex gap-2 overflow-x-auto rounded-2xl border border-orange-100 bg-white p-2 shadow-sm">
-        {tablar.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setFaolTab(tab.id)}
-            className={`shrink-0 rounded-xl px-5 py-2.5 text-sm font-bold ${
-              faolTab === tab.id
-                ? "bg-orange-500 text-white"
-                : "text-gray-500 hover:bg-orange-50 hover:text-orange-600"
-            }`}
-          >
-            {tab.nom}
-          </button>
-        ))}
-
+      <div className="flex flex-wrap items-center gap-3">
+        <ModalTablari
+          tablar={tablar.map((tab) => ({ id: tab.id, nom: tab.nom }))}
+          faol={faolTab}
+          onChange={(id) => setFaolTab(id as typeof faolTab)}
+        />
         <button
+          type="button"
           onClick={() => setTuzilmaOchiq(true)}
-          className={`shrink-0 rounded-xl px-5 py-2.5 text-sm font-bold ${
-            tuzilmaOchiq
-              ? "bg-orange-500 text-white"
-              : "text-gray-500 hover:bg-orange-50 hover:text-orange-600"
-          }`}
+          className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-[13px] font-bold text-slate-600 shadow-sm transition hover:border-gold-200 hover:bg-gold-50 hover:text-gold-600"
         >
           Tashkilot tuzilmasi
         </button>
