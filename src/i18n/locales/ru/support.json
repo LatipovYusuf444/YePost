@@ -17,5 +17,12 @@
     "READ": "Прочитано"
   },
   "today": "Сегодня",
-  "yesterday": "Вчера"
+  "yesterday": "Вчера",
+  "loadOlder": "Показать предыдущие сообщения",
+  "loadingOlder": "Загрузка...",
+  "attachAria": "Прикрепить файл",
+  "removeAttachmentAria": "Удалить файл",
+  "downloadAria": "Скачать",
+  "uploadingAttachments": "Загрузка файлов...",
+  "defaultSenderName": "YePost"
 }

@@ -626,9 +626,16 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                             ? item.actualQuantity
                             : item.quantity;
                         const price = "price" in item ? item.price : 0;
+                        // expectedQuantity — DRAFT holatida ombordagi joriy qoldiq,
+                        // tasdiqlangandan keyin tasdiqlash paytidagi qoldiq — har
+                        // doim to'g'ri to'ldirilgan bo'ladi. systemQuantity esa
+                        // DRAFT holatida 0 (haqiqiy 0 emas, hali qayd etilmagan
+                        // degani) bo'lgani uchun faqat zaxira sifatida ishlatiladi
+                        // — "??" o'zi 0 ni "mavjud" deb hisoblab, expectedQuantity'ga
+                        // hech qachon tushmay qolishiga yo'l qo'ymaslik uchun.
                         const expectedQuantity =
                           "actualQuantity" in item
-                            ? item.systemQuantity ?? item.expectedQuantity
+                            ? item.expectedQuantity ?? item.systemQuantity
                             : undefined;
                         const difference =
                           expectedQuantity == null

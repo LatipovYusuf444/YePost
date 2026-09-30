@@ -1,6 +1,6 @@
 import axios from "axios";
 import apiClient from "./axios";
-import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
+import { apiData, apiList, ruxsatsizBulsaBosh, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import type {
   ChiqimHujjati,
   ChiqimYaratishMalumoti,
@@ -123,8 +123,12 @@ async function omborYangilashToliq(
 
 // Organization sahifasi: kompaniyaning barcha Swagger CRUD endpointlari.
 export const kompaniyalarApi = {
+  // KASSIR/OMBORCHI uchun /organization/company 403 qaytaradi — bo'sh
+  // ro'yxat sifatida qabul qilinadi, sahifa yiqilib qolmasligi uchun.
   royxat: async () =>
-    apiList((await apiClient.get<Kompaniya[] | ApiListEnvelope<Kompaniya>>("/organization/company")).data),
+    ruxsatsizBulsaBosh(async () =>
+      apiList((await apiClient.get<Kompaniya[] | ApiListEnvelope<Kompaniya>>("/organization/company")).data)
+    ),
   olish: async (id: string) =>
     apiData((await apiClient.get<Kompaniya | ApiEnvelope<Kompaniya>>(`/organization/company/${id}`)).data),
   yaratish: async (data: KompaniyaSaqlashMalumoti) =>
@@ -137,8 +141,12 @@ export const kompaniyalarApi = {
 
 // Ombor/index.tsx: branchId maydoniga real UUID tanlash uchun filiallar.
 export const filiallarApi = {
+  // KASSIR/OMBORCHI uchun /organization/branches 403 qaytaradi — bo'sh
+  // ro'yxat sifatida qabul qilinadi, sahifa yiqilib qolmasligi uchun.
   royxat: async () =>
-    apiList((await apiClient.get<Filial[] | ApiListEnvelope<Filial>>("/organization/branches")).data),
+    ruxsatsizBulsaBosh(async () =>
+      apiList((await apiClient.get<Filial[] | ApiListEnvelope<Filial>>("/organization/branches")).data)
+    ),
   olish: async (id: string) =>
     apiData((await apiClient.get<Filial | ApiEnvelope<Filial>>(`/organization/branches/${id}`)).data),
   yaratish: async (data: FilialYaratishMalumoti) =>
@@ -364,9 +372,11 @@ export async function yetkazibBeruvchiYaratish(data: { name: string; phone?: str
   );
 }
 
+// KASSIR/OMBORCHI uchun /accounts/users 403 qaytaradi — bo'sh ro'yxat
+// sifatida qabul qilinadi, sahifa yiqilib qolmasligi uchun.
 export async function xodimlar() {
-  return apiList(
-    (await apiClient.get<NomliEntity[] | ApiListEnvelope<NomliEntity>>("/accounts/users")).data
+  return ruxsatsizBulsaBosh(async () =>
+    apiList((await apiClient.get<NomliEntity[] | ApiListEnvelope<NomliEntity>>("/accounts/users")).data)
   );
 }
 
@@ -404,9 +414,13 @@ export async function manzilniKoordinatadanAniqlash(
 
 // Kirim formasida hali qoldiqda bo'lmagan mahsulotlarni ham tanlash uchun katalog olinadi.
 // GET /catalog/modifications barcha variantlarni narx va mahsulot bilan bitta so'rovda qaytaradi.
+// KASSIR/OMBORCHI uchun bu endpoint (tannarx borligi sababli) 403 qaytaradi —
+// bo'sh ro'yxat sifatida qabul qilinadi, sahifa yiqilib qolmasligi uchun.
 export async function barchaModifikatsiyalar() {
-  const response = await apiClient.get<
-    MahsulotModifikatsiyasi[] | ApiListEnvelope<MahsulotModifikatsiyasi>
-  >("/catalog/modifications");
-  return apiList(response.data);
+  return ruxsatsizBulsaBosh(async () => {
+    const response = await apiClient.get<
+      MahsulotModifikatsiyasi[] | ApiListEnvelope<MahsulotModifikatsiyasi>
+    >("/catalog/modifications");
+    return apiList(response.data);
+  });
 }

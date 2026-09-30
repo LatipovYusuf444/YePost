@@ -1,8 +1,10 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { isAccessTokenValid, isAuthSessionValid, useAuthStore } from "@/store/authStore";
+import { useAuthProfileStore } from "@/store/authProfileStore";
 import { accessTokenniAjratish, accessTokenniYangilash as refreshAccessToken } from "@/api/sozlamalarApi";
 import { authSessiyaYaroqli, authTokenlarniTozalash } from "@/lib/authTokenStorage";
+import { sahifagaRuxsatBormi } from "@/lib/roles";
 
 type ProtectedRouteProps = {
   children: ReactNode;
@@ -14,6 +16,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const refreshToken = useAuthStore((state) => state.refreshToken);
   const expiresAt = useAuthStore((state) => state.expiresAt);
   const accessTokenniSaqlash = useAuthStore((state) => state.accessTokenniYangilash);
+  const profil = useAuthProfileStore((state) => state.profil);
   const [refreshTekshirilmoqda, setRefreshTekshirilmoqda] = useState(false);
 
   useEffect(() => {
@@ -67,6 +70,13 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     }
 
     return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  // Profil hali yuklanayotgan bo'lsa (bir lahzalik holat) sahifa ko'rsatiladi;
+  // profil kelgach joriy sahifaga rol bo'yicha ruxsat yo'qligi aniqlansa,
+  // bosh sahifaga qaytariladi (backend real cheklovni 403 orqali ta'minlaydi).
+  if (profil && location.pathname !== "/" && !sahifagaRuxsatBormi(profil, location.pathname)) {
+    return <Navigate to="/" replace />;
   }
 
   return children;

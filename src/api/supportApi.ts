@@ -1,22 +1,25 @@
 import apiClient from "./axios";
-import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
+import { apiData, type ApiEnvelope } from "./response";
 import type { QollabQuvvatlashJavobi, QollabQuvvatlashXabari } from "@/types/support";
 
-// Backendda hali mavjud emas — quyidagi endpointlar backendchi tomonidan
-// qo'shilishi kerak (to'liq spetsifikatsiya chatda yozilgan):
-//   GET    /support/messages?cursor=&limit=
-//   POST   /support/messages           { text, attachmentIds? }
-//   PATCH  /support/messages/read
-//   GET    /support/unread-count
 export const supportApi = {
-  xabarlar: async (params?: { cursor?: string; limit?: number }) =>
-    apiList(
+  // Yangi xabarlar birinchi keladi; eskilarini olish uchun oldingi
+  // javobdagi nextCursorni cursor sifatida yuborish kerak.
+  xabarlar: async (params?: { cursor?: string; limit?: number }) => {
+    const javob = apiData(
       (
-        await apiClient.get<QollabQuvvatlashJavobi | ApiListEnvelope<QollabQuvvatlashXabari>>("/support/messages", {
-          params,
-        })
+        await apiClient.get<QollabQuvvatlashJavobi | ApiEnvelope<QollabQuvvatlashJavobi>>(
+          "/support/messages",
+          { params }
+        )
       ).data
-    ),
+    );
+    if (Array.isArray(javob)) return { items: javob, nextCursor: null as string | null };
+    return {
+      items: javob.items ?? javob.results ?? javob.data ?? javob.value ?? [],
+      nextCursor: javob.nextCursor ?? javob.cursor ?? null,
+    };
+  },
 
   xabarYuborish: async (text: string, attachmentIds?: string[]) =>
     apiData(

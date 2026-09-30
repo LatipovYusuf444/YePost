@@ -1,7 +1,7 @@
 import apiClient from "./axios";
 import axios from "axios";
 import { modifikatsiyalarApi } from "./catalogApi";
-import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
+import { apiData, apiList, ruxsatsizBulsaBosh, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import type {
   MijozTanlovi,
   OmborTanlovi,
@@ -188,9 +188,13 @@ export async function mijozKompaniyalariRoyxatiniOlish() {
 }
 
 // Savdo/index.tsx: sotuv uchun mas'ul xodim tanlovi.
+// KASSIR/OMBORCHI uchun /accounts/users 403 qaytaradi — bo'sh ro'yxat
+// sifatida qabul qilinadi, sahifa yiqilib qolmasligi uchun.
 export async function xodimlarRoyxatiniOlish() {
-  const response = await apiClient.get<RoyxatJavobi<XodimTanlovi> | ApiListEnvelope<XodimTanlovi>>("/accounts/users");
-  return royxatniAjratish(response.data);
+  return ruxsatsizBulsaBosh(async () => {
+    const response = await apiClient.get<RoyxatJavobi<XodimTanlovi> | ApiListEnvelope<XodimTanlovi>>("/accounts/users");
+    return royxatniAjratish(response.data);
+  });
 }
 
 // Savdo/index.tsx: ombordagi mavjud modifikatsiya, qoldiq va narxlarni oladi.
@@ -262,8 +266,11 @@ export async function qoldiqNomlariniBoyitish(qoldiqlar: QoldiqTanlovi[]) {
 
 // YangiSotuvModal.tsx: ombor qoldig'ida bo'lmasa ham katalogdagi real mahsulot
 // modifikatsiyalarini sotuv tanlovida ko'rsatish uchun ishlatiladi.
+// To'liq katalog (/catalog/modifications) KASSIR/OMBORCHI uchun 403 (tannarx
+// borligi sababli), shuning uchun ular ham ochiq bo'lgan qidiruv endpointi
+// ishlatiladi (qoldiq bilan, tannarxsiz).
 export async function katalogModifikatsiyalariniQoldiqTanlovigaOlish(): Promise<QoldiqTanlovi[]> {
-  const modifications = await modifikatsiyalarApi.barchasi();
+  const modifications = await modifikatsiyalarApi.qidiruv();
 
   return modifications
     .filter((modification) => modification.product?.isActive !== false)

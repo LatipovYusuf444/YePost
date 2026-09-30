@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
@@ -40,6 +40,8 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useAuthProfileStore } from "@/store/authProfileStore";
+import { useSupportStore } from "@/store/supportStore";
+import { sahifagaRuxsatBormi } from "@/lib/roles";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/Components/ui/sheet";
 
 type MenyuBolasi = { key: string; path: string; icon: LucideIcon };
@@ -150,6 +152,31 @@ export default function YonPanel({
   const logout = useAuthStore((state) => state.logout);
   const username = useAuthStore((state) => state.username);
   const profil = useAuthProfileStore((state) => state.profil);
+  const oqilmaganXabarSoni = useSupportStore((state) => state.oqilmaganSoni);
+  const oqilmaganSoniniYangilash = useSupportStore((state) => state.oqilmaganSoniniYangilash);
+
+  // Qo'llab-quvvatlash bo'limidagi o'qilmagan xabarlar soni sidebar
+  // ikonkasida badge sifatida ko'rsatiladi — taxminan har 30 soniyada yangilanadi.
+  useEffect(() => {
+    void oqilmaganSoniniYangilash();
+    const oraliq = setInterval(() => void oqilmaganSoniniYangilash(), 30000);
+    return () => clearInterval(oraliq);
+  }, [oqilmaganSoniniYangilash]);
+
+  // Profil hali yuklanmagan bo'lsa hamma bandni ko'rsatamiz (bir lahzalik
+  // holat, backend real cheklovni baribir 403 orqali ta'minlaydi) — aks
+  // holda KASSIR/OMBORCHI uchun ruxsati yo'q bandlar (va ularning bolalari)
+  // menyudan yashiriladi.
+  const korinadiganMenyular = useMemo(() => {
+    if (!profil) return menyular;
+    return menyular
+      .filter((menu) => sahifagaRuxsatBormi(profil, menu.path))
+      .map((menu) =>
+        menu.bolalar
+          ? { ...menu, bolalar: menu.bolalar.filter((bola) => sahifagaRuxsatBormi(profil, bola.path.split("?")[0])) }
+          : menu
+      );
+  }, [profil]);
 
   const [mobil, setMobil] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia(MOBIL_QIYINCHILIK).matches : false
@@ -217,7 +244,7 @@ export default function YonPanel({
       <span className="mx-3 h-px shrink-0 bg-white/10" />
 
       <nav className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto overflow-x-hidden px-2 py-3 [scrollbar-color:#26364F_transparent] [scrollbar-width:thin]">
-        {menyular.map((menu, index) => {
+        {korinadiganMenyular.map((menu, index) => {
           const Icon = menu.icon;
 
           if (menu.bolalar) {
@@ -301,11 +328,18 @@ export default function YonPanel({
               >
                 {({ isActive }) => (
                   <>
-                    <Icon
-                      size={18}
-                      strokeWidth={2}
-                      className={`shrink-0 ${isActive ? "text-sky-300" : ""}`}
-                    />
+                    <span className="relative shrink-0">
+                      <Icon
+                        size={18}
+                        strokeWidth={2}
+                        className={isActive ? "text-sky-300" : ""}
+                      />
+                      {menu.key === "qollabQuvvatlash" && oqilmaganXabarSoni > 0 && (
+                        <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-black text-white">
+                          {oqilmaganXabarSoni > 9 ? "9+" : oqilmaganXabarSoni}
+                        </span>
+                      )}
+                    </span>
                     <span className={`${yorliqKlass} ${acik ? "opacity-100" : "opacity-0"}`}>{t(`menu.${menu.key}`)}</span>
                   </>
                 )}

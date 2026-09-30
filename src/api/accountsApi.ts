@@ -1,5 +1,5 @@
 import apiClient from "./axios";
-import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
+import { apiData, apiList, ruxsatsizBulsaBosh, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import type {
   AccountFoydalanuvchi,
   AccountVakolati,
@@ -12,13 +12,15 @@ import type { Filial } from "@/types/ombor";
 
 // Hodimlar/index.tsx: Swagger accounts/users bo'limining to'liq CRUD amallari.
 export const foydalanuvchilarApi = {
-  royxat: async () => {
+  // KASSIR/OMBORCHI uchun /accounts/users 403 qaytaradi — bo'sh ro'yxat
+  // sifatida qabul qilinadi, sahifa yiqilib qolmasligi uchun.
+  royxat: async () => ruxsatsizBulsaBosh(async () => {
     const response = await apiClient.get<AccountFoydalanuvchi[] | ApiListEnvelope<AccountFoydalanuvchi>>(
       "/accounts/users"
     );
 
     return apiList(response.data);
-  },
+  }),
   olish: async (id: string) => {
     const response = await apiClient.get<AccountFoydalanuvchi | ApiEnvelope<AccountFoydalanuvchi>>(
       `/accounts/users/${id}`

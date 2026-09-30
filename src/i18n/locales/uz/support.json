@@ -17,5 +17,12 @@
     "READ": "O'qildi"
   },
   "today": "Bugun",
-  "yesterday": "Kecha"
+  "yesterday": "Kecha",
+  "loadOlder": "Oldingi xabarlarni ko'rish",
+  "loadingOlder": "Yuklanmoqda...",
+  "attachAria": "Fayl biriktirish",
+  "removeAttachmentAria": "Faylni olib tashlash",
+  "downloadAria": "Yuklab olish",
+  "uploadingAttachments": "Fayllar yuklanmoqda...",
+  "defaultSenderName": "YePost"
 }

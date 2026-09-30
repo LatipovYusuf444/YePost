@@ -20,6 +20,24 @@ function toastKerakmi(url?: string) {
   return !TOAST_ISTISNOLARI.some((yol) => url.includes(yol));
 }
 
+// KASSIR/OMBORCHI uchun ba'zi to'liq ro'yxatlar (xodimlar, filiallar,
+// kompaniyalar, to'liq mahsulot katalogi) backendda 403 qaytaradi — bu
+// funksionallik, xatolik emas (frontend bo'sh ro'yxat sifatida qabul
+// qiladi), shuning uchun bunday holatda xatolik toasti chiqarilmaydi.
+const ROL_CHEKLANGAN_TOLIQ_ROYXATLAR = [
+  "/accounts/users",
+  "/organization/branches",
+  "/organization/company",
+  "/catalog/modifications",
+];
+
+function rolCheklanganRoyxat403Mi(error: unknown) {
+  if (!axios.isAxiosError(error) || error.response?.status !== 403) return false;
+  if (error.config?.method?.toLowerCase() !== "get") return false;
+  const yol = (error.config.url ?? "").split("?")[0];
+  return ROL_CHEKLANGAN_TOLIQ_ROYXATLAR.includes(yol);
+}
+
 const MUTATSIYA_USULLARI = new Set(["post", "put", "patch", "delete"]);
 
 function muvaffaqiyatMatni(usul?: string) {
@@ -74,7 +92,7 @@ apiClient.interceptors.response.use(
   },
   async (error: unknown) => {
     if (!axios.isAxiosError(error) || error.response?.status !== 401 || !error.config) {
-      if (axios.isAxiosError(error) && toastKerakmi(error.config?.url)) {
+      if (axios.isAxiosError(error) && toastKerakmi(error.config?.url) && !rolCheklanganRoyxat403Mi(error)) {
         xatolikXabari(getApiErrorMessage(error));
       }
       return Promise.reject(error);

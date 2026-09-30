@@ -1,5 +1,5 @@
 import apiClient from "./axios";
-import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
+import { apiData, apiList, ruxsatsizBulsaBosh, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import type {
   Kategoriya,
   KategoriyaMalumoti,
@@ -151,12 +151,23 @@ export const mahsulotlarApi = {
 export const modifikatsiyalarApi = {
   // Barcha mahsulotlar variantlari narx va mahsulot bilan bitta so'rovda —
   // har bir mahsulot uchun alohida royxat() chaqirishning (N+1) o'rniga.
-  barchasi: async (productIds?: string[]) => {
+  // KASSIR/OMBORCHI uchun (tannarx borligi sababli) 403 qaytaradi — bo'sh
+  // ro'yxat sifatida qabul qilinadi, sahifa yiqilib qolmasligi uchun.
+  barchasi: async (productIds?: string[]) => ruxsatsizBulsaBosh(async () => {
     const response = await apiClient.get<
       MahsulotModifikatsiyasi[] | ApiListEnvelope<MahsulotModifikatsiyasi>
     >("/catalog/modifications", {
       params: productIds?.length ? { productIds: productIds.join(",") } : undefined,
     });
+    return apiList(response.data);
+  }),
+  // Savdo (POS) uchun: KASSIR/OMBORCHI ham foydalanadigan, tannarxsiz va
+  // qoldiq bilan qaytaradigan qidiruv endpointi — to'liq katalog (barchasi())
+  // o'rniga ishlatiladi, chunki u rol bo'yicha yopiq.
+  qidiruv: async (q?: string) => {
+    const response = await apiClient.get<
+      MahsulotModifikatsiyasi[] | ApiListEnvelope<MahsulotModifikatsiyasi>
+    >("/catalog/modifications/search", { params: q ? { q } : undefined });
     return apiList(response.data);
   },
   royxat: async (productId: string) => {

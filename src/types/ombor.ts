@@ -253,7 +253,7 @@ export type InventarizatsiyaHujjati = {
     modificationId: string;
     actualQuantity: number | string;
     systemQuantity?: number | string;
-    expectedQuantity?: number;
+    expectedQuantity?: number | string;
     modification?: MahsulotModifikatsiyasi;
   }>;
 };

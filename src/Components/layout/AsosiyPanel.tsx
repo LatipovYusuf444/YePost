@@ -3,6 +3,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import YonPanel from "./YonPanel";
 import YuqoriPanel from "./YuqoriPanel";
+import QollabQuvvatlashVidjeti from "@/Components/common/QollabQuvvatlashVidjeti";
 
 const sahifaVariantlari = {
   initial: { opacity: 0, y: 16, scale: 0.99 },
@@ -40,6 +41,8 @@ export default function AsosiyLayout() {
           </AnimatePresence>
         </div>
       </main>
+
+      <QollabQuvvatlashVidjeti />
     </div>
   );
 }
