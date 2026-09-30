@@ -129,7 +129,7 @@ export default function SotuvlarJadvali({
 
   const visibleRows = useMemo(
     () => sotuvlar.slice((currentPage - 1) * pageSize, currentPage * pageSize),
-    [currentPage, sotuvlar]
+    [currentPage, pageSize, sotuvlar]
   );
 
   return (

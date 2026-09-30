@@ -1,4 +1,4 @@
-import { useTheme, type ThemeName } from "./ThemeProvider";
+import { useTheme, type ThemeName } from "./themeContext";
 
 const choices: Array<{ id: ThemeName; label: string; swatch: string }> = [
   { id: "default", label: "Default", swatch: "bg-blue-600" },

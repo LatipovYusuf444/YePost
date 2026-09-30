@@ -11,6 +11,7 @@
   "send": "Отправить",
   "sendAria": "Отправить сообщение",
   "closeErrorAria": "Закрыть ошибку",
+  "closeChatAria": "Закрыть чат",
   "status": {
     "SENT": "Отправлено",
     "DELIVERED": "Доставлено",

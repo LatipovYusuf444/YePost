@@ -60,7 +60,7 @@ export default function XaridorTolovlariTab({ xaridorId }: { xaridorId: string }
       .catch((error) => setXatolik(getApiErrorMessage(error)))
       .finally(() => { if (active) setYuklanmoqda(false); });
     return () => { active = false; };
-  }, [xaridorId, yangilanish]);
+  }, [t, xaridorId, yangilanish]);
 
   if (yuklanmoqda) {
     return <div className="px-9 py-7 text-sm font-bold text-slate-500">{t("xaridorTab.loading")}</div>;

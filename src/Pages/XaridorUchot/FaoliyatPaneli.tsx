@@ -46,17 +46,17 @@ const BOSH_YOZUVLAR: FaoliyatYozuvi[] = [];
 export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, partnerId }: Props) {
   const { t } = useTranslation(["xaridor_uchot", "common"]);
 
-  function activityYozuvi(item: Activity): FaoliyatYozuvi {
+  const activityYozuvi = useCallback((item: Activity): FaoliyatYozuvi => {
     return { id: item.id, turi: item.type === "TASK" ? "vazifa" : "ish", sarlavha: item.subject || t("faoliyatPaneli.defaultActivitySubject"), matn: item.description || item.result || "", sana: item.dueAt || item.createdAt || new Date().toISOString() };
-  }
+  }, [t]);
 
-  function commentYozuvi(item: Comment): FaoliyatYozuvi {
+  const commentYozuvi = useCallback((item: Comment): FaoliyatYozuvi => {
     return { id: item.id, turi: "izoh", sarlavha: t("faoliyatPaneli.commentSubject"), matn: item.text || "", sana: item.createdAt || new Date().toISOString() };
-  }
+  }, [t]);
 
-  function chatYozuvi(item: ChatMessage, index: number): FaoliyatYozuvi {
+  const chatYozuvi = useCallback((item: ChatMessage, index: number): FaoliyatYozuvi => {
     return { id: item.id || `chat-${item.createdAt || index}`, turi: "xabar", sarlavha: item.direction === "IN" ? t("faoliyatPaneli.chatFromCustomer") : t("faoliyatPaneli.chatSent"), matn: item.text || "", sana: item.createdAt || new Date().toISOString() };
-  }
+  }, [t]);
 
   const yozishTablari = yozishTabKalitlari.map((kalit) => ({ kalit, nom: t(`faoliyatPaneli.tabs.${kalit}`) }));
   const sarlavhaPlaceholder: Record<FaoliyatTuri, string> = {
@@ -110,7 +110,7 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
       ].sort((a,b) => new Date(b.sana).getTime() - new Date(a.sana).getTime()));
     } catch (error) { setXatolik(getApiErrorMessage(error)); }
     finally { setYuklanmoqda(false); }
-  }, [boshlangichYozuvlar, partnerId]);
+  }, [activityYozuvi, boshlangichYozuvlar, chatYozuvi, commentYozuvi, partnerId]);
 
   useEffect(() => { void yuklash(); }, [yuklash]);
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useLocation } from "react-router-dom";
-import { MessageCircle, X } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useSupportStore } from "@/store/supportStore";
 import { sahifagaRuxsatBormi } from "@/lib/roles";
@@ -34,31 +34,41 @@ export default function QollabQuvvatlashVidjeti() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.97 }}
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed bottom-24 right-5 z-[9998] h-[min(600px,calc(100vh-140px))] w-[380px] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-[26px] border border-white/10 bg-black shadow-[0_24px_70px_rgba(0,0,0,.55)]"
+            id="support-chat-widget"
+            role="dialog"
+            aria-label="Qo'llab-quvvatlash suhbati"
+            className="fixed bottom-5 right-5 z-[9998] h-[min(640px,calc(100dvh-2.5rem))] w-[400px] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,.18)]"
           >
             <SupportChatOynasi compact onClose={() => setOchiq(false)} />
           </motion.div>
         )}
       </AnimatePresence>
 
-      <motion.button
-        type="button"
-        onClick={() => setOchiq((joriy) => !joriy)}
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3, delay: 0.4 }}
-        whileHover={{ scale: 1.06 }}
-        whileTap={{ scale: 0.96 }}
-        aria-label="Qo'llab-quvvatlash"
-        className={`fixed bottom-5 right-5 z-[9999] flex h-14 w-14 items-center justify-center rounded-full text-white shadow-[0_14px_34px_rgba(79,70,229,.4)] ${QOLLAB_QUVVATLASH_GRADIENT}`}
-      >
-        {ochiq ? <X size={24} /> : <MessageCircle size={24} />}
-        {!ochiq && oqilmaganSoni > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white ring-2 ring-white">
-            {oqilmaganSoni > 9 ? "9+" : oqilmaganSoni}
-          </span>
+      <AnimatePresence>
+        {!ochiq && (
+          <motion.button
+            type="button"
+            onClick={() => setOchiq(true)}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.2 }}
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.96 }}
+            aria-label="Qo'llab-quvvatlash"
+            aria-expanded={false}
+            aria-controls="support-chat-widget"
+            className={`fixed bottom-5 right-5 z-[9999] flex h-14 w-14 items-center justify-center rounded-[18px] text-white shadow-[0_14px_34px_rgba(37,99,235,.3)] ${QOLLAB_QUVVATLASH_GRADIENT}`}
+          >
+            <MessageCircle size={24} />
+            {oqilmaganSoni > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white ring-2 ring-white">
+                {oqilmaganSoni > 9 ? "9+" : oqilmaganSoni}
+              </span>
+            )}
+          </motion.button>
         )}
-      </motion.button>
+      </AnimatePresence>
     </>
   );
 }

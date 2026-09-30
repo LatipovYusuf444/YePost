@@ -8,12 +8,14 @@ type SupportState = {
   xabarlar: QollabQuvvatlashXabari[];
   nextCursor: string | null;
   yuklanmoqda: boolean;
+  yangilanmoqda: boolean;
   eskilarYuklanmoqda: boolean;
   yuborilmoqda: boolean;
   xatolik: string | null;
   ulanmagan: boolean;
   oqilmaganSoni: number;
   xabarlarniYuklash: () => Promise<void>;
+  yangiXabarlarniTekshirish: () => Promise<void>;
   eskiXabarlarniYuklash: () => Promise<void>;
   xabarYuborish: (text: string, fayllar?: File[]) => Promise<boolean>;
   oqilganDebBelgilash: () => Promise<void>;
@@ -41,6 +43,7 @@ export const useSupportStore = create<SupportState>((set, get) => ({
   // qilib qo'yiladi, aks holda birinchi render'da bir lahzaga "xabar
   // yo'q" bo'sh holati chaqib o'tib ketardi.
   yuklanmoqda: true,
+  yangilanmoqda: false,
   eskilarYuklanmoqda: false,
   yuborilmoqda: false,
   xatolik: null,
@@ -61,6 +64,33 @@ export const useSupportStore = create<SupportState>((set, get) => ({
         return;
       }
       set({ yuklanmoqda: false, xatolik: getApiErrorMessage(error) });
+    }
+  },
+
+  yangiXabarlarniTekshirish: async () => {
+    const { yuklanmoqda, yangilanmoqda, ulanmagan } = get();
+    if (yuklanmoqda || yangilanmoqda || ulanmagan) return;
+    set({ yangilanmoqda: true });
+    try {
+      const { items } = await supportApi.xabarlar({ limit: 30 });
+      const oxirgiXabarlar = [...items].reverse();
+      let yangiKiruvchiXabarBormi = false;
+      set((holat) => {
+        const mavjudIdlar = new Set(holat.xabarlar.map((xabar) => xabar.id));
+        const serverdagiXabarlar = new Map(oxirgiXabarlar.map((xabar) => [xabar.id, xabar]));
+        const yangilar = oxirgiXabarlar.filter((xabar) => !mavjudIdlar.has(xabar.id));
+        yangiKiruvchiXabarBormi = yangilar.some((xabar) => xabar.direction === "IN");
+        return {
+          xabarlar: [
+            ...holat.xabarlar.map((xabar) => serverdagiXabarlar.get(xabar.id) ?? xabar),
+            ...yangilar,
+          ],
+          yangilanmoqda: false,
+        };
+      });
+      if (yangiKiruvchiXabarBormi) void get().oqilganDebBelgilash();
+    } catch (error) {
+      set({ yangilanmoqda: false, ...(backendUlanmaganmi(error) ? { ulanmagan: true } : {}) });
     }
   },
 

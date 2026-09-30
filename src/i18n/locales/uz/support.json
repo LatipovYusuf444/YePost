@@ -11,6 +11,7 @@
   "send": "Yuborish",
   "sendAria": "Xabarni yuborish",
   "closeErrorAria": "Xatolikni yopish",
+  "closeChatAria": "Suhbatni yopish",
   "status": {
     "SENT": "Yuborildi",
     "DELIVERED": "Yetkazildi",

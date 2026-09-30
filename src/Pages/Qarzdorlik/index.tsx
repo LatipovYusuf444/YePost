@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Building2, CircleDollarSign, RefreshCw, Search, UserRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Sotuv } from "@/types/savdo";
@@ -16,7 +16,7 @@ const kompaniyami = (sotuv: Sotuv) => Boolean(sotuv.clientCompanyId || sotuv.cli
 
 export default function Qarzdorliklar({ sotuvlar, onSotuvniOchish, onYangilash }: Props) {
   const { t } = useTranslation("qarzdorlik");
-  const telefon = (sotuv: Sotuv) => sotuv.customer?.phone || sotuv.clientCompany?.phone || t("noPhone");
+  const telefon = useCallback((sotuv: Sotuv) => sotuv.customer?.phone || sotuv.clientCompany?.phone || t("noPhone"), [t]);
   const [qidiruv, setQidiruv] = useState("");
   const [tur, setTur] = useState<Tur>("BARCHASI");
   const [yangilanmoqda, setYangilanmoqda] = useState(false);

@@ -1,8 +1,7 @@
-import { createContext, useContext, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
+import { useLayoutEffect, useMemo, useState, type ReactNode } from "react";
+import { ThemeContext, type ThemeName } from "./themeContext";
 
-export type ThemeName = "default" | "green" | "purple";
 const STORAGE_KEY = "yepost-theme";
-const ThemeContext = createContext<{ theme: ThemeName; setTheme: (theme: ThemeName) => void } | null>(null);
 
 function readTheme(): ThemeName {
   try {
@@ -27,10 +26,4 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => ({ theme, setTheme: setThemeState }), [theme]);
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
-}
-
-export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (!context) throw new Error("useTheme must be used inside ThemeProvider");
-  return context;
 }
