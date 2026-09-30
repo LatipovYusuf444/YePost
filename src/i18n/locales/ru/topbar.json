@@ -11,7 +11,15 @@
     "empty": "Уведомлений нет",
     "defaultTitle": "Уведомление",
     "defaultMessage": "Новое событие CRM",
-    "closeAria": "Закрыть уведомления"
+    "closeAria": "Закрыть уведомления",
+    "new": "Новое",
+    "justNow": "только что",
+    "minutesAgo": "{{count}} мин. назад",
+    "hoursAgo": "{{count}} ч. назад",
+    "daysAgo": "{{count}} дн. назад",
+    "markReadAria": "Отметить «{{title}}» прочитанным",
+    "sectionNew": "Новые",
+    "sectionEarlier": "Ранее"
   },
   "profile": {
     "menuAria": "Меню профиля",

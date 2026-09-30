@@ -128,8 +128,8 @@ function bolaFaolmi(bola: MenyuBolasi, pathname: string, search: string) {
 // Yopiq holatda (64px) faqat ikonka ko'rinadi: qator 48px kenglikda, ikonka 18px va 15px chetlari.
 const qatorKlass =
   "relative flex h-[46px] max-h-[calc((100vh-230px)/11)] min-h-8 w-full items-center gap-3 px-[15px] text-[14.5px] transition-colors duration-200";
-const qatorFaolKlass = "theme-sidebar-active rounded-none font-semibold text-white";
-const qatorOddiyKlass = "theme-sidebar-item rounded-[10px] font-medium text-[#8391A7] hover:bg-[#122036] hover:text-slate-100";
+const qatorFaolKlass = "theme-sidebar-active rounded-[14px] font-semibold text-white shadow-[0_8px_20px_rgba(2,6,23,.28)]";
+const qatorOddiyKlass = "theme-sidebar-item rounded-[14px] font-medium text-[#8391A7] hover:bg-[#122036] hover:text-slate-100";
 // Matn faqat sidebar ochiq (toggle) bo'lganda ko'rinadi.
 const yorliqKlass =
   "min-w-0 truncate whitespace-nowrap transition-opacity duration-200";
@@ -148,6 +148,7 @@ export default function YonPanel({
 }) {
   const { t } = useTranslation("nav");
   const navigate = useNavigate();
+  const [maslahat, setMaslahat] = useState<{ matn: string; top: number; left: number } | null>(null);
   const { pathname, search } = useLocation();
   const logout = useAuthStore((state) => state.logout);
   const username = useAuthStore((state) => state.username);
@@ -215,6 +216,23 @@ export default function YonPanel({
     if (!yolIchida(pathname, menu.path) && bolalar[0]) navigate(bolalar[0].path);
   }
 
+  // Tor (faqat ikonka) rejimda ikonka ustiga kelganda nomi ko'rsatiladi.
+  const maslahatEvents = (matn: string) =>
+    acik
+      ? {}
+      : {
+          onMouseEnter: (event: React.MouseEvent<HTMLElement> | React.FocusEvent<HTMLElement>) => {
+            const rect = event.currentTarget.getBoundingClientRect();
+            setMaslahat({ matn, top: rect.top + rect.height / 2, left: rect.right + 14 });
+          },
+          onMouseLeave: () => setMaslahat(null),
+          onFocus: (event: React.FocusEvent<HTMLElement>) => {
+            const rect = event.currentTarget.getBoundingClientRect();
+            setMaslahat({ matn, top: rect.top + rect.height / 2, left: rect.right + 14 });
+          },
+          onBlur: () => setMaslahat(null),
+        };
+
   const ism = profil?.fullName?.trim() || profil?.username || username || "";
   const rolNomi = profil ? t(`roles.${profil.role}`, { defaultValue: profil.role }) : "";
   const rasmUrl = profil?.avatarUrl || "";
@@ -262,7 +280,8 @@ export default function YonPanel({
                   type="button"
                   onClick={() => bolimniBosish(menu)}
                   aria-expanded={ochiq}
-                  title={t(`menu.${menu.key}`)}
+                  aria-label={t(`menu.${menu.key}`)}
+                  {...maslahatEvents(t(`menu.${menu.key}`))}
                   className={`${qatorKlass} ${guruhFaol ? qatorFaolKlass : qatorOddiyKlass}`}
                 >
                   <Icon size={18} strokeWidth={2} className={`shrink-0 ${guruhFaol ? "text-sky-300" : ""}`} />
@@ -294,7 +313,7 @@ export default function YonPanel({
                             tabIndex={ochiq ? 0 : -1}
                             className={`relative flex h-10 items-center gap-2.5 truncate whitespace-nowrap px-3 text-[14px] transition-colors duration-200 ${
                               faol
-                              ? "theme-sidebar-subactive rounded-none font-semibold text-sky-100 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-[3px] before:rounded-full before:bg-sky-400"
+                              ? "theme-sidebar-subactive rounded-xl font-semibold text-sky-100 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-[3px] before:rounded-full before:bg-sky-400"
                                 : "theme-sidebar-item rounded-lg font-medium text-[#8391A7] hover:bg-[#122036] hover:text-slate-100"
                             }`}
                           >
@@ -323,7 +342,8 @@ export default function YonPanel({
             >
               <NavLink
                 to={menu.path}
-                title={t(`menu.${menu.key}`)}
+                aria-label={t(`menu.${menu.key}`)}
+                {...maslahatEvents(t(`menu.${menu.key}`))}
                 className={({ isActive }) => `${qatorKlass} ${isActive ? qatorFaolKlass : qatorOddiyKlass}`}
               >
                 {({ isActive }) => (
@@ -372,8 +392,8 @@ export default function YonPanel({
           )}
           <button
             onClick={() => void handleLogout()}
-            title={t("logout")}
             aria-label={t("logout")}
+            {...maslahatEvents(t("logout"))}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#8391A7] transition-colors duration-200 hover:bg-red-500/10 hover:text-red-300"
           >
             <LogOut size={18} strokeWidth={2} />
@@ -389,12 +409,23 @@ export default function YonPanel({
         initial={{ x: -64, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
-        className={`theme-sidebar fixed left-0 top-0 z-50 hidden h-screen flex-col overflow-hidden border-r border-white/5 bg-[#0B1424] text-[#8391A7] transition-[width] duration-200 ease-in-out md:flex ${
+        className={`theme-sidebar fixed left-3 top-3 z-50 hidden h-[calc(100vh-24px)] flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#0B1424] text-[#8391A7] shadow-[0_28px_70px_rgba(2,6,23,.38)] transition-[width] duration-200 ease-in-out md:flex ${
           acik ? "w-70" : "w-16"
         }`}
       >
         {panelIchki}
       </motion.aside>
+
+      {maslahat && !acik && (
+        <div
+          role="tooltip"
+          style={{ top: maslahat.top, left: maslahat.left }}
+          className="pointer-events-none fixed z-[70] -translate-y-1/2 whitespace-nowrap rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-lg ring-1 ring-white/10"
+        >
+          <span className="absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rotate-45 bg-slate-900" />
+          {maslahat.matn}
+        </div>
+      )}
 
       {/* Mobil (< md): sidebar shadcn Sheet (Radix Dialog asosida) yordamida qorong'i fon
           bilan chapdan suriladigan panel sifatida ochiladi/yopiladi; desktop paneliga tegilmagan. */}

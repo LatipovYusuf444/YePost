@@ -21,8 +21,8 @@ export default function AsosiyLayout() {
       <YonPanel acik={sidebarAcik} onAcikChange={setSidebarAcik} />
 
       <main
-        className={`min-h-screen w-full min-w-0 max-w-full overflow-x-clip pl-4 pr-6 pt-6 transition-[padding-left] duration-200 ease-in-out md:pl-20 ${
-          sidebarAcik ? "md:pl-74" : ""
+        className={`min-h-screen w-full min-w-0 max-w-full overflow-x-clip pl-4 pr-6 pt-3 transition-[padding-left] duration-200 ease-in-out md:pl-[92px] ${
+          sidebarAcik ? "md:pl-[308px]" : ""
         }`}
       >
         <YuqoriPanel sidebarAcik={sidebarAcik} onSidebarToggle={() => setSidebarAcik((joriy) => !joriy)} />

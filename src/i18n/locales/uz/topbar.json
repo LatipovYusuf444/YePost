@@ -11,7 +11,15 @@
     "empty": "Bildirishnomalar yo'q",
     "defaultTitle": "Bildirishnoma",
     "defaultMessage": "Yangi CRM hodisasi",
-    "closeAria": "Bildirishnomalarni yopish"
+    "closeAria": "Bildirishnomalarni yopish",
+    "new": "Yangi",
+    "justNow": "hozirgina",
+    "minutesAgo": "{{count}} daqiqa oldin",
+    "hoursAgo": "{{count}} soat oldin",
+    "daysAgo": "{{count}} kun oldin",
+    "markReadAria": "\"{{title}}\" ni o'qilgan deb belgilash",
+    "sectionNew": "Yangi",
+    "sectionEarlier": "Avvalgilar"
   },
   "profile": {
     "menuAria": "Profil menyusi",
