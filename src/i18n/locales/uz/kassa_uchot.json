@@ -2,7 +2,7 @@
   "eyebrow": "Kassa uchoti",
   "title": "Kassa",
   "subtitle": "Naqd, bank va ilova orqali tushum va chiqimlar nazorati.",
-  "loading": "Backend ma'lumotlari yuklanmoqda...",
+  "loading": "Ma’lumot yuklanmoqda...",
   "groups": {
     "naqd": { "name": "Naqd", "tushum": "Naqd tushumlari", "chiqim": "Naqd chiqimlari" },
     "bank": { "name": "Bank", "tushum": "Kiruvchi bank to'lovlari", "chiqim": "Chiquvchi bank to'lovlari" },
@@ -44,7 +44,7 @@
     "xarajat": "Xarajat"
   },
   "xaridorTab": {
-    "loading": "To'lovlar backenddan yuklanmoqda...",
+    "loading": "Ma’lumot yuklanmoqda...",
     "empty": "Bu mijozda kassa to'lovlari yo'q",
     "salePayment": "Sotuv to'lovi",
     "columns": {

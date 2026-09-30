@@ -11,6 +11,7 @@ import type { Filial } from "@/types/ombor";
 import type { Bolim, Lavozim, Xodim } from "./types";
 import type { HrDepartment, HrPosition } from "@/types/hr";
 
+import YuklanmoqdaHolati from "../HisobotUchot/YuklanmoqdaHolati";
 // Vakolatlar endi Sozlamalarda (SozlamalarUchot/VakolatlarBolimi).
 // "Tashkilot tuzilmasi" — tab emas: bosilganda to'liq ekranli oyna ochadi.
 type Tab = "xodimlar" | "davomat";
@@ -112,7 +113,7 @@ export default function XodimUchot() {
         username: xodim.login,
         fullName: [xodim.ism, xodim.familiya].filter(Boolean).join(" "),
         phone: xodim.telefonlar[0] ?? "",
-        position: xodim.izoh,
+        position: lavozimlar.find((item) => item.id === xodim.lavozimId)?.nomi ?? xodim.izoh,
         role: xodim.rol as AccountRoli,
         branchId: filialId,
         departmentId: xodim.bolimId || undefined,
@@ -198,7 +199,7 @@ export default function XodimUchot() {
       </div>
 
       {faolTab === "xodimlar" && (
-        yuklanmoqda ? <p className="rounded-2xl bg-white p-10 text-center font-bold text-gray-400">Backenddan yuklanmoqda...</p> :
+        yuklanmoqda ? <YuklanmoqdaHolati className="h-96" /> :
         <Xodimlar
           xodimlar={xodimlar}
           lavozimlar={lavozimlar}

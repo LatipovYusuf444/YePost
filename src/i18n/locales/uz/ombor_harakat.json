@@ -12,8 +12,20 @@
       "masul": "Mas'ul shaxs",
       "turi": "Turi"
     },
-    "stats": { "total": "Jami hujjatlar", "completed": "Tugallangan", "inProgress": "Jarayonda", "cancelled": "Bekor qilingan" },
-    "filters": { "dateFrom": "Sanadan", "dateTo": "Sanagacha", "status": "Holat bo'yicha filtr", "allStatuses": "Barcha holatlar", "warehouse": "Ombor bo'yicha filtr", "allWarehouses": "Barcha omborlar" },
+    "stats": {
+      "total": "Jami hujjatlar",
+      "completed": "Tugallangan",
+      "inProgress": "Jarayonda",
+      "cancelled": "Bekor qilingan"
+    },
+    "filters": {
+      "dateFrom": "Sanadan",
+      "dateTo": "Sanagacha",
+      "status": "Holat bo'yicha filtr",
+      "allStatuses": "Barcha holatlar",
+      "warehouse": "Ombor bo'yicha filtr",
+      "allWarehouses": "Barcha omborlar"
+    },
     "columnsMenuAria": "Ustunlarni sozlash",
     "typeFull": "To'liq",
     "typePartial": "Qisman",
@@ -85,7 +97,7 @@
         "location": "Joy / javon",
         "batchSerial": "Partiya / seriya",
         "systemStock": "Tizimdagi qoldiq",
-        "actualQuantity": "Haqiqiy miqdor",
+        "actualQuantity": "Miqdor",
         "countStatus": "Sanoq holati",
         "difference": "Farq"
       },
@@ -101,7 +113,9 @@
         "uncounted": "{{count}} ta sanalmagan tovar bor. Barchasini sanang yoki qoralama uchun backend qo‘llovini kuting.",
         "varianceReason": "Farqlarni tasdiqlash uchun sababini yozing.",
         "invalidQuantity": "{{name}} uchun haqiqiy miqdor 0 yoki undan katta raqam bo'lishi kerak."
-      }
+      },
+      "notDeducted": "ayirilmaydi",
+      "addOnlyNote": "Ombor qoldig'i faqat ko'paytiriladi: sanalgan miqdor tizim qoldig'idan kam bo'lsa, farq (kamomad) ombordan ayirilmaydi."
     }
   },
   "kochirish": {

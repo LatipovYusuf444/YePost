@@ -103,7 +103,8 @@
     "acceptedAmount": "Qabul qilinadigan summa",
     "fullAmount": "To'liq summa",
     "confirm": "To'lovni tasdiqlash",
-    "apiNote": "Tasdiqlashda `/sales` yaratiladi va `/sales/id/confirm` orqali ombor qoldig'i kamayadi."
+    "apiNote": "Tasdiqlashda `/sales` yaratiladi va `/sales/id/confirm` orqali ombor qoldig'i kamayadi.",
+    "multiWarehouseNote": "Mahsulotlar {{count}} ta ombordan. Har ombor uchun alohida sotuv yaratiladi va qoldiq aynan shu ombordan chiqariladi."
   },
   "errors": {
     "loadFailed": "Bosh sahifa ma'lumotlari olinmadi",
@@ -116,6 +117,7 @@
     "confirmFailed": "Sotuvni tasdiqlab bo'lmadi",
     "paymentSuccess": "To'lov muvaffaqiyatli amalga oshirildi",
     "finalizeFailed": "Sotuvni yakunlab bo'lmadi",
-    "selectCustomerFirst": "Avval mijoz tanlang"
+    "selectCustomerFirst": "Avval mijoz tanlang",
+    "partialSuccess": "{{total}} ta ombordan {{done}} tasi tasdiqlandi, qolgan mahsulotlar savatchada qoldi: {{error}}"
   }
 }

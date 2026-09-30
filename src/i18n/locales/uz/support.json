@@ -25,5 +25,58 @@
   "removeAttachmentAria": "Faylni olib tashlash",
   "downloadAria": "Yuklab olish",
   "uploadingAttachments": "Fayllar yuklanmoqda...",
-  "defaultSenderName": "YePost"
+  "defaultSenderName": "YePost",
+  "inbox": {
+    "searchPlaceholder": "Murojaatlarni qidirish...",
+    "tabs": {
+      "ACTIVE": "Faol",
+      "IN_PROGRESS": "Jarayonda",
+      "COMPLETED": "Yakunlangan"
+    },
+    "statusLabel": {
+      "ACTIVE": "Faol",
+      "IN_PROGRESS": "Jarayonda",
+      "COMPLETED": "Yakunlangan"
+    },
+    "newTicket": "Yangi murojaat",
+    "newTicketTitle": "Yangi murojaat yaratish",
+    "subjectLabel": "Mavzu",
+    "subjectPlaceholder": "Masalan: To'lov bilan bog'liq savol",
+    "firstMessageLabel": "Xabar",
+    "firstMessagePlaceholder": "Muammoni batafsil yozing...",
+    "create": "Yaratish",
+    "cancel": "Bekor qilish",
+    "generalSubject": "Umumiy suhbat",
+    "noTickets": "Murojaatlar topilmadi",
+    "noTicketsText": "Bu bo'limda hozircha murojaat yo'q.",
+    "selectTicket": "Suhbatni tanlang",
+    "selectTicketText": "Chap tarafdagi ro'yxatdan murojaatni tanlang.",
+    "back": "Orqaga",
+    "complete": "Yakunlash",
+    "reopen": "Qayta ochish",
+    "completedNotice": "Bu murojaat yakunlangan. Yozish uchun uni qayta oching.",
+    "noMessagesPreview": "Xabar yo'q",
+    "attachmentPreview": "Fayl yuborildi",
+    "you": "Siz",
+    "info": {
+      "title": "Murojaat haqida",
+      "agent": "Mas'ul xodim",
+      "agentNone": "Hali biriktirilmagan",
+      "agentRole": "Qo'llab-quvvatlash xodimi",
+      "teamRole": "YePost jamoasi",
+      "number": "Raqam",
+      "status": "Holati",
+      "created": "Yaratilgan",
+      "lastReply": "Oxirgi xabar",
+      "messages": "Xabarlar soni",
+      "files": "Fayllar",
+      "filesEmpty": "Biriktirilgan fayl yo'q",
+      "history": "Murojaatlar tarixi",
+      "historyEmpty": "Boshqa murojaatlar yo'q",
+      "hint": "Backendga murojaatlar (tickets) qo'shilgach, mas'ul xodim va tarix to'liq ishlaydi.",
+      "phone": "Telefon raqamingiz"
+    },
+    "singleModeBanner": "Backendda murojaatlar (tickets) hali yo'q — hozircha bitta umumiy suhbat ko'rsatiladi.",
+    "loadingList": "Murojaatlar yuklanmoqda..."
+  }
 }

@@ -25,5 +25,58 @@
   "removeAttachmentAria": "Удалить файл",
   "downloadAria": "Скачать",
   "uploadingAttachments": "Загрузка файлов...",
-  "defaultSenderName": "YePost"
+  "defaultSenderName": "YePost",
+  "inbox": {
+    "searchPlaceholder": "Поиск обращений...",
+    "tabs": {
+      "ACTIVE": "Активные",
+      "IN_PROGRESS": "В работе",
+      "COMPLETED": "Завершённые"
+    },
+    "statusLabel": {
+      "ACTIVE": "Активно",
+      "IN_PROGRESS": "В работе",
+      "COMPLETED": "Завершено"
+    },
+    "newTicket": "Новое обращение",
+    "newTicketTitle": "Создать обращение",
+    "subjectLabel": "Тема",
+    "subjectPlaceholder": "Например: вопрос по оплате",
+    "firstMessageLabel": "Сообщение",
+    "firstMessagePlaceholder": "Опишите проблему подробнее...",
+    "create": "Создать",
+    "cancel": "Отмена",
+    "generalSubject": "Общий чат",
+    "noTickets": "Обращения не найдены",
+    "noTicketsText": "В этом разделе пока нет обращений.",
+    "selectTicket": "Выберите чат",
+    "selectTicketText": "Выберите обращение из списка слева.",
+    "back": "Назад",
+    "complete": "Завершить",
+    "reopen": "Открыть снова",
+    "completedNotice": "Обращение завершено. Откройте его снова, чтобы написать.",
+    "noMessagesPreview": "Нет сообщений",
+    "attachmentPreview": "Отправлен файл",
+    "you": "Вы",
+    "info": {
+      "title": "Об обращении",
+      "agent": "Ответственный",
+      "agentNone": "Пока не назначен",
+      "agentRole": "Сотрудник поддержки",
+      "teamRole": "Команда YePost",
+      "number": "Номер",
+      "status": "Статус",
+      "created": "Создано",
+      "lastReply": "Последнее сообщение",
+      "messages": "Сообщений",
+      "files": "Файлы",
+      "filesEmpty": "Нет прикреплённых файлов",
+      "history": "История обращений",
+      "historyEmpty": "Других обращений нет",
+      "hint": "После добавления обращений (tickets) в backend ответственный и история заработают полностью.",
+      "phone": "Ваш номер телефона"
+    },
+    "singleModeBanner": "В backend пока нет обращений (tickets) — показан один общий чат.",
+    "loadingList": "Загрузка обращений..."
+  }
 }

@@ -154,11 +154,6 @@ export default function BoshSahifa() {
   }, [narxTuri, updatePriceType]);
 
   useEffect(() => {
-    const cartWarehouseId = cart.find((item) => item.warehouseId)?.warehouseId;
-    if (cartWarehouseId && cartWarehouseId !== warehouseId) setWarehouseId(cartWarehouseId);
-  }, [cart, warehouseId]);
-
-  useEffect(() => {
     if (selectedCustomerModal) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";
 
@@ -211,10 +206,6 @@ export default function BoshSahifa() {
       setMessage({ type: "error", text: t("errors.cartEmpty") });
       return;
     }
-    if (cart.some((item) => item.warehouseId && item.warehouseId !== warehouseId)) {
-      setMessage({ type: "error", text: t("errors.cartWarehouseMismatch") });
-      return;
-    }
     setTolovSummasi(String(payableTotal));
     setTolovModalOchiq(true);
   }
@@ -235,7 +226,7 @@ export default function BoshSahifa() {
 
     const rawTotal = cart.reduce((sum, item) => sum + item.narx * item.soni, 0);
     let remainingDiscount = Math.min(discountSum, rawTotal);
-    const items = cart.map((item, index) => {
+    const qatorlar = cart.map((item, index) => {
       const lineTotal = item.narx * item.soni;
       const lineDiscount =
         index === cart.length - 1
@@ -244,37 +235,73 @@ export default function BoshSahifa() {
       remainingDiscount -= lineDiscount;
 
       return {
+        cartId: item.id,
+        omborId: item.warehouseId || warehouseId,
         modificationId: item.modificationId || item.id,
         quantity: item.soni,
         price: item.narx,
         discount: lineDiscount,
+        sof: lineTotal - lineDiscount,
       };
     });
 
+    // Backend bitta sotuvni bitta ombor bilan yaratadi, shuning uchun savatcha omborlar bo'yicha
+    // bo'linadi: har ombor uchun alohida sotuv yaratilib tasdiqlanadi va qoldiq aynan shu ombordan chiqadi.
+    const omborGuruhlari = new Map<string, typeof qatorlar>();
+    qatorlar.forEach((qator) => {
+      omborGuruhlari.set(qator.omborId, [...(omborGuruhlari.get(qator.omborId) ?? []), qator]);
+    });
+    if (!warehouseId && omborGuruhlari.has("")) {
+      setMessage({ type: "error", text: t("errors.warehouseNotFound") });
+      return;
+    }
+    const guruhlar = Array.from(omborGuruhlari.entries());
+    const guruhSoflari = guruhlar.map(([, qatorlarRoyxati]) => qatorlarRoyxati.reduce((sum, qator) => sum + qator.sof, 0));
+    const guruhSoflariJami = guruhSoflari.reduce((sum, qiymat) => sum + qiymat, 0) || 1;
+
     setSaving(true);
     setMessage(null);
+    let tasdiqlanganlar = 0;
+    let qabulQilinganQism = 0;
     try {
-      const sale = await yangiSotuvYaratish({
-        warehouseId,
-        customerId: mijozTuri === "doimiy" && selectedCustomerId ? selectedCustomerId : undefined,
-        saleType: mijozTuri === "doimiy" ? "CLIENT" : "QUICK",
-        // Sotuvning mas'ul xodimi har doim tizimga real kirgan foydalanuvchi
-        // (kassir, admin, direktor va h.k.) bo'lishi kerak.
-        responsibleId: joriyProfil?.id,
-        note: [customerName ? `Mijoz: ${customerName}` : "", note].filter(Boolean).join(" | ") || undefined,
-        items,
-        payments: [{ paymentType: selectedPayment.apiTuri, amount: qabulQilinadiganSumma }],
-      });
-      if (!sale) throw new Error(t("errors.createDraftFailed"));
-      const tasdiqlandi = await sotuvniTasdiqlash(sale.id);
-      if (!tasdiqlandi) {
-        throw new Error(useSavdoStore.getState().xatolik || t("errors.confirmFailed"));
+      for (let index = 0; index < guruhlar.length; index += 1) {
+        const [omborId, qatorlarRoyxati] = guruhlar[index];
+        // To'lov summasi omborlar orasida sotuv summasiga mutanosib taqsimlanadi (oxirgisiga qoldiq).
+        const ulush =
+          index === guruhlar.length - 1
+            ? qabulQilinadiganSumma - qabulQilinganQism
+            : Math.min(Math.round((qabulQilinadiganSumma * guruhSoflari[index]) / guruhSoflariJami), guruhSoflari[index]);
+        qabulQilinganQism += ulush;
+
+        const sale = await yangiSotuvYaratish({
+          warehouseId: omborId,
+          customerId: mijozTuri === "doimiy" && selectedCustomerId ? selectedCustomerId : undefined,
+          saleType: mijozTuri === "doimiy" ? "CLIENT" : "QUICK",
+          // Sotuvning mas'ul xodimi har doim tizimga real kirgan foydalanuvchi
+          // (kassir, admin, direktor va h.k.) bo'lishi kerak.
+          responsibleId: joriyProfil?.id,
+          note: [customerName ? `Mijoz: ${customerName}` : "", note].filter(Boolean).join(" | ") || undefined,
+          items: qatorlarRoyxati.map(({ modificationId, quantity, price, discount }) => ({ modificationId, quantity, price, discount })),
+          payments: ulush > 0 ? [{ paymentType: selectedPayment.apiTuri, amount: ulush }] : [],
+        });
+        if (!sale) throw new Error(useSavdoStore.getState().xatolik || t("errors.createDraftFailed"));
+        const tasdiqlandi = await sotuvniTasdiqlash(sale.id);
+        if (!tasdiqlandi) {
+          throw new Error(useSavdoStore.getState().xatolik || t("errors.confirmFailed"));
+        }
+        tasdiqlanganlar += 1;
+        // Tasdiqlangan ombor mahsulotlari savatchadan olib tashlanadi.
+        qatorlarRoyxati.forEach((qator) => removeFromCart(qator.cartId));
       }
       clearCart();
       setTolovModalOchiq(false);
       setMessage({ type: "success", text: t("errors.paymentSuccess") });
     } catch (error) {
-      setMessage({ type: "error", text: xatoMatni(error, t("errors.finalizeFailed")) });
+      const xato = xatoMatni(error, t("errors.finalizeFailed"));
+      setMessage({
+        type: "error",
+        text: tasdiqlanganlar > 0 ? t("errors.partialSuccess", { done: tasdiqlanganlar, total: guruhlar.length, error: xato }) : xato,
+      });
     } finally {
       setSaving(false);
     }
@@ -320,20 +347,6 @@ export default function BoshSahifa() {
             </div>
           </div>
 
-          {omborlar.length > 1 && (
-            <AppSelect
-              value={warehouseId}
-              onChange={(event) => setWarehouseId(event.target.value)}
-              dropdownMinWidth={280}
-              className="h-10 rounded-xl border border-gold-200/60 bg-gold-50 px-3 text-sm font-semibold text-[#0F172A] outline-none focus:border-gold-400"
-            >
-              {omborlar.map((ombor) => (
-                <option key={ombor.id} value={ombor.id}>
-                  {mijozNomi(ombor)}
-                </option>
-              ))}
-            </AppSelect>
-          )}
         </div>
 
         {message && (
@@ -374,7 +387,14 @@ export default function BoshSahifa() {
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-bold text-[#0F172A]">{item.nom}</p>
-                    <p className="mt-0.5 text-xs text-[#94A3B8]">{formatSumma(item.narx)}</p>
+                    <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-[#94A3B8]">
+                      <span>{formatSumma(item.narx)}</span>
+                      {(item.warehouseName || omborlar.find((ombor) => String(ombor.id) === item.warehouseId)) && (
+                        <span className="rounded-md bg-white px-1.5 py-0.5 font-bold text-gold-600 ring-1 ring-gold-100">
+                          {item.warehouseName || mijozNomi(omborlar.find((ombor) => String(ombor.id) === item.warehouseId)!)}
+                        </span>
+                      )}
+                    </p>
                   </div>
 
                   <div className="flex h-9 items-center justify-between rounded-lg bg-white px-1 shadow-sm">
@@ -910,6 +930,11 @@ export default function BoshSahifa() {
             <div className="grid gap-8 p-9 lg:grid-cols-[minmax(0,1fr)_400px]">
               <div>
                 <div className="mb-4 flex items-center justify-between"><h3 className="font-black text-slate-900">{t("paymentModal.products")}</h3><span className="rounded-full bg-gold-50 px-3 py-1 text-xs font-black text-gold-600">{t("paymentModal.piecesCount", { count: cartPiecesCount })}</span></div>
+                {new Set(cart.map((item) => item.warehouseId || warehouseId)).size > 1 && (
+                  <p className="mb-3 rounded-2xl bg-gold-50 px-4 py-3 text-xs font-bold leading-5 text-gold-700">
+                    {t("paymentModal.multiWarehouseNote", { count: new Set(cart.map((item) => item.warehouseId || warehouseId)).size })}
+                  </p>
+                )}
                 <div className="max-h-[480px] space-y-3 overflow-y-auto pr-1">
                   {cart.map((item) => <article key={item.id} className="flex items-center justify-between gap-5 rounded-[24px] border border-gold-100 bg-white p-5 shadow-[0_12px_35px_rgba(37,99,235,.07)]"><div className="min-w-0"><p className="truncate text-base font-black text-slate-900">{item.nom}</p><p className="mt-1.5 text-sm font-semibold text-slate-400">{item.soni} × {formatSumma(item.narx)} · {item.warehouseName || t("paymentModal.selectedWarehouseFallback")}</p></div><p className="shrink-0 text-base font-black text-gold-600">{formatSumma(item.soni * item.narx)}</p></article>)}
                 </div>

@@ -11,6 +11,7 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { Maxsulot, Tanlov, TovarHarakati, TovarHarakatiFilter } from "./types";
 import { bugun, bugunMinus, sanadaMi, son } from "./yordamchilar";
 
+import YuklanmoqdaHolati from "./YuklanmoqdaHolati";
 const boshFilter: TovarHarakatiFilter = {
   dateFrom: bugunMinus(30),
   dateTo: bugun(),
@@ -426,9 +427,7 @@ export default function TovarHarakati() {
       {/* Natija jadvali */}
       <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm">
         {yuklanmoqda ? (
-          <div className="flex h-72 items-center justify-center font-bold text-slate-400">
-            Backenddan yuklanmoqda...
-          </div>
+          <YuklanmoqdaHolati />
         ) : korinishQatorlar.length === 0 ? (
           <Bosh />
         ) : (

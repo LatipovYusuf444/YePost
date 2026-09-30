@@ -63,7 +63,7 @@ export default function Xodimlar({ xodimlar, lavozimlar, bolimlar, filiallar = [
       id: "lavozim",
       nom: "Lavozim",
       kenglik: 150,
-      katak: (x) => <span className="text-slate-500">{lavozimNomi(lavozimlar, x.lavozimId) || "—"}</span>,
+      katak: (x) => <span className="text-slate-500">{lavozimNomi(lavozimlar, x.lavozimId, x.izoh) || "—"}</span>,
     },
     {
       id: "bolim",
@@ -122,7 +122,7 @@ export default function Xodimlar({ xodimlar, lavozimlar, bolimlar, filiallar = [
         xodim.telefonlar.join(" "),
         xodim.filial,
         xodim.manzil,
-        lavozimNomi(lavozimlar, xodim.lavozimId),
+        lavozimNomi(lavozimlar, xodim.lavozimId, xodim.izoh),
         holatMatni[xodim.holat],
       ]
         .join(" ")
@@ -232,7 +232,7 @@ export default function Xodimlar({ xodimlar, lavozimlar, bolimlar, filiallar = [
               {korinadi("lavozim") && (
                 <p className="mt-2 flex items-center gap-1.5 text-sm font-bold text-gray-500">
                   <Briefcase size={14} className="text-orange-400" />
-                  {lavozimNomi(lavozimlar, xodim.lavozimId) || "Lavozim biriktirilmagan"}
+                  {lavozimNomi(lavozimlar, xodim.lavozimId, xodim.izoh) || "Lavozim biriktirilmagan"}
                 </p>
               )}
 

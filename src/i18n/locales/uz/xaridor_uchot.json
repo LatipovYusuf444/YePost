@@ -325,7 +325,7 @@
   },
   "root": {
     "retry": "Qayta urinish",
-    "loading": "Backend ma'lumotlari yuklanmoqda...",
+    "loading": "Ma’lumot yuklanmoqda...",
     "saving": "Saqlanmoqda...",
     "customFieldsTooLarge": "Maxsus maydonlar hajmi 2KB dan oshmasligi kerak."
   }

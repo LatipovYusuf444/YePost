@@ -54,6 +54,10 @@
       "noStock": "Bu mahsulot bo'yicha qoldiq yo'q",
       "noPrice": "Bu mahsulot narxi backendda kiritilmagan",
       "mixedWarehouse": "Savatchada boshqa ombor mahsuloti bor. Bitta sotuv faqat bitta ombordan qilinadi."
-    }
+    },
+    "unnamed": "Nomsiz mahsulot",
+    "add": "Qo'shish",
+    "results": "{{count}} ta mahsulot",
+    "clearSelection": "Tozalash"
   }
 }

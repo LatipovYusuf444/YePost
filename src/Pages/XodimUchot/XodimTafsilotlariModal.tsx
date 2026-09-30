@@ -173,7 +173,7 @@ function MalumotlarTab({
             </h2>
           </div>
 
-          <dl className="mt-5 space-y-4">
+          <dl className="mt-2 divide-y-2 divide-slate-200 [&>div]:py-4">
             <div>
               <dt className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                 <span className="text-[#2563EB]">
@@ -197,7 +197,7 @@ function MalumotlarTab({
             <Qator
               icon={<Briefcase size={14} />}
               nom="Lavozim"
-              qiymat={lavozimNomi(lavozimlar, xodim.lavozimId) || "Biriktirilmagan"}
+              qiymat={lavozimNomi(lavozimlar, xodim.lavozimId, xodim.izoh) || "Biriktirilmagan"}
             />
             <Qator
               icon={<Network size={14} />}
@@ -230,7 +230,7 @@ function MalumotlarTab({
               Qo'shimcha ma'lumotlar
             </h2>
           </div>
-          <dl className="mt-5 space-y-4">
+          <dl className="mt-2 divide-y-2 divide-slate-200 [&>div]:py-4">
             <Qator nom="Yaratgan mas'ul shaxs" qiymat={xodim.yaratganMasul} />
             <Qator nom="Yaratilgan sana" qiymat={sanaFormat(xodim.yaratilganSana)} />
             <Qator nom="O'zgartirgan mas'ul shaxs" qiymat={xodim.ozgartirganMasul} />

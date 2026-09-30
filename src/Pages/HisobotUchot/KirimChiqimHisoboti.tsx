@@ -12,6 +12,7 @@ import { cashFlowReportApi, type CashFlowReport } from "@/api/reportsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import AppModal from "@/Components/common/AppModal";
 
+import YuklanmoqdaHolati from "./YuklanmoqdaHolati";
 // Kirim-chiqim (kassa oboroti) hisoboti — matritsa: kassalar × (Kirim/Chiqim/Qoldiq).
 // Qatorlar: Boshlang'ich qoldiq / Aylanma / Yakuniy qoldiq.
 // "Aylanma" bosilsa — backend tranzaksiyalari hujjatlar kesimida ochiladi.
@@ -327,7 +328,7 @@ export default function KirimChiqimHisoboti() {
       </section>
 
       {xato && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
-      {yuklanmoqda && <p className="rounded-2xl bg-orange-50 px-4 py-3 text-sm font-bold text-orange-600">Kassa aylanmasi backenddan yuklanmoqda...</p>}
+      {yuklanmoqda && <YuklanmoqdaHolati className="h-48" />}
 
       <button
         onClick={() => void eksport()}

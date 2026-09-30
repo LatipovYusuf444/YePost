@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
 import { useAuthProfileStore } from "@/store/authProfileStore";
+import { omborQoldiqlari } from "@/api/omborApi";
 import { useOmborStore } from "@/store/omborStore";
 import type { InventarizatsiyaTuri, OmborQoldigi } from "@/types/ombor";
 import { holat, hujjatRaqami, modificationNomi, qoldiqMiqdori, sana } from "./omborYordamchilari";
@@ -37,6 +38,13 @@ const INVENTORY_BLUE_THEME = {
   "--color-blue-700": "#1D4ED8",
   "--color-blue-800": "#1E40AF",
 } as CSSProperties;
+
+// Backend hisoblaydigan umumiy qoldiq: rezerv qilingan miqdor ham kiradi (availableQuantity emas).
+function tizimQoldigi(qoldiq: OmborQoldigi) {
+  const raw = qoldiq as OmborQoldigi & { quantity?: number | string; balance?: number | string; availableQuantity?: number | string };
+  const qiymatlar = [raw.quantity, raw.balance, raw.availableQuantity].map((value) => Number(value)).filter((value) => Number.isFinite(value) && value >= 0);
+  return qiymatlar.length ? Math.max(...qiymatlar) : 0;
+}
 
 export default function Inventarizatsiya() {
   const { t } = useTranslation("ombor_harakat");
@@ -234,7 +242,8 @@ export default function Inventarizatsiya() {
       const difference = actual - system;
       if (difference > 0) surplus += difference;
       if (difference < 0) shortage += Math.abs(difference);
-      if (difference !== 0) variances.push({ id: row.modificationId, name: modificationNomi(row.modification), system, actual, difference });
+      // Faqat ortiqcha (musbat) farq qoldiqqa qo'shiladi; kamomad ombordan ayirilmaydi.
+      if (difference > 0) variances.push({ id: row.modificationId, name: modificationNomi(row.modification), system, actual, difference });
     }
     return { counted, uncounted, invalid, surplus, shortage, variances };
   }, [actuals, inventarizatsiyaQatorlari]);
@@ -440,6 +449,24 @@ export default function Inventarizatsiya() {
       return;
     }
     if (reviewAction === "confirm" && sanoqXulosasi.variances.length > 0 && !varianceAcknowledged) return;
+    // Ombor qoldig'i hech qachon kamaytirilmaydi: backend farqni (haqiqiy - tizim) bo'yicha FIFO
+    // tuzatish qiladi, shuning uchun haqiqiy miqdor eng kamida joriy tizim qoldig'iga tenglashtiriladi.
+    // Sotuvlar tufayli o'zgargan bo'lishi mumkinligi uchun qoldiq yuborishdan oldin qayta olinadi.
+    const joriyQoldiq = new Map<string, number>();
+    for (const qoldiq of inventarizatsiyaQatorlari) joriyQoldiq.set(qoldiq.modificationId, tizimQoldigi(qoldiq));
+    try {
+      const yangiQoldiqlar = await omborQoldiqlari(warehouseId);
+      const yigindi = new Map<string, number>();
+      for (const qoldiq of yangiQoldiqlar) {
+        yigindi.set(qoldiq.modificationId, (yigindi.get(qoldiq.modificationId) ?? 0) + tizimQoldigi(qoldiq));
+      }
+      for (const [modificationId, miqdor] of yigindi) {
+        joriyQoldiq.set(modificationId, Math.max(miqdor, joriyQoldiq.get(modificationId) ?? 0));
+      }
+    } catch {
+      // Yangilab bo'lmasa, ekrandagi qoldiq bilan davom etiladi
+    }
+
     const itemMap = new Map<string, { modificationId: string; actualQuantity: number }>();
     for (const qoldiq of inventarizatsiyaQatorlari) {
       const kiritilgan = actuals[qoldiq.modificationId]?.trim();
@@ -457,7 +484,7 @@ export default function Inventarizatsiya() {
       }
       itemMap.set(qoldiq.modificationId, {
         modificationId: qoldiq.modificationId,
-        actualQuantity,
+        actualQuantity: Math.max(actualQuantity, joriyQoldiq.get(qoldiq.modificationId) ?? 0),
       });
     }
 
@@ -720,11 +747,6 @@ export default function Inventarizatsiya() {
                 </div>
 
                 {warehouseId && !qoldiqYuklanmoqda && <>
-                  <div className="mb-4 grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-2xl bg-blue-50 p-3"><span className="text-xs font-bold text-blue-700">{t("inventarizatsiya.createModal.totalRows")}</span><p className="mt-1 text-xl font-black text-slate-900">{inventarizatsiyaQatorlari.length}</p></div>
-                    <div className="rounded-2xl bg-emerald-50 p-3"><span className="text-xs font-bold text-emerald-700">{t("inventarizatsiya.createModal.counted")}</span><p className="mt-1 text-xl font-black text-emerald-700">{sanoqXulosasi.counted}</p></div>
-                    <div className="rounded-2xl bg-amber-50 p-3"><span className="text-xs font-bold text-amber-700">{t("inventarizatsiya.createModal.uncounted")}</span><p className="mt-1 text-xl font-black text-amber-700">{sanoqXulosasi.uncounted.length + sanoqXulosasi.invalid.length}</p></div>
-                  </div>
                   <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
                     <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-bold text-slate-700"><input type="checkbox" checked={blindCount} onChange={(event) => setBlindCount(event.target.checked)} className="h-4 w-4 accent-blue-600" />{t("inventarizatsiya.createModal.blindCount")}</label>
                     <span className="text-xs text-slate-500">{t("inventarizatsiya.createModal.blindCountHint")}</span>
@@ -735,7 +757,10 @@ export default function Inventarizatsiya() {
                     <p className="mt-2 text-xs text-slate-500">{t("inventarizatsiya.createModal.scanHint")}</p>
                     {scanFeedback && <p role="status" className="mt-2 text-xs font-bold text-blue-700">{scanFeedback}</p>}
                   </div>
-                  <p className="mb-3 text-xs font-medium text-slate-500">{t("inventarizatsiya.createModal.locationBackendHint")}</p>
+                  <p className="mb-3 flex items-start gap-2 rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">
+                    <AlertTriangle size={14} className="mt-px shrink-0" />
+                    {t("inventarizatsiya.createModal.addOnlyNote")}
+                  </p>
                 </>}
 
                 {qoldiqYuklanmoqda ? (
@@ -750,18 +775,15 @@ export default function Inventarizatsiya() {
                   </div>
                 ) : (
                   <div className="mt-4 overflow-x-auto rounded-2xl border border-blue-100 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-blue-400 [&::-webkit-scrollbar-track]:bg-blue-50">
-                    <table className="w-full min-w-[1430px] text-left text-sm">
+                    <table className="w-full min-w-[960px] text-left text-sm">
                       <thead className="bg-[#F4F8FF] text-xs font-black uppercase text-slate-500">
                         <tr>
                           <th className="px-4 py-4">{t("inventarizatsiya.createModal.table.number")}</th>
                           <th className="px-4 py-4">{t("inventarizatsiya.createModal.table.product")}</th>
+                          <th className="px-4 py-4">{t("inventarizatsiya.createModal.table.actualQuantity")}</th>
                           <th className="px-4 py-4">{t("inventarizatsiya.createModal.table.barcode")}</th>
                           <th className="px-4 py-4">{t("inventarizatsiya.createModal.table.warehouse")}</th>
-                          <th className="px-4 py-4">{t("inventarizatsiya.createModal.table.location")}</th>
-                          <th className="px-4 py-4">{t("inventarizatsiya.createModal.table.batchSerial")}</th>
                           <th className="px-4 py-4">{t("inventarizatsiya.createModal.table.systemStock")}</th>
-                          <th className="px-4 py-4">{t("inventarizatsiya.createModal.table.actualQuantity")}</th>
-                          <th className="px-4 py-4">{t("inventarizatsiya.createModal.table.countStatus")}</th>
                           <th className="px-4 py-4">{t("inventarizatsiya.createModal.table.difference")}</th>
                           <th className="px-4 py-4" />
                         </tr>
@@ -778,11 +800,6 @@ export default function Inventarizatsiya() {
                             <tr key={`${qoldiq.modificationId}-${index}`}>
                               <td className="px-4 py-4 text-slate-400">{index + 1}</td>
                               <td className="px-4 py-4 font-black text-slate-900">{modificationNomi(qoldiq.modification)}</td>
-                              <td className="px-4 py-4 text-slate-500">{qoldiq.modification?.barcode ?? "—"}</td>
-                              <td className="px-4 py-4">{qoldiq.warehouse?.name ?? omborMap.get(warehouseId) ?? t("inventarizatsiya.unknownWarehouse")}</td>
-                              <td className="px-4 py-3"><input disabled placeholder="—" title={t("inventarizatsiya.createModal.locationBackendHint")} className="h-10 w-24 rounded-xl border border-slate-200 bg-slate-50 px-3 text-slate-400" /></td>
-                              <td className="px-4 py-3"><input disabled placeholder="—" title={t("inventarizatsiya.createModal.locationBackendHint")} className="h-10 w-28 rounded-xl border border-slate-200 bg-slate-50 px-3 text-slate-400" /></td>
-                              <td className="px-4 py-4 font-bold text-slate-600">{blindCount ? "•••" : tizim}</td>
                               <td className="px-4 py-3">
                                 <input
                                   type="number"
@@ -798,9 +815,14 @@ export default function Inventarizatsiya() {
                                   aria-label={t("inventarizatsiya.createModal.actualQuantityAria", { name: modificationNomi(qoldiq.modification) })}
                                 />
                               </td>
-                              <td className="px-4 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-black ${sanaldi ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{t(sanaldi ? "inventarizatsiya.createModal.counted" : "inventarizatsiya.createModal.uncounted")}</span></td>
-                              <td className={`px-4 py-4 font-black ${farq == null || farq === 0 ? "text-slate-400" : farq > 0 ? "text-emerald-600" : "text-red-500"}`}>
+                              <td className="px-4 py-4 text-slate-500">{qoldiq.modification?.barcode ?? "—"}</td>
+                              <td className="px-4 py-4">{qoldiq.warehouse?.name ?? omborMap.get(warehouseId) ?? t("inventarizatsiya.unknownWarehouse")}</td>
+                              <td className="px-4 py-4 font-bold text-slate-600">{blindCount ? "•••" : tizim}</td>
+                              <td className={`px-4 py-4 font-black ${farq == null || farq === 0 ? "text-slate-400" : farq > 0 ? "text-emerald-600" : "text-amber-600"}`}>
                                 {blindCount || farq == null ? "—" : farq > 0 ? `+${farq}` : farq}
+                                {!blindCount && farq != null && farq < 0 && (
+                                  <span className="block text-[10px] font-bold leading-3 text-amber-500">{t("inventarizatsiya.createModal.notDeducted")}</span>
+                                )}
                               </td>
                               <td className="px-4 py-4 text-right">
                                 {qolQoshilgan && (
@@ -868,7 +890,7 @@ export default function Inventarizatsiya() {
                                   document.body
                                 )}
                             </td>
-                            <td colSpan={9} className="px-4 py-3 text-sm text-slate-400">{t("inventarizatsiya.createModal.addNextProductHint")}</td>
+                            <td colSpan={6} className="px-4 py-3 text-sm text-slate-400">{t("inventarizatsiya.createModal.addNextProductHint")}</td>
                           </tr>
                         )}
                       </tbody>

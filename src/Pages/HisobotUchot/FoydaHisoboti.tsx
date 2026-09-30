@@ -8,6 +8,7 @@ import { productProfitReportApi } from "@/api/reportsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { bugun, bugunMinus, pul, son } from "./yordamchilar";
 
+import YuklanmoqdaHolati from "./YuklanmoqdaHolati";
 type ProfitRow = {
   productId?: string;
   productName?: string;
@@ -139,7 +140,7 @@ export default function FoydaHisoboti() {
       <label className="relative sm:w-72"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/><input value={qidiruv} onChange={(event) => setQidiruv(event.target.value)} placeholder="Mahsulot bo‘yicha qidiruv" className="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-orange-400"/></label>
     </div>
     <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm">
-      {yuklanmoqda ? <div className="flex h-72 items-center justify-center font-bold text-slate-400">Backenddan yuklanmoqda...</div> : korinadigan.length ? <KengaytiriladiganJadval ustunlar={ustunlar} qatorlar={korinadigan} jamiBor /> : <div className="flex h-72 items-center justify-center font-bold text-slate-400">Tanlangan filtr bo‘yicha ma’lumot topilmadi.</div>}
+      {yuklanmoqda ? <YuklanmoqdaHolati /> : korinadigan.length ? <KengaytiriladiganJadval ustunlar={ustunlar} qatorlar={korinadigan} jamiBor /> : <div className="flex h-72 items-center justify-center font-bold text-slate-400">Tanlangan filtr bo‘yicha ma’lumot topilmadi.</div>}
     </section>
   </div>;
 }

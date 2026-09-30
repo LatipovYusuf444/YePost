@@ -1,5 +1,5 @@
-import SupportChatOynasi from "./SupportChatOynasi";
+import SupportInbox from "./SupportInbox";
 
 export default function QollabQuvvatlash() {
-  return <SupportChatOynasi />;
+  return <SupportInbox />;
 }

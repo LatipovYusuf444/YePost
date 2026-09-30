@@ -30,8 +30,9 @@ export function asosiyTelefon(xodim: Xodim) {
   return xodim.telefonlar.find((telefon) => telefon.trim()) ?? "";
 }
 
-export function lavozimNomi(lavozimlar: Lavozim[], lavozimId: string) {
-  return lavozimlar.find((item) => item.id === lavozimId)?.nomi ?? "";
+// Lavozim ro'yxatidan topilmasa (lavozimId biriktirilmagan), backenddagi matnli `position` ishlatiladi.
+export function lavozimNomi(lavozimlar: Lavozim[], lavozimId: string, zaxira = "") {
+  return lavozimlar.find((item) => item.id === lavozimId)?.nomi || zaxira;
 }
 
 // Xodimning haqiqiy vakolatlari = lavozim vakolatlari + shaxsiy vakolatlar.

@@ -7,6 +7,7 @@ import { counterpartyBalanceReportApi } from "@/api/reportsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { pul } from "./yordamchilar";
 
+import YuklanmoqdaHolati from "./YuklanmoqdaHolati";
 type Qator = {
   id: string;
   nomi: string;
@@ -134,7 +135,7 @@ export default function OzaroHisobKitob() {
     </div>
     {xato && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
     <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm">
-      {yuklanmoqda ? <div className="p-10 text-center font-bold text-orange-500">Backenddan yuklanmoqda...</div> : korinadigan.length ? <KengaytiriladiganJadval ustunlar={ustunlar} qatorlar={korinadigan} jamiBor kengaytir /> : <div className="p-10 text-center font-bold text-gray-400">Kontragent topilmadi.</div>}
+      {yuklanmoqda ? <YuklanmoqdaHolati /> : korinadigan.length ? <KengaytiriladiganJadval ustunlar={ustunlar} qatorlar={korinadigan} jamiBor kengaytir /> : <div className="p-10 text-center font-bold text-gray-400">Kontragent topilmadi.</div>}
     </section>
   </div>;
 }

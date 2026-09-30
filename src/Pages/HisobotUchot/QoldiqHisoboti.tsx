@@ -8,6 +8,7 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useHisobotRealData } from "./HisobotRealData";
 import { son } from "./yordamchilar";
 
+import YuklanmoqdaHolati from "./YuklanmoqdaHolati";
 // Ombor qoldig'i backenddagi /reports/stock-balance natijasidan olinadi.
 // Filter paneli backend "Ombor qoldig'i" hujjat filtriga mos: sana, ombor, filial,
 // kategoriya, mahsulot, narx turi, variatsiya, xarakteristika, qoldiqlar + belgilar.
@@ -286,7 +287,7 @@ export default function QoldiqHisoboti() {
       {/* Natija jadvali */}
       <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm">
         {yuklanmoqda ? (
-          <div className="flex h-72 items-center justify-center font-bold text-gray-400">Backenddan yuklanmoqda...</div>
+          <YuklanmoqdaHolati />
         ) : qatorlar.length === 0 ? (
           <div className="flex h-72 items-center justify-center rounded-2xl border border-dashed border-orange-200 bg-orange-50/30 text-center">
             <div>
