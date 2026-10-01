@@ -1,3 +1,4 @@
+import axios from "axios";
 import { create } from "zustand";
 import {
   mijozKompaniyalariRoyxatiniOlish,
@@ -9,6 +10,7 @@ import {
   qaytarishlarRoyxatiniOlish,
   qaytarishTafsilotiniOlish,
   qaytarishniBekorQilish,
+  qaytarishniOchirish,
   qaytarishniYangilash,
   qaytarishniTasdiqlash,
   qaytarishYaratish,
@@ -224,6 +226,7 @@ type SavdoState = {
   ) => Promise<Qaytarish | null>;
   qaytarishniTasdiqlash: (qaytarishId: string) => Promise<boolean>;
   qaytarishniBekorQilish: (qaytarishId: string) => Promise<boolean>;
+  qaytarishniOchirish: (qaytarishId: string) => Promise<boolean>;
   tanlanganSotuvniTozalash: () => void;
   xatolikniTozalash: () => void;
 };
@@ -521,6 +524,40 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
       return true;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+
+  qaytarishniOchirish: async (qaytarishId) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+
+    try {
+      await qaytarishniOchirish(qaytarishId);
+      set((state) => ({
+        qaytarishlar: state.qaytarishlar.filter((qaytarish) => qaytarish.id !== qaytarishId),
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch (error) {
+      // Xatolik toasti axios interceptor orqali allaqachon ko'rsatilgan.
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      let haqiqiy: Qaytarish | null = null;
+      if (status === 400) {
+        try {
+          haqiqiy = await qaytarishTafsilotiniOlish(qaytarishId);
+        } catch {
+          haqiqiy = null;
+        }
+      }
+      set((state) => ({
+        qaytarishlar:
+          status === 404
+            ? state.qaytarishlar.filter((qaytarish) => qaytarish.id !== qaytarishId)
+            : haqiqiy
+              ? state.qaytarishlar.map((qaytarish) => (qaytarish.id === qaytarishId ? haqiqiy : qaytarish))
+              : state.qaytarishlar,
+        amalBajarilmoqda: false,
+      }));
       return false;
     }
   },

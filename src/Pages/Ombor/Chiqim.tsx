@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
 import { useOmborStore } from "@/store/omborStore";
+import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import type {
   ChiqimHujjati,
   ChiqimSababi,
@@ -424,7 +425,14 @@ export default function Chiqim() {
               ) : sahifadagiRoyxat.map((item) => (
                   <tr key={item.id} onClick={() => setTanlanganId(item.id)} className="cursor-pointer transition hover:bg-orange-50/40">
                     {faolUstunlar.map((column) => <td key={column.id} className="overflow-hidden px-6 py-5">{katak(item, column.id)}</td>)}
-                    <td className="sticky right-0 bg-white px-5 py-4 group-hover:bg-orange-50/40" />
+                    <td className="sticky right-0 bg-white px-5 py-4 text-right group-hover:bg-orange-50/40">
+                      <HujjatOchirish
+                        guruh="ombor"
+                        status={item.status}
+                        nom={hujjatRaqami(item)}
+                        onTasdiq={() => store.chiqimOchirish(item.id)}
+                      />
+                    </td>
                   </tr>
                 ))}
             </tbody>

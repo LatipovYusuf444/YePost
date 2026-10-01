@@ -13,6 +13,7 @@ import { holat, hujjatRaqami, modificationNomi, qoldiqMiqdori, sana } from "./om
 import InventoryHujjatModal from "./InventoryHujjatModal";
 import OmborJadval from "./OmborJadval";
 import TablePagination from "@/Components/common/TablePagination";
+import HujjatOchirish from "@/Components/common/HujjatOchirish";
 
 type InventarizatsiyaUstuni = "nomi" | "status" | "yaratilgan" | "ombor" | "masul" | "turi";
 
@@ -621,7 +622,15 @@ export default function Inventarizatsiya() {
               return (
               <tr key={item.id} onClick={() => setTanlanganId(item.id)} className="cursor-pointer text-slate-600 transition hover:bg-blue-50/60">
                 {faolUstunlar.map((ustun) => <td key={ustun.id}>{jadvalKatagi(item, ustun.id)}</td>)}
-                <td className="sticky right-0 bg-white px-5 py-4 group-hover:bg-blue-50/60" />
+                <td className="sticky right-0 bg-white px-5 py-4 text-right group-hover:bg-blue-50/60">
+                  <HujjatOchirish
+                    guruh="ombor"
+                    status={item.status}
+                    nom={hujjatRaqami(item)}
+                    izoh={t("hujjatOchirish.freezeNote", { ns: "common" })}
+                    onTasdiq={() => store.inventarizatsiyaOchirish(item.id)}
+                  />
+                </td>
               </tr>
             );})}
             {store.yuklanmoqda && store.inventarizatsiyalar.length === 0 && (

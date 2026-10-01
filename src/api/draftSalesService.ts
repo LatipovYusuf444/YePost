@@ -113,7 +113,7 @@ export const draftSalesService = {
     return saleToDraftSale(apiData(response.data));
   },
   deleteDraft: async (id: string) => {
-    await apiClient.post(`/sales/${id}/cancel`);
+    await apiClient.delete(`/sales/${id}`);
   },
   continueDraft: async (id: string) => {
     return draftSalesService.getDraftById(id);

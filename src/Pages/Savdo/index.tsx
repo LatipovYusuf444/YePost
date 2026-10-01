@@ -60,6 +60,7 @@ export default function Savdo() {
     yangiQaytarishYaratish,
     qaytarishniTasdiqlash,
     qaytarishniBekorQilish,
+    qaytarishniOchirish,
     tanlanganSotuvniTozalash,
     xatolikniTozalash,
   } = useSavdoStore();
@@ -393,6 +394,7 @@ export default function Savdo() {
               onYaratish={yangiQaytarishYaratish}
               onTasdiqlash={qaytarishniTasdiqlash}
               onBekorQilish={qaytarishniBekorQilish}
+              onOchirish={qaytarishniOchirish}
             />
           )}
         </>

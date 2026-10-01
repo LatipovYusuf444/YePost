@@ -170,6 +170,11 @@ export async function qaytarishniBekorQilish(qaytarishId: string) {
   return apiData(response.data);
 }
 
+// Qaytarish.tsx: faqat qoralama (DRAFT) qaytarishni o'chiradi.
+export async function qaytarishniOchirish(qaytarishId: string) {
+  await apiClient.delete(`/returns/${qaytarishId}`);
+}
+
 // Savdo/index.tsx: yangi sotuv formasidagi ombor tanlovi uchun.
 export async function omborlarRoyxatiniOlish() {
   const response = await apiClient.get<RoyxatJavobi<OmborTanlovi> | ApiListEnvelope<OmborTanlovi>>("/organization/warehouses");

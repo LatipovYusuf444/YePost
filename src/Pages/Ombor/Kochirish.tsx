@@ -21,6 +21,7 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
 import { useOmborStore } from "@/store/omborStore";
+import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import type {
   KochirishHujjati,
   MahsulotModifikatsiyasi,
@@ -563,6 +564,14 @@ export default function Kochirish() {
                       </td>
                     ))}
                     <td className="sticky right-0 bg-white px-5 py-3 text-right group-hover:bg-[#F8FAFC]">
+                      <div className="flex items-center justify-end gap-2">
+                      <HujjatOchirish
+                        guruh="ombor"
+                        status={hujjat.status}
+                        nom={hujjatNomi(hujjat, t)}
+                        onTasdiq={() => store.kochirishOchirish(hujjat.id)}
+                        className="h-11 w-11 rounded-2xl"
+                      />
                       <button
                         type="button"
                         onClick={(event) => {
@@ -574,6 +583,7 @@ export default function Kochirish() {
                       >
                         <Eye size={18} />
                       </button>
+                      </div>
                     </td>
                   </tr>
                 ))

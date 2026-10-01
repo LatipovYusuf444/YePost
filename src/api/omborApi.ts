@@ -209,6 +209,10 @@ export const kirimApi = {
         `/inventory/purchases/${id}/cancel`
       )).data
     ),
+  // Faqat qoralama (DRAFT) hujjat o'chiriladi; tasdiqlanganini bekor qilish kerak.
+  ochirish: async (id: string) => {
+    await apiClient.delete(`/inventory/purchases/${id}`);
+  },
 };
 
 // Ombor/Chiqim.tsx: ombordan hisobdan chiqarish hujjatlari.
@@ -251,6 +255,10 @@ export const chiqimApi = {
         `/inventory/write-offs/${id}/cancel`
       )).data
     ),
+  // Faqat qoralama (DRAFT) hujjat o'chiriladi; tasdiqlanganini bekor qilish kerak.
+  ochirish: async (id: string) => {
+    await apiClient.delete(`/inventory/write-offs/${id}`);
+  },
 };
 
 // Ombor/Kochirish.tsx: omborlar orasida ko'chirish hujjatlari.
@@ -285,6 +293,10 @@ export const kochirishApi = {
     apiData(
       (await apiClient.post<KochirishHujjati | ApiEnvelope<KochirishHujjati>>(`/inventory/transfers/${id}/cancel`)).data
     ),
+  // Faqat qoralama (DRAFT) hujjat o'chiriladi; tasdiqlanganini bekor qilish kerak.
+  ochirish: async (id: string) => {
+    await apiClient.delete(`/inventory/transfers/${id}`);
+  },
 };
 
 // Ombor/Inventarizatsiya.tsx: inventarizatsiya hujjatlari.
@@ -340,6 +352,10 @@ export const inventarizatsiyaApi = {
         )
       ).data
     ),
+  // Faqat qoralama (DRAFT) hujjat o'chiriladi; tasdiqlanganini bekor qilish kerak.
+  ochirish: async (id: string) => {
+    await apiClient.delete(`/inventory/stock-takes/${id}`);
+  },
 };
 
 // Ombor/OmborQoldigi.tsx va Mahsulotlar.tsx: real ombor qoldiqlari.

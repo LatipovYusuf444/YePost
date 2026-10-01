@@ -1,3 +1,4 @@
+import axios from "axios";
 import { create } from "zustand";
 import {
   barchaModifikatsiyalar,
@@ -79,17 +80,20 @@ type OmborState = {
   kirimYangilash: (id: string, data: Partial<KirimYaratishMalumoti>) => Promise<boolean>;
   kirimTasdiqlash: (id: string) => Promise<boolean>;
   kirimBekorQilish: (id: string) => Promise<boolean>;
+  kirimOchirish: (id: string) => Promise<boolean>;
   chiqimYaratish: (data: ChiqimYaratishMalumoti) => Promise<ChiqimHujjati | null>;
   chiqimOlish: (id: string) => Promise<ChiqimHujjati | null>;
   chiqimYangilash: (id: string, data: Partial<ChiqimYaratishMalumoti>) => Promise<boolean>;
   chiqimTasdiqlash: (id: string) => Promise<boolean>;
   chiqimBekorQilish: (id: string) => Promise<boolean>;
+  chiqimOchirish: (id: string) => Promise<boolean>;
   kochirishYaratish: (data: KochirishYaratishMalumoti) => Promise<KochirishHujjati | null>;
   kochirishOlish: (id: string) => Promise<KochirishHujjati | null>;
   kochirishYangilash: (id: string, data: Partial<KochirishYaratishMalumoti>) => Promise<boolean>;
   kochirishJonatish: (id: string) => Promise<boolean>;
   kochirishQabulQilish: (id: string) => Promise<boolean>;
   kochirishBekorQilish: (id: string) => Promise<boolean>;
+  kochirishOchirish: (id: string) => Promise<boolean>;
   inventarizatsiyaYaratish: (
     data: InventarizatsiyaYaratishMalumoti
   ) => Promise<InventarizatsiyaHujjati | null>;
@@ -97,6 +101,7 @@ type OmborState = {
   inventarizatsiyaYangilash: (id: string, data: Partial<InventarizatsiyaYaratishMalumoti>) => Promise<boolean>;
   inventarizatsiyaTasdiqlash: (id: string) => Promise<boolean>;
   inventarizatsiyaBekorQilish: (id: string) => Promise<boolean>;
+  inventarizatsiyaOchirish: (id: string) => Promise<boolean>;
   // Mahsulotlar sahifasida bir variant narxi tahrirlansa, shu yerdagi
   // (allaqachon yuklab olingan) nusxa ham darhol yangilanishi uchun.
   modifikatsiyaNarxiniYangilash: (
@@ -108,6 +113,26 @@ type OmborState = {
 
 function hujjatniAlmashtirish<T extends { id: string }>(royxat: T[], hujjat: T) {
   return royxat.map((item) => (item.id === hujjat.id ? hujjat : item));
+}
+
+// DRAFT hujjatni o'chirish rad etilsa (masalan, uni boshqa foydalanuvchi shu orada tasdiqlagan
+// yoki o'chirib yuborgan) ro'yxatni backenddagi haqiqiy holatga moslaymiz.
+async function ochirishXatosidaSinxronlash<T extends { id: string }>(
+  royxat: T[],
+  id: string,
+  olish: (id: string) => Promise<T>,
+  error: unknown
+) {
+  const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+  if (status === 404) return royxat.filter((item) => item.id !== id);
+  if (status === 400) {
+    try {
+      return hujjatniAlmashtirish(royxat, await olish(id));
+    } catch {
+      return royxat;
+    }
+  }
+  return royxat;
 }
 
 function kochirishHujjatiniAlmashtirish(
@@ -593,6 +618,19 @@ export const useOmborStore = create<OmborState>((set, get) => ({
       return false;
     }
   },
+  kirimOchirish: async (id) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      await kirimApi.ochirish(id);
+      set((state) => ({ kirimlar: state.kirimlar.filter((item) => item.id !== id), amalBajarilmoqda: false }));
+      return true;
+    } catch (error) {
+      // Xatolik toasti axios interceptor orqali allaqachon ko'rsatilgan.
+      const royxat = await ochirishXatosidaSinxronlash(get().kirimlar, id, kirimApi.olish, error);
+      set({ kirimlar: royxat, amalBajarilmoqda: false });
+      return false;
+    }
+  },
 
   chiqimYaratish: async (data) => {
     set({ amalBajarilmoqda: true, xatolik: null });
@@ -658,6 +696,19 @@ export const useOmborStore = create<OmborState>((set, get) => ({
       return true;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+  chiqimOchirish: async (id) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      await chiqimApi.ochirish(id);
+      set((state) => ({ chiqimlar: state.chiqimlar.filter((item) => item.id !== id), amalBajarilmoqda: false }));
+      return true;
+    } catch (error) {
+      // Xatolik toasti axios interceptor orqali allaqachon ko'rsatilgan.
+      const royxat = await ochirishXatosidaSinxronlash(get().chiqimlar, id, chiqimApi.olish, error);
+      set({ chiqimlar: royxat, amalBajarilmoqda: false });
       return false;
     }
   },
@@ -750,6 +801,19 @@ export const useOmborStore = create<OmborState>((set, get) => ({
       return false;
     }
   },
+  kochirishOchirish: async (id) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      await kochirishApi.ochirish(id);
+      set((state) => ({ kochirishlar: state.kochirishlar.filter((item) => item.id !== id), amalBajarilmoqda: false }));
+      return true;
+    } catch (error) {
+      // Xatolik toasti axios interceptor orqali allaqachon ko'rsatilgan.
+      const royxat = await ochirishXatosidaSinxronlash(get().kochirishlar, id, kochirishApi.olish, error);
+      set({ kochirishlar: royxat, amalBajarilmoqda: false });
+      return false;
+    }
+  },
 
   inventarizatsiyaYaratish: async (data) => {
     set({ amalBajarilmoqda: true, xatolik: null });
@@ -821,6 +885,19 @@ export const useOmborStore = create<OmborState>((set, get) => ({
       return true;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+  inventarizatsiyaOchirish: async (id) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      await inventarizatsiyaApi.ochirish(id);
+      set((state) => ({ inventarizatsiyalar: state.inventarizatsiyalar.filter((item) => item.id !== id), amalBajarilmoqda: false }));
+      return true;
+    } catch (error) {
+      // Xatolik toasti axios interceptor orqali allaqachon ko'rsatilgan.
+      const royxat = await ochirishXatosidaSinxronlash(get().inventarizatsiyalar, id, inventarizatsiyaApi.olish, error);
+      set({ inventarizatsiyalar: royxat, amalBajarilmoqda: false });
       return false;
     }
   },

@@ -10,6 +10,7 @@ import KirimTafsilotModal from "./KirimTafsilotModal";
 import YangiKirimModal from "./YangiKirimModal";
 import OmborJadval from "./OmborJadval";
 import TablePagination from "@/Components/common/TablePagination";
+import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import HujjatStatistikaKartalari from "./HujjatStatistikaKartalari";
 
 type UstunKaliti =
@@ -324,7 +325,14 @@ export default function Xaridlar() {
                           <div className="truncate">{katak(hujjat, ustun.kalit)}</div>
                         </td>
                       ))}
-                      <td className="sticky right-0 bg-white" />
+                      <td className="sticky right-0 bg-white text-right">
+                        <HujjatOchirish
+                          guruh="ombor"
+                          status={hujjat.status}
+                          nom={hujjatRaqami(hujjat)}
+                          onTasdiq={() => store.kirimOchirish(hujjat.id)}
+                        />
+                      </td>
                     </tr>
                   );
                 })

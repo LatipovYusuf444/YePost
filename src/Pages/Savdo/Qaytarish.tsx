@@ -22,6 +22,7 @@ import {
 import QaytarishTafsilotlariModal from "./QaytarishTafsilotlariModal";
 import SavdoSelect from "./SavdoSelect";
 import TablePagination from "@/Components/common/TablePagination";
+import HujjatOchirish from "@/Components/common/HujjatOchirish";
 
 type QaytarishProps = {
   sotuvlar: Sotuv[];
@@ -32,6 +33,7 @@ type QaytarishProps = {
   onYaratish: (malumot: QaytarishYaratishMalumoti) => Promise<QaytarishTuri | null>;
   onTasdiqlash: (qaytarishId: string) => Promise<boolean>;
   onBekorQilish: (qaytarishId: string) => Promise<boolean>;
+  onOchirish: (qaytarishId: string) => Promise<boolean>;
 };
 
 const sababMatni: Record<QaytarishSababi, string> = {
@@ -58,6 +60,7 @@ export default function Qaytarish({
   onSotuvTafsilotiniOlish,
   onYaratish,
   onTasdiqlash,
+  onOchirish,
 }: QaytarishProps) {
   const { t } = useTranslation("savdo_kichik");
   const qaytarishMumkinSotuvlar = useMemo(
@@ -215,6 +218,7 @@ export default function Qaytarish({
                 <th className="px-5 py-4">{t("qaytarish.columns.summa")}</th>
                 <th className="px-5 py-4">{t("qaytarish.columns.sana")}</th>
                 <th className="px-5 py-4">{t("qaytarish.columns.holati")}</th>
+                <th className="w-20 px-5 py-4" />
               </tr>
             </thead>
             <tbody className="divide-y divide-orange-100/70">
@@ -250,12 +254,20 @@ export default function Qaytarish({
                         {t(holatniOzbekcha(holat))}
                       </span>
                     </td>
+                    <td className="px-5 py-4 text-right">
+                      <HujjatOchirish
+                        guruh="savdo"
+                        status={qaytarish.status ?? "DRAFT"}
+                        nom={qaytarish.id.slice(0, 8).toUpperCase()}
+                        onTasdiq={() => onOchirish(qaytarish.id)}
+                      />
+                    </td>
                   </tr>
                 );
               })}
               {qaytarishlar.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-16 text-center text-gray-400">
+                  <td colSpan={7} className="px-6 py-16 text-center text-gray-400">
                     {t("qaytarish.emptyList")}
                   </td>
                 </tr>

@@ -37,5 +37,15 @@
     "today": "Bugun",
     "last7Days": "7 kun",
     "last30Days": "30 kun"
+  },
+  "hujjatOchirish": {
+    "tooltip": "Qoralamani o'chirish",
+    "aria": "{{name}} qoralamasini o'chirish",
+    "title": "Qoralama hujjat o'chirilsinmi?",
+    "description": "Hujjat butunlay o'chiriladi va uni qayta tiklab bo'lmaydi.",
+    "no": "Qaytish",
+    "yes": "Ha, o'chirish",
+    "deleting": "O'chirilmoqda...",
+    "freezeNote": "Ombor muzlatilishi darhol bekor qilinadi."
   }
 }

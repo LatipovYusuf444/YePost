@@ -16,7 +16,8 @@ import {
 } from "lucide-react";
 import type { DraftStatus, MijozTanlovi, QoldiqTanlovi, Sotuv, XodimTanlovi } from "@/types/savdo";
 import { draftSalesService, saleToDraftSale } from "@/api/draftSalesService";
-import { pulniFormatlash, sotuvHolati } from "./savdoYordamchilari";
+import { pulniFormatlash, sotuvHolati, sotuvRaqami } from "./savdoYordamchilari";
+import { HujjatOchirishOynasi } from "@/Components/common/HujjatOchirish";
 import SavdoSelect from "./SavdoSelect";
 
 type SavatchaProps = {
@@ -99,6 +100,7 @@ export default function Savatcha({
   const [mijozFilter, setMijozFilter] = useState("all");
   const [ochiqMenuId, setOchiqMenuId] = useState<string | null>(null);
   const [menuJoylashuvi, setMenuJoylashuvi] = useState<{ top: number; left: number } | null>(null);
+  const [ochirishSotuv, setOchirishSotuv] = useState<Sotuv | null>(null);
   const [amalId, setAmalId] = useState<string | null>(null);
   const [sahifa, setSahifa] = useState(1);
   const pageSize = 10;
@@ -237,6 +239,11 @@ export default function Savatcha({
       return;
     }
 
+    if (action === "delete") {
+      setOchirishSotuv(sotuv);
+      return;
+    }
+
     setAmalId(sotuv.id);
     try {
       if (action === "duplicate") {
@@ -247,15 +254,23 @@ export default function Savatcha({
         if (reason === null) return;
         await draftSalesService.cancelDraft(sotuv.id, reason.trim() || t("savatcha.alerts.cancelReasonMissing"));
         onXabar("savatcha.messages.cancelled");
-      } else if (action === "delete") {
-        const ok = window.confirm(t("savatcha.alerts.deleteConfirm"));
-        if (!ok) return;
-        await draftSalesService.deleteDraft(sotuv.id);
-        onXabar("savatcha.messages.deleted");
       }
       await onRefresh();
     } finally {
       setAmalId(null);
+    }
+  }
+
+  // Faqat qoralama sotuv o'chiriladi; xato bo'lsa (masalan, shu orada tasdiqlangan) ro'yxat baribir yangilanadi.
+  async function qoralamaniOchirish(sotuv: Sotuv) {
+    try {
+      await draftSalesService.deleteDraft(sotuv.id);
+      onXabar("savatcha.messages.deleted");
+      return true;
+    } catch {
+      return false;
+    } finally {
+      await onRefresh();
     }
   }
 
@@ -460,7 +475,7 @@ export default function Savatcha({
                                 { key: "print", label: t("savatcha.table.actions.print"), icon: Printer },
                                 { key: "cancel", label: t("savatcha.table.actions.cancel"), icon: XCircle },
                                 { key: "delete", label: t("savatcha.table.actions.delete"), icon: Trash2, danger: true },
-                              ].map((item) => {
+                              ].filter((item) => item.key !== "delete" || sotuvHolati(sotuv) === "DRAFT").map((item) => {
                                 const Icon = item.icon;
                                 return (
                                   <button
@@ -540,6 +555,13 @@ export default function Savatcha({
         </div>
       </section>
 
+      {ochirishSotuv && (
+        <HujjatOchirishOynasi
+          nom={`#${sotuvRaqami(ochirishSotuv)}`}
+          onTasdiq={() => qoralamaniOchirish(ochirishSotuv)}
+          onYopish={() => setOchirishSotuv(null)}
+        />
+      )}
     </div>
   );
 }
