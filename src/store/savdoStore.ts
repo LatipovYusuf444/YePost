@@ -16,6 +16,7 @@ import {
   qaytarishYaratish,
   sotuvlarRoyxatiniOlish,
   sotuvniBekorQilish,
+  sotuvniOchirish,
   sotuvniTasdiqlash,
   sotuvgaTolovQoshish as sotuvgaTolovQoshishApi,
   sotuvTafsilotiniOlish,
@@ -218,6 +219,7 @@ type SavdoState = {
     tolov: Pick<SotuvTolovi, "paymentType" | "amount">
   ) => Promise<boolean>;
   sotuvniBekorQilish: (sotuvId: string) => Promise<boolean>;
+  sotuvniOchirish: (sotuvId: string) => Promise<boolean>;
   yangiQaytarishYaratish: (malumot: QaytarishYaratishMalumoti) => Promise<Qaytarish | null>;
   qaytarishTafsilotiniYuklash: (qaytarishId: string) => Promise<Qaytarish | null>;
   qaytarishniYangilash: (
@@ -416,6 +418,43 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
       return true;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
+
+  sotuvniOchirish: async (sotuvId) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+
+    try {
+      await sotuvniOchirish(sotuvId);
+      set((state) => ({
+        sotuvlar: state.sotuvlar.filter((sotuv) => sotuv.id !== sotuvId),
+        tanlanganSotuv: state.tanlanganSotuv?.id === sotuvId ? null : state.tanlanganSotuv,
+        amalBajarilmoqda: false,
+      }));
+      window.dispatchEvent(new CustomEvent("savdo:yangilandi", { detail: { sotuvId } }));
+      return true;
+    } catch (error) {
+      // Xatolik toasti axios interceptor orqali allaqachon ko'rsatilgan.
+      // Sotuv shu orada tasdiqlangan/o'chirilgan bo'lishi mumkin — ro'yxatni backend holatiga moslaymiz.
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      let haqiqiy: Sotuv | null = null;
+      if (status === 400) {
+        try {
+          haqiqiy = sotuvniBoglanganMalumotlarBilanBoyitish(await sotuvTafsilotiniOlish(sotuvId), get());
+        } catch {
+          haqiqiy = null;
+        }
+      }
+      set((state) => ({
+        sotuvlar:
+          status === 404
+            ? state.sotuvlar.filter((sotuv) => sotuv.id !== sotuvId)
+            : haqiqiy
+              ? state.sotuvlar.map((sotuv) => (sotuv.id === sotuvId ? haqiqiy : sotuv))
+              : state.sotuvlar,
+        amalBajarilmoqda: false,
+      }));
       return false;
     }
   },

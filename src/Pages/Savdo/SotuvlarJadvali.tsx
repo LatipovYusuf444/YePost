@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ReceiptText, RotateCcw } from "lucide-react";
 import TablePagination from "@/Components/common/TablePagination";
+import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import type { Qaytarish, Sotuv, TolovTuri } from "@/types/savdo";
 import {
   masulNomi,
@@ -20,6 +21,7 @@ type SotuvlarJadvaliProps = {
   onSotuvniOchish: (sotuv: Sotuv) => void;
   qaytarishlar?: Qaytarish[];
   onQaytarish?: (sotuv: Sotuv) => void;
+  onOchirish?: (sotuvId: string) => Promise<boolean>;
   tarixKorinish?: boolean;
   boshMatn?: string;
 };
@@ -116,6 +118,7 @@ export default function SotuvlarJadvali({
   onSotuvniOchish,
   qaytarishlar = [],
   onQaytarish,
+  onOchirish,
   tarixKorinish = false,
   boshMatn,
 }: SotuvlarJadvaliProps) {
@@ -156,6 +159,7 @@ export default function SotuvlarJadvali({
               {tarixKorinish && (
                 <th className="border-b border-gray-200 px-4 py-3 text-right font-medium">{t("sotuvlarJadvali.columns.amallar")}</th>
               )}
+              {!tarixKorinish && onOchirish && <th className="w-16 border-b border-gray-200 px-4 py-3" />}
             </tr>
           </thead>
           <tbody className="text-[13px] text-[#4B4B4B]">
@@ -229,13 +233,23 @@ export default function SotuvlarJadvali({
                       </div>
                     </td>
                   )}
+                  {!tarixKorinish && onOchirish && (
+                    <td className="border-b border-gray-100 px-4 py-3.5 text-right align-middle">
+                      <HujjatOchirish
+                        guruh="savdo"
+                        status={sotuv.status}
+                        nom={`#${sotuvRaqami(sotuv)}`}
+                        onTasdiq={() => onOchirish(sotuv.id)}
+                      />
+                    </td>
+                  )}
                 </tr>
               );
             })}
 
             {sotuvlar.length === 0 && (
               <tr>
-                <td colSpan={tarixKorinish ? 10 : 6} className="px-6 py-20 text-center">
+                <td colSpan={tarixKorinish ? 10 : onOchirish ? 7 : 6} className="px-6 py-20 text-center">
                   <ReceiptText className="mx-auto text-orange-200" size={40} />
                   <p className="mt-3 font-semibold text-gray-500">{effectiveBoshMatn}</p>
                   <p className="mt-1 text-sm text-gray-400">

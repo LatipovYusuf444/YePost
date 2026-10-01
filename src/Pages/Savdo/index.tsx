@@ -57,6 +57,7 @@ export default function Savdo() {
     sotuvniTasdiqlash,
     sotuvgaTolovQoshish,
     sotuvniBekorQilish,
+    sotuvniOchirish,
     yangiQaytarishYaratish,
     qaytarishniTasdiqlash,
     qaytarishniBekorQilish,
@@ -350,6 +351,7 @@ export default function Savdo() {
                 <SotuvlarJadvali
                   sotuvlar={qidirilganSotuvlar}
                   onSotuvniOchish={sotuvniOchish}
+                  onOchirish={sotuvniOchirish}
                 />
               )}
               {faolTab === "tarix" && (
@@ -368,6 +370,7 @@ export default function Savdo() {
               sotuvlar={sotuvlar}
               onSotuvniOchish={sotuvniOchish}
               onYangilash={boshlangichMalumotlarniYuklash}
+              onOchirish={sotuvniOchirish}
             />
           )}
 

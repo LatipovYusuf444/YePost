@@ -5,18 +5,20 @@ import type { Sotuv } from "@/types/savdo";
 import { masulNomi, mijozNomi, pulniFormatlash, sananiFormatlash, sotuvHolati, sotuvRaqami, sotuvSummasi } from "./savdoYordamchilari";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
 import TablePagination from "@/Components/common/TablePagination";
+import HujjatOchirish from "@/Components/common/HujjatOchirish";
 
 type Props = {
   sotuvlar: Sotuv[];
   onSotuvniOchish: (sotuv: Sotuv) => void;
   onYangilash: () => Promise<void> | void;
+  onOchirish: (sotuvId: string) => Promise<boolean>;
 };
 
 function bekorSana(sotuv: Sotuv) {
   return sotuv.cancelledAt || sotuv.updatedAt || sotuv.createdAt;
 }
 
-export default function BekorQilinganlar({ sotuvlar, onSotuvniOchish, onYangilash }: Props) {
+export default function BekorQilinganlar({ sotuvlar, onSotuvniOchish, onYangilash, onOchirish }: Props) {
   const { t } = useTranslation("savdo_kichik");
   const [qidiruv, setQidiruv] = useState("");
   const [sanaDan, setSanaDan] = useState("");
@@ -68,11 +70,11 @@ export default function BekorQilinganlar({ sotuvlar, onSotuvniOchish, onYangilas
     </div>
 
     <div className="overflow-x-auto bg-white/70"><table className="w-full min-w-[900px] text-left text-sm">
-      <thead className="bg-[#EFF6FF] text-xs font-black uppercase tracking-wide text-slate-500"><tr><th className="px-8 py-4">{t("bekorQilinganlar.columns.sotuv")}</th><th className="px-5 py-4">{t("bekorQilinganlar.columns.mijoz")}</th><th className="px-5 py-4">{t("bekorQilinganlar.columns.summa")}</th><th className="px-5 py-4">{t("bekorQilinganlar.columns.bekorSana")}</th><th className="px-5 py-4">{t("bekorQilinganlar.columns.masul")}</th><th className="px-8 py-4">{t("bekorQilinganlar.columns.holati")}</th></tr></thead>
+      <thead className="bg-[#EFF6FF] text-xs font-black uppercase tracking-wide text-slate-500"><tr><th className="px-8 py-4">{t("bekorQilinganlar.columns.sotuv")}</th><th className="px-5 py-4">{t("bekorQilinganlar.columns.mijoz")}</th><th className="px-5 py-4">{t("bekorQilinganlar.columns.summa")}</th><th className="px-5 py-4">{t("bekorQilinganlar.columns.bekorSana")}</th><th className="px-5 py-4">{t("bekorQilinganlar.columns.masul")}</th><th className="px-8 py-4">{t("bekorQilinganlar.columns.holati")}</th><th className="w-20 px-5 py-4" /></tr></thead>
       <tbody className="divide-y divide-orange-100/70">{visibleRows.map((sotuv) => <tr key={sotuv.id} onClick={() => onSotuvniOchish(sotuv)} className="group cursor-pointer transition hover:bg-orange-50/65">
         <td className="px-8 py-5"><p className="font-semibold text-slate-900">#{sotuvRaqami(sotuv)}</p><p className="mt-1 text-xs font-semibold text-slate-400">{sotuv.note || t("bekorQilinganlar.izohYoq")}</p></td>
         <td className="px-5 py-5"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-50 text-orange-500 ring-1 ring-orange-100"><UserRound size={18}/></span><div><p className="font-black text-slate-900">{mijozNomi(sotuv)}</p><p className="mt-0.5 text-xs font-semibold text-slate-400">{telefon(sotuv)}</p></div></div></td>
-        <td className="px-5 py-5 font-black text-slate-900">{pulniFormatlash(sotuvSummasi(sotuv))}</td><td className="px-5 py-5 font-semibold text-slate-600">{sananiFormatlash(bekorSana(sotuv))}</td><td className="px-5 py-5 font-bold text-slate-700">{masulNomi(sotuv)}</td><td className="px-8 py-5"><span className="inline-flex rounded-full bg-red-50 px-3 py-1.5 text-xs font-black text-red-600 ring-1 ring-red-100">{t("bekorQilinganlar.statusBekor")}</span></td>
+        <td className="px-5 py-5 font-black text-slate-900">{pulniFormatlash(sotuvSummasi(sotuv))}</td><td className="px-5 py-5 font-semibold text-slate-600">{sananiFormatlash(bekorSana(sotuv))}</td><td className="px-5 py-5 font-bold text-slate-700">{masulNomi(sotuv)}</td><td className="px-8 py-5"><span className="inline-flex rounded-full bg-red-50 px-3 py-1.5 text-xs font-black text-red-600 ring-1 ring-red-100">{t("bekorQilinganlar.statusBekor")}</span></td><td className="px-5 py-5 text-right"><HujjatOchirish guruh="savdo" status={sotuv.status} nom={`#${sotuvRaqami(sotuv)}`} onTasdiq={() => onOchirish(sotuv.id)} /></td>
       </tr>)}</tbody>
     </table></div>
     <TablePagination page={page} pageSize={pageSize} totalItems={rows.length} onPageChange={setPage} onPageSizeChange={setPageSize} />

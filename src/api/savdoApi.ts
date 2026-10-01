@@ -65,6 +65,11 @@ export async function sotuvniBekorQilish(sotuvId: string) {
   return apiData(response.data);
 }
 
+// Qoralama (DRAFT) yoki bekor qilingan sotuvni butunlay o'chiradi.
+export async function sotuvniOchirish(sotuvId: string) {
+  await apiClient.delete(`/sales/${sotuvId}`);
+}
+
 // Tasdiqlangan sotuvdagi qarzdorlikka yangi to'lov qo'shadi.
 // Payment endpoint umumiy ResponseHelper qaytargani uchun, saqlangandan keyin
 // sotuvning yangilangan holatini alohida GET orqali qayta olamiz.
