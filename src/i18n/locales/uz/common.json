@@ -46,6 +46,8 @@
     "no": "Qaytish",
     "yes": "Ha, o'chirish",
     "deleting": "O'chirilmoqda...",
-    "freezeNote": "Ombor muzlatilishi darhol bekor qilinadi."
+    "freezeNote": "Ombor muzlatilishi darhol bekor qilinadi.",
+    "tooltipCancelled": "Bekor qilingan hujjatni o'chirish",
+    "titleCancelled": "Bekor qilingan hujjat o'chirilsinmi?"
   }
 }

@@ -2,10 +2,12 @@ import { useEffect, useState, type KeyboardEvent, type MouseEvent } from "react"
 import { createPortal } from "react-dom";
 import { LoaderCircle, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { hujjatOchiriladimi } from "@/lib/hujjatHolati";
 import { useHujjatniOchirishMumkinmi, type HujjatGuruhi } from "@/hooks/useHujjatniOchirishMumkinmi";
 
 type HujjatOchirishOynasiProps = {
   nom: string;
+  bekorQilingan?: boolean;
   onTasdiq: () => Promise<boolean | void>;
   onYopish: () => void;
   // Qo'shimcha ogohlantirish (masalan, inventarizatsiya o'chirilsa ombor muzlatilishi bekor bo'ladi).
@@ -15,7 +17,7 @@ type HujjatOchirishOynasiProps = {
 // Qoralama hujjatni o'chirishni tasdiqlash oynasi.
 // Oyna React daraxtida jadval qatori ichida bo'lishi mumkin, shuning uchun hodisalar
 // qatorga (tafsilotni ochish) o'tmasligi kerak.
-export function HujjatOchirishOynasi({ nom, onTasdiq, onYopish, izoh }: HujjatOchirishOynasiProps) {
+export function HujjatOchirishOynasi({ nom, bekorQilingan = false, onTasdiq, onYopish, izoh }: HujjatOchirishOynasiProps) {
   const { t } = useTranslation("common");
   const [bajarilmoqda, setBajarilmoqda] = useState(false);
 
@@ -58,7 +60,7 @@ export function HujjatOchirishOynasi({ nom, onTasdiq, onYopish, izoh }: HujjatOc
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-500 ring-8 ring-red-50/60">
           <Trash2 size={24} />
         </span>
-        <h3 id="hujjat-ochirish-sarlavha" className="mt-4 text-lg font-black text-slate-950">{t("hujjatOchirish.title")}</h3>
+        <h3 id="hujjat-ochirish-sarlavha" className="mt-4 text-lg font-black text-slate-950">{t(bekorQilingan ? "hujjatOchirish.titleCancelled" : "hujjatOchirish.title")}</h3>
         <p className="mx-auto mt-3 max-w-full truncate rounded-full bg-slate-100 px-4 py-1.5 text-sm font-black text-slate-700">{nom}</p>
         <p className="mt-3 text-sm leading-6 text-slate-500">{t("hujjatOchirish.description")}</p>
         {izoh && <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs font-bold leading-5 text-amber-700">{izoh}</p>}
@@ -97,14 +99,15 @@ type HujjatOchirishProps = {
   className?: string;
 };
 
-// Jadval qatoridagi "O'chirish" tugmasi: faqat qoralama (DRAFT) hujjat va ruxsati bor rol uchun ko'rinadi.
+// Jadval qatoridagi "O'chirish" tugmasi: faqat qoralama (DRAFT) yoki bekor qilingan hujjat va ruxsati bor rol uchun ko'rinadi.
 // Tasdiqlangan hujjatni o'chirib bo'lmaydi — uni bekor qilish kerak.
 export default function HujjatOchirish({ guruh, status, nom, onTasdiq, izoh, className = "" }: HujjatOchirishProps) {
   const { t } = useTranslation("common");
   const ruxsat = useHujjatniOchirishMumkinmi(guruh);
   const [ochiq, setOchiq] = useState(false);
+  const bekorQilingan = ["CANCELLED", "CANCELED"].includes(String(status ?? "").toUpperCase());
 
-  if (!ruxsat || String(status ?? "").toUpperCase() !== "DRAFT") return null;
+  if (!ruxsat || !hujjatOchiriladimi(status)) return null;
 
   return (
     <>
@@ -115,13 +118,13 @@ export default function HujjatOchirish({ guruh, status, nom, onTasdiq, izoh, cla
           setOchiq(true);
         }}
         onKeyDown={(event) => event.stopPropagation()}
-        title={t("hujjatOchirish.tooltip")}
+        title={t(bekorQilingan ? "hujjatOchirish.tooltipCancelled" : "hujjatOchirish.tooltip")}
         aria-label={t("hujjatOchirish.aria", { name: nom })}
         className={`inline-flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-500 hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 ${className}`}
       >
         <Trash2 size={16} />
       </button>
-      {ochiq && <HujjatOchirishOynasi nom={nom} izoh={izoh} onTasdiq={onTasdiq} onYopish={() => setOchiq(false)} />}
+      {ochiq && <HujjatOchirishOynasi nom={nom} bekorQilingan={bekorQilingan} izoh={izoh} onTasdiq={onTasdiq} onYopish={() => setOchiq(false)} />}
     </>
   );
 }

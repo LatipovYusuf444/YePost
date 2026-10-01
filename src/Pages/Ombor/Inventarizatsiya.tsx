@@ -627,7 +627,7 @@ export default function Inventarizatsiya() {
                     guruh="ombor"
                     status={item.status}
                     nom={hujjatRaqami(item)}
-                    izoh={t("hujjatOchirish.freezeNote", { ns: "common" })}
+                    izoh={String(item.status ?? "").toUpperCase() === "DRAFT" ? t("hujjatOchirish.freezeNote", { ns: "common" }) : undefined}
                     onTasdiq={() => store.inventarizatsiyaOchirish(item.id)}
                   />
                 </td>

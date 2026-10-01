@@ -209,7 +209,7 @@ export const kirimApi = {
         `/inventory/purchases/${id}/cancel`
       )).data
     ),
-  // Faqat qoralama (DRAFT) hujjat o'chiriladi; tasdiqlanganini bekor qilish kerak.
+  // Qoralama (DRAFT) va bekor qilingan hujjat o'chiriladi; tasdiqlanganini bekor qilish kerak.
   ochirish: async (id: string) => {
     await apiClient.delete(`/inventory/purchases/${id}`);
   },
@@ -255,7 +255,7 @@ export const chiqimApi = {
         `/inventory/write-offs/${id}/cancel`
       )).data
     ),
-  // Faqat qoralama (DRAFT) hujjat o'chiriladi; tasdiqlanganini bekor qilish kerak.
+  // Qoralama (DRAFT) va bekor qilingan hujjat o'chiriladi; tasdiqlanganini bekor qilish kerak.
   ochirish: async (id: string) => {
     await apiClient.delete(`/inventory/write-offs/${id}`);
   },
@@ -293,7 +293,7 @@ export const kochirishApi = {
     apiData(
       (await apiClient.post<KochirishHujjati | ApiEnvelope<KochirishHujjati>>(`/inventory/transfers/${id}/cancel`)).data
     ),
-  // Faqat qoralama (DRAFT) hujjat o'chiriladi; tasdiqlanganini bekor qilish kerak.
+  // Qoralama (DRAFT) va bekor qilingan hujjat o'chiriladi; tasdiqlanganini bekor qilish kerak.
   ochirish: async (id: string) => {
     await apiClient.delete(`/inventory/transfers/${id}`);
   },
@@ -352,7 +352,7 @@ export const inventarizatsiyaApi = {
         )
       ).data
     ),
-  // Faqat qoralama (DRAFT) hujjat o'chiriladi; tasdiqlanganini bekor qilish kerak.
+  // Qoralama (DRAFT) va bekor qilingan hujjat o'chiriladi; tasdiqlanganini bekor qilish kerak.
   ochirish: async (id: string) => {
     await apiClient.delete(`/inventory/stock-takes/${id}`);
   },

@@ -18,6 +18,7 @@ import type { DraftStatus, MijozTanlovi, QoldiqTanlovi, Sotuv, XodimTanlovi } fr
 import { draftSalesService, saleToDraftSale } from "@/api/draftSalesService";
 import { pulniFormatlash, sotuvHolati, sotuvRaqami } from "./savdoYordamchilari";
 import { HujjatOchirishOynasi } from "@/Components/common/HujjatOchirish";
+import { hujjatOchiriladimi } from "@/lib/hujjatHolati";
 import SavdoSelect from "./SavdoSelect";
 
 type SavatchaProps = {
@@ -475,7 +476,7 @@ export default function Savatcha({
                                 { key: "print", label: t("savatcha.table.actions.print"), icon: Printer },
                                 { key: "cancel", label: t("savatcha.table.actions.cancel"), icon: XCircle },
                                 { key: "delete", label: t("savatcha.table.actions.delete"), icon: Trash2, danger: true },
-                              ].filter((item) => item.key !== "delete" || sotuvHolati(sotuv) === "DRAFT").map((item) => {
+                              ].filter((item) => item.key !== "delete" || hujjatOchiriladimi(sotuvHolati(sotuv))).map((item) => {
                                 const Icon = item.icon;
                                 return (
                                   <button
@@ -558,6 +559,7 @@ export default function Savatcha({
       {ochirishSotuv && (
         <HujjatOchirishOynasi
           nom={`#${sotuvRaqami(ochirishSotuv)}`}
+          bekorQilingan={sotuvHolati(ochirishSotuv) === "CANCELLED"}
           onTasdiq={() => qoralamaniOchirish(ochirishSotuv)}
           onYopish={() => setOchirishSotuv(null)}
         />
