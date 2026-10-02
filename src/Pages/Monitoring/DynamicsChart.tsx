@@ -17,7 +17,6 @@ import {
   Cell,
   Line,
   LineChart,
-  ReferenceDot,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -40,10 +39,14 @@ type Props = {
   dateTo: string;
 };
 
+// "Savdo dinamikasi" chizig'i: yumshoq (silliq) egri chiziq, ostida och to'q sariq to'ldirish, ochiq kulrang to'g'ri gorizontal to'r.
+const SALES_LINE = "#F26B2C";
+const SALES_GRID = "#EEF0F4";
+
 const themes = {
   sales: {
-    color: "var(--theme-chart)",
-    pale: "var(--theme-chart-faint)",
+    color: SALES_LINE,
+    pale: "#FFF1E8",
     icon: TrendingUp,
     key: "salesTrend",
     label: "text-blue-600",
@@ -131,7 +134,7 @@ export default function DynamicsChart({
   dateTo,
 }: Props) {
   const { t, i18n } = useTranslation("monitoring");
-  const [showAverage, setShowAverage] = useState(true);
+  const [showAverage, setShowAverage] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
@@ -187,7 +190,7 @@ export default function DynamicsChart({
         tickLine={false}
         tick={{ fill: "#94a3b8", fontSize: 11 }}
         tickFormatter={compact}
-        width={64}
+        width={78}
       />
     ),
     grid: (
@@ -324,17 +327,17 @@ export default function DynamicsChart({
                           >
                             <stop
                               offset="0%"
-                              stopColor="#3b82f6"
-                              stopOpacity={0.3}
+                              stopColor={SALES_LINE}
+                              stopOpacity={0.24}
                             />
                             <stop
                               offset="100%"
-                              stopColor="#3b82f6"
-                              stopOpacity={0.015}
+                              stopColor={SALES_LINE}
+                              stopOpacity={0.02}
                             />
                           </linearGradient>
                         </defs>
-                        {axes.grid}
+                        <CartesianGrid vertical={false} stroke={SALES_GRID} />
                         {axes.x}
                         {axes.y}
                         {axes.tooltip}
@@ -346,31 +349,23 @@ export default function DynamicsChart({
                           />
                         )}
                         <Area
-                          type="linear"
+                          type="monotone"
                           dataKey="summa"
                           stroke={color}
-                          strokeWidth={3}
+                          strokeWidth={2}
+                          strokeLinejoin="round"
                           fill={`url(#${gradientId})`}
+                          dot={false}
                           isAnimationActive={!reducedMotion}
                           animationDuration={720}
                           animationEasing="ease-out"
                           activeDot={{
-                            r: 6,
+                            r: 4,
                             fill: color,
                             stroke: "white",
-                            strokeWidth: 3,
+                            strokeWidth: 2,
                           }}
                         />
-                        {peak && (
-                          <ReferenceDot
-                            x={peak.nom}
-                            y={peak.summa}
-                            r={5}
-                            fill={color}
-                            stroke="white"
-                            strokeWidth={3}
-                          />
-                        )}
                       </AreaChart>
             ) : variant === "income" ? (
                       <BarChart
@@ -459,7 +454,10 @@ export default function DynamicsChart({
               </div>
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3 px-2 text-[11px] text-slate-400">
                 <span className="flex items-center gap-2">
-                  <span className={`h-2 w-2 rounded-full ${active}`} />
+                  <span
+                    className={`h-2 w-2 rounded-full ${variant === "sales" ? "" : active}`}
+                    style={variant === "sales" ? { background: SALES_LINE } : undefined}
+                  />
                   {t(`dynamics.${variant}Legend`)}
                 </span>
                 {variant === "sales" && (
@@ -468,7 +466,8 @@ export default function DynamicsChart({
                       type="checkbox"
                       checked={showAverage}
                       onChange={(event) => setShowAverage(event.target.checked)}
-                      className="accent-blue-600"
+                      className="h-3.5 w-3.5"
+                      style={{ accentColor: SALES_LINE }}
                     />
                     <span>{t("dynamics.averageLine")}</span>
                   </label>
