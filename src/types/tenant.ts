@@ -14,6 +14,8 @@ export type JoriyFoydalanuvchi = {
   isActive?: boolean;
   telegramId?: string | null;
   isStaff?: boolean;
+  // /auth/me faol grantlarni ham qaytaradi (masalan, RETURN_CANCEL).
+  grants?: Array<{ id?: string; code: string; isActive?: boolean }>;
   avatarUrl?: string | null;
   createdAt?: string;
   updatedAt?: string;

@@ -70,6 +70,7 @@ import SavdoSelect from "./SavdoSelect";
 
 import ModalTablari from "@/Components/common/ModalTablari";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
+import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 import SotuvHujjatlariTab from "./SotuvHujjatlariTab";
 type SotuvTafsilotlariModalProps = {
   sotuv: Sotuv;
@@ -1385,6 +1386,7 @@ function KelishuvCard({
   onYetkazish: () => void;
   onOmbordanChiqarish: () => void;
 }) {
+  const bekorMumkin = useHujjatniBekorQilishMumkinmi("savdo");
   const { t } = useTranslation("savdo_tafsilot");
   const [menuOpen, setMenuOpen] = useState(false);
   const [tanlanganBolim, setTanlanganBolim] = useState("To'lov va yetkazish");
@@ -1507,7 +1509,7 @@ function KelishuvCard({
       <div className="mt-5 flex flex-wrap justify-between gap-3 text-xs text-slate-500">
         <span>{t("kelishuvCard.maydonniTanlang")}</span>
         <span>{t("kelishuvCard.maydonYarating")}</span>
-        {draft && (
+        {draft && bekorMumkin && (
           <button disabled={amalBajarilmoqda} onClick={() => onBekorQilish(sotuv.id)} className="text-red-500 disabled:opacity-50">
             {t("kelishuvCard.sotuvniBekorQilish")}
           </button>

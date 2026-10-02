@@ -16,6 +16,7 @@ import {
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
+import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 import { useOmborStore } from "@/store/omborStore";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
 import type { InventoryDocumentType } from "@/types/inventoryDocuments";
@@ -70,6 +71,7 @@ function hujjatHolati(hujjat: Hujjat | null) {
 }
 
 export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
+  const bekorMumkin = useHujjatniBekorQilishMumkinmi("ombor");
   const { t } = useTranslation("ombor_hujjat");
   const store = useOmborStore();
   const kirimOlish = useOmborStore((state) => state.kirimOlish);
@@ -403,6 +405,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
           <div className="flex shrink-0 items-center gap-2">
             {hujjat && tur === "kochirish" && !tahrir && hujjatHolati(hujjat) === "DRAFT" && (
               <>
+                {bekorMumkin && (
                 <button
                   type="button"
                   onClick={() => void kochirishHolatiniYangilash("cancel")}
@@ -411,6 +414,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                 >
                   <Ban size={17} /> {t("actions.cancel")}
                 </button>
+                )}
                 <button
                   type="button"
                   onClick={() => void kochirishHolatiniYangilash("send")}
@@ -746,7 +750,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                       onTiklandi={() => void inventarizatsiyaniQaytaYuklash()}
                     />
                   )}
-                  {hujjatHolati(hujjat) === "CONFIRMED" && tur === "inventarizatsiya" && (
+                  {hujjatHolati(hujjat) === "CONFIRMED" && tur === "inventarizatsiya" && bekorMumkin && (
                     <button
                       type="button"
                       onClick={() => void inventarizatsiyaniBekorQilish()}

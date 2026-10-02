@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
+import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 import type { ChiqimHujjati, ChiqimSababi, MahsulotModifikatsiyasi } from "@/types/ombor";
 import { holat, hujjatRaqami, modificationNomi, pul, sana } from "./omborYordamchilari";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
@@ -31,6 +32,7 @@ function statusSinfi(status?: string) {
 }
 
 export default function ChiqimTafsilotModal({ id, onClose }: Props) {
+  const bekorMumkin = useHujjatniBekorQilishMumkinmi("ombor");
   const { t } = useTranslation("ombor_kichik");
   const store = useOmborStore();
   const chiqimOlish = useOmborStore((state) => state.chiqimOlish);
@@ -127,7 +129,7 @@ export default function ChiqimTafsilotModal({ id, onClose }: Props) {
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {qoralama && <button type="button" onClick={() => void tasdiqlash()} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-emerald-600 px-5 text-sm font-black text-white shadow-lg shadow-emerald-100 disabled:opacity-50"><CheckCircle2 size={18} />{t("chiqimTafsilotModal.confirmButton")}</button>}
-            {tasdiqlangan && <button type="button" onClick={() => setBekorTasdiq(true)} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-slate-700 px-5 text-sm font-black text-white shadow-lg disabled:opacity-50"><RotateCcw size={18} />{t("chiqimTafsilotModal.cancelButton")}</button>}
+            {tasdiqlangan && bekorMumkin && <button type="button" onClick={() => setBekorTasdiq(true)} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-slate-700 px-5 text-sm font-black text-white shadow-lg disabled:opacity-50"><RotateCcw size={18} />{t("chiqimTafsilotModal.cancelButton")}</button>}
           </div>
         </header>
 

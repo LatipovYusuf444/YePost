@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { useOmborStore } from "@/store/omborStore";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import HujjatBekorQilish from "@/Components/common/HujjatBekorQilish";
+import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 import type { KochirishHujjati, MahsulotModifikatsiyasi, NomliEntity } from "@/types/ombor";
 import { holat, hujjatRaqami, modificationNomi, pul, qoldiqMiqdori } from "./omborYordamchilari";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
@@ -72,6 +73,7 @@ function statusKlasi(value: string) {
 }
 
 export default function KochirishKorishModal({ id, onClose }: Props) {
+  const bekorMumkin = useHujjatniBekorQilishMumkinmi("ombor");
   const { t } = useTranslation("ombor_modal");
   const store = useOmborStore();
   const [hujjat, setHujjat] = useState<KochirishHujjati | null>(null);
@@ -241,9 +243,11 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
                   <button type="button" onClick={() => void amalBajarish("send")} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#2563EB] px-5 font-black text-white disabled:opacity-50">
                     <Send size={17} /> {t("kochirishKorishModal.actions.send")}
                   </button>
+                  {bekorMumkin && (
                   <button type="button" onClick={() => void amalBajarish("cancel")} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-slate-700 px-5 font-black text-white disabled:opacity-50">
                     <Ban size={17} /> {t("kochirishKorishModal.actions.cancel")}
                   </button>
+                  )}
                 </>
               )}
               {hujjat && joriyStatus === "SENT" && (

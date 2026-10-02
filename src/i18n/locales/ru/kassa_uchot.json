@@ -142,5 +142,6 @@
   "holatlar": {
     "qoralama": "Черновик",
     "bekor_qilingan": "Отменено"
-  }
+  },
+  "saleNoPermission": "Для отмены продажи нужен директор или администратор с правом RETURN_CANCEL."
 }

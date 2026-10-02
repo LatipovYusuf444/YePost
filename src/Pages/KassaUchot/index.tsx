@@ -37,6 +37,7 @@ import { sanaFormat, summaFormat } from "./yordamchilar";
 import ModalTablari from "@/Components/common/ModalTablari";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import LoadingState from "@/Components/common/LoadingState";
+import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 type Bolim = { yonalish: KassaYonalishi };
 type Guruh = { kanal: KassaKanali; icon: typeof Banknote; bolimlar: Bolim[] };
 
@@ -88,6 +89,7 @@ const uiOperationTuri: Record<KassaAmaliyotTuri, CashOperationType> = {
 
 export default function KassaUchot() {
   const { t } = useTranslation(["kassa_uchot", "common"]);
+  const sotuvniBekorQilishMumkin = useHujjatniBekorQilishMumkinmi("savdo");
 
   function amaliyotgaMoslash(
     item: FinanceTransaction,
@@ -274,6 +276,8 @@ export default function KassaUchot() {
     }
     if (amaliyot.backendSource === "SALE") {
       if (amaliyot.holat === "qoralama") return { mumkin: false };
+      // Sotuvni bekor qilish (va o'chirish) direktor yoki RETURN_CANCEL granti bor admin uchun.
+      if (!sotuvniBekorQilishMumkin) return { mumkin: false, sarlavha: t("saleNoPermission") };
       return {
         mumkin: Boolean(amaliyot.backendRefId),
         sarlavha: t(amalTuri(amaliyot) === "bekor" ? "saleTooltip.cancel" : "saleTooltip.delete"),

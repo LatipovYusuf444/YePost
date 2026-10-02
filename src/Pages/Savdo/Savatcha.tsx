@@ -107,7 +107,7 @@ export default function Savatcha({
   const [menuJoylashuvi, setMenuJoylashuvi] = useState<{ top: number; left: number } | null>(null);
   const [ochirishSotuv, setOchirishSotuv] = useState<Sotuv | null>(null);
   const [tiklashSotuv, setTiklashSotuv] = useState<Sotuv | null>(null);
-  const tiklashRuxsati = useHujjatniTiklashMumkinmi();
+  const tiklashRuxsati = useHujjatniTiklashMumkinmi("savdo");
   const [amalId, setAmalId] = useState<string | null>(null);
   const [sahifa, setSahifa] = useState(1);
   const pageSize = 10;

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
+import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 import type { KirimHujjati, MahsulotModifikatsiyasi } from "@/types/ombor";
 import { holat, hujjatRaqami, modificationNomi, pul } from "./omborYordamchilari";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
@@ -36,6 +37,7 @@ function notedanQismlar(note?: string) {
 }
 
 export default function KirimTafsilotModal({ id, onClose }: Props) {
+  const bekorMumkin = useHujjatniBekorQilishMumkinmi("ombor");
   const { t } = useTranslation("ombor_kichik");
   const store = useOmborStore();
   const kirimOlish = useOmborStore((state) => state.kirimOlish);
@@ -94,7 +96,7 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
         </div>
         <div className="flex items-center justify-end gap-2">
           {hujjat && status === "DRAFT" && <button type="button" onClick={() => void tasdiqlash()} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-emerald-600 px-5 text-sm font-black text-white shadow-lg shadow-emerald-100 disabled:opacity-50">{store.amalBajarilmoqda ? <LoaderCircle size={17} className="animate-spin"/> : <CheckCircle2 size={17}/>}{t("kirimTafsilotModal.confirmButton")}</button>}
-          {hujjat && status === "CONFIRMED" && <button type="button" onClick={() => setBekorSorash(true)} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-slate-700 px-5 text-sm font-black text-white shadow-lg shadow-slate-200 disabled:opacity-50"><RotateCcw size={17}/>{t("kirimTafsilotModal.cancelButton")}</button>}
+          {hujjat && status === "CONFIRMED" && bekorMumkin && <button type="button" onClick={() => setBekorSorash(true)} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-slate-700 px-5 text-sm font-black text-white shadow-lg shadow-slate-200 disabled:opacity-50"><RotateCcw size={17}/>{t("kirimTafsilotModal.cancelButton")}</button>}
         </div>
       </header>
 

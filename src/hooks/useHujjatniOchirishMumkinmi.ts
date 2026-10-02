@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { rolniNormallashtirish } from "@/lib/roles";
 import { useAuthProfileStore } from "@/store/authProfileStore";
+import type { JoriyFoydalanuvchi } from "@/types/tenant";
 
 export type HujjatGuruhi = "ombor" | "savdo";
 
@@ -10,7 +11,7 @@ export type HujjatGuruhi = "ombor" | "savdo";
 const OMBOR_ROLLARI = ["OMBORCHI", "STOREKEEPER", "ADMIN", "DIREKTOR"];
 const SAVDO_ROLLARI = [...OMBOR_ROLLARI, "KASSIR"];
 
-export function useHujjatniOchirishMumkinmi(guruh: HujjatGuruhi) {
+function useProfilniKutish() {
   const profil = useAuthProfileStore((state) => state.profil);
   const profilniYuklash = useAuthProfileStore((state) => state.profilniYuklash);
 
@@ -18,15 +19,30 @@ export function useHujjatniOchirishMumkinmi(guruh: HujjatGuruhi) {
     if (!profil) void profilniYuklash();
   }, [profil, profilniYuklash]);
 
+  return profil;
+}
+
+export function useHujjatniOchirishMumkinmi(guruh: HujjatGuruhi) {
+  const profil = useProfilniKutish();
   const rol = rolniNormallashtirish(profil?.role);
   return (guruh === "ombor" ? OMBOR_ROLLARI : SAVDO_ROLLARI).includes(rol);
 }
 
-// Qayta tiklash (CANCELLED -> DRAFT) ruxsati bekor qilish bilan bir xil: faqat admin va direktor
-// (sotuv/qaytarishda backend RETURN_CANCEL ruxsatini ham qabul qiladi - bunday foydalanuvchida backend o'zi hal qiladi).
-const TIKLASH_ROLLARI = ["ADMIN", "DIREKTOR"];
+// Bekor qilish va qayta tiklash (CANCELLED -> DRAFT) ruxsati bir xil (backend: rol, keyin grant):
+// - ombor hujjatlari (kirim, chiqim, ko'chirish, inventarizatsiya): admin va direktor;
+// - sotuv va qaytarish: direktor, yoki faol RETURN_CANCEL granti bor admin (direktorga grant shart emas).
+export function bekorQilishRuxsatiBormi(profil: JoriyFoydalanuvchi | null | undefined, guruh: HujjatGuruhi) {
+  const rol = rolniNormallashtirish(profil?.role);
+  if (rol === "DIREKTOR") return true;
+  if (rol !== "ADMIN") return false;
+  if (guruh === "ombor") return true;
+  return (profil?.grants ?? []).some((grant) => grant.code === "RETURN_CANCEL" && grant.isActive !== false);
+}
 
-export function useHujjatniTiklashMumkinmi() {
-  const profil = useAuthProfileStore((state) => state.profil);
-  return TIKLASH_ROLLARI.includes(rolniNormallashtirish(profil?.role));
+export function useHujjatniBekorQilishMumkinmi(guruh: HujjatGuruhi) {
+  return bekorQilishRuxsatiBormi(useProfilniKutish(), guruh);
+}
+
+export function useHujjatniTiklashMumkinmi(guruh: HujjatGuruhi) {
+  return bekorQilishRuxsatiBormi(useProfilniKutish(), guruh);
 }

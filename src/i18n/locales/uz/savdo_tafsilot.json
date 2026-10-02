@@ -488,6 +488,7 @@
       "INVOICE": "Hisob-faktura"
     },
     "bosh": "Hozircha hujjat yo'q. Sotuv tasdiqlanganda chek nusxasi shu yerda paydo bo'ladi.",
-    "pdfYoq": "PDF fayl topilmadi."
+    "pdfYoq": "PDF fayl topilmadi.",
+    "faqatTasdiqlangan": "Hisob-faktura faqat tasdiqlangan sotuv uchun yaratiladi."
   }
 }

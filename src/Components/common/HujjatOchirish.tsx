@@ -73,7 +73,7 @@ function tugmaKlassi(korinish: "ikonka" | "tugma" | "kichik", ohang: "qizil" | "
 export default function HujjatOchirish({ guruh, status, nom, onTasdiq, onTiklash, izoh, className = "", korinish = "ikonka", onOchirildi, onTiklandi }: HujjatOchirishProps) {
   const { t } = useTranslation("common");
   const ochirishRuxsati = useHujjatniOchirishMumkinmi(guruh);
-  const tiklashRuxsati = useHujjatniTiklashMumkinmi();
+  const tiklashRuxsati = useHujjatniTiklashMumkinmi(guruh);
   const [ochiq, setOchiq] = useState(false);
   const [tiklashOchiq, setTiklashOchiq] = useState(false);
   const bekorQilingan = ["CANCELLED", "CANCELED"].includes(String(status ?? "").toUpperCase());

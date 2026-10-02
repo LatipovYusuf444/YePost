@@ -357,6 +357,7 @@ export default function AmalgaOshirilganlar() {
                   <td className="px-5 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <HujjatBekorQilish
+                        guruh="savdo"
                         status={item.status}
                         nom={item.nomi}
                         onTasdiq={() => savdo.sotuvniBekorQilish(item.id)}

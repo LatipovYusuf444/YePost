@@ -4,7 +4,7 @@ import { FileDown, FilePlus2, FileText, LoaderCircle, Receipt, RefreshCw } from 
 import { sotuvHujjatiPdfOchish, sotuvHujjatiYaratish, sotuvHujjatlariniOlish, type SotuvHujjati } from "@/api/savdoApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { Sotuv } from "@/types/savdo";
-import { sananiFormatlash } from "./savdoYordamchilari";
+import { sananiFormatlash, sotuvHolati } from "./savdoYordamchilari";
 
 // Sotuvning saqlangan hujjatlari: tasdiqlashda olingan chek nusxasi (RECEIPT) va talab bo'yicha
 // yaratiladigan hisob-faktura (INVOICE). Ro'yxat GET /sales/:id/documents, yaratish POST /sales/:id/documents.
@@ -57,6 +57,8 @@ export default function SotuvHujjatlariTab({ sotuv }: { sotuv: Sotuv }) {
     }
   }
 
+  // Backend hisob-fakturani faqat tasdiqlangan sotuvga yaratadi (aks holda 400).
+  const hisobFakturaMumkin = sotuvHolati(sotuv) === "CONFIRMED";
   const turiMatni = (turi?: string) => t(`hujjatlarTab.turlar.${String(turi ?? "").toUpperCase()}`, { defaultValue: turi ?? "—" });
 
   return (
@@ -80,7 +82,8 @@ export default function SotuvHujjatlariTab({ sotuv }: { sotuv: Sotuv }) {
             <button
               type="button"
               onClick={() => void hisobFakturaYaratish()}
-              disabled={yaratilmoqda}
+              disabled={yaratilmoqda || !hisobFakturaMumkin}
+              title={hisobFakturaMumkin ? undefined : t("hujjatlarTab.faqatTasdiqlangan")}
               className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#2563EB] px-4 text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,235,.22)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] disabled:opacity-60"
             >
               {yaratilmoqda ? <LoaderCircle size={16} className="animate-spin" /> : <FilePlus2 size={16} />}

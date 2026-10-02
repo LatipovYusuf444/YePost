@@ -3,8 +3,11 @@ import { Ban } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import { cn } from "@/lib/utils";
+import { useHujjatniBekorQilishMumkinmi, type HujjatGuruhi } from "@/hooks/useHujjatniOchirishMumkinmi";
 
 type HujjatBekorQilishProps = {
+  // Ruxsat guruhi: sotuv/qaytarishda admin uchun RETURN_CANCEL granti ham kerak.
+  guruh?: HujjatGuruhi;
   status?: string | null;
   nom: string;
   onTasdiq: () => Promise<boolean>;
@@ -22,6 +25,7 @@ type HujjatBekorQilishProps = {
 // "Bekor qilish" tugmasi: standart holatda faqat tasdiqlangan (CONFIRMED) hujjat uchun ko'rinadi.
 // Bekor qilingan hujjat keyin "O'chirish" tugmasi bilan butunlay o'chirilishi mumkin.
 export default function HujjatBekorQilish({
+  guruh = "ombor",
   status,
   nom,
   onTasdiq,
@@ -33,8 +37,9 @@ export default function HujjatBekorQilish({
 }: HujjatBekorQilishProps) {
   const { t } = useTranslation("common");
   const [ochiq, setOchiq] = useState(false);
+  const ruxsat = useHujjatniBekorQilishMumkinmi(guruh);
 
-  if (!holatlar.includes(String(status ?? "").toUpperCase())) return null;
+  if (!ruxsat || !holatlar.includes(String(status ?? "").toUpperCase())) return null;
 
   async function bekorQilish() {
     const ok = await onTasdiq();

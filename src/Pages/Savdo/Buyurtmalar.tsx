@@ -195,7 +195,7 @@ export default function Buyurtmalar({ onSotuvniOchish, onOchirish, onTiklash }: 
                   </td>
                   <td className="max-w-[220px] truncate px-5 py-5 text-slate-600">{buyurtma.delivery?.address || "—"}</td>
                   <td className="px-5 py-5 font-black text-slate-900">{pulniFormatlash(sotuvSummasi(buyurtma))}</td>
-                  <td className="whitespace-nowrap px-5 py-5 font-semibold text-slate-600">{sananiFormatlash(buyurtma.createdAt)}</td>
+                  <td className="whitespace-nowrap px-5 py-5 font-semibold text-slate-600">{sananiFormatlash(buyurtma.createdAt ?? buyurtma.date)}</td>
                   <td className="px-5 py-5">
                     <span className={`inline-flex rounded-full px-3 py-1.5 text-xs font-black ring-1 ${HOLAT_RANGI[holat]}`}>{t(`buyurtmalar.tabs.${holat}`)}</span>
                   </td>

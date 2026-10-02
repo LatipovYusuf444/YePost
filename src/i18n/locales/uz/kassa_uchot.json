@@ -142,5 +142,6 @@
   "holatlar": {
     "qoralama": "Qoralama",
     "bekor_qilingan": "Bekor qilingan"
-  }
+  },
+  "saleNoPermission": "Sotuvni bekor qilish uchun direktor yoki RETURN_CANCEL ruxsati bor admin kerak."
 }

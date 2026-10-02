@@ -25,6 +25,7 @@ export function rolniNormallashtirish(role?: string | null): NormalizedRole {
     KASSIR: "KASSIR",
     WAREHOUSE: "OMBORCHI",
     WAREHOUSEMAN: "OMBORCHI",
+    STOREKEEPER: "OMBORCHI",
     OMBORCHI: "OMBORCHI",
   };
 
