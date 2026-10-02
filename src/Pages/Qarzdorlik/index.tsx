@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Building2, CircleDollarSign, RefreshCw, Search, UserRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import JadvalYuklanmoqda from "@/Pages/Savdo/JadvalYuklanmoqda";
 import type { Sotuv } from "@/types/savdo";
 import { mijozNomi, pulniFormatlash, sananiFormatlash, sotuvHolati, sotuvQarzdorlikSummasi, sotuvRaqami, sotuvSummasi, sotuvTolanganSummasi } from "@/Pages/Savdo/savdoYordamchilari";
 import TablePagination from "@/Components/common/TablePagination";
@@ -9,12 +10,13 @@ type Props = {
   sotuvlar: Sotuv[];
   onSotuvniOchish: (sotuv: Sotuv) => Promise<void> | void;
   onYangilash: () => Promise<void> | void;
+  yuklanmoqda?: boolean;
 };
 type Tur = "BARCHASI" | "MIJOZ" | "KOMPANIYA";
 
 const kompaniyami = (sotuv: Sotuv) => Boolean(sotuv.clientCompanyId || sotuv.clientCompany);
 
-export default function Qarzdorliklar({ sotuvlar, onSotuvniOchish, onYangilash }: Props) {
+export default function Qarzdorliklar({ sotuvlar, onSotuvniOchish, onYangilash, yuklanmoqda = false }: Props) {
   const { t } = useTranslation("qarzdorlik");
   const telefon = useCallback((sotuv: Sotuv) => sotuv.customer?.phone || sotuv.clientCompany?.phone || t("noPhone"), [t]);
   const [qidiruv, setQidiruv] = useState("");
@@ -73,7 +75,8 @@ export default function Qarzdorliklar({ sotuvlar, onSotuvniOchish, onYangilash }
       </tr>)}</tbody>
     </table></div>
     <TablePagination page={page} pageSize={pageSize} totalItems={rows.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
-    {rows.length === 0 && <div className="px-6 py-20 text-center"><CircleDollarSign className="mx-auto text-orange-200" size={42}/><h2 className="mt-3 text-lg font-black text-slate-800">{t("empty.title")}</h2><p className="mt-1 text-sm font-semibold text-slate-400">{t("empty.subtitle")}</p></div>}
+    {yuklanmoqda && rows.length === 0 && <JadvalYuklanmoqda ikonka={<CircleDollarSign size={24} />} />}
+    {!yuklanmoqda && rows.length === 0 && <div className="px-6 py-20 text-center"><CircleDollarSign className="mx-auto text-orange-200" size={42}/><h2 className="mt-3 text-lg font-black text-slate-800">{t("empty.title")}</h2><p className="mt-1 text-sm font-semibold text-slate-400">{t("empty.subtitle")}</p></div>}
     <div className="flex justify-between border-t border-orange-100 bg-[#F8FAFC] px-8 py-4 text-xs font-bold text-slate-500"><span>{t("footer.count", { count: rows.length })}</span><span>{t("footer.hint")}</span></div>
   </section>;
 }

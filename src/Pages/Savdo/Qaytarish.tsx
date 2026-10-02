@@ -21,6 +21,7 @@ import {
 } from "./savdoYordamchilari";
 import QaytarishTafsilotlariModal from "./QaytarishTafsilotlariModal";
 import SavdoSelect from "./SavdoSelect";
+import JadvalYuklanmoqda from "./JadvalYuklanmoqda";
 import TablePagination from "@/Components/common/TablePagination";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 
@@ -29,6 +30,7 @@ type QaytarishProps = {
   qaytarishlar: QaytarishTuri[];
   boshlangichSotuvId?: string;
   amalBajarilmoqda: boolean;
+  yuklanmoqda?: boolean;
   onSotuvTafsilotiniOlish: (sotuvId: string) => Promise<Sotuv | null>;
   onYaratish: (malumot: QaytarishYaratishMalumoti) => Promise<QaytarishTuri | null>;
   onTasdiqlash: (qaytarishId: string) => Promise<boolean>;
@@ -58,6 +60,7 @@ export default function Qaytarish({
   qaytarishlar,
   boshlangichSotuvId = "",
   amalBajarilmoqda,
+  yuklanmoqda = false,
   onSotuvTafsilotiniOlish,
   onYaratish,
   onTasdiqlash,
@@ -268,7 +271,14 @@ export default function Qaytarish({
                   </tr>
                 );
               })}
-              {qaytarishlar.length === 0 && (
+              {yuklanmoqda && qaytarishlar.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="p-0">
+                    <JadvalYuklanmoqda ikonka={<RotateCcw size={24} />} />
+                  </td>
+                </tr>
+              )}
+              {!yuklanmoqda && qaytarishlar.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-6 py-16 text-center text-gray-400">
                     {t("qaytarish.emptyList")}

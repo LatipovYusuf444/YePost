@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CreditCard, LoaderCircle, RefreshCw, Search, WalletCards, X } from "lucide-react";
+import JadvalYuklanmoqda from "./JadvalYuklanmoqda";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { useTolovlar } from "@/hooks/useTolovlar";
@@ -28,22 +29,6 @@ function turiBadge(tolov: TolovYozuvi, t: TFunction) {
     >
       {kirim ? t("tolovlar.turiOptions.kirim") : t("tolovlar.turiOptions.chiqim")}
     </span>
-  );
-}
-
-function SkeletonRows() {
-  return (
-    <>
-      {Array.from({ length: 5 }).map((_, index) => (
-        <tr key={index}>
-          {Array.from({ length: 6 }).map((__, cellIndex) => (
-            <td key={cellIndex} className="px-6 py-5">
-              <div className="h-4 w-full max-w-[150px] animate-pulse rounded-full bg-orange-100/70" />
-            </td>
-          ))}
-        </tr>
-      ))}
-    </>
   );
 }
 
@@ -181,7 +166,11 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
             </thead>
             <tbody className="divide-y divide-orange-100/80 text-slate-800">
               {yuklanmoqda ? (
-                <SkeletonRows />
+                <tr>
+                  <td colSpan={6} className="p-0">
+                    <JadvalYuklanmoqda ikonka={<CreditCard size={24} />} />
+                  </td>
+                </tr>
               ) : (
                 rows.map((tolov) => (
                   <tr
@@ -221,13 +210,7 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
 
       <div className="grid gap-3 md:hidden">
         {yuklanmoqda
-          ? Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className="rounded-2xl border border-orange-100 bg-white p-4 shadow-sm">
-                <div className="h-4 w-32 animate-pulse rounded-full bg-orange-100" />
-                <div className="mt-3 h-4 w-44 animate-pulse rounded-full bg-orange-100" />
-                <div className="mt-4 h-8 w-full animate-pulse rounded-xl bg-orange-100" />
-              </div>
-            ))
+          ? <JadvalYuklanmoqda ikonka={<CreditCard size={24} />} className="min-h-[260px]" />
           : rows.map((tolov) => (
               <article
                 key={tolov.id}

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
   CircleAlert,
-  LoaderCircle,
   Plus,
   Search,
   ShoppingCart,
@@ -18,6 +17,7 @@ import MahsulotQaytarishModal from "./MahsulotQaytarishModal";
 import Qaytarish from "./Qaytarish";
 import Savatcha from "./Savatcha";
 import SotuvlarJadvali from "./SotuvlarJadvali";
+import JadvalYuklanmoqda from "./JadvalYuklanmoqda";
 import { bugungiSanaKaliti } from "@/lib/sanaKaliti";
 import SotuvTafsilotlariModal from "./SotuvTafsilotlariModal";
 import Tarix from "./Tarix";
@@ -256,16 +256,7 @@ export default function Savdo() {
         </div>
       )}
 
-      {yuklanmoqda ? (
-        <div className="flex min-h-80 items-center justify-center rounded-[28px] border border-gray-100 bg-white shadow-sm">
-          <div className="text-center">
-            <LoaderCircle className="mx-auto animate-spin text-orange-500" size={34} />
-            <p className="mt-3 text-sm font-semibold text-gray-500">
-              {t("savdoSahifasi.loading")}
-            </p>
-          </div>
-        </div>
-      ) : (
+      {(
         <>
           {faolTab === "savatcha" && (
             <Savatcha
@@ -274,6 +265,7 @@ export default function Savdo() {
               mijozlar={mijozlar}
               qoldiqlar={qoldiqlar}
               amalBajarilmoqda={amalBajarilmoqda}
+              yuklanmoqda={yuklanmoqda}
               onQoshish={() => {
                 setYangiSotuvVarianti("draft");
                 setYangiSotuvOchiq(true);
@@ -353,7 +345,8 @@ export default function Savdo() {
                 </div>
               </div>
 
-              {faolTab === "barchasi" && (
+              {yuklanmoqda && sotuvlar.length === 0 && <JadvalYuklanmoqda />}
+              {!(yuklanmoqda && sotuvlar.length === 0) && faolTab === "barchasi" && (
                 <SotuvlarJadvali
                   sotuvlar={qidirilganSotuvlar}
                   onSotuvniOchish={sotuvniOchish}
@@ -361,7 +354,7 @@ export default function Savdo() {
                   onTiklash={sotuvniTiklash}
                 />
               )}
-              {faolTab === "tarix" && (
+              {!(yuklanmoqda && sotuvlar.length === 0) && faolTab === "tarix" && (
                 <Tarix
                   sotuvlar={qidirilganSotuvlar}
                   qaytarishlar={qaytarishlar}
@@ -383,6 +376,7 @@ export default function Savdo() {
           {faolTab === "bekor-qilingan" && (
             <BekorQilinganlar
               sotuvlar={sotuvlar}
+              yuklanmoqda={yuklanmoqda}
               onSotuvniOchish={sotuvniOchish}
               onYangilash={boshlangichMalumotlarniYuklash}
               onOchirish={sotuvniOchirish}
@@ -400,6 +394,7 @@ export default function Savdo() {
           {faolTab === "qarzdorliklar" && (
             <Qarzdorliklar
               sotuvlar={sotuvlar}
+              yuklanmoqda={yuklanmoqda}
               onSotuvniOchish={sotuvniOchish}
               onYangilash={boshlangichMalumotlarniYuklash}
             />
@@ -407,6 +402,7 @@ export default function Savdo() {
           {faolTab === "qaytarish" && (
             <Qaytarish
               sotuvlar={sotuvlar}
+              yuklanmoqda={yuklanmoqda}
               qaytarishlar={qaytarishlar}
               amalBajarilmoqda={amalBajarilmoqda}
               onSotuvTafsilotiniOlish={sotuvTafsilotiniYuklash}

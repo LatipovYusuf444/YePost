@@ -6,6 +6,7 @@ import {
   Edit3,
   LoaderCircle,
   MoreHorizontal,
+  FileText,
   PackageOpen,
   PlayCircle,
   Plus,
@@ -24,6 +25,7 @@ import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import { useHujjatniTiklashMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 import { sotuvniTiklash } from "@/api/savdoApi";
 import SavdoSelect from "./SavdoSelect";
+import JadvalYuklanmoqda from "./JadvalYuklanmoqda";
 
 type SavatchaProps = {
   sotuvlar: Sotuv[];
@@ -31,6 +33,7 @@ type SavatchaProps = {
   mijozlar: MijozTanlovi[];
   qoldiqlar: QoldiqTanlovi[];
   amalBajarilmoqda?: boolean;
+  yuklanmoqda?: boolean;
   onQoshish: () => void;
   onSotuvniOchish: (sotuv: Sotuv) => void;
   onDavomEttirish: (sotuv: Sotuv) => Promise<void> | void;
@@ -91,6 +94,7 @@ export default function Savatcha({
   mijozlar,
   qoldiqlar,
   amalBajarilmoqda = false,
+  yuklanmoqda = false,
   onQoshish,
   onSotuvniOchish,
   onDavomEttirish,
@@ -520,7 +524,15 @@ export default function Savatcha({
                   );
                 })}
 
-                {visibleRows.length === 0 && (
+                {yuklanmoqda && visibleRows.length === 0 && (
+                  <tr>
+                    <td colSpan={10} className="p-0">
+                      <JadvalYuklanmoqda ikonka={<FileText size={24} />} />
+                    </td>
+                  </tr>
+                )}
+
+                {!yuklanmoqda && visibleRows.length === 0 && (
                   <tr>
                     <td colSpan={10} className="px-6 py-20 text-center">
                       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[24px] bg-orange-50 text-orange-500">

@@ -6,9 +6,11 @@ import { masulNomi, mijozNomi, pulniFormatlash, sananiFormatlash, sotuvHolati, s
 import DateRangePicker from "@/Components/ui/DateRangePicker";
 import TablePagination from "@/Components/common/TablePagination";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
+import JadvalYuklanmoqda from "./JadvalYuklanmoqda";
 
 type Props = {
   sotuvlar: Sotuv[];
+  yuklanmoqda?: boolean;
   onSotuvniOchish: (sotuv: Sotuv) => void;
   onYangilash: () => Promise<void> | void;
   onOchirish: (sotuvId: string) => Promise<boolean>;
@@ -19,7 +21,7 @@ function bekorSana(sotuv: Sotuv) {
   return sotuv.cancelledAt || sotuv.updatedAt || sotuv.createdAt;
 }
 
-export default function BekorQilinganlar({ sotuvlar, onSotuvniOchish, onYangilash, onOchirish, onTiklash }: Props) {
+export default function BekorQilinganlar({ sotuvlar, yuklanmoqda = false, onSotuvniOchish, onYangilash, onOchirish, onTiklash }: Props) {
   const { t } = useTranslation("savdo_kichik");
   const [qidiruv, setQidiruv] = useState("");
   const [sanaDan, setSanaDan] = useState("");
@@ -79,7 +81,8 @@ export default function BekorQilinganlar({ sotuvlar, onSotuvniOchish, onYangilas
       </tr>)}</tbody>
     </table></div>
     <TablePagination page={page} pageSize={pageSize} totalItems={rows.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
-    {rows.length === 0 && <div className="bg-white/70 px-6 py-20 text-center"><span className="mx-auto flex h-16 w-16 items-center justify-center rounded-[24px] bg-orange-50 text-orange-300"><Ban size={31}/></span><h2 className="mt-4 text-lg font-black text-slate-800">{t("bekorQilinganlar.emptyTitle")}</h2><p className="mt-1 text-sm font-semibold text-slate-400">{t("bekorQilinganlar.emptySubtitle")}</p></div>}
+    {yuklanmoqda && rows.length === 0 && <JadvalYuklanmoqda ikonka={<Ban size={24} />} />}
+    {!yuklanmoqda && rows.length === 0 && <div className="bg-white/70 px-6 py-20 text-center"><span className="mx-auto flex h-16 w-16 items-center justify-center rounded-[24px] bg-orange-50 text-orange-300"><Ban size={31}/></span><h2 className="mt-4 text-lg font-black text-slate-800">{t("bekorQilinganlar.emptyTitle")}</h2><p className="mt-1 text-sm font-semibold text-slate-400">{t("bekorQilinganlar.emptySubtitle")}</p></div>}
     <div className="flex justify-between border-t border-orange-100 bg-[#F8FAFC] px-8 py-4 text-xs font-bold text-slate-500"><span>{t("bekorQilinganlar.footerCount", { count: rows.length })}</span><span>{t("bekorQilinganlar.footerHint")}</span></div>
   </section>;
 }

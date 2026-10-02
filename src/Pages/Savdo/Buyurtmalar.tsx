@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { PackageOpen, RefreshCw, Search, Truck } from "lucide-react";
 import TablePagination from "@/Components/common/TablePagination";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
+import JadvalYuklanmoqda from "./JadvalYuklanmoqda";
 import { BUYURTMA_HOLATLARI, buyurtmalarApi, type Buyurtma, type BuyurtmaHolati } from "@/api/buyurtmalarApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { Sotuv } from "@/types/savdo";
@@ -214,6 +215,8 @@ export default function Buyurtmalar({ onSotuvniOchish, onOchirish, onTiklash }: 
           </tbody>
         </table>
       </div>
+
+      {yuklanmoqda && royxat.length === 0 && <JadvalYuklanmoqda ikonka={<Truck size={24} />} />}
 
       {!yuklanmoqda && royxat.length === 0 && !xatolik && (
         <div className="bg-white/70 px-6 py-20 text-center">
