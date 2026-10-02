@@ -107,7 +107,7 @@ export default function SotuvHujjatlariTab({ sotuv }: { sotuv: Sotuv }) {
                 <td className="px-5 py-4">
                   <span className="inline-flex items-center gap-2 font-bold text-slate-900">
                     {String(hujjat.type).toUpperCase() === "INVOICE" ? <FileText size={16} className="text-[#2563EB]" /> : <Receipt size={16} className="text-emerald-500" />}
-                    {hujjat.docNumber || hujjat.number || hujjat.id.slice(0, 8).toUpperCase()}
+                    {hujjat.content?.docNumber || hujjat.docNumber || hujjat.number || hujjat.id.slice(0, 8).toUpperCase()}
                   </span>
                 </td>
                 <td className="px-3 py-4">{turiMatni(hujjat.type)}</td>

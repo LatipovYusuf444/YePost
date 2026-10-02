@@ -291,7 +291,9 @@ export default function BoshSahifa() {
         }
         tasdiqlanganlar += 1;
         // Tasdiqlangan ombor mahsulotlari savatchadan olib tashlanadi.
-        qatorlarRoyxati.forEach((qator) => removeFromCart(qator.cartId));
+        qatorlarRoyxati.forEach((qator) => {
+          removeFromCart(qator.cartId);
+        });
       }
       clearCart();
       setTolovModalOchiq(false);

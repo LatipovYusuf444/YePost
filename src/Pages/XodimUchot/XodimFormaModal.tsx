@@ -154,7 +154,10 @@ export default function XodimFormaModal({
   function guruhniAlmashtirish(kodlar: string[], yoqish: boolean) {
     setVakolatlar((oldingi) => {
       const yangi = new Set(oldingi);
-      kodlar.forEach((kod) => (yoqish ? yangi.add(kod) : yangi.delete(kod)));
+      kodlar.forEach((kod) => {
+        if (yoqish) yangi.add(kod);
+        else yangi.delete(kod);
+      });
       return yangi;
     });
   }

@@ -428,9 +428,12 @@ export type SotuvHujjatiTuri = "RECEIPT" | "INVOICE";
 export type SotuvHujjati = {
   id: string;
   type?: SotuvHujjatiTuri | string;
+  // Hujjat raqami (CHEK-000007, HF-000001) saqlangan nusxa (`content`) ichida keladi.
+  content?: { docNumber?: string } | null;
   docNumber?: string;
   number?: string;
   createdAt?: string;
+  createdById?: string | null;
   createdBy?: { fullName?: string | null; name?: string | null } | null;
   user?: { fullName?: string | null } | null;
 };
