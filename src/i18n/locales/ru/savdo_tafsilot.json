@@ -2,7 +2,6 @@
   "tabs": {
     "umumiy": "Основное",
     "tovarlar": "Товары",
-    "hisobFakturalar": "Счета-фактуры",
     "tarix": "История"
   },
   "bolimlar": {
@@ -349,12 +348,6 @@
       "partnerIdKerak": "Для сохранения активности у продажи должен быть реальный ID партнёра.",
       "masulXodimKerak": "Для создания дела или задачи нужен ответственный сотрудник."
     }
-  },
-  "productsCard": {
-    "kicker": "Состав продажи",
-    "sarlavha": "Товары",
-    "qatorSoni": "{{count}} строк",
-    "mahsulotTavsifi": "Информация о товаре берётся из каталога"
   },
   "faoliyatPanel": {
     "tablar": {

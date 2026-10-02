@@ -71,7 +71,6 @@ import SavdoSelect from "./SavdoSelect";
 import ModalTablari from "@/Components/common/ModalTablari";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
-import SotuvHujjatlariTab from "./SotuvHujjatlariTab";
 type SotuvTafsilotlariModalProps = {
   sotuv: Sotuv;
   qoldiqlar: QoldiqTanlovi[];
@@ -130,7 +129,7 @@ type SaqlanganHujjat = {
 // Bu identifikatorlar activeTab/tanlanganBolim state qiymatlari sifatida ham
 // ishlatiladi (bir nechta joyda taqqoslanadi) — shuning uchun o'zi o'zgarmaydi,
 // faqat TAB_LABEL_KEYS/BOLIM_LABEL_KEYS orqali ekranda tarjima qilinadi.
-const tabs = ["Umumiy", "Tovarlar", "Hisob-fakturalar", "Tarix"];
+const tabs = ["Umumiy", "Tovarlar", "Tarix"];
 const bolimlar = ["To'lov", "To'lov va yetkazish", "Terminal orqali to'lov", "Yetkazish", "Ombordan chiqarish"];
 // Real backend bilan hozircha faqat shu ikkisi ishlaydi — qolganlari
 // tayyor bo'lguncha "Qo'shish" menyusida o'chiq (bosib bo'lmaydigan) holatda turadi.
@@ -139,7 +138,6 @@ const faolBolimlar = new Set(["To'lov", "Ombordan chiqarish"]);
 const TAB_LABEL_KEYS: Record<string, string> = {
   Umumiy: "tabs.umumiy",
   Tovarlar: "tabs.tovarlar",
-  "Hisob-fakturalar": "tabs.hisobFakturalar",
   Tarix: "tabs.tarix",
 };
 
@@ -329,11 +327,6 @@ function mahsulotNomi(item: SotuvItem, t: TFunction) {
   return item.modification?.product?.name ?? item.modification?.name ?? t("common.mahsulotNomiTopilmadi");
 }
 
-function mahsulotTavsifi(item: SotuvItem, t: TFunction) {
-  if (item.modification?.product?.name && item.modification?.name) return item.modification.name;
-  return t("productsCard.mahsulotTavsifi");
-}
-
 function son(value: unknown) {
   const raqam = Number(value ?? 0);
   return Number.isFinite(raqam) ? raqam : 0;
@@ -431,7 +424,7 @@ export default function SotuvTafsilotlariModal({
       <div className="relative h-[calc(100vh-32px)] w-full">
         <ModalTezkorPanel sotuv={sotuv} onYopish={onYopish} />
         <section className="relative h-full w-full overflow-hidden rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80">
-        <div className={`scrollbar-hidden h-full ${activeTab === "Hisob-fakturalar" ? "overflow-hidden" : "overflow-y-auto"}`}>
+        <div className="scrollbar-hidden h-full overflow-y-auto">
           <header className="sticky top-0 z-30 border-b border-orange-100/80 bg-[#F8FAFC]/90 px-9 py-6 backdrop-blur-xl">
             <div className="flex items-center justify-between gap-4">
               <h1 className="truncate text-2xl font-bold text-slate-900">{sotuvJadvalId(sotuv)}</h1>
@@ -539,8 +532,6 @@ export default function SotuvTafsilotlariModal({
               amalBajarilmoqda={amalBajarilmoqda}
               onYangilash={onYangilash}
             />
-          ) : activeTab === "Hisob-fakturalar" ? (
-            <SotuvHujjatlariTab sotuv={sotuv} />
           ) : activeTab === "Tarix" ? (
             <TarixTab sotuv={sotuv} />
           ) : (
@@ -1359,7 +1350,6 @@ function UmumiyTab({
         )}
         <FeedCard title={t("umumiyTab.feed.hisoblashRejimi")} time={vaqt} text={t("umumiyTab.feed.hisoblashRejimiTavsif", { summa: pulniFormatlash(jami) })} />
         <FeedCard title={t("umumiyTab.feed.sotuvYaratildi")} time={vaqt} text={t("umumiyTab.feed.sotuvYaratildiTavsif", { mijoz: mijozNomi(sotuv), raqam: sotuvRaqami(sotuv) })} />
-        <ProductsCard sotuv={sotuv} />
       </main>
     </div>
   );
@@ -3286,45 +3276,6 @@ function Maydon({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ProductsCard({ sotuv }: { sotuv: Sotuv }) {
-  const { t } = useTranslation("savdo_tafsilot");
-  return (
-    <section className="rounded-[26px] border border-white/70 bg-white p-5 shadow-[0_16px_42px_rgba(15,23,42,.07)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(15,23,42,.10)]">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-500">{t("productsCard.kicker")}</p>
-          <h3 className="mt-1 text-lg font-black text-slate-800">{t("productsCard.sarlavha")}</h3>
-        </div>
-        <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-600">
-          {t("productsCard.qatorSoni", { count: (sotuv.items ?? []).length })}
-        </span>
-      </div>
-      <div className="space-y-3">
-        {(sotuv.items ?? []).map((item, index) => (
-          <div
-            key={item.id ?? `${item.modificationId}-${index}`}
-            className="grid gap-4 rounded-2xl border border-slate-100 bg-gradient-to-r from-[#EFF6FF] via-white to-[#F8FAFC] p-4 text-sm transition hover:border-orange-100 hover:shadow-[0_12px_28px_rgba(37,99,235,.10)] md:grid-cols-[1fr_90px_130px_140px]"
-          >
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-100 text-orange-600">
-                <Package size={20} />
-              </span>
-              <div className="min-w-0">
-                <p className="truncate font-black text-slate-800">{mahsulotNomi(item, t)}</p>
-                <p className="mt-1 truncate text-xs font-medium text-slate-400">{mahsulotTavsifi(item, t)}</p>
-              </div>
-            </div>
-            <SmallMetric label={t("common.jadval.miqdor")} value={String(item.quantity)} />
-            <SmallMetric label={t("common.jadval.narx")} value={pulniFormatlash(item.price)} />
-            <SmallMetric label={t("nakladnoy.jami")} value={pulniFormatlash(mahsulotJami(item))} accent />
-          </div>
-        ))}
-        {(sotuv.items ?? []).length === 0 && <p className="rounded-xl bg-slate-50 p-5 text-center text-sm text-slate-400">{t("common.tovarlarYoq")}</p>}
-      </div>
-    </section>
-  );
-}
-
 function FaoliyatPanel({
   xodimlar = [],
   onSaqlash,
@@ -4614,15 +4565,6 @@ function KalendarTanlashPanel({
           <div className="mt-3 h-2 w-36 rounded-full bg-slate-300" />
         </div>
       </div>
-    </div>
-  );
-}
-
-function SmallMetric({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div className="rounded-2xl bg-white/70 px-3 py-2 ring-1 ring-slate-100">
-      <p className="text-xs font-bold text-slate-400">{label}</p>
-      <p className={`mt-1 font-black ${accent ? "text-emerald-600" : "text-slate-700"}`}>{value}</p>
     </div>
   );
 }

@@ -2,7 +2,6 @@
   "tabs": {
     "umumiy": "Umumiy",
     "tovarlar": "Tovarlar",
-    "hisobFakturalar": "Hisob-fakturalar",
     "tarix": "Tarix"
   },
   "bolimlar": {
@@ -349,12 +348,6 @@
       "partnerIdKerak": "Faoliyatni saqlash uchun sotuvda real partner ID bo'lishi kerak.",
       "masulXodimKerak": "Ish yoki vazifa yaratish uchun mas'ul xodim kerak."
     }
-  },
-  "productsCard": {
-    "kicker": "Sotuv tarkibi",
-    "sarlavha": "Tovarlar",
-    "qatorSoni": "{{count}} qator",
-    "mahsulotTavsifi": "Mahsulot ma'lumoti katalogdan olinadi"
   },
   "faoliyatPanel": {
     "tablar": {
