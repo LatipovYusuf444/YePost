@@ -191,6 +191,24 @@
     "tolovniSaqlash": "To'lovni saqlash",
     "tolovniQoshish": "To'lovni qo'shish"
   },
+  "tolovQatori": {
+    "nomi": "To'lov №{{raqam}}",
+    "summa": "to'lov summasi: {{summa}}",
+    "amallar": "Amallar",
+    "ochish": "To'lovni ochish",
+    "tolangan": "To'langan",
+    "qarz": "Qarz"
+  },
+  "tolovTafsilot": {
+    "belgisi": "To'lov",
+    "summa": "To'lov summasi",
+    "sotuv": "Sotuv",
+    "mijoz": "Mijoz",
+    "tolovTuri": "To'lov turi",
+    "sana": "Sana",
+    "masulShaxs": "Mas'ul shaxs",
+    "yopish": "Yopish"
+  },
   "hisobFakturalarTab": {
     "id": "ID",
     "nomi": "Nomi",

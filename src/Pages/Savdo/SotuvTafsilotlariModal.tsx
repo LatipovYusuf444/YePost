@@ -67,6 +67,7 @@ import {
   tolovTuriMatni,
 } from "./savdoYordamchilari";
 import SavdoSelect from "./SavdoSelect";
+import SotuvTolovlari from "./SotuvTolovlari";
 
 import ModalTablari from "@/Components/common/ModalTablari";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
@@ -1460,15 +1461,7 @@ function KelishuvCard({
             )}
           </div>
 
-          {(sotuv.payments ?? []).length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {sotuv.payments?.map((tolov, index) => (
-                <span key={tolov.id ?? `${tolov.paymentType}-${index}`} className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-[#2563EB]">
-                  {tolovTuriMatni[tolov.paymentType]}: {pulniFormatlash(tolov.amount)}
-                </span>
-              ))}
-            </div>
-          )}
+          <SotuvTolovlari sotuv={sotuv} mijoz={modalMijozNomi(sotuv)} />
           <div className="mt-6 space-y-2 text-sm">
             <div className="flex justify-between text-slate-400">
               <span>{t("kelishuvCard.sotuvJami")}</span>

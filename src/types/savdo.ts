@@ -78,6 +78,9 @@ export type SotuvTolovi = {
   id?: string;
   paymentType: TolovTuri;
   amount: number | string;
+  createdAt?: string;
+  paidAt?: string;
+  date?: string;
 };
 
 export type Sotuv = {

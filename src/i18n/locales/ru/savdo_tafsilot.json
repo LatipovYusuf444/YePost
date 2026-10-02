@@ -189,7 +189,25 @@
       "saqlanmadi": "Оплата не сохранена. Попробуйте ещё раз."
     },
     "tolovniSaqlash": "Сохранить оплату",
-    "tolovniQoshish": "Добавить оплату"
+    "tolovniQoshish":"Добавить оплату"
+  },
+  "tolovQatori": {
+    "nomi": "Оплата №{{raqam}}",
+    "summa": "сумма оплаты: {{summa}}",
+    "amallar": "Действия",
+    "ochish": "Открыть оплату",
+    "tolangan": "Оплачено",
+    "qarz": "Долг"
+  },
+  "tolovTafsilot": {
+    "belgisi": "Оплата",
+    "summa": "Сумма оплаты",
+    "sotuv": "Продажа",
+    "mijoz": "Клиент",
+    "tolovTuri": "Способ оплаты",
+    "sana": "Дата",
+    "masulShaxs": "Ответственный",
+    "yopish": "Закрыть"
   },
   "hisobFakturalarTab": {
     "id": "ID",
