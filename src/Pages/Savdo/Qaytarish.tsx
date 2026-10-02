@@ -34,6 +34,7 @@ type QaytarishProps = {
   onTasdiqlash: (qaytarishId: string) => Promise<boolean>;
   onBekorQilish: (qaytarishId: string) => Promise<boolean>;
   onOchirish: (qaytarishId: string) => Promise<boolean>;
+  onTiklash: (qaytarishId: string) => Promise<boolean>;
 };
 
 const sababMatni: Record<QaytarishSababi, string> = {
@@ -61,6 +62,7 @@ export default function Qaytarish({
   onYaratish,
   onTasdiqlash,
   onOchirish,
+  onTiklash,
 }: QaytarishProps) {
   const { t } = useTranslation("savdo_kichik");
   const qaytarishMumkinSotuvlar = useMemo(
@@ -260,6 +262,7 @@ export default function Qaytarish({
                         status={qaytarish.status ?? "DRAFT"}
                         nom={qaytarish.id.slice(0, 8).toUpperCase()}
                         onTasdiq={() => onOchirish(qaytarish.id)}
+                        onTiklash={() => onTiklash(qaytarish.id)}
                       />
                     </td>
                   </tr>

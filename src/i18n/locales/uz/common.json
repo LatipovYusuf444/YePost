@@ -49,5 +49,31 @@
     "freezeNote": "Ombor muzlatilishi darhol bekor qilinadi.",
     "tooltipCancelled": "Bekor qilingan hujjatni o'chirish",
     "titleCancelled": "Bekor qilingan hujjat o'chirilsinmi?"
+  },
+  "hujjatBekorQilish": {
+    "tooltip": "Hujjatni bekor qilish",
+    "aria": "{{name}} hujjatini bekor qilish",
+    "title": "Hujjat bekor qilinsinmi?",
+    "description": "Hujjat bekor qilinadi va tovar qoldig'i omborga qaytariladi. Keyin uni butunlay o'chirish mumkin.",
+    "no": "Qaytish",
+    "yes": "Ha, bekor qilish",
+    "cancelling": "Bekor qilinmoqda...",
+    "transferDescription": "Ko'chirma bekor qilinadi va tovar manba omborga qaytariladi. Qabul qilgan omborda tovar ishlatilgan bo'lsa, bekor qilib bo'lmaydi.",
+    "action": "Bekor qilish"
+  },
+  "hujjatTiklash": {
+    "tooltip": "Qayta tiklash (qoralamaga)",
+    "aria": "{{name}} hujjatini qayta tiklash",
+    "title": "Hujjat qayta tiklansinmi?",
+    "description": "Hujjat qoralama holatiga qaytadi. Qoldiq, kassa va qarz o'zgarmaydi. Qayta tasdiqlansangiz, harakat qaytadan bajariladi.",
+    "no": "Qaytish",
+    "yes": "Ha, tiklash",
+    "restoring": "Tiklanmoqda...",
+    "action": "Qayta tiklash"
+  },
+  "errorBoundary": {
+    "title": "Kutilmagan xatolik yuz berdi",
+    "description": "Sahifani qayta yuklab ko'ring. Xato takrorlansa, quyidagi matnni dasturchiga yuboring.",
+    "reload": "Sahifani qayta yuklash"
   }
 }

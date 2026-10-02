@@ -124,6 +124,8 @@ export function sotuvTolanganSummasi(sotuv: Sotuv) {
 
 export function sotuvQarzdorlikSummasi(sotuv: Sotuv) {
   const holat = String(sotuv.status ?? "DRAFT").toUpperCase();
+  // Backend bekor qilingan sotuvda paidAmount/debtAmount ni tarix sifatida saqlaydi — bu qarz emas.
+  if (holat === "CANCELLED" || holat === "CANCELED") return 0;
   if (
     holat !== "DRAFT" &&
     sotuv.debtAmount !== undefined &&

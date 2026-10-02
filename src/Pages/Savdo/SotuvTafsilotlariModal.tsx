@@ -69,6 +69,8 @@ import {
 import SavdoSelect from "./SavdoSelect";
 
 import ModalTablari from "@/Components/common/ModalTablari";
+import HujjatOchirish from "@/Components/common/HujjatOchirish";
+import SotuvHujjatlariTab from "./SotuvHujjatlariTab";
 type SotuvTafsilotlariModalProps = {
   sotuv: Sotuv;
   qoldiqlar: QoldiqTanlovi[];
@@ -381,6 +383,8 @@ export default function SotuvTafsilotlariModal({
   onBekorQilish,
 }: SotuvTafsilotlariModalProps) {
   const { t } = useTranslation("savdo_tafsilot");
+  const sotuvniOchirish = useSavdoStore((state) => state.sotuvniOchirish);
+  const sotuvniTiklash = useSavdoStore((state) => state.sotuvniTiklash);
   const [activeTab, setActiveTab] = useState("Umumiy");
   const [yetkazishOchiq, setYetkazishOchiq] = useState(false);
   const [ombordanChiqarishOchiq, setOmbordanChiqarishOchiq] = useState(false);
@@ -497,6 +501,15 @@ export default function SotuvTafsilotlariModal({
                     </div>
                   )}
                 </div>
+                <HujjatOchirish
+                  korinish="kichik"
+                  guruh="savdo"
+                  status={sotuv.status}
+                  nom={sotuvJadvalId(sotuv)}
+                  onTasdiq={() => sotuvniOchirish(sotuv.id)}
+                  onTiklash={() => sotuvniTiklash(sotuv.id)}
+                  onOchirildi={onYopish}
+                />
                 {holat !== "CANCELLED" && sotuvQarzdorlikSummasi(sotuv) > 0 && (
                   <button
                     disabled={amalBajarilmoqda}
@@ -526,7 +539,7 @@ export default function SotuvTafsilotlariModal({
               onYangilash={onYangilash}
             />
           ) : activeTab === "Hisob-fakturalar" ? (
-            <HisobFakturalarTab sotuv={sotuv} />
+            <SotuvHujjatlariTab sotuv={sotuv} />
           ) : activeTab === "Tarix" ? (
             <TarixTab sotuv={sotuv} />
           ) : (
@@ -1713,125 +1726,6 @@ function TolovQabulQilishModal({
   );
 }
 
-function HisobFakturalarTab({ sotuv }: { sotuv: Sotuv }) {
-  const { t } = useTranslation("savdo_tafsilot");
-  const [sahifaHajmi, setSahifaHajmi] = useState("10");
-  const sotuvId = sotuvJadvalId(sotuv);
-  const invoiceNomi = mijozNomi(sotuv);
-  const masul = masulNomi(sotuv);
-  const yaratilganSana = sotuv.createdAt ? new Date(sotuv.createdAt) : new Date();
-  const muddatSana = new Date(yaratilganSana);
-  muddatSana.setDate(muddatSana.getDate() + 7);
-  const sanaFormat = (sana: Date) =>
-    Number.isNaN(sana.getTime())
-      ? "—"
-      : new Intl.DateTimeFormat("uz-UZ", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }).format(sana);
-  const qatorKorinadi = true;
-
-  return (
-    <div
-      className="rounded-[26px] bg-[#EEF3F6] px-8 py-8"
-      onWheel={(event) => event.stopPropagation()}
-      onTouchMove={(event) => event.stopPropagation()}
-    >
-      <div className="overflow-hidden rounded-[24px] bg-white shadow-[0_18px_55px_rgba(15,23,42,.07)] ring-1 ring-slate-100">
-        <div>
-          <table className="w-full table-fixed text-left text-[13px] text-slate-600">
-            <thead className="border-b border-slate-100 bg-slate-50/60 text-slate-500">
-              <tr>
-                <th className="w-10 px-3 py-4">
-                  <input type="checkbox" className="h-4 w-4 rounded border-slate-300" readOnly />
-                </th>
-                <th className="w-9 px-2 py-4">
-                  <Settings size={16} className="text-slate-400" />
-                </th>
-                <th className="w-12 px-3 py-4 font-medium">{t("hisobFakturalarTab.id")}</th>
-                <th className="w-[12%] px-3 py-4 font-medium">{t("hisobFakturalarTab.nomi")}</th>
-                <th className="w-[12%] px-3 py-4 font-medium">{t("hisobFakturalarTab.hisobRaqami")}</th>
-                <th className="w-[18%] px-3 py-4 font-medium">{t("hisobFakturalarTab.kimYaratgan")}</th>
-                <th className="w-[18%] px-3 py-4 font-medium">{t("hisobFakturalarTab.masul")}</th>
-                <th className="w-[12%] px-3 py-4 font-medium">{t("hisobFakturalarTab.berilganSana")}</th>
-                <th className="w-[12%] px-3 py-4 font-medium">{t("hisobFakturalarTab.tolovMuddati")}</th>
-                <th className="w-[12%] px-3 py-4 font-medium">{t("hisobFakturalarTab.bosqich")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {qatorKorinadi ? (
-                <tr className="border-b border-slate-100 transition hover:bg-slate-50">
-                  <td className="px-3 py-5">
-                    <input type="checkbox" className="h-4 w-4 rounded border-slate-300" readOnly />
-                  </td>
-                  <td className="px-2 py-5">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-md text-slate-400">
-                      <MoreHorizontal size={18} />
-                    </div>
-                  </td>
-                  <td className="px-3 py-5 font-medium text-slate-700">1</td>
-                  <td className="truncate px-3 py-5 font-medium text-slate-900">{invoiceNomi}</td>
-                  <td className="truncate px-3 py-5">{sotuvId}</td>
-                  <td className="px-3 py-5">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-400 text-white">
-                        <UserRound size={15} />
-                      </span>
-                      <span>{masul === "—" ? t("hisobFakturalarTab.kiritilmagan") : masul}</span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-5">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-400 text-white">
-                        <UserRound size={15} />
-                      </span>
-                      <span>{masul === "—" ? t("hisobFakturalarTab.kiritilmagan") : masul}</span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-5">{sanaFormat(yaratilganSana)}</td>
-                  <td className="px-3 py-5">{sanaFormat(muddatSana)}</td>
-                  <td className="px-3 py-5">
-                    <div className="h-2 w-full max-w-24 overflow-hidden rounded-full bg-slate-100">
-                      <div className="h-full w-2/3 rounded-full bg-sky-400" />
-                    </div>
-                    <p className="mt-2 text-xs text-slate-400">{t("hisobFakturalarTab.yangi")}</p>
-                  </td>
-                </tr>
-              ) : (
-                <tr>
-                  <td colSpan={10} className="px-4 py-16 text-center text-slate-400">
-                    {t("hisobFakturalarTab.topilmadi")}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 px-5 py-4 text-xs font-semibold uppercase text-slate-500">
-          <span>{t("hisobFakturalarTab.tanlangan")}</span>
-          <span>{t("hisobFakturalarTab.jamiHisob")}</span>
-          <div className="flex items-center gap-2">
-            <span>{t("hisobFakturalarTab.sahifada")}</span>
-            <SavdoSelect
-              value={sahifaHajmi}
-              onChange={setSahifaHajmi}
-              className="w-24 normal-case"
-              buttonClassName="h-10 rounded-xl px-3 text-sm"
-              dropdownClassName="z-[95]"
-              options={[
-                { value: "10", label: "10" },
-                { value: "20", label: "20" },
-                { value: "50", label: "50" },
-              ]}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 type TarixQatori = {
   id: string;
   sana: string;
@@ -1948,6 +1842,9 @@ function tarixTipiniAniqlash(item: SaleAuditLog, t: TFunction): { tip: string; a
   ).toUpperCase();
   if (yangiHolat === "CONFIRMED") return { tip: t("tarix.tip.tasdiqlandi"), accent: "green" };
   if (yangiHolat === "CANCELLED") return { tip: t("tarix.tip.bekorQilindi"), accent: "red" };
+  // Bekor qilingan sotuv qayta tiklanganda backend `diff.status: { from: CANCELLED, to: DRAFT }` yozadi.
+  const eskiHolat = String((diff.status as { from?: unknown } | undefined)?.from ?? "").toUpperCase();
+  if (eskiHolat === "CANCELLED" && yangiHolat === "DRAFT") return { tip: t("tarix.tip.tiklandi"), accent: "blue" };
   if (item.action === "CREATE") return { tip: t("tarix.tip.yaratildi"), accent: "blue" };
   return { tip: t("tarix.tip.yangilandi"), accent: "orange" };
 }

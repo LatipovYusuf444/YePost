@@ -95,5 +95,29 @@
       "oldingi": "Предыдущая",
       "keyingi": "Следующая"
     }
+  },
+  "buyurtmalar": {
+    "eyebrow": "Доставка",
+    "title": "Заказы",
+    "refresh": "Обновить",
+    "searchPlaceholder": "Поиск по номеру, клиенту или телефону",
+    "tabs": {
+      "ALL": "Все",
+      "NEW": "Новые",
+      "CONFIRMED": "Подтверждённые",
+      "DELIVERING": "В доставке",
+      "COMPLETED": "Завершённые",
+      "CANCELLED": "Отменённые"
+    },
+    "columns": {
+      "buyurtma": "Заказ",
+      "mijoz": "Клиент",
+      "manzil": "Адрес",
+      "summa": "Сумма",
+      "sana": "Дата",
+      "holati": "Статус"
+    },
+    "emptyTitle": "Заказы не найдены",
+    "emptySubtitle": "Здесь отображаются продажи с доставкой."
   }
 }

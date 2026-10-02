@@ -13,6 +13,7 @@ import AppModal from "@/Components/common/AppModal";
 import { sotuvTafsilotiniOlish } from "@/api/savdoApi";
 import { mahsulotlarApi, modifikatsiyalarApi } from "@/api/catalogApi";
 import { useSavdoStore } from "@/store/savdoStore";
+import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import type {
   Qaytarish,
   QaytarishSababi,
@@ -93,6 +94,12 @@ export default function QaytarishTafsilotlariModal({
   );
   const xatolikniTozalash = useSavdoStore(
     (state) => state.xatolikniTozalash
+  );
+  const qaytarishniOchirish = useSavdoStore(
+    (state) => state.qaytarishniOchirish
+  );
+  const qaytarishniTiklash = useSavdoStore(
+    (state) => state.qaytarishniTiklash
   );
   const sotuvlar = useSavdoStore((state) => state.sotuvlar);
   const omborlar = useSavdoStore((state) => state.omborlar);
@@ -479,7 +486,21 @@ export default function QaytarishTafsilotlariModal({
                   </div>
                 )}
 
-                <div className="mt-7 flex justify-end">
+                <div className="mt-7 flex flex-wrap justify-end gap-3">
+                  <HujjatOchirish
+                    korinish="tugma"
+                    guruh="savdo"
+                    status={qaytarish.status}
+                    nom={qaytarish.id.slice(0, 8).toUpperCase()}
+                    onTasdiq={() => qaytarishniOchirish(qaytarish.id)}
+                    onTiklash={() => qaytarishniTiklash(qaytarish.id)}
+                    onOchirildi={onYopish}
+                    onTiklandi={() =>
+                      void qaytarishTafsilotiniYuklash(qaytarish.id).then((yangi) => {
+                        if (yangi) setQaytarish((joriy) => (joriy ? { ...joriy, ...yangi } : yangi));
+                      })
+                    }
+                  />
                   {qoralama ? (
                     <button
                       onClick={() => void tahrirlashniBoshlash()}

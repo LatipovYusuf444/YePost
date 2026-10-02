@@ -95,5 +95,29 @@
       "oldingi": "Oldingi",
       "keyingi": "Keyingi"
     }
+  },
+  "buyurtmalar": {
+    "eyebrow": "Yetkazib berish",
+    "title": "Buyurtmalar",
+    "refresh": "Yangilash",
+    "searchPlaceholder": "Raqam, mijoz yoki telefon bo'yicha qidirish",
+    "tabs": {
+      "ALL": "Barchasi",
+      "NEW": "Yangi",
+      "CONFIRMED": "Tasdiqlangan",
+      "DELIVERING": "Yetkazilmoqda",
+      "COMPLETED": "Yakunlangan",
+      "CANCELLED": "Bekor qilingan"
+    },
+    "columns": {
+      "buyurtma": "Buyurtma",
+      "mijoz": "Mijoz",
+      "manzil": "Manzil",
+      "summa": "Summa",
+      "sana": "Sana",
+      "holati": "Holati"
+    },
+    "emptyTitle": "Buyurtmalar topilmadi",
+    "emptySubtitle": "Yetkazib berishi bor sotuvlar shu yerda ko'rinadi."
   }
 }

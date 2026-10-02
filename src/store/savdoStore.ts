@@ -11,6 +11,7 @@ import {
   qaytarishTafsilotiniOlish,
   qaytarishniBekorQilish,
   qaytarishniOchirish,
+  qaytarishniTiklash,
   qaytarishniYangilash,
   qaytarishniTasdiqlash,
   qaytarishYaratish,
@@ -18,6 +19,7 @@ import {
   sotuvniBekorQilish,
   sotuvniOchirish,
   sotuvniTasdiqlash,
+  sotuvniTiklash,
   sotuvgaTolovQoshish as sotuvgaTolovQoshishApi,
   sotuvTafsilotiniOlish,
   sotuvniYangilash as sotuvniYangilashApi,
@@ -220,6 +222,7 @@ type SavdoState = {
   ) => Promise<boolean>;
   sotuvniBekorQilish: (sotuvId: string) => Promise<boolean>;
   sotuvniOchirish: (sotuvId: string) => Promise<boolean>;
+  sotuvniTiklash: (sotuvId: string) => Promise<boolean>;
   yangiQaytarishYaratish: (malumot: QaytarishYaratishMalumoti) => Promise<Qaytarish | null>;
   qaytarishTafsilotiniYuklash: (qaytarishId: string) => Promise<Qaytarish | null>;
   qaytarishniYangilash: (
@@ -229,6 +232,7 @@ type SavdoState = {
   qaytarishniTasdiqlash: (qaytarishId: string) => Promise<boolean>;
   qaytarishniBekorQilish: (qaytarishId: string) => Promise<boolean>;
   qaytarishniOchirish: (qaytarishId: string) => Promise<boolean>;
+  qaytarishniTiklash: (qaytarishId: string) => Promise<boolean>;
   tanlanganSotuvniTozalash: () => void;
   xatolikniTozalash: () => void;
 };
@@ -455,6 +459,39 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
               : state.sotuvlar,
         amalBajarilmoqda: false,
       }));
+      // Boshqa sahifalardagi (masalan, Ombor → Amalga oshirilganlar) ro'yxat ham moslansin.
+      window.dispatchEvent(new CustomEvent("savdo:yangilandi", { detail: { sotuvId } }));
+      return false;
+    }
+  },
+
+  sotuvniTiklash: async (sotuvId) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+
+    try {
+      const tiklangan = await sotuvniTiklash(sotuvId);
+      const mavjud = get().sotuvlar.find((sotuv) => sotuv.id === sotuvId);
+      // Javobda bog'langan maydonlar (mijoz, mahsulotlar) bo'lmasligi mumkin — avvalgi nusxa bilan birlashtiramiz.
+      const boyitilgan = sotuvniBoglanganMalumotlarBilanBoyitish({ ...mavjud, ...tiklangan }, get());
+      set((state) => ({
+        sotuvlar: state.sotuvlar.map((sotuv) => (sotuv.id === sotuvId ? boyitilgan : sotuv)),
+        tanlanganSotuv: state.tanlanganSotuv?.id === sotuvId ? boyitilgan : state.tanlanganSotuv,
+        amalBajarilmoqda: false,
+      }));
+      window.dispatchEvent(new CustomEvent("savdo:yangilandi", { detail: { sotuvId } }));
+      return true;
+    } catch {
+      // Xatolik toasti axios interceptor orqali allaqachon ko'rsatilgan (masalan, tasdiqlangan qaytarishi bor sotuv).
+      // Sotuv shu orada o'zgargan bo'lishi mumkin — backenddagi holatga moslaymiz.
+      try {
+        const haqiqiy = sotuvniBoglanganMalumotlarBilanBoyitish(await sotuvTafsilotiniOlish(sotuvId), get());
+        set((state) => ({
+          sotuvlar: state.sotuvlar.map((sotuv) => (sotuv.id === sotuvId ? haqiqiy : sotuv)),
+          amalBajarilmoqda: false,
+        }));
+      } catch {
+        set({ amalBajarilmoqda: false });
+      }
       return false;
     }
   },
@@ -474,7 +511,8 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
         sotuvlar: state.sotuvlar.map((sotuv) =>
           sotuv.id === sotuvId ? boyitilgan : sotuv
         ),
-        tanlanganSotuv: boyitilgan,
+        // Ro'yxatdan (tafsilot oynasi ochilmagan holda) bekor qilinsa, oyna o'zi ochilib qolmasin.
+        tanlanganSotuv: state.tanlanganSotuv?.id === sotuvId ? boyitilgan : state.tanlanganSotuv,
         amalBajarilmoqda: false,
       }));
       window.dispatchEvent(new CustomEvent("savdo:yangilandi", { detail: { sotuvId } }));
@@ -597,6 +635,33 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
               : state.qaytarishlar,
         amalBajarilmoqda: false,
       }));
+      return false;
+    }
+  },
+
+  qaytarishniTiklash: async (qaytarishId) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+
+    try {
+      const tiklangan = await qaytarishniTiklash(qaytarishId);
+      set((state) => ({
+        qaytarishlar: state.qaytarishlar.map((qaytarish) =>
+          qaytarish.id === qaytarishId ? { ...qaytarish, ...tiklangan } : qaytarish
+        ),
+        amalBajarilmoqda: false,
+      }));
+      return true;
+    } catch {
+      // Xatolik toasti axios interceptor orqali allaqachon ko'rsatilgan.
+      try {
+        const haqiqiy = await qaytarishTafsilotiniOlish(qaytarishId);
+        set((state) => ({
+          qaytarishlar: state.qaytarishlar.map((qaytarish) => (qaytarish.id === qaytarishId ? haqiqiy : qaytarish)),
+          amalBajarilmoqda: false,
+        }));
+      } catch {
+        set({ amalBajarilmoqda: false });
+      }
       return false;
     }
   },

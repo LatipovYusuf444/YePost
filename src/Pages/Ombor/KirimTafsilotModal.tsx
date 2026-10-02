@@ -3,6 +3,7 @@ import { Ban, CheckCircle2, FileText, LoaderCircle, RotateCcw } from "lucide-rea
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
+import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import type { KirimHujjati, MahsulotModifikatsiyasi } from "@/types/ombor";
 import { holat, hujjatRaqami, modificationNomi, pul } from "./omborYordamchilari";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
@@ -138,6 +139,10 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
             </div>
             {(!hujjat.items || hujjat.items.length === 0) && <div className="py-12 text-center text-sm font-bold text-slate-400">{t("kirimTafsilotModal.emptyItems")}</div>}
           </section>
+
+          <div className="mt-5 flex justify-end empty:hidden">
+            <HujjatOchirish korinish="tugma" guruh="ombor" status={hujjat.status} nom={hujjatRaqami(hujjat)} onTasdiq={() => store.kirimOchirish(hujjat.id)} onTiklash={() => store.kirimTiklash(hujjat.id)} onOchirildi={onClose} onTiklandi={() => void qaytaYuklash()} />
+          </div>
         </>}
       </div>
     </div>

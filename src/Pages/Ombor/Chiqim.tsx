@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
 import { useOmborStore } from "@/store/omborStore";
+import { mahalliySanaKaliti } from "@/lib/sanaKaliti";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import type {
   ChiqimHujjati,
@@ -179,8 +180,7 @@ export default function Chiqim() {
       const status = String(item.status ?? "DRAFT").toUpperCase();
       const statusMos = statusFiltri === "ALL" || status === statusFiltri || (statusFiltri === "CANCELLED" && status === "CANCELED");
       if (!statusMos) return false;
-      const createdAt = item.createdAt ? new Date(item.createdAt) : null;
-      const hujjatSanasi = createdAt && !Number.isNaN(createdAt.getTime()) ? createdAt.toISOString().slice(0, 10) : "";
+      const hujjatSanasi = mahalliySanaKaliti(item.createdAt);
       if (sanaDan && !(hujjatSanasi && hujjatSanasi >= sanaDan)) return false;
       if (sanaGacha && !(hujjatSanasi && hujjatSanasi <= sanaGacha)) return false;
       return !query || [
@@ -431,6 +431,7 @@ export default function Chiqim() {
                         status={item.status}
                         nom={hujjatRaqami(item)}
                         onTasdiq={() => store.chiqimOchirish(item.id)}
+                        onTiklash={() => store.chiqimTiklash(item.id)}
                       />
                     </td>
                   </tr>

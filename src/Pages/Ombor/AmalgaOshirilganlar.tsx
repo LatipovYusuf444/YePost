@@ -22,6 +22,8 @@ import { OmbordanChiqarishHujjatModal } from "@/Pages/Savdo/SotuvTafsilotlariMod
 import { hujjatRaqami, pul, sana } from "./omborYordamchilari";
 import OmborJadval from "./OmborJadval";
 import TablePagination from "@/Components/common/TablePagination";
+import HujjatBekorQilish from "@/Components/common/HujjatBekorQilish";
+import HujjatOchirish from "@/Components/common/HujjatOchirish";
 
 type JadvalQatori = {
   id: string;
@@ -168,7 +170,8 @@ export default function AmalgaOshirilganlar() {
   const rows = useMemo<JadvalQatori[]>(
     () =>
       store.sotuvlar
-        .filter((sotuv) => sotuvHolati(sotuv) === "CONFIRMED")
+        // Bekor qilingan sotuvlar ham ko'rinadi — ularni shu yerning o'zida butunlay o'chirish mumkin.
+        .filter((sotuv) => sotuvHolati(sotuv) !== "DRAFT")
         .map((sotuv) => ({
           id: sotuv.id,
           nomi: hujjatRaqami(sotuv),
@@ -314,7 +317,7 @@ export default function AmalgaOshirilganlar() {
                       {t(`amalgaOshirilganlar.columns.${ustun.kalit}`)}
                     </th>
                   ))}
-                <th className="w-[76px] px-5 py-4 text-right">
+                <th className="w-[190px] px-5 py-4 text-right">
                   <button
                     type="button"
                     onClick={() => setSozlamaOchiq((oldingi) => !oldingi)}
@@ -352,18 +355,34 @@ export default function AmalgaOshirilganlar() {
                       </td>
                     ))}
                   <td className="px-5 py-4 text-right">
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        realizatsiyaniOchish(item.id);
-                      }}
-                      title={t("umumiy.hujjatniKorish")}
-                      aria-label={t("umumiy.hujjatniKorish")}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-orange-500 transition hover:bg-orange-100"
-                    >
-                      <FileText size={18} />
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      <HujjatBekorQilish
+                        status={item.status}
+                        nom={item.nomi}
+                        onTasdiq={() => savdo.sotuvniBekorQilish(item.id)}
+                        className="h-11 w-11 rounded-2xl"
+                      />
+                      <HujjatOchirish
+                        guruh="savdo"
+                        status={item.status}
+                        nom={item.nomi}
+                        onTasdiq={() => savdo.sotuvniOchirish(item.id)}
+                        onTiklash={() => savdo.sotuvniTiklash(item.id)}
+                        className="h-11 w-11 rounded-2xl"
+                      />
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          realizatsiyaniOchish(item.id);
+                        }}
+                        title={t("umumiy.hujjatniKorish")}
+                        aria-label={t("umumiy.hujjatniKorish")}
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-orange-500 transition hover:bg-orange-100"
+                      >
+                        <FileText size={18} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -60,6 +60,17 @@ export default function DateRangePicker({ from, to, onChange, className = "", co
     return format(fromDate ?? toDate!, "dd.MM.yyyy");
   }, [from, to, t]);
 
+  // Bitta kunni tanlash uchun shu kunni ikkinchi marta bosishadi, kalendar esa buni tanlovni bekor qilish deb
+  // hisoblaydi (filtr butunlay tozalanib, barcha hujjatlar ko'rinib qolardi) — uni bir kunlik oraliq qilamiz.
+  function kunniTanlash(range: DateRange | undefined, bosilganKun: Date) {
+    const bittaKun = draft?.from && (!draft.to || toKey(draft.to) === toKey(draft.from));
+    if (!range && bittaKun && toKey(bosilganKun) === toKey(draft.from!)) {
+      setDraft({ from: bosilganKun, to: bosilganKun });
+      return;
+    }
+    setDraft(range);
+  }
+
   function qollash() {
     onChange(draft?.from ? toKey(draft.from) : "", draft?.to ? toKey(draft.to) : draft?.from ? toKey(draft.from) : "");
     setOpen(false);
@@ -112,7 +123,7 @@ export default function DateRangePicker({ from, to, onChange, className = "", co
           mode="range"
           numberOfMonths={2}
           selected={draft}
-          onSelect={setDraft}
+          onSelect={(range, bosilganKun) => kunniTanlash(range, bosilganKun)}
           defaultMonth={draft?.to ?? draft?.from ?? new Date()}
           locale={kalendarTili}
           className="[--cell-size:--spacing(8)]"

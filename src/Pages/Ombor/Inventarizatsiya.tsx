@@ -8,6 +8,7 @@ import DateRangePicker from "@/Components/ui/DateRangePicker";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { omborQoldiqlari } from "@/api/omborApi";
 import { useOmborStore } from "@/store/omborStore";
+import { mahalliySanaKaliti } from "@/lib/sanaKaliti";
 import type { InventarizatsiyaTuri, OmborQoldigi } from "@/types/ombor";
 import { holat, hujjatRaqami, modificationNomi, qoldiqMiqdori, sana } from "./omborYordamchilari";
 import InventoryHujjatModal from "./InventoryHujjatModal";
@@ -323,8 +324,7 @@ export default function Inventarizatsiya() {
         .toLowerCase()
         .includes(query);
       const status = String(item.status ?? "DRAFT").toUpperCase();
-      const createdAt = item.createdAt ? new Date(item.createdAt) : null;
-      const hujjatSanasi = createdAt && !Number.isNaN(createdAt.getTime()) ? createdAt.toISOString().slice(0, 10) : "";
+      const hujjatSanasi = mahalliySanaKaliti(item.createdAt);
       return matnMos &&
         (holatFiltri === "ALL" || status === holatFiltri || (holatFiltri === "CANCELLED" && status === "CANCELED")) &&
         (omborFiltri === "ALL" || item.warehouseId === omborFiltri) &&
@@ -629,6 +629,7 @@ export default function Inventarizatsiya() {
                     nom={hujjatRaqami(item)}
                     izoh={String(item.status ?? "").toUpperCase() === "DRAFT" ? t("hujjatOchirish.freezeNote", { ns: "common" }) : undefined}
                     onTasdiq={() => store.inventarizatsiyaOchirish(item.id)}
+                    onTiklash={() => store.inventarizatsiyaTiklash(item.id)}
                   />
                 </td>
               </tr>

@@ -21,3 +21,12 @@ export function useHujjatniOchirishMumkinmi(guruh: HujjatGuruhi) {
   const rol = rolniNormallashtirish(profil?.role);
   return (guruh === "ombor" ? OMBOR_ROLLARI : SAVDO_ROLLARI).includes(rol);
 }
+
+// Qayta tiklash (CANCELLED -> DRAFT) ruxsati bekor qilish bilan bir xil: faqat admin va direktor
+// (sotuv/qaytarishda backend RETURN_CANCEL ruxsatini ham qabul qiladi - bunday foydalanuvchida backend o'zi hal qiladi).
+const TIKLASH_ROLLARI = ["ADMIN", "DIREKTOR"];
+
+export function useHujjatniTiklashMumkinmi() {
+  const profil = useAuthProfileStore((state) => state.profil);
+  return TIKLASH_ROLLARI.includes(rolniNormallashtirish(profil?.role));
+}

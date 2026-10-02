@@ -65,6 +65,7 @@ const menyular: Menyu[] = [
       { key: "tolovlar", path: "/savdo?tab=tolovlar", icon: CreditCard },
       { key: "qarzdorliklar", path: "/savdo?tab=qarzdorliklar", icon: HandCoins },
       { key: "qaytarish", path: "/savdo?tab=qaytarish", icon: Undo2 },
+      { key: "buyurtmalar", path: "/savdo?tab=buyurtmalar", icon: Truck },
       { key: "bekorQilinganlar", path: "/savdo?tab=bekor-qilingan", icon: Ban },
     ],
   },

@@ -9,6 +9,7 @@ import {
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
+import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import type { ChiqimHujjati, ChiqimSababi, MahsulotModifikatsiyasi } from "@/types/ombor";
 import { holat, hujjatRaqami, modificationNomi, pul, sana } from "./omborYordamchilari";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
@@ -181,6 +182,10 @@ export default function ChiqimTafsilotModal({ id, onClose }: Props) {
                 {qatorlar.length === 0 && <div className="p-10 text-center text-sm font-bold text-slate-400">{t("chiqimTafsilotModal.emptyItems")}</div>}
               </div>
             </section>
+
+            <div className="mt-5 flex justify-end empty:hidden">
+              <HujjatOchirish korinish="tugma" guruh="ombor" status={hujjat.status} nom={hujjatRaqami(hujjat)} onTasdiq={() => store.chiqimOchirish(hujjat.id)} onTiklash={() => store.chiqimTiklash(hujjat.id)} onOchirildi={onClose} onTiklandi={() => void hujjatniYangilash()} />
+            </div>
           </div>
         )}
 

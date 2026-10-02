@@ -2,7 +2,8 @@ export type FoydalanuvchiRoli = "KASSIR" | "OMBORCHI" | "ADMIN" | "DIREKTOR";
 
 export type JoriyFoydalanuvchi = {
   id: string;
-  workspaceId: string;
+  // Super admin (isStaff: true) hech qanday kompaniyaga tegishli emas — workspaceId null.
+  workspaceId: string | null;
   branchId?: string | null;
   username: string;
   fullName?: string | null;

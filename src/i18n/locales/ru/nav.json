@@ -35,7 +35,8 @@
     "hisobotAudit": "Журналы аудита",
     "xodimlar": "Сотрудники",
     "qollabQuvvatlash": "Поддержка",
-    "sozlamalar": "Настройки"
+    "sozlamalar": "Настройки",
+    "buyurtmalar": "Заказы"
   },
   "roles": {
     "DIREKTOR": "Директор",

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Ban,
   ArrowDownLeft,
   ArrowUpRight,
   Banknote,
@@ -7,10 +8,15 @@ import {
   Plus,
   Search,
   Smartphone,
+  LoaderCircle,
+  Trash2,
+  Wallet,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { barchaFinanceTransactions } from "@/api/tolovApi";
 import { cashOperationsApi } from "@/api/cashOperationsApi";
+import { kassaKirimApi, xarajatApi } from "@/api/financeApi";
+import { sotuvniBekorQilish, sotuvniOchirish } from "@/api/savdoApi";
 import { foydalanuvchilarApi } from "@/api/accountsApi";
 import { filiallarApi } from "@/api/omborApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
@@ -29,6 +35,8 @@ import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali, KassaYonalishi } f
 import { sanaFormat, summaFormat } from "./yordamchilar";
 
 import ModalTablari from "@/Components/common/ModalTablari";
+import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
+import LoadingState from "@/Components/common/LoadingState";
 type Bolim = { yonalish: KassaYonalishi };
 type Guruh = { kanal: KassaKanali; icon: typeof Banknote; bolimlar: Bolim[] };
 
@@ -97,7 +105,8 @@ export default function KassaUchot() {
       kanal: kanalniMoslash(item.paymentType),
       yonalish: item.type === "INCOME" ? "tushum" : "chiqim",
       turi: backendTuriniMoslash(item),
-      holat: "tasdiqlangan",
+      // Backend sotuv to'lovlarini ham holati bilan qaytaradi — bekor qilingan sotuvning to'lovi kassada hisobga olinmaydi.
+      holat: item.status === "CANCELLED" ? "bekor_qilingan" : item.status === "DRAFT" ? "qoralama" : "tasdiqlangan",
       raqam: item.refDocNumber || item.id.slice(0, 8).toUpperCase(),
       nomi: item.refDocNumber || item.note || item.source,
       kontragent: item.counterpartyName || branch?.name || "",
@@ -173,6 +182,7 @@ export default function KassaUchot() {
   const [qidiruv, setQidiruv] = useState("");
   const [modalOchiq, setModalOchiq] = useState(false);
   const [tahrirAmaliyot, setTahrirAmaliyot] = useState<KassaAmaliyoti | null>(null);
+  const [tasdiqAmaliyot, setTasdiqAmaliyot] = useState<KassaAmaliyoti | null>(null);
 
   const yuklash = useCallback(async () => {
     setYuklanmoqda(true);
@@ -246,16 +256,64 @@ export default function KassaUchot() {
     }
   }
 
+  // Qatorga qarab qaysi amal bajariladi:
+  // - tasdiqlangan kassa operatsiyasi va sotuv to'lovi — bekor qilinadi (sotuvda butun sotuv bekor bo'ladi, tovar omborga qaytadi);
+  // - qoralama / bekor qilingan kassa operatsiyasi, eski kirim va xarajat, bekor qilingan sotuv — o'chiriladi.
+  function amalTuri(amaliyot: KassaAmaliyoti): "bekor" | "ochirish" {
+    if (amaliyot.backendSource === "CASH_OPERATION" || amaliyot.backendSource === "SALE") {
+      return amaliyot.holat === "tasdiqlangan" ? "bekor" : "ochirish";
+    }
+    return "ochirish";
+  }
+
+  // Qaysi qatorni o'chirish/bekor qilish mumkin: faqat backendda endpointi bor yozuvlar.
+  // Sotuv to'lovi sotuv orqali (POST /sales/:id/cancel, DELETE /sales/:id) boshqariladi.
+  function ochirishHolati(amaliyot: KassaAmaliyoti): { mumkin: boolean; sarlavha?: string } {
+    if (amaliyot.backendSource === "RETURN") {
+      return { mumkin: false, sarlavha: t("deleteBlocked.RETURN") };
+    }
+    if (amaliyot.backendSource === "SALE") {
+      if (amaliyot.holat === "qoralama") return { mumkin: false };
+      return {
+        mumkin: Boolean(amaliyot.backendRefId),
+        sarlavha: t(amalTuri(amaliyot) === "bekor" ? "saleTooltip.cancel" : "saleTooltip.delete"),
+      };
+    }
+    return { mumkin: Boolean(amaliyot.backendRefId) };
+  }
+
+  function ochirishniSorash(amaliyot: KassaAmaliyoti) {
+    if (!ochirishHolati(amaliyot).mumkin) return;
+    setXatolik("");
+    setTasdiqAmaliyot(amaliyot);
+  }
+
   async function ochirish(amaliyot: KassaAmaliyoti) {
-    if (amaliyot.readonly || amaliyot.backendSource !== "CASH_OPERATION" || !amaliyot.backendRefId) return;
-    const cancel = amaliyot.holat === "tasdiqlangan";
-    if (!window.confirm(t(cancel ? "cancelConfirm" : "deleteConfirm", { number: amaliyot.raqam }))) return;
+    const id = amaliyot.backendRefId;
+    if (!id) return false;
     try {
-      if (cancel) await cashOperationsApi.bekorQilish(amaliyot.backendRefId);
-      else await cashOperationsApi.ochirish(amaliyot.backendRefId);
+      if (amaliyot.backendSource === "CASH_OPERATION") {
+        if (amalTuri(amaliyot) === "bekor") await cashOperationsApi.bekorQilish(id);
+        else await cashOperationsApi.ochirish(id);
+      } else if (amaliyot.backendSource === "SALE") {
+        // Kassadagi sotuv to'lovi `refId` orqali sotuvga bog'langan.
+        if (amalTuri(amaliyot) === "bekor") await sotuvniBekorQilish(id);
+        else await sotuvniOchirish(id);
+        window.dispatchEvent(new CustomEvent("savdo:yangilandi", { detail: { sotuvId: id } }));
+      } else if (amaliyot.backendSource === "CASH_IN") {
+        await kassaKirimApi.ochirish(id);
+      } else if (amaliyot.backendSource === "EXPENSE") {
+        await xarajatApi.ochirish(id);
+      } else {
+        return false;
+      }
       await yuklash();
+      return true;
     } catch (error) {
       setXatolik(getApiErrorMessage(error));
+      // Yozuv shu orada boshqa joyda o'zgargan bo'lishi mumkin — ro'yxatni backend holatiga moslaymiz.
+      await yuklash();
+      return false;
     }
   }
 
@@ -286,14 +344,26 @@ export default function KassaUchot() {
     });
   }, [amaliyotlar, kanal, yonalish, qidiruv]);
 
-  const jami = royxat.reduce((sum, amaliyot) => sum + amaliyot.summa, 0);
+  // Bekor qilingan amaliyotlar kassa jamiga kirmaydi.
+  // Birinchi yuklanishda (ma'lumot hali yo'q) sahifa o'rtasida yuklanish holati ko'rsatiladi.
+  const dastlabkiYuklanish = yuklanmoqda && amaliyotlar.length === 0;
+  const jami = royxat.reduce((sum, amaliyot) => sum + (amaliyot.holat === "bekor_qilingan" ? 0 : amaliyot.summa), 0);
 
   const ustunlar: Ustun<KassaAmaliyoti>[] = [
     {
       id: "raqam",
       nom: t("table.raqam"),
       kenglik: 130,
-      katak: (a) => <span className="font-black text-slate-900">{a.raqam}</span>,
+      katak: (a) => (
+        <span className="inline-flex items-center gap-2">
+          <span className="font-black text-slate-900">{a.raqam}</span>
+          {(a.holat === "bekor_qilingan" || a.holat === "qoralama") && (
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${a.holat === "bekor_qilingan" ? "bg-red-50 text-red-500" : "bg-slate-100 text-slate-500"}`}>
+              {t(`holatlar.${a.holat}`)}
+            </span>
+          )}
+        </span>
+      ),
     },
     {
       id: "nomi",
@@ -362,11 +432,6 @@ export default function KassaUchot() {
           {xatolik}
         </div>
       )}
-      {yuklanmoqda && (
-        <div className="rounded-2xl border border-orange-100 bg-white px-4 py-3 text-sm font-bold text-slate-500">
-          {t("loading")}
-        </div>
-      )}
 
       {/* Har kanal uchun tushum va chiqim alohida tab */}
       <ModalTablari
@@ -398,14 +463,16 @@ export default function KassaUchot() {
             />
           </label>
 
-          <div
-            className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-2xl px-4 text-sm font-black ${
-              tushum ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500"
-            }`}
-          >
-            {tushum ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
-            {t("totalLabel", { value: summaFormat(jami) })}
-          </div>
+          {!dastlabkiYuklanish && (
+            <div
+              className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-2xl px-4 text-sm font-black ${
+                tushum ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500"
+              }`}
+            >
+              {tushum ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
+              {t("totalLabel", { value: summaFormat(jami) })}
+            </div>
+          )}
         </div>
 
         <button
@@ -419,9 +486,14 @@ export default function KassaUchot() {
       </div>
 
       {/* Joriy bo'lim nomi */}
-      <h2 className="text-lg font-black text-gray-800">{joriyBolimNomi}</h2>
+      <h2 className="flex items-center gap-2 text-lg font-black text-gray-800">
+        {joriyBolimNomi}
+        {yuklanmoqda && !dastlabkiYuklanish && <LoaderCircle size={18} className="animate-spin text-orange-500" aria-label={t("loading")} />}
+      </h2>
 
-      {royxat.length === 0 ? (
+      {dastlabkiYuklanish ? (
+        <LoadingState matn={t("loading")} ikonka={<Wallet size={24} />} />
+      ) : royxat.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-orange-200 bg-white p-14 text-center font-bold text-gray-400">
           {t("emptyList", { section: joriyBolimNomi })}
         </p>
@@ -432,9 +504,32 @@ export default function KassaUchot() {
           kengaytir
           sozlamaBor
           onQatorBosildi={modalniOchish}
-          onQatorOchirish={ochirish}
+          qatorKlass={(a) => (a.holat === "bekor_qilingan" ? "opacity-60" : "")}
+          onQatorOchirish={ochirishniSorash}
+          qatorOchirishHolati={ochirishHolati}
         />
       )}
+
+      {tasdiqAmaliyot && (() => {
+        const bekor = amalTuri(tasdiqAmaliyot) === "bekor";
+        const sotuv = tasdiqAmaliyot.backendSource === "SALE";
+        const kalit = sotuv ? (bekor ? "saleCancelDialog" : "saleDeleteDialog") : bekor ? "cancelDialog" : "deleteDialog";
+        return (
+          <TasdiqlashOynasi
+            ikonka={bekor ? <Ban size={24} /> : <Trash2 size={24} />}
+            ohang={bekor ? "sariq" : "qizil"}
+            sarlavha={t(`${kalit}.title`)}
+            nom={`${tasdiqAmaliyot.raqam} · ${summaFormat(tasdiqAmaliyot.summa)}`}
+            tavsif={t(`${kalit}.description`)}
+            izoh={sotuv && bekor ? t("saleCancelDialog.note") : undefined}
+            ortgaMatni={t("common:hujjatOchirish.no")}
+            tasdiqMatni={t(bekor ? `${sotuv ? "saleCancelDialog" : "cancelDialog"}.yes` : "common:hujjatOchirish.yes")}
+            jarayonMatni={t(bekor ? "cancelDialog.cancelling" : "common:hujjatOchirish.deleting")}
+            onTasdiq={() => ochirish(tasdiqAmaliyot)}
+            onYopish={() => setTasdiqAmaliyot(null)}
+          />
+        );
+      })()}
 
       {modalOchiq && (
         <KassaAmaliyotModal

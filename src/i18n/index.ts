@@ -55,6 +55,8 @@ import xaridorUchotUz from "./locales/uz/xaridor_uchot.json";
 import xaridorUchotRu from "./locales/ru/xaridor_uchot.json";
 import supportUz from "./locales/uz/support.json";
 import supportRu from "./locales/ru/support.json";
+import adminUz from "./locales/uz/admin.json";
+import adminRu from "./locales/ru/admin.json";
 
 export const LANG_STORAGE_KEY = "yepost-lang";
 export const SUPPORTED_LANGUAGES = ["uz", "ru"] as const;
@@ -96,6 +98,7 @@ void i18n.use(initReactI18next).init({
       kassa_uchot: kassaUchotUz,
       xaridor_uchot: xaridorUchotUz,
       support: supportUz,
+      admin: adminUz,
     },
     ru: {
       common: commonRu,
@@ -125,6 +128,7 @@ void i18n.use(initReactI18next).init({
       kassa_uchot: kassaUchotRu,
       xaridor_uchot: xaridorUchotRu,
       support: supportRu,
+      admin: adminRu,
     },
   },
   lng: getStoredLanguage(),
@@ -157,6 +161,7 @@ void i18n.use(initReactI18next).init({
     "kassa_uchot",
     "xaridor_uchot",
     "support",
+    "admin",
   ],
   defaultNS: "common",
   interpolation: { escapeValue: false },

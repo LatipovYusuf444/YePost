@@ -169,6 +169,18 @@ export async function qaytarishniTasdiqlash(qaytarishId: string) {
   return apiData(response.data);
 }
 
+// Bekor qilingan sotuvni qoralamaga (DRAFT) qaytaradi; qoldiq, kassa va qarz o'zgarmaydi.
+export async function sotuvniTiklash(sotuvId: string) {
+  const response = await apiClient.post<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${sotuvId}/restore`);
+  return apiData(response.data);
+}
+
+// Bekor qilingan qaytarishni qoralamaga (DRAFT) qaytaradi.
+export async function qaytarishniTiklash(qaytarishId: string) {
+  const response = await apiClient.post<Qaytarish | ApiEnvelope<Qaytarish>>(`/returns/${qaytarishId}/restore`);
+  return apiData(response.data);
+}
+
 // Qaytarish.tsx: qaytarish hujjatini bekor qiladi.
 export async function qaytarishniBekorQilish(qaytarishId: string) {
   const response = await apiClient.post<Qaytarish | ApiEnvelope<Qaytarish>>(`/returns/${qaytarishId}/cancel`);
@@ -408,4 +420,64 @@ export async function katalogModifikatsiyalariniQoldiqTanlovigaOlish(): Promise<
         },
       };
     });
+}
+
+// Sotuvning saqlangan hujjatlari: tasdiqlashda olingan chek nusxasi (RECEIPT) va talab bo'yicha yaratiladigan hisob-faktura (INVOICE).
+export type SotuvHujjatiTuri = "RECEIPT" | "INVOICE";
+
+export type SotuvHujjati = {
+  id: string;
+  type?: SotuvHujjatiTuri | string;
+  docNumber?: string;
+  number?: string;
+  createdAt?: string;
+  createdBy?: { fullName?: string | null; name?: string | null } | null;
+  user?: { fullName?: string | null } | null;
+};
+
+export async function sotuvHujjatlariniOlish(sotuvId: string) {
+  const response = await apiClient.get<unknown>(`/sales/${sotuvId}/documents`);
+  const raw = response.data as { data?: unknown; items?: unknown } | unknown[];
+  const royxat = Array.isArray(raw)
+    ? raw
+    : Array.isArray(raw?.data)
+      ? raw.data
+      : Array.isArray((raw?.data as { items?: unknown } | undefined)?.items)
+        ? (raw?.data as { items: unknown[] }).items
+        : Array.isArray(raw?.items)
+          ? raw.items
+          : [];
+  return royxat as SotuvHujjati[];
+}
+
+export async function sotuvHujjatiYaratish(sotuvId: string, type: SotuvHujjatiTuri) {
+  const response = await apiClient.post<SotuvHujjati | ApiEnvelope<SotuvHujjati>>(`/sales/${sotuvId}/documents`, { type });
+  return apiData(response.data);
+}
+
+// Hujjatning PDF nusxasini yangi oynada ochadi. Backend PDF faylni to'g'ridan-to'g'ri, yoki JSON ichida
+// havola (`url`) / base64 sifatida qaytarishi mumkin — ikkalasi ham qo'llab-quvvatlanadi.
+export async function sotuvHujjatiPdfOchish(sotuvId: string, hujjatId: string) {
+  const response = await apiClient.get<Blob>(`/sales/${sotuvId}/documents/${hujjatId}/pdf`, { responseType: "blob" });
+  const blob = response.data;
+  if (blob.type.includes("pdf")) {
+    window.open(URL.createObjectURL(blob), "_blank", "noopener");
+    return;
+  }
+  let javob: Record<string, unknown> = {};
+  try {
+    javob = JSON.parse(await blob.text()) as Record<string, unknown>;
+  } catch {
+    throw new Error("PDF_YOQ");
+  }
+  const malumot = (javob.data && typeof javob.data === "object" ? javob.data : javob) as Record<string, unknown>;
+  const havola = [malumot.url, malumot.pdfUrl, malumot.link].find((qiymat) => typeof qiymat === "string") as string | undefined;
+  if (havola) {
+    window.open(havola, "_blank", "noopener");
+    return;
+  }
+  const base64 = [malumot.base64, malumot.pdf, malumot.content].find((qiymat) => typeof qiymat === "string") as string | undefined;
+  if (!base64) throw new Error("PDF_YOQ");
+  const baytlar = Uint8Array.from(atob(base64), (belgi) => belgi.charCodeAt(0));
+  window.open(URL.createObjectURL(new Blob([baytlar], { type: "application/pdf" })), "_blank", "noopener");
 }

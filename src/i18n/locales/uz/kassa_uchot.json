@@ -2,11 +2,23 @@
   "eyebrow": "Kassa uchoti",
   "title": "Kassa",
   "subtitle": "Naqd, bank va ilova orqali tushum va chiqimlar nazorati.",
-  "loading": "Ma’lumot yuklanmoqda...",
+  "loading": "Ma'lumotlar yuklanmoqda...",
   "groups": {
-    "naqd": { "name": "Naqd", "tushum": "Naqd tushumlari", "chiqim": "Naqd chiqimlari" },
-    "bank": { "name": "Bank", "tushum": "Kiruvchi bank to'lovlari", "chiqim": "Chiquvchi bank to'lovlari" },
-    "ilova": { "name": "Ilova orqali", "tushum": "Ilova orqali tushumlar", "chiqim": "Ilova orqali chiqimlar" }
+    "naqd": {
+      "name": "Naqd",
+      "tushum": "Naqd tushumlari",
+      "chiqim": "Naqd chiqimlari"
+    },
+    "bank": {
+      "name": "Bank",
+      "tushum": "Kiruvchi bank to'lovlari",
+      "chiqim": "Chiquvchi bank to'lovlari"
+    },
+    "ilova": {
+      "name": "Ilova orqali",
+      "tushum": "Ilova orqali tushumlar",
+      "chiqim": "Ilova orqali chiqimlar"
+    }
   },
   "channels": {
     "naqd": "Naqd",
@@ -99,5 +111,36 @@
       "invalidAmount": "Summa 0 dan katta son bo'lishi kerak.",
       "commentRequired": "Boshqa pul xarajatlari uchun kommentariya (nega chiqim) to'ldirilishi shart."
     }
+  },
+  "deleteDialog": {
+    "title": "Kassa amaliyoti o'chirilsinmi?",
+    "description": "Amaliyot butunlay o'chiriladi va uni qayta tiklab bo'lmaydi."
+  },
+  "cancelDialog": {
+    "title": "Kassa amaliyoti bekor qilinsinmi?",
+    "description": "Amaliyot bekor qilinadi va hisob teskari yozuv bilan qaytariladi (mijoz balansi tiklanadi). Bekor qilingan amaliyotni keyin butunlay o'chirish mumkin.",
+    "yes": "Ha, bekor qilish",
+    "cancelling": "Bekor qilinmoqda..."
+  },
+  "deleteBlocked": {
+    "RETURN": "Bu amaliyot qaytarish hujjatiga tegishli. Uni qaytarishni bekor qilish orqali o'zgartirish mumkin (Savdo → Qaytarish)."
+  },
+  "saleCancelDialog": {
+    "title": "Sotuv bekor qilinsinmi?",
+    "description": "Bu tushum sotuvning to'lovi. Tushumni bekor qilish uchun BUTUN sotuv bekor qilinadi: sotilgan tovarlar omborga qaytariladi, to'lovlar kassa ro'yxatidan chiqadi. Naqd pul ochiq smenangizga qaytarish (REFUND) chiqimi bo'lib yoziladi.",
+    "yes": "Ha, sotuvni bekor qilish",
+    "note": "Naqd pul avtomatik qaytarilishi uchun sizda ochiq smena bo'lishi kerak."
+  },
+  "saleDeleteDialog": {
+    "title": "Bekor qilingan sotuv o'chirilsinmi?",
+    "description": "Bu tushum bekor qilingan sotuvga tegishli. Sotuv butunlay o'chiriladi va uni qayta tiklab bo'lmaydi."
+  },
+  "saleTooltip": {
+    "cancel": "Sotuvni bekor qilish (tovar omborga qaytadi)",
+    "delete": "Bekor qilingan sotuvni o'chirish"
+  },
+  "holatlar": {
+    "qoralama": "Qoralama",
+    "bekor_qilingan": "Bekor qilingan"
   }
 }

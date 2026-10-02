@@ -7,7 +7,8 @@
       "tolovlar": "Оплаты",
       "qarzdorliklar": "Задолженности",
       "qaytarish": "Возврат",
-      "bekorQilingan": "Отменённые"
+      "bekorQilingan": "Отменённые",
+      "buyurtmalar": "Заказы"
     },
     "statusFilter": {
       "barchasi": "Статус: все",

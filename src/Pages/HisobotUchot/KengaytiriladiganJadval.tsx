@@ -30,6 +30,7 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
   qatorKlass,
   sozlamaBor = false,
   onQatorOchirish,
+  qatorOchirishHolati,
 }: {
   ustunlar: Ustun<T>[];
   qatorlar: T[];
@@ -39,6 +40,8 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
   qatorKlass?: (row: T) => string; // qatorga qo'shimcha klass (masalan guruh sarlavhasi)
   sozlamaBor?: boolean; // true — jadval oxirida ustunlarni sozlash (yashirish) tugmasi
   onQatorOchirish?: (row: T) => void; // oxirgi ustunda (⚙ ostida) har qator uchun o'chirish tugmasi
+  // Qator o'chirilishi mumkin emas bo'lsa tugma o'chirib qo'yiladi va sarlavhada sababi ko'rsatiladi.
+  qatorOchirishHolati?: (row: T) => { mumkin: boolean; sarlavha?: string };
 }) {
   const [tartib, setTartib] = useState<string[]>(() => ustunlar.map((u) => u.id));
   const [kengliklar, setKengliklar] = useState<Record<string, number>>(() =>
@@ -257,21 +260,26 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
               ))}
               {amallarUstuni && (
                 <td className="px-3 py-4">
-                  {onQatorOchirish && (
-                    <div className="flex justify-end">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onQatorOchirish(row);
-                        }}
-                        aria-label="O'chirish"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
-                  )}
+                  {onQatorOchirish && (() => {
+                    const holat = qatorOchirishHolati?.(row) ?? { mumkin: true };
+                    return (
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          disabled={!holat.mumkin}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onQatorOchirish(row);
+                          }}
+                          aria-label="O'chirish"
+                          title={holat.sarlavha}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-300 disabled:hover:bg-slate-100"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </td>
               )}
             </tr>

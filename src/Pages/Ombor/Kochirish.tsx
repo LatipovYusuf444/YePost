@@ -21,7 +21,9 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
 import { useOmborStore } from "@/store/omborStore";
+import { mahalliySanaKaliti } from "@/lib/sanaKaliti";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
+import HujjatBekorQilish from "@/Components/common/HujjatBekorQilish";
 import type {
   KochirishHujjati,
   MahsulotModifikatsiyasi,
@@ -268,8 +270,7 @@ export default function Kochirish() {
   const filtrlangan = useMemo(() => {
     const qiymat = qidiruv.trim().toLocaleLowerCase("uz");
     return store.kochirishlar.filter((hujjat) => {
-      const createdAt = hujjat.createdAt ? new Date(hujjat.createdAt) : null;
-      const hujjatSanasi = createdAt && !Number.isNaN(createdAt.getTime()) ? createdAt.toISOString().slice(0, 10) : "";
+      const hujjatSanasi = mahalliySanaKaliti(hujjat.createdAt);
       if (sanaDan && !(hujjatSanasi && hujjatSanasi >= sanaDan)) return false;
       if (sanaGacha && !(hujjatSanasi && hujjatSanasi <= sanaGacha)) return false;
       if (!qiymat) return true;
@@ -565,11 +566,20 @@ export default function Kochirish() {
                     ))}
                     <td className="sticky right-0 bg-white px-5 py-3 text-right group-hover:bg-[#F8FAFC]">
                       <div className="flex items-center justify-end gap-2">
+                      <HujjatBekorQilish
+                        status={hujjat.status}
+                        nom={hujjatNomi(hujjat, t)}
+                        holatlar={["SENT", "RECEIVED"]}
+                        tavsifKaliti="hujjatBekorQilish.transferDescription"
+                        onTasdiq={() => store.kochirishBekorQilish(hujjat.id)}
+                        className="h-11 w-11 rounded-2xl"
+                      />
                       <HujjatOchirish
                         guruh="ombor"
                         status={hujjat.status}
                         nom={hujjatNomi(hujjat, t)}
                         onTasdiq={() => store.kochirishOchirish(hujjat.id)}
+                        onTiklash={() => store.kochirishTiklash(hujjat.id)}
                         className="h-11 w-11 rounded-2xl"
                       />
                       <button

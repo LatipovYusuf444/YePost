@@ -4,6 +4,7 @@ import { FileText, LoaderCircle, Plus, Search, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
 import { useOmborStore } from "@/store/omborStore";
+import { mahalliySanaKaliti } from "@/lib/sanaKaliti";
 import type { KirimHujjati } from "@/types/ombor";
 import { holat, hujjatRaqami, pul, sana } from "./omborYordamchilari";
 import KirimTafsilotModal from "./KirimTafsilotModal";
@@ -153,8 +154,7 @@ export default function Xaridlar() {
       const status = String(hujjat.status ?? "DRAFT").toUpperCase();
       const statusMos = statusFiltri === "ALL" || status === statusFiltri || (statusFiltri === "CANCELLED" && status === "CANCELED");
       if (!statusMos) return false;
-      const createdAt = hujjat.createdAt ? new Date(hujjat.createdAt) : null;
-      const hujjatSanasi = createdAt && !Number.isNaN(createdAt.getTime()) ? createdAt.toISOString().slice(0, 10) : "";
+      const hujjatSanasi = mahalliySanaKaliti(hujjat.createdAt);
       if (sanaDan && !(hujjatSanasi && hujjatSanasi >= sanaDan)) return false;
       if (sanaGacha && !(hujjatSanasi && hujjatSanasi <= sanaGacha)) return false;
       if (!q) return true;
@@ -331,6 +331,7 @@ export default function Xaridlar() {
                           status={hujjat.status}
                           nom={hujjatRaqami(hujjat)}
                           onTasdiq={() => store.kirimOchirish(hujjat.id)}
+                          onTiklash={() => store.kirimTiklash(hujjat.id)}
                         />
                       </td>
                     </tr>

@@ -255,7 +255,8 @@
       "tasdiqlandi": "Sotuv tasdiqlandi",
       "bekorQilindi": "Sotuv bekor qilindi",
       "yaratildi": "Sotuv yaratildi",
-      "yangilandi": "Sotuv yangilandi"
+      "yangilandi": "Sotuv yangilandi",
+      "tiklandi": "Sotuv qayta tiklandi"
     }
   },
   "tovarlarTab": {
@@ -357,10 +358,26 @@
   },
   "faoliyatPanel": {
     "tablar": {
-      "ish": { "label": "Ish", "title": "Mijoz bilan bog'lanish", "placeholder": "Vazifa haqida batafsil yozing..." },
-      "izoh": { "label": "Izoh", "title": "Izoh yozish", "placeholder": "Izoh matnini kiriting..." },
-      "xabar": { "label": "Xabar", "title": "Xabar yuborish", "placeholder": "Xabar matnini kiriting..." },
-      "vazifa": { "label": "Vazifa", "title": "Vazifa yaratish", "placeholder": "Vazifa tavsifini yozing..." }
+      "ish": {
+        "label": "Ish",
+        "title": "Mijoz bilan bog'lanish",
+        "placeholder": "Vazifa haqida batafsil yozing..."
+      },
+      "izoh": {
+        "label": "Izoh",
+        "title": "Izoh yozish",
+        "placeholder": "Izoh matnini kiriting..."
+      },
+      "xabar": {
+        "label": "Xabar",
+        "title": "Xabar yuborish",
+        "placeholder": "Xabar matnini kiriting..."
+      },
+      "vazifa": {
+        "label": "Vazifa",
+        "title": "Vazifa yaratish",
+        "placeholder": "Vazifa tavsifini yozing..."
+      }
     },
     "koprok": "Ko'proq",
     "nimaQilishKerak": "Nima qilish kerak",
@@ -454,5 +471,23 @@
     "ishtirokchilar": "ishtirokchilar (1)",
     "yopishAria": "Kalendar panelini yopish",
     "bugun": "bugun"
+  },
+  "hujjatlarTab": {
+    "sarlavha": "Sotuv hujjatlari",
+    "tavsif": "Tasdiqlashda olingan chek nusxasi va talab bo'yicha yaratilgan hisob-fakturalar.",
+    "yangilash": "Yangilash",
+    "hisobFakturaYaratish": "Hisob-faktura yaratish",
+    "columns": {
+      "raqam": "Raqam",
+      "turi": "Turi",
+      "kimYaratgan": "Kim yaratgan",
+      "sana": "Sana"
+    },
+    "turlar": {
+      "RECEIPT": "Chek",
+      "INVOICE": "Hisob-faktura"
+    },
+    "bosh": "Hozircha hujjat yo'q. Sotuv tasdiqlanganda chek nusxasi shu yerda paydo bo'ladi.",
+    "pdfYoq": "PDF fayl topilmadi."
   }
 }

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import { useOmborStore } from "@/store/omborStore";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
 import type { InventoryDocumentType } from "@/types/inventoryDocuments";
@@ -339,6 +340,12 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
     store.xatolikniTozalash();
     const ok = await store.inventarizatsiyaBekorQilish(id);
     if (!ok) return;
+    const yangilangan = await store.inventarizatsiyaOlish(id);
+    if (yangilangan) setHujjat(yangilangan);
+  }
+
+  // Qayta tiklangach (CANCELLED -> DRAFT) hujjatni backenddagi yangi holati bilan almashtiramiz.
+  async function inventarizatsiyaniQaytaYuklash() {
     const yangilangan = await store.inventarizatsiyaOlish(id);
     if (yangilangan) setHujjat(yangilangan);
   }
@@ -726,6 +733,19 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                 </div>
 
                 <div className="mt-6 flex justify-end gap-3">
+                  {tur === "inventarizatsiya" && (
+                    <HujjatOchirish
+                      korinish="tugma"
+                      guruh="ombor"
+                      status={hujjat.status}
+                      nom={hujjatRaqami(hujjat)}
+                      izoh={hujjatHolati(hujjat) === "DRAFT" ? t("hujjatOchirish.freezeNote", { ns: "common" }) : undefined}
+                      onTasdiq={() => store.inventarizatsiyaOchirish(hujjat.id)}
+                      onTiklash={() => store.inventarizatsiyaTiklash(hujjat.id)}
+                      onOchirildi={onClose}
+                      onTiklandi={() => void inventarizatsiyaniQaytaYuklash()}
+                    />
+                  )}
                   {hujjatHolati(hujjat) === "CONFIRMED" && tur === "inventarizatsiya" && (
                     <button
                       type="button"

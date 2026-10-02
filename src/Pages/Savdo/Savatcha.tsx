@@ -11,6 +11,7 @@ import {
   Plus,
   Printer,
   Search,
+  RotateCcw,
   Trash2,
   XCircle,
 } from "lucide-react";
@@ -19,6 +20,9 @@ import { draftSalesService, saleToDraftSale } from "@/api/draftSalesService";
 import { pulniFormatlash, sotuvHolati, sotuvRaqami } from "./savdoYordamchilari";
 import { HujjatOchirishOynasi } from "@/Components/common/HujjatOchirish";
 import { hujjatOchiriladimi } from "@/lib/hujjatHolati";
+import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
+import { useHujjatniTiklashMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
+import { sotuvniTiklash } from "@/api/savdoApi";
 import SavdoSelect from "./SavdoSelect";
 
 type SavatchaProps = {
@@ -102,6 +106,8 @@ export default function Savatcha({
   const [ochiqMenuId, setOchiqMenuId] = useState<string | null>(null);
   const [menuJoylashuvi, setMenuJoylashuvi] = useState<{ top: number; left: number } | null>(null);
   const [ochirishSotuv, setOchirishSotuv] = useState<Sotuv | null>(null);
+  const [tiklashSotuv, setTiklashSotuv] = useState<Sotuv | null>(null);
+  const tiklashRuxsati = useHujjatniTiklashMumkinmi();
   const [amalId, setAmalId] = useState<string | null>(null);
   const [sahifa, setSahifa] = useState(1);
   const pageSize = 10;
@@ -212,7 +218,7 @@ export default function Savatcha({
     });
   }
 
-  async function actionBajarish(sotuv: Sotuv, action: "continue" | "edit" | "duplicate" | "print" | "cancel" | "delete") {
+  async function actionBajarish(sotuv: Sotuv, action: "continue" | "edit" | "duplicate" | "print" | "cancel" | "delete" | "restore") {
     setOchiqMenuId(null);
     setMenuJoylashuvi(null);
 
@@ -242,6 +248,11 @@ export default function Savatcha({
 
     if (action === "delete") {
       setOchirishSotuv(sotuv);
+      return;
+    }
+
+    if (action === "restore") {
+      setTiklashSotuv(sotuv);
       return;
     }
 
@@ -475,8 +486,12 @@ export default function Savatcha({
                                 { key: "duplicate", label: t("savatcha.table.actions.duplicate"), icon: Copy },
                                 { key: "print", label: t("savatcha.table.actions.print"), icon: Printer },
                                 { key: "cancel", label: t("savatcha.table.actions.cancel"), icon: XCircle },
+                                { key: "restore", label: t("hujjatTiklash.action", { ns: "common" }), icon: RotateCcw },
                                 { key: "delete", label: t("savatcha.table.actions.delete"), icon: Trash2, danger: true },
-                              ].filter((item) => item.key !== "delete" || hujjatOchiriladimi(sotuvHolati(sotuv))).map((item) => {
+                              ]
+                                .filter((item) => item.key !== "delete" || hujjatOchiriladimi(sotuvHolati(sotuv)))
+                                .filter((item) => item.key !== "restore" || (tiklashRuxsati && sotuvHolati(sotuv) === "CANCELLED"))
+                                .map((item) => {
                                 const Icon = item.icon;
                                 return (
                                   <button
@@ -555,6 +570,30 @@ export default function Savatcha({
           </div>
         </div>
       </section>
+
+      {tiklashSotuv && (
+        <TasdiqlashOynasi
+          ikonka={<RotateCcw size={24} />}
+          ohang="yashil"
+          sarlavha={t("hujjatTiklash.title", { ns: "common" })}
+          nom={`#${sotuvRaqami(tiklashSotuv)}`}
+          tavsif={t("hujjatTiklash.description", { ns: "common" })}
+          ortgaMatni={t("hujjatTiklash.no", { ns: "common" })}
+          tasdiqMatni={t("hujjatTiklash.yes", { ns: "common" })}
+          jarayonMatni={t("hujjatTiklash.restoring", { ns: "common" })}
+          onTasdiq={async () => {
+            try {
+              await sotuvniTiklash(tiklashSotuv.id);
+              return true;
+            } catch {
+              return false;
+            } finally {
+              await onRefresh();
+            }
+          }}
+          onYopish={() => setTiklashSotuv(null)}
+        />
+      )}
 
       {ochirishSotuv && (
         <HujjatOchirishOynasi

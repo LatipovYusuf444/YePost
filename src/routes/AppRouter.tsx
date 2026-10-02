@@ -18,6 +18,12 @@ import Ombor from "@/Pages/Ombor"
 import XaridorUchot from "@/Pages/XaridorUchot"
 import Savdo from "@/Pages/Savdo"
 import SozlamalarUchot from "@/Pages/SozlamalarUchot"
+import AdminLayout from "@/Pages/Admin/AdminLayout"
+import AdminDashboard from "@/Pages/Admin/Dashboard"
+import AdminKompaniyalar from "@/Pages/Admin/Kompaniyalar"
+import AdminTariflar from "@/Pages/Admin/Tariflar"
+import AdminObunalar from "@/Pages/Admin/Obunalar"
+import AdminFoydalanuvchilar from "@/Pages/Admin/Foydalanuvchilar"
 import { Navigate, Route, Routes } from "react-router"
 import ProtectedRoute from "./ProtectedRoute"
 
@@ -25,6 +31,20 @@ export default function AppRouter() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      {/* Super admin (isStaff) paneli: ProtectedRoute faqat shu foydalanuvchini /admin ga kiritadi. */}
+      <Route
+        element={
+          <ProtectedRoute>
+            <AdminLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/kompaniyalar" element={<AdminKompaniyalar />} />
+        <Route path="/admin/tariflar" element={<AdminTariflar />} />
+        <Route path="/admin/obunalar" element={<AdminObunalar />} />
+        <Route path="/admin/foydalanuvchilar" element={<AdminFoydalanuvchilar />} />
+      </Route>
       <Route
         element={
           <ProtectedRoute>

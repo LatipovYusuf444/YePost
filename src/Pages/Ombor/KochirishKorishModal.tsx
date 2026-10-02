@@ -16,6 +16,8 @@ import {
 import AppModal from "@/Components/common/AppModal";
 import { useTranslation } from "react-i18next";
 import { useOmborStore } from "@/store/omborStore";
+import HujjatOchirish from "@/Components/common/HujjatOchirish";
+import HujjatBekorQilish from "@/Components/common/HujjatBekorQilish";
 import type { KochirishHujjati, MahsulotModifikatsiyasi, NomliEntity } from "@/types/ombor";
 import { holat, hujjatRaqami, modificationNomi, pul, qoldiqMiqdori } from "./omborYordamchilari";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
@@ -318,6 +320,19 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
                     </table>
                   </div>
                 </section>
+
+                <div className="mt-6 flex flex-wrap justify-end gap-3 empty:hidden">
+                  <HujjatBekorQilish
+                    korinish="tugma"
+                    status={hujjat.status}
+                    nom={hujjatRaqami(hujjat)}
+                    holatlar={["SENT", "RECEIVED"]}
+                    tavsifKaliti="hujjatBekorQilish.transferDescription"
+                    onTasdiq={() => store.kochirishBekorQilish(hujjat.id)}
+                    onBajarildi={() => void hujjatniYuklash()}
+                  />
+                  <HujjatOchirish korinish="tugma" guruh="ombor" status={hujjat.status} nom={hujjatRaqami(hujjat)} onTasdiq={() => store.kochirishOchirish(hujjat.id)} onTiklash={() => store.kochirishTiklash(hujjat.id)} onOchirildi={onClose} onTiklandi={() => void hujjatniYuklash()} />
+                </div>
               </>
             )}
           </div>

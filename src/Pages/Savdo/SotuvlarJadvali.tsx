@@ -22,6 +22,7 @@ type SotuvlarJadvaliProps = {
   qaytarishlar?: Qaytarish[];
   onQaytarish?: (sotuv: Sotuv) => void;
   onOchirish?: (sotuvId: string) => Promise<boolean>;
+  onTiklash?: (sotuvId: string) => Promise<boolean>;
   tarixKorinish?: boolean;
   boshMatn?: string;
 };
@@ -119,6 +120,7 @@ export default function SotuvlarJadvali({
   qaytarishlar = [],
   onQaytarish,
   onOchirish,
+  onTiklash,
   tarixKorinish = false,
   boshMatn,
 }: SotuvlarJadvaliProps) {
@@ -240,6 +242,7 @@ export default function SotuvlarJadvali({
                         status={sotuv.status}
                         nom={`#${sotuvRaqami(sotuv)}`}
                         onTasdiq={() => onOchirish(sotuv.id)}
+                        onTiklash={onTiklash ? () => onTiklash(sotuv.id) : undefined}
                       />
                     </td>
                   )}

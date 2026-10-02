@@ -13,10 +13,12 @@ import { sotuvTafsilotiniOlish } from "@/api/savdoApi";
 import { useSavdoStore } from "@/store/savdoStore";
 import type { Sotuv, SotuvHolati, SotuvYaratishMalumoti, TolovTuri } from "@/types/savdo";
 import BekorQilinganlar from "./BekorQilinganlar";
+import Buyurtmalar from "./Buyurtmalar";
 import MahsulotQaytarishModal from "./MahsulotQaytarishModal";
 import Qaytarish from "./Qaytarish";
 import Savatcha from "./Savatcha";
 import SotuvlarJadvali from "./SotuvlarJadvali";
+import { bugungiSanaKaliti } from "@/lib/sanaKaliti";
 import SotuvTafsilotlariModal from "./SotuvTafsilotlariModal";
 import Tarix from "./Tarix";
 import Tolovlar from "./Tolovlar";
@@ -33,6 +35,7 @@ type SavdoTabi =
   | "tolovlar"
   | "qarzdorliklar"
   | "qaytarish"
+  | "buyurtmalar"
   | "bekor-qilingan";
 
 export default function Savdo() {
@@ -58,17 +61,19 @@ export default function Savdo() {
     sotuvgaTolovQoshish,
     sotuvniBekorQilish,
     sotuvniOchirish,
+    sotuvniTiklash,
     yangiQaytarishYaratish,
     qaytarishniTasdiqlash,
     qaytarishniBekorQilish,
     qaytarishniOchirish,
+    qaytarishniTiklash,
     tanlanganSotuvniTozalash,
     xatolikniTozalash,
   } = useSavdoStore();
   const [searchParams] = useSearchParams();
   const [qidiruv, setQidiruv] = useState("");
-  const [sanaDan, setSanaDan] = useState(() => new Date().toISOString().slice(0, 10));
-  const [sanaGacha, setSanaGacha] = useState(() => new Date().toISOString().slice(0, 10));
+  const [sanaDan, setSanaDan] = useState(bugungiSanaKaliti);
+  const [sanaGacha, setSanaGacha] = useState(bugungiSanaKaliti);
   const [statusFilteri, setStatusFilteri] = useState<SotuvHolati | "barchasi">("barchasi");
   const [tolovFilteri, setTolovFilteri] = useState<TolovTuri | "barchasi">("barchasi");
   const [yangiSotuvOchiq, setYangiSotuvOchiq] = useState(false);
@@ -84,6 +89,7 @@ export default function Savdo() {
       { id: "tolovlar", nomi: t("savdoSahifasi.tabs.tolovlar") },
       { id: "qarzdorliklar", nomi: t("savdoSahifasi.tabs.qarzdorliklar") },
       { id: "qaytarish", nomi: t("savdoSahifasi.tabs.qaytarish") },
+      { id: "buyurtmalar", nomi: t("savdoSahifasi.tabs.buyurtmalar") },
       { id: "bekor-qilingan", nomi: t("savdoSahifasi.tabs.bekorQilingan") },
     ],
     [t]
@@ -281,7 +287,7 @@ export default function Savdo() {
             />
           )}
 
-          {!["tolovlar", "qarzdorliklar", "qaytarish", "savatcha", "bekor-qilingan"].includes(faolTab) && (
+          {!["tolovlar", "qarzdorliklar", "qaytarish", "savatcha", "bekor-qilingan", "buyurtmalar"].includes(faolTab) && (
             <section className="overflow-hidden rounded-[30px] border border-gray-100 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
               <div className="border-b border-gray-100 px-10 py-7">
                 <h1 className="savdo-section-title">{sahifaSarlavhasi}</h1>
@@ -352,6 +358,7 @@ export default function Savdo() {
                   sotuvlar={qidirilganSotuvlar}
                   onSotuvniOchish={sotuvniOchish}
                   onOchirish={sotuvniOchirish}
+                  onTiklash={sotuvniTiklash}
                 />
               )}
               {faolTab === "tarix" && (
@@ -365,12 +372,21 @@ export default function Savdo() {
             </section>
           )}
 
+          {faolTab === "buyurtmalar" && (
+            <Buyurtmalar
+              onSotuvniOchish={sotuvniOchish}
+              onOchirish={sotuvniOchirish}
+              onTiklash={sotuvniTiklash}
+            />
+          )}
+
           {faolTab === "bekor-qilingan" && (
             <BekorQilinganlar
               sotuvlar={sotuvlar}
               onSotuvniOchish={sotuvniOchish}
               onYangilash={boshlangichMalumotlarniYuklash}
               onOchirish={sotuvniOchirish}
+              onTiklash={sotuvniTiklash}
             />
           )}
 
@@ -398,6 +414,7 @@ export default function Savdo() {
               onTasdiqlash={qaytarishniTasdiqlash}
               onBekorQilish={qaytarishniBekorQilish}
               onOchirish={qaytarishniOchirish}
+              onTiklash={qaytarishniTiklash}
             />
           )}
         </>
