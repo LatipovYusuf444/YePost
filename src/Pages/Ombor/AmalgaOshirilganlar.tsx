@@ -77,15 +77,20 @@ type UstunKaliti =
   | "tolangan"
   | "qarz";
 
-const ustunlar: Array<{ kalit: UstunKaliti }> = [
-  { kalit: "kontragent" },
-  { kalit: "ombor" },
-  { kalit: "sana" },
-  { kalit: "masul" },
-  { kalit: "status" },
-  { kalit: "summa" },
-  { kalit: "tolangan" },
-  { kalit: "qarz" },
+// Jadval "table-fixed", shuning uchun har bir ustunga aniq kenglik (px) beriladi — aks holda barcha
+// ustunlar teng bo'linib, sana/summa kabi matnlar qo'shni ustunga o'tib ketadi. Kenglik yetmasa
+// jadval o'z konteyneri ichida gorizontal scroll qiladi (Chiqim/Xaridlar jadvallari kabi).
+const NOMI_KENGLIGI = 140;
+const AMAL_KENGLIGI = 190;
+const ustunlar: Array<{ kalit: UstunKaliti; kenglik: number }> = [
+  { kalit: "kontragent", kenglik: 150 },
+  { kalit: "ombor", kenglik: 150 },
+  { kalit: "sana", kenglik: 176 },
+  { kalit: "masul", kenglik: 170 },
+  { kalit: "status", kenglik: 165 },
+  { kalit: "summa", kenglik: 168 },
+  { kalit: "tolangan", kenglik: 168 },
+  { kalit: "qarz", kenglik: 160 },
 ];
 
 const yaratishVariantlari = [{ key: "sotuvYaratish", path: "/savdo" }];
@@ -209,6 +214,11 @@ export default function AmalgaOshirilganlar() {
     );
   }, [qidiruv, rows, t]);
   const sahifadagiRows = useMemo(() => filtrlanganRows.slice((page - 1) * pageSize, page * pageSize), [filtrlanganRows, page, pageSize]);
+  const faolUstunlar = useMemo(
+    () => ustunlar.filter((ustun) => korinadiganUstunlar.includes(ustun.kalit)),
+    [korinadiganUstunlar]
+  );
+  const jadvalMinKengligi = faolUstunlar.reduce((jami, ustun) => jami + ustun.kenglik, NOMI_KENGLIGI + AMAL_KENGLIGI);
   useEffect(() => setPage(1), [filtrlanganRows, pageSize]);
 
   function ustunniAlmashtirish(kalit: UstunKaliti) {
@@ -306,18 +316,23 @@ export default function AmalgaOshirilganlar() {
 
       <div className="relative overflow-visible">
         <OmborJadval>
-          <table className="w-full min-w-[860px] table-fixed text-left text-sm">
+          <table className="w-full table-fixed text-left text-sm" style={{ minWidth: jadvalMinKengligi }}>
+            <colgroup>
+              <col style={{ width: NOMI_KENGLIGI }} />
+              {faolUstunlar.map((ustun) => (
+                <col key={ustun.kalit} style={{ width: ustun.kenglik }} />
+              ))}
+              <col style={{ width: AMAL_KENGLIGI }} />
+            </colgroup>
             <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500">
               <tr>
-                <th className="w-[210px] px-6 py-5">{t("amalgaOshirilganlar.columns.nomi")}</th>
-                {ustunlar
-                  .filter((ustun) => korinadiganUstunlar.includes(ustun.kalit))
-                  .map((ustun) => (
-                    <th key={ustun.kalit} className="border-l border-orange-200/70 px-6 py-5">
-                      {t(`amalgaOshirilganlar.columns.${ustun.kalit}`)}
-                    </th>
-                  ))}
-                <th className="w-[190px] px-5 py-4 text-right">
+                <th className="px-6 py-5">{t("amalgaOshirilganlar.columns.nomi")}</th>
+                {faolUstunlar.map((ustun) => (
+                  <th key={ustun.kalit} className="border-l border-orange-200/70 px-6 py-5">
+                    {t(`amalgaOshirilganlar.columns.${ustun.kalit}`)}
+                  </th>
+                ))}
+                <th className="px-5 py-4 text-right">
                   <button
                     type="button"
                     onClick={() => setSozlamaOchiq((oldingi) => !oldingi)}
@@ -338,22 +353,20 @@ export default function AmalgaOshirilganlar() {
                   className="cursor-pointer text-slate-600 transition hover:bg-orange-50/40"
                 >
                   <td className="truncate px-6 py-5 font-black text-slate-900">{item.nomi}</td>
-                  {ustunlar
-                    .filter((ustun) => korinadiganUstunlar.includes(ustun.kalit))
-                    .map((ustun) => (
-                      <td
-                        key={ustun.kalit}
-                        className={`px-6 py-5 ${
-                          ustun.kalit === "ombor" ||
-                          ustun.kalit === "masul" ||
-                          ustun.kalit === "kontragent"
-                            ? "whitespace-normal break-words"
-                            : "whitespace-nowrap"
-                        }`}
-                      >
-                        {katak(item, ustun.kalit)}
-                      </td>
-                    ))}
+                  {faolUstunlar.map((ustun) => (
+                    <td
+                      key={ustun.kalit}
+                      className={`px-6 py-5 ${
+                        ustun.kalit === "ombor" ||
+                        ustun.kalit === "masul" ||
+                        ustun.kalit === "kontragent"
+                          ? "whitespace-normal break-words"
+                          : "whitespace-nowrap"
+                      }`}
+                    >
+                      {katak(item, ustun.kalit)}
+                    </td>
+                  ))}
                   <td className="px-5 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <HujjatBekorQilish
