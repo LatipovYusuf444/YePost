@@ -24,6 +24,7 @@ import AdminKompaniyalar from "@/Pages/Admin/Kompaniyalar"
 import AdminTariflar from "@/Pages/Admin/Tariflar"
 import AdminObunalar from "@/Pages/Admin/Obunalar"
 import AdminFoydalanuvchilar from "@/Pages/Admin/Foydalanuvchilar"
+import AdminQollabQuvvatlash from "@/Pages/Admin/QollabQuvvatlash"
 import { Navigate, Route, Routes } from "react-router"
 import ProtectedRoute from "./ProtectedRoute"
 
@@ -44,6 +45,7 @@ export default function AppRouter() {
         <Route path="/admin/tariflar" element={<AdminTariflar />} />
         <Route path="/admin/obunalar" element={<AdminObunalar />} />
         <Route path="/admin/foydalanuvchilar" element={<AdminFoydalanuvchilar />} />
+        <Route path="/admin/qollab-quvvatlash" element={<AdminQollabQuvvatlash />} />
       </Route>
       <Route
         element={

@@ -350,6 +350,8 @@ export default function SupportInbox() {
 
   const ilovalar = useMemo(() => xabarlar.flatMap((x) => x.attachments ?? []), [xabarlar]);
   const yakunlangan = tanlangan?.status === "COMPLETED";
+  // "Umumiy suhbat" yakunlanmaydi (backend 403 qaytaradi), shuning uchun unda "Yakunlash" tugmasi ko'rsatilmaydi.
+  const umumiySuhbat = tanlangan?.id === YAGONA_ID || Boolean(tanlangan?.isGeneral);
   const mutaxassis = tanlangan?.assignee ?? null;
 
   return (
@@ -500,7 +502,7 @@ export default function SupportInbox() {
               <span className={`hidden shrink-0 rounded-full px-3 py-1 text-xs font-bold sm:inline-flex ${HOLAT_RANGI[tanlangan.status]}`}>
                 {t(`inbox.statusLabel.${tanlangan.status}`)}
               </span>
-              {rejim === "tickets" && (
+              {rejim === "tickets" && !umumiySuhbat && (
                 yakunlangan ? (
                   <button
                     type="button"
@@ -654,7 +656,7 @@ export default function SupportInbox() {
                 <dt className="text-sm font-bold text-slate-400">{t("inbox.info.phone")}</dt>
                 <dd className="text-sm font-black text-slate-800">{profil?.phone || "—"}</dd>
               </div>
-              {tanlangan.id !== YAGONA_ID && (
+              {!umumiySuhbat && (
                 <div className="flex items-center justify-between gap-3">
                   <dt className="text-sm font-bold text-slate-400">{t("inbox.info.number")}</dt>
                   <dd className="text-sm font-black text-slate-800">{`#${tanlangan.id.slice(-6).toUpperCase()}`}</dd>

@@ -8,7 +8,8 @@
     "kompaniyalar": "Kompaniyalar",
     "tariflar": "Tariflar",
     "obunalar": "Obunalar",
-    "foydalanuvchilar": "Foydalanuvchilar"
+    "foydalanuvchilar": "Foydalanuvchilar",
+    "qollabQuvvatlash": "Qo'llab-quvvatlash"
   },
   "common": {
     "yangilash": "Yangilash",
@@ -160,5 +161,36 @@
       "STOREKEEPER": "Omborchi",
       "CASHIER": "Kassir"
     }
+  },
+  "qollabQuvvatlash": {
+    "sarlavha": "Qo'llab-quvvatlash",
+    "tavsif": "Barcha kompaniyalarning murojaatlari: javob bering, o'zingizga biriktiring va yakunlang.",
+    "qidirish": "Mavzu yoki xabar bo'yicha qidirish...",
+    "filtr": {
+      "ACTIVE": "Faol",
+      "IN_PROGRESS": "Jarayonda",
+      "COMPLETED": "Yakunlangan",
+      "ALL": "Barchasi"
+    },
+    "holat": {
+      "ACTIVE": "Faol",
+      "IN_PROGRESS": "Jarayonda",
+      "COMPLETED": "Yakunlangan"
+    },
+    "bosh": "Murojaatlar topilmadi",
+    "tanlang": "Murojaatni tanlang",
+    "tanlangTavsif": "Chap tarafdagi ro'yxatdan murojaatni oching.",
+    "masul": "Mas'ul",
+    "biriktirilmagan": "Biriktirilmagan",
+    "ozimgaBiriktirish": "O'zimga biriktirish",
+    "yakunlash": "Yakunlash",
+    "qaytaOchish": "Qayta ochish",
+    "oldingilar": "Oldingi xabarlar",
+    "xabarYoq": "Hali xabar yo'q",
+    "javobYozing": "Javobingizni yozing... (Enter — yuborish, Shift+Enter — yangi qator)",
+    "yuborish": "Yuborish",
+    "yakunlanganEslatma": "Murojaat yakunlangan. Javob yozish uchun uni qayta oching.",
+    "orqaga": "Orqaga",
+    "yopish": "Yopish"
   }
 }

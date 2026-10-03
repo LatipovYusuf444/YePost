@@ -23,14 +23,17 @@ export type QollabQuvvatlashJavobi =
       cursor?: string | null;
     };
 
-// Murojaatlar (ticket) — backendga hali qo'shilmagan; qarang: docs/support-backend-spec.md
+// Murojaatlar (ticket): backendda mavjud; qarang: docs/support-backend-spec.md
 export type SupportTicketHolati = "ACTIVE" | "IN_PROGRESS" | "COMPLETED";
 
 export type SupportTicket = {
   id: string;
   subject: string;
   status: SupportTicketHolati;
+  // Har kompaniyaning eski umumiy yozishmasi: yakunlab bo'lmaydi (403).
+  isGeneral?: boolean;
   createdAt: string;
+  completedAt?: string | null;
   lastMessage?: string | null;
   lastMessageAt?: string | null;
   unreadCount?: number;
@@ -41,4 +44,9 @@ export type SupportTicket = {
     avatarUrl?: string | null;
     role?: string | null;
   } | null;
+};
+
+// Super admin ro'yxatida har bir murojaat qaysi kompaniyaniki ekani ham keladi.
+export type PlatformSupportTicket = SupportTicket & {
+  workspace?: { id: string; name: string } | null;
 };

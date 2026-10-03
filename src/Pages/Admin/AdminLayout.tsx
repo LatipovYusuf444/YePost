@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Building2, CreditCard, LayoutDashboard, LogOut, ShieldCheck, Tag, Users } from "lucide-react";
+import { Building2, CreditCard, Headset, LayoutDashboard, LogOut, ShieldCheck, Tag, Users } from "lucide-react";
 import LanguageSwitcher from "@/Components/common/LanguageSwitcher";
 import ThemeSwitcher from "@/Components/theme/ThemeSwitcher";
 import { useAuthStore } from "@/store/authStore";
@@ -12,6 +12,7 @@ const MENYU = [
   { key: "tariflar", path: "/admin/tariflar", icon: Tag, end: false },
   { key: "obunalar", path: "/admin/obunalar", icon: CreditCard, end: false },
   { key: "foydalanuvchilar", path: "/admin/foydalanuvchilar", icon: Users, end: false },
+  { key: "qollabQuvvatlash", path: "/admin/qollab-quvvatlash", icon: Headset, end: false },
 ] as const;
 
 const qatorKlass = "relative flex h-11 items-center gap-3 rounded-[14px] px-3.5 text-[14.5px] transition-colors duration-200";

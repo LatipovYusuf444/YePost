@@ -8,7 +8,8 @@
     "kompaniyalar": "Компании",
     "tariflar": "Тарифы",
     "obunalar": "Подписки",
-    "foydalanuvchilar": "Пользователи"
+    "foydalanuvchilar": "Пользователи",
+    "qollabQuvvatlash": "Поддержка"
   },
   "common": {
     "yangilash": "Обновить",
@@ -160,5 +161,36 @@
       "STOREKEEPER": "Кладовщик",
       "CASHIER": "Кассир"
     }
+  },
+  "qollabQuvvatlash": {
+    "sarlavha": "Поддержка",
+    "tavsif": "Обращения всех компаний: отвечайте, назначайте на себя и завершайте.",
+    "qidirish": "Поиск по теме или сообщению...",
+    "filtr": {
+      "ACTIVE": "Активные",
+      "IN_PROGRESS": "В работе",
+      "COMPLETED": "Завершённые",
+      "ALL": "Все"
+    },
+    "holat": {
+      "ACTIVE": "Активно",
+      "IN_PROGRESS": "В работе",
+      "COMPLETED": "Завершено"
+    },
+    "bosh": "Обращений не найдено",
+    "tanlang": "Выберите обращение",
+    "tanlangTavsif": "Откройте обращение из списка слева.",
+    "masul": "Ответственный",
+    "biriktirilmagan": "Не назначен",
+    "ozimgaBiriktirish": "Назначить на себя",
+    "yakunlash": "Завершить",
+    "qaytaOchish": "Открыть снова",
+    "oldingilar": "Предыдущие сообщения",
+    "xabarYoq": "Сообщений пока нет",
+    "javobYozing": "Напишите ответ... (Enter — отправить, Shift+Enter — новая строка)",
+    "yuborish": "Отправить",
+    "yakunlanganEslatma": "Обращение завершено. Чтобы ответить, откройте его снова.",
+    "orqaga": "Назад",
+    "yopish": "Закрыть"
   }
 }
