@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { ru, uz } from "date-fns/locale";
@@ -31,6 +31,10 @@ function fromKey(value: string): Date | undefined {
   return Number.isNaN(date.getTime()) ? undefined : date;
 }
 
+// Ikki oylik kalendar (kenglik 28px * 7 kun * 2 oy + oraliqlar) egallaydigan taxminiy kenglik.
+const KALENDAR_KENGLIGI = 460;
+const EKRAN_CHETI = 16;
+
 function shiftDay(amount: number) {
   const date = new Date();
   date.setDate(date.getDate() + amount);
@@ -45,6 +49,22 @@ export default function DateRangePicker({ from, to, onChange, className = "", co
   const kalendarTili = i18n.resolvedLanguage === "ru" ? ru : uz;
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<DateRange | undefined>({ from: fromKey(from), to: fromKey(to) });
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  // Kalendar ochilayotganda tugma ekranning o'ng tomonida bo'lsa, u tugmaning o'ng chetiga tekislanadi
+  // (aks holda ekran chetiga yopishib, jadval ustiga chiqib ketadi). Tor ekranda bitta oy ko'rsatiladi.
+  const [hizalash, setHizalash] = useState<"start" | "end">("start");
+  const [oylarSoni, setOylarSoni] = useState(2);
+
+  function ochilishniBoshqarish(keyingi: boolean) {
+    if (keyingi) {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      const ekranKengligi = window.innerWidth;
+      const kamOy = ekranKengligi < KALENDAR_KENGLIGI + EKRAN_CHETI * 2;
+      setOylarSoni(kamOy ? 1 : 2);
+      if (rect) setHizalash(!kamOy && rect.left + KALENDAR_KENGLIGI + EKRAN_CHETI > ekranKengligi ? "end" : "start");
+    }
+    setOpen(keyingi);
+  }
 
   useEffect(() => {
     if (open) setDraft({ from: fromKey(from), to: fromKey(to) });
@@ -81,9 +101,10 @@ export default function DateRangePicker({ from, to, onChange, className = "", co
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={ochilishniBoshqarish}>
       <PopoverTrigger asChild>
         <Button
+          ref={triggerRef}
           type="button"
           aria-label={t("dateRange.ariaLabel")}
           className={cn(
@@ -118,15 +139,15 @@ export default function DateRangePicker({ from, to, onChange, className = "", co
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-auto p-3">
+      <PopoverContent align={hizalash} collisionPadding={EKRAN_CHETI} className="w-auto max-w-[calc(100vw-2rem)] p-2.5">
         <Calendar
           mode="range"
-          numberOfMonths={2}
+          numberOfMonths={oylarSoni}
           selected={draft}
           onSelect={(range, bosilganKun) => kunniTanlash(range, bosilganKun)}
           defaultMonth={draft?.to ?? draft?.from ?? new Date()}
           locale={kalendarTili}
-          className="[--cell-size:--spacing(8)]"
+          className="[--cell-size:--spacing(7)]"
         />
         <div className="flex flex-wrap gap-1.5 border-t border-border pt-3 text-xs font-bold">
           <button type="button" onClick={() => tezOraliq(0)} className="cursor-pointer rounded-lg bg-muted px-2.5 py-1.5 text-primary hover:bg-muted/70">

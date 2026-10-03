@@ -1,5 +1,17 @@
 {
   "filiallarBoshqaruvi": {
+    "viewToggle": "Ko'rinish",
+    "viewTable": "Jadval",
+    "viewCards": "Kartochka",
+    "editAria": "{{name}} filialini tahrirlash",
+    "deleteAria": "{{name}} filialini o'chirish",
+    "table": {
+      "name": "Nomi",
+      "address": "Manzil",
+      "responsible": "Mas'ul shaxs",
+      "status": "Status",
+      "actions": "Amallar"
+    },
     "confirmDelete": "Filialni soft delete qilasizmi?",
     "eyebrow": "Filial boshqaruvi",
     "title": "Filiallar",

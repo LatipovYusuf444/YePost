@@ -68,6 +68,12 @@
     "next": "Keyingi"
   },
   "categoriesTab": {
+    "viewToggle": "Ko'rinish",
+    "viewTable": "Jadval",
+    "viewCards": "Kartochka",
+    "name": "Nomi",
+    "edit": "Tahrirlash",
+    "delete": "O'chirish",
     "title": "Kategoriyalar",
     "subtitle": "Mahsulotlar uchun asosiy ma'lumotnoma.",
     "add": "Qo'shish"

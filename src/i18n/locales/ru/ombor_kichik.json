@@ -1,5 +1,17 @@
 {
   "filiallarBoshqaruvi": {
+    "viewToggle": "Вид",
+    "viewTable": "Таблица",
+    "viewCards": "Карточки",
+    "editAria": "Редактировать филиал {{name}}",
+    "deleteAria": "Удалить филиал {{name}}",
+    "table": {
+      "name": "Название",
+      "address": "Адрес",
+      "responsible": "Ответственный",
+      "status": "Статус",
+      "actions": "Действия"
+    },
     "confirmDelete": "Выполнить мягкое удаление филиала?",
     "eyebrow": "Управление филиалами",
     "title": "Филиалы",

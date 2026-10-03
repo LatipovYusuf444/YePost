@@ -367,24 +367,28 @@ export default function TovarHarakati() {
 
           <KopTanlovli
             label="Ombor"
+            placeholder="Barcha omborlar"
               options={omborlar}
             selected={ish.warehouseIds}
             onChange={(v) => yangilash("warehouseIds", v)}
           />
           <KopTanlovli
             label="Kategoriya"
+            placeholder="Barcha kategoriyalar"
               options={kategoriyalar}
             selected={ish.categoryIds}
             onChange={(v) => yangilash("categoryIds", v)}
           />
           <KopTanlovli
             label="Maxsulot"
+            placeholder="Barcha mahsulotlar"
             options={maxsulotTanlovlari}
             selected={ish.productIds}
             onChange={(v) => yangilash("productIds", v)}
           />
           <KopTanlovli
             label="Variatsiya"
+            placeholder="Barcha variatsiyalar"
               options={variatsiyalar}
             selected={ish.xarakteristikaIds}
             onChange={(v) => yangilash("xarakteristikaIds", v)}

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
   FileText,
-  LoaderCircle,
   Plus,
   Search,
   Settings,
@@ -24,6 +23,10 @@ import OmborJadval from "./OmborJadval";
 import TablePagination from "@/Components/common/TablePagination";
 import HujjatBekorQilish from "@/Components/common/HujjatBekorQilish";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
+import DateRangePicker from "@/Components/ui/DateRangePicker";
+import JadvalYuklanmoqda from "@/Pages/Savdo/JadvalYuklanmoqda";
+import SotuvStatistikasi from "@/Pages/Savdo/SotuvStatistikasi";
+import { mahalliySanaKaliti } from "@/lib/sanaKaliti";
 
 type JadvalQatori = {
   id: string;
@@ -37,6 +40,11 @@ type JadvalQatori = {
   tolangan?: number;
   qarz?: number;
 };
+
+// Realizatsiya sanasi: tasdiqlangan kun (bo'lmasa yaratilgan kun) — jadvaldagi "Sana" ustuni bilan bir xil.
+function realizatsiyaSanasi(sotuv: Sotuv) {
+  return sotuv.confirmedAt ?? sotuv.createdAt;
+}
 
 function kontragentNomi(sotuv: Sotuv) {
   const mijoz = sotuv.customer;
@@ -80,7 +88,7 @@ type UstunKaliti =
 // Jadval "table-fixed", shuning uchun har bir ustunga aniq kenglik (px) beriladi — aks holda barcha
 // ustunlar teng bo'linib, sana/summa kabi matnlar qo'shni ustunga o'tib ketadi. Kenglik yetmasa
 // jadval o'z konteyneri ichida gorizontal scroll qiladi (Chiqim/Xaridlar jadvallari kabi).
-const NOMI_KENGLIGI = 140;
+const NOMI_KENGLIGI = 172;
 const AMAL_KENGLIGI = 190;
 const ustunlar: Array<{ kalit: UstunKaliti; kenglik: number }> = [
   { kalit: "kontragent", kenglik: 150 },
@@ -128,6 +136,10 @@ export default function AmalgaOshirilganlar() {
   const [qidiruv, setQidiruv] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [sanaDan, setSanaDan] = useState("");
+  const [sanaGacha, setSanaGacha] = useState("");
+  // Birinchi yuklash tugamaguncha "ma'lumot yo'q" holati ko'rinib qolmasligi uchun.
+  const [birinchiYuklashTugadi, setBirinchiYuklashTugadi] = useState(false);
   const [yaratishOchiq, setYaratishOchiq] = useState(false);
   const [sozlamaOchiq, setSozlamaOchiq] = useState(false);
   const [korinadiganUstunlar, setKorinadiganUstunlar] = useState<UstunKaliti[]>(
@@ -135,7 +147,7 @@ export default function AmalgaOshirilganlar() {
   );
 
   useEffect(() => {
-    void amalgaOshirilganlarniYuklash();
+    void amalgaOshirilganlarniYuklash().finally(() => setBirinchiYuklashTugadi(true));
   }, [amalgaOshirilganlarniYuklash]);
 
   useEffect(() => {
@@ -172,11 +184,15 @@ export default function AmalgaOshirilganlar() {
     [store.xodimlar]
   );
 
+  // Bekor qilingan sotuvlar ham ko'rinadi — ularni shu yerning o'zida butunlay o'chirish mumkin.
+  const realizatsiyalar = useMemo(
+    () => store.sotuvlar.filter((sotuv) => sotuvHolati(sotuv) !== "DRAFT"),
+    [store.sotuvlar]
+  );
+
   const rows = useMemo<JadvalQatori[]>(
     () =>
-      store.sotuvlar
-        // Bekor qilingan sotuvlar ham ko'rinadi — ularni shu yerning o'zida butunlay o'chirish mumkin.
-        .filter((sotuv) => sotuvHolati(sotuv) !== "DRAFT")
+      realizatsiyalar
         .map((sotuv) => ({
           id: sotuv.id,
           nomi: hujjatRaqami(sotuv),
@@ -192,13 +208,21 @@ export default function AmalgaOshirilganlar() {
         .sort((a, b) =>
           String(b.realizationDate ?? "").localeCompare(String(a.realizationDate ?? ""))
         ),
-    [omborMap, store.sotuvlar, xodimMap, t]
+    [omborMap, realizatsiyalar, xodimMap, t]
   );
 
   const filtrlanganRows = useMemo(() => {
     const query = qidiruv.trim().toLowerCase();
-    if (!query) return rows;
-    return rows.filter((item) =>
+    const sanaBoyicha =
+      sanaDan || sanaGacha
+        ? rows.filter((item) => {
+            const kun = mahalliySanaKaliti(item.realizationDate);
+            if (!kun) return false;
+            return (!sanaDan || kun >= sanaDan) && (!sanaGacha || kun <= sanaGacha);
+          })
+        : rows;
+    if (!query) return sanaBoyicha;
+    return sanaBoyicha.filter((item) =>
       [
         item.nomi,
         item.kontragent,
@@ -212,7 +236,7 @@ export default function AmalgaOshirilganlar() {
         .toLowerCase()
         .includes(query)
     );
-  }, [qidiruv, rows, t]);
+  }, [qidiruv, rows, sanaDan, sanaGacha, t]);
   const sahifadagiRows = useMemo(() => filtrlanganRows.slice((page - 1) * pageSize, page * pageSize), [filtrlanganRows, page, pageSize]);
   const faolUstunlar = useMemo(
     () => ustunlar.filter((ustun) => korinadiganUstunlar.includes(ustun.kalit)),
@@ -220,6 +244,8 @@ export default function AmalgaOshirilganlar() {
   );
   const jadvalMinKengligi = faolUstunlar.reduce((jami, ustun) => jami + ustun.kenglik, NOMI_KENGLIGI + AMAL_KENGLIGI);
   useEffect(() => setPage(1), [filtrlanganRows, pageSize]);
+
+  const birinchiYuklanmoqda = rows.length === 0 && (store.yuklanmoqda || !birinchiYuklashTugadi);
 
   function ustunniAlmashtirish(kalit: UstunKaliti) {
     setKorinadiganUstunlar((oldingi) =>
@@ -284,7 +310,20 @@ export default function AmalgaOshirilganlar() {
         </div>
       </header>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <SotuvStatistikasi
+        sotuvlar={realizatsiyalar}
+        yuklanmoqda={birinchiYuklanmoqda}
+        sanaDan={sanaDan}
+        sanaGacha={sanaGacha}
+        onSanaTanlash={(dan, gacha) => {
+          setSanaDan(dan);
+          setSanaGacha(gacha);
+        }}
+        qoralamaKorsatilsin={false}
+        sanaOlish={realizatsiyaSanasi}
+      />
+
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <label className="relative block w-full max-w-[480px]">
           <Search
             size={19}
@@ -297,6 +336,18 @@ export default function AmalgaOshirilganlar() {
             className="h-14 w-full rounded-[20px] border border-slate-200 bg-white pl-13 pr-5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
           />
         </label>
+
+        <div className="w-full lg:w-[260px]">
+          <DateRangePicker
+            from={sanaDan}
+            to={sanaGacha}
+            onChange={(from, to) => {
+              setSanaDan(from);
+              setSanaGacha(to);
+            }}
+            compact
+          />
+        </div>
       </div>
 
       {store.xatolik && (
@@ -314,6 +365,11 @@ export default function AmalgaOshirilganlar() {
         </div>
       )}
 
+      {birinchiYuklanmoqda ? (
+        <div className="overflow-hidden rounded-[30px] border border-orange-100 bg-white shadow-sm">
+          <JadvalYuklanmoqda ikonka={<FileText size={24} />} />
+        </div>
+      ) : (
       <div className="relative overflow-visible">
         <OmborJadval>
           <table className="w-full table-fixed text-left text-sm" style={{ minWidth: jadvalMinKengligi }}>
@@ -427,21 +483,16 @@ export default function AmalgaOshirilganlar() {
           </div>
         )}
 
-        {store.yuklanmoqda && rows.length === 0 && (
-          <div className="flex min-h-48 items-center justify-center gap-2 text-sm font-bold text-slate-400">
-            <LoaderCircle size={22} className="animate-spin text-orange-500" /> {t("amalgaOshirilganlar.loading")}
-          </div>
-        )}
-
         {!store.yuklanmoqda && filtrlanganRows.length === 0 && (
           <div className="flex min-h-48 flex-col items-center justify-center px-6 text-center">
             <FileText size={30} className="text-orange-200" />
             <p className="mt-3 font-bold text-slate-400">
-              {qidiruv ? t("amalgaOshirilganlar.emptySearch") : t("amalgaOshirilganlar.emptyList")}
+              {qidiruv || sanaDan || sanaGacha ? t("amalgaOshirilganlar.emptySearch") : t("amalgaOshirilganlar.emptyList")}
             </p>
           </div>
         )}
       </div>
+      )}
 
       {savdo.tanlanganSotuv && (
         <OmbordanChiqarishHujjatModal

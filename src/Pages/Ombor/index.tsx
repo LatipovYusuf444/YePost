@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import LoadingState from "@/Components/common/LoadingState";
 import TablePagination from "@/Components/common/TablePagination";
 import { manzilniKoordinatadanAniqlash } from "@/api/omborApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
@@ -32,6 +33,15 @@ import OrganizationTablari, { type OrganizationTab } from "./OrganizationTablari
 import OmborJadval from "./OmborJadval";
 
 type Korinish = "jadval" | "kartochka";
+
+function ismBoshHarflari(nom: string) {
+  return nom
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((qism) => qism[0]?.toUpperCase())
+    .join("");
+}
 
 export default function Ombor() {
   const { t } = useTranslation("ombor_bosh");
@@ -373,140 +383,169 @@ export default function Ombor() {
       )}
 
       {yuklanmoqda ? (
-        <div className="flex h-72 items-center justify-center rounded-[24px] border border-orange-100 bg-white">
-          <LoaderCircle className="animate-spin text-orange-500" size={32} />
-        </div>
+        <LoadingState matn={t("omborlarSahifasi.loading")} ikonka={<Warehouse size={24} />} />
       ) : korinish === "jadval" ? (
         <>
         <OmborJadval>
-            <table className="w-full min-w-[1480px] text-left">
+            <table className="w-full text-left">
               <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500">
                 <tr>
-                  <th className="min-w-52 px-6 py-4">{t("omborlarSahifasi.table.headers.name")}</th>
-                  <th className="min-w-56 px-6 py-4">{t("omborlarSahifasi.table.headers.location")}</th>
-                  <th className="min-w-36 px-6 py-4">{t("omborlarSahifasi.table.headers.workingHours")}</th>
-                  <th className="min-w-48 px-6 py-4">{t("omborlarSahifasi.table.headers.createdBy")}</th>
-                  <th className="min-w-40 px-6 py-4">{t("omborlarSahifasi.table.headers.createdAt")}</th>
-                  <th className="min-w-44 px-6 py-4">{t("omborlarSahifasi.table.headers.responsible")}</th>
-                  <th className="min-w-48 px-6 py-4">{t("omborlarSahifasi.table.headers.responsiblePhone")}</th>
-                  <th className="min-w-28 px-6 py-4">{t("omborlarSahifasi.table.headers.status")}</th>
-                  <th className="w-20 px-6 py-4 text-right">
+                  <th className="px-4! py-4">{t("omborlarSahifasi.table.headers.name")}</th>
+                  <th className="px-4! py-4">{t("omborlarSahifasi.table.headers.location")}</th>
+                  <th className="px-4! py-4">{t("omborlarSahifasi.table.headers.workingHours")}</th>
+                  <th className="px-4! py-4">{t("omborlarSahifasi.table.headers.createdBy")}</th>
+                  <th className="px-4! py-4">{t("omborlarSahifasi.table.headers.createdAt")}</th>
+                  <th className="px-4! py-4">{t("omborlarSahifasi.table.headers.responsible")}</th>
+                  <th className="px-4! py-4">{t("omborlarSahifasi.table.headers.responsiblePhone")}</th>
+                  <th className="px-4! py-4">{t("omborlarSahifasi.table.headers.status")}</th>
+                  <th className="w-16 px-4! py-4 text-right">
                     <span className="sr-only">{t("omborlarSahifasi.table.headers.actions")}</span>
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-          {sahifadagiOmborlar.map((ombor) => (
-            <tr
-              key={ombor.id}
-              onClick={() => void modalniOchish(ombor)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  void modalniOchish(ombor);
-                }
-              }}
-              tabIndex={0}
-              className="cursor-pointer transition hover:bg-orange-50/50 focus:bg-orange-50/50 focus:outline-none"
-              aria-label={t("omborlarSahifasi.table.openAria", { name: ombor.name })}
-            >
-              <td className="px-6 py-5">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-orange-500">
-                    <Warehouse size={20} />
-                  </span>
-                  <span className="truncate font-black text-gray-950">{ombor.name}</span>
-                </div>
-              </td>
-              <td className="px-6 py-5 text-sm font-semibold text-gray-600">
-                <p className="max-w-56 leading-5">{ombor.address || t("omborlarSahifasi.table.noAddress")}</p>
-                {ombor.latitude != null && ombor.longitude != null && (
-                  <p className="mt-1 flex items-start gap-1 text-xs font-bold text-slate-400">
-                    <MapPin size={13} className="mt-0.5 shrink-0" />
-                    <span>
-                      {ombor.latitude},<br />
-                      {ombor.longitude}
+          {sahifadagiOmborlar.map((ombor) => {
+            const yaratuvchi = omborYaratuvchisi(ombor);
+            const yaratuvchiNomi = yaratuvchi
+              ? yaratuvchi.fullName || yaratuvchi.name || yaratuvchi.username || t("omborlarSahifasi.table.defaultUserName")
+              : "";
+            const masulNomi =
+              ombor.responsible?.fullName ??
+              ombor.responsible?.username ??
+              ombor.responsible?.name ??
+              (ombor.responsibleId ? xodimMap.get(ombor.responsibleId)?.fullName : undefined) ??
+              (ombor.responsibleId ? xodimMap.get(ombor.responsibleId)?.username : undefined);
+            const masulTelefoni =
+              ombor.responsible?.phone ?? (ombor.responsibleId ? xodimMap.get(ombor.responsibleId)?.phone : undefined);
+            const faol = ombor.isActive !== false;
+
+            return (
+              <tr
+                key={ombor.id}
+                onClick={() => void modalniOchish(ombor)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    void modalniOchish(ombor);
+                  }
+                }}
+                tabIndex={0}
+                className="cursor-pointer transition hover:bg-orange-50/50 focus:bg-orange-50/50 focus:outline-none"
+                aria-label={t("omborlarSahifasi.table.openAria", { name: ombor.name })}
+              >
+                <td className="px-4! py-4">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-orange-500 ring-1 ring-orange-100">
+                      <Warehouse size={19} />
                     </span>
+                    <span className="whitespace-nowrap font-black text-gray-950">{ombor.name}</span>
+                  </div>
+                </td>
+                <td className="px-4! py-4 text-sm font-semibold">
+                  <p
+                    title={ombor.address || undefined}
+                    className={`line-clamp-2 min-w-52 max-w-72 leading-5 ${ombor.address ? "text-gray-600" : "text-slate-400"}`}
+                  >
+                    {ombor.address || t("omborlarSahifasi.table.noAddress")}
                   </p>
-                )}
-              </td>
-              <td className="px-6 py-5 text-sm font-semibold leading-5 text-gray-600">
-                {ombor.openingTime && ombor.closingTime ? (
-                  <>
-                    {ombor.openingTime} –<br />
-                    {ombor.closingTime}
-                  </>
-                ) : (
-                  t("omborlarSahifasi.table.noWorkingHours")
-                )}
-              </td>
-              <td className="px-6 py-5 text-sm text-gray-600">
-                {(() => {
-                  const yaratuvchi = omborYaratuvchisi(ombor);
-                  if (!yaratuvchi) return <span className="font-semibold text-slate-400">{t("omborlarSahifasi.table.noCreator")}</span>;
-                  const nomi = yaratuvchi.fullName || yaratuvchi.name || yaratuvchi.username || t("omborlarSahifasi.table.defaultUserName");
-                  return (
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500 ring-1 ring-orange-100">
-                        <UserRound size={17} />
+                  {ombor.latitude != null && ombor.longitude != null && (
+                    <span className="mt-1.5 inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-slate-50 px-2 py-0.5 text-xs font-bold text-slate-400 ring-1 ring-slate-100">
+                      <MapPin size={12} className="shrink-0" />
+                      {ombor.latitude}, {ombor.longitude}
+                    </span>
+                  )}
+                </td>
+                <td className="px-4! py-4">
+                  {ombor.openingTime && ombor.closingTime ? (
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-slate-50 px-2.5 py-1.5 text-sm font-bold text-slate-700 ring-1 ring-slate-100">
+                      <Clock3 size={14} className="shrink-0 text-slate-400" />
+                      {ombor.openingTime} – {ombor.closingTime}
+                    </span>
+                  ) : (
+                    <span className="whitespace-nowrap text-sm font-semibold text-slate-400">{t("omborlarSahifasi.table.noWorkingHours")}</span>
+                  )}
+                </td>
+                <td className="px-4! py-4 text-sm text-gray-600">
+                  {yaratuvchi ? (
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-50 text-[11px] font-black text-orange-500 ring-1 ring-orange-100">
+                        {ismBoshHarflari(yaratuvchiNomi) || <UserRound size={16} />}
                       </span>
                       <div className="min-w-0">
-                        <p className="truncate font-black text-slate-800">{nomi}</p>
-                        {yaratuvchi.username && yaratuvchi.username !== nomi && (
-                          <p className="mt-0.5 truncate text-xs font-semibold text-slate-400">@{yaratuvchi.username}</p>
+                        <p className="whitespace-nowrap font-black text-slate-800">{yaratuvchiNomi}</p>
+                        {yaratuvchi.username && yaratuvchi.username !== yaratuvchiNomi && (
+                          <p className="mt-0.5 whitespace-nowrap text-xs font-semibold text-slate-400">@{yaratuvchi.username}</p>
                         )}
                       </div>
                     </div>
-                  );
-                })()}
-              </td>
-              <td className="px-6 py-5 text-sm font-semibold text-gray-500">
-                {sananiFormatlash(ombor.createdAt)}
-              </td>
-              <td className="px-6 py-5 text-sm font-semibold text-gray-600">
-                {ombor.responsible?.fullName ??
-                  ombor.responsible?.username ??
-                  ombor.responsible?.name ??
-                  (ombor.responsibleId ? xodimMap.get(ombor.responsibleId)?.fullName : undefined) ??
-                  (ombor.responsibleId ? xodimMap.get(ombor.responsibleId)?.username : undefined) ??
-                  t("omborlarSahifasi.table.noResponsible")}
-              </td>
-              <td className="px-6 py-5 text-sm font-black text-gray-600">
-                {ombor.responsible?.phone ??
-                  (ombor.responsibleId ? xodimMap.get(ombor.responsibleId)?.phone : undefined) ??
-                  t("omborlarSahifasi.table.noPhone")}
-              </td>
-              <td className="px-6 py-5 text-right">
-                <span
-                  className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${
-                    ombor.isActive === false
-                      ? "bg-gray-100 text-gray-500"
-                      : "bg-emerald-50 text-emerald-600"
-                  }`}
-                >
-                  {ombor.isActive === false ? t("omborlarSahifasi.table.statusInactive") : t("omborlarSahifasi.table.statusActive")}
-                </span>
-              </td>
-              <td className="px-6 py-5">
-                <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void ochirish(ombor.id);
-                    }}
-                    onKeyDown={(event) => event.stopPropagation()}
-                    disabled={amalBajarilmoqda}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100 disabled:opacity-50"
-                    aria-label={t("omborlarSahifasi.table.deleteAria", { name: ombor.name })}
-                    title={t("omborlarSahifasi.table.deleteTitle")}
+                  ) : (
+                    <span className="whitespace-nowrap font-semibold text-slate-400">{t("omborlarSahifasi.table.noCreator")}</span>
+                  )}
+                </td>
+                <td className="px-4! py-4 text-sm font-semibold text-gray-500">
+                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                    <CalendarDays size={14} className="shrink-0 text-slate-300" />
+                    {sananiFormatlash(ombor.createdAt)}
+                  </span>
+                </td>
+                <td className="px-4! py-4 text-sm font-semibold text-gray-600">
+                  {masulNomi ? (
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-50 text-[11px] font-black text-sky-600 ring-1 ring-sky-100">
+                        {ismBoshHarflari(masulNomi) || <UserRound size={16} />}
+                      </span>
+                      <span className="whitespace-nowrap font-bold text-slate-800">{masulNomi}</span>
+                    </div>
+                  ) : (
+                    <span className="whitespace-nowrap text-slate-400">{t("omborlarSahifasi.table.noResponsible")}</span>
+                  )}
+                </td>
+                <td className="px-4! py-4 text-sm font-bold">
+                  {masulTelefoni ? (
+                    <a
+                      href={`tel:${masulTelefoni.replace(/[^\d+]/g, "")}`}
+                      onClick={(event) => event.stopPropagation()}
+                      onKeyDown={(event) => event.stopPropagation()}
+                      className="inline-flex items-center gap-1.5 whitespace-nowrap tabular-nums text-slate-700 transition hover:text-[#2563EB]"
+                    >
+                      <Phone size={14} className="shrink-0 text-slate-300" />
+                      {masulTelefoni}
+                    </a>
+                  ) : (
+                    <span className="whitespace-nowrap font-semibold text-slate-400">{t("omborlarSahifasi.table.noPhone")}</span>
+                  )}
+                </td>
+                <td className="px-4! py-4">
+                  <span
+                    className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-xs font-black ring-1 ${
+                      faol ? "bg-emerald-50 text-emerald-600 ring-emerald-100" : "bg-gray-100 text-gray-500 ring-gray-200"
+                    }`}
                   >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
+                    <span className={`h-1.5 w-1.5 rounded-full ${faol ? "bg-emerald-500" : "bg-gray-400"}`} />
+                    {faol ? t("omborlarSahifasi.table.statusActive") : t("omborlarSahifasi.table.statusInactive")}
+                  </span>
+                </td>
+                <td className="px-4! py-4">
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void ochirish(ombor.id);
+                      }}
+                      onKeyDown={(event) => event.stopPropagation()}
+                      disabled={amalBajarilmoqda}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100 disabled:opacity-50"
+                      aria-label={t("omborlarSahifasi.table.deleteAria", { name: ombor.name })}
+                      title={t("omborlarSahifasi.table.deleteTitle")}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
           {omborlar.length === 0 && (
             <tr>
               <td colSpan={9} className="px-6 py-14 text-center">
@@ -528,66 +567,79 @@ export default function Ombor() {
           {omborlar.map((ombor) => {
             const masul =
               ombor.responsible ?? xodimlar.find((xodim) => xodim.id === ombor.responsibleId);
+            const masulNomi = masul?.fullName ?? masul?.username ?? masul?.name;
             const filialNomi =
               ombor.branch?.name ??
               filiallar.find((filial) => filial.id === ombor.branchId)?.name;
+            const faol = ombor.isActive !== false;
 
             return (
               <article
                 key={ombor.id}
-                className="overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                className="group flex flex-col overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-[0_10px_30px_rgba(37,99,235,.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(37,99,235,.12)]"
               >
-                <div className="p-5">
+                <div className="flex-1 p-5">
                   <div className="flex items-start justify-between gap-3">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-500">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-50 to-white text-orange-500 ring-1 ring-orange-100 transition duration-300 group-hover:-rotate-6 group-hover:scale-105">
                       <Warehouse size={22} />
                     </span>
                     <span
-                      className={`rounded-full px-3 py-1 text-xs font-black ${
-                        ombor.isActive === false
-                          ? "bg-gray-100 text-gray-500"
-                          : "bg-emerald-50 text-emerald-600"
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black ring-1 ${
+                        faol ? "bg-emerald-50 text-emerald-600 ring-emerald-100" : "bg-gray-100 text-gray-500 ring-gray-200"
                       }`}
                     >
-                      {ombor.isActive === false ? t("omborlarSahifasi.table.statusInactive") : t("omborlarSahifasi.table.statusActive")}
+                      <span className={`h-1.5 w-1.5 rounded-full ${faol ? "bg-emerald-500" : "bg-gray-400"}`} />
+                      {faol ? t("omborlarSahifasi.table.statusActive") : t("omborlarSahifasi.table.statusInactive")}
                     </span>
                   </div>
 
                   <h2 className="mt-4 truncate text-xl font-black text-slate-950">{ombor.name}</h2>
-                  <p className="mt-1 truncate text-sm font-semibold text-slate-500">
-                    {ombor.address || t("omborlarSahifasi.table.noAddress")}
+                  <p className="mt-1.5 flex items-start gap-1.5 text-sm font-semibold text-slate-500" title={ombor.address || undefined}>
+                    <MapPin size={15} className="mt-0.5 shrink-0 text-slate-300" />
+                    <span className={`line-clamp-2 ${ombor.address ? "" : "text-slate-400"}`}>
+                      {ombor.address || t("omborlarSahifasi.table.noAddress")}
+                    </span>
                   </p>
 
-                  <div className="mt-4 space-y-2 text-sm text-slate-500">
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-100">
+                      <Clock3 size={13} className="shrink-0 text-slate-400" />
+                      {ombor.openingTime || "—"} — {ombor.closingTime || "—"}
+                    </span>
                     {(ombor.latitude != null || ombor.longitude != null) && (
-                      <p className="flex items-center gap-2">
-                        <MapPin size={15} className="shrink-0 text-orange-500" />
-                        <span className="truncate">
-                          {ombor.latitude ?? "—"}, {ombor.longitude ?? "—"}
-                        </span>
-                      </p>
+                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-500 ring-1 ring-slate-100">
+                        <MapPin size={13} className="shrink-0 text-slate-400" />
+                        {ombor.latitude ?? "—"}, {ombor.longitude ?? "—"}
+                      </span>
                     )}
-                    <p className="flex items-center gap-2">
-                      <Clock3 size={15} className="shrink-0 text-orange-500" />
-                      <span>
-                        {ombor.openingTime || "—"} — {ombor.closingTime || "—"}
-                      </span>
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <UserRound size={15} className="shrink-0 text-orange-500" />
-                      <span className="truncate">
-                        {masul?.fullName ?? masul?.username ?? masul?.name ?? t("omborlarSahifasi.cards.noResponsible")}
-                      </span>
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <CalendarDays size={15} className="shrink-0 text-orange-500" />
-                      <span>{sananiFormatlash(ombor.createdAt)}</span>
-                    </p>
                     {filialNomi && (
-                      <p className="truncate text-xs font-bold text-slate-400">
+                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-orange-50 px-2.5 py-1.5 text-xs font-bold text-orange-600 ring-1 ring-orange-100">
                         {t("omborlarSahifasi.cards.branchLabel", { name: filialNomi })}
-                      </p>
+                      </span>
                     )}
+                  </div>
+
+                  <div className="mt-4 divide-y divide-slate-100 rounded-2xl border border-slate-100 bg-slate-50/60">
+                    <div className="flex items-center gap-2.5 px-3.5 py-3">
+                      {masulNomi ? (
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-50 text-[11px] font-black text-sky-600 ring-1 ring-sky-100">
+                          {ismBoshHarflari(masulNomi) || <UserRound size={15} />}
+                        </span>
+                      ) : (
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-slate-300 ring-1 ring-slate-100">
+                          <UserRound size={15} />
+                        </span>
+                      )}
+                      <span className={`truncate text-sm ${masulNomi ? "font-bold text-slate-800" : "font-semibold text-slate-400"}`}>
+                        {masulNomi ?? t("omborlarSahifasi.cards.noResponsible")}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2.5 px-3.5 py-3 text-sm font-semibold text-slate-500">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-slate-300 ring-1 ring-slate-100">
+                        <CalendarDays size={15} />
+                      </span>
+                      {sananiFormatlash(ombor.createdAt)}
+                    </div>
                   </div>
                 </div>
 

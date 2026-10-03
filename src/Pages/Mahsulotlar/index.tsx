@@ -41,6 +41,7 @@ import type {
 import type { Ombor } from "@/types/ombor";
 
 import ModalTablari from "@/Components/common/ModalTablari";
+import KorinishTanlash, { type RoyxatKorinishi } from "@/Pages/Ombor/KorinishTanlash";
 type Tab = "mahsulotlar" | "kategoriyalar";
 type Korinish = "kartochka" | "jadval";
 type VariationRow = {
@@ -153,6 +154,7 @@ export default function Mahsulotlar() {
   const [tab, setTab] = useState<Tab>("mahsulotlar");
   const [qidiruv, setQidiruv] = useState("");
   const [korinish, setKorinish] = useState<Korinish>("jadval");
+  const [kategoriyaKorinishi, setKategoriyaKorinishi] = useState<RoyxatKorinishi>("jadval");
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
   const [korinishMenu, setKorinishMenu] = useState(false);
@@ -405,15 +407,62 @@ export default function Mahsulotlar() {
           )}
         </section>
       ) : (
-        <section className="space-y-4">
-          <div className="flex items-end justify-between"><div><h2 className="text-2xl font-black">{t("categoriesTab.title")}</h2><p className="text-sm text-gray-500">{t("categoriesTab.subtitle")}</p></div><button onClick={()=>setOddiyModal("new")} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-5 font-black text-white"><Plus size={17}/>{t("categoriesTab.add")}</button></div>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {store.kategoriyalar.map(item=><article key={item.id} className="rounded-[24px] border border-orange-100 bg-white p-5">
-              <div className="flex items-start justify-between"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-orange-600"><Tags size={21}/></div><div className="flex gap-2"><button onClick={()=>void oddiyTahrirlash(item)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-600"><Edit3 size={15}/></button><button onClick={()=>void oddiyOchirish(item.id)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500"><Trash2 size={15}/></button></div></div>
-              <h3 className="mt-4 text-lg font-black">{item.name}</h3>
-            </article>)}
-            {store.kategoriyalar.length===0&&<Empty matn={t("empty.noData")}/>}
+        <section className="space-y-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-2xl font-black">{t("categoriesTab.title")}</h2>
+              <p className="text-sm text-gray-500">{t("categoriesTab.subtitle")}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <KorinishTanlash
+                qiymat={kategoriyaKorinishi}
+                onChange={setKategoriyaKorinishi}
+                sarlavha={t("categoriesTab.viewToggle")}
+                jadvalMatni={t("categoriesTab.viewTable")}
+                kartochkaMatni={t("categoriesTab.viewCards")}
+              />
+              <button onClick={()=>setOddiyModal("new")} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-5 font-black text-white shadow-[0_10px_24px_rgba(37,99,235,.22)] transition hover:-translate-y-0.5 hover:bg-orange-600"><Plus size={17}/>{t("categoriesTab.add")}</button>
+            </div>
           </div>
+
+          {kategoriyaKorinishi==="kartochka"?(
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {store.kategoriyalar.map(item=><article key={item.id} className="group flex flex-col overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-[0_10px_30px_rgba(37,99,235,.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(37,99,235,.12)]">
+                <div className="flex flex-1 items-center gap-4 p-5">
+                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-50 to-white text-orange-500 ring-1 ring-orange-100 transition duration-300 group-hover:-rotate-6 group-hover:scale-105"><Tags size={24}/></span>
+                  <h3 className="min-w-0 flex-1 truncate text-lg font-black text-slate-900">{item.name}</h3>
+                </div>
+                <div className="flex gap-2 border-t border-orange-100 bg-orange-50/40 p-3">
+                  <button onClick={()=>void oddiyTahrirlash(item)} className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-orange-600 ring-1 ring-orange-100 transition hover:bg-orange-100"><Edit3 size={15}/>{t("categoriesTab.edit")}</button>
+                  <button onClick={()=>void oddiyOchirish(item.id)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100" aria-label={t("categoriesTab.delete")}><Trash2 size={15}/></button>
+                </div>
+              </article>)}
+              {store.kategoriyalar.length===0&&<Empty matn={t("empty.noData")}/>}
+            </div>
+          ):(
+            <div className="overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-[0_10px_30px_rgba(37,99,235,.06)]">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th className="w-16 px-5 py-4">{t("table.index")}</th>
+                    <th className="px-5 py-4">{t("categoriesTab.name")}</th>
+                    <th className="w-32 px-5 py-4 text-right"><span className="sr-only">{t("table.action")}</span></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-orange-100/70">
+                  {store.kategoriyalar.map((item,index)=><tr key={item.id} onClick={()=>void oddiyTahrirlash(item)} className="cursor-pointer transition hover:bg-orange-50/50">
+                    <td className="px-5 py-4 font-bold tabular-nums text-slate-400">{index+1}</td>
+                    <td className="px-5 py-4"><div className="flex items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500 ring-1 ring-orange-100"><Tags size={18}/></span><span className="font-black text-slate-900">{item.name}</span></div></td>
+                    <td className="px-5 py-4"><div className="flex justify-end gap-2">
+                      <button onClick={(e)=>{e.stopPropagation();void oddiyTahrirlash(item)}} className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-600 transition hover:bg-orange-100" aria-label={t("categoriesTab.edit")}><Edit3 size={15}/></button>
+                      <button onClick={(e)=>{e.stopPropagation();void oddiyOchirish(item.id)}} className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100" aria-label={t("categoriesTab.delete")}><Trash2 size={15}/></button>
+                    </div></td>
+                  </tr>)}
+                  {store.kategoriyalar.length===0&&<tr><td colSpan={3} className="px-6 py-14 text-center"><Tags className="mx-auto text-orange-200" size={40}/><p className="mt-3 font-semibold text-gray-400">{t("empty.noData")}</p></td></tr>}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
       )}
 

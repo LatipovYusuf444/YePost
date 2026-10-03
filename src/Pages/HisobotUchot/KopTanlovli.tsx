@@ -8,7 +8,7 @@ export default function KopTanlovli({
   options,
   selected,
   onChange,
-  placeholder = "",
+  placeholder = "Barchasi",
 }: {
   label: string;
   options: Tanlov[];
