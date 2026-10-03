@@ -2,33 +2,48 @@
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import {
+  ArrowLeft,
+  Ban,
   Bell,
+  Building2,
+  Calculator,
+  CalendarCheck,
   CalendarDays,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
+  ClipboardCheck,
   CreditCard,
   Database,
   Download,
   ExternalLink,
+  Eye,
   FileText,
   Link,
   ImageIcon,
   LoaderCircle,
   MessageSquare,
+  MapPin,
   MoreHorizontal,
   Package,
   Paperclip,
+  PenLine,
+  Phone,
   Pin,
   Plus,
   Printer,
+  RotateCcw,
   Search,
   Send,
-  Settings,
+  ShoppingCart,
   SlidersHorizontal,
   Smile,
+  StickyNote,
   Trash2,
+  UserCheck,
   UserRound,
+  Wallet,
+  Warehouse,
   X,
 } from "lucide-react";
 import { crmApi, royxatniAjratish } from "@/api/crmApi";
@@ -68,6 +83,7 @@ import {
 } from "./savdoYordamchilari";
 import SavdoSelect from "./SavdoSelect";
 import SotuvTolovlari from "./SotuvTolovlari";
+import SotuvJarayoni from "./SotuvJarayoni";
 
 import ModalTablari from "@/Components/common/ModalTablari";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
@@ -430,7 +446,6 @@ export default function SotuvTafsilotlariModal({
             <div className="flex items-center justify-between gap-4">
               <h1 className="truncate text-2xl font-bold text-slate-900">{sotuvJadvalId(sotuv)}</h1>
               <div className="flex shrink-0 items-center gap-2">
-                <IconButton icon={<Settings size={17} />} />
                 <div className="relative hidden sm:block">
                   <button
                     type="button"
@@ -505,16 +520,6 @@ export default function SotuvTafsilotlariModal({
                   onTiklash={() => sotuvniTiklash(sotuv.id)}
                   onOchirildi={onYopish}
                 />
-                {holat !== "CANCELLED" && sotuvQarzdorlikSummasi(sotuv) > 0 && (
-                  <button
-                    disabled={amalBajarilmoqda}
-                    onClick={() => setTolovModalOchiq(true)}
-                    className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#2563EB] px-4 text-sm font-bold text-white shadow-[0_10px_24px_rgba(37,99,235,.24)] transition hover:bg-[#1D4ED8] disabled:opacity-50"
-                  >
-                    {amalBajarilmoqda ? <LoaderCircle size={16} className="animate-spin" /> : t("header.tolovniQabulQilish")}
-                    <ChevronDown size={15} />
-                  </button>
-                )}
               </div>
             </div>
 
@@ -1256,6 +1261,19 @@ function UmumiyTab({
     }
   }
 
+  function faoliyatIkonkasi(turi: string) {
+    switch (turi) {
+      case "Izoh":
+        return <MessageSquare size={18} />;
+      case "Xabar":
+        return <Send size={18} />;
+      case "Vazifa":
+        return <ClipboardCheck size={18} />;
+      default:
+        return <CalendarCheck size={18} />;
+    }
+  }
+
   // faoliyat.turi qiymati ("Ish"/"Izoh"/"Xabar"/"Vazifa") state va taqqoslashlarda
   // ishlatilgani uchun o'zi o'zgarmaydi — bu faqat ekranda ko'rsatish uchun tarjima.
   function faoliyatTuriKorinishi(turi: string) {
@@ -1274,7 +1292,18 @@ function UmumiyTab({
   }
 
   return (
-    <div className="grid gap-8 px-9 py-9 xl:grid-cols-[43%_36px_minmax(0,1fr)] 2xl:grid-cols-[41%_38px_minmax(0,1fr)]">
+    <>
+    <div className="px-9 pt-9">
+      <SotuvJarayoni
+        sotuv={sotuv}
+        jami={jami}
+        holat={holat}
+        amalBajarilmoqda={amalBajarilmoqda}
+        onTolovOchish={onTolovOchish}
+        onOmbordanChiqarish={onOmbordanChiqarish}
+      />
+    </div>
+    <div className="grid gap-8 px-9 pb-9 pt-8 xl:grid-cols-[43%_minmax(0,1fr)] 2xl:grid-cols-[41%_minmax(0,1fr)]">
       <aside className="space-y-6">
         <KelishuvCard
           sotuv={sotuv}
@@ -1288,16 +1317,8 @@ function UmumiyTab({
           onOmbordanChiqarish={onOmbordanChiqarish}
         />
 
-        <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(37,99,235,.08)] backdrop-blur">
-          <CardTitle title={t("umumiyTab.qoshimchaMalumotlar")} action={t("common.ozgartirish")} />
-          <Info label={t("umumiyTab.qaytarilganSavdo")} value={t("umumiyTab.tanlanmagan")} pill />
-          <Info label={t("common.info.masulShaxs")} value={masulNomi(sotuv)} />
-          <Info label={t("umumiyTab.sana")} value={sananiFormatlash(sotuv.createdAt)} />
-          <Info label={t("umumiyTab.qoshimchaIzoh")} value={sotuv.note || t("umumiyTab.izohYoq")} />
-        </section>
+        <QoshimchaMalumotCard sotuv={sotuv} />
       </aside>
-
-      <TimelineRail />
 
         <main className="space-y-6">
           {crmXatolik && (
@@ -1312,47 +1333,55 @@ function UmumiyTab({
             <LoaderCircle className="animate-spin text-orange-500" size={24} />
           </div>
         )}
-        {hujjatlar.map((hujjat) => (
-          <HujjatFeedCard
-            key={hujjat.id}
-            hujjat={hujjat}
-            sotuv={sotuv}
-            onOchish={() => onHujjatOchish(hujjat)}
-          />
-        ))}
-        {[...saqlanganFaoliyatlar]
-          .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)))
-          .map((faoliyat) =>
-          faoliyat.harakat === "Kalendariga qo'shish" || faoliyat.matn.includes("Kalendariga qo'shish") ? (
-            <CalendarFeedCard
-              key={faoliyat.id}
-              faoliyat={faoliyat}
-              xodimlar={xodimlar}
-              onOchirish={faoliyatniOchirish}
-              onYangilash={faoliyatniYangilash}
-              onZakrepit={() => void faoliyatniZakrepitQilish(faoliyat)}
-            />
-          ) : (
-              <FeedCard
-                key={faoliyat.id}
-                title={faoliyatTuriKorinishi(faoliyat.turi)}
-                time={qisqaVaqt(faoliyat.sana)}
-                text={`${faoliyat.sarlavha}${faoliyat.matn ? ` — ${faoliyat.matn}` : ""}`}
-                onOchirish={faoliyat.turi === "Xabar" ? undefined : () => faoliyatniOchirish(faoliyat.id)}
+        <ol className="relative space-y-4 before:absolute before:bottom-6 before:left-5 before:top-6 before:w-px before:bg-orange-200">
+          {hujjatlar.map((hujjat) => (
+            <TimelineElement key={hujjat.id} icon={<FileText size={18} />} ohang="kok">
+              <HujjatFeedCard hujjat={hujjat} sotuv={sotuv} onOchish={() => onHujjatOchish(hujjat)} />
+            </TimelineElement>
+          ))}
+          {[...saqlanganFaoliyatlar]
+            .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)))
+            .map((faoliyat) =>
+              faoliyat.harakat === "Kalendariga qo'shish" || faoliyat.matn.includes("Kalendariga qo'shish") ? (
+                <TimelineElement key={faoliyat.id} icon={<CalendarDays size={18} />} ohang="sariq">
+                  <CalendarFeedCard
+                    faoliyat={faoliyat}
+                    xodimlar={xodimlar}
+                    onOchirish={faoliyatniOchirish}
+                    onYangilash={faoliyatniYangilash}
+                    onZakrepit={() => void faoliyatniZakrepitQilish(faoliyat)}
+                  />
+                </TimelineElement>
+              ) : (
+                <TimelineElement key={faoliyat.id} icon={faoliyatIkonkasi(faoliyat.turi)} ohang={faoliyat.turi === "Vazifa" ? "yashil" : "kok"}>
+                  <FeedCard
+                    title={faoliyatTuriKorinishi(faoliyat.turi)}
+                    time={qisqaVaqt(faoliyat.sana)}
+                    text={`${faoliyat.sarlavha}${faoliyat.matn ? ` — ${faoliyat.matn}` : ""}`}
+                    onOchirish={faoliyat.turi === "Xabar" ? undefined : () => faoliyatniOchirish(faoliyat.id)}
+                  />
+                </TimelineElement>
+              )
+            )}
+          {holat === "CONFIRMED" && (
+            <TimelineElement icon={<Package size={18} />} ohang="yashil">
+              <OmbordanChiqarishHujjatFeedCard
+                sotuv={sotuv}
+                vaqt={qisqaVaqt(sotuv.confirmedAt) || vaqt}
+                onOchish={onOmbordanChiqarish}
               />
-            )
+            </TimelineElement>
           )}
-        {holat === "CONFIRMED" && (
-          <OmbordanChiqarishHujjatFeedCard
-            sotuv={sotuv}
-            vaqt={qisqaVaqt(sotuv.confirmedAt) || vaqt}
-            onOchish={onOmbordanChiqarish}
-          />
-        )}
-        <FeedCard title={t("umumiyTab.feed.hisoblashRejimi")} time={vaqt} text={t("umumiyTab.feed.hisoblashRejimiTavsif", { summa: pulniFormatlash(jami) })} />
-        <FeedCard title={t("umumiyTab.feed.sotuvYaratildi")} time={vaqt} text={t("umumiyTab.feed.sotuvYaratildiTavsif", { mijoz: mijozNomi(sotuv), raqam: sotuvRaqami(sotuv) })} />
+          <TimelineElement icon={<Calculator size={18} />} ohang="kulrang">
+            <FeedCard title={t("umumiyTab.feed.hisoblashRejimi")} time={vaqt} text={t("umumiyTab.feed.hisoblashRejimiTavsif", { summa: pulniFormatlash(jami) })} />
+          </TimelineElement>
+          <TimelineElement icon={<ShoppingCart size={18} />} ohang="kok">
+            <FeedCard title={t("umumiyTab.feed.sotuvYaratildi")} time={vaqt} text={t("umumiyTab.feed.sotuvYaratildiTavsif", { mijoz: mijozNomi(sotuv), raqam: sotuvRaqami(sotuv) })} />
+          </TimelineElement>
+        </ol>
       </main>
     </div>
+    </>
   );
 }
 
@@ -1392,34 +1421,40 @@ function KelishuvCard({
     if (bolim === "To'lov") onTolovOchish();
   }
 
+  const tolanganFoiz = jami > 0 ? Math.min(100, Math.round((tolanganSumma / jami) * 100)) : 0;
+  const telefon = mijozTelefon(sotuv);
+  const holatStili =
+    holat === "CONFIRMED"
+      ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
+      : holat === "CANCELLED"
+        ? "bg-red-50 text-red-600 ring-red-100"
+        : "bg-amber-50 text-amber-700 ring-amber-100";
+
   return (
     <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(37,99,235,.08)] backdrop-blur">
       <CardTitle title={t("kelishuvCard.sarlavha")} action={t("common.ozgartirish")} />
-      <Info label={t("kelishuvCard.bosqich")} value={sotuvHolatiMatni[holat]} />
 
       <div className="mt-4 flex items-end justify-between gap-4">
         <div>
           <p className="text-sm text-slate-400">{t("kelishuvCard.miqdorVaValyuta")}</p>
           <h2 className="mt-1 text-4xl font-light tracking-wide text-slate-700">{pulniFormatlash(jami)}</h2>
         </div>
-        {draft ? (
-          <button
-            disabled={amalBajarilmoqda}
-            onClick={onTolovOchish}
-            className="h-10 rounded-xl bg-[#2563EB] px-4 text-xs font-black uppercase text-white shadow-[0_10px_24px_rgba(37,99,235,.22)] transition hover:bg-[#1D4ED8] disabled:opacity-50"
-          >
-            {t("header.tolovniQabulQilish")}
-          </button>
-        ) : (
-          <span className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100">{sotuvHolatiMatni[holat]}</span>
-        )}
+        <span className={`rounded-full px-3.5 py-1.5 text-xs font-bold ring-1 ${holatStili}`}>{sotuvHolatiMatni[holat]}</span>
       </div>
 
       <div className="mt-5 rounded-2xl border border-orange-100 bg-gradient-to-br from-[#F8FAFC] to-white p-4">
-        <p className="text-sm text-slate-500">{t(BOLIM_LABEL_KEYS[tanlanganBolim] ?? tanlanganBolim)}</p>
-        <p className="mt-3 text-sm text-slate-400">{t("kelishuvCard.bolimTavsif")}</p>
-        <div className="mt-4 border-t border-slate-100 pt-3">
-          <div className="relative">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#2563EB] shadow-sm ring-1 ring-orange-100">
+              <Wallet size={19} />
+            </span>
+            <div className="min-w-0">
+              <h3 className="font-black text-slate-800">{t(BOLIM_LABEL_KEYS[tanlanganBolim] ?? tanlanganBolim)}</h3>
+              <p className="mt-0.5 text-xs leading-5 text-slate-400">{t("kelishuvCard.bolimTavsif")}</p>
+            </div>
+          </div>
+
+          <div className="relative shrink-0">
             <button
               type="button"
               onClick={() => setMenuOpen((current) => !current)}
@@ -1429,7 +1464,7 @@ function KelishuvCard({
               {t("common.qoshish")}
             </button>
             {menuOpen && (
-              <div className="absolute left-0 top-12 z-40 w-[238px] rounded-[22px] bg-white py-3 shadow-[0_18px_50px_rgba(15,23,42,.16)] ring-1 ring-orange-100">
+              <div className="absolute right-0 top-12 z-40 w-[238px] rounded-[22px] bg-white py-3 shadow-[0_18px_50px_rgba(15,23,42,.16)] ring-1 ring-orange-100">
                 {bolimlar.map((bolim) => {
                   const faol = faolBolimlar.has(bolim);
                   return (
@@ -1460,35 +1495,55 @@ function KelishuvCard({
               </div>
             )}
           </div>
-
-          <SotuvTolovlari sotuv={sotuv} mijoz={modalMijozNomi(sotuv)} />
-          <div className="mt-6 space-y-2 text-sm">
-            <div className="flex justify-between text-slate-400">
-              <span>{t("kelishuvCard.sotuvJami")}</span>
-              <span>{pulniFormatlash(jami)}</span>
-            </div>
-            <div className="flex justify-between text-[#2563EB]">
-              <span>{t("kelishuvCard.qabulQilinganTolov")}</span>
-              <span className="font-bold">{pulniFormatlash(tolanganSumma)}</span>
-            </div>
-            <div className={`flex justify-between ${qarzdorlikSumma > 0 ? "text-red-500" : "text-emerald-600"}`}>
-              <span>{qarzdorlikSumma > 0 ? t("kelishuvCard.qarzdorlikQoldigi") : t("kelishuvCard.qarzdorlikYoq")}</span>
-              <span className="font-bold">{pulniFormatlash(qarzdorlikSumma)}</span>
-            </div>
-            {ortiqchaTolovSumma > 0 && (
-              <div className="flex justify-between text-amber-600">
-                <span>{t("kelishuvCard.ortiqchaTolov")}</span>
-                <span className="font-bold">{pulniFormatlash(ortiqchaTolovSumma)}</span>
-              </div>
-            )}
-          </div>
         </div>
+
+        <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2">
+          <Korsatkich label={t("kelishuvCard.sotuvJami")} value={pulniFormatlash(jami)} />
+          <Korsatkich label={t("kelishuvCard.qabulQilingan")} value={pulniFormatlash(tolanganSumma)} ohang="kok" />
+          <Korsatkich
+            label={qarzdorlikSumma > 0 ? t("kelishuvCard.qarzdorlikQoldigi") : t("kelishuvCard.qarzdorlikYoq")}
+            value={pulniFormatlash(qarzdorlikSumma)}
+            ohang={qarzdorlikSumma > 0 ? "qizil" : "yashil"}
+          />
+        </div>
+
+        {jami > 0 && (
+          <div className="mt-3">
+            <div className="mb-1.5 flex items-center justify-between text-xs">
+              <span className="text-slate-400">{t("kelishuvCard.tolovHolati")}</span>
+              <span className="font-bold text-slate-600">{t("kelishuvCard.tolanganFoiz", { foiz: tolanganFoiz })}</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={tolanganFoiz}>
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${qarzdorlikSumma > 0 ? "bg-[#2563EB]" : "bg-emerald-500"}`}
+                style={{ width: `${tolanganFoiz}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {ortiqchaTolovSumma > 0 && (
+          <div className="mt-3 flex justify-between rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            <span>{t("kelishuvCard.ortiqchaTolov")}</span>
+            <span className="font-bold">{pulniFormatlash(ortiqchaTolovSumma)}</span>
+          </div>
+        )}
+
+        <SotuvTolovlari sotuv={sotuv} mijoz={modalMijozNomi(sotuv)} />
       </div>
 
-      <Info label={t("common.info.mijoz")} value={modalMijozNomi(sotuv)} />
-      <Info label={t("common.info.telefon")} value={mijozTelefon(sotuv)} />
-      <Info label={t("common.info.manzil")} value={mijozManzili(sotuv)} />
-      <Info label={t("common.info.masulShaxs")} value={masulNomi(sotuv)} />
+      <div className="mt-5 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-100 bg-white">
+        <KontaktQatori icon={<UserRound size={17} />} label={t("common.info.mijoz")} value={modalMijozNomi(sotuv)} />
+        <KontaktQatori
+          icon={<Phone size={17} />}
+          label={t("common.info.telefon")}
+          value={telefon}
+          href={`tel:${telefon.replace(/[^\d+]/g, "")}`}
+        />
+        <KontaktQatori icon={<MapPin size={17} />} label={t("common.info.manzil")} value={mijozManzili(sotuv)} />
+        <KontaktQatori icon={<UserCheck size={17} />} label={t("common.info.masulShaxs")} value={masulNomi(sotuv)} />
+      </div>
+
       <div className="mt-5 flex flex-wrap justify-between gap-3 text-xs text-slate-500">
         <span>{t("kelishuvCard.maydonniTanlang")}</span>
         <span>{t("kelishuvCard.maydonYarating")}</span>
@@ -1711,13 +1766,20 @@ function TolovQabulQilishModal({
   );
 }
 
+type TarixAccent = "green" | "blue" | "orange" | "red";
+type TarixTuri = "yaratildi" | "tasdiqlandi" | "tolov" | "bekor" | "ochirildi" | "tiklandi" | "yangilandi";
+type TarixChipOhangi = "kulrang" | "kok" | "yashil" | "qizil" | "sariq";
+type TarixChip = { label?: string; value: string; ohang: TarixChipOhangi };
+
 type TarixQatori = {
   id: string;
   sana: string;
   avtor: string;
   tip: string;
   tavsif: string;
-  accent?: "green" | "blue" | "orange" | "red";
+  chiplar: TarixChip[];
+  turi: TarixTuri;
+  accent?: TarixAccent;
 };
 
 const TARIX_MAYDON_NOMLARI: Record<string, string> = {
@@ -1736,6 +1798,47 @@ const TARIX_MAYDON_NOMLARI: Record<string, string> = {
 };
 
 const TARIX_PUL_MAYDONLARI = new Set(["debtAmount", "paidAmount", "totalAmount", "discountAmount", "amount"]);
+
+const TARIX_CHIP_STILI: Record<TarixChipOhangi, string> = {
+  kulrang: "bg-slate-50 text-slate-700 ring-slate-100",
+  kok: "bg-orange-50 text-[#2563EB] ring-orange-100",
+  yashil: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+  qizil: "bg-red-50 text-red-600 ring-red-100",
+  sariq: "bg-amber-50 text-amber-700 ring-amber-100",
+};
+
+const TARIX_TIP_RANGI: Record<TarixAccent, string> = {
+  green: "text-emerald-700",
+  blue: "text-slate-900",
+  orange: "text-amber-700",
+  red: "text-red-600",
+};
+
+const TARIX_TIMELINE_OHANGI: Record<TarixAccent, TimelineOhangi> = {
+  green: "yashil",
+  blue: "kok",
+  orange: "sariq",
+  red: "qizil",
+};
+
+function tarixIkonkasi(turi: TarixTuri) {
+  switch (turi) {
+    case "tasdiqlandi":
+      return <CheckCircle2 size={18} />;
+    case "tolov":
+      return <CreditCard size={18} />;
+    case "bekor":
+      return <Ban size={18} />;
+    case "ochirildi":
+      return <Trash2 size={18} />;
+    case "tiklandi":
+      return <RotateCcw size={18} />;
+    case "yaratildi":
+      return <ShoppingCart size={18} />;
+    default:
+      return <PenLine size={18} />;
+  }
+}
 
 function tarixHolatMatni(value: unknown) {
   const kalit = String(value ?? "").toUpperCase();
@@ -1771,87 +1874,143 @@ function tarixQiymatMatni(maydon: string, value: unknown, t: TFunction): string 
   return String(value);
 }
 
-function tarixTavsifiniYasash(item: SaleAuditLog, t: TFunction): string {
+function tarixHolatOhangi(value: unknown): TarixChipOhangi {
+  const kalit = String(value ?? "").toUpperCase();
+  if (kalit === "CONFIRMED") return "yashil";
+  if (kalit === "CANCELLED" || kalit === "CANCELED") return "qizil";
+  return "sariq";
+}
+
+function tarixPulChipi(maydon: string, qiymat: unknown, t: TFunction): TarixChip {
+  const summa = Number(qiymat);
+  return {
+    label: tarixMaydonNomi(maydon, t),
+    value: tarixQiymatMatni(maydon, qiymat, t),
+    ohang: maydon === "paidAmount" ? "kok" : maydon === "debtAmount" ? (summa > 0 ? "qizil" : "yashil") : "kulrang",
+  };
+}
+
+// Audit yozuvidagi o'zgarishlar ekranda qisqa "belgi"lar (chip) sifatida ko'rsatiladi.
+function tarixChiplari(item: SaleAuditLog, t: TFunction): TarixChip[] {
   const diff = (item.diff ?? {}) as Record<string, unknown>;
   const before = (diff.before ?? null) as Record<string, unknown> | null;
   const after = (diff.after ?? null) as Record<string, unknown> | null;
+  const chiplar: TarixChip[] = [];
 
   if (before || after) {
     const eskiHolat = before?.status;
     const yangiHolat = after?.status;
-    const qismlar: string[] = [];
     if (yangiHolat && eskiHolat !== yangiHolat) {
-      qismlar.push(
-        t("tarix.tavsifMatni.holatOzgardi", {
-          eski: eskiHolat ? tarixHolatMatni(eskiHolat) : "—",
-          yangi: tarixHolatMatni(yangiHolat),
-        })
-      );
+      chiplar.push({
+        label: tarixMaydonNomi("status", t),
+        value: eskiHolat ? `${tarixHolatMatni(eskiHolat)} → ${tarixHolatMatni(yangiHolat)}` : tarixHolatMatni(yangiHolat),
+        ohang: tarixHolatOhangi(yangiHolat),
+      });
     }
     for (const maydon of ["totalAmount", "paidAmount", "debtAmount"]) {
       const qiymat = after?.[maydon];
-      if (qiymat !== undefined && qiymat !== null) {
-        qismlar.push(`${tarixMaydonNomi(maydon, t)}: ${tarixQiymatMatni(maydon, qiymat, t)}`);
-      }
+      if (qiymat !== undefined && qiymat !== null) chiplar.push(tarixPulChipi(maydon, qiymat, t));
     }
-    return qismlar.length > 0 ? qismlar.join(" · ") : t("tarix.tavsifMatni.malumotYangilandi");
+  } else {
+    for (const [maydon, qiymat] of Object.entries(diff)) {
+      if (maydon === "before" || maydon === "after") continue;
+      const record = qiymat as { from?: unknown; to?: unknown } | null;
+      const yangiQiymat = record && "to" in record ? record.to : qiymat;
+      const yangi = tarixQiymatMatni(maydon, yangiQiymat, t);
+      if (!yangi) continue;
+      if (maydon === "payments") {
+        chiplar.push({ value: t("tarix.tavsifMatni.tolovQoshildi", { qiymat: yangi }), ohang: "yashil" });
+        continue;
+      }
+      const eski = record && "from" in record ? tarixQiymatMatni(maydon, record.from, t) : null;
+      chiplar.push({
+        label: tarixMaydonNomi(maydon, t),
+        value: eski && eski !== "—" && eski !== yangi ? `${eski} → ${yangi}` : yangi,
+        ohang: maydon === "status" ? tarixHolatOhangi(yangiQiymat) : "kulrang",
+      });
+    }
   }
 
-  const qismlar = Object.entries(diff)
-    .filter(([maydon]) => maydon !== "before" && maydon !== "after")
-    .map(([maydon, qiymat]) => {
-      const record = qiymat as { from?: unknown; to?: unknown } | null;
-      const yangi = tarixQiymatMatni(maydon, record && "to" in record ? record.to : qiymat, t);
-      if (!yangi) return null;
-      if (maydon === "payments") return t("tarix.tavsifMatni.tolovQoshildi", { qiymat: yangi });
-      const eski = record && "from" in record ? tarixQiymatMatni(maydon, record.from, t) : null;
-      return eski && eski !== "—" && eski !== yangi
-        ? `${tarixMaydonNomi(maydon, t)}: ${eski} → ${yangi}`
-        : `${tarixMaydonNomi(maydon, t)}: ${yangi}`;
-    })
-    .filter((matn): matn is string => Boolean(matn));
-
-  return qismlar.length > 0 ? qismlar.join(" · ") : t("tarix.tavsifMatni.malumotYangilandi");
+  if (chiplar.length === 0) chiplar.push({ value: t("tarix.tavsifMatni.malumotYangilandi"), ohang: "kulrang" });
+  return chiplar;
 }
 
-function tarixTipiniAniqlash(item: SaleAuditLog, t: TFunction): { tip: string; accent: "green" | "blue" | "orange" | "red" } {
-  if (item.action === "DELETE") return { tip: t("tarix.tip.ochirildi"), accent: "red" };
+function tarixTipiniAniqlash(item: SaleAuditLog, t: TFunction): { tip: string; accent: TarixAccent; turi: TarixTuri } {
+  if (item.action === "DELETE") return { tip: t("tarix.tip.ochirildi"), accent: "red", turi: "ochirildi" };
 
   const diff = (item.diff ?? {}) as Record<string, unknown>;
-  if ("payments" in diff) return { tip: t("tarix.tip.tolovQabulQilindi"), accent: "green" };
+  if ("payments" in diff) return { tip: t("tarix.tip.tolovQabulQilindi"), accent: "green", turi: "tolov" };
 
   const yangiHolat = String(
     (diff.status as { to?: unknown } | undefined)?.to ??
       (diff.after as Record<string, unknown> | undefined)?.status ??
       ""
   ).toUpperCase();
-  if (yangiHolat === "CONFIRMED") return { tip: t("tarix.tip.tasdiqlandi"), accent: "green" };
-  if (yangiHolat === "CANCELLED") return { tip: t("tarix.tip.bekorQilindi"), accent: "red" };
+  if (yangiHolat === "CONFIRMED") return { tip: t("tarix.tip.tasdiqlandi"), accent: "green", turi: "tasdiqlandi" };
+  if (yangiHolat === "CANCELLED") return { tip: t("tarix.tip.bekorQilindi"), accent: "red", turi: "bekor" };
   // Bekor qilingan sotuv qayta tiklanganda backend `diff.status: { from: CANCELLED, to: DRAFT }` yozadi.
   const eskiHolat = String((diff.status as { from?: unknown } | undefined)?.from ?? "").toUpperCase();
-  if (eskiHolat === "CANCELLED" && yangiHolat === "DRAFT") return { tip: t("tarix.tip.tiklandi"), accent: "blue" };
-  if (item.action === "CREATE") return { tip: t("tarix.tip.yaratildi"), accent: "blue" };
-  return { tip: t("tarix.tip.yangilandi"), accent: "orange" };
+  if (eskiHolat === "CANCELLED" && yangiHolat === "DRAFT") return { tip: t("tarix.tip.tiklandi"), accent: "blue", turi: "tiklandi" };
+  if (item.action === "CREATE") return { tip: t("tarix.tip.yaratildi"), accent: "blue", turi: "yaratildi" };
+  return { tip: t("tarix.tip.yangilandi"), accent: "orange", turi: "yangilandi" };
+}
+
+function tarixMuallifBoshHarflari(nom: string) {
+  return nom
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((qism) => qism[0]?.toUpperCase())
+    .join("");
 }
 
 function TarixTab({ sotuv }: { sotuv: Sotuv }) {
   const { t } = useTranslation("savdo_tafsilot");
   const [filter, setFilter] = useState("");
   const [sanaTartibi, setSanaTartibi] = useState<"desc" | "asc">("desc");
-  const [backendTarix,setBackendTarix]=useState<SaleAuditLog[]>([]);
-  const [tarixYuklanmoqda,setTarixYuklanmoqda]=useState(true);
-  const [tarixXatosi,setTarixXatosi]=useState("");
+  const [backendTarix, setBackendTarix] = useState<SaleAuditLog[]>([]);
+  const [tarixYuklanmoqda, setTarixYuklanmoqda] = useState(true);
+  const [tarixXatosi, setTarixXatosi] = useState("");
 
   useEffect(() => {
-    let active=true;setTarixYuklanmoqda(true);setTarixXatosi("");
-    void sotuvTarixiniOlish(sotuv.id).then(data=>{if(active)setBackendTarix(data)}).catch(error=>{if(active)setTarixXatosi(getApiErrorMessage(error))}).finally(()=>{if(active)setTarixYuklanmoqda(false)});
-    return()=>{active=false};
+    let active = true;
+    setTarixYuklanmoqda(true);
+    setTarixXatosi("");
+    void sotuvTarixiniOlish(sotuv.id)
+      .then((data) => {
+        if (active) setBackendTarix(data);
+      })
+      .catch((error) => {
+        if (active) setTarixXatosi(getApiErrorMessage(error));
+      })
+      .finally(() => {
+        if (active) setTarixYuklanmoqda(false);
+      });
+    return () => {
+      active = false;
+    };
   }, [sotuv.id]);
-  const qatorlar:TarixQatori[]=backendTarix.map((item):TarixQatori=>{const {tip,accent}=tarixTipiniAniqlash(item, t);return{id:item.id,sana:item.createdAt,avtor:item.actor?.fullName||item.actor?.username||item.user?.fullName||item.user?.username||t("common.tizim"),tip,tavsif:tarixTavsifiniYasash(item, t),accent}}).sort((a, b) => {
-    const aVaqt = new Date(a.sana).getTime();
-    const bVaqt = new Date(b.sana).getTime();
-    return sanaTartibi === "desc" ? bVaqt - aVaqt : aVaqt - bVaqt;
-  });
+
+  const qatorlar: TarixQatori[] = backendTarix
+    .map((item): TarixQatori => {
+      const { tip, accent, turi } = tarixTipiniAniqlash(item, t);
+      const chiplar = tarixChiplari(item, t);
+      return {
+        id: item.id,
+        sana: item.createdAt,
+        avtor: item.actor?.fullName || item.actor?.username || item.user?.fullName || item.user?.username || t("common.tizim"),
+        tip,
+        tavsif: chiplar.map((chip) => (chip.label ? `${chip.label}: ${chip.value}` : chip.value)).join(" · "),
+        chiplar,
+        turi,
+        accent,
+      };
+    })
+    .sort((a, b) => {
+      const aVaqt = new Date(a.sana).getTime();
+      const bVaqt = new Date(b.sana).getTime();
+      return sanaTartibi === "desc" ? bVaqt - aVaqt : aVaqt - bVaqt;
+    });
 
   const qidiruv = filter.trim().toLowerCase();
   const korinadiganQatorlar = qidiruv
@@ -1868,108 +2027,120 @@ function TarixTab({ sotuv }: { sotuv: Sotuv }) {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-slate-900">{t("tarix.sarlavha")}</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            {t("tarix.tavsif")}
-          </p>
+          <p className="mt-1 text-sm text-slate-500">{t("tarix.tavsif")}</p>
         </div>
-        <label className="relative block w-full max-w-[360px]">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
-          <input
-            value={filter}
-            onChange={(event) => setFilter(event.target.value)}
-            placeholder={t("tarix.filtr")}
-            className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-12 pr-4 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
-          />
-        </label>
-      </div>
-
-      {sotuv.items && sotuv.items.length > 0 && (
-        <div className="mb-6 rounded-[24px] border border-orange-100 bg-[#F8FAFC] p-5">
-          <p className="text-xs font-black uppercase tracking-wide text-orange-600">
-            {t("tarix.sotilganMahsulotlar", { count: sotuv.items.length })}
-          </p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {sotuv.items.map((item, index) => (
-              <div
-                key={item.id ?? item.saleItemId ?? index}
-                className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2 text-sm shadow-sm"
-              >
-                <span className="min-w-0 truncate font-semibold text-slate-700">{mahsulotNomi(item, t)}</span>
-                <span className="shrink-0 text-xs font-bold text-slate-500">
-                  {son(item.quantity)} x {pulniFormatlash(item.price)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <section className="overflow-hidden rounded-[24px] bg-white shadow-[0_18px_55px_rgba(15,23,42,.07)] ring-1 ring-slate-100">
-        <div className="grid grid-cols-[58px_190px_1.1fr_1.4fr_2fr] border-b border-slate-100 bg-slate-50 text-sm font-semibold text-slate-600">
-          <div className="flex h-14 items-center justify-center">
-            <input type="checkbox" className="h-4 w-4 rounded border-slate-300" readOnly />
-          </div>
+        <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
+          <label className="relative block w-full sm:w-[320px]">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
+            <input
+              value={filter}
+              onChange={(event) => setFilter(event.target.value)}
+              placeholder={t("tarix.filtr")}
+              className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-12 pr-4 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
+            />
+          </label>
           <button
             type="button"
             onClick={() => setSanaTartibi((joriy) => (joriy === "desc" ? "asc" : "desc"))}
-            className="flex h-14 items-center gap-2 text-left transition hover:text-sky-600"
+            className="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-sky-300 hover:text-sky-600"
             title={sanaTartibi === "desc" ? t("tarix.tartiblashEskidan") : t("tarix.tartiblashYangidan")}
             aria-label={t("tarix.sanaBoyichaTartiblash")}
           >
             {t("tarix.sana")}
             <ChevronDown size={15} className={`transition ${sanaTartibi === "asc" ? "rotate-180" : ""}`} />
           </button>
-          <div className="flex h-14 items-center">{t("tarix.avtor")}</div>
-          <div className="flex h-14 items-center">{t("tarix.tipHodisa")}</div>
-          <div className="flex h-14 items-center">{t("tarix.tavsifUstuni")}</div>
         </div>
+      </div>
 
-        <div className="divide-y divide-slate-100">
-          {korinadiganQatorlar.map((qator) => (
-            <div
-              key={qator.id}
-              className="grid min-h-[60px] grid-cols-[58px_190px_1.1fr_1.4fr_2fr] items-center text-sm transition hover:bg-slate-50"
-            >
-              <div className="flex items-center justify-center">
-                <input type="checkbox" className="h-4 w-4 rounded border-slate-300" readOnly />
-              </div>
-              <div className="flex items-center gap-3 text-slate-600">
-                <span>{tarixVaqti(qator.sana, t)}</span>
-              </div>
-              <div className="flex min-w-0 items-center gap-3 text-slate-700">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-400 text-xs text-white">
-                  <UserRound size={15} />
-                </span>
-                <span className="truncate">{qator.avtor}</span>
-              </div>
+      {sotuv.items && sotuv.items.length > 0 && (
+        <section className="mb-6 rounded-[24px] border border-orange-100 bg-[#F8FAFC] p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-orange-600">
+              <Package size={15} />
+              {t("tarix.sotilganMahsulotlar", { count: sotuv.items.length })}
+            </p>
+            <p className="text-sm text-slate-500">
+              {t("nakladnoy.jami")} <span className="ml-1 font-black text-slate-800">{pulniFormatlash(sotuvSummasi(sotuv))}</span>
+            </p>
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {sotuv.items.map((item, index) => (
               <div
-                className={`font-medium ${
-                  qator.accent === "green"
-                    ? "text-green-700"
-                    : qator.accent === "red"
-                      ? "text-red-600"
-                      : qator.accent === "orange"
-                        ? "text-orange-600"
-                        : "text-slate-700"
-                }`}
+                key={item.id ?? item.saleItemId ?? index}
+                className="flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 shadow-sm ring-1 ring-slate-100"
               >
-                {qator.tip}
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-[#2563EB] ring-1 ring-orange-100">
+                  <Package size={17} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-slate-800">{mahsulotNomi(item, t)}</p>
+                  <p className="mt-0.5 text-xs text-slate-400">
+                    {son(item.quantity)} × {pulniFormatlash(item.price)}
+                  </p>
+                </div>
+                <span className="shrink-0 text-sm font-black text-slate-800">{pulniFormatlash(mahsulotJami(item))}</span>
               </div>
-              <div className="min-w-0 pr-5 text-slate-700">
-                <span className="line-clamp-2">{qator.tavsif}</span>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
+        </section>
+      )}
 
-          {tarixYuklanmoqda && <div className="flex h-48 items-center justify-center"><LoaderCircle className="animate-spin text-orange-500"/></div>}
-          {tarixXatosi && <div className="p-6 text-center text-sm font-semibold text-red-600">{tarixXatosi}</div>}
-          {!tarixYuklanmoqda && !tarixXatosi && korinadiganQatorlar.length === 0 && (
-            <div className="flex h-48 items-center justify-center text-sm font-medium text-slate-400">
-              {t("tarix.topilmadi")}
-            </div>
-          )}
+      {tarixYuklanmoqda && (
+        <div className="flex h-48 items-center justify-center rounded-[24px] bg-white ring-1 ring-slate-100">
+          <LoaderCircle className="animate-spin text-orange-500" />
         </div>
-      </section>
+      )}
+      {tarixXatosi && (
+        <div className="rounded-[24px] bg-red-50 p-6 text-center text-sm font-semibold text-red-600 ring-1 ring-red-100">{tarixXatosi}</div>
+      )}
+      {!tarixYuklanmoqda && !tarixXatosi && korinadiganQatorlar.length === 0 && (
+        <div className="flex h-48 items-center justify-center rounded-[24px] bg-white text-sm font-medium text-slate-400 ring-1 ring-slate-100">
+          {t("tarix.topilmadi")}
+        </div>
+      )}
+
+      {korinadiganQatorlar.length > 0 && (
+        <ol className="relative space-y-4 before:absolute before:bottom-6 before:left-5 before:top-6 before:w-px before:bg-orange-200">
+          {korinadiganQatorlar.map((qator) => {
+            const accent = qator.accent ?? "blue";
+            const tizim = qator.avtor === t("common.tizim");
+            return (
+              <TimelineElement key={qator.id} icon={tarixIkonkasi(qator.turi)} ohang={TARIX_TIMELINE_OHANGI[accent]}>
+                <article className="rounded-[20px] border border-slate-100 bg-white p-4 shadow-[0_14px_38px_rgba(15,23,42,.05)] transition hover:shadow-[0_20px_50px_rgba(15,23,42,.09)]">
+                  <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+                    <div className="min-w-0">
+                      <h3 className={`font-black ${TARIX_TIP_RANGI[accent]}`}>{qator.tip}</h3>
+                      <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-slate-400">
+                        <span className="font-semibold text-slate-500">{tarixVaqti(qator.sana, t)}</span>
+                        <span aria-hidden>·</span>
+                        <span>{sananiFormatlash(qator.sana)}</span>
+                      </p>
+                    </div>
+                    <div className="inline-flex max-w-full items-center gap-2 rounded-full bg-slate-50 py-1 pl-1 pr-3 ring-1 ring-slate-100">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-400 text-[11px] font-bold text-white">
+                        {tizim ? <UserRound size={15} /> : tarixMuallifBoshHarflari(qator.avtor) || <UserRound size={15} />}
+                      </span>
+                      <span className="truncate text-sm font-semibold text-slate-700">{qator.avtor}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {qator.chiplar.map((chip, index) => (
+                      <span
+                        key={`${chip.label ?? "matn"}-${index}`}
+                        className={`inline-flex max-w-full items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs ring-1 ${TARIX_CHIP_STILI[chip.ohang]}`}
+                      >
+                        {chip.label && <span className="opacity-70">{chip.label}</span>}
+                        <span className="break-words font-bold">{chip.value}</span>
+                      </span>
+                    ))}
+                  </div>
+                </article>
+              </TimelineElement>
+            );
+          })}
+        </ol>
+      )}
     </div>
   );
 }
@@ -2977,7 +3148,7 @@ export function OmbordanChiqarishHujjatModal({ sotuv, jami, onClose }: { sotuv: 
     <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
       <div className="relative h-[calc(100vh-32px)] w-full">
         <ModalTezkorPanel sotuv={sotuv} onYopish={onClose} />
-        <OmbordanChiqarishHujjatMazmuni sotuv={sotuv} jami={jami} onClose={onClose} ikkinchiYopishTugmasi={false} />
+        <OmbordanChiqarishHujjatMazmuni sotuv={sotuv} jami={jami} onClose={onClose} />
       </div>
     </AppModal>
   );
@@ -2987,12 +3158,10 @@ function OmbordanChiqarishHujjatMazmuni({
   sotuv,
   jami,
   onClose,
-  ikkinchiYopishTugmasi = true,
 }: {
   sotuv: Sotuv;
   jami: number;
   onClose: () => void;
-  ikkinchiYopishTugmasi?: boolean;
 }) {
   const { t } = useTranslation("savdo_tafsilot");
   const items = sotuv.items ?? [];
@@ -3004,7 +3173,6 @@ function OmbordanChiqarishHujjatMazmuni({
   const chegirmaSummasi = sotuvChegirmaSummasi(sotuv);
   const [faoliyatXatosi, setFaoliyatXatosi] = useState("");
   const [faolBolim, setFaolBolim] = useState<"Umumiy" | "Tovarlar">("Umumiy");
-  const hujjatTovarUstunlari = "grid-cols-[40px_320px_150px_170px_220px_170px_140px_170px_170px]";
 
   function itemQoldiginiTopish(item: SotuvItem) {
     const warehouseId = sotuv.warehouseId ?? sotuv.warehouse?.id;
@@ -3064,141 +3232,183 @@ function OmbordanChiqarishHujjatMazmuni({
 
   return (
       <div className="scrollbar-hidden h-full overflow-y-auto rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] px-7 py-7 shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80">
-        <div className="flex items-start justify-between gap-4 border-b border-orange-100/80 pb-6">
-          <div>
-            <h2 className="text-3xl font-semibold text-slate-900">{t("ombordanChiqarish.sarlavha")}</h2>
-            <p className="mt-2 text-sm text-slate-500">
-              {tasdiqlangan
-                ? t("ombordanChiqarish.tavsifBajarilgan", { raqam: sotuvRaqami(sotuv) })
-                : t("ombordanChiqarish.tavsifKutilmoqda", { raqam: sotuvRaqami(sotuv) })}
-            </p>
-          </div>
-          {ikkinchiYopishTugmasi && (
-            <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-[#2563EB] hover:text-white">
-              <X size={19} />
-            </button>
-          )}
-        </div>
+        <div className="border-b border-orange-100/80 pb-6">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-orange-50 hover:text-[#2563EB] hover:ring-orange-200"
+          >
+            <ArrowLeft size={17} />
+            {t("ombordanChiqarish.orqaga")}
+          </button>
 
-        <nav className="mt-6 flex gap-2 border-b border-orange-100/80">
-          {(["Umumiy", "Tovarlar"] as const).map((bolim) => (
-            <button
-              key={bolim}
-              type="button"
-              onClick={() => setFaolBolim(bolim)}
-              className={`-mb-px rounded-t-xl border border-b-0 px-4 py-2.5 text-sm font-bold transition ${
-                faolBolim === bolim
-                  ? "border-orange-200 bg-white text-[#2563EB]"
-                  : "border-transparent text-slate-500 hover:text-[#2563EB]"
+          <div className="mt-5 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-3xl font-semibold text-slate-900">{t("ombordanChiqarish.sarlavha")}</h2>
+              <p className="mt-2 text-sm text-slate-500">
+                {tasdiqlangan
+                  ? t("ombordanChiqarish.tavsifBajarilgan", { raqam: sotuvRaqami(sotuv) })
+                  : t("ombordanChiqarish.tavsifKutilmoqda", { raqam: sotuvRaqami(sotuv) })}
+              </p>
+            </div>
+            <span
+              className={`inline-flex h-8 items-center gap-1.5 rounded-full px-4 text-xs font-bold ring-1 ${
+                tasdiqlangan ? "bg-emerald-50 text-emerald-700 ring-emerald-100" : "bg-amber-50 text-amber-700 ring-amber-100"
               }`}
             >
-              {t(TAB_LABEL_KEYS[bolim] ?? bolim)}
-            </button>
-          ))}
-        </nav>
+              {tasdiqlangan ? <CheckCircle2 size={14} /> : <Package size={14} />}
+              {tasdiqlangan ? t("ombordanChiqarish.holatBajarilgan") : t("ombordanChiqarish.holatKutilmoqda")}
+            </span>
+          </div>
+        </div>
+
+        <ModalTablari
+          className="mt-6"
+          tablar={(["Umumiy", "Tovarlar"] as const).map((bolim) => ({ id: bolim, nom: t(TAB_LABEL_KEYS[bolim] ?? bolim) }))}
+          faol={faolBolim}
+          onChange={(id) => setFaolBolim(id as typeof faolBolim)}
+        />
 
         {faolBolim === "Tovarlar" ? (
-          <section className="mt-6 rounded-2xl bg-white shadow-sm">
+          <section className="mt-6 overflow-hidden rounded-[24px] bg-white shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80">
             {items.length > 0 ? (
               <div className="overflow-x-auto">
-                <div className="min-w-[1560px]">
-                  <div className={`grid ${hujjatTovarUstunlari} gap-x-5 border-b border-slate-200 bg-white px-7 py-5 text-sm text-slate-600`}>
-                    <span>#</span>
-                    <span>{t("common.jadval.mahsulot")}</span>
-                    <span>{t("common.jadval.narx")}</span>
-                    <span>{t("common.jadval.miqdor")}</span>
-                    <span>{t("common.jadval.ombor")}</span>
-                    <span>{t("common.jadval.mavjudQoldiq")}</span>
-                    <span>{t("common.jadval.rezervda")}</span>
-                    <span>{t("common.jadval.ombordanChiqdi")}</span>
-                    <span>{t("common.jadval.summa")}</span>
-                  </div>
+                <table className="w-full min-w-[1040px] text-left text-sm">
+                  <thead className="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-500">
+                    <tr>
+                      <th className="w-12 px-5 py-4">#</th>
+                      <th className="px-3 py-4">{t("common.jadval.mahsulot")}</th>
+                      <th className="px-3 py-4">{t("common.jadval.narx")}</th>
+                      <th className="px-3 py-4">{t("common.jadval.miqdor")}</th>
+                      <th className="px-3 py-4">{t("common.jadval.ombor")}</th>
+                      <th className="px-3 py-4">{t("common.jadval.mavjudQoldiq")}</th>
+                      <th className="px-3 py-4">{t("common.jadval.rezervda")}</th>
+                      <th className="px-3 py-4">{t("common.jadval.ombordanChiqdi")}</th>
+                      <th className="px-5 py-4 text-right">{t("common.jadval.summa")}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                    {items.map((item, index) => {
+                      const itemJami = mahsulotJami(item);
+                      const itemQoldiq = itemQoldiginiTopish(item);
+                      const mavjudQoldiq = itemQoldiq ? qoldiqMiqdori(itemQoldiq) : 0;
+                      const miqdor = son(item.quantity);
+                      const rezerv = tasdiqlangan ? 0 : miqdor;
+                      const ombordanChiqdi = tasdiqlangan ? miqdor : 0;
 
-                  {items.map((item, index) => {
-                    const itemJami = mahsulotJami(item);
-                    const itemQoldiq = itemQoldiginiTopish(item);
-                    const mavjudQoldiq = itemQoldiq ? qoldiqMiqdori(itemQoldiq) : 0;
-                    const rezerv = tasdiqlangan ? 0 : item.quantity;
-                    const ombordanChiqdi = tasdiqlangan ? item.quantity : 0;
-
-                    return (
-                      <div
-                        key={item.id ?? `${item.modificationId}-${index}`}
-                        className={`grid ${hujjatTovarUstunlari} items-center gap-x-5 border-b border-slate-100 px-7 py-4 text-sm text-slate-700`}
-                      >
-                        <span className="text-slate-400">{index + 1}.</span>
-
-                        <div className="flex h-12 items-center rounded-md border border-slate-200 bg-slate-50 px-3">
-                          <span className="min-w-0 flex-1 truncate text-slate-800">{mahsulotNomi(item, t)}</span>
-                        </div>
-
-                        <div className="flex h-12 items-center justify-end rounded-md border border-slate-200 bg-slate-50 px-3">
-                          {pulniFormatlash(item.price)}
-                        </div>
-
-                        <div className="flex h-12 items-center justify-end gap-2 rounded-md border border-slate-200 bg-slate-50 px-3">
-                          <span>{item.quantity}</span>
-                          <span className="text-slate-400">{t("common.dona")}</span>
-                        </div>
-
-                        <div className="flex h-12 items-center rounded-md border border-slate-200 bg-slate-50 px-3">
-                          <span className="min-w-0 flex-1 truncate">{omborNomi}</span>
-                        </div>
-
-                        <span className="text-[#2563EB]">{Math.max(mavjudQoldiq, 0)} {t("common.dona")}</span>
-
-                        <div className="flex h-12 items-center justify-end rounded-md border border-slate-200 bg-slate-50 px-3">{rezerv}</div>
-
-                        <span>{ombordanChiqdi} {t("common.dona")}</span>
-
-                        <span className="font-bold text-emerald-600">{pulniFormatlash(itemJami)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+                      return (
+                        <tr key={item.id ?? `${item.modificationId}-${index}`} className="transition hover:bg-slate-50/70">
+                          <td className="px-5 py-4 text-slate-400">{index + 1}</td>
+                          <td className="px-3 py-4">
+                            <div className="flex min-w-0 items-center gap-3">
+                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-[#2563EB] ring-1 ring-orange-100">
+                                <Package size={17} />
+                              </span>
+                              <span className="min-w-0 truncate font-semibold text-slate-800">{mahsulotNomi(item, t)}</span>
+                            </div>
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4">{pulniFormatlash(item.price)}</td>
+                          <td className="whitespace-nowrap px-3 py-4 font-semibold">
+                            {item.quantity} <span className="font-normal text-slate-400">{t("common.dona")}</span>
+                          </td>
+                          <td className="px-3 py-4">{omborNomi}</td>
+                          <td className="whitespace-nowrap px-3 py-4 font-semibold text-[#2563EB]">
+                            {Math.max(mavjudQoldiq, 0)} {t("common.dona")}
+                          </td>
+                          <td className="px-3 py-4">
+                            <span
+                              className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-bold ring-1 ${
+                                rezerv > 0 ? "bg-amber-50 text-amber-700 ring-amber-100" : "bg-slate-50 text-slate-400 ring-slate-100"
+                              }`}
+                            >
+                              {rezerv}
+                            </span>
+                          </td>
+                          <td className="px-3 py-4">
+                            <span
+                              className={`inline-flex whitespace-nowrap rounded-lg px-2.5 py-1 text-xs font-bold ring-1 ${
+                                ombordanChiqdi > 0 ? "bg-emerald-50 text-emerald-700 ring-emerald-100" : "bg-slate-50 text-slate-400 ring-slate-100"
+                              }`}
+                            >
+                              {ombordanChiqdi} {t("common.dona")}
+                            </span>
+                          </td>
+                          <td className="whitespace-nowrap px-5 py-4 text-right font-black text-emerald-600">{pulniFormatlash(itemJami)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             ) : (
               <p className="px-7 py-16 text-center text-sm text-slate-400">{t("common.tovarlarYoq")}</p>
             )}
 
             {items.length > 0 && (
-              <div className="border-t border-slate-100 px-7 py-8">
-                <div className="ml-auto max-w-md space-y-4 text-right text-slate-600">
-                  <p>{t("common.totals.chegirmaSoliqsiz")} <span className="ml-8">{pulniFormatlash(mahsulotlarJami)}</span></p>
-                  <p>{t("common.totals.yetkazishSummasi")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
-                  <p className="text-lime-700">{t("common.totals.chegirmaSummasi")} <span className="ml-8">{pulniFormatlash(chegirmaSummasi)}</span></p>
-                  <p>{t("common.totals.soliqsizSumma")} <span className="ml-8">{pulniFormatlash(mahsulotlarJami - chegirmaSummasi)}</span></p>
-                  <p>{t("common.totals.soliqSummasi")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
-                  <div className="border-t border-slate-200 pt-5 text-2xl font-bold text-slate-700">
-                    {t("common.totals.umumiySumma")} <span className="ml-8">{pulniFormatlash(jami)}</span>
+              <div className="border-t border-slate-100 p-6">
+                <div className="ml-auto w-full max-w-md space-y-2.5 text-sm">
+                  <div className="flex justify-between gap-6 text-slate-500">
+                    <span>{t("common.totals.chegirmaSoliqsiz").replace(/:\s*$/, "")}</span>
+                    <span className="font-semibold text-slate-700">{pulniFormatlash(mahsulotlarJami)}</span>
+                  </div>
+                  <div className="flex justify-between gap-6 text-slate-500">
+                    <span>{t("common.totals.yetkazishSummasi").replace(/:\s*$/, "")}</span>
+                    <span className="font-semibold text-slate-700">{pulniFormatlash(0)}</span>
+                  </div>
+                  <div className="flex justify-between gap-6 text-lime-700">
+                    <span>{t("common.totals.chegirmaSummasi").replace(/:\s*$/, "")}</span>
+                    <span className="font-semibold">{pulniFormatlash(chegirmaSummasi)}</span>
+                  </div>
+                  <div className="flex justify-between gap-6 text-slate-500">
+                    <span>{t("common.totals.soliqsizSumma").replace(/:\s*$/, "")}</span>
+                    <span className="font-semibold text-slate-700">{pulniFormatlash(mahsulotlarJami - chegirmaSummasi)}</span>
+                  </div>
+                  <div className="flex justify-between gap-6 text-slate-500">
+                    <span>{t("common.totals.soliqSummasi").replace(/:\s*$/, "")}</span>
+                    <span className="font-semibold text-slate-700">{pulniFormatlash(0)}</span>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-6 rounded-2xl bg-orange-50 px-4 py-3.5 ring-1 ring-orange-100">
+                    <span className="font-black text-slate-700">{t("common.totals.umumiySumma").replace(/:\s*$/, "")}</span>
+                    <span className="text-xl font-black text-slate-900">{pulniFormatlash(jami)}</span>
                   </div>
                 </div>
               </div>
             )}
           </section>
         ) : (
-          <div className="mt-6 grid gap-6 xl:grid-cols-[42%_34px_minmax(0,1fr)]">
+          <div className="mt-6 grid gap-6 xl:grid-cols-[42%_minmax(0,1fr)]">
             <aside className="space-y-4">
-              <section className="rounded-2xl bg-white p-5 shadow-sm">
+              <section className="rounded-[24px] border border-orange-100/80 bg-white p-5 shadow-[0_18px_46px_rgba(37,99,235,.08)]">
                 <CardTitle title={t("ombordanChiqarish.asosiyMalumotlar")} />
-                <Info label={t("common.info.mijoz")} value={mijozNomi(sotuv)} pill />
-                <Info label={t("common.info.telefon")} value={mijozTelefon(sotuv)} />
-                <Info label={t("common.info.manzil")} value={mijozManzili(sotuv)} />
-                <Info label={t("common.info.kompaniya")} value={sotuv.clientCompany?.name || t("common.info.kompaniyaTanlanmagan")} />
-                <Info label={t("common.info.ombor")} value={omborNomi} />
-                <Info label={t("common.info.masulShaxs")} value={masulNomi(sotuv)} />
+                <div className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-100 bg-white">
+                  <KontaktQatori icon={<UserRound size={17} />} label={t("common.info.mijoz")} value={mijozNomi(sotuv)} />
+                  <KontaktQatori
+                    icon={<Phone size={17} />}
+                    label={t("common.info.telefon")}
+                    value={mijozTelefon(sotuv)}
+                    href={`tel:${mijozTelefon(sotuv).replace(/[^\d+]/g, "")}`}
+                  />
+                  <KontaktQatori icon={<MapPin size={17} />} label={t("common.info.manzil")} value={mijozManzili(sotuv)} />
+                  <KontaktQatori
+                    icon={<Building2 size={17} />}
+                    label={t("common.info.kompaniya")}
+                    value={sotuv.clientCompany?.name || t("common.info.kompaniyaTanlanmagan")}
+                  />
+                  <KontaktQatori icon={<Warehouse size={17} />} label={t("common.info.ombor")} value={omborNomi} />
+                  <KontaktQatori icon={<UserCheck size={17} />} label={t("common.info.masulShaxs")} value={masulNomi(sotuv)} />
+                </div>
               </section>
             </aside>
-
-            <TimelineRail />
 
             <main className="space-y-5">
               {faoliyatXatosi && <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">{faoliyatXatosi}</div>}
               <FaoliyatPanel onSaqlash={faoliyatniBackendgaSaqlash} />
               <Divider label={t("umumiyTab.feed.bugun")} />
-              <article className="rounded-2xl bg-white/80 p-5 text-slate-700 shadow-sm">
+
+              <div className="flex items-start gap-3 rounded-2xl bg-orange-50 px-4 py-3 text-sm text-slate-600 ring-1 ring-orange-100">
+                <Eye size={18} className="mt-0.5 shrink-0 text-[#2563EB]" />
                 {t("ombordanChiqarish.koryapsiz", { mijoz: mijozNomi(sotuv) })}
-              </article>
+              </div>
 
               {yaqindaTasdiqlandi && (
                 <article className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-700 shadow-sm">
@@ -3207,19 +3417,24 @@ function OmbordanChiqarishHujjatMazmuni({
                 </article>
               )}
 
-              <article className="rounded-2xl bg-white/80 p-5 shadow-sm">
-                <div className="flex items-start gap-4">
-                  <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white ${tasdiqlangan ? "bg-emerald-500" : "bg-amber-400"}`}>
-                    <Package size={20} />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-lg font-semibold text-slate-700">{tasdiqlangan ? t("ombordanChiqarish.amaliBajarilgan") : t("ombordanChiqarish.amaliKutilmoqda")}</h3>
-                    <p className="mt-2 text-sm text-slate-500">
-                      {t("ombordanChiqarish.amaliTavsif", { count: items.length, summa: pulniFormatlash(jami), ombor: omborNomi })}
-                    </p>
+              <ol className="relative before:absolute before:bottom-6 before:left-5 before:top-6 before:w-px before:bg-orange-200">
+                <TimelineElement icon={<Package size={18} />} ohang={tasdiqlangan ? "yashil" : "sariq"}>
+                  <article className="rounded-[20px] border border-slate-100 bg-white p-5 shadow-[0_14px_38px_rgba(15,23,42,.05)]">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <h3 className="text-lg font-black text-slate-800">
+                        {tasdiqlangan ? t("ombordanChiqarish.amaliBajarilgan") : t("ombordanChiqarish.amaliKutilmoqda")}
+                      </h3>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-2">
+                      <Korsatkich label={t("tabs.tovarlar")} value={String(items.length)} />
+                      <Korsatkich label={t("common.jadval.summa")} value={pulniFormatlash(jami)} ohang="yashil" />
+                      <Korsatkich label={t("common.info.ombor")} value={omborNomi} />
+                    </div>
+
                     {!tasdiqlangan && (
                       <>
-                        <p className="mt-2 text-xs text-slate-400">
+                        <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-700 ring-1 ring-amber-100">
                           {t("ombordanChiqarish.tasdiqlanmaguncha")}
                         </p>
                         {ombordanChiqarishXatosi && (
@@ -3238,9 +3453,9 @@ function OmbordanChiqarishHujjatMazmuni({
                         </button>
                       </>
                     )}
-                  </div>
-                </div>
-              </article>
+                  </article>
+                </TimelineElement>
+              </ol>
             </main>
           </div>
         )}
@@ -3267,6 +3482,19 @@ function Maydon({ label, value }: { label: string; value: string }) {
       <div className="mt-2 flex h-12 items-center justify-end rounded-md border border-slate-300 bg-white px-3 text-slate-600">{value}</div>
     </label>
   );
+}
+
+function faoliyatTabIkonkasi(key: string) {
+  switch (key) {
+    case "Izoh":
+      return <MessageSquare size={16} />;
+    case "Xabar":
+      return <Send size={16} />;
+    case "Vazifa":
+      return <ClipboardCheck size={16} />;
+    default:
+      return <CalendarCheck size={16} />;
+  }
 }
 
 function FaoliyatPanel({
@@ -3393,30 +3621,22 @@ function FaoliyatPanel({
 
   return (
     <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(37,99,235,.08)] backdrop-blur transition-all duration-300">
-      <nav className="mb-5 flex flex-wrap items-center gap-5 text-sm text-slate-500">
+      <nav className="mb-5 flex flex-wrap items-center gap-1.5 rounded-2xl bg-slate-50 p-1.5 text-sm font-semibold text-slate-500 ring-1 ring-slate-100">
         {faoliyatTablari.map((tab) => (
           <button
             key={tab.key}
             type="button"
             onClick={() => tabniTanlash(tab.key)}
-            className={`rounded-lg px-3 py-2 transition ${
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 transition ${
               activeTab === tab.key && ochiq
-                ? "border border-orange-200 bg-orange-50 text-[#2563EB]"
-                : "hover:bg-orange-50 hover:text-[#2563EB]"
+                ? "bg-white text-[#2563EB] shadow-sm ring-1 ring-orange-100"
+                : "hover:bg-white/70 hover:text-[#2563EB]"
             }`}
           >
+            {faoliyatTabIkonkasi(tab.key)}
             {tab.label}
           </button>
         ))}
-        <button
-          type="button"
-          onClick={() => {
-            setOchiq(true);
-          }}
-          className="inline-flex items-center gap-1 rounded-lg px-3 py-2 transition hover:bg-slate-50 hover:text-blue-600"
-        >
-          {t("faoliyatPanel.koprok")} <ChevronDown size={14} />
-        </button>
       </nav>
 
       {panelXatosi && <p className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm font-bold text-red-500">{panelXatosi}</p>}
@@ -3427,8 +3647,9 @@ function FaoliyatPanel({
           onClick={() => {
             setOchiq(true);
           }}
-          className="flex h-14 w-full items-center justify-between rounded-xl border border-orange-100 bg-[#F8FAFC]/60 px-5 text-left text-slate-400 transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50 hover:shadow-sm"
+          className="flex h-14 w-full items-center gap-3 rounded-xl border border-orange-100 bg-[#F8FAFC]/60 px-5 text-left text-slate-400 transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50 hover:shadow-sm"
         >
+          <PenLine size={18} className="shrink-0 text-slate-300" />
           <span>{t("faoliyatPanel.nimaQilishKerak")}</span>
         </button>
       ) : (
@@ -4021,15 +4242,22 @@ function AloqaKanallariModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function TimelineRail() {
+type TimelineOhangi = "kok" | "yashil" | "sariq" | "qizil" | "kulrang";
+const TIMELINE_OHANGI: Record<TimelineOhangi, string> = {
+  kok: "bg-[#2563EB] text-white shadow-[0_10px_24px_rgba(37,99,235,.28)]",
+  yashil: "bg-emerald-500 text-white shadow-[0_10px_24px_rgba(16,185,129,.26)]",
+  sariq: "bg-amber-400 text-white shadow-[0_10px_24px_rgba(245,158,11,.26)]",
+  qizil: "bg-red-500 text-white shadow-[0_10px_24px_rgba(239,68,68,.26)]",
+  kulrang: "bg-white text-slate-500 shadow-sm ring-1 ring-slate-200",
+};
+
+// Faoliyat lentasidagi bitta hodisa: chapdagi ikonka umumiy vertikal chiziqqa ulanadi.
+function TimelineElement({ icon, ohang, children }: { icon: ReactNode; ohang: TimelineOhangi; children: ReactNode }) {
   return (
-    <div className="hidden flex-col items-center xl:flex">
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2563EB] text-white shadow-[0_12px_28px_rgba(37,99,235,.28)]"><MessageSquare size={18} /></div>
-      <div className="h-32 w-px bg-orange-200" />
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white shadow-[0_12px_28px_rgba(16,185,129,.22)]"><Bell size={18} /></div>
-      <div className="h-28 w-px bg-orange-200" />
-      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#2563EB] shadow-sm ring-1 ring-orange-100"><Package size={17} /></div>
-    </div>
+    <li className="relative pl-14">
+      <span className={`absolute left-0 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full ring-4 ring-[#F5F8FC] ${TIMELINE_OHANGI[ohang]}`}>{icon}</span>
+      {children}
+    </li>
   );
 }
 
@@ -4052,11 +4280,102 @@ function CardTitle({ title, action }: { title: string; action?: string }) {
   );
 }
 
-function Info({ label, value, pill = false }: { label: string; value: string; pill?: boolean }) {
+type IzohQatori = { kalit?: string; qiymat: string };
+
+// Sotuv yaratishda izoh "Kalit: qiymat" qatorlaridan (har biri yangi qatorda) yig'iladi; erkin matn ham bo'lishi mumkin.
+function izohniQatorlarga(izoh?: string): IzohQatori[] {
+  return (izoh ?? "")
+    .split(/\r?\n/)
+    .map((qator) => qator.trim())
+    .filter(Boolean)
+    .map((qator) => {
+      const moslik = qator.match(/^(\p{L}[^:\d]{0,39}):\s*(.+)$/u);
+      return moslik ? { kalit: moslik[1].trim(), qiymat: moslik[2].trim() } : { qiymat: qator };
+    });
+}
+
+function QoshimchaMalumotCard({ sotuv }: { sotuv: Sotuv }) {
+  const { t } = useTranslation("savdo_tafsilot");
+  const izohQatorlari = izohniQatorlarga(sotuv.note);
+  const kalitliQatorlar = izohQatorlari.filter((qator) => qator.kalit);
+  const erkinMatn = izohQatorlari.filter((qator) => !qator.kalit);
+
   return (
-    <div className="mt-4">
-      <p className="text-sm text-slate-400">{label}</p>
-      <div className={`mt-1 text-sm text-slate-700 ${pill ? "inline-flex min-h-8 min-w-[260px] items-center rounded-xl bg-orange-50 px-3 ring-1 ring-orange-100" : ""}`}>{value}</div>
+    <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(37,99,235,.08)] backdrop-blur">
+      <CardTitle title={t("umumiyTab.qoshimchaMalumotlar")} action={t("common.ozgartirish")} />
+
+      <div className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-100 bg-white">
+        <KontaktQatori icon={<RotateCcw size={17} />} label={t("umumiyTab.qaytarilganSavdo")} value={t("umumiyTab.tanlanmagan")} />
+        <KontaktQatori icon={<UserCheck size={17} />} label={t("common.info.masulShaxs")} value={masulNomi(sotuv)} />
+        <KontaktQatori icon={<CalendarDays size={17} />} label={t("umumiyTab.sana")} value={sananiFormatlash(sotuv.createdAt)} />
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-slate-100 bg-white p-4">
+        <div className="flex items-center gap-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-[#2563EB] ring-1 ring-orange-100">
+            <StickyNote size={15} />
+          </span>
+          <p className="text-xs font-black uppercase tracking-wide text-slate-400">{t("umumiyTab.qoshimchaIzoh")}</p>
+        </div>
+
+        {izohQatorlari.length === 0 ? (
+          <p className="mt-3 text-sm text-slate-300">{t("umumiyTab.izohYoq")}</p>
+        ) : (
+          <>
+            {kalitliQatorlar.length > 0 && (
+              <dl className="mt-3 divide-y divide-slate-100">
+                {kalitliQatorlar.map((qator, index) => (
+                  <div key={`${qator.kalit}-${index}`} className="flex items-start justify-between gap-4 py-2 text-sm">
+                    <dt className="shrink-0 text-slate-400">{qator.kalit}</dt>
+                    <dd className="min-w-0 break-words text-right font-semibold text-slate-800">{qator.qiymat}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+            {erkinMatn.length > 0 && (
+              <p className={`whitespace-pre-line break-words text-sm leading-6 text-slate-600 ${kalitliQatorlar.length > 0 ? "mt-3 border-t border-slate-100 pt-3" : "mt-3"}`}>
+                {erkinMatn.map((qator) => qator.qiymat).join("\n")}
+              </p>
+            )}
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
+
+type KorsatkichOhangi = "kulrang" | "kok" | "qizil" | "yashil";
+const KORSATKICH_OHANGI: Record<KorsatkichOhangi, string> = {
+  kulrang: "text-slate-700",
+  kok: "text-[#2563EB]",
+  qizil: "text-red-500",
+  yashil: "text-emerald-600",
+};
+
+function Korsatkich({ label, value, ohang = "kulrang" }: { label: string; value: string; ohang?: KorsatkichOhangi }) {
+  return (
+    <div className="rounded-xl bg-white px-3 py-2.5 ring-1 ring-slate-100">
+      <p className="text-xs text-slate-400">{label}</p>
+      <p className={`mt-1 text-sm font-black ${KORSATKICH_OHANGI[ohang]}`}>{value}</p>
+    </div>
+  );
+}
+
+function KontaktQatori({ icon, label, value, href }: { icon: ReactNode; label: string; value: string; href?: string }) {
+  const bosh = !value || value === "-" || value === "—";
+  return (
+    <div className="flex items-center gap-3 px-4 py-3">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-[#2563EB] ring-1 ring-orange-100">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs text-slate-400">{label}</p>
+        {href && !bosh ? (
+          <a href={href} className="mt-0.5 block break-words text-sm font-semibold text-slate-800 transition hover:text-[#2563EB]">
+            {value}
+          </a>
+        ) : (
+          <p className={`mt-0.5 break-words text-sm font-semibold ${bosh ? "text-slate-300" : "text-slate-800"}`}>{bosh ? "—" : value}</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -4072,15 +4391,11 @@ function HujjatFeedCard({
 }) {
   const { t } = useTranslation("savdo_tafsilot");
   return (
-    <article className="group relative overflow-visible rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_14px_38px_rgba(37,99,235,.08)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(37,99,235,.12)]">
-      <div className="absolute -left-[70px] top-5 hidden h-11 w-11 items-center justify-center rounded-full bg-[#2563EB] text-white shadow-[0_12px_30px_rgba(37,99,235,.30)] xl:flex">
-        <FileText size={21} />
-      </div>
-
+    <article className="group relative overflow-visible rounded-[20px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_14px_38px_rgba(37,99,235,.06)] transition duration-300 hover:shadow-[0_20px_50px_rgba(37,99,235,.10)]">
       <div className="flex items-start justify-between gap-5">
         <div className="flex min-w-0 items-start gap-4">
-          <div className="flex h-[96px] w-[108px] shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-[#2563EB] ring-1 ring-orange-100">
-            <FileText size={42} strokeWidth={1.8} />
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-[#2563EB] ring-1 ring-orange-100">
+            <FileText size={30} strokeWidth={1.8} />
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
@@ -4101,7 +4416,6 @@ function HujjatFeedCard({
           </div>
         </div>
 
-        <UserRound className="mt-1 shrink-0 rounded-full bg-slate-100 p-1.5 text-slate-500" size={32} />
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -4143,45 +4457,34 @@ function OmbordanChiqarishHujjatFeedCard({
   const omborNomi = sotuvOmborNomi(sotuv, omborlar, t);
 
   return (
-    <article className="group relative overflow-visible rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_14px_38px_rgba(37,99,235,.08)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(37,99,235,.12)]">
-      <div className="absolute -left-[70px] top-5 hidden h-11 w-11 items-center justify-center rounded-full bg-emerald-500 text-white shadow-[0_12px_30px_rgba(16,185,129,.30)] xl:flex">
-        <Package size={21} />
+    <article className="group relative overflow-hidden rounded-[20px] border border-emerald-100 bg-white/92 p-5 shadow-[0_14px_38px_rgba(16,185,129,.07)] transition duration-300 hover:shadow-[0_20px_50px_rgba(16,185,129,.12)]">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <h3 className="font-black text-slate-900">{t("ombordanChiqarishFeedCard.qoshildi")}</h3>
+        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500">{vaqt}</span>
       </div>
 
-      <div className="flex items-start justify-between gap-5">
-        <div className="flex min-w-0 items-start gap-4">
-          <div className="flex h-[96px] w-[108px] shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
-            <Package size={42} strokeWidth={1.8} />
-          </div>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-3">
-              <h3 className="font-black text-slate-900">{t("ombordanChiqarishFeedCard.qoshildi")}</h3>
-              <span className="text-sm font-medium text-slate-400">{vaqt}</span>
-            </div>
-            <div className="mt-3 space-y-1.5 text-sm">
-              <p className="text-slate-500">
-                {t("ombordanChiqarishFeedCard.sotuv")} <span className="font-semibold text-slate-800">{sotuvRaqami(sotuv)}</span>
-              </p>
-              <p className="text-slate-500">
-                {t("ombordanChiqarishFeedCard.mijoz")} <span className="font-semibold text-slate-800">{mijozNomi(sotuv)}</span>
-              </p>
-              <p className="text-slate-400">
-                {t("ombordanChiqarishFeedCard.ombor")}{" "}
-                <span className="font-semibold text-slate-700">{omborNomi}</span>
-              </p>
-            </div>
-          </div>
+      <dl className="mt-3 grid gap-2 rounded-2xl bg-emerald-50/60 p-4 text-sm sm:grid-cols-3">
+        <div className="min-w-0">
+          <dt className="text-xs text-slate-400">{t("ombordanChiqarishFeedCard.sotuv")}</dt>
+          <dd className="mt-0.5 break-words font-semibold text-slate-800">{sotuvRaqami(sotuv)}</dd>
         </div>
+        <div className="min-w-0">
+          <dt className="text-xs text-slate-400">{t("ombordanChiqarishFeedCard.mijoz")}</dt>
+          <dd className="mt-0.5 break-words font-semibold text-slate-800">{mijozNomi(sotuv)}</dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="text-xs text-slate-400">{t("ombordanChiqarishFeedCard.ombor")}</dt>
+          <dd className="mt-0.5 break-words font-semibold text-slate-800">{omborNomi}</dd>
+        </div>
+      </dl>
 
-        <UserRound className="mt-1 shrink-0 rounded-full bg-slate-100 p-1.5 text-slate-500" size={32} />
-      </div>
-
-      <div className="mt-5 flex flex-wrap items-center gap-3">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <button
           type="button"
           onClick={onOchish}
-          className="inline-flex h-10 min-w-[150px] items-center justify-center rounded-xl border border-orange-100 bg-white px-5 text-sm font-bold text-slate-700 transition hover:border-[#2563EB] hover:text-[#2563EB]"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-white px-5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-500 hover:text-white"
         >
+          <FileText size={16} />
           {t("ombordanChiqarishFeedCard.korish")}
         </button>
       </div>
@@ -4202,29 +4505,25 @@ function FeedCard({
 }) {
   const { t } = useTranslation("savdo_tafsilot");
   return (
-    <article className="group relative overflow-hidden rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_14px_38px_rgba(37,99,235,.08)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(37,99,235,.12)]">
-      <span className="absolute inset-y-5 left-0 w-1 rounded-r-full bg-gradient-to-b from-orange-400 to-orange-600 opacity-80" />
+    <article className="group relative overflow-hidden rounded-[20px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_14px_38px_rgba(37,99,235,.06)] transition duration-300 hover:shadow-[0_20px_50px_rgba(37,99,235,.10)]">
       <div className="flex items-start justify-between gap-4">
-        <div className="pl-2">
-          <div className="flex flex-wrap items-center gap-3">
-            <h3 className="font-black text-slate-700">{title}</h3>
-            <span className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-bold text-slate-400 ring-1 ring-orange-100">{time}</span>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h3 className="font-black text-slate-800">{title}</h3>
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500">{time}</span>
           </div>
-          <p className="mt-3 text-sm font-medium leading-6 text-slate-600">{text}</p>
+          <p className="mt-2 break-words text-sm leading-6 text-slate-600">{text}</p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {onOchirish && (
-            <button
-              type="button"
-              onClick={onOchirish}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-red-400 opacity-0 transition hover:bg-red-100 hover:text-red-600 group-hover:opacity-100"
-              aria-label={t("feedCard.ochirishAria", { title })}
-            >
-              <Trash2 size={16} />
-            </button>
-          )}
-          <div className="h-9 w-9 rounded-full bg-gradient-to-br from-orange-50 to-[#F8FAFC] ring-1 ring-orange-100" />
-        </div>
+        {onOchirish && (
+          <button
+            type="button"
+            onClick={onOchirish}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-400 opacity-0 transition hover:bg-red-100 hover:text-red-600 group-hover:opacity-100"
+            aria-label={t("feedCard.ochirishAria", { title })}
+          >
+            <Trash2 size={16} />
+          </button>
+        )}
       </div>
     </article>
   );
@@ -4560,8 +4859,4 @@ function KalendarTanlashPanel({
       </div>
     </div>
   );
-}
-
-function IconButton({ icon }: { icon: ReactNode }) {
-  return <button className="hidden h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-600 shadow-sm transition hover:text-orange-600 sm:flex">{icon}</button>;
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CreditCard, LoaderCircle, RefreshCw, Search, WalletCards, X } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Banknote, CreditCard, Landmark, LoaderCircle, ReceiptText, RefreshCw, Scale, Search, Wallet, WalletCards, X } from "lucide-react";
 import JadvalYuklanmoqda from "./JadvalYuklanmoqda";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -10,6 +10,8 @@ import { tolovSanasiniFormatlash, tolovSummasiniFormatlash, tolovUsuliMatni } fr
 import AppModal from "@/Components/common/AppModal";
 import SavdoSelect from "./SavdoSelect";
 import TablePagination from "@/Components/common/TablePagination";
+import DateRangePicker from "@/Components/ui/DateRangePicker";
+import KorinishTanlash, { type RoyxatKorinishi } from "@/Pages/Ombor/KorinishTanlash";
 
 type TolovlarProps = {
   sotuvlar: Sotuv[];
@@ -21,20 +23,45 @@ function turiBadge(tolov: TolovYozuvi, t: TFunction) {
   const kirim = tolov.turi === "KIRIM";
   return (
     <span
-      className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${
+      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-black ${
         kirim
           ? "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100"
           : "bg-red-50 text-red-600 ring-1 ring-red-100"
       }`}
     >
+      {kirim ? <ArrowDownLeft size={13} /> : <ArrowUpRight size={13} />}
       {kirim ? t("tolovlar.turiOptions.kirim") : t("tolovlar.turiOptions.chiqim")}
     </span>
   );
 }
 
+function tolovIkonkasi(turi: string, size = 15) {
+  switch (String(turi).toUpperCase()) {
+    case "CASH":
+      return <Banknote size={size} />;
+    case "CARD":
+      return <CreditCard size={size} />;
+    case "BANK":
+      return <Landmark size={size} />;
+    default:
+      return <Wallet size={size} />;
+  }
+}
+
+function boshHarflar(nom: string) {
+  return nom
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((qism) => qism[0]?.toUpperCase())
+    .join("");
+}
+
 export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: TolovlarProps) {
   const { t } = useTranslation("savdo_tolov");
   const [tanlanganTolov, setTanlanganTolov] = useState<TolovYozuvi | null>(null);
+  // Standart ko'rinish — jadval; kartochka ko'rinishi barcha ekranlarda.
+  const [korinish, setKorinish] = useState<RoyxatKorinishi>("jadval");
 
   const turiOptions = [
     { value: "BARCHASI", label: t("tolovlar.turiOptions.all") },
@@ -62,6 +89,7 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
   const {
     rows,
     jami,
+    xulosa,
     currentPage,
     filtrlar,
     yuklanmoqda,
@@ -89,6 +117,14 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
             {t("tolovlar.subtitle")}
           </p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+        <KorinishTanlash
+          qiymat={korinish}
+          onChange={setKorinish}
+          sarlavha={t("tolovlar.viewToggle")}
+          jadvalMatni={t("tolovlar.viewTable")}
+          kartochkaMatni={t("tolovlar.viewCards")}
+        />
         <button
           type="button"
           onClick={() => void refetch()}
@@ -98,9 +134,39 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
           {yuklanmoqda ? <LoaderCircle className="animate-spin" size={16} /> : <RefreshCw size={16} />}
           {t("tolovlar.refreshButton")}
         </button>
+        </div>
       </div>
 
-      <div className="grid gap-3 py-5 @min-[1130px]:grid-cols-[minmax(220px,1fr)_150px_170px_170px_150px_150px]">
+      <section className="grid gap-4 pt-5 sm:grid-cols-2 xl:grid-cols-4" aria-label={t("tolovlar.title")}>
+        {[
+          { kalit: "kirim", label: t("tolovlar.stat.kirim"), qiymat: tolovSummasiniFormatlash(xulosa.kirim), ikonka: ArrowDownLeft, stil: "from-emerald-400 to-emerald-600 shadow-emerald-200", chegara: "border-emerald-100", matn: "text-slate-900" },
+          { kalit: "chiqim", label: t("tolovlar.stat.chiqim"), qiymat: tolovSummasiniFormatlash(xulosa.chiqim), ikonka: ArrowUpRight, stil: "from-rose-400 to-rose-600 shadow-rose-200", chegara: "border-rose-100", matn: "text-slate-900" },
+          { kalit: "balans", label: t("tolovlar.stat.balans"), qiymat: tolovSummasiniFormatlash(xulosa.kirim - xulosa.chiqim), ikonka: Scale, stil: "from-blue-500 to-blue-700 shadow-blue-200", chegara: "border-blue-100", matn: xulosa.kirim - xulosa.chiqim < 0 ? "text-rose-600" : "text-slate-900" },
+          { kalit: "soni", label: t("tolovlar.stat.soni"), qiymat: String(jami), ikonka: ReceiptText, stil: "from-violet-500 to-violet-700 shadow-violet-200", chegara: "border-violet-100", matn: "text-slate-900" },
+        ].map((karta) => {
+          const Ikonka = karta.ikonka;
+          return (
+            <div
+              key={karta.kalit}
+              className={`group flex items-center gap-4 rounded-[22px] border bg-gradient-to-br from-white to-slate-50/70 p-5 shadow-[0_5px_18px_rgba(15,23,42,.05)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_16px_34px_rgba(15,23,42,.10)] ${karta.chegara}`}
+            >
+              <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-md transition duration-300 group-hover:-rotate-6 group-hover:scale-105 ${karta.stil}`}>
+                <Ikonka size={22} />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold text-slate-500">{karta.label}</p>
+                {xulosa.yuklanmoqda && karta.kalit !== "soni" ? (
+                  <div className="mt-2 h-7 w-32 animate-pulse rounded-lg bg-slate-100" />
+                ) : (
+                  <p className={`mt-1 truncate text-2xl font-black leading-none tracking-tight tabular-nums ${karta.matn}`}>{karta.qiymat}</p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </section>
+
+      <div className="grid gap-3 py-5 @min-[1130px]:grid-cols-[minmax(220px,1fr)_150px_170px_170px_240px]">
         <label className="flex h-11 items-center gap-2 rounded-2xl border border-orange-100 bg-[#F8FAFC]/70 px-4 transition focus-within:border-orange-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-orange-100">
           <Search size={18} className="shrink-0 text-orange-300" />
           <input
@@ -126,19 +192,12 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
           portal
           buttonClassName="h-11 rounded-2xl px-4 text-sm"
         />
-        <input
-          type="date"
-          value={filtrlar.startDate}
-          onChange={(event) => filtrniYangilash({ startDate: event.target.value })}
-          className="h-11 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-orange-300 focus:ring-4 focus:ring-orange-100"
-          aria-label={t("tolovlar.startDateAria")}
-        />
-        <input
-          type="date"
-          value={filtrlar.endDate}
-          onChange={(event) => filtrniYangilash({ endDate: event.target.value })}
-          className="h-11 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-orange-300 focus:ring-4 focus:ring-orange-100"
-          aria-label={t("tolovlar.endDateAria")}
+        <DateRangePicker
+          from={filtrlar.startDate}
+          to={filtrlar.endDate}
+          onChange={(from, to) => filtrniYangilash({ startDate: from, endDate: to })}
+          compact
+          className="h-11"
         />
       </div>
 
@@ -151,7 +210,7 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
         </div>
       )}
 
-      <div className="hidden overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-sm md:block">
+      <div className={`overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-sm ${korinish === "jadval" ? "hidden md:block" : "hidden"}`}>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[920px] border-collapse text-left text-sm">
             <thead className="bg-[#F8FAFC] text-xs font-black uppercase tracking-wide text-slate-500">
@@ -179,15 +238,34 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
                     className="cursor-pointer transition hover:bg-orange-50/55"
                     title={tolov.sotuv ? t("tolovlar.table.rowTitleSotuv") : t("tolovlar.table.rowTitleTolov")}
                   >
-                    <td className="px-6 py-5 font-semibold text-slate-900">{tolov.sotuvId}</td>
-                    <td className="px-6 py-5 font-bold">{tolov.mijoz}</td>
-                    <td className="px-6 py-5">{turiBadge(tolov, t)}</td>
-                    <td className="px-6 py-5 font-semibold text-slate-700">{tolovUsuliMatni(tolov.tolovTuri)}</td>
-                    <td className={`px-6 py-5 font-black ${tolov.turi === "CHIQIM" ? "text-red-600" : "text-slate-950"}`}>
-                      {tolov.turi === "CHIQIM" ? "-" : ""}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-[#2563EB] ring-1 ring-orange-100">
+                          <ReceiptText size={18} />
+                        </span>
+                        <span className="font-black tabular-nums text-slate-900">{tolov.sotuvId}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-50 text-[11px] font-black text-[#2563EB] ring-1 ring-orange-100">
+                          {boshHarflar(tolov.mijoz) || "—"}
+                        </span>
+                        <span className="truncate font-bold">{tolov.mijoz}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">{turiBadge(tolov, t)}</td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-100">
+                        <span className="text-slate-400">{tolovIkonkasi(tolov.tolovTuri, 14)}</span>
+                        {tolovUsuliMatni(tolov.tolovTuri)}
+                      </span>
+                    </td>
+                    <td className={`whitespace-nowrap px-6 py-4 font-black tabular-nums ${tolov.turi === "CHIQIM" ? "text-red-600" : "text-emerald-700"}`}>
+                      {tolov.turi === "CHIQIM" ? "-" : "+"}
                       {tolovSummasiniFormatlash(tolov.summa)}
                     </td>
-                    <td className="px-6 py-5 text-slate-600">{tolovSanasiniFormatlash(tolov.sana)}</td>
+                    <td className="whitespace-nowrap px-6 py-4 text-slate-600">{tolovSanasiniFormatlash(tolov.sana)}</td>
                   </tr>
                 ))
               )}
@@ -208,43 +286,59 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
         </div>
       </div>
 
-      <div className="grid gap-3 md:hidden">
-        {yuklanmoqda
-          ? <JadvalYuklanmoqda ikonka={<CreditCard size={24} />} className="min-h-[260px]" />
-          : rows.map((tolov) => (
+      <div className={`grid gap-4 ${korinish === "kartochka" ? "sm:grid-cols-2 xl:grid-cols-3" : "md:hidden"}`}>
+        {yuklanmoqda ? (
+          <div className="col-span-full">
+            <JadvalYuklanmoqda ikonka={<CreditCard size={24} />} className="min-h-[260px]" />
+          </div>
+        ) : (
+          rows.map((tolov) => {
+            const chiqim = tolov.turi === "CHIQIM";
+            return (
               <article
                 key={tolov.id}
                 onClick={() => tolovniOchish(tolov)}
-                className="cursor-pointer rounded-2xl border border-orange-100 bg-white p-4 shadow-sm transition hover:bg-orange-50/45"
+                title={tolov.sotuv ? t("tolovlar.table.rowTitleSotuv") : t("tolovlar.table.rowTitleTolov")}
+                className="group cursor-pointer overflow-hidden rounded-[22px] border border-orange-100 bg-white shadow-[0_10px_30px_rgba(37,99,235,.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(37,99,235,.12)]"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-black text-orange-600">{tolov.sotuvId}</p>
-                    <p className="mt-1 text-sm font-bold text-slate-800">{tolov.mijoz}</p>
+                <div className="p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-[#2563EB] ring-1 ring-orange-100 transition duration-300 group-hover:-rotate-6 group-hover:scale-105">
+                        <ReceiptText size={20} />
+                      </span>
+                      <p className="truncate font-black tabular-nums text-slate-900">{tolov.sotuvId}</p>
+                    </div>
+                    {turiBadge(tolov, t)}
                   </div>
-                  {turiBadge(tolov, t)}
+
+                  <p className={`mt-5 text-2xl font-black tracking-tight tabular-nums ${chiqim ? "text-red-600" : "text-emerald-700"}`}>
+                    {chiqim ? "-" : "+"}
+                    {tolovSummasiniFormatlash(tolov.summa)}
+                  </p>
+
+                  <div className="mt-4 flex items-center gap-2.5 rounded-2xl bg-slate-50 px-3.5 py-3 ring-1 ring-slate-100">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-50 text-[11px] font-black text-[#2563EB] ring-1 ring-orange-100">
+                      {boshHarflar(tolov.mijoz) || "—"}
+                    </span>
+                    <span className="truncate text-sm font-bold text-slate-800">{tolov.mijoz}</span>
+                  </div>
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <p className="text-xs font-black uppercase text-slate-400">{t("tolovlar.mobile.tolovTuri")}</p>
-                    <p className="mt-1 font-bold text-slate-700">{tolovUsuliMatni(tolov.tolovTuri)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-black uppercase text-slate-400">{t("tolovlar.mobile.summa")}</p>
-                    <p className={`mt-1 font-black ${tolov.turi === "CHIQIM" ? "text-red-600" : "text-slate-950"}`}>
-                      {tolov.turi === "CHIQIM" ? "-" : ""}
-                      {tolovSummasiniFormatlash(tolov.summa)}
-                    </p>
-                  </div>
+
+                <div className="flex items-center justify-between gap-3 border-t border-orange-100 bg-orange-50/40 px-5 py-3">
+                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-100">
+                    <span className="text-slate-400">{tolovIkonkasi(tolov.tolovTuri, 14)}</span>
+                    {tolovUsuliMatni(tolov.tolovTuri)}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-500">{tolovSanasiniFormatlash(tolov.sana)}</span>
                 </div>
-                <p className="mt-4 text-xs font-semibold text-slate-400">
-                  {t("tolovlar.mobile.sana", { sana: tolovSanasiniFormatlash(tolov.sana) })}
-                </p>
               </article>
-            ))}
+            );
+          })
+        )}
 
         {!yuklanmoqda && rows.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-orange-200 bg-orange-50/40 p-8 text-center">
+          <div className="col-span-full rounded-2xl border border-dashed border-orange-200 bg-orange-50/40 p-8 text-center">
             <WalletCards className="mx-auto text-orange-300" size={36} />
             <p className="mt-3 font-black text-slate-700">{t("tolovlar.mobile.emptyTitle")}</p>
           </div>

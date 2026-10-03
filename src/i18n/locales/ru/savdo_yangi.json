@@ -28,6 +28,11 @@
     "productOtherWarehouse": "Выбранный товар с другого склада. Одна продажа оформляется только с одного склада."
   },
   "activity": {
+    "collapsedPlaceholder": "Что нужно сделать",
+    "dateLabel": "Дата",
+    "timeLabel": "Время",
+    "resetDate": "Сбросить на сегодня",
+    "dateDone": "Готово",
     "today": "Сегодня",
     "defaultDateTime": "Сегодня, в 15:00",
     "dateAtTime": "{{date}}, в {{time}}",

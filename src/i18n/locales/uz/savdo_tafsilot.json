@@ -161,6 +161,9 @@
     "miqdorVaValyuta": "Miqdor va valyuta",
     "bolimTavsif": "Bu yerda to'lov, yetkazish va ombordan chiqarish ma'lumotlari ko'rsatiladi.",
     "sotuvJami": "Sotuv jami",
+    "qabulQilingan": "Qabul qilingan",
+    "tolovHolati": "To'lov holati",
+    "tolanganFoiz": "{{foiz}}% to'langan",
     "qabulQilinganTolov": "Qabul qilingan to'lov",
     "qarzdorlikQoldigi": "Qarzdorlik qoldig'i",
     "qarzdorlikYoq": "Qarzdorlik yo'q",
@@ -191,7 +194,52 @@
     "tolovniSaqlash": "To'lovni saqlash",
     "tolovniQoshish": "To'lovni qo'shish"
   },
+  "jarayon": {
+    "sarlavha": "Sotuv jarayoni",
+    "keyingiQadam": "Keyingi qadam",
+    "hozir": "Hozir",
+    "qadamlar": {
+      "yaratildi": { "nom": "Sotuv yaratildi", "izoh": "Mijoz va tovarlar tanlandi" },
+      "ombor": {
+        "nom": "Ombordan chiqarish",
+        "izohKutilmoqda": "Tasdiqlang — tovar ombordan chiqadi",
+        "izohBajarilgan": "Tovar ombordan chiqarildi"
+      },
+      "tolov": {
+        "nom": "To'lov qabul qilish",
+        "izohYoq": "To'lov hali qabul qilinmagan",
+        "izohQisman": "{{tolangan}} / {{jami}}",
+        "izohToliq": "To'liq to'langan"
+      },
+      "yakun": {
+        "nom": "Yakunlandi",
+        "izohKutilmoqda": "Tovar chiqib, to'lov to'liq bo'lgach",
+        "izohBajarilgan": "Sotuv to'liq yopildi"
+      }
+    },
+    "keyingi": {
+      "ombor": {
+        "sarlavha": "Ombordan chiqarishni tasdiqlang",
+        "tavsif": "Tasdiqlangach tovar ombordan chiqadi va sotuv \"Amalga oshirilganlar\" bo'limiga tushadi. To'lovni xohlasangiz oldindan ham qabul qilishingiz mumkin.",
+        "tugma": "Ombordan chiqarish"
+      },
+      "tolov": {
+        "sarlavha": "To'lovni qabul qiling",
+        "tavsif": "Qarzdorlik qoldig'i: {{summa}}. To'lov qisman yoki to'liq qabul qilinishi mumkin.",
+        "tugma": "To'lovni qabul qilish"
+      },
+      "yakunlandi": {
+        "sarlavha": "Sotuv yakunlandi",
+        "tavsif": "Tovar ombordan chiqarilgan va to'lov to'liq qabul qilingan."
+      },
+      "bekor": {
+        "sarlavha": "Sotuv bekor qilingan",
+        "tavsif": "Bu sotuv bo'yicha keyingi amallar mavjud emas."
+      }
+    }
+  },
   "tolovQatori": {
+    "sarlavha": "Qabul qilingan to'lovlar",
     "nomi": "To'lov №{{raqam}}",
     "summa": "to'lov summasi: {{summa}}",
     "amallar": "Amallar",
@@ -207,6 +255,8 @@
     "tolovTuri": "To'lov turi",
     "sana": "Sana",
     "masulShaxs": "Mas'ul shaxs",
+    "sotuvUlushi": "Sotuv summasining {{foiz}}% qismi",
+    "sotuvJami": "Sotuv jami:",
     "yopish": "Yopish"
   },
   "hisobFakturalarTab": {
@@ -362,6 +412,9 @@
     "tasdiqlanmaguncha": "Tasdiqlanmaguncha bu sotuv \"Amalga oshirilganlar\" bo'limiga tushmaydi va ombor qoldig'i o'zgarmaydi.",
     "tasdiqlabBolmadi": "Sotuvni ombordan chiqarish uchun tasdiqlab bo'lmadi.",
     "tasdiqlash": "Tasdiqlash",
+    "orqaga": "Orqaga",
+    "holatBajarilgan": "Ombordan chiqarilgan",
+    "holatKutilmoqda": "Tasdiqlash kutilmoqda",
     "errors": {
       "partnerIdKerak": "Faoliyatni saqlash uchun sotuvda real partner ID bo'lishi kerak.",
       "masulXodimKerak": "Ish yoki vazifa yaratish uchun mas'ul xodim kerak."

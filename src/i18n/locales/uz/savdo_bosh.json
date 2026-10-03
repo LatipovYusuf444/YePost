@@ -28,6 +28,37 @@
       "bekorQilingan": "Bekor qilingan sotuvlar",
       "barchasi": "Barcha sotuvlar"
     },
+    "statistika": {
+      "aria": "Savdo ko'rsatkichlari",
+      "sarlavhalar": {
+        "barchasi": { "sotuvlar": "Jami sotuvlar", "summa": "Jami savdo summasi" },
+        "bugun": { "sotuvlar": "Bugungi sotuvlar", "summa": "Bugungi savdo summasi" },
+        "davr": { "sotuvlar": "Davr bo'yicha sotuvlar", "summa": "Davr bo'yicha savdo summasi" }
+      },
+      "tolov": "Qabul qilingan to'lov",
+      "qarz": "Qarzdorlik",
+      "tasdiqlangan": "{{count}} tasdiqlangan",
+      "qoralama": "{{count}} qoralama",
+      "ortachaChek": "O'rtacha chek: {{summa}}",
+      "tolanganFoiz": "{{foiz}}% to'langan",
+      "qarzdorSotuvlar": "{{count}} ta sotuvda qarz bor",
+      "qarzYoq": "Qarzdorlik yo'q",
+      "kechagiga": "kechagiga nisbatan",
+      "oldingiDavrga": "oldingi davrga nisbatan",
+      "kechaYoq": "Kecha ko'rsatkich bo'lmagan",
+      "davrYoq": "Oldingi davrda ko'rsatkich bo'lmagan",
+      "barchaVaqt": "Barcha vaqt davomida",
+      "bugunniKorsatish": "Faqat bugungi sotuvlarni ko'rsatish",
+      "barchasiniKorsatish": "Barcha sotuvlarni ko'rsatish",
+      "qarzdorlarniKorsatish": "Qarzdor sotuvlarni jadvalda ko'rsatish",
+      "som": "so'm"
+    },
+    "qarzXulosasi": {
+      "qarzdorlar": "{{count}} ta qarzdor",
+      "sotuvlar": "{{count}} ta sotuvda",
+      "jami": "Jami qarz:",
+      "tozalash": "Filtrni tozalash"
+    },
     "closeError": "Yopish",
     "successTitle": "Muvaffaqiyatli",
     "loading": "Ma'lumotlar yuklanmoqda...",

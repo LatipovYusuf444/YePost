@@ -1,5 +1,9 @@
 {
   "tolovlar": {
+    "viewToggle": "Ko'rinish",
+    "viewTable": "Jadval",
+    "viewCards": "Kartochka",
+    "stat": { "kirim": "Jami kirim", "chiqim": "Jami chiqim", "balans": "Sof balans", "soni": "To'lovlar soni" },
     "eyebrow": "Savdo",
     "title": "To'lovlar",
     "subtitle": "Sotuv, qaytarim, kassa kirimi va xarajatlar real backenddan olinadi.",

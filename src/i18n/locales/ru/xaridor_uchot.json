@@ -32,6 +32,11 @@
     "copy": "Скопировать"
   },
   "faoliyatPaneli": {
+    "collapsedPlaceholder": "Что нужно сделать",
+    "dateLabel": "Дата",
+    "timeLabel": "Время",
+    "resetDate": "Сбросить на сегодня",
+    "dateDone": "Готово",
     "tabs": { "ish": "Дело", "izoh": "Комментарий", "xabar": "Сообщение", "vazifa": "Задача" },
     "more": "Ещё",
     "titlePlaceholders": {

@@ -2,7 +2,7 @@ import apiClient from "./axios";
 import axios from "axios";
 import { modifikatsiyalarApi } from "./catalogApi";
 import { stockBalanceReportAll } from "./reportsApi";
-import { apiData, apiList, ruxsatsizBulsaBosh, type ApiEnvelope, type ApiListEnvelope } from "./response";
+import { apiData, apiList, ruxsatsizBulsaBosh, sahifaJavobi, type ApiEnvelope, type ApiListEnvelope, type SahifaliRoyxat } from "./response";
 import type {
   MijozTanlovi,
   OmborTanlovi,
@@ -30,6 +30,84 @@ function royxatniAjratish<T>(data: RoyxatJavobi<T>): T[] {
 export async function sotuvlarRoyxatiniOlish() {
   const response = await apiClient.get<RoyxatJavobi<Sotuv> | ApiListEnvelope<Sotuv>>("/sales");
   return royxatniAjratish(response.data);
+}
+
+// GET /sales — filtr va sahifalash. page/pageSize berilmasa backend avvalgidek hammasini qaytaradi.
+// dateFrom/dateTo — YYYY-MM-DD (ikkala chet ham kiradi), search — hujjat raqami, mijoz ismi/familiyasi/telefoni.
+export type SotuvlarFiltri = {
+  dateFrom?: string;
+  dateTo?: string;
+  status?: "CONFIRMED" | "DRAFT" | "CANCELLED";
+  search?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export async function sotuvlarSahifasiniOlish(filtr: SotuvlarFiltri = {}): Promise<SahifaliRoyxat<Sotuv>> {
+  const params: Record<string, string | number> = {};
+  if (filtr.dateFrom) params.dateFrom = filtr.dateFrom;
+  if (filtr.dateTo) params.dateTo = filtr.dateTo;
+  if (filtr.status) params.status = filtr.status;
+  if (filtr.search?.trim()) params.search = filtr.search.trim();
+  if (filtr.page) params.page = filtr.page;
+  if (filtr.pageSize) params.pageSize = Math.min(filtr.pageSize, 100);
+  const response = await apiClient.get<unknown>("/sales", { params });
+  return sahifaJavobi<Sotuv>(response.data, filtr.page ?? 1, filtr.pageSize ?? 20);
+}
+
+// GET /sales/summary — Savdo sahifasi kartalari uchun. Summalar faqat tasdiqlangan sotuvlar bo'yicha (backend satr qaytaradi).
+export type SotuvlarXulosaDavri = {
+  confirmedCount: number;
+  draftCount: number;
+  cancelledCount: number;
+  totalAmount: number;
+  paidAmount: number;
+  debtAmount: number;
+  averageCheck: number;
+};
+
+export type SotuvlarXulosasi = {
+  current: SotuvlarXulosaDavri;
+  // dateFrom yoki dateTo berilmasa backend null qaytaradi.
+  previous: SotuvlarXulosaDavri | null;
+  // dateTo (yoki bugun) bilan tugaydigan 7 kun.
+  daily: Array<{ date: string; count: number; amount: number }>;
+};
+
+function xulosaSoni(qiymat: unknown) {
+  const son = Number(qiymat);
+  return Number.isFinite(son) ? son : 0;
+}
+
+function xulosaDavri(raw: unknown): SotuvlarXulosaDavri {
+  const obyekt = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  return {
+    confirmedCount: xulosaSoni(obyekt.confirmedCount),
+    draftCount: xulosaSoni(obyekt.draftCount),
+    cancelledCount: xulosaSoni(obyekt.cancelledCount),
+    totalAmount: xulosaSoni(obyekt.totalAmount),
+    paidAmount: xulosaSoni(obyekt.paidAmount),
+    debtAmount: xulosaSoni(obyekt.debtAmount),
+    averageCheck: xulosaSoni(obyekt.averageCheck),
+  };
+}
+
+export async function sotuvlarXulosasiniOlish(filtr: { dateFrom?: string; dateTo?: string } = {}): Promise<SotuvlarXulosasi> {
+  const params: Record<string, string> = {};
+  if (filtr.dateFrom) params.dateFrom = filtr.dateFrom;
+  if (filtr.dateTo) params.dateTo = filtr.dateTo;
+  const response = await apiClient.get<unknown>("/sales/summary", { params });
+  const asosiy = apiData(response.data as ApiEnvelope<Record<string, unknown>>) as Record<string, unknown>;
+  const kunlik = Array.isArray(asosiy?.daily) ? (asosiy.daily as Array<Record<string, unknown>>) : [];
+  return {
+    current: xulosaDavri(asosiy?.current),
+    previous: asosiy?.previous ? xulosaDavri(asosiy.previous) : null,
+    daily: kunlik.map((element) => ({
+      date: String(element.date ?? ""),
+      count: xulosaSoni(element.count),
+      amount: xulosaSoni(element.amount),
+    })),
+  };
 }
 
 // Savdo/index.tsx: tanlangan sotuvning mahsulotlari va to'lovlarini oladi.

@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { sotuvTafsilotiniOlish } from "@/api/savdoApi";
+import { sotuvTafsilotiniOlish, sotuvlarSahifasiniOlish, sotuvlarXulosasiniOlish, type SotuvlarXulosasi } from "@/api/savdoApi";
 import { useSavdoStore } from "@/store/savdoStore";
 import type { Sotuv, SotuvHolati, SotuvYaratishMalumoti, TolovTuri } from "@/types/savdo";
 import BekorQilinganlar from "./BekorQilinganlar";
@@ -17,6 +17,7 @@ import MahsulotQaytarishModal from "./MahsulotQaytarishModal";
 import Qaytarish from "./Qaytarish";
 import Savatcha from "./Savatcha";
 import SotuvlarJadvali from "./SotuvlarJadvali";
+import SotuvStatistikasi from "./SotuvStatistikasi";
 import JadvalYuklanmoqda from "./JadvalYuklanmoqda";
 import { bugungiSanaKaliti } from "@/lib/sanaKaliti";
 import SotuvTafsilotlariModal from "./SotuvTafsilotlariModal";
@@ -24,7 +25,7 @@ import Tarix from "./Tarix";
 import Tolovlar from "./Tolovlar";
 import Qarzdorliklar from "../Qarzdorlik";
 import YangiSotuvModal from "./YangiSotuvModal";
-import { mijozNomi, sotuvHolati, sotuvRaqami } from "./savdoYordamchilari";
+import { mijozNomi, pulniFormatlash, sotuvHolati, sotuvQarzdorlikSummasi, sotuvRaqami } from "./savdoYordamchilari";
 import SavdoSelect from "./SavdoSelect";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
 
@@ -69,6 +70,7 @@ export default function Savdo() {
     qaytarishniTiklash,
     tanlanganSotuvniTozalash,
     xatolikniTozalash,
+    sotuvlarniBoyitish,
   } = useSavdoStore();
   const [searchParams] = useSearchParams();
   const [qidiruv, setQidiruv] = useState("");
@@ -147,6 +149,83 @@ export default function Savdo() {
     const timer = window.setTimeout(() => setXabar(""), 2500);
     return () => window.clearTimeout(timer);
   }, [xabar]);
+  // ---- Server tomonidan filtr/sahifalash (GET /sales) va kartalar xulosasi (GET /sales/summary) ----
+  // Server rejimi faqat "Barcha sotuvlar" tabida va to'lov turi filtri yo'q bo'lganda ishlaydi (server to'lov turi bo'yicha filtrlamaydi).
+  // So'rov muvaffaqiyatsiz bo'lsa, avvalgidek yuklangan ro'yxatdan brauzerda filtrlanadi.
+  const [serverSahifaTanlovi, setServerSahifaTanlovi] = useState({ kalit: "", page: 1 });
+  const [serverHajm, setServerHajm] = useState(20);
+  const [qidiruvKechiktirilgan, setQidiruvKechiktirilgan] = useState("");
+  const [serverQatorlar, setServerQatorlar] = useState<Sotuv[]>([]);
+  const [serverJami, setServerJami] = useState(0);
+  const [serverYuklanmoqda, setServerYuklanmoqda] = useState(false);
+  const [serverYuklanganKalit, setServerYuklanganKalit] = useState("");
+  const [serverXatoKaliti, setServerXatoKaliti] = useState("");
+  const [serverYangilanish, setServerYangilanish] = useState(0);
+  const [xulosa, setXulosa] = useState<SotuvlarXulosasi | null>(null);
+
+  useEffect(() => {
+    const kechiktirish = window.setTimeout(() => setQidiruvKechiktirilgan(qidiruv.trim()), 350);
+    return () => window.clearTimeout(kechiktirish);
+  }, [qidiruv]);
+
+  // Sotuv o'zgarganda (tasdiqlash, bekor qilish, to'lov, o'chirish) server ro'yxati va xulosa qayta olinadi.
+  useEffect(() => {
+    const yangilash = () => setServerYangilanish((joriy) => joriy + 1);
+    window.addEventListener("savdo:yangilandi", yangilash);
+    return () => window.removeEventListener("savdo:yangilandi", yangilash);
+  }, []);
+
+  const serverFiltrKaliti = [sanaDan, sanaGacha, statusFilteri, qidiruvKechiktirilgan, serverHajm].join("|");
+  const serverRejimi = faolTab === "barchasi" && tolovFilteri === "barchasi" && serverXatoKaliti !== serverFiltrKaliti;
+  // Filtr o'zgarsa sahifa avtomatik 1 ga qaytadi (alohida qo'shimcha so'rovsiz).
+  const serverSahifa = serverSahifaTanlovi.kalit === serverFiltrKaliti ? serverSahifaTanlovi.page : 1;
+
+  useEffect(() => {
+    if (!serverRejimi) return;
+    let faol = true;
+    setServerYuklanmoqda(true);
+    void sotuvlarSahifasiniOlish({
+      dateFrom: sanaDan || undefined,
+      dateTo: sanaGacha || undefined,
+      status: statusFilteri === "barchasi" ? undefined : statusFilteri,
+      search: qidiruvKechiktirilgan || undefined,
+      page: serverSahifa,
+      pageSize: serverHajm,
+    })
+      .then((javob) => {
+        if (!faol) return;
+        setServerQatorlar(sotuvlarniBoyitish(javob.items));
+        setServerJami(javob.total);
+        setServerYuklanganKalit(serverFiltrKaliti);
+      })
+      .catch(() => {
+        if (faol) setServerXatoKaliti(serverFiltrKaliti);
+      })
+      .finally(() => {
+        if (faol) setServerYuklanmoqda(false);
+      });
+    return () => {
+      faol = false;
+    };
+    // sotuvlarniBoyitish store'da barqaror funksiya.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverRejimi, sanaDan, sanaGacha, statusFilteri, qidiruvKechiktirilgan, serverSahifa, serverHajm, serverYangilanish]);
+
+  useEffect(() => {
+    if (faolTab !== "barchasi") return;
+    let faol = true;
+    void sotuvlarXulosasiniOlish({ dateFrom: sanaDan || undefined, dateTo: sanaGacha || undefined })
+      .then((javob) => {
+        if (faol) setXulosa(javob);
+      })
+      .catch(() => {
+        if (faol) setXulosa(null);
+      });
+    return () => {
+      faol = false;
+    };
+  }, [faolTab, sanaDan, sanaGacha, serverYangilanish]);
+
   const qidirilganSotuvlar = useMemo(() => {
     const qiymat = qidiruv.trim().toLowerCase();
     const sanaBoyicha = sotuvlar.filter((sotuv) => {
@@ -165,14 +244,21 @@ export default function Savdo() {
         sotuvHolati(sotuv) === statusFilteri;
       const tolovMos =
         tolovFilteri === "barchasi" ||
-        sotuv.payments?.some((tolov) => String(tolov.paymentType).toUpperCase() === tolovFilteri);
+        (tolovFilteri === "DEBT"
+          ? sotuvHolati(sotuv) === "CONFIRMED" && sotuvQarzdorlikSummasi(sotuv) > 0
+          : sotuv.payments?.some((tolov) => String(tolov.paymentType).toUpperCase() === tolovFilteri));
 
       return statusMos && tolovMos;
     });
 
-    if (!qiymat) return filterlangan;
+    const tartiblangan =
+      tolovFilteri === "DEBT"
+        ? [...filterlangan].sort((a, b) => sotuvQarzdorlikSummasi(b) - sotuvQarzdorlikSummasi(a))
+        : filterlangan;
 
-    return filterlangan.filter((sotuv) =>
+    if (!qiymat) return tartiblangan;
+
+    return tartiblangan.filter((sotuv) =>
       [
         sotuvRaqami(sotuv),
         mijozNomi(sotuv),
@@ -187,6 +273,16 @@ export default function Savdo() {
         .includes(qiymat)
     );
   }, [qidiruv, sanaDan, sanaGacha, sotuvlar, statusFilterKorinsin, statusFilteri, tolovFilteri]);
+
+  const qarzXulosasi = useMemo(() => {
+    if (tolovFilteri !== "DEBT") return null;
+    const qarzdorlar = new Set(qidirilganSotuvlar.map((sotuv) => sotuv.customerId ?? sotuv.clientCompanyId ?? sotuv.id));
+    return {
+      sotuvlar: qidirilganSotuvlar.length,
+      qarzdorlar: qarzdorlar.size,
+      jami: qidirilganSotuvlar.reduce((summa, sotuv) => summa + sotuvQarzdorlikSummasi(sotuv), 0),
+    };
+  }, [qidirilganSotuvlar, tolovFilteri]);
 
   async function sotuvniOchish(sotuv: Sotuv) {
     await qoldiqlarniYuklash(sotuv.warehouseId);
@@ -279,13 +375,34 @@ export default function Savdo() {
             />
           )}
 
+          {faolTab === "barchasi" && (
+            <SotuvStatistikasi
+              sotuvlar={sotuvlar}
+              yuklanmoqda={yuklanmoqda}
+              sanaDan={sanaDan}
+              sanaGacha={sanaGacha}
+              xulosa={xulosa}
+              onSanaTanlash={(dan, gacha) => {
+                setSanaDan(dan);
+                setSanaGacha(gacha);
+              }}
+              onQarzniKorsatish={() => {
+                setStatusFilteri("barchasi");
+                setTolovFilteri("DEBT");
+              }}
+            />
+          )}
+
           {!["tolovlar", "qarzdorliklar", "qaytarish", "savatcha", "bekor-qilingan", "buyurtmalar"].includes(faolTab) && (
             <section className="overflow-hidden rounded-[30px] border border-gray-100 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-              <div className="border-b border-gray-100 px-10 py-7">
+              <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-6 sm:px-10 sm:py-7">
                 <h1 className="savdo-section-title">{sahifaSarlavhasi}</h1>
+                <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-orange-50 px-2.5 text-xs font-black tabular-nums text-[#2563EB] ring-1 ring-orange-100">
+                  {serverRejimi && serverYuklanganKalit === serverFiltrKaliti ? serverJami : qidirilganSotuvlar.length}
+                </span>
               </div>
 
-              <div className="flex flex-col gap-4 px-10 py-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-col gap-4 px-5 py-5 sm:px-10 sm:py-6 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   {yangiSotuvKorinsin && (
                     <button
@@ -293,14 +410,14 @@ export default function Savdo() {
                         setYangiSotuvVarianti("sale");
                         setYangiSotuvOchiq(true);
                       }}
-                      className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md bg-orange-500 px-4 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-500/20"
+                      className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-orange-500 px-4 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-500/20"
                     >
                       <Plus size={16} />
                       {t("savdoSahifasi.add")}
                     </button>
                   )}
 
-                  <label className="flex h-10 w-full items-center gap-2 rounded-lg border border-gray-200 bg-[#FAFAFA] px-3 transition focus-within:border-orange-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-orange-100 sm:w-[390px]">
+                  <label className="flex h-10 w-full items-center gap-2 rounded-xl border border-gray-200 bg-[#FAFAFA] px-3 transition focus-within:border-orange-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-orange-100 sm:w-[390px]">
                     <input
                       value={qidiruv}
                       onChange={(event) => setQidiruv(event.target.value)}
@@ -319,7 +436,7 @@ export default function Savdo() {
                         onChange={(value) => setStatusFilteri(value as SotuvHolati | "barchasi")}
                         options={statusFilterlari}
                         portal
-                        buttonClassName="h-10 rounded-md border-gray-200 bg-white px-3 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
+                        buttonClassName="h-10 rounded-xl border-gray-200 bg-white px-3 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
                       />
                     </div>
                   )}
@@ -330,7 +447,7 @@ export default function Savdo() {
                       onChange={(value) => setTolovFilteri(value as TolovTuri | "barchasi")}
                       options={tolovFilterlari}
                       portal
-                      buttonClassName="h-10 rounded-md border-gray-200 bg-white px-3 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
+                      buttonClassName="h-10 rounded-xl border-gray-200 bg-white px-3 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
                     />
                   </div>
 
@@ -345,10 +462,44 @@ export default function Savdo() {
                 </div>
               </div>
 
-              {yuklanmoqda && sotuvlar.length === 0 && <JadvalYuklanmoqda />}
-              {!(yuklanmoqda && sotuvlar.length === 0) && faolTab === "barchasi" && (
+              {qarzXulosasi && (
+                <div className="mx-5 mb-2 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-2xl bg-rose-50 px-5 py-3.5 ring-1 ring-rose-100 sm:mx-10">
+                  <CircleAlert size={18} className="shrink-0 text-rose-500" />
+                  <span className="text-sm font-bold text-rose-700">
+                    {t("savdoSahifasi.qarzXulosasi.qarzdorlar", { count: qarzXulosasi.qarzdorlar })}
+                  </span>
+                  <span className="text-sm text-rose-600">
+                    {t("savdoSahifasi.qarzXulosasi.sotuvlar", { count: qarzXulosasi.sotuvlar })}
+                  </span>
+                  <span className="text-sm text-rose-600">
+                    {t("savdoSahifasi.qarzXulosasi.jami")} <b className="font-black text-rose-700">{pulniFormatlash(qarzXulosasi.jami)}</b>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setTolovFilteri("barchasi")}
+                    className="ml-auto text-xs font-bold text-rose-500 transition hover:text-rose-700"
+                  >
+                    {t("savdoSahifasi.qarzXulosasi.tozalash")}
+                  </button>
+                </div>
+              )}
+
+              {((yuklanmoqda && sotuvlar.length === 0) || (faolTab === "barchasi" && serverRejimi && serverYuklanganKalit === "")) && <JadvalYuklanmoqda />}
+              {!(yuklanmoqda && sotuvlar.length === 0) && !(faolTab === "barchasi" && serverRejimi && serverYuklanganKalit === "") && faolTab === "barchasi" && (
                 <SotuvlarJadvali
-                  sotuvlar={qidirilganSotuvlar}
+                  sotuvlar={serverRejimi ? serverQatorlar : qidirilganSotuvlar}
+                  serverSahifalash={
+                    serverRejimi
+                      ? {
+                          page: serverSahifa,
+                          pageSize: serverHajm,
+                          total: serverJami,
+                          yuklanmoqda: serverYuklanmoqda,
+                          onPageChange: (page) => setServerSahifaTanlovi({ kalit: serverFiltrKaliti, page }),
+                          onPageSizeChange: (hajm) => setServerHajm(Math.min(hajm, 100)),
+                        }
+                      : undefined
+                  }
                   onSotuvniOchish={sotuvniOchish}
                   onOchirish={sotuvniOchirish}
                   onTiklash={sotuvniTiklash}

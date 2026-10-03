@@ -542,14 +542,6 @@ export default function Savatcha({
                       <p className="mt-1 text-sm font-semibold text-slate-400">
                         {t("savatcha.table.empty.description")}
                       </p>
-                      <button
-                        type="button"
-                        onClick={onQoshish}
-                        className="mt-5 inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-[0_14px_30px_rgba(37,99,235,.22)] transition hover:bg-orange-600"
-                      >
-                        <Plus size={17} />
-                        {t("savatcha.table.empty.create")}
-                      </button>
                     </td>
                   </tr>
                 )}

@@ -233,6 +233,7 @@ type SavdoState = {
   qaytarishniBekorQilish: (qaytarishId: string) => Promise<boolean>;
   qaytarishniOchirish: (qaytarishId: string) => Promise<boolean>;
   qaytarishniTiklash: (qaytarishId: string) => Promise<boolean>;
+  sotuvlarniBoyitish: (sotuvlar: Sotuv[]) => Sotuv[];
   tanlanganSotuvniTozalash: () => void;
   xatolikniTozalash: () => void;
 };
@@ -684,6 +685,8 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
     }
   },
 
+  // Server sahifasidan kelgan sotuvlarga mijoz, xodim va ombor nomlarini (yuklangan ro'yxatlardan) biriktiradi.
+  sotuvlarniBoyitish: (sotuvlar) => sotuvlar.map((sotuv) => sotuvniBoglanganMalumotlarBilanBoyitish(sotuv, get())),
   tanlanganSotuvniTozalash: () => set({ tanlanganSotuv: null }),
   xatolikniTozalash: () => set({ xatolik: null }),
 }));

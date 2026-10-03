@@ -28,6 +28,11 @@
     "productOtherWarehouse": "Tanlangan mahsulot boshqa ombordan. Bitta sotuv faqat bitta ombordan qilinadi — ombor yoki mahsulotni tekshiring."
   },
   "activity": {
+    "collapsedPlaceholder": "Nima qilish kerak",
+    "dateLabel": "Sana",
+    "timeLabel": "Vaqt",
+    "resetDate": "Bugunga qaytarish",
+    "dateDone": "Tayyor",
     "today": "Bugun",
     "defaultDateTime": "Bugun, soat 15:00",
     "dateAtTime": "{{date}}, soat {{time}}",

@@ -28,6 +28,37 @@
       "bekorQilingan": "Отменённые продажи",
       "barchasi": "Все продажи"
     },
+    "statistika": {
+      "aria": "Показатели продаж",
+      "sarlavhalar": {
+        "barchasi": { "sotuvlar": "Всего продаж", "summa": "Общая сумма продаж" },
+        "bugun": { "sotuvlar": "Продажи сегодня", "summa": "Сумма продаж сегодня" },
+        "davr": { "sotuvlar": "Продажи за период", "summa": "Сумма продаж за период" }
+      },
+      "tolov": "Принятая оплата",
+      "qarz": "Задолженность",
+      "tasdiqlangan": "{{count}} подтверждено",
+      "qoralama": "{{count}} черновик",
+      "ortachaChek": "Средний чек: {{summa}}",
+      "tolanganFoiz": "Оплачено {{foiz}}%",
+      "qarzdorSotuvlar": "Долг в {{count}} продажах",
+      "qarzYoq": "Задолженности нет",
+      "kechagiga": "к вчерашнему дню",
+      "oldingiDavrga": "к предыдущему периоду",
+      "kechaYoq": "Вчера показателей не было",
+      "davrYoq": "В предыдущем периоде показателей не было",
+      "barchaVaqt": "За всё время",
+      "bugunniKorsatish": "Показать только сегодняшние продажи",
+      "barchasiniKorsatish": "Показать все продажи",
+      "qarzdorlarniKorsatish": "Показать должников в таблице",
+      "som": "сум"
+    },
+    "qarzXulosasi": {
+      "qarzdorlar": "Должников: {{count}}",
+      "sotuvlar": "в {{count}} продажах",
+      "jami": "Общий долг:",
+      "tozalash": "Сбросить фильтр"
+    },
     "closeError": "Закрыть",
     "successTitle": "Успешно",
     "loading": "Данные загружаются...",

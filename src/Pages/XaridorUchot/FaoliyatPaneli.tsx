@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Bell,
-  Briefcase,
+  CalendarCheck,
   CalendarDays,
-  CheckSquare,
   ChevronDown,
+  ClipboardCheck,
   MessageSquare,
+  PenLine,
+  Send,
   UserRound,
   Wallet,
 } from "lucide-react";
@@ -81,6 +83,8 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
   }
 
   const [faoliyatTab, setFaoliyatTab] = useState<FaoliyatTuri>("ish");
+  const [ochiq, setOchiq] = useState(false);
+  const [sanaMenyuOchiq, setSanaMenyuOchiq] = useState(false);
   const [sarlavha, setSarlavha] = useState("");
   const [tafsilot, setTafsilot] = useState("");
   const [sana, setSana] = useState(bugun());
@@ -138,7 +142,7 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
         if (!assigneeId) throw new Error(t("faoliyatPaneli.errors.noAssignee"));
         await crmApi.activityYaratish({ type: faoliyatTab === "vazifa" ? "TASK" : "CALL", partnerId, subject: tozaSarlavha, description: tafsilot.trim() || undefined, dueAt: Number.isNaN(muddat.getTime()) ? new Date().toISOString() : muddat.toISOString(), assigneeId });
       }
-      tozalash(); await yuklash();
+      tozalash(); setOchiq(false); await yuklash();
     } catch (error) { setXatolik(getApiErrorMessage(error)); }
     finally { setSaqlanmoqda(false); }
   }
@@ -147,101 +151,163 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
     <div className="space-y-5">
       {xatolik && <div className="rounded-2xl border border-red-100 bg-red-50 p-3 text-sm font-bold text-red-600">{xatolik}</div>}
       <section className="overflow-hidden rounded-[22px] bg-white/92 p-4 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80 backdrop-blur">
-        <div className="flex flex-wrap items-center gap-2">
+        <nav className="mb-4 flex flex-wrap items-center gap-1.5 rounded-2xl bg-slate-50 p-1.5 text-sm font-semibold text-slate-500 ring-1 ring-slate-100">
           {yozishTablari.map((tab) => (
             <button
               key={tab.kalit}
               type="button"
-              onClick={() => setFaoliyatTab(tab.kalit)}
-              className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-bold transition ${
-                faoliyatTab === tab.kalit
-                  ? "border border-orange-200 bg-orange-50 text-[#2563EB]"
-                  : "text-slate-500 hover:bg-orange-50 hover:text-[#2563EB]"
+              onClick={() => {
+                setFaoliyatTab(tab.kalit);
+                setOchiq(true);
+              }}
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 transition ${
+                faoliyatTab === tab.kalit && ochiq
+                  ? "bg-white text-[#2563EB] shadow-sm ring-1 ring-orange-100"
+                  : "hover:bg-white/70 hover:text-[#2563EB]"
               }`}
             >
+              <FaoliyatIkonka turi={tab.kalit} size={16} />
               {tab.nom}
             </button>
           ))}
+        </nav>
+
+        {!ochiq ? (
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-bold text-slate-500 transition hover:bg-orange-50 hover:text-[#2563EB]"
+            onClick={() => setOchiq(true)}
+            className="flex h-14 w-full items-center gap-3 rounded-xl border border-orange-100 bg-[#F8FAFC]/60 px-5 text-left text-slate-400 transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50 hover:shadow-sm"
           >
-            {t("faoliyatPaneli.more")} <ChevronDown size={14} />
+            <PenLine size={18} className="shrink-0 text-slate-300" />
+            <span>{t("faoliyatPaneli.collapsedPlaceholder")}</span>
           </button>
-        </div>
+        ) : (
+          <div className="animate-in slide-in-from-top-2 fade-in-0 duration-300">
+            <div className="rounded-2xl border border-orange-300 bg-gradient-to-br from-white to-[#F8FAFC] p-4 shadow-inner transition-all duration-300 ease-in-out focus-within:ring-4 focus-within:ring-orange-100">
+              <div className="flex items-start gap-4">
+                <div className="min-w-0 flex-1">
+                  <input
+                    value={sarlavha}
+                    onChange={(event) => setSarlavha(event.target.value)}
+                    placeholder={sarlavhaPlaceholder[faoliyatTab]}
+                    autoFocus
+                    className="h-10 w-full bg-transparent text-base text-slate-700 outline-none placeholder:text-slate-700"
+                  />
+                  <textarea
+                    value={tafsilot}
+                    onChange={(event) => setTafsilot(event.target.value)}
+                    rows={3}
+                    placeholder={tafsilotPlaceholder[faoliyatTab]}
+                    className="mt-4 min-h-[72px] w-full resize-none bg-transparent text-sm text-slate-600 outline-none placeholder:text-slate-400"
+                  />
+                </div>
+                <div className="flex h-10 shrink-0 items-center gap-2 text-slate-400">
+                  <span className="h-3 w-3 shrink-0 rounded-full bg-amber-400 ring-4 ring-amber-50" title={t("faoliyatPaneli.priorityTitle")} />
+                  <span
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-[#2563EB]"
+                    title={t("faoliyatPaneli.responsibleTitle")}
+                  >
+                    <UserRound size={18} />
+                  </span>
+                </div>
+              </div>
 
-        <div className="mt-4 rounded-2xl border border-orange-300 bg-gradient-to-br from-white to-[#EFF6FF] p-4 shadow-inner transition focus-within:ring-4 focus-within:ring-orange-100">
-          <div className="flex items-start gap-3">
-            <div className="min-w-0 flex-1 space-y-3">
-              <input
-                value={sarlavha}
-                onChange={(event) => setSarlavha(event.target.value)}
-                placeholder={sarlavhaPlaceholder[faoliyatTab]}
-                className="h-9 w-full border-0 bg-transparent text-base font-semibold text-slate-700 outline-none placeholder:text-slate-700"
-              />
-              <textarea
-                value={tafsilot}
-                onChange={(event) => setTafsilot(event.target.value)}
-                rows={4}
-                placeholder={tafsilotPlaceholder[faoliyatTab]}
-                className="w-full resize-none border-0 bg-transparent text-sm font-semibold leading-6 text-slate-600 outline-none placeholder:text-slate-400"
-              />
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setSanaMenyuOchiq((joriy) => !joriy)}
+                    className={`inline-flex h-10 items-center gap-2 rounded-xl border bg-white px-3 text-sm font-semibold text-slate-700 transition ${
+                      sanaMenyuOchiq ? "border-[#2563EB] ring-4 ring-orange-100" : "border-slate-200 hover:border-orange-200"
+                    }`}
+                    aria-expanded={sanaMenyuOchiq}
+                  >
+                    <CalendarDays size={16} className="shrink-0 text-slate-400" />
+                    {muddatMatni(sana, vaqt)}
+                    <ChevronDown size={15} className={`shrink-0 text-slate-400 transition ${sanaMenyuOchiq ? "rotate-180" : ""}`} />
+                  </button>
+                  {sanaMenyuOchiq && (
+                    <>
+                      <button
+                        type="button"
+                        aria-label={t("common:actions.cancel")}
+                        className="fixed inset-0 z-30 cursor-default"
+                        onClick={() => setSanaMenyuOchiq(false)}
+                      />
+                      <div className="absolute left-0 top-12 z-40 w-72 rounded-2xl bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,.16)] ring-1 ring-orange-100">
+                        <label className="grid gap-1.5 text-xs font-bold text-slate-500">
+                          {t("faoliyatPaneli.dateLabel")}
+                          <input
+                            type="date"
+                            value={sana}
+                            onChange={(event) => setSana(event.target.value)}
+                            className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
+                          />
+                        </label>
+                        <label className="mt-3 grid gap-1.5 text-xs font-bold text-slate-500">
+                          {t("faoliyatPaneli.timeLabel")}
+                          <input
+                            type="time"
+                            value={vaqt}
+                            onChange={(event) => setVaqt(event.target.value)}
+                            className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
+                          />
+                        </label>
+                        <div className="mt-3 flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSana(bugun());
+                              setVaqt(hozirgiVaqt());
+                            }}
+                            className="rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-500 transition hover:bg-slate-100"
+                          >
+                            {t("faoliyatPaneli.resetDate")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSanaMenyuOchiq(false)}
+                            className="rounded-lg bg-[#2563EB] px-3.5 py-1.5 text-xs font-black text-white transition hover:bg-[#1D4ED8]"
+                          >
+                            {t("faoliyatPaneli.dateDone")}
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-orange-50 hover:text-[#2563EB]"
+                  title={t("faoliyatPaneli.reminderTitle")}
+                >
+                  <Bell size={18} />
+                </button>
+              </div>
             </div>
-            <div className="flex shrink-0 items-center gap-3 pt-1">
-              <span className="h-3.5 w-3.5 rounded-full bg-amber-400" title={t("faoliyatPaneli.priorityTitle")} />
-              <span
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-[#2563EB]"
-                title={t("faoliyatPaneli.responsibleTitle")}
+
+            <div className="mt-4 flex flex-wrap items-center gap-4">
+              <button
+                type="button"
+                onClick={() => void saqlash()}
+                disabled={!sarlavha.trim() || saqlanmoqda || !partnerId}
+                className="rounded-full bg-[#2563EB] px-5 py-2 text-xs font-bold uppercase text-white transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] hover:shadow-md disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:hover:translate-y-0 disabled:hover:shadow-none"
               >
-                <UserRound size={18} />
-              </span>
+                {saqlanmoqda ? t("faoliyatPaneli.saving") : t("common:actions.save")}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  tozalash();
+                  setOchiq(false);
+                }}
+                className="text-xs font-bold uppercase text-slate-600 transition hover:text-slate-900"
+              >
+                {t("common:actions.cancel")}
+              </button>
             </div>
           </div>
-
-          <div className="mt-5 flex flex-wrap items-center gap-3">
-            <div className="inline-flex min-h-11 flex-wrap items-center gap-2 rounded-xl border border-orange-200 bg-orange-50/80 px-3 py-2 text-sm font-semibold text-slate-700">
-              <CalendarDays size={16} className="shrink-0 text-[#2563EB]" />
-              <span className="shrink-0">{muddatMatni(sana, vaqt)}</span>
-              <input
-                type="date"
-                value={sana}
-                onChange={(event) => setSana(event.target.value)}
-                className="h-7 rounded-lg border border-orange-100 bg-white px-2 text-xs font-bold text-slate-600 outline-none focus:border-[#2563EB]"
-              />
-              <input
-                type="time"
-                value={vaqt}
-                onChange={(event) => setVaqt(event.target.value)}
-                className="h-7 rounded-lg border border-orange-100 bg-white px-2 text-xs font-bold text-slate-600 outline-none focus:border-[#2563EB]"
-              />
-            </div>
-            <button
-              type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-orange-50 hover:text-[#2563EB]"
-              title={t("faoliyatPaneli.reminderTitle")}
-            >
-              <Bell size={18} />
-            </button>
-          </div>
-
-          <div className="mt-5 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => void saqlash()}
-              disabled={!sarlavha.trim() || saqlanmoqda || !partnerId}
-              className="inline-flex h-10 items-center justify-center rounded-2xl bg-[#2563EB] px-6 text-sm font-black uppercase text-white shadow-[0_12px_28px_rgba(37,99,235,.22)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-orange-200 disabled:shadow-none disabled:hover:translate-y-0"
-            >
-              {saqlanmoqda ? t("faoliyatPaneli.saving") : t("common:actions.save")}
-            </button>
-            <button
-              type="button"
-              onClick={tozalash}
-              className="inline-flex h-10 items-center justify-center rounded-2xl px-4 text-sm font-black uppercase text-slate-600 transition hover:bg-orange-50 hover:text-[#2563EB]"
-            >
-              {t("common:actions.cancel")}
-            </button>
-          </div>
-        </div>
+        )}
       </section>
 
       <div className="flex justify-center">
@@ -255,20 +321,19 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
         {yozuvlar.map((yozuv) => (
           <article
             key={yozuv.id}
-            className="relative overflow-hidden rounded-[22px] bg-white/92 p-5 shadow-[0_14px_36px_rgba(37,99,235,.07)] ring-1 ring-orange-100/70"
+            className="rounded-[20px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_14px_38px_rgba(37,99,235,.06)] transition duration-300 hover:shadow-[0_20px_50px_rgba(37,99,235,.10)]"
           >
-            <span className="absolute inset-y-0 left-0 w-1.5 bg-[#2563EB]" />
-            <div className="flex items-center gap-3">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-50 text-[#2563EB]">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-50 text-[#2563EB] ring-1 ring-orange-100">
                 <FaoliyatIkonka turi={yozuv.turi} />
               </span>
-              <h3 className="text-base font-black text-slate-900">{yozuv.sarlavha}</h3>
-              <span className="rounded-lg bg-orange-50 px-2 py-0.5 text-xs font-bold text-[#2563EB]">
+              <h3 className="font-black text-slate-800">{yozuv.sarlavha}</h3>
+              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500">
                 {qisqaVaqt(yozuv.sana)}
               </span>
             </div>
             {yozuv.matn && (
-              <p className="mt-3 text-sm leading-6 text-slate-600">{yozuv.matn}</p>
+              <p className="mt-3 break-words text-sm leading-6 text-slate-600">{yozuv.matn}</p>
             )}
           </article>
         ))}
@@ -283,10 +348,11 @@ export default function FaoliyatPaneli({ boshlangichYozuvlar = BOSH_YOZUVLAR, pa
   );
 }
 
-function FaoliyatIkonka({ turi }: { turi: FaoliyatTuri }) {
-  if (turi === "tolov") return <Wallet size={15} />;
-  if (turi === "izoh" || turi === "xabar") return <MessageSquare size={15} />;
-  if (turi === "vazifa") return <CheckSquare size={15} />;
-  if (turi === "ish") return <Briefcase size={15} />;
-  return <Bell size={15} />;
+function FaoliyatIkonka({ turi, size = 15 }: { turi: FaoliyatTuri; size?: number }) {
+  if (turi === "tolov") return <Wallet size={size} />;
+  if (turi === "izoh") return <MessageSquare size={size} />;
+  if (turi === "xabar") return <Send size={size} />;
+  if (turi === "vazifa") return <ClipboardCheck size={size} />;
+  if (turi === "ish") return <CalendarCheck size={size} />;
+  return <Bell size={size} />;
 }

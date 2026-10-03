@@ -32,6 +32,11 @@
     "copy": "Nusxalash"
   },
   "faoliyatPaneli": {
+    "collapsedPlaceholder": "Nima qilish kerak",
+    "dateLabel": "Sana",
+    "timeLabel": "Vaqt",
+    "resetDate": "Bugunga qaytarish",
+    "dateDone": "Tayyor",
     "tabs": { "ish": "Ish", "izoh": "Izoh", "xabar": "Xabar", "vazifa": "Vazifa" },
     "more": "Ko'proq",
     "titlePlaceholders": {

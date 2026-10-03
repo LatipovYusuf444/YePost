@@ -1,11 +1,7 @@
 import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Bell,
-  CheckCircle,
-  Filter,
   LoaderCircle,
-  MessageSquare,
   Minus,
   Paperclip,
   Plus,
@@ -17,6 +13,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import FaoliyatPaneli from "@/Pages/XaridorUchot/FaoliyatPaneli";
 import GoldCartIllustration from "@/Components/illustrations/GoldCartIllustration";
 import {
   mijozlarRoyxatiniOlish,
@@ -30,7 +27,6 @@ import type { MijozTanlovi, OmborTanlovi, TolovTuri } from "@/types/savdo";
 
 type CustomerType = "donalik" | "doimiy";
 type CustomerDetailTab = "Asosiyisi" | "Savatcha" | "Tarix";
-type CustomerActivityTab = "Vazifa" | "Kommentariya" | "Habarnoma" | "Qo'shimcha";
 type NarxTuri = "chakana" | "ulgurji";
 
 type PaymentType = {
@@ -78,12 +74,6 @@ export default function BoshSahifa() {
     { id: "Savatcha", label: t("customerModal.tabs.cart") },
     { id: "Tarix", label: t("customerModal.tabs.history") },
   ];
-  const customerActivityTabs: Array<{ id: CustomerActivityTab; label: string }> = [
-    { id: "Vazifa", label: t("customerModal.activityTabs.task") },
-    { id: "Kommentariya", label: t("customerModal.activityTabs.comment") },
-    { id: "Habarnoma", label: t("customerModal.activityTabs.notification") },
-    { id: "Qo'shimcha", label: t("customerModal.activityTabs.extra") },
-  ];
   const paymentTypes: PaymentType[] = useMemo(
     () => [
       { label: t("paymentTypes.payme"), apiTuri: "CARD" },
@@ -107,8 +97,6 @@ export default function BoshSahifa() {
   const [narxTuri, setNarxTuri] = useState<NarxTuri>("chakana");
   const [selectedCustomerModal, setSelectedCustomerModal] = useState<MijozTanlovi | null>(null);
   const [customerDetailTab, setCustomerDetailTab] = useState<CustomerDetailTab>("Asosiyisi");
-  const [customerActivityTab, setCustomerActivityTab] = useState<CustomerActivityTab>("Vazifa");
-  const [customerActionType, setCustomerActionType] = useState(t("customerModal.actionPlaceholder"));
   const [customerDocumentType, setCustomerDocumentType] = useState(t("customerModal.documentTypes.documents"));
   const [customerPaymentAccepted, setCustomerPaymentAccepted] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
@@ -321,8 +309,6 @@ export default function BoshSahifa() {
 
     setSelectedCustomerModal(customer);
     setCustomerDetailTab("Asosiyisi");
-    setCustomerActivityTab("Vazifa");
-    setCustomerActionType(t("customerModal.actionPlaceholder"));
     setCustomerDocumentType(t("customerModal.documentTypes.documents"));
     setCustomerPaymentAccepted(false);
   }
@@ -815,100 +801,8 @@ export default function BoshSahifa() {
                   </section>
                 </div>
 
-                <main className="rounded-[28px] bg-white p-6 shadow-sm">
-                  <div className="mb-5 flex flex-wrap gap-2">
-                    {customerActivityTabs.map((tab) => (
-                      <button
-                        key={tab.id}
-                        onClick={() => setCustomerActivityTab(tab.id)}
-                        className={[
-                          "rounded-full px-4 py-2 text-sm font-semibold transition",
-                          customerActivityTab === tab.id
-                            ? "border border-gold-400 bg-gold-50 text-gold-600"
-                            : "text-gray-600 hover:bg-gold-50 hover:text-gold-600",
-                        ].join(" ")}
-                      >
-                        {tab.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <AppSelect
-                    value={customerActionType}
-                    onChange={(event) => setCustomerActionType(event.target.value)}
-                    className="h-14 w-full rounded-2xl border border-gray-100 bg-white px-4 text-gray-700 outline-none"
-                  >
-                    <option>{t("customerModal.actionPlaceholder")}</option>
-                    <option>{t("customerModal.actions.call")}</option>
-                    <option>{t("customerModal.actions.remindPayment")}</option>
-                    <option>{t("customerModal.actions.newOrder")}</option>
-                  </AppSelect>
-
-                  <div className="my-6 flex items-center gap-3">
-                    <div className="h-px flex-1 bg-gray-200" />
-                    <span className="rounded-full border border-green-300 bg-green-50 px-5 py-2 text-sm font-medium text-green-600">
-                      {t("customerModal.today")}
-                    </span>
-                    <div className="h-px flex-1 bg-gray-200" />
-                    <button className="inline-flex h-10 items-center gap-2 rounded-full bg-gray-50 px-4 text-sm font-semibold text-gray-500">
-                      {t("customerModal.filter")}
-                      <Filter size={14} />
-                    </button>
-                  </div>
-
-                  <div className="space-y-4">
-                    {[
-                      {
-                        title: t("customerModal.activityTabs.task"),
-                        time: "18:37",
-                        text: t("customerModal.activity.taskText", { name: mijozNomi(selectedCustomerModal) }),
-                        icon: CheckCircle,
-                        className: "bg-yellow-400",
-                      },
-                      {
-                        title: t("customerModal.activityTabs.comment"),
-                        time: "14:00",
-                        text: t("customerModal.activity.commentText", { phone: selectedCustomerModal.phone || t("customer.customerBadge") }),
-                        icon: MessageSquare,
-                        className: "bg-blue-600",
-                      },
-                      {
-                        title: t("customerModal.activityTabs.notification"),
-                        time: "14:00",
-                        text: t("customerModal.activity.notificationText"),
-                        icon: Bell,
-                        className: "bg-green-500",
-                      },
-                    ].map((item) => {
-                      const Icon = item.icon;
-
-                      return (
-                        <article
-                          key={item.title}
-                          className="flex gap-5 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-100"
-                        >
-                          <div
-                            className={[
-                              "flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white",
-                              item.className,
-                            ].join(" ")}
-                          >
-                            <Icon size={24} />
-                          </div>
-
-                          <div className="min-w-0">
-                            <h3 className="text-lg font-bold text-gray-800">
-                              {item.title}{" "}
-                              <span className="text-sm font-normal text-gray-400">
-                                | {item.time}
-                              </span>
-                            </h3>
-                            <p className="mt-2 text-sm text-gray-500">{item.text}</p>
-                          </div>
-                        </article>
-                      );
-                    })}
-                  </div>
+                <main className="min-w-0">
+                  <FaoliyatPaneli partnerId={selectedCustomerModal.partner?.id} />
                 </main>
               </div>
             )}

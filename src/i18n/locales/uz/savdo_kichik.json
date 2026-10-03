@@ -29,6 +29,21 @@
     "malumotTopilmadi": "Ma'lumot topilmadi"
   },
   "qaytarish": {
+    "sarlavha": "Qaytarish",
+    "tavsif": "Tasdiqlangan sotuvlar bo'yicha mahsulotni qaytarish hujjatlari.",
+    "yangi": "Yangi qaytarish",
+    "yangiTavsif": "Sotuvni tanlang, sababni belgilang va qaytarishni tasdiqlang.",
+    "sotuvMijoz": "Mijoz",
+    "sotuvSumma": "Sotuv summasi",
+    "mahsulotlarSoni": "Mahsulotlar",
+    "sotuvTanlanmaganHint": "Sotuv tanlansa, shu yerda uning qisqacha ma'lumoti ko'rinadi.",
+    "toliqEslatma": "Sotuvdagi barcha mahsulotlar to'liq qaytariladi va ombor qoldig'i tiklanadi.",
+    "stat": {
+      "jami": "Jami qaytarishlar",
+      "tasdiqlangan": "Tasdiqlangan",
+      "qoralama": "Qoralama",
+      "summa": "Qaytarilgan summa"
+    },
     "sabablar": {
       "DEFECT": "Nuqsonli mahsulot",
       "WRONG": "Noto'g'ri mahsulot",
@@ -75,7 +90,20 @@
       "PARTIALLY_RETURNED": "Qisman qaytarilgan",
       "FULLY_RETURNED": "To'liq qaytarilgan"
     },
+    "sotuvHolatlari": {
+      "DRAFT": "Qoralama",
+      "CONFIRMED": "Tasdiqlangan",
+      "CANCELLED": "Bekor qilingan"
+    },
+    "qarzSummasi": "Qarz: {{summa}}",
+    "tolovHolati": {
+      "toliq": "To'liq to'langan",
+      "qisman": "Qisman to'langan",
+      "yoq": "To'lanmagan"
+    },
     "columns": {
+      "tolov": "To'lov",
+      "holat": "Holat",
       "savdoRaqami": "Savdo raqami",
       "mijozNomi": "Mijoz nomi",
       "tolovTuri": "To'lov turi",

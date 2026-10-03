@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   Bell,
+  CalendarCheck,
   CalendarDays,
+  ChevronDown,
+  ClipboardCheck,
   Copy,
   Download,
   ExternalLink,
@@ -9,12 +12,15 @@ import {
   Link,
   LoaderCircle,
   MessageSquare,
+  PenLine,
   Plus,
   Printer,
   Search,
+  Send,
   Settings,
   Trash2,
   UserRound,
+  Users,
   X,
 } from "lucide-react";
 import type { TFunction } from "i18next";
@@ -55,6 +61,14 @@ type MahsulotQatori = {
 };
 
 const faoliyatTablar = ["Ish", "Izoh", "Xabar", "Vazifa", "Uchrashuv"];
+
+const faoliyatTabIkonkalari: Record<string, typeof CalendarCheck> = {
+  Ish: CalendarCheck,
+  Izoh: MessageSquare,
+  Xabar: Send,
+  Vazifa: ClipboardCheck,
+  Uchrashuv: Users,
+};
 
 const faoliyatTabKalitlari: Record<string, string> = {
   Ish: "activityTabs.work",
@@ -256,6 +270,8 @@ export default function YangiSotuvModal({
   const [faoliyatSana, setFaoliyatSana] = useState(bugungiSana());
   const [faoliyatSoat, setFaoliyatSoat] = useState("15:00");
   const [faoliyatSaqlangan, setFaoliyatSaqlangan] = useState(false);
+  const [faoliyatOchiq, setFaoliyatOchiq] = useState(false);
+  const [sanaMenyuOchiq, setSanaMenyuOchiq] = useState(false);
   const [sotuvBackendgaSaqlandi, setSotuvBackendgaSaqlandi] = useState(false);
   const [mahsulotlar, setMahsulotlar] = useState<MahsulotQatori[]>([
     { modificationId: "", qoldiqKaliti: "", quantity: "1", price: "", discount: "" },
@@ -906,173 +922,230 @@ export default function YangiSotuvModal({
 
               <div className="min-w-0 space-y-4">
                 <section className="overflow-hidden rounded-2xl bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,.04)] ring-1 ring-[#DCE5F0]">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {faoliyatTablar.map((tab) => (
-                      <button
-                        key={tab}
-                        type="button"
-                        onClick={() => {
-                          setFaolTab(tab);
-                          setFaoliyatSaqlangan(false);
-                        }}
-                        className={`relative inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-bold transition ${
-                          faolTab === tab
-                            ? "border border-orange-200 bg-orange-50 text-[#2563EB]"
-                            : "text-slate-500 hover:bg-orange-50 hover:text-[#2563EB]"
-                        }`}
-                      >
-                        {t(faoliyatTabKalitlari[tab] ?? tab)}
-                      </button>
-                    ))}
-                  </div>
+                  <nav className="mb-4 flex flex-wrap items-center gap-1.5 rounded-2xl bg-slate-50 p-1.5 text-sm font-semibold text-slate-500 ring-1 ring-slate-100">
+                    {faoliyatTablar.map((tab) => {
+                      const Ikonka = faoliyatTabIkonkalari[tab] ?? CalendarCheck;
+                      return (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => {
+                            setFaolTab(tab);
+                            setFaoliyatOchiq(true);
+                            setFaoliyatSaqlangan(false);
+                          }}
+                          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 transition ${
+                            faolTab === tab && faoliyatOchiq
+                              ? "bg-white text-[#2563EB] shadow-sm ring-1 ring-orange-100"
+                              : "hover:bg-white/70 hover:text-[#2563EB]"
+                          }`}
+                        >
+                          <Ikonka size={16} />
+                          {t(faoliyatTabKalitlari[tab] ?? tab)}
+                        </button>
+                      );
+                    })}
+                  </nav>
 
-                  <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 transition focus-within:border-[#2563EB] focus-within:ring-4 focus-within:ring-orange-100">
-                    <div className="flex items-start gap-3">
-                      <div className="min-w-0 flex-1 space-y-3">
-                        <input
-                          value={faoliyatSarlavha}
-                          onChange={(event) => {
-                            setFaoliyatSarlavha(event.target.value);
-                            setFaoliyatSaqlangan(false);
-                          }}
-                          placeholder={
-                            faoliyatMatnlari[faolTab] ? t(faoliyatMatnlari[faolTab].title) : t("activity.namePlaceholderFallback")
-                          }
-                          className="h-9 w-full border-0 bg-transparent text-base font-semibold text-slate-700 outline-none placeholder:text-slate-700"
-                        />
-                        <textarea
-                          value={faoliyatTafsilot}
-                          onChange={(event) => {
-                            setFaoliyatTafsilot(event.target.value);
-                            setFaoliyatSaqlangan(false);
-                          }}
-                          rows={4}
-                          placeholder={
-                            faoliyatMatnlari[faolTab]
-                              ? t(faoliyatMatnlari[faolTab].placeholder)
-                              : t("activity.detailsPlaceholderFallback")
-                          }
-                          className="w-full resize-none border-0 bg-transparent text-sm font-semibold leading-6 text-slate-600 outline-none placeholder:text-slate-400"
-                        />
-                      </div>
-                      <div className="flex shrink-0 items-center gap-3 pt-1">
-                        <span className="h-3.5 w-3.5 rounded-full bg-amber-400" />
-                        <SavdoSelect
-                          value={responsibleId}
-                          onChange={(value) => {
-                            setResponsibleId(value);
-                            setFaoliyatSaqlangan(false);
-                          }}
-                          placeholder={t("labels.responsible")}
-                          options={xodimlar.map((xodim) => ({
-                            value: xodim.id,
-                            searchLabel: xodimNomi(xodim, t),
-                            label: (
-                              <span className="flex min-w-0 items-center gap-3">
-                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xs font-black text-[#2563EB]">
-                                  {xodimBoshHarflari(xodim, t) || <UserRound size={15} />}
-                                </span>
-                                <span className="min-w-0 flex-1 truncate">{xodimNomi(xodim, t)}</span>
-                              </span>
-                            ),
-                          }))}
-                          selectedLabel={
-                            tanlanganXodim ? (
-                              <span className="flex h-9 w-9 shrink-0 items-center justify-center text-center text-xs font-black leading-none">
-                                {xodimBoshHarflari(tanlanganXodim, t)}
-                              </span>
-                            ) : (
-                              <span className="flex h-9 w-9 shrink-0 items-center justify-center leading-none">
-                                <UserRound size={18} className="block shrink-0" />
-                              </span>
-                            )
-                          }
-                          className="w-9 shrink-0"
-                          buttonClassName="h-9 w-9 justify-center gap-0 rounded-full border-0 bg-orange-100 p-0 text-center text-[#2563EB] shadow-none [&>span]:flex [&>span]:h-9 [&>span]:w-9 [&>span]:items-center [&>span]:justify-center hover:bg-orange-200 focus:ring-orange-100"
-                          dropdownClassName="[&>div>div]:text-center min-w-[260px]"
-                          portal
-                          hideChevron
-                        />
-                      </div>
-                    </div>
+                  {!faoliyatOchiq ? (
+                    <button
+                      type="button"
+                      onClick={() => setFaoliyatOchiq(true)}
+                      className="flex h-14 w-full items-center gap-3 rounded-xl border border-orange-100 bg-[#F8FAFC]/60 px-5 text-left text-slate-400 transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50 hover:shadow-sm"
+                    >
+                      <PenLine size={18} className="shrink-0 text-slate-300" />
+                      <span>{t("activity.collapsedPlaceholder")}</span>
+                    </button>
+                  ) : (
+                    <div className="animate-in slide-in-from-top-2 fade-in-0 duration-300">
+                      <div className="rounded-2xl border border-orange-300 bg-gradient-to-br from-white to-[#F8FAFC] p-4 shadow-inner transition-all duration-300 ease-in-out focus-within:ring-4 focus-within:ring-orange-100">
+                        <div className="flex items-start gap-4">
+                          <div className="min-w-0 flex-1">
+                            <input
+                              value={faoliyatSarlavha}
+                              onChange={(event) => {
+                                setFaoliyatSarlavha(event.target.value);
+                                setFaoliyatSaqlangan(false);
+                              }}
+                              placeholder={
+                                faoliyatMatnlari[faolTab] ? t(faoliyatMatnlari[faolTab].title) : t("activity.namePlaceholderFallback")
+                              }
+                              autoFocus
+                              className="h-10 w-full bg-transparent text-base text-slate-700 outline-none placeholder:text-slate-700"
+                            />
+                            <textarea
+                              value={faoliyatTafsilot}
+                              onChange={(event) => {
+                                setFaoliyatTafsilot(event.target.value);
+                                setFaoliyatSaqlangan(false);
+                              }}
+                              rows={3}
+                              placeholder={
+                                faoliyatMatnlari[faolTab]
+                                  ? t(faoliyatMatnlari[faolTab].placeholder)
+                                  : t("activity.detailsPlaceholderFallback")
+                              }
+                              className="mt-4 min-h-[72px] w-full resize-none bg-transparent text-sm text-slate-600 outline-none placeholder:text-slate-400"
+                            />
+                          </div>
+                          <div className="flex h-10 shrink-0 items-center gap-2 text-slate-400">
+                            <span className="h-3 w-3 shrink-0 rounded-full bg-amber-400 ring-4 ring-amber-50" />
+                            <SavdoSelect
+                              value={responsibleId}
+                              onChange={(value) => {
+                                setResponsibleId(value);
+                                setFaoliyatSaqlangan(false);
+                              }}
+                              placeholder={t("labels.responsible")}
+                              options={xodimlar.map((xodim) => ({
+                                value: xodim.id,
+                                searchLabel: xodimNomi(xodim, t),
+                                label: (
+                                  <span className="flex min-w-0 items-center gap-3">
+                                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xs font-black text-[#2563EB]">
+                                      {xodimBoshHarflari(xodim, t) || <UserRound size={15} />}
+                                    </span>
+                                    <span className="min-w-0 flex-1 truncate">{xodimNomi(xodim, t)}</span>
+                                  </span>
+                                ),
+                              }))}
+                              selectedLabel={
+                                tanlanganXodim ? (
+                                  <span className="flex h-9 w-9 shrink-0 items-center justify-center text-center text-xs font-black leading-none">
+                                    {xodimBoshHarflari(tanlanganXodim, t)}
+                                  </span>
+                                ) : (
+                                  <span className="flex h-9 w-9 shrink-0 items-center justify-center leading-none">
+                                    <UserRound size={18} className="block shrink-0" />
+                                  </span>
+                                )
+                              }
+                              className="w-9 shrink-0"
+                              buttonClassName="h-9 w-9 justify-center gap-0 rounded-full border-0 bg-orange-100 p-0 text-center text-[#2563EB] shadow-none [&>span]:flex [&>span]:h-9 [&>span]:w-9 [&>span]:items-center [&>span]:justify-center hover:bg-orange-200 focus:ring-orange-100"
+                              dropdownClassName="[&>div>div]:text-center min-w-[260px]"
+                              portal
+                              hideChevron
+                            />
+                          </div>
+                        </div>
 
-                    <div className="mt-5 flex flex-wrap items-center gap-3">
-                      <div className="inline-flex min-h-11 flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700">
-                        <CalendarDays size={16} className="shrink-0" />
-                        <span className="shrink-0">
-                          {faoliyatSanasiMatni(faoliyatSana, faoliyatSoat, t)}
-                        </span>
-                        <input
-                          type="date"
-                          value={faoliyatSana}
-                          onChange={(event) => {
-                            setFaoliyatSana(event.target.value);
-                            setFaoliyatSaqlangan(false);
-                          }}
-                          className="h-7 rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold text-slate-600 outline-none focus:border-[#2563EB]"
-                        />
-                        <input
-                          type="time"
-                          value={faoliyatSoat}
-                          onChange={(event) => {
-                            setFaoliyatSoat(event.target.value);
-                            setFaoliyatSaqlangan(false);
-                          }}
-                          className="h-7 rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold text-slate-600 outline-none focus:border-[#2563EB]"
-                        />
+                        <div className="mt-4 flex flex-wrap items-center gap-2">
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setSanaMenyuOchiq((joriy) => !joriy)}
+                              className={`inline-flex h-10 items-center gap-2 rounded-xl border bg-white px-3 text-sm font-semibold text-slate-700 transition ${
+                                sanaMenyuOchiq ? "border-[#2563EB] ring-4 ring-orange-100" : "border-slate-200 hover:border-orange-200"
+                              }`}
+                              aria-expanded={sanaMenyuOchiq}
+                            >
+                              <CalendarDays size={16} className="shrink-0 text-slate-400" />
+                              {faoliyatSanasiMatni(faoliyatSana, faoliyatSoat, t)}
+                              <ChevronDown size={15} className={`shrink-0 text-slate-400 transition ${sanaMenyuOchiq ? "rotate-180" : ""}`} />
+                            </button>
+                            {sanaMenyuOchiq && (
+                              <>
+                                <button
+                                  type="button"
+                                  aria-label={t("actions.cancel")}
+                                  className="fixed inset-0 z-30 cursor-default"
+                                  onClick={() => setSanaMenyuOchiq(false)}
+                                />
+                                <div className="absolute left-0 top-12 z-40 w-72 rounded-2xl bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,.16)] ring-1 ring-orange-100">
+                                  <label className="grid gap-1.5 text-xs font-bold text-slate-500">
+                                    {t("activity.dateLabel")}
+                                    <input
+                                      type="date"
+                                      value={faoliyatSana}
+                                      onChange={(event) => {
+                                        setFaoliyatSana(event.target.value);
+                                        setFaoliyatSaqlangan(false);
+                                      }}
+                                      className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
+                                    />
+                                  </label>
+                                  <label className="mt-3 grid gap-1.5 text-xs font-bold text-slate-500">
+                                    {t("activity.timeLabel")}
+                                    <input
+                                      type="time"
+                                      value={faoliyatSoat}
+                                      onChange={(event) => {
+                                        setFaoliyatSoat(event.target.value);
+                                        setFaoliyatSaqlangan(false);
+                                      }}
+                                      className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
+                                    />
+                                  </label>
+                                  <div className="mt-3 flex items-center justify-between gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setFaoliyatSana(bugungiSana());
+                                        setFaoliyatSoat("15:00");
+                                        setFaoliyatSaqlangan(false);
+                                      }}
+                                      className="rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-500 transition hover:bg-slate-100"
+                                    >
+                                      {t("activity.resetDate")}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setSanaMenyuOchiq(false)}
+                                      className="rounded-lg bg-[#2563EB] px-3.5 py-1.5 text-xs font-black text-white transition hover:bg-[#1D4ED8]"
+                                    >
+                                      {t("activity.dateDone")}
+                                    </button>
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-orange-50 hover:text-[#2563EB]"
+                            title={t("activity.reminderTitle")}
+                          >
+                            <Bell size={18} />
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-orange-50 hover:text-[#2563EB]"
-                        title={t("activity.reminderTitle")}
-                      >
-                        <Bell size={18} />
-                      </button>
-                      {faolTab === "Xabar" && (
+
+                      <div className="mt-4 flex flex-wrap items-center gap-4">
                         <button
                           type="button"
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-orange-50 hover:text-[#2563EB]"
-                          title={t(faoliyatTabKalitlari.Xabar)}
+                          onClick={() => {
+                            if (!faoliyatSarlavha.trim()) {
+                              const faolTabMatni = faoliyatMatnlari[faolTab];
+                              setFaoliyatSarlavha(faolTabMatni ? t(faolTabMatni.title) : "");
+                            }
+                            setFaoliyatSaqlangan(true);
+                          }}
+                          className="rounded-full bg-[#2563EB] px-5 py-2 text-xs font-bold uppercase text-white transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] hover:shadow-md"
                         >
-                          <MessageSquare size={18} />
+                          {t("actions.save")}
                         </button>
-                      )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFaoliyatSarlavha("");
+                            setFaoliyatTafsilot("");
+                            setFaoliyatSana(bugungiSana());
+                            setFaoliyatSoat("15:00");
+                            setFaoliyatSaqlangan(false);
+                            setFaoliyatOchiq(false);
+                          }}
+                          className="text-xs font-bold uppercase text-slate-600 transition hover:text-slate-900"
+                        >
+                          {t("actions.cancel")}
+                        </button>
+                        {faoliyatSaqlangan && (
+                          <span className="text-xs font-bold text-emerald-600">
+                            {t("activity.savedNotice")}
+                          </span>
+                        )}
+                      </div>
                     </div>
-
-                    <div className="mt-5 flex flex-wrap items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!faoliyatSarlavha.trim()) {
-                            const faolTabMatni = faoliyatMatnlari[faolTab];
-                            setFaoliyatSarlavha(faolTabMatni ? t(faolTabMatni.title) : "");
-                          }
-                          setFaoliyatSaqlangan(true);
-                        }}
-                        className="inline-flex h-10 items-center justify-center rounded-xl bg-[#2563EB] px-6 text-sm font-black uppercase text-white shadow-sm transition hover:bg-[#1D4ED8]"
-                      >
-                        {t("actions.save")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFaoliyatSarlavha("");
-                          setFaoliyatTafsilot("");
-                          setFaoliyatSana(bugungiSana());
-                          setFaoliyatSoat("15:00");
-                          setFaoliyatSaqlangan(false);
-                        }}
-                        className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-black uppercase text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
-                      >
-                        {t("actions.cancel")}
-                      </button>
-                      {faoliyatSaqlangan && (
-                        <span className="text-xs font-bold text-emerald-600">
-                          {t("activity.savedNotice")}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                  )}
                 </section>
 
                 <section className="overflow-hidden rounded-2xl bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,.04)] ring-1 ring-[#DCE5F0]">

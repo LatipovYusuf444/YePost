@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ReceiptText, RotateCcw } from "lucide-react";
+import { ReceiptText, RotateCcw, UserRound } from "lucide-react";
 import TablePagination from "@/Components/common/TablePagination";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import type { Qaytarish, Sotuv, TolovTuri } from "@/types/savdo";
@@ -9,11 +9,14 @@ import {
   mijozNomi,
   pulniFormatlash,
   qaytarishSummasi,
+  sotuvHolati,
   sotuvJadvalId,
   sotuvMahsulotiId,
   sotuvMahsulotiMiqdori,
+  sotuvQarzdorlikSummasi,
   sotuvRaqami,
   sotuvSummasi,
+  sotuvTolanganSummasi,
 } from "./savdoYordamchilari";
 
 type SotuvlarJadvaliProps = {
@@ -25,6 +28,15 @@ type SotuvlarJadvaliProps = {
   onTiklash?: (sotuvId: string) => Promise<boolean>;
   tarixKorinish?: boolean;
   boshMatn?: string;
+  // Berilsa, sotuvlar serverdan sahifalab keladi: jadval ularni qayta bo'lmaydi, sahifalash serverniki bo'ladi.
+  serverSahifalash?: {
+    page: number;
+    pageSize: number;
+    total: number;
+    yuklanmoqda?: boolean;
+    onPageChange: (page: number) => void;
+    onPageSizeChange: (pageSize: number) => void;
+  };
 };
 
 function telefonRaqam(sotuv: Sotuv) {
@@ -95,6 +107,31 @@ const tarixHolatClass = {
   FULLY_RETURNED: "bg-red-50 text-red-600 ring-red-100",
 } as const;
 
+const sotuvHolatiStili = {
+  DRAFT: "bg-amber-50 text-amber-700 ring-amber-100",
+  CONFIRMED: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+  CANCELLED: "bg-red-50 text-red-600 ring-red-100",
+} as const;
+
+function boshHarflar(nom: string) {
+  return nom
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((qism) => qism[0]?.toUpperCase())
+    .join("");
+}
+
+// Ism boshlanishidagi dumaloq belgi (mijoz yoki mas'ul shaxs uchun).
+function Avatar({ nom, bosh }: { nom: string; bosh?: boolean }) {
+  const harflar = bosh ? "" : boshHarflar(nom);
+  return (
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-50 text-[11px] font-black text-[#2563EB] ring-1 ring-orange-100">
+      {harflar || <UserRound size={15} />}
+    </span>
+  );
+}
+
 function sanaVaVaqt(value?: string) {
   if (!value) return { sana: "-", vaqt: "" };
 
@@ -123,6 +160,7 @@ export default function SotuvlarJadvali({
   onTiklash,
   tarixKorinish = false,
   boshMatn,
+  serverSahifalash,
 }: SotuvlarJadvaliProps) {
   const { t } = useTranslation("savdo_kichik");
   const effectiveBoshMatn = boshMatn ?? t("sotuvlarJadvali.boshMatn");
@@ -133,14 +171,14 @@ export default function SotuvlarJadvali({
   }, [sotuvlar, pageSize]);
 
   const visibleRows = useMemo(
-    () => sotuvlar.slice((currentPage - 1) * pageSize, currentPage * pageSize),
-    [currentPage, pageSize, sotuvlar]
+    () => (serverSahifalash ? sotuvlar : sotuvlar.slice((currentPage - 1) * pageSize, currentPage * pageSize)),
+    [currentPage, pageSize, serverSahifalash, sotuvlar]
   );
 
   return (
-    <div className="px-10 pb-10">
-      <div className="overflow-x-auto">
-        <table className={`w-full border-collapse text-left text-sm ${tarixKorinish ? "min-w-[1180px]" : "min-w-[900px]"}`}>
+    <div className="px-5 pb-6 sm:px-10 sm:pb-10">
+      <div className={`overflow-x-auto transition-opacity ${serverSahifalash?.yuklanmoqda ? "opacity-50" : ""}`}>
+        <table className={`w-full border-collapse text-left text-sm ${tarixKorinish ? "min-w-[1180px]" : "min-w-[1120px]"}`}>
           <thead className="text-[13px] font-medium text-slate-500">
             <tr>
               <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.savdoRaqami")}</th>
@@ -149,6 +187,12 @@ export default function SotuvlarJadvali({
                 <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.tolovTuri")}</th>
               )}
               <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.summa")}</th>
+              {!tarixKorinish && (
+                <>
+                  <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.tolov")}</th>
+                  <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.holat")}</th>
+                </>
+              )}
               {tarixKorinish && (
                 <>
                   <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.holati")}</th>
@@ -169,6 +213,15 @@ export default function SotuvlarJadvali({
               const sana = sanaVaVaqt(sotuv.createdAt);
               const stat = qaytarishStatistikasi(sotuv, qaytarishlar);
               const paymentType = sotuv.payments?.[0]?.paymentType;
+              const holat = sotuvHolati(sotuv);
+              const jami = sotuvSummasi(sotuv);
+              const tolangan = sotuvTolanganSummasi(sotuv);
+              const tolanganFoiz = jami > 0 ? Math.min(100, Math.round((tolangan / jami) * 100)) : 0;
+              const qarz = sotuvQarzdorlikSummasi(sotuv);
+              const tolovToliq = jami > 0 && qarz <= 0;
+              const mijoz = mijozNomi(sotuv);
+              const mijozYoq = !sotuv.customer && !sotuv.clientCompany;
+              const masul = masulNomi(sotuv);
 
               return (
                 <tr
@@ -177,20 +230,65 @@ export default function SotuvlarJadvali({
                   className="cursor-pointer transition hover:bg-orange-50/45"
                   title={t("sotuvlarJadvali.rowTitle", { raqam: sotuvRaqami(sotuv) })}
                 >
-                  <td className="border-b border-gray-100 px-4 py-3.5">
+                  <td className="border-b border-gray-100 px-4 py-3.5 font-bold tabular-nums text-slate-900">
                     {sotuvJadvalId(sotuv)}
                   </td>
                   <td className="border-b border-gray-100 px-4 py-3.5 font-medium">
-                    {mijozNomi(sotuv)}
+                    {tarixKorinish ? (
+                      mijoz
+                    ) : (
+                      <span className="flex min-w-0 items-center gap-2.5">
+                        <Avatar nom={mijoz} bosh={mijozYoq} />
+                        <span className="truncate">{mijoz}</span>
+                      </span>
+                    )}
                   </td>
                   {tarixKorinish && (
                     <td className="border-b border-gray-100 px-4 py-3.5">
                       {paymentType ? t(tolovTuriKaliti[paymentType]) : "-"}
                     </td>
                   )}
-                  <td className="border-b border-gray-100 px-4 py-3.5 font-semibold text-emerald-700">
-                    {pulniFormatlash(sotuvSummasi(sotuv))}
+                  <td className="whitespace-nowrap border-b border-gray-100 px-4 py-3.5 font-semibold text-emerald-700">
+                    {pulniFormatlash(jami)}
                   </td>
+                  {!tarixKorinish && (
+                    <>
+                      <td className="border-b border-gray-100 px-4 py-3.5">
+                        {holat === "CANCELLED" ? (
+                          <span className="text-slate-300">—</span>
+                        ) : (
+                          <div className="w-36">
+                            <div className="flex items-center justify-between gap-2 text-xs font-bold">
+                              <span className={tolovToliq ? "text-emerald-600" : tolangan > 0 ? "text-[#2563EB]" : "text-slate-400"}>
+                                {tolovToliq
+                                  ? t("sotuvlarJadvali.tolovHolati.toliq")
+                                  : tolangan > 0
+                                    ? t("sotuvlarJadvali.tolovHolati.qisman")
+                                    : t("sotuvlarJadvali.tolovHolati.yoq")}
+                              </span>
+                              <span className="tabular-nums text-slate-400">{tolanganFoiz}%</span>
+                            </div>
+                            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${tolovToliq ? "bg-emerald-500" : "bg-[#2563EB]"}`}
+                                style={{ width: `${tolanganFoiz}%` }}
+                              />
+                            </div>
+                            {holat === "CONFIRMED" && qarz > 0 && (
+                              <p className="mt-1.5 whitespace-nowrap text-[11px] font-bold text-rose-500">
+                                {t("sotuvlarJadvali.qarzSummasi", { summa: pulniFormatlash(qarz) })}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td className="border-b border-gray-100 px-4 py-3.5">
+                        <span className={`inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-black ring-1 ${sotuvHolatiStili[holat]}`}>
+                          {t(`sotuvlarJadvali.sotuvHolatlari.${holat}`)}
+                        </span>
+                      </td>
+                    </>
+                  )}
                   {tarixKorinish && (
                     <>
                       <td className="border-b border-gray-100 px-4 py-3.5">
@@ -212,7 +310,14 @@ export default function SotuvlarJadvali({
                     )}
                   </td>
                   <td className="border-b border-gray-100 px-4 py-3.5">
-                    {masulNomi(sotuv)}
+                    {tarixKorinish ? (
+                      masul
+                    ) : (
+                      <span className="flex min-w-0 items-center gap-2.5">
+                        <Avatar nom={masul} bosh={masul === "-"} />
+                        <span className="truncate">{masul}</span>
+                      </span>
+                    )}
                   </td>
                   <td className="border-b border-gray-100 px-4 py-3.5">
                     {telefonRaqam(sotuv)}
@@ -252,7 +357,7 @@ export default function SotuvlarJadvali({
 
             {sotuvlar.length === 0 && (
               <tr>
-                <td colSpan={tarixKorinish ? 10 : onOchirish ? 7 : 6} className="px-6 py-20 text-center">
+                <td colSpan={tarixKorinish ? 10 : onOchirish ? 9 : 8} className="px-6 py-20 text-center">
                   <ReceiptText className="mx-auto text-orange-200" size={40} />
                   <p className="mt-3 font-semibold text-gray-500">{effectiveBoshMatn}</p>
                   <p className="mt-1 text-sm text-gray-400">
@@ -265,7 +370,17 @@ export default function SotuvlarJadvali({
         </table>
       </div>
 
-      <TablePagination page={currentPage} pageSize={pageSize} totalItems={sotuvlar.length} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
+      {serverSahifalash ? (
+        <TablePagination
+          page={serverSahifalash.page}
+          pageSize={serverSahifalash.pageSize}
+          totalItems={serverSahifalash.total}
+          onPageChange={serverSahifalash.onPageChange}
+          onPageSizeChange={serverSahifalash.onPageSizeChange}
+        />
+      ) : (
+        <TablePagination page={currentPage} pageSize={pageSize} totalItems={sotuvlar.length} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
+      )}
     </div>
   );
 }
