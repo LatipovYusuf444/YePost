@@ -1,3 +1,4 @@
+import { pulMatni, summaniOgirish } from "@/lib/valyuta";
 import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -148,9 +149,9 @@ export default function DynamicsChart({
   const gradientId = `${id}-${variant}`;
   const { color, pale, icon: Icon, key, label, tint, active } = themes[variant];
   const locale = i18n.resolvedLanguage === "ru" ? "ru-RU" : "uz-UZ";
-  const format = (value: number) =>
-    `${Math.round(value).toLocaleString(locale)} ${t("dynamics.currency")}`;
-  const compact = (value: number) => {
+  const format = (value: number) => pulMatni(value, "UZS", true, t("dynamics.currency"));
+  const compact = (qiymat: number) => {
+    const value = summaniOgirish(qiymat);
     const abs = Math.abs(value);
     if (abs >= 1_000_000_000)
       return `${Number((value / 1_000_000_000).toFixed(1))} ${t("dynamics.billion")}`;

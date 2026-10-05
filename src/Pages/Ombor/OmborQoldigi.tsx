@@ -1,3 +1,4 @@
+import { pulMatni } from "@/lib/valyuta";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -95,7 +96,7 @@ function raqam(value: unknown) {
 }
 
 function pul(value: number) {
-  return `${value.toLocaleString("uz-UZ")} so'm`;
+  return pulMatni(value);
 }
 
 function sana(value: string) {

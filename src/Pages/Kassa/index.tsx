@@ -1,3 +1,4 @@
+import { pulMatni } from "@/lib/valyuta";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
@@ -85,7 +86,7 @@ const kassaKirimManbasiMatni: Record<KassaKirimManbasi, string> = {
 };
 
 function pul(value?: number | string) {
-  return `${Number(value ?? 0).toLocaleString("uz-UZ")} so'm`;
+  return pulMatni(value);
 }
 
 function sana(value?: string | null) {

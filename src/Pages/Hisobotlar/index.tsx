@@ -1,3 +1,4 @@
+import { pulMatni } from "@/lib/valyuta";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
@@ -76,7 +77,7 @@ export default function Hisobotlar() {
   function pul(value: unknown) {
     const number = Number(value ?? 0);
     if (!Number.isFinite(number)) return String(value ?? "—");
-    return `${number.toLocaleString("uz-UZ")} ${t("currencySuffix")}`;
+    return pulMatni(number, "UZS", false, t("currencySuffix"));
   }
 
   function valuesFromResponse(data: HisobotJavobi | null): unknown[] {

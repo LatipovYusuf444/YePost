@@ -1,3 +1,4 @@
+import { pulMatni } from "@/lib/valyuta";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -5,12 +6,14 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Gauge,
+  History,
   LoaderCircle,
   FlaskConical,
   Package,
   Receipt,
   RefreshCw,
   ShoppingCart,
+  Sun,
   Trophy,
   TrendingDown,
   TrendingUp,
@@ -35,7 +38,7 @@ import type { StockBalanceItem } from "@/api/reportsApi";
 import type { ChiqimHujjati, KirimHujjati, KochirishHujjati, MahsulotModifikatsiyasi, Ombor } from "@/types/ombor";
 import type { FinanceTransaction } from "@/types/tolov";
 import MuddatTanlov from "@/Pages/HisobotUchot/MuddatTanlov";
-import { bugun, bugunMinus } from "@/Pages/HisobotUchot/yordamchilar";
+import { bugungiSanaKaliti, mahalliySanaKaliti } from "@/lib/sanaKaliti";
 import DynamicsChart from "./DynamicsChart";
 import ModalTablari from "@/Components/common/ModalTablari";
 import {
@@ -141,7 +144,7 @@ function son(value: unknown) {
 }
 
 function pul(value: unknown) {
-  return `${Math.round(son(value)).toLocaleString("uz-UZ")} so'm`;
+  return pulMatni(son(value), "UZS", true);
 }
 
 function MarkaziyYuklanish({
@@ -165,6 +168,21 @@ function MarkaziyYuklanish({
 
 function kunKaliti(date: Date) {
   return date.toISOString().slice(0, 10);
+}
+
+// Hujjat/sotuv sanasining MAHALLIY kuni (YYYY-MM-DD). Backend vaqtni UTC'da qaytaradi, `slice(0, 10)` esa
+// Toshkentda 00:00–05:00 oralig'idagi hujjatni oldingi kunga o'tkazib yuborardi — "Bugun"/"Kecha" filtrida
+// bu xato bo'lardi. Faqat sana ("2026-10-05") kelsa, o'zi qaytariladi.
+function kunniOlish(qiymat: string) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(qiymat)) return qiymat;
+  return mahalliySanaKaliti(qiymat) || qiymat.slice(0, 10);
+}
+
+// Mahalliy kunni `siljish` kunga surib YYYY-MM-DD qaytaradi (0 = bugun, -1 = kecha).
+function mahalliyKunSurish(siljish: number) {
+  const sana = new Date();
+  sana.setDate(sana.getDate() + siljish);
+  return mahalliySanaKaliti(sana);
 }
 
 function oyKaliti(date: Date) {
@@ -264,7 +282,13 @@ function davrOraliqlari(
     return [];
 
   const natija: Bucket[] = [];
-  if (davr === "kunlik") {
+  if (davr === "kunlik" && dateFrom === dateTo) {
+    // Bitta kun tanlangan ("Bugun" / "Kecha"): bitta nuqta o'rniga soatlar kesimida 24 ta bo'lak.
+    for (let soat = 0; soat < 24; soat++) {
+      const hh = String(soat).padStart(2, "0");
+      natija.push({ key: `${dateFrom}T${hh}`, nom: `${hh}:00` });
+    }
+  } else if (davr === "kunlik") {
     const cur = new Date(start);
     let himoya = 0;
     while (cur <= end && himoya < 400) {
@@ -298,10 +322,12 @@ function davrOraliqlari(
   return natija;
 }
 
+// Bo'lak kaliti MAHALLIY kun/oy/yil bo'yicha (hujjat sanasi UTC'da keladi, lekin foydalanuvchi kunini ko'radi).
 function sanadanKalit(date: Date, davr: Davr) {
-  if (davr === "kunlik") return kunKaliti(date);
-  if (davr === "oylik") return oyKaliti(date);
-  return String(date.getUTCFullYear());
+  const kun = mahalliySanaKaliti(date);
+  if (davr === "kunlik") return kun;
+  if (davr === "oylik") return kun.slice(0, 7);
+  return kun.slice(0, 4);
 }
 
 // Vaqt-qatori emas, balki "joriy yig'indi" ko'rinishidagi grafiklar uchun (to'lov turlari,
@@ -373,7 +399,10 @@ function nuqtalarGaGuruhlash<T>(
     if (!raw) return;
     const sana = new Date(raw);
     if (Number.isNaN(sana.getTime())) return;
-    const kalit = sanadanKalit(sana, davr);
+    const soatlik = oraliqlar[0]?.key.includes("T") ?? false;
+    const kalit = soatlik
+      ? `${mahalliySanaKaliti(sana)}T${String(sana.getHours()).padStart(2, "0")}`
+      : sanadanKalit(sana, davr);
     if (xarita.has(kalit))
       xarita.set(kalit, (xarita.get(kalit) ?? 0) + qiymatOlish(item));
   });
@@ -398,11 +427,15 @@ function ProfitRowlarniOlish(value: unknown): ProfitRow[] {
   return [];
 }
 
+// Tanlangan kun chegaralari foydalanuvchining MAHALLIY kuniga qarab olinadi (UTC emas), shunda "Bugun" aynan
+// bugungi 00:00–23:59 ni qamrab oladi.
 function isoDateFrom(value: string) {
-  return new Date(`${value}T00:00:00.000Z`).toISOString();
+  const [y, m, d] = value.split("-").map(Number);
+  return new Date(y, m - 1, d, 0, 0, 0, 0).toISOString();
 }
 function isoDateTo(value: string) {
-  return new Date(`${value}T23:59:59.999Z`).toISOString();
+  const [y, m, d] = value.split("-").map(Number);
+  return new Date(y, m - 1, d, 23, 59, 59, 999).toISOString();
 }
 
 export default function Monitoring() {
@@ -420,8 +453,8 @@ export default function Monitoring() {
   const [omborHarakatDavr, setOmborHarakatDavr] = useState<Davr>("yillik");
   const [topDavr, setTopDavr] = useState<Davr>("yillik");
   const [bottomDavr, setBottomDavr] = useState<Davr>("yillik");
-  const [dateFrom, setDateFrom] = useState(bugunMinus(29));
-  const [dateTo, setDateTo] = useState(bugun());
+  const [dateFrom, setDateFrom] = useState(() => mahalliyKunSurish(-29));
+  const [dateTo, setDateTo] = useState(() => bugungiSanaKaliti());
   const [tanlanganOmborId, setTanlanganOmborId] = useState("");
   const [yangilanish, setYangilanish] = useState(0);
 
@@ -771,7 +804,7 @@ export default function Monitoring() {
     () =>
       nuqtalarGaGuruhlash(
         barchaSotuvlar.filter((sotuv) => {
-          const sana = sotuvSanasi(sotuv).slice(0, 10);
+          const sana = kunniOlish(sotuvSanasi(sotuv));
           return (
             sotuvHolati(sotuv) === "CONFIRMED" &&
             sana >= dateFrom &&
@@ -867,7 +900,7 @@ export default function Monitoring() {
   const davrSavdosi = useMemo(() => {
     const tasdiqlangan = barchaSotuvlar.filter((sotuv) => {
       if (sotuvHolati(sotuv) !== "CONFIRMED") return false;
-      const sana = sotuvSanasi(sotuv).slice(0, 10);
+      const sana = kunniOlish(sotuvSanasi(sotuv));
       return sana >= dateFrom && sana <= dateTo;
     });
     return {
@@ -885,7 +918,7 @@ export default function Monitoring() {
   const oldingiDavrSavdosi = useMemo(() => {
     const tasdiqlangan = barchaSotuvlar.filter((sotuv) => {
       if (sotuvHolati(sotuv) !== "CONFIRMED") return false;
-      const sana = sotuvSanasi(sotuv).slice(0, 10);
+      const sana = kunniOlish(sotuvSanasi(sotuv));
       return sana >= oldingiOraliq.from && sana <= oldingiOraliq.to;
     });
     return {
@@ -1010,7 +1043,7 @@ export default function Monitoring() {
     const xarita = new Map<string, OmborHarakatNuqtasi>();
     kirimHujjatlari.forEach((hujjat) => {
       if (!hujjatTasdiqlanganmi(hujjat)) return;
-      const kun = hujjatSanasi(hujjat).slice(0, 10);
+      const kun = kunniOlish(hujjatSanasi(hujjat));
       if (!kun || kun < omborHarakatOraliq.from || kun > omborHarakatOraliq.to)
         return;
       const nom =
@@ -1027,7 +1060,7 @@ export default function Monitoring() {
     });
     chiqimHujjatlari.forEach((hujjat) => {
       if (!hujjatTasdiqlanganmi(hujjat)) return;
-      const kun = hujjatSanasi(hujjat).slice(0, 10);
+      const kun = kunniOlish(hujjatSanasi(hujjat));
       if (!kun || kun < omborHarakatOraliq.from || kun > omborHarakatOraliq.to)
         return;
       const nom =
@@ -1051,13 +1084,13 @@ export default function Monitoring() {
       const status = String(hujjat.status ?? "").toUpperCase();
       if (!["SENT", "RECEIVED", "CONFIRMED"].includes(status)) return;
       const summa = kochirmaSummasi(hujjat, modifikatsiyaXaritasi);
-      const chiqimKun = kochirmaSanasi(hujjat, "manba").slice(0, 10);
+      const chiqimKun = kunniOlish(kochirmaSanasi(hujjat, "manba"));
       if (chiqimKun >= omborHarakatOraliq.from && chiqimKun <= omborHarakatOraliq.to) {
         const nom = hujjat.sourceWarehouse?.name ?? omborNomXaritasi.get(hujjat.sourceWarehouseId) ?? "-";
         qoshKochirma(hujjat.sourceWarehouseId, nom, "chiqim", summa);
       }
       if (["RECEIVED", "CONFIRMED"].includes(status)) {
-        const kirimKun = kochirmaSanasi(hujjat, "qabul").slice(0, 10);
+        const kirimKun = kunniOlish(kochirmaSanasi(hujjat, "qabul"));
         if (kirimKun >= omborHarakatOraliq.from && kirimKun <= omborHarakatOraliq.to) {
           const nom = hujjat.destWarehouse?.name ?? omborNomXaritasi.get(hujjat.destWarehouseId) ?? "-";
           qoshKochirma(hujjat.destWarehouseId, nom, "kirim", summa);
@@ -1072,7 +1105,7 @@ export default function Monitoring() {
   const chiqimMahsulotQatorlari = useMemo<ChiqimMahsulotQatori[]>(() => {
     return chiqimHujjatlari
       .filter((hujjat) => {
-        const sana = hujjatSanasi(hujjat).slice(0, 10);
+        const sana = kunniOlish(hujjatSanasi(hujjat));
         return hujjatTasdiqlanganmi(hujjat) && sana >= dateFrom && sana <= dateTo;
       })
       .flatMap((hujjat) =>
@@ -1084,7 +1117,7 @@ export default function Monitoring() {
           );
           return {
             id: `${hujjat.id}-${item.id ?? item.modificationId}-${index}`,
-            sana: hujjatSanasi(hujjat).slice(0, 10),
+            sana: kunniOlish(hujjatSanasi(hujjat)),
             hujjat: hujjat.documentNumber ?? hujjat.number ?? hujjat.docNumber ?? hujjat.id,
             ombor: hujjat.warehouse?.name ?? omborNomXaritasi.get(hujjat.warehouseId) ?? "-",
             mahsulot: modification?.product?.name ?? modification?.name ?? item.modificationId,
@@ -1101,7 +1134,7 @@ export default function Monitoring() {
     return kochirmaHujjatlari
       .filter((hujjat) => !["CANCELLED", "CANCELED"].includes(String(hujjat.status ?? "").toUpperCase()))
       .flatMap((hujjat) => {
-        const sana = kochirmaSanasi(hujjat).slice(0, 10);
+        const sana = kunniOlish(kochirmaSanasi(hujjat));
         if (!sana || sana < dateFrom || sana > dateTo) return [];
         return (hujjat.items ?? []).map((item, index) => {
           const mod = item.modification ?? modifikatsiyaXaritasi.get(item.modificationId);
@@ -1149,7 +1182,7 @@ export default function Monitoring() {
       if (!tanlanganOmborId) return [];
       const kirimlar = nuqtalarGaGuruhlash(
             kirimHujjatlari.filter((h) => {
-              const sana = hujjatSanasi(h).slice(0, 10);
+              const sana = kunniOlish(hujjatSanasi(h));
               return (
                 h.warehouseId === tanlanganOmborId &&
                 hujjatTasdiqlanganmi(h) &&
@@ -1163,7 +1196,7 @@ export default function Monitoring() {
             omborKirimDavr,
           );
       const transferlar = nuqtalarGaGuruhlash(
-        kochirmaHujjatlari.filter((h) => ["RECEIVED", "CONFIRMED"].includes(String(h.status ?? "").toUpperCase()) && h.destWarehouseId === tanlanganOmborId && kochirmaSanasi(h, "qabul").slice(0, 10) >= dateFrom && kochirmaSanasi(h, "qabul").slice(0, 10) <= dateTo),
+        kochirmaHujjatlari.filter((h) => ["RECEIVED", "CONFIRMED"].includes(String(h.status ?? "").toUpperCase()) && h.destWarehouseId === tanlanganOmborId && kunniOlish(kochirmaSanasi(h, "qabul")) >= dateFrom && kunniOlish(kochirmaSanasi(h, "qabul")) <= dateTo),
         (h) => kochirmaSanasi(h, "qabul"),
         (h) => kochirmaSummasi(h, modifikatsiyaXaritasi),
         omborKirimOraliqlari,
@@ -1188,7 +1221,7 @@ export default function Monitoring() {
       if (!tanlanganOmborId) return [];
       const chiqimlar = nuqtalarGaGuruhlash(
             chiqimHujjatlari.filter((h) => {
-              const sana = hujjatSanasi(h).slice(0, 10);
+              const sana = kunniOlish(hujjatSanasi(h));
               return (
                 h.warehouseId === tanlanganOmborId &&
                 hujjatTasdiqlanganmi(h) &&
@@ -1202,7 +1235,7 @@ export default function Monitoring() {
             omborChiqimDavr,
           );
       const transferlar = nuqtalarGaGuruhlash(
-        kochirmaHujjatlari.filter((h) => ["SENT", "RECEIVED", "CONFIRMED"].includes(String(h.status ?? "").toUpperCase()) && h.sourceWarehouseId === tanlanganOmborId && kochirmaSanasi(h, "manba").slice(0, 10) >= dateFrom && kochirmaSanasi(h, "manba").slice(0, 10) <= dateTo),
+        kochirmaHujjatlari.filter((h) => ["SENT", "RECEIVED", "CONFIRMED"].includes(String(h.status ?? "").toUpperCase()) && h.sourceWarehouseId === tanlanganOmborId && kunniOlish(kochirmaSanasi(h, "manba")) >= dateFrom && kunniOlish(kochirmaSanasi(h, "manba")) <= dateTo),
         (h) => kochirmaSanasi(h, "manba"),
         (h) => kochirmaSummasi(h, modifikatsiyaXaritasi),
         omborChiqimOraliqlari,
@@ -1350,7 +1383,34 @@ export default function Monitoring() {
           faol={tab}
           onChange={(id) => setTab(id as Tab)}
         />
-        <div className="ml-auto">
+        <div className="ml-auto flex flex-wrap items-end gap-2">
+          <div role="group" aria-label={t("quick.today")} className="flex gap-2">
+            {[
+              { key: "today", kun: mahalliyKunSurish(0), Ikonka: Sun },
+              { key: "yesterday", kun: mahalliyKunSurish(-1), Ikonka: History },
+            ].map((item) => {
+              const faol = dateFrom === item.kun && dateTo === item.kun;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  aria-pressed={faol}
+                  onClick={() => {
+                    setDateFrom(item.kun);
+                    setDateTo(item.kun);
+                  }}
+                  className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border px-4 text-sm font-bold shadow-sm transition active:scale-[.97] ${
+                    faol
+                      ? "border-transparent bg-primary text-primary-foreground shadow-md hover:bg-primary/90"
+                      : "border-border bg-white text-slate-700 hover:border-transparent hover:bg-primary hover:text-primary-foreground hover:shadow-md"
+                  }`}
+                >
+                  <item.Ikonka size={16} className="shrink-0" />
+                  {t(`quick.${item.key}`)}
+                </button>
+              );
+            })}
+          </div>
           <MuddatTanlov
             dateFrom={dateFrom}
             dateTo={dateTo}

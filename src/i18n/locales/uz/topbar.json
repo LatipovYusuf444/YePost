@@ -67,5 +67,22 @@
     "add": "Qo'shish",
     "results": "{{count}} ta mahsulot",
     "clearSelection": "Tozalash"
+  },
+  "currency": {
+    "title": "Valyuta",
+    "UZS": "O'zbek so'mi",
+    "USD": "AQSh dollari",
+    "som": "so'm",
+    "rateLabel": "Dollar kursi",
+    "save": "Saqlash",
+    "rateInvalid": "Kursni to'g'ri kiriting (0 dan katta son).",
+    "close": "Yopish",
+    "sourceDemo": "Real kurs ulangach avtomatik yangilanadi. Hozircha uni qo'lda o'zgartirishingiz mumkin.",
+    "sourceManual": "Kurs qo'lda kiritilgan. Demo kursga qaytarish uchun o'ngdagi tugmani bosing.",
+    "sourceServer": "Kurs serverdan olingan.",
+    "reset": "Demo kursga qaytarish",
+    "badgeDemo": "DEMO",
+    "badgeManual": "QO'LDA",
+    "badgeServer": "SERVER"
   }
 }

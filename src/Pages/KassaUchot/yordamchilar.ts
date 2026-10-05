@@ -1,3 +1,4 @@
+import { pulMatni } from "@/lib/valyuta";
 import type { KassaKanali, KassaYonalishi } from "./types";
 
 export const maydonKlass =
@@ -24,7 +25,7 @@ export function keyingiRaqam(amaliyotlar: { raqam: string }[]) {
 }
 
 export function summaFormat(summa: number) {
-  return `${Math.round(summa).toLocaleString("uz-UZ")} so'm`;
+  return pulMatni(summa, "UZS", true);
 }
 
 export function sanaFormat(sana: string) {

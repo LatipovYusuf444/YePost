@@ -1,8 +1,8 @@
 import type { TolovUsuliKeng } from "@/types/tolov";
+import { pulMatni } from "@/lib/valyuta";
 
 export function tolovSummasiniFormatlash(value: number | string | null | undefined) {
-  const number = Number(value ?? 0);
-  return `${Number.isFinite(number) ? number.toLocaleString("uz-UZ") : "0"} so'm`;
+  return pulMatni(value);
 }
 
 export function tolovSanasiniFormatlash(value?: string) {

@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import YonPanel from "./YonPanel";
 import YuqoriPanel from "./YuqoriPanel";
 import QollabQuvvatlashVidjeti from "@/Components/common/QollabQuvvatlashVidjeti";
+import { useValyutaStore } from "@/lib/valyuta";
 
 const sahifaVariantlari = {
   initial: { opacity: 0, y: 16, scale: 0.99 },
@@ -13,6 +14,8 @@ const sahifaVariantlari = {
 
 export default function AsosiyLayout() {
   const location = useLocation();
+  // Valyuta yoki kurs o'zgarganda sahifa qayta yig'iladi — barcha narxlar yangi valyutada qayta hisoblanadi.
+  const valyutaKaliti = useValyutaStore((holat) => `${holat.valyuta}:${holat.kurs}`);
   // Yon panel faqat navbar tugmasi bilan ochiladi/yopiladi (hover emas); holat shu yerda bitta joyda.
   const [sidebarAcik, setSidebarAcik] = useState(false);
 
@@ -36,7 +39,9 @@ export default function AsosiyLayout() {
               variants={sahifaVariantlari}
               transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
             >
-              <Outlet />
+              <Fragment key={valyutaKaliti}>
+                <Outlet />
+              </Fragment>
             </motion.div>
           </AnimatePresence>
         </div>

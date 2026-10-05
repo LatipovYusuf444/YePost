@@ -1,3 +1,4 @@
+import { pulMatni, summaniOgirish, valyutaBelgisi } from "@/lib/valyuta";
 import { useMemo, useState } from "react";
 import {
   Area,
@@ -48,10 +49,18 @@ const data = {
   ],
 };
 
-function formatSumma(value: number) {
-  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)} mlrd`;
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)} mln`;
-  return `${value.toLocaleString("ru-RU")} so‘m`;
+function formatSumma(qiymat: number) {
+  const value = summaniOgirish(qiymat);
+  const belgi = valyutaBelgisi() === "$" ? "$" : "";
+  const qoshimcha = belgi ? "" : " so‘m";
+  if (value >= 1_000_000_000) return `${belgi}${(value / 1_000_000_000).toFixed(1)} mlrd`;
+  if (value >= 1_000_000) return `${belgi}${(value / 1_000_000).toFixed(1)} mln`;
+  if (belgi && value >= 1_000) return `${belgi}${(value / 1_000).toFixed(1)}k`;
+  return `${belgi}${value.toLocaleString("ru-RU", { maximumFractionDigits: 2 })}${qoshimcha}`;
+}
+
+function tooltipSumma(qiymat: number) {
+  return pulMatni(qiymat);
 }
 
 export default function SavdoGrafiki() {
@@ -109,7 +118,7 @@ export default function SavdoGrafiki() {
               <XAxis dataKey="nom" axisLine={false} tickLine={false} tick={{ fill: "#9CA3AF", fontSize: 12 }} />
               <YAxis axisLine={false} tickLine={false} tick={{ fill: "#9CA3AF", fontSize: 12 }} tickFormatter={formatSumma} />
               <Tooltip
-                formatter={(value) => [`${Number(value).toLocaleString("ru-RU")} so‘m`, "Savdo"]}
+                formatter={(value) => [tooltipSumma(Number(value)), "Savdo"]}
                 contentStyle={{
                   borderRadius: "16px",
                   border: "1px solid var(--theme-chart-grid-sales)",
@@ -131,7 +140,7 @@ export default function SavdoGrafiki() {
               <XAxis dataKey="nom" axisLine={false} tickLine={false} tick={{ fill: "#9CA3AF", fontSize: 12 }} />
               <YAxis axisLine={false} tickLine={false} tick={{ fill: "#9CA3AF", fontSize: 12 }} tickFormatter={formatSumma} />
               <Tooltip
-                formatter={(value) => [`${Number(value).toLocaleString("ru-RU")} so‘m`, "Savdo"]}
+                formatter={(value) => [tooltipSumma(Number(value)), "Savdo"]}
                 contentStyle={{
                   borderRadius: "16px",
                   border: "1px solid var(--theme-chart-grid-sales)",

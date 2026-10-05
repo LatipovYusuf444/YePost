@@ -1,7 +1,8 @@
 // Hisobot UI yordamchilari.
+import { pulMatni } from "@/lib/valyuta";
 
 export function pul(summa: number) {
-  return `${Math.round(summa).toLocaleString("uz-UZ")} so'm`;
+  return pulMatni(summa, "UZS", true);
 }
 
 export function son(qiymat: number) {

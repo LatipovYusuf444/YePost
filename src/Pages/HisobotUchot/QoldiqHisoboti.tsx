@@ -6,7 +6,7 @@ import Dropdown from "./Dropdown";
 import { stockBalanceExport, stockBalanceReport, type StockBalanceResponse } from "@/api/reportsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useHisobotRealData } from "./HisobotRealData";
-import { son } from "./yordamchilar";
+import { pul, son } from "./yordamchilar";
 
 import YuklanmoqdaHolati from "./YuklanmoqdaHolati";
 // Ombor qoldig'i backenddagi /reports/stock-balance natijasidan olinadi.
@@ -158,13 +158,13 @@ export default function QoldiqHisoboti() {
         ),
         jami: () => son(jami.qoldiq),
       },
-      { id: "narx", nom: "Narx", kenglik: 140, katak: (q) => `${son(q.narx)} so'm` },
+      { id: "narx", nom: "Narx", kenglik: 140, katak: (q) => pul(q.narx) },
       {
         id: "summa",
         nom: "Summa",
         kenglik: 160,
-        katak: (q) => <span className="font-bold text-gray-800">{son(q.summa)} so'm</span>,
-        jami: () => <span className="font-black text-orange-600">{son(jami.summa)} so'm</span>,
+        katak: (q) => <span className="font-bold text-gray-800">{pul(q.summa)}</span>,
+        jami: () => <span className="font-black text-orange-600">{pul(jami.summa)}</span>,
       }
     );
     return ust;

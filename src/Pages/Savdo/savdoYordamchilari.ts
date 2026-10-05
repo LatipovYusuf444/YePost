@@ -1,3 +1,4 @@
+import { pulMatni } from "@/lib/valyuta";
 import type { Qaytarish, Sotuv, SotuvHolati, SotuvMahsuloti, TolovTuri } from "@/types/savdo";
 
 type MoslashuvchanSotuvMahsuloti = SotuvMahsuloti &
@@ -67,8 +68,7 @@ export function sotuvMahsulotiNarxi(item: SotuvMahsuloti) {
 }
 
 export function pulniFormatlash(value: number | string | null | undefined) {
-  const raqam = raqamgaAylantirish(value);
-  return `${Number.isFinite(raqam) ? raqam.toLocaleString("uz-UZ") : "0"} so'm`;
+  return pulMatni(raqamgaAylantirish(value));
 }
 
 export function sananiFormatlash(value?: string) {

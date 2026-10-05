@@ -27,6 +27,7 @@ import AppModal from "@/Components/common/AppModal";
 import { mahsulotlarApi } from "@/api/catalogApi";
 import { omborlarApi } from "@/api/omborApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { pulMatni, valyutaKodi } from "@/lib/valyuta";
 import { rolniNormallashtirish } from "@/lib/roles";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useMahsulotlarStore } from "@/store/mahsulotlarStore";
@@ -318,14 +319,19 @@ export default function Mahsulotlar() {
               <h2 className="mt-4 text-xl font-black">{item.name}</h2>
               <p className="mt-1 text-sm text-gray-500">{item.category?.name??store.kategoriyalar.find(x=>x.id===item.categoryId)?.name??t("fallback.category")} В· {item.unit?.shortName??item.unit?.name??store.birliklar.find(x=>x.id===item.unitId)?.shortName??t("fallback.unit")}</p>
               <p className="mt-2 text-xs text-gray-400">{t("table.barcode")}: {item.barcode||t("notEntered")} В· {t("table.article")}: {item.article||t("notEntered")}</p>
-              {store.modifikatsiyalar[item.id]?.length ? (
+              {store.modifikatsiyalar[item.id] === undefined ? (
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <NarxYuklanmoqda ohang="orange" katta/>
+                  <NarxYuklanmoqda ohang="emerald" katta/>
+                </div>
+              ) : store.modifikatsiyalar[item.id]?.length ? (
                 <div className="mt-4 max-h-40 space-y-2 overflow-y-auto">
                   {store.modifikatsiyalar[item.id].map((modification) => (
                     <div key={modification.id} className="rounded-xl bg-slate-50 px-3 py-2">
                       {store.modifikatsiyalar[item.id].length > 1 && <p className="mb-1 truncate text-xs font-bold text-gray-500">{modification.name || modification.barcode || t("card.defaultVariant")}</p>}
                       <div className="grid grid-cols-2 gap-2">
-                        <div className="rounded-lg bg-orange-50 px-2 py-1.5"><p className="text-[10px] font-bold uppercase tracking-wide text-orange-600">{t("card.salePrice")}</p><p className="text-sm font-black text-orange-700">{modification.price?.retailPrice == null ? t("card.noPrice") : money(modification.price.retailPrice)}</p></div>
-                        <div className="rounded-lg bg-emerald-50 px-2 py-1.5"><p className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">{t("card.costPrice")}</p><p className="text-sm font-black text-emerald-700">{modification.price?.costPrice == null ? t("card.noPrice") : money(modification.price.costPrice)}</p></div>
+                        <div className="rounded-lg bg-orange-50 px-2 py-1.5"><p className="text-[10px] font-bold uppercase tracking-wide text-orange-600">{t("card.salePrice")}</p><p className="text-sm font-black text-orange-700">{modification.price?.retailPrice == null ? t("card.noPrice") : money(modification.price.retailPrice, modification.price.currency)}</p></div>
+                        <div className="rounded-lg bg-emerald-50 px-2 py-1.5"><p className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">{t("card.costPrice")}</p><p className="text-sm font-black text-emerald-700">{modification.price?.costPrice == null ? t("card.noPrice") : money(modification.price.costPrice, modification.price.currency)}</p></div>
                       </div>
                     </div>
                   ))}
@@ -373,18 +379,18 @@ export default function Mahsulotlar() {
                         <td className="px-5 py-4 font-bold text-gray-600">{birlikNomi(item)}</td>
                         <td className="px-5 py-4">
                           <div className="flex flex-col gap-1.5">
-                            {(store.modifikatsiyalar[item.id] ?? []).length ? (store.modifikatsiyalar[item.id] ?? []).map((modification) => (
+                            {store.modifikatsiyalar[item.id] === undefined ? <NarxYuklanmoqda ohang="orange"/> : (store.modifikatsiyalar[item.id] ?? []).length ? (store.modifikatsiyalar[item.id] ?? []).map((modification) => (
                               <span key={modification.id} className="inline-flex w-fit rounded-lg bg-orange-50 px-2.5 py-1 font-black text-orange-700">
-                                {modification.price?.retailPrice == null ? t("card.noPrice") : money(modification.price.retailPrice)}
+                                {modification.price?.retailPrice == null ? t("card.noPrice") : money(modification.price.retailPrice, modification.price.currency)}
                               </span>
                             )) : <span className="text-gray-400">{t("card.noPrice")}</span>}
                           </div>
                         </td>
                         <td className="px-5 py-4">
                           <div className="flex flex-col gap-1.5">
-                            {(store.modifikatsiyalar[item.id] ?? []).length ? (store.modifikatsiyalar[item.id] ?? []).map((modification) => (
+                            {store.modifikatsiyalar[item.id] === undefined ? <NarxYuklanmoqda ohang="emerald"/> : (store.modifikatsiyalar[item.id] ?? []).length ? (store.modifikatsiyalar[item.id] ?? []).map((modification) => (
                               <span key={modification.id} className="inline-flex w-fit rounded-lg bg-emerald-50 px-2.5 py-1 font-black text-emerald-700">
-                                {modification.price?.costPrice == null ? t("card.noPrice") : money(modification.price.costPrice)}
+                                {modification.price?.costPrice == null ? t("card.noPrice") : money(modification.price.costPrice, modification.price.currency)}
                               </span>
                             )) : <span className="text-gray-400">{t("card.noPrice")}</span>}
                           </div>
@@ -472,6 +478,11 @@ export default function Mahsulotlar() {
       {importModalOchiq&&<MahsulotImportModal onClose={()=>setImportModalOchiq(false)} onImported={yuklash}/>}
     </div>
   );
+}
+
+// Narx hali kelmagan paytda "Narx yo'q" o'rniga o'sha joyning o'zida yuklanish (skeleton) ko'rsatiladi.
+function NarxYuklanmoqda({ohang,katta}:{ohang:"orange"|"emerald";katta?:boolean}) {
+  return <span role="status" aria-busy="true" className={`block animate-pulse rounded-lg ${ohang==="orange"?"bg-orange-100":"bg-emerald-100"} ${katta?"h-12 w-full rounded-xl":"h-7 w-24"}`}><span className="sr-only">...</span></span>;
 }
 
 function Empty({matn}:{matn:string}) {
@@ -650,6 +661,10 @@ function formatNumberInput(value:string) {
 // normalizatsiya qilinadi, faqat birinchi ajratkich qoldiriladi, qolgan nuqta/vergullar tashlanadi.
 function sanitizeMoneyInput(value:string) {
   const cleaned=value.replace(",",".").replace(/[^\d.]/g,"");
+  // "1.000.000" kabi minglik nuqtalar: ikkinchi nuqta kiritilganda oldingi qism aniq 3 xonali guruhlardan
+  // iborat bo'lsa, nuqtalar minglik ajratkich deb olinadi (aks holda "1.000.000" jimgina 1 ga aylanardi).
+  const qismlar=cleaned.split(".");
+  if(qismlar.length>=3&&qismlar.slice(1,-1).every((qism)=>qism.length===3)&&qismlar[qismlar.length-1].length<=3)return qismlar.join("");
   const firstDot=cleaned.indexOf(".");
   if(firstDot===-1)return cleaned;
   return cleaned.slice(0,firstDot+1)+cleaned.slice(firstDot+1).replace(/\./g,"");
@@ -667,7 +682,7 @@ function MoneyInput({value,suffix,onChange,currency,onCurrencyChange,onApplyAll}
 function PriceField({label,value}:{label:string;value:number|string|undefined}) {
   return <label className="grid gap-1">
     <span className="truncate text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</span>
-    <input disabled value={`${Number(value??0).toLocaleString("uz-UZ")} so'm`} className="input h-10 px-3 text-xs font-black sm:text-sm"/>
+    <input disabled value={pulMatni(value)} className="input h-10 px-3 text-xs font-black sm:text-sm"/>
   </label>;
 }
 
@@ -698,6 +713,18 @@ function cleanRemoteImage(value: string) {
   return clean && !clean.startsWith("blob:") ? clean : "";
 }
 
+// Tan narx va ustama (%) dan sotuv narxi; USD uchun kasr saqlanishi uchun 2 xonagacha yaxlitlanadi.
+function ustamadanNarx(cost:number,markup:number) {
+  return String(Math.round((cost+(cost*markup/100))*100)/100);
+}
+
+// Mavjud narxlardan ustama (%) — tahrirlash oynasida "Ustama" maydoni to'g'ri ko'rinishi uchun.
+function ustamaniHisoblash(costPrice?:number|string|null,retailPrice?:number|string|null) {
+  const cost=Number(costPrice??0);
+  const retail=Number(retailPrice??0);
+  return cost>0&&retail>=0?String(Number((((retail-cost)/cost)*100).toFixed(2))):"";
+}
+
 function numericOrZero(value: string) {
   const number = Number(value || 0);
   return Number.isFinite(number) && number > 0 ? number : 0;
@@ -711,6 +738,8 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
   const [categoryId,setCategoryId]=useState(editing?item.categoryId:store.kategoriyalar[0]?.id??"");
   const [unitId,setUnitId]=useState(editing?item.unitId:store.birliklar.find((unit)=>isProductUnit(unit,store.standardBirliklar))?.id??"");
   const [unitResolving,setUnitResolving]=useState(false);
+  // Saqlash bir necha ketma-ket so'rovdan iborat (mahsulot, variant, narx) — tugma butun jarayon davomida band turadi.
+  const [saqlanmoqda,setSaqlanmoqda]=useState(false);
   const [barcode,setBarcode]=useState(editing?item.barcode??"":"");
   const [article,setArticle]=useState(editing?item.article??"":"");
   const [imageUrl,setImageUrl]=useState(editing?item.imageUrl??"":"");
@@ -733,6 +762,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
       ...emptyVariantDraft,
       costPrice:asosiyVariant.price.costPrice!=null?String(asosiyVariant.price.costPrice):"",
       costCurrency:valyuta,
+      markup:ustamaniHisoblash(asosiyVariant.price.costPrice,asosiyVariant.price.retailPrice),
       retailPrice:asosiyVariant.price.retailPrice!=null?String(asosiyVariant.price.retailPrice):"",
       retailCurrency:valyuta,
       wholesalePrice:asosiyVariant.price.wholesalePrice!=null?String(asosiyVariant.price.wholesalePrice):"",
@@ -822,6 +852,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
         ...draft,
         costPrice:asosiyVariant.price!.costPrice!=null?String(asosiyVariant.price!.costPrice):"",
         costCurrency:valyuta,
+        markup:ustamaniHisoblash(asosiyVariant.price!.costPrice,asosiyVariant.price!.retailPrice),
         retailPrice:asosiyVariant.price!.retailPrice!=null?String(asosiyVariant.price!.retailPrice):"",
         retailCurrency:valyuta,
         wholesalePrice:asosiyVariant.price!.wholesalePrice!=null?String(asosiyVariant.price!.wholesalePrice):"",
@@ -865,6 +896,12 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
 
   async function save(e:FormEvent){
     e.preventDefault();
+    if(saqlanmoqda)return;
+    setSaqlanmoqda(true);
+    try{await saqlash()}finally{setSaqlanmoqda(false)}
+  }
+
+  async function saqlash(){
     const variantParams=variationRows.reduce<Record<string, string[]>>((params,row)=>{
       const attribute=row.attribute.trim();
       if(attribute&&row.options.length>0)params[attribute]=row.options;
@@ -1122,7 +1159,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
     if(field==="costPrice"||field==="markup"){
       const cost=Number(field==="costPrice"?numericValue:current.costPrice||0);
       const markup=Number(field==="markup"?numericValue:current.markup||0);
-      if(cost>0&&markup>=0)patch.retailPrice=String(Math.round(cost+(cost*markup/100)));
+      if(cost>0&&markup>=0)patch.retailPrice=ustamadanNarx(cost,markup);
     }
     if(field==="retailPrice"){
       const cost=Number(current.costPrice||0);
@@ -1136,10 +1173,14 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
     const numericValue=sanitizeMoneyInput(value);
     setBaseDraft((current)=>{
       const patch:Partial<VariantDraft>={[field]:numericValue};
-      if(field==="costPrice"||field==="markup"){
+      if(field==="costPrice"&&editing){
+        // Tahrirlashda tan narx o'zgarsa, mavjud sotuv narxi o'zgarmaydi — faqat ustama qayta hisoblanadi
+        // (aks holda bo'sh ustama 0% deb olinib, sotuv narxi tan narxga tenglashib qolardi).
+        patch.markup=ustamaniHisoblash(numericValue,current.retailPrice);
+      }else if(field==="costPrice"||field==="markup"){
         const cost=Number(field==="costPrice"?numericValue:current.costPrice||0);
         const markup=Number(field==="markup"?numericValue:current.markup||0);
-        if(cost>0&&markup>=0)patch.retailPrice=String(Math.round(cost+(cost*markup/100)));
+        if(cost>0&&markup>=0)patch.retailPrice=ustamadanNarx(cost,markup);
       }
       if(field==="retailPrice"){
         const cost=Number(current.costPrice||0);
@@ -1163,7 +1204,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
           ...current,
           costPrice:source.costPrice,
           costCurrency:source.costCurrency,
-          retailPrice:cost>0&&markup>=0?String(Math.round(cost+(cost*markup/100))):current.retailPrice,
+          retailPrice:cost>0&&markup>=0?ustamadanNarx(cost,markup):current.retailPrice,
         };
       });
       return next;
@@ -1182,7 +1223,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
         next[combo.key]={
           ...current,
           markup:source.markup,
-          retailPrice:cost>0&&markup>=0?String(Math.round(cost+(cost*markup/100))):current.retailPrice,
+          retailPrice:cost>0&&markup>=0?ustamadanNarx(cost,markup):current.retailPrice,
         };
       });
       return next;
@@ -1504,7 +1545,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
 
     <div className="flex justify-end gap-3 border-t border-gray-100 px-6 py-4">
       <button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t("productModal.cancel")}</button>
-      <button disabled={store.amalBajarilmoqda||unitResolving} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{(store.amalBajarilmoqda||unitResolving)&&<LoaderCircle size={16} className="animate-spin"/>}{editing?t("productModal.save"):t("productModal.create")}</button>
+      <button disabled={store.amalBajarilmoqda||unitResolving||saqlanmoqda} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{(store.amalBajarilmoqda||unitResolving||saqlanmoqda)&&<LoaderCircle size={16} className="animate-spin"/>}{editing?t("productModal.save"):t("productModal.create")}</button>
     </div>
   </form></AppModal>
 }
@@ -1615,4 +1656,4 @@ const modalSizeClass={normal:"max-w-xl",medium:"max-w-3xl",wide:"max-w-5xl"} as 
 function Modal({title,onClose,children,size="normal"}:{title:string;onClose:()=>void;children:React.ReactNode;size?:"normal"|"medium"|"wide"}){return <AppModal><div className={`scrollbar-hidden max-h-[94vh] w-full overflow-y-auto rounded-[30px] bg-white p-6 shadow-2xl ${modalSizeClass[size]}`}><div className="mb-5 flex justify-between gap-4"><h2 className="text-2xl font-black">{title}</h2><button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 hover:bg-orange-500 hover:text-white"><X size={18}/></button></div>{children}</div></AppModal>}
 function Actions({loading,onClose}:{loading:boolean;onClose:()=>void}){const { t } = useTranslation("mahsulotlar");return <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t("actions.cancel")}</button><button disabled={loading} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{loading&&<LoaderCircle size={16} className="animate-spin"/>}{t("actions.save")}</button></div>}
 function ErrorBox(){const x=useMahsulotlarStore(s=>s.xatolik);return <div className="rounded-xl bg-red-50 p-3 font-bold text-red-600">{x}</div>}
-function money(value:number|string|undefined){return `${Number(value??0).toLocaleString("uz-UZ")} so'm`}
+function money(value:number|string|undefined,currency?:string|null){return pulMatni(value,valyutaKodi(currency))}

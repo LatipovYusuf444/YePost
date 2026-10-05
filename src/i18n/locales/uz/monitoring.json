@@ -134,5 +134,9 @@
       "TRANSFER": "O'tkazma",
       "ONLINE": "Onlayn"
     }
+  },
+  "quick": {
+    "today": "Bugun",
+    "yesterday": "Kecha"
   }
 }

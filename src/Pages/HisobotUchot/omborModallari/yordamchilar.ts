@@ -1,3 +1,4 @@
+import { pulMatni } from "@/lib/valyuta";
 import type {
   ChiqimHujjat,
   Hujjat,
@@ -26,7 +27,7 @@ export function tarixgaQoshish(eski: TarixYozuvi[] | undefined, matn: string): T
 }
 
 export function pul(value: number) {
-  return `${Number(value ?? 0).toLocaleString("uz-UZ")} so'm`;
+  return pulMatni(value);
 }
 
 export function sana(value: string) {

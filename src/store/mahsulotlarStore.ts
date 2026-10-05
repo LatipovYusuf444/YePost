@@ -117,6 +117,11 @@ function standardBirlikkaMosiniTopish(
 
 const standardBirlikSorovlari = new Map<number, Promise<string>>();
 
+// Modifikatsiya (narx) ma'lumotining "versiyasi". Barcha modifikatsiyalarni yuklash so'rovi ketayotgan paytda
+// narx/modifikatsiya saqlansa, kechikib kelgan ESKI ro'yxat yangi narxni bosib ketmasligi uchun ishlatiladi:
+// so'rov boshlangandan keyin versiya o'zgargan bo'lsa, uning natijasi tashlab yuboriladi.
+let modifikatsiyaVersiyasi = 0;
+
 export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
   kategoriyalar: [],
   birliklar: [],
@@ -373,12 +378,14 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
   modifikatsiyalarniYuklash: async (productId) => {
     try {
       const items = await modifikatsiyalarApi.royxat(productId);
+      modifikatsiyaVersiyasi++;
       set((state) => ({ modifikatsiyalar: { ...state.modifikatsiyalar, [productId]: items } }));
     } catch (error) {
       set({ xatolik: getApiErrorMessage(error) });
     }
   },
   barchaModifikatsiyalarniYuklash: async () => {
+    const versiya = ++modifikatsiyaVersiyasi;
     try {
       const items = await modifikatsiyalarApi.barchasi();
       const guruhlar: Record<string, MahsulotModifikatsiyasi[]> = {};
@@ -386,9 +393,20 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
       for (const item of items) {
         if (item.productId) (guruhlar[item.productId] ??= []).push(item);
       }
+      // So'rov ketayotganda narx/modifikatsiya o'zgargan — bu ro'yxat eskirgan, yangi ma'lumotni bosib ketmasin.
+      // Faqat hali narxi umuman yuklanmagan mahsulotlar to'ldiriladi (jadvalda yuklanish holati qolib ketmasligi uchun).
+      if (versiya !== modifikatsiyaVersiyasi) {
+        set((state) => ({ modifikatsiyalar: { ...guruhlar, ...state.modifikatsiyalar } }));
+        return;
+      }
       set({ modifikatsiyalar: guruhlar });
     } catch (error) {
-      set({ xatolik: getApiErrorMessage(error) });
+      // Xatoda ham yuklanish holati tugaydi: narxi kelmagan mahsulotlar bo'sh ro'yxat bilan to'ldiriladi.
+      set((state) => {
+        const bosh: Record<string, MahsulotModifikatsiyasi[]> = {};
+        for (const mahsulot of state.mahsulotlar) bosh[mahsulot.id] = [];
+        return { modifikatsiyalar: { ...bosh, ...state.modifikatsiyalar }, xatolik: getApiErrorMessage(error) };
+      });
     }
   },
   modifikatsiyaOlish: async (id) => {
@@ -405,6 +423,7 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
       const item = id
         ? await modifikatsiyalarApi.yangilash(id, data)
         : await modifikatsiyalarApi.yaratish(productId, data);
+      modifikatsiyaVersiyasi++;
       set((state) => ({
         modifikatsiyalar: {
           ...state.modifikatsiyalar,
@@ -428,6 +447,7 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       await modifikatsiyalarApi.ochirish(id);
+      modifikatsiyaVersiyasi++;
       set((state) => ({
         modifikatsiyalar: {
           ...state.modifikatsiyalar,
@@ -444,13 +464,19 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
   narxYangilash: async (productId, id, data) => {
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
-      const price = await modifikatsiyalarApi.narxYangilash(id, data);
+      const javob = await modifikatsiyalarApi.narxYangilash(id, data);
+      modifikatsiyaVersiyasi++;
+      // Backend javobida ba'zi maydonlar bo'lmasa ham jadvalda "Narx yo'q" chiqmasligi uchun
+      // eski narx, yuborilgan qiymatlar va javob birlashtiriladi.
+      let price = { ...data, ...javob };
       set((state) => ({
         modifikatsiyalar: {
           ...state.modifikatsiyalar,
-          [productId]: (state.modifikatsiyalar[productId] ?? []).map((item) =>
-            item.id === id ? { ...item, price } : item
-          ),
+          [productId]: (state.modifikatsiyalar[productId] ?? []).map((item) => {
+            if (item.id !== id) return item;
+            price = { ...item.price, ...data, ...javob };
+            return { ...item, price };
+          }),
         },
         amalBajarilmoqda: false,
       }));

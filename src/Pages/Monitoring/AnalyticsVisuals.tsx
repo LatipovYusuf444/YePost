@@ -1,3 +1,4 @@
+import { pulMatni, summaniOgirish } from "@/lib/valyuta";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -44,10 +45,9 @@ function useFormat() {
   const locale = i18n.resolvedLanguage === "ru" ? "ru-RU" : "uz-UZ";
   const number = (value: number) =>
     value.toLocaleString(locale, { maximumFractionDigits: 2 });
-  const money = (value: number) =>
-    `${Math.round(value).toLocaleString(locale)} ${t("dynamics.currency")}`;
-  const compact = (value: number) => {
-    const n = Math.abs(value);
+  const money = (value: number) => pulMatni(value, "UZS", true, t("dynamics.currency"));
+  const compact = (qiymat: number) => {
+    const n = Math.abs(summaniOgirish(qiymat));
     if (n >= 1_000_000)
       return `${number(n / 1_000_000)} ${t("dynamics.million")}`;
     if (n >= 1_000) return `${number(n / 1_000)} ${t("dynamics.thousand")}`;

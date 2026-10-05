@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import LanguageSwitcher from "@/Components/common/LanguageSwitcher";
 import ThemeSwitcher from "@/Components/theme/ThemeSwitcher";
+import ValyutaTanlash from "@/Components/common/ValyutaTanlash";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -120,6 +121,7 @@ export default function YuqoriPanel({
         >
           <PackagePlus size={20} />
         </button>
+        <ValyutaTanlash />
         <ThemeSwitcher variant="dark" />
         <LanguageSwitcher variant="dark" />
         <BildirishnomaTugmasi
@@ -160,6 +162,7 @@ export default function YuqoriPanel({
         <Menu size={20} />
       </button>
       <div className="flex items-center gap-2">
+        <ValyutaTanlash />
         <ThemeSwitcher variant="dark" />
         <LanguageSwitcher variant="dark" />
         <BildirishnomaTugmasi

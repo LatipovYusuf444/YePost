@@ -1,3 +1,4 @@
+import { pulMatni } from "@/lib/valyuta";
 import type { MahsulotModifikatsiyasi, OmborQoldigi } from "@/types/ombor";
 
 export function sana(value?: string) {
@@ -15,7 +16,7 @@ export function sana(value?: string) {
 }
 
 export function pul(value?: number) {
-  return `${Number(value ?? 0).toLocaleString("uz-UZ")} so'm`;
+  return pulMatni(value);
 }
 
 export function modificationNomi(modification?: MahsulotModifikatsiyasi) {

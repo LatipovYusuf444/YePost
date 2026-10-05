@@ -1,3 +1,4 @@
+import { pulMatni } from "@/lib/valyuta";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronDown, LoaderCircle, Minus, PackageOpen, PackagePlus, Plus, RefreshCw, Search, ShoppingCart, Trash2, X } from "lucide-react";
@@ -18,7 +19,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const KAM_QOLDIQ = 10;
 
 function formatSumma(value: number) {
-  return `${Math.round(Number(value) || 0).toLocaleString("uz-UZ")} so'm`;
+  return pulMatni(Number(value) || 0, "UZS", true);
 }
 
 function nomniOlish(item?: OmborTanlovi | null) {

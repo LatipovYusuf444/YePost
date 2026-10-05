@@ -1,3 +1,4 @@
+import { pulMatni } from "@/lib/valyuta";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Briefcase, Building2, Phone, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -146,7 +147,6 @@ function MalumotlarTab({
   const jamiRealizatsiya = savdolar.reduce((sum, savdo) => sum + savdo.summa, 0);
   const jamiTolangan = savdolar.reduce((sum, savdo) => sum + savdo.tolangan, 0);
   const jamiQarz = savdolar.reduce((sum, savdo) => sum + savdo.qarz, 0);
-  const valyuta = t("shared.currencySuffix");
 
   return (
     <div className="grid gap-6 px-9 py-7 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -211,12 +211,12 @@ function MalumotlarTab({
               qiymat={xaridor.lavozim || t("shared.notEntered")}
             />
             <Qator nom={t("shared.registeredDateLabel")} qiymat={sanaFormat(xaridor.yaratilganSana)} />
-            <Qator nom={t("xaridorDetails.totalSales")} qiymat={`${jamiRealizatsiya.toLocaleString("uz-UZ")} ${valyuta}`} />
-            <Qator nom={t("xaridorDetails.totalPaid")} qiymat={`${jamiTolangan.toLocaleString("uz-UZ")} ${valyuta}`} />
+            <Qator nom={t("xaridorDetails.totalSales")} qiymat={pulMatni(jamiRealizatsiya, "UZS", true)} />
+            <Qator nom={t("xaridorDetails.totalPaid")} qiymat={pulMatni(jamiTolangan, "UZS", true)} />
             <Qator
               icon={jamiQarz > 0 ? <AlertTriangle size={14} /> : undefined}
               nom={jamiQarz > 0 ? t("xaridorDetails.debtorYes") : t("xaridorDetails.debtorNo")}
-              qiymat={`${jamiQarz.toLocaleString("uz-UZ")} ${valyuta}`}
+              qiymat={pulMatni(jamiQarz, "UZS", true)}
               qarz={jamiQarz > 0}
             />
           </dl>

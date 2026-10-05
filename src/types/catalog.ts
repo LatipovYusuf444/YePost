@@ -135,4 +135,5 @@ export type NarxMalumoti = {
   costPrice?: number;
   retailPrice?: number;
   wholesalePrice?: number;
+  currency?: "UZS" | "USD";
 };

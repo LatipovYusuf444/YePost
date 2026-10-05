@@ -1,3 +1,4 @@
+import { pulMatni } from "@/lib/valyuta";
 import type { KirimHolati, SavdoHolati, Xaridor, XaridorKompaniyasi } from "./types";
 
 export const maydonKlass =
@@ -12,7 +13,7 @@ export function bugun() {
 }
 
 export function summaFormat(summa: number) {
-  return `${Math.round(summa).toLocaleString("uz-UZ")} so'm`;
+  return pulMatni(summa, "UZS", true);
 }
 
 export function xaridorNomi(xaridor: Xaridor) {

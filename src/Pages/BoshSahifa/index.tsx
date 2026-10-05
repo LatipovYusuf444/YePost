@@ -1,3 +1,4 @@
+import { pulMatni } from "@/lib/valyuta";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -37,7 +38,7 @@ type PaymentType = {
 const quickDiscounts = [15, 30, 50, 75];
 
 function formatSumma(value: number) {
-  return `${Math.round(Number(value) || 0).toLocaleString("ru-RU")} uzs`;
+  return pulMatni(Number(value) || 0, "UZS", true, "uzs");
 }
 
 function readNumber(value: unknown, fallback = 0) {
