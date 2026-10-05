@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Building2, Pencil, Plus, Power, PowerOff, Search, Trash2, Users } from "lucide-react";
+import { Building2, Clock, Pencil, Plus, Power, PowerOff, Trash2, Users } from "lucide-react";
 import LoadingState from "@/Components/common/LoadingState";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import { platformApi } from "@/api/platformApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { PlatformKompaniya, PlatformKompaniyaYaratish } from "@/types/platform";
-import { AdminModal, AmalTugmasi, BoshHolat, Belgi, Maydon, SahifaSarlavhasi, ShakldaTugmalar, inputKlass, jadvalKlass, tdKlass, thKlass } from "./AdminUI";
+import { AdminModal, AmalTugmasi, Avatar, BoshHolat, Belgi, Maydon, MiniKarta, QidiruvMaydoni, SahifaSarlavhasi, ShakldaTugmalar, XatoXabari, asosiyTugmaKlass, inputKlass, jadvalKlass, tbodyKlass, tdKlass, theadKlass, thKlass, trKlass } from "./AdminUI";
 
 const VAQT_ZONALARI = ["Asia/Tashkent", "Asia/Samarkand", "Asia/Almaty", "Asia/Bishkek", "Europe/Moscow", "UTC"];
 
@@ -90,7 +90,7 @@ function KompaniyaModali({ tahrir, onYopish, onSaqlandi }: { tahrir: PlatformKom
   }
 
   return (
-    <AdminModal sarlavha={t(tahrir ? "kompaniyalar.tahrirlash" : "kompaniyalar.yangi")} onYopish={onYopish} kenglik="max-w-xl">
+    <AdminModal sarlavha={t(tahrir ? "kompaniyalar.tahrirlash" : "kompaniyalar.yangi")} onYopish={onYopish} kenglik="max-w-xl" ikonka={<Building2 size={20} />}>
       <form onSubmit={(event) => void yuborish(event)} className="space-y-4">
         <Maydon nom={t("kompaniyalar.nomi")}>
           <input
@@ -126,12 +126,12 @@ function KompaniyaModali({ tahrir, onYopish, onSaqlandi }: { tahrir: PlatformKom
 
         {!tahrir && (
           <>
-            <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700">
+            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-orange-200">
               <input type="checkbox" checked={forma.isActive} onChange={(event) => ozgartirish("isActive", event.target.checked)} className="h-4 w-4 accent-orange-500" />
               {t("kompaniyalar.faolBoshlash")}
             </label>
 
-            <div className="rounded-2xl border border-orange-100 p-4">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
               <label className="flex cursor-pointer items-center gap-3 text-sm font-black text-slate-800">
                 <input type="checkbox" checked={forma.direktorYaratish} onChange={(event) => ozgartirish("direktorYaratish", event.target.checked)} className="h-4 w-4 accent-orange-500" />
                 {t("kompaniyalar.direktorYaratish")}
@@ -156,7 +156,7 @@ function KompaniyaModali({ tahrir, onYopish, onSaqlandi }: { tahrir: PlatformKom
           </>
         )}
 
-        {xato && <p className="rounded-2xl bg-red-50 p-3.5 text-sm font-bold text-red-600">{xato}</p>}
+        {xato && <XatoXabari matn={xato} />}
         <ShakldaTugmalar ortga={{ matn: t("common.bekor"), onClick: onYopish }} bajarilmoqda={bajarilmoqda} saqlashMatni={t(tahrir ? "common.saqlash" : "kompaniyalar.yaratish")} />
       </form>
     </AdminModal>
@@ -222,19 +222,24 @@ export default function AdminKompaniyalar() {
         eyebrow={t("eyebrow")}
         sarlavha={t("kompaniyalar.title")}
         tavsif={t("kompaniyalar.subtitle")}
+        ikonka={<Building2 size={26} />}
         amallar={
-          <button type="button" onClick={() => setModal({ tahrir: null })} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-md shadow-orange-200 transition hover:bg-orange-600">
+          <button type="button" onClick={() => setModal({ tahrir: null })} className={asosiyTugmaKlass}>
             <Plus size={17} /> {t("kompaniyalar.yangi")}
           </button>
         }
       />
 
-      <label className="flex h-12 w-full items-center gap-3 rounded-2xl border border-orange-100 bg-white px-4 shadow-sm focus-within:border-orange-300 focus-within:ring-4 focus-within:ring-orange-50 sm:max-w-md">
-        <Search size={18} className="text-orange-400" />
-        <input value={qidiruv} onChange={(event) => setQidiruv(event.target.value)} placeholder={t("kompaniyalar.qidiruv")} className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-700 outline-none" />
-      </label>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <QidiruvMaydoni qiymat={qidiruv} onOzgarish={setQidiruv} placeholder={t("kompaniyalar.qidiruv")} className="lg:max-w-md" />
+        <div className="flex flex-wrap gap-2">
+          <MiniKarta nom={t("common.jami")} qiymat={royxat.length} />
+          <MiniKarta nom={t("common.faol")} qiymat={royxat.filter((item) => item.isActive).length} ohang="emerald" />
+          <MiniKarta nom={t("common.nofaol")} qiymat={royxat.filter((item) => !item.isActive).length} ohang="slate" />
+        </div>
+      </div>
 
-      {xatolik && <div className="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">{xatolik}</div>}
+      {xatolik && <XatoXabari matn={xatolik} />}
 
       {yuklanmoqda && royxat.length === 0 ? (
         <LoadingState matn={t("common.yuklanmoqda")} ikonka={<Building2 size={24} />} />
@@ -244,7 +249,7 @@ export default function AdminKompaniyalar() {
         <div className={jadvalKlass}>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px]">
-              <thead className="bg-[#FFF7F0]">
+              <thead className={theadKlass}>
                 <tr>
                   <th className={thKlass}>{t("kompaniyalar.nomi")}</th>
                   <th className={thKlass}>{t("kompaniyalar.vaqtZonasi")}</th>
@@ -253,14 +258,23 @@ export default function AdminKompaniyalar() {
                   <th className="w-52 px-5 py-4" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-orange-100/70">
+              <tbody className={tbodyKlass}>
                 {korinadigan.map((kompaniya) => (
-                  <tr key={kompaniya.id} className="transition hover:bg-orange-50/40">
+                  <tr key={kompaniya.id} className={trKlass}>
                     <td className={tdKlass}>
-                      <p className="font-black text-slate-900">{kompaniya.name}</p>
-                      <p className="mt-0.5 text-xs font-semibold text-slate-400">{kompaniya.slug}</p>
+                      <div className="flex items-center gap-3">
+                        <Avatar nom={kompaniya.name} />
+                        <div className="min-w-0">
+                          <p className="truncate font-black text-slate-900">{kompaniya.name}</p>
+                          <p className="mt-0.5 truncate font-mono text-xs text-slate-400">{kompaniya.slug}</p>
+                        </div>
+                      </div>
                     </td>
-                    <td className={tdKlass}>{kompaniya.timezone || "—"}</td>
+                    <td className={tdKlass}>
+                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200/70">
+                        <Clock size={13} className="text-slate-400" /> {kompaniya.timezone || "—"}
+                      </span>
+                    </td>
                     <td className={tdKlass}>{kompaniya.isActive ? <Belgi rang="yashil">{t("common.faol")}</Belgi> : <Belgi rang="kulrang">{t("common.nofaol")}</Belgi>}</td>
                     <td className={tdKlass}>{kompaniya.createdAt ? new Date(kompaniya.createdAt).toLocaleDateString("uz-UZ") : "—"}</td>
                     <td className={`${tdKlass} text-right`}>
@@ -269,7 +283,7 @@ export default function AdminKompaniyalar() {
                           to={`/admin/foydalanuvchilar?workspaceId=${kompaniya.id}`}
                           title={t("kompaniyalar.foydalanuvchilar")}
                           aria-label={t("kompaniyalar.foydalanuvchilar")}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition hover:bg-blue-600 hover:text-white"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition hover:bg-orange-50 hover:text-orange-600"
                         >
                           <Users size={16} />
                         </Link>
@@ -288,6 +302,7 @@ export default function AdminKompaniyalar() {
               </tbody>
             </table>
           </div>
+          <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-3 text-xs font-semibold text-slate-400">{t("common.natija", { count: korinadigan.length })}</div>
         </div>
       )}
 

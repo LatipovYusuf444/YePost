@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Ban, CalendarPlus, CreditCard, Pencil, Plus } from "lucide-react";
+import { ArrowRight, Ban, CalendarPlus, CreditCard, Pencil, Plus } from "lucide-react";
 import LoadingState from "@/Components/common/LoadingState";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import { platformApi } from "@/api/platformApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { mahalliySanaKaliti } from "@/lib/sanaKaliti";
 import type { ObunaDavri, ObunaHolati, PlatformKompaniya, PlatformObuna, PlatformTarif } from "@/types/platform";
-import { AdminModal, AmalTugmasi, BoshHolat, Belgi, Maydon, SahifaSarlavhasi, ShakldaTugmalar, inputKlass, jadvalKlass, tdKlass, thKlass } from "./AdminUI";
+import { AdminModal, AmalTugmasi, Avatar, BoshHolat, Belgi, Maydon, SahifaSarlavhasi, ShakldaTugmalar, XatoXabari, asosiyTugmaKlass, inputKlass, jadvalKlass, tbodyKlass, tdKlass, theadKlass, thKlass, trKlass } from "./AdminUI";
 
 const DAVRLAR: ObunaDavri[] = ["MONTHLY", "QUARTERLY", "ANNUAL"];
 const HOLATLAR: ObunaHolati[] = ["TRIAL", "ACTIVE", "EXPIRED", "CANCELLED"];
@@ -20,6 +20,14 @@ function davrQoshish(sana: string, davr: ObunaDavri) {
   const natija = new Date(boshlanish);
   natija.setMonth(natija.getMonth() + DAVR_OYLARI[davr]);
   return mahalliySanaKaliti(natija);
+}
+
+// Tugashgacha necha kun qolgani (o'tib ketgan bo'lsa manfiy). Sana noto'g'ri bo'lsa null.
+function kunQoldi(tugash?: string) {
+  const kalit = mahalliySanaKaliti(tugash);
+  if (!kalit) return null;
+  const bugun = new Date(`${mahalliySanaKaliti(new Date())}T00:00:00`).getTime();
+  return Math.round((new Date(`${kalit}T00:00:00`).getTime() - bugun) / 86_400_000);
 }
 
 function sanaKorinishi(qiymat?: string) {
@@ -60,7 +68,7 @@ function ObunaModali({ tahrir, kompaniyalar, tariflar, onYopish, onSaqlandi }: {
   }
 
   return (
-    <AdminModal sarlavha={t(tahrir ? "obunalar.tahrirlash" : "obunalar.yangi")} onYopish={onYopish} kenglik="max-w-xl">
+    <AdminModal sarlavha={t(tahrir ? "obunalar.tahrirlash" : "obunalar.yangi")} onYopish={onYopish} kenglik="max-w-xl" ikonka={<CreditCard size={20} />}>
       <form onSubmit={(event) => void yuborish(event)} className="space-y-4">
         <Maydon nom={t("obunalar.kompaniya")}>
           <select value={workspaceId} onChange={(event) => setWorkspaceId(event.target.value)} disabled={Boolean(tahrir)} className={inputKlass}>
@@ -134,7 +142,7 @@ function ObunaModali({ tahrir, kompaniyalar, tariflar, onYopish, onSaqlandi }: {
             />
           </Maydon>
         </div>
-        {xato && <p className="rounded-2xl bg-red-50 p-3.5 text-sm font-bold text-red-600">{xato}</p>}
+        {xato && <XatoXabari matn={xato} />}
         <ShakldaTugmalar ortga={{ matn: t("common.bekor"), onClick: onYopish }} bajarilmoqda={bajarilmoqda} saqlashMatni={t("common.saqlash")} />
       </form>
     </AdminModal>
@@ -220,23 +228,37 @@ export default function AdminObunalar() {
         eyebrow={t("eyebrow")}
         sarlavha={t("obunalar.title")}
         tavsif={t("obunalar.subtitle")}
+        ikonka={<CreditCard size={26} />}
         amallar={
-          <button type="button" onClick={() => setModal({ tahrir: null })} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-md shadow-orange-200 transition hover:bg-orange-600">
+          <button type="button" onClick={() => setModal({ tahrir: null })} className={asosiyTugmaKlass}>
             <Plus size={17} /> {t("obunalar.yangi")}
           </button>
         }
       />
 
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <select value={holatFiltri} onChange={(event) => setHolatFiltri(event.target.value)} aria-label={t("obunalar.holati")} className={`${inputKlass} sm:max-w-[220px]`}>
-          <option value="ALL">{t("obunalar.barchaHolatlar")}</option>
-          {HOLATLAR.map((item) => (
-            <option key={item} value={item}>
-              {t(`obunalar.holatlar.${item}`)}
-            </option>
-          ))}
-        </select>
-        <select value={kompaniyaFiltri} onChange={(event) => setKompaniyaFiltri(event.target.value)} aria-label={t("obunalar.kompaniya")} className={`${inputKlass} sm:max-w-[280px]`}>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div role="tablist" aria-label={t("obunalar.holati")} className="flex flex-wrap gap-2">
+          {(["ALL", ...HOLATLAR] as const).map((kalit) => {
+            const faol = holatFiltri === kalit;
+            const soni = kalit === "ALL" ? obunalar.length : obunalar.filter((item) => item.status === kalit).length;
+            return (
+              <button
+                key={kalit}
+                type="button"
+                role="tab"
+                aria-selected={faol}
+                onClick={() => setHolatFiltri(kalit)}
+                className={`inline-flex h-10 items-center gap-2 rounded-xl px-3.5 text-sm font-bold transition ${
+                  faol ? "bg-orange-500 text-white shadow-md shadow-orange-500/25" : "border border-slate-200 bg-white text-slate-600 hover:border-orange-200 hover:bg-orange-50"
+                }`}
+              >
+                {kalit === "ALL" ? t("obunalar.barchaHolatlar") : t(`obunalar.holatlar.${kalit}`)}
+                <span className={`rounded-md px-1.5 py-0.5 text-xs font-black ${faol ? "bg-white/25 text-white" : "bg-slate-100 text-slate-500"}`}>{soni}</span>
+              </button>
+            );
+          })}
+        </div>
+        <select value={kompaniyaFiltri} onChange={(event) => setKompaniyaFiltri(event.target.value)} aria-label={t("obunalar.kompaniya")} className={`${inputKlass} lg:max-w-[280px]`}>
           <option value="ALL">{t("obunalar.barchaKompaniyalar")}</option>
           {kompaniyalar.map((item) => (
             <option key={item.id} value={item.id}>
@@ -246,7 +268,7 @@ export default function AdminObunalar() {
         </select>
       </div>
 
-      {xatolik && <div className="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">{xatolik}</div>}
+      {xatolik && <XatoXabari matn={xatolik} />}
 
       {yuklanmoqda && obunalar.length === 0 ? (
         <LoadingState matn={t("common.yuklanmoqda")} ikonka={<CreditCard size={24} />} />
@@ -256,25 +278,44 @@ export default function AdminObunalar() {
         <div className={jadvalKlass}>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px]">
-              <thead className="bg-[#FFF7F0]">
+              <thead className={theadKlass}>
                 <tr>
                   <th className={thKlass}>{t("obunalar.kompaniya")}</th>
                   <th className={thKlass}>{t("obunalar.tarif")}</th>
                   <th className={thKlass}>{t("obunalar.davr")}</th>
-                  <th className={thKlass}>{t("obunalar.boshlanish")}</th>
-                  <th className={thKlass}>{t("obunalar.tugash")}</th>
+                  <th className={thKlass}>
+                    {t("obunalar.boshlanish")} → {t("obunalar.tugash")}
+                  </th>
                   <th className={thKlass}>{t("obunalar.holati")}</th>
                   <th className="w-40 px-5 py-4" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-orange-100/70">
-                {korinadigan.map((obuna) => (
-                  <tr key={obuna.id} className="transition hover:bg-orange-50/40">
-                    <td className={`${tdKlass} font-black text-slate-900`}>{obuna.workspace?.name ?? kompaniyaNomi.get(obuna.workspaceId) ?? obuna.workspaceId}</td>
-                    <td className={tdKlass}>{obuna.tariff?.name ?? tarifNomi.get(obuna.tariffId) ?? "—"}</td>
+              <tbody className={tbodyKlass}>
+                {korinadigan.map((obuna) => {
+                  const kompaniyaMatni = obuna.workspace?.name ?? kompaniyaNomi.get(obuna.workspaceId) ?? obuna.workspaceId;
+                  const qolgan = obuna.status === "CANCELLED" ? null : kunQoldi(obuna.endDate);
+                  return (
+                  <tr key={obuna.id} className={trKlass}>
+                    <td className={tdKlass}>
+                      <div className="flex items-center gap-3">
+                        <Avatar nom={kompaniyaMatni} />
+                        <span className="truncate font-black text-slate-900">{kompaniyaMatni}</span>
+                      </div>
+                    </td>
+                    <td className={tdKlass}>
+                      <span className="inline-flex rounded-lg bg-orange-50 px-2.5 py-1 text-xs font-black text-orange-600">{obuna.tariff?.name ?? tarifNomi.get(obuna.tariffId) ?? "—"}</span>
+                    </td>
                     <td className={tdKlass}>{t(`obunalar.davrlar.${obuna.period}`, { defaultValue: obuna.period })}</td>
-                    <td className={tdKlass}>{sanaKorinishi(obuna.startDate)}</td>
-                    <td className={tdKlass}>{sanaKorinishi(obuna.endDate)}</td>
+                    <td className={tdKlass}>
+                      <div className="flex items-center gap-2 whitespace-nowrap text-xs font-semibold text-slate-600">
+                        {sanaKorinishi(obuna.startDate)} <ArrowRight size={13} className="text-slate-300" /> {sanaKorinishi(obuna.endDate)}
+                      </div>
+                      {qolgan !== null && (
+                        <p className={`mt-1 text-xs font-bold ${qolgan < 0 ? "text-red-500" : qolgan <= 7 ? "text-amber-600" : "text-slate-400"}`}>
+                          {qolgan < 0 ? t("obunalar.muddatiOtgan") : t("obunalar.kunQoldi", { count: qolgan })}
+                        </p>
+                      )}
+                    </td>
                     <td className={tdKlass}>
                       <Belgi rang={HOLAT_RANGI[obuna.status] ?? "kulrang"}>{t(`obunalar.holatlar.${obuna.status}`, { defaultValue: obuna.status })}</Belgi>
                     </td>
@@ -286,10 +327,12 @@ export default function AdminObunalar() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
+          <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-3 text-xs font-semibold text-slate-400">{t("common.natija", { count: korinadigan.length })}</div>
         </div>
       )}
 

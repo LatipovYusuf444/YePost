@@ -1,14 +1,22 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Pencil, Plus, Tag, Trash2 } from "lucide-react";
+import { Building2, Crown, Gem, Pencil, Plus, Sparkles, Tag, Trash2, Users, type LucideIcon } from "lucide-react";
 import LoadingState from "@/Components/common/LoadingState";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import { platformApi } from "@/api/platformApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { PlatformTarif, PlatformTarifSaqlash, TarifTuri } from "@/types/platform";
-import { AdminModal, AmalTugmasi, BoshHolat, Belgi, Maydon, SahifaSarlavhasi, ShakldaTugmalar, inputKlass, jadvalKlass, tdKlass, thKlass } from "./AdminUI";
+import { AdminModal, AmalTugmasi, BoshHolat, Belgi, Maydon, SahifaSarlavhasi, ShakldaTugmalar, XatoXabari, asosiyTugmaKlass, inputKlass, type BelgiRangi } from "./AdminUI";
 
 const TARIF_TURLARI: TarifTuri[] = ["FREE", "BASIC", "PRO", "ENTERPRISE"];
+
+// Har bir tarif turiga o'z rangi va ikonkasi beriladi — kartalar bir qarashda ajralib turadi.
+const TUR_USLUBI: Record<TarifTuri, { ikonka: LucideIcon; tile: string; belgi: BelgiRangi }> = {
+  FREE: { ikonka: Tag, tile: "from-slate-400 to-slate-600 shadow-slate-500/30", belgi: "kulrang" },
+  BASIC: { ikonka: Sparkles, tile: "from-sky-400 to-blue-600 shadow-blue-500/30", belgi: "kok" },
+  PRO: { ikonka: Gem, tile: "from-violet-400 to-purple-600 shadow-violet-500/30", belgi: "binafsha" },
+  ENTERPRISE: { ikonka: Crown, tile: "from-amber-400 to-orange-600 shadow-orange-500/30", belgi: "sariq" },
+};
 
 function limitMatni(qiymat: number | null | undefined, cheksiz: string) {
   return qiymat === null || qiymat === undefined ? cheksiz : String(qiymat);
@@ -52,7 +60,7 @@ function TarifModali({ tahrir, onYopish, onSaqlandi }: { tahrir: PlatformTarif |
   }
 
   return (
-    <AdminModal sarlavha={t(tahrir ? "tariflar.tahrirlash" : "tariflar.yangi")} onYopish={onYopish}>
+    <AdminModal sarlavha={t(tahrir ? "tariflar.tahrirlash" : "tariflar.yangi")} onYopish={onYopish} ikonka={<Tag size={20} />}>
       <form onSubmit={(event) => void yuborish(event)} className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <Maydon nom={t("tariflar.turi")}>
@@ -79,11 +87,11 @@ function TarifModali({ tahrir, onYopish, onSaqlandi }: { tahrir: PlatformTarif |
             </Maydon>
           </div>
         </div>
-        <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700">
+        <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-orange-200">
           <input type="checkbox" checked={faol} onChange={(event) => setFaol(event.target.checked)} className="h-4 w-4 accent-orange-500" />
           {t("common.faol")}
         </label>
-        {xato && <p className="rounded-2xl bg-red-50 p-3.5 text-sm font-bold text-red-600">{xato}</p>}
+        {xato && <XatoXabari matn={xato} />}
         <ShakldaTugmalar ortga={{ matn: t("common.bekor"), onClick: onYopish }} bajarilmoqda={bajarilmoqda} saqlashMatni={t("common.saqlash")} />
       </form>
     </AdminModal>
@@ -131,56 +139,83 @@ export default function AdminTariflar() {
         eyebrow={t("eyebrow")}
         sarlavha={t("tariflar.title")}
         tavsif={t("tariflar.subtitle")}
+        ikonka={<Tag size={26} />}
         amallar={
-          <button type="button" onClick={() => setModal({ tahrir: null })} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-md shadow-orange-200 transition hover:bg-orange-600">
+          <button type="button" onClick={() => setModal({ tahrir: null })} className={asosiyTugmaKlass}>
             <Plus size={17} /> {t("tariflar.yangi")}
           </button>
         }
       />
 
-      {xatolik && <div className="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">{xatolik}</div>}
+      {xatolik && <XatoXabari matn={xatolik} />}
 
       {yuklanmoqda && royxat.length === 0 ? (
         <LoadingState matn={t("common.yuklanmoqda")} ikonka={<Tag size={24} />} />
       ) : royxat.length === 0 ? (
         <BoshHolat matn={t("tariflar.bosh")} />
       ) : (
-        <div className={jadvalKlass}>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px]">
-              <thead className="bg-[#FFF7F0]">
-                <tr>
-                  <th className={thKlass}>{t("tariflar.nomi")}</th>
-                  <th className={thKlass}>{t("tariflar.turi")}</th>
-                  <th className={thKlass}>{t("tariflar.maxFilial")}</th>
-                  <th className={thKlass}>{t("tariflar.maxFoydalanuvchi")}</th>
-                  <th className={thKlass}>{t("tariflar.oylikNarx")}</th>
-                  <th className={thKlass}>{t("common.holati")}</th>
-                  <th className="w-28 px-5 py-4" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-orange-100/70">
-                {royxat.map((tarif) => (
-                  <tr key={tarif.id} className="transition hover:bg-orange-50/40">
-                    <td className={`${tdKlass} font-black text-slate-900`}>{tarif.name}</td>
-                    <td className={tdKlass}>
-                      <Belgi rang="kok">{tarif.type}</Belgi>
-                    </td>
-                    <td className={tdKlass}>{limitMatni(tarif.maxBranches, t("tariflar.cheksiz"))}</td>
-                    <td className={tdKlass}>{limitMatni(tarif.maxUsers, t("tariflar.cheksiz"))}</td>
-                    <td className={`${tdKlass} font-bold text-slate-900`}>{Number(tarif.monthlyPrice ?? 0).toLocaleString("uz-UZ")} so'm</td>
-                    <td className={tdKlass}>{tarif.isActive ? <Belgi rang="yashil">{t("common.faol")}</Belgi> : <Belgi rang="kulrang">{t("common.nofaol")}</Belgi>}</td>
-                    <td className={`${tdKlass} text-right`}>
-                      <div className="flex items-center justify-end gap-2">
-                        <AmalTugmasi matn={t("common.tahrirlash")} ikonka={<Pencil size={16} />} onClick={() => setModal({ tahrir: tarif })} />
-                        <AmalTugmasi matn={t("common.ochirish")} ikonka={<Trash2 size={16} />} ohang="qizil" onClick={() => setOchirishTasdiq(tarif)} />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {royxat.map((tarif) => {
+            const uslub = TUR_USLUBI[tarif.type] ?? TUR_USLUBI.BASIC;
+            const Ikonka = uslub.ikonka;
+            const narx = Number(tarif.monthlyPrice ?? 0);
+            return (
+              <article
+                key={tarif.id}
+                className={`group flex flex-col rounded-3xl border bg-white p-6 shadow-[0_4px_20px_rgba(15,23,42,.05)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(15,23,42,.12)] ${
+                  tarif.isActive ? "border-slate-200/70" : "border-dashed border-slate-300 opacity-75"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <span className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg ${uslub.tile}`}>
+                    <Ikonka size={22} />
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Belgi rang={uslub.belgi} nuqta={false}>
+                      {tarif.type}
+                    </Belgi>
+                    {tarif.isActive ? <Belgi rang="yashil">{t("common.faol")}</Belgi> : <Belgi rang="kulrang">{t("common.nofaol")}</Belgi>}
+                  </div>
+                </div>
+
+                <h3 className="mt-5 truncate text-xl font-black text-slate-900">{tarif.name}</h3>
+                <p className="mt-2 flex items-baseline gap-1.5">
+                  {narx > 0 ? (
+                    <>
+                      <span className="text-[30px] font-black leading-none tracking-tight text-slate-900">{narx.toLocaleString("uz-UZ")}</span>
+                      <span className="text-sm font-semibold text-slate-400">
+                        {t("tariflar.som")} / {t("tariflar.oyiga")}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-[30px] font-black leading-none tracking-tight text-emerald-600">{t("tariflar.bepul")}</span>
+                  )}
+                </p>
+
+                <dl className="mt-5 space-y-2.5 border-t border-slate-100 pt-5">
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-orange-500">
+                      <Building2 size={16} />
+                    </span>
+                    <dt className="flex-1 text-slate-500">{t("tariflar.maxFilial")}</dt>
+                    <dd className="font-black text-slate-900">{limitMatni(tarif.maxBranches, t("tariflar.cheksiz"))}</dd>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-orange-500">
+                      <Users size={16} />
+                    </span>
+                    <dt className="flex-1 text-slate-500">{t("tariflar.maxFoydalanuvchi")}</dt>
+                    <dd className="font-black text-slate-900">{limitMatni(tarif.maxUsers, t("tariflar.cheksiz"))}</dd>
+                  </div>
+                </dl>
+
+                <div className="mt-6 flex items-center justify-end gap-1 border-t border-slate-100 pt-4">
+                  <AmalTugmasi matn={t("common.tahrirlash")} ikonka={<Pencil size={16} />} onClick={() => setModal({ tahrir: tarif })} />
+                  <AmalTugmasi matn={t("common.ochirish")} ikonka={<Trash2 size={16} />} ohang="qizil" onClick={() => setOchirishTasdiq(tarif)} />
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
 

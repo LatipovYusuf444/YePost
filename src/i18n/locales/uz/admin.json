@@ -23,7 +23,9 @@
     "holati": "Holati",
     "faol": "Faol",
     "nofaol": "Nofaol",
-    "yaratilgan": "Yaratilgan"
+    "yaratilgan": "Yaratilgan",
+    "jami": "Jami",
+    "natija": "{{count}} ta natija"
   },
   "dashboard": {
     "title": "Boshqaruv paneli",
@@ -36,7 +38,9 @@
     "nofaol": "Nofaol",
     "bloklangan": "Bloklangan",
     "songgi30": "So'nggi 30 kunda qo'shilgan",
-    "hammasi": "Hammasini ko'rish"
+    "hammasi": "Hammasini ko'rish",
+    "tezkor": "Tezkor o'tish",
+    "ulush": "Faol ulushi"
   },
   "kompaniyalar": {
     "title": "Kompaniyalar",
@@ -91,7 +95,10 @@
     "xatolar": {
       "nomKerak": "Tarif nomini kiriting.",
       "qiymatNotogri": "Limitlar butun son, narx esa manfiy bo'lmagan son bo'lishi kerak."
-    }
+    },
+    "oyiga": "oyiga",
+    "som": "so'm",
+    "bepul": "Bepul"
   },
   "obunalar": {
     "title": "Obunalar",
@@ -130,7 +137,9 @@
       "kompaniyaKerak": "Kompaniyani tanlang.",
       "tarifKerak": "Tarifni tanlang.",
       "sanaNotogri": "Sanalar noto'g'ri: tugash sanasi boshlanishdan keyin bo'lishi kerak."
-    }
+    },
+    "kunQoldi": "{{count}} kun qoldi",
+    "muddatiOtgan": "Muddati o'tgan"
   },
   "foydalanuvchilar": {
     "title": "Foydalanuvchilar",

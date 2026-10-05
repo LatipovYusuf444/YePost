@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { KeyRound, Lock, Search, ShieldCheck, Unlock, Users } from "lucide-react";
+import { Building2, KeyRound, Lock, ShieldCheck, Unlock, Users } from "lucide-react";
 import LoadingState from "@/Components/common/LoadingState";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import { platformApi } from "@/api/platformApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import type { PlatformFoydalanuvchi, PlatformKompaniya } from "@/types/platform";
-import { AdminModal, AmalTugmasi, BoshHolat, Belgi, Maydon, SahifaSarlavhasi, ShakldaTugmalar, inputKlass, jadvalKlass, tdKlass, thKlass } from "./AdminUI";
+import { AdminModal, AmalTugmasi, Avatar, BoshHolat, Belgi, Maydon, QidiruvMaydoni, SahifaSarlavhasi, ShakldaTugmalar, XatoXabari, inputKlass, jadvalKlass, tbodyKlass, tdKlass, theadKlass, thKlass, trKlass, type BelgiRangi } from "./AdminUI";
 
 const ROLLAR = ["DIRECTOR", "ADMIN", "STOREKEEPER", "CASHIER"] as const;
+const ROL_RANGI: Record<string, BelgiRangi> = { DIRECTOR: "binafsha", ADMIN: "kok", STOREKEEPER: "sariq", CASHIER: "yashil" };
 
 function ParolModali({ foydalanuvchi, onYopish }: { foydalanuvchi: PlatformFoydalanuvchi; onYopish: () => void }) {
   const { t } = useTranslation("admin");
@@ -35,12 +36,12 @@ function ParolModali({ foydalanuvchi, onYopish }: { foydalanuvchi: PlatformFoyda
   }
 
   return (
-    <AdminModal sarlavha={t("foydalanuvchilar.parolniTiklash")} tavsif={`${foydalanuvchi.fullName || foydalanuvchi.username} (@${foydalanuvchi.username})`} onYopish={onYopish}>
+    <AdminModal sarlavha={t("foydalanuvchilar.parolniTiklash")} tavsif={`${foydalanuvchi.fullName || foydalanuvchi.username} (@${foydalanuvchi.username})`} onYopish={onYopish} ikonka={<KeyRound size={20} />}>
       <form onSubmit={(event) => void yuborish(event)} className="space-y-4">
         <Maydon nom={t("foydalanuvchilar.yangiParol")} izoh={t("foydalanuvchilar.parolIzoh")}>
           <input autoFocus type="password" value={parol} onChange={(event) => setParol(event.target.value)} autoComplete="new-password" className={inputKlass} />
         </Maydon>
-        {xato && <p className="rounded-2xl bg-red-50 p-3.5 text-sm font-bold text-red-600">{xato}</p>}
+        {xato && <XatoXabari matn={xato} />}
         <ShakldaTugmalar ortga={{ matn: t("common.bekor"), onClick: onYopish }} bajarilmoqda={bajarilmoqda} saqlashMatni={t("common.saqlash")} />
       </form>
     </AdminModal>
@@ -105,13 +106,10 @@ export default function AdminFoydalanuvchilar() {
 
   return (
     <div className="space-y-6">
-      <SahifaSarlavhasi eyebrow={t("eyebrow")} sarlavha={t("foydalanuvchilar.title")} tavsif={t("foydalanuvchilar.subtitle")} />
+      <SahifaSarlavhasi eyebrow={t("eyebrow")} sarlavha={t("foydalanuvchilar.title")} tavsif={t("foydalanuvchilar.subtitle")} ikonka={<Users size={26} />} />
 
       <div className="flex flex-col gap-3 lg:flex-row">
-        <label className="flex h-11 w-full items-center gap-3 rounded-2xl border border-orange-100 bg-white px-4 shadow-sm focus-within:border-orange-300 focus-within:ring-4 focus-within:ring-orange-50 lg:max-w-md">
-          <Search size={18} className="text-orange-400" />
-          <input value={qidiruv} onChange={(event) => setQidiruv(event.target.value)} placeholder={t("foydalanuvchilar.qidiruv")} className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-700 outline-none" />
-        </label>
+        <QidiruvMaydoni qiymat={qidiruv} onOzgarish={setQidiruv} placeholder={t("foydalanuvchilar.qidiruv")} className="lg:max-w-md" />
         <select
           value={workspaceId}
           onChange={(event) => {
@@ -140,7 +138,7 @@ export default function AdminFoydalanuvchilar() {
         </select>
       </div>
 
-      {xatolik && <div className="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">{xatolik}</div>}
+      {xatolik && <XatoXabari matn={xatolik} />}
 
       {yuklanmoqda && royxat.length === 0 ? (
         <LoadingState matn={t("common.yuklanmoqda")} ikonka={<Users size={24} />} />
@@ -150,7 +148,7 @@ export default function AdminFoydalanuvchilar() {
         <div className={jadvalKlass}>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px]">
-              <thead className="bg-[#FFF7F0]">
+              <thead className={theadKlass}>
                 <tr>
                   <th className={thKlass}>{t("foydalanuvchilar.foydalanuvchi")}</th>
                   <th className={thKlass}>{t("foydalanuvchilar.rol")}</th>
@@ -159,26 +157,43 @@ export default function AdminFoydalanuvchilar() {
                   <th className="w-32 px-5 py-4" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-orange-100/70">
+              <tbody className={tbodyKlass}>
                 {royxat.map((foydalanuvchi) => {
                   const oziMi = foydalanuvchi.id === joriyProfil?.id;
                   // Super adminlar (shu jumladan o'zi) ustida amal bajarib bo'lmaydi — backend 403 qaytaradi.
                   const cheklangan = oziMi || Boolean(foydalanuvchi.isStaff);
                   return (
-                    <tr key={foydalanuvchi.id} className="transition hover:bg-orange-50/40">
+                    <tr key={foydalanuvchi.id} className={trKlass}>
                       <td className={tdKlass}>
-                        <p className="flex items-center gap-2 font-black text-slate-900">
-                          {foydalanuvchi.fullName || foydalanuvchi.username}
-                          {foydalanuvchi.isStaff && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-black text-violet-600 ring-1 ring-violet-100">
-                              <ShieldCheck size={11} /> {t("foydalanuvchilar.superAdmin")}
-                            </span>
-                          )}
-                        </p>
-                        <p className="mt-0.5 text-xs font-semibold text-slate-400">@{foydalanuvchi.username}</p>
+                        <div className="flex items-center gap-3">
+                          <Avatar nom={foydalanuvchi.fullName || foydalanuvchi.username} />
+                          <div className="min-w-0">
+                            <p className="flex flex-wrap items-center gap-2 font-black text-slate-900">
+                              {foydalanuvchi.fullName || foydalanuvchi.username}
+                              {foydalanuvchi.isStaff && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-black text-violet-600 ring-1 ring-violet-200/70">
+                                  <ShieldCheck size={11} /> {t("foydalanuvchilar.superAdmin")}
+                                </span>
+                              )}
+                            </p>
+                            <p className="mt-0.5 text-xs font-medium text-slate-400">@{foydalanuvchi.username}</p>
+                          </div>
+                        </div>
                       </td>
-                      <td className={tdKlass}>{foydalanuvchi.role ? t(`foydalanuvchilar.rollar.${foydalanuvchi.role}`, { defaultValue: foydalanuvchi.role }) : "—"}</td>
-                      <td className={tdKlass}>{kompaniyaNomi(foydalanuvchi)}</td>
+                      <td className={tdKlass}>
+                        {foydalanuvchi.role ? (
+                          <Belgi rang={ROL_RANGI[foydalanuvchi.role] ?? "kulrang"} nuqta={false}>
+                            {t(`foydalanuvchilar.rollar.${foydalanuvchi.role}`, { defaultValue: foydalanuvchi.role })}
+                          </Belgi>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className={tdKlass}>
+                        <span className="inline-flex items-center gap-2 text-sm font-medium text-slate-600">
+                          <Building2 size={14} className="shrink-0 text-slate-300" /> {kompaniyaNomi(foydalanuvchi)}
+                        </span>
+                      </td>
                       <td className={tdKlass}>{foydalanuvchi.isActive ? <Belgi rang="yashil">{t("common.faol")}</Belgi> : <Belgi rang="qizil">{t("foydalanuvchilar.bloklangan")}</Belgi>}</td>
                       <td className={`${tdKlass} text-right`}>
                         <div className="flex items-center justify-end gap-2">
@@ -198,6 +213,7 @@ export default function AdminFoydalanuvchilar() {
               </tbody>
             </table>
           </div>
+          <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-3 text-xs font-semibold text-slate-400">{t("common.natija", { count: royxat.length })}</div>
         </div>
       )}
 

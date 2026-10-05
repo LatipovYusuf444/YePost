@@ -7,15 +7,15 @@ import { useAuthProfileStore } from "@/store/authProfileStore";
 import type { PlatformSupportTicket, QollabQuvvatlashXabari, SupportTicketHolati } from "@/types/support";
 import { KunlarRoyxati } from "@/Pages/Support/SupportXabarlari";
 import { guruhlash } from "@/Pages/Support/supportYordamchilar";
-import { SahifaSarlavhasi } from "./AdminUI";
+import { Avatar, SahifaSarlavhasi, XatoXabari } from "./AdminUI";
 
 type HolatFiltri = "ALL" | SupportTicketHolati;
 
 const FILTRLAR: HolatFiltri[] = ["ACTIVE", "IN_PROGRESS", "COMPLETED", "ALL"];
 const HOLAT_RANGI: Record<SupportTicketHolati, string> = {
-  ACTIVE: "bg-emerald-50 text-emerald-600",
-  IN_PROGRESS: "bg-amber-50 text-amber-600",
-  COMPLETED: "bg-slate-100 text-slate-500",
+  ACTIVE: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/70",
+  IN_PROGRESS: "bg-amber-50 text-amber-700 ring-1 ring-amber-200/70",
+  COMPLETED: "bg-slate-100 text-slate-500 ring-1 ring-slate-200",
 };
 
 function royxatVaqti(iso?: string | null) {
@@ -187,21 +187,14 @@ export default function AdminQollabQuvvatlash() {
 
   return (
     <div className="space-y-5">
-      <SahifaSarlavhasi eyebrow={t("eyebrow")} sarlavha={t("qollabQuvvatlash.sarlavha")} tavsif={t("qollabQuvvatlash.tavsif")} />
+      <SahifaSarlavhasi eyebrow={t("eyebrow")} sarlavha={t("qollabQuvvatlash.sarlavha")} tavsif={t("qollabQuvvatlash.tavsif")} ikonka={<Headset size={26} />} />
 
-      {xato && (
-        <div className="flex items-start justify-between gap-3 rounded-2xl border border-red-100 bg-red-50 p-3 text-sm font-bold text-red-600">
-          <span>{xato}</span>
-          <button type="button" onClick={() => setXato("")} className="font-black">
-            {t("qollabQuvvatlash.yopish")}
-          </button>
-        </div>
-      )}
+      {xato && <XatoXabari matn={xato} yopish={() => setXato("")} />}
 
       <div className="grid h-[calc(100vh-260px)] min-h-[520px] gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
-        <aside className={`${tanlangan ? "hidden lg:flex" : "flex"} min-h-0 flex-col overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-sm`}>
-          <div className="space-y-3 border-b border-orange-100 p-4">
-            <label className="flex h-11 items-center gap-2 rounded-2xl border border-orange-100 bg-[#F8FAFC] px-3 focus-within:border-orange-300 focus-within:bg-white">
+        <aside className={`${tanlangan ? "hidden lg:flex" : "flex"} min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-[0_4px_20px_rgba(15,23,42,.05)]`}>
+          <div className="space-y-3 border-b border-slate-100 p-4">
+            <label className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 transition focus-within:border-orange-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-orange-100">
               <Search size={17} className="shrink-0 text-slate-400" />
               <input
                 value={qidiruv}
@@ -217,7 +210,7 @@ export default function AdminQollabQuvvatlash() {
                   type="button"
                   onClick={() => setFiltr(kalit)}
                   className={`h-8 rounded-lg px-1 text-[11px] font-bold transition ${
-                    filtr === kalit ? "bg-white text-[#2563EB] shadow-sm" : "text-slate-500 hover:text-slate-800"
+                    filtr === kalit ? "bg-white text-orange-600 shadow-sm" : "text-slate-500 hover:text-slate-800"
                   }`}
                 >
                   {t(`qollabQuvvatlash.filtr.${kalit}`)}
@@ -233,7 +226,7 @@ export default function AdminQollabQuvvatlash() {
               </div>
             ) : tickets.length === 0 ? (
               <div className="flex h-48 flex-col items-center justify-center gap-2 px-6 text-center text-sm font-semibold text-slate-400">
-                <MessageSquare size={30} className="text-orange-200" />
+                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 text-orange-300"><MessageSquare size={26} /></span>
                 {t("qollabQuvvatlash.bosh")}
               </div>
             ) : (
@@ -245,13 +238,14 @@ export default function AdminQollabQuvvatlash() {
                     setTanlangan(ticket);
                     setMatn("");
                   }}
-                  className={`flex w-full flex-col gap-1.5 border-b border-slate-100 px-4 py-3.5 text-left transition ${
-                    tanlanganId === ticket.id ? "bg-orange-50" : "hover:bg-slate-50"
+                  className={`relative flex w-full flex-col gap-1.5 border-b border-slate-100 px-4 py-3.5 text-left transition ${
+                    tanlanganId === ticket.id ? "bg-orange-50/70" : "hover:bg-slate-50"
                   }`}
                 >
+                  {tanlanganId === ticket.id && <span className="absolute inset-y-0 left-0 w-1 bg-orange-500" />}
                   <span className="flex items-center justify-between gap-2">
-                    <span className="flex min-w-0 items-center gap-1.5 text-xs font-bold text-[#2563EB]">
-                      <Building2 size={13} className="shrink-0" />
+                    <span className="flex min-w-0 items-center gap-2 text-xs font-bold text-orange-600">
+                      <Avatar nom={ticket.workspace?.name ?? "?"} kattalik="sm" />
                       <span className="truncate">{ticket.workspace?.name ?? "—"}</span>
                     </span>
                     <span className="shrink-0 text-[11px] font-semibold text-slate-400">{royxatVaqti(ticket.lastMessageAt ?? ticket.createdAt)}</span>
@@ -259,7 +253,7 @@ export default function AdminQollabQuvvatlash() {
                   <span className="flex items-center justify-between gap-2">
                     <span className="truncate text-sm font-black text-slate-800">{ticket.isGeneral ? tSupport("inbox.generalSubject") : ticket.subject}</span>
                     {Boolean(ticket.unreadCount) && (
-                      <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[#2563EB] px-1.5 text-[11px] font-black text-white">
+                      <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-black text-white">
                         {ticket.unreadCount}
                       </span>
                     )}
@@ -275,16 +269,16 @@ export default function AdminQollabQuvvatlash() {
           </div>
         </aside>
 
-        <section className={`${tanlangan ? "flex" : "hidden lg:flex"} min-h-0 flex-col overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-sm`}>
+        <section className={`${tanlangan ? "flex" : "hidden lg:flex"} min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-[0_4px_20px_rgba(15,23,42,.05)]`}>
           {!tanlangan ? (
             <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-slate-400">
-              <Headset size={40} className="text-orange-200" />
+              <span className="flex h-20 w-20 items-center justify-center rounded-3xl bg-orange-50 text-orange-300 ring-8 ring-orange-50/60"><Headset size={36} /></span>
               <p className="font-black text-slate-600">{t("qollabQuvvatlash.tanlang")}</p>
               <p className="text-sm">{t("qollabQuvvatlash.tanlangTavsif")}</p>
             </div>
           ) : (
             <>
-              <header className="flex flex-wrap items-center gap-3 border-b border-orange-100 px-5 py-4">
+              <header className="flex flex-wrap items-center gap-3 border-b border-slate-100 bg-gradient-to-b from-orange-50/50 to-white px-5 py-4">
                 <button
                   type="button"
                   onClick={() => setTanlangan(null)}
@@ -294,7 +288,7 @@ export default function AdminQollabQuvvatlash() {
                   <ArrowLeft size={18} />
                 </button>
                 <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-1.5 text-xs font-bold text-[#2563EB]">
+                  <p className="flex items-center gap-1.5 text-xs font-bold text-orange-600">
                     <Building2 size={13} />
                     {tanlangan.workspace?.name ?? "—"}
                   </p>
@@ -309,7 +303,7 @@ export default function AdminQollabQuvvatlash() {
                     type="button"
                     disabled={amalBajarilmoqda}
                     onClick={() => void amalBajarish(() => platformSupportApi.biriktirish(tanlangan.id))}
-                    className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#2563EB] px-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#1D4ED8] disabled:opacity-50"
+                    className="inline-flex h-10 items-center gap-2 rounded-xl bg-orange-500 px-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-orange-600 disabled:opacity-50"
                   >
                     <UserCheck size={16} />
                     <span className="hidden sm:inline">{t("qollabQuvvatlash.ozimgaBiriktirish")}</span>
@@ -321,7 +315,7 @@ export default function AdminQollabQuvvatlash() {
                       type="button"
                       disabled={amalBajarilmoqda}
                       onClick={() => void amalBajarish(() => platformSupportApi.holat(tanlangan.id, "ACTIVE"))}
-                      className="inline-flex h-10 items-center gap-2 rounded-xl border border-blue-200 px-3.5 text-sm font-bold text-blue-600 transition hover:bg-blue-50 disabled:opacity-50"
+                      className="inline-flex h-10 items-center gap-2 rounded-xl border border-orange-200 px-3.5 text-sm font-bold text-orange-600 transition hover:bg-orange-50 disabled:opacity-50"
                     >
                       <RotateCcw size={15} />
                       <span className="hidden sm:inline">{t("qollabQuvvatlash.qaytaOchish")}</span>
@@ -342,7 +336,7 @@ export default function AdminQollabQuvvatlash() {
               <div className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-slate-50/60 px-5 py-5">
                 {nextCursor && (
                   <div className="flex justify-center">
-                    <button type="button" onClick={() => void oldingilarniYuklash()} className="rounded-full bg-white px-4 py-1.5 text-xs font-bold text-[#2563EB] shadow-sm ring-1 ring-slate-200 transition hover:bg-orange-50">
+                    <button type="button" onClick={() => void oldingilarniYuklash()} className="rounded-full bg-white px-4 py-1.5 text-xs font-bold text-orange-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-orange-50">
                       {t("qollabQuvvatlash.oldingilar")}
                     </button>
                   </div>
@@ -374,13 +368,13 @@ export default function AdminQollabQuvvatlash() {
                     }}
                     rows={2}
                     placeholder={t("qollabQuvvatlash.javobYozing")}
-                    className="min-h-12 flex-1 resize-none rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-orange-300 focus:ring-4 focus:ring-orange-50"
+                    className="min-h-12 flex-1 resize-none rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                   />
                   <button
                     type="button"
                     onClick={() => void javobYuborish()}
                     disabled={!matn.trim() || yuborilmoqda}
-                    className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#2563EB] px-5 text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,235,.22)] transition hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+                    className="inline-flex h-12 items-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-md shadow-orange-500/25 transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
                   >
                     {yuborilmoqda ? <LoaderCircle size={16} className="animate-spin" /> : <Send size={16} />}
                     {t("qollabQuvvatlash.yuborish")}
