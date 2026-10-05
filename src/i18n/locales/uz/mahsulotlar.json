@@ -164,9 +164,9 @@
     "generateShort": "Generatsiya",
     "priceTable": {
       "variation": "Variatsiya",
-      "costPrice": "Kelish narxi *",
+      "costPrice": "Kelish narxi",
       "markup": "Ustama",
-      "retailPrice": "Sotuv narxi *",
+      "retailPrice": "Sotuv narxi",
       "wholesalePrice": "Ulgurji narx"
     },
     "baseVariant": {

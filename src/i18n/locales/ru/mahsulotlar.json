@@ -164,9 +164,9 @@
     "generateShort": "Сгенерировать",
     "priceTable": {
       "variation": "Вариация",
-      "costPrice": "Цена закупки *",
+      "costPrice": "Цена закупки",
       "markup": "Наценка",
-      "retailPrice": "Цена продажи *",
+      "retailPrice": "Цена продажи",
       "wholesalePrice": "Оптовая цена"
     },
     "baseVariant": {

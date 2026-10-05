@@ -713,6 +713,18 @@ function cleanRemoteImage(value: string) {
   return clean && !clean.startsWith("blob:") ? clean : "";
 }
 
+// Narx majburiy emas: hech bir narx maydoni to'ldirilmagan bo'lsa narx umuman yuborilmaydi
+// (aks holda backendga 0 ketib, "Narx mavjud emas" o'rniga "0" saqlanib qolardi).
+function narxYigish(draft?:Pick<VariantDraft,"costPrice"|"retailPrice"|"wholesalePrice"|"retailCurrency">) {
+  if(!draft||(!draft.costPrice&&!draft.retailPrice&&!draft.wholesalePrice))return undefined;
+  return {
+    costPrice:Number(draft.costPrice||0),
+    retailPrice:Number(draft.retailPrice||0),
+    wholesalePrice:Number(draft.wholesalePrice||draft.retailPrice||0),
+    currency:draft.retailCurrency??"UZS",
+  };
+}
+
 // Tan narx va ustama (%) dan sotuv narxi; USD uchun kasr saqlanishi uchun 2 xonagacha yaxlitlanadi.
 function ustamadanNarx(cost:number,markup:number) {
   return String(Math.round((cost+(cost*markup/100))*100)/100);
@@ -929,12 +941,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
         imageUrl:cleanRemoteImage(variantDrafts[combo.key]?.imageUrl??"")||undefined,
         minStock:numericOrZero(variantStockDrafts[combo.key]?.minStock??""),
         params:{...combo.params,...characteristicParams},
-        price:{
-          costPrice:Number(variantDrafts[combo.key]?.costPrice||0),
-          retailPrice:Number(variantDrafts[combo.key]?.retailPrice||0),
-          wholesalePrice:Number(variantDrafts[combo.key]?.wholesalePrice||variantDrafts[combo.key]?.retailPrice||0),
-          currency:variantDrafts[combo.key]?.retailCurrency??"UZS",
-        },
+        price:narxYigish(variantDrafts[combo.key]),
       }));
     if(!name.trim()||!categoryId||!unitId||(!editing&&generatedVariants.length===0&&!barcode.trim()))return;
     let productUnitId=unitId;
@@ -962,34 +969,27 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
           imageUrl:safeImageUrl||undefined,
           minStock:numericOrZero(baseStock.minStock),
           params:hasDefaultParams?defaultParams:undefined,
-          price:{
-            costPrice:Number(baseDraft.costPrice||0),
-            retailPrice:Number(baseDraft.retailPrice||0),
-            wholesalePrice:Number(baseDraft.wholesalePrice||baseDraft.retailPrice||0),
-            currency:baseDraft.retailCurrency??"UZS",
-          },
+          price:narxYigish(baseDraft),
         });
     // Tahrirlashda, oddiy (variatsiyasiz) mahsulotning "Asosiy variant narxlari"
     // bo'limi alohida — mavjud variantga (yoki hali yo'q bo'lsa, yangisiga) saqlanadi,
     // aks holda mahsulotning o'z maydonlari saqlanib, narx o'zgarishi tashlab ketilardi.
     if(ok&&editing&&generatedVariants.length===0){
       const asosiyVariant=store.modifikatsiyalar[item.id]?.[0];
-      const narx={
-        costPrice:Number(baseDraft.costPrice||0),
-        retailPrice:Number(baseDraft.retailPrice||0),
-        wholesalePrice:Number(baseDraft.wholesalePrice||baseDraft.retailPrice||0),
-        currency:baseDraft.retailCurrency??"UZS",
-      };
-      ok=await store.modifikatsiyaSaqlash(item.id,asosiyVariant?.id??null,{
-        name:asosiyVariant?.name||undefined,
-        barcode:asosiyVariant?.barcode||barcode.trim()||generateBarcodeValue(),
-        article:asosiyVariant?.article||article.trim()||undefined,
-        price:narx,
-      });
-      // Mavjud variantni tahrirlashda backend narxni asosiy PATCH orqali qabul qilmaydi —
-      // narx faqat alohida /price endpointi orqali haqiqiy saqlanadi (ModForm'dagi kabi),
-      // aks holda so'rov ketadi-yu, jadvalda eski narx qolib ketaveradi.
-      if(ok&&asosiyVariant)ok=await store.narxYangilash(item.id,asosiyVariant.id,narx);
+      const narx=narxYigish(baseDraft);
+      // Narx kiritilmagan va asosiy variant ham yo'q bo'lsa, narxsiz yangi variant yaratilmaydi.
+      if(narx||asosiyVariant){
+        ok=await store.modifikatsiyaSaqlash(item.id,asosiyVariant?.id??null,{
+          name:asosiyVariant?.name||undefined,
+          barcode:asosiyVariant?.barcode||barcode.trim()||generateBarcodeValue(),
+          article:asosiyVariant?.article||article.trim()||undefined,
+          price:narx,
+        });
+        // Mavjud variantni tahrirlashda backend narxni asosiy PATCH orqali qabul qilmaydi —
+        // narx faqat alohida /price endpointi orqali haqiqiy saqlanadi (ModForm'dagi kabi),
+        // aks holda so'rov ketadi-yu, jadvalda eski narx qolib ketaveradi.
+        if(ok&&narx&&asosiyVariant)ok=await store.narxYangilash(item.id,asosiyVariant.id,narx);
+      }
     }
     if(ok)onClose()
   }
