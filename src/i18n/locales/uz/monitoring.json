@@ -10,21 +10,34 @@
     "peak": "Eng yuqori natija",
     "activePeriods": "{{count}} ta faol davr",
     "grouping": "Guruhlash",
-    "averageLine": "O'rtacha chiziq",
+    "averageLine": "O'rtachani ko'rsatish",
     "cashExpense": "Kassa xarajatlari",
     "stockExpense": "Ombor chiqimi",
-    "salesLegend": "Tasdiqlangan savdo",
-    "incomeLegend": "Har bir davr kirimi",
+    "salesLegend": "Tasdiqlangan savdo summasi",
+    "incomeLegend": "Davr bo'yicha kirim",
     "expenseLegend": "Kassa xarajatlari",
-    "confirmedOnly": "Faqat tasdiqlangan sotuvlar hisoblangan",
-    "noForecast": "Haqiqiy natijalar",
+    "confirmedOnly": "Faqat tasdiqlangan sotuvlar. Sof tushum (qaytarishlar ayirilgan) yuqoridagi kartada",
+    "noForecast": "Prognoz emas, haqiqiy ma'lumot",
     "emptyHint": "Boshqa sana oralig'ini tanlang yoki ma'lumotlarni yangilang.",
     "loadError": "Grafik ma'lumotlarini yuklab bo'lmadi",
     "loading": "Ma'lumot yuklanmoqda...",
     "currency": "so'm",
     "million": "mln",
     "billion": "mlrd",
-    "thousand": "ming"
+    "thousand": "ming",
+    "totalSales": "Davrdagi jami savdo (qaytarishlar ayirilmagan)",
+    "totalIncome": "Davrdagi jami kirim",
+    "totalExpense": "Davrdagi jami chiqim",
+    "bestDaily": "Eng yaxshi kun",
+    "bestMonthly": "Eng yaxshi oy",
+    "bestYearly": "Eng yaxshi yil",
+    "avgDaily": "Kuniga o'rtacha",
+    "avgMonthly": "Oyiga o'rtacha",
+    "avgYearly": "Yiliga o'rtacha",
+    "activeDaily": "Savdo bo'lgan kunlar: {{count}} ta",
+    "activeMonthly": "Savdo bo'lgan oylar: {{count}} ta",
+    "activeYearly": "Savdo bo'lgan yillar: {{count}} ta",
+    "rangeHint": "Tanlangan sana oralig'i"
   },
   "tabs": {
     "savdo": "Savdo va moliya",
@@ -36,18 +49,27 @@
     "yearly": "Yillik"
   },
   "kpi": {
-    "periodSales": "Tanlangan davr savdosi",
+    "periodSales": "Savdo summasi",
     "periodSalesSub": "{{count}} ta tasdiqlangan sotuv",
+    "periodSalesHint": "Savdo summasi = tasdiqlangan sotuvlar − qaytarilgan tovarlar summasi",
+    "returnedDeducted": "Qaytarilgan (ayirilgan)",
+    "loading": "Yuklanmoqda...",
     "netProfit": "Sof foyda",
-    "netProfitSub": "Rentabellik {{percent}}%",
-    "totalDebt": "Jami qarzdorlik",
+    "netProfitSub": "Savdodan foyda ulushi: {{percent}}%",
+    "netProfitHint": "Sof foyda = yalpi foyda (tushum − tannarx) − xarajatlar. Qaytarishlar tushum va tannarxdan allaqachon ayirilgan",
+    "grossProfit": "Yalpi foyda",
+    "expenses": "Xarajatlar",
+    "totalDebt": "Mijozlar qarzi",
     "totalDebtSub": "{{count}} ta qarzdor mijoz",
-    "stockValue": "Ombordagi qoldiq qiymati",
-    "stockValueSub": "{{count}} ta ombor",
+    "stockValue": "Ombor qoldig'i qiymati",
+    "stockValueSub": "{{count}} ta ombor bo'yicha",
     "salesCount": "Sotuvlar soni",
-    "salesCountSub": "O'rtacha chek {{avg}}",
-    "trendNew": "Yangi",
-    "trendCurrent": "Joriy holat"
+    "salesCountSub": "O'rtacha chek: {{avg}}",
+    "trendNew": "Taqqoslash yo'q",
+    "trendNewHint": "Oldingi davrda ma'lumot yo'q, shuning uchun foizda taqqoslab bo'lmaydi",
+    "trendVsPrevious": "Oldingi davrga nisbatan",
+    "trendCurrent": "Hozirgi holat",
+    "trendCurrentHint": "Bu ko'rsatkich tanlangan davrga emas, bugungi holatga qarab hisoblanadi"
   },
   "mini": {
     "warehouses": "Omborlar soni",
@@ -56,7 +78,7 @@
   "charts": {
     "salesTrend": {
       "title": "Savdo dinamikasi",
-      "subtitle": "Tasdiqlangan sotuvlar bo'yicha, tanlangan sana oralig'ida",
+      "subtitle": "Tasdiqlangan sotuvlar summasi: kun, oy yoki yil kesimida",
       "current": "Joriy davr",
       "previous": "Oldingi davr"
     },
@@ -66,7 +88,7 @@
     },
     "income": {
       "title": "Kirim dinamikasi",
-      "subtitle": "Tanlangan davr bo'yicha tushgan pul mablag'lari"
+      "subtitle": "Tanlangan davrda kassaga tushgan pul mablag'lari"
     },
     "expense": {
       "title": "Chiqim dinamikasi",

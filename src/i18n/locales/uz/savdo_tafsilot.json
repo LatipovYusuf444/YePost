@@ -343,8 +343,12 @@
       "narxKatta": "Narx 0 dan katta bo'lishi kerak.",
       "miqdorKatta": "Miqdor 0 dan katta bo'lishi kerak.",
       "miqdorOshmasin": "Miqdor qoldiqdan oshmasin: {{qty}} dona.",
-      "omborniTanlang": "Omborni tanlang."
+      "omborniTanlang": "Omborni tanlang.",
+      "chegirmaOshmasin": "Chegirma qator summasidan oshmasin."
     },
+    "chegirmaPlaceholder": "Chegirma (so'm)",
+    "chegirmaQatori": "Chegirma: {{summa}}",
+    "narxQulflangan": "Narx ombordagi haqiqiy narx bo'yicha belgilanadi va o'zgartirilmaydi",
     "shtrixKod": "Shtrix-kod: {{value}}",
     "artikul": "Artikul: {{value}}"
   },

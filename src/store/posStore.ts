@@ -12,13 +12,28 @@ export type CartItem = {
   warehouseId?: string;
   warehouseName?: string;
   soni: number;
+  // Kassir kiritgan haqiqiy sotuv narxi (bir dona uchun). Bo'sh bo'lsa — katalog narxi (`narx`).
+  // Katalog narxidan farqi chegirma sifatida avtomatik hisoblanadi.
+  sotuvNarxi?: number;
 };
+
+// Haqiqiy sotuv narxi: katalog narxidan baland yoki noto'g'ri qiymat bo'lsa katalog narxi olinadi.
+export function savatchaSotuvNarxi(item: Pick<CartItem, "narx" | "sotuvNarxi">) {
+  const narx = item.sotuvNarxi;
+  return narx != null && narx > 0 && narx < item.narx ? narx : item.narx;
+}
+
+// Avtomatik chegirma: (katalog narxi − sotuv narxi) × miqdor. Masalan 18 000 → 17 800 bo'lsa, 1 dona uchun 200 so'm.
+export function savatchaChegirma(item: Pick<CartItem, "narx" | "sotuvNarxi" | "soni">) {
+  return Math.round((item.narx - savatchaSotuvNarxi(item)) * item.soni);
+}
 
 type PosState = {
   cart: CartItem[];
   addToCart: (item: Omit<CartItem, "soni">, quantity?: number) => void;
   updateQuantity: (productId: string, nextQuantity: number) => void;
   updatePriceType: (priceType: "chakana" | "ulgurji") => void;
+  setSotuvNarxi: (productId: string, narx?: number) => void;
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
 };
@@ -66,7 +81,14 @@ export const usePosStore = create<PosState>()(
           cart: state.cart.map((item) => ({
             ...item,
             narx: priceType === "ulgurji" ? item.ulgurjiNarx || item.chakanaNarx : item.chakanaNarx,
+            // Narx turi o'zgarganda qo'lda kiritilgan sotuv narxi tashlab yuboriladi.
+            sotuvNarxi: undefined,
           })),
+        }));
+      },
+      setSotuvNarxi: (productId, narx) => {
+        set((state) => ({
+          cart: state.cart.map((item) => (item.id === productId ? { ...item, sotuvNarxi: narx } : item)),
         }));
       },
       removeFromCart: (productId) => {

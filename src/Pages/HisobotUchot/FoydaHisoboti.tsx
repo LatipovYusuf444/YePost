@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Download, Search } from "lucide-react";
+import { Link } from "react-router-dom";
 import KengaytiriladiganJadval, { type Ustun } from "./KengaytiriladiganJadval";
 import Dropdown from "./Dropdown";
 import MuddatTanlov from "./MuddatTanlov";
@@ -76,7 +77,9 @@ export default function FoydaHisoboti() {
             foyda,
             rentabellik: Number(item.marginPct ?? (tushum ? (foyda / tushum) * 100 : 0)),
           };
-        }));
+        })
+          // To'liq qaytarilgan mahsulotlar nol bo'lib qoladi — ro'yxatda ko'rsatilmaydi.
+          .filter((qator) => qator.sotilgan !== 0 || qator.tushum !== 0 || qator.tannarx !== 0));
       })
       .catch((error) => { if (active) setXato(getApiErrorMessage(error)); })
       .finally(() => { if (active) setYuklanmoqda(false); });
@@ -105,7 +108,7 @@ export default function FoydaHisoboti() {
     { id: "sotilgan", nom: "Sotilgan miqdor", kenglik: 160, hizalash: "right", katak: (item) => son(item.sotilgan), jami: () => son(jami.sotilgan) },
     { id: "tushum", nom: "Tushum", kenglik: 180, hizalash: "right", katak: (item) => pul(item.tushum), jami: () => pul(jami.tushum) },
     { id: "tannarx", nom: "Tannarx", kenglik: 180, hizalash: "right", katak: (item) => pul(item.tannarx), jami: () => pul(jami.tannarx) },
-    { id: "foyda", nom: "Foyda", kenglik: 180, hizalash: "right", katak: (item) => <span className={item.foyda >= 0 ? "font-black text-emerald-600" : "font-black text-red-500"}>{pul(item.foyda)}</span>, jami: () => <span className={jami.foyda >= 0 ? "text-emerald-600" : "text-red-500"}>{pul(jami.foyda)}</span> },
+    { id: "foyda", nom: "Yalpi foyda", kenglik: 180, hizalash: "right", katak: (item) => <span className={item.foyda >= 0 ? "font-black text-emerald-600" : "font-black text-red-500"}>{pul(item.foyda)}</span>, jami: () => <span className={jami.foyda >= 0 ? "text-emerald-600" : "text-red-500"}>{pul(jami.foyda)}</span> },
     { id: "rentabellik", nom: "Rentabellik", kenglik: 150, hizalash: "right", katak: (item) => `${item.rentabellik.toFixed(2)}%`, jami: () => `${jami.rentabellik.toFixed(2)}%` },
   ];
 
@@ -134,6 +137,9 @@ export default function FoydaHisoboti() {
         <Dropdown label="Mahsulot kategoriyasi" value={categoryId} options={[{ value: "", nomi: "Barchasi" }, ...kategoriyalar.map((item) => ({ value: item.id, nomi: item.nomi }))]} onChange={setCategoryId} />
       </div>
     </section>
+    <p className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700">
+      Yalpi foyda = tushum − tannarx (qaytarilgan tovarlar ayirilgan, operatsion xarajatlarsiz). Sof foyda — xarajatlar ayirilgan natija — <Link to="/hisobotlar/foyda-xarajat" className="font-black underline underline-offset-2">«Foyda va xarajat»</Link> sahifasida.
+    </p>
     {xato && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <button type="button" disabled={exportYuklanmoqda} onClick={() => void eksport()} className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-bold text-orange-600 shadow-sm disabled:opacity-50"><Download size={16}/>{exportYuklanmoqda ? "Yuklanmoqda..." : "Excel (.xlsx)"}</button>

@@ -9,6 +9,7 @@ import {
   mijozNomi,
   pulniFormatlash,
   qaytarishSummasi,
+  sotuvChegirmaSummasi,
   sotuvHolati,
   sotuvJadvalId,
   sotuvMahsulotiId,
@@ -178,7 +179,7 @@ export default function SotuvlarJadvali({
   return (
     <div className="px-5 pb-6 sm:px-10 sm:pb-10">
       <div className={`overflow-x-auto transition-opacity ${serverSahifalash?.yuklanmoqda ? "opacity-50" : ""}`}>
-        <table className={`w-full border-collapse text-left text-sm ${tarixKorinish ? "min-w-[1180px]" : "min-w-[1120px]"}`}>
+        <table className={`w-full border-collapse text-left text-sm ${tarixKorinish ? "min-w-[1280px]" : "min-w-[1220px]"}`}>
           <thead className="text-[13px] font-medium text-slate-500">
             <tr>
               <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.savdoRaqami")}</th>
@@ -187,6 +188,7 @@ export default function SotuvlarJadvali({
                 <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.tolovTuri")}</th>
               )}
               <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.summa")}</th>
+              <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.chegirma")}</th>
               {!tarixKorinish && (
                 <>
                   <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.tolov")}</th>
@@ -215,6 +217,7 @@ export default function SotuvlarJadvali({
               const paymentType = sotuv.payments?.[0]?.paymentType;
               const holat = sotuvHolati(sotuv);
               const jami = sotuvSummasi(sotuv);
+              const chegirma = sotuvChegirmaSummasi(sotuv);
               const tolangan = sotuvTolanganSummasi(sotuv);
               const tolanganFoiz = jami > 0 ? Math.min(100, Math.round((tolangan / jami) * 100)) : 0;
               const qarz = sotuvQarzdorlikSummasi(sotuv);
@@ -250,6 +253,13 @@ export default function SotuvlarJadvali({
                   )}
                   <td className="whitespace-nowrap border-b border-gray-100 px-4 py-3.5 font-semibold text-emerald-700">
                     {pulniFormatlash(jami)}
+                  </td>
+                  <td className="whitespace-nowrap border-b border-gray-100 px-4 py-3.5 font-semibold tabular-nums">
+                    {chegirma > 0 ? (
+                      <span className="text-lime-700">{pulniFormatlash(chegirma)}</span>
+                    ) : (
+                      <span className="text-slate-300">—</span>
+                    )}
                   </td>
                   {!tarixKorinish && (
                     <>
@@ -357,7 +367,7 @@ export default function SotuvlarJadvali({
 
             {sotuvlar.length === 0 && (
               <tr>
-                <td colSpan={tarixKorinish ? 10 : onOchirish ? 9 : 8} className="px-6 py-20 text-center">
+                <td colSpan={tarixKorinish ? 11 : onOchirish ? 10 : 9} className="px-6 py-20 text-center">
                   <ReceiptText className="mx-auto text-orange-200" size={40} />
                   <p className="mt-3 font-semibold text-gray-500">{effectiveBoshMatn}</p>
                   <p className="mt-1 text-sm text-gray-400">

@@ -4,7 +4,12 @@
     "emptyTitle": "Корзина пуста",
     "emptySubtitle": "Пока не выбран ни один товар",
     "removeAria": "Удалить товар из корзины",
-    "close": "Закрыть"
+    "close": "Закрыть",
+    "salePriceLabel": "Цена продажи",
+    "resetPrice": "Вернуть цену из каталога",
+    "salePriceTooHigh": "Не выше цены каталога ({{narx}})",
+    "autoDiscount": "Скидка: −{{summa}}",
+    "autoDiscountEach": "({{bir}} × {{soni}} шт.)"
   },
   "customerType": {
     "donalik": "Разовый клиент",
@@ -19,8 +24,11 @@
   "customer": {
     "label": "Клиент",
     "namePlaceholder": "Имя, фамилия",
-    "discountLabel": "Скидка",
-    "discountPlaceholder": "Введите скидку",
+    "discountLabel": "Общая скидка",
+    "discountPlaceholder": "Введите общую скидку",
+    "autoDiscountLine": "Скидка на цену (автоматически)",
+    "extraDiscountLine": "Общая скидка",
+    "totalDiscount": "Итого скидка",
     "currency": "UZS",
     "addNote": "Добавить примечание",
     "notePlaceholder": "Примечание...",

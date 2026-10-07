@@ -126,9 +126,10 @@
     "rowTotal": "Qator jami",
     "product": "Mahsulot",
     "image": "Rasm",
-    "price": "Narx (so'm)",
+    "price": "Katalog narxi (so'm)",
+    "salePrice": "Sotuv narxi (so'm)",
     "quantity": "Miqdor",
-    "discount": "Chegirma (so'm)",
+    "discount": "Chegirma (so'm, jami)",
     "priceLocked": "Narx ombordagi haqiqiy narx bo'yicha belgilanadi va o'zgartirilmaydi"
   },
   "placeholders": {
@@ -158,6 +159,7 @@
     "addRow": "Qo'shish"
   },
   "products": {
+    "autoDiscountHint": "Katalog narxi {{katalog}}, sotuv narxi {{sotuv}}: har bir dona uchun {{bir}} chegirma avtomatik hisoblandi (jami {{jami}}).",
     "removeRowAriaLabel": "Mahsulot qatorini o'chirish",
     "imageButtonTitle": "Rasm",
     "stockLabelShort": "qoldiq",

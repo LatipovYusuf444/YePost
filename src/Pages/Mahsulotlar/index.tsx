@@ -141,6 +141,15 @@ function standardUnitLabel(unit: StandardUnit) {
     : unit.nameUz;
 }
 
+// Yangi mahsulot uchun boshlang'ich birlik: avval "dona" (H87), topilmasa mahsulotga mos birinchi birlik.
+function defaultProductUnit(units: OlchovBirligi[], standardUnits: StandardUnit[]) {
+  const mos = units.filter((unit) => isProductUnit(unit, standardUnits));
+  return (
+    mos.find((unit) => [unit.code, unit.name, unit.shortName].some((value) => ["h87", "dona"].includes(unitKey(value)))) ??
+    mos[0]
+  );
+}
+
 const korinishlar: Array<{ id: Korinish; nom: string; icon: typeof Boxes }> = [
   { id: "kartochka", nom: "Kartochka", icon: LayoutGrid },
   { id: "jadval", nom: "Jadval", icon: Table2 },
@@ -748,7 +757,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
   const editing=item!=="new";
   const [name,setName]=useState(editing?item.name:"");
   const [categoryId,setCategoryId]=useState(editing?item.categoryId:store.kategoriyalar[0]?.id??"");
-  const [unitId,setUnitId]=useState(editing?item.unitId:store.birliklar.find((unit)=>isProductUnit(unit,store.standardBirliklar))?.id??"");
+  const [unitId,setUnitId]=useState(editing?item.unitId:defaultProductUnit(store.birliklar,store.standardBirliklar)?.id??"");
   const [unitResolving,setUnitResolving]=useState(false);
   // Saqlash bir necha ketma-ket so'rovdan iborat (mahsulot, variant, narx) — tugma butun jarayon davomida band turadi.
   const [saqlanmoqda,setSaqlanmoqda]=useState(false);

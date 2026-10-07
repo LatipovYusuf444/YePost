@@ -100,13 +100,15 @@ export function sotuvSummasi(sotuv: Sotuv) {
   return backendJami > 0 || itemsJami === 0 ? backendJami : itemsJami;
 }
 
+// Qatorlardagi chegirmalar yig'indisi; ro'yxat javobida qatorlar bo'lmasa backend `discountAmount` olinadi.
 export function sotuvChegirmaSummasi(sotuv: Sotuv) {
-  return (
+  const qatorlarChegirmasi =
     sotuv.items?.reduce(
       (jami, mahsulot) => jami + raqamgaAylantirish(mahsulot.discount),
       0
-    ) ?? 0
-  );
+    ) ?? 0;
+
+  return qatorlarChegirmasi > 0 ? qatorlarChegirmasi : raqamgaAylantirish(sotuv.discountAmount);
 }
 
 export function sotuvTolanganSummasi(sotuv: Sotuv) {

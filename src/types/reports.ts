@@ -49,6 +49,36 @@ export type ProductProfitFilter = SanaFilter & {
   categoryId?: string;
 };
 
+// Chegirmalar hisoboti: GET /reports/discounts (backend endpointi tayyor bo'lgach ulanadi).
+export type DiscountReportGroupBy = "DAY" | "MONTH" | "CASHIER" | "PRODUCT";
+
+export type DiscountReportFilter = SanaFilter & {
+  groupBy?: DiscountReportGroupBy;
+  branchId?: string;
+  responsibleId?: string;
+  productId?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export type DiscountReportRow = {
+  key?: string;
+  label?: string;
+  discountAmount?: number | string;
+  salesCount?: number | string;
+  discountedSalesCount?: number | string;
+  salesAmount?: number | string;
+  discountPct?: number | string;
+};
+
+export type DiscountReportSummary = {
+  totalDiscount?: number | string;
+  discountedSalesCount?: number | string;
+  totalSalesCount?: number | string;
+  totalSalesAmount?: number | string;
+  avgDiscountPct?: number | string;
+};
+
 export type IncomeExpenseFilter = SanaFilter & {
   branchIds?: string;
   branchId?: string;

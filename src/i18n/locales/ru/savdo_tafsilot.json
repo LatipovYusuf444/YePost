@@ -343,8 +343,12 @@
       "narxKatta": "Цена должна быть больше 0.",
       "miqdorKatta": "Количество должно быть больше 0.",
       "miqdorOshmasin": "Количество не должно превышать остаток: {{qty}} шт.",
-      "omborniTanlang": "Выберите склад."
+      "omborniTanlang": "Выберите склад.",
+      "chegirmaOshmasin": "Скидка не должна превышать сумму строки."
     },
+    "chegirmaPlaceholder": "Скидка (сум)",
+    "chegirmaQatori": "Скидка: {{summa}}",
+    "narxQulflangan": "Цена определяется по фактической цене на складе и не изменяется",
     "shtrixKod": "Штрих-код: {{value}}",
     "artikul": "Артикул: {{value}}"
   },

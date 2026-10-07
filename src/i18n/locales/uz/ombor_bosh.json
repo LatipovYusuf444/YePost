@@ -103,7 +103,7 @@
     "noFiles": "Fayl yuklanmagan",
     "deleteFileAria": "Faylni o'chirish",
     "productsTitle": "Tovarlar",
-    "productsSubtitle": "Mahsulotlar, miqdor va real omborni kiriting.",
+    "productsSubtitle": "Mahsulotlar, miqdor va real omborni kiriting. Tan narx bo'sh qolsa, tasdiqlashda katalogdagi tan narx olinadi.",
     "createProduct": "Mahsulot yaratish",
     "addRow": "Qator qo'shish",
     "table": {

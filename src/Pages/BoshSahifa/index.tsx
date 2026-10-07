@@ -22,7 +22,8 @@ import {
 } from "@/api/savdoApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
-import { usePosStore } from "@/store/posStore";
+import { savatchaChegirma, savatchaSotuvNarxi, usePosStore } from "@/store/posStore";
+import SotuvNarxiMaydoni from "./SotuvNarxiMaydoni";
 import { useSavdoStore } from "@/store/savdoStore";
 import type { MijozTanlovi, OmborTanlovi, TolovTuri } from "@/types/savdo";
 
@@ -63,6 +64,7 @@ export default function BoshSahifa() {
   const cart = usePosStore((state) => state.cart);
   const updateCartQuantity = usePosStore((state) => state.updateQuantity);
   const updatePriceType = usePosStore((state) => state.updatePriceType);
+  const setSotuvNarxi = usePosStore((state) => state.setSotuvNarxi);
   const removeFromCart = usePosStore((state) => state.removeFromCart);
   const clearPosCart = usePosStore((state) => state.clearCart);
   const yangiSotuvYaratish = useSavdoStore((state) => state.yangiSotuvYaratish);
@@ -151,10 +153,15 @@ export default function BoshSahifa() {
     };
   }, [selectedCustomerModal]);
 
+  // Katalog narxlarida jami; kassir sotuv narxini pasaytirgan bo'lsa, farqi avtomatik "narx chegirmasi" bo'ladi.
   const total = cart.reduce((sum, item) => sum + item.narx * item.soni, 0);
-  const percentDiscountSum = Math.round((total * discountPercent) / 100);
-  const discountSum = Math.min(total, discountAmount || percentDiscountSum);
-  const payableTotal = Math.max(total - discountSum, 0);
+  const avtoChegirma = cart.reduce((sum, item) => sum + savatchaChegirma(item), 0);
+  const sotuvNarxlaridaJami = total - avtoChegirma;
+  // Qo'shimcha umumiy chegirma (so'm yoki %) sotuv narxlaridagi summadan hisoblanadi.
+  const percentDiscountSum = Math.round((sotuvNarxlaridaJami * discountPercent) / 100);
+  const discountSum = Math.min(sotuvNarxlaridaJami, discountAmount || percentDiscountSum);
+  const jamiChegirma = avtoChegirma + discountSum;
+  const payableTotal = Math.max(sotuvNarxlaridaJami - discountSum, 0);
   const selectedPayment = paymentTypes.find((item) => item.label === paymentType) ?? paymentTypes[0];
   const cartPiecesCount = cart.reduce((sum, item) => sum + item.soni, 0);
 
@@ -213,14 +220,17 @@ export default function BoshSahifa() {
       return;
     }
 
-    const rawTotal = cart.reduce((sum, item) => sum + item.narx * item.soni, 0);
+    // Backendga katalog narxi (`price`) va umumiy chegirma (`discount`) yuboriladi: avtomatik narx chegirmasi
+    // + qo'shimcha umumiy chegirmaning shu qatorga to'g'ri kelgan ulushi.
+    const rawTotal = sotuvNarxlaridaJami;
     let remainingDiscount = Math.min(discountSum, rawTotal);
     const qatorlar = cart.map((item, index) => {
-      const lineTotal = item.narx * item.soni;
+      const narxChegirmasi = savatchaChegirma(item);
+      const lineTotal = item.narx * item.soni - narxChegirmasi;
       const lineDiscount =
         index === cart.length - 1
           ? remainingDiscount
-          : Math.min(Math.round((discountSum * lineTotal) / rawTotal), remainingDiscount);
+          : Math.min(rawTotal > 0 ? Math.round((discountSum * lineTotal) / rawTotal) : 0, remainingDiscount);
       remainingDiscount -= lineDiscount;
 
       return {
@@ -229,7 +239,7 @@ export default function BoshSahifa() {
         modificationId: item.modificationId || item.id,
         quantity: item.soni,
         price: item.narx,
-        discount: lineDiscount,
+        discount: narxChegirmasi + lineDiscount,
         sof: lineTotal - lineDiscount,
       };
     });
@@ -376,14 +386,18 @@ export default function BoshSahifa() {
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-bold text-[#0F172A]">{item.nom}</p>
-                    <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-[#94A3B8]">
-                      <span>{formatSumma(item.narx)}</span>
-                      {(item.warehouseName || omborlar.find((ombor) => String(ombor.id) === item.warehouseId)) && (
+                    {(item.warehouseName || omborlar.find((ombor) => String(ombor.id) === item.warehouseId)) && (
+                      <p className="mt-0.5 text-xs text-[#94A3B8]">
                         <span className="rounded-md bg-white px-1.5 py-0.5 font-bold text-gold-600 ring-1 ring-gold-100">
                           {item.warehouseName || mijozNomi(omborlar.find((ombor) => String(ombor.id) === item.warehouseId)!)}
                         </span>
-                      )}
-                    </p>
+                      </p>
+                    )}
+                    <SotuvNarxiMaydoni
+                      item={item}
+                      onChange={(narx) => setSotuvNarxi(item.id, narx)}
+                      formatSumma={formatSumma}
+                    />
                   </div>
 
                   <div className="flex h-9 items-center justify-between rounded-lg bg-white px-1 shadow-sm">
@@ -403,7 +417,7 @@ export default function BoshSahifa() {
                   </div>
 
                   <p className="text-right text-sm font-bold text-gold-600">
-                    {formatSumma(item.narx * item.soni)}
+                    {formatSumma(savatchaSotuvNarxi(item) * item.soni)}
                   </p>
 
                   <button
@@ -575,6 +589,20 @@ export default function BoshSahifa() {
                 <span>{t("customer.subtotal")}</span>
                 <span>{formatSumma(total)}</span>
               </div>
+
+              {avtoChegirma > 0 && (
+                <div className="mb-2 flex justify-between text-xs font-semibold text-emerald-700">
+                  <span>{t("customer.autoDiscountLine")}</span>
+                  <span>−{formatSumma(avtoChegirma)}</span>
+                </div>
+              )}
+
+              {discountSum > 0 && (
+                <div className="mb-2 flex justify-between text-xs font-semibold text-emerald-700">
+                  <span>{t("customer.extraDiscountLine")}</span>
+                  <span>−{formatSumma(discountSum)}</span>
+                </div>
+              )}
 
               <div className="mb-3 flex justify-between text-sm font-black text-[#0F172A]">
                 <span>{t("customer.total")}</span>
@@ -835,7 +863,7 @@ export default function BoshSahifa() {
                 <div className="max-h-[480px] space-y-3 overflow-y-auto pr-1">
                   {cart.map((item) => <article key={item.id} className="flex items-center justify-between gap-5 rounded-[24px] border border-gold-100 bg-white p-5 shadow-[0_12px_35px_rgba(37,99,235,.07)]"><div className="min-w-0"><p className="truncate text-base font-black text-slate-900">{item.nom}</p><p className="mt-1.5 text-sm font-semibold text-slate-400">{item.soni} × {formatSumma(item.narx)} · {item.warehouseName || t("paymentModal.selectedWarehouseFallback")}</p></div><p className="shrink-0 text-base font-black text-gold-600">{formatSumma(item.soni * item.narx)}</p></article>)}
                 </div>
-                <div className="mt-5 grid grid-cols-3 gap-3 text-sm"><Summary label={t("customer.subtotal")} value={formatSumma(total)}/><Summary label={t("customer.discountLabel")} value={formatSumma(discountSum)}/><Summary label={t("paymentModal.payable")} value={formatSumma(payableTotal)} accent/></div>
+                <div className="mt-5 grid grid-cols-3 gap-3 text-sm"><Summary label={t("customer.subtotal")} value={formatSumma(total)}/><Summary label={t("customer.totalDiscount")} value={formatSumma(jamiChegirma)}/><Summary label={t("paymentModal.payable")} value={formatSumma(payableTotal)} accent/></div>
               </div>
 
               <aside className="flex flex-col rounded-[30px] border border-gold-100 bg-white p-7 shadow-[0_18px_50px_rgba(37,99,235,.10)]">

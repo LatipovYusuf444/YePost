@@ -17,6 +17,8 @@ type IncomeExpenseResponse = {
   income?: {
     saleRevenue?: number | string;
     otherIncome?: number | string;
+    // Qaytarilgan savdo summasi — saleRevenue (sof tushum) dan allaqachon ayirilgan, faqat ma'lumot uchun.
+    returns?: number | string;
     total?: number | string;
   };
   cost?: { costOfGoods?: number | string };
@@ -79,6 +81,7 @@ export default function FoydaXarajatHisoboti() {
   const [dateTo, setDateTo] = useState(bugun());
   const [filiallar, setFiliallar] = useState<string[]>([]);
   const [foydaXarajat, setFoydaXarajat] = useState<FoydaXarajatYozuvi[]>([]);
+  const [qaytarilgan, setQaytarilgan] = useState(0);
   const [yuklanmoqda, setYuklanmoqda] = useState(false);
   const [xato, setXato] = useState("");
 
@@ -96,13 +99,14 @@ export default function FoydaXarajatHisoboti() {
         if (!active) return;
         const value = response as IncomeExpenseResponse;
         const sana = `${dateTo}T23:59:59.000Z`;
+        setQaytarilgan(Number(value.income?.returns ?? 0));
         const rows: FoydaXarajatYozuvi[] = [
           {
             id: "saleRevenue",
             sana,
             filialId: "",
             tur: "daromad",
-            kategoriya: "Savdo tushumi",
+            kategoriya: "Savdo tushumi (sof)",
             summa: Number(value.income?.saleRevenue ?? value.summary?.revenue ?? 0),
           },
           {
@@ -137,7 +141,7 @@ export default function FoydaXarajatHisoboti() {
             sana,
             filialId: "",
             tur: "xarajat",
-            kategoriya: "Qaytarishlar",
+            kategoriya: "Mijozlarga qaytarilgan pul",
             summa: refunds,
           });
         }
@@ -218,7 +222,7 @@ export default function FoydaXarajatHisoboti() {
         <>
           {/* Asosiy ko'rsatkichlar */}
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Korsatkich icon={TrendingUp} nom="Daromad" summa={hisob.daromad} izoh="Savdo va boshqa tushumlar" tone="emerald" />
+            <Korsatkich icon={TrendingUp} nom="Daromad" summa={hisob.daromad} izoh="Qaytarishlar ayirilgan tushum" tone="emerald" />
             <Korsatkich icon={PackageMinus} nom="Tovar tannarxi" summa={-hisob.tannarx} izoh="Sotilgan tovarlar bo‘yicha" tone="amber" />
             <Korsatkich icon={Wallet} nom="Yalpi foyda" summa={hisob.yalpi} izoh={`Rentabellik ${foiz(hisob.yalpi, hisob.daromad)}`} tone="blue" />
             <Korsatkich icon={TrendingDown} nom="Xarajatlar" summa={-hisob.xarajat} izoh="Operatsion xarajatlar" tone="red" />
@@ -233,6 +237,12 @@ export default function FoydaXarajatHisoboti() {
                 hisob.daromadlar.map((r) => (
                   <Satr key={r.kategoriya} nom={kategoriyaNomi(r.kategoriya)} summa={r.summa} jami={hisob.daromad} tone="emerald" />
                 ))
+              )}
+              {qaytarilgan > 0 && (
+                <div className="flex items-center justify-between gap-4 bg-slate-50/70 px-6 py-3 text-xs font-semibold text-slate-500">
+                  <span>Qaytarilgan savdo (tushumdan allaqachon ayirilgan)</span>
+                  <span className="tabular-nums">−{pul(qaytarilgan)}</span>
+                </div>
               )}
               <Jami nom="Jami daromad" summa={hisob.daromad} tone="emerald" />
             </Karta>
@@ -291,6 +301,9 @@ export default function FoydaXarajatHisoboti() {
                 >
                   Rentabellik {foiz(hisob.sof, hisob.daromad)}
                 </span>
+                <p className="mt-2 text-xs font-semibold text-slate-400">
+                  Yalpi foyda {pul(hisob.yalpi)} − xarajatlar {pul(hisob.xarajat)}
+                </p>
               </div>
             </div>
             <span className={`tabular-nums text-2xl font-black sm:text-3xl ${foydali ? "text-emerald-600" : "text-red-500"}`}>

@@ -112,6 +112,8 @@ type YangiTovarQatori = {
   modificationId: string;
   quantity: number;
   price: number;
+  // Narx katalogdan kelgan bo'lsa qulflanadi (faqat chegirma o'zgaradi); katalogda narx bo'lmasa qo'lda kiritiladi.
+  priceLocked?: boolean;
   discount: number;
   availableQty: number;
   warehouseName: string;
@@ -2190,6 +2192,10 @@ function TovarlarTab({
     0
   );
   const umumiyJami = jami + yangiQatorJami;
+  const umumiyChegirma =
+    items.reduce((summa, item) => summa + son(item.discount), 0) +
+    yangiQatorlar.reduce((summa, qator) => summa + son(qator.discount), 0);
+  const chegirmasizJami = umumiyJami + umumiyChegirma;
   const qidirilganQoldiqlar = qoldiqlar
     .filter((qoldiq) => !sotuv.warehouseId || !qoldiq.warehouseId || qoldiq.warehouseId === sotuv.warehouseId)
     .filter((qoldiq) => {
@@ -2210,6 +2216,7 @@ function TovarlarTab({
         modificationId: "",
         quantity: 1,
         price: 0,
+        priceLocked: false,
         discount: 0,
         availableQty: 0,
         warehouseName: omborNomi,
@@ -2223,9 +2230,11 @@ function TovarlarTab({
   }
 
   function qoldiqniTanlash(qatorId: string, qoldiq: QoldiqTanlovi) {
+    const katalogNarxi = qoldiqNarxi(qoldiq);
     yangiQatorniYangilash(qatorId, {
       modificationId: qoldiq.modificationId,
-      price: qoldiqNarxi(qoldiq),
+      price: katalogNarxi,
+      priceLocked: katalogNarxi > 0,
       availableQty: qoldiqMiqdori(qoldiq),
       warehouseName: qoldiq.warehouse?.name || omborNomi,
       warehouseAddress: qoldiq.warehouse?.address || omborManzili,
@@ -2265,12 +2274,16 @@ function TovarlarTab({
             ? t("tovarlarTab.errors.miqdorOshmasin", { qty: formatlanganRaqam(qator.availableQty) })
             : "",
       ombor: !qator.warehouseName ? t("tovarlarTab.errors.omborniTanlang") : "",
+      chegirma:
+        qator.discount > 0 && qator.discount > qator.quantity * qator.price
+          ? t("tovarlarTab.errors.chegirmaOshmasin")
+          : "",
     };
   }
 
   function qatorValid(qator: YangiTovarQatori) {
     const xatolar = yangiQatorXatolari(qator);
-    return !xatolar.mahsulot && !xatolar.narx && !xatolar.miqdor && !xatolar.ombor;
+    return !xatolar.mahsulot && !xatolar.narx && !xatolar.miqdor && !xatolar.ombor && !xatolar.chegirma;
   }
 
   function itemQoldiginiTopish(item: SotuvItem) {
@@ -2419,8 +2432,15 @@ function TovarlarTab({
                     </div>
                   </div>
 
-                  <div className="flex h-12 items-center justify-end rounded-md border border-slate-300 bg-white px-3">
-                    {pulniFormatlash(itemNarxi)}
+                  <div>
+                    <div className="flex h-12 items-center justify-end rounded-md border border-slate-300 bg-white px-3">
+                      {pulniFormatlash(itemNarxi)}
+                    </div>
+                    {son(item.discount) > 0 && (
+                      <span className="mt-1 block text-right text-xs font-semibold text-lime-700">
+                        {t("tovarlarTab.chegirmaQatori", { summa: pulniFormatlash(son(item.discount)) })}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex h-12 items-center justify-end gap-2 rounded-md border border-slate-300 bg-white px-3">
@@ -2503,15 +2523,32 @@ function TovarlarTab({
                       type="text"
                       inputMode="numeric"
                       value={qator.price ? `${formatlanganRaqam(qator.price)} so'm` : ""}
+                      readOnly={qator.priceLocked}
+                      title={qator.priceLocked ? t("tovarlarTab.narxQulflangan") : undefined}
                       onChange={(event) => yangiQatorniYangilash(qator.id, { price: raqamniAjratish(event.target.value) })}
                       onFocus={(event) => event.currentTarget.select()}
                       placeholder="0 so'm"
-                      className={`h-12 w-full rounded-md border bg-white px-3 text-right outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-500/10 ${
-                        xatoKorsatish && xatolar.narx ? "border-red-400 ring-4 ring-red-100" : "border-slate-300"
-                      }`}
+                      className={`h-12 w-full rounded-md border px-3 text-right outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-500/10 ${
+                        qator.priceLocked ? "cursor-not-allowed bg-slate-50 text-slate-500" : "bg-white"
+                      } ${xatoKorsatish && xatolar.narx ? "border-red-400 ring-4 ring-red-100" : "border-slate-300"}`}
                     />
                     {xatoKorsatish && xatolar.narx && (
                       <p className="mt-1.5 text-xs font-semibold text-red-500">{xatolar.narx}</p>
+                    )}
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      aria-label={t("tovarlarTab.chegirmaPlaceholder")}
+                      value={qator.discount ? `${formatlanganRaqam(qator.discount)} so'm` : ""}
+                      onChange={(event) => yangiQatorniYangilash(qator.id, { discount: raqamniAjratish(event.target.value) })}
+                      onFocus={(event) => event.currentTarget.select()}
+                      placeholder={t("tovarlarTab.chegirmaPlaceholder")}
+                      className={`mt-2 h-10 w-full rounded-md border bg-white px-3 text-right text-sm outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-500/10 ${
+                        xatoKorsatish && xatolar.chegirma ? "border-red-400 ring-4 ring-red-100" : "border-slate-300"
+                      }`}
+                    />
+                    {xatoKorsatish && xatolar.chegirma && (
+                      <p className="mt-1.5 text-xs font-semibold text-red-500">{xatolar.chegirma}</p>
                     )}
                   </div>
 
@@ -2586,9 +2623,9 @@ function TovarlarTab({
 
         <div className="border-t border-slate-100 px-7 py-8">
           <div className="ml-auto max-w-md space-y-4 text-right text-slate-600">
-            <p>{t("common.totals.chegirmaSoliqsiz")} <span className="ml-8">{pulniFormatlash(umumiyJami)}</span></p>
+            <p>{t("common.totals.chegirmaSoliqsiz")} <span className="ml-8">{pulniFormatlash(chegirmasizJami)}</span></p>
             <p>{t("common.totals.yetkazishSummasi")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
-            <p className="text-lime-700">{t("common.totals.chegirmaSummasi")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
+            <p className="text-lime-700">{t("common.totals.chegirmaSummasi")} <span className="ml-8">{pulniFormatlash(umumiyChegirma)}</span></p>
             <p>{t("common.totals.soliqsizSumma")} <span className="ml-8">{pulniFormatlash(umumiyJami)}</span></p>
             <p>{t("common.totals.soliqSummasi")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
             <div className="border-t border-slate-200 pt-5 text-2xl font-bold text-slate-700">
@@ -2719,7 +2756,8 @@ function TovarlarTab({
 export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
   const { t } = useTranslation("savdo_tafsilot");
   const items = sotuv.items ?? [];
-  const jami = sotuvSummasi(sotuv);
+  const jami = items.length > 0 ? items.reduce((summa, item) => summa + mahsulotJami(item), 0) : sotuvSummasi(sotuv);
+  const chegirmaSummasi = sotuvChegirmaSummasi(sotuv);
   const tasdiqlangan = sotuvHolati(sotuv) === "CONFIRMED";
   const omborNomi = sotuv.warehouse?.name || t("common.info.ombor");
   const omborManzili = sotuv.warehouse?.address || t("common.manzilKiritilmagan");
@@ -2857,9 +2895,9 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
 
         <div className="border-t border-slate-100 px-7 py-8">
           <div className="ml-auto max-w-md space-y-4 text-right text-slate-600">
-            <p>{t("common.totals.chegirmaSoliqsiz")} <span className="ml-8">{pulniFormatlash(jami)}</span></p>
+            <p>{t("common.totals.chegirmaSoliqsiz")} <span className="ml-8">{pulniFormatlash(jami + chegirmaSummasi)}</span></p>
             <p>{t("common.totals.yetkazishSummasi")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
-            <p className="text-lime-700">{t("common.totals.chegirmaSummasi")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
+            <p className="text-lime-700">{t("common.totals.chegirmaSummasi")} <span className="ml-8">{pulniFormatlash(chegirmaSummasi)}</span></p>
             <p>{t("common.totals.soliqsizSumma")} <span className="ml-8">{pulniFormatlash(jami)}</span></p>
             <p>{t("common.totals.soliqSummasi")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
             <div className="border-t border-slate-200 pt-5 text-2xl font-bold text-slate-700">

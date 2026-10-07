@@ -5,6 +5,7 @@ import type {
   AuditLog,
   AuditLogsJavobi,
   CounterpartyBalanceFilter,
+  DiscountReportFilter,
   ExportTuri,
   HisobotJavobi,
   IncomeExpenseFilter,
@@ -167,6 +168,21 @@ export const productProfitReportApi = {
   },
 };
 
+// Hisobotlar sahifasi: GET /reports/discounts (groupBy=DAY|MONTH|CASHIER|PRODUCT)
+export const discountReportApi = {
+  olish: (params: DiscountReportFilter) =>
+    getReport("/reports/discounts", { groupBy: "DAY", ...params }),
+  barchasi: (params: DiscountReportFilter) =>
+    getAllReport("/reports/discounts", { groupBy: "DAY", ...params }),
+  export: (params: DiscountReportFilter, exportTuri: ExportTuri = "excel") => {
+    return exportReport(
+      "/reports/discounts",
+      { groupBy: "DAY", ...params, export: exportTuri },
+      `discounts.${exportTuri === "pdf" ? "pdf" : "xlsx"}`
+    );
+  },
+};
+
 // Hisobotlar sahifasi: GET /reports/income-expense
 export const incomeExpenseReportApi = {
   olish: (params: IncomeExpenseFilter) => {
@@ -300,14 +316,14 @@ export async function auditLogsOlish(params: AuditFilter) {
 }
 
 // Hisobot filtrlari uchun faqat ayni sahifaga kerakli tanlovlarni yuklaymiz.
-export type HisobotTanlovTuri = "all" | "stock" | "qoldiq" | "counterparty" | "profit" | "foydaxarajat" | "income" | "audit";
+export type HisobotTanlovTuri = "all" | "stock" | "qoldiq" | "counterparty" | "profit" | "foydaxarajat" | "income" | "discount" | "audit";
 
 export async function hisobotTanlovlariniOlish(turi: HisobotTanlovTuri = "all") {
   const kerak = {
     products: turi === "all" || turi === "stock" || turi === "qoldiq",
     modifications: turi === "all" || turi === "stock" || turi === "qoldiq",
     warehouses: turi === "all" || turi === "stock" || turi === "qoldiq",
-    branches: turi === "all" || turi === "stock" || turi === "qoldiq" || turi === "foydaxarajat" || turi === "income",
+    branches: turi === "all" || turi === "stock" || turi === "qoldiq" || turi === "foydaxarajat" || turi === "income" || turi === "discount",
     categories: turi === "all" || turi === "stock" || turi === "qoldiq" || turi === "profit",
     customers: turi === "all" || turi === "stock" || turi === "counterparty",
     suppliers: turi === "all" || turi === "stock" || turi === "counterparty",

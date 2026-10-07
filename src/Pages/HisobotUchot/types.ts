@@ -1,6 +1,6 @@
 // Hisobot UI modellari real report endpointlari javobidan shakllantiriladi.
 
-export type HisobotTab = "stock" | "qoldiq" | "counterparty" | "profit" | "foydaxarajat" | "income" | "audit";
+export type HisobotTab = "stock" | "qoldiq" | "counterparty" | "profit" | "foydaxarajat" | "income" | "discount" | "audit";
 
 // Tanlov ro'yxati (filter selectlari / ko'p tanlovli maydonlar uchun)
 export type Tanlov = {

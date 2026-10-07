@@ -126,9 +126,10 @@
     "rowTotal": "Итого по строке",
     "product": "Товар",
     "image": "Фото",
-    "price": "Цена (сум)",
+    "price": "Цена каталога (сум)",
+    "salePrice": "Цена продажи (сум)",
     "quantity": "Количество",
-    "discount": "Скидка (сум)",
+    "discount": "Скидка (сум, всего)",
     "priceLocked": "Цена берётся с остатка склада и не редактируется"
   },
   "placeholders": {
@@ -158,6 +159,7 @@
     "addRow": "Добавить"
   },
   "products": {
+    "autoDiscountHint": "Цена каталога {{katalog}}, цена продажи {{sotuv}}: скидка {{bir}} за единицу рассчитана автоматически (всего {{jami}}).",
     "removeRowAriaLabel": "Удалить строку товара",
     "imageButtonTitle": "Изображение",
     "stockLabelShort": "остаток",

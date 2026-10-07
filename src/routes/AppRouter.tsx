@@ -83,6 +83,7 @@ export default function AppRouter() {
         <Route path="/hisobotlar/foyda" element={<HisobotUchot tab="profit" />} />
         <Route path="/hisobotlar/foyda-xarajat" element={<HisobotUchot tab="foydaxarajat" />} />
         <Route path="/hisobotlar/kirim-chiqim" element={<HisobotUchot tab="income" />} />
+        <Route path="/hisobotlar/chegirmalar" element={<HisobotUchot tab="discount" />} />
         <Route path="/hisobotlar/audit-loglari" element={<HisobotUchot tab="audit" />} />
         {/* Mock Xodim uchoti eski backendli Hodimlar sahifasi o'rnida
             (backend kodi Pages/Hodimlar + accountStore da tegilmagan holda qoladi). */}

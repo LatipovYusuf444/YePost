@@ -1,5 +1,6 @@
 import {
   Activity,
+  BadgePercent,
   BarChart3,
   FileClock,
   Layers,
@@ -14,6 +15,7 @@ import OzaroHisobKitob from "./OzaroHisobKitob";
 import FoydaHisoboti from "./FoydaHisoboti";
 import FoydaXarajatHisoboti from "./FoydaXarajatHisoboti";
 import KirimChiqimHisoboti from "./KirimChiqimHisoboti";
+import ChegirmaHisoboti from "./ChegirmaHisoboti";
 import { HisobotRealDataProvider, useHisobotRealData } from "./HisobotRealData";
 import type { HisobotTab } from "./types";
 import AuditLoglari from "./AuditLoglari";
@@ -22,9 +24,10 @@ const tablar: Array<{ id: HisobotTab; nom: string; icon: typeof BarChart3 }> = [
   { id: "stock", nom: "Tovar harakati", icon: Activity },
   { id: "qoldiq", nom: "Ombor qoldig'i", icon: Layers },
   { id: "counterparty", nom: "O'zaro hisob-kitob", icon: UsersRound },
-  { id: "profit", nom: "Foyda hisoboti", icon: TrendingUp },
+  { id: "profit", nom: "Yalpi foyda hisoboti", icon: TrendingUp },
   { id: "foydaxarajat", nom: "Foyda va xarajat", icon: Scale },
   { id: "income", nom: "Kirim-chiqim", icon: WalletCards },
+  { id: "discount", nom: "Chegirmalar hisoboti", icon: BadgePercent },
   { id: "audit", nom: "Audit loglari", icon: FileClock },
 ];
 
@@ -68,6 +71,8 @@ function HisobotSahifasi({ tab }: { tab: HisobotTab }) {
         <FoydaXarajatHisoboti />
       ) : tab === "income" ? (
         <KirimChiqimHisoboti />
+      ) : tab === "discount" ? (
+        <ChegirmaHisoboti />
       ) : (
         <AuditLoglari />
       )}

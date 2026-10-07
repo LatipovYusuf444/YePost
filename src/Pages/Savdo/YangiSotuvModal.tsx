@@ -1172,6 +1172,9 @@ export default function YangiSotuvModal({
                       const narx = raqamgaAylantirish(mahsulot.price);
                       const chegirma = raqamgaAylantirish(mahsulot.discount);
                       const qatorJami = Math.max(miqdor * narx - chegirma, 0);
+                      // Sotuv narxi = katalog narxi − chegirma / miqdor. Narxni pasaytirsangiz chegirma avtomatik hisoblanadi.
+                      const sotuvNarxi = miqdor > 0 ? Math.round(Math.max(narx - chegirma / miqdor, 0) * 100) / 100 : narx;
+                      const birDonaChegirma = Math.max(narx - sotuvNarxi, 0);
 
                       return (
                         <div
@@ -1224,7 +1227,7 @@ export default function YangiSotuvModal({
                             </div>
 
                             </div>
-                            <div className="grid min-w-0 gap-3 sm:grid-cols-3"><div className="min-w-0">
+                            <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-4"><div className="min-w-0">
                               <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-500">{t("labels.price")}</p>
                               <input
                               type="number"
@@ -1235,6 +1238,32 @@ export default function YangiSotuvModal({
                               disabled
                               title={t("labels.priceLocked")}
                               className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100 text-slate-900 placeholder:text-slate-400 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
+                              placeholder={t("placeholders.price")}
+                            />
+                            </div>
+
+                            <div className="min-w-0">
+                              <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-500">{t("labels.salePrice")}</p>
+                              <input
+                              type="number"
+                              min="0"
+                              max={narx || undefined}
+                              step="0.01"
+                              disabled={narx <= 0}
+                              value={narx > 0 ? sotuvNarxi : ""}
+                              onFocus={(event) => event.currentTarget.select()}
+                              onChange={(event) => {
+                                const kiritilgan = raqamgaAylantirish(event.target.value);
+                                // Bo'sh yoki noto'g'ri qiymat katalog narxiga qaytaradi; katalog narxidan baland narx chegirma bermaydi.
+                                const yangiChegirma =
+                                  kiritilgan > 0 && kiritilgan < narx ? Math.round((narx - kiritilgan) * miqdor * 100) / 100 : 0;
+                                mahsulotniYangilash(index, { discount: yangiChegirma > 0 ? String(yangiChegirma) : "" });
+                              }}
+                              className={`h-11 w-full min-w-0 rounded-xl border bg-white px-3 text-sm font-semibold outline-none transition focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70 ${
+                                birDonaChegirma > 0
+                                  ? "border-emerald-300 text-emerald-700 focus:border-emerald-500 focus:ring-emerald-100"
+                                  : "border-slate-200 text-slate-900 focus:border-[#2563EB] focus:ring-orange-100"
+                              }`}
                               placeholder={t("placeholders.price")}
                             />
                             </div>
@@ -1270,6 +1299,17 @@ export default function YangiSotuvModal({
                             </div>
                           </div>
                           </div>
+
+                          {birDonaChegirma > 0 && miqdor > 0 && (
+                            <p className="mt-3 rounded-xl bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100">
+                              {t("products.autoDiscountHint", {
+                                katalog: pulniFormatlash(narx),
+                                sotuv: pulniFormatlash(sotuvNarxi),
+                                bir: pulniFormatlash(birDonaChegirma),
+                                jami: pulniFormatlash(chegirma),
+                              })}
+                            </p>
+                          )}
 
                           <div className="mt-3 grid gap-2 md:grid-cols-3">
                             <div>

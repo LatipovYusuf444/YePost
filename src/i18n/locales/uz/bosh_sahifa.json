@@ -4,7 +4,12 @@
     "emptyTitle": "Savatcha bo'sh",
     "emptySubtitle": "Hozircha hech qanday mahsulot tanlanmagan",
     "removeAria": "Mahsulotni savatchadan o'chirish",
-    "close": "Yopish"
+    "close": "Yopish",
+    "salePriceLabel": "Sotuv narxi",
+    "resetPrice": "Katalog narxiga qaytarish",
+    "salePriceTooHigh": "Katalog narxidan ({{narx}}) oshmasin",
+    "autoDiscount": "Chegirma: −{{summa}}",
+    "autoDiscountEach": "({{bir}} × {{soni}} dona)"
   },
   "customerType": {
     "donalik": "Donalik mijoz",
@@ -19,8 +24,11 @@
   "customer": {
     "label": "Mijoz",
     "namePlaceholder": "Ism, Familiya",
-    "discountLabel": "Chegirma",
-    "discountPlaceholder": "Chegirmani kiriting",
+    "discountLabel": "Umumiy chegirma",
+    "discountPlaceholder": "Umumiy chegirmani kiriting",
+    "autoDiscountLine": "Narx chegirmasi (avtomatik)",
+    "extraDiscountLine": "Umumiy chegirma",
+    "totalDiscount": "Jami chegirma",
     "currency": "UZS",
     "addNote": "Eslatma qo'shish",
     "notePlaceholder": "Eslatma...",

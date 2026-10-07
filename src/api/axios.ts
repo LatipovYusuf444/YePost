@@ -13,7 +13,8 @@ import { muvaffaqiyatXabari, xatolikXabari } from "@/lib/toast";
 // Toast ko'rsatilmaydigan yo'llar: auth oqimi (o'zi navigatsiya qiladi),
 // bildirishnoma o'qilgan deb belgilash va chat/support xabar yuborish
 // (fon jarayoni yoki o'z UI-tasdig'i bor harakatlar, alohida toast shart emas).
-const TOAST_ISTISNOLARI = ["/auth/login", "/auth/refresh", "/auth/logout", "/notifications", "/chat/", "/support/messages"];
+// "/reports/discounts" — sahifa xatoni o'zi ko'rsatadi va backendda endpoint bo'lmasa (404) zaxira hisobga o'tadi.
+const TOAST_ISTISNOLARI = ["/auth/login", "/auth/refresh", "/auth/logout", "/notifications", "/chat/", "/support/messages", "/reports/discounts"];
 
 function toastKerakmi(url?: string) {
   if (!url) return true;
