@@ -267,7 +267,10 @@
     "debtors": {
       "title": "Eng ko'p qarzdor mijozlar",
       "subtitle": "Joriy holat bo'yicha",
-      "empty": "Qarzdor mijozlar topilmadi"
+      "empty": "Qarzdor mijozlar topilmadi",
+      "countLabel": "Qarzdor mijozlar soni",
+      "countValue": "{{count}} ta",
+      "topShare": "Eng katta ulush"
     },
     "warehouseStock": {
       "title": "Omborlar bo'yicha qoldiq qiymati",
@@ -321,7 +324,9 @@
       "BANK": "Bank",
       "TRANSFER": "O'tkazma",
       "ONLINE": "Onlayn"
-    }
+    },
+    "profitState": "Foydada",
+    "lossState": "Zararda"
   },
   "quick": {
     "today": "Bugun",

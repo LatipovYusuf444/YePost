@@ -39,6 +39,10 @@ type Props = {
 
 const MANBALAR_SONI = 5;
 
+// "Boshqaruv xulosasi" kartasi (buyurtmalar + moliyaviy natija) hozircha ko'rsatilmaydi.
+// Komponent va uning ma'lumotlari saqlangan: kerak bo'lsa `true` qilish kifoya.
+const BOSHQARUV_XULOSASINI_KORSATISH = false;
+
 // Monitoring → Savdo va moliya: boshqaruv xulosasi, e'tibor talab qiladigan holatlar va moliyaviy grafik.
 // Hammasi real ma'lumotlardan hisoblanadi; ma'lumot yo'q bo'lsa bo'sh holat ko'rsatiladi (namuna ma'lumot yo'q).
 export default function BoshqaruvPaneli(props: Props) {
@@ -127,13 +131,15 @@ export default function BoshqaruvPaneli(props: Props) {
 
   return (
     <div className="space-y-6">
-      <BoshqaruvXulosasi
-        buyurtma={{ malumot: buyurtma, yuklanmoqda: buyurtmaYuklanmoqda, xato: buyurtmaXato }}
-        onBuyurtmaQayta={() => setBuyurtmaQayta((son) => son + 1)}
-        moliya={moliya}
-        moliyaYuklanmoqda={props.moliyaYuklanmoqda}
-        moliyaXato={props.moliyaXato}
-      />
+      {BOSHQARUV_XULOSASINI_KORSATISH && (
+        <BoshqaruvXulosasi
+          buyurtma={{ malumot: buyurtma, yuklanmoqda: buyurtmaYuklanmoqda, xato: buyurtmaXato }}
+          onBuyurtmaQayta={() => setBuyurtmaQayta((son) => son + 1)}
+          moliya={moliya}
+          moliyaYuklanmoqda={props.moliyaYuklanmoqda}
+          moliyaXato={props.moliyaXato}
+        />
+      )}
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] xl:items-stretch">
         {/* Telefon va planshetda avval e'tibor talab qiladigan holatlar, keyin grafik ko'rsatiladi. */}
         <div className="order-2 grid min-w-0 xl:order-1">

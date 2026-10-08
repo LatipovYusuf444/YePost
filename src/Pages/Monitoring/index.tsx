@@ -6,7 +6,6 @@ import {
   ArrowDownLeft,
   ArrowDownRight,
   ArrowUpRight,
-  Gauge,
   History,
   Info,
   LoaderCircle,
@@ -20,7 +19,6 @@ import {
   TrendingDown,
   TrendingUp,
   Users,
-  Wallet,
   Warehouse,
 } from "lucide-react";
 import AppSelect from "@/Components/ui/AppSelect";
@@ -46,9 +44,8 @@ import DynamicsChart from "./DynamicsChart";
 import BoshqaruvPaneli from "./BoshqaruvPaneli";
 import { summaniAjratish } from "./summaMatni";
 import ModalTablari from "@/Components/common/ModalTablari";
+import { FoydaKartasi, QarzdorlarKartasi, TolovTurlariKartasi } from "./TaqsimotKartalari";
 import {
-  ProfitDial,
-  PaymentRing,
   WarehouseTree,
   WarehouseFlow,
   WarehouseTimeline,
@@ -456,7 +453,7 @@ export default function Monitoring() {
   const [chiqimDavr, setChiqimDavr] = useState<Davr>("kunlik");
   const [omborKirimDavr, setOmborKirimDavr] = useState<Davr>("kunlik");
   const [omborChiqimDavr, setOmborChiqimDavr] = useState<Davr>("kunlik");
-  const [tolovDavr, setTolovDavr] = useState<Davr>("yillik");
+  const [tolovDavr, setTolovDavr] = useState<Davr>("kunlik");
   const [omborHarakatDavr, setOmborHarakatDavr] = useState<Davr>("yillik");
   const [topDavr, setTopDavr] = useState<Davr>("yillik");
   const [bottomDavr, setBottomDavr] = useState<Davr>("yillik");
@@ -1590,62 +1587,39 @@ export default function Monitoring() {
             />
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-3">
-            <ChartCard
-              title={t("charts.profitGauge.title")}
-              subtitle={t("charts.profitGauge.subtitle")}
-              icon={Gauge}
-              accent={(demoMode ? demoSofFoyda : foydaKorsatkichlari.sofFoyda) >= 0 ? "green" : "rose"}
+          <div className="grid gap-6 xl:grid-cols-3 xl:items-stretch">
+            <FoydaKartasi
+              sofFoyda={demoMode ? demoSofFoyda : foydaKorsatkichlari.sofFoyda}
+              rentabellik={demoMode ? 14.2 : foydaKorsatkichlari.rentabellik}
+              yalpiFoyda={demoMode ? 3_400_000 : foydaKorsatkichlari.yalpiFoyda}
+              xarajat={demoMode ? 540_000 : foydaKorsatkichlari.xarajat}
               xato={demoMode ? "" : foydaXato}
               yuklanmoqda={!demoMode && foydaYuklanmoqda}
-              height={330}
-              appearance="dark"
-            >
-              <ProfitDial
-                profit={demoMode ? demoSofFoyda : foydaKorsatkichlari.sofFoyda}
-                margin={demoMode ? 14.2 : foydaKorsatkichlari.rentabellik}
-              />
-            </ChartCard>
+            />
 
-            <ChartCard
-              title={t("charts.paymentMethods.title")}
-              subtitle={
-                tolovKuniMatni
-                  ? `${t("charts.paymentMethods.subtitle")} · ${tolovKuniMatni}`
-                  : t("charts.paymentMethods.subtitle")
-              }
-              icon={Wallet}
-              accent="blue"
-              headerExtra={
-                <DavrToggle value={tolovDavr} onChange={setTolovDavr} />
-              }
+            <TolovTurlariKartasi
+              items={demoMode ? demoTolovTurlari : tolovTurlariBoyicha}
+              davr={tolovDavr}
+              onDavrChange={setTolovDavr}
+              yorliq={tolovKuniMatni}
               xato={demoMode ? "" : tolovXato}
               yuklanmoqda={!demoMode && tolovYuklanmoqda}
-              height={400}
-              bosh={!demoMode && tolovTurlariBoyicha.length === 0 ? t("noData") : undefined}
-            >
-              <PaymentRing items={demoMode ? demoTolovTurlari : tolovTurlariBoyicha} />
-            </ChartCard>
+            />
 
-            <ListCard
-              title={t("charts.debtors.title")}
-              subtitle={t("charts.debtors.subtitle")}
-              icon={Users}
-              accent="rose"
-              xato={demoMode ? "" : debtorlarXato}
-              yuklanmoqda={!demoMode && debtorlarYuklanmoqda}
-              bosh={t("charts.debtors.empty")}
+            <QarzdorlarKartasi
               items={demoMode ? demoQarzdorlar : debtors
                 .slice(0, 6)
                 .map((item) => ({
                   nom: item.counterpartyName,
                   summa: son(item.closingBalance),
                 }))}
-              rang="red"
-              total={demoMode ? jamiSumma(demoQarzdorlar) : debtors.reduce(
+              jami={demoMode ? jamiSumma(demoQarzdorlar) : debtors.reduce(
                 (sum, item) => sum + son(item.closingBalance),
                 0,
               )}
+              soni={demoMode ? demoQarzdorlar.length : debtors.length}
+              xato={demoMode ? "" : debtorlarXato}
+              yuklanmoqda={!demoMode && debtorlarYuklanmoqda}
             />
           </div>
         </div>
@@ -2453,101 +2427,6 @@ function TaqsimotCard({
                 })}
               </div>
             </div>
-          </div>
-        </>
-      )}
-    </section>
-  );
-}
-
-function ListCard({
-  title,
-  subtitle,
-  items,
-  bosh,
-  xato,
-  yuklanmoqda,
-  icon: Icon,
-  total,
-}: {
-  title: string;
-  subtitle: string;
-  items: Nuqta[];
-  bosh: string;
-  xato?: string;
-  yuklanmoqda?: boolean;
-  rang?: string;
-  accent?: string;
-  icon?: typeof Users;
-  total: number;
-}) {
-  const { t } = useTranslation("monitoring");
-  const max = Math.max(1, ...items.map((item) => item.summa));
-  return (
-    <section
-      aria-label={title}
-      className="monitoring-enter min-w-0 rounded-[24px] border border-rose-100 bg-gradient-to-br from-rose-50 via-white to-white p-5 shadow-sm sm:p-6"
-    >
-      <div className="flex items-center gap-3">
-        {Icon && (
-          <span className="rounded-2xl bg-rose-100 p-3 text-rose-600">
-            <Icon size={20} />
-          </span>
-        )}
-        <div>
-          <h2 className="font-semibold text-slate-950">{title}</h2>
-          <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
-        </div>
-      </div>
-      {xato ? (
-        <p
-          role="alert"
-          className="mt-4 rounded-xl bg-rose-50 p-4 text-sm text-rose-600"
-        >
-          {xato}
-        </p>
-      ) : yuklanmoqda ? (
-        <MarkaziyYuklanish text="Yuklanmoqda..." className="mt-5 h-64 rounded-2xl bg-rose-50/80 text-sm" />
-      ) : (
-        <>
-          <p className="mt-5 text-xs text-slate-400">{t("kpi.totalDebt")}</p>
-          <p className="mt-1 break-words text-2xl font-bold tabular-nums text-rose-600">
-            {pul(total)}
-          </p>
-          <div className="mt-5 max-h-80 space-y-3 overflow-y-auto">
-            {items.length === 0 ? (
-              <p className="py-12 text-center text-sm text-slate-400">{bosh}</p>
-            ) : (
-              items.map((item, index) => (
-                <div
-                  key={index}
-                  className="rounded-2xl border border-rose-100/80 bg-white/90 p-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-xs font-bold text-rose-500">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-semibold text-slate-700">
-                        {item.nom}
-                      </p>
-                      <p className="mt-1 text-sm font-bold tabular-nums text-slate-950">
-                        {pul(item.summa)}
-                      </p>
-                    </div>
-                    <span className="text-xs text-rose-500">
-                      {(total > 0 ? (item.summa / total) * 100 : 0).toFixed(1)}%
-                    </span>
-                  </div>
-                  <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-rose-50">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-rose-300 to-rose-500"
-                      style={{ width: `${(item.summa / max) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ))
-            )}
           </div>
         </>
       )}

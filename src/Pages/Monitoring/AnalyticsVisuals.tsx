@@ -7,15 +7,9 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   Legend,
   Line,
   LineChart,
-  Pie,
-  PieChart,
-  PolarAngleAxis,
-  RadialBar,
-  RadialBarChart,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -54,144 +48,6 @@ function useFormat() {
     return number(n);
   };
   return { t, number, money, compact };
-}
-
-export function ProfitDial({
-  profit,
-  margin,
-}: {
-  profit: number;
-  margin: number;
-}) {
-  const { t, money, number } = useFormat();
-  return (
-    <div className="flex h-full flex-col justify-center">
-      <div className="relative h-52">
-        <ResponsiveContainer
-          width="100%"
-          height="100%"
-          minWidth={0}
-          initialDimension={{ width: 300, height: 208 }}
-        >
-          <RadialBarChart
-            data={[{ value: Math.min(100, Math.abs(margin)) }]}
-            innerRadius="80%"
-            outerRadius="100%"
-            startAngle={180}
-            endAngle={0}
-            cy="85%"
-            barSize={18}
-          >
-            <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-            <RadialBar
-              dataKey="value"
-              cornerRadius={12}
-              background={{ fill: "#334155" }}
-              fill={profit >= 0 ? "#2dd4bf" : "#fb7185"}
-              isAnimationActive={false}
-            />
-          </RadialBarChart>
-        </ResponsiveContainer>
-        <div className="absolute inset-x-0 bottom-5 text-center">
-          <p className="text-xs text-slate-400">{t("visuals.margin")}</p>
-          <p
-            className={`mt-1 text-4xl font-bold tabular-nums ${margin >= 0 ? "text-teal-300" : "text-rose-300"}`}
-          >
-            {number(margin)}%
-          </p>
-        </div>
-      </div>
-      <div className="flex justify-between px-4 text-[10px] text-slate-500">
-        <span>0%</span>
-        <span>{t("visuals.dialScale")}</span>
-        <span>100%</span>
-      </div>
-      <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-center">
-        <p className="text-xs text-slate-400">{t("kpi.netProfit")}</p>
-        <p className="mt-1 break-words text-xl font-semibold tabular-nums text-white">
-          {money(profit)}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-export function PaymentRing({ items }: { items: Point[] }) {
-  const { t, money, number } = useFormat();
-  const total = items.reduce((sum, item) => sum + item.summa, 0);
-  return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto">
-      <div className="relative h-48 shrink-0">
-        <ResponsiveContainer
-          width="100%"
-          height="100%"
-          minWidth={0}
-          initialDimension={{ width: 300, height: 192 }}
-        >
-          <PieChart>
-            <Pie
-              data={items}
-              dataKey="summa"
-              nameKey="nom"
-              innerRadius={62}
-              outerRadius={86}
-              paddingAngle={items.length > 1 ? 4 : 0}
-              cornerRadius={6}
-              stroke="none"
-              isAnimationActive={false}
-            >
-              {items.map((item, index) => (
-                <Cell key={item.nom} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip
-              formatter={(value) => [
-                money(Number(value)),
-                t("charts.paymentMethods.title"),
-              ]}
-              contentStyle={tooltipStyle}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-          <span className="text-2xl font-semibold text-slate-900">
-            {items.length}
-          </span>
-          <span className="mt-1 text-xs text-slate-400">
-            {t("visuals.paymentTypes")}
-          </span>
-        </div>
-      </div>
-      <div className="text-center">
-        <p className="text-xs text-slate-500">{t("dynamics.total")}</p>
-        <p className="mt-1 text-lg font-bold tabular-nums text-slate-950">
-          {money(total)}
-        </p>
-      </div>
-      <div className="space-y-2">
-        {items.map((item, index) => (
-          <div
-            key={item.nom}
-            className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-100 bg-white/70 px-3 py-2.5 text-xs"
-          >
-            <span className="flex items-center gap-2 font-medium text-slate-600">
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ background: COLORS[index % COLORS.length] }}
-              />
-              {t(`visuals.payment.${item.nom}`, { defaultValue: item.nom })}
-            </span>
-            <span className="font-semibold text-slate-900">
-              {money(item.summa)}{" "}
-              <span className="ml-1 text-slate-400">
-                {number(total ? (item.summa / total) * 100 : 0)}%
-              </span>
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 }
 
 function TreeTile({

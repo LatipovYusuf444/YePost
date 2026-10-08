@@ -147,6 +147,25 @@
       "holati": "Holati"
     },
     "emptyTitle": "Buyurtmalar topilmadi",
-    "emptySubtitle": "Yetkazib berishi bor sotuvlar shu yerda ko'rinadi."
+    "emptySubtitle": "Yetkazib berishi bor sotuvlar shu yerda ko'rinadi.",
+    "subtitle": "Yetkazib berish biriktirilgan sotuvlar: holatini kuzating va kechikkanlarini toping",
+    "resultCount": "{{count}} ta buyurtma",
+    "late": "Kechikkan",
+    "lateHint": "Rejalashtirilgan yetkazish sanasi o'tib ketgan",
+    "scheduled": "Reja: {{sana}}",
+    "noAddress": "Manzil kiritilmagan",
+    "noPhone": "Telefon yo'q",
+    "emptyFilterTitle": "Bu filtr bo'yicha buyurtma topilmadi",
+    "emptyFilterSubtitle": "Boshqa holatni tanlang yoki qidiruv so'zini o'zgartiring.",
+    "clearFilter": "Filtrni tozalash",
+    "howTitle": "Buyurtma qanday paydo bo'ladi?",
+    "steps": {
+      "one": "Savdo bo'limida kerakli sotuvni oching",
+      "two": "Sotuv tafsilotida «Yetkazish» tugmasini bosing",
+      "three": "Manzil, kuryer va sanani kiriting hamda saqlang"
+    },
+    "goToSales": "Sotuvlarga o'tish",
+    "retry": "Qayta urinish",
+    "rowOpen": "Sotuvni ochish"
   }
 }

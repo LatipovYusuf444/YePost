@@ -60,7 +60,6 @@ export default function Inventarizatsiya() {
   const [type, setType] = useState<InventarizatsiyaTuri>("FULL");
   const [responsibleId, setResponsibleId] = useState("");
   const [actuals, setActuals] = useState<Record<string, string>>({});
-  const [blindCount, setBlindCount] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
   const [scanFeedback, setScanFeedback] = useState("");
   const [reviewAction, setReviewAction] = useState<"save" | "confirm" | null>(null);
@@ -378,7 +377,6 @@ export default function Inventarizatsiya() {
     setType("FULL");
     setResponsibleId(joriyProfil?.id ?? "");
     setActuals({});
-    setBlindCount(false);
     setBarcodeInput("");
     setScanFeedback("");
     setReviewAction(null);
@@ -740,11 +738,6 @@ export default function Inventarizatsiya() {
                 </div>
               )}
 
-              <div className="mt-5 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-                <AlertTriangle size={20} className="mt-0.5 shrink-0 text-amber-600" />
-                <div><p className="font-black">{t("inventarizatsiya.createModal.freezeTitle")}</p><p className="mt-1 leading-6">{t("inventarizatsiya.createModal.freezeWarning")}</p></div>
-              </div>
-
               <section className="mt-5 rounded-[26px] border border-blue-100 bg-white p-4 shadow-sm sm:p-5">
                 <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
@@ -757,10 +750,6 @@ export default function Inventarizatsiya() {
                 </div>
 
                 {warehouseId && !qoldiqYuklanmoqda && <>
-                  <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
-                    <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-bold text-slate-700"><input type="checkbox" checked={blindCount} onChange={(event) => setBlindCount(event.target.checked)} className="h-4 w-4 accent-blue-600" />{t("inventarizatsiya.createModal.blindCount")}</label>
-                    <span className="text-xs text-slate-500">{t("inventarizatsiya.createModal.blindCountHint")}</span>
-                  </div>
                   <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50/40 p-4">
                     <label htmlFor="inventory-barcode" className="flex items-center gap-2 text-sm font-black text-blue-800"><ScanLine size={18} />{t("inventarizatsiya.createModal.scanTitle")}</label>
                     <div className="mt-2 flex gap-2"><input id="inventory-barcode" value={barcodeInput} onChange={(event) => setBarcodeInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); barcodeSanash(); } }} placeholder={t("inventarizatsiya.createModal.scanPlaceholder")} className="h-11 min-w-0 flex-1 rounded-xl border border-blue-200 bg-white px-3 outline-none focus:border-blue-500" /><button type="button" onClick={barcodeSanash} disabled={!barcodeInput.trim()} className="rounded-xl bg-blue-600 px-4 text-sm font-bold text-white disabled:opacity-50">{t("inventarizatsiya.createModal.scanButton")}</button></div>
@@ -827,10 +816,10 @@ export default function Inventarizatsiya() {
                               </td>
                               <td className="px-4 py-4 text-slate-500">{qoldiq.modification?.barcode ?? "—"}</td>
                               <td className="px-4 py-4">{qoldiq.warehouse?.name ?? omborMap.get(warehouseId) ?? t("inventarizatsiya.unknownWarehouse")}</td>
-                              <td className="px-4 py-4 font-bold text-slate-600">{blindCount ? "•••" : tizim}</td>
+                              <td className="px-4 py-4 font-bold text-slate-600">{tizim}</td>
                               <td className={`px-4 py-4 font-black ${farq == null || farq === 0 ? "text-slate-400" : farq > 0 ? "text-emerald-600" : "text-amber-600"}`}>
-                                {blindCount || farq == null ? "—" : farq > 0 ? `+${farq}` : farq}
-                                {!blindCount && farq != null && farq < 0 && (
+                                {farq == null ? "—" : farq > 0 ? `+${farq}` : farq}
+                                {farq != null && farq < 0 && (
                                   <span className="block text-[10px] font-bold leading-3 text-amber-500">{t("inventarizatsiya.createModal.notDeducted")}</span>
                                 )}
                               </td>
