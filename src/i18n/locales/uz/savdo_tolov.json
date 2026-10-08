@@ -85,7 +85,7 @@
       "tolovTuri": "To'lov turi",
       "sotuvJami": "Sotuv jami",
       "oldinQaytarilgan": "Oldin qaytarilgan",
-      "qaytariladigan": "Qaytariladigan"
+      "qaytariladigan": "Qaytariladigan tovar qiymati"
     },
     "table": {
       "columns": {
@@ -115,7 +115,7 @@
       "none": "Pul qaytarilmaydi"
     },
     "sidebar": {
-      "infoNote": "Tasdiqlangan qaytarish tovarni omborga qaytaradi. Pul qaytarish turi tanlanganiga qarab naqd/karta kassadan chiqadi, mijoz balansiga yoziladi yoki umuman qaytarilmaydi.",
+      "infoNote": "Tasdiqlangan qaytarish tovarni omborga qaytaradi. Tovar qiymati avval sotuvdagi qarzni yopadi, qarzdan ortiqcha qismi esa tanlangan usulda mijozga qaytariladi (naqd/karta kassadan chiqadi, mijoz balansiga yoziladi yoki umuman qaytarilmaydi). Summalarni backend o'zi hisoblaydi.",
       "sababLabel": "Qaytarish sababi",
       "refundLabel": "Pul qaytarish turi",
       "noteLabel": "Izoh",

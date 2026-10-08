@@ -9,7 +9,7 @@
   "view": {
     "status": "Holat",
     "sale": "Sotuv",
-    "amount": "Summa",
+    "amount": "Qaytgan tovar qiymati",
     "createdAt": "Yaratilgan sana",
     "customer": "Mijoz",
     "customerUnknown": "Ma'lumot mavjud emas",
@@ -18,6 +18,8 @@
     "responsible": "Mas'ul xodim",
     "responsibleUnassigned": "Biriktirilmagan",
     "refundMethod": "Pul qaytarish turi",
+    "refundAmount": "Mijozga qaytarilgan pul",
+    "debtReduction": "Qarzdan ayirilgan summa",
     "note": "Izoh",
     "editButton": "Qaytarishni tahrirlash",
     "onlyDraftEditable": "Faqat qoralama qaytarishni tahrirlash mumkin."

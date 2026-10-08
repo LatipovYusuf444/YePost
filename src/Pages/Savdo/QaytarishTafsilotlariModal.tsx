@@ -434,6 +434,13 @@ export default function QaytarishTafsilotlariModal({
                       t(refundMethodniOzbekcha(qaytarish.refundMethod))
                     }
                   />
+                  {/* Backend tasdiqlashda hisoblagan qiymatlar: mahsulot qiymati avval qarzni yopadi, ortig'i mijozga qaytariladi. */}
+                  {!qoralama && qaytarish.refundAmount != null && (
+                    <Malumot nom={t("view.refundAmount")} qiymat={pulniFormatlash(Number(qaytarish.refundAmount) || 0)} />
+                  )}
+                  {!qoralama && qaytarish.debtReduction != null && (
+                    <Malumot nom={t("view.debtReduction")} qiymat={pulniFormatlash(Number(qaytarish.debtReduction) || 0)} />
+                  )}
                 </div>
 
                 <div className="mt-7 overflow-x-auto rounded-[26px] border border-orange-100 bg-white shadow-[0_16px_45px_rgba(37,99,235,.07)]">

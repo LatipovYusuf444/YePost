@@ -172,7 +172,9 @@ export type Qaytarish = {
   totalAmount?: number | string;
   restock?: boolean;
   refundMethod?: QaytarishToloviniQaytarishUsuli | string;
+  // Backend `confirm` da hisoblaydi (satr ko'rinishida kelishi mumkin): mijozga qaytariladigan pul va sotuvdagi qarzdan ayirilgan summa.
   refundAmount?: number | string;
+  debtReduction?: number | string;
   createdAt?: string;
   updatedAt?: string;
   confirmedAt?: string;

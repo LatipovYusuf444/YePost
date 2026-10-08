@@ -9,7 +9,7 @@
   "view": {
     "status": "Статус",
     "sale": "Продажа",
-    "amount": "Сумма",
+    "amount": "Стоимость возвращённого товара",
     "createdAt": "Дата создания",
     "customer": "Клиент",
     "customerUnknown": "Данные отсутствуют",
@@ -18,6 +18,8 @@
     "responsible": "Ответственный сотрудник",
     "responsibleUnassigned": "Не назначен",
     "refundMethod": "Способ возврата",
+    "refundAmount": "Возвращено клиенту",
+    "debtReduction": "Списано с долга",
     "note": "Примечание",
     "editButton": "Редактировать возврат",
     "onlyDraftEditable": "Редактировать можно только черновик возврата."

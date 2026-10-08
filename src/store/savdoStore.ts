@@ -26,7 +26,6 @@ import {
   sotuvYaratish,
   xodimlarRoyxatiniOlish,
 } from "@/api/savdoApi";
-import { cashOperationsApi } from "@/api/cashOperationsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type {
   MijozTanlovi,
@@ -39,10 +38,7 @@ import type {
   SotuvYaratishMalumoti,
   XodimTanlovi,
 } from "@/types/savdo";
-import type { CashPaymentMethod } from "@/types/cashOperation";
 import { sotuvQarzdorlikSummasi } from "@/Pages/Savdo/savdoYordamchilari";
-
-const kassagaYoziladiganTolovUsullari = new Set(["CASH", "CARD"]);
 
 function xatolikKodi(error: unknown): string | undefined {
   if (typeof error !== "object" || error === null) return undefined;
@@ -55,43 +51,6 @@ function tasdiqlashXatoligiMatni(error: unknown) {
     return "Ombordagi mahsulot qoldig'i yetarli emas. Sotuvni tasdiqlashdan oldin ombor qoldig'ini to'ldiring yoki sotuvdagi miqdorni kamaytiring.";
   }
   return getApiErrorMessage(error);
-}
-
-async function qaytarishToloviniKassagaYozish(qaytarish: Qaytarish) {
-  const refundMethod = String(qaytarish.refundMethod ?? "CASH").toUpperCase();
-  if (!kassagaYoziladiganTolovUsullari.has(refundMethod)) return;
-
-  const summa = Number(
-    qaytarish.refundAmount ??
-      qaytarish.totalAmount ??
-      qaytarish.total ??
-      qaytarish.items?.reduce(
-        (jami, item) => jami + Number(item.quantity ?? 0) * Number(item.price ?? 0),
-        0
-      ) ??
-      0
-  );
-  if (summa <= 0) return;
-
-  // POST /finance/expenses eskirgan (Swagger: "o'rniga POST /finance/cash-operations
-  // ishlating"). Yaratilgan operatsiya qoralama holatida keladi, shu uchun kassa
-  // hisobotlarida (masalan /reports/cash-flow) ko'rinishi uchun darhol tasdiqlanadi.
-  const operatsiya = await cashOperationsApi.yaratish({
-    type: "CUSTOMER_REFUND",
-    amount: summa,
-    paymentMethod: refundMethod as CashPaymentMethod,
-    date: new Date().toISOString(),
-    saleId: qaytarish.saleId || undefined,
-    name: "Sotuv qaytarimi",
-    note: [
-      `Qaytarish ID: ${qaytarish.id}`,
-      qaytarish.saleId ? `Sotuv ID: ${qaytarish.saleId}` : "",
-      qaytarish.reason ? `Sabab: ${qaytarish.reason}` : "",
-    ]
-      .filter(Boolean)
-      .join(" | "),
-  });
-  await cashOperationsApi.tasdiqlash(operatsiya.id);
 }
 
 function qoldiqBirlashtirishKaliti(item: Pick<QoldiqTanlovi, "modificationId" | "warehouseId">) {
@@ -573,13 +532,9 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
     set({ amalBajarilmoqda: true, xatolik: null });
 
     try {
+      // POST /returns/{id}/confirm: refundAmount, debtReduction, ombor qoldig'i va kassa/balans yozuvlarini backend o'zi bajaradi.
+      // Frontend qo'shimcha kassa operatsiyasi (CUSTOMER_REFUND) YARATMAYDI — aks holda pul ikki marta chiqib ketadi.
       const yangilangan = await qaytarishniTasdiqlash(qaytarishId);
-
-      try {
-        await qaytarishToloviniKassagaYozish(yangilangan);
-      } catch (error) {
-        set({ xatolik: `Qaytarish tasdiqlandi, lekin to'lov qaytarimi kassaga yozilmadi: ${getApiErrorMessage(error)}` });
-      }
 
       const [sotuvlar, qaytarishlar] = await Promise.all([
         sotuvlarRoyxatiniOlish(),
