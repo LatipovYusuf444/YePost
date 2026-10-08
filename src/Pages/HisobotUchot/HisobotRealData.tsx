@@ -51,8 +51,21 @@ const boshData: RealData = {
 };
 
 const HisobotContext = createContext<RealData>(boshData);
-const tanlovNomi = (item: ApiTanlov) => item.name ?? item.fullName ??
+// Bo'sh nom ("") ham "nom yo'q" hisoblanadi: aks holda tanlov ro'yxatida matnsiz qator chiqib qolardi.
+const tanlovNomi = (item: ApiTanlov) => item.name?.trim() || item.fullName?.trim() ||
   ([item.firstName, item.lastName].filter(Boolean).join(" ") || item.username || item.id);
+
+// Variatsiya (modifikatsiya) nomi: "Mahsulot — variant". Variantning o'z nomi bo'sh bo'lsa xususiyatlari yoki "Asosiy variant" ko'rsatiladi.
+function variatsiyaNomi(item: ApiTanlov, mahsulotNomlari: Map<string, string>) {
+  // Mahsulot nomi topilmasa, variantni ajratib turish uchun shtrix kod ko'rsatiladi.
+  const mahsulot = item.product?.name?.trim() || mahsulotNomlari.get(item.productId ?? item.product?.id ?? "") || item.barcode || "";
+  const xususiyatlar = Object.entries(item.params ?? {})
+    .filter(([, qiymat]) => qiymat !== null && qiymat !== undefined && String(qiymat).trim())
+    .map(([kalit, qiymat]) => `${kalit}: ${String(qiymat)}`)
+    .join(", ");
+  const variant = item.name?.trim() || xususiyatlar || "Asosiy variant";
+  return [mahsulot, variant].filter(Boolean).join(" — ");
+}
 
 export function HisobotRealDataProvider({ children, tab }: { children: ReactNode; tab: HisobotTab }) {
   const [data, setData] = useState<RealData>(boshData);
@@ -65,6 +78,7 @@ export function HisobotRealDataProvider({ children, tab }: { children: ReactNode
         if (!active) return;
         const products = selections.products as ApiTanlov[];
         const modifications = selections.modifications as ApiTanlov[];
+        const mahsulotNomlari = new Map(products.map((product) => [product.id, tanlovNomi(product)]));
         const maxsulotlar: Maxsulot[] = products.map((product) => {
           const modification = modifications.find((item) => item.product?.id === product.id || item.productId === product.id);
           return {
@@ -93,7 +107,7 @@ export function HisobotRealDataProvider({ children, tab }: { children: ReactNode
           mijozlar: selections.customers.map((item) => ({ id: item.id, nomi: tanlovNomi(item as ApiTanlov) })),
           kompaniyalar: selections.companies.map((item) => ({ id: item.id, nomi: tanlovNomi(item as ApiTanlov) })),
           yetkazibBeruvchilar: selections.suppliers.map((item) => ({ id: item.id, nomi: tanlovNomi(item as ApiTanlov) })),
-          variatsiyalar: modifications.map((item) => ({ id: item.id, nomi: tanlovNomi(item) })),
+          variatsiyalar: modifications.map((item) => ({ id: item.id, nomi: variatsiyaNomi(item, mahsulotNomlari) })),
           xarakteristikalar: Array.from(new Map(xarakteristikalar.map((item) => [item.id, item])).values()),
         });
       })

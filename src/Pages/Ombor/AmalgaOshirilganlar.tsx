@@ -323,8 +323,8 @@ export default function AmalgaOshirilganlar() {
         sanaOlish={realizatsiyaSanasi}
       />
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <label className="relative block w-full max-w-[480px]">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <label className="relative block w-full min-w-0 sm:max-w-[480px] sm:flex-1">
           <Search
             size={19}
             className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-slate-400"
@@ -337,7 +337,7 @@ export default function AmalgaOshirilganlar() {
           />
         </label>
 
-        <div className="w-full lg:w-[260px]">
+        <div className="w-full sm:w-64 sm:shrink-0 lg:w-[260px]">
           <DateRangePicker
             from={sanaDan}
             to={sanaGacha}

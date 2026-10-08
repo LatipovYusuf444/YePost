@@ -721,7 +721,7 @@ export default function Monitoring() {
     setOmborYuklanmoqda(true);
     setOmborXato("");
     Promise.all([
-      stockBalanceReportAll({ balanceStatus: "ALL" }),
+      stockBalanceReportAll({ balanceStatus: "ALL", priceType: "COST" }),
       omborlarApi.royxat(),
     ])
       .then(([items, omborRoyxati]) => {
@@ -1446,7 +1446,7 @@ export default function Monitoring() {
         </div>
       </nav>
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
+      <section className="grid gap-4 sm:grid-cols-2 sm:max-lg:[&>*:last-child:nth-child(odd)]:col-span-2 lg:grid-cols-6 lg:[&>*]:col-span-2 lg:[&>*:nth-child(n+4)]:col-span-3 2xl:grid-cols-5 2xl:[&>*]:col-span-1 2xl:[&>*:nth-child(n+4)]:col-span-1">
         <KpiCard
           icon={ShoppingCart}
           label={t("kpi.periodSales")}
@@ -1630,7 +1630,7 @@ export default function Monitoring() {
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <MiniStat
               icon={Package}
-              label={t("kpi.stockValue")}
+              label={t("kpi.stockValueCost")}
               value={pul(demoMode ? jamiSumma(demoOmborQoldiqlari) : omborJami.qiymat)}
               yuklanmoqda={!demoMode && omborYuklanmoqda}
               xato={!demoMode && !!omborXato}

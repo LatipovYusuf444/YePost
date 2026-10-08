@@ -84,5 +84,7 @@
     "badgeDemo": "ДЕМО",
     "badgeManual": "ВРУЧНУЮ",
     "badgeServer": "СЕРВЕР"
-  }
+  },
+  "displayMenu": "Настройки отображения",
+  "displayMenuClose": "Закрыть настройки отображения"
 }

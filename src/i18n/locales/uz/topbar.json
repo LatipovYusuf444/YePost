@@ -84,5 +84,7 @@
     "badgeDemo": "DEMO",
     "badgeManual": "QO'LDA",
     "badgeServer": "SERVER"
-  }
+  },
+  "displayMenu": "Ko'rinish sozlamalari",
+  "displayMenuClose": "Ko'rinish sozlamalarini yopish"
 }

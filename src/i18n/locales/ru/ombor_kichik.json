@@ -92,7 +92,10 @@
     "searchPlaceholder": "Поиск",
     "addButton": "Добавить",
     "removeAria": "Убрать {{label}}",
-    "notFound": "Не найдено"
+    "notFound": "Не найдено",
+    "all": "Все",
+    "clear": "Сбросить",
+    "selectedCount": "Выбрано: {{count}}"
   },
   "kompaniyalar": {
     "confirmDelete": "Выполнить мягкое удаление компании?",

@@ -439,20 +439,20 @@ export default function Kochirish() {
     <div className="min-h-[calc(100vh-245px)] space-y-6">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-[38px] font-black leading-none tracking-tight text-slate-950">{t("kochirish.pageTitle")}</h1>
-          <p className="mt-2 text-lg text-slate-500">{t("kochirish.pageSubtitle")}</p>
+          <h1 className="text-3xl font-black tracking-tight text-slate-950">{t("kochirish.pageTitle")}</h1>
+          <p className="mt-1 text-sm font-medium text-slate-500">{t("kochirish.pageSubtitle")}</p>
         </div>
         <button
           type="button"
           onClick={() => setModal(true)}
-          className="inline-flex h-14 items-center justify-center gap-2 self-start rounded-[22px] bg-[#2563EB] px-6 text-base font-black text-white shadow-[0_12px_28px_rgba(37,99,235,.22)] transition hover:-translate-y-0.5 hover:bg-orange-600"
+          className="inline-flex h-12 items-center justify-center gap-2 self-start rounded-2xl bg-[#2563EB] px-6 text-sm font-black text-white shadow-[0_12px_28px_rgba(37,99,235,.22)] transition hover:-translate-y-0.5 hover:bg-orange-600"
         >
           <Plus size={20} /> {t("kochirish.createButton")}
         </button>
       </header>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <label className="flex h-14 w-full max-w-[480px] items-center gap-3 rounded-[22px] border border-slate-200 bg-white px-5 shadow-sm transition focus-within:border-orange-300 focus-within:ring-4 focus-within:ring-orange-100">
+        <label className="flex h-14 w-full min-w-0 items-center gap-3 rounded-[22px] border border-slate-200 bg-white px-5 shadow-sm transition focus-within:border-orange-300 focus-within:ring-4 focus-within:ring-orange-100">
           <Search size={21} className="shrink-0 text-slate-400" />
           <input
             value={qidiruv}
@@ -470,7 +470,7 @@ export default function Kochirish() {
           from={sanaDan}
           to={sanaGacha}
           onChange={(from, to) => { setSanaDan(from); setSanaGacha(to); }}
-          className="h-14 w-full sm:w-126"
+          className="h-14 w-full sm:w-64 sm:shrink-0 lg:w-80"
         />
       </div>
 

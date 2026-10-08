@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { BadgePercent, Download, Percent, ReceiptText, Search, ShoppingCart } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { BadgePercent, Download, Gift, Percent, ReceiptText, Scale, Search, ShoppingCart } from "lucide-react";
 import KengaytiriladiganJadval, { type Ustun } from "./KengaytiriladiganJadval";
 import Dropdown from "./Dropdown";
 import MuddatTanlov from "./MuddatTanlov";
 import LoadingState from "@/Components/common/LoadingState";
-import InlineLoading from "@/Components/common/InlineLoading";
+import KorsatkichKartasi, { KartaChiziqlari, KartaOlchagich } from "@/Components/common/KorsatkichKartasi";
 import ChegirmaXulosaBlok from "./ChegirmaXulosa";
 import {
   backendYoqmi,
@@ -37,6 +37,8 @@ type Qator = {
   sotuvSummasi: number;
   chegirma: number;
   foiz: number;
+  // Zavod bonusi (faqat kun/oy kesimida).
+  bonus: number;
 };
 
 const guruhlar: { value: DiscountReportGroupBy; nomi: string; ustun: string; qidiruv: string }[] = [
@@ -77,6 +79,7 @@ function qatorlarniOlish(royxat: DiscountReportRow[], guruh: DiscountReportGroup
       chegirmaliSotuvlar: raqam(item.discountedSalesCount ?? item.salesCount),
       sotuvSummasi,
       chegirma,
+      bonus: raqam(item.bonusAmount),
       // Foiz backenddan kelmasa, chegirmagacha bo'lgan summaga nisbatan hisoblanadi.
       foiz: item.discountPct != null
         ? raqam(item.discountPct)
@@ -179,6 +182,7 @@ export default function ChegirmaHisoboti() {
       chegirmaliSotuvlar: korinadigan.reduce((sum, item) => sum + item.chegirmaliSotuvlar, 0),
       sotuvSummasi,
       chegirma,
+      bonus: korinadigan.reduce((sum, item) => sum + item.bonus, 0),
       foiz: sotuvSummasi + chegirma > 0 ? (chegirma / (sotuvSummasi + chegirma)) * 100 : 0,
     };
   }, [korinadigan]);
@@ -189,7 +193,26 @@ export default function ChegirmaHisoboti() {
     chegirmaliSotuvlar: xulosa?.discountedSalesCount != null ? raqam(xulosa.discountedSalesCount) : jami.chegirmaliSotuvlar,
     sotuvlarSoni: xulosa?.totalSalesCount != null ? raqam(xulosa.totalSalesCount) : jami.sotuvlarSoni,
     foiz: xulosa?.avgDiscountPct != null ? raqam(xulosa.avgDiscountPct) : jami.foiz,
+    // Zavod bonusi kartalari faqat backend hisoboti bonusni qaytarganda ko'rsatiladi.
+    bonus: xulosa?.totalBonus != null ? raqam(xulosa.totalBonus) : null,
+    bonusFarqi:
+      xulosa?.bonusMinusDiscount != null
+        ? raqam(xulosa.bonusMinusDiscount)
+        : xulosa?.totalBonus != null
+          ? raqam(xulosa.totalBonus) - raqam(xulosa.totalDiscount)
+          : null,
   }), [jami, xulosa]);
+
+  // Bonus kesimlari: kun/oy qatorlarida ustun bor; kassir, mijoz va mahsulot kesimida bonus berilmaydi.
+  const bonusUstuniBor = guruh === "DAY" || guruh === "MONTH";
+
+  // Kartalardagi bezak ustunlari jadvaldagi real qatorlardan olinadi: kun/oy kesimida oxirgi 7 ta (vaqt tartibida), qolganlarida eng kattalari.
+  const bezakQiymatlari = (olish: (item: Qator) => number) => (bonusUstuniBor ? korinadigan.slice(-7) : korinadigan.slice(0, 7)).map(olish);
+  const chegirmaliUlushi = kartalar.sotuvlarSoni > 0 ? Math.min(100, (kartalar.chegirmaliSotuvlar / kartalar.sotuvlarSoni) * 100) : 0;
+
+  const bonusUstuni: Ustun<Qator>[] = bonusUstuniBor
+    ? [{ id: "bonus", nom: "Zavod bonusi", kenglik: 170, hizalash: "right", katak: (item) => (item.bonus ? <span className="font-black text-emerald-700">{pul(item.bonus)}</span> : <span className="text-slate-300">—</span>), jami: () => <span className="text-emerald-700">{pul(jami.bonus)}</span> }]
+    : [];
 
   const ustunlar: Ustun<Qator>[] = [
     { id: "nomi", nom: joriyGuruh.ustun, kenglik: 240, katak: (item) => <span className="font-black text-slate-900">{item.nomi}</span>, jami: () => `Jami: ${korinadigan.length} ta` },
@@ -198,6 +221,7 @@ export default function ChegirmaHisoboti() {
     { id: "sotuvSummasi", nom: "Sotuv summasi", kenglik: 190, hizalash: "right", katak: (item) => pul(item.sotuvSummasi), jami: () => pul(jami.sotuvSummasi) },
     { id: "chegirma", nom: "Chegirma summasi", kenglik: 190, hizalash: "right", katak: (item) => <span className="font-black text-lime-700">{pul(item.chegirma)}</span>, jami: () => <span className="text-lime-700">{pul(jami.chegirma)}</span> },
     { id: "foiz", nom: "Chegirma %", kenglik: 140, hizalash: "right", katak: (item) => `${item.foiz.toFixed(2)}%`, jami: () => `${jami.foiz.toFixed(2)}%` },
+    ...bonusUstuni,
   ];
 
   async function eksport() {
@@ -225,12 +249,71 @@ export default function ChegirmaHisoboti() {
       </div>
     </section>
 
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <Karta icon={<BadgePercent size={20} />} nom="Jami chegirma" qiymat={pul(kartalar.chegirma)} yuklanmoqda={yuklanmoqda} rang="lime" />
-      <Karta icon={<ReceiptText size={20} />} nom="Chegirmali sotuvlar" qiymat={son(kartalar.chegirmaliSotuvlar)} yuklanmoqda={yuklanmoqda} rang="orange" />
-      <Karta icon={<ShoppingCart size={20} />} nom="Jami sotuvlar" qiymat={son(kartalar.sotuvlarSoni)} yuklanmoqda={yuklanmoqda} rang="blue" />
-      <Karta icon={<Percent size={20} />} nom="O‘rtacha chegirma" qiymat={`${kartalar.foiz.toFixed(2)}%`} yuklanmoqda={yuklanmoqda} rang="slate" />
+    <div className={`grid gap-4 sm:grid-cols-2 ${kartalar.bonus != null ? "xl:grid-cols-3" : "xl:grid-cols-4"}`}>
+      <KorsatkichKartasi
+        icon={BadgePercent}
+        nom="Jami chegirma"
+        qiymat={pul(kartalar.chegirma)}
+        rang="amber"
+        belgi={{ matn: "Jami" }}
+        ornament={<KartaChiziqlari qiymatlar={bezakQiymatlari((item) => item.chegirma)} klass="bg-amber-400" />}
+        yuklanmoqda={yuklanmoqda}
+      />
+      <KorsatkichKartasi
+        icon={ReceiptText}
+        nom="Chegirmali sotuvlar"
+        qiymat={son(kartalar.chegirmaliSotuvlar)}
+        rang="violet"
+        belgi={{ matn: `${chegirmaliUlushi.toFixed(chegirmaliUlushi % 1 === 0 ? 0 : 1)}%` }}
+        ornament={<KartaOlchagich faol={kartalar.chegirmaliSotuvlar} jami={kartalar.sotuvlarSoni} klass="bg-violet-400" />}
+        yuklanmoqda={yuklanmoqda}
+      />
+      <KorsatkichKartasi
+        icon={ShoppingCart}
+        nom="Jami sotuvlar"
+        qiymat={son(kartalar.sotuvlarSoni)}
+        rang="blue"
+        belgi={{ matn: "Jami" }}
+        ornament={<KartaChiziqlari qiymatlar={bezakQiymatlari((item) => item.sotuvlarSoni)} klass="bg-blue-400" />}
+        yuklanmoqda={yuklanmoqda}
+      />
+      <KorsatkichKartasi
+        icon={Percent}
+        nom="O‘rtacha chegirma"
+        qiymat={`${kartalar.foiz.toFixed(2)}%`}
+        rang="rose"
+        belgi={{ matn: "o‘rtacha" }}
+        ornament={<KartaOlchagich faol={kartalar.foiz} jami={100} klass="bg-rose-400" />}
+        yuklanmoqda={yuklanmoqda}
+      />
+      {kartalar.bonus != null && (
+        <>
+          <KorsatkichKartasi
+            icon={Gift}
+            nom="Olingan zavod bonusi"
+            qiymat={pul(kartalar.bonus)}
+            rang="emerald"
+            belgi={{ matn: "Zavoddan" }}
+            ornament={bonusUstuniBor ? <KartaChiziqlari qiymatlar={bezakQiymatlari((item) => item.bonus)} klass="bg-emerald-400" /> : undefined}
+            yuklanmoqda={yuklanmoqda}
+          />
+          <KorsatkichKartasi
+            icon={Scale}
+            nom="Bonus − chegirma"
+            qiymat={pul(kartalar.bonusFarqi ?? 0)}
+            rang={(kartalar.bonusFarqi ?? 0) >= 0 ? "emerald" : "rose"}
+            manfiy={(kartalar.bonusFarqi ?? 0) < 0}
+            belgi={(kartalar.bonusFarqi ?? 0) >= 0 ? { matn: "Bonus ustun", ohang: "yaxshi" } : { matn: "Chegirma ustun", ohang: "xavfli" }}
+            yuklanmoqda={yuklanmoqda}
+          />
+        </>
+      )}
     </div>
+    {responsibleId && kartalar.bonus != null && (
+      <p className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-semibold leading-5 text-blue-800">
+        Zavod bonusi kassirga bog‘liq emas, shuning uchun kassir filtri tanlanganda olingan bonus 0 ko‘rsatiladi.
+      </p>
+    )}
 
     {xato && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
     {manba === "sotuvlar" && !xato && (
@@ -245,26 +328,5 @@ export default function ChegirmaHisoboti() {
     <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm">
       {yuklanmoqda ? <LoadingState matn="Chegirmalar jadvali yuklanmoqda..." ikonka={<BadgePercent size={24} />} className="min-h-[300px] rounded-none border-0 bg-transparent py-12" /> : korinadigan.length ? <KengaytiriladiganJadval ustunlar={ustunlar} qatorlar={korinadigan} jamiBor /> : <div className="flex h-72 items-center justify-center font-bold text-slate-400">Tanlangan filtr bo‘yicha chegirma topilmadi.</div>}
     </section>
-  </div>;
-}
-
-const kartaRanglari = {
-  lime: "bg-lime-50 text-lime-700 ring-lime-100",
-  orange: "bg-orange-50 text-orange-600 ring-orange-100",
-  blue: "bg-blue-50 text-blue-600 ring-blue-100",
-  slate: "bg-slate-100 text-slate-600 ring-slate-200",
-};
-
-function Karta({ icon, nom, qiymat, rang, yuklanmoqda }: { icon: ReactNode; nom: string; qiymat: string; rang: keyof typeof kartaRanglari; yuklanmoqda: boolean }) {
-  return <div className="flex items-center gap-4 rounded-3xl border border-orange-100 bg-white p-5 shadow-sm">
-    <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ring-1 ${kartaRanglari[rang]}`}>{icon}</span>
-    <div className="min-w-0">
-      <p className="text-xs font-bold text-slate-500">{nom}</p>
-      {yuklanmoqda ? (
-        <InlineLoading matn="Yuklanmoqda..." className="mt-1" />
-      ) : (
-        <p className="mt-1 truncate text-xl font-black text-slate-950">{qiymat}</p>
-      )}
-    </div>
   </div>;
 }

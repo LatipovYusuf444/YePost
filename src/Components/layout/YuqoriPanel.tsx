@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "motion/react";
-import { Bell, BellOff, CheckCheck, FileBarChart, LoaderCircle, LogOut, Menu, Package, PackagePlus, Search, Settings, ShoppingCart, UserRound, Users, Wallet } from "lucide-react";
+import { Bell, BellOff, CheckCheck, FileBarChart, LoaderCircle, LogOut, Menu, Package, PackagePlus, Search, Settings, ShoppingCart, SlidersHorizontal, UserRound, Users, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import LanguageSwitcher from "@/Components/common/LanguageSwitcher";
@@ -50,6 +50,74 @@ function YopishqoqNavbar({ children }: { children: ReactNode }) {
   );
 }
 
+// Header (yon panel ochiq/yopiq bo'lishiga qarab) kengligiga moslashadi:
+//   toliq  — valyuta, mavzu va til to'liq ko'rinadi;
+//   ixcham — til nomi yashiriladi (faqat bayroq);
+//   menyu  — uchala boshqaruv bitta "Ko'rinish" tugmasidagi ochiluvchi panelga yig'iladi (telefon).
+// Viewport emas, header kengligi o'lchanadi: planshetda yon panel ochilganda ham joy yetishmay qolmaydi.
+type HeaderRejimi = "toliq" | "ixcham" | "menyu";
+
+function useHeaderRejimi(bosh: boolean) {
+  const [element, setElement] = useState<HTMLElement | null>(null);
+  const [kenglik, setKenglik] = useState(1200);
+
+  useEffect(() => {
+    if (!element) return;
+    const kuzatuvchi = new ResizeObserver(([yozuv]) => setKenglik(Math.round(yozuv.contentRect.width)));
+    kuzatuvchi.observe(element);
+    return () => kuzatuvchi.disconnect();
+  }, [element]);
+
+  // Bosh sahifa headerida qidiruv maydoni va "mahsulot qo'shish" tugmasi ham bor, shuning uchun ko'proq joy kerak.
+  const [toliq, ixcham] = bosh ? [900, 810] : [660, 570];
+  const rejim: HeaderRejimi = kenglik >= toliq ? "toliq" : kenglik >= ixcham ? "ixcham" : "menyu";
+  return { ref: setElement, rejim };
+}
+
+function KorinishMenyusi() {
+  const { t } = useTranslation("topbar");
+  const [ochiq, setOchiq] = useState(false);
+  return (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOchiq((qiymat) => !qiymat)}
+        aria-label={t("displayMenu")}
+        aria-haspopup="dialog"
+        aria-expanded={ochiq}
+        className={`flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 text-white/90 transition-colors hover:bg-white/20 hover:text-white ${ochiq ? "bg-white/25" : "bg-white/10"}`}
+      >
+        <SlidersHorizontal size={19} />
+      </button>
+      {ochiq && (
+        <>
+          <button type="button" aria-label={t("displayMenuClose")} className="fixed inset-0 z-100 cursor-default" onClick={() => setOchiq(false)} />
+          <div
+            role="dialog"
+            aria-label={t("displayMenu")}
+            className="absolute right-0 top-14 z-101 flex w-[min(300px,calc(100vw-32px))] flex-col items-end gap-3 rounded-3xl border border-white/10 bg-[#0B1424] p-4 shadow-[0_24px_60px_rgba(2,6,23,.5)]"
+          >
+            <ValyutaTanlash />
+            <ThemeSwitcher variant="dark" />
+            <LanguageSwitcher variant="dark" />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function HeaderBoshqaruvlari({ rejim }: { rejim: HeaderRejimi }) {
+  if (rejim === "menyu") return <KorinishMenyusi />;
+  return (
+    <>
+      <ValyutaTanlash />
+      <ThemeSwitcher variant="dark" />
+      <LanguageSwitcher variant="dark" qisqa={rejim === "ixcham"} />
+    </>
+  );
+}
+
 export default function YuqoriPanel({
   sidebarAcik,
   onSidebarToggle,
@@ -64,6 +132,7 @@ export default function YuqoriPanel({
   const [bildirishnomaOchiq, setBildirishnomaOchiq] = useState(false);
   const [bildirishnomaYuklanmoqda, setBildirishnomaYuklanmoqda] = useState(false);
   const [mahsulotModalOchiq, setMahsulotModalOchiq] = useState(false);
+  const { ref: headerRef, rejim } = useHeaderRejimi(pathname === "/");
 
   const profil = useAuthProfileStore((state) => state.profil);
   const profilniYuklash = useAuthProfileStore((state) => state.profilniYuklash);
@@ -124,7 +193,7 @@ export default function YuqoriPanel({
   if (pathname === "/") {
     return (
       <YopishqoqNavbar>
-      <header className="theme-sidebar relative flex items-center gap-3 rounded-[24px] border border-white/10 bg-[#0B1424] px-3 py-2.5 shadow-[0_18px_44px_rgba(2,6,23,.28)] transition-shadow duration-300 group-data-[aylangan]/navbar:shadow-[0_24px_56px_rgba(2,6,23,.46)] group-data-[aylangan]/navbar:ring-1 group-data-[aylangan]/navbar:ring-white/10 motion-reduce:transition-none">
+      <header ref={headerRef} className={`theme-sidebar relative flex items-center gap-2 rounded-[22px] sm:gap-3 sm:rounded-[24px]${rejim === "menyu" ? " flex-wrap" : ""} border border-white/10 bg-[#0B1424] px-3 py-2.5 shadow-[0_18px_44px_rgba(2,6,23,.28)] transition-shadow duration-300 group-data-[aylangan]/navbar:shadow-[0_24px_56px_rgba(2,6,23,.46)] group-data-[aylangan]/navbar:ring-1 group-data-[aylangan]/navbar:ring-white/10 motion-reduce:transition-none`}>
         <button
           type="button"
           onClick={onSidebarToggle}
@@ -134,7 +203,7 @@ export default function YuqoriPanel({
         >
           <Menu size={20} />
         </button>
-        <div className="theme-search flex h-11 min-w-0 flex-1 items-center rounded-2xl border border-white/10 bg-white/10 px-4 transition focus-within:border-white/30 focus-within:bg-white/15">
+        <div className={`theme-search flex h-11 min-w-0 items-center rounded-2xl border border-white/10 bg-white/10 px-4 transition focus-within:border-white/30 focus-within:bg-white/15 ${rejim === "menyu" ? "order-last basis-full" : "flex-1"}`}>
           <Search size={18} className="mr-3 shrink-0 text-white/60" />
           <input
             placeholder={t("searchPlaceholder")}
@@ -144,14 +213,12 @@ export default function YuqoriPanel({
         <button
           type="button"
           onClick={() => setMahsulotModalOchiq(true)}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-white/90 hover:bg-white/20 hover:text-white transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-white/90 hover:bg-white/20 hover:text-white transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40${rejim === "menyu" ? " ml-auto" : ""}`}
           aria-label={t("addProduct")}
         >
           <PackagePlus size={20} />
         </button>
-        <ValyutaTanlash />
-        <ThemeSwitcher variant="dark" />
-        <LanguageSwitcher variant="dark" />
+        <HeaderBoshqaruvlari rejim={rejim} />
         <BildirishnomaTugmasi
           ochiq={bildirishnomaOchiq}
           setOchiq={setBildirishnomaOchiq}
@@ -177,6 +244,7 @@ export default function YuqoriPanel({
   return (
     <YopishqoqNavbar>
     <motion.header
+      ref={headerRef}
       initial={{ opacity: 0, y: -16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
@@ -192,9 +260,7 @@ export default function YuqoriPanel({
         <Menu size={20} />
       </button>
       <div className="flex items-center gap-2">
-        <ValyutaTanlash />
-        <ThemeSwitcher variant="dark" />
-        <LanguageSwitcher variant="dark" />
+        <HeaderBoshqaruvlari rejim={rejim} />
         <BildirishnomaTugmasi
         ochiq={bildirishnomaOchiq}
         setOchiq={setBildirishnomaOchiq}

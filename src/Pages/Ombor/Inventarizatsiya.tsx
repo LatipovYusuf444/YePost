@@ -1,7 +1,7 @@
 import AppSelect from "@/Components/ui/AppSelect";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle, CheckCircle2, CircleX, ClipboardList, Clock3, FileText, Filter, LoaderCircle, Lock, MessageSquareText, Package, Plus, ScanLine, Search, Settings, Trash2, Warehouse } from "lucide-react";
+import { AlertTriangle, ClipboardList, FileText, Filter, LoaderCircle, Lock, MessageSquareText, Package, Plus, ScanLine, Search, Settings, Trash2, Warehouse } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
@@ -12,6 +12,7 @@ import { mahalliySanaKaliti } from "@/lib/sanaKaliti";
 import type { InventarizatsiyaTuri, OmborQoldigi } from "@/types/ombor";
 import { holat, hujjatRaqami, modificationNomi, qoldiqMiqdori, sana } from "./omborYordamchilari";
 import InventoryHujjatModal from "./InventoryHujjatModal";
+import HujjatStatistikaKartalari from "./HujjatStatistikaKartalari";
 import OmborJadval from "./OmborJadval";
 import TablePagination from "@/Components/common/TablePagination";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
@@ -529,36 +530,17 @@ export default function Inventarizatsiya() {
         </button>
       </header>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label={t("inventarizatsiya.pageTitle")}>
-      {[
-          { title: t("inventarizatsiya.stats.total"), value: inventarizatsiyaStatistikasi.jami, icon: FileText },
-          { title: t("inventarizatsiya.stats.completed"), value: inventarizatsiyaStatistikasi.tugallangan, icon: CheckCircle2 },
-          { title: t("inventarizatsiya.stats.inProgress"), value: inventarizatsiyaStatistikasi.jarayonda, icon: Clock3 },
-          { title: t("inventarizatsiya.stats.cancelled"), value: inventarizatsiyaStatistikasi.bekorQilingan, icon: CircleX },
-        ].map(({ title, value, icon: Icon }, index) => {
-          const kartaYuklanmoqda = store.yuklanmoqda && store.inventarizatsiyalar.length === 0;
-          return (
-          <button key={title} type="button" onClick={() => { setHolatFiltri(["ALL", "CONFIRMED", "DRAFT", "CANCELLED"][index]); setPage(1); }} disabled={kartaYuklanmoqda} aria-pressed={holatFiltri === ["ALL", "CONFIRMED", "DRAFT", "CANCELLED"][index]} aria-busy={kartaYuklanmoqda} className={`group relative isolate flex min-h-[126px] flex-col justify-center overflow-hidden rounded-[22px] border border-blue-100 bg-gradient-to-br from-white to-blue-50/70 p-4 text-left shadow-[0_5px_18px_rgba(37,99,235,.06)] transition duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_14px_30px_rgba(37,99,235,.13)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-default disabled:hover:translate-y-0 disabled:hover:border-blue-100 disabled:hover:shadow-[0_5px_18px_rgba(37,99,235,.06)] sm:p-5 ${holatFiltri === ["ALL", "CONFIRMED", "DRAFT", "CANCELLED"][index] && !kartaYuklanmoqda ? "ring-2 ring-blue-300" : ""}`}>
-          <span className="pointer-events-none absolute -right-7 -top-8 -z-10 h-28 w-28 rounded-full bg-blue-200/40 blur-2xl transition duration-500 group-hover:scale-150" />
-            {kartaYuklanmoqda ? (
-              <span className="flex items-center justify-center gap-2 text-sm font-bold text-slate-400">
-                <LoaderCircle size={18} className="animate-spin text-blue-500" />
-                {t("inventarizatsiya.loadingDocuments")}
-              </span>
-            ) : (
-              <div className="flex w-full items-center gap-3">
-                <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-md transition duration-300 group-hover:rotate-[-6deg] group-hover:scale-105 ${index === 1 ? "bg-emerald-500 shadow-emerald-200" : index === 2 ? "bg-amber-500 shadow-amber-200" : index === 3 ? "bg-rose-500 shadow-rose-200" : "bg-blue-600 shadow-blue-200"}`}><Icon size={21} /></span>
-                <div><p className="text-sm font-semibold text-slate-500">{title}</p><p className="mt-1 text-2xl font-black leading-none text-slate-900">{value}</p></div>
-                <span className={`rounded-full bg-white/80 px-2.5 py-1 text-xs font-black shadow-sm ring-1 ring-white/90 ${index === 1 ? "text-emerald-700" : index === 2 ? "text-amber-700" : index === 3 ? "text-rose-700" : "text-blue-700"}`}>{inventarizatsiyaStatistikasi.jami ? Math.round((value / inventarizatsiyaStatistikasi.jami) * 100) : 0}%</span>
-              </div>
-            )}
-          {!kartaYuklanmoqda && <span className="mt-4 block h-1.5 w-full overflow-hidden rounded-full bg-white/90 shadow-inner"><span className={`block h-full rounded-full transition-[width] duration-700 ease-out ${index === 1 ? "bg-emerald-500" : index === 2 ? "bg-amber-500" : index === 3 ? "bg-rose-500" : "bg-blue-500"}`} style={{ width: `${inventarizatsiyaStatistikasi.jami ? Math.round((value / inventarizatsiyaStatistikasi.jami) * 100) : 0}%` }} /></span>}
-          </button>
-          );
-        })}
-      </section>
+      <HujjatStatistikaKartalari
+        labels={[t("inventarizatsiya.stats.total"), t("inventarizatsiya.stats.completed"), t("inventarizatsiya.stats.inProgress"), t("inventarizatsiya.stats.cancelled")]}
+        values={[inventarizatsiyaStatistikasi.jami, inventarizatsiyaStatistikasi.tugallangan, inventarizatsiyaStatistikasi.jarayonda, inventarizatsiyaStatistikasi.bekorQilingan]}
+        selected={holatFiltri}
+        onSelect={(holat) => { setHolatFiltri(holat); setPage(1); }}
+        ariaLabel={t("inventarizatsiya.pageTitle")}
+        loading={store.yuklanmoqda && store.inventarizatsiyalar.length === 0}
+        loadingText={t("inventarizatsiya.loadingDocuments")}
+      />
 
-      <section className="grid gap-3 rounded-2xl border border-blue-100 bg-white p-3 shadow-[0_2px_8px_rgba(37,99,235,.05)] lg:grid-cols-[minmax(240px,1fr)_minmax(260px,1.1fr)_minmax(150px,.55fr)_minmax(170px,.65fr)] lg:items-center">
+      <section className="grid gap-3 rounded-2xl border border-blue-100 bg-white p-3 shadow-[0_2px_8px_rgba(37,99,235,.05)] sm:grid-cols-2 lg:grid-cols-[minmax(240px,1fr)_minmax(260px,1.1fr)_minmax(150px,.55fr)_minmax(170px,.65fr)] lg:items-center">
         <label className="relative block min-w-0">
           <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-blue-700" />
           <input

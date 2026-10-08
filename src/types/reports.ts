@@ -69,6 +69,8 @@ export type DiscountReportRow = {
   discountedSalesCount?: number | string;
   salesAmount?: number | string;
   discountPct?: number | string;
+  // Yetkazib beruvchi (zavod) bonusi — faqat DAY/MONTH qatorlarida keladi (kassir, mijoz, mahsulot qatorlarida yo'q).
+  bonusAmount?: number | string;
 };
 
 export type DiscountReportSummary = {
@@ -77,6 +79,9 @@ export type DiscountReportSummary = {
   totalSalesCount?: number | string;
   totalSalesAmount?: number | string;
   avgDiscountPct?: number | string;
+  // Tasdiqlangan zavod bonuslari yig'indisi va uning chegirmadan farqi (bonus − chegirma).
+  totalBonus?: number | string;
+  bonusMinusDiscount?: number | string;
 };
 
 export type IncomeExpenseFilter = SanaFilter & {

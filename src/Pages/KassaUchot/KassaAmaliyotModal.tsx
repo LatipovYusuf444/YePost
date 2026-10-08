@@ -210,7 +210,7 @@ export default function KassaAmaliyotModal({
   }
 
   return (
-    <AppModal className="!items-stretch !p-3 !pl-[74px] sm:!p-5 sm:!pl-[88px]">
+    <AppModal className="!items-stretch !p-3 sm:!p-5 sm:!pl-[88px]">
       <div className="relative flex min-h-0 w-full">
         {/* Modaldan chiqib turadigan yopish (X) — chap chetда */}
         <button

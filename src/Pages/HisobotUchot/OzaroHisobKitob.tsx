@@ -98,7 +98,13 @@ export default function OzaroHisobKitob() {
     { id: "turi", nom: "Turi", kenglik: 180, katak: (row) => row.turi },
     { id: "total", nom: "Debet", kenglik: 190, hizalash: "right", katak: (row) => pul(row.total), jami: () => pul(jami.total) },
     { id: "paid", nom: "Kredit", kenglik: 190, hizalash: "right", katak: (row) => <span className="text-emerald-600">{pul(row.paid)}</span>, jami: () => pul(jami.paid) },
-    { id: "debt", nom: "Yakuniy balans", kenglik: 190, hizalash: "right", katak: (row) => <span className={row.debt ? "font-black text-red-500" : "text-gray-500"}>{pul(row.debt)}</span>, jami: () => pul(jami.debt) },
+    { id: "debt", nom: "Yakuniy balans", kenglik: 190, hizalash: "right", katak: (row) =>
+        // Zavod bonusi qarzdan oshsa, yetkazib beruvchi balansi musbat bo'ladi: bu zavod oldidagi avansimiz (qarz emas).
+        row.turi === "Yetkazib beruvchi" && row.debt > 0 ? (
+          <span className="font-black text-emerald-600">{pul(row.debt)} <span className="text-xs font-bold">(avans)</span></span>
+        ) : (
+          <span className={row.debt ? "font-black text-red-500" : "text-gray-500"}>{pul(row.debt)}</span>
+        ), jami: () => pul(jami.debt) },
   ];
 
   async function eksport() {

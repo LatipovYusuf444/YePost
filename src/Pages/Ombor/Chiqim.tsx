@@ -362,7 +362,7 @@ export default function Chiqim() {
       />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative w-full max-w-[480px]">
+        <div className="relative w-full min-w-0 sm:max-w-[480px] sm:flex-1">
           <Search size={18} className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input value={qidiruv} onChange={(event) => setQidiruv(event.target.value)} placeholder={t("chiqim.searchPlaceholder")} className="h-14 w-full rounded-2xl border border-slate-200 bg-white pl-13 pr-5 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100" />
         </div>
@@ -370,7 +370,7 @@ export default function Chiqim() {
           from={sanaDan}
           to={sanaGacha}
           onChange={(from, to) => { setSanaDan(from); setSanaGacha(to); }}
-          className="h-14 w-full sm:w-126"
+          className="h-14 w-full sm:w-64 sm:shrink-0 lg:w-80"
         />
       </div>
 

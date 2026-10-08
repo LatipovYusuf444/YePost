@@ -1,5 +1,13 @@
 # Yetkazib beruvchi (zavod) bonusi — frontend ulanishi uchun talab
 
+> **Holat (2026-10-08): backend tayyor (466ed93), frontend ulangan.** Quyidagi savollarga javob:
+> 1) bonus qarzdan katta bo'lsa xato yo'q — ortig'i zavod oldidagi avans (`counterparty-balance`da `closingBalance` musbat);
+> 2) bonus "boshqa daromad" sifatida yoziladi: faqat **sof foyda** oshadi, **yalpi foyda** o'zgarmaydi.
+> Endpointlar: `GET/POST /finance/supplier-bonuses`, `GET/PATCH/DELETE /:id`, `POST /:id/confirm|cancel|restore`
+> (ruxsat: DIREKTOR yoki CASH_IN; o'chirish — DELETE). Hisobotlar: `income.supplierBonus` (`otherIncome` ichida, qayta qo'shilmaydi),
+> `discounts.summary.totalBonus/bonusMinusDiscount`, DAY/MONTH qatorlarida `bonusAmount`, `counterparty-balance` hujjat turi `SUPPLIER_BONUS`.
+> Frontend: Kassa → «Zavod bonusi» tabi (`src/Pages/KassaUchot/ZavodBonusi*.tsx`, `src/api/zavodBonusiApi.ts`).
+
 Sana: 2026-10-08. Hujjat backend dasturchi uchun. Backend tavsifi bo'yicha reja to'g'ri, quyida frontend UI'ni
 qaysi shartnomaga yozishi va tasdiqlanishi kerak bo'lgan savollar yig'ilgan.
 (2026-10-08 holatida bonus uchun marshrut topilmadi: `supplier-bonuses`, `finance/supplier-bonuses`, `partners/...` va h.k. — hammasi `404`.)

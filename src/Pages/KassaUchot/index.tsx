@@ -4,6 +4,7 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Banknote,
+  Gift,
   Landmark,
   Plus,
   Search,
@@ -31,6 +32,7 @@ import type {
 } from "@/types/cashOperation";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
 import KassaAmaliyotModal from "./KassaAmaliyotModal";
+import ZavodBonusi from "./ZavodBonusi";
 import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali, KassaYonalishi } from "./types";
 import { sanaFormat, summaFormat } from "./yordamchilar";
 
@@ -38,6 +40,8 @@ import ModalTablari from "@/Components/common/ModalTablari";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import LoadingState from "@/Components/common/LoadingState";
 import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
+import { useAuthProfileStore } from "@/store/authProfileStore";
+import { rolniNormallashtirish } from "@/lib/roles";
 type Bolim = { yonalish: KassaYonalishi };
 type Guruh = { kanal: KassaKanali; icon: typeof Banknote; bolimlar: Bolim[] };
 
@@ -90,6 +94,13 @@ const uiOperationTuri: Record<KassaAmaliyotTuri, CashOperationType> = {
 export default function KassaUchot() {
   const { t } = useTranslation(["kassa_uchot", "common"]);
   const sotuvniBekorQilishMumkin = useHujjatniBekorQilishMumkinmi("savdo");
+  // Zavod bonusi: yaratish/tasdiqlash — direktor yoki CASH_IN huquqi; o'chirish — DELETE huquqi (direktor ham).
+  const profil = useAuthProfileStore((holat) => holat.profil);
+  const profilRoli = rolniNormallashtirish(profil?.role);
+  const faolHuquq = (kod: string) => (profil?.grants ?? []).some((huquq) => huquq.code === kod && huquq.isActive !== false);
+  const zavodBonusiRuxsati = profilRoli === "DIREKTOR" || faolHuquq("CASH_IN");
+  const zavodBonusiOchirish = profilRoli === "DIREKTOR" || faolHuquq("DELETE");
+  const [zavodBonusiOchiq, setZavodBonusiOchiq] = useState(false);
 
   function amaliyotgaMoslash(
     item: FinanceTransaction,
@@ -439,21 +450,33 @@ export default function KassaUchot() {
 
       {/* Har kanal uchun tushum va chiqim alohida tab */}
       <ModalTablari
-        tablar={guruhlar.flatMap((guruh) => {
-          const Ikonka = guruh.icon;
-          return guruh.bolimlar.map((bolim) => ({
-            id: `${guruh.kanal}:${bolim.yonalish}`,
-            nom: t(`groups.${guruh.kanal}.${bolim.yonalish}`),
-            icon: <Ikonka size={15} />,
-          }));
-        })}
-        faol={`${kanal}:${yonalish}`}
+        tablar={[
+          ...guruhlar.flatMap((guruh) => {
+            const Ikonka = guruh.icon;
+            return guruh.bolimlar.map((bolim) => ({
+              id: `${guruh.kanal}:${bolim.yonalish}`,
+              nom: t(`groups.${guruh.kanal}.${bolim.yonalish}`),
+              icon: <Ikonka size={15} />,
+            }));
+          }),
+          ...(zavodBonusiRuxsati ? [{ id: "zavod-bonusi", nom: t("zavodBonusi.tab"), icon: <Gift size={15} /> }] : []),
+        ]}
+        faol={zavodBonusiOchiq ? "zavod-bonusi" : `${kanal}:${yonalish}`}
         onChange={(id) => {
+          if (id === "zavod-bonusi") {
+            setZavodBonusiOchiq(true);
+            return;
+          }
+          setZavodBonusiOchiq(false);
           const [yangiKanal, yangiYonalish] = id.split(":");
           bolimniTanlash(yangiKanal as KassaKanali, yangiYonalish as KassaYonalishi);
         }}
       />
 
+      {zavodBonusiOchiq && zavodBonusiRuxsati ? (
+        <ZavodBonusi ochirishMumkin={zavodBonusiOchirish} />
+      ) : (
+        <>
       {/* Chapda: qidiruv + jami. O'ngda: yaratish tugmasi. */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
@@ -544,6 +567,9 @@ export default function KassaUchot() {
           onSaqlash={saqlash}
         />
       )}
+        </>
+      )}
     </div>
   );
 }
+

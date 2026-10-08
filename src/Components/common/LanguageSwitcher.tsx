@@ -33,9 +33,11 @@ const LANGUAGE_META: Record<AppLanguage, { fullLabel: string; Flag: (props: SVGP
 type LanguageSwitcherProps = {
   className?: string;
   variant?: "dark" | "light";
+  // Tor joyda til nomi yashiriladi (faqat bayroq va strelka qoladi).
+  qisqa?: boolean;
 };
 
-export default function LanguageSwitcher({ className = "", variant = "dark" }: LanguageSwitcherProps) {
+export default function LanguageSwitcher({ className = "", variant = "dark", qisqa = false }: LanguageSwitcherProps) {
   const { i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const current = (i18n.resolvedLanguage ?? i18n.language) as AppLanguage;
@@ -59,7 +61,7 @@ export default function LanguageSwitcher({ className = "", variant = "dark" }: L
         <span className="inline-block h-3.5 w-5 shrink-0 overflow-hidden rounded-[3px] ring-1 ring-black/10">
           <Flag className="h-full w-full" />
         </span>
-        {fullLabel}
+        {!qisqa && fullLabel}
         <ChevronDown size={14} className={`shrink-0 opacity-60 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (

@@ -143,5 +143,90 @@
     "qoralama": "Qoralama",
     "bekor_qilingan": "Bekor qilingan"
   },
-  "saleNoPermission": "Sotuvni bekor qilish uchun direktor yoki RETURN_CANCEL ruxsati bor admin kerak."
+  "saleNoPermission": "Sotuvni bekor qilish uchun direktor yoki RETURN_CANCEL ruxsati bor admin kerak.",
+  "zavodBonusi": {
+    "tab": "Zavod bonusi",
+    "subtitle": "Zavoddan olingan bonus: tasdiqlanganda zavod oldidagi qarzimiz bonus summasiga kamayadi va u sof foydaga daromad bo'lib qo'shiladi (yalpi foyda o'zgarmaydi). Kassaga pul kirmaydi.",
+    "searchPlaceholder": "Raqam, zavod yoki izoh bo'yicha qidirish",
+    "statusFilter": "Holat bo'yicha filtr",
+    "statusAll": "Barcha holatlar",
+    "createButton": "Bonus qo'shish",
+    "confirmedTotal": "Tasdiqlangan: {{value}}",
+    "loading": "Bonuslar yuklanmoqda...",
+    "empty": "Zavod bonusi hujjatlari yo'q",
+    "emptyHint": "Zavoddan bonus olsangiz, «Bonus qo'shish» tugmasi bilan kiriting.",
+    "emptyFiltered": "Tanlangan filtr bo'yicha bonus topilmadi",
+    "holatlar": {
+      "DRAFT": "Qoralama",
+      "CONFIRMED": "Tasdiqlangan",
+      "CANCELLED": "Bekor qilingan"
+    },
+    "columns": {
+      "number": "Raqam",
+      "supplier": "Zavod",
+      "date": "Sana",
+      "amount": "Summa",
+      "branch": "Filial",
+      "createdBy": "Mas'ul",
+      "note": "Izoh",
+      "actions": "Amallar",
+      "status": "Holat"
+    },
+    "amallar": {
+      "tasdiqlash": "Tasdiqlash",
+      "bekorQilish": "Bekor qilish",
+      "tiklash": "Qoralamaga qaytarish",
+      "ochirish": "O'chirish"
+    },
+    "form": {
+      "titleNew": "Yangi zavod bonusi",
+      "titleEdit": "Bonusni tahrirlash",
+      "titleView": "Zavod bonusi",
+      "badgeNew": "Yangi",
+      "info": "Tasdiqlanganda zavod oldidagi qarz bonus summasiga kamayadi. Bonus qarzdan katta bo'lsa, ortig'i zavod oldidagi avans bo'lib qoladi. Kassaga pul kirmaydi.",
+      "supplier": "Zavod (yetkazib beruvchi)",
+      "supplierPlaceholder": "Zavodni tanlang",
+      "amount": "Bonus summasi (so'm)",
+      "date": "Sana",
+      "branch": "Filial",
+      "branchNone": "Filialsiz",
+      "note": "Izoh",
+      "notePlaceholder": "Masalan: III chorak hajm bonusi",
+      "save": "Saqlash",
+      "saveConfirm": "Saqlash va tasdiqlash",
+      "cancel": "Bekor qilish",
+      "close": "Yopish"
+    },
+    "dialog": {
+      "no": "Yo'q, qaytish",
+      "working": "Bajarilmoqda...",
+      "tasdiqlash": {
+        "title": "Bonusni tasdiqlaymizmi?",
+        "description": "Zavod oldidagi qarz bonus summasiga kamayadi va u sof foydaga daromad sifatida qo'shiladi.",
+        "yes": "Ha, tasdiqlash"
+      },
+      "bekorQilish": {
+        "title": "Bonusni bekor qilamizmi?",
+        "description": "Zavod oldidagi qarz va daromad avvalgi holatiga qaytariladi. Bonus «Bekor qilingan» holatga o'tadi; keyin uni qoralamaga qaytarish yoki o'chirish mumkin.",
+        "yes": "Ha, bekor qilish"
+      },
+      "tiklash": {
+        "title": "Bonus qoralamaga qaytarilsinmi?",
+        "description": "Bekor qilingan bonus qoralamaga qaytadi. Hisobotlarga u tasdiqlanmaguncha kirmaydi.",
+        "yes": "Ha, qaytarish"
+      },
+      "ochirish": {
+        "title": "Bonusni o'chiramizmi?",
+        "description": "Hujjat butunlay o'chiriladi. Bu amalni qaytarib bo'lmaydi.",
+        "yes": "Ha, o'chirish"
+      }
+    },
+    "errors": {
+      "supplierRequired": "Zavodni tanlang.",
+      "amountInvalid": "Bonus summasini kiriting (0 dan katta bo'lishi kerak).",
+      "draftOnlyEditable": "Faqat qoralama holatidagi bonusni tahrirlash mumkin.",
+      "draftOnlyDeletable": "Faqat qoralama yoki bekor qilingan bonusni o'chirish mumkin.",
+      "supplierNotFound": "Bunday zavod topilmadi."
+    }
+  }
 }

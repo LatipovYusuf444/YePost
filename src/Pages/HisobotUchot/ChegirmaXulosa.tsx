@@ -174,6 +174,19 @@ function DavrKartasi({
         </Korsatkich>
       </dl>
 
+      {qiymat?.bonus != null && (
+        <div className="relative mt-5 grid gap-4 rounded-2xl bg-emerald-50/70 p-4 ring-1 ring-emerald-100 sm:grid-cols-2">
+          <Korsatkich nom="Olingan zavod bonusi" yuklanmoqda={yuklanmoqda}>
+            <span className="text-xl font-extrabold tabular-nums text-emerald-700">{pul(qiymat.bonus)}</span>
+          </Korsatkich>
+          <Korsatkich nom="Bonus − chegirma" yuklanmoqda={yuklanmoqda}>
+            <span className={`text-xl font-extrabold tabular-nums ${(qiymat.bonusMinusChegirma ?? 0) >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
+              {pul(qiymat.bonusMinusChegirma ?? 0)}
+            </span>
+          </Korsatkich>
+        </div>
+      )}
+
       {!yuklanmoqda && qiymat && barchasi > 0 && chegirmali === 0 && (
         <p className="relative mt-4 text-xs font-semibold text-slate-500">Bu davrda hech bir savdoda chegirma berilmagan.</p>
       )}

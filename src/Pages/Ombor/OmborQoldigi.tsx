@@ -3,12 +3,28 @@ import AppSelect from "@/Components/ui/AppSelect";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  Bookmark,
+  Boxes,
+  Building2,
+  CalendarCheck,
   CalendarDays,
+  Check,
+  Coins,
+  Eraser,
+  Layers,
+  ListFilter,
+  Tags,
   FileDown,
   LoaderCircle,
+  Package,
+  PackageCheck,
+  PackageOpen,
   Printer,
   RefreshCw,
   Search,
+  SlidersHorizontal,
+  TriangleAlert,
+  Warehouse,
 } from "lucide-react";
 import {
   kategoriyalarApi,
@@ -22,8 +38,11 @@ import {
 import { stockBalanceExport, stockBalanceReport, type StockBalanceParams, type StockBalanceResponse } from "@/api/reportsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import KopTanlov from "./KopTanlov";
+import { FiltrGuruhi } from "@/Components/common/FiltrBolimlari";
 import OmborJadval from "./OmborJadval";
 import TablePagination from "@/Components/common/TablePagination";
+import KorsatkichKartasi, { KartaChiziqlari, KartaOlchagich } from "@/Components/common/KorsatkichKartasi";
+import LoadingState from "@/Components/common/LoadingState";
 import type {
   Kategoriya,
   Mahsulot,
@@ -99,6 +118,16 @@ function pul(value: number) {
   return pulMatni(value);
 }
 
+// Miqdor: kasr bo'lishi mumkin (kg, litr), minglik ajratgich bilan.
+function son(value: number) {
+  return value.toLocaleString("uz-UZ", { maximumFractionDigits: 3 });
+}
+
+// Kartalar uchun yaxlitlangan summa.
+function pulYaxlit(value: number) {
+  return pulMatni(value, "UZS", true);
+}
+
 function sana(value: string) {
   const date = new Date(`${value}T00:00:00`);
   return Number.isNaN(date.getTime())
@@ -141,6 +170,8 @@ export default function OmborQoldigi() {
   const [jadvalQidiruvi, setJadvalQidiruvi] = useState("");
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [xatolik, setXatolik] = useState<string | null>(null);
+  // Hisobot faqat "Hisobotni shakllantirish" bosilganda olinadi: bundan oldin kartalarda "0" emas, "—" ko'rsatiladi.
+  const [shakllantirildi, setShakllantirildi] = useState(false);
 
   const malumotlarniYuklash = useCallback(async () => {
     setYuklanmoqda(true);
@@ -179,9 +210,23 @@ export default function OmborQoldigi() {
     setFiltr((old) => ({ ...old, [kalit]: qiymat }));
   }
 
+  // Faqat shakldagi ro'yxat filtrlarini tozalaydi (sana, narx turi va ko'rinish sozlamalari qoladi); hisobot qayta so'ralmaydi.
+  function filtrlarniTozalash() {
+    setFiltr((old) => ({
+      ...old,
+      omborlar: [],
+      filiallar: [],
+      kategoriyalar: [],
+      mahsulotlar: [],
+      variatsiyalar: [],
+      xarakteristikalar: [],
+      qoldiqTuri: "hammasi",
+    }));
+  }
+
   async function hisobotniShakllantirish() {
     setYuklanmoqda(true);setXatolik(null);
-    try{const applied={...filtr};setPage(1);setReport(await stockBalanceReport(reportParams(applied,jadvalQidiruvi,1,pageSize)));setQollangan(applied)}catch(error){setXatolik(getApiErrorMessage(error))}finally{setYuklanmoqda(false)}
+    try{const applied={...filtr};setPage(1);setReport(await stockBalanceReport(reportParams(applied,jadvalQidiruvi,1,pageSize)));setQollangan(applied);setShakllantirildi(true)}catch(error){setXatolik(getApiErrorMessage(error))}finally{setYuklanmoqda(false)}
     setShakllantirilgan(bugun());
   }
 
@@ -361,148 +406,293 @@ export default function OmborQoldigi() {
     URL.revokeObjectURL(url);
   }
 
+  const faolFiltrlar =
+    filtr.omborlar.length +
+    filtr.filiallar.length +
+    filtr.kategoriyalar.length +
+    filtr.mahsulotlar.length +
+    filtr.variatsiyalar.length +
+    filtr.xarakteristikalar.length +
+    (filtr.qoldiqTuri !== "hammasi" ? 1 : 0);
+  const ulush = (qism: number) => (yakun.jami > 0 ? Math.round((qism / yakun.jami) * 100) : 0);
+  const kartaYuklanmoqda = yuklanmoqda && satrlar.length === 0;
+  const oxirgiSatrlar = satrlar.slice(0, 7);
+
   return (
     <div className="space-y-5">
-      <header>
-        <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-500">{t("omborQoldigi.eyebrow")}</p>
-        <h1 className="mt-1 text-3xl font-black text-gray-950">{t("omborQoldigi.title")}</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          {t("omborQoldigi.subtitle")}
-        </p>
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-4">
+          <span aria-hidden className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/30">
+            <Boxes size={26} strokeWidth={2.1} />
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-orange-500">{t("omborQoldigi.eyebrow")}</p>
+            <h1 className="mt-0.5 text-3xl font-black tracking-tight text-gray-950">{t("omborQoldigi.title")}</h1>
+            <p className="mt-1 text-sm text-gray-500">{t("omborQoldigi.subtitle")}</p>
+          </div>
+        </div>
+        <span className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-xs font-bold text-slate-500 shadow-sm ring-1 ring-slate-200">
+          <CalendarCheck size={15} className="shrink-0 text-orange-500" aria-hidden />
+          {t("omborQoldigi.asOfStatus", { date: sana(qollangan.sana), generatedAt: sana(shakllantirilgan) })}
+        </span>
       </header>
 
       {xatolik && (
-        <div className="flex items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">
-          <span>{xatolik}</span>
-          <button type="button" onClick={() => void malumotlarniYuklash()}>{t("omborQoldigi.retry")}</button>
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">
+          <span className="flex items-center gap-2"><TriangleAlert size={17} aria-hidden /> {xatolik}</span>
+          <button type="button" onClick={() => void malumotlarniYuklash()} className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-red-600 ring-1 ring-red-200 transition hover:bg-red-100">
+            <RefreshCw size={13} aria-hidden /> {t("omborQoldigi.retry")}
+          </button>
         </div>
       )}
 
-      <section className="space-y-4 rounded-[24px] border border-orange-100 bg-white p-5 shadow-sm">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-sm font-bold text-gray-500">{t("omborQoldigi.filters.byDate")}</span>
-          <div className="relative">
-            <input
-              type="date"
-              value={filtr.sana}
-              onChange={(event) => ozgartirish("sana", event.target.value)}
-              className="h-12 rounded-2xl border border-gray-200 bg-white px-5 pr-11 text-sm font-semibold outline-none focus:border-orange-400"
-            />
-            <CalendarDays size={17} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
+      <section aria-label={t("omborQoldigi.summary.aria")} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <KorsatkichKartasi
+          icon={Boxes}
+          nom={t("omborQoldigi.summary.total")}
+          qiymat={shakllantirildi ? son(yakun.jami) : "—"}
+          rang="blue"
+          belgi={shakllantirildi ? { matn: t("omborQoldigi.summary.positions", { count: report.total }) } : undefined}
+          ornament={shakllantirildi ? <KartaChiziqlari qiymatlar={oxirgiSatrlar.map((item) => item.jami)} klass="bg-blue-400" /> : undefined}
+          yuklanmoqda={kartaYuklanmoqda}
+          yuklanishMatni={t("omborQoldigi.loading")}
+        />
+        <KorsatkichKartasi
+          icon={PackageCheck}
+          nom={t("omborQoldigi.summary.available")}
+          qiymat={shakllantirildi ? son(yakun.bosh) : "—"}
+          rang="emerald"
+          belgi={shakllantirildi ? { matn: `${ulush(yakun.bosh)}%` } : undefined}
+          ornament={shakllantirildi ? <KartaOlchagich faol={yakun.bosh} jami={yakun.jami} klass="bg-emerald-400" /> : undefined}
+          yuklanmoqda={kartaYuklanmoqda}
+          yuklanishMatni={t("omborQoldigi.loading")}
+        />
+        <KorsatkichKartasi
+          icon={Bookmark}
+          nom={t("omborQoldigi.summary.reserved")}
+          qiymat={shakllantirildi ? son(yakun.rezerv) : "—"}
+          rang="amber"
+          belgi={shakllantirildi ? { matn: `${ulush(yakun.rezerv)}%` } : undefined}
+          ornament={shakllantirildi ? <KartaOlchagich faol={yakun.rezerv} jami={yakun.jami} klass="bg-amber-400" /> : undefined}
+          yuklanmoqda={kartaYuklanmoqda}
+          yuklanishMatni={t("omborQoldigi.loading")}
+        />
+        <KorsatkichKartasi
+          icon={Coins}
+          nom={t("omborQoldigi.summary.value", { narx: narxTuriNomi })}
+          qiymat={shakllantirildi ? pulYaxlit(yakun.umumiy) : "—"}
+          rang="violet"
+                    ornament={shakllantirildi ? <KartaChiziqlari qiymatlar={oxirgiSatrlar.map((item) => item.umumiy)} klass="bg-violet-400" /> : undefined}
+          yuklanmoqda={kartaYuklanmoqda}
+          yuklanishMatni={t("omborQoldigi.loading")}
+        />
+      </section>
+
+      <section className="rounded-[26px] border border-slate-200/80 bg-white shadow-[0_8px_30px_-18px_rgba(15,23,42,.25)]">
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-t-[26px] border-b border-slate-100 bg-linear-to-r from-orange-50/70 via-white to-white px-5 py-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-orange-500 to-orange-400 text-white shadow-md shadow-orange-200/60">
+              <SlidersHorizontal size={19} />
+            </span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-base font-black text-gray-900">{t("omborQoldigi.filters.title")}</h2>
+                {faolFiltrlar > 0 && (
+                  <span className="rounded-full bg-orange-500 px-2.5 py-0.5 text-xs font-bold text-white tabular-nums">
+                    {t("omborQoldigi.filters.activeCount", { count: faolFiltrlar })}
+                  </span>
+                )}
+              </div>
+              <p className="mt-0.5 text-xs font-medium text-gray-500">{t("omborQoldigi.filters.subtitle")}</p>
+            </div>
           </div>
-          <button type="button" onClick={() => ozgartirish("sana", bugun())} className="text-sm font-black text-orange-600 hover:underline">
-            {t("omborQoldigi.filters.today")}
-          </button>
+
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+            {faolFiltrlar > 0 && (
+              <button
+                type="button"
+                onClick={filtrlarniTozalash}
+                className="inline-flex h-11 cursor-pointer items-center gap-1.5 rounded-xl px-3.5 text-sm font-bold text-gray-500 ring-1 ring-slate-200 transition hover:bg-slate-50 hover:text-gray-800"
+              >
+                <Eraser size={15} aria-hidden /> {t("omborQoldigi.filters.clear")}
+              </button>
+            )}
+            <div className="flex w-full items-center gap-1.5 rounded-2xl bg-slate-50 p-1 ring-1 ring-slate-200 sm:w-auto">
+              <span className="flex shrink-0 items-center gap-1.5 pl-2.5 pr-1 text-xs font-bold text-gray-500">
+                <CalendarDays size={14} className="text-orange-500" aria-hidden /> <span className="hidden sm:inline">{t("omborQoldigi.filters.byDate")}</span>
+              </span>
+              <input
+                type="date"
+                value={filtr.sana}
+                onChange={(event) => ozgartirish("sana", event.target.value)}
+                aria-label={t("omborQoldigi.filters.byDate")}
+                className="h-9 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-50"
+              />
+              <button
+                type="button"
+                onClick={() => ozgartirish("sana", bugun())}
+                className="h-9 shrink-0 cursor-pointer rounded-xl bg-orange-500 px-3.5 text-xs font-black text-white transition hover:bg-orange-600"
+              >
+                {t("omborQoldigi.filters.today")}
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <KopTanlov sarlavha={t("omborQoldigi.filters.warehouse")} variantlar={omborlar.map((item) => ({ id: item.id, label: item.name }))} tanlangan={filtr.omborlar} onOzgarish={(value) => ozgartirish("omborlar", value)} qidiruvPlaceholder={t("omborQoldigi.filters.warehouseSearchPlaceholder")} />
-          <KopTanlov sarlavha={t("omborQoldigi.filters.branch")} variantlar={filiallar.map((item) => ({ id: item.id, label: item.name }))} tanlangan={filtr.filiallar} onOzgarish={(value) => ozgartirish("filiallar", value)} qidiruvPlaceholder={t("omborQoldigi.filters.branchSearchPlaceholder")} />
-          <KopTanlov sarlavha={t("omborQoldigi.filters.category")} variantlar={kategoriyalar.map((item) => ({ id: item.id, label: item.name }))} tanlangan={filtr.kategoriyalar} onOzgarish={(value) => ozgartirish("kategoriyalar", value)} qidiruvPlaceholder={t("omborQoldigi.filters.categorySearchPlaceholder")} />
-          <KopTanlov sarlavha={t("omborQoldigi.filters.product")} variantlar={mahsulotlar.map((item) => ({ id: item.id, label: item.name }))} tanlangan={filtr.mahsulotlar} onOzgarish={(value) => ozgartirish("mahsulotlar", value)} qidiruvPlaceholder={t("omborQoldigi.filters.productSearchPlaceholder")} />
-
-          <div className="min-w-0">
-            <p className="mb-1.5 text-xs font-bold text-gray-500">{t("omborQoldigi.filters.priceType")}</p>
-            <AppSelect value={filtr.narxTuri} onChange={(event) => ozgartirish("narxTuri", event.target.value as NarxTuri)} className="h-11 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 outline-none focus:border-orange-400">
-              {narxTurlari.map((item) => <option key={item.kalit} value={item.kalit}>{t(`omborQoldigi.priceTypes.${item.kalit}`)}</option>)}
-            </AppSelect>
+        <div className="space-y-6 p-5 sm:p-6">
+          <div>
+            <FiltrGuruhi nom={t("omborQoldigi.filters.groupLocation")} rang="bg-indigo-400" />
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <KopTanlov ikonka={Warehouse} sarlavha={t("omborQoldigi.filters.warehouse")} variantlar={omborlar.map((item) => ({ id: item.id, label: item.name }))} tanlangan={filtr.omborlar} onOzgarish={(value) => ozgartirish("omborlar", value)} qidiruvPlaceholder={t("omborQoldigi.filters.warehouseSearchPlaceholder")} />
+              <KopTanlov ikonka={Building2} sarlavha={t("omborQoldigi.filters.branch")} variantlar={filiallar.map((item) => ({ id: item.id, label: item.name }))} tanlangan={filtr.filiallar} onOzgarish={(value) => ozgartirish("filiallar", value)} qidiruvPlaceholder={t("omborQoldigi.filters.branchSearchPlaceholder")} />
+              <div className="min-w-0">
+                <p className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-gray-500"><Coins size={13} aria-hidden className="shrink-0 text-gray-400" />{t("omborQoldigi.filters.priceType")}</p>
+                <AppSelect value={filtr.narxTuri} onChange={(event) => ozgartirish("narxTuri", event.target.value as NarxTuri)} className="h-12 w-full rounded-xl !p-0 text-sm font-semibold text-gray-700 [&>button]:!border-slate-200 [&>button]:!bg-slate-50/60 [&>button]:!px-3.5 [&>button:hover]:!bg-white">
+                  {narxTurlari.map((item) => <option key={item.kalit} value={item.kalit}>{t(`omborQoldigi.priceTypes.${item.kalit}`)}</option>)}
+                </AppSelect>
+              </div>
+              <div className="min-w-0">
+                <p className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-gray-500"><Package size={13} aria-hidden className="shrink-0 text-gray-400" />{t("omborQoldigi.filters.stockType")}</p>
+                <AppSelect value={filtr.qoldiqTuri} onChange={(event) => ozgartirish("qoldiqTuri", event.target.value as QoldiqFiltri)} className="h-12 w-full rounded-xl !p-0 text-sm font-semibold text-gray-700 [&>button]:!border-slate-200 [&>button]:!bg-slate-50/60 [&>button]:!px-3.5 [&>button:hover]:!bg-white">
+                  <option value="hammasi">{t("omborQoldigi.filters.stockOptions.hammasi")}</option>
+                  <option value="musbat">{t("omborQoldigi.filters.stockOptions.musbat")}</option>
+                  <option value="nol">{t("omborQoldigi.filters.stockOptions.nol")}</option>
+                  <option value="manfiy">{t("omborQoldigi.filters.stockOptions.manfiy")}</option>
+                </AppSelect>
+              </div>
+            </div>
           </div>
-          <KopTanlov sarlavha={t("omborQoldigi.filters.variations")} variantlar={variatsiyaVariantlari} tanlangan={filtr.variatsiyalar} onOzgarish={(value) => ozgartirish("variatsiyalar", value)} qidiruvPlaceholder={t("omborQoldigi.filters.variationsSearchPlaceholder")} />
-          <KopTanlov sarlavha={t("omborQoldigi.filters.characteristics")} variantlar={xarakteristikaVariantlari} tanlangan={filtr.xarakteristikalar} onOzgarish={(value) => ozgartirish("xarakteristikalar", value)} qidiruvPlaceholder={t("omborQoldigi.filters.characteristicsSearchPlaceholder")} />
-          <div className="min-w-0">
-            <p className="mb-1.5 text-xs font-bold text-gray-500">{t("omborQoldigi.filters.stockType")}</p>
-            <AppSelect value={filtr.qoldiqTuri} onChange={(event) => ozgartirish("qoldiqTuri", event.target.value as QoldiqFiltri)} className="h-11 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 outline-none focus:border-orange-400">
-              <option value="hammasi">{t("omborQoldigi.filters.stockOptions.hammasi")}</option>
-              <option value="musbat">{t("omborQoldigi.filters.stockOptions.musbat")}</option>
-              <option value="nol">{t("omborQoldigi.filters.stockOptions.nol")}</option>
-              <option value="manfiy">{t("omborQoldigi.filters.stockOptions.manfiy")}</option>
-            </AppSelect>
-          </div>
-        </div>
 
-        <div className="grid gap-3 border-t border-gray-100 pt-4 sm:grid-cols-2 xl:grid-cols-4">
-          {([
-            ["omborlarBoyichaAjratish", t("omborQoldigi.filters.groupByWarehouse")],
-            ["shtrixKodniKorsatish", t("omborQoldigi.filters.showBarcode")],
-            ["variatsiyalarniKorsatish", t("omborQoldigi.filters.showVariations")],
-          ] as Array<["omborlarBoyichaAjratish" | "shtrixKodniKorsatish" | "variatsiyalarniKorsatish", string]>).map(([key, label]) => (
-            <label key={key} className="flex items-center gap-2.5 text-sm font-bold text-gray-600">
-              <input type="checkbox" checked={filtr[key]} onChange={(event) => ozgartirish(key, event.target.checked)} className="h-[18px] w-[18px] accent-orange-500" />
-              {label}
-            </label>
-          ))}
+          <div>
+            <FiltrGuruhi nom={t("omborQoldigi.filters.groupProduct")} rang="bg-emerald-400" />
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <KopTanlov ikonka={Tags} sarlavha={t("omborQoldigi.filters.category")} variantlar={kategoriyalar.map((item) => ({ id: item.id, label: item.name }))} tanlangan={filtr.kategoriyalar} onOzgarish={(value) => ozgartirish("kategoriyalar", value)} qidiruvPlaceholder={t("omborQoldigi.filters.categorySearchPlaceholder")} />
+              <KopTanlov ikonka={Package} sarlavha={t("omborQoldigi.filters.product")} variantlar={mahsulotlar.map((item) => ({ id: item.id, label: item.name }))} tanlangan={filtr.mahsulotlar} onOzgarish={(value) => ozgartirish("mahsulotlar", value)} qidiruvPlaceholder={t("omborQoldigi.filters.productSearchPlaceholder")} />
+              <KopTanlov ikonka={Layers} sarlavha={t("omborQoldigi.filters.variations")} variantlar={variatsiyaVariantlari} tanlangan={filtr.variatsiyalar} onOzgarish={(value) => ozgartirish("variatsiyalar", value)} qidiruvPlaceholder={t("omborQoldigi.filters.variationsSearchPlaceholder")} />
+              <KopTanlov ikonka={ListFilter} sarlavha={t("omborQoldigi.filters.characteristics")} variantlar={xarakteristikaVariantlari} tanlangan={filtr.xarakteristikalar} onOzgarish={(value) => ozgartirish("xarakteristikalar", value)} qidiruvPlaceholder={t("omborQoldigi.filters.characteristicsSearchPlaceholder")} />
+            </div>
+          </div>
+
+          <div>
+            <FiltrGuruhi nom={t("omborQoldigi.filters.groupView")} rang="bg-amber-400" />
+            <div className="flex flex-wrap gap-2.5">
+              {([
+                ["omborlarBoyichaAjratish", t("omborQoldigi.filters.groupByWarehouse"), Warehouse],
+                ["shtrixKodniKorsatish", t("omborQoldigi.filters.showBarcode"), Package],
+                ["variatsiyalarniKorsatish", t("omborQoldigi.filters.showVariations"), Boxes],
+              ] as Array<["omborlarBoyichaAjratish" | "shtrixKodniKorsatish" | "variatsiyalarniKorsatish", string, typeof Package]>).map(([key, label, Ikona]) => {
+                const belgilangan = filtr[key];
+                return (
+                  <label
+                    key={key}
+                    className={`inline-flex cursor-pointer items-center gap-2.5 rounded-2xl border px-3.5 py-2.5 text-sm font-bold transition has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-orange-100 ${
+                      belgilangan ? "border-orange-300 bg-orange-50 text-orange-700" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    <input type="checkbox" checked={belgilangan} onChange={(event) => ozgartirish(key, event.target.checked)} className="sr-only" />
+                    <span aria-hidden className={`flex h-5 w-5 items-center justify-center rounded-md border transition ${belgilangan ? "border-orange-500 bg-orange-500 text-white" : "border-gray-300 bg-white text-transparent"}`}>
+                      <Check size={13} strokeWidth={3} />
+                    </span>
+                    <Ikona size={15} aria-hidden className={belgilangan ? "text-orange-500" : "text-gray-400"} />
+                    {label}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </section>
 
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={() => void hisobotniShakllantirish()} disabled={yuklanmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-lg shadow-orange-100 transition hover:bg-orange-600 disabled:opacity-60">
+        <button type="button" onClick={() => void hisobotniShakllantirish()} disabled={yuklanmoqda} className="inline-flex h-12 cursor-pointer items-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-lg shadow-orange-100 transition hover:-translate-y-0.5 hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none">
           {yuklanmoqda ? <LoaderCircle size={17} className="animate-spin" /> : <RefreshCw size={17} />}
           {t("omborQoldigi.actions.generateReport")}
         </button>
-        <button type="button" onClick={() => window.print()} className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-5 text-sm font-bold text-gray-600 hover:text-orange-600"><Printer size={17} />{t("omborQoldigi.actions.print")}</button>
-        <button type="button" onClick={() => void excelgaYuklash()} disabled={exportYuklanmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-5 text-sm font-bold text-gray-600 hover:text-orange-600 disabled:opacity-50">{exportYuklanmoqda?<LoaderCircle size={17} className="animate-spin"/>:<FileDown size={17} />}{t("omborQoldigi.actions.exportExcel")}</button>
-        <span className="text-sm font-bold text-gray-400">{t("omborQoldigi.asOfStatus", { date: sana(qollangan.sana), generatedAt: sana(shakllantirilgan) })}</span>
-        <label className="relative ml-auto w-full max-w-sm">
+        <button type="button" onClick={() => window.print()} className="inline-flex h-12 cursor-pointer items-center gap-2 rounded-2xl border border-gray-200 bg-white px-5 text-sm font-bold text-gray-600 shadow-sm transition hover:border-orange-200 hover:text-orange-600"><Printer size={17} />{t("omborQoldigi.actions.print")}</button>
+        <button type="button" onClick={() => void excelgaYuklash()} disabled={exportYuklanmoqda} className="inline-flex h-12 cursor-pointer items-center gap-2 rounded-2xl border border-gray-200 bg-white px-5 text-sm font-bold text-gray-600 shadow-sm transition hover:border-orange-200 hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-50">{exportYuklanmoqda ? <LoaderCircle size={17} className="animate-spin" /> : <FileDown size={17} />}{t("omborQoldigi.actions.exportExcel")}</button>
+        <label className="relative w-full min-w-0 sm:ml-auto sm:max-w-sm sm:flex-1">
           <Search size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input value={jadvalQidiruvi} onChange={(event) => setJadvalQidiruvi(event.target.value)} placeholder={t("omborQoldigi.tableSearchPlaceholder")} className="h-12 w-full rounded-2xl border border-gray-200 bg-white pl-11 pr-4 text-sm outline-none focus:border-orange-400" />
+          <input value={jadvalQidiruvi} onChange={(event) => setJadvalQidiruvi(event.target.value)} placeholder={t("omborQoldigi.tableSearchPlaceholder")} className="h-12 w-full rounded-2xl border border-gray-200 bg-white pl-11 pr-4 text-sm shadow-sm outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-50" />
         </label>
       </div>
 
       {qollangan.sana !== bugun() && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-          {t("omborQoldigi.reportNotice")}
+        <div className="flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
+          <TriangleAlert size={17} className="mt-0.5 shrink-0" aria-hidden /> {t("omborQoldigi.reportNotice")}
         </div>
       )}
 
-      <OmborJadval className="[&_thead_th]:!h-auto [&_thead_th]:!py-3">
+      <OmborJadval className="[&_thead_th]:!h-auto [&_thead_th]:!py-3 [&_thead_th]:!px-5 [&_tbody_td]:!px-5 [&_tbody_td]:!py-3.5 [&_thead_th]:!border-slate-200 [&_thead_th]:!text-slate-500 [&_tbody]:!divide-slate-100 shadow-[0_8px_30px_-18px_rgba(15,23,42,.25)]">
           <table className="w-full min-w-[900px] text-sm">
-            <thead className="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-500">
+            <thead className="text-xs font-black uppercase tracking-wide">
               <tr>
-                <th rowSpan={2} className="px-5 py-3 text-left">{t("omborQoldigi.columns.name")}</th>
-                {qollangan.shtrixKodniKorsatish && <th rowSpan={2} className="px-5 py-3 text-left">{t("omborQoldigi.columns.barcode")}</th>}
-                {qollangan.variatsiyalarniKorsatish && <th rowSpan={2} className="px-5 py-3 text-left">{t("omborQoldigi.columns.variation")}</th>}
-                {qollangan.omborlarBoyichaAjratish && <th rowSpan={2} className="px-5 py-3 text-left">{t("omborQoldigi.columns.warehouse")}</th>}
-                <th rowSpan={2} className="px-5 py-3 text-left">{t("omborQoldigi.columns.unit")}</th>
-                <th colSpan={2} className="border-b border-orange-100 px-5 py-2 text-center">{t("omborQoldigi.columns.totalStock")}</th>
-                <th colSpan={2} className="border-b border-orange-100 px-5 py-2 text-center">{narxTuriNomi}</th>
+                <th rowSpan={2} className="text-left">{t("omborQoldigi.columns.name")}</th>
+                {qollangan.shtrixKodniKorsatish && <th rowSpan={2} className="text-left">{t("omborQoldigi.columns.barcode")}</th>}
+                {qollangan.variatsiyalarniKorsatish && <th rowSpan={2} className="text-left">{t("omborQoldigi.columns.variation")}</th>}
+                {qollangan.omborlarBoyichaAjratish && <th rowSpan={2} className="text-left">{t("omborQoldigi.columns.warehouse")}</th>}
+                <th rowSpan={2} className="text-left">{t("omborQoldigi.columns.unit")}</th>
+                <th colSpan={2} className="border-b border-slate-200 text-center">{t("omborQoldigi.columns.totalStock")}</th>
+                <th colSpan={2} className="border-b border-slate-200 text-center">{narxTuriNomi}</th>
               </tr>
               <tr>
-                <th className="px-5 py-2 text-right">{t("omborQoldigi.columns.total")}</th>
-                <th className="px-5 py-2 text-right">{t("omborQoldigi.columns.available")}</th>
-                <th className="px-5 py-2 text-right">{t("omborQoldigi.columns.unitPrice")}</th>
-                <th className="px-5 py-2 text-right">{t("omborQoldigi.columns.totalAmount")}</th>
+                <th className="text-right">{t("omborQoldigi.columns.total")}</th>
+                <th className="text-right">{t("omborQoldigi.columns.available")}</th>
+                <th className="text-right">{t("omborQoldigi.columns.unitPrice")}</th>
+                <th className="text-right">{t("omborQoldigi.columns.totalAmount")}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-slate-100">
               {satrlar.map((item) => (
-                <tr key={item.kalit} className="hover:bg-orange-50/30">
-                  <td className="px-5 py-3 font-black text-gray-950">{item.mahsulotNomi}</td>
-                  {qollangan.shtrixKodniKorsatish && <td className="px-5 py-3 text-gray-500">{item.shtrixKod || "—"}</td>}
-                  {qollangan.variatsiyalarniKorsatish && <td className="px-5 py-3 text-gray-500">{item.variatsiya}</td>}
-                  {qollangan.omborlarBoyichaAjratish && <td className="px-5 py-3 text-gray-600">{item.omborNomi}</td>}
-                  <td className="px-5 py-3 text-gray-500">{item.birlik}</td>
-                  <td className={`px-5 py-3 text-right font-bold ${item.jami < 0 ? "text-red-500" : "text-gray-800"}`}>{item.jami}</td>
-                  <td className="px-5 py-3 text-right font-bold text-emerald-600">{item.bosh}</td>
-                  <td className="px-5 py-3 text-right text-gray-600">{pul(item.birlikNarx)}</td>
-                  <td className="px-5 py-3 text-right font-black text-gray-900">{pul(item.umumiy)}</td>
+                <tr key={item.kalit} className="transition-colors odd:bg-white even:bg-slate-50/40 hover:bg-orange-50/50 motion-reduce:transition-none">
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500 ring-1 ring-orange-100">
+                        <Package size={16} />
+                      </span>
+                      <span className="min-w-0 max-w-[340px] font-black leading-snug text-gray-950">{item.mahsulotNomi}</span>
+                    </div>
+                  </td>
+                  {qollangan.shtrixKodniKorsatish && <td className="tabular-nums text-gray-500">{item.shtrixKod || "—"}</td>}
+                  {qollangan.variatsiyalarniKorsatish && <td className="text-gray-500">{item.variatsiya}</td>}
+                  {qollangan.omborlarBoyichaAjratish && (
+                    <td>
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700 ring-1 ring-indigo-100">
+                        <Warehouse size={12} aria-hidden /> {item.omborNomi}
+                      </span>
+                    </td>
+                  )}
+                  <td><span className="inline-flex rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">{item.birlik}</span></td>
+                  <td className={`text-right font-bold tabular-nums ${item.jami < 0 ? "text-red-500" : "text-gray-800"}`}>{son(item.jami)}</td>
+                  <td className="text-right">
+                    <span className={`inline-flex min-w-12 justify-end rounded-lg px-2.5 py-1 font-extrabold tabular-nums ${item.bosh < 0 ? "bg-red-50 text-red-600" : item.bosh === 0 ? "bg-slate-100 text-slate-500" : "bg-emerald-50 text-emerald-700"}`}>{son(item.bosh)}</span>
+                  </td>
+                  <td className="text-right tabular-nums text-gray-600">{pul(item.birlikNarx)}</td>
+                  <td className="text-right font-black tabular-nums text-gray-900">{pul(item.umumiy)}</td>
                 </tr>
               ))}
             </tbody>
             {satrlar.length > 0 && (
-              <tfoot className="border-t-2 border-orange-100 bg-orange-50/40 font-black text-gray-800">
+              <tfoot className="border-t-2 border-orange-100 bg-linear-to-r from-orange-50/70 to-orange-50/30 font-black text-gray-800">
                 <tr>
-                  <td className="px-5 py-3" colSpan={1 + (qollangan.shtrixKodniKorsatish ? 1 : 0) + (qollangan.variatsiyalarniKorsatish ? 1 : 0) + (qollangan.omborlarBoyichaAjratish ? 1 : 0)}>{t("omborQoldigi.summaryLine", { count: satrlar.length })}</td>
-                  <td className="px-5 py-3" />
-                  <td className="px-5 py-3 text-right">{yakun.jami}</td>
-                  <td className="px-5 py-3 text-right">{yakun.bosh}</td>
-                  <td className="px-5 py-3" />
-                  <td className="px-5 py-3 text-right">{pul(yakun.umumiy)}</td>
+                  <td className="px-5 py-3.5" colSpan={1 + (qollangan.shtrixKodniKorsatish ? 1 : 0) + (qollangan.variatsiyalarniKorsatish ? 1 : 0) + (qollangan.omborlarBoyichaAjratish ? 1 : 0)}>{t("omborQoldigi.summaryLine", { count: satrlar.length })}</td>
+                  <td className="px-5 py-3.5" />
+                  <td className="px-5 py-3.5 text-right tabular-nums">{son(yakun.jami)}</td>
+                  <td className="px-5 py-3.5 text-right tabular-nums text-emerald-700">{son(yakun.bosh)}</td>
+                  <td className="px-5 py-3.5" />
+                  <td className="px-5 py-3.5 text-right tabular-nums">{pul(yakun.umumiy)}</td>
                 </tr>
               </tfoot>
             )}
           </table>
-        {!yuklanmoqda && satrlar.length === 0 && <div className="p-14 text-center font-semibold text-gray-400">{t("omborQoldigi.emptyState")}</div>}
-        {yuklanmoqda && satrlar.length === 0 && <div className="p-14 text-center"><LoaderCircle className="mx-auto animate-spin text-orange-500" size={28} /></div>}
+        {!yuklanmoqda && satrlar.length === 0 && (
+          <div className="flex flex-col items-center gap-3 px-6 py-14 text-center">
+            <span aria-hidden className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400"><PackageOpen size={26} /></span>
+            <p className="max-w-md font-semibold text-gray-500">{shakllantirildi ? t("omborQoldigi.emptyState") : t("omborQoldigi.notGenerated")}</p>
+          </div>
+        )}
+        {yuklanmoqda && satrlar.length === 0 && (
+          <LoadingState matn={t("omborQoldigi.loading")} ikonka={<Boxes size={24} />} className="min-h-[260px] rounded-none border-0 bg-transparent" />
+        )}
       </OmborJadval>
       <TablePagination page={page} pageSize={pageSize} totalItems={report.total} onPageChange={(value) => void sahifaniOlish(value)} onPageSizeChange={(value) => void sahifaniOlish(1,value)} />
     </div>

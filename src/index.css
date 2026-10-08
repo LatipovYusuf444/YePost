@@ -156,6 +156,77 @@ h1 {
   }
 }
 
+/* Telefon (< md): modal butun ekranni egallaydi — chapdagi 76–92px "yon panel" bo'shlig'i va katta ichki
+   paddinglar olib tashlanadi, yon amallar ustuni esa yuqori-o'ngdagi bitta "Yopish" tugmasiga aylanadi. */
+@media (max-width: 767px) {
+  .app-modal-compact {
+    padding: 10px !important;
+  }
+
+  .app-modal-compact [class~="px-9"],
+  .app-modal-compact [class~="px-8"],
+  .app-modal-compact [class~="px-7"],
+  .app-modal-compact [class~="px-6"] {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  .app-modal-compact [class~="py-8"],
+  .app-modal-compact [class~="py-7"] {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+
+  .app-modal-compact [class~="p-8"],
+  .app-modal-compact [class~="p-7"],
+  .app-modal-compact [class~="p-6"] {
+    padding: 1rem !important;
+  }
+
+  /* Yuqori-o'ngdagi "Yopish" tugmasi sarlavha matni ustiga chiqmasin. */
+  .app-modal-compact header {
+    padding-right: 3.5rem !important;
+  }
+
+  /* Pastki amallar paneli: tugmalar sig'masa keyingi qatorga tushadi va butun kenglikni egallaydi. */
+  .app-modal-compact footer {
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  .app-modal-compact footer > button {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Qat'iy ustunsiz `grid` ichidagi katta maydonlar (input, telefon qatori) panelni kengaytirib yubormasin. */
+  .app-modal-compact .grid > *,
+  .app-modal-compact input,
+  .app-modal-compact select,
+  .app-modal-compact textarea {
+    min-width: 0;
+  }
+
+  .app-modal-compact [class~="absolute"][class*="-left-"][class*="flex-col"]:not([data-modal-action-rail]) {
+    left: auto !important;
+    right: 12px !important;
+    top: 12px !important;
+    flex-direction: row !important;
+  }
+
+  .app-modal-compact [class~="absolute"][class*="-left-"][class*="flex-col"]:not([data-modal-action-rail]) > :not(:first-child) {
+    display: none !important;
+  }
+
+  .app-modal-compact[data-own-close="true"] [class~="absolute"][class*="-left-"][class*="flex-col"]:not([data-modal-action-rail]) {
+    display: none !important;
+  }
+}
+
 .app-modal-compact h1,
 .app-modal-compact h2 {
   font-family: inherit;

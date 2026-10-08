@@ -296,15 +296,15 @@ export default function Mahsulotlar() {
 
       {store.yuklanmoqda ? <div className="flex h-72 items-center justify-center"><LoaderCircle className="animate-spin text-orange-500" size={34}/></div> : tab === "mahsulotlar" ? (
         <section className="space-y-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:gap-3">
-            <label className="flex h-11 w-full max-w-xl items-center gap-2 rounded-2xl border bg-white px-4 lg:flex-1"><Search size={17} className="text-gray-400"/><input value={qidiruv} onChange={e=>{setQidiruv(e.target.value);setPage(1)}} className="min-w-0 flex-1 outline-none" placeholder={t("toolbar.searchPlaceholder")}/></label>
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <label className="flex h-11 w-full max-w-xl items-center gap-2 rounded-2xl border bg-white px-4 sm:min-w-[240px] sm:flex-1"><Search size={17} className="text-gray-400"/><input value={qidiruv} onChange={e=>{setQidiruv(e.target.value);setPage(1)}} className="min-w-0 flex-1 outline-none" placeholder={t("toolbar.searchPlaceholder")}/></label>
             {excelAmallariMumkin&&<>
               <button type="button" onClick={()=>setImportModalOchiq(true)} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-blue-100 bg-white px-4 font-bold text-blue-600 hover:border-blue-200 hover:bg-blue-50"><Upload size={17}/>{t("toolbar.import")}</button>
               <button type="button" disabled={excelAmali!==null} onClick={()=>void mahsulotlarniExportQilish()} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-blue-100 bg-white px-4 font-bold text-blue-600 disabled:opacity-50 hover:border-blue-200 hover:bg-blue-50">{excelAmali==="export"?<LoaderCircle size={17} className="animate-spin"/>:<Download size={17}/>}{t("toolbar.export")}</button>
               <button type="button" disabled={excelAmali!==null} onClick={()=>void importShabloniniYuklash()} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 font-bold text-slate-600 disabled:opacity-50 hover:border-blue-200 hover:text-blue-600">{excelAmali==="template"?<LoaderCircle size={17} className="animate-spin"/>:<FileSpreadsheet size={17}/>}{t("toolbar.downloadTemplate")}</button>
             </>}
             <div className="relative">
-              <button type="button" onClick={()=>setKorinishMenu((value)=>!value)} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 font-bold text-gray-600 shadow-sm hover:border-orange-200 hover:text-orange-600 lg:w-auto">
+              <button type="button" onClick={()=>setKorinishMenu((value)=>!value)} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 font-bold text-gray-600 shadow-sm hover:border-orange-200 hover:text-orange-600 sm:w-auto">
                 <TanlanganIcon size={17} className="text-orange-500"/>
                 {t("toolbar.view")}
                 {korinishMenu ? <ChevronUp size={16} className="text-orange-500"/> : <ChevronDown size={16} className="text-orange-500"/>}

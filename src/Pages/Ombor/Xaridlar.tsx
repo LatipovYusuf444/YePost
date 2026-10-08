@@ -262,7 +262,7 @@ export default function Xaridlar() {
           from={sanaDan}
           to={sanaGacha}
           onChange={(from, to) => { setSanaDan(from); setSanaGacha(to); }}
-          className="w-full sm:w-126"
+          className="w-full sm:w-64 sm:shrink-0 lg:w-80"
           compact
         />
       </div>

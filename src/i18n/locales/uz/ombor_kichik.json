@@ -92,7 +92,10 @@
     "searchPlaceholder": "Qidirish",
     "addButton": "Qo'shish",
     "removeAria": "{{label}} ni olib tashlash",
-    "notFound": "Topilmadi"
+    "notFound": "Topilmadi",
+    "all": "Barchasi",
+    "clear": "Tozalash",
+    "selectedCount": "{{count}} ta tanlangan"
   },
   "kompaniyalar": {
     "confirmDelete": "Kompaniyani soft delete qilasizmi?",

@@ -7,9 +7,11 @@ type Props = {
   onClose: () => void;
   onDownload: () => void;
   onOpenExternal: () => void;
+  // Telefon: chapda joy yo'q — faqat "Yopish" tugmasi ko'rsatiladi.
+  ixcham?: boolean;
 };
 
-export default function ModalActionRail({ top, left, onClose, onDownload, onOpenExternal }: Props) {
+export default function ModalActionRail({ top, left, onClose, onDownload, onOpenExternal, ixcham = false }: Props) {
   const [copied, setCopied] = useState(false);
 
   async function copyLink() {
@@ -30,12 +32,13 @@ export default function ModalActionRail({ top, left, onClose, onDownload, onOpen
     window.setTimeout(() => setCopied(false), 1400);
   }
 
-  const actions = [
+  const barchaAmallar = [
     { label: "Yopish", icon: X, onClick: onClose, close: true },
     { label: copied ? "Havola nusxalandi" : "Havolani nusxalash", icon: copied ? Check : LinkIcon, onClick: () => void copyLink() },
     { label: "Modal ma'lumotini yuklab olish", icon: Download, onClick: onDownload },
     { label: "Alohida oynada ochish", icon: ExternalLink, onClick: onOpenExternal },
   ];
+  const actions = ixcham ? barchaAmallar.slice(0, 1) : barchaAmallar;
 
   return (
     <div

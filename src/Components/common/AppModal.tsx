@@ -2,6 +2,20 @@ import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import ModalActionRail from "./ModalActionRail";
 
+// Modal panelining yuqori qismida o'zining yopish tugmasi (X) bormi? Telefonda yon "amallar ustuni"
+// uchun joy yo'q: tugma bor bo'lsa ustun yashiriladi, yo'q bo'lsa faqat "Yopish" qoladi.
+function oziningYopishTugmasiBormi(overlay: HTMLElement) {
+  const yuqori = overlay.getBoundingClientRect().top + 150;
+  return Array.from(overlay.querySelectorAll<HTMLButtonElement>("button")).some((tugma) => {
+    if (tugma.closest('[data-modal-action-rail="true"]')) return false;
+    if (tugma.closest('[class~="absolute"][class*="-left-"][class*="flex-col"]')) return false;
+    const joy = tugma.getBoundingClientRect();
+    // Ko'rinmaydigan (ekrandan tashqaridagi yoki o'lchamsiz) tugma "o'zining yopish tugmasi" hisoblanmaydi.
+    if (joy.width === 0 || joy.left < 0 || joy.right > window.innerWidth || joy.top > yuqori) return false;
+    return Boolean(tugma.querySelector("svg.lucide-x")) || /yopish|close|закры/i.test(tugma.getAttribute("aria-label") ?? "");
+  });
+}
+
 let ochiqModallarSoni = 0;
 let oldingiBodyOverflow = "";
 let oldingiHtmlOverflow = "";
@@ -15,7 +29,7 @@ type AppModalProps = {
 
 export default function AppModal({ children, className = "", onClose, actionRail = true }: AppModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  const [railHolati, setRailHolati] = useState<{ top: number; left: number } | null>(null);
+  const [railHolati, setRailHolati] = useState<{ top: number; left: number; ixcham: boolean } | null>(null);
 
   useLayoutEffect(() => {
     if (ochiqModallarSoni === 0) {
@@ -39,6 +53,7 @@ export default function AppModal({ children, className = "", onClose, actionRail
     if (!actionRail) return;
     const overlay = overlayRef.current;
     if (!overlay) return;
+    overlay.dataset.ownClose = oziningYopishTugmasiBormi(overlay) ? "true" : "false";
 
     const maxsusRail = overlay.querySelector<HTMLElement>(
       '[class*="-left-"][class*="flex-col"]:not([data-modal-action-rail])'
@@ -53,9 +68,16 @@ export default function AppModal({ children, className = "", onClose, actionRail
 
     function joylashtirish() {
       const rect = modalPanel.getBoundingClientRect();
-      const left = Math.max(12, rect.left - 50);
-      const top = Math.max(12, Math.min(rect.top + 20, window.innerHeight - 208));
-      setRailHolati({ top, left });
+      // Chapda 4 ta tugma sig'adigan joy yo'q (telefon): o'z X tugmasi bor modalda ustun yashiriladi,
+      // yo'q bo'lsa panelning yuqori-o'ng burchagiga faqat "Yopish" qo'yiladi.
+      const joyYoq = rect.left < 62;
+      if (joyYoq && overlay!.dataset.ownClose === "true") {
+        setRailHolati(null);
+        return;
+      }
+      const left = joyYoq ? Math.max(12, rect.right - 54) : Math.max(12, rect.left - 50);
+      const top = joyYoq ? rect.top + 10 : Math.max(12, Math.min(rect.top + 20, window.innerHeight - 208));
+      setRailHolati({ top, left, ixcham: joyYoq });
     }
 
     joylashtirish();
@@ -121,6 +143,7 @@ export default function AppModal({ children, className = "", onClose, actionRail
         <ModalActionRail
           top={railHolati.top}
           left={railHolati.left}
+          ixcham={railHolati.ixcham}
           onClose={modalniYopish}
           onDownload={modalniYuklash}
           onOpenExternal={() => window.open(window.location.href, "_blank", "noopener,noreferrer")}

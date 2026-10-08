@@ -16,7 +16,9 @@ type SatrModeli = { kategoriya: string; summa: number };
 type IncomeExpenseResponse = {
   income?: {
     saleRevenue?: number | string;
+    // Boshqa daromad (zavod bonusi shu ichiga kiradi) — faqat SOF foydani oshiradi, yalpi foydaga ta'sir qilmaydi.
     otherIncome?: number | string;
+    supplierBonus?: number | string;
     // Qaytarilgan savdo summasi — saleRevenue (sof tushum) dan allaqachon ayirilgan, faqat ma'lumot uchun.
     returns?: number | string;
     total?: number | string;
@@ -82,6 +84,7 @@ export default function FoydaXarajatHisoboti() {
   const [filiallar, setFiliallar] = useState<string[]>([]);
   const [foydaXarajat, setFoydaXarajat] = useState<FoydaXarajatYozuvi[]>([]);
   const [qaytarilgan, setQaytarilgan] = useState(0);
+  const [boshqaDaromad, setBoshqaDaromad] = useState({ jami: 0, zavodBonusi: 0 });
   const [yuklanmoqda, setYuklanmoqda] = useState(false);
   const [xato, setXato] = useState("");
 
@@ -100,6 +103,12 @@ export default function FoydaXarajatHisoboti() {
         const value = response as IncomeExpenseResponse;
         const sana = `${dateTo}T23:59:59.000Z`;
         setQaytarilgan(Number(value.income?.returns ?? 0));
+        const boshqaJami = Number(value.income?.otherIncome ?? 0);
+        setBoshqaDaromad({
+          jami: boshqaJami,
+          // Zavod bonusi `otherIncome` ichida — alohida qo'shilmaydi, faqat ajratib ko'rsatiladi.
+          zavodBonusi: Math.min(Math.max(Number(value.income?.supplierBonus ?? 0), 0), Math.max(boshqaJami, 0)),
+        });
         const rows: FoydaXarajatYozuvi[] = [
           {
             id: "saleRevenue",
@@ -108,14 +117,6 @@ export default function FoydaXarajatHisoboti() {
             tur: "daromad",
             kategoriya: "Savdo tushumi (sof)",
             summa: Number(value.income?.saleRevenue ?? value.summary?.revenue ?? 0),
-          },
-          {
-            id: "otherIncome",
-            sana,
-            filialId: "",
-            tur: "daromad",
-            kategoriya: "Boshqa daromad",
-            summa: Number(value.income?.otherIncome ?? 0),
           },
           {
             id: "saleCost",
@@ -161,10 +162,12 @@ export default function FoydaXarajatHisoboti() {
     const daromad = jam(daromadlar);
     const tannarx = jam(tannarxlar);
     const xarajat = jam(xarajatlar);
+    // Yalpi foyda faqat savdodan: bonus va boshqa daromad uni o'zgartirmaydi (backend `summary.grossProfit` bilan bir xil).
     const yalpi = daromad - tannarx;
-    const sof = yalpi - xarajat;
-    return { daromadlar, tannarxlar, xarajatlar, daromad, tannarx, xarajat, yalpi, sof };
-  }, [foydaXarajat]);
+    const boshqa = boshqaDaromad.jami;
+    const sof = yalpi + boshqa - xarajat;
+    return { daromadlar, tannarxlar, xarajatlar, daromad, tannarx, xarajat, yalpi, boshqa, sof, jamiDaromad: daromad + boshqa };
+  }, [foydaXarajat, boshqaDaromad]);
 
   async function eksport() {
     setXato("");
@@ -247,6 +250,21 @@ export default function FoydaXarajatHisoboti() {
               <Jami nom="Jami daromad" summa={hisob.daromad} tone="emerald" />
             </Karta>
 
+            {hisob.boshqa !== 0 && (
+              <Karta icon={TrendingUp} nom="Boshqa daromadlar" tone="emerald">
+                {boshqaDaromad.zavodBonusi > 0 && (
+                  <Satr nom="Yetkazib beruvchi (zavod) bonusi" summa={boshqaDaromad.zavodBonusi} jami={hisob.boshqa} tone="emerald" />
+                )}
+                {hisob.boshqa - boshqaDaromad.zavodBonusi !== 0 && (
+                  <Satr nom="Boshqa daromad" summa={hisob.boshqa - boshqaDaromad.zavodBonusi} jami={hisob.boshqa} tone="emerald" />
+                )}
+                <div className="bg-slate-50/70 px-6 py-3 text-xs font-semibold text-slate-500">
+                  Bu daromadlar faqat sof foydani oshiradi — yalpi foyda o‘zgarmaydi.
+                </div>
+                <Jami nom="Jami boshqa daromad" summa={hisob.boshqa} tone="emerald" />
+              </Karta>
+            )}
+
             <Karta icon={Receipt} nom="Operatsion xarajatlar" tone="red">
               {hisob.xarajatlar.length === 0 ? (
                 <BoshQator matn="Xarajat yozuvlari yo‘q" />
@@ -273,6 +291,7 @@ export default function FoydaXarajatHisoboti() {
               <Hisoblash nom="Daromad" summa={hisob.daromad} />
               <Hisoblash nom="Sotilgan tovar tannarxi" summa={-hisob.tannarx} />
               <Hisoblash nom="Yalpi foyda" summa={hisob.yalpi} izoh={`Rentabellik ${foiz(hisob.yalpi, hisob.daromad)}`} kuchli />
+              {hisob.boshqa !== 0 && <Hisoblash nom="Boshqa daromad" summa={hisob.boshqa} izoh={boshqaDaromad.zavodBonusi > 0 ? `shundan zavod bonusi ${pul(boshqaDaromad.zavodBonusi)}` : undefined} />}
               <Hisoblash nom="Operatsion xarajatlar" summa={-hisob.xarajat} />
             </Karta>
           </section>
@@ -299,10 +318,11 @@ export default function FoydaXarajatHisoboti() {
                     foydali ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"
                   }`}
                 >
-                  Rentabellik {foiz(hisob.sof, hisob.daromad)}
+                  Rentabellik {foiz(hisob.sof, hisob.jamiDaromad)}
                 </span>
                 <p className="mt-2 text-xs font-semibold text-slate-400">
-                  Yalpi foyda {pul(hisob.yalpi)} − xarajatlar {pul(hisob.xarajat)}
+                  Yalpi foyda {pul(hisob.yalpi)}
+                  {hisob.boshqa !== 0 && <> + boshqa daromad {pul(hisob.boshqa)}</>} − xarajatlar {pul(hisob.xarajat)}
                 </p>
               </div>
             </div>

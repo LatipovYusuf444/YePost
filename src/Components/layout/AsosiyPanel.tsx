@@ -23,27 +23,31 @@ export default function AsosiyLayout() {
     <div className="app-shell min-h-screen bg-gradient-to-br from-cream-50 via-cream-200 to-gold-150">
       <YonPanel acik={sidebarAcik} onAcikChange={setSidebarAcik} />
 
+      {/* Telefonda chetlar torroq, katta ekranda kontent markazlashgan holda keng tarqalib ketmaydi.
+          Yon panel faqat katta ekranda (lg+) kontentni suradi; planshetda uning ustiga chiqadi. */}
       <main
-        className={`min-h-screen w-full min-w-0 max-w-full overflow-x-clip pl-4 pr-6 pt-3 transition-[padding-left] duration-200 ease-in-out md:pl-[92px] ${
-          sidebarAcik ? "md:pl-[308px]" : ""
+        className={`min-h-screen w-full min-w-0 max-w-full overflow-x-clip px-3 pt-3 transition-[padding-left] duration-200 ease-in-out sm:pl-4 sm:pr-5 md:pl-[92px] lg:pr-6 ${
+          sidebarAcik ? "lg:pl-[308px]" : ""
         }`}
       >
-        <YuqoriPanel sidebarAcik={sidebarAcik} onSidebarToggle={() => setSidebarAcik((joriy) => !joriy)} />
-        <div className="app-main-surface @container min-h-[calc(100vh-48px)] min-w-0 max-w-full rounded-[34px] border border-gold-200/60 bg-white/80 p-7 shadow-gold-medium backdrop-blur-xl">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={location.pathname}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              variants={sahifaVariantlari}
-              transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <Fragment key={valyutaKaliti}>
-                <Outlet />
-              </Fragment>
-            </motion.div>
-          </AnimatePresence>
+        <div className="mx-auto w-full max-w-[1880px]">
+          <YuqoriPanel sidebarAcik={sidebarAcik} onSidebarToggle={() => setSidebarAcik((joriy) => !joriy)} />
+          <div className="app-main-surface @container min-h-[calc(100vh-48px)] min-w-0 max-w-full rounded-[22px] border border-gold-200/60 bg-white/80 p-3 shadow-gold-medium backdrop-blur-xl sm:rounded-[28px] sm:p-5 lg:rounded-[34px] lg:p-7">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                variants={sahifaVariantlari}
+                transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <Fragment key={valyutaKaliti}>
+                  <Outlet />
+                </Fragment>
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
       </main>
 

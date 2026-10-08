@@ -15,6 +15,9 @@ export type ChegirmaXulosa = {
   jami: number;
   chegirmaliSotuvlar: number;
   sotuvlarSoni: number;
+  // Zavod bonusi backend hisobotida bo'lgandagina keladi (sotuvlar ro'yxatidan hisoblanganda — yo'q).
+  bonus?: number;
+  bonusMinusChegirma?: number;
 };
 
 export type ChegirmaXulosalari = {
@@ -108,10 +111,18 @@ export function javobXulosasi(javob: unknown): DiscountReportSummary | undefined
 export function backendXulosa(javob: unknown): ChegirmaXulosa {
   const summary = javobXulosasi(javob);
   if (summary && summary.totalDiscount != null) {
+    const bonus = summary.totalBonus != null ? raqam(summary.totalBonus) : undefined;
     return {
       jami: raqam(summary.totalDiscount),
       chegirmaliSotuvlar: raqam(summary.discountedSalesCount),
       sotuvlarSoni: raqam(summary.totalSalesCount),
+      bonus,
+      bonusMinusChegirma:
+        summary.bonusMinusDiscount != null
+          ? raqam(summary.bonusMinusDiscount)
+          : bonus != null
+            ? bonus - raqam(summary.totalDiscount)
+            : undefined,
     };
   }
   const qatorlar = javobQatorlari(javob);
