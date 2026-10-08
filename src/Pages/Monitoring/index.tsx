@@ -11,6 +11,8 @@ import {
   LoaderCircle,
   FlaskConical,
   Package,
+  PackageX,
+  PieChart as PieChartIcon,
   Receipt,
   RefreshCw,
   ShoppingCart,
@@ -46,7 +48,7 @@ import { summaniAjratish } from "./summaMatni";
 import ModalTablari from "@/Components/common/ModalTablari";
 import { FoydaKartasi, QarzdorlarKartasi, TolovTurlariKartasi } from "./TaqsimotKartalari";
 import {
-  WarehouseTree,
+  WarehouseStock,
   WarehouseFlow,
   WarehouseTimeline,
   ProductRanking,
@@ -1053,7 +1055,7 @@ export default function Monitoring() {
     const manfiyQoldiq = stockItems.filter(
       (item) => son(item.quantity) < 0 || son(item.availableQuantity) < 0,
     ).length;
-    return { qiymat, omborlarSoni: omborlar.length, kamQolgan, manfiyQoldiq };
+    return { qiymat, omborlarSoni: omborlar.length, kamQolgan, manfiyQoldiq, qatorlarSoni: stockItems.length };
   }, [stockItems, omborlar]);
 
   // Omborlar bo'yicha kirim/chiqim grafigi ham o'z mustaqil davriga (omborHarakatDavr) ega.
@@ -1631,26 +1633,40 @@ export default function Monitoring() {
               label={t("kpi.stockValue")}
               value={pul(demoMode ? jamiSumma(demoOmborQoldiqlari) : omborJami.qiymat)}
               yuklanmoqda={!demoMode && omborYuklanmoqda}
+              xato={!demoMode && !!omborXato}
+              rang="blue"
+              belgi={{ matn: t("mini.warehousesBadge", { count: demoMode ? DEMO_OMBORLAR.length : omborJami.omborlarSoni }) }}
+              ornament={<MiniBars values={(demoMode ? demoOmborQoldiqlari : omborlarBoyicha).slice(0, 6).map((item) => item.summa)} className="bg-blue-400" />}
             />
             <MiniStat
               icon={Warehouse}
               label={t("mini.warehouses")}
               value={String(demoMode ? DEMO_OMBORLAR.length : omborJami.omborlarSoni)}
               yuklanmoqda={!demoMode && omborYuklanmoqda}
+              xato={!demoMode && !!omborXato}
+              rang="violet"
+              belgi={{ matn: t("mini.badgeTotal") }}
+              ornament={<MiniBars values={Array.from({ length: Math.min(8, demoMode ? DEMO_OMBORLAR.length : omborJami.omborlarSoni) }, () => 1)} className="bg-violet-400" />}
             />
             <MiniStat
               icon={AlertTriangle}
               label={t("mini.lowStock")}
               value={String(demoMode ? 7 : omborJami.kamQolgan)}
               yuklanmoqda={!demoMode && omborYuklanmoqda}
-              rang="red"
+              xato={!demoMode && !!omborXato}
+              rang="amber"
+              belgi={{ matn: t("mini.countBadge", { count: demoMode ? 7 : omborJami.kamQolgan }), yaxshi: (demoMode ? 7 : omborJami.kamQolgan) === 0 }}
+              ornament={<MiniMeter faol={demoMode ? 7 : omborJami.kamQolgan} jami={demoMode ? 40 : omborJami.qatorlarSoni} className="bg-amber-400" />}
             />
             <MiniStat
-              icon={AlertTriangle}
+              icon={PackageX}
               label="Manfiy qoldiqli mahsulotlar"
               value={String(demoMode ? 0 : omborJami.manfiyQoldiq)}
               yuklanmoqda={!demoMode && omborYuklanmoqda}
-              rang="red"
+              xato={!demoMode && !!omborXato}
+              rang="rose"
+              belgi={{ matn: t("mini.countBadge", { count: demoMode ? 0 : omborJami.manfiyQoldiq }), yaxshi: (demoMode ? 0 : omborJami.manfiyQoldiq) === 0 }}
+              ornament={<MiniMeter faol={demoMode ? 0 : omborJami.manfiyQoldiq} jami={demoMode ? 40 : omborJami.qatorlarSoni} className="bg-rose-400" />}
             />
           </div>
 
@@ -2146,45 +2162,127 @@ function KpiCard({
   );
 }
 
+type MiniRang = "blue" | "violet" | "amber" | "rose";
+
+// Har bir kartaning o'z urg'u rangi bor (ma'lumot turiga mos); hammasi bitta dizayn tizimida.
+const MINI_USLUBLAR: Record<MiniRang, { karta: string; plitka: string; belgi: string }> = {
+  blue: {
+    karta: "border-blue-200/70 from-blue-50 via-white to-sky-50/70 hover:shadow-blue-200/70",
+    plitka: "from-blue-100 to-sky-50 text-blue-600 ring-blue-200/70",
+    belgi: "bg-blue-100/80 text-blue-700",
+  },
+  violet: {
+    karta: "border-violet-200/70 from-violet-50 via-white to-fuchsia-50/60 hover:shadow-violet-200/70",
+    plitka: "from-violet-100 to-fuchsia-50 text-violet-600 ring-violet-200/70",
+    belgi: "bg-violet-100/80 text-violet-700",
+  },
+  amber: {
+    karta: "border-amber-200/70 from-amber-50 via-white to-yellow-50/70 hover:shadow-amber-200/70",
+    plitka: "from-amber-100 to-yellow-50 text-amber-600 ring-amber-200/70",
+    belgi: "bg-amber-100/80 text-amber-700",
+  },
+  rose: {
+    karta: "border-rose-200/70 from-rose-50 via-white to-pink-50/70 hover:shadow-rose-200/70",
+    plitka: "from-rose-100 to-pink-50 text-rose-600 ring-rose-200/70",
+    belgi: "bg-rose-100/80 text-rose-700",
+  },
+};
+
+// Faqat bezak: ustunlar soni/balandligi kartadagi real ma'lumotdan olinadi (yangi ma'lumot o'ylab topilmaydi).
+function MiniBars({ values, className }: { values: number[]; className: string }) {
+  if (values.length === 0) return null;
+  const eng = Math.max(...values, 1);
+  return (
+    <div aria-hidden className="flex h-9 items-end gap-1">
+      {values.map((qiymat, index) => (
+        <span
+          key={index}
+          className={`w-2.5 rounded-t-md opacity-80 ${className}`}
+          style={{ height: `${Math.max(24, (qiymat / eng) * 100)}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function MiniMeter({ faol, jami, className }: { faol: number; jami: number; className: string }) {
+  const SEGMENTLAR = 10;
+  const tolgan =
+    jami > 0 ? Math.min(SEGMENTLAR, Math.max(faol > 0 ? 1 : 0, Math.round((faol / jami) * SEGMENTLAR))) : 0;
+  return (
+    <div aria-hidden className="flex h-9 items-end gap-1">
+      {Array.from({ length: SEGMENTLAR }, (_, index) => (
+        <span
+          key={index}
+          className={`w-1.5 rounded-full ${index < tolgan ? className : "bg-slate-200/80"}`}
+          style={{ height: `${38 + index * 6}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
 function MiniStat({
   icon: Icon,
   label,
   value,
   yuklanmoqda,
-  rang = "orange",
+  rang = "blue",
+  belgi,
+  ornament,
+  xato = false,
 }: {
   icon: typeof Package;
   label: string;
   value: string;
   yuklanmoqda: boolean;
-  rang?: "orange" | "red";
+  rang?: MiniRang;
+  belgi?: { matn: string; yaxshi?: boolean };
+  ornament?: ReactNode;
+  xato?: boolean;
 }) {
   const { t } = useTranslation("monitoring");
-  const ranglar = {
-    orange: "bg-orange-50 text-orange-500",
-    red: "bg-red-50 text-red-500",
-  } as const;
+  const uslub = MINI_USLUBLAR[rang];
+  const { raqam, birlik } = summaniAjratish(value);
   return (
     <div
-      className={`monitoring-enter flex min-w-0 items-center gap-3 rounded-[22px] border p-5 shadow-sm ${rang === "red" ? "border-amber-100 bg-amber-50/60" : "border-indigo-100 bg-indigo-50/50"}`}
+      className={`monitoring-enter @container group min-w-0 rounded-[22px] border bg-linear-to-br p-4 shadow-[0_8px_24px_-16px_rgba(15,23,42,.22)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-lg motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:p-5 ${uslub.karta}`}
     >
-      <span
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${ranglar[rang]}`}
-      >
-        <Icon size={18} />
-      </span>
-      <div>
-        <p className="text-xs font-bold text-slate-400">{label}</p>
-        {yuklanmoqda ? (
-          <MarkaziyYuklanish
-            text={t("dynamics.loading")}
-            className="mt-1 min-h-7 flex-row justify-start gap-2 text-xs"
-          />
-        ) : (
-          <p className="break-words text-lg font-semibold tabular-nums text-slate-950">
-            {value}
-          </p>
-        )}
+      <div className="flex items-center gap-3.5">
+        <span
+          aria-hidden
+          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br shadow-sm ring-1 ${uslub.plitka}`}
+        >
+          <Icon size={26} strokeWidth={1.9} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <p className="min-w-0 text-[13px] font-semibold leading-snug text-slate-600">{label}</p>
+            {belgi && !yuklanmoqda && !xato && (
+              <span
+                className={`shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold tabular-nums ${belgi.yaxshi ? "bg-emerald-100/80 text-emerald-700" : uslub.belgi}`}
+              >
+                {belgi.matn}
+              </span>
+            )}
+          </div>
+          <div className="mt-1.5 flex items-end justify-between gap-3">
+            {yuklanmoqda ? (
+              <MarkaziyYuklanish
+                text={t("dynamics.loading")}
+                className="min-h-9 flex-row justify-start gap-2 text-xs"
+              />
+            ) : (
+              <p className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
+                <span className="whitespace-nowrap text-[26px] font-extrabold leading-none tracking-tight tabular-nums text-slate-950">
+                  {raqam}
+                </span>
+                {birlik && <span className="text-sm font-bold text-slate-500">{birlik}</span>}
+              </p>
+            )}
+            {!yuklanmoqda && !xato && ornament && <div className="hidden shrink-0 @[300px]:block">{ornament}</div>}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -2317,16 +2415,34 @@ function ChartCard({
   );
 }
 
-const OMBOR_RANGLARI = [
-  "var(--theme-chart-series-1)",
-  "var(--theme-chart-series-2)",
-  "var(--theme-chart-series-3)",
-  "var(--theme-chart-series-4)",
-  "var(--theme-chart-series-5)",
+// Ulushlar ro'yxatidagi har bir qator o'z rangiga ega (gradient chiziq + foiz belgisi).
+const ULUSH_USLUBLARI = [
+  { chiziq: "from-indigo-600 to-violet-500", belgi: "bg-indigo-50 text-indigo-700" },
+  { chiziq: "from-sky-500 to-blue-300", belgi: "bg-sky-50 text-sky-700" },
+  { chiziq: "from-emerald-500 to-teal-300", belgi: "bg-emerald-50 text-emerald-700" },
+  { chiziq: "from-amber-400 to-yellow-300", belgi: "bg-amber-50 text-amber-700" },
+  { chiziq: "from-rose-500 to-pink-300", belgi: "bg-rose-50 text-rose-700" },
+  { chiziq: "from-fuchsia-500 to-purple-400", belgi: "bg-fuchsia-50 text-fuchsia-700" },
 ];
 
-// Grafik + "Jami" summasi + har bir element ulushi (%) ro'yxatini birga ko'rsatadigan
-// taqsimot kartochkasi (referens dizayndagi "Energiya resurslari sarfi" bo'limi uslubida).
+// Chiziq birinchi chizilganda chapdan o'ngga silliq to'ladi.
+function UlushChizigi({ foiz, gradient }: { foiz: number; gradient: string }) {
+  const [kirdi, setKirdi] = useState(false);
+  useEffect(() => {
+    const kadr = requestAnimationFrame(() => setKirdi(true));
+    return () => cancelAnimationFrame(kadr);
+  }, []);
+  return (
+    <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+      <div
+        className={`h-full origin-left rounded-full bg-linear-to-r transition-transform duration-700 ease-out motion-reduce:transition-none ${gradient}`}
+        style={{ width: `${Math.max(foiz, foiz > 0 ? 1.5 : 0)}%`, transform: kirdi ? "scaleX(1)" : "scaleX(0)" }}
+      />
+    </div>
+  );
+}
+
+// Omborlar bo'yicha qoldiq: chapda qiymat grafigi, o'ngda har bir omborning ulushi.
 function TaqsimotCard({
   title,
   subtitle,
@@ -2348,88 +2464,94 @@ function TaqsimotCard({
   yuklanmoqda?: boolean;
   icon?: typeof Warehouse;
 }) {
+  const { t } = useTranslation("monitoring");
   const jami = jamiSumma(items);
+  const { raqam, birlik } = summaniAjratish(pul(jami));
+  const holat = xato ? (
+    <p role="alert" className="flex h-full items-center justify-center rounded-2xl bg-rose-50 p-4 text-center text-sm font-semibold text-rose-600">
+      {xato}
+    </p>
+  ) : yuklanmoqda ? (
+    <MarkaziyYuklanish text={t("dynamics.loading")} className="h-full rounded-2xl bg-slate-50/80 text-sm" />
+  ) : bosh ? (
+    <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/30 px-4 text-center text-sm font-medium text-slate-500">
+      {bosh}
+    </div>
+  ) : null;
+
   return (
-    <section
-      aria-label={title}
-      className="monitoring-enter min-w-0 overflow-hidden rounded-[24px] border border-indigo-100 bg-gradient-to-br from-indigo-50/70 via-white to-white p-5 shadow-sm sm:p-6"
-    >
-      <div className="mb-5 flex items-center gap-3">
-        {Icon && (
-          <span className="rounded-2xl bg-indigo-100 p-3 text-indigo-600">
-            <Icon size={20} />
-          </span>
-        )}
-        <div>
-          <h2 className="font-semibold text-slate-950">{title}</h2>
-          <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
-        </div>
-      </div>
-      {xato ? (
-        <p
-          role="alert"
-          className="rounded-xl bg-rose-50 p-4 text-sm text-rose-600"
-        >
-          {xato}
-        </p>
-      ) : yuklanmoqda ? (
-        <MarkaziyYuklanish text="Yuklanmoqda..." className="h-64 rounded-2xl bg-indigo-50/80 text-sm" />
-      ) : (
-        <>
-          <div className="mb-5">
-            <p className="text-xs text-slate-500">{jamiLabel}</p>
-            <p className="mt-1 break-words text-3xl font-bold tabular-nums text-slate-950">
-              {pul(jami)}
-            </p>
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] xl:items-stretch">
+      <section
+        aria-label={title}
+        className="monitoring-enter flex min-w-0 flex-col overflow-hidden rounded-[26px] border border-indigo-100/80 bg-linear-to-br from-indigo-50/60 via-white to-white p-5 shadow-[0_8px_30px_-18px_rgba(79,70,229,.3)] sm:p-6"
+      >
+        <div className="flex items-center gap-3.5">
+          {Icon && (
+            <span aria-hidden className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-indigo-100 to-violet-50 text-indigo-600 ring-1 ring-indigo-200/70">
+              <Icon size={22} strokeWidth={1.9} />
+            </span>
+          )}
+          <div className="min-w-0">
+            <h2 className="text-lg font-extrabold leading-tight text-slate-950">{title}</h2>
+            <p className="mt-1 text-[13px] font-medium text-slate-500">{subtitle}</p>
           </div>
-          <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-            <div className="h-64">
-              {bosh ? (
-                <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-indigo-200 text-sm text-slate-400">
-                  {bosh}
-                </div>
-              ) : (
-                <WarehouseTree items={items} />
-              )}
-            </div>
-            <div>
-              <p className="mb-3 text-xs font-semibold text-slate-400">
-                {shareLabel}
-              </p>
-              <div className="max-h-72 space-y-3 overflow-y-auto">
-                {items.map((item, index) => {
-                  const share = jami > 0 ? (item.summa / jami) * 100 : 0;
-                  return (
-                    <div
-                      key={index}
-                      className="rounded-xl border border-slate-100 bg-white p-3"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                        <span className="font-semibold text-slate-700">
-                          {item.nom}
-                        </span>
-                        <span className="tabular-nums text-slate-500">
-                          {pul(item.summa)} · {share.toFixed(1)}%
-                        </span>
-                      </div>
-                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-indigo-50">
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: `${share}%`,
-                            background:
-                              OMBOR_RANGLARI[index % OMBOR_RANGLARI.length],
-                          }}
-                        />
-                      </div>
+        </div>
+        <p className="mt-5 text-sm font-medium text-slate-500">{jamiLabel}</p>
+        <p className="mt-1 flex flex-wrap items-baseline gap-x-2">
+          <span className={`text-[34px] font-extrabold leading-none tracking-tight tabular-nums ${yuklanmoqda || xato ? "text-slate-300" : "text-slate-950"}`}>
+            {yuklanmoqda || xato ? "—" : raqam}
+          </span>
+          {birlik && !yuklanmoqda && !xato && <span className="text-lg font-bold text-slate-500">{birlik}</span>}
+        </p>
+        <div className="mt-4 h-[300px] min-w-0 xl:h-auto xl:min-h-[300px] xl:flex-1">{holat ?? <WarehouseStock items={items} />}</div>
+      </section>
+
+      <section
+        aria-label={shareLabel}
+        className="monitoring-enter flex min-w-0 flex-col rounded-[26px] border border-slate-200/80 bg-linear-to-br from-slate-50/70 via-white to-white p-5 shadow-[0_8px_30px_-18px_rgba(15,23,42,.25)] sm:p-6"
+      >
+        <div className="flex items-center gap-3.5">
+          <span aria-hidden className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-blue-100 to-sky-50 text-blue-600 ring-1 ring-blue-200/70">
+            <PieChartIcon size={22} strokeWidth={1.9} />
+          </span>
+          <h2 className="min-w-0 text-lg font-extrabold leading-tight text-slate-950">{shareLabel}</h2>
+        </div>
+
+        {holat ? (
+          <div className="mt-5 min-h-[240px] flex-1">{holat}</div>
+        ) : (
+          <>
+            <ul className="mt-5 grid max-h-[420px] gap-3 overflow-y-auto pr-1">
+              {items.map((item, index) => {
+                const ulush = jami > 0 ? (item.summa / jami) * 100 : 0;
+                const uslub = ULUSH_USLUBLARI[index % ULUSH_USLUBLARI.length];
+                return (
+                  <li key={index} className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm transition-shadow duration-300 hover:shadow-md motion-reduce:transition-none">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="min-w-0 truncate text-[15px] font-bold text-slate-900" title={item.nom}>
+                        {item.nom}
+                      </p>
+                      <span className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-bold tabular-nums ${uslub.belgi}`}>
+                        {Math.round(ulush)}%
+                      </span>
                     </div>
-                  );
-                })}
+                    <p className="mt-1 text-[13px] font-medium tabular-nums text-slate-500">
+                      {pul(item.summa)} · {ulush.toFixed(1)}%
+                    </p>
+                    <UlushChizigi foiz={ulush} gradient={uslub.chiziq} />
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="mt-auto flex items-center justify-between gap-3 pt-5">
+              <div className="flex w-full items-center justify-between gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/50 px-4 py-3">
+                <span className="text-xs font-semibold text-slate-500">{jamiLabel}</span>
+                <span className="text-sm font-extrabold tabular-nums text-slate-950">{pul(jami)}</span>
               </div>
             </div>
-          </div>
-        </>
-      )}
-    </section>
+          </>
+        )}
+      </section>
+    </div>
   );
 }

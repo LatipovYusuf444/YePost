@@ -239,7 +239,10 @@
   },
   "mini": {
     "warehouses": "Количество складов",
-    "lowStock": "Товары на исходе"
+    "lowStock": "Товары на исходе",
+    "warehousesBadge": "Складов: {{count}}",
+    "badgeTotal": "Всего",
+    "countBadge": "{{count}} шт."
   },
   "charts": {
     "salesTrend": {

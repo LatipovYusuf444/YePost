@@ -8,25 +8,17 @@ import {
   BarChart,
   CartesianGrid,
   Legend,
+  LabelList,
   Line,
   LineChart,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
-  Treemap,
   XAxis,
   YAxis,
 } from "recharts";
 
 type Point = { nom: string; summa: number };
-const COLORS = [
-  "var(--theme-chart-series-1)",
-  "var(--theme-chart-series-2)",
-  "var(--theme-chart-series-3)",
-  "var(--theme-chart-series-4)",
-  "var(--theme-chart-series-5)",
-  "var(--theme-chart-series-6)",
-];
 const tooltipStyle = {
   borderRadius: 16,
   border: "1px solid var(--theme-chart-grid)",
@@ -50,69 +42,89 @@ function useFormat() {
   return { t, number, money, compact };
 }
 
-function TreeTile({
-  x = 0,
-  y = 0,
-  width = 0,
-  height = 0,
-  name = "",
-  index = 0,
-  depth = 0,
-}: {
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
-  name?: string;
-  index?: number;
-  depth?: number;
-}) {
-  if (!depth) return null;
+// Omborlar bo'yicha qoldiq qiymati: har bir ombor uchun bitta ustun (real qiymatlar, o'zgartirilmagan).
+export function WarehouseStock({ items }: { items: Point[] }) {
+  const { money, compact } = useFormat();
+  const id = useId().replace(/:/g, "");
+  const data = items.filter((item) => item.summa > 0);
+  const harakatsiz =
+    typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const belgi = { fill: "rgba(255,255,255,.88)", fontSize: 12, fontWeight: 600 };
   return (
-    <g>
-      <rect
-        x={x + 3}
-        y={y + 3}
-        width={Math.max(0, width - 6)}
-        height={Math.max(0, height - 6)}
-        fill={COLORS[index % COLORS.length]}
-        rx={12}
-      />
-      {width > 80 && height > 40 && (
-        <text x={x + 15} y={y + 25} fill="white" fontSize={12} fontWeight={600}>
-          {name.length > Math.floor(width / 8)
-            ? `${name.slice(0, Math.max(3, Math.floor(width / 8) - 3))}…`
-            : name}
-        </text>
-      )}
-    </g>
-  );
-}
-
-export function WarehouseTree({ items }: { items: Point[] }) {
-  const { money } = useFormat();
-  return (
-    <ResponsiveContainer
-      width="100%"
-      height="100%"
-      minWidth={0}
-      initialDimension={{ width: 400, height: 260 }}
-    >
-      <Treemap
-        data={items
-          .filter((item) => item.summa > 0)
-          .map((item) => ({ name: item.nom, value: item.summa }))}
-        dataKey="value"
-        nameKey="name"
-        content={<TreeTile />}
-        isAnimationActive={false}
+    <div className="h-full overflow-hidden rounded-[22px] bg-linear-to-br from-blue-600 via-indigo-600 to-violet-500 px-2 pb-1 pt-4 shadow-lg shadow-indigo-500/20 ring-1 ring-white/20 sm:px-3">
+      <ResponsiveContainer
+        width="100%"
+        height="100%"
+        minWidth={0}
+        initialDimension={{ width: 520, height: 280 }}
       >
-        <Tooltip
-          formatter={(value) => money(Number(value))}
-          contentStyle={tooltipStyle}
-        />
-      </Treemap>
-    </ResponsiveContainer>
+        <BarChart data={data} margin={{ top: 22, right: 12, left: 0, bottom: 2 }}>
+          <defs>
+            <linearGradient id={`ombor-${id}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#fff" stopOpacity={0.96} />
+              <stop offset="100%" stopColor="#fff" stopOpacity={0.28} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid vertical={false} stroke="rgba(255,255,255,.22)" strokeDasharray="3 6" />
+          <XAxis
+            dataKey="nom"
+            axisLine={false}
+            tickLine={false}
+            interval={0}
+            tickFormatter={(nom: string) => (nom.length > 14 ? `${nom.slice(0, 13)}…` : nom)}
+            tick={belgi}
+          />
+          <YAxis
+            width={62}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={compact}
+            tick={{ ...belgi, fontSize: 11, fontWeight: 500 }}
+          />
+          <Tooltip
+            cursor={{ fill: "rgba(255,255,255,.10)" }}
+            content={(props) => {
+              const nuqta = props.payload?.[0]?.payload as Point | undefined;
+              if (!props.active || !nuqta) return null;
+              return (
+                <div className="rounded-xl bg-slate-950/95 px-3.5 py-2.5 text-white shadow-xl shadow-slate-950/30 ring-1 ring-white/10">
+                  <p className="text-[11px] font-medium text-slate-300">{nuqta.nom}</p>
+                  <p className="mt-0.5 text-sm font-bold tabular-nums">{money(nuqta.summa)}</p>
+                </div>
+              );
+            }}
+          />
+          <Bar
+            dataKey="summa"
+            fill={`url(#ombor-${id})`}
+            radius={[12, 12, 0, 0]}
+            maxBarSize={64}
+            isAnimationActive={!harakatsiz}
+            animationDuration={700}
+            animationEasing="ease-out"
+          >
+            <LabelList
+              dataKey="summa"
+              content={(props) => {
+                const { x, y, width, value } = props as { x?: number; y?: number; width?: number; value?: number };
+                return (
+                  <text
+                    x={Number(x ?? 0) + Number(width ?? 0) / 2}
+                    y={Number(y ?? 0) - 8}
+                    textAnchor="middle"
+                    fill="#fff"
+                    fontSize={11}
+                    fontWeight={700}
+                  >
+                    {compact(Number(value ?? 0))}
+                  </text>
+                );
+              }}
+            />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
