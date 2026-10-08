@@ -49,8 +49,8 @@ export type ProductProfitFilter = SanaFilter & {
   categoryId?: string;
 };
 
-// Chegirmalar hisoboti: GET /reports/discounts (backend endpointi tayyor bo'lgach ulanadi).
-export type DiscountReportGroupBy = "DAY" | "MONTH" | "CASHIER" | "PRODUCT";
+// Chegirmalar hisoboti: GET /reports/discounts.
+export type DiscountReportGroupBy = "DAY" | "MONTH" | "CASHIER" | "CUSTOMER" | "PRODUCT";
 
 export type DiscountReportFilter = SanaFilter & {
   groupBy?: DiscountReportGroupBy;

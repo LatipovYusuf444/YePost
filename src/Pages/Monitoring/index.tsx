@@ -43,6 +43,7 @@ import type { FinanceTransaction } from "@/types/tolov";
 import MuddatTanlov from "@/Pages/HisobotUchot/MuddatTanlov";
 import { bugungiSanaKaliti, mahalliySanaKaliti } from "@/lib/sanaKaliti";
 import DynamicsChart from "./DynamicsChart";
+import BoshqaruvPaneli from "./BoshqaruvPaneli";
 import { summaniAjratish } from "./summaMatni";
 import ModalTablari from "@/Components/common/ModalTablari";
 import {
@@ -1527,6 +1528,30 @@ export default function Monitoring() {
           belgi={t("kpi.trendCurrent")}
         />
       </section>
+
+      {/* Boshqaruv xulosasi, e'tibor talab qiladigan holatlar va moliyaviy grafik: real backend ma'lumotlari, namuna ma'lumotsiz. */}
+      {tab === "savdo" && (
+        <BoshqaruvPaneli
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          yangilanish={yangilanish}
+          moliyaJavobi={incomeExpense}
+          moliyaYuklanmoqda={foydaYuklanmoqda}
+          moliyaXato={foydaXato}
+          sotuvlar={barchaSotuvlar}
+          sotuvYuklanmoqda={sotuvYuklanmoqda}
+          sotuvXato={sotuvXato}
+          omborKamQolgan={omborJami.kamQolgan}
+          omborManfiy={omborJami.manfiyQoldiq}
+          omborYuklanmoqda={omborYuklanmoqda}
+          omborXato={omborXato}
+          kirimHujjatlari={kirimHujjatlari}
+          chiqimHujjatlari={chiqimHujjatlari}
+          kochirishHujjatlari={kochirmaHujjatlari}
+          hujjatlarYuklanmoqda={omborHarakatiYuklanmoqda}
+          hujjatlarXato={omborHarakatiXato}
+        />
+      )}
 
       {tab === "savdo" ? (
         <div className="space-y-6">

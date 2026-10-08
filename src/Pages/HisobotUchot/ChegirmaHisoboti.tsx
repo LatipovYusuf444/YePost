@@ -8,6 +8,8 @@ import InlineLoading from "@/Components/common/InlineLoading";
 import ChegirmaXulosaBlok from "./ChegirmaXulosa";
 import {
   backendYoqmi,
+  javobQatorlari,
+  javobXulosasi,
   sotuvlardanQatorlar,
   sotuvlardanXulosa,
   tasdiqlanganSotuvlar,
@@ -37,16 +39,11 @@ type Qator = {
   foiz: number;
 };
 
-type Javob = {
-  items?: DiscountReportRow[];
-  rows?: DiscountReportRow[];
-  summary?: DiscountReportSummary;
-};
-
 const guruhlar: { value: DiscountReportGroupBy; nomi: string; ustun: string; qidiruv: string }[] = [
   { value: "DAY", nomi: "Kun bo'yicha", ustun: "Sana", qidiruv: "Sana bo‘yicha qidiruv" },
   { value: "MONTH", nomi: "Oy bo'yicha", ustun: "Oy", qidiruv: "Oy bo‘yicha qidiruv" },
   { value: "CASHIER", nomi: "Kassir bo'yicha", ustun: "Kassir", qidiruv: "Kassir bo‘yicha qidiruv" },
+  { value: "CUSTOMER", nomi: "Mijoz bo'yicha", ustun: "Mijoz", qidiruv: "Mijoz bo‘yicha qidiruv" },
   { value: "PRODUCT", nomi: "Mahsulot bo'yicha", ustun: "Mahsulot", qidiruv: "Mahsulot bo‘yicha qidiruv" },
 ];
 
@@ -68,8 +65,7 @@ function sarlavhaMatni(label: string, guruh: DiscountReportGroupBy) {
   return label;
 }
 
-function qatorlarniOlish(javob: Javob, guruh: DiscountReportGroupBy): Qator[] {
-  const royxat = javob.items ?? javob.rows ?? [];
+function qatorlarniOlish(royxat: DiscountReportRow[], guruh: DiscountReportGroupBy): Qator[] {
   return royxat.map((item, index) => {
     const chegirma = raqam(item.discountAmount);
     const sotuvSummasi = raqam(item.salesAmount);
@@ -131,10 +127,9 @@ export default function ChegirmaHisoboti() {
     discountReportApi.barchasi(filtr)
       .then((javob) => {
         if (!active) return;
-        const value = javob as Javob;
         setManba("backend");
-        setQatorlar(qatorlarniOlish(value, guruh));
-        setXulosa(value.summary ?? null);
+        setQatorlar(qatorlarniOlish(javobQatorlari(javob), guruh));
+        setXulosa(javobXulosasi(javob) ?? null);
       })
       .catch(async (error) => {
         if (!active) return;
@@ -147,7 +142,7 @@ export default function ChegirmaHisoboti() {
             if (!active) return;
             const jamiSumma = sotuvlar.reduce((sum, sotuv) => sum + sotuvSummasi(sotuv), 0);
             setManba("sotuvlar");
-            setQatorlar(qatorlarniOlish({ items: sotuvlardanQatorlar(sotuvlar, guruh) }, guruh));
+            setQatorlar(qatorlarniOlish(sotuvlardanQatorlar(sotuvlar, guruh), guruh));
             setXulosa(xulosaSummaryga(sotuvlardanXulosa(sotuvlar), jamiSumma));
           } catch (sotuvXatosi) {
             if (!active) return;
@@ -170,8 +165,8 @@ export default function ChegirmaHisoboti() {
   const korinadigan = useMemo(() => {
     const key = qidiruv.trim().toLowerCase();
     const royxat = key ? qatorlar.filter((item) => item.nomi.toLowerCase().includes(key)) : qatorlar;
-    // Kassir va mahsulot kesimida eng ko'p chegirma berilganlar tepada ko'rsatiladi.
-    return guruh === "CASHIER" || guruh === "PRODUCT"
+    // Kassir, mijoz va mahsulot kesimida eng ko'p chegirma berilganlar tepada ko'rsatiladi.
+    return guruh === "CASHIER" || guruh === "CUSTOMER" || guruh === "PRODUCT"
       ? [...royxat].sort((a, b) => b.chegirma - a.chegirma)
       : royxat;
   }, [guruh, qatorlar, qidiruv]);

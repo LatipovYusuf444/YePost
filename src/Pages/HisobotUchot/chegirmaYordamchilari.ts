@@ -1,7 +1,7 @@
 import axios from "axios";
 import { discountReportApi } from "@/api/reportsApi";
 import { sotuvlarSahifasiniOlish } from "@/api/savdoApi";
-import { masulNomi, sotuvChegirmaSummasi, sotuvHolati, sotuvSummasi } from "@/Pages/Savdo/savdoYordamchilari";
+import { masulNomi, mijozNomi, sotuvChegirmaSummasi, sotuvHolati, sotuvSummasi } from "@/Pages/Savdo/savdoYordamchilari";
 import type { Sotuv } from "@/types/savdo";
 import type { DiscountReportGroupBy, DiscountReportRow, DiscountReportSummary } from "@/types/reports";
 
@@ -88,12 +88,25 @@ export function sotuvlardanXulosa(sotuvlar: Sotuv[]): ChegirmaXulosa {
   return { jami, chegirmaliSotuvlar: chegirmali, sotuvlarSoni: sotuvlar.length };
 }
 
-// Backend javobidan (summary yoki qatorlar yig'indisidan) xulosa olinadi.
-type BackendJavob = { summary?: DiscountReportSummary; items?: DiscountReportRow[]; rows?: DiscountReportRow[] };
+// Backend javobi `{ summary, items }` ko'rinishida kutiladi, lekin `rows` yoki `data` (massiv yoki ichki obyekt) bilan kelsa ham o'qiladi.
+type BackendIchki = { summary?: DiscountReportSummary; items?: DiscountReportRow[]; rows?: DiscountReportRow[] };
+type BackendJavob = BackendIchki & { data?: DiscountReportRow[] | BackendIchki };
 
-export function backendXulosa(javob: unknown): ChegirmaXulosa {
+export function javobQatorlari(javob: unknown): DiscountReportRow[] {
   const qiymat = (javob ?? {}) as BackendJavob;
-  const summary = qiymat.summary;
+  const ichki = Array.isArray(qiymat.data) ? undefined : qiymat.data;
+  return qiymat.items ?? qiymat.rows ?? (Array.isArray(qiymat.data) ? qiymat.data : undefined) ?? ichki?.items ?? ichki?.rows ?? [];
+}
+
+export function javobXulosasi(javob: unknown): DiscountReportSummary | undefined {
+  const qiymat = (javob ?? {}) as BackendJavob;
+  const ichki = Array.isArray(qiymat.data) ? undefined : qiymat.data;
+  return qiymat.summary ?? ichki?.summary;
+}
+
+// Backend javobidan (summary yoki qatorlar yig'indisidan) xulosa olinadi.
+export function backendXulosa(javob: unknown): ChegirmaXulosa {
+  const summary = javobXulosasi(javob);
   if (summary && summary.totalDiscount != null) {
     return {
       jami: raqam(summary.totalDiscount),
@@ -101,7 +114,7 @@ export function backendXulosa(javob: unknown): ChegirmaXulosa {
       sotuvlarSoni: raqam(summary.totalSalesCount),
     };
   }
-  const qatorlar = qiymat.items ?? qiymat.rows ?? [];
+  const qatorlar = javobQatorlari(javob);
   return {
     jami: qatorlar.reduce((sum, qator) => sum + raqam(qator.discountAmount), 0),
     chegirmaliSotuvlar: qatorlar.reduce((sum, qator) => sum + raqam(qator.discountedSalesCount ?? qator.salesCount), 0),
@@ -172,7 +185,9 @@ export function sotuvlardanQatorlar(
         ? [kun, kun]
         : guruh === "MONTH"
           ? [kun.slice(0, 7), kun.slice(0, 7)]
-          : [sotuv.responsibleId ?? "-", masulNomi(sotuv)];
+          : guruh === "CUSTOMER"
+            ? [sotuv.customerId ?? sotuv.clientCompanyId ?? "donalik", mijozNomi(sotuv)]
+            : [sotuv.responsibleId ?? "-", masulNomi(sotuv)];
     const qator = yigish(key, label);
     const chegirma = sotuvChegirmaSummasi(sotuv);
     qator.salesCount += 1;

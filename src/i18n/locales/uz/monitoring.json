@@ -71,6 +71,172 @@
     "trendCurrent": "Hozirgi holat",
     "trendCurrentHint": "Bu ko'rsatkich tanlangan davrga emas, bugungi holatga qarab hisoblanadi"
   },
+  "boshqaruv": {
+    "title": "Boshqaruv xulosasi",
+    "subtitle": "Buyurtmalar va moliyaviy natija — bir qarashda",
+    "retry": "Qayta urinish",
+    "orders": {
+      "title": "Buyurtmalar (yetkazib berish)",
+      "badge": "Hozirgi holat",
+      "badgeHint": "Buyurtmalar soni tanlangan davrga emas, bugungi holatga qarab hisoblanadi",
+      "loading": "Buyurtmalar yuklanmoqda...",
+      "error": "Buyurtmalar ma'lumotini yuklab bo'lmadi",
+      "empty": "Hozircha buyurtmalar yo'q.",
+      "emptyHint": "Yetkazib berish biriktirilgan sotuvlar shu yerda hisoblanadi.",
+      "total": "Jami buyurtmalar",
+      "totalSub": "Bekor qilingan: {{count}} ta",
+      "active": "Faol buyurtmalar",
+      "activeSub": "Yangi, tasdiqlangan va yo'ldagi",
+      "completed": "Yakunlangan",
+      "completedSub": "Mijozga topshirilgan",
+      "late": "Kechikayotgan",
+      "lateSub": "Yetkazish sanasi o'tib ketgan",
+      "lateNone": "Kechikish yo'q"
+    },
+    "finance": {
+      "title": "Moliyaviy natija",
+      "badge": "Tanlangan davr",
+      "badgeHint": "Yuqoridagi sana filtri bo'yicha hisoblanadi",
+      "loading": "Moliyaviy ma'lumot yuklanmoqda...",
+      "error": "Moliyaviy ma'lumotni yuklab bo'lmadi",
+      "empty": "Moliyaviy ma'lumot mavjud emas",
+      "revenue": "Jami daromad",
+      "revenueSub": "Qaytarishlar ayirilgan tushum",
+      "revenueSubReturns": "Qaytarilgan {{summa}} ayirilgan",
+      "expense": "Jami xarajat",
+      "expenseSub": "Tannarx {{tannarx}} + xarajat {{operatsion}}",
+      "profit": "Sof foyda",
+      "loss": "Sof zarar",
+      "profitSub": "Foyda ulushi: {{percent}}%",
+      "profitFormula": "Daromad − xarajat"
+    },
+    "alerts": {
+      "title": "E'tibor talab qiladigan holatlar",
+      "subtitle": "Qarz, ombor, yetkazish va moliya bo'yicha muhim holatlar avtomatik tekshirib boriladi",
+      "status": {
+        "critical": "Shoshilinch e'tibor kerak",
+        "warning": "Ba'zi masalalar bor",
+        "attention": "Kichik eslatmalar bor",
+        "ok": "Hammasi joyida"
+      },
+      "severity": {
+        "critical": "Muhim",
+        "warning": "Ogohlantirish",
+        "attention": "Diqqat"
+      },
+      "ok": "Hozircha e'tibor talab qiladigan holat yo'q",
+      "okHint": "Qarz, ombor, yetkazish va moliya ko'rsatkichlari me'yorda.",
+      "passedTitle": "Tekshiruvdan o'tgan",
+      "agoToday": "bugun",
+      "agoDays": "{{count}} kun oldin",
+      "loading": "Holatlar tekshirilmoqda...",
+      "error": "Holatlarni aniqlab bo'lmadi",
+      "partial": "Ba'zi ma'lumotlar yuklanmadi, shuning uchun ro'yxat to'liq bo'lmasligi mumkin.",
+      "items": {
+        "loss": {
+          "title": "Tanlangan davrda zarar qayd etilgan",
+          "desc": "Xarajatlar daromaddan oshib ketgan. Tannarx va xarajatlarni tekshirib chiqing.",
+          "cta": "Foyda va xarajatni ko'rish",
+          "ok": "Zarar yo'q",
+          "metric": "Zarar summasi"
+        },
+        "negativeStock": {
+          "title": "{{count}} ta mahsulot qoldig'i manfiy",
+          "desc": "Omborda borligidan ko'p sotilgan. Kirim hujjati kiritilmagan bo'lishi mumkin.",
+          "cta": "Ombor qoldig'ini ochish",
+          "ok": "Manfiy qoldiq yo'q"
+        },
+        "lateOrders": {
+          "title": "{{count}} ta yetkazish kechikmoqda",
+          "desc": "Rejalashtirilgan sana o'tib ketgan, lekin buyurtma hali mijozga topshirilmagan.",
+          "cta": "Buyurtmalarni ko'rish",
+          "ok": "Kechikkan yetkazish yo'q",
+          "relatedLabel": "Eng ko'p kechikkan",
+          "dateLabel": "Rejalashtirilgan sana"
+        },
+        "overdueDebt": {
+          "title": "{{count}} ta qarz {{days}} kundan oshib ketgan",
+          "desc": "Mijozlar uzoq vaqtdan beri to'lamayapti. Ularga eslatish vaqti keldi.",
+          "cta": "Qarzdorliklarni ochish",
+          "ok": "Muddati o'tgan qarz yo'q",
+          "metric": "To'lanmagan qoldiq",
+          "relatedLabel": "Eng katta qarz",
+          "dateLabel": "Eng eski qarz"
+        },
+        "lowStock": {
+          "title": "{{count}} ta mahsulot tugab bormoqda",
+          "desc": "Qoldig'i 5 donadan kam. Yetkazib beruvchiga buyurtma berishni rejalashtiring.",
+          "cta": "Qoldiqni ko'rish",
+          "ok": "Kam qolgan mahsulot yo'q"
+        },
+        "pendingPayments": {
+          "title": "{{count}} ta savdoda to'lov kutilmoqda",
+          "desc": "Mijozlar hali to'lamagan, lekin muddati {{days}} kundan oshmagan. Qarzni o'z vaqtida yig'ib oling.",
+          "cta": "Qarzdorliklarni ochish",
+          "ok": "Kutilayotgan to'lov yo'q",
+          "metric": "To'lanmagan qoldiq",
+          "relatedLabel": "Eng katta qarz",
+          "dateLabel": "Eng eski qarz"
+        },
+        "draftSales": {
+          "title": "{{count}} ta sotuv tasdiqlanmagan",
+          "desc": "Qoralama sotuvlar ombor qoldig'iga va hisobotlarga hali ta'sir qilmayapti. Tasdiqlang yoki o'chiring.",
+          "cta": "Qoralamalarni ochish",
+          "ok": "Qoralama sotuv yo'q",
+          "dateLabel": "Oxirgi qoralama"
+        },
+        "draftDocs": {
+          "title": "{{count}} ta ombor hujjati tasdiqlashni kutmoqda",
+          "desc": "Kirim, chiqim yoki ko'chirish hujjatlari qoralama holatida. Tasdiqlanmaguncha ombor qoldig'i o'zgarmaydi.",
+          "cta": "Hujjatlarni ochish",
+          "ok": "Qoralama ombor hujjati yo'q"
+        }
+      }
+    },
+    "chart": {
+      "title": "Moliyaviy ko'rsatkichlar",
+      "subtitle": "Daromad, xarajat va sof foyda dinamikasi",
+      "grouping": "Guruhlash",
+      "group": {
+        "kun": "Kun",
+        "hafta": "Hafta",
+        "oy": "Oy",
+        "chorak": "Chorak",
+        "yil": "Yil"
+      },
+      "revenue": "Daromad",
+      "expense": "Xarajat",
+      "profit": "Sof foyda",
+      "loading": "Moliyaviy ma'lumot yuklanmoqda...",
+      "error": "Moliyaviy ma'lumotni yuklab bo'lmadi",
+      "empty": "Ma'lumot mavjud emas",
+      "emptyHint": "Tanlangan davrda daromad yoki xarajat topilmadi. Boshqa sana oralig'ini tanlab ko'ring.",
+      "partial": "{{count}} ta davr yuklanmadi, grafik mavjud ma'lumotlar bo'yicha chizildi.",
+      "tooMany": "Bu guruhlash uchun davr juda uzun (ko'pi bilan {{max}} bo'lak)",
+      "quarterShort": "{{n}}-chorak {{yil}}",
+      "toggleHint": "Grafikda ko'rsatish yoki yashirish",
+      "revenueSub": "{{count}} ta davr bo'yicha jami",
+      "expenseSub": "Daromadning {{percent}}%",
+      "expenseSubEmpty": "Tannarx va xarajatlar",
+      "profitSub": "Foyda ulushi: {{percent}}%",
+      "profitSubEmpty": "Daromad − xarajat",
+      "loss": "Sof zarar",
+      "insights": {
+        "best": "Eng yaxshi davr",
+        "avg": {
+          "kun": "Kuniga o'rtacha foyda",
+          "hafta": "Haftasiga o'rtacha foyda",
+          "oy": "Oyiga o'rtacha foyda",
+          "chorak": "Choragiga o'rtacha foyda",
+          "yil": "Yiliga o'rtacha foyda"
+        },
+        "margin": "Foyda ulushi",
+        "lossPeriods": "Zarar bo'lgan davrlar",
+        "lossCount": "{{count}} ta",
+        "noLoss": "Zarar bo'lmagan"
+      }
+    }
+  },
   "mini": {
     "warehouses": "Omborlar soni",
     "lowStock": "Kam qolgan mahsulotlar"

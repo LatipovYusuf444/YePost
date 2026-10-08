@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "motion/react";
 import { Bell, BellOff, CheckCheck, FileBarChart, LoaderCircle, LogOut, Menu, Package, PackagePlus, Search, Settings, ShoppingCart, UserRound, Users, Wallet } from "lucide-react";
@@ -23,6 +23,33 @@ import type { Bildirishnoma } from "@/types/crm";
 import type { JoriyFoydalanuvchi } from "@/types/tenant";
 
 import { useAvatarUrl } from "@/store/avatarStore";
+
+// Navbar sahifa aylantirilganda ham tepada qotib turadi. Aylantirilganda uning ostida xira (muzlagan oyna) tuman
+// paydo bo'ladi va soya kuchayadi, shuning uchun kontent navbar ostidan chiroyli o'tadi.
+// Sahifa `window` bo'yicha aylanadi, shuning uchun `sticky` yetarli (ichki scroll konteyner yo'q).
+function YopishqoqNavbar({ children }: { children: ReactNode }) {
+  const [aylangan, setAylangan] = useState(false);
+
+  useEffect(() => {
+    const yangila = () => setAylangan(window.scrollY > 8);
+    yangila();
+    window.addEventListener("scroll", yangila, { passive: true });
+    return () => window.removeEventListener("scroll", yangila);
+  }, []);
+
+  return (
+    // `-mt-3 pt-3`: boshlang'ich joylashuv avvalgidek qoladi (main'ning yuqori bo'sh joyi 12px), qotganda esa
+    // tuman qatlami ekranning eng tepasigacha yetadi.
+    <div data-aylangan={aylangan ? "" : undefined} className="group/navbar sticky top-0 z-40 -mt-3 pb-4 pt-3">
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -inset-x-3 top-0 -bottom-2 bg-linear-to-b from-white/75 via-white/45 to-transparent opacity-0 backdrop-blur-md transition-opacity duration-300 [mask-image:linear-gradient(to_bottom,black_62%,transparent)] group-data-[aylangan]/navbar:opacity-100 motion-reduce:transition-none"
+      />
+      {children}
+    </div>
+  );
+}
+
 export default function YuqoriPanel({
   sidebarAcik,
   onSidebarToggle,
@@ -96,7 +123,8 @@ export default function YuqoriPanel({
   // Bosh sahifa ("/") navbari avvalgidek qoladi; qolgan barcha sahifalar minimal navbardan foydalanadi.
   if (pathname === "/") {
     return (
-      <header className="theme-sidebar mb-4 flex items-center gap-3 rounded-[24px] border border-white/10 bg-[#0B1424] px-3 py-2.5 shadow-[0_18px_44px_rgba(2,6,23,.28)]">
+      <YopishqoqNavbar>
+      <header className="theme-sidebar relative flex items-center gap-3 rounded-[24px] border border-white/10 bg-[#0B1424] px-3 py-2.5 shadow-[0_18px_44px_rgba(2,6,23,.28)] transition-shadow duration-300 group-data-[aylangan]/navbar:shadow-[0_24px_56px_rgba(2,6,23,.46)] group-data-[aylangan]/navbar:ring-1 group-data-[aylangan]/navbar:ring-white/10 motion-reduce:transition-none">
         <button
           type="button"
           onClick={onSidebarToggle}
@@ -142,15 +170,17 @@ export default function YuqoriPanel({
           <MahsulotTanlashModal onClose={() => setMahsulotModalOchiq(false)} />
         )}
       </header>
+      </YopishqoqNavbar>
     );
   }
 
   return (
+    <YopishqoqNavbar>
     <motion.header
       initial={{ opacity: 0, y: -16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-      className="theme-sidebar mb-4 flex items-center gap-3 rounded-[24px] border border-white/10 bg-[#0B1424] px-3 py-2.5 shadow-[0_18px_44px_rgba(2,6,23,.28)] justify-between"
+      className="theme-sidebar relative flex items-center gap-3 rounded-[24px] border border-white/10 bg-[#0B1424] px-3 py-2.5 shadow-[0_18px_44px_rgba(2,6,23,.28)] transition-shadow duration-300 justify-between group-data-[aylangan]/navbar:shadow-[0_24px_56px_rgba(2,6,23,.46)] group-data-[aylangan]/navbar:ring-1 group-data-[aylangan]/navbar:ring-white/10 motion-reduce:transition-none"
     >
       <button
         type="button"
@@ -182,6 +212,7 @@ export default function YuqoriPanel({
       />
       </div>
     </motion.header>
+    </YopishqoqNavbar>
   );
 }
 

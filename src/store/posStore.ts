@@ -78,12 +78,12 @@ export const usePosStore = create<PosState>()(
       },
       updatePriceType: (priceType) => {
         set((state) => ({
-          cart: state.cart.map((item) => ({
-            ...item,
-            narx: priceType === "ulgurji" ? item.ulgurjiNarx || item.chakanaNarx : item.chakanaNarx,
-            // Narx turi o'zgarganda qo'lda kiritilgan sotuv narxi tashlab yuboriladi.
-            sotuvNarxi: undefined,
-          })),
+          cart: state.cart.map((item) => {
+            const narx = priceType === "ulgurji" ? item.ulgurjiNarx || item.chakanaNarx : item.chakanaNarx;
+            // Katalog narxi haqiqatan o'zgargandagina qo'lda kiritilgan sotuv narxi tashlab yuboriladi
+            // (sahifa qayta ochilganda saqlangan narxlar yo'qolmasligi uchun).
+            return { ...item, narx, sotuvNarxi: narx === item.narx ? item.sotuvNarxi : undefined };
+          }),
         }));
       },
       setSotuvNarxi: (productId, narx) => {

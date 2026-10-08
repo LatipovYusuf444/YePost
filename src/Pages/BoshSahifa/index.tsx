@@ -92,6 +92,8 @@ export default function BoshSahifa() {
   const [warehouseId, setWarehouseId] = useState("");
   const [discountPercent, setDiscountPercent] = useState(0);
   const [discountAmount, setDiscountAmount] = useState(0);
+  // Umumiy chegirma so'mda yoki foizda kiritiladi; foiz har doim so'mga aylantirib, shu summa backendga yuboriladi.
+  const [chegirmaTuri, setChegirmaTuri] = useState<"sum" | "foiz">("sum");
   const [paymentType, setPaymentType] = useState(t("paymentTypes.payme"));
   const [customerName, setCustomerName] = useState("");
   const [mijozTuri, setMijozTuri] = useState<CustomerType>("donalik");
@@ -477,26 +479,58 @@ export default function BoshSahifa() {
                 <p className="text-sm font-bold text-[#0F172A]">{t("customer.discountLabel")}</p>
               </div>
 
-              <div className="grid grid-cols-[minmax(0,1fr)_74px] gap-2">
+              <div className="grid grid-cols-[minmax(0,1fr)_84px] gap-2">
                 <input
-                  value={discountAmount || ""}
+                  inputMode="decimal"
+                  value={(chegirmaTuri === "foiz" ? discountPercent : discountAmount) || ""}
                   onChange={(event) => {
-                    setDiscountAmount(readNumber(event.target.value));
-                    setDiscountPercent(0);
+                    const qiymat = readNumber(event.target.value);
+                    if (chegirmaTuri === "foiz") {
+                      setDiscountPercent(Math.min(Math.max(qiymat, 0), 100));
+                      setDiscountAmount(0);
+                    } else {
+                      setDiscountAmount(qiymat);
+                      setDiscountPercent(0);
+                    }
                   }}
-                  placeholder={t("customer.discountPlaceholder")}
+                  placeholder={chegirmaTuri === "foiz" ? t("customer.discountPercentPlaceholder") : t("customer.discountPlaceholder")}
                   className="h-10 min-w-0 rounded-xl bg-gold-50 px-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-gold-200"
                 />
-                <button className="rounded-xl border border-gold-400 bg-white text-xs font-bold text-gold-600">
-                  {t("customer.currency")}
-                </button>
+                <div role="group" aria-label={t("customer.discountLabel")} className="grid grid-cols-2 rounded-xl bg-gold-100 p-0.5">
+                  {(["sum", "foiz"] as const).map((turi) => (
+                    <button
+                      key={turi}
+                      type="button"
+                      aria-pressed={chegirmaTuri === turi}
+                      onClick={() => {
+                        setChegirmaTuri(turi);
+                        // Tur almashganda kiritilgan qiymat qayta hisoblanmasligi uchun tozalanadi.
+                        setDiscountAmount(0);
+                        setDiscountPercent(0);
+                      }}
+                      className={[
+                        "rounded-[10px] text-xs font-bold transition",
+                        chegirmaTuri === turi ? "bg-white text-gold-600 shadow-sm" : "text-[#64748B] hover:text-gold-600",
+                      ].join(" ")}
+                    >
+                      {turi === "sum" ? t("customer.discountModeSum") : "%"}
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              {chegirmaTuri === "foiz" && discountSum > 0 && (
+                <p className="mt-2 text-xs font-semibold text-emerald-700">
+                  {t("customer.discountConverted", { summa: formatSumma(discountSum) })}
+                </p>
+              )}
 
               <div className="mt-2 grid grid-cols-4 gap-2">
                 {quickDiscounts.map((item) => (
                   <button
                     key={item}
                     onClick={() => {
+                      setChegirmaTuri("foiz");
                       setDiscountPercent(item);
                       setDiscountAmount(0);
                     }}
