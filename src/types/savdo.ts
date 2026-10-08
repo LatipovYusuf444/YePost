@@ -160,6 +160,7 @@ export type QaytarishMahsuloti = {
 
 export type Qaytarish = {
   id: string;
+  docNumber?: string;
   documentNumber?: string;
   number?: string;
   saleId: string;

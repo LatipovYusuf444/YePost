@@ -1,6 +1,8 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  Ban,
+  CheckCircle2,
   Edit3,
   LoaderCircle,
   Package,
@@ -14,6 +16,8 @@ import { sotuvTafsilotiniOlish } from "@/api/savdoApi";
 import { mahsulotlarApi, modifikatsiyalarApi } from "@/api/catalogApi";
 import { useSavdoStore } from "@/store/savdoStore";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
+import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
+import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 import type {
   Qaytarish,
   QaytarishSababi,
@@ -28,9 +32,14 @@ import {
   sotuvMahsulotiMiqdori,
   sotuvMahsulotiModifikatsiyaId,
   sotuvMahsulotiNarxi,
+  sotuvQarzdorlikSummasi,
   sotuvRaqami,
 } from "./savdoYordamchilari";
 import SavdoSelect from "./SavdoSelect";
+import QaytarishHisobKitobi from "./qaytarish/QaytarishHisobKitobi";
+import QaytarishVaqtChizigi from "./qaytarish/QaytarishVaqtChizigi";
+import { backendHisobKitobi, mockVaqtChizigi, taxminiyHisobKitob } from "./qaytarish/mockReturnData";
+import { qaytarishRaqami } from "./qaytarish/qaytarishYordamchilari";
 
 type Props = {
   qaytarishId: string;
@@ -101,6 +110,13 @@ export default function QaytarishTafsilotlariModal({
   const qaytarishniTiklash = useSavdoStore(
     (state) => state.qaytarishniTiklash
   );
+  const qaytarishniTasdiqlash = useSavdoStore(
+    (state) => state.qaytarishniTasdiqlash
+  );
+  const qaytarishniBekorQilish = useSavdoStore(
+    (state) => state.qaytarishniBekorQilish
+  );
+  const bekorQilishRuxsati = useHujjatniBekorQilishMumkinmi("savdo");
   const sotuvlar = useSavdoStore((state) => state.sotuvlar);
   const omborlar = useSavdoStore((state) => state.omborlar);
   const xodimlar = useSavdoStore((state) => state.xodimlar);
@@ -112,6 +128,8 @@ export default function QaytarishTafsilotlariModal({
   const [qaytarish, setQaytarish] = useState<Qaytarish | null>(null);
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [tahrir, setTahrir] = useState(false);
+  // Holat o'zgartiruvchi amal tasdiqlash oynasi: tasdiqlash (DRAFT) yoki bekor qilish (CONFIRMED).
+  const [holatAmali, setHolatAmali] = useState<"tasdiqlash" | "bekorQilish" | null>(null);
   const [sotuvYuklanmoqda, setSotuvYuklanmoqda] = useState(false);
   const [saleId, setSaleId] = useState("");
   const [warehouseId, setWarehouseId] = useState("");
@@ -319,6 +337,34 @@ export default function QaytarishTafsilotlariModal({
 
   const holat = String(qaytarish?.status ?? "DRAFT").toUpperCase();
   const qoralama = holat === "DRAFT";
+  const tasdiqlangan = holat === "CONFIRMED";
+
+  // Hisob-kitob kartasi: tasdiqlangan hujjatda backend qiymatlari (refundAmount/debtReduction), qoralamada taxminiy ko'rsatish.
+  const bogliqSotuv = qaytarish ? sotuvlar.find((item) => item.id === qaytarish.saleId) : undefined;
+  const hozirgiQarz = bogliqSotuv ? sotuvQarzdorlikSummasi(bogliqSotuv) : null;
+  const hisobKitob = !qaytarish
+    ? null
+    : tasdiqlangan
+      ? backendHisobKitobi(qaytarish, qaytarishSummasi(qaytarish), hozirgiQarz)
+      : qoralama
+        ? taxminiyHisobKitob(
+            qaytarishSummasi(qaytarish),
+            hozirgiQarz ?? 0,
+            (String(qaytarish.refundMethod ?? "CASH").toUpperCase() as RefundMethod) ?? "CASH"
+          )
+        : null;
+
+  // Tasdiqlash/bekor qilishdan keyin hujjat (status, refundAmount, debtReduction) backenddan qayta olinadi.
+  async function holatniQaytaYuklash(id: string) {
+    const yangi = await qaytarishTafsilotiniYuklash(id);
+    if (yangi) setQaytarish((joriy) => (joriy ? { ...joriy, ...yangi } : yangi));
+  }
+
+  async function holatAmaliniBajarish(id: string) {
+    const bajarildi = holatAmali === "bekorQilish" ? await qaytarishniBekorQilish(id) : await qaytarishniTasdiqlash(id);
+    if (bajarildi) await holatniQaytaYuklash(id);
+    return bajarildi;
+  }
   const tasdiqlanganSotuvlar = sotuvlar.filter(
     (sotuv) =>
       String(sotuv.status).toUpperCase() === "CONFIRMED" &&
@@ -340,7 +386,7 @@ export default function QaytarishTafsilotlariModal({
               <h2 className="mt-1 text-2xl font-black text-slate-950">
                 {qaytarish
                   ? t("header.titleWithId", {
-                      id: qaytarish.id.slice(0, 8).toUpperCase(),
+                      id: qaytarishRaqami(qaytarish),
                     })
                   : t("header.titleFallback")}
               </h2>
@@ -393,7 +439,18 @@ export default function QaytarishTafsilotlariModal({
                   />
                 </div>
 
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                {hisobKitob && (
+                  <div className="mt-6">
+                    <h3 className="mb-3 text-base font-black text-slate-900">{t("detail.calcTitle")}</h3>
+                    <QaytarishHisobKitobi
+                      hisob={hisobKitob}
+                      usul={(String(qaytarish.refundMethod ?? "CASH").toUpperCase() as RefundMethod) ?? "CASH"}
+                      ixcham
+                    />
+                  </div>
+                )}
+
+                <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <Malumot
                     nom={t("view.customer")}
                     qiymat={
@@ -435,15 +492,17 @@ export default function QaytarishTafsilotlariModal({
                     }
                   />
                   {/* Backend tasdiqlashda hisoblagan qiymatlar: mahsulot qiymati avval qarzni yopadi, ortig'i mijozga qaytariladi. */}
-                  {!qoralama && qaytarish.refundAmount != null && (
+                  {!qoralama && !hisobKitob && qaytarish.refundAmount != null && (
                     <Malumot nom={t("view.refundAmount")} qiymat={pulniFormatlash(Number(qaytarish.refundAmount) || 0)} />
                   )}
-                  {!qoralama && qaytarish.debtReduction != null && (
+                  {!qoralama && !hisobKitob && qaytarish.debtReduction != null && (
                     <Malumot nom={t("view.debtReduction")} qiymat={pulniFormatlash(Number(qaytarish.debtReduction) || 0)} />
                   )}
                 </div>
 
-                <div className="mt-7 overflow-x-auto rounded-[26px] border border-orange-100 bg-white shadow-[0_16px_45px_rgba(37,99,235,.07)]">
+                <div className="mt-7 grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
+                <div className="min-w-0">
+                <div className="overflow-x-auto rounded-[26px] border border-orange-100 bg-white shadow-[0_16px_45px_rgba(37,99,235,.07)]">
                   <table className="w-full min-w-[650px] text-left text-sm">
                     <thead className="bg-[#EFF6FF] text-xs font-black uppercase tracking-wide text-slate-500">
                       <tr>
@@ -492,6 +551,9 @@ export default function QaytarishTafsilotlariModal({
                     </p>
                   </div>
                 )}
+                </div>
+                <QaytarishVaqtChizigi voqealar={mockVaqtChizigi(qaytarish)} />
+                </div>
 
                 <div className="mt-7 flex flex-wrap justify-end gap-3">
                   <HujjatOchirish
@@ -508,6 +570,28 @@ export default function QaytarishTafsilotlariModal({
                       })
                     }
                   />
+                  {qoralama && (
+                    <button
+                      type="button"
+                      onClick={() => setHolatAmali("tasdiqlash")}
+                      disabled={amalBajarilmoqda}
+                      className="inline-flex h-11 items-center gap-2 rounded-2xl bg-emerald-500 px-5 font-black text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 disabled:opacity-60"
+                    >
+                      <CheckCircle2 size={17} />
+                      {t("view.confirmButton")}
+                    </button>
+                  )}
+                  {tasdiqlangan && bekorQilishRuxsati && (
+                    <button
+                      type="button"
+                      onClick={() => setHolatAmali("bekorQilish")}
+                      disabled={amalBajarilmoqda}
+                      className="inline-flex h-11 items-center gap-2 rounded-2xl bg-amber-50 px-5 font-black text-amber-700 ring-1 ring-amber-200 transition hover:bg-amber-500 hover:text-white disabled:opacity-60"
+                    >
+                      <Ban size={17} />
+                      {t("view.cancelButton")}
+                    </button>
+                  )}
                   {qoralama ? (
                     <button
                       onClick={() => void tahrirlashniBoshlash()}
@@ -719,6 +803,20 @@ export default function QaytarishTafsilotlariModal({
           </div>
         )}
       </section>
+      {holatAmali && qaytarish && (
+        <TasdiqlashOynasi
+          ikonka={holatAmali === "bekorQilish" ? <Ban size={24} /> : <CheckCircle2 size={24} />}
+          ohang={holatAmali === "bekorQilish" ? "sariq" : "yashil"}
+          sarlavha={t(`dialogs.${holatAmali}.title`)}
+          nom={`${qaytarish.id.slice(0, 8).toUpperCase()} · ${pulniFormatlash(qaytarishSummasi(qaytarish))}`}
+          tavsif={t(`dialogs.${holatAmali}.description`)}
+          ortgaMatni={t("dialogs.no")}
+          tasdiqMatni={t(`dialogs.${holatAmali}.yes`)}
+          jarayonMatni={t("dialogs.working")}
+          onTasdiq={() => holatAmaliniBajarish(qaytarish.id)}
+          onYopish={() => setHolatAmali(null)}
+        />
+      )}
     </AppModal>
   );
 }

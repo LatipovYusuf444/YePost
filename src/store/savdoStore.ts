@@ -53,6 +53,21 @@ function tasdiqlashXatoligiMatni(error: unknown) {
   return getApiErrorMessage(error);
 }
 
+type SavdoSet = (partial: Partial<SavdoState>) => void;
+
+// Qaytarishni bekor qilish/tiklashdan keyin sotuvdagi qarz va ombor qoldig'i backenddan qayta olinadi
+// (qarz, qoldiq va refundni backend o'zi o'zgartiradi — frontend hech narsa hisoblamaydi).
+async function sotuvVaQoldiqniYangilash(set: SavdoSet, get: () => SavdoState, warehouseId?: string) {
+  try {
+    const sotuvlar = await sotuvlarRoyxatiniOlish();
+    const boglanganMalumotlar = get();
+    set({ sotuvlar: sotuvlar.map((sotuv) => sotuvniBoglanganMalumotlarBilanBoyitish(sotuv, boglanganMalumotlar)) });
+    if (warehouseId) await get().qoldiqlarniYuklash(warehouseId);
+  } catch {
+    // Yangilash muvaffaqiyatsiz bo'lsa ham asosiy amal bajarilgan; ma'lumot keyingi yuklashda yangilanadi.
+  }
+}
+
 function qoldiqBirlashtirishKaliti(item: Pick<QoldiqTanlovi, "modificationId" | "warehouseId">) {
   // Bitta mahsulot bir nechta omborda alohida qoldiqqa ega bo'lishi mumkin,
   // shuning uchun faqat modificationId emas, ombor bilan birga kalit qilinadi
@@ -606,6 +621,7 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
         ),
         amalBajarilmoqda: false,
       }));
+      await sotuvVaQoldiqniYangilash(set, get, tiklangan.warehouseId);
       return true;
     } catch {
       // Xatolik toasti axios interceptor orqali allaqachon ko'rsatilgan.
@@ -633,6 +649,7 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
         ),
         amalBajarilmoqda: false,
       }));
+      await sotuvVaQoldiqniYangilash(set, get, yangilangan.warehouseId);
       return true;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });

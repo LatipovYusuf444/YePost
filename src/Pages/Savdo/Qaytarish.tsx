@@ -1,27 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleCheck, Clock3, LoaderCircle, RotateCcw, Undo2, Wallet } from "lucide-react";
-import type {
-  Qaytarish as QaytarishTuri,
-  QaytarishSababi,
-  QaytarishYaratishMalumoti,
-  Sotuv,
-} from "@/types/savdo";
+import { ArrowLeft, CircleCheck, Clock3, Plus, RotateCcw, Undo2, Wallet } from "lucide-react";
+import type { Qaytarish as QaytarishTuri, QaytarishYaratishMalumoti, Sotuv } from "@/types/savdo";
+import { useSavdoStore } from "@/store/savdoStore";
 import {
   mijozNomi,
   pulniFormatlash,
   qaytarishSummasi,
   sananiFormatlash,
-  sotuvMahsulotiId,
-  sotuvMahsulotiMiqdori,
-  sotuvMahsulotiModifikatsiyaId,
-  sotuvMahsulotiNarxi,
-  sotuvHolati,
+  sotuvQarzdorlikSummasi,
   sotuvRaqami,
-  sotuvSummasi,
 } from "./savdoYordamchilari";
 import QaytarishTafsilotlariModal from "./QaytarishTafsilotlariModal";
-import SavdoSelect from "./SavdoSelect";
+import QaytarishWizard from "./qaytarish/QaytarishWizard";
+import { qaytarishHolati, qaytarishRaqami, raqamga } from "./qaytarish/qaytarishYordamchilari";
 import JadvalYuklanmoqda from "./JadvalYuklanmoqda";
 import TablePagination from "@/Components/common/TablePagination";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
@@ -40,27 +32,31 @@ type QaytarishProps = {
   onTiklash: (qaytarishId: string) => Promise<boolean>;
 };
 
-const sababMatni: Record<QaytarishSababi, string> = {
-  DEFECT: "qaytarish.sabablar.DEFECT",
-  WRONG: "qaytarish.sabablar.WRONG",
-  OTHER: "qaytarish.sabablar.OTHER",
+const HOLAT_STILI: Record<string, { badge: string; nuqta: string; kalit: string }> = {
+  CONFIRMED: { badge: "bg-emerald-50 text-emerald-700 ring-emerald-100", nuqta: "bg-emerald-500", kalit: "confirmed" },
+  CANCELLED: { badge: "bg-red-50 text-red-600 ring-red-100", nuqta: "bg-red-500", kalit: "cancelled" },
+  DRAFT: { badge: "bg-amber-50 text-amber-700 ring-amber-100", nuqta: "bg-amber-500", kalit: "draft" },
 };
 
-function sababniOzbekcha(reason?: string) {
-  return sababMatni[String(reason ?? "OTHER").toUpperCase() as QaytarishSababi] ?? "qaytarish.sabablar.OTHER";
+function holatStili(holat: string) {
+  return HOLAT_STILI[holat === "CANCELED" ? "CANCELLED" : holat] ?? HOLAT_STILI.DRAFT;
 }
 
-function holatniOzbekcha(holat: string) {
-  if (holat === "CONFIRMED") return "qaytarish.holatlar.CONFIRMED";
-  if (holat === "CANCELLED" || holat === "CANCELED") return "qaytarish.holatlar.CANCELLED";
-  return "qaytarish.holatlar.DRAFT";
+function Holat({ holat }: { holat: string }) {
+  const { t } = useTranslation("savdo_qaytarish");
+  const uslub = holatStili(holat);
+  return (
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-xs font-black ring-1 ${uslub.badge}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${uslub.nuqta}`} />
+      {t(`status.${uslub.kalit}`)}
+    </span>
+  );
 }
 
 export default function Qaytarish({
   sotuvlar,
   qaytarishlar,
   boshlangichSotuvId = "",
-  amalBajarilmoqda,
   yuklanmoqda = false,
   onSotuvTafsilotiniOlish,
   onYaratish,
@@ -69,20 +65,9 @@ export default function Qaytarish({
   onTiklash,
 }: QaytarishProps) {
   const { t } = useTranslation("savdo_kichik");
-  const qaytarishMumkinSotuvlar = useMemo(
-    () =>
-      sotuvlar.filter(
-        (sotuv) =>
-          sotuvHolati(sotuv) === "CONFIRMED" &&
-          Boolean(sotuv.warehouseId ?? sotuv.warehouse?.id) &&
-          (sotuv.items?.length ?? 0) > 0
-      ),
-    [sotuvlar]
-  );
-  const [saleId, setSaleId] = useState(boshlangichSotuvId);
-  const [reason, setReason] = useState<QaytarishSababi>("OTHER");
-  const [note, setNote] = useState("");
-  const [xatolik, setXatolik] = useState("");
+  const { t: tq } = useTranslation("savdo_qaytarish");
+  const qaytarishTafsilotiniYuklash = useSavdoStore((state) => state.qaytarishTafsilotiniYuklash);
+  const [yangiOchiq, setYangiOchiq] = useState(Boolean(boshlangichSotuvId));
   const [tanlanganId, setTanlanganId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -90,77 +75,15 @@ export default function Qaytarish({
   useEffect(() => setPage(1), [pageSize, qaytarishlar]);
 
   useEffect(() => {
-    if (boshlangichSotuvId) setSaleId(boshlangichSotuvId);
+    if (boshlangichSotuvId) setYangiOchiq(true);
   }, [boshlangichSotuvId]);
 
-  async function toliqQaytarishYaratish() {
-    setXatolik("");
-    const royxatdagiSotuv = sotuvlar.find((item) => item.id === saleId);
-
-    if (!royxatdagiSotuv) {
-      setXatolik("qaytarish.xatoliklar.sotuvTanlanmagan");
-      return;
-    }
-
-    const toliqSotuv = (await onSotuvTafsilotiniOlish(royxatdagiSotuv.id)) ?? royxatdagiSotuv;
-    const warehouseId = toliqSotuv.warehouseId ?? toliqSotuv.warehouse?.id ?? "";
-
-    if (!warehouseId) {
-      setXatolik("qaytarish.xatoliklar.omborTopilmadi");
-      return;
-    }
-
-    const items = (toliqSotuv.items ?? [])
-      .map((item) => ({
-        saleItemId: sotuvMahsulotiId(item),
-        modificationId: sotuvMahsulotiModifikatsiyaId(item),
-        quantity: sotuvMahsulotiMiqdori(item),
-        price: sotuvMahsulotiNarxi(item),
-      }))
-      .filter(
-        (item) =>
-          item.saleItemId &&
-          item.modificationId &&
-          Number.isFinite(item.quantity) &&
-          item.quantity >= 0.001 &&
-          Number.isFinite(item.price) &&
-          item.price >= 0
-      );
-
-    if (items.length === 0) {
-      setXatolik("qaytarish.xatoliklar.yaroqliQatorYoq");
-      return;
-    }
-
-    const yaratilganQaytarish = await onYaratish({
-      saleId: toliqSotuv.id,
-      warehouseId,
-      responsibleId: toliqSotuv.responsibleId,
-      reason,
-      note: note.trim() || undefined,
-      items,
-    });
-
-    if (!yaratilganQaytarish) return;
-
-    const tasdiqlandi = await onTasdiqlash(yaratilganQaytarish.id);
-    if (!tasdiqlandi) {
-      setXatolik("qaytarish.xatoliklar.tasdiqlashXato");
-      return;
-    }
-
-    setSaleId("");
-    setReason("OTHER");
-    setNote("");
-  }
-
-  const tanlanganSotuv = qaytarishMumkinSotuvlar.find((sotuv) => sotuv.id === saleId);
   const statistika = useMemo(() => {
     let tasdiqlangan = 0;
     let qoralama = 0;
     let summa = 0;
     for (const qaytarish of qaytarishlar) {
-      const holat = String(qaytarish.status ?? "DRAFT").toUpperCase();
+      const holat = qaytarishHolati(qaytarish);
       if (holat === "CONFIRMED") {
         tasdiqlangan += 1;
         summa += qaytarishSummasi(qaytarish);
@@ -178,17 +101,76 @@ export default function Qaytarish({
     { kalit: "summa", label: t("qaytarish.stat.summa"), qiymat: pulniFormatlash(statistika.summa), ikonka: Wallet, stil: "from-rose-400 to-rose-600 shadow-rose-200", chegara: "border-rose-100" },
   ];
 
-  const sababStili: Record<QaytarishSababi, string> = {
-    DEFECT: "bg-red-50 text-red-600 ring-red-100",
-    WRONG: "bg-amber-50 text-amber-700 ring-amber-100",
-    OTHER: "bg-slate-50 text-slate-600 ring-slate-200",
-  };
+  // Jadval qatori uchun tayyor ma'lumotlar. Pul maydonlari faqat tasdiqlangan hujjatda backenddan keladi.
+  function qatorMalumoti(qaytarish: QaytarishTuri) {
+    const holat = qaytarishHolati(qaytarish);
+    const bogliqSotuv = qaytarish.sale ?? sotuvlar.find((item) => item.id === qaytarish.saleId) ?? { id: qaytarish.saleId };
+    const sotuvTopildi = sotuvlar.find((item) => item.id === qaytarish.saleId);
+    const tasdiqlangan = holat === "CONFIRMED";
+    const qaytarilgan = tasdiqlangan ? raqamga(qaytarish.refundAmount) : null;
+    const qarzdanAyrilgan = tasdiqlangan ? raqamga(qaytarish.debtReduction) : null;
+    // Hozircha hujjat bo'yicha "qaytarishdan keyingi qarz" saqlanmaydi: sotuvning joriy qarzi ko'rsatiladi.
+    const qolganQarz = tasdiqlangan && sotuvTopildi ? sotuvQarzdorlikSummasi(sotuvTopildi) : null;
+    return {
+      holat,
+      raqam: qaytarishRaqami(qaytarish),
+      sotuvRaqami: sotuvRaqami(bogliqSotuv),
+      mijoz: mijozNomi(bogliqSotuv),
+      tovarQiymati: qaytarishSummasi(qaytarish),
+      qaytarilgan,
+      qarzdanAyrilgan,
+      qolganQarz,
+    };
+  }
+
+  const pul = (qiymat: number | null) => (qiymat === null ? "—" : pulniFormatlash(qiymat));
+
+  if (yangiOchiq) {
+    return (
+      <div className="space-y-5">
+        <header className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="savdo-section-title">{tq("wizard.pageTitle")}</h1>
+            <p className="mt-1 text-sm text-slate-500">{tq("wizard.pageHint")}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setYangiOchiq(false)}
+            className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-extrabold text-slate-600 transition hover:bg-slate-50"
+          >
+            <ArrowLeft size={16} aria-hidden /> {tq("list.backToList")}
+          </button>
+        </header>
+        <QaytarishWizard
+          sotuvlar={sotuvlar}
+          qaytarishlar={qaytarishlar}
+          boshlangichSotuvId={boshlangichSotuvId}
+          onSotuvTafsilotiniOlish={onSotuvTafsilotiniOlish}
+          onYaratish={onYaratish}
+          onTasdiqlash={onTasdiqlash}
+          onTafsilotiniOlish={qaytarishTafsilotiniYuklash}
+          onHujjatniKorish={setTanlanganId}
+          onYopish={() => setYangiOchiq(false)}
+        />
+        {tanlanganId && <QaytarishTafsilotlariModal qaytarishId={tanlanganId} onYopish={() => setTanlanganId(null)} />}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
-      <header>
-        <h1 className="savdo-section-title">{t("qaytarish.sarlavha")}</h1>
-        <p className="mt-1 text-sm text-slate-500">{t("qaytarish.tavsif")}</p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="savdo-section-title">{t("qaytarish.sarlavha")}</h1>
+          <p className="mt-1 text-sm text-slate-500">{t("qaytarish.tavsif")}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setYangiOchiq(true)}
+          className="inline-flex h-12 cursor-pointer items-center gap-2 rounded-2xl bg-orange-500 px-6 text-sm font-black text-white shadow-lg shadow-orange-200 transition hover:-translate-y-0.5 hover:bg-orange-600 motion-reduce:transition-none"
+        >
+          <Plus size={17} aria-hidden /> {tq("list.newReturn")}
+        </button>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label={t("qaytarish.sarlavha")}>
@@ -211,164 +193,50 @@ export default function Qaytarish({
         })}
       </section>
 
-      <section className="overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-[0_14px_38px_rgba(37,99,235,.06)]">
-        <div className="flex items-center gap-3 border-b border-orange-100 bg-gradient-to-r from-orange-50 to-white px-6 py-4">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#2563EB] shadow-sm ring-1 ring-orange-100">
-            <RotateCcw size={19} />
-          </span>
-          <div>
-            <h2 className="font-black text-slate-900">{t("qaytarish.yangi")}</h2>
-            <p className="text-xs text-slate-500">{t("qaytarish.yangiTavsif")}</p>
-          </div>
-        </div>
-
-        <div className="grid gap-5 p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <div className="space-y-5">
-            <label className="block space-y-2 text-sm font-bold text-gray-700">
-              <span>1. {t("qaytarish.tasdiqlanganSotuv")}</span>
-              <SavdoSelect
-                value={saleId}
-                onChange={setSaleId}
-                placeholder={t("qaytarish.sotuvniTanlang")}
-                buttonClassName="h-12 rounded-2xl"
-                options={qaytarishMumkinSotuvlar.map((sotuv) => ({
-                  value: sotuv.id,
-                  label: `${sotuvRaqami(sotuv)} — ${mijozNomi(sotuv)}`,
-                }))}
-              />
-            </label>
-
-            {tanlanganSotuv ? (
-              <div className="grid grid-cols-3 gap-2 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-100">
-                <div className="min-w-0">
-                  <p className="text-xs text-slate-400">{t("qaytarish.sotuvMijoz")}</p>
-                  <p className="mt-0.5 truncate text-sm font-bold text-slate-800">{mijozNomi(tanlanganSotuv)}</p>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs text-slate-400">{t("qaytarish.sotuvSumma")}</p>
-                  <p className="mt-0.5 truncate text-sm font-black text-emerald-700">{pulniFormatlash(sotuvSummasi(tanlanganSotuv))}</p>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs text-slate-400">{t("qaytarish.mahsulotlarSoni")}</p>
-                  <p className="mt-0.5 truncate text-sm font-bold text-slate-800">{tanlanganSotuv.items?.length ?? 0}</p>
-                </div>
-              </div>
-            ) : (
-              <p className="rounded-2xl border border-dashed border-slate-200 px-4 py-3 text-xs text-slate-400">{t("qaytarish.sotuvTanlanmaganHint")}</p>
-            )}
-          </div>
-
-          <div className="space-y-5">
-            <div className="space-y-2 text-sm font-bold text-gray-700">
-              <span>2. {t("qaytarish.sabab")}</span>
-              <div className="grid gap-2 sm:grid-cols-3">
-                {(Object.keys(sababMatni) as QaytarishSababi[]).map((kalit) => (
-                  <button
-                    key={kalit}
-                    type="button"
-                    onClick={() => setReason(kalit)}
-                    aria-pressed={reason === kalit}
-                    className={`h-12 rounded-2xl px-3 text-xs font-bold ring-1 transition ${
-                      reason === kalit
-                        ? "bg-[#2563EB] text-white shadow-[0_10px_24px_rgba(37,99,235,.22)] ring-[#2563EB]"
-                        : "bg-white text-slate-600 ring-slate-200 hover:bg-orange-50 hover:text-[#2563EB]"
-                    }`}
-                  >
-                    {t(sababMatni[kalit])}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <label className="block space-y-2 text-sm font-bold text-gray-700">
-              <span>3. {t("qaytarish.izoh")}</span>
-              <input
-                value={note}
-                onChange={(event) => setNote(event.target.value)}
-                className="h-12 w-full rounded-2xl border border-gray-200 px-4 text-sm font-medium outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
-                placeholder={t("qaytarish.izohPlaceholder")}
-              />
-            </label>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-orange-100 bg-orange-50/40 px-6 py-4">
-          <p className="text-xs text-slate-500">{t("qaytarish.toliqEslatma")}</p>
-          <button
-            onClick={toliqQaytarishYaratish}
-            disabled={amalBajarilmoqda || !saleId}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-6 text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,235,.22)] transition hover:-translate-y-0.5 hover:bg-orange-600 disabled:translate-y-0 disabled:opacity-50"
-          >
-            {amalBajarilmoqda ? <LoaderCircle size={17} className="animate-spin" /> : <RotateCcw size={17} />}
-            {t("qaytarish.toliqQaytarish")}
-          </button>
-        </div>
-        {(xatolik || qaytarishMumkinSotuvlar.length === 0) && (
-          <div className="space-y-1 px-6 pb-4">
-            {xatolik && <p className="text-sm font-bold text-red-600">{t(xatolik)}</p>}
-            {qaytarishMumkinSotuvlar.length === 0 && <p className="text-sm text-amber-600">{t("qaytarish.mahsulotYoqOgohlantirish")}</p>}
-          </div>
-        )}
-      </section>
-
-      <div className="overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-[0_14px_38px_rgba(37,99,235,.06)]">
+      {/* Planshet va kompyuter: jadval */}
+      <div className="hidden overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-[0_14px_38px_rgba(37,99,235,.06)] md:block">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left text-sm">
+          <table className="w-full min-w-[1180px] text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                <th className="px-5 py-4">{t("qaytarish.columns.hujjat")}</th>
-                <th className="px-5 py-4">{t("qaytarish.columns.sotuvVaMijoz")}</th>
-                <th className="px-5 py-4">{t("qaytarish.columns.sabab")}</th>
-                <th className="px-5 py-4">{t("qaytarish.columns.summa")}</th>
-                <th className="px-5 py-4">{t("qaytarish.columns.sana")}</th>
-                <th className="px-5 py-4">{t("qaytarish.columns.holati")}</th>
-                <th className="w-20 px-5 py-4" />
+                <th className="px-4 py-4">{tq("list.columns.number")}</th>
+                <th className="px-4 py-4">{tq("list.columns.customer")}</th>
+                <th className="px-4 py-4">{tq("list.columns.sale")}</th>
+                <th className="px-4 py-4 text-right">{tq("list.columns.goodsValue")}</th>
+                <th className="px-4 py-4 text-right">{tq("list.columns.refunded")}</th>
+                <th className="px-4 py-4 text-right">{tq("list.columns.debtReduced")}</th>
+                <th className="px-4 py-4 text-right" title={tq("list.remainingDebtHint")}>{tq("list.columns.remainingDebt")}</th>
+                <th className="px-4 py-4">{tq("list.columns.status")}</th>
+                <th className="px-4 py-4">{tq("list.columns.date")}</th>
+                <th className="w-20 px-4 py-4" />
               </tr>
             </thead>
             <tbody className="divide-y divide-orange-100/70">
               {visibleRows.map((qaytarish) => {
-                const holat = String(qaytarish.status ?? "DRAFT").toUpperCase();
-                const sabab = String(qaytarish.reason ?? "OTHER").toUpperCase() as QaytarishSababi;
-                const bogliqSotuv = qaytarish.sale ?? sotuvlar.find((item) => item.id === qaytarish.saleId) ?? { id: qaytarish.saleId };
-
+                const q = qatorMalumoti(qaytarish);
                 return (
-                  <tr
-                    key={qaytarish.id}
-                    onClick={() => setTanlanganId(qaytarish.id)}
-                    className="cursor-pointer transition hover:bg-orange-50/60"
-                  >
-                    <td className="px-5 py-4">
+                  <tr key={qaytarish.id} onClick={() => setTanlanganId(qaytarish.id)} className="cursor-pointer transition hover:bg-orange-50/60">
+                    <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-[#2563EB] ring-1 ring-orange-100">
                           <Undo2 size={18} />
                         </span>
-                        <span className="font-black tabular-nums text-slate-900">{qaytarish.id.slice(0, 8).toUpperCase()}</span>
+                        <span className="font-black tabular-nums text-slate-900">{q.raqam}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-4">
-                      <p className="font-bold text-slate-800">{sotuvRaqami(bogliqSotuv)}</p>
-                      <p className="mt-1 text-xs text-slate-400">{mijozNomi(bogliqSotuv)}</p>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={`inline-flex whitespace-nowrap rounded-lg px-2.5 py-1 text-xs font-bold ring-1 ${sababStili[sabab] ?? sababStili.OTHER}`}>
-                        {t(sababniOzbekcha(qaytarish.reason))}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-5 py-4 font-black text-slate-900">
-                      {pulniFormatlash(qaytarishSummasi(qaytarish))}
-                    </td>
-                    <td className="whitespace-nowrap px-5 py-4 text-slate-600">{sananiFormatlash(qaytarish.createdAt)}</td>
-                    <td className="px-5 py-4">
-                      <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-xs font-black ring-1 ${holat === "CONFIRMED" ? "bg-emerald-50 text-emerald-700 ring-emerald-100" : holat === "CANCELLED" || holat === "CANCELED" ? "bg-red-50 text-red-600 ring-red-100" : "bg-amber-50 text-amber-700 ring-amber-100"}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${holat === "CONFIRMED" ? "bg-emerald-500" : holat === "CANCELLED" || holat === "CANCELED" ? "bg-red-500" : "bg-amber-500"}`} />
-                        {t(holatniOzbekcha(holat))}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className="max-w-[200px] truncate px-4 py-4 font-semibold text-slate-700">{q.mijoz}</td>
+                    <td className="whitespace-nowrap px-4 py-4 font-bold text-slate-800">{q.sotuvRaqami}</td>
+                    <td className="whitespace-nowrap px-4 py-4 text-right font-black tabular-nums text-slate-900">{pulniFormatlash(q.tovarQiymati)}</td>
+                    <td className="whitespace-nowrap px-4 py-4 text-right font-bold tabular-nums text-orange-700">{pul(q.qaytarilgan)}</td>
+                    <td className="whitespace-nowrap px-4 py-4 text-right font-bold tabular-nums text-emerald-700">{pul(q.qarzdanAyrilgan)}</td>
+                    <td className={`whitespace-nowrap px-4 py-4 text-right font-bold tabular-nums ${q.qolganQarz ? "text-rose-600" : "text-slate-600"}`}>{pul(q.qolganQarz)}</td>
+                    <td className="px-4 py-4"><Holat holat={q.holat} /></td>
+                    <td className="whitespace-nowrap px-4 py-4 text-slate-600">{sananiFormatlash(qaytarish.createdAt)}</td>
+                    <td className="px-4 py-4 text-right" onClick={(event) => event.stopPropagation()}>
                       <HujjatOchirish
                         guruh="savdo"
                         status={qaytarish.status ?? "DRAFT"}
-                        nom={qaytarish.id.slice(0, 8).toUpperCase()}
+                        nom={q.raqam}
                         onTasdiq={() => onOchirish(qaytarish.id)}
                         onTiklash={() => onTiklash(qaytarish.id)}
                       />
@@ -378,14 +246,14 @@ export default function Qaytarish({
               })}
               {yuklanmoqda && qaytarishlar.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-0">
+                  <td colSpan={10} className="p-0">
                     <JadvalYuklanmoqda ikonka={<RotateCcw size={24} />} />
                   </td>
                 </tr>
               )}
               {!yuklanmoqda && qaytarishlar.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-16 text-center">
+                  <td colSpan={10} className="px-6 py-16 text-center">
                     <Undo2 className="mx-auto text-orange-200" size={40} />
                     <p className="mt-3 font-semibold text-gray-400">{t("qaytarish.emptyList")}</p>
                   </td>
@@ -395,13 +263,67 @@ export default function Qaytarish({
           </table>
         </div>
       </div>
+
+      {/* Telefon: kartalar */}
+      <ul className="space-y-3 md:hidden">
+        {visibleRows.map((qaytarish) => {
+          const q = qatorMalumoti(qaytarish);
+          return (
+            <li key={qaytarish.id}>
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setTanlanganId(qaytarish.id)}
+                onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setTanlanganId(qaytarish.id); } }}
+                className="cursor-pointer rounded-[22px] border border-slate-200 bg-white p-4 shadow-sm transition active:bg-orange-50/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-black tabular-nums text-slate-900">{q.raqam}</p>
+                    <p className="mt-0.5 truncate text-sm font-semibold text-slate-600">{q.mijoz} · {q.sotuvRaqami}</p>
+                    <p className="text-xs font-medium tabular-nums text-slate-400">{sananiFormatlash(qaytarish.createdAt)}</p>
+                  </div>
+                  <Holat holat={q.holat} />
+                </div>
+                <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-dashed border-slate-200 pt-3 text-xs">
+                  {[
+                    { nom: tq("list.columns.goodsValue"), qiymat: pulniFormatlash(q.tovarQiymati), rang: "text-slate-900" },
+                    { nom: tq("list.columns.refunded"), qiymat: pul(q.qaytarilgan), rang: "text-orange-700" },
+                    { nom: tq("list.columns.debtReduced"), qiymat: pul(q.qarzdanAyrilgan), rang: "text-emerald-700" },
+                    { nom: tq("list.columns.remainingDebt"), qiymat: pul(q.qolganQarz), rang: q.qolganQarz ? "text-rose-600" : "text-slate-600" },
+                  ].map((satr) => (
+                    <div key={satr.nom} className="min-w-0">
+                      <dt className="text-[11px] font-semibold text-slate-400">{satr.nom}</dt>
+                      <dd className={`mt-0.5 truncate text-[13px] font-extrabold tabular-nums ${satr.rang}`}>{satr.qiymat}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <div className="mt-3 flex justify-end" onClick={(event) => event.stopPropagation()}>
+                  <HujjatOchirish
+                    guruh="savdo"
+                    status={qaytarish.status ?? "DRAFT"}
+                    nom={q.raqam}
+                    onTasdiq={() => onOchirish(qaytarish.id)}
+                    onTiklash={() => onTiklash(qaytarish.id)}
+                  />
+                </div>
+              </div>
+            </li>
+          );
+        })}
+        {yuklanmoqda && qaytarishlar.length === 0 && (
+          <li className="overflow-hidden rounded-[22px] border border-slate-200 bg-white"><JadvalYuklanmoqda ikonka={<RotateCcw size={24} />} /></li>
+        )}
+        {!yuklanmoqda && qaytarishlar.length === 0 && (
+          <li className="rounded-[22px] border border-dashed border-slate-200 bg-white px-6 py-12 text-center">
+            <Undo2 className="mx-auto text-orange-200" size={40} />
+            <p className="mt-3 font-semibold text-gray-400">{t("qaytarish.emptyList")}</p>
+          </li>
+        )}
+      </ul>
+
       <TablePagination page={page} pageSize={pageSize} totalItems={qaytarishlar.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
-      {tanlanganId && (
-        <QaytarishTafsilotlariModal
-          qaytarishId={tanlanganId}
-          onYopish={() => setTanlanganId(null)}
-        />
-      )}
+      {tanlanganId && <QaytarishTafsilotlariModal qaytarishId={tanlanganId} onYopish={() => setTanlanganId(null)} />}
     </div>
   );
 }
