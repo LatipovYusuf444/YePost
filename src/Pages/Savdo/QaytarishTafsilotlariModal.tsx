@@ -32,14 +32,13 @@ import {
   sotuvMahsulotiMiqdori,
   sotuvMahsulotiModifikatsiyaId,
   sotuvMahsulotiNarxi,
-  sotuvQarzdorlikSummasi,
   sotuvRaqami,
 } from "./savdoYordamchilari";
 import SavdoSelect from "./SavdoSelect";
 import QaytarishHisobKitobi from "./qaytarish/QaytarishHisobKitobi";
 import QaytarishVaqtChizigi from "./qaytarish/QaytarishVaqtChizigi";
-import { backendHisobKitobi, mockVaqtChizigi, taxminiyHisobKitob } from "./qaytarish/mockReturnData";
-import { qaytarishRaqami } from "./qaytarish/qaytarishYordamchilari";
+import { hujjatHisobKitobi } from "./qaytarish/hisobKitob";
+import { qaytarishMijozi, qaytarishRaqami } from "./qaytarish/qaytarishYordamchilari";
 
 type Props = {
   qaytarishId: string;
@@ -57,7 +56,9 @@ type Qator = {
 
 const sababMatni: Record<QaytarishSababi, string> = {
   DEFECT: "reasons.defect",
+  CUSTOMER_CHANGED_MIND: "reasons.customerChangedMind",
   WRONG: "reasons.wrong",
+  NOT_SUITABLE: "reasons.notSuitable",
   OTHER: "reasons.other",
 };
 
@@ -130,6 +131,8 @@ export default function QaytarishTafsilotlariModal({
   const [tahrir, setTahrir] = useState(false);
   // Holat o'zgartiruvchi amal tasdiqlash oynasi: tasdiqlash (DRAFT) yoki bekor qilish (CONFIRMED).
   const [holatAmali, setHolatAmali] = useState<"tasdiqlash" | "bekorQilish" | null>(null);
+  // Holat o'zgargach (tasdiqlash / bekor qilish / tiklash) jarayon tarixi backenddan qayta olinadi.
+  const [vaqtChizigiTokeni, setVaqtChizigiTokeni] = useState(0);
   const [sotuvYuklanmoqda, setSotuvYuklanmoqda] = useState(false);
   const [saleId, setSaleId] = useState("");
   const [warehouseId, setWarehouseId] = useState("");
@@ -339,25 +342,15 @@ export default function QaytarishTafsilotlariModal({
   const qoralama = holat === "DRAFT";
   const tasdiqlangan = holat === "CONFIRMED";
 
-  // Hisob-kitob kartasi: tasdiqlangan hujjatda backend qiymatlari (refundAmount/debtReduction), qoralamada taxminiy ko'rsatish.
-  const bogliqSotuv = qaytarish ? sotuvlar.find((item) => item.id === qaytarish.saleId) : undefined;
-  const hozirgiQarz = bogliqSotuv ? sotuvQarzdorlikSummasi(bogliqSotuv) : null;
-  const hisobKitob = !qaytarish
-    ? null
-    : tasdiqlangan
-      ? backendHisobKitobi(qaytarish, qaytarishSummasi(qaytarish), hozirgiQarz)
-      : qoralama
-        ? taxminiyHisobKitob(
-            qaytarishSummasi(qaytarish),
-            hozirgiQarz ?? 0,
-            (String(qaytarish.refundMethod ?? "CASH").toUpperCase() as RefundMethod) ?? "CASH"
-          )
-        : null;
+  // Hisob-kitob kartasi: faqat tasdiqlangan hujjatning o'z (backend) maydonlari. Eski hujjatlarda debtBefore/debtAfter
+  // null bo'lishi mumkin — ular "ma'lumot mavjud emas" deb ko'rsatiladi, sotuvning hozirgi qarzi o'rniga qo'yilmaydi.
+  const hisobKitob = qaytarish && tasdiqlangan ? hujjatHisobKitobi(qaytarish) : null;
 
-  // Tasdiqlash/bekor qilishdan keyin hujjat (status, refundAmount, debtReduction) backenddan qayta olinadi.
+  // Tasdiqlash/bekor qilishdan keyin hujjat (status, refundAmount, debtReduction, debtBefore/After) va tarix backenddan qayta olinadi.
   async function holatniQaytaYuklash(id: string) {
     const yangi = await qaytarishTafsilotiniYuklash(id);
     if (yangi) setQaytarish((joriy) => (joriy ? { ...joriy, ...yangi } : yangi));
+    setVaqtChizigiTokeni((son) => son + 1);
   }
 
   async function holatAmaliniBajarish(id: string) {
@@ -442,22 +435,17 @@ export default function QaytarishTafsilotlariModal({
                 {hisobKitob && (
                   <div className="mt-6">
                     <h3 className="mb-3 text-base font-black text-slate-900">{t("detail.calcTitle")}</h3>
-                    <QaytarishHisobKitobi
-                      hisob={hisobKitob}
-                      usul={(String(qaytarish.refundMethod ?? "CASH").toUpperCase() as RefundMethod) ?? "CASH"}
-                      ixcham
-                    />
+                    <QaytarishHisobKitobi hisob={hisobKitob} usul={String(qaytarish.refundMethod ?? "CASH").toUpperCase()} ixcham />
                   </div>
+                )}
+                {qoralama && (
+                  <p className="mt-6 rounded-2xl bg-slate-50 px-4 py-3 text-[13px] font-semibold leading-5 text-slate-600 ring-1 ring-slate-100">{t("detail.calcAfterConfirm")}</p>
                 )}
 
                 <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <Malumot
                     nom={t("view.customer")}
-                    qiymat={
-                      qaytarish.sale
-                        ? mijozNomi(qaytarish.sale)
-                        : t("view.customerUnknown")
-                    }
+                    qiymat={qaytarishMijozi(qaytarish, sotuvlar) ?? t("view.customerUnknown")}
                   />
                   <Malumot
                     nom={t("view.warehouse")}
@@ -552,7 +540,7 @@ export default function QaytarishTafsilotlariModal({
                   </div>
                 )}
                 </div>
-                <QaytarishVaqtChizigi voqealar={mockVaqtChizigi(qaytarish)} />
+                <QaytarishVaqtChizigi qaytarishId={qaytarish.id} yangilash={vaqtChizigiTokeni} />
                 </div>
 
                 <div className="mt-7 flex flex-wrap justify-end gap-3">
@@ -560,15 +548,11 @@ export default function QaytarishTafsilotlariModal({
                     korinish="tugma"
                     guruh="savdo"
                     status={qaytarish.status}
-                    nom={qaytarish.id.slice(0, 8).toUpperCase()}
+                    nom={qaytarishRaqami(qaytarish)}
                     onTasdiq={() => qaytarishniOchirish(qaytarish.id)}
                     onTiklash={() => qaytarishniTiklash(qaytarish.id)}
                     onOchirildi={onYopish}
-                    onTiklandi={() =>
-                      void qaytarishTafsilotiniYuklash(qaytarish.id).then((yangi) => {
-                        if (yangi) setQaytarish((joriy) => (joriy ? { ...joriy, ...yangi } : yangi));
-                      })
-                    }
+                    onTiklandi={() => void holatniQaytaYuklash(qaytarish.id)}
                   />
                   {qoralama && (
                     <button
@@ -808,7 +792,7 @@ export default function QaytarishTafsilotlariModal({
           ikonka={holatAmali === "bekorQilish" ? <Ban size={24} /> : <CheckCircle2 size={24} />}
           ohang={holatAmali === "bekorQilish" ? "sariq" : "yashil"}
           sarlavha={t(`dialogs.${holatAmali}.title`)}
-          nom={`${qaytarish.id.slice(0, 8).toUpperCase()} · ${pulniFormatlash(qaytarishSummasi(qaytarish))}`}
+          nom={`${qaytarishRaqami(qaytarish)} · ${pulniFormatlash(qaytarishSummasi(qaytarish))}`}
           tavsif={t(`dialogs.${holatAmali}.description`)}
           ortgaMatni={t("dialogs.no")}
           tasdiqMatni={t(`dialogs.${holatAmali}.yes`)}

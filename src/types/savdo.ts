@@ -28,7 +28,8 @@ export type YetkazishPayload = {
   note?: string;
 };
 export type SaleAuditLog = { id: string; action: "CREATE"|"UPDATE"|"DELETE"; actor?: NomliMalumot|null; user?: NomliMalumot|null; diff?: Record<string,unknown>|null; createdAt:string };
-export type QaytarishSababi = "DEFECT" | "WRONG" | "OTHER";
+// Backend qaytarish sabablari (CreateReturnDto.reason).
+export type QaytarishSababi = "CUSTOMER_CHANGED_MIND" | "NOT_SUITABLE" | "DEFECT" | "WRONG" | "OTHER";
 
 export type QaytarishToloviniQaytarishUsuli = "CASH" | "CARD" | "BALANCE" | "NONE";
 export type DraftStatus = "draft" | "waiting" | "editing" | "paid" | "cancelled";
@@ -174,8 +175,14 @@ export type Qaytarish = {
   restock?: boolean;
   refundMethod?: QaytarishToloviniQaytarishUsuli | string;
   // Backend `confirm` da hisoblaydi (satr ko'rinishida kelishi mumkin): mijozga qaytariladigan pul va sotuvdagi qarzdan ayirilgan summa.
-  refundAmount?: number | string;
-  debtReduction?: number | string;
+  refundAmount?: number | string | null;
+  debtReduction?: number | string | null;
+  // Tasdiqlash vaqtidagi sotuv qarzi snapshot'i (qaytarishdan oldin / keyin). Eski hujjatlarda null bo'lishi mumkin —
+  // null "ma'lumot yo'q" degani, 0 emas.
+  debtBefore?: number | string | null;
+  debtAfter?: number | string | null;
+  returnedQuantity?: number | string | null;
+  customer?: NomliMalumot | null;
   createdAt?: string;
   updatedAt?: string;
   confirmedAt?: string;
@@ -199,6 +206,42 @@ export type QaytarishYaratishMalumoti = {
     quantity: number;
     price: number;
   }>;
+};
+
+// GET /sales/{saleId}/returnable-items — sotuv qatori bo'yicha qaytarilishi mumkin bo'lgan miqdor (backend hisoblaydi).
+export type QaytariladiganQator = {
+  saleItemId: string;
+  modificationId?: string;
+  soldQuantity?: number | string | null;
+  returnedQuantity?: number | string | null;
+  remainingQuantity?: number | string | null;
+  price?: number | string | null;
+  modification?: SotuvMahsuloti["modification"];
+};
+
+// POST /returns/preview — hech narsa saqlanmaydi; backend qarz/pul taqsimotini hisoblab qaytaradi.
+export type QaytarishOldindanSorovi = {
+  saleId: string;
+  refundMethod?: QaytarishToloviniQaytarishUsuli;
+  items: Array<{ saleItemId: string; quantity: number }>;
+};
+
+export type QaytarishOldindanJavobi = {
+  goodsValue?: number | string | null;
+  debtBefore?: number | string | null;
+  debtReduction?: number | string | null;
+  refundAmount?: number | string | null;
+  debtAfter?: number | string | null;
+  returnedQuantity?: number | string | null;
+};
+
+// GET /returns/{id}/timeline — hujjat voqealari (kim va qachon).
+export type QaytarishVoqeasi = {
+  id?: string;
+  type: string;
+  at?: string | null;
+  actor?: { id?: string; fullName?: string | null; name?: string | null } | null;
+  payload?: Record<string, unknown> | null;
 };
 
 export type OmborTanlovi = NomliMalumot;

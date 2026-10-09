@@ -7,7 +7,11 @@ import type {
   MijozTanlovi,
   OmborTanlovi,
   Qaytarish,
+  QaytarishOldindanJavobi,
+  QaytarishOldindanSorovi,
+  QaytarishVoqeasi,
   QaytarishYaratishMalumoti,
+  QaytariladiganQator,
   QoldiqTanlovi,
   QoldiqValyutasi,
   Sotuv,
@@ -223,6 +227,34 @@ export async function qaytarishlarRoyxatiniOlish() {
 export async function qaytarishTafsilotiniOlish(qaytarishId: string) {
   const response = await apiClient.get<Qaytarish | ApiEnvelope<Qaytarish>>(`/returns/${qaytarishId}`);
   return apiData(response.data);
+}
+
+// Qaytarish wizard (2-bosqich): sotuv qatorlari bo'yicha sotilgan / avval qaytarilgan / qolgan miqdorni backend beradi.
+export async function qaytariladiganQatorlarniOlish(sotuvId: string, signal?: AbortSignal) {
+  const response = await apiClient.get<RoyxatJavobi<QaytariladiganQator> | ApiListEnvelope<QaytariladiganQator>>(
+    `/sales/${sotuvId}/returnable-items`,
+    { signal }
+  );
+  return royxatniAjratish(response.data);
+}
+
+// Qaytarish wizard (4-bosqich): tasdiqlashdan oldin backend hisob-kitobi (hech narsa saqlanmaydi, qoldiq/qarz/kassa o'zgarmaydi).
+export async function qaytarishniOldindanKorish(malumot: QaytarishOldindanSorovi, signal?: AbortSignal) {
+  const response = await apiClient.post<QaytarishOldindanJavobi | ApiEnvelope<QaytarishOldindanJavobi>>(
+    "/returns/preview",
+    malumot,
+    { signal }
+  );
+  return apiData(response.data);
+}
+
+// Qaytarish tafsiloti: hujjat voqealari tarixi.
+export async function qaytarishVaqtChiziginiOlish(qaytarishId: string, signal?: AbortSignal) {
+  const response = await apiClient.get<RoyxatJavobi<QaytarishVoqeasi> | ApiListEnvelope<QaytarishVoqeasi>>(
+    `/returns/${qaytarishId}/timeline`,
+    { signal }
+  );
+  return royxatniAjratish(response.data);
 }
 
 // Qaytarish.tsx: yangi qaytarish hujjatini qoralama holatida yaratadi.

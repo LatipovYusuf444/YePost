@@ -68,7 +68,9 @@
   "reasons": {
     "defect": "Nuqsonli mahsulot",
     "wrong": "Noto'g'ri mahsulot",
-    "other": "Boshqa sabab"
+    "other": "Boshqa sabab",
+    "customerChangedMind": "Mijoz fikrini o'zgartirdi",
+    "notSuitable": "Mahsulot mos kelmadi"
   },
   "refundMethods": {
     "cash": "Naqd",
@@ -111,13 +113,16 @@
       "hint": "Tasdiqlangan sotuvni tanlang. Sotuv raqami yoki mijoz nomi bo'yicha qidirishingiz mumkin.",
       "search": "Sotuv raqami yoki mijoz bo'yicha qidirish",
       "empty": "Qaytarish mumkin bo'lgan sotuv topilmadi.",
-      "partial": "Qisman qaytarilgan",
+      "partial": "Oldin qaytarilgan",
       "total": "Sotuv summasi",
       "paid": "To'langan",
       "debt": "Qarz",
       "showingFirst": "Dastlabki {{count}} ta sotuv ko'rsatildi. Qidiruvdan foydalaning.",
       "loading": "Sotuv ma'lumotlari yuklanmoqda...",
-      "selected": "Tanlangan sotuv"
+      "selected": "Tanlangan sotuv",
+      "listLoading": "Sotuvlar yuklanmoqda...",
+      "listError": "Sotuvlar ro'yxatini olib bo'lmadi",
+      "nothingReturnable": "Bu sotuv bo'yicha qaytarilishi mumkin bo'lgan mahsulot qolmagan."
     },
     "items": {
       "heading": "Qaysi mahsulot qaytariladi?",
@@ -137,8 +142,12 @@
       "errors": {
         "invalid": "Miqdorni son bilan kiriting.",
         "negative": "Miqdor 0 dan kichik bo'lishi mumkin emas.",
-        "exceeds": "Qaytarish miqdori qolgan miqdordan ({{max}}) oshib ketdi."
-      }
+        "exceeds": "Qaytarish miqdori qolgan miqdordan ({{max}}) oshib ketdi.",
+        "data": "Bu qator uchun backend ma'lumotlari to'liq emas."
+      },
+      "returned": "Avval qaytarilgan",
+      "empty": "Bu sotuv bo'yicha qaytariladigan mahsulotlar topilmadi.",
+      "selectedQuantity": "Qaytariladigan miqdor"
     },
     "reason": {
       "heading": "Nima uchun qaytarilmoqda?",
@@ -165,8 +174,8 @@
         "BALANCE": "Mijoz balansiga",
         "NONE": "Pul qaytarilmaydi"
       },
-      "estimate": "Taxminiy",
-      "estimateNote": "Bu — taxminiy ko'rsatish. Yakuniy summalarni tasdiqlash vaqtida backend o'zi hisoblaydi.",
+      "estimate": "Oldindan ko'rish",
+      "estimateNote": "Summalarni backend hisoblagan (oldindan ko'rish). Tasdiqlangandan keyin hujjatdagi yakuniy qiymatlar ko'rsatiladi.",
       "goods": "Qaytarilgan tovar qiymati",
       "currentDebt": "Sotuvdagi qarz",
       "currentDebtHint": "Qaytarishdan oldingi qarz",
@@ -181,8 +190,13 @@
         "qarzYoq": "Sotuvda qarz yo'q: tovar qiymatining hammasi mijozga qaytariladi.",
         "qarzdanKichik": "Tovar qiymati qarzdan kichik: hammasi qarzdan ayriladi, mijozga pul qaytarilmaydi.",
         "qarzgaTeng": "Tovar qiymati qarzga teng: qarz to'liq yopiladi, mijozga pul qaytarilmaydi.",
-        "qarzdanKatta": "Tovar qiymati qarzdan katta: avval qarz yopiladi, qolgan qismi mijozga qaytariladi."
-      }
+        "qarzdanKatta": "Tovar qiymati qarzdan katta: avval qarz yopiladi, qolgan qismi mijozga qaytariladi.",
+        "pulQaytarilmaydi": "Tovar qiymati qarzdan katta, lekin \"Pul qaytarilmaydi\" usuli tanlangan: mijozga pul berilmaydi."
+      },
+      "unavailable": "Ma'lumot mavjud emas",
+      "loading": "Backend hisob-kitobi yuklanmoqda...",
+      "previewFailed": "Hisob-kitobni olib bo'lmadi.",
+      "cannotConfirm": "Hisob-kitob olinmaguncha qaytarishni tasdiqlab bo'lmaydi."
     },
     "confirm": {
       "heading": "Tasdiqlash",
@@ -204,24 +218,30 @@
       "debt": "Qarzdan ayrildi: {{summa}}",
       "refund": "Mijozga qaytarildi: {{summa}}",
       "noRefund": "Mijozga pul qaytarilmadi",
-      "finished": "Hujjat tasdiqlandi",
       "remaining": "Qolgan qarz",
-      "estimateNote": "Yakuniy summalarni backend javobidan olib bo'lmadi, taxminiy qiymat ko'rsatilmoqda. Aniq summalarni hujjatdan ko'ring.",
       "viewDocument": "Qaytarish hujjatini ko'rish",
       "newReturn": "Yangi qaytarish",
-      "close": "Yopish"
+      "close": "Yopish",
+      "debtUnavailable": "Qarzdan ayrilgan summa: ma'lumot mavjud emas",
+      "refundUnavailable": "Mijozga qaytarilgan summa: ma'lumot mavjud emas",
+      "status": "Hujjat holati: {{holat}}",
+      "detailsFailed": "Hujjat ma'lumotlarini olib bo'lmadi. Summalarni \"Qaytarish hujjatini ko'rish\" orqali tekshiring."
     },
     "errors": {
       "noItems": "Kamida bitta mahsulot uchun qaytarish miqdorini kiriting.",
       "noteRequired": "\"Boshqa\" sababi uchun kamida 3 belgidan iborat izoh kiriting.",
       "warehouseMissing": "Sotuvda ombor ko'rsatilmagan, qaytarish yaratib bo'lmaydi.",
-      "confirmFailed": "Qaytarish yaratildi, lekin tasdiqlanmadi. Qayta urinib ko'ring — yangi hujjat yaratilmaydi."
-    }
+      "confirmFailed": "Qaytarish yaratildi, lekin tasdiqlanmadi. Qayta urinib ko'ring — yangi hujjat yaratilmaydi.",
+      "saleLoadFailed": "Sotuv ma'lumotlarini olib bo'lmadi.",
+      "createFailed": "Qaytarish hujjati yaratilmadi. Ma'lumotlar saqlab qolindi, qayta urinib ko'ring.",
+      "previewIncomplete": "Backend hisob-kitobi to'liq qaytmadi. Qayta urinib ko'ring."
+    },
+    "retry": "Qayta urinish",
+    "unavailable": "Ma'lumot mavjud emas"
   },
   "list": {
     "newReturn": "Yangi qaytarish",
     "backToList": "Ro'yxatga qaytish",
-    "remainingDebtHint": "Sotuvning hozirgi qarzi",
     "columns": {
       "number": "Qaytarish №",
       "customer": "Mijoz",
@@ -232,21 +252,33 @@
       "remainingDebt": "Qolgan qarz",
       "status": "Holat",
       "date": "Sana"
-    }
+    },
+    "noData": "Ma'lumot yo'q",
+    "search": "Qidirish: raqam, mijoz, sotuv",
+    "filters": {
+      "all": "Hammasi"
+    },
+    "loadError": "Qaytarishlar ro'yxatini olib bo'lmadi",
+    "noMatches": "Qidiruv yoki filtrga mos qaytarish topilmadi."
   },
   "detail": {
     "calcTitle": "Hisob-kitob",
     "timelineTitle": "Jarayon tarixi",
-    "timelineSampleNote": "Jarayon tarixi backendda hali saqlanmaydi: hujjat holati va sanalaridan namunaviy tuzildi.",
-    "sample": "Namuna",
     "events": {
-      "yaratildi": "Qaytarish yaratildi",
-      "mahsulot": "Mahsulotlar tanlandi",
-      "hisob": "Hisob-kitob bajarildi",
-      "tasdiqlandi": "Qaytarish tasdiqlandi",
-      "ombor": "Tovar omborga qaytdi",
-      "moliya": "Qarz va to'lov yangilandi",
-      "bekorQilindi": "Qaytarish bekor qilindi"
-    }
+      "CREATED": "Qaytarish yaratildi",
+      "UPDATED": "Qaytarish tahrirlandi",
+      "CONFIRMED": "Qaytarish tasdiqlandi",
+      "STOCK_RETURNED": "Tovar omborga qaytdi",
+      "DEBT_REDUCED": "Sotuv qarzi kamaytirildi",
+      "CANCELLED": "Qaytarish bekor qilindi",
+      "RESTORED": "Qaytarish tiklandi"
+    },
+    "timelineLoading": "Tarix yuklanmoqda...",
+    "timelineError": "Jarayon tarixini olib bo'lmadi.",
+    "retry": "Qayta urinish",
+    "timelineEmpty": "Ma'lumot mavjud emas",
+    "unavailable": "Sana mavjud emas",
+    "eventQuantity": "{{count}} dona",
+    "calcAfterConfirm": "Qarz va pul hisob-kitobi hujjat tasdiqlangandan keyin backend tomonidan chiqariladi."
   }
 }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import axios from "axios";
 import { AnimatePresence, motion } from "motion/react";
 import { useTranslation } from "react-i18next";
 import {
@@ -14,6 +15,7 @@ import {
   PackageCheck,
   PackageX,
   Plus,
+  RefreshCw,
   Search,
   ShieldQuestion,
   Undo2,
@@ -21,17 +23,22 @@ import {
   MessageSquareText,
   type LucideIcon,
 } from "lucide-react";
-import { useSavdoStore } from "@/store/savdoStore";
+import { qaytariladiganQatorlarniOlish, qaytarishniOldindanKorish } from "@/api/savdoApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type {
   Qaytarish,
+  QaytarishOldindanSorovi,
   QaytarishToloviniQaytarishUsuli as RefundMethod,
   QaytarishYaratishMalumoti,
+  QaytariladiganQator,
   Sotuv,
+  SotuvMahsuloti,
 } from "@/types/savdo";
 import {
   mijozNomi,
   pulniFormatlash,
   sananiFormatlash,
+  sotuvMahsulotiId,
   sotuvMahsulotiModifikatsiyaId,
   sotuvMahsulotiNarxi,
   sotuvQarzdorlikSummasi,
@@ -41,21 +48,24 @@ import {
 } from "../savdoYordamchilari";
 import QaytarishStepper from "./QaytarishStepper";
 import QaytarishHisobKitobi from "./QaytarishHisobKitobi";
-import { backendHisobKitobi, taxminiyHisobKitob, type HisobKitob } from "./mockReturnData";
+import { hujjatHisobKitobi, oldindanHisobKitob, type HisobKitob } from "./hisobKitob";
 import {
-  SABAB_IZOH_MATNI,
   UI_SABABLAR,
-  backendSabab,
+  miqdorgaAylantirish,
   qaytarishMumkinmi,
   qaytarishRaqami,
-  qolganMiqdor,
+  raqamga,
   sotuvSanasi,
+  sotuvdaTasdiqlanganQaytarishBormi,
   type UiSabab,
 } from "./qaytarishYordamchilari";
 
 type Props = {
   sotuvlar: Sotuv[];
   qaytarishlar: Qaytarish[];
+  // Sotuvlar ro'yxati hali yuklanayotgan / yuklanmagan bo'lsa 1-bosqichda tushunarli holat ko'rsatiladi.
+  sotuvlarYuklanmoqda?: boolean;
+  sotuvlarXatosi?: string | null;
   // Berilsa, sotuv tanlash bosqichi o'tkazib yuboriladi (masalan, sotuvlar jadvalidagi "Qaytarish" tugmasi).
   boshlangichSotuvId?: string;
   onSotuvTafsilotiniOlish: (sotuvId: string) => Promise<Sotuv | null>;
@@ -85,10 +95,41 @@ const SABAB_IKONKALARI: Record<UiSabab, LucideIcon> = {
 const USULLAR: RefundMethod[] = ["CASH", "CARD", "BALANCE", "NONE"];
 const MAKS_SOTUV_KARTALARI = 30;
 
+type QatorXatosi = "" | "invalid" | "negative" | "exceeds" | "data";
+
+// 2-bosqich qatori: miqdorlar va narx backenddan (GET /sales/{id}/returnable-items), nomlar sotuv qatoridan.
+type Qator = {
+  id: string; // saleItemId
+  modificationId: string;
+  nom: string;
+  variant: string;
+  sotilgan: number | null;
+  oldin: number | null;
+  qolgan: number | null;
+  narx: number | null;
+  matn: string;
+  son: number;
+  xato: QatorXatosi;
+};
+
+type QatorlarHolati =
+  | { turi: "bosh" }
+  | { turi: "yuklanmoqda" }
+  | { turi: "xato"; xabar: string }
+  | { turi: "tayyor"; qatorlar: QaytariladiganQator[] };
+
+type OldindanHolati =
+  | { turi: "bosh" }
+  | { turi: "yuklanmoqda" }
+  | { turi: "xato"; xabar: string }
+  | { turi: "tayyor"; kalit: string; hisob: HisobKitob; dona: number | null };
+
 type Natija = {
   raqam: string;
   qaytarishId: string;
-  hisob: HisobKitob;
+  holat: string | null;
+  // Hujjat tafsilotini olib bo'lmasa null: summalar o'ylab topilmaydi.
+  hisob: HisobKitob | null;
   dona: number;
   mijoz: string;
   sotuv: string;
@@ -99,9 +140,22 @@ function songa(matn: string | undefined) {
   return tozalangan === "" ? 0 : Number(tozalangan);
 }
 
+// Ro'yxatdagi sotuv qatori mijoz/kompaniya nomlari bilan boyitilgan; tafsilot javobida ular bo'lmasa saqlab qolinadi.
+function sotuvniBirlashtirish(royxatdagi: Sotuv | null, tafsilot: Sotuv): Sotuv {
+  if (!royxatdagi) return tafsilot;
+  return {
+    ...royxatdagi,
+    ...tafsilot,
+    customer: tafsilot.customer ?? royxatdagi.customer,
+    clientCompany: tafsilot.clientCompany ?? royxatdagi.clientCompany,
+  };
+}
+
 export default function QaytarishWizard({
   sotuvlar,
   qaytarishlar,
+  sotuvlarYuklanmoqda = false,
+  sotuvlarXatosi = null,
   boshlangichSotuvId = "",
   onSotuvTafsilotiniOlish,
   onYaratish,
@@ -116,51 +170,82 @@ export default function QaytarishWizard({
   const [tanlanganId, setTanlanganId] = useState("");
   const [sotuv, setSotuv] = useState<Sotuv | null>(null);
   const [sotuvYuklanmoqda, setSotuvYuklanmoqda] = useState(false);
+  const [sotuvXatosi, setSotuvXatosi] = useState("");
+  const [qatorlarHolati, setQatorlarHolati] = useState<QatorlarHolati>({ turi: "bosh" });
   const [qidiruv, setQidiruv] = useState("");
   const [miqdorlar, setMiqdorlar] = useState<Record<string, string>>({});
   const [sabab, setSabab] = useState<UiSabab | "">("");
   const [izoh, setIzoh] = useState("");
   const [usul, setUsul] = useState<RefundMethod>("CASH");
+  const [oldindan, setOldindan] = useState<OldindanHolati>({ turi: "bosh" });
+  const [oldindanUrinish, setOldindanUrinish] = useState(0);
   const [yuborilmoqda, setYuborilmoqda] = useState(false);
   const [xatolik, setXatolik] = useState("");
   const [yaratilganId, setYaratilganId] = useState<string | null>(null);
   const [natija, setNatija] = useState<Natija | null>(null);
   const yuqoriRef = useRef<HTMLDivElement | null>(null);
   const boshlandi = useRef(false);
+  // Tez-tez bosishda takroriy so'rov ketmasligi uchun (state asinxron yangilanadi).
+  const yuborishQulfi = useRef(false);
+  const tanlovTokeni = useRef(0);
+  const oldindanKaliti = useRef("");
+  const oldindanBoshqaruvi = useRef<AbortController | null>(null);
 
   const qadamlar = useMemo(
     () => (["sale", "items", "reason", "calc", "confirm", "done"] as const).map((kalit) => t(`wizard.steps.${kalit}`)),
     [t]
   );
 
-  // ── 1-bosqich: sotuvlar ro'yxati ─────────────────────────────────────────────────────────
+  // ── 1-bosqich: sotuvlar ro'yxati (real backend ro'yxati) ──────────────────────────────────
   const sotuvKartalari = useMemo(() => {
     const soz = qidiruv.trim().toLowerCase();
     return sotuvlar
       .filter(qaytarishMumkinmi)
-      .map((item) => {
-        const qatorlar = qolganMiqdor(item, qaytarishlar);
-        return {
-          sotuv: item,
-          qaytarilishiMumkin: qatorlar.some((qator) => qator.qolgan > 0),
-          qismanQaytarilgan: qatorlar.some((qator) => qator.oldin > 0),
-        };
-      })
-      .filter((karta) => karta.qaytarilishiMumkin)
-      .filter((karta) => !soz || `${sotuvRaqami(karta.sotuv)} ${mijozNomi(karta.sotuv)}`.toLowerCase().includes(soz));
+      .filter((item) => !soz || `${sotuvRaqami(item)} ${mijozNomi(item)}`.toLowerCase().includes(soz))
+      .map((item) => ({ sotuv: item, oldinQaytarilgan: sotuvdaTasdiqlanganQaytarishBormi(item.id, qaytarishlar) }));
   }, [qaytarishlar, qidiruv, sotuvlar]);
 
+  // Sotuv tafsiloti va qaytarilishi mumkin bo'lgan qatorlar backenddan olinadi. Xato bo'lsa keyingi bosqichga o'tilmaydi.
   async function sotuvniTanlash(id: string) {
+    const token = ++tanlovTokeni.current;
     setTanlanganId(id);
     setXatolik("");
+    setSotuvXatosi("");
+    setSotuv(null);
+    setMiqdorlar({});
+    setQatorlarHolati({ turi: "yuklanmoqda" });
     setSotuvYuklanmoqda(true);
     const royxatdagi = sotuvlar.find((item) => item.id === id) ?? null;
-    const toliq = (await onSotuvTafsilotiniOlish(id)) ?? royxatdagi;
-    setSotuvYuklanmoqda(false);
-    setSotuv(toliq);
-    if (!toliq) return;
-    // Standart: qolgan barcha miqdor qaytariladi (foydalanuvchi o'zgartirishi mumkin).
-    setMiqdorlar(Object.fromEntries(qolganMiqdor(toliq, qaytarishlar).map((qator) => [qator.id, String(qator.qolgan)])));
+    try {
+      const [tafsilot, qatorlar] = await Promise.all([onSotuvTafsilotiniOlish(id), qaytariladiganQatorlarniOlish(id)]);
+      if (token !== tanlovTokeni.current) return false;
+      if (!tafsilot) {
+        setSotuvXatosi(t("wizard.errors.saleLoadFailed"));
+        setQatorlarHolati({ turi: "bosh" });
+        return false;
+      }
+      const birlashgan = sotuvniBirlashtirish(royxatdagi, tafsilot);
+      setSotuv(birlashgan);
+      setQatorlarHolati({ turi: "tayyor", qatorlar });
+      // Standart: qolgan barcha miqdor qaytariladi (foydalanuvchi o'zgartirishi mumkin).
+      setMiqdorlar(
+        Object.fromEntries(
+          qatorlar.map((qator) => {
+            const qolgan = miqdorgaAylantirish(qator.remainingQuantity);
+            return [qator.saleItemId, qolgan !== null && qolgan > 0 ? String(qolgan) : "0"];
+          })
+        )
+      );
+      return true;
+    } catch (error) {
+      if (token !== tanlovTokeni.current) return false;
+      const xabar = getApiErrorMessage(error);
+      setSotuvXatosi(xabar);
+      setQatorlarHolati({ turi: "xato", xabar });
+      return false;
+    } finally {
+      if (token === tanlovTokeni.current) setSotuvYuklanmoqda(false);
+    }
   }
 
   // Sotuvlar jadvalidan kelganda (boshlangichSotuvId) tanlov bosqichi o'tkazib yuboriladi.
@@ -168,7 +253,9 @@ export default function QaytarishWizard({
     if (!boshlangichSotuvId || boshlandi.current) return;
     if (!sotuvlar.some((item) => item.id === boshlangichSotuvId)) return;
     boshlandi.current = true;
-    void sotuvniTanlash(boshlangichSotuvId).then(() => setQadam(QADAM_MAHSULOT));
+    void sotuvniTanlash(boshlangichSotuvId).then((muvaffaqiyatli) => {
+      if (muvaffaqiyatli) setQadam(QADAM_MAHSULOT);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boshlangichSotuvId, sotuvlar]);
 
@@ -177,28 +264,46 @@ export default function QaytarishWizard({
   }, [qadam]);
 
   // ── 2-bosqich: mahsulot qatorlari ───────────────────────────────────────────────────────
-  const qatorlar = useMemo(() => {
-    if (!sotuv) return [];
-    return qolganMiqdor(sotuv, qaytarishlar).map(({ item, id, sotilgan, oldin, qolgan }) => {
-      const mahsulot = item.modification?.product?.name;
-      const variantNomi = item.modification?.name;
-      const nom = mahsulot || variantNomi || sotuvMahsulotiModifikatsiyaId(item) || t("wizard.items.fallback");
-      const variant = mahsulot && variantNomi && mahsulot !== variantNomi ? variantNomi : "";
-      const narx = sotuvMahsulotiNarxi(item);
-      const matn = miqdorlar[id] ?? "0";
-      const son = songa(matn);
-      const xato = !Number.isFinite(son) ? "invalid" : son < 0 ? "negative" : son > qolgan + 1e-9 ? "exceeds" : "";
-      return { item, id, nom, variant, sotilgan, oldin, qolgan, narx, matn, son: xato ? 0 : son, xato };
-    });
-  }, [miqdorlar, qaytarishlar, sotuv, t]);
+  const qatorlar = useMemo<Qator[]>(() => {
+    if (!sotuv || qatorlarHolati.turi !== "tayyor") return [];
+    const sotuvQatorlari = new Map<string, SotuvMahsuloti>();
+    for (const item of sotuv.items ?? []) sotuvQatorlari.set(sotuvMahsulotiId(item), item);
 
-  const tanlanganQatorlar = qatorlar.filter((qator) => qator.son > 0);
-  const tovarQiymati = tanlanganQatorlar.reduce((jami, qator) => jami + qator.son * qator.narx, 0);
+    return qatorlarHolati.qatorlar.map((javob) => {
+      const item = sotuvQatorlari.get(javob.saleItemId);
+      const modifikatsiya = item?.modification ?? javob.modification;
+      const mahsulot = modifikatsiya?.product?.name;
+      const variantNomi = modifikatsiya?.name;
+      const modificationId = javob.modificationId || (item ? sotuvMahsulotiModifikatsiyaId(item) : "");
+      const nom = mahsulot || variantNomi || modificationId || t("wizard.items.fallback");
+      const variant = mahsulot && variantNomi && mahsulot !== variantNomi ? variantNomi : "";
+      const sotilgan = miqdorgaAylantirish(javob.soldQuantity);
+      const oldin = miqdorgaAylantirish(javob.returnedQuantity);
+      const qolgan = miqdorgaAylantirish(javob.remainingQuantity);
+      // Narx: backend javobidagi narx; u kelmasa shu sotuv qatorining haqiqiy narxi.
+      const narx = miqdorgaAylantirish(javob.price) ?? (item ? miqdorgaAylantirish(sotuvMahsulotiNarxi(item)) : null);
+      const matn = miqdorlar[javob.saleItemId] ?? "0";
+      const son = songa(matn);
+      // Backend ma'lumoti to'liq bo'lmagan qator tanlab bo'lmaydi (noto'g'ri qiymat 0 ga aylantirilmaydi).
+      const malumotNoTogri = qolgan === null || narx === null || !modificationId;
+      const xato: QatorXatosi = malumotNoTogri
+        ? "data"
+        : !Number.isFinite(son)
+          ? "invalid"
+          : son < 0
+            ? "negative"
+            : son > (qolgan ?? 0) + 1e-9
+              ? "exceeds"
+              : "";
+      return { id: javob.saleItemId, modificationId, nom, variant, sotilgan, oldin, qolgan, narx, matn, son: xato ? 0 : son, xato };
+    });
+  }, [miqdorlar, qatorlarHolati, sotuv, t]);
+
+  const tanlanganQatorlar = useMemo(() => qatorlar.filter((qator) => qator.son > 0), [qatorlar]);
   const dona = tanlanganQatorlar.reduce((jami, qator) => jami + qator.son, 0);
-  const xatoliQatorBor = qatorlar.some((qator) => qator.xato);
-  const mavjudQarz = sotuv ? sotuvQarzdorlikSummasi(sotuv) : 0;
-  // KO'RSATISH uchun taxminiy hisob; yakuniy qiymatlarni backend `confirm` da hisoblaydi.
-  const taxminiy = taxminiyHisobKitob(tovarQiymati, mavjudQarz, usul);
+  // "data" xatosi alohida: bunday qator o'chirilgan ko'rsatiladi va boshqa qatorlarni to'smaydi.
+  const xatoliQatorBor = qatorlar.some((qator) => qator.xato && qator.xato !== "data");
+  const qaytariladiganQatorBor = qatorlar.some((qator) => (qator.qolgan ?? 0) > 0 && qator.xato !== "data");
 
   function miqdorniOzgartirish(id: string, qiymat: string) {
     setMiqdorlar((joriy) => ({ ...joriy, [id]: qiymat }));
@@ -209,16 +314,67 @@ export default function QaytarishWizard({
     miqdorniOzgartirish(id, String(Math.round(yangi * 1000) / 1000));
   }
 
+  // ── 4-bosqich: backend hisob-kitobi (POST /returns/preview) ──────────────────────────────
+  // Kalit: sotuv + pul qaytarish usuli + tanlangan qatorlar. U o'zgarsa, eski hisob-kitob yaroqsiz bo'ladi.
+  const sorovKaliti = useMemo(() => {
+    if (!sotuv || tanlanganQatorlar.length === 0) return "";
+    const sorov: QaytarishOldindanSorovi = {
+      saleId: sotuv.id,
+      refundMethod: usul,
+      items: tanlanganQatorlar.map((qator) => ({ saleItemId: qator.id, quantity: qator.son })),
+    };
+    return JSON.stringify(sorov);
+  }, [sotuv, tanlanganQatorlar, usul]);
+
+  useEffect(() => () => oldindanBoshqaruvi.current?.abort(), []);
+
+  useEffect(() => {
+    if (qadam !== QADAM_HISOB && qadam !== QADAM_TASDIQ) return;
+    if (!sorovKaliti || oldindanKaliti.current === sorovKaliti) return;
+
+    oldindanKaliti.current = sorovKaliti;
+    oldindanBoshqaruvi.current?.abort();
+    const boshqaruv = new AbortController();
+    oldindanBoshqaruvi.current = boshqaruv;
+    setOldindan({ turi: "yuklanmoqda" });
+
+    qaytarishniOldindanKorish(JSON.parse(sorovKaliti) as QaytarishOldindanSorovi, boshqaruv.signal)
+      .then((javob) => {
+        if (oldindanKaliti.current !== sorovKaliti) return;
+        const hisob = oldindanHisobKitob(javob);
+        if (!hisob) {
+          setOldindan({ turi: "xato", xabar: t("wizard.errors.previewIncomplete") });
+          return;
+        }
+        setOldindan({ turi: "tayyor", kalit: sorovKaliti, hisob, dona: miqdorgaAylantirish(javob.returnedQuantity) });
+      })
+      .catch((error: unknown) => {
+        if (axios.isCancel(error) || oldindanKaliti.current !== sorovKaliti) return;
+        setOldindan({ turi: "xato", xabar: getApiErrorMessage(error) });
+      });
+  }, [qadam, sorovKaliti, oldindanUrinish, t]);
+
+  function oldindanQaytaUrinish() {
+    oldindanKaliti.current = "";
+    setOldindanUrinish((son) => son + 1);
+  }
+
+  // Hisob-kitob faqat joriy tanlovga (sotuv, usul, qatorlar) mos kelganda yaroqli.
+  const oldindanTayyor = oldindan.turi === "tayyor" && oldindan.kalit === sorovKaliti;
+  const oldindanHisob = oldindan.turi === "tayyor" ? oldindan.hisob : null;
+
   // ── Navigatsiya ─────────────────────────────────────────────────────────────────────────
   const izohKerak = sabab === "OTHER" && izoh.trim().length < 3;
   const davomEtishMumkin =
     qadam === QADAM_SOTUV
-      ? Boolean(sotuv) && !sotuvYuklanmoqda
+      ? Boolean(sotuv) && !sotuvYuklanmoqda && qatorlarHolati.turi === "tayyor" && qaytariladiganQatorBor
       : qadam === QADAM_MAHSULOT
         ? tanlanganQatorlar.length > 0 && !xatoliQatorBor
         : qadam === QADAM_SABAB
           ? sabab !== "" && !izohKerak
-          : true;
+          : qadam === QADAM_HISOB
+            ? oldindanTayyor
+            : true;
 
   function keyingisi() {
     setXatolik("");
@@ -230,6 +386,8 @@ export default function QaytarishWizard({
       setXatolik("wizard.errors.noteRequired");
       return;
     }
+    // Hisob-kitob bosqichiga har kirganda backenddan yangilanadi.
+    if (qadam === QADAM_SABAB) oldindanKaliti.current = "";
     setQadam((joriy) => Math.min(joriy + 1, QADAM_TASDIQ));
   }
 
@@ -239,22 +397,29 @@ export default function QaytarishWizard({
   }
 
   function yangiQaytarish() {
+    tanlovTokeni.current += 1;
+    oldindanKaliti.current = "";
+    oldindanBoshqaruvi.current?.abort();
     setQadam(QADAM_SOTUV);
     setTanlanganId("");
     setSotuv(null);
+    setSotuvXatosi("");
+    setQatorlarHolati({ turi: "bosh" });
     setMiqdorlar({});
     setSabab("");
     setIzoh("");
     setUsul("CASH");
+    setOldindan({ turi: "bosh" });
     setXatolik("");
     setYaratilganId(null);
     setNatija(null);
     setQidiruv("");
   }
 
-  // ── Tasdiqlash: mavjud API oqimi o'zgarmagan (yaratish → tasdiqlash) ──────────────────────────
+  // ── Tasdiqlash: mavjud API oqimi (yaratish → tasdiqlash); barcha summalarni backend hisoblaydi ──────
   async function tasdiqlash() {
-    if (!sotuv || !sabab) return;
+    if (yuborishQulfi.current) return;
+    if (!sotuv || !sabab || !oldindanTayyor) return;
     setXatolik("");
 
     const warehouseId = sotuv.warehouseId ?? sotuv.warehouse?.id ?? "";
@@ -263,6 +428,7 @@ export default function QaytarishWizard({
       return;
     }
 
+    yuborishQulfi.current = true;
     setYuborilmoqda(true);
     try {
       // Tasdiqlash xato bersa hujjat qoralama bo'lib qoladi: qayta urinish yangisini yaratmaydi, mavjudini tasdiqlaydi.
@@ -272,18 +438,22 @@ export default function QaytarishWizard({
           saleId: sotuv.id,
           warehouseId,
           responsibleId: sotuv.responsibleId,
-          reason: backendSabab(sabab),
+          reason: sabab,
           restock: true,
           refundMethod: usul,
-          note: [`Sabab: ${SABAB_IZOH_MATNI[sabab]}`, izoh.trim()].filter(Boolean).join(" | "),
+          note: izoh.trim() || undefined,
           items: tanlanganQatorlar.map((qator) => ({
             saleItemId: qator.id,
-            modificationId: sotuvMahsulotiModifikatsiyaId(qator.item),
+            modificationId: qator.modificationId,
             quantity: qator.son,
-            price: qator.narx,
+            // Narx — backend (returnable-items) bergan sotuv narxi; frontend o'zi hisoblamaydi.
+            price: qator.narx ?? 0,
           })),
         });
-        if (!yaratilgan) return;
+        if (!yaratilgan) {
+          setXatolik("wizard.errors.createFailed");
+          return;
+        }
         id = yaratilgan.id;
         setYaratilganId(id);
       }
@@ -294,23 +464,24 @@ export default function QaytarishWizard({
         return;
       }
 
-      // Yakuniy qiymatlar: backend qaytargan refundAmount / debtReduction (yagona manba) va yangilangan sotuv qarzi.
-      const tafsilot = await onTafsilotiniOlish(id);
-      const yangiSotuv = useSavdoStore.getState().sotuvlar.find((item) => item.id === sotuv.id);
-      const hozirgiQarz = yangiSotuv ? sotuvQarzdorlikSummasi(yangiSotuv) : null;
-      const hisob = (tafsilot ? backendHisobKitobi(tafsilot, tovarQiymati, hozirgiQarz) : null) ?? taxminiy;
+      // Yakuniy qiymatlar: tasdiqlangan hujjatdan (backend hisoblagan refundAmount/debtReduction va debtBefore/debtAfter).
+      const hujjat = await onTafsilotiniOlish(id);
+      const hisob = hujjat ? hujjatHisobKitobi(hujjat) : null;
+      const hujjatDonasi = hujjat?.items?.length ? hujjat.items.reduce((jami, qator) => jami + (raqamga(qator.quantity) ?? 0), 0) : null;
 
       setNatija({
-        raqam: tafsilot ? qaytarishRaqami(tafsilot) : id.slice(0, 8).toUpperCase(),
+        raqam: hujjat ? qaytarishRaqami(hujjat) : id.slice(0, 8).toUpperCase(),
         qaytarishId: id,
+        holat: hujjat ? String(hujjat.status ?? "").toUpperCase() || null : null,
         hisob,
-        dona,
+        dona: raqamga(hujjat?.returnedQuantity) ?? hujjatDonasi ?? dona,
         mijoz: mijozNomi(sotuv),
         sotuv: sotuvRaqami(sotuv),
       });
       setQadam(QADAM_YAKUN);
       onMuvaffaqiyat?.();
     } finally {
+      yuborishQulfi.current = false;
       setYuborilmoqda(false);
     }
   }
@@ -352,10 +523,20 @@ export default function QaytarishWizard({
                 </label>
 
                 {sotuvKartalari.length === 0 ? (
-                  <p className="mt-5 rounded-2xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm font-semibold text-slate-400">{t("wizard.sale.empty")}</p>
+                  sotuvlarYuklanmoqda ? (
+                    <p role="status" className="mt-5 flex items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 px-4 py-10 text-sm font-semibold text-slate-400">
+                      <LoaderCircle size={16} className="animate-spin text-orange-500" aria-hidden /> {t("wizard.sale.listLoading")}
+                    </p>
+                  ) : sotuvlarXatosi ? (
+                    <p role="alert" className="mt-5 flex items-start gap-2 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-600">
+                      <AlertCircle size={17} className="mt-0.5 shrink-0" aria-hidden /> {t("wizard.sale.listError")}: {sotuvlarXatosi}
+                    </p>
+                  ) : (
+                    <p className="mt-5 rounded-2xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm font-semibold text-slate-400">{t("wizard.sale.empty")}</p>
+                  )
                 ) : (
                   <ul className="mt-5 grid gap-3 lg:grid-cols-2">
-                    {sotuvKartalari.slice(0, MAKS_SOTUV_KARTALARI).map(({ sotuv: item, qismanQaytarilgan }) => {
+                    {sotuvKartalari.slice(0, MAKS_SOTUV_KARTALARI).map(({ sotuv: item, oldinQaytarilgan }) => {
                       const tanlangan = tanlanganId === item.id;
                       const qarz = sotuvQarzdorlikSummasi(item);
                       return (
@@ -372,7 +553,7 @@ export default function QaytarishWizard({
                               <div className="min-w-0">
                                 <p className="flex flex-wrap items-center gap-2 text-base font-black text-slate-900">
                                   {sotuvRaqami(item)}
-                                  {qismanQaytarilgan && (
+                                  {oldinQaytarilgan && (
                                     <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-black text-amber-700 ring-1 ring-amber-200">{t("wizard.sale.partial")}</span>
                                   )}
                                 </p>
@@ -402,87 +583,114 @@ export default function QaytarishWizard({
                     <LoaderCircle size={16} className="animate-spin text-orange-500" aria-hidden /> {t("wizard.sale.loading")}
                   </p>
                 )}
+                {sotuvXatosi && !sotuvYuklanmoqda && (
+                  <div role="alert" className="mt-4 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3">
+                    <p className="flex items-start gap-2 text-sm font-bold text-rose-600">
+                      <AlertCircle size={17} className="mt-0.5 shrink-0" aria-hidden /> {t("wizard.errors.saleLoadFailed")}
+                    </p>
+                    <p className="mt-1 break-words text-xs font-medium text-rose-500">{sotuvXatosi}</p>
+                    <button
+                      type="button"
+                      onClick={() => void sotuvniTanlash(tanlanganId)}
+                      className="mt-3 inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl bg-white px-3 text-xs font-extrabold text-rose-600 ring-1 ring-rose-200 transition hover:bg-rose-100"
+                    >
+                      <RefreshCw size={13} aria-hidden /> {t("wizard.retry")}
+                    </button>
+                  </div>
+                )}
                 {sotuv && !sotuvYuklanmoqda && <SotuvXulosasi sotuv={sotuv} />}
+                {sotuv && !sotuvYuklanmoqda && qatorlarHolati.turi === "tayyor" && !qaytariladiganQatorBor && (
+                  <p role="status" className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">{t("wizard.sale.nothingReturnable")}</p>
+                )}
               </section>
             )}
 
             {qadam === QADAM_MAHSULOT && sotuv && (
               <section aria-labelledby="qadam-mahsulot">
                 <Sarlavha id="qadam-mahsulot" nom={t("wizard.items.heading")} izoh={t("wizard.items.hint")} />
-                <div className="mt-5 hidden grid-cols-[minmax(0,1.7fr)_repeat(3,minmax(0,.7fr))_minmax(210px,1.1fr)] gap-4 px-4 text-[11px] font-black uppercase tracking-wide text-slate-400 lg:grid">
-                  <span>{t("wizard.items.product")}</span>
-                  <span>{t("wizard.items.sold")}</span>
-                  <span>{t("wizard.items.price")}</span>
-                  <span>{t("wizard.items.lineTotal")}</span>
-                  <span>{t("wizard.items.returnQty")}</span>
-                </div>
-                <ul className="mt-2 space-y-3 lg:mt-2">
-                  {qatorlar.map((qator) => (
-                    <li
-                      key={qator.id}
-                      className={`grid gap-4 rounded-[22px] border p-4 lg:grid-cols-[minmax(0,1.7fr)_repeat(3,minmax(0,.7fr))_minmax(210px,1.1fr)] lg:items-center ${
-                        qator.qolgan === 0 ? "border-slate-100 bg-slate-50/60 opacity-70" : qator.xato ? "border-rose-300 bg-rose-50/40" : "border-slate-200 bg-white"
-                      }`}
-                    >
-                      <div className="min-w-0">
-                        <p className="break-words text-[15px] font-black text-slate-900">{qator.nom}</p>
-                        {qator.variant && <p className="mt-0.5 text-xs font-semibold text-slate-500">{qator.variant}</p>}
-                        {qator.oldin > 0 && <p className="mt-1 text-[11px] font-bold text-amber-700">{t("wizard.items.alreadyReturned", { count: qator.oldin })}</p>}
-                      </div>
-                      <Maydon nom={t("wizard.items.sold")} qiymat={`${qator.sotilgan} ${t("wizard.unit")}`} />
-                      <Maydon nom={t("wizard.items.price")} qiymat={pulniFormatlash(qator.narx)} />
-                      <Maydon nom={t("wizard.items.lineTotal")} qiymat={pulniFormatlash(qator.sotilgan * qator.narx)} kuchli />
-                      <div>
-                        <p className="mb-1.5 text-[11px] font-black uppercase tracking-wide text-slate-400 lg:hidden">{t("wizard.items.returnQty")}</p>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => miqdorniSurish(qator.id, qator.qolgan, -1)}
-                            disabled={qator.qolgan === 0}
-                            aria-label={t("wizard.items.decrease")}
-                            className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                {qatorlar.length === 0 ? (
+                  <p className="mt-5 rounded-2xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm font-semibold text-slate-400">{t("wizard.items.empty")}</p>
+                ) : (
+                  <>
+                    <div className="mt-5 hidden grid-cols-[minmax(0,1.7fr)_repeat(3,minmax(0,.7fr))_minmax(210px,1.1fr)] gap-4 px-4 text-[11px] font-black uppercase tracking-wide text-slate-400 lg:grid">
+                      <span>{t("wizard.items.product")}</span>
+                      <span>{t("wizard.items.sold")}</span>
+                      <span>{t("wizard.items.returned")}</span>
+                      <span>{t("wizard.items.price")}</span>
+                      <span>{t("wizard.items.returnQty")}</span>
+                    </div>
+                    <ul className="mt-2 space-y-3 lg:mt-2">
+                      {qatorlar.map((qator) => {
+                        const maks = qator.qolgan ?? 0;
+                        const ochirilgan = qator.xato === "data" || maks === 0;
+                        return (
+                          <li
+                            key={qator.id}
+                            className={`grid gap-4 rounded-[22px] border p-4 lg:grid-cols-[minmax(0,1.7fr)_repeat(3,minmax(0,.7fr))_minmax(210px,1.1fr)] lg:items-center ${
+                              ochirilgan ? "border-slate-100 bg-slate-50/60 opacity-70" : qator.xato ? "border-rose-300 bg-rose-50/40" : "border-slate-200 bg-white"
+                            }`}
                           >
-                            <Minus size={16} />
-                          </button>
-                          <input
-                            inputMode="decimal"
-                            value={qator.matn}
-                            onChange={(event) => miqdorniOzgartirish(qator.id, event.target.value)}
-                            disabled={qator.qolgan === 0}
-                            aria-label={`${qator.nom}: ${t("wizard.items.returnQty")}`}
-                            aria-invalid={Boolean(qator.xato)}
-                            className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white text-center text-base font-extrabold tabular-nums outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-50 aria-invalid:border-rose-400 aria-invalid:ring-4 aria-invalid:ring-rose-100 disabled:bg-slate-50"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => miqdorniSurish(qator.id, qator.qolgan, 1)}
-                            disabled={qator.qolgan === 0}
-                            aria-label={t("wizard.items.increase")}
-                            className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            <Plus size={16} />
-                          </button>
-                        </div>
-                        <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-400">
-                          <span>{t("wizard.items.max", { count: qator.qolgan })}</span>
-                          {qator.qolgan > 0 && (
-                            <button type="button" onClick={() => miqdorniOzgartirish(qator.id, String(qator.qolgan))} className="cursor-pointer font-black text-orange-600 hover:underline">
-                              {t("wizard.items.all")}
-                            </button>
-                          )}
-                        </div>
-                        {qator.xato && (
-                          <p role="alert" className="mt-1.5 flex items-start gap-1.5 text-xs font-bold text-rose-600">
-                            <AlertCircle size={13} className="mt-0.5 shrink-0" aria-hidden /> {t(`wizard.items.errors.${qator.xato}`, { max: qator.qolgan })}
-                          </p>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                            <div className="min-w-0">
+                              <p className="break-words text-[15px] font-black text-slate-900">{qator.nom}</p>
+                              {qator.variant && <p className="mt-0.5 text-xs font-semibold text-slate-500">{qator.variant}</p>}
+                            </div>
+                            <Maydon nom={t("wizard.items.sold")} qiymat={qator.sotilgan === null ? t("wizard.unavailable") : `${qator.sotilgan} ${t("wizard.unit")}`} />
+                            <Maydon nom={t("wizard.items.returned")} qiymat={qator.oldin === null ? t("wizard.unavailable") : `${qator.oldin} ${t("wizard.unit")}`} />
+                            <Maydon nom={t("wizard.items.price")} qiymat={qator.narx === null ? t("wizard.unavailable") : pulniFormatlash(qator.narx)} kuchli />
+                            <div>
+                              <p className="mb-1.5 text-[11px] font-black uppercase tracking-wide text-slate-400 lg:hidden">{t("wizard.items.returnQty")}</p>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => miqdorniSurish(qator.id, maks, -1)}
+                                  disabled={ochirilgan}
+                                  aria-label={t("wizard.items.decrease")}
+                                  className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                  <Minus size={16} />
+                                </button>
+                                <input
+                                  inputMode="decimal"
+                                  value={qator.matn}
+                                  onChange={(event) => miqdorniOzgartirish(qator.id, event.target.value)}
+                                  disabled={ochirilgan}
+                                  aria-label={`${qator.nom}: ${t("wizard.items.returnQty")}`}
+                                  aria-invalid={Boolean(qator.xato) && qator.xato !== "data"}
+                                  className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white text-center text-base font-extrabold tabular-nums outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-50 aria-invalid:border-rose-400 aria-invalid:ring-4 aria-invalid:ring-rose-100 disabled:bg-slate-50"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => miqdorniSurish(qator.id, maks, 1)}
+                                  disabled={ochirilgan}
+                                  aria-label={t("wizard.items.increase")}
+                                  className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                  <Plus size={16} />
+                                </button>
+                              </div>
+                              <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-400">
+                                <span>{qator.qolgan === null ? t("wizard.unavailable") : t("wizard.items.max", { count: maks })}</span>
+                                {!ochirilgan && (
+                                  <button type="button" onClick={() => miqdorniOzgartirish(qator.id, String(maks))} className="cursor-pointer font-black text-orange-600 hover:underline">
+                                    {t("wizard.items.all")}
+                                  </button>
+                                )}
+                              </div>
+                              {qator.xato && (
+                                <p role="alert" className="mt-1.5 flex items-start gap-1.5 text-xs font-bold text-rose-600">
+                                  <AlertCircle size={13} className="mt-0.5 shrink-0" aria-hidden /> {t(`wizard.items.errors.${qator.xato}`, { max: maks })}
+                                </p>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </>
+                )}
                 <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-orange-50/70 px-5 py-4 ring-1 ring-orange-100">
-                  <span className="text-sm font-bold text-slate-600">{t("wizard.items.selectedTotal")}</span>
-                  <span className="text-2xl font-extrabold tabular-nums text-slate-950">{pulniFormatlash(tovarQiymati)}</span>
+                  <span className="text-sm font-bold text-slate-600">{t("wizard.items.selectedQuantity")}</span>
+                  <span className="text-2xl font-extrabold tabular-nums text-slate-950">{dona} {t("wizard.unit")}</span>
                 </div>
               </section>
             )}
@@ -562,9 +770,9 @@ export default function QaytarishWizard({
                   </div>
                 </div>
                 <div className="mt-6">
-                  <QaytarishHisobKitobi hisob={taxminiy} usul={usul} />
+                  <OldindanKorinishi holat={oldindan} usul={usul} onQaytaUrinish={oldindanQaytaUrinish} />
                 </div>
-                <p className="mt-3 text-xs font-medium text-slate-400">{t("wizard.calc.estimateNote")}</p>
+                {oldindanTayyor && <p className="mt-3 text-xs font-medium text-slate-400">{t("wizard.calc.estimateNote")}</p>}
               </section>
             )}
 
@@ -576,6 +784,11 @@ export default function QaytarishWizard({
                   <Fakt nom={t("wizard.confirm.customer")} qiymat={mijozNomi(sotuv)} />
                   <Fakt nom={t("wizard.confirm.reason")} qiymat={tanlanganSabab} />
                   <Fakt nom={t("wizard.confirm.method")} qiymat={t(`wizard.calc.methods.${usul}`)} />
+                  {izoh.trim() && (
+                    <div className="sm:col-span-2">
+                      <Fakt nom={t("wizard.reason.comment")} qiymat={izoh.trim()} />
+                    </div>
+                  )}
                   <div className="sm:col-span-2">
                     <Fakt
                       nom={t("wizard.confirm.products")}
@@ -584,11 +797,11 @@ export default function QaytarishWizard({
                   </div>
                 </dl>
                 <div className="mt-4">
-                  <QaytarishHisobKitobi hisob={taxminiy} usul={usul} ixcham />
+                  <OldindanKorinishi holat={oldindan} usul={usul} ixcham onQaytaUrinish={oldindanQaytaUrinish} />
                 </div>
                 <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-sky-200 bg-sky-50/70 px-5 py-3.5">
                   <span className="flex items-center gap-2 text-sm font-bold text-sky-800"><PackageCheck size={17} aria-hidden /> {t("wizard.confirm.stock")}</span>
-                  <span className="text-lg font-extrabold tabular-nums text-sky-900">{dona} {t("wizard.unit")}</span>
+                  <span className="text-lg font-extrabold tabular-nums text-sky-900">{(oldindan.turi === "tayyor" ? oldindan.dona : null) ?? dona} {t("wizard.unit")}</span>
                 </div>
                 <p className="mt-3 rounded-2xl bg-slate-50 px-4 py-3 text-xs font-semibold leading-5 text-slate-500 ring-1 ring-slate-100">{t("wizard.confirm.warning")}</p>
               </section>
@@ -627,9 +840,9 @@ export default function QaytarishWizard({
               </button>
             </div>
 
-            {qadam > QADAM_MAHSULOT && qadam < QADAM_TASDIQ && (
+            {qadam === QADAM_HISOB && oldindanHisob && oldindanHisob.tovarQiymati !== null && (
               <span className="hidden text-sm font-bold text-slate-500 xl:inline">
-                {t("wizard.items.selectedTotal")}: <b className="font-black tabular-nums text-slate-900">{pulniFormatlash(tovarQiymati)}</b>
+                {t("wizard.calc.goods")}: <b className="font-black tabular-nums text-slate-900">{pulniFormatlash(oldindanHisob.tovarQiymati)}</b>
               </span>
             )}
 
@@ -646,17 +859,53 @@ export default function QaytarishWizard({
               <button
                 type="button"
                 onClick={() => void tasdiqlash()}
-                disabled={yuborilmoqda}
+                disabled={yuborilmoqda || !oldindanTayyor}
                 className="order-first inline-flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 text-sm font-black text-white shadow-lg shadow-emerald-200 transition hover:-translate-y-0.5 hover:bg-emerald-700 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none sm:order-none sm:ml-auto sm:w-auto"
               >
                 {yuborilmoqda ? <LoaderCircle size={17} className="animate-spin" aria-hidden /> : <CheckCircle2 size={17} aria-hidden />}
-                {yuborilmoqda ? t("wizard.confirm.working") : t("wizard.confirm.buttonWithAmount", { summa: pulniFormatlash(tovarQiymati) })}
+                {yuborilmoqda
+                  ? t("wizard.confirm.working")
+                  : oldindanHisob?.tovarQiymati !== null && oldindanHisob?.tovarQiymati !== undefined
+                    ? t("wizard.confirm.buttonWithAmount", { summa: pulniFormatlash(oldindanHisob.tovarQiymati) })
+                    : t("wizard.confirm.button")}
               </button>
             )}
           </footer>
         )}
       </div>
     </div>
+  );
+}
+
+// 4–5-bosqich: backend hisob-kitobi (yuklanmoqda / xato / tayyor).
+function OldindanKorinishi({ holat, usul, ixcham = false, onQaytaUrinish }: { holat: OldindanHolati; usul: RefundMethod; ixcham?: boolean; onQaytaUrinish: () => void }) {
+  const { t } = useTranslation("savdo_qaytarish");
+
+  if (holat.turi === "tayyor") return <QaytarishHisobKitobi hisob={holat.hisob} usul={usul} ixcham={ixcham} oldindan />;
+
+  if (holat.turi === "xato") {
+    return (
+      <div role="alert" className="rounded-[22px] border border-rose-100 bg-rose-50 px-5 py-4">
+        <p className="flex items-start gap-2 text-sm font-bold text-rose-600">
+          <AlertCircle size={17} className="mt-0.5 shrink-0" aria-hidden /> {t("wizard.calc.previewFailed")}
+        </p>
+        <p className="mt-1 break-words text-xs font-medium text-rose-500">{holat.xabar}</p>
+        <p className="mt-1 text-xs font-semibold text-rose-500">{t("wizard.calc.cannotConfirm")}</p>
+        <button
+          type="button"
+          onClick={onQaytaUrinish}
+          className="mt-3 inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl bg-white px-3 text-xs font-extrabold text-rose-600 ring-1 ring-rose-200 transition hover:bg-rose-100"
+        >
+          <RefreshCw size={13} aria-hidden /> {t("wizard.retry")}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <p role="status" className="flex items-center justify-center gap-2 rounded-[22px] border border-dashed border-slate-200 px-5 py-12 text-sm font-semibold text-slate-500">
+      <LoaderCircle size={17} className="animate-spin text-orange-500" aria-hidden /> {t("wizard.calc.loading")}
+    </p>
   );
 }
 
@@ -725,19 +974,32 @@ function SotuvXulosasi({ sotuv }: { sotuv: Sotuv }) {
   );
 }
 
-// 6-bosqich: muvaffaqiyatli yakun ekrani.
+// 6-bosqich: muvaffaqiyatli yakun ekrani — qiymatlar tasdiqlangan hujjatdan (backend javobi).
 function Yakun({ natija, onKorish, onYangi, onYopish }: { natija: Natija; onKorish: () => void; onYangi: () => void; onYopish: () => void }) {
   const { t } = useTranslation("savdo_qaytarish");
   const { hisob } = natija;
+  const yoq = t("wizard.unavailable");
+  const holatMatni = natija.holat ? t(`status.${natija.holat === "CONFIRMED" ? "confirmed" : natija.holat === "CANCELLED" || natija.holat === "CANCELED" ? "cancelled" : "draft"}`) : yoq;
+
   const satrlar = [
-    { ikonka: PackageCheck, matn: t("wizard.done.stock", { count: natija.dona }) },
-    { ikonka: Undo2, matn: t("wizard.done.debt", { summa: pulniFormatlash(hisob.qarzdanAyriladi) }) },
+    { matn: t("wizard.done.stock", { count: natija.dona }), yoq: false },
     {
-      ikonka: CheckCircle2,
-      matn: hisob.mijozgaQaytariladi > 0 ? t("wizard.done.refund", { summa: pulniFormatlash(hisob.mijozgaQaytariladi) }) : t("wizard.done.noRefund"),
+      matn: !hisob || hisob.qarzdanAyriladi === null ? t("wizard.done.debtUnavailable") : t("wizard.done.debt", { summa: pulniFormatlash(hisob.qarzdanAyriladi) }),
+      yoq: !hisob || hisob.qarzdanAyriladi === null,
     },
-    { ikonka: FileText, matn: t("wizard.done.finished") },
+    {
+      matn:
+        !hisob || hisob.mijozgaQaytariladi === null
+          ? t("wizard.done.refundUnavailable")
+          : hisob.mijozgaQaytariladi > 0
+            ? t("wizard.done.refund", { summa: pulniFormatlash(hisob.mijozgaQaytariladi) })
+            : t("wizard.done.noRefund"),
+      yoq: !hisob || hisob.mijozgaQaytariladi === null,
+    },
+    { matn: t("wizard.done.status", { holat: holatMatni }), yoq: !natija.holat },
   ];
+
+  const qolgan = hisob?.qolganQarz ?? null;
 
   return (
     <section aria-live="polite" className="mx-auto max-w-2xl py-4 text-center">
@@ -757,18 +1019,22 @@ function Yakun({ natija, onKorish, onYangi, onYopish }: { natija: Natija; onKori
 
       <ul className="mx-auto mt-6 max-w-md space-y-2.5 text-left">
         {satrlar.map((satr) => (
-          <li key={satr.matn} className="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/60 px-4 py-3">
-            <span aria-hidden className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white"><Check size={16} strokeWidth={3} /></span>
-            <span className="text-sm font-extrabold text-slate-800">{satr.matn}</span>
+          <li key={satr.matn} className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${satr.yoq ? "border-slate-200 bg-slate-50" : "border-emerald-100 bg-emerald-50/60"}`}>
+            <span aria-hidden className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white ${satr.yoq ? "bg-slate-300" : "bg-emerald-500"}`}><Check size={16} strokeWidth={3} /></span>
+            <span className={`text-sm font-extrabold ${satr.yoq ? "text-slate-500" : "text-slate-800"}`}>{satr.matn}</span>
           </li>
         ))}
       </ul>
 
       <div className="mx-auto mt-5 flex max-w-md items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4">
         <span className="text-sm font-bold text-slate-500">{t("wizard.done.remaining")}</span>
-        <span className={`text-2xl font-extrabold tabular-nums ${hisob.qolganQarz > 0 ? "text-rose-600" : "text-emerald-600"}`}>{pulniFormatlash(hisob.qolganQarz)}</span>
+        {qolgan === null ? (
+          <span className="text-sm font-bold text-slate-400">{yoq}</span>
+        ) : (
+          <span className={`text-2xl font-extrabold tabular-nums ${qolgan > 0 ? "text-rose-600" : "text-emerald-600"}`}>{pulniFormatlash(qolgan)}</span>
+        )}
       </div>
-      {hisob.manba === "taxminiy" && <p className="mx-auto mt-3 max-w-md text-xs font-medium text-amber-700">{t("wizard.done.estimateNote")}</p>}
+      {!hisob && <p className="mx-auto mt-3 max-w-md text-xs font-medium text-amber-700">{t("wizard.done.detailsFailed")}</p>}
 
       <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
         <button type="button" onClick={onKorish} className="inline-flex h-12 cursor-pointer items-center gap-2 rounded-2xl bg-orange-500 px-6 text-sm font-black text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600">
