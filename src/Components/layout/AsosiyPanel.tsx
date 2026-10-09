@@ -15,7 +15,7 @@ const sahifaVariantlari = {
 export default function AsosiyLayout() {
   const location = useLocation();
   // Valyuta yoki kurs o'zgarganda sahifa qayta yig'iladi — barcha narxlar yangi valyutada qayta hisoblanadi.
-  const valyutaKaliti = useValyutaStore((holat) => `${holat.valyuta}:${holat.kurs}`);
+  const valyutaKaliti = useValyutaStore((holat) => `${holat.rejimYoniq}:${holat.valyuta}:${holat.kursBor ? holat.kurs : 0}`);
   // Yon panel faqat navbar tugmasi bilan ochiladi/yopiladi (hover emas); holat shu yerda bitta joyda.
   const [sidebarAcik, setSidebarAcik] = useState(false);
 

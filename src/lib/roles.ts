@@ -43,6 +43,12 @@ function foydalanuvchiRoli(user?: RoleLike | null): NormalizedRole {
   return rolniNormallashtirish(user?.role) || rolniNormallashtirish(user?.roleName);
 }
 
+// Valyuta rejimi va dollar kursini faqat ADMIN va DIREKTOR o'zgartira oladi (backend ham shunday cheklaydi).
+export function foydalanuvchiKursniOzgartiraOladimi(user?: RoleLike | null) {
+  const rol = foydalanuvchiRoli(user);
+  return rol === "ADMIN" || rol === "DIREKTOR";
+}
+
 // KASSIR va OMBORCHI kira oladigan sahifalar (backend shu rollar uchun
 // qolgan ro'yxatlarni — xodimlar, filiallar, kompaniyalar, to'liq katalog —
 // 403 bilan yopadi, shuning uchun menyu va marshrutlar ham shunga mos

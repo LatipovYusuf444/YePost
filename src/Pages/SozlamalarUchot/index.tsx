@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Bell,
   Building2,
+  CircleDollarSign,
   MapPin,
   PlugZap,
   Receipt,
@@ -20,6 +22,7 @@ import KompaniyaBolimi from "./KompaniyaBolimi";
 import OlchovBirligiBolimi from "./OlchovBirligiBolimi";
 import ProfilBolimi from "./ProfilBolimi";
 import VakolatlarBolimi from "./VakolatlarBolimi";
+import ValyutaBolimi from "./ValyutaBolimi";
 import type { SozlamaBolim } from "./types";
 
 // faqatDirektor: true — bo'lim faqat superadmin/direktor uchun ochiladi.
@@ -29,6 +32,7 @@ const bolimlar: { id: SozlamaBolim; icon: typeof UserRound; faqatDirektor?: bool
   { id: "filiallar", icon: MapPin },
   { id: "birliklar", icon: Ruler },
   { id: "vakolatlar", icon: ShieldCheck },
+  { id: "valyuta", icon: CircleDollarSign },
   { id: "integratsiya", icon: PlugZap, faqatDirektor: true },
   { id: "chek", icon: Receipt },
   { id: "bildirishnoma", icon: Bell },
@@ -37,7 +41,10 @@ const bolimlar: { id: SozlamaBolim; icon: typeof UserRound; faqatDirektor?: bool
 // Sozlamalar uchoti: mavjud bo'limlar real backend API'lariga ulangan.
 export default function SozlamalarUchot() {
   const { t } = useTranslation("sozlamalar_uchot");
-  const [bolim, setBolim] = useState<SozlamaBolim>("profil");
+  // Boshqa sahifadan to'g'ridan-to'g'ri bo'limga o'tish: /sozlamalar?bolim=valyuta
+  const [qidiruvParametrlari] = useSearchParams();
+  const boshlangichBolim = bolimlar.find((b) => b.id === qidiruvParametrlari.get("bolim"))?.id ?? "profil";
+  const [bolim, setBolim] = useState<SozlamaBolim>(boshlangichBolim);
 
   // Rol: SUPERADMIN/OWNER ham DIREKTOR sifatida normallashadi (lib/roles).
   const profil = useAuthProfileStore((s) => s.profil);
@@ -84,6 +91,7 @@ export default function SozlamalarUchot() {
           {bolim === "kompaniya" && <KompaniyaBolimi />}
           {bolim === "filiallar" && <FiliallarBolimi />}
           {bolim === "birliklar" && <OlchovBirligiBolimi />}
+          {bolim === "valyuta" && <ValyutaBolimi />}
           {bolim === "vakolatlar" && <VakolatlarBolimi />}
           {bolim === "integratsiya" && direktor && <IntegratsiyaBolimi />}
           {bolim === "chek" && <ChekBolimi />}

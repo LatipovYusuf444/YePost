@@ -8,7 +8,8 @@ export type SozlamaBolim =
   | "vakolatlar"
   | "integratsiya"
   | "chek"
-  | "bildirishnoma";
+  | "bildirishnoma"
+  | "valyuta";
 
 // --- Ma'lumotnoma (reference) ---
 // Bojxona o'lchov birliklari klassifikatori (tarif.customs.uz).

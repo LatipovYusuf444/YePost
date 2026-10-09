@@ -184,6 +184,11 @@ function qoldiqNarxi(qoldiq?: QoldiqTanlovi) {
   );
 }
 
+// Dollarda narxlangan mahsulot: asl narx ($100). Sotuvga baribir so'mdagi narx (bugungi kurs bo'yicha) qo'yiladi.
+function dollarNarxi(valyuta?: QoldiqTanlovi["valyuta"]) {
+  return valyuta ? `$${valyuta.asl.toLocaleString("uz-UZ", { maximumFractionDigits: 2 })}` : "";
+}
+
 function qoldiqKaliti(qoldiq: Pick<QoldiqTanlovi, "modificationId" | "warehouseId">) {
   return qoldiq.warehouseId ? `${qoldiq.modificationId}::${qoldiq.warehouseId}` : qoldiq.modificationId;
 }
@@ -439,7 +444,9 @@ export default function YangiSotuvModal({
     return royxat
       .map((item) => {
         const miqdor = qoldiqMiqdori(item);
-        const mavjud = miqdor > 0;
+        // Dollarda narxlangan mahsulotga kurs kiritilmagan bo'lsa so'mdagi narx yo'q: sotuvga qo'shib bo'lmaydi.
+        const kursYoq = item.valyuta?.currency === "USD" && item.valyuta.uzs === null;
+        const mavjud = miqdor > 0 && !kursYoq;
         const oziNomi = qoldiqNomi(item, t);
         const nom =
           oziNomi !== t("common.unknownProduct")
@@ -448,7 +455,11 @@ export default function YangiSotuvModal({
               `${oziNomi} #${String(item.modificationId ?? "").slice(-6)}`;
         const itemOmborNomi =
           item.warehouse?.name ?? omborlar.find((ombor) => ombor.id === item.warehouseId)?.name;
-        const narxMatni = pulniFormatlash(Number(qoldiqNarxi(item)) || (item.modificationId ? narxlar.get(item.modificationId) : 0) || 0);
+        const narxMatni =
+          kursYoq && item.valyuta
+            ? dollarNarxi(item.valyuta)
+            : pulniFormatlash(Number(qoldiqNarxi(item)) || (item.modificationId ? narxlar.get(item.modificationId) : 0) || 0) +
+              (item.valyuta ? ` (${dollarNarxi(item.valyuta)})` : "");
 
         return {
           mavjud,
@@ -470,7 +481,7 @@ export default function YangiSotuvModal({
                       {nom} - {t("products.priceLabelShort")}: {narxMatni}
                     </span>
                     <span className="shrink-0 rounded-md bg-red-100 px-2 py-0.5 text-[11px] font-black uppercase text-red-600">
-                      {t("products.outOfStock")}
+                      {kursYoq ? t("products.noRate") : t("products.outOfStock")}
                     </span>
                   </span>
                 ),
@@ -1240,6 +1251,11 @@ export default function YangiSotuvModal({
                               className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100 text-slate-900 placeholder:text-slate-400 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                               placeholder={t("placeholders.price")}
                             />
+                            {qoldiq?.valyuta && qoldiq.valyuta.kurs !== null && (
+                              <p className="mt-1 text-[11px] font-semibold text-slate-400">
+                                {t("products.usdHint", { usd: dollarNarxi(qoldiq.valyuta), kurs: qoldiq.valyuta.kurs.toLocaleString("uz-UZ", { maximumFractionDigits: 2 }) })}
+                              </p>
+                            )}
                             </div>
 
                             <div className="min-w-0">

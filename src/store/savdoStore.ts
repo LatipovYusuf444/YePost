@@ -92,29 +92,37 @@ function qoldiqlarniKatalogBilanBirlashtirish(
     // ID'si yo'q qator boshqa mahsulotning katalog yozuvi bilan aralashib ketmasligi uchun izlanmaydi.
     const katalogItem = item.modificationId ? map.get(kalit) ?? map.get(item.modificationId) : undefined;
     const modification = item.modification ?? katalogItem?.modification;
+    // Dollarda saqlangan mahsulot: ombor hisobotidagi narx dollarda bo'lishi mumkin, shuning uchun
+    // sotuv narxi doim katalog qidiruvidagi so'mdagi narx (retailPriceUzs) bo'ladi.
+    const valyuta = katalogItem?.valyuta;
 
     map.set(kalit, {
       ...katalogItem,
       ...item,
+      valyuta,
       modification: modification
         ? {
             ...katalogItem?.modification,
             ...item.modification,
             id: modification.id,
             product: item.modification?.product ?? katalogItem?.modification?.product,
-            price: item.modification?.price ?? katalogItem?.modification?.price,
+            price: valyuta
+              ? katalogItem?.modification?.price
+              : (item.modification?.price ?? katalogItem?.modification?.price),
           }
         : undefined,
-      sellingPrice:
-        item.sellingPrice ??
-        item.price ??
-        katalogItem?.sellingPrice ??
-        katalogItem?.price,
-      price:
-        item.price ??
-        item.sellingPrice ??
-        katalogItem?.price ??
-        katalogItem?.sellingPrice,
+      sellingPrice: valyuta
+        ? katalogItem?.sellingPrice
+        : (item.sellingPrice ??
+          item.price ??
+          katalogItem?.sellingPrice ??
+          katalogItem?.price),
+      price: valyuta
+        ? katalogItem?.price
+        : (item.price ??
+          item.sellingPrice ??
+          katalogItem?.price ??
+          katalogItem?.sellingPrice),
     });
   }
 

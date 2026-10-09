@@ -42,6 +42,11 @@ export type MahsulotNarxi = {
   retailPrice?: number | string;
   wholesalePrice?: number | string;
   currency?: string;
+  // GET /catalog/modifications/search: valyuta rejimi yoqilgan bo'lsa qo'shimcha keladi.
+  // USD narx × bugungi kurs, butun so'mgacha yaxlitlangan; UZS narx o'zgarmaydi; kurs yo'q bo'lsa *Uzs = null.
+  rate?: number | string | null;
+  retailPriceUzs?: number | string | null;
+  wholesalePriceUzs?: number | string | null;
   createdAt?: string;
   updatedAt?: string;
 };

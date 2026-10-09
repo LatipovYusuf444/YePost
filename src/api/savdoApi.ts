@@ -9,6 +9,7 @@ import type {
   Qaytarish,
   QaytarishYaratishMalumoti,
   QoldiqTanlovi,
+  QoldiqValyutasi,
   Sotuv,
   SotuvTolovi,
   SotuvYaratishMalumoti,
@@ -17,7 +18,8 @@ import type {
   YetkazishPayload,
   SaleAuditLog,
 } from "@/types/savdo";
-import type { Mahsulot, MahsulotModifikatsiyasi } from "@/types/catalog";
+import type { Mahsulot, MahsulotModifikatsiyasi, MahsulotNarxi } from "@/types/catalog";
+import { kursniSongaAylantirish } from "./valyutaApi";
 
 type RoyxatJavobi<T> = T[] | { value?: T[]; items?: T[]; results?: T[]; data?: T[] };
 
@@ -447,6 +449,20 @@ export async function qoldiqNomlariniBoyitish(qoldiqlar: QoldiqTanlovi[]) {
   );
 }
 
+// Valyuta rejimi yoqilgan bo'lsa qidiruv har bir narxga `retailPriceUzs`/`wholesalePriceUzs`/`rate` qo'shadi.
+// Dollarda saqlangan mahsulot uchun sotuvga SO'MDAGI narx yuboriladi (sotuv, kassa va qarz hozircha so'mda).
+// Rejim o'chiq bo'lsa (maydonlar kelmaydi) yoki narx so'mda bo'lsa narx avvalgidek qoladi.
+function qoldiqValyutasi(narx?: MahsulotNarxi | null): QoldiqValyutasi | undefined {
+  if (!narx || narx.retailPriceUzs === undefined) return undefined;
+  if (String(narx.currency ?? "UZS").toUpperCase() !== "USD") return undefined;
+  return {
+    currency: "USD",
+    asl: Number(narx.retailPrice ?? 0),
+    kurs: kursniSongaAylantirish(narx.rate),
+    uzs: kursniSongaAylantirish(narx.retailPriceUzs),
+  };
+}
+
 // YangiSotuvModal.tsx: ombor qoldig'ida bo'lmasa ham katalogdagi real mahsulot
 // modifikatsiyalarini sotuv tanlovida ko'rsatish uchun ishlatiladi.
 // To'liq katalog (/catalog/modifications) KASSIR/OMBORCHI uchun 403 (tannarx
@@ -465,21 +481,22 @@ export async function katalogModifikatsiyalariniQoldiqTanlovigaOlish(): Promise<
     })
     .map((modification) => {
       const productId = modification.productId ?? modification.product?.id;
+      const valyuta = qoldiqValyutasi(modification.price);
+      // Dollar narx: so'mdagi qiymat; kurs kiritilmagan bo'lsa 0 (mahsulot sotuvga qo'shilmaydi).
+      const chakana = valyuta
+        ? (valyuta.uzs ?? 0)
+        : Number(modification.price?.retailPrice ?? modification.price?.wholesalePrice ?? 0);
+      const ulgurji = valyuta
+        ? (kursniSongaAylantirish(modification.price?.wholesalePriceUzs) ?? 0)
+        : Number(modification.price?.wholesalePrice ?? 0);
       return {
         productId,
         modificationId: modification.id,
         quantity: 0,
         balance: 0,
-        sellingPrice: Number(
-          modification.price?.retailPrice ??
-            modification.price?.wholesalePrice ??
-            0
-        ),
-        price: Number(
-          modification.price?.retailPrice ??
-            modification.price?.wholesalePrice ??
-            0
-        ),
+        sellingPrice: chakana,
+        price: chakana,
+        valyuta,
         modification: {
           id: modification.id,
           name: modification.name ?? "Asosiy variant",
@@ -491,9 +508,9 @@ export async function katalogModifikatsiyalariniQoldiqTanlovigaOlish(): Promise<
           },
           price: {
             costPrice: Number(modification.price?.costPrice ?? 0),
-            retailPrice: Number(modification.price?.retailPrice ?? 0),
-            wholesalePrice: Number(modification.price?.wholesalePrice ?? 0),
-            sellingPrice: Number(modification.price?.retailPrice ?? 0),
+            retailPrice: valyuta ? chakana : Number(modification.price?.retailPrice ?? 0),
+            wholesalePrice: ulgurji,
+            sellingPrice: chakana,
           },
         },
       };

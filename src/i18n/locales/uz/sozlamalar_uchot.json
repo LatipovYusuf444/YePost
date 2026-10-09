@@ -10,7 +10,8 @@
     "vakolatlar": "Vakolatlar",
     "integratsiya": "Integratsiya",
     "chek": "Chek sozlamalari",
-    "bildirishnoma": "Bildirishnomalar"
+    "bildirishnoma": "Bildirishnomalar",
+    "valyuta": "Valyuta"
   },
   "saved": "Saqlandi ✓",
   "savingToBackend": "Backendga saqlanmoqda...",
@@ -203,6 +204,46 @@
       "type": "Faqat JPG, PNG yoki WEBP rasm yuklash mumkin.",
       "size": "Rasm hajmi 5 MB dan oshmasligi kerak.",
       "read": "Rasmni o'qib bo'lmadi. Boshqa rasm tanlang."
+    }
+  },
+  "valyuta": {
+    "title": "Valyuta va dollar kursi",
+    "subtitle": "Dollarda narxlangan mahsulotlarni so'mga o'girish uchun kursni har kuni administrator kiritadi.",
+    "refresh": "Yangilash",
+    "modeLabel": "Valyuta rejimi",
+    "modeOnHint": "Yoqilgan: dollarda narxlangan mahsulotlar bugungi kurs bo'yicha so'mga o'giriladi va navbarda so'm/dollar ko'rinishini tanlash mumkin.",
+    "modeOffHint": "O'chiq: barcha narxlar avvalgidek, faqat so'mda ko'rsatiladi.",
+    "readOnlyNotice": "Rejimni va kursni faqat admin yoki direktor o'zgartira oladi.",
+    "modeEnabledMessage": "Valyuta rejimi yoqildi.",
+    "modeDisabledMessage": "Valyuta rejimi o'chirildi.",
+    "currentRate": "Bugungi kurs",
+    "som": "so'm",
+    "effectiveSince": "Kurs kiritilgan kun: {{sana}}",
+    "noRate": "Kurs kiritilmagan",
+    "noRateAdminHint": "Pastdagi formada bugungi kursni kiriting. Kurs kiritilmaguncha dollarda narxlangan mahsulotlarni sotib bo'lmaydi.",
+    "noRateHint": "Kursni admin yoki direktor kiritadi. Kurs kiritilmaguncha dollarda narxlangan mahsulotlarni sotib bo'lmaydi.",
+    "rateSavedMessage": "{{sana}} uchun kurs saqlandi: 1 $ = {{kurs}} so'm.",
+    "form": {
+      "title": "Kursni kiritish",
+      "subtitle": "Dollar kursini har kuni qo'lda kiriting. Markaziy bankdan avtomatik olinmaydi.",
+      "date": "Sana",
+      "rate": "Dollar kursi",
+      "save": "Saqlash",
+      "replace": "Almashtirish",
+      "dateInvalid": "Sanani to'g'ri tanlang.",
+      "rateInvalid": "Kursni to'g'ri kiriting (0 dan katta son).",
+      "willReplace": "{{sana}} uchun kurs allaqachon kiritilgan ({{kurs}} so'm) — saqlasangiz almashtiriladi.",
+      "rules": "Kiritilgan kurs shu kundan keyingi kurs kiritilguncha amal qiladi va oldingi kunlarga ta'sir qilmaydi. So'mdagi narx butun so'mgacha yaxlitlanadi."
+    },
+    "history": {
+      "title": "Kurslar tarixi",
+      "subtitle": "So'nggi {{kunlar}} kun. Qatorni bosib kursni qayta kiritish mumkin.",
+      "date": "Sana",
+      "rate": "Kurs (so'm)",
+      "updatedAt": "Yangilangan",
+      "empty": "Hali kurs kiritilmagan.",
+      "today": "Bugun",
+      "active": "Amalda"
     }
   }
 }

@@ -205,6 +205,17 @@ export type OmborTanlovi = NomliMalumot;
 export type MijozTanlovi = NomliMalumot;
 export type XodimTanlovi = NomliMalumot & { username?: string };
 
+// Valyuta rejimida dollarda saqlangan mahsulot narxi: sotuvga so'mdagi narx (retailPriceUzs) yuboriladi.
+export type QoldiqValyutasi = {
+  currency: "UZS" | "USD";
+  /** Katalogdagi asl (dollardagi) chakana narx. */
+  asl: number;
+  /** Bugungi kurs; kurs kiritilmagan bo'lsa null. */
+  kurs: number | null;
+  /** So'mdagi chakana narx; kurs kiritilmagan bo'lsa null (sotuvga qo'shib bo'lmaydi). */
+  uzs: number | null;
+};
+
 export type QoldiqTanlovi = {
   id?: string;
   warehouseId?: string;
@@ -214,6 +225,7 @@ export type QoldiqTanlovi = {
   balance?: number | string;
   sellingPrice?: number | string;
   price?: number | string;
+  valyuta?: QoldiqValyutasi;
   modification?: {
     id: string;
     name?: string;

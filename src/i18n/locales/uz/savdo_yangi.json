@@ -164,7 +164,9 @@
     "imageButtonTitle": "Rasm",
     "stockLabelShort": "qoldiq",
     "priceLabelShort": "narx",
-    "outOfStock": "Qoldiq yo'q"
+    "outOfStock": "Qoldiq yo'q",
+    "noRate": "Kurs kiritilmagan",
+    "usdHint": "{{usd}} × {{kurs}} so'm (bugungi kurs)"
   },
   "summary": {
     "totalLabel": "Sotuv jami",

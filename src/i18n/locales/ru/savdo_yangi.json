@@ -164,7 +164,9 @@
     "imageButtonTitle": "Изображение",
     "stockLabelShort": "остаток",
     "priceLabelShort": "цена",
-    "outOfStock": "Нет в наличии"
+    "outOfStock": "Нет в наличии",
+    "noRate": "Курс не введён",
+    "usdHint": "{{usd}} × {{kurs}} сум (курс на сегодня)"
   },
   "summary": {
     "totalLabel": "Итого по продаже",
