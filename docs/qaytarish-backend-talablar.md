@@ -3,55 +3,53 @@
 > Qaytarish sahifasi (6 bosqichli wizard, ro'yxat, tafsilot) real backend API'lariga ulangan; mock ma'lumotlar olib tashlangan.
 > Frontend hech qanday summani o'zi hisoblamaydi va `CUSTOMER_REFUND` yoki boshqa kassa/moliya so'rovini yubormaydi:
 > qoldiq, qarz va kassa harakatlarini backend `confirm` / `cancel` / `restore` da boshqaradi.
+> Barcha javoblar standart envelope (`{ data }`) ichida; sonlar ko'pincha satr ("7500000") ko'rinishida keladi.
 
 ## Frontend ishlatadigan endpointlar
 
 | Endpoint | Qayerda | Eslatma |
 | --- | --- | --- |
 | `GET /returns` | Ro'yxat | Ustunlar hujjat maydonlaridan olinadi |
-| `GET /returns/{id}` | Tafsilot, 6-bosqich | `refundAmount`, `debtReduction`, `debtBefore`, `debtAfter` |
-| `GET /sales/{saleId}/returnable-items` | 2-bosqich | Sotilgan / avval qaytarilgan / qolgan miqdor va narx |
-| `POST /returns/preview` | 4–5-bosqich | Hech narsa saqlanmaydi; backend hisob-kitobi |
+| `GET /returns/{id}` | Tafsilot, 6-bosqich | `refundAmount`, `debtReduction`, `debtBefore`, `debtAfter`, `reasonComment` |
+| `GET /sales/{saleId}/returnable-items` | 2-bosqich | Sotilgan / avval qaytarilgan / qolgan miqdor, narx va `unitValue` |
+| `POST /returns/preview` | 4–5-bosqich va qoralama tafsiloti | Hech narsa saqlanmaydi; backend hisob-kitobi |
 | `POST /returns` | 5-bosqich | DRAFT hujjat yaratadi |
+| `PATCH /returns/{id}` | Qoralamani tahrirlash | `reason`, `reasonComment`, `note`, `items` |
 | `POST /returns/{id}/confirm` | 5-bosqich, tafsilot | Qoldiq, qarz va kassani backend o'zi yangilaydi |
 | `POST /returns/{id}/cancel`, `POST /returns/{id}/restore` | Tafsilot | Yangilashdan keyin faqat `GET` lar yuboriladi |
 | `GET /returns/{id}/timeline` | Tafsilot | Haqiqiy tarix; xato bo'lsa xabar + "Qayta urinish" |
 
-## Frontend kutayotgan kontrakt (YANGI endpointlar)
+## Real javob shakllari (backend tasdiqlagan)
 
-> Ogohlantirish: `returnable-items`, `preview` va `timeline` uchun repodagi `openapi.json` eskirgan (bu yo'llar yo'q).
-> Quyidagi shakllar backend hisobotidagi maydon nomlari va shu hujjatdagi avvalgi taklif asosida yozilgan;
-> haqiqiy backend javobi bilan solishtirib tasdiqlash kerak.
-
-**`GET /sales/{saleId}/returnable-items`** → massiv:
-`saleItemId`, `modificationId`, `soldQuantity`, `returnedQuantity`, `remainingQuantity`, `price` (son yoki satr).
-Mahsulot nomi sotuv qatoridan (`saleItemId` bo'yicha) olinadi; javobda `modification{name, product{name}}` kelsa u ham ishlatiladi.
+**`GET /sales/{id}/returnable-items`** → `[{ saleItemId, modificationId, soldQuantity, returnedQuantity, remainingQuantity, price, unitValue }]`.
+Frontend `price` ni "Narxi" sifatida ko'rsatadi, hujjat yaratishda `price` ga `unitValue` (kelmasa `price`) yuboradi;
+`unitValue` narxdan farq qilsa qatorda "Qaytarish qiymati" ko'rsatiladi. Mahsulot nomi sotuv qatoridan (`saleItemId` bo'yicha) olinadi.
 
 **`POST /returns/preview`**
 - Request: `{ saleId, refundMethod, items: [{ saleItemId, quantity }] }`
-- Response: `{ goodsValue, debtBefore, debtReduction, refundAmount, debtAfter, returnedQuantity? }`.
+- Response: `{ goodsValue, debtBefore, debtReduction, refundAmount, debtAfter, returnedQuantity, currency }`
+  (misol: 3 dona → `4500000 / 3500000 / 3500000 / 1000000 / 0 / "3" / "UZS"`).
   Beshta summaning hammasi to'g'ri son bo'lmasa, frontend javobni qabul qilmaydi va tasdiqlashga yo'l qo'ymaydi.
 
-**`GET /returns/{id}/timeline`** → massiv: `{ type, at, actor?{id, fullName}, payload?{quantity?, amount?} }`.
-Tanilgan `type`lar: `CREATED`, `UPDATED`, `CONFIRMED`, `STOCK_RETURNED`, `DEBT_REDUCED`, `CANCELLED`, `RESTORED`;
-boshqa tur kelsa ham voqea yashirilmaydi (turi o'qiladigan matnga aylantirib ko'rsatiladi).
+**`GET /returns/{id}/timeline`** → `[{ type, at, actor?{id, fullName}, metadata? }]`.
+`type`: `CREATED`, `CONFIRMED`, `DEBT_UPDATED` (`metadata: { debtBefore, debtReduction, debtAfter }`),
+`REFUND_COMPLETED` (`metadata: { amount, method }`), ... Noma'lum tur ham yashirilmaydi (o'qiladigan matn bilan ko'rsatiladi).
 
-**`POST /returns` (CreateReturnDto)**: `saleId, warehouseId, responsibleId, reason, restock, refundMethod, note, items[{saleItemId, modificationId, quantity, price}]`.
-- `reason`: `CUSTOMER_CHANGED_MIND | NOT_SUITABLE | DEFECT | WRONG | OTHER` — endi to'g'ridan-to'g'ri yuboriladi
-  (avval "Sabab: ..." izohga yozilar edi). `OTHER` uchun izoh majburiy (kamida 3 belgi).
-- `note`: faqat foydalanuvchi izohi. Alohida `reasonComment` maydoni bo'lsa, frontend shunga o'tkaziladi.
-- `price`: `returnable-items` dagi backend narxi (kelmasa shu sotuv qatorining narxi).
+**`POST /returns`**: `saleId, warehouseId, responsibleId, reason, reasonComment, restock, refundMethod, note, items[{saleItemId, modificationId, quantity, price}]`.
+- `reason`: `DEFECT | WRONG | OTHER | CUSTOMER_CHANGED_MIND | NOT_SUITABLE` (to'g'ridan-to'g'ri yuboriladi).
+- `reasonComment`: sabab izohi (`OTHER` uchun majburiy, kamida 3 belgi). `note` ga qo'shilmaydi.
 
 ## Eski hujjatlar va null qiymatlar
 
 - `debtBefore` / `debtAfter` eski hujjatlarda `null` bo'lishi mumkin: ro'yxat va tafsilotda **"Ma'lumot mavjud emas"** ko'rsatiladi (0 emas).
 - `0` haqiqiy qiymat sifatida `0 so'm` ko'rsatiladi.
 - Sotuvning HOZIRGI qarzi hujjatning tarixiy qarzi sifatida ishlatilmaydi.
-- Qoralama hujjatda hisob-kitob kartasi yo'q ("tasdiqlangandan keyin backend chiqaradi"); bekor qilingan hujjatda ro'yxatda summa ustunlari "—".
+- Qoralama hujjatda snapshot bo'sh, shuning uchun tafsilotdagi hisob-kitob kartasi `POST /returns/preview` dan olinadi ("Oldindan ko'rish" belgisi bilan).
+  Bekor qilingan hujjatda ro'yxatdagi summa ustunlari "—".
 
-## Hali tekshirilmagan / backenddan aniqlashtirish kerak
+## Hali tekshirilmagan
 
-1. Uchta yangi endpointning real javob shakli (yuqoridagi ogohlantirish).
-2. `reason` uchun yangi qiymatlarni (`CUSTOMER_CHANGED_MIND`, `NOT_SUITABLE`) `POST /returns` qabul qilishi.
-3. `GET /returns` ro'yxatida `docNumber`, `customer`, `refundAmount`, `debtReduction`, `debtAfter` kelishi (kelmasa tegishli ustun "Ma'lumot yo'q").
-4. Qoralama hujjat uchun preview kerak bo'lsa (hozir tafsilotda hisob-kitob ko'rsatilmaydi).
+1. Haqiqiy kassa chiqimi (aynan `7 500 000`) va "takroriy `CUSTOMER_REFUND` yo'q" — faqat backend/kassa tomonida tekshiriladi;
+   frontend bunday so'rov yubormasligi mock testda tasdiqlangan.
+2. `unitValue` va `price` farqi: hujjat summasi (`totalAmount`) va preview `goodsValue` mos kelishi.
+3. Tarixda boshqa `type`lar (`CANCELLED`, `RESTORED`, ...) kelsa nomlari: hozir tanilganlari tarjima qilingan, qolganlari matn ko'rinishida chiqadi.

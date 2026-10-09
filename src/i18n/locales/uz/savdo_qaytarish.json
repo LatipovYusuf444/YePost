@@ -24,7 +24,8 @@
     "editButton": "Qaytarishni tahrirlash",
     "confirmButton": "Tasdiqlash",
     "cancelButton": "Bekor qilish",
-    "onlyDraftEditable": "Faqat qoralama qaytarishni tahrirlash mumkin."
+    "onlyDraftEditable": "Faqat qoralama qaytarishni tahrirlash mumkin.",
+    "reasonComment": "Sabab izohi"
   },
   "dialogs": {
     "no": "Yo'q, qaytish",
@@ -63,7 +64,8 @@
     "notePlaceholder": "Qaytarish bo'yicha izoh",
     "totalAmount": "Qaytarish summasi: {{amount}}",
     "cancel": "Bekor qilish",
-    "save": "O'zgarishlarni saqlash"
+    "save": "O'zgarishlarni saqlash",
+    "reasonCommentPlaceholder": "Sabab izohi"
   },
   "reasons": {
     "defect": "Nuqsonli mahsulot",
@@ -147,7 +149,8 @@
       },
       "returned": "Avval qaytarilgan",
       "empty": "Bu sotuv bo'yicha qaytariladigan mahsulotlar topilmadi.",
-      "selectedQuantity": "Qaytariladigan miqdor"
+      "selectedQuantity": "Qaytariladigan miqdor",
+      "unitValue": "Qaytarish qiymati: {{summa}}"
     },
     "reason": {
       "heading": "Nima uchun qaytarilmoqda?",
@@ -269,9 +272,10 @@
       "UPDATED": "Qaytarish tahrirlandi",
       "CONFIRMED": "Qaytarish tasdiqlandi",
       "STOCK_RETURNED": "Tovar omborga qaytdi",
-      "DEBT_REDUCED": "Sotuv qarzi kamaytirildi",
       "CANCELLED": "Qaytarish bekor qilindi",
-      "RESTORED": "Qaytarish tiklandi"
+      "RESTORED": "Qaytarish tiklandi",
+      "DEBT_UPDATED": "Sotuv qarzi yangilandi",
+      "REFUND_COMPLETED": "Mijozga pul qaytarildi"
     },
     "timelineLoading": "Tarix yuklanmoqda...",
     "timelineError": "Jarayon tarixini olib bo'lmadi.",
@@ -279,6 +283,6 @@
     "timelineEmpty": "Ma'lumot mavjud emas",
     "unavailable": "Sana mavjud emas",
     "eventQuantity": "{{count}} dona",
-    "calcAfterConfirm": "Qarz va pul hisob-kitobi hujjat tasdiqlangandan keyin backend tomonidan chiqariladi."
+    "eventDebtReduced": "Qarzdan ayrildi: {{summa}}"
   }
 }

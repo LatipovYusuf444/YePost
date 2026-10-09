@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from "react";
+import axios from "axios";
 import { useTranslation } from "react-i18next";
 import {
   Ban,
@@ -12,7 +13,8 @@ import {
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
-import { sotuvTafsilotiniOlish } from "@/api/savdoApi";
+import { qaytarishniOldindanKorish, sotuvTafsilotiniOlish } from "@/api/savdoApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { mahsulotlarApi, modifikatsiyalarApi } from "@/api/catalogApi";
 import { useSavdoStore } from "@/store/savdoStore";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
@@ -37,7 +39,8 @@ import {
 import SavdoSelect from "./SavdoSelect";
 import QaytarishHisobKitobi from "./qaytarish/QaytarishHisobKitobi";
 import QaytarishVaqtChizigi from "./qaytarish/QaytarishVaqtChizigi";
-import { hujjatHisobKitobi } from "./qaytarish/hisobKitob";
+import QaytarishOldindanHisobi, { type OldindanKorinishHolati } from "./qaytarish/QaytarishOldindanHisobi";
+import { hujjatHisobKitobi, oldindanHisobKitob } from "./qaytarish/hisobKitob";
 import { qaytarishMijozi, qaytarishRaqami } from "./qaytarish/qaytarishYordamchilari";
 
 type Props = {
@@ -139,6 +142,10 @@ export default function QaytarishTafsilotlariModal({
   const [responsibleId, setResponsibleId] = useState("");
   const [reason, setReason] = useState<QaytarishSababi>("OTHER");
   const [note, setNote] = useState("");
+  const [reasonComment, setReasonComment] = useState("");
+  // Qoralama hujjat: hisob-kitob snapshot'i faqat tasdiqlashda yoziladi, shuning uchun oldindan ko'rish (POST /returns/preview).
+  const [qoralamaHisobi, setQoralamaHisobi] = useState<OldindanKorinishHolati>({ turi: "bosh" });
+  const [qoralamaUrinish, setQoralamaUrinish] = useState(0);
   const [items, setItems] = useState<Qator[]>([]);
 
   useEffect(() => {
@@ -259,6 +266,7 @@ export default function QaytarishTafsilotlariModal({
     setResponsibleId(qaytarish.responsibleId ?? "");
     setReason((qaytarish.reason as QaytarishSababi) ?? "OTHER");
     setNote(qaytarish.note ?? "");
+    setReasonComment(qaytarish.reasonComment ?? "");
 
     if (qaytarish.saleId) {
       await sotuvdanQatorlar(qaytarish.saleId, qaytarish);
@@ -321,6 +329,7 @@ export default function QaytarishTafsilotlariModal({
       warehouseId,
       responsibleId: responsibleId || undefined,
       reason,
+      reasonComment: reasonComment.trim() || undefined,
       note,
       items: tanlanganQatorlar.map(
         ({ saleItemId, modificationId, quantity, price }) => ({
@@ -345,6 +354,38 @@ export default function QaytarishTafsilotlariModal({
   // Hisob-kitob kartasi: faqat tasdiqlangan hujjatning o'z (backend) maydonlari. Eski hujjatlarda debtBefore/debtAfter
   // null bo'lishi mumkin — ular "ma'lumot mavjud emas" deb ko'rsatiladi, sotuvning hozirgi qarzi o'rniga qo'yilmaydi.
   const hisobKitob = qaytarish && tasdiqlangan ? hujjatHisobKitobi(qaytarish) : null;
+
+  // Qoralama hujjat uchun oldindan ko'rish so'rovi (tahrirlash vaqtida va boshqa holatlarda yuborilmaydi).
+  const qoralamaSorovi = useMemo(() => {
+    if (!qaytarish || !qoralama || tahrir) return "";
+    const qatorlar = (qaytarish.items ?? []).map((qator) => ({ saleItemId: qator.saleItemId, quantity: Number(qator.quantity) }));
+    if (!qaytarish.saleId || qatorlar.length === 0 || qatorlar.some((qator) => !qator.saleItemId || !Number.isFinite(qator.quantity))) return "";
+    const usul = String(qaytarish.refundMethod ?? "").toUpperCase();
+    return JSON.stringify({
+      saleId: qaytarish.saleId,
+      ...(["CASH", "CARD", "BALANCE", "NONE"].includes(usul) ? { refundMethod: usul } : {}),
+      items: qatorlar,
+    });
+  }, [qaytarish, qoralama, tahrir]);
+
+  useEffect(() => {
+    if (!qoralamaSorovi) {
+      setQoralamaHisobi({ turi: "bosh" });
+      return;
+    }
+    const boshqaruv = new AbortController();
+    setQoralamaHisobi({ turi: "yuklanmoqda" });
+    qaytarishniOldindanKorish(JSON.parse(qoralamaSorovi), boshqaruv.signal)
+      .then((javob) => {
+        const hisob = oldindanHisobKitob(javob);
+        setQoralamaHisobi(hisob ? { turi: "tayyor", hisob } : { turi: "xato", xabar: t("wizard.errors.previewIncomplete") });
+      })
+      .catch((error: unknown) => {
+        if (axios.isCancel(error)) return;
+        setQoralamaHisobi({ turi: "xato", xabar: getApiErrorMessage(error) });
+      });
+    return () => boshqaruv.abort();
+  }, [qoralamaSorovi, qoralamaUrinish, t]);
 
   // Tasdiqlash/bekor qilishdan keyin hujjat (status, refundAmount, debtReduction, debtBefore/After) va tarix backenddan qayta olinadi.
   async function holatniQaytaYuklash(id: string) {
@@ -438,8 +479,16 @@ export default function QaytarishTafsilotlariModal({
                     <QaytarishHisobKitobi hisob={hisobKitob} usul={String(qaytarish.refundMethod ?? "CASH").toUpperCase()} ixcham />
                   </div>
                 )}
-                {qoralama && (
-                  <p className="mt-6 rounded-2xl bg-slate-50 px-4 py-3 text-[13px] font-semibold leading-5 text-slate-600 ring-1 ring-slate-100">{t("detail.calcAfterConfirm")}</p>
+                {qoralama && qoralamaSorovi && (
+                  <div className="mt-6">
+                    <h3 className="mb-3 text-base font-black text-slate-900">{t("detail.calcTitle")}</h3>
+                    <QaytarishOldindanHisobi
+                      holat={qoralamaHisobi}
+                      usul={String(qaytarish.refundMethod ?? "CASH").toUpperCase()}
+                      ixcham
+                      onQaytaUrinish={() => setQoralamaUrinish((son) => son + 1)}
+                    />
+                  </div>
                 )}
 
                 <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -528,6 +577,17 @@ export default function QaytarishTafsilotlariModal({
                     </tbody>
                   </table>
                 </div>
+
+                {qaytarish.reasonComment && (
+                  <div className="mt-5 rounded-[24px] border border-slate-100 bg-white/80 p-5 shadow-sm">
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                      {t("view.reasonComment")}
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-gray-700">
+                      {qaytarish.reasonComment}
+                    </p>
+                  </div>
+                )}
 
                 {qaytarish.note && (
                   <div className="mt-5 rounded-[24px] border border-slate-100 bg-white/80 p-5 shadow-sm">
@@ -740,6 +800,14 @@ export default function QaytarishTafsilotlariModal({
                     )}
                   </div>
                 </div>
+
+                <textarea
+                  value={reasonComment}
+                  onChange={(event) => setReasonComment(event.target.value)}
+                  className="mt-5 min-h-20 w-full rounded-2xl border p-4 outline-none focus:border-orange-300"
+                  placeholder={t("form.reasonCommentPlaceholder")}
+                  aria-label={t("form.reasonCommentPlaceholder")}
+                />
 
                 <textarea
                   value={note}

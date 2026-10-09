@@ -47,7 +47,7 @@ import {
   sotuvTolanganSummasi,
 } from "../savdoYordamchilari";
 import QaytarishStepper from "./QaytarishStepper";
-import QaytarishHisobKitobi from "./QaytarishHisobKitobi";
+import QaytarishOldindanHisobi from "./QaytarishOldindanHisobi";
 import { hujjatHisobKitobi, oldindanHisobKitob, type HisobKitob } from "./hisobKitob";
 import {
   UI_SABABLAR,
@@ -107,6 +107,8 @@ type Qator = {
   oldin: number | null;
   qolgan: number | null;
   narx: number | null;
+  // Qaytarishda bir dona uchun backend hisoblaydigan qiymat (unitValue); kelmasa narx.
+  birlikQiymati: number | null;
   matn: string;
   son: number;
   xato: QatorXatosi;
@@ -282,6 +284,7 @@ export default function QaytarishWizard({
       const qolgan = miqdorgaAylantirish(javob.remainingQuantity);
       // Narx: backend javobidagi narx; u kelmasa shu sotuv qatorining haqiqiy narxi.
       const narx = miqdorgaAylantirish(javob.price) ?? (item ? miqdorgaAylantirish(sotuvMahsulotiNarxi(item)) : null);
+      const birlikQiymati = miqdorgaAylantirish(javob.unitValue) ?? narx;
       const matn = miqdorlar[javob.saleItemId] ?? "0";
       const son = songa(matn);
       // Backend ma'lumoti to'liq bo'lmagan qator tanlab bo'lmaydi (noto'g'ri qiymat 0 ga aylantirilmaydi).
@@ -295,7 +298,7 @@ export default function QaytarishWizard({
             : son > (qolgan ?? 0) + 1e-9
               ? "exceeds"
               : "";
-      return { id: javob.saleItemId, modificationId, nom, variant, sotilgan, oldin, qolgan, narx, matn, son: xato ? 0 : son, xato };
+      return { id: javob.saleItemId, modificationId, nom, variant, sotilgan, oldin, qolgan, narx, birlikQiymati, matn, son: xato ? 0 : son, xato };
     });
   }, [miqdorlar, qatorlarHolati, sotuv, t]);
 
@@ -439,15 +442,16 @@ export default function QaytarishWizard({
           warehouseId,
           responsibleId: sotuv.responsibleId,
           reason: sabab,
+          // Sabab izohi backendda `note` dan alohida maydon (reasonComment).
+          reasonComment: izoh.trim() || undefined,
           restock: true,
           refundMethod: usul,
-          note: izoh.trim() || undefined,
           items: tanlanganQatorlar.map((qator) => ({
             saleItemId: qator.id,
             modificationId: qator.modificationId,
             quantity: qator.son,
-            // Narx — backend (returnable-items) bergan sotuv narxi; frontend o'zi hisoblamaydi.
-            price: qator.narx ?? 0,
+            // Narx — backend (returnable-items) bergan bir dona qiymati (unitValue, kelmasa price); frontend o'zi hisoblamaydi.
+            price: qator.birlikQiymati ?? 0,
           })),
         });
         if (!yaratilgan) {
@@ -636,7 +640,12 @@ export default function QaytarishWizard({
                             </div>
                             <Maydon nom={t("wizard.items.sold")} qiymat={qator.sotilgan === null ? t("wizard.unavailable") : `${qator.sotilgan} ${t("wizard.unit")}`} />
                             <Maydon nom={t("wizard.items.returned")} qiymat={qator.oldin === null ? t("wizard.unavailable") : `${qator.oldin} ${t("wizard.unit")}`} />
-                            <Maydon nom={t("wizard.items.price")} qiymat={qator.narx === null ? t("wizard.unavailable") : pulniFormatlash(qator.narx)} kuchli />
+                            <div className="min-w-0">
+                              <Maydon nom={t("wizard.items.price")} qiymat={qator.narx === null ? t("wizard.unavailable") : pulniFormatlash(qator.narx)} kuchli />
+                              {qator.narx !== null && qator.birlikQiymati !== null && qator.birlikQiymati !== qator.narx && (
+                                <p className="mt-0.5 text-[11px] font-semibold text-slate-400">{t("wizard.items.unitValue", { summa: pulniFormatlash(qator.birlikQiymati) })}</p>
+                              )}
+                            </div>
                             <div>
                               <p className="mb-1.5 text-[11px] font-black uppercase tracking-wide text-slate-400 lg:hidden">{t("wizard.items.returnQty")}</p>
                               <div className="flex items-center gap-2">
@@ -770,7 +779,7 @@ export default function QaytarishWizard({
                   </div>
                 </div>
                 <div className="mt-6">
-                  <OldindanKorinishi holat={oldindan} usul={usul} onQaytaUrinish={oldindanQaytaUrinish} />
+                  <QaytarishOldindanHisobi holat={oldindan} usul={usul} onQaytaUrinish={oldindanQaytaUrinish} />
                 </div>
                 {oldindanTayyor && <p className="mt-3 text-xs font-medium text-slate-400">{t("wizard.calc.estimateNote")}</p>}
               </section>
@@ -797,7 +806,7 @@ export default function QaytarishWizard({
                   </div>
                 </dl>
                 <div className="mt-4">
-                  <OldindanKorinishi holat={oldindan} usul={usul} ixcham onQaytaUrinish={oldindanQaytaUrinish} />
+                  <QaytarishOldindanHisobi holat={oldindan} usul={usul} ixcham onQaytaUrinish={oldindanQaytaUrinish} />
                 </div>
                 <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-sky-200 bg-sky-50/70 px-5 py-3.5">
                   <span className="flex items-center gap-2 text-sm font-bold text-sky-800"><PackageCheck size={17} aria-hidden /> {t("wizard.confirm.stock")}</span>
@@ -874,38 +883,6 @@ export default function QaytarishWizard({
         )}
       </div>
     </div>
-  );
-}
-
-// 4–5-bosqich: backend hisob-kitobi (yuklanmoqda / xato / tayyor).
-function OldindanKorinishi({ holat, usul, ixcham = false, onQaytaUrinish }: { holat: OldindanHolati; usul: RefundMethod; ixcham?: boolean; onQaytaUrinish: () => void }) {
-  const { t } = useTranslation("savdo_qaytarish");
-
-  if (holat.turi === "tayyor") return <QaytarishHisobKitobi hisob={holat.hisob} usul={usul} ixcham={ixcham} oldindan />;
-
-  if (holat.turi === "xato") {
-    return (
-      <div role="alert" className="rounded-[22px] border border-rose-100 bg-rose-50 px-5 py-4">
-        <p className="flex items-start gap-2 text-sm font-bold text-rose-600">
-          <AlertCircle size={17} className="mt-0.5 shrink-0" aria-hidden /> {t("wizard.calc.previewFailed")}
-        </p>
-        <p className="mt-1 break-words text-xs font-medium text-rose-500">{holat.xabar}</p>
-        <p className="mt-1 text-xs font-semibold text-rose-500">{t("wizard.calc.cannotConfirm")}</p>
-        <button
-          type="button"
-          onClick={onQaytaUrinish}
-          className="mt-3 inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl bg-white px-3 text-xs font-extrabold text-rose-600 ring-1 ring-rose-200 transition hover:bg-rose-100"
-        >
-          <RefreshCw size={13} aria-hidden /> {t("wizard.retry")}
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <p role="status" className="flex items-center justify-center gap-2 rounded-[22px] border border-dashed border-slate-200 px-5 py-12 text-sm font-semibold text-slate-500">
-      <LoaderCircle size={17} className="animate-spin text-orange-500" aria-hidden /> {t("wizard.calc.loading")}
-    </p>
   );
 }
 

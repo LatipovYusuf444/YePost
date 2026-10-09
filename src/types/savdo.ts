@@ -167,6 +167,8 @@ export type Qaytarish = {
   saleId: string;
   warehouseId: string;
   reason?: QaytarishSababi | string;
+  // Sabab izohi (backendda `note` dan alohida maydon).
+  reasonComment?: string | null;
   responsibleId?: string;
   note?: string;
   status?: SotuvHolati | string;
@@ -196,6 +198,8 @@ export type QaytarishYaratishMalumoti = {
   saleId: string;
   warehouseId: string;
   reason?: QaytarishSababi;
+  // Sabab izohi (OTHER uchun majburiy); umumiy izoh `note` da qoladi.
+  reasonComment?: string;
   responsibleId?: string;
   restock?: boolean;
   refundMethod?: QaytarishToloviniQaytarishUsuli;
@@ -216,6 +220,8 @@ export type QaytariladiganQator = {
   returnedQuantity?: number | string | null;
   remainingQuantity?: number | string | null;
   price?: number | string | null;
+  // Qaytarishda bir dona uchun hisoblanadigan qiymat (backend beradi).
+  unitValue?: number | string | null;
   modification?: SotuvMahsuloti["modification"];
 };
 
@@ -233,6 +239,7 @@ export type QaytarishOldindanJavobi = {
   refundAmount?: number | string | null;
   debtAfter?: number | string | null;
   returnedQuantity?: number | string | null;
+  currency?: string;
 };
 
 // GET /returns/{id}/timeline — hujjat voqealari (kim va qachon).
@@ -241,7 +248,8 @@ export type QaytarishVoqeasi = {
   type: string;
   at?: string | null;
   actor?: { id?: string; fullName?: string | null; name?: string | null } | null;
-  payload?: Record<string, unknown> | null;
+  // Voqeaga xos ma'lumotlar: DEBT_UPDATED { debtBefore, debtReduction, debtAfter }, REFUND_COMPLETED { amount, method }.
+  metadata?: Record<string, unknown> | null;
 };
 
 export type OmborTanlovi = NomliMalumot;

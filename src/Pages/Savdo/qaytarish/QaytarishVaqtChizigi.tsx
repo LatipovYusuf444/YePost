@@ -6,6 +6,7 @@ import {
   CircleAlert,
   CircleDot,
   FilePlus2,
+  HandCoins,
   LoaderCircle,
   PackageCheck,
   Pencil,
@@ -15,6 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { qaytarishVaqtChiziginiOlish } from "@/api/savdoApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { QaytarishVoqeasi } from "@/types/savdo";
@@ -26,7 +28,8 @@ const IKONKALAR: Record<string, { ikonka: LucideIcon; rang: string }> = {
   UPDATED: { ikonka: Pencil, rang: "bg-orange-50 text-orange-600" },
   CONFIRMED: { ikonka: CheckCircle2, rang: "bg-emerald-50 text-emerald-600" },
   STOCK_RETURNED: { ikonka: PackageCheck, rang: "bg-sky-50 text-sky-600" },
-  DEBT_REDUCED: { ikonka: Wallet, rang: "bg-emerald-50 text-emerald-600" },
+  DEBT_UPDATED: { ikonka: Wallet, rang: "bg-emerald-50 text-emerald-600" },
+  REFUND_COMPLETED: { ikonka: HandCoins, rang: "bg-orange-50 text-orange-600" },
   CANCELLED: { ikonka: Ban, rang: "bg-rose-50 text-rose-600" },
   RESTORED: { ikonka: Undo2, rang: "bg-amber-50 text-amber-600" },
 };
@@ -42,6 +45,31 @@ function turniOqiladigan(tur: string) {
 function voqeaVaqti(voqea: QaytarishVoqeasi) {
   const vaqt = voqea.at ? new Date(voqea.at).getTime() : Number.NaN;
   return Number.isFinite(vaqt) ? vaqt : null;
+}
+
+// Voqeaning `metadata` si bo'yicha qisqa tafsilotlar (hammasi backend qiymatlari; bo'sh maydon ko'rsatilmaydi).
+// DEBT_UPDATED: { debtBefore, debtReduction, debtAfter }; REFUND_COMPLETED: { amount, method }.
+function voqeaTafsilotlari(tur: string, metadata: Record<string, unknown> | null | undefined, t: TFunction) {
+  const meta = metadata ?? {};
+  const qismlar: string[] = [];
+
+  if (tur === "DEBT_UPDATED") {
+    const oldin = raqamga(meta.debtBefore);
+    const keyin = raqamga(meta.debtAfter);
+    const kamayish = raqamga(meta.debtReduction);
+    if (oldin !== null && keyin !== null) qismlar.push(`${pulniFormatlash(oldin)} → ${pulniFormatlash(keyin)}`);
+    if (kamayish !== null) qismlar.push(t("detail.eventDebtReduced", { summa: pulniFormatlash(kamayish) }));
+    return qismlar;
+  }
+
+  const summa = raqamga(meta.amount);
+  const miqdor = raqamga(meta.quantity);
+  if (summa !== null) qismlar.push(pulniFormatlash(summa));
+  if (miqdor !== null) qismlar.push(t("detail.eventQuantity", { count: miqdor }));
+  if (typeof meta.method === "string" && meta.method) {
+    qismlar.push(t(`refundMethods.${meta.method.toLowerCase()}`, { defaultValue: meta.method }));
+  }
+  return qismlar;
 }
 
 type Holat = { turi: "yuklanmoqda" } | { turi: "xato"; xabar: string } | { turi: "tayyor"; voqealar: QaytarishVoqeasi[] };
@@ -109,13 +137,7 @@ export default function QaytarishVaqtChizigi({ qaytarishId, yangilash = 0 }: { q
             const { ikonka: Ikona, rang } = IKONKALAR[tur] ?? STANDART_IKONKA;
             const oxirgi = indeks === holat.voqealar.length - 1;
             const aktyor = voqea.actor?.fullName ?? voqea.actor?.name ?? null;
-            const miqdor = raqamga(voqea.payload?.quantity);
-            const summa = raqamga(voqea.payload?.amount);
-            const tafsilotlar = [
-              aktyor,
-              miqdor !== null ? t("detail.eventQuantity", { count: miqdor }) : null,
-              summa !== null ? pulniFormatlash(summa) : null,
-            ].filter(Boolean);
+            const tafsilotlar = [aktyor, ...voqeaTafsilotlari(tur, voqea.metadata, t)].filter(Boolean);
             return (
               <li key={voqea.id ?? `${tur}-${voqea.at ?? indeks}`} className="relative flex gap-4 pb-5 last:pb-0">
                 {!oxirgi && <span aria-hidden className="absolute left-[19px] top-10 bottom-0 w-px bg-slate-200" />}
