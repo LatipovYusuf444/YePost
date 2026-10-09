@@ -46,7 +46,8 @@
     "quantity": "Miqdor",
     "price": "Narx",
     "total": "Jami",
-    "empty": "Mahsulotlar mavjud emas"
+    "empty": "Mahsulotlar mavjud emas",
+    "unknownProduct": "Mahsulot"
   },
   "form": {
     "saleLabel": "Tasdiqlangan sotuv *",
@@ -113,7 +114,7 @@
     "sale": {
       "heading": "Qaysi sotuvdan qaytarish?",
       "hint": "Tasdiqlangan sotuvni tanlang. Sotuv raqami yoki mijoz nomi bo'yicha qidirishingiz mumkin.",
-      "search": "Sotuv raqami yoki mijoz bo'yicha qidirish",
+      "search": "Qidirish: raqam, mijoz, telefon",
       "empty": "Qaytarish mumkin bo'lgan sotuv topilmadi.",
       "partial": "Oldin qaytarilgan",
       "total": "Sotuv summasi",
@@ -124,41 +125,55 @@
       "selected": "Tanlangan sotuv",
       "listLoading": "Sotuvlar yuklanmoqda...",
       "listError": "Sotuvlar ro'yxatini olib bo'lmadi",
-      "nothingReturnable": "Bu sotuv bo'yicha qaytarilishi mumkin bo'lgan mahsulot qolmagan."
+      "nothingReturnable": "Bu sotuv bo'yicha qaytarilishi mumkin bo'lgan mahsulot qolmagan.",
+      "count": "{{count}} ta sotuv",
+      "clear": "Qidiruvni tozalash",
+      "showMore": "Yana ko'rsatish ({{count}})"
     },
     "items": {
       "heading": "Qaysi mahsulot qaytariladi?",
-      "hint": "Har bir mahsulot uchun qaytariladigan miqdorni kiriting. 0 — qaytarilmaydi.",
+      "hint": "Har bir mahsulot uchun nechta dona qaytarilishini kiriting. 0 yozsangiz, mahsulot qaytarilmaydi.",
       "fallback": "Mahsulot",
       "product": "Mahsulot",
       "sold": "Sotilgan",
-      "price": "Narxi",
+      "price": "Sotuv narxi",
       "lineTotal": "Jami",
-      "returnQty": "Qaytarish miqdori",
+      "returnQty": "Nechta qaytariladi?",
       "alreadyReturned": "Avval qaytarilgan: {{count}}",
       "decrease": "Kamaytirish",
       "increase": "Ko'paytirish",
-      "max": "Maksimal: {{count}}",
-      "all": "Hammasi",
+      "max": "Qaytarish mumkin: {{count}} dona",
+      "all": "Hammasini tanlash",
       "selectedTotal": "Qaytariladigan tovar qiymati",
       "errors": {
-        "invalid": "Miqdorni son bilan kiriting.",
+        "invalid": "Miqdorni raqam bilan kiriting.",
         "negative": "Miqdor 0 dan kichik bo'lishi mumkin emas.",
-        "exceeds": "Qaytarish miqdori qolgan miqdordan ({{max}}) oshib ketdi.",
-        "data": "Bu qator uchun backend ma'lumotlari to'liq emas."
+        "exceeds": "Kiritilgan miqdor qaytarish mumkin bo'lgan miqdordan ({{max}} dona) ko'p.",
+        "data": "Bu mahsulotning ma'lumotlari to'liq kelmadi, uni tanlab bo'lmaydi."
       },
       "returned": "Avval qaytarilgan",
       "empty": "Bu sotuv bo'yicha qaytariladigan mahsulotlar topilmadi.",
-      "selectedQuantity": "Qaytariladigan miqdor",
-      "unitValue": "Qaytarish qiymati: {{summa}}"
+      "selectedQuantity": "Jami qaytariladi",
+      "unitValue": "Qaytarishda hisoblanadi: {{summa}}",
+      "selected": "Tanlangan",
+      "productsCount": "{{count}} ta mahsulot",
+      "loadingName": "Mahsulot nomi yuklanmoqda",
+      "clear": "Tozalash",
+      "rowTotal": "Summa",
+      "totalValue": "Qaytariladigan tovar qiymati",
+      "calculating": "Hisoblanmoqda...",
+      "totalFailed": "Summani hisoblab bo'lmadi"
     },
     "reason": {
       "heading": "Nima uchun qaytarilmoqda?",
-      "hint": "Sababni tanlang. Bu hujjatda saqlanadi va hisobotlarda ishlatiladi.",
-      "comment": "Izoh",
+      "hint": "Qaytarish sababini tanlang. Bu hujjatda saqlanadi va hisobotlarda ishlatiladi.",
+      "comment": "Qo'shimcha izoh",
       "required": "Majburiy",
       "optional": "Ixtiyoriy",
-      "placeholder": "Qo'shimcha izoh yozing..."
+      "placeholder": "Kerak bo'lsa, o'zingiz yozing: nima bo'lganini qisqacha bayon qiling...",
+      "quickTitle": "Aniqroq sababni belgilang",
+      "quickHint": "bir nechtasini tanlash mumkin",
+      "willBeSaved": "Hujjatga yoziladi"
     },
     "reasons": {
       "DEFECT": "Mahsulot nuqsonli",
@@ -169,8 +184,8 @@
     },
     "calc": {
       "heading": "Hisob-kitob",
-      "hint": "Qaytarilgan tovar qiymati avval sotuvdagi qarzni yopadi, ortig'i mijozga qaytariladi.",
-      "method": "Pul qaytarish usuli",
+      "hint": "Qaytarilgan tovar qiymati avval sotuvdagi qarzni kamaytiradi, qolgan qismi tanlangan usulda mijozga qaytariladi.",
+      "method": "Mijozga pul qanday qaytariladi?",
       "methods": {
         "CASH": "Naqd",
         "CARD": "Karta",
@@ -181,29 +196,36 @@
       "estimateNote": "Summalarni backend hisoblagan (oldindan ko'rish). Tasdiqlangandan keyin hujjatdagi yakuniy qiymatlar ko'rsatiladi.",
       "goods": "Qaytarilgan tovar qiymati",
       "currentDebt": "Sotuvdagi qarz",
-      "currentDebtHint": "Qaytarishdan oldingi qarz",
+      "currentDebtHint": "Qaytarishdan oldin",
       "debtReduction": "Qarzdan ayriladi",
-      "debtReductionHint": "Mijoz qarzini kamaytiradi",
+      "debtReductionHint": "Mijozning qarzi shu summaga kamayadi",
       "refund": "Mijozga qaytariladi",
-      "refundHint": "Mijozga pul sifatida beriladi",
+      "refundHint": "Mijozga beriladigan pul",
       "refundHintBalance": "Mijoz balansiga o'tkaziladi",
-      "refundHintNone": "Pul qaytarilmaydi",
+      "refundHintNone": "Mijozga pul berilmaydi",
       "remaining": "Qaytarishdan keyingi qarz",
       "notes": {
-        "qarzYoq": "Sotuvda qarz yo'q: tovar qiymatining hammasi mijozga qaytariladi.",
-        "qarzdanKichik": "Tovar qiymati qarzdan kichik: hammasi qarzdan ayriladi, mijozga pul qaytarilmaydi.",
+        "qarzYoq": "Sotuvda qarz yo'q, shuning uchun tovar qiymatining hammasi mijozga qaytariladi.",
+        "qarzdanKichik": "Tovar qiymati qarzdan kichik, shuning uchun hammasi qarzni kamaytiradi va mijozga pul qaytarilmaydi.",
         "qarzgaTeng": "Tovar qiymati qarzga teng: qarz to'liq yopiladi, mijozga pul qaytarilmaydi.",
         "qarzdanKatta": "Tovar qiymati qarzdan katta: avval qarz yopiladi, qolgan qismi mijozga qaytariladi.",
-        "pulQaytarilmaydi": "Tovar qiymati qarzdan katta, lekin \"Pul qaytarilmaydi\" usuli tanlangan: mijozga pul berilmaydi."
+        "pulQaytarilmaydi": "Tovar qiymati qarzdan katta, lekin \"Pul qaytarilmaydi\" tanlangan: mijozga pul berilmaydi."
       },
       "unavailable": "Ma'lumot mavjud emas",
       "loading": "Backend hisob-kitobi yuklanmoqda...",
       "previewFailed": "Hisob-kitobni olib bo'lmadi.",
-      "cannotConfirm": "Hisob-kitob olinmaguncha qaytarishni tasdiqlab bo'lmaydi."
+      "cannotConfirm": "Hisob-kitob olinmaguncha qaytarishni tasdiqlab bo'lmaydi.",
+      "methodHints": {
+        "CASH": "Naqd pul bilan beriladi",
+        "CARD": "Bank kartasi orqali",
+        "BALANCE": "Mijoz hisobida qoladi",
+        "NONE": "Faqat qarz kamayadi"
+      },
+      "debtClosed": "Qarz to'liq yopiladi"
     },
     "confirm": {
       "heading": "Tasdiqlash",
-      "hint": "Ma'lumotlarni tekshiring. Tasdiqlangandan keyin tovar omborga qaytadi.",
+      "hint": "Ma'lumotlarni oxirgi marta tekshiring. Tasdiqlangandan keyin tovar omborga qaytadi.",
       "sale": "Sotuv",
       "customer": "Mijoz",
       "reason": "Sabab",
@@ -213,7 +235,14 @@
       "warning": "Tasdiqlangandan keyin ombor qoldig'i va sotuvdagi qarz backend tomonidan yangilanadi. Xato bo'lsa, hujjatni keyin bekor qilish mumkin.",
       "working": "Bajarilmoqda...",
       "button": "Qaytarishni tasdiqlash",
-      "buttonWithAmount": "Qaytarishni tasdiqlash — {{summa}}"
+      "buttonWithAmount": "Qaytarishni tasdiqlash — {{summa}}",
+      "itemsTitle": "Qaytariladigan mahsulotlar",
+      "effectsTitle": "Tasdiqlangandan keyin nima bo'ladi",
+      "effStock": "Tovar omborga qaytadi: {{count}} dona",
+      "effDebt": "Sotuvdagi qarz {{summa}} ga kamayadi",
+      "effNoDebt": "Sotuvdagi qarz o'zgarmaydi",
+      "effRefund": "Mijozga {{summa}} qaytariladi ({{usul}})",
+      "effNoRefund": "Mijozga pul qaytarilmaydi"
     },
     "done": {
       "title": "Qaytarish muvaffaqiyatli yakunlandi",
@@ -237,10 +266,44 @@
       "confirmFailed": "Qaytarish yaratildi, lekin tasdiqlanmadi. Qayta urinib ko'ring — yangi hujjat yaratilmaydi.",
       "saleLoadFailed": "Sotuv ma'lumotlarini olib bo'lmadi.",
       "createFailed": "Qaytarish hujjati yaratilmadi. Ma'lumotlar saqlab qolindi, qayta urinib ko'ring.",
-      "previewIncomplete": "Backend hisob-kitobi to'liq qaytmadi. Qayta urinib ko'ring."
+      "previewIncomplete": "Backend hisob-kitobi to'liq qaytmadi. Qayta urinib ko'ring.",
+      "previewInconsistent": "Backend hisob-kitobidagi summalar o'zaro mos kelmadi, shuning uchun tasdiqlab bo'lmaydi. Qayta urinib ko'ring yoki administratorga xabar bering."
     },
     "retry": "Qayta urinish",
-    "unavailable": "Ma'lumot mavjud emas"
+    "unavailable": "Ma'lumot mavjud emas",
+    "reasonHints": {
+      "DEFECT": "Mahsulot ishlamayapti yoki shikastlangan",
+      "CUSTOMER_CHANGED_MIND": "Mijoz xaridni xohlamay qoldi",
+      "WRONG": "Boshqa model, rang yoki miqdor berilgan",
+      "NOT_SUITABLE": "Mahsulot mijozga to'g'ri kelmadi",
+      "OTHER": "Yuqoridagilarga kirmaydi — izoh yozing"
+    },
+    "presets": {
+      "notWorking": "Ishlamayapti",
+      "damaged": "Shikastlangan yoki singan",
+      "packageDamaged": "Qadog'i buzilgan",
+      "missingParts": "Butlovchi qismlari yetishmaydi",
+      "usedLook": "Ishlatilgan ko'rinishda",
+      "expired": "Yaroqlilik muddati o'tgan",
+      "noLongerNeeded": "Kerak bo'lmay qoldi",
+      "tooExpensive": "Narxi qimmat tuyuldi",
+      "foundCheaper": "Boshqa joydan arzonroq topdi",
+      "giftRejected": "Sovg'a egasiga yoqmadi",
+      "orderedByMistake": "Xato buyurtma qilingan",
+      "wrongModel": "Boshqa model berilgan",
+      "wrongColor": "Boshqa rang berilgan",
+      "wrongSize": "Boshqa o'lcham berilgan",
+      "wrongQuantity": "Soni noto'g'ri",
+      "mixedUp": "Boshqa mahsulot bilan almashib ketgan",
+      "sizeNotFit": "O'lchami to'g'ri kelmadi",
+      "colorNotLike": "Rangi yoqmadi",
+      "qualityNotSatisfied": "Sifatidan qoniqmadi",
+      "featuresMismatch": "Xususiyatlari talabga mos emas",
+      "incompatible": "Boshqa qurilma bilan mos kelmaydi",
+      "operatorError": "Operator xatosi",
+      "duplicateOrder": "Takroriy buyurtma",
+      "lateDelivery": "Yetkazib berish kechikdi"
+    }
   },
   "list": {
     "newReturn": "Yangi qaytarish",
@@ -283,6 +346,11 @@
     "timelineEmpty": "Ma'lumot mavjud emas",
     "unavailable": "Sana mavjud emas",
     "eventQuantity": "{{count}} dona",
-    "eventDebtReduced": "Qarzdan ayrildi: {{summa}}"
+    "eventDebtReduced": "Qarzdan ayrildi: {{summa}}",
+    "itemsTitle": "Qaytarilgan mahsulotlar",
+    "itemsCount": "{{count}} ta",
+    "infoTitle": "Hujjat ma'lumotlari",
+    "confirmedAt": "Tasdiqlangan sana",
+    "snapshotMissing": "Bu hujjat uchun tasdiqlash vaqtidagi qarz holati (oldingi va keyingi qarz) saqlanmagan. Eski hujjatlarda shunday bo'lishi mumkin."
   }
 }

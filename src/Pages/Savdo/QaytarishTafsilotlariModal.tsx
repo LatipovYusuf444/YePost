@@ -1,16 +1,27 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState, type ReactNode } from "react";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
 import {
   Ban,
+  Banknote,
+  BadgeCheck,
+  Boxes,
+  CalendarClock,
   CheckCircle2,
   Edit3,
+  Info,
+  ListChecks,
   LoaderCircle,
   Package,
+  Receipt,
   RotateCcw,
   Save,
   Trash2,
+  User,
+  UserCheck,
+  Warehouse,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import { qaytarishniOldindanKorish, sotuvTafsilotiniOlish } from "@/api/savdoApi";
@@ -40,7 +51,7 @@ import SavdoSelect from "./SavdoSelect";
 import QaytarishHisobKitobi from "./qaytarish/QaytarishHisobKitobi";
 import QaytarishVaqtChizigi from "./qaytarish/QaytarishVaqtChizigi";
 import QaytarishOldindanHisobi, { type OldindanKorinishHolati } from "./qaytarish/QaytarishOldindanHisobi";
-import { hujjatHisobKitobi, oldindanHisobKitob } from "./qaytarish/hisobKitob";
+import { hisobMuvofiqmi, hujjatHisobKitobi, oldindanHisobKitob } from "./qaytarish/hisobKitob";
 import { qaytarishMijozi, qaytarishRaqami } from "./qaytarish/qaytarishYordamchilari";
 
 type Props = {
@@ -72,18 +83,35 @@ const refundMethodMatni: Record<RefundMethod, string> = {
   NONE: "refundMethods.none",
 };
 
-function mahsulotNomi(item: {
-  modificationId: string;
-  modification?: {
-    name?: string;
-    product?: { name?: string };
-  };
-}) {
+function mahsulotNomi(
+  item: {
+    modificationId: string;
+    modification?: {
+      name?: string;
+      product?: { name?: string };
+    };
+  },
+  // Nom kelmasa ID o'rniga o'qiladigan matn ko'rsatish uchun.
+  bosh: string = item.modificationId
+) {
   const productName = item.modification?.product?.name;
   const variantName = item.modification?.name;
   return [productName, variantName && variantName !== productName ? variantName : ""]
     .filter(Boolean)
-    .join(" / ") || item.modificationId;
+    .join(" / ") || bosh;
+}
+
+// Mahsulot nomi va variantini alohida qatorlarda ko'rsatish uchun.
+function mahsulotQismlari(
+  item: { modificationId: string; modification?: { name?: string; product?: { name?: string } } },
+  bosh: string
+) {
+  const mahsulot = item.modification?.product?.name;
+  const variant = item.modification?.name;
+  return {
+    nom: mahsulot || variant || bosh,
+    variant: mahsulot && variant && variant !== mahsulot ? variant : "",
+  };
 }
 
 function sababniOzbekcha(reason?: string) {
@@ -354,6 +382,7 @@ export default function QaytarishTafsilotlariModal({
   // Hisob-kitob kartasi: faqat tasdiqlangan hujjatning o'z (backend) maydonlari. Eski hujjatlarda debtBefore/debtAfter
   // null bo'lishi mumkin — ular "ma'lumot mavjud emas" deb ko'rsatiladi, sotuvning hozirgi qarzi o'rniga qo'yilmaydi.
   const hisobKitob = qaytarish && tasdiqlangan ? hujjatHisobKitobi(qaytarish) : null;
+  const jamiDona = (qaytarish?.items ?? []).reduce((jami, qator) => jami + (Number(qator.quantity) || 0), 0);
 
   // Qoralama hujjat uchun oldindan ko'rish so'rovi (tahrirlash vaqtida va boshqa holatlarda yuborilmaydi).
   const qoralamaSorovi = useMemo(() => {
@@ -378,7 +407,13 @@ export default function QaytarishTafsilotlariModal({
     qaytarishniOldindanKorish(JSON.parse(qoralamaSorovi), boshqaruv.signal)
       .then((javob) => {
         const hisob = oldindanHisobKitob(javob);
-        setQoralamaHisobi(hisob ? { turi: "tayyor", hisob } : { turi: "xato", xabar: t("wizard.errors.previewIncomplete") });
+        setQoralamaHisobi(
+          !hisob
+            ? { turi: "xato", xabar: t("wizard.errors.previewIncomplete") }
+            : !hisobMuvofiqmi(hisob)
+              ? { turi: "xato", xabar: t("wizard.errors.previewInconsistent") }
+              : { turi: "tayyor", hisob }
+        );
       })
       .catch((error: unknown) => {
         if (axios.isCancel(error)) return;
@@ -408,27 +443,41 @@ export default function QaytarishTafsilotlariModal({
   return (
     <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-3 backdrop-blur-[3px] lg:py-4 lg:pl-[88px] lg:pr-4">
       <section className="scrollbar-hidden h-[calc(100vh-24px)] w-full overflow-y-auto rounded-[34px] border border-orange-100 bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80 lg:h-[calc(100vh-32px)] lg:rounded-l-[46px] lg:rounded-r-[36px]">
-        <header className="sticky top-0 z-20 flex items-start justify-between gap-4 border-b border-orange-100/80 bg-[#F8FAFC]/90 px-6 py-5 backdrop-blur-xl lg:px-10 lg:py-6">
-          <div className="flex items-start gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-200">
+        <header className="sticky top-0 z-20 flex items-start justify-between gap-3 border-b border-orange-100/80 bg-[#F8FAFC]/90 px-4 py-4 backdrop-blur-xl sm:gap-4 sm:px-6 sm:py-5 lg:px-10 lg:py-6">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-200 sm:flex">
               <RotateCcw size={22} />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-orange-500">
                 {t("header.eyebrow")}
               </p>
-              <h2 className="mt-1 text-2xl font-black text-slate-950">
-                {qaytarish
-                  ? t("header.titleWithId", {
-                      id: qaytarishRaqami(qaytarish),
-                    })
-                  : t("header.titleFallback")}
-              </h2>
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                <h2 className="text-xl font-black text-slate-950 sm:text-2xl">
+                  {qaytarish
+                    ? t("header.titleWithId", {
+                        id: qaytarishRaqami(qaytarish),
+                      })
+                    : t("header.titleFallback")}
+                </h2>
+                {qaytarish && <HolatBelgisi holat={holat} matn={t(holatMatni(holat))} />}
+              </div>
+              {qaytarish && (
+                <p className="mt-1 truncate text-sm font-semibold text-slate-500">
+                  {[
+                    qaytarishMijozi(qaytarish, sotuvlar),
+                    qaytarish.sale ? sotuvRaqami(qaytarish.sale) : sotuvRaqami({ id: qaytarish.saleId }),
+                    sananiFormatlash(qaytarish.createdAt),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              )}
             </div>
           </div>
           <button
             onClick={onYopish}
-            className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm ring-1 ring-orange-100 transition hover:bg-orange-500 hover:text-white"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm ring-1 ring-orange-100 transition hover:bg-orange-500 hover:text-white"
             aria-label={t("header.closeAria")}
           >
             <X size={19} />
@@ -453,157 +502,188 @@ export default function QaytarishTafsilotlariModal({
 
             {!tahrir ? (
               <>
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  <Malumot nom={t("view.status")} qiymat={t(holatMatni(holat))} />
-                  <Malumot
-                    nom={t("view.sale")}
-                    qiymat={
-                      qaytarish.sale
-                        ? sotuvRaqami(qaytarish.sale)
-                        : sotuvRaqami({ id: qaytarish.saleId })
-                    }
-                  />
-                  <Malumot
-                    nom={t("view.amount")}
-                    qiymat={pulniFormatlash(qaytarishSummasi(qaytarish))}
-                  />
-                  <Malumot
-                    nom={t("view.createdAt")}
-                    qiymat={sananiFormatlash(qaytarish.createdAt)}
-                  />
-                </div>
+                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
+                  <div className="min-w-0 space-y-6">
+                    {/* Hisob-kitob: tasdiqlangan hujjatda hujjatning o'z (backend) qiymatlari */}
+                    {hisobKitob && (
+                      <section aria-label={t("detail.calcTitle")}>
+                        <h3 className="mb-3 text-base font-black text-slate-900">{t("detail.calcTitle")}</h3>
+                        <QaytarishHisobKitobi hisob={hisobKitob} usul={String(qaytarish.refundMethod ?? "CASH").toUpperCase()} ixcham />
+                        {(hisobKitob.mavjudQarz === null || hisobKitob.qolganQarz === null) && (
+                          <p className="mt-3 flex items-start gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold leading-5 text-slate-500">
+                            <Info size={15} className="mt-0.5 shrink-0 text-slate-400" aria-hidden />
+                            {t("detail.snapshotMissing")}
+                          </p>
+                        )}
+                      </section>
+                    )}
+                    {qoralama && qoralamaSorovi && (
+                      <section aria-label={t("detail.calcTitle")}>
+                        <h3 className="mb-3 text-base font-black text-slate-900">{t("detail.calcTitle")}</h3>
+                        <QaytarishOldindanHisobi
+                          holat={qoralamaHisobi}
+                          usul={String(qaytarish.refundMethod ?? "CASH").toUpperCase()}
+                          ixcham
+                          onQaytaUrinish={() => setQoralamaUrinish((son) => son + 1)}
+                        />
+                      </section>
+                    )}
+                    {/* Backend tasdiqlashda hisoblagan qiymatlar kartada ko'rsatilmagan holatlar (masalan, bekor qilingan hujjat) */}
+                    {!qoralama && !hisobKitob && (qaytarish.refundAmount != null || qaytarish.debtReduction != null) && (
+                      <dl className="grid gap-3 sm:grid-cols-2">
+                        {qaytarish.debtReduction != null && (
+                          <BilimQatori ikonka={BadgeCheck} nom={t("view.debtReduction")} qiymat={pulniFormatlash(Number(qaytarish.debtReduction) || 0)} />
+                        )}
+                        {qaytarish.refundAmount != null && (
+                          <BilimQatori ikonka={Banknote} nom={t("view.refundAmount")} qiymat={pulniFormatlash(Number(qaytarish.refundAmount) || 0)} />
+                        )}
+                      </dl>
+                    )}
 
-                {hisobKitob && (
-                  <div className="mt-6">
-                    <h3 className="mb-3 text-base font-black text-slate-900">{t("detail.calcTitle")}</h3>
-                    <QaytarishHisobKitobi hisob={hisobKitob} usul={String(qaytarish.refundMethod ?? "CASH").toUpperCase()} ixcham />
-                  </div>
-                )}
-                {qoralama && qoralamaSorovi && (
-                  <div className="mt-6">
-                    <h3 className="mb-3 text-base font-black text-slate-900">{t("detail.calcTitle")}</h3>
-                    <QaytarishOldindanHisobi
-                      holat={qoralamaHisobi}
-                      usul={String(qaytarish.refundMethod ?? "CASH").toUpperCase()}
-                      ixcham
-                      onQaytaUrinish={() => setQoralamaUrinish((son) => son + 1)}
-                    />
-                  </div>
-                )}
-
-                <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  <Malumot
-                    nom={t("view.customer")}
-                    qiymat={qaytarishMijozi(qaytarish, sotuvlar) ?? t("view.customerUnknown")}
-                  />
-                  <Malumot
-                    nom={t("view.warehouse")}
-                    qiymat={
-                      qaytarish.warehouse?.name ??
-                      omborlar.find(
-                        (item) => item.id === qaytarish.warehouseId
-                      )?.name ??
-                      qaytarish.warehouseId
-                    }
-                  />
-                  <Malumot
-                    nom={t("view.reason")}
-                    qiymat={
-                      t(sababniOzbekcha(qaytarish.reason))
-                    }
-                  />
-                  <Malumot
-                    nom={t("view.responsible")}
-                    qiymat={
-                      qaytarish.responsible?.fullName ??
-                      xodimlar.find(
-                        (item) => item.id === qaytarish.responsibleId
-                      )?.fullName ??
-                      t("view.responsibleUnassigned")
-                    }
-                  />
-                  <Malumot
-                    nom={t("view.refundMethod")}
-                    qiymat={
-                      t(refundMethodniOzbekcha(qaytarish.refundMethod))
-                    }
-                  />
-                  {/* Backend tasdiqlashda hisoblagan qiymatlar: mahsulot qiymati avval qarzni yopadi, ortig'i mijozga qaytariladi. */}
-                  {!qoralama && !hisobKitob && qaytarish.refundAmount != null && (
-                    <Malumot nom={t("view.refundAmount")} qiymat={pulniFormatlash(Number(qaytarish.refundAmount) || 0)} />
-                  )}
-                  {!qoralama && !hisobKitob && qaytarish.debtReduction != null && (
-                    <Malumot nom={t("view.debtReduction")} qiymat={pulniFormatlash(Number(qaytarish.debtReduction) || 0)} />
-                  )}
-                </div>
-
-                <div className="mt-7 grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
-                <div className="min-w-0">
-                <div className="overflow-x-auto rounded-[26px] border border-orange-100 bg-white shadow-[0_16px_45px_rgba(37,99,235,.07)]">
-                  <table className="w-full min-w-[650px] text-left text-sm">
-                    <thead className="bg-[#EFF6FF] text-xs font-black uppercase tracking-wide text-slate-500">
-                      <tr>
-                        <th className="px-4 py-3">{t("table.product")}</th>
-                        <th className="px-4 py-3">{t("table.quantity")}</th>
-                        <th className="px-4 py-3">{t("table.price")}</th>
-                        <th className="px-4 py-3">{t("table.total")}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-orange-100">
-                      {(qaytarish.items ?? []).map((item, index) => (
-                        <tr key={item.id ?? `${item.saleItemId}-${index}`} className="transition hover:bg-orange-50/50">
-                          <td className="px-4 py-3 font-bold">
-                            {mahsulotNomi(item)}
-                          </td>
-                          <td className="px-4 py-3">{item.quantity}</td>
-                          <td className="px-4 py-3">
-                            {pulniFormatlash(item.price)}
-                          </td>
-                          <td className="px-4 py-3 font-black">
-                            {pulniFormatlash(item.quantity * item.price)}
-                          </td>
-                        </tr>
-                      ))}
-                      {(qaytarish.items ?? []).length === 0 && (
-                        <tr>
-                          <td
-                            colSpan={4}
-                            className="px-4 py-10 text-center text-gray-400"
-                          >
-                            {t("table.empty")}
-                          </td>
-                        </tr>
+                    {/* Qaytarilgan mahsulotlar */}
+                    <section className="overflow-hidden rounded-[26px] border border-slate-200/80 bg-white shadow-[0_10px_30px_-18px_rgba(15,23,42,.25)]" aria-label={t("detail.itemsTitle")}>
+                      <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-linear-to-r from-orange-50/70 via-white to-white px-5 py-4">
+                        <h3 className="flex items-center gap-2.5 text-base font-black text-slate-900">
+                          <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500 text-white shadow-md shadow-orange-200">
+                            <Boxes size={18} />
+                          </span>
+                          {t("detail.itemsTitle")}
+                        </h3>
+                        <span className="shrink-0 whitespace-nowrap rounded-full bg-white px-3 py-1 text-xs font-black text-slate-600 ring-1 ring-slate-200">
+                          {t("detail.itemsCount", { count: (qaytarish.items ?? []).length })}
+                        </span>
+                      </div>
+                      {(qaytarish.items ?? []).length === 0 ? (
+                        <p className="px-5 py-10 text-center text-sm font-semibold text-gray-400">{t("table.empty")}</p>
+                      ) : (
+                        <>
+                          <table className="hidden w-full text-left text-sm md:table">
+                            <thead className="text-[11px] font-black uppercase tracking-wide text-slate-400">
+                              <tr className="border-b border-slate-100">
+                                <th className="px-5 py-3">{t("table.product")}</th>
+                                <th className="px-5 py-3 text-center">{t("table.quantity")}</th>
+                                <th className="px-5 py-3 text-right">{t("table.price")}</th>
+                                <th className="px-5 py-3 text-right">{t("table.total")}</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {(qaytarish.items ?? []).map((item, index) => {
+                                const qism = mahsulotQismlari(item, t("table.unknownProduct"));
+                                return (
+                                  <tr key={item.id ?? `${item.saleItemId}-${index}`} className="transition hover:bg-orange-50/40">
+                                    <td className="px-5 py-4">
+                                      <div className="flex items-center gap-3">
+                                        <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600 ring-1 ring-orange-100">
+                                          <Package size={18} />
+                                        </span>
+                                        <div className="min-w-0">
+                                          <p className="break-words font-extrabold text-slate-900">{qism.nom}</p>
+                                          {qism.variant && <p className="mt-0.5 text-xs font-semibold text-slate-400">{qism.variant}</p>}
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="px-5 py-4 text-center">
+                                      <span className="inline-flex items-center rounded-full bg-sky-50 px-3 py-1 text-xs font-black tabular-nums text-sky-700 ring-1 ring-sky-100">
+                                        {item.quantity} {t("wizard.unit")}
+                                      </span>
+                                    </td>
+                                    <td className="whitespace-nowrap px-5 py-4 text-right font-semibold tabular-nums text-slate-600">{pulniFormatlash(item.price)}</td>
+                                    <td className="whitespace-nowrap px-5 py-4 text-right text-[15px] font-extrabold tabular-nums text-slate-950">{pulniFormatlash(item.quantity * item.price)}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                          <ul className="divide-y divide-slate-100 md:hidden">
+                            {(qaytarish.items ?? []).map((item, index) => {
+                              const qism = mahsulotQismlari(item, t("table.unknownProduct"));
+                              return (
+                                <li key={item.id ?? `${item.saleItemId}-${index}`} className="flex items-start gap-3 px-5 py-4">
+                                  <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600 ring-1 ring-orange-100">
+                                    <Package size={18} />
+                                  </span>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="break-words text-sm font-extrabold text-slate-900">{qism.nom}</p>
+                                    {qism.variant && <p className="mt-0.5 text-xs font-semibold text-slate-400">{qism.variant}</p>}
+                                    <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold tabular-nums text-slate-500">
+                                      <span className="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-0.5 font-black text-sky-700 ring-1 ring-sky-100">
+                                        {item.quantity} {t("wizard.unit")}
+                                      </span>
+                                      × {pulniFormatlash(item.price)}
+                                    </p>
+                                  </div>
+                                  <p className="shrink-0 text-sm font-extrabold tabular-nums text-slate-950">{pulniFormatlash(item.quantity * item.price)}</p>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </>
                       )}
-                    </tbody>
-                  </table>
-                </div>
+                      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-orange-100 bg-linear-to-r from-orange-50/80 via-orange-50/40 to-white px-5 py-4">
+                        <span className="inline-flex items-center gap-2 text-sm font-bold text-slate-600">
+                          {t("view.amount")}
+                          <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-black tabular-nums text-slate-600 ring-1 ring-orange-100">
+                            {jamiDona} {t("wizard.unit")}
+                          </span>
+                        </span>
+                        <span className="text-2xl font-extrabold tabular-nums text-slate-950">{pulniFormatlash(qaytarishSummasi(qaytarish))}</span>
+                      </div>
+                    </section>
 
-                {qaytarish.reasonComment && (
-                  <div className="mt-5 rounded-[24px] border border-slate-100 bg-white/80 p-5 shadow-sm">
-                    <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                      {t("view.reasonComment")}
-                    </p>
-                    <p className="mt-1 text-sm font-medium text-gray-700">
-                      {qaytarish.reasonComment}
-                    </p>
+                    {qaytarish.reasonComment && (
+                      <section className="rounded-[24px] border border-slate-200/80 bg-white p-5 shadow-sm">
+                        <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">{t("view.reasonComment")}</p>
+                        <p className="mt-1 whitespace-pre-line break-words text-sm font-semibold text-slate-700">{qaytarish.reasonComment}</p>
+                      </section>
+                    )}
+
+                    {qaytarish.note && (
+                      <section className="rounded-[24px] border border-slate-200/80 bg-white p-5 shadow-sm">
+                        <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">{t("view.note")}</p>
+                        <p className="mt-1 whitespace-pre-line break-words text-sm font-semibold text-slate-700">{qaytarish.note}</p>
+                      </section>
+                    )}
                   </div>
-                )}
 
-                {qaytarish.note && (
-                  <div className="mt-5 rounded-[24px] border border-slate-100 bg-white/80 p-5 shadow-sm">
-                    <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                      {t("view.note")}
-                    </p>
-                    <p className="mt-1 text-sm font-medium text-gray-700">
-                      {qaytarish.note}
-                    </p>
-                  </div>
-                )}
-                </div>
-                <QaytarishVaqtChizigi qaytarishId={qaytarish.id} yangilash={vaqtChizigiTokeni} />
+                  <aside className="min-w-0 space-y-6">
+                    {/* Hujjat ma'lumotlari */}
+                    <section className="rounded-[26px] border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6" aria-label={t("detail.infoTitle")}>
+                      <h3 className="text-base font-black text-slate-900">{t("detail.infoTitle")}</h3>
+                      <dl className="mt-4 space-y-4">
+                        <BilimQatori ikonka={User} nom={t("view.customer")} qiymat={qaytarishMijozi(qaytarish, sotuvlar) ?? t("view.customerUnknown")} />
+                        <BilimQatori
+                          ikonka={Receipt}
+                          nom={t("view.sale")}
+                          qiymat={qaytarish.sale ? sotuvRaqami(qaytarish.sale) : sotuvRaqami({ id: qaytarish.saleId })}
+                        />
+                        <BilimQatori
+                          ikonka={Warehouse}
+                          nom={t("view.warehouse")}
+                          qiymat={qaytarish.warehouse?.name ?? omborlar.find((item) => item.id === qaytarish.warehouseId)?.name ?? qaytarish.warehouseId}
+                        />
+                        <BilimQatori
+                          ikonka={UserCheck}
+                          nom={t("view.responsible")}
+                          qiymat={
+                            qaytarish.responsible?.fullName ??
+                            xodimlar.find((item) => item.id === qaytarish.responsibleId)?.fullName ??
+                            t("view.responsibleUnassigned")
+                          }
+                        />
+                        <BilimQatori ikonka={ListChecks} nom={t("view.reason")} qiymat={t(sababniOzbekcha(qaytarish.reason))} />
+                        <BilimQatori ikonka={Banknote} nom={t("view.refundMethod")} qiymat={t(refundMethodniOzbekcha(qaytarish.refundMethod))} />
+                        <BilimQatori ikonka={CalendarClock} nom={t("view.createdAt")} qiymat={sananiFormatlash(qaytarish.createdAt)} />
+                        {qaytarish.confirmedAt && (
+                          <BilimQatori ikonka={CheckCircle2} nom={t("detail.confirmedAt")} qiymat={sananiFormatlash(qaytarish.confirmedAt)} />
+                        )}
+                      </dl>
+                    </section>
+
+                    <QaytarishVaqtChizigi qaytarishId={qaytarish.id} yangilash={vaqtChizigiTokeni} />
+                  </aside>
                 </div>
 
-                <div className="mt-7 flex flex-wrap justify-end gap-3">
+                <div className="mt-7 flex flex-wrap items-center justify-end gap-3">
                   <HujjatOchirish
                     korinish="tugma"
                     guruh="savdo"
@@ -645,8 +725,8 @@ export default function QaytarishTafsilotlariModal({
                       {t("view.editButton")}
                     </button>
                   ) : (
-                    <p className="rounded-2xl bg-gray-100 px-4 py-3 text-sm font-bold text-gray-500">
-                      {t("view.onlyDraftEditable")}
+                    <p className="flex items-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-xs font-bold text-slate-500">
+                      <Info size={14} className="shrink-0" aria-hidden /> {t("view.onlyDraftEditable")}
                     </p>
                   )}
                 </div>
@@ -873,16 +953,33 @@ export default function QaytarishTafsilotlariModal({
   );
 }
 
-function Malumot({ nom, qiymat }: { nom: string; qiymat: string }) {
+// Hujjat holati belgisi (tasdiqlangan / qoralama / bekor qilingan).
+function HolatBelgisi({ holat, matn }: { holat: string; matn: string }) {
+  const uslub =
+    holat === "CONFIRMED"
+      ? { belgi: "bg-emerald-50 text-emerald-700 ring-emerald-100", nuqta: "bg-emerald-500" }
+      : holat === "CANCELLED" || holat === "CANCELED"
+        ? { belgi: "bg-red-50 text-red-600 ring-red-100", nuqta: "bg-red-500" }
+        : { belgi: "bg-amber-50 text-amber-700 ring-amber-100", nuqta: "bg-amber-500" };
   return (
-    <div className="group min-h-[112px] rounded-[24px] border border-orange-100 bg-white/80 p-5 shadow-[0_12px_35px_rgba(37,99,235,.06)] transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-[0_18px_45px_rgba(37,99,235,.10)]">
-      <div className="flex items-center gap-2 text-slate-400">
-        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-50 text-orange-500 transition group-hover:bg-orange-500 group-hover:text-white">
-          <Package size={15} />
-        </span>
-        <span className="text-xs font-bold uppercase tracking-wider">{nom}</span>
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-xs font-black ring-1 ${uslub.belgi}`}>
+      <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${uslub.nuqta}`} />
+      {matn}
+    </span>
+  );
+}
+
+// "Hujjat ma'lumotlari" kartasidagi bitta qator: ikonka, sarlavha va qiymat.
+function BilimQatori({ ikonka: Ikona, nom, qiymat }: { ikonka: LucideIcon; nom: string; qiymat: ReactNode }) {
+  return (
+    <div className="flex items-start gap-3">
+      <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+        <Ikona size={16} />
+      </span>
+      <div className="min-w-0">
+        <dt className="text-[11px] font-black uppercase tracking-wide text-slate-400">{nom}</dt>
+        <dd className="mt-0.5 break-words text-sm font-extrabold text-slate-900">{qiymat}</dd>
       </div>
-      <p className="mt-3 break-words text-base font-black text-slate-800">{qiymat}</p>
     </div>
   );
 }

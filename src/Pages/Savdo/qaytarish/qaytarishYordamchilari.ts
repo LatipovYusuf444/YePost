@@ -8,6 +8,16 @@ import { mijozNomi, sotuvHolati } from "../savdoYordamchilari";
 export type UiSabab = QaytarishSababi;
 export const UI_SABABLAR: UiSabab[] = ["DEFECT", "CUSTOMER_CHANGED_MIND", "WRONG", "NOT_SUITABLE", "OTHER"];
 
+// Har bir asosiy sabab uchun "tezkor izoh" variantlari. Backend sabablari (enum) o'zgarmaydi: tanlangan variantlar
+// sabab izohiga (reasonComment) matn bo'lib yoziladi. Matnlari: savdo_qaytarish → wizard.presets.<kalit>.
+export const SABAB_VARIANTLARI: Record<UiSabab, string[]> = {
+  DEFECT: ["notWorking", "damaged", "packageDamaged", "missingParts", "usedLook", "expired"],
+  CUSTOMER_CHANGED_MIND: ["noLongerNeeded", "tooExpensive", "foundCheaper", "giftRejected", "orderedByMistake"],
+  WRONG: ["wrongModel", "wrongColor", "wrongSize", "wrongQuantity", "mixedUp"],
+  NOT_SUITABLE: ["sizeNotFit", "colorNotLike", "qualityNotSatisfied", "featuresMismatch", "incompatible"],
+  OTHER: ["operatorError", "duplicateOrder", "lateDelivery"],
+};
+
 // Qaytarish raqami: backend `docNumber` (QAY-000003); bo'lmasa hujjat ID sining boshi.
 export function qaytarishRaqami(qaytarish: Qaytarish) {
   return qaytarish.docNumber ?? qaytarish.documentNumber ?? qaytarish.number ?? qaytarish.id.slice(0, 8).toUpperCase();

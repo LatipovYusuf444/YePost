@@ -34,6 +34,17 @@ export function oldindanHisobKitob(javob: QaytarishOldindanJavobi | null | undef
   return Object.values(hisob).every((qiymat) => qiymat !== null) ? hisob : null;
 }
 
+// Backend raqamlari o'zaro mos kelishi: qarz = oldingi qarz − ayrilgan qarz, ayrilgan qarz + qaytarilgan pul ≤ tovar qiymati,
+// hech biri manfiy emas. Mos kelmasa, noto'g'ri summani tasdiqlab yubormaslik uchun hisob-kitob qabul qilinmaydi.
+// (1 so'm — yaxlitlash farqi uchun.)
+export function hisobMuvofiqmi(hisob: HisobKitob) {
+  const { tovarQiymati, mavjudQarz, qarzdanAyriladi, mijozgaQaytariladi, qolganQarz } = hisob;
+  if (tovarQiymati === null || mavjudQarz === null || qarzdanAyriladi === null || mijozgaQaytariladi === null || qolganQarz === null) return false;
+  if ([tovarQiymati, mavjudQarz, qarzdanAyriladi, mijozgaQaytariladi, qolganQarz].some((qiymat) => qiymat < 0)) return false;
+  if (Math.abs(qolganQarz - (mavjudQarz - qarzdanAyriladi)) > 1) return false;
+  return qarzdanAyriladi + mijozgaQaytariladi <= tovarQiymati + 1;
+}
+
 // Backend hujjati (GET /returns/{id}): faqat hujjatning o'z maydonlari. Eski hujjatlarda debtBefore/debtAfter null bo'lishi
 // mumkin — ular null bo'lib qoladi (sotuvning HOZIRGI qarzi tarixiy qiymat o'rniga ishlatilmaydi).
 export function hujjatHisobKitobi(qaytarish: Qaytarish): HisobKitob {
