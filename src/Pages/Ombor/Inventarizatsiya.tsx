@@ -1,5 +1,5 @@
 import AppSelect from "@/Components/ui/AppSelect";
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle, ClipboardList, FileText, Filter, LoaderCircle, Lock, MessageSquareText, Package, Plus, ScanLine, Search, Settings, Trash2, Warehouse } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -10,7 +10,7 @@ import { omborQoldiqlari } from "@/api/omborApi";
 import { useOmborStore } from "@/store/omborStore";
 import { mahalliySanaKaliti } from "@/lib/sanaKaliti";
 import type { InventarizatsiyaTuri, OmborQoldigi } from "@/types/ombor";
-import { holat, hujjatRaqami, modificationNomi, qoldiqMiqdori, sana } from "./omborYordamchilari";
+import { holat, hujjatRaqami, mahsulotQidiruvi, modificationNomi, qoldiqMiqdori, sana } from "./omborYordamchilari";
 import InventoryHujjatModal from "./InventoryHujjatModal";
 import HujjatStatistikaKartalari from "./HujjatStatistikaKartalari";
 import OmborJadval from "./OmborJadval";
@@ -72,6 +72,12 @@ export default function Inventarizatsiya() {
   const [mahsulotMenyuJoylashuvi, setMahsulotMenyuJoylashuvi] = useState({ top: 0, left: 0, width: 0 });
   const mahsulotSearchRef = useRef<HTMLDivElement | null>(null);
   const mahsulotMenyuRef = useRef<HTMLDivElement | null>(null);
+  // Klaviatura bilan boshqarish: ro'yxatdagi faol variant, qidiruv/shtrix-kod maydonlari va jadval.
+  const [mahsulotFaolIndeks, setMahsulotFaolIndeks] = useState(-1);
+  const [fokusNavbati, setFokusNavbati] = useState(0);
+  const mahsulotInputRef = useRef<HTMLInputElement | null>(null);
+  const barcodeInputRef = useRef<HTMLInputElement | null>(null);
+  const jadvalRef = useRef<HTMLDivElement | null>(null);
   const [note, setNote] = useState("");
   const [formaXatosi, setFormaXatosi] = useState<FormaXatosi>(null);
   const [qoldiqYuklanmoqda, setQoldiqYuklanmoqda] = useState(false);
@@ -257,25 +263,102 @@ export default function Inventarizatsiya() {
     return barchaTanlovlar.filter((qoldiq) => !kiritilganIds.has(qoldiq.modificationId));
   }, [barchaTanlovlar, inventarizatsiyaQatorlari]);
 
-  // Qidiruv matniga mos tanlovlar — mahsulot nomi yoki shtrix-kod bo'yicha qidiriladi,
-  // ro'yxat katta bo'lganda mahsulotni qo'lda topish uchun.
-  const mahsulotQidiruviMoslari = useMemo(() => {
-    const q = mahsulotQidiruv.trim().toLowerCase();
-    if (!q) return tanlanmaganTanlovlar;
-    return tanlanmaganTanlovlar.filter((qoldiq) => {
-      const nomi = modificationNomi(qoldiq.modification).toLowerCase();
-      const barcode = (qoldiq.modification?.barcode ?? "").toLowerCase();
-      return nomi.includes(q) || barcode.includes(q);
-    });
-  }, [tanlanmaganTanlovlar, mahsulotQidiruv]);
+  // Qidiruv matniga mos tanlovlar — mahsulot nomi, shtrix-kod yoki artikul bo'yicha qidiriladi.
+  // Tartib backend qidiruvi bilan bir xil (aniq mos kelgani birinchi), chunki Enter birinchi natijani qo'shadi.
+  const mahsulotQidiruviMoslari = useMemo(
+    () => mahsulotQidiruvi(tanlanmaganTanlovlar, mahsulotQidiruv),
+    [tanlanmaganTanlovlar, mahsulotQidiruv]
+  );
 
   function mahsulotQoshish(modificationId: string) {
+    if (qoldiqYuklanmoqda) return;
     const qoldiq = barchaTanlovlar.find((item) => item.modificationId === modificationId);
     if (!qoldiq) return;
-    setTanlanganModifikatsiyaIds((oldingi) => [...oldingi, modificationId]);
+    // Tez-tez bosilgan Enter yoki ikki marta bosish bitta mahsulotni ikki marta qo'shmasin.
+    if (inventarizatsiyaQatorlari.some((item) => item.modificationId === modificationId)) return;
+    setTanlanganModifikatsiyaIds((oldingi) => (oldingi.includes(modificationId) ? oldingi : [...oldingi, modificationId]));
     setMahsulotQidiruv("");
-    setMahsulotDropdownOchiq(false);
+    // Keyingi mahsulot uchun ro'yxat avtomatik ochiq qoladi (hech narsa belgilanmagan: tasodifiy Enter hech narsa qo'shmaydi).
+    // Tanlanmagan mahsulot qolmasa, qidiruv qatori yo'qoladi — ro'yxat ham yopiladi.
+    setMahsulotDropdownOchiq(tanlanmaganTanlovlar.length > 1);
+    setMahsulotFaolIndeks(-1);
+    // Yangi qator qo'shilgach fokus yana mahsulot qidiruv maydoniga qaytadi (keyingi mahsulot uchun).
+    setFokusNavbati((navbat) => navbat + 1);
   }
+
+  // Qidiruv maydonida: ↑/↓ — ro'yxatda yurish, Enter — tanlangan mahsulotni qo'shish, Escape — ro'yxatni yopish.
+  function mahsulotKlavishi(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.nativeEvent.isComposing) return;
+    const moslar = mahsulotQidiruviMoslari;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      if (moslar.length === 0) {
+        setMahsulotDropdownOchiq(true);
+        return;
+      }
+      const pastga = event.key === "ArrowDown";
+      let keyingi: number;
+      if (!mahsulotDropdownOchiq) keyingi = pastga ? 0 : moslar.length - 1;
+      else if (pastga) keyingi = (mahsulotFaolIndeks + 1) % moslar.length;
+      else keyingi = mahsulotFaolIndeks <= 0 ? moslar.length - 1 : mahsulotFaolIndeks - 1;
+      setMahsulotDropdownOchiq(true);
+      setMahsulotFaolIndeks(keyingi);
+      window.requestAnimationFrame(() => {
+        document.getElementById(`inventory-product-option-${keyingi}`)?.scrollIntoView({ block: "nearest" });
+      });
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!mahsulotDropdownOchiq) {
+        // Ro'yxat Escape bilan yopilgan bo'lsa, Enter uni qayta ochadi (mahsulot qo'shilmaydi).
+        if (mahsulotQidiruv.trim()) {
+          setMahsulotDropdownOchiq(true);
+          setMahsulotFaolIndeks(0);
+        }
+        return;
+      }
+      const tanlangan = moslar[mahsulotFaolIndeks];
+      if (tanlangan) mahsulotQoshish(tanlangan.modificationId);
+      return;
+    }
+    if (event.key === "Escape" && mahsulotDropdownOchiq) {
+      event.preventDefault();
+      event.stopPropagation();
+      setMahsulotDropdownOchiq(false);
+      setMahsulotFaolIndeks(-1);
+      return;
+    }
+    if (event.key === "Tab") setMahsulotDropdownOchiq(false);
+  }
+
+  // Miqdor maydonida Enter — keyingi qatorning miqdoriga, oxirgi qatorda esa mahsulot qidiruviga o'tadi.
+  function keyingiMiqdorgaOtish(joriy: HTMLInputElement) {
+    const maydonlar = Array.from(jadvalRef.current?.querySelectorAll<HTMLInputElement>("input[data-inventory-qty]") ?? []);
+    const keyingi = maydonlar[maydonlar.indexOf(joriy) + 1];
+    if (keyingi) {
+      keyingi.focus();
+      keyingi.select();
+      return;
+    }
+    mahsulotInputRef.current?.focus();
+  }
+
+  useEffect(() => {
+    if (fokusNavbati === 0) return;
+    const qidiruv = mahsulotInputRef.current;
+    if (qidiruv) {
+      if (document.activeElement !== qidiruv) qidiruv.focus({ preventScroll: true });
+      qidiruv.scrollIntoView({ block: "nearest" });
+      // Qidiruv qatori pastga siljigan: ochiq ro'yxat yangi joyga ko'chadi.
+      mahsulotMenyuJoylashuviniYangilash();
+      return;
+    }
+    // Barcha mahsulotlar qo'shib bo'lingan: qidiruv qatori yo'q, oxirgi miqdor maydoniga o'tamiz.
+    const maydonlar = jadvalRef.current?.querySelectorAll<HTMLInputElement>("input[data-inventory-qty]");
+    maydonlar?.[maydonlar.length - 1]?.focus();
+  }, [fokusNavbati, mahsulotMenyuJoylashuviniYangilash]);
 
   function barcodeSanash() {
     const code = barcodeInput.trim().toLowerCase();
@@ -283,6 +366,8 @@ export default function Inventarizatsiya() {
     const matches = barchaTanlovlar.filter((row) => row.modification?.barcode?.trim().toLowerCase() === code);
     if (matches.length !== 1) {
       setScanFeedback(t(matches.length ? "inventarizatsiya.createModal.scanAmbiguous" : "inventarizatsiya.createModal.scanNotFound"));
+      // Keyingi skan xato kod bilan qo'shilib ketmasligi uchun matn belgilab qo'yiladi (yangi skan uni almashtiradi).
+      barcodeInputRef.current?.select();
       return;
     }
     const row = matches[0];
@@ -297,6 +382,8 @@ export default function Inventarizatsiya() {
     setBarcodeInput("");
     setScanFeedback(t("inventarizatsiya.createModal.scanSuccess", { name: modificationNomi(row.modification) }));
     setFormaXatosi(null);
+    // "Sanash" tugmasi bosilgan bo'lsa ham fokus shtrix-kod maydonida qoladi — keyingi skanga tayyor.
+    barcodeInputRef.current?.focus();
   }
 
   const inventarizatsiyaStatistikasi = useMemo(() => {
@@ -386,6 +473,7 @@ export default function Inventarizatsiya() {
     setTanlanganModifikatsiyaIds([]);
     setMahsulotQidiruv("");
     setMahsulotDropdownOchiq(false);
+    setMahsulotFaolIndeks(-1);
     setNote("");
     setFormaXatosi(null);
     setModal(true);
@@ -407,6 +495,7 @@ export default function Inventarizatsiya() {
     setTanlanganModifikatsiyaIds([]);
     setMahsulotQidiruv("");
     setMahsulotDropdownOchiq(false);
+    setMahsulotFaolIndeks(-1);
     setFormaXatosi(null);
     store.xatolikniTozalash();
     if (!id) return;
@@ -734,7 +823,7 @@ export default function Inventarizatsiya() {
                 {warehouseId && !qoldiqYuklanmoqda && <>
                   <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50/40 p-4">
                     <label htmlFor="inventory-barcode" className="flex items-center gap-2 text-sm font-black text-blue-800"><ScanLine size={18} />{t("inventarizatsiya.createModal.scanTitle")}</label>
-                    <div className="mt-2 flex gap-2"><input id="inventory-barcode" value={barcodeInput} onChange={(event) => setBarcodeInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); barcodeSanash(); } }} placeholder={t("inventarizatsiya.createModal.scanPlaceholder")} className="h-11 min-w-0 flex-1 rounded-xl border border-blue-200 bg-white px-3 outline-none focus:border-blue-500" /><button type="button" onClick={barcodeSanash} disabled={!barcodeInput.trim()} className="rounded-xl bg-blue-600 px-4 text-sm font-bold text-white disabled:opacity-50">{t("inventarizatsiya.createModal.scanButton")}</button></div>
+                    <div className="mt-2 flex gap-2"><input id="inventory-barcode" ref={barcodeInputRef} autoComplete="off" value={barcodeInput} onChange={(event) => setBarcodeInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); if (!event.nativeEvent.isComposing) barcodeSanash(); } }} placeholder={t("inventarizatsiya.createModal.scanPlaceholder")} className="h-11 min-w-0 flex-1 rounded-xl border border-blue-200 bg-white px-3 outline-none focus:border-blue-500" /><button type="button" onClick={barcodeSanash} disabled={!barcodeInput.trim()} className="rounded-xl bg-blue-600 px-4 text-sm font-bold text-white disabled:opacity-50">{t("inventarizatsiya.createModal.scanButton")}</button></div>
                     <p className="mt-2 text-xs text-slate-500">{t("inventarizatsiya.createModal.scanHint")}</p>
                     {scanFeedback && <p role="status" className="mt-2 text-xs font-bold text-blue-700">{scanFeedback}</p>}
                   </div>
@@ -755,7 +844,7 @@ export default function Inventarizatsiya() {
                     {t("inventarizatsiya.createModal.selectWarehouseHint")}
                   </div>
                 ) : (
-                  <div className="mt-4 overflow-x-auto rounded-2xl border border-blue-100 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-blue-400 [&::-webkit-scrollbar-track]:bg-blue-50">
+                  <div ref={jadvalRef} className="mt-4 overflow-x-auto rounded-2xl border border-blue-100 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-blue-400 [&::-webkit-scrollbar-track]:bg-blue-50">
                     <table className="w-full min-w-[960px] text-left text-sm">
                       <thead className="bg-[#F4F8FF] text-xs font-black uppercase text-slate-500">
                         <tr>
@@ -786,11 +875,17 @@ export default function Inventarizatsiya() {
                                   type="number"
                                   min="0"
                                   step="any"
+                                  data-inventory-qty
                                   value={haqiqiyRaw}
                                   placeholder={t("inventarizatsiya.createModal.quantityPlaceholder")}
                                   onChange={(event) => {
                                     setFormaXatosi(null);
                                     setActuals((oldingi) => ({ ...oldingi, [qoldiq.modificationId]: event.target.value }));
+                                  }}
+                                  onKeyDown={(event) => {
+                                    if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+                                    event.preventDefault();
+                                    keyingiMiqdorgaOtish(event.currentTarget);
                                   }}
                                   className="h-10 w-32 rounded-xl border border-blue-100 bg-white px-3 font-bold outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                                   aria-label={t("inventarizatsiya.createModal.actualQuantityAria", { name: modificationNomi(qoldiq.modification) })}
@@ -833,12 +928,21 @@ export default function Inventarizatsiya() {
                             <td className="px-4 py-3">
                               <div ref={mahsulotSearchRef} className="relative">
                                 <input
+                                  ref={mahsulotInputRef}
                                   value={mahsulotQidiruv}
                                   onChange={(event) => {
                                     setMahsulotQidiruv(event.target.value);
+                                    setMahsulotFaolIndeks(event.target.value.trim() ? 0 : -1);
                                     setMahsulotDropdownOchiq(true);
                                   }}
                                   onFocus={() => setMahsulotDropdownOchiq(true)}
+                                  onKeyDown={mahsulotKlavishi}
+                                  autoComplete="off"
+                                  role="combobox"
+                                  aria-expanded={mahsulotDropdownOchiq}
+                                  aria-controls="inventory-product-list"
+                                  aria-autocomplete="list"
+                                  aria-activedescendant={mahsulotDropdownOchiq && mahsulotFaolIndeks >= 0 ? `inventory-product-option-${mahsulotFaolIndeks}` : undefined}
                                   aria-label={t("inventarizatsiya.createModal.table.product")}
                                   placeholder={t("inventarizatsiya.createModal.selectProduct")}
                                   className="h-10 w-full min-w-64 rounded-xl border border-blue-100 bg-white px-3 font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
@@ -848,15 +952,26 @@ export default function Inventarizatsiya() {
                                 createPortal(
                                   <div
                                     ref={mahsulotMenyuRef}
+                                    id="inventory-product-list"
+                                    role="listbox"
                                     className="fixed z-100000 max-h-64 overflow-y-auto rounded-2xl border border-blue-100 bg-white p-1.5 shadow-[0_18px_44px_rgba(15,23,42,.16)]"
                                     style={{ top: mahsulotMenyuJoylashuvi.top, left: mahsulotMenyuJoylashuvi.left, width: Math.max(mahsulotMenyuJoylashuvi.width, 256) }}
                                   >
-                                    {mahsulotQidiruviMoslari.map((qoldiq) => (
+                                    {mahsulotQidiruviMoslari.map((qoldiq, optionIndex) => (
                                       <button
                                         key={qoldiq.modificationId}
+                                        id={`inventory-product-option-${optionIndex}`}
+                                        role="option"
+                                        aria-selected={optionIndex === mahsulotFaolIndeks}
                                         type="button"
+                                        tabIndex={-1}
+                                        // Sichqoncha bilan tanlaganda qidiruv maydoni fokusini yo'qotmasin (keyingi mahsulotni darrov yozish uchun).
+                                        onMouseDown={(event) => event.preventDefault()}
+                                        onMouseMove={() => {
+                                          if (optionIndex !== mahsulotFaolIndeks) setMahsulotFaolIndeks(optionIndex);
+                                        }}
                                         onClick={() => mahsulotQoshish(qoldiq.modificationId)}
-                                        className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-slate-700 hover:bg-blue-50"
+                                        className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-slate-700 hover:bg-blue-50 ${optionIndex === mahsulotFaolIndeks ? "bg-blue-50" : ""}`}
                                       >
                                         <span className="truncate">{modificationNomi(qoldiq.modification)}</span>
                                         {qoldiq.modification?.barcode && (
@@ -865,7 +980,7 @@ export default function Inventarizatsiya() {
                                       </button>
                                     ))}
                                     {mahsulotQidiruviMoslari.length === 0 && (
-                                      <p className="px-3 py-2.5 text-xs font-semibold text-slate-400">{t("inventarizatsiya.createModal.searchEmpty")}</p>
+                                      <p role="status" className="px-3 py-2.5 text-xs font-semibold text-slate-400">{t("inventarizatsiya.createModal.searchEmpty")}</p>
                                     )}
                                   </div>,
                                   document.body
