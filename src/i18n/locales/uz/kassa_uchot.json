@@ -228,5 +228,38 @@
       "draftOnlyDeletable": "Faqat qoralama yoki bekor qilingan bonusni o'chirish mumkin.",
       "supplierNotFound": "Bunday zavod topilmadi."
     }
+  },
+  "view": {
+    "amountIncome": "Tushum summasi",
+    "amountExpense": "Chiqim summasi",
+    "detailsTitle": "Amaliyot ma'lumotlari",
+    "name": "Nomi",
+    "customer": "Mijoz",
+    "employee": "Xodim",
+    "supplier": "Yetkazib beruvchi",
+    "statusTitle": "Holat",
+    "status": {
+      "tasdiqlangan": "Tasdiqlangan",
+      "qoralama": "Qoralama",
+      "bekor_qilingan": "Bekor qilingan"
+    },
+    "statusHint": {
+      "tasdiqlangan": "Summa kassada hisobga olingan.",
+      "qoralama": "Hujjat saqlangan, lekin hali tasdiqlanmagan — kassada hisobga olinmaydi. Uni tahrirlash mumkin.",
+      "bekor_qilingan": "Hujjat bekor qilingan va kassada hisobga olinmaydi."
+    },
+    "sourceTitle": "Manba",
+    "source": {
+      "SALE": "Sotuv to'lovi",
+      "RETURN": "Mahsulot qaytarish",
+      "CASH_IN": "Kassa kirimi",
+      "EXPENSE": "Xarajat",
+      "CASH_OPERATION": "Kassa amaliyoti"
+    },
+    "sourceHint": {
+      "SALE": "Bu yozuv sotuvdan avtomatik keladi va sotuv bo'limida boshqariladi.",
+      "RETURN": "Bu yozuv qaytarishdan avtomatik keladi va qaytarish bo'limida boshqariladi."
+    },
+    "noComment": "Izoh qoldirilmagan"
   }
 }

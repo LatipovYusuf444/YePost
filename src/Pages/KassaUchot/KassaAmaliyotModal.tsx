@@ -17,6 +17,7 @@ import { foydalanuvchilarApi } from "@/api/accountsApi";
 import { mijozlarApi, yetkazibBeruvchilarApi } from "@/api/partnersApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
+import KassaAmaliyotKorinishi from "./KassaAmaliyotKorinishi";
 import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali } from "./types";
 import {
   hozir,
@@ -135,6 +136,10 @@ export default function KassaAmaliyotModal({
     mavjudHolat === "bekor_qilingan" ||
     !tahrirRejim;
 
+  // Mavjud amaliyotni ko'rish: modal tarkibiga qarab o'lchamlanadi (pastda bo'sh joy qolmaydi).
+  // Yaratish va tahrirlash formasi avvalgidek butun balandlikda.
+  const korishRejimi = Boolean(boshlangich) && readonly;
+
   const yonalish = turYonalishi[turi];
   const tushum = yonalish === "tushum";
   const partiya = partiyaTuri(turi);
@@ -210,8 +215,8 @@ export default function KassaAmaliyotModal({
   }
 
   return (
-    <AppModal className="!items-stretch !p-3 sm:!p-5 sm:!pl-[88px]">
-      <div className="relative flex min-h-0 w-full">
+    <AppModal className={`${korishRejimi ? "!items-center" : "!items-stretch"} !p-3 sm:!p-5 sm:!pl-[88px]`}>
+      <div className={`relative flex min-h-0 w-full ${korishRejimi ? "max-h-full max-w-[1120px]" : ""}`}>
         {/* Modaldan chiqib turadigan yopish (X) — chap chetда */}
         <button
           type="button"
@@ -224,7 +229,7 @@ export default function KassaAmaliyotModal({
 
         <form
           onSubmit={(event) => event.preventDefault()}
-          className="flex min-h-0 w-full flex-col overflow-hidden rounded-[32px] border border-orange-100 bg-[#F8FAFC] shadow-[0_28px_90px_rgba(15,23,42,.32)]"
+          className={`flex min-h-0 w-full flex-col overflow-hidden rounded-[32px] border border-orange-100 bg-[#F8FAFC] shadow-[0_28px_90px_rgba(15,23,42,.32)] ${korishRejimi ? "max-h-full" : ""}`}
         >
         <header className="flex shrink-0 items-center justify-between border-b border-orange-100 bg-white/75 px-5 py-4 sm:px-8">
           {/* Chapda: sarlavha (X modaldan tashqarida) */}
@@ -280,6 +285,10 @@ export default function KassaAmaliyotModal({
             </div>
           )}
 
+          {boshlangich && korishRejimi ? (
+            // Mavjud amaliyotni ko'rish: o'chirilgan forma o'rniga alohida ko'rinish (yaratish/tahrirlash formasi o'zgarmagan).
+            <KassaAmaliyotKorinishi amaliyot={boshlangich} />
+          ) : (
           <fieldset disabled={readonly} className="m-0 grid gap-5 border-0 p-0 xl:grid-cols-2">
             {/* --- Chap: pul tushumi haqida --- */}
             <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
@@ -472,6 +481,7 @@ export default function KassaAmaliyotModal({
               </section>
             </div>
           </fieldset>
+          )}
         </div>
 
         {tahrirRejim && (
