@@ -152,6 +152,16 @@ export function qaytarishSummasi(qaytarish: Qaytarish) {
   return backendJami > 0 || itemsJami === 0 ? backendJami : itemsJami;
 }
 
+// Donalik savdoda kassir yozgan mijoz ismi uchun backendda alohida maydon yo'q (CreateSaleDto: faqat customerId,
+// clientCompanyId va note). Shuning uchun Bosh sahifa uni sotuv izohiga "Mijoz: <ism> | <izoh>" ko'rinishida yozadi.
+// Sotuvga ro'yxatdagi mijoz yoki kompaniya biriktirilmagan bo'lsa, ism shu izohdan o'qiladi.
+const DONALIK_MIJOZ_IZOHI = /^\s*Mijoz:\s*([^|\n]+?)\s*(?:\||$|\n)/;
+
+export function donalikMijozNomi(sotuv: Pick<Sotuv, "note" | "customer" | "customerId" | "clientCompany" | "clientCompanyId">) {
+  if (sotuv.customer || sotuv.customerId || sotuv.clientCompany || sotuv.clientCompanyId) return "";
+  return DONALIK_MIJOZ_IZOHI.exec(sotuv.note ?? "")?.[1]?.trim() ?? "";
+}
+
 export function mijozNomi(sotuv: Sotuv) {
   const mijoz = sotuv.customer;
   const jismoniyMijoz = [mijoz?.firstName, mijoz?.lastName].filter(Boolean).join(" ");
@@ -161,6 +171,7 @@ export function mijozNomi(sotuv: Sotuv) {
     mijoz?.fullName ||
     mijoz?.name ||
     sotuv.clientCompany?.name ||
+    donalikMijozNomi(sotuv) ||
     "Donalik mijoz"
   );
 }

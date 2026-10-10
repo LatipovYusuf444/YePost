@@ -66,6 +66,7 @@ import type { Activity, Attachment, ChatMessage, Comment } from "@/types/crm";
 import type { Ombor } from "@/types/ombor";
 import type { QoldiqTanlovi, SaleAuditLog, Sotuv, SotuvTolovi, SotuvYaratishMalumoti, TolovTuri, XodimTanlovi, YetkazishMalumoti, YetkazishPayload } from "@/types/savdo";
 import {
+  donalikMijozNomi,
   masulNomi,
   mijozNomi,
   pulniFormatlash,
@@ -225,6 +226,7 @@ function modalMijozNomi(sotuv: Sotuv) {
     sotuv.customer?.fullName ||
     sotuv.customer?.name ||
     sotuv.clientCompany?.name ||
+    donalikMijozNomi(sotuv) ||
     "-"
   );
 }
