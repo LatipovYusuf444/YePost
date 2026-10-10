@@ -32,23 +32,48 @@ export function modificationNomi(modification?: MahsulotModifikatsiyasi) {
 // avval shtrix-kod yoki artikul to'liq mos kelgani, keyin nomi to'liq mos kelgani, keyin qolganlari alifbo bo'yicha.
 // Enter birinchi natijani qo'shgani uchun "3-6-35" yozilganda "3-6-350" emas, aynan "3-6-35" birinchi turishi shart.
 // Qidiruv matni bo'sh bo'lsa ro'yxat o'zgarishsiz qaytariladi.
-export function mahsulotQidiruvi(qoldiqlar: OmborQoldigi[], qidiruv: string): OmborQoldigi[] {
+export function modifikatsiyaQidiruvi<T>(
+  royxat: T[],
+  qidiruv: string,
+  modifikatsiyasi: (element: T) => MahsulotModifikatsiyasi | undefined
+): T[] {
   const q = qidiruv.trim().toLowerCase();
-  if (!q) return qoldiqlar;
+  if (!q) return royxat;
   const kichik = (qiymat?: string | null) => (qiymat ?? "").trim().toLowerCase();
-  const natija: Array<{ qoldiq: OmborQoldigi; daraja: number; nom: string }> = [];
-  for (const qoldiq of qoldiqlar) {
-    const modifikatsiya = qoldiq.modification;
+  const natija: Array<{ element: T; daraja: number; nom: string }> = [];
+  for (const element of royxat) {
+    const modifikatsiya = modifikatsiyasi(element);
     const nom = modificationNomi(modifikatsiya);
     const barcode = kichik(modifikatsiya?.barcode);
     const artikul = kichik(modifikatsiya?.article);
     if (!nom.toLowerCase().includes(q) && !barcode.includes(q) && !artikul.includes(q)) continue;
     const nomAniq = [nom, modifikatsiya?.product?.name, modifikatsiya?.name].some((qiymat) => kichik(qiymat) === q);
-    natija.push({ qoldiq, daraja: barcode === q || artikul === q ? 0 : nomAniq ? 1 : 2, nom });
+    natija.push({ element, daraja: barcode === q || artikul === q ? 0 : nomAniq ? 1 : 2, nom });
   }
   return natija
     .sort((a, b) => a.daraja - b.daraja || a.nom.localeCompare(b.nom, "uz", { sensitivity: "base" }))
-    .map((item) => item.qoldiq);
+    .map((item) => item.element);
+}
+
+export function mahsulotQidiruvi(qoldiqlar: OmborQoldigi[], qidiruv: string): OmborQoldigi[] {
+  return modifikatsiyaQidiruvi(qoldiqlar, qidiruv, (qoldiq) => qoldiq.modification);
+}
+
+// Shtrix-kod yoki artikul to'liq mos kelgan modifikatsiyalar (skaner uchun). Katta-kichik harfga qaramaydi.
+export function kodBilanTopish<T>(
+  royxat: T[],
+  kod: string,
+  modifikatsiyasi: (element: T) => MahsulotModifikatsiyasi | undefined
+): T[] {
+  const q = kod.trim().toLowerCase();
+  if (!q) return [];
+  return royxat.filter((element) => {
+    const modifikatsiya = modifikatsiyasi(element);
+    return (
+      (modifikatsiya?.barcode ?? "").trim().toLowerCase() === q ||
+      (modifikatsiya?.article ?? "").trim().toLowerCase() === q
+    );
+  });
 }
 
 export function qoldiqMiqdori(qoldiq: OmborQoldigi) {

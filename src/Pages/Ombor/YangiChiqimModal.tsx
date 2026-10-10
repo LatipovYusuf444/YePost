@@ -1,5 +1,5 @@
 import AppSelect from "@/Components/ui/AppSelect";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Barcode,
   CalendarDays,
@@ -18,7 +18,9 @@ import { useTranslation } from "react-i18next";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useOmborStore } from "@/store/omborStore";
 import type { ChiqimSababi } from "@/types/ombor";
-import { modificationNomi, pul, qoldiqMiqdori } from "./omborYordamchilari";
+import { kodBilanTopish, modificationNomi, pul, qoldiqMiqdori } from "./omborYordamchilari";
+import MahsulotTanlov, { type MahsulotVarianti } from "./MahsulotTanlov";
+import ShtrixKodMaydoni, { type SkanNatijasi } from "./ShtrixKodMaydoni";
 
 type Props = { onClose: () => void };
 type Qator = { id: string; modificationId: string; quantity: number };
@@ -57,6 +59,22 @@ export default function YangiChiqimModal({ onClose }: Props) {
   const [note, setNote] = useState("");
   const [qatorlar, setQatorlar] = useState<Qator[]>([yangiQator()]);
   const [xato, setXato] = useState("");
+  // Klaviatura bilan tez kiritish: keyingi fokus (mahsulot ro'yxati yoki miqdor maydoni).
+  const { t: tk } = useTranslation("ombor_kichik");
+  const [fokus, setFokus] = useState<{ qatorId: string; maydon: "mahsulot" | "miqdor"; n: number } | null>(null);
+  const fokusNavbati = useRef(0);
+  const qatorlarRef = useRef<HTMLDivElement | null>(null);
+
+  // Mahsulot ro'yxatini ochishni MahsulotTanlov o'zi bajaradi (`ochishSorovi`); miqdor maydoniga fokusni shu yerda beramiz.
+  useEffect(() => {
+    if (!fokus) return;
+    if (fokus.maydon === "miqdor") {
+      const maydon = qatorlarRef.current?.querySelector<HTMLInputElement>(`input[data-chiqim-miqdor="${fokus.qatorId}"]`);
+      maydon?.focus();
+      maydon?.select();
+    }
+    setFokus(null);
+  }, [fokus]);
 
   const bugun = useMemo(
     () => new Intl.DateTimeFormat("uz-UZ", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date()),
@@ -98,6 +116,73 @@ export default function YangiChiqimModal({ onClose }: Props) {
 
   function qatorniYangilash(id: string, value: Partial<Qator>) {
     setQatorlar((rows) => rows.map((row) => (row.id === id ? { ...row, ...value } : row)));
+  }
+
+  function fokusSoralish(qatorId: string, maydon: "mahsulot" | "miqdor") {
+    fokusNavbati.current += 1;
+    setFokus({ qatorId, maydon, n: fokusNavbati.current });
+  }
+
+  // Tanlash ro'yxati: ombordagi qoldig'i bor mahsulotlar; boshqa qatorda tanlangani ko'rinadi, lekin tanlab bo'lmaydi (takror yo'q).
+  function mahsulotVariantlari(qatorId: string): MahsulotVarianti[] {
+    const korilgan = new Set<string>();
+    const royxat: MahsulotVarianti[] = [];
+    for (const item of mavjudMahsulotlar) {
+      if (korilgan.has(item.modificationId)) continue;
+      korilgan.add(item.modificationId);
+      royxat.push({
+        id: item.modificationId,
+        modification: item.modification ?? store.modifikatsiyalar.find((modification) => modification.id === item.modificationId),
+        disabled: qatorlar.some((boshqa) => boshqa.id !== qatorId && boshqa.modificationId === item.modificationId),
+      });
+    }
+    return royxat;
+  }
+
+  // Miqdorda Enter: keyingi qatorga o'tadi. Keyingi qator yo'q bo'lsa va joriy qatorda mahsulot bor bo'lsa,
+  // yangi qator qo'shiladi va uning mahsulot ro'yxati ochiladi.
+  function keyingiQatorgaOtish(qatorId: string) {
+    const index = qatorlar.findIndex((row) => row.id === qatorId);
+    const joriy = qatorlar[index];
+    if (!joriy?.modificationId || !(joriy.quantity > 0)) return;
+    const keyingi = qatorlar[index + 1];
+    if (keyingi) {
+      fokusSoralish(keyingi.id, keyingi.modificationId ? "miqdor" : "mahsulot");
+      return;
+    }
+    const yangi = yangiQator();
+    setQatorlar((rows) => [...rows, yangi]);
+    fokusSoralish(yangi.id, "mahsulot");
+  }
+
+  // Shtrix-kod (yoki artikul) to'liq mos kelsa mahsulot qo'shiladi; qator bor bo'lsa miqdori 1 taga oshadi (qoldiqdan oshmaydi).
+  function kodniQoshish(kod: string): SkanNatijasi {
+    const mos = kodBilanTopish(
+      omborQoldiqlari,
+      kod,
+      (item) => item.modification ?? store.modifikatsiyalar.find((modification) => modification.id === item.modificationId)
+    );
+    if (mos.length === 0) return { xato: true, matn: tk("shtrixKod.notFound") };
+    if (new Set(mos.map((item) => item.modificationId)).size > 1) return { xato: true, matn: tk("shtrixKod.ambiguous") };
+    const qoldiq = mos[0];
+    const mod = qoldiq.modification ?? store.modifikatsiyalar.find((modification) => modification.id === qoldiq.modificationId);
+    const nom = modificationNomi(mod);
+    const mavjud = Number(qoldiqMiqdori(qoldiq));
+    if (!(mavjud > 0)) return { xato: true, matn: tk("shtrixKod.outOfStock", { name: nom }) };
+    const bor = qatorlar.find((row) => row.modificationId === qoldiq.modificationId);
+    if (bor) {
+      const yangiMiqdor = Number(bor.quantity || 0) + 1;
+      if (yangiMiqdor > mavjud) return { xato: true, matn: tk("shtrixKod.notEnough", { name: nom, available: mavjud }) };
+      qatorniYangilash(bor.id, { quantity: yangiMiqdor });
+      return { xato: false, matn: tk("shtrixKod.added", { name: nom, qty: yangiMiqdor }) };
+    }
+    const bosh = qatorlar.find((row) => !row.modificationId);
+    if (bosh) {
+      qatorniYangilash(bosh.id, { modificationId: qoldiq.modificationId });
+      return { xato: false, matn: tk("shtrixKod.added", { name: nom, qty: bosh.quantity || 1 }) };
+    }
+    setQatorlar((rows) => [...rows, { ...yangiQator(), modificationId: qoldiq.modificationId }]);
+    return { xato: false, matn: tk("shtrixKod.added", { name: nom, qty: 1 }) };
   }
 
   function omborniAlmashtirish(value: string) {
@@ -211,8 +296,12 @@ export default function YangiChiqimModal({ onClose }: Props) {
               </button>
             </div>
 
+            <div className="mb-4">
+              <ShtrixKodMaydoni onSkan={kodniQoshish} inputClassName={input} />
+            </div>
+
             <div className="scrollbar-orange overflow-x-auto pb-2">
-              <div className="min-w-[1220px] space-y-3">
+              <div ref={qatorlarRef} className="min-w-[1220px] space-y-3">
                 <div className="grid grid-cols-[42px_76px_2.1fr_1fr_1fr_1fr_1.35fr_1fr_1fr_48px] gap-3 px-3 text-[13px] font-semibold text-slate-600">
                   <span>{t("yangiChiqimModal.items.columns.number")}</span><span /><span>{t("yangiChiqimModal.items.columns.product")}</span><span>{t("yangiChiqimModal.items.columns.barcode")}</span><span>{t("yangiChiqimModal.items.columns.costPrice")}</span><span>{t("yangiChiqimModal.items.columns.quantity")}</span><span>{t("yangiChiqimModal.items.columns.warehouse")}</span><span>{t("yangiChiqimModal.items.columns.stock")}</span><span>{t("yangiChiqimModal.items.columns.amount")}</span><span />
                 </div>
@@ -225,17 +314,22 @@ export default function YangiChiqimModal({ onClose }: Props) {
                     <div key={row.id} className="grid grid-cols-[42px_76px_2.1fr_1fr_1fr_1fr_1.35fr_1fr_1fr_48px] items-center gap-3 rounded-2xl border border-orange-100 bg-[#FFFFFF] p-3">
                       <span className="text-center text-sm font-black text-slate-400">{index + 1}</span>
                       <div className="flex h-12 items-center justify-center rounded-xl border border-dashed border-orange-200 bg-white text-slate-300"><Image size={20} /></div>
-                      <AppSelect value={row.modificationId} onChange={(event) => qatorniYangilash(row.id, { modificationId: event.target.value })} className={`${input} min-w-0`}>
-                        <option value="">{t("yangiChiqimModal.items.selectProduct")}</option>
-                        {mavjudMahsulotlar.map((item, itemIndex) => (
-                          <option key={`${item.modificationId}-${itemIndex}`} value={item.modificationId} disabled={qatorlar.some((boshqa) => boshqa.id !== row.id && boshqa.modificationId === item.modificationId)}>
-                            {modificationNomi(item.modification ?? store.modifikatsiyalar.find((modification) => modification.id === item.modificationId))}
-                          </option>
-                        ))}
-                      </AppSelect>
+                      <MahsulotTanlov
+                        value={row.modificationId}
+                        variantlar={mahsulotVariantlari(row.id)}
+                        onChange={(id) => {
+                          qatorniYangilash(row.id, { modificationId: id });
+                          // Mahsulot tanlangach fokus shu qatorning miqdoriga o'tadi.
+                          fokusSoralish(row.id, "miqdor");
+                        }}
+                        placeholder={t("yangiChiqimModal.items.selectProduct")}
+                        className={input}
+                        tanlanganNomi={mod ? modificationNomi(mod) : undefined}
+                        ochishSorovi={fokus?.maydon === "mahsulot" && fokus.qatorId === row.id ? fokus.n : 0}
+                      />
                       <div className="relative"><Barcode size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={mod?.barcode ?? ""} readOnly placeholder={t("yangiChiqimModal.items.barcodePlaceholder")} className={`${input} pl-9`} /></div>
                       <input value={narx ? narx.toLocaleString("uz-UZ") : "0"} readOnly className={input} />
-                      <div className="relative"><input type="number" min="0.001" max={mavjud || undefined} step="0.001" value={row.quantity} onChange={(event) => qatorniYangilash(row.id, { quantity: Number(event.target.value) })} className={`${input} pr-14`} /><span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400">{t("yangiChiqimModal.items.unit")}</span></div>
+                      <div className="relative"><input type="number" min="0.001" max={mavjud || undefined} step="0.001" value={row.quantity} data-chiqim-miqdor={row.id} onChange={(event) => qatorniYangilash(row.id, { quantity: Number(event.target.value) })} onKeyDown={(event) => { if (event.key !== "Enter" || event.nativeEvent.isComposing) return; event.preventDefault(); keyingiQatorgaOtish(row.id); }} className={`${input} pr-14`} /><span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400">{t("yangiChiqimModal.items.unit")}</span></div>
                       <div className="relative"><Warehouse size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><AppSelect value={warehouseId} onChange={(event) => omborniAlmashtirish(event.target.value)} className={`${input} appearance-none pl-9 pr-8`}><option value="">{t("yangiChiqimModal.items.selectWarehouse")}</option>{store.omborlar.filter((item) => item.isActive !== false).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</AppSelect><ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" /></div>
                       <div className="rounded-xl bg-slate-50 px-3 py-2.5"><p className="font-black text-slate-700">{mavjud.toLocaleString("uz-UZ")}</p><p className="truncate text-[10px] font-semibold text-slate-400">{store.omborlar.find((item) => item.id === warehouseId)?.name ?? t("yangiChiqimModal.items.warehouseFallback")}</p></div>
                       <p className="font-black text-emerald-600">{pul(row.quantity * narx)}</p>

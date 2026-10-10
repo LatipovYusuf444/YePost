@@ -193,5 +193,18 @@
   "omborJadval": {
     "scrollLeftAria": "Jadvalni chapga surish",
     "scrollRightAria": "Jadvalni o'ngga surish"
+  },
+  "mahsulotTanlov": {
+    "empty": "Hech narsa topilmadi"
+  },
+  "shtrixKod": {
+    "placeholder": "Shtrix kodni skanerlang yoki yozib Enter bosing",
+    "ariaLabel": "Shtrix kod bilan mahsulot qo'shish",
+    "added": "{{name}} qo'shildi: {{qty}} dona",
+    "notFound": "Bu shtrix kodli mahsulot topilmadi.",
+    "ambiguous": "Bu shtrix kod bir nechta mahsulotga biriktirilgan. Qo'lda tanlang.",
+    "outOfStock": "{{name}}: qoldiq yo'q.",
+    "notEnough": "{{name}}: qoldiq yetarli emas (mavjud {{available}}).",
+    "pickWarehouse": "Avval omborni tanlang."
   }
 }

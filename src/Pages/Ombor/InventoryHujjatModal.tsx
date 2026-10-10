@@ -1,5 +1,5 @@
 import AppSelect from "@/Components/ui/AppSelect";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CheckCircle2,
   Ban,
@@ -19,6 +19,7 @@ import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 import { useOmborStore } from "@/store/omborStore";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
+import MahsulotTanlov, { type MahsulotVarianti } from "./MahsulotTanlov";
 import type { InventoryDocumentType } from "@/types/inventoryDocuments";
 import type {
   ChiqimHujjati,
@@ -97,6 +98,27 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
   const [note, setNote] = useState("");
   const [items, setItems] = useState<Qator[]>([]);
   const [validatsiyaXatosi, setValidatsiyaXatosi] = useState("");
+  // Klaviatura bilan tez kiritish: keyingi fokus (mahsulot ro'yxati, miqdor yoki tannarx maydoni).
+  const [fokus, setFokus] = useState<{ qator: number; maydon: "mahsulot" | "miqdor" | "narx"; n: number } | null>(null);
+  const fokusNavbati = useRef(0);
+  const qatorlarRef = useRef<HTMLDivElement | null>(null);
+  const mahsulotVariantlari = useMemo<MahsulotVarianti[]>(
+    () => store.modifikatsiyalar.map((modification) => ({ id: modification.id, modification })),
+    [store.modifikatsiyalar]
+  );
+
+  // Mahsulot ro'yxatini ochishni MahsulotTanlov o'zi bajaradi (`ochishSorovi`); qolgan maydonlarga fokusni shu yerda beramiz.
+  useEffect(() => {
+    if (!fokus) return;
+    if (fokus.maydon !== "mahsulot") {
+      const maydon = qatorlarRef.current?.querySelector<HTMLInputElement>(
+        `input[data-hujjat-${fokus.maydon}="${fokus.qator}"]`
+      );
+      maydon?.focus();
+      maydon?.select();
+    }
+    setFokus(null);
+  }, [fokus]);
 
   useEffect(() => {
     let faol = true;
@@ -315,6 +337,27 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
       ...oldingi,
       { modificationId: "", quantity: 1, price: 0 },
     ]);
+  }
+
+  function fokusSoralish(qator: number, maydon: "mahsulot" | "miqdor" | "narx") {
+    fokusNavbati.current += 1;
+    setFokus({ qator, maydon, n: fokusNavbati.current });
+  }
+
+  // Qator oxirida Enter: keyingi qatorga o'tadi. Keyingi qator yo'q bo'lsa va joriy qatorda mahsulot bor bo'lsa,
+  // yangi qator qo'shiladi va uning mahsulot ro'yxati ochiladi. Enter hech qachon hujjatni saqlamaydi.
+  function keyingiQatorgaOtish(index: number) {
+    const joriy = items[index];
+    if (!joriy?.modificationId) return;
+    const miqdor = Number(joriy.quantity);
+    if (!Number.isFinite(miqdor) || (tur === "inventarizatsiya" ? miqdor < 0 : miqdor <= 0)) return;
+    const keyingi = items[index + 1];
+    if (keyingi) {
+      fokusSoralish(index + 1, keyingi.modificationId ? "miqdor" : "mahsulot");
+      return;
+    }
+    qatorQoshish();
+    fokusSoralish(index + 1, "mahsulot");
   }
 
   function qatorniYangilash(index: number, data: Partial<Qator>) {
@@ -892,7 +935,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                   </AppSelect>
                 </div>
 
-                <div className="mt-5 space-y-3">
+                <div ref={qatorlarRef} className="mt-5 space-y-3">
                   {items.map((item, index) => (
                     <div
                       key={`${index}-${item.modificationId}`}
@@ -902,29 +945,30 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                           : "md:grid-cols-[1fr_140px_44px]"
                       }`}
                     >
-                      <AppSelect
+                      <MahsulotTanlov
                         value={item.modificationId}
-                        onChange={(event) =>
-                          qatorniYangilash(index, {
-                            modificationId: event.target.value,
-                          })
-                        }
-                        className="h-11 rounded-xl border border-slate-200 bg-white px-3 outline-none transition-colors focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
-                      >
-                        <option value="">{t("form.productPlaceholder")}</option>
-                        {store.modifikatsiyalar.map((modification) => (
-                          <option key={modification.id} value={modification.id}>
-                            {modificationNomi(modification)}
-                            {modification.barcode
-                              ? ` — ${modification.barcode}`
-                              : ""}
-                          </option>
-                        ))}
-                      </AppSelect>
+                        variantlar={mahsulotVariantlari}
+                        onChange={(id) => {
+                          qatorniYangilash(index, { modificationId: id });
+                          // Mahsulot tanlangach fokus shu qatorning miqdoriga o'tadi.
+                          fokusSoralish(index, "miqdor");
+                        }}
+                        placeholder={t("form.productPlaceholder")}
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 outline-none transition-colors focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
+                        ochishSorovi={fokus?.maydon === "mahsulot" && fokus.qator === index ? fokus.n : 0}
+                      />
                       <input
                         type="number"
                         min="0.001"
                         step="0.001"
+                        data-hujjat-miqdor={index}
+                        onKeyDown={(event) => {
+                          if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+                          event.preventDefault();
+                          // Kirimda miqdordan keyin tannarxga o'tiladi, qolgan hujjatlarda keyingi qatorga.
+                          if (tur === "kirim") fokusSoralish(index, "narx");
+                          else keyingiQatorgaOtish(index);
+                        }}
                         value={item.quantity}
                         onChange={(event) =>
                           qatorniYangilash(index, {
@@ -943,6 +987,12 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                           type="number"
                           min="0"
                           step="0.01"
+                          data-hujjat-narx={index}
+                          onKeyDown={(event) => {
+                            if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+                            event.preventDefault();
+                            keyingiQatorgaOtish(index);
+                          }}
                           value={item.price}
                           onChange={(event) =>
                             qatorniYangilash(index, {

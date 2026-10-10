@@ -32,7 +32,9 @@ import {
 } from "@/api/catalogApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { Kategoriya, OlchovBirligi } from "@/types/catalog";
-import { modificationNomi, pul, qoldiqMiqdori } from "./omborYordamchilari";
+import { kodBilanTopish, modificationNomi, pul, qoldiqMiqdori } from "./omborYordamchilari";
+import MahsulotTanlov, { type MahsulotVarianti } from "./MahsulotTanlov";
+import ShtrixKodMaydoni, { type SkanNatijasi } from "./ShtrixKodMaydoni";
 
 type Fayl = { id: string; nomi: string; url: string };
 
@@ -98,6 +100,28 @@ export default function YangiKirimModal({ onClose }: Props) {
 
   const [note, setNote] = useState("");
   const [qatorlar, setQatorlar] = useState<Qator[]>([yangiQator(birinchiOmbor)]);
+  // Klaviatura bilan tez kiritish: keyingi fokus (mahsulot ro'yxati, miqdor yoki tannarx maydoni).
+  const { t: tk } = useTranslation("ombor_kichik");
+  const [fokus, setFokus] = useState<{ qatorId: string; maydon: "mahsulot" | "miqdor" | "narx"; n: number } | null>(null);
+  const fokusNavbati = useRef(0);
+  const qatorlarRef = useRef<HTMLDivElement | null>(null);
+  const mahsulotVariantlari = useMemo<MahsulotVarianti[]>(
+    () => store.modifikatsiyalar.map((item) => ({ id: item.id, modification: item })),
+    [store.modifikatsiyalar]
+  );
+
+  // Mahsulot ro'yxatini ochishni MahsulotTanlov o'zi bajaradi (`ochishSorovi`); qolgan maydonlarga fokusni shu yerda beramiz.
+  useEffect(() => {
+    if (!fokus) return;
+    if (fokus.maydon !== "mahsulot") {
+      const maydon = qatorlarRef.current?.querySelector<HTMLInputElement>(
+        `input[data-kirim-${fokus.maydon}="${fokus.qatorId}"]`
+      );
+      maydon?.focus();
+      maydon?.select();
+    }
+    setFokus(null);
+  }, [fokus]);
   const [tanlangan, setTanlangan] = useState<Set<string>>(new Set());
   const [xato, setXato] = useState("");
   const [yaratishOchiqUchun, setYaratishOchiqUchun] = useState<string | null>(null);
@@ -189,6 +213,51 @@ export default function YangiKirimModal({ onClose }: Props) {
       boshlangichRetail: retail,
       boshlangichWholesale: wholesale,
     });
+  }
+
+  function fokusSoralish(qatorId: string, maydon: "mahsulot" | "miqdor" | "narx") {
+    fokusNavbati.current += 1;
+    setFokus({ qatorId, maydon, n: fokusNavbati.current });
+  }
+
+  // Qator oxirida Enter: keyingi qatorga o'tadi. Keyingi qator yo'q bo'lsa va joriy qatorda mahsulot bor bo'lsa,
+  // yangi qator qo'shiladi va uning mahsulot ro'yxati ochiladi.
+  function keyingiQatorgaOtish(qatorId: string) {
+    const index = qatorlar.findIndex((row) => row.id === qatorId);
+    const joriy = qatorlar[index];
+    if (!joriy?.modificationId) return;
+    const keyingi = qatorlar[index + 1];
+    if (keyingi) {
+      fokusSoralish(keyingi.id, keyingi.modificationId ? "miqdor" : "mahsulot");
+      return;
+    }
+    const yangi = yangiQator(qatorlar[0]?.warehouseId || birinchiOmbor);
+    setQatorlar((rows) => [...rows, yangi]);
+    fokusSoralish(yangi.id, "mahsulot");
+  }
+
+  // Shtrix-kod (yoki artikul) to'liq mos kelsa mahsulot qo'shiladi; qator bor bo'lsa miqdori 1 taga oshadi (takror qator yo'q).
+  function kodniQoshish(kod: string): SkanNatijasi {
+    const mos = kodBilanTopish(store.modifikatsiyalar, kod, (item) => item);
+    if (mos.length === 0) return { xato: true, matn: tk("shtrixKod.notFound") };
+    if (mos.length > 1) return { xato: true, matn: tk("shtrixKod.ambiguous") };
+    const mod = mos[0];
+    const nom = modificationNomi(mod);
+    const bor = qatorlar.find((row) => row.modificationId === mod.id);
+    if (bor) {
+      const yangiMiqdor = Number(bor.quantity || 0) + 1;
+      yangilash(bor.id, { quantity: yangiMiqdor });
+      return { xato: false, matn: tk("shtrixKod.added", { name: nom, qty: yangiMiqdor }) };
+    }
+    const bosh = qatorlar.find((row) => !row.modificationId);
+    if (bosh) {
+      mahsulotTanlash(bosh.id, mod.id);
+      return { xato: false, matn: tk("shtrixKod.added", { name: nom, qty: bosh.quantity || 1 }) };
+    }
+    const yangi = yangiQator(qatorlar[0]?.warehouseId || birinchiOmbor);
+    setQatorlar((rows) => [...rows, yangi]);
+    mahsulotTanlash(yangi.id, mod.id);
+    return { xato: false, matn: tk("shtrixKod.added", { name: nom, qty: 1 }) };
   }
 
   function barchasiniBelgilash() {
@@ -465,8 +534,12 @@ export default function YangiKirimModal({ onClose }: Props) {
               </div>
             </div>
 
+            <div className="mb-4">
+              <ShtrixKodMaydoni onSkan={kodniQoshish} inputClassName={inputSm} />
+            </div>
+
             <div className="scrollbar-orange overflow-x-auto pb-2">
-              <div className="min-w-[1280px] space-y-3">
+              <div ref={qatorlarRef} className="min-w-[1280px] space-y-3">
                 <div className="grid grid-cols-[28px_38px_2fr_1fr_1fr_1fr_1fr_1fr_1.2fr_1fr_48px] gap-3 px-3 text-[13px] font-semibold text-slate-600">
                   <button type="button" onClick={barchasiniBelgilash} aria-label={t("yangiKirim.table.selectAllAria")}>
                     {tanlangan.size === qatorlar.length && qatorlar.length > 0 ? (
@@ -508,18 +581,19 @@ export default function YangiKirimModal({ onClose }: Props) {
                         )}
                       </button>
                       <span className="text-center text-sm font-black text-slate-400">{index + 1}</span>
-                      <AppSelect
+                      <MahsulotTanlov
                         value={row.modificationId}
-                        onChange={(event) => mahsulotTanlash(row.id, event.target.value)}
-                        className={`${inputSm} min-w-0`}
-                      >
-                        <option value="">{t("yangiKirim.table.selectProductOption")}</option>
-                        {store.modifikatsiyalar.map((item) => (
-                          <option key={item.id} value={item.id}>
-                            {modificationNomi(item)}
-                          </option>
-                        ))}
-                      </AppSelect>
+                        variantlar={mahsulotVariantlari}
+                        onChange={(id) => {
+                          mahsulotTanlash(row.id, id);
+                          // Mahsulot tanlangach fokus shu qatorning miqdoriga o'tadi.
+                          fokusSoralish(row.id, "miqdor");
+                        }}
+                        placeholder={t("yangiKirim.table.selectProductOption")}
+                        className={inputSm}
+                        tanlanganNomi={mod ? modificationNomi(mod) : undefined}
+                        ochishSorovi={fokus?.maydon === "mahsulot" && fokus.qatorId === row.id ? fokus.n : 0}
+                      />
                       <div className="relative">
                         <Barcode size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input value={mod?.barcode ?? ""} readOnly placeholder={t("yangiKirim.table.barcodePlaceholder")} className={`${inputSm} pl-8`} />
@@ -529,7 +603,13 @@ export default function YangiKirimModal({ onClose }: Props) {
                         min="0"
                         step="0.01"
                         value={row.price}
+                        data-kirim-narx={row.id}
                         onChange={(event) => yangilash(row.id, { price: event.target.value })}
+                        onKeyDown={(event) => {
+                          if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+                          event.preventDefault();
+                          keyingiQatorgaOtish(row.id);
+                        }}
                         placeholder={t("yangiKirim.table.pricePlaceholder")}
                         className={inputSm}
                       />
@@ -539,6 +619,11 @@ export default function YangiKirimModal({ onClose }: Props) {
                         step="0.01"
                         value={row.retailPrice}
                         onChange={(event) => yangilash(row.id, { retailPrice: event.target.value })}
+                        onKeyDown={(event) => {
+                          if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+                          event.preventDefault();
+                          keyingiQatorgaOtish(row.id);
+                        }}
                         placeholder={t("yangiKirim.table.pricePlaceholder")}
                         className={inputSm}
                       />
@@ -548,6 +633,11 @@ export default function YangiKirimModal({ onClose }: Props) {
                         step="0.01"
                         value={row.wholesalePrice}
                         onChange={(event) => yangilash(row.id, { wholesalePrice: event.target.value })}
+                        onKeyDown={(event) => {
+                          if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+                          event.preventDefault();
+                          keyingiQatorgaOtish(row.id);
+                        }}
                         placeholder={t("yangiKirim.table.pricePlaceholder")}
                         className={inputSm}
                       />
@@ -556,7 +646,14 @@ export default function YangiKirimModal({ onClose }: Props) {
                         min="0.001"
                         step="0.001"
                         value={row.quantity}
+                        data-kirim-miqdor={row.id}
                         onChange={(event) => yangilash(row.id, { quantity: Number(event.target.value) })}
+                        onKeyDown={(event) => {
+                          if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+                          event.preventDefault();
+                          // Miqdordan keyin tannarxga o'tiladi (qolgan narxlarga Tab bilan).
+                          fokusSoralish(row.id, "narx");
+                        }}
                         className={inputSm}
                       />
                       <div className="relative">
