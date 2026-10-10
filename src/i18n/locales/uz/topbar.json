@@ -86,5 +86,17 @@
     "changeRate": "Kursni o'zgartirish"
   },
   "displayMenu": "Ko'rinish sozlamalari",
-  "displayMenuClose": "Ko'rinish sozlamalarini yopish"
+  "displayMenuClose": "Ko'rinish sozlamalarini yopish",
+  "search": {
+    "loading": "Mahsulotlar yuklanmoqda...",
+    "empty": "Hech narsa topilmadi",
+    "loadFailed": "Mahsulotlar ro'yxati olinmadi.",
+    "retry": "Qayta urinish",
+    "added": "{{name}} savatchaga qo'shildi: {{qty}} dona",
+    "notEnough": "{{name}}: qoldiq yetarli emas (mavjud {{available}})",
+    "outOfStock": "Qoldiq yo'q",
+    "outOfStockMessage": "{{name}}: qoldiq yo'q",
+    "notExact": "Aniq mos mahsulot topilmadi — ro'yxatdan tanlang.",
+    "hint": "↑↓ tanlash · Enter qo'shish · Esc yopish"
+  }
 }

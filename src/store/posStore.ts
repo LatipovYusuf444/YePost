@@ -30,6 +30,8 @@ export function savatchaChegirma(item: Pick<CartItem, "narx" | "sotuvNarxi" | "s
 
 type PosState = {
   cart: CartItem[];
+  // Bosh sahifada tanlangan narx turi (chakana/ulgurji): headerdagi tezkor qidiruv savatchaga shu narx bilan qo'shadi.
+  narxTuri: "chakana" | "ulgurji";
   addToCart: (item: Omit<CartItem, "soni">, quantity?: number) => void;
   updateQuantity: (productId: string, nextQuantity: number) => void;
   updatePriceType: (priceType: "chakana" | "ulgurji") => void;
@@ -42,6 +44,7 @@ export const usePosStore = create<PosState>()(
   persist(
     (set) => ({
       cart: [],
+      narxTuri: "chakana",
       addToCart: (item, quantity = 1) => {
         set((state) => {
           const exists = state.cart.find((cartItem) => cartItem.id === item.id);
@@ -78,6 +81,7 @@ export const usePosStore = create<PosState>()(
       },
       updatePriceType: (priceType) => {
         set((state) => ({
+          narxTuri: priceType,
           cart: state.cart.map((item) => {
             const narx = priceType === "ulgurji" ? item.ulgurjiNarx || item.chakanaNarx : item.chakanaNarx;
             // Katalog narxi haqiqatan o'zgargandagina qo'lda kiritilgan sotuv narxi tashlab yuboriladi

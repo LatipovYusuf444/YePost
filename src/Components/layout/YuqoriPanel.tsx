@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "motion/react";
-import { Bell, BellOff, CheckCheck, FileBarChart, LoaderCircle, LogOut, Menu, Package, PackagePlus, Search, Settings, ShoppingCart, SlidersHorizontal, UserRound, Users, Wallet } from "lucide-react";
+import { Bell, BellOff, CheckCheck, FileBarChart, LoaderCircle, LogOut, Menu, Package, PackagePlus, Settings, ShoppingCart, SlidersHorizontal, UserRound, Users, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import LanguageSwitcher from "@/Components/common/LanguageSwitcher";
@@ -16,6 +16,7 @@ import {
 } from "@/Components/ui/dropdown-menu";
 import { crmApi } from "@/api/crmApi";
 import MahsulotTanlashModal from "./MahsulotTanlashModal";
+import HeaderMahsulotQidiruvi from "./HeaderMahsulotQidiruvi";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { useAuthStore } from "@/store/authStore";
 import { useAuthProfileStore } from "@/store/authProfileStore";
@@ -203,13 +204,9 @@ export default function YuqoriPanel({
         >
           <Menu size={20} />
         </button>
-        <div className={`theme-search flex h-11 min-w-0 items-center rounded-2xl border border-white/10 bg-white/10 px-4 transition focus-within:border-white/30 focus-within:bg-white/15 ${rejim === "menyu" ? "order-last basis-full" : "flex-1"}`}>
-          <Search size={18} className="mr-3 shrink-0 text-white/60" />
-          <input
-            placeholder={t("searchPlaceholder")}
-            className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/50"
-          />
-        </div>
+        <HeaderMahsulotQidiruvi
+          className={`theme-search flex h-11 min-w-0 items-center rounded-2xl border border-white/10 bg-white/10 px-4 transition focus-within:border-white/30 focus-within:bg-white/15 ${rejim === "menyu" ? "order-last basis-full" : "flex-1"}`}
+        />
         <button
           type="button"
           onClick={() => setMahsulotModalOchiq(true)}
