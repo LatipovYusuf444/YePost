@@ -32,6 +32,7 @@ function customerName(sale: Sotuv) {
     sale.customer?.name ||
     sale.clientCompany?.name ||
     sale.clientCompany?.fullName ||
+    sale.walkInCustomerName?.trim() ||
     "Mijoz tanlanmagan"
   );
 }
@@ -71,7 +72,7 @@ export function saleToDraftSale(sale: Sotuv): DraftSale {
     draftNumber: sale.documentNumber || sale.number || sale.docNumber || sale.id.slice(0, 8),
     customerId: sale.customerId || sale.clientCompanyId,
     customerName: customerName(sale),
-    customerPhone: sale.customer?.phone || sale.clientCompany?.phone || "",
+    customerPhone: sale.customer?.phone || sale.clientCompany?.phone || sale.walkInCustomerPhone || "",
     items,
     totalAmount,
     discountAmount,

@@ -31,7 +31,7 @@ export default function BekorQilinganlar({ sotuvlar, yuklanmoqda = false, onSotu
   const [pageSize, setPageSize] = useState(10);
 
   function telefon(sotuv: Sotuv) {
-    return sotuv.customer?.phone || sotuv.clientCompany?.phone || t("bekorQilinganlar.telefonKiritilmagan");
+    return sotuv.customer?.phone || sotuv.clientCompany?.phone || sotuv.walkInCustomerPhone || t("bekorQilinganlar.telefonKiritilmagan");
   }
 
   const bekorQilinganlar = useMemo(() => sotuvlar

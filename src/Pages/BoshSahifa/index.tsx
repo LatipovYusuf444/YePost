@@ -96,6 +96,8 @@ export default function BoshSahifa() {
   const [chegirmaTuri, setChegirmaTuri] = useState<"sum" | "foiz">("sum");
   const [paymentType, setPaymentType] = useState(t("paymentTypes.payme"));
   const [customerName, setCustomerName] = useState("");
+  // Donalik mijozning ixtiyoriy telefoni (backendda walkInCustomerPhone).
+  const [customerPhone, setCustomerPhone] = useState("");
   const [mijozTuri, setMijozTuri] = useState<CustomerType>("donalik");
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [customerSearch, setCustomerSearch] = useState("");
@@ -189,6 +191,7 @@ export default function BoshSahifa() {
     setDiscountPercent(0);
     setDiscountAmount(0);
     setCustomerName("");
+    setCustomerPhone("");
     setSelectedCustomerId("");
     setNote("");
     setMessage(null);
@@ -281,7 +284,11 @@ export default function BoshSahifa() {
           // Sotuvning mas'ul xodimi har doim tizimga real kirgan foydalanuvchi
           // (kassir, admin, direktor va h.k.) bo'lishi kerak.
           responsibleId: joriyProfil?.id,
-          note: [customerName ? `Mijoz: ${customerName}` : "", note].filter(Boolean).join(" | ") || undefined,
+          // Donalik savdoda kassir yozgan ism sotuvga alohida maydon sifatida saqlanadi (izohga yozilmaydi).
+          // Doimiy mijoz rejimida (customerId bilan) yuborilmaydi.
+          walkInCustomerName: mijozTuri === "donalik" && customerName.trim() ? customerName.trim().slice(0, 200) : undefined,
+          walkInCustomerPhone: mijozTuri === "donalik" && customerPhone.trim() ? customerPhone.trim().slice(0, 50) : undefined,
+          note: note.trim() || undefined,
           items: qatorlarRoyxati.map(({ modificationId, quantity, price, discount }) => ({ modificationId, quantity, price, discount })),
           payments: ulush > 0 ? [{ paymentType: selectedPayment.apiTuri, amount: ulush }] : [],
         });
@@ -469,8 +476,19 @@ export default function BoshSahifa() {
               <input
                 value={customerName}
                 onChange={(event) => setCustomerName(event.target.value)}
+                maxLength={200}
                 placeholder={t("customer.namePlaceholder")}
                 className="h-10 w-full rounded-xl bg-gold-50 px-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-gold-200"
+              />
+              <input
+                value={customerPhone}
+                onChange={(event) => setCustomerPhone(event.target.value.replace(/[^\d+\-()\s]/g, ""))}
+                maxLength={50}
+                inputMode="tel"
+                autoComplete="off"
+                placeholder={t("customer.phonePlaceholder")}
+                aria-label={t("customer.phonePlaceholder")}
+                className="mt-2 h-10 w-full rounded-xl bg-gold-50 px-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-gold-200"
               />
             </div>
 

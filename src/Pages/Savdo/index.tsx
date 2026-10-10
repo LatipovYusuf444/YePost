@@ -264,6 +264,7 @@ export default function Savdo() {
         mijozNomi(sotuv),
         sotuv.customer?.phone,
         sotuv.clientCompany?.phone,
+        sotuv.walkInCustomerPhone,
         sotuv.status,
         sotuv.note,
         ...(sotuv.payments?.map((tolov) => tolov.paymentType) ?? []),

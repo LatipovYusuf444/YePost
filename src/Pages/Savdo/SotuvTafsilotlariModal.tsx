@@ -213,7 +213,7 @@ function mijozIdOlish(sotuv: Sotuv) {
 }
 
 function mijozTelefon(sotuv: Sotuv) {
-  return sotuv.customer?.phone || sotuv.clientCompany?.phone || "-";
+  return sotuv.customer?.phone || sotuv.clientCompany?.phone || sotuv.walkInCustomerPhone || "-";
 }
 
 function modalMijozNomi(sotuv: Sotuv) {

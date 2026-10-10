@@ -109,6 +109,9 @@ export type Sotuv = {
   warehouse?: NomliMalumot;
   customer?: NomliMalumot;
   clientCompany?: NomliMalumot;
+  // Donalik savdo: kassir yozgan mijoz ismi/telefoni (oddiy matn; mijoz bazasiga yozilmaydi, qarz yuritilmaydi). Yo'q bo'lsa null.
+  walkInCustomerName?: string | null;
+  walkInCustomerPhone?: string | null;
   responsible?: NomliMalumot;
   items?: SotuvMahsuloti[];
   payments?: SotuvTolovi[];
@@ -141,6 +144,9 @@ export type SotuvYaratishMalumoti = {
   responsibleId?: string;
   saleType?: SotuvTuri;
   note?: string;
+  // Donalik savdo uchun mijoz ismi (≤200 belgi) va telefoni (≤50 belgi). Qarzga sotish uchun baribir customerId kerak.
+  walkInCustomerName?: string;
+  walkInCustomerPhone?: string;
   items: Array<{
     modificationId: string;
     quantity: number;

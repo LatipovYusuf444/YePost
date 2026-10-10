@@ -18,7 +18,7 @@ const kompaniyami = (sotuv: Sotuv) => Boolean(sotuv.clientCompanyId || sotuv.cli
 
 export default function Qarzdorliklar({ sotuvlar, onSotuvniOchish, onYangilash, yuklanmoqda = false }: Props) {
   const { t } = useTranslation("qarzdorlik");
-  const telefon = useCallback((sotuv: Sotuv) => sotuv.customer?.phone || sotuv.clientCompany?.phone || t("noPhone"), [t]);
+  const telefon = useCallback((sotuv: Sotuv) => sotuv.customer?.phone || sotuv.clientCompany?.phone || sotuv.walkInCustomerPhone || t("noPhone"), [t]);
   const [qidiruv, setQidiruv] = useState("");
   const [tur, setTur] = useState<Tur>("BARCHASI");
   const [yangilanmoqda, setYangilanmoqda] = useState(false);

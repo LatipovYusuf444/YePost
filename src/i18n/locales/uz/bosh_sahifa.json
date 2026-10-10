@@ -48,7 +48,8 @@
     "customerBadge": "Mijoz",
     "notFound": "Mijoz topilmadi",
     "searchHint": "Mijozni qidirish uchun ism yoki familiya kiriting",
-    "next": "Keyingisi"
+    "next": "Keyingisi",
+    "phonePlaceholder": "Telefon (ixtiyoriy)"
   },
   "customerModal": {
     "eyebrow": "Doimiy mijoz savdosi",

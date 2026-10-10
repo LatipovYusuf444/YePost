@@ -288,7 +288,7 @@ export default function QaytarishWizard({
     };
     return sotuvlar
       .filter(qaytarishMumkinmi)
-      .filter((item) => !soz || `${sotuvRaqami(item)} ${mijozNomi(item)} ${item.customer?.phone ?? ""}`.toLowerCase().includes(soz))
+      .filter((item) => !soz || `${sotuvRaqami(item)} ${mijozNomi(item)} ${item.customer?.phone ?? ""} ${item.walkInCustomerPhone ?? ""}`.toLowerCase().includes(soz))
       // Yangi sotuvlar birinchi.
       .sort((birinchi, ikkinchi) => vaqt(ikkinchi) - vaqt(birinchi))
       .map((item) => ({ sotuv: item, oldinQaytarilgan: sotuvdaTasdiqlanganQaytarishBormi(item.id, qaytarishlar) }));
