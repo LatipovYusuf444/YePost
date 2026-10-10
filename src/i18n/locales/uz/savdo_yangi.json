@@ -166,7 +166,15 @@
     "priceLabelShort": "narx",
     "outOfStock": "Qoldiq yo'q",
     "noRate": "Kurs kiritilmagan",
-    "usdHint": "{{usd}} × {{kurs}} so'm (bugungi kurs)"
+    "usdHint": "{{usd}} × {{kurs}} so'm (bugungi kurs)",
+    "scanPlaceholder": "Shtrix kodni skanerlang yoki yozib Enter bosing",
+    "scanAriaLabel": "Shtrix kod bilan mahsulot qo'shish",
+    "scanAdded": "{{name}} qo'shildi: {{qty}} dona",
+    "scanNotFound": "Bu shtrix kodli mahsulot topilmadi.",
+    "scanOutOfStock": "{{name}}: qoldiq yo'q.",
+    "scanNoRate": "{{name}}: so'mdagi narx yo'q (kurs kiritilmagan).",
+    "scanNotEnough": "{{name}}: qoldiq yetarli emas (mavjud {{available}}).",
+    "scanPickWarehouse": "{{name}} bir nechta omborda bor. Avval omborni tanlang."
   },
   "summary": {
     "totalLabel": "Sotuv jami",

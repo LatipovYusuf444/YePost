@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   Bell,
   CalendarCheck,
@@ -15,6 +15,7 @@ import {
   PenLine,
   Plus,
   Printer,
+  ScanLine,
   Search,
   Send,
   Settings,
@@ -282,6 +283,24 @@ export default function YangiSotuvModal({
     { modificationId: "", qoldiqKaliti: "", quantity: "1", price: "", discount: "" },
   ]);
   const [xatolik, setXatolik] = useState("");
+  // Klaviatura bilan tez kiritish: keyingi fokus (mahsulot ro'yxati yoki miqdor maydoni) va shtrix-kod skaneri.
+  const [fokusSorovi, setFokusSorovi] = useState<{ qator: number; maydon: "mahsulot" | "miqdor"; n: number } | null>(null);
+  const fokusNavbati = useRef(0);
+  const [skanMatni, setSkanMatni] = useState("");
+  const [skanXabari, setSkanXabari] = useState<{ xato: boolean; matn: string } | null>(null);
+  const skanInputRef = useRef<HTMLInputElement | null>(null);
+  const qatorlarRef = useRef<HTMLDivElement | null>(null);
+
+  // Mahsulot ro'yxatini ochishni SavdoSelect o'zi bajaradi (`ochishSorovi`); miqdor maydoniga fokusni shu yerda beramiz.
+  useEffect(() => {
+    if (!fokusSorovi) return;
+    if (fokusSorovi.maydon === "miqdor") {
+      const maydon = qatorlarRef.current?.querySelector<HTMLInputElement>(`input[data-sotuv-miqdor="${fokusSorovi.qator}"]`);
+      maydon?.focus();
+      maydon?.select();
+    }
+    setFokusSorovi(null);
+  }, [fokusSorovi]);
 
   const jami = useMemo(
     () =>
@@ -461,6 +480,10 @@ export default function YangiSotuvModal({
             : pulniFormatlash(Number(qoldiqNarxi(item)) || (item.modificationId ? narxlar.get(item.modificationId) : 0) || 0) +
               (item.valyuta ? ` (${dollarNarxi(item.valyuta)})` : "");
 
+        // Qidiruv va aniq moslik uchun: shtrix-kod/artikul va aniq nom variantlari.
+        const kodlar = [item.modification?.barcode, item.modification?.article].filter((kod): kod is string => Boolean(kod?.trim()));
+        const aniqNomlar = [nom, item.modification?.product?.name].filter((matn): matn is string => Boolean(matn?.trim()));
+
         return {
           mavjud,
           nom,
@@ -468,11 +491,15 @@ export default function YangiSotuvModal({
             ? {
                 value: qoldiqKaliti(item),
                 searchLabel: nom,
+                kodlar,
+                nomlar: aniqNomlar,
                 label: `${nom}${itemOmborNomi ? ` (${itemOmborNomi})` : ""} - ${t("products.stockLabelShort")}: ${miqdor} - ${t("products.priceLabelShort")}: ${narxMatni}`,
               }
             : {
                 value: qoldiqKaliti(item),
                 searchLabel: nom,
+                kodlar,
+                nomlar: aniqNomlar,
                 disabled: true,
                 xavf: true,
                 label: (
@@ -528,6 +555,95 @@ export default function YangiSotuvModal({
       ...joriy,
       { modificationId: "", qoldiqKaliti: "", quantity: "1", price: "", discount: "" },
     ]);
+  }
+
+  function fokusSoralish(qator: number, maydon: "mahsulot" | "miqdor") {
+    fokusNavbati.current += 1;
+    setFokusSorovi({ qator, maydon, n: fokusNavbati.current });
+  }
+
+  // Miqdor/chegirma maydonida Enter: keyingi qatorga o'tadi. Keyingi qator yo'q bo'lsa va joriy qatorda mahsulot bor bo'lsa,
+  // yangi qator qo'shiladi va uning mahsulot ro'yxati ochiladi. Enter hech qachon sotuvni saqlamaydi.
+  function keyingiQatorgaOtish(index: number) {
+    const joriy = mahsulotlar[index];
+    if (!joriy?.modificationId || raqamgaAylantirish(joriy.quantity) <= 0) return;
+    const keyingi = mahsulotlar[index + 1];
+    if (keyingi) {
+      fokusSoralish(index + 1, keyingi.modificationId ? "miqdor" : "mahsulot");
+      return;
+    }
+    qatorQoshish();
+    fokusSoralish(index + 1, "mahsulot");
+  }
+
+  // Shtrix-kod (yoki artikul) to'liq mos kelsa mahsulot qo'shiladi; qator bor bo'lsa miqdori 1 taga oshadi (takror qator yo'q).
+  function shtrixKodniQoshish() {
+    const kod = skanMatni.trim().toLowerCase();
+    if (!kod) return;
+    const xato = (matn: string) => {
+      setSkanXabari({ xato: true, matn });
+      // Xato kod matni belgilanadi: keyingi skan uni almashtiradi.
+      skanInputRef.current?.select();
+    };
+    const korinadigan = qoldiqlar.filter((item) => !warehouseId || !item.warehouseId || item.warehouseId === warehouseId);
+    const mos = korinadigan.filter(
+      (item) =>
+        item.modification?.barcode?.trim().toLowerCase() === kod ||
+        item.modification?.article?.trim().toLowerCase() === kod
+    );
+    if (mos.length === 0) {
+      xato(t("products.scanNotFound"));
+      return;
+    }
+    const sotuvga = mos.filter(
+      (item) => item.warehouseId && qoldiqMiqdori(item) > 0 && !(item.valyuta?.currency === "USD" && item.valyuta.uzs === null)
+    );
+    if (sotuvga.length === 0) {
+      const nom = qoldiqNomi(mos[0], t);
+      const kursYoq = mos[0].valyuta?.currency === "USD" && mos[0].valyuta.uzs === null;
+      xato(t(kursYoq ? "products.scanNoRate" : "products.scanOutOfStock", { name: nom }));
+      return;
+    }
+    if (!warehouseId && new Set(sotuvga.map((item) => item.warehouseId)).size > 1) {
+      xato(t("products.scanPickWarehouse", { name: qoldiqNomi(sotuvga[0], t) }));
+      return;
+    }
+    const item = [...sotuvga].sort((x, y) => qoldiqMiqdori(y) - qoldiqMiqdori(x))[0];
+    const nom = qoldiqNomi(item, t);
+    const kalit = qoldiqKaliti(item);
+    const mavjudMiqdor = qoldiqMiqdori(item);
+    const bor = mahsulotlar.findIndex((mahsulot) => mahsulot.qoldiqKaliti === kalit);
+
+    if (bor >= 0) {
+      const yangiMiqdor = raqamgaAylantirish(mahsulotlar[bor].quantity) + 1;
+      if (yangiMiqdor > mavjudMiqdor) {
+        xato(t("products.scanNotEnough", { name: nom, available: mavjudMiqdor }));
+        return;
+      }
+      mahsulotniYangilash(bor, { quantity: String(yangiMiqdor) });
+      setSkanXabari({ xato: false, matn: t("products.scanAdded", { name: nom, qty: yangiMiqdor }) });
+    } else {
+      const narx = qoldiqNarxi(item);
+      const yangiQator: MahsulotQatori = {
+        modificationId: item.modificationId,
+        qoldiqKaliti: kalit,
+        quantity: "1",
+        price: narx ? String(narx) : "",
+        discount: "",
+      };
+      // Birinchi bo'sh qator to'ldiriladi, bo'lmasa yangi qator qo'shiladi.
+      setMahsulotlar((joriy) => {
+        const bosh = joriy.findIndex((mahsulot) => !mahsulot.modificationId);
+        return bosh >= 0 ? joriy.map((mahsulot, qatorIndex) => (qatorIndex === bosh ? yangiQator : mahsulot)) : [...joriy, yangiQator];
+      });
+      if (item.warehouseId && item.warehouseId !== warehouseId) {
+        setWarehouseId(item.warehouseId);
+        onOmborTanlash(item.warehouseId);
+      }
+      setSkanXabari({ xato: false, matn: t("products.scanAdded", { name: nom, qty: 1 }) });
+    }
+    setSkanMatni("");
+    skanInputRef.current?.focus();
   }
 
   function nusxaOlish() {
@@ -1174,7 +1290,33 @@ export default function YangiSotuvModal({
                     </button>
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="mb-4">
+                    <div className="relative">
+                      <ScanLine size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        ref={skanInputRef}
+                        value={skanMatni}
+                        onChange={(event) => setSkanMatni(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key !== "Enter") return;
+                          // Skaner kod + Enter yuboradi: forma yuborilmaydi, mahsulot qo'shiladi.
+                          event.preventDefault();
+                          if (!event.nativeEvent.isComposing) shtrixKodniQoshish();
+                        }}
+                        autoComplete="off"
+                        placeholder={t("products.scanPlaceholder")}
+                        aria-label={t("products.scanAriaLabel")}
+                        className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white pl-10 pr-3.5 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
+                      />
+                    </div>
+                    {skanXabari && (
+                      <p role="status" className={`mt-2 text-xs font-bold ${skanXabari.xato ? "text-red-600" : "text-emerald-600"}`}>
+                        {skanXabari.matn}
+                      </p>
+                    )}
+                  </div>
+
+                  <div ref={qatorlarRef} className="space-y-3">
                     {mahsulotlar.map((mahsulot, index) => {
                       const qoldiq = qoldiqlar.find(
                         (item) => qoldiqKaliti(item) === mahsulot.qoldiqKaliti
@@ -1217,7 +1359,13 @@ export default function YangiSotuvModal({
                               <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-500">{t("labels.product")}</p>
                               <SavdoSelect
                               value={mahsulot.qoldiqKaliti}
-                              onChange={(value) => modifikatsiyaniTanlash(index, value)}
+                              onChange={(value) => {
+                                modifikatsiyaniTanlash(index, value);
+                                // Mahsulot tanlangach fokus shu qatorning miqdoriga o'tadi.
+                                fokusSoralish(index, "miqdor");
+                              }}
+                              klaviatura
+                              ochishSorovi={fokusSorovi?.maydon === "mahsulot" && fokusSorovi.qator === index ? fokusSorovi.n : 0}
                               placeholder={t("placeholders.selectProduct")}
                               options={mahsulotOptionlari()}
                               buttonClassName="h-11 rounded-xl border-slate-200 shadow-none hover:shadow-none focus:border-[#2563EB] px-3.5 text-sm"
@@ -1268,6 +1416,11 @@ export default function YangiSotuvModal({
                               disabled={narx <= 0}
                               value={narx > 0 ? sotuvNarxi : ""}
                               onFocus={(event) => event.currentTarget.select()}
+                              onKeyDown={(event) => {
+                                if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+                                event.preventDefault();
+                                fokusSoralish(index, "miqdor");
+                              }}
                               onChange={(event) => {
                                 const kiritilgan = raqamgaAylantirish(event.target.value);
                                 // Bo'sh yoki noto'g'ri qiymat katalog narxiga qaytaradi; katalog narxidan baland narx chegirma bermaydi.
@@ -1291,9 +1444,15 @@ export default function YangiSotuvModal({
                               min="0.001"
                               step="0.001"
                               value={mahsulot.quantity}
+                              data-sotuv-miqdor={index}
                               onChange={(event) =>
                                 mahsulotniYangilash(index, { quantity: event.target.value })
                               }
+                              onKeyDown={(event) => {
+                                if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+                                event.preventDefault();
+                                keyingiQatorgaOtish(index);
+                              }}
                               className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100 text-slate-900 placeholder:text-slate-400 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                               placeholder={t("placeholders.quantity")}
                             />
@@ -1309,6 +1468,11 @@ export default function YangiSotuvModal({
                               onChange={(event) =>
                                 mahsulotniYangilash(index, { discount: event.target.value })
                               }
+                              onKeyDown={(event) => {
+                                if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+                                event.preventDefault();
+                                keyingiQatorgaOtish(index);
+                              }}
                               className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100 text-slate-900 placeholder:text-slate-400 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                               placeholder={t("placeholders.discount")}
                             />

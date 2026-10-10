@@ -166,7 +166,15 @@
     "priceLabelShort": "цена",
     "outOfStock": "Нет в наличии",
     "noRate": "Курс не введён",
-    "usdHint": "{{usd}} × {{kurs}} сум (курс на сегодня)"
+    "usdHint": "{{usd}} × {{kurs}} сум (курс на сегодня)",
+    "scanPlaceholder": "Отсканируйте штрихкод или введите и нажмите Enter",
+    "scanAriaLabel": "Добавить товар по штрихкоду",
+    "scanAdded": "{{name}} добавлен: {{qty}} шт.",
+    "scanNotFound": "Товар с таким штрихкодом не найден.",
+    "scanOutOfStock": "{{name}}: нет в наличии.",
+    "scanNoRate": "{{name}}: нет цены в сумах (курс не введён).",
+    "scanNotEnough": "{{name}}: недостаточно на складе (доступно {{available}}).",
+    "scanPickWarehouse": "{{name}} есть на нескольких складах. Сначала выберите склад."
   },
   "summary": {
     "totalLabel": "Итого по продаже",
