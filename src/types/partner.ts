@@ -68,7 +68,7 @@ export type Mijoz = {
 
 export type MijozMalumoti = {
   firstName: string;
-  lastName: string;
+  lastName?: string;
   middleName?: string;
   phone: string;
   address?: string;

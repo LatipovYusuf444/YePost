@@ -255,10 +255,12 @@ function PartnerModal({
     let ok = false;
 
     if (tab === "xaridorlar") {
-      if (!firstName.trim() || !lastName.trim() || !phone.trim()) return;
+      // Familiya majburiy emas (backend uni ixtiyoriy qabul qiladi).
+      if (!firstName.trim() || !phone.trim()) return;
       ok = await store.mijozSaqlash(editing ? item.id : null, {
         firstName: firstName.trim(),
-        lastName: lastName.trim(),
+        // Yangi mijozda bo'sh familiya yuborilmaydi; mavjud mijozda tozalansa "" yuboriladi.
+        lastName: lastName.trim() || (xaridor?.lastName ? "" : undefined),
         middleName: middleName.trim() || undefined,
         phone: phone.trim(),
         address: address.trim() || undefined,

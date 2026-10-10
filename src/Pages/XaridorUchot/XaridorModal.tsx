@@ -101,7 +101,8 @@ export default function XaridorModal({
 
     const tozaTelefonlar = telefonlar.map((telefon) => telefon.trim()).filter(Boolean);
 
-    if (!ism.trim() || !familiya.trim() || tozaTelefonlar.length === 0) {
+    // Familiya majburiy emas (backend uni ixtiyoriy qabul qiladi).
+    if (!ism.trim() || tozaTelefonlar.length === 0) {
       setXato(t("xaridorModal.requiredError"));
       return;
     }

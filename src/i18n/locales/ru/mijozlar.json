@@ -38,7 +38,7 @@
     "companyUnassigned": "Компания не привязана",
     "placeholders": {
       "firstName": "Имя *",
-      "lastName": "Фамилия *",
+      "lastName": "Фамилия",
       "middleName": "Отчество",
       "phoneRequired": "Телефон *",
       "phone": "Телефон",

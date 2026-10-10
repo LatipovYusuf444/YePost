@@ -38,7 +38,7 @@
     "companyUnassigned": "Kompaniya biriktirilmagan",
     "placeholders": {
       "firstName": "Ism *",
-      "lastName": "Familiya *",
+      "lastName": "Familiya",
       "middleName": "Otasining ismi",
       "phoneRequired": "Telefon *",
       "phone": "Telefon",

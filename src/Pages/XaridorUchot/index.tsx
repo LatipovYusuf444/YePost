@@ -88,7 +88,8 @@ export default function XaridorUchot({ faolTab = "xaridorlar" }: Props) {
       });
       const payload = {
         firstName: xaridor.ism.trim(),
-        lastName: xaridor.familiya.trim(),
+        // Familiya ixtiyoriy: yangi mijozda bo'sh bo'lsa yuborilmaydi; mavjud mijozda tozalansa "" yuboriladi.
+        lastName: xaridor.familiya.trim() || (xaridorlar.find((item) => item.id === xaridor.id)?.familiya ? "" : undefined),
         phone: xaridor.telefonlar.find((item) => item.trim())?.trim() ?? "",
         address: xaridor.manzil.trim() || undefined,
         telegramId: xaridor.ijtimoiy.telegram.trim() || undefined,
