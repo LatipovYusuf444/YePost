@@ -25,7 +25,7 @@ import Tarix from "./Tarix";
 import Tolovlar from "./Tolovlar";
 import Qarzdorliklar from "../Qarzdorlik";
 import YangiSotuvModal from "./YangiSotuvModal";
-import { mijozNomi, pulniFormatlash, sotuvHolati, sotuvQarzdorlikSummasi, sotuvRaqami } from "./savdoYordamchilari";
+import { mijozNomi, pulniFormatlash, sotuvHolati, sotuvQarzdorlikSummasi, sotuvRaqami, sotuvSummasiniSomga } from "./savdoYordamchilari";
 import SavdoSelect from "./SavdoSelect";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
 
@@ -281,7 +281,7 @@ export default function Savdo() {
     return {
       sotuvlar: qidirilganSotuvlar.length,
       qarzdorlar: qarzdorlar.size,
-      jami: qidirilganSotuvlar.reduce((summa, sotuv) => summa + sotuvQarzdorlikSummasi(sotuv), 0),
+      jami: qidirilganSotuvlar.reduce((summa, sotuv) => summa + sotuvSummasiniSomga(sotuvQarzdorlikSummasi(sotuv), sotuv), 0),
     };
   }, [qidirilganSotuvlar, tolovFilteri]);
 

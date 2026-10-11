@@ -27,7 +27,7 @@ import JadvalYuklanmoqda from "./JadvalYuklanmoqda";
 import { BUYURTMA_HOLATLARI, buyurtmalarApi, type Buyurtma, type BuyurtmaHolati } from "@/api/buyurtmalarApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { Sotuv } from "@/types/savdo";
-import { masulNomi, mijozNomi, pulniFormatlash, sananiFormatlash, sotuvRaqami, sotuvSummasi } from "./savdoYordamchilari";
+import { masulNomi, mijozNomi, pulniFormatlash, sananiFormatlash, sotuvRaqami, sotuvSummasi, sotuvValyutasi } from "./savdoYordamchilari";
 
 type Props = {
   onSotuvniOchish: (sotuv: Sotuv) => void;
@@ -347,7 +347,7 @@ export default function Buyurtmalar({ onSotuvniOchish, onOchirish, onTiklash }: 
                           <span className="line-clamp-2">{manzil || t("buyurtmalar.noAddress")}</span>
                         </p>
                       </td>
-                      <td className="whitespace-nowrap px-5 py-4 text-[15px] font-extrabold tabular-nums text-slate-950">{pulniFormatlash(sotuvSummasi(buyurtma))}</td>
+                      <td className="whitespace-nowrap px-5 py-4 text-[15px] font-extrabold tabular-nums text-slate-950">{pulniFormatlash(sotuvSummasi(buyurtma), sotuvValyutasi(buyurtma))}</td>
                       <td className="px-5 py-4">
                         <p className="whitespace-nowrap text-[13px] font-semibold tabular-nums text-slate-700">{sananiFormatlash(buyurtma.createdAt ?? buyurtma.date)}</p>
                         {reja && (
@@ -443,7 +443,7 @@ export default function Buyurtmalar({ onSotuvniOchish, onOchirish, onTiklash }: 
 
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-base font-extrabold tabular-nums text-slate-950">{pulniFormatlash(sotuvSummasi(buyurtma))}</span>
+                        <span className="text-base font-extrabold tabular-nums text-slate-950">{pulniFormatlash(sotuvSummasi(buyurtma), sotuvValyutasi(buyurtma))}</span>
                         {reja && (
                           <span className={`inline-flex items-center gap-1 text-xs font-semibold tabular-nums ${kechikkan ? "text-rose-600" : "text-slate-500"}`}>
                             <CalendarClock size={12} aria-hidden /> {t("buyurtmalar.scheduled", { sana: sananiFormatlash(reja).split(",")[0].split(" ")[0] })}

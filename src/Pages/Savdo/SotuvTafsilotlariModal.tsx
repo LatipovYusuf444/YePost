@@ -70,6 +70,7 @@ import {
   masulNomi,
   mijozNomi,
   pulniFormatlash,
+  qatorValyutasi,
   sananiFormatlash,
   sotuvChegirmaSummasi,
   sotuvHolati,
@@ -80,8 +81,13 @@ import {
   sotuvRaqami,
   sotuvSummasi,
   sotuvTolanganSummasi,
+  sotuvValyutasi,
+  sotuvValyutasigaOgirish,
+  tolovSotuvValyutasida,
   tolovTuriMatni,
+  tolovValyutasi,
 } from "./savdoYordamchilari";
+import { useValyutaStore, valyutaKodi, type Valyuta } from "@/lib/valyuta";
 import SavdoSelect from "./SavdoSelect";
 import SotuvTolovlari from "./SotuvTolovlari";
 import SotuvJarayoni from "./SotuvJarayoni";
@@ -101,7 +107,7 @@ type SotuvTafsilotlariModalProps = {
   ) => Promise<boolean>;
   onTolovQoshish: (
     sotuvId: string,
-    tolov: Pick<SotuvTolovi, "paymentType" | "amount">
+    tolov: Pick<SotuvTolovi, "paymentType" | "amount" | "currency">
   ) => Promise<boolean>;
   onTasdiqlash: (sotuvId: string) => Promise<void> | void;
   onBekorQilish: (sotuvId: string) => void;
@@ -355,6 +361,28 @@ function son(value: unknown) {
 
 function mahsulotJami(item: SotuvItem) {
   return son(item.quantity) * son(item.price) - son(item.discount);
+}
+
+// Qatorlar bo'yicha yig'indi sotuv valyutasida (aralash sotuvda dollar qatorlari kurs bilan o'giriladi).
+// Kurs topilmasa — `zaxira` (backend jami) qaytadi.
+function qatorlarYigindisi(sotuv: Sotuv, items: SotuvItem[], qiymat: (item: SotuvItem) => number, zaxira: number) {
+  let jami = 0;
+  for (const item of items) {
+    const ogirilgan = sotuvValyutasigaOgirish(qiymat(item), qatorValyutasi(item, sotuv), sotuv);
+    if (ogirilgan === null) return zaxira;
+    jami += ogirilgan;
+  }
+  return jami;
+}
+
+// Sotuv valyutasidan farqli bo'lgan qator/to'lov valyutasi (bir xil bo'lsa `currency` yuborilmaydi — sotuv valyutasi default).
+function farqliValyuta(valyuta: Valyuta, sotuv: Pick<Sotuv, "currency">) {
+  return valyuta !== sotuvValyutasi(sotuv) ? { currency: valyuta } : {};
+}
+
+// Dollarni sentgacha, so'mni butungacha YUQORIGA yaxlitlaydi (qarzni to'liq yopish uchun).
+function valyutaYaxlitlash(summa: number, valyuta: Valyuta) {
+  return valyuta === "USD" ? Math.ceil(summa * 100 - 1e-9) / 100 : Math.ceil(summa - 1e-9);
 }
 
 function qoldiqMiqdori(qoldiq: QoldiqTanlovi) {
@@ -661,7 +689,7 @@ function YukXatiGeneratorModal({
   const hujjatSarlavha = hujjatTuri === "Nakladnoy" ? "Nakladnoy" : "Hisob-faktura";
   const hujjatSarlavhaKorinishi = t(HUJJAT_MENU_LABEL_KEYS[hujjatSarlavha] ?? hujjatSarlavha);
   const mijoz = mijozNomi(sotuv);
-  const jami = pulniFormatlash(sotuvSummasi(sotuv));
+  const jami = pulniFormatlash(sotuvSummasi(sotuv), sotuvValyutasi(sotuv));
   const mahsulotlar = sotuv.items ?? [];
   const yetkazuvchi = sotuv.warehouse?.name || "YePost";
   const yetkazuvchiManzil = sotuv.warehouse?.address || "Savdo tizimi";
@@ -691,8 +719,8 @@ function YukXatiGeneratorModal({
             <td>${mahsulotNomi(item, t)}</td>
             <td>${t("common.dona")}</td>
             <td>${item.quantity}</td>
-            <td>${pulniFormatlash(item.price)}</td>
-            <td>${pulniFormatlash(mahsulotJami(item))}</td>
+            <td>${pulniFormatlash(item.price, qatorValyutasi(item, sotuv))}</td>
+            <td>${pulniFormatlash(mahsulotJami(item), qatorValyutasi(item, sotuv))}</td>
           </tr>
         `
       )
@@ -845,8 +873,8 @@ function YukXatiGeneratorModal({
       text(mahsulotNomi(item, t).slice(0, 26), 82, y + 8, 9);
       text("dona", 254, y + 8, 9);
       text(String(item.quantity), 310, y + 8, 9);
-      text(pulniFormatlash(item.price), 360, y + 8, 9);
-      text(pulniFormatlash(mahsulotJami(item)), 438, y + 8, 9, "F2");
+      text(pulniFormatlash(item.price, qatorValyutasi(item, sotuv)), 360, y + 8, 9);
+      text(pulniFormatlash(mahsulotJami(item), qatorValyutasi(item, sotuv)), 438, y + 8, 9, "F2");
       y -= rowHeight;
     });
     if (visibleItems.length === 0) {
@@ -1008,8 +1036,8 @@ function YukXatiGeneratorModal({
                             <td className="border-t border-r border-slate-950 px-3 py-1.5 font-semibold">{mahsulotNomi(item, t)}</td>
                             <td className="border-t border-r border-slate-950 px-3 py-1.5 text-center">{t("common.dona")}</td>
                             <td className="border-t border-r border-slate-950 px-3 py-1.5 text-center">{item.quantity}</td>
-                            <td className="border-t border-r border-slate-950 px-3 py-1.5 text-center">{pulniFormatlash(item.price)}</td>
-                            <td className="border-t border-slate-950 px-3 py-1.5 text-center font-bold">{pulniFormatlash(mahsulotJami(item))}</td>
+                            <td className="border-t border-r border-slate-950 px-3 py-1.5 text-center">{pulniFormatlash(item.price, qatorValyutasi(item, sotuv))}</td>
+                            <td className="border-t border-slate-950 px-3 py-1.5 text-center font-bold">{pulniFormatlash(mahsulotJami(item), qatorValyutasi(item, sotuv))}</td>
                           </tr>
                         ))}
                         {mahsulotlar.length === 0 && (
@@ -1377,7 +1405,7 @@ function UmumiyTab({
             </TimelineElement>
           )}
           <TimelineElement icon={<Calculator size={18} />} ohang="kulrang">
-            <FeedCard title={t("umumiyTab.feed.hisoblashRejimi")} time={vaqt} text={t("umumiyTab.feed.hisoblashRejimiTavsif", { summa: pulniFormatlash(jami) })} />
+            <FeedCard title={t("umumiyTab.feed.hisoblashRejimi")} time={vaqt} text={t("umumiyTab.feed.hisoblashRejimiTavsif", { summa: pulniFormatlash(jami, sotuvValyutasi(sotuv)) })} />
           </TimelineElement>
           <TimelineElement icon={<ShoppingCart size={18} />} ohang="kok">
             <FeedCard title={t("umumiyTab.feed.sotuvYaratildi")} time={vaqt} text={t("umumiyTab.feed.sotuvYaratildiTavsif", { mijoz: mijozNomi(sotuv), raqam: sotuvRaqami(sotuv) })} />
@@ -1441,7 +1469,7 @@ function KelishuvCard({
       <div className="mt-4 flex items-end justify-between gap-4">
         <div>
           <p className="text-sm text-slate-400">{t("kelishuvCard.miqdorVaValyuta")}</p>
-          <h2 className="mt-1 text-4xl font-light tracking-wide text-slate-700">{pulniFormatlash(jami)}</h2>
+          <h2 className="mt-1 text-4xl font-light tracking-wide text-slate-700">{pulniFormatlash(jami, sotuvValyutasi(sotuv))}</h2>
         </div>
         <span className={`rounded-full px-3.5 py-1.5 text-xs font-bold ring-1 ${holatStili}`}>{sotuvHolatiMatni[holat]}</span>
       </div>
@@ -1502,11 +1530,11 @@ function KelishuvCard({
         </div>
 
         <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2">
-          <Korsatkich label={t("kelishuvCard.sotuvJami")} value={pulniFormatlash(jami)} />
-          <Korsatkich label={t("kelishuvCard.qabulQilingan")} value={pulniFormatlash(tolanganSumma)} ohang="kok" />
+          <Korsatkich label={t("kelishuvCard.sotuvJami")} value={pulniFormatlash(jami, sotuvValyutasi(sotuv))} />
+          <Korsatkich label={t("kelishuvCard.qabulQilingan")} value={pulniFormatlash(tolanganSumma, sotuvValyutasi(sotuv))} ohang="kok" />
           <Korsatkich
             label={qarzdorlikSumma > 0 ? t("kelishuvCard.qarzdorlikQoldigi") : t("kelishuvCard.qarzdorlikYoq")}
-            value={pulniFormatlash(qarzdorlikSumma)}
+            value={pulniFormatlash(qarzdorlikSumma, sotuvValyutasi(sotuv))}
             ohang={qarzdorlikSumma > 0 ? "qizil" : "yashil"}
           />
         </div>
@@ -1529,7 +1557,7 @@ function KelishuvCard({
         {ortiqchaTolovSumma > 0 && (
           <div className="mt-3 flex justify-between rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700">
             <span>{t("kelishuvCard.ortiqchaTolov")}</span>
-            <span className="font-bold">{pulniFormatlash(ortiqchaTolovSumma)}</span>
+            <span className="font-bold">{pulniFormatlash(ortiqchaTolovSumma, sotuvValyutasi(sotuv))}</span>
           </div>
         )}
 
@@ -1580,7 +1608,7 @@ function TolovQabulQilishModal({
   ) => Promise<boolean>;
   onTolovQoshish: (
     sotuvId: string,
-    tolov: Pick<SotuvTolovi, "paymentType" | "amount">
+    tolov: Pick<SotuvTolovi, "paymentType" | "amount" | "currency">
   ) => Promise<boolean>;
   onYopish: () => void;
 }) {
@@ -1591,16 +1619,39 @@ function TolovQabulQilishModal({
     { value: "BANK", label: t("common.tolovTuri.bank") },
   ];
   const mavjudTolovlar = sotuv.payments ?? [];
-  const mavjudYigindisi = mavjudTolovlar.reduce((jami2, tolov) => jami2 + Number(tolov.amount ?? 0), 0);
+  const mavjudYigindisi = mavjudTolovlar.reduce((jami2, tolov) => jami2 + tolovSotuvValyutasida(tolov, sotuv), 0);
   const boshlangichQarz = Math.max(jami - mavjudYigindisi, 0);
 
+  // Valyuta rejimi yoqilgan va bugungi kurs bor bo'lsa to'lovni sotuvdan boshqa valyutada (so'm/dollar) qabul qilish mumkin:
+  // backend uni bugungi kurs bilan sotuv valyutasiga o'giradi.
+  const rejimYoniq = useValyutaStore((holat) => holat.rejimYoniq);
+  const kursBor = useValyutaStore((holat) => holat.kursBor);
+  const kurs = useValyutaStore((holat) => holat.kurs);
+  const sotuvVal = sotuvValyutasi(sotuv);
+  const valyutaTanlashMumkin = rejimYoniq && kursBor && kurs > 0;
+
   const [tolovTuri, setTolovTuri] = useState<TolovTuri>("CASH");
+  const [tolovVal, setTolovVal] = useState<Valyuta>(sotuvVal);
   const [summa, setSumma] = useState("0");
   const [xatolik, setXatolik] = useState("");
 
+  const boshqaValyuta = valyutaTanlashMumkin && tolovVal !== sotuvVal;
+  const tolovniSotuvValyutasiga = (miqdor: number) => (!boshqaValyuta ? miqdor : tolovVal === "USD" ? miqdor * kurs : miqdor / kurs);
+  const qarzniTolovValyutasiga = (miqdor: number) => (!boshqaValyuta ? miqdor : tolovVal === "USD" ? miqdor / kurs : miqdor * kurs);
+  // Tanlangan to'lov valyutasida to'lash mumkin bo'lgan eng katta summa (qarzni to'liq yopadi).
+  const maxTolov = boshqaValyuta ? valyutaYaxlitlash(qarzniTolovValyutasiga(boshlangichQarz), tolovVal) : boshlangichQarz;
+
   const yangiSumma = Number(summa) || 0;
-  const yakuniyTolangan = mavjudYigindisi + yangiSumma;
+  const yangiSummaSotuvValyutasida = tolovniSotuvValyutasiga(yangiSumma);
+  const yakuniyTolangan = mavjudYigindisi + yangiSummaSotuvValyutasida;
   const qolganQarz = Math.max(jami - yakuniyTolangan, 0);
+
+  function valyutaniOzgartirish(yangi: Valyuta) {
+    if (yangi === tolovVal) return;
+    setTolovVal(yangi);
+    setSumma("0");
+    setXatolik("");
+  }
 
   async function submit() {
     setXatolik("");
@@ -1610,8 +1661,8 @@ function TolovQabulQilishModal({
       return;
     }
 
-    if (yakuniyTolangan > jami) {
-      setXatolik(t("tolovModal.errors.qarzdorlikdanOshmasin", { maksimal: pulniFormatlash(boshlangichQarz) }));
+    if (boshqaValyuta ? yangiSumma > maxTolov : yakuniyTolangan > jami) {
+      setXatolik(t("tolovModal.errors.qarzdorlikdanOshmasin", { maksimal: pulniFormatlash(maxTolov, tolovVal) }));
       return;
     }
 
@@ -1619,6 +1670,7 @@ function TolovQabulQilishModal({
       const saqlandi = await onTolovQoshish(sotuv.id, {
         paymentType: tolovTuri,
         amount: yangiSumma,
+        ...(boshqaValyuta ? { currency: tolovVal } : {}),
       });
       if (!saqlandi) {
         setXatolik(t("tolovModal.errors.saqlanmadi"));
@@ -1629,8 +1681,12 @@ function TolovQabulQilishModal({
     }
 
     const yangiTolovlar = [
-      ...mavjudTolovlar.map((tolov) => ({ paymentType: tolov.paymentType, amount: Number(tolov.amount ?? 0) })),
-      ...(yangiSumma > 0 ? [{ paymentType: tolovTuri, amount: yangiSumma }] : []),
+      ...mavjudTolovlar.map((tolov) => ({
+        paymentType: tolov.paymentType,
+        amount: Number(tolov.amount ?? 0),
+        ...farqliValyuta(tolovValyutasi(tolov, sotuv), sotuv),
+      })),
+      ...(yangiSumma > 0 ? [{ paymentType: tolovTuri, amount: yangiSumma, ...(boshqaValyuta ? { currency: tolovVal } : {}) }] : []),
     ];
 
     const saqlandi = await onYangilash(sotuv.id, { payments: yangiTolovlar });
@@ -1672,7 +1728,7 @@ function TolovQabulQilishModal({
                       key={tolov.id ?? `${tolov.paymentType}-${index}`}
                       className="rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold text-[#2563EB]"
                     >
-                      {tolovTuriMatni[tolov.paymentType]}: {pulniFormatlash(tolov.amount)}
+                      {tolovTuriMatni[tolov.paymentType]}: {pulniFormatlash(tolov.amount, tolovValyutasi(tolov, sotuv))}
                     </span>
                   ))}
                 </div>
@@ -1695,7 +1751,7 @@ function TolovQabulQilishModal({
                 <input
                   type="number"
                   min="0"
-                  max={boshlangichQarz || undefined}
+                  max={maxTolov || undefined}
                   value={summa}
                   onChange={(event) => setSumma(event.target.value)}
                   className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
@@ -1704,13 +1760,42 @@ function TolovQabulQilishModal({
               </label>
             </div>
 
+            {valyutaTanlashMumkin && (
+              <div className="grid gap-2">
+                <span className="text-sm font-bold text-slate-400">{t("tolovModal.tolovValyutasi")}</span>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="inline-flex rounded-xl bg-gray-100 p-1">
+                    {(["UZS", "USD"] as const).map((valyuta) => (
+                      <button
+                        key={valyuta}
+                        type="button"
+                        onClick={() => valyutaniOzgartirish(valyuta)}
+                        className={`rounded-lg px-4 py-2 text-xs font-bold transition ${
+                          tolovVal === valyuta ? "bg-white text-[#2563EB] shadow-sm" : "text-gray-500 hover:text-gray-700"
+                        }`}
+                      >
+                        {valyuta === "USD" ? t("tolovModal.valyutaDollar") : t("tolovModal.valyutaSom")}
+                      </button>
+                    ))}
+                  </div>
+                  {boshqaValyuta && (
+                    <span className="text-xs font-semibold text-slate-500">
+                      {t("tolovModal.kursQatori", { kurs: kurs.toLocaleString("uz-UZ", { maximumFractionDigits: 2 }) })}
+                      {yangiSumma > 0 &&
+                        ` · ${t("tolovModal.sotuvValyutasidagiQiymat", { summa: pulniFormatlash(yangiSummaSotuvValyutasida, sotuvVal) })}`}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-wrap gap-2.5">
               <button
                 type="button"
-                onClick={() => setSumma(String(boshlangichQarz))}
+                onClick={() => setSumma(String(maxTolov))}
                 className="rounded-xl bg-orange-50 px-4 py-2.5 text-xs font-bold text-[#2563EB] transition hover:bg-orange-100"
               >
-                {t("tolovModal.tolashToliq", { summa: pulniFormatlash(boshlangichQarz) })}
+                {t("tolovModal.tolashToliq", { summa: pulniFormatlash(maxTolov, boshqaValyuta ? tolovVal : sotuvVal) })}
               </button>
               <button
                 type="button"
@@ -1724,20 +1809,20 @@ function TolovQabulQilishModal({
             <div className="grid gap-4 rounded-2xl bg-gradient-to-br from-orange-50/70 to-white p-5 ring-1 ring-orange-100 sm:grid-cols-3">
               <div>
                 <p className="text-xs font-black uppercase tracking-wide text-slate-400">{t("tolovModal.sotuvJami")}</p>
-                <p className="mt-1.5 text-lg font-black text-slate-800">{pulniFormatlash(jami)}</p>
+                <p className="mt-1.5 text-lg font-black text-slate-800">{pulniFormatlash(jami, sotuvValyutasi(sotuv))}</p>
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-wide text-slate-400">
                   {t("tolovModal.jamiTolov")}
                 </p>
-                <p className="mt-1.5 text-lg font-black text-[#2563EB]">{pulniFormatlash(yakuniyTolangan)}</p>
+                <p className="mt-1.5 text-lg font-black text-[#2563EB]">{pulniFormatlash(yakuniyTolangan, sotuvValyutasi(sotuv))}</p>
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-wide text-slate-400">
                   {qolganQarz > 0 ? t("tolovModal.qarzdorlikQoldigi") : t("tolovModal.qarzdorlik")}
                 </p>
                 <p className={`mt-1.5 text-lg font-black ${qolganQarz > 0 ? "text-red-500" : "text-emerald-600"}`}>
-                  {qolganQarz > 0 ? pulniFormatlash(qolganQarz) : t("tolovModal.yoq")}
+                  {qolganQarz > 0 ? pulniFormatlash(qolganQarz, sotuvValyutasi(sotuv)) : t("tolovModal.yoq")}
                 </p>
               </div>
             </div>
@@ -1864,11 +1949,11 @@ function tarixQiymatMatni(maydon: string, value: unknown, t: TFunction): string 
     if (maydon === "payments") {
       return value
         .map((tolov) => {
-          const record = tolov as { amount?: number | string; paymentType?: string };
+          const record = tolov as { amount?: number | string; paymentType?: string; currency?: string | null };
           const turi = record.paymentType
             ? tolovTuriMatni[record.paymentType as TolovTuri] ?? record.paymentType
             : "";
-          return `${pulniFormatlash(record.amount)}${turi ? ` (${turi})` : ""}`;
+          return `${pulniFormatlash(record.amount, record.currency ? valyutaKodi(record.currency) : undefined)}${turi ? ` (${turi})` : ""}`;
         })
         .join(", ");
     }
@@ -2064,7 +2149,7 @@ function TarixTab({ sotuv }: { sotuv: Sotuv }) {
               {t("tarix.sotilganMahsulotlar", { count: sotuv.items.length })}
             </p>
             <p className="text-sm text-slate-500">
-              {t("nakladnoy.jami")} <span className="ml-1 font-black text-slate-800">{pulniFormatlash(sotuvSummasi(sotuv))}</span>
+              {t("nakladnoy.jami")} <span className="ml-1 font-black text-slate-800">{pulniFormatlash(sotuvSummasi(sotuv), sotuvValyutasi(sotuv))}</span>
             </p>
           </div>
           <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -2079,10 +2164,10 @@ function TarixTab({ sotuv }: { sotuv: Sotuv }) {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-slate-800">{mahsulotNomi(item, t)}</p>
                   <p className="mt-0.5 text-xs text-slate-400">
-                    {son(item.quantity)} × {pulniFormatlash(item.price)}
+                    {son(item.quantity)} × {pulniFormatlash(item.price, qatorValyutasi(item, sotuv))}
                   </p>
                 </div>
-                <span className="shrink-0 text-sm font-black text-slate-800">{pulniFormatlash(mahsulotJami(item))}</span>
+                <span className="shrink-0 text-sm font-black text-slate-800">{pulniFormatlash(mahsulotJami(item), qatorValyutasi(item, sotuv))}</span>
               </div>
             ))}
           </div>
@@ -2166,7 +2251,7 @@ function TovarlarTab({
   const { t } = useTranslation("savdo_tafsilot");
   const items = sotuv.items ?? [];
   const backendJami = sotuvSummasi(sotuv);
-  const qatorlarJami = items.reduce((summa, item) => summa + mahsulotJami(item), 0);
+  const qatorlarJami = qatorlarYigindisi(sotuv, items, mahsulotJami, backendJami);
   const jami = items.length > 0 ? qatorlarJami : backendJami;
   const tasdiqlangan = sotuvHolati(sotuv) === "CONFIRMED";
   const omborNomi = sotuv.warehouse?.name || t("common.info.ombor");
@@ -2195,7 +2280,7 @@ function TovarlarTab({
   );
   const umumiyJami = jami + yangiQatorJami;
   const umumiyChegirma =
-    items.reduce((summa, item) => summa + son(item.discount), 0) +
+    qatorlarYigindisi(sotuv, items, (item) => son(item.discount), sotuvChegirmaSummasi(sotuv)) +
     yangiQatorlar.reduce((summa, qator) => summa + son(qator.discount), 0);
   const chegirmasizJami = umumiyJami + umumiyChegirma;
   const qidirilganQoldiqlar = qoldiqlar
@@ -2319,6 +2404,7 @@ function TovarlarTab({
           quantity: son(item.quantity),
           price: son(item.price),
           discount: son(item.discount),
+          ...farqliValyuta(qatorValyutasi(item, sotuv), sotuv),
         })),
         ...yangiQatorlar.map((qator) => ({
           modificationId: qator.modificationId,
@@ -2436,11 +2522,11 @@ function TovarlarTab({
 
                   <div>
                     <div className="flex h-12 items-center justify-end rounded-md border border-slate-300 bg-white px-3">
-                      {pulniFormatlash(itemNarxi)}
+                      {pulniFormatlash(itemNarxi, qatorValyutasi(item, sotuv))}
                     </div>
                     {son(item.discount) > 0 && (
                       <span className="mt-1 block text-right text-xs font-semibold text-lime-700">
-                        {t("tovarlarTab.chegirmaQatori", { summa: pulniFormatlash(son(item.discount)) })}
+                        {t("tovarlarTab.chegirmaQatori", { summa: pulniFormatlash(son(item.discount), qatorValyutasi(item, sotuv)) })}
                       </span>
                     )}
                   </div>
@@ -2467,7 +2553,7 @@ function TovarlarTab({
                   </div>
 
                   <span>{ombordanChiqdi} {t("common.dona")}</span>
-                  <span className="font-bold text-emerald-600">{pulniFormatlash(itemJami)}</span>
+                  <span className="font-bold text-emerald-600">{pulniFormatlash(itemJami, qatorValyutasi(item, sotuv))}</span>
                 </div>
               );
             })}
@@ -2625,13 +2711,13 @@ function TovarlarTab({
 
         <div className="border-t border-slate-100 px-7 py-8">
           <div className="ml-auto max-w-md space-y-4 text-right text-slate-600">
-            <p>{t("common.totals.chegirmaSoliqsiz")} <span className="ml-8">{pulniFormatlash(chegirmasizJami)}</span></p>
-            <p>{t("common.totals.yetkazishSummasi")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
-            <p className="text-lime-700">{t("common.totals.chegirmaSummasi")} <span className="ml-8">{pulniFormatlash(umumiyChegirma)}</span></p>
-            <p>{t("common.totals.soliqsizSumma")} <span className="ml-8">{pulniFormatlash(umumiyJami)}</span></p>
-            <p>{t("common.totals.soliqSummasi")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
+            <p>{t("common.totals.chegirmaSoliqsiz")} <span className="ml-8">{pulniFormatlash(chegirmasizJami, sotuvValyutasi(sotuv))}</span></p>
+            <p>{t("common.totals.yetkazishSummasi")} <span className="ml-8">{pulniFormatlash(0, sotuvValyutasi(sotuv))}</span></p>
+            <p className="text-lime-700">{t("common.totals.chegirmaSummasi")} <span className="ml-8">{pulniFormatlash(umumiyChegirma, sotuvValyutasi(sotuv))}</span></p>
+            <p>{t("common.totals.soliqsizSumma")} <span className="ml-8">{pulniFormatlash(umumiyJami, sotuvValyutasi(sotuv))}</span></p>
+            <p>{t("common.totals.soliqSummasi")} <span className="ml-8">{pulniFormatlash(0, sotuvValyutasi(sotuv))}</span></p>
             <div className="border-t border-slate-200 pt-5 text-2xl font-bold text-slate-700">
-              {t("common.totals.umumiySumma")} <span className="ml-8">{pulniFormatlash(umumiyJami)}</span>
+              {t("common.totals.umumiySumma")} <span className="ml-8">{pulniFormatlash(umumiyJami, sotuvValyutasi(sotuv))}</span>
             </div>
           </div>
         </div>
@@ -2758,7 +2844,7 @@ function TovarlarTab({
 export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
   const { t } = useTranslation("savdo_tafsilot");
   const items = sotuv.items ?? [];
-  const jami = items.length > 0 ? items.reduce((summa, item) => summa + mahsulotJami(item), 0) : sotuvSummasi(sotuv);
+  const jami = items.length > 0 ? qatorlarYigindisi(sotuv, items, mahsulotJami, sotuvSummasi(sotuv)) : sotuvSummasi(sotuv);
   const chegirmaSummasi = sotuvChegirmaSummasi(sotuv);
   const tasdiqlangan = sotuvHolati(sotuv) === "CONFIRMED";
   const omborNomi = sotuv.warehouse?.name || t("common.info.ombor");
@@ -2834,7 +2920,7 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
                   </div>
 
                   <div className="flex h-12 items-center justify-end rounded-md border border-slate-300 bg-white px-3">
-                    {pulniFormatlash(item.price)}
+                    {pulniFormatlash(item.price, qatorValyutasi(item, sotuv))}
                   </div>
 
                   <div className="flex h-12 items-center justify-end gap-2 rounded-md border border-slate-300 bg-white px-3">
@@ -2882,7 +2968,7 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
                   </div>
 
                   <span>{ombordanChiqdi} {t("common.dona")}</span>
-                  <span className="font-bold text-emerald-600">{pulniFormatlash(itemJami)}</span>
+                  <span className="font-bold text-emerald-600">{pulniFormatlash(itemJami, qatorValyutasi(item, sotuv))}</span>
                 </div>
               );
             })}
@@ -2897,13 +2983,13 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
 
         <div className="border-t border-slate-100 px-7 py-8">
           <div className="ml-auto max-w-md space-y-4 text-right text-slate-600">
-            <p>{t("common.totals.chegirmaSoliqsiz")} <span className="ml-8">{pulniFormatlash(jami + chegirmaSummasi)}</span></p>
-            <p>{t("common.totals.yetkazishSummasi")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
-            <p className="text-lime-700">{t("common.totals.chegirmaSummasi")} <span className="ml-8">{pulniFormatlash(chegirmaSummasi)}</span></p>
-            <p>{t("common.totals.soliqsizSumma")} <span className="ml-8">{pulniFormatlash(jami)}</span></p>
-            <p>{t("common.totals.soliqSummasi")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
+            <p>{t("common.totals.chegirmaSoliqsiz")} <span className="ml-8">{pulniFormatlash(jami + chegirmaSummasi, sotuvValyutasi(sotuv))}</span></p>
+            <p>{t("common.totals.yetkazishSummasi")} <span className="ml-8">{pulniFormatlash(0, sotuvValyutasi(sotuv))}</span></p>
+            <p className="text-lime-700">{t("common.totals.chegirmaSummasi")} <span className="ml-8">{pulniFormatlash(chegirmaSummasi, sotuvValyutasi(sotuv))}</span></p>
+            <p>{t("common.totals.soliqsizSumma")} <span className="ml-8">{pulniFormatlash(jami, sotuvValyutasi(sotuv))}</span></p>
+            <p>{t("common.totals.soliqSummasi")} <span className="ml-8">{pulniFormatlash(0, sotuvValyutasi(sotuv))}</span></p>
             <div className="border-t border-slate-200 pt-5 text-2xl font-bold text-slate-700">
-              {t("common.totals.umumiySumma")} <span className="ml-8">{pulniFormatlash(jami)}</span>
+              {t("common.totals.umumiySumma")} <span className="ml-8">{pulniFormatlash(jami, sotuvValyutasi(sotuv))}</span>
             </div>
           </div>
         </div>
@@ -3111,9 +3197,9 @@ function YetkazishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; 
                       <div className="mt-7 flex h-12 items-center justify-center rounded-md border border-dashed border-slate-300 text-slate-400">
                         <ImageIcon size={20} />
                       </div>
-                      <Maydon label={t("yetkazishPanel.narxi")} value={pulniFormatlash(item.price)} />
+                      <Maydon label={t("yetkazishPanel.narxi")} value={pulniFormatlash(item.price, qatorValyutasi(item, sotuv))} />
                       <Maydon label={t("yetkazishPanel.miqdori")} value={String(item.quantity)} />
-                      <Maydon label={t("yetkazishPanel.natija")} value={pulniFormatlash(mahsulotJami(item))} />
+                      <Maydon label={t("yetkazishPanel.natija")} value={pulniFormatlash(mahsulotJami(item), qatorValyutasi(item, sotuv))} />
                     </div>
                   ))
                 ) : (
@@ -3122,10 +3208,10 @@ function YetkazishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; 
               </div>
               <div className="mt-10 border-t border-slate-200 pt-8">
                 <div className="ml-auto max-w-md space-y-4 text-right text-slate-600">
-                  <p>{t("yetkazishPanel.tovarlarSummasi")} <span className="ml-8">{pulniFormatlash(jami)}</span></p>
-                  <p className="text-lime-700">{t("yetkazishPanel.mijozFoydasiLabel")} <span className="ml-8">{pulniFormatlash(0)}</span></p>
+                  <p>{t("yetkazishPanel.tovarlarSummasi")} <span className="ml-8">{pulniFormatlash(jami, sotuvValyutasi(sotuv))}</span></p>
+                  <p className="text-lime-700">{t("yetkazishPanel.mijozFoydasiLabel")} <span className="ml-8">{pulniFormatlash(0, sotuvValyutasi(sotuv))}</span></p>
                   <div className="border-t border-slate-200 pt-4 text-2xl font-bold">
-                    {t("yetkazishPanel.jami")} <span className="ml-8">{pulniFormatlash(jami)}</span>
+                    {t("yetkazishPanel.jami")} <span className="ml-8">{pulniFormatlash(jami, sotuvValyutasi(sotuv))}</span>
                   </div>
                 </div>
               </div>
@@ -3209,7 +3295,12 @@ function OmbordanChiqarishHujjatMazmuni({
   const omborlar = useOmborStore((state) => state.omborlar);
   const omborNomi = sotuvOmborNomi(sotuv, omborlar, t);
   const qoldiqlar = useSavdoStore((state) => state.qoldiqlar);
-  const mahsulotlarJami = items.reduce((yigindi, item) => yigindi + son(item.quantity) * son(item.price), 0);
+  const mahsulotlarJami = qatorlarYigindisi(
+    sotuv,
+    items,
+    (item) => son(item.quantity) * son(item.price),
+    sotuvSummasi(sotuv) + sotuvChegirmaSummasi(sotuv)
+  );
   const chegirmaSummasi = sotuvChegirmaSummasi(sotuv);
   const [faoliyatXatosi, setFaoliyatXatosi] = useState("");
   const [faolBolim, setFaolBolim] = useState<"Umumiy" | "Tovarlar">("Umumiy");
@@ -3347,7 +3438,7 @@ function OmbordanChiqarishHujjatMazmuni({
                               <span className="min-w-0 truncate font-semibold text-slate-800">{mahsulotNomi(item, t)}</span>
                             </div>
                           </td>
-                          <td className="whitespace-nowrap px-3 py-4">{pulniFormatlash(item.price)}</td>
+                          <td className="whitespace-nowrap px-3 py-4">{pulniFormatlash(item.price, qatorValyutasi(item, sotuv))}</td>
                           <td className="whitespace-nowrap px-3 py-4 font-semibold">
                             {item.quantity} <span className="font-normal text-slate-400">{t("common.dona")}</span>
                           </td>
@@ -3373,7 +3464,7 @@ function OmbordanChiqarishHujjatMazmuni({
                               {ombordanChiqdi} {t("common.dona")}
                             </span>
                           </td>
-                          <td className="whitespace-nowrap px-5 py-4 text-right font-black text-emerald-600">{pulniFormatlash(itemJami)}</td>
+                          <td className="whitespace-nowrap px-5 py-4 text-right font-black text-emerald-600">{pulniFormatlash(itemJami, qatorValyutasi(item, sotuv))}</td>
                         </tr>
                       );
                     })}
@@ -3389,27 +3480,27 @@ function OmbordanChiqarishHujjatMazmuni({
                 <div className="ml-auto w-full max-w-md space-y-2.5 text-sm">
                   <div className="flex justify-between gap-6 text-slate-500">
                     <span>{t("common.totals.chegirmaSoliqsiz").replace(/:\s*$/, "")}</span>
-                    <span className="font-semibold text-slate-700">{pulniFormatlash(mahsulotlarJami)}</span>
+                    <span className="font-semibold text-slate-700">{pulniFormatlash(mahsulotlarJami, sotuvValyutasi(sotuv))}</span>
                   </div>
                   <div className="flex justify-between gap-6 text-slate-500">
                     <span>{t("common.totals.yetkazishSummasi").replace(/:\s*$/, "")}</span>
-                    <span className="font-semibold text-slate-700">{pulniFormatlash(0)}</span>
+                    <span className="font-semibold text-slate-700">{pulniFormatlash(0, sotuvValyutasi(sotuv))}</span>
                   </div>
                   <div className="flex justify-between gap-6 text-lime-700">
                     <span>{t("common.totals.chegirmaSummasi").replace(/:\s*$/, "")}</span>
-                    <span className="font-semibold">{pulniFormatlash(chegirmaSummasi)}</span>
+                    <span className="font-semibold">{pulniFormatlash(chegirmaSummasi, sotuvValyutasi(sotuv))}</span>
                   </div>
                   <div className="flex justify-between gap-6 text-slate-500">
                     <span>{t("common.totals.soliqsizSumma").replace(/:\s*$/, "")}</span>
-                    <span className="font-semibold text-slate-700">{pulniFormatlash(mahsulotlarJami - chegirmaSummasi)}</span>
+                    <span className="font-semibold text-slate-700">{pulniFormatlash(mahsulotlarJami - chegirmaSummasi, sotuvValyutasi(sotuv))}</span>
                   </div>
                   <div className="flex justify-between gap-6 text-slate-500">
                     <span>{t("common.totals.soliqSummasi").replace(/:\s*$/, "")}</span>
-                    <span className="font-semibold text-slate-700">{pulniFormatlash(0)}</span>
+                    <span className="font-semibold text-slate-700">{pulniFormatlash(0, sotuvValyutasi(sotuv))}</span>
                   </div>
                   <div className="mt-3 flex items-center justify-between gap-6 rounded-2xl bg-orange-50 px-4 py-3.5 ring-1 ring-orange-100">
                     <span className="font-black text-slate-700">{t("common.totals.umumiySumma").replace(/:\s*$/, "")}</span>
-                    <span className="text-xl font-black text-slate-900">{pulniFormatlash(jami)}</span>
+                    <span className="text-xl font-black text-slate-900">{pulniFormatlash(jami, sotuvValyutasi(sotuv))}</span>
                   </div>
                 </div>
               </div>
@@ -3468,7 +3559,7 @@ function OmbordanChiqarishHujjatMazmuni({
 
                     <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-2">
                       <Korsatkich label={t("tabs.tovarlar")} value={String(items.length)} />
-                      <Korsatkich label={t("common.jadval.summa")} value={pulniFormatlash(jami)} ohang="yashil" />
+                      <Korsatkich label={t("common.jadval.summa")} value={pulniFormatlash(jami, sotuvValyutasi(sotuv))} ohang="yashil" />
                       <Korsatkich label={t("common.info.ombor")} value={omborNomi} />
                     </div>
 

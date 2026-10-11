@@ -3,7 +3,17 @@ import { useTranslation } from "react-i18next";
 import { Banknote, CalendarDays, CheckCircle2, ChevronDown, CreditCard, FileText, Landmark, UserCheck, UserRound } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import type { Sotuv, SotuvTolovi, TolovTuri } from "@/types/savdo";
-import { masulNomi, pulniFormatlash, sananiFormatlash, sotuvRaqami, sotuvSummasi, tolovTuriMatni } from "./savdoYordamchilari";
+import {
+  masulNomi,
+  pulniFormatlash,
+  sananiFormatlash,
+  sotuvRaqami,
+  sotuvSummasi,
+  sotuvValyutasi,
+  tolovSotuvValyutasida,
+  tolovTuriMatni,
+  tolovValyutasi,
+} from "./savdoYordamchilari";
 
 type TolovQatori = {
   tolov: SotuvTolovi;
@@ -59,7 +69,7 @@ export default function SotuvTolovlari({ sotuv, mijoz }: { sotuv: Sotuv; mijoz: 
                 className="min-w-0 text-left text-sm font-medium text-[#2563EB] transition hover:text-[#1D4ED8] hover:underline"
               >
                 {t("tolovQatori.nomi", { raqam: qator.raqam })}
-                {sanaMatni ? ` — ${sanaMatni}` : ""} ({t("tolovQatori.summa", { summa: pulniFormatlash(qator.tolov.amount) })})
+                {sanaMatni ? ` — ${sanaMatni}` : ""} ({t("tolovQatori.summa", { summa: pulniFormatlash(qator.tolov.amount, tolovValyutasi(qator.tolov, sotuv)) })})
               </button>
               <div className="flex shrink-0 items-center gap-2">
                 <div className="relative">
@@ -125,7 +135,9 @@ function TolovTafsilotModal({ sotuv, mijoz, qator, onYopish }: { sotuv: Sotuv; m
   const { tolov } = qator;
   const qarz = tolov.paymentType === "DEBT";
   const sotuvJami = sotuvSummasi(sotuv);
-  const sotuvUlushi = sotuvJami > 0 ? Math.min(100, Math.round((Number(tolov.amount) / sotuvJami) * 100)) : 0;
+  const tolovVal = tolovValyutasi(tolov, sotuv);
+  const sotuvVal = sotuvValyutasi(sotuv);
+  const sotuvUlushi = sotuvJami > 0 ? Math.min(100, Math.round((tolovSotuvValyutasida(tolov, sotuv) / sotuvJami) * 100)) : 0;
 
   return (
     <AppModal onClose={onYopish}>
@@ -147,7 +159,15 @@ function TolovTafsilotModal({ sotuv, mijoz, qator, onYopish }: { sotuv: Sotuv; m
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-sm text-slate-400">{t("tolovTafsilot.summa")}</p>
-                <p className="mt-1 text-4xl font-light tracking-wide text-slate-800">{pulniFormatlash(tolov.amount)}</p>
+                <p className="mt-1 text-4xl font-light tracking-wide text-slate-800">{pulniFormatlash(tolov.amount, tolovVal)}</p>
+                {tolovVal !== sotuvVal && (
+                  <p className="mt-1 text-xs font-semibold text-slate-400">
+                    {t("tolovTafsilot.sotuvValyutasidagiQiymat", {
+                      summa: pulniFormatlash(tolovSotuvValyutasida(tolov, sotuv), sotuvVal),
+                      kurs: Number(tolov.rate ?? 0) > 0 ? ` · ${t("tolovTafsilot.kurs", { kurs: Number(tolov.rate).toLocaleString("uz-UZ", { maximumFractionDigits: 2 }) })}` : "",
+                    })}
+                  </p>
+                )}
               </div>
               <span
                 className={`inline-flex h-7 shrink-0 items-center gap-1 rounded-full px-3 text-xs font-bold ${
@@ -164,7 +184,7 @@ function TolovTafsilotModal({ sotuv, mijoz, qator, onYopish }: { sotuv: Sotuv; m
                 <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
                   <span className="font-bold text-slate-600">{t("tolovTafsilot.sotuvUlushi", { foiz: sotuvUlushi })}</span>
                   <span className="text-slate-400">
-                    {t("tolovTafsilot.sotuvJami")} {pulniFormatlash(sotuvJami)}
+                    {t("tolovTafsilot.sotuvJami")} {pulniFormatlash(sotuvJami, sotuvVal)}
                   </span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-white ring-1 ring-slate-100" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={sotuvUlushi}>

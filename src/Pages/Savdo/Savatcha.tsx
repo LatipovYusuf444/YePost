@@ -19,6 +19,7 @@ import {
 import type { DraftStatus, MijozTanlovi, QoldiqTanlovi, Sotuv, XodimTanlovi } from "@/types/savdo";
 import { draftSalesService, saleToDraftSale } from "@/api/draftSalesService";
 import { pulniFormatlash, sotuvHolati, sotuvRaqami } from "./savdoYordamchilari";
+import { valyutaKodi } from "@/lib/valyuta";
 import { HujjatOchirishOynasi } from "@/Components/common/HujjatOchirish";
 import { hujjatOchiriladimi } from "@/lib/hujjatHolati";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
@@ -456,7 +457,7 @@ export default function Savatcha({
                       </td>
                       <td className="whitespace-nowrap border-b border-orange-50 px-4 py-4 align-middle">{draft.customerPhone || "-"}</td>
                       <td className="whitespace-nowrap border-b border-orange-50 px-4 py-4 text-center align-middle font-semibold">{draft.items.length}</td>
-                      <td className="whitespace-nowrap border-b border-orange-50 px-4 py-4 align-middle font-black text-emerald-700">{pulniFormatlash(draft.finalAmount || draft.totalAmount)}</td>
+                      <td className="whitespace-nowrap border-b border-orange-50 px-4 py-4 align-middle font-black text-emerald-700">{pulniFormatlash(draft.finalAmount || draft.totalAmount, valyutaKodi(draft.currency))}</td>
                       <td className="whitespace-nowrap border-b border-orange-50 px-4 py-4 align-middle">
                         <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ring-1 ${statusTone}`}>
                           {statusMatni[draft.status]}

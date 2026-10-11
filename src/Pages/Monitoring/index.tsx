@@ -35,7 +35,7 @@ import {
 } from "@/api/reportsApi";
 import { barchaFinanceTransactions } from "@/api/tolovApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
-import { sotuvHolati, sotuvSummasi } from "@/Pages/Savdo/savdoYordamchilari";
+import { sotuvHolati, sotuvSummasi, sotuvSummasiniSomga } from "@/Pages/Savdo/savdoYordamchilari";
 import type { Sotuv } from "@/types/savdo";
 import type { StockBalanceItem } from "@/api/reportsApi";
 import type { ChiqimHujjati, KirimHujjati, KochirishHujjati, MahsulotModifikatsiyasi, Ombor } from "@/types/ombor";
@@ -911,7 +911,7 @@ export default function Monitoring() {
     });
     return {
       summa: tasdiqlangan.reduce(
-        (jami, sotuv) => jami + sotuvSummasi(sotuv),
+        (jami, sotuv) => jami + sotuvSummasiniSomga(sotuvSummasi(sotuv), sotuv),
         0,
       ),
       soni: tasdiqlangan.length,
@@ -929,7 +929,7 @@ export default function Monitoring() {
     });
     return {
       summa: tasdiqlangan.reduce(
-        (jami, sotuv) => jami + sotuvSummasi(sotuv),
+        (jami, sotuv) => jami + sotuvSummasiniSomga(sotuvSummasi(sotuv), sotuv),
         0,
       ),
       soni: tasdiqlangan.length,

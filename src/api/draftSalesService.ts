@@ -63,9 +63,12 @@ export function saleToDraftSale(sale: Sotuv): DraftSale {
     };
   });
   const totalAmount = numberValue(sale.totalAmount ?? sale.total);
+  // Aralash sotuvda qator chegirmalari turli valyutada bo'lishi mumkin — ularni qo'shib bo'lmaydi, faqat backend `discountAmount` olinadi.
+  const saleCurrency = String(sale.currency ?? "UZS").toUpperCase();
+  const aralash = (sale.items ?? []).some((item) => String(item.currency ?? saleCurrency).toUpperCase() !== saleCurrency);
   const discountAmount =
     numberValue(sale.discountAmount) ||
-    items.reduce((sum, item) => sum + item.discount, 0);
+    (aralash ? 0 : items.reduce((sum, item) => sum + item.discount, 0));
 
   return {
     id: sale.id,
@@ -77,6 +80,7 @@ export function saleToDraftSale(sale: Sotuv): DraftSale {
     totalAmount,
     discountAmount,
     finalAmount: Math.max(totalAmount - discountAmount, 0),
+    currency: sale.currency,
     status: draftStatus(sale.status),
     note: sale.note,
     responsibleUserId: sale.responsibleId,
@@ -122,7 +126,10 @@ export const draftSalesService = {
   duplicateDraft: async (id: string) => {
     const response = await apiClient.get<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${id}`);
     const sale = apiData(response.data);
+    // Nusxada valyutalar saqlanadi: dollar qator narxi so'm sifatida qayta yuborilmasligi kerak.
+    const saleCurrency = String(sale.currency ?? "UZS").toUpperCase();
     const payload: SotuvYaratishMalumoti = {
+      ...(saleCurrency !== "UZS" ? { currency: saleCurrency } : {}),
       warehouseId: sale.warehouseId ?? "",
       customerId: sale.customerId,
       clientCompanyId: sale.clientCompanyId,
@@ -134,6 +141,9 @@ export const draftSalesService = {
         quantity: numberValue(item.quantity),
         price: numberValue(item.price),
         discount: numberValue(item.discount),
+        ...(String(item.currency ?? saleCurrency).toUpperCase() !== saleCurrency
+          ? { currency: String(item.currency).toUpperCase() }
+          : {}),
       })),
       payments: [],
     };

@@ -8,6 +8,7 @@ import {
   masulNomi,
   mijozNomi,
   pulniFormatlash,
+  sotuvValyutasi,
   qaytarishSummasi,
   sotuvChegirmaSummasi,
   sotuvHolati,
@@ -252,11 +253,11 @@ export default function SotuvlarJadvali({
                     </td>
                   )}
                   <td className="whitespace-nowrap border-b border-gray-100 px-4 py-3.5 font-semibold text-emerald-700">
-                    {pulniFormatlash(jami)}
+                    {pulniFormatlash(jami, sotuvValyutasi(sotuv))}
                   </td>
                   <td className="whitespace-nowrap border-b border-gray-100 px-4 py-3.5 font-semibold tabular-nums">
                     {chegirma > 0 ? (
-                      <span className="text-lime-700">{pulniFormatlash(chegirma)}</span>
+                      <span className="text-lime-700">{pulniFormatlash(chegirma, sotuvValyutasi(sotuv))}</span>
                     ) : (
                       <span className="text-slate-300">—</span>
                     )}
@@ -286,7 +287,7 @@ export default function SotuvlarJadvali({
                             </div>
                             {holat === "CONFIRMED" && qarz > 0 && (
                               <p className="mt-1.5 whitespace-nowrap text-[11px] font-bold text-rose-500">
-                                {t("sotuvlarJadvali.qarzSummasi", { summa: pulniFormatlash(qarz) })}
+                                {t("sotuvlarJadvali.qarzSummasi", { summa: pulniFormatlash(qarz, sotuvValyutasi(sotuv)) })}
                               </p>
                             )}
                           </div>

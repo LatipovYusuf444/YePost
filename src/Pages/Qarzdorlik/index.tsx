@@ -3,7 +3,7 @@ import { Building2, CircleDollarSign, RefreshCw, Search, UserRound } from "lucid
 import { useTranslation } from "react-i18next";
 import JadvalYuklanmoqda from "@/Pages/Savdo/JadvalYuklanmoqda";
 import type { Sotuv } from "@/types/savdo";
-import { mijozNomi, pulniFormatlash, sananiFormatlash, sotuvHolati, sotuvQarzdorlikSummasi, sotuvRaqami, sotuvSummasi, sotuvTolanganSummasi } from "@/Pages/Savdo/savdoYordamchilari";
+import { mijozNomi, pulniFormatlash, sananiFormatlash, sotuvHolati, sotuvQarzdorlikSummasi, sotuvRaqami, sotuvSummasi, sotuvTolanganSummasi, sotuvValyutasi } from "@/Pages/Savdo/savdoYordamchilari";
 import TablePagination from "@/Components/common/TablePagination";
 
 type Props = {
@@ -71,7 +71,7 @@ export default function Qarzdorliklar({ sotuvlar, onSotuvniOchish, onYangilash, 
       <thead className="bg-[#F8FAFC] text-xs font-black uppercase text-slate-400"><tr><th className="px-8 py-4">{t("table.customer")}</th><th className="px-5 py-4">{t("table.sale")}</th><th className="px-5 py-4">{t("table.total")}</th><th className="px-5 py-4">{t("table.paid")}</th><th className="px-5 py-4">{t("table.debt")}</th><th className="px-5 py-4">{t("table.date")}</th></tr></thead>
       <tbody className="divide-y divide-orange-100/70">{visibleRows.map((sotuv) => <tr key={sotuv.id} onClick={() => void onSotuvniOchish(sotuv)} className="cursor-pointer hover:bg-orange-50/50">
         <td className="px-8 py-5"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-50 text-orange-500 ring-1 ring-orange-100">{kompaniyami(sotuv) ? <Building2 size={18}/> : <UserRound size={18}/>}</span><div><p className="font-black text-slate-900">{mijozNomi(sotuv)}</p><p className="mt-0.5 text-xs font-semibold text-slate-400">{telefon(sotuv)}</p></div></div></td>
-        <td className="px-5 py-5 font-semibold text-slate-900">{sotuvRaqami(sotuv)}</td><td className="px-5 py-5 font-bold text-slate-700">{pulniFormatlash(sotuvSummasi(sotuv))}</td><td className="px-5 py-5 font-bold text-emerald-600">{pulniFormatlash(sotuvTolanganSummasi(sotuv))}</td><td className="px-5 py-5"><span className="rounded-xl bg-red-50 px-3 py-2 font-black text-red-600 ring-1 ring-red-100">{pulniFormatlash(sotuvQarzdorlikSummasi(sotuv))}</span></td><td className="px-5 py-5 font-semibold text-slate-500">{sananiFormatlash(sotuv.confirmedAt ?? sotuv.createdAt ?? sotuv.date)}</td>
+        <td className="px-5 py-5 font-semibold text-slate-900">{sotuvRaqami(sotuv)}</td><td className="px-5 py-5 font-bold text-slate-700">{pulniFormatlash(sotuvSummasi(sotuv), sotuvValyutasi(sotuv))}</td><td className="px-5 py-5 font-bold text-emerald-600">{pulniFormatlash(sotuvTolanganSummasi(sotuv), sotuvValyutasi(sotuv))}</td><td className="px-5 py-5"><span className="rounded-xl bg-red-50 px-3 py-2 font-black text-red-600 ring-1 ring-red-100">{pulniFormatlash(sotuvQarzdorlikSummasi(sotuv), sotuvValyutasi(sotuv))}</span></td><td className="px-5 py-5 font-semibold text-slate-500">{sananiFormatlash(sotuv.confirmedAt ?? sotuv.createdAt ?? sotuv.date)}</td>
       </tr>)}</tbody>
     </table></div>
     <TablePagination page={page} pageSize={pageSize} totalItems={rows.length} onPageChange={setPage} onPageSizeChange={setPageSize} />

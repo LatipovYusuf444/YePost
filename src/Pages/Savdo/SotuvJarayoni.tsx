@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { ArrowRight, Ban, Check, CheckCircle2, ChevronRight, CreditCard, LoaderCircle, Package } from "lucide-react";
 import type { Sotuv, SotuvHolati } from "@/types/savdo";
-import { pulniFormatlash, sotuvHolatiMatni, sotuvQarzdorlikSummasi, sotuvTolanganSummasi } from "./savdoYordamchilari";
+import { pulniFormatlash, sotuvHolatiMatni, sotuvQarzdorlikSummasi, sotuvTolanganSummasi, sotuvValyutasi } from "./savdoYordamchilari";
 
 type QadamHolati = "bajarilgan" | "joriy" | "kutilmoqda";
 
@@ -81,7 +81,7 @@ export default function SotuvJarayoni({ sotuv, jami, holat, amalBajarilmoqda, on
       izoh: toliqTolangan
         ? t("jarayon.qadamlar.tolov.izohToliq")
         : tolangan > 0
-          ? t("jarayon.qadamlar.tolov.izohQisman", { tolangan: pulniFormatlash(tolangan), jami: pulniFormatlash(jami) })
+          ? t("jarayon.qadamlar.tolov.izohQisman", { tolangan: pulniFormatlash(tolangan, sotuvValyutasi(sotuv)), jami: pulniFormatlash(jami, sotuvValyutasi(sotuv)) })
           : t("jarayon.qadamlar.tolov.izohYoq"),
       holat: toliqTolangan ? "bajarilgan" : tasdiqlangan ? "joriy" : "kutilmoqda",
     },
@@ -162,7 +162,7 @@ export default function SotuvJarayoni({ sotuv, jami, holat, amalBajarilmoqda, on
               </p>
               <p className="mt-1 text-sm leading-6 text-slate-500">
                 {tasdiqlangan
-                  ? t("jarayon.keyingi.tolov.tavsif", { summa: pulniFormatlash(qarz) })
+                  ? t("jarayon.keyingi.tolov.tavsif", { summa: pulniFormatlash(qarz, sotuvValyutasi(sotuv)) })
                   : t("jarayon.keyingi.ombor.tavsif")}
               </p>
             </div>
