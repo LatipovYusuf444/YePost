@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { Download, PackageMinus, Percent, Receipt, TrendingDown, TrendingUp, Wallet, type LucideIcon } from "lucide-react";
 import MuddatTanlov from "./MuddatTanlov";
@@ -7,7 +7,8 @@ import { useHisobotRealData } from "./HisobotRealData";
 import { incomeExpenseReportApi } from "@/api/reportsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { FoydaXarajatYozuvi } from "./types";
-import { bugun, bugunMinus, pul } from "./yordamchilar";
+import { bugun, bugunMinus } from "./yordamchilar";
+import { pulMatni, valyutaKodi, type Valyuta } from "@/lib/valyuta";
 import YuklanmoqdaHolati from "./YuklanmoqdaHolati";
 
 // Foyda va xarajat (P&L) hisoboti — Daromad − Tannarx = Yalpi foyda − Xarajat = Sof foyda.
@@ -35,8 +36,18 @@ type IncomeExpenseResponse = {
     grossProfit?: number | string;
     expense?: number | string;
     netProfit?: number | string;
+    // Hisobot valyutasi (Sozlamalar → Valyuta → Hisobot valyutasi). Berilmasa — so'm.
+    currency?: string;
   };
 };
+
+// Hisobot javobi qaysi valyutada kelsa (summary.currency), sahifadagi barcha summalar shu valyutadan ko'rsatiladi.
+const HisobotValyutasi = createContext<Valyuta>("UZS");
+
+function usePul() {
+  const valyuta = useContext(HisobotValyutasi);
+  return (summa: number) => pulMatni(summa, valyuta, true);
+}
 
 function guruhla(rows: FoydaXarajatYozuvi[], tur: "daromad" | "tannarx" | "xarajat"): SatrModeli[] {
   const map = new Map<string, number>();
@@ -85,6 +96,8 @@ export default function FoydaXarajatHisoboti() {
   const [foydaXarajat, setFoydaXarajat] = useState<FoydaXarajatYozuvi[]>([]);
   const [qaytarilgan, setQaytarilgan] = useState(0);
   const [boshqaDaromad, setBoshqaDaromad] = useState({ jami: 0, zavodBonusi: 0 });
+  const [valyuta, setValyuta] = useState<Valyuta>("UZS");
+  const pul = (summa: number) => pulMatni(summa, valyuta, true);
   const [yuklanmoqda, setYuklanmoqda] = useState(false);
   const [xato, setXato] = useState("");
 
@@ -101,6 +114,7 @@ export default function FoydaXarajatHisoboti() {
       .then((response) => {
         if (!active) return;
         const value = response as IncomeExpenseResponse;
+        setValyuta(valyutaKodi(value.summary?.currency));
         const sana = `${dateTo}T23:59:59.000Z`;
         setQaytarilgan(Number(value.income?.returns ?? 0));
         const boshqaJami = Number(value.income?.otherIncome ?? 0);
@@ -185,6 +199,7 @@ export default function FoydaXarajatHisoboti() {
   const foydali = hisob.sof >= 0;
 
   return (
+    <HisobotValyutasi.Provider value={valyuta}>
     <div className="space-y-5">
       {/* Filter paneli */}
       <section className="rounded-3xl border border-orange-100 bg-white p-5 shadow-sm">
@@ -333,6 +348,7 @@ export default function FoydaXarajatHisoboti() {
         </>
       )}
     </div>
+    </HisobotValyutasi.Provider>
   );
 }
 
@@ -345,6 +361,7 @@ const TONLAR = {
 type Ton = keyof typeof TONLAR;
 
 function Korsatkich({ icon: Icon, nom, summa, izoh, tone }: { icon: LucideIcon; nom: string; summa: number; izoh: string; tone: Ton }) {
+  const pul = usePul();
   const t = TONLAR[tone];
   return (
     <div className={`rounded-[24px] border border-slate-100 bg-white p-5 shadow-sm ring-1 ${t.halqa}`}>
@@ -372,6 +389,7 @@ function Karta({ icon: Icon, nom, tone, children }: { icon: LucideIcon; nom: str
 }
 
 function Satr({ nom, summa, jami, tone }: { nom: string; summa: number; jami: number; tone: Ton }) {
+  const pul = usePul();
   const t = TONLAR[tone];
   const ulush = jami ? Math.min(100, Math.abs(summa / jami) * 100) : 0;
   return (
@@ -391,6 +409,7 @@ function Satr({ nom, summa, jami, tone }: { nom: string; summa: number; jami: nu
 }
 
 function Jami({ nom, summa, tone }: { nom: string; summa: number; tone: Ton }) {
+  const pul = usePul();
   const t = TONLAR[tone];
   return (
     <div className={`flex items-center justify-between px-6 py-4 ${t.fon}`}>
@@ -401,6 +420,7 @@ function Jami({ nom, summa, tone }: { nom: string; summa: number; tone: Ton }) {
 }
 
 function Hisoblash({ nom, summa, izoh, kuchli }: { nom: string; summa: number; izoh?: string; kuchli?: boolean }) {
+  const pul = usePul();
   return (
     <div className={`flex items-center justify-between px-6 ${kuchli ? "bg-blue-50 py-4" : "py-3.5"}`}>
       <div>

@@ -9,7 +9,7 @@ import {
   type KursYozuvi,
 } from "@/api/valyutaApi";
 import { foydalanuvchiKursniOzgartiraOladimi } from "@/lib/roles";
-import { useValyutaStore } from "@/lib/valyuta";
+import { useValyutaStore, valyutaKodi, type Valyuta } from "@/lib/valyuta";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { BolimKarta, Maydon, Switch } from "./UmumiyUI";
 import { maydonKlass } from "./yordamchilar";
@@ -61,6 +61,7 @@ export default function ValyutaBolimi() {
   const navbarniYangilash = useValyutaStore((holat) => holat.kursniYuklash);
 
   const [yoniq, setYoniq] = useState(false);
+  const [hisobotValyutasi, setHisobotValyutasi] = useState<Valyuta>("UZS");
   const [amaldagi, setAmaldagi] = useState<AmaldagiKurs | null>(null);
   const [royxat, setRoyxat] = useState<KursYozuvi[]>([]);
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
@@ -87,6 +88,7 @@ export default function ValyutaBolimi() {
       ]);
       const kurslar = await valyutaApi.kurslarRoyxati({ dateFrom: kunlarOldin(joriy.date, TARIX_KUNLARI) });
       setYoniq(rejim ? Boolean(rejim.enabled) : kursniSongaAylantirish(joriy.rate) !== null);
+      setHisobotValyutasi(valyutaKodi(rejim?.reportCurrency));
       setAmaldagi(joriy);
       setRoyxat([...kurslar].sort((a, b) => b.date.localeCompare(a.date)));
     } catch (error) {
@@ -112,8 +114,25 @@ export default function ValyutaBolimi() {
     try {
       const saqlangan = await valyutaApi.rejimniYangilash(!yoniq);
       setYoniq(Boolean(saqlangan.enabled));
+      if (saqlangan.reportCurrency) setHisobotValyutasi(valyutaKodi(saqlangan.reportCurrency));
       setXabar(t(saqlangan.enabled ? "valyuta.modeEnabledMessage" : "valyuta.modeDisabledMessage"));
       void navbarniYangilash();
+    } catch (error) {
+      setXato(getApiErrorMessage(error));
+    } finally {
+      setRejimSaqlanmoqda(false);
+    }
+  }
+
+  async function hisobotValyutasiniOzgartirish(yangi: Valyuta) {
+    if (!tahrirlaydi || rejimSaqlanmoqda || yangi === hisobotValyutasi) return;
+    setRejimSaqlanmoqda(true);
+    setXato("");
+    setXabar("");
+    try {
+      const saqlangan = await valyutaApi.rejimniYangilash(yoniq, yangi);
+      setHisobotValyutasi(valyutaKodi(saqlangan.reportCurrency ?? yangi));
+      setXabar(t("valyuta.reportCurrency.savedMessage", { valyuta: t(yangi === "USD" ? "valyuta.reportCurrency.usd" : "valyuta.reportCurrency.uzs") }));
     } catch (error) {
       setXato(getApiErrorMessage(error));
     } finally {
@@ -200,6 +219,31 @@ export default function ValyutaBolimi() {
               </div>
               <Switch yoniq={yoniq} onChange={() => void rejimniOzgartirish()} disabled={!tahrirlaydi || rejimSaqlanmoqda} />
             </div>
+
+            {yoniq && (
+              <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl bg-slate-50 px-5 py-4 lg:col-span-2">
+                <div className="min-w-0 max-w-xl">
+                  <p className="text-sm font-black text-slate-800">{t("valyuta.reportCurrency.label")}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">{t("valyuta.reportCurrency.hint")}</p>
+                </div>
+                <div className="inline-flex rounded-xl bg-white p-1 ring-1 ring-slate-200" role="group" aria-label={t("valyuta.reportCurrency.label")}>
+                  {(["UZS", "USD"] as const).map((valyuta) => (
+                    <button
+                      key={valyuta}
+                      type="button"
+                      onClick={() => void hisobotValyutasiniOzgartirish(valyuta)}
+                      disabled={!tahrirlaydi || rejimSaqlanmoqda}
+                      aria-pressed={hisobotValyutasi === valyuta}
+                      className={`rounded-lg px-4 py-2 text-xs font-black transition disabled:cursor-not-allowed ${
+                        hisobotValyutasi === valyuta ? "bg-[#2563EB] text-white shadow-sm" : "text-slate-500 hover:text-slate-800 disabled:hover:text-slate-500"
+                      }`}
+                    >
+                      {t(valyuta === "USD" ? "valyuta.reportCurrency.usd" : "valyuta.reportCurrency.uzs")}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className={`rounded-2xl border px-5 py-4 ${joriyKurs !== null ? "border-emerald-200 bg-emerald-50/50" : "border-amber-200 bg-amber-50/60"}`}>
               <p className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-slate-500">

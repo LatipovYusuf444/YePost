@@ -216,6 +216,13 @@
     "readOnlyNotice": "Rejimni va kursni faqat admin yoki direktor o'zgartira oladi.",
     "modeEnabledMessage": "Valyuta rejimi yoqildi.",
     "modeDisabledMessage": "Valyuta rejimi o'chirildi.",
+    "reportCurrency": {
+      "label": "Hisobot valyutasi",
+      "hint": "Hisobotlardagi jami summalar shu valyutada hisoblanadi: so'm va dollardagi savdolar o'sha kunning kursi bilan o'giriladi.",
+      "uzs": "So'm",
+      "usd": "Dollar ($)",
+      "savedMessage": "Hisobot valyutasi o'zgartirildi: {{valyuta}}."
+    },
     "currentRate": "Bugungi kurs",
     "som": "so'm",
     "effectiveSince": "Kurs kiritilgan kun: {{sana}}",
