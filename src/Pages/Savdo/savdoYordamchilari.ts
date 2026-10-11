@@ -1,5 +1,5 @@
-import { pulMatni } from "@/lib/valyuta";
-import type { Qaytarish, Sotuv, SotuvHolati, SotuvMahsuloti, TolovTuri } from "@/types/savdo";
+import { pulMatni, useValyutaStore, valyutaKodi, type Valyuta } from "@/lib/valyuta";
+import type { Qaytarish, QaytarishMahsuloti, Sotuv, SotuvHolati, SotuvMahsuloti, SotuvTolovi, TolovTuri } from "@/types/savdo";
 
 type MoslashuvchanSotuvMahsuloti = SotuvMahsuloti &
   Record<string, unknown> & {
@@ -67,8 +67,75 @@ export function sotuvMahsulotiNarxi(item: SotuvMahsuloti) {
   return miqdor > 0 && jami > 0 ? jami / miqdor : 0;
 }
 
-export function pulniFormatlash(value: number | string | null | undefined) {
-  return pulMatni(raqamgaAylantirish(value));
+/**
+ * Summani matnga aylantiradi. `valyuta` berilsa va u dollar bo'lsa, summa o'z valyutasida ($) ko'rsatiladi — kursga o'girilmaydi
+ * (aralash sotuvda dollar qatori tasdiqlangan kundagi kursga bog'langan, bugungi kurs bilan qayta hisoblash noto'g'ri bo'lardi).
+ * Aks holda (so'm yoki valyuta berilmagan) avvalgidek: tanlangan ko'rinish valyutasida.
+ */
+export function pulniFormatlash(value: number | string | null | undefined, valyuta?: Valyuta) {
+  const son = raqamgaAylantirish(value);
+  if (valyuta === "USD") return `$${son.toLocaleString("uz-UZ", { maximumFractionDigits: 2 })}`;
+  return pulMatni(son);
+}
+
+/** Sotuv jami / qarz / foyda hisoblanadigan valyuta (backend `currency`; belgilanmagan bo'lsa — so'm). */
+export function sotuvValyutasi(sotuv: Pick<Sotuv, "currency">): Valyuta {
+  return valyutaKodi(sotuv.currency);
+}
+
+/** Qator o'z valyutasi (aralash sotuvda dollar qatori); belgilanmagan bo'lsa — sotuv valyutasi. */
+export function qatorValyutasi(item: Pick<SotuvMahsuloti, "currency">, sotuv: Pick<Sotuv, "currency">): Valyuta {
+  return item.currency ? valyutaKodi(item.currency) : sotuvValyutasi(sotuv);
+}
+
+/** To'lov o'z valyutasi; belgilanmagan bo'lsa — sotuv valyutasi. */
+export function tolovValyutasi(tolov: Pick<SotuvTolovi, "currency">, sotuv: Pick<Sotuv, "currency">): Valyuta {
+  return tolov.currency ? valyutaKodi(tolov.currency) : sotuvValyutasi(sotuv);
+}
+
+// Sotuvdagi so'm/dollar kursi (1 USD = necha so'm): avval boshqa valyutadagi to'lovdan (`amount` va `settledAmount` nisbati —
+// tasdiqlangan kundagi kurs), bo'lmasa bugungi kursdan. Topilmasa 0.
+function sotuvKursi(sotuv: Pick<Sotuv, "currency" | "payments">) {
+  const sotuvVal = sotuvValyutasi(sotuv);
+  for (const tolov of sotuv.payments ?? []) {
+    const summa = raqamgaAylantirish(tolov.amount);
+    const hisoblangan = raqamgaAylantirish(tolov.settledAmount);
+    const tolovVal = tolov.currency ? valyutaKodi(tolov.currency) : sotuvVal;
+    if (tolovVal === sotuvVal || !(summa > 0) || !(hisoblangan > 0)) continue;
+    return tolovVal === "USD" ? hisoblangan / summa : summa / hisoblangan;
+  }
+  const { kurs, kursBor } = useValyutaStore.getState();
+  return kursBor && kurs > 0 ? kurs : 0;
+}
+
+/** Summani so'mga o'giradi (dollar bo'lsa bugungi kurs bilan; kurs yo'q bo'lsa — o'zgarishsiz). Turli valyutadagi hujjatlar yig'indisi uchun. */
+export function summaniSomga(summa: number, valyuta: Valyuta) {
+  if (valyuta !== "USD") return summa;
+  const { kurs, kursBor } = useValyutaStore.getState();
+  return kursBor && kurs > 0 ? summa * kurs : summa;
+}
+
+export function sotuvSummasiniSomga(summa: number, sotuv: Pick<Sotuv, "currency">) {
+  return summaniSomga(summa, sotuvValyutasi(sotuv));
+}
+
+/** Qaytarish hujjati summalari valyutasi: hujjatning o'zi, bo'lmasa bog'langan sotuv, bo'lmasa so'm. */
+export function qaytarishValyutasi(qaytarish: Pick<Qaytarish, "currency" | "sale">): Valyuta {
+  return valyutaKodi(qaytarish.currency ?? qaytarish.sale?.currency);
+}
+
+/** Qaytarish hujjati qatori valyutasi: qatorning o'zi, bo'lmasa hujjat valyutasi. */
+export function qaytarishQatoriValyutasi(item: Pick<QaytarishMahsuloti, "currency">, qaytarish: Pick<Qaytarish, "currency" | "sale">): Valyuta {
+  return item.currency ? valyutaKodi(item.currency) : qaytarishValyutasi(qaytarish);
+}
+
+/** Qator summasini sotuv valyutasiga o'giradi; kurs topilmasa `null`. */
+export function sotuvValyutasigaOgirish(summa: number, manba: Valyuta, sotuv: Pick<Sotuv, "currency" | "payments">) {
+  const nishon = sotuvValyutasi(sotuv);
+  if (manba === nishon) return summa;
+  const kurs = sotuvKursi(sotuv);
+  if (!(kurs > 0)) return null;
+  return manba === "USD" ? summa * kurs : summa / kurs;
 }
 
 export function sananiFormatlash(value?: string) {
@@ -91,8 +158,11 @@ export function sotuvSummasi(sotuv: Sotuv) {
     sotuv.items?.reduce(
       (jami, mahsulot) =>
         jami +
-        sotuvMahsulotiMiqdori(mahsulot) * sotuvMahsulotiNarxi(mahsulot) -
-        raqamgaAylantirish(mahsulot.discount),
+        (sotuvValyutasigaOgirish(
+          sotuvMahsulotiMiqdori(mahsulot) * sotuvMahsulotiNarxi(mahsulot) - raqamgaAylantirish(mahsulot.discount),
+          qatorValyutasi(mahsulot, sotuv),
+          sotuv
+        ) ?? 0),
       0
     ) ?? 0;
   const backendJami = raqamgaAylantirish(sotuv.totalAmount ?? sotuv.total);
@@ -104,15 +174,24 @@ export function sotuvSummasi(sotuv: Sotuv) {
 export function sotuvChegirmaSummasi(sotuv: Sotuv) {
   const qatorlarChegirmasi =
     sotuv.items?.reduce(
-      (jami, mahsulot) => jami + raqamgaAylantirish(mahsulot.discount),
+      (jami, mahsulot) =>
+        jami + (sotuvValyutasigaOgirish(raqamgaAylantirish(mahsulot.discount), qatorValyutasi(mahsulot, sotuv), sotuv) ?? 0),
       0
     ) ?? 0;
 
   return qatorlarChegirmasi > 0 ? qatorlarChegirmasi : raqamgaAylantirish(sotuv.discountAmount);
 }
 
+// To'lov sotuv valyutasidagi qiymati: boshqa valyutadagi to'lovda backend hisoblab saqlagan `settledAmount`.
+export function tolovSotuvValyutasida(tolov: SotuvTolovi, sotuv: Pick<Sotuv, "currency" | "payments">) {
+  const summa = raqamgaAylantirish(tolov.amount);
+  if (tolovValyutasi(tolov, sotuv) === sotuvValyutasi(sotuv)) return summa;
+  const hisoblangan = raqamgaAylantirish(tolov.settledAmount);
+  return hisoblangan > 0 ? hisoblangan : (sotuvValyutasigaOgirish(summa, tolovValyutasi(tolov, sotuv), sotuv) ?? 0);
+}
+
 export function sotuvTolanganSummasi(sotuv: Sotuv) {
-  const paymentsJami = sotuv.payments?.reduce((jami, tolov) => jami + raqamgaAylantirish(tolov.amount), 0) ?? 0;
+  const paymentsJami = sotuv.payments?.reduce((jami, tolov) => jami + tolovSotuvValyutasida(tolov, sotuv), 0) ?? 0;
   const holat = String(sotuv.status ?? "DRAFT").toUpperCase();
   if (
     holat !== "DRAFT" &&

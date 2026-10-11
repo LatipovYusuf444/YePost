@@ -7,6 +7,8 @@ import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./resp
 
 export type ValyutaRejimi = {
   enabled: boolean;
+  /** Hisobotlardagi jami summalar valyutasi (UZS/USD); berilmasa — so'm. */
+  reportCurrency?: string | null;
 };
 
 export type KursYozuvi = {
@@ -36,10 +38,15 @@ export const valyutaApi = {
   rejimniOlish: async () =>
     apiData((await apiClient.get<ValyutaRejimi | ApiEnvelope<ValyutaRejimi>>("/settings/currency")).data),
 
-  // PATCH /settings/currency — faqat ADMIN/DIREKTOR
-  rejimniYangilash: async (enabled: boolean) =>
+  // PATCH /settings/currency — faqat ADMIN/DIREKTOR. `reportCurrency` faqat o'zgartirilganda yuboriladi.
+  rejimniYangilash: async (enabled: boolean, reportCurrency?: "UZS" | "USD") =>
     apiData(
-      (await apiClient.patch<ValyutaRejimi | ApiEnvelope<ValyutaRejimi>>("/settings/currency", { enabled })).data
+      (
+        await apiClient.patch<ValyutaRejimi | ApiEnvelope<ValyutaRejimi>>("/settings/currency", {
+          enabled,
+          ...(reportCurrency ? { reportCurrency } : {}),
+        })
+      ).data
     ),
 
   // GET /settings/exchange-rates?dateFrom=&dateTo= — yangisi birinchi (hamma rol)

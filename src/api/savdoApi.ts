@@ -157,9 +157,10 @@ export async function sotuvniOchirish(sotuvId: string) {
 // Tasdiqlangan sotuvdagi qarzdorlikka yangi to'lov qo'shadi.
 // Payment endpoint umumiy ResponseHelper qaytargani uchun, saqlangandan keyin
 // sotuvning yangilangan holatini alohida GET orqali qayta olamiz.
+// POST /sales/:id/payments — currency berilsa to'lov shu valyutada (boshqa valyutadagi to'lov bugungi kurs bilan hisoblanadi).
 export async function sotuvgaTolovQoshish(
   sotuvId: string,
-  tolov: Pick<SotuvTolovi, "paymentType" | "amount">
+  tolov: Pick<SotuvTolovi, "paymentType" | "amount" | "currency">
 ) {
   await apiClient.post(`/sales/${sotuvId}/payments`, tolov);
   return sotuvTafsilotiniOlish(sotuvId);
@@ -492,6 +493,8 @@ function qoldiqValyutasi(narx?: MahsulotNarxi | null): QoldiqValyutasi | undefin
     asl: Number(narx.retailPrice ?? 0),
     kurs: kursniSongaAylantirish(narx.rate),
     uzs: kursniSongaAylantirish(narx.retailPriceUzs),
+    ulgurjiAsl: Number(narx.wholesalePrice ?? 0) || 0,
+    ulgurjiUzs: kursniSongaAylantirish(narx.wholesalePriceUzs),
   };
 }
 

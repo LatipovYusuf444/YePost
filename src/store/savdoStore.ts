@@ -200,7 +200,7 @@ type SavdoState = {
   sotuvniTasdiqlash: (sotuvId: string) => Promise<boolean>;
   sotuvgaTolovQoshish: (
     sotuvId: string,
-    tolov: Pick<SotuvTolovi, "paymentType" | "amount">
+    tolov: Pick<SotuvTolovi, "paymentType" | "amount" | "currency">
   ) => Promise<boolean>;
   sotuvniBekorQilish: (sotuvId: string) => Promise<boolean>;
   sotuvniOchirish: (sotuvId: string) => Promise<boolean>;

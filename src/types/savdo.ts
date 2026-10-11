@@ -57,6 +57,8 @@ export type SotuvMahsuloti = {
   price: number | string;
   discount?: number | string;
   total?: number | string;
+  // Qator valyutasi (UZS/USD): price, discount va total shu valyutada. Berilmasa — sotuv valyutasi.
+  currency?: string | null;
   modification?: {
     id: string;
     name?: string;
@@ -79,6 +81,11 @@ export type SotuvTolovi = {
   id?: string;
   paymentType: TolovTuri;
   amount: number | string;
+  // To'lov valyutasi: amount shu valyutada. Berilmasa — sotuv valyutasi. Qaytim doim so'mda beriladi.
+  currency?: string | null;
+  // Shu to'lovning sotuv valyutasidagi qiymati va hisoblangan kurs (backend saqlaydi, javobda keladi).
+  settledAmount?: number | string | null;
+  rate?: number | string | null;
   createdAt?: string;
   paidAt?: string;
   date?: string;
@@ -86,6 +93,8 @@ export type SotuvTolovi = {
 
 export type Sotuv = {
   id: string;
+  // Sotuv valyutasi: jami, qarz va foyda shu valyutada (UZS/USD). Berilmasa — so'm.
+  currency?: string | null;
   number?: string;
   documentNumber?: string;
   docNumber?: string;
@@ -127,6 +136,8 @@ export type DraftSale = {
   totalAmount: number;
   discountAmount: number;
   finalAmount: number;
+  // Jami summalar valyutasi (sotuv valyutasi; berilmasa — so'm).
+  currency?: string | null;
   status: DraftStatus;
   note?: string;
   responsibleUserId?: string;
@@ -143,6 +154,8 @@ export type SotuvYaratishMalumoti = {
   clientCompanyId?: string;
   responsibleId?: string;
   saleType?: SotuvTuri;
+  // Sotuv valyutasi. Faqat aralash (so'm + dollar) sotuvda yuboriladi; aks holda berilmaydi (so'm).
+  currency?: string;
   note?: string;
   // Donalik savdo uchun mijoz ismi (≤200 belgi) va telefoni (≤50 belgi). Qarzga sotish uchun baribir customerId kerak.
   walkInCustomerName?: string;
@@ -152,6 +165,8 @@ export type SotuvYaratishMalumoti = {
     quantity: number;
     price: number;
     discount?: number;
+    // Qator o'z valyutasida (masalan, dollarda saqlangan mahsulot narxi). Berilmasa — sotuv valyutasi.
+    currency?: string;
   }>;
   payments?: SotuvTolovi[];
 };
@@ -160,6 +175,8 @@ export type QaytarishMahsuloti = {
   id?: string;
   saleItemId: string;
   modificationId: string;
+  // Qator valyutasi (price shu valyutada); berilmasa — hujjat valyutasi.
+  currency?: string | null;
   quantity: number;
   price: number;
   modification?: SotuvMahsuloti["modification"];
@@ -190,6 +207,8 @@ export type Qaytarish = {
   debtBefore?: number | string | null;
   debtAfter?: number | string | null;
   returnedQuantity?: number | string | null;
+  // Hujjat summalari valyutasi (berilmasa — bog'langan sotuv valyutasi, u ham bo'lmasa so'm).
+  currency?: string | null;
   customer?: NomliMalumot | null;
   createdAt?: string;
   updatedAt?: string;
@@ -228,6 +247,8 @@ export type QaytariladiganQator = {
   price?: number | string | null;
   // Qaytarishda bir dona uchun hisoblanadigan qiymat (backend beradi).
   unitValue?: number | string | null;
+  // Qator valyutasi: price va unitValue shu valyutada (aralash sotuvda dollar qatori). Berilmasa — sotuv valyutasi.
+  currency?: string | null;
   modification?: SotuvMahsuloti["modification"];
 };
 
@@ -271,6 +292,10 @@ export type QoldiqValyutasi = {
   kurs: number | null;
   /** So'mdagi chakana narx; kurs kiritilmagan bo'lsa null (sotuvga qo'shib bo'lmaydi). */
   uzs: number | null;
+  /** Katalogdagi asl (dollardagi) ulgurji narx; yo'q bo'lsa 0. */
+  ulgurjiAsl?: number;
+  /** So'mdagi ulgurji narx; yo'q bo'lsa null. */
+  ulgurjiUzs?: number | null;
 };
 
 export type QoldiqTanlovi = {
