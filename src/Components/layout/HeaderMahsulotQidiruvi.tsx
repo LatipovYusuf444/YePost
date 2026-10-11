@@ -12,6 +12,7 @@ import {
 import { usePosStore } from "@/store/posStore";
 import type { QoldiqTanlovi } from "@/types/savdo";
 import {
+  dollarMalumoti,
   mahsulotNomi,
   qoldiqBirlashtirish,
   qoldiqMiqdori,
@@ -262,6 +263,7 @@ export default function HeaderMahsulotQidiruvi({ className }: Props) {
         narx,
         chakanaNarx: qoldiqNarxi(qator.item, "chakana"),
         ulgurjiNarx: qoldiqNarxi(qator.item, "ulgurji"),
+        ...dollarMalumoti(qator.item),
         qoldiq: qator.qoldiq,
         warehouseId: qator.warehouseId,
         warehouseName: qator.warehouseName,

@@ -1,5 +1,4 @@
-import { pulMatni } from "@/lib/valyuta";
-import AppSelect from "@/Components/ui/AppSelect";
+import { pulMatni, useValyutaStore } from "@/lib/valyuta";
 import { useEffect, useMemo, useState } from "react";
 import {
   LoaderCircle,
@@ -7,14 +6,13 @@ import {
   Paperclip,
   Plus,
   Search,
-  Settings,
   Trash2,
   WalletCards,
   X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
-import FaoliyatPaneli from "@/Pages/XaridorUchot/FaoliyatPaneli";
+import SotuvTafsilotlariModal from "@/Pages/Savdo/SotuvTafsilotlariModal";
 import GoldCartIllustration from "@/Components/illustrations/GoldCartIllustration";
 import {
   mijozlarRoyxatiniOlish,
@@ -24,11 +22,11 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { savatchaChegirma, savatchaSotuvNarxi, usePosStore } from "@/store/posStore";
 import SotuvNarxiMaydoni from "./SotuvNarxiMaydoni";
+import { aralashTolovniTaqsimlash, dollarNarxi, dollarniSomga, sotuvQatori } from "./aralashTolov";
 import { useSavdoStore } from "@/store/savdoStore";
-import type { MijozTanlovi, OmborTanlovi, TolovTuri } from "@/types/savdo";
+import type { MijozTanlovi, OmborTanlovi, Sotuv, SotuvTolovi, TolovTuri } from "@/types/savdo";
 
 type CustomerType = "donalik" | "doimiy";
-type CustomerDetailTab = "Asosiyisi" | "Savatcha" | "Tarix";
 type NarxTuri = "chakana" | "ulgurji";
 
 type PaymentType = {
@@ -69,14 +67,20 @@ export default function BoshSahifa() {
   const clearPosCart = usePosStore((state) => state.clearCart);
   const yangiSotuvYaratish = useSavdoStore((state) => state.yangiSotuvYaratish);
   const sotuvniTasdiqlash = useSavdoStore((state) => state.sotuvniTasdiqlash);
+  // Doimiy mijoz savdosi: Savdo bo'limidagi sotuv oynasi shu store ma'lumotlari bilan ishlaydi.
+  const tanlanganSotuv = useSavdoStore((state) => state.tanlanganSotuv);
+  const savdoXodimlar = useSavdoStore((state) => state.xodimlar);
+  const savdoQoldiqlar = useSavdoStore((state) => state.qoldiqlar);
+  const amalBajarilmoqda = useSavdoStore((state) => state.amalBajarilmoqda);
+  const savdoXatoligi = useSavdoStore((state) => state.xatolik);
+  const sotuvniYangilash = useSavdoStore((state) => state.sotuvniYangilash);
+  const sotuvgaTolovQoshish = useSavdoStore((state) => state.sotuvgaTolovQoshish);
+  const sotuvniBekorQilish = useSavdoStore((state) => state.sotuvniBekorQilish);
+  const tanlanganSotuvniTozalash = useSavdoStore((state) => state.tanlanganSotuvniTozalash);
+  const xatolikniTozalash = useSavdoStore((state) => state.xatolikniTozalash);
   const joriyProfil = useAuthProfileStore((state) => state.profil);
   const profilniYuklash = useAuthProfileStore((state) => state.profilniYuklash);
 
-  const customerDetailTabs: Array<{ id: CustomerDetailTab; label: string }> = [
-    { id: "Asosiyisi", label: t("customerModal.tabs.main") },
-    { id: "Savatcha", label: t("customerModal.tabs.cart") },
-    { id: "Tarix", label: t("customerModal.tabs.history") },
-  ];
   const paymentTypes: PaymentType[] = useMemo(
     () => [
       { label: t("paymentTypes.payme"), apiTuri: "CARD" },
@@ -102,10 +106,8 @@ export default function BoshSahifa() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [customerSearch, setCustomerSearch] = useState("");
   const [narxTuri, setNarxTuri] = useState<NarxTuri>("chakana");
-  const [selectedCustomerModal, setSelectedCustomerModal] = useState<MijozTanlovi | null>(null);
-  const [customerDetailTab, setCustomerDetailTab] = useState<CustomerDetailTab>("Asosiyisi");
-  const [customerDocumentType, setCustomerDocumentType] = useState(t("customerModal.documentTypes.documents"));
-  const [customerPaymentAccepted, setCustomerPaymentAccepted] = useState(false);
+  // Doimiy mijoz uchun yaratilgan qoralama sotuvning oynasi ochiqmi.
+  const [doimiySotuvOchiq, setDoimiySotuvOchiq] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(true);
@@ -113,6 +115,10 @@ export default function BoshSahifa() {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [tolovModalOchiq, setTolovModalOchiq] = useState(false);
   const [tolovSummasi, setTolovSummasi] = useState("");
+  // Dollarda qabul qilinadigan to'lov ($). Faqat valyuta rejimi yoqilgan va bugungi kurs kiritilgan bo'lsa ishlatiladi.
+  const [dollarTolovi, setDollarTolovi] = useState("");
+  const kurs = useValyutaStore((holat) => holat.kurs);
+  const dollarTolovMumkin = useValyutaStore((holat) => holat.rejimYoniq && holat.kursBor && holat.kurs > 0);
 
   useEffect(() => {
     let active = true;
@@ -148,15 +154,6 @@ export default function BoshSahifa() {
     updatePriceType(narxTuri);
   }, [narxTuri, updatePriceType]);
 
-  useEffect(() => {
-    if (selectedCustomerModal) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
-
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [selectedCustomerModal]);
-
   // Katalog narxlarida jami; kassir sotuv narxini pasaytirgan bo'lsa, farqi avtomatik "narx chegirmasi" bo'ladi.
   const total = cart.reduce((sum, item) => sum + item.narx * item.soni, 0);
   const avtoChegirma = cart.reduce((sum, item) => sum + savatchaChegirma(item), 0);
@@ -168,6 +165,25 @@ export default function BoshSahifa() {
   const payableTotal = Math.max(sotuvNarxlaridaJami - discountSum, 0);
   const selectedPayment = paymentTypes.find((item) => item.label === paymentType) ?? paymentTypes[0];
   const cartPiecesCount = cart.reduce((sum, item) => sum + item.soni, 0);
+
+  // To'lov: so'mdagi qism + dollardagi qism (kurs bo'yicha so'mga o'girilib jamlanadi). Qaytim so'mda beriladi.
+  const somTolovi = readNumber(tolovSummasi);
+  const dollarTiyin = dollarTolovMumkin ? Math.max(Math.round(readNumber(dollarTolovi) * 100), 0) : 0;
+  const dollarSomda = dollarTiyin > 0 ? dollarniSomga(dollarTiyin, kurs) : 0;
+  const qabulJami = somTolovi + dollarSomda;
+  const qaytim = Math.max(qabulJami - payableTotal, 0);
+  const qarzQoldi = Math.max(payableTotal - qabulJami, 0);
+  // Dollar bilan to'langanda so'm qismi qolgan summadan oshmaydi (qaytim faqat dollar banknota katta bo'lganda chiqadi).
+  const tolovYaroqli =
+    qabulJami > 0 && (dollarTiyin > 0 ? somTolovi <= Math.max(payableTotal - dollarSomda, 0) : somTolovi <= payableTotal);
+  const somMatni = (qiymat: number) => `${Math.round(qiymat).toLocaleString("uz-UZ")} uzs`;
+
+  function dollarOzgardi(qiymat: string) {
+    setDollarTolovi(qiymat);
+    const tiyin = Math.max(Math.round(readNumber(qiymat) * 100), 0);
+    // So'm qismi avtomatik qolgan summaga to'ldiriladi (kassir xohlasa o'zgartiradi).
+    setTolovSummasi(String(Math.max(payableTotal - (tiyin > 0 ? dollarniSomga(tiyin, kurs) : 0), 0)));
+  }
 
   const filteredCustomers = useMemo(() => {
     const value = customerSearch.toLowerCase().trim();
@@ -208,28 +224,16 @@ export default function BoshSahifa() {
       return;
     }
     setTolovSummasi(String(payableTotal));
+    setDollarTolovi("");
     setTolovModalOchiq(true);
   }
 
-  async function tolovniTasdiqlash() {
-    const qabulQilinadiganSumma = readNumber(tolovSummasi);
-    if (qabulQilinadiganSumma <= 0 || qabulQilinadiganSumma > payableTotal) {
-      setMessage({ type: "error", text: t("errors.amountRange", { max: formatSumma(payableTotal) }) });
-      return;
-    }
-    if (
-      qabulQilinadiganSumma < payableTotal &&
-      (mijozTuri !== "doimiy" || !selectedCustomerId)
-    ) {
-      setMessage({ type: "error", text: t("errors.selectDebtCustomer") });
-      return;
-    }
-
-    // Backendga katalog narxi (`price`) va umumiy chegirma (`discount`) yuboriladi: avtomatik narx chegirmasi
-    // + qo'shimcha umumiy chegirmaning shu qatorga to'g'ri kelgan ulushi.
+  // Savatcha qatorlari backendga ketadigan ko'rinishda: katalog narxi (`price`) va umumiy chegirma (`discount`).
+  // Avtomatik narx chegirmasi + qo'shimcha umumiy chegirmaning shu qatorga to'g'ri kelgan ulushi.
+  function savatchaQatorlari() {
     const rawTotal = sotuvNarxlaridaJami;
     let remainingDiscount = Math.min(discountSum, rawTotal);
-    const qatorlar = cart.map((item, index) => {
+    return cart.map((item, index) => {
       const narxChegirmasi = savatchaChegirma(item);
       const lineTotal = item.narx * item.soni - narxChegirmasi;
       const lineDiscount =
@@ -246,8 +250,32 @@ export default function BoshSahifa() {
         price: item.narx,
         discount: narxChegirmasi + lineDiscount,
         sof: lineTotal - lineDiscount,
+        dollar: dollarNarxi(item, narxTuri),
       };
     });
+  }
+
+  async function tolovniTasdiqlash() {
+    const somQismi = readNumber(tolovSummasi);
+    const usdSent = dollarTolovMumkin ? Math.max(Math.round(readNumber(dollarTolovi) * 100), 0) : 0;
+    const usdSomda = usdSent > 0 ? dollarniSomga(usdSent, kurs) : 0;
+    const qabulQilinadiganSumma = somQismi + usdSomda;
+    if (
+      qabulQilinadiganSumma <= 0 ||
+      (usdSent > 0 ? somQismi > Math.max(payableTotal - usdSomda, 0) : qabulQilinadiganSumma > payableTotal)
+    ) {
+      setMessage({ type: "error", text: t("errors.amountRange", { max: formatSumma(payableTotal) }) });
+      return;
+    }
+    if (
+      qabulQilinadiganSumma < payableTotal &&
+      (mijozTuri !== "doimiy" || !selectedCustomerId)
+    ) {
+      setMessage({ type: "error", text: t("errors.selectDebtCustomer") });
+      return;
+    }
+
+    const qatorlar = savatchaQatorlari();
 
     // Backend bitta sotuvni bitta ombor bilan yaratadi, shuning uchun savatcha omborlar bo'yicha
     // bo'linadi: har ombor uchun alohida sotuv yaratilib tasdiqlanadi va qoldiq aynan shu ombordan chiqadi.
@@ -262,6 +290,10 @@ export default function BoshSahifa() {
     const guruhlar = Array.from(omborGuruhlari.entries());
     const guruhSoflari = guruhlar.map(([, qatorlarRoyxati]) => qatorlarRoyxati.reduce((sum, qator) => sum + qator.sof, 0));
     const guruhSoflariJami = guruhSoflari.reduce((sum, qiymat) => sum + qiymat, 0) || 1;
+    // Aralash sotuv: savatchada dollar mahsulot bor yoki dollarda to'lanmoqda. Faqat shunda valyuta maydonlari yuboriladi,
+    // oddiy so'mdagi sotuv avvalgidek (valyutasiz) ketadi.
+    const aralash = usdSent > 0 || qatorlar.some((qator) => qator.dollar);
+    const aralashTaqsimot = usdSent > 0 ? aralashTolovniTaqsimlash(guruhSoflari, somQismi, usdSent, kurs) : null;
 
     setSaving(true);
     setMessage(null);
@@ -277,6 +309,17 @@ export default function BoshSahifa() {
             : Math.min(Math.round((qabulQilinadiganSumma * guruhSoflari[index]) / guruhSoflariJami), guruhSoflari[index]);
         qabulQilinganQism += ulush;
 
+        // Dollarda to'lov bo'lsa: so'm qismi tanlangan usulda, dollar qismi naqd (CASH) va USD valyutasida; aks holda avvalgidek.
+        const ulushi = aralashTaqsimot?.[index];
+        const tolovlar: SotuvTolovi[] = ulushi
+          ? [
+              ...(ulushi.uzs > 0 ? [{ paymentType: selectedPayment.apiTuri, amount: ulushi.uzs, currency: "UZS" }] : []),
+              ...(ulushi.usdSent > 0 ? [{ paymentType: "CASH" as const, amount: ulushi.usdSent / 100, currency: "USD" }] : []),
+            ]
+          : ulush > 0
+            ? [{ paymentType: selectedPayment.apiTuri, amount: ulush, ...(aralash ? { currency: "UZS" } : {}) }]
+            : [];
+
         const sale = await yangiSotuvYaratish({
           warehouseId: omborId,
           customerId: mijozTuri === "doimiy" && selectedCustomerId ? selectedCustomerId : undefined,
@@ -289,8 +332,11 @@ export default function BoshSahifa() {
           walkInCustomerName: mijozTuri === "donalik" && customerName.trim() ? customerName.trim().slice(0, 200) : undefined,
           walkInCustomerPhone: mijozTuri === "donalik" && customerPhone.trim() ? customerPhone.trim().slice(0, 50) : undefined,
           note: note.trim() || undefined,
-          items: qatorlarRoyxati.map(({ modificationId, quantity, price, discount }) => ({ modificationId, quantity, price, discount })),
-          payments: ulush > 0 ? [{ paymentType: selectedPayment.apiTuri, amount: ulush }] : [],
+          ...(aralash ? { currency: "UZS" } : {}),
+          items: qatorlarRoyxati.map(({ modificationId, quantity, price, discount, dollar }) =>
+            sotuvQatori({ modificationId, quantity, price, discount, dollar })
+          ),
+          payments: tolovlar,
         });
         if (!sale) throw new Error(useSavdoStore.getState().xatolik || t("errors.createDraftFailed"));
         const tasdiqlandi = await sotuvniTasdiqlash(sale.id);
@@ -317,28 +363,100 @@ export default function BoshSahifa() {
     }
   }
 
-  function handleNextCustomer() {
+  // Doimiy mijoz: savatcha mijozga biriktirilgan haqiqiy qoralama sotuvga aylanadi va Savdo bo'limidagi sotuv oynasi ochiladi
+  // (to'lovni qabul qilish, qarzga qoldirish, tasdiqlash va hujjatlar shu oynada).
+  async function handleNextCustomer() {
+    setMessage(null);
     if (!selectedCustomerId) {
       setMessage({ type: "error", text: t("errors.selectCustomerFirst") });
       return;
     }
+    if (!mijozlar.some((item) => String(item.id) === selectedCustomerId)) return;
+    if (!warehouseId) {
+      setMessage({ type: "error", text: t("errors.warehouseNotFound") });
+      return;
+    }
+    if (cart.length === 0) {
+      setMessage({ type: "error", text: t("errors.cartEmpty") });
+      return;
+    }
 
-    const customer = mijozlar.find((item) => String(item.id) === selectedCustomerId);
+    const qatorlar = savatchaQatorlari();
+    // Backend bitta sotuvni bitta ombor bilan yaratadi: savatcha omborlar bo'yicha bo'linadi.
+    const omborGuruhlari = new Map<string, typeof qatorlar>();
+    qatorlar.forEach((qator) => {
+      omborGuruhlari.set(qator.omborId, [...(omborGuruhlari.get(qator.omborId) ?? []), qator]);
+    });
+    const guruhlar = Array.from(omborGuruhlari.entries());
+    // Dollarda saqlangan mahsulot bor bo'lsa sotuv aralash (so'm + dollar) hisoblanadi: valyuta maydonlari faqat shunda yuboriladi.
+    const aralash = qatorlar.some((qator) => qator.dollar);
 
-    if (!customer) return;
+    setSaving(true);
+    const yaratilganlar: Sotuv[] = [];
+    let xato = "";
+    try {
+      for (const [omborId, qatorlarRoyxati] of guruhlar) {
+        const sale = await yangiSotuvYaratish({
+          warehouseId: omborId,
+          customerId: selectedCustomerId,
+          saleType: "CLIENT",
+          responsibleId: joriyProfil?.id,
+          note: note.trim() || undefined,
+          ...(aralash ? { currency: "UZS" } : {}),
+          items: qatorlarRoyxati.map(({ modificationId, quantity, price, discount, dollar }) =>
+            sotuvQatori({ modificationId, quantity, price, discount, dollar })
+          ),
+        });
+        if (!sale) throw new Error(useSavdoStore.getState().xatolik || t("errors.createDraftFailed"));
+        yaratilganlar.push(sale);
+        // Qoralamaga o'tgan mahsulotlar savatchadan olib tashlanadi.
+        qatorlarRoyxati.forEach((qator) => removeFromCart(qator.cartId));
+      }
+    } catch (error) {
+      xato = xatoMatni(error, t("errors.createDraftFailed"));
+    }
 
-    setSelectedCustomerModal(customer);
-    setCustomerDetailTab("Asosiyisi");
-    setCustomerDocumentType(t("customerModal.documentTypes.documents"));
-    setCustomerPaymentAccepted(false);
+    try {
+      if (yaratilganlar.length > 0) {
+        // Oyna ma'lumotlari (xodimlar, mijozlar, qoldiqlar) Savdo bo'limidagi kabi do'kondan olinadi: bo'sh bo'lsa yuklanadi.
+        const savdo = useSavdoStore.getState();
+        if (savdo.xodimlar.length === 0 || savdo.mijozlar.length === 0) await savdo.boshlangichMalumotlarniYuklash();
+        else void savdo.qoldiqlarniYuklash(yaratilganlar[0].warehouseId);
+        // Oyna to'liq (mijoz va ombor nomlari bilan boyitilgan) sotuv bilan ochiladi.
+        await savdo.sotuvTafsilotiniYuklash(yaratilganlar[0].id);
+        setDoimiySotuvOchiq(true);
+      }
+      if (!xato) {
+        clearCart();
+        if (yaratilganlar.length > 1) {
+          setMessage({ type: "success", text: t("doimiySotuv.extraDrafts", { count: yaratilganlar.length - 1 }) });
+        }
+      } else {
+        setMessage({
+          type: "error",
+          text: yaratilganlar.length > 0
+            ? t("doimiySotuv.partialDrafts", { done: yaratilganlar.length, total: guruhlar.length, error: xato })
+            : xato,
+        });
+      }
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function closeCustomerModal() {
-    setSelectedCustomerModal(null);
-    setCustomerDetailTab("Asosiyisi");
+  function doimiySotuvniYopish() {
+    setDoimiySotuvOchiq(false);
+    tanlanganSotuvniTozalash();
+    xatolikniTozalash();
   }
 
-  const activeDetailTabLabel = customerDetailTabs.find((tab) => tab.id === customerDetailTab)?.label ?? "";
+  async function doimiySotuvniBekorQilish(sotuvId: string) {
+    if (!window.confirm(t("doimiySotuv.confirmCancel"))) return;
+    if (await sotuvniBekorQilish(sotuvId)) {
+      doimiySotuvniYopish();
+      setMessage({ type: "success", text: t("doimiySotuv.cancelled") });
+    }
+  }
 
   return (
     <div className="grid min-h-[calc(100vh-214px)] w-full min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_minmax(390px,24%)]">
@@ -399,6 +517,13 @@ export default function BoshSahifa() {
                       <p className="mt-0.5 text-xs text-[#94A3B8]">
                         <span className="rounded-md bg-white px-1.5 py-0.5 font-bold text-gold-600 ring-1 ring-gold-100">
                           {item.warehouseName || mijozNomi(omborlar.find((ombor) => String(ombor.id) === item.warehouseId)!)}
+                        </span>
+                      </p>
+                    )}
+                    {dollarNarxi(item, narxTuri) && (
+                      <p className="mt-0.5 text-xs">
+                        <span className="rounded-md bg-white px-1.5 py-0.5 font-bold text-gold-600 ring-1 ring-gold-100">
+                          ${dollarNarxi(item, narxTuri)?.narx.toLocaleString("uz-UZ", { maximumFractionDigits: 2 })}
                         </span>
                       </p>
                     )}
@@ -759,142 +884,45 @@ export default function BoshSahifa() {
             </div>
 
             <button
-              onClick={handleNextCustomer}
-              className="mt-auto h-11 w-full rounded-lg bg-gold-500 text-sm font-bold text-white transition hover:bg-gold-600"
+              onClick={() => void handleNextCustomer()}
+              disabled={saving}
+              className="mt-auto flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-gold-500 text-sm font-bold text-white transition hover:bg-gold-600 disabled:cursor-not-allowed disabled:bg-gray-300"
             >
+              {saving && <LoaderCircle size={15} className="animate-spin" />}
               {t("customer.next")}
             </button>
           </>
         )}
       </aside>
 
-      {selectedCustomerModal && (
-        <AppModal>
-          <section className="scrollbar-hidden max-h-[94vh] w-full max-w-[1500px] overflow-y-auto rounded-[34px] bg-[#D8D8D8] p-4 shadow-2xl sm:p-6">
-            <div className="mb-6 flex flex-col items-start justify-between gap-5 xl:flex-row xl:items-center">
-              <div>
-                <p className="text-sm font-medium text-gray-500">{t("customerModal.eyebrow")}</p>
-                <h2 className="mt-1 text-3xl font-bold text-gray-950 sm:text-4xl">
-                  {mijozNomi(selectedCustomerModal)}
-                </h2>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() => setCustomerPaymentAccepted(false)}
-                  className="h-12 rounded-2xl border border-gold-100 bg-white px-5 text-sm font-semibold text-gray-700 transition hover:text-gold-600"
-                >
-                  {t("customerModal.backToPayment")}
-                </button>
-
-                <AppSelect
-                  value={customerDocumentType}
-                  onChange={(event) => setCustomerDocumentType(event.target.value)}
-                  className="h-12 rounded-2xl border border-gold-100 bg-white px-5 text-sm font-semibold text-gray-700 outline-none transition hover:border-gold-300"
-                >
-                  <option>{t("customerModal.documentTypes.documents")}</option>
-                  <option>{t("customerModal.documentTypes.receipt")}</option>
-                  <option>{t("customerModal.documentTypes.invoice")}</option>
-                  <option>{t("customerModal.documentTypes.pdf")}</option>
-                </AppSelect>
-
-                <button
-                  onClick={closeCustomerModal}
-                  className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gold-500 text-white shadow-lg shadow-gold-200 transition hover:bg-gold-600"
-                  aria-label={t("customerModal.closeAria")}
-                >
-                  <X size={26} />
-                </button>
-              </div>
-            </div>
-
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-gold-100 bg-white px-4 py-3 shadow-sm">
-              <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
-                {customerDetailTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setCustomerDetailTab(tab.id)}
-                    className={[
-                      "shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition",
-                      customerDetailTab === tab.id
-                        ? "border border-gold-400 bg-gold-50 text-gold-600"
-                        : "text-gray-500 hover:bg-gold-50 hover:text-gold-600",
-                    ].join(" ")}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              <button className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 text-gray-700 transition hover:bg-gold-500 hover:text-white">
-                <Settings size={18} />
-              </button>
-            </div>
-
-            {customerDetailTab === "Asosiyisi" && (
-              <div className="grid items-start gap-6 xl:grid-cols-[360px_minmax(0,1fr)] 2xl:grid-cols-[380px_minmax(0,1fr)]">
-                <div className="space-y-5">
-                  <section className="rounded-[28px] bg-white p-6 shadow-sm">
-                    <div className="mb-5 flex items-center justify-between border-b border-gray-100 pb-4">
-                      <h3 className="text-xl font-bold text-gray-950">{t("customerModal.sale")}</h3>
-                      <button className="text-sm font-semibold text-gray-400 transition hover:text-gold-600">
-                        {t("customerModal.edit")}
-                      </button>
-                    </div>
-
-                    <p className="text-sm text-gray-500">{t("customerModal.amount")}</p>
-                    <h4 className="mt-1 text-3xl font-bold text-gray-950">
-                      {formatSumma(total)}
-                    </h4>
-
-                    <button
-                      onClick={handlePay}
-                      disabled={saving || cart.length === 0}
-                      className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-green-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-green-700 disabled:bg-gray-300"
-                    >
-                      {saving && <LoaderCircle size={16} className="animate-spin" />}
-                      {customerPaymentAccepted ? t("customerModal.paymentAccepted") : t("customerModal.acceptPayment")}
-                    </button>
-
-                    <div className="mt-6 rounded-3xl bg-gray-50 p-5">
-                      <p className="font-bold text-gray-800">{t("customerModal.paymentDelivery")}</p>
-                      <p className="mt-1 text-sm text-gray-500">
-                        {t("customerModal.backendNote")}
-                      </p>
-                    </div>
-
-                    <div className="mt-6 space-y-5">
-                      {[
-                        [t("customerModal.fields.counterparty"), mijozNomi(selectedCustomerModal)],
-                        [t("customerModal.fields.phone"), selectedCustomerModal.phone || t("customer.noPhone")],
-                        [t("customerModal.fields.email"), selectedCustomerModal.email || t("customerModal.notEntered")],
-                        [t("customerModal.fields.address"), selectedCustomerModal.address || t("customerModal.notEntered")],
-                        [t("customerModal.fields.priceType"), narxTuri === "chakana" ? t("customer.retailPrice") : t("customer.wholesalePrice")],
-                      ].map(([label, value]) => (
-                        <div key={label}>
-                          <p className="text-sm text-gray-500">{label}</p>
-                          <div className="mt-2 rounded-2xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-800">
-                            {value}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                </div>
-
-                <main className="min-w-0">
-                  <FaoliyatPaneli partnerId={selectedCustomerModal.partner?.id} />
-                </main>
-              </div>
-            )}
-
-            {customerDetailTab !== "Asosiyisi" && (
-              <div className="rounded-[28px] bg-white p-8 text-center text-sm font-semibold text-gray-400">
-                {t("customerModal.sectionDemo", { section: activeDetailTabLabel })}
-              </div>
-            )}
-          </section>
-        </AppModal>
+      {doimiySotuvOchiq && tanlanganSotuv && (
+        <SotuvTafsilotlariModal
+          sotuv={tanlanganSotuv}
+          qoldiqlar={savdoQoldiqlar}
+          xodimlar={savdoXodimlar}
+          amalBajarilmoqda={amalBajarilmoqda}
+          onYopish={doimiySotuvniYopish}
+          onYangilash={sotuvniYangilash}
+          onTolovQoshish={sotuvgaTolovQoshish}
+          onTasdiqlash={async (sotuvId) => {
+            if (await sotuvniTasdiqlash(sotuvId)) {
+              doimiySotuvniYopish();
+              setMessage({ type: "success", text: t("doimiySotuv.confirmed") });
+            }
+          }}
+          onBekorQilish={(sotuvId) => void doimiySotuvniBekorQilish(sotuvId)}
+        />
+      )}
+      {doimiySotuvOchiq && savdoXatoligi && (
+        <div
+          role="alert"
+          className="fixed left-1/2 top-4 z-[100200] flex max-w-[92vw] -translate-x-1/2 items-center gap-3 rounded-2xl bg-red-600 px-5 py-3 text-sm font-bold text-white shadow-2xl"
+        >
+          <span>{savdoXatoligi}</span>
+          <button type="button" onClick={xatolikniTozalash} aria-label={t("cart.close")} className="shrink-0 rounded-lg p-1 hover:bg-white/20">
+            <X size={16} />
+          </button>
+        </div>
       )}
       {tolovModalOchiq && (
         <AppModal className="bg-slate-950/60 backdrop-blur-md">
@@ -921,9 +949,29 @@ export default function BoshSahifa() {
               <aside className="flex flex-col rounded-[30px] border border-gold-100 bg-white p-7 shadow-[0_18px_50px_rgba(37,99,235,.10)]">
                 <div className="rounded-[24px] bg-[#F8FAFC] p-5 ring-1 ring-gold-100"><p className="text-xs font-black uppercase tracking-wide text-slate-400">{t("paymentModal.totalPayable")}</p><p className="mt-2 text-3xl font-black text-slate-950">{formatSumma(payableTotal)}</p><p className="mt-2 text-sm font-bold text-gold-500">{t("paymentModal.selected", { type: paymentType })}</p></div>
                 <label className="mt-6 block"><span className="text-xs font-black uppercase tracking-wide text-slate-400">{t("paymentModal.acceptedAmount")}</span><div className="mt-2 flex h-16 items-center rounded-2xl border border-gold-200 bg-[#F8FAFC] px-5 focus-within:ring-4 focus-within:ring-gold-50"><input type="number" min="1" max={payableTotal} value={tolovSummasi} onChange={(e) => setTolovSummasi(e.target.value)} className="min-w-0 flex-1 bg-transparent text-2xl font-black text-slate-900 outline-none"/><span className="text-sm font-black text-gold-500">{t("customer.currency")}</span></div></label>
-                <div className="mt-4 flex gap-3"><button type="button" onClick={() => setTolovSummasi(String(payableTotal))} className="flex-1 rounded-2xl bg-gold-50 px-3 py-3 text-xs font-black text-gold-600">{t("paymentModal.fullAmount")}</button><button type="button" onClick={() => setTolovSummasi(String(Math.round(payableTotal / 2)))} className="flex-1 rounded-2xl bg-slate-100 px-3 py-3 text-xs font-black text-slate-600">50%</button></div>
+                {dollarTolovMumkin && (
+                  <div className="mt-4 rounded-2xl border border-gold-100 bg-white p-4">
+                    <label className="block">
+                      <span className="text-xs font-black uppercase tracking-wide text-slate-400">{t("paymentModal.dollarAmount")}</span>
+                      <div className="mt-2 flex h-14 items-center rounded-2xl border border-gold-200 bg-[#F8FAFC] px-4 focus-within:ring-4 focus-within:ring-gold-50">
+                        <input type="number" min="0" step="0.01" inputMode="decimal" value={dollarTolovi} onChange={(e) => dollarOzgardi(e.target.value)} placeholder="0" className="min-w-0 flex-1 bg-transparent text-xl font-black text-slate-900 outline-none" />
+                        <span className="text-sm font-black text-gold-500">$</span>
+                      </div>
+                    </label>
+                    <p className="mt-2 text-[11px] font-semibold text-slate-400">{t("paymentModal.rateLine", { kurs: kurs.toLocaleString("uz-UZ", { maximumFractionDigits: 2 }) })}</p>
+                  </div>
+                )}
+                {(dollarTiyin > 0 || qaytim > 0) && (
+                  <div className="mt-3 space-y-1.5 rounded-2xl bg-slate-50 p-4 text-sm font-bold text-slate-600">
+                    {dollarTiyin > 0 && <div className="flex justify-between gap-3"><span>{t("paymentModal.dollarInSom")}</span><span>{somMatni(dollarSomda)}</span></div>}
+                    <div className="flex justify-between gap-3"><span>{t("paymentModal.receivedTotal")}</span><span>{somMatni(qabulJami)}</span></div>
+                    {qaytim > 0 && <div className="flex justify-between gap-3 text-emerald-700"><span>{t("paymentModal.change")}</span><span>{somMatni(qaytim)}</span></div>}
+                    {qarzQoldi > 0 && <div className="flex justify-between gap-3 text-amber-700"><span>{t("paymentModal.debtLeft")}</span><span>{somMatni(qarzQoldi)}</span></div>}
+                  </div>
+                )}
+                <div className="mt-4 flex gap-3"><button type="button" onClick={() => { setTolovSummasi(String(payableTotal)); setDollarTolovi(""); }} className="flex-1 rounded-2xl bg-gold-50 px-3 py-3 text-xs font-black text-gold-600">{t("paymentModal.fullAmount")}</button><button type="button" onClick={() => { setTolovSummasi(String(Math.round(payableTotal / 2))); setDollarTolovi(""); }} className="flex-1 rounded-2xl bg-slate-100 px-3 py-3 text-xs font-black text-slate-600">50%</button></div>
                 {message?.type === "error" && <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 p-3 text-xs font-bold leading-5 text-red-600">{message.text}</div>}
-                <button type="button" onClick={() => void tolovniTasdiqlash()} disabled={saving || readNumber(tolovSummasi) <= 0 || readNumber(tolovSummasi) > payableTotal} className="mt-auto flex w-full items-center justify-center gap-2 rounded-2xl bg-gold-500 px-5 py-4 text-sm font-black text-white shadow-lg shadow-gold-200 transition hover:bg-gold-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none">{saving && <LoaderCircle size={17} className="animate-spin"/>} {t("paymentModal.confirm")}</button>
+                <button type="button" onClick={() => void tolovniTasdiqlash()} disabled={saving || !tolovYaroqli} className="mt-auto flex w-full items-center justify-center gap-2 rounded-2xl bg-gold-500 px-5 py-4 text-sm font-black text-white shadow-lg shadow-gold-200 transition hover:bg-gold-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none">{saving && <LoaderCircle size={17} className="animate-spin"/>} {t("paymentModal.confirm")}</button>
                 <p className="mt-3 text-center text-xs font-semibold leading-5 text-slate-400">{t("paymentModal.apiNote")}</p>
               </aside>
             </div>

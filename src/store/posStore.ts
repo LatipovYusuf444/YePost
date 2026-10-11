@@ -15,6 +15,13 @@ export type CartItem = {
   // Kassir kiritgan haqiqiy sotuv narxi (bir dona uchun). Bo'sh bo'lsa — katalog narxi (`narx`).
   // Katalog narxidan farqi chegirma sifatida avtomatik hisoblanadi.
   sotuvNarxi?: number;
+  // Dollarda saqlangan mahsulot (valyuta rejimi): savatcha hisobi so'mda (`narx` — kurs bo'yicha so'mdagi narx), lekin sotuv
+  // backendga bu qator o'z valyutasida (USD, asl dollar narxi) yuboriladi.
+  valyuta?: "USD";
+  aslNarx?: number;
+  aslUlgurjiNarx?: number;
+  // `narx` hisoblangan kurs (1 USD = necha so'm).
+  kurs?: number;
 };
 
 // Haqiqiy sotuv narxi: katalog narxidan baland yoki noto'g'ri qiymat bo'lsa katalog narxi olinadi.

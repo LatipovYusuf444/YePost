@@ -44,6 +44,12 @@ export function qoldiqMiqdori(item: QoldiqTanlovi) {
 }
 
 export function qoldiqNarxi(item: QoldiqTanlovi, narxTuri: "chakana" | "ulgurji") {
+  // Dollarda saqlangan mahsulot: so'mdagi narx kurs bilan hisoblangan qiymat (retailPriceUzs / wholesalePriceUzs).
+  const dollar = item.valyuta;
+  if (dollar?.currency === "USD" && dollar.kurs && dollar.uzs) {
+    const ulgurjiUzs = dollar.ulgurjiUzs ?? 0;
+    return narxTuri === "ulgurji" && ulgurjiUzs > 0 ? ulgurjiUzs : dollar.uzs;
+  }
   const narx = item.modification?.price;
   const chakana = musbat(narx?.retailPrice, narx?.sellingPrice, item.sellingPrice, item.price, narx?.wholesalePrice);
   const ulgurji = musbat(narx?.wholesalePrice);
@@ -103,4 +109,17 @@ export function qoldiqBirlashtirish(omborQoldiq: QoldiqTanlovi[], katalog: Qoldi
 
 export function tanlovKaliti(modificationId: string, warehouseId: string) {
   return `${modificationId}::${warehouseId}`;
+}
+
+// Dollarda saqlangan mahsulot bo'lsa, savatcha elementiga qo'shiladigan maydonlar (aks holda bo'sh obyekt).
+// Faqat valyuta rejimi yoqilgan va kurs bor bo'lsa (backend `valyuta`ni shunda beradi) ishlaydi.
+export function dollarMalumoti(item: QoldiqTanlovi) {
+  const dollar = item.valyuta;
+  if (dollar?.currency !== "USD" || !dollar.kurs || !dollar.uzs || !(dollar.asl > 0)) return {};
+  return {
+    valyuta: "USD" as const,
+    aslNarx: dollar.asl,
+    aslUlgurjiNarx: dollar.ulgurjiAsl ?? 0,
+    kurs: dollar.kurs,
+  };
 }

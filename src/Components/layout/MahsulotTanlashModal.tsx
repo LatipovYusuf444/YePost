@@ -12,6 +12,7 @@ import {
 import { usePosStore } from "@/store/posStore";
 import type { OmborTanlovi, QoldiqTanlovi } from "@/types/savdo";
 import {
+  dollarMalumoti,
   mahsulotNomi,
   qoldiqBirlashtirish,
   qoldiqMiqdori,
@@ -214,6 +215,7 @@ export default function MahsulotTanlashModal({ onClose }: { onClose: () => void 
           narx: qoldiqNarxi(tanlov.item, narxTuri),
           chakanaNarx: qoldiqNarxi(tanlov.item, "chakana"),
           ulgurjiNarx: qoldiqNarxi(tanlov.item, "ulgurji"),
+          ...dollarMalumoti(tanlov.item),
           qoldiq: qoldiqMiqdori(tanlov.item),
           warehouseId: tanlov.warehouseId,
           warehouseName: tanlov.warehouseName,
