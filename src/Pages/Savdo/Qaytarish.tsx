@@ -7,9 +7,12 @@ import { useSavdoStore } from "@/store/savdoStore";
 import {
   pulniFormatlash,
   qaytarishSummasi,
+  qaytarishValyutasi,
   sananiFormatlash,
   sotuvRaqami,
+  summaniSomga,
 } from "./savdoYordamchilari";
+import type { Valyuta } from "@/lib/valyuta";
 import QaytarishTafsilotlariModal from "./QaytarishTafsilotlariModal";
 import QaytarishWizard from "./qaytarish/QaytarishWizard";
 import { qaytarishHolati, qaytarishMijozi, qaytarishRaqami, raqamga } from "./qaytarish/qaytarishYordamchilari";
@@ -109,7 +112,7 @@ export default function Qaytarish({
       const holat = qaytarishHolati(qaytarish);
       if (holat === "CONFIRMED") {
         tasdiqlangan += 1;
-        summa += qaytarishSummasi(qaytarish);
+        summa += summaniSomga(qaytarishSummasi(qaytarish), qaytarishValyutasi(qaytarish));
       } else if (holat !== "CANCELLED" && holat !== "CANCELED") {
         qoralama += 1;
       }
@@ -126,10 +129,10 @@ export default function Qaytarish({
 
   // Pul maydoni: tasdiqlangan hujjatda backend qiymati (0 ham haqiqiy qiymat). Kelmasa — "Ma'lumot yo'q" (0 emas);
   // qoralama / bekor qilingan hujjatda summa hali yo'q yoki bekor qilingan, shuning uchun "—".
-  function pulMaydoni(qiymat: unknown, tasdiqlangan: boolean): PulMaydoni {
+  function pulMaydoni(qiymat: unknown, tasdiqlangan: boolean, valyuta?: Valyuta): PulMaydoni {
     if (!tasdiqlangan) return { matn: "—", son: null, yoq: false };
     const son = raqamga(qiymat);
-    return son === null ? { matn: tq("list.noData"), son: null, yoq: true } : { matn: pulniFormatlash(son), son, yoq: false };
+    return son === null ? { matn: tq("list.noData"), son: null, yoq: true } : { matn: pulniFormatlash(son, valyuta), son, yoq: false };
   }
 
   // Jadval qatori uchun tayyor ma'lumotlar (hammasi backend hujjatidan; qolgan qarz — hujjatdagi debtAfter snapshot'i).
@@ -137,15 +140,17 @@ export default function Qaytarish({
     const holat = qaytarishHolati(qaytarish);
     const bogliqSotuv = qaytarish.sale ?? sotuvlar.find((item) => item.id === qaytarish.saleId) ?? { id: qaytarish.saleId };
     const tasdiqlangan = holat === "CONFIRMED";
+    const valyuta = qaytarishValyutasi({ currency: qaytarish.currency, sale: qaytarish.sale ?? bogliqSotuv });
     return {
       holat,
+      valyuta,
       raqam: qaytarishRaqami(qaytarish),
       sotuvRaqami: sotuvRaqami(bogliqSotuv),
       mijoz: qaytarishMijozi(qaytarish, sotuvlar) ?? tq("list.noData"),
       tovarQiymati: qaytarishSummasi(qaytarish),
-      qaytarilgan: pulMaydoni(qaytarish.refundAmount, tasdiqlangan),
-      qarzdanAyrilgan: pulMaydoni(qaytarish.debtReduction, tasdiqlangan),
-      qolganQarz: pulMaydoni(qaytarish.debtAfter, tasdiqlangan),
+      qaytarilgan: pulMaydoni(qaytarish.refundAmount, tasdiqlangan, valyuta),
+      qarzdanAyrilgan: pulMaydoni(qaytarish.debtReduction, tasdiqlangan, valyuta),
+      qolganQarz: pulMaydoni(qaytarish.debtAfter, tasdiqlangan, valyuta),
     };
   }
 
@@ -291,7 +296,7 @@ export default function Qaytarish({
                     </td>
                     <td className="max-w-[200px] truncate px-4 py-4 font-semibold text-slate-700">{q.mijoz}</td>
                     <td className="whitespace-nowrap px-4 py-4 font-bold text-slate-800">{q.sotuvRaqami}</td>
-                    <td className="whitespace-nowrap px-4 py-4 text-right font-black tabular-nums text-slate-900">{pulniFormatlash(q.tovarQiymati)}</td>
+                    <td className="whitespace-nowrap px-4 py-4 text-right font-black tabular-nums text-slate-900">{pulniFormatlash(q.tovarQiymati, q.valyuta)}</td>
                     <td className={`whitespace-nowrap px-4 py-4 text-right tabular-nums ${q.qaytarilgan.yoq ? "text-xs font-semibold text-slate-400" : "font-bold text-orange-700"}`}>{q.qaytarilgan.matn}</td>
                     <td className={`whitespace-nowrap px-4 py-4 text-right tabular-nums ${q.qarzdanAyrilgan.yoq ? "text-xs font-semibold text-slate-400" : "font-bold text-emerald-700"}`}>{q.qarzdanAyrilgan.matn}</td>
                     <td className={`whitespace-nowrap px-4 py-4 text-right tabular-nums ${q.qolganQarz.yoq ? "text-xs font-semibold text-slate-400" : (q.qolganQarz.son ?? 0) > 0 ? "font-bold text-rose-600" : "font-bold text-slate-600"}`}>{q.qolganQarz.matn}</td>
@@ -352,7 +357,7 @@ export default function Qaytarish({
                 </div>
                 <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-dashed border-slate-200 pt-3 text-xs">
                   {[
-                    { nom: tq("list.columns.goodsValue"), qiymat: pulniFormatlash(q.tovarQiymati), rang: "text-slate-900" },
+                    { nom: tq("list.columns.goodsValue"), qiymat: pulniFormatlash(q.tovarQiymati, q.valyuta), rang: "text-slate-900" },
                     { nom: tq("list.columns.refunded"), qiymat: q.qaytarilgan.matn, rang: q.qaytarilgan.yoq ? "text-slate-400" : "text-orange-700" },
                     { nom: tq("list.columns.debtReduced"), qiymat: q.qarzdanAyrilgan.matn, rang: q.qarzdanAyrilgan.yoq ? "text-slate-400" : "text-emerald-700" },
                     { nom: tq("list.columns.remainingDebt"), qiymat: q.qolganQarz.matn, rang: q.qolganQarz.yoq ? "text-slate-400" : (q.qolganQarz.son ?? 0) > 0 ? "text-rose-600" : "text-slate-600" },

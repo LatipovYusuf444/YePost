@@ -20,6 +20,7 @@ import type { TFunction } from "i18next";
 import { qaytarishVaqtChiziginiOlish } from "@/api/savdoApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { QaytarishVoqeasi } from "@/types/savdo";
+import type { Valyuta } from "@/lib/valyuta";
 import { pulniFormatlash, sananiFormatlash } from "../savdoYordamchilari";
 import { raqamga } from "./qaytarishYordamchilari";
 
@@ -49,7 +50,7 @@ function voqeaVaqti(voqea: QaytarishVoqeasi) {
 
 // Voqeaning `metadata` si bo'yicha qisqa tafsilotlar (hammasi backend qiymatlari; bo'sh maydon ko'rsatilmaydi).
 // DEBT_UPDATED: { debtBefore, debtReduction, debtAfter }; REFUND_COMPLETED: { amount, method }.
-function voqeaTafsilotlari(tur: string, metadata: Record<string, unknown> | null | undefined, t: TFunction) {
+function voqeaTafsilotlari(tur: string, metadata: Record<string, unknown> | null | undefined, t: TFunction, valyuta?: Valyuta) {
   const meta = metadata ?? {};
   const qismlar: string[] = [];
 
@@ -57,14 +58,14 @@ function voqeaTafsilotlari(tur: string, metadata: Record<string, unknown> | null
     const oldin = raqamga(meta.debtBefore);
     const keyin = raqamga(meta.debtAfter);
     const kamayish = raqamga(meta.debtReduction);
-    if (oldin !== null && keyin !== null) qismlar.push(`${pulniFormatlash(oldin)} → ${pulniFormatlash(keyin)}`);
-    if (kamayish !== null) qismlar.push(t("detail.eventDebtReduced", { summa: pulniFormatlash(kamayish) }));
+    if (oldin !== null && keyin !== null) qismlar.push(`${pulniFormatlash(oldin, valyuta)} → ${pulniFormatlash(keyin, valyuta)}`);
+    if (kamayish !== null) qismlar.push(t("detail.eventDebtReduced", { summa: pulniFormatlash(kamayish, valyuta) }));
     return qismlar;
   }
 
   const summa = raqamga(meta.amount);
   const miqdor = raqamga(meta.quantity);
-  if (summa !== null) qismlar.push(pulniFormatlash(summa));
+  if (summa !== null) qismlar.push(pulniFormatlash(summa, valyuta));
   if (miqdor !== null) qismlar.push(t("detail.eventQuantity", { count: miqdor }));
   if (typeof meta.method === "string" && meta.method) {
     qismlar.push(t(`refundMethods.${meta.method.toLowerCase()}`, { defaultValue: meta.method }));
@@ -76,7 +77,7 @@ type Holat = { turi: "yuklanmoqda" } | { turi: "xato"; xabar: string } | { turi:
 
 // Qaytarish hujjatining haqiqiy tarixi: GET /returns/{id}/timeline. Soxta voqea qo'shilmaydi —
 // tarix kelmasa yuklash/xato/bo'sh holati ko'rsatiladi.
-export default function QaytarishVaqtChizigi({ qaytarishId, yangilash = 0 }: { qaytarishId: string; yangilash?: number }) {
+export default function QaytarishVaqtChizigi({ qaytarishId, yangilash = 0, valyuta }: { qaytarishId: string; yangilash?: number; valyuta?: Valyuta }) {
   const { t } = useTranslation("savdo_qaytarish");
   const [holat, setHolat] = useState<Holat>({ turi: "yuklanmoqda" });
   const [urinish, setUrinish] = useState(0);
@@ -137,7 +138,7 @@ export default function QaytarishVaqtChizigi({ qaytarishId, yangilash = 0 }: { q
             const { ikonka: Ikona, rang } = IKONKALAR[tur] ?? STANDART_IKONKA;
             const oxirgi = indeks === holat.voqealar.length - 1;
             const aktyor = voqea.actor?.fullName ?? voqea.actor?.name ?? null;
-            const tafsilotlar = [aktyor, ...voqeaTafsilotlari(tur, voqea.metadata, t)].filter(Boolean);
+            const tafsilotlar = [aktyor, ...voqeaTafsilotlari(tur, voqea.metadata, t, valyuta)].filter(Boolean);
             return (
               <li key={voqea.id ?? `${tur}-${voqea.at ?? indeks}`} className="relative flex gap-4 pb-5 last:pb-0">
                 {!oxirgi && <span aria-hidden className="absolute left-[19px] top-10 bottom-0 w-px bg-slate-200" />}

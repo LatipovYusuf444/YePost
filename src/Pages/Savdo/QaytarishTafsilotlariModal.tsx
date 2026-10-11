@@ -39,7 +39,9 @@ import type {
 import {
   mijozNomi,
   pulniFormatlash,
+  qaytarishQatoriValyutasi,
   qaytarishSummasi,
+  qaytarishValyutasi,
   sananiFormatlash,
   sotuvMahsulotiId,
   sotuvMahsulotiMiqdori,
@@ -532,10 +534,10 @@ export default function QaytarishTafsilotlariModal({
                     {!qoralama && !hisobKitob && (qaytarish.refundAmount != null || qaytarish.debtReduction != null) && (
                       <dl className="grid gap-3 sm:grid-cols-2">
                         {qaytarish.debtReduction != null && (
-                          <BilimQatori ikonka={BadgeCheck} nom={t("view.debtReduction")} qiymat={pulniFormatlash(Number(qaytarish.debtReduction) || 0)} />
+                          <BilimQatori ikonka={BadgeCheck} nom={t("view.debtReduction")} qiymat={pulniFormatlash(Number(qaytarish.debtReduction) || 0, qaytarishValyutasi(qaytarish))} />
                         )}
                         {qaytarish.refundAmount != null && (
-                          <BilimQatori ikonka={Banknote} nom={t("view.refundAmount")} qiymat={pulniFormatlash(Number(qaytarish.refundAmount) || 0)} />
+                          <BilimQatori ikonka={Banknote} nom={t("view.refundAmount")} qiymat={pulniFormatlash(Number(qaytarish.refundAmount) || 0, qaytarishValyutasi(qaytarish))} />
                         )}
                       </dl>
                     )}
@@ -587,8 +589,8 @@ export default function QaytarishTafsilotlariModal({
                                         {item.quantity} {t("wizard.unit")}
                                       </span>
                                     </td>
-                                    <td className="whitespace-nowrap px-5 py-4 text-right font-semibold tabular-nums text-slate-600">{pulniFormatlash(item.price)}</td>
-                                    <td className="whitespace-nowrap px-5 py-4 text-right text-[15px] font-extrabold tabular-nums text-slate-950">{pulniFormatlash(item.quantity * item.price)}</td>
+                                    <td className="whitespace-nowrap px-5 py-4 text-right font-semibold tabular-nums text-slate-600">{pulniFormatlash(item.price, qaytarishQatoriValyutasi(item, qaytarish))}</td>
+                                    <td className="whitespace-nowrap px-5 py-4 text-right text-[15px] font-extrabold tabular-nums text-slate-950">{pulniFormatlash(item.quantity * item.price, qaytarishQatoriValyutasi(item, qaytarish))}</td>
                                   </tr>
                                 );
                               })}
@@ -609,10 +611,10 @@ export default function QaytarishTafsilotlariModal({
                                       <span className="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-0.5 font-black text-sky-700 ring-1 ring-sky-100">
                                         {item.quantity} {t("wizard.unit")}
                                       </span>
-                                      × {pulniFormatlash(item.price)}
+                                      × {pulniFormatlash(item.price, qaytarishQatoriValyutasi(item, qaytarish))}
                                     </p>
                                   </div>
-                                  <p className="shrink-0 text-sm font-extrabold tabular-nums text-slate-950">{pulniFormatlash(item.quantity * item.price)}</p>
+                                  <p className="shrink-0 text-sm font-extrabold tabular-nums text-slate-950">{pulniFormatlash(item.quantity * item.price, qaytarishQatoriValyutasi(item, qaytarish))}</p>
                                 </li>
                               );
                             })}
@@ -626,7 +628,7 @@ export default function QaytarishTafsilotlariModal({
                             {jamiDona} {t("wizard.unit")}
                           </span>
                         </span>
-                        <span className="text-2xl font-extrabold tabular-nums text-slate-950">{pulniFormatlash(qaytarishSummasi(qaytarish))}</span>
+                        <span className="text-2xl font-extrabold tabular-nums text-slate-950">{pulniFormatlash(qaytarishSummasi(qaytarish), qaytarishValyutasi(qaytarish))}</span>
                       </div>
                     </section>
 
@@ -679,7 +681,7 @@ export default function QaytarishTafsilotlariModal({
                       </dl>
                     </section>
 
-                    <QaytarishVaqtChizigi qaytarishId={qaytarish.id} yangilash={vaqtChizigiTokeni} />
+                    <QaytarishVaqtChizigi qaytarishId={qaytarish.id} yangilash={vaqtChizigiTokeni} valyuta={qaytarishValyutasi(qaytarish)} />
                   </aside>
                 </div>
 
@@ -940,7 +942,7 @@ export default function QaytarishTafsilotlariModal({
           ikonka={holatAmali === "bekorQilish" ? <Ban size={24} /> : <CheckCircle2 size={24} />}
           ohang={holatAmali === "bekorQilish" ? "sariq" : "yashil"}
           sarlavha={t(`dialogs.${holatAmali}.title`)}
-          nom={`${qaytarishRaqami(qaytarish)} · ${pulniFormatlash(qaytarishSummasi(qaytarish))}`}
+          nom={`${qaytarishRaqami(qaytarish)} · ${pulniFormatlash(qaytarishSummasi(qaytarish), qaytarishValyutasi(qaytarish))}`}
           tavsif={t(`dialogs.${holatAmali}.description`)}
           ortgaMatni={t("dialogs.no")}
           tasdiqMatni={t(`dialogs.${holatAmali}.yes`)}

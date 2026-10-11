@@ -40,6 +40,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { qaytariladiganQatorlarniOlish, qaytarishniOldindanKorish, qoldiqNomlariniBoyitish } from "@/api/savdoApi";
+import { valyutaKodi, type Valyuta } from "@/lib/valyuta";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type {
   Qaytarish,
@@ -61,6 +62,7 @@ import {
   sotuvRaqami,
   sotuvSummasi,
   sotuvTolanganSummasi,
+  sotuvValyutasi,
 } from "../savdoYordamchilari";
 import QaytarishStepper from "./QaytarishStepper";
 import QaytarishOldindanHisobi from "./QaytarishOldindanHisobi";
@@ -174,6 +176,8 @@ type Qator = {
   narx: number | null;
   // Qaytarishda bir dona uchun backend hisoblaydigan qiymat (unitValue); kelmasa narx.
   birlikQiymati: number | null;
+  // narx va birlikQiymati valyutasi (aralash sotuvda dollar qatori).
+  valyuta: Valyuta;
   matn: string;
   son: number;
   xato: QatorXatosi;
@@ -378,6 +382,7 @@ export default function QaytarishWizard({
       // Narx: backend javobidagi narx; u kelmasa shu sotuv qatorining haqiqiy narxi.
       const narx = miqdorgaAylantirish(javob.price) ?? (item ? miqdorgaAylantirish(sotuvMahsulotiNarxi(item)) : null);
       const birlikQiymati = miqdorgaAylantirish(javob.unitValue) ?? narx;
+      const valyuta = valyutaKodi(javob.currency ?? item?.currency ?? sotuv.currency);
       const matn = miqdorlar[javob.saleItemId] ?? "0";
       const son = songa(matn);
       // Backend ma'lumoti to'liq bo'lmagan qator tanlab bo'lmaydi (noto'g'ri qiymat 0 ga aylantirilmaydi).
@@ -391,7 +396,7 @@ export default function QaytarishWizard({
             : son > (qolgan ?? 0) + 1e-9
               ? "exceeds"
               : "";
-      return { id: javob.saleItemId, modificationId, nom, nomYuklanmoqda, variant, sotilgan, oldin, qolgan, narx, birlikQiymati, matn, son: xato ? 0 : son, xato };
+      return { id: javob.saleItemId, modificationId, nom, nomYuklanmoqda, variant, sotilgan, oldin, qolgan, narx, birlikQiymati, valyuta, matn, son: xato ? 0 : son, xato };
     });
   }, [miqdorlar, qatorNomlari, qatorlarHolati, sotuv, t]);
 
@@ -500,6 +505,7 @@ export default function QaytarishWizard({
   const oldindanHisob = oldindan.turi === "tayyor" ? oldindan.hisob : null;
   // Eskirgan (boshqa tanlovga tegishli) holat ko'rsatilmaydi: o'rniga yuklanmoqda holati chiqadi.
   const korinadiganOldindan: OldindanHolati = oldindan.turi !== "bosh" && oldindan.kalit !== sorovKaliti ? { turi: "yuklanmoqda", kalit: sorovKaliti } : oldindan;
+  const jamiValyutasi = korinadiganOldindan.turi === "tayyor" ? korinadiganOldindan.hisob.valyuta : undefined;
   // 2-bosqichdagi "jami summa": faqat backend hisob-kitobi (goodsValue).
   const jamiSumma: number | "kutilmoqda" | "xato" | null = !sorovKaliti
     ? null
@@ -657,7 +663,7 @@ export default function QaytarishWizard({
     sotuv ? `${sotuvRaqami(sotuv)} · ${mijozNomi(sotuv)}` : null,
     tanlanganQatorlar.length > 0 ? `${dona} ${t("wizard.unit")}` : null,
     tanlanganSabab || null,
-    oldindanTayyor && oldindanHisob?.tovarQiymati != null ? pulniFormatlash(oldindanHisob.tovarQiymati) : null,
+    oldindanTayyor && oldindanHisob?.tovarQiymati != null ? pulniFormatlash(oldindanHisob.tovarQiymati, oldindanHisob.valyuta) : null,
     qadam >= QADAM_TASDIQ ? t(`wizard.calc.methods.${usul}`) : null,
     natija?.raqam ?? null,
   ];
@@ -853,7 +859,7 @@ export default function QaytarishWizard({
                           </button>
                         </span>
                       ) : (
-                        <span className="text-2xl font-extrabold tabular-nums text-emerald-700">{pulniFormatlash(jamiSumma)}</span>
+                        <span className="text-2xl font-extrabold tabular-nums text-emerald-700">{pulniFormatlash(jamiSumma, jamiValyutasi)}</span>
                       )}
                     </div>
                   </div>
@@ -1104,7 +1110,7 @@ export default function QaytarishWizard({
                               <span className="shrink-0 rounded-full bg-sky-50 px-3 py-1 text-xs font-black tabular-nums text-sky-700 ring-1 ring-sky-100">
                                 {qator.son} {t("wizard.unit")}
                               </span>
-                              {typeof summa === "number" && <span className="hidden shrink-0 text-sm font-extrabold tabular-nums text-slate-800 sm:block">{pulniFormatlash(summa)}</span>}
+                              {typeof summa === "number" && <span className="hidden shrink-0 text-sm font-extrabold tabular-nums text-slate-800 sm:block">{pulniFormatlash(summa, qator.valyuta)}</span>}
                             </li>
                           );
                         })}
@@ -1142,7 +1148,7 @@ export default function QaytarishWizard({
                               rang: "bg-emerald-100 text-emerald-700",
                               matn:
                                 (oldindanHisob.qarzdanAyriladi ?? 0) > 0
-                                  ? t("wizard.confirm.effDebt", { summa: pulniFormatlash(oldindanHisob.qarzdanAyriladi) })
+                                  ? t("wizard.confirm.effDebt", { summa: pulniFormatlash(oldindanHisob.qarzdanAyriladi, oldindanHisob.valyuta) })
                                   : t("wizard.confirm.effNoDebt"),
                             },
                             {
@@ -1150,7 +1156,7 @@ export default function QaytarishWizard({
                               rang: "bg-orange-100 text-orange-700",
                               matn:
                                 (oldindanHisob.mijozgaQaytariladi ?? 0) > 0
-                                  ? t("wizard.confirm.effRefund", { summa: pulniFormatlash(oldindanHisob.mijozgaQaytariladi), usul: t(`wizard.calc.methods.${usul}`) })
+                                  ? t("wizard.confirm.effRefund", { summa: pulniFormatlash(oldindanHisob.mijozgaQaytariladi, oldindanHisob.valyuta), usul: t(`wizard.calc.methods.${usul}`) })
                                   : t("wizard.confirm.effNoRefund"),
                             },
                           ].map((satr) => (
@@ -1215,7 +1221,7 @@ export default function QaytarishWizard({
 
             {qadam === QADAM_HISOB && oldindanHisob && oldindanHisob.tovarQiymati !== null && (
               <span className="hidden text-sm font-bold text-slate-500 xl:inline">
-                {t("wizard.calc.goods")}: <b className="font-black tabular-nums text-slate-900">{pulniFormatlash(oldindanHisob.tovarQiymati)}</b>
+                {t("wizard.calc.goods")}: <b className="font-black tabular-nums text-slate-900">{pulniFormatlash(oldindanHisob.tovarQiymati, oldindanHisob.valyuta)}</b>
               </span>
             )}
 
@@ -1239,7 +1245,7 @@ export default function QaytarishWizard({
                 {yuborilmoqda
                   ? t("wizard.confirm.working")
                   : oldindanHisob?.tovarQiymati !== null && oldindanHisob?.tovarQiymati !== undefined
-                    ? t("wizard.confirm.buttonWithAmount", { summa: pulniFormatlash(oldindanHisob.tovarQiymati) })
+                    ? t("wizard.confirm.buttonWithAmount", { summa: pulniFormatlash(oldindanHisob.tovarQiymati, oldindanHisob.valyuta) })
                     : t("wizard.confirm.button")}
               </button>
             )}
@@ -1326,15 +1332,15 @@ function SotuvKartasi({ sotuv, tanlangan, oldinQaytarilgan, onTanlash }: { sotuv
       <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
         <div className="col-span-2 min-w-0 rounded-xl bg-slate-50 px-3 py-2 sm:col-span-1">
           <dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{t("wizard.sale.total")}</dt>
-          <dd className="mt-0.5 truncate text-[13px] font-extrabold tabular-nums text-slate-800">{pulniFormatlash(jami)}</dd>
+          <dd className="mt-0.5 truncate text-[13px] font-extrabold tabular-nums text-slate-800">{pulniFormatlash(jami, sotuvValyutasi(sotuv))}</dd>
         </div>
         <div className="min-w-0 rounded-xl bg-emerald-50/80 px-3 py-2">
           <dt className="text-[10px] font-bold uppercase tracking-wide text-emerald-600/70">{t("wizard.sale.paid")}</dt>
-          <dd className="mt-0.5 truncate text-[13px] font-extrabold tabular-nums text-emerald-700">{pulniFormatlash(tolangan)}</dd>
+          <dd className="mt-0.5 truncate text-[13px] font-extrabold tabular-nums text-emerald-700">{pulniFormatlash(tolangan, sotuvValyutasi(sotuv))}</dd>
         </div>
         <div className={`min-w-0 rounded-xl px-3 py-2 ${qarz > 0 ? "bg-rose-50/80" : "bg-slate-50"}`}>
           <dt className={`text-[10px] font-bold uppercase tracking-wide ${qarz > 0 ? "text-rose-500/80" : "text-slate-400"}`}>{t("wizard.sale.debt")}</dt>
-          <dd className={`mt-0.5 truncate text-[13px] font-extrabold tabular-nums ${qarz > 0 ? "text-rose-600" : "text-slate-500"}`}>{pulniFormatlash(qarz)}</dd>
+          <dd className={`mt-0.5 truncate text-[13px] font-extrabold tabular-nums ${qarz > 0 ? "text-rose-600" : "text-slate-500"}`}>{pulniFormatlash(qarz, sotuvValyutasi(sotuv))}</dd>
         </div>
       </dl>
     </button>
@@ -1457,10 +1463,10 @@ function MahsulotQatori({
           rang="violet"
           className="col-span-2 md:col-span-1"
           nom={t("wizard.items.price")}
-          qiymat={qator.narx === null ? yoq : pulniFormatlash(qator.narx)}
+          qiymat={qator.narx === null ? yoq : pulniFormatlash(qator.narx, qator.valyuta)}
           izoh={
             farqliQiymat && qator.birlikQiymati !== null ? (
-              <p className="mt-0.5 text-[11px] font-bold leading-snug text-emerald-600">{t("wizard.items.unitValue", { summa: pulniFormatlash(qator.birlikQiymati) })}</p>
+              <p className="mt-0.5 text-[11px] font-bold leading-snug text-emerald-600">{t("wizard.items.unitValue", { summa: pulniFormatlash(qator.birlikQiymati, qator.valyuta) })}</p>
             ) : undefined
           }
         />
@@ -1541,7 +1547,7 @@ function MahsulotQatori({
             {summa === "kutilmoqda" ? (
               <span className="h-4 w-20 animate-pulse rounded bg-emerald-100" aria-hidden />
             ) : (
-              <span className="text-sm font-extrabold tabular-nums text-emerald-700">{pulniFormatlash(summa)}</span>
+              <span className="text-sm font-extrabold tabular-nums text-emerald-700">{pulniFormatlash(summa, qator.valyuta)}</span>
             )}
           </div>
         )}
@@ -1572,7 +1578,7 @@ function SotuvXulosasi({ sotuv }: { sotuv: Sotuv }) {
   const kartalar = [
     {
       nom: t("wizard.sale.total"),
-      qiymat: pulniFormatlash(sotuvSummasi(sotuv)),
+      qiymat: pulniFormatlash(sotuvSummasi(sotuv), sotuvValyutasi(sotuv)),
       ikonka: Wallet,
       karta: "bg-slate-50 ring-slate-100",
       tile: "bg-white text-slate-500 ring-slate-200",
@@ -1581,7 +1587,7 @@ function SotuvXulosasi({ sotuv }: { sotuv: Sotuv }) {
     },
     {
       nom: t("wizard.sale.paid"),
-      qiymat: pulniFormatlash(sotuvTolanganSummasi(sotuv)),
+      qiymat: pulniFormatlash(sotuvTolanganSummasi(sotuv), sotuvValyutasi(sotuv)),
       ikonka: BadgeCheck,
       karta: "bg-emerald-50/80 ring-emerald-100",
       tile: "bg-white text-emerald-600 ring-emerald-100",
@@ -1590,7 +1596,7 @@ function SotuvXulosasi({ sotuv }: { sotuv: Sotuv }) {
     },
     {
       nom: t("wizard.sale.debt"),
-      qiymat: pulniFormatlash(qarz),
+      qiymat: pulniFormatlash(qarz, sotuvValyutasi(sotuv)),
       ikonka: CircleDollarSign,
       karta: qarz > 0 ? "bg-rose-50/80 ring-rose-100" : "bg-slate-50 ring-slate-100",
       tile: qarz > 0 ? "bg-white text-rose-500 ring-rose-100" : "bg-white text-slate-400 ring-slate-200",
@@ -1655,7 +1661,7 @@ function Yakun({ natija, onKorish, onYangi, onYopish }: { natija: Natija; onKori
   const satrlar = [
     { matn: t("wizard.done.stock", { count: natija.dona }), yoq: false },
     {
-      matn: !hisob || hisob.qarzdanAyriladi === null ? t("wizard.done.debtUnavailable") : t("wizard.done.debt", { summa: pulniFormatlash(hisob.qarzdanAyriladi) }),
+      matn: !hisob || hisob.qarzdanAyriladi === null ? t("wizard.done.debtUnavailable") : t("wizard.done.debt", { summa: pulniFormatlash(hisob.qarzdanAyriladi, hisob.valyuta) }),
       yoq: !hisob || hisob.qarzdanAyriladi === null,
     },
     {
@@ -1663,7 +1669,7 @@ function Yakun({ natija, onKorish, onYangi, onYopish }: { natija: Natija; onKori
         !hisob || hisob.mijozgaQaytariladi === null
           ? t("wizard.done.refundUnavailable")
           : hisob.mijozgaQaytariladi > 0
-            ? t("wizard.done.refund", { summa: pulniFormatlash(hisob.mijozgaQaytariladi) })
+            ? t("wizard.done.refund", { summa: pulniFormatlash(hisob.mijozgaQaytariladi, hisob.valyuta) })
             : t("wizard.done.noRefund"),
       yoq: !hisob || hisob.mijozgaQaytariladi === null,
     },

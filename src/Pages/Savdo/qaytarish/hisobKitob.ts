@@ -1,5 +1,6 @@
+import { valyutaKodi, type Valyuta } from "@/lib/valyuta";
 import type { Qaytarish, QaytarishOldindanJavobi, QaytarishToloviniQaytarishUsuli } from "@/types/savdo";
-import { qaytarishSummasi } from "../savdoYordamchilari";
+import { qaytarishSummasi, qaytarishValyutasi } from "../savdoYordamchilari";
 import { raqamga } from "./qaytarishYordamchilari";
 
 // Qaytarish hisob-kitobi: BARCHA summalarni backend hisoblaydi (POST /returns/preview va tasdiqlangan hujjat).
@@ -16,6 +17,8 @@ export type HisobKitob = {
   mijozgaQaytariladi: number | null;
   /** Qaytarishdan keyingi qarz (debtAfter). */
   qolganQarz: number | null;
+  /** Yuqoridagi summalar valyutasi (backend `currency`; berilmasa — so'm). */
+  valyuta: Valyuta;
 };
 
 export type HisobKitobHolati = "qarzYoq" | "qarzdanKichik" | "qarzgaTeng" | "qarzdanKatta" | "pulQaytarilmaydi";
@@ -30,6 +33,7 @@ export function oldindanHisobKitob(javob: QaytarishOldindanJavobi | null | undef
     qarzdanAyriladi: raqamga(javob.debtReduction),
     mijozgaQaytariladi: raqamga(javob.refundAmount),
     qolganQarz: raqamga(javob.debtAfter),
+    valyuta: valyutaKodi(javob.currency),
   };
   return Object.values(hisob).every((qiymat) => qiymat !== null) ? hisob : null;
 }
@@ -55,6 +59,7 @@ export function hujjatHisobKitobi(qaytarish: Qaytarish): HisobKitob {
     qarzdanAyriladi: raqamga(qaytarish.debtReduction),
     mijozgaQaytariladi: raqamga(qaytarish.refundAmount),
     qolganQarz: raqamga(qaytarish.debtAfter),
+    valyuta: qaytarishValyutasi(qaytarish),
   };
 }
 

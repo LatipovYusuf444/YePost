@@ -19,7 +19,7 @@ type Props = {
 export default function QaytarishHisobKitobi({ hisob, usul = "CASH", ixcham = false, oldindan = false }: Props) {
   const { t } = useTranslation("savdo_qaytarish");
   const yoq = t("wizard.calc.unavailable");
-  const summa = (qiymat: number | null) => (qiymat === null ? yoq : pulniFormatlash(qiymat));
+  const summa = (qiymat: number | null) => (qiymat === null ? yoq : pulniFormatlash(qiymat, hisob.valyuta));
 
   const jami = hisob.tovarQiymati;
   // Ulushlar faqat backend summalarining nisbati (ko'rsatish uchun); biri noma'lum bo'lsa chiziq ko'rsatilmaydi.
@@ -91,7 +91,7 @@ export default function QaytarishHisobKitobi({ hisob, usul = "CASH", ixcham = fa
           rang="emerald"
           ikonka={<BadgeCheck size={17} />}
           nom={t("wizard.calc.debtReduction")}
-          qiymat={hisob.qarzdanAyriladi === null ? yoq : `− ${pulniFormatlash(hisob.qarzdanAyriladi)}`}
+          qiymat={hisob.qarzdanAyriladi === null ? yoq : `− ${pulniFormatlash(hisob.qarzdanAyriladi, hisob.valyuta)}`}
           yoq={hisob.qarzdanAyriladi === null}
           izoh={t("wizard.calc.debtReductionHint")}
         />
@@ -124,7 +124,7 @@ export default function QaytarishHisobKitobi({ hisob, usul = "CASH", ixcham = fa
             <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">{t("wizard.calc.remaining")}</p>
             {hisob.mavjudQarz !== null && hisob.qolganQarz !== null && (
               <p className="mt-0.5 text-xs font-semibold tabular-nums text-slate-400">
-                {pulniFormatlash(hisob.mavjudQarz)} → {pulniFormatlash(hisob.qolganQarz)}
+                {pulniFormatlash(hisob.mavjudQarz, hisob.valyuta)} → {pulniFormatlash(hisob.qolganQarz, hisob.valyuta)}
               </p>
             )}
           </div>
