@@ -87,6 +87,8 @@ export type DiscountReportSummary = {
 export type IncomeExpenseFilter = SanaFilter & {
   branchIds?: string;
   branchId?: string;
+  // Berilsa, javobga davrlar bo'yicha `series` ham qo'shiladi (dateFrom va dateTo ikkalasi ham kerak; ko'pi bilan 400 davr).
+  groupBy?: "DAY" | "WEEK" | "MONTH" | "QUARTER" | "YEAR";
 };
 
 export type AuditFilter = SanaFilter & {

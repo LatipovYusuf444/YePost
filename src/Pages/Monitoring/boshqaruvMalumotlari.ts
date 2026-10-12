@@ -1,5 +1,6 @@
 import { buyurtmalarApi, type Buyurtma, type BuyurtmaHolati } from "@/api/buyurtmalarApi";
 import { incomeExpenseReportApi } from "@/api/reportsApi";
+import { valyutaKodi, type Valyuta } from "@/lib/valyuta";
 import { mijozNomi, sotuvHolati, sotuvQarzdorlikSummasi, sotuvRaqami } from "@/Pages/Savdo/savdoYordamchilari";
 import type { Sotuv } from "@/types/savdo";
 
@@ -96,7 +97,7 @@ export async function buyurtmaKorsatkichlariniOlish(): Promise<BuyurtmaKorsatkic
 // Moliya: daromad, xarajat, sof foyda (GET /reports/income-expense)
 // ---------------------------------------------------------------------------------------------
 
-export type MoliyaJavobi = {
+type MoliyaBlogi = {
   income?: { saleRevenue?: number | string; otherIncome?: number | string; returns?: number | string; total?: number | string };
   cost?: { costOfGoods?: number | string };
   expenses?: { total?: number | string };
@@ -105,8 +106,13 @@ export type MoliyaJavobi = {
     cost?: number | string;
     expense?: number | string;
     netProfit?: number | string;
+    // Hisobot valyutasi (UZS/USD); berilmasa — so'm.
+    currency?: string;
   };
 };
+
+// `groupBy` bilan so'ralganda server har bir davr uchun alohida blok qaytaradi (series): from/to — davr chegaralari (YYYY-MM-DD).
+export type MoliyaJavobi = MoliyaBlogi & { series?: Array<MoliyaBlogi & { from?: string; to?: string }> };
 
 export type MoliyaQiymatlari = {
   daromad: number;
@@ -134,8 +140,10 @@ export function moliyaQiymatlari(javob: MoliyaJavobi | null | undefined): Moliya
 export type MoliyaGuruhi = "kun" | "hafta" | "oy" | "chorak" | "yil";
 export const MOLIYA_GURUHLARI: MoliyaGuruhi[] = ["kun", "hafta", "oy", "chorak", "yil"];
 
-// Bitta grafik uchun ko'pi bilan shuncha davr so'raladi (har biri alohida hisobot so'rovi).
-export const MOLIYA_MAKS_DAVR = 31;
+// Bitta grafik uchun ko'pi bilan shuncha davr ko'rsatiladi (server `groupBy` bilan ko'pi bilan 400 davr beradi, lekin grafik o'qilishi kerak).
+export const MOLIYA_MAKS_DAVR = 120;
+// Server `groupBy` ni bilmasa (eski versiya) har davr alohida so'raladi: shuncha davrdan ko'pida bunday qilinmaydi.
+const ESKI_USUL_MAKS_DAVR = 31;
 
 export type MoliyaOraligi = { key: string; dan: string; gacha: string; yil: number; oy: number; chorak: number };
 
@@ -185,7 +193,27 @@ export type MoliyaNuqtasi = {
   sofFoyda: number;
   // Shu davr uchun hisobot yuklanmadi.
   xato: boolean;
+  // Summalar valyutasi (hisobot valyutasi); berilmasa — so'm.
+  valyuta?: Valyuta;
 };
+
+// Oraliqdagi kunlar soni (ikkala chet ham kiradi).
+export function moliyaOraligiKunlari(oraliq: Pick<MoliyaOraligi, "dan" | "gacha">) {
+  return Math.round((kundanSana(oraliq.gacha).getTime() - kundanSana(oraliq.dan).getTime()) / 86_400_000) + 1;
+}
+
+// Guruhdagi o'rtacha davr uzunligi (kun): "o'rtacha foyda" ni bir davrga keltirish uchun.
+const GURUH_KUNLARI: Record<MoliyaGuruhi, number> = { kun: 1, hafta: 7, oy: 365.25 / 12, chorak: 365.25 / 4, yil: 365.25 };
+
+/**
+ * Bir davrga (kun / hafta / oy / chorak / yil) o'rtacha qiymat: jami qiymat tanlangan oraliqdagi kunlar soniga qarab bo'linadi.
+ * Chetdagi to'liq bo'lmagan hafta yoki oy to'liq davr deb sanalmaydi; oraliq bitta davrdan qisqa bo'lsa — jami qiymat.
+ */
+export function moliyaOrtachaDavrQiymati(jami: number, nuqtalar: MoliyaNuqtasi[], guruh: MoliyaGuruhi) {
+  const kunlar = nuqtalar.reduce((summa, nuqta) => summa + moliyaOraligiKunlari(nuqta.oraliq), 0);
+  const davrlar = Math.max(kunlar / GURUH_KUNLARI[guruh], 1);
+  return kunlar > 0 ? jami / davrlar : 0;
+}
 
 const kunBoshiISO = (kun: string) => kundanSana(kun).toISOString();
 const kunOxiriISO = (kun: string) => {
@@ -227,6 +255,7 @@ export async function moliyaNuqtalariniOlish(
           xarajat: qiymat?.xarajat ?? 0,
           sofFoyda: qiymat?.sofFoyda ?? 0,
           xato: false,
+          valyuta: valyutaKodi(javob.summary?.currency),
         };
       } catch {
         nuqta = { oraliq, daromad: 0, xarajat: 0, sofFoyda: 0, xato: true };
@@ -238,6 +267,75 @@ export async function moliyaNuqtalariniOlish(
 
   await Promise.all(Array.from({ length: Math.min(limit, oraliqlar.length) }, () => ishchi()));
   return natija.filter(Boolean);
+}
+
+const GURUH_API: Record<MoliyaGuruhi, NonNullable<Parameters<typeof incomeExpenseReportApi.olish>[0]["groupBy"]>> = {
+  kun: "DAY",
+  hafta: "WEEK",
+  oy: "MONTH",
+  chorak: "QUARTER",
+  yil: "YEAR",
+};
+
+function davrdanOraliq(from: string, to: string): MoliyaOraligi {
+  const [yil, oy] = from.split("-").map(Number);
+  return { key: `${from}_${to}`, dan: from, gacha: to, yil, oy, chorak: Math.floor((oy - 1) / 3) + 1 };
+}
+
+// Server `groupBy` parametrini bilmasa (eski versiya) so'rovni rad etadi (400/422): shunda eski usulga o'tiladi.
+function groupByQollanmaydi(error: unknown) {
+  const holat = (error as { response?: { status?: number } } | null)?.response?.status;
+  return holat === 400 || holat === 422;
+}
+
+export type MoliyaMalumoti = { nuqtalar: MoliyaNuqtasi[]; valyuta: Valyuta };
+
+// Grafik uchun barcha davrlar BITTA so'rovda olinadi: GET /reports/income-expense?groupBy=...&dateFrom=YYYY-MM-DD&dateTo=YYYY-MM-DD.
+// Kunlar kompaniya vaqt mintaqasida hisoblanadi, davrlar (hafta — dushanbadan, chetlari oraliqqa kesilgan) serverdan keladi.
+// Server `series` qaytarmasa yoki `groupBy` ni bilmasa — har davr alohida so'raladigan eski usul (ko'pi bilan 31 davr).
+export async function moliyaMalumotiniOlish(
+  dan: string,
+  gacha: string,
+  guruh: MoliyaGuruhi,
+  keshi: Map<string, MoliyaNuqtasi>,
+  faolmi: () => boolean,
+): Promise<MoliyaMalumoti> {
+  const oraliqlar = moliyaOraliqlari(dan, gacha, guruh);
+  const keshdagilar = oraliqlar.map((oraliq) => keshi.get(oraliq.key));
+  if (oraliqlar.length > 0 && keshdagilar.every((nuqta) => nuqta && !nuqta.xato)) {
+    const nuqtalar = keshdagilar as MoliyaNuqtasi[];
+    return { nuqtalar, valyuta: nuqtalar[0].valyuta ?? "UZS" };
+  }
+
+  const xatoNuqtalari = () => oraliqlar.map((oraliq): MoliyaNuqtasi => ({ oraliq, daromad: 0, xarajat: 0, sofFoyda: 0, xato: true }));
+  try {
+    const javob = (await incomeExpenseReportApi.olish({ dateFrom: dan, dateTo: gacha, groupBy: GURUH_API[guruh] })) as MoliyaJavobi;
+    if (!faolmi()) return { nuqtalar: [], valyuta: "UZS" };
+    if (Array.isArray(javob.series) && javob.series.length > 0) {
+      const valyuta = valyutaKodi(javob.summary?.currency);
+      const nuqtalar = javob.series.map((davr): MoliyaNuqtasi => {
+        const qiymat = moliyaQiymatlari(davr);
+        const oraliq = davrdanOraliq(String(davr.from ?? dan), String(davr.to ?? davr.from ?? gacha));
+        const nuqta: MoliyaNuqtasi = {
+          oraliq,
+          daromad: qiymat?.daromad ?? 0,
+          xarajat: qiymat?.xarajat ?? 0,
+          sofFoyda: qiymat?.sofFoyda ?? 0,
+          xato: false,
+          valyuta,
+        };
+        keshi.set(oraliq.key, nuqta);
+        return nuqta;
+      });
+      return { nuqtalar, valyuta };
+    }
+  } catch (error) {
+    if (!groupByQollanmaydi(error)) return { nuqtalar: xatoNuqtalari(), valyuta: "UZS" };
+  }
+
+  if (oraliqlar.length > ESKI_USUL_MAKS_DAVR) return { nuqtalar: xatoNuqtalari(), valyuta: "UZS" };
+  const nuqtalar = await moliyaNuqtalariniOlish(oraliqlar, keshi, faolmi);
+  return { nuqtalar, valyuta: nuqtalar.find((nuqta) => !nuqta.xato)?.valyuta ?? "UZS" };
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -3,13 +3,14 @@ import { useTranslation } from "react-i18next";
 import { ChartColumn, Eye, EyeOff, Receipt, RefreshCw, TrendingDown, TrendingUp, TriangleAlert, Wallet, type LucideIcon } from "lucide-react";
 import { Area, Bar, CartesianGrid, ComposedChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import LoadingState from "@/Components/common/LoadingState";
-import { pulMatni, summaniOgirish } from "@/lib/valyuta";
+import { pulMatni, summaniOgirish, type Valyuta } from "@/lib/valyuta";
 import {
   MOLIYA_GURUHLARI,
   MOLIYA_MAKS_DAVR,
   avtoMoliyaGuruhi,
-  moliyaNuqtalariniOlish,
+  moliyaMalumotiniOlish,
   moliyaOraliqlari,
+  moliyaOrtachaDavrQiymati,
   type MoliyaGuruhi,
   type MoliyaNuqtasi,
   type MoliyaOraligi,
@@ -18,7 +19,7 @@ import { sanaMatni, summaniAjratish } from "./summaMatni";
 
 // Daromad, xarajat va sof foyda bitta grafikda. Sana oralig'i Monitoring sahifasining umumiy filtridan olinadi;
 // "Guruhlash" faqat shu oraliq qanday bo'laklarga bo'linishini tanlaydi. Ma'lumot /reports/income-expense dan keladi
-// (har bir davr uchun alohida so'rov); hech qanday namuna ma'lumot ishlatilmaydi.
+// (groupBy bilan bitta so'rov, davrlar serverdan); hech qanday namuna ma'lumot ishlatilmaydi.
 const DAROMAD_RANGI = "var(--theme-primary, #2563EB)";
 const XARAJAT_RANGI = "#F59E0B";
 const FOYDA_RANGI = "#059669";
@@ -40,6 +41,8 @@ export default function MoliyaGrafigi({ dateFrom, dateTo, yangilanish }: Props) 
   const id = useId().replace(/:/g, "");
   const [tanlangan, setTanlangan] = useState<MoliyaGuruhi | null>(null);
   const [nuqtalar, setNuqtalar] = useState<MoliyaNuqtasi[]>([]);
+  // Hisobot valyutasi: server `summary.currency` bergan valyuta (berilmasa — so'm).
+  const [valyuta, setValyuta] = useState<Valyuta>("UZS");
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [qaytaSoni, setQaytaSoni] = useState(0);
   const [yashirin, setYashirin] = useState<Record<Qator, boolean>>({ daromad: false, xarajat: false, sofFoyda: false });
@@ -71,8 +74,6 @@ export default function MoliyaGrafigi({ dateFrom, dateTo, yangilanish }: Props) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tanlangan, dateFrom, dateTo, davrlarSoni]);
 
-  const oraliqlar = useMemo(() => moliyaOraliqlari(dateFrom, dateTo, guruh), [dateFrom, dateTo, guruh]);
-
   useEffect(() => {
     if (oxirgiYangilanish.current !== yangilanish) {
       keshi.current.clear();
@@ -80,9 +81,11 @@ export default function MoliyaGrafigi({ dateFrom, dateTo, yangilanish }: Props) 
     }
     let faol = true;
     setYuklanmoqda(true);
-    moliyaNuqtalariniOlish(oraliqlar, keshi.current, () => faol)
+    moliyaMalumotiniOlish(dateFrom, dateTo, guruh, keshi.current, () => faol)
       .then((natija) => {
-        if (faol) setNuqtalar(natija);
+        if (!faol) return;
+        setNuqtalar(natija.nuqtalar);
+        setValyuta(natija.valyuta);
       })
       .finally(() => {
         if (faol) setYuklanmoqda(false);
@@ -90,11 +93,11 @@ export default function MoliyaGrafigi({ dateFrom, dateTo, yangilanish }: Props) 
     return () => {
       faol = false;
     };
-  }, [oraliqlar, yangilanish, qaytaSoni]);
+  }, [dateFrom, dateTo, guruh, yangilanish, qaytaSoni]);
 
-  const pul = (summa: number) => pulMatni(summa, "UZS", true, t("dynamics.currency"));
+  const pul = (summa: number) => pulMatni(summa, valyuta, true, t("dynamics.currency"));
   const qisqa = (qiymat: number) => {
-    const value = summaniOgirish(qiymat);
+    const value = summaniOgirish(qiymat, valyuta);
     const abs = Math.abs(value);
     if (abs >= 1_000_000_000) return `${Number((value / 1_000_000_000).toFixed(1))} ${t("dynamics.billion")}`;
     if (abs >= 1_000_000) return `${Number((value / 1_000_000).toFixed(1))} ${t("dynamics.million")}`;
@@ -139,7 +142,8 @@ export default function MoliyaGrafigi({ dateFrom, dateTo, yangilanish }: Props) 
 
   // Grafik ostidagi qisqa xulosa: faqat yuklangan davrlar bo'yicha hisoblanadi.
   const engYaxshi = yuklanganlar.length > 0 ? [...yuklanganlar].sort((a, b) => b.sofFoyda - a.sofFoyda)[0] : undefined;
-  const ortachaFoyda = yuklanganlar.length > 0 ? foyda / yuklanganlar.length : 0;
+  // Bir davrga o'rtacha: jami foyda kunlar soniga qarab bo'linadi (chetdagi to'liq bo'lmagan hafta/oy to'liq davr deb sanalmaydi).
+  const ortachaFoyda = yuklanganlar.length > 0 ? moliyaOrtachaDavrQiymati(foyda, yuklanganlar, guruh) : 0;
   const zararDavrlari = yuklanganlar.filter((nuqta) => nuqta.sofFoyda < 0).length;
 
   const korsatkichlar: { kalit: Qator; nom: string; rang: string; qiymat: number; icon: LucideIcon; tile: string; izoh: string; manfiy: boolean }[] = [
