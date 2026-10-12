@@ -18,6 +18,7 @@
   },
   "errors": {
     "dismiss": "Yopish",
+    "usdUnavailable": "Dollarda sotuv uchun valyuta rejimi yoqilgan va bugungi kurs kiritilgan bo'lishi kerak (Sozlamalar → Valyuta).",
     "selectClientForActivity": "CRM faoliyatini saqlash uchun mijozni tanlang.",
     "selectResponsibleForTask": "Ish yoki vazifa yaratish uchun mas'ul xodimni tanlang.",
     "selectWarehouseFirst": "Avval omborni tanlang.",
@@ -83,7 +84,8 @@
   },
   "currencies": {
     "uzs": "O'zbek so'mi",
-    "usd": "AQSH dollari"
+    "usd": "AQSH dollari",
+    "usdNoRate": "AQSH dollari (kurs kiritilmagan)"
   },
   "modal": {
     "draftTitle": "Qoralama qo'shish",
@@ -114,7 +116,8 @@
     "stageLabel": "Bosqich",
     "currencyLabel": "Valyuta",
     "startDateLabel": "Boshlanish sanasi",
-    "endDateLabel": "Tugash sanasi"
+    "endDateLabel": "Tugash sanasi",
+    "commentLabel": "Izoh"
   },
   "labels": {
     "zeroAmountPlaceholder": "0 so'm",
@@ -130,6 +133,9 @@
     "salePrice": "Sotuv narxi (so'm)",
     "quantity": "Miqdor",
     "discount": "Chegirma (so'm, jami)",
+    "priceUsd": "Katalog narxi ($)",
+    "salePriceUsd": "Sotuv narxi ($)",
+    "discountUsd": "Chegirma ($, jami)",
     "priceLocked": "Narx ombordagi haqiqiy narx bo'yicha belgilanadi va o'zgartirilmaydi"
   },
   "placeholders": {
@@ -144,19 +150,29 @@
   "sections": {
     "clientAndCompany": "Mijoz va kompaniya",
     "additional": "Qo'shimcha",
-    "products": "Tovarlar"
+    "products": "Tovarlar",
+    "clientInfo": "Mijoz ma'lumotlari",
+    "saleSettings": "Sotuv sozlamalari",
+    "draftSettings": "Qoralama sozlamalari",
+    "productList": "Mahsulotlar ro'yxati",
+    "activity": "Faoliyat"
   },
   "messages": {
     "clientAutoAttachedToCompany": "Mijoz kompaniyaga avtomatik biriktirildi: {{company}}",
     "companyRepAutoSelected": "Kompaniya vakili avtomatik tanlandi: {{client}}"
   },
   "hints": {
-    "saleCreatedByCurrentUser": "Sotuv har doim tizimga kirgan foydalanuvchi nomidan yaratiladi."
+    "saleCreatedByCurrentUser": "Sotuv har doim tizimga kirgan foydalanuvchi nomidan yaratiladi.",
+    "usdSale": "Sotuv dollarda yaratiladi: so'mda narxlangan mahsulotlar bugungi kurs bo'yicha ($1 = {{kurs}} so'm) ko'rsatiladi, backend tasdiqlash kunidagi kurs bilan hisoblaydi."
   },
   "actions": {
     "save": "Saqlash",
     "cancel": "Bekor qilish",
-    "addRow": "Qo'shish"
+    "addRow": "Qo'shish",
+    "addProduct": "Mahsulot qo'shish",
+    "import": "Import",
+    "clear": "Tozalash",
+    "close": "Yopish"
   },
   "products": {
     "autoDiscountHint": "Katalog narxi {{katalog}}, sotuv narxi {{sotuv}}: har bir dona uchun {{bir}} chegirma avtomatik hisoblandi (jami {{jami}}).",
@@ -167,6 +183,7 @@
     "outOfStock": "Qoldiq yo'q",
     "noRate": "Kurs kiritilmagan",
     "usdHint": "{{usd}} × {{kurs}} so'm (bugungi kurs)",
+    "keyboardHint": "Klaviatura: ↑/↓ — qatorlar orasida; Enter — keyingi qator (oxirgisida yangisi); ro'yxatda Shift+Enter — tanlab, darrov keyingi mahsulotga; Ctrl+↑/↓ — mahsulot maydoniga; Ctrl+Delete — qatorni o'chirish.",
     "scanPlaceholder": "Shtrix kodni skanerlang yoki yozib Enter bosing",
     "scanAriaLabel": "Shtrix kod bilan mahsulot qo'shish",
     "scanAdded": "{{name}} qo'shildi: {{qty}} dona",
@@ -176,7 +193,40 @@
     "scanNotEnough": "{{name}}: qoldiq yetarli emas (mavjud {{available}}).",
     "scanPickWarehouse": "{{name}} bir nechta omborda bor. Avval omborni tanlang."
   },
+  "stepper": {
+    "aria": "Sotuv yaratish bosqichlari",
+    "customer": { "title": "Mijoz", "hint": "Mijozni tanlang" },
+    "products": { "title": "Mahsulotlar", "hint": "Mahsulotlarni qo'shing" },
+    "payment": { "title": "To'lov", "hint": "To'lov ma'lumotlari" },
+    "confirm": { "title": "Yakun", "hint": "Tasdiqlang" }
+  },
+  "table": {
+    "number": "#",
+    "product": "Mahsulot",
+    "catalogPrice": "Katalog narxi",
+    "salePrice": "Sotuv narxi",
+    "quantity": "Miqdor",
+    "discount": "Chegirma",
+    "total": "Jami",
+    "currencySuffix": "so'm",
+    "currencySuffixUsd": "$"
+  },
+  "comment": {
+    "label": "Izoh (ixtiyoriy)",
+    "placeholder": "Qo'shimcha ma'lumotlar..."
+  },
+  "import": {
+    "title": "«Qoralamani yuklash» bilan saqlangan JSON faylni import qilish",
+    "done": "Import qilindi: {{count}} ta mahsulot qatori.",
+    "doneNoItems": "Fayl o'qildi, lekin mahsulot qatorlari topilmadi.",
+    "skipped": "{{count}} ta qator o'tkazib yuborildi (omborda topilmadi).",
+    "invalid": "Fayl noto'g'ri. «Qoralamani yuklash» bilan saqlangan JSON faylni tanlang."
+  },
   "summary": {
+    "productsCount": "Mahsulotlar soni",
+    "totalQuantity": "Umumiy miqdor",
+    "discount": "Chegirma",
+    "grandTotal": "Jami summa",
     "totalLabel": "Sotuv jami",
     "paymentHint": "To'lov shu yerda qabul qilinmaydi — sotuv qoralama sifatida saqlangach, to'lovni sotuv sahifasidan alohida qabul qilasiz."
   }

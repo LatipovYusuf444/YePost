@@ -46,6 +46,8 @@ type SavdoSelectProps = {
   klaviatura?: boolean;
   // O'zgargan har bir musbat qiymat ro'yxatni dasturiy ochadi (masalan, yangi qator qo'shilganda).
   ochishSorovi?: number;
+  // Faqat `klaviatura` rejimida: Shift+Enter faol variantni `onChange` o'rniga shu funksiya bilan tanlaydi (tez ketma-ket kiritish uchun).
+  tezTanlash?: (value: string) => void;
 };
 
 function labelToText(label: ReactNode) {
@@ -82,6 +84,7 @@ export default function SavdoSelect({
   qidiruvPlaceholder,
   klaviatura = false,
   ochishSorovi = 0,
+  tezTanlash,
 }: SavdoSelectProps) {
   const { t } = useTranslation("savdo_kichik");
   const effectivePlaceholder = placeholder ?? t("savdoSelect.tanlang");
@@ -211,7 +214,13 @@ export default function SavdoSelect({
       // Forma yuborilmasin va Enter faqat tanlangan variantni qo'shsin.
       event.preventDefault();
       const faol = korinadiganOptions[faolIndeks];
-      if (faol) variantniTanlash(faol);
+      if (faol && event.shiftKey && tezTanlash && !faol.disabled) {
+        tezTanlash(faol.value);
+        setOpen(false);
+        buttonRef.current?.focus();
+      } else if (faol) {
+        variantniTanlash(faol);
+      }
     } else if (event.key === "Escape") {
       event.preventDefault();
       setOpen(false);
