@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Edit3, LoaderCircle, Lock, Plus, Ruler, Trash2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { birliklarApi } from "@/api/catalogApi";
+import { birliklarApi, mahsulotlarApi } from "@/api/catalogApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { foydalanuvchiDirektormi } from "@/lib/roles";
-import type { OlchovBirligi } from "@/types/catalog";
+import type { Mahsulot, OlchovBirligi } from "@/types/catalog";
+import BirlikMahsulotlari from "./BirlikMahsulotlari";
 import { BolimKarta } from "./UmumiyUI";
 import { maydonKlass } from "./yordamchilar";
 
@@ -23,6 +24,18 @@ export default function OlchovBirligiBolimi() {
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [saqlanmoqda, setSaqlanmoqda] = useState(false);
   const [xato, setXato] = useState("");
+  // Birlik ustiga bosilganda shu birlikdagi mahsulotlar ro'yxati ochiladi. Mahsulotlar kartalardagi soni uchun ham kerak:
+  // yuklanmasa (null) son ko'rsatilmaydi, ro'yxat esa baribir ochiladi.
+  const [mahsulotlar, setMahsulotlar] = useState<Mahsulot[] | null>(null);
+  const [tanlanganBirlik, setTanlanganBirlik] = useState<OlchovBirligi | null>(null);
+  const mahsulotSoni = useMemo(() => {
+    const xarita = new Map<string, number>();
+    mahsulotlar?.forEach((mahsulot) => {
+      const birlikId = mahsulot.unitId ?? mahsulot.unit?.id;
+      if (birlikId) xarita.set(birlikId, (xarita.get(birlikId) ?? 0) + 1);
+    });
+    return xarita;
+  }, [mahsulotlar]);
 
   async function yuklash() {
     setYuklanmoqda(true);
@@ -37,6 +50,20 @@ export default function OlchovBirligiBolimi() {
   }
   useEffect(() => {
     void yuklash();
+  }, []);
+  useEffect(() => {
+    let faol = true;
+    mahsulotlarApi
+      .royxat()
+      .then((royxat) => {
+        if (faol) setMahsulotlar(royxat);
+      })
+      .catch(() => {
+        if (faol) setMahsulotlar(null);
+      });
+    return () => {
+      faol = false;
+    };
   }, []);
 
   function boshla(birlik?: OlchovBirligi) {
@@ -171,7 +198,8 @@ export default function OlchovBirligiBolimi() {
           {olchovlar.map((birlik) => (
             <article
               key={birlik.id}
-              className="group rounded-[20px] border border-orange-100 bg-white p-4 shadow-sm transition hover:border-orange-200 hover:shadow-md"
+              onClick={() => setTanlanganBirlik(birlik)}
+              className="group cursor-pointer rounded-[20px] border border-orange-100 bg-white p-4 shadow-sm transition hover:border-orange-200 hover:shadow-md"
             >
               <div className="flex items-start justify-between">
                 <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-[#2563EB]">
@@ -181,7 +209,10 @@ export default function OlchovBirligiBolimi() {
                   <div className="flex gap-1.5 opacity-0 transition group-hover:opacity-100">
                     <button
                       type="button"
-                      onClick={() => boshla(birlik)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        boshla(birlik);
+                      }}
                       className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-[#2563EB] hover:bg-orange-100"
                       aria-label={t("common:actions.edit")}
                     >
@@ -189,7 +220,10 @@ export default function OlchovBirligiBolimi() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => void ochirish(birlik)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void ochirish(birlik);
+                      }}
                       className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100"
                       aria-label={t("common:actions.delete")}
                     >
@@ -198,14 +232,26 @@ export default function OlchovBirligiBolimi() {
                   </div>
                 )}
               </div>
-              <p className="mt-3 text-base font-black text-gray-900">{birlik.name}</p>
-              <div className="mt-1.5 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setTanlanganBirlik(birlik)}
+                className="mt-3 block w-full rounded-lg text-left text-base font-black text-gray-900 outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+                aria-label={t("birliklar.products.openAria", { name: birlik.name })}
+              >
+                {birlik.name}
+              </button>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500">
                   {birlik.shortName || t("birliklar.noShortName")}
                 </span>
                 {birlik.code && (
                   <span className="rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-[#2563EB]">
                     {t("birliklar.codeLabel", { code: birlik.code })}
+                  </span>
+                )}
+                {mahsulotlar && (
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
+                    {t("birliklar.products.countBadge", { count: mahsulotSoni.get(birlik.id) ?? 0 })}
                   </span>
                 )}
               </div>
@@ -221,6 +267,9 @@ export default function OlchovBirligiBolimi() {
             </div>
           )}
         </div>
+      )}
+      {tanlanganBirlik && (
+        <BirlikMahsulotlari birlik={tanlanganBirlik} mahsulotlar={mahsulotlar ?? []} onYopish={() => setTanlanganBirlik(null)} />
       )}
     </BolimKarta>
   );

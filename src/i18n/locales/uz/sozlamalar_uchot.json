@@ -192,7 +192,34 @@
     "empty": "Backendda hali o'lchov birligi yo'q",
     "emptyHint": "Yuqoridagi \"Qo'shish\" tugmasi orqali birinchi birlikni yarating.",
     "nameRequired": "O'lchov birligi nomi majburiy.",
-    "deleteConfirm": "\"{{name}}\" o'lchov birligini o'chirasizmi?"
+    "deleteConfirm": "\"{{name}}\" o'lchov birligini o'chirasizmi?",
+    "products": {
+      "eyebrow": "O'lchov birligi bo'yicha mahsulotlar",
+      "closeAria": "Yopish",
+      "openAria": "{{name}}: shu birlikdagi mahsulotlarni ko'rish",
+      "countBadge": "{{count}} ta mahsulot",
+      "productsCount": "Mahsulotlar soni",
+      "totalStock": "Jami qoldiq (barcha omborlar)",
+      "available": "Mavjud (zaxirasiz)",
+      "byWarehouse": "Omborlar bo'yicha qoldiq",
+      "searchPlaceholder": "Mahsulot, shtrix-kod yoki ombor bo'yicha qidirish",
+      "warehouseFilter": "Ombor bo'yicha filtr",
+      "allWarehouses": "Barcha omborlar",
+      "refresh": "Yangilash",
+      "stockError": "Qoldiqlarni olib bo'lmadi (mahsulotlar ro'yxati ko'rsatilmoqda)",
+      "empty": "Bu o'lchov birligida hali mahsulot yo'q.",
+      "noMatches": "Qidiruv bo'yicha hech narsa topilmadi.",
+      "inactive": "Nofaol",
+      "noStockRecord": "Omborda yo'q",
+      "columns": {
+        "product": "Mahsulot",
+        "barcode": "Shtrix-kod",
+        "warehouse": "Ombor",
+        "stock": "Qoldiq",
+        "reserved": "Zaxira",
+        "available": "Mavjud"
+      }
+    }
   },
   "avatar": {
     "upload": "Rasm yuklash",
