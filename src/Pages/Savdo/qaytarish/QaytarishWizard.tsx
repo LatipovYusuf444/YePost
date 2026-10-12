@@ -39,7 +39,12 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { qaytariladiganQatorlarniOlish, qaytarishniOldindanKorish, qoldiqNomlariniBoyitish } from "@/api/savdoApi";
+import {
+  qaytariladiganQatorlarniOlish,
+  qaytariladiganSotuvlarniOlish,
+  qaytarishniOldindanKorish,
+  qoldiqNomlariniBoyitish,
+} from "@/api/savdoApi";
 import { valyutaKodi, type Valyuta } from "@/lib/valyuta";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type {
@@ -57,6 +62,7 @@ import {
   sananiFormatlash,
   sotuvMahsulotiId,
   sotuvMahsulotiModifikatsiyaId,
+  sotuvHolati,
   sotuvMahsulotiNarxi,
   sotuvQarzdorlikSummasi,
   sotuvRaqami,
@@ -252,6 +258,27 @@ export default function QaytarishWizard({
   const [qatorlarHolati, setQatorlarHolati] = useState<QatorlarHolati>({ turi: "bosh" });
   const [qidiruv, setQidiruv] = useState("");
   const [korinadiganSon, setKorinadiganSon] = useState(SOTUV_SAHIFASI);
+  // Qaytarsa bo'ladigan sotuvlar: backend filtri GET /sales?returnable=true (tasdiqlangan va kamida bitta qatori to'liq qaytarilmagan).
+  // Filtr ishlamasa (xato yoki eski backend) mahalliy filtr ishlatiladi. Sotuv tashqaridan berilgan bo'lsa ro'yxat kerak emas.
+  const [qaytariladiganSotuvlar, setQaytariladiganSotuvlar] = useState<Sotuv[] | null>(null);
+  const [qaytariladiganYuklanmoqda, setQaytariladiganYuklanmoqda] = useState(!boshlangichSotuvId);
+  useEffect(() => {
+    if (boshlangichSotuvId) return;
+    let faol = true;
+    qaytariladiganSotuvlarniOlish()
+      .then((royxat) => {
+        if (faol) setQaytariladiganSotuvlar(royxat);
+      })
+      .catch(() => {
+        if (faol) setQaytariladiganSotuvlar(null);
+      })
+      .finally(() => {
+        if (faol) setQaytariladiganYuklanmoqda(false);
+      });
+    return () => {
+      faol = false;
+    };
+  }, [boshlangichSotuvId]);
   // Katalogdan olingan mahsulot nomlari (modificationId bo'yicha); bo'sh obyekt — nom topilmadi.
   const [qatorNomlari, setQatorNomlari] = useState<Record<string, { mahsulot?: string; variant?: string }>>({});
   const nomSorovlari = useRef(new Set<string>());
@@ -290,13 +317,18 @@ export default function QaytarishWizard({
       const son = new Date(sotuvSanasi(item) ?? "").getTime();
       return Number.isFinite(son) ? son : 0;
     };
-    return sotuvlar
-      .filter(qaytarishMumkinmi)
+    // Backend ro'yxati afzal (mijoz/kompaniya nomlari do'kondagi boyitilgan nusxadan olinadi); u bo'lmasa mahalliy filtr.
+    const manba = qaytariladiganSotuvlar
+      ? qaytariladiganSotuvlar
+          .filter((item) => sotuvHolati(item) === "CONFIRMED")
+          .map((item) => sotuvniBirlashtirish(sotuvlar.find((royxatdagi) => royxatdagi.id === item.id) ?? null, item))
+      : sotuvlar.filter(qaytarishMumkinmi);
+    return manba
       .filter((item) => !soz || `${sotuvRaqami(item)} ${mijozNomi(item)} ${item.customer?.phone ?? ""} ${item.walkInCustomerPhone ?? ""}`.toLowerCase().includes(soz))
       // Yangi sotuvlar birinchi.
       .sort((birinchi, ikkinchi) => vaqt(ikkinchi) - vaqt(birinchi))
       .map((item) => ({ sotuv: item, oldinQaytarilgan: sotuvdaTasdiqlanganQaytarishBormi(item.id, qaytarishlar) }));
-  }, [qaytarishlar, qidiruv, sotuvlar]);
+  }, [qaytarishlar, qidiruv, sotuvlar, qaytariladiganSotuvlar]);
 
   // Sotuv tafsiloti va qaytarilishi mumkin bo'lgan qatorlar backenddan olinadi. Xato bo'lsa keyingi bosqichga o'tilmaydi.
   async function sotuvniTanlash(id: string) {
@@ -726,11 +758,11 @@ export default function QaytarishWizard({
                 </div>
 
                 {sotuvKartalari.length === 0 ? (
-                  sotuvlarYuklanmoqda ? (
+                  sotuvlarYuklanmoqda || qaytariladiganYuklanmoqda ? (
                     <p role="status" className="mt-5 flex items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 px-4 py-10 text-sm font-semibold text-slate-400">
                       <LoaderCircle size={16} className="animate-spin text-orange-500" aria-hidden /> {t("wizard.sale.listLoading")}
                     </p>
-                  ) : sotuvlarXatosi ? (
+                  ) : sotuvlarXatosi && !qaytariladiganSotuvlar ? (
                     <p role="alert" className="mt-5 flex items-start gap-2 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-600">
                       <AlertCircle size={17} className="mt-0.5 shrink-0" aria-hidden /> {t("wizard.sale.listError")}: {sotuvlarXatosi}
                     </p>

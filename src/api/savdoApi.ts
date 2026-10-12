@@ -45,6 +45,8 @@ export type SotuvlarFiltri = {
   dateTo?: string;
   status?: "CONFIRMED" | "DRAFT" | "CANCELLED";
   search?: string;
+  // true — faqat qaytarsa bo'ladigan sotuvlar: tasdiqlangan va kamida bitta qatori hali to'liq qaytarilmagan (qisman qaytarilganlar qoladi).
+  returnable?: boolean;
   page?: number;
   pageSize?: number;
 };
@@ -55,10 +57,16 @@ export async function sotuvlarSahifasiniOlish(filtr: SotuvlarFiltri = {}): Promi
   if (filtr.dateTo) params.dateTo = filtr.dateTo;
   if (filtr.status) params.status = filtr.status;
   if (filtr.search?.trim()) params.search = filtr.search.trim();
+  if (filtr.returnable) params.returnable = "true";
   if (filtr.page) params.page = filtr.page;
   if (filtr.pageSize) params.pageSize = Math.min(filtr.pageSize, 100);
   const response = await apiClient.get<unknown>("/sales", { params });
   return sahifaJavobi<Sotuv>(response.data, filtr.page ?? 1, filtr.pageSize ?? 20);
+}
+
+// Qaytarish wizard (1-bosqich): faqat qaytarsa bo'ladigan sotuvlar (GET /sales?returnable=true).
+export async function qaytariladiganSotuvlarniOlish(): Promise<Sotuv[]> {
+  return (await sotuvlarSahifasiniOlish({ returnable: true })).items;
 }
 
 // GET /sales/summary — Savdo sahifasi kartalari uchun. Summalar faqat tasdiqlangan sotuvlar bo'yicha (backend satr qaytaradi).
