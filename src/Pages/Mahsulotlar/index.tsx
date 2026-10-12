@@ -257,10 +257,17 @@ export default function Mahsulotlar() {
     return item.unit?.shortName ?? item.unit?.name ?? store.birliklar.find((x) => x.id === item.unitId)?.shortName ?? t("fallback.unit");
   }
 
+  // Mahsulotni ochish (variantlar va narxlar oynasi): jadvalda qator ustiga bosilganda ishlaydi.
+  function mahsulotniKorish(item: Mahsulot) {
+    setModProduct(item);
+    void store.modifikatsiyalarniYuklash(item.id);
+  }
+
   function mahsulotAmallari(item: Mahsulot, ixcham = false) {
     return (
-      <div className={ixcham ? "flex justify-end gap-2" : "mt-5 grid grid-cols-[1fr_1fr_42px] gap-2 border-t pt-4"}>
-        <button onClick={()=>{setModProduct(item);void store.modifikatsiyalarniYuklash(item.id)}} className={`inline-flex items-center justify-center gap-1 rounded-xl bg-slate-50 font-bold text-slate-600 ${ixcham ? "h-10 px-3 text-sm" : "py-2.5 text-sm"}`}><Eye size={15}/>{!ixcham&&t("actions.variants")}</button>
+      // Jadvaldagi tugmalar (tahrirlash, o'chirish) bosilganda qator ochilmasligi uchun bosish yuqoriga o'tkazilmaydi.
+      <div onClick={ixcham ? (event) => event.stopPropagation() : undefined} className={ixcham ? "flex justify-end gap-2" : "mt-5 grid grid-cols-[1fr_1fr_42px] gap-2 border-t pt-4"}>
+        {!ixcham&&<button onClick={()=>mahsulotniKorish(item)} className="inline-flex items-center justify-center gap-1 rounded-xl bg-slate-50 py-2.5 text-sm font-bold text-slate-600"><Eye size={15}/>{t("actions.variants")}</button>}
         <button onClick={()=>void mahsulotTahrirlash(item)} className={`inline-flex items-center justify-center gap-1 rounded-xl bg-orange-50 font-bold text-orange-600 ${ixcham ? "h-10 px-3 text-sm" : "py-2.5 text-sm"}`}><Edit3 size={15}/>{!ixcham&&t("actions.edit")}</button>
         <button onClick={()=>void mahsulotOchirish(item.id)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500"><Trash2 size={16}/></button>
       </div>
@@ -379,7 +386,18 @@ export default function Mahsulotlar() {
                   </thead>
                   <tbody className="divide-y divide-orange-100">
                     {paginatedMahsulotlar.map((item,index)=>(
-                      <tr key={item.id} className="hover:bg-orange-50/40">
+                      <tr
+                        key={item.id}
+                        onClick={()=>mahsulotniKorish(item)}
+                        onKeyDown={(event)=>{
+                          // Qatorning o'ziga fokus berilganda Enter / Bo'shliq ham ochadi (ichidagi tugmalarga tegmaydi).
+                          if (event.target !== event.currentTarget || (event.key !== "Enter" && event.key !== " ")) return;
+                          event.preventDefault();
+                          mahsulotniKorish(item);
+                        }}
+                        tabIndex={0}
+                        className="cursor-pointer transition hover:bg-orange-50/40 focus-visible:bg-orange-50/60 focus-visible:outline-none"
+                      >
                         <td className="px-5 py-4 font-bold text-gray-500">{(currentPage - 1) * pageSize + index + 1}</td>
                         <td className="px-5 py-4">
                           <span className="font-black text-gray-900">{item.name}</span>
