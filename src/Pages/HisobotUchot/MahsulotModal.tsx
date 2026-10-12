@@ -7,6 +7,7 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { Mahsulot, MahsulotModifikatsiyasi, OlchovBirligi } from "@/types/catalog";
 import { useHisobotRealData } from "./HisobotRealData";
 import type { Maxsulot } from "./types";
+import { ustamaFoizi } from "@/Pages/Mahsulotlar/narxHisobi";
 
 // Hisobotdan ochilgan mahsulot real katalog endpointlari orqali tahrirlanadi.
 
@@ -67,10 +68,9 @@ export default function MahsulotModal({
     return () => { active = false; };
   }, [mahsulot.id]);
 
-  const ustama =
-    Number(tanNarx) > 0 && Number(sotuvNarx) >= 0
-      ? (((Number(sotuvNarx) - Number(tanNarx)) / Number(tanNarx)) * 100).toFixed(1)
-      : "";
+  // Ustama sotuv narxidan hisoblanadi: (sotuv − kelish) ÷ sotuv × 100.
+  const ustamaQiymati = ustamaFoizi(Number(tanNarx), Number(sotuvNarx));
+  const ustama = ustamaQiymati === null ? "" : ustamaQiymati.toFixed(1);
 
   function rasmTanlash(file?: File) {
     if (!file || !file.type.startsWith("image/")) return;

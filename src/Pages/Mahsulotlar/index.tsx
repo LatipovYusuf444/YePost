@@ -43,6 +43,7 @@ import type { Ombor } from "@/types/ombor";
 
 import ModalTablari from "@/Components/common/ModalTablari";
 import KorinishTanlash, { type RoyxatKorinishi } from "@/Pages/Ombor/KorinishTanlash";
+import { sotuvNarxiUstamadan, ustamaFoizi } from "./narxHisobi";
 type Tab = "mahsulotlar" | "kategoriyalar";
 type Korinish = "kartochka" | "jadval";
 type VariationRow = {
@@ -752,16 +753,17 @@ function narxYigish(draft?:Pick<VariantDraft,"costPrice"|"retailPrice"|"wholesal
   };
 }
 
-// Tan narx va ustama (%) dan sotuv narxi; USD uchun kasr saqlanishi uchun 2 xonagacha yaxlitlanadi.
+// Kelish narxi va ustama (%) dan sotuv narxi: ustama sotuv narxidan hisoblanadi — sotuv = kelish ÷ (1 − ustama/100).
+// USD uchun kasr saqlanishi uchun 2 xonagacha yaxlitlanadi. Ustama 100% va undan katta bo'lsa sotuv narxi aniqlanmaydi (null).
 function ustamadanNarx(cost:number,markup:number) {
-  return String(Math.round((cost+(cost*markup/100))*100)/100);
+  const narx=sotuvNarxiUstamadan(cost,markup);
+  return narx===null?null:String(Math.round(narx*100)/100);
 }
 
-// Mavjud narxlardan ustama (%) — tahrirlash oynasida "Ustama" maydoni to'g'ri ko'rinishi uchun.
+// Mavjud narxlardan ustama (%): (sotuv − kelish) ÷ sotuv × 100 — "Ustama" maydoni to'g'ri ko'rinishi uchun.
 function ustamaniHisoblash(costPrice?:number|string|null,retailPrice?:number|string|null) {
-  const cost=Number(costPrice??0);
-  const retail=Number(retailPrice??0);
-  return cost>0&&retail>=0?String(Number((((retail-cost)/cost)*100).toFixed(2))):"";
+  const foiz=ustamaFoizi(Number(costPrice??0),Number(retailPrice??0));
+  return foiz===null?"":String(Number(foiz.toFixed(2)));
 }
 
 function numericOrZero(value: string) {
@@ -1186,12 +1188,12 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
     if(field==="costPrice"||field==="markup"){
       const cost=Number(field==="costPrice"?numericValue:current.costPrice||0);
       const markup=Number(field==="markup"?numericValue:current.markup||0);
-      if(cost>0&&markup>=0)patch.retailPrice=ustamadanNarx(cost,markup);
+      {const narx=cost>0&&markup>=0?ustamadanNarx(cost,markup):null;if(narx!==null)patch.retailPrice=narx;}
     }
     if(field==="retailPrice"){
       const cost=Number(current.costPrice||0);
       const retail=Number(numericValue||0);
-      if(cost>0&&retail>=0)patch.markup=String(Number((((retail-cost)/cost)*100).toFixed(2)));
+      if(cost>0)patch.markup=ustamaniHisoblash(cost,retail);
     }
     updateVariantDraft(key,patch);
   }
@@ -1207,12 +1209,12 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
       }else if(field==="costPrice"||field==="markup"){
         const cost=Number(field==="costPrice"?numericValue:current.costPrice||0);
         const markup=Number(field==="markup"?numericValue:current.markup||0);
-        if(cost>0&&markup>=0)patch.retailPrice=ustamadanNarx(cost,markup);
+        {const narx=cost>0&&markup>=0?ustamadanNarx(cost,markup):null;if(narx!==null)patch.retailPrice=narx;}
       }
       if(field==="retailPrice"){
         const cost=Number(current.costPrice||0);
         const retail=Number(numericValue||0);
-        if(cost>0&&retail>=0)patch.markup=String(Number((((retail-cost)/cost)*100).toFixed(2)));
+        if(cost>0)patch.markup=ustamaniHisoblash(cost,retail);
       }
       return {...current,...patch};
     });
@@ -1231,7 +1233,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
           ...current,
           costPrice:source.costPrice,
           costCurrency:source.costCurrency,
-          retailPrice:cost>0&&markup>=0?ustamadanNarx(cost,markup):current.retailPrice,
+          retailPrice:(cost>0&&markup>=0?ustamadanNarx(cost,markup):null)??current.retailPrice,
         };
       });
       return next;
@@ -1250,7 +1252,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
         next[combo.key]={
           ...current,
           markup:source.markup,
-          retailPrice:cost>0&&markup>=0?ustamadanNarx(cost,markup):current.retailPrice,
+          retailPrice:(cost>0&&markup>=0?ustamadanNarx(cost,markup):null)??current.retailPrice,
         };
       });
       return next;
@@ -1270,7 +1272,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
           ...current,
           retailPrice:source.retailPrice,
           retailCurrency:source.retailCurrency,
-          markup:cost>0&&retail>=0?String(Number((((retail-cost)/cost)*100).toFixed(2))):current.markup,
+          markup:cost>0?ustamaniHisoblash(cost,retail):current.markup,
         };
       });
       return next;
