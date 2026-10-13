@@ -27,7 +27,6 @@ import { useSavdoStore } from "@/store/savdoStore";
 import type { MijozTanlovi, OmborTanlovi, Sotuv, SotuvTolovi, TolovTuri } from "@/types/savdo";
 
 type CustomerType = "donalik" | "doimiy";
-type NarxTuri = "chakana" | "ulgurji";
 
 type PaymentType = {
   label: string;
@@ -105,7 +104,8 @@ export default function BoshSahifa() {
   const [mijozTuri, setMijozTuri] = useState<CustomerType>("donalik");
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [customerSearch, setCustomerSearch] = useState("");
-  const [narxTuri, setNarxTuri] = useState<NarxTuri>("chakana");
+  const narxTuri = usePosStore((state) => state.narxTuri);
+  const setNarxTuri = updatePriceType;
   // Doimiy mijoz uchun yaratilgan qoralama sotuvning oynasi ochiqmi.
   const [doimiySotuvOchiq, setDoimiySotuvOchiq] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);

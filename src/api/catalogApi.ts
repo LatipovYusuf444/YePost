@@ -1,5 +1,6 @@
 import apiClient from "./axios";
-import { apiData, apiList, ruxsatsizBulsaBosh, type ApiEnvelope, type ApiListEnvelope } from "./response";
+import { apiData, apiList, ruxsatsizBulsaBosh, sahifaJavobi, type ApiEnvelope, type ApiListEnvelope } from "./response";
+import { katalogQidiruvQatoriniMoslash, type KatalogQidiruvQatori } from "./catalogSearch";
 import type {
   Kategoriya,
   KategoriyaMalumoti,
@@ -148,6 +149,10 @@ export const mahsulotlarApi = {
 };
 
 // Mahsulot tafsiloti: modifikatsiyalar CRUD va alohida narx endpointlari.
+// Bir paytda ochilgan header, savatcha va tanlash oynasi bitta katalog so'rovini ulashadi.
+// Natija keshlanmaydi: keyingi yangilash backenddan yangi narxlarni oladi.
+const katalogQidiruvSorovlari = new Map<string, Promise<MahsulotModifikatsiyasi[]>>();
+
 export const modifikatsiyalarApi = {
   // Barcha mahsulotlar variantlari narx va mahsulot bilan bitta so'rovda —
   // har bir mahsulot uchun alohida royxat() chaqirishning (N+1) o'rniga.
@@ -165,10 +170,29 @@ export const modifikatsiyalarApi = {
   // qoldiq bilan qaytaradigan qidiruv endpointi — to'liq katalog (barchasi())
   // o'rniga ishlatiladi, chunki u rol bo'yicha yopiq.
   qidiruv: async (q?: string) => {
-    const response = await apiClient.get<
-      MahsulotModifikatsiyasi[] | ApiListEnvelope<MahsulotModifikatsiyasi>
-    >("/catalog/modifications/search", { params: q ? { q } : undefined });
-    return apiList(response.data);
+    const kalit = q ?? "";
+    const mavjud = katalogQidiruvSorovlari.get(kalit);
+    if (mavjud) return mavjud;
+    const sorov = (async () => {
+    const sahifa = async (page: number) => {
+      const response = await apiClient.get<unknown>("/catalog/modifications/search", {
+        params: { page, pageSize: 100, ...(q ? { search: q } : {}) },
+      });
+      return sahifaJavobi<KatalogQidiruvQatori>(response.data, page, 100);
+    };
+    const birinchi = await sahifa(1);
+    const qolgan = await Promise.all(Array.from({ length: Math.max(0, birinchi.totalPages - 1) }, (_, i) => sahifa(i + 2)));
+    const modifikatsiyalar = [birinchi, ...qolgan].flatMap((page) => page.items)
+      .map(katalogQidiruvQatoriniMoslash)
+      .filter((item): item is MahsulotModifikatsiyasi => item !== null);
+    return Array.from(new Map(modifikatsiyalar.map((item) => [item.id, item])).values());
+    })();
+    katalogQidiruvSorovlari.set(kalit, sorov);
+    try {
+      return await sorov;
+    } finally {
+      katalogQidiruvSorovlari.delete(kalit);
+    }
   },
   royxat: async (productId: string) => {
     const response = await apiClient.get<

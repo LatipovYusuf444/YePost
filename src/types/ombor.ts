@@ -94,6 +94,7 @@ export type MahsulotModifikatsiyasi = {
     costPrice?: number | string;
     retailPrice?: number | string;
     wholesalePrice?: number | string;
+    currency?: string;
   };
 };
 
@@ -118,6 +119,7 @@ export type KirimMahsuloti = {
 
 export type KirimHujjati = {
   id: string;
+  currency?: "UZS" | "USD" | string;
   number?: string;
   documentNumber?: string;
   docNumber?: string;

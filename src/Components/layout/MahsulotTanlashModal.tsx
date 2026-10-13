@@ -51,7 +51,8 @@ export default function MahsulotTanlashModal({ onClose }: { onClose: () => void 
   const [warehouseId, setWarehouseId] = useState("");
   const [mahsulotlar, setMahsulotlar] = useState<QoldiqTanlovi[]>([]);
   const [qidiruv, setQidiruv] = useState("");
-  const [narxTuri, setNarxTuri] = useState<"chakana" | "ulgurji">("chakana");
+  const narxTuri = usePosStore((state) => state.narxTuri);
+  const setNarxTuri = usePosStore((state) => state.updatePriceType);
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [xabar, setXabar] = useState("");
   const [reloadKey, setReloadKey] = useState(0);

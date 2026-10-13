@@ -32,7 +32,9 @@ import {
 } from "@/api/catalogApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { Kategoriya, OlchovBirligi } from "@/types/catalog";
-import { kodBilanTopish, modificationNomi, pul, qoldiqMiqdori } from "./omborYordamchilari";
+import { kodBilanTopish, modificationNomi, qoldiqMiqdori } from "./omborYordamchilari";
+import { korsatiladiganValyuta, useValyuta, valyutaKodi, type Valyuta } from "@/lib/valyuta";
+import { kirimElementiniYigish, kirimNarxiniOgirish } from "./kirimValyuta";
 import MahsulotTanlov, { type MahsulotVarianti } from "./MahsulotTanlov";
 import ShtrixKodMaydoni, { type SkanNatijasi } from "./ShtrixKodMaydoni";
 
@@ -48,6 +50,8 @@ type Qator = {
   wholesalePrice: string;
   boshlangichRetail: number;
   boshlangichWholesale: number;
+  boshlangichTanNarx: number;
+  currency: Valyuta;
 };
 
 type Props = { onClose: () => void };
@@ -63,6 +67,8 @@ function yangiQator(warehouseId = ""): Qator {
     wholesalePrice: "",
     boshlangichRetail: 0,
     boshlangichWholesale: 0,
+    boshlangichTanNarx: 0,
+    currency: "UZS",
   };
 }
 
@@ -74,6 +80,9 @@ const inputSm =
 export default function YangiKirimModal({ onClose }: Props) {
   const { t } = useTranslation("ombor_bosh");
   const store = useOmborStore();
+  const { kurs, kursBor } = useValyuta();
+  const [narxValyutasi, setNarxValyutasi] = useState<Valyuta>(() => korsatiladiganValyuta());
+  const amaldagiKurs = kursBor ? kurs : null;
   const birinchiOmbor =
     store.omborlar.find((item) => item.isActive !== false)?.id ?? store.omborlar[0]?.id ?? "";
 
@@ -149,10 +158,39 @@ export default function YangiKirimModal({ onClose }: Props) {
     setFayllar((joriy) => joriy.filter((item) => item.id !== id));
   }
 
-  const jami = useMemo(
-    () => qatorlar.reduce((sum, row) => sum + row.quantity * Number(row.price || 0), 0),
-    [qatorlar]
-  );
+  const jami = useMemo(() => {
+    try {
+      return qatorlar.reduce((sum, row) => {
+        const item = kirimElementiniYigish(row, amaldagiKurs);
+        return sum + item.quantity * item.price;
+      }, 0);
+    } catch { return null; }
+  }, [qatorlar, amaldagiKurs]);
+  const kursKerak = qatorlar.some((row) => row.modificationId && row.currency === "USD") && !kursBor;
+
+  function qatorValyutasi(row: Qator): Valyuta {
+    return !kursBor ? row.currency : narxValyutasi;
+  }
+
+  function narxQiymati(row: Qator, maydon: "price" | "retailPrice" | "wholesalePrice") {
+    if (row[maydon] === "") return "";
+    const qiymat = kirimNarxiniOgirish(Number(row[maydon]), row.currency, qatorValyutasi(row), amaldagiKurs);
+    return Math.round(qiymat * 100) / 100;
+  }
+
+  function narxniKiritish(row: Qator, maydon: "price" | "retailPrice" | "wholesalePrice", qiymat: string) {
+    if (qiymat !== "" && (!Number.isFinite(Number(qiymat)) || Number(qiymat) < 0)) return;
+    const asl = qiymat === "" ? "" : String(kirimNarxiniOgirish(Number(qiymat), qatorValyutasi(row), row.currency, amaldagiKurs));
+    yangilash(row.id, { [maydon]: asl });
+  }
+
+  function jamiMatni() {
+    if (jami === null) return "—";
+    const valyuta = kursBor ? narxValyutasi : "UZS";
+    const qiymat = kirimNarxiniOgirish(jami, "UZS", valyuta, amaldagiKurs);
+    const matn = qiymat.toLocaleString("uz-UZ", { maximumFractionDigits: 2 });
+    return valyuta === "USD" ? `$${matn}` : `${matn} so'm`;
+  }
   const bugun = new Intl.DateTimeFormat("uz-UZ", {
     day: "2-digit",
     month: "2-digit",
@@ -212,6 +250,8 @@ export default function YangiKirimModal({ onClose }: Props) {
       wholesalePrice: wholesale ? String(wholesale) : "",
       boshlangichRetail: retail,
       boshlangichWholesale: wholesale,
+      boshlangichTanNarx: cost,
+      currency: valyutaKodi(mod?.price?.currency),
     });
   }
 
@@ -282,8 +322,9 @@ export default function YangiKirimModal({ onClose }: Props) {
 
   async function saqlash(tasdiqlash: boolean) {
     setXato("");
+    if (kursKerak) return setXato("yangiKirim.errors.exchangeRateRequired");
     const valid = qatorlar.filter(
-      (row) => row.modificationId && row.warehouseId && row.quantity > 0 && Number(row.price) >= 0
+      (row) => row.modificationId && row.warehouseId && Number.isFinite(row.quantity) && row.quantity > 0 && Number.isFinite(Number(row.price)) && Number(row.price) >= 0
     );
     if (!supplierId) return setXato("yangiKirim.errors.supplierRequired");
     if (!valid.length || valid.length !== qatorlar.length)
@@ -300,11 +341,7 @@ export default function YangiKirimModal({ onClose }: Props) {
       warehouseId: valid[0].warehouseId,
       responsibleId: responsibleId || undefined,
       note: izohQismlari.join(" | "),
-      items: valid.map((row) => ({
-        modificationId: row.modificationId,
-        quantity: row.quantity,
-        price: Number(row.price || 0),
-      })),
+      items: valid.map((row) => kirimElementiniYigish(row, amaldagiKurs)),
     });
     if (!hujjat) return;
 
@@ -320,6 +357,7 @@ export default function YangiKirimModal({ onClose }: Props) {
             .narxYangilash(row.modificationId, {
               retailPrice: Number(row.retailPrice || 0) || undefined,
               wholesalePrice: Number(row.wholesalePrice || 0) || undefined,
+              currency: row.currency,
             })
             .catch(() => null)
         )
@@ -514,7 +552,14 @@ export default function YangiKirimModal({ onClose }: Props) {
                   {t("yangiKirim.productsSubtitle")}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                  {t("yangiKirim.currency")}
+                  <AppSelect aria-label={t("yangiKirim.currency")} value={kursBor ? narxValyutasi : "UZS"} onChange={(event) => setNarxValyutasi(event.target.value as Valyuta)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700">
+                    <option value="UZS">UZS</option>
+                    <option value="USD" disabled={!kursBor}>USD</option>
+                  </AppSelect>
+                </label>
                 <button
                   type="button"
                   onClick={() => setYaratishOchiqUchun(qatorlar[qatorlar.length - 1]?.id ?? null)}
@@ -534,6 +579,7 @@ export default function YangiKirimModal({ onClose }: Props) {
               </div>
             </div>
 
+            {kursKerak && <p role="alert" className="mb-4 rounded-xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">{t("yangiKirim.errors.exchangeRateRequired")}</p>}
             <div className="mb-4">
               <ShtrixKodMaydoni onSkan={kodniQoshish} inputClassName={inputSm} />
             </div>
@@ -598,49 +644,52 @@ export default function YangiKirimModal({ onClose }: Props) {
                         <Barcode size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input value={mod?.barcode ?? ""} readOnly placeholder={t("yangiKirim.table.barcodePlaceholder")} className={`${inputSm} pl-8`} />
                       </div>
-                      <input
+                      <div className="relative"><input
                         type="number"
                         min="0"
                         step="0.01"
-                        value={row.price}
+                        aria-label={`${t("yangiKirim.table.costPriceHeader")} (${qatorValyutasi(row)})`}
+                        value={narxQiymati(row, "price")}
                         data-kirim-narx={row.id}
-                        onChange={(event) => yangilash(row.id, { price: event.target.value })}
+                        onChange={(event) => narxniKiritish(row, "price", event.target.value)}
                         onKeyDown={(event) => {
                           if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
                           event.preventDefault();
                           keyingiQatorgaOtish(row.id);
                         }}
                         placeholder={t("yangiKirim.table.pricePlaceholder")}
-                        className={inputSm}
-                      />
-                      <input
+                        className={`${inputSm} pr-16`}
+                      /><span className="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{qatorValyutasi(row)}</span></div>
+                      <div className="relative"><input
                         type="number"
                         min="0"
                         step="0.01"
-                        value={row.retailPrice}
-                        onChange={(event) => yangilash(row.id, { retailPrice: event.target.value })}
+                        aria-label={`${t("yangiKirim.table.retailPriceHeader")} (${qatorValyutasi(row)})`}
+                        value={narxQiymati(row, "retailPrice")}
+                        onChange={(event) => narxniKiritish(row, "retailPrice", event.target.value)}
                         onKeyDown={(event) => {
                           if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
                           event.preventDefault();
                           keyingiQatorgaOtish(row.id);
                         }}
                         placeholder={t("yangiKirim.table.pricePlaceholder")}
-                        className={inputSm}
-                      />
-                      <input
+                        className={`${inputSm} pr-16`}
+                      /><span className="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{qatorValyutasi(row)}</span></div>
+                      <div className="relative"><input
                         type="number"
                         min="0"
                         step="0.01"
-                        value={row.wholesalePrice}
-                        onChange={(event) => yangilash(row.id, { wholesalePrice: event.target.value })}
+                        aria-label={`${t("yangiKirim.table.wholesalePriceHeader")} (${qatorValyutasi(row)})`}
+                        value={narxQiymati(row, "wholesalePrice")}
+                        onChange={(event) => narxniKiritish(row, "wholesalePrice", event.target.value)}
                         onKeyDown={(event) => {
                           if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
                           event.preventDefault();
                           keyingiQatorgaOtish(row.id);
                         }}
                         placeholder={t("yangiKirim.table.pricePlaceholder")}
-                        className={inputSm}
-                      />
+                        className={`${inputSm} pr-16`}
+                      /><span className="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{qatorValyutasi(row)}</span></div>
                       <input
                         type="number"
                         min="0.001"
@@ -703,7 +752,7 @@ export default function YangiKirimModal({ onClose }: Props) {
               </button>
               <div className="text-right">
                 <p className="text-xs font-black uppercase text-slate-400">{t("yangiKirim.totalLabel")}</p>
-                <p className="mt-1 text-2xl font-black text-slate-950">{pul(jami)}</p>
+                <p className="mt-1 text-2xl font-black text-slate-950">{jamiMatni()}</p>
               </div>
             </div>
           </section>

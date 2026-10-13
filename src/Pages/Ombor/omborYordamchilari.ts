@@ -1,4 +1,4 @@
-import { pulMatni } from "@/lib/valyuta";
+import { pulMatni, type Valyuta } from "@/lib/valyuta";
 import type { MahsulotModifikatsiyasi, OmborQoldigi } from "@/types/ombor";
 
 export function sana(value?: string) {
@@ -15,8 +15,8 @@ export function sana(value?: string) {
       }).format(date);
 }
 
-export function pul(value?: number) {
-  return pulMatni(value);
+export function pul(value?: number, manba: Valyuta = "UZS") {
+  return pulMatni(value, manba);
 }
 
 export function modificationNomi(modification?: MahsulotModifikatsiyasi) {

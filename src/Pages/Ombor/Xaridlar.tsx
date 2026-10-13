@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
 import { useOmborStore } from "@/store/omborStore";
 import { mahalliySanaKaliti } from "@/lib/sanaKaliti";
+import { valyutaKodi } from "@/lib/valyuta";
 import type { KirimHujjati } from "@/types/ombor";
 import { holat, hujjatRaqami, pul, sana } from "./omborYordamchilari";
 import KirimTafsilotModal from "./KirimTafsilotModal";
@@ -218,7 +219,7 @@ export default function Xaridlar() {
       case "ozgartirilgan":
         return sana(hujjat.updatedAt);
       case "summa":
-        return <span className="font-bold text-gray-700">{pul(kirimSummasi(hujjat))}</span>;
+        return <span className="font-bold text-gray-700">{pul(kirimSummasi(hujjat), valyutaKodi(hujjat.currency))}</span>;
     }
   }
 

@@ -6,6 +6,7 @@ import { useOmborStore } from "@/store/omborStore";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 import type { KirimHujjati, MahsulotModifikatsiyasi } from "@/types/ombor";
+import { valyutaKodi } from "@/lib/valyuta";
 import { holat, hujjatRaqami, modificationNomi, pul } from "./omborYordamchilari";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
 
@@ -109,7 +110,7 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
               <SectionTitle icon={<FileText size={18}/>} text={t("kirimTafsilotModal.aboutSection")} />
               <div className="rounded-[24px] bg-gradient-to-br from-orange-50 to-orange-100/70 p-6 sm:p-8">
                 <p className="text-sm font-black uppercase tracking-wide text-orange-600">{t("kirimTafsilotModal.totalAmount")}</p>
-                <p className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-5xl">{pul(jami)}</p>
+                <p className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-5xl">{pul(jami, valyutaKodi(hujjat.currency))}</p>
               </div>
               <div className="mt-5 grid gap-5 sm:grid-cols-2">
                 <Info label={t("kirimTafsilotModal.nameLabel")} value={nomi || hujjatRaqami(hujjat)}/>
@@ -134,7 +135,9 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
                     const tanNarx = Number(item.price ?? mod?.price?.costPrice ?? 0);
                     const sotuvNarx = Number(mod?.price?.retailPrice ?? 0);
                     const ulgurjiNarx = Number(mod?.price?.wholesalePrice ?? 0);
-                    return <tr key={item.id ?? `${item.modificationId}-${index}`} className="hover:bg-orange-50/30"><td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td><td className="px-4 py-4 font-black text-slate-800">{modificationNomi(mod)}</td><td className="px-4 py-4 font-medium text-slate-500">{mod?.barcode || "—"}</td><td className="px-4 py-4 font-semibold text-slate-600">{pul(tanNarx)}</td><td className="px-4 py-4 text-slate-600">{pul(sotuvNarx)}</td><td className="px-4 py-4 text-slate-600">{pul(ulgurjiNarx)}</td><td className="px-4 py-4 font-bold text-slate-700">{Number(item.quantity).toLocaleString("uz-UZ")}</td><td className="px-4 py-4 text-slate-600">{warehouse?.name ?? hujjat.warehouseId}</td><td className="px-4 py-4 font-black text-emerald-600">{pul(Number(item.quantity) * tanNarx)}</td></tr>;
+                    const katalogValyutasi = valyutaKodi(mod?.price?.currency);
+                    const tanValyutasi = item.price != null ? valyutaKodi(hujjat.currency) : katalogValyutasi;
+                    return <tr key={item.id ?? `${item.modificationId}-${index}`} className="hover:bg-orange-50/30"><td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td><td className="px-4 py-4 font-black text-slate-800">{modificationNomi(mod)}</td><td className="px-4 py-4 font-medium text-slate-500">{mod?.barcode || "—"}</td><td className="px-4 py-4 font-semibold text-slate-600">{pul(tanNarx, tanValyutasi)}</td><td className="px-4 py-4 text-slate-600">{pul(sotuvNarx, katalogValyutasi)}</td><td className="px-4 py-4 text-slate-600">{pul(ulgurjiNarx, katalogValyutasi)}</td><td className="px-4 py-4 font-bold text-slate-700">{Number(item.quantity).toLocaleString("uz-UZ")}</td><td className="px-4 py-4 text-slate-600">{warehouse?.name ?? hujjat.warehouseId}</td><td className="px-4 py-4 font-black text-emerald-600">{pul(Number(item.quantity) * tanNarx, tanValyutasi)}</td></tr>;
                   })}
                 </tbody>
               </table>

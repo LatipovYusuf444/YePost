@@ -44,9 +44,11 @@ export function qoldiqMiqdori(item: QoldiqTanlovi) {
 }
 
 export function qoldiqNarxi(item: QoldiqTanlovi, narxTuri: "chakana" | "ulgurji") {
+  if (item.narxAniq === false) return 0;
   // Dollarda saqlangan mahsulot: so'mdagi narx kurs bilan hisoblangan qiymat (retailPriceUzs / wholesalePriceUzs).
   const dollar = item.valyuta;
-  if (dollar?.currency === "USD" && dollar.kurs && dollar.uzs) {
+  if (dollar?.currency === "USD") {
+    if (!dollar.kurs || !dollar.uzs) return 0;
     const ulgurjiUzs = dollar.ulgurjiUzs ?? 0;
     return narxTuri === "ulgurji" && ulgurjiUzs > 0 ? ulgurjiUzs : dollar.uzs;
   }
@@ -86,6 +88,8 @@ export function qoldiqBirlashtirish(omborQoldiq: QoldiqTanlovi[], katalog: Qoldi
     xarita.set(item.modificationId, {
       ...katalogdagi,
       ...item,
+      valyuta: katalogdagi?.valyuta ?? item.valyuta,
+      narxAniq: katalogdagi?.narxAniq ?? item.narxAniq,
       sellingPrice: musbat(item.sellingPrice, item.price, katalogdagi?.sellingPrice, katalogdagi?.price),
       price: musbat(item.price, item.sellingPrice, katalogdagi?.price, katalogdagi?.sellingPrice),
       modification: {

@@ -100,6 +100,7 @@ function qoldiqlarniKatalogBilanBirlashtirish(
       ...katalogItem,
       ...item,
       valyuta,
+      narxAniq: katalogItem?.narxAniq ?? item.narxAniq,
       modification: modification
         ? {
             ...katalogItem?.modification,

@@ -13,7 +13,6 @@ import type {
   QaytarishYaratishMalumoti,
   QaytariladiganQator,
   QoldiqTanlovi,
-  QoldiqValyutasi,
   Sotuv,
   SotuvTolovi,
   SotuvYaratishMalumoti,
@@ -22,8 +21,8 @@ import type {
   YetkazishPayload,
   SaleAuditLog,
 } from "@/types/savdo";
-import type { Mahsulot, MahsulotModifikatsiyasi, MahsulotNarxi } from "@/types/catalog";
-import { kursniSongaAylantirish } from "./valyutaApi";
+import type { Mahsulot, MahsulotModifikatsiyasi } from "@/types/catalog";
+import { katalogNarxiniQoldiqqaMoslash } from "./catalogSearch";
 
 type RoyxatJavobi<T> = T[] | { value?: T[]; items?: T[]; results?: T[]; data?: T[] };
 
@@ -374,6 +373,7 @@ async function qoldiqlarniHisobotdanOlish(warehouseId?: string): Promise<QoldiqT
       const chakana = Number(qator.retailPrice ?? 0);
       const ulgurji = Number(qator.wholesalePrice ?? 0);
       return {
+        narxAniq: false,
         warehouseId: qator.warehouseId ?? undefined,
         productId: qator.productId,
         modificationId: qator.modificationId,
@@ -402,7 +402,7 @@ export async function omborQoldiqlariniOlish(warehouseId?: string) {
   const response = await apiClient.get<RoyxatJavobi<QoldiqTanlovi> | ApiListEnvelope<QoldiqTanlovi>>("/inventory/stock-balance", {
     params: warehouseId ? { warehouseId } : undefined,
   });
-  return royxatniAjratish(response.data).map(qoldiqIdsiniTiklash);
+  return royxatniAjratish(response.data).map((item) => ({ ...qoldiqIdsiniTiklash(item), narxAniq: false }));
 }
 
 // Modifikatsiya/mahsulot ma'lumotlari sahifalar almashganda qayta-qayta so'ralmasligi uchun
@@ -439,28 +439,32 @@ export async function qoldiqNomlariniBoyitish(qoldiqlar: QoldiqTanlovi[]) {
 
   return Promise.all(
     qoldiqlar.map(async (qoldiq) => {
-      if (qoldiq.modification?.product?.name) return qoldiq;
+      if (qoldiq.modification?.product?.name && qoldiq.narxAniq !== false && narxBormi(qoldiq.modification.price)) return qoldiq;
 
       // ID yo'q bo'lsa so'rov yuborilmaydi (aks holda `/catalog/modifications/undefined` → 400).
       const modificationId = qoldiq.modificationId || qoldiq.modification?.id;
       if (!modificationId) return qoldiq;
 
       try {
-        const modification = await keshdanOlish(modifikatsiyaKeshi, modificationId, async () =>
-          apiData(
-            (
-              await apiClient.get<MahsulotModifikatsiyasi | ApiEnvelope<MahsulotModifikatsiyasi>>(
-                `/catalog/modifications/${modificationId}`
-              )
-            ).data
-          )
-        );
-        if (!modification) return qoldiq;
+        const modification = await keshdanOlish(modifikatsiyaKeshi, modificationId, async () => {
+          const soz = qoldiq.modification?.barcode || qoldiq.modification?.article || qoldiq.modification?.product?.name;
+          if (soz) {
+            try {
+              const mos = (await modifikatsiyalarApi.qidiruv(soz)).find((item) => item.id === modificationId);
+              if (mos) return mos;
+            } catch { /* Detail endpointi keyingi zaxira manba. */ }
+          }
+          const item = await modifikatsiyalarApi.olish(modificationId);
+          return item.id === modificationId ? item : null;
+        });
+        if (!modification || modification.id !== modificationId) return qoldiq;
         const productId = modification.productId ?? qoldiq.productId;
-        const product = productId ? await mahsulotniOlish(productId) : null;
+        const product = modification.product ?? (productId ? await mahsulotniOlish(productId) : null);
+        const { modificationPrice, ...narxlar } = katalogNarxiniQoldiqqaMoslash(modification.price);
 
         return {
           ...qoldiq,
+          ...narxlar,
           productId: productId ?? qoldiq.productId,
           modification: {
             ...qoldiq.modification,
@@ -471,16 +475,7 @@ export async function qoldiqNomlariniBoyitish(qoldiqlar: QoldiqTanlovi[]) {
             product: product
               ? { id: product.id, name: product.name }
               : qoldiq.modification?.product,
-            price: narxBormi(qoldiq.modification?.price)
-              ? qoldiq.modification?.price
-              : (modification.price
-                ? {
-                    costPrice: modification.price.costPrice,
-                    retailPrice: modification.price.retailPrice,
-                    wholesalePrice: modification.price.wholesalePrice,
-                    sellingPrice: modification.price.retailPrice,
-                  }
-                : undefined),
+            price: modificationPrice,
           },
         } satisfies QoldiqTanlovi;
       } catch {
@@ -488,22 +483,6 @@ export async function qoldiqNomlariniBoyitish(qoldiqlar: QoldiqTanlovi[]) {
       }
     })
   );
-}
-
-// Valyuta rejimi yoqilgan bo'lsa qidiruv har bir narxga `retailPriceUzs`/`wholesalePriceUzs`/`rate` qo'shadi.
-// Dollarda saqlangan mahsulot uchun sotuvga SO'MDAGI narx yuboriladi (sotuv, kassa va qarz hozircha so'mda).
-// Rejim o'chiq bo'lsa (maydonlar kelmaydi) yoki narx so'mda bo'lsa narx avvalgidek qoladi.
-function qoldiqValyutasi(narx?: MahsulotNarxi | null): QoldiqValyutasi | undefined {
-  if (!narx || narx.retailPriceUzs === undefined) return undefined;
-  if (String(narx.currency ?? "UZS").toUpperCase() !== "USD") return undefined;
-  return {
-    currency: "USD",
-    asl: Number(narx.retailPrice ?? 0),
-    kurs: kursniSongaAylantirish(narx.rate),
-    uzs: kursniSongaAylantirish(narx.retailPriceUzs),
-    ulgurjiAsl: Number(narx.wholesalePrice ?? 0) || 0,
-    ulgurjiUzs: kursniSongaAylantirish(narx.wholesalePriceUzs),
-  };
 }
 
 // YangiSotuvModal.tsx: ombor qoldig'ida bo'lmasa ham katalogdagi real mahsulot
@@ -524,22 +503,13 @@ export async function katalogModifikatsiyalariniQoldiqTanlovigaOlish(): Promise<
     })
     .map((modification) => {
       const productId = modification.productId ?? modification.product?.id;
-      const valyuta = qoldiqValyutasi(modification.price);
-      // Dollar narx: so'mdagi qiymat; kurs kiritilmagan bo'lsa 0 (mahsulot sotuvga qo'shilmaydi).
-      const chakana = valyuta
-        ? (valyuta.uzs ?? 0)
-        : Number(modification.price?.retailPrice ?? modification.price?.wholesalePrice ?? 0);
-      const ulgurji = valyuta
-        ? (kursniSongaAylantirish(modification.price?.wholesalePriceUzs) ?? 0)
-        : Number(modification.price?.wholesalePrice ?? 0);
+      const { modificationPrice, ...narxlar } = katalogNarxiniQoldiqqaMoslash(modification.price);
       return {
         productId,
         modificationId: modification.id,
         quantity: 0,
         balance: 0,
-        sellingPrice: chakana,
-        price: chakana,
-        valyuta,
+        ...narxlar,
         modification: {
           id: modification.id,
           name: modification.name ?? "Asosiy variant",
@@ -549,12 +519,7 @@ export async function katalogModifikatsiyalariniQoldiqTanlovigaOlish(): Promise<
             id: productId ?? "",
             name: modification.product?.name ?? "",
           },
-          price: {
-            costPrice: Number(modification.price?.costPrice ?? 0),
-            retailPrice: valyuta ? chakana : Number(modification.price?.retailPrice ?? 0),
-            wholesalePrice: ulgurji,
-            sellingPrice: chakana,
-          },
+          price: modificationPrice,
         },
       };
     });

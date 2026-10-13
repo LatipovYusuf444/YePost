@@ -299,6 +299,8 @@ export type QoldiqValyutasi = {
 };
 
 export type QoldiqTanlovi = {
+  /** False: hisobotdagi narx valyutasi hali katalogdan tekshirilmagan, uni sotuvga bermaslik kerak. */
+  narxAniq?: boolean;
   id?: string;
   warehouseId?: string;
   productId?: string;

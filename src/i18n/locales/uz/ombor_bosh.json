@@ -79,6 +79,7 @@
     }
   },
   "yangiKirim": {
+    "currency": "Narxlar valyutasi",
     "defaultName": "Kirim hujjati #{{number}}",
     "close": "Yopish",
     "title": "Yangi kirim",
@@ -131,6 +132,7 @@
     "saveAndConfirm": "Saqlash va tasdiqlash",
     "errors": {
       "supplierRequired": "Yetkazib beruvchini ro'yxatdan tanlang yoki yangi qo'shing.",
+      "exchangeRateRequired": "USD mahsulotini kirim qilish uchun Sozlamalar → Valyuta bo‘limida dollar kursini kiriting. Kurssiz USD narxi so‘m deb saqlanmaydi.",
       "rowsIncomplete": "Har bir qatorda mahsulot, ombor, miqdor va tan narxni to'liq kiriting.",
       "mixedWarehouse": "Barcha qatorlarda bir xil omborni tanlang."
     }
