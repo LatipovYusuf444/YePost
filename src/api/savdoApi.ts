@@ -490,8 +490,8 @@ export async function qoldiqNomlariniBoyitish(qoldiqlar: QoldiqTanlovi[]) {
 // To'liq katalog (/catalog/modifications) KASSIR/OMBORCHI uchun 403 (tannarx
 // borligi sababli), shuning uchun ular ham ochiq bo'lgan qidiruv endpointi
 // ishlatiladi (qoldiq bilan, tannarxsiz).
-export async function katalogModifikatsiyalariniQoldiqTanlovigaOlish(): Promise<QoldiqTanlovi[]> {
-  const modifications = await modifikatsiyalarApi.qidiruv();
+export async function katalogModifikatsiyalariniQoldiqTanlovigaOlish(majbur = false): Promise<QoldiqTanlovi[]> {
+  const modifications = await modifikatsiyalarApi.qidiruv(undefined, majbur);
 
   return modifications
     .filter((modification) => modification.product?.isActive !== false)

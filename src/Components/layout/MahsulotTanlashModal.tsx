@@ -56,6 +56,7 @@ export default function MahsulotTanlashModal({ onClose }: { onClose: () => void 
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [xabar, setXabar] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [katalogSorovi, setKatalogSorovi] = useState<Promise<QoldiqTanlovi[]> | null>(null);
   const [omborDropdownOchiq, setOmborDropdownOchiq] = useState(false);
   // Tanlovlar (modificationId + ombor) kaliti bo'yicha saqlanadi — omborlar almashganda yo'qolmaydi.
   const [tanlanganMiqdorlar, setTanlanganMiqdorlar] = useState<Record<string, number>>({});
@@ -73,10 +74,12 @@ export default function MahsulotTanlashModal({ onClose }: { onClose: () => void 
         if (!active) return;
         setOmborlar(warehouses);
         setWarehouseId(String(warehouses[0]?.id ?? ""));
+        if (!warehouses.length) setYuklanmoqda(false);
       } catch {
-        if (active) setXabar("posModal.errors.warehousesLoadFailed");
-      } finally {
-        if (active) setYuklanmoqda(false);
+        if (active) {
+          setXabar("posModal.errors.warehousesLoadFailed");
+          setYuklanmoqda(false);
+        }
       }
     };
 
@@ -87,13 +90,21 @@ export default function MahsulotTanlashModal({ onClose }: { onClose: () => void 
   }, []);
 
   useEffect(() => {
+    const sorov = katalogModifikatsiyalariniQoldiqTanlovigaOlish(reloadKey > 0);
+    // Omborlar so'rovi tugashidan oldingi reject unhandled bo'lib qolmasin.
+    void sorov.catch(() => undefined);
+    setKatalogSorovi(sorov);
+  }, [reloadKey]);
+
+  useEffect(() => {
+    if (!warehouseId || !katalogSorovi) return;
     let active = true;
     const load = async () => {
       setYuklanmoqda(true);
       setXabar("");
       const [stockResult, catalogResult] = await Promise.allSettled([
-        omborQoldiqlariniOlish(warehouseId || undefined),
-        katalogModifikatsiyalariniQoldiqTanlovigaOlish(),
+        omborQoldiqlariniOlish(warehouseId),
+        katalogSorovi,
       ]);
 
       if (!active) return;
@@ -142,7 +153,7 @@ export default function MahsulotTanlashModal({ onClose }: { onClose: () => void 
     return () => {
       active = false;
     };
-  }, [warehouseId, reloadKey]);
+  }, [warehouseId, katalogSorovi]);
 
   const filteredProducts = useMemo(() => {
     const query = qidiruv.trim().toLowerCase();

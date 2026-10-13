@@ -1,6 +1,41 @@
 import type { MahsulotModifikatsiyasi, MahsulotNarxi } from "@/types/catalog";
 import type { QoldiqValyutasi } from "@/types/savdo";
 
+/** Qisqa kesh + umumiy in-flight so'rov: remount/ombor almashishi katalogni qayta yuklamaydi. */
+export function katalogQidiruvYuklagich<T>(
+  sahifaOlish: (q: string, page: number) => Promise<{ items: T[]; totalPages: number }>,
+  vaqt = Date.now,
+) {
+  type Yozuv = { sorov: Promise<T[]>; tugadi: boolean; muddati: number };
+  const kesh = new Map<string, Yozuv>();
+  return {
+    olish(q = "", majbur = false): Promise<T[]> {
+      const mavjud = kesh.get(q);
+      if (mavjud && (!mavjud.tugadi || (!majbur && vaqt() < mavjud.muddati))) return mavjud.sorov;
+      const yozuv: Yozuv = { sorov: Promise.resolve([]), tugadi: false, muddati: 0 };
+      yozuv.sorov = (async () => {
+        try {
+          const birinchi = await sahifaOlish(q, 1);
+          const items = [...birinchi.items];
+          // Barcha sahifalar lokal qidiruv uchun kerak, lekin backendga birdan yuborilmaydi.
+          for (let page = 2; page <= birinchi.totalPages; page++) {
+            items.push(...(await sahifaOlish(q, page)).items);
+          }
+          yozuv.tugadi = true;
+          yozuv.muddati = vaqt() + 30_000;
+          return items;
+        } catch (error) {
+          if (kesh.get(q) === yozuv) kesh.delete(q);
+          throw error;
+        }
+      })();
+      kesh.set(q, yozuv);
+      return yozuv.sorov;
+    },
+    tozalash() { kesh.clear(); },
+  };
+}
+
 export type KatalogQidiruvQatori = MahsulotModifikatsiyasi | {
   modificationId?: string;
   productId?: string;

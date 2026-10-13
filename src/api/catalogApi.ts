@@ -1,6 +1,8 @@
 import apiClient from "./axios";
 import { apiData, apiList, ruxsatsizBulsaBosh, sahifaJavobi, type ApiEnvelope, type ApiListEnvelope } from "./response";
-import { katalogQidiruvQatoriniMoslash, type KatalogQidiruvQatori } from "./catalogSearch";
+import { katalogQidiruvQatoriniMoslash, katalogQidiruvYuklagich, type KatalogQidiruvQatori } from "./catalogSearch";
+import { authTokenlarniOlish } from "@/lib/authTokenStorage";
+import { apiTiliniOlish } from "./apiLanguage";
 import type {
   Kategoriya,
   KategoriyaMalumoti,
@@ -149,9 +151,23 @@ export const mahsulotlarApi = {
 };
 
 // Mahsulot tafsiloti: modifikatsiyalar CRUD va alohida narx endpointlari.
-// Bir paytda ochilgan header, savatcha va tanlash oynasi bitta katalog so'rovini ulashadi.
-// Natija keshlanmaydi: keyingi yangilash backenddan yangi narxlarni oladi.
-const katalogQidiruvSorovlari = new Map<string, Promise<MahsulotModifikatsiyasi[]>>();
+const katalogYuklagich = katalogQidiruvYuklagich(async (q, page) => {
+  const response = await apiClient.get<unknown>("/catalog/modifications/search", {
+    params: { page, pageSize: 100, ...(q ? { search: q } : {}) },
+  });
+  return sahifaJavobi<KatalogQidiruvQatori>(response.data, page, 100);
+});
+let katalogSessiyasi = "";
+
+// Narx/mahsulot, kirim yoki valyuta kursi o'zgarsa eski katalog narxi ishlatilmaydi.
+apiClient.interceptors.response.use((response) => {
+  const method = response.config.method?.toLowerCase();
+  const path = response.config.url ?? "";
+  const kataloggaTasirQiladi = ["/catalog/", "/inventory/", "/settings/currency", "/settings/exchange-rates"]
+    .some((prefix) => path.startsWith(prefix));
+  if (kataloggaTasirQiladi && method && ["post", "put", "patch", "delete"].includes(method)) katalogYuklagich.tozalash();
+  return response;
+});
 
 export const modifikatsiyalarApi = {
   // Barcha mahsulotlar variantlari narx va mahsulot bilan bitta so'rovda —
@@ -169,30 +185,16 @@ export const modifikatsiyalarApi = {
   // Savdo (POS) uchun: KASSIR/OMBORCHI ham foydalanadigan, tannarxsiz va
   // qoldiq bilan qaytaradigan qidiruv endpointi — to'liq katalog (barchasi())
   // o'rniga ishlatiladi, chunki u rol bo'yicha yopiq.
-  qidiruv: async (q?: string) => {
-    const kalit = q ?? "";
-    const mavjud = katalogQidiruvSorovlari.get(kalit);
-    if (mavjud) return mavjud;
-    const sorov = (async () => {
-    const sahifa = async (page: number) => {
-      const response = await apiClient.get<unknown>("/catalog/modifications/search", {
-        params: { page, pageSize: 100, ...(q ? { search: q } : {}) },
-      });
-      return sahifaJavobi<KatalogQidiruvQatori>(response.data, page, 100);
-    };
-    const birinchi = await sahifa(1);
-    const qolgan = await Promise.all(Array.from({ length: Math.max(0, birinchi.totalPages - 1) }, (_, i) => sahifa(i + 2)));
-    const modifikatsiyalar = [birinchi, ...qolgan].flatMap((page) => page.items)
+  qidiruv: async (q?: string, majbur = false) => {
+    const sessiya = `${authTokenlarniOlish().accessToken ?? ""}:${apiTiliniOlish()}`;
+    if (sessiya !== katalogSessiyasi) {
+      katalogYuklagich.tozalash();
+      katalogSessiyasi = sessiya;
+    }
+    const modifikatsiyalar = (await katalogYuklagich.olish(q, majbur))
       .map(katalogQidiruvQatoriniMoslash)
       .filter((item): item is MahsulotModifikatsiyasi => item !== null);
     return Array.from(new Map(modifikatsiyalar.map((item) => [item.id, item])).values());
-    })();
-    katalogQidiruvSorovlari.set(kalit, sorov);
-    try {
-      return await sorov;
-    } finally {
-      katalogQidiruvSorovlari.delete(kalit);
-    }
   },
   royxat: async (productId: string) => {
     const response = await apiClient.get<

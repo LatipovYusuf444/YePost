@@ -52,7 +52,7 @@ async function malumotlarniOlish(majbur = false): Promise<Malumot> {
     try {
       const omborlar = await omborlarRoyxatiniOlish();
       const [katalogNatija, ...qoldiqNatijalari] = await Promise.allSettled([
-        katalogModifikatsiyalariniQoldiqTanlovigaOlish(),
+        katalogModifikatsiyalariniQoldiqTanlovigaOlish(majbur),
         ...omborlar.map((ombor) => omborQoldiqlariniOlish(String(ombor.id))),
       ]);
       if (katalogNatija.status === "rejected" && qoldiqNatijalari.every((natija) => natija.status === "rejected")) {
