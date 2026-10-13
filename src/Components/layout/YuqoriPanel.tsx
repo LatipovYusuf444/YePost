@@ -75,7 +75,7 @@ function useHeaderRejimi(bosh: boolean) {
   return { ref: setElement, rejim };
 }
 
-function KorinishMenyusi() {
+export function KorinishMenyusi({ valyutaBilan = true }: { valyutaBilan?: boolean }) {
   const { t } = useTranslation("topbar");
   const [ochiq, setOchiq] = useState(false);
   return (
@@ -96,9 +96,9 @@ function KorinishMenyusi() {
           <div
             role="dialog"
             aria-label={t("displayMenu")}
-            className="absolute right-0 top-14 z-101 flex w-[min(300px,calc(100vw-32px))] flex-col items-end gap-3 rounded-3xl border border-white/10 bg-[#0B1424] p-4 shadow-[0_24px_60px_rgba(2,6,23,.5)]"
+            className="mobile-display-menu absolute right-0 top-14 z-101 flex w-[min(300px,calc(100vw-32px))] flex-col items-end gap-3 rounded-3xl border border-white/10 bg-[#0B1424] p-4 shadow-[0_24px_60px_rgba(2,6,23,.5)]"
           >
-            <ValyutaTanlash />
+            {valyutaBilan && <ValyutaTanlash />}
             <ThemeSwitcher variant="dark" />
             <LanguageSwitcher variant="dark" />
           </div>
@@ -189,6 +189,41 @@ export default function YuqoriPanel({
   useEffect(() => {
     void bildirishnomalarniYuklash();
   }, []);
+
+  const [mobil, setMobil] = useState(() => window.matchMedia("(max-width: 767px)").matches);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 767px)");
+    const yangila = () => setMobil(media.matches);
+    media.addEventListener("change", yangila);
+    return () => media.removeEventListener("change", yangila);
+  }, []);
+
+  if (mobil) {
+    return (
+      <YopishqoqNavbar>
+        <header className="mobile-topbar theme-sidebar relative rounded-[22px] border border-white/10 bg-[#0B1424] p-3 text-white shadow-lg">
+          <div className="flex min-w-0 items-center justify-between gap-2">
+            <Link to="/" className="flex min-w-0 items-center gap-2.5 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
+              <span className="theme-logo flex size-10 shrink-0 items-center justify-center rounded-[14px] bg-linear-to-br from-sky-400 to-blue-600 text-lg font-black text-white">Y</span>
+              <span className="min-w-0"><span className="block text-[15px] font-bold tracking-wide">YEPOST</span><span className="block truncate text-[10px] text-slate-400">{t("brandTagline", { ns: "nav" })}</span></span>
+            </Link>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <KorinishMenyusi />
+              <BildirishnomaTugmasi ochiq={bildirishnomaOchiq} setOchiq={setBildirishnomaOchiq} items={bildirishnomalar} oqilmaganSoni={oqilmaganSoni} yuklanmoqda={bildirishnomaYuklanmoqda} onReload={() => void bildirishnomalarniYuklash()} onRead={(id) => void bildirishnomaniOqish(id)} onReadAll={() => void hammasiniOqish()} />
+              <ProfilTugmasi profil={profil} onLogout={() => void handleLogout()} bosHarfBilan />
+            </div>
+          </div>
+          {pathname === "/" && (
+            <div className="mt-3 flex gap-2">
+              <HeaderMahsulotQidiruvi className="theme-search flex h-11 min-w-0 flex-1 items-center rounded-2xl border border-white/10 bg-white/10 px-3" />
+              <button type="button" onClick={() => setMahsulotModalOchiq(true)} aria-label={t("addProduct")} className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white focus-visible:outline-2 focus-visible:outline-white"><PackagePlus size={20} /></button>
+            </div>
+          )}
+          {mahsulotModalOchiq && <MahsulotTanlashModal onClose={() => setMahsulotModalOchiq(false)} />}
+        </header>
+      </YopishqoqNavbar>
+    );
+  }
 
   // Bosh sahifa ("/") navbari avvalgidek qoladi; qolgan barcha sahifalar minimal navbardan foydalanadi.
   if (pathname === "/") {

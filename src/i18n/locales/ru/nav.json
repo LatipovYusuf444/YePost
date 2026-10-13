@@ -1,6 +1,18 @@
 {
   "brand": "YEPOST",
   "brandTagline": "Система продаж",
+  "mobile": {
+    "back": "Все разделы",
+    "chooseSection": "Выберите нужный раздел",
+    "overview": "Обзор",
+    "navigation": "Основная навигация",
+    "home": "Главная",
+    "menu": "Меню",
+    "description": "Все разделы в одном месте",
+    "close": "Закрыть меню",
+    "search": "Найти раздел",
+    "empty": "Раздел не найден"
+  },
   "menu": {
     "boshSahifa": "Главная",
     "monitoring": "Мониторинг",

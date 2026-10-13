@@ -43,7 +43,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useSupportStore } from "@/store/supportStore";
 import { sahifagaRuxsatBormi } from "@/lib/roles";
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/Components/ui/sheet";
+import MobilNavigatsiya from "./MobilNavigatsiya";
 
 import { useAvatarUrl } from "@/store/avatarStore";
 type MenyuBolasi = { key: string; path: string; icon: LucideIcon };
@@ -138,17 +138,10 @@ const qatorOddiyKlass = "theme-sidebar-item rounded-[14px] font-medium text-[#83
 const yorliqKlass =
   "min-w-0 truncate whitespace-nowrap transition-opacity duration-200";
 
-// Mobil (< md) ekranlarda sidebar doimiy panel emas, balki shadcn Sheet orqali
-// qorong'i fon (overlay) bilan chapdan suriladigan panel sifatida ochiladi/yopiladi.
-// Desktopda (md+) xatti-harakat avvalgidek qoladi (ikonka <-> yorliqli panel toggle).
-const MOBIL_QIYINCHILIK = "(max-width: 767px)";
-
 export default function YonPanel({
   acik,
-  onAcikChange,
 }: {
   acik: boolean;
-  onAcikChange: (value: boolean) => void;
 }) {
   const { t } = useTranslation("nav");
   const navigate = useNavigate();
@@ -182,18 +175,6 @@ export default function YonPanel({
           : menu
       );
   }, [profil]);
-
-  const [mobil, setMobil] = useState(() =>
-    typeof window !== "undefined" ? window.matchMedia(MOBIL_QIYINCHILIK).matches : false
-  );
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia(MOBIL_QIYINCHILIK);
-    const tekshirish = () => setMobil(mediaQuery.matches);
-    tekshirish();
-    mediaQuery.addEventListener("change", tekshirish);
-    return () => mediaQuery.removeEventListener("change", tekshirish);
-  }, []);
 
   // Joriy marshrut tegishli bo'lim ochiq turadi (yangilashdan keyin ham); qolganlarini foydalanuvchi ochadi.
   const faolBolim = menyular.find((menu) => menu.bolalar && yolIchida(pathname, menu.path))?.path;
@@ -424,26 +405,19 @@ export default function YonPanel({
         <div
           role="tooltip"
           style={{ top: maslahat.top, left: maslahat.left }}
-          className="pointer-events-none fixed z-[70] -translate-y-1/2 whitespace-nowrap rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-lg ring-1 ring-white/10"
+          className="pointer-events-none fixed z-[70] hidden md:block -translate-y-1/2 whitespace-nowrap rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-lg ring-1 ring-white/10"
         >
           <span className="absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rotate-45 bg-slate-900" />
           {maslahat.matn}
         </div>
       )}
 
-      {/* Mobil (< md): sidebar shadcn Sheet (Radix Dialog asosida) yordamida qorong'i fon
-          bilan chapdan suriladigan panel sifatida ochiladi/yopiladi; desktop paneliga tegilmagan. */}
-      <Sheet open={mobil && acik} onOpenChange={onAcikChange}>
-        <SheetContent
-          side="left"
-          showClose={false}
-          className="theme-sidebar w-70 max-w-[80vw] border-none bg-[#0B1424] p-0 text-[#8391A7] md:hidden"
-        >
-          <SheetTitle className="sr-only">{t("brand")}</SheetTitle>
-          <SheetDescription className="sr-only">{t("brandTagline")}</SheetDescription>
-          {panelIchki}
-        </SheetContent>
-      </Sheet>
+      <MobilNavigatsiya menyular={korinadiganMenyular.map((menu) => ({
+        ...menu,
+        label: t(`menu.${menu.key}`),
+        badge: menu.key === "qollabQuvvatlash" ? oqilmaganXabarSoni : undefined,
+        bolalar: menu.bolalar?.map((bola) => ({ ...bola, label: t(`menu.${bola.key}`) })),
+      }))} />
     </>
   );
 }

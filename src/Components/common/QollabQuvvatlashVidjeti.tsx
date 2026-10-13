@@ -37,7 +37,7 @@ export default function QollabQuvvatlashVidjeti() {
             id="support-chat-widget"
             role="dialog"
             aria-label="Qo'llab-quvvatlash suhbati"
-            className="fixed bottom-5 right-5 z-[9998] h-[min(640px,calc(100dvh-2.5rem))] w-[400px] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,.18)]"
+            className="mobile-support-dialog fixed bottom-5 right-5 z-[9998] h-[min(640px,calc(100dvh-2.5rem))] w-[400px] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,.18)]"
           >
             <SupportChatOynasi compact onClose={() => setOchiq(false)} />
           </motion.div>
@@ -58,7 +58,7 @@ export default function QollabQuvvatlashVidjeti() {
             aria-label="Qo'llab-quvvatlash"
             aria-expanded={false}
             aria-controls="support-chat-widget"
-            className={`fixed bottom-5 right-5 z-[9999] flex h-14 w-14 items-center justify-center rounded-[18px] text-white shadow-[0_14px_34px_rgba(37,99,235,.3)] ${QOLLAB_QUVVATLASH_GRADIENT}`}
+            className={`mobile-support-button fixed bottom-5 right-5 z-[9999] flex h-14 w-14 items-center justify-center rounded-[18px] text-white shadow-[0_14px_34px_rgba(37,99,235,.3)] ${QOLLAB_QUVVATLASH_GRADIENT}`}
           >
             <MessageCircle size={24} />
             {oqilmaganSoni > 0 && (

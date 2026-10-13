@@ -20,19 +20,19 @@ export default function AsosiyLayout() {
   const [sidebarAcik, setSidebarAcik] = useState(false);
 
   return (
-    <div className="app-shell min-h-screen bg-gradient-to-br from-cream-50 via-cream-200 to-gold-150">
-      <YonPanel acik={sidebarAcik} onAcikChange={setSidebarAcik} />
+    <div className="app-shell mobile-app-shell min-h-screen bg-gradient-to-br from-cream-50 via-cream-200 to-gold-150">
+      <YonPanel acik={sidebarAcik} />
 
       {/* Telefonda chetlar torroq, katta ekranda kontent markazlashgan holda keng tarqalib ketmaydi.
           Yon panel faqat katta ekranda (lg+) kontentni suradi; planshetda uning ustiga chiqadi. */}
       <main
-        className={`min-h-screen w-full min-w-0 max-w-full overflow-x-clip px-3 pt-3 transition-[padding-left] duration-200 ease-in-out sm:pl-4 sm:pr-5 md:pl-[92px] lg:pr-6 ${
+        className={`min-h-screen w-full min-w-0 max-w-full overflow-x-clip px-2.5 pt-3 sm:px-3 transition-[padding-left] duration-200 ease-in-out sm:pl-4 sm:pr-5 md:pl-[92px] lg:pr-6 ${
           sidebarAcik ? "lg:pl-[308px]" : ""
         }`}
       >
         <div className="mx-auto w-full max-w-[1880px]">
           <YuqoriPanel sidebarAcik={sidebarAcik} onSidebarToggle={() => setSidebarAcik((joriy) => !joriy)} />
-          <div className="app-main-surface @container min-h-[calc(100vh-48px)] min-w-0 max-w-full rounded-[22px] border border-gold-200/60 bg-white/80 p-3 shadow-gold-medium backdrop-blur-xl sm:rounded-[28px] sm:p-5 lg:rounded-[34px] lg:p-7">
+          <div className="app-main-surface @container min-h-[calc(100vh-48px)] min-w-0 max-w-full rounded-[20px] border border-gold-200/60 bg-white/80 p-3 shadow-gold-medium backdrop-blur-xl sm:rounded-[28px] sm:p-5 lg:rounded-[34px] lg:p-7">
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}

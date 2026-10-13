@@ -1,6 +1,18 @@
 {
   "brand": "YEPOST",
   "brandTagline": "Savdo tizimi",
+  "mobile": {
+    "back": "Barcha bo‘limlar",
+    "chooseSection": "Kerakli bo‘limni tanlang",
+    "overview": "Umumiy ko‘rinish",
+    "navigation": "Asosiy navigatsiya",
+    "home": "Asosiy",
+    "menu": "Menyu",
+    "description": "Barcha bo‘limlar bir joyda",
+    "close": "Menyuni yopish",
+    "search": "Bo‘limni qidirish",
+    "empty": "Bo‘lim topilmadi"
+  },
   "menu": {
     "boshSahifa": "Bosh sahifa",
     "monitoring": "Monitoring",

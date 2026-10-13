@@ -5,6 +5,8 @@ import LanguageSwitcher from "@/Components/common/LanguageSwitcher";
 import ThemeSwitcher from "@/Components/theme/ThemeSwitcher";
 import { useAuthStore } from "@/store/authStore";
 import { useAuthProfileStore } from "@/store/authProfileStore";
+import MobilNavigatsiya from "@/Components/layout/MobilNavigatsiya";
+import { KorinishMenyusi } from "@/Components/layout/YuqoriPanel";
 
 const MENYU = [
   { key: "dashboard", path: "/admin", icon: LayoutDashboard, end: true },
@@ -36,7 +38,7 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="app-shell min-h-screen bg-gradient-to-br from-cream-50 via-cream-200 to-gold-150">
+    <div className="app-shell mobile-app-shell min-h-screen bg-gradient-to-br from-cream-50 via-cream-200 to-gold-150">
       <aside className="theme-sidebar fixed left-3 top-3 z-50 hidden h-[calc(100vh-24px)] w-[260px] flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#0B1424] text-[#8391A7] shadow-[0_28px_70px_rgba(2,6,23,.38)] md:flex">
         <div className="flex h-[72px] shrink-0 items-center gap-3 px-[18px]">
           <div className="theme-logo flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[10px] bg-linear-to-br from-sky-400 to-blue-600 text-lg font-black text-white">Y</div>
@@ -88,11 +90,11 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      <main className="min-h-screen w-full min-w-0 max-w-full overflow-x-clip pl-4 pr-6 pt-3 pb-4 md:pl-[288px]">
-        <div className="mb-3 flex items-center justify-between gap-3 rounded-[24px] border border-white/10 bg-[#0B1424] px-4 py-3 text-slate-200 shadow-[0_18px_44px_rgba(2,6,23,.28)]">
-          <div className="flex items-center gap-2 text-sm font-black md:hidden">
+      <main className="min-h-screen w-full min-w-0 max-w-full overflow-x-clip px-2.5 pt-3 pb-4 md:pl-[288px] md:pr-6">
+        <div className="mobile-topbar mb-3 flex items-center justify-between gap-3 rounded-[24px] border border-white/10 bg-[#0B1424] px-4 py-3 text-slate-200 shadow-[0_18px_44px_rgba(2,6,23,.28)]">
+          <div className="flex min-w-0 items-center gap-2 text-sm font-black md:hidden">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 to-blue-600 text-white">Y</span>
-            {t("superAdmin")}
+            <span className="truncate">{t("superAdmin")}</span>
           </div>
           <div className="hidden min-w-0 items-center gap-2 text-sm md:flex">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-violet-300">
@@ -104,38 +106,23 @@ export default function AdminLayout() {
               <JoriyIkonka size={15} className="text-sky-300" /> {t(`menu.${joriy.key}`)}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <ThemeSwitcher variant="dark" />
-            <LanguageSwitcher />
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="hidden items-center gap-2 md:flex">
+              <ThemeSwitcher variant="dark" />
+              <LanguageSwitcher />
+            </div>
+            <div className="md:hidden"><KorinishMenyusi valyutaBilan={false} /></div>
             <button type="button" onClick={() => void chiqish()} aria-label={t("chiqish")} className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-300 transition hover:bg-red-500/15 hover:text-red-300 md:hidden">
               <LogOut size={17} />
             </button>
           </div>
         </div>
 
-        {/* Mobil: yon panel yo'q, shuning uchun gorizontal menyu. */}
-        <nav className="mb-3 flex gap-2 overflow-x-auto md:hidden" aria-label={t("brandTagline")}>
-          {MENYU.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.end}
-                className={({ isActive }) =>
-                  `inline-flex h-10 shrink-0 items-center gap-2 rounded-2xl px-4 text-sm font-black transition ${isActive ? "bg-orange-500 text-white shadow-md shadow-orange-500/25" : "bg-white text-slate-600 ring-1 ring-slate-200"}`
-                }
-              >
-                <Icon size={16} /> {t(`menu.${item.key}`)}
-              </NavLink>
-            );
-          })}
-        </nav>
-
-        <div className="app-main-surface @container min-h-[calc(100vh-120px)] min-w-0 max-w-full rounded-[34px] border border-gold-200/60 bg-white/80 p-7 shadow-gold-medium backdrop-blur-xl">
+        <div className="app-main-surface @container min-h-[calc(100vh-120px)] min-w-0 max-w-full rounded-[20px] border border-gold-200/60 bg-white/80 p-3 shadow-gold-medium backdrop-blur-xl md:rounded-[34px] md:p-7">
           <Outlet />
         </div>
       </main>
+      <MobilNavigatsiya asosiyKalitlar={["dashboard", "kompaniyalar", "obunalar"]} menyular={MENYU.map((item) => ({ ...item, label: t(`menu.${item.key}`) }))} />
     </div>
   );
 }
