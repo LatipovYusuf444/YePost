@@ -1,7 +1,7 @@
 import { pulMatni } from "@/lib/valyuta";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, ChevronDown, LoaderCircle, Minus, PackageOpen, PackagePlus, Plus, RefreshCw, Search, ShoppingCart, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, LoaderCircle, PackageOpen, PackagePlus, RefreshCw, Search, ShoppingCart, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   katalogModifikatsiyalariniQoldiqTanlovigaOlish,
@@ -10,6 +10,7 @@ import {
   qoldiqNomlariniBoyitish,
 } from "@/api/savdoApi";
 import { usePosStore } from "@/store/posStore";
+import SavatchaMiqdoriMaydoni from "@/Pages/BoshSahifa/SavatchaMiqdoriMaydoni";
 import type { OmborTanlovi, QoldiqTanlovi } from "@/types/savdo";
 import {
   dollarMalumoti,
@@ -19,6 +20,7 @@ import {
   qoldiqNarxi,
   savatNomi,
   tanlovKaliti,
+  tanlashQoldigi,
   variantNomi,
 } from "./posMahsulotlari";
 
@@ -47,6 +49,7 @@ type TanlovMalumoti = { item: QoldiqTanlovi; warehouseId: string; warehouseName:
 export default function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation("topbar");
   const addToCart = usePosStore((state) => state.addToCart);
+  const cart = usePosStore((state) => state.cart);
   const [omborlar, setOmborlar] = useState<OmborTanlovi[]>([]);
   const [warehouseId, setWarehouseId] = useState("");
   const [mahsulotlar, setMahsulotlar] = useState<QoldiqTanlovi[]>([]);
@@ -166,8 +169,9 @@ export default function MahsulotTanlashModal({ onClose }: { onClose: () => void 
       .sort((a, b) => (savatNomi(a) || "￿").localeCompare(savatNomi(b) || "￿", "uz"));
   }, [mahsulotlar, qidiruv]);
 
-  function miqdorniYangilash(item: QoldiqTanlovi, ozgarish: number) {
-    const qoldiq = qoldiqMiqdori(item);
+  function miqdorniYangilash(item: QoldiqTanlovi, miqdor: number) {
+    if (!Number.isFinite(miqdor)) return;
+    const qoldiq = tanlashQoldigi(item, warehouseId, cart);
     const narx = qoldiqNarxi(item, narxTuri);
 
     if (qoldiq <= 0) {
@@ -182,7 +186,7 @@ export default function MahsulotTanlashModal({ onClose }: { onClose: () => void 
 
     setXabar("");
     const kalit = tanlovKaliti(item.modificationId, warehouseId);
-    const yangi = Math.min(Math.max((tanlanganMiqdorlar[kalit] ?? 0) + ozgarish, 0), qoldiq);
+    const yangi = Math.min(Math.max(miqdor, 0), qoldiq);
     setTanlanganMiqdorlar((joriy) => {
       const keyingi = { ...joriy };
       if (yangi === 0) delete keyingi[kalit];
@@ -413,6 +417,7 @@ export default function MahsulotTanlashModal({ onClose }: { onClose: () => void 
               <div className="grid gap-5 lg:grid-cols-2 2xl:grid-cols-3">
                 {filteredProducts.map((item) => {
                   const qoldiq = qoldiqMiqdori(item);
+                  const qoshishMumkin = tanlashQoldigi(item, warehouseId, cart);
                   const narx = qoldiqNarxi(item, narxTuri);
                   const sotishMumkin = qoldiq > 0 && narx > 0;
                   const nom = mahsulotNomi(item) || variantNomi(item) || nomsiz;
@@ -465,29 +470,24 @@ export default function MahsulotTanlashModal({ onClose }: { onClose: () => void 
                         <p className="rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-500">
                           {qoldiq <= 0 ? t("posModal.noStock") : t("posModal.noPrice")}
                         </p>
-                      ) : tanlangan ? (
-                        <div className="flex items-center justify-between gap-3 rounded-2xl bg-gold-500 p-1.5 text-white shadow-lg shadow-gold-100">
-                          <button type="button" onClick={() => miqdorniYangilash(item, -1)} className="flex h-10 w-10 items-center justify-center rounded-xl transition hover:bg-white/15" aria-label={t("posModal.decreaseAria")}>
-                            {tanlangan === 1 ? <Trash2 size={17} /> : <Minus size={18} />}
-                          </button>
-                          <div className="text-center leading-tight">
-                            <p className="text-base font-black">{tanlangan}</p>
-                            <p className="text-[10px] font-semibold text-white/80">{formatSumma(tanlangan * narx)}</p>
-                          </div>
-                          <button type="button" onClick={() => miqdorniYangilash(item, 1)} disabled={tanlangan >= qoldiq} className="flex h-10 w-10 items-center justify-center rounded-xl transition hover:bg-white/15 disabled:opacity-40" aria-label={t("posModal.increaseAria")}>
-                            <Plus size={18} />
-                          </button>
-                        </div>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => miqdorniYangilash(item, 1)}
-                          className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-gold-200 bg-white text-sm font-black text-gold-600 transition hover:bg-gold-500 hover:text-white"
-                          aria-label={t("posModal.selectAria")}
-                        >
-                          <Plus size={18} />
-                          {t("posModal.add")}
-                        </button>
+                        <div className={`flex min-h-16 items-center justify-between gap-3 rounded-2xl border px-4 py-2.5 transition ${tanlangan ? "border-gold-500 bg-gold-500 text-white shadow-lg shadow-gold-100" : "border-gold-200 bg-gold-50/50 text-gold-600"}`}>
+                          <label className="flex min-w-0 items-center gap-3">
+                            <span className="text-xs font-bold">{t("posModal.quantity")}</span>
+                            <SavatchaMiqdoriMaydoni
+                              soni={tanlangan}
+                              qoldiq={qoshishMumkin}
+                              label={t("posModal.quantityAria", { name: nom })}
+                              nolMumkin
+                              onChange={(miqdor) => miqdorniYangilash(item, miqdor)}
+                              className="h-10 w-24 min-w-0 rounded-xl border border-gold-200 bg-white px-2 text-center text-base font-black tabular-nums text-slate-900 outline-none transition focus:border-gold-400 focus:ring-4 focus:ring-white/30 disabled:cursor-not-allowed disabled:opacity-50"
+                            />
+                          </label>
+                          <div className="min-w-0 text-right leading-tight">
+                            <p className="text-[10px] font-semibold opacity-75">{qoshishMumkin < qoldiq ? t("posModal.canAdd", { count: qoshishMumkin }) : t("posModal.lineTotal")}</p>
+                            <p className="mt-1 truncate text-xs font-black tabular-nums">{formatSumma(tanlangan * narx)}</p>
+                          </div>
+                        </div>
                       )}
                     </article>
                   );

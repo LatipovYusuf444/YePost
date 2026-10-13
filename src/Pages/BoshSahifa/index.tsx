@@ -1,5 +1,5 @@
 import { pulMatni, useValyutaStore } from "@/lib/valyuta";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   LoaderCircle,
   Minus,
@@ -17,11 +17,14 @@ import GoldCartIllustration from "@/Components/illustrations/GoldCartIllustratio
 import {
   mijozlarRoyxatiniOlish,
   omborlarRoyxatiniOlish,
+  xodimlarRoyxatiniOlish,
 } from "@/api/savdoApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { savatchaChegirma, savatchaSotuvNarxi, usePosStore } from "@/store/posStore";
 import SotuvNarxiMaydoni from "./SotuvNarxiMaydoni";
+import SavatchaMiqdoriMaydoni from "./SavatchaMiqdoriMaydoni";
+import { doimiySotuvniModalgaTayyorlash } from "./doimiySotuv";
 import { aralashTolovniTaqsimlash, dollarNarxi, dollarniSomga, sotuvQatori } from "./aralashTolov";
 import { useSavdoStore } from "@/store/savdoStore";
 import type { MijozTanlovi, OmborTanlovi, Sotuv, SotuvTolovi, TolovTuri } from "@/types/savdo";
@@ -108,6 +111,7 @@ export default function BoshSahifa() {
   const setNarxTuri = updatePriceType;
   // Doimiy mijoz uchun yaratilgan qoralama sotuvning oynasi ochiqmi.
   const [doimiySotuvOchiq, setDoimiySotuvOchiq] = useState(false);
+  const doimiySotuvYaratilmoqda = useRef(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(true);
@@ -366,6 +370,7 @@ export default function BoshSahifa() {
   // Doimiy mijoz: savatcha mijozga biriktirilgan haqiqiy qoralama sotuvga aylanadi va Savdo bo'limidagi sotuv oynasi ochiladi
   // (to'lovni qabul qilish, qarzga qoldirish, tasdiqlash va hujjatlar shu oynada).
   async function handleNextCustomer() {
+    if (doimiySotuvYaratilmoqda.current) return;
     setMessage(null);
     if (!selectedCustomerId) {
       setMessage({ type: "error", text: t("errors.selectCustomerFirst") });
@@ -391,6 +396,9 @@ export default function BoshSahifa() {
     // Dollarda saqlangan mahsulot bor bo'lsa sotuv aralash (so'm + dollar) hisoblanadi: valyuta maydonlari faqat shunda yuboriladi.
     const aralash = qatorlar.some((qator) => qator.dollar);
 
+    doimiySotuvYaratilmoqda.current = true;
+    tanlanganSotuvniTozalash();
+    setDoimiySotuvOchiq(true);
     setSaving(true);
     const yaratilganlar: Sotuv[] = [];
     let xato = "";
@@ -418,13 +426,29 @@ export default function BoshSahifa() {
 
     try {
       if (yaratilganlar.length > 0) {
-        // Oyna ma'lumotlari (xodimlar, mijozlar, qoldiqlar) Savdo bo'limidagi kabi do'kondan olinadi: bo'sh bo'lsa yuklanadi.
         const savdo = useSavdoStore.getState();
-        if (savdo.xodimlar.length === 0 || savdo.mijozlar.length === 0) await savdo.boshlangichMalumotlarniYuklash();
-        else void savdo.qoldiqlarniYuklash(yaratilganlar[0].warehouseId);
-        // Oyna to'liq (mijoz va ombor nomlari bilan boyitilgan) sotuv bilan ochiladi.
-        await savdo.sotuvTafsilotiniYuklash(yaratilganlar[0].id);
-        setDoimiySotuvOchiq(true);
+        const xodimlar = savdo.xodimlar.length > 0 ? savdo.xodimlar : joriyProfil ? [{
+          id: joriyProfil.id,
+          fullName: joriyProfil.fullName ?? undefined,
+          username: joriyProfil.username,
+        }] : [];
+        // Modal POST javobi kelishi bilan ochiladi: barcha sotuvlar/katalog va takroriy detail GET kutilmaydi.
+        const birinchi = doimiySotuvniModalgaTayyorlash(yaratilganlar[0], { mijozlar, omborlar, xodimlar, cart });
+        useSavdoStore.setState({
+          tanlanganSotuv: birinchi,
+          mijozlar: savdo.mijozlar.length ? savdo.mijozlar : mijozlar,
+          omborlar: savdo.omborlar.length ? savdo.omborlar : omborlar,
+          xodimlar,
+        });
+        // Qo'shimcha tahrir/to'lov amallari uchun ma'lumotlar fonda yangilanadi.
+        void savdo.qoldiqlarniYuklash(birinchi.warehouseId);
+        if (!savdo.xodimlar.length) {
+          void xodimlarRoyxatiniOlish().then((items) => {
+            if (items.length) useSavdoStore.setState({ xodimlar: items });
+          }).catch(() => undefined);
+        }
+      } else {
+        setDoimiySotuvOchiq(false);
       }
       if (!xato) {
         clearCart();
@@ -440,6 +464,7 @@ export default function BoshSahifa() {
         });
       }
     } finally {
+      doimiySotuvYaratilmoqda.current = false;
       setSaving(false);
     }
   }
@@ -509,7 +534,7 @@ export default function BoshSahifa() {
               {cart.map((item) => (
                 <div
                   key={item.id}
-                  className="mb-2 grid gap-3 rounded-xl bg-gold-50/70 p-3 sm:grid-cols-[minmax(0,1fr)_108px_116px_36px] sm:items-center"
+                  className="mb-2 grid gap-3 rounded-xl bg-gold-50/70 p-3 sm:grid-cols-[minmax(0,1fr)_132px_116px_36px] sm:items-center"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-bold text-[#0F172A]">{item.nom}</p>
@@ -536,15 +561,25 @@ export default function BoshSahifa() {
 
                   <div className="flex h-9 items-center justify-between rounded-lg bg-white px-1 shadow-sm">
                     <button
+                      type="button"
+                      aria-label={t("cart.decreaseQuantity", { name: item.nom })}
                       onClick={() => updateQuantity(item.id, item.soni - 1)}
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-[#94A3B8] hover:bg-gold-100 hover:text-gold-600"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#94A3B8] hover:bg-gold-100 hover:text-gold-600"
                     >
                       <Minus size={14} />
                     </button>
-                    <span className="text-sm font-bold text-[#0F172A]">{item.soni}</span>
+                    <SavatchaMiqdoriMaydoni
+                      soni={item.soni}
+                      qoldiq={item.qoldiq}
+                      label={t("cart.quantityLabel", { name: item.nom })}
+                      onChange={(soni) => updateQuantity(item.id, soni)}
+                    />
                     <button
+                      type="button"
+                      aria-label={t("cart.increaseQuantity", { name: item.nom })}
+                      disabled={item.soni >= item.qoldiq}
                       onClick={() => updateQuantity(item.id, item.soni + 1)}
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-[#94A3B8] hover:bg-gold-100 hover:text-gold-600"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#94A3B8] hover:bg-gold-100 hover:text-gold-600 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <Plus size={14} />
                     </button>
@@ -885,7 +920,7 @@ export default function BoshSahifa() {
 
             <button
               onClick={() => void handleNextCustomer()}
-              disabled={saving}
+              disabled={saving || loading || cart.length === 0 || !selectedCustomerId}
               className="mt-auto flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-gold-500 text-sm font-bold text-white transition hover:bg-gold-600 disabled:cursor-not-allowed disabled:bg-gray-300"
             >
               {saving && <LoaderCircle size={15} className="animate-spin" />}
@@ -895,7 +930,16 @@ export default function BoshSahifa() {
         )}
       </aside>
 
-      {doimiySotuvOchiq && tanlanganSotuv && (
+      {doimiySotuvOchiq && saving && (
+        <AppModal actionRail={false} className="bg-slate-950/60 backdrop-blur-md">
+          <section role="dialog" aria-modal="true" aria-label={t("doimiySotuv.creating")} aria-busy="true" className="flex min-h-64 w-full max-w-lg flex-col items-center justify-center gap-4 rounded-3xl bg-white px-8 py-10 text-center shadow-2xl">
+            <LoaderCircle size={36} className="animate-spin text-gold-500" />
+            <p className="text-lg font-bold text-slate-900">{t("doimiySotuv.creating")}</p>
+            <p className="text-sm text-slate-500">{t("doimiySotuv.creatingHint")}</p>
+          </section>
+        </AppModal>
+      )}
+      {doimiySotuvOchiq && !saving && tanlanganSotuv && (
         <SotuvTafsilotlariModal
           sotuv={tanlanganSotuv}
           qoldiqlar={savdoQoldiqlar}

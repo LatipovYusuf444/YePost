@@ -53,6 +53,7 @@ export const usePosStore = create<PosState>()(
       cart: [],
       narxTuri: "chakana",
       addToCart: (item, quantity = 1) => {
+        if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(item.qoldiq) || item.qoldiq <= 0) return;
         set((state) => {
           const exists = state.cart.find((cartItem) => cartItem.id === item.id);
 
@@ -63,7 +64,7 @@ export const usePosStore = create<PosState>()(
                   ? {
                       ...cartItem,
                       ...item,
-                      soni: Math.min(cartItem.soni + quantity, item.qoldiq || cartItem.soni + quantity),
+                      soni: Math.min(cartItem.soni + quantity, item.qoldiq),
                     }
                   : cartItem
               ),
@@ -71,16 +72,17 @@ export const usePosStore = create<PosState>()(
           }
 
           return {
-            cart: [...state.cart, { ...item, soni: Math.min(quantity, item.qoldiq || quantity) }],
+            cart: [...state.cart, { ...item, soni: Math.min(quantity, item.qoldiq) }],
           };
         });
       },
       updateQuantity: (productId, nextQuantity) => {
+        if (!Number.isFinite(nextQuantity)) return;
         set((state) => ({
           cart: state.cart
             .map((item) =>
               item.id === productId
-                ? { ...item, soni: Math.min(Math.max(nextQuantity, 0), item.qoldiq || nextQuantity) }
+                ? { ...item, soni: Math.min(Math.max(nextQuantity, 0), Number.isFinite(item.qoldiq) ? Math.max(0, item.qoldiq) : 0) }
                 : item
             )
             .filter((item) => item.soni > 0),

@@ -43,6 +43,14 @@ export function qoldiqMiqdori(item: QoldiqTanlovi) {
   return Number(raw.quantity ?? raw.balance ?? raw.availableQuantity ?? raw.availableQty ?? raw.balanceQty ?? raw.qty ?? 0);
 }
 
+/** Modalda qo'shiladigan miqdor: shu ombordagi savatcha miqdorini ham hisobga oladi. */
+export function tanlashQoldigi(item: QoldiqTanlovi, warehouseId: string, cart: ReadonlyArray<{ id: string; soni: number }>) {
+  const qoldiq = qoldiqMiqdori(item);
+  if (!Number.isFinite(qoldiq)) return 0;
+  const savatchada = cart.find((row) => row.id === tanlovKaliti(item.modificationId, warehouseId))?.soni ?? 0;
+  return Math.max(0, qoldiq - savatchada);
+}
+
 export function qoldiqNarxi(item: QoldiqTanlovi, narxTuri: "chakana" | "ulgurji") {
   if (item.narxAniq === false) return 0;
   // Dollarda saqlangan mahsulot: so'mdagi narx kurs bilan hisoblangan qiymat (retailPriceUzs / wholesalePriceUzs).

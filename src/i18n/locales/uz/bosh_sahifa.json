@@ -1,5 +1,8 @@
 {
   "cart": {
+    "quantityLabel": "{{name}} miqdori",
+    "decreaseQuantity": "{{name}} miqdorini kamaytirish",
+    "increaseQuantity": "{{name}} miqdorini ko'paytirish",
     "title": "Savatcha",
     "emptyTitle": "Savatcha bo'sh",
     "emptySubtitle": "Hozircha hech qanday mahsulot tanlanmagan",
@@ -52,6 +55,8 @@
     "phonePlaceholder": "Telefon (ixtiyoriy)"
   },
   "doimiySotuv": {
+    "creating": "Sotuv yaratilmoqda",
+    "creatingHint": "Sotuv oynasi hozir ochiladi. Tasdiqlash modal ichida bajariladi.",
     "extraDrafts": "Boshqa omborlardagi mahsulotlar uchun yana {{count}} ta alohida qoralama yaratildi (Savdo → Qoralamalar).",
     "partialDrafts": "{{total}} ta ombordan {{done}} tasi uchun qoralama yaratildi, qolgan mahsulotlar savatchada qoldi: {{error}}",
     "confirmed": "Sotuv tasdiqlandi.",
