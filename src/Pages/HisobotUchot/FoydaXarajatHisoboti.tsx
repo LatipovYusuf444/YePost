@@ -8,45 +8,20 @@ import { incomeExpenseReportApi } from "@/api/reportsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { FoydaXarajatYozuvi } from "./types";
 import { bugun, bugunMinus } from "./yordamchilar";
-import { pulMatni, valyutaKodi, type Valyuta } from "@/lib/valyuta";
+import { korsatiladiganValyuta, useValyuta, type Valyuta } from "@/lib/valyuta";
 import YuklanmoqdaHolati from "./YuklanmoqdaHolati";
+import { foydaXarajatniMoslash, type IncomeExpenseResponse } from "./foydaXarajatModeli";
+import { hisobotPulMatni } from "./hisobotValyutasi";
 
 // Foyda va xarajat (P&L) hisoboti — Daromad − Tannarx = Yalpi foyda − Xarajat = Sof foyda.
 // Muddat/Filial bo'yicha real hisobot ma'lumotlari filtrlanadi.
 type SatrModeli = { kategoriya: string; summa: number };
-type IncomeExpenseResponse = {
-  income?: {
-    saleRevenue?: number | string;
-    // Boshqa daromad (zavod bonusi shu ichiga kiradi) — faqat SOF foydani oshiradi, yalpi foydaga ta'sir qilmaydi.
-    otherIncome?: number | string;
-    supplierBonus?: number | string;
-    // Qaytarilgan savdo summasi — saleRevenue (sof tushum) dan allaqachon ayirilgan, faqat ma'lumot uchun.
-    returns?: number | string;
-    total?: number | string;
-  };
-  cost?: { costOfGoods?: number | string };
-  expenses?: {
-    items?: Array<{ category?: string; name?: string; amount?: number | string }>;
-    refunds?: number | string;
-    total?: number | string;
-  };
-  summary?: {
-    revenue?: number | string;
-    cost?: number | string;
-    grossProfit?: number | string;
-    expense?: number | string;
-    netProfit?: number | string;
-    // Hisobot valyutasi (Sozlamalar → Valyuta → Hisobot valyutasi). Berilmasa — so'm.
-    currency?: string;
-  };
-};
-
 // Hisobot javobi qaysi valyutada kelsa (summary.currency), sahifadagi barcha summalar shu valyutadan ko'rsatiladi.
 const HisobotValyutasi = createContext<Valyuta>("UZS");
 
 function usePul() {
   const valyuta = useContext(HisobotValyutasi);
-  return (summa: number) => pulMatni(summa, valyuta, true);
+  return (summa: number) => hisobotPulMatni(summa, valyuta);
 }
 
 function guruhla(rows: FoydaXarajatYozuvi[], tur: "daromad" | "tannarx" | "xarajat"): SatrModeli[] {
@@ -89,6 +64,8 @@ function foiz(qism: number, butun: number) {
 }
 
 export default function FoydaXarajatHisoboti() {
+  useValyuta();
+  const tanlanganValyuta = korsatiladiganValyuta();
   const { filiallar: filialTanlovlari } = useHisobotRealData();
   const [dateFrom, setDateFrom] = useState(bugunMinus(30));
   const [dateTo, setDateTo] = useState(bugun());
@@ -96,9 +73,11 @@ export default function FoydaXarajatHisoboti() {
   const [foydaXarajat, setFoydaXarajat] = useState<FoydaXarajatYozuvi[]>([]);
   const [qaytarilgan, setQaytarilgan] = useState(0);
   const [boshqaDaromad, setBoshqaDaromad] = useState({ jami: 0, zavodBonusi: 0 });
-  const [valyuta, setValyuta] = useState<Valyuta>("UZS");
-  const pul = (summa: number) => pulMatni(summa, valyuta, true);
-  const [yuklanmoqda, setYuklanmoqda] = useState(false);
+  const [jamiSummalar, setJamiSummalar] = useState({ daromad: 0, tannarx: 0, xarajat: 0, yalpi: 0, boshqa: 0, sof: 0, jamiDaromad: 0 });
+  const [valyuta, setValyuta] = useState<Valyuta>(tanlanganValyuta);
+  const pul = (summa: number) => hisobotPulMatni(summa, valyuta);
+  const [yuklanmoqda, setYuklanmoqda] = useState(true);
+  const [eksportYuklanmoqda, setEksportYuklanmoqda] = useState(false);
   const [xato, setXato] = useState("");
 
   useEffect(() => {
@@ -110,89 +89,53 @@ export default function FoydaXarajatHisoboti() {
         dateFrom: new Date(`${dateFrom}T00:00:00.000Z`).toISOString(),
         dateTo: new Date(`${dateTo}T23:59:59.999Z`).toISOString(),
         branchIds: filiallar.length ? filiallar.join(",") : undefined,
+        currency: tanlanganValyuta,
       })
       .then((response) => {
         if (!active) return;
-        const value = response as IncomeExpenseResponse;
-        setValyuta(valyutaKodi(value.summary?.currency));
-        const sana = `${dateTo}T23:59:59.000Z`;
-        setQaytarilgan(Number(value.income?.returns ?? 0));
-        const boshqaJami = Number(value.income?.otherIncome ?? 0);
-        setBoshqaDaromad({
-          jami: boshqaJami,
-          // Zavod bonusi `otherIncome` ichida — alohida qo'shilmaydi, faqat ajratib ko'rsatiladi.
-          zavodBonusi: Math.min(Math.max(Number(value.income?.supplierBonus ?? 0), 0), Math.max(boshqaJami, 0)),
-        });
-        const rows: FoydaXarajatYozuvi[] = [
-          {
-            id: "saleRevenue",
-            sana,
-            filialId: "",
-            tur: "daromad",
-            kategoriya: "Savdo tushumi (sof)",
-            summa: Number(value.income?.saleRevenue ?? value.summary?.revenue ?? 0),
-          },
-          {
-            id: "saleCost",
-            sana,
-            filialId: "",
-            tur: "tannarx",
-            kategoriya: "Sotilgan tovar tannarxi",
-            summa: Number(value.cost?.costOfGoods ?? value.summary?.cost ?? 0),
-          },
-          ...(value.expenses?.items ?? []).map((item, index) => ({
-            id: `expense-${item.category ?? index}`,
-            sana,
-            filialId: "",
-            tur: "xarajat" as const,
-            kategoriya: item.name || item.category || "Xarajat",
-            summa: Number(item.amount ?? 0),
-          })),
-        ];
-        const refunds = Number(value.expenses?.refunds ?? 0);
-        if (refunds) {
-          rows.push({
-            id: "refunds",
-            sana,
-            filialId: "",
-            tur: "xarajat",
-            kategoriya: "Mijozlarga qaytarilgan pul",
-            summa: refunds,
-          });
-        }
-        setFoydaXarajat(rows.filter((item) => item.summa !== 0));
+        const model = foydaXarajatniMoslash(response as IncomeExpenseResponse, `${dateTo}T23:59:59.000Z`, tanlanganValyuta);
+        setValyuta(model.valyuta);
+        setQaytarilgan(model.qaytarilgan);
+        setBoshqaDaromad(model.boshqaDaromad);
+        setFoydaXarajat(model.qatorlar);
+        setJamiSummalar(model.jami);
       })
-      .catch((error) => { if (active) setXato(getApiErrorMessage(error)); })
+      .catch((error) => {
+        if (active) {
+          setFoydaXarajat([]);
+          setQaytarilgan(0);
+          setBoshqaDaromad({ jami: 0, zavodBonusi: 0 });
+          setXato(getApiErrorMessage(error));
+        }
+      })
       .finally(() => { if (active) setYuklanmoqda(false); });
     return () => { active = false; };
-  }, [dateFrom, dateTo, filiallar]);
+  }, [dateFrom, dateTo, filiallar, tanlanganValyuta]);
 
   const hisob = useMemo(() => {
     const rows = foydaXarajat;
     const daromadlar = guruhla(rows, "daromad");
     const tannarxlar = guruhla(rows, "tannarx");
     const xarajatlar = guruhla(rows, "xarajat");
-    const jam = (s: SatrModeli[]) => s.reduce((a, b) => a + b.summa, 0);
-    const daromad = jam(daromadlar);
-    const tannarx = jam(tannarxlar);
-    const xarajat = jam(xarajatlar);
-    // Yalpi foyda faqat savdodan: bonus va boshqa daromad uni o'zgartirmaydi (backend `summary.grossProfit` bilan bir xil).
-    const yalpi = daromad - tannarx;
-    const boshqa = boshqaDaromad.jami;
-    const sof = yalpi + boshqa - xarajat;
-    return { daromadlar, tannarxlar, xarajatlar, daromad, tannarx, xarajat, yalpi, boshqa, sof, jamiDaromad: daromad + boshqa };
-  }, [foydaXarajat, boshqaDaromad]);
+    // Backend har bir jami summani alohida yaxlitlaydi; ularni UI qayta hisoblamaydi.
+    return { daromadlar, tannarxlar, xarajatlar, ...jamiSummalar };
+  }, [foydaXarajat, jamiSummalar]);
 
   async function eksport() {
+    if (eksportYuklanmoqda) return;
+    setEksportYuklanmoqda(true);
     setXato("");
     try {
       await incomeExpenseReportApi.export({
         dateFrom: new Date(`${dateFrom}T00:00:00.000Z`).toISOString(),
         dateTo: new Date(`${dateTo}T23:59:59.999Z`).toISOString(),
         branchIds: filiallar.length ? filiallar.join(",") : undefined,
+        currency: tanlanganValyuta,
       }, "excel");
     } catch (error) {
       setXato(getApiErrorMessage(error));
+    } finally {
+      setEksportYuklanmoqda(false);
     }
   }
 
@@ -219,11 +162,11 @@ export default function FoydaXarajatHisoboti() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <button
           onClick={() => void eksport()}
-          disabled={yuklanmoqda}
+          disabled={yuklanmoqda || eksportYuklanmoqda || (Boolean(xato) && foydaXarajat.length === 0)}
           className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-bold text-orange-600 shadow-sm transition hover:bg-orange-50 disabled:opacity-60"
         >
           <Download size={16} />
-          Excel (.xlsx)
+          {eksportYuklanmoqda ? "Yuklanmoqda..." : `Excel (.xlsx) · ${valyuta}`}
         </button>
         <p className="text-sm font-semibold text-slate-400">
           {dateFrom.split("-").reverse().join(".")} – {dateTo.split("-").reverse().join(".")}
@@ -236,7 +179,7 @@ export default function FoydaXarajatHisoboti() {
         <section className="rounded-[28px] border border-orange-100 bg-white shadow-sm">
           <YuklanmoqdaHolati />
         </section>
-      ) : (
+      ) : xato && foydaXarajat.length === 0 ? null : (
         <>
           {/* Asosiy ko'rsatkichlar */}
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

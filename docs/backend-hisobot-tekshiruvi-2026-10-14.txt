@@ -1,0 +1,172 @@
+YANGILANISH — 2026-10-14: yangi backend shartnomasi frontendga ulandi.
+
+Quyidagi eski tekshiruv arxiv uchun qoldirilgan. Undagi currency/Excel va nol tannarx
+bo'yicha ochiq savollar endi quyidagicha hal qilingan:
+
+1. income-expense va product-profit currency=UZS|USD qabul qilishi real API orqali tekshirildi.
+   Ikkala hisobotning ikkala valyutadagi javobi HTTP 200 qaytardi.
+   Product-profit javobida currency, income-expense javobida summary.currency mavjud.
+   Frontend navbar tanlovini currency parametrida yuboradi; summalar qayta o'girilmaydi.
+   Eski /settings/currency.reportCurrency taxminiy zaxira yo'li olib tashlandi.
+
+2. Real API natijasi (14.09.2026–14.10.2026, barcha filiallar):
+   USD tushum=169.50, tannarx=147.60, yalpi/sof foyda=21.90, xarajat=0, qaytarish=49.20.
+   UZS tushum=2018745, tannarx=1757916, yalpi/sof foyda=260829, xarajat=0, qaytarish=586000.
+   Qaytarishlar summasi endi 585972 emas, server qaytargan to'liq 586000 UZS.
+
+3. Excel: ikkala hisobotning USD va UZS eksporti HTTP 200 bilan tekshirildi.
+   Sarlavhalarda Tushum (USD/UZS), saleRevenue (USD/UZS), returns (USD/UZS) va boshqalar bor.
+   Frontend eksportda ham tanlangan currency parametrini yuboradi.
+
+4. Tasdiqlangan shartnoma frontendga moslandi:
+   saleRevenue sof tushum; income.returns ikkinchi marta ayirilmaydi.
+   supplierBonus otherIncome ichida, bir marta hisoblanadi.
+   expenses.total = summary.expense = items + refunds.
+   refunds — savdo qaytarish hujjatisiz CUSTOMER_REFUND kassa amali; UI alohida xarajat qatorida ko'rsatadi.
+   grossProfit = revenue - cost.
+   netProfit = income.total - costOfGoods - expenses.total.
+   Backendning jami daromad, yalpi va sof foyda qiymatlari UI uchun asosiy manba.
+   Har maydon alohida yaxlitlangani uchun kichik tafovutlar operandlar soniga mos chegarada tekshiriladi.
+   Kurslar serverda: savdo o'z kunining, kassa/xarajat o'z kunining kursida hisoblanadi.
+
+5. Nol tannarx: backendchi izohiga ko'ra inventarizatsiya partiyasining tannarxi 0.
+   Bu hisoblash xatosi emas. Frontend tarixiy 0 tannarxni saqlaydi, joriy katalog narxi bilan almashtirmaydi.
+
+6. priceType narx turlari rejasi bilan keyin qo'shiladi. Frontend hozir priceType yubormaydi.
+   Chakana/ulgurji bo'yicha alohida tarixiy filtr va jamlanma hali ulanmagan.
+
+Tekshiruv GET so'rovlari bilan bajarildi, real sotuv/to'lov/ombor yozuvlari o'zgartirilmagan.
+Nol bo'lmagan xarajat/bonus/refund va alohida yaxlitlash holatlari frontend regression testlarida tekshirildi;
+joriy real bazada xarajat va bonus nol. Backend manba kodi o'zgartirilmagan.
+Natija: 46 ta test o'tdi, o'zgargan TS/TSX fayllarining ESLint tekshiruvi va production build o'tdi.
+
+----- OLDINGI TEKSHIRUV ARXIVI (server yangilanishidan avvalgi holat) -----
+
+YePost: yalpi foyda va foyda/xarajat hisobotlari tekshiruvi
+Sana: 2026-10-14. Tekshirilgan rol: DIRECTOR.
+Bu tekshiruv faqat GET so'rovlar bilan bajarildi. Sotuv/to'lov/ombor yozuvlari yaratilmagan.
+Backend manba kodi yoki Swagger mavjud emas; xulosalar amaldagi API javoblariga asoslangan.
+
+1. Hozirgi natijalar
+
+GET /api/v1/reports/income-expense
+dateFrom=2026-09-14T00:00:00.000Z
+dateTo=2026-10-14T23:59:59.999Z
+Filial: barchasi.
+HTTP 200:
+income: saleRevenue=169.5, returns=49.2, otherIncome=0, supplierBonus=0, total=169.5
+cost: costOfGoods=147.6
+expenses: items=[], refunds=0, total=0
+summary: currency=USD, revenue=169.5, cost=147.6, grossProfit=21.9, expense=0, netProfit=21.9
+summary.byCurrency: UZS sales/cost/profit=0; USD sales=169.5, cost=147.6, profit=21.9.
+
+GET /api/v1/settings/currency -> 200: enabled=true, reportCurrency=USD.
+GET /api/v1/settings/exchange-rates/effective?date=2026-10-14
+-> 200: rate=11910, rateDate=2026-10-10.
+
+USD: 169.50 - 147.60 - 0 = 21.90.
+Joriy kurs bilan UZS ko'rinishi: 2 018 745 - 1 757 916 - 0 = 260 829.
+Rentabellik = 21.9 / 169.5 * 100 = 12.92035...% (UI 12.9%).
+Yalpi foyda mahsulot hisobotidagi 3 faol qator yig'indisi bilan ham mos.
+Qoralamalar daromadga qo'shilmagan, to'liq qaytarilgan sotuvlar chiqarilgan.
+100 000 so'mlik CUSTOMER_PAYMENT kassa yozuvi daromadga qayta qo'shilmagan.
+
+2. Backendda yetishmayotgan narx turi
+
+GET /api/v1/sales javobidagi hujjat va qatorlarda priceType maydoni yo'q.
+saleType=QUICK|CLIENT chakana/ulgurji narx turini bildirmaydi.
+GET /api/v1/reports/income-expense?...&priceType=RETAIL -> HTTP 400:
+field=priceType, code=whitelistValidation,
+message="priceType maydonini yuborish ruxsat etilmagan".
+traceId=80e97ac0-bfb5-4435-ba2a-7bf11c32290d.
+
+Hozir tekshirilgan mahsulotlarda chakana va ulgurji narxlar teng:
+3,6*200: retailPrice=0.95, wholesalePrice=0.95, costPrice=0.828 USD.
+3,6*150: retailPrice=0.74, wholesalePrice=0.74, costPrice=0.648 USD.
+Shu sabab tarixiy narxdan sotuv chakana yoki ulgurjiligini aniqlab bo'lmaydi.
+Umumiy hisobot haqiqiy saqlangan sotuv narxini jamlayapti, ammo turlarni alohida tekshirish/filtrlash imkoni yo'q.
+
+So'rov: sotuv yaratish/yangilash va javoblarda priceType=RETAIL|WHOLESALE saqlash.
+Aralash narx turlari kerak bo'lsa, maydonni har sotuv qatorida saqlash.
+income-expense va product-profit hisobotlariga priceType filtri yoki byPriceType jamlanmasini qo'shish.
+Eski hujjatlarni joriy katalog narxiga qarab taxminan belgilamaslik; UNKNOWN sifatida ajratish.
+Hisobot tarixiy price/discount/costPrice/rate asosida qolishi kerak.
+Backend qo'shgach frontend payload, filtr va turlar jamlanmasi ulanishi kerak.
+
+3. Backendda tanlangan hisobot valyutasi va aniqlik
+
+GET /api/v1/reports/income-expense?...&currency=UZS -> HTTP 400:
+field=currency, code=whitelistValidation,
+message="currency maydonini yuborish ruxsat etilmagan".
+traceId=f8273391-e088-4ee2-bdea-dcec375ba11e.
+Hozir UI faqat backendning USD hisobotini joriy 11910 kurs bilan UZSga aylantiradi.
+Bu backend UZS hisobotini mustaqil hisoblab berdi degani emas.
+
+Aniq yaxlitlash misoli:
+GET /api/v1/returns dagi ikki CONFIRMED qaytarish:
+2cbdae6f-3d55-4939-b1f7-31fc92925471: 100 * 5800 = 580000 UZS.
+5334e9ff-e4df-44df-88af-20225da93580: 5 * 1200 = 6000 UZS.
+Asl jami=586000 UZS.
+Backend income.returns=49.2 USD (asl 586000/11910=49.20235... yaxlitlangan).
+UI qayta UZSga aylantirganda 49.2*11910=585972 UZS; farq=28 UZS.
+Bu ma'lumot uchun qaytarish qatoriga tegishli; tushumdan ikkinchi marta ayirilmaydi.
+
+So'rov: currency=UZS|USD filtrini ikkala hisobot va eksportda qo'llash,
+hisobni serverda yaxlitlanmagan Decimal qiymatlaridan bajarish, faqat oxirida yaxlitlash.
+Har bir pul maydoni (qaytarish, boshqa daromad, bonus, xarajat ham) uchun to'liq aniqlikni saqlash.
+Valyuta konvertatsiyasi tarixiy hujjat kursidami yoki joriy kursdami — shartnomada aniq yozish;
+javobda currency va ishlatilgan kurs/sana yoki conversionPolicy qaytarish.
+Frontend keyin tanlangan valyuta bilan so'rashi va javobni ikkinchi marta konvertatsiya qilmasligi kerak.
+
+GET /api/v1/reports/product-profit hozir currency qaytarmaydi;
+frontend vaqtincha /settings/currency.reportCurrency orqali USD ekanini aniqlaydi.
+Unga ham summary.currency yoki yuqori darajada currency qo'shish kerak.
+
+4. Tarixiy tannarxni tekshirish
+
+CONFIRMED saleId=0225b25a-c550-4868-a948-a11d80376aca.
+saleItemId=36f34f3d-eae0-453a-a2f5-f1adf0244e75.
+modificationId=cd3cb3f7-d002-4add-89c6-05bc0e3a52c7 (3,6*100).
+Qator: quantity=1, price=0.5, currency=USD, costPrice=0.
+Product-profit: revenue=0.5, cost=0, profit=0.5, marginPct=100.
+Joriy katalog costPrice=0.48 USD bo'lsa ham hisobot saqlangan 0 tannarxga mos.
+Bu hisoblash xatosi ekanligi isbotlanmagan: boshlang'ich qoldiq yoki tarixiy partiya tannarxi 0 bo'lishi mumkin.
+Backendchi shu sotuvda COGS qaysi partiya/stock ledger yozuvidan olinganini tekshirsin.
+Agar partiya tannarxi haqiqatan 0.48 bo'lgan bo'lsa, sotuv tasdiqlangandagi snapshot/ledger yo'li tuzatilsin.
+Tarixiy hujjat tannarxini bugungi katalog narxi bilan avtomatik almashtirmaslik kerak.
+
+5. Xarajat va boshqa daromad shartnomasi
+
+Amaldagi ma'lumotlarda expenses=0, otherIncome=0, supplierBonus=0.
+Shuning uchun nol bo'lmagan USD/UZS xarajat, bonus va qisman qaytarishlarning serverdagi ishlashi hali real yozuvlarda tasdiqlanmagan.
+Frontend testlarida summary-only xarajat, tafsiloti yetishmagan xarajat, qaytarilgan pulni ikki marta ayirmaslik,
+bonusni otherIncome tarkibida bir marta sanash, chegirma va zarar holatlari tekshirildi.
+
+Backend shartnomasi quyidagilarni aniq kafolatlashi kerak:
+- saleRevenue qaytarish va chegirmalar ayirilgan sof tushum; income.returns faqat ma'lumot uchun.
+- supplierBonus otherIncome ichiga kiradimi; hozir frontend ichiga kiradi deb oladi.
+- expenses.total va summary.expense bir xil jami; expenses.items uning tafsilotlari.
+- expenses.refunds shu jami ichidami va savdo qaytarishlaridan alohida operatsion xarajatmi.
+- summary.grossProfit=revenue-cost; netProfit=grossProfit+otherIncome-expense.
+- Barcha maydonlar summary.currency valyutasida, tarixiy qator valyutalari mos kursda o'tkazilgan.
+
+Frontendda tuzatildi: expenses.total/summary.expense tafsilotsiz ham hisobga olinadi;
+refunds jami ustiga ko'r-ko'rona yana qo'shilmaydi; tafsilotsiz qismi alohida ko'rsatiladi;
+formulalar yoki valyuta noto'g'ri bo'lsa taxminiy foyda o'rniga xato chiqadi.
+
+6. Excel eksporti
+
+GET /api/v1/reports/income-expense?...&export=excel -> 200 XLSX.
+Report varag'i: saleRevenue, returns, otherIncome, supplierBonus, costOfGoods, grossProfit, expense, netProfit.
+Qator: 169.5, 49.2, 0, 0, 147.6, 21.9, 0, 21.9.
+Faylda currency yoki valyuta sarlavhasi yo'q. Product-profit eksportida ham yo'q.
+So'rov: valyuta, davr, filial, narx turi va konvertatsiya qoidasini eksport sarlavhasida ko'rsatish;
+currency/priceType filtrlari eksportga ham qo'llansin.
+Hozir frontend eksport tugmasida faylning manba valyutasi USD ko'rsatiladi.
+
+7. Tekshiruv chegarasi
+
+Real API, DIRECTOR akkaunt va barcha filiallar jamlanmasi tekshirildi.
+Boshqa rollar, alohida filial va serverdagi nol bo'lmagan operatsion xarajatlar uchun test ma'lumotlari kerak.
+Yangi real moliyaviy yozuv yaratib test qilinmadi; backend manba kodi o'zgartirilmadi.
+Frontend testlari va production build natijasi chatda alohida beriladi.

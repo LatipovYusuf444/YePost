@@ -38,6 +38,7 @@ export type CounterpartyBalanceFilter = {
 };
 
 export type ProductProfitFilter = SanaFilter & {
+  currency?: "UZS" | "USD";
   groupBy?: "PRODUCT" | "CUSTOMER" | "MONTH" | "BRANCH" | "WAREHOUSE";
   branchIds?: string;
   warehouseIds?: string;
@@ -85,6 +86,7 @@ export type DiscountReportSummary = {
 };
 
 export type IncomeExpenseFilter = SanaFilter & {
+  currency?: "UZS" | "USD";
   branchIds?: string;
   branchId?: string;
   // Berilsa, javobga davrlar bo'yicha `series` ham qo'shiladi (dateFrom va dateTo ikkalasi ham kerak; ko'pi bilan 400 davr).

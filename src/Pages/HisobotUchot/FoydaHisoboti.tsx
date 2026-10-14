@@ -7,49 +7,23 @@ import MuddatTanlov from "./MuddatTanlov";
 import { useHisobotRealData } from "./HisobotRealData";
 import { productProfitReportApi } from "@/api/reportsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
-import { bugun, bugunMinus, pul, son } from "./yordamchilar";
+import { bugun, bugunMinus, son } from "./yordamchilar";
+import { korsatiladiganValyuta, useValyuta, type Valyuta } from "@/lib/valyuta";
+import { foydaHisobotiniMoslash, type FoydaQatori as Qator } from "./foydaHisobotiModeli";
+import { hisobotPulMatni } from "./hisobotValyutasi";
 
 import YuklanmoqdaHolati from "./YuklanmoqdaHolati";
-type ProfitRow = {
-  productId?: string;
-  productName?: string;
-  qtySold?: number | string;
-  revenue?: number | string;
-  cost?: number | string;
-  profit?: number | string;
-  marginPct?: number | string;
-};
-
-type Qator = {
-  id: string;
-  nomi: string;
-  sotilgan: number;
-  tushum: number;
-  tannarx: number;
-  foyda: number;
-  rentabellik: number;
-};
-
-function rows(value: unknown): ProfitRow[] {
-  if (Array.isArray(value)) return value as ProfitRow[];
-  if (value && typeof value === "object") {
-    const record = value as Record<string, unknown>;
-    if (Array.isArray(record.data)) return record.data as ProfitRow[];
-    if (Array.isArray(record.items)) return record.items as ProfitRow[];
-    if (Array.isArray(record.value)) return record.value as ProfitRow[];
-    return [record as ProfitRow];
-  }
-  return [];
-}
-
 export default function FoydaHisoboti() {
+  useValyuta();
+  const tanlanganValyuta = korsatiladiganValyuta();
   const { kategoriyalar } = useHisobotRealData();
   const [dateFrom, setDateFrom] = useState(bugunMinus(30));
   const [dateTo, setDateTo] = useState(bugun());
   const [categoryId, setCategoryId] = useState("");
   const [qidiruv, setQidiruv] = useState("");
   const [qatorlar, setQatorlar] = useState<Qator[]>([]);
-  const [yuklanmoqda, setYuklanmoqda] = useState(false);
+  const [hisobotValyutasi, setHisobotValyutasi] = useState<Valyuta>(tanlanganValyuta);
+  const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [exportYuklanmoqda, setExportYuklanmoqda] = useState(false);
   const [xato, setXato] = useState("");
 
@@ -62,29 +36,20 @@ export default function FoydaHisoboti() {
       dateFrom: new Date(`${dateFrom}T00:00:00.000Z`).toISOString(),
       dateTo: new Date(`${dateTo}T23:59:59.999Z`).toISOString(),
       categoryId: categoryId || undefined,
+      currency: tanlanganValyuta,
     })
       .then((value) => {
         if (!active) return;
-        setQatorlar(rows(value).map((item, index) => {
-          const tushum = Number(item.revenue ?? 0);
-          const foyda = Number(item.profit ?? 0);
-          return {
-            id: item.productId ?? `profit-${index}`,
-            nomi: item.productName ?? "Mahsulot",
-            sotilgan: Number(item.qtySold ?? 0),
-            tushum,
-            tannarx: Number(item.cost ?? 0),
-            foyda,
-            rentabellik: Number(item.marginPct ?? (tushum ? (foyda / tushum) * 100 : 0)),
-          };
-        })
-          // To'liq qaytarilgan mahsulotlar nol bo'lib qoladi — ro'yxatda ko'rsatilmaydi.
-          .filter((qator) => qator.sotilgan !== 0 || qator.tushum !== 0 || qator.tannarx !== 0));
+        const model = foydaHisobotiniMoslash(value, tanlanganValyuta);
+        setHisobotValyutasi(model.valyuta);
+        setQatorlar(model.qatorlar);
       })
-      .catch((error) => { if (active) setXato(getApiErrorMessage(error)); })
+      .catch((error) => { if (active) { setQatorlar([]); setXato(getApiErrorMessage(error)); } })
       .finally(() => { if (active) setYuklanmoqda(false); });
     return () => { active = false; };
-  }, [categoryId, dateFrom, dateTo]);
+  }, [categoryId, dateFrom, dateTo, tanlanganValyuta]);
+
+  const pul = (summa: number) => hisobotPulMatni(summa, hisobotValyutasi);
 
   const korinadigan = useMemo(() => {
     const key = qidiruv.trim().toLowerCase();
@@ -122,6 +87,7 @@ export default function FoydaHisoboti() {
         dateFrom: new Date(`${dateFrom}T00:00:00.000Z`).toISOString(),
         dateTo: new Date(`${dateTo}T23:59:59.999Z`).toISOString(),
         categoryId: categoryId || undefined,
+        currency: tanlanganValyuta,
       }, "excel");
     } catch (error) {
       setXato(getApiErrorMessage(error));
@@ -142,7 +108,7 @@ export default function FoydaHisoboti() {
     </p>
     {xato && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <button type="button" disabled={exportYuklanmoqda} onClick={() => void eksport()} className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-bold text-orange-600 shadow-sm disabled:opacity-50"><Download size={16}/>{exportYuklanmoqda ? "Yuklanmoqda..." : "Excel (.xlsx)"}</button>
+      <button type="button" disabled={exportYuklanmoqda || yuklanmoqda || !korinadigan.length} onClick={() => void eksport()} className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-bold text-orange-600 shadow-sm disabled:opacity-50"><Download size={16}/>{exportYuklanmoqda ? "Yuklanmoqda..." : `Excel (.xlsx) · ${hisobotValyutasi}`}</button>
       <label className="relative sm:w-72"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/><input value={qidiruv} onChange={(event) => setQidiruv(event.target.value)} placeholder="Mahsulot bo‘yicha qidiruv" className="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-orange-400"/></label>
     </div>
     <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm">
