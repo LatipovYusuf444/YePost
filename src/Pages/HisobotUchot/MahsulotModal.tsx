@@ -8,6 +8,7 @@ import type { Mahsulot, MahsulotModifikatsiyasi, OlchovBirligi } from "@/types/c
 import { useHisobotRealData } from "./HisobotRealData";
 import type { Maxsulot } from "./types";
 import { ustamaFoizi } from "@/Pages/Mahsulotlar/narxHisobi";
+import { narxQoralamaValyutalari } from "@/Pages/Mahsulotlar/narxValyutaYuklama";
 
 // Hisobotdan ochilgan mahsulot real katalog endpointlari orqali tahrirlanadi.
 
@@ -95,9 +96,12 @@ export default function MahsulotModal({
           article: artikul.trim() || undefined,
           imageUrl: uploaded?.imageUrl ?? modifikatsiya.imageUrl ?? undefined,
         });
+        // Narxlar bu oynada valyutasiz tahrirlanadi: har bir narxning saqlangan valyutasi o'zgarmaydi.
+        const valyutalar = modifikatsiya.price ? narxQoralamaValyutalari(modifikatsiya.price) : {};
         await modifikatsiyalarApi.narxYangilash(modifikatsiya.id, {
           costPrice: Number(tanNarx) || 0, retailPrice: Number(sotuvNarx) || 0,
           wholesalePrice: Number(ulgurji) || 0,
+          ...valyutalar,
         });
       }
       onClose();

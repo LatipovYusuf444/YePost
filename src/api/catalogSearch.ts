@@ -1,5 +1,6 @@
 import type { MahsulotModifikatsiyasi, MahsulotNarxi } from "@/types/catalog";
 import type { QoldiqValyutasi } from "@/types/savdo";
+import { narxValyutalari } from "../lib/narxValyutasi.ts";
 
 /** Qisqa kesh + umumiy in-flight so'rov: remount/ombor almashishi katalogni qayta yuklamaydi. */
 export function katalogQidiruvYuklagich<T>(
@@ -58,18 +59,26 @@ function musbatSon(value: unknown) {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-/** Bir xil moslash search va detail javoblariga ishlatiladi; USD kurssiz UZS narxga aylanmaydi. */
+/**
+ * Bir xil moslash search va detail javoblariga ishlatiladi; USD kurssiz UZS narxga aylanmaydi.
+ * Har bir narxning valyutasi alohida (retailCurrency / wholesaleCurrency): masalan chakana so'mda, ulgurji dollarda bo'lishi mumkin.
+ */
 export function katalogNarxiniQoldiqqaMoslash(narx?: MahsulotNarxi | null) {
-  const valyuta: QoldiqValyutasi | undefined = narx?.currency?.toUpperCase() === "USD" ? {
-    currency: "USD",
-    asl: Number(narx.retailPrice ?? 0),
+  const valyutalar = narxValyutalari(narx);
+  const chakanaUsd = valyutalar.retail === "USD";
+  const ulgurjiUsd = valyutalar.wholesale === "USD";
+  const valyuta: QoldiqValyutasi | undefined = narx && (chakanaUsd || ulgurjiUsd) ? {
+    currency: valyutalar.retail,
+    asl: chakanaUsd ? Number(narx.retailPrice ?? 0) : 0,
     kurs: musbatSon(narx.rate),
-    uzs: musbatSon(narx.retailPriceUzs),
-    ulgurjiAsl: Number(narx.wholesalePrice ?? 0),
-    ulgurjiUzs: musbatSon(narx.wholesalePriceUzs),
+    uzs: chakanaUsd ? musbatSon(narx.retailPriceUzs) : null,
+    ulgurjiCurrency: valyutalar.wholesale,
+    ulgurjiAsl: ulgurjiUsd ? Number(narx.wholesalePrice ?? 0) : 0,
+    ulgurjiUzs: ulgurjiUsd ? musbatSon(narx.wholesalePriceUzs) : musbatSon(narx.wholesalePrice),
   } : undefined;
-  const chakana = valyuta ? (valyuta.uzs ?? 0) : Number(narx?.retailPrice ?? narx?.wholesalePrice ?? 0);
-  const ulgurji = valyuta ? (valyuta.ulgurjiUzs ?? 0) : Number(narx?.wholesalePrice ?? 0);
+  // So'mdagi narxlar: dollar narx kurs bilan o'giriladi (kurs yo'q bo'lsa 0 — sotuvga qo'shib bo'lmaydi), so'm narx o'zgarmaydi.
+  const ulgurji = ulgurjiUsd ? (valyuta?.ulgurjiUzs ?? 0) : Number(narx?.wholesalePrice ?? 0);
+  const chakana = chakanaUsd ? (valyuta?.uzs ?? 0) : narx?.retailPrice != null ? Number(narx.retailPrice) : ulgurji;
   return {
     narxAniq: Boolean(narx),
     sellingPrice: chakana,

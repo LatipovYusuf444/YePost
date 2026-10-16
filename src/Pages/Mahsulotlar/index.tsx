@@ -44,6 +44,8 @@ import type { Ombor } from "@/types/ombor";
 import ModalTablari from "@/Components/common/ModalTablari";
 import KorinishTanlash, { type RoyxatKorinishi } from "@/Pages/Ombor/KorinishTanlash";
 import { sotuvNarxiUstamadan, ustamaFoizi } from "./narxHisobi";
+import { narxQoralamaValyutalari, narxYigish, ustamaHisoblashMumkin } from "./narxValyutaYuklama";
+import { narxValyutalari } from "@/lib/narxValyutasi";
 type Tab = "mahsulotlar" | "kategoriyalar";
 type Korinish = "kartochka" | "jadval";
 type VariationRow = {
@@ -347,8 +349,8 @@ export default function Mahsulotlar() {
                     <div key={modification.id} className="rounded-xl bg-slate-50 px-3 py-2">
                       {store.modifikatsiyalar[item.id].length > 1 && <p className="mb-1 truncate text-xs font-bold text-gray-500">{modification.name || modification.barcode || t("card.defaultVariant")}</p>}
                       <div className="grid grid-cols-2 gap-2">
-                        <div className="rounded-lg bg-orange-50 px-2 py-1.5"><p className="text-[10px] font-bold uppercase tracking-wide text-orange-600">{t("card.salePrice")}</p><p className="text-sm font-black text-orange-700">{modification.price?.retailPrice == null ? t("card.noPrice") : money(modification.price.retailPrice, modification.price.currency)}</p></div>
-                        <div className="rounded-lg bg-emerald-50 px-2 py-1.5"><p className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">{t("card.costPrice")}</p><p className="text-sm font-black text-emerald-700">{modification.price?.costPrice == null ? t("card.noPrice") : money(modification.price.costPrice, modification.price.currency)}</p></div>
+                        <div className="rounded-lg bg-orange-50 px-2 py-1.5"><p className="text-[10px] font-bold uppercase tracking-wide text-orange-600">{t("card.salePrice")}</p><p className="text-sm font-black text-orange-700">{modification.price?.retailPrice == null ? t("card.noPrice") : money(modification.price.retailPrice, narxValyutalari(modification.price).retail)}</p></div>
+                        <div className="rounded-lg bg-emerald-50 px-2 py-1.5"><p className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">{t("card.costPrice")}</p><p className="text-sm font-black text-emerald-700">{modification.price?.costPrice == null ? t("card.noPrice") : money(modification.price.costPrice, narxValyutalari(modification.price).cost)}</p></div>
                       </div>
                     </div>
                   ))}
@@ -409,7 +411,7 @@ export default function Mahsulotlar() {
                           <div className="flex flex-col gap-1.5">
                             {store.modifikatsiyalar[item.id] === undefined ? <NarxYuklanmoqda ohang="orange"/> : (store.modifikatsiyalar[item.id] ?? []).length ? (store.modifikatsiyalar[item.id] ?? []).map((modification) => (
                               <span key={modification.id} className="inline-flex w-fit rounded-lg bg-orange-50 px-2.5 py-1 font-black text-orange-700">
-                                {modification.price?.retailPrice == null ? t("card.noPrice") : money(modification.price.retailPrice, modification.price.currency)}
+                                {modification.price?.retailPrice == null ? t("card.noPrice") : money(modification.price.retailPrice, narxValyutalari(modification.price).retail)}
                               </span>
                             )) : <span className="text-gray-400">{t("card.noPrice")}</span>}
                           </div>
@@ -418,7 +420,7 @@ export default function Mahsulotlar() {
                           <div className="flex flex-col gap-1.5">
                             {store.modifikatsiyalar[item.id] === undefined ? <NarxYuklanmoqda ohang="emerald"/> : (store.modifikatsiyalar[item.id] ?? []).length ? (store.modifikatsiyalar[item.id] ?? []).map((modification) => (
                               <span key={modification.id} className="inline-flex w-fit rounded-lg bg-emerald-50 px-2.5 py-1 font-black text-emerald-700">
-                                {modification.price?.costPrice == null ? t("card.noPrice") : money(modification.price.costPrice, modification.price.currency)}
+                                {modification.price?.costPrice == null ? t("card.noPrice") : money(modification.price.costPrice, narxValyutalari(modification.price).cost)}
                               </span>
                             )) : <span className="text-gray-400">{t("card.noPrice")}</span>}
                           </div>
@@ -707,10 +709,10 @@ function MoneyInput({value,suffix,onChange,currency,onCurrencyChange,onApplyAll}
   </div>;
 }
 
-function PriceField({label,value}:{label:string;value:number|string|undefined}) {
+function PriceField({label,value,currency}:{label:string;value:number|string|undefined;currency?:"UZS"|"USD"}) {
   return <label className="grid gap-1">
     <span className="truncate text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</span>
-    <input disabled value={pulMatni(value)} className="input h-10 px-3 text-xs font-black sm:text-sm"/>
+    <input disabled value={pulMatni(value,currency)} className="input h-10 px-3 text-xs font-black sm:text-sm"/>
   </label>;
 }
 
@@ -739,18 +741,6 @@ const emptyVariantDraft: VariantDraft = {
 function cleanRemoteImage(value: string) {
   const clean = value.trim();
   return clean && !clean.startsWith("blob:") ? clean : "";
-}
-
-// Narx majburiy emas: hech bir narx maydoni to'ldirilmagan bo'lsa narx umuman yuborilmaydi
-// (aks holda backendga 0 ketib, "Narx mavjud emas" o'rniga "0" saqlanib qolardi).
-function narxYigish(draft?:Pick<VariantDraft,"costPrice"|"retailPrice"|"wholesalePrice"|"retailCurrency">) {
-  if(!draft||(!draft.costPrice&&!draft.retailPrice&&!draft.wholesalePrice))return undefined;
-  return {
-    costPrice:Number(draft.costPrice||0),
-    retailPrice:Number(draft.retailPrice||0),
-    wholesalePrice:Number(draft.wholesalePrice||draft.retailPrice||0),
-    currency:draft.retailCurrency??"UZS",
-  };
 }
 
 // Kelish narxi va ustama (%) dan sotuv narxi: ustama sotuv narxidan hisoblanadi — sotuv = kelish ÷ (1 − ustama/100).
@@ -798,16 +788,17 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
     if(item==="new")return emptyVariantDraft;
     const asosiyVariant=store.modifikatsiyalar[item.id]?.[0];
     if(!asosiyVariant?.price)return emptyVariantDraft;
-    const valyuta=(asosiyVariant.price.currency as "UZS"|"USD")??"UZS";
+    const valyutalar=narxQoralamaValyutalari(asosiyVariant.price);
     return {
       ...emptyVariantDraft,
       costPrice:asosiyVariant.price.costPrice!=null?String(asosiyVariant.price.costPrice):"",
-      costCurrency:valyuta,
-      markup:ustamaniHisoblash(asosiyVariant.price.costPrice,asosiyVariant.price.retailPrice),
+      costCurrency:valyutalar.costCurrency,
+      // Ustama faqat tannarx va chakana narx bir valyutada bo'lsagina hisoblanadi.
+      markup:valyutalar.costCurrency===valyutalar.retailCurrency?ustamaniHisoblash(asosiyVariant.price.costPrice,asosiyVariant.price.retailPrice):"",
       retailPrice:asosiyVariant.price.retailPrice!=null?String(asosiyVariant.price.retailPrice):"",
-      retailCurrency:valyuta,
+      retailCurrency:valyutalar.retailCurrency,
       wholesalePrice:asosiyVariant.price.wholesalePrice!=null?String(asosiyVariant.price.wholesalePrice):"",
-      wholesaleCurrency:valyuta,
+      wholesaleCurrency:valyutalar.wholesaleCurrency,
     };
   });
   const [baseStock,setBaseStock]=useState<VariantStockDraft>({open:true,warehouseId:"",quantity:"",minStock:""});
@@ -888,16 +879,16 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
     if(!asosiyVariant?.price)return;
     setBaseDraft((draft)=>{
       if(draft.costPrice||draft.retailPrice||draft.wholesalePrice)return draft;
-      const valyuta=(asosiyVariant.price!.currency as "UZS"|"USD")??"UZS";
+      const valyutalar=narxQoralamaValyutalari(asosiyVariant.price);
       return {
         ...draft,
         costPrice:asosiyVariant.price!.costPrice!=null?String(asosiyVariant.price!.costPrice):"",
-        costCurrency:valyuta,
-        markup:ustamaniHisoblash(asosiyVariant.price!.costPrice,asosiyVariant.price!.retailPrice),
+        costCurrency:valyutalar.costCurrency,
+        markup:valyutalar.costCurrency===valyutalar.retailCurrency?ustamaniHisoblash(asosiyVariant.price!.costPrice,asosiyVariant.price!.retailPrice):"",
         retailPrice:asosiyVariant.price!.retailPrice!=null?String(asosiyVariant.price!.retailPrice):"",
-        retailCurrency:valyuta,
+        retailCurrency:valyutalar.retailCurrency,
         wholesalePrice:asosiyVariant.price!.wholesalePrice!=null?String(asosiyVariant.price!.wholesalePrice):"",
-        wholesaleCurrency:valyuta,
+        wholesaleCurrency:valyutalar.wholesaleCurrency,
       };
     });
   }, [item, store.modifikatsiyalar]);
@@ -1185,12 +1176,14 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
     const numericValue=sanitizeMoneyInput(value);
     const current=variantDrafts[key]??{barcode:"",imageUrl:"",active:true,costPrice:"",costCurrency:"UZS",markup:"",retailPrice:"",retailCurrency:"UZS",wholesalePrice:"",wholesaleCurrency:"UZS"};
     const patch:Partial<VariantDraft>={[field]:numericValue};
-    if(field==="costPrice"||field==="markup"){
+    // Ustama va sotuv narxi bir-biridan faqat tannarx va chakana narx bir valyutada bo'lsagina hisoblanadi.
+    const birValyuta=ustamaHisoblashMumkin(current);
+    if(birValyuta&&(field==="costPrice"||field==="markup")){
       const cost=Number(field==="costPrice"?numericValue:current.costPrice||0);
       const markup=Number(field==="markup"?numericValue:current.markup||0);
       {const narx=cost>0&&markup>=0?ustamadanNarx(cost,markup):null;if(narx!==null)patch.retailPrice=narx;}
     }
-    if(field==="retailPrice"){
+    if(birValyuta&&field==="retailPrice"){
       const cost=Number(current.costPrice||0);
       const retail=Number(numericValue||0);
       if(cost>0)patch.markup=ustamaniHisoblash(cost,retail);
@@ -1202,16 +1195,18 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
     const numericValue=sanitizeMoneyInput(value);
     setBaseDraft((current)=>{
       const patch:Partial<VariantDraft>={[field]:numericValue};
-      if(field==="costPrice"&&editing){
+      // Ustama va sotuv narxi bir-biridan faqat tannarx va chakana narx bir valyutada bo'lsagina hisoblanadi.
+      const birValyuta=ustamaHisoblashMumkin(current);
+      if(birValyuta&&field==="costPrice"&&editing){
         // Tahrirlashda tan narx o'zgarsa, mavjud sotuv narxi o'zgarmaydi — faqat ustama qayta hisoblanadi
         // (aks holda bo'sh ustama 0% deb olinib, sotuv narxi tan narxga tenglashib qolardi).
         patch.markup=ustamaniHisoblash(numericValue,current.retailPrice);
-      }else if(field==="costPrice"||field==="markup"){
+      }else if(birValyuta&&(field==="costPrice"||field==="markup")){
         const cost=Number(field==="costPrice"?numericValue:current.costPrice||0);
         const markup=Number(field==="markup"?numericValue:current.markup||0);
         {const narx=cost>0&&markup>=0?ustamadanNarx(cost,markup):null;if(narx!==null)patch.retailPrice=narx;}
       }
-      if(field==="retailPrice"){
+      if(birValyuta&&field==="retailPrice"){
         const cost=Number(current.costPrice||0);
         const retail=Number(numericValue||0);
         if(cost>0)patch.markup=ustamaniHisoblash(cost,retail);
@@ -1649,9 +1644,9 @@ function ModifikatsiyalarModal({product,onClose}:{product:Mahsulot;onClose:()=>v
     <div className="flex justify-end"><button onClick={()=>setEditing("new")} className="inline-flex h-10 items-center gap-2 rounded-xl bg-orange-500 px-4 font-black text-white"><PackagePlus size={16}/>{t("variantsModal.addVariant")}</button></div>
     <div className="mt-4 space-y-3">{items.map(item=><div key={item.id} className="rounded-2xl border border-orange-100 p-4">
       <div className="grid grid-cols-3 gap-2">
-        <PriceField label={t("variantsModal.costLabel")} value={item.price?.costPrice}/>
-        <PriceField label={t("variantsModal.retailLabel")} value={item.price?.retailPrice}/>
-        <PriceField label={t("variantsModal.wholesaleLabel")} value={item.price?.wholesalePrice}/>
+        <PriceField label={t("variantsModal.costLabel")} value={item.price?.costPrice} currency={narxValyutalari(item.price).cost}/>
+        <PriceField label={t("variantsModal.retailLabel")} value={item.price?.retailPrice} currency={narxValyutalari(item.price).retail}/>
+        <PriceField label={t("variantsModal.wholesaleLabel")} value={item.price?.wholesalePrice} currency={narxValyutalari(item.price).wholesale}/>
       </div>
       <div className="mt-3 flex items-center justify-between gap-3 border-t border-orange-50 pt-3">
         <div className="min-w-0">
@@ -1677,7 +1672,9 @@ function ModForm({productId,item,onClose}:{productId:string;item:MahsulotModifik
   // Parametrlar (JSON) — faqat shu variantda avvaldan xarakteristika (rang, o'lcham va h.k.) bo'lsa ko'rsatiladi;
   // oddiy variantlarda bu texnik maydon shart emas, "Mahsulot" oynasidagi "Xarakteristikalar" bo'limidan boshqariladi.
   const parametrlarKerak=editing&&Boolean(item.params&&Object.keys(item.params).length>0);
-  async function save(e:FormEvent){e.preventDefault();if(!barcode.trim()){setJsonError("modForm.barcodeRequired");return}let parsed:Record<string,unknown>|undefined;try{parsed=params.trim()?JSON.parse(params):undefined;setJsonError("")}catch{setJsonError("modForm.invalidJson");return}const ok=await store.modifikatsiyaSaqlash(productId,editing?item.id:null,{name:name.trim()||undefined,barcode:barcode.trim(),article:article.trim()||undefined,params:parsed,price:{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale}});if(ok&&editing)await store.narxYangilash(productId,item.id,{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale});if(ok)onClose()}
+  // Bu oynada narxlar valyutasiz kiritiladi: mavjud variantni tahrirlashda har bir narxning o'z valyutasi saqlanib qoladi (yangi variant so'mda).
+  const saqlanganValyutalar=editing&&item.price?narxQoralamaValyutalari(item.price):{};
+  async function save(e:FormEvent){e.preventDefault();if(!barcode.trim()){setJsonError("modForm.barcodeRequired");return}let parsed:Record<string,unknown>|undefined;try{parsed=params.trim()?JSON.parse(params):undefined;setJsonError("")}catch{setJsonError("modForm.invalidJson");return}const ok=await store.modifikatsiyaSaqlash(productId,editing?item.id:null,{name:name.trim()||undefined,barcode:barcode.trim(),article:article.trim()||undefined,params:parsed,price:{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale,...saqlanganValyutalar}});if(ok&&editing)await store.narxYangilash(productId,item.id,{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale,...saqlanganValyutalar});if(ok)onClose()}
   return <AppModal><form onSubmit={save} className="w-full max-w-2xl rounded-[28px] bg-white p-6 shadow-2xl"><div className="flex justify-between"><h2 className="text-2xl font-black">{editing?t("modForm.editTitle"):t("modForm.createTitle")}</h2><button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100"><X size={18}/></button></div><div className="mt-5 grid gap-3 sm:grid-cols-2"><label className="grid gap-1.5 sm:col-span-2"><span className="text-xs font-bold text-slate-400">{t("modForm.namePlaceholder")}</span><input value={name} onChange={e=>setName(e.target.value)} className="input" placeholder={mahsulotNomi||t("modForm.namePlaceholder")}/>{mahsulotNomi&&<span className="text-[11px] font-medium text-slate-400">{t("modForm.nameHint",{product:mahsulotNomi})}</span>}</label><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.barcodePlaceholder")}</span><input value={barcode} onChange={e=>{setBarcode(e.target.value);if(jsonError==="modForm.barcodeRequired")setJsonError("")}} aria-invalid={jsonError==="modForm.barcodeRequired"} className="input" placeholder={t("modForm.barcodePlaceholder")}/></label><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.articlePlaceholder")}</span><input value={article} onChange={e=>setArticle(e.target.value)} className="input" placeholder={t("modForm.articlePlaceholder")}/></label>{parametrlarKerak&&<label className="grid gap-1.5 sm:col-span-2"><span className="text-xs font-bold text-slate-400">{t("modForm.paramsLabel")}</span><input value={params} onChange={e=>setParams(e.target.value)} className="input" placeholder={t("modForm.paramsPlaceholder")}/></label>}<label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.costPlaceholder")}</span><input type="number" min="0" step="0.01" value={cost} onChange={e=>setCost(Number(e.target.value))} className="input" placeholder={t("modForm.costPlaceholder")}/></label><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.retailPlaceholder")}</span><input type="number" min="0" step="0.01" value={retail} onChange={e=>setRetail(Number(e.target.value))} className="input" placeholder={t("modForm.retailPlaceholder")}/></label><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.wholesalePlaceholder")}</span><input type="number" min="0" step="0.01" value={wholesale} onChange={e=>setWholesale(Number(e.target.value))} className="input" placeholder={t("modForm.wholesalePlaceholder")}/></label></div>{jsonError&&<p className="mt-3 text-sm font-bold text-red-500">{t(jsonError)}</p>}<Actions loading={store.amalBajarilmoqda} onClose={onClose}/></form></AppModal>
 }
 

@@ -20,6 +20,8 @@ export type CartItem = {
   valyuta?: "USD";
   aslNarx?: number;
   aslUlgurjiNarx?: number;
+  // Ulgurji narx so'mda alohida belgilangan (chakana dollarda): ulgurji tanlanganda qator so'mda ketadi.
+  ulgurjiSomda?: boolean;
   // `narx` hisoblangan kurs (1 USD = necha so'm).
   kurs?: number;
 };

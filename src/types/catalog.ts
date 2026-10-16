@@ -41,7 +41,12 @@ export type MahsulotNarxi = {
   costPrice?: number | string;
   retailPrice?: number | string;
   wholesalePrice?: number | string;
+  // Eski umumiy maydon: endi faqat chakana narx valyutasi (retailCurrency bilan bir xil).
   currency?: string;
+  // Har bir narxning o'z valyutasi (UZS/USD). Yo'q bo'lsa — `currency`, u ham yo'q bo'lsa so'm.
+  costCurrency?: string | null;
+  retailCurrency?: string | null;
+  wholesaleCurrency?: string | null;
   // GET /catalog/modifications/search: valyuta rejimi yoqilgan bo'lsa qo'shimcha keladi.
   // USD narx × bugungi kurs, butun so'mgacha yaxlitlangan; UZS narx o'zgarmaydi; kurs yo'q bo'lsa *Uzs = null.
   rate?: number | string | null;
@@ -78,6 +83,9 @@ export type ModifikatsiyaMalumoti = {
     retailPrice?: number;
     wholesalePrice?: number;
     currency?: string;
+    costCurrency?: "UZS" | "USD";
+    retailCurrency?: "UZS" | "USD";
+    wholesaleCurrency?: "UZS" | "USD";
   };
 };
 
@@ -140,5 +148,9 @@ export type NarxMalumoti = {
   costPrice?: number;
   retailPrice?: number;
   wholesalePrice?: number;
+  // Eski umumiy maydon (endi faqat chakana narx valyutasi): yangi kodda costCurrency/retailCurrency/wholesaleCurrency yuboriladi.
   currency?: "UZS" | "USD";
+  costCurrency?: "UZS" | "USD";
+  retailCurrency?: "UZS" | "USD";
+  wholesaleCurrency?: "UZS" | "USD";
 };

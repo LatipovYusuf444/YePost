@@ -1,5 +1,7 @@
 export type SotuvHolati = "DRAFT" | "CONFIRMED" | "CANCELLED";
 export type SotuvTuri = "QUICK" | "CLIENT";
+// Savdo narx turi (Sozlamalar → Sotuv: qaysilari yoqilgan bo'lsa shular ishlatiladi; o'chirilgan tur yuborilsa backend rad etadi).
+export type SotuvNarxTuri = "COST" | "RETAIL" | "WHOLESALE";
 export type TolovTuri = "CASH" | "CARD" | "BANK" | "DEBT";
 export type YetkazishHolati = "PENDING" | "DISPATCHED" | "DELIVERED" | "CANCELLED";
 
@@ -59,6 +61,11 @@ export type SotuvMahsuloti = {
   total?: number | string;
   // Qator valyutasi (UZS/USD): price, discount va total shu valyutada. Berilmasa — sotuv valyutasi.
   currency?: string | null;
+  // Qator narx turi (chakana/ulgurji/tannarx); eski qatorlarda bo'lmasligi mumkin.
+  priceType?: SotuvNarxTuri | null;
+  // Katalogdagi narx (qo'lda yozilgan narx bilan solishtirish uchun) va chegirma foizi (hisobot uchun; summa `discount`da).
+  catalogPrice?: number | string | null;
+  discountPercent?: number | string | null;
   modification?: {
     id: string;
     name?: string;
@@ -107,6 +114,8 @@ export type Sotuv = {
   note?: string;
   total?: number | string;
   totalAmount?: number | string;
+  // Sotuv summasi valyutalar bo'yicha (aralash sotuvda): { UZS: "15000", USD: "2" }.
+  totalsByCurrency?: Record<string, number | string> | null;
   discountAmount?: number | string;
   paidAmount?: number | string;
   debtAmount?: number | string;
@@ -154,8 +163,10 @@ export type SotuvYaratishMalumoti = {
   clientCompanyId?: string;
   responsibleId?: string;
   saleType?: SotuvTuri;
-  // Sotuv valyutasi. Faqat aralash (so'm + dollar) sotuvda yuboriladi; aks holda berilmaydi (so'm).
+  // Sotuv (hisob-kitob) valyutasi: jami va qarz shu valyutada. Berilmasa backend valyuta rejimida mijozli savdoni USD, mijozsizni UZS deb oladi.
   currency?: string;
+  // Dollar qatnashsa qaytim mingtagacha yaxlitlanadi (standart true); false — aniq qaytim (tanga).
+  roundChange?: boolean;
   note?: string;
   // Donalik savdo uchun mijoz ismi (≤200 belgi) va telefoni (≤50 belgi). Qarzga sotish uchun baribir customerId kerak.
   walkInCustomerName?: string;
@@ -167,6 +178,8 @@ export type SotuvYaratishMalumoti = {
     discount?: number;
     // Qator o'z valyutasida (masalan, dollarda saqlangan mahsulot narxi). Berilmasa — sotuv valyutasi.
     currency?: string;
+    // Qator qaysi narx turida sotilgani (hisobotlarda narx turi bo'yicha ko'rinadi). Sozlamada o'chirilgan tur yuborilmaydi.
+    priceType?: SotuvNarxTuri;
   }>;
   payments?: SotuvTolovi[];
 };
@@ -284,17 +297,22 @@ export type MijozTanlovi = NomliMalumot;
 export type XodimTanlovi = NomliMalumot & { username?: string };
 
 // Valyuta rejimida dollarda saqlangan mahsulot narxi: sotuvga so'mdagi narx (retailPriceUzs) yuboriladi.
+// Har bir narxning valyutasi alohida: `currency` — chakana narx valyutasi, `ulgurjiCurrency` — ulgurji narx valyutasi.
+// Obyekt chakana yoki ulgurji narxlardan kamida bittasi dollarda bo'lsagina yaratiladi.
 export type QoldiqValyutasi = {
+  /** Chakana narx valyutasi. */
   currency: "UZS" | "USD";
-  /** Katalogdagi asl (dollardagi) chakana narx. */
+  /** Katalogdagi asl (dollardagi) chakana narx; chakana narx dollarda bo'lmasa 0. */
   asl: number;
   /** Bugungi kurs; kurs kiritilmagan bo'lsa null. */
   kurs: number | null;
-  /** So'mdagi chakana narx; kurs kiritilmagan bo'lsa null (sotuvga qo'shib bo'lmaydi). */
+  /** So'mdagi chakana narx (chakana narx dollarda bo'lsa kurs bilan hisoblangan); kurs kiritilmagan bo'lsa null (sotuvga qo'shib bo'lmaydi). */
   uzs: number | null;
-  /** Katalogdagi asl (dollardagi) ulgurji narx; yo'q bo'lsa 0. */
+  /** Ulgurji narx valyutasi; berilmasa — chakana narx valyutasi bilan bir xil. */
+  ulgurjiCurrency?: "UZS" | "USD";
+  /** Katalogdagi asl (dollardagi) ulgurji narx; ulgurji narx dollarda bo'lmasa yoki yo'q bo'lsa 0. */
   ulgurjiAsl?: number;
-  /** So'mdagi ulgurji narx; yo'q bo'lsa null. */
+  /** So'mdagi ulgurji narx (dollarda bo'lsa kurs bilan hisoblangan); yo'q bo'lsa null. */
   ulgurjiUzs?: number | null;
 };
 

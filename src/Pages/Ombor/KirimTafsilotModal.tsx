@@ -7,6 +7,7 @@ import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 import type { KirimHujjati, MahsulotModifikatsiyasi } from "@/types/ombor";
 import { valyutaKodi } from "@/lib/valyuta";
+import { narxValyutalari } from "@/lib/narxValyutasi";
 import { holat, hujjatRaqami, modificationNomi, pul } from "./omborYordamchilari";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
 
@@ -135,9 +136,10 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
                     const tanNarx = Number(item.price ?? mod?.price?.costPrice ?? 0);
                     const sotuvNarx = Number(mod?.price?.retailPrice ?? 0);
                     const ulgurjiNarx = Number(mod?.price?.wholesalePrice ?? 0);
-                    const katalogValyutasi = valyutaKodi(mod?.price?.currency);
-                    const tanValyutasi = item.price != null ? valyutaKodi(hujjat.currency) : katalogValyutasi;
-                    return <tr key={item.id ?? `${item.modificationId}-${index}`} className="hover:bg-orange-50/30"><td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td><td className="px-4 py-4 font-black text-slate-800">{modificationNomi(mod)}</td><td className="px-4 py-4 font-medium text-slate-500">{mod?.barcode || "—"}</td><td className="px-4 py-4 font-semibold text-slate-600">{pul(tanNarx, tanValyutasi)}</td><td className="px-4 py-4 text-slate-600">{pul(sotuvNarx, katalogValyutasi)}</td><td className="px-4 py-4 text-slate-600">{pul(ulgurjiNarx, katalogValyutasi)}</td><td className="px-4 py-4 font-bold text-slate-700">{Number(item.quantity).toLocaleString("uz-UZ")}</td><td className="px-4 py-4 text-slate-600">{warehouse?.name ?? hujjat.warehouseId}</td><td className="px-4 py-4 font-black text-emerald-600">{pul(Number(item.quantity) * tanNarx, tanValyutasi)}</td></tr>;
+                    // Har bir narxning o'z valyutasi: tannarx, chakana va ulgurji narxlar turli valyutada bo'lishi mumkin.
+                    const katalogValyutalari = narxValyutalari(mod?.price);
+                    const tanValyutasi = item.price != null ? valyutaKodi(hujjat.currency) : katalogValyutalari.cost;
+                    return <tr key={item.id ?? `${item.modificationId}-${index}`} className="hover:bg-orange-50/30"><td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td><td className="px-4 py-4 font-black text-slate-800">{modificationNomi(mod)}</td><td className="px-4 py-4 font-medium text-slate-500">{mod?.barcode || "—"}</td><td className="px-4 py-4 font-semibold text-slate-600">{pul(tanNarx, tanValyutasi)}</td><td className="px-4 py-4 text-slate-600">{pul(sotuvNarx, katalogValyutalari.retail)}</td><td className="px-4 py-4 text-slate-600">{pul(ulgurjiNarx, katalogValyutalari.wholesale)}</td><td className="px-4 py-4 font-bold text-slate-700">{Number(item.quantity).toLocaleString("uz-UZ")}</td><td className="px-4 py-4 text-slate-600">{warehouse?.name ?? hujjat.warehouseId}</td><td className="px-4 py-4 font-black text-emerald-600">{pul(Number(item.quantity) * tanNarx, tanValyutasi)}</td></tr>;
                   })}
                 </tbody>
               </table>

@@ -33,7 +33,8 @@ import {
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { Kategoriya, OlchovBirligi } from "@/types/catalog";
 import { kodBilanTopish, modificationNomi, qoldiqMiqdori } from "./omborYordamchilari";
-import { korsatiladiganValyuta, useValyuta, valyutaKodi, type Valyuta } from "@/lib/valyuta";
+import { korsatiladiganValyuta, useValyuta, type Valyuta } from "@/lib/valyuta";
+import { narxValyutalari } from "@/lib/narxValyutasi";
 import { kirimElementiniYigish, kirimNarxiniOgirish } from "./kirimValyuta";
 import MahsulotTanlov, { type MahsulotVarianti } from "./MahsulotTanlov";
 import ShtrixKodMaydoni, { type SkanNatijasi } from "./ShtrixKodMaydoni";
@@ -51,7 +52,10 @@ type Qator = {
   boshlangichRetail: number;
   boshlangichWholesale: number;
   boshlangichTanNarx: number;
+  // Tannarx (kirim narxi) valyutasi; chakana va ulgurji narxlarning valyutasi alohida bo'lishi mumkin (berilmasa — tannarx valyutasi).
   currency: Valyuta;
+  retailValyuta?: Valyuta;
+  wholesaleValyuta?: Valyuta;
 };
 
 type Props = { onClose: () => void };
@@ -168,19 +172,27 @@ export default function YangiKirimModal({ onClose }: Props) {
   }, [qatorlar, amaldagiKurs]);
   const kursKerak = qatorlar.some((row) => row.modificationId && row.currency === "USD") && !kursBor;
 
-  function qatorValyutasi(row: Qator): Valyuta {
-    return !kursBor ? row.currency : narxValyutasi;
+  // Har bir narx o'z valyutasida saqlanadi: tannarx — `currency`, chakana va ulgurji — o'z valyutasida (berilmasa tannarxniki).
+  function maydonValyutasi(row: Qator, maydon: "price" | "retailPrice" | "wholesalePrice"): Valyuta {
+    if (maydon === "retailPrice") return row.retailValyuta ?? row.currency;
+    if (maydon === "wholesalePrice") return row.wholesaleValyuta ?? row.currency;
+    return row.currency;
+  }
+
+  // Ko'rsatiladigan valyuta: kurs bor bo'lsa tanlangan valyuta, aks holda narxning o'z valyutasi.
+  function korsatishValyutasi(row: Qator, maydon: "price" | "retailPrice" | "wholesalePrice"): Valyuta {
+    return !kursBor ? maydonValyutasi(row, maydon) : narxValyutasi;
   }
 
   function narxQiymati(row: Qator, maydon: "price" | "retailPrice" | "wholesalePrice") {
     if (row[maydon] === "") return "";
-    const qiymat = kirimNarxiniOgirish(Number(row[maydon]), row.currency, qatorValyutasi(row), amaldagiKurs);
+    const qiymat = kirimNarxiniOgirish(Number(row[maydon]), maydonValyutasi(row, maydon), korsatishValyutasi(row, maydon), amaldagiKurs);
     return Math.round(qiymat * 100) / 100;
   }
 
   function narxniKiritish(row: Qator, maydon: "price" | "retailPrice" | "wholesalePrice", qiymat: string) {
     if (qiymat !== "" && (!Number.isFinite(Number(qiymat)) || Number(qiymat) < 0)) return;
-    const asl = qiymat === "" ? "" : String(kirimNarxiniOgirish(Number(qiymat), qatorValyutasi(row), row.currency, amaldagiKurs));
+    const asl = qiymat === "" ? "" : String(kirimNarxiniOgirish(Number(qiymat), korsatishValyutasi(row, maydon), maydonValyutasi(row, maydon), amaldagiKurs));
     yangilash(row.id, { [maydon]: asl });
   }
 
@@ -251,7 +263,10 @@ export default function YangiKirimModal({ onClose }: Props) {
       boshlangichRetail: retail,
       boshlangichWholesale: wholesale,
       boshlangichTanNarx: cost,
-      currency: valyutaKodi(mod?.price?.currency),
+      // Har bir narxning o'z valyutasi: kirim narxi (tannarx) costCurrency'da, chakana/ulgurji o'z valyutasida.
+      currency: narxValyutalari(mod?.price).cost,
+      retailValyuta: narxValyutalari(mod?.price).retail,
+      wholesaleValyuta: narxValyutalari(mod?.price).wholesale,
     });
   }
 
@@ -357,7 +372,9 @@ export default function YangiKirimModal({ onClose }: Props) {
             .narxYangilash(row.modificationId, {
               retailPrice: Number(row.retailPrice || 0) || undefined,
               wholesalePrice: Number(row.wholesalePrice || 0) || undefined,
-              currency: row.currency,
+              // Valyuta faqat yuborilayotgan narx uchun, har biri o'z valyutasida (eski umumiy `currency` endi faqat chakana narxniki).
+              ...(Number(row.retailPrice || 0) ? { retailCurrency: maydonValyutasi(row, "retailPrice") } : {}),
+              ...(Number(row.wholesalePrice || 0) ? { wholesaleCurrency: maydonValyutasi(row, "wholesalePrice") } : {}),
             })
             .catch(() => null)
         )
@@ -648,7 +665,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                         type="number"
                         min="0"
                         step="0.01"
-                        aria-label={`${t("yangiKirim.table.costPriceHeader")} (${qatorValyutasi(row)})`}
+                        aria-label={`${t("yangiKirim.table.costPriceHeader")} (${korsatishValyutasi(row, "price")})`}
                         value={narxQiymati(row, "price")}
                         data-kirim-narx={row.id}
                         onChange={(event) => narxniKiritish(row, "price", event.target.value)}
@@ -659,12 +676,12 @@ export default function YangiKirimModal({ onClose }: Props) {
                         }}
                         placeholder={t("yangiKirim.table.pricePlaceholder")}
                         className={`${inputSm} pr-16`}
-                      /><span className="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{qatorValyutasi(row)}</span></div>
+                      /><span className="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{korsatishValyutasi(row, "price")}</span></div>
                       <div className="relative"><input
                         type="number"
                         min="0"
                         step="0.01"
-                        aria-label={`${t("yangiKirim.table.retailPriceHeader")} (${qatorValyutasi(row)})`}
+                        aria-label={`${t("yangiKirim.table.retailPriceHeader")} (${korsatishValyutasi(row, "retailPrice")})`}
                         value={narxQiymati(row, "retailPrice")}
                         onChange={(event) => narxniKiritish(row, "retailPrice", event.target.value)}
                         onKeyDown={(event) => {
@@ -674,12 +691,12 @@ export default function YangiKirimModal({ onClose }: Props) {
                         }}
                         placeholder={t("yangiKirim.table.pricePlaceholder")}
                         className={`${inputSm} pr-16`}
-                      /><span className="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{qatorValyutasi(row)}</span></div>
+                      /><span className="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{korsatishValyutasi(row, "retailPrice")}</span></div>
                       <div className="relative"><input
                         type="number"
                         min="0"
                         step="0.01"
-                        aria-label={`${t("yangiKirim.table.wholesalePriceHeader")} (${qatorValyutasi(row)})`}
+                        aria-label={`${t("yangiKirim.table.wholesalePriceHeader")} (${korsatishValyutasi(row, "wholesalePrice")})`}
                         value={narxQiymati(row, "wholesalePrice")}
                         onChange={(event) => narxniKiritish(row, "wholesalePrice", event.target.value)}
                         onKeyDown={(event) => {
@@ -689,7 +706,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                         }}
                         placeholder={t("yangiKirim.table.pricePlaceholder")}
                         className={`${inputSm} pr-16`}
-                      /><span className="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{qatorValyutasi(row)}</span></div>
+                      /><span className="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{korsatishValyutasi(row, "wholesalePrice")}</span></div>
                       <input
                         type="number"
                         min="0.001"

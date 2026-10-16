@@ -10,16 +10,23 @@ type DollarMaydonlari = {
   valyuta?: "USD";
   aslNarx?: number;
   aslUlgurjiNarx?: number;
+  /** Ulgurji narx so'mda alohida belgilangan (chakana dollarda bo'lsa ham ulgurji tanlanganda qator so'mda ketadi). */
+  ulgurjiSomda?: boolean;
   kurs?: number;
 };
 
 export type DollarQatori = { narx: number; kurs: number };
 
-/** Qator dollarda saqlangan mahsulot bo'lsa, uning asl dollar narxi va kursi; aks holda null (qator so'mda). */
+/**
+ * Tanlangan narx turi dollarda saqlangan bo'lsa, uning asl dollar narxi va kursi; aks holda null (qator so'mda).
+ * Chakana va ulgurji narxlarning valyutalari alohida; ulgurji narx umuman belgilanmagan bo'lsa chakana narxga qaytiladi.
+ */
 export function dollarNarxi(item: DollarMaydonlari, narxTuri: NarxTuri): DollarQatori | null {
   if (item.valyuta !== "USD") return null;
   const kurs = Number(item.kurs) || 0;
-  const asl = narxTuri === "ulgurji" && (item.aslUlgurjiNarx ?? 0) > 0 ? (item.aslUlgurjiNarx as number) : (item.aslNarx ?? 0);
+  const ulgurjiDollar = item.aslUlgurjiNarx ?? 0;
+  const ulgurji = narxTuri === "ulgurji" && (ulgurjiDollar > 0 || item.ulgurjiSomda === true);
+  const asl = ulgurji ? ulgurjiDollar : (item.aslNarx ?? 0);
   return kurs > 0 && asl > 0 ? { narx: asl, kurs } : null;
 }
 
@@ -41,6 +48,8 @@ type QatorMalumoti = {
   /** So'mdagi jami chegirma (narx chegirmasi + umumiy chegirma ulushi). */
   discount: number;
   dollar: DollarQatori | null;
+  /** Qator narx turi; berilmasa maydon yuborilmaydi. */
+  priceType?: "RETAIL" | "WHOLESALE";
 };
 
 export type SotuvQatori = {
@@ -49,12 +58,14 @@ export type SotuvQatori = {
   price: number;
   discount: number;
   currency?: "USD";
+  priceType?: "RETAIL" | "WHOLESALE";
 };
 
 /** Backendga ketadigan qator: dollar mahsulot o'z valyutasida (asl narx va dollardagi chegirma), qolganlari avvalgidek so'mda. */
 export function sotuvQatori(qator: QatorMalumoti): SotuvQatori {
+  const narxTuri = qator.priceType ? { priceType: qator.priceType } : {};
   if (!qator.dollar) {
-    return { modificationId: qator.modificationId, quantity: qator.quantity, price: qator.price, discount: qator.discount };
+    return { modificationId: qator.modificationId, quantity: qator.quantity, price: qator.price, discount: qator.discount, ...narxTuri };
   }
   return {
     modificationId: qator.modificationId,
@@ -62,7 +73,13 @@ export function sotuvQatori(qator: QatorMalumoti): SotuvQatori {
     price: qator.dollar.narx,
     discount: sentgaYaxlitlash(qator.discount / qator.dollar.kurs),
     currency: "USD",
+    ...narxTuri,
   };
+}
+
+/** POS narx turi (chakana/ulgurji) → backend `priceType`. */
+export function narxTuriKodi(narxTuri: NarxTuri): "RETAIL" | "WHOLESALE" {
+  return narxTuri === "ulgurji" ? "WHOLESALE" : "RETAIL";
 }
 
 export type TolovUlushi = {

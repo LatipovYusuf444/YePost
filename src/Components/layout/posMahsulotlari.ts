@@ -51,10 +51,20 @@ export function tanlashQoldigi(item: QoldiqTanlovi, warehouseId: string, cart: R
   return Math.max(0, qoldiq - savatchada);
 }
 
+/** Ulgurji narx dollarda saqlanganmi (chakana narx valyutasidan mustaqil). */
+function ulgurjiDollardami(dollar?: QoldiqTanlovi["valyuta"]) {
+  return Boolean(dollar) && (dollar?.ulgurjiCurrency ?? dollar?.currency) === "USD";
+}
+
 export function qoldiqNarxi(item: QoldiqTanlovi, narxTuri: "chakana" | "ulgurji") {
   if (item.narxAniq === false) return 0;
-  // Dollarda saqlangan mahsulot: so'mdagi narx kurs bilan hisoblangan qiymat (retailPriceUzs / wholesalePriceUzs).
+  // Dollarda saqlangan narx: so'mdagi narx kurs bilan hisoblangan qiymat (retailPriceUzs / wholesalePriceUzs).
+  // Chakana va ulgurji narxlarning valyutalari alohida (masalan chakana so'mda, ulgurji dollarda).
   const dollar = item.valyuta;
+  if (narxTuri === "ulgurji" && dollar?.currency !== "USD" && ulgurjiDollardami(dollar) && (dollar?.ulgurjiAsl ?? 0) > 0) {
+    // Chakana so'mda, ulgurji dollarda: kurs yo'q bo'lsa ulgurji narxda sotuvga qo'shib bo'lmaydi (chakana narxga jimgina o'tilmaydi).
+    return dollar?.kurs && dollar.ulgurjiUzs ? dollar.ulgurjiUzs : 0;
+  }
   if (dollar?.currency === "USD") {
     if (!dollar.kurs || !dollar.uzs) return 0;
     const ulgurjiUzs = dollar.ulgurjiUzs ?? 0;
@@ -123,15 +133,22 @@ export function tanlovKaliti(modificationId: string, warehouseId: string) {
   return `${modificationId}::${warehouseId}`;
 }
 
-// Dollarda saqlangan mahsulot bo'lsa, savatcha elementiga qo'shiladigan maydonlar (aks holda bo'sh obyekt).
+// Dollarda saqlangan narxi bor mahsulot bo'lsa, savatcha elementiga qo'shiladigan maydonlar (aks holda bo'sh obyekt).
 // Faqat valyuta rejimi yoqilgan va kurs bor bo'lsa (backend `valyuta`ni shunda beradi) ishlaydi.
+// Chakana va ulgurji narxlarning valyutalari alohida: dollarda bo'lmagan narx uchun asl dollar narxi 0 (qator so'mda ketadi).
 export function dollarMalumoti(item: QoldiqTanlovi) {
   const dollar = item.valyuta;
-  if (dollar?.currency !== "USD" || !dollar.kurs || !dollar.uzs || !(dollar.asl > 0)) return {};
+  if (!dollar?.kurs) return {};
+  const chakanaDollarda = dollar.currency === "USD" && Boolean(dollar.uzs) && dollar.asl > 0;
+  const ulgurjiDollarda = ulgurjiDollardami(dollar) && (dollar.ulgurjiAsl ?? 0) > 0 && Boolean(dollar.ulgurjiUzs);
+  if (!chakanaDollarda && !ulgurjiDollarda) return {};
+  // Ulgurji narx so'mda alohida belgilangan bo'lsa (ulgurji tanlanganda chakana dollar narxiga qaytilmasligi uchun) belgilanadi.
+  const ulgurjiSomda = !ulgurjiDollarda && (dollar.ulgurjiUzs ?? 0) > 0;
   return {
     valyuta: "USD" as const,
-    aslNarx: dollar.asl,
-    aslUlgurjiNarx: dollar.ulgurjiAsl ?? 0,
+    aslNarx: chakanaDollarda ? dollar.asl : 0,
+    aslUlgurjiNarx: ulgurjiDollarda ? (dollar.ulgurjiAsl ?? 0) : 0,
     kurs: dollar.kurs,
+    ...(ulgurjiSomda ? { ulgurjiSomda: true } : {}),
   };
 }
