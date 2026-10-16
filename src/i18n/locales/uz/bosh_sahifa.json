@@ -83,7 +83,8 @@
     "dollarInSom": "Dollar (so'mda)",
     "receivedTotal": "Jami qabul qilinadi",
     "change": "Qaytim (so'mda beriladi)",
-    "debtLeft": "Qarz qoladi"
+    "debtLeft": "Qarz qoladi",
+    "roundChange": "Qaytimni minglikkacha yaxlitlash"
   },
   "errors": {
     "loadFailed": "Bosh sahifa ma'lumotlari olinmadi",

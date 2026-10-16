@@ -848,7 +848,8 @@ export default function YangiSotuvModal({
         responsibleId: responsibleId || undefined,
         saleType: customerId || clientCompanyId ? "CLIENT" : "QUICK",
         note: backendIzohiniYigish() || undefined,
-        ...(sotuvVal === "USD" ? { currency: "USD" } : {}),
+        // Tanlangan sotuv valyutasi har doim aniq yuboriladi (berilmasa backend mijozli savdoni USD deb oladi).
+        currency: sotuvVal,
         items: yuboriladiganQatorlar,
       });
       if (muvaffaqiyatli) setSotuvBackendgaSaqlandi(true);

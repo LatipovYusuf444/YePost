@@ -25,8 +25,9 @@ import { savatchaChegirma, savatchaSotuvNarxi, usePosStore } from "@/store/posSt
 import SotuvNarxiMaydoni from "./SotuvNarxiMaydoni";
 import SavatchaMiqdoriMaydoni from "./SavatchaMiqdoriMaydoni";
 import { doimiySotuvniModalgaTayyorlash } from "./doimiySotuv";
-import { aralashTolovniTaqsimlash, dollarNarxi, dollarniSomga, sotuvQatori } from "./aralashTolov";
+import { aralashTolovniTaqsimlash, dollarNarxi, dollarniSomga, narxTuriKodi, sotuvQatori } from "./aralashTolov";
 import { useSavdoStore } from "@/store/savdoStore";
+import { useKassaNarxTurlari } from "@/store/savdoSozlamalariStore";
 import type { MijozTanlovi, OmborTanlovi, Sotuv, SotuvTolovi, TolovTuri } from "@/types/savdo";
 
 type CustomerType = "donalik" | "doimiy";
@@ -109,6 +110,8 @@ export default function BoshSahifa() {
   const [customerSearch, setCustomerSearch] = useState("");
   const narxTuri = usePosStore((state) => state.narxTuri);
   const setNarxTuri = updatePriceType;
+  // Sozlamalar → Sotuv: faqat yoqilgan narx turlari tanlanadi (o'chirilgan turni backend rad etadi).
+  const narxRuxsati = useKassaNarxTurlari();
   // Doimiy mijoz uchun yaratilgan qoralama sotuvning oynasi ochiqmi.
   const [doimiySotuvOchiq, setDoimiySotuvOchiq] = useState(false);
   const doimiySotuvYaratilmoqda = useRef(false);
@@ -121,6 +124,8 @@ export default function BoshSahifa() {
   const [tolovSummasi, setTolovSummasi] = useState("");
   // Dollarda qabul qilinadigan to'lov ($). Faqat valyuta rejimi yoqilgan va bugungi kurs kiritilgan bo'lsa ishlatiladi.
   const [dollarTolovi, setDollarTolovi] = useState("");
+  // Dollar qatnashganda qaytim mingtagacha yaxlitlanadi (backend `roundChange`, standart yoqilgan); tanga oladigan mijoz uchun o'chiriladi.
+  const [qaytimYaxlitlash, setQaytimYaxlitlash] = useState(true);
   const kurs = useValyutaStore((holat) => holat.kurs);
   const dollarTolovMumkin = useValyutaStore((holat) => holat.rejimYoniq && holat.kursBor && holat.kurs > 0);
 
@@ -176,6 +181,8 @@ export default function BoshSahifa() {
   const dollarSomda = dollarTiyin > 0 ? dollarniSomga(dollarTiyin, kurs) : 0;
   const qabulJami = somTolovi + dollarSomda;
   const qaytim = Math.max(qabulJami - payableTotal, 0);
+  // Dollar qatnashsa backend qaytimni so'mda eng yaqin minggacha yaxlitlaydi (roundChange standart holatda yoqilgan): kassir shu summani beradi.
+  const qaytimBerish = dollarTiyin > 0 && qaytimYaxlitlash ? Math.round(qaytim / 1000) * 1000 : qaytim;
   const qarzQoldi = Math.max(payableTotal - qabulJami, 0);
   // Dollar bilan to'langanda so'm qismi qolgan summadan oshmaydi (qaytim faqat dollar banknota katta bo'lganda chiqadi).
   const tolovYaroqli =
@@ -229,6 +236,7 @@ export default function BoshSahifa() {
     }
     setTolovSummasi(String(payableTotal));
     setDollarTolovi("");
+    setQaytimYaxlitlash(true);
     setTolovModalOchiq(true);
   }
 
@@ -255,6 +263,7 @@ export default function BoshSahifa() {
         discount: narxChegirmasi + lineDiscount,
         sof: lineTotal - lineDiscount,
         dollar: dollarNarxi(item, narxTuri),
+        priceType: narxTuriKodi(narxTuri),
       };
     });
   }
@@ -294,9 +303,7 @@ export default function BoshSahifa() {
     const guruhlar = Array.from(omborGuruhlari.entries());
     const guruhSoflari = guruhlar.map(([, qatorlarRoyxati]) => qatorlarRoyxati.reduce((sum, qator) => sum + qator.sof, 0));
     const guruhSoflariJami = guruhSoflari.reduce((sum, qiymat) => sum + qiymat, 0) || 1;
-    // Aralash sotuv: savatchada dollar mahsulot bor yoki dollarda to'lanmoqda. Faqat shunda valyuta maydonlari yuboriladi,
-    // oddiy so'mdagi sotuv avvalgidek (valyutasiz) ketadi.
-    const aralash = usdSent > 0 || qatorlar.some((qator) => qator.dollar);
+    // Sotuv valyutasi (UZS), so'm to'lovlari va dollar to'lovi har doim o'z valyutasi bilan ketadi (dollar mahsulot qatori o'zida USD).
     const aralashTaqsimot = usdSent > 0 ? aralashTolovniTaqsimlash(guruhSoflari, somQismi, usdSent, kurs) : null;
 
     setSaving(true);
@@ -321,7 +328,7 @@ export default function BoshSahifa() {
               ...(ulushi.usdSent > 0 ? [{ paymentType: "CASH" as const, amount: ulushi.usdSent / 100, currency: "USD" }] : []),
             ]
           : ulush > 0
-            ? [{ paymentType: selectedPayment.apiTuri, amount: ulush, ...(aralash ? { currency: "UZS" } : {}) }]
+            ? [{ paymentType: selectedPayment.apiTuri, amount: ulush, currency: "UZS" }]
             : [];
 
         const sale = await yangiSotuvYaratish({
@@ -336,9 +343,12 @@ export default function BoshSahifa() {
           walkInCustomerName: mijozTuri === "donalik" && customerName.trim() ? customerName.trim().slice(0, 200) : undefined,
           walkInCustomerPhone: mijozTuri === "donalik" && customerPhone.trim() ? customerPhone.trim().slice(0, 50) : undefined,
           note: note.trim() || undefined,
-          ...(aralash ? { currency: "UZS" } : {}),
-          items: qatorlarRoyxati.map(({ modificationId, quantity, price, discount, dollar }) =>
-            sotuvQatori({ modificationId, quantity, price, discount, dollar })
+          // Savdo valyutasi har doim aniq yuboriladi: berilmasa backend valyuta rejimida mijozli savdoni USD deb oladi va
+          // so'mdagi narx/to'lovlar dollar sifatida o'qilib qolardi. Kassa hisob-kitobi so'mda, dollar qatorlari o'z valyutasi bilan ketadi.
+          currency: "UZS",
+          ...(usdSent > 0 && !qaytimYaxlitlash ? { roundChange: false } : {}),
+          items: qatorlarRoyxati.map(({ modificationId, quantity, price, discount, dollar, priceType }) =>
+            sotuvQatori({ modificationId, quantity, price, discount, dollar, priceType })
           ),
           payments: tolovlar,
         });
@@ -393,8 +403,6 @@ export default function BoshSahifa() {
       omborGuruhlari.set(qator.omborId, [...(omborGuruhlari.get(qator.omborId) ?? []), qator]);
     });
     const guruhlar = Array.from(omborGuruhlari.entries());
-    // Dollarda saqlangan mahsulot bor bo'lsa sotuv aralash (so'm + dollar) hisoblanadi: valyuta maydonlari faqat shunda yuboriladi.
-    const aralash = qatorlar.some((qator) => qator.dollar);
 
     doimiySotuvYaratilmoqda.current = true;
     tanlanganSotuvniTozalash();
@@ -410,9 +418,11 @@ export default function BoshSahifa() {
           saleType: "CLIENT",
           responsibleId: joriyProfil?.id,
           note: note.trim() || undefined,
-          ...(aralash ? { currency: "UZS" } : {}),
-          items: qatorlarRoyxati.map(({ modificationId, quantity, price, discount, dollar }) =>
-            sotuvQatori({ modificationId, quantity, price, discount, dollar })
+          // Savdo valyutasi har doim aniq yuboriladi: berilmasa backend valyuta rejimida mijozli savdoni USD deb oladi va
+          // so'mdagi narx/to'lovlar dollar sifatida o'qilib qolardi. Kassa hisob-kitobi so'mda, dollar qatorlari o'z valyutasi bilan ketadi.
+          currency: "UZS",
+          items: qatorlarRoyxati.map(({ modificationId, quantity, price, discount, dollar, priceType }) =>
+            sotuvQatori({ modificationId, quantity, price, discount, dollar, priceType })
           ),
         });
         if (!sale) throw new Error(useSavdoStore.getState().xatolik || t("errors.createDraftFailed"));
@@ -745,8 +755,9 @@ export default function BoshSahifa() {
             <div className="mb-5 grid grid-cols-2 rounded-xl bg-gold-100 p-1">
               <button
                 onClick={() => setNarxTuri("chakana")}
+                disabled={!narxRuxsati.chakana}
                 className={[
-                  "rounded-lg py-2.5 text-xs font-bold transition",
+                  "rounded-lg py-2.5 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-40",
                   narxTuri === "chakana"
                     ? "border border-gold-300 bg-white text-gold-600"
                     : "text-[#64748B] hover:text-gold-600",
@@ -756,8 +767,9 @@ export default function BoshSahifa() {
               </button>
               <button
                 onClick={() => setNarxTuri("ulgurji")}
+                disabled={!narxRuxsati.ulgurji}
                 className={[
-                  "rounded-lg py-2.5 text-xs font-bold transition",
+                  "rounded-lg py-2.5 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-40",
                   narxTuri === "ulgurji"
                     ? "border border-gold-300 bg-white text-gold-600"
                     : "text-[#64748B] hover:text-gold-600",
@@ -896,8 +908,9 @@ export default function BoshSahifa() {
             <div className="mb-5 grid grid-cols-2 rounded-lg bg-gray-100 p-1">
               <button
                 onClick={() => setNarxTuri("chakana")}
+                disabled={!narxRuxsati.chakana}
                 className={[
-                  "rounded-md py-2.5 text-xs font-bold transition",
+                  "rounded-md py-2.5 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-40",
                   narxTuri === "chakana"
                     ? "border border-gold-300 bg-white text-gold-600"
                     : "text-gray-500 hover:text-gold-600",
@@ -907,8 +920,9 @@ export default function BoshSahifa() {
               </button>
               <button
                 onClick={() => setNarxTuri("ulgurji")}
+                disabled={!narxRuxsati.ulgurji}
                 className={[
-                  "rounded-md py-2.5 text-xs font-bold transition",
+                  "rounded-md py-2.5 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-40",
                   narxTuri === "ulgurji"
                     ? "border border-gold-300 bg-white text-gold-600"
                     : "text-gray-500 hover:text-gold-600",
@@ -1003,13 +1017,17 @@ export default function BoshSahifa() {
                       </div>
                     </label>
                     <p className="mt-2 text-[11px] font-semibold text-slate-400">{t("paymentModal.rateLine", { kurs: kurs.toLocaleString("uz-UZ", { maximumFractionDigits: 2 }) })}</p>
+                    <label className="mt-3 flex cursor-pointer items-center gap-2 text-xs font-bold text-slate-500">
+                      <input type="checkbox" checked={qaytimYaxlitlash} onChange={(e) => setQaytimYaxlitlash(e.target.checked)} className="h-4 w-4 accent-gold-500" />
+                      {t("paymentModal.roundChange")}
+                    </label>
                   </div>
                 )}
                 {(dollarTiyin > 0 || qaytim > 0) && (
                   <div className="mt-3 space-y-1.5 rounded-2xl bg-slate-50 p-4 text-sm font-bold text-slate-600">
                     {dollarTiyin > 0 && <div className="flex justify-between gap-3"><span>{t("paymentModal.dollarInSom")}</span><span>{somMatni(dollarSomda)}</span></div>}
                     <div className="flex justify-between gap-3"><span>{t("paymentModal.receivedTotal")}</span><span>{somMatni(qabulJami)}</span></div>
-                    {qaytim > 0 && <div className="flex justify-between gap-3 text-emerald-700"><span>{t("paymentModal.change")}</span><span>{somMatni(qaytim)}</span></div>}
+                    {qaytimBerish > 0 && <div className="flex justify-between gap-3 text-emerald-700"><span>{t("paymentModal.change")}</span><span>{somMatni(qaytimBerish)}</span></div>}
                     {qarzQoldi > 0 && <div className="flex justify-between gap-3 text-amber-700"><span>{t("paymentModal.debtLeft")}</span><span>{somMatni(qarzQoldi)}</span></div>}
                   </div>
                 )}

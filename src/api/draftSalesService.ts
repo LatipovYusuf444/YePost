@@ -129,7 +129,8 @@ export const draftSalesService = {
     // Nusxada valyutalar saqlanadi: dollar qator narxi so'm sifatida qayta yuborilmasligi kerak.
     const saleCurrency = String(sale.currency ?? "UZS").toUpperCase();
     const payload: SotuvYaratishMalumoti = {
-      ...(saleCurrency !== "UZS" ? { currency: saleCurrency } : {}),
+      // Valyuta har doim aniq yuboriladi: berilmasa backend mijozli savdoni USD deb oladi (so'mdagi narxlar dollar bo'lib qolardi).
+      currency: saleCurrency,
       warehouseId: sale.warehouseId ?? "",
       customerId: sale.customerId,
       clientCompanyId: sale.clientCompanyId,
