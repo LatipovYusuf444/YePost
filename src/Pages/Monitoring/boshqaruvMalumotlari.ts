@@ -1,6 +1,7 @@
 import { buyurtmalarApi, type Buyurtma, type BuyurtmaHolati } from "@/api/buyurtmalarApi";
 import { incomeExpenseReportApi } from "@/api/reportsApi";
-import { valyutaKodi, type Valyuta } from "@/lib/valyuta";
+import { type Valyuta } from "@/lib/valyuta";
+import { hisobotValyutasiniTekshirish } from "@/Pages/HisobotUchot/hisobotValyutasi";
 import { mijozNomi, sotuvHolati, sotuvQarzdorlikSummasi, sotuvRaqami } from "@/Pages/Savdo/savdoYordamchilari";
 import type { Sotuv } from "@/types/savdo";
 
@@ -106,7 +107,7 @@ type MoliyaBlogi = {
     cost?: number | string;
     expense?: number | string;
     netProfit?: number | string;
-    // Hisobot valyutasi (UZS/USD); berilmasa — so'm.
+    // Hisobot valyutasi (UZS/USD): server so'ralgan `currency`da o'zi hisoblab qaytaradi, summalar qayta o'girilmaydi.
     currency?: string;
   };
 };
@@ -193,7 +194,7 @@ export type MoliyaNuqtasi = {
   sofFoyda: number;
   // Shu davr uchun hisobot yuklanmadi.
   xato: boolean;
-  // Summalar valyutasi (hisobot valyutasi); berilmasa — so'm.
+  // Summalar valyutasi: server hisoblagan hisobot valyutasi (kesh shu valyuta bo'yicha tekshiriladi).
   valyuta?: Valyuta;
 };
 
@@ -226,6 +227,7 @@ export async function moliyaNuqtalariniOlish(
   oraliqlar: MoliyaOraligi[],
   keshi: Map<string, MoliyaNuqtasi>,
   faolmi: () => boolean,
+  valyuta: Valyuta,
   limit = 4,
 ): Promise<MoliyaNuqtasi[]> {
   const natija: MoliyaNuqtasi[] = new Array(oraliqlar.length);
@@ -238,7 +240,7 @@ export async function moliyaNuqtalariniOlish(
       if (indeks >= oraliqlar.length) return;
       const oraliq = oraliqlar[indeks];
       const eski = keshi.get(oraliq.key);
-      if (eski && !eski.xato) {
+      if (eski && !eski.xato && eski.valyuta === valyuta) {
         natija[indeks] = eski;
         continue;
       }
@@ -247,6 +249,7 @@ export async function moliyaNuqtalariniOlish(
         const javob = (await incomeExpenseReportApi.olish({
           dateFrom: kunBoshiISO(oraliq.dan),
           dateTo: kunOxiriISO(oraliq.gacha),
+          currency: valyuta,
         })) as MoliyaJavobi;
         const qiymat = moliyaQiymatlari(javob);
         nuqta = {
@@ -255,7 +258,7 @@ export async function moliyaNuqtalariniOlish(
           xarajat: qiymat?.xarajat ?? 0,
           sofFoyda: qiymat?.sofFoyda ?? 0,
           xato: false,
-          valyuta: valyutaKodi(javob.summary?.currency),
+          valyuta: hisobotValyutasiniTekshirish(javob.summary?.currency, valyuta),
         };
       } catch {
         nuqta = { oraliq, daromad: 0, xarajat: 0, sofFoyda: 0, xato: true };
@@ -293,26 +296,27 @@ export type MoliyaMalumoti = { nuqtalar: MoliyaNuqtasi[]; valyuta: Valyuta };
 // Grafik uchun barcha davrlar BITTA so'rovda olinadi: GET /reports/income-expense?groupBy=...&dateFrom=YYYY-MM-DD&dateTo=YYYY-MM-DD.
 // Kunlar kompaniya vaqt mintaqasida hisoblanadi, davrlar (hafta — dushanbadan, chetlari oraliqqa kesilgan) serverdan keladi.
 // Server `series` qaytarmasa yoki `groupBy` ni bilmasa — har davr alohida so'raladigan eski usul (ko'pi bilan 31 davr).
+// `kutilgan` — so'ralayotgan hisobot valyutasi: server shu valyutada hisoblaydi, javob boshqa valyutada kelsa xato hisoblanadi.
 export async function moliyaMalumotiniOlish(
   dan: string,
   gacha: string,
   guruh: MoliyaGuruhi,
   keshi: Map<string, MoliyaNuqtasi>,
   faolmi: () => boolean,
+  kutilgan: Valyuta,
 ): Promise<MoliyaMalumoti> {
   const oraliqlar = moliyaOraliqlari(dan, gacha, guruh);
   const keshdagilar = oraliqlar.map((oraliq) => keshi.get(oraliq.key));
-  if (oraliqlar.length > 0 && keshdagilar.every((nuqta) => nuqta && !nuqta.xato)) {
-    const nuqtalar = keshdagilar as MoliyaNuqtasi[];
-    return { nuqtalar, valyuta: nuqtalar[0].valyuta ?? "UZS" };
+  if (oraliqlar.length > 0 && keshdagilar.every((nuqta) => nuqta && !nuqta.xato && nuqta.valyuta === kutilgan)) {
+    return { nuqtalar: keshdagilar as MoliyaNuqtasi[], valyuta: kutilgan };
   }
 
   const xatoNuqtalari = () => oraliqlar.map((oraliq): MoliyaNuqtasi => ({ oraliq, daromad: 0, xarajat: 0, sofFoyda: 0, xato: true }));
   try {
-    const javob = (await incomeExpenseReportApi.olish({ dateFrom: dan, dateTo: gacha, groupBy: GURUH_API[guruh] })) as MoliyaJavobi;
-    if (!faolmi()) return { nuqtalar: [], valyuta: "UZS" };
+    const javob = (await incomeExpenseReportApi.olish({ dateFrom: dan, dateTo: gacha, groupBy: GURUH_API[guruh], currency: kutilgan })) as MoliyaJavobi;
+    if (!faolmi()) return { nuqtalar: [], valyuta: kutilgan };
     if (Array.isArray(javob.series) && javob.series.length > 0) {
-      const valyuta = valyutaKodi(javob.summary?.currency);
+      const valyuta = hisobotValyutasiniTekshirish(javob.summary?.currency, kutilgan);
       const nuqtalar = javob.series.map((davr): MoliyaNuqtasi => {
         const qiymat = moliyaQiymatlari(davr);
         const oraliq = davrdanOraliq(String(davr.from ?? dan), String(davr.to ?? davr.from ?? gacha));
@@ -330,12 +334,12 @@ export async function moliyaMalumotiniOlish(
       return { nuqtalar, valyuta };
     }
   } catch (error) {
-    if (!groupByQollanmaydi(error)) return { nuqtalar: xatoNuqtalari(), valyuta: "UZS" };
+    if (!groupByQollanmaydi(error)) return { nuqtalar: xatoNuqtalari(), valyuta: kutilgan };
   }
 
-  if (oraliqlar.length > ESKI_USUL_MAKS_DAVR) return { nuqtalar: xatoNuqtalari(), valyuta: "UZS" };
-  const nuqtalar = await moliyaNuqtalariniOlish(oraliqlar, keshi, faolmi);
-  return { nuqtalar, valyuta: nuqtalar.find((nuqta) => !nuqta.xato)?.valyuta ?? "UZS" };
+  if (oraliqlar.length > ESKI_USUL_MAKS_DAVR) return { nuqtalar: xatoNuqtalari(), valyuta: kutilgan };
+  const nuqtalar = await moliyaNuqtalariniOlish(oraliqlar, keshi, faolmi, kutilgan);
+  return { nuqtalar, valyuta: kutilgan };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -351,8 +355,10 @@ export type Ogohlantirish = {
   kalit: string;
   params: Record<string, string | number>;
   son: number;
-  // Asosiy summa (so'm): zarar yoki to'lanmagan qoldiq. Kartada alohida ajratib ko'rsatiladi.
+  // Asosiy summa: zarar yoki to'lanmagan qoldiq. Kartada alohida ajratib ko'rsatiladi.
   summa?: number;
+  // `summa` hisobot valyutasida (server hisoblagan) bo'lsa shu valyuta; berilmasa — so'mdagi sotuv qoldig'i.
+  summaValyutasi?: Valyuta;
   sana?: string;
   // `sana` dan necha kun o'tgani.
   kunOldin?: number;
@@ -373,6 +379,9 @@ export type OgohlantirishManbasi = {
   qoralamaHujjatlari: number;
   mavjud: ManbaMavjudligi;
   pul: (summa: number) => string;
+  // `sofFoyda` (income-expense hisoboti) summalari uchun: server hisoblagan hisobot valyutasi, qayta o'girilmaydi.
+  moliyaValyutasi: Valyuta;
+  moliyaPul: (summa: number) => string;
   hozir?: Date;
 };
 
@@ -418,9 +427,10 @@ export function ogohlantirishlarniHisoblash(manba: OgohlantirishManbasi): Ogohla
       id: "loss",
       daraja: "critical",
       kalit: "loss",
-      params: { summa: manba.pul(Math.abs(manba.sofFoyda)) },
+      params: { summa: manba.moliyaPul(Math.abs(manba.sofFoyda)) },
       son: 1,
       summa: Math.abs(manba.sofFoyda),
+      summaValyutasi: manba.moliyaValyutasi,
       havola: "/hisobotlar/foyda-xarajat",
     });
   }

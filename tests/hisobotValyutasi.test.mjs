@@ -17,6 +17,11 @@ test('formatting never applies today’s exchange rate or reinterprets a backend
  assert.equal(hisobotPulMatni(-0,'UZS'),"0 so'm");
 });
 
+test('localized so‘m suffix is applied to UZS only and never changes the amount',()=>{
+ assert.equal(hisobotPulMatni(12345,'UZS','сум'),`${(12345).toLocaleString('uz-UZ')} сум`);
+ assert.equal(hisobotPulMatni(169.5,'USD','сум'),`$${(169.5).toLocaleString('uz-UZ')}`);
+});
+
 test('missing, unsupported or unexpected currency is rejected rather than guessed',()=>{
  assert.equal(hisobotValyutasiniTekshirish('usd','USD'),'USD');
  assert.throws(()=>hisobotValyutasiniTekshirish(undefined,'UZS'),/valyuta/i);

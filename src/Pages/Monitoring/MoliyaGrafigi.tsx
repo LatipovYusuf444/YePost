@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { ChartColumn, Eye, EyeOff, Receipt, RefreshCw, TrendingDown, TrendingUp, TriangleAlert, Wallet, type LucideIcon } from "lucide-react";
 import { Area, Bar, CartesianGrid, ComposedChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import LoadingState from "@/Components/common/LoadingState";
-import { pulMatni, summaniOgirish, type Valyuta } from "@/lib/valyuta";
+import { korsatiladiganValyuta, type Valyuta } from "@/lib/valyuta";
+import { hisobotPulMatni } from "@/Pages/HisobotUchot/hisobotValyutasi";
 import {
   MOLIYA_GURUHLARI,
   MOLIYA_MAKS_DAVR,
@@ -41,8 +42,8 @@ export default function MoliyaGrafigi({ dateFrom, dateTo, yangilanish }: Props) 
   const id = useId().replace(/:/g, "");
   const [tanlangan, setTanlangan] = useState<MoliyaGuruhi | null>(null);
   const [nuqtalar, setNuqtalar] = useState<MoliyaNuqtasi[]>([]);
-  // Hisobot valyutasi: server `summary.currency` bergan valyuta (berilmasa — so'm).
-  const [valyuta, setValyuta] = useState<Valyuta>("UZS");
+  // Hisobot valyutasi: navbarda tanlangan valyutada so'raladi, server o'sha valyutada hisoblab `summary.currency` bilan qaytaradi.
+  const [valyuta, setValyuta] = useState<Valyuta>(() => korsatiladiganValyuta());
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [qaytaSoni, setQaytaSoni] = useState(0);
   const [yashirin, setYashirin] = useState<Record<Qator, boolean>>({ daromad: false, xarajat: false, sofFoyda: false });
@@ -81,7 +82,7 @@ export default function MoliyaGrafigi({ dateFrom, dateTo, yangilanish }: Props) 
     }
     let faol = true;
     setYuklanmoqda(true);
-    moliyaMalumotiniOlish(dateFrom, dateTo, guruh, keshi.current, () => faol)
+    moliyaMalumotiniOlish(dateFrom, dateTo, guruh, keshi.current, () => faol, korsatiladiganValyuta())
       .then((natija) => {
         if (!faol) return;
         setNuqtalar(natija.nuqtalar);
@@ -95,9 +96,9 @@ export default function MoliyaGrafigi({ dateFrom, dateTo, yangilanish }: Props) 
     };
   }, [dateFrom, dateTo, guruh, yangilanish, qaytaSoni]);
 
-  const pul = (summa: number) => pulMatni(summa, valyuta, true, t("dynamics.currency"));
-  const qisqa = (qiymat: number) => {
-    const value = summaniOgirish(qiymat, valyuta);
+  // Server summalarni so'ralgan valyutada hisoblab bergan: bugungi kurs bilan qayta o'girilmaydi, faqat formatlanadi.
+  const pul = (summa: number) => hisobotPulMatni(summa, valyuta, t("dynamics.currency"));
+  const qisqa = (value: number) => {
     const abs = Math.abs(value);
     if (abs >= 1_000_000_000) return `${Number((value / 1_000_000_000).toFixed(1))} ${t("dynamics.billion")}`;
     if (abs >= 1_000_000) return `${Number((value / 1_000_000).toFixed(1))} ${t("dynamics.million")}`;

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
-import { pulMatni } from "@/lib/valyuta";
+import { pulMatni, type Valyuta } from "@/lib/valyuta";
+import { hisobotPulMatni } from "@/Pages/HisobotUchot/hisobotValyutasi";
 import type { ChiqimHujjati, KirimHujjati, KochirishHujjati } from "@/types/ombor";
 import type { Sotuv } from "@/types/savdo";
 import BoshqaruvXulosasi from "./BoshqaruvXulosasi";
@@ -21,6 +22,8 @@ type Props = {
   yangilanish: number;
   // Monitoring sahifasi allaqachon yuklagan ma'lumotlar (qayta so'ralmaydi).
   moliyaJavobi: MoliyaJavobi | null;
+  // `moliyaJavobi` summalari valyutasi (server so'ralgan valyutada hisoblaydi).
+  moliyaValyutasi: Valyuta;
   moliyaYuklanmoqda: boolean;
   moliyaXato: string;
   sotuvlar: Sotuv[];
@@ -50,6 +53,7 @@ export default function BoshqaruvPaneli(props: Props) {
   const {
     yangilanish,
     moliyaJavobi,
+    moliyaValyutasi,
     sotuvlar,
     sotuvXato,
     moliyaXato,
@@ -107,6 +111,8 @@ export default function BoshqaruvPaneli(props: Props) {
         hujjat: !hujjatlarXato,
       },
       pul: (summa) => pulMatni(summa, "UZS", true, t("dynamics.currency")),
+      moliyaValyutasi,
+      moliyaPul: (summa) => hisobotPulMatni(summa, moliyaValyutasi, t("dynamics.currency")),
     });
   }, [
     sotuvlar,
@@ -114,6 +120,7 @@ export default function BoshqaruvPaneli(props: Props) {
     buyurtma,
     buyurtmaXato,
     moliya,
+    moliyaValyutasi,
     moliyaXato,
     omborKamQolgan,
     omborManfiy,
@@ -136,6 +143,7 @@ export default function BoshqaruvPaneli(props: Props) {
           buyurtma={{ malumot: buyurtma, yuklanmoqda: buyurtmaYuklanmoqda, xato: buyurtmaXato }}
           onBuyurtmaQayta={() => setBuyurtmaQayta((son) => son + 1)}
           moliya={moliya}
+          moliyaValyutasi={moliyaValyutasi}
           moliyaYuklanmoqda={props.moliyaYuklanmoqda}
           moliyaXato={props.moliyaXato}
         />

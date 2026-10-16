@@ -14,7 +14,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import InlineLoading from "@/Components/common/InlineLoading";
-import { pulMatni } from "@/lib/valyuta";
+import type { Valyuta } from "@/lib/valyuta";
+import { hisobotPulMatni } from "@/Pages/HisobotUchot/hisobotValyutasi";
 import type { BuyurtmaKorsatkichlari, MoliyaQiymatlari } from "./boshqaruvMalumotlari";
 import { summaniAjratish } from "./summaMatni";
 
@@ -22,15 +23,17 @@ type Props = {
   buyurtma: { malumot: BuyurtmaKorsatkichlari | null; yuklanmoqda: boolean; xato: string };
   onBuyurtmaQayta: () => void;
   moliya: MoliyaQiymatlari | null;
+  // `moliya` summalari valyutasi (server so'ralgan valyutada hisoblaydi, qayta o'girilmaydi).
+  moliyaValyutasi: Valyuta;
   moliyaYuklanmoqda: boolean;
   moliyaXato: string;
 };
 
 // Tepada: buyurtmalar (yetkazib berish) bo'yicha jami / faol / yakunlangan / kechikayotgan.
 // Pastda: tanlangan davr uchun daromad, xarajat va sof foyda. Ma'lumotlar real backenddan keladi.
-export default function BoshqaruvXulosasi({ buyurtma, onBuyurtmaQayta, moliya, moliyaYuklanmoqda, moliyaXato }: Props) {
+export default function BoshqaruvXulosasi({ buyurtma, onBuyurtmaQayta, moliya, moliyaValyutasi, moliyaYuklanmoqda, moliyaXato }: Props) {
   const { t, i18n } = useTranslation("monitoring");
-  const pul = (summa: number) => pulMatni(summa, "UZS", true, t("dynamics.currency"));
+  const pul = (summa: number) => hisobotPulMatni(summa, moliyaValyutasi, t("dynamics.currency"));
   const son = (qiymat: number) => qiymat.toLocaleString(i18n.resolvedLanguage === "ru" ? "ru-RU" : "uz-UZ");
   const b = buyurtma.malumot;
   const foydaFoizi = moliya && moliya.daromad > 0 ? (moliya.sofFoyda / moliya.daromad) * 100 : null;

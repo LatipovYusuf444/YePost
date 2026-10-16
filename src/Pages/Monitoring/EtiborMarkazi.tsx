@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import InlineLoading from "@/Components/common/InlineLoading";
 import { pulMatni } from "@/lib/valyuta";
+import { hisobotPulMatni } from "@/Pages/HisobotUchot/hisobotValyutasi";
 import { kunKaliti, type Ogohlantirish, type OgohlantirishDarajasi } from "./boshqaruvMalumotlari";
 import { sanaMatni } from "./summaMatni";
 
@@ -175,7 +176,7 @@ export default function EtiborMarkazi({ ogohlantirishlar, otganTekshiruvlar, yuk
                     {item.summa != null && (
                       <span className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3.5 py-2.5">
                         <span className="text-xs font-semibold text-slate-500">{t(`boshqaruv.alerts.items.${item.kalit}.metric`)}</span>
-                        <span className={`text-base font-extrabold tabular-nums ${item.daraja === "critical" ? "text-rose-600" : "text-slate-950"}`}>{pul(item.summa)}</span>
+                        <span className={`text-base font-extrabold tabular-nums ${item.daraja === "critical" ? "text-rose-600" : "text-slate-950"}`}>{item.summaValyutasi ? hisobotPulMatni(item.summa, item.summaValyutasi, t("dynamics.currency")) : pul(item.summa)}</span>
                       </span>
                     )}
 

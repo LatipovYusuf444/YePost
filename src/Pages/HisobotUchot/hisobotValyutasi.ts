@@ -8,8 +8,8 @@ export function hisobotValyutasiniTekshirish(currency: unknown, kutilgan?: Hisob
 }
 
 /** Server tanlangan valyutada hisoblagan summani faqat formatlaydi; kurs ishlatilmaydi. */
-export function hisobotPulMatni(summa: number, valyuta: HisobotValyutasi) {
+export function hisobotPulMatni(summa: number, valyuta: HisobotValyutasi, uzsBelgi = "so'm") {
   const yaxlit = valyuta === "UZS" ? Math.round(summa) : summa;
   const matn = (yaxlit === 0 ? 0 : yaxlit).toLocaleString("uz-UZ", { maximumFractionDigits: valyuta === "USD" ? 2 : 0 });
-  return valyuta === "USD" ? `$${matn}` : `${matn} so'm`;
+  return valyuta === "USD" ? `$${matn}` : `${matn} ${uzsBelgi}`;
 }

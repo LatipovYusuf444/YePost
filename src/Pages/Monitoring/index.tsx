@@ -1,4 +1,5 @@
-import { pulMatni } from "@/lib/valyuta";
+import { korsatiladiganValyuta, pulMatni, type Valyuta } from "@/lib/valyuta";
+import { hisobotPulMatni, hisobotValyutasiniTekshirish } from "@/Pages/HisobotUchot/hisobotValyutasi";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -133,6 +134,8 @@ type IncomeExpenseResponse = {
     grossProfit?: number | string;
     expense?: number | string;
     netProfit?: number | string;
+    // Hisobot valyutasi: server so'ralgan `currency`da o'zi hisoblab qaytaradi.
+    currency?: string;
   };
 };
 
@@ -470,6 +473,8 @@ export default function Monitoring() {
 
   const [incomeExpense, setIncomeExpense] =
     useState<IncomeExpenseResponse | null>(null);
+  // `incomeExpense` summalari valyutasi: navbarda tanlangan valyutada so'raladi, server o'zi hisoblaydi (qayta o'girilmaydi).
+  const [hisobotValyutasi, setHisobotValyutasi] = useState<Valyuta>(() => korsatiladiganValyuta());
   const [foydaYuklanmoqda, setFoydaYuklanmoqda] = useState(true);
   const [foydaXato, setFoydaXato] = useState("");
 
@@ -534,10 +539,15 @@ export default function Monitoring() {
     let active = true;
     setFoydaYuklanmoqda(true);
     setFoydaXato("");
+    const kutilgan = korsatiladiganValyuta();
     incomeExpenseReportApi
-      .olish({ dateFrom: isoDateFrom(dateFrom), dateTo: isoDateTo(dateTo) })
+      .olish({ dateFrom: isoDateFrom(dateFrom), dateTo: isoDateTo(dateTo), currency: kutilgan })
       .then((incomeExp) => {
-        if (active) setIncomeExpense(incomeExp as IncomeExpenseResponse);
+        const javob = incomeExp as IncomeExpenseResponse;
+        const valyuta = hisobotValyutasiniTekshirish(javob.summary?.currency, kutilgan);
+        if (!active) return;
+        setHisobotValyutasi(valyuta);
+        setIncomeExpense(javob);
       })
       .catch((error) => {
         if (active) setFoydaXato(getApiErrorMessage(error));
@@ -562,13 +572,18 @@ export default function Monitoring() {
     useState<IncomeExpenseResponse | null>(null);
   useEffect(() => {
     let active = true;
+    const kutilgan = korsatiladiganValyuta();
     incomeExpenseReportApi
       .olish({
         dateFrom: isoDateFrom(oldingiOraliq.from),
         dateTo: isoDateTo(oldingiOraliq.to),
+        currency: kutilgan,
       })
       .then((value) => {
-        if (active) setOldingiIncomeExpense(value as IncomeExpenseResponse);
+        const javob = value as IncomeExpenseResponse;
+        // Valyutasi mos kelmagan javob bilan o'sish foizi hisoblanmaydi (catch → trend ko'rsatilmaydi).
+        hisobotValyutasiniTekshirish(javob.summary?.currency, kutilgan);
+        if (active) setOldingiIncomeExpense(javob);
       })
       .catch(() => {
         if (active) setOldingiIncomeExpense(null);
@@ -966,6 +981,11 @@ export default function Monitoring() {
     return qiymat != null ? son(qiymat) : davrSavdosi.summa;
   }, [incomeExpense, davrSavdosi]);
   const qaytarilganSumma = son(incomeExpense?.income?.returns);
+  // income-expense summalari server hisoblagan valyutada (hisobotValyutasi) ko'rsatiladi, kurs bilan qayta o'girilmaydi.
+  const hisobotPul = (value: unknown) => hisobotPulMatni(son(value), hisobotValyutasi);
+  // Hisobot kelmasa sof tushum o'rniga sotuvlar ro'yxati yig'indisi (so'mda) ishlatiladi — u eski usulda formatlanadi.
+  const sofTushumHisobotdan = (incomeExpense?.income?.saleRevenue ?? incomeExpense?.summary?.revenue) != null;
+  const sofTushumPul = (value: unknown) => (sofTushumHisobotdan ? hisobotPul(value) : pul(value));
   const savdoTrendi = useMemo(() => {
     const oldingi = oldingiIncomeExpense?.income?.saleRevenue ?? oldingiIncomeExpense?.summary?.revenue;
     return incomeExpense && oldingi != null
@@ -1450,11 +1470,11 @@ export default function Monitoring() {
         <KpiCard
           icon={ShoppingCart}
           label={t("kpi.periodSales")}
-          value={pul(demoMode ? jamiSumma(demoSavdoNuqtalar) : sofTushum)}
+          value={demoMode ? pul(jamiSumma(demoSavdoNuqtalar)) : sofTushumPul(sofTushum)}
           sub={t("kpi.periodSalesSub", { count: demoMode ? 23 : davrSavdosi.soni })}
           tafsilot={
             !demoMode && qaytarilganSumma > 0
-              ? [{ label: t("kpi.returnedDeducted"), value: `−${pul(qaytarilganSumma)}`, ton: "minus" }]
+              ? [{ label: t("kpi.returnedDeducted"), value: `−${hisobotPul(qaytarilganSumma)}`, ton: "minus" }]
               : undefined
           }
           hint={t("kpi.periodSalesHint")}
@@ -1466,7 +1486,7 @@ export default function Monitoring() {
         <KpiCard
           icon={(demoMode ? demoSofFoyda : foydaKorsatkichlari.sofFoyda) >= 0 ? TrendingUp : TrendingDown}
           label={t("kpi.netProfit")}
-          value={pul(demoMode ? demoSofFoyda : foydaKorsatkichlari.sofFoyda)}
+          value={demoMode ? pul(demoSofFoyda) : hisobotPul(foydaKorsatkichlari.sofFoyda)}
           sub={t("kpi.netProfitSub", {
             percent: (demoMode ? 14.2 : foydaKorsatkichlari.rentabellik).toFixed(1),
           })}
@@ -1479,10 +1499,10 @@ export default function Monitoring() {
                 ]
               : foydaKorsatkichlari.yalpiFoyda != null && foydaKorsatkichlari.xarajat != null
                 ? [
-                    { label: t("kpi.grossProfit"), value: pul(foydaKorsatkichlari.yalpiFoyda) },
+                    { label: t("kpi.grossProfit"), value: hisobotPul(foydaKorsatkichlari.yalpiFoyda) },
                     {
                       label: t("kpi.expenses"),
-                      value: foydaKorsatkichlari.xarajat > 0 ? `−${pul(foydaKorsatkichlari.xarajat)}` : pul(0),
+                      value: foydaKorsatkichlari.xarajat > 0 ? `−${hisobotPul(foydaKorsatkichlari.xarajat)}` : hisobotPul(0),
                       ton: foydaKorsatkichlari.xarajat > 0 ? "minus" : undefined,
                     },
                   ]
@@ -1498,7 +1518,7 @@ export default function Monitoring() {
           icon={Receipt}
           label={t("kpi.salesCount")}
           value={String(demoMode ? 23 : davrSavdosi.soni)}
-          sub={t("kpi.salesCountSub", { avg: pul(demoMode ? 425_000 : ortachaChek) })}
+          sub={t("kpi.salesCountSub", { avg: demoMode ? pul(425_000) : sofTushumPul(ortachaChek) })}
           yuklanmoqda={!demoMode && sotuvYuklanmoqda}
           trend={demoMode ? { foiz: 6.8, yangi: false } : sotuvlarSoniTrendi}
           xato={demoMode ? "" : sotuvXato}
@@ -1535,6 +1555,7 @@ export default function Monitoring() {
           dateTo={dateTo}
           yangilanish={yangilanish}
           moliyaJavobi={incomeExpense}
+          moliyaValyutasi={hisobotValyutasi}
           moliyaYuklanmoqda={foydaYuklanmoqda}
           moliyaXato={foydaXato}
           sotuvlar={barchaSotuvlar}
