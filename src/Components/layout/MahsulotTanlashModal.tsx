@@ -10,6 +10,7 @@ import {
   qoldiqNomlariniBoyitish,
 } from "@/api/savdoApi";
 import { usePosStore } from "@/store/posStore";
+import { useKassaNarxTurlari } from "@/store/savdoSozlamalariStore";
 import SavatchaMiqdoriMaydoni from "@/Pages/BoshSahifa/SavatchaMiqdoriMaydoni";
 import type { OmborTanlovi, QoldiqTanlovi } from "@/types/savdo";
 import {
@@ -56,6 +57,8 @@ export default function MahsulotTanlashModal({ onClose }: { onClose: () => void 
   const [qidiruv, setQidiruv] = useState("");
   const narxTuri = usePosStore((state) => state.narxTuri);
   const setNarxTuri = usePosStore((state) => state.updatePriceType);
+  // Sozlamalar → Sotuv: faqat yoqilgan narx turlari tanlanadi.
+  const narxRuxsati = useKassaNarxTurlari();
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [xabar, setXabar] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
@@ -385,7 +388,8 @@ export default function MahsulotTanlashModal({ onClose }: { onClose: () => void 
                   key={tur}
                   type="button"
                   onClick={() => setNarxTuri(tur)}
-                  className={`rounded-xl text-sm font-black transition ${
+                  disabled={!narxRuxsati[tur]}
+                  className={`rounded-xl text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${
                     narxTuri === tur ? "bg-gold-500 text-white shadow-md shadow-gold-200" : "text-slate-500 hover:text-slate-700"
                   }`}
                 >

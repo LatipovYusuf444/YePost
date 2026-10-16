@@ -39,6 +39,8 @@ export type CounterpartyBalanceFilter = {
 
 export type ProductProfitFilter = SanaFilter & {
   currency?: "UZS" | "USD";
+  // Sotuv qatori narx turi bo'yicha filtr; UNKNOWN — narx turi yozilmagan (eski) qatorlar.
+  priceType?: "COST" | "RETAIL" | "WHOLESALE" | "UNKNOWN";
   groupBy?: "PRODUCT" | "CUSTOMER" | "MONTH" | "BRANCH" | "WAREHOUSE";
   branchIds?: string;
   warehouseIds?: string;
@@ -56,6 +58,8 @@ export type DiscountReportGroupBy = "DAY" | "MONTH" | "CASHIER" | "CUSTOMER" | "
 export type DiscountReportFilter = SanaFilter & {
   groupBy?: DiscountReportGroupBy;
   branchId?: string;
+  // Kassir filtri: backendda `cashierId`. UI `responsibleId` bilan ham chaqirishi mumkin — API qatlamida `cashierId`ga o'tkaziladi.
+  cashierId?: string;
   responsibleId?: string;
   productId?: string;
   page?: number;

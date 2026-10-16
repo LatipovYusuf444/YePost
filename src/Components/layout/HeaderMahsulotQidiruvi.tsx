@@ -10,6 +10,7 @@ import {
   qoldiqNomlariniBoyitish,
 } from "@/api/savdoApi";
 import { usePosStore } from "@/store/posStore";
+import { useKassaNarxTurlari } from "@/store/savdoSozlamalariStore";
 import type { QoldiqTanlovi } from "@/types/savdo";
 import {
   dollarMalumoti,
@@ -160,6 +161,8 @@ type Props = {
 export default function HeaderMahsulotQidiruvi({ className }: Props) {
   const { t } = useTranslation("topbar");
   const narxTuri = usePosStore((state) => state.narxTuri);
+  // Sozlamalar → Sotuv: o'chirilgan narx turi tanlangan bo'lsa, savatchaga qo'shishdan oldin ruxsat etilgan turga o'tkaziladi.
+  useKassaNarxTurlari();
   const [soz, setSoz] = useState("");
   const [ochiq, setOchiq] = useState(false);
   const [malumot, setMalumot] = useState<Malumot | null>(() => kesh?.malumot ?? null);

@@ -13,6 +13,17 @@ import { foydaHisobotiniMoslash, type FoydaQatori as Qator } from "./foydaHisobo
 import { hisobotPulMatni } from "./hisobotValyutasi";
 
 import YuklanmoqdaHolati from "./YuklanmoqdaHolati";
+
+// Sotuv qatori narx turi bo'yicha filtr (GET /reports/product-profit?priceType=...).
+const NARX_TURI_VARIANTLARI = [
+  { value: "", nomi: "Barchasi" },
+  { value: "RETAIL", nomi: "Chakana" },
+  { value: "WHOLESALE", nomi: "Ulgurji" },
+  { value: "COST", nomi: "Tannarx" },
+  { value: "UNKNOWN", nomi: "Noma’lum" },
+];
+type NarxTuriFiltri = "" | "RETAIL" | "WHOLESALE" | "COST" | "UNKNOWN";
+
 export default function FoydaHisoboti() {
   useValyuta();
   const tanlanganValyuta = korsatiladiganValyuta();
@@ -20,6 +31,7 @@ export default function FoydaHisoboti() {
   const [dateFrom, setDateFrom] = useState(bugunMinus(30));
   const [dateTo, setDateTo] = useState(bugun());
   const [categoryId, setCategoryId] = useState("");
+  const [narxTuri, setNarxTuri] = useState<NarxTuriFiltri>("");
   const [qidiruv, setQidiruv] = useState("");
   const [qatorlar, setQatorlar] = useState<Qator[]>([]);
   const [hisobotValyutasi, setHisobotValyutasi] = useState<Valyuta>(tanlanganValyuta);
@@ -36,6 +48,7 @@ export default function FoydaHisoboti() {
       dateFrom: new Date(`${dateFrom}T00:00:00.000Z`).toISOString(),
       dateTo: new Date(`${dateTo}T23:59:59.999Z`).toISOString(),
       categoryId: categoryId || undefined,
+      priceType: narxTuri || undefined,
       currency: tanlanganValyuta,
     })
       .then((value) => {
@@ -47,7 +60,7 @@ export default function FoydaHisoboti() {
       .catch((error) => { if (active) { setQatorlar([]); setXato(getApiErrorMessage(error)); } })
       .finally(() => { if (active) setYuklanmoqda(false); });
     return () => { active = false; };
-  }, [categoryId, dateFrom, dateTo, tanlanganValyuta]);
+  }, [categoryId, dateFrom, dateTo, narxTuri, tanlanganValyuta]);
 
   const pul = (summa: number) => hisobotPulMatni(summa, hisobotValyutasi);
 
@@ -87,6 +100,7 @@ export default function FoydaHisoboti() {
         dateFrom: new Date(`${dateFrom}T00:00:00.000Z`).toISOString(),
         dateTo: new Date(`${dateTo}T23:59:59.999Z`).toISOString(),
         categoryId: categoryId || undefined,
+        priceType: narxTuri || undefined,
         currency: tanlanganValyuta,
       }, "excel");
     } catch (error) {
@@ -98,9 +112,10 @@ export default function FoydaHisoboti() {
 
   return <div className="space-y-5">
     <section className="rounded-3xl border border-orange-100 bg-white p-5 shadow-sm">
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
         <MuddatTanlov dateFrom={dateFrom} dateTo={dateTo} onChange={(from, to) => { setDateFrom(from); setDateTo(to); }} />
         <Dropdown label="Mahsulot kategoriyasi" value={categoryId} options={[{ value: "", nomi: "Barchasi" }, ...kategoriyalar.map((item) => ({ value: item.id, nomi: item.nomi }))]} onChange={setCategoryId} />
+        <Dropdown label="Narx turi" value={narxTuri} options={NARX_TURI_VARIANTLARI} onChange={(value) => setNarxTuri(value as NarxTuriFiltri)} />
       </div>
     </section>
     <p className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700">

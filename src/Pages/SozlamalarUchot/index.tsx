@@ -9,6 +9,7 @@ import {
   Receipt,
   Ruler,
   ShieldCheck,
+  Tags,
   UserRound,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -19,6 +20,7 @@ import ChekBolimi from "./ChekBolimi";
 import FiliallarBolimi from "./FiliallarBolimi";
 import IntegratsiyaBolimi from "./IntegratsiyaBolimi";
 import KompaniyaBolimi from "./KompaniyaBolimi";
+import NarxTurlariBolimi from "./NarxTurlariBolimi";
 import OlchovBirligiBolimi from "./OlchovBirligiBolimi";
 import ProfilBolimi from "./ProfilBolimi";
 import VakolatlarBolimi from "./VakolatlarBolimi";
@@ -33,6 +35,7 @@ const bolimlar: { id: SozlamaBolim; icon: typeof UserRound; faqatDirektor?: bool
   { id: "birliklar", icon: Ruler },
   { id: "vakolatlar", icon: ShieldCheck },
   { id: "valyuta", icon: CircleDollarSign },
+  { id: "narxTurlari", icon: Tags },
   { id: "integratsiya", icon: PlugZap, faqatDirektor: true },
   { id: "chek", icon: Receipt },
   { id: "bildirishnoma", icon: Bell },
@@ -92,6 +95,7 @@ export default function SozlamalarUchot() {
           {bolim === "filiallar" && <FiliallarBolimi />}
           {bolim === "birliklar" && <OlchovBirligiBolimi />}
           {bolim === "valyuta" && <ValyutaBolimi />}
+          {bolim === "narxTurlari" && <NarxTurlariBolimi />}
           {bolim === "vakolatlar" && <VakolatlarBolimi />}
           {bolim === "integratsiya" && direktor && <IntegratsiyaBolimi />}
           {bolim === "chek" && <ChekBolimi />}

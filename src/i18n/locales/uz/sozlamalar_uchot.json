@@ -11,7 +11,8 @@
     "integratsiya": "Integratsiya",
     "chek": "Chek sozlamalari",
     "bildirishnoma": "Bildirishnomalar",
-    "valyuta": "Valyuta"
+    "valyuta": "Valyuta",
+    "narxTurlari": "Sotuv narx turlari"
   },
   "saved": "Saqlandi ✓",
   "savingToBackend": "Backendga saqlanmoqda...",
@@ -279,5 +280,28 @@
       "today": "Bugun",
       "active": "Amalda"
     }
+  },
+  "narxTurlari": {
+    "title": "Sotuv narx turlari",
+    "subtitle": "Savdoda qaysi narx turlari ishlatilishini tanlang. O'chirilgan narx turi bilan sotuv qilib bo'lmaydi.",
+    "readOnlyNotice": "Narx turlarini faqat admin yoki direktor o'zgartira oladi.",
+    "minOne": "Kamida bitta narx turi yoqilgan bo'lishi kerak. Birinchi (standart) tur kassada boshlang'ich tanlanadi. Kassada hozircha chakana va ulgurji narxlar tanlanadi.",
+    "savedMessage": "Narx turlari saqlandi.",
+    "types": {
+      "COST": {
+        "label": "Tannarx",
+        "hint": "Mahsulotni tannarx narxida sotish."
+      },
+      "RETAIL": {
+        "label": "Chakana narx",
+        "hint": "Oddiy xaridorlar uchun asosiy sotuv narxi."
+      },
+      "WHOLESALE": {
+        "label": "Ulgurji narx",
+        "hint": "Ulgurji xaridorlar uchun alohida narx."
+      }
+    },
+    "defaultBadge": "Standart",
+    "makeDefault": "Standart qilish"
   }
 }

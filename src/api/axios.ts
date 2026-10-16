@@ -39,6 +39,16 @@ function rolCheklanganRoyxat403Mi(error: unknown) {
   return ROL_CHEKLANGAN_TOLIQ_ROYXATLAR.includes(yol);
 }
 
+// Kassa fonda o'qiydigan sozlama (narx turlari): o'qib bo'lmasa (masalan, rolga ruxsat yo'q) kassa avvalgidek ishlaydi,
+// shuning uchun bu GET xatosi har sahifada qizil xabar chiqarmaydi.
+const FON_SOZLAMA_YOLLARI = ["/settings/sales"];
+
+function fonSozlamaXatosiMi(error: unknown) {
+  if (!axios.isAxiosError(error) || error.config?.method?.toLowerCase() !== "get") return false;
+  const yol = (error.config.url ?? "").split("?")[0];
+  return FON_SOZLAMA_YOLLARI.includes(yol);
+}
+
 const MUTATSIYA_USULLARI = new Set(["post", "put", "patch", "delete"]);
 
 function muvaffaqiyatMatni(usul?: string) {
@@ -93,7 +103,7 @@ apiClient.interceptors.response.use(
   },
   async (error: unknown) => {
     if (!axios.isAxiosError(error) || error.response?.status !== 401 || !error.config) {
-      if (axios.isAxiosError(error) && toastKerakmi(error.config?.url) && !rolCheklanganRoyxat403Mi(error)) {
+      if (axios.isAxiosError(error) && toastKerakmi(error.config?.url) && !rolCheklanganRoyxat403Mi(error) && !fonSozlamaXatosiMi(error)) {
         xatolikXabari(getApiErrorMessage(error));
       }
       return Promise.reject(error);
