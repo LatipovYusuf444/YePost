@@ -1,5 +1,6 @@
 import apiClient from "./axios";
 import { getApiErrorMessage } from "./sozlamalarApi";
+import { chegirmaParametrlari } from "./hisobotParametrlari";
 import type {
   AuditFilter,
   AuditLog,
@@ -168,16 +169,16 @@ export const productProfitReportApi = {
   },
 };
 
-// Hisobotlar sahifasi: GET /reports/discounts (groupBy=DAY|MONTH|CASHIER|PRODUCT)
+// Hisobotlar sahifasi: GET /reports/discounts (groupBy=DAY|MONTH|CASHIER|CUSTOMER|PRODUCT)
 export const discountReportApi = {
   olish: (params: DiscountReportFilter) =>
-    getReport("/reports/discounts", { groupBy: "DAY", ...params }),
+    getReport("/reports/discounts", chegirmaParametrlari(params)),
   barchasi: (params: DiscountReportFilter) =>
-    getAllReport("/reports/discounts", { groupBy: "DAY", ...params }),
+    getAllReport("/reports/discounts", chegirmaParametrlari(params)),
   export: (params: DiscountReportFilter, exportTuri: ExportTuri = "excel") => {
     return exportReport(
       "/reports/discounts",
-      { groupBy: "DAY", ...params, export: exportTuri },
+      { ...chegirmaParametrlari(params), export: exportTuri },
       `discounts.${exportTuri === "pdf" ? "pdf" : "xlsx"}`
     );
   },

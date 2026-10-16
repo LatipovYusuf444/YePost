@@ -37,7 +37,17 @@ type ApiErrorBody = {
   message?: string | string[];
   detail?: string;
   error?: string;
+  // Validatsiya xatosida backend (ApiErrorDto) har bir maydon bo'yicha sabablarni shu yerda qaytaradi: message esa umumiy ("Input validation failed").
+  errors?: Array<{ field?: string; constraints?: Array<{ code?: string; message?: string }> }>;
 };
+
+// ApiErrorDto.errors[].constraints[].message — foydalanuvchiga tushunarli (x-lang tilida) sabablar; takrorlari olib tashlanadi.
+function tekshiruvSabablari(errors: ApiErrorBody["errors"]) {
+  const xabarlar = (Array.isArray(errors) ? errors : []).flatMap((item) =>
+    (Array.isArray(item?.constraints) ? item.constraints : []).map((cheklov) => cheklov?.message?.trim() ?? "")
+  );
+  return Array.from(new Set(xabarlar.filter(Boolean))).slice(0, 3).join(" ");
+}
 
 export async function login(payload: LoginPayload) {
   // Login.tsx: autentifikatsiyasiz POST /auth/login so'rovini yuboradi.
@@ -119,6 +129,9 @@ export function getApiErrorMessage(error: unknown) {
   if (!error.response) {
     return "Server bilan bog'lanib bo'lmadi. Internet aloqasini tekshiring.";
   }
+
+  const sabablar = tekshiruvSabablari(error.response.data?.errors);
+  if (sabablar) return sabablar;
 
   const message = error.response.data?.message;
   if (Array.isArray(message)) {
