@@ -60,11 +60,35 @@ function musbatSon(value: unknown) {
 }
 
 /**
+ * Backend narx valyutasini (retailCurrency / wholesaleCurrency) yubormagan, lekin kurs va so'mdagi qiymatni (…PriceUzs) yuborgan bo'lsa:
+ * so'mdagi qiymat narxning kursga ko'paytirilgan qiymatiga teng bo'lsa narx dollarda ekani aniq (so'mdagi narxda …PriceUzs narxning o'ziga teng).
+ * Aks holda xom dollar narx (masalan 1.19) so'm sifatida o'qilib, savatchada "1 uzs" bo'lib qolardi.
+ */
+export function narxValyutasiniAniqlash(
+  narx: unknown,
+  uzs: unknown,
+  kurs: number | null,
+  belgilangan: "UZS" | "USD"
+): "UZS" | "USD" {
+  if (belgilangan === "USD") return belgilangan;
+  const asl = Number(narx);
+  const som = musbatSon(uzs);
+  if (!kurs || !som || !(asl > 0) || Math.abs(som - asl) <= 1) return belgilangan;
+  return Math.abs(som - asl * kurs) <= Math.max(1, asl * kurs * 0.01) ? "USD" : belgilangan;
+}
+
+/**
  * Bir xil moslash search va detail javoblariga ishlatiladi; USD kurssiz UZS narxga aylanmaydi.
  * Har bir narxning valyutasi alohida (retailCurrency / wholesaleCurrency): masalan chakana so'mda, ulgurji dollarda bo'lishi mumkin.
  */
 export function katalogNarxiniQoldiqqaMoslash(narx?: MahsulotNarxi | null) {
-  const valyutalar = narxValyutalari(narx);
+  const belgilangan = narxValyutalari(narx);
+  const kurs = musbatSon(narx?.rate);
+  const valyutalar = {
+    ...belgilangan,
+    retail: narxValyutasiniAniqlash(narx?.retailPrice, narx?.retailPriceUzs, kurs, belgilangan.retail),
+    wholesale: narxValyutasiniAniqlash(narx?.wholesalePrice, narx?.wholesalePriceUzs, kurs, belgilangan.wholesale),
+  };
   const chakanaUsd = valyutalar.retail === "USD";
   const ulgurjiUsd = valyutalar.wholesale === "USD";
   const valyuta: QoldiqValyutasi | undefined = narx && (chakanaUsd || ulgurjiUsd) ? {
