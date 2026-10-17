@@ -10,7 +10,7 @@
     "close": "Yopish",
     "salePriceLabel": "Sotuv narxi",
     "resetPrice": "Katalog narxiga qaytarish",
-    "salePriceTooHigh": "Katalog narxidan ({{narx}}) oshmasin",
+    "markup": "Ustama: +{{summa}}",
     "autoDiscount": "Chegirma: −{{summa}}",
     "autoDiscountEach": "({{bir}} × {{soni}} dona)"
   },
@@ -33,6 +33,7 @@
     "discountModeSum": "so'm",
     "discountConverted": "= {{summa}} (so'mga avtomatik aylantiriladi)",
     "autoDiscountLine": "Narx chegirmasi (avtomatik)",
+    "markupLine": "Narx ustamasi (qo'lda)",
     "extraDiscountLine": "Umumiy chegirma",
     "totalDiscount": "Jami chegirma",
     "currency": "UZS",

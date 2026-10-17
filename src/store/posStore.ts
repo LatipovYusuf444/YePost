@@ -26,15 +26,21 @@ export type CartItem = {
   kurs?: number;
 };
 
-// Haqiqiy sotuv narxi: katalog narxidan baland yoki noto'g'ri qiymat bo'lsa katalog narxi olinadi.
+// Haqiqiy sotuv narxi: kassir kiritgan narx (katalog narxidan past ham, baland ham bo'lishi mumkin).
+// Kiritilmagan yoki noto'g'ri (0, manfiy, son emas) bo'lsa katalog narxi olinadi.
 export function savatchaSotuvNarxi(item: Pick<CartItem, "narx" | "sotuvNarxi">) {
   const narx = item.sotuvNarxi;
-  return narx != null && narx > 0 && narx < item.narx ? narx : item.narx;
+  return narx != null && Number.isFinite(narx) && narx > 0 ? narx : item.narx;
 }
 
-// Avtomatik chegirma: (katalog narxi − sotuv narxi) × miqdor. Masalan 18 000 → 17 800 bo'lsa, 1 dona uchun 200 so'm.
+// Avtomatik chegirma: sotuv narxi katalogdan past bo'lsa (katalog narxi − sotuv narxi) × miqdor. Masalan 18 000 → 17 800 bo'lsa, 1 dona uchun 200 so'm.
 export function savatchaChegirma(item: Pick<CartItem, "narx" | "sotuvNarxi" | "soni">) {
-  return Math.round((item.narx - savatchaSotuvNarxi(item)) * item.soni);
+  return Math.max(Math.round((item.narx - savatchaSotuvNarxi(item)) * item.soni), 0);
+}
+
+// Ustama: sotuv narxi katalogdan baland bo'lsa (sotuv narxi − katalog narxi) × miqdor. Masalan 13 500 → 19 000 bo'lsa, 1 dona uchun 5 500 so'm.
+export function savatchaUstama(item: Pick<CartItem, "narx" | "sotuvNarxi" | "soni">) {
+  return Math.max(Math.round((savatchaSotuvNarxi(item) - item.narx) * item.soni), 0);
 }
 
 type PosState = {

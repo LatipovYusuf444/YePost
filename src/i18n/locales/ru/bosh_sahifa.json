@@ -10,7 +10,7 @@
     "close": "Закрыть",
     "salePriceLabel": "Цена продажи",
     "resetPrice": "Вернуть цену из каталога",
-    "salePriceTooHigh": "Не выше цены каталога ({{narx}})",
+    "markup": "Наценка: +{{summa}}",
     "autoDiscount": "Скидка: −{{summa}}",
     "autoDiscountEach": "({{bir}} × {{soni}} шт.)"
   },
@@ -33,6 +33,7 @@
     "discountModeSum": "сум",
     "discountConverted": "= {{summa}} (автоматически переводится в сумы)",
     "autoDiscountLine": "Скидка на цену (автоматически)",
+    "markupLine": "Наценка на цену (вручную)",
     "extraDiscountLine": "Общая скидка",
     "totalDiscount": "Итого скидка",
     "currency": "UZS",

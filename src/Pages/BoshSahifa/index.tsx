@@ -21,7 +21,7 @@ import {
 } from "@/api/savdoApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
-import { savatchaChegirma, savatchaSotuvNarxi, usePosStore } from "@/store/posStore";
+import { savatchaChegirma, savatchaSotuvNarxi, savatchaUstama, usePosStore } from "@/store/posStore";
 import SotuvNarxiMaydoni from "./SotuvNarxiMaydoni";
 import SavatchaMiqdoriMaydoni from "./SavatchaMiqdoriMaydoni";
 import { doimiySotuvniModalgaTayyorlash } from "./doimiySotuv";
@@ -166,7 +166,9 @@ export default function BoshSahifa() {
   // Katalog narxlarida jami; kassir sotuv narxini pasaytirgan bo'lsa, farqi avtomatik "narx chegirmasi" bo'ladi.
   const total = cart.reduce((sum, item) => sum + item.narx * item.soni, 0);
   const avtoChegirma = cart.reduce((sum, item) => sum + savatchaChegirma(item), 0);
-  const sotuvNarxlaridaJami = total - avtoChegirma;
+  // Kassir narxni katalogdan baland qo'ysa, farqi ustama bo'lib jamiga qo'shiladi.
+  const ustama = cart.reduce((sum, item) => sum + savatchaUstama(item), 0);
+  const sotuvNarxlaridaJami = total - avtoChegirma + ustama;
   // Qo'shimcha umumiy chegirma (so'm yoki %) sotuv narxlaridagi summadan hisoblanadi.
   const percentDiscountSum = Math.round((sotuvNarxlaridaJami * discountPercent) / 100);
   const discountSum = Math.min(sotuvNarxlaridaJami, discountAmount || percentDiscountSum);
@@ -247,7 +249,9 @@ export default function BoshSahifa() {
     let remainingDiscount = Math.min(discountSum, rawTotal);
     return cart.map((item, index) => {
       const narxChegirmasi = savatchaChegirma(item);
-      const lineTotal = item.narx * item.soni - narxChegirmasi;
+      const qatorUstamasi = savatchaUstama(item);
+      // Sotuv narxi katalogdan baland bo'lsa qator jami aynan sotuv narxi × miqdor.
+      const lineTotal = qatorUstamasi > 0 ? item.soni * savatchaSotuvNarxi(item) : item.narx * item.soni - narxChegirmasi;
       const lineDiscount =
         index === cart.length - 1
           ? remainingDiscount
@@ -259,10 +263,12 @@ export default function BoshSahifa() {
         omborId: item.warehouseId || warehouseId,
         modificationId: item.modificationId || item.id,
         quantity: item.soni,
-        price: item.narx,
+        // Katalogdan qimmatroq sotilsa qo'lda kiritilgan narx yuboriladi (backend `price`ni qo'lda narx sifatida qabul qiladi),
+        // chegirma esa faqat umumiy chegirma ulushi. Bunday qator so'mda ketadi (dollar narx katalog narxiga bog'langan).
+        price: qatorUstamasi > 0 ? savatchaSotuvNarxi(item) : item.narx,
         discount: narxChegirmasi + lineDiscount,
         sof: lineTotal - lineDiscount,
-        dollar: dollarNarxi(item, narxTuri),
+        dollar: qatorUstamasi > 0 ? null : dollarNarxi(item, narxTuri),
         priceType: narxTuriKodi(narxTuri),
       };
     });
@@ -821,6 +827,13 @@ export default function BoshSahifa() {
                 </div>
               )}
 
+              {ustama > 0 && (
+                <div className="mb-2 flex justify-between text-xs font-semibold text-amber-700">
+                  <span>{t("customer.markupLine")}</span>
+                  <span>+{formatSumma(ustama)}</span>
+                </div>
+              )}
+
               {discountSum > 0 && (
                 <div className="mb-2 flex justify-between text-xs font-semibold text-emerald-700">
                   <span>{t("customer.extraDiscountLine")}</span>
@@ -1001,7 +1014,7 @@ export default function BoshSahifa() {
                 <div className="max-h-[480px] space-y-3 overflow-y-auto pr-1">
                   {cart.map((item) => <article key={item.id} className="flex items-center justify-between gap-5 rounded-[24px] border border-gold-100 bg-white p-5 shadow-[0_12px_35px_rgba(37,99,235,.07)]"><div className="min-w-0"><p className="truncate text-base font-black text-slate-900">{item.nom}</p><p className="mt-1.5 text-sm font-semibold text-slate-400">{item.soni} × {formatSumma(item.narx)} · {item.warehouseName || t("paymentModal.selectedWarehouseFallback")}</p></div><p className="shrink-0 text-base font-black text-gold-600">{formatSumma(item.soni * item.narx)}</p></article>)}
                 </div>
-                <div className="mt-5 grid grid-cols-3 gap-3 text-sm"><Summary label={t("customer.subtotal")} value={formatSumma(total)}/><Summary label={t("customer.totalDiscount")} value={formatSumma(jamiChegirma)}/><Summary label={t("paymentModal.payable")} value={formatSumma(payableTotal)} accent/></div>
+                <div className="mt-5 grid grid-cols-3 gap-3 text-sm"><Summary label={t("customer.subtotal")} value={formatSumma(total + ustama)}/><Summary label={t("customer.totalDiscount")} value={formatSumma(jamiChegirma)}/><Summary label={t("paymentModal.payable")} value={formatSumma(payableTotal)} accent/></div>
               </div>
 
               <aside className="flex flex-col rounded-[30px] border border-gold-100 bg-white p-7 shadow-[0_18px_50px_rgba(37,99,235,.10)]">
