@@ -27,6 +27,7 @@ import {
   xodimlarRoyxatiniOlish,
 } from "@/api/savdoApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { mijozlarApi } from "@/api/partnersApi";
 import type {
   MijozTanlovi,
   OmborTanlovi,
@@ -178,6 +179,36 @@ function sotuvniBoglanganMalumotlarBilanBoyitish(
   };
 }
 
+// Mijozlar ro'yxatida topilmagan sotuv mijozlari id bo'yicha bir marta so'raladi (muvaffaqiyatsiz bo'lsa ham qayta-qayta emas).
+const mijozSorovlari = new Set<string>();
+
+// Yangi olingan mijozlar do'kondagi ro'yxatga qo'shiladi va mijozi hali topilmagan sotuvlar qayta boyitiladi.
+function mijozlarniQoshish(
+  holat: {
+    sotuvlar: Sotuv[];
+    tanlanganSotuv: Sotuv | null;
+    mijozlar: MijozTanlovi[];
+    mijozKompaniyalari: MijozTanlovi[];
+    xodimlar: XodimTanlovi[];
+    omborlar: OmborTanlovi[];
+    qoldiqlar?: QoldiqTanlovi[];
+  },
+  yangilar: MijozTanlovi[]
+) {
+  const mavjud = new Set(holat.mijozlar.map((mijoz) => mijoz.id));
+  const qoshiladigan = yangilar.filter((mijoz) => mijoz.id && !mavjud.has(mijoz.id));
+  if (qoshiladigan.length === 0) return null;
+  const mijozlar = [...holat.mijozlar, ...qoshiladigan];
+  const malumotlar = { ...holat, mijozlar };
+  const boyitish = (sotuv: Sotuv) =>
+    sotuv.customer || !sotuv.customerId ? sotuv : sotuvniBoglanganMalumotlarBilanBoyitish(sotuv, malumotlar);
+  return {
+    mijozlar,
+    sotuvlar: holat.sotuvlar.map(boyitish),
+    tanlanganSotuv: holat.tanlanganSotuv ? boyitish(holat.tanlanganSotuv) : holat.tanlanganSotuv,
+  };
+}
+
 type SavdoState = {
   sotuvlar: Sotuv[];
   qaytarishlar: Qaytarish[];
@@ -217,6 +248,10 @@ type SavdoState = {
   qaytarishniOchirish: (qaytarishId: string) => Promise<boolean>;
   qaytarishniTiklash: (qaytarishId: string) => Promise<boolean>;
   sotuvlarniBoyitish: (sotuvlar: Sotuv[]) => Sotuv[];
+  // Mijozlar ro'yxatini boshlang'ich (og'ir) yuklashni kutmasdan oldindan yuklaydi: sotuvlar ro'yxatida mijoz nomi darrov chiqishi uchun.
+  mijozlarniOldindanYuklash: () => Promise<void>;
+  // Sotuvda biriktirilgan, lekin ro'yxatda topilmagan mijozlarni id bo'yicha olib, sotuvlarni yangilaydi.
+  mijozlarniTuldirish: (idlar: string[]) => Promise<void>;
   tanlanganSotuvniTozalash: () => void;
   xatolikniTozalash: () => void;
 };
@@ -261,7 +296,10 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
       const qoldiqlar = await qoldiqNomlariniBoyitish(
         qoldiqlarniKatalogBilanBirlashtirish(stockQoldiqlar, katalogQoldiqlar)
       );
-      const boglanganMalumotlar = { mijozlar, mijozKompaniyalari, xodimlar, omborlar, qoldiqlar };
+      // Yuklash davomida id bo'yicha olingan mijozlar (ro'yxatda yo'q edi) yangi ro'yxat ustidan yozilib ketmasin.
+      const yuklanganIdlar = new Set(mijozlar.map((mijoz) => mijoz.id));
+      const barchaMijozlar = [...mijozlar, ...get().mijozlar.filter((mijoz) => !yuklanganIdlar.has(mijoz.id))];
+      const boglanganMalumotlar = { mijozlar: barchaMijozlar, mijozKompaniyalari, xodimlar, omborlar, qoldiqlar };
 
       set({
         sotuvlar: sotuvlar.map((sotuv) =>
@@ -269,7 +307,7 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
         ),
         qaytarishlar,
         omborlar,
-        mijozlar,
+        mijozlar: barchaMijozlar,
         mijozKompaniyalari,
         xodimlar,
         qoldiqlar,
@@ -668,6 +706,32 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
 
   // Server sahifasidan kelgan sotuvlarga mijoz, xodim va ombor nomlarini (yuklangan ro'yxatlardan) biriktiradi.
   sotuvlarniBoyitish: (sotuvlar) => sotuvlar.map((sotuv) => sotuvniBoglanganMalumotlarBilanBoyitish(sotuv, get())),
+
+  mijozlarniOldindanYuklash: async () => {
+    if (get().mijozlar.length > 0) return;
+    try {
+      const mijozlar = await mijozlarRoyxatiniOlish();
+      const yangi = mijozlarniQoshish(get(), mijozlar);
+      if (yangi) set(yangi);
+    } catch {
+      // Asosiy yuklash mijozlarni o'zi qayta oladi; bu faqat nomlarni tezroq ko'rsatish uchun.
+    }
+  },
+
+  mijozlarniTuldirish: async (idlar) => {
+    const mavjud = new Set(get().mijozlar.map((mijoz) => mijoz.id));
+    const kerak = Array.from(new Set(idlar))
+      .filter((id) => id && !mavjud.has(id) && !mijozSorovlari.has(id))
+      .slice(0, 25);
+    if (kerak.length === 0) return;
+    kerak.forEach((id) => mijozSorovlari.add(id));
+    const natijalar = await Promise.allSettled(kerak.map((id) => mijozlarApi.olish(id)));
+    const topilgan = natijalar.flatMap((natija) =>
+      natija.status === "fulfilled" && natija.value?.id ? [natija.value as unknown as MijozTanlovi] : []
+    );
+    const yangi = mijozlarniQoshish(get(), topilgan);
+    if (yangi) set(yangi);
+  },
   tanlanganSotuvniTozalash: () => set({ tanlanganSotuv: null }),
   xatolikniTozalash: () => set({ xatolik: null }),
 }));

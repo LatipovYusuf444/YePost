@@ -71,6 +71,8 @@ export default function Savdo() {
     tanlanganSotuvniTozalash,
     xatolikniTozalash,
     sotuvlarniBoyitish,
+    mijozlarniOldindanYuklash,
+    mijozlarniTuldirish,
   } = useSavdoStore();
   const [searchParams] = useSearchParams();
   const [qidiruv, setQidiruv] = useState("");
@@ -136,6 +138,12 @@ export default function Savdo() {
     void boshlangichMalumotlarniYuklash();
   }, [boshlangichMalumotlarniYuklash]);
 
+  // Mijozlar ro'yxati og'ir boshlang'ich yuklash (ombor qoldig'i, katalog) tugashini kutmaydi: sotuvlar ro'yxatida nomlar darrov chiqadi.
+  const [mijozlarTayyor, setMijozlarTayyor] = useState(false);
+  useEffect(() => {
+    void mijozlarniOldindanYuklash().finally(() => setMijozlarTayyor(true));
+  }, [mijozlarniOldindanYuklash]);
+
   useEffect(() => {
     const yangiSotuvniOchish = () => {
       setYangiSotuvVarianti("sale");
@@ -156,13 +164,28 @@ export default function Savdo() {
   const [serverSahifaTanlovi, setServerSahifaTanlovi] = useState({ kalit: "", page: 1 });
   const [serverHajm, setServerHajm] = useState(20);
   const [qidiruvKechiktirilgan, setQidiruvKechiktirilgan] = useState("");
-  const [serverQatorlar, setServerQatorlar] = useState<Sotuv[]>([]);
+  // Server qatorlari xom saqlanadi, mijoz/xodim/ombor nomlari do'kondagi ro'yxatlar o'zgarganda qayta boyitiladi
+  // (ro'yxatlar sotuvlardan keyin kelsa ham "Donalik mijoz" bo'lib qolmasligi uchun).
+  const [serverXom, setServerXom] = useState<Sotuv[]>([]);
   const [serverJami, setServerJami] = useState(0);
   const [serverYuklanmoqda, setServerYuklanmoqda] = useState(false);
   const [serverYuklanganKalit, setServerYuklanganKalit] = useState("");
   const [serverXatoKaliti, setServerXatoKaliti] = useState("");
   const [serverYangilanish, setServerYangilanish] = useState(0);
   const [xulosa, setXulosa] = useState<SotuvlarXulosasi | null>(null);
+  // sotuvlarniBoyitish do'kon holatini o'qiydi: ro'yxatlar (mijoz, xodim, ombor) o'zgarganda server qatorlari qayta boyitiladi.
+  const serverQatorlar = useMemo(
+    () => sotuvlarniBoyitish(serverXom),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [serverXom, mijozlar, mijozKompaniyalari, xodimlar, omborlar, qoldiqlar]
+  );
+
+  // Sotuvga biriktirilgan, lekin mijozlar ro'yxatida topilmagan mijozlar (ro'yxat to'liq emas yoki mijoz keyin qo'shilgan) id bo'yicha olinadi.
+  useEffect(() => {
+    if (!mijozlarTayyor) return;
+    const idlar = [...sotuvlar, ...serverQatorlar].flatMap((sotuv) => (sotuv.customerId && !sotuv.customer ? [sotuv.customerId] : []));
+    if (idlar.length > 0) void mijozlarniTuldirish(idlar);
+  }, [mijozlarTayyor, sotuvlar, serverQatorlar, mijozlarniTuldirish]);
 
   useEffect(() => {
     const kechiktirish = window.setTimeout(() => setQidiruvKechiktirilgan(qidiruv.trim()), 350);
@@ -195,7 +218,7 @@ export default function Savdo() {
     })
       .then((javob) => {
         if (!faol) return;
-        setServerQatorlar(sotuvlarniBoyitish(javob.items));
+        setServerXom(javob.items);
         setServerJami(javob.total);
         setServerYuklanganKalit(serverFiltrKaliti);
       })

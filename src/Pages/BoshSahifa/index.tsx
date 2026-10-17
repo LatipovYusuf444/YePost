@@ -80,6 +80,7 @@ export default function BoshSahifa() {
   const sotuvgaTolovQoshish = useSavdoStore((state) => state.sotuvgaTolovQoshish);
   const sotuvniBekorQilish = useSavdoStore((state) => state.sotuvniBekorQilish);
   const tanlanganSotuvniTozalash = useSavdoStore((state) => state.tanlanganSotuvniTozalash);
+  const mijozlarniOldindanYuklash = useSavdoStore((state) => state.mijozlarniOldindanYuklash);
   const xatolikniTozalash = useSavdoStore((state) => state.xatolikniTozalash);
   const joriyProfil = useAuthProfileStore((state) => state.profil);
   const profilniYuklash = useAuthProfileStore((state) => state.profilniYuklash);
@@ -158,6 +159,11 @@ export default function BoshSahifa() {
   useEffect(() => {
     if (!joriyProfil) void profilniYuklash();
   }, [joriyProfil, profilniYuklash]);
+
+  // Doimiy mijozning sotuv oynasi (to'lov, tasdiqlash) mijoz nomini saqlab qolishi uchun mijozlar savdo do'koniga ham yuklanadi.
+  useEffect(() => {
+    void mijozlarniOldindanYuklash();
+  }, [mijozlarniOldindanYuklash]);
 
   useEffect(() => {
     updatePriceType(narxTuri);

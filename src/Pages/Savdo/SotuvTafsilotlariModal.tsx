@@ -66,6 +66,7 @@ import type { Activity, Attachment, ChatMessage, Comment } from "@/types/crm";
 import type { Ombor } from "@/types/ombor";
 import type { QoldiqTanlovi, SaleAuditLog, Sotuv, SotuvTolovi, SotuvYaratishMalumoti, TolovTuri, XodimTanlovi, YetkazishMalumoti, YetkazishPayload } from "@/types/savdo";
 import {
+  BIRIKTIRILGAN_MIJOZ_NOMI,
   donalikMijozNomi,
   masulNomi,
   mijozNomi,
@@ -73,6 +74,7 @@ import {
   qatorValyutasi,
   sananiFormatlash,
   sotuvChegirmaSummasi,
+  sotuvdaMijozBiriktirilganmi,
   sotuvHolati,
   sotuvHolatiMatni,
   sotuvJadvalId,
@@ -234,7 +236,7 @@ function modalMijozNomi(sotuv: Sotuv) {
     sotuv.customer?.name ||
     sotuv.clientCompany?.name ||
     donalikMijozNomi(sotuv) ||
-    "-"
+    (sotuvdaMijozBiriktirilganmi(sotuv) ? BIRIKTIRILGAN_MIJOZ_NOMI : "-")
   );
 }
 

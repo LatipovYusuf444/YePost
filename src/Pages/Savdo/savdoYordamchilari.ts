@@ -245,6 +245,14 @@ export function donalikMijozNomi(
   return DONALIK_MIJOZ_IZOHI.exec(sotuv.note ?? "")?.[1]?.trim() ?? "";
 }
 
+// Sotuvda mijoz (yoki kompaniya) biriktirilgan, lekin uning nomi hali topilmagan bo'lsa ko'rsatiladigan nom:
+// biriktirilgan mijozni "Donalik mijoz" deb atab bo'lmaydi (qarz va to'lovlar shu mijozniki).
+export const BIRIKTIRILGAN_MIJOZ_NOMI = "Doimiy mijoz";
+
+export function sotuvdaMijozBiriktirilganmi(sotuv: Pick<Sotuv, "customer" | "customerId" | "clientCompany" | "clientCompanyId">) {
+  return Boolean(sotuv.customer || sotuv.customerId || sotuv.clientCompany || sotuv.clientCompanyId);
+}
+
 export function mijozNomi(sotuv: Sotuv) {
   const mijoz = sotuv.customer;
   const jismoniyMijoz = [mijoz?.firstName, mijoz?.lastName].filter(Boolean).join(" ");
@@ -255,7 +263,7 @@ export function mijozNomi(sotuv: Sotuv) {
     mijoz?.name ||
     sotuv.clientCompany?.name ||
     donalikMijozNomi(sotuv) ||
-    "Donalik mijoz"
+    (sotuvdaMijozBiriktirilganmi(sotuv) ? BIRIKTIRILGAN_MIJOZ_NOMI : "Donalik mijoz")
   );
 }
 

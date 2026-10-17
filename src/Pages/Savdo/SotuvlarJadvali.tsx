@@ -7,6 +7,7 @@ import type { Qaytarish, Sotuv, TolovTuri } from "@/types/savdo";
 import {
   masulNomi,
   mijozNomi,
+  sotuvdaMijozBiriktirilganmi,
   pulniFormatlash,
   sotuvValyutasi,
   qaytarishSummasi,
@@ -225,7 +226,7 @@ export default function SotuvlarJadvali({
               const qarz = sotuvQarzdorlikSummasi(sotuv);
               const tolovToliq = jami > 0 && qarz <= 0;
               const mijoz = mijozNomi(sotuv);
-              const mijozYoq = !sotuv.customer && !sotuv.clientCompany;
+              const mijozYoq = !sotuvdaMijozBiriktirilganmi(sotuv);
               const masul = masulNomi(sotuv);
 
               return (
