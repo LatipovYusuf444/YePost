@@ -46,6 +46,7 @@ export function mijozniUiGa(item: Mijoz): Xaridor {
     kompaniyaId: item.companyId ?? "",
     lavozim: typeof custom.position === "string" ? custom.position : "",
     balans: raqam(item.balance),
+    balansValyutasi: item.balanceCurrency ?? undefined,
     yaratganMasul: item.partner?.createdBy?.fullName || "Tizim",
     yaratilganSana: item.partner?.createdAt ?? item.createdAt ?? "",
     ozgartirilganSana: item.partner?.updatedAt ?? item.updatedAt ?? item.createdAt ?? "",

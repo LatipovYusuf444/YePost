@@ -251,6 +251,7 @@
     "companyUnassigned": "Не привязано",
     "totalSales": "Всего реализовано",
     "totalPaid": "Всего оплачено",
+    "accountBalance": "Счёт клиента",
     "debtorYes": "Должник: ДА",
     "debtorNo": "Не должник"
   },

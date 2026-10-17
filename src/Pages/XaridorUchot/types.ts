@@ -18,6 +18,8 @@ export type Xaridor = {
   kompaniyaId: string; // "" — kompaniya biriktirilmagan
   lavozim: string;
   balans: number;
+  // Mijoz hisobi valyutasi (valyuta rejimida USD); berilmasa — so'm.
+  balansValyutasi?: string;
   yaratganMasul: string; // yaratgan mas'ul shaxs
   yaratilganSana: string;
   ozgartirilganSana: string; // oxirgi o'zgartirilgan sana

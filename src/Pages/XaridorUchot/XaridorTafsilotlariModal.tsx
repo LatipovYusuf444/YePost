@@ -1,6 +1,7 @@
-import { pulMatni } from "@/lib/valyuta";
+import { pulMatni, valyutaKodi } from "@/lib/valyuta";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Briefcase, Building2, Phone, Trash2 } from "lucide-react";
+import { AlertTriangle, Briefcase, Building2, Phone, Trash2, Wallet } from "lucide-react";
+import { pulniFormatlash } from "@/Pages/Savdo/savdoYordamchilari";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import FaoliyatPaneli from "./FaoliyatPaneli";
@@ -213,6 +214,12 @@ function MalumotlarTab({
             <Qator nom={t("shared.registeredDateLabel")} qiymat={sanaFormat(xaridor.yaratilganSana)} />
             <Qator nom={t("xaridorDetails.totalSales")} qiymat={pulMatni(jamiRealizatsiya, "UZS", true)} />
             <Qator nom={t("xaridorDetails.totalPaid")} qiymat={pulMatni(jamiTolangan, "UZS", true)} />
+            {/* Mijoz hisobi: oldindan to'langan pul (ortiqcha to'lov yoki kassa orqali to'ldirilgan); o'z valyutasida ko'rsatiladi. */}
+            <Qator
+              icon={<Wallet size={14} />}
+              nom={t("xaridorDetails.accountBalance")}
+              qiymat={pulniFormatlash(Math.max(xaridor.balans, 0), valyutaKodi(xaridor.balansValyutasi))}
+            />
             <Qator
               icon={jamiQarz > 0 ? <AlertTriangle size={14} /> : undefined}
               nom={jamiQarz > 0 ? t("xaridorDetails.debtorYes") : t("xaridorDetails.debtorNo")}

@@ -58,7 +58,9 @@ export type Mijoz = {
   telegramId?: string | null;
   companyId?: string | null;
   company?: MijozKompaniyasi | null;
+  // Mijoz hisobi (oldindan to'langan pul) va uning valyutasi (valyuta rejimida USD).
   balance?: number | string | null;
+  balanceCurrency?: string | null;
   customFields?: Record<string, unknown> | null;
   socials?: PartnerSocials | null;
   partner?: Partner | null;
