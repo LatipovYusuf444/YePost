@@ -86,6 +86,7 @@ export function katalogNarxiniQoldiqqaMoslash(narx?: MahsulotNarxi | null) {
     valyuta,
     modificationPrice: {
       costPrice: Number(narx?.costPrice ?? 0),
+      costCurrency: valyutalar.cost,
       retailPrice: chakana,
       wholesalePrice: ulgurji,
       sellingPrice: chakana,

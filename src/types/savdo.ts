@@ -190,6 +190,8 @@ export type SotuvYaratishMalumoti = {
     currency?: string;
     // Qator qaysi narx turida sotilgani (hisobotlarda narx turi bo'yicha ko'rinadi). Sozlamada o'chirilgan tur yuborilmaydi.
     priceType?: SotuvNarxTuri;
+    // Chegirma foizda kiritilgan bo'lsa — foiz (hisobot uchun); chegirma summasi `discount`da.
+    discountPercent?: number;
   }>;
   payments?: SotuvTolovi[];
 };
@@ -349,6 +351,8 @@ export type QoldiqTanlovi = {
       retailPrice?: number | string;
       wholesalePrice?: number | string;
       sellingPrice?: number | string;
+      // Tannarx valyutasi (UZS/USD); berilmasa — so'm.
+      costCurrency?: string | null;
     };
   };
   warehouse?: OmborTanlovi;
