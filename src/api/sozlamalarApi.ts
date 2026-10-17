@@ -1,6 +1,7 @@
 import axios from "axios";
 import { API_BASE_URL } from "./apiConfig";
-import { apiTilHeaderi } from "./apiLanguage";
+import { apiTilHeaderi, apiTiliniOlish } from "./apiLanguage";
+import { xatoKodiMatni } from "./xatoKodlari";
 
 export type LoginPayload = {
   username: string;
@@ -34,6 +35,8 @@ export type RefreshResponse = {
 };
 
 type ApiErrorBody = {
+  // Backend xato kodi (masalan, "errors.wallet.insufficient_balance").
+  code?: string;
   message?: string | string[];
   detail?: string;
   error?: string;
@@ -129,6 +132,15 @@ export function getApiErrorMessage(error: unknown) {
   if (!error.response) {
     return "Server bilan bog'lanib bo'lmadi. Internet aloqasini tekshiring.";
   }
+
+  // Mijoz hisobi va valyuta xato kodlari: tushunarli (va kontekstga mos) matn; boshqa kodlar avvalgidek ko'rsatiladi.
+  const xabar = error.response.data?.message;
+  const kodMatni = xatoKodiMatni(
+    error.response.data?.code ?? (typeof xabar === "string" && xabar.startsWith("errors.") ? xabar : undefined),
+    error.config?.url,
+    apiTiliniOlish()
+  );
+  if (kodMatni) return kodMatni;
 
   const sabablar = tekshiruvSabablari(error.response.data?.errors);
   if (sabablar) return sabablar;
