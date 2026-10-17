@@ -30,6 +30,9 @@ const INVENTARIZATSIYA_USTUNLARI: Array<{ id: InventarizatsiyaUstuni; nom: strin
 
 type FormaXatosi = { key: string; params?: Record<string, string | number> } | null;
 
+// Yangi inventarizatsiyada faqat qidirib qo'shilgan mahsulotlar sanaladi, ombordagi qolganlarga tegilmaydi.
+const YARATISH_TURI: InventarizatsiyaTuri = "PARTIAL";
+
 const INVENTORY_BLUE_THEME = {
   "--color-blue-50": "#EFF6FF",
   "--color-blue-100": "#DBEAFE",
@@ -58,7 +61,6 @@ export default function Inventarizatsiya() {
   const [modal, setModal] = useState(false);
   const [tanlanganId, setTanlanganId] = useState<string | null>(null);
   const [warehouseId, setWarehouseId] = useState("");
-  const [type, setType] = useState<InventarizatsiyaTuri>("FULL");
   const [responsibleId, setResponsibleId] = useState("");
   const [actuals, setActuals] = useState<Record<string, string>>({});
   const [barcodeInput, setBarcodeInput] = useState("");
@@ -67,7 +69,8 @@ export default function Inventarizatsiya() {
   const [tanlanganModifikatsiyaIds, setTanlanganModifikatsiyaIds] = useState<string[]>([]);
   const [mahsulotQidiruv, setMahsulotQidiruv] = useState("");
   const [mahsulotDropdownOchiq, setMahsulotDropdownOchiq] = useState(false);
-  const [mahsulotMenyuJoylashuvi, setMahsulotMenyuJoylashuvi] = useState({ top: 0, left: 0, width: 0 });
+  // Ro'yxat pastga ochilsa `top`, yuqoriga ochilsa `bottom` bilan inputga bog'lanadi: natija kam bo'lsa ham input yonida turadi.
+  const [mahsulotMenyuJoylashuvi, setMahsulotMenyuJoylashuvi] = useState<{ top?: number; bottom?: number; maxHeight?: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
   const mahsulotSearchRef = useRef<HTMLDivElement | null>(null);
   const mahsulotMenyuRef = useRef<HTMLDivElement | null>(null);
   // Klaviatura bilan boshqarish: ro'yxatdagi faol variant, qidiruv/shtrix-kod maydonlari va jadval.
@@ -113,10 +116,16 @@ export default function Inventarizatsiya() {
     if (!rect) return;
     const menyuBalandligi = 256;
     const pastgaTop = rect.bottom + 4;
-    const top = pastgaTop + menyuBalandligi <= window.innerHeight - 12
-      ? pastgaTop
-      : Math.max(12, rect.top - menyuBalandligi - 4);
-    setMahsulotMenyuJoylashuvi({ top, left: rect.left, width: rect.width });
+    setMahsulotMenyuJoylashuvi(
+      pastgaTop + menyuBalandligi <= window.innerHeight - 12
+        ? { top: pastgaTop, left: rect.left, width: rect.width }
+        : {
+            bottom: window.innerHeight - rect.top + 4,
+            maxHeight: Math.max(80, Math.min(menyuBalandligi, rect.top - 16)),
+            left: rect.left,
+            width: rect.width,
+          }
+    );
   }, []);
 
   useEffect(() => {
@@ -191,8 +200,8 @@ export default function Inventarizatsiya() {
       ),
     [store.qoldiqlar, warehouseId]
   );
-  // PARTIAL turida omborda hali hech qachon qoldig'i bo'lmagan (Kirim qilinmagan)
-  // mahsulotlarni ham tanlash mumkin — boshlang'ich qoldiqni Kirimsiz kiritish uchun.
+  // Omborda hali hech qachon qoldig'i bo'lmagan (Kirim qilinmagan) mahsulotlarni ham qidirib
+  // qo'shish mumkin — boshlang'ich qoldiqni Kirimsiz kiritish uchun.
   // Tizimdagi qoldig'i 0 deb ko'rsatiladi, chunki stock-balance'da hali yozuvi yo'q.
   const barchaTanlovlar: OmborQoldigi[] = useMemo(() => {
     if (!warehouseId) return qoldiqlar;
@@ -208,22 +217,14 @@ export default function Inventarizatsiya() {
     return [...qoldiqlar, ...yangilari];
   }, [qoldiqlar, store.modifikatsiyalar, warehouseId]);
 
-  // Qo'lda "Mahsulot qo'shish" orqali tanlangan qo'shimcha qatorlar — FULL va PARTIAL
-  // turlarining ikkalasida ham ishlaydi (masalan, hali umuman qoldig'i bo'lmagan
-  // mahsulotni FULL inventarizatsiyaga ham qo'shish mumkin).
-  const qolQoshilganQatorlar = useMemo(() => {
+  // Jadvalda faqat qidirib (yoki shtrix-kod bilan) qo'shilgan mahsulotlar turadi: ombordagi
+  // barcha qoldiq avtomatik chiqmaydi, backend ham faqat ro'yxatdagilarni tuzatadi.
+  const inventarizatsiyaQatorlari = useMemo(() => {
     const tanlovByModification = new Map(barchaTanlovlar.map((qoldiq) => [qoldiq.modificationId, qoldiq]));
     return tanlanganModifikatsiyaIds
       .map((modificationId) => tanlovByModification.get(modificationId))
-      .filter((qoldiq): qoldiq is (typeof qoldiqlar)[number] => Boolean(qoldiq));
+      .filter((qoldiq): qoldiq is OmborQoldigi => Boolean(qoldiq));
   }, [barchaTanlovlar, tanlanganModifikatsiyaIds]);
-
-  const inventarizatsiyaQatorlari = useMemo(() => {
-    if (type === "PARTIAL") return qolQoshilganQatorlar;
-    // FULL: mavjud barcha qoldiqlar avtomatik + qo'lda qo'shilgan yangi mahsulotlar.
-    const mavjudIds = new Set(qoldiqlar.map((qoldiq) => qoldiq.modificationId));
-    return [...qoldiqlar, ...qolQoshilganQatorlar.filter((qoldiq) => !mavjudIds.has(qoldiq.modificationId))];
-  }, [qoldiqlar, qolQoshilganQatorlar, type]);
 
   const sanoqXulosasi = useMemo(() => {
     let counted = 0;
@@ -263,10 +264,13 @@ export default function Inventarizatsiya() {
 
   // Qidiruv matniga mos tanlovlar — mahsulot nomi, shtrix-kod yoki artikul bo'yicha qidiriladi.
   // Tartib backend qidiruvi bilan bir xil (aniq mos kelgani birinchi), chunki Enter birinchi natijani qo'shadi.
+  // Qidiruv matni bo'sh bo'lsa hech narsa ko'rsatilmaydi: ro'yxat faqat yozilgandan keyin chiqadi.
+  const qidiruvYozilgan = mahsulotQidiruv.trim().length > 0;
   const mahsulotQidiruviMoslari = useMemo(
-    () => mahsulotQidiruvi(tanlanmaganTanlovlar, mahsulotQidiruv),
-    [tanlanmaganTanlovlar, mahsulotQidiruv]
+    () => (qidiruvYozilgan ? mahsulotQidiruvi(tanlanmaganTanlovlar, mahsulotQidiruv) : []),
+    [qidiruvYozilgan, tanlanmaganTanlovlar, mahsulotQidiruv]
   );
+  const mahsulotRoyxatiKorinadi = mahsulotDropdownOchiq && qidiruvYozilgan;
 
   function mahsulotQoshish(modificationId: string) {
     if (qoldiqYuklanmoqda) return;
@@ -276,9 +280,8 @@ export default function Inventarizatsiya() {
     if (inventarizatsiyaQatorlari.some((item) => item.modificationId === modificationId)) return;
     setTanlanganModifikatsiyaIds((oldingi) => (oldingi.includes(modificationId) ? oldingi : [...oldingi, modificationId]));
     setMahsulotQidiruv("");
-    // Keyingi mahsulot uchun ro'yxat avtomatik ochiq qoladi (hech narsa belgilanmagan: tasodifiy Enter hech narsa qo'shmaydi).
-    // Tanlanmagan mahsulot qolmasa, qidiruv qatori yo'qoladi — ro'yxat ham yopiladi.
-    setMahsulotDropdownOchiq(tanlanmaganTanlovlar.length > 1);
+    // Qidiruv matni tozalandi: keyingi mahsulot yozilmaguncha ro'yxat yopiq turadi.
+    setMahsulotDropdownOchiq(false);
     setMahsulotFaolIndeks(-1);
     // Yangi qator qo'shilgach fokus yana mahsulot qidiruv maydoniga qaytadi (keyingi mahsulot uchun).
     setFokusNavbati((navbat) => navbat + 1);
@@ -290,7 +293,7 @@ export default function Inventarizatsiya() {
     const moslar = mahsulotQidiruviMoslari;
     // ↑ ro'yxatning boshida (yoki ro'yxat yopiq bo'lsa) jadvalning oxirgi qatoriga, ya'ni miqdor maydoniga o'tadi:
     // yuqoridagi xatoni sichqonsiz tuzatish uchun. Yozilgan qidiruv matni saqlanadi.
-    if (event.key === "ArrowUp" && (!mahsulotDropdownOchiq || mahsulotFaolIndeks <= 0)) {
+    if (event.key === "ArrowUp" && (!mahsulotRoyxatiKorinadi || mahsulotFaolIndeks <= 0)) {
       const maydonlar = jadvalRef.current?.querySelectorAll<HTMLInputElement>("input[data-inventory-qty]");
       const oxirgi = maydonlar?.[maydonlar.length - 1];
       if (oxirgi) {
@@ -304,8 +307,9 @@ export default function Inventarizatsiya() {
     }
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
+      // Hali hech narsa yozilmagan: ro'yxat ochilmaydi.
       if (moslar.length === 0) {
-        setMahsulotDropdownOchiq(true);
+        if (qidiruvYozilgan) setMahsulotDropdownOchiq(true);
         return;
       }
       const pastga = event.key === "ArrowDown";
@@ -335,7 +339,7 @@ export default function Inventarizatsiya() {
       if (tanlangan) mahsulotQoshish(tanlangan.modificationId);
       return;
     }
-    if (event.key === "Escape" && mahsulotDropdownOchiq) {
+    if (event.key === "Escape" && mahsulotRoyxatiKorinadi) {
       event.preventDefault();
       event.stopPropagation();
       setMahsulotDropdownOchiq(false);
@@ -475,7 +479,6 @@ export default function Inventarizatsiya() {
   function formaniOchish() {
     store.xatolikniTozalash();
     setWarehouseId("");
-    setType("FULL");
     setResponsibleId(joriyProfil?.id ?? "");
     setActuals({});
     setBarcodeInput("");
@@ -583,7 +586,7 @@ export default function Inventarizatsiya() {
 
     const hujjat = await store.inventarizatsiyaYaratish({
       warehouseId,
-      type,
+      type: YARATISH_TURI,
       responsibleId: responsibleId || undefined,
       note: note.trim() || undefined,
       items: Array.from(itemMap.values()),
@@ -869,7 +872,6 @@ export default function Inventarizatsiya() {
                           const haqiqiy = Number(haqiqiyRaw);
                           const sanaldi = haqiqiyRaw.trim() !== "" && Number.isFinite(haqiqiy) && haqiqiy >= 0;
                           const farq = sanaldi ? haqiqiy - tizim : null;
-                          const qolQoshilgan = tanlanganModifikatsiyaIds.includes(qoldiq.modificationId);
                           return (
                             <tr key={`${qoldiq.modificationId}-${index}`}>
                               <td className="px-4 py-4 text-slate-400">{index + 1}</td>
@@ -911,23 +913,21 @@ export default function Inventarizatsiya() {
                                 )}
                               </td>
                               <td className="px-4 py-4 text-right">
-                                {qolQoshilgan && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setTanlanganModifikatsiyaIds((oldingi) => oldingi.filter((id) => id !== qoldiq.modificationId));
-                                      setActuals((oldingi) => {
-                                        const keyingi = { ...oldingi };
-                                        delete keyingi[qoldiq.modificationId];
-                                        return keyingi;
-                                      });
-                                    }}
-                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
-                                    aria-label={t("inventarizatsiya.createModal.removeRowAria")}
-                                  >
-                                    <Trash2 size={15} />
-                                  </button>
-                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setTanlanganModifikatsiyaIds((oldingi) => oldingi.filter((id) => id !== qoldiq.modificationId));
+                                    setActuals((oldingi) => {
+                                      const keyingi = { ...oldingi };
+                                      delete keyingi[qoldiq.modificationId];
+                                      return keyingi;
+                                    });
+                                  }}
+                                  className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
+                                  aria-label={t("inventarizatsiya.createModal.removeRowAria")}
+                                >
+                                  <Trash2 size={15} />
+                                </button>
                               </td>
                             </tr>
                           );
@@ -945,27 +945,28 @@ export default function Inventarizatsiya() {
                                     setMahsulotFaolIndeks(event.target.value.trim() ? 0 : -1);
                                     setMahsulotDropdownOchiq(true);
                                   }}
-                                  onFocus={() => setMahsulotDropdownOchiq(true)}
+                                  // Bo'sh maydonni bosganda ro'yxat ochilmaydi; avval yozilgan qidiruv matni bo'lsa, natijalari qayta chiqadi.
+                                  onFocus={() => { if (qidiruvYozilgan) setMahsulotDropdownOchiq(true); }}
                                   onKeyDown={mahsulotKlavishi}
                                   autoComplete="off"
                                   role="combobox"
-                                  aria-expanded={mahsulotDropdownOchiq}
+                                  aria-expanded={mahsulotRoyxatiKorinadi}
                                   aria-controls="inventory-product-list"
                                   aria-autocomplete="list"
-                                  aria-activedescendant={mahsulotDropdownOchiq && mahsulotFaolIndeks >= 0 ? `inventory-product-option-${mahsulotFaolIndeks}` : undefined}
+                                  aria-activedescendant={mahsulotRoyxatiKorinadi && mahsulotFaolIndeks >= 0 ? `inventory-product-option-${mahsulotFaolIndeks}` : undefined}
                                   aria-label={t("inventarizatsiya.createModal.table.product")}
                                   placeholder={t("inventarizatsiya.createModal.selectProduct")}
                                   className="h-10 w-full min-w-64 rounded-xl border border-blue-100 bg-white px-3 font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                                 />
                               </div>
-                              {mahsulotDropdownOchiq &&
+                              {mahsulotRoyxatiKorinadi &&
                                 createPortal(
                                   <div
                                     ref={mahsulotMenyuRef}
                                     id="inventory-product-list"
                                     role="listbox"
                                     className="fixed z-100000 max-h-64 overflow-y-auto rounded-2xl border border-blue-100 bg-white p-1.5 shadow-[0_18px_44px_rgba(15,23,42,.16)]"
-                                    style={{ top: mahsulotMenyuJoylashuvi.top, left: mahsulotMenyuJoylashuvi.left, width: Math.max(mahsulotMenyuJoylashuvi.width, 256) }}
+                                    style={{ top: mahsulotMenyuJoylashuvi.top, bottom: mahsulotMenyuJoylashuvi.bottom, maxHeight: mahsulotMenyuJoylashuvi.maxHeight, left: mahsulotMenyuJoylashuvi.left, width: Math.max(mahsulotMenyuJoylashuvi.width, 256) }}
                                   >
                                     {mahsulotQidiruviMoslari.map((qoldiq, optionIndex) => (
                                       <button
@@ -1007,7 +1008,7 @@ export default function Inventarizatsiya() {
               </> : <div className="space-y-5">
                 <div className="rounded-[26px] border border-blue-100 bg-white p-5 shadow-sm">
                   <h3 className="text-lg font-black text-slate-900">{t("inventarizatsiya.createModal.reviewTitle")}</h3>
-                  <p className="mt-1 text-sm text-slate-500">{omborMap.get(warehouseId)} · {t(type === "FULL" ? "inventarizatsiya.typeFull" : "inventarizatsiya.typePartial")}</p>
+                  <p className="mt-1 text-sm text-slate-500">{omborMap.get(warehouseId)} · {t("inventarizatsiya.typePartial")}</p>
                   <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
                     {[
                       ["totalRows", inventarizatsiyaQatorlari.length, "text-slate-900"],
