@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Banknote, CalendarDays, CheckCircle2, ChevronDown, CreditCard, FileText, Landmark, UserCheck, UserRound } from "lucide-react";
+import { Banknote, CalendarDays, CheckCircle2, ChevronDown, CreditCard, FileText, Landmark, UserCheck, UserRound, Wallet } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import type { Sotuv, SotuvTolovi, TolovTuri } from "@/types/savdo";
 import {
@@ -125,6 +125,8 @@ function tolovTuriIkonkasi(turi: TolovTuri) {
       return <CreditCard size={17} />;
     case "BANK":
       return <Landmark size={17} />;
+    case "BALANCE":
+      return <Wallet size={17} />;
     default:
       return <Banknote size={17} />;
   }

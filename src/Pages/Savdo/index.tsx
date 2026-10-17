@@ -114,6 +114,7 @@ export default function Savdo() {
       { value: "CARD", label: t("savdoSahifasi.paymentFilter.card") },
       { value: "BANK", label: t("savdoSahifasi.paymentFilter.bank") },
       { value: "DEBT", label: t("savdoSahifasi.paymentFilter.debt") },
+      { value: "BALANCE", label: t("savdoSahifasi.paymentFilter.balance") },
     ],
     [t]
   );

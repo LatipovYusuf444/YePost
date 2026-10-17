@@ -83,7 +83,8 @@
       "CASH": "Naqd",
       "CARD": "Karta",
       "BANK": "Bank o'tkazmasi",
-      "DEBT": "Qarz"
+      "DEBT": "Qarz",
+      "BALANCE": "Mijoz hisobi"
     },
     "holatlar": {
       "SOLD": "Sotilgan",

@@ -21,7 +21,8 @@
       "cash": "Naqd",
       "card": "Karta",
       "bank": "Bank o'tkazmasi",
-      "debt": "Qarz"
+      "debt": "Qarz",
+      "balance": "Mijoz hisobi"
     },
     "titles": {
       "tarix": "Savdo tarixi",

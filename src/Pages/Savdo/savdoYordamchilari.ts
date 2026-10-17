@@ -301,5 +301,6 @@ export const tolovTuriMatni: Record<TolovTuri, string> = {
   CARD: "Karta",
   BANK: "Bank o'tkazmasi",
   DEBT: "Qarz",
+  BALANCE: "Mijoz hisobi",
 };
 

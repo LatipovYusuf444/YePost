@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, type ReactNode } from "react";
+﻿import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import {
@@ -88,6 +88,7 @@ import {
   tolovValyutasi,
 } from "./savdoYordamchilari";
 import { useValyutaStore, valyutaKodi, type Valyuta } from "@/lib/valyuta";
+import { mijozHisobi } from "@/lib/mijozHisobi";
 import SavdoSelect from "./SavdoSelect";
 import SotuvTolovlari from "./SotuvTolovlari";
 import SotuvJarayoni from "./SotuvJarayoni";
@@ -1561,6 +1562,20 @@ function KelishuvCard({
           </div>
         )}
 
+        {Number(sotuv.excessToBalance ?? 0) > 0 && (
+          <div className="mt-3 flex justify-between rounded-xl bg-sky-50 px-3 py-2 text-xs text-sky-700">
+            <span>{t("kelishuvCard.hisobgaYozilgan")}</span>
+            <span className="font-bold">{pulniFormatlash(Number(sotuv.excessToBalance), sotuvValyutasi(sotuv))}</span>
+          </div>
+        )}
+
+        {Number(sotuv.excessToDebt ?? 0) > 0 && (
+          <div className="mt-3 flex justify-between rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+            <span>{t("kelishuvCard.qarzgaKetgan")}</span>
+            <span className="font-bold">{pulniFormatlash(Number(sotuv.excessToDebt), sotuvValyutasi(sotuv))}</span>
+          </div>
+        )}
+
         <SotuvTolovlari sotuv={sotuv} mijoz={modalMijozNomi(sotuv)} />
       </div>
 
@@ -1589,6 +1604,9 @@ function KelishuvCard({
   );
 }
 
+// Saqlashni kutayotgan to'lov (bir sotuvga bir nechta to'lov: masalan, bir qismi dollarda, qolgani so'mda).
+type YangiTolovQatori = { paymentType: TolovTuri; amount: number; currency: Valyuta };
+
 function TolovQabulQilishModal({
   sotuv,
   jami,
@@ -1613,14 +1631,8 @@ function TolovQabulQilishModal({
   onYopish: () => void;
 }) {
   const { t } = useTranslation("savdo_tafsilot");
-  const tolovTuriOptions: Array<{ value: TolovTuri; label: string }> = [
-    { value: "CASH", label: t("common.tolovTuri.naqd") },
-    { value: "CARD", label: t("common.tolovTuri.karta") },
-    { value: "BANK", label: t("common.tolovTuri.bank") },
-  ];
   const mavjudTolovlar = sotuv.payments ?? [];
   const mavjudYigindisi = mavjudTolovlar.reduce((jami2, tolov) => jami2 + tolovSotuvValyutasida(tolov, sotuv), 0);
-  const boshlangichQarz = Math.max(jami - mavjudYigindisi, 0);
 
   // Valyuta rejimi yoqilgan va bugungi kurs bor bo'lsa to'lovni sotuvdan boshqa valyutada (so'm/dollar) qabul qilish mumkin:
   // backend uni bugungi kurs bilan sotuv valyutasiga o'giradi.
@@ -1630,21 +1642,96 @@ function TolovQabulQilishModal({
   const sotuvVal = sotuvValyutasi(sotuv);
   const valyutaTanlashMumkin = rejimYoniq && kursBor && kurs > 0;
 
+  // Mijoz hisobi (oldindan to'langan pul): faqat mijozli sotuvda, to'lov hisob valyutasida (valyuta rejimida dollar) yechiladi.
+  const mijozId = mijozIdOlish(sotuv);
+  const [hisobManbasi, setHisobManbasi] = useState<{ balance?: number | string | null; balanceCurrency?: string | null } | null>(
+    sotuv.customer ? { balance: sotuv.customer.balance, balanceCurrency: sotuv.customer.balanceCurrency } : null
+  );
+  useEffect(() => {
+    if (!mijozId) return;
+    let faol = true;
+    mijozlarApi
+      .olish(mijozId)
+      .then((mijoz) => {
+        if (faol) setHisobManbasi(mijoz);
+      })
+      .catch(() => undefined);
+    return () => {
+      faol = false;
+    };
+  }, [mijozId]);
+  const hisob = mijozHisobi(hisobManbasi);
+  // Dollar hisobni so'mlik sotuvga (yoki aksincha) o'girish uchun bugungi kurs kerak.
+  const balansTuriMumkin = Boolean(mijozId) && hisob.miqdor > 0 && (hisob.valyuta === sotuvVal || valyutaTanlashMumkin);
+  const tolovTuriOptions: Array<{ value: TolovTuri; label: string }> = [
+    { value: "CASH", label: t("common.tolovTuri.naqd") },
+    { value: "CARD", label: t("common.tolovTuri.karta") },
+    { value: "BANK", label: t("common.tolovTuri.bank") },
+    ...(balansTuriMumkin
+      ? [{ value: "BALANCE" as const, label: t("tolovModal.hisobdanTolov", { summa: pulniFormatlash(hisob.miqdor, hisob.valyuta) }) }]
+      : []),
+  ];
+
   const [tolovTuri, setTolovTuri] = useState<TolovTuri>("CASH");
   const [tolovVal, setTolovVal] = useState<Valyuta>(sotuvVal);
   const [summa, setSumma] = useState("0");
   const [xatolik, setXatolik] = useState("");
+  // Bir nechta to'lov: shakldagi to'lov "Yana to'lov qo'shish" bilan ro'yxatga o'tadi; saqlashda ro'yxat va
+  // shakldagi summa (bo'lsa) birga yuboriladi.
+  const [qatorlar, setQatorlar] = useState<YangiTolovQatori[]>([]);
+  const [saqlanmoqda, setSaqlanmoqda] = useState(false);
+  // Qoralamadagi mijozli sotuvda chekdan ortiq pul: qaytim yoki mijoz hisobiga yozish (backend `keepExcess`).
+  const [ortiqchaniHisobga, setOrtiqchaniHisobga] = useState(false);
+  // To'lovlar ketma-ket yuborilganda `amalBajarilmoqda` har so'rov orasida o'chib qoladi — ikki marta bosish takroriy to'lov yaratmasin.
+  const saqlashQulfi = useRef(false);
 
   const boshqaValyuta = valyutaTanlashMumkin && tolovVal !== sotuvVal;
-  const tolovniSotuvValyutasiga = (miqdor: number) => (!boshqaValyuta ? miqdor : tolovVal === "USD" ? miqdor * kurs : miqdor / kurs);
-  const qarzniTolovValyutasiga = (miqdor: number) => (!boshqaValyuta ? miqdor : tolovVal === "USD" ? miqdor / kurs : miqdor * kurs);
-  // Tanlangan to'lov valyutasida to'lash mumkin bo'lgan eng katta summa (qarzni to'liq yopadi).
-  const maxTolov = boshqaValyuta ? valyutaYaxlitlash(qarzniTolovValyutasiga(boshlangichQarz), tolovVal) : boshlangichQarz;
+  // To'lov valyutasidagi summani sotuv valyutasiga (va aksincha) bugungi kurs bilan o'giradi.
+  const sotuvValyutasigaOgirish = (miqdor: number, valyuta: Valyuta) =>
+    valyuta === sotuvVal || !(kurs > 0) ? miqdor : valyuta === "USD" ? miqdor * kurs : miqdor / kurs;
+  const sotuvValyutasidanOgirish = (miqdor: number, valyuta: Valyuta) =>
+    valyuta === sotuvVal || !(kurs > 0) ? miqdor : valyuta === "USD" ? miqdor / kurs : miqdor * kurs;
+
+  // Ro'yxatdagi to'lovlar hisobga olingandan keyingi qarz.
+  const qatorlarYigindisi = qatorlar.reduce((jami2, qator) => jami2 + sotuvValyutasigaOgirish(qator.amount, qator.currency), 0);
+  const boshlangichQarz = Math.max(jami - mavjudYigindisi - qatorlarYigindisi, 0);
+  // Tanlangan to'lov valyutasida to'lash mumkin bo'lgan eng katta summa (qolgan qarzni to'liq yopadi).
+  // Sotuv valyutasida tiyingacha yuqoriga yaxlitlanadi: boshqa valyutadan o'girishdagi kasr shovqini kiritish maydoniga tushmasin.
+  const maxTolov =
+    tolovVal === sotuvVal
+      ? Math.ceil(boshlangichQarz * 100 - 1e-6) / 100
+      : valyutaYaxlitlash(sotuvValyutasidanOgirish(boshlangichQarz, tolovVal), tolovVal);
+
+  // Hisobdan to'lov: hisobdagi qoldiq (ro'yxatdagi hisobdan to'lovlar ayirilgan) va qolgan qarzdan oshmaydi (backend
+  // `overpayment_not_allowed`), shuning uchun qarz hisob valyutasining eng kichik birligigacha PASTGA yaxlitlanadi.
+  const balansTanlangan = tolovTuri === "BALANCE";
+  const birlikdaPastga = (miqdor: number, valyuta: Valyuta) =>
+    valyuta === "USD" ? Math.floor(miqdor * 100 + 1e-6) / 100 : Math.floor(miqdor + 1e-6);
+  const balansQatorlari = qatorlar.filter((qator) => qator.paymentType === "BALANCE").reduce((jami2, qator) => jami2 + qator.amount, 0);
+  const balansMaxHisobda = Math.min(
+    birlikdaPastga(sotuvValyutasidanOgirish(boshlangichQarz, hisob.valyuta), hisob.valyuta),
+    birlikdaPastga(Math.max(hisob.miqdor - balansQatorlari, 0), hisob.valyuta)
+  );
+  const balansMax = balansTanlangan ? balansMaxHisobda : 0;
+  const korsatiladiganMax = balansTanlangan ? balansMax : maxTolov;
 
   const yangiSumma = Number(summa) || 0;
-  const yangiSummaSotuvValyutasida = tolovniSotuvValyutasiga(yangiSumma);
-  const yakuniyTolangan = mavjudYigindisi + yangiSummaSotuvValyutasida;
-  const qolganQarz = Math.max(jami - yakuniyTolangan, 0);
+  const yangiSummaSotuvValyutasida = sotuvValyutasigaOgirish(yangiSumma, tolovVal);
+  const yakuniyTolangan = mavjudYigindisi + qatorlarYigindisi + yangiSummaSotuvValyutasida;
+  const qarzFarqi = jami - yakuniyTolangan;
+  const qolganQarz = qarzFarqi > 1e-6 ? qarzFarqi : 0;
+  // Qoralamadagi mijozli sotuvda chekdan ortiq pul qabul qilinadi (kassir qaytim yoki hisobga yozishni tanlaydi);
+  // tasdiqlangan sotuvda qarzdan ortiq to'lov qabul qilinmaydi.
+  const ortiqchaYoziladi = draft && Boolean(mijozId);
+  // Boshqa valyutada yaxlitlash (dollar — sentgacha, so'm — butungacha yuqoriga) eng ko'pi bilan bir birlik ortiqcha beradi:
+  // bu xato hisoblanmaydi. Bir xil valyutada ortiqcha to'lov qabul qilinmaydi.
+  const ruxsatEtilganFarq = Math.max(
+    1e-6,
+    ...[...qatorlar.map((qator) => qator.currency), ...(yangiSumma > 0 ? [tolovVal] : [])]
+      .filter((valyuta) => valyuta !== sotuvVal)
+      .map((valyuta) => sotuvValyutasigaOgirish(valyuta === "USD" ? 0.01 : 1, valyuta))
+  );
+  const ortiqchaSumma = yakuniyTolangan - jami > ruxsatEtilganFarq ? yakuniyTolangan - jami : 0;
 
   function valyutaniOzgartirish(yangi: Valyuta) {
     if (yangi === tolovVal) return;
@@ -1653,52 +1740,118 @@ function TolovQabulQilishModal({
     setXatolik("");
   }
 
+  function tolovTuriniOzgartirish(yangi: TolovTuri) {
+    if (yangi === tolovTuri) return;
+    setTolovTuri(yangi);
+    setSumma("0");
+    setXatolik("");
+    // Hisobdan to'lov faqat hisob valyutasida yechiladi; boshqa usulga qaytganda valyuta sotuv valyutasiga qaytadi.
+    if (yangi === "BALANCE") setTolovVal(hisob.valyuta);
+    else if (tolovTuri === "BALANCE") setTolovVal(sotuvVal);
+  }
+
+  // Saqlanadigan to'lovlar (ro'yxat + shakldagi summa) bo'yicha xato matni; xato bo'lmasa bo'sh qator.
+  function tolovlarniTekshirish(tolovlarSoni: number) {
+    if (yangiSumma < 0) return draft ? t("tolovModal.errors.manfiyBolmasin") : t("tolovModal.errors.nolDanKatta");
+    if (!draft && tolovlarSoni === 0) return t("tolovModal.errors.nolDanKatta");
+    if (balansTanlangan && yangiSumma > balansMax + 1e-9) {
+      return t("tolovModal.errors.hisobdanOshmasin", { maksimal: pulniFormatlash(balansMax, tolovVal) });
+    }
+    if (!ortiqchaYoziladi && yakuniyTolangan > jami + ruxsatEtilganFarq) {
+      return t("tolovModal.errors.qarzdorlikdanOshmasin", { maksimal: pulniFormatlash(maxTolov, tolovVal) });
+    }
+    return "";
+  }
+
+  function qatorQoshish() {
+    setXatolik("");
+    const xato = yangiSumma > 0 ? tolovlarniTekshirish(1) : t("tolovModal.errors.nolDanKatta");
+    if (xato) {
+      setXatolik(xato);
+      return;
+    }
+    setQatorlar((joriy) => [...joriy, { paymentType: tolovTuri, amount: yangiSumma, currency: tolovVal }]);
+    setSumma("0");
+    // Hisobdan to'lovdan keyin qolgani odatda naqd to'lanadi.
+    if (tolovTuri === "BALANCE") setTolovTuri("CASH");
+    // Ikkinchi to'lov odatda boshqa valyutada bo'ladi (masalan, dollardan keyin qolgani so'mda).
+    if (valyutaTanlashMumkin) setTolovVal(tolovVal === "USD" ? "UZS" : "USD");
+  }
+
   async function submit() {
+    if (saqlashQulfi.current) return;
     setXatolik("");
 
-    if (yangiSumma < 0 || (!draft && yangiSumma <= 0)) {
-      setXatolik(draft ? t("tolovModal.errors.manfiyBolmasin") : t("tolovModal.errors.nolDanKatta"));
+    const tolovlar: YangiTolovQatori[] = [
+      ...qatorlar,
+      ...(yangiSumma > 0 ? [{ paymentType: tolovTuri, amount: yangiSumma, currency: tolovVal }] : []),
+    ];
+    const xato = tolovlarniTekshirish(tolovlar.length);
+    if (xato) {
+      setXatolik(xato);
       return;
     }
 
-    if (boshqaValyuta ? yangiSumma > maxTolov : yakuniyTolangan > jami) {
-      setXatolik(t("tolovModal.errors.qarzdorlikdanOshmasin", { maksimal: pulniFormatlash(maxTolov, tolovVal) }));
-      return;
-    }
-
-    if (!draft) {
-      const saqlandi = await onTolovQoshish(sotuv.id, {
-        paymentType: tolovTuri,
-        amount: yangiSumma,
-        ...(boshqaValyuta ? { currency: tolovVal } : {}),
-      });
-      if (!saqlandi) {
-        setXatolik(t("tolovModal.errors.saqlanmadi"));
+    saqlashQulfi.current = true;
+    setSaqlanmoqda(true);
+    try {
+      if (!draft) {
+        // Tasdiqlangan sotuvga to'lov qo'shish endpointi bitta to'lov oladi: har biri alohida yuboriladi.
+        for (let i = 0; i < tolovlar.length; i += 1) {
+          const tolov = tolovlar[i];
+          const saqlandi = await onTolovQoshish(sotuv.id, {
+            paymentType: tolov.paymentType,
+            amount: tolov.amount,
+            ...farqliValyuta(tolov.currency, sotuv),
+          });
+          if (!saqlandi) {
+            // Oldingilari saqlangan: ular ro'yxatdan chiqariladi, qolganlari qayta urinish uchun turadi.
+            setQatorlar(qatorlar.slice(i));
+            // Backendning aniq sababi (masalan, hisobda pul yetmaydi) bo'lsa, shu ko'rsatiladi.
+            const sabab = useSavdoStore.getState().xatolik;
+            setXatolik(
+              i > 0
+                ? `${t("tolovModal.errors.qismanSaqlandi", { saqlandi: i, jami: tolovlar.length })}${sabab ? ` ${sabab}` : ""}`
+                : sabab || t("tolovModal.errors.saqlanmadi")
+            );
+            return;
+          }
+        }
+        onYopish();
         return;
       }
+
+      const yangiTolovlar = [
+        ...mavjudTolovlar.map((tolov) => ({
+          paymentType: tolov.paymentType,
+          amount: Number(tolov.amount ?? 0),
+          ...farqliValyuta(tolovValyutasi(tolov, sotuv), sotuv),
+        })),
+        ...tolovlar.map((tolov) => ({
+          paymentType: tolov.paymentType,
+          amount: tolov.amount,
+          ...farqliValyuta(tolov.currency, sotuv),
+        })),
+      ];
+
+      const saqlandi = await onYangilash(sotuv.id, {
+        payments: yangiTolovlar,
+        // Chekdan ortiq pul bo'lsa tanlov aniq yuboriladi (eski qarzlar yopilgach qolgani qaytim yoki mijoz hisobiga).
+        ...(ortiqchaYoziladi && ortiqchaSumma > 0 ? { keepExcess: ortiqchaniHisobga } : {}),
+      });
+      if (!saqlandi) {
+        setXatolik(useSavdoStore.getState().xatolik || t("tolovModal.errors.saqlanmadi"));
+        return;
+      }
+
+      // To'lov qabul qilish sotuvni avtomatik tasdiqlamaydi — sotuv hali
+      // qoralama holatida qoladi, ombordan real chiqarish uchun "Ombordan
+      // chiqarish" bo'limida alohida tasdiqlash kerak.
       onYopish();
-      return;
+    } finally {
+      saqlashQulfi.current = false;
+      setSaqlanmoqda(false);
     }
-
-    const yangiTolovlar = [
-      ...mavjudTolovlar.map((tolov) => ({
-        paymentType: tolov.paymentType,
-        amount: Number(tolov.amount ?? 0),
-        ...farqliValyuta(tolovValyutasi(tolov, sotuv), sotuv),
-      })),
-      ...(yangiSumma > 0 ? [{ paymentType: tolovTuri, amount: yangiSumma, ...(boshqaValyuta ? { currency: tolovVal } : {}) }] : []),
-    ];
-
-    const saqlandi = await onYangilash(sotuv.id, { payments: yangiTolovlar });
-    if (!saqlandi) {
-      setXatolik(t("tolovModal.errors.saqlanmadi"));
-      return;
-    }
-
-    // To'lov qabul qilish sotuvni avtomatik tasdiqlamaydi — sotuv hali
-    // qoralama holatida qoladi, ombordan real chiqarish uchun "Ombordan
-    // chiqarish" bo'limida alohida tasdiqlash kerak.
-    onYopish();
   }
 
   return (
@@ -1735,12 +1888,46 @@ function TolovQabulQilishModal({
               </div>
             )}
 
+            {qatorlar.length > 0 && (
+              <div>
+                <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">
+                  {t("tolovModal.qoshiladiganTolovlar")}
+                </p>
+                <div className="space-y-2">
+                  {qatorlar.map((qator, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-2.5 ring-1 ring-slate-100"
+                    >
+                      <div className="min-w-0 text-sm font-bold text-slate-700">
+                        {tolovTuriMatni[qator.paymentType]}: {pulniFormatlash(qator.amount, qator.currency)}
+                        {qator.currency !== sotuvVal && (
+                          <span className="ml-2 text-xs font-semibold text-slate-400">
+                            ≈ {pulniFormatlash(sotuvValyutasigaOgirish(qator.amount, qator.currency), sotuvVal)}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        disabled={saqlanmoqda}
+                        onClick={() => setQatorlar((joriy) => joriy.filter((_, qatorIndeksi) => qatorIndeksi !== index))}
+                        aria-label={t("tolovModal.tolovniOlibTashlash")}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-500 disabled:opacity-40"
+                      >
+                        <X size={15} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-400">{t("tolovModal.tolovTuri")}</span>
                 <SavdoSelect
                   value={tolovTuri}
-                  onChange={(value) => setTolovTuri(value as TolovTuri)}
+                  onChange={(value) => tolovTuriniOzgartirish(value as TolovTuri)}
                   options={tolovTuriOptions}
                   buttonClassName="h-12 rounded-xl px-4 text-sm"
                   portal
@@ -1751,7 +1938,7 @@ function TolovQabulQilishModal({
                 <input
                   type="number"
                   min="0"
-                  max={maxTolov || undefined}
+                  max={korsatiladiganMax || undefined}
                   value={summa}
                   onChange={(event) => setSumma(event.target.value)}
                   className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
@@ -1764,6 +1951,11 @@ function TolovQabulQilishModal({
               <div className="grid gap-2">
                 <span className="text-sm font-bold text-slate-400">{t("tolovModal.tolovValyutasi")}</span>
                 <div className="flex flex-wrap items-center gap-3">
+                  {balansTanlangan ? (
+                    <span className="rounded-xl bg-gray-100 px-4 py-2 text-xs font-bold text-slate-600">
+                      {t("tolovModal.hisobValyutasi", { valyuta: tolovVal === "USD" ? t("tolovModal.valyutaDollar") : t("tolovModal.valyutaSom") })}
+                    </span>
+                  ) : (
                   <div className="inline-flex rounded-xl bg-gray-100 p-1">
                     {(["UZS", "USD"] as const).map((valyuta) => (
                       <button
@@ -1778,6 +1970,7 @@ function TolovQabulQilishModal({
                       </button>
                     ))}
                   </div>
+                  )}
                   {boshqaValyuta && (
                     <span className="text-xs font-semibold text-slate-500">
                       {t("tolovModal.kursQatori", { kurs: kurs.toLocaleString("uz-UZ", { maximumFractionDigits: 2 }) })}
@@ -1790,12 +1983,24 @@ function TolovQabulQilishModal({
             )}
 
             <div className="flex flex-wrap gap-2.5">
+              {balansTuriMumkin && !balansTanlangan && balansMaxHisobda > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    tolovTuriniOzgartirish("BALANCE");
+                    setSumma(String(balansMaxHisobda));
+                  }}
+                  className="rounded-xl bg-sky-50 px-4 py-2.5 text-xs font-bold text-sky-700 transition hover:bg-sky-100"
+                >
+                  {t("tolovModal.hisobidanTolash", { summa: pulniFormatlash(balansMaxHisobda, hisob.valyuta) })}
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => setSumma(String(maxTolov))}
+                onClick={() => setSumma(String(korsatiladiganMax))}
                 className="rounded-xl bg-orange-50 px-4 py-2.5 text-xs font-bold text-[#2563EB] transition hover:bg-orange-100"
               >
-                {t("tolovModal.tolashToliq", { summa: pulniFormatlash(maxTolov, boshqaValyuta ? tolovVal : sotuvVal) })}
+                {t("tolovModal.tolashToliq", { summa: pulniFormatlash(korsatiladiganMax, tolovVal) })}
               </button>
               <button
                 type="button"
@@ -1804,7 +2009,26 @@ function TolovQabulQilishModal({
               >
                 {t("tolovModal.qarzgaQoldirish")}
               </button>
+              <button
+                type="button"
+                disabled={saqlanmoqda || !(yangiSumma > 0)}
+                onClick={qatorQoshish}
+                className="ml-auto inline-flex items-center gap-1.5 rounded-xl border border-dashed border-[#2563EB]/40 px-4 py-2.5 text-xs font-bold text-[#2563EB] transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Plus size={14} />
+                {t("tolovModal.yanaTolovQoshish")}
+              </button>
             </div>
+            {qatorlar.length === 0 && (
+              <p className="-mt-2 text-xs font-semibold leading-5 text-slate-400">{t("tolovModal.yanaTolovIzoh")}</p>
+            )}
+            {balansTuriMumkin && (
+              <p className="-mt-2 text-xs font-bold leading-5 text-sky-700">
+                {balansTanlangan
+                  ? t("tolovModal.hisobQoldigi", { summa: pulniFormatlash(Math.max(hisob.miqdor - balansQatorlari, 0), hisob.valyuta) })
+                  : t("tolovModal.hisobMavjud", { summa: pulniFormatlash(hisob.miqdor, hisob.valyuta) })}
+              </p>
+            )}
 
             <div className="grid gap-4 rounded-2xl bg-gradient-to-br from-orange-50/70 to-white p-5 ring-1 ring-orange-100 sm:grid-cols-3">
               <div>
@@ -1827,6 +2051,23 @@ function TolovQabulQilishModal({
               </div>
             </div>
 
+            {ortiqchaYoziladi && ortiqchaSumma > 0 && (
+              <fieldset className="rounded-2xl border border-sky-100 bg-sky-50/50 p-4">
+                <legend className="px-1 text-xs font-black uppercase tracking-wide text-slate-500">
+                  {t("tolovModal.ortiqchaSarlavha", { summa: pulniFormatlash(ortiqchaSumma, sotuvVal) })}
+                </legend>
+                <label className="mt-1 flex cursor-pointer items-center gap-2 text-sm font-bold text-slate-700">
+                  <input type="radio" name="ortiqcha-tolov" checked={!ortiqchaniHisobga} onChange={() => setOrtiqchaniHisobga(false)} className="h-4 w-4 accent-[#2563EB]" />
+                  {t("tolovModal.ortiqchaQaytim")}
+                </label>
+                <label className="mt-2 flex cursor-pointer items-center gap-2 text-sm font-bold text-slate-700">
+                  <input type="radio" name="ortiqcha-tolov" checked={ortiqchaniHisobga} onChange={() => setOrtiqchaniHisobga(true)} className="h-4 w-4 accent-[#2563EB]" />
+                  {t("tolovModal.ortiqchaHisobga")}
+                </label>
+                <p className="mt-2 text-xs font-semibold leading-5 text-slate-500">{t("tolovModal.ortiqchaIzoh")}</p>
+              </fieldset>
+            )}
+
             {xatolik && (
               <div className="rounded-2xl bg-red-50 p-3.5 text-sm font-bold text-red-600">{xatolik}</div>
             )}
@@ -1841,11 +2082,11 @@ function TolovQabulQilishModal({
               </button>
               <button
                 type="button"
-                disabled={amalBajarilmoqda}
+                disabled={amalBajarilmoqda || saqlanmoqda}
                 onClick={() => void submit()}
                 className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#2563EB] px-6 text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,235,.24)] transition hover:bg-[#1D4ED8] disabled:opacity-50"
               >
-                {amalBajarilmoqda && <LoaderCircle size={16} className="animate-spin" />}
+                {(amalBajarilmoqda || saqlanmoqda) && <LoaderCircle size={16} className="animate-spin" />}
                 {draft ? t("tolovModal.tolovniSaqlash") : t("tolovModal.tolovniQoshish")}
               </button>
             </div>

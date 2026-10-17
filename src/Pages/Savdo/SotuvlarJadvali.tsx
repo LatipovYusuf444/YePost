@@ -101,6 +101,7 @@ const tolovTuriKaliti: Record<TolovTuri, string> = {
   CARD: "sotuvlarJadvali.tolovTuri.CARD",
   BANK: "sotuvlarJadvali.tolovTuri.BANK",
   DEBT: "sotuvlarJadvali.tolovTuri.DEBT",
+  BALANCE: "sotuvlarJadvali.tolovTuri.BALANCE",
 };
 
 const tarixHolatClass = {

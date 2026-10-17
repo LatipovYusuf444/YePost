@@ -2,7 +2,8 @@ export type SotuvHolati = "DRAFT" | "CONFIRMED" | "CANCELLED";
 export type SotuvTuri = "QUICK" | "CLIENT";
 // Savdo narx turi (Sozlamalar → Sotuv: qaysilari yoqilgan bo'lsa shular ishlatiladi; o'chirilgan tur yuborilsa backend rad etadi).
 export type SotuvNarxTuri = "COST" | "RETAIL" | "WHOLESALE";
-export type TolovTuri = "CASH" | "CARD" | "BANK" | "DEBT";
+// BALANCE — mijoz hisobidan to'lov (faqat mijozli savdoda; kassa yashigiga tushmaydi).
+export type TolovTuri = "CASH" | "CARD" | "BANK" | "DEBT" | "BALANCE";
 export type YetkazishHolati = "PENDING" | "DISPATCHED" | "DELIVERED" | "CANCELLED";
 
 export type YetkazishMalumoti = {
@@ -49,6 +50,9 @@ export type NomliMalumot = {
   companyId?: string | null;
   company?: NomliMalumot | null;
   partner?: { id: string } | null;
+  // Mijoz hisobi (oldindan to'langan pul) va uning valyutasi (valyuta rejimida USD).
+  balance?: number | string | null;
+  balanceCurrency?: string | null;
 };
 
 export type SotuvMahsuloti = {
@@ -119,6 +123,10 @@ export type Sotuv = {
   discountAmount?: number | string;
   paidAmount?: number | string;
   debtAmount?: number | string;
+  // `keepExcess` bilan ortiqcha pulning mijoz hisobiga yozilgan qismi (sotuv valyutasida).
+  excessToBalance?: number | string | null;
+  // Ortiqcha pulning mijozning eski qarzini yopishga ketgan qismi (sotuv valyutasida).
+  excessToDebt?: number | string | null;
   createdAt?: string;
   date?: string;
   updatedAt?: string;
@@ -167,6 +175,8 @@ export type SotuvYaratishMalumoti = {
   currency?: string;
   // Dollar qatnashsa qaytim mingtagacha yaxlitlanadi (standart true); false — aniq qaytim (tanga).
   roundChange?: boolean;
+  // Ortiqcha pul (eski qarzlar yopilgach) qaytim emas, mijoz hisobiga yoziladi. Faqat mijozli savdoda (standart false).
+  keepExcess?: boolean;
   note?: string;
   // Donalik savdo uchun mijoz ismi (≤200 belgi) va telefoni (≤50 belgi). Qarzga sotish uchun baribir customerId kerak.
   walkInCustomerName?: string;
