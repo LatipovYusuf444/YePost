@@ -200,6 +200,23 @@
     "payment": { "title": "To'lov", "hint": "To'lov ma'lumotlari" },
     "confirm": { "title": "Yakun", "hint": "Tasdiqlang" }
   },
+  "priceTypes": {
+    "label": "Narx turi",
+    "cost": "Tan narx",
+    "retail": "Chakana",
+    "wholesale": "Ulgurji",
+    "costShort": "Tan",
+    "retailShort": "Chakana",
+    "wholesaleShort": "Ulgurji",
+    "hint": "Sotuvchi tanlaydi: tanlangan tur narxi hamma mahsulotga qo'yiladi. Har qatorda alohida ham o'zgartirish mumkin.",
+    "disabled": "Sozlamalarda o'chirilgan",
+    "noPrice": "Bu mahsulotda bu narx turi yo'q",
+    "skipped": "{{count}} ta mahsulotda \"{{type}}\" narxi yo'q — ular avvalgi narx turida qoldi."
+  },
+  "discountUnit": {
+    "label": "Chegirma birligi",
+    "percentTitle": "Chegirma foizda (0–100)"
+  },
   "table": {
     "number": "#",
     "product": "Mahsulot",
