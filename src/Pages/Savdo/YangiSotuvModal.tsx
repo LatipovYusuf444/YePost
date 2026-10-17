@@ -347,6 +347,9 @@ export default function YangiSotuvModal({
   const narxSozlamasiniYuklash = useSavdoSozlamalariStore((holat) => holat.yuklash);
   const [narxTuri, setNarxTuri] = useState<SotuvNarxTuri>("RETAIL");
   const [narxXabari, setNarxXabari] = useState("");
+  // "Sotuv narxi" maydoni hisoblangan qiymatni ko'rsatadi (katalog + ustama − chegirma / miqdor), shuning uchun yozilayotgan matn alohida
+  // saqlanadi: aks holda maydonni bo'shatib bo'lmaydi (bo'sh qiymat darrov katalog narxiga qaytadi). Maydondan chiqilganda hisoblangan narx ko'rinadi.
+  const [narxTahriri, setNarxTahriri] = useState<{ qator: number; matn: string } | null>(null);
   const narxTuriTanlandi = useRef(false);
   const turRuxsati = (tur: SotuvNarxTuri) => (narxSozlamasi ? narxSozlamasi.includes(tur) : tur !== "COST");
   useEffect(() => {
@@ -979,6 +982,7 @@ export default function YangiSotuvModal({
   }
 
   function qatorniOchirish(index: number) {
+    setNarxTahriri(null);
     setMahsulotlar((joriy) => joriy.filter((_, qatorIndex) => qatorIndex !== index));
   }
 
@@ -1730,9 +1734,10 @@ export default function YangiSotuvModal({
                                 min="0"
                                 step="0.01"
                                 disabled={narx <= 0}
-                                value={narx > 0 ? sotuvNarxi : ""}
+                                value={narxTahriri?.qator === index ? narxTahriri.matn : narx > 0 ? sotuvNarxi : ""}
                                 data-sotuv-narx={index}
                                 onFocus={(event) => event.currentTarget.select()}
+                                onBlur={() => setNarxTahriri(null)}
                                 onKeyDown={(event) => {
                                   if (qatorKlavishlari(event, index, "narx")) return;
                                   if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
@@ -1740,6 +1745,7 @@ export default function YangiSotuvModal({
                                   fokusSoralish(index, "miqdor");
                                 }}
                                 onChange={(event) => {
+                                  setNarxTahriri({ qator: index, matn: event.target.value });
                                   const kiritilgan = raqamgaAylantirish(event.target.value);
                                   // Bo'sh yoki noto'g'ri qiymat katalog narxiga qaytaradi; katalogdan past narx chegirma, baland narx ustama bo'ladi.
                                   const { ustama: yangiUstama, chegirma: yangiChegirma } = kiritilganNarx({ katalog: katalogNarxi, kiritilgan, miqdor });
