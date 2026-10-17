@@ -17,16 +17,18 @@ import { foydalanuvchilarApi } from "@/api/accountsApi";
 import { mijozlarApi, yetkazibBeruvchilarApi } from "@/api/partnersApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
+import { useValyutaStore, valyutaKodi, type Valyuta } from "@/lib/valyuta";
 import KassaAmaliyotKorinishi from "./KassaAmaliyotKorinishi";
 import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali } from "./types";
 import {
   hozir,
   izohMajburiy,
+  kassaSummasi,
   keyingiRaqam,
   maydonKlass,
   partiyaTuri,
-  summaFormat,
   turYonalishi,
+  valyutaTanlanadiganTur,
   yangiId,
 } from "./yordamchilar";
 
@@ -58,7 +60,8 @@ type Props = {
   onSaqlash: (amaliyot: KassaAmaliyoti) => void;
 };
 
-type XaridorTanlov = { id: string; nomi: string; telefon: string; balans: number };
+// balans — mijoz hisobi (oldindan to'langan pul) va uning valyutasi (valyuta rejimida dollar).
+type XaridorTanlov = { id: string; nomi: string; telefon: string; balans: number; balansValyutasi: Valyuta };
 type OddiyTanlov = { id: string; nomi: string };
 
 // Kassa amaliyotini yaratish (o'zimizning "Yangi kirim" uslubida).
@@ -93,6 +96,15 @@ export default function KassaAmaliyotModal({
   const [sana, setSana] = useState(boshlangich?.sana.slice(0, 10) ?? hozir().slice(0, 10));
   const [izoh, setIzoh] = useState(boshlangich?.izoh ?? "");
   const [xato, setXato] = useState("");
+  // Valyuta (so'm/dollar) va kurs: faqat valyuta rejimi yoqilgan va bugungi kurs kiritilgan bo'lsa; kurs yozilmasa backend kunlik kursni oladi.
+  const rejimYoniq = useValyutaStore((holat) => holat.rejimYoniq);
+  const kursBor = useValyutaStore((holat) => holat.kursBor);
+  const kunlikKurs = useValyutaStore((holat) => holat.kurs);
+  const [valyuta, setValyuta] = useState<Valyuta>(boshlangich?.valyuta ?? "UZS");
+  const [kursMatni, setKursMatni] = useState(boshlangich?.kurs ? String(boshlangich.kurs) : "");
+  // Yetkazib beruvchiga to'lovda qaysi valyutadagi qarz yopilishi (`settleCurrency`); tanlanmasa to'lov valyutasi bilan bir xil.
+  // Mijozda hisob valyutasini backend o'zi qo'yadi.
+  const [qarzVal, setQarzVal] = useState<Valyuta | null>(boshlangich?.hisobValyutasi ?? null);
 
   // Mas'ul shaxs — tizimga kirgan foydalanuvchi; o'zgartirib bo'lmaydi.
   const joriyProfil = useAuthProfileStore((state) => state.profil);
@@ -118,6 +130,7 @@ export default function KassaAmaliyotModal({
           nomi: [item.firstName, item.lastName].filter(Boolean).join(" ") || item.phone || item.id,
           telefon: item.phone ?? "",
           balans: Number(item.balance ?? 0),
+          balansValyutasi: valyutaKodi(item.balanceCurrency),
         })));
         setXodimlar(users.map((item) => ({ id: item.id, nomi: item.fullName || item.username })));
         setYetkazibBeruvchilar(suppliers.map((item) => ({ id: item.id, nomi: item.name })));
@@ -150,9 +163,34 @@ export default function KassaAmaliyotModal({
     [xaridorlar, xaridorId]
   );
   const summaSoni = Number(summa) || 0;
-  // To'lov qarzni kamaytiradi (+), qaytarish oshiradi (−).
+  const valyutaTanlovi = rejimYoniq && kursBor && valyutaTanlanadiganTur(turi);
+  const tanlanganValyuta: Valyuta = valyutaTanlovi ? valyuta : "UZS";
+  // Hisob valyutasi: mijozda — uning hisobi valyutasi (faqat ko'rsatish uchun); yetkazib beruvchida — kassir tanlagan qarz valyutasi.
+  const hisobVal: Valyuta | null =
+    partiya === "xaridor"
+      ? tanlanganXaridor
+        ? tanlanganXaridor.balansValyutasi
+        : null
+      : partiya === "yetkazib"
+        ? (qarzVal ?? tanlanganValyuta)
+        : null;
+  const kursKerak = valyutaTanlovi && hisobVal !== null && tanlanganValyuta !== hisobVal;
+  const kiritilganKurs = Number(kursMatni.replace(",", ".")) || 0;
+  const amalKurs = kiritilganKurs > 0 ? kiritilganKurs : kunlikKurs;
+  // Summaning hisob valyutasidagi taxminiy qiymati (aniq qiymatni backend tasdiqlaganda hisoblaydi).
+  const hisoblanganSumma =
+    hisobVal === null
+      ? null
+      : !kursKerak
+        ? summaSoni
+        : amalKurs > 0
+          ? tanlanganValyuta === "UZS"
+            ? summaSoni / amalKurs
+            : summaSoni * amalKurs
+          : null;
+  // To'lov hisobni to'ldiradi (+), qaytarish kamaytiradi (−).
   const balansDelta =
-    turi === "xaridor_tolovi" ? summaSoni : turi === "xaridorga_qaytarish" ? -summaSoni : 0;
+    hisoblanganSumma === null ? 0 : turi === "xaridor_tolovi" ? hisoblanganSumma : turi === "xaridorga_qaytarish" ? -hisoblanganSumma : 0;
 
   function turniOzgartir(yangiTuri: KassaAmaliyotTuri) {
     setTuri(yangiTuri);
@@ -161,6 +199,9 @@ export default function KassaAmaliyotModal({
     setSupplierId("");
     setEmployeeId("");
     setKontragent("");
+    setValyuta("UZS");
+    setKursMatni("");
+    setQarzVal(null);
   }
 
   function yubor(tasdiqla: boolean) {
@@ -178,6 +219,10 @@ export default function KassaAmaliyotModal({
     }
     if (izohMajburiy(turi) && !izoh.trim()) {
       setXato(t("modal.errors.commentRequired"));
+      return;
+    }
+    if (kursKerak && kursMatni.trim() && !(kiritilganKurs > 0)) {
+      setXato(t("modal.errors.invalidRate"));
       return;
     }
 
@@ -203,6 +248,10 @@ export default function KassaAmaliyotModal({
       nomi: nomi.trim() || t(`types.${turi}`),
       kontragent: yakuniyKontragent,
       summa: Number(summa),
+      valyuta: valyutaTanlovi ? tanlanganValyuta : undefined,
+      // `settleCurrency` faqat yetkazib beruvchiga to'lovda yuboriladi; mijoz hisobida backend uni o'zi qo'yadi.
+      hisobValyutasi: valyutaTanlovi && partiya === "yetkazib" && hisobVal ? hisobVal : undefined,
+      kurs: valyutaTanlovi && kursKerak && kiritilganKurs > 0 ? kiritilganKurs : undefined,
       sana: new Date(`${sana}T${new Date().toISOString().slice(11, 16)}`).toISOString(),
       masul: masul.trim(),
       izoh: izoh.trim(),
@@ -340,10 +389,10 @@ export default function KassaAmaliyotModal({
                             tanlanganXaridor.balans < 0 ? "text-red-500" : "text-emerald-600"
                           }`}
                         >
-                          {summaFormat(tanlanganXaridor.balans)}
-                          {summaSoni > 0 && (
+                          {kassaSummasi(tanlanganXaridor.balans, tanlanganXaridor.balansValyutasi)}
+                          {summaSoni > 0 && hisoblanganSumma !== null && (
                             <span className="ml-2 text-xs text-slate-500">
-                              → {summaFormat(tanlanganXaridor.balans + balansDelta)}
+                              → {kassaSummasi(tanlanganXaridor.balans + balansDelta, tanlanganXaridor.balansValyutasi)}
                             </span>
                           )}
                         </span>
@@ -393,17 +442,93 @@ export default function KassaAmaliyotModal({
                   </Maydon>
                 )}
 
+                {/* Valyuta: mijoz hisobi va yetkazib beruvchi to'lovlarida so'm yoki dollar */}
+                {valyutaTanlovi && (
+                  <div className="space-y-2 text-sm font-bold text-slate-500">
+                    <span>{t("modal.currencyLabel")}</span>
+                    <div className="inline-flex rounded-xl bg-slate-100 p-1">
+                      {(["UZS", "USD"] as const).map((kod) => (
+                        <button
+                          key={kod}
+                          type="button"
+                          onClick={() => {
+                            if (kod === valyuta) return;
+                            setValyuta(kod);
+                            setSumma("");
+                            setKursMatni("");
+                          }}
+                          className={`rounded-lg px-4 py-2 text-xs font-bold transition ${
+                            valyuta === kod ? "bg-white text-[#2563EB] shadow-sm" : "text-slate-500 hover:text-slate-700"
+                          }`}
+                        >
+                          {kod === "USD" ? t("modal.currencyUsd") : t("modal.currencyUzs")}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Yetkazib beruvchi: qaysi valyutadagi qarz yopiladi (masalan, so'mda to'lab dollar qarzni yopish) */}
+                {valyutaTanlovi && partiya === "yetkazib" && (
+                  <div className="space-y-2 text-sm font-bold text-slate-500">
+                    <span>{t("modal.settleLabel")}</span>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="inline-flex rounded-xl bg-slate-100 p-1">
+                        {(["UZS", "USD"] as const).map((kod) => (
+                          <button
+                            key={kod}
+                            type="button"
+                            onClick={() => setQarzVal(kod)}
+                            className={`rounded-lg px-4 py-2 text-xs font-bold transition ${
+                              hisobVal === kod ? "bg-white text-[#2563EB] shadow-sm" : "text-slate-500 hover:text-slate-700"
+                            }`}
+                          >
+                            {kod === "USD" ? t("modal.currencyUsd") : t("modal.currencyUzs")}
+                          </button>
+                        ))}
+                      </div>
+                      <span className="text-xs font-semibold text-slate-400">{t("modal.settleHint")}</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Summa */}
-                <Maydon label={t("modal.amountLabel")}>
+                <Maydon label={valyutaTanlovi ? t("modal.amountLabelCurrency", { valyuta: tanlanganValyuta === "USD" ? "$" : t("modal.currencyUzs") }) : t("modal.amountLabel")}>
                   <input
                     type="text"
-                    inputMode="numeric"
-                    value={summa ? Number(summa).toLocaleString("ru-RU") : ""}
-                    onChange={(event) => setSumma(event.target.value.replace(/\D/g, "").replace(/^0+(?=\d)/, ""))}
-                    placeholder="450 000"
+                    inputMode={tanlanganValyuta === "USD" ? "decimal" : "numeric"}
+                    value={tanlanganValyuta === "USD" ? summa : summa ? Number(summa).toLocaleString("ru-RU") : ""}
+                    onChange={(event) =>
+                      setSumma(
+                        tanlanganValyuta === "USD"
+                          ? event.target.value.replace(/,/g, ".").replace(/[^\d.]/g, "").replace(/^(\d*\.\d{0,2}).*$/, "$1").replace(/\.(?=.*\.)/g, "")
+                          : event.target.value.replace(/\D/g, "").replace(/^0+(?=\d)/, "")
+                      )
+                    }
+                    placeholder={tanlanganValyuta === "USD" ? "100" : "450 000"}
                     className={maydonKlass}
                   />
                 </Maydon>
+
+                {/* Kurs: so'mda berilgan pul dollar hisobiga (yoki aksincha) o'tganda; yozilmasa kunlik kurs */}
+                {kursKerak && (
+                  <Maydon label={t("modal.rateLabel")}>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={kursMatni}
+                      onChange={(event) => setKursMatni(event.target.value.replace(/[^\d.,]/g, ""))}
+                      placeholder={kunlikKurs > 0 ? t("modal.ratePlaceholder", { kurs: kunlikKurs.toLocaleString("uz-UZ") }) : ""}
+                      className={maydonKlass}
+                    />
+                    <span className="block text-xs font-semibold text-slate-400">{t("modal.rateHint")}</span>
+                    {summaSoni > 0 && hisoblanganSumma !== null && hisobVal && (
+                      <span className="block text-xs font-bold text-sky-700">
+                        {t("modal.settledPreview", { summa: kassaSummasi(hisoblanganSumma, hisobVal) })}
+                      </span>
+                    )}
+                  </Maydon>
+                )}
 
                 {/* To'lov turi / hisob */}
                 <Maydon label={t("modal.paymentTypeLabel")}>

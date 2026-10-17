@@ -42,5 +42,11 @@ export type KassaAmaliyoti = {
   backendSource?: "SALE" | "RETURN" | "CASH_IN" | "EXPENSE" | "CASH_OPERATION";
   backendRefId?: string;
   backendBranchId?: string;
+  // Valyuta: pul qaysi valyutada olingan/berilgan (yo'q — so'm), mijoz/yetkazib beruvchi hisobi valyutasi,
+  // shu summaning hisob valyutasidagi qiymati va kurs (backend tasdiqlaganda hisoblaydi yoki kassir yozadi).
+  valyuta?: "UZS" | "USD";
+  hisobValyutasi?: "UZS" | "USD";
+  hisoblanganSumma?: number;
+  kurs?: number;
   readonly?: boolean;
 };

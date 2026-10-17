@@ -44,13 +44,13 @@
     "summa": "Сумма"
   },
   "types": {
-    "xaridor_tolovi": "Оплата от клиента",
+    "xaridor_tolovi": "Пополнение счёта клиента",
     "hisobdor_qaytardi": "Возврат средств подотчётным лицом",
     "taminotchi_qaytardi": "Возврат средств поставщиком",
     "boshqa_kirim": "Прочие денежные поступления",
     "donalik_savdo": "Разовая продажа",
     "taminot_tolovi": "Оплата поставщику",
-    "xaridorga_qaytarish": "Возврат средств клиенту",
+    "xaridorga_qaytarish": "Возврат наличными со счёта",
     "ish_haqi": "Выплата зарплаты",
     "boshqa_chiqim": "Прочие денежные расходы",
     "xarajat": "Расход"
@@ -84,7 +84,7 @@
     "expenseTypeLabel": "Тип расхода *",
     "customerLabel": "Клиент *",
     "customerPlaceholder": "Выберите клиента",
-    "currentDebtLabel": "Текущий долг",
+    "currentDebtLabel": "Счёт клиента (баланс)",
     "employeeLabel": "Сотрудник *",
     "employeePlaceholder": "Выберите сотрудника",
     "supplierLabel": "Поставщик *",
@@ -92,6 +92,16 @@
     "counterpartyLabel": "Контрагент",
     "counterpartyPlaceholder": "Необязательно — от кого/кому",
     "amountLabel": "Сумма (сум) *",
+    "amountLabelCurrency": "Сумма ({{valyuta}}) *",
+    "currencyLabel": "Валюта",
+    "currencyUzs": "Сум",
+    "currencyUsd": "Доллар ($)",
+    "settleLabel": "Долг в какой валюте закрывается",
+    "settleHint": "Например, платя в сумах, можно закрыть долг в долларах — курс вводите вы.",
+    "rateLabel": "Курс (1 $ = сколько сум)",
+    "ratePlaceholder": "Курс на сегодня: {{kurs}}",
+    "rateHint": "Необязательно. Если оставить пустым, будет использован курс на сегодня.",
+    "settledPreview": "Будет записано на счёт: {{summa}}",
     "paymentTypeLabel": "Способ оплаты",
     "responsibleLabel": "Ответственное лицо",
     "responsiblePlaceholder": "Выберите ответственное лицо",
@@ -109,6 +119,7 @@
       "selectEmployee": "Необходимо выбрать сотрудника.",
       "selectSupplier": "Необходимо выбрать поставщика.",
       "invalidAmount": "Сумма должна быть числом больше 0.",
+      "invalidRate": "Курс должен быть числом больше 0.",
       "commentRequired": "Для прочих расходов необходимо заполнить комментарий (причину расхода)."
     }
   },
@@ -232,6 +243,7 @@
   "view": {
     "amountIncome": "Сумма поступления",
     "amountExpense": "Сумма расхода",
+    "settledLine": "На счёт: {{summa}} (курс: 1 $ = {{kurs}} сум)",
     "detailsTitle": "Данные операции",
     "name": "Название",
     "customer": "Клиент",

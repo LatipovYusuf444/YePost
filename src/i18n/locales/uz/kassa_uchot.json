@@ -44,13 +44,13 @@
     "summa": "Summa"
   },
   "types": {
-    "xaridor_tolovi": "Mijozdan to'lov",
+    "xaridor_tolovi": "Mijoz hisobini to'ldirish",
     "hisobdor_qaytardi": "Hisobdor shaxs mablag'ini qaytarish",
     "taminotchi_qaytardi": "Yetkazib beruvchi mablag'ini qaytarishi",
     "boshqa_kirim": "Boshqa pul mablag'lari tushumi",
     "donalik_savdo": "Donalik savdo",
     "taminot_tolovi": "Yetkazib beruvchiga to'lov",
-    "xaridorga_qaytarish": "Xaridorga pul mablag'larini qaytarish",
+    "xaridorga_qaytarish": "Hisobdan naqd qaytarish",
     "ish_haqi": "Ish haqini to'lash",
     "boshqa_chiqim": "Boshqa pul xarajatlari",
     "xarajat": "Xarajat"
@@ -84,7 +84,7 @@
     "expenseTypeLabel": "Chiqim turi *",
     "customerLabel": "Mijoz *",
     "customerPlaceholder": "Mijozni tanlang",
-    "currentDebtLabel": "Joriy qarzi",
+    "currentDebtLabel": "Mijoz hisobi (balans)",
     "employeeLabel": "Xodim *",
     "employeePlaceholder": "Xodimni tanlang",
     "supplierLabel": "Yetkazib beruvchi *",
@@ -92,6 +92,16 @@
     "counterpartyLabel": "Kontragent",
     "counterpartyPlaceholder": "Ixtiyoriy — kimdan/kimga",
     "amountLabel": "Summa (so'm) *",
+    "amountLabelCurrency": "Summa ({{valyuta}}) *",
+    "currencyLabel": "Valyuta",
+    "currencyUzs": "So'm",
+    "currencyUsd": "Dollar ($)",
+    "settleLabel": "Qaysi valyutadagi qarzni yopadi",
+    "settleHint": "Masalan, so'mda to'lab dollardagi qarzni yopish mumkin — kursni o'zingiz yozasiz.",
+    "rateLabel": "Kurs (1 $ = necha so'm)",
+    "ratePlaceholder": "Kunlik kurs: {{kurs}}",
+    "rateHint": "Ixtiyoriy. Bo'sh qoldirsangiz kunlik kurs ishlatiladi.",
+    "settledPreview": "Hisobga o'tadi: {{summa}}",
     "paymentTypeLabel": "To'lov turi",
     "responsibleLabel": "Mas'ul shaxs",
     "responsiblePlaceholder": "Mas'ul shaxsni tanlang",
@@ -109,6 +119,7 @@
       "selectEmployee": "Xodim tanlanishi shart.",
       "selectSupplier": "Yetkazib beruvchi tanlanishi shart.",
       "invalidAmount": "Summa 0 dan katta son bo'lishi kerak.",
+      "invalidRate": "Kurs 0 dan katta son bo'lishi kerak.",
       "commentRequired": "Boshqa pul xarajatlari uchun kommentariya (nega chiqim) to'ldirilishi shart."
     }
   },
@@ -232,6 +243,7 @@
   "view": {
     "amountIncome": "Tushum summasi",
     "amountExpense": "Chiqim summasi",
+    "settledLine": "Hisobga: {{summa}} (kurs: 1 $ = {{kurs}} so'm)",
     "detailsTitle": "Amaliyot ma'lumotlari",
     "name": "Nomi",
     "customer": "Mijoz",

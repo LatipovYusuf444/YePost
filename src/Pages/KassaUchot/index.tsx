@@ -34,7 +34,7 @@ import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/Kengaytiril
 import KassaAmaliyotModal from "./KassaAmaliyotModal";
 import ZavodBonusi from "./ZavodBonusi";
 import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali, KassaYonalishi } from "./types";
-import { sanaFormat, summaFormat } from "./yordamchilar";
+import { kassaSummasi, sanaFormat, summaFormat } from "./yordamchilar";
 
 import ModalTablari from "@/Components/common/ModalTablari";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
@@ -172,6 +172,10 @@ export default function KassaUchot() {
       nomi: item.name || t(`types.${cashOperationTuri[item.type]}`),
       kontragent: counterparty,
       summa: Number(item.amount ?? 0),
+      valyuta: item.currency === "USD" ? "USD" : item.currency === "UZS" ? "UZS" : undefined,
+      hisobValyutasi: item.settleCurrency === "USD" ? "USD" : item.settleCurrency === "UZS" ? "UZS" : undefined,
+      hisoblanganSumma: item.settledAmount != null && Number(item.settledAmount) > 0 ? Number(item.settledAmount) : undefined,
+      kurs: item.rate != null && Number(item.rate) > 0 ? Number(item.rate) : undefined,
       sana: item.date,
       masul:
         item.responsible?.fullName ||
@@ -240,6 +244,10 @@ export default function KassaUchot() {
         type: uiOperationTuri[amaliyot.turi],
         date: amaliyot.sana,
         amount: amaliyot.summa,
+        // So'mda berilgan pul hisob valyutasiga (dollarga) `rate` bilan o'giriladi; kurs yozilmasa backend kunlik kursni oladi.
+        ...(amaliyot.valyuta ? { currency: amaliyot.valyuta } : {}),
+        ...(amaliyot.hisobValyutasi ? { settleCurrency: amaliyot.hisobValyutasi } : {}),
+        ...(amaliyot.kurs ? { rate: amaliyot.kurs } : {}),
         paymentMethod,
         name: amaliyot.nomi,
         note: amaliyot.izoh || amaliyot.nomi,
@@ -362,7 +370,10 @@ export default function KassaUchot() {
   // Bekor qilingan amaliyotlar kassa jamiga kirmaydi.
   // Birinchi yuklanishda (ma'lumot hali yo'q) sahifa o'rtasida yuklanish holati ko'rsatiladi.
   const dastlabkiYuklanish = yuklanmoqda && amaliyotlar.length === 0;
-  const jami = royxat.reduce((sum, amaliyot) => sum + (amaliyot.holat === "bekor_qilingan" ? 0 : amaliyot.summa), 0);
+  // Dollardagi operatsiyalar so'mga qo'shilmaydi: jami valyutalar bo'yicha alohida ko'rsatiladi.
+  const jamiSom = royxat.reduce((sum, amaliyot) => sum + (amaliyot.holat === "bekor_qilingan" || amaliyot.valyuta === "USD" ? 0 : amaliyot.summa), 0);
+  const jamiDollar = royxat.reduce((sum, amaliyot) => sum + (amaliyot.holat === "bekor_qilingan" || amaliyot.valyuta !== "USD" ? 0 : amaliyot.summa), 0);
+  const jamiMatni = jamiDollar > 0 ? (jamiSom > 0 ? `${summaFormat(jamiSom)} + ${kassaSummasi(jamiDollar, "USD")}` : kassaSummasi(jamiDollar, "USD")) : summaFormat(jamiSom);
 
   const ustunlar: Ustun<KassaAmaliyoti>[] = [
     {
@@ -426,7 +437,13 @@ export default function KassaUchot() {
       kenglik: 150,
       katak: (a) => (
         <span className={`font-black ${tushum ? "text-emerald-600" : "text-red-500"}`}>
-          {tushum ? "+" : "−"} {summaFormat(a.summa)}
+          {tushum ? "+" : "−"} {kassaSummasi(a.summa, a.valyuta)}
+          {a.hisoblanganSumma !== undefined && a.hisobValyutasi && (a.valyuta ?? "UZS") !== a.hisobValyutasi && (
+            <span className="block text-[11px] font-semibold text-slate-400">
+              → {kassaSummasi(a.hisoblanganSumma, a.hisobValyutasi)}
+              {a.kurs ? ` · ${a.kurs.toLocaleString("uz-UZ")}` : ""}
+            </span>
+          )}
         </span>
       ),
     },
@@ -497,7 +514,7 @@ export default function KassaUchot() {
               }`}
             >
               {tushum ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
-              {t("totalLabel", { value: summaFormat(jami) })}
+              {t("totalLabel", { value: jamiMatni })}
             </div>
           )}
         </div>
@@ -546,7 +563,7 @@ export default function KassaUchot() {
             ikonka={bekor ? <Ban size={24} /> : <Trash2 size={24} />}
             ohang={bekor ? "sariq" : "qizil"}
             sarlavha={t(`${kalit}.title`)}
-            nom={`${tasdiqAmaliyot.raqam} · ${summaFormat(tasdiqAmaliyot.summa)}`}
+            nom={`${tasdiqAmaliyot.raqam} · ${kassaSummasi(tasdiqAmaliyot.summa, tasdiqAmaliyot.valyuta)}`}
             tavsif={t(`${kalit}.description`)}
             izoh={sotuv && bekor ? t("saleCancelDialog.note") : undefined}
             ortgaMatni={t("common:hujjatOchirish.no")}

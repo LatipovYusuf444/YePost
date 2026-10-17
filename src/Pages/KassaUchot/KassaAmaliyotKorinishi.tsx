@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { KassaAmaliyoti, KassaHolati, KassaKanali } from "./types";
-import { partiyaTuri, sanaFormat, summaFormat } from "./yordamchilar";
+import { kassaSummasi, partiyaTuri, sanaFormat } from "./yordamchilar";
 
 const kanalIkonlari: Record<KassaKanali, typeof Banknote> = {
   naqd: Banknote,
@@ -120,8 +120,16 @@ export default function KassaAmaliyotKorinishi({ amaliyot }: Props) {
               tushum ? "text-emerald-600" : "text-red-500"
             }`}
           >
-            {tushum ? "+" : "−"} {summaFormat(amaliyot.summa)}
+            {tushum ? "+" : "−"} {kassaSummasi(amaliyot.summa, amaliyot.valyuta)}
           </p>
+          {amaliyot.hisoblanganSumma !== undefined && amaliyot.hisobValyutasi && (amaliyot.valyuta ?? "UZS") !== amaliyot.hisobValyutasi && (
+            <p className="mt-2 text-sm font-bold text-slate-500">
+              {t("view.settledLine", {
+                summa: kassaSummasi(amaliyot.hisoblanganSumma, amaliyot.hisobValyutasi),
+                kurs: amaliyot.kurs ? amaliyot.kurs.toLocaleString("uz-UZ") : "—",
+              })}
+            </p>
+          )}
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-extrabold text-[#2563EB] ring-1 ring-orange-100">

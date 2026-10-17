@@ -28,6 +28,16 @@ export function summaFormat(summa: number) {
   return pulMatni(summa, "UZS", true);
 }
 
+// Kassa summasi o'z valyutasida: dollar — ko'rinish valyutasiga o'girilmaydi; so'm — avvalgidek.
+export function kassaSummasi(summa: number, valyuta?: "UZS" | "USD") {
+  return valyuta === "USD" ? `$${summa.toLocaleString("uz-UZ", { maximumFractionDigits: 2 })}` : summaFormat(summa);
+}
+
+// Valyuta (so'm/dollar) tanlanadigan turlar: mijoz hisobi (to'ldirish/qaytarish) va yetkazib beruvchiga to'lov.
+export function valyutaTanlanadiganTur(turi: import("./types").KassaAmaliyotTuri) {
+  return turi === "xaridor_tolovi" || turi === "xaridorga_qaytarish" || turi === "taminot_tolovi";
+}
+
 export function sanaFormat(sana: string) {
   const vaqt = new Date(sana);
   if (Number.isNaN(vaqt.getTime())) return sana;

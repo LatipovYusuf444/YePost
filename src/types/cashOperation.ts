@@ -20,6 +20,12 @@ export type CashOperation = {
   status: CashOperationStatus;
   paymentMethod: CashPaymentMethod;
   amount: string | number;
+  // Pul harakatlangan valyuta; berilmasa — so'm.
+  currency?: "UZS" | "USD" | null;
+  // Hisob (mijoz/yetkazib beruvchi balansi) valyutasi va shu valyutadagi qiymat (tasdiqlanganda backend hisoblaydi).
+  settleCurrency?: "UZS" | "USD" | null;
+  settledAmount?: string | number | null;
+  rate?: string | number | null;
   date: string;
   name?: string | null;
   note?: string | null;
@@ -46,6 +52,10 @@ export type CashOperationPayload = {
   type: CashOperationType;
   paymentMethod?: CashPaymentMethod;
   amount: number;
+  // So'mda berilgan pul hisob valyutasiga (USD) `rate` bilan o'giriladi; `rate` berilmasa kunlik kurs olinadi. $ uchun valyuta rejimi kerak.
+  currency?: "UZS" | "USD";
+  settleCurrency?: "UZS" | "USD";
+  rate?: number;
   date?: string;
   name?: string;
   note?: string;
