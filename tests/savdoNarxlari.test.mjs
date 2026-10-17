@@ -4,9 +4,11 @@ import {
   chakanaSomNarxi,
   chegirmaFoizi,
   chegirmaSummasi,
+  kiritilganNarx,
   narxSotuvValyutasida,
   qatorNarxTuri,
   turNarxi,
+  ustamaliNarx,
   yuboriladiganQator,
 } from '../src/lib/savdoNarxlari.ts';
 
@@ -105,4 +107,42 @@ test('yuboriladigan qator: dollarli sotuv — mahsulot o‘z valyutasida', () =>
   // so'mda saqlangan mahsulot: so'm narx, chegirma kurs bilan so'mga
   const som = yuboriladiganQator({ modificationId: 'a', miqdor: 2, tur: 'COST', qoldiq: SOM, sotuvVal: 'USD', kurs: KURS, narx: 1.26, chegirma: 0.5, chegirmaTuri: 'sum', foiz: 0 });
   assert.deepEqual(som, { modificationId: 'a', quantity: 2, priceType: 'COST', price: 15000, discount: 5955, currency: 'UZS' });
+});
+
+test('kiritilgan narx: katalogdan past — chegirma, baland — ustama, teng yoki noto‘g‘ri — ikkalasi 0', () => {
+  assert.deepEqual(kiritilganNarx({ katalog: 3000, kiritilgan: 2500, miqdor: 4 }), { ustama: 0, chegirma: 2000 });
+  assert.deepEqual(kiritilganNarx({ katalog: 3000, kiritilgan: 4500, miqdor: 4 }), { ustama: 1500, chegirma: 0 });
+  assert.deepEqual(kiritilganNarx({ katalog: 3000, kiritilgan: 3000, miqdor: 4 }), { ustama: 0, chegirma: 0 });
+  for (const kiritilgan of [0, -5, NaN]) {
+    assert.deepEqual(kiritilganNarx({ katalog: 3000, kiritilgan, miqdor: 4 }), { ustama: 0, chegirma: 0 }, String(kiritilgan));
+  }
+  // katalog narxi yo'q: baland narx ham ustama emas
+  assert.deepEqual(kiritilganNarx({ katalog: 0, kiritilgan: 100, miqdor: 1 }), { ustama: 0, chegirma: 0 });
+  // dollarda 2 xonagacha yaxlitlanadi
+  assert.deepEqual(kiritilganNarx({ katalog: 1.19, kiritilgan: 1.5, miqdor: 3 }), { ustama: 0.31, chegirma: 0 });
+  assert.deepEqual(kiritilganNarx({ katalog: 1.19, kiritilgan: 1, miqdor: 3 }), { ustama: 0, chegirma: 0.57 });
+});
+
+test('bir dona narxi: katalog + ustama (yaxlitlangan, manfiy qiymatlar hisobga olinmaydi)', () => {
+  assert.equal(ustamaliNarx(3000, 1500), 4500);
+  assert.equal(ustamaliNarx(0.1, 0.2), 0.3);
+  assert.equal(ustamaliNarx(3000, -50), 3000);
+  assert.equal(ustamaliNarx(3000, 0), 3000);
+});
+
+test('yuboriladigan qator: so‘mli sotuvda ustama narxga qo‘shiladi (qo‘lda narx), chegirma o‘zgarmaydi', () => {
+  const q = yuboriladiganQator({ modificationId: 'a', miqdor: 5, tur: 'RETAIL', qoldiq: SOM, sotuvVal: 'UZS', kurs: KURS, narx: 25000, chegirma: 0, chegirmaTuri: 'sum', foiz: 0, ustama: 5000 });
+  assert.deepEqual(q, { modificationId: 'a', quantity: 5, priceType: 'RETAIL', price: 30000, discount: 0 });
+  // ustama berilmasa avvalgidek
+  const eski = yuboriladiganQator({ modificationId: 'a', miqdor: 5, tur: 'RETAIL', qoldiq: SOM, sotuvVal: 'UZS', kurs: KURS, narx: 25000, chegirma: 0, chegirmaTuri: 'sum', foiz: 0 });
+  assert.equal(eski.price, 25000);
+});
+
+test('yuboriladigan qator: dollarli sotuvda ustama mahsulot valyutasida qo‘shiladi', () => {
+  // dollarda saqlangan mahsulot: 100 $ + 5 $ ustama
+  const dollar = yuboriladiganQator({ modificationId: 'b', miqdor: 1, tur: 'RETAIL', qoldiq: DOLLAR, sotuvVal: 'USD', kurs: KURS, narx: 100, chegirma: 0, chegirmaTuri: 'sum', foiz: 0, ustama: 5 });
+  assert.deepEqual(dollar, { modificationId: 'b', quantity: 1, priceType: 'RETAIL', price: 105, discount: 0, currency: 'USD' });
+  // so'mda saqlangan mahsulot: ustama kurs bilan so'mga o'giriladi (1 $ = 11 910 so'm)
+  const som = yuboriladiganQator({ modificationId: 'a', miqdor: 2, tur: 'RETAIL', qoldiq: SOM, sotuvVal: 'USD', kurs: KURS, narx: 2.1, chegirma: 0, chegirmaTuri: 'sum', foiz: 0, ustama: 1 });
+  assert.deepEqual(som, { modificationId: 'a', quantity: 2, priceType: 'RETAIL', price: 25000 + 11910, discount: 0, currency: 'UZS' });
 });

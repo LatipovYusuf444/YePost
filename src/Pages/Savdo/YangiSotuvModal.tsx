@@ -56,9 +56,11 @@ import type {
 import {
   chegirmaFoizi,
   chegirmaSummasi,
+  kiritilganNarx,
   narxSotuvValyutasida,
   qatorNarxTuri,
   turNarxi,
+  ustamaliNarx,
   yuboriladiganQator,
   type ChegirmaTuri,
 } from "@/lib/savdoNarxlari";
@@ -90,17 +92,24 @@ type MahsulotQatori = {
   // Chegirma summada (`discount`) yoki foizda (`discountFoiz`) kiritiladi; backendga summa ketadi, foizda kiritilsa foiz ham (hisobot uchun).
   discountTuri: ChegirmaTuri;
   discountFoiz: string;
+  // Sotuvchi "Sotuv narxi"ga katalog narxidan baland narx yozsa — farq (bir dona uchun ustama); backendga qo'lda narx bo'lib ketadi.
+  ustama: string;
 };
 
 function bosQator(priceType: SotuvNarxTuri): MahsulotQatori {
-  return { modificationId: "", qoldiqKaliti: "", quantity: "1", price: "", discount: "", priceType, discountTuri: "sum", discountFoiz: "" };
+  return { modificationId: "", qoldiqKaliti: "", quantity: "1", price: "", discount: "", priceType, discountTuri: "sum", discountFoiz: "", ustama: "" };
+}
+
+// Bir dona narxi (sotuv valyutasida): katalog narxi + ustama.
+function qatorBirNarxi(mahsulot: MahsulotQatori) {
+  return ustamaliNarx(raqamgaAylantirish(mahsulot.price), raqamgaAylantirish(mahsulot.ustama));
 }
 
 // Qatordagi chegirma summasi (sotuv valyutasida): foizda kiritilgan bo'lsa qator jamidan hisoblanadi; qator jamidan oshmaydi.
 function qatorChegirmasi(mahsulot: MahsulotQatori) {
   return chegirmaSummasi({
     miqdor: raqamgaAylantirish(mahsulot.quantity),
-    narx: raqamgaAylantirish(mahsulot.price),
+    narx: qatorBirNarxi(mahsulot),
     tur: mahsulot.discountTuri,
     summa: raqamgaAylantirish(mahsulot.discount),
     foiz: raqamgaAylantirish(mahsulot.discountFoiz),
@@ -384,7 +393,7 @@ export default function YangiSotuvModal({
         (summa, mahsulot) =>
           summa +
           raqamgaAylantirish(mahsulot.quantity) *
-            raqamgaAylantirish(mahsulot.price) -
+            qatorBirNarxi(mahsulot) -
           qatorChegirmasi(mahsulot),
         0
       ),
@@ -508,10 +517,13 @@ export default function YangiSotuvModal({
         const eskiChegirma = qator.discountTuri === "sum" ? raqamgaAylantirish(qator.discount) : 0;
         const yangiChegirma =
           yangiVal === "USD" ? Math.round((eskiChegirma / kurs) * 100) / 100 : Math.round(eskiChegirma * kurs);
+        const eskiUstama = raqamgaAylantirish(qator.ustama);
+        const yangiUstama = yangiVal === "USD" ? Math.round((eskiUstama / kurs) * 100) / 100 : Math.round(eskiUstama * kurs);
         return {
           ...qator,
           price: narx ? String(narx) : "",
           discount: qator.discountTuri === "sum" ? (eskiChegirma > 0 ? String(yangiChegirma) : "") : qator.discount,
+          ustama: eskiUstama > 0 && yangiUstama > 0 ? String(yangiUstama) : "",
         };
       })
     );
@@ -540,6 +552,7 @@ export default function YangiSotuvModal({
       qoldiqKaliti: tanlanganQoldiqKaliti,
       priceType: tur,
       price: narx ? String(narx) : "",
+      ustama: "",
     });
 
     if (qoldiq?.warehouseId && qoldiq.warehouseId !== warehouseId) {
@@ -821,6 +834,7 @@ export default function YangiSotuvModal({
           chegirma: qatorChegirmasi(mahsulot),
           chegirmaTuri: mahsulot.discountTuri,
           foiz: raqamgaAylantirish(mahsulot.discountFoiz),
+          ustama: raqamgaAylantirish(mahsulot.ustama),
         })
       );
 
@@ -926,7 +940,7 @@ export default function YangiSotuvModal({
       joriy.map((qator) => {
         if (!qator.modificationId) return { ...qator, priceType: tur };
         const narx = narxi(qator);
-        return narx ? { ...qator, priceType: tur, price: String(narx) } : qator;
+        return narx ? { ...qator, priceType: tur, price: String(narx), ustama: "" } : qator;
       })
     );
     const narxsiz = mahsulotlar.filter((qator) => qator.modificationId && !narxi(qator)).length;
@@ -944,7 +958,7 @@ export default function YangiSotuvModal({
     const narx = qoldiqNarxiValyutada(qoldiq, sotuvVal, kurs, tur);
     if (!qator || !narx) return;
     setNarxXabari("");
-    mahsulotniYangilash(index, { priceType: tur, price: String(narx) });
+    mahsulotniYangilash(index, { priceType: tur, price: String(narx), ustama: "" });
   }
 
   // Chegirma birligi (summa yoki foiz): kiritilgan qiymat shu qator uchun ikkinchi birlikka o'giriladi.
@@ -953,7 +967,7 @@ export default function YangiSotuvModal({
       joriy.map((qator, qatorIndex) => {
         if (qatorIndex !== index || qator.discountTuri === yangi) return qator;
         const miqdor = raqamgaAylantirish(qator.quantity);
-        const narx = raqamgaAylantirish(qator.price);
+        const narx = qatorBirNarxi(qator);
         if (yangi === "foiz") {
           const foiz = chegirmaFoizi(miqdor, narx, raqamgaAylantirish(qator.discount));
           return { ...qator, discountTuri: "foiz", discountFoiz: foiz > 0 ? String(foiz) : "" };
@@ -1111,6 +1125,7 @@ export default function YangiSotuvModal({
         const tur = qatorNarxTuri(qoldiq, faylTuri ?? narxTuri, turRuxsati, kurs) ?? narxTuri;
         const chegirmaTuri: ChegirmaTuri = qator?.discountTuri === "foiz" ? "foiz" : "sum";
         const faylFoizi = raqamgaAylantirish(String(qator?.discountFoiz ?? ""));
+        const faylUstamasi = raqamgaAylantirish(String(qator?.ustama ?? ""));
         const narx = qoldiqNarxiValyutada(qoldiq, yangiVal, kurs, tur);
         qatorlar.push({
           modificationId: qoldiq.modificationId,
@@ -1122,6 +1137,8 @@ export default function YangiSotuvModal({
           discountTuri: chegirmaTuri,
           // Foiz valyutaga bog'liq emas: har doim olinadi.
           discountFoiz: chegirmaTuri === "foiz" && faylFoizi > 0 ? String(Math.min(faylFoizi, 100)) : "",
+          // Ustama summa kabi fayl valyutasida: valyuta o'zgargan bo'lsa olinmaydi.
+          ustama: chegirmaOlinadi && faylUstamasi > 0 ? String(faylUstamasi) : "",
         });
       }
 
@@ -1602,10 +1619,13 @@ export default function YangiSotuvModal({
                           (item) => qoldiqKaliti(item) === mahsulot.qoldiqKaliti
                         );
                         const miqdor = raqamgaAylantirish(mahsulot.quantity);
-                        const narx = raqamgaAylantirish(mahsulot.price);
+                        const katalogNarxi = raqamgaAylantirish(mahsulot.price);
+                        const ustama = raqamgaAylantirish(mahsulot.ustama);
+                        // Bir dona narxi = katalog narxi + ustama.
+                        const narx = qatorBirNarxi(mahsulot);
                         const chegirma = qatorChegirmasi(mahsulot);
                         const qatorJami = Math.max(miqdor * narx - chegirma, 0);
-                        // Sotuv narxi = katalog narxi − chegirma / miqdor. Narxni pasaytirsangiz chegirma avtomatik hisoblanadi.
+                        // Sotuv narxi = katalog narxi + ustama − chegirma / miqdor. Narxni pasaytirsangiz chegirma, oshirsangiz ustama avtomatik hisoblanadi.
                         const sotuvNarxi = miqdor > 0 ? Math.round(Math.max(narx - chegirma / miqdor, 0) * 100) / 100 : narx;
                         const birDonaChegirma = Math.max(narx - sotuvNarxi, 0);
 
@@ -1708,7 +1728,6 @@ export default function YangiSotuvModal({
                               <input
                                 type="number"
                                 min="0"
-                                max={narx || undefined}
                                 step="0.01"
                                 disabled={narx <= 0}
                                 value={narx > 0 ? sotuvNarxi : ""}
@@ -1722,19 +1741,20 @@ export default function YangiSotuvModal({
                                 }}
                                 onChange={(event) => {
                                   const kiritilgan = raqamgaAylantirish(event.target.value);
-                                  // Bo'sh yoki noto'g'ri qiymat katalog narxiga qaytaradi; katalog narxidan baland narx chegirma bermaydi.
+                                  // Bo'sh yoki noto'g'ri qiymat katalog narxiga qaytaradi; katalogdan past narx chegirma, baland narx ustama bo'ladi.
+                                  const { ustama: yangiUstama, chegirma: yangiChegirma } = kiritilganNarx({ katalog: katalogNarxi, kiritilgan, miqdor });
+                                  const ustamaMatni = yangiUstama > 0 ? String(yangiUstama) : "";
                                   if (mahsulot.discountTuri === "foiz") {
-                                    const foiz = kiritilgan > 0 && kiritilgan < narx ? chegirmaFoizi(1, narx, narx - kiritilgan) : 0;
-                                    mahsulotniYangilash(index, { discountFoiz: foiz > 0 ? String(foiz) : "" });
+                                    const foiz = kiritilgan > 0 && kiritilgan < katalogNarxi ? chegirmaFoizi(1, katalogNarxi, katalogNarxi - kiritilgan) : 0;
+                                    mahsulotniYangilash(index, { ustama: ustamaMatni, discountFoiz: foiz > 0 ? String(foiz) : "" });
                                     return;
                                   }
-                                  const yangiChegirma =
-                                    kiritilgan > 0 && kiritilgan < narx ? Math.round((narx - kiritilgan) * miqdor * 100) / 100 : 0;
-                                  mahsulotniYangilash(index, { discount: yangiChegirma > 0 ? String(yangiChegirma) : "" });
+                                  mahsulotniYangilash(index, { ustama: ustamaMatni, discount: yangiChegirma > 0 ? String(yangiChegirma) : "" });
                                 }}
                                 className={cn(
                                   maydonKlassi,
-                                  birDonaChegirma > 0 && "border-emerald-300 text-emerald-700 focus:border-emerald-500 focus:ring-emerald-100"
+                                  birDonaChegirma > 0 && "border-emerald-300 text-emerald-700 focus:border-emerald-500 focus:ring-emerald-100",
+                                  ustama > 0 && "border-amber-300 text-amber-700 focus:border-amber-500 focus:ring-amber-100"
                                 )}
                                 placeholder={t("placeholders.price")}
                               />
@@ -1837,7 +1857,18 @@ export default function YangiSotuvModal({
                               </button>
                             </div>
 
-                            {birDonaChegirma > 0 && miqdor > 0 && (
+                            {ustama > 0 && miqdor > 0 && (
+                              <p className="rounded-xl bg-amber-50 px-3.5 py-2 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 lg:col-span-full">
+                                {t("products.autoMarkupHint", {
+                                  katalog: pulniFormatlash(katalogNarxi, sotuvVal),
+                                  sotuv: pulniFormatlash(narx, sotuvVal),
+                                  bir: pulniFormatlash(ustama, sotuvVal),
+                                  jami: pulniFormatlash(ustama * miqdor, sotuvVal),
+                                })}
+                              </p>
+                            )}
+
+                            {birDonaChegirma > 0 && miqdor > 0 && ustama <= 0 && (
                               <p className="rounded-xl bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 lg:col-span-full">
                                 {t("products.autoDiscountHint", {
                                   katalog: pulniFormatlash(narx, sotuvVal),

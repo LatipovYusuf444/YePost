@@ -176,6 +176,7 @@
   },
   "products": {
     "autoDiscountHint": "Katalog narxi {{katalog}}, sotuv narxi {{sotuv}}: har bir dona uchun {{bir}} chegirma avtomatik hisoblandi (jami {{jami}}).",
+    "autoMarkupHint": "Katalog narxi {{katalog}}, sotuv narxi {{sotuv}}: har bir donaga {{bir}} ustama qo'shildi (jami {{jami}}).",
     "removeRowAriaLabel": "Mahsulot qatorini o'chirish",
     "imageButtonTitle": "Rasm",
     "stockLabelShort": "qoldiq",

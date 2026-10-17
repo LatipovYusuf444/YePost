@@ -93,6 +93,22 @@ export function chegirmaFoizi(miqdor: number, narx: number, summa: number) {
   return jami > 0 ? yaxlit2((Math.min(Math.max(summa, 0), jami) / jami) * 100) : 0;
 }
 
+/**
+ * Sotuvchi "Sotuv narxi" maydoniga yozgan narx katalog narxiga nisbatan: pastroq bo'lsa — chegirma (har bir dona uchun farq × miqdor),
+ * baland bo'lsa — ustama (har bir donaga qo'shimcha). Bo'sh, noto'g'ri yoki katalog narxiga teng qiymat ikkalasini ham 0 qiladi.
+ */
+export function kiritilganNarx(p: { katalog: number; kiritilgan: number; miqdor: number }) {
+  if (!(p.katalog > 0) || !(p.kiritilgan > 0)) return { ustama: 0, chegirma: 0 };
+  if (p.kiritilgan > p.katalog) return { ustama: yaxlit2(p.kiritilgan - p.katalog), chegirma: 0 };
+  if (p.kiritilgan < p.katalog) return { ustama: 0, chegirma: yaxlit2((p.katalog - p.kiritilgan) * Math.max(p.miqdor, 0)) };
+  return { ustama: 0, chegirma: 0 };
+}
+
+/** Bir dona narxi: katalog narxi + ustama (sotuvchi katalogdan baland narx yozgan bo'lsa). */
+export function ustamaliNarx(katalog: number, ustama: number) {
+  return yaxlit2(Math.max(katalog, 0) + Math.max(ustama, 0));
+}
+
 export type YuboriladiganQator = {
   modificationId: string;
   quantity: number;
@@ -121,17 +137,20 @@ export function yuboriladiganQator(p: {
   chegirma: number;
   chegirmaTuri: ChegirmaTuri;
   foiz: number;
+  /** Bir dona uchun ustama (sotuv valyutasida): sotuv narxi katalogdan baland bo'lsa, qo'lda narx sifatida yuboriladi. */
+  ustama?: number;
 }): YuboriladiganQator {
+  const ustama = Math.max(p.ustama ?? 0, 0);
   const asos = {
     modificationId: p.modificationId,
     quantity: p.miqdor,
     priceType: p.tur,
     ...(p.chegirmaTuri === "foiz" && p.foiz > 0 && p.chegirma > 0 ? { discountPercent: Math.min(p.foiz, 100) } : {}),
   };
-  if (p.sotuvVal === "UZS") return { ...asos, price: p.narx, discount: p.chegirma };
+  if (p.sotuvVal === "UZS") return { ...asos, price: ustamaliNarx(p.narx, ustama), discount: p.chegirma };
   const narx = turNarxi(p.qoldiq, p.tur, p.kurs);
   if (narx && narx.valyuta === "UZS") {
-    return { ...asos, price: narx.asl, discount: yaxlit2(p.chegirma * p.kurs), currency: "UZS" };
+    return { ...asos, price: narx.asl + Math.round(ustama * p.kurs), discount: yaxlit2(p.chegirma * p.kurs), currency: "UZS" };
   }
-  return { ...asos, price: p.narx, discount: p.chegirma, currency: "USD" };
+  return { ...asos, price: ustamaliNarx(p.narx, ustama), discount: p.chegirma, currency: "USD" };
 }

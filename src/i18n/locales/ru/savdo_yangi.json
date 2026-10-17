@@ -176,6 +176,7 @@
   },
   "products": {
     "autoDiscountHint": "Цена каталога {{katalog}}, цена продажи {{sotuv}}: скидка {{bir}} за единицу рассчитана автоматически (всего {{jami}}).",
+    "autoMarkupHint": "Цена каталога {{katalog}}, цена продажи {{sotuv}}: наценка {{bir}} за единицу (всего {{jami}}).",
     "removeRowAriaLabel": "Удалить строку товара",
     "imageButtonTitle": "Изображение",
     "stockLabelShort": "остаток",
