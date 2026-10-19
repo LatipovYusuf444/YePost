@@ -3,6 +3,7 @@ import AppRouter from "./routes/AppRouter";
 import { ThemeProvider } from "@/Components/theme/ThemeProvider";
 import { Toaster } from "@/Components/ui/sonner";
 import ErrorBoundary from "@/Components/common/ErrorBoundary";
+import HujjatOgohlantirishOynasi from "@/Components/common/HujjatOgohlantirishOynasi";
 
 export default function App() {
   return (
@@ -11,6 +12,7 @@ export default function App() {
         <ErrorBoundary>
           <AppRouter />
         </ErrorBoundary>
+        <HujjatOgohlantirishOynasi />
         <Toaster />
       </MotionConfig>
     </ThemeProvider>

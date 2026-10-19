@@ -4,6 +4,7 @@ import {
   Bell,
   Building2,
   CircleDollarSign,
+  Lock,
   MapPin,
   PlugZap,
   Receipt,
@@ -17,6 +18,7 @@ import { useAuthProfileStore } from "@/store/authProfileStore";
 import { foydalanuvchiDirektormi } from "@/lib/roles";
 import BildirishnomaBolimi from "./BildirishnomaBolimi";
 import ChekBolimi from "./ChekBolimi";
+import DavrniYopishBolimi from "./DavrniYopishBolimi";
 import FiliallarBolimi from "./FiliallarBolimi";
 import IntegratsiyaBolimi from "./IntegratsiyaBolimi";
 import KompaniyaBolimi from "./KompaniyaBolimi";
@@ -36,6 +38,7 @@ const bolimlar: { id: SozlamaBolim; icon: typeof UserRound; faqatDirektor?: bool
   { id: "vakolatlar", icon: ShieldCheck },
   { id: "valyuta", icon: CircleDollarSign },
   { id: "narxTurlari", icon: Tags },
+  { id: "davrniYopish", icon: Lock },
   { id: "integratsiya", icon: PlugZap, faqatDirektor: true },
   { id: "chek", icon: Receipt },
   { id: "bildirishnoma", icon: Bell },
@@ -96,6 +99,7 @@ export default function SozlamalarUchot() {
           {bolim === "birliklar" && <OlchovBirligiBolimi />}
           {bolim === "valyuta" && <ValyutaBolimi />}
           {bolim === "narxTurlari" && <NarxTurlariBolimi />}
+          {bolim === "davrniYopish" && <DavrniYopishBolimi />}
           {bolim === "vakolatlar" && <VakolatlarBolimi />}
           {bolim === "integratsiya" && direktor && <IntegratsiyaBolimi />}
           {bolim === "chek" && <ChekBolimi />}

@@ -138,7 +138,8 @@ export function getApiErrorMessage(error: unknown) {
   const kodMatni = xatoKodiMatni(
     error.response.data?.code ?? (typeof xabar === "string" && xabar.startsWith("errors.") ? xabar : undefined),
     error.config?.url,
-    apiTiliniOlish()
+    apiTiliniOlish(),
+    error.response.data
   );
   if (kodMatni) return kodMatni;
 
@@ -159,6 +160,7 @@ export function getApiErrorMessage(error: unknown) {
     403: "Bu amalni bajarish uchun ruxsat yetarli emas.",
     404: "Ma'lumot topilmadi.",
     409: "Bu amal mavjud holat bilan to'qnashdi.",
+    423: "Davr yopilgan: bu sanadagi hujjatni o'zgartirib bo'lmaydi.",
   };
   return generic[error.response.status] ?? "Amalni bajarishda xatolik yuz berdi.";
 }

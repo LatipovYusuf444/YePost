@@ -1,6 +1,7 @@
-// Mijoz hisobi (wallet) va valyuta bilan bog'liq backend xato kodlari uchun tushunarli matnlar.
+// Mijoz hisobi (wallet), valyuta, hujjat sanasi va davrni yopish bilan bog'liq backend xato kodlari uchun tushunarli matnlar.
 // UI'siz va tashqi importlarsiz yozilgan — alohida sinash mumkin. Boshqa kodlar uchun `null` qaytadi:
 // ular avvalgidek backend `message` / `errors` orqali ko'rsatiladi.
+import { kunMatni } from "../lib/hujjatSanasi.ts";
 
 type Til = "uz" | "ru";
 
@@ -59,12 +60,146 @@ const BEKOR_QILISH_MATNI: KodMatni = {
   ru: "Продажу нельзя отменить: деньги, записанные на счёт клиента по этой продаже, уже использованы.",
 };
 
-/** Xato kodi tushunarli matnga; kod noma'lum bo'lsa `null`. `url` — so'rov manzili (sotuvni bekor qilish alohida matn oladi). */
-export function xatoKodiMatni(kod: unknown, url: string | undefined, til: string): string | null {
+// ── Hujjat sanasi va davrni yopish ──────────────────────────────────────────────────────────────────
+
+/** Tasdiqlashda "Davom etasizmi?" deb so'raladigan ogohlantirish (409): `confirmWarnings: true` bilan qayta yuboriladi. */
+export const OGOHLANTIRISH_KODI = "errors.inventory.before_stock_take";
+
+type Obyekt = Record<string, unknown>;
+
+function obyekt(qiymat: unknown): Obyekt | null {
+  return qiymat && typeof qiymat === "object" && !Array.isArray(qiymat) ? (qiymat as Obyekt) : null;
+}
+
+const TAFSILOT_KONTEYNERLARI = ["details", "data", "meta", "params", "args", "context", "message"];
+
+/** Xato javobidagi qo'shimcha maydon (`closedUntil`, `shortage`, `transfers`...): javob ildizida yoki `details`/`data`/`meta` kabi ichki obyektda. */
+export function xatoMaydoni(tafsilot: unknown, kalit: string): unknown {
+  const asosiy = obyekt(tafsilot);
+  if (!asosiy) return undefined;
+  const nomzodlar = [asosiy, ...TAFSILOT_KONTEYNERLARI.map((nom) => obyekt(asosiy[nom]))];
+  for (const nomzod of nomzodlar) {
+    const qiymat = nomzod?.[kalit];
+    if (qiymat !== undefined && qiymat !== null && qiymat !== "") return qiymat;
+  }
+  return undefined;
+}
+
+/** Xato javobidan kod: `code` maydoni, bo'lmasa "errors." bilan boshlangan `message`. */
+export function xatoKodi(tafsilot: unknown): string | undefined {
+  const asosiy = obyekt(tafsilot);
+  if (!asosiy) return undefined;
+  if (typeof asosiy.code === "string" && asosiy.code) return asosiy.code;
+  return typeof asosiy.message === "string" && asosiy.message.startsWith("errors.") ? asosiy.message : undefined;
+}
+
+function matnTil(matn: KodMatni, til: Til) {
+  return matn[til];
+}
+
+function soniMatni(qiymat: unknown): string {
+  const son = Number(qiymat);
+  if (qiymat === undefined || qiymat === null || qiymat === "" || !Number.isFinite(son)) return "";
+  return son.toLocaleString("uz-UZ", { maximumFractionDigits: 3 });
+}
+
+function royxatMatni(qiymat: unknown, chegara = 5): string {
+  const elementlar = (Array.isArray(qiymat) ? qiymat : [])
+    .map((element) => (typeof element === "string" || typeof element === "number" ? String(element) : ""))
+    .filter(Boolean);
+  if (elementlar.length === 0) return "";
+  const korinadigan = elementlar.slice(0, chegara).join(", ");
+  return elementlar.length > chegara ? `${korinadigan} (+${elementlar.length - chegara})` : korinadigan;
+}
+
+const HARAKAT_TURLARI: Array<[RegExp, KodMatni]> = [
+  [/RETURN/i, { uz: "qaytarish", ru: "возврат" }],
+  [/SALE/i, { uz: "sotuv", ru: "продажа" }],
+  [/PURCHASE|RECEIPT/i, { uz: "kirim", ru: "приход" }],
+  [/WRITE/i, { uz: "chiqim", ru: "списание" }],
+  [/TRANSFER/i, { uz: "ko'chirma", ru: "перемещение" }],
+  [/STOCK/i, { uz: "inventarizatsiya", ru: "инвентаризация" }],
+];
+
+function harakatMatni(harakat: unknown, til: Til): string {
+  const element = obyekt(harakat);
+  if (!element) return "";
+  const turi = typeof element.type === "string" ? element.type : "";
+  const nomi = HARAKAT_TURLARI.find(([regex]) => regex.test(turi))?.[1][til] ?? turi.toLowerCase();
+  const sana = kunMatni(typeof element.date === "string" ? element.date : undefined);
+  const miqdor = soniMatni(element.quantity);
+  return [nomi, sana, miqdor && `(${miqdor})`].filter(Boolean).join(" ");
+}
+
+type DinamikMatn = (til: Til, tafsilot: unknown) => string;
+
+// Javobdagi maydonlarga qarab yig'iladigan matnlar (maydon kelmasa ham jumla tushunarli bo'lib qoladi).
+const DINAMIK_MATNLAR: Record<string, DinamikMatn> = {
+  "errors.document.date_in_future": (til) =>
+    matnTil(
+      {
+        uz: "Sana bugundan keyin bo'lishi mumkin emas. Bugungi yoki o'tgan sanani tanlang.",
+        ru: "Дата не может быть позже сегодняшней. Выберите сегодняшнюю или прошедшую дату.",
+      },
+      til
+    ),
+  "errors.document.period_closed": (til, tafsilot) => {
+    const kun = kunMatni(String(xatoMaydoni(tafsilot, "closedUntil") ?? ""));
+    return til === "ru"
+      ? `Период закрыт${kun ? ` до ${kun} включительно` : ""}: документы за эти даты нельзя создавать, менять, проводить или отменять. Выберите более позднюю дату или попросите директора открыть период.`
+      : `Davr yopilgan${kun ? `: ${kun} (shu kun ham) va undan oldingi sanalar` : ""}. Bu sanadagi hujjatni yaratib, o'zgartirib, tasdiqlab yoki bekor qilib bo'lmaydi. Keyingi sanani tanlang yoki direktordan davrni ochishni so'rang.`;
+  },
+  "errors.document.transfers_in_transit": (til, tafsilot) => {
+    const royxat = royxatMatni(xatoMaydoni(tafsilot, "transfers"));
+    return til === "ru"
+      ? `В этом периоде есть перемещения в пути${royxat ? `: ${royxat}` : ""}. Сначала примите их, затем закройте период.`
+      : `Shu davrda yo'lda turgan ko'chirmalar bor${royxat ? `: ${royxat}` : ""}. Avval ularni qabul qiling, keyin davrni yoping.`;
+  },
+  "errors.inventory.negative_stock_after": (til, tafsilot) => {
+    const kun = kunMatni(String(xatoMaydoni(tafsilot, "date") ?? ""));
+    const yetishmaydi = soniMatni(xatoMaydoni(tafsilot, "shortage"));
+    return til === "ru"
+      ? `Из-за этого документа остаток на складе уйдёт в минус${kun ? ` ${kun}` : " в одном из следующих дней"}${yetishmaydi ? ` (не хватает: ${yetishmaydi})` : ""}. Измените дату или количество.`
+      : `Bu hujjat tufayli ombor qoldig'i${kun ? ` ${kun} kuni` : " keyingi kunda"} minusga tushadi${yetishmaydi ? ` (yetishmaydi: ${yetishmaydi})` : ""}. Sanani yoki miqdorni o'zgartiring.`;
+  },
+  "errors.finance.negative_cash_after": (til, tafsilot) => {
+    const kun = kunMatni(String(xatoMaydoni(tafsilot, "date") ?? ""));
+    const yetishmaydi = soniMatni(xatoMaydoni(tafsilot, "shortage"));
+    return til === "ru"
+      ? `Из-за этого расхода касса в сумах уйдёт в минус${kun ? ` ${kun}` : " в одном из следующих дней"}${yetishmaydi ? ` (не хватает: ${yetishmaydi} сум)` : ""}. Измените дату или сумму.`
+      : `Bu chiqim tufayli so'm kassasi${kun ? ` ${kun} kuni` : " keyingi kunda"} minusga tushadi${yetishmaydi ? ` (yetishmaydi: ${yetishmaydi} so'm)` : ""}. Sanani yoki summani o'zgartiring.`;
+  },
+  "errors.inventory.movements_after_stock_take": (til, tafsilot) => {
+    const harakatlar = xatoMaydoni(tafsilot, "movements");
+    const royxat = royxatMatni(
+      (Array.isArray(harakatlar) ? harakatlar : []).map((harakat) => harakatMatni(harakat, til)),
+      3
+    );
+    return til === "ru"
+      ? `Инвентаризация проведена задним числом, а по этим товарам после этой даты уже были движения${royxat ? `: ${royxat}` : ""}. Проведите инвентаризацию сегодняшней датой.`
+      : `Inventarizatsiya o'tgan sanada o'tkazilmoqda, lekin shu tovarlar bo'yicha undan keyin harakatlar bo'lgan${royxat ? `: ${royxat}` : ""}. Inventarizatsiyani bugungi sana bilan o'tkazing.`;
+  },
+  [OGOHLANTIRISH_KODI]: (til, tafsilot) => {
+    const raqam = String(xatoMaydoni(tafsilot, "stockTakeNumber") ?? "");
+    const kun = kunMatni(String(xatoMaydoni(tafsilot, "stockTakeDate") ?? ""));
+    const qavs = [raqam, kun].filter(Boolean).join(", ");
+    return til === "ru"
+      ? `Дата документа раньше подтверждённой инвентаризации${qavs ? ` (${qavs})` : ""}. Это может повлиять на остатки.`
+      : `Hujjat sanasi tasdiqlangan inventarizatsiyadan${qavs ? ` (${qavs})` : ""} oldingi sanada. Bu qoldiqlarga ta'sir qilishi mumkin.`;
+  },
+};
+
+/**
+ * Xato kodi tushunarli matnga; kod noma'lum bo'lsa `null`. `url` — so'rov manzili (sotuvni bekor qilish alohida matn oladi).
+ * `tafsilot` — xato javobining tanasi: sana/yetishmovchilik kabi maydonlar matnga qo'shiladi.
+ */
+export function xatoKodiMatni(kod: unknown, url: string | undefined, til: string, tafsilot?: unknown): string | null {
   if (typeof kod !== "string") return null;
   const tilKodi: Til = til === "ru" ? "ru" : "uz";
   if (kod === "errors.wallet.insufficient_balance" && /\/sales\/[^/?]+\/cancel/.test(url ?? "")) {
     return BEKOR_QILISH_MATNI[tilKodi];
   }
+  const dinamik = DINAMIK_MATNLAR[kod];
+  if (dinamik) return dinamik(tilKodi, tafsilot);
   return MATNLAR[kod]?.[tilKodi] ?? null;
 }

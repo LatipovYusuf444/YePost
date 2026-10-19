@@ -1,6 +1,7 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
 import { API_BASE_URL } from "./apiConfig";
 import { accessTokenniAjratish, accessTokenniYangilash, getApiErrorMessage } from "./sozlamalarApi";
+import { ogohlantirishXatosimi } from "./hujjatOgohlantirishi";
 import { apiTiliniOlish } from "./apiLanguage";
 import {
   accessTokenniSaqlash,
@@ -41,7 +42,7 @@ function rolCheklanganRoyxat403Mi(error: unknown) {
 
 // Kassa fonda o'qiydigan sozlama (narx turlari): o'qib bo'lmasa (masalan, rolga ruxsat yo'q) kassa avvalgidek ishlaydi,
 // shuning uchun bu GET xatosi har sahifada qizil xabar chiqarmaydi.
-const FON_SOZLAMA_YOLLARI = ["/settings/sales"];
+const FON_SOZLAMA_YOLLARI = ["/settings/sales", "/settings/period-close"];
 
 function fonSozlamaXatosiMi(error: unknown) {
   if (!axios.isAxiosError(error) || error.config?.method?.toLowerCase() !== "get") return false;
@@ -103,7 +104,8 @@ apiClient.interceptors.response.use(
   },
   async (error: unknown) => {
     if (!axios.isAxiosError(error) || error.response?.status !== 401 || !error.config) {
-      if (axios.isAxiosError(error) && toastKerakmi(error.config?.url) && !rolCheklanganRoyxat403Mi(error) && !fonSozlamaXatosiMi(error)) {
+      // 409 before_stock_take — xato emas, "Davom etasizmi?" ogohlantirishi: toast o'rniga tasdiqlash oynasi chiqadi (api/hujjatOgohlantirishi).
+      if (axios.isAxiosError(error) && toastKerakmi(error.config?.url) && !rolCheklanganRoyxat403Mi(error) && !fonSozlamaXatosiMi(error) && !ogohlantirishXatosimi(error)) {
         xatolikXabari(getApiErrorMessage(error));
       }
       return Promise.reject(error);

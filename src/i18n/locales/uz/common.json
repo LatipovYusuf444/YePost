@@ -61,6 +61,20 @@
     "transferDescription": "Ko'chirma bekor qilinadi va tovar manba omborga qaytariladi. Qabul qilgan omborda tovar ishlatilgan bo'lsa, bekor qilib bo'lmaydi.",
     "action": "Bekor qilish"
   },
+  "hujjatSanasi": {
+    "pastHint": "O'tgan sana tanlandi: hujjat shu kunning oxirida (23:59) yoziladi.",
+    "closedHint": "Davr {{sana}} gacha (shu kun ham) yopilgan: bu sanada hujjatni o'zgartirib bo'lmaydi.",
+    "createdAt": "Kiritilgan: {{vaqt}}",
+    "createdAtTitle": "Hujjat sanasi va kiritilgan vaqt har xil kunda"
+  },
+  "hujjatOgohlantirish": {
+    "title": "Ogohlantirish",
+    "defaultName": "Inventarizatsiya",
+    "question": "Davom etasizmi?",
+    "no": "Yo'q, qaytish",
+    "yes": "Ha, davom etish",
+    "continuing": "Bajarilmoqda..."
+  },
   "hujjatTiklash": {
     "tooltip": "Qayta tiklash (qoralamaga)",
     "aria": "{{name}} hujjatini qayta tiklash",

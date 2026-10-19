@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { xatoKodiMatni } from '../src/api/xatoKodlari.ts';
+import { OGOHLANTIRISH_KODI, xatoKodi, xatoKodiMatni, xatoMaydoni } from '../src/api/xatoKodlari.ts';
 
 test('hisobda pul yetmasa: tushunarli matn (uz va ru)', () => {
   assert.equal(xatoKodiMatni('errors.wallet.insufficient_balance', '/sales/s1/payments', 'uz'), 'Mijoz hisobida pul yetarli emas.');
@@ -37,4 +37,57 @@ test('ko‘p birlikli tovar xatolari: uz va ru matn', () => {
     assert.ok(xatoKodiMatni(`errors.catalog.${kod}`, '/catalog/products/p/units', 'uz'), kod);
     assert.ok(xatoKodiMatni(`errors.catalog.${kod}`, '/catalog/products/p/units', 'ru'), kod);
   }
+});
+
+// ── Hujjat sanasi va davrni yopish ──
+
+test('period_closed: yopilgan kun matnga qo‘shiladi (ildizda ham, ichki obyektda ham)', () => {
+  const matn = xatoKodiMatni('errors.document.period_closed', '/sales', 'uz', { closedUntil: '2026-09-30' });
+  assert.match(matn, /30\.09\.2026/);
+  assert.match(matn, /shu kun ham/);
+  assert.match(xatoKodiMatni('errors.document.period_closed', '/sales', 'ru', { details: { closedUntil: '2026-09-30' } }), /30\.09\.2026 включительно/);
+  // maydon kelmasa ham matn tushunarli
+  assert.match(xatoKodiMatni('errors.document.period_closed', '/sales', 'uz', {}), /Davr yopilgan/);
+});
+
+test('date_in_future va transfers_in_transit', () => {
+  assert.match(xatoKodiMatni('errors.document.date_in_future', '/sales', 'uz'), /bugundan keyin/);
+  const matn = xatoKodiMatni('errors.document.transfers_in_transit', '/settings/period-close', 'uz', { transfers: ['KOCH-000012', 'KOCH-000013'] });
+  assert.match(matn, /KOCH-000012, KOCH-000013/);
+  assert.match(matn, /qabul qiling/);
+});
+
+test('negative_stock_after / negative_cash_after: sana va yetishmovchilik', () => {
+  const ombor = xatoKodiMatni('errors.inventory.negative_stock_after', '/sales', 'uz', { date: '2026-10-12', shortage: '5', modificationId: 'm1', warehouseId: 'w1' });
+  assert.match(ombor, /12\.10\.2026/);
+  assert.match(ombor, /yetishmaydi: 5/);
+  const kassa = xatoKodiMatni('errors.finance.negative_cash_after', '/finance/cash-operations', 'uz', { date: '2026-10-12', shortage: 1500000 });
+  assert.match(kassa, /12\.10\.2026/);
+  assert.match(kassa, /1[\s ]500[\s ]000/);
+  assert.match(xatoKodiMatni('errors.finance.negative_cash_after', '/x', 'ru', { date: '2026-10-12', shortage: 100 }), /уйдёт в минус/);
+});
+
+test('movements_after_stock_take: harakatlar ro‘yxati', () => {
+  const matn = xatoKodiMatni('errors.inventory.movements_after_stock_take', '/inventory/stock-takes/s1/confirm', 'uz', {
+    movements: [{ type: 'SALE', docId: 'd1', date: '2026-10-15', quantity: 3 }, { type: 'PURCHASE', docId: 'd2', date: '2026-10-16', quantity: 10 }],
+  });
+  assert.match(matn, /sotuv 15\.10\.2026 \(3\)/);
+  assert.match(matn, /kirim 16\.10\.2026 \(10\)/);
+});
+
+test('before_stock_take ogohlantirishi: inventarizatsiya raqami va sanasi', () => {
+  const matn = xatoKodiMatni(OGOHLANTIRISH_KODI, '/sales/s1/confirm', 'uz', { stockTakeId: 'x', stockTakeNumber: 'INV-000012', stockTakeDate: '2026-10-12' });
+  assert.match(matn, /INV-000012, 12\.10\.2026/);
+  assert.match(matn, /oldingi sanada/);
+});
+
+test('out_of_stock avvalgidek (null), xatoKodi va xatoMaydoni yordamchilari', () => {
+  assert.equal(xatoKodiMatni('errors.inventory.out_of_stock', '/sales/s1/confirm', 'uz', { remaining: 2 }), null);
+  assert.equal(xatoKodi({ code: 'errors.document.period_closed' }), 'errors.document.period_closed');
+  assert.equal(xatoKodi({ message: 'errors.document.date_in_future' }), 'errors.document.date_in_future');
+  assert.equal(xatoKodi({ message: 'Oddiy matn' }), undefined);
+  assert.equal(xatoKodi(null), undefined);
+  assert.equal(xatoMaydoni({ data: { closedUntil: '2026-01-01' } }, 'closedUntil'), '2026-01-01');
+  assert.equal(xatoMaydoni({ message: { shortage: 3 } }, 'shortage'), 3);
+  assert.equal(xatoMaydoni('matn', 'x'), undefined);
 });

@@ -12,7 +12,8 @@
     "chek": "Chek sozlamalari",
     "bildirishnoma": "Bildirishnomalar",
     "valyuta": "Valyuta",
-    "narxTurlari": "Sotuv narx turlari"
+    "narxTurlari": "Sotuv narx turlari",
+    "davrniYopish": "Davrni yopish"
   },
   "saved": "Saqlandi ✓",
   "savingToBackend": "Backendga saqlanmoqda...",
@@ -305,5 +306,37 @@
     },
     "defaultBadge": "Standart",
     "makeDefault": "Standart qilish"
+  },
+  "davrniYopish": {
+    "title": "Davrni yopish",
+    "subtitle": "Hisobot davri yopilgach, o'tgan sanalardagi hujjatlar o'zgarmaydi. Yopilgan kun (o'sha kun ham) va undan oldingi sanalar bloklanadi.",
+    "readOnlyNotice": "Davrni faqat direktor yopishi yoki ochishi mumkin. Siz joriy holatni ko'ra olasiz.",
+    "statusClosed": "Davr {{sana}} gacha (shu kun ham) yopilgan",
+    "statusOpen": "Davr ochiq: barcha sanalarda hujjat yaratish mumkin",
+    "changedBy": "O'zgartirgan: {{kim}}, {{vaqt}}",
+    "rules": {
+      "blocked": "Yopilgan davrda hujjatni yaratish, tahrirlash, tasdiqlash, yuborish/qabul qilish, bekor qilish, tiklash va o'chirish mumkin emas.",
+      "allowed": "Istisno: eski sotuvning qarzini bugun to'lash va eski sotuvdan bugun qaytarish mumkin.",
+      "transfers": "Davrda yo'lda turgan (yuborilgan, qabul qilinmagan) ko'chirma bo'lsa, avval uni qabul qilish kerak."
+    },
+    "dateLabel": "Shu kungacha yopish",
+    "dateHint": "Tanlangan kun ham yopiladi. Bugundan keyingi sanani tanlab bo'lmaydi.",
+    "futureError": "Davrni bugundan keyingi sanagacha yopib bo'lmaydi.",
+    "closeAction": "Davrni yopish",
+    "openAction": "Davrni ochish",
+    "back": "Qaytish",
+    "working": "Saqlanmoqda...",
+    "closedMessage": "Davr yopildi ✓",
+    "openedMessage": "Davr ochildi ✓",
+    "confirmClose": {
+      "title": "Davr yopilsinmi?",
+      "description": "Shu kun va undan oldingi sanadagi hujjatlarni yaratib, o'zgartirib yoki bekor qilib bo'lmaydi. Keyin davrni qayta ochish mumkin.",
+      "yes": "Ha, yopish"
+    },
+    "confirmOpen": {
+      "title": "Davr ochilsinmi?",
+      "description": "Davr to'liq ochiladi va o'tgan sanalardagi hujjatlarni yana o'zgartirish mumkin bo'ladi.",
+      "yes": "Ha, ochish"
+    }
   }
 }

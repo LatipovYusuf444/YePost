@@ -10,7 +10,8 @@ export type SozlamaBolim =
   | "chek"
   | "bildirishnoma"
   | "valyuta"
-  | "narxTurlari";
+  | "narxTurlari"
+  | "davrniYopish";
 
 // --- Ma'lumotnoma (reference) ---
 // Bojxona o'lchov birliklari klassifikatori (tarif.customs.uz).
