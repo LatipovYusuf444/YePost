@@ -4,7 +4,8 @@ import { FileText, LoaderCircle, Plus, Search, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
 import { useOmborStore } from "@/store/omborStore";
-import { mahalliySanaKaliti } from "@/lib/sanaKaliti";
+import { toshkentKuni } from "@/lib/hujjatSanasi";
+import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import { valyutaKodi } from "@/lib/valyuta";
 import type { KirimHujjati } from "@/types/ombor";
 import { holat, hujjatRaqami, pul, sana } from "./omborYordamchilari";
@@ -155,7 +156,8 @@ export default function Xaridlar() {
       const status = String(hujjat.status ?? "DRAFT").toUpperCase();
       const statusMos = statusFiltri === "ALL" || status === statusFiltri || (statusFiltri === "CANCELLED" && status === "CANCELED");
       if (!statusMos) return false;
-      const hujjatSanasi = mahalliySanaKaliti(hujjat.createdAt);
+      // Hujjat sanasi (`date`, Toshkent kuni); eski yozuvlarda — yaratilgan kun.
+      const hujjatSanasi = toshkentKuni(hujjat.date ?? hujjat.createdAt);
       if (sanaDan && !(hujjatSanasi && hujjatSanasi >= sanaDan)) return false;
       if (sanaGacha && !(hujjatSanasi && hujjatSanasi <= sanaGacha)) return false;
       if (!q) return true;
@@ -165,7 +167,7 @@ export default function Xaridlar() {
         supplierNomi(hujjat.supplierId, hujjat.supplier?.name),
         hujjat.warehouse?.name ?? omborlarMap.get(hujjat.warehouseId),
         masulNomi(hujjat),
-        sana(hujjat.createdAt),
+        sana(hujjat.date ?? hujjat.createdAt),
         sana(hujjat.updatedAt),
         holat(hujjat.status),
       ]
@@ -207,7 +209,12 @@ export default function Xaridlar() {
       case "ombor":
         return hujjat.warehouse?.name ?? omborlarMap.get(hujjat.warehouseId) ?? t("xaridlar.unknownWarehouse");
       case "yaratilgan":
-        return sana(hujjat.createdAt);
+        return (
+          <>
+            {sana(hujjat.date ?? hujjat.createdAt)}
+            <KiritilganBelgisi date={hujjat.date} createdAt={hujjat.createdAt} />
+          </>
+        );
       case "masul":
         return masulNomi(hujjat);
       case "status":

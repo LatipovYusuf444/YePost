@@ -2,7 +2,6 @@ import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Barcode,
-  CalendarDays,
   ChevronDown,
   Clock3,
   Image,
@@ -14,6 +13,8 @@ import {
   Warehouse,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
+import { bugungiToshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
 import { useTranslation } from "react-i18next";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useOmborStore } from "@/store/omborStore";
@@ -76,10 +77,8 @@ export default function YangiChiqimModal({ onClose }: Props) {
     setFokus(null);
   }, [fokus]);
 
-  const bugun = useMemo(
-    () => new Intl.DateTimeFormat("uz-UZ", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date()),
-    []
-  );
+  // Hujjat sanasi: bugun yoki o'tgan kun (kelajak yo'q); o'tgan kun tanlansa backend hujjatni shu kunning oxirida yozadi.
+  const [hujjatSanasi, setHujjatSanasi] = useState(() => bugungiToshkentKuni());
   const hozir = useMemo(
     () => new Intl.DateTimeFormat("uz-UZ", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date()),
     []
@@ -208,6 +207,7 @@ export default function YangiChiqimModal({ onClose }: Props) {
     if (ortiqcha) return setXato("yangiChiqimModal.errors.exceedsStock");
 
     const hujjat = await store.chiqimYaratish({
+      ...yangiHujjatSanasi(hujjatSanasi),
       warehouseId,
       reason,
       responsibleId: responsibleId || undefined,
@@ -252,10 +252,7 @@ export default function YangiChiqimModal({ onClose }: Props) {
                   options={Object.entries(chiqimSabablari).map(([id, name]) => ({ id, name }))}
                 />
                 <Field label={t("yangiChiqimModal.fields.docDate")}>
-                  <div className="relative">
-                    <input value={bugun} readOnly className={`${input} pr-11`} />
-                    <CalendarDays size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                  </div>
+                  <HujjatSanasiMaydoni value={hujjatSanasi} onChange={setHujjatSanasi} className={input} aria-label={t("yangiChiqimModal.fields.docDate")} />
                 </Field>
                 <SelectField
                   label={t("yangiChiqimModal.fields.responsible")}

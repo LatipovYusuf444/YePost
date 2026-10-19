@@ -3,6 +3,7 @@ import { Ban, CheckCircle2, FileText, LoaderCircle, RotateCcw } from "lucide-rea
 import { useTranslation } from "react-i18next";
 import { qatorMiqdoriMatni } from "@/lib/kopBirlik";
 import AppModal from "@/Components/common/AppModal";
+import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import { useOmborStore } from "@/store/omborStore";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
@@ -118,7 +119,10 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
                 <Info label={t("kirimTafsilotModal.nameLabel")} value={nomi || hujjatRaqami(hujjat)}/>
                 <Info label={t("kirimTafsilotModal.supplierLabel")} value={supplier?.name ?? supplier?.fullName ?? hujjat.supplierId}/>
                 <Info label={t("kirimTafsilotModal.warehouseLabel")} value={warehouse?.name ?? hujjat.warehouseId}/>
-                <Info label={t("kirimTafsilotModal.dateLabel")} value={faqatSana(hujjat.createdAt)}/>
+                <div>
+                  <Info label={t("kirimTafsilotModal.dateLabel")} value={faqatSana(hujjat.date ?? hujjat.createdAt)}/>
+                  <KiritilganBelgisi date={hujjat.date} createdAt={hujjat.createdAt} className="mt-1" />
+                </div>
                 <Info label={t("kirimTafsilotModal.responsibleLabel")} value={responsible?.fullName ?? responsible?.name ?? responsible?.username ?? t("kirimTafsilotModal.unassigned")}/>
               </div>
             </section>

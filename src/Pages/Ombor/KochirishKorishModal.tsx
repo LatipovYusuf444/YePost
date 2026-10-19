@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import { useTranslation } from "react-i18next";
 import { useOmborStore } from "@/store/omborStore";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
@@ -307,7 +308,7 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
                       </div>
                     </div>
                     <div className="mt-6 grid grid-cols-2 gap-5 border-t border-orange-100 pt-5">
-                      <div><p className="text-sm font-bold text-slate-400">{t("kochirishKorishModal.view.movedDate")}</p><p className="mt-1 text-lg font-black text-slate-800">{sana(hujjat.createdAt)}</p></div>
+                      <div><p className="text-sm font-bold text-slate-400">{t("kochirishKorishModal.view.movedDate")}</p><p className="mt-1 text-lg font-black text-slate-800">{sana(hujjat.date ?? hujjat.createdAt)}</p><KiritilganBelgisi date={hujjat.date} createdAt={hujjat.createdAt} className="mt-1" /></div>
                       <div><p className="text-sm font-bold text-slate-400">{t("kochirishKorishModal.view.responsible")}</p><p className="mt-1 text-lg font-black text-slate-800">{masulNomi}</p></div>
                     </div>
                   </section>

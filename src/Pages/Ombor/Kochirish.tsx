@@ -21,7 +21,8 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
 import { useOmborStore } from "@/store/omborStore";
-import { mahalliySanaKaliti } from "@/lib/sanaKaliti";
+import { toshkentKuni } from "@/lib/hujjatSanasi";
+import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import HujjatBekorQilish from "@/Components/common/HujjatBekorQilish";
 import type {
@@ -270,7 +271,8 @@ export default function Kochirish() {
   const filtrlangan = useMemo(() => {
     const qiymat = qidiruv.trim().toLocaleLowerCase("uz");
     return store.kochirishlar.filter((hujjat) => {
-      const hujjatSanasi = mahalliySanaKaliti(hujjat.createdAt);
+      // Hujjat sanasi (`date`, Toshkent kuni); eski yozuvlarda — yaratilgan kun.
+      const hujjatSanasi = toshkentKuni(hujjat.date ?? hujjat.createdAt);
       if (sanaDan && !(hujjatSanasi && hujjatSanasi >= sanaDan)) return false;
       if (sanaGacha && !(hujjatSanasi && hujjatSanasi <= sanaGacha)) return false;
       if (!qiymat) return true;
@@ -281,7 +283,7 @@ export default function Kochirish() {
         ozgartirganNomi(hujjat),
         manbaOmborNomi(hujjat),
         qabulOmborNomi(hujjat),
-        hujjat.createdAt,
+        hujjat.date ?? hujjat.createdAt,
         hujjat.updatedAt,
         hujjatSummasi(hujjat, modifikatsiyaMap),
       ]
@@ -421,7 +423,12 @@ export default function Kochirish() {
       case "yaratgan":
         return yaratganNomi(hujjat);
       case "yaratilgan":
-        return qisqaSana(hujjat.createdAt);
+        return (
+          <>
+            {qisqaSana(hujjat.date ?? hujjat.createdAt)}
+            <KiritilganBelgisi date={hujjat.date} createdAt={hujjat.createdAt} />
+          </>
+        );
       case "ombordan":
         return manbaOmborNomi(hujjat);
       case "omborga":

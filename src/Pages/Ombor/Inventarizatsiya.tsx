@@ -4,11 +4,12 @@ import { createPortal } from "react-dom";
 import { AlertTriangle, ClipboardList, FileText, Filter, LoaderCircle, Lock, MessageSquareText, Package, Plus, ScanLine, Search, Settings, Trash2, Warehouse } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import HujjatSanasiMaydoni, { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { omborQoldiqlari } from "@/api/omborApi";
 import { useOmborStore } from "@/store/omborStore";
-import { mahalliySanaKaliti } from "@/lib/sanaKaliti";
+import { bugungiToshkentKuni, toshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
 import type { InventarizatsiyaTuri, OmborQoldigi } from "@/types/ombor";
 import { holat, hujjatRaqami, mahsulotQidiruvi, modificationNomi, qoldiqMiqdori, sana } from "./omborYordamchilari";
 import InventoryHujjatModal from "./InventoryHujjatModal";
@@ -62,6 +63,8 @@ export default function Inventarizatsiya() {
   const [tanlanganId, setTanlanganId] = useState<string | null>(null);
   const [warehouseId, setWarehouseId] = useState("");
   const [responsibleId, setResponsibleId] = useState("");
+  // Hujjat sanasi: bugun yoki o'tgan kun (kelajak yo'q); o'tgan kun tanlansa backend hujjatni shu kunning oxirida yozadi.
+  const [hujjatSanasi, setHujjatSanasi] = useState(() => bugungiToshkentKuni());
   const [actuals, setActuals] = useState<Record<string, string>>({});
   const [barcodeInput, setBarcodeInput] = useState("");
   const [scanFeedback, setScanFeedback] = useState("");
@@ -421,19 +424,20 @@ export default function Inventarizatsiya() {
         masul?.fullName ?? masul?.username ?? masul?.name,
         holat(item.status),
         item.type === "PARTIAL" ? t("inventarizatsiya.typePartial") : t("inventarizatsiya.typeFull"),
-        sana(item.createdAt),
+        sana(item.date ?? item.createdAt),
       ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase()
         .includes(query);
       const status = String(item.status ?? "DRAFT").toUpperCase();
-      const hujjatSanasi = mahalliySanaKaliti(item.createdAt);
+      // Hujjat sanasi (`date`, Toshkent kuni); eski yozuvlarda — yaratilgan kun.
+      const hujjatKuni = toshkentKuni(item.date ?? item.createdAt);
       return matnMos &&
         (holatFiltri === "ALL" || status === holatFiltri || (holatFiltri === "CANCELLED" && status === "CANCELED")) &&
         (omborFiltri === "ALL" || item.warehouseId === omborFiltri) &&
-        (!sanaDan || Boolean(hujjatSanasi && hujjatSanasi >= sanaDan)) &&
-        (!sanaGacha || Boolean(hujjatSanasi && hujjatSanasi <= sanaGacha));
+        (!sanaDan || Boolean(hujjatKuni && hujjatKuni >= sanaDan)) &&
+        (!sanaGacha || Boolean(hujjatKuni && hujjatKuni <= sanaGacha));
     });
   }, [holatFiltri, omborFiltri, omborMap, qidiruv, sanaDan, sanaGacha, store.inventarizatsiyalar, t, xodimMap]);
   const sahifadagiHujjatlar = useMemo(() => korinadiganHujjatlar.slice((page - 1) * pageSize, page * pageSize), [korinadiganHujjatlar, page, pageSize]);
@@ -470,7 +474,14 @@ export default function Inventarizatsiya() {
         </span>
       );
     }
-    if (ustun === "yaratilgan") return <span className="whitespace-nowrap">{sana(item.createdAt)}</span>;
+    if (ustun === "yaratilgan") {
+      return (
+        <span className="whitespace-nowrap">
+          {sana(item.date ?? item.createdAt)}
+          <KiritilganBelgisi date={item.date} createdAt={item.createdAt} />
+        </span>
+      );
+    }
     if (ustun === "ombor") return item.warehouse?.name ?? omborMap.get(item.warehouseId) ?? t("inventarizatsiya.unknownWarehouse");
     if (ustun === "masul") return masul?.fullName ?? masul?.username ?? masul?.name ?? t("inventarizatsiya.unassigned");
     return item.type === "PARTIAL" ? t("inventarizatsiya.typePartial") : t("inventarizatsiya.typeFull");
@@ -480,6 +491,7 @@ export default function Inventarizatsiya() {
     store.xatolikniTozalash();
     setWarehouseId("");
     setResponsibleId(joriyProfil?.id ?? "");
+    setHujjatSanasi(bugungiToshkentKuni());
     setActuals({});
     setBarcodeInput("");
     setScanFeedback("");
@@ -585,6 +597,7 @@ export default function Inventarizatsiya() {
     }
 
     const hujjat = await store.inventarizatsiyaYaratish({
+      ...yangiHujjatSanasi(hujjatSanasi),
       warehouseId,
       type: YARATISH_TURI,
       responsibleId: responsibleId || undefined,
@@ -784,6 +797,15 @@ export default function Inventarizatsiya() {
                         <option key={ombor.id} value={ombor.id}>{ombor.name}</option>
                       ))}
                     </AppSelect>
+                  </label>
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-bold text-slate-500">{t("inventarizatsiya.createModal.dateLabel")}</span>
+                    <HujjatSanasiMaydoni
+                      value={hujjatSanasi}
+                      onChange={setHujjatSanasi}
+                      aria-label={t("inventarizatsiya.createModal.dateLabel")}
+                      className="h-12 w-full rounded-2xl border border-blue-100 bg-white px-4 font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                    />
                   </label>
                   <label className="block">
                     <span className="mb-2 block text-sm font-bold text-slate-500">{t("inventarizatsiya.createModal.responsibleLabel")}</span>

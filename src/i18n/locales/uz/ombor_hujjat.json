@@ -39,7 +39,7 @@
   "view": {
     "totalAmount": "Umumiy summa",
     "status": "Holat",
-    "createdAt": "Yaratilgan sana",
+    "createdAt": "Hujjat sanasi",
     "responsible": "Mas'ul xodim",
     "unassigned": "Biriktirilmagan",
     "products": "Mahsulotlar",
@@ -69,6 +69,7 @@
     "empty": "Mahsulotlar mavjud emas"
   },
   "form": {
+    "dateLabel": "Hujjat sanasi",
     "supplierPlaceholder": "Yetkazib beruvchi *",
     "warehousePlaceholder": "Ombor *",
     "sourceWarehousePlaceholder": "Manba ombor *",

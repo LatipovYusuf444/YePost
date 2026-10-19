@@ -12,7 +12,8 @@ import {
 } from "lucide-react";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
 import { useOmborStore } from "@/store/omborStore";
-import { mahalliySanaKaliti } from "@/lib/sanaKaliti";
+import { toshkentKuni } from "@/lib/hujjatSanasi";
+import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import type {
   ChiqimHujjati,
@@ -180,7 +181,8 @@ export default function Chiqim() {
       const status = String(item.status ?? "DRAFT").toUpperCase();
       const statusMos = statusFiltri === "ALL" || status === statusFiltri || (statusFiltri === "CANCELLED" && status === "CANCELED");
       if (!statusMos) return false;
-      const hujjatSanasi = mahalliySanaKaliti(item.createdAt);
+      // Hujjat sanasi (`date`, Toshkent kuni); eski yozuvlarda — yaratilgan kun.
+      const hujjatSanasi = toshkentKuni(item.date ?? item.createdAt);
       if (sanaDan && !(hujjatSanasi && hujjatSanasi >= sanaDan)) return false;
       if (sanaGacha && !(hujjatSanasi && hujjatSanasi <= sanaGacha)) return false;
       return !query || [
@@ -190,7 +192,7 @@ export default function Chiqim() {
         masulNomi(item),
         yaratganNomi(item),
         ozgartirganNomi(item),
-        sana(item.createdAt),
+        sana(item.date ?? item.createdAt),
         sana(item.updatedAt),
         holat(item.status),
       ]
@@ -295,7 +297,12 @@ export default function Chiqim() {
       case "status":
         return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${statusSinfi(item.status)}`}>{holat(item.status)}</span>;
       case "yaratilgan":
-        return <span className="whitespace-nowrap text-slate-500">{sana(item.createdAt)}</span>;
+        return (
+          <span className="whitespace-nowrap text-slate-500">
+            {sana(item.date ?? item.createdAt)}
+            <KiritilganBelgisi date={item.date} createdAt={item.createdAt} />
+          </span>
+        );
       case "ombor":
         return <span className="font-semibold text-slate-600">{omborNomi(item)}</span>;
       case "yaratgan":

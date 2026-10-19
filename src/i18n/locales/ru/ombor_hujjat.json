@@ -39,7 +39,7 @@
   "view": {
     "totalAmount": "Общая сумма",
     "status": "Статус",
-    "createdAt": "Дата создания",
+    "createdAt": "Дата документа",
     "responsible": "Ответственный сотрудник",
     "unassigned": "Не назначен",
     "products": "Товары",
@@ -69,6 +69,7 @@
     "empty": "Товары отсутствуют"
   },
   "form": {
+    "dateLabel": "Дата документа",
     "supplierPlaceholder": "Поставщик *",
     "warehousePlaceholder": "Склад *",
     "sourceWarehousePlaceholder": "Склад-отправитель *",

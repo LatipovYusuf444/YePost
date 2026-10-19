@@ -1,5 +1,5 @@
 import AppSelect from "@/Components/ui/AppSelect";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   CheckCircle2,
   Ban,
@@ -16,6 +16,8 @@ import {
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
+import HujjatSanasiMaydoni, { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
+import { tahrirSanasi, toshkentKuni } from "@/lib/hujjatSanasi";
 import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 import { useOmborStore } from "@/store/omborStore";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
@@ -92,6 +94,9 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
   const [sourceWarehouseId, setSourceWarehouseId] = useState("");
   const [destWarehouseId, setDestWarehouseId] = useState("");
   const [responsibleId, setResponsibleId] = useState("");
+  // Hujjat sanasi (kun): tahrirda o'zgargan bo'lsagina PATCH `date` yuboriladi.
+  const [hujjatSanasi, setHujjatSanasi] = useState("");
+  const [boshlangichSana, setBoshlangichSana] = useState("");
   const [reason, setReason] = useState<ChiqimSababi>("OTHER");
   const [stockTakeType, setStockTakeType] =
     useState<InventarizatsiyaTuri>("FULL");
@@ -152,6 +157,9 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
   ]);
 
   function formaniToldirish(item: Hujjat) {
+    const kun = toshkentKuni(item.date ?? item.createdAt);
+    setHujjatSanasi(kun);
+    setBoshlangichSana(kun);
     setResponsibleId(item.responsibleId ?? "");
     setNote(item.note ?? "");
 
@@ -266,6 +274,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
     if (tur === "kirim") {
       if (!supplierId || !warehouseId) return;
       ok = await store.kirimYangilash(id, {
+        ...tahrirSanasi(hujjatSanasi, boshlangichSana),
         supplierId,
         warehouseId,
         responsibleId: responsibleId || undefined,
@@ -279,6 +288,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
     } else if (tur === "chiqim") {
       if (!warehouseId) return;
       ok = await store.chiqimYangilash(id, {
+        ...tahrirSanasi(hujjatSanasi, boshlangichSana),
         warehouseId,
         reason,
         responsibleId: responsibleId || undefined,
@@ -296,6 +306,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
       )
         return;
       ok = await store.kochirishYangilash(id, {
+        ...tahrirSanasi(hujjatSanasi, boshlangichSana),
         sourceWarehouseId,
         destWarehouseId,
         responsibleId: responsibleId || undefined,
@@ -308,6 +319,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
     } else {
       if (!warehouseId) return;
       ok = await store.inventarizatsiyaYangilash(id, {
+        ...tahrirSanasi(hujjatSanasi, boshlangichSana),
         warehouseId,
         type: stockTakeType,
         responsibleId: responsibleId || undefined,
@@ -520,7 +532,11 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                   )}
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <Malumot nom={t("view.status")} qiymat={holat(hujjat.status)} />
-                  <Malumot nom={t("view.createdAt")} qiymat={sana(hujjat.createdAt)} />
+                  <Malumot
+                    nom={t("view.createdAt")}
+                    qiymat={sana(hujjat.date ?? hujjat.createdAt)}
+                    qoshimcha={<KiritilganBelgisi date={hujjat.date} createdAt={hujjat.createdAt} className="mt-1" />}
+                  />
                   <Malumot
                     nom={t("view.responsible")}
                     qiymat={
@@ -828,6 +844,15 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
             ) : (
               <div>
                 <div className="grid gap-4 md:grid-cols-2">
+                  <label className="grid gap-1.5 text-sm font-bold text-slate-500">
+                    <span>{t("form.dateLabel")}</span>
+                    <HujjatSanasiMaydoni
+                      value={hujjatSanasi}
+                      onChange={setHujjatSanasi}
+                      aria-label={t("form.dateLabel")}
+                      className="h-12 w-full rounded-2xl border px-4 text-slate-700"
+                    />
+                  </label>
                   {tur === "kirim" && (
                     <AppSelect
                       value={supplierId}
@@ -1075,7 +1100,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
   );
 }
 
-function Malumot({ nom, qiymat }: { nom: string; qiymat: string }) {
+function Malumot({ nom, qiymat, qoshimcha }: { nom: string; qiymat: string; qoshimcha?: ReactNode }) {
   return (
     <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
       <div className="flex items-center gap-2 text-gray-400">
@@ -1083,6 +1108,7 @@ function Malumot({ nom, qiymat }: { nom: string; qiymat: string }) {
         <span className="text-xs font-bold uppercase tracking-wider">{nom}</span>
       </div>
       <p className="mt-2 break-words text-base font-black text-slate-800">{qiymat}</p>
+      {qoshimcha}
     </div>
   );
 }

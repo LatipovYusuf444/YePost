@@ -44,6 +44,7 @@
       "selectWarehouse": "Выберите склад",
       "typeLabel": "Тип проверки *",
       "responsibleLabel": "Ответственное лицо",
+      "dateLabel": "Дата инвентаризации",
       "responsibleUnassigned": "Ответственный не назначен",
       "unknownEmployee": "Неизвестный сотрудник",
       "noteTitle": "Комментарий",

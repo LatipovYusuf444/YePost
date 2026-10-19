@@ -2,7 +2,6 @@ import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Barcode,
-  CalendarDays,
   Check,
   CheckSquare,
   ChevronDown,
@@ -21,6 +20,8 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
+import { bugungiToshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useOmborStore } from "@/store/omborStore";
 import {
@@ -140,6 +141,8 @@ export default function YangiKirimModal({ onClose }: Props) {
   }, [joriyProfil]);
 
   const [note, setNote] = useState("");
+  // Hujjat sanasi: bugun yoki o'tgan kun (kelajak yo'q); o'tgan kun tanlansa backend hujjatni shu kunning oxirida yozadi.
+  const [hujjatSanasi, setHujjatSanasi] = useState(() => bugungiToshkentKuni());
   const [qatorlar, setQatorlar] = useState<Qator[]>([yangiQator(birinchiOmbor)]);
   // Klaviatura bilan tez kiritish: keyingi fokus (mahsulot ro'yxati, miqdor yoki tannarx maydoni).
   const { t: tk } = useTranslation("ombor_kichik");
@@ -403,6 +406,7 @@ export default function YangiKirimModal({ onClose }: Props) {
     fayllar.forEach((fayl) => izohQismlari.push(`Fayl: ${fayl.nomi} (${fayl.url})`));
 
     const hujjat = await store.kirimYaratish({
+      ...yangiHujjatSanasi(hujjatSanasi),
       supplierId,
       warehouseId: valid[0].warehouseId,
       responsibleId: responsibleId || undefined,
@@ -558,13 +562,7 @@ export default function YangiKirimModal({ onClose }: Props) {
 
                 <label className="space-y-2 text-sm font-bold text-slate-500">
                   <span>{t("yangiKirim.dateLabel")}</span>
-                  <div className="relative">
-                    <input value={bugun} readOnly className={`${input} pr-11 text-slate-400`} />
-                    <CalendarDays size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                  </div>
-                  <span className="block text-xs font-semibold text-slate-400">
-                    {t("yangiKirim.dateHint")}
-                  </span>
+                  <HujjatSanasiMaydoni value={hujjatSanasi} onChange={setHujjatSanasi} className={input} aria-label={t("yangiKirim.dateLabel")} />
                 </label>
               </div>
             </section>

@@ -2,7 +2,6 @@ import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Barcode,
-  CalendarDays,
   Clock3,
   Copy,
   GripVertical,
@@ -17,6 +16,8 @@ import {
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
+import { bugungiToshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
 import { useTranslation } from "react-i18next";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useOmborStore } from "@/store/omborStore";
@@ -40,14 +41,6 @@ function modifikatsiyaNarxi(mod?: MahsulotModifikatsiyasi) {
   const qiymat = mod?.price?.retailPrice ?? mod?.price?.costPrice ?? mod?.price?.wholesalePrice ?? 0;
   const narx = Number(qiymat);
   return Number.isFinite(narx) ? narx : 0;
-}
-
-function bugungiSana() {
-  return new Intl.DateTimeFormat("uz-UZ", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
 }
 
 function hozirgiVaqt() {
@@ -80,6 +73,8 @@ export default function KochirishYaratishModal({ onClose }: Props) {
   }, [joriyProfil]);
 
   const [note, setNote] = useState("");
+  // Hujjat sanasi: bugun yoki o'tgan kun (kelajak yo'q); o'tgan kun tanlansa backend hujjatni shu kunning oxirida yozadi.
+  const [hujjatSanasi, setHujjatSanasi] = useState(() => bugungiToshkentKuni());
   const [items, setItems] = useState<Qator[]>([yangiQator()]);
   const [xato, setXato] = useState("");
   const [jonatilmoqda, setJonatilmoqda] = useState(false);
@@ -230,6 +225,7 @@ export default function KochirishYaratishModal({ onClose }: Props) {
     setXato("");
     setJonatilmoqda(send);
     const hujjat = await store.kochirishYaratish({
+      ...yangiHujjatSanasi(hujjatSanasi),
       sourceWarehouseId,
       destWarehouseId,
       responsibleId: responsibleId || undefined,
@@ -293,9 +289,7 @@ export default function KochirishYaratishModal({ onClose }: Props) {
                   </label>
                   <label className="grid gap-2 text-sm font-bold text-slate-400 sm:col-span-2">
                     {t("kochirishYaratishModal.fields.createdDate")}
-                    <span className="flex h-12 items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 font-black text-slate-700">
-                      {bugungiSana()} <CalendarDays size={18} className="text-slate-400" />
-                    </span>
+                    <HujjatSanasiMaydoni value={hujjatSanasi} onChange={setHujjatSanasi} className="input text-slate-700" aria-label={t("kochirishYaratishModal.fields.createdDate")} />
                   </label>
                   <label className="grid gap-2 text-sm font-bold text-slate-400 sm:col-span-2">
                     {t("kochirishYaratishModal.fields.responsible")}

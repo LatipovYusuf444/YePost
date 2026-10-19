@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import { useOmborStore } from "@/store/omborStore";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
@@ -150,7 +151,10 @@ export default function ChiqimTafsilotModal({ id, onClose }: Props) {
                 </div>
                 <div className="mt-5 grid gap-5 sm:grid-cols-2">
                   <Info label={t("chiqimTafsilotModal.reasonLabel")} value={sabab} className="sm:col-span-2" />
-                  <Info label={t("chiqimTafsilotModal.dateLabel")} value={sana(hujjat.createdAt)} />
+                  <div>
+                    <Info label={t("chiqimTafsilotModal.dateLabel")} value={sana(hujjat.date ?? hujjat.createdAt)} />
+                    <KiritilganBelgisi date={hujjat.date} createdAt={hujjat.createdAt} className="mt-1" />
+                  </div>
                   <Info label={t("chiqimTafsilotModal.responsibleLabel")} value={masulNomi} />
                   <Info label={t("chiqimTafsilotModal.warehouseLabel")} value={omborNomi} className="sm:col-span-2" />
                 </div>
