@@ -254,8 +254,10 @@ export default function Savdo() {
     const qiymat = qidiruv.trim().toLowerCase();
     const sanaBoyicha = sotuvlar.filter((sotuv) => {
       if (!sanaDan && !sanaGacha) return true;
-      if (!sotuv.createdAt) return false;
-      const sana = new Date(sotuv.createdAt);
+      // Hujjat sanasi (`date`); eski yozuvlarda — yaratilgan vaqt.
+      const hujjatVaqti = sotuv.date ?? sotuv.createdAt;
+      if (!hujjatVaqti) return false;
+      const sana = new Date(hujjatVaqti);
       if (Number.isNaN(sana.getTime())) return false;
       const kalit = `${sana.getFullYear()}-${String(sana.getMonth() + 1).padStart(2, "0")}-${String(sana.getDate()).padStart(2, "0")}`;
       return (!sanaDan || kalit >= sanaDan) && (!sanaGacha || kalit <= sanaGacha);

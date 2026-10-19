@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ReceiptText, RotateCcw, UserRound } from "lucide-react";
 import TablePagination from "@/Components/common/TablePagination";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
+import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import type { Qaytarish, Sotuv, TolovTuri } from "@/types/savdo";
 import {
   masulNomi,
@@ -215,7 +216,8 @@ export default function SotuvlarJadvali({
           </thead>
           <tbody className="text-[13px] text-[#4B4B4B]">
             {visibleRows.map((sotuv) => {
-              const sana = sanaVaVaqt(sotuv.createdAt);
+              // Hujjat sanasi (`date`); eski yozuvlarda — yaratilgan vaqt.
+              const sana = sanaVaVaqt(sotuv.date ?? sotuv.createdAt);
               const stat = qaytarishStatistikasi(sotuv, qaytarishlar);
               const paymentType = sotuv.payments?.[0]?.paymentType;
               const holat = sotuvHolati(sotuv);
@@ -321,6 +323,7 @@ export default function SotuvlarJadvali({
                         {sana.vaqt}
                       </span>
                     )}
+                    <KiritilganBelgisi date={sotuv.date} createdAt={sotuv.createdAt} className="mt-0.5" />
                   </td>
                   <td className="border-b border-gray-100 px-4 py-3.5">
                     {tarixKorinish ? (

@@ -1,5 +1,7 @@
 ﻿import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import HujjatSanasiMaydoni, { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
+import { toshkentKuni } from "@/lib/hujjatSanasi";
 import type { TFunction } from "i18next";
 import {
   ArrowLeft,
@@ -443,7 +445,7 @@ export default function SotuvTafsilotlariModal({
   const holat = sotuvHolati(sotuv);
   const jami = sotuvSummasi(sotuv);
   const draft = holat === "DRAFT";
-  const vaqt = qisqaVaqt(sotuv.createdAt) || "—";
+  const vaqt = qisqaVaqt(sotuv.date ?? sotuv.createdAt) || "—";
 
   useEffect(() => {
     setHujjatlar([]);
@@ -586,6 +588,7 @@ export default function SotuvTafsilotlariModal({
               vaqt={vaqt}
               amalBajarilmoqda={amalBajarilmoqda}
               onTolovOchish={() => setTolovModalOchiq(true)}
+              onSanaSaqlash={(kun) => onYangilash(sotuv.id, { date: kun })}
               onBekorQilish={onBekorQilish}
               onYetkazish={() => setYetkazishOchiq(true)}
               onOmbordanChiqarish={() => setOmbordanChiqarishOchiq(true)}
@@ -699,8 +702,9 @@ function YukXatiGeneratorModal({
   const yetkazuvchiManzil = sotuv.warehouse?.address || "Savdo tizimi";
   const xaridorTelefon = mijozTelefon(sotuv);
   const qisqaSana = (() => {
-    const sana = sotuv.createdAt ? new Date(sotuv.createdAt) : new Date();
-    if (Number.isNaN(sana.getTime())) return sananiFormatlash(sotuv.createdAt);
+    const hujjatVaqti = sotuv.date ?? sotuv.createdAt;
+    const sana = hujjatVaqti ? new Date(hujjatVaqti) : new Date();
+    if (Number.isNaN(sana.getTime())) return sananiFormatlash(sotuv.date ?? sotuv.createdAt);
     return new Intl.DateTimeFormat("uz-UZ", { day: "2-digit", month: "2-digit", year: "2-digit" }).format(sana);
   })();
   const tolovlar = sotuv.payments ?? [];
@@ -806,7 +810,7 @@ function YukXatiGeneratorModal({
         </head>
         <body>
           <h1>Yuk xati</h1>
-          <div class="meta">Hujjat raqami: ${hujjatRaqam} · Sana: ${sananiFormatlash(sotuv.createdAt)}</div>
+          <div class="meta">Hujjat raqami: ${hujjatRaqam} · Sana: ${sananiFormatlash(sotuv.date ?? sotuv.createdAt)}</div>
           <div class="grid">
             <div class="box"><b>Mijoz:</b><br/>${mijoz}</div>
             <div class="box"><b>Mas'ul:</b><br/>${masulNomi(sotuv)}</div>
@@ -1092,6 +1096,7 @@ function UmumiyTab({
   vaqt,
   amalBajarilmoqda,
   onTolovOchish,
+  onSanaSaqlash,
   onBekorQilish,
   onYetkazish,
   onOmbordanChiqarish,
@@ -1105,6 +1110,8 @@ function UmumiyTab({
   draft: boolean;
   vaqt: string;
   amalBajarilmoqda: boolean;
+  // Qoralama sotuv sanasini o'zgartirish (PATCH { date }).
+  onSanaSaqlash: (kun: string) => Promise<boolean>;
   onTolovOchish: () => void;
   onBekorQilish: (sotuvId: string) => void;
   onYetkazish: () => void;
@@ -1353,7 +1360,7 @@ function UmumiyTab({
           onOmbordanChiqarish={onOmbordanChiqarish}
         />
 
-        <QoshimchaMalumotCard sotuv={sotuv} />
+        <QoshimchaMalumotCard sotuv={sotuv} draft={draft} onSanaSaqlash={onSanaSaqlash} />
       </aside>
 
         <main className="space-y-6">
@@ -4669,8 +4676,34 @@ function izohniQatorlarga(izoh?: string): IzohQatori[] {
     });
 }
 
-function QoshimchaMalumotCard({ sotuv }: { sotuv: Sotuv }) {
+function QoshimchaMalumotCard({
+  sotuv,
+  draft,
+  onSanaSaqlash,
+}: {
+  sotuv: Sotuv;
+  draft: boolean;
+  // Qoralama sotuv sanasini o'zgartirish (PATCH { date }); tasdiqlangan hujjat sanasi: bekor qilish → tiklash → sana → tasdiqlash.
+  onSanaSaqlash: (kun: string) => Promise<boolean>;
+}) {
   const { t } = useTranslation("savdo_tafsilot");
+  const hujjatKuni = toshkentKuni(sotuv.date ?? sotuv.createdAt);
+  const [kun, setKun] = useState(hujjatKuni);
+  const [sanaSaqlanmoqda, setSanaSaqlanmoqda] = useState(false);
+  useEffect(() => setKun(hujjatKuni), [hujjatKuni]);
+
+  async function sananiSaqlash() {
+    if (!kun || kun === hujjatKuni || sanaSaqlanmoqda) return;
+    setSanaSaqlanmoqda(true);
+    try {
+      const saqlandi = await onSanaSaqlash(kun);
+      // Xato toasti ko'rsatilgan: maydon backenddagi sanaga qaytadi.
+      if (!saqlandi) setKun(hujjatKuni);
+    } finally {
+      setSanaSaqlanmoqda(false);
+    }
+  }
+
   const izohQatorlari = izohniQatorlarga(sotuv.note);
   const kalitliQatorlar = izohQatorlari.filter((qator) => qator.kalit);
   const erkinMatn = izohQatorlari.filter((qator) => !qator.kalit);
@@ -4682,7 +4715,39 @@ function QoshimchaMalumotCard({ sotuv }: { sotuv: Sotuv }) {
       <div className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-100 bg-white">
         <KontaktQatori icon={<RotateCcw size={17} />} label={t("umumiyTab.qaytarilganSavdo")} value={t("umumiyTab.tanlanmagan")} />
         <KontaktQatori icon={<UserCheck size={17} />} label={t("common.info.masulShaxs")} value={masulNomi(sotuv)} />
-        <KontaktQatori icon={<CalendarDays size={17} />} label={t("umumiyTab.sana")} value={sananiFormatlash(sotuv.createdAt)} />
+        {draft ? (
+          <div className="flex items-start gap-3 px-4 py-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-[#2563EB] ring-1 ring-orange-100"><CalendarDays size={17} /></span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-slate-400">{t("umumiyTab.sana")}</p>
+              <div className="mt-1 flex flex-wrap items-start gap-2">
+                <HujjatSanasiMaydoni
+                  value={kun}
+                  onChange={setKun}
+                  disabled={sanaSaqlanmoqda}
+                  aria-label={t("umumiyTab.sana")}
+                  className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100 disabled:opacity-60"
+                />
+                {kun && kun !== hujjatKuni && (
+                  <button
+                    type="button"
+                    onClick={() => void sananiSaqlash()}
+                    disabled={sanaSaqlanmoqda}
+                    className="h-9 rounded-lg bg-[#2563EB] px-3 text-xs font-black text-white transition hover:bg-[#1D4ED8] disabled:opacity-60"
+                  >
+                    {t("umumiyTab.sanaSaqlash")}
+                  </button>
+                )}
+              </div>
+              <KiritilganBelgisi date={sotuv.date} createdAt={sotuv.createdAt} className="mt-1" />
+            </div>
+          </div>
+        ) : (
+          <div>
+            <KontaktQatori icon={<CalendarDays size={17} />} label={t("umumiyTab.sana")} value={sananiFormatlash(sotuv.date ?? sotuv.createdAt)} />
+            <KiritilganBelgisi date={sotuv.date} createdAt={sotuv.createdAt} className="-mt-2 pb-2 pl-16" />
+          </div>
+        )}
       </div>
 
       <div className="mt-4 rounded-2xl border border-slate-100 bg-white p-4">

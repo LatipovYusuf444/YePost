@@ -41,9 +41,10 @@ type JadvalQatori = {
   qarz?: number;
 };
 
-// Realizatsiya sanasi: tasdiqlangan kun (bo'lmasa yaratilgan kun) — jadvaldagi "Sana" ustuni bilan bir xil.
+// Realizatsiya sanasi: hujjat sanasi (o'tgan sana bilan kiritilgan sotuvda ham to'g'ri kun); eski yozuvlarda tasdiqlangan,
+// bo'lmasa yaratilgan kun — jadvaldagi "Sana" ustuni bilan bir xil.
 function realizatsiyaSanasi(sotuv: Sotuv) {
-  return sotuv.confirmedAt ?? sotuv.createdAt;
+  return sotuv.date ?? sotuv.confirmedAt ?? sotuv.createdAt;
 }
 
 function kontragentNomi(sotuv: Sotuv) {
@@ -200,7 +201,7 @@ export default function AmalgaOshirilganlar() {
           ombor: omborNomi(sotuv.warehouseId, sotuv.warehouse, omborMap, t("amalgaOshirilganlar.unknownWarehouse")),
           masul: entityNomi(sotuv.responsibleId, sotuv.responsible, xodimMap, t("umumiy.biriktirilmagan")),
           status: String(sotuv.status ?? "CONFIRMED"),
-          realizationDate: sotuv.confirmedAt ?? sotuv.createdAt,
+          realizationDate: realizatsiyaSanasi(sotuv),
           summa: sotuvSummasi(sotuv),
           tolangan: sotuvTolanganSummasi(sotuv),
           qarz: sotuvQarzdorlikSummasi(sotuv),

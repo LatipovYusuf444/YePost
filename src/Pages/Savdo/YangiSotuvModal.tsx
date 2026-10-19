@@ -40,6 +40,8 @@ import {
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
+import { bugungiToshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
 import { crmApi } from "@/api/crmApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
@@ -323,6 +325,8 @@ export default function YangiSotuvModal({
   const [customerId, setCustomerId] = useState("");
   const [clientCompanyId, setClientCompanyId] = useState("");
   const [responsibleId, setResponsibleId] = useState("");
+  // Sotuv sanasi: bugun yoki o'tgan kun (kelajak yo'q); o'tgan kun tanlansa backend hujjatni shu kunning oxirida yozadi.
+  const [hujjatSanasi, setHujjatSanasi] = useState(() => bugungiToshkentKuni());
   const joriyProfil = useAuthProfileStore((state) => state.profil);
   const profilniYuklash = useAuthProfileStore((state) => state.profilniYuklash);
 
@@ -916,6 +920,7 @@ export default function YangiSotuvModal({
     let muvaffaqiyatli = sotuvBackendgaSaqlandi;
     if (!sotuvBackendgaSaqlandi) {
       muvaffaqiyatli = await onSaqlash({
+        ...yangiHujjatSanasi(hujjatSanasi),
         warehouseId,
         customerId: customerId || undefined,
         clientCompanyId: clientCompanyId || undefined,
@@ -1558,7 +1563,17 @@ export default function YangiSotuvModal({
                       <Plus size={18} />
                       {t("actions.addProduct")}
                     </button>
-                    <div className="flex min-w-[220px] flex-1 items-center gap-2 sm:ml-auto sm:max-w-[420px]">
+                    <div className="flex min-w-[200px] items-center gap-2 sm:ml-auto">
+                      <span className="hidden shrink-0 text-sm font-semibold text-slate-600 sm:inline">{t("labels.saleDate")}</span>
+                      <HujjatSanasiMaydoni
+                        value={hujjatSanasi}
+                        onChange={setHujjatSanasi}
+                        disabled={formaBandmi}
+                        aria-label={t("labels.saleDate")}
+                        className={maydonKlassi}
+                      />
+                    </div>
+                    <div className="flex min-w-[220px] flex-1 items-center gap-2 sm:max-w-[420px]">
                       <span className="hidden shrink-0 text-sm font-semibold text-slate-600 sm:inline">{t("labels.warehouse")}</span>
                       <SavdoSelect
                         className="min-w-0 flex-1"

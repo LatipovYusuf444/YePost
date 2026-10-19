@@ -93,9 +93,9 @@ function kunlarOrasida(dan: string, gacha: string) {
   return Math.round((b - a) / 86400000);
 }
 
-// Sotuvning kuni jadvaldagi sana filtri bilan bir xil bo'lishi kerak (standart: yaratilgan kun).
+// Sotuvning kuni jadvaldagi sana filtri bilan bir xil bo'lishi kerak (standart: hujjat sanasi, eski yozuvlarda yaratilgan kun).
 function standartSana(sotuv: Sotuv) {
-  return sotuv.createdAt;
+  return sotuv.date ?? sotuv.createdAt;
 }
 
 function hisoblash(sotuvlar: Sotuv[], dan: string, gacha: string, sanaOlish: (sotuv: Sotuv) => string | undefined) {

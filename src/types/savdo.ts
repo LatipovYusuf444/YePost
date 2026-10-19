@@ -173,6 +173,8 @@ export type DraftSale = {
 };
 
 export type SotuvYaratishMalumoti = {
+  // Hujjat sanasi (kun, YYYY-MM-DD, Toshkent): berilmasa yoki bugun bo'lsa — hozirgi vaqt; o'tgan kun — o'sha kunning 23:59:59.
+  date?: string;
   warehouseId: string;
   customerId?: string;
   clientCompanyId?: string;
