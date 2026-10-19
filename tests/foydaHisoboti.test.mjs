@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { foydaHisobotiniMoslash } from '../src/Pages/HisobotUchot/foydaHisobotiModeli.ts';
+import { engKopFoyda, foydaHisobotiniMoslash, foydaJami, foydaniSaralash, zararliQatorlar } from '../src/Pages/HisobotUchot/foydaHisobotiModeli.ts';
 
 const report={items:[
  {productId:'p1',productName:'3,6*200',qtySold:100,revenue:95,cost:82.8,profit:12.2,marginPct:12.84},
@@ -42,4 +42,39 @@ test('server-calculated UZS values and historical-rate margins stay unchanged',(
  const model=foydaHisobotiniMoslash({currency:'UZS',items:[{productId:'historical',qtySold:1,revenue:12345,cost:10000,profit:2345,marginPct:19}]},'UZS');
  assert.equal(model.qatorlar[0].tushum,12345);
  assert.equal(model.qatorlar[0].foyda,2345);
+});
+
+const qator=(id,nomi,sotilgan,tushum,tannarx)=>({id,nomi,sotilgan,tushum,tannarx,foyda:tushum-tannarx,rentabellik:tushum?(tushum-tannarx)/tushum*100:0});
+const royxat=[qator('a','B mahsulot',10,1000,800),qator('b','A mahsulot',5,500,520),qator('c','C mahsulot',20,3000,2000),qator('d','D mahsulot',1,100,100)];
+
+test('eng ko‘p foyda: faqat foydali qatorlar, kamayish tartibida, soni cheklangan',()=>{
+ assert.deepEqual(engKopFoyda(royxat).map(q=>q.id),['c','a']);
+ assert.deepEqual(engKopFoyda(royxat,1).map(q=>q.id),['c']);
+ assert.deepEqual(engKopFoyda([]),[]);
+});
+
+test('zarar bilan sotilganlar: faqat foydasi manfiy, eng katta zarar birinchi',()=>{
+ assert.deepEqual(zararliQatorlar(royxat).map(q=>q.id),['b']);
+ assert.deepEqual(zararliQatorlar([qator('x','X',1,10,15),qator('y','Y',1,10,30)]).map(q=>q.id),['y','x']);
+});
+
+test('saralash: asl ro‘yxat o‘zgarmaydi; nom bo‘yicha harf tartibi, son bo‘yicha o‘sish/kamayish',()=>{
+ const asl=royxat.map(q=>q.id).join('');
+ assert.deepEqual(foydaniSaralash(royxat,'foyda',true).map(q=>q.id),['c','a','d','b']);
+ assert.deepEqual(foydaniSaralash(royxat,'foyda',false).map(q=>q.id),['b','d','a','c']);
+ assert.deepEqual(foydaniSaralash(royxat,'nomi',false).map(q=>q.id),['b','a','c','d'].sort((x,y)=>royxat.find(q=>q.id===x).nomi.localeCompare(royxat.find(q=>q.id===y).nomi)));
+ assert.equal(royxat.map(q=>q.id).join(''),asl);
+});
+
+test('jami: yig‘indi va rentabellik tushumga nisbatan; bo‘sh ro‘yxatda 0',()=>{
+ const j=foydaJami(royxat);
+ assert.equal(j.sotilgan,36); assert.equal(j.tushum,4600); assert.equal(j.tannarx,3420); assert.equal(j.foyda,1180);
+ assert.ok(Math.abs(j.rentabellik-1180/4600*100)<1e-9);
+ assert.deepEqual(foydaJami([]),{sotilgan:0,tushum:0,tannarx:0,foyda:0,rentabellik:0});
+});
+
+test('mijozlar kesimi: guruh nomi, nomi bo‘lmagan guruh — donalik mijoz',()=>{
+ const m=foydaHisobotiniMoslash({currency:'UZS',items:[{groupKey:'c1',groupName:'Ali',qtySold:3,revenue:300,cost:200,profit:100},{groupKey:null,qtySold:1,revenue:50,cost:40,profit:10}]},'UZS','CUSTOMER');
+ assert.deepEqual(m.qatorlar.map(q=>q.nomi),['Ali','Donalik mijoz']);
+ assert.equal(foydaHisobotiniMoslash({currency:'UZS',items:[{qtySold:1,revenue:5,cost:4,profit:1}]},'UZS').qatorlar[0].nomi,'Mahsulot');
 });
