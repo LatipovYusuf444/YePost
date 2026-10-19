@@ -465,6 +465,7 @@ export async function qoldiqNomlariniBoyitish(qoldiqlar: QoldiqTanlovi[]) {
         return {
           ...qoldiq,
           ...narxlar,
+          ...(modification.birliklar?.length ? { birliklar: modification.birliklar } : {}),
           productId: productId ?? qoldiq.productId,
           modification: {
             ...qoldiq.modification,
@@ -510,6 +511,7 @@ export async function katalogModifikatsiyalariniQoldiqTanlovigaOlish(majbur = fa
         quantity: 0,
         balance: 0,
         ...narxlar,
+        ...(modification.birliklar?.length ? { birliklar: modification.birliklar } : {}),
         modification: {
           id: modification.id,
           name: modification.name ?? "Asosiy variant",

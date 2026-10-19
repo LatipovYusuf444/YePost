@@ -1,6 +1,7 @@
 import type { MahsulotModifikatsiyasi, MahsulotNarxi } from "@/types/catalog";
 import type { QoldiqValyutasi } from "@/types/savdo";
 import { narxValyutalari } from "../lib/narxValyutasi.ts";
+import { birliklarniMoslash } from "../lib/kopBirlik.ts";
 
 /** Qisqa kesh + umumiy in-flight so'rov: remount/ombor almashishi katalogni qayta yuklamaydi. */
 export function katalogQidiruvYuklagich<T>(
@@ -41,6 +42,9 @@ export type KatalogQidiruvQatori = MahsulotModifikatsiyasi | {
   modificationId?: string;
   productId?: string;
   modification?: MahsulotModifikatsiyasi | null;
+  // Tovar birliklari va (pochka shtrix-kodi o'qilgan bo'lsa) shu birlik.
+  units?: unknown;
+  unitId?: string | null;
 };
 
 /** Search API qoldiq qatorini qaytaradi: variant, uning narxi va valyutasi `modification` ichida. */
@@ -49,7 +53,14 @@ export function katalogQidiruvQatoriniMoslash(qator: KatalogQidiruvQatori): Mahs
     const mod = qator.modification;
     const id = qator.modificationId || mod?.id;
     if (!id || !mod || (mod.id && mod.id !== id)) return null;
-    return { ...mod, id, productId: qator.productId ?? mod.productId };
+    const birliklar = "units" in qator ? birliklarniMoslash(qator.units) : [];
+    return {
+      ...mod,
+      id,
+      productId: qator.productId ?? mod.productId,
+      ...(birliklar.length ? { birliklar } : {}),
+      ...("unitId" in qator && qator.unitId ? { qidiruvBirligi: qator.unitId } : {}),
+    };
   }
   return "id" in qator && qator.id ? qator : null;
 }

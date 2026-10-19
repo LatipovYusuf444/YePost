@@ -114,7 +114,24 @@ export type KirimMahsuloti = {
   modificationId: string;
   quantity: number;
   price: number;
+  // Qo'shimcha birlikda kiritilgan qator: kiritilgan son/narx shu birlikda, `quantity`/`price` esa asosiy birlikda.
+  unitId?: string | null;
+  unitName?: string | null;
+  baseUnitName?: string | null;
+  unitQuantity?: number | string | null;
+  unitPrice?: number | string | null;
+  factorSnapshot?: number | string | null;
   modification?: MahsulotModifikatsiyasi;
+};
+
+// Kirimda sanalgan miqdor kartochkadagi koeffitsientdan 2% dan ko'p farq qilsa backend hujjatni saqlab, shuni qaytaradi.
+export type KirimOgohlantirishi = {
+  code: string;
+  modificationId?: string;
+  unitId?: string;
+  unitName?: string;
+  cardFactor?: string | number;
+  actualFactor?: string | number;
 };
 
 export type KirimHujjati = {
@@ -138,6 +155,7 @@ export type KirimHujjati = {
   warehouse?: Ombor;
   responsible?: NomliEntity;
   items?: KirimMahsuloti[];
+  warnings?: KirimOgohlantirishi[];
 };
 
 export type KirimYaratishMalumoti = {
@@ -149,6 +167,11 @@ export type KirimYaratishMalumoti = {
     modificationId: string;
     quantity: number;
     price: number;
+    // Qo'shimcha birlik (qop, korobka): `quantity` va `price` shu birlikda.
+    unitId?: string;
+    // Koeffitsient tekshiruvi: sanalgan birlik va uning soni (masalan 120 pochka).
+    checkUnitId?: string;
+    checkCount?: number;
   }>;
 };
 

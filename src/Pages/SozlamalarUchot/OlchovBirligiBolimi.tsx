@@ -21,6 +21,8 @@ export default function OlchovBirligiBolimi() {
   const [kod, setKod] = useState("");
   const [nomi, setNomi] = useState("");
   const [qisqa, setQisqa] = useState("");
+  // Kg, litr, metr kabi birliklarda kasr miqdor (0,5; 1,25) mumkin.
+  const [kasr, setKasr] = useState(false);
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [saqlanmoqda, setSaqlanmoqda] = useState(false);
   const [xato, setXato] = useState("");
@@ -72,6 +74,7 @@ export default function OlchovBirligiBolimi() {
     setKod(birlik?.code ?? "");
     setNomi(birlik?.name ?? "");
     setQisqa(birlik?.shortName ?? "");
+    setKasr(birlik?.isFractional === true);
     setFormOchiq(true);
   }
 
@@ -92,7 +95,7 @@ export default function OlchovBirligiBolimi() {
     setSaqlanmoqda(true);
     setXato("");
     try {
-      const payload = { code: kod.trim() || undefined, name: nomi.trim(), shortName: qisqa.trim() || undefined };
+      const payload = { code: kod.trim() || undefined, name: nomi.trim(), shortName: qisqa.trim() || undefined, isFractional: kasr };
       const saved = tahrir ? await birliklarApi.yangilash(tahrir.id, payload) : await birliklarApi.yaratish(payload);
       setOlchovlar((items) =>
         items.some((x) => x.id === saved.id) ? items.map((x) => (x.id === saved.id ? saved : x)) : [saved, ...items]
@@ -166,6 +169,10 @@ export default function OlchovBirligiBolimi() {
               autoFocus
             />
             <input value={qisqa} onChange={(e) => setQisqa(e.target.value)} placeholder={t("birliklar.shortNamePlaceholder")} className={maydonKlass} />
+            <label className="flex items-center gap-2 text-sm font-bold text-gray-600 sm:col-span-full">
+              <input type="checkbox" checked={kasr} onChange={(e) => setKasr(e.target.checked)} />
+              {t("birliklar.fractional")}
+            </label>
           </div>
           <div className="mt-3 flex justify-end gap-2">
             <button
@@ -244,6 +251,9 @@ export default function OlchovBirligiBolimi() {
                 <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500">
                   {birlik.shortName || t("birliklar.noShortName")}
                 </span>
+                {birlik.isFractional && (
+                  <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700">{t("birliklar.fractionalBadge")}</span>
+                )}
                 {birlik.code && (
                   <span className="rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-[#2563EB]">
                     {t("birliklar.codeLabel", { code: birlik.code })}

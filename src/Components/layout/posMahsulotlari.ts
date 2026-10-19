@@ -1,4 +1,5 @@
 import type { QoldiqTanlovi } from "@/types/savdo";
+import { asosiyMiqdor, birlikTopish, type TovarBirligi } from "../../lib/kopBirlik.ts";
 
 // POS mahsulot tanlash uchun umumiy yordamchilar: MahsulotTanlashModal (to'liq oyna) va headerdagi tezkor qidiruv
 // bir xil qoida bo'yicha nom, narx va qoldiqni hisoblaydi.
@@ -44,10 +45,12 @@ export function qoldiqMiqdori(item: QoldiqTanlovi) {
 }
 
 /** Modalda qo'shiladigan miqdor: shu ombordagi savatcha miqdorini ham hisobga oladi. */
-export function tanlashQoldigi(item: QoldiqTanlovi, warehouseId: string, cart: ReadonlyArray<{ id: string; soni: number }>) {
+export function tanlashQoldigi(item: QoldiqTanlovi, warehouseId: string, cart: ReadonlyArray<{ id: string; soni: number; birliklar?: TovarBirligi[]; birlikId?: string }>) {
   const qoldiq = qoldiqMiqdori(item);
   if (!Number.isFinite(qoldiq)) return 0;
-  const savatchada = cart.find((row) => row.id === tanlovKaliti(item.modificationId, warehouseId))?.soni ?? 0;
+  // Savatchadagi miqdor qo'shimcha birlikda (pochka) bo'lishi mumkin: qoldiq asosiy birlikda, shuning uchun o'giriladi.
+  const qator = cart.find((row) => row.id === tanlovKaliti(item.modificationId, warehouseId));
+  const savatchada = qator ? asosiyMiqdor(birlikTopish(qator.birliklar, qator.birlikId), qator.soni) : 0;
   return Math.max(0, qoldiq - savatchada);
 }
 

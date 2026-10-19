@@ -22,6 +22,35 @@ const MATNLAR: Record<string, KodMatni> = {
     uz: "Dollar bilan ishlash uchun valyuta rejimi yoqilgan bo'lishi kerak (Sozlamalar → Valyuta).",
     ru: "Для работы с долларом должен быть включён валютный режим (Настройки → Валюта).",
   },
+  // Ko'p birlikli tovarlar (pochka, qop, korobka).
+  "errors.catalog.unit_not_allowed": {
+    uz: "Bu birlik shu tovarda yo'q yoki bu hujjatda ishlatib bo'lmaydi (masalan, pochka kirimda yoki korobka sotuvda).",
+    ru: "Эта единица не задана у товара или не допускается в этом документе (например, пачка в приходе или коробка в продаже).",
+  },
+  "errors.catalog.quantity_not_whole": {
+    uz: "Bu birlikda faqat butun miqdor kiritiladi (masalan, 1,5 korobka bo'lmaydi).",
+    ru: "В этой единице можно указывать только целое количество (например, 1,5 коробки нельзя).",
+  },
+  "errors.catalog.base_unit_factor": {
+    uz: "Asosiy birlikning koeffitsienti 1 bo'lishi kerak.",
+    ru: "Коэффициент базовой единицы должен быть равен 1.",
+  },
+  "errors.catalog.base_unit_in_use": {
+    uz: "Qoldig'i yoki hujjatlari bor tovarning asosiy birligini o'zgartirib bo'lmaydi.",
+    ru: "Нельзя менять базовую единицу у товара, по которому есть остатки или документы.",
+  },
+  "errors.catalog.unit_not_found": {
+    uz: "Tanlangan birlik topilmadi.",
+    ru: "Выбранная единица не найдена.",
+  },
+  "errors.catalog.unit_duplicate": {
+    uz: "Bir birlik ikki marta kiritilgan.",
+    ru: "Одна единица указана дважды.",
+  },
+  "errors.catalog.barcode_already_exists": {
+    uz: "Bu shtrix-kod boshqa tovar yoki birlikda allaqachon bor.",
+    ru: "Этот штрихкод уже используется другим товаром или единицей.",
+  },
 };
 
 // Sotuvni bekor qilishda hisobdan yechilgan pul qaytadi; hisobga yozilgan pul esa ishlatilgan bo'lsa bekor qilib bo'lmaydi.

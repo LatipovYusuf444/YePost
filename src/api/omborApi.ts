@@ -175,6 +175,12 @@ export const omborlarApi = {
 };
 
 // Ombor/Xaridlar.tsx va Kirim.tsx: kirim hujjatlari.
+function kirimOgohlantirishlari(raw: KirimHujjati | ApiEnvelope<KirimHujjati>): KirimHujjati {
+  const hujjat = apiData(raw);
+  const tashqi = (raw as { warnings?: KirimHujjati["warnings"] }).warnings;
+  return !hujjat.warnings && Array.isArray(tashqi) ? { ...hujjat, warnings: tashqi } : hujjat;
+}
+
 export const kirimApi = {
   royxat: async () => {
     const response = await apiClient.get<RoyxatJavobi<KirimHujjati>>(
@@ -186,17 +192,14 @@ export const kirimApi = {
     apiData(
       (await apiClient.get<KirimHujjati | ApiEnvelope<KirimHujjati>>(`/inventory/purchases/${id}`)).data
     ),
+  // Javobdagi `warnings` (FACTOR_CHANGED) hujjat ichida ham, o'rovchi javob yonida ham kelishi mumkin: hujjatga qo'shib qaytariladi.
   yaratish: async (data: KirimYaratishMalumoti) =>
-    apiData(
-      (await apiClient.post<KirimHujjati | ApiEnvelope<KirimHujjati>>("/inventory/purchases", data)).data
-    ),
+    kirimOgohlantirishlari((await apiClient.post<KirimHujjati | ApiEnvelope<KirimHujjati>>("/inventory/purchases", data)).data),
   yangilash: async (id: string, data: Partial<KirimYaratishMalumoti>) =>
-    apiData(
-      (await apiClient.patch<KirimHujjati | ApiEnvelope<KirimHujjati>>(
-        `/inventory/purchases/${id}`,
-        data
-      )).data
-    ),
+    kirimOgohlantirishlari((await apiClient.patch<KirimHujjati | ApiEnvelope<KirimHujjati>>(
+      `/inventory/purchases/${id}`,
+      data
+    )).data),
   tasdiqlash: async (id: string) =>
     apiData(
       (await apiClient.post<KirimHujjati | ApiEnvelope<KirimHujjati>>(

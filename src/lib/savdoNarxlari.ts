@@ -1,6 +1,7 @@
 // "Sotuv yaratish" jadvali uchun narx turi (tannarx / chakana / ulgurji) va chegirma (summa yoki foiz) hisob-kitobi.
 // UI'siz yozilgan (faqat tur importlari) — testlarda to'g'ridan-to'g'ri ishlaydi.
 import type { QoldiqTanlovi, SotuvNarxTuri } from "../types/savdo.ts";
+import { birlikNarxi, type TovarBirligi } from "./kopBirlik.ts";
 
 export type NarxValyutasi = "UZS" | "USD";
 export type ChegirmaTuri = "sum" | "foiz";
@@ -118,6 +119,8 @@ export type YuboriladiganQator = {
   // Chegirma foizda kiritilgan bo'lsa — foiz (backendda hisobot uchun); summa `discount`da.
   discountPercent?: number;
   currency?: NarxValyutasi;
+  // Qo'shimcha birlikda sotilsa (pochka): miqdor va narx shu birlikda. Asosiy birlikda yuborilmaydi.
+  unitId?: string;
 };
 
 /**
@@ -139,6 +142,8 @@ export function yuboriladiganQator(p: {
   foiz: number;
   /** Bir dona uchun ustama (sotuv valyutasida): sotuv narxi katalogdan baland bo'lsa, qo'lda narx sifatida yuboriladi. */
   ustama?: number;
+  /** Tanlangan birlik: miqdor, narx va chegirma shu birlikda (qo'shimcha birlikda `unitId` yuboriladi). */
+  birlik?: TovarBirligi;
 }): YuboriladiganQator {
   const ustama = Math.max(p.ustama ?? 0, 0);
   const asos = {
@@ -146,9 +151,10 @@ export function yuboriladiganQator(p: {
     quantity: p.miqdor,
     priceType: p.tur,
     ...(p.chegirmaTuri === "foiz" && p.foiz > 0 && p.chegirma > 0 ? { discountPercent: Math.min(p.foiz, 100) } : {}),
+    ...(p.birlik && !p.birlik.asosiy ? { unitId: p.birlik.unitId } : {}),
   };
   if (p.sotuvVal === "UZS") return { ...asos, price: ustamaliNarx(p.narx, ustama), discount: p.chegirma };
-  const narx = turNarxi(p.qoldiq, p.tur, p.kurs);
+  const narx = birlikNarxi(turNarxi(p.qoldiq, p.tur, p.kurs), p.birlik, p.tur);
   if (narx && narx.valyuta === "UZS") {
     return { ...asos, price: narx.asl + Math.round(ustama * p.kurs), discount: yaxlit2(p.chegirma * p.kurs), currency: "UZS" };
   }

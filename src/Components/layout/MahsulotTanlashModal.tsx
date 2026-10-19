@@ -236,6 +236,7 @@ export default function MahsulotTanlashModal({ onClose }: { onClose: () => void 
           ulgurjiNarx: qoldiqNarxi(tanlov.item, "ulgurji"),
           ...dollarMalumoti(tanlov.item),
           qoldiq: qoldiqMiqdori(tanlov.item),
+          ...(tanlov.item.birliklar?.length ? { birliklar: tanlov.item.birliklar } : {}),
           warehouseId: tanlov.warehouseId,
           warehouseName: tanlov.warehouseName,
         },

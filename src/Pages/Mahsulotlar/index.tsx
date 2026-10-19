@@ -15,6 +15,7 @@ import {
   PackagePlus,
   Plus,
   RefreshCw,
+  Ruler,
   Search,
   Table2,
   Tags,
@@ -46,6 +47,7 @@ import KorinishTanlash, { type RoyxatKorinishi } from "@/Pages/Ombor/KorinishTan
 import { sotuvNarxiUstamadan, ustamaFoizi } from "./narxHisobi";
 import { narxQoralamaValyutalari, narxYigish, ustamaHisoblashMumkin } from "./narxValyutaYuklama";
 import { narxValyutalari } from "@/lib/narxValyutasi";
+import BirliklarModal from "./BirliklarModal";
 type Tab = "mahsulotlar" | "kategoriyalar";
 type Korinish = "kartochka" | "jadval";
 type VariationRow = {
@@ -174,6 +176,7 @@ export default function Mahsulotlar() {
   const [mahsulotModal, setMahsulotModal] = useState<Mahsulot | "new" | null>(null);
   const [oddiyModal, setOddiyModal] = useState<Kategoriya | "new" | null>(null);
   const [modProduct, setModProduct] = useState<Mahsulot | null>(null);
+  const [birlikProduct, setBirlikProduct] = useState<Mahsulot | null>(null);
   const [importModalOchiq, setImportModalOchiq] = useState(false);
   const [excelAmali, setExcelAmali] = useState<"template" | "export" | null>(null);
   const [excelXatolik, setExcelXatolik] = useState("");
@@ -219,6 +222,8 @@ export default function Mahsulotlar() {
   const TanlanganIcon = tanlanganKorinish.icon;
   const rol = rolniNormallashtirish(profil?.role);
   const excelAmallariMumkin = rol === "ADMIN" || rol === "DIREKTOR";
+  // Tovar birliklarini faqat admin va direktor o'zgartira oladi (backend PUT /catalog/products/:id/units).
+  const birlikTahrirlashMumkin = excelAmallariMumkin;
 
   async function importShabloniniYuklash() {
     if (excelAmali) return;
@@ -271,6 +276,7 @@ export default function Mahsulotlar() {
       // Jadvaldagi tugmalar (tahrirlash, o'chirish) bosilganda qator ochilmasligi uchun bosish yuqoriga o'tkazilmaydi.
       <div onClick={ixcham ? (event) => event.stopPropagation() : undefined} className={ixcham ? "flex justify-end gap-2" : "mt-5 grid grid-cols-[1fr_1fr_42px] gap-2 border-t pt-4"}>
         {!ixcham&&<button onClick={()=>mahsulotniKorish(item)} className="inline-flex items-center justify-center gap-1 rounded-xl bg-slate-50 py-2.5 text-sm font-bold text-slate-600"><Eye size={15}/>{t("actions.variants")}</button>}
+        {birlikTahrirlashMumkin&&<button type="button" onClick={()=>setBirlikProduct(item)} title={t("actions.units")} aria-label={t("actions.units")} className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-500 hover:bg-orange-50 hover:text-orange-600"><Ruler size={16}/></button>}
         <button onClick={()=>void mahsulotTahrirlash(item)} className={`inline-flex items-center justify-center gap-1 rounded-xl bg-orange-50 font-bold text-orange-600 ${ixcham ? "h-10 px-3 text-sm" : "py-2.5 text-sm"}`}><Edit3 size={15}/>{!ixcham&&t("actions.edit")}</button>
         <button onClick={()=>void mahsulotOchirish(item.id)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500"><Trash2 size={16}/></button>
       </div>
@@ -505,6 +511,7 @@ export default function Mahsulotlar() {
       {mahsulotModal&&<MahsulotModalKeng item={mahsulotModal} onClose={()=>setMahsulotModal(null)}/>}
       {oddiyModal&&<OddiyModal item={oddiyModal} onClose={()=>setOddiyModal(null)}/>}
       {modProduct&&<ModifikatsiyalarModal product={modProduct} onClose={()=>setModProduct(null)}/>}
+      {birlikProduct&&<BirliklarModal product={birlikProduct} birliklar={store.birliklar} onClose={()=>setBirlikProduct(null)}/>}
       {importModalOchiq&&<MahsulotImportModal onClose={()=>setImportModalOchiq(false)} onImported={yuklash}/>}
     </div>
   );

@@ -42,6 +42,9 @@ export type ProductProfitFilter = SanaFilter & {
   // Sotuv qatori narx turi bo'yicha filtr; UNKNOWN — narx turi yozilmagan (eski) qatorlar.
   priceType?: "COST" | "RETAIL" | "WHOLESALE" | "UNKNOWN";
   groupBy?: "PRODUCT" | "CUSTOMER" | "MONTH" | "BRANCH" | "WAREHOUSE";
+  // Tovar nomi bo'yicha qidiruv (backend: `%`, `_` harf sifatida) va tartib.
+  search?: string;
+  sort?: "PROFIT_UZS_DESC" | "REVENUE_UZS_DESC" | "MARGIN_DESC" | "NAME_ASC";
   branchIds?: string;
   warehouseIds?: string;
   customerIds?: string;

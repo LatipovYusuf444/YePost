@@ -30,6 +30,7 @@ import { stockBalanceExport, stockBalanceReport, type StockBalanceResponse } fro
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useHisobotRealData } from "./HisobotRealData";
 import { pul, son } from "./yordamchilar";
+import { qoldiqTaqsimotiMatni } from "@/lib/kopBirlik";
 
 import YuklanmoqdaHolati from "./YuklanmoqdaHolati";
 // Ombor qoldig'i backenddagi /reports/stock-balance natijasidan olinadi.
@@ -66,6 +67,9 @@ type Qator = {
   qoldiq: number;
   narx: number;
   summa: number;
+  // Ko'p birlikli tovar: "2 qop 4,367 kg" va "≈ 130,83 pochka" (qoldiq asosiy birlikda saqlanadi).
+  bolingan?: string | null;
+  taxminan?: string | null;
 };
 
 export default function QoldiqHisoboti() {
@@ -143,6 +147,7 @@ export default function QoldiqHisoboti() {
       kategoriya: kategoriyaTanlovlari.find((entry) => entry.id === product?.categoryId)?.nomi ?? "—",
       birlik: item.unitName ?? product?.birlik ?? "",
       qoldiq: Number(item.quantity ?? 0),
+      ...qoldiqTaqsimotiMatni(item, item.unitName ?? product?.birlik),
       narx,
       summa: Number(item.totalAmount ?? Number(item.quantity ?? 0) * narx),
     };
@@ -191,6 +196,8 @@ export default function QoldiqHisoboti() {
             }`}
           >
             {son(q.qoldiq)}
+            {q.bolingan && <span className="block text-[11px] font-semibold text-slate-500">{q.bolingan}</span>}
+            {q.taxminan && <span className="block text-[11px] font-semibold text-slate-400">{q.taxminan}</span>}
           </span>
         ),
         jami: () => son(jami.qoldiq),

@@ -11,5 +11,6 @@ export function hisobotValyutasiniTekshirish(currency: unknown, kutilgan?: Hisob
 export function hisobotPulMatni(summa: number, valyuta: HisobotValyutasi, uzsBelgi = "so'm") {
   const yaxlit = valyuta === "UZS" ? Math.round(summa) : summa;
   const matn = (yaxlit === 0 ? 0 : yaxlit).toLocaleString("uz-UZ", { maximumFractionDigits: valyuta === "USD" ? 2 : 0 });
-  return valyuta === "USD" ? `$${matn}` : `${matn} ${uzsBelgi}`;
+  // Manfiy dollar "-$1.2" ko'rinishida (ishora belgisi oldida).
+  return valyuta === "USD" ? (matn.startsWith("-") ? `-$${matn.slice(1)}` : `$${matn}`) : `${matn} ${uzsBelgi}`;
 }

@@ -188,6 +188,8 @@
     "codePlaceholder": "Код (796)",
     "namePlaceholder": "Название (например: Штука)",
     "shortNamePlaceholder": "Сокращение (шт)",
+    "fractional": "Допускается дробное количество (кг, литр, метр)",
+    "fractionalBadge": "Дробное",
     "noShortName": "Нет сокращения",
     "codeLabel": "Код: {{code}}",
     "empty": "В backend пока нет единиц измерения",

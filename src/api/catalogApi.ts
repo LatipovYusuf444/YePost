@@ -2,6 +2,7 @@ import apiClient from "./axios";
 import { apiData, apiList, ruxsatsizBulsaBosh, sahifaJavobi, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import { katalogQidiruvQatoriniMoslash, katalogQidiruvYuklagich, type KatalogQidiruvQatori } from "./catalogSearch";
 import { authTokenlarniOlish } from "@/lib/authTokenStorage";
+import { birliklarniMoslash, birliklarTanasi, type TovarBirligi } from "@/lib/kopBirlik";
 import { apiTiliniOlish } from "./apiLanguage";
 import type {
   Kategoriya,
@@ -92,6 +93,18 @@ export const birliklarApi = {
     ),
   ochirish: async (id: string) =>
     apiData((await apiClient.delete<OlchovBirligi | ApiEnvelope<OlchovBirligi>>(`/catalog/units/${id}`)).data),
+};
+
+// Tovar birliklari (pochka, qop, korobka): koeffitsient bilan qo'shimcha birliklar. PUT ro'yxatni to'liq almashtiradi (ADMIN, DIRECTOR).
+export const mahsulotBirliklariApi = {
+  olish: async (productId: string): Promise<TovarBirligi[]> => {
+    const response = await apiClient.get<unknown>(`/catalog/products/${productId}/units`);
+    return birliklarniMoslash(apiList(response.data as TovarBirligi[] | ApiListEnvelope<TovarBirligi>));
+  },
+  saqlash: async (productId: string, birliklar: readonly TovarBirligi[]): Promise<TovarBirligi[]> => {
+    const response = await apiClient.put<unknown>(`/catalog/products/${productId}/units`, birliklarTanasi(birliklar));
+    return birliklarniMoslash(apiList(response.data as TovarBirligi[] | ApiListEnvelope<TovarBirligi>));
+  },
 };
 
 // Mahsulotlar sahifasi: Swagger catalog/products to'liq CRUD.

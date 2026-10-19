@@ -18,6 +18,7 @@
   },
   "errors": {
     "dismiss": "Yopish",
+    "quantityNotWhole": "Pochka, qop, korobka kabi birliklarda faqat butun miqdor kiritiladi.",
     "usdUnavailable": "Dollarda sotuv uchun valyuta rejimi yoqilgan va bugungi kurs kiritilgan bo'lishi kerak (Sozlamalar → Valyuta).",
     "selectClientForActivity": "CRM faoliyatini saqlash uchun mijozni tanlang.",
     "selectResponsibleForTask": "Ish yoki vazifa yaratish uchun mas'ul xodimni tanlang.",
@@ -136,6 +137,7 @@
     "priceUsd": "Katalog narxi ($)",
     "salePriceUsd": "Sotuv narxi ($)",
     "discountUsd": "Chegirma ($, jami)",
+    "unit": "Birlik",
     "priceLocked": "Narx ombordagi haqiqiy narx bo'yicha belgilanadi va o'zgartirilmaydi"
   },
   "placeholders": {
@@ -177,6 +179,7 @@
   "products": {
     "autoDiscountHint": "Katalog narxi {{katalog}}, sotuv narxi {{sotuv}}: har bir dona uchun {{bir}} chegirma avtomatik hisoblandi (jami {{jami}}).",
     "autoMarkupHint": "Katalog narxi {{katalog}}, sotuv narxi {{sotuv}}: har bir donaga {{bir}} ustama qo'shildi (jami {{jami}}).",
+    "baseEquivalent": "= {{qty}} {{unit}}",
     "removeRowAriaLabel": "Mahsulot qatorini o'chirish",
     "imageButtonTitle": "Rasm",
     "stockLabelShort": "qoldiq",

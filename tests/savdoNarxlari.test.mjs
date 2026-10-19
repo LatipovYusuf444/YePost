@@ -146,3 +146,20 @@ test('yuboriladigan qator: dollarli sotuvda ustama mahsulot valyutasida qo‘shi
   const som = yuboriladiganQator({ modificationId: 'a', miqdor: 2, tur: 'RETAIL', qoldiq: SOM, sotuvVal: 'USD', kurs: KURS, narx: 2.1, chegirma: 0, chegirmaTuri: 'sum', foiz: 0, ustama: 1 });
   assert.deepEqual(som, { modificationId: 'a', quantity: 2, priceType: 'RETAIL', price: 25000 + 11910, discount: 0, currency: 'UZS' });
 });
+
+const POCHKA = { unitId: 'u-p', kod: null, nomi: 'pochka', qisqa: 'pochka', kasr: false, koeff: 50, asosiy: false, qabul: true, sotuv: true, chakana: 12000, ulgurji: null, shtrix: null };
+const DONA = { unitId: 'u-d', kod: null, nomi: 'dona', qisqa: 'dona', kasr: false, koeff: 1, asosiy: true, qabul: true, sotuv: true, chakana: null, ulgurji: null, shtrix: null };
+
+test('yuboriladigan qator: qo‘shimcha birlikda unitId yuboriladi, miqdor va narx shu birlikda; asosiy birlikda unitId yo‘q', () => {
+  const pochka = yuboriladiganQator({ modificationId: 'a', miqdor: 10, tur: 'RETAIL', qoldiq: SOM, sotuvVal: 'UZS', kurs: KURS, narx: 12000, chegirma: 0, chegirmaTuri: 'sum', foiz: 0, birlik: POCHKA });
+  assert.deepEqual(pochka, { modificationId: 'a', quantity: 10, priceType: 'RETAIL', price: 12000, discount: 0, unitId: 'u-p' });
+  const dona = yuboriladiganQator({ modificationId: 'a', miqdor: 10, tur: 'RETAIL', qoldiq: SOM, sotuvVal: 'UZS', kurs: KURS, narx: 25000, chegirma: 0, chegirmaTuri: 'sum', foiz: 0, birlik: DONA });
+  assert.ok(!('unitId' in dona));
+  assert.equal(dona.price, 25000);
+});
+
+test('yuboriladigan qator: dollarli sotuvda so‘mdagi mahsulot birlik narxida (asosiy × koeff) so‘mda ketadi', () => {
+  const q = yuboriladiganQator({ modificationId: 'a', miqdor: 2, tur: 'WHOLESALE', qoldiq: SOM, sotuvVal: 'USD', kurs: KURS, narx: 0, chegirma: 0, chegirmaTuri: 'sum', foiz: 0, birlik: POCHKA });
+  // ulgurji narx 22 000 so'm × 50 = 1 100 000 so'm / pochka (birlikning o'z ulgurji narxi yo'q)
+  assert.deepEqual(q, { modificationId: 'a', quantity: 2, priceType: 'WHOLESALE', price: 1100000, discount: 0, currency: 'UZS', unitId: 'u-p' });
+});

@@ -29,3 +29,12 @@ test('noma‘lum kod, bad_request yoki kod yo‘q: null — avvalgi xabar saqlan
 test('ingliz tili so‘ralsa o‘zbekcha matn qaytadi', () => {
   assert.equal(xatoKodiMatni('errors.wallet.insufficient_balance', '/sales/s1/payments', 'en'), 'Mijoz hisobida pul yetarli emas.');
 });
+
+test('ko‘p birlikli tovar xatolari: uz va ru matn', () => {
+  assert.match(xatoKodiMatni('errors.catalog.quantity_not_whole', '/sales', 'uz'), /faqat butun miqdor/);
+  assert.match(xatoKodiMatni('errors.catalog.unit_not_allowed', '/inventory/purchases', 'ru'), /не допускается/);
+  for (const kod of ['base_unit_factor', 'base_unit_in_use', 'unit_not_found', 'unit_duplicate', 'barcode_already_exists']) {
+    assert.ok(xatoKodiMatni(`errors.catalog.${kod}`, '/catalog/products/p/units', 'uz'), kod);
+    assert.ok(xatoKodiMatni(`errors.catalog.${kod}`, '/catalog/products/p/units', 'ru'), kod);
+  }
+});
