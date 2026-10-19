@@ -1,3 +1,4 @@
+import { toshkentKuni } from "@/lib/hujjatSanasi";
 import { pulMatni } from "@/lib/valyuta";
 import type { KassaKanali, KassaYonalishi } from "./types";
 
@@ -38,14 +39,16 @@ export function valyutaTanlanadiganTur(turi: import("./types").KassaAmaliyotTuri
   return turi === "xaridor_tolovi" || turi === "xaridorga_qaytarish" || turi === "taminot_tolovi";
 }
 
+// Hujjat sanasi Toshkent kuni bo'yicha (backend ham shunday hisoblaydi): brauzer vaqt mintaqasi kunni siljitmaydi.
 export function sanaFormat(sana: string) {
-  const vaqt = new Date(sana);
-  if (Number.isNaN(vaqt.getTime())) return sana;
+  const kun = toshkentKuni(sana);
+  if (!kun) return sana;
   return new Intl.DateTimeFormat("uz-UZ", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-  }).format(vaqt);
+    timeZone: "UTC",
+  }).format(new Date(`${kun}T12:00:00Z`));
 }
 
 export const kanalMatni: Record<KassaKanali, string> = {

@@ -38,6 +38,8 @@ import { kassaSummasi, sanaFormat, summaFormat } from "./yordamchilar";
 
 import ModalTablari from "@/Components/common/ModalTablari";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
+import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
+import { toshkentKuni } from "@/lib/hujjatSanasi";
 import LoadingState from "@/Components/common/LoadingState";
 import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
@@ -177,6 +179,7 @@ export default function KassaUchot() {
       hisoblanganSumma: item.settledAmount != null && Number(item.settledAmount) > 0 ? Number(item.settledAmount) : undefined,
       kurs: item.rate != null && Number(item.rate) > 0 ? Number(item.rate) : undefined,
       sana: item.date,
+      kiritilgan: item.createdAt,
       masul:
         item.responsible?.fullName ||
         responsible?.fullName ||
@@ -242,7 +245,7 @@ export default function KassaUchot() {
         amaliyot.kanal === "bank" ? "BANK" : amaliyot.kanal === "ilova" ? "CARD" : "CASH";
       const payload: CashOperationPayload = {
         type: uiOperationTuri[amaliyot.turi],
-        date: amaliyot.sana,
+        date: toshkentKuni(amaliyot.sana) || undefined,
         amount: amaliyot.summa,
         // So'mda berilgan pul hisob valyutasiga (dollarga) `rate` bilan o'giriladi; kurs yozilmasa backend kunlik kursni oladi.
         ...(amaliyot.valyuta ? { currency: amaliyot.valyuta } : {}),
@@ -429,7 +432,12 @@ export default function KassaUchot() {
       id: "sana",
       nom: t("table.sana"),
       kenglik: 130,
-      katak: (a) => <span className="text-slate-500">{sanaFormat(a.sana)}</span>,
+      katak: (a) => (
+        <span className="text-slate-500">
+          {sanaFormat(a.sana)}
+          <KiritilganBelgisi date={a.sana} createdAt={a.kiritilgan} />
+        </span>
+      ),
     },
     {
       id: "summa",

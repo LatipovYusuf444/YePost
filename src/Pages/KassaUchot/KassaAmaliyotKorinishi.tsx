@@ -18,6 +18,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import type { KassaAmaliyoti, KassaHolati, KassaKanali } from "./types";
 import { kassaSummasi, partiyaTuri, sanaFormat } from "./yordamchilar";
 
@@ -166,6 +167,7 @@ export default function KassaAmaliyotKorinishi({ amaliyot }: Props) {
             </Qator>
             <Qator ikonka={<CalendarDays size={17} />} nom={tushum ? t("modal.incomeDateLabel") : t("modal.expenseDateLabel")}>
               <span className="tabular-nums">{sanaFormat(amaliyot.sana)}</span>
+              <KiritilganBelgisi date={amaliyot.sana} createdAt={amaliyot.kiritilgan} />
             </Qator>
             <Qator ikonka={<KanalIkonka size={17} />} nom={t("modal.paymentTypeLabel")}>
               {t(`channels.${amaliyot.kanal}`)}

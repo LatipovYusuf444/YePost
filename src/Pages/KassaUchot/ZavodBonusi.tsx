@@ -5,6 +5,7 @@ import AppSelect from "@/Components/ui/AppSelect";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
 import LoadingState from "@/Components/common/LoadingState";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
+import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import { zavodBonusiApi } from "@/api/zavodBonusiApi";
 import type { ZavodBonusi as ZavodBonusiHujjati, ZavodBonusiHolati } from "@/types/zavodBonusi";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
@@ -116,7 +117,12 @@ export default function ZavodBonusi({ ochirishMumkin }: Props) {
       katak: (b) => <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-black ${HOLAT_USLUBI[b.status]}`}>{t(`zavodBonusi.holatlar.${b.status}`)}</span>,
     },
     { id: "zavod", nom: t("zavodBonusi.columns.supplier"), kenglik: 170, katak: (b) => <span className="font-semibold text-slate-700">{b.supplier?.name ?? "—"}</span> },
-    { id: "sana", nom: t("zavodBonusi.columns.date"), kenglik: 125, katak: (b) => <span className="text-slate-500">{b.date ? sanaFormat(b.date) : "—"}</span> },
+    { id: "sana", nom: t("zavodBonusi.columns.date"), kenglik: 125, katak: (b) => (
+      <span className="text-slate-500">
+        {b.date ? sanaFormat(b.date) : "—"}
+        <KiritilganBelgisi date={b.date} createdAt={b.createdAt} />
+      </span>
+    ) },
     {
       id: "summa",
       nom: t("zavodBonusi.columns.amount"),

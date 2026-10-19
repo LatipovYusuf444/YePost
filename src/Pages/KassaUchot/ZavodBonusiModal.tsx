@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Gift, Info, LoaderCircle, X } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
+import { bugungiToshkentKuni, toshkentKuni } from "@/lib/hujjatSanasi";
 import AppSelect from "@/Components/ui/AppSelect";
 import { yetkazibBeruvchilar, filiallarApi } from "@/api/omborApi";
 import { zavodBonusiApi } from "@/api/zavodBonusiApi";
@@ -12,18 +14,6 @@ import { zavodBonusiXatosi } from "./zavodBonusiXato";
 type Tanlov = { id: string; nomi: string };
 
 const raqamlar = (matn: string) => matn.replace(/\D/g, "");
-const bosh = (qiymat: number) => String(qiymat).padStart(2, "0");
-
-// Mahalliy sana ("YYYY-MM-DD") + hozirgi mahalliy vaqt -> ISO. UTC kuni siljib ketmasligi uchun kun mahalliy olinadi.
-function sanaISO(sana: string) {
-  const hozir = new Date();
-  return new Date(`${sana}T${bosh(hozir.getHours())}:${bosh(hozir.getMinutes())}`).toISOString();
-}
-
-function bugungiKun() {
-  const hozir = new Date();
-  return `${hozir.getFullYear()}-${bosh(hozir.getMonth() + 1)}-${bosh(hozir.getDate())}`;
-}
 
 type Props = {
   bonus: ZavodBonusi | null;
@@ -41,7 +31,8 @@ export default function ZavodBonusiModal({ bonus, onYopish, onYangilash }: Props
   const [filiallar, setFiliallar] = useState<Tanlov[]>([]);
   const [zavodId, setZavodId] = useState(bonus?.supplierId ?? "");
   const [summa, setSumma] = useState(bonus ? raqamlar(String(Math.round(Number(bonus.amount ?? 0)))) : "");
-  const [sana, setSana] = useState(bonus?.date ? bonus.date.slice(0, 10) : bugungiKun());
+  // Hujjat sanasi (kun, Toshkent): bugun yoki o'tgan kun; kelajak sana backendda rad etiladi.
+  const [sana, setSana] = useState(() => toshkentKuni(bonus?.date) || bugungiToshkentKuni());
   const [filialId, setFilialId] = useState(bonus?.branchId ?? "");
   const [izoh, setIzoh] = useState(bonus?.note ?? "");
   const [joriyId, setJoriyId] = useState<string | null>(bonus?.id ?? null);
@@ -93,7 +84,8 @@ export default function ZavodBonusiModal({ bonus, onYopish, onYangilash }: Props
     const payload: ZavodBonusiPayload = {
       supplierId: zavodId,
       amount: miqdor,
-      date: sanaISO(sana || bugungiKun()),
+      // Faqat kun yuboriladi (YYYY-MM-DD): bugun — hozirgi vaqt, o'tgan kun — shu kunning 23:59:59 (Toshkent).
+      date: sana || bugungiToshkentKuni(),
       branchId: filialId || undefined,
       note: izoh.trim() || undefined,
     };
@@ -168,7 +160,7 @@ export default function ZavodBonusiModal({ bonus, onYopish, onYangilash }: Props
               />
             </Maydon>
             <Maydon nom={t("zavodBonusi.form.date")}>
-              <input type="date" value={sana} onChange={(event) => setSana(event.target.value)} disabled={faqatKorish || ishlayapti} className={maydonKlass} />
+              <HujjatSanasiMaydoni value={sana} onChange={setSana} disabled={faqatKorish || ishlayapti} className={maydonKlass} aria-label={t("zavodBonusi.form.date")} korsatma={!faqatKorish} />
             </Maydon>
           </div>
 

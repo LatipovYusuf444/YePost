@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Banknote,
-  CalendarDays,
   Clock3,
   Landmark,
   Lock,
@@ -12,6 +11,8 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
+import { bugungiToshkentKuni, toshkentKuni } from "@/lib/hujjatSanasi";
 import Tanlov from "@/Pages/XaridorUchot/Tanlov";
 import { foydalanuvchilarApi } from "@/api/accountsApi";
 import { mijozlarApi, yetkazibBeruvchilarApi } from "@/api/partnersApi";
@@ -93,7 +94,8 @@ export default function KassaAmaliyotModal({
   const [kontragent, setKontragent] = useState(boshlangich?.kontragent ?? "");
   const [summa, setSumma] = useState(boshlangich ? String(boshlangich.summa) : "");
   const [masul, setMasul] = useState(boshlangich?.masul ?? "");
-  const [sana, setSana] = useState(boshlangich?.sana.slice(0, 10) ?? hozir().slice(0, 10));
+  // Hujjat sanasi (kun, Toshkent): bugun yoki o'tgan kun; kelajak sana backendda rad etiladi.
+  const [sana, setSana] = useState(() => toshkentKuni(boshlangich?.sana) || bugungiToshkentKuni());
   const [izoh, setIzoh] = useState(boshlangich?.izoh ?? "");
   const [xato, setXato] = useState("");
   // Valyuta (so'm/dollar) va kurs: faqat valyuta rejimi yoqilgan va bugungi kurs kiritilgan bo'lsa; kurs yozilmasa backend kunlik kursni oladi.
@@ -252,7 +254,8 @@ export default function KassaAmaliyotModal({
       // `settleCurrency` faqat yetkazib beruvchiga to'lovda yuboriladi; mijoz hisobida backend uni o'zi qo'yadi.
       hisobValyutasi: valyutaTanlovi && partiya === "yetkazib" && hisobVal ? hisobVal : undefined,
       kurs: valyutaTanlovi && kursKerak && kiritilganKurs > 0 ? kiritilganKurs : undefined,
-      sana: new Date(`${sana}T${new Date().toISOString().slice(11, 16)}`).toISOString(),
+      // Faqat kun yuboriladi (YYYY-MM-DD): bugun — hozirgi vaqt, o'tgan kun — shu kunning 23:59:59 (Toshkent).
+      sana: sana || bugungiToshkentKuni(),
       masul: masul.trim(),
       izoh: izoh.trim(),
       backendSource: boshlangich?.backendSource,
@@ -561,18 +564,12 @@ export default function KassaAmaliyotModal({
 
                 {/* Sana */}
                 <Maydon label={tushum ? t("modal.incomeDateLabel") : t("modal.expenseDateLabel")}>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      value={sana}
-                      onChange={(event) => setSana(event.target.value)}
-                      className={`${maydonKlass} pr-11`}
-                    />
-                    <CalendarDays
-                      size={18}
-                      className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-                  </div>
+                  <HujjatSanasiMaydoni
+                    value={sana}
+                    onChange={setSana}
+                    aria-label={tushum ? t("modal.incomeDateLabel") : t("modal.expenseDateLabel")}
+                    className={maydonKlass}
+                  />
                 </Maydon>
               </div>
             </section>

@@ -36,7 +36,8 @@ export type KassaAmaliyoti = {
   nomi: string; // amaliyot nomi / asosi
   kontragent: string; // kimdan olindi yoki kimga berildi
   summa: number;
-  sana: string; // ISO
+  sana: string; // ISO yoki kun (YYYY-MM-DD)
+  kiritilgan?: string; // yozuv kiritilgan vaqt (createdAt, ISO) — sana boshqa kunda bo'lsa "kiritilgan" belgisi uchun
   masul: string; // mas'ul shaxs
   izoh: string;
   backendSource?: "SALE" | "RETURN" | "CASH_IN" | "EXPENSE" | "CASH_OPERATION";
