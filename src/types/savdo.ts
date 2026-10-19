@@ -70,6 +70,13 @@ export type SotuvMahsuloti = {
   // Katalogdagi narx (qo'lda yozilgan narx bilan solishtirish uchun) va chegirma foizi (hisobot uchun; summa `discount`da).
   catalogPrice?: number | string | null;
   discountPercent?: number | string | null;
+  // Qo'shimcha birlikda sotilgan qator (pochka): `quantity`/`price` asosiy birlikda, kiritilgan son va narx esa shu yerda.
+  unitId?: string | null;
+  unitName?: string | null;
+  baseUnitName?: string | null;
+  unitQuantity?: number | string | null;
+  unitPrice?: number | string | null;
+  factorSnapshot?: number | string | null;
   modification?: {
     id: string;
     name?: string;
@@ -192,6 +199,8 @@ export type SotuvYaratishMalumoti = {
     priceType?: SotuvNarxTuri;
     // Chegirma foizda kiritilgan bo'lsa — foiz (hisobot uchun); chegirma summasi `discount`da.
     discountPercent?: number;
+    // Qo'shimcha birlik (pochka): `quantity` va `price` shu birlikda. Berilmasa — asosiy birlik.
+    unitId?: string;
   }>;
   payments?: SotuvTolovi[];
 };
@@ -270,8 +279,13 @@ export type QaytariladiganQator = {
   returnedQuantity?: number | string | null;
   remainingQuantity?: number | string | null;
   price?: number | string | null;
-  // Qaytarishda bir dona uchun hisoblanadigan qiymat (backend beradi).
+  // Qaytarishda bir dona uchun hisoblanadigan qiymat (backend beradi); pochkada sotilgan qatorda — 1 pochka qiymati.
   unitValue?: number | string | null;
+  // Birlikda (pochka) sotilgan qator: sotilgan va qolgan miqdor shu birlikda; qaytarishda `quantity` ham shu birlikda.
+  unitId?: string | null;
+  unitName?: string | null;
+  unitQuantity?: number | string | null;
+  unitRemainingQuantity?: number | string | null;
   // Qator valyutasi: price va unitValue shu valyutada (aralash sotuvda dollar qatori). Berilmasa — sotuv valyutasi.
   currency?: string | null;
   modification?: SotuvMahsuloti["modification"];
@@ -331,6 +345,8 @@ export type QoldiqValyutasi = {
 export type QoldiqTanlovi = {
   /** False: hisobotdagi narx valyutasi hali katalogdan tekshirilmagan, uni sotuvga bermaslik kerak. */
   narxAniq?: boolean;
+  /** Tovarning birliklari (asosiy birlik birinchi); qoldiq `quantity` har doim asosiy birlikda. */
+  birliklar?: import("../lib/kopBirlik.ts").TovarBirligi[];
   id?: string;
   warehouseId?: string;
   productId?: string;

@@ -46,6 +46,7 @@ import {
   qoldiqNomlariniBoyitish,
 } from "@/api/savdoApi";
 import { valyutaKodi, type Valyuta } from "@/lib/valyuta";
+import { qaytariladiganQatorBirligida } from "@/lib/kopBirlik";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type {
   Qaytarish,
@@ -179,6 +180,8 @@ type Qator = {
   sotilgan: number | null;
   oldin: number | null;
   qolgan: number | null;
+  // Birlikda (pochka) sotilgan qator: miqdorlar shu birlikda; aks holda null (dona).
+  birlik: string | null;
   narx: number | null;
   // Qaytarishda bir dona uchun backend hisoblaydigan qiymat (unitValue); kelmasa narx.
   birlikQiymati: number | null;
@@ -408,11 +411,14 @@ export default function QaytarishWizard({
       const nomYuklanmoqda = !mahsulot && !variantNomi && Boolean(modificationId) && katalogdan === undefined;
       const nom = mahsulot || variantNomi || `${t("wizard.items.fallback")}${modificationId ? ` #${modificationId.slice(-6)}` : ""}`;
       const variant = mahsulot && variantNomi && mahsulot !== variantNomi ? variantNomi : "";
-      const sotilgan = miqdorgaAylantirish(javob.soldQuantity);
-      const oldin = miqdorgaAylantirish(javob.returnedQuantity);
-      const qolgan = miqdorgaAylantirish(javob.remainingQuantity);
-      // Narx: backend javobidagi narx; u kelmasa shu sotuv qatorining haqiqiy narxi.
-      const narx = miqdorgaAylantirish(javob.price) ?? (item ? miqdorgaAylantirish(sotuvMahsulotiNarxi(item)) : null);
+      const birlikli = qaytariladiganQatorBirligida(javob);
+      const sotilgan = miqdorgaAylantirish(birlikli.sotilgan);
+      const oldin = miqdorgaAylantirish(birlikli.oldin);
+      const qolgan = miqdorgaAylantirish(birlikli.qolgan);
+      // Narx: backend javobidagi narx; u kelmasa shu sotuv qatorining haqiqiy narxi. Birlikda sotilgan qatorda narx — 1 birlik (pochka) qiymati.
+      const narx = birlikli.birlikda
+        ? miqdorgaAylantirish(javob.unitValue)
+        : miqdorgaAylantirish(javob.price) ?? (item ? miqdorgaAylantirish(sotuvMahsulotiNarxi(item)) : null);
       const birlikQiymati = miqdorgaAylantirish(javob.unitValue) ?? narx;
       const valyuta = valyutaKodi(javob.currency ?? item?.currency ?? sotuv.currency);
       const matn = miqdorlar[javob.saleItemId] ?? "0";
@@ -428,7 +434,7 @@ export default function QaytarishWizard({
             : son > (qolgan ?? 0) + 1e-9
               ? "exceeds"
               : "";
-      return { id: javob.saleItemId, modificationId, nom, nomYuklanmoqda, variant, sotilgan, oldin, qolgan, narx, birlikQiymati, valyuta, matn, son: xato ? 0 : son, xato };
+      return { id: javob.saleItemId, modificationId, nom, nomYuklanmoqda, variant, sotilgan, oldin, qolgan, birlik: birlikli.birlik, narx, birlikQiymati, valyuta, matn, son: xato ? 0 : son, xato };
     });
   }, [miqdorlar, qatorNomlari, qatorlarHolati, sotuv, t]);
 
@@ -1483,12 +1489,12 @@ function MahsulotQatori({
 
       {/* Backend ko'rsatkichlari */}
       <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-3 lg:contents">
-        <Korsatkich ikonka={ShoppingBag} rang="sky" nom={t("wizard.items.sold")} qiymat={qator.sotilgan === null ? yoq : `${qator.sotilgan} ${t("wizard.unit")}`} />
+        <Korsatkich ikonka={ShoppingBag} rang="sky" nom={t("wizard.items.sold")} qiymat={qator.sotilgan === null ? yoq : `${qator.sotilgan} ${qator.birlik ?? t("wizard.unit")}`} />
         <Korsatkich
           ikonka={Undo2}
           rang={(qator.oldin ?? 0) > 0 ? "amber" : "slate"}
           nom={t("wizard.items.returned")}
-          qiymat={qator.oldin === null ? yoq : `${qator.oldin} ${t("wizard.unit")}`}
+          qiymat={qator.oldin === null ? yoq : `${qator.oldin} ${qator.birlik ?? t("wizard.unit")}`}
         />
         <Korsatkich
           ikonka={Tag}

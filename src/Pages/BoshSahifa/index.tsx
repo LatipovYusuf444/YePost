@@ -22,6 +22,7 @@ import {
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { savatchaChegirma, savatchaSotuvNarxi, savatchaUstama, usePosStore } from "@/store/posStore";
+import { sotuvBirliklari } from "@/lib/kopBirlik";
 import SotuvNarxiMaydoni from "./SotuvNarxiMaydoni";
 import SavatchaMiqdoriMaydoni from "./SavatchaMiqdoriMaydoni";
 import { doimiySotuvniModalgaTayyorlash } from "./doimiySotuv";
@@ -64,6 +65,7 @@ export default function BoshSahifa() {
   const { t } = useTranslation("bosh_sahifa");
   const cart = usePosStore((state) => state.cart);
   const updateCartQuantity = usePosStore((state) => state.updateQuantity);
+  const setBirlik = usePosStore((state) => state.setBirlik);
   const updatePriceType = usePosStore((state) => state.updatePriceType);
   const setSotuvNarxi = usePosStore((state) => state.setSotuvNarxi);
   const removeFromCart = usePosStore((state) => state.removeFromCart);
@@ -276,6 +278,7 @@ export default function BoshSahifa() {
         sof: lineTotal - lineDiscount,
         dollar: qatorUstamasi > 0 ? null : dollarNarxi(item, narxTuri),
         priceType: narxTuriKodi(narxTuri),
+        unitId: item.birlikId || undefined,
       };
     });
   }
@@ -359,8 +362,8 @@ export default function BoshSahifa() {
           // so'mdagi narx/to'lovlar dollar sifatida o'qilib qolardi. Kassa hisob-kitobi so'mda, dollar qatorlari o'z valyutasi bilan ketadi.
           currency: "UZS",
           ...(usdSent > 0 && !qaytimYaxlitlash ? { roundChange: false } : {}),
-          items: qatorlarRoyxati.map(({ modificationId, quantity, price, discount, dollar, priceType }) =>
-            sotuvQatori({ modificationId, quantity, price, discount, dollar, priceType })
+          items: qatorlarRoyxati.map(({ modificationId, quantity, price, discount, dollar, priceType, unitId }) =>
+            sotuvQatori({ modificationId, quantity, price, discount, dollar, priceType, unitId })
           ),
           payments: tolovlar,
         });
@@ -433,8 +436,8 @@ export default function BoshSahifa() {
           // Savdo valyutasi har doim aniq yuboriladi: berilmasa backend valyuta rejimida mijozli savdoni USD deb oladi va
           // so'mdagi narx/to'lovlar dollar sifatida o'qilib qolardi. Kassa hisob-kitobi so'mda, dollar qatorlari o'z valyutasi bilan ketadi.
           currency: "UZS",
-          items: qatorlarRoyxati.map(({ modificationId, quantity, price, discount, dollar, priceType }) =>
-            sotuvQatori({ modificationId, quantity, price, discount, dollar, priceType })
+          items: qatorlarRoyxati.map(({ modificationId, quantity, price, discount, dollar, priceType, unitId }) =>
+            sotuvQatori({ modificationId, quantity, price, discount, dollar, priceType, unitId })
           ),
         });
         if (!sale) throw new Error(useSavdoStore.getState().xatolik || t("errors.createDraftFailed"));
@@ -573,6 +576,18 @@ export default function BoshSahifa() {
                           ${dollarNarxi(item, narxTuri)?.narx.toLocaleString("uz-UZ", { maximumFractionDigits: 2 })}
                         </span>
                       </p>
+                    )}
+                    {item.baza && sotuvBirliklari(item.birliklar).length > 0 && (
+                      <select
+                        aria-label={t("cart.unitLabel", { name: item.nom })}
+                        value={item.birlikId ?? ""}
+                        onChange={(event) => setBirlik(item.id, event.target.value)}
+                        className="mt-1.5 h-8 w-28 rounded-lg border border-gold-100 bg-white px-2 text-xs font-bold text-slate-700 outline-none focus:border-gold-400"
+                      >
+                        {sotuvBirliklari(item.birliklar).map((birlik) => (
+                          <option key={birlik.unitId} value={birlik.asosiy ? "" : birlik.unitId}>{birlik.qisqa || birlik.nomi}</option>
+                        ))}
+                      </select>
                     )}
                     <SotuvNarxiMaydoni
                       item={item}

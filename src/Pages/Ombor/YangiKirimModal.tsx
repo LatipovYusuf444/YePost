@@ -36,6 +36,9 @@ import { kodBilanTopish, modificationNomi, qoldiqMiqdori } from "./omborYordamch
 import { korsatiladiganValyuta, useValyuta, type Valyuta } from "@/lib/valyuta";
 import { narxValyutalari } from "@/lib/narxValyutasi";
 import { kirimElementiniYigish, kirimNarxiniOgirish } from "./kirimValyuta";
+import { mahsulotBirliklariApi } from "@/api/catalogApi";
+import { asosiyMiqdor, birlikTopish, koeffTekshiruvi, miqdorYaroqlimi, qabulBirliklari, type TovarBirligi } from "@/lib/kopBirlik";
+import type { KirimOgohlantirishi } from "@/types/ombor";
 import MahsulotTanlov, { type MahsulotVarianti } from "./MahsulotTanlov";
 import ShtrixKodMaydoni, { type SkanNatijasi } from "./ShtrixKodMaydoni";
 
@@ -56,7 +59,28 @@ type Qator = {
   currency: Valyuta;
   retailValyuta?: Valyuta;
   wholesaleValyuta?: Valyuta;
+  // Tovar birliklari (pochka, qop, korobka) mahsulot tanlangach yuklanadi; `birlikId` "" — asosiy birlik.
+  birliklar: TovarBirligi[];
+  birlikId: string;
+  // Sanalgan qo'shimcha birlik (pochka) soni: backend haqiqiy koeffitsientni kartochka bilan solishtiradi.
+  sanash: string;
+  // Miqdor maydonida yozilayotgan matn: "24." kabi tugallanmagan kasr son (raqamga aylantirilsa 0 bo'lib qolar edi) maydonda saqlanadi.
+  miqdorMatni: string | null;
 };
+
+// Tovar birliklari bir marta olinadi (bir tovar bir nechta qatorda ham so'rovni takrorlamaydi); xatolik kesh qilinmaydi.
+const birlikKeshi = new Map<string, Promise<TovarBirligi[]>>();
+function tovarBirliklari(productId: string) {
+  let sorov = birlikKeshi.get(productId);
+  if (!sorov) {
+    sorov = mahsulotBirliklariApi.olish(productId).catch(() => {
+      birlikKeshi.delete(productId);
+      return [] as TovarBirligi[];
+    });
+    birlikKeshi.set(productId, sorov);
+  }
+  return sorov;
+}
 
 type Props = { onClose: () => void };
 
@@ -73,6 +97,10 @@ function yangiQator(warehouseId = ""): Qator {
     boshlangichWholesale: 0,
     boshlangichTanNarx: 0,
     currency: "UZS",
+    birliklar: [],
+    birlikId: "",
+    sanash: "",
+    miqdorMatni: null,
   };
 }
 
@@ -137,6 +165,7 @@ export default function YangiKirimModal({ onClose }: Props) {
   }, [fokus]);
   const [tanlangan, setTanlangan] = useState<Set<string>>(new Set());
   const [xato, setXato] = useState("");
+  const [ogohlantirishlar, setOgohlantirishlar] = useState<KirimOgohlantirishi[]>([]);
   const [yaratishOchiqUchun, setYaratishOchiqUchun] = useState<string | null>(null);
   const [fayllar, setFayllar] = useState<Fayl[]>([]);
   const [faylYuklanmoqda, setFaylYuklanmoqda] = useState(false);
@@ -165,7 +194,7 @@ export default function YangiKirimModal({ onClose }: Props) {
   const jami = useMemo(() => {
     try {
       return qatorlar.reduce((sum, row) => {
-        const item = kirimElementiniYigish(row, amaldagiKurs);
+        const item = kirimElementiniYigish({ ...row, birlik: birlikTopish(row.birliklar, row.birlikId) }, amaldagiKurs);
         return sum + item.quantity * item.price;
       }, 0);
     } catch { return null; }
@@ -267,7 +296,27 @@ export default function YangiKirimModal({ onClose }: Props) {
       currency: narxValyutalari(mod?.price).cost,
       retailValyuta: narxValyutalari(mod?.price).retail,
       wholesaleValyuta: narxValyutalari(mod?.price).wholesale,
+      birliklar: [],
+      birlikId: "",
+      sanash: "",
     });
+    if (mod?.productId) void tovarBirliklari(mod.productId).then((birliklar) => yangilash(id, { birliklar }));
+  }
+
+  // Qabul birligini almashtirish: tannarx yangi birlikdagi narxga (asosiy narx × koeffitsient) o'tadi.
+  function birlikniOzgartirish(row: Qator, birlikId: string) {
+    const birlik = birlikTopish(row.birliklar, birlikId);
+    const koeff = birlik && !birlik.asosiy ? birlik.koeff : 1;
+    const narx = Math.round(row.boshlangichTanNarx * koeff * 100) / 100;
+    yangilash(row.id, { birlikId, price: narx ? String(narx) : "", sanash: "" });
+  }
+
+  // Yig'ish uchun qatorning tanlangan birligi va sanash birligi (kirimda `canReceive: false` pochka ham sanash uchun bo'ladi).
+  function qatorBirliklari(row: Qator) {
+    const birlik = birlikTopish(row.birliklar, row.birlikId);
+    const sanashBirligi = row.birliklar.find((item) => !item.asosiy && item.unitId !== row.birlikId && !item.qabul)
+      ?? row.birliklar.find((item) => !item.asosiy && item.unitId !== row.birlikId);
+    return { birlik, sanashBirligi };
   }
 
   function fokusSoralish(qatorId: string, maydon: "mahsulot" | "miqdor" | "narx") {
@@ -346,6 +395,8 @@ export default function YangiKirimModal({ onClose }: Props) {
       return setXato("yangiKirim.errors.rowsIncomplete");
     if (new Set(valid.map((row) => row.warehouseId)).size !== 1)
       return setXato("yangiKirim.errors.mixedWarehouse");
+    if (valid.some((row) => !miqdorYaroqlimi(birlikTopish(row.birliklar, row.birlikId), row.quantity)))
+      return setXato("yangiKirim.errors.quantityNotWhole");
 
     const izohQismlari = [`Nomi: ${kirimNomi.trim() || "Kirim hujjati"}`];
     if (note.trim()) izohQismlari.push(note.trim());
@@ -356,7 +407,10 @@ export default function YangiKirimModal({ onClose }: Props) {
       warehouseId: valid[0].warehouseId,
       responsibleId: responsibleId || undefined,
       note: izohQismlari.join(" | "),
-      items: valid.map((row) => kirimElementiniYigish(row, amaldagiKurs)),
+      items: valid.map((row) => {
+        const { birlik, sanashBirligi } = qatorBirliklari(row);
+        return kirimElementiniYigish({ ...row, birlik, sanashBirligi, sanashSoni: Number(row.sanash) || 0 }, amaldagiKurs);
+      }),
     });
     if (!hujjat) return;
 
@@ -383,6 +437,11 @@ export default function YangiKirimModal({ onClose }: Props) {
     }
 
     if (tasdiqlash && !(await store.kirimTasdiqlash(hujjat.id))) return;
+    // Sanalgan miqdor kartochkadagi koeffitsientdan farq qilsa hujjat saqlangan: foydalanuvchiga ko'rsatib, keyin yopiladi.
+    if (hujjat.warnings?.length) {
+      setOgohlantirishlar(hujjat.warnings);
+      return;
+    }
     onClose();
   }
 
@@ -397,6 +456,20 @@ export default function YangiKirimModal({ onClose }: Props) {
         </header>
 
         <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-8">
+          {ogohlantirishlar.length > 0 && (
+            <div role="alert" className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+              <p className="font-black">{t("yangiKirim.units.warningTitle")}</p>
+              <ul className="mt-1.5 list-disc space-y-1 pl-5">
+                {ogohlantirishlar.map((item, index) => (
+                  <li key={`${item.modificationId ?? ""}-${item.unitId ?? ""}-${index}`}>
+                    {t("yangiKirim.units.warningLine", { unit: item.unitName ?? "", card: Number(item.cardFactor ?? 0), actual: Number(item.actualFactor ?? 0) })}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1.5 text-xs font-semibold text-amber-700">{t("yangiKirim.units.warningHint")}</p>
+              <button type="button" onClick={onClose} className="mt-3 h-10 rounded-xl bg-amber-500 px-5 text-sm font-black text-white hover:bg-amber-600">{t("yangiKirim.units.continue")}</button>
+            </div>
+          )}
           {(xato || store.xatolik) && (
             <div className="mb-4 flex justify-between gap-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
               <span>{xato ? t(xato) : store.xatolik}</span>
@@ -627,6 +700,11 @@ export default function YangiKirimModal({ onClose }: Props) {
                   const stock = store.qoldiqlar.find(
                     (item) => item.modificationId === row.modificationId && item.warehouseId === row.warehouseId
                   );
+                  const qabulOptlari = qabulBirliklari(row.birliklar);
+                  const { birlik: qabulBirligi, sanashBirligi } = qatorBirliklari(row);
+                  const asosiyNomi = row.birliklar.find((item) => item.asosiy)?.qisqa ?? "";
+                  // Sanalgan son kiritilgan bo'lsa: 1 pochka necha kg ekani va kartochkadan farqi (2% dan ko'p — ogohlantirish).
+                  const tekshiruv = sanashBirligi ? koeffTekshiruvi(asosiyMiqdor(qabulBirligi, row.quantity), Number(row.sanash) || 0, sanashBirligi.koeff) : null;
                   return (
                     <div
                       key={row.id}
@@ -707,13 +785,15 @@ export default function YangiKirimModal({ onClose }: Props) {
                         placeholder={t("yangiKirim.table.pricePlaceholder")}
                         className={`${inputSm} pr-16`}
                       /><span className="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{korsatishValyutasi(row, "wholesalePrice")}</span></div>
+                      <div className="min-w-0 space-y-1.5">
                       <input
                         type="number"
                         min="0.001"
                         step="0.001"
-                        value={row.quantity}
+                        value={row.miqdorMatni ?? row.quantity}
                         data-kirim-miqdor={row.id}
-                        onChange={(event) => yangilash(row.id, { quantity: Number(event.target.value) })}
+                        onChange={(event) => yangilash(row.id, { miqdorMatni: event.target.value, quantity: Number(event.target.value) })}
+                        onBlur={() => yangilash(row.id, { miqdorMatni: null })}
                         onKeyDown={(event) => {
                           if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
                           event.preventDefault();
@@ -722,6 +802,38 @@ export default function YangiKirimModal({ onClose }: Props) {
                         }}
                         className={inputSm}
                       />
+                      {qabulOptlari.length > 0 && (
+                        <select
+                          aria-label={t("yangiKirim.units.unit")}
+                          value={row.birlikId}
+                          onChange={(event) => birlikniOzgartirish(row, event.target.value)}
+                          className="h-9 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-1 text-[11px] font-bold text-slate-700 outline-none focus:border-orange-400"
+                        >
+                          {qabulOptlari.map((birlik) => (
+                            <option key={birlik.unitId} value={birlik.asosiy ? "" : birlik.unitId}>{birlik.qisqa || birlik.nomi}</option>
+                          ))}
+                        </select>
+                      )}
+                      {sanashBirligi && (
+                        <div>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={row.sanash}
+                            onChange={(event) => yangilash(row.id, { sanash: event.target.value })}
+                            aria-label={t("yangiKirim.units.countLabel", { unit: sanashBirligi.nomi })}
+                            placeholder={t("yangiKirim.units.countPlaceholder", { unit: sanashBirligi.qisqa || sanashBirligi.nomi })}
+                            className="h-9 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-2 text-[11px] font-bold text-slate-700 outline-none focus:border-orange-400"
+                          />
+                          {tekshiruv && (
+                            <p className={`mt-1 text-[11px] font-semibold ${tekshiruv.ogohlantirish ? "text-amber-600" : "text-slate-400"}`}>
+                              {t("yangiKirim.units.factorLine", { unit: sanashBirligi.qisqa || sanashBirligi.nomi, actual: tekshiruv.haqiqiy, base: asosiyNomi, card: sanashBirligi.koeff })}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      </div>
                       <div className="relative">
                         <Warehouse size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                         <AppSelect

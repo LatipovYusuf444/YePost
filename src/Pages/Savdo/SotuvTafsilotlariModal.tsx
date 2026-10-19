@@ -89,6 +89,7 @@ import {
   tolovTuriMatni,
   tolovValyutasi,
 } from "./savdoYordamchilari";
+import { qatorBirligida, qatorMiqdoriMatni, qatorniQaytaYuborish } from "@/lib/kopBirlik";
 import { useValyutaStore, valyutaKodi, type Valyuta } from "@/lib/valyuta";
 import { mijozHisobi } from "@/lib/mijozHisobi";
 import SavdoSelect from "./SavdoSelect";
@@ -2407,7 +2408,7 @@ function TarixTab({ sotuv }: { sotuv: Sotuv }) {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-slate-800">{mahsulotNomi(item, t)}</p>
                   <p className="mt-0.5 text-xs text-slate-400">
-                    {son(item.quantity)} × {pulniFormatlash(item.price, qatorValyutasi(item, sotuv))}
+                    {qatorMiqdoriMatni(item)} × {pulniFormatlash(qatorBirligida(item).narx, qatorValyutasi(item, sotuv))}
                   </p>
                 </div>
                 <span className="shrink-0 text-sm font-black text-slate-800">{pulniFormatlash(mahsulotJami(item), qatorValyutasi(item, sotuv))}</span>
@@ -2644,8 +2645,8 @@ function TovarlarTab({
       items: [
         ...items.map((item) => ({
           modificationId: item.modificationId,
-          quantity: son(item.quantity),
-          price: son(item.price),
+          // Pochka kabi birlikda sotilgan qator birlikdagi son va narx bilan qayta yuboriladi (summa va birlik o'zgarmaydi).
+          ...qatorniQaytaYuborish(item),
           discount: son(item.discount),
           ...farqliValyuta(qatorValyutasi(item, sotuv), sotuv),
         })),
@@ -2734,7 +2735,7 @@ function TovarlarTab({
 
             {items.map((item, index) => {
               const itemJami = mahsulotJami(item);
-              const itemNarxi = item.price;
+              const itemNarxi = qatorBirligida(item).narx;
               const ombordanChiqdi = tasdiqlangan ? item.quantity : 0;
               const rezerv = tasdiqlangan ? 0 : item.quantity;
               const omborKey = item.id ?? `${item.modificationId}-${index}`;
@@ -2775,8 +2776,8 @@ function TovarlarTab({
                   </div>
 
                   <div className="flex h-12 items-center justify-end gap-2 rounded-md border border-slate-300 bg-white px-3">
-                    <span>{item.quantity}</span>
-                    <span className="text-slate-400">{t("common.dona")}</span>
+                    <span>{qatorBirligida(item).miqdor}</span>
+                    <span className="text-slate-400">{qatorBirligida(item).birlik ?? t("common.dona")}</span>
                   </div>
 
                   <button
@@ -3163,12 +3164,12 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
                   </div>
 
                   <div className="flex h-12 items-center justify-end rounded-md border border-slate-300 bg-white px-3">
-                    {pulniFormatlash(item.price, qatorValyutasi(item, sotuv))}
+                    {pulniFormatlash(qatorBirligida(item).narx, qatorValyutasi(item, sotuv))}
                   </div>
 
                   <div className="flex h-12 items-center justify-end gap-2 rounded-md border border-slate-300 bg-white px-3">
-                    <span>{item.quantity}</span>
-                    <span className="text-slate-400">{t("common.dona")}</span>
+                    <span>{qatorBirligida(item).miqdor}</span>
+                    <span className="text-slate-400">{qatorBirligida(item).birlik ?? t("common.dona")}</span>
                   </div>
 
                   <button

@@ -1,6 +1,7 @@
 {
   "cart": {
     "quantityLabel": "{{name}} miqdori",
+    "unitLabel": "{{name}} — sotuv birligi",
     "decreaseQuantity": "{{name}} miqdorini kamaytirish",
     "increaseQuantity": "{{name}} miqdorini ko'paytirish",
     "title": "Savatcha",

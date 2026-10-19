@@ -50,6 +50,8 @@ type QatorMalumoti = {
   dollar: DollarQatori | null;
   /** Qator narx turi; berilmasa maydon yuborilmaydi. */
   priceType?: "RETAIL" | "WHOLESALE";
+  /** Qo'shimcha birlik (pochka): `quantity` va narx shu birlikda; asosiy birlikda berilmaydi. */
+  unitId?: string;
 };
 
 export type SotuvQatori = {
@@ -59,11 +61,12 @@ export type SotuvQatori = {
   discount: number;
   currency?: "USD";
   priceType?: "RETAIL" | "WHOLESALE";
+  unitId?: string;
 };
 
 /** Backendga ketadigan qator: dollar mahsulot o'z valyutasida (asl narx va dollardagi chegirma), qolganlari avvalgidek so'mda. */
 export function sotuvQatori(qator: QatorMalumoti): SotuvQatori {
-  const narxTuri = qator.priceType ? { priceType: qator.priceType } : {};
+  const narxTuri = { ...(qator.priceType ? { priceType: qator.priceType } : {}), ...(qator.unitId ? { unitId: qator.unitId } : {}) };
   if (!qator.dollar) {
     return { modificationId: qator.modificationId, quantity: qator.quantity, price: qator.price, discount: qator.discount, ...narxTuri };
   }

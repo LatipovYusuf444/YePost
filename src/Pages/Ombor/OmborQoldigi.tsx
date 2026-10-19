@@ -1,4 +1,5 @@
 import { pulMatni } from "@/lib/valyuta";
+import { qoldiqTaqsimotiMatni } from "@/lib/kopBirlik";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -83,6 +84,9 @@ type Satr = {
   bosh: number;
   birlikNarx: number;
   umumiy: number;
+  // Ko'p birlikli tovar: "2 qop 4,367 kg" va "≈ 130,83 pochka" (qoldiq asosiy birlikda saqlanadi).
+  bolingan?: string | null;
+  taxminan?: string | null;
 };
 
 
@@ -266,7 +270,7 @@ export default function OmborQoldigi() {
   const satrlar = useMemo<Satr[]>(() => {
     return report.items.map((item) => {
       const birlikNarx = raqam(qollangan.narxTuri === "retailPrice" ? item.retailPrice : qollangan.narxTuri === "wholesalePrice" ? item.wholesalePrice : item.costPrice);
-      return { kalit: `${item.modificationId}:${item.warehouseId ?? "all"}`, mahsulotNomi: item.productName, birlik: item.unitName || "—", shtrixKod: item.barcode || "", variatsiya: item.modificationName || t("omborQoldigi.baseVariant"), omborNomi: item.warehouseName || t("omborQoldigi.allWarehouses"), jami: raqam(item.quantity), rezerv: raqam(item.reservedQuantity), bosh: raqam(item.availableQuantity), birlikNarx, umumiy: raqam(item.totalAmount) };
+      return { kalit: `${item.modificationId}:${item.warehouseId ?? "all"}`, mahsulotNomi: item.productName, birlik: item.unitName || "—", shtrixKod: item.barcode || "", variatsiya: item.modificationName || t("omborQoldigi.baseVariant"), omborNomi: item.warehouseName || t("omborQoldigi.allWarehouses"), ...qoldiqTaqsimotiMatni(item, item.unitName), jami: raqam(item.quantity), rezerv: raqam(item.reservedQuantity), bosh: raqam(item.availableQuantity), birlikNarx, umumiy: raqam(item.totalAmount) };
     });
     /* Eski client-side hisoblash olib tashlandi.
     const qoldiqlar: never[] = [];
@@ -662,7 +666,11 @@ export default function OmborQoldigi() {
                     </td>
                   )}
                   <td><span className="inline-flex rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">{item.birlik}</span></td>
-                  <td className={`text-right font-bold tabular-nums ${item.jami < 0 ? "text-red-500" : "text-gray-800"}`}>{son(item.jami)}</td>
+                  <td className={`text-right font-bold tabular-nums ${item.jami < 0 ? "text-red-500" : "text-gray-800"}`}>
+                    {son(item.jami)}
+                    {item.bolingan && <span className="block text-[11px] font-semibold text-slate-500">{item.bolingan}</span>}
+                    {item.taxminan && <span className="block text-[11px] font-semibold text-slate-400">{item.taxminan}</span>}
+                  </td>
                   <td className="text-right">
                     <span className={`inline-flex min-w-12 justify-end rounded-lg px-2.5 py-1 font-extrabold tabular-nums ${item.bosh < 0 ? "bg-red-50 text-red-600" : item.bosh === 0 ? "bg-slate-100 text-slate-500" : "bg-emerald-50 text-emerald-700"}`}>{son(item.bosh)}</span>
                   </td>

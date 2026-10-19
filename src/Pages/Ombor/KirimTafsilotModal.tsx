@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Ban, CheckCircle2, FileText, LoaderCircle, RotateCcw } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { qatorMiqdoriMatni } from "@/lib/kopBirlik";
 import AppModal from "@/Components/common/AppModal";
 import { useOmborStore } from "@/store/omborStore";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
@@ -139,7 +140,7 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
                     // Har bir narxning o'z valyutasi: tannarx, chakana va ulgurji narxlar turli valyutada bo'lishi mumkin.
                     const katalogValyutalari = narxValyutalari(mod?.price);
                     const tanValyutasi = item.price != null ? valyutaKodi(hujjat.currency) : katalogValyutalari.cost;
-                    return <tr key={item.id ?? `${item.modificationId}-${index}`} className="hover:bg-orange-50/30"><td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td><td className="px-4 py-4 font-black text-slate-800">{modificationNomi(mod)}</td><td className="px-4 py-4 font-medium text-slate-500">{mod?.barcode || "—"}</td><td className="px-4 py-4 font-semibold text-slate-600">{pul(tanNarx, tanValyutasi)}</td><td className="px-4 py-4 text-slate-600">{pul(sotuvNarx, katalogValyutalari.retail)}</td><td className="px-4 py-4 text-slate-600">{pul(ulgurjiNarx, katalogValyutalari.wholesale)}</td><td className="px-4 py-4 font-bold text-slate-700">{Number(item.quantity).toLocaleString("uz-UZ")}</td><td className="px-4 py-4 text-slate-600">{warehouse?.name ?? hujjat.warehouseId}</td><td className="px-4 py-4 font-black text-emerald-600">{pul(Number(item.quantity) * tanNarx, tanValyutasi)}</td></tr>;
+                    return <tr key={item.id ?? `${item.modificationId}-${index}`} className="hover:bg-orange-50/30"><td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td><td className="px-4 py-4 font-black text-slate-800">{modificationNomi(mod)}</td><td className="px-4 py-4 font-medium text-slate-500">{mod?.barcode || "—"}</td><td className="px-4 py-4 font-semibold text-slate-600">{pul(tanNarx, tanValyutasi)}</td><td className="px-4 py-4 text-slate-600">{pul(sotuvNarx, katalogValyutalari.retail)}</td><td className="px-4 py-4 text-slate-600">{pul(ulgurjiNarx, katalogValyutalari.wholesale)}</td><td className="px-4 py-4 font-bold text-slate-700">{item.unitId && item.unitQuantity != null ? <>{qatorMiqdoriMatni(item)}<span className="block text-[11px] font-semibold text-slate-400">= {Number(item.quantity).toLocaleString("uz-UZ", { maximumFractionDigits: 3 })} {item.baseUnitName ?? ""}</span></> : Number(item.quantity).toLocaleString("uz-UZ")}</td><td className="px-4 py-4 text-slate-600">{warehouse?.name ?? hujjat.warehouseId}</td><td className="px-4 py-4 font-black text-emerald-600">{pul(Number(item.quantity) * tanNarx, tanValyutasi)}</td></tr>;
                   })}
                 </tbody>
               </table>

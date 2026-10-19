@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { birlikTopish, savatchaBirlikQiymatlari, type SavatchaBaza, type TovarBirligi } from "../lib/kopBirlik.ts";
 
 export type CartItem = {
   id: string;
@@ -24,7 +25,23 @@ export type CartItem = {
   ulgurjiSomda?: boolean;
   // `narx` hisoblangan kurs (1 USD = necha so'm).
   kurs?: number;
+  // Ko'p birlikli tovar: tovar birliklari (asosiy birlik birinchi) va tanlangan sotuv birligi ("" yoki yo'q — asosiy birlik).
+  // Qator maydonlari (narx, qoldiq, soni) tanlangan birlikda; `baza` — asosiy birlikdagi qiymatlar (birlik almashganda shundan hisoblanadi).
+  birliklar?: TovarBirligi[];
+  birlikId?: string;
+  baza?: SavatchaBaza;
 };
+
+function bazaOlish(item: Omit<CartItem, "soni">): SavatchaBaza {
+  return {
+    chakanaNarx: item.chakanaNarx,
+    ulgurjiNarx: item.ulgurjiNarx,
+    qoldiq: item.qoldiq,
+    ...(item.aslNarx !== undefined ? { aslNarx: item.aslNarx } : {}),
+    ...(item.aslUlgurjiNarx !== undefined ? { aslUlgurjiNarx: item.aslUlgurjiNarx } : {}),
+    ...(item.kurs !== undefined ? { kurs: item.kurs } : {}),
+  };
+}
 
 // Haqiqiy sotuv narxi: kassir kiritgan narx (katalog narxidan past ham, baland ham bo'lishi mumkin).
 // Kiritilmagan yoki noto'g'ri (0, manfiy, son emas) bo'lsa katalog narxi olinadi.
@@ -48,6 +65,8 @@ type PosState = {
   // Bosh sahifada tanlangan narx turi (chakana/ulgurji): headerdagi tezkor qidiruv savatchaga shu narx bilan qo'shadi.
   narxTuri: "chakana" | "ulgurji";
   addToCart: (item: Omit<CartItem, "soni">, quantity?: number) => void;
+  // Qatorning sotuv birligini almashtiradi (dona ↔ pochka): narx, qoldiq va miqdor yangi birlikda.
+  setBirlik: (productId: string, birlikId: string) => void;
   updateQuantity: (productId: string, nextQuantity: number) => void;
   updatePriceType: (priceType: "chakana" | "ulgurji") => void;
   setSotuvNarxi: (productId: string, narx?: number) => void;
@@ -67,20 +86,21 @@ export const usePosStore = create<PosState>()(
 
           if (exists) {
             return {
-              cart: state.cart.map((cartItem) =>
-                cartItem.id === item.id
-                  ? {
-                      ...cartItem,
-                      ...item,
-                      soni: Math.min(cartItem.soni + quantity, item.qoldiq),
-                    }
-                  : cartItem
-              ),
+              cart: state.cart.map((cartItem) => {
+                if (cartItem.id !== item.id) return cartItem;
+                const birlik = birlikTopish(item.birliklar, cartItem.birlikId);
+                // Qator qo'shimcha birlikda bo'lsa, yangi (asosiy birlikdagi) qiymatlar shu birlikka o'giriladi.
+                if (birlik && !birlik.asosiy) {
+                  const qiymat = savatchaBirlikQiymatlari(bazaOlish(item), birlik, state.narxTuri);
+                  return { ...cartItem, ...item, ...qiymat, baza: bazaOlish(item), birlikId: cartItem.birlikId, soni: Math.min(cartItem.soni + quantity, qiymat.qoldiq) };
+                }
+                return { ...cartItem, ...item, ...(item.birliklar?.length ? { baza: bazaOlish(item) } : {}), soni: Math.min(cartItem.soni + quantity, item.qoldiq) };
+              }),
             };
           }
 
           return {
-            cart: [...state.cart, { ...item, soni: Math.min(quantity, item.qoldiq) }],
+            cart: [...state.cart, { ...item, ...(item.birliklar?.length ? { baza: bazaOlish(item) } : {}), soni: Math.min(quantity, item.qoldiq) }],
           };
         });
       },
@@ -94,6 +114,20 @@ export const usePosStore = create<PosState>()(
                 : item
             )
             .filter((item) => item.soni > 0),
+        }));
+      },
+      setBirlik: (productId, birlikId) => {
+        set((state) => ({
+          cart: state.cart.map((item) => {
+            if (item.id !== productId || !item.baza) return item;
+            const birlik = birlikTopish(item.birliklar, birlikId);
+            const qiymat = savatchaBirlikQiymatlari(item.baza, birlik, state.narxTuri);
+            // Qo'shimcha birlikda (pochka, korobka) miqdor butun bo'lishi kerak (kasrli birlikdan tashqari); qoldiqdan oshmaydi.
+            const butun = birlik && !birlik.asosiy && !birlik.kasr;
+            const soni = Math.min(butun ? Math.max(Math.round(item.soni), 1) : item.soni, qiymat.qoldiq);
+            // Narxlar yangi birlikdagi; qo'lda yozilgan sotuv narxi (eski birlikdagi) tashlanadi.
+            return { ...item, ...qiymat, birlikId: birlik && !birlik.asosiy ? birlik.unitId : "", sotuvNarxi: undefined, soni };
+          }),
         }));
       },
       updatePriceType: (priceType) => {

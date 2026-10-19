@@ -64,6 +64,16 @@ import {
   yuboriladiganQator,
   type ChegirmaTuri,
 } from "@/lib/savdoNarxlari";
+import {
+  asosiyMiqdor,
+  birlikNarxi,
+  birlikTopish,
+  miqdorYaroqlimi,
+  qoldiqMatni,
+  shtrixBirligi,
+  sotuvBirliklari,
+  type TovarBirligi,
+} from "@/lib/kopBirlik";
 import { useSavdoSozlamalariStore } from "@/store/savdoSozlamalariStore";
 import { pulniFormatlash } from "./savdoYordamchilari";
 import SavdoSelect, { type SavdoSelectOption } from "./SavdoSelect";
@@ -92,12 +102,14 @@ type MahsulotQatori = {
   // Chegirma summada (`discount`) yoki foizda (`discountFoiz`) kiritiladi; backendga summa ketadi, foizda kiritilsa foiz ham (hisobot uchun).
   discountTuri: ChegirmaTuri;
   discountFoiz: string;
+  // Sotuv birligi (pochka, qop): "" — asosiy birlik. `quantity`, `price` va chegirma shu birlikda.
+  birlikId: string;
   // Sotuvchi "Sotuv narxi"ga katalog narxidan baland narx yozsa — farq (bir dona uchun ustama); backendga qo'lda narx bo'lib ketadi.
   ustama: string;
 };
 
 function bosQator(priceType: SotuvNarxTuri): MahsulotQatori {
-  return { modificationId: "", qoldiqKaliti: "", quantity: "1", price: "", discount: "", priceType, discountTuri: "sum", discountFoiz: "", ustama: "" };
+  return { modificationId: "", qoldiqKaliti: "", quantity: "1", price: "", discount: "", priceType, discountTuri: "sum", discountFoiz: "", birlikId: "", ustama: "" };
 }
 
 // Bir dona narxi (sotuv valyutasida): katalog narxi + ustama.
@@ -248,8 +260,8 @@ function dollarNarxi(valyuta?: QoldiqTanlovi["valyuta"]) {
 // Mahsulot narxi sotuv valyutasida. So'mda: katalogdagi so'mdagi narx. Dollarda: dollarda narxlangan mahsulot o'z dollar narxida,
 // so'mda narxlangan mahsulot esa bugungi kurs bo'yicha o'girilgan (sentgacha yaxlitlangan) narxda.
 // Tanlangan narx turi (tan narx / chakana / ulgurji) bo'yicha; narx yo'q bo'lsa 0.
-function qoldiqNarxiValyutada(qoldiq: QoldiqTanlovi | undefined, valyuta: "UZS" | "USD", kurs: number, tur: SotuvNarxTuri = "RETAIL") {
-  return narxSotuvValyutasida(turNarxi(qoldiq, tur, kurs), valyuta, kurs);
+function qoldiqNarxiValyutada(qoldiq: QoldiqTanlovi | undefined, valyuta: "UZS" | "USD", kurs: number, tur: SotuvNarxTuri = "RETAIL", birlik?: TovarBirligi) {
+  return narxSotuvValyutasida(birlikNarxi(turNarxi(qoldiq, tur, kurs), birlik, tur), valyuta, kurs);
 }
 
 function qoldiqKaliti(qoldiq: Pick<QoldiqTanlovi, "modificationId" | "warehouseId">) {
@@ -515,7 +527,7 @@ export default function YangiSotuvModal({
       joriy.map((qator) => {
         const qoldiq = qoldiqlar.find((item) => qoldiqKaliti(item) === qator.qoldiqKaliti);
         if (!qoldiq) return qator;
-        const narx = qoldiqNarxiValyutada(qoldiq, yangiVal, kurs, qator.priceType);
+        const narx = qoldiqNarxiValyutada(qoldiq, yangiVal, kurs, qator.priceType, birlikTopish(qoldiq.birliklar, qator.birlikId));
         // Foizdagi chegirma valyutaga bog'liq emas; summadagisi yangi valyutaga o'giriladi.
         const eskiChegirma = qator.discountTuri === "sum" ? raqamgaAylantirish(qator.discount) : 0;
         const yangiChegirma =
@@ -555,6 +567,7 @@ export default function YangiSotuvModal({
       qoldiqKaliti: tanlanganQoldiqKaliti,
       priceType: tur,
       price: narx ? String(narx) : "",
+      birlikId: "",
       ustama: "",
     });
 
@@ -721,7 +734,8 @@ export default function YangiSotuvModal({
     const mos = korinadigan.filter(
       (item) =>
         item.modification?.barcode?.trim().toLowerCase() === kod ||
-        item.modification?.article?.trim().toLowerCase() === kod
+        item.modification?.article?.trim().toLowerCase() === kod ||
+        Boolean(shtrixBirligi(item.birliklar, kod))
     );
     if (mos.length === 0) {
       xato(t("products.scanNotFound"));
@@ -744,11 +758,14 @@ export default function YangiSotuvModal({
     const nom = qoldiqNomi(item, t);
     const kalit = qoldiqKaliti(item);
     const mavjudMiqdor = qoldiqMiqdori(item);
-    const bor = mahsulotlar.findIndex((mahsulot) => mahsulot.qoldiqKaliti === kalit);
+    // Pochka shtrix-kodi o'qilsa — shu birlik tanlanadi (qoldiq asosiy birlikda tekshiriladi).
+    const skanBirligi = shtrixBirligi(item.birliklar, kod);
+    const skanBirlikId = skanBirligi?.unitId ?? "";
+    const bor = mahsulotlar.findIndex((mahsulot) => mahsulot.qoldiqKaliti === kalit && mahsulot.birlikId === skanBirlikId);
 
     if (bor >= 0) {
       const yangiMiqdor = raqamgaAylantirish(mahsulotlar[bor].quantity) + 1;
-      if (yangiMiqdor > mavjudMiqdor) {
+      if (asosiyMiqdor(skanBirligi, yangiMiqdor) > mavjudMiqdor) {
         xato(t("products.scanNotEnough", { name: nom, available: mavjudMiqdor }));
         return;
       }
@@ -756,12 +773,13 @@ export default function YangiSotuvModal({
       setSkanXabari({ xato: false, matn: t("products.scanAdded", { name: nom, qty: yangiMiqdor }) });
     } else {
       const tur = qatorNarxTuri(item, narxTuri, turRuxsati, kurs) ?? narxTuri;
-      const narx = qoldiqNarxiValyutada(item, sotuvVal, kurs, tur);
+      const narx = qoldiqNarxiValyutada(item, sotuvVal, kurs, tur, skanBirligi);
       const yangiQator: MahsulotQatori = {
         ...bosQator(tur),
         modificationId: item.modificationId,
         qoldiqKaliti: kalit,
         price: narx ? String(narx) : "",
+        birlikId: skanBirlikId,
       };
       // Birinchi bo'sh qator to'ldiriladi, bo'lmasa yangi qator qo'shiladi.
       setMahsulotlar((joriy) => {
@@ -838,6 +856,7 @@ export default function YangiSotuvModal({
           chegirmaTuri: mahsulot.discountTuri,
           foiz: raqamgaAylantirish(mahsulot.discountFoiz),
           ustama: raqamgaAylantirish(mahsulot.ustama),
+          birlik: birlikTopish(qoldiqlar.find((item) => qoldiqKaliti(item) === mahsulot.qoldiqKaliti)?.birliklar, mahsulot.birlikId),
         })
       );
 
@@ -870,12 +889,19 @@ export default function YangiSotuvModal({
         return;
       }
       const mavjudMiqdor = tanlanganQoldiq ? qoldiqMiqdori(tanlanganQoldiq) : 0;
-      if (soralganMiqdor > mavjudMiqdor) {
+      const birlik = birlikTopish(tanlanganQoldiq?.birliklar, mahsulot.birlikId);
+      if (!miqdorYaroqlimi(birlik, soralganMiqdor)) {
+        setXatolik("errors.quantityNotWhole");
+        return;
+      }
+      // Qoldiq asosiy birlikda: pochkada kiritilgan miqdor asosiy birlikka o'giriladi.
+      const talab = asosiyMiqdor(birlik, soralganMiqdor);
+      if (talab > mavjudMiqdor) {
         setXatolik(
           t("errors.insufficientStock", {
             name: tanlanganQoldiq ? qoldiqNomi(tanlanganQoldiq, t) : t("common.selectedProductFallback"),
             available: mavjudMiqdor,
-            requested: soralganMiqdor,
+            requested: talab,
           })
         );
         return;
@@ -937,8 +963,10 @@ export default function YangiSotuvModal({
   function narxTuriniTanlash(tur: SotuvNarxTuri) {
     narxTuriTanlandi.current = true;
     setNarxTuri(tur);
-    const narxi = (qator: MahsulotQatori) =>
-      qoldiqNarxiValyutada(qoldiqlar.find((item) => qoldiqKaliti(item) === qator.qoldiqKaliti), sotuvVal, kurs, tur);
+    const narxi = (qator: MahsulotQatori) => {
+      const qoldiq = qoldiqlar.find((item) => qoldiqKaliti(item) === qator.qoldiqKaliti);
+      return qoldiqNarxiValyutada(qoldiq, sotuvVal, kurs, tur, birlikTopish(qoldiq?.birliklar, qator.birlikId));
+    };
     setMahsulotlar((joriy) =>
       joriy.map((qator) => {
         if (!qator.modificationId) return { ...qator, priceType: tur };
@@ -958,10 +986,20 @@ export default function YangiSotuvModal({
   function qatorNarxTuriniOzgartirish(index: number, tur: SotuvNarxTuri) {
     const qator = mahsulotlar[index];
     const qoldiq = qoldiqlar.find((item) => qoldiqKaliti(item) === qator?.qoldiqKaliti);
-    const narx = qoldiqNarxiValyutada(qoldiq, sotuvVal, kurs, tur);
+    const narx = qoldiqNarxiValyutada(qoldiq, sotuvVal, kurs, tur, birlikTopish(qoldiq?.birliklar, qator?.birlikId));
     if (!qator || !narx) return;
     setNarxXabari("");
     mahsulotniYangilash(index, { priceType: tur, price: String(narx), ustama: "" });
+  }
+
+  // Sotuv birligini almashtirish (dona ↔ pochka): narx yangi birlikdagi narxga o'tadi, ustama va summadagi chegirma tozalanadi.
+  function birlikniOzgartirish(index: number, birlikId: string) {
+    const qator = mahsulotlar[index];
+    const qoldiq = qoldiqlar.find((item) => qoldiqKaliti(item) === qator?.qoldiqKaliti);
+    const narx = qoldiqNarxiValyutada(qoldiq, sotuvVal, kurs, qator?.priceType, birlikTopish(qoldiq?.birliklar, birlikId));
+    if (!qator || !narx) return;
+    setNarxXabari("");
+    mahsulotniYangilash(index, { birlikId, price: String(narx), ustama: "", discount: qator.discountTuri === "sum" ? "" : qator.discount });
   }
 
   // Chegirma birligi (summa yoki foiz): kiritilgan qiymat shu qator uchun ikkinchi birlikka o'giriladi.
@@ -1130,7 +1168,8 @@ export default function YangiSotuvModal({
         const chegirmaTuri: ChegirmaTuri = qator?.discountTuri === "foiz" ? "foiz" : "sum";
         const faylFoizi = raqamgaAylantirish(String(qator?.discountFoiz ?? ""));
         const faylUstamasi = raqamgaAylantirish(String(qator?.ustama ?? ""));
-        const narx = qoldiqNarxiValyutada(qoldiq, yangiVal, kurs, tur);
+        const faylBirligi = birlikTopish(qoldiq.birliklar, typeof qator?.birlikId === "string" ? qator.birlikId : "");
+        const narx = qoldiqNarxiValyutada(qoldiq, yangiVal, kurs, tur, faylBirligi);
         qatorlar.push({
           modificationId: qoldiq.modificationId,
           qoldiqKaliti: qoldiqKaliti(qoldiq),
@@ -1139,6 +1178,7 @@ export default function YangiSotuvModal({
           discount: chegirmaOlinadi && chegirmaTuri === "sum" && chegirma > 0 ? String(chegirma) : "",
           priceType: tur,
           discountTuri: chegirmaTuri,
+          birlikId: faylBirligi?.unitId ?? "",
           // Foiz valyutaga bog'liq emas: har doim olinadi.
           discountFoiz: chegirmaTuri === "foiz" && faylFoizi > 0 ? String(Math.min(faylFoizi, 100)) : "",
           // Ustama summa kabi fayl valyutasida: valyuta o'zgargan bo'lsa olinmaydi.
@@ -1623,6 +1663,11 @@ export default function YangiSotuvModal({
                           (item) => qoldiqKaliti(item) === mahsulot.qoldiqKaliti
                         );
                         const miqdor = raqamgaAylantirish(mahsulot.quantity);
+                        const qatorBirliklari = sotuvBirliklari(qoldiq?.birliklar);
+                        const tanlanganBirlik = birlikTopish(qoldiq?.birliklar, mahsulot.birlikId);
+                        const asosiyBirlikNomi = qoldiq?.birliklar?.find((birlik) => birlik.asosiy)?.qisqa ?? "";
+                        // Qo'shimcha birlikda (pochka, korobka) faqat butun miqdor mumkin (kasrli birlik bundan mustasno).
+                        const butunMiqdor = Boolean(tanlanganBirlik && !tanlanganBirlik.asosiy && !tanlanganBirlik.kasr);
                         const katalogNarxi = raqamgaAylantirish(mahsulot.price);
                         const ustama = raqamgaAylantirish(mahsulot.ustama);
                         // Bir dona narxi = katalog narxi + ustama.
@@ -1693,7 +1738,7 @@ export default function YangiSotuvModal({
                                   <p className="mt-1 truncate text-xs font-semibold text-slate-500">
                                     {t("labels.availableStock")}:{" "}
                                     <span className="font-bold text-[#2563EB]">
-                                      {qoldiq ? `${qoldiqMiqdori(qoldiq)} ${qoldiqBirligi(qoldiq, t)}` : "—"}
+                                      {qoldiq ? (qoldiq.birliklar && qoldiq.birliklar.length > 1 ? qoldiqMatni(qoldiqMiqdori(qoldiq), qoldiq.birliklar) : `${qoldiqMiqdori(qoldiq)} ${qoldiqBirligi(qoldiq, t)}`) : "—"}
                                     </span>
                                   </p>
                                 </div>
@@ -1771,7 +1816,7 @@ export default function YangiSotuvModal({
                               <input
                                 type="number"
                                 min="0.001"
-                                step="0.001"
+                                step={butunMiqdor ? "any" : "0.001"}
                                 value={mahsulot.quantity}
                                 data-sotuv-miqdor={index}
                                 onChange={(event) =>
@@ -1786,6 +1831,25 @@ export default function YangiSotuvModal({
                                 className={maydonKlassi}
                                 placeholder={t("placeholders.quantity")}
                               />
+                              {qatorBirliklari.length > 0 && (
+                                <div className="mt-1.5">
+                                  <select
+                                    aria-label={t("labels.unit")}
+                                    value={mahsulot.birlikId}
+                                    onChange={(event) => birlikniOzgartirish(index, event.target.value)}
+                                    className="h-9 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-1 text-[11px] font-bold text-slate-700 outline-none focus:border-[#2563EB]"
+                                  >
+                                    {qatorBirliklari.map((birlik) => (
+                                      <option key={birlik.unitId} value={birlik.asosiy ? "" : birlik.unitId}>{birlik.qisqa || birlik.nomi}</option>
+                                    ))}
+                                  </select>
+                                  {tanlanganBirlik && !tanlanganBirlik.asosiy && miqdor > 0 && (
+                                    <p className="mt-1 text-[11px] font-semibold text-slate-400">
+                                      {t("products.baseEquivalent", { qty: asosiyMiqdor(tanlanganBirlik, miqdor).toLocaleString("uz-UZ", { maximumFractionDigits: 3 }), unit: asosiyBirlikNomi })}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
                             </div>
 
                             <div className="min-w-0">

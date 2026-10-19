@@ -45,7 +45,8 @@
     "variants": "Variantlar",
     "cancel": "Bekor qilish",
     "save": "Saqlash",
-    "create": "Yaratish"
+    "create": "Yaratish",
+    "units": "Birliklar"
   },
   "card": {
     "salePrice": "Sotuv narxi",
@@ -256,5 +257,30 @@
     "wholesalePlaceholder": "Ulgurji narx",
     "invalidJson": "Parametrlar JSON formati noto'g'ri.",
     "barcodeRequired": "Shtrix-kod kiritilishi shart — saqlash uchun to'ldiring."
+  },
+  "units": {
+    "title": "Tovar birliklari",
+    "base": "Asosiy birlik",
+    "baseHint": "Qoldiq shu birlikda yuritiladi. Qo'shimcha birliklar (pochka, qop, korobka) faqat kirim va sotuvda tanlanadi.",
+    "empty": "Qo'shimcha birlik yo'q — tovar faqat asosiy birlikda ishlaydi.",
+    "unit": "Birlik",
+    "pickUnit": "Birlikni tanlang",
+    "factor": "Koeffitsient",
+    "factorHint": "1 {{unit}} = {{n}} {{base}}",
+    "retail": "Chakana narx",
+    "wholesale": "Ulgurji narx",
+    "auto": "Avtomatik",
+    "barcode": "Shtrix-kod",
+    "barcodePlaceholder": "Ixtiyoriy (masalan pochka shtrix-kodi)",
+    "canReceive": "Kirimda",
+    "canSell": "Sotuvda",
+    "remove": "Birlikni olib tashlash",
+    "add": "Birlik qo'shish",
+    "priceHint": "Narx bo'sh bo'lsa — asosiy narx × koeffitsient. Narx katalogdagi o'sha narx turining valyutasida kiritiladi.",
+    "errors": {
+      "unitRequired": "Har bir qatorda birlikni tanlang.",
+      "unitDuplicate": "Bir birlik ikki marta kiritilgan (yoki asosiy birlik qo'shilgan).",
+      "factorInvalid": "Koeffitsient noldan katta son bo'lishi kerak."
+    }
   }
 }

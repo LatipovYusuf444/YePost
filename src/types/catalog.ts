@@ -1,3 +1,5 @@
+import type { TovarBirligi } from "../lib/kopBirlik.ts";
+
 export type Kategoriya = {
   id: string;
   name: string;
@@ -14,6 +16,8 @@ export type OlchovBirligi = {
   code?: string | null;
   name: string;
   shortName?: string | null;
+  // Kg, litr, metr kabi kasr miqdor mumkin birliklar.
+  isFractional?: boolean;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -22,6 +26,7 @@ export type OlchovBirligiMalumoti = {
   code?: string;
   name: string;
   shortName?: string;
+  isFractional?: boolean;
 };
 
 export type StandardUnit = {
@@ -67,6 +72,10 @@ export type MahsulotModifikatsiyasi = {
   minStock?: number | string | null;
   price?: MahsulotNarxi | null;
   product?: (Pick<Mahsulot, "id" | "name"> & Partial<Mahsulot>) | null;
+  // GET /catalog/modifications/search: tovarning sotiladigan/qabul qilinadigan birliklari (asosiy birlik birinchi).
+  birliklar?: TovarBirligi[];
+  // Qidiruv shtrix-kodi qo'shimcha birlikka (pochka) tegishli bo'lsa — shu birlik.
+  qidiruvBirligi?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -97,6 +106,8 @@ export type Mahsulot = {
   imageUrl?: string | null;
   barcode?: string | null;
   article?: string | null;
+  // 1 asosiy birlik og'irligi (kg), faqat ma'lumot uchun.
+  infoWeightKg?: number | string | null;
   isActive: boolean;
   category?: Kategoriya;
   unit?: OlchovBirligi;
@@ -112,6 +123,7 @@ export type MahsulotMalumoti = {
   imageUrl?: string;
   barcode?: string;
   article?: string;
+  infoWeightKg?: number | null;
   isActive?: boolean;
 };
 

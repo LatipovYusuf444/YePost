@@ -188,6 +188,8 @@
     "codePlaceholder": "Kod (796)",
     "namePlaceholder": "Nomi (masalan: Dona)",
     "shortNamePlaceholder": "Qisqa (dona)",
+    "fractional": "Kasr miqdor mumkin (kg, litr, metr)",
+    "fractionalBadge": "Kasr",
     "noShortName": "Qisqa nom yo'q",
     "codeLabel": "Kod: {{code}}",
     "empty": "Backendda hali o'lchov birligi yo'q",

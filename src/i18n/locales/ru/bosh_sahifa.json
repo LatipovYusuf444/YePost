@@ -1,6 +1,7 @@
 {
   "cart": {
     "quantityLabel": "Количество: {{name}}",
+    "unitLabel": "{{name}} — единица продажи",
     "decreaseQuantity": "Уменьшить количество: {{name}}",
     "increaseQuantity": "Увеличить количество: {{name}}",
     "title": "Корзина",

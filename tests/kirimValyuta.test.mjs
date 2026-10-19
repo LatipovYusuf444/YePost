@@ -52,3 +52,26 @@ test('invalid monetary inputs cannot enter the purchase payload', () => {
     assert.throws(() => kirimElementiniYigish({ modificationId: 'usd', quantity: 1, price, currency: 'USD' }, 11780), /NARX_NOTOGRI/);
   }
 });
+
+const KG = { unitId: 'u-kg', kod: null, nomi: 'kg', qisqa: 'kg', kasr: true, koeff: 1, asosiy: true, qabul: true, sotuv: true, chakana: null, ulgurji: null, shtrix: null };
+const QOP = { unitId: 'u-qop', kod: null, nomi: 'qop', qisqa: 'qop', kasr: false, koeff: 25, asosiy: false, qabul: true, sotuv: false, chakana: null, ulgurji: null, shtrix: null };
+const POCHKA = { unitId: 'u-p', kod: null, nomi: 'pochka', qisqa: 'pochka', kasr: false, koeff: 0.403333, asosiy: false, qabul: false, sotuv: true, chakana: null, ulgurji: null, shtrix: null };
+
+test('kirim qatori: qo‘shimcha birlikda unitId yuboriladi, narx shu birlikda; asosiy birlikda unitId yo‘q', () => {
+  const qop = kirimElementiniYigish({ modificationId: 'm', quantity: 4, price: '675000', currency: 'UZS', birlik: QOP }, null);
+  assert.deepEqual(qop, { modificationId: 'm', quantity: 4, price: 675000, unitId: 'u-qop' });
+  const kg = kirimElementiniYigish({ modificationId: 'm', quantity: 24.2, price: '27000', currency: 'UZS', birlik: KG }, null);
+  assert.deepEqual(kg, { modificationId: 'm', quantity: 24.2, price: 27000 });
+});
+
+test('kirim qatori: narx bo‘sh bo‘lsa birlikdagi tannarx = asosiy tannarx × koeffitsient', () => {
+  const item = kirimElementiniYigish({ modificationId: 'm', quantity: 1, price: '', currency: 'UZS', boshlangichTanNarx: 27000, birlik: QOP }, null);
+  assert.equal(item.price, 675000);
+});
+
+test('kirim qatori: pochkalar soni yuborilsa checkUnitId va checkCount qo‘shiladi (soni yo‘q bo‘lsa — yo‘q)', () => {
+  const tekshiruv = kirimElementiniYigish({ modificationId: 'm', quantity: 24.2, price: '27000', currency: 'UZS', birlik: KG, sanashBirligi: POCHKA, sanashSoni: 60 }, null);
+  assert.deepEqual(tekshiruv, { modificationId: 'm', quantity: 24.2, price: 27000, checkUnitId: 'u-p', checkCount: 60 });
+  const soniYoq = kirimElementiniYigish({ modificationId: 'm', quantity: 24.2, price: '27000', currency: 'UZS', birlik: KG, sanashBirligi: POCHKA, sanashSoni: 0 }, null);
+  assert.ok(!('checkUnitId' in soniYoq) && !('checkCount' in soniYoq));
+});

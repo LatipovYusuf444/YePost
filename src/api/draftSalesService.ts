@@ -1,5 +1,6 @@
 import apiClient from "./axios";
 import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
+import { qatorniQaytaYuborish } from "../lib/kopBirlik";
 import type {
   DraftSale,
   DraftSaleItem,
@@ -139,8 +140,8 @@ export const draftSalesService = {
       note: sale.note ? `${sale.note}\nNusxa olingan draft: ${sale.id}` : `Nusxa olingan draft: ${sale.id}`,
       items: (sale.items ?? []).map((item) => ({
         modificationId: item.modificationId,
-        quantity: numberValue(item.quantity),
-        price: numberValue(item.price),
+        // Pochka kabi birlikda sotilgan qator birlikdagi son va narx bilan nusxalanadi.
+        ...qatorniQaytaYuborish(item),
         discount: numberValue(item.discount),
         ...(String(item.currency ?? saleCurrency).toUpperCase() !== saleCurrency
           ? { currency: String(item.currency).toUpperCase() }

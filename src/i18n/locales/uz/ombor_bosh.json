@@ -130,7 +130,18 @@
     "cancel": "Bekor qilish",
     "save": "Saqlash",
     "saveAndConfirm": "Saqlash va tasdiqlash",
+    "units": {
+      "unit": "Birlik",
+      "countLabel": "Sanalgan {{unit}} soni",
+      "countPlaceholder": "{{unit}} soni",
+      "factorLine": "1 {{unit}} = {{actual}} {{base}} (kartochkada: {{card}})",
+      "warningTitle": "Koeffitsient kartochkadagidan farq qildi",
+      "warningLine": "{{unit}}: kartochkada {{card}}, haqiqatda {{actual}}",
+      "warningHint": "Kirim saqlandi. Kerak bo'lsa tovar kartochkasidagi koeffitsientni yangilang.",
+      "continue": "Tushunarli"
+    },
     "errors": {
+      "quantityNotWhole": "Pochka, qop, korobka kabi birliklarda faqat butun miqdor kiritiladi.",
       "supplierRequired": "Yetkazib beruvchini ro'yxatdan tanlang yoki yangi qo'shing.",
       "exchangeRateRequired": "USD mahsulotini kirim qilish uchun Sozlamalar → Valyuta bo‘limida dollar kursini kiriting. Kurssiz USD narxi so‘m deb saqlanmaydi.",
       "rowsIncomplete": "Har bir qatorda mahsulot, ombor, miqdor va tan narxni to'liq kiriting.",

@@ -268,6 +268,7 @@ export default function HeaderMahsulotQidiruvi({ className }: Props) {
         ulgurjiNarx: qoldiqNarxi(qator.item, "ulgurji"),
         ...dollarMalumoti(qator.item),
         qoldiq: qator.qoldiq,
+        ...(qator.item.birliklar?.length ? { birliklar: qator.item.birliklar } : {}),
         warehouseId: qator.warehouseId,
         warehouseName: qator.warehouseName,
       },
