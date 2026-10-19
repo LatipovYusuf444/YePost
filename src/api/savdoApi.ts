@@ -1,6 +1,7 @@
 import apiClient from "./axios";
 import axios from "axios";
 import { modifikatsiyalarApi } from "./catalogApi";
+import { ogohlantirishBilanBajarish } from "./hujjatOgohlantirishi";
 import { stockBalanceReportAll } from "./reportsApi";
 import { apiData, apiList, ruxsatsizBulsaBosh, sahifaJavobi, type ApiEnvelope, type ApiListEnvelope, type SahifaliRoyxat } from "./response";
 import type {
@@ -146,7 +147,10 @@ export async function sotuvniYangilash(
 
 // Savatcha.tsx va Savdo/index.tsx: qoralama sotuvni tasdiqlaydi.
 export async function sotuvniTasdiqlash(sotuvId: string) {
-  const response = await apiClient.post<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${sotuvId}/confirm`);
+  // Sana tasdiqlangan inventarizatsiyadan oldin bo'lsa backend 409 ogohlantirish qaytaradi: "ha" bo'lsa confirmWarnings bilan qayta yuboriladi.
+  const response = await ogohlantirishBilanBajarish((tana) =>
+    apiClient.post<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${sotuvId}/confirm`, tana)
+  );
   return apiData(response.data);
 }
 
@@ -285,7 +289,9 @@ export async function qaytarishniYangilash(
 
 // Qaytarish.tsx: qaytarishni tasdiqlaydi va mahsulotni omborga qaytaradi.
 export async function qaytarishniTasdiqlash(qaytarishId: string) {
-  const response = await apiClient.post<Qaytarish | ApiEnvelope<Qaytarish>>(`/returns/${qaytarishId}/confirm`);
+  const response = await ogohlantirishBilanBajarish((tana) =>
+    apiClient.post<Qaytarish | ApiEnvelope<Qaytarish>>(`/returns/${qaytarishId}/confirm`, tana)
+  );
   return apiData(response.data);
 }
 

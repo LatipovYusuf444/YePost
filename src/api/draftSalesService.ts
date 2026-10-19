@@ -1,4 +1,5 @@
 import apiClient from "./axios";
+import { ogohlantirishBilanBajarish } from "./hujjatOgohlantirishi";
 import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import { qatorniQaytaYuborish } from "../lib/kopBirlik";
 import type {
@@ -159,7 +160,9 @@ export const draftSalesService = {
     return saleToDraftSale(apiData(response.data));
   },
   payDraft: async (id: string) => {
-    const response = await apiClient.post<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${id}/confirm`);
+    const response = await ogohlantirishBilanBajarish((tana) =>
+      apiClient.post<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${id}/confirm`, tana)
+    );
     return saleToDraftSale(apiData(response.data));
   },
 };

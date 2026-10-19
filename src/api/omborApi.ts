@@ -1,5 +1,6 @@
 import axios from "axios";
 import apiClient from "./axios";
+import { ogohlantirishBilanBajarish } from "./hujjatOgohlantirishi";
 import { apiData, apiList, ruxsatsizBulsaBosh, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import type {
   ChiqimHujjati,
@@ -200,10 +201,11 @@ export const kirimApi = {
       `/inventory/purchases/${id}`,
       data
     )).data),
+  // Sana tasdiqlangan inventarizatsiyadan oldin bo'lsa backend 409 ogohlantirish qaytaradi: "ha" bo'lsa confirmWarnings bilan qayta yuboriladi.
   tasdiqlash: async (id: string) =>
     apiData(
-      (await apiClient.post<KirimHujjati | ApiEnvelope<KirimHujjati>>(
-        `/inventory/purchases/${id}/confirm`
+      (await ogohlantirishBilanBajarish((tana) =>
+        apiClient.post<KirimHujjati | ApiEnvelope<KirimHujjati>>(`/inventory/purchases/${id}/confirm`, tana)
       )).data
     ),
   bekorQilish: async (id: string) =>
@@ -251,8 +253,8 @@ export const chiqimApi = {
     ),
   tasdiqlash: async (id: string) =>
     apiData(
-      (await apiClient.post<ChiqimHujjati | ApiEnvelope<ChiqimHujjati>>(
-        `/inventory/write-offs/${id}/confirm`
+      (await ogohlantirishBilanBajarish((tana) =>
+        apiClient.post<ChiqimHujjati | ApiEnvelope<ChiqimHujjati>>(`/inventory/write-offs/${id}/confirm`, tana)
       )).data
     ),
   bekorQilish: async (id: string) =>
@@ -292,11 +294,15 @@ export const kochirishApi = {
     ),
   jonatish: async (id: string) =>
     apiData(
-      (await apiClient.post<KochirishHujjati | ApiEnvelope<KochirishHujjati>>(`/inventory/transfers/${id}/send`)).data
+      (await ogohlantirishBilanBajarish((tana) =>
+        apiClient.post<KochirishHujjati | ApiEnvelope<KochirishHujjati>>(`/inventory/transfers/${id}/send`, tana)
+      )).data
     ),
   qabulQilish: async (id: string) =>
     apiData(
-      (await apiClient.post<KochirishHujjati | ApiEnvelope<KochirishHujjati>>(`/inventory/transfers/${id}/receive`)).data
+      (await ogohlantirishBilanBajarish((tana) =>
+        apiClient.post<KochirishHujjati | ApiEnvelope<KochirishHujjati>>(`/inventory/transfers/${id}/receive`, tana)
+      )).data
     ),
   bekorQilish: async (id: string) =>
     apiData(
@@ -351,8 +357,11 @@ export const inventarizatsiyaApi = {
   tasdiqlash: async (id: string) =>
     apiData(
       (
-        await apiClient.post<InventarizatsiyaHujjati | ApiEnvelope<InventarizatsiyaHujjati>>(
-          `/inventory/stock-takes/${id}/confirm`
+        await ogohlantirishBilanBajarish((tana) =>
+          apiClient.post<InventarizatsiyaHujjati | ApiEnvelope<InventarizatsiyaHujjati>>(
+            `/inventory/stock-takes/${id}/confirm`,
+            tana
+          )
         )
       ).data
     ),
