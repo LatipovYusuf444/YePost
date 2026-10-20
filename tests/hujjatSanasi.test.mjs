@@ -1,9 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  bugungiToshkentKuni, kelajakKunmi, kiritilganVaqtMatni, kunMatni, kunniSurish, otganKunmi, tahrirSanasi,
+  bugungiToshkentKuni, kelajakKunmi, kiritilganVaqtMatni, kunMatni, kunniSurish, otganKunmi, saqlanganTolovMaydonlari, tahrirSanasi,
   toshkentKuni, tolovQoshimchasi, vaqtMatni, yangiHujjatSanasi,
 } from '../src/lib/hujjatSanasi.ts';
+
+test('saqlanganTolovMaydonlari: qoralamadagi eski to‘lov id (va izoh) bilan qaytadi, date hech qachon qo‘shilmaydi', () => {
+  assert.deepEqual(saqlanganTolovMaydonlari({ id: 'p1', note: ' Akmal aka karta bilan berdi ', date: '2026-10-18T18:59:59.999Z' }), { id: 'p1', note: 'Akmal aka karta bilan berdi' });
+  assert.deepEqual(saqlanganTolovMaydonlari({ id: 'p2', note: '' }), { id: 'p2' });
+  assert.deepEqual(saqlanganTolovMaydonlari({ id: 'p3', note: null }), { id: 'p3' });
+  assert.deepEqual(saqlanganTolovMaydonlari({ note: 'izoh' }), { note: 'izoh' });
+  assert.deepEqual(saqlanganTolovMaydonlari({}), {});
+});
+
+test('o‘tgan kun to‘lovi (23:59:59.999 Toshkent) Toshkent kuni bo‘yicha o‘sha kun bo‘lib qoladi', () => {
+  assert.equal(toshkentKuni('2026-10-18T18:59:59.999Z'), '2026-10-18');
+  assert.equal(kunMatni('2026-10-18T18:59:59.999Z'), '18.10.2026');
+});
 
 test('toshkentKuni: UTC vaqt Toshkent (UTC+5) kuniga o‘tadi', () => {
   assert.equal(toshkentKuni('2026-10-19T18:59:59Z'), '2026-10-19');

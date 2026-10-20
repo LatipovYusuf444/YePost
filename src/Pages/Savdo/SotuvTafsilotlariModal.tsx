@@ -1,7 +1,7 @@
 ﻿import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import HujjatSanasiMaydoni, { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
-import { bugungiToshkentKuni, kelajakKunmi, kunMatni, tolovQoshimchasi, toshkentKuni } from "@/lib/hujjatSanasi";
+import { bugungiToshkentKuni, kelajakKunmi, kunMatni, saqlanganTolovMaydonlari, tolovQoshimchasi, toshkentKuni } from "@/lib/hujjatSanasi";
 import { useDavrStore } from "@/store/davrStore";
 import type { TFunction } from "i18next";
 import {
@@ -1894,6 +1894,11 @@ function TolovQabulQilishModal({
     // To'lov sanasi: kelajak kun va yopilgan davr kuni backendda rad etiladi (date_in_future, period_closed).
     const kunlar = [...qatorlar.map((qator) => qator.date), ...(yangiSumma > 0 ? [tolovKuni] : [])];
     if (kunlar.some((kun) => kelajakKunmi(kun))) return t("tolovModal.errors.sanaKelajak");
+    // To'lov sotuv kunidan oldingi kunga yozilmaydi (backend: 400 errors.sales.payment_before_sale).
+    const sotuvKuni = toshkentKuni(sotuv.date ?? sotuv.createdAt);
+    if (sotuvKuni && kunlar.some((kun) => kun && kun < sotuvKuni)) {
+      return t("tolovModal.errors.sanaSotuvdanOldin", { sana: kunMatni(sotuvKuni) });
+    }
     if (yopilganKun && kunlar.some((kun) => kun && kun <= yopilganKun)) {
       return t("tolovModal.errors.davrYopilgan", { sana: kunMatni(yopilganKun) });
     }
@@ -1965,8 +1970,8 @@ function TolovQabulQilishModal({
           paymentType: tolov.paymentType,
           amount: Number(tolov.amount ?? 0),
           ...farqliValyuta(tolovValyutasi(tolov, sotuv), sotuv),
-          // Qoralamada to'lovlar ro'yxati to'liq almashtiriladi: avval yozilgan izoh yo'qolmasligi uchun qayta yuboriladi.
-          ...(tolov.note ? { note: tolov.note } : {}),
+          // Qoralamada to'lovlar ro'yxati to'liq almashtiriladi: eski to'lov `id` bilan qaytariladi, shunda uning sanasi va izohi saqlanadi.
+          ...saqlanganTolovMaydonlari(tolov),
         })),
         ...tolovlar.map((tolov) => ({
           paymentType: tolov.paymentType,

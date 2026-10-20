@@ -100,6 +100,16 @@ export function tolovQoshimchasi(kun: string, izoh: string, bugun: string = bugu
 }
 
 /**
+ * Qoralamada saqlangan to'lovni `payments[]` ichida qayta yuborish: backend ro'yxatni to'liq almashtiradi, lekin `id` bilan
+ * kelgan element o'sha to'lov bo'lib qoladi (`date` yuborilmasa eski kuni, `note` yuborilmasa eski izohi saqlanadi).
+ * `id`siz element YANGI to'lov bo'ladi (kuni sotuv kuniga tushadi, izohi yo'qoladi) — shuning uchun `date` hech qachon qo'shilmaydi.
+ */
+export function saqlanganTolovMaydonlari(tolov: { id?: string | null; note?: string | null }): { id?: string; note?: string } {
+  const izoh = (tolov.note ?? "").trim();
+  return { ...(tolov.id ? { id: tolov.id } : {}), ...(izoh ? { note: izoh } : {}) };
+}
+
+/**
  * Mavjud qoralamani tahrirlash (PATCH): `date` faqat foydalanuvchi o'zgartirgan bo'lsa yuboriladi.
  * Bo'sh qiymat sanani o'zgartirmaydi.
  */

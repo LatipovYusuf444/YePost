@@ -50,6 +50,11 @@ test('period_closed: yopilgan kun matnga qo‘shiladi (ildizda ham, ichki obyekt
   assert.match(xatoKodiMatni('errors.document.period_closed', '/sales', 'uz', {}), /Davr yopilgan/);
 });
 
+test('payment_before_sale: to‘lov sanasi sotuv sanasidan oldin (uz va ru)', () => {
+  assert.match(xatoKodiMatni('errors.sales.payment_before_sale', '/sales/s1/payments', 'uz'), /sotuv sanasidan oldin/);
+  assert.match(xatoKodiMatni('errors.sales.payment_before_sale', '/sales/s1', 'ru'), /раньше даты продажи/);
+});
+
 test('date_in_future va transfers_in_transit', () => {
   assert.match(xatoKodiMatni('errors.document.date_in_future', '/sales', 'uz'), /bugundan keyin/);
   const matn = xatoKodiMatni('errors.document.transfers_in_transit', '/settings/period-close', 'uz', { transfers: ['KOCH-000012', 'KOCH-000013'] });

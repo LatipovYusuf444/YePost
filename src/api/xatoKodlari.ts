@@ -52,6 +52,11 @@ const MATNLAR: Record<string, KodMatni> = {
     uz: "Bu shtrix-kod boshqa tovar yoki birlikda allaqachon bor.",
     ru: "Этот штрихкод уже используется другим товаром или единицей.",
   },
+  // To'lov sanasi sotuv kunidan oldin (yangi to'lovda yoki qoralama sanasi oldinga surilganda alohida kunli to'lov oldinda qolsa).
+  "errors.sales.payment_before_sale": {
+    uz: "To'lov sanasi sotuv sanasidan oldin bo'lishi mumkin emas. To'lov sanasini yoki sotuv sanasini o'zgartiring.",
+    ru: "Дата оплаты не может быть раньше даты продажи. Измените дату оплаты или дату продажи.",
+  },
   // Telegram bot (nakladnoy va xabarnomalar).
   "errors.integrations.invalid_bot_token": {
     uz: "Telegram bot tokeni noto'g'ri yoki bot yoqilmagan. Sozlamalar → Integratsiya bo'limida tokenni tekshiring.",

@@ -259,7 +259,8 @@
       "hisobdanOshmasin": "Hisobdan ko'pi bilan {{maksimal}} to'lash mumkin (hisobdagi pul va qolgan qarzdan oshmasin).",
       "qismanSaqlandi": "{{jami}} ta to'lovdan {{saqlandi}} tasi saqlandi, qolganlari saqlanmadi. Qolganlarini qaytadan urinib ko'ring.",
       "sanaKelajak": "To'lov sanasi bugundan keyin bo'lishi mumkin emas.",
-      "davrYopilgan": "Davr yopilgan: {{sana}} va undan oldingi kunlarga to'lov yozib bo'lmaydi."
+      "davrYopilgan": "Davr yopilgan: {{sana}} va undan oldingi kunlarga to'lov yozib bo'lmaydi.",
+      "sanaSotuvdanOldin": "To'lov sanasi sotuv sanasidan ({{sana}}) oldin bo'lishi mumkin emas."
     },
     "tolovniSaqlash": "To'lovni saqlash",
     "tolovniQoshish": "To'lovni qo'shish"

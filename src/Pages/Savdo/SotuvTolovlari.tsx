@@ -2,11 +2,11 @@ import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Banknote, CalendarDays, CheckCircle2, ChevronDown, CreditCard, FileText, Landmark, UserCheck, UserRound, Wallet } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import { bugungiToshkentKuni, kunMatni, toshkentKuni, vaqtMatni } from "@/lib/hujjatSanasi";
 import type { Sotuv, SotuvTolovi, TolovTuri } from "@/types/savdo";
 import {
   masulNomi,
   pulniFormatlash,
-  sananiFormatlash,
   sotuvRaqami,
   sotuvSummasi,
   sotuvValyutasi,
@@ -26,11 +26,12 @@ function tolovSanasi(tolov: SotuvTolovi) {
   return tolov.date ?? tolov.paidAt ?? tolov.createdAt;
 }
 
-function qisqaSana(value?: string) {
-  if (!value) return "";
-  const sana = new Date(value);
-  if (Number.isNaN(sana.getTime())) return "";
-  return new Intl.DateTimeFormat("uz-UZ", { day: "2-digit", month: "2-digit", year: "numeric" }).format(sana);
+// To'lov kuni Toshkent vaqti bo'yicha olinadi. O'tgan kunga yozilgan to'lov o'sha kunning 23:59:59 bilan saqlanadi (vaqti ma'nosiz),
+// shuning uchun faqat kun ko'rsatiladi; bugungi to'lovda kiritilgan vaqt ham ko'rsatiladi.
+function tolovSanasiMatni(value?: string) {
+  const kun = kunMatni(value);
+  if (!kun) return "";
+  return toshkentKuni(value) === bugungiToshkentKuni() ? vaqtMatni(value) || kun : kun;
 }
 
 function qatorlarniYigish(sotuv: Sotuv): TolovQatori[] {
@@ -55,7 +56,7 @@ export default function SotuvTolovlari({ sotuv, mijoz }: { sotuv: Sotuv; mijoz: 
         <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">{t("tolovQatori.sarlavha")}</p>
         <div className="space-y-2">
         {qatorlar.map((qator) => {
-          const sanaMatni = qisqaSana(qator.sana);
+          const sanaMatni = kunMatni(qator.sana);
           const qarz = qator.tolov.paymentType === "DEBT";
           const menuOchiq = ochiqMenuId === qator.raqam;
           return (
@@ -204,7 +205,7 @@ function TolovTafsilotModal({ sotuv, mijoz, qator, onYopish }: { sotuv: Sotuv; m
               label={t("tolovTafsilot.tolovTuri")}
               value={tolovTuriMatni[tolov.paymentType] ?? tolov.paymentType}
             />
-            <TafsilotQatori icon={<CalendarDays size={17} />} label={t("tolovTafsilot.sana")} value={sananiFormatlash(qator.sana)} />
+            <TafsilotQatori icon={<CalendarDays size={17} />} label={t("tolovTafsilot.sana")} value={tolovSanasiMatni(qator.sana)} />
             {tolov.note && <TafsilotQatori icon={<FileText size={17} />} label={t("tolovTafsilot.izoh")} value={tolov.note} />}
             <TafsilotQatori icon={<UserCheck size={17} />} label={t("tolovTafsilot.masulShaxs")} value={masulNomi(sotuv)} />
           </div>
