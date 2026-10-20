@@ -21,9 +21,9 @@ type TolovQatori = {
   sana?: string;
 };
 
-// Backend to'lov sanasini qaysi nom bilan qaytarishidan qat'i nazar o'qiymiz.
+// Backend to'lov sanasini qaysi nom bilan qaytarishidan qat'i nazar o'qiymiz: kassir yozgan sana (date/paidAt) bo'lsa shu, aks holda kiritilgan vaqt.
 function tolovSanasi(tolov: SotuvTolovi) {
-  return tolov.createdAt ?? tolov.paidAt ?? tolov.date;
+  return tolov.date ?? tolov.paidAt ?? tolov.createdAt;
 }
 
 function qisqaSana(value?: string) {
@@ -205,6 +205,7 @@ function TolovTafsilotModal({ sotuv, mijoz, qator, onYopish }: { sotuv: Sotuv; m
               value={tolovTuriMatni[tolov.paymentType] ?? tolov.paymentType}
             />
             <TafsilotQatori icon={<CalendarDays size={17} />} label={t("tolovTafsilot.sana")} value={sananiFormatlash(qator.sana)} />
+            {tolov.note && <TafsilotQatori icon={<FileText size={17} />} label={t("tolovTafsilot.izoh")} value={tolov.note} />}
             <TafsilotQatori icon={<UserCheck size={17} />} label={t("tolovTafsilot.masulShaxs")} value={masulNomi(sotuv)} />
           </div>
         </div>

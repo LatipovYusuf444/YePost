@@ -1,7 +1,8 @@
 ﻿import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import HujjatSanasiMaydoni, { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
-import { toshkentKuni } from "@/lib/hujjatSanasi";
+import { bugungiToshkentKuni, kelajakKunmi, kunMatni, tolovQoshimchasi, toshkentKuni } from "@/lib/hujjatSanasi";
+import { useDavrStore } from "@/store/davrStore";
 import type { TFunction } from "i18next";
 import {
   ArrowLeft,
@@ -120,7 +121,7 @@ type SotuvTafsilotlariModalProps = {
   ) => Promise<boolean>;
   onTolovQoshish: (
     sotuvId: string,
-    tolov: Pick<SotuvTolovi, "paymentType" | "amount" | "currency">
+    tolov: Pick<SotuvTolovi, "paymentType" | "amount" | "currency" | "date" | "note">
   ) => Promise<boolean>;
   onTasdiqlash: (sotuvId: string) => Promise<void> | void;
   onBekorQilish: (sotuvId: string) => void;
@@ -1721,7 +1722,7 @@ function KelishuvCard({
 }
 
 // Saqlashni kutayotgan to'lov (bir sotuvga bir nechta to'lov: masalan, bir qismi dollarda, qolgani so'mda).
-type YangiTolovQatori = { paymentType: TolovTuri; amount: number; currency: Valyuta };
+type YangiTolovQatori = { paymentType: TolovTuri; amount: number; currency: Valyuta; date: string; note: string };
 
 function TolovQabulQilishModal({
   sotuv,
@@ -1742,7 +1743,7 @@ function TolovQabulQilishModal({
   ) => Promise<boolean>;
   onTolovQoshish: (
     sotuvId: string,
-    tolov: Pick<SotuvTolovi, "paymentType" | "amount" | "currency">
+    tolov: Pick<SotuvTolovi, "paymentType" | "amount" | "currency" | "date" | "note">
   ) => Promise<boolean>;
   onYopish: () => void;
 }) {
@@ -1791,6 +1792,10 @@ function TolovQabulQilishModal({
   const [tolovTuri, setTolovTuri] = useState<TolovTuri>("CASH");
   const [tolovVal, setTolovVal] = useState<Valyuta>(sotuvVal);
   const [summa, setSumma] = useState("0");
+  // To'lov sanasi (qachon berilgani; kun, Toshkent) va izoh. Bugun/bo'sh bo'lsa so'rovga qo'shilmaydi — backend hozirgi vaqtni oladi.
+  const [tolovKuni, setTolovKuni] = useState(() => bugungiToshkentKuni());
+  const [izoh, setIzoh] = useState("");
+  const yopilganKun = useDavrStore((holat) => holat.holat?.closedUntil ?? null);
   const [xatolik, setXatolik] = useState("");
   // Bir nechta to'lov: shakldagi to'lov "Yana to'lov qo'shish" bilan ro'yxatga o'tadi; saqlashda ro'yxat va
   // shakldagi summa (bo'lsa) birga yuboriladi.
@@ -1886,6 +1891,12 @@ function TolovQabulQilishModal({
     if (!ortiqchaYoziladi && yakuniyTolangan > jami + ruxsatEtilganFarq) {
       return t("tolovModal.errors.qarzdorlikdanOshmasin", { maksimal: pulniFormatlash(maxTolov, tolovVal) });
     }
+    // To'lov sanasi: kelajak kun va yopilgan davr kuni backendda rad etiladi (date_in_future, period_closed).
+    const kunlar = [...qatorlar.map((qator) => qator.date), ...(yangiSumma > 0 ? [tolovKuni] : [])];
+    if (kunlar.some((kun) => kelajakKunmi(kun))) return t("tolovModal.errors.sanaKelajak");
+    if (yopilganKun && kunlar.some((kun) => kun && kun <= yopilganKun)) {
+      return t("tolovModal.errors.davrYopilgan", { sana: kunMatni(yopilganKun) });
+    }
     return "";
   }
 
@@ -1896,8 +1907,9 @@ function TolovQabulQilishModal({
       setXatolik(xato);
       return;
     }
-    setQatorlar((joriy) => [...joriy, { paymentType: tolovTuri, amount: yangiSumma, currency: tolovVal }]);
+    setQatorlar((joriy) => [...joriy, { paymentType: tolovTuri, amount: yangiSumma, currency: tolovVal, date: tolovKuni, note: izoh.trim() }]);
     setSumma("0");
+    setIzoh("");
     // Hisobdan to'lovdan keyin qolgani odatda naqd to'lanadi.
     if (tolovTuri === "BALANCE") setTolovTuri("CASH");
     // Ikkinchi to'lov odatda boshqa valyutada bo'ladi (masalan, dollardan keyin qolgani so'mda).
@@ -1910,7 +1922,7 @@ function TolovQabulQilishModal({
 
     const tolovlar: YangiTolovQatori[] = [
       ...qatorlar,
-      ...(yangiSumma > 0 ? [{ paymentType: tolovTuri, amount: yangiSumma, currency: tolovVal }] : []),
+      ...(yangiSumma > 0 ? [{ paymentType: tolovTuri, amount: yangiSumma, currency: tolovVal, date: tolovKuni, note: izoh.trim() }] : []),
     ];
     const xato = tolovlarniTekshirish(tolovlar.length);
     if (xato) {
@@ -1929,6 +1941,7 @@ function TolovQabulQilishModal({
             paymentType: tolov.paymentType,
             amount: tolov.amount,
             ...farqliValyuta(tolov.currency, sotuv),
+            ...tolovQoshimchasi(tolov.date, tolov.note),
           });
           if (!saqlandi) {
             // Oldingilari saqlangan: ular ro'yxatdan chiqariladi, qolganlari qayta urinish uchun turadi.
@@ -1952,11 +1965,14 @@ function TolovQabulQilishModal({
           paymentType: tolov.paymentType,
           amount: Number(tolov.amount ?? 0),
           ...farqliValyuta(tolovValyutasi(tolov, sotuv), sotuv),
+          // Qoralamada to'lovlar ro'yxati to'liq almashtiriladi: avval yozilgan izoh yo'qolmasligi uchun qayta yuboriladi.
+          ...(tolov.note ? { note: tolov.note } : {}),
         })),
         ...tolovlar.map((tolov) => ({
           paymentType: tolov.paymentType,
           amount: tolov.amount,
           ...farqliValyuta(tolov.currency, sotuv),
+          ...tolovQoshimchasi(tolov.date, tolov.note),
         })),
       ];
 
@@ -2008,6 +2024,14 @@ function TolovQabulQilishModal({
                       className="rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold text-[#2563EB]"
                     >
                       {tolovTuriMatni[tolov.paymentType]}: {pulniFormatlash(tolov.amount, tolovValyutasi(tolov, sotuv))}
+                      {kunMatni(tolov.date ?? tolov.paidAt ?? tolov.createdAt) && (
+                        <span className="ml-1.5 font-semibold text-slate-400">· {kunMatni(tolov.date ?? tolov.paidAt ?? tolov.createdAt)}</span>
+                      )}
+                      {tolov.note && (
+                        <span className="ml-1.5 font-semibold text-slate-500" title={tolov.note}>
+                          · {tolov.note.length > 28 ? `${tolov.note.slice(0, 28)}…` : tolov.note}
+                        </span>
+                      )}
                     </span>
                   ))}
                 </div>
@@ -2030,6 +2054,13 @@ function TolovQabulQilishModal({
                         {qator.currency !== sotuvVal && (
                           <span className="ml-2 text-xs font-semibold text-slate-400">
                             ≈ {pulniFormatlash(sotuvValyutasigaOgirish(qator.amount, qator.currency), sotuvVal)}
+                          </span>
+                        )}
+                        {(qator.date !== bugungiToshkentKuni() || qator.note) && (
+                          <span className="mt-0.5 block text-xs font-semibold text-slate-400">
+                            {qator.date !== bugungiToshkentKuni() ? kunMatni(qator.date) : ""}
+                            {qator.date !== bugungiToshkentKuni() && qator.note ? " · " : ""}
+                            {qator.note}
                           </span>
                         )}
                       </div>
@@ -2117,6 +2148,33 @@ function TolovQabulQilishModal({
                   )}
                 </div>
               </div>
+            )}
+
+            <div className="grid gap-4 sm:grid-cols-[200px_minmax(0,1fr)]">
+              <label className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2">
+                <span className="text-sm font-bold text-slate-400">{t("tolovModal.tolovSanasi")}</span>
+                <HujjatSanasiMaydoni
+                  value={tolovKuni}
+                  onChange={setTolovKuni}
+                  aria-label={t("tolovModal.tolovSanasi")}
+                  korsatma={false}
+                  className="h-12 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
+                />
+              </label>
+              <label className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2">
+                <span className="text-sm font-bold text-slate-400">{t("tolovModal.izoh")}</span>
+                <input
+                  type="text"
+                  value={izoh}
+                  maxLength={300}
+                  onChange={(event) => setIzoh(event.target.value)}
+                  placeholder={t("tolovModal.izohPlaceholder")}
+                  className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-normal placeholder:text-slate-300 focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
+                />
+              </label>
+            </div>
+            {tolovKuni !== bugungiToshkentKuni() && (
+              <p className="-mt-2 text-xs font-semibold leading-5 text-amber-600">{t("tolovModal.sanaOtganIzoh", { sana: kunMatni(tolovKuni) })}</p>
             )}
 
             <div className="flex flex-wrap gap-2.5">

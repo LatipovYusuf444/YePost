@@ -247,13 +247,19 @@
     "qarzdorlikQoldigi": "Qarzdorlik qoldig'i",
     "qarzdorlik": "Qarzdorlik",
     "yoq": "Yo'q",
+    "tolovSanasi": "To'lov sanasi",
+    "izoh": "Izoh",
+    "izohPlaceholder": "Masalan: kim berdi, qachon va nima uchun",
+    "sanaOtganIzoh": "To'lov {{sana}} kuni berilgan deb yoziladi.",
     "errors": {
       "manfiyBolmasin": "To'lov summasi manfiy bo'lishi mumkin emas.",
       "nolDanKatta": "To'lov summasi 0 dan katta bo'lishi kerak.",
       "qarzdorlikdanOshmasin": "To'lov summasi qarzdorlikdan oshmasligi kerak. Maksimal: {{maksimal}}.",
       "saqlanmadi": "To'lov saqlanmadi. Qaytadan urinib ko'ring.",
       "hisobdanOshmasin": "Hisobdan ko'pi bilan {{maksimal}} to'lash mumkin (hisobdagi pul va qolgan qarzdan oshmasin).",
-      "qismanSaqlandi": "{{jami}} ta to'lovdan {{saqlandi}} tasi saqlandi, qolganlari saqlanmadi. Qolganlarini qaytadan urinib ko'ring."
+      "qismanSaqlandi": "{{jami}} ta to'lovdan {{saqlandi}} tasi saqlandi, qolganlari saqlanmadi. Qolganlarini qaytadan urinib ko'ring.",
+      "sanaKelajak": "To'lov sanasi bugundan keyin bo'lishi mumkin emas.",
+      "davrYopilgan": "Davr yopilgan: {{sana}} va undan oldingi kunlarga to'lov yozib bo'lmaydi."
     },
     "tolovniSaqlash": "To'lovni saqlash",
     "tolovniQoshish": "To'lovni qo'shish"
@@ -318,6 +324,7 @@
     "mijoz": "Mijoz",
     "tolovTuri": "To'lov turi",
     "sana": "Sana",
+    "izoh": "Izoh",
     "masulShaxs": "Mas'ul shaxs",
     "sotuvUlushi": "Sotuv summasining {{foiz}}% qismi",
     "sotuvValyutasidagiQiymat": "Sotuv valyutasida: {{summa}}{{kurs}}",

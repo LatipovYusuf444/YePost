@@ -107,6 +107,8 @@ export type SotuvTolovi = {
   createdAt?: string;
   paidAt?: string;
   date?: string;
+  // To'lovga kassir yozgan izoh (qachon, kimdan, nima uchun); bo'lmasa yo'q.
+  note?: string | null;
 };
 
 export type Sotuv = {

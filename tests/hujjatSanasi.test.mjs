@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   bugungiToshkentKuni, kelajakKunmi, kiritilganVaqtMatni, kunMatni, kunniSurish, otganKunmi, tahrirSanasi,
-  toshkentKuni, vaqtMatni, yangiHujjatSanasi,
+  toshkentKuni, tolovQoshimchasi, vaqtMatni, yangiHujjatSanasi,
 } from '../src/lib/hujjatSanasi.ts';
 
 test('toshkentKuni: UTC vaqt Toshkent (UTC+5) kuniga o‘tadi', () => {
@@ -69,4 +69,14 @@ test('kiritilganVaqtMatni: kunlar farq qilsagina "kiritilgan" vaqti qaytadi', ()
   assert.equal(kiritilganVaqtMatni('2026-10-19T19:30:00Z', '2026-10-20T03:00:00Z'), null);
   assert.equal(kiritilganVaqtMatni(undefined, '2026-10-19T06:50:00Z'), null);
   assert.equal(kiritilganVaqtMatni('2026-10-18T18:59:59Z', null), null);
+});
+
+test('tolovQoshimchasi: bugun va bo‘sh izoh hech narsa qo‘shmaydi, o‘tgan kun va izoh qo‘shiladi', () => {
+  const bugun = '2026-10-20';
+  assert.deepEqual(tolovQoshimchasi('2026-10-20', '', bugun), {});
+  assert.deepEqual(tolovQoshimchasi('', '   ', bugun), {});
+  assert.deepEqual(tolovQoshimchasi('2026-10-18', '', bugun), { date: '2026-10-18' });
+  assert.deepEqual(tolovQoshimchasi('2026-10-20', '  Akmal aka berdi, naqd  ', bugun), { note: 'Akmal aka berdi, naqd' });
+  assert.deepEqual(tolovQoshimchasi('2026-10-18', 'Avans', bugun), { date: '2026-10-18', note: 'Avans' });
+  assert.deepEqual(tolovQoshimchasi('noto‘g‘ri', 'x', bugun), { note: 'x' });
 });

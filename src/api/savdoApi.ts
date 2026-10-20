@@ -171,7 +171,7 @@ export async function sotuvniOchirish(sotuvId: string) {
 // POST /sales/:id/payments — currency berilsa to'lov shu valyutada (boshqa valyutadagi to'lov bugungi kurs bilan hisoblanadi).
 export async function sotuvgaTolovQoshish(
   sotuvId: string,
-  tolov: Pick<SotuvTolovi, "paymentType" | "amount" | "currency">
+  tolov: Pick<SotuvTolovi, "paymentType" | "amount" | "currency" | "date" | "note">
 ) {
   await apiClient.post(`/sales/${sotuvId}/payments`, tolov);
   return sotuvTafsilotiniOlish(sotuvId);

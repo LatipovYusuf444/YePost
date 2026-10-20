@@ -91,6 +91,15 @@ export function yangiHujjatSanasi(kun: string, bugun: string = bugungiToshkentKu
 }
 
 /**
+ * To'lovga qo'shiladigan `date` (faqat bugundan boshqa kun bo'lsa) va `note` (izoh bo'sh bo'lmasa, qirqilgan).
+ * Bo'sh qoldirilsa so'rovga hech narsa qo'shilmaydi — backend to'lovni hozirgi vaqt bilan yozadi.
+ */
+export function tolovQoshimchasi(kun: string, izoh: string, bugun: string = bugungiToshkentKuni()): { date?: string; note?: string } {
+  const matn = izoh.trim();
+  return { ...yangiHujjatSanasi(kun, bugun), ...(matn ? { note: matn } : {}) };
+}
+
+/**
  * Mavjud qoralamani tahrirlash (PATCH): `date` faqat foydalanuvchi o'zgartirgan bo'lsa yuboriladi.
  * Bo'sh qiymat sanani o'zgartirmaydi.
  */
