@@ -5,6 +5,7 @@ import { pulniFormatlash } from "@/Pages/Savdo/savdoYordamchilari";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import FaoliyatPaneli from "./FaoliyatPaneli";
+import MijozTelegramKarti from "./MijozTelegramKarti";
 import { crmApi, royxatniAjratish } from "@/api/crmApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { InstagramIkonka, TelegramIkonka, WhatsappIkonka } from "./IjtimoiyIkonkalar";
@@ -228,6 +229,8 @@ function MalumotlarTab({
             />
           </dl>
         </section>
+
+        <MijozTelegramKarti xaridor={xaridor} />
       </div>
 
       <FaoliyatPaneli partnerId={xaridor.partnerId} customerId={xaridor.id} />

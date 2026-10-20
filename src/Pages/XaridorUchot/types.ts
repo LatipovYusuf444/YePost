@@ -1,4 +1,5 @@
 // Xaridor uchoti UI view-model tiplari. Backend DTO'lari backendAdapters.ts orqali moslanadi.
+import type { MijozTelegramHolati } from "@/lib/telegramXabarnoma";
 
 export type IjtimoiyTarmoqlar = {
   telegram: string;
@@ -20,6 +21,8 @@ export type Xaridor = {
   balans: number;
   // Mijoz hisobi valyutasi (valyuta rejimida USD); berilmasa — so'm.
   balansValyutasi?: string;
+  // Telegram bot holati (telegramChatId/LinkedAt/Notify/Blocked); mijoz ro'yxatidan kelganda to'ldiriladi.
+  telegramBot?: MijozTelegramHolati;
   yaratganMasul: string; // yaratgan mas'ul shaxs
   yaratilganSana: string;
   ozgartirilganSana: string; // oxirgi o'zgartirilgan sana

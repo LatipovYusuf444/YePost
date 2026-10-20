@@ -245,6 +245,42 @@
     "position": "Lavozim",
     "positionPlaceholder": "Savdo vakili"
   },
+  "telegramBot": {
+    "title": "Telegram bot",
+    "subtitle": "Mijoz botga ulansa, sotuv, to'lov va bekor qilish haqida xabar oladi; sotuvda PDF nakladnoy ham keladi.",
+    "status": {
+      "ulangan": "Ulangan",
+      "ulanmagan": "Ulanmagan",
+      "ochirgan": "Xabar o'chirilgan",
+      "bloklagan": "Botni bloklagan"
+    },
+    "linkedAt": "Ulangan: {{vaqt}}",
+    "hints": {
+      "ochirgan": "Mijoz botda /stop bosgan: xabar yuborilmaydi. Mijoz botda /start bosib qayta yoqishi mumkin.",
+      "bloklagan": "Mijoz botni bloklagan: xabar yetib bormaydi. Qayta ulash uchun mijoz botni blokdan chiqarib /start bosishi kerak."
+    },
+    "createLink": "Ulash havolasini yaratish",
+    "newLink": "Yangi havola yaratish",
+    "creating": "Yaratilmoqda...",
+    "linkTitle": "Botga ulash havolasi",
+    "qrAria": "Botga ulash QR kodi",
+    "copy": "Nusxalash",
+    "copied": "Nusxalandi",
+    "openInTelegram": "Telegramda ochish",
+    "expires": "Havola bir martalik, {{vaqt}} gacha amal qiladi. Mijozga yuboring yoki QR kodni skanerlating.",
+    "oneTime": "Havola bir martalik, 7 kun amal qiladi. Mijozga yuboring yoki QR kodni skanerlating.",
+    "waiting": "Mijoz ulanishini kutyapmiz...",
+    "refresh": "Holatni yangilash",
+    "disconnect": "Botdan uzish",
+    "phoneHint": "Mijoz botda /start bosib telefon raqamini yuborsa ham ulanadi (raqam mijoz kartasidagi bilan mos kelsa).",
+    "disconnectConfirm": {
+      "title": "Mijoz botdan uzilsinmi?",
+      "description": "Mijoz sotuv, to'lov va bekor qilish xabarlarini olmaydi. Keyin yangi havola bilan qayta ulash mumkin.",
+      "yes": "Ha, uzish",
+      "no": "Qaytish",
+      "working": "Uzilmoqda..."
+    }
+  },
   "xaridorDetails": {
     "aboutTitle": "Xaridor haqida",
     "companyLabel": "Kompaniya",

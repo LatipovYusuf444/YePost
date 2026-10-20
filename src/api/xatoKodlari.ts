@@ -52,6 +52,28 @@ const MATNLAR: Record<string, KodMatni> = {
     uz: "Bu shtrix-kod boshqa tovar yoki birlikda allaqachon bor.",
     ru: "Этот штрихкод уже используется другим товаром или единицей.",
   },
+  // Telegram bot (nakladnoy va xabarnomalar).
+  "errors.integrations.invalid_bot_token": {
+    uz: "Telegram bot tokeni noto'g'ri yoki bot yoqilmagan. Sozlamalar → Integratsiya bo'limida tokenni tekshiring.",
+    ru: "Токен Telegram-бота неверный или бот не включён. Проверьте токен в разделе Настройки → Интеграции.",
+  },
+  "errors.integrations.sale_has_no_customer": {
+    uz: "Sotuvda mijoz yo'q: mijozsiz (chakana) sotuvga Telegram xabari yuborilmaydi.",
+    ru: "В продаже нет клиента: по розничным продажам без клиента сообщения в Telegram не отправляются.",
+  },
+};
+
+// Nakladnoy PDF va xabar yuborish faqat tasdiqlangan sotuv uchun; bu kodlar boshqa so'rovlarda (masalan, to'lov)
+// avvalgidek backend matni bilan ko'rsatiladi, shuning uchun faqat nakladnoy/notify manzillarida almashtiriladi.
+const NAKLADNOY_MATNLARI: Record<string, KodMatni> = {
+  "errors.sales.only_confirmed_sale_payable": {
+    uz: "Nakladnoy va Telegram xabari faqat tasdiqlangan sotuv uchun mavjud. Avval sotuvni tasdiqlang.",
+    ru: "Накладная и сообщение в Telegram доступны только для подтверждённой продажи. Сначала подтвердите продажу.",
+  },
+  "errors.sales.sale_not_found": {
+    uz: "Sotuv topilmadi.",
+    ru: "Продажа не найдена.",
+  },
 };
 
 // Sotuvni bekor qilishda hisobdan yechilgan pul qaytadi; hisobga yozilgan pul esa ishlatilgan bo'lsa bekor qilib bo'lmaydi.
@@ -198,6 +220,9 @@ export function xatoKodiMatni(kod: unknown, url: string | undefined, til: string
   const tilKodi: Til = til === "ru" ? "ru" : "uz";
   if (kod === "errors.wallet.insufficient_balance" && /\/sales\/[^/?]+\/cancel/.test(url ?? "")) {
     return BEKOR_QILISH_MATNI[tilKodi];
+  }
+  if (NAKLADNOY_MATNLARI[kod] && /\/sales\/[^/?]+\/(?:notify|nakladnoy\.pdf)/.test(url ?? "")) {
+    return NAKLADNOY_MATNLARI[kod][tilKodi];
   }
   const dinamik = DINAMIK_MATNLAR[kod];
   if (dinamik) return dinamik(tilKodi, tafsilot);

@@ -1,3 +1,4 @@
+import { mijozTelegramHolati } from "@/lib/telegramXabarnoma";
 import type { TimelineItem } from "@/types/crm";
 import type { Mijoz, MijozKompaniyasi, YetkazibBeruvchi } from "@/types/partner";
 import type { Sotuv } from "@/types/savdo";
@@ -47,6 +48,7 @@ export function mijozniUiGa(item: Mijoz): Xaridor {
     lavozim: typeof custom.position === "string" ? custom.position : "",
     balans: raqam(item.balance),
     balansValyutasi: item.balanceCurrency ?? undefined,
+    telegramBot: mijozTelegramHolati(item),
     yaratganMasul: item.partner?.createdBy?.fullName || "Tizim",
     yaratilganSana: item.partner?.createdAt ?? item.createdAt ?? "",
     ozgartirilganSana: item.partner?.updatedAt ?? item.updatedAt ?? item.createdAt ?? "",

@@ -91,3 +91,22 @@ test('out_of_stock avvalgidek (null), xatoKodi va xatoMaydoni yordamchilari', ()
   assert.equal(xatoMaydoni({ message: { shortage: 3 } }, 'shortage'), 3);
   assert.equal(xatoMaydoni('matn', 'x'), undefined);
 });
+
+// ── Telegram nakladnoy ──
+
+test('Telegram bot kodlari: invalid_bot_token va sale_has_no_customer (uz/ru)', () => {
+  assert.match(xatoKodiMatni('errors.integrations.invalid_bot_token', '/integrations/telegram', 'uz'), /bot tokeni noto'g'ri/);
+  assert.match(xatoKodiMatni('errors.integrations.invalid_bot_token', '/partners/customers/c1/telegram-link', 'ru'), /Токен Telegram-бота/);
+  assert.match(xatoKodiMatni('errors.integrations.sale_has_no_customer', '/sales/s1/notify', 'uz'), /mijoz yo'q/);
+  assert.match(xatoKodiMatni('errors.integrations.sale_has_no_customer', '/sales/s1/notify', 'ru'), /нет клиента/);
+});
+
+test('only_confirmed_sale_payable va sale_not_found: faqat nakladnoy/notify manzillarida almashtiriladi', () => {
+  assert.match(xatoKodiMatni('errors.sales.only_confirmed_sale_payable', '/sales/s1/notify', 'uz'), /faqat tasdiqlangan sotuv/);
+  assert.match(xatoKodiMatni('errors.sales.only_confirmed_sale_payable', '/sales/abc-123/nakladnoy.pdf', 'ru'), /только для подтверждённой/);
+  assert.equal(xatoKodiMatni('errors.sales.sale_not_found', '/sales/s1/notify', 'uz'), 'Sotuv topilmadi.');
+  // to'lov va boshqa so'rovlarda avvalgidek (null — backend matni ko'rsatiladi)
+  assert.equal(xatoKodiMatni('errors.sales.only_confirmed_sale_payable', '/sales/s1/payments', 'uz'), null);
+  assert.equal(xatoKodiMatni('errors.sales.only_confirmed_sale_payable', '/sales/s1', 'uz'), null);
+  assert.equal(xatoKodiMatni('errors.sales.sale_not_found', '/sales/s1', 'uz'), null);
+});

@@ -1,9 +1,32 @@
 import apiClient from "./axios";
 import { apiData, type ApiEnvelope } from "./response";
 
-export type TelegramIntegratsiya = { botToken?: string | null; chatId?: string | null; isActive?: boolean; crmBotEnabled?: boolean };
+// Telegram bot (TZ 701): javobda botToken va webhookSecret ENDI YO'Q — tokenning oxirgi 4 belgisi (`botTokenLast4`) va bot nomi (`botUsername`) keladi.
+// Mijozga xabar yuborish tugmalari (`sendOn*`, `attachPdf`) standart holatda yoqilgan.
+export type TelegramIntegratsiya = {
+  botTokenLast4?: string | null;
+  botUsername?: string | null;
+  chatId?: string | null;
+  isActive?: boolean;
+  crmBotEnabled?: boolean;
+  sendOnSale?: boolean;
+  sendOnPayment?: boolean;
+  sendOnCancel?: boolean;
+  attachPdf?: boolean;
+};
 export type PrinterIntegratsiya = { ipAddress?: string | null; port?: number | null; isActive?: boolean };
-export type TelegramIntegratsiyaSaqlash = { botToken?: string; chatId?: string; isActive?: boolean; crmBotEnabled?: boolean };
+// `botToken` faqat YANGI token kiritilganda yuboriladi: yuborilmasa eski token saqlanadi, bo'sh matn esa 400 beradi.
+// Noto'g'ri token Telegram'da tekshiriladi: 400 errors.integrations.invalid_bot_token.
+export type TelegramIntegratsiyaSaqlash = {
+  botToken?: string;
+  chatId?: string;
+  isActive?: boolean;
+  crmBotEnabled?: boolean;
+  sendOnSale?: boolean;
+  sendOnPayment?: boolean;
+  sendOnCancel?: boolean;
+  attachPdf?: boolean;
+};
 export type PrinterIntegratsiyaSaqlash = { ipAddress?: string; port?: number; isActive?: boolean };
 
 export type TolovProvayderi = "PAYME" | "CLICK" | "UZUM";

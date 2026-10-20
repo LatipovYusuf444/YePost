@@ -50,6 +50,14 @@ function fonSozlamaXatosiMi(error: unknown) {
   return FON_SOZLAMA_YOLLARI.includes(yol);
 }
 
+// Fon (yordamchi) so'rovlar uchun: `xatoniYashirish: true` bo'lsa, xato bo'lganda qizil toast chiqarilmaydi
+// (masalan, ro'yxatdagi nomlarni to'ldirish uchun id bo'yicha olinadigan mijoz o'chirilgan bo'lsa).
+declare module "axios" {
+  interface AxiosRequestConfig {
+    xatoniYashirish?: boolean;
+  }
+}
+
 const MUTATSIYA_USULLARI = new Set(["post", "put", "patch", "delete"]);
 
 function muvaffaqiyatMatni(usul?: string) {
@@ -105,7 +113,7 @@ apiClient.interceptors.response.use(
   async (error: unknown) => {
     if (!axios.isAxiosError(error) || error.response?.status !== 401 || !error.config) {
       // 409 before_stock_take — xato emas, "Davom etasizmi?" ogohlantirishi: toast o'rniga tasdiqlash oynasi chiqadi (api/hujjatOgohlantirishi).
-      if (axios.isAxiosError(error) && toastKerakmi(error.config?.url) && !rolCheklanganRoyxat403Mi(error) && !fonSozlamaXatosiMi(error) && !ogohlantirishXatosimi(error)) {
+      if (axios.isAxiosError(error) && toastKerakmi(error.config?.url) && !rolCheklanganRoyxat403Mi(error) && !fonSozlamaXatosiMi(error) && !ogohlantirishXatosimi(error) && !error.config?.xatoniYashirish) {
         xatolikXabari(getApiErrorMessage(error));
       }
       return Promise.reject(error);

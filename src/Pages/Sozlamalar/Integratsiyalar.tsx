@@ -20,6 +20,8 @@ type FormaXatolari = {
 
 export default function Integratsiyalar() {
   const [telegramToken, setTelegramToken] = useState("");
+  // Backend tokenni qaytarmaydi: faqat oxirgi 4 belgisi; yangi token yozilmasa eskisi saqlanadi.
+  const [tokenOxirgi4, setTokenOxirgi4] = useState("");
   const [telegramChatId, setTelegramChatId] = useState("");
   const [telegramFaol, setTelegramFaol] = useState(false);
   const [crmBotFaol, setCrmBotFaol] = useState(false);
@@ -48,7 +50,8 @@ export default function Integratsiyalar() {
         integratsiyalarApi.printerOlish(),
       ]);
 
-      setTelegramToken(telegram.botToken ?? "");
+      setTelegramToken("");
+      setTokenOxirgi4(telegram.botTokenLast4 ?? "");
       setTelegramChatId(telegram.chatId ?? "");
       setTelegramFaol(Boolean(telegram.isActive));
       setCrmBotFaol(Boolean(telegram.crmBotEnabled));
@@ -68,7 +71,7 @@ export default function Integratsiyalar() {
 
   function telegramniTekshirish() {
     if (!telegramFaol) return "";
-    if (!telegramToken.trim()) return "Bot token kiritilishi kerak.";
+    if (!telegramToken.trim() && !tokenOxirgi4) return "Bot token kiritilishi kerak.";
     if (!telegramChatId.trim()) return "Chat ID kiritilishi kerak.";
     return "";
   }
@@ -94,12 +97,13 @@ export default function Integratsiyalar() {
     setSaqlanmoqda("telegram");
     try {
       const data = await integratsiyalarApi.telegramYangilash({
-        botToken: telegramToken.trim(),
+        ...(telegramToken.trim() ? { botToken: telegramToken.trim() } : {}),
         chatId: telegramChatId.trim(),
         isActive: telegramFaol,
         crmBotEnabled: crmBotFaol,
       });
-      setTelegramToken(data.botToken ?? telegramToken.trim());
+      setTelegramToken("");
+      setTokenOxirgi4(data.botTokenLast4 ?? tokenOxirgi4);
       setTelegramChatId(data.chatId ?? telegramChatId.trim());
       setTelegramFaol(Boolean(data.isActive));
       setCrmBotFaol(Boolean(data.crmBotEnabled));
@@ -211,7 +215,7 @@ export default function Integratsiyalar() {
                   value={telegramToken}
                   onChange={(event) => setTelegramToken(event.target.value)}
                   className="h-full min-w-0 flex-1 bg-transparent px-3 font-semibold outline-none"
-                  placeholder="123456789:AAExampleBotTokenString"
+                  placeholder={tokenOxirgi4 ? `••••${tokenOxirgi4}` : "123456789:AAExampleBotTokenString"}
                   autoComplete="off"
                 />
                 <button

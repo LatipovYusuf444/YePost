@@ -61,6 +61,12 @@ export type Mijoz = {
   // Mijoz hisobi (oldindan to'langan pul) va uning valyutasi (valyuta rejimida USD).
   balance?: number | string | null;
   balanceCurrency?: string | null;
+  // Telegram bot: ulangan mijozning chat id'si (null — ulanmagan), ulangan vaqt, xabar yoqilganligi (mijoz /stop bossa false)
+  // va mijoz botni bloklaganmi.
+  telegramChatId?: string | null;
+  telegramLinkedAt?: string | null;
+  telegramNotify?: boolean | null;
+  telegramBlocked?: boolean | null;
   customFields?: Record<string, unknown> | null;
   socials?: PartnerSocials | null;
   partner?: Partner | null;
