@@ -7,6 +7,7 @@ export type SozlamaBolim =
   | "birliklar"
   | "vakolatlar"
   | "integratsiya"
+  | "telegram"
   | "chek"
   | "bildirishnoma"
   | "valyuta"

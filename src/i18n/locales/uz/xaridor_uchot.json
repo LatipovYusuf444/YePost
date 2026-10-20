@@ -259,7 +259,7 @@
       "ochirgan": "Mijoz botda /stop bosgan: xabar yuborilmaydi. Mijoz botda /start bosib qayta yoqishi mumkin.",
       "bloklagan": "Mijoz botni bloklagan: xabar yetib bormaydi. Qayta ulash uchun mijoz botni blokdan chiqarib /start bosishi kerak."
     },
-    "createLink": "Ulash havolasini yaratish",
+    "createLink": "Botga ulash",
     "newLink": "Yangi havola yaratish",
     "creating": "Yaratilmoqda...",
     "linkTitle": "Botga ulash havolasi",

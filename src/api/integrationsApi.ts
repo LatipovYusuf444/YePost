@@ -45,11 +45,16 @@ export type TolovIntegratsiyasiSaqlash = {
   isActive?: boolean;
 };
 
+// Hali sozlanmagan korxona uchun backend `{ data: null }` (yoki bo'sh javob) qaytarishi mumkin: bo'sh obyektga aylantiriladi.
+function sozlamaObyekti<T extends object>(javob: T | null | undefined): T {
+  return javob && typeof javob === "object" ? javob : ({} as T);
+}
+
 export const integratsiyalarApi = {
-  telegramOlish: async () => apiData((await apiClient.get<TelegramIntegratsiya | ApiEnvelope<TelegramIntegratsiya>>("/integrations/telegram")).data),
-  telegramYangilash: async (data: TelegramIntegratsiyaSaqlash) => apiData((await apiClient.patch<TelegramIntegratsiya | ApiEnvelope<TelegramIntegratsiya>>("/integrations/telegram", data)).data),
-  printerOlish: async () => apiData((await apiClient.get<PrinterIntegratsiya | ApiEnvelope<PrinterIntegratsiya>>("/integrations/printer")).data),
-  printerYangilash: async (data: PrinterIntegratsiyaSaqlash) => apiData((await apiClient.patch<PrinterIntegratsiya | ApiEnvelope<PrinterIntegratsiya>>("/integrations/printer", data)).data),
+  telegramOlish: async () => sozlamaObyekti(apiData((await apiClient.get<TelegramIntegratsiya | ApiEnvelope<TelegramIntegratsiya>>("/integrations/telegram")).data)),
+  telegramYangilash: async (data: TelegramIntegratsiyaSaqlash) => sozlamaObyekti(apiData((await apiClient.patch<TelegramIntegratsiya | ApiEnvelope<TelegramIntegratsiya>>("/integrations/telegram", data)).data)),
+  printerOlish: async () => sozlamaObyekti(apiData((await apiClient.get<PrinterIntegratsiya | ApiEnvelope<PrinterIntegratsiya>>("/integrations/printer")).data)),
+  printerYangilash: async (data: PrinterIntegratsiyaSaqlash) => sozlamaObyekti(apiData((await apiClient.patch<PrinterIntegratsiya | ApiEnvelope<PrinterIntegratsiya>>("/integrations/printer", data)).data)),
   tolovOlish: async (provider: TolovProvayderi) => apiData((await apiClient.get<TolovIntegratsiyasi | ApiEnvelope<TolovIntegratsiyasi>>(`/integrations/payments/${provider}`)).data),
   tolovYangilash: async (provider: TolovProvayderi, data: TolovIntegratsiyasiSaqlash) => apiData((await apiClient.patch<TolovIntegratsiyasi | ApiEnvelope<TolovIntegratsiyasi>>(`/integrations/payments/${provider}`, data)).data),
 };

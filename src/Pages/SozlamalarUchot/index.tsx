@@ -9,6 +9,7 @@ import {
   PlugZap,
   Receipt,
   Ruler,
+  Send,
   ShieldCheck,
   Tags,
   UserRound,
@@ -25,6 +26,7 @@ import KompaniyaBolimi from "./KompaniyaBolimi";
 import NarxTurlariBolimi from "./NarxTurlariBolimi";
 import OlchovBirligiBolimi from "./OlchovBirligiBolimi";
 import ProfilBolimi from "./ProfilBolimi";
+import TelegramBotKarti from "./TelegramBotKarti";
 import VakolatlarBolimi from "./VakolatlarBolimi";
 import ValyutaBolimi from "./ValyutaBolimi";
 import type { SozlamaBolim } from "./types";
@@ -40,6 +42,7 @@ const bolimlar: { id: SozlamaBolim; icon: typeof UserRound; faqatDirektor?: bool
   { id: "narxTurlari", icon: Tags },
   { id: "davrniYopish", icon: Lock },
   { id: "integratsiya", icon: PlugZap, faqatDirektor: true },
+  { id: "telegram", icon: Send, faqatDirektor: true },
   { id: "chek", icon: Receipt },
   { id: "bildirishnoma", icon: Bell },
 ];
@@ -102,6 +105,7 @@ export default function SozlamalarUchot() {
           {bolim === "davrniYopish" && <DavrniYopishBolimi />}
           {bolim === "vakolatlar" && <VakolatlarBolimi />}
           {bolim === "integratsiya" && direktor && <IntegratsiyaBolimi />}
+          {bolim === "telegram" && direktor && <TelegramBotKarti />}
           {bolim === "chek" && <ChekBolimi />}
           {bolim === "bildirishnoma" && <BildirishnomaBolimi />}
         </div>
