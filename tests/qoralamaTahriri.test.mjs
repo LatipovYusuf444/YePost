@@ -19,6 +19,7 @@ import {
   sonniOqish,
   tahrirItemlari,
   tanlanadiganQoldiqlar,
+  valyutaniOzgartirish,
   xatoBormi,
   yangiQatorYaratish,
 } from '../src/lib/qoralamaTahriri.ts';
@@ -95,8 +96,13 @@ test('miqdorni o‘zgartirish: faqat miqdor o‘zgaradi, narx qulflangan, summa 
   assert.equal(ozgarishlarSoni([q]), 1);
   assert.equal(qatorSummasi(q), 200000);
   assert.deepEqual(tahrirItemlari([q], UZS), [{ modificationId: 'a', quantity: 8, price: 25000, discount: 0, priceType: 'RETAIL' }]);
-  // narx qulflangan: o'zgarmaydi
-  assert.equal(narxniOzgartirish(q, '1').narx, '25000');
+  // narx erkin tahrirlanadi: yozilgan narx bilan summa qayta hisoblanadi
+  const narxli = narxniOzgartirish(q, '26000');
+  assert.equal(narxli.narx, '26000');
+  assert.equal(qatorOzgarganmi(narxli), true);
+  assert.equal(qatorSummasi(narxli), 8 * 26000);
+  assert.deepEqual(tahrirItemlari([narxli], UZS), [{ modificationId: 'a', quantity: 8, price: 26000, discount: 0, priceType: 'RETAIL' }]);
+  assert.equal(qatorOzgarganmi(narxniOzgartirish(boshlash(ITEM_A), '25000')), false);
   // qaytadan asl miqdor yozilsa o'zgarish qolmaydi
   assert.equal(qatorOzgarganmi(miqdorniOzgartirish(q, '5')), false);
   assert.equal(qatorOzgarganmi(miqdorniOzgartirish(q, '5.0')), false);
@@ -127,7 +133,7 @@ test('mahsulotni almashtirish: so‘mli sotuvda katalog narxi, narx qulflanadi, 
   const q = mahsulotniAlmashtirish(asl, DOLLAR, { nom: 'Dollarli', standartTur: 'RETAIL', ctx: UZS, aslHolati: asl });
   assert.equal(q.modificationId, 'b');
   assert.equal(q.narx, '1200000');
-  assert.equal(q.narxQulf, true);
+  assert.equal(q.katalogNarxi, '1200000');
   assert.equal(q.chegirma, '');
   assert.equal(q.chegirmaFoiz, null);
   assert.equal(q.tur, 'RETAIL');
@@ -179,7 +185,7 @@ test('narx turi: so‘ralgan tur narxi yo‘q bo‘lsa ruxsat etilgan boshqa tur
   assert.equal(ulgurji.narx, '22000');
 
   const narxsiz = mahsulotniAlmashtirish(asl, NARXSIZ, { nom: 'N', standartTur: 'RETAIL', ctx: UZS, aslHolati: asl });
-  assert.equal(narxsiz.narxQulf, false);
+  assert.equal(narxsiz.katalogNarxi, '');
   assert.equal(narxsiz.narx, '');
   assert.deepEqual(qatorXatolari(narxsiz, NARXSIZ), { narx: 'kerak' });
   const yozilgan = narxniOzgartirish(narxsiz, '15000');
@@ -187,15 +193,65 @@ test('narx turi: so‘ralgan tur narxi yo‘q bo‘lsa ruxsat etilgan boshqa tur
   assert.deepEqual(tahrirItemlari([yozilgan], UZS), [{ modificationId: 'd', quantity: 5, priceType: 'RETAIL', price: 15000, discount: 0 }]);
 });
 
-test('kurs yo‘qligi: so‘mli mahsulotni dollarli sotuvga qo‘shib bo‘lmaydi (narx yozilmaydi, "kurs" xatosi)', () => {
+test('kurs yo‘qligi: so‘mli mahsulotni dollarli sotuvga qo‘shsa narx bo‘sh qoladi, narxni qo‘lda yozish mumkin', () => {
   const kursYoq = { sotuvVal: 'USD', kurs: 0, turRuxsati: HAMMASI };
   const asl = boshlash(ITEM_DOLLAR, 'USD');
   const q = mahsulotniAlmashtirish(asl, SOM, { nom: 'S', standartTur: 'RETAIL', ctx: kursYoq, aslHolati: asl });
   assert.equal(q.narx, '');
-  assert.equal(q.narxQulf, true);
-  assert.deepEqual(qatorXatolari(q, SOM), { narx: 'kurs' });
-  // narx qulflangan: qo'lda yozish mumkin emas
-  assert.equal(narxniOzgartirish(q, '5').narx, '');
+  assert.equal(q.katalogNarxi, '');
+  assert.deepEqual(qatorXatolari(q, SOM), { narx: 'kerak' });
+  const yozilgan = narxniOzgartirish(q, '2.5');
+  assert.deepEqual(qatorXatolari(yozilgan, SOM), {});
+  assert.deepEqual(tahrirItemlari([yozilgan], kursYoq), [{ modificationId: 'a', quantity: 2, priceType: 'RETAIL', price: 2.5, discount: 0 }]);
+});
+
+test('almashtirilgan qatorda katalog narxi o‘zgartirilsa qo‘lda narx yuboriladi (so‘mli va dollarli sotuv)', () => {
+  const dollarQatori0 = boshlash(ITEM_DOLLAR, 'USD');
+  const q = mahsulotniAlmashtirish(dollarQatori0, SOM, { nom: 'S', standartTur: 'RETAIL', ctx: UZS, aslHolati: dollarQatori0 });
+  assert.equal(q.narx, '25000');
+  // katalog narxida — "Sotuv yaratish" shakli
+  assert.deepEqual(tahrirItemlari([q], UZS), [{ modificationId: 'a', quantity: 2, priceType: 'RETAIL', price: 25000, discount: 0 }]);
+  const arzon = narxniOzgartirish(q, '23000');
+  assert.deepEqual(qatorXatolari(arzon, SOM), {});
+  assert.deepEqual(tahrirItemlari([arzon], UZS), [{ modificationId: 'a', quantity: 2, priceType: 'RETAIL', price: 23000, discount: 0 }]);
+  // narxni o'chirib yoki 0 yozib bo'lmaydi
+  assert.deepEqual(qatorXatolari(narxniOzgartirish(q, ''), SOM), { narx: 'kerak' });
+  assert.deepEqual(qatorXatolari(narxniOzgartirish(q, '0'), SOM), { narx: 'kerak' });
+
+  // dollarli sotuvda so'mli mahsulot narxi qo'lda yozilsa o'z valyutasida (UZS) yoki sotuv valyutasida (USD) yuboriladi
+  const dollarQatori = boshlash(ITEM_DOLLAR, 'USD');
+  const d = mahsulotniAlmashtirish(dollarQatori, SOM, { nom: 'S', standartTur: 'RETAIL', ctx: USD, aslHolati: dollarQatori });
+  assert.deepEqual(tahrirItemlari([narxniOzgartirish(d, '3')], USD), [{ modificationId: 'a', quantity: 2, priceType: 'RETAIL', price: 3, discount: 0 }]);
+  const somga = valyutaniOzgartirish(d, 'UZS', KURS);
+  assert.equal(somga.valyuta, 'UZS');
+  assert.deepEqual(tahrirItemlari([narxniOzgartirish(somga, '24000')], USD), [{ modificationId: 'a', quantity: 2, priceType: 'RETAIL', price: 24000, discount: 0, currency: 'UZS' }]);
+});
+
+test('qator valyutasini almashtirish: kurs bilan o‘giriladi, dastlabki valyutaga qaytsa aniq qiymatlar tiklanadi', () => {
+  const q = boshlash(ITEM_FOIZLI);
+  const usd = valyutaniOzgartirish(q, 'USD', KURS);
+  assert.equal(usd.valyuta, 'USD');
+  assert.equal(usd.narx, '2.08');
+  assert.equal(usd.chegirma, '1.04');
+  assert.equal(qatorOzgarganmi(usd), true);
+  assert.equal(ozgarishlarSoni([usd]), 1);
+  assert.deepEqual(tahrirItemlari([usd], UZS), [{ modificationId: 'a', quantity: 5, price: 2.08, discount: 1.04, currency: 'USD', priceType: 'WHOLESALE', discountPercent: 10 }]);
+  // qaytganda yaxlitlash xatosi yo'q: 25000 va 12500
+  const qayta = valyutaniOzgartirish(usd, 'UZS', KURS);
+  assert.equal(qayta.narx, '25000');
+  assert.equal(qayta.chegirma, '12500');
+  assert.equal(qatorOzgarganmi(qayta), false);
+  // kurs yo'q: o'zgarmaydi
+  assert.equal(valyutaniOzgartirish(q, 'USD', 0), q);
+  // dollarli qatorni so'mga: butun so'm
+  const dollar = boshlash(ITEM_DOLLAR, 'USD');
+  const som = valyutaniOzgartirish(dollar, 'UZS', KURS);
+  assert.equal(som.narx, '1200000');
+  assert.equal(som.chegirma, '60000');
+  const [qator] = tahrirItemlari([som], USD);
+  assert.deepEqual(qator, { modificationId: 'b', quantity: 2, price: 1200000, discount: 60000, currency: 'UZS' });
+  // jami: so'mli qatorlar so'mda, dollarli qatorlar kurs bilan
+  assert.equal(qatorSummasi(usd), 5 * 2.08 - 1.04);
 });
 
 test('ombor qoldig‘i: mavjud qator o‘z miqdorini band qilgan, almashtirilgan qator faqat o‘z qoldig‘i bilan', () => {

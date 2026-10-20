@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
-import { LoaderCircle, Lock, Package, Plus, RotateCcw, Search, Trash2, TriangleAlert, Undo2, X } from "lucide-react";
+import { ArrowLeftRight, LoaderCircle, Package, Plus, RotateCcw, Search, Trash2, TriangleAlert, Undo2, X } from "lucide-react";
 import {
   bandMahsulotlar,
   chegirmaniOzgartirish,
@@ -19,9 +19,9 @@ import {
   qatorSummasi,
   qoldiqMiqdori,
   qoldiqTopish,
-  sonniOqish,
   tahrirItemlari,
   tanlanadiganQoldiqlar,
+  valyutaniOzgartirish,
   xatoBormi,
   yangiQatorYaratish,
   type QatorXatolari,
@@ -50,7 +50,7 @@ const ORAMA =
   "flex h-10 w-full items-center gap-1.5 rounded-lg border bg-white px-3 transition focus-within:border-[#2563EB] focus-within:ring-4 focus-within:ring-blue-100";
 const XATO_RAMKA = "border-red-400 ring-4 ring-red-100";
 const ODDIY_RAMKA = "border-slate-300";
-const SATR_USTUNLARI = "xl:grid-cols-[34px_minmax(220px,1fr)_136px_148px_132px_136px_92px_64px]";
+const SATR_USTUNLARI = "xl:grid-cols-[34px_minmax(220px,1fr)_136px_172px_132px_136px_92px_64px]";
 const POPOVER_LIMIT = 80;
 
 function formatSon(son: number) {
@@ -88,11 +88,30 @@ function Belgi({ valyuta }: { valyuta: Valyuta }) {
   return <span className="shrink-0 text-xs font-semibold text-slate-400">{valyuta === "USD" ? "$" : "so'm"}</span>;
 }
 
+// Narx valyutasi: almashtirish mumkin bo'lsa tugma (so'm ↔ $), aks holda oddiy belgi.
+function ValyutaTugmasi({ valyuta, mumkin, sarlavha, onClick }: { valyuta: Valyuta; mumkin: boolean; sarlavha: string; onClick: () => void }) {
+  if (!mumkin) return <Belgi valyuta={valyuta} />;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={sarlavha}
+      aria-label={sarlavha}
+      className="inline-flex shrink-0 items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-black text-slate-500 transition hover:bg-blue-50 hover:text-[#2563EB]"
+    >
+      {valyuta === "USD" ? "$" : "so'm"}
+      <ArrowLeftRight size={10} />
+    </button>
+  );
+}
+
 export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilmoqda, onYangilash, onOzgarish }: Props) {
   const { t } = useTranslation("savdo_tafsilot");
   const sotuvVal = sotuvValyutasi(sotuv);
   const omborId = sotuv.warehouseId ?? sotuv.warehouse?.id;
   const kurs = useValyutaStore((holat) => (holat.kursBor && holat.kurs > 0 ? holat.kurs : 0));
+  // Valyuta rejimi yoqilgan va bugungi kurs kiritilgan bo'lsagina qatorni dollarga o'tkazish mumkin.
+  const dollarMumkin = useValyutaStore((holat) => holat.rejimYoniq && holat.kursBor && holat.kurs > 0);
   const narxTurlari = useSavdoSozlamalariStore((holat) => holat.narxTurlari);
   const sozlamaniYuklash = useSavdoSozlamalariStore((holat) => holat.yuklash);
 
@@ -280,16 +299,16 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
         const asliMi = popoverQatori.asl?.modificationId === qoldiq.modificationId;
         const holat = band.has(qoldiq.modificationId)
           ? "band"
-          : katalog !== null && narx <= 0
-            ? "kurs"
-            : miqdor <= 0 && !asliMi
-              ? "yoq"
+          : miqdor <= 0 && !asliMi
+            ? "yoq"
+            : katalog !== null && narx <= 0
+              ? "kurs"
               : "ok";
         const matn = [nom, qoldiq.modification?.name, qoldiq.modification?.barcode, qoldiq.modification?.article].join(" ").toLowerCase();
         return { qoldiq, nom, narx, miqdor, holat, matn };
       })
       .filter((element) => !qiymat || element.matn.includes(qiymat))
-      .sort((a, b) => Number(b.holat === "ok") - Number(a.holat === "ok") || a.nom.localeCompare(b.nom, "uz"));
+      .sort((a, b) => Number(b.holat === "ok" || b.holat === "kurs") - Number(a.holat === "ok" || a.holat === "kurs") || a.nom.localeCompare(b.nom, "uz"));
   }, [popoverQatori, qidiruv, qatorlar, tanlashRoyxati, narxTurlari, ctx.turRuxsati, kurs, sotuvVal]);
 
   const korsatiladiganElementlar = royxatElementlari.slice(0, POPOVER_LIMIT);
@@ -297,7 +316,7 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
   function qidiruvdaTugma(key: string) {
     if (key === "Escape") popoverniYopish();
     if (key === "Enter") {
-      const birinchi = korsatiladiganElementlar.find((element) => element.holat === "ok");
+      const birinchi = korsatiladiganElementlar.find((element) => element.holat === "ok" || element.holat === "kurs");
       if (birinchi) mahsulotTanlash(birinchi.qoldiq);
     }
   }
@@ -371,10 +390,13 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
           ]
             .filter(Boolean)
             .join(" · ");
-          const narxSoni = sonniOqish(q.narx);
           const mahsulotXatosi = urinildi && xatolar.mahsulot;
           const miqdorXatoKorinadi = Boolean(xatolar.miqdor);
-          const narxXatoKorinadi = Boolean(xatolar.narx) && (urinildi || xatolar.narx === "kurs");
+          const narxXatoKorinadi = Boolean(xatolar.narx) && (urinildi || mavjud);
+          const valyutaNishoni: Valyuta = q.valyuta === "USD" ? "UZS" : "USD";
+          const valyutaMumkin =
+            !q.ochirildi &&
+            ((mavjud && valyutaNishoni === q.aslValyuta) || (kurs > 0 && (valyutaNishoni === "UZS" || dollarMumkin)));
           const chegirmaXatoKorinadi = Boolean(xatolar.chegirma);
           const holatStili =
             holat === "ochirildi"
@@ -456,39 +478,27 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
               </Maydon>
 
               <Maydon yorliq={t("common.jadval.narx")}>
-                {q.narxQulf ? (
-                  <div
-                    title={t("qoralamaTahrir.narxQulflangan")}
-                    className={`flex h-10 items-center justify-end gap-1.5 rounded-lg px-3 text-sm font-semibold tabular-nums ${
-                      narxXatoKorinadi ? "bg-red-50 text-red-500 ring-1 ring-red-200" : "bg-slate-50 text-slate-700"
-                    } ${ochirildi ? "line-through opacity-60" : ""}`}
-                  >
-                    <Lock size={12} className="shrink-0 text-slate-300" />
-                    {narxSoni !== null && narxSoni > 0 ? pulniFormatlash(narxSoni, q.valyuta) : "—"}
-                  </div>
-                ) : (
-                  <div className={`${ORAMA} ${narxXatoKorinadi ? XATO_RAMKA : ODDIY_RAMKA}`}>
-                    {q.valyuta === "USD" && <Belgi valyuta="USD" />}
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={q.narx}
-                      disabled={ochirildi}
-                      aria-label={`${t("common.jadval.narx")}: ${nom}`}
-                      onChange={(event) =>
-                        qatorniYangilash(q.kalit, (qator) => narxniOzgartirish(qator, kiritishniTozalash(event.target.value, q.valyuta === "USD" ? 2 : 0)))
-                      }
-                      onFocus={(event) => event.currentTarget.select()}
-                      onKeyDown={(event) => event.key === "Enter" && event.currentTarget.blur()}
-                      placeholder="0"
-                      className="min-w-0 flex-1 bg-transparent text-right text-sm font-semibold tabular-nums text-slate-800 outline-none disabled:cursor-not-allowed disabled:text-slate-400"
-                    />
-                    {q.valyuta !== "USD" && <Belgi valyuta="UZS" />}
-                  </div>
-                )}
-                {narxXatoKorinadi && xatolar.narx && (
-                  <XatoMatni>{xatolar.narx === "kurs" ? t("qoralamaTahrir.xatolar.narxKurs") : t("qoralamaTahrir.xatolar.narxKerak")}</XatoMatni>
-                )}
+                <div className={`${ORAMA} ${narxXatoKorinadi ? XATO_RAMKA : ODDIY_RAMKA}`}>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={q.narx}
+                    disabled={ochirildi}
+                    aria-label={`${t("common.jadval.narx")}: ${nom}`}
+                    onChange={(event) => qatorniYangilash(q.kalit, (qator) => narxniOzgartirish(qator, kiritishniTozalash(event.target.value, 2)))}
+                    onFocus={(event) => event.currentTarget.select()}
+                    onKeyDown={(event) => event.key === "Enter" && event.currentTarget.blur()}
+                    placeholder="0"
+                    className="min-w-0 flex-1 bg-transparent text-right text-sm font-semibold tabular-nums text-slate-800 outline-none disabled:cursor-not-allowed disabled:text-slate-400"
+                  />
+                  <ValyutaTugmasi
+                    valyuta={q.valyuta}
+                    mumkin={valyutaMumkin}
+                    sarlavha={t("qoralamaTahrir.valyutaniAlmashtirish")}
+                    onClick={() => qatorniYangilash(q.kalit, (qator) => valyutaniOzgartirish(qator, valyutaNishoni, kurs))}
+                  />
+                </div>
+                {narxXatoKorinadi && xatolar.narx && <XatoMatni>{t("qoralamaTahrir.xatolar.narxKerak")}</XatoMatni>}
               </Maydon>
 
               <Maydon yorliq={t("qoralamaTahrir.chegirma")}>
@@ -501,7 +511,7 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
                     disabled={ochirildi}
                     aria-label={`${t("qoralamaTahrir.chegirma")}: ${nom}`}
                     onChange={(event) =>
-                      qatorniYangilash(q.kalit, (qator) => chegirmaniOzgartirish(qator, kiritishniTozalash(event.target.value, q.valyuta === "USD" ? 2 : 0)))
+                      qatorniYangilash(q.kalit, (qator) => chegirmaniOzgartirish(qator, kiritishniTozalash(event.target.value, 2)))
                     }
                     onFocus={(event) => event.currentTarget.select()}
                     onKeyDown={(event) => event.key === "Enter" && event.currentTarget.blur()}
@@ -684,7 +694,7 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
                   <div className="px-3 py-10 text-center text-sm text-slate-400">{t("tovarlarTab.qoldiqdaTopilmadi")}</div>
                 )}
                 {korsatiladiganElementlar.map((element) => {
-                  const mumkin = element.holat === "ok";
+                  const mumkin = element.holat === "ok" || element.holat === "kurs";
                   return (
                     <button
                       key={element.qoldiq.modificationId}
@@ -701,7 +711,7 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold text-slate-800">{element.nom}</span>
                         <span className="mt-0.5 block truncate text-xs text-slate-400">
-                          {element.holat === "ok" ? `${t("qoralamaTahrir.omborda")}: ${formatSon(element.miqdor)} ${t("common.dona")}` : t(`qoralamaTahrir.mavjudEmas.${element.holat}`)}
+                          {mumkin ? `${t("qoralamaTahrir.omborda")}: ${formatSon(element.miqdor)} ${t("common.dona")}${element.holat === "kurs" ? ` · ${t("qoralamaTahrir.mavjudEmas.kurs")}` : ""}` : t(`qoralamaTahrir.mavjudEmas.${element.holat}`)}
                           {element.qoldiq.modification?.barcode ? ` · ${element.qoldiq.modification.barcode}` : ""}
                         </span>
                       </span>

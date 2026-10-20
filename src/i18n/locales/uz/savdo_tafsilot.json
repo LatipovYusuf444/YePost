@@ -425,10 +425,10 @@
     "mahsulotQoshish": "Mahsulot qo'shish",
     "mahsulotniAlmashtirish": "Mahsulotni almashtirish",
     "mahsulotTanlang": "Mahsulotni tanlang",
-    "kursYoqOgohlantirish": "Dollar kursi kiritilmagan: so'mda narxlangan mahsulotlarni dollarli sotuvga qo'shib bo'lmaydi.",
+    "kursYoqOgohlantirish": "Dollar kursi kiritilmagan: so'mda narxlangan mahsulot narxi dollarga avtomatik o'girilmaydi, narxni qo'lda kiriting.",
     "chegirma": "Chegirma",
     "omborda": "Omborda",
-    "narxQulflangan": "Narx ombordagi haqiqiy narx bo'yicha belgilanadi va o'zgartirilmaydi",
+    "valyutaniAlmashtirish": "Narx valyutasini almashtirish (so'm ↔ $): narx kurs bilan o'giriladi",
     "holat": {
       "yangi": "Yangi",
       "almashtirilgan": "Almashtirildi",
@@ -443,8 +443,7 @@
       "miqdorNol": "Miqdor 0 dan katta bo'lishi kerak.",
       "miqdorButun": "Bu birlikda faqat butun miqdor bo'lishi mumkin.",
       "miqdorQoldiq": "Omborda yetarli emas: ko'pi bilan {{mavjud}}.",
-      "narxKerak": "Narxni kiriting.",
-      "narxKurs": "Dollar kursi yo'q — narx hisoblanmadi.",
+      "narxKerak": "Narxni 0 dan katta kiriting.",
       "chegirma": "Chegirma qator summasidan oshmasin."
     },
     "jami": {
@@ -462,7 +461,7 @@
     "tozalash": "Qidiruvni tozalash",
     "mavjudEmas": {
       "band": "Bu mahsulot boshqa qatorda bor",
-      "kurs": "Dollar kursi kiritilmagan",
+      "kurs": "Kurs yo'q — narxni qo'lda kiriting",
       "yoq": "Omborda yo'q"
     },
     "yanaMahsulot": "Yana {{soni}} ta mahsulot bor — qidiruv orqali toping",
