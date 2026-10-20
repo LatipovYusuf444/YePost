@@ -38,6 +38,11 @@
       "title": "Yangi inventarizatsiya",
       "newBadge": "Yangi",
       "reviewBadge": "Tekshiruv",
+      "steps": {
+        "aria": "Bosqichlar",
+        "fill": "To'ldirish",
+        "review": "Tekshirish"
+      },
       "closeAria": "Yopish",
       "aboutTitle": "Inventarizatsiya haqida",
       "warehouseLabel": "Ombor *",
@@ -98,6 +103,7 @@
         "location": "Joy / javon",
         "batchSerial": "Partiya / seriya",
         "systemStock": "Tizimdagi qoldiq",
+        "systemShort": "Tizimda",
         "actualQuantity": "Miqdor",
         "countStatus": "Sanoq holati",
         "difference": "Farq"

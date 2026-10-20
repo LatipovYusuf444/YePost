@@ -1,7 +1,7 @@
 import AppSelect from "@/Components/ui/AppSelect";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle, ClipboardList, FileText, Filter, LoaderCircle, Lock, MessageSquareText, Package, Plus, ScanLine, Search, Settings, Trash2, Warehouse } from "lucide-react";
+import { AlertTriangle, Check, ClipboardList, FileText, Filter, Info, LoaderCircle, Lock, MessageSquareText, Package, Plus, ScanLine, Search, Settings, Trash2, UserRound, Warehouse } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import HujjatSanasiMaydoni, { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
@@ -9,7 +9,7 @@ import DateRangePicker from "@/Components/ui/DateRangePicker";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { omborQoldiqlari } from "@/api/omborApi";
 import { useOmborStore } from "@/store/omborStore";
-import { bugungiToshkentKuni, toshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
+import { bugungiToshkentKuni, kunMatni, toshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
 import type { InventarizatsiyaTuri, OmborQoldigi } from "@/types/ombor";
 import { holat, hujjatRaqami, mahsulotQidiruvi, modificationNomi, qoldiqMiqdori, sana } from "./omborYordamchilari";
 import InventoryHujjatModal from "./InventoryHujjatModal";
@@ -264,6 +264,12 @@ export default function Inventarizatsiya() {
     const kiritilganIds = new Set(inventarizatsiyaQatorlari.map((qoldiq) => qoldiq.modificationId));
     return barchaTanlovlar.filter((qoldiq) => !kiritilganIds.has(qoldiq.modificationId));
   }, [barchaTanlovlar, inventarizatsiyaQatorlari]);
+
+  // Qidiruv maydoni ro'yxat ostida qotirilgan: yangi qator qo'shilganda ro'yxat pastiga siljiydi.
+  useEffect(() => {
+    const royxat = jadvalRef.current;
+    if (royxat) royxat.scrollTop = royxat.scrollHeight;
+  }, [inventarizatsiyaQatorlari.length]);
 
   // Qidiruv matniga mos tanlovlar — mahsulot nomi, shtrix-kod yoki artikul bo'yicha qidiriladi.
   // Tartib backend qidiruvi bilan bir xil (aniq mos kelgani birinchi), chunki Enter birinchi natijani qo'shadi.
@@ -767,309 +773,398 @@ export default function Inventarizatsiya() {
         )}
 
       {modal && (
-        <AppModal onClose={formaniYopish} className="sidebar-aligned-document-modal p-3 sm:p-5">
-          <div className="flex max-h-[90vh] w-full flex-col overflow-hidden rounded-[32px] border border-blue-100 bg-[#F8FAFC] shadow-[0_28px_90px_rgba(15,23,42,.32)]" style={INVENTORY_BLUE_THEME}>
-            <header className="flex shrink-0 items-center gap-3 border-b border-blue-100 bg-gradient-to-r from-white via-white to-blue-50/60 px-5 py-4 sm:px-8">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md shadow-blue-200"><ClipboardList size={20} /></span>
-              <div className="flex min-w-0 flex-wrap items-center gap-3">
-                <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{t("inventarizatsiya.createModal.title")}</h2>
-                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-600">{t(reviewAction ? "inventarizatsiya.createModal.reviewBadge" : "inventarizatsiya.createModal.newBadge")}</span>
-              </div>
-            </header>
-
-            <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-8">
-              {!reviewAction ? <>
-              <section className="rounded-[26px] border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
-                <h3 className="mb-5 flex items-center gap-2 border-b border-blue-100 pb-4 text-sm font-black uppercase tracking-wide text-slate-600">
-                  <ClipboardList size={18} className="text-blue-600" />
-                  {t("inventarizatsiya.createModal.aboutTitle")}
-                </h3>
-                <div className="grid gap-5 md:grid-cols-2">
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-bold text-slate-500">{t("inventarizatsiya.createModal.warehouseLabel")}</span>
-                    <AppSelect
-                      value={warehouseId}
-                      onChange={(event) => void omborTanlash(event.target.value)}
-                      className="h-12 w-full rounded-2xl border border-blue-100 bg-white px-4 font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                    >
-                      <option value="">{t("inventarizatsiya.createModal.selectWarehouse")}</option>
-                      {store.omborlar.map((ombor) => (
-                        <option key={ombor.id} value={ombor.id}>{ombor.name}</option>
-                      ))}
-                    </AppSelect>
-                  </label>
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-bold text-slate-500">{t("inventarizatsiya.createModal.dateLabel")}</span>
-                    <HujjatSanasiMaydoni
-                      value={hujjatSanasi}
-                      onChange={setHujjatSanasi}
-                      aria-label={t("inventarizatsiya.createModal.dateLabel")}
-                      className="h-12 w-full rounded-2xl border border-blue-100 bg-white px-4 font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-bold text-slate-500">{t("inventarizatsiya.createModal.responsibleLabel")}</span>
-                    <div className="flex h-12 w-full items-center justify-between rounded-2xl border border-blue-100 bg-slate-50 px-4 font-semibold text-slate-700">
-                      <span className="truncate">
-                        {joriyProfil?.fullName ?? joriyProfil?.username ?? t("inventarizatsiya.createModal.unknownEmployee")}
-                      </span>
-                      <Lock size={15} className="shrink-0 text-slate-400" />
-                    </div>
-                  </label>
-                  <label className="block md:col-span-2">
-                    <span className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-500"><MessageSquareText size={16} className="text-blue-600" />{t("inventarizatsiya.createModal.noteTitle")}</span>
-                    <textarea
-                      value={note}
-                      onChange={(event) => setNote(event.target.value)}
-                      rows={3}
-                      className="w-full resize-none rounded-2xl border border-blue-100 bg-white p-4 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                      placeholder={t("inventarizatsiya.createModal.notePlaceholder")}
-                    />
-                    <p className="mt-2 text-xs font-semibold leading-5 text-slate-400">
-                      {t("inventarizatsiya.createModal.noteHelper")}
-                    </p>
-                  </label>
-                </div>
-              </section>
-
-              {(formaXatosi || store.xatolik) && (
-                <div className="mt-5 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">
-                  {formaXatosi ? t(formaXatosi.key, formaXatosi.params) : store.xatolik}
-                </div>
-              )}
-
-              <section className="mt-5 rounded-[26px] border border-blue-100 bg-white p-4 shadow-sm sm:p-5">
-                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">{t("inventarizatsiya.createModal.itemsTitle")}</h3>
-                    <p className="mt-1 text-xs font-medium text-slate-400">{t("inventarizatsiya.createModal.itemsSubtitle")}</p>
+        <AppModal onClose={formaniYopish} className="p-4">
+          <div className={`flex w-full max-w-[1200px] flex-col overflow-hidden rounded-[32px] bg-[#F4F5F9] shadow-[0_44px_120px_-24px_rgba(8,14,40,.7)] ring-1 ring-slate-900/10 ${reviewAction ? "max-h-[min(94vh,940px)]" : "h-[min(94vh,940px)]"}`} style={INVENTORY_BLUE_THEME}>
+            <header className="relative shrink-0 overflow-hidden bg-gradient-to-br from-[#0B1330] via-[#101C4A] to-[#1B2E6E] px-5 py-5 sm:px-8">
+              <div aria-hidden className="pointer-events-none absolute -right-20 -top-28 h-72 w-72 rounded-full bg-amber-300/15 blur-3xl" />
+              <div aria-hidden className="pointer-events-none absolute -bottom-16 left-24 h-40 w-72 rounded-full bg-blue-400/15 blur-3xl" />
+              <div className="relative flex items-center gap-4">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-200 via-amber-300 to-amber-500 text-[#0B1330] shadow-[0_10px_28px_-6px_rgba(251,191,36,.6)] ring-1 ring-white/50"><ClipboardList size={22} strokeWidth={2.2} /></span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <h2 className="text-xl font-black tracking-tight text-white sm:text-2xl">{t("inventarizatsiya.createModal.title")}</h2>
+                    <span className="rounded-full border border-amber-300/40 bg-amber-300/10 px-2.5 py-0.5 text-[11px] font-black tracking-wide text-amber-200">{t(reviewAction ? "inventarizatsiya.createModal.reviewBadge" : "inventarizatsiya.createModal.newBadge")}</span>
                   </div>
-                  {warehouseId && !qoldiqYuklanmoqda && (
-                    <span className="inline-flex h-9 w-fit items-center rounded-xl bg-blue-50 px-3 text-xs font-black text-blue-700">{t("inventarizatsiya.createModal.itemsCount", { count: inventarizatsiyaQatorlari.length })}</span>
+                  {(warehouseId || hujjatSanasi) && (
+                    <p className="mt-1 truncate text-xs font-semibold tracking-wide text-slate-300">
+                      {[omborMap.get(warehouseId), kunMatni(hujjatSanasi)].filter(Boolean).join("  ·  ")}
+                    </p>
                   )}
                 </div>
+                <ol className="hidden shrink-0 items-center gap-2.5 sm:flex" aria-label={t("inventarizatsiya.createModal.steps.aria")}>
+                  {(["fill", "review"] as const).map((qadam, indeks) => {
+                    const faol = indeks === 0 ? !reviewAction : Boolean(reviewAction);
+                    const tugagan = indeks === 0 && Boolean(reviewAction);
+                    return (
+                      <li key={qadam} className="flex items-center gap-2.5" aria-current={faol ? "step" : undefined}>
+                        {indeks > 0 && <span className={`h-px w-8 ${reviewAction ? "bg-amber-300/70" : "bg-white/20"}`} aria-hidden />}
+                        <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-black transition ${tugagan ? "bg-emerald-400 text-[#0B1330]" : faol ? "bg-amber-300 text-[#0B1330] shadow-[0_0_0_4px_rgba(252,211,77,.18)]" : "bg-white/10 text-slate-400"}`}>
+                          {tugagan ? <Check size={14} strokeWidth={3} /> : indeks + 1}
+                        </span>
+                        <span className={`text-xs font-bold tracking-wide ${faol ? "text-white" : "text-slate-400"}`}>{t(`inventarizatsiya.createModal.steps.${qadam}`)}</span>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+              <div aria-hidden className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-amber-300/70 to-transparent" />
+            </header>
 
-                {warehouseId && !qoldiqYuklanmoqda && <>
-                  <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50/40 p-4">
-                    <label htmlFor="inventory-barcode" className="flex items-center gap-2 text-sm font-black text-blue-800"><ScanLine size={18} />{t("inventarizatsiya.createModal.scanTitle")}</label>
-                    <div className="mt-2 flex gap-2"><input id="inventory-barcode" ref={barcodeInputRef} autoComplete="off" value={barcodeInput} onChange={(event) => setBarcodeInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); if (!event.nativeEvent.isComposing) barcodeSanash(); } }} placeholder={t("inventarizatsiya.createModal.scanPlaceholder")} className="h-11 min-w-0 flex-1 rounded-xl border border-blue-200 bg-white px-3 outline-none focus:border-blue-500" /><button type="button" onClick={barcodeSanash} disabled={!barcodeInput.trim()} className="rounded-xl bg-blue-600 px-4 text-sm font-bold text-white disabled:opacity-50">{t("inventarizatsiya.createModal.scanButton")}</button></div>
-                    <p className="mt-2 text-xs text-slate-500">{t("inventarizatsiya.createModal.scanHint")}</p>
-                    {scanFeedback && <p role="status" className="mt-2 text-xs font-bold text-blue-700">{scanFeedback}</p>}
-                  </div>
-                  <p className="mb-3 flex items-start gap-2 rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">
-                    <AlertTriangle size={14} className="mt-px shrink-0" />
-                    {t("inventarizatsiya.createModal.addOnlyNote")}
-                  </p>
-                </>}
+            <div className={`flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 sm:p-6 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-track]:bg-transparent ${reviewAction ? "" : "lg:overflow-hidden"}`}>
+              {!reviewAction ? <>
+              {(formaXatosi || store.xatolik) && (
+                <div role="alert" className="flex shrink-0 items-start gap-2.5 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
+                  <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                  <span>{formaXatosi ? t(formaXatosi.key, formaXatosi.params) : store.xatolik}</span>
+                </div>
+              )}
+              <div className="grid gap-5 lg:min-h-0 lg:flex-1 lg:grid-cols-[330px_minmax(0,1fr)]">
+                <aside className="lg:min-h-0 lg:overflow-y-auto lg:pb-2 lg:pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300">
+                  <section className="rounded-[26px] border border-slate-200/70 bg-white p-4 shadow-[0_14px_34px_-20px_rgba(15,23,42,.22)] sm:p-5">
+                    <div role="heading" aria-level={3} className="mb-4 flex items-center gap-2.5 text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#0B1330] text-amber-300 shadow-md shadow-slate-900/20"><ClipboardList size={15} /></span>
+                      {t("inventarizatsiya.createModal.aboutTitle")}
+                    </div>
+                    <div className="grid gap-3.5">
+                      <label className="block">
+                        <span className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-400">{t("inventarizatsiya.createModal.warehouseLabel")}</span>
+                        <AppSelect
+                          value={warehouseId}
+                          onChange={(event) => void omborTanlash(event.target.value)}
+                          // AppSelect ichki tugmaga tashqi paddingni meros qiladi: manfiy chekka tugmani yorliq va boshqa maydonlar bilan tekislaydi.
+                          className="-mx-4 h-12 rounded-2xl px-4 text-[15px] font-semibold text-slate-800"
+                        >
+                          <option value="">{t("inventarizatsiya.createModal.selectWarehouse")}</option>
+                          {store.omborlar.map((ombor) => (
+                            <option key={ombor.id} value={ombor.id}>{ombor.name}</option>
+                          ))}
+                        </AppSelect>
+                      </label>
+                      <label className="block">
+                        <span className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-400">{t("inventarizatsiya.createModal.dateLabel")}</span>
+                        <HujjatSanasiMaydoni
+                          value={hujjatSanasi}
+                          onChange={setHujjatSanasi}
+                          aria-label={t("inventarizatsiya.createModal.dateLabel")}
+                          className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-[15px] font-semibold text-slate-800 outline-none transition hover:border-slate-300 focus:border-[#1B2E6E] focus:ring-4 focus:ring-blue-100"
+                        />
+                      </label>
+                      <div className="block">
+                        <span className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-400">{t("inventarizatsiya.createModal.responsibleLabel")}</span>
+                        <div className="flex h-12 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3.5 text-[15px] font-semibold text-slate-800">
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-200 to-amber-400 text-[#0B1330]"><UserRound size={14} /></span>
+                          <span className="min-w-0 flex-1 truncate">
+                            {joriyProfil?.fullName ?? joriyProfil?.username ?? t("inventarizatsiya.createModal.unknownEmployee")}
+                          </span>
+                          <Lock size={14} className="shrink-0 text-slate-400" />
+                        </div>
+                      </div>
+                      <label className="block">
+                        <span className="mb-1.5 flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-400"><MessageSquareText size={13} className="text-slate-400" />{t("inventarizatsiya.createModal.noteTitle")}</span>
+                        <textarea
+                          value={note}
+                          onChange={(event) => setNote(event.target.value)}
+                          rows={3}
+                          className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#1B2E6E] focus:ring-4 focus:ring-blue-100"
+                          placeholder={t("inventarizatsiya.createModal.notePlaceholder")}
+                        />
+                        <p className="mt-2 flex items-start gap-1.5 text-[11px] font-medium leading-4 text-slate-400">
+                          <Info size={12} className="mt-px shrink-0" />
+                          {t("inventarizatsiya.createModal.noteHelper")}
+                        </p>
+                      </label>
+                    </div>
+                  </section>
 
-                {qoldiqYuklanmoqda ? (
-                  <div className="flex min-h-40 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-blue-200 bg-blue-50/40 text-sm font-bold text-slate-400">
-                    <LoaderCircle size={24} className="animate-spin text-blue-600" />
-                    {t("inventarizatsiya.createModal.stockLoading")}
+                  {warehouseId && !qoldiqYuklanmoqda && (
+                    <section className="relative mt-3.5 overflow-hidden rounded-[26px] bg-gradient-to-br from-[#0B1330] via-[#101C4A] to-[#1B2E6E] p-4 text-white shadow-[0_8px_18px_-12px_rgba(11,19,48,.6)]">
+                      <div aria-hidden className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-amber-300/20 blur-2xl" />
+                      <div className="relative grid grid-cols-2 gap-x-4 gap-y-3">
+                        {[
+                          ["totalRows", inventarizatsiyaQatorlari.length, "text-white"],
+                          ["counted", sanoqXulosasi.counted, "text-emerald-300"],
+                          ["surplus", `+${sanoqXulosasi.surplus}`, "text-amber-200"],
+                          ["shortage", sanoqXulosasi.shortage ? `-${sanoqXulosasi.shortage}` : "0", "text-red-300"],
+                        ].map(([key, value, rang]) => (
+                          <div key={key}>
+                            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-slate-400">{t(`inventarizatsiya.createModal.${key}`)}</p>
+                            <p className={`mt-0.5 text-xl font-black tabular-nums ${rang}`}>{value}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div
+                        role="progressbar"
+                        aria-valuemin={0}
+                        aria-valuemax={inventarizatsiyaQatorlari.length}
+                        aria-valuenow={sanoqXulosasi.counted}
+                        className="relative mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"
+                      >
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-amber-300 to-emerald-300 transition-all duration-300"
+                          style={{ width: `${inventarizatsiyaQatorlari.length ? Math.round((sanoqXulosasi.counted / inventarizatsiyaQatorlari.length) * 100) : 0}%` }}
+                        />
+                      </div>
+                    </section>
+                  )}
+                </aside>
+
+                <section className="flex min-w-0 flex-col rounded-[26px] border border-slate-200/70 bg-white shadow-[0_14px_34px_-20px_rgba(15,23,42,.22)] lg:min-h-0">
+                  <div className="flex shrink-0 items-center justify-between gap-3 px-5 pb-3 pt-5">
+                    <div className="min-w-0">
+                      <div role="heading" aria-level={3} className="flex items-center gap-2.5 text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#0B1330] text-amber-300 shadow-md shadow-slate-900/20"><Package size={15} /></span>
+                        {t("inventarizatsiya.createModal.itemsTitle")}
+                      </div>
+                      <p className="mt-1.5 text-xs font-medium text-slate-400">{t("inventarizatsiya.createModal.itemsSubtitle")}</p>
+                    </div>
+                    {warehouseId && !qoldiqYuklanmoqda && (
+                      <span className="inline-flex h-8 shrink-0 items-center rounded-full bg-[#0B1330] px-3.5 text-xs font-black text-amber-200 shadow-md shadow-slate-900/20">{t("inventarizatsiya.createModal.itemsCount", { count: inventarizatsiyaQatorlari.length })}</span>
+                    )}
                   </div>
-                ) : !warehouseId ? (
-                  <div className="flex min-h-40 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-blue-200 bg-blue-50/40 text-sm font-bold text-slate-400">
-                    <Warehouse size={24} className="text-blue-300" />
-                    {t("inventarizatsiya.createModal.selectWarehouseHint")}
-                  </div>
-                ) : (
-                  <div ref={jadvalRef} className="mt-4 overflow-x-auto rounded-2xl border border-blue-100 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-blue-400 [&::-webkit-scrollbar-track]:bg-blue-50">
-                    <table className="w-full min-w-[960px] text-left text-sm">
-                      <thead className="bg-[#F4F8FF] text-xs font-black uppercase text-slate-500">
-                        <tr>
-                          <th className="px-4 py-4">{t("inventarizatsiya.createModal.table.number")}</th>
-                          <th className="px-4 py-4">{t("inventarizatsiya.createModal.table.product")}</th>
-                          <th className="px-4 py-4">{t("inventarizatsiya.createModal.table.actualQuantity")}</th>
-                          <th className="px-4 py-4">{t("inventarizatsiya.createModal.table.barcode")}</th>
-                          <th className="px-4 py-4">{t("inventarizatsiya.createModal.table.warehouse")}</th>
-                          <th className="px-4 py-4">{t("inventarizatsiya.createModal.table.systemStock")}</th>
-                          <th className="px-4 py-4">{t("inventarizatsiya.createModal.table.difference")}</th>
-                          <th className="px-4 py-4" />
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-blue-50">
-                        {inventarizatsiyaQatorlari.map((qoldiq, index) => {
-                          const tizim = qoldiqMiqdori(qoldiq);
-                          const haqiqiyRaw = actuals[qoldiq.modificationId] ?? "";
-                          const haqiqiy = Number(haqiqiyRaw);
-                          const sanaldi = haqiqiyRaw.trim() !== "" && Number.isFinite(haqiqiy) && haqiqiy >= 0;
-                          const farq = sanaldi ? haqiqiy - tizim : null;
-                          return (
-                            <tr key={`${qoldiq.modificationId}-${index}`}>
-                              <td className="px-4 py-4 text-slate-400">{index + 1}</td>
-                              <td className="px-4 py-4 font-black text-slate-900">{modificationNomi(qoldiq.modification)}</td>
-                              <td className="px-4 py-3">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step="any"
-                                  data-inventory-qty
-                                  value={haqiqiyRaw}
-                                  placeholder={t("inventarizatsiya.createModal.quantityPlaceholder")}
-                                  onChange={(event) => {
-                                    setFormaXatosi(null);
-                                    setActuals((oldingi) => ({ ...oldingi, [qoldiq.modificationId]: event.target.value }));
-                                  }}
-                                  onKeyDown={(event) => {
-                                    if (event.nativeEvent.isComposing) return;
-                                    if (event.key === "Enter") {
-                                      event.preventDefault();
-                                      miqdorlarOrasidaYurish(event.currentTarget, event.shiftKey ? -1 : 1);
-                                    } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-                                      // Sonni oshirib-kamaytirish o'rniga qatorlar orasida yuriladi (sichqoncha bilan spinner ishlaydi).
-                                      event.preventDefault();
-                                      miqdorlarOrasidaYurish(event.currentTarget, event.key === "ArrowDown" ? 1 : -1);
-                                    }
-                                  }}
-                                  className="h-10 w-32 rounded-xl border border-blue-100 bg-white px-3 font-bold outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                                  aria-label={t("inventarizatsiya.createModal.actualQuantityAria", { name: modificationNomi(qoldiq.modification) })}
-                                />
-                              </td>
-                              <td className="px-4 py-4 text-slate-500">{qoldiq.modification?.barcode ?? "—"}</td>
-                              <td className="px-4 py-4">{qoldiq.warehouse?.name ?? omborMap.get(warehouseId) ?? t("inventarizatsiya.unknownWarehouse")}</td>
-                              <td className="px-4 py-4 font-bold text-slate-600">{tizim}</td>
-                              <td className={`px-4 py-4 font-black ${farq == null || farq === 0 ? "text-slate-400" : farq > 0 ? "text-emerald-600" : "text-amber-600"}`}>
-                                {farq == null ? "—" : farq > 0 ? `+${farq}` : farq}
-                                {farq != null && farq < 0 && (
-                                  <span className="block text-[10px] font-bold leading-3 text-amber-500">{t("inventarizatsiya.createModal.notDeducted")}</span>
-                                )}
-                              </td>
-                              <td className="px-4 py-4 text-right">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setTanlanganModifikatsiyaIds((oldingi) => oldingi.filter((id) => id !== qoldiq.modificationId));
-                                    setActuals((oldingi) => {
-                                      const keyingi = { ...oldingi };
-                                      delete keyingi[qoldiq.modificationId];
-                                      return keyingi;
-                                    });
-                                  }}
-                                  className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
-                                  aria-label={t("inventarizatsiya.createModal.removeRowAria")}
-                                >
-                                  <Trash2 size={15} />
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                        {tanlanmaganTanlovlar.length > 0 && (
-                          <tr>
-                            <td className="px-4 py-3 text-slate-400">{inventarizatsiyaQatorlari.length + 1}</td>
-                            <td className="px-4 py-3">
-                              <div ref={mahsulotSearchRef} className="relative">
-                                <input
-                                  ref={mahsulotInputRef}
-                                  value={mahsulotQidiruv}
-                                  onChange={(event) => {
-                                    setMahsulotQidiruv(event.target.value);
-                                    setMahsulotFaolIndeks(event.target.value.trim() ? 0 : -1);
-                                    setMahsulotDropdownOchiq(true);
-                                  }}
-                                  // Bo'sh maydonni bosganda ro'yxat ochilmaydi; avval yozilgan qidiruv matni bo'lsa, natijalari qayta chiqadi.
-                                  onFocus={() => { if (qidiruvYozilgan) setMahsulotDropdownOchiq(true); }}
-                                  onKeyDown={mahsulotKlavishi}
-                                  autoComplete="off"
-                                  role="combobox"
-                                  aria-expanded={mahsulotRoyxatiKorinadi}
-                                  aria-controls="inventory-product-list"
-                                  aria-autocomplete="list"
-                                  aria-activedescendant={mahsulotRoyxatiKorinadi && mahsulotFaolIndeks >= 0 ? `inventory-product-option-${mahsulotFaolIndeks}` : undefined}
-                                  aria-label={t("inventarizatsiya.createModal.table.product")}
-                                  placeholder={t("inventarizatsiya.createModal.selectProduct")}
-                                  className="h-10 w-full min-w-64 rounded-xl border border-blue-100 bg-white px-3 font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                                />
-                              </div>
-                              {mahsulotRoyxatiKorinadi &&
-                                createPortal(
-                                  <div
-                                    ref={mahsulotMenyuRef}
-                                    id="inventory-product-list"
-                                    role="listbox"
-                                    className="fixed z-100000 max-h-64 overflow-y-auto rounded-2xl border border-blue-100 bg-white p-1.5 shadow-[0_18px_44px_rgba(15,23,42,.16)]"
-                                    style={{ top: mahsulotMenyuJoylashuvi.top, bottom: mahsulotMenyuJoylashuvi.bottom, maxHeight: mahsulotMenyuJoylashuvi.maxHeight, left: mahsulotMenyuJoylashuvi.left, width: Math.max(mahsulotMenyuJoylashuvi.width, 256) }}
+
+                  {warehouseId && !qoldiqYuklanmoqda && (
+                    <div className="shrink-0 space-y-2.5 px-5 pb-3">
+                      <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-3.5">
+                        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                          <label htmlFor="inventory-barcode" className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.14em] text-[#1B2E6E]"><ScanLine size={15} />{t("inventarizatsiya.createModal.scanTitle")}</label>
+                          <p className="text-[11px] font-medium leading-4 text-slate-500">{t("inventarizatsiya.createModal.scanHint")}</p>
+                        </div>
+                        <div className="mt-2.5 flex gap-2.5"><input id="inventory-barcode" ref={barcodeInputRef} autoComplete="off" value={barcodeInput} onChange={(event) => setBarcodeInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); if (!event.nativeEvent.isComposing) barcodeSanash(); } }} placeholder={t("inventarizatsiya.createModal.scanPlaceholder")} className="h-12 min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 text-[15px] font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-slate-300 focus:border-[#1B2E6E] focus:ring-4 focus:ring-blue-100" /><button type="button" onClick={barcodeSanash} disabled={!barcodeInput.trim()} className="h-12 rounded-2xl bg-gradient-to-b from-[#1C2F72] to-[#0B1330] px-6 text-sm font-black text-white shadow-[0_10px_22px_-10px_rgba(11,19,48,.8)] ring-1 ring-amber-300/30 transition hover:from-[#233A8A] disabled:opacity-40 disabled:shadow-none">{t("inventarizatsiya.createModal.scanButton")}</button></div>
+                        {scanFeedback && <p role="status" className="mt-2 text-xs font-bold text-[#1B2E6E]">{scanFeedback}</p>}
+                      </div>
+                      <p className="flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2 text-[11px] font-bold leading-4 text-amber-800 ring-1 ring-amber-200/70">
+                        <AlertTriangle size={13} className="mt-px shrink-0" />
+                        {t("inventarizatsiya.createModal.addOnlyNote")}
+                      </p>
+                    </div>
+                  )}
+
+                  {qoldiqYuklanmoqda ? (
+                    <div className="m-5 mt-2 flex min-h-48 flex-1 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 text-sm font-bold text-slate-400">
+                      <LoaderCircle size={24} className="animate-spin text-[#1B2E6E]" />
+                      {t("inventarizatsiya.createModal.stockLoading")}
+                    </div>
+                  ) : !warehouseId ? (
+                    <div className="m-5 mt-2 flex min-h-48 flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-4 text-center text-sm font-bold text-slate-400">
+                      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#1B2E6E] shadow-md ring-1 ring-slate-100"><Warehouse size={24} /></span>
+                      {t("inventarizatsiya.createModal.selectWarehouseHint")}
+                    </div>
+                  ) : (
+                    <>
+                      <div ref={jadvalRef} className="mx-5 min-h-40 flex-1 overflow-y-auto rounded-2xl border border-slate-200 bg-white lg:min-h-0 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300">
+                        {inventarizatsiyaQatorlari.length > 0 ? (
+                          <>
+                            <div className="sticky top-0 z-10 hidden grid-cols-[32px_minmax(0,1fr)_88px_136px_104px_36px] items-center gap-x-3 border-b border-slate-100 bg-slate-50/95 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400 backdrop-blur sm:grid">
+                              <span>{t("inventarizatsiya.createModal.table.number")}</span>
+                              <span>{t("inventarizatsiya.createModal.table.product")}</span>
+                              <span className="text-right">{t("inventarizatsiya.createModal.table.systemShort")}</span>
+                              <span>{t("inventarizatsiya.createModal.table.actualQuantity")}</span>
+                              <span>{t("inventarizatsiya.createModal.table.difference")}</span>
+                              <span />
+                            </div>
+                            <div className="divide-y divide-slate-100">
+                              {inventarizatsiyaQatorlari.map((qoldiq, index) => {
+                                const tizim = qoldiqMiqdori(qoldiq);
+                                const haqiqiyRaw = actuals[qoldiq.modificationId] ?? "";
+                                const haqiqiy = Number(haqiqiyRaw);
+                                const sanaldi = haqiqiyRaw.trim() !== "" && Number.isFinite(haqiqiy) && haqiqiy >= 0;
+                                const farq = sanaldi ? haqiqiy - tizim : null;
+                                const farqChipi = (
+                                  <span
+                                    title={farq != null && farq < 0 ? t("inventarizatsiya.createModal.notDeducted") : undefined}
+                                    className={`inline-flex min-w-11 items-center justify-center rounded-full px-2.5 py-1 text-xs font-black tabular-nums ring-1 ${farq == null || farq === 0 ? "bg-slate-50 text-slate-400 ring-slate-200" : farq > 0 ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-amber-50 text-amber-700 ring-amber-200"}`}
                                   >
-                                    {mahsulotQidiruviMoslari.map((qoldiq, optionIndex) => (
-                                      <button
-                                        key={qoldiq.modificationId}
-                                        id={`inventory-product-option-${optionIndex}`}
-                                        role="option"
-                                        aria-selected={optionIndex === mahsulotFaolIndeks}
-                                        type="button"
-                                        tabIndex={-1}
-                                        // Sichqoncha bilan tanlaganda qidiruv maydoni fokusini yo'qotmasin (keyingi mahsulotni darrov yozish uchun).
-                                        onMouseDown={(event) => event.preventDefault()}
-                                        onMouseMove={() => {
-                                          if (optionIndex !== mahsulotFaolIndeks) setMahsulotFaolIndeks(optionIndex);
-                                        }}
-                                        onClick={() => mahsulotQoshish(qoldiq.modificationId)}
-                                        className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-slate-700 hover:bg-blue-50 ${optionIndex === mahsulotFaolIndeks ? "bg-blue-50" : ""}`}
-                                      >
-                                        <span className="truncate">{modificationNomi(qoldiq.modification)}</span>
-                                        {qoldiq.modification?.barcode && (
-                                          <span className="shrink-0 text-xs font-semibold text-slate-400">{qoldiq.modification.barcode}</span>
-                                        )}
-                                      </button>
-                                    ))}
-                                    {mahsulotQidiruviMoslari.length === 0 && (
-                                      <p role="status" className="px-3 py-2.5 text-xs font-semibold text-slate-400">{t("inventarizatsiya.createModal.searchEmpty")}</p>
-                                    )}
-                                  </div>,
-                                  document.body
-                                )}
-                            </td>
-                            <td colSpan={6} className="px-4 py-3 text-sm text-slate-400">{t("inventarizatsiya.createModal.addNextProductHint")}</td>
-                          </tr>
+                                    {farq == null ? "—" : farq > 0 ? `+${farq}` : farq}
+                                  </span>
+                                );
+                                return (
+                                  <div key={`${qoldiq.modificationId}-${index}`} className="grid grid-cols-[24px_minmax(0,1fr)_36px] items-center gap-x-3 gap-y-2.5 px-4 py-3.5 transition hover:bg-slate-50/80 sm:grid-cols-[32px_minmax(0,1fr)_88px_136px_104px_36px] sm:gap-y-0">
+                                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-[11px] font-black tabular-nums text-slate-500">{index + 1}</span>
+                                    <div className="min-w-0">
+                                      <p className="line-clamp-2 text-[15px] font-bold leading-snug text-slate-900" title={modificationNomi(qoldiq.modification)}>{modificationNomi(qoldiq.modification)}</p>
+                                      <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-semibold tracking-wide text-slate-400">
+                                        <span className="truncate">{qoldiq.modification?.barcode ?? "—"}</span>
+                                        <span className="flex items-center gap-1.5 sm:hidden">
+                                          <span className="text-slate-300">·</span>
+                                          {t("inventarizatsiya.createModal.table.systemShort")}: <b className="text-slate-600">{tizim}</b>
+                                          {farqChipi}
+                                        </span>
+                                      </p>
+                                    </div>
+                                    <span className="hidden text-right text-[15px] font-bold tabular-nums text-slate-600 sm:block">{tizim}</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="any"
+                                      data-inventory-qty
+                                      value={haqiqiyRaw}
+                                      placeholder={t("inventarizatsiya.createModal.quantityPlaceholder")}
+                                      onChange={(event) => {
+                                        setFormaXatosi(null);
+                                        setActuals((oldingi) => ({ ...oldingi, [qoldiq.modificationId]: event.target.value }));
+                                      }}
+                                      onKeyDown={(event) => {
+                                        if (event.nativeEvent.isComposing) return;
+                                        if (event.key === "Enter") {
+                                          event.preventDefault();
+                                          miqdorlarOrasidaYurish(event.currentTarget, event.shiftKey ? -1 : 1);
+                                        } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                                          // Sonni oshirib-kamaytirish o'rniga qatorlar orasida yuriladi (sichqoncha bilan spinner ishlaydi).
+                                          event.preventDefault();
+                                          miqdorlarOrasidaYurish(event.currentTarget, event.key === "ArrowDown" ? 1 : -1);
+                                        }
+                                      }}
+                                      className="col-[2/4] row-start-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[15px] font-bold tabular-nums text-slate-900 outline-none transition placeholder:font-medium placeholder:text-slate-300 hover:border-slate-300 focus:border-[#1B2E6E] focus:ring-4 focus:ring-blue-100 sm:col-auto sm:row-auto"
+                                      aria-label={t("inventarizatsiya.createModal.actualQuantityAria", { name: modificationNomi(qoldiq.modification) })}
+                                    />
+                                    <div className="hidden sm:block">{farqChipi}</div>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setTanlanganModifikatsiyaIds((oldingi) => oldingi.filter((id) => id !== qoldiq.modificationId));
+                                        setActuals((oldingi) => {
+                                          const keyingi = { ...oldingi };
+                                          delete keyingi[qoldiq.modificationId];
+                                          return keyingi;
+                                        });
+                                      }}
+                                      className="col-start-3 row-start-1 flex h-9 w-9 items-center justify-center rounded-xl text-slate-300 transition hover:bg-red-50 hover:text-red-500 sm:col-auto sm:row-auto"
+                                      aria-label={t("inventarizatsiya.createModal.removeRowAria")}
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex min-h-40 flex-col items-center justify-center gap-2.5 px-4 py-8 text-center">
+                            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 text-slate-300 ring-1 ring-slate-100"><Package size={22} /></span>
+                            <p className="text-sm font-semibold text-slate-400">{t("inventarizatsiya.createModal.itemsSubtitle")}</p>
+                          </div>
                         )}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </section>
-              </> : <div className="space-y-5">
-                <div className="rounded-[26px] border border-blue-100 bg-white p-5 shadow-sm">
+                      </div>
+
+                      {tanlanmaganTanlovlar.length > 0 && (
+                        <div className="shrink-0 px-5 pb-5 pt-3">
+                          <div ref={mahsulotSearchRef} className="relative">
+                            <Search size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#1B2E6E]/60" />
+                            <input
+                              ref={mahsulotInputRef}
+                              value={mahsulotQidiruv}
+                              onChange={(event) => {
+                                setMahsulotQidiruv(event.target.value);
+                                setMahsulotFaolIndeks(event.target.value.trim() ? 0 : -1);
+                                setMahsulotDropdownOchiq(true);
+                              }}
+                              // Bo'sh maydonni bosganda ro'yxat ochilmaydi; avval yozilgan qidiruv matni bo'lsa, natijalari qayta chiqadi.
+                              onFocus={() => { if (qidiruvYozilgan) setMahsulotDropdownOchiq(true); }}
+                              onKeyDown={mahsulotKlavishi}
+                              autoComplete="off"
+                              role="combobox"
+                              aria-expanded={mahsulotRoyxatiKorinadi}
+                              aria-controls="inventory-product-list"
+                              aria-autocomplete="list"
+                              aria-activedescendant={mahsulotRoyxatiKorinadi && mahsulotFaolIndeks >= 0 ? `inventory-product-option-${mahsulotFaolIndeks}` : undefined}
+                              aria-label={t("inventarizatsiya.createModal.table.product")}
+                              placeholder={t("inventarizatsiya.createModal.selectProduct")}
+                              className="h-12 w-full rounded-2xl border border-slate-300 bg-white pl-11 pr-4 text-[15px] font-semibold text-slate-800 shadow-[0_8px_20px_-14px_rgba(15,23,42,.4)] outline-none transition placeholder:font-medium placeholder:text-slate-400 focus:border-[#1B2E6E] focus:ring-4 focus:ring-blue-100"
+                            />
+                          </div>
+                          {mahsulotRoyxatiKorinadi &&
+                            createPortal(
+                              <div
+                                ref={mahsulotMenyuRef}
+                                id="inventory-product-list"
+                                role="listbox"
+                                className="fixed z-100000 max-h-64 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-[0_22px_54px_-12px_rgba(15,23,42,.32)]"
+                                style={{ top: mahsulotMenyuJoylashuvi.top, bottom: mahsulotMenyuJoylashuvi.bottom, maxHeight: mahsulotMenyuJoylashuvi.maxHeight, left: mahsulotMenyuJoylashuvi.left, width: Math.max(mahsulotMenyuJoylashuvi.width, 256) }}
+                              >
+                                {mahsulotQidiruviMoslari.map((qoldiq, optionIndex) => (
+                                  <button
+                                    key={qoldiq.modificationId}
+                                    id={`inventory-product-option-${optionIndex}`}
+                                    role="option"
+                                    aria-selected={optionIndex === mahsulotFaolIndeks}
+                                    type="button"
+                                    tabIndex={-1}
+                                    // Sichqoncha bilan tanlaganda qidiruv maydoni fokusini yo'qotmasin (keyingi mahsulotni darrov yozish uchun).
+                                    onMouseDown={(event) => event.preventDefault()}
+                                    onMouseMove={() => {
+                                      if (optionIndex !== mahsulotFaolIndeks) setMahsulotFaolIndeks(optionIndex);
+                                    }}
+                                    onClick={() => mahsulotQoshish(qoldiq.modificationId)}
+                                    className={`flex w-full items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 ${optionIndex === mahsulotFaolIndeks ? "bg-slate-100" : ""}`}
+                                  >
+                                    <span className="truncate">{modificationNomi(qoldiq.modification)}</span>
+                                    {qoldiq.modification?.barcode && (
+                                      <span className="shrink-0 text-xs font-semibold text-slate-400">{qoldiq.modification.barcode}</span>
+                                    )}
+                                  </button>
+                                ))}
+                                {mahsulotQidiruviMoslari.length === 0 && (
+                                  <p role="status" className="px-3 py-2.5 text-xs font-semibold text-slate-400">{t("inventarizatsiya.createModal.searchEmpty")}</p>
+                                )}
+                              </div>,
+                              document.body
+                            )}
+                          <p className="mt-2 px-1 text-[11px] font-medium leading-4 text-slate-400">{t("inventarizatsiya.createModal.addNextProductHint")}</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </section>
+              </div>
+              </> : <div className="mx-auto w-full max-w-3xl space-y-4">
+                <div className="rounded-[26px] border border-slate-200/70 bg-white p-5 shadow-[0_14px_34px_-20px_rgba(15,23,42,.22)] sm:p-6">
                   <h3 className="text-lg font-black text-slate-900">{t("inventarizatsiya.createModal.reviewTitle")}</h3>
-                  <p className="mt-1 text-sm text-slate-500">{omborMap.get(warehouseId)} · {t("inventarizatsiya.typePartial")}</p>
-                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+                  <div aria-hidden className="mt-2 h-px w-16 bg-gradient-to-r from-amber-400 to-transparent" />
+                  <p className="mt-2 text-xs font-semibold text-slate-500">{omborMap.get(warehouseId)} · {t("inventarizatsiya.typePartial")}</p>
+                  <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
                     {[
-                      ["totalRows", inventarizatsiyaQatorlari.length, "text-slate-900"],
-                      ["counted", sanoqXulosasi.counted, "text-emerald-700"],
-                      ["uncounted", sanoqXulosasi.uncounted.length + sanoqXulosasi.invalid.length, "text-amber-700"],
-                      ["surplus", `+${sanoqXulosasi.surplus}`, "text-emerald-700"],
-                      ["shortage", sanoqXulosasi.shortage ? `-${sanoqXulosasi.shortage}` : "0", "text-red-600"],
-                    ].map(([key, value, color]) => <div key={key} className="rounded-2xl bg-slate-50 p-3"><p className="text-xs font-bold text-slate-500">{t(`inventarizatsiya.createModal.${key}`)}</p><p className={`mt-1 text-xl font-black ${color}`}>{value}</p></div>)}
+                      ["totalRows", inventarizatsiyaQatorlari.length, "text-slate-900", "bg-slate-400"],
+                      ["counted", sanoqXulosasi.counted, "text-emerald-700", "bg-emerald-500"],
+                      ["uncounted", sanoqXulosasi.uncounted.length + sanoqXulosasi.invalid.length, "text-amber-700", "bg-amber-500"],
+                      ["surplus", `+${sanoqXulosasi.surplus}`, "text-emerald-700", "bg-emerald-500"],
+                      ["shortage", sanoqXulosasi.shortage ? `-${sanoqXulosasi.shortage}` : "0", "text-red-600", "bg-red-500"],
+                    ].map(([key, value, color, nuqta]) => (
+                      <div key={key} className="rounded-2xl bg-slate-50 p-3.5 ring-1 ring-slate-200/70">
+                        <p className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500"><span className={`h-1.5 w-1.5 rounded-full ${nuqta}`} />{t(`inventarizatsiya.createModal.${key}`)}</p>
+                        <p className={`mt-1.5 text-2xl font-black tabular-nums ${color}`}>{value}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
                 {sanoqXulosasi.uncounted.length > 0 && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950"><p className="font-black">{t("inventarizatsiya.createModal.uncountedWarning", { count: sanoqXulosasi.uncounted.length })}</p><p className="mt-2 leading-6">{sanoqXulosasi.uncounted.join(", ")}</p><p className="mt-2 text-xs">{t("inventarizatsiya.createModal.uncountedBackendHint")}</p></div>}
                 {sanoqXulosasi.invalid.length > 0 && <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">{t("inventarizatsiya.createModal.errors.invalidQuantity", { name: sanoqXulosasi.invalid[0] })}</div>}
-                <div className="rounded-[26px] border border-blue-100 bg-white p-5 shadow-sm">
-                  <h3 className="font-black text-slate-900">{t("inventarizatsiya.createModal.varianceTitle")}</h3>
-                  {sanoqXulosasi.variances.length === 0 ? <p className="mt-3 text-sm text-slate-500">{t("inventarizatsiya.createModal.noVariance")}</p> : <div className="mt-3 max-h-48 divide-y divide-slate-100 overflow-y-auto">{sanoqXulosasi.variances.map((item) => <div key={item.id} className="flex items-center justify-between gap-3 py-2 text-sm"><span className="font-semibold text-slate-700">{item.name} <span className="font-normal text-slate-400">({item.system} → {item.actual})</span></span><span className={`font-black ${item.difference > 0 ? "text-emerald-700" : "text-red-600"}`}>{item.difference > 0 ? "+" : ""}{item.difference}</span></div>)}</div>}
-                  {sanoqXulosasi.variances.length > 0 && <><label htmlFor="inventory-variance-reason" className="mt-4 block text-sm font-bold text-slate-700">{t("inventarizatsiya.createModal.varianceReason")}</label><textarea id="inventory-variance-reason" value={note} onChange={(event) => setNote(event.target.value)} rows={2} placeholder={t("inventarizatsiya.createModal.varianceReasonPlaceholder")} className="mt-2 w-full rounded-xl border border-slate-200 p-3 outline-none focus:border-blue-500" /><p className="mt-2 text-xs text-slate-500">{t("inventarizatsiya.createModal.variancePolicyHint")}</p></>}
+                <div className="rounded-[26px] border border-slate-200/70 bg-white p-5 shadow-[0_14px_34px_-20px_rgba(15,23,42,.22)] sm:p-6">
+                  <div role="heading" aria-level={3} className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">{t("inventarizatsiya.createModal.varianceTitle")}</div>
+                  {sanoqXulosasi.variances.length === 0 ? <p className="mt-3 text-sm font-medium text-slate-500">{t("inventarizatsiya.createModal.noVariance")}</p> : <div className="mt-3 max-h-60 divide-y divide-slate-100 overflow-y-auto rounded-2xl border border-slate-100">{sanoqXulosasi.variances.map((item) => <div key={item.id} className="flex items-center justify-between gap-3 px-3.5 py-3 text-sm"><span className="min-w-0 truncate font-semibold text-slate-700">{item.name} <span className="font-normal text-slate-400">({item.system} → {item.actual})</span></span><span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-black tabular-nums ${item.difference > 0 ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"}`}>{item.difference > 0 ? "+" : ""}{item.difference}</span></div>)}</div>}
+                  {sanoqXulosasi.variances.length > 0 && <><label htmlFor="inventory-variance-reason" className="mt-4 block text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-400">{t("inventarizatsiya.createModal.varianceReason")}</label><textarea id="inventory-variance-reason" value={note} onChange={(event) => setNote(event.target.value)} rows={2} placeholder={t("inventarizatsiya.createModal.varianceReasonPlaceholder")} className="mt-1.5 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#1B2E6E] focus:ring-4 focus:ring-blue-100" /><p className="mt-1.5 text-[11px] font-medium leading-4 text-slate-400">{t("inventarizatsiya.createModal.variancePolicyHint")}</p></>}
                 </div>
-                {(formaXatosi || store.xatolik) && <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">{formaXatosi ? t(formaXatosi.key, formaXatosi.params) : store.xatolik}</div>}
+                {(formaXatosi || store.xatolik) && <div role="alert" className="flex items-start gap-2.5 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600"><AlertTriangle size={16} className="mt-0.5 shrink-0" /><span>{formaXatosi ? t(formaXatosi.key, formaXatosi.params) : store.xatolik}</span></div>}
               </div>}
             </div>
 
-            <footer className="flex shrink-0 flex-col-reverse gap-3 border-t border-blue-100 bg-white/75 px-5 py-4 sm:flex-row sm:justify-end sm:px-8">
+            <footer className="flex shrink-0 flex-col-reverse gap-2.5 border-t border-slate-200/70 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-8">
               <button
                 type="button"
                 onClick={formaniYopish}
                 disabled={store.amalBajarilmoqda}
-                className="h-12 rounded-2xl bg-slate-100 px-7 text-sm font-black text-slate-600 hover:bg-slate-200 disabled:opacity-50"
+                className="h-12 rounded-2xl px-5 text-sm font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50 sm:mr-auto"
               >
                 {t("inventarizatsiya.createModal.cancel")}
               </button>
               {reviewAction ? <>
-              <button type="button" onClick={() => { setReviewAction(null); setFormaXatosi(null); }} disabled={store.amalBajarilmoqda} className="h-12 rounded-2xl border border-blue-200 bg-white px-7 text-sm font-black text-blue-700 disabled:opacity-50">{t("inventarizatsiya.createModal.backToCount")}</button>
-              <button type="button" onClick={() => void yaratish()} disabled={store.amalBajarilmoqda || sanoqXulosasi.uncounted.length > 0 || sanoqXulosasi.invalid.length > 0} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-7 text-sm font-black text-white shadow-lg shadow-blue-200 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">{store.amalBajarilmoqda && <LoaderCircle size={17} className="animate-spin" />}{t(reviewAction === "confirm" ? "inventarizatsiya.createModal.confirmFinal" : "inventarizatsiya.createModal.saveFinal")}</button>
+              <button type="button" onClick={() => { setReviewAction(null); setFormaXatosi(null); }} disabled={store.amalBajarilmoqda} className="h-12 rounded-2xl border border-slate-300 bg-white px-6 text-sm font-black text-[#0B1330] transition hover:border-slate-400 hover:bg-slate-50 disabled:opacity-50">{t("inventarizatsiya.createModal.backToCount")}</button>
+              <button type="button" onClick={() => void yaratish()} disabled={store.amalBajarilmoqda || sanoqXulosasi.uncounted.length > 0 || sanoqXulosasi.invalid.length > 0} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#1C2F72] to-[#0B1330] px-7 text-sm font-black text-white shadow-[0_14px_30px_-10px_rgba(11,19,48,.85)] ring-1 ring-amber-300/40 transition hover:from-[#233A8A] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none">{store.amalBajarilmoqda && <LoaderCircle size={17} className="animate-spin" />}{t(reviewAction === "confirm" ? "inventarizatsiya.createModal.confirmFinal" : "inventarizatsiya.createModal.saveFinal")}</button>
               </> : <>
               <button
                 type="button"
                 onClick={() => koribChiqish("save")}
                 disabled={store.amalBajarilmoqda || qoldiqYuklanmoqda || !warehouseId}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-blue-300 bg-white px-7 text-sm font-black text-blue-700 disabled:opacity-50"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-6 text-sm font-black text-[#0B1330] transition hover:border-slate-400 hover:bg-slate-50 disabled:opacity-50"
               >
                 {store.amalBajarilmoqda && <LoaderCircle size={17} className="animate-spin" />}
                 {t("inventarizatsiya.createModal.save")}
@@ -1078,7 +1173,7 @@ export default function Inventarizatsiya() {
                 type="button"
                 onClick={() => koribChiqish("confirm")}
                 disabled={store.amalBajarilmoqda || qoldiqYuklanmoqda || !warehouseId}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-7 text-sm font-black text-white shadow-lg shadow-blue-200 hover:bg-blue-700 disabled:opacity-50"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#1C2F72] to-[#0B1330] px-7 text-sm font-black text-white shadow-[0_14px_30px_-10px_rgba(11,19,48,.85)] ring-1 ring-amber-300/40 transition hover:from-[#233A8A] disabled:opacity-50 disabled:shadow-none"
               >
                 {store.amalBajarilmoqda && <LoaderCircle size={17} className="animate-spin" />}
                 {t("inventarizatsiya.createModal.saveAndConfirm")}

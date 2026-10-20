@@ -38,6 +38,11 @@
       "title": "Новая инвентаризация",
       "newBadge": "Новая",
       "reviewBadge": "Проверка",
+      "steps": {
+        "aria": "Шаги",
+        "fill": "Заполнение",
+        "review": "Проверка"
+      },
       "closeAria": "Закрыть",
       "aboutTitle": "Об инвентаризации",
       "warehouseLabel": "Склад *",
@@ -98,6 +103,7 @@
         "location": "Место / ячейка",
         "batchSerial": "Партия / серия",
         "systemStock": "Остаток в системе",
+        "systemShort": "В системе",
         "actualQuantity": "Количество",
         "countStatus": "Статус подсчёта",
         "difference": "Разница"
