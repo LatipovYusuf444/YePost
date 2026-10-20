@@ -148,6 +148,8 @@
     "photoDrop": "Rasmni tashlang",
     "photoBrowse": "Tanlash uchun bosing",
     "sectionVariations": "Variatsiyalar",
+    "sectionUnits": "Birliklar",
+    "unitsHint": "Qoldiq asosiy birlikda (masalan kg) yuritiladi. Korobka kabi qo'shimcha birlikni koeffitsient bilan qo'shing: 1 korobka = 3 kg. Birlik ro'yxatda bo'lmasa, avval Sozlamalar → O'lchov birligi bo'limida yarating.",
     "variationAttributeLabel": "Variatsiya atributini tanlang *",
     "variationAttributeHint": "Masalan: Rang",
     "attributePlaceholder": "Atribut kiriting",

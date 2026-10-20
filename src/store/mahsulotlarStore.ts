@@ -3,9 +3,11 @@ import {
   birliklarApi,
   getStandardUnits,
   kategoriyalarApi,
+  mahsulotBirliklariApi,
   mahsulotlarApi,
   modifikatsiyalarApi,
 } from "@/api/catalogApi";
+import type { TovarBirligi } from "@/lib/kopBirlik";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useOmborStore } from "@/store/omborStore";
 import type {
@@ -40,13 +42,16 @@ type MahsulotlarState = {
   standardBirlikniWorkspacegaOtkazish: (unit: StandardUnit) => Promise<string | null>;
   mahsulotOlish: (id: string) => Promise<Mahsulot | null>;
   mahsulotSaqlash: (id: string | null, data: MahsulotMalumoti) => Promise<boolean>;
+  // `birliklar` — qo'shimcha birliklar (korobka, pochka): mahsulot yaratilgach PUT /catalog/products/:id/units bilan saqlanadi.
   mahsulotNarxBilanYaratish: (
     data: MahsulotMalumoti,
-    variant: ModifikatsiyaMalumoti
+    variant: ModifikatsiyaMalumoti,
+    birliklar?: readonly TovarBirligi[]
   ) => Promise<boolean>;
   mahsulotVariantlarBilanYaratish: (
     data: MahsulotMalumoti,
-    variantlar: ModifikatsiyaMalumoti[]
+    variantlar: ModifikatsiyaMalumoti[],
+    birliklar?: readonly TovarBirligi[]
   ) => Promise<boolean>;
   mahsulotOchirish: (id: string) => Promise<boolean>;
   modifikatsiyalarniYuklash: (productId: string) => Promise<void>;
@@ -121,6 +126,23 @@ const standardBirlikSorovlari = new Map<number, Promise<string>>();
 // narx/modifikatsiya saqlansa, kechikib kelgan ESKI ro'yxat yangi narxni bosib ketmasligi uchun ishlatiladi:
 // so'rov boshlangandan keyin versiya o'zgargan bo'lsa, uning natijasi tashlab yuboriladi.
 let modifikatsiyaVersiyasi = 0;
+
+// Yangi mahsulot yaratilgach qo'shimcha birliklar saqlanadi. Birliklar saqlanmasa mahsulot o'chirilmaydi (u allaqachon yaratilgan):
+// xato banner'da ko'rsatiladi, birliklarni mahsulot qatoridagi "Birliklar" tugmasi bilan qayta kiritish mumkin.
+async function yangiMahsulotBirliklariniSaqlash(
+  set: (qism: Partial<MahsulotlarState>) => void,
+  mahsulotId: string,
+  birliklar?: readonly TovarBirligi[]
+) {
+  if (!birliklar?.some((birlik) => !birlik.asosiy)) return;
+  try {
+    await mahsulotBirliklariApi.saqlash(mahsulotId, birliklar);
+  } catch (error) {
+    set({
+      xatolik: `Mahsulot yaratildi, lekin birliklar saqlanmadi: ${getApiErrorMessage(error).replace(/[.!?]?\s*$/, ".")} Birliklarni mahsulot qatoridagi "Birliklar" tugmasi bilan qayta kiriting.`,
+    });
+  }
+}
 
 export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
   kategoriyalar: [],
@@ -291,7 +313,7 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
       return false;
     }
   },
-  mahsulotNarxBilanYaratish: async (data, variant) => {
+  mahsulotNarxBilanYaratish: async (data, variant, birliklar) => {
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const mahsulot = mahsulotniBoyitish(await mahsulotlarApi.yaratish(data), get());
@@ -310,6 +332,7 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
           },
           amalBajarilmoqda: false,
         }));
+        await yangiMahsulotBirliklariniSaqlash(set, mahsulot.id, birliklar);
         return true;
       } catch (variantXatosi) {
         // Backend mahsulot va variantni alohida endpointlarda yaratadi.
@@ -326,7 +349,7 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
       return false;
     }
   },
-  mahsulotVariantlarBilanYaratish: async (data, variantlar) => {
+  mahsulotVariantlarBilanYaratish: async (data, variantlar, birliklar) => {
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const mahsulot = mahsulotniBoyitish(await mahsulotlarApi.yaratish(data), get());
@@ -346,6 +369,7 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
           },
           amalBajarilmoqda: false,
         }));
+        await yangiMahsulotBirliklariniSaqlash(set, mahsulot.id, birliklar);
         return true;
       } catch (variantXatosi) {
         try {

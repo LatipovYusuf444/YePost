@@ -25,13 +25,14 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
-import { mahsulotlarApi } from "@/api/catalogApi";
+import { mahsulotBirliklariApi, mahsulotlarApi } from "@/api/catalogApi";
 import { omborlarApi } from "@/api/omborApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { pulMatni, valyutaKodi } from "@/lib/valyuta";
 import { rolniNormallashtirish } from "@/lib/roles";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useMahsulotlarStore } from "@/store/mahsulotlarStore";
+import type { TovarBirligi } from "@/lib/kopBirlik";
 import type {
   Kategoriya,
   Mahsulot,
@@ -48,6 +49,8 @@ import { sotuvNarxiUstamadan, ustamaFoizi } from "./narxHisobi";
 import { narxQoralamaValyutalari, narxYigish, ustamaHisoblashMumkin } from "./narxValyutaYuklama";
 import { narxValyutalari } from "@/lib/narxValyutasi";
 import BirliklarModal from "./BirliklarModal";
+import BirlikQatorlariMaydoni from "./BirlikQatorlari";
+import { birlikQatorlariImzosi, birlikQatorlariniOlish, birlikRoyxatiniYigish, type BirlikQatori } from "./birlikQatorlariMantiq";
 type Tab = "mahsulotlar" | "kategoriyalar";
 type Korinish = "kartochka" | "jadval";
 type VariationRow = {
@@ -776,6 +779,13 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
   const [categoryId,setCategoryId]=useState(editing?item.categoryId:store.kategoriyalar[0]?.id??"");
   const [unitId,setUnitId]=useState(editing?item.unitId:defaultProductUnit(store.birliklar,store.standardBirliklar)?.id??"");
   const [unitResolving,setUnitResolving]=useState(false);
+  // Qo'shimcha birliklar (masalan 1 korobka = 3 kg): faqat ADMIN/DIREKTOR (backend PUT /catalog/products/:id/units).
+  // Yangi mahsulotda ular mahsulot yaratilgach saqlanadi; tahrirlashda mavjudlari yuklanadi (birlikBoshlangich — yuklangan holat imzosi).
+  const profil=useAuthProfileStore((state)=>state.profil);
+  const birlikRuxsati=["ADMIN","DIREKTOR"].includes(rolniNormallashtirish(profil?.role));
+  const [birlikQatorlari,setBirlikQatorlari]=useState<BirlikQatori[]>([]);
+  const [birlikBoshlangich,setBirlikBoshlangich]=useState<string|null>(editing?null:birlikQatorlariImzosi([]));
+  const [birlikXato,setBirlikXato]=useState("");
   // Saqlash bir necha ketma-ket so'rovdan iborat (mahsulot, variant, narx) — tugma butun jarayon davomida band turadi.
   const [saqlanmoqda,setSaqlanmoqda]=useState(false);
   const [barcode,setBarcode]=useState(editing?item.barcode??"":"");
@@ -868,6 +878,20 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
   }, [variantCombinations]);
 
   useEffect(() => {
+    if(item==="new"||!birlikRuxsati)return;
+    let active=true;
+    mahsulotBirliklariApi.olish(item.id)
+      .then((royxat)=>{
+        if(!active)return;
+        const qatorlar=birlikQatorlariniOlish(royxat);
+        setBirlikQatorlari(qatorlar);
+        setBirlikBoshlangich(birlikQatorlariImzosi(qatorlar));
+      })
+      .catch((error)=>{if(active)setBirlikXato(getApiErrorMessage(error))});
+    return ()=>{active=false};
+  }, [item, birlikRuxsati]);
+
+  useEffect(() => {
     let mounted=true;
     Promise.allSettled([omborlarApi.royxat()])
       .then(([omborNatija])=>{
@@ -917,6 +941,13 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
     ()=>store.standardBirliklar.filter((unit)=>PRODUCT_UNIT_CATEGORIES.has(unit.category)&&!standardUnitInWorkspace(unit,productWorkspaceUnits)),
     [store.standardBirliklar,productWorkspaceUnits]
   );
+
+  // "Birliklar" bo'limi uchun asosiy birlik nomi (workspace yoki hali o'tkazilmagan standart birlik).
+  const asosiyBirlik=productWorkspaceUnits.find((x)=>x.id===unitId);
+  const asosiyStandart=unitId.startsWith(STANDARD_UNIT_PREFIX)?store.standardBirliklar.find((x)=>x.id===Number(unitId.slice(STANDARD_UNIT_PREFIX.length))):undefined;
+  const asosiyBirlikNomi=asosiyBirlik?.name??(asosiyStandart?standardUnitLabel(asosiyStandart):"");
+  const asosiyQisqaNomi=asosiyBirlik?.shortName??asosiyBirlik?.name??(asosiyStandart?(asosiyStandart.shortNameUz||asosiyStandart.nameUz):"");
+  const birlikYuklanmoqda=editing&&birlikRuxsati&&birlikBoshlangich===null&&!birlikXato;
 
   useEffect(() => {
     setVariantStockDrafts((drafts) => {
@@ -983,12 +1014,20 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
       productUnitId=workspaceUnitId;
       setUnitId(workspaceUnitId);
     }
+    // Qo'shimcha birliklar: mahsulot yaratilmasdan oldin tekshiriladi (birlik tanlangan, koeffitsient musbat, takrorlanmagan).
+    let yangiBirliklar:TovarBirligi[]|undefined;
+    if(birlikRuxsati&&birlikQatorlari.length>0){
+      const yigilgan=birlikRoyxatiniYigish(birlikQatorlari,store.birliklar,{unitId:productUnitId,nomi:asosiyQisqaNomi||asosiyBirlikNomi});
+      if("xato" in yigilgan){setBirlikXato(t(`units.errors.${yigilgan.xato}`));return}
+      yangiBirliklar=yigilgan.royxat;
+    }
+    setBirlikXato("");
     const safeImageUrl=cleanRemoteImage(imageUrl);
     const data={name:name.trim(),categoryId,unitId:productUnitId,barcode:barcode.trim()||undefined,article:article.trim()||undefined,imageUrl:safeImageUrl||undefined,isActive};
     let ok=editing
       ?await store.mahsulotSaqlash(item.id,data)
       :generatedVariants.length>0
-        ?await store.mahsulotVariantlarBilanYaratish(data,generatedVariants)
+        ?await store.mahsulotVariantlarBilanYaratish(data,generatedVariants,yangiBirliklar)
         :await store.mahsulotNarxBilanYaratish(data,{
           name:hasVariantParams?Object.values(variantParams).flat().join(", "):"Asosiy variant",
           barcode:barcode.trim(),
@@ -997,7 +1036,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
           minStock:numericOrZero(baseStock.minStock),
           params:hasDefaultParams?defaultParams:undefined,
           price:narxYigish(baseDraft),
-        });
+        },yangiBirliklar);
     // Tahrirlashda, oddiy (variatsiyasiz) mahsulotning "Asosiy variant narxlari"
     // bo'limi alohida — mavjud variantga (yoki hali yo'q bo'lsa, yangisiga) saqlanadi,
     // aks holda mahsulotning o'z maydonlari saqlanib, narx o'zgarishi tashlab ketilardi.
@@ -1016,6 +1055,19 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
         // narx faqat alohida /price endpointi orqali haqiqiy saqlanadi (ModForm'dagi kabi),
         // aks holda so'rov ketadi-yu, jadvalda eski narx qolib ketaveradi.
         if(ok&&narx&&asosiyVariant)ok=await store.narxYangilash(item.id,asosiyVariant.id,narx);
+      }
+    }
+    // Tahrirlashda birliklar mahsulot saqlangach alohida PUT bilan yoziladi. Faqat ular yuklangan va o'zgargan bo'lsa (yuklanmagan ro'yxat
+    // bo'sh deb yuborilib, mavjud birliklarni o'chirib yubormasligi uchun). Xato bo'lsa oyna ochiq qoladi.
+    if(ok&&editing&&birlikRuxsati&&birlikBoshlangich!==null&&birlikQatorlariImzosi(birlikQatorlari)!==birlikBoshlangich){
+      const yigilgan=birlikRoyxatiniYigish(birlikQatorlari,store.birliklar,{unitId:productUnitId,nomi:asosiyQisqaNomi||asosiyBirlikNomi});
+      if("xato" in yigilgan){setBirlikXato(t(`units.errors.${yigilgan.xato}`));return}
+      try{
+        await mahsulotBirliklariApi.saqlash(item.id,yigilgan.royxat);
+        setBirlikBoshlangich(birlikQatorlariImzosi(birlikQatorlari));
+      }catch(error){
+        setBirlikXato(getApiErrorMessage(error));
+        ok=false;
       }
     }
     if(ok)onClose()
@@ -1329,7 +1381,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
                 <div className="block text-sm font-black text-gray-500">
                   <p>{t("productModal.unitLabel")}</p>
                   <div className="mt-2 flex items-center gap-3">
-                    <AppSelect value={unitId} onChange={e=>setUnitId(e.target.value)} className="input min-w-0 flex-1">
+                    <AppSelect value={unitId} onChange={e=>{const yangi=e.target.value;setUnitId(yangi);setBirlikQatorlari((qatorlar)=>qatorlar.filter((qator)=>qator.unitId!==yangi))}} className="input min-w-0 flex-1">
                       <option value="">{t("productModal.unitPlaceholder")}</option>
                       <optgroup label={t("productModal.unitGroupWorkspace")}>
                         {productWorkspaceUnits.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}
@@ -1367,6 +1419,17 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
               </div>
             </div>
           </div>
+          {birlikRuxsati&&<div className="space-y-4 pt-2">
+            <div className="flex items-center gap-4"><h3 className="text-xl font-black">{t("productModal.sectionUnits")}</h3><div className="h-px flex-1 bg-gray-100"/></div>
+            <div className="rounded-2xl bg-orange-50 p-4 text-sm text-orange-900">
+              <p><span className="font-black">{t("units.base")}:</span> {asosiyBirlikNomi||t("productModal.unitPlaceholder")}</p>
+              <p className="mt-1 text-xs font-semibold text-orange-700/80">{t("productModal.unitsHint")}</p>
+            </div>
+            {birlikYuklanmoqda
+              ?<div className="flex h-24 items-center justify-center"><LoaderCircle className="animate-spin text-orange-500" size={26}/></div>
+              :<BirlikQatorlariMaydoni qatorlar={birlikQatorlari} onChange={(qatorlar)=>{setBirlikQatorlari(qatorlar);setBirlikXato("")}} birliklar={store.birliklar} asosiyId={unitId} asosiyNomi={asosiyQisqaNomi||t("fallback.unit")}/>}
+            {birlikXato&&<p role="alert" className="rounded-xl bg-red-50 p-3 text-sm font-bold text-red-600">{birlikXato}</p>}
+          </div>}
           <div className="space-y-4 pt-2">
             <div className="flex items-center gap-4"><h3 className="text-xl font-black">{t("productModal.sectionVariations")}</h3><div className="h-px flex-1 bg-gray-100"/></div>
             <div>
