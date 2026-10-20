@@ -127,6 +127,44 @@
     "topshirdi": "Topshirdi",
     "oldi": "Oldi"
   },
+  "telegramXabar": {
+    "title": "Nakladnoy va Telegram",
+    "pdfButton": "Nakladnoy (PDF)",
+    "pdfLoading": "Yuklanmoqda...",
+    "label": "Telegram:",
+    "refresh": "Holatni yangilash",
+    "resend": "Qayta yuborish",
+    "queued": "Xabar yuborish navbatiga qo'yildi.",
+    "history": "Yuborish tarixi",
+    "attempts": "{{soni}} urinish",
+    "noCustomer": "Mijozsiz (chakana) sotuvga Telegram xabari yuborilmaydi. Nakladnoyni PDF qilib yuklab olishingiz mumkin.",
+    "loadError": "Holatni olib bo'lmadi",
+    "status": {
+      "yuborilmagan": "Hali yuborilmagan",
+      "yuborildi": "Yuborildi",
+      "navbatda": "Navbatda",
+      "xato": "Xato",
+      "bloklangan": "Mijoz botni bloklagan",
+      "ulanmagan": "Ulanmagan",
+      "ochirilgan": "Xabar o'chirilgan",
+      "mijozOchirgan": "Mijoz o'chirgan",
+      "otkazilgan": "Yuborilmadi"
+    },
+    "reason": {
+      "yuborilmagan": "Bu sotuv uchun xabar hali yuborilmagan. «Qayta yuborish» tugmasi bilan yuborishingiz mumkin.",
+      "yuborildi": "Mijozga xabar yetkazildi.",
+      "navbatda": "Xabar yuborilmoqda...",
+      "ulanmagan": "Mijoz Telegram botga ulanmagan: mijoz kartasidan ulash havolasini yarating.",
+      "ochirilgan": "Bot xabarnomasi o'chirilgan (Sozlamalar → Integratsiya).",
+      "mijozOchirgan": "Mijoz botda /stop bosgan, shuning uchun xabar yuborilmadi.",
+      "otkazilgan": "Xabar yuborilmadi."
+    },
+    "events": {
+      "SALE_CONFIRMED": "Sotuv tasdiqlandi",
+      "PAYMENT": "To'lov qabul qilindi",
+      "SALE_CANCELLED": "Sotuv bekor qilindi"
+    }
+  },
   "umumiyTab": {
     "qoshimchaMalumotlar": "Qo'shimcha ma'lumotlar",
     "qaytarilganSavdo": "Qaytarilgan savdo",
@@ -173,7 +211,9 @@
     "ortiqchaTolov": "Ortiqcha to'lov / qaytim",
     "maydonniTanlang": "Maydonni tanlang",
     "maydonYarating": "Maydon yarating",
-    "sotuvniBekorQilish": "Sotuvni bekor qilish"
+    "sotuvniBekorQilish": "Sotuvni bekor qilish",
+    "mijozMalumotlari": "Mijoz ma'lumotlari",
+    "mijozniTahrirlash": "Tahrirlash"
   },
   "tolovModal": {
     "belgisi": "To'lov",
@@ -198,6 +238,7 @@
     "qarzgaQoldirish": "Qarzga qoldirish",
     "tolovValyutasi": "To'lov valyutasi",
     "valyutaSom": "So'm",
+    "somBelgisi": "so'm",
     "valyutaDollar": "Dollar ($)",
     "kursQatori": "Bugungi kurs: 1 $ = {{kurs}} so'm",
     "sotuvValyutasidagiQiymat": "Sotuv valyutasida: {{summa}}",
@@ -376,6 +417,112 @@
     "narxQulflangan": "Narx ombordagi haqiqiy narx bo'yicha belgilanadi va o'zgartirilmaydi",
     "shtrixKod": "Shtrix-kod: {{value}}",
     "artikul": "Artikul: {{value}}"
+  },
+  "qoralamaTahrir": {
+    "sarlavha": "Qoralama tovarlari",
+    "tavsif": "Miqdorni o'zgartiring, mahsulotni almashtiring yoki yangisini qo'shing. O'zgarishlar faqat «Saqlash» bosilgandan keyin yoziladi.",
+    "valyuta": "Valyuta",
+    "mahsulotQoshish": "Mahsulot qo'shish",
+    "mahsulotniAlmashtirish": "Mahsulotni almashtirish",
+    "mahsulotTanlang": "Mahsulotni tanlang",
+    "kursYoqOgohlantirish": "Dollar kursi kiritilmagan: so'mda narxlangan mahsulotlarni dollarli sotuvga qo'shib bo'lmaydi.",
+    "chegirma": "Chegirma",
+    "omborda": "Omborda",
+    "narxQulflangan": "Narx ombordagi haqiqiy narx bo'yicha belgilanadi va o'zgartirilmaydi",
+    "holat": {
+      "yangi": "Yangi",
+      "almashtirilgan": "Almashtirildi",
+      "ozgargan": "O'zgardi",
+      "ochirildi": "O'chiriladi"
+    },
+    "qatorniOchirish": "Qatorni o'chirish",
+    "qaytarish": "Qatorni qaytarish",
+    "qatorniQaytarish": "Qatorni dastlabki holatiga qaytarish",
+    "xatolar": {
+      "mahsulot": "Mahsulotni tanlang.",
+      "miqdorNol": "Miqdor 0 dan katta bo'lishi kerak.",
+      "miqdorButun": "Bu birlikda faqat butun miqdor bo'lishi mumkin.",
+      "miqdorQoldiq": "Omborda yetarli emas: ko'pi bilan {{mavjud}}.",
+      "narxKerak": "Narxni kiriting.",
+      "narxKurs": "Dollar kursi yo'q — narx hisoblanmadi.",
+      "chegirma": "Chegirma qator summasidan oshmasin."
+    },
+    "jami": {
+      "chegirmasiz": "Chegirmasiz summa",
+      "chegirma": "Chegirma",
+      "saqlangan": "Saqlangan summa",
+      "taxminiy": "Kurs topilmagani uchun jami taxminiy hisoblandi."
+    },
+    "saqlanmagan": "{{soni}} ta o'zgarish saqlanmagan",
+    "kamida": "Kamida bitta mahsulot qoldiring: mahsulotsiz qoralamani saqlab bo'lmaydi.",
+    "xatolarniTuzating": "Qizil bilan belgilangan maydonlarni to'g'rilang.",
+    "bekorQilish": "O'zgarishlarni bekor qilish",
+    "saqlash": "O'zgarishlarni saqlash",
+    "qidiruv": "Nom, shtrix-kod yoki artikul bo'yicha qidiring",
+    "tozalash": "Qidiruvni tozalash",
+    "mavjudEmas": {
+      "band": "Bu mahsulot boshqa qatorda bor",
+      "kurs": "Dollar kursi kiritilmagan",
+      "yoq": "Omborda yo'q"
+    },
+    "yanaMahsulot": "Yana {{soni}} ta mahsulot bor — qidiruv orqali toping",
+    "avvalSaqlang": "Avval tovarlardagi o'zgarishlarni saqlang yoki bekor qiling.",
+    "yopishTasdigi": {
+      "sarlavha": "Saqlanmagan o'zgarishlar",
+      "tavsif": "Tovarlardagi o'zgarishlar saqlanmagan. Oynani yopsangiz, ular yo'qoladi.",
+      "yopish": "Baribir yopish",
+      "yopilmoqda": "Yopilmoqda...",
+      "qolish": "Qaytish"
+    }
+  },
+  "mijozTahrir": {
+    "belgisi": "Mijoz",
+    "sarlavha": "Mijoz ma'lumotlarini tahrirlash",
+    "sotuv": "Sotuv: {{raqam}}",
+    "biriktirish": {
+      "sarlavha": "Sotuvdagi mijoz",
+      "mijoz": "Mijoz",
+      "kompaniya": "Kompaniya",
+      "mijozPlaceholder": "Mijozni qidiring va tanlang",
+      "kompaniyaPlaceholder": "Kompaniyani qidiring va tanlang",
+      "izoh": "Boshqa mijozni tanlasangiz, bu qoralama o'sha mijozga o'tkaziladi.",
+      "ajratibBolmaydi": "Sotuvdan mijozni olib tashlab bo'lmaydi — faqat boshqasiga almashtirish mumkin."
+    },
+    "mijozKarta": {
+      "sarlavha": "Mijoz kartasi",
+      "ism": "Ism",
+      "familiya": "Familiya",
+      "telefon": "Telefon",
+      "manzil": "Manzil",
+      "manzilPlaceholder": "Shahar, ko'cha, uy",
+      "ogohlantirish": "O'zgarishlar mijoz kartasida saqlanadi va uning barcha hujjatlarida ko'rinadi.",
+      "yuklanmoqda": "Mijoz ma'lumotlari yuklanmoqda..."
+    },
+    "kompaniyaKarta": {
+      "sarlavha": "Kompaniya kartasi",
+      "nomi": "Kompaniya nomi",
+      "stir": "STIR (INN)",
+      "telefon": "Telefon",
+      "ogohlantirish": "O'zgarishlar kompaniya kartasida saqlanadi va uning barcha hujjatlarida ko'rinadi.",
+      "manzilYoq": "Kompaniya kartasida manzil maydoni yo'q.",
+      "yuklanmoqda": "Kompaniya ma'lumotlari yuklanmoqda..."
+    },
+    "donalik": {
+      "sarlavha": "Donalik mijoz",
+      "ism": "Mijoz ismi",
+      "telefon": "Telefon",
+      "izoh": "Bu ma'lumotlar faqat shu sotuvda saqlanadi (mijozlar bazasiga yozilmaydi).",
+      "manzilIzoh": "Donalik mijozning manzili saqlanmaydi. Manzil kerak bo'lsa, yuqoridan doimiy mijozni tanlang."
+    },
+    "xatolar": {
+      "ism": "Ismni kiriting.",
+      "telefon": "Telefon raqamini kiriting.",
+      "kompaniyaNomi": "Kompaniya nomini kiriting."
+    },
+    "ozgarishYoq": "O'zgarish yo'q",
+    "saqlash": "Saqlash",
+    "bekorQilish": "Bekor qilish",
+    "saqlanmoqda": "Saqlanmoqda..."
   },
   "eskiTovarlarTab": {
     "mahsulotQoshish": "Mahsulot qo'shish",

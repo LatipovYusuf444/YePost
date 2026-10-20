@@ -37,6 +37,8 @@ type SavatchaProps = {
   yuklanmoqda?: boolean;
   onQoshish: () => void;
   onSotuvniOchish: (sotuv: Sotuv) => void;
+  // "Tahrirlash": qoralama tafsiloti "Tovarlar" bo'limida ochiladi (tovar va mijoz ma'lumotlari tahrirlanadi).
+  onTahrirlash?: (sotuv: Sotuv) => void;
   onDavomEttirish: (sotuv: Sotuv) => Promise<void> | void;
   onRefresh: () => Promise<void> | void;
   onXabar: (xabar: string) => void;
@@ -98,6 +100,7 @@ export default function Savatcha({
   yuklanmoqda = false,
   onQoshish,
   onSotuvniOchish,
+  onTahrirlash,
   onDavomEttirish,
   onRefresh,
   onXabar,
@@ -228,7 +231,7 @@ export default function Savatcha({
     setMenuJoylashuvi(null);
 
     if (action === "edit") {
-      onSotuvniOchish(sotuv);
+      (onTahrirlash ?? onSotuvniOchish)(sotuv);
       return;
     }
 
@@ -494,6 +497,7 @@ export default function Savatcha({
                                 { key: "restore", label: t("hujjatTiklash.action", { ns: "common" }), icon: RotateCcw },
                                 { key: "delete", label: t("savatcha.table.actions.delete"), icon: Trash2, danger: true },
                               ]
+                                .filter((item) => item.key !== "edit" || sotuvHolati(sotuv) === "DRAFT")
                                 .filter((item) => item.key !== "delete" || hujjatOchiriladimi(sotuvHolati(sotuv)))
                                 .filter((item) => item.key !== "restore" || (tiklashRuxsati && sotuvHolati(sotuv) === "CANCELLED"))
                                 .map((item) => {

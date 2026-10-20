@@ -13,8 +13,11 @@ import type {
 export const mijozlarApi = {
   royxat: async () =>
     apiList((await apiClient.get<Mijoz[] | ApiListEnvelope<Mijoz>>("/partners/customers")).data),
-  olish: async (id: string) =>
-    apiData((await apiClient.get<Mijoz | ApiEnvelope<Mijoz>>(`/partners/customers/${id}`)).data),
+  // `fon` — yordamchi so'rov (nomlarni to'ldirish, hisobni o'qish): mijoz topilmasa (404) xato toasti chiqmaydi, chaqiruvchi xatoni o'zi hal qiladi.
+  olish: async (id: string, fon = false) =>
+    apiData(
+      (await apiClient.get<Mijoz | ApiEnvelope<Mijoz>>(`/partners/customers/${id}`, fon ? { xatoniYashirish: true } : undefined)).data
+    ),
   yaratish: async (data: MijozMalumoti) =>
     apiData((await apiClient.post<Mijoz | ApiEnvelope<Mijoz>>("/partners/customers", data)).data),
   yangilash: async (id: string, data: Partial<MijozMalumoti>) =>
@@ -33,11 +36,13 @@ export const mijozKompaniyalariApi = {
         )
       ).data
     ),
-  olish: async (id: string) =>
+  // `fon` — yordamchi so'rov: kompaniya topilmasa (404) xato toasti chiqmaydi, chaqiruvchi xatoni o'zi hal qiladi.
+  olish: async (id: string, fon = false) =>
     apiData(
       (
         await apiClient.get<MijozKompaniyasi | ApiEnvelope<MijozKompaniyasi>>(
-          `/partners/client-companies/${id}`
+          `/partners/client-companies/${id}`,
+          fon ? { xatoniYashirish: true } : undefined
         )
       ).data
     ),

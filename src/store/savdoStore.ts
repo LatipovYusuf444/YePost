@@ -209,6 +209,25 @@ function mijozlarniQoshish(
   };
 }
 
+// Mijoz yoki kompaniya kartasi tahrirlangach: sotuvga ulangan nusxa (nom, telefon, manzil) ham yangilanadi.
+function sotuvdaMijozniYangilash(sotuv: Sotuv, mijoz: MijozTanlovi): Sotuv {
+  return sotuv.customerId === mijoz.id || sotuv.customer?.id === mijoz.id
+    ? { ...sotuv, customer: { ...sotuv.customer, ...mijoz } }
+    : sotuv;
+}
+
+function sotuvdaKompaniyaniYangilash(sotuv: Sotuv, kompaniya: MijozTanlovi): Sotuv {
+  return sotuv.clientCompanyId === kompaniya.id || sotuv.clientCompany?.id === kompaniya.id
+    ? { ...sotuv, clientCompany: { ...sotuv.clientCompany, ...kompaniya } }
+    : sotuv;
+}
+
+function royxatdaYangilash(royxat: MijozTanlovi[], yangi: MijozTanlovi) {
+  return royxat.some((item) => item.id === yangi.id)
+    ? royxat.map((item) => (item.id === yangi.id ? { ...item, ...yangi } : item))
+    : [...royxat, yangi];
+}
+
 type SavdoState = {
   sotuvlar: Sotuv[];
   qaytarishlar: Qaytarish[];
@@ -252,6 +271,9 @@ type SavdoState = {
   mijozlarniOldindanYuklash: () => Promise<void>;
   // Sotuvda biriktirilgan, lekin ro'yxatda topilmagan mijozlarni id bo'yicha olib, sotuvlarni yangilaydi.
   mijozlarniTuldirish: (idlar: string[]) => Promise<void>;
+  // Mijoz yoki kompaniya kartasi tahrirlangach (nom, telefon, manzil): ro'yxat, sotuvlar va ochiq sotuv yangi ma'lumot bilan almashtiriladi.
+  mijozMalumotiniYangilash: (mijoz: MijozTanlovi) => void;
+  kompaniyaMalumotiniYangilash: (kompaniya: MijozTanlovi) => void;
   tanlanganSotuvniTozalash: () => void;
   xatolikniTozalash: () => void;
 };
@@ -725,13 +747,29 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
       .slice(0, 25);
     if (kerak.length === 0) return;
     kerak.forEach((id) => mijozSorovlari.add(id));
-    const natijalar = await Promise.allSettled(kerak.map((id) => mijozlarApi.olish(id)));
+    // Fon so'rovi: sotuvdagi mijoz o'chirilgan bo'lishi mumkin (404) — bu foydalanuvchiga xato sifatida ko'rsatilmaydi.
+    const natijalar = await Promise.allSettled(kerak.map((id) => mijozlarApi.olish(id, true)));
     const topilgan = natijalar.flatMap((natija) =>
       natija.status === "fulfilled" && natija.value?.id ? [natija.value as unknown as MijozTanlovi] : []
     );
     const yangi = mijozlarniQoshish(get(), topilgan);
     if (yangi) set(yangi);
   },
+
+  mijozMalumotiniYangilash: (mijoz) =>
+    set((state) => ({
+      mijozlar: royxatdaYangilash(state.mijozlar, mijoz),
+      sotuvlar: state.sotuvlar.map((sotuv) => sotuvdaMijozniYangilash(sotuv, mijoz)),
+      tanlanganSotuv: state.tanlanganSotuv ? sotuvdaMijozniYangilash(state.tanlanganSotuv, mijoz) : state.tanlanganSotuv,
+    })),
+
+  kompaniyaMalumotiniYangilash: (kompaniya) =>
+    set((state) => ({
+      mijozKompaniyalari: royxatdaYangilash(state.mijozKompaniyalari, kompaniya),
+      sotuvlar: state.sotuvlar.map((sotuv) => sotuvdaKompaniyaniYangilash(sotuv, kompaniya)),
+      tanlanganSotuv: state.tanlanganSotuv ? sotuvdaKompaniyaniYangilash(state.tanlanganSotuv, kompaniya) : state.tanlanganSotuv,
+    })),
+
   tanlanganSotuvniTozalash: () => set({ tanlanganSotuv: null }),
   xatolikniTozalash: () => set({ xatolik: null }),
 }));

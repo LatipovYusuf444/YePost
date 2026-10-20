@@ -42,6 +42,7 @@ import {
   Smile,
   StickyNote,
   Trash2,
+  TriangleAlert,
   UserCheck,
   UserRound,
   Wallet,
@@ -94,11 +95,17 @@ import {
 import { qatorBirligida, qatorMiqdoriMatni, qatorniQaytaYuborish } from "@/lib/kopBirlik";
 import { useValyutaStore, valyutaKodi, type Valyuta } from "@/lib/valyuta";
 import { mijozHisobi } from "@/lib/mijozHisobi";
+import { qatorlarImzosi } from "@/lib/qoralamaTahriri";
+import { xatolikXabari } from "@/lib/toast";
 import SavdoSelect from "./SavdoSelect";
 import SotuvTolovlari from "./SotuvTolovlari";
 import SotuvJarayoni from "./SotuvJarayoni";
+import TelegramXabarnomaKarti from "./TelegramXabarnoma";
+import QoralamaTovarlarTahriri from "./QoralamaTovarlarTahriri";
+import MijozniTahrirlashOynasi from "./MijozniTahrirlashOynasi";
 
 import ModalTablari from "@/Components/common/ModalTablari";
+import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 type SotuvTafsilotlariModalProps = {
@@ -117,6 +124,8 @@ type SotuvTafsilotlariModalProps = {
   ) => Promise<boolean>;
   onTasdiqlash: (sotuvId: string) => Promise<void> | void;
   onBekorQilish: (sotuvId: string) => void;
+  // Qoralamalar ro'yxatidagi "Tahrirlash" oynani to'g'ridan-to'g'ri "Tovarlar" bo'limida ochadi.
+  boshlangichTab?: "Umumiy" | "Tovarlar" | "Tarix";
 };
 
 type SotuvItem = NonNullable<Sotuv["items"]>[number];
@@ -430,11 +439,16 @@ export default function SotuvTafsilotlariModal({
   onYangilash,
   onTolovQoshish,
   onBekorQilish,
+  boshlangichTab,
 }: SotuvTafsilotlariModalProps) {
   const { t } = useTranslation("savdo_tafsilot");
   const sotuvniOchirish = useSavdoStore((state) => state.sotuvniOchirish);
   const sotuvniTiklash = useSavdoStore((state) => state.sotuvniTiklash);
-  const [activeTab, setActiveTab] = useState("Umumiy");
+  const [activeTab, setActiveTab] = useState<string>(boshlangichTab ?? "Umumiy");
+  // Qoralama tovarlaridagi saqlanmagan o'zgarishlar soni (tahrirlagich xabar beradi): yopish va to'lovga o'tish shunga qarab nazorat qilinadi.
+  const [tovarOzgarishlari, setTovarOzgarishlari] = useState(0);
+  const [yopishSoralmoqda, setYopishSoralmoqda] = useState(false);
+  const [mijozOynasiOchiq, setMijozOynasiOchiq] = useState(false);
   const [yetkazishOchiq, setYetkazishOchiq] = useState(false);
   const [ombordanChiqarishOchiq, setOmbordanChiqarishOchiq] = useState(false);
   const [tolovModalOchiq, setTolovModalOchiq] = useState(false);
@@ -474,10 +488,28 @@ export default function SotuvTafsilotlariModal({
     setHujjatGeneratorOchiq(true);
   }
 
+  const saqlanmaganTovarlar = draft && tovarOzgarishlari > 0;
+
+  // Saqlanmagan tovar o'zgarishlari bo'lsa, oyna yopilishidan oldin so'raladi.
+  function yopishniSoraymiz() {
+    if (saqlanmaganTovarlar) setYopishSoralmoqda(true);
+    else onYopish();
+  }
+
+  // To'lov backendda saqlangan qatorlar bo'yicha hisoblanadi: saqlanmagan o'zgarish bo'lsa avval saqlash (yoki bekor qilish) kerak.
+  function tolovniOchish() {
+    if (saqlanmaganTovarlar) {
+      setActiveTab("Tovarlar");
+      xatolikXabari(t("qoralamaTahrir.avvalSaqlang"));
+      return;
+    }
+    setTolovModalOchiq(true);
+  }
+
   return (
     <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
       <div className="relative h-[calc(100vh-32px)] w-full">
-        <ModalTezkorPanel sotuv={sotuv} onYopish={onYopish} />
+        <ModalTezkorPanel sotuv={sotuv} onYopish={yopishniSoraymiz} />
         <section className="relative h-full w-full overflow-hidden rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80">
         <div className="scrollbar-hidden h-full overflow-y-auto">
           <header className="sticky top-0 z-30 border-b border-orange-100/80 bg-[#F8FAFC]/90 px-9 py-6 backdrop-blur-xl">
@@ -569,13 +601,45 @@ export default function SotuvTafsilotlariModal({
               />
           </header>
 
+          {saqlanmaganTovarlar && activeTab !== "Tovarlar" && (
+            <div className="mx-9 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-amber-50 px-5 py-3.5 text-sm font-semibold text-amber-800 ring-1 ring-amber-200">
+              <span className="flex items-center gap-2.5">
+                <TriangleAlert size={18} className="shrink-0" />
+                {t("qoralamaTahrir.saqlanmagan", { soni: tovarOzgarishlari })}
+              </span>
+              <button
+                type="button"
+                onClick={() => setActiveTab("Tovarlar")}
+                className="h-9 rounded-xl bg-amber-500 px-4 text-xs font-black text-white transition hover:bg-amber-600"
+              >
+                {t("tabs.tovarlar")}
+              </button>
+            </div>
+          )}
+
+          {/* Qoralama tovarlari tahrirlanadi; boshqa tab'ga o'tilganda ham yozilgan o'zgarishlar yo'qolmasligi uchun yashirin holda saqlanadi. */}
+          {draft && (
+            <div hidden={activeTab !== "Tovarlar"}>
+              <QoralamaTovarlarTahriri
+                key={`${sotuv.id}:${qatorlarImzosi(sotuv.items)}`}
+                sotuv={sotuv}
+                qoldiqlar={qoldiqlar}
+                amalBajarilmoqda={amalBajarilmoqda}
+                onYangilash={onYangilash}
+                onOzgarish={setTovarOzgarishlari}
+              />
+            </div>
+          )}
+
           {activeTab === "Tovarlar" ? (
-            <TovarlarTab
-              sotuv={sotuv}
-              qoldiqlar={qoldiqlar}
-              amalBajarilmoqda={amalBajarilmoqda}
-              onYangilash={onYangilash}
-            />
+            draft ? null : (
+              <TovarlarTab
+                sotuv={sotuv}
+                qoldiqlar={qoldiqlar}
+                amalBajarilmoqda={amalBajarilmoqda}
+                onYangilash={onYangilash}
+              />
+            )
           ) : activeTab === "Tarix" ? (
             <TarixTab sotuv={sotuv} />
           ) : (
@@ -587,11 +651,12 @@ export default function SotuvTafsilotlariModal({
               draft={draft}
               vaqt={vaqt}
               amalBajarilmoqda={amalBajarilmoqda}
-              onTolovOchish={() => setTolovModalOchiq(true)}
+              onTolovOchish={tolovniOchish}
               onSanaSaqlash={(kun) => onYangilash(sotuv.id, { date: kun })}
               onBekorQilish={onBekorQilish}
               onYetkazish={() => setYetkazishOchiq(true)}
               onOmbordanChiqarish={() => setOmbordanChiqarishOchiq(true)}
+              onMijozniTahrirlash={() => setMijozOynasiOchiq(true)}
               hujjatlar={hujjatlar}
               onHujjatOchish={hujjatniOchish}
             />
@@ -616,6 +681,27 @@ export default function SotuvTafsilotlariModal({
             sotuv={sotuv}
             hujjatTuri={tanlanganHujjatTuri}
             onClose={() => setHujjatGeneratorOchiq(false)}
+          />
+        )}
+        {mijozOynasiOchiq && draft && (
+          <MijozniTahrirlashOynasi
+            sotuv={sotuv}
+            onSotuvniYangilash={onYangilash}
+            onYopish={() => setMijozOynasiOchiq(false)}
+          />
+        )}
+        {yopishSoralmoqda && (
+          <TasdiqlashOynasi
+            ikonka={<TriangleAlert size={26} />}
+            ohang="sariq"
+            sarlavha={t("qoralamaTahrir.yopishTasdigi.sarlavha")}
+            nom={sotuvJadvalId(sotuv)}
+            tavsif={t("qoralamaTahrir.yopishTasdigi.tavsif")}
+            ortgaMatni={t("qoralamaTahrir.yopishTasdigi.qolish")}
+            tasdiqMatni={t("qoralamaTahrir.yopishTasdigi.yopish")}
+            jarayonMatni={t("qoralamaTahrir.yopishTasdigi.yopilmoqda")}
+            onTasdiq={async () => onYopish()}
+            onYopish={() => setYopishSoralmoqda(false)}
           />
         )}
       </section>
@@ -1100,6 +1186,7 @@ function UmumiyTab({
   onBekorQilish,
   onYetkazish,
   onOmbordanChiqarish,
+  onMijozniTahrirlash,
   hujjatlar,
   onHujjatOchish,
 }: {
@@ -1116,6 +1203,7 @@ function UmumiyTab({
   onBekorQilish: (sotuvId: string) => void;
   onYetkazish: () => void;
   onOmbordanChiqarish: () => void;
+  onMijozniTahrirlash: () => void;
   hujjatlar: SaqlanganHujjat[];
   onHujjatOchish: (hujjat: SaqlanganHujjat) => void;
 }) {
@@ -1358,9 +1446,12 @@ function UmumiyTab({
           onBekorQilish={onBekorQilish}
           onYetkazish={onYetkazish}
           onOmbordanChiqarish={onOmbordanChiqarish}
+          onMijozniTahrirlash={onMijozniTahrirlash}
         />
 
         <QoshimchaMalumotCard sotuv={sotuv} draft={draft} onSanaSaqlash={onSanaSaqlash} />
+
+        <TelegramXabarnomaKarti sotuv={sotuv} />
       </aside>
 
         <main className="space-y-6">
@@ -1438,6 +1529,7 @@ function KelishuvCard({
   onBekorQilish,
   onYetkazish,
   onOmbordanChiqarish,
+  onMijozniTahrirlash,
 }: {
   sotuv: Sotuv;
   jami: number;
@@ -1448,6 +1540,7 @@ function KelishuvCard({
   onBekorQilish: (sotuvId: string) => void;
   onYetkazish: () => void;
   onOmbordanChiqarish: () => void;
+  onMijozniTahrirlash: () => void;
 }) {
   const bekorMumkin = useHujjatniBekorQilishMumkinmi("savdo");
   const { t } = useTranslation("savdo_tafsilot");
@@ -1589,7 +1682,20 @@ function KelishuvCard({
         <SotuvTolovlari sotuv={sotuv} mijoz={modalMijozNomi(sotuv)} />
       </div>
 
-      <div className="mt-5 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-100 bg-white">
+      {draft && (
+        <div className="mt-5 flex items-center justify-between gap-3">
+          <h3 className="text-xs font-black uppercase tracking-wide text-slate-600">{t("kelishuvCard.mijozMalumotlari")}</h3>
+          <button
+            type="button"
+            onClick={onMijozniTahrirlash}
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-blue-50 px-3 text-xs font-black text-[#2563EB] transition hover:bg-blue-100"
+          >
+            <PenLine size={13} />
+            {t("kelishuvCard.mijozniTahrirlash")}
+          </button>
+        </div>
+      )}
+      <div className={`${draft ? "mt-3" : "mt-5"} divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-100 bg-white`}>
         <KontaktQatori icon={<UserRound size={17} />} label={t("common.info.mijoz")} value={modalMijozNomi(sotuv)} />
         <KontaktQatori
           icon={<Phone size={17} />}
@@ -1661,7 +1767,7 @@ function TolovQabulQilishModal({
     if (!mijozId) return;
     let faol = true;
     mijozlarApi
-      .olish(mijozId)
+      .olish(mijozId, true)
       .then((mijoz) => {
         if (faol) setHisobManbasi(mijoz);
       })
@@ -1742,6 +1848,16 @@ function TolovQabulQilishModal({
       .map((valyuta) => sotuvValyutasigaOgirish(valyuta === "USD" ? 0.01 : 1, valyuta))
   );
   const ortiqchaSumma = yakuniyTolangan - jami > ruxsatEtilganFarq ? yakuniyTolangan - jami : 0;
+
+  // Xulosa (Sotuv jami / Jami to'lov / Qarzdorlik) tanlangan to'lov valyutasida ko'rsatiladi: dollar tanlansa — dollarda
+  // (bugungi kurs bilan, backend ham shu kursda hisoblaydi), so'm tanlansa — so'mda. Sotuv valyutasidagi asl qiymat ostida turadi.
+  const xulosaVal: Valyuta = boshqaValyuta ? tolovVal : sotuvVal;
+  const xulosaQiymati = (miqdor: number, yaxlitlash: "yuqoriga" | "yaqin") => {
+    if (xulosaVal === sotuvVal) return miqdor;
+    const ogirilgan = sotuvValyutasidanOgirish(miqdor, xulosaVal);
+    if (yaxlitlash === "yuqoriga") return valyutaYaxlitlash(ogirilgan, xulosaVal);
+    return xulosaVal === "USD" ? Math.round(ogirilgan * 100) / 100 : Math.round(ogirilgan);
+  };
 
   function valyutaniOzgartirish(yangi: Valyuta) {
     if (yangi === tolovVal) return;
@@ -1945,15 +2061,26 @@ function TolovQabulQilishModal({
               </label>
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-400">{t("tolovModal.tolovSummasi")}</span>
-                <input
-                  type="number"
-                  min="0"
-                  max={korsatiladiganMax || undefined}
-                  value={summa}
-                  onChange={(event) => setSumma(event.target.value)}
-                  className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
-                  placeholder="0"
-                />
+                <div className="relative">
+                  {/* Valyuta belgisi: dollarda summa oldida "$", so'mda oxirida "so'm" — qaysi valyutada kiritilayotgani ko'rinib turadi. */}
+                  {tolovVal === "USD" && (
+                    <span aria-hidden className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-[#2563EB]">$</span>
+                  )}
+                  <input
+                    type="number"
+                    min="0"
+                    step={tolovVal === "USD" ? "0.01" : "any"}
+                    max={korsatiladiganMax || undefined}
+                    value={summa}
+                    onChange={(event) => setSumma(event.target.value)}
+                    aria-label={`${t("tolovModal.tolovSummasi")} (${tolovVal === "USD" ? "$" : t("tolovModal.somBelgisi")})`}
+                    className={`h-12 w-full rounded-xl border border-slate-200 bg-white text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100 ${tolovVal === "USD" ? "pl-9 pr-4" : "pl-4 pr-20"}`}
+                    placeholder="0"
+                  />
+                  {tolovVal !== "USD" && (
+                    <span aria-hidden className="pointer-events-none absolute right-9 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{t("tolovModal.somBelgisi")}</span>
+                  )}
+                </div>
               </label>
             </div>
 
@@ -2043,21 +2170,24 @@ function TolovQabulQilishModal({
             <div className="grid gap-4 rounded-2xl bg-gradient-to-br from-orange-50/70 to-white p-5 ring-1 ring-orange-100 sm:grid-cols-3">
               <div>
                 <p className="text-xs font-black uppercase tracking-wide text-slate-400">{t("tolovModal.sotuvJami")}</p>
-                <p className="mt-1.5 text-lg font-black text-slate-800">{pulniFormatlash(jami, sotuvValyutasi(sotuv))}</p>
+                <p className="mt-1.5 text-lg font-black text-slate-800">{pulniFormatlash(xulosaQiymati(jami, "yuqoriga"), xulosaVal)}</p>
+                {boshqaValyuta && <p className="mt-0.5 text-[11px] font-semibold text-slate-400">≈ {pulniFormatlash(jami, sotuvVal)}</p>}
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-wide text-slate-400">
                   {t("tolovModal.jamiTolov")}
                 </p>
-                <p className="mt-1.5 text-lg font-black text-[#2563EB]">{pulniFormatlash(yakuniyTolangan, sotuvValyutasi(sotuv))}</p>
+                <p className="mt-1.5 text-lg font-black text-[#2563EB]">{pulniFormatlash(xulosaQiymati(yakuniyTolangan, "yaqin"), xulosaVal)}</p>
+                {boshqaValyuta && <p className="mt-0.5 text-[11px] font-semibold text-slate-400">≈ {pulniFormatlash(yakuniyTolangan, sotuvVal)}</p>}
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-wide text-slate-400">
                   {qolganQarz > 0 ? t("tolovModal.qarzdorlikQoldigi") : t("tolovModal.qarzdorlik")}
                 </p>
                 <p className={`mt-1.5 text-lg font-black ${qolganQarz > 0 ? "text-red-500" : "text-emerald-600"}`}>
-                  {qolganQarz > 0 ? pulniFormatlash(qolganQarz, sotuvValyutasi(sotuv)) : t("tolovModal.yoq")}
+                  {qolganQarz > 0 ? pulniFormatlash(xulosaQiymati(qolganQarz, "yuqoriga"), xulosaVal) : t("tolovModal.yoq")}
                 </p>
+                {boshqaValyuta && qolganQarz > 0 && <p className="mt-0.5 text-[11px] font-semibold text-slate-400">≈ {pulniFormatlash(qolganQarz, sotuvVal)}</p>}
               </div>
             </div>
 

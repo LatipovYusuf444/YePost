@@ -83,6 +83,8 @@ export default function Savdo() {
   const [yangiSotuvOchiq, setYangiSotuvOchiq] = useState(false);
   const [yangiSotuvVarianti, setYangiSotuvVarianti] = useState<"sale" | "draft">("sale");
   const [qaytarishModalSotuv, setQaytarishModalSotuv] = useState<Sotuv | null>(null);
+  // Qoralamalar ro'yxatidagi "Tahrirlash" tafsilot oynasini "Tovarlar" bo'limida ochadi; boshqa joydan ochilganda odatdagidek.
+  const [tahrirRejimi, setTahrirRejimi] = useState(false);
   const [xabar, setXabar] = useState("");
 
   const tablar = useMemo<Array<{ id: SavdoTabi; nomi: string }>>(
@@ -311,9 +313,18 @@ export default function Savdo() {
     };
   }, [qidirilganSotuvlar, tolovFilteri]);
 
-  async function sotuvniOchish(sotuv: Sotuv) {
+  async function sotuvniYuklabOchish(sotuv: Sotuv, tahrirlash: boolean) {
+    setTahrirRejimi(tahrirlash);
     await qoldiqlarniYuklash(sotuv.warehouseId);
     await sotuvTafsilotiniYuklash(sotuv.id);
+  }
+
+  async function sotuvniOchish(sotuv: Sotuv) {
+    await sotuvniYuklabOchish(sotuv, false);
+  }
+
+  async function sotuvniTahrirlashgaOchish(sotuv: Sotuv) {
+    await sotuvniYuklabOchish(sotuv, true);
   }
 
   async function mahsulotQaytarishniOchish(sotuv: Sotuv) {
@@ -394,6 +405,7 @@ export default function Savdo() {
                 setYangiSotuvOchiq(true);
               }}
               onSotuvniOchish={sotuvniOchish}
+              onTahrirlash={sotuvniTahrirlashgaOchish}
               onDavomEttirish={async (sotuv) => {
                 await sotuvniOchish(sotuv);
               }}
@@ -635,6 +647,7 @@ export default function Savdo() {
             if (muvaffaqiyatli) tanlanganSotuvniTozalash();
           }}
           onBekorQilish={(sotuvId) => void bekorQilish(sotuvId)}
+          boshlangichTab={tahrirRejimi ? "Tovarlar" : undefined}
         />
       )}
 
