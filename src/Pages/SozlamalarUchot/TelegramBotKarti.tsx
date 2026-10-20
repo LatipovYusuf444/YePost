@@ -3,6 +3,7 @@ import { KeyRound, LoaderCircle, Send } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { integratsiyalarApi, type TelegramIntegratsiya, type TelegramIntegratsiyaSaqlash } from "@/api/integrationsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { botTokenKerakmi } from "@/lib/telegramXabarnoma";
 import { BolimKarta, SaqlashTugma, Switch } from "./UmumiyUI";
 import { maydonKlass } from "./yordamchilar";
 
@@ -38,6 +39,7 @@ export default function TelegramBotKarti() {
   const [holat, setHolat] = useState<TelegramIntegratsiya>({});
   const [forma, setForma] = useState<Forma>(() => formaga({}));
   const [token, setToken] = useState("");
+  const [tokenXatosi, setTokenXatosi] = useState(false);
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [saqlanmoqda, setSaqlanmoqda] = useState(false);
   const [xato, setXato] = useState("");
@@ -70,14 +72,21 @@ export default function TelegramBotKarti() {
 
   async function saqlash() {
     if (saqlanmoqda) return;
-    setSaqlanmoqda(true);
     setXato("");
     setXabar("");
     const yangiToken = token.trim();
+    // Maydon bo'sh bo'lsa eski token saqlanadi: faqat saqlangan token (botTokenLast4) yo'q bo'lsa token so'raladi. Chat ID majburiy emas.
+    if (botTokenKerakmi({ yoniq: forma.isActive, yangiToken, oxirgi4: holat.botTokenLast4 })) {
+      setTokenXatosi(true);
+      setXato(t("integratsiya.botTokenRequired"));
+      return;
+    }
+    setSaqlanmoqda(true);
     const tana: TelegramIntegratsiyaSaqlash = {
       // Bo'sh token yuborilmaydi (backend 400 beradi); yuborilmasa eski token saqlanadi.
       ...(yangiToken ? { botToken: yangiToken } : {}),
-      chatId: forma.chatId,
+      // Bo'sh Chat ID ham yuboriladi (backend qabul qiladi, avval yozilgan bo'lsa tozalanadi).
+      chatId: forma.chatId.trim(),
       isActive: forma.isActive,
       crmBotEnabled: forma.crmBotEnabled,
       sendOnSale: forma.sendOnSale,
@@ -91,6 +100,7 @@ export default function TelegramBotKarti() {
       setHolat(yangi);
       setForma(formaga(yangi));
       setToken("");
+      setTokenXatosi(false);
       setXabar(t("integratsiya.telegramSaved"));
     } catch (error) {
       // Noto'g'ri token: 400 errors.integrations.invalid_bot_token — token maydoni yozilgan holda qoladi.
@@ -160,10 +170,12 @@ export default function TelegramBotKarti() {
                     disabled={saqlanmoqda}
                     onChange={(event) => {
                       setToken(event.target.value);
+                      setTokenXatosi(false);
                       setXabar("");
                     }}
+                    aria-invalid={tokenXatosi || undefined}
                     placeholder={oxirgi4 ? `••••${oxirgi4}` : t("integratsiya.botTokenPlaceholder")}
-                    className={`${maydonKlass} pl-10`}
+                    className={`${maydonKlass} pl-10 ${tokenXatosi ? "!border-red-400 !ring-4 !ring-red-100" : ""}`}
                   />
                 </div>
                 <span className="text-[11px] font-semibold leading-4 text-slate-400">
@@ -179,6 +191,7 @@ export default function TelegramBotKarti() {
                   placeholder={t("integratsiya.chatIdPlaceholder")}
                   className={maydonKlass}
                 />
+                <span className="text-[11px] font-semibold leading-4 text-slate-400">{t("integratsiya.chatIdHint")}</span>
               </label>
             </div>
 

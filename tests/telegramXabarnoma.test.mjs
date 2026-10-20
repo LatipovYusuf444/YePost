@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  mijozTelegramHolati, mijozTelegramTuri, nakladnoyFaylNomi, navbatdaBormi, sotuvXabarHolati, telegramHavolasi,
+  botTokenKerakmi, mijozTelegramHolati, mijozTelegramTuri, nakladnoyFaylNomi, navbatdaBormi, sotuvXabarHolati, telegramHavolasi,
   xabarTuri, xabarXatoMatni, xabarnomaYozuvlari,
 } from '../src/lib/telegramXabarnoma.ts';
 
@@ -93,4 +93,18 @@ test('nakladnoyFaylNomi: Content-Disposition yoki zaxira nom', () => {
   assert.equal(nakladnoyFaylNomi(undefined, ''), 'Nakladnoy_sotuv.pdf');
   assert.equal(nakladnoyFaylNomi('attachment; filename="a/b:c.pdf"', 'X'), 'a_b_c.pdf');
   assert.equal(nakladnoyFaylNomi('attachment; filename="hisob"', 'X'), 'hisob.pdf');
+});
+
+test('botTokenKerakmi: faqat saqlangan token (botTokenLast4) bor-yo‘qligi tekshiriladi, Chat ID hisobga olinmaydi', () => {
+  // saqlangan token bor: maydon bo'sh bo'lsa ham xato yo'q (eski token saqlanadi)
+  assert.equal(botTokenKerakmi({ yoniq: true, yangiToken: '', oxirgi4: 'AbCd' }), false);
+  assert.equal(botTokenKerakmi({ yoniq: true, yangiToken: '   ', oxirgi4: 'AbCd' }), false);
+  // saqlangan token yo'q va maydon bo'sh: token kerak
+  assert.equal(botTokenKerakmi({ yoniq: true, yangiToken: '', oxirgi4: null }), true);
+  assert.equal(botTokenKerakmi({ yoniq: true, yangiToken: '  ', oxirgi4: '' }), true);
+  assert.equal(botTokenKerakmi({ yoniq: true, yangiToken: '', oxirgi4: undefined }), true);
+  // yangi token yozilgan: kerak emas
+  assert.equal(botTokenKerakmi({ yoniq: true, yangiToken: '123:ABC', oxirgi4: null }), false);
+  // bot o'chiq: hech narsa majburiy emas
+  assert.equal(botTokenKerakmi({ yoniq: false, yangiToken: '', oxirgi4: null }), false);
 });

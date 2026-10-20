@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { integratsiyalarApi } from "@/api/integrationsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { botTokenKerakmi } from "@/lib/telegramXabarnoma";
 
 type FormaXatolari = {
   telegram?: string;
@@ -70,9 +71,8 @@ export default function Integratsiyalar() {
   }, []);
 
   function telegramniTekshirish() {
-    if (!telegramFaol) return "";
-    if (!telegramToken.trim() && !tokenOxirgi4) return "Bot token kiritilishi kerak.";
-    if (!telegramChatId.trim()) return "Chat ID kiritilishi kerak.";
+    // Token maydoni bo'sh bo'lsa eski token saqlanadi: faqat saqlangan token (botTokenLast4) bor-yo'qligi tekshiriladi. Chat ID majburiy emas.
+    if (botTokenKerakmi({ yoniq: telegramFaol, yangiToken: telegramToken, oxirgi4: tokenOxirgi4 })) return "Bot token kiritilishi kerak.";
     return "";
   }
 
@@ -230,7 +230,7 @@ export default function Integratsiyalar() {
             </label>
 
             <label className="block text-sm font-bold text-gray-700">
-              Chat ID
+              Chat ID (ixtiyoriy)
               <input
                 value={telegramChatId}
                 onChange={(event) => setTelegramChatId(event.target.value)}

@@ -1,6 +1,15 @@
 // Telegram nakladnoy: mijozga xabar yuborish (TZ 701). UI'siz va tashqi importlarsiz yozilgan — alohida sinash mumkin.
 // Backend: GET /notification-logs, POST /sales/:id/notify, POST/DELETE /partners/customers/:id/telegram-link, GET /sales/:id/nakladnoy.pdf.
 
+/**
+ * Telegram bot sozlamasida bot token kiritilishi kerakmi: bot yoqilgan, maydonga yangi token yozilmagan va saqlangan token yo'q
+ * (backend javobida `botTokenLast4` bo'sh). Maydon bo'sh qolsa eski token saqlanadi, shuning uchun faqat `botTokenLast4` bor-yo'qligi tekshiriladi.
+ * Chat ID tekshirilmaydi: mijozlarga xabar yuboradigan bot uchun u kerak emas (backend bo'sh qiymatni qabul qiladi).
+ */
+export function botTokenKerakmi(p: { yoniq: boolean; yangiToken: string; oxirgi4?: string | null }): boolean {
+  return p.yoniq && !p.yangiToken.trim() && !String(p.oxirgi4 ?? "").trim();
+}
+
 export type XabarnomaHodisasi = "SALE_CONFIRMED" | "PAYMENT" | "SALE_CANCELLED";
 export type XabarnomaHolati = "QUEUED" | "SENT" | "FAILED" | "BLOCKED" | "SKIPPED";
 
