@@ -77,6 +77,48 @@ test('birlik narxi: o‘z narxi bo‘lsa shu, bo‘lmasa asosiy × koeff; dollar
   assert.equal(birlikNarxi(som, pochka, 'COST').asl, Math.round(27000 * 0.403333 * 100) / 100);
 });
 
+// GET /catalog/modifications/search: har bir birlikda backend hisoblagan narx (o'z narxi, bo'lmasa asosiy × koeff).
+const QIDIRUV_BIRLIKLARI = [
+  { unitId: 'u-kg', name: 'kg', shortName: 'kg', factor: 1, isBase: true, canReceive: true, canSell: true },
+  { unitId: 'u-k', name: 'korobka', shortName: 'korobka', factor: 3, isBase: false, canReceive: true, canSell: true, retailPrice: null, wholesalePrice: null,
+    effectiveRetailPrice: '53100', effectiveWholesalePrice: 48000, currency: 'UZS', wholesaleCurrency: 'uzs', effectiveRetailPriceUzs: null, effectiveWholesalePriceUzs: null },
+];
+
+test('backend birlik narxi (effective*): o‘qiladi, o‘z narxi (retailPrice) bilan aralashmaydi va PUT tanasiga tushmaydi', () => {
+  const [kg, korobka] = birliklarniMoslash(QIDIRUV_BIRLIKLARI);
+  assert.deepEqual(korobka.samarali, { chakana: 53100, ulgurji: 48000, chakanaValyuta: 'UZS', ulgurjiValyuta: 'UZS', chakanaSom: null, ulgurjiSom: null });
+  assert.equal(korobka.chakana, null);
+  assert.equal(korobka.ulgurji, null);
+  assert.equal(kg.samarali, undefined);
+  // effective narx faqat sotuv uchun: mahsulotni saqlashda birlikning o'z narxi sifatida yuborilmaydi
+  assert.deepEqual(birliklarTanasi([kg, korobka]).units[0], { unitId: 'u-k', factor: 3, canReceive: true, canSell: true, retailPrice: null, wholesalePrice: null, barcode: null });
+  // narx maydonlari yo'q (/units, bir nechta variant) — samarali yo'q
+  assert.equal(birliklarniMoslash([{ unitId: 'u-k', factor: 3, effectiveRetailPrice: null, effectiveWholesalePrice: null }])[0].samarali, undefined);
+});
+
+test('birlik narxi: backend narxi (effective*) birinchi o‘rinda; valyuta mos kelmasa yoki yo‘q bo‘lsa eski hisob', () => {
+  const [, korobka] = birliklarniMoslash(QIDIRUV_BIRLIKLARI);
+  const som = { valyuta: 'UZS', asl: 17700, som: 17700 };
+  // 17 700 × 3 = 53 100 (backend bilan bir xil)
+  assert.deepEqual(birlikNarxi(som, korobka, 'RETAIL'), { valyuta: 'UZS', asl: 53100, som: 53100 });
+  assert.deepEqual(birlikNarxi(som, korobka, 'WHOLESALE'), { valyuta: 'UZS', asl: 48000, som: 48000 });
+  // backend narxi formuladan farq qilsa — backendniki (sotuvda "17 700" emas, korobka narxi)
+  const boshqa = { ...korobka, samarali: { ...korobka.samarali, chakana: 50000 } };
+  assert.equal(birlikNarxi(som, boshqa, 'RETAIL').asl, 50000);
+  // tannarx backend narxini ishlatmaydi
+  assert.equal(birlikNarxi(som, korobka, 'COST').asl, 53100);
+  // valyuta mos kelmasa (so'mdagi narx, backend dollar yozgan) — eski formula
+  const dollarBelgili = { ...korobka, samarali: { ...korobka.samarali, chakana: 15, chakanaValyuta: 'USD' } };
+  assert.equal(birlikNarxi(som, dollarBelgili, 'RETAIL').asl, 53100);
+  // dollar narx: so'mdagi qiymat backenddan, kelmasa proporsional
+  const dollar = { valyuta: 'USD', asl: 5, som: 60000 };
+  const dollarBirlik = { ...korobka, samarali: { chakana: 15, ulgurji: null, chakanaValyuta: 'USD', ulgurjiValyuta: null, chakanaSom: 181000, ulgurjiSom: null } };
+  assert.deepEqual(birlikNarxi(dollar, dollarBirlik, 'RETAIL'), { valyuta: 'USD', asl: 15, som: 181000 });
+  assert.deepEqual(birlikNarxi(dollar, { ...dollarBirlik, samarali: { ...dollarBirlik.samarali, chakanaSom: null } }, 'RETAIL'), { valyuta: 'USD', asl: 15, som: 180000 });
+  // backend narxi bo'lmagan birlik avvalgidek
+  assert.equal(birlikNarxi(som, { ...korobka, samarali: undefined }, 'RETAIL').asl, 53100);
+});
+
 test('qoldiq matni: "45 pochka 20 dona" ko‘rinishi; katta birlik bo‘lmasa faqat asosiy', () => {
   const dona = birliklarniMoslash([
     { unitId: 'd', name: 'dona', shortName: 'dona', factor: '1', isBase: true },

@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Download, LoaderCircle, RefreshCw, RotateCw, Send } from "lucide-react";
+import { Download, LoaderCircle, MessageSquareText, RefreshCw, RotateCw, Send } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { telegramApi } from "@/api/telegramApi";
 import { vaqtMatni } from "@/lib/hujjatSanasi";
 import { xatolikXabari } from "@/lib/toast";
 import {
+  mijozJavobiHolati,
   navbatdaBormi,
   sotuvXabarHolati,
   xabarTuri,
   xabarXatoMatni,
+  type MijozJavobi,
+  type MijozJavobiTuriBelgisi,
   type SotuvXabarTuri,
   type XabarnomaYozuvi,
 } from "@/lib/telegramXabarnoma";
@@ -28,9 +31,18 @@ const BELGI_RANGI: Record<SotuvXabarTuri, string> = {
   yuborilmagan: "bg-slate-100 text-slate-500 ring-slate-200",
 };
 
+const JAVOB_RANGI: Record<MijozJavobiTuriBelgisi, string> = {
+  yoq: "bg-slate-100 text-slate-500 ring-slate-200",
+  tasdiqlagan: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+  xato: "bg-red-50 text-red-600 ring-red-100",
+};
+
 const TARIX_CHEGARASI = 5;
 const NAVBAT_QAYTA_SORASH = 2500;
 const NAVBAT_QAYTA_SORASH_SONI = 8;
+// Mijoz mahsulotni tanlab, izohni hali yozmagan bo'lsa (backend 30 daqiqagacha kutadi) javoblar shu oraliqda qayta o'qiladi.
+const IZOH_QAYTA_SORASH = 10_000;
+const IZOH_QAYTA_SORASH_SONI = 30;
 
 // Sotuv kartasi: server nakladnoy PDF (GET /sales/:id/nakladnoy.pdf) va mijozga Telegram xabari holati.
 // Holat GET /notification-logs?saleId= dan olinadi, "Qayta yuborish" — POST /sales/:id/notify.
@@ -87,6 +99,51 @@ export default function TelegramXabarnomaKarti({ sotuv }: { sotuv: Sotuv }) {
     setYuklashXatosi(false);
     void yuklash();
   }, [yuklash, holat]);
+
+  // Mijozning botdagi javobi (GET /sales/:id/customer-responses): fon rejimida o'qiladi, xato bo'lsa karta o'zi buni ko'rsatadi.
+  const [javoblar, setJavoblar] = useState<MijozJavobi[]>([]);
+  const [javoblarYuklandi, setJavoblarYuklandi] = useState(false);
+  const [javoblarXatosi, setJavoblarXatosi] = useState(false);
+  const javobTartibi = useRef(0);
+
+  const javoblarniYuklash = useCallback(async () => {
+    if (!korsatiladi || !mijozId) return;
+    const tartib = (javobTartibi.current += 1);
+    try {
+      const royxat = await telegramApi.mijozJavoblari(sotuv.id);
+      if (faolRef.current && tartib === javobTartibi.current) {
+        setJavoblar(royxat);
+        setJavoblarXatosi(false);
+      }
+    } catch {
+      if (faolRef.current && tartib === javobTartibi.current) setJavoblarXatosi(true);
+    } finally {
+      if (faolRef.current && tartib === javobTartibi.current) setJavoblarYuklandi(true);
+    }
+  }, [korsatiladi, mijozId, sotuv.id]);
+
+  useEffect(() => {
+    setJavoblar([]);
+    setJavoblarYuklandi(false);
+    setJavoblarXatosi(false);
+    void javoblarniYuklash();
+  }, [javoblarniYuklash, holat]);
+
+  const javobHolati = mijozJavobiHolati(javoblar);
+  const izohKutilmoqda = javobHolati.kutilmoqda;
+  useEffect(() => {
+    if (!izohKutilmoqda) return;
+    let marta = 0;
+    const interval = window.setInterval(() => {
+      marta += 1;
+      if (marta > IZOH_QAYTA_SORASH_SONI) {
+        window.clearInterval(interval);
+        return;
+      }
+      void javoblarniYuklash();
+    }, IZOH_QAYTA_SORASH);
+    return () => window.clearInterval(interval);
+  }, [izohKutilmoqda, javoblarniYuklash]);
 
   // Navbatdagi (QUEUED) yozuv bor: backend yuborib bo'lguncha qisqa vaqt oraliqda qayta so'raladi.
   const navbatda = navbatdaBormi(yozuvlar);
@@ -173,7 +230,10 @@ export default function TelegramXabarnomaKarti({ sotuv }: { sotuv: Sotuv }) {
             <div className="ml-auto flex items-center gap-1.5">
               <button
                 type="button"
-                onClick={() => void yuklash()}
+                onClick={() => {
+                  void yuklash();
+                  void javoblarniYuklash();
+                }}
                 disabled={yuklanmoqda}
                 aria-label={t("telegramXabar.refresh")}
                 title={t("telegramXabar.refresh")}
@@ -226,6 +286,54 @@ export default function TelegramXabarnomaKarti({ sotuv }: { sotuv: Sotuv }) {
               </ul>
             </div>
           )}
+
+          <div className="border-t border-slate-100 pt-3.5">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-500">
+                <MessageSquareText size={15} />
+              </span>
+              <span className="text-sm font-bold text-slate-500">{t("telegramXabar.response.label")}</span>
+              {!javoblarYuklandi ? (
+                <LoaderCircle size={16} className="animate-spin text-slate-300" />
+              ) : javoblarXatosi && javoblar.length === 0 ? (
+                <span className="text-xs font-semibold text-slate-400">{t("telegramXabar.response.loadError")}</span>
+              ) : (
+                <span className={`rounded-full px-3 py-1 text-xs font-black ring-1 ${JAVOB_RANGI[javobHolati.tur]}`}>
+                  {javobHolati.tur === "xato" && javobHolati.xatolar > 1
+                    ? t("telegramXabar.response.status.xatoSoni", { soni: javobHolati.xatolar })
+                    : t(`telegramXabar.response.status.${javobHolati.tur}`)}
+                </span>
+              )}
+            </div>
+            {javobHolati.kutilmoqda && (
+              <p className="mt-2 text-xs font-bold leading-5 text-amber-600">{t("telegramXabar.response.awaiting")}</p>
+            )}
+            {javoblar.length > 0 && (
+              <ul className="mt-2.5 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-100 bg-white">
+                {javoblar.slice(0, TARIX_CHEGARASI).map((javob) => (
+                  <li key={javob.id} className="flex flex-wrap items-start gap-x-3 gap-y-1 px-3 py-2.5">
+                    <span className="min-w-0 flex-1 text-sm font-semibold text-slate-700">
+                      {javob.kind === "OK" ? (
+                        t("telegramXabar.response.ok")
+                      ) : (
+                        <>
+                          <span className="font-black text-red-600">{javob.productName ?? t("telegramXabar.response.other")}</span>
+                          {javob.awaitingComment ? (
+                            <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-black text-amber-700 ring-1 ring-amber-100">
+                              {t("telegramXabar.response.commentAwaited")}
+                            </span>
+                          ) : (
+                            <span className="ml-2 font-medium text-slate-600">{javob.comment ?? t("telegramXabar.response.noComment")}</span>
+                          )}
+                        </>
+                      )}
+                    </span>
+                    <span className="text-xs font-semibold tabular-nums text-slate-400">{vaqtMatni(javob.createdAt)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       )}
     </section>

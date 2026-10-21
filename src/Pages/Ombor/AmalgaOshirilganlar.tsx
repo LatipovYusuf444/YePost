@@ -187,7 +187,7 @@ export default function AmalgaOshirilganlar() {
 
   // Bekor qilingan sotuvlar ham ko'rinadi — ularni shu yerning o'zida butunlay o'chirish mumkin.
   const realizatsiyalar = useMemo(
-    () => store.sotuvlar.filter((sotuv) => sotuvHolati(sotuv) !== "DRAFT"),
+    () => store.sotuvlar.filter((sotuv) => !sotuv.isOpeningDebt && sotuvHolati(sotuv) !== "DRAFT"),
     [store.sotuvlar]
   );
 

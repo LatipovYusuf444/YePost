@@ -76,6 +76,8 @@ export type SavdoHolati = "qoralama" | "tolangan" | "qarzdor" | "bekor";
 
 export type XaridorSavdosi = {
   id: string;
+  isOpeningDebt?: boolean;
+  currency?: string;
   xaridorId: string;
   kompaniyaId: string;
   nomi: string; // savdo nomi

@@ -52,6 +52,21 @@ test('real nested search response retains product identity, USD price and conver
   assert.deepEqual(mod.price, raw.modification.price);
 });
 
+test('search response units carry the backend-computed unit price (korobka = 17 700 × 3 = 53 100) into the modification', () => {
+  const mod = katalogQidiruvQatoriniMoslash({
+    modificationId: 'm1', productId: 'p1',
+    modification: { id: 'm1', name: 'Konfet', price: { retailPrice: '17700', currency: 'UZS' } },
+    units: [
+      { unitId: 'u-kg', name: 'kg', factor: 1, isBase: true },
+      { unitId: 'u-k', name: 'korobka', factor: 3, isBase: false, canSell: true, retailPrice: null, effectiveRetailPrice: '53100', currency: 'UZS' },
+    ],
+  });
+  assert.equal(mod.birliklar.length, 2);
+  assert.equal(mod.birliklar[1].chakana, null);
+  assert.equal(mod.birliklar[1].samarali.chakana, 53100);
+  assert.equal(mod.birliklar[1].samarali.chakanaValyuta, 'UZS');
+});
+
 test('legacy flat catalog search response still retains its original price currency', () => {
   const flat = { id: 'flat', barcode: '123', price: { retailPrice: '10', currency: 'USD' } };
   assert.deepEqual(katalogQidiruvQatoriniMoslash(flat), flat);

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { pulniFormatlash } from "@/Pages/Savdo/savdoYordamchilari";
+import { valyutaKodi } from "@/lib/valyuta";
 import { Bell, MessageSquare, Package, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
@@ -73,7 +75,7 @@ export function SavdolarTab({
           onClick={() => setKorilayotganSavdo(savdo)}
           className="font-black text-slate-900"
         >
-          {savdo.nomi}
+          {savdo.isOpeningDebt ? t("openingDebt.title") : savdo.nomi}
         </BosiladiganKatak>
       ),
     },
@@ -109,7 +111,7 @@ export function SavdolarTab({
       id: "summa",
       nom: t("tablari.summa"),
       kenglik: 140,
-      katak: (savdo) => <span className="font-bold text-slate-700">{summaFormat(savdo.summa)}</span>,
+      katak: (savdo) => <span className="font-bold text-slate-700">{pulniFormatlash(savdo.summa, valyutaKodi(savdo.currency))}</span>,
     },
   ];
 

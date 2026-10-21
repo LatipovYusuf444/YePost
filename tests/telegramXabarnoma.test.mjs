@@ -1,9 +1,54 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  botTokenKerakmi, mijozTelegramHolati, mijozTelegramTuri, nakladnoyFaylNomi, navbatdaBormi, sotuvXabarHolati, telegramHavolasi,
-  xabarTuri, xabarXatoMatni, xabarnomaYozuvlari,
+  bildirishnomaSotuviId, botTokenKerakmi, mijozJavobiHolati, mijozJavoblari, mijozTelegramHolati, mijozTelegramTuri, nakladnoyFaylNomi,
+  navbatdaBormi, sotuvXabarHolati, telegramHavolasi, xabarTuri, xabarXatoMatni, xabarnomaYozuvlari,
 } from '../src/lib/telegramXabarnoma.ts';
+
+// ── Mijoz javobi (GET /sales/:id/customer-responses) ──
+const javobXom = [
+  { id: 'r3', kind: 'PROBLEM', productName: 'Konfet', comment: '2 ta kam keldi', awaitingComment: false, createdAt: '2026-10-21T09:00:00Z', saleItemId: 'i1' },
+  { id: 'r2', kind: 'PROBLEM', productName: null, comment: null, awaitingComment: true, createdAt: '2026-10-21T08:50:00Z', saleItemId: null },
+  { id: 'r1', kind: 'OK', productName: null, comment: null, awaitingComment: false, createdAt: '2026-10-21T08:00:00Z', saleItemId: null },
+];
+
+test('mijozJavoblari: massiv, items va data.items shakllari; yangisi birinchi; noma‘lum kind va id‘siz yozuvlar tashlanadi', () => {
+  const xom = [...javobXom].reverse().concat([{ id: 'x', kind: 'MAYBE' }, { kind: 'OK' }, null]);
+  for (const javob of [xom, { items: xom }, { data: xom }, { data: { items: xom } }]) {
+    const natija = mijozJavoblari(javob);
+    assert.deepEqual(natija.map((j) => j.id), ['r3', 'r2', 'r1']);
+  }
+  const [konfet, boshqa] = mijozJavoblari(javobXom);
+  assert.equal(konfet.productName, 'Konfet');
+  assert.equal(konfet.comment, '2 ta kam keldi');
+  assert.equal(konfet.awaitingComment, false);
+  assert.equal(boshqa.productName, null);
+  assert.equal(boshqa.awaitingComment, true);
+  assert.deepEqual(mijozJavoblari(undefined), []);
+  assert.deepEqual(mijozJavoblari({}), []);
+  assert.equal(mijozJavoblari([{ id: 'a', kind: 'ok' }])[0].kind, 'OK');
+});
+
+test('mijozJavobiHolati: javob yo‘q / tasdiqlagan / xato (oxirgi tasdiqdan keyingi xatolar soni, izoh kutilmoqda)', () => {
+  assert.deepEqual(mijozJavobiHolati([]), { tur: 'yoq', xatolar: 0, kutilmoqda: false });
+  assert.deepEqual(mijozJavobiHolati(mijozJavoblari([javobXom[2]])), { tur: 'tasdiqlagan', xatolar: 0, kutilmoqda: false });
+  // eng yangisi PROBLEM: undan keyingi tasdiq hisobga olinmaydi; xatolar — oxirgi OK'dan keyingilari
+  assert.deepEqual(mijozJavobiHolati(mijozJavoblari(javobXom)), { tur: 'xato', xatolar: 2, kutilmoqda: true });
+  assert.deepEqual(mijozJavobiHolati(mijozJavoblari([javobXom[0]])), { tur: 'xato', xatolar: 1, kutilmoqda: false });
+  // avval xato, keyin "To'g'ri keldi" — mijoz fikrini o'zgartirgan: tasdiqlagan
+  const keyinTasdiq = mijozJavoblari([{ id: 'ok', kind: 'OK', createdAt: '2026-10-21T10:00:00Z' }, ...javobXom]);
+  assert.equal(mijozJavobiHolati(keyinTasdiq).tur, 'tasdiqlagan');
+});
+
+test('bildirishnomaSotuviId: faqat CUSTOMER_FEEDBACK + refType Sale + refId', () => {
+  assert.equal(bildirishnomaSotuviId({ id: 'n', kind: 'CUSTOMER_FEEDBACK', refType: 'Sale', refId: 's-123' }), 's-123');
+  assert.equal(bildirishnomaSotuviId({ kind: 'customer_feedback', refType: 'sale', refId: ' s-9 ' }), 's-9');
+  assert.equal(bildirishnomaSotuviId({ kind: 'CUSTOMER_FEEDBACK', refType: 'Customer', refId: 'c1' }), null);
+  assert.equal(bildirishnomaSotuviId({ kind: 'CUSTOMER_FEEDBACK', refType: 'Sale' }), null);
+  assert.equal(bildirishnomaSotuviId({ kind: 'LOW_STOCK', refType: 'Sale', refId: 's1' }), null);
+  assert.equal(bildirishnomaSotuviId({ id: 'n', title: 'Sotuv' }), null);
+  assert.equal(bildirishnomaSotuviId(null), null);
+});
 
 const yozuv = (qism) => ({ id: 'n1', event: 'SALE_CONFIRMED', status: 'SENT', lastError: null, attempts: 1, sentAt: '2026-10-20T08:00:00Z', createdAt: '2026-10-20T07:59:00Z', saleId: 's1', customerId: 'c1', docId: null, ...qism });
 

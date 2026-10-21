@@ -42,7 +42,7 @@ export default function XaridorUchot({ faolTab = "xaridorlar" }: Props) {
     setYuklanmoqda(true);
     setXatolik("");
     try {
-      const [customers, companies, suppliers, sales, purchases, warehouses, responsibles] = await Promise.all([
+      const [customers, companies, suppliers, sales, purchases, warehouses, responsibles, openingDebts] = await Promise.all([
         mijozlarApi.royxat(),
         mijozKompaniyalariApi.royxat(),
         yetkazibBeruvchilarApi.royxat(),
@@ -50,13 +50,14 @@ export default function XaridorUchot({ faolTab = "xaridorlar" }: Props) {
         kirimApi.royxat(),
         omborlarApi.royxat(),
         omborMasullari(),
+        sotuvlarRoyxatiniOlish({ openingDebt: true }).catch((error) => { setXatolik(getApiErrorMessage(error)); return []; }),
       ]);
       setXaridorlar(customers.map(mijozniUiGa));
       setKompaniyalar(companies.map(kompaniyaniUiGa));
       setYetkazibBeruvchilar(suppliers.map(yetkazibBeruvchiniUiGa));
       const lookup = { omborlar: warehouses, masullar: responsibles };
       setSavdolar(
-        sales
+        Array.from(new Map([...sales, ...openingDebts].map((item) => [item.id, item])).values())
           .filter((item) => sotuvHolati(item) === "CONFIRMED")
           .map((item) => sotuvniUiGa(item, lookup))
       );

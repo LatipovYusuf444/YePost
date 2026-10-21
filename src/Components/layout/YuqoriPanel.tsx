@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu";
 import { crmApi } from "@/api/crmApi";
+import { bildirishnomaSotuviId } from "@/lib/telegramXabarnoma";
 import MahsulotTanlashModal from "./MahsulotTanlashModal";
 import HeaderMahsulotQidiruvi from "./HeaderMahsulotQidiruvi";
 import { Checkbox } from "@/Components/ui/checkbox";
@@ -358,6 +359,7 @@ function BildirishnomaTugmasi({
   onReadAll: () => void;
 }) {
   const { t } = useTranslation("topbar");
+  const navigate = useNavigate();
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [position, setPosition] = useState({ top: 0, right: 24 });
 
@@ -474,12 +476,28 @@ function BildirishnomaTugmasi({
                               const matn = item.text ?? item.message ?? t("notifications.defaultMessage");
                               const tur = bildirishnomaTuri(`${sarlavha} ${matn}`);
                               const Ikonka = tur.icon;
+                              // Mijoz botda nakladnoyga javob bergan (CUSTOMER_FEEDBACK): bosilsa sotuv kartasi ochiladi.
+                              const sotuvId = bildirishnomaSotuviId(item);
                               return (
                                 <li key={item.id}>
                                   <label
+                                    onClick={
+                                      sotuvId
+                                        ? (event) => {
+                                            // Belgi (o'qildi) katagi o'zining amalini bajaradi, qolgan joy sotuvni ochadi.
+                                            if ((event.target as HTMLElement).closest('[role="checkbox"]')) return;
+                                            event.preventDefault();
+                                            if (!oqilgan) onRead(item.id);
+                                            setOchiq(false);
+                                            navigate(`/savdo?sotuv=${encodeURIComponent(sotuvId)}`);
+                                          }
+                                        : undefined
+                                    }
                                     className={`group flex items-start gap-3 rounded-2xl border p-3 transition ${
                                       oqilgan
-                                        ? "cursor-default border-slate-100 bg-white"
+                                        ? sotuvId
+                                          ? "cursor-pointer border-slate-100 bg-white hover:bg-slate-50"
+                                          : "cursor-default border-slate-100 bg-white"
                                         : "cursor-pointer border-gold-200 bg-gold-50/60 shadow-[0_6px_18px_rgba(37,99,235,.08)] hover:bg-gold-50"
                                     }`}
                                   >

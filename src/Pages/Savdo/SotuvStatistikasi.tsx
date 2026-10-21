@@ -4,6 +4,7 @@ import { ArrowDownRight, ArrowUpRight, CircleAlert, CircleCheck, Minus, Shopping
 import type { SotuvlarXulosasi } from "@/api/savdoApi";
 import type { Sotuv } from "@/types/savdo";
 import { mahalliySanaKaliti } from "@/lib/sanaKaliti";
+import { savdoHujjatimi } from "@/lib/boshlangichQarz";
 import { sotuvHolati, sotuvQarzdorlikSummasi, sotuvSummasi, sotuvTolanganSummasi } from "./savdoYordamchilari";
 
 type SotuvStatistikasiProps = {
@@ -124,6 +125,15 @@ function hisoblash(sotuvlar: Sotuv[], dan: string, gacha: string, sanaOlish: (so
   let oldingiSumma = 0;
 
   for (const sotuv of sotuvlar) {
+    if (!savdoHujjatimi(sotuv)) {
+      const kun = mahalliySanaKaliti(sanaOlish(sotuv));
+      if (sotuvHolati(sotuv) === "CONFIRMED" && kun && (!dan || kun >= dan) && (!gacha || kun <= gacha)) {
+        const qoldiq = sotuvQarzdorlikSummasi(sotuv);
+        qarz += qoldiq;
+        if (qoldiq > 0) qarzdorSotuvlar += 1;
+      }
+      continue;
+    }
     const holat = sotuvHolati(sotuv);
     if (holat === "CANCELLED") continue;
     const kun = mahalliySanaKaliti(sanaOlish(sotuv));

@@ -131,6 +131,70 @@ export function navbatdaBormi(yozuvlar: XabarnomaYozuvi[]): boolean {
   return yozuvlar.some((yozuv) => String(yozuv.status).toUpperCase() === "QUEUED");
 }
 
+// ── Mijoz javobi (nakladnoy xabari tagidagi "✅ To'g'ri keldi" / "❌ Xato bor" tugmalari) ───────────
+
+export type MijozJavobiTuri = "OK" | "PROBLEM";
+
+export type MijozJavobi = {
+  id: string;
+  kind: MijozJavobiTuri;
+  /** Mijoz tanlagan mahsulot; `null` — "Boshqa". */
+  productName: string | null;
+  comment: string | null;
+  /** Mijoz mahsulotni tanlagan, izoh hali kutilmoqda (30 daqiqagacha). */
+  awaitingComment: boolean;
+  createdAt: string | null;
+  saleItemId: string | null;
+};
+
+/** GET /sales/:id/customer-responses javobi (massiv, `{ items }`, `{ data }` yoki `{ data: { items } }`) → javoblar, yangisi birinchi. */
+export function mijozJavoblari(raw: unknown): MijozJavobi[] {
+  const asosiy = obyekt(raw);
+  const ichki = obyekt(asosiy?.data);
+  const royxat = [raw, asosiy?.items, asosiy?.data, ichki?.items].find(Array.isArray) as unknown[] | undefined;
+  const javoblar: MijozJavobi[] = [];
+  for (const element of royxat ?? []) {
+    const javob = obyekt(element);
+    const id = matn(javob?.id);
+    const kind = (matn(javob?.kind) ?? "").toUpperCase();
+    if (!javob || !id || (kind !== "OK" && kind !== "PROBLEM")) continue;
+    javoblar.push({
+      id,
+      kind,
+      productName: matn(javob.productName),
+      comment: matn(javob.comment),
+      awaitingComment: javob.awaitingComment === true,
+      createdAt: matn(javob.createdAt),
+      saleItemId: matn(javob.saleItemId),
+    });
+  }
+  // Backend yangisini birinchi qaytaradi; vaqt bo'yicha qayta tartiblash (teng vaqtda javobdagi tartib saqlanadi).
+  return javoblar.sort((a, b) => vaqtQiymati(b.createdAt) - vaqtQiymati(a.createdAt));
+}
+
+export type MijozJavobiTuriBelgisi = "yoq" | "tasdiqlagan" | "xato";
+
+/**
+ * Sotuv kartasidagi "Mijoz javobi" belgisi: eng yangi javob "OK" bo'lsa — tasdiqlagan; "PROBLEM" bo'lsa — xato
+ * (`xatolar` — oxirgi tasdiqdan keyingi xato javoblari soni, `kutilmoqda` — ularning birida izoh hali kutilmoqda); javob yo'q bo'lsa — "yoq".
+ */
+export function mijozJavobiHolati(javoblar: readonly MijozJavobi[]): { tur: MijozJavobiTuriBelgisi; xatolar: number; kutilmoqda: boolean } {
+  if (javoblar.length === 0 || javoblar[0].kind === "OK") {
+    return { tur: javoblar.length === 0 ? "yoq" : "tasdiqlagan", xatolar: 0, kutilmoqda: false };
+  }
+  const oxirgiTasdiq = javoblar.findIndex((javob) => javob.kind === "OK");
+  const xatolar = javoblar.slice(0, oxirgiTasdiq === -1 ? javoblar.length : oxirgiTasdiq).filter((javob) => javob.kind === "PROBLEM");
+  return { tur: "xato", xatolar: xatolar.length, kutilmoqda: xatolar.some((javob) => javob.awaitingComment) };
+}
+
+/** Bildirishnoma (`kind: CUSTOMER_FEEDBACK`, `refType: 'Sale'`, `refId` = sotuv id) bosilganda ochiladigan sotuv id; boshqa bildirishnomalarda `null`. */
+export function bildirishnomaSotuviId(bildirishnoma: unknown): string | null {
+  const o = obyekt(bildirishnoma);
+  if ((matn(o?.kind) ?? "").toUpperCase() !== "CUSTOMER_FEEDBACK") return null;
+  if ((matn(o?.refType) ?? "").toLowerCase() !== "sale") return null;
+  return matn(o?.refId);
+}
+
 // ── Mijozni botga ulash ────────────────────────────────────────────────────────────────────────────
 
 export type MijozTelegramHolati = {

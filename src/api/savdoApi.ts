@@ -33,14 +33,17 @@ function royxatniAjratish<T>(data: RoyxatJavobi<T>): T[] {
 
 // Savdo/index.tsx, Savatcha.tsx, Tarix.tsx va BekorQilinganlar.tsx:
 // barcha sotuvlarni backenddan oladi.
-export async function sotuvlarRoyxatiniOlish() {
-  const response = await apiClient.get<RoyxatJavobi<Sotuv> | ApiListEnvelope<Sotuv>>("/sales");
+export async function sotuvlarRoyxatiniOlish(filtr: { openingDebt?: boolean } = {}) {
+  const response = await apiClient.get<RoyxatJavobi<Sotuv> | ApiListEnvelope<Sotuv>>("/sales", {
+    params: filtr.openingDebt === undefined ? undefined : { openingDebt: filtr.openingDebt },
+  });
   return royxatniAjratish(response.data);
 }
 
 // GET /sales — filtr va sahifalash. page/pageSize berilmasa backend avvalgidek hammasini qaytaradi.
 // dateFrom/dateTo — YYYY-MM-DD (ikkala chet ham kiradi), search — hujjat raqami, mijoz ismi/familiyasi/telefoni.
 export type SotuvlarFiltri = {
+  openingDebt?: boolean;
   dateFrom?: string;
   dateTo?: string;
   status?: "CONFIRMED" | "DRAFT" | "CANCELLED";
@@ -53,6 +56,7 @@ export type SotuvlarFiltri = {
 
 export async function sotuvlarSahifasiniOlish(filtr: SotuvlarFiltri = {}): Promise<SahifaliRoyxat<Sotuv>> {
   const params: Record<string, string | number> = {};
+  if (filtr.openingDebt !== undefined) params.openingDebt = String(filtr.openingDebt);
   if (filtr.dateFrom) params.dateFrom = filtr.dateFrom;
   if (filtr.dateTo) params.dateTo = filtr.dateTo;
   if (filtr.status) params.status = filtr.status;
@@ -66,7 +70,7 @@ export async function sotuvlarSahifasiniOlish(filtr: SotuvlarFiltri = {}): Promi
 
 // Qaytarish wizard (1-bosqich): faqat qaytarsa bo'ladigan sotuvlar (GET /sales?returnable=true).
 export async function qaytariladiganSotuvlarniOlish(): Promise<Sotuv[]> {
-  return (await sotuvlarSahifasiniOlish({ returnable: true })).items;
+  return (await sotuvlarSahifasiniOlish({ returnable: true })).items.filter((sotuv) => !sotuv.isOpeningDebt);
 }
 
 // GET /sales/summary — Savdo sahifasi kartalari uchun. Summalar faqat tasdiqlangan sotuvlar bo'yicha (backend satr qaytaradi).

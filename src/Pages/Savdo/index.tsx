@@ -74,7 +74,7 @@ export default function Savdo() {
     mijozlarniOldindanYuklash,
     mijozlarniTuldirish,
   } = useSavdoStore();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [qidiruv, setQidiruv] = useState("");
   const [sanaDan, setSanaDan] = useState(bugungiSanaKaliti);
   const [sanaGacha, setSanaGacha] = useState(bugungiSanaKaliti);
@@ -145,6 +145,25 @@ export default function Savdo() {
   useEffect(() => {
     void mijozlarniOldindanYuklash().finally(() => setMijozlarTayyor(true));
   }, [mijozlarniOldindanYuklash]);
+
+  // Bildirishnomadan (mijoz nakladnoyga javob bergan) /savdo?sotuv=<id> havolasi: sotuv kartasi ochiladi, havola tozalanadi.
+  const havolaSotuvi = searchParams.get("sotuv");
+  useEffect(() => {
+    if (!havolaSotuvi) return;
+    setTahrirRejimi(false);
+    setSearchParams(
+      (joriy) => {
+        const yangi = new URLSearchParams(joriy);
+        yangi.delete("sotuv");
+        return yangi;
+      },
+      { replace: true }
+    );
+    void (async () => {
+      const sotuv = await sotuvTafsilotiniYuklash(havolaSotuvi);
+      if (sotuv) await qoldiqlarniYuklash(sotuv.warehouseId);
+    })();
+  }, [havolaSotuvi, setSearchParams, sotuvTafsilotiniYuklash, qoldiqlarniYuklash]);
 
   useEffect(() => {
     const yangiSotuvniOchish = () => {

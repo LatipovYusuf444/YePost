@@ -104,6 +104,7 @@ import SotuvJarayoni from "./SotuvJarayoni";
 import TelegramXabarnomaKarti from "./TelegramXabarnoma";
 import QoralamaTovarlarTahriri from "./QoralamaTovarlarTahriri";
 import MijozniTahrirlashOynasi from "./MijozniTahrirlashOynasi";
+import BoshlangichQarzTafsilotlariModal from "@/Pages/XaridorUchot/BoshlangichQarzTafsilotlariModal";
 
 import ModalTablari from "@/Components/common/ModalTablari";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
@@ -431,7 +432,13 @@ function qoldiqTavsifi(qoldiq: QoldiqTanlovi, t: TFunction) {
     .join(" · ");
 }
 
-export default function SotuvTafsilotlariModal({
+export default function SotuvTafsilotlariModal(props: SotuvTafsilotlariModalProps) {
+  return props.sotuv.isOpeningDebt
+    ? <BoshlangichQarzTafsilotlariModal key={props.sotuv.id} sotuvId={props.sotuv.id} boshlangich={props.sotuv} onClose={props.onYopish} />
+    : <OddiySotuvTafsilotlariModal {...props} />;
+}
+
+function OddiySotuvTafsilotlariModal({
   sotuv,
   qoldiqlar,
   xodimlar,

@@ -8,6 +8,7 @@ import {
   Search,
   Trash2,
   WalletCards,
+  Warehouse,
   X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -510,14 +511,14 @@ export default function BoshSahifa() {
 
   return (
     <div className="grid min-h-[calc(100vh-214px)] w-full min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_minmax(390px,24%)]">
-      <section className="flex min-h-[520px] flex-col rounded-[26px] border-2 border-gold-200 bg-white/86 p-4 shadow-gold-soft sm:p-5 xl:p-6">
+      <section className="flex min-h-[520px] min-w-0 flex-col rounded-[26px] border border-gold-200 bg-white/95 p-4 shadow-gold-soft sm:p-5 xl:p-6">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2.5">
               <h1 className="text-2xl font-bold leading-tight text-[#0F172A] sm:text-3xl">
                 {t("cart.title")}
               </h1>
-              <span className="theme-primary-gradient flex h-6 min-w-6 items-center justify-center rounded-full bg-linear-to-br from-gold-300 to-gold-600 px-2 text-xs font-bold text-white shadow-gold-soft">
+              <span className="flex h-7 min-w-7 items-center justify-center rounded-lg bg-gold-50 px-2 text-xs font-bold tabular-nums text-gold-600 ring-1 ring-inset ring-gold-200">
                 {cart.length}
               </span>
             </div>
@@ -541,7 +542,7 @@ export default function BoshSahifa() {
           </div>
         )}
 
-        <div className="flex min-h-[360px] flex-1 flex-col overflow-hidden rounded-2xl border-2 border-gold-200 bg-white shadow-sm sm:min-h-[430px] xl:min-h-[500px]">
+        <div className="@container/cart flex min-h-[360px] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl bg-slate-50/80 sm:min-h-[430px] xl:min-h-[500px]">
           {cart.length === 0 ? (
             <div className="flex flex-1 items-center justify-center p-6 text-center">
               <div className="flex flex-col items-center">
@@ -555,85 +556,106 @@ export default function BoshSahifa() {
               </div>
             </div>
           ) : (
-            <div className="flex-1 overflow-auto p-3 sm:p-4">
+            <div role="list" aria-label={t("cart.title")} className="flex-1 space-y-3 overflow-auto p-2.5 @min-[560px]/cart:p-3">
               {cart.map((item) => (
-                <div
+                <article
                   key={item.id}
-                  className="mb-2 grid gap-3 rounded-xl bg-gold-50/70 p-3 sm:grid-cols-[minmax(0,1fr)_132px_116px_36px] sm:items-center"
+                  role="listitem"
+                  className="min-w-0 rounded-xl border border-gold-100 bg-white p-3.5 shadow-[0_2px_5px_rgba(15,23,42,0.025)] transition-colors hover:border-gold-200 @min-[560px]/cart:p-4"
                 >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-[#0F172A]">{item.nom}</p>
-                    {(item.warehouseName || omborlar.find((ombor) => String(ombor.id) === item.warehouseId)) && (
-                      <p className="mt-0.5 text-xs text-[#94A3B8]">
-                        <span className="rounded-md bg-white px-1.5 py-0.5 font-bold text-gold-600 ring-1 ring-gold-100">
-                          {item.warehouseName || mijozNomi(omborlar.find((ombor) => String(ombor.id) === item.warehouseId)!)}
-                        </span>
-                      </p>
-                    )}
-                    {dollarNarxi(item, narxTuri) && (
-                      <p className="mt-0.5 text-xs">
-                        <span className="rounded-md bg-white px-1.5 py-0.5 font-bold text-gold-600 ring-1 ring-gold-100">
-                          ${dollarNarxi(item, narxTuri)?.narx.toLocaleString("uz-UZ", { maximumFractionDigits: 2 })}
-                        </span>
-                      </p>
-                    )}
-                    {item.baza && sotuvBirliklari(item.birliklar).length > 0 && (
-                      <select
-                        aria-label={t("cart.unitLabel", { name: item.nom })}
-                        value={item.birlikId ?? ""}
-                        onChange={(event) => setBirlik(item.id, event.target.value)}
-                        className="mt-1.5 h-8 w-28 rounded-lg border border-gold-100 bg-white px-2 text-xs font-bold text-slate-700 outline-none focus:border-gold-400"
-                      >
-                        {sotuvBirliklari(item.birliklar).map((birlik) => (
-                          <option key={birlik.unitId} value={birlik.asosiy ? "" : birlik.unitId}>{birlik.qisqa || birlik.nomi}</option>
-                        ))}
-                      </select>
-                    )}
+                  <div className="mb-3.5 flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+                    <div className="min-w-0">
+                      <p className="break-words text-[15px] font-semibold leading-6 text-[#0F172A]">{item.nom}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        {(item.warehouseName || omborlar.find((ombor) => String(ombor.id) === item.warehouseId)) && (
+                          <p className="flex min-w-0 items-center gap-1.5 text-xs text-slate-500">
+                            <Warehouse size={13} className="shrink-0 text-slate-400" aria-hidden />
+                            <span className="break-words">
+                              {t("cart.warehouse")}: {item.warehouseName || mijozNomi(omborlar.find((ombor) => String(ombor.id) === item.warehouseId)!)}
+                            </span>
+                          </p>
+                        )}
+                        {dollarNarxi(item, narxTuri) && (
+                          <p className="text-xs">
+                            <span className="rounded-md bg-gold-50 px-1.5 py-0.5 font-semibold tabular-nums text-gold-600">
+                              ${dollarNarxi(item, narxTuri)?.narx.toLocaleString("uz-UZ", { maximumFractionDigits: 2 })}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeFromCart(item.id)}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                      aria-label={`${t("cart.removeAria")}: ${item.nom}`}
+                      title={t("cart.removeAria")}
+                    >
+                      <Trash2 size={16} aria-hidden />
+                    </button>
+                  </div>
+
+                  <div className="grid min-w-0 grid-cols-1 items-start gap-x-3 gap-y-4 @min-[300px]/cart:grid-cols-2 @min-[560px]/cart:grid-cols-[minmax(72px,0.75fr)_minmax(0,1.15fr)_minmax(116px,1fr)_minmax(0,1.2fr)] @min-[560px]/cart:gap-x-4">
+                    <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-slate-500">
+                      {t("cart.unit")}
+                      {item.baza && sotuvBirliklari(item.birliklar).length > 0 ? (
+                        <select
+                          aria-label={t("cart.unitLabel", { name: item.nom })}
+                          value={item.birlikId ?? ""}
+                          onChange={(event) => setBirlik(item.id, event.target.value)}
+                          className="h-10 w-full min-w-0 rounded-lg border border-gold-100 bg-white px-2.5 text-sm font-semibold text-slate-700 outline-none transition focus:border-gold-400 focus:ring-2 focus:ring-gold-100"
+                        >
+                          {sotuvBirliklari(item.birliklar).map((birlik) => (
+                            <option key={birlik.unitId} value={birlik.asosiy ? "" : birlik.unitId}>{birlik.qisqa || birlik.nomi}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="flex h-10 items-center rounded-lg border border-slate-100 bg-slate-50 px-3 text-sm font-semibold text-slate-600">{t("cart.piece")}</span>
+                      )}
+                    </label>
                     <SotuvNarxiMaydoni
                       item={item}
                       onChange={(narx) => setSotuvNarxi(item.id, narx)}
                       formatSumma={formatSumma}
                     />
+                    <div className="min-w-0">
+                      <p className="mb-1.5 text-xs font-medium text-slate-500">{t("cart.quantity")}</p>
+                      <div className="flex h-10 items-center justify-between rounded-lg border border-gold-100 bg-white px-1 transition focus-within:border-gold-400 focus-within:ring-2 focus-within:ring-gold-100">
+                        <button
+                          type="button"
+                          aria-label={t("cart.decreaseQuantity", { name: item.nom })}
+                          onClick={() => updateQuantity(item.id, item.soni - 1)}
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-500 transition hover:bg-gold-50 hover:text-gold-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-300"
+                        >
+                          <Minus size={14} />
+                        </button>
+                        <SavatchaMiqdoriMaydoni
+                          soni={item.soni}
+                          qoldiq={item.qoldiq}
+                          label={t("cart.quantityLabel", { name: item.nom })}
+                          onChange={(soni) => updateQuantity(item.id, soni)}
+                          className="h-8 w-full min-w-0 flex-1 rounded-md bg-transparent px-0.5 text-center text-sm font-semibold tabular-nums text-slate-900 outline-none disabled:opacity-40"
+                        />
+                        <button
+                          type="button"
+                          aria-label={t("cart.increaseQuantity", { name: item.nom })}
+                          disabled={item.soni >= item.qoldiq}
+                          onClick={() => updateQuantity(item.id, item.soni + 1)}
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-500 transition hover:bg-gold-50 hover:text-gold-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-300 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="min-w-0 text-right">
+                      <p className="mb-1.5 text-xs font-medium text-slate-500">{t("cart.lineTotal")}</p>
+                      <p className="flex min-h-10 items-center justify-end rounded-lg bg-gold-50/80 px-2.5 py-2 text-sm font-bold tabular-nums text-gold-600 [overflow-wrap:anywhere]">
+                        {formatSumma(savatchaSotuvNarxi(item) * item.soni)}
+                      </p>
+                    </div>
                   </div>
-
-                  <div className="flex h-9 items-center justify-between rounded-lg bg-white px-1 shadow-sm">
-                    <button
-                      type="button"
-                      aria-label={t("cart.decreaseQuantity", { name: item.nom })}
-                      onClick={() => updateQuantity(item.id, item.soni - 1)}
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#94A3B8] hover:bg-gold-100 hover:text-gold-600"
-                    >
-                      <Minus size={14} />
-                    </button>
-                    <SavatchaMiqdoriMaydoni
-                      soni={item.soni}
-                      qoldiq={item.qoldiq}
-                      label={t("cart.quantityLabel", { name: item.nom })}
-                      onChange={(soni) => updateQuantity(item.id, soni)}
-                    />
-                    <button
-                      type="button"
-                      aria-label={t("cart.increaseQuantity", { name: item.nom })}
-                      disabled={item.soni >= item.qoldiq}
-                      onClick={() => updateQuantity(item.id, item.soni + 1)}
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#94A3B8] hover:bg-gold-100 hover:text-gold-600 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      <Plus size={14} />
-                    </button>
-                  </div>
-
-                  <p className="text-right text-sm font-bold text-gold-600">
-                    {formatSumma(savatchaSotuvNarxi(item) * item.soni)}
-                  </p>
-
-                  <button
-                    onClick={() => removeFromCart(item.id)}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-gray-400 shadow-sm transition hover:bg-red-50 hover:text-red-500"
-                    aria-label={t("cart.removeAria")}
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
+                </article>
               ))}
             </div>
           )}

@@ -1,6 +1,22 @@
 // Ko'p birlikli tovarlar: qoldiq bitta asosiy birlikda (masalan dona) yuritiladi, qo'shimcha birliklar (pochka, qop, korobka)
 // koeffitsient bilan qo'yiladi: `koeff` — 1 shu birlikda nechta asosiy birlik. UI'siz va `@/` importlarisiz yozilgan — testlarda ishlaydi.
 
+/**
+ * Backend hisoblagan birlik narxi (`GET /catalog/modifications/search` har bir birlikda): birlikning o'z narxi, bo'lmasa
+ * asosiy narx × koeffitsient (17 700 × 3 = 53 100). Sotuvda shu narx ishlatiladi; `chakana`/`ulgurji` esa faqat birlikning O'Z narxi
+ * (mahsulot kartochkasida tahrirlanadi) — ular aralashtirilmaydi.
+ */
+export type BirlikSamaraliNarxi = {
+  chakana: number | null;
+  ulgurji: number | null;
+  /** Narxning valyutasi (`currency` / `wholesaleCurrency`); kelmasa `null` — asosiy narx valyutasi. */
+  chakanaValyuta: "UZS" | "USD" | null;
+  ulgurjiValyuta: "UZS" | "USD" | null;
+  /** Faqat valyuta rejimida: so'mga o'girilgan qiymat. */
+  chakanaSom: number | null;
+  ulgurjiSom: number | null;
+};
+
 export type TovarBirligi = {
   unitId: string;
   kod: string | null;
@@ -17,6 +33,8 @@ export type TovarBirligi = {
   chakana: number | null;
   ulgurji: number | null;
   shtrix: string | null;
+  /** Backend hisoblagan sotuv narxi (qidiruv javobida keladi; mahsulotda bir nechta variant bo'lsa `/units` da yo'q). */
+  samarali?: BirlikSamaraliNarxi | null;
 };
 
 /** Narx turi: tanlangan birlik narxi shunga qarab olinadi (tannarx har doim asosiy narx × koeff). */
@@ -33,6 +51,27 @@ function musbatYokiNull(value: unknown) {
 }
 
 const yaxlit6 = (son: number) => Math.round(son * 1e6) / 1e6;
+const yaxlit2 = (son: number) => Math.round(son * 100) / 100;
+
+function valyutaKodi(value: unknown): "UZS" | "USD" | null {
+  const kod = typeof value === "string" ? value.trim().toUpperCase() : "";
+  return kod === "USD" ? "USD" : kod === "UZS" || kod === "SUM" ? "UZS" : null;
+}
+
+/** `effectiveRetailPrice` / `effectiveWholesalePrice` (+ valyuta, so'mdagi qiymat); ikkala narx ham yo'q bo'lsa `undefined`. */
+function samaraliNarxniOqish(item: Record<string, unknown>): BirlikSamaraliNarxi | undefined {
+  const chakana = musbatYokiNull(item.effectiveRetailPrice);
+  const ulgurji = musbatYokiNull(item.effectiveWholesalePrice);
+  if (chakana === null && ulgurji === null) return undefined;
+  return {
+    chakana,
+    ulgurji,
+    chakanaValyuta: valyutaKodi(item.currency),
+    ulgurjiValyuta: valyutaKodi(item.wholesaleCurrency),
+    chakanaSom: musbatYokiNull(item.effectiveRetailPriceUzs),
+    ulgurjiSom: musbatYokiNull(item.effectiveWholesalePriceUzs),
+  };
+}
 
 /** Backend `units` ro'yxatini (factor satr bo'lishi mumkin) tartibga keltiradi: asosiy birlik birinchi. */
 export function birliklarniMoslash(raw: unknown): TovarBirligi[] {
@@ -45,6 +84,7 @@ export function birliklarniMoslash(raw: unknown): TovarBirligi[] {
     const koeff = musbatYokiNull(item.factor ?? item.koeff);
     if (!unitId || koeff === null) continue;
     const nomi = String(item.name ?? item.nomi ?? "");
+    const samarali = samaraliNarxniOqish(item);
     natija.push({
       unitId,
       kod: typeof item.code === "string" ? item.code : null,
@@ -58,6 +98,7 @@ export function birliklarniMoslash(raw: unknown): TovarBirligi[] {
       chakana: musbatYokiNull(item.retailPrice),
       ulgurji: musbatYokiNull(item.wholesalePrice),
       shtrix: typeof item.barcode === "string" && item.barcode.trim() ? item.barcode.trim() : null,
+      ...(samarali ? { samarali } : {}),
     });
   }
   return natija.sort((a, b) => Number(b.asosiy) - Number(a.asosiy) || a.koeff - b.koeff);
@@ -109,11 +150,32 @@ export function miqdorYaroqlimi(birlik: TovarBirligi | undefined, miqdor: number
 type NarxJufti = { valyuta: "UZS" | "USD"; asl: number; som: number };
 
 /**
- * Tanlangan birlikdagi narx. Birlikning o'z narxi (chakana/ulgurji) bo'lsa — shu, bo'lmasa asosiy narx × koeff;
- * dollar narxning so'mdagi qiymati o'sha kurs bilan proporsional o'zgaradi. Tannarx har doim asosiy narx × koeff.
+ * Backend hisoblagan birlik narxi (`effective*`), agar u asosiy narx valyutasida bo'lsa; aks holda (yoki kelmagan bo'lsa) `null` —
+ * hisob eski formula bilan davom etadi. Tannarx uchun backend narxi yo'q.
+ */
+function samaraliNarx(birlik: TovarBirligi, tur: BirlikNarxTuri, valyuta: "UZS" | "USD") {
+  const s = birlik.samarali;
+  if (!s || tur === "COST") return null;
+  const asl = tur === "RETAIL" ? s.chakana : s.ulgurji;
+  const narxValyutasi = tur === "RETAIL" ? s.chakanaValyuta : s.ulgurjiValyuta;
+  if (asl === null || (narxValyutasi !== null && narxValyutasi !== valyuta)) return null;
+  return { asl: yaxlit2(asl), som: (tur === "RETAIL" ? s.chakanaSom : s.ulgurjiSom) };
+}
+
+/**
+ * Tanlangan birlikdagi narx. Backend hisoblagan narx (`effective*`) bo'lsa — shu; bo'lmasa birlikning o'z narxi (chakana/ulgurji),
+ * u ham bo'lmasa asosiy narx × koeff; dollar narxning so'mdagi qiymati o'sha kurs bilan proporsional o'zgaradi.
+ * Tannarx har doim asosiy narx × koeff.
  */
 export function birlikNarxi(narx: NarxJufti | null, birlik: TovarBirligi | undefined, tur: BirlikNarxTuri): NarxJufti | null {
   if (!narx || !birlik || birlik.asosiy) return narx;
+  const backend = samaraliNarx(birlik, tur, narx.valyuta);
+  if (backend) {
+    const som = backend.som !== null
+      ? Math.round(backend.som)
+      : narx.valyuta === "UZS" ? Math.round(backend.asl) : narx.asl > 0 ? Math.round(narx.som * (backend.asl / narx.asl)) : narx.som;
+    return { valyuta: narx.valyuta, asl: backend.asl, som };
+  }
   const oz = tur === "RETAIL" ? birlik.chakana : tur === "WHOLESALE" ? birlik.ulgurji : null;
   const asl = oz ?? yaxlit6(narx.asl * birlik.koeff);
   const nisbat = narx.asl > 0 ? asl / narx.asl : 0;
@@ -200,8 +262,6 @@ export type SavatchaBaza = {
   kurs?: number;
 };
 
-const yaxlit2 = (son: number) => Math.round(son * 100) / 100;
-
 /**
  * Savatcha qatori tanlangan birlikda: narxlar (so'mda), dollar narxlar va qoldiq shu birlikda hisoblanadi, shunda savatchaning
  * qolgan hisobi (jami, chegirma, to'lov) o'zgarmaydi. Birlikning o'z narxi (katalogdagi o'sha narx turi valyutasida) bo'lsa — shu,
@@ -216,17 +276,20 @@ export function savatchaBirlikQiymatlari(baza: SavatchaBaza, birlik: TovarBirlig
   let aslNarx = baza.aslNarx;
   let aslUlgurjiNarx = baza.aslUlgurjiNarx;
   if (!boshqa) {
+    // Backend hisoblagan narx (`effective*`) birinchi o'rinda; u kelmasa — birlikning o'z narxi, keyin asosiy narx × koeff.
     if ((baza.aslNarx ?? 0) > 0 && kurs > 0) {
-      aslNarx = birlik.chakana ?? yaxlit2((baza.aslNarx ?? 0) * k);
-      chakanaNarx = Math.round(aslNarx * kurs);
+      const backend = samaraliNarx(birlik, "RETAIL", "USD");
+      aslNarx = backend?.asl ?? birlik.chakana ?? yaxlit2((baza.aslNarx ?? 0) * k);
+      chakanaNarx = backend?.som != null ? Math.round(backend.som) : Math.round(aslNarx * kurs);
     } else {
-      chakanaNarx = birlik.chakana ?? Math.round(baza.chakanaNarx * k);
+      chakanaNarx = samaraliNarx(birlik, "RETAIL", "UZS")?.asl ?? birlik.chakana ?? Math.round(baza.chakanaNarx * k);
     }
     if ((baza.aslUlgurjiNarx ?? 0) > 0 && kurs > 0) {
-      aslUlgurjiNarx = birlik.ulgurji ?? yaxlit2((baza.aslUlgurjiNarx ?? 0) * k);
-      ulgurjiNarx = Math.round(aslUlgurjiNarx * kurs);
+      const backend = samaraliNarx(birlik, "WHOLESALE", "USD");
+      aslUlgurjiNarx = backend?.asl ?? birlik.ulgurji ?? yaxlit2((baza.aslUlgurjiNarx ?? 0) * k);
+      ulgurjiNarx = backend?.som != null ? Math.round(backend.som) : Math.round(aslUlgurjiNarx * kurs);
     } else {
-      ulgurjiNarx = birlik.ulgurji ?? (baza.ulgurjiNarx > 0 ? Math.round(baza.ulgurjiNarx * k) : 0);
+      ulgurjiNarx = samaraliNarx(birlik, "WHOLESALE", "UZS")?.asl ?? birlik.ulgurji ?? (baza.ulgurjiNarx > 0 ? Math.round(baza.ulgurjiNarx * k) : 0);
     }
   }
   const qoldiq = !birlik || birlik.asosiy ? baza.qoldiq : birlik.kasr ? Math.round((baza.qoldiq / k) * 1000) / 1000 : Math.floor(baza.qoldiq / k + 1e-9);

@@ -1,5 +1,10 @@
 {
   "cart": {
+    "warehouse": "Ombor",
+    "unit": "Birlik",
+    "piece": "dona",
+    "quantity": "Miqdor",
+    "lineTotal": "Jami",
     "quantityLabel": "{{name}} miqdori",
     "unitLabel": "{{name}} — sotuv birligi",
     "decreaseQuantity": "{{name}} miqdorini kamaytirish",

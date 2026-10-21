@@ -37,6 +37,24 @@ test('savatcha birlikda: dollar narx birlikka o‘tadi (1.2 $ × 50 = 60 $, so�
   assert.equal(savatchaBirlikQiymatlari(dollar, { ...pochka, chakana: 55 }, 'chakana').chakanaNarx, 660000);
 });
 
+test('savatcha birlikda: backend hisoblagan narx (effective*) birinchi o‘rinda, valyuta mos kelmasa eski hisob', () => {
+  const samarali = (qism) => ({ chakana: null, ulgurji: null, chakanaValyuta: null, ulgurjiValyuta: null, chakanaSom: null, ulgurjiSom: null, ...qism });
+  const korobka = { ...pochka, koeff: 3, chakana: null, samarali: samarali({ chakana: 53100, ulgurji: 50000 }) };
+  const som = { chakanaNarx: 17700, ulgurjiNarx: 16000, qoldiq: 100 };
+  assert.deepEqual(savatchaBirlikQiymatlari(som, korobka, 'chakana'), { chakanaNarx: 53100, ulgurjiNarx: 50000, narx: 53100, qoldiq: 33 });
+  // backend narxi formuladan farq qilsa — backendniki
+  assert.equal(savatchaBirlikQiymatlari(som, { ...korobka, samarali: samarali({ chakana: 50000 }) }, 'chakana').chakanaNarx, 50000);
+  // so'mdagi savatchada dollar belgili backend narxi ishlatilmaydi
+  assert.equal(savatchaBirlikQiymatlari(som, { ...korobka, samarali: samarali({ chakana: 15, chakanaValyuta: 'USD' }) }, 'chakana').chakanaNarx, 53100);
+  // dollar narx: asl narx backenddan, so'mi backenddagi so'm qiymatdan (yo'q bo'lsa kurs bilan)
+  const dollar = { chakanaNarx: 14400, ulgurjiNarx: 0, qoldiq: 100, aslNarx: 1.2, kurs: 12000 };
+  const dollarBirlik = { ...korobka, samarali: samarali({ chakana: 3.5, chakanaValyuta: 'USD', chakanaSom: 42500 }) };
+  const q = savatchaBirlikQiymatlari(dollar, dollarBirlik, 'chakana');
+  assert.equal(q.aslNarx, 3.5);
+  assert.equal(q.chakanaNarx, 42500);
+  assert.equal(savatchaBirlikQiymatlari(dollar, { ...dollarBirlik, samarali: samarali({ chakana: 3.5, chakanaValyuta: 'USD' }) }, 'chakana').chakanaNarx, 42000);
+});
+
 const element = (extra = {}) => ({ id: 'a::w1', modificationId: 'a', nom: 'Paket', narx: 270, chakanaNarx: 270, ulgurjiNarx: 250, qoldiq: 2270, warehouseId: 'w1', birliklar: [dona, pochka], ...extra });
 
 test('store: pochkaga o‘tganda narx, qoldiq va miqdor yangi birlikda; asosiyga qaytganda hammasi tiklanadi', () => {

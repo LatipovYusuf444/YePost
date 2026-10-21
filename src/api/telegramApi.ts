@@ -2,9 +2,11 @@ import axios from "axios";
 import apiClient from "./axios";
 import { apiData, type ApiEnvelope } from "./response";
 import {
+  mijozJavoblari,
   nakladnoyFaylNomi,
   telegramHavolasi,
   xabarnomaYozuvlari,
+  type MijozJavobi,
   type TelegramHavola,
   type XabarnomaYozuvi,
 } from "@/lib/telegramXabarnoma";
@@ -67,6 +69,11 @@ export const telegramApi = {
     xabarnomaYozuvlari(
       (await apiClient.get<unknown>("/notification-logs", { params: toza(sorov), xatoniYashirish: true })).data
     ),
+
+  // GET /sales/:id/customer-responses — mijozning botdagi javobi ("✅ To'g'ri keldi" / "❌ Xato bor"), yangisi birinchi.
+  // Fon rejimida o'qiladi: rolga ruxsat bo'lmasa qizil toast chiqmaydi, karta o'zi buni ko'rsatadi.
+  mijozJavoblari: async (sotuvId: string): Promise<MijozJavobi[]> =>
+    mijozJavoblari((await apiClient.get<unknown>(`/sales/${sotuvId}/customer-responses`, { xatoniYashirish: true })).data),
 
   // POST /sales/:id/notify → 201, NotificationLog (status QUEUED). Qoralama — 400 only_confirmed_sale_payable,
   // mijozsiz — 400 sale_has_no_customer, topilmadi — 404 sale_not_found.

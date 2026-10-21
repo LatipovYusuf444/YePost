@@ -139,6 +139,21 @@
     "attempts": "{{soni}} urinish",
     "noCustomer": "Mijozsiz (chakana) sotuvga Telegram xabari yuborilmaydi. Nakladnoyni PDF qilib yuklab olishingiz mumkin.",
     "loadError": "Holatni olib bo'lmadi",
+    "response": {
+      "label": "Mijoz javobi:",
+      "loadError": "Javobni olib bo'lmadi",
+      "status": {
+        "yoq": "Javob kelmagan",
+        "tasdiqlagan": "✅ To'g'ri keldi",
+        "xato": "❌ Xato bor",
+        "xatoSoni": "❌ Xato bor: {{soni}} ta"
+      },
+      "ok": "Mijoz nakladnoyni tasdiqladi",
+      "other": "Boshqa",
+      "commentAwaited": "izoh kutilmoqda",
+      "noComment": "izohsiz",
+      "awaiting": "Mijoz mahsulotni tanladi, izohini hali yozmadi (30 daqiqagacha kutiladi)."
+    },
     "status": {
       "yuborilmagan": "Hali yuborilmagan",
       "yuborildi": "Yuborildi",

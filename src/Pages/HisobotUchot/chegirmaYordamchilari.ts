@@ -3,6 +3,7 @@ import { discountReportApi } from "@/api/reportsApi";
 import { sotuvlarSahifasiniOlish } from "@/api/savdoApi";
 import { masulNomi, mijozNomi, sotuvChegirmaSummasi, sotuvHolati, sotuvSummasi } from "@/Pages/Savdo/savdoYordamchilari";
 import type { Sotuv } from "@/types/savdo";
+import { savdoHujjatimi } from "@/lib/boshlangichQarz";
 import type { DiscountReportGroupBy, DiscountReportRow, DiscountReportSummary } from "@/types/reports";
 
 // Chegirmalar hisoboti yordamchilari.
@@ -74,7 +75,7 @@ export async function tasdiqlanganSotuvlar(dateFrom: string, dateTo: string): Pr
     .flat()
     .filter((sotuv) => {
       const kun = sotuvKuni(sotuv);
-      return sotuvHolati(sotuv) === "CONFIRMED" && kun >= dateFrom && kun <= dateTo;
+      return savdoHujjatimi(sotuv) && sotuvHolati(sotuv) === "CONFIRMED" && kun >= dateFrom && kun <= dateTo;
     });
 }
 

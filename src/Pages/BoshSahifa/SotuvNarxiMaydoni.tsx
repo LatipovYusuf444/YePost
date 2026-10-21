@@ -41,9 +41,9 @@ export default function SotuvNarxiMaydoni({
   }
 
   return (
-    <div className="mt-1.5 space-y-1.5">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <label className="flex items-center gap-1.5 text-[11px] font-semibold text-[#64748B]">
+    <div className="min-w-0 space-y-1.5">
+      <div className="relative">
+        <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-slate-500">
           {t("cart.salePriceLabel")}
           <input
             type="text"
@@ -59,12 +59,12 @@ export default function SotuvNarxiMaydoni({
               if (!matn || kiritilgan <= 0) setMatn(String(joriy));
             }}
             onChange={(event) => ozgardi(event.target.value)}
-            className={`h-8 w-28 rounded-lg bg-white px-2 text-right text-xs font-bold tabular-nums text-[#0F172A] outline-none ring-1 transition focus:ring-2 ${
+            className={`h-10 w-full min-w-0 rounded-lg border bg-white pl-2.5 text-right text-sm font-semibold tabular-nums text-[#0F172A] outline-none transition focus:ring-2 ${chegirma > 0 || ustama > 0 ? "pr-9" : "pr-2.5"} ${
               ustama > 0
-                ? "ring-amber-300 focus:ring-amber-400"
+                ? "border-amber-300 focus:border-amber-400 focus:ring-amber-100"
                 : chegirma > 0
-                  ? "ring-emerald-300 focus:ring-emerald-400"
-                  : "ring-gold-200 focus:ring-gold-400"
+                  ? "border-emerald-300 focus:border-emerald-400 focus:ring-emerald-100"
+                  : "border-gold-100 focus:border-gold-400 focus:ring-gold-100"
             }`}
           />
         </label>
@@ -74,7 +74,7 @@ export default function SotuvNarxiMaydoni({
             onClick={() => onChange(undefined)}
             title={t("cart.resetPrice")}
             aria-label={t("cart.resetPrice")}
-            className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-[#94A3B8] shadow-sm transition hover:text-gold-600"
+            className="absolute bottom-1.5 right-1 flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-gold-50 hover:text-gold-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-300"
           >
             <Undo2 size={13} aria-hidden />
           </button>

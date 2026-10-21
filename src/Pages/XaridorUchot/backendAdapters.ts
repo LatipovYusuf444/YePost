@@ -112,6 +112,8 @@ export function sotuvniUiGa(item: Sotuv, lookup: HujjatLookup = {}): XaridorSavd
   return {
     id: item.id,
     xaridorId: item.customerId ?? item.customer?.id ?? "",
+    isOpeningDebt: item.isOpeningDebt,
+    currency: item.currency ?? "UZS",
     kompaniyaId: item.clientCompanyId ?? item.clientCompany?.id ?? "",
     nomi: item.note?.split("\n")[0] || item.docNumber || item.documentNumber || "Sotuv",
     raqam: item.docNumber || item.documentNumber || item.number || item.id,

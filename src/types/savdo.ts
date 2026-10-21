@@ -113,6 +113,8 @@ export type SotuvTolovi = {
 
 export type Sotuv = {
   id: string;
+  // Tovarsiz boshlang'ich qarz: qarzdorlikda qatnashadi, savdo aylanmasi va foydaga kirmaydi.
+  isOpeningDebt?: boolean;
   // Sotuv valyutasi: jami, qarz va foyda shu valyutada (UZS/USD). Berilmasa — so'm.
   currency?: string | null;
   number?: string;

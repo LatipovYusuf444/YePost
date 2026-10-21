@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Building2, Phone, Plus, Search, Trash2, UserRound } from "lucide-react";
+import { Building2, FileSpreadsheet, Phone, Plus, Search, Trash2, UserRound } from "lucide-react";
+import BoshlangichQarzImportModal from "./BoshlangichQarzImportModal";
 import { useTranslation } from "react-i18next";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
 import IjtimoiyIkonlar from "./IjtimoiyIkonlar";
@@ -23,6 +24,7 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
   const [qidiruv, setQidiruv] = useState("");
   const [korinish, setKorinish] = useState<Korinish>("karta");
   const [modalOchiq, setModalOchiq] = useState(false);
+  const [importOchiq, setImportOchiq] = useState(false);
   const [tahrirXaridor, setTahrirXaridor] = useState<Xaridor | null>(null);
   const [tafsilotXaridor, setTafsilotXaridor] = useState<Xaridor | null>(null);
   const [yashirinMaydon, setYashirinMaydon] = useState<Set<string>>(() => new Set());
@@ -121,6 +123,8 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
           <KorinishTanlov qiymat={korinish} onChange={setKorinish} />
         </div>
 
+        <div className="flex flex-wrap items-center gap-2">
+        <button type="button" onClick={() => setImportOchiq(true)} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-2xl border border-blue-200 bg-white px-4 text-sm font-semibold text-blue-700 hover:bg-blue-50"><FileSpreadsheet size={17} aria-hidden />{t("openingDebt.import.button")}</button>
         <button
           onClick={() => modalniOchish()}
           className="inline-flex h-11 shrink-0 items-center gap-2 rounded-2xl bg-orange-500 px-4 text-sm font-black text-white"
@@ -128,6 +132,7 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
           <Plus size={17} />
           {t("xaridorlar.addButton")}
         </button>
+        </div>
       </div>
 
       {korinish === "jadval" && (
@@ -252,6 +257,8 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
           onYopish={() => setTafsilotXaridor(null)}
         />
       )}
+
+      {importOchiq && <BoshlangichQarzImportModal onClose={() => setImportOchiq(false)} />}
 
       {modalOchiq && (
         <XaridorModal

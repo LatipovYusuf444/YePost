@@ -240,6 +240,7 @@ export default function SotuvlarJadvali({
                 >
                   <td className="border-b border-gray-100 px-4 py-3.5 font-bold tabular-nums text-slate-900">
                     {sotuvJadvalId(sotuv)}
+                    {sotuv.isOpeningDebt && <span className="mt-1 block w-fit rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">{t("xaridor_uchot:openingDebt.title")}</span>}
                   </td>
                   <td className="border-b border-gray-100 px-4 py-3.5 font-medium">
                     {tarixKorinish ? (
@@ -343,7 +344,7 @@ export default function SotuvlarJadvali({
                       <div className="flex items-center justify-end">
                         <button
                           type="button"
-                          disabled={stat.holat === "FULLY_RETURNED" || !onQaytarish}
+                          disabled={Boolean(sotuv.isOpeningDebt) || stat.holat === "FULLY_RETURNED" || !onQaytarish}
                           onClick={(event) => {
                             event.stopPropagation();
                             onQaytarish?.(sotuv);

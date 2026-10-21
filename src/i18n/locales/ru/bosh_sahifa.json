@@ -1,5 +1,10 @@
 {
   "cart": {
+    "warehouse": "Склад",
+    "unit": "Единица",
+    "piece": "шт.",
+    "quantity": "Количество",
+    "lineTotal": "Сумма",
     "quantityLabel": "Количество: {{name}}",
     "unitLabel": "{{name}} — единица продажи",
     "decreaseQuantity": "Уменьшить количество: {{name}}",

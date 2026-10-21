@@ -5,6 +5,8 @@ import JadvalYuklanmoqda from "@/Pages/Savdo/JadvalYuklanmoqda";
 import type { Sotuv } from "@/types/savdo";
 import { mijozNomi, pulniFormatlash, sananiFormatlash, sotuvHolati, sotuvQarzdorlikSummasi, sotuvRaqami, sotuvSummasi, sotuvTolanganSummasi, sotuvValyutasi } from "@/Pages/Savdo/savdoYordamchilari";
 import TablePagination from "@/Components/common/TablePagination";
+import { sotuvlarRoyxatiniOlish } from "@/api/savdoApi";
+import { getApiErrorMessage } from "@/api/sozlamalarApi";
 
 type Props = {
   sotuvlar: Sotuv[];
@@ -24,9 +26,33 @@ export default function Qarzdorliklar({ sotuvlar, onSotuvniOchish, onYangilash, 
   const [yangilanmoqda, setYangilanmoqda] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const qarzlar = useMemo(() => sotuvlar
+  const [openingDebts, setOpeningDebts] = useState<Sotuv[]>([]);
+  const [openingLoaded, setOpeningLoaded] = useState(false);
+  const [openingLoading, setOpeningLoading] = useState(true);
+  const [openingError, setOpeningError] = useState("");
+  const [revision, setRevision] = useState(0);
+  useEffect(() => {
+    const refresh = () => setRevision((value) => value + 1);
+    window.addEventListener("savdo:yangilandi", refresh);
+    return () => window.removeEventListener("savdo:yangilandi", refresh);
+  }, []);
+  useEffect(() => {
+    let active = true;
+    setOpeningLoading(true);
+    setOpeningError("");
+    void sotuvlarRoyxatiniOlish({ openingDebt: true })
+      .then((items) => { if (active) { setOpeningDebts(items.filter((item) => item.isOpeningDebt)); setOpeningLoaded(true); } })
+      .catch((cause) => { if (active) setOpeningError(getApiErrorMessage(cause)); })
+      .finally(() => { if (active) setOpeningLoading(false); });
+    return () => { active = false; };
+  }, [revision]);
+  const hujjatlar = useMemo(() => Array.from(new Map([
+    ...(openingLoaded ? sotuvlar.filter((item) => !item.isOpeningDebt) : sotuvlar),
+    ...openingDebts,
+  ].map((item) => [item.id, item])).values()), [sotuvlar, openingDebts, openingLoaded]);
+  const qarzlar = useMemo(() => hujjatlar
     .filter((sotuv) => sotuvHolati(sotuv) === "CONFIRMED" && sotuvQarzdorlikSummasi(sotuv) > 0)
-    .sort((a, b) => sotuvQarzdorlikSummasi(b) - sotuvQarzdorlikSummasi(a)), [sotuvlar]);
+    .sort((a, b) => sotuvQarzdorlikSummasi(b) - sotuvQarzdorlikSummasi(a)), [hujjatlar]);
   const rows = useMemo(() => {
     const q = qidiruv.trim().toLowerCase();
     return qarzlar.filter((sotuv) => {
@@ -37,6 +63,7 @@ export default function Qarzdorliklar({ sotuvlar, onSotuvniOchish, onYangilash, 
   const visibleRows = useMemo(() => rows.slice((page - 1) * pageSize, page * pageSize), [rows, page, pageSize]);
   useEffect(() => { setPage(1); }, [rows, pageSize]);
   async function yangilash() {
+    setRevision((value) => value + 1);
     setYangilanmoqda(true);
     try { await onYangilash(); } finally { setYangilanmoqda(false); }
   }
@@ -67,16 +94,17 @@ export default function Qarzdorliklar({ sotuvlar, onSotuvniOchish, onYangilash, 
         {(["BARCHASI", "MIJOZ", "KOMPANIYA"] as Tur[]).map((item) => <button key={item} onClick={() => setTur(item)} className={`rounded-xl px-3 py-2 text-xs font-black sm:px-5 ${tur === item ? "bg-white text-orange-600 shadow-sm" : "text-slate-500"}`}>{turNomi[item]}</button>)}
       </div>
     </div>
+    {openingError && <p role="alert" className="mx-6 my-3 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{openingError}</p>}
     <div className="overflow-x-auto"><table className="w-full min-w-[950px] text-left text-sm">
       <thead className="bg-[#F8FAFC] text-xs font-black uppercase text-slate-400"><tr><th className="px-8 py-4">{t("table.customer")}</th><th className="px-5 py-4">{t("table.sale")}</th><th className="px-5 py-4">{t("table.total")}</th><th className="px-5 py-4">{t("table.paid")}</th><th className="px-5 py-4">{t("table.debt")}</th><th className="px-5 py-4">{t("table.date")}</th></tr></thead>
       <tbody className="divide-y divide-orange-100/70">{visibleRows.map((sotuv) => <tr key={sotuv.id} onClick={() => void onSotuvniOchish(sotuv)} className="cursor-pointer hover:bg-orange-50/50">
         <td className="px-8 py-5"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-50 text-orange-500 ring-1 ring-orange-100">{kompaniyami(sotuv) ? <Building2 size={18}/> : <UserRound size={18}/>}</span><div><p className="font-black text-slate-900">{mijozNomi(sotuv)}</p><p className="mt-0.5 text-xs font-semibold text-slate-400">{telefon(sotuv)}</p></div></div></td>
-        <td className="px-5 py-5 font-semibold text-slate-900">{sotuvRaqami(sotuv)}</td><td className="px-5 py-5 font-bold text-slate-700">{pulniFormatlash(sotuvSummasi(sotuv), sotuvValyutasi(sotuv))}</td><td className="px-5 py-5 font-bold text-emerald-600">{pulniFormatlash(sotuvTolanganSummasi(sotuv), sotuvValyutasi(sotuv))}</td><td className="px-5 py-5"><span className="rounded-xl bg-red-50 px-3 py-2 font-black text-red-600 ring-1 ring-red-100">{pulniFormatlash(sotuvQarzdorlikSummasi(sotuv), sotuvValyutasi(sotuv))}</span></td><td className="px-5 py-5 font-semibold text-slate-500">{sananiFormatlash(sotuv.confirmedAt ?? sotuv.createdAt ?? sotuv.date)}</td>
+        <td className="px-5 py-5 font-semibold text-slate-900">{sotuvRaqami(sotuv)}{sotuv.isOpeningDebt && <span className="mt-1 block w-fit rounded-md bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">{t("xaridor_uchot:openingDebt.title")}</span>}</td><td className="px-5 py-5 font-bold text-slate-700">{pulniFormatlash(sotuvSummasi(sotuv), sotuvValyutasi(sotuv))}</td><td className="px-5 py-5 font-bold text-emerald-600">{pulniFormatlash(sotuvTolanganSummasi(sotuv), sotuvValyutasi(sotuv))}</td><td className="px-5 py-5"><span className="rounded-xl bg-red-50 px-3 py-2 font-black text-red-600 ring-1 ring-red-100">{pulniFormatlash(sotuvQarzdorlikSummasi(sotuv), sotuvValyutasi(sotuv))}</span></td><td className="px-5 py-5 font-semibold text-slate-500">{sananiFormatlash(sotuv.date ?? sotuv.confirmedAt ?? sotuv.createdAt)}</td>
       </tr>)}</tbody>
     </table></div>
     <TablePagination page={page} pageSize={pageSize} totalItems={rows.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
-    {yuklanmoqda && rows.length === 0 && <JadvalYuklanmoqda ikonka={<CircleDollarSign size={24} />} />}
-    {!yuklanmoqda && rows.length === 0 && <div className="px-6 py-20 text-center"><CircleDollarSign className="mx-auto text-orange-200" size={42}/><h2 className="mt-3 text-lg font-black text-slate-800">{t("empty.title")}</h2><p className="mt-1 text-sm font-semibold text-slate-400">{t("empty.subtitle")}</p></div>}
+    {(yuklanmoqda || openingLoading) && rows.length === 0 && <JadvalYuklanmoqda ikonka={<CircleDollarSign size={24} />} />}
+    {!yuklanmoqda && !openingLoading && rows.length === 0 && <div className="px-6 py-20 text-center"><CircleDollarSign className="mx-auto text-orange-200" size={42}/><h2 className="mt-3 text-lg font-black text-slate-800">{t("empty.title")}</h2><p className="mt-1 text-sm font-semibold text-slate-400">{t("empty.subtitle")}</p></div>}
     <div className="flex justify-between border-t border-orange-100 bg-[#F8FAFC] px-8 py-4 text-xs font-bold text-slate-500"><span>{t("footer.count", { count: rows.length })}</span><span>{t("footer.hint")}</span></div>
   </section>;
 }

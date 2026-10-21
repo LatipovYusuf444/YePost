@@ -27,6 +27,7 @@ import {
 import AppSelect from "@/Components/ui/AppSelect";
 import InlineLoading from "@/Components/common/InlineLoading";
 import { sotuvlarRoyxatiniOlish } from "@/api/savdoApi";
+import { savdoHujjatimi } from "@/lib/boshlangichQarz";
 import { barchaModifikatsiyalar, chiqimApi, kirimApi, kochirishApi, omborlarApi } from "@/api/omborApi";
 import {
   counterpartyBalanceReportApi,
@@ -825,6 +826,7 @@ export default function Monitoring() {
     () =>
       nuqtalarGaGuruhlash(
         barchaSotuvlar.filter((sotuv) => {
+          if (!savdoHujjatimi(sotuv)) return false;
           const sana = kunniOlish(sotuvSanasi(sotuv));
           return (
             sotuvHolati(sotuv) === "CONFIRMED" &&
@@ -920,7 +922,7 @@ export default function Monitoring() {
 
   const davrSavdosi = useMemo(() => {
     const tasdiqlangan = barchaSotuvlar.filter((sotuv) => {
-      if (sotuvHolati(sotuv) !== "CONFIRMED") return false;
+      if (!savdoHujjatimi(sotuv) || sotuvHolati(sotuv) !== "CONFIRMED") return false;
       const sana = kunniOlish(sotuvSanasi(sotuv));
       return sana >= dateFrom && sana <= dateTo;
     });
@@ -938,7 +940,7 @@ export default function Monitoring() {
   // uchun qo'shimcha so'rovsiz, mavjud ma'lumotdan hisoblanadi.
   const oldingiDavrSavdosi = useMemo(() => {
     const tasdiqlangan = barchaSotuvlar.filter((sotuv) => {
-      if (sotuvHolati(sotuv) !== "CONFIRMED") return false;
+      if (!savdoHujjatimi(sotuv) || sotuvHolati(sotuv) !== "CONFIRMED") return false;
       const sana = kunniOlish(sotuvSanasi(sotuv));
       return sana >= oldingiOraliq.from && sana <= oldingiOraliq.to;
     });

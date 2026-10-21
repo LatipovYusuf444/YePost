@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Bell, ChevronDown, MessageSquare, Package } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import BoshlangichQarzTafsilotlariModal from "./BoshlangichQarzTafsilotlariModal";
 import FaoliyatPaneli from "./FaoliyatPaneli";
 import TezkorPanel from "./TezkorPanel";
 import type { XaridorSavdosi } from "./types";
@@ -26,7 +27,13 @@ const tabKalitlari: Tab[] = ["umumiy", "tovarlar", "hisobFakturalar", "tarix"];
 
 // Savdolar jadvalidagi qatorni bosganda ochiladigan savdo tafsilotlari oynasi.
 // Savdo modulidagi SotuvTafsilotlariModal ko'rinishida, mock-first (backendsiz).
-export default function XaridorSavdoModal({ savdo, xaridorNomi, customerId, partnerId, onYopish }: Props) {
+export default function XaridorSavdoModal(props: Props) {
+  return props.savdo.isOpeningDebt
+    ? <BoshlangichQarzTafsilotlariModal key={props.savdo.id} sotuvId={props.savdo.id} onClose={props.onYopish} />
+    : <OddiyXaridorSavdoModal {...props} />;
+}
+
+function OddiyXaridorSavdoModal({ savdo, xaridorNomi, customerId, partnerId, onYopish }: Props) {
   const { t } = useTranslation("xaridor_uchot");
   const tablar = tabKalitlari.map((kalit) => ({ kalit, nom: t(`savdoModal.tabs.${kalit}`) }));
   const [faolTab, setFaolTab] = useState<Tab>("umumiy");
