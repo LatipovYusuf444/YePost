@@ -41,6 +41,7 @@ import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
+import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import { bugungiToshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
 import { crmApi } from "@/api/crmApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
@@ -1781,10 +1782,7 @@ export default function YangiSotuvModal({
 
                             <div className="min-w-0">
                               <p className={mobilYorliqKlassi}>{t(sotuvVal === "USD" ? "labels.salePriceUsd" : "labels.salePrice")}</p>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.01"
+                              <SummaMaydoni
                                 disabled={narx <= 0}
                                 value={narxTahriri?.qator === index ? narxTahriri.matn : narx > 0 ? sotuvNarxi : ""}
                                 data-sotuv-narx={index}
@@ -1796,9 +1794,9 @@ export default function YangiSotuvModal({
                                   event.preventDefault();
                                   fokusSoralish(index, "miqdor");
                                 }}
-                                onChange={(event) => {
-                                  setNarxTahriri({ qator: index, matn: event.target.value });
-                                  const kiritilgan = raqamgaAylantirish(event.target.value);
+                                onChange={(qiymat) => {
+                                  setNarxTahriri({ qator: index, matn: qiymat });
+                                  const kiritilgan = raqamgaAylantirish(qiymat);
                                   // Bo'sh yoki noto'g'ri qiymat katalog narxiga qaytaradi; katalogdan past narx chegirma, baland narx ustama bo'ladi.
                                   const { ustama: yangiUstama, chegirma: yangiChegirma } = kiritilganNarx({ katalog: katalogNarxi, kiritilgan, miqdor });
                                   const ustamaMatni = yangiUstama > 0 ? String(yangiUstama) : "";
@@ -1862,19 +1860,15 @@ export default function YangiSotuvModal({
                             <div className="min-w-0">
                               <p className={mobilYorliqKlassi}>{t(sotuvVal === "USD" ? "labels.discountUsd" : "labels.discount")}</p>
                               <div className="relative">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max={mahsulot.discountTuri === "foiz" ? 100 : undefined}
-                                  step="0.01"
+                                <SummaMaydoni
                                   value={mahsulot.discountTuri === "foiz" ? mahsulot.discountFoiz : mahsulot.discount}
                                   data-sotuv-chegirma={index}
-                                  onChange={(event) =>
+                                  onChange={(qiymat) =>
                                     mahsulotniYangilash(
                                       index,
                                       mahsulot.discountTuri === "foiz"
-                                        ? { discountFoiz: raqamgaAylantirish(event.target.value) > 100 ? "100" : event.target.value }
-                                        : { discount: event.target.value }
+                                        ? { discountFoiz: raqamgaAylantirish(qiymat) > 100 ? "100" : qiymat }
+                                        : { discount: qiymat }
                                     )
                                   }
                                   onKeyDown={(event) => {

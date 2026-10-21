@@ -29,6 +29,7 @@ import {
   type TahrirQatori,
 } from "@/lib/qoralamaTahriri";
 import { narxSotuvValyutasida, qatorNarxTuri, turNarxi } from "@/lib/savdoNarxlari";
+import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import { useValyutaStore, type Valyuta } from "@/lib/valyuta";
 import { useSavdoSozlamalariStore } from "@/store/savdoSozlamalariStore";
 import { useSavdoStore } from "@/store/savdoStore";
@@ -502,13 +503,11 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
 
               <Maydon yorliq={t("common.jadval.narx")}>
                 <div className={`${ORAMA} ${narxXatoKorinadi ? XATO_RAMKA : ODDIY_RAMKA}`}>
-                  <input
-                    type="text"
-                    inputMode="decimal"
+                  <SummaMaydoni
                     value={q.narx}
                     disabled={ochirildi}
                     aria-label={`${t("common.jadval.narx")}: ${nom}`}
-                    onChange={(event) => qatorniYangilash(q.kalit, (qator) => narxniOzgartirish(qator, kiritishniTozalash(event.target.value, 2)))}
+                    onChange={(qiymat) => qatorniYangilash(q.kalit, (qator) => narxniOzgartirish(qator, kiritishniTozalash(qiymat, 2)))}
                     onFocus={(event) => event.currentTarget.select()}
                     onKeyDown={(event) => event.key === "Enter" && event.currentTarget.blur()}
                     placeholder="0"
@@ -527,14 +526,12 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
               <Maydon yorliq={t("qoralamaTahrir.chegirma")}>
                 <div className={`${ORAMA} ${chegirmaXatoKorinadi ? XATO_RAMKA : ODDIY_RAMKA}`}>
                   {q.valyuta === "USD" && <Belgi valyuta="USD" />}
-                  <input
-                    type="text"
-                    inputMode="decimal"
+                  <SummaMaydoni
                     value={q.chegirma}
                     disabled={ochirildi}
                     aria-label={`${t("qoralamaTahrir.chegirma")}: ${nom}`}
-                    onChange={(event) =>
-                      qatorniYangilash(q.kalit, (qator) => chegirmaniOzgartirish(qator, kiritishniTozalash(event.target.value, 2)))
+                    onChange={(qiymat) =>
+                      qatorniYangilash(q.kalit, (qator) => chegirmaniOzgartirish(qator, kiritishniTozalash(qiymat, 2)))
                     }
                     onFocus={(event) => event.currentTarget.select()}
                     onKeyDown={(event) => event.key === "Enter" && event.currentTarget.blur()}

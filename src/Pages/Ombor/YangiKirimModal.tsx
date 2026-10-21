@@ -1,4 +1,5 @@
 import AppSelect from "@/Components/ui/AppSelect";
+import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Barcode,
@@ -737,14 +738,11 @@ export default function YangiKirimModal({ onClose }: Props) {
                         <Barcode size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input value={mod?.barcode ?? ""} readOnly placeholder={t("yangiKirim.table.barcodePlaceholder")} className={`${inputSm} pl-8`} />
                       </div>
-                      <div className="relative"><input
-                        type="number"
-                        min="0"
-                        step="0.01"
+                      <div className="relative"><SummaMaydoni
                         aria-label={`${t("yangiKirim.table.costPriceHeader")} (${korsatishValyutasi(row, "price")})`}
                         value={narxQiymati(row, "price")}
                         data-kirim-narx={row.id}
-                        onChange={(event) => narxniKiritish(row, "price", event.target.value)}
+                        onChange={(qiymat) => narxniKiritish(row, "price", qiymat)}
                         onKeyDown={(event) => {
                           if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
                           event.preventDefault();
@@ -753,13 +751,10 @@ export default function YangiKirimModal({ onClose }: Props) {
                         placeholder={t("yangiKirim.table.pricePlaceholder")}
                         className={`${inputSm} pr-16`}
                       /><span className="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{korsatishValyutasi(row, "price")}</span></div>
-                      <div className="relative"><input
-                        type="number"
-                        min="0"
-                        step="0.01"
+                      <div className="relative"><SummaMaydoni
                         aria-label={`${t("yangiKirim.table.retailPriceHeader")} (${korsatishValyutasi(row, "retailPrice")})`}
                         value={narxQiymati(row, "retailPrice")}
-                        onChange={(event) => narxniKiritish(row, "retailPrice", event.target.value)}
+                        onChange={(qiymat) => narxniKiritish(row, "retailPrice", qiymat)}
                         onKeyDown={(event) => {
                           if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
                           event.preventDefault();
@@ -768,13 +763,10 @@ export default function YangiKirimModal({ onClose }: Props) {
                         placeholder={t("yangiKirim.table.pricePlaceholder")}
                         className={`${inputSm} pr-16`}
                       /><span className="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{korsatishValyutasi(row, "retailPrice")}</span></div>
-                      <div className="relative"><input
-                        type="number"
-                        min="0"
-                        step="0.01"
+                      <div className="relative"><SummaMaydoni
                         aria-label={`${t("yangiKirim.table.wholesalePriceHeader")} (${korsatishValyutasi(row, "wholesalePrice")})`}
                         value={narxQiymati(row, "wholesalePrice")}
-                        onChange={(event) => narxniKiritish(row, "wholesalePrice", event.target.value)}
+                        onChange={(qiymat) => narxniKiritish(row, "wholesalePrice", qiymat)}
                         onKeyDown={(event) => {
                           if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
                           event.preventDefault();
@@ -1014,15 +1006,15 @@ function MahsulotYaratishPanel({
               <SelectField label={t("mahsulotYaratish.unitLabel")} value={unitId} onChange={setUnitId} placeholder={t("mahsulotYaratish.selectPlaceholder")} options={birliklar.map((item) => ({ id: item.id, name: item.shortName ? `${item.name} (${item.shortName})` : item.name }))} />
               <label className="space-y-2 text-sm font-bold text-slate-500">
                 <span>{t("mahsulotYaratish.costPriceLabel")}</span>
-                <input type="number" min="0" step="0.01" value={costPrice} onChange={(event) => setCostPrice(event.target.value)} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
+                <SummaMaydoni value={costPrice} onChange={setCostPrice} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
               </label>
               <label className="space-y-2 text-sm font-bold text-slate-500">
                 <span>{t("mahsulotYaratish.retailPriceLabel")}</span>
-                <input type="number" min="0" step="0.01" value={retailPrice} onChange={(event) => setRetailPrice(event.target.value)} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
+                <SummaMaydoni value={retailPrice} onChange={setRetailPrice} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
               </label>
               <label className="space-y-2 text-sm font-bold text-slate-500">
                 <span>{t("mahsulotYaratish.wholesalePriceLabel")}</span>
-                <input type="number" min="0" step="0.01" value={wholesalePrice} onChange={(event) => setWholesalePrice(event.target.value)} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
+                <SummaMaydoni value={wholesalePrice} onChange={setWholesalePrice} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
               </label>
             </div>
             <div className="flex justify-end gap-3 pt-2">

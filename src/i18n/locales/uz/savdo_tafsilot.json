@@ -364,6 +364,16 @@
     "tolangan": "To'langan",
     "qarz": "Qarz"
   },
+  "ombordanChiqarishQatori": {
+    "sarlavha": "Ombordan chiqarish",
+    "nomi": "Ombordan chiqarish №{{raqam}}",
+    "xulosa": "{{soni}} ta mahsulot",
+    "amallar": "Amallar",
+    "yopish": "Menyuni yopish",
+    "ochish": "Chiqarilgan mahsulotlarni ochish",
+    "pdf": "Nakladnoy (PDF)",
+    "chiqarilgan": "Chiqarilgan"
+  },
   "tolovTafsilot": {
     "belgisi": "To'lov",
     "summa": "To'lov summasi",
@@ -649,6 +659,47 @@
       "masulXodimKerak": "Ish yoki vazifa yaratish uchun mas'ul xodim kerak."
     }
   },
+  "ombordanChiqqan": {
+    "sarlavha": "Ombordan chiqqan mahsulotlar",
+    "tavsif": "Shu sotuv bilan ombordan haqiqatda qaysi mahsulot qancha chiqqani (ombor harakati bo'yicha).",
+    "yangilash": "Yangilash",
+    "yuklanmoqda": "Ombor harakati yuklanmoqda...",
+    "xato": "Ombor harakatini olib bo'lmadi.",
+    "qaytaUrinish": "Qayta urinish",
+    "bosh": "Bu sotuv bilan ombordan chiqqan mahsulot topilmadi.",
+    "nomiYoq": "Mahsulot",
+    "jadval": {
+      "mahsulot": "Mahsulot",
+      "ombor": "Ombor",
+      "chiqdi": "Chiqdi",
+      "qaytdi": "Qaytdi",
+      "vaqt": "Vaqt"
+    },
+    "tovarSoni": "{{soni}} ta tovar",
+    "jamiChiqdi": "Jami chiqdi",
+    "havola": "Ombordan chiqarilgan mahsulotlarni ko'rish",
+    "havolaXulosa": "{{soni}} ta mahsulot ombordan chiqarilgan",
+    "havolaOchish": "Qaysi mahsulot qancha chiqqanini ko'rish",
+    "qadamHavola": "Chiqarilgan mahsulotlar",
+    "oyna": {
+      "eyebrow": "Ombordan chiqarish",
+      "sarlavha": "Ombordan chiqarilgan mahsulotlar",
+      "yopish": "Yopish",
+      "sana": "Chiqarilgan sana",
+      "sanaVaVaqt": "Sana",
+      "ombor": "Ombor",
+      "mahsulotlar": "Mahsulotlar",
+      "mahsulotSoni": "{{soni}} ta",
+      "kiritilgan": "Kiritilgan: {{vaqt}}",
+      "sotuvda": "Sotuvda: {{miqdor}}",
+      "hujjat": "Hujjat",
+      "boshIzoh": "Sotuv tasdiqlangan bo'lsa, ombor harakati hisobotidan (Hisobotlar → Tovar harakati) tekshirib ko'ring.",
+      "holat": {
+        "chiqarilgan": "Ombordan chiqarilgan",
+        "bekor": "Sotuv bekor qilingan"
+      }
+    }
+  },
   "faoliyatPanel": {
     "tablar": {
       "ish": {
@@ -735,7 +786,8 @@
     "sotuv": "Sotuv",
     "mijoz": "Mijoz",
     "ombor": "Ombor",
-    "korish": "Hujjatni ko'rish"
+    "korish": "Hujjatni ko'rish",
+    "tafsilot": "Ombor hujjati"
   },
   "feedCard": {
     "ochirishAria": "{{title}}ni o'chirish"

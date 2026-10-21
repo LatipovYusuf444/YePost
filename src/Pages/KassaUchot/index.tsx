@@ -32,6 +32,8 @@ import type {
 } from "@/types/cashOperation";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
 import KassaAmaliyotModal from "./KassaAmaliyotModal";
+import NomiKatagi from "./NomiKatagi";
+import { amaliyotSotuvIdsi, nomQismlari } from "./nomQismlari";
 import ZavodBonusi from "./ZavodBonusi";
 import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali, KassaYonalishi } from "./types";
 import { kassaSummasi, sanaFormat, summaFormat } from "./yordamchilar";
@@ -40,8 +42,10 @@ import ModalTablari from "@/Components/common/ModalTablari";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import { toshkentKuni } from "@/lib/hujjatSanasi";
+import { kassaRaqamlari, kassaTartibi } from "@/lib/kassaNomlari";
 import LoadingState from "@/Components/common/LoadingState";
 import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
+import { useKassaSotuvKeshi } from "@/hooks/useKassaSotuvlari";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { rolniNormallashtirish } from "@/lib/roles";
 type Bolim = { yonalish: KassaYonalishi };
@@ -122,8 +126,10 @@ export default function KassaUchot() {
       turi: backendTuriniMoslash(item),
       // Backend sotuv to'lovlarini ham holati bilan qaytaradi — bekor qilingan sotuvning to'lovi kassada hisobga olinmaydi.
       holat: item.status === "CANCELLED" ? "bekor_qilingan" : item.status === "DRAFT" ? "qoralama" : "tasdiqlangan",
+      // `raqam` ro'yxat yig'ilganda K1, K2... ga almashadi; hujjatning o'z raqami (SOT-000014) `hujjatRaqami`da qoladi.
       raqam: item.refDocNumber || item.id.slice(0, 8).toUpperCase(),
-      nomi: item.refDocNumber || item.note || item.source,
+      hujjatRaqami: item.refDocNumber || undefined,
+      nomi: item.refDocNumber || item.note || t(`types.${backendTuriniMoslash(item)}`),
       kontragent: item.counterpartyName || branch?.name || "",
       summa: Number(item.amount ?? 0),
       sana: item.date,
@@ -171,6 +177,7 @@ export default function KassaUchot() {
       saleId: item.saleId ?? undefined,
       purchaseId: item.purchaseId ?? undefined,
       raqam: item.docNumber,
+      hujjatRaqami: item.docNumber || undefined,
       nomi: item.name || t(`types.${cashOperationTuri[item.type]}`),
       kontragent: counterparty,
       summa: Number(item.amount ?? 0),
@@ -311,7 +318,7 @@ export default function KassaUchot() {
   function ochirishniSorash(amaliyot: KassaAmaliyoti) {
     if (!ochirishHolati(amaliyot).mumkin) return;
     setXatolik("");
-    setTasdiqAmaliyot(amaliyot);
+    setTasdiqAmaliyot(nomBilan(amaliyot));
   }
 
   async function ochirish(amaliyot: KassaAmaliyoti) {
@@ -357,18 +364,35 @@ export default function KassaUchot() {
     setYonalish(yangiYonalish);
   }
 
+  // Har bir bo'limda eng eskisi K1, keyingisi K2... — jadval ham shu tartibda. Raqam qidiruvga bog'liq emas.
+  const raqamlangan = useMemo(() => {
+    const raqamlar = kassaRaqamlari(amaliyotlar);
+    return amaliyotlar
+      .map((amaliyot) => ({ ...amaliyot, raqam: raqamlar.get(amaliyot.id) ?? amaliyot.raqam }))
+      .sort((a, b) => kassaTartibi(a, b));
+  }, [amaliyotlar]);
+
+  // "Nomi" katagidagi sotuv raqami va mahsulot nomlari ekranda turgan qatorlar uchungina, fonda olinadi (NomiKatagi).
+  const sotuvKeshi = useKassaSotuvKeshi();
+
+  // Ochilayotgan oynaga (ko'rinish, o'chirish tasdig'i) jadvaldagi bilan bir xil nom beriladi; sotuv hali olinmagan bo'lsa — sarlavhaning o'zi.
+  function nomBilan(amaliyot: KassaAmaliyoti): KassaAmaliyoti {
+    const { sarlavha, tafsilot } = nomQismlari(amaliyot, sotuvKeshi.olingan(amaliyotSotuvIdsi(amaliyot)), t);
+    return { ...amaliyot, nomSarlavhasi: sarlavha, nomTafsiloti: tafsilot };
+  }
+
   const royxat = useMemo(() => {
     const soz = qidiruv.trim().toLowerCase();
-    return amaliyotlar.filter((amaliyot) => {
+    return raqamlangan.filter((amaliyot) => {
       if (amaliyot.kanal !== kanal) return false;
       if (amaliyot.yonalish !== yonalish) return false;
       if (!soz) return true;
-      return [amaliyot.raqam, amaliyot.nomi, amaliyot.kontragent, amaliyot.masul, amaliyot.izoh]
+      return [amaliyot.raqam, amaliyot.hujjatRaqami, amaliyot.nomi, amaliyot.kontragent, amaliyot.masul, amaliyot.izoh]
         .join(" ")
         .toLowerCase()
         .includes(soz);
     });
-  }, [amaliyotlar, kanal, yonalish, qidiruv]);
+  }, [raqamlangan, kanal, yonalish, qidiruv]);
 
   // Bekor qilingan amaliyotlar kassa jamiga kirmaydi.
   // Birinchi yuklanishda (ma'lumot hali yo'q) sahifa o'rtasida yuklanish holati ko'rsatiladi.
@@ -397,8 +421,8 @@ export default function KassaUchot() {
     {
       id: "nomi",
       nom: t("table.nomi"),
-      kenglik: 200,
-      katak: (a) => <span className="font-semibold text-slate-700">{a.nomi}</span>,
+      kenglik: 280,
+      katak: (a) => <NomiKatagi amaliyot={a} kesh={sotuvKeshi} />,
     },
     {
       id: "kontragent",
@@ -555,7 +579,7 @@ export default function KassaUchot() {
           qatorlar={royxat}
           kengaytir
           sozlamaBor
-          onQatorBosildi={modalniOchish}
+          onQatorBosildi={(a) => modalniOchish(nomBilan(a))}
           qatorKlass={(a) => (a.holat === "bekor_qilingan" ? "opacity-60" : "")}
           onQatorOchirish={ochirishniSorash}
           qatorOchirishHolati={ochirishHolati}
@@ -571,7 +595,7 @@ export default function KassaUchot() {
             ikonka={bekor ? <Ban size={24} /> : <Trash2 size={24} />}
             ohang={bekor ? "sariq" : "qizil"}
             sarlavha={t(`${kalit}.title`)}
-            nom={`${tasdiqAmaliyot.raqam} · ${kassaSummasi(tasdiqAmaliyot.summa, tasdiqAmaliyot.valyuta)}`}
+            nom={[tasdiqAmaliyot.raqam, tasdiqAmaliyot.nomSarlavhasi, kassaSummasi(tasdiqAmaliyot.summa, tasdiqAmaliyot.valyuta)].filter(Boolean).join(" · ")}
             tavsif={t(`${kalit}.description`)}
             izoh={sotuv && bekor ? t("saleCancelDialog.note") : undefined}
             ortgaMatni={t("common:hujjatOchirish.no")}

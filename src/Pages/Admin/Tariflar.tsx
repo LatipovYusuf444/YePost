@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Building2, Crown, Gem, Pencil, Plus, Sparkles, Tag, Trash2, Users, type LucideIcon } from "lucide-react";
 import LoadingState from "@/Components/common/LoadingState";
+import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import { platformApi } from "@/api/platformApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
@@ -83,7 +84,7 @@ function TarifModali({ tahrir, onYopish, onSaqlandi }: { tahrir: PlatformTarif |
           </Maydon>
           <div className="sm:col-span-2">
             <Maydon nom={t("tariflar.oylikNarx")}>
-              <input type="number" min={0} value={narx} onChange={(event) => setNarx(event.target.value)} className={inputKlass} />
+              <SummaMaydoni value={narx} onChange={setNarx} placeholder="0" className={inputKlass} />
             </Maydon>
           </div>
         </div>

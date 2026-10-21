@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { BookOpen, LoaderCircle, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import { boshlangichQarzYaratish } from "@/api/boshlangichQarzApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { boshlangichQarzMalumoti } from "@/lib/boshlangichQarz";
@@ -55,7 +56,7 @@ export default function BoshlangichQarzModal({ xaridor, onClose }: { xaridor: Xa
         <form onSubmit={(event) => void saqlash(event)} className="space-y-5 p-5 sm:p-6">
           <p className="rounded-xl bg-blue-50 p-3 text-sm leading-6 text-blue-800">{t("openingDebt.hint")}</p>
           <div className="grid grid-cols-[minmax(0,1fr)_110px] gap-3">
-            <label className="grid gap-1.5 text-sm font-semibold text-slate-600">{t("openingDebt.amount")}<input autoFocus required inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} disabled={saving} placeholder="1 200 000" className={fieldClass} /></label>
+            <label className="grid gap-1.5 text-sm font-semibold text-slate-600">{t("openingDebt.amount")}<SummaMaydoni autoFocus required value={amount} onChange={setAmount} disabled={saving} placeholder="1 200 000" className={fieldClass} /></label>
             <label className="grid gap-1.5 text-sm font-semibold text-slate-600">{t("openingDebt.currency")}<select value={currency} onChange={(event) => setCurrency(event.target.value)} disabled={saving} className={fieldClass}><option value="UZS">UZS</option><option value="USD">USD</option></select></label>
           </div>
           <label className="grid gap-1.5 text-sm font-semibold text-slate-600">{t("openingDebt.date")}<input type="date" value={date} max={bugungiToshkentKuni()} onChange={(event) => setDate(event.target.value)} disabled={saving} className={fieldClass} /></label>

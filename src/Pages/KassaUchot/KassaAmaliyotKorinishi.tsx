@@ -82,7 +82,7 @@ export default function KassaAmaliyotKorinishi({ amaliyot }: Props) {
   const kontragent = amaliyot.kontragent.trim();
   const manba = amaliyot.backendSource;
   const manbaIzohi = manba === "SALE" || manba === "RETURN" ? t(`view.sourceHint.${manba}`) : "";
-  const nomKorsatilsinmi = Boolean(amaliyot.nomi.trim()) && amaliyot.nomi.trim() !== amaliyot.raqam.trim();
+  const nomMatni = [amaliyot.nomSarlavhasi || amaliyot.nomi, amaliyot.nomTafsiloti].filter((qism) => qism?.trim()).join(" — ");
   const izoh = amaliyot.izoh.trim();
 
   return (
@@ -142,9 +142,14 @@ export default function KassaAmaliyotKorinishi({ amaliyot }: Props) {
         <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm sm:p-6">
           <KartaSarlavhasi ikonka={<FileText size={18} />} matn={t("view.detailsTitle")} />
           <div className="grid gap-3 sm:grid-cols-2">
-            {nomKorsatilsinmi && (
+            {nomMatni && (
               <Qator ikonka={<FileText size={17} />} nom={t("view.name")}>
-                {amaliyot.nomi}
+                {nomMatni}
+              </Qator>
+            )}
+            {amaliyot.hujjatRaqami && (
+              <Qator ikonka={<Hash size={17} />} nom={t("view.documentNumber")}>
+                <span className="tabular-nums">{amaliyot.hujjatRaqami}</span>
               </Qator>
             )}
             <Qator ikonka={<UserRound size={17} />} nom={kontragentNomi}>

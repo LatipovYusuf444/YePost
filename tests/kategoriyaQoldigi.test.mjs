@@ -14,8 +14,8 @@ registerHooks({
     return nextResolve(specifier, context);
   },
 });
-const { kategoriyaQoldiginiOlish } = await import('../src/api/kategoriyaQoldigiApi.ts');
-const { kategoriyaQatorlari, kategoriyaMiqdorJamilari } = await import('../src/lib/kategoriyaQoldigi.ts');
+const { kategoriyaQoldiginiOlish, kategoriyaMahsulotlariniOlish } = await import('../src/api/kategoriyaQoldigiApi.ts');
+const { kategoriyaQatorlari, kategoriyaMiqdorJamilari, kategoriyaMahsulotlariniBirlashtirish, kategoriyaMahsulotlariJavobi } = await import('../src/lib/kategoriyaQoldigi.ts');
 const products = [
   { id: 'food', name: 'Un', categoryId: 'food-category', unitId: 'kg', isActive: true },
   { id: 'empty', name: 'Guruch', categoryId: 'food-category', unitId: 'kg', isActive: false },
@@ -92,4 +92,56 @@ test('quantities remain separate for different units, invalid values are not rep
   assert.deepEqual(kategoriyaMiqdorJamilari(rows).sort((a, b) => a.birlik.localeCompare(b.birlik)), [
     { birlik: 'dona', mavjud: 3 }, { birlik: 'kg', mavjud: 2.5 },
   ]);
+});
+
+// ── GET /catalog/products?categoryId=<id> ──
+const serverMahsulot = (id, qism = {}) => ({ id, name: `Mahsulot ${id}`, categoryId: 'food-category', unitId: 'kg', isActive: true, ...qism });
+
+test('kategoriya mahsulotlari: faqat categoryId yuboriladi (page/pageSize emas), xato toasti yashirin; massiv javobda keyingi sahifa so‘ralmaydi', async () => {
+  reset();
+  handlers.set('/catalog/products', () => [serverMahsulot('a'), serverMahsulot('b'), { name: 'id yo‘q' }]);
+  const natija = await kategoriyaMahsulotlariniOlish('food-category');
+  assert.deepEqual(natija.map(item => item.id), ['a', 'b']);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, '/catalog/products');
+  assert.deepEqual(calls[0].config.params, { categoryId: 'food-category' });
+  assert.equal(calls[0].config.xatoniYashirish, true);
+});
+
+test('kategoriya mahsulotlari: server totalPages yozsa ketma-ket olinadi; page‘ni bilmasa takror mahsulotda to‘xtaydi', async () => {
+  reset();
+  handlers.set('/catalog/products', config => ({ items: [serverMahsulot(`p${config.params.page ?? 1}`)], totalPages: 3 }));
+  assert.deepEqual((await kategoriyaMahsulotlariniOlish('food-category')).map(item => item.id), ['p1', 'p2', 'p3']);
+  assert.deepEqual(calls.map(call => call.config.params.page), [undefined, 2, 3]);
+
+  reset();
+  handlers.set('/catalog/products', () => ({ data: { items: [serverMahsulot('a'), serverMahsulot('b')], totalPages: 5 } }));
+  assert.deepEqual((await kategoriyaMahsulotlariniOlish('food-category')).map(item => item.id), ['a', 'b']);
+  assert.equal(calls.length, 2, 'server page parametrini e’tiborsiz qoldirsa, yangi mahsulot kelmagan sahifada to‘xtaydi');
+
+  reset();
+  handlers.set('/catalog/products', () => { throw new Error('boom'); });
+  await assert.rejects(kategoriyaMahsulotlariniOlish('food-category'), /boom/);
+});
+
+test('kategoriyaMahsulotlariJavobi: massiv, items, data, data.items; id‘siz qatorlar tashlanadi', () => {
+  const xom = [serverMahsulot('a'), { id: '' }, null, 'x'];
+  for (const javob of [xom, { items: xom }, { data: xom }, { data: { items: xom } }]) {
+    assert.deepEqual(kategoriyaMahsulotlariJavobi(javob).items.map(item => item.id), ['a']);
+  }
+  assert.equal(kategoriyaMahsulotlariJavobi(xom).totalPages, 1);
+  assert.equal(kategoriyaMahsulotlariJavobi({ items: xom, totalPages: '4' }).totalPages, 4);
+  assert.deepEqual(kategoriyaMahsulotlariJavobi(undefined), { items: [], totalPages: 1 });
+});
+
+test('server mahsulotlari umumiy ro‘yxat bilan birlashadi: serverniki ustun, ikkala tomonda yo‘q mahsulot yo‘qolmaydi; server yo‘q bo‘lsa umumiy ro‘yxat', () => {
+  const umumiy = [serverMahsulot('shared', { name: 'Eski nom' }), serverMahsulot('faqat-umumiy')];
+  const birlashgan = kategoriyaMahsulotlariniBirlashtirish([serverMahsulot('shared', { name: 'Yangi nom' }), serverMahsulot('faqat-server')], umumiy);
+  assert.deepEqual(birlashgan.map(item => item.id).sort(), ['faqat-server', 'faqat-umumiy', 'shared']);
+  assert.equal(birlashgan.find(item => item.id === 'shared').name, 'Yangi nom');
+  assert.deepEqual(kategoriyaMahsulotlariniBirlashtirish(null, umumiy), umumiy);
+  assert.deepEqual(kategoriyaMahsulotlariniBirlashtirish([], umumiy), umumiy);
+  // umumiy ro'yxatda yo'q, qoldig'i ham yo'q server mahsuloti kategoriya qatori sifatida chiqadi
+  const qatorlar = kategoriyaQatorlari('food-category', kategoriyaMahsulotlariniBirlashtirish([serverMahsulot('yangi', { name: 'Yangi mahsulot' })], []), [], units);
+  assert.deepEqual(qatorlar.map(qator => [qator.mahsulotId, qator.nom, qator.qoldiq]), [['yangi', 'Yangi mahsulot', null]]);
 });

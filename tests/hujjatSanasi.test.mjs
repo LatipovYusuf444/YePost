@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  bugungiToshkentKuni, kelajakKunmi, kiritilganVaqtMatni, kunMatni, kunniSurish, otganKunmi, saqlanganTolovMaydonlari, tahrirSanasi,
+  bugungiToshkentKuni, hujjatVaqtiMatni, kelajakKunmi, kiritilganVaqtMatni, kunMatni, kunniSurish, otganKunmi, saqlanganTolovMaydonlari, tahrirSanasi,
   toshkentKuni, tolovQoshimchasi, vaqtMatni, yangiHujjatSanasi,
 } from '../src/lib/hujjatSanasi.ts';
 
@@ -92,4 +92,17 @@ test('tolovQoshimchasi: bugun va bo‘sh izoh hech narsa qo‘shmaydi, o‘tgan 
   assert.deepEqual(tolovQoshimchasi('2026-10-20', '  Akmal aka berdi, naqd  ', bugun), { note: 'Akmal aka berdi, naqd' });
   assert.deepEqual(tolovQoshimchasi('2026-10-18', 'Avans', bugun), { date: '2026-10-18', note: 'Avans' });
   assert.deepEqual(tolovQoshimchasi('noto‘g‘ri', 'x', bugun), { note: 'x' });
+});
+
+test('hujjatVaqtiMatni: odatda sana va vaqt (Toshkent); o‘tgan kunga yozilgan hujjatda 23:59 ko‘rsatilmaydi, faqat kun', () => {
+  // bugun kiritilgan, bugungi sana — vaqt bilan
+  assert.equal(hujjatVaqtiMatni('2026-10-21T07:05:00.000Z', '2026-10-21T07:05:00.000Z'), '21.10.2026 12:05');
+  // kiritilgan vaqt berilmasa ham vaqt bilan
+  assert.equal(hujjatVaqtiMatni('2026-10-21T07:05:00.000Z'), '21.10.2026 12:05');
+  // 20.10 kuniga (23:59:59.999 Toshkent) 21.10 da kiritilgan — faqat kun
+  assert.equal(hujjatVaqtiMatni('2026-10-20T18:59:59.999Z', '2026-10-21T07:00:00.000Z'), '20.10.2026');
+  // UTC kuni Toshkent kunidan farq qiladigan vaqt (Toshkent 21.10 01:30) to‘g‘ri kunga tushadi
+  assert.equal(hujjatVaqtiMatni('2026-10-20T20:30:00.000Z', '2026-10-20T20:30:00.000Z'), '21.10.2026 01:30');
+  assert.equal(hujjatVaqtiMatni(null), '');
+  assert.equal(hujjatVaqtiMatni('abc'), '');
 });

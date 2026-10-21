@@ -92,4 +92,25 @@ export const telegramApi = {
       throw await blobXatosiniOchish(error);
     }
   },
+
+  // "Hujjatni ko'rish": nakladnoy PDF yangi oynada ochiladi. `oyna` — tugma bosilganda SINXRON ochilgan bo'sh oyna: so'rov tugagach ochilgan
+  // oyna brauzerda bloklanadi. Oyna yo'q yoki bloklangan bo'lsa, PDF yuklab olinadi. Xato bo'lsa bo'sh oyna yopiladi, xato toasti chaqiruvchida.
+  nakladnoyniKorish: async (sotuvId: string, hujjatRaqami: string, oyna: Window | null) => {
+    try {
+      const javob = await apiClient.get<Blob>(`/sales/${sotuvId}/nakladnoy.pdf`, { responseType: "blob", xatoniYashirish: true });
+      const nomi = nakladnoyFaylNomi(String(javob.headers["content-disposition"] ?? ""), hujjatRaqami);
+      const pdf = new Blob([javob.data], { type: "application/pdf" });
+      if (oyna && !oyna.closed) {
+        const url = URL.createObjectURL(pdf);
+        oyna.location.href = url;
+        window.setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000);
+      } else {
+        faylniYuklab(pdf, nomi);
+      }
+      return nomi;
+    } catch (error) {
+      oyna?.close();
+      throw await blobXatosiniOchish(error);
+    }
+  },
 };

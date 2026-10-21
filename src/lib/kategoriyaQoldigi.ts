@@ -23,6 +23,39 @@ function raqam(value: unknown): number | null {
   return Number.isFinite(son) ? son : null;
 }
 
+type Obyekt = Record<string, unknown>;
+
+function obyekt(qiymat: unknown): Obyekt | null {
+  return qiymat && typeof qiymat === "object" && !Array.isArray(qiymat) ? (qiymat as Obyekt) : null;
+}
+
+/**
+ * GET /catalog/products?categoryId=<id> javobi (massiv, `{ items }`, `{ data }` yoki `{ data: { items } }`) → mahsulotlar va serverning
+ * aniq yozgan `totalPages` soni (yozilmasa 1: oddiy massiv javobda sahifalash bor deb taxmin qilinmaydi). Id'siz qatorlar tashlanadi.
+ */
+export function kategoriyaMahsulotlariJavobi(raw: unknown): { items: Mahsulot[]; totalPages: number } {
+  const asosiy = obyekt(raw);
+  const ichki = obyekt(asosiy?.data);
+  const royxat = [raw, asosiy?.items, asosiy?.data, ichki?.items].find(Array.isArray) as unknown[] | undefined;
+  const items = (royxat ?? []).filter((element): element is Mahsulot => {
+    const qator = obyekt(element);
+    return typeof qator?.id === "string" && qator.id !== "";
+  });
+  const sahifalar = Number(asosiy?.totalPages ?? ichki?.totalPages);
+  return { items, totalPages: Number.isFinite(sahifalar) && sahifalar > 1 ? Math.floor(sahifalar) : 1 };
+}
+
+/**
+ * Serverdan kelgan kategoriya mahsulotlari umumiy ro'yxat bilan birlashtiriladi (id bo'yicha, serverniki ustun): serverda bo'lib,
+ * yuklangan umumiy ro'yxatda yo'q (yoki aksincha) mahsulot ham kategoriya ro'yxatidan tushib qolmaydi.
+ */
+export function kategoriyaMahsulotlariniBirlashtirish(server: readonly Mahsulot[] | null | undefined, umumiy: readonly Mahsulot[]): Mahsulot[] {
+  if (!server?.length) return [...umumiy];
+  const xarita = new Map<string, Mahsulot>(umumiy.map((mahsulot) => [mahsulot.id, mahsulot]));
+  for (const mahsulot of server) xarita.set(mahsulot.id, { ...xarita.get(mahsulot.id), ...mahsulot });
+  return Array.from(xarita.values());
+}
+
 export function kategoriyaQatorlari(
   kategoriyaId: string,
   mahsulotlar: Mahsulot[],

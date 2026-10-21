@@ -72,6 +72,22 @@ export function vaqtMatni(qiymat?: string | number | Date | null): string {
   return `${q.day}.${q.month}.${q.year} ${q.hour}:${q.minute}`;
 }
 
+/**
+ * Hujjat vaqti ko'rinishi: odatda "21.10.2026 12:05" (Toshkent). O'tgan kunga yozilgan hujjat o'sha kunning oxirida (23:59:59) saqlanadi —
+ * vaqti ma'nosiz, shuning uchun hujjat kuni kiritilgan kundan oldin bo'lsa faqat kun ko'rsatiladi ("21.10.2026").
+ */
+export function hujjatVaqtiMatni(
+  sana: string | number | Date | null | undefined,
+  kiritilgan?: string | number | Date | null
+): string {
+  const kun = kunMatni(sana);
+  if (!kun) return "";
+  const hujjatKuni = toshkentKuni(sana);
+  const kiritilganKuni = toshkentKuni(kiritilgan);
+  if (kiritilganKuni && hujjatKuni < kiritilganKuni) return kun;
+  return vaqtMatni(sana) || kun;
+}
+
 /** Berilgan kun bugundan keyinmi (kelajak sana backendda rad etiladi). */
 export function kelajakKunmi(kun: string, bugun: string = bugungiToshkentKuni()): boolean {
   return KUN_REGEX.test(kun) && kun > bugun;

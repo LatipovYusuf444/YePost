@@ -1,4 +1,5 @@
 import AppSelect from "@/Components/ui/AppSelect";
+import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   CheckCircle2,
@@ -987,10 +988,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                         }
                       />
                       {tur === "kirim" && (
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
+                        <SummaMaydoni
                           data-hujjat-narx={index}
                           onKeyDown={(event) => {
                             if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
@@ -998,9 +996,9 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                             keyingiQatorgaOtish(index);
                           }}
                           value={item.price}
-                          onChange={(event) =>
+                          onChange={(qiymat) =>
                             qatorniYangilash(index, {
-                              price: Number(event.target.value),
+                              price: Number(qiymat),
                             })
                           }
                           className="h-11 rounded-xl border border-slate-200 bg-white px-3 outline-none transition-colors focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"

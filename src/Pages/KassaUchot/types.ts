@@ -32,8 +32,11 @@ export type KassaAmaliyoti = {
   responsibleId?: string;
   saleId?: string;
   purchaseId?: string;
-  raqam: string;
+  raqam: string; // jadvalda va ko'rinishda: har bir bo'limda K1, K2, ... (hujjatning o'z raqami `hujjatRaqami`da)
+  hujjatRaqami?: string; // backend hujjat raqami: sotuv uchun SOT-000014, kassa amaliyoti uchun uning docNumber'i
   nomi: string; // amaliyot nomi / asosi
+  nomSarlavhasi?: string; // jadvalda "Nomi": masalan "Sotuv SOT-000014" (yo'q bo'lsa — nomi)
+  nomTafsiloti?: string; // ...va sotuvdagi mahsulotlar: "Konfet, Pishloq va yana 2 ta"
   kontragent: string; // kimdan olindi yoki kimga berildi
   summa: number;
   sana: string; // ISO yoki kun (YYYY-MM-DD)

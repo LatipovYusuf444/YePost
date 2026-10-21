@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppSelect from "@/Components/ui/AppSelect";
+import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import type { OlchovBirligi } from "@/types/catalog";
 import { bosBirlikQatori, type BirlikQatori } from "./birlikQatorlariMantiq";
 
@@ -50,11 +51,11 @@ export default function BirlikQatorlariMaydoni({ qatorlar, onChange, birliklar, 
               </label>
               <label className="grid gap-1.5">
                 <span className="text-xs font-bold text-slate-400">{t("units.retail")}</span>
-                <input value={qator.chakana} inputMode="decimal" onChange={(event) => yangila(qator.kalit, { chakana: event.target.value.replace(/[^\d.]/g, "") })} className="input" placeholder={t("units.auto")} />
+                <SummaMaydoni value={qator.chakana} onChange={(qiymat) => yangila(qator.kalit, { chakana: qiymat })} className="input" placeholder={t("units.auto")} />
               </label>
               <label className="grid gap-1.5">
                 <span className="text-xs font-bold text-slate-400">{t("units.wholesale")}</span>
-                <input value={qator.ulgurji} inputMode="decimal" onChange={(event) => yangila(qator.kalit, { ulgurji: event.target.value.replace(/[^\d.]/g, "") })} className="input" placeholder={t("units.auto")} />
+                <SummaMaydoni value={qator.ulgurji} onChange={(qiymat) => yangila(qator.kalit, { ulgurji: qiymat })} className="input" placeholder={t("units.auto")} />
               </label>
             </div>
             <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">

@@ -1,4 +1,5 @@
-import { pulMatni, useValyutaStore } from "@/lib/valyuta";
+import { pulMatni, useValyutaStore } from "@/lib/valyuta";
+import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   LoaderCircle,
@@ -719,11 +720,10 @@ export default function BoshSahifa() {
               </div>
 
               <div className="grid grid-cols-[minmax(0,1fr)_84px] gap-2">
-                <input
-                  inputMode="decimal"
+                <SummaMaydoni
                   value={(chegirmaTuri === "foiz" ? discountPercent : discountAmount) || ""}
-                  onChange={(event) => {
-                    const qiymat = readNumber(event.target.value);
+                  onChange={(matn) => {
+                    const qiymat = readNumber(matn);
                     if (chegirmaTuri === "foiz") {
                       setDiscountPercent(Math.min(Math.max(qiymat, 0), 100));
                       setDiscountAmount(0);
@@ -1064,13 +1064,13 @@ export default function BoshSahifa() {
 
               <aside className="flex flex-col rounded-[30px] border border-gold-100 bg-white p-7 shadow-[0_18px_50px_rgba(37,99,235,.10)]">
                 <div className="rounded-[24px] bg-[#F8FAFC] p-5 ring-1 ring-gold-100"><p className="text-xs font-black uppercase tracking-wide text-slate-400">{t("paymentModal.totalPayable")}</p><p className="mt-2 text-3xl font-black text-slate-950">{formatSumma(payableTotal)}</p><p className="mt-2 text-sm font-bold text-gold-500">{t("paymentModal.selected", { type: paymentType })}</p></div>
-                <label className="mt-6 block"><span className="text-xs font-black uppercase tracking-wide text-slate-400">{t("paymentModal.acceptedAmount")}</span><div className="mt-2 flex h-16 items-center rounded-2xl border border-gold-200 bg-[#F8FAFC] px-5 focus-within:ring-4 focus-within:ring-gold-50"><input type="number" min="1" max={payableTotal} value={tolovSummasi} onChange={(e) => setTolovSummasi(e.target.value)} className="min-w-0 flex-1 bg-transparent text-2xl font-black text-slate-900 outline-none"/><span className="text-sm font-black text-gold-500">{t("customer.currency")}</span></div></label>
+                <label className="mt-6 block"><span className="text-xs font-black uppercase tracking-wide text-slate-400">{t("paymentModal.acceptedAmount")}</span><div className="mt-2 flex h-16 items-center rounded-2xl border border-gold-200 bg-[#F8FAFC] px-5 focus-within:ring-4 focus-within:ring-gold-50"><SummaMaydoni value={tolovSummasi} onChange={setTolovSummasi} placeholder="0" className="min-w-0 flex-1 bg-transparent text-2xl font-black text-slate-900 outline-none"/><span className="text-sm font-black text-gold-500">{t("customer.currency")}</span></div></label>
                 {dollarTolovMumkin && (
                   <div className="mt-4 rounded-2xl border border-gold-100 bg-white p-4">
                     <label className="block">
                       <span className="text-xs font-black uppercase tracking-wide text-slate-400">{t("paymentModal.dollarAmount")}</span>
                       <div className="mt-2 flex h-14 items-center rounded-2xl border border-gold-200 bg-[#F8FAFC] px-4 focus-within:ring-4 focus-within:ring-gold-50">
-                        <input type="number" min="0" step="0.01" inputMode="decimal" value={dollarTolovi} onChange={(e) => dollarOzgardi(e.target.value)} placeholder="0" className="min-w-0 flex-1 bg-transparent text-xl font-black text-slate-900 outline-none" />
+                        <SummaMaydoni value={dollarTolovi} onChange={dollarOzgardi} placeholder="0" className="min-w-0 flex-1 bg-transparent text-xl font-black text-slate-900 outline-none" />
                         <span className="text-sm font-black text-gold-500">$</span>
                       </div>
                     </label>

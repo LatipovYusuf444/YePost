@@ -1,4 +1,5 @@
-import AppSelect from "@/Components/ui/AppSelect";
+import AppSelect from "@/Components/ui/AppSelect";
+import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { ChevronDown, ImagePlus, Plus, X } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
@@ -338,14 +339,7 @@ function Narx({ label, value, onChange }: { label: string; value: string; onChan
     <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">
       {label}
       <div className="relative mt-2">
-        <input
-          type="number"
-          min="0"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="input pr-14"
-          placeholder="0"
-        />
+        <SummaMaydoni value={value} onChange={onChange} className="input pr-14" placeholder="0" />
         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">so'm</span>
       </div>
     </label>

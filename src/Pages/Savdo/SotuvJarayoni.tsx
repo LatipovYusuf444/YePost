@@ -19,6 +19,8 @@ type SotuvJarayoniProps = {
   amalBajarilmoqda: boolean;
   onTolovOchish: () => void;
   onOmbordanChiqarish: () => void;
+  // Ombordan chiqarilgan mahsulotlar oynasini ochadi (ombor qadami bajarilgach havola sifatida ko'rinadi).
+  onChiqarilganlarniKorish?: () => void;
 };
 
 const QADAM_STILI: Record<QadamHolati, { karta: string; doira: string; nom: string }> = {
@@ -41,7 +43,7 @@ const QADAM_STILI: Record<QadamHolati, { karta: string; doira: string; nom: stri
 
 // Sotuv hayot sikli: qoralama yaratiladi → ombordan chiqarish tasdiqlanadi → to'lov qabul qilinadi → yakun.
 // To'lovni tasdiqlashdan oldin ham qabul qilish mumkin, shuning uchun "to'lov" qadami mustaqil hisoblanadi.
-export default function SotuvJarayoni({ sotuv, jami, holat, amalBajarilmoqda, onTolovOchish, onOmbordanChiqarish }: SotuvJarayoniProps) {
+export default function SotuvJarayoni({ sotuv, jami, holat, amalBajarilmoqda, onTolovOchish, onOmbordanChiqarish, onChiqarilganlarniKorish }: SotuvJarayoniProps) {
   const { t } = useTranslation("savdo_tafsilot");
   const tasdiqlangan = holat === "CONFIRMED";
   const tolangan = sotuvTolanganSummasi(sotuv);
@@ -130,6 +132,16 @@ export default function SotuvJarayoni({ sotuv, jami, holat, amalBajarilmoqda, on
                   )}
                 </p>
                 <p className="mt-1 text-xs leading-5 text-slate-500">{qadam.izoh}</p>
+                {qadam.kalit === "ombor" && tasdiqlangan && onChiqarilganlarniKorish && (
+                  <button
+                    type="button"
+                    onClick={onChiqarilganlarniKorish}
+                    className="mt-2 inline-flex items-center gap-1 text-xs font-black text-emerald-700 underline-offset-2 transition hover:text-emerald-900 hover:underline"
+                  >
+                    {t("ombordanChiqqan.qadamHavola")}
+                    <ChevronRight size={13} />
+                  </button>
+                )}
               </div>
               {index < qadamlar.length - 1 && (
                 <span className="absolute -right-[13px] top-1/2 z-10 hidden h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-white text-slate-300 shadow-sm ring-1 ring-slate-100 xl:flex">

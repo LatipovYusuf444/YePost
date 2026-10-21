@@ -134,6 +134,12 @@ export async function sotuvTafsilotiniOlish(sotuvId: string) {
   return apiData(response.data);
 }
 
+// Kassa uchoti: sotuv to'lovi qatoriga mahsulot nomlarini qo'shish uchun. Fon rejimi: xato bo'lsa toast chiqmaydi, jadval nomsiz ko'rinaveradi.
+export async function sotuvTafsilotiniFondaOlish(sotuvId: string) {
+  const response = await apiClient.get<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${sotuvId}`, { xatoniYashirish: true });
+  return apiData(response.data);
+}
+
 // Savdo/index.tsx: yangi sotuvni qoralama holatida yaratadi.
 export async function sotuvYaratish(malumot: SotuvYaratishMalumoti) {
   const response = await apiClient.post<Sotuv | ApiEnvelope<Sotuv>>("/sales", malumot);

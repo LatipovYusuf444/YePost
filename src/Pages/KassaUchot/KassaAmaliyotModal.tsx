@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
 import { bugungiToshkentKuni, toshkentKuni } from "@/lib/hujjatSanasi";
 import Tanlov from "@/Pages/XaridorUchot/Tanlov";
@@ -497,17 +498,10 @@ export default function KassaAmaliyotModal({
 
                 {/* Summa */}
                 <Maydon label={valyutaTanlovi ? t("modal.amountLabelCurrency", { valyuta: tanlanganValyuta === "USD" ? "$" : t("modal.currencyUzs") }) : t("modal.amountLabel")}>
-                  <input
-                    type="text"
-                    inputMode={tanlanganValyuta === "USD" ? "decimal" : "numeric"}
-                    value={tanlanganValyuta === "USD" ? summa : summa ? Number(summa).toLocaleString("ru-RU") : ""}
-                    onChange={(event) =>
-                      setSumma(
-                        tanlanganValyuta === "USD"
-                          ? event.target.value.replace(/,/g, ".").replace(/[^\d.]/g, "").replace(/^(\d*\.\d{0,2}).*$/, "$1").replace(/\.(?=.*\.)/g, "")
-                          : event.target.value.replace(/\D/g, "").replace(/^0+(?=\d)/, "")
-                      )
-                    }
+                  <SummaMaydoni
+                    kasr={tanlanganValyuta === "USD" ? 2 : 0}
+                    value={summa}
+                    onChange={setSumma}
                     placeholder={tanlanganValyuta === "USD" ? "100" : "450 000"}
                     className={maydonKlass}
                   />
@@ -516,11 +510,10 @@ export default function KassaAmaliyotModal({
                 {/* Kurs: so'mda berilgan pul dollar hisobiga (yoki aksincha) o'tganda; yozilmasa kunlik kurs */}
                 {kursKerak && (
                   <Maydon label={t("modal.rateLabel")}>
-                    <input
-                      type="text"
-                      inputMode="decimal"
+                    <SummaMaydoni
+                      kasr={4}
                       value={kursMatni}
-                      onChange={(event) => setKursMatni(event.target.value.replace(/[^\d.,]/g, ""))}
+                      onChange={setKursMatni}
                       placeholder={kunlikKurs > 0 ? t("modal.ratePlaceholder", { kurs: kunlikKurs.toLocaleString("uz-UZ") }) : ""}
                       className={maydonKlass}
                     />

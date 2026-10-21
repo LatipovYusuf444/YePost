@@ -155,6 +155,12 @@
     "bekor_qilingan": "Bekor qilingan"
   },
   "saleNoPermission": "Sotuvni bekor qilish uchun direktor yoki RETURN_CANCEL ruxsati bor admin kerak.",
+  "names": {
+    "sale": "Sotuv {{raqam}}",
+    "salePayment": "Sotuv to'lovi",
+    "return": "Qaytarish {{raqam}}",
+    "moreProducts": "va yana {{count}} ta"
+  },
   "zavodBonusi": {
     "tab": "Zavod bonusi",
     "subtitle": "Zavoddan olingan bonus: tasdiqlanganda zavod oldidagi qarzimiz bonus summasiga kamayadi va u sof foydaga daromad bo'lib qo'shiladi (yalpi foyda o'zgarmaydi). Kassaga pul kirmaydi.",
@@ -246,6 +252,7 @@
     "settledLine": "Hisobga: {{summa}} (kurs: 1 $ = {{kurs}} so'm)",
     "detailsTitle": "Amaliyot ma'lumotlari",
     "name": "Nomi",
+    "documentNumber": "Hujjat raqami",
     "customer": "Mijoz",
     "employee": "Xodim",
     "supplier": "Yetkazib beruvchi",

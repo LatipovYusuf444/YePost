@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 import { CalendarDays, CircleAlert, Info, LoaderCircle, Lock, RefreshCw, TrendingUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import {
   kursniSongaAylantirish,
   valyutaApi,
@@ -289,11 +290,11 @@ export default function ValyutaBolimi() {
             <Maydon label={t("valyuta.form.rate")}>
               <div className="relative">
                 <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">1 $ =</span>
-                <input
-                  inputMode="decimal"
+                <SummaMaydoni
+                  kasr={4}
                   value={kursKiritma}
-                  onChange={(event) => {
-                    setKursKiritma(event.target.value.replace(/[^\d.,\s]/g, ""));
+                  onChange={(qiymat) => {
+                    setKursKiritma(qiymat);
                     setFormaXato("");
                   }}
                   placeholder="12 650"

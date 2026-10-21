@@ -4,11 +4,11 @@ import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import AppSelect from "@/Components/ui/AppSelect";
 import TablePagination from "@/Components/common/TablePagination";
-import { kategoriyaQoldiginiOlish } from "@/api/kategoriyaQoldigiApi";
+import { kategoriyaMahsulotlariniOlish, kategoriyaQoldiginiOlish } from "@/api/kategoriyaQoldigiApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { StockBalanceItem } from "@/api/reportsApi";
 import type { Kategoriya, Mahsulot, OlchovBirligi } from "@/types/catalog";
-import { kategoriyaMiqdorJamilari, kategoriyaQatorlari } from "@/lib/kategoriyaQoldigi";
+import { kategoriyaMahsulotlariniBirlashtirish, kategoriyaMiqdorJamilari, kategoriyaQatorlari } from "@/lib/kategoriyaQoldigi";
 
 type Props = { kategoriya: Kategoriya; mahsulotlar: Mahsulot[]; birliklar: OlchovBirligi[]; onYopish: () => void };
 const sonMatni = (son: number) => son.toLocaleString("uz-UZ", { maximumFractionDigits: 3 });
@@ -16,6 +16,8 @@ const sonMatni = (son: number) => son.toLocaleString("uz-UZ", { maximumFractionD
 export default function KategoriyaQoldigiModal({ kategoriya, mahsulotlar, birliklar, onYopish }: Props) {
   const { t } = useTranslation("mahsulotlar");
   const [qoldiqlar, setQoldiqlar] = useState<StockBalanceItem[]>([]);
+  // Serverdan (GET /catalog/products?categoryId=) kelgan kategoriya mahsulotlari; kelmasa (xato) umumiy ro'yxatdan filtrlanadi.
+  const [serverMahsulotlari, setServerMahsulotlari] = useState<Mahsulot[] | null>(null);
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [xato, setXato] = useState("");
   const [yangilash, setYangilash] = useState(0);
@@ -28,9 +30,11 @@ export default function KategoriyaQoldigiModal({ kategoriya, mahsulotlar, birlik
     let faol = true;
     setYuklanmoqda(true);
     setXato("");
-    kategoriyaQoldiginiOlish(kategoriya.id)
-      .then(items => { if (faol) setQoldiqlar(items); })
-      .catch(error => { if (faol) { setQoldiqlar([]); setXato(getApiErrorMessage(error)); } })
+    // Mahsulotlar ro'yxati xatosi jim: qoldiq bilan birga jadval to'liq chiqadi, mahsulot so'rovi bo'lmasa avvalgidek ishlaydi.
+    const mahsulotlarSorovi = kategoriyaMahsulotlariniOlish(kategoriya.id).catch(() => null);
+    Promise.all([kategoriyaQoldiginiOlish(kategoriya.id), mahsulotlarSorovi])
+      .then(([items, kategoriyaMahsulotlari]) => { if (faol) { setQoldiqlar(items); setServerMahsulotlari(kategoriyaMahsulotlari); } })
+      .catch(error => { if (faol) { setQoldiqlar([]); setServerMahsulotlari(null); setXato(getApiErrorMessage(error)); } })
       .finally(() => { if (faol) setYuklanmoqda(false); });
     return () => { faol = false; };
   }, [kategoriya.id, yangilash]);
@@ -41,7 +45,8 @@ export default function KategoriyaQoldigiModal({ kategoriya, mahsulotlar, birlik
     return () => window.removeEventListener("keydown", yopish);
   }, [onYopish]);
 
-  const qatorlar = useMemo(() => kategoriyaQatorlari(kategoriya.id, mahsulotlar, qoldiqlar, birliklar), [kategoriya.id, mahsulotlar, qoldiqlar, birliklar]);
+  const kategoriyaMahsulotlari = useMemo(() => kategoriyaMahsulotlariniBirlashtirish(serverMahsulotlari, mahsulotlar), [serverMahsulotlari, mahsulotlar]);
+  const qatorlar = useMemo(() => kategoriyaQatorlari(kategoriya.id, kategoriyaMahsulotlari, qoldiqlar, birliklar), [kategoriya.id, kategoriyaMahsulotlari, qoldiqlar, birliklar]);
   const omborlar = useMemo(() => Array.from(new Map(qatorlar.filter(item => item.omborId).map(item => [item.omborId!, item.omborNomi])).entries()).sort((a, b) => a[1].localeCompare(b[1], "uz")), [qatorlar]);
   const filtrlangan = useMemo(() => {
     const matn = qidiruv.trim().toLocaleLowerCase();
