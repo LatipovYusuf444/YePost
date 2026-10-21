@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState, type ReactNode } from "react";
+﻿import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import HujjatSanasiMaydoni, { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import { bugungiToshkentKuni, hujjatVaqtiMatni, kelajakKunmi, kunMatni, saqlanganTolovMaydonlari, tolovQoshimchasi, toshkentKuni } from "@/lib/hujjatSanasi";
@@ -107,6 +107,7 @@ import TelegramXabarnomaKarti from "./TelegramXabarnoma";
 import SotuvOmbordanChiqqanlar from "./SotuvOmbordanChiqqanlar";
 import OmbordanChiqqanlarOynasi, { OmbordanChiqqanlarHavolasi } from "./OmbordanChiqqanlarOynasi";
 import QoralamaUmumiyTahrir from "./QoralamaUmumiyTahrir";
+import QoralamaTovarlarTahriri from "./QoralamaTovarlarTahriri";
 import BoshlangichQarzTafsilotlariModal from "@/Pages/XaridorUchot/BoshlangichQarzTafsilotlariModal";
 
 import ModalTablari from "@/Components/common/ModalTablari";
@@ -682,7 +683,7 @@ function OddiySotuvTafsilotlariModal({
         </div>
 
         {yetkazishOchiq && <YetkazishPanel sotuv={sotuv} jami={jami} onClose={() => setYetkazishOchiq(false)} />}
-        {ombordanChiqarishOchiq && <OmbordanChiqarishPanel sotuv={sotuv} jami={jami} onClose={() => setOmbordanChiqarishOchiq(false)} />}
+        {ombordanChiqarishOchiq && <OmbordanChiqarishPanel sotuv={sotuv} jami={jami} onClose={() => setOmbordanChiqarishOchiq(false)} onOzgarish={setTovarOzgarishlari} />}
         {chiqarilganlarOchiq && <OmbordanChiqqanlarOynasi sotuv={sotuv} onYopish={() => setChiqarilganlarOchiq(false)} />}
         {tolovModalOchiq && (
           <TolovQabulQilishModal
@@ -3671,20 +3672,38 @@ function YetkazishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; 
   );
 }
 
-function OmbordanChiqarishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; onClose: () => void }) {
+// `onOzgarish`: qoralama tovarlaridagi saqlanmagan o'zgarishlar soni (tahrirlashda) — tashqi oyna yopilishini nazorat qilish uchun.
+function OmbordanChiqarishPanel({ sotuv, jami, onClose, onOzgarish }: { sotuv: Sotuv; jami: number; onClose: () => void; onOzgarish?: (soni: number) => void }) {
   return (
     <div className="absolute inset-0 z-[60] bg-[rgba(15,23,42,.45)] backdrop-blur-[1px]">
-      <OmbordanChiqarishHujjatMazmuni sotuv={sotuv} jami={jami} onClose={onClose} />
+      <OmbordanChiqarishHujjatMazmuni sotuv={sotuv} jami={jami} onClose={onClose} onOzgarish={onOzgarish} />
     </div>
   );
 }
 
 export function OmbordanChiqarishHujjatModal({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; onClose: () => void }) {
+  const { t } = useTranslation("savdo_tafsilot");
+  const [saqlanmaganSoni, setSaqlanmaganSoni] = useState(0);
+  const [yopishSorovi, setYopishSorovi] = useState(false);
   return (
     <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
       <div className="relative h-[calc(100vh-32px)] w-full">
-        <ModalTezkorPanel sotuv={sotuv} onYopish={onClose} />
-        <OmbordanChiqarishHujjatMazmuni sotuv={sotuv} jami={jami} onClose={onClose} />
+        <ModalTezkorPanel sotuv={sotuv} onYopish={() => (saqlanmaganSoni > 0 ? setYopishSorovi(true) : onClose())} />
+        <OmbordanChiqarishHujjatMazmuni sotuv={sotuv} jami={jami} onClose={onClose} onOzgarish={setSaqlanmaganSoni} />
+        {yopishSorovi && (
+          <TasdiqlashOynasi
+            ikonka={<TriangleAlert size={26} />}
+            ohang="sariq"
+            sarlavha={t("qoralamaTahrir.yopishTasdigi.sarlavha")}
+            nom={sotuvJadvalId(sotuv)}
+            tavsif={t("qoralamaTahrir.yopishTasdigi.tavsif")}
+            ortgaMatni={t("qoralamaTahrir.yopishTasdigi.qolish")}
+            tasdiqMatni={t("qoralamaTahrir.yopishTasdigi.yopish")}
+            jarayonMatni={t("qoralamaTahrir.yopishTasdigi.yopilmoqda")}
+            onTasdiq={async () => onClose()}
+            onYopish={() => setYopishSorovi(false)}
+          />
+        )}
       </div>
     </AppModal>
   );
@@ -3694,10 +3713,12 @@ function OmbordanChiqarishHujjatMazmuni({
   sotuv,
   jami,
   onClose,
+  onOzgarish,
 }: {
   sotuv: Sotuv;
   jami: number;
   onClose: () => void;
+  onOzgarish?: (soni: number) => void;
 }) {
   const { t } = useTranslation("savdo_tafsilot");
   const items = sotuv.items ?? [];
@@ -3731,6 +3752,45 @@ function OmbordanChiqarishHujjatMazmuni({
   const [ombordanChiqarishXatosi, setOmbordanChiqarishXatosi] = useState("");
   const [yaqindaTasdiqlandi, setYaqindaTasdiqlandi] = useState(false);
 
+  // Qoralama hujjatni shu oynaning o'zida tahrirlash: barcha mahsulotlar (qo'shish, almashtirish, o'chirish, miqdor, narx, chegirma).
+  // Saqlash sotuvni backendda yangilaydi va umumiy ombor ichidagi sotuv o'rnini almashtiradi: sana, summa va mahsulotlar hamma joyda bir xil bo'ladi.
+  const qoralama = sotuvHolati(sotuv) === "DRAFT";
+  const sotuvniYangilash = useSavdoStore((state) => state.sotuvniYangilash);
+  const saqlanmoqda = useSavdoStore((state) => state.amalBajarilmoqda);
+  const qoldiqYuklanmoqda = useSavdoStore((state) => state.qoldiqYuklanmoqda);
+  const qoldiqlarniYuklash = useSavdoStore((state) => state.qoldiqlarniYuklash);
+  const [tahrirRejimi, setTahrirRejimi] = useState(false);
+  const [tovarOzgarishlari, setTovarOzgarishlari] = useState(0);
+  const [chiqishSorovi, setChiqishSorovi] = useState<"orqaga" | "tahrir" | null>(null);
+  const tahrirdaMi = qoralama && tahrirRejimi;
+
+  const ozgarishniBildirish = useCallback(
+    (soni: number) => {
+      setTovarOzgarishlari(soni);
+      onOzgarish?.(soni);
+    },
+    [onOzgarish]
+  );
+
+  function tahrirniBoshlash() {
+    // Ombordagi qoldiq (tahrirlagichdagi "Omborda" va miqdor tekshiruvi) shu sotuv ombori bo'yicha yangilanadi.
+    void qoldiqlarniYuklash(sotuv.warehouseId ?? sotuv.warehouse?.id);
+    setTahrirRejimi(true);
+  }
+  function tahrirdanChiqish() {
+    if (tovarOzgarishlari > 0) setChiqishSorovi("tahrir");
+    else setTahrirRejimi(false);
+  }
+  function orqagaQaytish() {
+    if (tahrirdaMi && tovarOzgarishlari > 0) setChiqishSorovi("orqaga");
+    else onClose();
+  }
+  async function tovarlarniSaqlash(sotuvId: string, malumot: Partial<SotuvYaratishMalumoti>) {
+    const muvaffaqiyatli = await sotuvniYangilash(sotuvId, malumot);
+    if (muvaffaqiyatli) setTahrirRejimi(false);
+    return muvaffaqiyatli;
+  }
+
   async function ombordanChiqarishniTasdiqlash() {
     setOmbordanChiqarishXatosi("");
     setOmbordanChiqarishTasdiqlanmoqda(true);
@@ -3750,7 +3810,7 @@ function OmbordanChiqarishHujjatMazmuni({
         <div className="border-b border-slate-400/50 pb-6">
           <button
             type="button"
-            onClick={onClose}
+            onClick={orqagaQaytish}
             className="inline-flex h-10 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-orange-50 hover:text-[#2563EB] hover:ring-orange-200"
           >
             <ArrowLeft size={17} />
@@ -3767,6 +3827,28 @@ function OmbordanChiqarishHujjatMazmuni({
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2.5">
+              {qoralama && !tahrirdaMi && (
+                <button
+                  type="button"
+                  onClick={tahrirniBoshlash}
+                  disabled={saqlanmoqda || ombordanChiqarishTasdiqlanmoqda}
+                  className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#2563EB] px-4 text-xs font-bold text-white shadow-[0_8px_20px_rgba(37,99,235,.24)] transition hover:bg-[#1D4ED8] disabled:opacity-50"
+                >
+                  <PenLine size={14} />
+                  {t("ombordanChiqarish.tahrirlash")}
+                </button>
+              )}
+              {tahrirdaMi && (
+                <button
+                  type="button"
+                  onClick={tahrirdanChiqish}
+                  disabled={saqlanmoqda}
+                  className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-xs font-bold text-slate-700 shadow-sm transition hover:border-slate-400 disabled:opacity-50"
+                >
+                  <X size={14} />
+                  {t("ombordanChiqarish.tahrirdanChiqish")}
+                </button>
+              )}
               {tasdiqlangan && (
                 <button
                   type="button"
@@ -3832,7 +3914,7 @@ function OmbordanChiqarishHujjatMazmuni({
                     </p>
                     {!tasdiqlangan && (
                       <p className="mt-3 max-w-2xl rounded-xl border border-amber-200 bg-amber-50/80 px-3.5 py-2.5 text-xs leading-5 text-amber-800">
-                        {t("ombordanChiqarish.tasdiqlanmaguncha")}
+                        {tahrirdaMi ? t("ombordanChiqarish.tahrirdaTasdiqlab") : t("ombordanChiqarish.tasdiqlanmaguncha")}
                       </p>
                     )}
                     {!tasdiqlangan && ombordanChiqarishXatosi && (
@@ -3843,7 +3925,8 @@ function OmbordanChiqarishHujjatMazmuni({
                 {!tasdiqlangan && (
                   <button
                     type="button"
-                    disabled={ombordanChiqarishTasdiqlanmoqda}
+                    disabled={ombordanChiqarishTasdiqlanmoqda || tahrirdaMi}
+                    title={tahrirdaMi ? t("qoralamaTahrir.avvalSaqlang") : undefined}
                     onClick={() => void ombordanChiqarishniTasdiqlash()}
                     className="inline-flex h-12 shrink-0 items-center gap-2 rounded-2xl bg-[#2563EB] px-7 text-sm font-black text-white shadow-[0_14px_30px_rgba(37,99,235,.28)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] disabled:opacity-50 disabled:hover:translate-y-0"
                   >
@@ -3864,7 +3947,19 @@ function OmbordanChiqarishHujjatMazmuni({
 
           <div className="grid items-start gap-6 2xl:grid-cols-[minmax(0,1fr)_380px]">
             <div className="min-w-0 space-y-6">
-              {/* Mahsulotlar jadvali (avvalgi "Tovarlar" bo'limi) */}
+              {/* Tahrirlash rejimi: barcha mahsulotlar shu joyning o'zida tahrirlanadi, saqlangach jadval yangi ma'lumot bilan qaytadi */}
+              {tahrirdaMi ? (
+                <section className="overflow-hidden rounded-[28px] border border-blue-300 bg-white shadow-[0_18px_50px_rgba(15,23,42,.07)]" data-testid="ombordan-chiqarish-tahrir">
+                  <QoralamaTovarlarTahriri
+                    sotuv={sotuv}
+                    qoldiqlar={qoldiqlar}
+                    amalBajarilmoqda={saqlanmoqda || qoldiqYuklanmoqda}
+                    onYangilash={tovarlarniSaqlash}
+                    onOzgarish={ozgarishniBildirish}
+                  />
+                </section>
+              ) : (
+              /* Mahsulotlar jadvali (avvalgi "Tovarlar" bo'limi) */
               <section className="overflow-hidden rounded-[28px] border border-slate-400/60 bg-white shadow-[0_18px_50px_rgba(15,23,42,.07)]">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-300 px-7 py-5">
                   <h3 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">{t("ombordanChiqqan.oyna.mahsulotlar")}</h3>
@@ -3977,6 +4072,7 @@ function OmbordanChiqarishHujjatMazmuni({
                   </div>
                 )}
               </section>
+              )}
 
               {/* Haqiqatda ombordan chiqqan mahsulotlar (ombor harakati hisobotidan) */}
               {sotuvHolati(sotuv) !== "DRAFT" && (
@@ -4011,6 +4107,24 @@ function OmbordanChiqarishHujjatMazmuni({
             </aside>
           </div>
         </div>
+
+        {chiqishSorovi && (
+          <TasdiqlashOynasi
+            ikonka={<TriangleAlert size={26} />}
+            ohang="sariq"
+            sarlavha={t("qoralamaTahrir.yopishTasdigi.sarlavha")}
+            nom={sotuvJadvalId(sotuv)}
+            tavsif={t("fullEdit.discardDescription")}
+            ortgaMatni={t("qoralamaTahrir.yopishTasdigi.qolish")}
+            tasdiqMatni={t("fullEdit.discardConfirm")}
+            jarayonMatni={t("qoralamaTahrir.yopishTasdigi.yopilmoqda")}
+            onTasdiq={async () => {
+              if (chiqishSorovi === "orqaga") onClose();
+              else setTahrirRejimi(false);
+            }}
+            onYopish={() => setChiqishSorovi(null)}
+          />
+        )}
       </div>
   );
 }
