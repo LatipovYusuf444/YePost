@@ -36,10 +36,11 @@ import type {
   QaytarishYaratishMalumoti,
   QoldiqTanlovi,
   Sotuv,
-  SotuvTolovi,
   SotuvYaratishMalumoti,
+  TolovQoshishMalumoti,
   XodimTanlovi,
 } from "@/types/savdo";
+import type { TolovNatijasi } from "@/lib/tolovOrtiqchasi";
 import { sotuvQarzdorlikSummasi } from "@/Pages/Savdo/savdoYordamchilari";
 
 function xatolikKodi(error: unknown): string | undefined {
@@ -252,10 +253,11 @@ type SavdoState = {
     malumot: Partial<SotuvYaratishMalumoti>
   ) => Promise<boolean>;
   sotuvniTasdiqlash: (sotuvId: string) => Promise<boolean>;
+  // Muvaffaqiyatda to'lov natijasi (qarzdan ortiq naqd to'lovda: mijozga qaytim va hisobga o'tgan pul), aks holda null.
   sotuvgaTolovQoshish: (
     sotuvId: string,
-    tolov: Pick<SotuvTolovi, "paymentType" | "amount" | "currency" | "date" | "note">
-  ) => Promise<boolean>;
+    tolov: TolovQoshishMalumoti
+  ) => Promise<TolovNatijasi | null>;
   sotuvniBekorQilish: (sotuvId: string) => Promise<boolean>;
   sotuvniOchirish: (sotuvId: string) => Promise<boolean>;
   sotuvniTiklash: (sotuvId: string) => Promise<boolean>;
@@ -474,7 +476,7 @@ export const useSavdoStore = create<SavdoState>((set, get) => {
     set({ amalBajarilmoqda: true, xatolik: null });
 
     try {
-      const yangilangan = await sotuvgaTolovQoshishApi(sotuvId, tolov);
+      const { sotuv: yangilangan, qaytim, hisobga } = await sotuvgaTolovQoshishApi(sotuvId, tolov);
       const boyitilgan = sotuvniBoglanganMalumotlarBilanBoyitish(yangilangan, get());
       set((state) => ({
         sotuvlar: state.sotuvlar.map((sotuv) =>
@@ -484,10 +486,10 @@ export const useSavdoStore = create<SavdoState>((set, get) => {
         amalBajarilmoqda: false,
       }));
       window.dispatchEvent(new CustomEvent("savdo:yangilandi", { detail: { sotuvId } }));
-      return true;
+      return { qaytim, hisobga };
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
-      return false;
+      return null;
     }
   },
 

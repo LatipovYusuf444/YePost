@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Banknote, CalendarDays, CheckCircle2, ChevronDown, CreditCard, FileText, Landmark, UserCheck, UserRound, Wallet } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import { bugungiToshkentKuni, kunMatni, toshkentKuni, vaqtMatni } from "@/lib/hujjatSanasi";
+import { somMatni, tolovlarQaytimi } from "@/lib/tolovOrtiqchasi";
 import type { Sotuv, SotuvTolovi, TolovTuri } from "@/types/savdo";
 import {
   masulNomi,
@@ -59,6 +60,7 @@ export default function SotuvTolovlari({ sotuv, mijoz }: { sotuv: Sotuv; mijoz: 
           const sanaMatni = kunMatni(qator.sana);
           const qarz = qator.tolov.paymentType === "DEBT";
           const menuOchiq = ochiqMenuId === qator.raqam;
+          const qaytim = tolovlarQaytimi([qator.tolov]);
           return (
             <div
               key={qator.tolov.id ?? qator.raqam}
@@ -72,7 +74,19 @@ export default function SotuvTolovlari({ sotuv, mijoz }: { sotuv: Sotuv; mijoz: 
                 {t("tolovQatori.nomi", { raqam: qator.raqam })}
                 {sanaMatni ? ` — ${sanaMatni}` : ""} ({t("tolovQatori.summa", { summa: pulniFormatlash(qator.tolov.amount, tolovValyutasi(qator.tolov, sotuv)) })})
               </button>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                {qaytim.qaytim > 0 && (
+                  <span className="inline-flex h-6 items-center gap-1 rounded-full bg-emerald-50 px-2.5 text-[11px] font-bold text-emerald-700 ring-1 ring-emerald-100">
+                    <Banknote size={12} />
+                    {t("tolovQatori.qaytim", { summa: somMatni(qaytim.qaytim, t("tolovModal.somBelgisi")) })}
+                  </span>
+                )}
+                {qaytim.hisobga > 0 && (
+                  <span className="inline-flex h-6 items-center gap-1 rounded-full bg-sky-50 px-2.5 text-[11px] font-bold text-sky-700 ring-1 ring-sky-100">
+                    <Wallet size={12} />
+                    {t("tolovQatori.hisobga", { summa: pulniFormatlash(qaytim.hisobga, sotuvValyutasi(sotuv)) })}
+                  </span>
+                )}
                 <div className="relative">
                   <button
                     type="button"
@@ -141,6 +155,7 @@ function TolovTafsilotModal({ sotuv, mijoz, qator, onYopish }: { sotuv: Sotuv; m
   const tolovVal = tolovValyutasi(tolov, sotuv);
   const sotuvVal = sotuvValyutasi(sotuv);
   const sotuvUlushi = sotuvJami > 0 ? Math.min(100, Math.round((tolovSotuvValyutasida(tolov, sotuv) / sotuvJami) * 100)) : 0;
+  const qaytim = tolovlarQaytimi([tolov]);
 
   return (
     <AppModal onClose={onYopish}>
@@ -205,6 +220,12 @@ function TolovTafsilotModal({ sotuv, mijoz, qator, onYopish }: { sotuv: Sotuv; m
               label={t("tolovTafsilot.tolovTuri")}
               value={tolovTuriMatni[tolov.paymentType] ?? tolov.paymentType}
             />
+            {qaytim.qaytim > 0 && (
+              <TafsilotQatori icon={<Banknote size={17} />} label={t("tolovTafsilot.qaytim")} value={somMatni(qaytim.qaytim, t("tolovModal.somBelgisi"))} />
+            )}
+            {qaytim.hisobga > 0 && (
+              <TafsilotQatori icon={<Wallet size={17} />} label={t("tolovTafsilot.hisobga")} value={pulniFormatlash(qaytim.hisobga, sotuvVal)} />
+            )}
             <TafsilotQatori icon={<CalendarDays size={17} />} label={t("tolovTafsilot.sana")} value={tolovSanasiMatni(qator.sana)} />
             {tolov.note && <TafsilotQatori icon={<FileText size={17} />} label={t("tolovTafsilot.izoh")} value={tolov.note} />}
             <TafsilotQatori icon={<UserCheck size={17} />} label={t("tolovTafsilot.masulShaxs")} value={masulNomi(sotuv)} />

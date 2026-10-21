@@ -15,13 +15,14 @@ import type {
   QaytariladiganQator,
   QoldiqTanlovi,
   Sotuv,
-  SotuvTolovi,
+  TolovQoshishMalumoti,
   SotuvYaratishMalumoti,
   XodimTanlovi,
   YetkazishMalumoti,
   YetkazishPayload,
   SaleAuditLog,
 } from "@/types/savdo";
+import { tolovNatijasi, type TolovNatijasi } from "../lib/tolovOrtiqchasi.ts";
 import type { Mahsulot, MahsulotModifikatsiyasi } from "@/types/catalog";
 import { katalogNarxiniQoldiqqaMoslash } from "./catalogSearch";
 
@@ -176,15 +177,16 @@ export async function sotuvniOchirish(sotuvId: string) {
 }
 
 // Tasdiqlangan sotuvdagi qarzdorlikka yangi to'lov qo'shadi.
-// Payment endpoint umumiy ResponseHelper qaytargani uchun, saqlangandan keyin
-// sotuvning yangilangan holatini alohida GET orqali qayta olamiz.
+// Saqlangandan keyin sotuvning yangilangan holati (to'lovlar, qarz, qaytim) alohida GET orqali qayta olinadi.
 // POST /sales/:id/payments — currency berilsa to'lov shu valyutada (boshqa valyutadagi to'lov bugungi kurs bilan hisoblanadi).
+// Qarzdan ortiq naqd to'lovda javobda `change` (so'mdagi qaytim) va `keepExcess` bilan `keptAmount` (hisobga o'tgan pul) keladi.
 export async function sotuvgaTolovQoshish(
   sotuvId: string,
-  tolov: Pick<SotuvTolovi, "paymentType" | "amount" | "currency" | "date" | "note">
-) {
-  await apiClient.post(`/sales/${sotuvId}/payments`, tolov);
-  return sotuvTafsilotiniOlish(sotuvId);
+  tolov: TolovQoshishMalumoti
+): Promise<{ sotuv: Sotuv } & TolovNatijasi> {
+  const javob = await apiClient.post<unknown>(`/sales/${sotuvId}/payments`, tolov);
+  const natija = tolovNatijasi(javob.data);
+  return { sotuv: await sotuvTafsilotiniOlish(sotuvId), ...natija };
 }
 
 export async function yetkazishniOlish(sotuvId: string) {

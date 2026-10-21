@@ -68,7 +68,8 @@ import { useOmborStore } from "@/store/omborStore";
 import { useSavdoStore } from "@/store/savdoStore";
 import type { Activity, ChatMessage, Comment } from "@/types/crm";
 import type { Ombor } from "@/types/ombor";
-import type { QoldiqTanlovi, SaleAuditLog, Sotuv, SotuvTolovi, SotuvYaratishMalumoti, TolovTuri, XodimTanlovi, YetkazishMalumoti, YetkazishPayload } from "@/types/savdo";
+import type { QoldiqTanlovi, SaleAuditLog, Sotuv, SotuvYaratishMalumoti, TolovQoshishMalumoti, TolovTuri, XodimTanlovi, YetkazishMalumoti, YetkazishPayload } from "@/types/savdo";
+import { dollarQatnashdimi, natijalarYigindisi, ortiqchaMaydonlari, ortiqchaTahlili, qaytimSomda, somMatni, tolovlarQaytimi, type OrtiqchaQatori, type TolovNatijasi } from "@/lib/tolovOrtiqchasi";
 import {
   BIRIKTIRILGAN_MIJOZ_NOMI,
   donalikMijozNomi,
@@ -99,6 +100,8 @@ import { mijozHisobi } from "@/lib/mijozHisobi";
 import { qoralamaFormasi } from "@/lib/qoralamaUmumiyTahrir";
 import { xatolikXabari } from "@/lib/toast";
 import SavdoSelect from "./SavdoSelect";
+import OrtiqchaTanlovi from "./OrtiqchaTanlovi";
+import TolovNatijasiKarta from "./TolovNatijasi";
 import SotuvTolovlari from "./SotuvTolovlari";
 import SotuvOmbordanChiqarishQatori from "./SotuvOmbordanChiqarishQatori";
 import SummaMaydoni from "@/Components/common/SummaMaydoni";
@@ -127,8 +130,8 @@ type SotuvTafsilotlariModalProps = {
   ) => Promise<boolean>;
   onTolovQoshish: (
     sotuvId: string,
-    tolov: Pick<SotuvTolovi, "paymentType" | "amount" | "currency" | "date" | "note">
-  ) => Promise<boolean>;
+    tolov: TolovQoshishMalumoti
+  ) => Promise<TolovNatijasi | null>;
   onTasdiqlash: (sotuvId: string) => Promise<void> | void;
   onBekorQilish: (sotuvId: string) => void;
   // Qoralamalar ro'yxatidagi "Tahrirlash" oynani to'g'ridan-to'g'ri "Tovarlar" bo'limida ochadi.
@@ -1519,6 +1522,8 @@ function KelishuvCard({
   const tolanganSumma = sotuvTolanganSummasi(sotuv);
   const qarzdorlikSumma = sotuvQarzdorlikSummasi(sotuv);
   const ortiqchaTolovSumma = sotuvOrtiqchaTolovSummasi(sotuv);
+  // Mijozga berilgan qaytim (so'mda) va hisobga o'tgan pul: to'lov qatorlarining `changeAmount` / `keptAmount` maydonlaridan.
+  const berilganQaytim = tolovlarQaytimi(sotuv.payments);
   function bolimniTanlash(bolim: string) {
     setTanlanganBolim(bolim);
     setMenuOpen(false);
@@ -1628,10 +1633,24 @@ function KelishuvCard({
           </div>
         )}
 
-        {ortiqchaTolovSumma > 0 && (
+        {ortiqchaTolovSumma > 0 && berilganQaytim.qaytim <= 0 && berilganQaytim.hisobga <= 0 && (
           <div className="mt-3 flex justify-between rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700">
             <span>{t("kelishuvCard.ortiqchaTolov")}</span>
             <span className="font-bold">{pulniFormatlash(ortiqchaTolovSumma, sotuvValyutasi(sotuv))}</span>
+          </div>
+        )}
+
+        {berilganQaytim.qaytim > 0 && (
+          <div className="mt-3 flex justify-between rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+            <span>{t("kelishuvCard.qaytimBerilgan")}</span>
+            <span className="font-bold">{somMatni(berilganQaytim.qaytim, t("tolovModal.somBelgisi"))}</span>
+          </div>
+        )}
+
+        {Number(sotuv.excessToBalance ?? 0) <= 0 && berilganQaytim.hisobga > 0 && (
+          <div className="mt-3 flex justify-between rounded-xl bg-sky-50 px-3 py-2 text-xs text-sky-700">
+            <span>{t("kelishuvCard.hisobgaYozilgan")}</span>
+            <span className="font-bold">{pulniFormatlash(berilganQaytim.hisobga, sotuvValyutasi(sotuv))}</span>
           </div>
         )}
 
@@ -1714,8 +1733,8 @@ function TolovQabulQilishModal({
   ) => Promise<boolean>;
   onTolovQoshish: (
     sotuvId: string,
-    tolov: Pick<SotuvTolovi, "paymentType" | "amount" | "currency" | "date" | "note">
-  ) => Promise<boolean>;
+    tolov: TolovQoshishMalumoti
+  ) => Promise<TolovNatijasi | null>;
   onYopish: () => void;
 }) {
   const { t } = useTranslation("savdo_tafsilot");
@@ -1772,8 +1791,14 @@ function TolovQabulQilishModal({
   // shakldagi summa (bo'lsa) birga yuboriladi.
   const [qatorlar, setQatorlar] = useState<YangiTolovQatori[]>([]);
   const [saqlanmoqda, setSaqlanmoqda] = useState(false);
-  // Qoralamadagi mijozli sotuvda chekdan ortiq pul: qaytim yoki mijoz hisobiga yozish (backend `keepExcess`).
+  // Qarzdan ortiq pul: qaytim yoki mijoz hisobiga yozish (backend `keepExcess`). Qoralamadagi mijozli sotuvda va tasdiqlangan sotuvga keyingi naqd to'lovda.
   const [ortiqchaniHisobga, setOrtiqchaniHisobga] = useState(false);
+  // Tasdiqlangan sotuvda dollar qatnashganda qaytim mingtagacha yaxlitlanadi (backend `roundChange`, standart yoqilgan).
+  const [qaytimYaxlitlash, setQaytimYaxlitlash] = useState(true);
+  // Saqlangan to'lovlarning natijasi (mijozga qaytim, hisobga o'tgan pul): hammasi saqlangach natija oynasi ko'rsatiladi,
+  // bir qismi saqlanib keyingisi xato bersa — qaytim eslatmasi forma ichida turadi.
+  const [natija, setNatija] = useState<TolovNatijasi | null>(null);
+  const [tugatildi, setTugatildi] = useState(false);
   // To'lovlar ketma-ket yuborilganda `amalBajarilmoqda` har so'rov orasida o'chib qoladi — ikki marta bosish takroriy to'lov yaratmasin.
   const saqlashQulfi = useRef(false);
 
@@ -1789,10 +1814,13 @@ function TolovQabulQilishModal({
   const boshlangichQarz = Math.max(jami - mavjudYigindisi - qatorlarYigindisi, 0);
   // Tanlangan to'lov valyutasida to'lash mumkin bo'lgan eng katta summa (qolgan qarzni to'liq yopadi).
   // Sotuv valyutasida tiyingacha yuqoriga yaxlitlanadi: boshqa valyutadan o'girishdagi kasr shovqini kiritish maydoniga tushmasin.
-  const maxTolov =
+  // Qarz yo'q bo'lsa 0 (ceil(-0.000001) manfiy nol bo'lib, "-0 so'm" chiqmasligi uchun).
+  const maxTolov = Math.max(
     tolovVal === sotuvVal
       ? Math.ceil(boshlangichQarz * 100 - 1e-6) / 100
-      : valyutaYaxlitlash(sotuvValyutasidanOgirish(boshlangichQarz, tolovVal), tolovVal);
+      : valyutaYaxlitlash(sotuvValyutasidanOgirish(boshlangichQarz, tolovVal), tolovVal),
+    0
+  );
 
   // Hisobdan to'lov: hisobdagi qoldiq (ro'yxatdagi hisobdan to'lovlar ayirilgan) va qolgan qarzdan oshmaydi (backend
   // `overpayment_not_allowed`), shuning uchun qarz hisob valyutasining eng kichik birligigacha PASTGA yaxlitlanadi.
@@ -1812,18 +1840,40 @@ function TolovQabulQilishModal({
   const yakuniyTolangan = mavjudYigindisi + qatorlarYigindisi + yangiSummaSotuvValyutasida;
   const qarzFarqi = jami - yakuniyTolangan;
   const qolganQarz = qarzFarqi > 1e-6 ? qarzFarqi : 0;
-  // Qoralamadagi mijozli sotuvda chekdan ortiq pul qabul qilinadi (kassir qaytim yoki hisobga yozishni tanlaydi);
-  // tasdiqlangan sotuvda qarzdan ortiq to'lov qabul qilinmaydi.
+  // Qoralamadagi mijozli sotuvda chekdan ortiq pul qabul qilinadi (kassir qaytim yoki hisobga yozishni tanlaydi).
+  // Tasdiqlangan sotuvda qarzdan ortiq faqat NAQD to'lov qabul qilinadi: qarz yopiladi, ortgani qaytim bo'ladi yoki hisobga o'tadi;
+  // karta, bank va hisobdan to'lov qarzdan oshmasligi kerak.
   const ortiqchaYoziladi = draft && Boolean(mijozId);
   // Boshqa valyutada yaxlitlash (dollar — sentgacha, so'm — butungacha yuqoriga) eng ko'pi bilan bir birlik ortiqcha beradi:
-  // bu xato hisoblanmaydi. Bir xil valyutada ortiqcha to'lov qabul qilinmaydi.
+  // bu xato hisoblanmaydi. Bir xil valyutada (naqd bo'lmagan to'lovda) ortiqcha to'lov qabul qilinmaydi.
+  const qatorValyutalari = [...qatorlar.map((qator) => qator.currency), ...(yangiSumma > 0 ? [tolovVal] : [])];
   const ruxsatEtilganFarq = Math.max(
     1e-6,
-    ...[...qatorlar.map((qator) => qator.currency), ...(yangiSumma > 0 ? [tolovVal] : [])]
+    ...qatorValyutalari
       .filter((valyuta) => valyuta !== sotuvVal)
       .map((valyuta) => sotuvValyutasigaOgirish(valyuta === "USD" ? 0.01 : 1, valyuta))
   );
-  const ortiqchaSumma = yakuniyTolangan - jami > ruxsatEtilganFarq ? yakuniyTolangan - jami : 0;
+  const qoralamaOrtiqchasi = yakuniyTolangan - jami > ruxsatEtilganFarq ? yakuniyTolangan - jami : 0;
+  // Tasdiqlangan sotuv: to'lovlar yuboriladigan tartibda qaysi biri qarzdan oshishi. Avvalgi to'lovlar jamidan oshgan qismi (oldin berilgan
+  // qaytim) yangi ortiqcha bo'lib ko'rinmasligi uchun avvalgi to'lov sotuv jamidan oshmaydigan qismi olinadi.
+  const avvalTolangan = Math.min(mavjudYigindisi, jami);
+  const qarzBor = jami - avvalTolangan > 1e-6;
+  const ortiqchaQatorlari: OrtiqchaQatori[] = [
+    ...qatorlar.map((qator) => ({ paymentType: qator.paymentType, qiymat: sotuvValyutasigaOgirish(qator.amount, qator.currency) })),
+    ...(yangiSumma > 0 ? [{ paymentType: tolovTuri, qiymat: yangiSummaSotuvValyutasida }] : []),
+  ];
+  const tahlil = ortiqchaTahlili({ jami, avvalTolangan, qatorlar: ortiqchaQatorlari, chegara: ruxsatEtilganFarq });
+  const ortiqchaSumma = draft ? qoralamaOrtiqchasi : tahlil.ortiqcha;
+  // Ekranda ortiqcha so'mda butungacha, dollarda sentgacha (boshqa valyutadan o'girishdagi kasr shovqini ko'rinmasin).
+  const ortiqchaKorinishi = sotuvVal === "USD" ? Math.round(ortiqchaSumma * 100) / 100 : Math.round(ortiqchaSumma);
+  // Tasdiqlangan sotuvda qarzdan ortiq naqd to'lov: ikki tanlov ko'rsatiladi (qaytim yoki mijoz hisobiga).
+  const naqdOrtiqcha = !draft && qarzBor && tahlil.ortiqcha > 0 && !tahlil.naqdEmas;
+  const ortiqchaTanloviKorinadi = (ortiqchaYoziladi && ortiqchaSumma > 0) || naqdOrtiqcha;
+  const dollarQatnashdi = dollarQatnashdimi(sotuvVal, qatorValyutalari);
+  // Mijozga beriladigan qaytim, so'mda (taxminiy: yakuniy summani server hisoblaydi).
+  const qaytimTaxmini = naqdOrtiqcha
+    ? qaytimSomda({ ortiqcha: tahlil.ortiqcha, sotuvValyutasi: sotuvVal, kurs, dollarQatnashdi, yaxlitlash: qaytimYaxlitlash })
+    : 0;
 
   // Xulosa (Sotuv jami / Jami to'lov / Qarzdorlik) tanlangan to'lov valyutasida ko'rsatiladi: dollar tanlansa — dollarda
   // (bugungi kurs bilan, backend ham shu kursda hisoblaydi), so'm tanlansa — so'mda. Sotuv valyutasidagi asl qiymat ostida turadi.
@@ -1859,8 +1909,14 @@ function TolovQabulQilishModal({
     if (balansTanlangan && yangiSumma > balansMax + 1e-9) {
       return t("tolovModal.errors.hisobdanOshmasin", { maksimal: pulniFormatlash(balansMax, tolovVal) });
     }
-    if (!ortiqchaYoziladi && yakuniyTolangan > jami + ruxsatEtilganFarq) {
-      return t("tolovModal.errors.qarzdorlikdanOshmasin", { maksimal: pulniFormatlash(maxTolov, tolovVal) });
+    if (draft) {
+      if (!ortiqchaYoziladi && yakuniyTolangan > jami + ruxsatEtilganFarq) {
+        return t("tolovModal.errors.qarzdorlikdanOshmasin", { maksimal: pulniFormatlash(maxTolov, tolovVal) });
+      }
+    } else if (tahlil.ortiqcha > 0) {
+      // Qarz yo'q bo'lsa ortiqcha to'lov qabul qilinmaydi; qarz bor bo'lsa ortiqchani faqat naqd to'lov hosil qilishi mumkin.
+      if (!qarzBor) return t("tolovModal.errors.qarzdorlikdanOshmasin", { maksimal: pulniFormatlash(maxTolov, tolovVal) });
+      if (tahlil.naqdEmas) return t("tolovModal.errors.ortiqchaFaqatNaqd", { maksimal: pulniFormatlash(maxTolov, tolovVal) });
     }
     // To'lov sanasi: kelajak kun va yopilgan davr kuni backendda rad etiladi (date_in_future, period_closed).
     const kunlar = [...qatorlar.map((qator) => qator.date), ...(yangiSumma > 0 ? [tolovKuni] : [])];
@@ -1911,6 +1967,15 @@ function TolovQabulQilishModal({
     try {
       if (!draft) {
         // Tasdiqlangan sotuvga to'lov qo'shish endpointi bitta to'lov oladi: har biri alohida yuboriladi.
+        // Qarzdan ortiq naqd to'lovda tanlov (hisobga o'tkazish yoki aniq qaytim) faqat ortiqchani boshlagan va undan keyingi qatorlarga qo'shiladi.
+        const bayroqlar = ortiqchaMaydonlari({
+          ortiqcha: tahlil.ortiqcha,
+          hisobgaYozish: ortiqchaniHisobga,
+          mijozBor: Boolean(mijozId),
+          dollarQatnashdi,
+          yaxlitlash: qaytimYaxlitlash,
+        });
+        const natijalar: TolovNatijasi[] = natija ? [natija] : [];
         for (let i = 0; i < tolovlar.length; i += 1) {
           const tolov = tolovlar[i];
           const saqlandi = await onTolovQoshish(sotuv.id, {
@@ -1918,10 +1983,14 @@ function TolovQabulQilishModal({
             amount: tolov.amount,
             ...farqliValyuta(tolov.currency, sotuv),
             ...tolovQoshimchasi(tolov.date, tolov.note),
+            ...(tahlil.birinchiOshgan !== -1 && i >= tahlil.birinchiOshgan ? bayroqlar : {}),
           });
           if (!saqlandi) {
             // Oldingilari saqlangan: ular ro'yxatdan chiqariladi, qolganlari qayta urinish uchun turadi.
             setQatorlar(qatorlar.slice(i));
+            // Saqlangan to'lovlardan mijozga qaytim berilgan bo'lsa, u kassirga ko'rinib turadi.
+            const oldingi = natijalarYigindisi(natijalar);
+            if (oldingi.qaytim > 0 || oldingi.hisobga > 0) setNatija(oldingi);
             // Backendning aniq sababi (masalan, hisobda pul yetmaydi) bo'lsa, shu ko'rsatiladi.
             const sabab = useSavdoStore.getState().xatolik;
             setXatolik(
@@ -1931,6 +2000,14 @@ function TolovQabulQilishModal({
             );
             return;
           }
+          natijalar.push(saqlandi);
+        }
+        // Qaytim yoki hisobga o'tgan pul bo'lsa oyna yopilmaydi: kassir mijozga qancha qaytim berishini ko'rishi kerak.
+        const yigindi = natijalarYigindisi(natijalar);
+        if (yigindi.qaytim > 0 || yigindi.hisobga > 0) {
+          setNatija(yigindi);
+          setTugatildi(true);
+          return;
         }
         onYopish();
         return;
@@ -1987,6 +2064,15 @@ function TolovQabulQilishModal({
           </div>
         </div>
 
+        {tugatildi && natija ? (
+          <TolovNatijasiKarta
+            qaytim={natija.qaytim}
+            hisobga={natija.hisobga}
+            sotuvValyutasi={sotuvVal}
+            qolganQarz={sotuvQarzdorlikSummasi(sotuv)}
+            onYopish={onYopish}
+          />
+        ) : (
         <div className="mt-7 space-y-5">
             {mavjudTolovlar.length > 0 && (
               <div>
@@ -2006,6 +2092,16 @@ function TolovQabulQilishModal({
                       {tolov.note && (
                         <span className="ml-1.5 font-semibold text-slate-500" title={tolov.note}>
                           · {tolov.note.length > 28 ? `${tolov.note.slice(0, 28)}…` : tolov.note}
+                        </span>
+                      )}
+                      {tolovlarQaytimi([tolov]).qaytim > 0 && (
+                        <span className="ml-1.5 font-semibold text-emerald-600">
+                          · {t("tolovModal.qaytimQatori", { summa: somMatni(tolovlarQaytimi([tolov]).qaytim, t("tolovModal.somBelgisi")) })}
+                        </span>
+                      )}
+                      {tolovlarQaytimi([tolov]).hisobga > 0 && (
+                        <span className="ml-1.5 font-semibold text-sky-600">
+                          · {t("tolovModal.hisobgaQatori", { summa: pulniFormatlash(tolovlarQaytimi([tolov]).hisobga, sotuvVal) })}
                         </span>
                       )}
                     </span>
@@ -2212,30 +2308,50 @@ function TolovQabulQilishModal({
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-wide text-slate-400">
-                  {qolganQarz > 0 ? t("tolovModal.qarzdorlikQoldigi") : t("tolovModal.qarzdorlik")}
+                  {qolganQarz > 0
+                    ? t("tolovModal.qarzdorlikQoldigi")
+                    : naqdOrtiqcha
+                      ? t("tolovModal.ortiqcha.qiymati")
+                      : t("tolovModal.qarzdorlik")}
                 </p>
-                <p className={`mt-1.5 text-lg font-black ${qolganQarz > 0 ? "text-red-500" : "text-emerald-600"}`}>
-                  {qolganQarz > 0 ? pulniFormatlash(xulosaQiymati(qolganQarz, "yuqoriga"), xulosaVal) : t("tolovModal.yoq")}
+                <p className={`mt-1.5 text-lg font-black ${qolganQarz > 0 ? "text-red-500" : naqdOrtiqcha ? "text-sky-600" : "text-emerald-600"}`}>
+                  {qolganQarz > 0
+                    ? pulniFormatlash(xulosaQiymati(qolganQarz, "yuqoriga"), xulosaVal)
+                    : naqdOrtiqcha
+                      ? pulniFormatlash(xulosaQiymati(tahlil.ortiqcha, "yaqin"), xulosaVal)
+                      : t("tolovModal.yoq")}
                 </p>
                 {boshqaValyuta && qolganQarz > 0 && <p className="mt-0.5 text-[11px] font-semibold text-slate-400">≈ {pulniFormatlash(qolganQarz, sotuvVal)}</p>}
+                {boshqaValyuta && naqdOrtiqcha && <p className="mt-0.5 text-[11px] font-semibold text-slate-400">≈ {pulniFormatlash(ortiqchaKorinishi, sotuvVal)}</p>}
               </div>
             </div>
 
-            {ortiqchaYoziladi && ortiqchaSumma > 0 && (
-              <fieldset className="rounded-2xl border border-sky-100 bg-sky-50/50 p-4">
-                <legend className="px-1 text-xs font-black uppercase tracking-wide text-slate-500">
-                  {t("tolovModal.ortiqchaSarlavha", { summa: pulniFormatlash(ortiqchaSumma, sotuvVal) })}
-                </legend>
-                <label className="mt-1 flex cursor-pointer items-center gap-2 text-sm font-bold text-slate-700">
-                  <input type="radio" name="ortiqcha-tolov" checked={!ortiqchaniHisobga} onChange={() => setOrtiqchaniHisobga(false)} className="h-4 w-4 accent-[#2563EB]" />
-                  {t("tolovModal.ortiqchaQaytim")}
-                </label>
-                <label className="mt-2 flex cursor-pointer items-center gap-2 text-sm font-bold text-slate-700">
-                  <input type="radio" name="ortiqcha-tolov" checked={ortiqchaniHisobga} onChange={() => setOrtiqchaniHisobga(true)} className="h-4 w-4 accent-[#2563EB]" />
-                  {t("tolovModal.ortiqchaHisobga")}
-                </label>
-                <p className="mt-2 text-xs font-semibold leading-5 text-slate-500">{t("tolovModal.ortiqchaIzoh")}</p>
-              </fieldset>
+            {ortiqchaTanloviKorinadi && (
+              <OrtiqchaTanlovi
+                rejim={draft ? "qoralama" : "tasdiqlangan"}
+                hisobgaYozish={ortiqchaniHisobga}
+                onOzgarish={setOrtiqchaniHisobga}
+                ortiqchaMatni={pulniFormatlash(ortiqchaKorinishi, sotuvVal)}
+                qaytimMatni={qaytimTaxmini > 0 ? somMatni(qaytimTaxmini, t("tolovModal.somBelgisi")) : undefined}
+                mijozBor={Boolean(mijozId)}
+                yaxlitlashKorsatilsin={naqdOrtiqcha && dollarQatnashdi}
+                yaxlitlash={qaytimYaxlitlash}
+                onYaxlitlash={setQaytimYaxlitlash}
+              />
+            )}
+
+            {!draft && qarzBor && tahlil.ortiqcha > 0 && tahlil.naqdEmas && (
+              <div role="alert" className="flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold leading-6 text-amber-800">
+                <TriangleAlert size={18} aria-hidden className="mt-0.5 shrink-0" />
+                {t("tolovModal.errors.ortiqchaFaqatNaqd", { maksimal: pulniFormatlash(maxTolov, tolovVal) })}
+              </div>
+            )}
+
+            {natija && !tugatildi && (natija.qaytim > 0 || natija.hisobga > 0) && (
+              <div role="status" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold leading-6 text-emerald-800">
+                {natija.qaytim > 0 && <p>{t("tolovModal.natija.saqlanganQaytim", { summa: somMatni(natija.qaytim, t("tolovModal.somBelgisi")) })}</p>}
+                {natija.hisobga > 0 && <p>{t("tolovModal.natija.saqlanganHisobga", { summa: pulniFormatlash(natija.hisobga, sotuvVal) })}</p>}
+              </div>
             )}
 
             {xatolik && (
@@ -2261,6 +2377,7 @@ function TolovQabulQilishModal({
               </button>
             </div>
         </div>
+        )}
       </div>
     </AppModal>
   );

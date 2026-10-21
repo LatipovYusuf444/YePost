@@ -21,6 +21,12 @@ export default {
       throw error;
     }
   },
+  // POST javobi `handlers`da "POST /yo'l" kaliti bilan beriladi.
+  async post(url, data, config) {
+    calls.push({ method: 'post', url, data, config });
+    const key = `POST ${url}`;
+    return { data: handlers.has(key) ? await handlers.get(key)(data, config) : {} };
+  },
 };
 
 export const modifikatsiyalarApi = {
