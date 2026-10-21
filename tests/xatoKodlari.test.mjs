@@ -14,8 +14,11 @@ test('sotuvni bekor qilishda shu kod boshqa matn oladi (hisobga yozilgan pul ish
   assert.match(xatoKodiMatni('errors.wallet.insufficient_balance', '/sales/abc-123/cancel', 'ru'), /нельзя отменить/);
 });
 
-test('hisobdan keragidan ko‘p yechish va valyuta rejimi o‘chiq', () => {
-  assert.match(xatoKodiMatni('errors.sales.overpayment_not_allowed', '/sales/s1/payments', 'uz'), /ko'p yechib bo'lmaydi/);
+test('qarzdan ko‘p to‘lov (karta, bank, hisob) va valyuta rejimi o‘chiq', () => {
+  const matn = xatoKodiMatni('errors.sales.overpayment_not_allowed', '/sales/s1/payments', 'uz');
+  assert.match(matn, /Karta, bank yoki hisobdan/);
+  assert.match(matn, /faqat naqd to'lovda/);
+  assert.match(xatoKodiMatni('errors.sales.overpayment_not_allowed', '/sales/s1/payments', 'ru'), /только при оплате наличными/);
   assert.match(xatoKodiMatni('errors.currency.mode_off', '/finance/cash-operations', 'uz'), /valyuta rejimi/);
 });
 

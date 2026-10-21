@@ -13,10 +13,10 @@ const MATNLAR: Record<string, KodMatni> = {
     uz: "Mijoz hisobida pul yetarli emas.",
     ru: "На счёте клиента недостаточно средств.",
   },
-  // Hisobdan chekka keragidan ko'p yechilyapti.
+  // Karta, bank yoki hisobdan qarzdan ko'p to'lanyapti (naqd to'lovda ortiqcha qabul qilinadi: qaytim yoki mijoz hisobiga).
   "errors.sales.overpayment_not_allowed": {
-    uz: "Hisobdan sotuvga kerakli summadan ko'p yechib bo'lmaydi. Summani kamaytiring.",
-    ru: "Со счёта нельзя списать больше суммы, нужной для продажи. Уменьшите сумму.",
+    uz: "Karta, bank yoki hisobdan qarz summasidan ko'p to'lab bo'lmaydi. Ortiqcha pulni faqat naqd to'lovda qabul qilish mumkin (qaytim yoki mijoz hisobiga). Summani kamaytiring.",
+    ru: "Картой, банковским переводом или со счёта нельзя заплатить больше суммы долга. Излишек принимается только при оплате наличными (сдача или зачисление на счёт клиента). Уменьшите сумму.",
   },
   // $ uchun valyuta rejimi o'chiq.
   "errors.currency.mode_off": {

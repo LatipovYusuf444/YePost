@@ -54,6 +54,18 @@ test('the official template is fetched as a Blob from the supplied endpoint', as
 test('repayment delegates oldest-first allocation to the documented backend debt API', async () => {
   calls.length = 0;
   const payload = { customerId: 'customer-1', amount: 100, paymentMethod: 'CASH', currency: 'USD', note: 'qarz uchun' };
-  await api.mijozQarziniTolash(payload);
+  const natija = await api.mijozQarziniTolash(payload);
   assert.deepEqual(calls, [{ method: 'post', url: '/finance/debt-repayment', data: payload, config: undefined }]);
+  // Ortiqcha bo'lmasa (oddiy javob) qaytim ham hisobga o'tgan pul ham yo'q.
+  assert.deepEqual(natija, { qaytim: 0, hisobga: 0 });
+});
+
+test('repayment forwards keepExcess/roundChange and returns the change and the amount credited to the account', async () => {
+  calls.length = 0;
+  const payload = { customerId: 'customer-1', amount: 1067000, paymentMethod: 'CASH', currency: 'UZS', roundChange: false, keepExcess: true };
+  responses.push({ change: '0', excessToBalance: '339000' });
+  assert.deepEqual(await api.mijozQarziniTolash(payload), { qaytim: 0, hisobga: 339000 });
+  assert.deepEqual(calls, [{ method: 'post', url: '/finance/debt-repayment', data: payload, config: undefined }]);
+  responses.push({ success: true, data: { change: '339000', excessToBalance: '0' } });
+  assert.deepEqual(await api.mijozQarziniTolash({ customerId: 'customer-1', amount: 1067000, paymentMethod: 'CASH', currency: 'UZS' }), { qaytim: 339000, hisobga: 0 });
 });

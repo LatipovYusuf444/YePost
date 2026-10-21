@@ -109,6 +109,17 @@ export type SotuvTolovi = {
   date?: string;
   // To'lovga kassir yozgan izoh (qachon, kimdan, nima uchun); bo'lmasa yo'q.
   note?: string | null;
+  // Shu to'lovdan mijozga berilgan qaytim (so'mda; sotuvni tasdiqlashda berilgani oxirgi naqd qatorda turadi) va mijoz hisobiga o'tgan pul.
+  changeAmount?: number | string | null;
+  keptAmount?: number | string | null;
+};
+
+// Tasdiqlangan sotuvga to'lov qo'shish (POST /sales/:id/payments). Qarzdan ortiq NAQD to'lovda ortgan pul qaytim bo'ladi (so'mda, so'm kassasidan
+// REFUND), `keepExcess: true` bo'lsa esa mijoz hisobiga o'tadi (mijozsiz sotuvda 400). `roundChange` — dollar qatnashsa qaytimni mingtagacha
+// yaxlitlash (standart true).
+export type TolovQoshishMalumoti = Pick<SotuvTolovi, "paymentType" | "amount" | "currency" | "date" | "note"> & {
+  roundChange?: boolean;
+  keepExcess?: boolean;
 };
 
 export type Sotuv = {
