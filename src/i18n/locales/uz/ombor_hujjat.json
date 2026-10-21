@@ -15,6 +15,22 @@
     "full": "To'liq",
     "partial": "Qisman"
   },
+  "inventoryView": {
+    "cancelledHint": "Hujjat bekor qilingan. Quyida saqlangan tekshiruv natijalari ko'rsatilgan.",
+    "confirmedHint": "Tekshiruv yakunlangan. Quyida hujjatda saqlangan miqdorlar ko'rsatilgan.",
+    "draftHint": "Tasdiqlashdan oldin haqiqiy miqdorlar va aniqlangan farqlarni tekshiring.",
+    "results": "Tekshiruv natijalari",
+    "resultsHint": "Tizimdagi va haqiqiy miqdorlar taqqoslanishi",
+    "rows": "ta mahsulot qatori",
+    "unknown": "{{count}} ta qatorda taqqoslash uchun miqdor yetishmaydi.",
+    "scrollHint": "Barcha ustunlarni ko'rish uchun jadvalni yon tomonga suring.",
+    "summary": {
+      "total": "Jami mahsulotlar",
+      "matched": "Mos kelgan",
+      "surplus": "Ortiqcha",
+      "shortage": "Kamomad"
+    }
+  },
   "errors": {
     "invalidStockTakeQuantity": "Har bir mahsulot uchun haqiqiy miqdor 0 yoki undan katta raqam bo'lishi kerak.",
     "invalidItems": "Mahsulot, miqdor va narx qiymatlarini to'g'ri kiriting."

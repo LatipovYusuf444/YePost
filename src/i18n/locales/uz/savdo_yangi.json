@@ -102,7 +102,7 @@
     "saleBadge": "Yangi",
     "saleSectionTitle": "Sotuv haqida",
     "saleNameLabel": "Sotuv nomi",
-    "saleNamePlaceholder": "Sotuv #",
+    "saleNamePlaceholder": "Nomsiz sotuvlar: №1, №2, …",
     "saleAmountLabel": "Sotuv summasi",
     "saleNotePrefix": "Sotuv nomi",
     "saleStockWarning": "Serverda ombor mavjud emas. Sotuv yaratishdan oldin Sozlamalar - Ombor bo'limida ombor yaratilishi kerak.",

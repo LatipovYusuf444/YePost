@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import ModalActionRail from "./ModalActionRail";
 
@@ -9,10 +9,12 @@ function oziningYopishTugmasiBormi(overlay: HTMLElement) {
   return Array.from(overlay.querySelectorAll<HTMLButtonElement>("button")).some((tugma) => {
     if (tugma.closest('[data-modal-action-rail="true"]')) return false;
     if (tugma.closest('[class~="absolute"][class*="-left-"][class*="flex-col"]')) return false;
+    const yopishTugmasi = Boolean(tugma.querySelector("svg.lucide-x")) || /yopish|close|закры/i.test(tugma.getAttribute("aria-label") ?? "");
+    if (!yopishTugmasi) return false;
     const joy = tugma.getBoundingClientRect();
     // Ko'rinmaydigan (ekrandan tashqaridagi yoki o'lchamsiz) tugma "o'zining yopish tugmasi" hisoblanmaydi.
     if (joy.width === 0 || joy.left < 0 || joy.right > window.innerWidth || joy.top > yuqori) return false;
-    return Boolean(tugma.querySelector("svg.lucide-x")) || /yopish|close|закры/i.test(tugma.getAttribute("aria-label") ?? "");
+    return true;
   });
 }
 
@@ -49,7 +51,7 @@ export default function AppModal({ children, className = "", onClose, actionRail
     };
   }, []);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!actionRail) return;
     const overlay = overlayRef.current;
     if (!overlay) return;
@@ -77,18 +79,29 @@ export default function AppModal({ children, className = "", onClose, actionRail
       }
       const left = joyYoq ? Math.max(12, rect.right - 54) : Math.max(12, rect.left - 50);
       const top = joyYoq ? rect.top + 10 : Math.max(12, Math.min(rect.top + 20, window.innerHeight - 208));
-      setRailHolati({ top, left, ixcham: joyYoq });
+      setRailHolati((oldingi) =>
+        oldingi?.top === top && oldingi.left === left && oldingi.ixcham === joyYoq
+          ? oldingi
+          : { top, left, ixcham: joyYoq }
+      );
     }
 
-    joylashtirish();
-    const observer = new ResizeObserver(joylashtirish);
+    // Scroll/resize hodisalari bitta kadrda bir martagina joylashuvni o'lchaydi.
+    let kadr: number | null = null;
+    function navbatgaQoyish() {
+      if (kadr !== null) return;
+      kadr = window.requestAnimationFrame(() => { kadr = null; joylashtirish(); });
+    }
+    navbatgaQoyish();
+    const observer = new ResizeObserver(navbatgaQoyish);
     observer.observe(modalPanel);
-    window.addEventListener("resize", joylashtirish);
-    window.addEventListener("scroll", joylashtirish, true);
+    window.addEventListener("resize", navbatgaQoyish);
+    window.addEventListener("scroll", navbatgaQoyish, true);
     return () => {
+      if (kadr !== null) window.cancelAnimationFrame(kadr);
       observer.disconnect();
-      window.removeEventListener("resize", joylashtirish);
-      window.removeEventListener("scroll", joylashtirish, true);
+      window.removeEventListener("resize", navbatgaQoyish);
+      window.removeEventListener("scroll", navbatgaQoyish, true);
     };
   }, [actionRail, children]);
 

@@ -96,14 +96,13 @@ import {
 import { qatorBirligida, qatorMiqdoriMatni, qatorniQaytaYuborish } from "@/lib/kopBirlik";
 import { useValyutaStore, valyutaKodi, type Valyuta } from "@/lib/valyuta";
 import { mijozHisobi } from "@/lib/mijozHisobi";
-import { qatorlarImzosi } from "@/lib/qoralamaTahriri";
+import { qoralamaFormasi } from "@/lib/qoralamaUmumiyTahrir";
 import { xatolikXabari } from "@/lib/toast";
 import SavdoSelect from "./SavdoSelect";
 import SotuvTolovlari from "./SotuvTolovlari";
 import SotuvJarayoni from "./SotuvJarayoni";
 import TelegramXabarnomaKarti from "./TelegramXabarnoma";
-import QoralamaTovarlarTahriri from "./QoralamaTovarlarTahriri";
-import MijozniTahrirlashOynasi from "./MijozniTahrirlashOynasi";
+import QoralamaUmumiyTahrir from "./QoralamaUmumiyTahrir";
 import BoshlangichQarzTafsilotlariModal from "@/Pages/XaridorUchot/BoshlangichQarzTafsilotlariModal";
 
 import ModalTablari from "@/Components/common/ModalTablari";
@@ -115,6 +114,7 @@ type SotuvTafsilotlariModalProps = {
   qoldiqlar: QoldiqTanlovi[];
   xodimlar: XodimTanlovi[];
   amalBajarilmoqda: boolean;
+  qoldiqYuklanmoqda?: boolean;
   onYopish: () => void;
   onYangilash: (
     sotuvId: string,
@@ -448,15 +448,17 @@ function OddiySotuvTafsilotlariModal({
   onTolovQoshish,
   onBekorQilish,
   boshlangichTab,
+  qoldiqYuklanmoqda = false,
 }: SotuvTafsilotlariModalProps) {
   const { t } = useTranslation("savdo_tafsilot");
   const sotuvniOchirish = useSavdoStore((state) => state.sotuvniOchirish);
   const sotuvniTiklash = useSavdoStore((state) => state.sotuvniTiklash);
-  const [activeTab, setActiveTab] = useState<string>(boshlangichTab ?? "Umumiy");
+  const bekorMumkin = useHujjatniBekorQilishMumkinmi("savdo");
+  const [activeTab, setActiveTab] = useState<string>(boshlangichTab === "Tovarlar" && sotuvHolati(sotuv) === "DRAFT" ? "Umumiy" : boshlangichTab ?? "Umumiy");
+  const [tahrirRejimi, setTahrirRejimi] = useState(boshlangichTab === "Tovarlar" && sotuvHolati(sotuv) === "DRAFT");
   // Qoralama tovarlaridagi saqlanmagan o'zgarishlar soni (tahrirlagich xabar beradi): yopish va to'lovga o'tish shunga qarab nazorat qilinadi.
   const [tovarOzgarishlari, setTovarOzgarishlari] = useState(0);
-  const [yopishSoralmoqda, setYopishSoralmoqda] = useState(false);
-  const [mijozOynasiOchiq, setMijozOynasiOchiq] = useState(false);
+  const [chiqishSorovi, setChiqishSorovi] = useState<"modal" | "tahrir" | null>(null);
   const [yetkazishOchiq, setYetkazishOchiq] = useState(false);
   const [ombordanChiqarishOchiq, setOmbordanChiqarishOchiq] = useState(false);
   const [tolovModalOchiq, setTolovModalOchiq] = useState(false);
@@ -500,8 +502,22 @@ function OddiySotuvTafsilotlariModal({
 
   // Saqlanmagan tovar o'zgarishlari bo'lsa, oyna yopilishidan oldin so'raladi.
   function yopishniSoraymiz() {
-    if (saqlanmaganTovarlar) setYopishSoralmoqda(true);
+    if (saqlanmaganTovarlar) setChiqishSorovi("modal");
     else onYopish();
+  }
+  function tahrirniTugatish() {
+    setTahrirRejimi(false);
+    setTovarOzgarishlari(0);
+    setActiveTab("Umumiy");
+    setChiqishSorovi(null);
+  }
+  function tahrirniBekorQilish() {
+    if (saqlanmaganTovarlar) setChiqishSorovi("tahrir");
+    else tahrirniBekorQilibChiqish();
+  }
+  function tahrirniBekorQilibChiqish() {
+    void useSavdoStore.getState().qoldiqlarniYuklash(sotuv.warehouseId ?? sotuv.warehouse?.id);
+    tahrirniTugatish();
   }
 
   // To'lov backendda saqlangan qatorlar bo'yicha hisoblanadi: saqlanmagan o'zgarish bo'lsa avval saqlash (yoki bekor qilish) kerak.
@@ -515,16 +531,19 @@ function OddiySotuvTafsilotlariModal({
   }
 
   return (
-    <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
-      <div className="relative h-[calc(100vh-32px)] w-full">
+    <AppModal className={`items-start justify-start p-0 py-4 pl-[88px] pr-4 ${tahrirRejimi ? "draft-sale-edit-overlay" : "bg-[rgba(15,23,42,.50)] backdrop-blur-[3px]"}`}>
+      <div className={`relative h-[calc(100vh-32px)] w-full ${tahrirRejimi ? "mx-auto max-w-[1440px]" : ""}`}>
         <ModalTezkorPanel sotuv={sotuv} onYopish={yopishniSoraymiz} />
-        <section className="relative h-full w-full overflow-hidden rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80">
+        <section className={`relative h-full w-full overflow-hidden text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80 ${tahrirRejimi ? "rounded-[26px] bg-[#F5F7FB]" : "rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7]"}`}>
         <div className="scrollbar-hidden h-full overflow-y-auto">
-          <header className="sticky top-0 z-30 border-b border-orange-100/80 bg-[#F8FAFC]/90 px-9 py-6 backdrop-blur-xl">
-            <div className="flex items-center justify-between gap-4">
-              <h1 className="truncate text-2xl font-bold text-slate-900">{sotuvJadvalId(sotuv)}</h1>
-              <div className="flex shrink-0 items-center gap-2">
-                <div className="relative hidden sm:block">
+          <header className={`sticky top-0 z-30 border-b backdrop-blur-xl ${tahrirRejimi ? "border-slate-200/80 bg-white/95 px-5 py-4 sm:px-6" : "border-orange-100/80 bg-[#F8FAFC]/90 px-9 py-6"}`}>
+            <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+              <div className="min-w-0 flex-1"><h1 className="break-words text-xl font-bold text-slate-900 sm:text-2xl">{qoralamaFormasi(sotuv).nom || `№${sotuvJadvalId(sotuv)}`}</h1><p className="mt-1 text-xs font-medium text-slate-500">{t(tahrirRejimi && draft ? "fullEdit.title" : "fullEdit.details")}</p></div>
+              <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+                {draft && !tahrirRejimi && <button type="button" disabled={amalBajarilmoqda || qoldiqYuklanmoqda} onClick={() => setTahrirRejimi(true)} className="inline-flex h-10 items-center gap-2 rounded-xl bg-gold-600 px-4 text-sm font-semibold text-white disabled:opacity-50"><PenLine size={16} />{t("fullEdit.edit")}</button>}
+                {draft && tahrirRejimi && <button type="button" disabled={amalBajarilmoqda} onClick={tahrirniBekorQilish} className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 disabled:opacity-50"><X size={16} />{t("fullEdit.discard")}</button>}
+                {!tahrirRejimi && holat !== "CANCELLED" && bekorMumkin && <button type="button" disabled={amalBajarilmoqda} onClick={() => onBekorQilish(sotuv.id)} className="inline-flex h-10 items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-600 disabled:opacity-50"><Ban size={16} />{t("fullEdit.cancelSale")}</button>}
+                {!tahrirRejimi && <div className="relative hidden sm:block">
                   <button
                     type="button"
                     onClick={() => setHujjatMenuOchiq((joriy) => !joriy)}
@@ -588,8 +607,8 @@ function OddiySotuvTafsilotlariModal({
                       </div>
                     </div>
                   )}
-                </div>
-                <HujjatOchirish
+                </div>}
+                {!tahrirRejimi && <HujjatOchirish
                   korinish="kichik"
                   guruh="savdo"
                   status={sotuv.status}
@@ -597,19 +616,19 @@ function OddiySotuvTafsilotlariModal({
                   onTasdiq={() => sotuvniOchirish(sotuv.id)}
                   onTiklash={() => sotuvniTiklash(sotuv.id)}
                   onOchirildi={onYopish}
-                />
+                />}
               </div>
             </div>
 
-            <ModalTablari
+            {!tahrirRejimi && <ModalTablari
                 className="mt-6"
                 tablar={tabs.map((tab) => ({ id: tab, nom: t(TAB_LABEL_KEYS[tab] ?? tab) }))}
                 faol={activeTab}
-                onChange={(id) => setActiveTab(id as typeof activeTab)}
-              />
+                onChange={setActiveTab}
+              />}
           </header>
 
-          {saqlanmaganTovarlar && activeTab !== "Tovarlar" && (
+          {saqlanmaganTovarlar && !tahrirRejimi && (
             <div className="mx-9 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-amber-50 px-5 py-3.5 text-sm font-semibold text-amber-800 ring-1 ring-amber-200">
               <span className="flex items-center gap-2.5">
                 <TriangleAlert size={18} className="shrink-0" />
@@ -617,7 +636,7 @@ function OddiySotuvTafsilotlariModal({
               </span>
               <button
                 type="button"
-                onClick={() => setActiveTab("Tovarlar")}
+                onClick={() => setTahrirRejimi(true)}
                 className="h-9 rounded-xl bg-amber-500 px-4 text-xs font-black text-white transition hover:bg-amber-600"
               >
                 {t("tabs.tovarlar")}
@@ -625,29 +644,13 @@ function OddiySotuvTafsilotlariModal({
             </div>
           )}
 
-          {/* Qoralama tovarlari tahrirlanadi; boshqa tab'ga o'tilganda ham yozilgan o'zgarishlar yo'qolmasligi uchun yashirin holda saqlanadi. */}
-          {draft && (
-            <div hidden={activeTab !== "Tovarlar"}>
-              <QoralamaTovarlarTahriri
-                key={`${sotuv.id}:${qatorlarImzosi(sotuv.items)}`}
-                sotuv={sotuv}
-                qoldiqlar={qoldiqlar}
-                amalBajarilmoqda={amalBajarilmoqda}
-                onYangilash={onYangilash}
-                onOzgarish={setTovarOzgarishlari}
-              />
-            </div>
-          )}
-
-          {activeTab === "Tovarlar" ? (
-            draft ? null : (
+          {draft && tahrirRejimi ? <QoralamaUmumiyTahrir sotuv={sotuv} amalBajarilmoqda={amalBajarilmoqda} onYangilash={onYangilash} onOzgarish={setTovarOzgarishlari} onSaqlandi={tahrirniTugatish} /> : activeTab === "Tovarlar" ? (
               <TovarlarTab
                 sotuv={sotuv}
                 qoldiqlar={qoldiqlar}
                 amalBajarilmoqda={amalBajarilmoqda}
                 onYangilash={onYangilash}
               />
-            )
           ) : activeTab === "Tarix" ? (
             <TarixTab sotuv={sotuv} />
           ) : (
@@ -664,7 +667,7 @@ function OddiySotuvTafsilotlariModal({
               onBekorQilish={onBekorQilish}
               onYetkazish={() => setYetkazishOchiq(true)}
               onOmbordanChiqarish={() => setOmbordanChiqarishOchiq(true)}
-              onMijozniTahrirlash={() => setMijozOynasiOchiq(true)}
+              onMijozniTahrirlash={() => setTahrirRejimi(true)}
               hujjatlar={hujjatlar}
               onHujjatOchish={hujjatniOchish}
             />
@@ -691,25 +694,18 @@ function OddiySotuvTafsilotlariModal({
             onClose={() => setHujjatGeneratorOchiq(false)}
           />
         )}
-        {mijozOynasiOchiq && draft && (
-          <MijozniTahrirlashOynasi
-            sotuv={sotuv}
-            onSotuvniYangilash={onYangilash}
-            onYopish={() => setMijozOynasiOchiq(false)}
-          />
-        )}
-        {yopishSoralmoqda && (
+        {chiqishSorovi && (
           <TasdiqlashOynasi
             ikonka={<TriangleAlert size={26} />}
             ohang="sariq"
             sarlavha={t("qoralamaTahrir.yopishTasdigi.sarlavha")}
             nom={sotuvJadvalId(sotuv)}
-            tavsif={t("qoralamaTahrir.yopishTasdigi.tavsif")}
+            tavsif={t("fullEdit.discardDescription")}
             ortgaMatni={t("qoralamaTahrir.yopishTasdigi.qolish")}
-            tasdiqMatni={t("qoralamaTahrir.yopishTasdigi.yopish")}
+            tasdiqMatni={t(chiqishSorovi === "tahrir" ? "fullEdit.discardConfirm" : "qoralamaTahrir.yopishTasdigi.yopish")}
             jarayonMatni={t("qoralamaTahrir.yopishTasdigi.yopilmoqda")}
-            onTasdiq={async () => onYopish()}
-            onYopish={() => setYopishSoralmoqda(false)}
+            onTasdiq={async () => { if (chiqishSorovi === "tahrir") tahrirniBekorQilibChiqish(); else onYopish(); }}
+            onYopish={() => setChiqishSorovi(null)}
           />
         )}
       </section>
@@ -1278,55 +1274,6 @@ function UmumiyTab({
     };
   }, [customerId, partnerId, sotuv.clientCompanyId, sotuv.id, t]);
 
-  async function faoliyatniSaqlash(faoliyat: Omit<SaqlanganFaoliyat, "id" | "sana"> & { sana?: string }) {
-    try {
-      setCrmXatolik("");
-      if (!partnerId) {
-        setCrmXatolik(t("umumiyTab.errors.partnerIdKerak"));
-        return false;
-      }
-      if (partnerId) {
-        if (faoliyat.turi === "Izoh") {
-          const comment = await crmApi.partnerCommentYaratish(partnerId, {
-            text: faoliyat.matn || faoliyat.sarlavha,
-            attachmentIds: faoliyat.attachmentIds,
-            mentionUserIds: faoliyat.mentionUserIds,
-          });
-          setSaqlanganFaoliyatlar((joriy) => [crmCommentniFaoliyatga(comment, t), ...joriy]);
-          return true;
-        }
-
-        if (faoliyat.turi === "Xabar") {
-          const text = faoliyat.matn || faoliyat.sarlavha;
-          const message = await crmApi.partnerChatXabarYuborish(partnerId, text);
-          setSaqlanganFaoliyatlar((joriy) => [crmXabarniFaoliyatga(message, t), ...joriy]);
-          return true;
-        }
-
-        const assigneeId = faoliyat.xodimId || sotuv.responsibleId;
-        if (!assigneeId) {
-          setCrmXatolik(t("umumiyTab.errors.masulXodimKerak"));
-          return false;
-        }
-
-        const activity = await crmApi.activityYaratish({
-          type: faoliyat.turi === "Vazifa" ? "TASK" : "CALL",
-          partnerId,
-          subject: faoliyat.sarlavha,
-          description: faoliyat.matn || undefined,
-          dueAt: faoliyat.sana ?? new Date().toISOString(),
-          assigneeId,
-        });
-        setSaqlanganFaoliyatlar((joriy) => [crmActivityniFaoliyatga(activity, t), ...joriy]);
-        return true;
-      }
-    } catch (error) {
-      setCrmXatolik(getApiErrorMessage(error));
-      return false;
-    }
-    return false;
-  }
-
   async function faoliyatniYangilash(id: string, malumot: Partial<SaqlanganFaoliyat>) {
     try {
       const joriyFaoliyat = saqlanganFaoliyatlar.find((faoliyat) => faoliyat.id === id);
@@ -1432,7 +1379,7 @@ function UmumiyTab({
 
   return (
     <>
-    <div className="px-9 pt-9">
+    <div className="px-4 pt-5 sm:px-7 sm:pt-7">
       <SotuvJarayoni
         sotuv={sotuv}
         jami={jami}
@@ -1442,7 +1389,7 @@ function UmumiyTab({
         onOmbordanChiqarish={onOmbordanChiqarish}
       />
     </div>
-    <div className="grid gap-8 px-9 pb-9 pt-8 xl:grid-cols-[43%_minmax(0,1fr)] 2xl:grid-cols-[41%_minmax(0,1fr)]">
+    <div className="grid gap-5 px-4 pb-6 pt-5 sm:gap-6 sm:px-7 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <aside className="space-y-6">
         <KelishuvCard
           sotuv={sotuv}
@@ -1468,7 +1415,6 @@ function UmumiyTab({
               {crmXatolik}
             </div>
           )}
-          <FaoliyatPanel xodimlar={xodimlar} onSaqlash={faoliyatniSaqlash} />
         <Divider label={t("umumiyTab.feed.bugun")} />
         {crmYuklanmoqda && (
           <div className="flex h-24 items-center justify-center rounded-2xl bg-white/92 shadow-[0_18px_46px_rgba(37,99,235,.08)]">

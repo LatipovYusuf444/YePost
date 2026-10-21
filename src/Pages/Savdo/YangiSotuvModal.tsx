@@ -46,6 +46,7 @@ import { crmApi } from "@/api/crmApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { cn } from "@/lib/utils";
+import { sotuvNomiIzohi } from "@/lib/sotuvNomi";
 import { useValyutaStore } from "@/lib/valyuta";
 import type {
   MijozTanlovi,
@@ -457,18 +458,9 @@ export default function YangiSotuvModal({
         stockWarning: t("modal.saleStockWarning"),
         submitLabel: t("modal.saleSubmitLabel"),
       };
-  const korsatiladiganSotuvNomi =
-    sotuvNomi.trim() ||
-    (tanlanganMijoz
-      ? t("preview.autoName", {
-          client: mijozKorinishi(tanlanganMijoz, t),
-          type: draftMode ? t("preview.typeDraft") : t("preview.typeSale"),
-        })
-      : "");
-
   function backendIzohiniYigish() {
     const metadata = [
-      korsatiladiganSotuvNomi ? `${modalMatnlari.notePrefix}: ${korsatiladiganSotuvNomi}` : "",
+      sotuvNomiIzohi(sotuvNomi, modalMatnlari.notePrefix),
       bosqich ? `${t("note.stageLabel")}: ${bosqich}` : "",
       `${t("note.currencyLabel")}: ${valyutalar.find((item) => item.value === valyuta)?.label ?? valyuta}`,
       boshlanishSanasi ? `${t("note.startDateLabel")}: ${boshlanishSanasi}` : "",
@@ -815,7 +807,7 @@ export default function YangiSotuvModal({
             customerId,
             clientCompanyId,
             responsibleId,
-            sotuvNomi: korsatiladiganSotuvNomi,
+            sotuvNomi: sotuvNomi.trim(),
             bosqich,
             valyuta,
             boshlanishSanasi,
@@ -1431,7 +1423,7 @@ export default function YangiSotuvModal({
                       <input
                         value={sotuvNomi}
                         onChange={(event) => setSotuvNomi(event.target.value)}
-                        placeholder={korsatiladiganSotuvNomi || modalMatnlari.namePlaceholder}
+                        placeholder={modalMatnlari.namePlaceholder}
                         className={maydonKlassi}
                       />
                     </label>

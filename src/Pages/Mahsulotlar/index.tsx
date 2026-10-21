@@ -17,6 +17,7 @@ import {
   RefreshCw,
   Ruler,
   Search,
+  Save,
   Table2,
   Tags,
   Trash2,
@@ -25,6 +26,8 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import ModalYuklanmoqda from "@/Components/common/ModalYuklanmoqda";
+import { useModalYuklash } from "@/hooks/useModalYuklash";
 import { mahsulotBirliklariApi, mahsulotlarApi } from "@/api/catalogApi";
 import { omborlarApi } from "@/api/omborApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
@@ -45,6 +48,7 @@ import type { Ombor } from "@/types/ombor";
 
 import ModalTablari from "@/Components/common/ModalTablari";
 import KorinishTanlash, { type RoyxatKorinishi } from "@/Pages/Ombor/KorinishTanlash";
+import KategoriyaQoldigiModal from "./KategoriyaQoldigiModal";
 import { sotuvNarxiUstamadan, ustamaFoizi } from "./narxHisobi";
 import { narxQoralamaValyutalari, narxYigish, ustamaHisoblashMumkin } from "./narxValyutaYuklama";
 import { narxValyutalari } from "@/lib/narxValyutasi";
@@ -177,7 +181,9 @@ export default function Mahsulotlar() {
   const [page, setPage] = useState(1);
   const [korinishMenu, setKorinishMenu] = useState(false);
   const [mahsulotModal, setMahsulotModal] = useState<Mahsulot | "new" | null>(null);
+  const mahsulotTahriri = useModalYuklash<{ mahsulot: Mahsulot; tahrirlash: boolean }>();
   const [oddiyModal, setOddiyModal] = useState<Kategoriya | "new" | null>(null);
+  const [kategoriyaQoldigi, setKategoriyaQoldigi] = useState<Kategoriya | null>(null);
   const [modProduct, setModProduct] = useState<Mahsulot | null>(null);
   const [birlikProduct, setBirlikProduct] = useState<Mahsulot | null>(null);
   const [importModalOchiq, setImportModalOchiq] = useState(false);
@@ -211,9 +217,15 @@ export default function Mahsulotlar() {
     if (toliq) setOddiyModal(toliq);
   }
 
-  async function mahsulotTahrirlash(item: Mahsulot) {
-    const toliq = await store.mahsulotOlish(item.id);
-    if (toliq) setMahsulotModal(toliq);
+  async function mahsulotTahrirlash(item: Mahsulot, tahrirlash = true) {
+    await mahsulotTahriri.ochish(async () => {
+      const [toliq, variantlar] = await Promise.all([
+        store.mahsulotOlish(item.id),
+        store.modifikatsiyalarniYuklash(item.id),
+      ]);
+      // Narxlarni yuklash muvaffaqiyatsiz bo'lsa, bo'sh narxlar bilan tahrir ochilmaydi.
+      return toliq && variantlar !== null ? { mahsulot: toliq, tahrirlash } : null;
+    });
   }
 
   async function mahsulotOchirish(id: string) {
@@ -268,17 +280,16 @@ export default function Mahsulotlar() {
     return item.unit?.shortName ?? item.unit?.name ?? store.birliklar.find((x) => x.id === item.unitId)?.shortName ?? t("fallback.unit");
   }
 
-  // Mahsulotni ochish (variantlar va narxlar oynasi): jadvalda qator ustiga bosilganda ishlaydi.
+  // Qator va qalam bitta katta mahsulot formasini, mavjud ma'lumotlar bilan ochadi.
   function mahsulotniKorish(item: Mahsulot) {
-    setModProduct(item);
-    void store.modifikatsiyalarniYuklash(item.id);
+    void mahsulotTahrirlash(item, false);
   }
 
   function mahsulotAmallari(item: Mahsulot, ixcham = false) {
     return (
       // Jadvaldagi tugmalar (tahrirlash, o'chirish) bosilganda qator ochilmasligi uchun bosish yuqoriga o'tkazilmaydi.
       <div onClick={ixcham ? (event) => event.stopPropagation() : undefined} className={ixcham ? "flex justify-end gap-2" : "mt-5 grid grid-cols-[1fr_1fr_42px] gap-2 border-t pt-4"}>
-        {!ixcham&&<button onClick={()=>mahsulotniKorish(item)} className="inline-flex items-center justify-center gap-1 rounded-xl bg-slate-50 py-2.5 text-sm font-bold text-slate-600"><Eye size={15}/>{t("actions.variants")}</button>}
+        {!ixcham&&<button onClick={()=>{setModProduct(item);void store.modifikatsiyalarniYuklash(item.id)}} className="inline-flex items-center justify-center gap-1 rounded-xl bg-slate-50 py-2.5 text-sm font-bold text-slate-600"><Eye size={15}/>{t("actions.variants")}</button>}
         {birlikTahrirlashMumkin&&<button type="button" onClick={()=>setBirlikProduct(item)} title={t("actions.units")} aria-label={t("actions.units")} className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-500 hover:bg-orange-50 hover:text-orange-600"><Ruler size={16}/></button>}
         <button onClick={()=>void mahsulotTahrirlash(item)} className={`inline-flex items-center justify-center gap-1 rounded-xl bg-orange-50 font-bold text-orange-600 ${ixcham ? "h-10 px-3 text-sm" : "py-2.5 text-sm"}`}><Edit3 size={15}/>{!ixcham&&t("actions.edit")}</button>
         <button onClick={()=>void mahsulotOchirish(item.id)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500"><Trash2 size={16}/></button>
@@ -379,9 +390,9 @@ export default function Mahsulotlar() {
             {mahsulotlar.length===0&&<Empty matn={t("empty.products")}/>}
           </div>
           ) : (
-            <div className="overflow-hidden rounded-[26px] border border-orange-100 bg-white shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-left text-sm">
+            <div className="min-w-0 max-w-full overflow-hidden rounded-[26px] border border-orange-100 bg-white shadow-sm">
+              <div className="scrollbar-orange max-w-full overflow-x-auto">
+                <table className="w-max min-w-full whitespace-nowrap text-left text-sm">
                   <thead className="bg-slate-50 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
                     <tr>
                       <th className="px-5 py-4">{t("table.index")}</th>
@@ -393,7 +404,7 @@ export default function Mahsulotlar() {
                       <th className="px-5 py-4">{t("table.barcode")}</th>
                       <th className="px-5 py-4">{t("table.article")}</th>
                       <th className="px-5 py-4">{t("table.status")}</th>
-                      <th className="px-5 py-4 text-right">{t("table.action")}</th>
+                      <th className="product-table-actions sticky right-0 z-20 min-w-44 bg-blue-50 px-5 py-4 text-right">{t("table.action")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-orange-100">
@@ -408,11 +419,11 @@ export default function Mahsulotlar() {
                           mahsulotniKorish(item);
                         }}
                         tabIndex={0}
-                        className="cursor-pointer transition hover:bg-orange-50/40 focus-visible:bg-orange-50/60 focus-visible:outline-none"
+                        className="group cursor-pointer transition hover:bg-orange-50/40 focus-visible:bg-orange-50/60 focus-visible:outline-none"
                       >
                         <td className="px-5 py-4 font-bold text-gray-500">{(currentPage - 1) * pageSize + index + 1}</td>
                         <td className="px-5 py-4">
-                          <span className="font-black text-gray-900">{item.name}</span>
+                          <span className="inline-block whitespace-nowrap rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 font-bold leading-5 text-blue-800">{item.name}</span>
                         </td>
                         <td className="px-5 py-4 font-bold text-gray-600">{kategoriyaNomi(item)}</td>
                         <td className="px-5 py-4 font-bold text-gray-600">{birlikNomi(item)}</td>
@@ -437,7 +448,7 @@ export default function Mahsulotlar() {
                         <td className="px-5 py-4 text-gray-500">{item.barcode||t("notEntered")}</td>
                         <td className="px-5 py-4 text-gray-500">{item.article||t("notEntered")}</td>
                         <td className="px-5 py-4"><span className={`rounded-full px-3 py-1 text-xs font-bold ${item.isActive?"bg-emerald-50 text-emerald-600":"bg-gray-100 text-gray-500"}`}>{item.isActive?t("status.active"):t("status.inactive")}</span></td>
-                        <td className="px-5 py-4">{mahsulotAmallari(item,true)}</td>
+                        <td className="product-table-actions sticky right-0 z-10 min-w-44 bg-blue-50 px-5 py-4 group-hover:bg-blue-100 group-focus-visible:bg-blue-100">{mahsulotAmallari(item,true)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -473,10 +484,10 @@ export default function Mahsulotlar() {
           {kategoriyaKorinishi==="kartochka"?(
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {store.kategoriyalar.map(item=><article key={item.id} className="group flex flex-col overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-[0_10px_30px_rgba(37,99,235,.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(37,99,235,.12)]">
-                <div className="flex flex-1 items-center gap-4 p-5">
+                <button type="button" onClick={()=>setKategoriyaQoldigi(item)} aria-label={t("categoryStock.open", { name: item.name })} className="flex flex-1 items-center gap-4 p-5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500">
                   <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-50 to-white text-orange-500 ring-1 ring-orange-100 transition duration-300 group-hover:-rotate-6 group-hover:scale-105"><Tags size={24}/></span>
                   <h3 className="min-w-0 flex-1 truncate text-lg font-black text-slate-900">{item.name}</h3>
-                </div>
+                </button>
                 <div className="flex gap-2 border-t border-orange-100 bg-orange-50/40 p-3">
                   <button onClick={()=>void oddiyTahrirlash(item)} className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-white text-sm font-black text-orange-600 ring-1 ring-orange-100 transition hover:bg-orange-100"><Edit3 size={15}/>{t("categoriesTab.edit")}</button>
                   <button onClick={()=>void oddiyOchirish(item.id)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100" aria-label={t("categoriesTab.delete")}><Trash2 size={15}/></button>
@@ -495,7 +506,7 @@ export default function Mahsulotlar() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-orange-100/70">
-                  {store.kategoriyalar.map((item,index)=><tr key={item.id} onClick={()=>void oddiyTahrirlash(item)} className="cursor-pointer transition hover:bg-orange-50/50">
+                  {store.kategoriyalar.map((item,index)=><tr key={item.id} tabIndex={0} aria-label={t("categoryStock.open", { name: item.name })} onClick={()=>setKategoriyaQoldigi(item)} onKeyDown={event=>{if(event.target===event.currentTarget&&(event.key==="Enter"||event.key===" ")){event.preventDefault();setKategoriyaQoldigi(item)}}} className="cursor-pointer transition hover:bg-orange-50/50 focus-visible:outline-2 focus-visible:outline-blue-500">
                     <td className="px-5 py-4 font-bold tabular-nums text-slate-400">{index+1}</td>
                     <td className="px-5 py-4"><div className="flex items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500 ring-1 ring-orange-100"><Tags size={18}/></span><span className="font-black text-slate-900">{item.name}</span></div></td>
                     <td className="px-5 py-4"><div className="flex justify-end gap-2">
@@ -512,7 +523,10 @@ export default function Mahsulotlar() {
       )}
 
       {mahsulotModal&&<MahsulotModalKeng item={mahsulotModal} onClose={()=>setMahsulotModal(null)}/>}
+      {mahsulotTahriri.yuklanmoqda&&<ModalYuklanmoqda onClose={mahsulotTahriri.yopish}/>}
+      {mahsulotTahriri.malumot&&<MahsulotModalKeng key={mahsulotTahriri.malumot.mahsulot.id} item={mahsulotTahriri.malumot.mahsulot} boshlangichTahrir={mahsulotTahriri.malumot.tahrirlash} onClose={mahsulotTahriri.yopish}/>}
       {oddiyModal&&<OddiyModal item={oddiyModal} onClose={()=>setOddiyModal(null)}/>}
+      {kategoriyaQoldigi&&<KategoriyaQoldigiModal key={kategoriyaQoldigi.id} kategoriya={kategoriyaQoldigi} mahsulotlar={store.mahsulotlar} birliklar={store.birliklar} onYopish={()=>setKategoriyaQoldigi(null)}/>}
       {modProduct&&<ModifikatsiyalarModal product={modProduct} onClose={()=>setModProduct(null)}/>}
       {birlikProduct&&<BirliklarModal product={birlikProduct} birliklar={store.birliklar} onClose={()=>setBirlikProduct(null)}/>}
       {importModalOchiq&&<MahsulotImportModal onClose={()=>setImportModalOchiq(false)} onImported={yuklash}/>}
@@ -771,10 +785,11 @@ function numericOrZero(value: string) {
   return Number.isFinite(number) && number > 0 ? number : 0;
 }
 
-function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}) {
+function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|"new";onClose:()=>void;boshlangichTahrir?:boolean}) {
   const { t } = useTranslation("mahsulotlar");
   const store=useMahsulotlarStore();
   const editing=item!=="new";
+  const [tahrirFaol,setTahrirFaol]=useState(!editing||boshlangichTahrir);
   const [name,setName]=useState(editing?item.name:"");
   const [categoryId,setCategoryId]=useState(editing?item.categoryId:store.kategoriyalar[0]?.id??"");
   const [unitId,setUnitId]=useState(editing?item.unitId:defaultProductUnit(store.birliklar,store.standardBirliklar)?.id??"");
@@ -966,7 +981,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
 
   async function save(e:FormEvent){
     e.preventDefault();
-    if(saqlanmoqda)return;
+    if(!tahrirFaol||saqlanmoqda)return;
     setSaqlanmoqda(true);
     try{await saqlash()}finally{setSaqlanmoqda(false)}
   }
@@ -1092,7 +1107,7 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
   }
 
   function selectImage(file?:File) {
-    if(!file||!file.type.startsWith("image/"))return;
+    if(!tahrirFaol||!file||!file.type.startsWith("image/"))return;
     setImageUrl(URL.createObjectURL(file));
   }
 
@@ -1338,15 +1353,15 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
     updateVariantDraft(key,{imageUrl:URL.createObjectURL(file)});
   }
 
-  return <AppModal className="product-modal-overlay"><form onSubmit={save} className="product-modal-panel scrollbar-hidden max-h-[94vh] w-full overflow-y-auto rounded-[30px] bg-white shadow-2xl">
-    <div className="flex items-center justify-between gap-4 border-b border-gray-100 px-6 py-5">
+  return <AppModal className="product-modal-overlay" onClose={onClose}><form onSubmit={save} className="product-modal-panel scrollbar-hidden max-h-[94vh] w-full overflow-y-auto rounded-[30px] bg-white shadow-2xl">
+    <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 bg-white/95 px-6 py-5 backdrop-blur-xl">
       <div className="flex min-w-0 items-center gap-4">
-        <button type="button" onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white"><X size={18}/></button>
-        <h2 className="truncate text-2xl font-black">{editing?t("productModal.editTitle"):t("productModal.createTitle")}</h2>
+        <h2 className="truncate text-2xl font-black">{editing?(tahrirFaol?t("productModal.editTitle"):name):t("productModal.createTitle")}</h2>
       </div>
-    </div>
+      {editing&&(!tahrirFaol?<button key="edit" type="button" onClick={event=>{event.preventDefault();setTahrirFaol(true)}} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white transition hover:bg-blue-700"><Edit3 size={17}/>{t("actions.edit")}</button>:<button key="save" type="submit" disabled={store.amalBajarilmoqda||unitResolving||saqlanmoqda} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white transition hover:bg-blue-700 disabled:opacity-50">{store.amalBajarilmoqda||unitResolving||saqlanmoqda?<LoaderCircle size={17} className="animate-spin"/>:<Save size={17}/>} {t("productModal.save")}</button>)}
+    </header>
 
-    <div className="px-6 py-6">
+    <fieldset disabled={!tahrirFaol} className="product-modal-fields min-w-0 border-0 px-6 py-6">
       <main className="min-w-0 space-y-8">
         {store.xatolik&&<div className="mb-4"><ErrorBox/></div>}
         <section className="space-y-5">
@@ -1635,11 +1650,11 @@ function MahsulotModalKeng({item,onClose}:{item:Mahsulot|"new";onClose:()=>void}
         </section>
 
       </main>
-    </div>
+    </fieldset>
 
     <div className="flex justify-end gap-3 border-t border-gray-100 px-6 py-4">
-      <button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t("productModal.cancel")}</button>
-      <button disabled={store.amalBajarilmoqda||unitResolving||saqlanmoqda} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{(store.amalBajarilmoqda||unitResolving||saqlanmoqda)&&<LoaderCircle size={16} className="animate-spin"/>}{editing?t("productModal.save"):t("productModal.create")}</button>
+      <button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t(tahrirFaol?"productModal.cancel":"actions.close")}</button>
+      {tahrirFaol&&<button disabled={store.amalBajarilmoqda||unitResolving||saqlanmoqda} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{(store.amalBajarilmoqda||unitResolving||saqlanmoqda)&&<LoaderCircle size={16} className="animate-spin"/>}{editing?t("productModal.save"):t("productModal.create")}</button>}
     </div>
   </form></AppModal>
 }

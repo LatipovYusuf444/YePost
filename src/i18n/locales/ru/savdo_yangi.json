@@ -102,7 +102,7 @@
     "saleBadge": "Новая",
     "saleSectionTitle": "О продаже",
     "saleNameLabel": "Название продажи",
-    "saleNamePlaceholder": "Продажа №",
+    "saleNamePlaceholder": "Без названия: №1, №2, …",
     "saleAmountLabel": "Сумма продажи",
     "saleNotePrefix": "Название продажи",
     "saleStockWarning": "На сервере нет склада. Прежде чем создать продажу, создайте склад в разделе Настройки - Склад.",

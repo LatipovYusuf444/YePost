@@ -373,7 +373,10 @@ async function qoldiqlarniHisobotdanOlish(warehouseId?: string): Promise<QoldiqT
       priceType: "RETAIL",
       includeReserved: true,
     },
-    500
+    500,
+    // Bu yordamchi manba: xatoda pastdagi oddiy qoldiq endpointi ishlatiladi.
+    // U ham ishlamasa xato avvalgidek foydalanuvchiga ko'rsatiladi.
+    { xatoniYashirish: true }
   );
 
   return qatorlar

@@ -351,17 +351,20 @@ export async function hisobotTanlovlariniOlish(turi: HisobotTanlovTuri = "all") 
 export type StockBalanceParams={asOf?:string;warehouseIds?:string;branchIds?:string;categoryIds?:string;productIds?:string;modificationIds?:string;balanceStatus?:"ALL"|"POSITIVE"|"ZERO"|"NEGATIVE";priceType?:"COST"|"RETAIL"|"WHOLESALE";groupByWarehouse?:boolean;includeReserved?:boolean;search?:string;page?:number;pageSize?:number};
 export type StockBalanceItem={warehouseId:string|null;warehouseName:string|null;branchId?:string|null;branchName?:string|null;productId:string;productName:string;categoryId?:string|null;categoryName?:string|null;modificationId:string;modificationName?:string|null;barcode?:string|null;unitName?:string|null;quantity:number|string;reservedQuantity:number|string;availableQuantity:number|string;costPrice?:number|string;retailPrice?:number|string;wholesalePrice?:number|string;totalAmount?:number|string;breakdown?:{unitId?:string;unitName?:string|null;count?:number|string;remainder?:number|string}|null;approx?:Array<{unitId?:string;unitName?:string|null;quantity?:number|string}>|null;infoWeightKg?:number|string|null;weightKg?:number|string|null};
 export type StockBalanceResponse={items:StockBalanceItem[];total:number;page:number;pageSize:number;totalPages:number;summary:{quantity:number|string;reservedQuantity:number|string;availableQuantity:number|string;totalAmount:number|string}};
-export async function stockBalanceReport(params:StockBalanceParams){return (await apiClient.get<StockBalanceResponse>("/reports/stock-balance",{params})).data}
+type StockReportSozlamasi = { xatoniYashirish?: boolean };
+export async function stockBalanceReport(params: StockBalanceParams, sozlama: StockReportSozlamasi = {}) {
+  return (await apiClient.get<StockBalanceResponse>("/reports/stock-balance", { params, ...sozlama })).data;
+}
 export async function stockBalanceExport(params:StockBalanceParams){const response=await apiClient.get<Blob>("/reports/stock-balance/export",{params,responseType:"blob"});faylniSaqlash(response.data,String(response.headers["content-disposition"]??""),`stock-balance-${new Date().toISOString().slice(0,10)}.xlsx`)}
 
 // Monitoring sahifasi: barcha sahifalarni yig'ib, to'liq qoldiq ro'yxatini oladi.
-export async function stockBalanceReportAll(params: StockBalanceParams, pageSize = 500) {
-  const first = await stockBalanceReport({ ...params, page: 1, pageSize });
+export async function stockBalanceReportAll(params: StockBalanceParams, pageSize = 500, sozlama: StockReportSozlamasi = {}) {
+  const first = await stockBalanceReport({ ...params, page: 1, pageSize }, sozlama);
   const totalPages = Number(first.totalPages ?? 1);
   if (totalPages <= 1) return first.items;
   const pages = await Promise.all(
     Array.from({ length: totalPages - 1 }, (_, index) =>
-      stockBalanceReport({ ...params, page: index + 2, pageSize })
+      stockBalanceReport({ ...params, page: index + 2, pageSize }, sozlama)
     )
   );
   return [first.items, ...pages.map((page) => page.items)].flat();

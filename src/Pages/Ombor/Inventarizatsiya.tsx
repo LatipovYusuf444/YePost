@@ -463,10 +463,10 @@ export default function Inventarizatsiya() {
     });
   }
 
-  function jadvalKatagi(item: (typeof store.inventarizatsiyalar)[number], ustun: InventarizatsiyaUstuni): ReactNode {
+  function jadvalKatagi(item: (typeof store.inventarizatsiyalar)[number], ustun: InventarizatsiyaUstuni, tartibRaqami: number): ReactNode {
     const status = String(item.status ?? "DRAFT").toUpperCase();
     const masul = item.responsible ?? (item.responsibleId ? xodimMap.get(item.responsibleId) : undefined);
-    if (ustun === "nomi") return <span className="font-black text-slate-900">{hujjatRaqami(item)}</span>;
+    if (ustun === "nomi") return <span className="whitespace-nowrap font-black text-slate-900">№{tartibRaqami}</span>;
     if (ustun === "status") {
       return (
         <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${
@@ -713,10 +713,10 @@ export default function Inventarizatsiya() {
             </tr>
           </thead>
           <tbody className="divide-y divide-blue-100">
-            {sahifadagiHujjatlar.map((item) => {
+            {sahifadagiHujjatlar.map((item, index) => {
               return (
               <tr key={item.id} onClick={() => setTanlanganId(item.id)} className="cursor-pointer text-slate-600 transition hover:bg-blue-50/60">
-                {faolUstunlar.map((ustun) => <td key={ustun.id}>{jadvalKatagi(item, ustun.id)}</td>)}
+                {faolUstunlar.map((ustun) => <td key={ustun.id}>{jadvalKatagi(item, ustun.id, (page - 1) * pageSize + index + 1)}</td>)}
                 <td className="sticky right-0 bg-white px-5 py-4 text-right group-hover:bg-blue-50/60">
                   <HujjatOchirish
                     guruh="ombor"

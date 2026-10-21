@@ -1,4 +1,5 @@
 import axios from "axios";
+import { modalYuklagichYaratish } from "@/lib/modalYuklash";
 import { create } from "zustand";
 import {
   mijozKompaniyalariRoyxatiniOlish,
@@ -237,6 +238,8 @@ type SavdoState = {
   xodimlar: XodimTanlovi[];
   qoldiqlar: QoldiqTanlovi[];
   tanlanganSotuv: Sotuv | null;
+  tafsilotYuklanmoqda: boolean;
+  qoldiqYuklanmoqda: boolean;
   yuklanmoqda: boolean;
   amalBajarilmoqda: boolean;
   xatolik: string | null;
@@ -278,7 +281,23 @@ type SavdoState = {
   xatolikniTozalash: () => void;
 };
 
-export const useSavdoStore = create<SavdoState>((set, get) => ({
+export const useSavdoStore = create<SavdoState>((set, get) => {
+  let qoldiqSorovi = 0;
+  let boshlangichSorov: Promise<void> | null = null;
+  let mijozlarSorovi: Promise<MijozTanlovi[]> | null = null;
+  // StrictMode/remount va mijozlarni oldindan yuklash bir xil so'rovlarni ko'paytirmaydi.
+  // Yakunlangach so'rov bo'shatiladi: keyingi yangilash yangi ma'lumot oladi.
+  function mijozlarniBirMartaOlish() {
+    mijozlarSorovi ??= mijozlarRoyxatiniOlish().finally(() => { mijozlarSorovi = null; });
+    return mijozlarSorovi;
+  }
+  const tafsilotYuklagich = modalYuklagichYaratish<Sotuv>({
+    boshlash: () => set({ tanlanganSotuv: null, tafsilotYuklanmoqda: true, amalBajarilmoqda: true, xatolik: null }),
+    natija: (sotuv) => set({ tanlanganSotuv: sotuv }),
+    xato: (error) => set({ xatolik: getApiErrorMessage(error) }),
+    yakun: () => set({ tafsilotYuklanmoqda: false, amalBajarilmoqda: false }),
+  });
+  return ({
   sotuvlar: [],
   qaytarishlar: [],
   omborlar: [],
@@ -287,11 +306,15 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
   xodimlar: [],
   qoldiqlar: [],
   tanlanganSotuv: null,
+  tafsilotYuklanmoqda: false,
+  qoldiqYuklanmoqda: false,
   yuklanmoqda: false,
   amalBajarilmoqda: false,
   xatolik: null,
 
-  boshlangichMalumotlarniYuklash: async () => {
+  boshlangichMalumotlarniYuklash: () => {
+    if (boshlangichSorov) return boshlangichSorov;
+    boshlangichSorov = (async () => {
     set({ yuklanmoqda: true, xatolik: null });
 
     try {
@@ -308,7 +331,7 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
         sotuvlarRoyxatiniOlish(),
         qaytarishlarRoyxatiniOlish(),
         omborlarRoyxatiniOlish(),
-        mijozlarRoyxatiniOlish(),
+        mijozlarniBirMartaOlish(),
         mijozKompaniyalariRoyxatiniOlish(),
         xodimlarRoyxatiniOlish(),
         omborQoldiqlariniOlish(),
@@ -338,9 +361,13 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
     } catch (error) {
       set({ yuklanmoqda: false, xatolik: getApiErrorMessage(error) });
     }
+    })().finally(() => { boshlangichSorov = null; });
+    return boshlangichSorov;
   },
 
   qoldiqlarniYuklash: async (warehouseId) => {
+    const sorov = ++qoldiqSorovi;
+    set({ qoldiqYuklanmoqda: true });
     try {
       const [stockQoldiqlar, katalogQoldiqlar] = await Promise.all([
         omborQoldiqlariniOlish(warehouseId),
@@ -349,25 +376,19 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
       const qoldiqlar = await qoldiqNomlariniBoyitish(
         qoldiqlarniKatalogBilanBirlashtirish(stockQoldiqlar, katalogQoldiqlar)
       );
-      set({ qoldiqlar });
+      if (sorov === qoldiqSorovi) set({ qoldiqlar });
     } catch (error) {
-      set({ xatolik: getApiErrorMessage(error) });
+      if (sorov === qoldiqSorovi) set({ xatolik: getApiErrorMessage(error) });
+    } finally {
+      if (sorov === qoldiqSorovi) set({ qoldiqYuklanmoqda: false });
     }
   },
 
-  sotuvTafsilotiniYuklash: async (sotuvId) => {
-    set({ amalBajarilmoqda: true, xatolik: null });
-
-    try {
+  sotuvTafsilotiniYuklash: (sotuvId) =>
+    tafsilotYuklagich.yuklash(async () => {
       const sotuv = await sotuvTafsilotiniOlish(sotuvId);
-      const boyitilgan = sotuvniBoglanganMalumotlarBilanBoyitish(sotuv, get());
-      set({ tanlanganSotuv: boyitilgan, amalBajarilmoqda: false });
-      return boyitilgan;
-    } catch (error) {
-      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
-      return null;
-    }
-  },
+      return sotuvniBoglanganMalumotlarBilanBoyitish(sotuv, get());
+    }),
 
   yangiSotuvYaratish: async (malumot) => {
     set({ amalBajarilmoqda: true, xatolik: null });
@@ -732,7 +753,7 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
   mijozlarniOldindanYuklash: async () => {
     if (get().mijozlar.length > 0) return;
     try {
-      const mijozlar = await mijozlarRoyxatiniOlish();
+      const mijozlar = await mijozlarniBirMartaOlish();
       const yangi = mijozlarniQoshish(get(), mijozlar);
       if (yangi) set(yangi);
     } catch {
@@ -770,6 +791,10 @@ export const useSavdoStore = create<SavdoState>((set, get) => ({
       tanlanganSotuv: state.tanlanganSotuv ? sotuvdaKompaniyaniYangilash(state.tanlanganSotuv, kompaniya) : state.tanlanganSotuv,
     })),
 
-  tanlanganSotuvniTozalash: () => set({ tanlanganSotuv: null }),
+  tanlanganSotuvniTozalash: () => {
+    tafsilotYuklagich.bekorQilish();
+    set({ tanlanganSotuv: null, tafsilotYuklanmoqda: false, ...(get().tafsilotYuklanmoqda ? { amalBajarilmoqda: false } : {}) });
+  },
   xatolikniTozalash: () => set({ xatolik: null }),
-}));
+  });
+});

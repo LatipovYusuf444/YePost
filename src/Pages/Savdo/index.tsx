@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { subMonths } from "date-fns";
 import {
   CheckCircle2,
   CircleAlert,
@@ -19,8 +20,9 @@ import Savatcha from "./Savatcha";
 import SotuvlarJadvali from "./SotuvlarJadvali";
 import SotuvStatistikasi from "./SotuvStatistikasi";
 import JadvalYuklanmoqda from "./JadvalYuklanmoqda";
-import { bugungiSanaKaliti } from "@/lib/sanaKaliti";
+import { bugungiSanaKaliti, mahalliySanaKaliti } from "@/lib/sanaKaliti";
 import SotuvTafsilotlariModal from "./SotuvTafsilotlariModal";
+import ModalYuklanmoqda from "@/Components/common/ModalYuklanmoqda";
 import Tarix from "./Tarix";
 import Tolovlar from "./Tolovlar";
 import Qarzdorliklar from "../Qarzdorlik";
@@ -50,6 +52,8 @@ export default function Savdo() {
     xodimlar,
     qoldiqlar,
     tanlanganSotuv,
+    tafsilotYuklanmoqda,
+    qoldiqYuklanmoqda,
     yuklanmoqda,
     amalBajarilmoqda,
     xatolik,
@@ -76,7 +80,7 @@ export default function Savdo() {
   } = useSavdoStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const [qidiruv, setQidiruv] = useState("");
-  const [sanaDan, setSanaDan] = useState(bugungiSanaKaliti);
+  const [sanaDan, setSanaDan] = useState(() => mahalliySanaKaliti(subMonths(new Date(), 1)));
   const [sanaGacha, setSanaGacha] = useState(bugungiSanaKaliti);
   const [statusFilteri, setStatusFilteri] = useState<SotuvHolati | "barchasi">("barchasi");
   const [tolovFilteri, setTolovFilteri] = useState<TolovTuri | "barchasi">("barchasi");
@@ -139,6 +143,7 @@ export default function Savdo() {
   useEffect(() => {
     void boshlangichMalumotlarniYuklash();
   }, [boshlangichMalumotlarniYuklash]);
+  useEffect(() => () => tanlanganSotuvniTozalash(), [tanlanganSotuvniTozalash]);
 
   // Mijozlar ro'yxati og'ir boshlang'ich yuklash (ombor qoldig'i, katalog) tugashini kutmaydi: sotuvlar ro'yxatida nomlar darrov chiqadi.
   const [mijozlarTayyor, setMijozlarTayyor] = useState(false);
@@ -334,8 +339,10 @@ export default function Savdo() {
 
   async function sotuvniYuklabOchish(sotuv: Sotuv, tahrirlash: boolean) {
     setTahrirRejimi(tahrirlash);
-    await qoldiqlarniYuklash(sotuv.warehouseId);
-    await sotuvTafsilotiniYuklash(sotuv.id);
+    await Promise.all([
+      sotuvTafsilotiniYuklash(sotuv.id),
+      qoldiqlarniYuklash(sotuv.warehouseId),
+    ]);
   }
 
   async function sotuvniOchish(sotuv: Sotuv) {
@@ -652,12 +659,15 @@ export default function Savdo() {
         />
       )}
 
-      {tanlanganSotuv && (
+      {tafsilotYuklanmoqda && <ModalYuklanmoqda onClose={tanlanganSotuvniTozalash} />}
+      {tanlanganSotuv && !tafsilotYuklanmoqda && (
         <SotuvTafsilotlariModal
+          key={tanlanganSotuv.id}
           sotuv={tanlanganSotuv}
           qoldiqlar={qoldiqlar}
           xodimlar={xodimlar}
-          amalBajarilmoqda={amalBajarilmoqda}
+          amalBajarilmoqda={amalBajarilmoqda || qoldiqYuklanmoqda}
+          qoldiqYuklanmoqda={qoldiqYuklanmoqda}
           onYopish={tanlanganSotuvniTozalash}
           onYangilash={sotuvniYangilash}
           onTolovQoshish={sotuvgaTolovQoshish}

@@ -21,6 +21,7 @@ import { OmbordanChiqarishHujjatModal } from "@/Pages/Savdo/SotuvTafsilotlariMod
 import { hujjatRaqami, pul, sana } from "./omborYordamchilari";
 import OmborJadval from "./OmborJadval";
 import TablePagination from "@/Components/common/TablePagination";
+import ModalYuklanmoqda from "@/Components/common/ModalYuklanmoqda";
 import HujjatBekorQilish from "@/Components/common/HujjatBekorQilish";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
@@ -174,6 +175,7 @@ export default function AmalgaOshirilganlar() {
     // shu sahifaga o'tilganda tasodifan chiqib ketmasin.
     savdoTanlanganSotuvniTozalash();
     savdoXatolikniTozalash();
+    return () => savdoTanlanganSotuvniTozalash();
   }, [savdoTanlanganSotuvniTozalash, savdoXatolikniTozalash]);
 
   const omborMap = useMemo(
@@ -403,13 +405,13 @@ export default function AmalgaOshirilganlar() {
               </tr>
             </thead>
             <tbody className="divide-y divide-orange-100">
-              {sahifadagiRows.map((item) => (
+              {sahifadagiRows.map((item, index) => (
                 <tr
                   key={item.id}
                   onClick={() => realizatsiyaniOchish(item.id)}
                   className="cursor-pointer text-slate-600 transition hover:bg-orange-50/40"
                 >
-                  <td className="truncate px-6 py-5 font-black text-slate-900">{item.nomi}</td>
+                  <td className="whitespace-nowrap px-6 py-5 font-black text-slate-900">№{(page - 1) * pageSize + index + 1}</td>
                   {faolUstunlar.map((ustun) => (
                     <td
                       key={ustun.kalit}
@@ -495,7 +497,8 @@ export default function AmalgaOshirilganlar() {
       </div>
       )}
 
-      {savdo.tanlanganSotuv && (
+      {savdo.tafsilotYuklanmoqda && <ModalYuklanmoqda onClose={savdo.tanlanganSotuvniTozalash} />}
+      {savdo.tanlanganSotuv && !savdo.tafsilotYuklanmoqda && (
         <OmbordanChiqarishHujjatModal
           sotuv={savdo.tanlanganSotuv}
           jami={sotuvSummasi(savdo.tanlanganSotuv)}

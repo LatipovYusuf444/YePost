@@ -290,10 +290,10 @@ export default function Chiqim() {
     jadval.scrollTo({ left: (thumbChap / scrollHolati.maxChap) * scrollHolati.maxScroll, behavior: "smooth" });
   }
 
-  function katak(item: ChiqimHujjati, id: Ustun) {
+  function katak(item: ChiqimHujjati, id: Ustun, tartibRaqami: number) {
     switch (id) {
       case "nomi":
-        return <div><p className="font-black text-slate-950">{t("chiqim.documentLabel")}</p><p className="mt-0.5 text-xs font-semibold text-slate-500">{hujjatRaqami(item)}</p></div>;
+        return <span className="whitespace-nowrap font-black text-slate-950">№{tartibRaqami}</span>;
       case "status":
         return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${statusSinfi(item.status)}`}>{holat(item.status)}</span>;
       case "yaratilgan":
@@ -429,9 +429,9 @@ export default function Chiqim() {
             <tbody className="divide-y divide-orange-100">
               {store.yuklanmoqda ? (
                 <tr><td colSpan={faolUstunlar.length + 1} className="py-20 text-center"><LoaderCircle className="mx-auto animate-spin text-orange-500" size={30} /></td></tr>
-              ) : sahifadagiRoyxat.map((item) => (
+              ) : sahifadagiRoyxat.map((item, index) => (
                   <tr key={item.id} onClick={() => setTanlanganId(item.id)} className="cursor-pointer transition hover:bg-orange-50/40">
-                    {faolUstunlar.map((column) => <td key={column.id} className="overflow-hidden px-6 py-5">{katak(item, column.id)}</td>)}
+                    {faolUstunlar.map((column) => <td key={column.id} className="overflow-hidden px-6 py-5">{katak(item, column.id, (page - 1) * pageSize + index + 1)}</td>)}
                     <td className="sticky right-0 bg-white px-5 py-4 text-right group-hover:bg-orange-50/40">
                       <HujjatOchirish
                         guruh="ombor"

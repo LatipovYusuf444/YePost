@@ -144,6 +144,62 @@ h1 {
   line-height: 1.45;
 }
 
+/* Inventarizatsiya tafsilotlari: faqat shu oynadagi amallar va faoliyat kartalari. */
+.stock-take-details > header h2 {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+}
+
+.stock-take-details [data-stock-take-actions] button {
+  height: 40px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.stock-take-details [data-stock-take-activity] section {
+  border: 2px solid #bfdbfe;
+  border-radius: 22px;
+  box-shadow: 0 4px 20px rgb(15 23 42 / 3%);
+}
+
+.stock-take-details [data-stock-take-activity] section > .border-b {
+  border-bottom: 2px solid #bfdbfe;
+}
+
+.stock-take-details [data-stock-take-activity] textarea {
+  border: 2px solid #cbd5e1;
+}
+
+.stock-take-details [data-stock-take-activity] textarea:focus {
+  border-color: #60a5fa;
+}
+
+.stock-take-details [data-stock-take-activity] .uppercase {
+  color: #334155;
+  font-weight: 700;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.stock-take-details [data-stock-take-activity] p.text-center {
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+/* Qoralama tahriri: faol oynani fon sahifasidan aniq ajratadi. */
+.app-modal-compact.draft-sale-edit-overlay {
+  background-color: rgb(2 6 23 / 86%) !important;
+  backdrop-filter: blur(6px);
+}
+
+@media (max-width: 767px) {
+  .app-modal-compact.draft-sale-edit-overlay header {
+    padding-right: 1rem !important;
+  }
+}
+
 /* Desktop modallar sidebar ustiga chiqmaydi. */
 @media (min-width: 768px) {
   .app-modal-compact {
@@ -369,6 +425,19 @@ body > .app-modal-compact:has(~ .app-modal-compact) > * > [class*="-left-"][clas
 }
 
 /* Keng mahsulot modali mavjud kontent maydonini to'liq egallaydi. */
+.product-modal-fields:disabled :is(input, textarea, select) {
+  opacity: 1;
+  color: #334155;
+  -webkit-text-fill-color: #334155;
+  cursor: default;
+}
+
+.product-modal-fields:disabled [data-app-select] button {
+  opacity: 1;
+  background-color: white;
+  cursor: default;
+}
+
 @media (min-width: 768px) {
   .product-modal-overlay .product-modal-panel {
     max-width: none;
@@ -507,6 +576,19 @@ table:not(:where(.font-serif *)) input,
 table:not(:where(.font-serif *)) select,
 table:not(:where(.font-serif *)) textarea {
   font-family: inherit;
+}
+
+/* Mahkamlangan Amal ustunining chegarasi scroll paytida ham ko'rinadi. */
+.product-table-actions {
+  box-shadow: -6px 0 12px rgb(15 23 42 / 8%);
+}
+
+.product-table-actions::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-left: 2px solid #60a5fa;
+  pointer-events: none;
 }
 
 .table-pagination {

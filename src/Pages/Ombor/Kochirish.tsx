@@ -410,10 +410,10 @@ export default function Kochirish() {
     });
   }
 
-  function hujayra(hujjat: KochirishHujjati, kalit: UstunKaliti) {
+  function hujayra(hujjat: KochirishHujjati, kalit: UstunKaliti, tartibRaqami: number) {
     switch (kalit) {
       case "nomi":
-        return <span className="font-black text-slate-900">{hujjatNomi(hujjat, t)}</span>;
+        return <span className="whitespace-nowrap font-black text-slate-900">№{tartibRaqami}</span>;
       case "status":
         return (
           <span className={`inline-flex rounded-full px-4 py-1.5 text-sm font-black ${statusKlasi(hujjat.status)}`}>
@@ -552,7 +552,7 @@ export default function Kochirish() {
                   </td>
                 </tr>
               ) : (
-                sahifadagiHujjatlar.map((hujjat) => (
+                sahifadagiHujjatlar.map((hujjat, index) => (
                   <tr
                     key={hujjat.id}
                     tabIndex={0}
@@ -568,7 +568,7 @@ export default function Kochirish() {
                   >
                     {korinadiganUstunlarRoyxati.map((ustun) => (
                       <td key={ustun.kalit} className="overflow-hidden whitespace-nowrap px-6 py-5">
-                        <div className="truncate">{hujayra(hujjat, ustun.kalit)}</div>
+                        <div className="truncate">{hujayra(hujjat, ustun.kalit, (page - 1) * pageSize + index + 1)}</div>
                       </td>
                     ))}
                     <td className="sticky right-0 bg-white px-5 py-3 text-right group-hover:bg-[#F8FAFC]">

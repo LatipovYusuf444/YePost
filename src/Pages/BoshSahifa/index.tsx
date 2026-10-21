@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import AppSelect from "@/Components/ui/AppSelect";
 import SotuvTafsilotlariModal from "@/Pages/Savdo/SotuvTafsilotlariModal";
 import GoldCartIllustration from "@/Components/illustrations/GoldCartIllustration";
 import {
@@ -561,9 +562,9 @@ export default function BoshSahifa() {
                 <article
                   key={item.id}
                   role="listitem"
-                  className="min-w-0 rounded-xl border border-gold-100 bg-white p-3.5 shadow-[0_2px_5px_rgba(15,23,42,0.025)] transition-colors hover:border-gold-200 @min-[560px]/cart:p-4"
+                  className="min-w-0 rounded-xl border-2 border-gold-300 bg-gold-50/60 p-3.5 shadow-[0_4px_12px_rgba(15,23,42,0.04)] transition-colors hover:border-gold-400 focus-within:border-gold-400 @min-[560px]/cart:p-4"
                 >
-                  <div className="mb-3.5 flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div className="mb-3.5 flex items-start justify-between gap-3 border-b border-gold-200 pb-3">
                     <div className="min-w-0">
                       <p className="break-words text-[15px] font-semibold leading-6 text-[#0F172A]">{item.nom}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -587,7 +588,7 @@ export default function BoshSahifa() {
                     <button
                       type="button"
                       onClick={() => removeFromCart(item.id)}
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gold-200 bg-white/80 text-slate-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
                       aria-label={`${t("cart.removeAria")}: ${item.nom}`}
                       title={t("cart.removeAria")}
                     >
@@ -599,16 +600,17 @@ export default function BoshSahifa() {
                     <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-slate-500">
                       {t("cart.unit")}
                       {item.baza && sotuvBirliklari(item.birliklar).length > 0 ? (
-                        <select
+                        <AppSelect
                           aria-label={t("cart.unitLabel", { name: item.nom })}
                           value={item.birlikId ?? ""}
                           onChange={(event) => setBirlik(item.id, event.target.value)}
-                          className="h-10 w-full min-w-0 rounded-lg border border-gold-100 bg-white px-2.5 text-sm font-semibold text-slate-700 outline-none transition focus:border-gold-400 focus:ring-2 focus:ring-gold-100"
+                          dropdownMinWidth={160}
+                          className="h-10 w-full min-w-0 rounded-lg text-sm font-semibold text-slate-700 [&>button]:border-gold-200 [&>button]:px-3"
                         >
                           {sotuvBirliklari(item.birliklar).map((birlik) => (
                             <option key={birlik.unitId} value={birlik.asosiy ? "" : birlik.unitId}>{birlik.qisqa || birlik.nomi}</option>
                           ))}
-                        </select>
+                        </AppSelect>
                       ) : (
                         <span className="flex h-10 items-center rounded-lg border border-slate-100 bg-slate-50 px-3 text-sm font-semibold text-slate-600">{t("cart.piece")}</span>
                       )}
@@ -650,7 +652,7 @@ export default function BoshSahifa() {
 
                     <div className="min-w-0 text-right">
                       <p className="mb-1.5 text-xs font-medium text-slate-500">{t("cart.lineTotal")}</p>
-                      <p className="flex min-h-10 items-center justify-end rounded-lg bg-gold-50/80 px-2.5 py-2 text-sm font-bold tabular-nums text-gold-600 [overflow-wrap:anywhere]">
+                      <p className="flex min-h-10 items-center justify-end rounded-lg border border-gold-200 bg-white/90 px-2.5 py-2 text-sm font-bold tabular-nums text-gold-600 [overflow-wrap:anywhere]">
                         {formatSumma(savatchaSotuvNarxi(item) * item.soni)}
                       </p>
                     </div>

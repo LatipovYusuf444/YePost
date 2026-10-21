@@ -79,6 +79,27 @@
     "subtitle": "Mahsulotlar uchun asosiy ma'lumotnoma.",
     "add": "Qo'shish"
   },
+  "categoryStock": {
+    "open": "{{name}} kategoriyasining ombor qoldig'ini ko'rish",
+    "eyebrow": "Kategoriya qoldig'i",
+    "subtitle": "Shu kategoriyadagi mahsulotlar barcha omborlar bo'yicha",
+    "products": "Mahsulotlar",
+    "warehouses": "Omborlar",
+    "warehouse": "Ombor",
+    "stock": "Qoldiq",
+    "reserved": "Rezerv",
+    "available": "Mavjud qoldiq",
+    "search": "Mahsulot, variant, shtrix-kod yoki ombor...",
+    "warehouseFilter": "Ombor bo'yicha saralash",
+    "allWarehouses": "Barcha omborlar",
+    "unnamedWarehouse": "Nomsiz ombor",
+    "noStockRecord": "Qoldiq yozuvi yo'q",
+    "loading": "Barcha omborlardagi qoldiqlar yuklanmoqda...",
+    "error": "Qoldiqlarni yuklab bo'lmadi",
+    "retry": "Qayta urinish",
+    "empty": "Bu kategoriyada mahsulotlar mavjud emas",
+    "noMatches": "Qidiruvga mos mahsulot topilmadi"
+  },
   "fallback": {
     "category": "Kategoriya",
     "unit": "Birlik"

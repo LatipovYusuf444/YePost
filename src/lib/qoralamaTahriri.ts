@@ -373,10 +373,10 @@ export function xatoBormi(xatolar: QatorXatolari) {
  * `qoldiq` — qatorning mahsulot qoldig'i; noma'lum bo'lsa ombor qoldig'i tekshirilmaydi (tasdiqlashda backend tekshiradi).
  * Qoralamadagi mavjud qator o'z miqdorini allaqachon band qilgan (rezerv), shuning uchun ko'paytirishda shu miqdor ham ruxsat etiladi.
  */
-export function qatorXatolari(q: TahrirQatori, qoldiq: QoldiqTanlovi | null | undefined): QatorXatolari {
+export function qatorXatolari(q: TahrirQatori, qoldiq: QoldiqTanlovi | null | undefined, rezervMavjud = true): QatorXatolari {
   if (q.ochirildi) return {};
   if (!q.modificationId) return { mahsulot: true };
-  if (!qatorOzgarganmi(q)) return {};
+  if (rezervMavjud && !qatorOzgarganmi(q)) return {};
 
   const xatolar: QatorXatolari = {};
   const { miqdor, narx, chegirma } = qatorRaqamlari(q);
@@ -386,8 +386,8 @@ export function qatorXatolari(q: TahrirQatori, qoldiq: QoldiqTanlovi | null | un
     xatolar.miqdor = { kod: "nol" };
   } else if (!miqdorYaroqlimi(birlik, miqdor)) {
     xatolar.miqdor = { kod: "butunEmas" };
-  } else if (qoldiq && miqdorOzgarganmi(q)) {
-    const band = mavjudMahsulotmi(q) && q.asl ? manfiyEmas(q.asl.quantity) : 0;
+  } else if ((!rezervMavjud || qoldiq) && (!rezervMavjud || miqdorOzgarganmi(q))) {
+    const band = rezervMavjud && mavjudMahsulotmi(q) && q.asl ? manfiyEmas(q.asl.quantity) : 0;
     const ruxsat = qoldiqMiqdori(qoldiq) + band;
     if (asosiyMiqdor(birlik, miqdor) > ruxsat + EPS) {
       // Ruxsat etilgan eng ko'p miqdor shu birlikda; kasr bo'lmaydigan birlikda (pochka, korobka) butun songa tushiriladi.

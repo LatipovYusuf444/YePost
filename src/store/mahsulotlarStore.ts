@@ -54,7 +54,7 @@ type MahsulotlarState = {
     birliklar?: readonly TovarBirligi[]
   ) => Promise<boolean>;
   mahsulotOchirish: (id: string) => Promise<boolean>;
-  modifikatsiyalarniYuklash: (productId: string) => Promise<void>;
+  modifikatsiyalarniYuklash: (productId: string) => Promise<MahsulotModifikatsiyasi[] | null>;
   barchaModifikatsiyalarniYuklash: () => Promise<void>;
   modifikatsiyaOlish: (id: string) => Promise<MahsulotModifikatsiyasi | null>;
   narxOlish: (id: string) => Promise<MahsulotModifikatsiyasi["price"] | null>;
@@ -404,8 +404,10 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
       const items = await modifikatsiyalarApi.royxat(productId);
       modifikatsiyaVersiyasi++;
       set((state) => ({ modifikatsiyalar: { ...state.modifikatsiyalar, [productId]: items } }));
+      return items;
     } catch (error) {
       set({ xatolik: getApiErrorMessage(error) });
+      return null;
     }
   },
   barchaModifikatsiyalarniYuklash: async () => {

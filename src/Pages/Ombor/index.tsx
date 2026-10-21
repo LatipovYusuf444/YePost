@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import ModalYuklanmoqda from "@/Components/common/ModalYuklanmoqda";
+import { useModalYuklash } from "@/hooks/useModalYuklash";
 import LoadingState from "@/Components/common/LoadingState";
 import TablePagination from "@/Components/common/TablePagination";
 import { manzilniKoordinatadanAniqlash } from "@/api/omborApi";
@@ -67,6 +69,7 @@ export default function Ombor() {
   const [tablePageSize, setTablePageSize] = useState(10);
   const [korinishMenuOchiq, setKorinishMenuOchiq] = useState(false);
   const [modalOchiq, setModalOchiq] = useState(false);
+  const omborTafsiloti = useModalYuklash<Ombor>();
   const [tahrirOmbor, setTahrirOmbor] = useState<Ombor | null>(null);
   const [name, setName] = useState("");
   const [branchId, setBranchId] = useState("");
@@ -147,7 +150,8 @@ export default function Ombor() {
 
   async function modalniOchish(ombor?: Ombor) {
     xatolikniTozalash();
-    const toliqOmbor = ombor ? await omborOlish(ombor.id) : null;
+    if (!ombor) omborTafsiloti.yopish();
+    const toliqOmbor = ombor ? await omborTafsiloti.ochish(() => omborOlish(ombor.id)) : null;
     if (ombor && !toliqOmbor) return;
     setTahrirOmbor(toliqOmbor);
     setName(toliqOmbor?.name ?? "");
@@ -678,6 +682,7 @@ export default function Ombor() {
         </div>
       )}
 
+      {omborTafsiloti.yuklanmoqda && <ModalYuklanmoqda onClose={omborTafsiloti.yopish} />}
       {modalOchiq && (
         <AppModal>
           <form

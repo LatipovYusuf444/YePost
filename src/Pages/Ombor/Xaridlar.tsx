@@ -195,15 +195,10 @@ export default function Xaridlar() {
     });
   }
 
-  function katak(hujjat: KirimHujjati, kalit: UstunKaliti): ReactNode {
+  function katak(hujjat: KirimHujjati, kalit: UstunKaliti, tartibRaqami: number): ReactNode {
     switch (kalit) {
       case "nomi":
-        return (
-          <>
-            <p className="font-black text-gray-950">{kirimNomi(hujjat)}</p>
-            <p className="text-xs font-semibold text-slate-500">{hujjatRaqami(hujjat)}</p>
-          </>
-        );
+        return <span className="whitespace-nowrap font-black text-gray-950">№{tartibRaqami}</span>;
       case "yetkazibBeruvchi":
         return supplierNomi(hujjat.supplierId, hujjat.supplier?.name);
       case "ombor":
@@ -321,7 +316,7 @@ export default function Xaridlar() {
                   </td>
                 </tr>
               ) : (
-                sahifadagiKirimlar.map((hujjat) => {
+                sahifadagiKirimlar.map((hujjat, index) => {
                   return (
                     <tr
                       key={hujjat.id}
@@ -330,7 +325,7 @@ export default function Xaridlar() {
                     >
                       {faolUstunlar.map((ustun) => (
                         <td key={ustun.kalit} className="overflow-hidden text-gray-700">
-                          <div className="truncate">{katak(hujjat, ustun.kalit)}</div>
+                          <div className="truncate">{katak(hujjat, ustun.kalit, (page - 1) * pageSize + index + 1)}</div>
                         </td>
                       ))}
                       <td className="sticky right-0 bg-white text-right">

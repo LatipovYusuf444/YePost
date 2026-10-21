@@ -21,6 +21,7 @@ import { tahrirSanasi, toshkentKuni } from "@/lib/hujjatSanasi";
 import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 import { useOmborStore } from "@/store/omborStore";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
+import InventarizatsiyaKorinish from "./InventarizatsiyaKorinish";
 import MahsulotTanlov, { type MahsulotVarianti } from "./MahsulotTanlov";
 import type { InventoryDocumentType } from "@/types/inventoryDocuments";
 import type {
@@ -423,24 +424,46 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
   }
 
   const qoralama = hujjatHolati(hujjat) === "DRAFT";
+  const inventarizatsiyaAmallari = hujjat && tur === "inventarizatsiya" && !tahrir ? <>
+    <HujjatOchirish
+      korinish="tugma"
+      guruh="ombor"
+      status={hujjat.status}
+      nom={hujjatRaqami(hujjat)}
+      izoh={qoralama ? t("hujjatOchirish.freezeNote", { ns: "common" }) : undefined}
+      onTasdiq={() => store.inventarizatsiyaOchirish(hujjat.id)}
+      onTiklash={() => store.inventarizatsiyaTiklash(hujjat.id)}
+      onOchirildi={onClose}
+      onTiklandi={() => void inventarizatsiyaniQaytaYuklash()}
+    />
+    {hujjatHolati(hujjat) === "CONFIRMED" && bekorMumkin && <button type="button" onClick={() => void inventarizatsiyaniBekorQilish()} disabled={store.amalBajarilmoqda} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-600 transition hover:bg-red-100 disabled:opacity-50">{store.amalBajarilmoqda ? <LoaderCircle size={17} className="animate-spin" /> : <Ban size={17} />}{t("actions.cancel")}</button>}
+    {qoralama && <button type="button" onClick={() => void inventarizatsiyaniYakunlash()} disabled={store.amalBajarilmoqda} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50">{store.amalBajarilmoqda ? <LoaderCircle size={17} className="animate-spin" /> : <CheckCircle2 size={17} />}{t("actions.confirmStockTake")}</button>}
+  </> : null;
+  const inventarizatsiyaKorinish = hujjat && tur === "inventarizatsiya" ? <InventarizatsiyaKorinish
+    hujjat={hujjat as InventarizatsiyaHujjati}
+    modifikatsiyalar={store.modifikatsiyalar}
+    omborNomi={(hujjat as InventarizatsiyaHujjati).warehouse?.name ?? store.omborlar.find(item => item.id === (hujjat as InventarizatsiyaHujjati).warehouseId)?.name ?? t("view.unknownWarehouse")}
+    masulNomi={hujjat.responsible?.fullName ?? hujjat.responsible?.username ?? store.xodimlar.find(item => item.id === hujjat.responsibleId)?.fullName ?? t("view.unassigned")}
+  /> : null;
 
   return (
-    <AppModal onClose={onClose}>
-      <div className="scrollbar-hidden max-h-[95vh] w-full max-w-[1500px] overflow-y-auto rounded-[36px] border border-orange-100 bg-[#F8FAFC] shadow-[0_30px_100px_rgba(15,23,42,.28)]">
-        <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-orange-100 bg-[#F8FAFC]/95 px-7 py-5 backdrop-blur-xl">
-          <div className="flex items-start gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-200">
+    <AppModal onClose={onClose} className={tur === "inventarizatsiya" ? "bg-slate-950/75 backdrop-blur-[5px]" : ""}>
+      <div className={tur === "inventarizatsiya" ? "stock-take-details scrollbar-hidden max-h-[94dvh] w-full max-w-[1360px] overflow-y-auto rounded-[26px] border border-slate-200 bg-[#F3F6FB] shadow-[0_30px_100px_rgba(2,6,23,.4)]" : "scrollbar-hidden max-h-[95vh] w-full max-w-[1500px] overflow-y-auto rounded-[36px] border border-orange-100 bg-[#F8FAFC] shadow-[0_30px_100px_rgba(15,23,42,.28)]"}>
+        <header className={tur === "inventarizatsiya" ? "sticky top-0 z-10 flex flex-col items-start justify-between gap-4 border-b border-slate-200/80 bg-white/95 px-6 py-5 backdrop-blur-xl lg:flex-row lg:items-center" : "sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-orange-100 bg-[#F8FAFC]/95 px-7 py-5 backdrop-blur-xl"}>
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-200">
               <FileText size={22} />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-orange-500">
                 {t("header.detailsLabel")}
               </p>
               <h2 className="text-2xl font-black text-slate-950 sm:text-3xl">
                 {t(`documentTitles.${tur}`)}
-                {hujjat ? ` · ${hujjatRaqami(hujjat)}` : ""}
+                {hujjat && tur !== "inventarizatsiya" ? ` · ${hujjatRaqami(hujjat)}` : ""}
               </h2>
-              {hujjat && (
+              {hujjat && <div className="flex flex-wrap items-center gap-2">
+                {tur === "inventarizatsiya" && <span className="mt-2 inline-flex rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1 font-mono text-xs font-bold text-blue-700">{hujjatRaqami(hujjat)}</span>}
                 <span
                   className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-black uppercase ${
                     ["CANCELLED", "CANCELED"].includes(hujjatHolati(hujjat))
@@ -454,10 +477,10 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                 >
                   {holat(hujjat.status)}
                 </span>
-              )}
+              </div>}
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div data-stock-take-actions={tur === "inventarizatsiya" ? "true" : undefined} className="flex shrink-0 flex-wrap items-center gap-2">
             {hujjat && tur === "kochirish" && !tahrir && hujjatHolati(hujjat) === "DRAFT" && (
               <>
                 {bekorMumkin && (
@@ -499,6 +522,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                 <Edit3 size={18} /> {t("actions.edit")}
               </button>
             )}
+            {inventarizatsiyaAmallari}
           </div>
         </header>
 
@@ -518,7 +542,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
               </div>
             )}
 
-            {!tahrir ? (
+            {!tahrir ? (inventarizatsiyaKorinish ?? (
               <>
                 <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm sm:p-6">
                   <h3 className="border-b border-orange-100 pb-4 text-sm font-black uppercase tracking-wide text-slate-600">
@@ -795,53 +819,8 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                   <InventoryDocumentActivity documentType={documentTypes[tur]} documentId={hujjat.id}/>
                 </div>
 
-                <div className="mt-6 flex justify-end gap-3">
-                  {tur === "inventarizatsiya" && (
-                    <HujjatOchirish
-                      korinish="tugma"
-                      guruh="ombor"
-                      status={hujjat.status}
-                      nom={hujjatRaqami(hujjat)}
-                      izoh={hujjatHolati(hujjat) === "DRAFT" ? t("hujjatOchirish.freezeNote", { ns: "common" }) : undefined}
-                      onTasdiq={() => store.inventarizatsiyaOchirish(hujjat.id)}
-                      onTiklash={() => store.inventarizatsiyaTiklash(hujjat.id)}
-                      onOchirildi={onClose}
-                      onTiklandi={() => void inventarizatsiyaniQaytaYuklash()}
-                    />
-                  )}
-                  {hujjatHolati(hujjat) === "CONFIRMED" && tur === "inventarizatsiya" && bekorMumkin && (
-                    <button
-                      type="button"
-                      onClick={() => void inventarizatsiyaniBekorQilish()}
-                      disabled={store.amalBajarilmoqda}
-                      className="inline-flex h-12 items-center gap-2 rounded-2xl bg-red-500 px-6 font-black text-white shadow-lg shadow-red-100 transition hover:bg-red-600 disabled:opacity-50"
-                    >
-                      {store.amalBajarilmoqda ? (
-                        <LoaderCircle size={18} className="animate-spin" />
-                      ) : (
-                        <Ban size={18} />
-                      )}
-                      {t("actions.cancel")}
-                    </button>
-                  )}
-                  {qoralama && tur === "inventarizatsiya" && (
-                    <button
-                      type="button"
-                      onClick={() => void inventarizatsiyaniYakunlash()}
-                      disabled={store.amalBajarilmoqda}
-                      className="inline-flex h-12 items-center gap-2 rounded-2xl bg-emerald-500 px-6 font-black text-white shadow-lg shadow-emerald-100 transition hover:bg-emerald-600 disabled:opacity-50"
-                    >
-                      {store.amalBajarilmoqda ? (
-                        <LoaderCircle size={18} className="animate-spin" />
-                      ) : (
-                        <CheckCircle2 size={18} />
-                      )}
-                      {t("actions.confirmStockTake")}
-                    </button>
-                  )}
-                </div>
               </>
-            ) : (
+            )) : (
               <div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <label className="grid gap-1.5 text-sm font-bold text-slate-500">

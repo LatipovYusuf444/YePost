@@ -32,6 +32,7 @@ import { narxSotuvValyutasida, qatorNarxTuri, turNarxi } from "@/lib/savdoNarxla
 import { useValyutaStore, type Valyuta } from "@/lib/valyuta";
 import { useSavdoSozlamalariStore } from "@/store/savdoSozlamalariStore";
 import { useSavdoStore } from "@/store/savdoStore";
+import { qoralamaTahrirSummasi } from "@/lib/qoralamaUmumiyTahrir";
 import type { QoldiqTanlovi, Sotuv, SotuvMahsuloti, SotuvYaratishMalumoti } from "@/types/savdo";
 import { pulniFormatlash, qatorValyutasi, sotuvSummasi, sotuvValyutasi, sotuvValyutasigaOgirish } from "./savdoYordamchilari";
 
@@ -42,6 +43,16 @@ type Props = {
   onYangilash: (sotuvId: string, malumot: Partial<SotuvYaratishMalumoti>) => Promise<boolean>;
   /** Saqlanmagan o'zgarishlar soni o'zgarganda (modalni yopish va to'lovga o'tishni nazorat qilish uchun). */
   onOzgarish?: (soni: number) => void;
+  umumiyTahrir?: {
+    malumot: Partial<SotuvYaratishMalumoti>;
+    ozgarishlarSoni: number;
+    warehouseId: string;
+    omborNomi: string;
+    currency: string;
+    xatoBor: boolean;
+    onBekor: () => void;
+    onSaqlandi: () => void;
+  };
 };
 
 type PopoverHolati = { kalit: string; left: number; kenglik: number; top?: number; bottom?: number };
@@ -105,10 +116,13 @@ function ValyutaTugmasi({ valyuta, mumkin, sarlavha, onClick }: { valyuta: Valyu
   );
 }
 
-export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilmoqda, onYangilash, onOzgarish }: Props) {
+export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilmoqda, onYangilash, onOzgarish, umumiyTahrir }: Props) {
   const { t } = useTranslation("savdo_tafsilot");
-  const sotuvVal = sotuvValyutasi(sotuv);
-  const omborId = sotuv.warehouseId ?? sotuv.warehouse?.id;
+  const sotuvVal = umumiyTahrir?.currency === "USD" ? "USD" : umumiyTahrir ? "UZS" : sotuvValyutasi(sotuv);
+  const aslOmborId = sotuv.warehouseId ?? sotuv.warehouse?.id;
+  const omborId = umumiyTahrir?.warehouseId ?? aslOmborId;
+  const rezervMavjud = omborId === aslOmborId;
+  const valyutaOzgargan = sotuvVal !== sotuvValyutasi(sotuv);
   const kurs = useValyutaStore((holat) => (holat.kursBor && holat.kurs > 0 ? holat.kurs : 0));
   // Valyuta rejimi yoqilgan va bugungi kurs kiritilgan bo'lsagina qatorni dollarga o'tkazish mumkin.
   const dollarMumkin = useValyutaStore((holat) => holat.rejimYoniq && holat.kursBor && holat.kurs > 0);
@@ -139,13 +153,14 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
   const popoverRef = useRef<HTMLDivElement>(null);
 
   const qoldiqOl = useCallback(
-    (q: TahrirQatori) => q.qoldiq ?? qoldiqTopish(qoldiqlar, q.modificationId, omborId) ?? null,
+    (q: TahrirQatori) => (q.qoldiq?.warehouseId === omborId ? q.qoldiq : null) ?? qoldiqTopish(qoldiqlar, q.modificationId, omborId) ?? null,
     [qoldiqlar, omborId]
   );
 
   const faol = qatorlar.filter((q) => !q.ochirildi);
   const ozgarish = ozgarishlarSoni(qatorlar);
-  const xatoBor = qatorlar.some((q) => xatoBormi(qatorXatolari(q, qoldiqOl(q))));
+  const jamiOzgarish = ozgarish + (umumiyTahrir?.ozgarishlarSoni ?? 0);
+  const xatoBor = Boolean(umumiyTahrir?.xatoBor) || qatorlar.some((q) => xatoBormi(qatorXatolari(q, qoldiqOl(q), rezervMavjud)));
 
   useEffect(() => {
     onOzgarish?.(ozgarish);
@@ -154,11 +169,13 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
   useEffect(() => () => onOzgarish?.(0), [onOzgarish]);
 
   const jami = useMemo(
-    () => qatorlarJami(qatorlar, (summa, valyuta) => sotuvValyutasigaOgirish(summa, valyuta, sotuv)),
-    [qatorlar, sotuv]
+    () => qatorlarJami(qatorlar, (summa, valyuta) => valyutaOzgargan
+      ? qoralamaTahrirSummasi(summa, valyuta, sotuvVal, kurs)
+      : sotuvValyutasigaOgirish(summa, valyuta, sotuv)),
+    [qatorlar, sotuv, sotuvVal, valyutaOzgargan, kurs]
   );
   const saqlanganJami = sotuvSummasi(sotuv);
-  const umumiyJami = ozgarish === 0 && saqlanganJami > 0 ? saqlanganJami : jami.jami;
+  const umumiyJami = ozgarish === 0 && !valyutaOzgargan && saqlanganJami > 0 ? saqlanganJami : jami.jami;
 
   const popoverniYopish = useCallback(() => {
     setPopover(null);
@@ -262,22 +279,28 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
     setQatorlar(boshlangich);
     setUrinildi(false);
     popoverniYopish();
+    umumiyTahrir?.onBekor();
   }
 
   async function saqlash() {
+    if (amalBajarilmoqda) return;
     setUrinildi(true);
-    if (ozgarish === 0 || faol.length === 0 || xatoBor) {
+    if (jamiOzgarish === 0 || faol.length === 0 || xatoBor) {
       window.requestAnimationFrame(() => {
         document.querySelector("[data-qator-xato='true']")?.scrollIntoView({ block: "center", behavior: "smooth" });
       });
       return;
     }
-    const muvaffaqiyatli = await onYangilash(sotuv.id, { items: tahrirItemlari(qatorlar, ctx) as SotuvYaratishMalumoti["items"] });
+    const muvaffaqiyatli = await onYangilash(sotuv.id, {
+      ...umumiyTahrir?.malumot,
+      ...(ozgarish > 0 || valyutaOzgargan || !rezervMavjud ? { items: tahrirItemlari(qatorlar, ctx) as SotuvYaratishMalumoti["items"] } : {}),
+    });
     // Saqlangandan keyin sotuv qatorlari yangilanadi va komponent qayta yaratiladi (tashqarida `key`).
     if (muvaffaqiyatli) {
       setUrinildi(false);
       // Qoralama rezervi o'zgargan bo'lishi mumkin (eski mahsulot bo'shaydi, yangisi band bo'ladi): "Omborda" raqamlari yangilanadi.
       void useSavdoStore.getState().qoldiqlarniYuklash(omborId);
+      umumiyTahrir?.onSaqlandi();
     }
   }
 
@@ -322,17 +345,17 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
   }
 
   const kursYoq = sotuvVal === "USD" && kurs <= 0;
-  const jamiTaxminiy = ozgarish > 0 && !jami.aniq;
+  const jamiTaxminiy = (ozgarish > 0 || valyutaOzgargan) && !jami.aniq;
 
   return (
-    <div className="px-4 py-5 sm:px-7 sm:py-7">
+    <div className={umumiyTahrir ? "mx-4 mb-5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_2px_8px_rgba(15,23,42,.025)] sm:mx-6 sm:p-5" : "px-4 py-5 sm:px-7 sm:py-7"}>
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-lg font-black text-slate-800">{t("qoralamaTahrir.sarlavha")}</h2>
-          <p className="mt-1 max-w-2xl text-sm leading-5 text-slate-400">{t("qoralamaTahrir.tavsif")}</p>
+          <h2 className="flex items-center gap-2 text-base font-bold text-slate-900">{umumiyTahrir && <Package size={18} className="text-gold-600" />}{t("qoralamaTahrir.sarlavha")}</h2>
+          <p className="mt-1 max-w-2xl text-sm leading-5 text-slate-500">{t(umumiyTahrir ? "fullEdit.productsHint" : "qoralamaTahrir.tavsif")}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-slate-500">
-              {t("common.info.ombor")}: <span className="text-slate-700">{sotuv.warehouse?.name || t("common.omborTanlanmagan")}</span>
+              {t("common.info.ombor")}: <span className="text-slate-700">{umumiyTahrir?.omborNomi || sotuv.warehouse?.name || t("common.omborTanlanmagan")}</span>
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-[#2563EB]">
               {t("qoralamaTahrir.valyuta")}: {sotuvVal === "USD" ? "USD ($)" : "UZS (so'm)"}
@@ -342,7 +365,7 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
         <button
           type="button"
           onClick={qatorQoshish}
-          className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#2563EB] px-5 text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,235,.22)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8]"
+          className="inline-flex h-10 items-center gap-2 rounded-xl bg-gold-600 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gold-700"
         >
           <Plus size={16} />
           {t("qoralamaTahrir.mahsulotQoshish")}
@@ -356,8 +379,8 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
         </div>
       )}
 
-      <section className="overflow-hidden rounded-2xl bg-white shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/70">
-        <div className={`hidden gap-x-3 border-b border-slate-100 bg-slate-50/70 px-5 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-400 xl:grid ${SATR_USTUNLARI}`}>
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className={`hidden gap-x-3 border-b border-slate-200 bg-slate-50 px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500 xl:grid ${SATR_USTUNLARI}`}>
           <span>№</span>
           <span>{t("common.jadval.mahsulot")}</span>
           <span className="text-right">{t("common.jadval.miqdor")}</span>
@@ -379,7 +402,7 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
 
         {qatorlar.map((q, indeks) => {
           const qoldiq = qoldiqOl(q);
-          const xatolar = qatorXatolari(q, qoldiq);
+          const xatolar = qatorXatolari(q, qoldiq, rezervMavjud);
           const mavjud = mavjudMahsulotmi(q);
           const holat = q.ochirildi ? "ochirildi" : !q.asl ? "yangi" : !mavjud ? "almashtirilgan" : qatorOzgarganmi(q) ? "ozgargan" : null;
           const nom = (q.asl && mavjud ? itemNomi(q.asl) : q.nom) || (qoldiq ? qoldiqNomi(qoldiq) : "") || (q.modificationId ? t("common.mahsulotNomiTopilmadi") : "");
@@ -595,7 +618,7 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
       </section>
 
       <div className="mt-6 flex justify-end">
-        <div className="w-full max-w-sm space-y-2.5 rounded-2xl bg-white p-5 text-sm text-slate-500 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/70">
+        <div className="w-full max-w-sm space-y-2.5 rounded-xl border border-gold-100 bg-gold-50/40 p-4 text-sm text-slate-500">
           <p className="flex items-center justify-between gap-6">
             <span>{t("qoralamaTahrir.jami.chegirmasiz")}</span>
             <span className="font-semibold tabular-nums text-slate-700">{pulniFormatlash(jami.chegirmasiz, sotuvVal)}</span>
@@ -604,14 +627,14 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
             <span>{t("qoralamaTahrir.jami.chegirma")}</span>
             <span className="font-semibold tabular-nums">{pulniFormatlash(jami.chegirma, sotuvVal)}</span>
           </p>
-          <p className="flex items-center justify-between gap-6 border-t border-slate-100 pt-3 text-base font-black text-slate-800">
+          <p className="flex items-center justify-between gap-6 border-t border-gold-200 pt-3 text-base font-bold text-gold-700">
             <span>{t("common.totals.umumiySumma")}</span>
             <span className="tabular-nums">
               {jamiTaxminiy ? "≈ " : ""}
               {pulniFormatlash(umumiyJami, sotuvVal)}
             </span>
           </p>
-          {ozgarish > 0 && saqlanganJami > 0 && (
+          {ozgarish > 0 && !valyutaOzgargan && saqlanganJami > 0 && (
             <p className="flex items-center justify-between gap-6 text-xs text-slate-400">
               <span>{t("qoralamaTahrir.jami.saqlangan")}</span>
               <span className="tabular-nums line-through">{pulniFormatlash(saqlanganJami, sotuvVal)}</span>
@@ -621,34 +644,34 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
         </div>
       </div>
 
-      {ozgarish > 0 && (
+      {(jamiOzgarish > 0 || umumiyTahrir) && (
         <div
           role="region"
-          aria-label={t("qoralamaTahrir.saqlanmagan", { soni: ozgarish })}
-          className="sticky bottom-4 z-20 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-900 px-5 py-3.5 text-white shadow-[0_18px_46px_rgba(15,23,42,.38)]"
+          aria-label={t("qoralamaTahrir.saqlanmagan", { soni: jamiOzgarish })}
+          className="sticky bottom-3 z-20 mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white/95 px-4 py-3 text-slate-700 shadow-[0_6px_24px_rgba(15,23,42,.12)] backdrop-blur-md"
         >
           <div className="min-w-0">
-            <p className="flex items-center gap-2 text-sm font-bold">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-400" />
-              {t("qoralamaTahrir.saqlanmagan", { soni: ozgarish })}
+            <p className="flex items-center gap-2 text-sm font-semibold">
+              <span className={`h-2 w-2 shrink-0 rounded-full ${jamiOzgarish > 0 ? "bg-amber-500" : "bg-slate-300"}`} />
+              {jamiOzgarish > 0 ? t("qoralamaTahrir.saqlanmagan", { soni: jamiOzgarish }) : t("fullEdit.noChanges")}
             </p>
-            {faol.length === 0 && <p className="mt-1 text-xs font-semibold text-amber-300">{t("qoralamaTahrir.kamida")}</p>}
-            {faol.length > 0 && urinildi && xatoBor && <p className="mt-1 text-xs font-semibold text-amber-300">{t("qoralamaTahrir.xatolarniTuzating")}</p>}
+            {faol.length === 0 && <p className="mt-1 text-xs font-semibold text-amber-700">{t("qoralamaTahrir.kamida")}</p>}
+            {faol.length > 0 && urinildi && xatoBor && <p className="mt-1 text-xs font-semibold text-amber-700">{t("qoralamaTahrir.xatolarniTuzating")}</p>}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             <button
               type="button"
               onClick={hammasiniBekorQilish}
               disabled={amalBajarilmoqda}
-              className="h-10 rounded-xl bg-white/10 px-4 text-sm font-bold transition hover:bg-white/20 disabled:opacity-50"
+              className="h-10 flex-1 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold transition hover:bg-slate-50 disabled:opacity-50 sm:flex-none"
             >
               {t("qoralamaTahrir.bekorQilish")}
             </button>
             <button
               type="button"
               onClick={() => void saqlash()}
-              disabled={amalBajarilmoqda || faol.length === 0}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-500 px-5 text-sm font-black text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={amalBajarilmoqda || faol.length === 0 || jamiOzgarish === 0 || Boolean(umumiyTahrir?.xatoBor)}
+              className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-gold-600 px-5 text-sm font-semibold text-white transition hover:bg-gold-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 sm:flex-none"
             >
               {amalBajarilmoqda && <LoaderCircle size={16} className="animate-spin" />}
               {amalBajarilmoqda ? t("common.saqlanmoqda") : t("qoralamaTahrir.saqlash")}

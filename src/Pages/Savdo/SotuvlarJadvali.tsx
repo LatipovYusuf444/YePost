@@ -4,6 +4,7 @@ import { ReceiptText, RotateCcw, UserRound } from "lucide-react";
 import TablePagination from "@/Components/common/TablePagination";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
+import { sotuvJadvalNomi, sotuvSarlavhaMijozi } from "@/lib/sotuvNomi";
 import type { Qaytarish, Sotuv, TolovTuri } from "@/types/savdo";
 import {
   masulNomi,
@@ -14,7 +15,6 @@ import {
   qaytarishSummasi,
   sotuvChegirmaSummasi,
   sotuvHolati,
-  sotuvJadvalId,
   sotuvMahsulotiId,
   sotuvMahsulotiMiqdori,
   sotuvQarzdorlikSummasi,
@@ -179,6 +179,9 @@ export default function SotuvlarJadvali({
     () => (serverSahifalash ? sotuvlar : sotuvlar.slice((currentPage - 1) * pageSize, currentPage * pageSize)),
     [currentPage, pageSize, serverSahifalash, sotuvlar]
   );
+  const qatorBoshlanishi = serverSahifalash
+    ? (serverSahifalash.page - 1) * serverSahifalash.pageSize
+    : (currentPage - 1) * pageSize;
 
   return (
     <div className="px-5 pb-6 sm:px-10 sm:pb-10">
@@ -186,7 +189,7 @@ export default function SotuvlarJadvali({
         <table className={`w-full border-collapse text-left text-sm ${tarixKorinish ? "min-w-[1280px]" : "min-w-[1220px]"}`}>
           <thead className="text-[13px] font-medium text-slate-500">
             <tr>
-              <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.savdoRaqami")}</th>
+              <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.sotuvNomi")}</th>
               <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.mijozNomi")}</th>
               {tarixKorinish && (
                 <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.tolovTuri")}</th>
@@ -215,7 +218,8 @@ export default function SotuvlarJadvali({
             </tr>
           </thead>
           <tbody className="text-[13px] text-[#4B4B4B]">
-            {visibleRows.map((sotuv) => {
+            {visibleRows.map((sotuv, index) => {
+              const nom = sotuvJadvalNomi(sotuv.note, qatorBoshlanishi + index + 1, sotuvSarlavhaMijozi(sotuv));
               // Hujjat sanasi (`date`); eski yozuvlarda — yaratilgan vaqt.
               const sana = sanaVaVaqt(sotuv.date ?? sotuv.createdAt);
               const stat = qaytarishStatistikasi(sotuv, qaytarishlar);
@@ -236,10 +240,12 @@ export default function SotuvlarJadvali({
                   key={sotuv.id}
                   onClick={() => onSotuvniOchish(sotuv)}
                   className="cursor-pointer transition hover:bg-orange-50/45"
-                  title={t("sotuvlarJadvali.rowTitle", { raqam: sotuvRaqami(sotuv) })}
+                  title={t("sotuvlarJadvali.rowTitle", { raqam: nom })}
                 >
-                  <td className="border-b border-gray-100 px-4 py-3.5 font-bold tabular-nums text-slate-900">
-                    {sotuvJadvalId(sotuv)}
+                  <td className="min-w-40 max-w-64 border-b border-gray-100 px-4 py-3.5">
+                    <span className="inline-flex max-w-full rounded-lg border border-gold-200 bg-gold-50 px-3 py-2 text-[13px] font-semibold leading-5 text-gold-700 [overflow-wrap:anywhere]">
+                      {nom}
+                    </span>
                     {sotuv.isOpeningDebt && <span className="mt-1 block w-fit rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">{t("xaridor_uchot:openingDebt.title")}</span>}
                   </td>
                   <td className="border-b border-gray-100 px-4 py-3.5 font-medium">
@@ -257,8 +263,10 @@ export default function SotuvlarJadvali({
                       {paymentType ? t(tolovTuriKaliti[paymentType]) : "-"}
                     </td>
                   )}
-                  <td className="whitespace-nowrap border-b border-gray-100 px-4 py-3.5 font-semibold text-emerald-700">
-                    {pulniFormatlash(jami, sotuvValyutasi(sotuv))}
+                  <td className="whitespace-nowrap border-b border-gray-100 px-4 py-3.5">
+                    <span className="inline-flex rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] font-bold leading-5 tabular-nums text-emerald-700">
+                      {pulniFormatlash(jami, sotuvValyutasi(sotuv))}
+                    </span>
                   </td>
                   <td className="whitespace-nowrap border-b border-gray-100 px-4 py-3.5 font-semibold tabular-nums">
                     {chegirma > 0 ? (
