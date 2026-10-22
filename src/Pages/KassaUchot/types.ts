@@ -10,7 +10,8 @@ export type KassaAmaliyotTuri =
   | "hisobdor_qaytardi" // Hisobdor shaxs mablag'ini qaytarish (xodim)
   | "taminotchi_qaytardi" // Yetkazib beruvchi mablag'ini qaytarishi
   | "boshqa_kirim" // Boshqa pul mablag'lari tushumi
-  | "donalik_savdo" // POS/donalik savdo — savdodan avtomat keladi (qo'lda yaratilmaydi)
+  | "donalik_savdo" // POS/donalik savdo (mijozsiz) — savdodan avtomat keladi (qo'lda yaratilmaydi)
+  | "xaridor_sotuv_tolovi" // Mijozli sotuvning to'lovi — savdodan avtomat keladi (qo'lda yaratilmaydi)
   // --- Chiqim ---
   | "taminot_tolovi" // Yetkazib beruvchiga to'lov (yetkazib)
   | "xaridorga_qaytarish" // Xaridorga pul mablag'larini qaytarish (xaridor)

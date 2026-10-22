@@ -66,7 +66,8 @@ function kanalniMoslash(paymentType: string): KassaKanali {
 }
 
 function backendTuriniMoslash(item: FinanceTransaction): KassaAmaliyotTuri {
-  if (item.source === "SALE") return "donalik_savdo";
+  // Sotuv to'lovi: mijozli sotuvda backend counterpartyType = "CUSTOMER" beradi, chakana (donalik) sotuvda null.
+  if (item.source === "SALE") return item.counterpartyType === "CUSTOMER" ? "xaridor_sotuv_tolovi" : "donalik_savdo";
   if (item.source === "RETURN") return "xaridorga_qaytarish";
   if (item.source === "CASH_IN") return "boshqa_kirim";
   return "xarajat";
@@ -90,6 +91,8 @@ const uiOperationTuri: Record<KassaAmaliyotTuri, CashOperationType> = {
   taminotchi_qaytardi: "SUPPLIER_RETURN",
   boshqa_kirim: "OTHER_INCOME",
   donalik_savdo: "RETAIL_SALE",
+  // Mijozli sotuv to'lovi savdodan avtomat keladi (faqat o'qiladi), shuning uchun bu moslik amalda ishlatilmaydi.
+  xaridor_sotuv_tolovi: "CUSTOMER_PAYMENT",
   taminot_tolovi: "SUPPLIER_PAYMENT",
   xaridorga_qaytarish: "CUSTOMER_REFUND",
   ish_haqi: "SALARY_PAYMENT",
@@ -239,6 +242,13 @@ export default function KassaUchot() {
   }, []);
 
   useEffect(() => { void yuklash(); }, [yuklash]);
+
+  // Sotuv to'lovi tahrirlanganda (bekor qilish, qayta tasdiqlash) kassa yozuvlari qayta olinadi.
+  useEffect(() => {
+    const yangilash = () => void yuklash();
+    window.addEventListener("savdo:yangilandi", yangilash);
+    return () => window.removeEventListener("savdo:yangilandi", yangilash);
+  }, [yuklash]);
 
   function modalniOchish(amaliyot?: KassaAmaliyoti) {
     setTahrirAmaliyot(amaliyot ?? null);

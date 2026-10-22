@@ -69,6 +69,7 @@ export const turYonalishi: Record<import("./types").KassaAmaliyotTuri, KassaYona
   taminotchi_qaytardi: "tushum",
   boshqa_kirim: "tushum",
   donalik_savdo: "tushum",
+  xaridor_sotuv_tolovi: "tushum",
   taminot_tolovi: "chiqim",
   xaridorga_qaytarish: "chiqim",
   ish_haqi: "chiqim",
@@ -80,7 +81,7 @@ export const turYonalishi: Record<import("./types").KassaAmaliyotTuri, KassaYona
 export function partiyaTuri(
   turi: import("./types").KassaAmaliyotTuri
 ): "xaridor" | "xodim" | "yetkazib" | null {
-  if (turi === "xaridor_tolovi" || turi === "xaridorga_qaytarish") return "xaridor";
+  if (turi === "xaridor_tolovi" || turi === "xaridor_sotuv_tolovi" || turi === "xaridorga_qaytarish") return "xaridor";
   if (turi === "hisobdor_qaytardi" || turi === "ish_haqi") return "xodim";
   if (turi === "taminotchi_qaytardi" || turi === "taminot_tolovi") return "yetkazib";
   return null;

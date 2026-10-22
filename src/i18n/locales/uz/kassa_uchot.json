@@ -49,6 +49,7 @@
     "taminotchi_qaytardi": "Yetkazib beruvchi mablag'ini qaytarishi",
     "boshqa_kirim": "Boshqa pul mablag'lari tushumi",
     "donalik_savdo": "Donalik savdo",
+    "xaridor_sotuv_tolovi": "Xaridor to'lovi",
     "taminot_tolovi": "Yetkazib beruvchiga to'lov",
     "xaridorga_qaytarish": "Hisobdan naqd qaytarish",
     "ish_haqi": "Ish haqini to'lash",
@@ -279,6 +280,9 @@
       "SALE": "Bu yozuv sotuvdan avtomatik keladi va sotuv bo'limida boshqariladi.",
       "RETURN": "Bu yozuv qaytarishdan avtomatik keladi va qaytarish bo'limida boshqariladi."
     },
-    "noComment": "Izoh qoldirilmagan"
+    "noComment": "Izoh qoldirilmagan",
+    "editPayment": "To'lovni tahrirlash",
+    "editPaymentHint": "Summa, valyuta yoki sanani to'g'rilash uchun sotuv vaqtincha bekor qilinib, yangi to'lov bilan qayta tasdiqlanadi.",
+    "editPaymentNoPermission": "To'lovni tahrirlash sotuvni bekor qilishni talab qiladi: faqat direktor yoki RETURN_CANCEL ruxsati bor admin tahrirlay oladi."
   }
 }

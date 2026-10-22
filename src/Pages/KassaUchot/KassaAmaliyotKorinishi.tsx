@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -12,6 +12,7 @@ import {
   Landmark,
   Link2,
   MessageSquare,
+  PenLine,
   PencilLine,
   ShieldCheck,
   Smartphone,
@@ -19,6 +20,9 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
+import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
+import { toshkentKuni } from "@/lib/hujjatSanasi";
+import SotuvTolovTahrirlash from "@/Pages/Savdo/SotuvTolovTahrirlash";
 import type { KassaAmaliyoti, KassaHolati, KassaKanali } from "./types";
 import { kassaSummasi, partiyaTuri, sanaFormat } from "./yordamchilar";
 
@@ -57,12 +61,20 @@ function boshHarflar(nom: string) {
   return (sozlar[0]?.[0] ?? "") + (sozlar[1]?.[0] ?? "");
 }
 
-type Props = { amaliyot: KassaAmaliyoti };
+type Props = {
+  amaliyot: KassaAmaliyoti;
+  /** Sotuv to'lovi tahrirlangach (kassa yozuvi eskirgani uchun) ko'rinish oynasi yopiladi. */
+  onYopish?: () => void;
+};
+
+const KANAL_TOLOV_TURI: Record<KassaKanali, string> = { naqd: "CASH", bank: "BANK", ilova: "CARD" };
 
 // Mavjud kassa amaliyotini ko'rish (faqat o'qish): summa, tur, kontragent, mas'ul, holat va izoh bir qarashda.
 // Yangi amaliyot yaratish va qoralamani tahrirlash formasi alohida (KassaAmaliyotModal) — bu yerda hech narsa o'zgartirilmaydi.
-export default function KassaAmaliyotKorinishi({ amaliyot }: Props) {
+export default function KassaAmaliyotKorinishi({ amaliyot, onYopish }: Props) {
   const { t } = useTranslation("kassa_uchot");
+  const bekorMumkin = useHujjatniBekorQilishMumkinmi("savdo");
+  const [tolovTahrirlanmoqda, setTolovTahrirlanmoqda] = useState(false);
   const tushum = amaliyot.yonalish === "tushum";
   const holat: KassaHolati = amaliyot.holat ?? "tasdiqlangan";
   const holatUslubi = holatUslublari[holat];
@@ -84,6 +96,8 @@ export default function KassaAmaliyotKorinishi({ amaliyot }: Props) {
   const manbaIzohi = manba === "SALE" || manba === "RETURN" ? t(`view.sourceHint.${manba}`) : "";
   const nomMatni = [amaliyot.nomSarlavhasi || amaliyot.nomi, amaliyot.nomTafsiloti].filter((qism) => qism?.trim()).join(" — ");
   const izoh = amaliyot.izoh.trim();
+  // Tasdiqlangan sotuv to'lovini shu yerning o'zida tahrirlash mumkin (sotuv id'si — backendRefId; u bo'lmasa yozuv id'sining o'zi).
+  const tahrirlanadiganSotuvId = manba === "SALE" && holat === "tasdiqlangan" && amaliyot.backendRefId && amaliyot.backendRefId !== amaliyot.id ? amaliyot.backendRefId : "";
 
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:items-start">
@@ -212,6 +226,21 @@ export default function KassaAmaliyotKorinishi({ amaliyot }: Props) {
                     {manbaIzohi}
                   </p>
                 )}
+                {tahrirlanadiganSotuvId && (
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      disabled={!bekorMumkin}
+                      title={bekorMumkin ? t("view.editPaymentHint") : t("view.editPaymentNoPermission")}
+                      onClick={() => setTolovTahrirlanmoqda(true)}
+                      className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#2563EB] px-4 text-sm font-bold text-white shadow-[0_8px_20px_rgba(37,99,235,.22)] transition hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <PenLine size={15} aria-hidden />
+                      {t("view.editPayment")}
+                    </button>
+                    <p className="mt-1.5 text-[11px] font-semibold leading-4 text-slate-400">{bekorMumkin ? t("view.editPaymentHint") : t("view.editPaymentNoPermission")}</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -230,6 +259,15 @@ export default function KassaAmaliyotKorinishi({ amaliyot }: Props) {
           )}
         </section>
       </div>
+
+      {tolovTahrirlanmoqda && tahrirlanadiganSotuvId && (
+        <SotuvTolovTahrirlash
+          sotuvId={tahrirlanadiganSotuvId}
+          ishora={{ id: amaliyot.id, paymentType: KANAL_TOLOV_TURI[amaliyot.kanal], summa: amaliyot.summa, kun: toshkentKuni(amaliyot.sana) }}
+          onYopish={() => setTolovTahrirlanmoqda(false)}
+          onTugadi={onYopish}
+        />
+      )}
     </div>
   );
 }

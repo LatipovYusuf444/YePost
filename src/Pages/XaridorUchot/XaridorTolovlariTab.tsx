@@ -41,7 +41,8 @@ export default function XaridorTolovlariTab({ xaridorId }: { xaridorId: string }
             id: item.id,
             kanal: item.paymentType === "BANK" ? "bank" : item.paymentType === "CARD" ? "ilova" : "naqd",
             yonalish: "tushum",
-            turi: "donalik_savdo",
+            // Bu xaridorning sotuv to'lovlari: mijozli sotuv ("Donalik savdo" emas).
+            turi: "xaridor_sotuv_tolovi",
             holat: "tasdiqlangan",
             xaridorId,
             raqam: item.refDocNumber || item.id.slice(0, 8).toUpperCase(),

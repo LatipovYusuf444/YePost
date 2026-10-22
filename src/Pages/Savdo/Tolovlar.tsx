@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { ArrowDownLeft, ArrowUpRight, Banknote, CreditCard, Landmark, LoaderCircle, ReceiptText, RefreshCw, Scale, Search, Wallet, WalletCards, X } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Banknote, CreditCard, Landmark, LoaderCircle, PenLine, ReceiptText, RefreshCw, Scale, Search, Wallet, WalletCards, X } from "lucide-react";
 import JadvalYuklanmoqda from "./JadvalYuklanmoqda";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { useTolovlar } from "@/hooks/useTolovlar";
 import type { Qaytarish, Sotuv } from "@/types/savdo";
-import type { TolovYozuvi } from "@/types/tolov";
+import type { FinanceTransaction, TolovYozuvi } from "@/types/tolov";
+import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
+import { toshkentKuni } from "@/lib/hujjatSanasi";
+import SotuvTolovTahrirlash from "./SotuvTolovTahrirlash";
 import { tolovSanasiniFormatlash, tolovSummasiniFormatlash, tolovUsuliMatni } from "@/utils/tolovFormatters";
 import AppModal from "@/Components/common/AppModal";
 import SavdoSelect from "./SavdoSelect";
@@ -353,6 +356,7 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
         <TolovTafsilotlariModal
           tolov={tanlanganTolov}
           onYopish={() => setTanlanganTolov(null)}
+          onTahrirlandi={() => void refetch()}
         />
       )}
     </section>
@@ -362,11 +366,20 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
 function TolovTafsilotlariModal({
   tolov,
   onYopish,
+  onTahrirlandi,
 }: {
   tolov: TolovYozuvi;
   onYopish: () => void;
+  /** Sotuv to'lovi tahrirlangach ro'yxat qayta olinadi. */
+  onTahrirlandi: () => void;
 }) {
-  const { t } = useTranslation("savdo_tolov");
+  const { t } = useTranslation(["savdo_tolov", "savdo_tafsilot"]);
+  const bekorMumkin = useHujjatniBekorQilishMumkinmi("savdo");
+  const [tahrirOchiq, setTahrirOchiq] = useState(false);
+  // Sotuv oynasida ochilmaydigan (yuklangan sotuvlar orasida yo'q) tasdiqlangan sotuv to'lovini shu yerda tahrirlash mumkin.
+  const tranzaksiya = tolov.raw as FinanceTransaction | undefined;
+  const tahrirlanadiganSotuvId =
+    tolov.manba === "SALE" && tranzaksiya?.status !== "CANCELLED" && tranzaksiya?.status !== "DRAFT" && tranzaksiya?.refId && tranzaksiya.refId !== tolov.id ? tranzaksiya.refId : "";
 
   return (
     <AppModal>
@@ -377,14 +390,28 @@ function TolovTafsilotlariModal({
             <h2 className="mt-1 text-2xl font-black text-slate-950">{tolov.sotuvId}</h2>
             <p className="mt-1 text-sm font-semibold text-slate-400">{tolov.mijoz}</p>
           </div>
-          <button
-            type="button"
-            onClick={onYopish}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm ring-1 ring-orange-100 transition hover:bg-orange-50 hover:text-orange-600"
-            aria-label={t("tolovlar.modal.closeAria")}
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            {tahrirlanadiganSotuvId && (
+              <button
+                type="button"
+                disabled={!bekorMumkin}
+                title={bekorMumkin ? undefined : t("savdo_tafsilot:tolovTahriri.ruxsatYoq")}
+                onClick={() => setTahrirOchiq(true)}
+                className="inline-flex h-10 items-center gap-2 rounded-2xl bg-[#2563EB] px-4 text-sm font-bold text-white shadow-[0_8px_20px_rgba(37,99,235,.22)] transition hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <PenLine size={15} aria-hidden />
+                {t("savdo_tafsilot:tolovTahriri.tugma")}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onYopish}
+              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm ring-1 ring-orange-100 transition hover:bg-orange-50 hover:text-orange-600"
+              aria-label={t("tolovlar.modal.closeAria")}
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         <div className="grid gap-4 p-6 md:grid-cols-[1fr_220px]">
@@ -428,6 +455,18 @@ function TolovTafsilotlariModal({
           </div>
         </div>
       </div>
+
+      {tahrirOchiq && tahrirlanadiganSotuvId && (
+        <SotuvTolovTahrirlash
+          sotuvId={tahrirlanadiganSotuvId}
+          ishora={{ id: tolov.id, paymentType: String(tolov.tolovTuri), summa: tolov.summa, kun: toshkentKuni(tolov.sana) }}
+          onYopish={() => setTahrirOchiq(false)}
+          onTugadi={() => {
+            onTahrirlandi();
+            onYopish();
+          }}
+        />
+      )}
     </AppModal>
   );
 }

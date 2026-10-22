@@ -340,7 +340,7 @@ export default function KassaAmaliyotModal({
 
           {boshlangich && korishRejimi ? (
             // Mavjud amaliyotni ko'rish: o'chirilgan forma o'rniga alohida ko'rinish (yaratish/tahrirlash formasi o'zgarmagan).
-            <KassaAmaliyotKorinishi amaliyot={boshlangich} />
+            <KassaAmaliyotKorinishi amaliyot={boshlangich} onYopish={onYopish} />
           ) : (
           <fieldset disabled={readonly} className="m-0 grid gap-5 border-0 p-0 xl:grid-cols-2">
             {/* --- Chap: pul tushumi haqida --- */}
