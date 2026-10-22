@@ -1,13 +1,16 @@
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Banknote, CalendarDays, CheckCircle2, ChevronDown, CreditCard, FileText, Landmark, UserCheck, UserRound, Wallet } from "lucide-react";
+import { Banknote, CalendarDays, CheckCircle2, ChevronDown, CreditCard, FileText, Landmark, PenLine, UserCheck, UserRound, Wallet } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 import { bugungiToshkentKuni, kunMatni, toshkentKuni, vaqtMatni } from "@/lib/hujjatSanasi";
 import { somMatni, tolovlarQaytimi } from "@/lib/tolovOrtiqchasi";
 import type { Sotuv, SotuvTolovi, TolovTuri } from "@/types/savdo";
+import TolovTahriri from "./TolovTahriri";
 import {
   masulNomi,
   pulniFormatlash,
+  sotuvHolati,
   sotuvRaqami,
   sotuvSummasi,
   sotuvValyutasi,
@@ -49,10 +52,12 @@ export default function SotuvTolovlari({ sotuv, mijoz }: { sotuv: Sotuv; mijoz: 
   const [tanlangan, setTanlangan] = useState<TolovQatori | null>(null);
   const qatorlar = qatorlarniYigish(sotuv);
 
-  if (qatorlar.length === 0) return null;
+  // Tahrirlash zanjiri (bekor qilish → tiklash → qayta tasdiqlash) paytida to'lovlar ro'yxati vaqtincha bo'sh ko'rinishi mumkin: ochiq oyna yo'qolmasligi kerak.
+  if (qatorlar.length === 0 && !tanlangan) return null;
 
   return (
     <>
+      {qatorlar.length > 0 && (
       <div className="mt-4 border-t border-slate-100 pt-4">
         <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">{t("tolovQatori.sarlavha")}</p>
         <div className="space-y-2">
@@ -128,6 +133,7 @@ export default function SotuvTolovlari({ sotuv, mijoz }: { sotuv: Sotuv; mijoz: 
         })}
         </div>
       </div>
+      )}
 
       {tanlangan && <TolovTafsilotModal sotuv={sotuv} mijoz={mijoz} qator={tanlangan} onYopish={() => setTanlangan(null)} />}
     </>
@@ -156,22 +162,49 @@ function TolovTafsilotModal({ sotuv, mijoz, qator, onYopish }: { sotuv: Sotuv; m
   const sotuvVal = sotuvValyutasi(sotuv);
   const sotuvUlushi = sotuvJami > 0 ? Math.min(100, Math.round((tolovSotuvValyutasida(tolov, sotuv) / sotuvJami) * 100)) : 0;
   const qaytim = tolovlarQaytimi([tolov]);
+  // Tahrirlash: tasdiqlangan sotuvdagi naqd, karta yoki bank to'lovi (hisobdan to'lov va qarz qatori emas). Zanjir sotuvni bekor qiladi,
+  // shuning uchun faqat sotuvni bekor qilish ruxsati bor foydalanuvchiga (direktor yoki RETURN_CANCEL ruxsati bor admin).
+  const bekorMumkin = useHujjatniBekorQilishMumkinmi("savdo");
+  const [tahrir, setTahrir] = useState(false);
+  const [band, setBand] = useState(false);
+  const tahrirlanadi =
+    sotuvHolati(sotuv) === "CONFIRMED" && Boolean(tolov.id) && (tolov.paymentType === "CASH" || tolov.paymentType === "CARD" || tolov.paymentType === "BANK");
 
   return (
-    <AppModal onClose={onYopish}>
-      <div className="w-full max-w-xl overflow-hidden rounded-[32px] bg-white shadow-[0_30px_90px_rgba(15,23,42,.24)]">
+    <AppModal
+      onClose={() => {
+        // Zanjir ishlayotganda oynani yopib bo'lmaydi: sotuv yarim holatda qolmasin.
+        if (!band) onYopish();
+      }}
+    >
+      <div className={`w-full overflow-hidden rounded-[32px] bg-white shadow-[0_30px_90px_rgba(15,23,42,.24)] ${tahrir ? "max-w-2xl" : "max-w-xl"}`}>
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 bg-gradient-to-r from-orange-50 to-white px-7 py-6">
           <div className="flex items-center gap-4">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[#2563EB] shadow-sm ring-1 ring-orange-100">
-              <CreditCard size={24} />
+              {tahrir ? <PenLine size={22} /> : <CreditCard size={24} />}
             </span>
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#2563EB]">{t("tolovTafsilot.belgisi")}</p>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#2563EB]">{tahrir ? t("tolovTahriri.sarlavha") : t("tolovTafsilot.belgisi")}</p>
               <h2 className="mt-1 text-2xl font-black text-slate-900">№{qator.raqam}</h2>
             </div>
           </div>
+          {tahrirlanadi && !tahrir && (
+            <button
+              type="button"
+              disabled={!bekorMumkin}
+              title={bekorMumkin ? undefined : t("tolovTahriri.ruxsatYoq")}
+              onClick={() => setTahrir(true)}
+              className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl bg-[#2563EB] px-4 text-sm font-bold text-white shadow-[0_8px_20px_rgba(37,99,235,.22)] transition hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <PenLine size={15} aria-hidden />
+              {t("tolovTahriri.tugma")}
+            </button>
+          )}
         </div>
 
+        {tahrir ? (
+          <TolovTahriri sotuv={sotuv} tolov={tolov} raqam={qator.raqam} onBand={setBand} onOrqaga={() => setTahrir(false)} onYopish={onYopish} />
+        ) : (
         <div className="space-y-5 px-7 py-6">
           <div className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-100">
             <div className="flex items-start justify-between gap-4">
@@ -231,6 +264,7 @@ function TolovTafsilotModal({ sotuv, mijoz, qator, onYopish }: { sotuv: Sotuv; m
             <TafsilotQatori icon={<UserCheck size={17} />} label={t("tolovTafsilot.masulShaxs")} value={masulNomi(sotuv)} />
           </div>
         </div>
+        )}
       </div>
     </AppModal>
   );

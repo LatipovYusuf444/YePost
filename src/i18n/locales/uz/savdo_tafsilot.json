@@ -411,6 +411,53 @@
     "pdf": "Nakladnoy (PDF)",
     "chiqarilgan": "Chiqarilgan"
   },
+  "tolovTahriri": {
+    "tugma": "Tahrirlash",
+    "ruxsatYoq": "To'lovni tahrirlash sotuvni bekor qilishni talab qiladi: faqat direktor yoki RETURN_CANCEL ruxsati bor admin tahrirlay oladi.",
+    "sarlavha": "To'lovni tahrirlash",
+    "tavsif": "To'lov turi, summa, valyuta va sanani to'g'rilang: masalan, summa adashib boshqa yozilgan yoki to'lov dollarda olingan bo'lsa.",
+    "ogohlantirish": "Saqlaganda sotuv vaqtincha bekor qilinadi (tovar omborga qaytadi, kassadagi to'lov qaytariladi), so'ng yangi to'lov bilan qayta tasdiqlanadi: tovar yana ombordan chiqadi, to'lov kassaga qayta yoziladi. Qaytim o'zi hisoblanadi.",
+    "orqaga": "Orqaga",
+    "saqlash": "Saqlash va qayta tasdiqlash",
+    "ozgarishYoq": "Hozircha o'zgarish yo'q",
+    "qaytimBoladi": "Ortiqcha pul qaytim bo'ladi (so'mda). Mijozsiz sotuvda uni hisobga o'tkazib bo'lmaydi.",
+    "tasdiq": {
+      "sarlavha": "To'lov tahrirlansinmi?",
+      "tavsif": "Sotuv bekor qilinib, yangi to'lov bilan qayta tasdiqlanadi. Jarayon tugamaguncha oynani yopmang.",
+      "ha": "Ha, tahrirlash",
+      "yoq": "Qaytish",
+      "jarayon": "Boshlanmoqda..."
+    },
+    "jarayonIzoh": "Sotuv qayta ishlanmoqda. Iltimos, kuting va oynani yopmang.",
+    "jarayonToxtadi": "Jarayon to'xtadi. Xato bergan bosqichdan davom ettirishingiz mumkin.",
+    "bosqichlar": {
+      "bekor": "Sotuv vaqtincha bekor qilinmoqda (tovar omborga qaytadi)",
+      "tiklash": "Sotuv qoralamaga qaytarilmoqda",
+      "yangilash": "To'lov yangilanmoqda",
+      "tasdiqlash": "Sotuv qayta tasdiqlanmoqda"
+    },
+    "xatoHolati": {
+      "bekor": "Sotuv o'zgarmadi.",
+      "tiklash": "Sotuv bekor qilingan holatda qoldi. «Qayta urinish» bilan davom ettiring.",
+      "yangilash": "Sotuv qoralama holatida qoldi, to'lov hali o'zgarmagan. «Qayta urinish» bilan davom ettiring.",
+      "tasdiqlash": "To'lov yangilandi, lekin sotuv qoralamada qoldi (tovar hali ombordan chiqmagan). «Qayta urinish» bilan tasdiqlang."
+    },
+    "qaytaUrinish": "Qayta urinish",
+    "yopish": "Yopish",
+    "tugadi": "To'lov yangilandi",
+    "yuklanmoqda": "Sotuv yuklanmoqda...",
+    "tanlash": {
+      "sarlavha": "Qaysi to'lovni tahrirlaymiz?",
+      "izoh": "Bu yozuv sotuvdagi to'lovlardan qaysi biriga tegishli ekanini aniq topib bo'lmadi. Tahrirlanadigan to'lovni tanlang."
+    },
+    "errors": {
+      "yuklanmadi": "Sotuvni yuklab bo'lmadi.",
+      "tasdiqlanmagan": "Sotuv tasdiqlangan emas, shuning uchun to'lovni bu yerdan tahrirlab bo'lmaydi.",
+      "tolovYoq": "Tahrirlash mumkin bo'lgan to'lov (naqd, karta yoki bank) topilmadi.",
+      "topilmadi": "Tahrirlanadigan to'lov topilmadi. Sotuvni qayta oching.",
+      "qarzMijozsiz": "To'lov kamaysa sotuvda qarz qoladi, lekin sotuvda mijoz yo'q: qarzga sotib bo'lmaydi."
+    }
+  },
   "tolovTafsilot": {
     "belgisi": "To'lov",
     "summa": "To'lov summasi",

@@ -5,6 +5,8 @@ import type { Valyuta } from "@/lib/valyuta";
 import { pulniFormatlash } from "./savdoYordamchilari";
 
 type Props = {
+  /** Sarlavha (standart: "To'lov qabul qilindi"). */
+  sarlavha?: string;
   /** Mijozga qaytim berilishi kerak bo'lgan summa, so'mda (server hisoblagani). */
   qaytim: number;
   /** Mijoz hisobiga o'tgan pul, sotuv valyutasida. */
@@ -16,7 +18,7 @@ type Props = {
 };
 
 // To'lov saqlangach: kassir mijozga qancha qaytim berishi (yoki qancha pul hisobga o'tgani) aniq ko'rinadi. Oyna "Yopish" bilan yopiladi.
-export default function TolovNatijasiKarta({ qaytim, hisobga, sotuvValyutasi, qolganQarz, onYopish }: Props) {
+export default function TolovNatijasiKarta({ sarlavha, qaytim, hisobga, sotuvValyutasi, qolganQarz, onYopish }: Props) {
   const { t } = useTranslation("savdo_tafsilot");
   const somBelgisi = t("tolovModal.somBelgisi");
 
@@ -26,7 +28,7 @@ export default function TolovNatijasiKarta({ qaytim, hisobga, sotuvValyutasi, qo
         <span className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-500 ring-8 ring-emerald-50/60">
           <CheckCircle2 size={34} aria-hidden />
         </span>
-        <h3 className="mt-4 text-xl font-black text-slate-900">{t("tolovModal.natija.sarlavha")}</h3>
+        <h3 className="mt-4 text-xl font-black text-slate-900">{sarlavha ?? t("tolovModal.natija.sarlavha")}</h3>
         <p className={`mt-1 text-sm font-semibold ${qolganQarz > 0 ? "text-amber-600" : "text-emerald-600"}`}>
           {qolganQarz > 0
             ? t("tolovModal.natija.qarzQoldi", { summa: pulniFormatlash(qolganQarz, sotuvValyutasi) })

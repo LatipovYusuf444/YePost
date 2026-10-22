@@ -41,6 +41,8 @@ import type {
   XodimTanlovi,
 } from "@/types/savdo";
 import type { TolovNatijasi } from "@/lib/tolovOrtiqchasi";
+import type { TolovTahririBosqichi } from "@/lib/tolovTahriri";
+import { TolovTahririXatosi, tolovniTahrirlash as tolovniTahrirlashApi, type TolovTahririParametrlari, type TolovTahririSorovi } from "@/api/tolovTahririApi";
 import { sotuvQarzdorlikSummasi } from "@/Pages/Savdo/savdoYordamchilari";
 
 function xatolikKodi(error: unknown): string | undefined {
@@ -258,6 +260,12 @@ type SavdoState = {
     sotuvId: string,
     tolov: TolovQoshishMalumoti
   ) => Promise<TolovNatijasi | null>;
+  // Tasdiqlangan sotuvdagi to'lovni o'zgartiradi: bekor qilish → tiklash → to'lovlarni yangilash → qayta tasdiqlash. Zanjir o'rtasida
+  // to'xtasa qaysi bosqichda xato bergani qaytadi (shu bosqichdan davom ettirish mumkin); sotuv har doim backend holatiga moslanadi.
+  tolovniTahrirlash: (
+    sorov: TolovTahririSorovi,
+    parametrlar?: TolovTahririParametrlari
+  ) => Promise<{ ok: true; sotuv: Sotuv } | { ok: false; bosqich: TolovTahririBosqichi | null; xato: string }>;
   sotuvniBekorQilish: (sotuvId: string) => Promise<boolean>;
   sotuvniOchirish: (sotuvId: string) => Promise<boolean>;
   sotuvniTiklash: (sotuvId: string) => Promise<boolean>;
@@ -490,6 +498,40 @@ export const useSavdoStore = create<SavdoState>((set, get) => {
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
       return null;
+    }
+  },
+
+  tolovniTahrirlash: async (sorov, parametrlar) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    const sotuvniMoslash = (sotuv: Sotuv) => {
+      const boyitilgan = sotuvniBoglanganMalumotlarBilanBoyitish(sotuv, get());
+      set((state) => ({
+        sotuvlar: state.sotuvlar.map((item) => (item.id === sorov.sotuvId ? boyitilgan : item)),
+        tanlanganSotuv: state.tanlanganSotuv?.id === sorov.sotuvId ? boyitilgan : state.tanlanganSotuv,
+      }));
+      window.dispatchEvent(new CustomEvent("savdo:yangilandi", { detail: { sotuvId: sorov.sotuvId } }));
+    };
+
+    try {
+      const yangilangan = await tolovniTahrirlashApi(sorov, parametrlar);
+      sotuvniMoslash(yangilangan);
+      // Bekor qilish va qayta tasdiqlash ombor qoldig'ini o'zgartirgan: qoldiq yangilanadi.
+      const warehouseId = yangilangan.warehouseId ?? get().sotuvlar.find((sotuv) => sotuv.id === sorov.sotuvId)?.warehouseId;
+      if (warehouseId) await get().qoldiqlarniYuklash(warehouseId);
+      set({ amalBajarilmoqda: false });
+      return { ok: true as const, sotuv: yangilangan };
+    } catch (error) {
+      // Zanjir o'rtasida to'xtagan bo'lishi mumkin (sotuv bekor qilingan yoki qoralama holatida): ro'yxat va ochiq sotuv backend holatiga moslanadi.
+      try {
+        sotuvniMoslash(await sotuvTafsilotiniOlish(sorov.sotuvId));
+      } catch {
+        // Holat noma'lum — mavjud nusxa qoladi.
+      }
+      const bosqich = error instanceof TolovTahririXatosi ? error.bosqich : null;
+      const sabab = error instanceof TolovTahririXatosi ? error.sabab : error;
+      const xato = bosqich === "tasdiqlash" ? tasdiqlashXatoligiMatni(sabab) : getApiErrorMessage(sabab);
+      set({ amalBajarilmoqda: false, xatolik: xato });
+      return { ok: false as const, bosqich, xato };
     }
   },
 

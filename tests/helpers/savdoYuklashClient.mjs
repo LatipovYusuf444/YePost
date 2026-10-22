@@ -27,6 +27,12 @@ export default {
     const key = `POST ${url}`;
     return { data: handlers.has(key) ? await handlers.get(key)(data, config) : {} };
   },
+  // PATCH javobi "PATCH /yo'l" kaliti bilan.
+  async patch(url, data, config) {
+    calls.push({ method: 'patch', url, data, config });
+    const key = `PATCH ${url}`;
+    return { data: handlers.has(key) ? await handlers.get(key)(data, config) : {} };
+  },
 };
 
 export const modifikatsiyalarApi = {
