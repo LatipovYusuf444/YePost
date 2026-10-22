@@ -416,7 +416,48 @@
     "ruxsatYoq": "To'lovni tahrirlash sotuvni bekor qilishni talab qiladi: faqat direktor yoki RETURN_CANCEL ruxsati bor admin tahrirlay oladi.",
     "sarlavha": "To'lovni tahrirlash",
     "tavsif": "To'lov turi, summa, valyuta va sanani to'g'rilang: masalan, summa adashib boshqa yozilgan yoki to'lov dollarda olingan bo'lsa.",
-    "ogohlantirish": "Saqlaganda sotuv vaqtincha bekor qilinadi (tovar omborga qaytadi, kassadagi to'lov qaytariladi), so'ng yangi to'lov bilan qayta tasdiqlanadi: tovar yana ombordan chiqadi, to'lov kassaga qayta yoziladi. Qaytim o'zi hisoblanadi.",
+    "ogohlantirish": "Saqlaganda sotuv vaqtincha bekor qilinib, yangi to'lov bilan qayta tasdiqlanadi: tovar ombordan qayta chiqadi, kassa yozuvi to'g'rilanadi. Kassa faqat ochiq smenada to'g'rilanadi. Qaytim o'zi hisoblanadi.",
+    "bolim": {
+      "tolov": "To'lov ma'lumotlari",
+      "hisob": "Hisob-kitob"
+    },
+    "maydon": {
+      "tur": "To'lov turi",
+      "summa": "Summa",
+      "sana": "To'lov sanasi",
+      "izoh": "Izoh",
+      "izohPlaceholder": "Izoh (ixtiyoriy)"
+    },
+    "hisob": {
+      "sotuv": "Sotuv summasi",
+      "tolov": "Jami to'lov",
+      "qarz": "Qarz qoldig'i",
+      "ortiqcha": "Ortiqcha to'lov"
+    },
+    "ortiqcha": {
+      "sarlavha": "Ortiqcha pul bilan nima qilamiz?",
+      "qaytim": "Qaytim berish",
+      "hisobga": "Mijoz hisobiga yozish",
+      "eskiQarz": "Mijozning eski qarzi bo'lsa, ortiqcha pul avval uni yopadi."
+    },
+    "qaytim": {
+      "sarlavha": "Qaytim (so'mda)",
+      "taxminiy": "Taxminiy: aniq summa saqlangach ko'rsatiladi.",
+      "yaxlitlash": "Minglikkacha yaxlitlash",
+      "yaxlitlashIzoh": "Dollar qatnashganda qaytim eng yaqin minggacha yaxlitlanadi (339 400 → 339 000)."
+    },
+    "hisobgaYoziladi": "Mijoz hisobiga yoziladi: {{summa}}",
+    "kursQatori": "Sotuv sanasidagi ({{sana}}) kurs: 1 $ = {{kurs}} so'm",
+    "kursKiritilganKun": "({{sana}} da kiritilgan)",
+    "dollarRejimOchiq": "Bu sotuv dollarda (sotuvi yoki qatorlari dollarda), uni qayta tasdiqlash uchun valyuta rejimi yoqilgan bo'lishi kerak (Sozlamalar → Valyuta).",
+    "dollarKursYoq": "Sotuv sanasi ({{sana}}) uchun dollar kursi kiritilmagan (undan oldingi kunlarda ham yo'q). Sozlamalar → Valyuta bo'limida kursni kiriting.",
+    "kursOqilmadi": "Sotuv sanasidagi dollar kursini o'qib bo'lmadi. Oynani yopib, qayta oching.",
+    "nakladnoy": {
+      "yuborish": "Tuzatilgan nakladnoyni mijozga yuborish",
+      "izoh": "Telegram orqali yuboriladi. Qayta tasdiqlashda yangi nakladnoy o'zi ketmaydi (xabar bu sotuvga avval yuborilgan).",
+      "yuborildi": "Tuzatilgan nakladnoy mijozga yuborish uchun navbatga qo'yildi.",
+      "yuborilmadi": "Nakladnoy mijozga yuborilmadi. {{sabab}} Sotuv kartasidagi «Qayta yuborish» tugmasi bilan qayta yuboring."
+    },
     "orqaga": "Orqaga",
     "saqlash": "Saqlash va qayta tasdiqlash",
     "ozgarishYoq": "Hozircha o'zgarish yo'q",
@@ -424,6 +465,7 @@
     "tasdiq": {
       "sarlavha": "To'lov tahrirlansinmi?",
       "tavsif": "Sotuv bekor qilinib, yangi to'lov bilan qayta tasdiqlanadi. Jarayon tugamaguncha oynani yopmang.",
+      "telegram": "Bekor qilishda mijozga Telegramda «sotuv bekor qilindi» xabari ketishi mumkin (har sotuv uchun bir marta).",
       "ha": "Ha, tahrirlash",
       "yoq": "Qaytish",
       "jarayon": "Boshlanmoqda..."
@@ -440,7 +482,9 @@
       "bekor": "Sotuv o'zgarmadi.",
       "tiklash": "Sotuv bekor qilingan holatda qoldi. «Qayta urinish» bilan davom ettiring.",
       "yangilash": "Sotuv qoralama holatida qoldi, to'lov hali o'zgarmagan. «Qayta urinish» bilan davom ettiring.",
-      "tasdiqlash": "To'lov yangilandi, lekin sotuv qoralamada qoldi (tovar hali ombordan chiqmagan). «Qayta urinish» bilan tasdiqlang."
+      "tasdiqlash": "To'lov yangilandi, lekin sotuv qoralamada qoldi (tovar hali ombordan chiqmagan). «Qayta urinish» bilan tasdiqlang.",
+      "tasdiqlashKurs": "To'lov yangilandi, lekin sotuv qoralamada qoldi: sotuv sanasi uchun dollar kursi topilmadi yoki (dollar sotuv uchun) valyuta rejimi o'chiq. Sozlamalar → Valyuta bo'limida sotuv sanasidagi (yoki undan oldingi) kursni kiriting yoki rejimni yoqing va «Qayta urinish»ni bosing.",
+      "tasdiqlashHisob": "Mijoz hisobidan to'langan qism uchun hisobda pul yetmadi (mijoz uni shu orada ishlatgan bo'lishi mumkin). To'lov yangilandi, lekin sotuv qoralamada qoldi. Mijoz hisobini to'ldiring va «Qayta urinish»ni bosing."
     },
     "qaytaUrinish": "Qayta urinish",
     "yopish": "Yopish",

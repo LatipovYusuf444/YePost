@@ -89,6 +89,10 @@ test('tolovTahririTanasi: payments va (berilsa) aniq keepExcess', () => {
   assert.deepEqual(lib.tolovTahririTanasi([{ amount: 1 }]), { payments: [{ amount: 1 }] });
   assert.deepEqual(lib.tolovTahririTanasi([{ amount: 1 }], false), { payments: [{ amount: 1 }], keepExcess: false });
   assert.deepEqual(lib.tolovTahririTanasi([{ amount: 1 }], true), { payments: [{ amount: 1 }], keepExcess: true });
+  // Aniq qaytim (yaxlitlamasdan): faqat `roundChange: false` yuboriladi, standart (yaxlitlash) maydonsiz.
+  assert.deepEqual(lib.tolovTahririTanasi([{ amount: 1 }], false, false), { payments: [{ amount: 1 }], keepExcess: false, roundChange: false });
+  assert.deepEqual(lib.tolovTahririTanasi([{ amount: 1 }], undefined, false), { payments: [{ amount: 1 }], roundChange: false });
+  assert.deepEqual(lib.tolovTahririTanasi([{ amount: 1 }], true, undefined), { payments: [{ amount: 1 }], keepExcess: true });
 });
 
 test('tolovYangilanishi: sana va izoh faqat asl qiymatdan farq qilsa qo‘shiladi', () => {
@@ -216,6 +220,63 @@ test('do‘kon: tasdiqlashda xato — ok: false, bosqich "tasdiqlash", sotuv bac
   assert.equal(holat.sotuvlar[0].status, 'DRAFT');
   assert.equal(holat.amalBajarilmoqda, false);
   assert.match(holat.xatolik, /Ombor qoldig‘i yetarli emas/);
+});
+
+// ───────── nakladnoyni mijozga qayta yuborish (backend: qayta tasdiqlashda u o'zi ketmaydi) ─────────
+
+function holatniTayyorlash() {
+  useSavdoStore.setState({ ...initial, sotuvlar: [sotuv()], tanlanganSotuv: sotuv(), qoldiqlarniYuklash: async () => {} }, true);
+}
+
+test('nakladnoy: tanlansa zanjir tugagach POST /sales/:id/notify (xato toastisiz), yangilanish hodisasi xabardan keyin', async () => {
+  zanjirniTayyorlash();
+  handlers.set('POST /sales/s1/notify', () => ({ id: 'log1', status: 'QUEUED' }));
+  holatniTayyorlash();
+  let hodisadaNotifyBormi = null;
+  const tinglovchi = () => (hodisadaNotifyBormi = calls.some((qo) => qo.url === '/sales/s1/notify'));
+  window.addEventListener('savdo:yangilandi', tinglovchi);
+  const natija = await useSavdoStore.getState().tolovniTahrirlash(sorov({ nakladnoyYuborish: true }));
+  window.removeEventListener('savdo:yangilandi', tinglovchi);
+  assert.equal(natija.ok, true);
+  assert.deepEqual(natija.nakladnoy, { ok: true });
+  const tartib = calls.map((qo) => `${(qo.method ?? 'get').toUpperCase()} ${qo.url}`);
+  assert.ok(tartib.indexOf('POST /sales/s1/notify') > tartib.indexOf('POST /sales/s1/confirm'), tartib.join(' > '));
+  assert.equal(calls.find((qo) => qo.url === '/sales/s1/notify').config.xatoniYashirish, true);
+  assert.equal(hodisadaNotifyBormi, true);
+});
+
+test('nakladnoy: tanlanmasa notify chaqirilmaydi, natijada nakladnoy yo‘q', async () => {
+  zanjirniTayyorlash();
+  holatniTayyorlash();
+  const natija = await useSavdoStore.getState().tolovniTahrirlash(sorov());
+  assert.equal(natija.ok, true);
+  assert.equal(natija.nakladnoy, null);
+  assert.ok(!calls.some((qo) => qo.url === '/sales/s1/notify'));
+});
+
+test('nakladnoy: yuborib bo‘lmasa to‘lov baribir yangilangan (ok: true), xato sababi bilan natijada', async () => {
+  zanjirniTayyorlash();
+  handlers.set('POST /sales/s1/notify', () => {
+    throw new Error('Sotuvda mijoz yo‘q');
+  });
+  holatniTayyorlash();
+  const natija = await useSavdoStore.getState().tolovniTahrirlash(sorov({ nakladnoyYuborish: true }));
+  assert.equal(natija.ok, true);
+  assert.deepEqual(natija.nakladnoy, { ok: false, xato: 'Sotuvda mijoz yo‘q' });
+  assert.equal(useSavdoStore.getState().tanlanganSotuv.status, 'CONFIRMED');
+});
+
+test('nakladnoy: zanjir xato bersa notify ketmaydi; xato kodi qaytadi (hisobda pul yetmasa — sotuv qoralamada qoladi)', async () => {
+  zanjirniTayyorlash();
+  handlers.set('POST /sales/s1/confirm', () => {
+    throw Object.assign(new Error('Mijoz hisobida pul yetarli emas.'), { response: { status: 400, data: { code: 'errors.wallet.insufficient_balance' } } });
+  });
+  holatniTayyorlash();
+  const natija = await useSavdoStore.getState().tolovniTahrirlash(sorov({ nakladnoyYuborish: true }));
+  assert.equal(natija.ok, false);
+  assert.equal(natija.bosqich, 'tasdiqlash');
+  assert.equal(natija.kod, 'errors.wallet.insufficient_balance');
+  assert.ok(!calls.some((qo) => qo.url === '/sales/s1/notify'));
 });
 
 // ───────── kassa yozuvidan to'lovni topish ─────────

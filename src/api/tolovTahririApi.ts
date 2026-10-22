@@ -7,6 +7,7 @@ import {
   type TolovTahririBosqichi,
   type TolovYangilanishi,
 } from "../lib/tolovTahriri.ts";
+import apiClient from "./axios";
 import { sotuvniBekorQilish, sotuvniTasdiqlash, sotuvniTiklash, sotuvniYangilash, sotuvTafsilotiniOlish } from "./savdoApi";
 
 export type TolovTahririSorovi = {
@@ -17,7 +18,20 @@ export type TolovTahririSorovi = {
   yangi: TolovYangilanishi;
   /** Qarzdan ortiq pul bo'lsa tanlov (hisobga yozish yoki qaytim); aks holda yuborilmaydi. */
   keepExcess?: boolean;
+  /** Dollar qatnashganda qaytim minggacha yaxlitlanmasin (backend standarti — yaxlitlash); faqat `false` yuboriladi. */
+  roundChange?: false;
+  /** Zanjir tugagach mijozga tuzatilgan nakladnoy yuboriladi (qayta tasdiqlashda u o'zi ketmaydi: xabar bu sotuvga avval yuborilgan). */
+  nakladnoyYuborish?: boolean;
 };
+
+/**
+ * POST /sales/:id/notify — tasdiqlangan sotuvning nakladnoyi mijozga Telegram orqali yuboriladi ("Qayta yuborish" tugmasi bilan bir xil).
+ * Backend navbatga qo'yadi (201); botga ulanmagan mijozga xabar ketmaydi, bu xabarnomalar tarixida ko'rinadi. Xato toasti chiqmaydi:
+ * chaqiruvchi natijani o'zi ko'rsatadi.
+ */
+export async function nakladnoyniMijozgaYuborish(sotuvId: string): Promise<void> {
+  await apiClient.post(`/sales/${sotuvId}/notify`, undefined, { xatoniYashirish: true });
+}
 
 /** Zanjirning qaysi bosqichida nima xato bergani: UI shu bosqichdan davom ettirishni taklif qiladi. */
 export class TolovTahririXatosi extends Error {
@@ -53,7 +67,7 @@ async function bosqichniBajarish(bosqich: TolovTahririBosqichi, sorov: TolovTahr
       qoralama.currency ?? "UZS"
     );
     if (!tolovlar) throw new Error(TOLOV_TOPILMADI);
-    await sotuvniYangilash(sorov.sotuvId, tolovTahririTanasi(tolovlar, sorov.keepExcess) as Partial<SotuvYaratishMalumoti>);
+    await sotuvniYangilash(sorov.sotuvId, tolovTahririTanasi(tolovlar, sorov.keepExcess, sorov.roundChange) as Partial<SotuvYaratishMalumoti>);
   } else {
     // Tasdiqlash sanasi inventarizatsiyadan oldin bo'lsa 409 ogohlantirish so'raladi (savdoApi ichida).
     await sotuvniTasdiqlash(sorov.sotuvId);

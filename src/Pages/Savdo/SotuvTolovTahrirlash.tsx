@@ -6,10 +6,11 @@ import { sotuvTafsilotiniOlish } from "@/api/savdoApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 import { kunMatni } from "@/lib/hujjatSanasi";
+import { valyutadaMatn } from "@/lib/tolovOrtiqchasi";
 import { tahrirlanadiganTolovmi, tolovniTopish, type TolovIshorasi } from "@/lib/tolovTahriri";
 import type { Sotuv } from "@/types/savdo";
 import TolovTahriri from "./TolovTahriri";
-import { pulniFormatlash, sotuvHolati, sotuvRaqami, tolovTuriMatni, tolovValyutasi } from "./savdoYordamchilari";
+import { sotuvHolati, sotuvRaqami, tolovTuriMatni, tolovValyutasi } from "./savdoYordamchilari";
 
 type Props = {
   sotuvId: string;
@@ -84,8 +85,8 @@ export default function SotuvTolovTahrirlash({ sotuvId, ishora, onYopish, onTuga
         if (!band) onYopish();
       }}
     >
-      <div className={`w-full overflow-hidden rounded-[32px] bg-white shadow-[0_30px_90px_rgba(15,23,42,.24)] ${tolov ? "max-w-2xl" : "max-w-xl"}`}>
-        <div className="flex items-center gap-4 border-b border-slate-100 bg-gradient-to-r from-orange-50 to-white px-7 py-6">
+      <div className={`flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-[32px] bg-white shadow-[0_30px_90px_rgba(15,23,42,.24)] ${tolov ? "max-w-4xl" : "max-w-xl"}`}>
+        <div className="flex shrink-0 items-center gap-4 border-b border-slate-100 bg-linear-to-r from-orange-50 to-white px-7 py-5">
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[#2563EB] shadow-sm ring-1 ring-orange-100">
             <PenLine size={22} />
           </span>
@@ -167,7 +168,7 @@ export default function SotuvTolovTahrirlash({ sotuvId, ishora, onYopish, onTuga
                         </span>
                       </span>
                     </span>
-                    <span className="shrink-0 text-sm font-black tabular-nums text-slate-900">{pulniFormatlash(element.amount, tolovValyutasi(element, sotuv))}</span>
+                    <span className="shrink-0 text-sm font-black tabular-nums text-slate-900">{valyutadaMatn(Number(element.amount ?? 0), tolovValyutasi(element, sotuv), t("tolovModal.somBelgisi"))}</span>
                   </button>
                 </li>
               ))}

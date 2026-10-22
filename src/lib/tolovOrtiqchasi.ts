@@ -91,6 +91,14 @@ export function somMatni(qiymat: number, somBelgisi: string): string {
   return `${Math.round(qiymat).toLocaleString("uz-UZ")} ${somBelgisi}`;
 }
 
+/**
+ * Summa o'z valyutasida, ko'rinish valyutasiga (sarlavhadagi so'm/dollar) o'girilmasdan: "$12.5" yoki "728 000 so'm". Sotuv hujjati o'z valyutasida
+ * (`sale.currency`) yuritiladi, ko'rinish valyutasi esa bugungi kurs bilan o'giradi — tahrirlash oynalarida ikkalasi aralashmasligi kerak.
+ */
+export function valyutadaMatn(miqdor: number, valyuta: string, somBelgisi: string): string {
+  return valyuta === "USD" ? `$${miqdor.toLocaleString("uz-UZ", { maximumFractionDigits: 2 })}` : somMatni(miqdor, somBelgisi);
+}
+
 /** To'lov natijasi: mijozga qaytim (so'mda) va mijoz hisobiga o'tgan pul. Ikkalasi ham yo'q bo'lsa 0. */
 export type TolovNatijasi = { qaytim: number; hisobga: number };
 

@@ -23,6 +23,11 @@ const MATNLAR: Record<string, KodMatni> = {
     uz: "Dollar bilan ishlash uchun valyuta rejimi yoqilgan bo'lishi kerak (Sozlamalar → Valyuta).",
     ru: "Для работы с долларом должен быть включён валютный режим (Настройки → Валюта).",
   },
+  // $ uchun kurs yo'q: backend hujjat (sotuv) sanasidagi kursni, topilmasa undan oldingi oxirgisini oladi.
+  "errors.currency.rate_missing": {
+    uz: "Dollar kursi kiritilmagan: hujjat sanasida ham, undan oldingi kunlarda ham. Sozlamalar → Valyuta bo'limida kursni kiriting.",
+    ru: "Курс доллара не задан: ни на дату документа, ни на более ранние дни. Укажите курс в разделе Настройки → Валюта.",
+  },
   // Ko'p birlikli tovarlar (pochka, qop, korobka).
   "errors.catalog.unit_not_allowed": {
     uz: "Bu birlik shu tovarda yo'q yoki bu hujjatda ishlatib bo'lmaydi (masalan, pochka kirimda yoki korobka sotuvda).",
@@ -56,6 +61,11 @@ const MATNLAR: Record<string, KodMatni> = {
   "errors.sales.payment_before_sale": {
     uz: "To'lov sanasi sotuv sanasidan oldin bo'lishi mumkin emas. To'lov sanasini yoki sotuv sanasini o'zgartiring.",
     ru: "Дата оплаты не может быть раньше даты продажи. Измените дату оплаты или дату продажи.",
+  },
+  // Sotuvni bekor qilish: uning qarzi keyingi sotuvdagi ortiqcha pul bilan yopilgan (avval o'sha sotuv bekor qilinadi).
+  "errors.sales.paid_by_later_sale": {
+    uz: "Bu sotuvning qarzi keyingi sotuvdagi ortiqcha pul bilan yopilgan, shuning uchun uni bekor qilib bo'lmaydi. Avval o'sha keyingi sotuvni bekor qiling.",
+    ru: "Долг по этой продаже погашен излишком оплаты по более поздней продаже, поэтому её нельзя отменить. Сначала отмените ту, более позднюю продажу.",
   },
   // Telegram bot (nakladnoy va xabarnomalar).
   "errors.integrations.invalid_bot_token": {
@@ -231,5 +241,23 @@ export function xatoKodiMatni(kod: unknown, url: string | undefined, til: string
   }
   const dinamik = DINAMIK_MATNLAR[kod];
   if (dinamik) return dinamik(tilKodi, tafsilot);
-  return MATNLAR[kod]?.[tilKodi] ?? null;
+  return MATNLAR[kod]?.[tilKodi] ?? MATNLAR[prefiksiBoshqaKod(kod)]?.[tilKodi] ?? null;
+}
+
+// Backend bu kodlarni turli prefiks bilan yozishi mumkin ("currency_mode_off", "errors.sales.currency_rate_missing"): oxirgi qismi bo'yicha topiladi.
+const OXIRGI_QISM_KODLARI: Record<string, string> = {
+  mode_off: "errors.currency.mode_off",
+  currency_mode_off: "errors.currency.mode_off",
+  rate_missing: "errors.currency.rate_missing",
+  currency_rate_missing: "errors.currency.rate_missing",
+  paid_by_later_sale: "errors.sales.paid_by_later_sale",
+};
+
+function prefiksiBoshqaKod(kod: string): string {
+  return OXIRGI_QISM_KODLARI[kod.slice(kod.lastIndexOf(".") + 1)] ?? kod;
+}
+
+/** Xato kodining asosiy ko'rinishi: prefiksi boshqacha yozilgan valyuta va bekor qilish kodlari ("currency_rate_missing") ham tanlanadi. */
+export function asosiyXatoKodi(kod: string | null | undefined): string | null {
+  return typeof kod === "string" ? prefiksiBoshqaKod(kod) : null;
 }

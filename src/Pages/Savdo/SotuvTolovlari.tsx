@@ -177,8 +177,8 @@ function TolovTafsilotModal({ sotuv, mijoz, qator, onYopish }: { sotuv: Sotuv; m
         if (!band) onYopish();
       }}
     >
-      <div className={`w-full overflow-hidden rounded-[32px] bg-white shadow-[0_30px_90px_rgba(15,23,42,.24)] ${tahrir ? "max-w-2xl" : "max-w-xl"}`}>
-        <div className="flex items-start justify-between gap-4 border-b border-slate-100 bg-gradient-to-r from-orange-50 to-white px-7 py-6">
+      <div className={`flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-[32px] bg-white shadow-[0_30px_90px_rgba(15,23,42,.24)] ${tahrir ? "max-w-4xl" : "max-w-xl"}`}>
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 bg-linear-to-r from-orange-50 to-white px-7 py-5">
           <div className="flex items-center gap-4">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[#2563EB] shadow-sm ring-1 ring-orange-100">
               {tahrir ? <PenLine size={22} /> : <CreditCard size={24} />}
@@ -205,7 +205,7 @@ function TolovTafsilotModal({ sotuv, mijoz, qator, onYopish }: { sotuv: Sotuv; m
         {tahrir ? (
           <TolovTahriri sotuv={sotuv} tolov={tolov} raqam={qator.raqam} onBand={setBand} onOrqaga={() => setTahrir(false)} onYopish={onYopish} />
         ) : (
-        <div className="space-y-5 px-7 py-6">
+        <div className="min-h-0 space-y-5 overflow-y-auto px-7 py-6">
           <div className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-100">
             <div className="flex items-start justify-between gap-4">
               <div>

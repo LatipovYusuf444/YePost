@@ -82,9 +82,9 @@ export function tolovlarniYangilash(
   });
 }
 
-/** PATCH tanasi: to'lovlar ro'yxati va (qarzdan ortiq pul bo'lsa) aniq `keepExcess`. */
-export function tolovTahririTanasi(tolovlar: Array<Record<string, unknown>>, keepExcess?: boolean) {
-  return { payments: tolovlar, ...(keepExcess === undefined ? {} : { keepExcess }) };
+/** PATCH tanasi: to'lovlar ro'yxati, (qarzdan ortiq pul bo'lsa) aniq `keepExcess` va (aniq qaytim so'ralsa) `roundChange: false`. */
+export function tolovTahririTanasi(tolovlar: Array<Record<string, unknown>>, keepExcess?: boolean, roundChange?: false) {
+  return { payments: tolovlar, ...(keepExcess === undefined ? {} : { keepExcess }), ...(roundChange === false ? { roundChange } : {}) };
 }
 
 type TolovFormasi = { paymentType: string; amount: number; currency: string; kun: string; izoh: string };

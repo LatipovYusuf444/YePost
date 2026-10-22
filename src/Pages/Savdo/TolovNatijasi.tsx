@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Banknote, CheckCircle2, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { somMatni } from "@/lib/tolovOrtiqchasi";
@@ -14,13 +15,18 @@ type Props = {
   sotuvValyutasi: Valyuta;
   /** To'lovdan keyingi qolgan qarz, sotuv valyutasida. */
   qolganQarz: number;
+  /** Summalarni formatlash (berilmasa — ko'rinish valyutasida). Tahrirlash oynasi sotuvning o'z valyutasida ko'rsatadi. */
+  pul?: (miqdor: number) => string;
+  /** Qaytim va hisob bloklaridan keyin, tugma oldidan ko'rsatiladigan qo'shimcha xabar (masalan, nakladnoy yuborilgani). */
+  qoshimcha?: ReactNode;
   onYopish: () => void;
 };
 
 // To'lov saqlangach: kassir mijozga qancha qaytim berishi (yoki qancha pul hisobga o'tgani) aniq ko'rinadi. Oyna "Yopish" bilan yopiladi.
-export default function TolovNatijasiKarta({ sarlavha, qaytim, hisobga, sotuvValyutasi, qolganQarz, onYopish }: Props) {
+export default function TolovNatijasiKarta({ sarlavha, qaytim, hisobga, sotuvValyutasi, qolganQarz, pul, qoshimcha, onYopish }: Props) {
   const { t } = useTranslation("savdo_tafsilot");
   const somBelgisi = t("tolovModal.somBelgisi");
+  const pulMatni = (miqdor: number) => (pul ? pul(miqdor) : pulniFormatlash(miqdor, sotuvValyutasi));
 
   return (
     <div className="mt-7 space-y-5" data-testid="tolov-natijasi">
@@ -31,7 +37,7 @@ export default function TolovNatijasiKarta({ sarlavha, qaytim, hisobga, sotuvVal
         <h3 className="mt-4 text-xl font-black text-slate-900">{sarlavha ?? t("tolovModal.natija.sarlavha")}</h3>
         <p className={`mt-1 text-sm font-semibold ${qolganQarz > 0 ? "text-amber-600" : "text-emerald-600"}`}>
           {qolganQarz > 0
-            ? t("tolovModal.natija.qarzQoldi", { summa: pulniFormatlash(qolganQarz, sotuvValyutasi) })
+            ? t("tolovModal.natija.qarzQoldi", { summa: pulMatni(qolganQarz) })
             : t("tolovModal.natija.qarzYopildi")}
         </p>
       </div>
@@ -63,12 +69,14 @@ export default function TolovNatijasiKarta({ sarlavha, qaytim, hisobga, sotuvVal
           <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-700">{t("tolovModal.natija.hisobgaSarlavha")}</p>
             <p className="mt-1 text-2xl font-black tabular-nums text-sky-700" data-testid="tolov-natijasi-hisobga">
-              {pulniFormatlash(hisobga, sotuvValyutasi)}
+              {pulMatni(hisobga)}
             </p>
             <p className="mt-1.5 text-xs font-semibold leading-5 text-slate-500">{t("tolovModal.natija.hisobgaIzoh")}</p>
           </div>
         </section>
       )}
+
+      {qoshimcha}
 
       <div className="flex justify-end pt-1">
         <button

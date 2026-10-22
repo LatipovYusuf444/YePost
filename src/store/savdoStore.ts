@@ -42,7 +42,13 @@ import type {
 } from "@/types/savdo";
 import type { TolovNatijasi } from "@/lib/tolovOrtiqchasi";
 import type { TolovTahririBosqichi } from "@/lib/tolovTahriri";
-import { TolovTahririXatosi, tolovniTahrirlash as tolovniTahrirlashApi, type TolovTahririParametrlari, type TolovTahririSorovi } from "@/api/tolovTahririApi";
+import {
+  TolovTahririXatosi,
+  nakladnoyniMijozgaYuborish,
+  tolovniTahrirlash as tolovniTahrirlashApi,
+  type TolovTahririParametrlari,
+  type TolovTahririSorovi,
+} from "@/api/tolovTahririApi";
 import { sotuvQarzdorlikSummasi } from "@/Pages/Savdo/savdoYordamchilari";
 
 function xatolikKodi(error: unknown): string | undefined {
@@ -50,6 +56,9 @@ function xatolikKodi(error: unknown): string | undefined {
   const response = (error as { response?: { data?: { code?: string } } }).response;
   return response?.data?.code;
 }
+
+/** Mijozga tuzatilgan nakladnoyni yuborish natijasi (so'ralgan bo'lsa): xato bo'lsa sabab matni bilan. */
+export type NakladnoyNatijasi = { ok: true } | { ok: false; xato: string };
 
 function tasdiqlashXatoligiMatni(error: unknown) {
   if (xatolikKodi(error) === "errors.inventory.out_of_stock") {
@@ -265,7 +274,10 @@ type SavdoState = {
   tolovniTahrirlash: (
     sorov: TolovTahririSorovi,
     parametrlar?: TolovTahririParametrlari
-  ) => Promise<{ ok: true; sotuv: Sotuv } | { ok: false; bosqich: TolovTahririBosqichi | null; xato: string }>;
+  ) => Promise<
+    | { ok: true; sotuv: Sotuv; nakladnoy: NakladnoyNatijasi | null }
+    | { ok: false; bosqich: TolovTahririBosqichi | null; xato: string; kod: string | null }
+  >;
   sotuvniBekorQilish: (sotuvId: string) => Promise<boolean>;
   sotuvniOchirish: (sotuvId: string) => Promise<boolean>;
   sotuvniTiklash: (sotuvId: string) => Promise<boolean>;
@@ -514,12 +526,23 @@ export const useSavdoStore = create<SavdoState>((set, get) => {
 
     try {
       const yangilangan = await tolovniTahrirlashApi(sorov, parametrlar);
+      // Zanjir tugadi: xabar yuborilmasa ham to'lov o'zgargan, shuning uchun nakladnoy xatosi natijaga xato bo'lib o'tmaydi. Yangilanish hodisasi
+      // xabardan keyin yuboriladi: sotuv kartasidagi Telegram bloki yangi (navbatdagi) yozuvni o'qiydi.
+      let nakladnoy: NakladnoyNatijasi | null = null;
+      if (sorov.nakladnoyYuborish) {
+        try {
+          await nakladnoyniMijozgaYuborish(sorov.sotuvId);
+          nakladnoy = { ok: true };
+        } catch (xato) {
+          nakladnoy = { ok: false, xato: getApiErrorMessage(xato) };
+        }
+      }
       sotuvniMoslash(yangilangan);
       // Bekor qilish va qayta tasdiqlash ombor qoldig'ini o'zgartirgan: qoldiq yangilanadi.
       const warehouseId = yangilangan.warehouseId ?? get().sotuvlar.find((sotuv) => sotuv.id === sorov.sotuvId)?.warehouseId;
       if (warehouseId) await get().qoldiqlarniYuklash(warehouseId);
       set({ amalBajarilmoqda: false });
-      return { ok: true as const, sotuv: yangilangan };
+      return { ok: true as const, sotuv: yangilangan, nakladnoy };
     } catch (error) {
       // Zanjir o'rtasida to'xtagan bo'lishi mumkin (sotuv bekor qilingan yoki qoralama holatida): ro'yxat va ochiq sotuv backend holatiga moslanadi.
       try {
@@ -531,7 +554,7 @@ export const useSavdoStore = create<SavdoState>((set, get) => {
       const sabab = error instanceof TolovTahririXatosi ? error.sabab : error;
       const xato = bosqich === "tasdiqlash" ? tasdiqlashXatoligiMatni(sabab) : getApiErrorMessage(sabab);
       set({ amalBajarilmoqda: false, xatolik: xato });
-      return { ok: false as const, bosqich, xato };
+      return { ok: false as const, bosqich, xato, kod: xatolikKodi(sabab) ?? null };
     }
   },
 

@@ -100,6 +100,16 @@ export default function TelegramXabarnomaKarti({ sotuv }: { sotuv: Sotuv }) {
     void yuklash();
   }, [yuklash, holat]);
 
+  // Sotuv boshqa joyda o'zgargan (masalan, to'lov tahrirlanib qayta tasdiqlangan va nakladnoy yuborilgan): holati o'zgarmasa ham yozuvlar qayta o'qiladi.
+  useEffect(() => {
+    const yangilash = (voqea: Event) => {
+      const sotuvId = (voqea as CustomEvent<{ sotuvId?: string } | undefined>).detail?.sotuvId;
+      if (!sotuvId || sotuvId === sotuv.id) void yuklash(true);
+    };
+    window.addEventListener("savdo:yangilandi", yangilash);
+    return () => window.removeEventListener("savdo:yangilandi", yangilash);
+  }, [yuklash, sotuv.id]);
+
   // Mijozning botdagi javobi (GET /sales/:id/customer-responses): fon rejimida o'qiladi, xato bo'lsa karta o'zi buni ko'rsatadi.
   const [javoblar, setJavoblar] = useState<MijozJavobi[]>([]);
   const [javoblarYuklandi, setJavoblarYuklandi] = useState(false);

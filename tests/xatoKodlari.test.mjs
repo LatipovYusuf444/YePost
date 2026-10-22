@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { OGOHLANTIRISH_KODI, xatoKodi, xatoKodiMatni, xatoMaydoni } from '../src/api/xatoKodlari.ts';
+import { OGOHLANTIRISH_KODI, asosiyXatoKodi, xatoKodi, xatoKodiMatni, xatoMaydoni } from '../src/api/xatoKodlari.ts';
 
 test('hisobda pul yetmasa: tushunarli matn (uz va ru)', () => {
   assert.equal(xatoKodiMatni('errors.wallet.insufficient_balance', '/sales/s1/payments', 'uz'), 'Mijoz hisobida pul yetarli emas.');
@@ -12,6 +12,35 @@ test('sotuvni bekor qilishda shu kod boshqa matn oladi (hisobga yozilgan pul ish
   assert.match(matn, /bekor qilib bo'lmaydi/);
   assert.match(matn, /ishlatib bo'lingan/);
   assert.match(xatoKodiMatni('errors.wallet.insufficient_balance', '/sales/abc-123/cancel', 'ru'), /нельзя отменить/);
+});
+
+test('sotuv qarzi keyingi sotuvdagi ortiqcha pul bilan yopilgan: bekor qilish paid_by_later_sale beradi', () => {
+  const matn = xatoKodiMatni('errors.sales.paid_by_later_sale', '/sales/s1/cancel', 'uz');
+  assert.match(matn, /keyingi sotuvdagi ortiqcha pul/);
+  assert.match(matn, /Avval o'sha keyingi sotuvni bekor qiling/);
+  assert.match(xatoKodiMatni('errors.sales.paid_by_later_sale', '/sales/s1/cancel', 'ru'), /более поздней продаже/);
+});
+
+test('valyuta xatolari: rejim o‘chiq va kurs kiritilmagan, kod prefiksi boshqacha bo‘lsa ham topiladi', () => {
+  assert.match(xatoKodiMatni('errors.currency.rate_missing', '/sales/s1', 'uz'), /hujjat sanasida ham, undan oldingi kunlarda ham/);
+  assert.match(xatoKodiMatni('errors.currency.rate_missing', '/sales/s1', 'ru'), /Курс доллара не задан/);
+  for (const kod of ['currency_mode_off', 'errors.sales.currency_mode_off', 'errors.currency.mode_off']) {
+    assert.match(xatoKodiMatni(kod, '/sales/s1', 'uz'), /valyuta rejimi yoqilgan/, kod);
+  }
+  for (const kod of ['currency_rate_missing', 'errors.sales.currency_rate_missing', 'errors.finance.rate_missing']) {
+    assert.match(xatoKodiMatni(kod, '/sales/s1', 'uz'), /Dollar kursi kiritilmagan/, kod);
+  }
+  assert.match(xatoKodiMatni('errors.sales.paid_by_later_sale', '/sales/s1/cancel', 'uz'), /keyingi sotuvni bekor qiling/);
+  assert.match(xatoKodiMatni('paid_by_later_sale', '/sales/s1/cancel', 'uz'), /keyingi sotuvni bekor qiling/);
+  assert.equal(xatoKodiMatni('errors.common.bad_request', '/sales', 'uz'), null);
+});
+
+test('asosiyXatoKodi: prefiksi boshqacha valyuta kodlari bir xil ko‘rinishga keladi, noma‘lum kod o‘zgarmaydi', () => {
+  assert.equal(asosiyXatoKodi('currency_rate_missing'), 'errors.currency.rate_missing');
+  assert.equal(asosiyXatoKodi('errors.sales.currency_mode_off'), 'errors.currency.mode_off');
+  assert.equal(asosiyXatoKodi('errors.wallet.insufficient_balance'), 'errors.wallet.insufficient_balance');
+  assert.equal(asosiyXatoKodi(undefined), null);
+  assert.equal(asosiyXatoKodi(null), null);
 });
 
 test('qarzdan ko‘p to‘lov (karta, bank, hisob) va valyuta rejimi o‘chiq', () => {

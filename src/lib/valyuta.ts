@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { kursniSongaAylantirish, valyutaApi } from "@/api/valyutaApi";
@@ -78,6 +79,17 @@ export const useValyutaStore = create<ValyutaHolati>()(
 /** Komponentlar uchun: valyuta yoki kurs o'zgarganda qayta chizilishi kerak bo'lsa. */
 export function useValyuta() {
   return useValyutaStore();
+}
+
+/**
+ * Kurs va rejim shu seansda hali o'qilmagan bo'lsa o'qiydi. Ularni sarlavhadagi valyuta tanlagich o'qiydi, u esa tor ekranda (ixcham sarlavha)
+ * menyu ochilmaguncha chizilmaydi: shunda saqlangan (eskirgan yoki bo'sh) qiymat qoladi va dollar tanlovi ko'rinmaydi.
+ */
+export function useKursniTayyorlash() {
+  useEffect(() => {
+    const { yuklandi, kursniYuklash } = useValyutaStore.getState();
+    if (!yuklandi) void kursniYuklash();
+  }, []);
 }
 
 /** Hozir haqiqatan ko'rsatiladigan valyuta: rejim o'chiq yoki kurs yo'q bo'lsa doim so'm. */

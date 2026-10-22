@@ -9,6 +9,7 @@ import {
   somMatni,
   tolovlarQaytimi,
   tolovNatijasi,
+  valyutadaMatn,
 } from '../src/lib/tolovOrtiqchasi.ts';
 
 const naqd = (qiymat) => ({ paymentType: 'CASH', qiymat });
@@ -131,4 +132,15 @@ test('somMatni: butun so‘mgacha yaxlitlanib, "so‘m" bilan', () => {
   assert.equal(tozala(somMatni(339000, "so'm")), "339000so'm");
   assert.equal(tozala(somMatni(338985.9, "so'm")), "338986so'm");
   assert.equal(tozala(somMatni(0, 'сум')), '0сум');
+});
+
+test('valyutadaMatn: summa o‘z valyutasida (ko‘rinish valyutasiga o‘girilmasdan): UZS — so‘m, USD — $', () => {
+  const tozala = (matn) => matn.replace(/[\s  ,]/g, '');
+  // Kasr belgisi tilga bog‘liq (uz-UZ — vergul): bu yerda faqat bo‘shliqlar olib tashlanadi.
+  const bosh = (matn) => matn.replace(/\s/g, '');
+  assert.equal(tozala(valyutadaMatn(728000, 'UZS', "so'm")), "728000so'm");
+  assert.equal(tozala(valyutadaMatn(228000.4, 'UZS', "so'm")), "228000so'm");
+  assert.match(bosh(valyutadaMatn(60.169, 'USD', "so'm")), /^\$60[.,]17$/);
+  assert.equal(tozala(valyutadaMatn(100, 'USD', "so'm")), '$100');
+  assert.equal(tozala(valyutadaMatn(1000, 'bu_noma‘lum', 'сум')), '1000сум');
 });
