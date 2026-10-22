@@ -2469,10 +2469,11 @@ function tarixMaydonNomi(maydon: string, t: TFunction) {
     : maydon.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/^./, (harf) => harf.toUpperCase());
 }
 
-function tarixQiymatMatni(maydon: string, value: unknown, t: TFunction): string {
+// `valyuta` — sotuv valyutasi: tarixdagi pul maydonlari (jami, to'langan, qarz) sotuvning o'z valyutasida ko'rsatiladi.
+function tarixQiymatMatni(maydon: string, value: unknown, t: TFunction, valyuta?: Valyuta): string {
   if (value === null || value === undefined || value === "") return "—";
   if (maydon === "status") return tarixHolatMatni(value);
-  if (TARIX_PUL_MAYDONLARI.has(maydon)) return pulniFormatlash(value as number | string);
+  if (TARIX_PUL_MAYDONLARI.has(maydon)) return pulniFormatlash(value as number | string, valyuta);
   if (Array.isArray(value)) {
     if (maydon === "payments") {
       return value
@@ -2498,17 +2499,17 @@ function tarixHolatOhangi(value: unknown): TarixChipOhangi {
   return "sariq";
 }
 
-function tarixPulChipi(maydon: string, qiymat: unknown, t: TFunction): TarixChip {
+function tarixPulChipi(maydon: string, qiymat: unknown, t: TFunction, valyuta?: Valyuta): TarixChip {
   const summa = Number(qiymat);
   return {
     label: tarixMaydonNomi(maydon, t),
-    value: tarixQiymatMatni(maydon, qiymat, t),
+    value: tarixQiymatMatni(maydon, qiymat, t, valyuta),
     ohang: maydon === "paidAmount" ? "kok" : maydon === "debtAmount" ? (summa > 0 ? "qizil" : "yashil") : "kulrang",
   };
 }
 
 // Audit yozuvidagi o'zgarishlar ekranda qisqa "belgi"lar (chip) sifatida ko'rsatiladi.
-function tarixChiplari(item: SaleAuditLog, t: TFunction): TarixChip[] {
+function tarixChiplari(item: SaleAuditLog, t: TFunction, valyuta?: Valyuta): TarixChip[] {
   const diff = (item.diff ?? {}) as Record<string, unknown>;
   const before = (diff.before ?? null) as Record<string, unknown> | null;
   const after = (diff.after ?? null) as Record<string, unknown> | null;
@@ -2526,20 +2527,20 @@ function tarixChiplari(item: SaleAuditLog, t: TFunction): TarixChip[] {
     }
     for (const maydon of ["totalAmount", "paidAmount", "debtAmount"]) {
       const qiymat = after?.[maydon];
-      if (qiymat !== undefined && qiymat !== null) chiplar.push(tarixPulChipi(maydon, qiymat, t));
+      if (qiymat !== undefined && qiymat !== null) chiplar.push(tarixPulChipi(maydon, qiymat, t, valyuta));
     }
   } else {
     for (const [maydon, qiymat] of Object.entries(diff)) {
       if (maydon === "before" || maydon === "after") continue;
       const record = qiymat as { from?: unknown; to?: unknown } | null;
       const yangiQiymat = record && "to" in record ? record.to : qiymat;
-      const yangi = tarixQiymatMatni(maydon, yangiQiymat, t);
+      const yangi = tarixQiymatMatni(maydon, yangiQiymat, t, valyuta);
       if (!yangi) continue;
       if (maydon === "payments") {
         chiplar.push({ value: t("tarix.tavsifMatni.tolovQoshildi", { qiymat: yangi }), ohang: "yashil" });
         continue;
       }
-      const eski = record && "from" in record ? tarixQiymatMatni(maydon, record.from, t) : null;
+      const eski = record && "from" in record ? tarixQiymatMatni(maydon, record.from, t, valyuta) : null;
       chiplar.push({
         label: tarixMaydonNomi(maydon, t),
         value: eski && eski !== "—" && eski !== yangi ? `${eski} → ${yangi}` : yangi,
@@ -2611,7 +2612,7 @@ function TarixTab({ sotuv }: { sotuv: Sotuv }) {
   const qatorlar: TarixQatori[] = backendTarix
     .map((item): TarixQatori => {
       const { tip, accent, turi } = tarixTipiniAniqlash(item, t);
-      const chiplar = tarixChiplari(item, t);
+      const chiplar = tarixChiplari(item, t, sotuvValyutasi(sotuv));
       return {
         id: item.id,
         sana: item.createdAt,

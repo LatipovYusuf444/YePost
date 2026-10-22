@@ -443,15 +443,33 @@
     "qaytim": {
       "sarlavha": "Qaytim (so'mda)",
       "taxminiy": "Taxminiy: aniq summa saqlangach ko'rsatiladi.",
+      "tahrir": "Qaytimni o'zgartirsangiz, kurs undan hisoblanadi: (qolgan summa + qaytim) ÷ dollar.",
       "yaxlitlash": "Minglikkacha yaxlitlash",
       "yaxlitlashIzoh": "Dollar qatnashganda qaytim eng yaqin minggacha yaxlitlanadi (339 400 → 339 000)."
     },
     "hisobgaYoziladi": "Mijoz hisobiga yoziladi: {{summa}}",
-    "kursQatori": "Sotuv sanasidagi ({{sana}}) kurs: 1 $ = {{kurs}} so'm",
+    "natija": {
+      "sarlavha": "Kassa va qarz",
+      "kassa": "Kassaga",
+      "karta": "Karta orqali",
+      "bank": "Bank orqali",
+      "hisob": "Mijoz hisobidan",
+      "qaytim": "Qaytim",
+      "hisobga": "Mijoz hisobiga",
+      "qarzYopildi": "Qarz yopildi"
+    },
+    "kursQatori": "Kunlik kurs ({{sana}}): 1 $ = {{kurs}} so'm",
     "kursKiritilganKun": "({{sana}} da kiritilgan)",
     "dollarRejimOchiq": "Bu sotuv dollarda (sotuvi yoki qatorlari dollarda), uni qayta tasdiqlash uchun valyuta rejimi yoqilgan bo'lishi kerak (Sozlamalar → Valyuta).",
-    "dollarKursYoq": "Sotuv sanasi ({{sana}}) uchun dollar kursi kiritilmagan (undan oldingi kunlarda ham yo'q). Sozlamalar → Valyuta bo'limida kursni kiriting.",
-    "kursOqilmadi": "Sotuv sanasidagi dollar kursini o'qib bo'lmadi. Oynani yopib, qayta oching.",
+    "dollarKursYoq": "Sotuv sanasi ({{sana}}) uchun kunlik dollar kursi kiritilmagan: to'lov uchun kursni o'zingiz kiriting.",
+    "kurs": {
+      "nomi": "Kurs (1 $ = necha so'm)",
+      "placeholder": "Masalan: 10 570",
+      "kunlikka": "Kunlik kurs",
+      "izoh": "Kassir kursi faqat shu to'lov uchun; sozlamadagi kunlik kurs o'zgarmaydi.",
+      "kiriting": "Dollar to'lov uchun kursni kiriting."
+    },
+    "kursOqilmadi": "Sotuv sanasidagi kunlik kursni o'qib bo'lmadi: dollar to'lov uchun kursni o'zingiz kiriting.",
     "nakladnoy": {
       "yuborish": "Tuzatilgan nakladnoyni mijozga yuborish",
       "izoh": "Telegram orqali yuboriladi. Qayta tasdiqlashda yangi nakladnoy o'zi ketmaydi (xabar bu sotuvga avval yuborilgan).",

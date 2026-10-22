@@ -7,19 +7,16 @@ import { mijozlarApi } from "@/api/partnersApi";
 import { telegramApi } from "@/api/telegramApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { vaqtMatni } from "@/lib/hujjatSanasi";
-import { mijozTelegramHolati, mijozTelegramTuri, type MijozTelegramHolati, type MijozTelegramTuri, type TelegramHavola } from "@/lib/telegramXabarnoma";
+import { mijozTelegramHolati, mijozTelegramTuri, type MijozTelegramHolati, type TelegramHavola } from "@/lib/telegramXabarnoma";
+import { TELEGRAM_HOLAT_RANGI } from "./telegramHolati";
 import type { Xaridor } from "./types";
 
-const HOLAT_RANGI: Record<MijozTelegramTuri, string> = {
-  ulangan: "bg-emerald-50 text-emerald-700 ring-emerald-100",
-  ulanmagan: "bg-slate-100 text-slate-500 ring-slate-200",
-  ochirgan: "bg-amber-50 text-amber-700 ring-amber-100",
-  bloklagan: "bg-red-50 text-red-600 ring-red-100",
-};
+const HOLAT_RANGI = TELEGRAM_HOLAT_RANGI;
 
 // Mijoz kartasi → Telegram bot: botga ulash havolasi (bir martalik, 7 kun), QR, holat va botdan uzish.
 // POST/DELETE /partners/customers/:id/telegram-link; holat mijoz obyektidagi telegramChatId/LinkedAt/Notify/Blocked maydonlaridan.
-export default function MijozTelegramKarti({ xaridor }: { xaridor: Xaridor }) {
+// `havolaBilanOchish` — ochilishi bilan (mijoz hali ulanmagan bo'lsa) ulash havolasi darhol yaratiladi (ro'yxatdagi "Havola" tugmasi).
+export default function MijozTelegramKarti({ xaridor, havolaBilanOchish = false }: { xaridor: Xaridor; havolaBilanOchish?: boolean }) {
   const { t } = useTranslation("xaridor_uchot");
   const [bot, setBot] = useState<MijozTelegramHolati>(() => xaridor.telegramBot ?? mijozTelegramHolati({}));
   const [havola, setHavola] = useState<TelegramHavola | null>(null);
@@ -46,6 +43,12 @@ export default function MijozTelegramKarti({ xaridor }: { xaridor: Xaridor }) {
   }, [xaridor.id]);
 
   const tur = mijozTelegramTuri(bot);
+
+  // Holat o'zgarganda (ulandi, uzildi, yangilandi) mijozlar ro'yxati xabardor qilinadi: ro'yxatdagi Telegram ustuni eskirib qolmasin.
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("mijoz:telegram", { detail: { id: xaridor.id, holat: bot } }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bot]);
 
   // Mijozni serverdan qayta o'qiydi (fon rejimida: xato toasti chiqmaydi). `jim` — avtomatik tekshiruv, tugma holatini o'zgartirmaydi.
   const yangilash = useCallback(
@@ -83,6 +86,15 @@ export default function MijozTelegramKarti({ xaridor }: { xaridor: Xaridor }) {
   useEffect(() => {
     if (ulangan) setHavola(null);
   }, [ulangan]);
+
+  const avtomatikBajarildi = useRef(false);
+  useEffect(() => {
+    if (!havolaBilanOchish || avtomatikBajarildi.current) return;
+    avtomatikBajarildi.current = true;
+    if (!bot.ulangan) void havolaYaratish();
+    // Faqat ochilganda bir marta.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function havolaYaratish() {
     if (jarayon) return;

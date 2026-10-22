@@ -322,3 +322,137 @@ test('tolovniTopish: id, keyin tur + summa, keyin kun bo‘yicha aniqlaydi', () 
   assert.equal(lib.tolovniTopish(ikki, { paymentType: 'CASH', summa: 100, kun: '2026-10-25' }), -1);
   assert.equal(lib.tolovniTopish(topish, {}), -1);
 });
+
+// ───────── kassir kursi (backend 2026-10-22: `payments[].rate`) ─────────
+
+test('tolovlarniYangilash: kassir kursi — tahrirlangan dollar qatori rate bilan, boshqa dollar qatori o‘z rate i bilan (kunlik kursga qaytmaydi)', () => {
+  const natija = lib.tolovlarniYangilash(
+    [
+      { id: 'a', paymentType: 'CASH', amount: '100', currency: 'USD', rate: '10570' },
+      { id: 'b', paymentType: 'CASH', amount: '200000', currency: 'UZS', rate: null },
+      { id: 'c', paymentType: 'CARD', amount: '50', currency: 'USD', rate: '12100' },
+    ],
+    { id: 'b', indeks: 1 },
+    { paymentType: 'CASH', amount: 80, currency: 'USD', rate: 10000 },
+    'UZS'
+  );
+  assert.deepEqual(natija, [
+    { paymentType: 'CASH', amount: 100, currency: 'USD', rate: 10570, id: 'a' },
+    { id: 'b', paymentType: 'CASH', amount: 80, currency: 'USD', rate: 10000 },
+    { paymentType: 'CARD', amount: 50, currency: 'USD', rate: 12100, id: 'c' },
+  ]);
+});
+
+test('tolovlarniYangilash: rate faqat boshqa valyutadagi qatorga (sotuv valyutasidagi to‘lovga yuborilmaydi), rate bo‘lmasa — kunlik kurs (maydon yo‘q)', () => {
+  const natija = lib.tolovlarniYangilash(
+    [
+      { id: 'a', paymentType: 'CASH', amount: '100000', currency: 'UZS', rate: '1' },
+      { id: 'b', paymentType: 'CASH', amount: '10', currency: 'USD' },
+    ],
+    { id: 'a', indeks: 0 },
+    { paymentType: 'CASH', amount: 90000, currency: 'UZS', rate: 10570 },
+    'UZS'
+  );
+  assert.deepEqual(natija, [
+    { id: 'a', paymentType: 'CASH', amount: 90000 },
+    { paymentType: 'CASH', amount: 10, currency: 'USD', id: 'b' },
+  ]);
+});
+
+test('tolovlarniYangilash: dollar sotuvga so‘mdagi to‘lov ham o‘z kursi (1 $ = necha so‘m) bilan', () => {
+  const natija = lib.tolovlarniYangilash(
+    [{ id: 'a', paymentType: 'CASH', amount: '1000000', currency: 'UZS', rate: '12100' }],
+    { id: 'a', indeks: 0 },
+    { paymentType: 'CASH', amount: 1000000, currency: 'UZS', rate: 11000 },
+    'USD'
+  );
+  assert.deepEqual(natija, [{ id: 'a', paymentType: 'CASH', amount: 1000000, currency: 'UZS', rate: 11000 }]);
+});
+
+test('tolovYangilanishi: kassir kursi (kurs > 0) rate bo‘lib qo‘shiladi, 0 yoki berilmasa — qo‘shilmaydi (kunlik kurs)', () => {
+  const asl = { kun: '2026-10-20', izoh: '' };
+  const forma = { paymentType: 'CASH', amount: 100, currency: 'USD', kun: '2026-10-20', izoh: '' };
+  assert.deepEqual(lib.tolovYangilanishi(asl, { ...forma, kurs: 10570 }), { paymentType: 'CASH', amount: 100, currency: 'USD', rate: 10570 });
+  assert.deepEqual(lib.tolovYangilanishi(asl, { ...forma, kurs: 0 }), { paymentType: 'CASH', amount: 100, currency: 'USD' });
+  assert.deepEqual(lib.tolovYangilanishi(asl, forma), { paymentType: 'CASH', amount: 100, currency: 'USD' });
+});
+
+test('tolovOzgarganmi: faqat kassir kursi o‘zgarsa ham "o‘zgardi" (saqlash yoqiladi)', () => {
+  const asl = { paymentType: 'CASH', amount: 100, currency: 'USD', kun: '2026-10-20', izoh: '', kurs: 10570 };
+  assert.equal(lib.tolovOzgarganmi(asl, { ...asl }), false);
+  assert.equal(lib.tolovOzgarganmi(asl, { ...asl, kurs: 10000 }), true);
+  assert.equal(lib.tolovOzgarganmi(asl, { ...asl, kurs: 0 }), true);
+  assert.equal(lib.tolovOzgarganmi({ ...asl, kurs: undefined }, { ...asl, kurs: 0 }), false);
+});
+
+test('zanjir: PATCH da kassir kursi saqlanadi — tiklangan qoralamadagi boshqa dollar qatori o‘z rate i bilan, tahrirlangan qator yangi rate bilan', async () => {
+  reset();
+  let holat = sotuv();
+  handlers.set('POST /sales/s1/cancel', () => (holat = sotuv({ status: 'CANCELLED' })));
+  handlers.set('POST /sales/s1/restore', () =>
+    (holat = sotuv({
+      status: 'DRAFT',
+      payments: [
+        { id: 'q1', paymentType: 'CASH', amount: '413600' },
+        { id: 'q2', paymentType: 'CASH', amount: '10', currency: 'USD', rate: '10000' },
+      ],
+    }))
+  );
+  handlers.set('PATCH /sales/s1', (tana) => (holat = sotuv({ status: 'DRAFT', payments: tana.payments })));
+  handlers.set('POST /sales/s1/confirm', () => (holat = sotuv()));
+  handlers.set('/sales/s1', () => holat);
+  await tolovniTahrirlash(sorov({ tolovId: 'q1', yangi: { paymentType: 'CASH', amount: 50, currency: 'USD', rate: 10570 } }));
+  const patch = calls.find((qo) => qo.method === 'patch');
+  assert.deepEqual(patch.data.payments, [
+    { id: 'q1', paymentType: 'CASH', amount: 50, currency: 'USD', rate: 10570 },
+    { paymentType: 'CASH', amount: 10, currency: 'USD', rate: 10000, id: 'q2' },
+  ]);
+});
+
+// ───────── natija: kassa xulosasi (real pul, o‘z valyutasida) ─────────
+
+test('tolovlarKassaXulosasi: $100 naqd → kassaga +$100, qaytim 329 000 so‘m (728 000 emas — u qarzning yopilgan qismi)', () => {
+  const x = lib.tolovlarKassaXulosasi([{ paymentType: 'CASH', amount: '100', currency: 'USD', changeAmount: '329000' }], 'UZS');
+  assert.deepEqual(x, { kirim: [{ tur: 'CASH', valyuta: 'USD', summa: 100 }], qaytim: 329000, hisobga: 0 });
+});
+
+test('tolovlarKassaXulosasi: so‘m sotuvda so‘m naqd — valyuta ko‘rsatilmasa sotuv valyutasi; bir tur va valyuta qo‘shiladi', () => {
+  const x = lib.tolovlarKassaXulosasi(
+    [
+      { paymentType: 'CASH', amount: '500000' },
+      { paymentType: 'CASH', amount: 228000, currency: 'UZS' },
+    ],
+    'UZS'
+  );
+  assert.deepEqual(x, { kirim: [{ tur: 'CASH', valyuta: 'UZS', summa: 728000 }], qaytim: 0, hisobga: 0 });
+});
+
+test('tolovlarKassaXulosasi: aralash to‘lov — dollar naqd, so‘m naqd, karta; tur tartibida, dollar so‘mdan oldin', () => {
+  const x = lib.tolovlarKassaXulosasi(
+    [
+      { paymentType: 'CARD', amount: '100000' },
+      { paymentType: 'CASH', amount: '228000' },
+      { paymentType: 'CASH', amount: '50', currency: 'USD' },
+      { paymentType: 'BANK', amount: '10', currency: 'USD' },
+    ],
+    'UZS'
+  );
+  assert.deepEqual(
+    x.kirim.map((q) => `${q.tur}:${q.valyuta}:${q.summa}`),
+    ['CASH:USD:50', 'CASH:UZS:228000', 'CARD:UZS:100000', 'BANK:USD:10']
+  );
+});
+
+test('tolovlarKassaXulosasi: qarz qatori (DEBT) pul emas; hisobga o‘tgan pul va qaytim yig‘iladi; bo‘sh ro‘yxat — bo‘sh xulosa', () => {
+  const x = lib.tolovlarKassaXulosasi(
+    [
+      { paymentType: 'DEBT', amount: '300000' },
+      { paymentType: 'CASH', amount: '100000', keptAmount: '25000' },
+      { paymentType: 'CASH', amount: '1000', changeAmount: '2000' },
+    ],
+    'UZS'
+  );
+  assert.deepEqual(x, { kirim: [{ tur: 'CASH', valyuta: 'UZS', summa: 101000 }], qaytim: 2000, hisobga: 25000 });
+  assert.deepEqual(lib.tolovlarKassaXulosasi(null, 'UZS'), { kirim: [], qaytim: 0, hisobga: 0 });
+  assert.deepEqual(lib.tolovlarKassaXulosasi([{ paymentType: 'CASH', amount: '0' }, { paymentType: 'CASH', amount: 'abc' }], 'UZS').kirim, []);
+});

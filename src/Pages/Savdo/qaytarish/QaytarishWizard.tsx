@@ -1746,7 +1746,7 @@ function Yakun({ natija, onKorish, onYangi, onYopish }: { natija: Natija; onKori
         {qolgan === null ? (
           <span className="text-sm font-bold text-slate-400">{yoq}</span>
         ) : (
-          <span className={`text-2xl font-extrabold tabular-nums ${qolgan > 0 ? "text-rose-600" : "text-emerald-600"}`}>{pulniFormatlash(qolgan)}</span>
+          <span className={`text-2xl font-extrabold tabular-nums ${qolgan > 0 ? "text-rose-600" : "text-emerald-600"}`}>{pulniFormatlash(qolgan, hisob?.valyuta)}</span>
         )}
       </div>
       {!hisob && <p className="mx-auto mt-3 max-w-md text-xs font-medium text-amber-700">{t("wizard.done.detailsFailed")}</p>}

@@ -153,3 +153,37 @@ test('botTokenKerakmi: faqat saqlangan token (botTokenLast4) bor-yo‘qligi teks
   // bot o'chiq: hech narsa majburiy emas
   assert.equal(botTokenKerakmi({ yoniq: false, yangiToken: '', oxirgi4: null }), false);
 });
+
+test('mijozlar ro‘yxati: Telegram filtri va sonlari (backend maydonlari: chatId, notify, blocked)', async () => {
+  const lib = await import('../src/lib/telegramXabarnoma.ts');
+  const ulangan = lib.mijozTelegramHolati({ telegramChatId: '123', telegramLinkedAt: '2026-10-20T10:00:00Z', telegramNotify: true, telegramBlocked: false });
+  const ulanmagan = lib.mijozTelegramHolati({ telegramChatId: null });
+  const ochirgan = lib.mijozTelegramHolati({ telegramChatId: '5', telegramNotify: false });
+  const bloklagan = lib.mijozTelegramHolati({ telegramChatId: '7', telegramNotify: true, telegramBlocked: true });
+  assert.deepEqual(lib.MIJOZ_TELEGRAM_FILTRLARI, ['hammasi', 'ulangan', 'ulanmagan', 'ochirgan', 'bloklagan']);
+  const barchasi = [ulangan, ulanmagan, ochirgan, bloklagan, undefined];
+  assert.equal(barchasi.filter((holat) => lib.mijozTelegramFiltridanOtadimi(holat, 'hammasi')).length, 5);
+  assert.equal(barchasi.filter((holat) => lib.mijozTelegramFiltridanOtadimi(holat, 'ulangan')).length, 1);
+  // Holati noma'lum (ro'yxatda telegram maydonlari kelmagan) mijoz — ulanmagan.
+  assert.equal(barchasi.filter((holat) => lib.mijozTelegramFiltridanOtadimi(holat, 'ulanmagan')).length, 2);
+  assert.equal(barchasi.filter((holat) => lib.mijozTelegramFiltridanOtadimi(holat, 'ochirgan')).length, 1);
+  assert.equal(barchasi.filter((holat) => lib.mijozTelegramFiltridanOtadimi(holat, 'bloklagan')).length, 1);
+  assert.deepEqual(lib.mijozTelegramSonlari(barchasi), { hammasi: 5, ulangan: 1, ulanmagan: 2, ochirgan: 1, bloklagan: 1 });
+  assert.deepEqual(lib.mijozTelegramSonlari([]), { hammasi: 0, ulangan: 0, ulanmagan: 0, ochirgan: 0, bloklagan: 0 });
+});
+
+test('botSozlanganmi va telegramUstuniKorinadimi: bot sozlanmagan do‘konda ustun ko‘rinmaydi', async () => {
+  const lib = await import('../src/lib/telegramXabarnoma.ts');
+  assert.equal(lib.botSozlanganmi({ botTokenLast4: '1234', botUsername: 'asia_bot' }), true);
+  assert.equal(lib.botSozlanganmi({ botTokenLast4: '1234' }), true);
+  assert.equal(lib.botSozlanganmi({ botUsername: 'asia_bot' }), true);
+  assert.equal(lib.botSozlanganmi({ botTokenLast4: '', botUsername: null }), false);
+  assert.equal(lib.botSozlanganmi({}), false);
+  assert.equal(lib.botSozlanganmi(null), false);
+  assert.equal(lib.telegramUstuniKorinadimi(true, false), true);
+  assert.equal(lib.telegramUstuniKorinadimi(false, true), false);
+  assert.equal(lib.telegramUstuniKorinadimi(false, false), false);
+  // Sozlama o‘qilmadi (ruxsat yo‘q): faqat ro‘yxatda ulangan mijoz bor bo‘lsa.
+  assert.equal(lib.telegramUstuniKorinadimi(null, true), true);
+  assert.equal(lib.telegramUstuniKorinadimi(null, false), false);
+});

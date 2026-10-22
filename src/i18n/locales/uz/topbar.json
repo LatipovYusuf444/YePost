@@ -78,6 +78,8 @@
     "USD": "AQSh dollari",
     "som": "so'm",
     "rateLabel": "Dollar kursi",
+    "reportLabel": "Hisobot valyutasi",
+    "documentsNote": "Sotuv, to'lov va qaytarish hujjatlari o'z valyutasida ko'rsatiladi. Jami summalar va hisobotlar esa Sozlamalar → Valyuta bo'limida tanlangan hisobot valyutasida.",
     "close": "Yopish",
     "sourceServer": "Kursni admin har kuni Sozlamalar → Valyuta bo'limida kiritadi. Markaziy bankdan avtomatik olinmaydi.",
     "badgeServer": "SERVER",

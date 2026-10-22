@@ -1,4 +1,4 @@
-import { pulMatni, useValyutaStore, valyutaKodi, type Valyuta } from "@/lib/valyuta";
+import { oziValyutadaMatn, pulMatni, useValyutaStore, valyutaKodi, type Valyuta } from "@/lib/valyuta";
 import type { Qaytarish, QaytarishMahsuloti, Sotuv, SotuvHolati, SotuvMahsuloti, SotuvTolovi, TolovTuri } from "@/types/savdo";
 
 type MoslashuvchanSotuvMahsuloti = SotuvMahsuloti &
@@ -68,13 +68,14 @@ export function sotuvMahsulotiNarxi(item: SotuvMahsuloti) {
 }
 
 /**
- * Summani matnga aylantiradi. `valyuta` berilsa va u dollar bo'lsa, summa o'z valyutasida ($) ko'rsatiladi — kursga o'girilmaydi
- * (aralash sotuvda dollar qatori tasdiqlangan kundagi kursga bog'langan, bugungi kurs bilan qayta hisoblash noto'g'ri bo'lardi).
- * Aks holda (so'm yoki valyuta berilmagan) avvalgidek: tanlangan ko'rinish valyutasida.
+ * Summani matnga aylantiradi. `valyuta` (hujjatning, qatorning yoki to'lovning `currency`si) berilsa, summa O'Z valyutasida ko'rsatiladi: so'm
+ * hujjat — so'mda, dollar hujjat — $ da; kursga o'girilmaydi (valyuta rejimi yoqilgan bo'lsa ham: rejim "hammasini dollarda ko'rsat" degani emas;
+ * aralash sotuvda dollar qatori tasdiqlangan kundagi kursga bog'langan, bugungi kurs bilan qayta hisoblash noto'g'ri bo'lardi).
+ * `valyuta` berilmasa (jami summalar) — hisobot valyutasida (`reportCurrency`, odatda so'm).
  */
 export function pulniFormatlash(value: number | string | null | undefined, valyuta?: Valyuta) {
   const son = raqamgaAylantirish(value);
-  if (valyuta === "USD") return `$${son.toLocaleString("uz-UZ", { maximumFractionDigits: 2 })}`;
+  if (valyuta) return oziValyutadaMatn(son, valyuta);
   return pulMatni(son);
 }
 

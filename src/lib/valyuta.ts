@@ -5,16 +5,17 @@ import { kursniSongaAylantirish, valyutaApi } from "@/api/valyutaApi";
 
 // Butun loyiha uchun yagona valyuta moduli.
 //
-// Qoida: backenddagi barcha summalar so'mda (UZS) deb olinadi; mahsulot narxi esa o'z `currency`siga ega
-// (UZS yoki USD). Dollar kursini ADMIN/DIREKTOR har kuni Sozlamalar → Valyuta bo'limida kiritadi (backend saqlaydi,
-// Markaziy bankdan avtomatik olinmaydi). Valyuta rejimi (GET /settings/currency) yoqilgan va bugungi kurs kiritilgan
-// bo'lsagina foydalanuvchi navbardan so'm/dollar ko'rinishini tanlay oladi; aks holda hamma narsa so'mda ko'rsatiladi.
+// Qoida (backend, 2026-10-22): valyuta rejimi yoqilgani "hammasini dollarda ko'rsat" degani emas. Har bir HUJJAT o'z valyutasida ko'rsatiladi
+// (sale.currency, qatorda items[].currency, to'lovda payments[].currency) — hech qachon ko'rinish valyutasiga o'girilmaydi. JAMI summalar
+// va hisobotlar esa GET /settings/currency dagi `reportCurrency` bo'yicha (Sozlamalar → Valyuta). Backenddagi barcha summalar so'mda
+// (UZS) deb olinadi; mahsulot narxi o'z `currency`siga ega. Dollar kursini ADMIN/DIREKTOR Sozlamalar → Valyuta bo'limida kiritadi.
+// Foydalanuvchi tanlaydigan "ko'rinish valyutasi" yo'q: eskisi hujjatlarni (so'mdagi sotuvni ham) dollarga aylantirib yuborardi.
 
 export type Valyuta = "UZS" | "USD";
 
 type ValyutaHolati = {
-  /** Foydalanuvchi tanlagan ko'rinish. Haqiqiy ko'rsatiladigan valyuta uchun `korsatiladiganValyuta()` ni ishlating. */
-  valyuta: Valyuta;
+  /** Hisobot valyutasi (GET /settings/currency → `reportCurrency`): jami summalar va hisobotlar shu valyutada. Hujjatlarga ta'sir qilmaydi. */
+  hisobotValyutasi: Valyuta;
   /** Backenddagi valyuta rejimi (GET /settings/currency). */
   rejimYoniq: boolean;
   /** Bugun amal qiladigan kurs: 1 USD necha so'm. `kursBor` false bo'lsa ma'noga ega emas. */
@@ -26,22 +27,20 @@ type ValyutaHolati = {
   /** Kompaniya vaqt mintaqasidagi bugungi kun (YYYY-MM-DD) — backend javobidan. */
   bugun: string | null;
   yuklandi: boolean;
-  valyutaniTanlash: (valyuta: Valyuta) => void;
-  /** Rejim va amaldagi kursni backenddan qayta oladi (Sozlamalarda o'zgartirilgandan keyin ham chaqiriladi). */
+  /** Rejim, hisobot valyutasi va amaldagi kursni backenddan qayta oladi (Sozlamalarda o'zgartirilgandan keyin ham chaqiriladi). */
   kursniYuklash: () => Promise<void>;
 };
 
 export const useValyutaStore = create<ValyutaHolati>()(
   persist(
     (set) => ({
-      valyuta: "UZS",
+      hisobotValyutasi: "UZS",
       rejimYoniq: false,
       kurs: 0,
       kursBor: false,
       kursSanasi: null,
       bugun: null,
       yuklandi: false,
-      valyutaniTanlash: (valyuta) => set({ valyuta }),
       kursniYuklash: async () => {
         const [rejim, amaldagi] = await Promise.allSettled([valyutaApi.rejimniOlish(), valyutaApi.amaldagiKurs()]);
         const kurs = amaldagi.status === "fulfilled" ? kursniSongaAylantirish(amaldagi.value.rate) : null;
@@ -49,6 +48,8 @@ export const useValyutaStore = create<ValyutaHolati>()(
         set((joriy) => ({
           // Rejim o'qilmasa (masalan, rolga ruxsat yo'q) bugungi kurs kiritilganligiga qarab baholanadi.
           rejimYoniq: rejim.status === "fulfilled" ? Boolean(rejim.value.enabled) : kurs !== null,
+          // Hisobot valyutasi o'qilmasa (rolga ruxsat yo'q yoki so'rov yiqilgan) oxirgi ma'lum qiymat saqlanadi.
+          hisobotValyutasi: rejim.status === "fulfilled" ? valyutaKodi(rejim.value.reportCurrency) : joriy.hisobotValyutasi,
           // Kurs so'rovi yiqilsa oxirgi ma'lum kurs saqlanadi; muvaffaqiyatli, lekin bo'sh javob kursni o'chiradi.
           kurs: amaldagi.status === "fulfilled" ? (kurs ?? 0) : joriy.kurs,
           kursBor: amaldagi.status === "fulfilled" ? kurs !== null : joriy.kursBor,
@@ -61,12 +62,13 @@ export const useValyutaStore = create<ValyutaHolati>()(
     }),
     {
       name: "yepost-valyuta",
-      // v2: avvalgi demo/qo'lda kiritilgan kurs endi ishlatilmaydi — faqat foydalanuvchi tanlovi qoladi.
-      version: 2,
-      migrate: (eski) => ({ valyuta: (eski as { valyuta?: Valyuta } | undefined)?.valyuta === "USD" ? "USD" : "UZS" }),
-      // Kurs va rejim keshlanadi (sahifa ochilganda narxlar sakramasligi uchun), lekin har safar backenddan yangilanadi.
+      // v3: foydalanuvchining "ko'rinish valyutasi" tanlovi olib tashlandi (u so'mdagi hujjatlarni ham dollarga aylantirardi); eski saqlangan
+      // qiymatlar (shu jumladan tanlangan dollar) tashlab yuboriladi, rejim va hisobot valyutasi backenddan qayta o'qiladi.
+      version: 3,
+      migrate: () => ({}),
+      // Kurs, rejim va hisobot valyutasi keshlanadi (sahifa ochilganda narxlar sakramasligi uchun), lekin har safar backenddan yangilanadi.
       partialize: (holat) => ({
-        valyuta: holat.valyuta,
+        hisobotValyutasi: holat.hisobotValyutasi,
         rejimYoniq: holat.rejimYoniq,
         kurs: holat.kurs,
         kursBor: holat.kursBor,
@@ -92,10 +94,10 @@ export function useKursniTayyorlash() {
   }, []);
 }
 
-/** Hozir haqiqatan ko'rsatiladigan valyuta: rejim o'chiq yoki kurs yo'q bo'lsa doim so'm. */
+/** JAMI summalar va hisobotlar valyutasi: hisobot valyutasi (`reportCurrency`); rejim o'chiq yoki kurs yo'q bo'lsa doim so'm. Hujjatlar uchun emas. */
 export function korsatiladiganValyuta(): Valyuta {
-  const { rejimYoniq, kursBor, valyuta } = useValyutaStore.getState();
-  return rejimYoniq && kursBor ? valyuta : "UZS";
+  const { rejimYoniq, kursBor, hisobotValyutasi } = useValyutaStore.getState();
+  return rejimYoniq && kursBor ? hisobotValyutasi : "UZS";
 }
 
 /** Summani manba valyutasidan hozir ko'rsatiladigan valyutaga o'giradi (kurs yo'q bo'lsa o'zgartirmaydi). */
@@ -111,23 +113,29 @@ export function valyutaBelgisi(): string {
 }
 
 /**
- * Narxni tanlangan valyutada matnga aylantiradi.
+ * Summani O'Z valyutasida matnga aylantiradi, hech qanday o'girishsiz (hujjatlar: sotuv, to'lov, qaytarish — `currency`si bilan).
  *  - UZS: "1 250 000 so'm" (`yaxlit` bo'lsa butun songa yaxlitlanadi; `uzsBelgi` — tilga qarab "so'm"/"сум")
  *  - USD: "$98.43" (2 xonagacha kasr)
- * `manba` — berilgan summaning o'z valyutasi (odatda UZS; mahsulot narxida u `price.currency`).
- * Kurs kiritilmagan bo'lsa dollar narx o'girilmaydi: u o'z valyutasida ($) ko'rsatiladi.
+ */
+export function oziValyutadaMatn(summa: number | string | null | undefined, valyuta: Valyuta, yaxlit = false, uzsBelgi = "so'm") {
+  const son = Number(summa ?? 0);
+  const qiymat = Number.isFinite(son) ? son : 0;
+  if (valyuta === "USD") return `$${qiymat.toLocaleString("uz-UZ", { maximumFractionDigits: 2 })}`;
+  return `${(yaxlit ? Math.round(qiymat) : qiymat).toLocaleString("uz-UZ")} ${uzsBelgi}`;
+}
+
+/**
+ * Summani matnga aylantiradi: dollar summa ($, narxning o'z valyutasi — `manba`) o'z valyutasida qoladi; so'm summa (backend jami summalari,
+ * `manba` berilmasa) hisobot valyutasida ko'rsatiladi (`korsatiladiganValyuta()`: odatda so'm, `reportCurrency` dollar bo'lsa bugungi kurs bilan $).
+ * Hujjatni (sotuv, to'lov) so'mda ham o'z valyutasida ko'rsatish uchun `oziValyutadaMatn` ishlating.
  */
 export function pulMatni(summa: number | string | null | undefined, manba: Valyuta = "UZS", yaxlit = false, uzsBelgi = "so'm") {
   const son = Number(summa ?? 0);
   const asl = Number.isFinite(son) ? son : 0;
+  if (manba === "USD") return oziValyutadaMatn(asl, "USD");
   const nishon = korsatiladiganValyuta();
-  const { kursBor } = useValyutaStore.getState();
   const qiymat = summaniOgirish(asl, manba, nishon);
-  const belgi: Valyuta = manba !== nishon && !kursBor ? manba : nishon;
-  if (belgi === "USD") {
-    return `$${qiymat.toLocaleString("uz-UZ", { maximumFractionDigits: 2 })}`;
-  }
-  return `${(yaxlit ? Math.round(qiymat) : qiymat).toLocaleString("uz-UZ")} ${uzsBelgi}`;
+  return oziValyutadaMatn(qiymat, nishon, yaxlit, uzsBelgi);
 }
 
 /** Backenddan kelgan valyuta kodini ("USD" | "UZS" | boshqa) xavfsiz Valyuta'ga aylantiradi. */

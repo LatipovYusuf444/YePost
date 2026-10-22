@@ -263,3 +263,38 @@ export function nakladnoyFaylNomi(disposition: string | null | undefined, hujjat
   nomi = nomi.replace(/[\\/:*?"<>|]+/g, "_");
   return /\.pdf$/i.test(nomi) ? nomi : `${nomi}.pdf`;
 }
+
+// ── Mijozlar ro'yxati: Telegram holati bo'yicha filtr ───────────────────────────────────────────────
+
+export type MijozTelegramFiltri = "hammasi" | MijozTelegramTuri;
+
+/** Filtr tugmalari tartibi: avval hammasi, keyin ulangan va muammoli holatlar. */
+export const MIJOZ_TELEGRAM_FILTRLARI: readonly MijozTelegramFiltri[] = ["hammasi", "ulangan", "ulanmagan", "ochirgan", "bloklagan"];
+
+/** Mijoz tanlangan filtrga mos keladimi (holat noma'lum bo'lsa — ulanmagan). */
+export function mijozTelegramFiltridanOtadimi(holat: MijozTelegramHolati | undefined, filtr: MijozTelegramFiltri): boolean {
+  return filtr === "hammasi" || mijozTelegramTuri(holat ?? mijozTelegramHolati({})) === filtr;
+}
+
+/** Har bir filtr bo'yicha mijozlar soni (filtr tugmalaridagi raqamlar). */
+export function mijozTelegramSonlari(holatlar: ReadonlyArray<MijozTelegramHolati | undefined>): Record<MijozTelegramFiltri, number> {
+  const sonlar: Record<MijozTelegramFiltri, number> = { hammasi: holatlar.length, ulangan: 0, ulanmagan: 0, ochirgan: 0, bloklagan: 0 };
+  for (const holat of holatlar) sonlar[mijozTelegramTuri(holat ?? mijozTelegramHolati({}))] += 1;
+  return sonlar;
+}
+
+// ── Mijozlar ro'yxati: "Telegram" ustuni faqat bot sozlangan do'konda ──────────────────────────────
+
+/** Do'konda Telegram bot sozlanganmi (GET /integrations/telegram): tokenning oxirgi 4 belgisi yoki bot nomi bor. Sozlanmagan do'konda javob bo'sh keladi. */
+export function botSozlanganmi(sozlama: unknown): boolean {
+  const o = obyekt(sozlama);
+  return Boolean(matn(o?.botTokenLast4) || matn(o?.botUsername));
+}
+
+/**
+ * "Telegram" ustuni ko'rsatiladimi. `botSozlangan`: true/false — sozlama o'qildi; `null` — o'qib bo'lmadi (masalan, rolga ruxsat yo'q): u holda ro'yxatda
+ * botga ulangan mijoz bo'lsagina (bot ishlayotgani ma'lum) ko'rsatiladi.
+ */
+export function telegramUstuniKorinadimi(botSozlangan: boolean | null, ulanganMijozBor: boolean): boolean {
+  return botSozlangan === true || (botSozlangan === null && ulanganMijozBor);
+}

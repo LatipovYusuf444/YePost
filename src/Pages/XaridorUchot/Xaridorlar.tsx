@@ -1,12 +1,24 @@
-import { useMemo, useState } from "react";
-import { Building2, FileSpreadsheet, Phone, Plus, Search, Trash2, UserRound } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Building2, FileSpreadsheet, Phone, Plus, Search, Send, Trash2, UserRound } from "lucide-react";
 import BoshlangichQarzImportModal from "./BoshlangichQarzImportModal";
 import { useTranslation } from "react-i18next";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
+import { integratsiyalarApi } from "@/api/integrationsApi";
+import {
+  MIJOZ_TELEGRAM_FILTRLARI,
+  botSozlanganmi,
+  mijozTelegramFiltridanOtadimi,
+  mijozTelegramSonlari,
+  telegramUstuniKorinadimi,
+  type MijozTelegramFiltri,
+  type MijozTelegramHolati,
+} from "@/lib/telegramXabarnoma";
 import IjtimoiyIkonlar from "./IjtimoiyIkonlar";
 import KartaSozlama, { type Maydon } from "./KartaSozlama";
 import KorinishTanlov, { type Korinish } from "./KorinishTanlov";
 import XaridorModal from "./XaridorModal";
+import TelegramHavolaOynasi from "./TelegramHavolaOynasi";
+import TelegramHolatBelgisi from "./TelegramHolatBelgisi";
 import XaridorTafsilotlariModal from "./XaridorTafsilotlariModal";
 import type { Xaridor, XaridorKompaniyasi } from "./types";
 import { asosiyTelefon, kompaniyaNomi, sanaFormat, xaridorNomi } from "./yordamchilar";
@@ -28,11 +40,48 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
   const [tahrirXaridor, setTahrirXaridor] = useState<Xaridor | null>(null);
   const [tafsilotXaridor, setTafsilotXaridor] = useState<Xaridor | null>(null);
   const [yashirinMaydon, setYashirinMaydon] = useState<Set<string>>(() => new Set());
+  const [telegramFiltri, setTelegramFiltri] = useState<MijozTelegramFiltri>("hammasi");
+  // Mijoz kartasida botga ulanganda yoki uzilganda ro'yxatdagi holat darhol yangilanadi (ro'yxat qayta yuklanmaguncha eskirib qolmasligi uchun).
+  const [telegramHolatlari, setTelegramHolatlari] = useState<Record<string, MijozTelegramHolati>>({});
+  useEffect(() => {
+    const tinglovchi = (voqea: Event) => {
+      const tafsilot = (voqea as CustomEvent<{ id?: string; holat?: MijozTelegramHolati }>).detail;
+      if (!tafsilot?.id || !tafsilot.holat) return;
+      const { id, holat } = tafsilot;
+      setTelegramHolatlari((joriy) => ({ ...joriy, [id]: holat }));
+    };
+    window.addEventListener("mijoz:telegram", tinglovchi);
+    return () => window.removeEventListener("mijoz:telegram", tinglovchi);
+  }, []);
+  const telegramHolati = useCallback((xaridor: Xaridor) => telegramHolatlari[xaridor.id] ?? xaridor.telegramBot, [telegramHolatlari]);
+  // "Telegram" ustuni faqat bot sozlangan do'konda ko'rsatiladi (Sozlamalar → Integratsiyalar). Sozlamani o'qib bo'lmasa (masalan, rolga ruxsat yo'q) —
+  // ro'yxatda botga ulangan mijoz bo'lsagina. undefined — hali o'qilmoqda (ustun ko'rinmaydi).
+  const [botSozlangan, setBotSozlangan] = useState<boolean | null | undefined>(undefined);
+  useEffect(() => {
+    let faol = true;
+    integratsiyalarApi
+      .telegramOlish(true)
+      .then((sozlama) => {
+        if (faol) setBotSozlangan(botSozlanganmi(sozlama));
+      })
+      .catch(() => {
+        if (faol) setBotSozlangan(null);
+      });
+    return () => {
+      faol = false;
+    };
+  }, []);
+  const telegramKorinadi = botSozlangan !== undefined && telegramUstuniKorinadimi(botSozlangan, xaridorlar.some((xaridor) => telegramHolati(xaridor)?.ulangan === true));
+  // Ustun yashirin bo'lsa filtr ham ishlamaydi (yashirin filtr ro'yxatni bo'shatib qo'ymasin).
+  const faolFiltr: MijozTelegramFiltri = telegramKorinadi ? telegramFiltri : "hammasi";
+  // "Havola" tugmasi: mijoz kartasini ochmasdan botga ulash havolasi.
+  const [havolaXaridor, setHavolaXaridor] = useState<Xaridor | null>(null);
 
   const kartaMaydonlari: Maydon[] = [
     { id: "ism", nom: t("xaridorlar.cardFields.ismFamiliya") },
     { id: "tel", nom: t("xaridorlar.cardFields.tel") },
     { id: "ijtimoiy", nom: t("xaridorlar.cardFields.ijtimoiy") },
+    ...(telegramKorinadi ? [{ id: "telegram", nom: t("xaridorlar.cardFields.telegram") }] : []),
     { id: "kompaniya", nom: t("xaridorlar.cardFields.kompaniya") },
     { id: "yaratilgan", nom: t("xaridorlar.cardFields.yaratilgan") },
     { id: "yaratgan", nom: t("xaridorlar.cardFields.yaratgan") },
@@ -55,6 +104,16 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
     { id: "tel", nom: t("xaridorlar.columns.tel"), kenglik: 160, katak: (x) => <span className="text-slate-500">{asosiyTelefon(x) || "—"}</span> },
     { id: "lavozim", nom: t("xaridorlar.columns.lavozim"), kenglik: 150, katak: (x) => <span className="text-slate-500">{x.lavozim || "—"}</span> },
     { id: "ijtimoiy", nom: t("xaridorlar.columns.ijtimoiy"), kenglik: 130, katak: (x) => <IjtimoiyIkonlar ijtimoiy={x.ijtimoiy} /> },
+    ...(telegramKorinadi
+      ? [
+          {
+            id: "telegram",
+            nom: t("xaridorlar.columns.telegram"),
+            kenglik: 190,
+            katak: (x: Xaridor) => <TelegramHolatBelgisi holat={telegramHolati(x)} onHavola={() => setHavolaXaridor(x)} />,
+          },
+        ]
+      : []),
     {
       id: "yaratgan",
       nom: t("xaridorlar.columns.yaratgan"),
@@ -66,25 +125,29 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
     { id: "kompaniya", nom: t("xaridorlar.columns.kompaniya"), kenglik: 180, katak: (x) => <span className="text-slate-500">{kompaniyaNomi(kompaniyalar, x.kompaniyaId) || "—"}</span> },
   ];
 
+  const telegramSonlari = useMemo(() => mijozTelegramSonlari(xaridorlar.map(telegramHolati)), [telegramHolati, xaridorlar]);
+
   const royxat = useMemo(() => {
     const soz = qidiruv.trim().toLowerCase();
-    if (!soz) return xaridorlar;
-    return xaridorlar.filter((xaridor) =>
-      [
-        xaridorNomi(xaridor),
-        xaridor.telefonlar.join(" "),
-        xaridor.manzil,
-        xaridor.lavozim,
-        xaridor.ijtimoiy.telegram,
-        xaridor.ijtimoiy.whatsapp,
-        xaridor.ijtimoiy.instagram,
-        kompaniyaNomi(kompaniyalar, xaridor.kompaniyaId),
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(soz)
+    return xaridorlar.filter(
+      (xaridor) =>
+        mijozTelegramFiltridanOtadimi(telegramHolati(xaridor), faolFiltr) &&
+        (!soz ||
+          [
+            xaridorNomi(xaridor),
+            xaridor.telefonlar.join(" "),
+            xaridor.manzil,
+            xaridor.lavozim,
+            xaridor.ijtimoiy.telegram,
+            xaridor.ijtimoiy.whatsapp,
+            xaridor.ijtimoiy.instagram,
+            kompaniyaNomi(kompaniyalar, xaridor.kompaniyaId),
+          ]
+            .join(" ")
+            .toLowerCase()
+            .includes(soz))
     );
-  }, [kompaniyalar, qidiruv, xaridorlar]);
+  }, [faolFiltr, kompaniyalar, qidiruv, telegramHolati, xaridorlar]);
 
   function modalniOchish(xaridor?: Xaridor) {
     setTahrirXaridor(xaridor ?? null);
@@ -134,6 +197,34 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
         </button>
         </div>
       </div>
+
+      {/* Telegram holati bo'yicha filtr: qaysi mijozlar botga ulanmagan yoki xabar olmayotgani ko'rinadi (faqat bot sozlangan do'konda). */}
+      {telegramKorinadi && (
+      <div role="group" aria-label={t("xaridorlar.telegramFilter.nomi")} className="flex flex-wrap items-center gap-2" data-testid="telegram-filtr">
+        <span className="mr-1 inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wide text-gray-400">
+          <Send size={13} aria-hidden />
+          {t("xaridorlar.telegramFilter.nomi")}
+        </span>
+        {MIJOZ_TELEGRAM_FILTRLARI.map((filtr) => {
+          const faol = faolFiltr === filtr;
+          return (
+            <button
+              key={filtr}
+              type="button"
+              aria-pressed={faol}
+              data-testid={`telegram-filtr-${filtr}`}
+              onClick={() => setTelegramFiltri(filtr)}
+              className={`inline-flex h-9 items-center gap-2 rounded-xl px-3 text-xs font-bold ring-1 transition ${
+                faol ? "bg-orange-500 text-white ring-orange-500" : "bg-white text-gray-600 ring-orange-100 hover:bg-orange-50"
+              }`}
+            >
+              {filtr === "hammasi" ? t("xaridorlar.telegramFilter.hammasi") : t(`telegramBot.kolonka.${filtr}`)}
+              <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-black ${faol ? "bg-white/25 text-white" : "bg-orange-50 text-orange-600"}`}>{telegramSonlari[filtr]}</span>
+            </button>
+          );
+        })}
+      </div>
+      )}
 
       {korinish === "jadval" && (
         <KengaytiriladiganJadval
@@ -204,6 +295,13 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
               </div>
             )}
 
+            {/* Telegram bot holati */}
+            {telegramKorinadi && korinadi("telegram") && (
+              <div className="mt-3">
+                <TelegramHolatBelgisi holat={telegramHolati(xaridor)} onHavola={() => setHavolaXaridor(xaridor)} />
+              </div>
+            )}
+
             {/* 4 Kompaniya aloqasi (bo'lsa) */}
             {korinadi("kompaniya") && kompaniyaNomi(kompaniyalar, xaridor.kompaniyaId) && (
               <p className="mt-3 flex items-center gap-1.5 text-sm text-gray-500">
@@ -259,6 +357,8 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
       )}
 
       {importOchiq && <BoshlangichQarzImportModal onClose={() => setImportOchiq(false)} />}
+
+      {havolaXaridor && <TelegramHavolaOynasi xaridor={havolaXaridor} onYopish={() => setHavolaXaridor(null)} />}
 
       {modalOchiq && (
         <XaridorModal

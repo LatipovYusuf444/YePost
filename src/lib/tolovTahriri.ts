@@ -23,6 +23,8 @@ export type SaqlanganTolov = {
   amount: number | string;
   currency?: string | null;
   note?: string | null;
+  /** Shu to'lov qaysi kurs bilan hisoblangani (backend javobida; kassir kursi yoki kunlik kurs). */
+  rate?: number | string | null;
 };
 
 /** O'zgargan to'lov: `date` va `note` faqat foydalanuvchi o'zgartirgan bo'lsa bor (aks holda eski sanasi va izohi saqlanadi). */
@@ -32,6 +34,8 @@ export type TolovYangilanishi = {
   currency: string;
   date?: string;
   note?: string;
+  /** Kassir kursi: 1 $ necha so'm, faqat shu to'lov uchun (backend `payments[].rate`). Berilmasa kunlik kurs olinadi. */
+  rate?: number;
 };
 
 const valyutaKodi = (qiymat?: string | null) => (qiymat?.toUpperCase() === "USD" ? "USD" : "UZS");
@@ -62,12 +66,17 @@ export function tolovlarniYangilash(
   const tanlanganIndeks = tahrirlanadiganTolovIndeksi(tolovlar, tanlov);
   if (tanlanganIndeks === -1) return null;
   const farqliValyuta = (valyuta?: string | null) => (valyutaKodi(valyuta) !== valyutaKodi(sotuvValyutasi) ? { currency: valyutaKodi(valyuta) } : {});
+  // Kurs faqat boshqa valyutadagi to'lov qatorida ma'noga ega (sotuv valyutasidagi to'lovga ta'sir qilmaydi).
+  const kursi = (valyuta: string | null | undefined, kurs: unknown) =>
+    valyutaKodi(valyuta) !== valyutaKodi(sotuvValyutasi) && Number(kurs) > 0 ? { rate: Number(kurs) } : {};
   return tolovlar.map((tolov, indeks) => {
     if (indeks !== tanlanganIndeks) {
+      // PATCH qatorlarni qayta yozadi: kassir kursini saqlab qolish uchun boshqa to'lovlar ham o'z kursi bilan qaytariladi (rate'siz qator kunlik kursni oladi).
       return {
         paymentType: tolov.paymentType,
         amount: Number(tolov.amount ?? 0),
         ...farqliValyuta(tolov.currency),
+        ...kursi(tolov.currency, tolov.rate),
         ...saqlanganTolovMaydonlari(tolov),
       };
     }
@@ -76,6 +85,7 @@ export function tolovlarniYangilash(
       paymentType: yangi.paymentType,
       amount: yangi.amount,
       ...farqliValyuta(yangi.currency),
+      ...kursi(yangi.currency, yangi.rate),
       ...(yangi.date ? { date: yangi.date } : {}),
       ...(yangi.note !== undefined ? { note: yangi.note } : {}),
     };
@@ -87,7 +97,8 @@ export function tolovTahririTanasi(tolovlar: Array<Record<string, unknown>>, kee
   return { payments: tolovlar, ...(keepExcess === undefined ? {} : { keepExcess }), ...(roundChange === false ? { roundChange } : {}) };
 }
 
-type TolovFormasi = { paymentType: string; amount: number; currency: string; kun: string; izoh: string };
+/** `kurs` — kassir kiritgan kurs (0 yoki berilmagan — kunlik kurs). */
+type TolovFormasi = { paymentType: string; amount: number; currency: string; kun: string; izoh: string; kurs?: number };
 
 /** Forma qiymatlaridan `TolovYangilanishi`: sana va izoh faqat asl qiymatdan farq qilsa qo'shiladi (izoh bo'sh qoldirilsa — o'chiriladi). */
 export function tolovYangilanishi(asl: { kun: string; izoh: string }, forma: TolovFormasi): TolovYangilanishi {
@@ -98,6 +109,7 @@ export function tolovYangilanishi(asl: { kun: string; izoh: string }, forma: Tol
     currency: valyutaKodi(forma.currency),
     ...tahrirSanasi(forma.kun, asl.kun),
     ...(izoh !== asl.izoh.trim() ? { note: izoh } : {}),
+    ...(forma.kurs && forma.kurs > 0 ? { rate: forma.kurs } : {}),
   };
 }
 
@@ -107,6 +119,7 @@ export function tolovOzgarganmi(asl: TolovFormasi, forma: TolovFormasi): boolean
     asl.paymentType !== forma.paymentType ||
     Math.abs(asl.amount - forma.amount) > 1e-9 ||
     valyutaKodi(asl.currency) !== valyutaKodi(forma.currency) ||
+    Math.abs((asl.kurs ?? 0) - (forma.kurs ?? 0)) > 1e-9 ||
     asl.kun !== forma.kun ||
     asl.izoh.trim() !== forma.izoh.trim()
   );
@@ -152,4 +165,55 @@ export function tolovniTopish(tolovlar: readonly TopiladiganTolov[], ishora: Tol
   if (summalar.length === 1) return summalar[0].indeks;
   const kunBoyicha = ishora.kun ? summalar.filter(({ tolov }) => toshkentKuni(tolov.date ?? tolov.paidAt ?? tolov.createdAt) === ishora.kun) : [];
   return kunBoyicha.length === 1 ? kunBoyicha[0].indeks : -1;
+}
+
+/** To'lov turi bo'yicha pul qayerga tushishi: naqd — kassaga, karta va bank — o'z hisobiga, mijoz hisobi — hisobdan yechiladi. */
+export type KirimTuri = "CASH" | "CARD" | "BANK" | "BALANCE";
+export const KIRIM_TURLARI: readonly KirimTuri[] = ["CASH", "CARD", "BANK", "BALANCE"];
+
+export type KirimQatori = { tur: KirimTuri; valyuta: "UZS" | "USD"; summa: number };
+
+export type TolovKassaXulosasi = {
+  /** Tushgan pul to'lov turi va O'Z valyutasi bo'yicha: $100 naqd — kassaga +$100 (so'mga o'girilgan 728 000 emas). */
+  kirim: KirimQatori[];
+  /** Mijozga qaytim, so'mda (backend `changeAmount`: so'm kassasidan chiqim). */
+  qaytim: number;
+  /** Mijoz hisobiga o'tgan pul, sotuv valyutasida (`keptAmount`). */
+  hisobga: number;
+};
+
+const musbatSon = (qiymat: unknown) => {
+  const son = Number(qiymat);
+  return Number.isFinite(son) && son > 0 ? son : 0;
+};
+
+/**
+ * Tasdiqlangan sotuvning to'lov qatorlaridan kassa xulosasi: pul real qancha va qaysi valyutada tushgani, qaytim va hisobga o'tgani. Qarzning yopilgan
+ * qismi (masalan 728 000) kassadagi pul emas: $100 kassaga +$100 bo'lib tushadi, so'm kassasidan qaytim chiqadi — kassa real pulga teng bo'ladi.
+ * Qarz qatori (DEBT) pul emas, hisobga olinmaydi.
+ */
+export function tolovlarKassaXulosasi(
+  tolovlar: ReadonlyArray<{ paymentType: string; amount?: unknown; currency?: string | null; changeAmount?: unknown; keptAmount?: unknown }> | null | undefined,
+  sotuvValyutasi: string
+): TolovKassaXulosasi {
+  const guruhlar = new Map<string, KirimQatori>();
+  let qaytim = 0;
+  let hisobga = 0;
+  for (const tolov of tolovlar ?? []) {
+    qaytim += musbatSon(tolov.changeAmount);
+    hisobga += musbatSon(tolov.keptAmount);
+    const tur = KIRIM_TURLARI.find((element) => element === tolov.paymentType);
+    const summa = musbatSon(tolov.amount);
+    if (!tur || summa === 0) continue;
+    const valyuta = valyutaKodi(tolov.currency ?? sotuvValyutasi);
+    const kalit = `${tur}:${valyuta}`;
+    const mavjud = guruhlar.get(kalit);
+    if (mavjud) mavjud.summa += summa;
+    else guruhlar.set(kalit, { tur, valyuta, summa });
+  }
+  // Tur tartibida (naqd, karta, bank, hisob), har turda dollar so'mdan oldin.
+  const kirim = [...guruhlar.values()].sort(
+    (a, b) => KIRIM_TURLARI.indexOf(a.tur) - KIRIM_TURLARI.indexOf(b.tur) || (a.valyuta === b.valyuta ? 0 : a.valyuta === "USD" ? -1 : 1)
+  );
+  return { kirim, qaytim, hisobga };
 }

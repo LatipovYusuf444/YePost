@@ -136,7 +136,7 @@ export default function QaytarishHisobKitobi({ hisob, usul = "CASH", ixcham = fa
             </span>
           )}
           {qarzBelgilangan ? (
-            <p className={`text-xl font-extrabold tabular-nums ${(hisob.qolganQarz ?? 0) > 0 ? "text-rose-600" : "text-emerald-600"}`}>{pulniFormatlash(hisob.qolganQarz)}</p>
+            <p className={`text-xl font-extrabold tabular-nums ${(hisob.qolganQarz ?? 0) > 0 ? "text-rose-600" : "text-emerald-600"}`}>{pulniFormatlash(hisob.qolganQarz, hisob.valyuta)}</p>
           ) : (
             <p className="text-sm font-bold text-slate-400">{yoq}</p>
           )}

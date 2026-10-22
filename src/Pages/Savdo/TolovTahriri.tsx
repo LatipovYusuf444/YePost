@@ -14,6 +14,8 @@ import {
   TOLOV_TOPILMADI,
   tolovOzgarganmi,
   tolovYangilanishi,
+  tolovlarKassaXulosasi,
+  type KirimTuri,
   type TolovTahririBosqichi,
 } from "@/lib/tolovTahriri";
 import { useKursniTayyorlash, useValyutaStore, type Valyuta } from "@/lib/valyuta";
@@ -123,19 +125,15 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
       faol = false;
     };
   }, [asos.sotuvKuni]);
+  // Kunlik kurs (sozlamadagi); kassir kursi (`payments[].rate`) bo'lsa u shu to'lov uchun undan ustun turadi.
   const kurs = sotuvKursi.holat === "tayyor" && sotuvKursi.kurs ? sotuvKursi.kurs : 0;
-  const valyutaTanlashMumkin = kurs > 0 && (rejimYoniq || !asos.dollarHujjat);
   const kursYuklandi = rejimYuklandi && sotuvKursi.holat !== "yuklanmoqda";
   const dollarHujjatRejimsiz = asos.dollarHujjat && rejimYuklandi && !rejimYoniq;
-  const dollarXabari = !kursYuklandi
-    ? ""
-    : dollarHujjatRejimsiz
-      ? t("tolovTahriri.dollarRejimOchiq")
-      : valyutaTanlashMumkin
-        ? ""
-        : sotuvKursi.holat === "xato"
-          ? t("tolovTahriri.kursOqilmadi")
-          : t("tolovTahriri.dollarKursYoq", { sana: kunMatni(asos.sotuvKuni) });
+  // Boshqa valyutada to'lash kunlik kurs bo'lmasa ham mumkin (kassir kursini o'zi kiritadi: rate_missing chiqmaydi); faqat dollar hujjat rejimsiz mumkin emas.
+  const valyutaTanlashMumkin = !dollarHujjatRejimsiz;
+  const dollarXabari = dollarHujjatRejimsiz ? t("tolovTahriri.dollarRejimOchiq") : "";
+  const kunlikKursXabari =
+    kursYuklandi && kurs === 0 ? (sotuvKursi.holat === "xato" ? t("tolovTahriri.kursOqilmadi") : t("tolovTahriri.dollarKursYoq", { sana: kunMatni(asos.sotuvKuni) })) : "";
   const yopilganKun = useDavrStore((holat) => holat.holat?.closedUntil ?? null);
 
   const [tur, setTur] = useState<TolovTuri>(tolov.paymentType);
@@ -146,6 +144,11 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
   const [ortiqchaniHisobga, setOrtiqchaniHisobga] = useState(false);
   // Dollar qatnashganda backend qaytimni minggacha yaxlitlaydi (`roundChange`, standart yoqilgan); belgi olinsa aniq qaytim.
   const [qaytimniYaxlitlash, setQaytimniYaxlitlash] = useState(true);
+  // Kassir kursi: null — kiritilmagan (kunlik kurs olinadi). To'lovda saqlangan kurs (`tolov.rate`) boshlang'ich qiymat bo'lib turadi, shunda PATCH uni saqlab qoladi.
+  const aslKursi = aslVal !== sotuvVal && Number(tolov.rate) > 0 ? Number(tolov.rate) : 0;
+  const [kursMatni, setKursMatni] = useState<string | null>(aslKursi > 0 ? String(aslKursi) : null);
+  // Kassir yozgan qaytim (so'mda): kurs undan hisoblanadi; null — qaytim kursdan hisoblanib ko'rsatiladi.
+  const [qaytimKiritilgan, setQaytimKiritilgan] = useState<string | null>(null);
   const [tasdiqOchiq, setTasdiqOchiq] = useState(false);
   const [xatolik, setXatolik] = useState("");
 
@@ -160,10 +163,13 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
   const ishlayapti = useRef(false);
 
   const yangiSumma = Number(summa) || 0;
+  // Shu to'lov uchun amal qiladigan kurs: kassir kursi (faqat boshqa valyutadagi to'lovda), bo'lmasa kunlik kurs.
+  const kassirKursi = val !== sotuvVal && kursMatni !== null ? Number(kursMatni) || 0 : 0;
+  const hisobKursi = kassirKursi > 0 ? kassirKursi : kurs;
   const sotuvValyutasigaOgirish = (miqdor: number, valyuta: Valyuta) =>
-    valyuta === sotuvVal || !(kurs > 0) ? miqdor : valyuta === "USD" ? miqdor * kurs : miqdor / kurs;
+    valyuta === sotuvVal || !(hisobKursi > 0) ? miqdor : valyuta === "USD" ? miqdor * hisobKursi : miqdor / hisobKursi;
   const sotuvValyutasidanOgirish = (miqdor: number, valyuta: Valyuta) =>
-    valyuta === sotuvVal || !(kurs > 0) ? miqdor : valyuta === "USD" ? miqdor / kurs : miqdor * kurs;
+    valyuta === sotuvVal || !(hisobKursi > 0) ? miqdor : valyuta === "USD" ? miqdor / hisobKursi : miqdor * hisobKursi;
   const yangiQiymat = sotuvValyutasigaOgirish(yangiSumma, val);
 
   // To'lovlar yuboriladigan tartibda: tahrirlangani o'z o'rnida. Boshqa valyutada yaxlitlash eng ko'pi bilan bir birlik ortiqcha beradi (xato emas).
@@ -184,17 +190,43 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
   const dollarQatnashdi = dollarQatnashdimi(sotuvVal, [val, ...asos.valyutalar.filter((_, indeks) => indeks !== asos.indeks)]);
   const ortiqchaNaqd = tahlil.ortiqcha > 0 && !tahlil.naqdEmas;
   // Mijozga beriladigan qaytim, so'mda (taxminiy: aniq summani backend tasdiqlashda hisoblaydi). Mijozning eski qarzi bo'lsa ortiqcha avval o'shani yopadi.
-  const qaytimTaxmini = ortiqchaNaqd && !hisobgaYozish ? qaytimSomda({ ortiqcha: tahlil.ortiqcha, sotuvValyutasi: sotuvVal, kurs, dollarQatnashdi, yaxlitlash: qaytimniYaxlitlash }) : 0;
+  const qaytimTaxmini = ortiqchaNaqd && !hisobgaYozish ? qaytimSomda({ ortiqcha: tahlil.ortiqcha, sotuvValyutasi: sotuvVal, kurs: hisobKursi, dollarQatnashdi, yaxlitlash: qaytimniYaxlitlash }) : 0;
 
-  const aslForma = { paymentType: tolov.paymentType, amount: aslSumma, currency: aslVal, kun: aslKun, izoh: aslIzoh };
-  const yangiForma = { paymentType: tur, amount: yangiSumma, currency: val, kun, izoh };
+  // Kassir qaytimni o'zi yozishi mumkin (so'm sotuvga dollar naqd): kurs undan hisoblanadi — kurs = (qolgan summa + qaytim) / dollar summasi
+  // (backend namunasi: (728 000 + 329 000) / $100 = 10 570). Dollar qatnashganda backend qaytimni minggacha yaxlitlaydi, shuning uchun mingga karrali qaytim aynan shunday chiqadi.
+  const qolganSumma = Math.max(asos.jami - boshqalarYigindisi, 0);
+  const qaytimTahrirlanadi = sotuvVal === "UZS" && val === "USD" && tur === "CASH" && yangiSumma > 0;
+  const qaytimBloki = !hisobgaYozish && (qaytimTaxmini > 0 || (qaytimTahrirlanadi && qaytimKiritilgan !== null));
+  function qaytimOzgardi(matn: string) {
+    setQaytimKiritilgan(matn);
+    setXatolik("");
+    const yangiKurs = Math.round(((qolganSumma + (Number(matn) || 0)) / yangiSumma) * 1e4) / 1e4;
+    if (yangiKurs > 0) setKursMatni(String(yangiKurs));
+    // Mingga karrali bo'lmagan qaytim aniq yozilgan: yaxlitlash uni o'zgartirib yubormasin.
+    if ((Number(matn) || 0) % 1000 !== 0) setQaytimniYaxlitlash(false);
+  }
+  // Maydon tozalansa ("") u bo'sh turadi (kunlik kurs hisobga olinadi), yangi kurs yozish mumkin; kunlik kursga "Kunlik kurs" tugmasi qaytaradi.
+  function kursOzgardi(matn: string) {
+    setKursMatni(matn);
+    setQaytimKiritilgan(null);
+    setXatolik("");
+  }
+  function kunlikKursgaQaytarish() {
+    setKursMatni(null);
+    setQaytimKiritilgan(null);
+    setXatolik("");
+  }
+
+  const aslForma = { paymentType: tolov.paymentType, amount: aslSumma, currency: aslVal, kun: aslKun, izoh: aslIzoh, kurs: aslKursi };
+  const yangiForma = { paymentType: tur, amount: yangiSumma, currency: val, kun, izoh, kurs: kassirKursi };
   const ozgardi = tolovOzgarganmi(aslForma, yangiForma);
 
   function tekshirish() {
     if (!(yangiSumma > 0)) return t("tolovModal.errors.nolDanKatta");
     // Qayta tasdiqlash (mode_off, rate_missing) PATCH'dan keyin tekshiriladi: xato bo'lsa sotuv bekor qilinib qoralamada qolardi — shuning uchun oldindan.
     if (dollarHujjatRejimsiz) return t("tolovTahriri.dollarRejimOchiq");
-    if (val !== sotuvVal && !valyutaTanlashMumkin) return dollarXabari || t("tolovTahriri.kursOqilmadi");
+    // Boshqa valyutada to'lov kursni talab qiladi (kunlik kurs yo'q bo'lsa kassir kiritadi); PATCH kursni tekshirmaydi, tasdiqlash tekshiradi.
+    if (val !== sotuvVal && !(hisobKursi > 0)) return t("tolovTahriri.kurs.kiriting");
     if (kelajakKunmi(kun)) return t("tolovModal.errors.sanaKelajak");
     if (asos.sotuvKuni && kun < asos.sotuvKuni) return t("tolovModal.errors.sanaSotuvdanOldin", { sana: kunMatni(asos.sotuvKuni) });
     // Bekor qilish va qayta tasdiqlash sotuv sanasida ham, yangi to'lov sanasida ham yopilgan davrga tegmasligi kerak (backend 423).
@@ -252,7 +284,7 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
       sotuvId: asos.sotuvId,
       tolovId: asos.tolovId,
       tolovIndeksi: asos.indeks,
-      yangi: tolovYangilanishi({ kun: aslKun, izoh: aslIzoh }, { paymentType: tur, amount: yangiSumma, currency: val, kun, izoh: izohMatni }),
+      yangi: tolovYangilanishi({ kun: aslKun, izoh: aslIzoh }, { paymentType: tur, amount: yangiSumma, currency: val, kun, izoh: izohMatni, kurs: kassirKursi }),
       // Qarzdan ortiq pul bo'lsa tanlov aniq yuboriladi (mijozli sotuvda: hisobga yozish yoki qaytim).
       ...(tahlil.ortiqcha > 0 && asos.mijozBor ? { keepExcess: ortiqchaniHisobga } : {}),
       ...(qaytimTaxmini > 0 && dollarQatnashdi && !qaytimniYaxlitlash ? { roundChange: false as const } : {}),
@@ -263,6 +295,12 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
 
   if (faza === "tugadi" && yakuniy) {
     const natija = tolovlarQaytimi(yakuniy.payments);
+    // Kassa real pulga teng: $100 kassaga +$100 bo'lib tushadi, so'm kassasidan qaytim chiqadi; qarzning yopilgan qismi (728 000) kassadagi pul emas.
+    const xulosa = tolovlarKassaXulosasi(yakuniy.payments, sotuvVal);
+    const qarzYopildi = Math.max(sotuvSummasi(yakuniy) - sotuvQarzdorlikSummasi(yakuniy), 0);
+    const kirimNomi: Record<KirimTuri, string> = { CASH: "kassa", CARD: "karta", BANK: "bank", BALANCE: "hisob" };
+    const xulosaBor = xulosa.kirim.length > 0 || xulosa.qaytim > 0 || xulosa.hisobga > 0 || qarzYopildi > 0;
+    const minus = "−";
     return (
       <div className="mx-auto w-full max-w-xl px-7 pb-6">
         <TolovNatijasiKarta
@@ -273,19 +311,58 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
           qolganQarz={sotuvQarzdorlikSummasi(yakuniy)}
           pul={sotuvPuli}
           qoshimcha={
-            nakladnoy && (
-              <p
-                data-testid="nakladnoy-natijasi"
-                className={`flex items-start gap-2.5 rounded-2xl p-4 text-xs font-semibold leading-5 ring-1 ${
-                  nakladnoy.ok ? "bg-sky-50 text-sky-800 ring-sky-100" : "bg-amber-50 text-amber-800 ring-amber-200"
-                }`}
-              >
-                {nakladnoy.ok ? <Send size={16} aria-hidden className="mt-0.5 shrink-0" /> : <TriangleAlert size={16} aria-hidden className="mt-0.5 shrink-0" />}
-                {nakladnoy.ok
-                  ? t("tolovTahriri.nakladnoy.yuborildi")
-                  : t("tolovTahriri.nakladnoy.yuborilmadi", { sabab: `${nakladnoy.xato.replace(/[.\s]+$/, "")}.` })}
-              </p>
-            )
+            <>
+              {xulosaBor && (
+                <section aria-label={t("tolovTahriri.natija.sarlavha")} className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3" data-testid="natija-kassa">
+                  <p className="text-xs font-black uppercase tracking-wide text-slate-500">{t("tolovTahriri.natija.sarlavha")}</p>
+                  <dl className="mt-1.5 divide-y divide-slate-200/70 text-sm">
+                    {xulosa.kirim.map((qator) => (
+                      <div key={`${qator.tur}:${qator.valyuta}`} className="flex items-center justify-between gap-3 py-1.5" data-testid={`natija-${kirimNomi[qator.tur]}`}>
+                        <dt className="font-semibold text-slate-600">{t(`tolovTahriri.natija.${kirimNomi[qator.tur]}`)}</dt>
+                        <dd className={`font-black tabular-nums ${qator.tur === "BALANCE" ? "text-slate-600" : "text-emerald-600"}`}>
+                          {qator.tur === "BALANCE" ? minus : "+"}
+                          {pul(qator.summa, qator.valyuta)}
+                        </dd>
+                      </div>
+                    ))}
+                    {xulosa.qaytim > 0 && (
+                      <div className="flex items-center justify-between gap-3 py-1.5" data-testid="natija-qaytim">
+                        <dt className="font-semibold text-slate-600">{t("tolovTahriri.natija.qaytim")}</dt>
+                        <dd className="font-black tabular-nums text-rose-600">
+                          {minus}
+                          {somMatni(xulosa.qaytim, t("tolovModal.somBelgisi"))}
+                        </dd>
+                      </div>
+                    )}
+                    {xulosa.hisobga > 0 && (
+                      <div className="flex items-center justify-between gap-3 py-1.5" data-testid="natija-hisobga">
+                        <dt className="font-semibold text-slate-600">{t("tolovTahriri.natija.hisobga")}</dt>
+                        <dd className="font-black tabular-nums text-sky-600">+{sotuvPuli(xulosa.hisobga)}</dd>
+                      </div>
+                    )}
+                    {qarzYopildi > 0 && (
+                      <div className="flex items-center justify-between gap-3 py-1.5" data-testid="natija-qarz-yopildi">
+                        <dt className="font-semibold text-slate-600">{t("tolovTahriri.natija.qarzYopildi")}</dt>
+                        <dd className="font-black tabular-nums text-slate-800">{sotuvPuli(qarzYopildi)}</dd>
+                      </div>
+                    )}
+                  </dl>
+                </section>
+              )}
+              {nakladnoy && (
+                <p
+                  data-testid="nakladnoy-natijasi"
+                  className={`flex items-start gap-2.5 rounded-2xl p-4 text-xs font-semibold leading-5 ring-1 ${
+                    nakladnoy.ok ? "bg-sky-50 text-sky-800 ring-sky-100" : "bg-amber-50 text-amber-800 ring-amber-200"
+                  }`}
+                >
+                  {nakladnoy.ok ? <Send size={16} aria-hidden className="mt-0.5 shrink-0" /> : <TriangleAlert size={16} aria-hidden className="mt-0.5 shrink-0" />}
+                  {nakladnoy.ok
+                    ? t("tolovTahriri.nakladnoy.yuborildi")
+                    : t("tolovTahriri.nakladnoy.yuborilmadi", { sabab: `${nakladnoy.xato.replace(/[.\s]+$/, "")}.` })}
+                </p>
+              )}
+            </>
           }
           onYopish={onYopish}
         />
@@ -403,6 +480,7 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
                       value={summa}
                       onChange={(qiymat) => {
                         setSumma(qiymat);
+                        setQaytimKiritilgan(null);
                         setXatolik("");
                       }}
                       aria-label={`${t("tolovModal.tolovSummasi")} (${val === "USD" ? "$" : t("tolovModal.somBelgisi")})`}
@@ -431,12 +509,43 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
                     ))}
                   </div>
                 </div>
+                {val !== sotuvVal && (
+                  <div className="mt-1 grid gap-1.5" data-testid="kassir-kursi">
+                    <span className={belgiSinfi}>{t("tolovTahriri.kurs.nomi")}</span>
+                    <div className="flex items-stretch gap-2">
+                      <SummaMaydoni
+                        value={kursMatni ?? (kurs > 0 ? String(kurs) : "")}
+                        onChange={kursOzgardi}
+                        kasr={4}
+                        aria-label={t("tolovTahriri.kurs.nomi")}
+                        className={`${maydonSinfi} px-4`}
+                        placeholder={kurs > 0 ? kurs.toLocaleString("uz-UZ", { maximumFractionDigits: 2 }) : t("tolovTahriri.kurs.placeholder")}
+                      />
+                      {kursMatni !== null && kurs > 0 && (
+                        <button
+                          type="button"
+                          onClick={kunlikKursgaQaytarish}
+                          data-testid="kunlik-kursga"
+                          className="shrink-0 rounded-xl bg-slate-100 px-3.5 text-xs font-bold text-slate-600 transition hover:bg-slate-200"
+                        >
+                          {t("tolovTahriri.kurs.kunlikka")}
+                        </button>
+                      )}
+                    </div>
+                    <span className="text-[11px] font-medium leading-4 text-slate-500">{t("tolovTahriri.kurs.izoh")}</span>
+                  </div>
+                )}
                 {val !== sotuvVal && kurs > 0 && (
                   <span className="text-xs font-semibold leading-5 text-slate-500" data-testid="sotuv-kursi">
                     {t("tolovTahriri.kursQatori", { sana: kunMatni(asos.sotuvKuni), kurs: kurs.toLocaleString("uz-UZ", { maximumFractionDigits: 2 }) })}
                     {sotuvKursi.holat === "tayyor" && sotuvKursi.kursSanasi && sotuvKursi.kursSanasi !== asos.sotuvKuni && ` ${t("tolovTahriri.kursKiritilganKun", { sana: kunMatni(sotuvKursi.kursSanasi) })}`}
                     {yangiSumma > 0 && ` · ${t("tolovModal.sotuvValyutasidagiQiymat", { summa: sotuvPuli(yangiQiymat) })}`}
                   </span>
+                )}
+                {val !== sotuvVal && kunlikKursXabari && (
+                  <p className="text-xs font-semibold leading-5 text-amber-700" data-testid="kunlik-kurs-yoq">
+                    {kunlikKursXabari}
+                  </p>
                 )}
                 {dollarXabari && (
                   <p className="text-xs font-semibold leading-5 text-amber-700" data-testid="dollar-mumkin-emas">
@@ -549,38 +658,53 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
                   <p className="rounded-xl bg-sky-50 px-3.5 py-2.5 text-xs font-semibold leading-5 text-sky-800 ring-1 ring-sky-100">{t("tolovTahriri.qaytimBoladi")}</p>
                 )}
 
-                {qaytimTaxmini > 0 && (
-                  <div aria-label={t("tolovTahriri.qaytim.sarlavha")} role="group" className="rounded-xl border border-emerald-200 bg-emerald-50/70 px-3.5 py-3" data-testid="qaytim-taxmini">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wide text-emerald-700">
-                        <Banknote size={15} aria-hidden className="shrink-0" />
-                        {t("tolovTahriri.qaytim.sarlavha")}
-                      </p>
-                      <p className="whitespace-nowrap text-xl font-black tabular-nums text-emerald-600" data-testid="qaytim-taxmini-summa">
-                        {somMatni(qaytimTaxmini, t("tolovModal.somBelgisi"))}
-                      </p>
-                    </div>
-                    <p className="mt-0.5 text-[11px] font-semibold leading-4 text-slate-500">{t("tolovTahriri.qaytim.taxminiy")}</p>
-                    {dollarQatnashdi && (
-                      <label className="mt-2 flex cursor-pointer items-center gap-2 text-[13px] font-bold text-slate-700" title={t("tolovTahriri.qaytim.yaxlitlashIzoh")}>
-                        <input
-                          type="checkbox"
-                          checked={qaytimniYaxlitlash}
-                          onChange={(event) => setQaytimniYaxlitlash(event.target.checked)}
-                          data-testid="qaytim-yaxlitlash"
-                          className="h-4 w-4 shrink-0 accent-[#2563EB]"
-                        />
-                        {t("tolovTahriri.qaytim.yaxlitlash")}
-                      </label>
-                    )}
-                  </div>
-                )}
-
                 {hisobgaYozish && (
                   <p className="flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3.5 py-3 text-sm font-black text-sky-700" data-testid="hisobga-yoziladi">
                     <Wallet size={16} aria-hidden className="shrink-0" />
                     {t("tolovTahriri.hisobgaYoziladi", { summa: sotuvPuli(ortiqchaKorinishi) })}
                   </p>
+                )}
+              </div>
+            )}
+
+            {qaytimBloki && (
+              <div aria-label={t("tolovTahriri.qaytim.sarlavha")} role="group" className="rounded-xl border border-emerald-200 bg-emerald-50/70 px-3.5 py-3" data-testid="qaytim-taxmini">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wide text-emerald-700">
+                    <Banknote size={15} aria-hidden className="shrink-0" />
+                    {t("tolovTahriri.qaytim.sarlavha")}
+                  </p>
+                  {qaytimTahrirlanadi ? (
+                    <div className="relative w-44 shrink-0">
+                      <SummaMaydoni
+                        value={qaytimKiritilgan ?? String(qaytimTaxmini)}
+                        onChange={qaytimOzgardi}
+                        kasr={0}
+                        aria-label={t("tolovTahriri.qaytim.sarlavha")}
+                        data-testid="qaytim-kiritish"
+                        className="h-10 w-full rounded-xl border border-emerald-200 bg-white pl-3 pr-12 text-right text-lg font-black tabular-nums text-emerald-600 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                        placeholder="0"
+                      />
+                      <span aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{t("tolovModal.somBelgisi")}</span>
+                    </div>
+                  ) : (
+                    <p className="whitespace-nowrap text-xl font-black tabular-nums text-emerald-600" data-testid="qaytim-taxmini-summa">
+                      {somMatni(qaytimTaxmini, t("tolovModal.somBelgisi"))}
+                    </p>
+                  )}
+                </div>
+                <p className="mt-0.5 text-[11px] font-semibold leading-4 text-slate-500">{qaytimTahrirlanadi ? t("tolovTahriri.qaytim.tahrir") : t("tolovTahriri.qaytim.taxminiy")}</p>
+                {dollarQatnashdi && (
+                  <label className="mt-2 flex cursor-pointer items-center gap-2 text-[13px] font-bold text-slate-700" title={t("tolovTahriri.qaytim.yaxlitlashIzoh")}>
+                    <input
+                      type="checkbox"
+                      checked={qaytimniYaxlitlash}
+                      onChange={(event) => setQaytimniYaxlitlash(event.target.checked)}
+                      data-testid="qaytim-yaxlitlash"
+                      className="h-4 w-4 shrink-0 accent-[#2563EB]"
+                    />
+                    {t("tolovTahriri.qaytim.yaxlitlash")}
+                  </label>
                 )}
               </div>
             )}

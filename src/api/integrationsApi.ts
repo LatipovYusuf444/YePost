@@ -51,7 +51,11 @@ function sozlamaObyekti<T extends object>(javob: T | null | undefined): T {
 }
 
 export const integratsiyalarApi = {
-  telegramOlish: async () => sozlamaObyekti(apiData((await apiClient.get<TelegramIntegratsiya | ApiEnvelope<TelegramIntegratsiya>>("/integrations/telegram")).data)),
+  // `jim` — fon rejimi: xato (masalan, rolga ruxsat yo'q) toast chiqarmaydi, chaqiruvchi o'zi hal qiladi.
+  telegramOlish: async (jim = false) =>
+    sozlamaObyekti(
+      apiData((await apiClient.get<TelegramIntegratsiya | ApiEnvelope<TelegramIntegratsiya>>("/integrations/telegram", jim ? { xatoniYashirish: true } : undefined)).data)
+    ),
   telegramYangilash: async (data: TelegramIntegratsiyaSaqlash) => sozlamaObyekti(apiData((await apiClient.patch<TelegramIntegratsiya | ApiEnvelope<TelegramIntegratsiya>>("/integrations/telegram", data)).data)),
   printerOlish: async () => sozlamaObyekti(apiData((await apiClient.get<PrinterIntegratsiya | ApiEnvelope<PrinterIntegratsiya>>("/integrations/printer")).data)),
   printerYangilash: async (data: PrinterIntegratsiyaSaqlash) => sozlamaObyekti(apiData((await apiClient.patch<PrinterIntegratsiya | ApiEnvelope<PrinterIntegratsiya>>("/integrations/printer", data)).data)),

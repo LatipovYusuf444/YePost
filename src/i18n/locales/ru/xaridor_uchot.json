@@ -165,6 +165,7 @@
       "ismFamiliya": "Имя Фамилия",
       "tel": "Телефон",
       "ijtimoiy": "Соцсети",
+      "telegram": "Статус Telegram",
       "kompaniya": "Компания",
       "yaratilgan": "Дата создания",
       "yaratgan": "Ответственный, создавший"
@@ -175,10 +176,16 @@
       "tel": "Телефон",
       "lavozim": "Должность",
       "ijtimoiy": "Соцсети",
+      "telegram": "Telegram",
       "yaratgan": "Ответственный, создавший",
       "yaratilgan": "Дата создания",
       "ozgartirilgan": "Дата изменения",
       "kompaniya": "Компания"
+    },
+    "telegramFilter": {
+      "nomi": "Telegram",
+      "hammasi": "Все",
+      "havola": "Ссылка"
     }
   },
   "kompaniyalar": {
@@ -309,6 +316,12 @@
       "ulanmagan": "Не подключён",
       "ochirgan": "Сообщения отключены",
       "bloklagan": "Заблокировал бота"
+    },
+    "kolonka": {
+      "ulangan": "Подключён",
+      "ulanmagan": "Не подключён",
+      "ochirgan": "Отключил",
+      "bloklagan": "Заблокировал"
     },
     "linkedAt": "Подключён: {{vaqt}}",
     "hints": {

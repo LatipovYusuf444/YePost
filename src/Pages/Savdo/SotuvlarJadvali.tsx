@@ -321,7 +321,7 @@ export default function SotuvlarJadvali({
                         </span>
                       </td>
                       <td className="border-b border-gray-100 px-4 py-3.5 font-semibold text-slate-900">
-                        {pulniFormatlash(stat.qaytarilganSumma)}
+                        {pulniFormatlash(stat.qaytarilganSumma, sotuvValyutasi(sotuv))}
                       </td>
                     </>
                   )}

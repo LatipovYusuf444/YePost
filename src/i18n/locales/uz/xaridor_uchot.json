@@ -165,6 +165,7 @@
       "ismFamiliya": "Ism Familiya",
       "tel": "Tel nomer",
       "ijtimoiy": "Ijtimoiy tarmoq",
+      "telegram": "Telegram holati",
       "kompaniya": "Kompaniya",
       "yaratilgan": "Yaratilgan sana",
       "yaratgan": "Yaratgan mas'ul shaxs"
@@ -175,10 +176,16 @@
       "tel": "Tel nomer",
       "lavozim": "Lavozim",
       "ijtimoiy": "Ijtimoiy tarmoq",
+      "telegram": "Telegram",
       "yaratgan": "Mas'ul shaxs yaratgan",
       "yaratilgan": "Sana yaratilgan",
       "ozgartirilgan": "O'zgartirilgan sana",
       "kompaniya": "Kompaniya"
+    },
+    "telegramFilter": {
+      "nomi": "Telegram",
+      "hammasi": "Hammasi",
+      "havola": "Havola"
     }
   },
   "kompaniyalar": {
@@ -309,6 +316,12 @@
       "ulanmagan": "Ulanmagan",
       "ochirgan": "Xabar o'chirilgan",
       "bloklagan": "Botni bloklagan"
+    },
+    "kolonka": {
+      "ulangan": "Ulangan",
+      "ulanmagan": "Ulanmagan",
+      "ochirgan": "O'chirgan",
+      "bloklagan": "Bloklagan"
     },
     "linkedAt": "Ulangan: {{vaqt}}",
     "hints": {

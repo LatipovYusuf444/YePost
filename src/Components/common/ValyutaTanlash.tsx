@@ -1,7 +1,7 @@
 import { useEffect, useState, type SVGProps } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Check, ChevronDown, CircleAlert, Settings2, TrendingUp } from "lucide-react";
+import { ArrowRight, ChevronDown, CircleAlert, FileText, Settings2, TrendingUp } from "lucide-react";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { foydalanuvchiKursniOzgartiraOladimi } from "@/lib/roles";
 import { useValyuta, type Valyuta } from "@/lib/valyuta";
@@ -54,14 +54,15 @@ function BayroqBelgisi({ Bayroq, katta = false }: { Bayroq: (props: SVGProps<SVG
 // Kurs backenddan qayta olinadigan oraliq (varaq qayta ko'ringanda ham darhol yangilanadi).
 const YANGILASH_ORALIGI = 15 * 60 * 1000;
 
-// Navbar: ko'rsatiladigan valyuta (so'm / dollar) va bugungi dollar kursi.
-// Valyuta rejimi (Sozlamalar → Valyuta) o'chiq bo'lsa hech narsa ko'rsatilmaydi va hamma narx so'mda chiqadi.
+// Navbar: hisobot valyutasi va bugungi dollar kursi (faqat ma'lumot). Hujjatlar (sotuv, to'lov, qaytarish) har doim O'Z valyutasida ko'rsatiladi,
+// jami summalar va hisobotlar — hisobot valyutasida (Sozlamalar → Valyuta): ko'rinish valyutasini tanlash yo'q, u so'mdagi hujjatlarni ham dollarga
+// aylantirib yuborardi. Valyuta rejimi (Sozlamalar → Valyuta) o'chiq bo'lsa hech narsa ko'rsatilmaydi.
 // Kursni ADMIN/DIREKTOR har kuni Sozlamalarda qo'lda kiritadi — bu yerda faqat ko'rsatiladi.
 export default function ValyutaTanlash() {
   const { t } = useTranslation("topbar");
   const navigate = useNavigate();
   const profil = useAuthProfileStore((holat) => holat.profil);
-  const { valyuta, rejimYoniq, kurs, kursBor, kursSanasi, valyutaniTanlash, kursniYuklash } = useValyuta();
+  const { hisobotValyutasi, rejimYoniq, kurs, kursBor, kursSanasi, kursniYuklash } = useValyuta();
   const [ochiq, setOchiq] = useState(false);
   const kursniOzgartira = foydalanuvchiKursniOzgartiraOladimi(profil);
 
@@ -80,8 +81,8 @@ export default function ValyutaTanlash() {
 
   if (!rejimYoniq) return null;
 
-  // Kurs kiritilmagan bo'lsa dollar ko'rinishi mumkin emas: doim so'm.
-  const korinadi: Valyuta = kursBor ? valyuta : "UZS";
+  // Kurs kiritilmagan bo'lsa jami summalarni dollarga o'girib bo'lmaydi: doim so'm.
+  const korinadi: Valyuta = kursBor ? hisobotValyutasi : "UZS";
   const joriy = VARIANTLAR.find((item) => item.kod === korinadi) ?? VARIANTLAR[0];
   const kursKorinishi = kurs.toLocaleString("uz-UZ", { maximumFractionDigits: 2 });
   // Hisob-kitob namunasi: 1 000 000 so'm necha dollar.
@@ -152,39 +153,19 @@ export default function ValyutaTanlash() {
             </div>
 
             <div className="p-3">
-              <div role="radiogroup" aria-label={t("currency.title")} className="grid gap-2">
-                {VARIANTLAR.map((item) => {
-                  const faol = item.kod === korinadi;
-                  const ochirilgan = item.kod === "USD" && !kursBor;
-                  return (
-                    <button
-                      key={item.kod}
-                      type="button"
-                      role="radio"
-                      aria-checked={faol}
-                      disabled={ochirilgan}
-                      onClick={() => {
-                        valyutaniTanlash(item.kod);
-                        setOchiq(false);
-                      }}
-                      className={`group flex items-center gap-3 rounded-2xl border px-3.5 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                        faol ? "border-orange-300 bg-orange-50/70 shadow-sm ring-2 ring-orange-100" : "border-slate-200 bg-white hover:border-orange-200 hover:bg-slate-50"
-                      }`}
-                    >
-                      <BayroqBelgisi Bayroq={item.Bayroq} katta />
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-black text-slate-900">{t(`currency.${item.kod}`)}</span>
-                        <span className="block text-xs font-semibold text-slate-400">
-                          {item.kod} · {item.belgi}
-                        </span>
-                      </span>
-                      <span className={`flex h-6 w-6 items-center justify-center rounded-full transition ${faol ? "bg-orange-500 text-white" : "border border-slate-200 text-transparent group-hover:border-orange-300"}`}>
-                        <Check size={14} strokeWidth={3} />
-                      </span>
-                    </button>
-                  );
-                })}
+              <div className="flex items-start gap-3 rounded-2xl border border-orange-200 bg-orange-50/70 px-3.5 py-3" data-testid="hisobot-valyutasi">
+                <BayroqBelgisi Bayroq={joriy.Bayroq} katta />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[11px] font-black uppercase tracking-wide text-orange-700">{t("currency.reportLabel")}</span>
+                  <span className="block text-sm font-black text-slate-900">
+                    {t(`currency.${joriy.kod}`)} · {joriy.belgi}
+                  </span>
+                </span>
               </div>
+              <p className="mt-2.5 flex items-start gap-2 px-1 text-xs font-medium leading-5 text-slate-500">
+                <FileText size={14} aria-hidden className="mt-0.5 shrink-0 text-slate-400" />
+                {t("currency.documentsNote")}
+              </p>
 
               {/* Kurs faqat ko'rsatiladi: uni ADMIN/DIREKTOR Sozlamalarda kiritadi */}
               <div className="mt-3 rounded-2xl bg-slate-50 p-3">
