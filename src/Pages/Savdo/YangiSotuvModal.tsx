@@ -1218,7 +1218,7 @@ export default function YangiSotuvModal({
             type="button"
             onClick={onYopish}
             title={t("header.closeButtonTitle")}
-            className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[#2563EB] text-white shadow-[0_10px_22px_rgba(37,99,235,.32)] ring-1 ring-white/80 transition duration-300 hover:-translate-x-0.5 hover:scale-105 hover:bg-[#1D4ED8]"
+            className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[#2563EB] text-white shadow-[0_10px_22px_rgba(37,99,235,.32)] ring-2 ring-white/80 transition duration-300 hover:-translate-x-0.5 hover:scale-105 hover:bg-[#1D4ED8]"
           >
             <X size={18} />
           </button>
@@ -1226,7 +1226,7 @@ export default function YangiSotuvModal({
             type="button"
             onClick={nusxaOlish}
             title={t("header.copyLinkTitle")}
-            className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#2563EB] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
+            className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#2563EB] shadow-md ring-2 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
           >
             <Link size={15} />
           </button>
@@ -1234,7 +1234,7 @@ export default function YangiSotuvModal({
             type="button"
             onClick={qoralamaniYuklash}
             title={t("header.downloadDraftTitle")}
-            className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#2563EB] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
+            className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#2563EB] shadow-md ring-2 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
           >
             <Download size={15} />
           </button>
@@ -1242,7 +1242,7 @@ export default function YangiSotuvModal({
             type="button"
             onClick={() => window.open(window.location.href, "_blank", "noopener,noreferrer")}
             title={t("header.openNewWindowTitle")}
-            className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#2563EB] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
+            className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#2563EB] shadow-md ring-2 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
           >
             <ExternalLink size={15} />
           </button>
@@ -1250,7 +1250,7 @@ export default function YangiSotuvModal({
             type="button"
             onClick={() => window.print()}
             title={t("header.printTitle")}
-            className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#2563EB] shadow-md ring-1 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
+            className="flex h-9 w-9 items-center justify-center rounded-[13px] bg-white text-[#2563EB] shadow-md ring-2 ring-orange-100 transition hover:-translate-x-0.5 hover:bg-orange-50"
           >
             <Printer size={15} />
           </button>
@@ -1258,9 +1258,9 @@ export default function YangiSotuvModal({
 
         <form
           onSubmit={submit}
-          className="relative flex h-full w-full flex-col overflow-hidden rounded-[22px] bg-[#F8FAFC] text-[#1E293B] shadow-[0_24px_80px_rgba(15,23,42,.30)] ring-1 ring-slate-200/80"
+          className="relative flex h-full w-full flex-col overflow-hidden rounded-[22px] bg-[#F8FAFC] text-[#1E293B] shadow-[0_24px_80px_rgba(15,23,42,.30)] ring-2 ring-slate-300/80"
         >
-          <header className="z-30 shrink-0 border-b border-slate-200 bg-white px-4 pb-4 pt-4 sm:px-7">
+          <header className="z-30 shrink-0 border-b-2 border-slate-300 bg-white px-4 pb-4 pt-4 sm:px-7">
             <div className="flex items-center justify-between gap-4">
               <div className="flex min-w-0 flex-wrap items-center gap-2.5 sm:gap-3">
                 <h2 className="text-2xl font-extrabold tracking-tight text-[#0F172A] sm:text-[30px]">{modalMatnlari.title}</h2>
@@ -1273,7 +1273,7 @@ export default function YangiSotuvModal({
                 >
                   <Copy size={17} />
                 </button>
-                <span className="rounded-full bg-[#EFF6FF] px-3 py-1 text-xs font-bold text-[#2563EB] ring-1 ring-blue-100">
+                <span className="rounded-full bg-[#EFF6FF] px-3 py-1 text-xs font-bold text-[#2563EB] ring-2 ring-blue-200">
                   {modalMatnlari.badge}
                 </span>
               </div>
@@ -1281,7 +1281,7 @@ export default function YangiSotuvModal({
               <button
                 type="button"
                 onClick={onYopish}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 hover:text-slate-900"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-white text-slate-600 shadow-sm ring-2 ring-slate-300 transition hover:bg-slate-50 hover:text-slate-900"
                 aria-label={t("header.closeAriaLabel")}
               >
                 <X size={19} />
@@ -1299,10 +1299,10 @@ export default function YangiSotuvModal({
                       type="button"
                       onClick={() => qadamgaOtish(index)}
                       aria-current={faol ? "step" : undefined}
-                      className={`group flex w-full min-w-0 flex-col items-center gap-1 rounded-2xl border px-1 py-2 text-center transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-100 sm:flex-row sm:gap-3 sm:px-3 sm:text-left ${
+                      className={`group flex w-full min-w-0 flex-col items-center gap-1 rounded-2xl border-2 px-1 py-2 text-center transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-100 sm:flex-row sm:gap-3 sm:px-3 sm:text-left ${
                         faol
-                          ? "border-blue-200 bg-[#EFF6FF] shadow-[0_6px_16px_rgba(37,99,235,.10)]"
-                          : "border-slate-200 bg-slate-50/70 hover:border-blue-200 hover:bg-white"
+                          ? "border-blue-300 bg-[#EFF6FF] shadow-[0_6px_16px_rgba(37,99,235,.10)]"
+                          : "border-slate-300 bg-slate-50/70 hover:border-blue-300 hover:bg-white"
                       }`}
                     >
                       <span
@@ -1311,7 +1311,7 @@ export default function YangiSotuvModal({
                             ? "bg-[#2563EB] text-white shadow-[0_6px_14px_rgba(37,99,235,.35)]"
                             : tayyor
                               ? "bg-emerald-500 text-white"
-                              : "border border-slate-300 bg-white text-slate-500"
+                              : "border-2 border-slate-300 bg-white text-slate-500"
                         }`}
                       >
                         {tayyor && !faol ? <Check size={17} strokeWidth={3} /> : index + 1}
@@ -1334,7 +1334,7 @@ export default function YangiSotuvModal({
           </header>
 
           {xatolik && (
-            <div className="mx-4 mt-4 flex shrink-0 items-start justify-between gap-4 rounded-2xl border border-red-200 bg-red-50 px-5 py-3.5 text-sm font-bold text-red-600 shadow-sm sm:mx-7">
+            <div className="mx-4 mt-4 flex shrink-0 items-start justify-between gap-4 rounded-2xl border-2 border-red-200 bg-red-50 px-5 py-3.5 text-sm font-bold text-red-600 shadow-sm sm:mx-7">
               <span>{t(xatolik)}</span>
               <button
                 type="button"
@@ -1432,7 +1432,7 @@ export default function YangiSotuvModal({
                     <label className="grid gap-1.5">
                       <span className={yorliqKlassi}>{t("note.stageLabel")}</span>
                       <div className="relative">
-                        <span aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-emerald-500 ring-4 ring-emerald-100" />
+                        <span aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-emerald-500 ring-4 ring-emerald-200" />
                         <SavdoSelect
                           value={bosqich}
                           onChange={setBosqich}
@@ -1478,7 +1478,7 @@ export default function YangiSotuvModal({
                     </div>
 
                     {sotuvVal === "USD" && (
-                      <p className="-mt-2 rounded-xl bg-[#EFF6FF] px-3.5 py-2 text-xs font-semibold leading-5 text-[#1E40AF] ring-1 ring-blue-100">
+                      <p className="-mt-2 rounded-xl bg-[#EFF6FF] px-3.5 py-2 text-xs font-semibold leading-5 text-[#1E40AF] ring-2 ring-blue-200">
                         {t("hints.usdSale", { kurs: kurs.toLocaleString("uz-UZ", { maximumFractionDigits: 2 }) })}
                       </p>
                     )}
@@ -1496,7 +1496,7 @@ export default function YangiSotuvModal({
 
                     <div className="grid gap-1.5">
                       <span className={yorliqKlassi}>{t("labels.responsible")}</span>
-                      <div className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-sm font-semibold text-slate-600">
+                      <div className="flex h-11 items-center gap-2 rounded-xl border-2 border-slate-300 bg-slate-50 px-3.5 text-sm font-semibold text-slate-600">
                         <UserRound size={16} className="shrink-0 text-slate-400" />
                         <span className="truncate">
                           {joriyProfil
@@ -1538,7 +1538,7 @@ export default function YangiSotuvModal({
                           onClick={() => importInputRef.current?.click()}
                           disabled={formaBandmi}
                           title={t("import.title")}
-                          className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-[#2563EB] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-100 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="inline-flex h-10 items-center gap-2 rounded-xl border-2 border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-300 hover:text-[#2563EB] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-100 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <Upload size={16} />
                           {t("actions.import")}
@@ -1585,7 +1585,7 @@ export default function YangiSotuvModal({
                     </div>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-slate-50 p-3 ring-2 ring-slate-300">
                     <span className="text-sm font-bold text-slate-600">{t("priceTypes.label")}</span>
                     <NarxTuriTanlovi
                       qiymat={narxTuri}
@@ -1654,7 +1654,7 @@ export default function YangiSotuvModal({
                   <p className="mt-3 hidden text-xs font-medium leading-5 text-slate-400 lg:block">{t("products.keyboardHint")}</p>
 
                   <div className="mt-4">
-                    <div className={`hidden rounded-t-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-[11px] font-black uppercase tracking-wide text-slate-500 lg:grid ${qatorUstunlari} lg:gap-3`}>
+                    <div className={`hidden rounded-t-2xl border-2 border-slate-300 bg-slate-50 px-4 py-2.5 text-[11px] font-black uppercase tracking-wide text-slate-500 lg:grid ${qatorUstunlari} lg:gap-3`}>
                       <span>{t("table.number")}</span>
                       <span>{t("table.product")}</span>
                       <span>{t("table.catalogPrice")}</span>
@@ -1665,7 +1665,7 @@ export default function YangiSotuvModal({
                       <span />
                     </div>
 
-                    <div ref={qatorlarRef} className="space-y-3 lg:space-y-0 lg:rounded-b-2xl lg:border lg:border-slate-200">
+                    <div ref={qatorlarRef} className="space-y-3 lg:space-y-0 lg:rounded-b-2xl lg:border-2 lg:border-slate-300">
                       {mahsulotlar.map((mahsulot, index) => {
                         const qoldiq = qoldiqlar.find(
                           (item) => qoldiqKaliti(item) === mahsulot.qoldiqKaliti
@@ -1689,7 +1689,7 @@ export default function YangiSotuvModal({
                         return (
                           <div
                             key={index}
-                            className={`grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 transition sm:grid-cols-2 lg:items-start lg:rounded-none lg:border-0 lg:border-b lg:border-slate-100 lg:px-4 lg:py-3 lg:last:border-b-0 ${qatorUstunlari}`}
+                            className={`grid grid-cols-1 gap-3 rounded-2xl border-2 border-slate-300 bg-white p-3.5 transition sm:grid-cols-2 lg:items-start lg:rounded-none lg:border-0 lg:border-b-2 lg:border-slate-200 lg:px-4 lg:py-3 lg:last:border-b-0 ${qatorUstunlari}`}
                           >
                             <div className="flex items-center justify-between sm:col-span-2 lg:col-span-1 lg:block lg:pt-3">
                               <span className="text-sm font-black text-slate-400">
@@ -1712,7 +1712,7 @@ export default function YangiSotuvModal({
                               <div className="flex items-start gap-2">
                                 <button
                                   type="button"
-                                  className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 text-slate-400 transition hover:border-[#2563EB] hover:text-[#2563EB] sm:flex"
+                                  className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400 transition hover:border-[#2563EB] hover:text-[#2563EB] sm:flex"
                                   title={t("products.imageButtonTitle")}
                                   aria-label={t("labels.image")}
                                 >
@@ -1809,7 +1809,7 @@ export default function YangiSotuvModal({
                                 }}
                                 className={cn(
                                   maydonKlassi,
-                                  birDonaChegirma > 0 && "border-emerald-300 text-emerald-700 focus:border-emerald-500 focus:ring-emerald-100",
+                                  birDonaChegirma > 0 && "border-emerald-300 text-emerald-700 focus:border-emerald-500 focus:ring-emerald-200",
                                   ustama > 0 && "border-amber-300 text-amber-700 focus:border-amber-500 focus:ring-amber-100"
                                 )}
                                 placeholder={t("placeholders.price")}
@@ -1842,7 +1842,7 @@ export default function YangiSotuvModal({
                                     aria-label={t("labels.unit")}
                                     value={mahsulot.birlikId}
                                     onChange={(event) => birlikniOzgartirish(index, event.target.value)}
-                                    className="h-9 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-1 text-[11px] font-bold text-slate-700 outline-none focus:border-[#2563EB]"
+                                    className="h-9 w-full min-w-0 rounded-xl border-2 border-slate-300 bg-white px-1 text-[11px] font-bold text-slate-700 outline-none focus:border-[#2563EB]"
                                   >
                                     {qatorBirliklari.map((birlik) => (
                                       <option key={birlik.unitId} value={birlik.asosiy ? "" : birlik.unitId}>{birlik.qisqa || birlik.nomi}</option>
@@ -1895,7 +1895,7 @@ export default function YangiSotuvModal({
                                       className={cn(
                                         "rounded-md px-1.5 py-1 transition",
                                         mahsulot.discountTuri === birlik
-                                          ? "bg-white text-[#2563EB] shadow-sm ring-1 ring-blue-100"
+                                          ? "bg-white text-[#2563EB] shadow-sm ring-2 ring-blue-200"
                                           : "text-slate-500 hover:text-slate-800"
                                       )}
                                     >
@@ -1911,7 +1911,7 @@ export default function YangiSotuvModal({
 
                             <div className="min-w-0 lg:pt-3 lg:text-right">
                               <p className={mobilYorliqKlassi}>{t("labels.rowTotal")}</p>
-                              <p className="flex h-11 items-center rounded-xl bg-emerald-50 px-3.5 text-sm font-black text-emerald-600 ring-1 ring-emerald-100 lg:h-auto lg:justify-end lg:bg-transparent lg:p-0 lg:ring-0">
+                              <p className="flex h-11 items-center rounded-xl bg-emerald-50 px-3.5 text-sm font-black text-emerald-600 ring-2 ring-emerald-200 lg:h-auto lg:justify-end lg:bg-transparent lg:p-0 lg:ring-0">
                                 <span className="truncate">{pulniFormatlash(qatorJami, sotuvVal)}</span>
                               </p>
                             </div>
@@ -1929,7 +1929,7 @@ export default function YangiSotuvModal({
                             </div>
 
                             {ustama > 0 && miqdor > 0 && (
-                              <p className="rounded-xl bg-amber-50 px-3.5 py-2 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 lg:col-span-full">
+                              <p className="rounded-xl bg-amber-50 px-3.5 py-2 text-xs font-semibold text-amber-700 ring-2 ring-amber-100 lg:col-span-full">
                                 {t("products.autoMarkupHint", {
                                   katalog: pulniFormatlash(katalogNarxi, sotuvVal),
                                   sotuv: pulniFormatlash(narx, sotuvVal),
@@ -1940,7 +1940,7 @@ export default function YangiSotuvModal({
                             )}
 
                             {birDonaChegirma > 0 && miqdor > 0 && ustama <= 0 && (
-                              <p className="rounded-xl bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 lg:col-span-full">
+                              <p className="rounded-xl bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-700 ring-2 ring-emerald-200 lg:col-span-full">
                                 {t("products.autoDiscountHint", {
                                   katalog: pulniFormatlash(narx, sotuvVal),
                                   sotuv: pulniFormatlash(sotuvNarxi, sotuvVal),
@@ -1964,7 +1964,7 @@ export default function YangiSotuvModal({
                   <p className="mt-3 text-xs font-medium leading-5 text-slate-500">{t("summary.paymentHint")}</p>
 
                   {omborlar.length === 0 && (
-                    <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-700">
+                    <div className="mt-4 rounded-2xl border-2 border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-700">
                       {modalMatnlari.stockWarning}
                     </div>
                   )}
@@ -1987,7 +1987,7 @@ export default function YangiSotuvModal({
 
                 <section className={kartaKlassi}>
                   <KartaBoshi ikonka={CalendarCheck} sarlavha={t("sections.activity")} />
-                  <nav className="mb-4 flex flex-wrap items-center gap-1.5 rounded-2xl bg-slate-50 p-1.5 text-sm font-semibold text-slate-500 ring-1 ring-slate-100">
+                  <nav className="mb-4 flex flex-wrap items-center gap-1.5 rounded-2xl bg-slate-50 p-1.5 text-sm font-semibold text-slate-500 ring-2 ring-slate-200">
                     {faoliyatTablar.map((tab) => {
                       const Ikonka = faoliyatTabIkonkalari[tab] ?? CalendarCheck;
                       return (
@@ -2001,7 +2001,7 @@ export default function YangiSotuvModal({
                           }}
                           className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 transition ${
                             faolTab === tab && faoliyatOchiq
-                              ? "bg-white text-[#2563EB] shadow-sm ring-1 ring-orange-100"
+                              ? "bg-white text-[#2563EB] shadow-sm ring-2 ring-orange-100"
                               : "hover:bg-white/70 hover:text-[#2563EB]"
                           }`}
                         >
@@ -2016,14 +2016,14 @@ export default function YangiSotuvModal({
                     <button
                       type="button"
                       onClick={() => setFaoliyatOchiq(true)}
-                      className="flex h-14 w-full items-center gap-3 rounded-xl border border-orange-100 bg-[#F8FAFC]/60 px-5 text-left text-slate-400 transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50 hover:shadow-sm"
+                      className="flex h-14 w-full items-center gap-3 rounded-xl border-2 border-orange-200 bg-[#F8FAFC]/60 px-5 text-left text-slate-400 transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50 hover:shadow-sm"
                     >
                       <PenLine size={18} className="shrink-0 text-slate-300" />
                       <span>{t("activity.collapsedPlaceholder")}</span>
                     </button>
                   ) : (
                     <div className="animate-in slide-in-from-top-2 fade-in-0 duration-300">
-                      <div className="rounded-2xl border border-orange-300 bg-gradient-to-br from-white to-[#F8FAFC] p-4 shadow-inner transition-all duration-300 ease-in-out focus-within:ring-4 focus-within:ring-orange-100">
+                      <div className="rounded-2xl border-2 border-orange-300 bg-gradient-to-br from-white to-[#F8FAFC] p-4 shadow-inner transition-all duration-300 ease-in-out focus-within:ring-4 focus-within:ring-orange-100">
                         <div className="flex items-start gap-4">
                           <div className="min-w-0 flex-1">
                             <input
@@ -2099,8 +2099,8 @@ export default function YangiSotuvModal({
                             <button
                               type="button"
                               onClick={() => setSanaMenyuOchiq((joriy) => !joriy)}
-                              className={`inline-flex h-10 items-center gap-2 rounded-xl border bg-white px-3 text-sm font-semibold text-slate-700 transition ${
-                                sanaMenyuOchiq ? "border-[#2563EB] ring-4 ring-orange-100" : "border-slate-200 hover:border-orange-200"
+                              className={`inline-flex h-10 items-center gap-2 rounded-xl border-2 bg-white px-3 text-sm font-semibold text-slate-700 transition ${
+                                sanaMenyuOchiq ? "border-[#2563EB] ring-4 ring-orange-100" : "border-slate-300 hover:border-orange-200"
                               }`}
                               aria-expanded={sanaMenyuOchiq}
                             >
@@ -2116,7 +2116,7 @@ export default function YangiSotuvModal({
                                   className="fixed inset-0 z-30 cursor-default"
                                   onClick={() => setSanaMenyuOchiq(false)}
                                 />
-                                <div className="absolute left-0 top-12 z-40 w-72 rounded-2xl bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,.16)] ring-1 ring-orange-100">
+                                <div className="absolute left-0 top-12 z-40 w-72 rounded-2xl bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,.16)] ring-2 ring-orange-100">
                                   <label className="grid gap-1.5 text-xs font-bold text-slate-500">
                                     {t("activity.dateLabel")}
                                     <input
@@ -2126,7 +2126,7 @@ export default function YangiSotuvModal({
                                         setFaoliyatSana(event.target.value);
                                         setFaoliyatSaqlangan(false);
                                       }}
-                                      className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
+                                      className="h-10 rounded-xl border-2 border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
                                     />
                                   </label>
                                   <label className="mt-3 grid gap-1.5 text-xs font-bold text-slate-500">
@@ -2138,7 +2138,7 @@ export default function YangiSotuvModal({
                                         setFaoliyatSoat(event.target.value);
                                         setFaoliyatSaqlangan(false);
                                       }}
-                                      className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
+                                      className="h-10 rounded-xl border-2 border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
                                     />
                                   </label>
                                   <div className="mt-3 flex items-center justify-between gap-2">
@@ -2216,13 +2216,13 @@ export default function YangiSotuvModal({
             </div>
           </div>
 
-          <footer className="shrink-0 border-t border-slate-200 bg-white px-4 py-3 sm:px-7">
+          <footer className="shrink-0 border-t-2 border-slate-300 bg-white px-4 py-3 sm:px-7">
             <div className="flex items-center justify-end gap-2 sm:gap-3">
               <button
                 type="button"
                 onClick={formaniTozalash}
                 disabled={formaBandmi}
-                className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-extrabold sm:h-12 sm:px-5 text-slate-700 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-11 items-center gap-2 rounded-xl border-2 border-slate-300 bg-white px-3 text-sm font-extrabold sm:h-12 sm:px-5 text-slate-700 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <RotateCcw size={17} />
                 <span className="sr-only sm:not-sr-only">{t("actions.clear")}</span>
@@ -2230,7 +2230,7 @@ export default function YangiSotuvModal({
               <button
                 type="button"
                 onClick={onYopish}
-                className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-extrabold text-slate-700 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-100 sm:h-12 sm:px-5"
+                className="inline-flex h-11 items-center gap-2 rounded-xl border-2 border-slate-300 bg-white px-3 text-sm font-extrabold text-slate-700 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-100 sm:h-12 sm:px-5"
               >
                 <X size={17} />
                 <span className="sr-only sm:not-sr-only">{t("actions.close")}</span>
@@ -2258,13 +2258,13 @@ const IZOH_MAKS_UZUNLIK = 500;
 // Mahsulot jadvali ustunlari (katta ekranda): №, mahsulot, katalog narxi, sotuv narxi, miqdor, chegirma, jami, o'chirish.
 const qatorUstunlari =
   "lg:grid-cols-[32px_minmax(0,2fr)_minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,1.45fr)_minmax(0,1.1fr)_40px]";
-const kartaKlassi = "rounded-2xl bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,.04)] ring-1 ring-[#DCE5F0] sm:p-5";
+const kartaKlassi = "rounded-2xl bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,.04)] ring-2 ring-[#CBD5E1] sm:p-5";
 const yorliqKlassi = "text-sm font-semibold text-slate-600";
 const mobilYorliqKlassi = "mb-1.5 text-[11px] font-black uppercase tracking-wide text-slate-500 lg:hidden";
 const maydonKlassi =
-  "h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
+  "h-11 w-full min-w-0 rounded-xl border-2 border-slate-300 bg-white px-3.5 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
 const selectTugmasiKlassi =
-  "h-11 rounded-xl border-slate-200 px-3.5 text-sm shadow-none hover:shadow-none focus:border-[#2563EB]";
+  "h-11 rounded-xl border-2 border-slate-300 px-3.5 text-sm shadow-none hover:shadow-none focus:border-[#2563EB]";
 
 // Narx turi tugmalari (tan narx / chakana / ulgurji). Sozlamada o'chirilgan yoki mahsulotda narxi yo'q tur o'chiq turadi.
 function NarxTuriTanlovi({
@@ -2310,7 +2310,7 @@ function NarxTuriTanlovi({
               "rounded-lg font-bold transition",
               kichik ? "flex-auto whitespace-nowrap px-1.5 py-1 text-center text-[10px]" : "px-4 py-2 text-xs",
               faol
-                ? "bg-white text-[#2563EB] shadow-sm ring-1 ring-blue-100"
+                ? "bg-white text-[#2563EB] shadow-sm ring-2 ring-blue-200"
                 : ochiq
                   ? "text-slate-600 hover:bg-white/70 hover:text-slate-900"
                   : "cursor-not-allowed text-slate-300"
@@ -2328,7 +2328,7 @@ function KartaBoshi({ ikonka: Ikonka, sarlavha, amal }: { ikonka: LucideIcon; sa
   return (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
       <div className="flex min-w-0 items-center gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB] ring-1 ring-blue-100">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB] ring-2 ring-blue-200">
           <Ikonka size={20} />
         </span>
         <h3 className="truncate text-lg font-extrabold tracking-tight text-[#0F172A]">{sarlavha}</h3>
@@ -2357,17 +2357,17 @@ function SanaMaydoni({ value, onChange }: { value: string; onChange: (value: str
 }
 
 const xulosaTonlari = {
-  kok: { karta: "bg-[#EFF6FF] ring-blue-100", belgi: "bg-white text-[#2563EB] ring-blue-100", qiymat: "text-[#0F172A]" },
-  oddiy: { karta: "bg-white ring-slate-200", belgi: "bg-slate-50 text-[#2563EB] ring-slate-200", qiymat: "text-[#0F172A]" },
-  yashil: { karta: "bg-emerald-50 ring-emerald-100", belgi: "bg-white text-emerald-600 ring-emerald-100", qiymat: "text-emerald-600" },
+  kok: { karta: "bg-[#EFF6FF] ring-blue-200", belgi: "bg-white text-[#2563EB] ring-blue-200", qiymat: "text-[#0F172A]" },
+  oddiy: { karta: "bg-white ring-slate-300", belgi: "bg-slate-50 text-[#2563EB] ring-slate-300", qiymat: "text-[#0F172A]" },
+  yashil: { karta: "bg-emerald-50 ring-emerald-200", belgi: "bg-white text-emerald-600 ring-emerald-200", qiymat: "text-emerald-600" },
   asosiy: { karta: "bg-[#E8EEFF] ring-blue-200", belgi: "bg-white text-[#2563EB] ring-blue-200", qiymat: "text-[#1D4ED8]" },
 } as const;
 
 function XulosaKarta({ ikonka: Ikonka, nom, qiymat, ton }: { ikonka: LucideIcon; nom: string; qiymat: string; ton: keyof typeof xulosaTonlari }) {
   const stil = xulosaTonlari[ton];
   return (
-    <div className={`flex min-w-0 items-center gap-3 rounded-2xl p-3.5 ring-1 ${stil.karta}`}>
-      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ${stil.belgi}`}>
+    <div className={`flex min-w-0 items-center gap-3 rounded-2xl p-3.5 ring-2 ${stil.karta}`}>
+      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-2 ${stil.belgi}`}>
         <Ikonka size={21} />
       </span>
       <div className="min-w-0">

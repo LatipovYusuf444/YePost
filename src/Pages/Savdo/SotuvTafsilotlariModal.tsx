@@ -1545,12 +1545,12 @@ function KelishuvCard({
     <section className="rounded-[24px] border border-orange-100/80 bg-white/92 p-5 shadow-[0_18px_46px_rgba(37,99,235,.08)] backdrop-blur">
       <CardTitle title={t("kelishuvCard.sarlavha")} action={t("common.ozgartirish")} />
 
-      <div className="mt-4 flex items-end justify-between gap-4">
-        <div>
-          <p className="text-sm text-slate-400">{t("kelishuvCard.miqdorVaValyuta")}</p>
-          <h2 className="mt-1 text-4xl font-light tracking-wide text-slate-700">{pulniFormatlash(jami, sotuvValyutasi(sotuv))}</h2>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0 max-w-full rounded-2xl border border-orange-200 border-l-4 border-l-orange-500 bg-gradient-to-br from-orange-50 to-white px-5 py-3.5 shadow-sm">
+          <p className="text-sm font-medium text-orange-700">{t("kelishuvCard.miqdorVaValyuta")}</p>
+          <h2 className="mt-1 break-words text-3xl font-bold tracking-tight text-orange-600 tabular-nums sm:text-4xl">{pulniFormatlash(jami, sotuvValyutasi(sotuv))}</h2>
         </div>
-        <span className={`rounded-full px-3.5 py-1.5 text-xs font-bold ring-1 ${holatStili}`}>{sotuvHolatiMatni[holat]}</span>
+        <span className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold ring-1 ${holatStili}`}>{sotuvHolatiMatni[holat]}</span>
       </div>
 
       <div className="mt-5 rounded-2xl border border-orange-100 bg-gradient-to-br from-[#F8FAFC] to-white p-4">
@@ -1608,13 +1608,13 @@ function KelishuvCard({
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2">
-          <Korsatkich label={t("kelishuvCard.sotuvJami")} value={pulniFormatlash(jami, sotuvValyutasi(sotuv))} />
-          <Korsatkich label={t("kelishuvCard.qabulQilingan")} value={pulniFormatlash(tolanganSumma, sotuvValyutasi(sotuv))} ohang="kok" />
+        <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3">
+          <Korsatkich label={t("kelishuvCard.sotuvJami")} value={pulniFormatlash(jami, sotuvValyutasi(sotuv))} ohang="kok" />
+          <Korsatkich label={t("kelishuvCard.qabulQilingan")} value={pulniFormatlash(tolanganSumma, sotuvValyutasi(sotuv))} ohang="yashil" />
           <Korsatkich
             label={qarzdorlikSumma > 0 ? t("kelishuvCard.qarzdorlikQoldigi") : t("kelishuvCard.qarzdorlikYoq")}
             value={pulniFormatlash(qarzdorlikSumma, sotuvValyutasi(sotuv))}
-            ohang={qarzdorlikSumma > 0 ? "qizil" : "yashil"}
+            ohang="qizil"
           />
         </div>
 
@@ -4447,18 +4447,18 @@ function QoshimchaMalumotCard({
 
 type KorsatkichOhangi = "kulrang" | "kok" | "qizil" | "yashil";
 const KORSATKICH_OHANGI: Record<KorsatkichOhangi, string> = {
-  kulrang: "text-slate-700",
-  kok: "text-[#2563EB]",
-  qizil: "text-red-500",
-  yashil: "text-emerald-600",
+  kulrang: "border-slate-200 border-t-slate-400 bg-slate-50 text-slate-700",
+  kok: "border-[#BFDBFE] border-t-[#3B82F6] bg-[#EFF6FF] text-[#1E40AF]",
+  qizil: "border-red-200 border-t-red-500 bg-red-50 text-red-700",
+  yashil: "border-emerald-200 border-t-emerald-500 bg-emerald-50 text-emerald-700",
 };
 
-// `chegara` — aniq ko'rinadigan chegara (oq fonli kartada, masalan ombordan chiqarish oynasida); odatda yengil ring.
+// `chegara` — kartaning tashqi chegarasiga qo'shimcha urg'u.
 function Korsatkich({ label, value, ohang = "kulrang", chegara = false }: { label: string; value: string; ohang?: KorsatkichOhangi; chegara?: boolean }) {
   return (
-    <div className={`rounded-xl bg-white px-3 py-2.5 ring-1 ${chegara ? "ring-slate-400/60" : "ring-slate-100"}`}>
-      <p className="text-xs text-slate-400">{label}</p>
-      <p className={`mt-1 text-sm font-black ${KORSATKICH_OHANGI[ohang]}`}>{value}</p>
+    <div className={`min-w-0 rounded-xl border border-t-4 px-3.5 py-3 shadow-sm ${KORSATKICH_OHANGI[ohang]} ${chegara ? "ring-1 ring-slate-400/60" : ""}`}>
+      <p className="text-xs font-semibold">{label}</p>
+      <p className="mt-1.5 break-words text-base font-black tabular-nums">{value}</p>
     </div>
   );
 }

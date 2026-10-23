@@ -5,6 +5,58 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Faqat modallardagi 1px chegaralar: ranglar va fokus holatlari saqlanadi. */
+@custom-variant modal-border (&:where(.app-modal-compact *, [aria-modal="true"], [aria-modal="true"] *, [data-slot="sheet-content"], [data-slot="sheet-content"] *));
+
+@utility border {
+  @variant modal-border { border-width: 2px; }
+}
+@utility border-x {
+  @variant modal-border { border-inline-width: 2px; }
+}
+@utility border-y {
+  @variant modal-border { border-block-width: 2px; }
+}
+@utility border-t {
+  @variant modal-border { border-top-width: 2px; }
+}
+@utility border-r {
+  @variant modal-border { border-right-width: 2px; }
+}
+@utility border-b {
+  @variant modal-border { border-bottom-width: 2px; }
+}
+@utility border-l {
+  @variant modal-border { border-left-width: 2px; }
+}
+@utility border-s {
+  @variant modal-border { border-inline-start-width: 2px; }
+}
+@utility border-e {
+  @variant modal-border { border-inline-end-width: 2px; }
+}
+@utility ring-1 {
+  @variant modal-border {
+    --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentColor);
+  }
+}
+@utility divide-x {
+  @variant modal-border {
+    :where(& > :not(:last-child)) {
+      border-inline-start-width: calc(2px * var(--tw-divide-x-reverse));
+      border-inline-end-width: calc(2px * (1 - var(--tw-divide-x-reverse)));
+    }
+  }
+}
+@utility divide-y {
+  @variant modal-border {
+    :where(& > :not(:last-child)) {
+      border-top-width: calc(2px * var(--tw-divide-y-reverse));
+      border-bottom-width: calc(2px * (1 - var(--tw-divide-y-reverse)));
+    }
+  }
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
