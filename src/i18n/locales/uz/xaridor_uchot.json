@@ -16,6 +16,16 @@
     "refresh": "Yangilash",
     "paid": "To'langan",
     "remaining": "Qolgan qarz",
+    "document": "Hujjat",
+    "cancellation": {
+      "action": "Bekor qilish",
+      "title": "Boshlang'ich qarzni bekor qilish",
+      "confirm": "{{name}} ({{amount}}) bekor qilinsinmi?",
+      "irreversible": "Bekor qilingan boshlang'ich qarzni qayta tiklab bo'lmaydi. Kerak bo'lsa, yangisini kiriting.",
+      "back": "Ortga",
+      "cancelling": "Bekor qilinmoqda…",
+      "cancelled": "Boshlang'ich qarz bekor qilingan. Uni qayta tiklab bo'lmaydi."
+    },
     "errors": {
       "amount": "Noldan katta, to'g'ri summa kiriting.",
       "currency": "UZS yoki USD valyutasini tanlang.",

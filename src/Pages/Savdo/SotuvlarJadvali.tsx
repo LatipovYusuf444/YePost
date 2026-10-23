@@ -372,7 +372,7 @@ export default function SotuvlarJadvali({
                         status={sotuv.status}
                         nom={`#${sotuvRaqami(sotuv)}`}
                         onTasdiq={() => onOchirish(sotuv.id)}
-                        onTiklash={onTiklash ? () => onTiklash(sotuv.id) : undefined}
+                        onTiklash={!sotuv.isOpeningDebt && onTiklash ? () => onTiklash(sotuv.id) : undefined}
                       />
                     </td>
                   )}

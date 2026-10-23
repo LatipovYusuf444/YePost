@@ -139,8 +139,14 @@ export const counterpartyBalanceReportApi = {
         rest.counterpartyType ?? (customerId ? "CUSTOMER" : supplierId ? "SUPPLIER" : undefined),
     });
   },
-  hujjatlar: (type: "CUSTOMER" | "SUPPLIER", id: string) =>
-    getReport(`/reports/counterparty-balance/${type}/${id}/documents`, {}),
+  hujjatlar: (
+    type: "CUSTOMER" | "SUPPLIER",
+    id: string,
+    params: Pick<CounterpartyBalanceFilter, "currency" | "dateFrom" | "dateTo"> = {}
+  ) => getReport(`/reports/counterparty-balance/${type}/${id}/documents`, {
+    ...params,
+    currency: params.currency ?? "UZS",
+  }),
   export: (params: CounterpartyBalanceFilter, exportTuri: ExportTuri = "excel") => {
     return exportReport(
       "/reports/counterparty-balance",

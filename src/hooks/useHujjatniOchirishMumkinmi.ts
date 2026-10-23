@@ -1,9 +1,10 @@
 import { useEffect } from "react";
 import { rolniNormallashtirish } from "@/lib/roles";
 import { useAuthProfileStore } from "@/store/authProfileStore";
-import type { JoriyFoydalanuvchi } from "@/types/tenant";
+import { bekorQilishRuxsatiBormi, type HujjatGuruhi } from "@/lib/hujjatRuxsati";
 
-export type HujjatGuruhi = "ombor" | "savdo";
+export { bekorQilishRuxsatiBormi };
+export type { HujjatGuruhi };
 
 // Backend DELETE ruxsati tahrirlash (PATCH) rollari bilan bir xil:
 // ombor hujjatlari (kirim, chiqim, ko'chirish, inventarizatsiya) — omborchi, admin, direktor;
@@ -31,14 +32,6 @@ export function useHujjatniOchirishMumkinmi(guruh: HujjatGuruhi) {
 // Bekor qilish va qayta tiklash (CANCELLED -> DRAFT) ruxsati bir xil (backend: rol, keyin grant):
 // - ombor hujjatlari (kirim, chiqim, ko'chirish, inventarizatsiya): admin va direktor;
 // - sotuv va qaytarish: direktor, yoki faol RETURN_CANCEL granti bor admin (direktorga grant shart emas).
-export function bekorQilishRuxsatiBormi(profil: JoriyFoydalanuvchi | null | undefined, guruh: HujjatGuruhi) {
-  const rol = rolniNormallashtirish(profil?.role);
-  if (rol === "DIREKTOR") return true;
-  if (rol !== "ADMIN") return false;
-  if (guruh === "ombor") return true;
-  return (profil?.grants ?? []).some((grant) => grant.code === "RETURN_CANCEL" && grant.isActive !== false);
-}
-
 export function useHujjatniBekorQilishMumkinmi(guruh: HujjatGuruhi) {
   return bekorQilishRuxsatiBormi(useProfilniKutish(), guruh);
 }

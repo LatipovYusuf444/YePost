@@ -23,6 +23,7 @@ export type StockMovementFilter = SanaFilter & {
 };
 
 export type CounterpartyBalanceFilter = {
+  currency?: "UZS" | "USD";
   counterpartyType?: "CUSTOMER" | "SUPPLIER";
   debtStatus?: "ALL" | "DEBTOR" | "CREDITOR" | "ZERO";
   dateFrom?: string;

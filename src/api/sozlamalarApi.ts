@@ -133,6 +133,11 @@ export function getApiErrorMessage(error: unknown) {
     return "Server bilan bog'lanib bo'lmadi. Internet aloqasini tekshiring.";
   }
 
+  // Bekor qilishda grant serverda ham tekshiriladi; toast va tafsilot oynasida bir xil tushunarli matn chiqsin.
+  if (error.response.status === 403 && /\/sales\/[^/?]+\/cancel(?:\?|$)/.test(error.config?.url ?? "")) {
+    return apiTiliniOlish() === "ru" ? "Нет доступа" : "Ruxsat yo'q";
+  }
+
   // Mijoz hisobi va valyuta xato kodlari: tushunarli (va kontekstga mos) matn; boshqa kodlar avvalgidek ko'rsatiladi.
   const xabar = error.response.data?.message;
   const kodMatni = xatoKodiMatni(

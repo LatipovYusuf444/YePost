@@ -1,3 +1,13 @@
+import { bekorQilishRuxsatiBormi, type HujjatRuxsatiProfili } from "./hujjatRuxsati.ts";
+
+// Boshlang'ich qarz oddiy sotuv bilan bir xil rol va RETURN_CANCEL grant tekshiruvidan o'tadi.
+export function boshlangichQarzniBekorQilishMumkin(
+  profil: HujjatRuxsatiProfili | null | undefined,
+  hujjat: { isOpeningDebt?: boolean; status?: string } | null | undefined
+) {
+  return hujjat?.isOpeningDebt === true && hujjat.status === "CONFIRMED" && bekorQilishRuxsatiBormi(profil, "savdo");
+}
+
 export type BoshlangichQarzMalumoti = {
   amount: number;
   currency?: "UZS" | "USD";
