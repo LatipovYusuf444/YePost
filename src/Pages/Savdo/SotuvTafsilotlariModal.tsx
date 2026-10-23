@@ -464,6 +464,7 @@ function OddiySotuvTafsilotlariModal({
   const bekorMumkin = useHujjatniBekorQilishMumkinmi("savdo");
   const [activeTab, setActiveTab] = useState<string>(boshlangichTab === "Tovarlar" && sotuvHolati(sotuv) === "DRAFT" ? "Umumiy" : boshlangichTab ?? "Umumiy");
   const [tahrirRejimi, setTahrirRejimi] = useState(boshlangichTab === "Tovarlar" && sotuvHolati(sotuv) === "DRAFT");
+  const [tahrirFooter, setTahrirFooter] = useState<HTMLDivElement | null>(null);
   // Qoralama tovarlaridagi saqlanmagan o'zgarishlar soni (tahrirlagich xabar beradi): yopish va to'lovga o'tish shunga qarab nazorat qilinadi.
   const [tovarOzgarishlari, setTovarOzgarishlari] = useState(0);
   const [chiqishSorovi, setChiqishSorovi] = useState<"modal" | "tahrir" | null>(null);
@@ -541,14 +542,14 @@ function OddiySotuvTafsilotlariModal({
   }
 
   return (
-    <AppModal className={`items-start justify-start p-0 py-4 pl-[88px] pr-4 ${tahrirRejimi ? "draft-sale-edit-overlay" : "bg-[rgba(15,23,42,.50)] backdrop-blur-[3px]"}`}>
-      <div className={`relative h-[calc(100vh-32px)] w-full ${tahrirRejimi ? "mx-auto max-w-[1440px]" : ""}`}>
+    <AppModal className={tahrirRejimi ? "items-start justify-start bg-slate-950/55 p-0 py-3 pl-3 pr-3 backdrop-blur-[3px] sm:pl-[78px]" : "items-start justify-start p-0 py-4 pl-[88px] pr-4 bg-[rgba(15,23,42,.50)] backdrop-blur-[3px]"}>
+      <div className={`relative w-full min-w-0 ${tahrirRejimi ? "h-[calc(100vh-24px)]" : "h-[calc(100vh-32px)]"}`}>
         <ModalTezkorPanel sotuv={sotuv} onYopish={yopishniSoraymiz} />
-        <section className={`relative h-full w-full overflow-hidden text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80 ${tahrirRejimi ? "rounded-[26px] bg-[#F5F7FB]" : "rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7]"}`}>
-        <div className="scrollbar-hidden h-full overflow-y-auto">
-          <header className={`sticky top-0 z-30 border-b backdrop-blur-xl ${tahrirRejimi ? "border-slate-200/80 bg-white/95 px-5 py-4 sm:px-6" : "border-orange-100/80 bg-[#F8FAFC]/90 px-9 py-6"}`}>
+        <section className={`relative h-full w-full overflow-hidden ${tahrirRejimi ? "rounded-[22px] bg-[#F8FAFC] text-[#1E293B] shadow-[0_24px_80px_rgba(15,23,42,.30)] ring-2 ring-slate-300/80" : "text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80 rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7]"}`}>
+        <div className={tahrirRejimi ? "flex h-full min-h-0 flex-col" : "scrollbar-hidden h-full overflow-y-auto"}>
+          <header className={`sticky top-0 z-30 backdrop-blur-xl ${tahrirRejimi ? "shrink-0 border-b-2 border-slate-300 bg-white px-4 py-4 sm:px-7" : "border-b border-orange-100/80 bg-[#F8FAFC]/90 px-9 py-6"}`}>
             <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
-              <div className="min-w-0 flex-1"><h1 className="break-words text-xl font-bold text-slate-900 sm:text-2xl">{qoralamaFormasi(sotuv).nom || `№${sotuvJadvalId(sotuv)}`}</h1><p className="mt-1 text-xs font-medium text-slate-500">{t(tahrirRejimi && draft ? "fullEdit.title" : "fullEdit.details")}</p></div>
+              <div className="min-w-0 flex-1">{tahrirRejimi ? <><div className="flex flex-wrap items-center gap-3"><h2 className="text-2xl font-extrabold tracking-tight text-[#0F172A] sm:text-[30px]">{t("fullEdit.title")}</h2><span className="rounded-full bg-[#EFF6FF] px-3 py-1 text-xs font-bold text-[#2563EB] ring-2 ring-blue-200">{t("savdo_yangi:modal.draftBadge")}</span></div><p className="mt-1 truncate text-xs font-medium text-slate-500">{qoralamaFormasi(sotuv).nom || `№${sotuvJadvalId(sotuv)}`}</p></> : <><h1 className="break-words text-xl font-bold text-slate-900 sm:text-2xl">{qoralamaFormasi(sotuv).nom || `№${sotuvJadvalId(sotuv)}`}</h1><p className="mt-1 text-xs font-medium text-slate-500">{t("fullEdit.details")}</p></>}</div>
               <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
                 {draft && !tahrirRejimi && <button type="button" disabled={amalBajarilmoqda || qoldiqYuklanmoqda} onClick={() => setTahrirRejimi(true)} className="inline-flex h-10 items-center gap-2 rounded-xl bg-gold-600 px-4 text-sm font-semibold text-white disabled:opacity-50"><PenLine size={16} />{t("fullEdit.edit")}</button>}
                 {draft && tahrirRejimi && <button type="button" disabled={amalBajarilmoqda} onClick={tahrirniBekorQilish} className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 disabled:opacity-50"><X size={16} />{t("fullEdit.discard")}</button>}
@@ -654,7 +655,7 @@ function OddiySotuvTafsilotlariModal({
             </div>
           )}
 
-          {draft && tahrirRejimi ? <QoralamaUmumiyTahrir sotuv={sotuv} amalBajarilmoqda={amalBajarilmoqda} onYangilash={onYangilash} onOzgarish={setTovarOzgarishlari} onSaqlandi={tahrirniTugatish} /> : activeTab === "Tovarlar" ? (
+          {draft && tahrirRejimi ? <QoralamaUmumiyTahrir sotuv={sotuv} amalBajarilmoqda={amalBajarilmoqda} onYangilash={onYangilash} onOzgarish={setTovarOzgarishlari} onSaqlandi={tahrirniTugatish} footerContainer={tahrirFooter} /> : activeTab === "Tovarlar" ? (
               <TovarlarTab
                 sotuv={sotuv}
                 qoldiqlar={qoldiqlar}
@@ -683,8 +684,8 @@ function OddiySotuvTafsilotlariModal({
               onHujjatOchish={hujjatniOchish}
             />
           )}
+          {draft && tahrirRejimi && <div ref={setTahrirFooter} className="shrink-0" />}
         </div>
-
         {yetkazishOchiq && <YetkazishPanel sotuv={sotuv} jami={jami} onClose={() => setYetkazishOchiq(false)} />}
         {ombordanChiqarishOchiq && <OmbordanChiqarishPanel sotuv={sotuv} jami={jami} onClose={() => setOmbordanChiqarishOchiq(false)} onOzgarish={setTovarOzgarishlari} />}
         {chiqarilganlarOchiq && <OmbordanChiqqanlarOynasi sotuv={sotuv} onYopish={() => setChiqarilganlarOchiq(false)} />}

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { CalendarDays, FilePenLine, LoaderCircle } from "lucide-react";
+import { CalendarDays, ChevronRight, ClipboardCheck, LoaderCircle, Package, Settings, UserRound } from "lucide-react";
 import { useSavdoStore } from "@/store/savdoStore";
 import { useValyutaStore } from "@/lib/valyuta";
 import { kelajakKunmi } from "@/lib/hujjatSanasi";
@@ -16,15 +16,16 @@ type Props = {
   onYangilash: (id: string, payload: Partial<SotuvYaratishMalumoti>) => Promise<boolean>;
   onOzgarish: (soni: number) => void;
   onSaqlandi: () => void;
+  footerContainer: HTMLDivElement | null;
 };
-const MAYDON = "h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-800 outline-none transition-colors hover:border-slate-300 focus:border-gold-400 focus:ring-2 focus:ring-gold-100 disabled:bg-slate-50";
-const TANLOV = "!h-11 !rounded-xl !border-slate-200 !px-3 !text-sm !shadow-none focus:!border-gold-400 focus:!ring-2 focus:!ring-gold-100";
+const MAYDON = "h-11 w-full min-w-0 rounded-xl border-2 border-slate-300 bg-white px-3.5 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
+const TANLOV = "!h-11 !rounded-xl !border-2 !border-slate-300 !px-3.5 !text-sm !shadow-none hover:!shadow-none focus:!border-[#2563EB]";
 function Maydon({ label, children }: { label: string; children: ReactNode }) {
-  return <label className="grid min-w-0 content-start gap-2"><span className="text-xs font-semibold text-slate-600">{label}</span>{children}</label>;
+  return <label className="grid min-w-0 content-start gap-1.5"><span className="text-sm font-semibold text-slate-600">{label}</span>{children}</label>;
 }
 function Bolim({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
-  return <section className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_2px_8px_rgba(15,23,42,.025)] sm:p-5">
-    <div className="mb-5 flex items-center gap-2.5 border-b border-slate-100 pb-4"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gold-50 text-gold-700">{icon}</span><h2 className="text-base font-bold text-slate-900">{title}</h2></div>
+  return <section className="min-w-0 rounded-2xl bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,.04)] ring-2 ring-[#CBD5E1] sm:p-5">
+    <div className="mb-4 flex items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB] ring-2 ring-blue-200">{icon}</span><h2 className="text-lg font-extrabold tracking-tight text-[#0F172A]">{title}</h2></div>
     {children}
   </section>;
 }
@@ -32,8 +33,17 @@ function nom(item: { id: string; firstName?: string; lastName?: string; name?: s
   return [item.firstName, item.lastName].filter(Boolean).join(" ") || item.fullName || item.name || item.id;
 }
 
-export default function QoralamaUmumiyTahrir({ sotuv, amalBajarilmoqda, onYangilash, onOzgarish, onSaqlandi }: Props) {
+export default function QoralamaUmumiyTahrir({ sotuv, amalBajarilmoqda, onYangilash, onOzgarish, onSaqlandi, footerContainer }: Props) {
   const { t } = useTranslation("savdo_tafsilot");
+  const { t: yangiT } = useTranslation("savdo_yangi");
+  const bolimlarRef = useRef<HTMLDivElement>(null);
+  const [faolBolim, setFaolBolim] = useState(0);
+  const bolimlar = [
+    { key: "client", label: yangiT("sections.clientInfo"), icon: UserRound },
+    { key: "settings", label: yangiT("sections.saleSettings"), icon: Settings },
+    { key: "products", label: t("qoralamaTahrir.sarlavha"), icon: Package },
+    { key: "summary", label: t("common.totals.umumiySumma"), icon: ClipboardCheck },
+  ];
   const omborlar = useSavdoStore((s) => s.omborlar);
   const mijozlar = useSavdoStore((s) => s.mijozlar);
   const kompaniyalar = useSavdoStore((s) => s.mijozKompaniyalari);
@@ -73,39 +83,60 @@ export default function QoralamaUmumiyTahrir({ sotuv, amalBajarilmoqda, onYangil
     return options;
   }
   const omborNomi = omborlar.find((item) => item.id === forma.warehouseId)?.name ?? (forma.warehouseId === asl.warehouseId ? sotuv.warehouse?.name : "") ?? "";
-  return <div className="pb-2">
-    <fieldset disabled={band} className="mx-4 mb-5 mt-5 min-w-0 sm:mx-6 sm:mt-6">
-      <p className="mb-4 text-sm leading-6 text-slate-500">{t("fullEdit.hint")}</p>
-      <div className="grid items-stretch gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-      <Bolim title={t("fullEdit.saleSection")} icon={<FilePenLine size={18} />}>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="sm:col-span-2"><Maydon label={t("fullEdit.name")}><input value={forma.nom} maxLength={200} onChange={(e) => maydon("nom", e.target.value)} className={MAYDON} /></Maydon></div>
+  return <>
+    <nav className="shrink-0 border-b-2 border-slate-300 bg-white px-4 pb-4 pt-3 sm:px-7" aria-label={yangiT("stepper.aria")}>
+      <ol className="grid grid-cols-4 gap-1.5 sm:grid-cols-2 sm:gap-2 lg:grid-cols-4">
+        {bolimlar.map((bolim, index) => {
+          const faol = faolBolim === index;
+          const Ikonka = bolim.icon;
+          return <li key={bolim.key} className="min-w-0"><button type="button" aria-current={faol ? "step" : undefined} onClick={() => {
+            setFaolBolim(index);
+            bolimlarRef.current?.querySelector(`[data-edit-section="${bolim.key}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }} className={`flex w-full min-w-0 flex-col items-center gap-1 rounded-2xl border-2 px-1 py-2 text-center transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-100 sm:flex-row sm:gap-3 sm:px-3 sm:text-left ${faol ? "border-blue-300 bg-[#EFF6FF] shadow-[0_6px_16px_rgba(37,99,235,.10)]" : "border-slate-300 bg-slate-50/70 hover:border-blue-300 hover:bg-white"}`}>
+            <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black sm:h-10 sm:w-10 sm:text-base ${faol ? "bg-[#2563EB] text-white shadow-[0_6px_14px_rgba(37,99,235,.35)]" : "border-2 border-slate-300 bg-white text-slate-500"}`}>{index + 1}</span>
+            <Ikonka size={20} className={`hidden shrink-0 sm:block ${faol ? "text-[#2563EB]" : "text-slate-400"}`} aria-hidden />
+            <span className="min-w-0 flex-1 truncate text-[11px] font-extrabold text-slate-700 sm:text-sm">{bolim.label}</span>
+            {index < bolimlar.length - 1 && <ChevronRight size={16} className="hidden shrink-0 text-slate-300 lg:block" aria-hidden />}
+          </button></li>;
+        })}
+      </ol>
+    </nav>
+    <div ref={bolimlarRef} className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-7">
+    <div className="grid items-start gap-5 xl:grid-cols-[minmax(360px,0.42fr)_minmax(0,1fr)]">
+    <fieldset disabled={band} className="min-w-0 space-y-4">
+      <div data-edit-section="client"><Bolim title={yangiT("sections.clientInfo")} icon={<UserRound size={20} />}>
+      <div className="space-y-4">
         <Maydon label={t("fullEdit.customer")}><SavdoSelect buttonClassName={TANLOV} value={forma.customerId} onChange={mijozniTanlash} disabled={band} options={[...(!asl.customerId ? [{value:"",label:t("fullEdit.none")}] : []), ...variantlar(mijozlar, asl.customerId, nom, sotuv.customer ? nom(sotuv.customer) : "")]} /></Maydon>
         <Maydon label={t("fullEdit.company")}><SavdoSelect buttonClassName={TANLOV} value={forma.clientCompanyId} onChange={kompaniyaniTanlash} disabled={band} options={[...(!asl.clientCompanyId ? [{value:"",label:t("fullEdit.none")}] : []), ...variantlar(kompaniyalar, asl.clientCompanyId, nom, sotuv.clientCompany ? nom(sotuv.clientCompany) : "")]} /></Maydon>
-        <Maydon label={t("fullEdit.warehouse")}><SavdoSelect buttonClassName={TANLOV} value={forma.warehouseId} onChange={omborniTanlash} disabled={band} options={variantlar(omborlar, asl.warehouseId, (item) => item.name || item.id, sotuv.warehouse?.name || "")} /></Maydon>
-        <Maydon label={t("fullEdit.currency")}><SavdoSelect buttonClassName={TANLOV} value={forma.currency} onChange={(value) => maydon("currency", value)} disabled={band} options={[{value:"UZS",label:"UZS (so'm)"},{value:"USD",label:"USD ($)",disabled:!usdMumkin && asl.currency!=="USD"}]} /></Maydon>
         {!forma.customerId && !forma.clientCompanyId && <>
           <Maydon label={t("fullEdit.walkInName")}><input value={forma.walkInCustomerName} maxLength={200} onChange={(e) => maydon("walkInCustomerName",e.target.value)} className={MAYDON} /></Maydon>
           <Maydon label={t("fullEdit.phone")}><input type="tel" value={forma.walkInCustomerPhone} maxLength={50} onChange={(e) => maydon("walkInCustomerPhone",e.target.value)} className={MAYDON} /></Maydon>
         </>}
-        <div className="sm:col-span-2 rounded-xl border border-slate-100 bg-slate-50/70 p-3"><Maydon label={t("fullEdit.responsible")}><input readOnly value={sotuv.responsible ? nom(sotuv.responsible) : sotuv.responsibleId || "—"} className="w-full min-w-0 bg-transparent text-sm font-semibold text-slate-700 outline-none" /></Maydon></div>
       </div>
-      </Bolim>
-      <Bolim title={t("fullEdit.scheduleSection")} icon={<CalendarDays size={18} />}>
+      </Bolim></div>
+      <div data-edit-section="settings"><Bolim title={yangiT("sections.saleSettings")} icon={<Settings size={20} />}>
+      <div className="space-y-4">
+        <Maydon label={t("fullEdit.name")}><input value={forma.nom} maxLength={200} onChange={(e) => maydon("nom", e.target.value)} className={MAYDON} /></Maydon>
+        <Maydon label={t("fullEdit.stage")}><input value={forma.bosqich} maxLength={100} onChange={(e) => maydon("bosqich", e.target.value)} className={MAYDON} /></Maydon>
+        <Maydon label={t("fullEdit.warehouse")}><SavdoSelect buttonClassName={TANLOV} value={forma.warehouseId} onChange={omborniTanlash} disabled={band} options={variantlar(omborlar, asl.warehouseId, (item) => item.name || item.id, sotuv.warehouse?.name || "")} /></Maydon>
+        <Maydon label={t("fullEdit.currency")}><SavdoSelect buttonClassName={TANLOV} value={forma.currency} onChange={(value) => maydon("currency", value)} disabled={band} options={[{value:"UZS",label:"UZS (so'm)"},{value:"USD",label:"USD ($)",disabled:!usdMumkin && asl.currency!=="USD"}]} /></Maydon>
+        <Maydon label={t("fullEdit.responsible")}><input readOnly value={sotuv.responsible ? nom(sotuv.responsible) : sotuv.responsibleId || "—"} className={`${MAYDON} bg-slate-50`} /></Maydon>
+      </div>
+      </Bolim></div>
+      <Bolim title={t("fullEdit.scheduleSection")} icon={<CalendarDays size={20} />}>
       <div className="grid gap-4 sm:grid-cols-2">
         <Maydon label={t("fullEdit.date")}><input type="date" value={forma.date} onChange={(e) => maydon("date", e.target.value)} className={MAYDON} /></Maydon>
-        <Maydon label={t("fullEdit.stage")}><input value={forma.bosqich} maxLength={100} onChange={(e) => maydon("bosqich", e.target.value)} className={MAYDON} /></Maydon>
         <Maydon label={t("fullEdit.start")}><input type="date" value={forma.boshlanish} onChange={(e) => maydon("boshlanish", e.target.value)} className={MAYDON} /></Maydon>
         <Maydon label={t("fullEdit.end")}><input type="date" value={forma.tugash} onChange={(e) => maydon("tugash", e.target.value)} className={MAYDON} /></Maydon>
         <div className="sm:col-span-2"><Maydon label={t("fullEdit.note")}><textarea value={forma.izoh} maxLength={2000} rows={4} onChange={(e) => maydon("izoh",e.target.value)} className={`${MAYDON} h-auto min-h-28 resize-y py-3`} /></Maydon></div>
       </div>
       </Bolim>
-      </div>
       {xato && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-medium text-red-700">{xato}</p>}
       {qoldiqYuklanmoqda && <p role="status" className="mt-4 flex items-center gap-2 text-sm text-slate-500"><LoaderCircle size={16} className="animate-spin" />{t("common:actions.loading")}</p>}
     </fieldset>
-    <fieldset disabled={band} className="min-w-0">
-      <QoralamaTovarlarTahriri sotuv={sotuv} qoldiqlar={qoldiqlar} amalBajarilmoqda={band} onYangilash={onYangilash} onOzgarish={setTovarOzgarishlari} umumiyTahrir={{malumot:patch,ozgarishlarSoni,warehouseId:forma.warehouseId,omborNomi,currency:forma.currency,xatoBor:Boolean(xato),onBekor:tiklash,onSaqlandi}} />
+    <fieldset data-edit-section="products" disabled={band} className="min-w-0">
+      <QoralamaTovarlarTahriri sotuv={sotuv} qoldiqlar={qoldiqlar} amalBajarilmoqda={band} onYangilash={onYangilash} onOzgarish={setTovarOzgarishlari} footerContainer={footerContainer} umumiyTahrir={{malumot:patch,ozgarishlarSoni,warehouseId:forma.warehouseId,omborNomi,currency:forma.currency,xatoBor:Boolean(xato),onBekor:tiklash,onSaqlandi}} />
     </fieldset>
-  </div>;
+    </div>
+  </div></>;
 }
