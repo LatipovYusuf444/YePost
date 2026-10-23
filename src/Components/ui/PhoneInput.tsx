@@ -2,7 +2,11 @@ const KOD = "+998";
 
 function raqamlarniAjratish(qiymat: string) {
   let raqamlar = (qiymat || "").replace(/\D/g, "");
-  if (raqamlar.startsWith("998")) raqamlar = raqamlar.slice(3);
+  // "99 8" ham mahalliy raqamning boshi bo'lishi mumkin.
+  // Kodni faqat aniq xalqaro formatdan ajratamiz.
+  if (raqamlar.startsWith("998") && (qiymat.trimStart().startsWith(KOD) || raqamlar.length === 12)) {
+    raqamlar = raqamlar.slice(3);
+  }
   return raqamlar.slice(0, 9);
 }
 
