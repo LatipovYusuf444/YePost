@@ -23,6 +23,7 @@ import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumki
 import { useOmborStore } from "@/store/omborStore";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
 import InventarizatsiyaKorinish from "./InventarizatsiyaKorinish";
+import { kirimYetkazibBeruvchiNomi } from "@/lib/kirimYetkazibBeruvchi";
 import MahsulotTanlov, { type MahsulotVarianti } from "./MahsulotTanlov";
 import type { InventoryDocumentType } from "@/types/inventoryDocuments";
 import type {
@@ -582,11 +583,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
                       <Malumot
                         nom={t("view.supplier")}
                         qiymat={
-                          (hujjat as KirimHujjati).supplier?.name ??
-                          store.yetkazibBeruvchilar.find(
-                            (item) =>
-                              item.id === (hujjat as KirimHujjati).supplierId
-                          )?.name ??
+                          kirimYetkazibBeruvchiNomi(hujjat as KirimHujjati, store.yetkazibBeruvchilar) ||
                           t("view.unknownSupplier")
                         }
                       />

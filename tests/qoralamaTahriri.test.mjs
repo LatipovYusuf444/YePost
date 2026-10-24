@@ -22,6 +22,7 @@ import {
   valyutaniOzgartirish,
   xatoBormi,
   yangiQatorYaratish,
+  qatorNarxTuriniOzgartirish,
 } from '../src/lib/qoralamaTahriri.ts';
 
 const KURS = 12000;
@@ -46,6 +47,74 @@ const ITEM_FOIZLI = { id: 'i4', modificationId: 'a', quantity: 5, price: 25000, 
 function boshlash(item, qatorValyutasi = 'UZS', indeks = 0) {
   return qatorniBoshlash(item, indeks, { nom: item.modificationId, qatorValyutasi });
 }
+
+test('draft price type updates the saved row and PATCH uses the selected type', () => {
+  const q = qatorNarxTuriniOzgartirish(boshlash(ITEM_A), 'WHOLESALE', SOM, UZS);
+  assert.equal(q.narx, '22000');
+  assert.equal(q.miqdor, '5');
+  assert.equal(qatorOzgarganmi(q), true);
+  assert.deepEqual(tahrirItemlari([q], UZS), [{ modificationId: 'a', quantity: 5, price: 22000, discount: 0, priceType: 'WHOLESALE' }]);
+});
+
+test('changing only priceType still enables saving when both prices are equal', () => {
+  const stock = { ...SOM, modification: { ...SOM.modification, price: { ...SOM.modification.price, wholesalePrice: 25000 } } };
+  const q = qatorNarxTuriniOzgartirish(boshlash(ITEM_A), 'WHOLESALE', stock, UZS);
+  assert.equal(q.narx, '25000');
+  assert.equal(ozgarishlarSoni([q]), 1);
+  assert.equal(tahrirItemlari([q], UZS)[0].priceType, 'WHOLESALE');
+});
+
+test('repricing keeps the current row currency and recalculates percentage discounts', () => {
+  const q = qatorNarxTuriniOzgartirish(boshlash(ITEM_FOIZLI), 'WHOLESALE', SOM, UZS);
+  assert.equal(q.chegirmaFoiz, 10);
+  assert.equal(q.chegirma, '11000');
+  const usd = qatorNarxTuriniOzgartirish(boshlash({ ...ITEM_A, currency: 'USD', price: 2 }, 'USD'), 'WHOLESALE', SOM, UZS);
+  assert.equal(usd.valyuta, 'USD');
+  assert.equal(usd.narx, '1.83');
+  assert.equal(tahrirItemlari([usd], UZS)[0].currency, 'USD');
+});
+
+test('bulk repricing can skip unavailable, disabled and deleted rows without wiping their prices', () => {
+  const q = boshlash(ITEM_A);
+  for (const [stock, ctx] of [[NARXSIZ, UZS], [null, UZS], [SOM, { ...UZS, turRuxsati: () => false }]]) {
+    assert.equal(qatorNarxTuriniOzgartirish(q, 'WHOLESALE', stock, ctx), q);
+  }
+  const deleted = { ...q, ochirildi: true };
+  assert.equal(qatorNarxTuriniOzgartirish(deleted, 'WHOLESALE', SOM, UZS), deleted);
+  const blank = qatorNarxTuriniOzgartirish(yangiQatorYaratish('new', 'UZS'), 'WHOLESALE', null, UZS);
+  assert.equal(blank.tur, 'WHOLESALE');
+});
+
+test('package repricing keeps selected unit and uses that unit price, not the base unit price', () => {
+  const stock = { ...BIRLIKLI, birliklar: [dona, { ...pochka, ulgurji: 40000 }], modification: { ...BIRLIKLI.modification, price: { retailPrice: 1000, wholesalePrice: 900 } } };
+  const q = qatorNarxTuriniOzgartirish(boshlash(ITEM_POCHKA), 'WHOLESALE', stock, UZS);
+  assert.equal(q.birlikId, 'pochka');
+  assert.equal(q.miqdor, '2');
+  assert.equal(q.narx, '40000');
+  assert.equal(tahrirItemlari([q], UZS)[0].unitId, 'pochka');
+});
+
+test('selected draft price type and exact price survive a currency round trip', () => {
+  const q = qatorNarxTuriniOzgartirish(boshlash(ITEM_A), 'WHOLESALE', SOM, UZS);
+  const returned = valyutaniOzgartirish(valyutaniOzgartirish(q, 'USD', KURS), 'UZS', KURS);
+  assert.equal(returned.narx, '22000');
+  assert.equal(returned.tur, 'WHOLESALE');
+  assert.equal(tahrirItemlari([returned], UZS)[0].price, 22000);
+});
+
+test('editing a converted row price or discount cannot restore a stale currency snapshot', () => {
+  const converted = valyutaniOzgartirish(boshlash(ITEM_A), 'USD', KURS);
+  const manual = narxniOzgartirish(converted, '3');
+  assert.equal(valyutaniOzgartirish(manual, 'UZS', KURS).narx, '36000');
+  const discounted = chegirmaniOzgartirish(converted, '1');
+  assert.equal(valyutaniOzgartirish(discounted, 'UZS', KURS).chegirma, '12000');
+});
+
+test('replacing a converted product clears the previous product currency snapshot', () => {
+  const converted = valyutaniOzgartirish(boshlash(ITEM_A), 'USD', KURS);
+  const replaced = mahsulotniAlmashtirish(converted, DOLLAR, { nom: 'Dollar', standartTur: 'RETAIL', ctx: USD });
+  assert.equal(valyutaniOzgartirish(replaced, 'UZS', KURS).narx, '1200000');
+});
 
 test('sonniOqish va kiritishniTozalash: vergul, bo‘shliq va noto‘g‘ri matn', () => {
   assert.equal(sonniOqish('1 500,5'), 1500.5);

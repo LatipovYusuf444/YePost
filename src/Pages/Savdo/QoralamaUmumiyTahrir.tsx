@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { CalendarDays, ChevronRight, ClipboardCheck, LoaderCircle, Package, Settings, UserRound } from "lucide-react";
 import { useSavdoStore } from "@/store/savdoStore";
 import { useValyutaStore } from "@/lib/valyuta";
-import { kelajakKunmi } from "@/lib/hujjatSanasi";
+import { bugungiToshkentKuni, kelajakKunmi } from "@/lib/hujjatSanasi";
 import { qoralamaFormasi, qoralamaPatch, type QoralamaForma } from "@/lib/qoralamaUmumiyTahrir";
 import { mijozgaMosSotuvNomi } from "@/lib/sotuvNomi";
 import type { Sotuv, SotuvYaratishMalumoti } from "@/types/savdo";
@@ -83,6 +83,16 @@ export default function QoralamaUmumiyTahrir({ sotuv, amalBajarilmoqda, onYangil
     return options;
   }
   const omborNomi = omborlar.find((item) => item.id === forma.warehouseId)?.name ?? (forma.warehouseId === asl.warehouseId ? sotuv.warehouse?.name : "") ?? "";
+  const sanaMaydoni = <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-blue-100 bg-blue-50/60 px-4 py-3">
+    <div className="flex min-w-0 items-center gap-3">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#2563EB] ring-1 ring-blue-200"><CalendarDays size={20} aria-hidden /></span>
+      <div>
+        <label htmlFor="qoralama-sotuv-sanasi" className="text-sm font-bold text-slate-700">{t("fullEdit.saleDate")}</label>
+        <p id="qoralama-sotuv-sanasi-hint" className="mt-0.5 text-xs font-medium leading-5 text-slate-500">{t("fullEdit.dateHint")}</p>
+      </div>
+    </div>
+    <input id="qoralama-sotuv-sanasi" type="date" value={forma.date} max={bugungiToshkentKuni()} required disabled={band} aria-describedby="qoralama-sotuv-sanasi-hint" aria-invalid={!forma.date || kelajakKunmi(forma.date) || undefined} onChange={(e) => maydon("date", e.target.value)} className={`${MAYDON} sm:w-[210px] focus:ring-blue-100 [color-scheme:light]`} />
+  </div>;
   return <>
     <nav className="shrink-0 border-b-2 border-slate-300 bg-white px-4 pb-4 pt-3 sm:px-7" aria-label={yangiT("stepper.aria")}>
       <ol className="grid grid-cols-4 gap-1.5 sm:grid-cols-2 sm:gap-2 lg:grid-cols-4">
@@ -123,19 +133,11 @@ export default function QoralamaUmumiyTahrir({ sotuv, amalBajarilmoqda, onYangil
         <Maydon label={t("fullEdit.responsible")}><input readOnly value={sotuv.responsible ? nom(sotuv.responsible) : sotuv.responsibleId || "—"} className={`${MAYDON} bg-slate-50`} /></Maydon>
       </div>
       </Bolim></div>
-      <Bolim title={t("fullEdit.scheduleSection")} icon={<CalendarDays size={20} />}>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Maydon label={t("fullEdit.date")}><input type="date" value={forma.date} onChange={(e) => maydon("date", e.target.value)} className={MAYDON} /></Maydon>
-        <Maydon label={t("fullEdit.start")}><input type="date" value={forma.boshlanish} onChange={(e) => maydon("boshlanish", e.target.value)} className={MAYDON} /></Maydon>
-        <Maydon label={t("fullEdit.end")}><input type="date" value={forma.tugash} onChange={(e) => maydon("tugash", e.target.value)} className={MAYDON} /></Maydon>
-        <div className="sm:col-span-2"><Maydon label={t("fullEdit.note")}><textarea value={forma.izoh} maxLength={2000} rows={4} onChange={(e) => maydon("izoh",e.target.value)} className={`${MAYDON} h-auto min-h-28 resize-y py-3`} /></Maydon></div>
-      </div>
-      </Bolim>
       {xato && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-medium text-red-700">{xato}</p>}
       {qoldiqYuklanmoqda && <p role="status" className="mt-4 flex items-center gap-2 text-sm text-slate-500"><LoaderCircle size={16} className="animate-spin" />{t("common:actions.loading")}</p>}
     </fieldset>
     <fieldset data-edit-section="products" disabled={band} className="min-w-0">
-      <QoralamaTovarlarTahriri sotuv={sotuv} qoldiqlar={qoldiqlar} amalBajarilmoqda={band} onYangilash={onYangilash} onOzgarish={setTovarOzgarishlari} footerContainer={footerContainer} umumiyTahrir={{malumot:patch,ozgarishlarSoni,warehouseId:forma.warehouseId,omborNomi,currency:forma.currency,xatoBor:Boolean(xato),onBekor:tiklash,onSaqlandi}} />
+      <QoralamaTovarlarTahriri sotuv={sotuv} qoldiqlar={qoldiqlar} amalBajarilmoqda={band} onYangilash={onYangilash} onOzgarish={setTovarOzgarishlari} footerContainer={footerContainer} umumiyTahrir={{malumot:patch,ozgarishlarSoni,warehouseId:forma.warehouseId,omborNomi,currency:forma.currency,sanaMaydoni,xatoBor:Boolean(xato),onBekor:tiklash,onSaqlandi}} />
     </fieldset>
     </div>
   </div></>;

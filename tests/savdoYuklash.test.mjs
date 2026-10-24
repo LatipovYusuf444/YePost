@@ -22,10 +22,47 @@ registerHooks({
   },
 });
 const { useSavdoStore } = await import('../src/store/savdoStore.ts');
-const { omborQoldiqlariniOlish } = await import('../src/api/savdoApi.ts');
+const { omborQoldiqlariniOlish, sotuvlarRoyxatiniOlish } = await import('../src/api/savdoApi.ts');
 const { stockBalanceReport } = await import('../src/api/reportsApi.ts');
 const initial = useSavdoStore.getState();
 const count = url => calls.filter(call => call.url === url).length;
+
+test('sales statistics load all explicitly paginated sales instead of trusting a partial first list', async () => {
+  reset();
+  handlers.set('/sales', config => {
+    const page = config?.params?.page;
+    return { data: [{ id: page === 2 ? 'second' : 'first' }], total: 2, page: page ?? 1, pageSize: 1, totalPages: 2 };
+  });
+  assert.deepEqual((await sotuvlarRoyxatiniOlish()).map(row => row.id), ['first', 'second']);
+  assert.equal(calls.at(-1).config.params.page, 2);
+});
+
+test('an API ignoring pagination cannot silently feed incomplete sales totals', async () => {
+  reset();
+  handlers.set('/sales', () => ({ data: [{ id: 'first' }], total: 2, pageSize: 1 }));
+  await assert.rejects(sotuvlarRoyxatiniOlish(), /to'liq/);
+});
+
+test('legacy results/value list wrappers remain supported', async () => {
+  for (const key of ['results', 'value']) {
+    reset();
+    handlers.set('/sales', () => ({ [key]: [{ id: 'legacy' }] }));
+    assert.equal((await sotuvlarRoyxatiniOlish())[0]?.id, 'legacy', key);
+  }
+});
+
+test('dismissing a failed load cannot turn unavailable sales statistics into zero', async () => {
+  reset();
+  useSavdoStore.setState(initial, true);
+  handlers.set('/sales', () => { throw new Error('Unavailable'); });
+  await initial.boshlangichMalumotlarniYuklash();
+  assert.equal(useSavdoStore.getState().sotuvlarToliq, false);
+  initial.xatolikniTozalash();
+  assert.equal(useSavdoStore.getState().sotuvlarToliq, false);
+  handlers.delete('/sales');
+  await initial.boshlangichMalumotlarniYuklash();
+  assert.equal(useSavdoStore.getState().sotuvlarToliq, true);
+});
 
 test('concurrent page mounts and customer prefetch share one initial request set', async () => {
   reset();

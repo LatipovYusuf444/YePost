@@ -11,6 +11,7 @@ import {
   mavjudMahsulotmi,
   miqdorniOzgartirish,
   narxniOzgartirish,
+  qatorNarxTuriniOzgartirish,
   ozgarishlarSoni,
   qatorOzgarganmi,
   qatorXatolari,
@@ -34,7 +35,8 @@ import { useValyutaStore, type Valyuta } from "@/lib/valyuta";
 import { useSavdoSozlamalariStore } from "@/store/savdoSozlamalariStore";
 import { useSavdoStore } from "@/store/savdoStore";
 import { qoralamaTahrirSummasi } from "@/lib/qoralamaUmumiyTahrir";
-import type { QoldiqTanlovi, Sotuv, SotuvMahsuloti, SotuvYaratishMalumoti } from "@/types/savdo";
+import type { QoldiqTanlovi, Sotuv, SotuvMahsuloti, SotuvNarxTuri, SotuvYaratishMalumoti } from "@/types/savdo";
+import NarxTuriTanlovi from "./NarxTuriTanlovi";
 import { pulniFormatlash, qatorValyutasi, sotuvSummasi, sotuvValyutasi, sotuvValyutasigaOgirish } from "./savdoYordamchilari";
 
 type Props = {
@@ -51,6 +53,7 @@ type Props = {
     warehouseId: string;
     omborNomi: string;
     currency: string;
+    sanaMaydoni?: ReactNode;
     xatoBor: boolean;
     onBekor: () => void;
     onSaqlandi: () => void;
@@ -120,6 +123,7 @@ function ValyutaTugmasi({ valyuta, mumkin, sarlavha, onClick }: { valyuta: Valyu
 
 export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilmoqda, onYangilash, onOzgarish, umumiyTahrir, footerContainer }: Props) {
   const { t } = useTranslation("savdo_tafsilot");
+  const { t: yangiT } = useTranslation("savdo_yangi");
   const sotuvVal = umumiyTahrir?.currency === "USD" ? "USD" : umumiyTahrir ? "UZS" : sotuvValyutasi(sotuv);
   const aslOmborId = sotuv.warehouseId ?? sotuv.warehouse?.id;
   const omborId = umumiyTahrir?.warehouseId ?? aslOmborId;
@@ -136,7 +140,7 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
   }, [sozlamaniYuklash]);
 
   const ctx = useMemo<TahrirKonteksti>(
-    () => ({ sotuvVal, kurs, turRuxsati: (tur) => !narxTurlari || narxTurlari.includes(tur) }),
+    () => ({ sotuvVal, kurs, turRuxsati: (tur) => narxTurlari ? narxTurlari.includes(tur) : tur !== "COST" }),
     [sotuvVal, kurs, narxTurlari]
   );
 
@@ -147,6 +151,9 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
     )
   );
   const [qatorlar, setQatorlar] = useState<TahrirQatori[]>(boshlangich);
+  const boshlangichTur = boshlangich.length > 0 && boshlangich.every((q) => q.tur === boshlangich[0].tur) ? boshlangich[0].tur : null;
+  const [narxTuri, setNarxTuri] = useState<SotuvNarxTuri | null>(boshlangichTur);
+  const [narxXabari, setNarxXabari] = useState("");
   const [urinildi, setUrinildi] = useState(false);
   const [popover, setPopover] = useState<PopoverHolati | null>(null);
   const [qidiruv, setQidiruv] = useState("");
@@ -246,10 +253,25 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
     setQatorlar((qatorlarRoyxati) => qatorlarRoyxati.map((q) => (q.kalit === kalit ? ozgartir(q) : q)));
   }
 
+  function narxTuriniTanlash(tur: SotuvNarxTuri) {
+    if (amalBajarilmoqda || !ctx.turRuxsati(tur)) return;
+    setNarxTuri(tur);
+    const yangilangan = qatorlar.map((q) => qatorNarxTuriniOzgartirish(q, tur, qoldiqOl(q), ctx));
+    const narxsiz = qatorlar.filter((q, i) => !q.ochirildi && q.modificationId && yangilangan[i] === q).length;
+    setQatorlar(yangilangan);
+    setNarxXabari(narxsiz ? yangiT("priceTypes.skipped", { count: narxsiz, type: yangiT(`priceTypes.${tur === "COST" ? "cost" : tur === "RETAIL" ? "retail" : "wholesale"}`) }) : "");
+  }
+
+  function qatorTuriniTanlash(kalit: string, tur: SotuvNarxTuri) {
+    if (amalBajarilmoqda || !ctx.turRuxsati(tur)) return;
+    setNarxXabari("");
+    qatorniYangilash(kalit, (q) => qatorNarxTuriniOzgartirish(q, tur, qoldiqOl(q), ctx));
+  }
+
   function qatorQoshish() {
     yangiRaqami.current += 1;
     const kalit = `yangi-${yangiRaqami.current}`;
-    setQatorlar((qatorlarRoyxati) => [...qatorlarRoyxati, yangiQatorYaratish(kalit, sotuvVal)]);
+    setQatorlar((qatorlarRoyxati) => [...qatorlarRoyxati, { ...yangiQatorYaratish(kalit, sotuvVal), tur: narxTuri }]);
     setOchiladiganKalit(kalit);
   }
 
@@ -264,7 +286,7 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
   }
 
   function standartTur(q: TahrirQatori) {
-    return q.tur ?? q.asl?.priceType ?? narxTurlari?.[0] ?? "RETAIL";
+    return q.tur ?? narxTuri ?? q.asl?.priceType ?? narxTurlari?.[0] ?? "RETAIL";
   }
 
   function mahsulotTanlash(qoldiq: QoldiqTanlovi) {
@@ -279,6 +301,8 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
 
   function hammasiniBekorQilish() {
     setQatorlar(boshlangich);
+    setNarxTuri(boshlangichTur);
+    setNarxXabari("");
     setUrinildi(false);
     popoverniYopish();
     umumiyTahrir?.onBekor();
@@ -313,7 +337,7 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
     if (!popoverQatori) return [];
     const qiymat = qidiruv.trim().toLowerCase();
     const band = bandMahsulotlar(qatorlar, popoverQatori.kalit);
-    const standart = popoverQatori.tur ?? popoverQatori.asl?.priceType ?? narxTurlari?.[0] ?? "RETAIL";
+    const standart = popoverQatori.tur ?? narxTuri ?? popoverQatori.asl?.priceType ?? narxTurlari?.[0] ?? "RETAIL";
     return tanlashRoyxati
       .map((qoldiq) => {
         const nom = qoldiqNomi(qoldiq) || qoldiq.modificationId;
@@ -334,7 +358,7 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
       })
       .filter((element) => !qiymat || element.matn.includes(qiymat))
       .sort((a, b) => Number(b.holat === "ok" || b.holat === "kurs") - Number(a.holat === "ok" || a.holat === "kurs") || a.nom.localeCompare(b.nom, "uz"));
-  }, [popoverQatori, qidiruv, qatorlar, tanlashRoyxati, narxTurlari, ctx.turRuxsati, kurs, sotuvVal]);
+  }, [popoverQatori, qidiruv, qatorlar, tanlashRoyxati, narxTurlari, narxTuri, ctx.turRuxsati, kurs, sotuvVal]);
 
   const korsatiladiganElementlar = royxatElementlari.slice(0, POPOVER_LIMIT);
 
@@ -408,6 +432,20 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
           <Plus size={16} />
           {t("qoralamaTahrir.mahsulotQoshish")}
         </button>
+      </div>
+
+      {umumiyTahrir?.sanaMaydoni}
+
+      <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border-2 border-slate-200 bg-slate-50 px-4 py-3">
+        <span className="text-sm font-bold text-slate-600">{yangiT("priceTypes.label")}</span>
+        <NarxTuriTanlovi
+          qiymat={narxTuri}
+          onChange={narxTuriniTanlash}
+          holat={(tur) => ({ ruxsat: ctx.turRuxsati(tur), narxBor: true })}
+          disabled={amalBajarilmoqda}
+        />
+        <p className="min-w-[200px] flex-1 text-xs font-medium leading-5 text-slate-500">{yangiT("priceTypes.hint")}</p>
+        {narxXabari && <p role="status" className="w-full text-xs font-semibold text-amber-700">{narxXabari}</p>}
       </div>
 
       {kursYoq && (
@@ -558,6 +596,13 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
                     onClick={() => qatorniYangilash(q.kalit, (qator) => valyutaniOzgartirish(qator, valyutaNishoni, kurs))}
                   />
                 </div>
+                <NarxTuriTanlovi
+                  qiymat={q.tur}
+                  onChange={(tur) => qatorTuriniTanlash(q.kalit, tur)}
+                  holat={(tur) => ({ ruxsat: ctx.turRuxsati(tur), narxBor: !q.modificationId || qatorNarxTuriniOzgartirish(q, tur, qoldiq, ctx) !== q })}
+                  disabled={amalBajarilmoqda || ochirildi}
+                  kichik
+                />
                 {narxXatoKorinadi && xatolar.narx && <XatoMatni>{t("qoralamaTahrir.xatolar.narxKerak")}</XatoMatni>}
               </Maydon>
 

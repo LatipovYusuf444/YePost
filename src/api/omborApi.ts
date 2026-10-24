@@ -22,6 +22,7 @@ import type {
   OmborSaqlashMalumoti,
 } from "@/types/ombor";
 import { profilApi } from "./authProfileApi";
+import { kirimYetkazibBeruvchilariniToldirish } from "@/lib/kirimYetkazibBeruvchi";
 
 type RoyxatJavobi<T> = T[] | { value?: T[]; items?: T[]; results?: T[]; data?: T[] };
 
@@ -182,17 +183,24 @@ function kirimOgohlantirishlari(raw: KirimHujjati | ApiEnvelope<KirimHujjati>): 
   return !hujjat.warnings && Array.isArray(tashqi) ? { ...hujjat, warnings: tashqi } : hujjat;
 }
 
+async function kirimYetkazibBeruvchisiniOlish(id: string): Promise<NomliEntity> {
+  return apiData((await apiClient.get<NomliEntity | ApiEnvelope<NomliEntity>>(
+    `/partners/suppliers/${id}`, { xatoniYashirish: true, timeout: 10_000 },
+  )).data);
+}
+
 export const kirimApi = {
   royxat: async () => {
     const response = await apiClient.get<RoyxatJavobi<KirimHujjati>>(
       "/inventory/purchases"
     );
-    return royxatniAjratish(response.data);
+    return kirimYetkazibBeruvchilariniToldirish(royxatniAjratish(response.data), kirimYetkazibBeruvchisiniOlish);
   },
-  olish: async (id: string) =>
+  olish: async (id: string) => (await kirimYetkazibBeruvchilariniToldirish([
     apiData(
       (await apiClient.get<KirimHujjati | ApiEnvelope<KirimHujjati>>(`/inventory/purchases/${id}`)).data
     ),
+  ], kirimYetkazibBeruvchisiniOlish))[0],
   // Javobdagi `warnings` (FACTOR_CHANGED) hujjat ichida ham, o'rovchi javob yonida ham kelishi mumkin: hujjatga qo'shib qaytariladi.
   yaratish: async (data: KirimYaratishMalumoti) =>
     kirimOgohlantirishlari((await apiClient.post<KirimHujjati | ApiEnvelope<KirimHujjati>>("/inventory/purchases", data)).data),

@@ -10,10 +10,10 @@ import type { StockBalanceItem } from "@/api/reportsApi";
 import type { Kategoriya, Mahsulot, OlchovBirligi } from "@/types/catalog";
 import { kategoriyaMahsulotlariniBirlashtirish, kategoriyaMiqdorJamilari, kategoriyaQatorlari } from "@/lib/kategoriyaQoldigi";
 
-type Props = { kategoriya: Kategoriya; mahsulotlar: Mahsulot[]; birliklar: OlchovBirligi[]; onYopish: () => void };
+type Props = { kategoriya: Kategoriya; mahsulotlar: Mahsulot[]; birliklar: OlchovBirligi[]; onYopish: () => void; onMahsulotOchish: (id: string) => void; yashirin?: boolean };
 const sonMatni = (son: number) => son.toLocaleString("uz-UZ", { maximumFractionDigits: 3 });
 
-export default function KategoriyaQoldigiModal({ kategoriya, mahsulotlar, birliklar, onYopish }: Props) {
+export default function KategoriyaQoldigiModal({ kategoriya, mahsulotlar, birliklar, onYopish, onMahsulotOchish, yashirin = false }: Props) {
   const { t } = useTranslation("mahsulotlar");
   const [qoldiqlar, setQoldiqlar] = useState<StockBalanceItem[]>([]);
   // Serverdan (GET /catalog/products?categoryId=) kelgan kategoriya mahsulotlari; kelmasa (xato) umumiy ro'yxatdan filtrlanadi.
@@ -27,6 +27,7 @@ export default function KategoriyaQoldigiModal({ kategoriya, mahsulotlar, birlik
   const [hajm, setHajm] = useState(20);
 
   useEffect(() => {
+    if (yashirin) return;
     let faol = true;
     setYuklanmoqda(true);
     setXato("");
@@ -37,13 +38,14 @@ export default function KategoriyaQoldigiModal({ kategoriya, mahsulotlar, birlik
       .catch(error => { if (faol) { setQoldiqlar([]); setServerMahsulotlari(null); setXato(getApiErrorMessage(error)); } })
       .finally(() => { if (faol) setYuklanmoqda(false); });
     return () => { faol = false; };
-  }, [kategoriya.id, yangilash]);
+  }, [kategoriya.id, yangilash, yashirin]);
 
   useEffect(() => {
+    if (yashirin) return;
     const yopish = (event: KeyboardEvent) => { if (event.key === "Escape") onYopish(); };
     window.addEventListener("keydown", yopish);
     return () => window.removeEventListener("keydown", yopish);
-  }, [onYopish]);
+  }, [onYopish, yashirin]);
 
   const kategoriyaMahsulotlari = useMemo(() => kategoriyaMahsulotlariniBirlashtirish(serverMahsulotlari, mahsulotlar), [serverMahsulotlari, mahsulotlar]);
   const qatorlar = useMemo(() => kategoriyaQatorlari(kategoriya.id, kategoriyaMahsulotlari, qoldiqlar, birliklar), [kategoriya.id, kategoriyaMahsulotlari, qoldiqlar, birliklar]);
@@ -59,6 +61,8 @@ export default function KategoriyaQoldigiModal({ kategoriya, mahsulotlar, birlik
   const korinadigan = filtrlangan.slice((joriySahifa - 1) * hajm, joriySahifa * hajm);
   const miqdor = (value: number | null, birlik: string) => value === null ? "—" : `${sonMatni(value)}${birlik ? ` ${birlik}` : ""}`;
   const tayyor = !yuklanmoqda && !xato;
+
+  if (yashirin) return null;
 
   return (
     <AppModal onClose={onYopish} actionRail={false} className="bg-slate-950/70 p-3 backdrop-blur-sm sm:p-6">
@@ -121,7 +125,12 @@ export default function KategoriyaQoldigiModal({ kategoriya, mahsulotlar, birlik
                   <th className="px-6 py-3">{t("table.product")}</th><th className="px-4 py-3">{t("table.barcode")}</th><th className="px-4 py-3">{t("categoryStock.warehouse")}</th><th className="px-4 py-3 text-right">{t("categoryStock.stock")}</th><th className="px-4 py-3 text-right">{t("categoryStock.reserved")}</th><th className="px-6 py-3 text-right">{t("categoryStock.available")}</th>
                 </tr></thead>
                 <tbody className="divide-y divide-slate-100">
-                  {korinadigan.map(item => <tr key={item.kalit} className="transition hover:bg-blue-50/40">
+                  {korinadigan.map(item => <tr key={item.kalit} tabIndex={0} aria-label={t("categoryStock.openProduct", { name: item.nom })} onClick={() => onMahsulotOchish(item.mahsulotId)} onKeyDown={event => {
+                    if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+                      event.preventDefault();
+                      onMahsulotOchish(item.mahsulotId);
+                    }
+                  }} className="cursor-pointer transition hover:bg-blue-50/60 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-500">
                     <td className="px-6 py-4"><p className="font-semibold text-slate-900">{item.nom}{item.nofaol && <span className="ml-2 rounded-md bg-slate-100 px-2 py-1 text-[10px] text-slate-500">{t("status.inactive")}</span>}</p>{item.variant && <p className="mt-1 text-xs text-slate-500">{item.variant}</p>}</td>
                     <td className="px-4 py-4 text-slate-500">{item.shtrix || "—"}</td>
                     <td className="px-4 py-4"><span className={item.omborId ? "font-medium text-slate-700" : "text-xs text-slate-400"}>{item.omborNomi || t(item.omborId ? "categoryStock.unnamedWarehouse" : "categoryStock.noStockRecord")}</span></td>

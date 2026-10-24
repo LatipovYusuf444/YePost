@@ -12,6 +12,7 @@ import { valyutaKodi } from "@/lib/valyuta";
 import { narxValyutalari } from "@/lib/narxValyutasi";
 import { holat, hujjatRaqami, modificationNomi, pul } from "./omborYordamchilari";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
+import { kirimYetkazibBeruvchiNomi } from "@/lib/kirimYetkazibBeruvchi";
 
 type Props = { id: string; onClose: () => void };
 
@@ -71,7 +72,7 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
   }, [id, kirimOlish, xatolikniTozalash]);
 
   const modMap = useMemo(() => new Map(store.modifikatsiyalar.map((item) => [item.id, item])), [store.modifikatsiyalar]);
-  const supplier = hujjat?.supplier ?? store.yetkazibBeruvchilar.find((item) => item.id === hujjat?.supplierId);
+  const supplierNomi = hujjat ? kirimYetkazibBeruvchiNomi(hujjat, store.yetkazibBeruvchilar) : "";
   const responsible = hujjat?.responsible ?? store.xodimlar.find((item) => item.id === hujjat?.responsibleId);
   const warehouse = hujjat?.warehouse ?? store.omborlar.find((item) => item.id === hujjat?.warehouseId);
   const jami = hujjat ? Number(hujjat.totalAmount ?? hujjat.total ?? 0) || (hujjat.items ?? []).reduce((sum, item) => sum + Number(item.quantity) * Number(item.price), 0) : 0;
@@ -117,7 +118,7 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
               </div>
               <div className="mt-5 grid gap-5 sm:grid-cols-2">
                 <Info label={t("kirimTafsilotModal.nameLabel")} value={nomi || hujjatRaqami(hujjat)}/>
-                <Info label={t("kirimTafsilotModal.supplierLabel")} value={supplier?.name ?? supplier?.fullName ?? hujjat.supplierId}/>
+                <Info label={t("kirimTafsilotModal.supplierLabel")} value={supplierNomi || t("common:supplierNameUnavailable")}/>
                 <Info label={t("kirimTafsilotModal.warehouseLabel")} value={warehouse?.name ?? hujjat.warehouseId}/>
                 <div>
                   <Info label={t("kirimTafsilotModal.dateLabel")} value={faqatSana(hujjat.date ?? hujjat.createdAt)}/>

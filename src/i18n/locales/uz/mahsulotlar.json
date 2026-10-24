@@ -80,6 +80,7 @@
     "add": "Qo'shish"
   },
   "categoryStock": {
+    "openProduct": "{{name}} mahsulotini ko'rish",
     "open": "{{name}} kategoriyasining ombor qoldig'ini ko'rish",
     "eyebrow": "Kategoriya qoldig'i",
     "subtitle": "Shu kategoriyadagi mahsulotlar barcha omborlar bo'yicha",

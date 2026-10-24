@@ -45,6 +45,7 @@ export default function Savdo() {
   const { t } = useTranslation("savdo_bosh");
   const {
     sotuvlar,
+    sotuvlarToliq,
     qaytarishlar,
     omborlar,
     mijozlar,
@@ -447,6 +448,7 @@ export default function Savdo() {
               sanaDan={sanaDan}
               sanaGacha={sanaGacha}
               xulosa={xulosa}
+              malumotToliq={sotuvlarToliq}
               onSanaTanlash={(dan, gacha) => {
                 setSanaDan(dan);
                 setSanaGacha(gacha);

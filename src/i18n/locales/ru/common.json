@@ -1,4 +1,5 @@
 {
+  "supplierNameUnavailable": "Наименование поставщика недоступно",
   "dateLocale": "ru-RU",
   "actions": {
     "save": "Сохранить",

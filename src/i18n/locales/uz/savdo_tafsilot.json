@@ -19,6 +19,8 @@
     "warehouse": "Ombor",
     "currency": "Hisob-kitob valyutasi",
     "date": "Hujjat sanasi",
+    "saleDate": "Sotuv sanasi",
+    "dateHint": "Sanani qo'lda yozing yoki kalendardan tanlang.",
     "stage": "Bosqich",
     "start": "Boshlanish sanasi",
     "end": "Tugash sanasi",

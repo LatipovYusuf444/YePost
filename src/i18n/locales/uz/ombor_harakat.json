@@ -86,6 +86,13 @@
       "backToCount": "Sanoqqa qaytish",
       "saveFinal": "Qoralamani yaratish",
       "confirmFinal": "Yaratish va tasdiqlash",
+      "confirmation": {
+        "title": "Inventarizatsiyani tasdiqlaysizmi?",
+        "description": "Inventarizatsiya saqlanadi va tasdiqlanadi. Aniqlangan ortiqcha miqdorlar ombor qoldig'iga qo'shiladi.",
+        "no": "Tasdiqlamayman",
+        "yes": "Tasdiqlayman",
+        "pending": "Tasdiqlanmoqda..."
+      },
       "itemsTitle": "Tovarlar",
       "itemsSubtitle": "Sanaladigan mahsulotlarni qidirib qo'shing",
       "itemsCount": "{{count}} ta",
@@ -117,7 +124,7 @@
         "selectWarehouse": "Omborni tanlang.",
         "noStockInWarehouse": "Tanlangan omborda inventarizatsiya qilinadigan qoldiq mavjud emas.",
         "selectAtLeastOne": "Inventarizatsiyaga kamida bitta mahsulot qo‘shing.",
-        "uncounted": "{{count}} ta sanalmagan tovar bor. Barchasini sanang yoki qoralama uchun backend qo‘llovini kuting.",
+        "uncounted": "{{count}} ta mahsulot hali sanalmagan. Haqiqiy miqdorini kiriting va qayta saqlang.",
         "varianceReason": "Farqlarni tasdiqlash uchun sababini yozing.",
         "invalidQuantity": "{{name}} uchun haqiqiy miqdor 0 yoki undan katta raqam bo'lishi kerak."
       },

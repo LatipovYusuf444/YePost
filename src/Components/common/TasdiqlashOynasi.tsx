@@ -4,7 +4,7 @@ import { LoaderCircle } from "lucide-react";
 
 type TasdiqlashOynasiProps = {
   ikonka: ReactNode;
-  ohang?: "qizil" | "sariq" | "yashil";
+  ohang?: "qizil" | "sariq" | "yashil" | "kok";
   sarlavha: string;
   nom: string;
   tavsif: string;
@@ -18,6 +18,10 @@ type TasdiqlashOynasiProps = {
 };
 
 const OHANGLAR = {
+  kok: {
+    ikonka: "bg-[#EFF6FF] text-[#2563EB] ring-[#EFF6FF]/60",
+    tugma: "bg-[#2563EB] shadow-blue-200 hover:bg-[#1D4ED8]",
+  },
   qizil: {
     ikonka: "bg-red-50 text-red-500 ring-red-50/60",
     tugma: "bg-red-500 shadow-red-200 hover:bg-red-600",

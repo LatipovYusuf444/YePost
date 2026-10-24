@@ -217,7 +217,7 @@ export default function Mahsulotlar() {
     if (toliq) setOddiyModal(toliq);
   }
 
-  async function mahsulotTahrirlash(item: Mahsulot, tahrirlash = true) {
+  async function mahsulotTahrirlash(item: Pick<Mahsulot, "id">, tahrirlash = true) {
     await mahsulotTahriri.ochish(async () => {
       const [toliq, variantlar] = await Promise.all([
         store.mahsulotOlish(item.id),
@@ -526,7 +526,7 @@ export default function Mahsulotlar() {
       {mahsulotTahriri.yuklanmoqda&&<ModalYuklanmoqda onClose={mahsulotTahriri.yopish}/>}
       {mahsulotTahriri.malumot&&<MahsulotModalKeng key={mahsulotTahriri.malumot.mahsulot.id} item={mahsulotTahriri.malumot.mahsulot} boshlangichTahrir={mahsulotTahriri.malumot.tahrirlash} onClose={mahsulotTahriri.yopish}/>}
       {oddiyModal&&<OddiyModal item={oddiyModal} onClose={()=>setOddiyModal(null)}/>}
-      {kategoriyaQoldigi&&<KategoriyaQoldigiModal key={kategoriyaQoldigi.id} kategoriya={kategoriyaQoldigi} mahsulotlar={store.mahsulotlar} birliklar={store.birliklar} onYopish={()=>setKategoriyaQoldigi(null)}/>}
+      {kategoriyaQoldigi&&<KategoriyaQoldigiModal key={kategoriyaQoldigi.id} kategoriya={kategoriyaQoldigi} mahsulotlar={store.mahsulotlar} birliklar={store.birliklar} onYopish={()=>setKategoriyaQoldigi(null)} onMahsulotOchish={id=>{void mahsulotTahrirlash({id},false)}} yashirin={mahsulotTahriri.yuklanmoqda || Boolean(mahsulotTahriri.malumot)}/>}
       {modProduct&&<ModifikatsiyalarModal product={modProduct} onClose={()=>setModProduct(null)}/>}
       {birlikProduct&&<BirliklarModal product={birlikProduct} birliklar={store.birliklar} onClose={()=>setBirlikProduct(null)}/>}
       {importModalOchiq&&<MahsulotImportModal onClose={()=>setImportModalOchiq(false)} onImported={yuklash}/>}

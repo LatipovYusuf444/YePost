@@ -33,6 +33,10 @@ import { aralashTolovniTaqsimlash, dollarNarxi, dollarniSomga, narxTuriKodi, sot
 import { useSavdoStore } from "@/store/savdoStore";
 import { useKassaNarxTurlari } from "@/store/savdoSozlamalariStore";
 import type { MijozTanlovi, OmborTanlovi, Sotuv, SotuvTolovi, TolovTuri } from "@/types/savdo";
+import XaridorModal from "@/Pages/XaridorUchot/XaridorModal";
+import { kompaniyaniUiGa } from "@/Pages/XaridorUchot/backendAdapters";
+import type { Xaridor, XaridorKompaniyasi } from "@/Pages/XaridorUchot/types";
+import { mijozKompaniyalariApi, mijozlarApi } from "@/api/partnersApi";
 
 type CustomerType = "donalik" | "doimiy";
 
@@ -66,6 +70,7 @@ function xatoMatni(error: unknown, fallback: string) {
 
 export default function BoshSahifa() {
   const { t } = useTranslation("bosh_sahifa");
+  const customerSearchRef = useRef<HTMLInputElement>(null);
   const cart = usePosStore((state) => state.cart);
   const updateCartQuantity = usePosStore((state) => state.updateQuantity);
   const setBirlik = usePosStore((state) => state.setBirlik);
@@ -112,8 +117,11 @@ export default function BoshSahifa() {
   // Donalik mijozning ixtiyoriy telefoni (backendda walkInCustomerPhone).
   const [customerPhone, setCustomerPhone] = useState("");
   const [mijozTuri, setMijozTuri] = useState<CustomerType>("donalik");
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
+  const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
+  const [mijozQoshishOchiq, setMijozQoshishOchiq] = useState(false);
+  const [mijozKompaniyalari, setMijozKompaniyalari] = useState<XaridorKompaniyasi[]>([]);
+  const mijozSaqlanmoqda = useRef(false);
   const narxTuri = usePosStore((state) => state.narxTuri);
   const setNarxTuri = updatePriceType;
   // Sozlamalar → Sotuv: faqat yoqilgan narx turlari tanlanadi (o'chirilgan turni backend rad etadi).
@@ -136,6 +144,20 @@ export default function BoshSahifa() {
   const dollarTolovMumkin = useValyutaStore((holat) => holat.rejimYoniq && holat.kursBor && holat.kurs > 0);
 
   useEffect(() => {
+    if (!mijozQoshishOchiq) {
+      customerSearchRef.current?.focus();
+      return;
+    }
+    let active = true;
+    void mijozKompaniyalariApi.royxat().then((items) => {
+      if (active) setMijozKompaniyalari(items.map(kompaniyaniUiGa));
+    }).catch(() => {
+      // Kompaniyasiz mijoz qo'shish mumkin; API xato xabarini o'zi ko'rsatadi.
+    });
+    return () => { active = false; };
+  }, [mijozQoshishOchiq]);
+
+  useEffect(() => {
     let active = true;
     const loadBase = async () => {
       setLoading(true);
@@ -146,7 +168,10 @@ export default function BoshSahifa() {
         ]);
         if (!active) return;
         setOmborlar(warehouses);
-        setMijozlar(customers);
+        setMijozlar((current) => [
+          ...customers,
+          ...current.filter((item) => !customers.some((customer) => customer.id === item.id)),
+        ]);
         setWarehouseId((oldValue) => oldValue || String(warehouses[0]?.id ?? ""));
       } catch (error) {
         if (active) setMessage({ type: "error", text: xatoMatni(error, t("errors.loadFailed")) });
@@ -221,6 +246,44 @@ export default function BoshSahifa() {
         .includes(value)
     );
   }, [customerSearch, mijozlar]);
+
+  async function mijozQoshish(xaridor: Xaridor) {
+    if (mijozSaqlanmoqda.current) return;
+    mijozSaqlanmoqda.current = true;
+    try {
+      const customFields = {
+        ...(xaridor.customFields ?? {}),
+        position: xaridor.lavozim.trim() || undefined,
+        whatsapp: xaridor.ijtimoiy.whatsapp.trim() || undefined,
+        instagram: xaridor.ijtimoiy.instagram.trim() || undefined,
+        extraPhones: xaridor.telefonlar.slice(1).map((item) => item.trim()).filter(Boolean),
+      };
+      if (new TextEncoder().encode(JSON.stringify(customFields)).byteLength > 2048) {
+        throw new Error(t("root.customFieldsTooLarge", { ns: "xaridor_uchot" }));
+      }
+      const saved = await mijozlarApi.yaratish({
+        firstName: xaridor.ism.trim(),
+        lastName: xaridor.familiya.trim() || undefined,
+        phone: xaridor.telefonlar.find((item) => item.trim())?.trim() ?? "",
+        address: xaridor.manzil.trim() || undefined,
+        telegramId: xaridor.ijtimoiy.telegram.trim() || undefined,
+        companyId: xaridor.kompaniyaId || undefined,
+        customFields,
+      });
+      const mijoz: MijozTanlovi = {
+        id: saved.id, firstName: saved.firstName, lastName: saved.lastName,
+        phone: saved.phone, address: saved.address ?? undefined,
+        companyId: saved.companyId, balance: saved.balance, balanceCurrency: saved.balanceCurrency,
+      };
+      setMijozlar((current) => [mijoz, ...current.filter((item) => item.id !== mijoz.id)]);
+      useSavdoStore.getState().mijozMalumotiniYangilash(mijoz);
+      setCustomerSearch(mijozNomi(mijoz));
+      setSelectedCustomerId(mijoz.id);
+      setMijozQoshishOchiq(false);
+    } finally {
+      mijozSaqlanmoqda.current = false;
+    }
+  }
 
   function updateQuantity(productId: string, nextQuantity: number) {
     updateCartQuantity(productId, nextQuantity);
@@ -914,6 +977,7 @@ export default function BoshSahifa() {
               <p className="mb-2 text-sm font-bold text-gray-700">{t("customer.regularCustomers")}</p>
               <div className="flex h-10 items-center gap-2 rounded-lg bg-white px-3 ring-1 ring-gray-100">
                 <input
+                  ref={customerSearchRef}
                   value={customerSearch}
                   onChange={(event) => setCustomerSearch(event.target.value)}
                   placeholder={t("customer.searchPlaceholder")}
@@ -957,8 +1021,20 @@ export default function BoshSahifa() {
               })}
 
               {filteredCustomers.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-400">
-                  {customerSearch.trim() ? t("customer.notFound") : t("customer.searchHint")}
+                <div className="flex min-h-[140px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-gray-200 bg-slate-50/60 px-4 py-5 text-center">
+                  <p className="max-w-[240px] text-sm leading-5 text-gray-400">
+                    {customerSearch.trim() ? t("customer.notFound") : t("customer.searchHint")}
+                  </p>
+                  {customerSearch.trim() && !loading && (
+                    <button
+                      type="button"
+                      onClick={() => setMijozQoshishOchiq(true)}
+                      className="inline-flex h-10 w-full max-w-[220px] shrink-0 items-center justify-center gap-2 rounded-xl bg-gold-500 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-gold-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-300 focus-visible:ring-offset-2"
+                    >
+                      <Plus size={16} />
+                      {t("customer.addCustomer")}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -1002,6 +1078,16 @@ export default function BoshSahifa() {
         )}
       </aside>
 
+      {mijozQoshishOchiq && (
+        <XaridorModal
+          boshlangich={null}
+          kompaniyalar={mijozKompaniyalari}
+          onYopish={() => {
+            if (!mijozSaqlanmoqda.current) setMijozQoshishOchiq(false);
+          }}
+          onSaqlash={mijozQoshish}
+        />
+      )}
       {doimiySotuvOchiq && saving && (
         <AppModal actionRail={false} className="bg-slate-950/60 backdrop-blur-md">
           <section role="dialog" aria-modal="true" aria-label={t("doimiySotuv.creating")} aria-busy="true" className="flex min-h-64 w-full max-w-lg flex-col items-center justify-center gap-4 rounded-3xl bg-white px-8 py-10 text-center shadow-2xl">

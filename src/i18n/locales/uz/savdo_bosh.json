@@ -30,6 +30,16 @@
       "barchasi": "Barcha sotuvlar"
     },
     "statistika": {
+      "dollarBlok": "Dollar hisob-kitobi",
+      "dollarBlokIzoh": "Dollardagi savdo, tushum va qarzdorlik",
+      "valyutaSavdo": "Tovarlar savdosi ({{valyuta}})",
+      "valyutaTolov": "Qabul qilingan to'lov ({{valyuta}})",
+      "valyutaQarz": "Qarzdorlik ({{valyuta}})",
+      "sotuvSanasi": "Sotuv sanasi bo'yicha",
+      "tolovSanasi": "To'lov sanasi bo'yicha",
+      "naqdKartaBank": "Naqd, karta va bank",
+      "qaytim": "Berilgan qaytim: {{summa}}",
+      "malumotYetishmaydi": "To'liq ma'lumot olinmadi",
       "aria": "Savdo ko'rsatkichlari",
       "sarlavhalar": {
         "barchasi": { "sotuvlar": "Jami sotuvlar", "summa": "Jami savdo summasi" },

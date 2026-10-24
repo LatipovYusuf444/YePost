@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Building2, FileSpreadsheet, Phone, Plus, Search, Send, Trash2, UserRound } from "lucide-react";
 import BoshlangichQarzImportModal from "./BoshlangichQarzImportModal";
 import { useTranslation } from "react-i18next";
@@ -36,6 +36,7 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
   const [qidiruv, setQidiruv] = useState("");
   const [korinish, setKorinish] = useState<Korinish>("karta");
   const [modalOchiq, setModalOchiq] = useState(false);
+  const xaridorSaqlanmoqda = useRef(false);
   const [importOchiq, setImportOchiq] = useState(false);
   const [tahrirXaridor, setTahrirXaridor] = useState<Xaridor | null>(null);
   const [tafsilotXaridor, setTafsilotXaridor] = useState<Xaridor | null>(null);
@@ -367,12 +368,21 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
           savdolar={savdolar}
           tolovlar={[]}
           tarix={[]}
-          onYopish={() => setModalOchiq(false)}
-          onSaqlash={async (xaridor) => {
-            const saqlangan = await onSaqlash(xaridor);
-            if (!saqlangan) return;
-            setTafsilotXaridor((joriy) => (joriy?.id === saqlangan.id ? saqlangan : joriy));
+          onYopish={() => {
+            if (xaridorSaqlanmoqda.current) return;
             setModalOchiq(false);
+          }}
+          onSaqlash={async (xaridor) => {
+            if (xaridorSaqlanmoqda.current) return;
+            xaridorSaqlanmoqda.current = true;
+            try {
+              const saqlangan = await onSaqlash(xaridor);
+              if (!saqlangan) return;
+              setTafsilotXaridor((joriy) => (joriy?.id === saqlangan.id ? saqlangan : joriy));
+              setModalOchiq(false);
+            } finally {
+              xaridorSaqlanmoqda.current = false;
+            }
           }}
         />
       )}

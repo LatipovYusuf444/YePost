@@ -30,6 +30,16 @@
       "barchasi": "Все продажи"
     },
     "statistika": {
+      "dollarBlok": "Расчёты в долларах",
+      "dollarBlokIzoh": "Продажи, поступления и задолженность в USD",
+      "valyutaSavdo": "Продажи товаров ({{valyuta}})",
+      "valyutaTolov": "Принятая оплата ({{valyuta}})",
+      "valyutaQarz": "Задолженность ({{valyuta}})",
+      "sotuvSanasi": "По дате продажи",
+      "tolovSanasi": "По дате оплаты",
+      "naqdKartaBank": "Наличные, карта и банк",
+      "qaytim": "Выданная сдача: {{summa}}",
+      "malumotYetishmaydi": "Получены не все данные",
       "aria": "Показатели продаж",
       "sarlavhalar": {
         "barchasi": { "sotuvlar": "Всего продаж", "summa": "Общая сумма продаж" },

@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowDownRight, ArrowUpRight, CircleAlert, CircleCheck, Minus, ShoppingBag, TrendingUp, Wallet } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, CircleAlert, CircleCheck, CircleDollarSign, Minus, ShoppingBag, TrendingUp, Wallet } from "lucide-react";
 import type { SotuvlarXulosasi } from "@/api/savdoApi";
 import type { Sotuv } from "@/types/savdo";
-import { mahalliySanaKaliti } from "@/lib/sanaKaliti";
+import { useSotuvValyutaStatistikasi } from "./useSotuvValyutaStatistikasi";
+import type { sotuvValyutaStatistikasi } from "./sotuvValyutaStatistikasi";
+import { toshkentKuni, kunniSurish } from "@/lib/hujjatSanasi";
 import { savdoHujjatimi } from "@/lib/boshlangichQarz";
-import { sotuvHolati, sotuvQarzdorlikSummasi, sotuvSummasi, sotuvTolanganSummasi } from "./savdoYordamchilari";
+import { sotuvHolati } from "./savdoYordamchilari";
 
 type SotuvStatistikasiProps = {
   sotuvlar: Sotuv[];
   yuklanmoqda: boolean;
+  malumotToliq?: boolean;
   sanaDan: string;
   sanaGacha: string;
   onSanaTanlash: (dan: string, gacha: string) => void;
@@ -54,7 +57,7 @@ const OHANG_STILI: Record<Ohang, { ikonka: string; chegara: string; porlash: str
 };
 
 // Raqam qiymati o'zgarganda silliq "sanab" ko'rsatadi (harakatni kamaytirish sozlamasi yoqilgan bo'lsa — darrov).
-function useSanab(qiymat: number, davomiyligi = 750) {
+function useSanab(qiymat: number, davomiyligi = 750, aniqlik = 0) {
   const [korsatilgan, setKorsatilgan] = useState(0);
   const oldingi = useRef(0);
 
@@ -70,22 +73,16 @@ function useSanab(qiymat: number, davomiyligi = 750) {
     const qadam = (hozir: number) => {
       const jarayon = Math.min(1, (hozir - boshVaqti) / davomiyligi);
       const silliq = 1 - Math.pow(1 - jarayon, 3);
-      setKorsatilgan(Math.round(boshlanish + (qiymat - boshlanish) * silliq));
+      const koeffitsient = 10 ** aniqlik;
+      setKorsatilgan(Math.round((boshlanish + (qiymat - boshlanish) * silliq) * koeffitsient) / koeffitsient);
       if (jarayon < 1) kadr = requestAnimationFrame(qadam);
       else oldingi.current = qiymat;
     };
     kadr = requestAnimationFrame(qadam);
     return () => cancelAnimationFrame(kadr);
-  }, [qiymat, davomiyligi]);
+  }, [qiymat, davomiyligi, aniqlik]);
 
   return korsatilgan;
-}
-
-// "YYYY-MM-DD" kalitini kun bo'yicha suradi (mahalliy sana bilan ishlaydi).
-function kunniSurish(kalit: string, kunlar: number) {
-  const sana = new Date(`${kalit}T12:00:00`);
-  sana.setDate(sana.getDate() + kunlar);
-  return mahalliySanaKaliti(sana);
 }
 
 function kunlarOrasida(dan: string, gacha: string) {
@@ -100,7 +97,7 @@ function standartSana(sotuv: Sotuv) {
 }
 
 function hisoblash(sotuvlar: Sotuv[], dan: string, gacha: string, sanaOlish: (sotuv: Sotuv) => string | undefined) {
-  const bugun = mahalliySanaKaliti(new Date());
+  const bugun = toshkentKuni(new Date());
   const rejim: Rejim = !dan && !gacha ? "barchasi" : dan === bugun && gacha === bugun ? "bugun" : "davr";
 
   // Oldingi davr: tanlangan davr bilan bir xil uzunlikdagi, undan darhol oldingi oraliq (faqat ikkala chegara ham bo'lsa).
@@ -117,32 +114,18 @@ function hisoblash(sotuvlar: Sotuv[], dan: string, gacha: string, sanaOlish: (so
   const kunSoni: Record<string, number> = {};
   let tasdiqlangan = 0;
   let qoralama = 0;
-  let summa = 0;
-  let tolangan = 0;
-  let qarz = 0;
-  let qarzdorSotuvlar = 0;
   let oldingiSoni = 0;
-  let oldingiSumma = 0;
 
   for (const sotuv of sotuvlar) {
-    if (!savdoHujjatimi(sotuv)) {
-      const kun = mahalliySanaKaliti(sanaOlish(sotuv));
-      if (sotuvHolati(sotuv) === "CONFIRMED" && kun && (!dan || kun >= dan) && (!gacha || kun <= gacha)) {
-        const qoldiq = sotuvQarzdorlikSummasi(sotuv);
-        qarz += qoldiq;
-        if (qoldiq > 0) qarzdorSotuvlar += 1;
-      }
-      continue;
-    }
+    if (!savdoHujjatimi(sotuv)) continue;
     const holat = sotuvHolati(sotuv);
     if (holat === "CANCELLED") continue;
-    const kun = mahalliySanaKaliti(sanaOlish(sotuv));
+    const kun = toshkentKuni(sanaOlish(sotuv));
     if (!kun) continue;
     kunSoni[kun] = (kunSoni[kun] ?? 0) + 1;
 
     if (oldingiDan && kun >= oldingiDan && kun <= oldingiGacha) {
       oldingiSoni += 1;
-      if (holat === "CONFIRMED") oldingiSumma += sotuvSummasi(sotuv);
     }
 
     const davrda = (!dan || kun >= dan) && (!gacha || kun <= gacha);
@@ -150,11 +133,6 @@ function hisoblash(sotuvlar: Sotuv[], dan: string, gacha: string, sanaOlish: (so
 
     if (holat === "CONFIRMED") {
       tasdiqlangan += 1;
-      summa += sotuvSummasi(sotuv);
-      tolangan += sotuvTolanganSummasi(sotuv);
-      const sotuvQarzi = sotuvQarzdorlikSummasi(sotuv);
-      qarz += sotuvQarzi;
-      if (sotuvQarzi > 0) qarzdorSotuvlar += 1;
     } else {
       qoralama += 1;
     }
@@ -165,14 +143,8 @@ function hisoblash(sotuvlar: Sotuv[], dan: string, gacha: string, sanaOlish: (so
     soni: tasdiqlangan + qoralama,
     tasdiqlangan,
     qoralama,
-    summa,
-    tolangan,
-    qarz,
-    qarzdorSotuvlar,
-    ortachaChek: tasdiqlangan > 0 ? Math.round(summa / tasdiqlangan) : 0,
     taqqoslash: Boolean(oldingiDan),
     oldingiSoni,
-    oldingiSumma,
     haftalik: haftalikKunlar.map((kun) => ({ kun, soni: kunSoni[kun] ?? 0 })),
   };
 }
@@ -229,6 +201,7 @@ function StatKarta({
   pastki,
   onClick,
   sarlavhaTitle,
+  dollar = false,
 }: {
   ikonka: ReactNode;
   ohang: Ohang;
@@ -237,19 +210,20 @@ function StatKarta({
   pastki: ReactNode;
   onClick?: () => void;
   sarlavhaTitle?: string;
+  dollar?: boolean;
 }) {
   const stil = OHANG_STILI[ohang];
-  const sinf = `group relative isolate flex min-h-[148px] flex-col justify-between overflow-hidden rounded-[22px] border bg-gradient-to-br from-white p-5 text-left shadow-[0_5px_18px_rgba(15,23,42,.05)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_16px_34px_rgba(15,23,42,.10)] ${stil.chegara}`;
+  const sinf = `group relative isolate flex min-h-[148px] flex-col justify-between overflow-hidden rounded-[22px] border bg-gradient-to-br p-5 text-left transition duration-300 hover:-translate-y-1 ${dollar ? "border-[#A8C2EF] from-[#ECF3FF] to-[#D9E6FC] shadow-[0_4px_16px_rgba(37,99,235,.07)] hover:border-blue-400 hover:shadow-[0_10px_24px_rgba(37,99,235,.12)]" : `from-white shadow-[0_5px_18px_rgba(15,23,42,.05)] hover:shadow-[0_16px_34px_rgba(15,23,42,.10)] ${stil.chegara}`}`;
   const ichki = (
     <>
-      <span className={`pointer-events-none absolute -right-8 -top-10 -z-10 h-32 w-32 rounded-full blur-2xl transition duration-500 group-hover:scale-150 ${stil.porlash}`} />
+      <span className={`pointer-events-none absolute -right-8 -top-10 -z-10 h-32 w-32 rounded-full blur-2xl transition duration-500 group-hover:scale-150 ${dollar ? "bg-blue-300/20" : stil.porlash}`} />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-slate-500">{sarlavha}</p>
+          <p className={`truncate text-sm font-bold ${dollar ? "text-blue-950/80" : "text-slate-500"}`}>{sarlavha}</p>
           <div className="mt-2">{qiymat}</div>
         </div>
         <span
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-md transition duration-300 group-hover:-rotate-6 group-hover:scale-105 ${stil.ikonka}`}
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition duration-300 group-hover:-rotate-6 group-hover:scale-105 ${dollar ? "border border-blue-300/60 bg-blue-200/70 text-blue-700" : `bg-gradient-to-br text-white shadow-md ${stil.ikonka}`}`}
         >
           {ikonka}
         </span>
@@ -279,11 +253,13 @@ function StatKarta({
   );
 }
 
-function Qiymat({ raqam, birlik }: { raqam: number; birlik?: string }) {
+function Qiymat({ raqam, birlik, aniqlik = 0 }: { raqam: number | null; birlik?: string; aniqlik?: number }) {
+  const dollar = birlik === "$";
   return (
     <p className="flex flex-wrap items-baseline gap-x-1.5 leading-none">
-      <span className="text-3xl font-black tracking-tight text-slate-900 tabular-nums">{raqamMatni(raqam)}</span>
-      {birlik && <span className="text-sm font-bold text-slate-400">{birlik}</span>}
+      {dollar && <span className="text-2xl font-semibold text-blue-600">$</span>}
+      <span className="text-3xl font-black tracking-tight text-slate-900 tabular-nums">{raqam === null ? "—" : raqam.toLocaleString("uz-UZ", { minimumFractionDigits: dollar ? 2 : 0, maximumFractionDigits: aniqlik })}</span>
+      {birlik && !dollar && <span className="text-sm font-bold text-slate-400">{birlik}</span>}
     </p>
   );
 }
@@ -298,10 +274,59 @@ function Belgi({ ohang, children }: { ohang: "yashil" | "sariq" | "kulrang"; chi
   return <span className={`inline-flex rounded-lg px-2 py-1 text-xs font-bold ring-1 ${stil}`}>{children}</span>;
 }
 
+function ValyutaKartalari({ natija, valyuta, yuklanmoqda, onQarzniKorsatish }: {
+  natija: ReturnType<typeof sotuvValyutaStatistikasi>["UZS"];
+  valyuta: "UZS" | "USD";
+  yuklanmoqda: boolean;
+  onQarzniKorsatish?: () => void;
+}) {
+  const { t } = useTranslation("savdo_bosh");
+  const aniqlik = valyuta === "USD" ? 2 : 0;
+  const summa = useSanab(natija.savdo, 750, aniqlik);
+  const tolov = useSanab(natija.tolov, 750, aniqlik);
+  const qarz = useSanab(natija.qarz, 750, aniqlik);
+  const birlik = valyuta === "USD" ? "$" : t("savdoSahifasi.statistika.som");
+  const hint = (toliq: boolean) => yuklanmoqda ? t("savdoSahifasi.loading") : !toliq ? t("savdoSahifasi.statistika.malumotYetishmaydi") : null;
+  const pul = (raqam: number, toliq: boolean) => <Qiymat raqam={yuklanmoqda || !toliq ? null : raqam} birlik={birlik} aniqlik={aniqlik} />;
+  return <>
+    <StatKarta
+      dollar={valyuta === "USD"}
+      ikonka={<TrendingUp size={22} />} ohang="yashil"
+      sarlavha={t("savdoSahifasi.statistika.valyutaSavdo", { valyuta })}
+      qiymat={pul(summa, natija.savdoToliq)}
+      pastki={<div className="space-y-1.5 text-xs text-slate-500">
+        <p>{hint(natija.savdoToliq) ?? t("savdoSahifasi.statistika.sotuvSanasi")}</p>
+        {!yuklanmoqda && natija.savdoToliq && <p className="font-semibold">{t("savdoSahifasi.statistika.ortachaChek", { summa: `${(natija.savdoSoni ? natija.savdo / natija.savdoSoni : 0).toLocaleString("uz-UZ", { maximumFractionDigits: aniqlik })} ${birlik}` })}</p>}
+      </div>}
+    />
+    <StatKarta
+      dollar={valyuta === "USD"}
+      ikonka={<Wallet size={22} />} ohang="binafsha"
+      sarlavha={t("savdoSahifasi.statistika.valyutaTolov", { valyuta })}
+      qiymat={pul(tolov, natija.tolovToliq)}
+      pastki={<div className="space-y-1.5 text-xs text-slate-500">
+        <p>{hint(natija.tolovToliq) ?? t("savdoSahifasi.statistika.tolovSanasi")}</p>
+        {!yuklanmoqda && natija.tolovToliq && <p>{t("savdoSahifasi.statistika.naqdKartaBank")}</p>}
+        {!yuklanmoqda && natija.tolovToliq && natija.qaytim > 0 && <p className="font-semibold">{t("savdoSahifasi.statistika.qaytim", { summa: `${raqamMatni(natija.qaytim)} ${birlik}` })}</p>}
+      </div>}
+    />
+    <StatKarta
+      dollar={valyuta === "USD"}
+      ikonka={natija.qarz > 0 ? <CircleAlert size={22} /> : <CircleCheck size={22} />}
+      ohang={natija.qarz > 0 ? "qizil" : "yashil"}
+      sarlavha={t("savdoSahifasi.statistika.valyutaQarz", { valyuta })}
+      qiymat={pul(qarz, natija.qarzToliq)}
+      onClick={!yuklanmoqda && natija.qarzToliq && natija.qarz > 0 ? onQarzniKorsatish : undefined}
+      pastki={hint(natija.qarzToliq) ? <p className="text-xs text-slate-500">{hint(natija.qarzToliq)}</p> : <Belgi ohang={natija.qarz > 0 ? "sariq" : "yashil"}>{natija.qarz > 0 ? t("savdoSahifasi.statistika.qarzdorSotuvlar", { count: natija.qarzdorSotuvlar }) : t("savdoSahifasi.statistika.qarzYoq")}</Belgi>}
+    />
+  </>;
+}
+
 // Savdo sahifasi tepasidagi ko'rsatkichlar: sana filtriga qarab — barcha vaqt, bugun yoki tanlangan davr bo'yicha.
 export default function SotuvStatistikasi({
   sotuvlar,
   yuklanmoqda,
+  malumotToliq = true,
   sanaDan,
   sanaGacha,
   onSanaTanlash,
@@ -312,7 +337,7 @@ export default function SotuvStatistikasi({
 }: SotuvStatistikasiProps) {
   const { t } = useTranslation("savdo_bosh");
   const mahalliy = useMemo(() => hisoblash(sotuvlar, sanaDan, sanaGacha, sanaOlish), [sotuvlar, sanaDan, sanaGacha, sanaOlish]);
-  // Server xulosasi bo'lsa, asosiy raqamlar undan olinadi; "qarzdor sotuvlar soni" xulosada yo'q, shuning uchun mahalliy hisobdan.
+  // Xulosadan faqat sonlar olinadi: valyutasiz pul maydonlari UZS/USD kartalariga tushmaydi.
   const natija = useMemo(() => {
     if (!xulosa) return mahalliy;
     const joriy = xulosa.current;
@@ -322,22 +347,18 @@ export default function SotuvStatistikasi({
       soni: joriy.confirmedCount + joriy.draftCount,
       tasdiqlangan: joriy.confirmedCount,
       qoralama: joriy.draftCount,
-      summa: joriy.totalAmount,
-      tolangan: joriy.paidAmount,
-      qarz: joriy.debtAmount,
-      ortachaChek: joriy.averageCheck,
       taqqoslash: mahalliy.rejim !== "barchasi" && oldingi !== null,
       oldingiSoni: oldingi ? oldingi.confirmedCount + oldingi.draftCount : 0,
-      oldingiSumma: oldingi ? oldingi.totalAmount : 0,
       haftalik: xulosa.daily.length > 0 ? xulosa.daily.map((element) => ({ kun: element.date, soni: element.count })) : mahalliy.haftalik,
     };
   }, [mahalliy, xulosa]);
+  const valyutaStat = useSotuvValyutaStatistikasi(sotuvlar, yuklanmoqda, sanaDan, sanaGacha, sanaOlish);
+  const royxatToliq = malumotToliq && (!xulosa || mahalliy.tasdiqlangan >= xulosa.current.confirmedCount);
+  const valyutaNatijasi = (valyuta: "UZS" | "USD") => royxatToliq ? valyutaStat.natija[valyuta] : {
+    ...valyutaStat.natija[valyuta], savdoToliq: false, tolovToliq: false, qarzToliq: false,
+  };
   const soni = useSanab(natija.soni);
-  const summa = useSanab(natija.summa);
-  const tolangan = useSanab(natija.tolangan);
-  const qarz = useSanab(natija.qarz);
-  const tolanganFoiz = natija.summa > 0 ? Math.min(100, Math.round((natija.tolangan / natija.summa) * 100)) : 0;
-  const som = t("savdoSahifasi.statistika.som");
+
 
   if (yuklanmoqda && sotuvlar.length === 0) {
     return (
@@ -353,7 +374,7 @@ export default function SotuvStatistikasi({
     );
   }
 
-  const bugun = mahalliySanaKaliti(new Date());
+  const bugun = toshkentKuni(new Date());
   const bugunTanlangan = natija.rejim === "bugun";
 
   return (
@@ -379,53 +400,22 @@ export default function SotuvStatistikasi({
         }
       />
 
-      <StatKarta
-        ikonka={<TrendingUp size={22} />}
-        ohang="yashil"
-        sarlavha={t(`savdoSahifasi.statistika.sarlavhalar.${natija.rejim}.summa`)}
-        qiymat={<Qiymat raqam={summa} birlik={som} />}
-        pastki={
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-slate-500">
-              {t("savdoSahifasi.statistika.ortachaChek", { summa: `${raqamMatni(natija.ortachaChek)} ${som}` })}
-            </p>
-            <OzgarishBelgisi rejim={natija.rejim} taqqoslash={natija.taqqoslash} joriy={natija.summa} oldingi={natija.oldingiSumma} />
-          </div>
-        }
-      />
-
-      <StatKarta
-        ikonka={<Wallet size={22} />}
-        ohang="binafsha"
-        sarlavha={t("savdoSahifasi.statistika.tolov")}
-        qiymat={<Qiymat raqam={tolangan} birlik={som} />}
-        pastki={
-          <div>
-            <div className="mb-1.5 flex items-center justify-between text-xs">
-              <span className="font-bold text-violet-700">{t("savdoSahifasi.statistika.tolanganFoiz", { foiz: tolanganFoiz })}</span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-white shadow-inner ring-1 ring-violet-100" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={tolanganFoiz}>
-              <div className="h-full rounded-full bg-gradient-to-r from-violet-400 to-violet-600 transition-[width] duration-700 ease-out" style={{ width: `${tolanganFoiz}%` }} />
+      <ValyutaKartalari natija={valyutaNatijasi("UZS")} valyuta="UZS" yuklanmoqda={valyutaStat.yuklanmoqda} onQarzniKorsatish={onQarzniKorsatish} />
+      <section aria-label={t("savdoSahifasi.statistika.dollarBlok")} className="rounded-[28px] border border-[#9DBBEF] bg-gradient-to-br from-[#D4E2FB] via-[#DFE9FC] to-[#C9DAF7] p-4 shadow-[0_6px_24px_rgba(37,99,235,.09)] sm:col-span-2 sm:p-5 xl:col-span-4">
+        <header className="mb-4 flex items-center justify-between gap-3 px-1">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-blue-100 bg-white text-blue-600 shadow-sm"><CircleDollarSign size={25} aria-hidden /></span>
+            <div className="min-w-0">
+              <h2 className="text-base font-bold tracking-tight text-slate-900">{t("savdoSahifasi.statistika.dollarBlok")}</h2>
+              <p className="mt-0.5 text-xs text-slate-500">{t("savdoSahifasi.statistika.dollarBlokIzoh")}</p>
             </div>
           </div>
-        }
-      />
-
-      <StatKarta
-        ikonka={natija.qarz > 0 ? <CircleAlert size={22} /> : <CircleCheck size={22} />}
-        ohang={natija.qarz > 0 ? "qizil" : "yashil"}
-        sarlavha={t("savdoSahifasi.statistika.qarz")}
-        qiymat={<Qiymat raqam={qarz} birlik={som} />}
-        onClick={natija.qarz > 0 ? onQarzniKorsatish : undefined}
-        sarlavhaTitle={natija.qarz > 0 && onQarzniKorsatish ? t("savdoSahifasi.statistika.qarzdorlarniKorsatish") : undefined}
-        pastki={
-          natija.qarz > 0 ? (
-            <Belgi ohang="sariq">{t("savdoSahifasi.statistika.qarzdorSotuvlar", { count: natija.qarzdorSotuvlar })}</Belgi>
-          ) : (
-            <Belgi ohang="yashil">{t("savdoSahifasi.statistika.qarzYoq")}</Belgi>
-          )
-        }
-      />
+          <span className="shrink-0 rounded-full border border-blue-500 bg-blue-600 px-3 py-1.5 text-xs font-black tracking-[0.16em] text-white shadow-sm">USD</span>
+        </header>
+        <div className="grid gap-3 md:grid-cols-3">
+          <ValyutaKartalari natija={valyutaNatijasi("USD")} valyuta="USD" yuklanmoqda={valyutaStat.yuklanmoqda} onQarzniKorsatish={onQarzniKorsatish} />
+        </div>
+      </section>
     </section>
   );
 }

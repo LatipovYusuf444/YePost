@@ -15,6 +15,7 @@ import OmborJadval from "./OmborJadval";
 import TablePagination from "@/Components/common/TablePagination";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import HujjatStatistikaKartalari from "./HujjatStatistikaKartalari";
+import { kirimYetkazibBeruvchiNomi } from "@/lib/kirimYetkazibBeruvchi";
 
 type UstunKaliti =
   | "nomi"
@@ -106,11 +107,6 @@ export default function Xaridlar() {
     void malumotlarniYuklashAgarKerak();
   }, [malumotlarniYuklashAgarKerak]);
 
-  const suppliersMap = useMemo(
-    () => new Map(store.yetkazibBeruvchilar.map((item) => [item.id, item])),
-    [store.yetkazibBeruvchilar]
-  );
-
   const xodimlarMap = useMemo(
     () => new Map(store.xodimlar.map((item) => [item.id, item])),
     [store.xodimlar]
@@ -120,10 +116,6 @@ export default function Xaridlar() {
     () => new Map(store.omborlar.map((item) => [item.id, item.name])),
     [store.omborlar]
   );
-
-  function supplierNomi(id: string, name?: string) {
-    return name ?? suppliersMap.get(id)?.name ?? suppliersMap.get(id)?.fullName ?? id;
-  }
 
   function masulNomi(hujjat: KirimHujjati) {
     const xodim = hujjat.responsibleId ? xodimlarMap.get(hujjat.responsibleId) : undefined;
@@ -164,7 +156,7 @@ export default function Xaridlar() {
       const matn = [
         kirimNomi(hujjat),
         hujjatRaqami(hujjat),
-        supplierNomi(hujjat.supplierId, hujjat.supplier?.name),
+        kirimYetkazibBeruvchiNomi(hujjat, store.yetkazibBeruvchilar),
         hujjat.warehouse?.name ?? omborlarMap.get(hujjat.warehouseId),
         masulNomi(hujjat),
         sana(hujjat.date ?? hujjat.createdAt),
@@ -176,7 +168,7 @@ export default function Xaridlar() {
       return matn.includes(q);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store.kirimlar, qidiruv, statusFiltri, sanaDan, sanaGacha, suppliersMap, store.xodimlar, omborlarMap]);
+  }, [store.kirimlar, qidiruv, statusFiltri, sanaDan, sanaGacha, store.yetkazibBeruvchilar, store.xodimlar, omborlarMap]);
   const statistika = useMemo(() => {
     const jami = store.kirimlar.length;
     const tasdiqlangan = store.kirimlar.filter((item) => String(item.status ?? "").toUpperCase() === "CONFIRMED").length;
@@ -200,7 +192,7 @@ export default function Xaridlar() {
       case "nomi":
         return <span className="whitespace-nowrap font-black text-gray-950">№{tartibRaqami}</span>;
       case "yetkazibBeruvchi":
-        return supplierNomi(hujjat.supplierId, hujjat.supplier?.name);
+        return <span className="block whitespace-normal break-words">{kirimYetkazibBeruvchiNomi(hujjat, store.yetkazibBeruvchilar) || t("common:supplierNameUnavailable")}</span>;
       case "ombor":
         return hujjat.warehouse?.name ?? omborlarMap.get(hujjat.warehouseId) ?? t("xaridlar.unknownWarehouse");
       case "yaratilgan":

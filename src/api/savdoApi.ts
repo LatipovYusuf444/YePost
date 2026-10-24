@@ -38,7 +38,21 @@ export async function sotuvlarRoyxatiniOlish(filtr: { openingDebt?: boolean } = 
   const response = await apiClient.get<RoyxatJavobi<Sotuv> | ApiListEnvelope<Sotuv>>("/sales", {
     params: filtr.openingDebt === undefined ? undefined : { openingDebt: filtr.openingDebt },
   });
-  return royxatniAjratish(response.data);
+  const first = sahifaJavobi<Sotuv>(response.data, 1, 100);
+  const legacy = royxatniAjratish(response.data);
+  if (first.items.length === 0 && Array.isArray(legacy)) first.items = legacy;
+  if (first.items.length >= first.total) return first.items;
+  // Eski backend ro'yxatni qisqartirsa ham statistika birinchi sahifaga bog'lanib qolmaydi.
+  const all = new Map(first.items.map((sale) => [sale.id, sale]));
+  let expected = first.total;
+  for (let page = 1; all.size < expected; page++) {
+    const next = await sotuvlarSahifasiniOlish({ ...filtr, page, pageSize: 100 });
+    const oldSize = all.size;
+    next.items.forEach((sale) => all.set(sale.id, sale));
+    expected = Math.max(expected, next.total);
+    if (!next.items.length || (page > 1 && all.size === oldSize)) throw new Error("Sotuvlar ro'yxati to'liq olinmadi");
+  }
+  return [...all.values()];
 }
 
 // GET /sales — filtr va sahifalash. page/pageSize berilmasa backend avvalgidek hammasini qaytaradi.

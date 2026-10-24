@@ -243,6 +243,8 @@ function royxatdaYangilash(royxat: MijozTanlovi[], yangi: MijozTanlovi) {
 
 type SavdoState = {
   sotuvlar: Sotuv[];
+  // Xato xabarini yopish muvaffaqiyatsiz yuklangan ro'yxatni to'liq qilib ko'rsatmasin.
+  sotuvlarToliq: boolean;
   qaytarishlar: Qaytarish[];
   omborlar: OmborTanlovi[];
   mijozlar: MijozTanlovi[];
@@ -321,6 +323,7 @@ export const useSavdoStore = create<SavdoState>((set, get) => {
   });
   return ({
   sotuvlar: [],
+  sotuvlarToliq: false,
   qaytarishlar: [],
   omborlar: [],
   mijozlar: [],
@@ -337,7 +340,7 @@ export const useSavdoStore = create<SavdoState>((set, get) => {
   boshlangichMalumotlarniYuklash: () => {
     if (boshlangichSorov) return boshlangichSorov;
     boshlangichSorov = (async () => {
-    set({ yuklanmoqda: true, xatolik: null });
+    set({ yuklanmoqda: true, xatolik: null, sotuvlarToliq: false });
 
     try {
       const [
@@ -372,6 +375,7 @@ export const useSavdoStore = create<SavdoState>((set, get) => {
         sotuvlar: sotuvlar.map((sotuv) =>
           sotuvniBoglanganMalumotlarBilanBoyitish(sotuv, boglanganMalumotlar)
         ),
+        sotuvlarToliq: true,
         qaytarishlar,
         omborlar,
         mijozlar: barchaMijozlar,
