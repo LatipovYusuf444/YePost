@@ -1,5 +1,12 @@
 {
   "inventarizatsiya": {
+    "editModal": {
+      "title": "Inventarizatsiyani tahrirlash",
+      "save": "O'zgarishlarni saqlash",
+      "lockedFields": "Tasdiqlangan hujjatning ombori va sanasi o'zgartirilmaydi.",
+      "noteHelper": "Saqlanganda sanoq tuzatiladi va ombor qoldiqlari qayta hisoblanadi.",
+      "movementsError": "Sanashdan keyin tovar harakati bor. Yangi inventarizatsiya qiling."
+    },
     "pageTitle": "Inventarizatsiya",
     "pageSubtitle": "Ombordagi haqiqiy qoldiqlarni tekshirish hujjatlari.",
     "createButton": "Yaratish",

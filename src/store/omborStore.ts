@@ -16,6 +16,7 @@ import {
   yetkazibBeruvchilar,
 } from "@/api/omborApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { xatoKodi, xatoMaydoni } from "@/api/xatoKodlari";
 import { qaytarishlarRoyxatiniOlish, sotuvlarRoyxatiniOlish } from "@/api/savdoApi";
 import type {
   ChiqimHujjati,
@@ -24,6 +25,7 @@ import type {
   FilialYaratishMalumoti,
   InventarizatsiyaHujjati,
   InventarizatsiyaYaratishMalumoti,
+  InventarizatsiyaTahrirMalumoti,
   KirimHujjati,
   KirimYaratishMalumoti,
   Kompaniya,
@@ -56,6 +58,7 @@ type OmborState = {
   yuklanmoqda: boolean;
   amalBajarilmoqda: boolean;
   xatolik: string | null;
+  inventarizatsiyaTahrirXatosi: { code: string | null; movements: Array<{ type: string; docId: string; date: string; quantity: number | string }> } | null;
   malumotlarniYuklash: () => Promise<void>;
   malumotlarniYuklashAgarKerak: () => Promise<void>;
   amalgaOshirilganlarniYuklash: () => Promise<void>;
@@ -102,6 +105,7 @@ type OmborState = {
   ) => Promise<InventarizatsiyaHujjati | null>;
   inventarizatsiyaOlish: (id: string) => Promise<InventarizatsiyaHujjati | null>;
   inventarizatsiyaYangilash: (id: string, data: Partial<InventarizatsiyaYaratishMalumoti>) => Promise<boolean>;
+  inventarizatsiyaTahrirlash: (id: string, data: InventarizatsiyaTahrirMalumoti) => Promise<InventarizatsiyaHujjati | null>;
   inventarizatsiyaTasdiqlash: (id: string) => Promise<boolean>;
   inventarizatsiyaBekorQilish: (id: string) => Promise<boolean>;
   inventarizatsiyaOchirish: (id: string) => Promise<boolean>;
@@ -863,6 +867,34 @@ export const useOmborStore = create<OmborState>((set, get) => ({
     }
   },
 
+  inventarizatsiyaTahrirXatosi: null,
+  inventarizatsiyaTahrirlash: async (id, data) => {
+    if (get().amalBajarilmoqda) return null;
+    set({ amalBajarilmoqda: true, xatolik: null, inventarizatsiyaTahrirXatosi: null });
+    let hujjat: InventarizatsiyaHujjati;
+    try {
+      hujjat = await inventarizatsiyaApi.tahrirlash(id, data);
+    } catch (error) {
+      const body = axios.isAxiosError(error) ? error.response?.data : undefined;
+      const movements = xatoMaydoni(body, "movements");
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error), inventarizatsiyaTahrirXatosi: {
+        code: xatoKodi(body) ?? null, movements: Array.isArray(movements) ? movements : [],
+      } });
+      return null;
+    }
+    // Mutatsiya allaqachon muvaffaqiyatli: keyingi GET xatosi qayta revise yuborishga sabab bo'lmasin.
+    set(state => ({ inventarizatsiyalar: hujjatniAlmashtirish(state.inventarizatsiyalar, hujjat) }));
+    try {
+      const { omborlar, modifikatsiyalar } = get();
+      const qoldiqlar = qoldiqlarniBoglash(await omborQoldiqlari(), omborlar, modifikatsiyalar);
+      set({ qoldiqlar });
+    } catch (error) {
+      set({ xatolik: getApiErrorMessage(error) });
+    } finally {
+      set({ amalBajarilmoqda: false });
+    }
+    return hujjat;
+  },
   inventarizatsiyaYaratish: async (data) => {
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
@@ -979,5 +1011,5 @@ export const useOmborStore = create<OmborState>((set, get) => ({
     });
   },
 
-  xatolikniTozalash: () => set({ xatolik: null }),
+  xatolikniTozalash: () => set({ xatolik: null, inventarizatsiyaTahrirXatosi: null }),
 }));

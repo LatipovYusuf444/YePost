@@ -8,6 +8,14 @@ type Til = "uz" | "ru";
 type KodMatni = { uz: string; ru: string };
 
 const MATNLAR: Record<string, KodMatni> = {
+  "errors.inventory.document_changed": {
+    uz: "Hujjat o'zgargan. Sahifani yangilang va qayta ochib tahrirlang.",
+    ru: "Документ изменён. Обновите страницу и откройте его заново для редактирования.",
+  },
+  "errors.inventory.confirmed_only_revisable": {
+    uz: "Faqat tasdiqlangan inventarizatsiyani tahrirlash mumkin. Hujjatni qayta oching.",
+    ru: "Редактировать можно только подтверждённую инвентаризацию. Откройте документ заново.",
+  },
   // Hisobdan to'lovda pul yetmaydi.
   "errors.wallet.insufficient_balance": {
     uz: "Mijoz hisobida pul yetarli emas.",

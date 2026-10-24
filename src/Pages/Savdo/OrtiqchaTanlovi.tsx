@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Banknote, Info, TriangleAlert, Wallet } from "lucide-react";
+import { Banknote, Info, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 type TanlovKartasiProps = {
@@ -99,34 +99,27 @@ export default function OrtiqchaTanlovi({
         <Info size={14} aria-hidden className="text-[#2563EB]" />
         {t(tasdiqlangan ? "tolovModal.ortiqcha.sarlavha" : "tolovModal.ortiqchaSarlavha", { summa: ortiqchaMatni })}
       </legend>
-      <p className="mb-3 text-xs font-semibold leading-5 text-slate-500">
+      {mijozBor && <p className="mb-3 text-xs font-semibold leading-5 text-slate-500">
         {t(tasdiqlangan ? "tolovModal.ortiqcha.savol" : "tolovModal.ortiqchaIzoh")}
-      </p>
+      </p>}
 
-      <div role="radiogroup" className="grid gap-3 sm:grid-cols-2">
+      <div role="radiogroup" className={`grid gap-3 ${mijozBor ? "sm:grid-cols-2" : ""}`}>
         <TanlovKartasi
           tanlangan={!hisobga}
           nom={t(tasdiqlangan ? "tolovModal.ortiqcha.qaytim.nom" : "tolovModal.ortiqchaQaytim")}
-          tavsif={t(tasdiqlangan ? "tolovModal.ortiqcha.qaytim.tavsif" : "tolovModal.ortiqcha.qaytim.tavsifQoralama", { summa: qaytimSummasi })}
+          tavsif={t(tasdiqlangan || !mijozBor ? "tolovModal.ortiqcha.qaytim.tavsif" : "tolovModal.ortiqcha.qaytim.tavsifQoralama", { summa: qaytimSummasi })}
           ikonka={<Banknote size={19} />}
           onTanlash={() => onOzgarish(false)}
         />
-        <TanlovKartasi
+        {mijozBor && <TanlovKartasi
           tanlangan={hisobga}
           nom={t(tasdiqlangan ? "tolovModal.ortiqcha.hisobga.nom" : "tolovModal.ortiqchaHisobga")}
           tavsif={t(tasdiqlangan ? "tolovModal.ortiqcha.hisobga.tavsif" : "tolovModal.ortiqcha.hisobga.tavsifQoralama", { summa: ortiqchaMatni })}
           ikonka={<Wallet size={19} />}
           mumkin={mijozBor}
           onTanlash={() => onOzgarish(true)}
-        />
+        />}
       </div>
-
-      {!mijozBor && (
-        <p className="mt-3 flex items-start gap-1.5 text-xs font-semibold leading-5 text-amber-700">
-          <TriangleAlert size={14} aria-hidden className="mt-0.5 shrink-0" />
-          {t("tolovModal.ortiqcha.hisobgaMijozsiz")}
-        </p>
-      )}
 
       {yaxlitlashKorsatilsin && !hisobga && onYaxlitlash && (
         <label className="mt-3 flex cursor-pointer items-start gap-2.5 rounded-xl bg-white/80 px-3.5 py-3 ring-1 ring-sky-100">
@@ -143,7 +136,7 @@ export default function OrtiqchaTanlovi({
         </label>
       )}
 
-      {tasdiqlangan && !hisobga && qaytimMatni && (
+      {!hisobga && qaytimMatni && (
         <p className="mt-3 text-xs font-semibold leading-5 text-slate-400">{t("tolovModal.ortiqcha.taxminiy")}</p>
       )}
     </fieldset>

@@ -24,6 +24,8 @@ import { useOmborStore } from "@/store/omborStore";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
 import InventarizatsiyaKorinish from "./InventarizatsiyaKorinish";
 import { kirimYetkazibBeruvchiNomi } from "@/lib/kirimYetkazibBeruvchi";
+import { useAuthProfileStore } from "@/store/authProfileStore";
+import { inventarizatsiyaTahririMumkin } from "@/lib/inventarizatsiyaTahriri";
 import MahsulotTanlov, { type MahsulotVarianti } from "./MahsulotTanlov";
 import type { InventoryDocumentType } from "@/types/inventoryDocuments";
 import type {
@@ -52,6 +54,7 @@ type Props = {
   tur: InventoryHujjatTuri;
   id: string;
   onClose: () => void;
+  onTasdiqlanganTahrir?: (hujjat: InventarizatsiyaHujjati) => void | Promise<void>;
 };
 
 type Hujjat =
@@ -76,7 +79,8 @@ function hujjatHolati(hujjat: Hujjat | null) {
   return String(hujjat?.status ?? "DRAFT").toUpperCase();
 }
 
-export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
+export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganTahrir }: Props) {
+  const profil = useAuthProfileStore(state => state.profil);
   const bekorMumkin = useHujjatniBekorQilishMumkinmi("ombor");
   const { t } = useTranslation("ombor_hujjat");
   const store = useOmborStore();
@@ -427,6 +431,7 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
 
   const qoralama = hujjatHolati(hujjat) === "DRAFT";
   const inventarizatsiyaAmallari = hujjat && tur === "inventarizatsiya" && !tahrir ? <>
+    {onTasdiqlanganTahrir && inventarizatsiyaTahririMumkin(hujjat, profil?.role) && <button type="button" onClick={() => void onTasdiqlanganTahrir(hujjat as InventarizatsiyaHujjati)} disabled={store.amalBajarilmoqda} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-50"><Edit3 size={17} />{t("actions.edit")}</button>}
     <HujjatOchirish
       korinish="tugma"
       guruh="ombor"
@@ -441,12 +446,12 @@ export default function InventoryHujjatModal({ tur, id, onClose }: Props) {
     {hujjatHolati(hujjat) === "CONFIRMED" && bekorMumkin && <button type="button" onClick={() => void inventarizatsiyaniBekorQilish()} disabled={store.amalBajarilmoqda} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-600 transition hover:bg-red-100 disabled:opacity-50">{store.amalBajarilmoqda ? <LoaderCircle size={17} className="animate-spin" /> : <Ban size={17} />}{t("actions.cancel")}</button>}
     {qoralama && <button type="button" onClick={() => void inventarizatsiyaniYakunlash()} disabled={store.amalBajarilmoqda} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50">{store.amalBajarilmoqda ? <LoaderCircle size={17} className="animate-spin" /> : <CheckCircle2 size={17} />}{t("actions.confirmStockTake")}</button>}
   </> : null;
-  const inventarizatsiyaKorinish = hujjat && tur === "inventarizatsiya" ? <InventarizatsiyaKorinish
+  const inventarizatsiyaKorinish = hujjat && tur === "inventarizatsiya" ? <div className="space-y-5"><InventarizatsiyaKorinish
     hujjat={hujjat as InventarizatsiyaHujjati}
     modifikatsiyalar={store.modifikatsiyalar}
     omborNomi={(hujjat as InventarizatsiyaHujjati).warehouse?.name ?? store.omborlar.find(item => item.id === (hujjat as InventarizatsiyaHujjati).warehouseId)?.name ?? t("view.unknownWarehouse")}
     masulNomi={hujjat.responsible?.fullName ?? hujjat.responsible?.username ?? store.xodimlar.find(item => item.id === hujjat.responsibleId)?.fullName ?? t("view.unassigned")}
-  /> : null;
+  /><InventoryDocumentActivity documentType="STOCK_TAKE" documentId={hujjat.id} /></div> : null;
 
   return (
     <AppModal onClose={onClose} className={tur === "inventarizatsiya" ? "bg-slate-950/75 backdrop-blur-[5px]" : ""}>

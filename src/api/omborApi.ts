@@ -8,6 +8,7 @@ import type {
   Filial,
   FilialYaratishMalumoti,
   InventarizatsiyaHujjati,
+  InventarizatsiyaTahrirMalumoti,
   InventarizatsiyaYaratishMalumoti,
   KirimHujjati,
   KirimYaratishMalumoti,
@@ -327,6 +328,12 @@ export const kochirishApi = {
 
 // Ombor/Inventarizatsiya.tsx: inventarizatsiya hujjatlari.
 export const inventarizatsiyaApi = {
+  // Bitta atomik amal: eski ta'sirni qaytarish va yangi sanoqni tasdiqlash serverda bajariladi.
+  tahrirlash: async (id: string, data: InventarizatsiyaTahrirMalumoti) => apiData(
+    (await ogohlantirishBilanBajarish((tasdiq) => apiClient.post<InventarizatsiyaHujjati | ApiEnvelope<InventarizatsiyaHujjati>>(
+      `/inventory/stock-takes/${id}/revise`, { ...data, confirmWarnings: false, ...tasdiq }
+    ))).data
+  ),
   royxat: async () => {
     const response = await apiClient.get<RoyxatJavobi<InventarizatsiyaHujjati>>(
       "/inventory/stock-takes"

@@ -86,3 +86,21 @@ test('do‘kon: to‘lov xato bersa null va xato sababi (modal shuni ko‘rsatad
   assert.match(useSavdoStore.getState().xatolik, /ko'p to'lab bo'lmaydi/);
   assert.equal(useSavdoStore.getState().amalBajarilmoqda, false);
 });
+
+test('walk-in confirmation keeps the backend changeAmount on the final cash row in both list and open sale', async () => {
+  reset();
+  const draft = sotuv({ status: 'DRAFT', customerId: null });
+  useSavdoStore.setState({ ...initial, sotuvlar: [draft], tanlanganSotuv: draft }, true);
+  handlers.set('/sales/s1', () => draft);
+  handlers.set('POST /sales/s1/confirm', () => ({ data: sotuv({ customerId: null, payments: [
+    { id: 'p1', paymentType: 'CARD', amount: '100000', currency: 'UZS', changeAmount: '0' },
+    { id: 'p2', paymentType: 'CASH', amount: '50', currency: 'USD', rate: '12100', changeAmount: '209000' },
+  ] }) }));
+  assert.equal(await useSavdoStore.getState().sotuvniTasdiqlash('s1'), true);
+  const state = useSavdoStore.getState();
+  for (const saved of [state.sotuvlar[0], state.tanlanganSotuv]) {
+    assert.equal(saved.payments[1].changeAmount, '209000');
+    assert.equal(saved.payments[1].rate, '12100');
+    assert.equal(saved.customerId, null);
+  }
+});

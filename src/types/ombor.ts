@@ -272,6 +272,8 @@ export type InventarizatsiyaTuri = "FULL" | "PARTIAL";
 
 export type InventarizatsiyaHujjati = {
   id: string;
+  docNumber?: string;
+  documentNumber?: string;
   date?: string;
   warehouseId: string;
   type?: InventarizatsiyaTuri | string;
@@ -279,6 +281,7 @@ export type InventarizatsiyaHujjati = {
   note?: string;
   status?: HujjatHolati | string;
   createdAt?: string;
+  updatedAt?: string;
   warehouse?: Ombor;
   responsible?: NomliEntity;
   items?: Array<{
@@ -299,4 +302,17 @@ export type InventarizatsiyaYaratishMalumoti = {
   responsibleId?: string;
   note?: string;
   items: Array<{ modificationId: string; actualQuantity: number }>;
+};
+
+// POST /inventory/stock-takes/:id/revise. Ombor va sana o'zgarmaydi.
+export type InventarizatsiyaTahrirMalumoti = {
+  expectedUpdatedAt?: string;
+  note?: string;
+  type?: InventarizatsiyaTuri;
+  responsibleId?: string;
+  confirmWarnings?: boolean;
+  items?: Array<{ modificationId: string } & (
+    { actualQuantity: number } |
+    { closedUnitId: string; closedQuantity: number; openQuantity: number }
+  )>;
 };

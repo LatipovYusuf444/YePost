@@ -38,6 +38,7 @@
       "title": "Tarix",
       "empty": "Tarix mavjud emas",
       "actions": {
+        "REVISED": "Tasdiqlangan inventarizatsiya tahrirlandi",
         "CREATED": "Hujjat yaratildi",
         "UPDATED": "Hujjat yangilandi",
         "CONFIRMED": "Hujjat tasdiqlandi",

@@ -323,6 +323,7 @@
     "somBelgisi": "so'm",
     "valyutaDollar": "Dollar ($)",
     "kursQatori": "Bugungi kurs: 1 $ = {{kurs}} so'm",
+    "kassirKursQatori": "To'lov kursi: 1 $ = {{kurs}} so'm",
     "sotuvValyutasidagiQiymat": "Sotuv valyutasida: {{summa}}",
     "sotuvJami": "Sotuv jami",
     "jamiTolov": "Jami to'lov",
@@ -336,6 +337,7 @@
     "errors": {
       "manfiyBolmasin": "To'lov summasi manfiy bo'lishi mumkin emas.",
       "nolDanKatta": "To'lov summasi 0 dan katta bo'lishi kerak.",
+      "qaytimMosEmas": "Qaytim summasi oldingi to'lovlar bilan mos kelmayapti. To'lovlarni yoki qaytimni tekshiring.",
       "qarzdorlikdanOshmasin": "To'lov summasi qarzdorlikdan oshmasligi kerak. Maksimal: {{maksimal}}.",
       "ortiqchaFaqatNaqd": "Karta, bank yoki hisobdan qarzdan ko'p to'lab bo'lmaydi (maksimal: {{maksimal}}). Ortiqcha pulni faqat naqd to'lovda qabul qilish mumkin.",
       "saqlanmadi": "To'lov saqlanmadi. Qaytadan urinib ko'ring.",
