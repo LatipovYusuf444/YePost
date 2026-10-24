@@ -169,6 +169,7 @@
     "usdSale": "Sotuv dollarda yaratiladi: so'mda narxlangan mahsulotlar bugungi kurs bo'yicha ($1 = {{kurs}} so'm) ko'rsatiladi, backend tasdiqlash kunidagi kurs bilan hisoblaydi."
   },
   "actions": {
+    "addCustomer": "Mijoz qo'shish",
     "save": "Saqlash",
     "cancel": "Bekor qilish",
     "addRow": "Qo'shish",

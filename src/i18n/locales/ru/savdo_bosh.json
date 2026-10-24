@@ -33,6 +33,8 @@
       "dollarBlok": "Расчёты в долларах",
       "dollarBlokIzoh": "Продажи, поступления и задолженность в USD",
       "hisobKitob": "Расчёты по продажам",
+      "kartaAylanishIzoh": "Нажмите на нужную карточку, чтобы сменить валюту",
+      "kartaniAylantirish": "Перевернуть карточку и показать {{valyuta}}",
       "valyutaTanlash": "Выбрать валюту карточек",
       "somTanlash": "Сум",
       "dollarTanlash": "Доллар",

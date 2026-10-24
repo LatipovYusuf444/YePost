@@ -2,6 +2,7 @@ import { hisobotValyutasiniTekshirish, type HisobotValyutasi } from "./hisobotVa
 
 /** Tushum, tannarx va foyda — bitta valyutada. */
 export type FoydaSummalari = { tushum: number; tannarx: number; foyda: number };
+export type FoydaValyutaQismi = FoydaSummalari & { sotilgan: number; rentabellik: number; cheklar: number | null };
 
 export type FoydaQatori = {
   id: string; nomi: string; sotilgan: number;
@@ -16,6 +17,8 @@ export type FoydaQatori = {
   birDonaTannarxUsd: number | null;
   // Faqat mijozlar kesimida: mijozga eng ko'p foyda keltirgan mahsulot.
   engYaxshiMahsulot: { nomi: string; foydaUzs: number } | null;
+  sotuvValyutalari?: Partial<Record<HisobotValyutasi, FoydaValyutaQismi>>;
+  tannarxKiritilmagan?: boolean;
 };
 
 /** Butun filtr bo'yicha jami (sahifaga emas): backend `summary`. */
@@ -26,6 +29,8 @@ export type FoydaXulosasi = {
   rentabellik: number;
   cheklar: number | null;
   ortachaKurs: number | null;
+  bySaleCurrency?: Record<HisobotValyutasi, FoydaValyutaQismi>;
+  tannarxYetishmaganSoni?: number;
 };
 
 /** `topProfit` / `lossItems` elementi: mahsulot va uning foydasi so'mda va dollarda. */
@@ -57,7 +62,7 @@ function summalar(tushum: unknown, tannarx: unknown, foyda: unknown): FoydaSumma
 
 /** Backend so'ralgan valyutada hisoblaydi; summalar qayta konvertatsiya qilinmaydi. */
 export function foydaHisobotiniMoslash(raw: unknown, kutilgan?: HisobotValyutasi, guruh: FoydaGuruhi = "PRODUCT"): {
-  valyuta: HisobotValyutasi; qatorlar: FoydaQatori[]; xulosa: FoydaXulosasi | null; eng: FoydaTaklifi[] | null; zarar: FoydaTaklifi[] | null;
+  valyuta: HisobotValyutasi; qatorlar: FoydaQatori[]; xulosa: FoydaXulosasi | null; eng: FoydaTaklifi[] | null; zarar: FoydaTaklifi[] | null; aslValyutada: boolean;
 } {
   const tashqi = obyekt(raw);
   const data = tashqi.success !== undefined && tashqi.data !== undefined ? tashqi.data : raw;
@@ -65,6 +70,9 @@ export function foydaHisobotiniMoslash(raw: unknown, kutilgan?: HisobotValyutasi
   const valyuta = hisobotValyutasiniTekshirish(obyekt(record.summary).currency ?? record.currency ?? tashqi.currency, kutilgan);
   const items = Array.isArray(data) ? data : [record.items, record.data, record.value].find(Array.isArray)
     ?? ("revenue" in record ? [record] : []);
+  if (obyekt(record.summary).bySaleCurrency || items.some((item) => obyekt(item).bySaleCurrency)) {
+    return aslValyutadagiHisobot(record, items, valyuta, guruh);
+  }
   const qatorlar: FoydaQatori[] = items.map((value, index) => {
     const item = obyekt(value);
     if (item.currency && String(item.currency).toUpperCase() !== valyuta) {
@@ -89,9 +97,53 @@ export function foydaHisobotiniMoslash(raw: unknown, kutilgan?: HisobotValyutasi
       cheklar: sonYokiNull(item.checks),
       birDonaTannarxUsd: sonYokiNull(item.unitCostUsd),
       engYaxshiMahsulot: eng.productName ? { nomi: String(eng.productName), foydaUzs: son(eng.profitUzs) } : null,
+      tannarxKiritilmagan: item.costMissing === true,
     };
   }).filter((qator) => qator.sotilgan !== 0 || qator.tushum !== 0 || qator.tannarx !== 0 || qator.foyda !== 0);
-  return { valyuta, qatorlar, xulosa: xulosaniMoslash(record.summary), eng: taklifniMoslash(record.topProfit), zarar: taklifniMoslash(record.lossItems) };
+  return { valyuta, qatorlar, xulosa: xulosaniMoslash(record.summary), eng: taklifniMoslash(record.topProfit), zarar: taklifniMoslash(record.lossItems), aslValyutada: false };
+}
+
+function aslQism(raw: unknown): FoydaValyutaQismi {
+  const value = obyekt(raw);
+  const tushum = son(value.revenue);
+  const tannarx = son(value.cost);
+  const foyda = son(value.profit);
+  return { tushum, tannarx, foyda, sotilgan: son(value.qtySold ?? value.qty), cheklar: sonYokiNull(value.checks), rentabellik: son(value.marginPct ?? (tushum ? foyda / tushum * 100 : 0)) };
+}
+
+function pulQismi(value: FoydaValyutaQismi): FoydaSummalari {
+  return { tushum: value.tushum, tannarx: value.tannarx, foyda: value.foyda };
+}
+
+function aslValyutadagiHisobot(record: Record<string, unknown>, items: unknown[], valyuta: HisobotValyutasi, guruh: FoydaGuruhi) {
+  const qatorlar: FoydaQatori[] = items.map((raw, index) => {
+    const item = obyekt(raw);
+    const byCurrency = obyekt(item.bySaleCurrency);
+    const sotuvValyutalari: Partial<Record<HisobotValyutasi, FoydaValyutaQismi>> = {};
+    for (const code of ["UZS", "USD"] as const) if (byCurrency[code]) sotuvValyutalari[code] = aslQism(byCurrency[code]);
+    const selected = sotuvValyutalari[valyuta] ?? aslQism(undefined);
+    return {
+      id: String(item.productId ?? item.groupKey ?? item.customerId ?? `profit-${index}`),
+      nomi: String(item.productName ?? item.groupName ?? item.customerName ?? (guruh === "CUSTOMER" ? "Donalik mijoz" : "Mahsulot")),
+      sotilgan: selected.sotilgan, tushum: selected.tushum, tannarx: selected.tannarx, foyda: selected.foyda, rentabellik: selected.rentabellik,
+      uzs: sotuvValyutalari.UZS ? pulQismi(sotuvValyutalari.UZS) : null,
+      usd: sotuvValyutalari.USD ? pulQismi(sotuvValyutalari.USD) : null,
+      zarar: selected.foyda < 0, cheklar: selected.cheklar,
+      birDonaTannarxUsd: sonYokiNull(item.unitCostUsd), engYaxshiMahsulot: null,
+      sotuvValyutalari, tannarxKiritilmagan: item.costMissing === true,
+    };
+  });
+  const summary = obyekt(record.summary);
+  const byCurrency = obyekt(summary.bySaleCurrency);
+  const bySaleCurrency = { UZS: aslQism(byCurrency.UZS), USD: aslQism(byCurrency.USD) };
+  const xulosa: FoydaXulosasi | null = summary.bySaleCurrency ? {
+    sotilgan: bySaleCurrency[valyuta].sotilgan,
+    uzs: pulQismi(bySaleCurrency.UZS), usd: pulQismi(bySaleCurrency.USD),
+    rentabellik: bySaleCurrency[valyuta].rentabellik, cheklar: bySaleCurrency[valyuta].cheklar, ortachaKurs: null,
+    bySaleCurrency, tannarxYetishmaganSoni: son(obyekt(summary.costMissing).count),
+  } : null;
+  // Eski topProfit/lossItems konvertatsiya qilingan; to'liq yuklangan asl qatorlardan tanlanadi.
+  return { valyuta, qatorlar, xulosa, eng: null, zarar: null, aslValyutada: true };
 }
 
 function xulosaniMoslash(raw: unknown): FoydaXulosasi | null {
@@ -131,7 +183,8 @@ export function valyutaJufti(uzs: number, usd: number | null, afzal: HisobotValy
 }
 
 /** Qator summasining asosiy/qo'shimcha ko'rinishi; so'm/dollar maydonlari bo'lmasa (eski javob) faqat hisobot valyutasidagi qiymat. */
-export function qatorJufti(qator: Pick<FoydaQatori, "uzs" | "usd" | "tushum" | "tannarx" | "foyda">, kalit: keyof FoydaSummalari, afzal: HisobotValyutasi) {
+export function qatorJufti(qator: Pick<FoydaQatori, "uzs" | "usd" | "tushum" | "tannarx" | "foyda" | "sotuvValyutalari">, kalit: keyof FoydaSummalari, afzal: HisobotValyutasi) {
+  if (qator.sotuvValyutalari) return { asosiy: { summa: qator.sotuvValyutalari[afzal]?.[kalit] ?? 0, valyuta: afzal }, qoshimcha: null };
   const uzs = qator.uzs?.[kalit];
   if (uzs === undefined) return { asosiy: { summa: qator[kalit], valyuta: afzal }, qoshimcha: null };
   return valyutaJufti(uzs, qator.usd?.[kalit] ?? null, afzal);
@@ -153,12 +206,12 @@ function qatordanTaklif(qator: FoydaQatori): FoydaTaklifi {
 
 /** Eng ko'p foyda keltirganlar (faqat foydasi 0 dan katta qatorlar). */
 export function engKopFoyda(qatorlar: FoydaQatori[], soni = 5): FoydaQatori[] {
-  return qatorlar.filter((qator) => qator.foyda > 0).sort((a, b) => b.foyda - a.foyda).slice(0, soni);
+  return qatorlar.filter((qator) => !qator.tannarxKiritilmagan && qator.foyda > 0).sort((a, b) => b.foyda - a.foyda).slice(0, soni);
 }
 
 /** Zarar bilan sotilganlar: sotuv narxi tannarxdan past (eng katta zarar birinchi). */
 export function zararliQatorlar(qatorlar: FoydaQatori[]): FoydaQatori[] {
-  return qatorlar.filter((qator) => qator.zarar).sort((a, b) => a.foyda - b.foyda);
+  return qatorlar.filter((qator) => !qator.tannarxKiritilmagan && qator.zarar).sort((a, b) => a.foyda - b.foyda);
 }
 
 /** Panel ro'yxati: backend ro'yxati (butun filtr bo'yicha) bo'lsa shu, bo'lmasa ko'rinayotgan qatorlardan. */
@@ -189,4 +242,15 @@ export function foydaJamiIkkiValyuta(qatorlar: FoydaQatori[]): { uzs: FoydaSumma
     );
   };
   return { uzs: yigish((qator) => qator.uzs), usd: yigish((qator) => qator.usd) };
+}
+
+/** Faqat bir valyutadagi sotuvlar; lokal mijoz qidiruvida backend xulosasining o'rnini bosadi. */
+export function foydaAslJami(qatorlar: FoydaQatori[], valyuta: HisobotValyutasi): FoydaValyutaQismi {
+  const result = qatorlar.reduce((sum, row) => {
+    const value = row.sotuvValyutalari?.[valyuta];
+    if (!value) return sum;
+    return { tushum: sum.tushum + value.tushum, tannarx: sum.tannarx + value.tannarx, foyda: sum.foyda + value.foyda, sotilgan: sum.sotilgan + value.sotilgan, cheklar: (sum.cheklar ?? 0) + (value.cheklar ?? 0), rentabellik: 0 };
+  }, { tushum: 0, tannarx: 0, foyda: 0, sotilgan: 0, cheklar: 0, rentabellik: 0 } as FoydaValyutaQismi);
+  result.rentabellik = result.tushum ? result.foyda / result.tushum * 100 : 0;
+  return result;
 }

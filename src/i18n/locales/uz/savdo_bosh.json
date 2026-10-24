@@ -33,6 +33,8 @@
       "dollarBlok": "Dollar hisob-kitobi",
       "dollarBlokIzoh": "Dollardagi savdo, tushum va qarzdorlik",
       "hisobKitob": "Savdo hisob-kitobi",
+      "kartaAylanishIzoh": "Valyutani almashtirish uchun kerakli kartani bosing",
+      "kartaniAylantirish": "Kartani aylantirib {{valyuta}} ko'rsatish",
       "valyutaTanlash": "Kartalar valyutasini tanlash",
       "somTanlash": "So'm",
       "dollarTanlash": "Dollar",

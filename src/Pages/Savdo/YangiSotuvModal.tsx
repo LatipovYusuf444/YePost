@@ -44,6 +44,11 @@ import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
 import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import { bugungiToshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
 import { crmApi } from "@/api/crmApi";
+import { mijozlarApi } from "@/api/partnersApi";
+import { useSavdoStore } from "@/store/savdoStore";
+import XaridorModal from "@/Pages/XaridorUchot/XaridorModal";
+import { kompaniyaniUiGa } from "@/Pages/XaridorUchot/backendAdapters";
+import type { Xaridor } from "@/Pages/XaridorUchot/types";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { cn } from "@/lib/utils";
@@ -326,6 +331,13 @@ export default function YangiSotuvModal({
   const { t } = useTranslation("savdo_yangi");
   const [warehouseId, setWarehouseId] = useState("");
   const [customerId, setCustomerId] = useState("");
+  const [mijozQoshishOchiq, setMijozQoshishOchiq] = useState(false);
+  const [qoshilganMijozlar, setQoshilganMijozlar] = useState<MijozTanlovi[]>([]);
+  const mijozSaqlanmoqda = useRef(false);
+  const barchaMijozlar = useMemo(() => [
+    ...mijozlar,
+    ...qoshilganMijozlar.filter((item) => !mijozlar.some((mijoz) => mijoz.id === item.id)),
+  ], [mijozlar, qoshilganMijozlar]);
   const [clientCompanyId, setClientCompanyId] = useState("");
   const [responsibleId, setResponsibleId] = useState("");
   // Sotuv sanasi: bugun yoki o'tgan kun (kelajak yo'q); o'tgan kun tanlansa backend hujjatni shu kunning oxirida yozadi.
@@ -433,7 +445,7 @@ export default function YangiSotuvModal({
       }),
     [t, usdMumkin]
   );
-  const tanlanganMijoz = mijozlar.find((item) => item.id === customerId);
+  const tanlanganMijoz = barchaMijozlar.find((item) => item.id === customerId);
   const tanlanganKompaniya = mijozKompaniyalari.find((item) => item.id === clientCompanyId);
   const tanlanganXodim = xodimlar.find((item) => item.id === responsibleId);
   const draftMode = variant === "draft";
@@ -674,13 +686,49 @@ export default function YangiSotuvModal({
       return;
     }
 
-    const mijoz = mijozlar.find((item) => item.id === tanlanganCustomerId);
+    const mijoz = barchaMijozlar.find((item) => item.id === tanlanganCustomerId);
     const boglanganKompaniyaId = mijozKompaniyaId(mijoz);
 
     if (boglanganKompaniyaId) {
       setClientCompanyId(boglanganKompaniyaId);
     } else {
       setClientCompanyId("");
+    }
+  }
+
+  async function yangiMijozniSaqlash(xaridor: Xaridor) {
+    if (mijozSaqlanmoqda.current) return;
+    mijozSaqlanmoqda.current = true;
+    try {
+      const customFields = {
+        ...(xaridor.customFields ?? {}),
+        position: xaridor.lavozim.trim() || undefined,
+        whatsapp: xaridor.ijtimoiy.whatsapp.trim() || undefined,
+        instagram: xaridor.ijtimoiy.instagram.trim() || undefined,
+        extraPhones: xaridor.telefonlar.slice(1).map((item) => item.trim()).filter(Boolean),
+      };
+      if (new TextEncoder().encode(JSON.stringify(customFields)).byteLength > 2048) {
+        throw new Error(t("root.customFieldsTooLarge", { ns: "xaridor_uchot" }));
+      }
+      const saved = await mijozlarApi.yaratish({
+        firstName: xaridor.ism.trim(), lastName: xaridor.familiya.trim() || undefined,
+        phone: xaridor.telefonlar.find((item) => item.trim())?.trim() ?? "",
+        address: xaridor.manzil.trim() || undefined,
+        telegramId: xaridor.ijtimoiy.telegram.trim() || undefined,
+        companyId: xaridor.kompaniyaId || undefined, customFields,
+      });
+      const mijoz: MijozTanlovi = {
+        id: saved.id, firstName: saved.firstName, lastName: saved.lastName,
+        phone: saved.phone, address: saved.address ?? undefined,
+        companyId: saved.companyId, balance: saved.balance, balanceCurrency: saved.balanceCurrency,
+      };
+      setQoshilganMijozlar((current) => [...current.filter((item) => item.id !== mijoz.id), mijoz]);
+      useSavdoStore.getState().mijozMalumotiniYangilash(mijoz);
+      setCustomerId(mijoz.id);
+      setClientCompanyId(mijozKompaniyaId(mijoz));
+      setMijozQoshishOchiq(false);
+    } finally {
+      mijozSaqlanmoqda.current = false;
     }
   }
 
@@ -692,7 +740,7 @@ export default function YangiSotuvModal({
       return;
     }
 
-    const vakil = mijozlar.find((mijoz) => mijozKompaniyaId(mijoz) === tanlanganCompanyId);
+    const vakil = barchaMijozlar.find((mijoz) => mijozKompaniyaId(mijoz) === tanlanganCompanyId);
     setCustomerId(vakil?.id ?? "");
   }
 
@@ -1189,7 +1237,7 @@ export default function YangiSotuvModal({
         setWarehouseId(ombor);
         onOmborTanlash(ombor);
       }
-      const mijoz = mijozlar.find((item) => item.id === malumot.customerId)?.id ?? "";
+      const mijoz = barchaMijozlar.find((item) => item.id === malumot.customerId)?.id ?? "";
       const kompaniya = mijozKompaniyalari.find((item) => item.id === malumot.clientCompanyId)?.id ?? "";
       setCustomerId(mijoz);
       setClientCompanyId(kompaniya);
@@ -1212,6 +1260,7 @@ export default function YangiSotuvModal({
   }
 
   return (
+    <>
     <AppModal className="items-start justify-start bg-slate-950/55 p-0 py-3 pl-3 pr-3 backdrop-blur-[3px] sm:pl-[78px]">
       <div className="relative h-[calc(100vh-24px)] w-full min-w-0">
         <div className="absolute -left-[46px] top-5 z-[90] hidden flex-col items-center gap-2 sm:flex">
@@ -1367,10 +1416,11 @@ export default function YangiSotuvModal({
                           placeholder={t("placeholders.clientSearch")}
                           className="w-full"
                           buttonClassName={`${selectTugmasiKlassi} pl-10`}
-                          options={mijozlar.map((mijoz) => ({
+                          options={barchaMijozlar.map((mijoz) => ({
                             value: mijoz.id,
                             label: `${mijozKorinishi(mijoz, t)}${mijoz.phone ? ` - ${mijoz.phone}` : ""}`,
                           }))}
+                          boshNatijaAmali={{ label: t("actions.addCustomer"), onClick: () => setMijozQoshishOchiq(true) }}
                           dropdownClassName="[&>div>div]:text-center min-w-[360px]"
                           portal
                         />
@@ -2250,6 +2300,13 @@ export default function YangiSotuvModal({
         </form>
       </div>
     </AppModal>
+    {mijozQoshishOchiq && <XaridorModal
+      boshlangich={null}
+      kompaniyalar={mijozKompaniyalari.map((item) => kompaniyaniUiGa({ id: item.id, name: kompaniyaNomi(item), phone: item.phone }))}
+      onYopish={() => { if (!mijozSaqlanmoqda.current) setMijozQoshishOchiq(false); }}
+      onSaqlash={yangiMijozniSaqlash}
+    />}
+    </>
   );
 }
 

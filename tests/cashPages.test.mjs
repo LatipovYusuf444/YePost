@@ -20,6 +20,7 @@ function page(path, dependencies, props = {}, globals = {}) {
   let cursor = 0;
   const slots = [], pending = [];
   const react = {
+    useId: () => 'cash-cards-test',
     useState(initial) { const i = cursor++; if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial; return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; },
     useRef(initial) { return react.useState(() => ({ current: initial }))[0]; },
     useMemo(fn, deps) { const i = cursor++; if (!slots[i] || !same(slots[i].deps, deps)) slots[i] = { deps, value: fn() }; return slots[i].value; },
@@ -84,6 +85,26 @@ test('cash-flow page keeps dual-currency cards and exports without the selected 
     } },
   });
   let tree = await screen.settle();
+  const card = name => nodes(tree).find(node => node.type === 'button' && node.props['aria-label']?.startsWith(`${name}:`));
+  assert.ok(card('Bank'), 'cash summary cards can be flipped');
+  for (const name of ['Bank', 'Karta', 'Naqd', 'Jami']) {
+    assert.equal(card(name).props['aria-pressed'], false, `${name} starts in UZS`);
+    assert.match(text(nodes(card(name)).find(node => node.props?.['aria-hidden'] === false)), /UZS/);
+    assert.ok(card(name).props['aria-describedby'], 'screen readers can read the active financial values');
+    assert.equal(nodes(card(name)).find(node => node.props?.id === card(name).props['aria-describedby']).props['aria-hidden'], false);
+  }
+  assert.match(text(nodes(card('Naqd')).find(node => node.props?.['aria-hidden'] === false)), /1.*400 so'm/);
+  const requestsBeforeFlip = calls.length;
+  card('Naqd').props.onClick();
+  tree = screen.render();
+  assert.equal(card('Naqd').props['aria-pressed'], true);
+  assert.match(text(nodes(card('Naqd')).find(node => node.props?.['aria-hidden'] === false)), /\$100[.,]75/);
+  assert.equal(card('Bank').props['aria-pressed'], false, 'other cards stay in UZS');
+  assert.equal(nodes(tree).find(node => node.type === 'select').props.value, 'UZS', 'flipping does not change table currency');
+  assert.equal(calls.length, requestsBeforeFlip, 'flipping uses the server summary already loaded');
+  card('Naqd').props.onClick();
+  tree = screen.render();
+  assert.equal(card('Naqd').props['aria-pressed'], false, 'second click restores UZS');
   assert.match(text(tree), /\$100[.,]75/);
   assert.match(text(tree), /1.*400 so'm/);
   nodes(tree).find(node => node.type === 'select').props.onChange({ target: { value: 'USD' } });

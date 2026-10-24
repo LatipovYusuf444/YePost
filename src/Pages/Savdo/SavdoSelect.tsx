@@ -12,7 +12,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { Check, ChevronDown, Search } from "lucide-react";
+import { Check, ChevronDown, Plus, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type SavdoSelectOption = {
@@ -48,6 +48,8 @@ type SavdoSelectProps = {
   ochishSorovi?: number;
   // Faqat `klaviatura` rejimida: Shift+Enter faol variantni `onChange` o'rniga shu funksiya bilan tanlaydi (tez ketma-ket kiritish uchun).
   tezTanlash?: (value: string) => void;
+  // Faqat chaqiruvchi bergan maydonda, qidiruv natijasi bo'sh bo'lsa ko'rsatiladi.
+  boshNatijaAmali?: { label: string; onClick: () => void };
 };
 
 function labelToText(label: ReactNode) {
@@ -85,6 +87,7 @@ export default function SavdoSelect({
   klaviatura = false,
   ochishSorovi = 0,
   tezTanlash,
+  boshNatijaAmali,
 }: SavdoSelectProps) {
   const { t } = useTranslation("savdo_kichik");
   const effectivePlaceholder = placeholder ?? t("savdoSelect.tanlang");
@@ -226,6 +229,8 @@ export default function SavdoSelect({
       setOpen(false);
       buttonRef.current?.focus();
     } else if (event.key === "Tab") {
+      // Bo'sh ro'yxatdagi yaratish tugmasiga klaviatura bilan o'tish mumkin bo'lsin.
+      if (boshNatijaAmali && soni === 0) return;
       // Ro'yxat yopiladi, fokus keyingi maydonga odatdagidek o'tadi.
       setOpen(false);
       buttonRef.current?.focus();
@@ -316,6 +321,15 @@ export default function SavdoSelect({
           })
         )}
       </div>
+      {korinadiganOptions.length === 0 && boshNatijaAmali && (
+        <div className="shrink-0 border-t border-blue-100 bg-blue-50/50 p-2">
+          <button type="button" aria-label={boshNatijaAmali.label}
+            onClick={() => { setOpen(false); boshNatijaAmali.onClick(); }}
+            className="flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#2563EB] px-3 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#1D4ED8] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200">
+            <Plus size={16} className="shrink-0" />{boshNatijaAmali.label}
+          </button>
+        </div>
+      )}
     </div>
   );
 

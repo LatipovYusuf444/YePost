@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Download, X } from "lucide-react";
+import { useEffect, useId, useMemo, useState } from "react";
+import { ArrowDownLeft, ArrowRightLeft, ArrowUpRight, Banknote, CreditCard, Download, Landmark, RotateCw, Wallet } from "lucide-react";
 import MuddatTanlov from "./MuddatTanlov";
 import KopTanlovli from "./KopTanlovli";
 import { useHisobotRealData } from "./HisobotRealData";
@@ -102,6 +102,8 @@ export default function KirimChiqimHisoboti() {
   const [dateTo, setDateTo] = useState(bugungiToshkentKuni);
   const [currency, setCurrency] = useState<CashCurrency>("UZS");
   const [currencySummary, setCurrencySummary] = useState<CashFlowReport["summary"]["byCurrency"]>();
+  const [dollarKartalar, setDollarKartalar] = useState<Record<string, boolean>>({});
+  const kartalarId = useId();
   const [kassalar, setKassalar] = useState<string[]>([]);
   const [kassaHujjatlar, setKassaHujjatlar] = useState<KassaHujjati[]>([]);
   const [yuklanmoqda, setYuklanmoqda] = useState(false);
@@ -353,19 +355,55 @@ export default function KirimChiqimHisoboti() {
       {yuklanmoqda && <YuklanmoqdaHolati className="h-48" />}
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Kassa qoldiqlari">
-        {[...kassaIdlar, "jami"].map((id) => (
-          <div key={id} className="rounded-2xl border border-orange-100 bg-white p-4 shadow-sm">
-            <h2 className="mb-2 font-bold text-gray-500">{id === "jami" ? "Jami" : kassaNomi(id)}</h2>
+        {[...kassaIdlar, "jami"].map((id) => {
+          const nomi = id === "jami" ? "Jami" : kassaNomi(id);
+          const dollar = Boolean(dollarKartalar[id]);
+          const keyingi = dollar ? "So'm" : "Dollar ($)";
+          const jami = id === "jami";
+          const Ikonka = id === "BANK" ? Landmark : id === "CARD" ? CreditCard : id === "CASH" ? Banknote : Wallet;
+          const ohang = id === "BANK" ? "border-blue-100 from-white to-blue-50/80" : id === "CARD" ? "border-violet-100 from-white to-violet-50/80" : "border-emerald-100 from-white to-emerald-50/80";
+          const ikonkaStili = id === "BANK" ? "bg-blue-100 text-blue-600" : id === "CARD" ? "bg-violet-100 text-violet-600" : "bg-emerald-100 text-emerald-600";
+          return <button key={id} type="button"
+            onClick={() => setDollarKartalar((old) => ({ ...old, [id]: !old[id] }))}
+            aria-label={`${nomi}: ${dollar ? "Dollar ($)" : "So'm"}. ${keyingi} ko'rsatish uchun aylantirish`}
+            aria-describedby={`${kartalarId}-${id}-${dollar ? "USD" : "UZS"}`}
+            aria-pressed={dollar}
+            title={`${keyingi} ko'rsatish uchun bosing`}
+            className="group relative min-w-0 cursor-pointer rounded-3xl text-left transition-transform duration-300 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:ring-offset-2 motion-reduce:transform-none"
+            style={{ perspective: "1200px" }}>
+            <span className="grid h-full transition-transform duration-700 motion-reduce:transition-none"
+              style={{ transformStyle: "preserve-3d", transform: dollar ? "rotateY(180deg)" : "rotateY(0deg)" }}>
             {(["UZS", "USD"] as const).map((code) => {
               const summary = currencySummary?.[code];
               const balance = id === "jami" ? summary : summary?.byPaymentMethod[id as "BANK" | "CARD" | "CASH"];
-              return <div key={code} className="mb-2">
-                <p className="font-black text-gray-900">{cashAmount(balance?.closingBalance, code)}</p>
-                <p className="text-xs text-gray-500">Kirim: {cashAmount(balance?.income, code)} · Chiqim: {cashAmount(balance?.expense, code)}</p>
-              </div>;
+              const usd = code === "USD";
+              return <span key={code} id={`${kartalarId}-${id}-${code}`} aria-hidden={usd !== dollar}
+                className={`relative col-start-1 row-start-1 flex min-w-0 flex-col overflow-hidden rounded-3xl border bg-gradient-to-br p-5 shadow-[0_5px_20px_rgba(15,23,42,0.04)] transition-shadow duration-300 group-hover:shadow-[0_12px_28px_rgba(15,23,42,0.09)] ${jami ? "border-slate-700 from-slate-900 to-slate-800 text-white" : usd ? "border-blue-200 from-blue-50 to-indigo-50 text-slate-900" : `${ohang} text-slate-900`}`}
+                style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", transform: usd ? "rotateY(180deg)" : "rotateY(0deg)" }}>
+                <span aria-hidden className={`pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full blur-2xl ${jami ? "bg-blue-500/20" : usd ? "bg-blue-200/40" : "bg-white/60"}`} />
+                <span className="relative flex items-center gap-3">
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${jami ? "bg-white/10 text-blue-200" : usd ? "bg-blue-100 text-blue-600" : ikonkaStili}`}><Ikonka size={20} aria-hidden /></span>
+                  <span className={`font-bold ${jami ? "text-white" : "text-slate-700"}`}>{nomi}</span>
+                  <span className={`ml-auto rounded-full border px-2.5 py-1 text-[10px] font-black tracking-wider ${jami ? "border-white/15 bg-white/10 text-blue-100" : "border-white bg-white/80 text-slate-500"}`}>{code}</span>
+                </span>
+                <span className={`mt-4 text-[11px] font-medium ${jami ? "text-slate-300" : "text-slate-500"}`}>Yakuniy qoldiq</span>
+                <span className="mt-1 break-words text-2xl font-black leading-tight tracking-tight tabular-nums">{cashAmount(balance?.closingBalance, code)}</span>
+                <span className={`mt-4 grid grid-cols-2 gap-3 border-t pt-3 ${jami ? "border-white/10" : "border-slate-200/60"}`}>
+                  <span className="min-w-0">
+                    <span className={`flex items-center gap-1 text-[11px] ${jami ? "text-emerald-300" : "text-emerald-600"}`}><ArrowDownLeft size={13} aria-hidden />Kirim</span>
+                    <span className="mt-1 block break-words text-xs font-bold tabular-nums">{cashAmount(balance?.income, code)}</span>
+                  </span>
+                  <span className="min-w-0">
+                    <span className={`flex items-center gap-1 text-[11px] ${jami ? "text-rose-300" : "text-rose-500"}`}><ArrowUpRight size={13} aria-hidden />Chiqim</span>
+                    <span className="mt-1 block break-words text-xs font-bold tabular-nums">{cashAmount(balance?.expense, code)}</span>
+                  </span>
+                </span>
+                <span className={`mt-4 flex items-center justify-end gap-1.5 text-[10px] font-bold ${jami ? "text-blue-200" : "text-blue-600"}`}><RotateCw size={12} aria-hidden />{usd ? "So'mga o'tish" : "Dollarga o'tish"}</span>
+              </span>;
             })}
-          </div>
-        ))}
+            </span>
+          </button>;
+        })}
       </section>
 
       <button
@@ -391,19 +429,22 @@ export default function KirimChiqimHisoboti() {
       {aylanmaOchiq && (
         <AppModal onClose={() => setAylanmaOchiq(false)}>
           <div
-            className="flex max-h-[90vh] w-[min(1100px,96vw)] flex-col overflow-hidden rounded-[28px] border border-orange-100 bg-white shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`${kartalarId}-aylanma-title`}
+            className="flex h-[94dvh] w-[calc(100vw-2rem)] max-w-[1900px] flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-slate-50 shadow-2xl sm:w-[calc(100vw-6rem)]"
           >
-            <div className="flex items-center justify-between border-b border-orange-100 px-6 py-4">
-              <h3 className="text-lg font-black text-gray-900">Aylanma tafsiloti</h3>
-              <button
-                onClick={() => setAylanmaOchiq(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-orange-100 bg-white text-gray-500 transition hover:bg-orange-50 hover:text-orange-600"
-              >
-                <X size={18} />
-              </button>
+            <div className="flex shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-4 py-4 sm:px-6 sm:py-5">
+              <span className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-blue-600 sm:flex"><ArrowRightLeft size={23} aria-hidden /></span>
+              <div className="min-w-0">
+                <h3 id={`${kartalarId}-aylanma-title`} className="text-lg font-black tracking-tight text-slate-900 sm:text-xl">Aylanma tafsiloti</h3>
+                <p className="mt-1 text-xs text-slate-500">{kunMatni(dateFrom)} — {kunMatni(dateTo)} <span className="mx-1 text-slate-300">·</span> {tafsilotSatrlar.length} ta hujjat</p>
+              </div>
+              <span className="ml-auto shrink-0 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700">{currency === "USD" ? "Dollar · USD" : "So'm · UZS"}</span>
             </div>
-            <div className="overflow-auto p-5">
+            <div className="flex min-h-0 flex-1 flex-col p-3 sm:p-5">
               <MatritsaJadval
+                ichkiScroll
                 birinchiSarlavha="Hujjatlar"
                 ustunlar={ustunlar}
                 satrlar={tafsilotSatrlar}
@@ -412,6 +453,10 @@ export default function KirimChiqimHisoboti() {
                 onReorder={qaytaTartibla}
                 bosh="Tanlangan davrda hujjat yo'q."
               />
+            </div>
+            <div className="flex shrink-0 items-center justify-between gap-3 border-t border-slate-200 bg-white px-4 py-3 sm:px-6">
+              <p className="text-xs text-slate-500">Hujjat tafsilotini ochish uchun qatorni bosing.</p>
+              <button type="button" onClick={() => setAylanmaOchiq(false)} className="shrink-0 cursor-pointer rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200">Yopish</button>
             </div>
           </div>
         </AppModal>
@@ -439,6 +484,7 @@ function MatritsaJadval({
   boshlaResize,
   onReorder,
   bosh,
+  ichkiScroll = false,
 }: {
   birinchiSarlavha: string;
   ustunlar: Guruh[];
@@ -447,6 +493,7 @@ function MatritsaJadval({
   boshlaResize: (leaf: string, e: React.PointerEvent) => void;
   onReorder?: (fromId: string, toId: string) => void;
   bosh?: string;
+  ichkiScroll?: boolean;
 }) {
   const [sudralgan, setSudralgan] = useState<string | null>(null);
   const [nishon, setNishon] = useState<string | null>(null);
@@ -467,15 +514,15 @@ function MatritsaJadval({
   }
 
   return (
-    <section className="rounded-[28px] border border-orange-100 bg-white shadow-sm">
-      <div className="aylanma-scroll overflow-x-auto rounded-[28px]">
-        <table className="text-sm" style={{ tableLayout: "fixed", width: jamiEn }}>
+    <section className={`${ichkiScroll ? "flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl" : "rounded-[28px]"} border border-orange-100 bg-white shadow-sm`}>
+      <div className={`aylanma-scroll ${ichkiScroll ? "min-h-0 flex-1 overflow-auto" : "overflow-x-auto rounded-[28px]"}`}>
+        <table className={ichkiScroll ? "border-separate border-spacing-0 text-sm [&_td]:border-b [&_td]:border-slate-100" : "text-sm"} style={{ tableLayout: "fixed", width: ichkiScroll ? "100%" : jamiEn, minWidth: ichkiScroll ? jamiEn : undefined }}>
           <colgroup>
             {leaflar.map((l) => (
               <col key={l} style={{ width: enOl(l) }} />
             ))}
           </colgroup>
-          <thead>
+          <thead className={ichkiScroll ? "sticky top-0 z-20 bg-slate-50 shadow-[0_1px_0_#e2e8f0] [&_th]:bg-slate-50!" : undefined}>
             <tr className="border-b border-orange-100">
               <th className="px-4 py-3" />
               {ustunlar.map((g) => {
@@ -549,7 +596,7 @@ function MatritsaJadval({
                   q.onClick ? "cursor-pointer hover:bg-amber-100/60" : ""
                 }`}
               >
-                <td className="truncate px-4 py-3.5 font-bold text-gray-700" title={q.label}>
+                <td className={`${ichkiScroll ? "break-words whitespace-normal leading-relaxed" : "truncate"} px-4 py-3.5 font-bold text-gray-700`} title={q.label}>
                   {q.label}
                 </td>
                 {q.kataklar.map((k, i) => (
