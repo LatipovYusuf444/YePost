@@ -27,6 +27,7 @@
   },
   "searchPlaceholder": "Raqam, nomi, kontragent yoki mas'ul...",
   "totalLabel": "Jami: {{value}}",
+  "periodTotalLabel": "Davr jami: {{value}}",
   "createButton": "Amaliyot yaratish",
   "emptyList": "{{section}} bo'yicha yozuv yo'q",
   "cancelConfirm": "{{number}} amaliyotini bekor qilasizmi?",

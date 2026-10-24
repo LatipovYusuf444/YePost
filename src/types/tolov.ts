@@ -41,6 +41,7 @@ export type TolovFiltrlari = {
 export type FinanceTransaction = {
   id: string; source: TolovManbasi; type: "INCOME" | "EXPENSE"; paymentType: string;
   amount: number | string; date: string; note?: string | null; refId?: string | null; refDocNumber?: string | null;
+  currency?: "UZS" | "USD";
   status?: "CONFIRMED" | "DRAFT" | "CANCELLED";
   branchId?: string | null; branchName?: string | null;
   responsibleId?: string | null; responsibleName?: string | null;

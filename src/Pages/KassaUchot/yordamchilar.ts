@@ -1,5 +1,5 @@
 import { toshkentKuni } from "@/lib/hujjatSanasi";
-import { pulMatni } from "@/lib/valyuta";
+import { cashAmount } from "@/lib/cashReports";
 import type { KassaKanali, KassaYonalishi } from "./types";
 
 export const maydonKlass =
@@ -26,12 +26,12 @@ export function keyingiRaqam(amaliyotlar: { raqam: string }[]) {
 }
 
 export function summaFormat(summa: number) {
-  return pulMatni(summa, "UZS", true);
+  return cashAmount(summa, "UZS");
 }
 
-// Kassa summasi o'z valyutasida: dollar — ko'rinish valyutasiga o'girilmaydi; so'm — avvalgidek.
+// Har ikkala valyuta ham o'z valyutasida qoladi.
 export function kassaSummasi(summa: number, valyuta?: "UZS" | "USD") {
-  return valyuta === "USD" ? `$${summa.toLocaleString("uz-UZ", { maximumFractionDigits: 2 })}` : summaFormat(summa);
+  return cashAmount(summa, valyuta ?? "UZS");
 }
 
 // Valyuta (so'm/dollar) tanlanadigan turlar: mijoz hisobi (to'ldirish/qaytarish) va yetkazib beruvchiga to'lov.

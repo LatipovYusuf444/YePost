@@ -1,6 +1,7 @@
 import apiClient from "./axios";
 import { getApiErrorMessage } from "./sozlamalarApi";
 import { chegirmaParametrlari } from "./hisobotParametrlari";
+import type { CashCurrency, CashDailyParams, CashDailyReport, CashFlowBalance, CashFlowCurrencySummary } from "@/types/cashReports";
 import type {
   AuditFilter,
   AuditLog,
@@ -210,6 +211,9 @@ export const incomeExpenseReportApi = {
 };
 
 export type CashFlowParams = {
+  currency?: CashCurrency;
+  page?: number;
+  pageSize?: number;
   dateFrom?: string;
   dateTo?: string;
   branchIds?: string;
@@ -218,12 +222,11 @@ export type CashFlowParams = {
 };
 
 export type CashFlowReport = {
-  summary: {
-    openingBalance: number | string;
-    income: number | string;
-    expense: number | string;
-    closingBalance: number | string;
+  summary: CashFlowBalance & {
+    byCurrency?: Record<CashCurrency, CashFlowCurrencySummary>;
+    byPaymentMethod?: Record<string, CashFlowBalance>;
   };
+  totalPages?: number;
   byPaymentMethod: Array<{
     paymentMethod: string;
     openingBalance: number | string;
@@ -233,6 +236,7 @@ export type CashFlowReport = {
   }>;
   items: Array<{
     id: string;
+    currency?: CashCurrency;
     date: string;
     documentNumber?: string;
     refDocNumber?: string;
@@ -251,27 +255,22 @@ export type CashFlowReport = {
 
 export const cashFlowReportApi = {
   olish: async (params: CashFlowParams) => {
-    const raw = await getReport<
-      CashFlowReport & {
-        summary: CashFlowReport["summary"] & {
-          byPaymentMethod?: Record<
-            string,
-            { income?: number | string; expense?: number | string }
-          >;
-        };
-      }
-    >("/reports/cash-flow", params);
-    if (Array.isArray(raw.byPaymentMethod)) return raw;
-    const byPaymentMethod = Object.entries(raw.summary?.byPaymentMethod ?? {}).map(
+    const first = await getReport<CashFlowReport>("/reports/cash-flow", { ...params, page: 1, pageSize: 500 });
+    const pages = await Promise.all(Array.from({ length: Math.max(0, Number(first.totalPages ?? 1) - 1) }, (_, index) =>
+      getReport<CashFlowReport>("/reports/cash-flow", { ...params, page: index + 2, pageSize: 500 })
+    ));
+    const raw = { ...first, items: [first.items ?? [], ...pages.map((page) => page.items ?? [])].flat() };
+    if (!raw.summary?.byCurrency?.[params.currency ?? "UZS"] && Array.isArray(raw.byPaymentMethod)) return raw;
+    const byPaymentMethod = Object.entries(raw.summary?.byCurrency?.[params.currency ?? "UZS"]?.byPaymentMethod ?? raw.summary?.byPaymentMethod ?? {}).map(
       ([paymentMethod, value]) => {
         const income = Number(value.income ?? 0);
         const expense = Number(value.expense ?? 0);
         return {
           paymentMethod,
-          openingBalance: 0,
+          openingBalance: Number(value.openingBalance ?? 0),
           income,
           expense,
-          closingBalance: income - expense,
+          closingBalance: Number(value.closingBalance ?? (Number(value.openingBalance ?? 0) + income - expense)),
         };
       }
     );
@@ -279,6 +278,10 @@ export const cashFlowReportApi = {
   },
   export: (params: CashFlowParams) =>
     exportReport("/reports/cash-flow/export", params, `cash-flow-${new Date().toISOString().slice(0, 10)}.xlsx`),
+};
+
+export const cashDailyReportApi = {
+  olish: (params: CashDailyParams) => getReport<CashDailyReport>("/reports/cash-daily", params),
 };
 
 // Audit sahifasi: GET /audit/logs

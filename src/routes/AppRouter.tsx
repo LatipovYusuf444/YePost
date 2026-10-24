@@ -4,6 +4,7 @@ import BoshSahifa from "@/Pages/BoshSahifa"
 import Monitoring from "@/Pages/Monitoring"
 import KassaUchot from "@/Pages/KassaUchot"
 import HisobotUchot from "@/Pages/HisobotUchot"
+import KunlikKassa from "@/Pages/HisobotUchot/KunlikKassa"
 import XodimUchot from "@/Pages/XodimUchot"
 import QollabQuvvatlash from "@/Pages/Support"
 import Mahsulotlar from "@/Pages/Mahsulotlar"
@@ -83,6 +84,7 @@ export default function AppRouter() {
         <Route path="/hisobotlar/foyda" element={<HisobotUchot tab="profit" />} />
         <Route path="/hisobotlar/foyda-xarajat" element={<HisobotUchot tab="foydaxarajat" />} />
         <Route path="/hisobotlar/kirim-chiqim" element={<HisobotUchot tab="income" />} />
+        <Route path="/hisobotlar/kunlik-kassa" element={<KunlikKassa />} />
         <Route path="/hisobotlar/chegirmalar" element={<HisobotUchot tab="discount" />} />
         <Route path="/hisobotlar/audit-loglari" element={<HisobotUchot tab="audit" />} />
         {/* Mock Xodim uchoti eski backendli Hodimlar sahifasi o'rnida

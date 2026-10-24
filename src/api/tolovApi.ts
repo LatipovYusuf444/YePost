@@ -2,6 +2,7 @@ import { kassaKirimApi, xarajatApi } from "./financeApi";
 import type { TolovMoliyaManbalari } from "@/types/tolov";
 import apiClient from "./axios";
 import type { FinanceTransaction, TolovManbasi } from "@/types/tolov";
+import type { FinanceCurrencySummary } from "@/types/cashReports";
 
 export async function financeTransactions(params: {
   search?: string;
@@ -15,25 +16,33 @@ export async function financeTransactions(params: {
   source?: TolovManbasi;
   dateFrom?: string;
   dateTo?: string;
+  currency?: "UZS" | "USD" | "ALL";
   page?: number;
   pageSize?: number;
 }) {
-  const response=await apiClient.get<{data?:FinanceTransaction[];total?:number;page?:number;pageSize?:number;totalPages?:number}>("/finance/transactions",{params});
-  return {items:response.data.data??[],total:response.data.total??0,page:response.data.page??1,pageSize:response.data.pageSize??10,totalPages:response.data.totalPages??1};
+  const response=await apiClient.get<{data?:FinanceTransaction[];total?:number;page?:number;pageSize?:number;totalPages?:number;summary?:FinanceCurrencySummary}>("/finance/transactions",{params});
+  return {items:response.data.data??[],total:response.data.total??0,page:response.data.page??1,pageSize:response.data.pageSize??10,totalPages:response.data.totalPages??1,summary:response.data.summary};
 }
 
-export async function barchaFinanceTransactions(
+export async function barchaFinanceTransactionsHisoboti(
   params: Omit<Parameters<typeof financeTransactions>[0], "page" | "pageSize"> = {}
 ) {
   const first = await financeTransactions({ ...params, page: 1, pageSize: 100 });
-  if (first.totalPages <= 1) return first.items;
+  if (first.totalPages <= 1) return first;
 
   const pages = await Promise.all(
     Array.from({ length: first.totalPages - 1 }, (_, index) =>
       financeTransactions({ ...params, page: index + 2, pageSize: 100 })
     )
   );
-  return [first.items, ...pages.map((page) => page.items)].flat();
+  return { ...first, items: [first.items, ...pages.map((page) => page.items)].flat() };
+}
+
+// Avvalgi chaqiruvchilarning massiv javobi saqlanadi.
+export async function barchaFinanceTransactions(
+  params: Omit<Parameters<typeof financeTransactions>[0], "page" | "pageSize"> = {}
+) {
+  return (await barchaFinanceTransactionsHisoboti(params)).items;
 }
 
 // Swagger bo'yicha mavjud real moliya endpointlari:

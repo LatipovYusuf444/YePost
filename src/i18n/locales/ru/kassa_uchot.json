@@ -27,6 +27,7 @@
   },
   "searchPlaceholder": "Номер, название, контрагент или ответственный...",
   "totalLabel": "Итого: {{value}}",
+  "periodTotalLabel": "Итого за период: {{value}}",
   "createButton": "Создать операцию",
   "emptyList": "Записей по разделу «{{section}}» нет",
   "cancelConfirm": "Отменить операцию {{number}}?",

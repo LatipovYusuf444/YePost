@@ -116,6 +116,8 @@ export type KirimChiqim = {
 // Karta: kartadan o'tkazma.
 export type KassaHujjati = {
   id: string;
+  currency?: "UZS" | "USD";
+  runningBalance?: number;
   sana: string;
   raqam: string; // FP1, FP2, ...
   nomi: string; // hujjat nomi (kirim kassa orderi, to'lov topshiriqnomasi ...)

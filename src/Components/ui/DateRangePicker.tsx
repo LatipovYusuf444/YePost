@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/Components/ui/popover
 import { Calendar } from "@/Components/ui/calendar";
 import { Button } from "@/Components/ui/button";
 import { cn } from "@/lib/utils";
+import { bugungiToshkentKuni, kunniSurish } from "@/lib/hujjatSanasi";
 
 type Props = {
   from: string;
@@ -15,6 +16,7 @@ type Props = {
   onChange: (from: string, to: string) => void;
   className?: string;
   compact?: boolean;
+  timeZone?: "Asia/Tashkent";
 };
 
 function toKey(date: Date) {
@@ -35,7 +37,8 @@ function fromKey(value: string): Date | undefined {
 const KALENDAR_KENGLIGI = 460;
 const EKRAN_CHETI = 16;
 
-function shiftDay(amount: number) {
+function shiftDay(amount: number, timeZone?: "Asia/Tashkent") {
+  if (timeZone === "Asia/Tashkent") return kunniSurish(bugungiToshkentKuni(), amount);
   const date = new Date();
   date.setDate(date.getDate() + amount);
   return toKey(date);
@@ -44,7 +47,7 @@ function shiftDay(amount: number) {
 // Ombor va savdo sahifalaridagi barcha sana-oraliq filtrlari uchun yagona,
 // shadcn/react-day-picker asosidagi haqiqiy kalendar. Backendda sana bo'yicha
 // so'rov parametri yo'q — filtr to'liq client tomonda ishlaydi.
-export default function DateRangePicker({ from, to, onChange, className = "", compact = false }: Props) {
+export default function DateRangePicker({ from, to, onChange, className = "", compact = false, timeZone }: Props) {
   const { t, i18n } = useTranslation("common");
   const kalendarTili = i18n.resolvedLanguage === "ru" ? ru : uz;
   const [open, setOpen] = useState(false);
@@ -97,7 +100,7 @@ export default function DateRangePicker({ from, to, onChange, className = "", co
   }
 
   function tezOraliq(startOffset: number) {
-    setDraft({ from: fromKey(shiftDay(startOffset)), to: fromKey(shiftDay(0)) });
+    setDraft({ from: fromKey(shiftDay(startOffset, timeZone)), to: fromKey(shiftDay(0, timeZone)) });
   }
 
   return (
@@ -145,7 +148,7 @@ export default function DateRangePicker({ from, to, onChange, className = "", co
           numberOfMonths={oylarSoni}
           selected={draft}
           onSelect={(range, bosilganKun) => kunniTanlash(range, bosilganKun)}
-          defaultMonth={draft?.to ?? draft?.from ?? new Date()}
+          defaultMonth={draft?.to ?? draft?.from ?? (timeZone ? fromKey(bugungiToshkentKuni()) : new Date())}
           locale={kalendarTili}
           className="[--cell-size:--spacing(7)]"
         />

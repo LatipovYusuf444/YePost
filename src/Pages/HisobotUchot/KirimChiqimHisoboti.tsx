@@ -4,7 +4,10 @@ import MuddatTanlov from "./MuddatTanlov";
 import KopTanlovli from "./KopTanlovli";
 import { useHisobotRealData } from "./HisobotRealData";
 import type { Tanlov } from "./types";
-import { bugun, bugunMinus, sanaFormat, sanadaMi, son } from "./yordamchilar";
+import { son } from "./yordamchilar";
+import { bugungiToshkentKuni, kunniSurish, kunMatni } from "@/lib/hujjatSanasi";
+import { cashAmount } from "@/lib/cashReports";
+import type { CashCurrency } from "@/types/cashReports";
 import type { KassaHujjati } from "./types";
 import KassaAmaliyotModal from "@/Pages/KassaUchot/KassaAmaliyotModal";
 import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali } from "@/Pages/KassaUchot/types";
@@ -58,6 +61,8 @@ function hujjatAmaliyoti(h: KassaHujjati, filiallar: Tanlov[]): KassaAmaliyoti {
     nomi: h.nomi,
     kontragent: filiallar.find((item) => item.id === h.branchId)?.nomi ?? h.branchId,
     summa: h.summa,
+    valyuta: h.currency ?? "UZS",
+    readonly: true,
     sana: h.sana,
     masul: "",
     izoh: "",
@@ -65,7 +70,7 @@ function hujjatAmaliyoti(h: KassaHujjati, filiallar: Tanlov[]): KassaAmaliyoti {
 }
 
 type Guruh = { id: string; nomi: string };
-type Katak = { kirim: number; chiqim: number; qoldiq: number | null };
+type Katak = { kirim: number; chiqim: number; qoldiq: number | null; currency?: CashCurrency };
 type Satr = { label: string; belgi?: boolean; onClick?: () => void; kataklar: Katak[] };
 
 // Leaf ustun kengliklarining boshlang'ich qiymati
@@ -93,8 +98,10 @@ function csvYuklash(nom: string, ustunlar: string[], qatorlar: (string | number)
 export default function KirimChiqimHisoboti() {
   void csvYuklash;
   const { filiallar: filialTanlovlari } = useHisobotRealData();
-  const [dateFrom, setDateFrom] = useState(bugunMinus(30));
-  const [dateTo, setDateTo] = useState(bugun());
+  const [dateFrom, setDateFrom] = useState(() => kunniSurish(bugungiToshkentKuni(), -30));
+  const [dateTo, setDateTo] = useState(bugungiToshkentKuni);
+  const [currency, setCurrency] = useState<CashCurrency>("UZS");
+  const [currencySummary, setCurrencySummary] = useState<CashFlowReport["summary"]["byCurrency"]>();
   const [kassalar, setKassalar] = useState<string[]>([]);
   const [kassaHujjatlar, setKassaHujjatlar] = useState<KassaHujjati[]>([]);
   const [yuklanmoqda, setYuklanmoqda] = useState(false);
@@ -111,17 +118,31 @@ export default function KirimChiqimHisoboti() {
     let active = true;
     setYuklanmoqda(true);
     setXato("");
+    setKassaHujjatlar([]);
+    setBackendSummary([]);
+    setCurrencySummary(undefined);
+    if (!dateFrom || !dateTo || dateFrom > dateTo) {
+      setXato("Sana oralig'ini to'g'ri kiriting.");
+      setYuklanmoqda(false);
+      return;
+    }
+    const methods = KASSA_TARTIB.filter((id) => (!kassalar.length || kassalar.includes(id)) && (!tolovTurlari.length || tolovTurlari.includes(id)));
+    if (!methods.length) { setYuklanmoqda(false); return; }
     cashFlowReportApi
       .olish({
-        dateFrom: new Date(`${dateFrom}T00:00:00.000Z`).toISOString(),
-        dateTo: new Date(`${dateTo}T23:59:59.999Z`).toISOString(),
-        paymentMethods: tolovTurlari.length ? tolovTurlari.join(",") : undefined,
+        dateFrom,
+        dateTo,
+        currency,
+        paymentMethods: methods.length === 3 ? undefined : methods.join(","),
       })
       .then((report) => {
         if (!active) return;
         setBackendSummary(report.byPaymentMethod ?? []);
+        setCurrencySummary(report.summary.byCurrency);
         setKassaHujjatlar((report.items ?? []).map((item) => ({
           id: item.id,
+          currency: item.currency ?? currency,
+          runningBalance: item.runningBalance == null ? undefined : Number(item.runningBalance),
           sana: item.date,
           raqam: item.documentNumber || item.refDocNumber || item.id,
           nomi: item.name || item.note || item.documentNumber || "Kassa amaliyoti",
@@ -141,7 +162,7 @@ export default function KirimChiqimHisoboti() {
       .catch((error) => { if (active) setXato(getApiErrorMessage(error)); })
       .finally(() => { if (active) setYuklanmoqda(false); });
     return () => { active = false; };
-  }, [dateFrom, dateTo, tolovTurlari]);
+  }, [dateFrom, dateTo, tolovTurlari, kassalar, currency]);
 
   // Guruh (kassa) ustunini sudrab qayta joylashtirish
   function qaytaTartibla(fromId: string, toId: string) {
@@ -202,24 +223,18 @@ export default function KirimChiqimHisoboti() {
 
   // Har bir kassaning boshlang'ich (davr boshigacha) va davr aylanmasi
   const kassaHisob = useMemo(() => {
-    const map: Record<string, { boshlangich: number; kirim: number; chiqim: number }> = {};
+    const map: Record<string, { boshlangich: number; kirim: number; chiqim: number; yakuniy: number }> = {};
     kassaIdlar.forEach((id) => {
-      const rows = mosHujjatlar.filter((r) => r.kassaId === id);
       const summary = backendSummary.find((item) => item.paymentMethod === id);
       map[id] = {
         boshlangich: Number(summary?.openingBalance ?? 0),
-        kirim: Number(
-          summary?.income ??
-            rows.filter((r) => r.turi === "kirim").reduce((s, r) => s + r.summa, 0)
-        ),
-        chiqim: Number(
-          summary?.expense ??
-            rows.filter((r) => r.turi === "chiqim").reduce((s, r) => s + r.summa, 0)
-        ),
+        kirim: Number(summary?.income ?? 0),
+        chiqim: Number(summary?.expense ?? 0),
+        yakuniy: Number(summary?.closingBalance ?? 0),
       };
     });
     return map;
-  }, [mosHujjatlar, kassaIdlar, backendSummary]);
+  }, [kassaIdlar, backendSummary]);
 
   // Umumiy matritsa qatorlari (Boshlang'ich / Aylanma / Yakuniy)
   const satrlar: Satr[] = useMemo(() => {
@@ -240,43 +255,44 @@ export default function KirimChiqimHisoboti() {
     });
     const yak = (id: string): Katak => {
       const h = kassaHisob[id];
-      return { kirim: h?.kirim ?? 0, chiqim: h?.chiqim ?? 0, qoldiq: (h?.boshlangich ?? 0) + (h?.kirim ?? 0) - (h?.chiqim ?? 0) };
+      return { kirim: h?.kirim ?? 0, chiqim: h?.chiqim ?? 0, qoldiq: h?.yakuniy ?? 0 };
     };
-    const qator = (fn: (id: string) => Katak): Katak[] => [...kassaIdlar.map(fn), jamiKatak(fn)];
+    const qator = (fn: (id: string) => Katak): Katak[] => [...kassaIdlar.map(fn), jamiKatak(fn)].map((katak) => ({ ...katak, currency }));
     return [
       { label: "Boshlang'ich qoldiq", kataklar: qator(bosh) },
       { label: "Aylanma", belgi: true, onClick: () => setAylanmaOchiq(true), kataklar: qator(ayl) },
       { label: "Yakuniy qoldiq", kataklar: qator(yak) },
     ];
-  }, [kassaHisob, kassaIdlar]);
+  }, [kassaHisob, kassaIdlar, currency]);
 
   // Hujjatlar bo'yicha aylanma (running qoldiq) — modal uchun
   const tafsilotSatrlar: Satr[] = useMemo(() => {
     const running: Record<string, number> = {};
     kassaIdlar.forEach((id) => (running[id] = kassaHisob[id]?.boshlangich ?? 0));
-    const docs = mosHujjatlar
-      .filter((r) => sanadaMi(r.sana, dateFrom, dateTo) && kassaIdlar.includes(r.kassaId))
-      .sort((a, b) => a.sana.localeCompare(b.sana) || a.id.localeCompare(b.id));
+    // runningBalance server ketma-ketligiga tegishli; teng sanalarda qayta saralamaymiz.
+    const docs = mosHujjatlar.filter((r) => kassaIdlar.includes(r.kassaId));
 
     return docs.map((d) => {
       running[d.kassaId] += d.turi === "kirim" ? d.summa : -d.summa;
       const kataklar: Katak[] = kassaIdlar.map((id) => ({
+        currency: d.currency ?? currency,
         kirim: id === d.kassaId && d.turi === "kirim" ? d.summa : 0,
         chiqim: id === d.kassaId && d.turi === "chiqim" ? d.summa : 0,
         qoldiq: running[id],
       }));
       const jami: Katak = {
+        currency: d.currency ?? currency,
         kirim: kataklar.reduce((s, k) => s + k.kirim, 0),
         chiqim: kataklar.reduce((s, k) => s + k.chiqim, 0),
-        qoldiq: kassaIdlar.reduce((s, id) => s + running[id], 0),
+        qoldiq: d.runningBalance ?? kassaIdlar.reduce((s, id) => s + running[id], 0),
       };
       return {
-        label: `${sanaFormat(d.sana)} · ${d.nomi}`,
+        label: `${kunMatni(d.sana)} · ${d.nomi} · ${d.currency ?? currency}`,
         onClick: () => setTanlanganHujjat(d),
         kataklar: [...kataklar, jami],
       };
     });
-  }, [mosHujjatlar, kassaIdlar, kassaHisob, dateFrom, dateTo]);
+  }, [mosHujjatlar, kassaIdlar, kassaHisob, currency]);
 
   async function eksport() {
     if (exportYuklanmoqda) return;
@@ -284,9 +300,9 @@ export default function KirimChiqimHisoboti() {
     setXato("");
     try {
       await cashFlowReportApi.export({
-        dateFrom: new Date(`${dateFrom}T00:00:00.000Z`).toISOString(),
-        dateTo: new Date(`${dateTo}T23:59:59.999Z`).toISOString(),
-        paymentMethods: tolovTurlari.length ? tolovTurlari.join(",") : undefined,
+        dateFrom,
+        dateTo,
+        paymentMethods: kassaIdlar.length === 3 ? undefined : kassaIdlar.join(","),
       });
     } catch (error) {
       setXato(getApiErrorMessage(error));
@@ -310,6 +326,7 @@ export default function KirimChiqimHisoboti() {
       <section className="rounded-3xl border border-orange-100 bg-white p-5 shadow-sm">
         <div className="grid gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
           <MuddatTanlov
+            timeZone="Asia/Tashkent"
             dateFrom={dateFrom}
             dateTo={dateTo}
             onChange={(f, t) => {
@@ -324,15 +341,36 @@ export default function KirimChiqimHisoboti() {
             selected={tolovTurlari}
             onChange={setTolovTurlari}
           />
+          <label className="text-xs font-bold text-gray-700">Jadval valyutasi
+            <select aria-label="Hisobot valyutasi" value={currency} onChange={(event) => setCurrency(event.target.value as CashCurrency)} className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm">
+              <option value="UZS">So'm</option><option value="USD">Dollar ($)</option>
+            </select>
+          </label>
         </div>
       </section>
 
       {xato && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
       {yuklanmoqda && <YuklanmoqdaHolati className="h-48" />}
 
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Kassa qoldiqlari">
+        {[...kassaIdlar, "jami"].map((id) => (
+          <div key={id} className="rounded-2xl border border-orange-100 bg-white p-4 shadow-sm">
+            <h2 className="mb-2 font-bold text-gray-500">{id === "jami" ? "Jami" : kassaNomi(id)}</h2>
+            {(["UZS", "USD"] as const).map((code) => {
+              const summary = currencySummary?.[code];
+              const balance = id === "jami" ? summary : summary?.byPaymentMethod[id as "BANK" | "CARD" | "CASH"];
+              return <div key={code} className="mb-2">
+                <p className="font-black text-gray-900">{cashAmount(balance?.closingBalance, code)}</p>
+                <p className="text-xs text-gray-500">Kirim: {cashAmount(balance?.income, code)} · Chiqim: {cashAmount(balance?.expense, code)}</p>
+              </div>;
+            })}
+          </div>
+        ))}
+      </section>
+
       <button
         onClick={() => void eksport()}
-        disabled={exportYuklanmoqda}
+        disabled={exportYuklanmoqda || !dateFrom || !dateTo || dateFrom > dateTo || !kassaIdlar.length}
         className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-bold text-orange-600 shadow-sm transition hover:bg-orange-50"
       >
         <Download size={16} />
@@ -541,15 +579,15 @@ function TripKatak({ katak, jami }: { katak: Katak; jami: boolean }) {
   return (
     <>
       <td className={`border-l border-orange-50 ${asos} ${katak.kirim > 0 ? "text-emerald-600" : "text-gray-300"}`}>
-        {son(katak.kirim)}
+        {katak.currency ? cashAmount(katak.kirim, katak.currency) : son(katak.kirim)}
       </td>
-      <td className={`${asos} ${katak.chiqim > 0 ? "text-red-500" : "text-gray-300"}`}>{son(katak.chiqim)}</td>
+      <td className={`${asos} ${katak.chiqim > 0 ? "text-red-500" : "text-gray-300"}`}>{katak.currency ? cashAmount(katak.chiqim, katak.currency) : son(katak.chiqim)}</td>
       <td
         className={`${asos} ${
           katak.qoldiq === null ? "text-gray-300" : katak.qoldiq >= 0 ? "text-gray-900" : "text-red-500"
         }`}
       >
-        {katak.qoldiq === null ? "—" : son(katak.qoldiq)}
+        {katak.qoldiq === null ? "—" : katak.currency ? cashAmount(katak.qoldiq, katak.currency) : son(katak.qoldiq)}
       </td>
     </>
   );

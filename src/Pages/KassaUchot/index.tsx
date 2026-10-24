@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Ban,
   ArrowDownLeft,
@@ -14,7 +14,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { barchaFinanceTransactions } from "@/api/tolovApi";
+import { barchaFinanceTransactionsHisoboti } from "@/api/tolovApi";
 import { cashOperationsApi } from "@/api/cashOperationsApi";
 import { kassaKirimApi, xarajatApi } from "@/api/financeApi";
 import { sotuvniBekorQilish, sotuvniOchirish } from "@/api/savdoApi";
@@ -36,7 +36,10 @@ import NomiKatagi from "./NomiKatagi";
 import { amaliyotSotuvIdsi, nomQismlari } from "./nomQismlari";
 import ZavodBonusi from "./ZavodBonusi";
 import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali, KassaYonalishi } from "./types";
-import { kassaSummasi, sanaFormat, summaFormat } from "./yordamchilar";
+import { kassaSummasi, sanaFormat } from "./yordamchilar";
+import MuddatTanlov from "../HisobotUchot/MuddatTanlov";
+import { cashAmount } from "@/lib/cashReports";
+import type { FinanceCurrencySummary } from "@/types/cashReports";
 
 import ModalTablari from "@/Components/common/ModalTablari";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
@@ -135,6 +138,7 @@ export default function KassaUchot() {
       nomi: item.refDocNumber || item.note || t(`types.${backendTuriniMoslash(item)}`),
       kontragent: item.counterpartyName || branch?.name || "",
       summa: Number(item.amount ?? 0),
+      valyuta: item.currency ?? "UZS",
       sana: item.date,
       masul: item.responsibleName || responsible?.fullName || responsible?.username || t("systemFallback"),
       izoh: item.note ?? "",
@@ -210,42 +214,93 @@ export default function KassaUchot() {
   const [kanal, setKanal] = useState<KassaKanali>("naqd");
   const [yonalish, setYonalish] = useState<KassaYonalishi>("tushum");
   const [qidiruv, setQidiruv] = useState("");
+  const raqamQidiruvi = /^K\d+$/i.test(qidiruv.trim());
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [currency, setCurrency] = useState<"UZS" | "USD" | "ALL">("ALL");
+  const [summary, setSummary] = useState<FinanceCurrencySummary>();
+  const yuklashId = useRef(0);
+  const raqamManbasi = useRef<Promise<FinanceTransaction[]> | null>(null);
+  const [hujjatRaqamlari, setHujjatRaqamlari] = useState<Map<string, string>>(new Map());
   const [modalOchiq, setModalOchiq] = useState(false);
   const [tahrirAmaliyot, setTahrirAmaliyot] = useState<KassaAmaliyoti | null>(null);
   const [tasdiqAmaliyot, setTasdiqAmaliyot] = useState<KassaAmaliyoti | null>(null);
 
   const yuklash = useCallback(async () => {
+    const requestId = ++yuklashId.current;
+    if (dateFrom && dateTo && dateFrom > dateTo) {
+      setXatolik("Boshlanish sanasi tugash sanasidan keyin bo'lmasin.");
+      setAmaliyotlar([]);
+      setSummary(undefined);
+      setYuklanmoqda(false);
+      return;
+    }
     setYuklanmoqda(true);
     setXatolik("");
+    setSummary(undefined);
     try {
-      const [transactions, cashOperations, users, branches] = await Promise.all([
-        barchaFinanceTransactions(),
+      // K1, K2... qidiruv, sana yoki valyuta filtridan keyin qayta raqamlanmasin.
+      if (!raqamManbasi.current) {
+        raqamManbasi.current = barchaFinanceTransactionsHisoboti({ currency: "ALL" }).then((data) => data.items);
+      }
+      const [report, cashOperations, users, branches, fullTransactions] = await Promise.all([
+        barchaFinanceTransactionsHisoboti({
+          currency,
+          dateFrom: dateFrom || undefined,
+          dateTo: dateTo || undefined,
+          paymentType: kanal === "bank" ? "BANK" : kanal === "ilova" ? "CARD" : "CASH",
+          type: yonalish === "tushum" ? "INCOME" : "EXPENSE",
+          search: raqamQidiruvi ? undefined : qidiruv.trim() || undefined,
+        }),
         cashOperationsApi.barchasi(),
         foydalanuvchilarApi.royxat(),
         filiallarApi.royxat(),
+        raqamManbasi.current,
       ]);
+      if (requestId !== yuklashId.current) return;
       const userMap = new Map(users.map((item) => [item.id, item]));
       const branchMap = new Map(branches.map((item) => [item.id, item]));
-      const operationRows = cashOperations.items.map((item) =>
-        cashOperationgaMoslash(item, userMap, branchMap)
-      );
-      const transactionRows = transactions
-        .filter((item) => item.source !== "CASH_OPERATION")
-        .map((item) => amaliyotgaMoslash(item, userMap, branchMap));
+      setHujjatRaqamlari(kassaRaqamlari([
+        ...cashOperations.items.map((item) => cashOperationgaMoslash(item, userMap, branchMap)),
+        ...fullTransactions.filter((item) => item.source !== "CASH_OPERATION").map((item) => amaliyotgaMoslash(item, userMap, branchMap)),
+      ]));
+      const operationMap = new Map(cashOperations.items.map((item) => [item.id, item]));
+      const transactionRows = report.items.map((item) => {
+        const operation = item.source === "CASH_OPERATION" ? operationMap.get(item.refId ?? item.id) : undefined;
+        if (!operation) return amaliyotgaMoslash(item, userMap, branchMap);
+        return { ...cashOperationgaMoslash(operation, userMap, branchMap), summa: Number(item.amount), valyuta: item.currency ?? "UZS", sana: item.date };
+      });
+      const transactionOperationIds = new Set(report.items.filter((item) => item.source === "CASH_OPERATION").map((item) => item.refId ?? item.id));
+      // Tasdiqlangan pul harakatlari faqat umumiy ledgerdan. Qoralama/bekor hujjatlar boshqarish uchun qoladi.
+      const operationRows = cashOperations.items
+        .filter((item) => item.status !== "CONFIRMED" && !transactionOperationIds.has(item.id))
+        .map((item) => cashOperationgaMoslash(item, userMap, branchMap))
+        .filter((item) => {
+          const day = toshkentKuni(item.sana);
+          const text = [item.raqam, item.nomi, item.kontragent, item.masul, item.izoh].join(" ").toLowerCase();
+          return item.kanal === kanal && item.yonalish === yonalish &&
+            (!dateFrom || day >= dateFrom) && (!dateTo || day <= dateTo) &&
+            (currency === "ALL" || (item.valyuta ?? "UZS") === currency) &&
+            (raqamQidiruvi || !qidiruv.trim() || text.includes(qidiruv.trim().toLowerCase()));
+        });
       setAmaliyotlar([...operationRows, ...transactionRows]);
+      setSummary(report.summary);
     } catch (error) {
+      if (requestId !== yuklashId.current) return;
+      raqamManbasi.current = null;
+      setAmaliyotlar([]);
       setXatolik(getApiErrorMessage(error));
     } finally {
-      setYuklanmoqda(false);
+      if (requestId === yuklashId.current) setYuklanmoqda(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currency, dateFrom, dateTo, kanal, yonalish, qidiruv, raqamQidiruvi]);
 
   useEffect(() => { void yuklash(); }, [yuklash]);
 
   // Sotuv to'lovi tahrirlanganda (bekor qilish, qayta tasdiqlash) kassa yozuvlari qayta olinadi.
   useEffect(() => {
-    const yangilash = () => void yuklash();
+    const yangilash = () => { raqamManbasi.current = null; void yuklash(); };
     window.addEventListener("savdo:yangilandi", yangilash);
     return () => window.removeEventListener("savdo:yangilandi", yangilash);
   }, [yuklash]);
@@ -291,6 +346,7 @@ export default function KassaUchot() {
       setKanal(amaliyot.kanal);
       setYonalish(amaliyot.yonalish);
       setModalOchiq(false);
+      raqamManbasi.current = null;
       await yuklash();
     } catch (error) {
       setXatolik(getApiErrorMessage(error));
@@ -350,6 +406,7 @@ export default function KassaUchot() {
       } else {
         return false;
       }
+      raqamManbasi.current = null;
       await yuklash();
       return true;
     } catch (error) {
@@ -376,11 +433,10 @@ export default function KassaUchot() {
 
   // Har bir bo'limda eng eskisi K1, keyingisi K2... — jadval ham shu tartibda. Raqam qidiruvga bog'liq emas.
   const raqamlangan = useMemo(() => {
-    const raqamlar = kassaRaqamlari(amaliyotlar);
     return amaliyotlar
-      .map((amaliyot) => ({ ...amaliyot, raqam: raqamlar.get(amaliyot.id) ?? amaliyot.raqam }))
+      .map((amaliyot) => ({ ...amaliyot, raqam: hujjatRaqamlari.get(amaliyot.id) ?? amaliyot.raqam }))
       .sort((a, b) => kassaTartibi(a, b));
-  }, [amaliyotlar]);
+  }, [amaliyotlar, hujjatRaqamlari]);
 
   // "Nomi" katagidagi sotuv raqami va mahsulot nomlari ekranda turgan qatorlar uchungina, fonda olinadi (NomiKatagi).
   const sotuvKeshi = useKassaSotuvKeshi();
@@ -392,25 +448,20 @@ export default function KassaUchot() {
   }
 
   const royxat = useMemo(() => {
-    const soz = qidiruv.trim().toLowerCase();
     return raqamlangan.filter((amaliyot) => {
       if (amaliyot.kanal !== kanal) return false;
       if (amaliyot.yonalish !== yonalish) return false;
-      if (!soz) return true;
-      return [amaliyot.raqam, amaliyot.hujjatRaqami, amaliyot.nomi, amaliyot.kontragent, amaliyot.masul, amaliyot.izoh]
-        .join(" ")
-        .toLowerCase()
-        .includes(soz);
+      if (raqamQidiruvi) return amaliyot.raqam.toUpperCase().includes(qidiruv.trim().toUpperCase());
+      return true;
     });
-  }, [raqamlangan, kanal, yonalish, qidiruv]);
+  }, [raqamlangan, kanal, yonalish, qidiruv, raqamQidiruvi]);
 
   // Bekor qilingan amaliyotlar kassa jamiga kirmaydi.
   // Birinchi yuklanishda (ma'lumot hali yo'q) sahifa o'rtasida yuklanish holati ko'rsatiladi.
   const dastlabkiYuklanish = yuklanmoqda && amaliyotlar.length === 0;
   // Dollardagi operatsiyalar so'mga qo'shilmaydi: jami valyutalar bo'yicha alohida ko'rsatiladi.
-  const jamiSom = royxat.reduce((sum, amaliyot) => sum + (amaliyot.holat === "bekor_qilingan" || amaliyot.valyuta === "USD" ? 0 : amaliyot.summa), 0);
-  const jamiDollar = royxat.reduce((sum, amaliyot) => sum + (amaliyot.holat === "bekor_qilingan" || amaliyot.valyuta !== "USD" ? 0 : amaliyot.summa), 0);
-  const jamiMatni = jamiDollar > 0 ? (jamiSom > 0 ? `${summaFormat(jamiSom)} + ${kassaSummasi(jamiDollar, "USD")}` : kassaSummasi(jamiDollar, "USD")) : summaFormat(jamiSom);
+  const summaryField = tushum ? "income" : "expense";
+  const jamiMatni = `${cashAmount(summary?.UZS?.[summaryField], "UZS")} · ${cashAmount(summary?.USD?.[summaryField], "USD")}`;
 
   const ustunlar: Ustun<KassaAmaliyoti>[] = [
     {
@@ -536,6 +587,15 @@ export default function KassaUchot() {
         <ZavodBonusi ochirishMumkin={zavodBonusiOchirish} />
       ) : (
         <>
+      <section className="grid gap-4 rounded-2xl border border-orange-100 bg-white p-4 sm:grid-cols-2">
+        <MuddatTanlov timeZone="Asia/Tashkent" dateFrom={dateFrom} dateTo={dateTo} onChange={(from, to) => { setDateFrom(from); setDateTo(to); }} />
+        <label className="text-xs font-bold text-gray-700">
+          Valyuta
+          <select aria-label="Kassa valyutasi" value={currency} onChange={(event) => setCurrency(event.target.value as typeof currency)} className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm">
+            <option value="ALL">So'm va dollar</option><option value="UZS">So'm</option><option value="USD">Dollar ($)</option>
+          </select>
+        </label>
+      </section>
       {/* Chapda: qidiruv + jami. O'ngda: yaratish tugmasi. */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
@@ -556,7 +616,7 @@ export default function KassaUchot() {
               }`}
             >
               {tushum ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
-              {t("totalLabel", { value: jamiMatni })}
+              {t(raqamQidiruvi ? "periodTotalLabel" : "totalLabel", { value: jamiMatni })}
             </div>
           )}
         </div>

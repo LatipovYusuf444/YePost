@@ -105,6 +105,7 @@ const menyular: Menyu[] = [
       { key: "hisobotFoyda", path: "/hisobotlar/foyda", icon: TrendingUp },
       { key: "hisobotFoydaXarajat", path: "/hisobotlar/foyda-xarajat", icon: Scale },
       { key: "hisobotKirimChiqim", path: "/hisobotlar/kirim-chiqim", icon: WalletCards },
+      { key: "hisobotKunlikKassa", path: "/hisobotlar/kunlik-kassa", icon: WalletCards },
       { key: "hisobotChegirmalar", path: "/hisobotlar/chegirmalar", icon: BadgePercent },
       { key: "hisobotAudit", path: "/hisobotlar/audit-loglari", icon: History },
     ],
