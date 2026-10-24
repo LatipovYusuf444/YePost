@@ -32,6 +32,11 @@
     "statistika": {
       "dollarBlok": "Расчёты в долларах",
       "dollarBlokIzoh": "Продажи, поступления и задолженность в USD",
+      "hisobKitob": "Расчёты по продажам",
+      "valyutaTanlash": "Выбрать валюту карточек",
+      "somTanlash": "Сум",
+      "dollarTanlash": "Доллар",
+      "somBlokIzoh": "Продажи, поступления и задолженность в сумах",
       "valyutaSavdo": "Продажи товаров ({{valyuta}})",
       "valyutaTolov": "Принятая оплата ({{valyuta}})",
       "valyutaQarz": "Задолженность ({{valyuta}})",

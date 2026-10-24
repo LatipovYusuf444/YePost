@@ -32,6 +32,11 @@
     "statistika": {
       "dollarBlok": "Dollar hisob-kitobi",
       "dollarBlokIzoh": "Dollardagi savdo, tushum va qarzdorlik",
+      "hisobKitob": "Savdo hisob-kitobi",
+      "valyutaTanlash": "Kartalar valyutasini tanlash",
+      "somTanlash": "So'm",
+      "dollarTanlash": "Dollar",
+      "somBlokIzoh": "So'mdagi savdo, tushum va qarzdorlik",
       "valyutaSavdo": "Tovarlar savdosi ({{valyuta}})",
       "valyutaTolov": "Qabul qilingan to'lov ({{valyuta}})",
       "valyutaQarz": "Qarzdorlik ({{valyuta}})",

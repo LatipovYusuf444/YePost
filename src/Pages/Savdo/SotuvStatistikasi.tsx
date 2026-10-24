@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowDownRight, ArrowUpRight, CircleAlert, CircleCheck, CircleDollarSign, Minus, ShoppingBag, TrendingUp, Wallet } from "lucide-react";
 import type { SotuvlarXulosasi } from "@/api/savdoApi";
@@ -336,6 +336,8 @@ export default function SotuvStatistikasi({
   xulosa = null,
 }: SotuvStatistikasiProps) {
   const { t } = useTranslation("savdo_bosh");
+  const [tanlanganValyuta, setTanlanganValyuta] = useState<"UZS" | "USD">("USD");
+  const panelId = useId();
   const mahalliy = useMemo(() => hisoblash(sotuvlar, sanaDan, sanaGacha, sanaOlish), [sotuvlar, sanaDan, sanaGacha, sanaOlish]);
   // Xulosadan faqat sonlar olinadi: valyutasiz pul maydonlari UZS/USD kartalariga tushmaydi.
   const natija = useMemo(() => {
@@ -378,7 +380,36 @@ export default function SotuvStatistikasi({
   const bugunTanlangan = natija.rejim === "bugun";
 
   return (
-    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label={t("savdoSahifasi.statistika.aria")}>
+    <section className={`relative rounded-[28px] border p-4 shadow-[0_6px_24px_rgba(37,99,235,.07)] transition-colors duration-300 sm:p-5 ${tanlanganValyuta === "USD" ? "border-[#9DBBEF] bg-gradient-to-br from-[#D4E2FB] via-[#DFE9FC] to-[#C9DAF7]" : "border-slate-200 bg-gradient-to-br from-slate-100 via-white to-blue-50/60"}`} aria-label={t("savdoSahifasi.statistika.aria")}>
+      <header className="mb-4 flex flex-wrap items-center justify-between gap-4 px-1">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-blue-100 bg-white text-blue-600 shadow-sm"><CircleDollarSign size={25} aria-hidden /></span>
+          <div className="min-w-0">
+            <h2 className="text-base font-bold tracking-tight text-slate-900">{t("savdoSahifasi.statistika.hisobKitob")}</h2>
+            <p className="mt-0.5 text-xs text-slate-500">{t(tanlanganValyuta === "USD" ? "savdoSahifasi.statistika.dollarBlokIzoh" : "savdoSahifasi.statistika.somBlokIzoh")}</p>
+          </div>
+        </div>
+        <div role="tablist" aria-label={t("savdoSahifasi.statistika.valyutaTanlash")} className="relative isolate grid w-full shrink-0 grid-cols-2 gap-1 rounded-2xl border border-white/80 bg-white/55 p-1.5 shadow-[inset_0_1px_3px_rgba(15,23,42,.05)] sm:w-auto">
+          <span aria-hidden className={`pointer-events-none absolute inset-y-1.5 left-1.5 -z-10 w-[calc((100%_-_16px)/2)] rounded-xl bg-blue-600 shadow-[0_3px_10px_rgba(37,99,235,.25)] transition-transform duration-300 motion-reduce:transition-none ${tanlanganValyuta === "USD" ? "translate-x-[calc(100%_+_4px)]" : "translate-x-0"}`} />
+          {(["UZS", "USD"] as const).map((valyuta, index) => (
+            <button key={valyuta} type="button" role="tab" id={`${panelId}-${valyuta}`} aria-selected={tanlanganValyuta === valyuta} aria-controls={`${panelId}-panel`} tabIndex={tanlanganValyuta === valyuta ? 0 : -1}
+              onClick={() => setTanlanganValyuta(valyuta)}
+              onKeyDown={(event) => {
+                const key = event.key;
+                if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(key)) return;
+                event.preventDefault();
+                const next = key === "Home" ? 0 : key === "End" ? 1 : 1 - index;
+                setTanlanganValyuta(next === 0 ? "UZS" : "USD");
+                event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
+              }}
+              className={`flex min-w-0 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 sm:min-w-[144px] ${tanlanganValyuta === valyuta ? "text-white" : "text-slate-600 hover:bg-white/60 hover:text-blue-700"}`}>
+              <span aria-hidden className={`flex h-6 w-6 items-center justify-center rounded-lg text-sm font-bold ${tanlanganValyuta === valyuta ? "bg-white/20" : "bg-slate-100 text-slate-500"}`}>{valyuta === "USD" ? "$" : "S"}</span>
+              {t(valyuta === "USD" ? "savdoSahifasi.statistika.dollarTanlash" : "savdoSahifasi.statistika.somTanlash")}
+            </button>
+          ))}
+        </div>
+      </header>
+      <div className="grid gap-4 xl:grid-cols-4">
       <StatKarta
         ikonka={<ShoppingBag size={22} />}
         ohang="kok"
@@ -400,22 +431,10 @@ export default function SotuvStatistikasi({
         }
       />
 
-      <ValyutaKartalari natija={valyutaNatijasi("UZS")} valyuta="UZS" yuklanmoqda={valyutaStat.yuklanmoqda} onQarzniKorsatish={onQarzniKorsatish} />
-      <section aria-label={t("savdoSahifasi.statistika.dollarBlok")} className="rounded-[28px] border border-[#9DBBEF] bg-gradient-to-br from-[#D4E2FB] via-[#DFE9FC] to-[#C9DAF7] p-4 shadow-[0_6px_24px_rgba(37,99,235,.09)] sm:col-span-2 sm:p-5 xl:col-span-4">
-        <header className="mb-4 flex items-center justify-between gap-3 px-1">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-blue-100 bg-white text-blue-600 shadow-sm"><CircleDollarSign size={25} aria-hidden /></span>
-            <div className="min-w-0">
-              <h2 className="text-base font-bold tracking-tight text-slate-900">{t("savdoSahifasi.statistika.dollarBlok")}</h2>
-              <p className="mt-0.5 text-xs text-slate-500">{t("savdoSahifasi.statistika.dollarBlokIzoh")}</p>
-            </div>
-          </div>
-          <span className="shrink-0 rounded-full border border-blue-500 bg-blue-600 px-3 py-1.5 text-xs font-black tracking-[0.16em] text-white shadow-sm">USD</span>
-        </header>
-        <div className="grid gap-3 md:grid-cols-3">
-          <ValyutaKartalari natija={valyutaNatijasi("USD")} valyuta="USD" yuklanmoqda={valyutaStat.yuklanmoqda} onQarzniKorsatish={onQarzniKorsatish} />
+        <div key={tanlanganValyuta} role="tabpanel" id={`${panelId}-panel`} aria-labelledby={`${panelId}-${tanlanganValyuta}`} className="grid animate-in gap-4 fade-in slide-in-from-bottom-1 duration-300 motion-reduce:animate-none md:grid-cols-3 xl:col-span-3">
+          <ValyutaKartalari key={tanlanganValyuta} natija={valyutaNatijasi(tanlanganValyuta)} valyuta={tanlanganValyuta} yuklanmoqda={valyutaStat.yuklanmoqda} onQarzniKorsatish={onQarzniKorsatish} />
         </div>
-      </section>
+      </div>
     </section>
   );
 }
