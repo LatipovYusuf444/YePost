@@ -12,6 +12,8 @@ export type CartItem = {
   qoldiq: number;
   warehouseId?: string;
   warehouseName?: string;
+  // Qator narx turi (chakana/ulgurji). Belgilanmagan bo'lsa — umumiy (Bosh sahifadagi) narx turi; `narx` shu turga mos hisoblangan.
+  narxTuri?: "chakana" | "ulgurji";
   soni: number;
   // Kassir kiritgan haqiqiy sotuv narxi (bir dona uchun). Bo'sh bo'lsa — katalog narxi (`narx`).
   // Katalog narxidan farqi chegirma sifatida avtomatik hisoblanadi.
@@ -43,6 +45,18 @@ function bazaOlish(item: Omit<CartItem, "soni">): SavatchaBaza {
   };
 }
 
+export type NarxTuri = "chakana" | "ulgurji";
+
+// Qatorning narx turi: o'zining turi, bo'lmasa umumiy tur.
+export function savatchaNarxTuri(item: Pick<CartItem, "narxTuri">, umumiy: NarxTuri): NarxTuri {
+  return item.narxTuri ?? umumiy;
+}
+
+// Tanlangan tur bo'yicha katalog narxi (ulgurji narx belgilanmagan bo'lsa chakana narx).
+export function narxTurigaKoraNarx(item: Pick<CartItem, "chakanaNarx" | "ulgurjiNarx">, tur: NarxTuri) {
+  return tur === "ulgurji" ? item.ulgurjiNarx || item.chakanaNarx : item.chakanaNarx;
+}
+
 // Haqiqiy sotuv narxi: kassir kiritgan narx (katalog narxidan past ham, baland ham bo'lishi mumkin).
 // Kiritilmagan yoki noto'g'ri (0, manfiy, son emas) bo'lsa katalog narxi olinadi.
 export function savatchaSotuvNarxi(item: Pick<CartItem, "narx" | "sotuvNarxi">) {
@@ -63,12 +77,15 @@ export function savatchaUstama(item: Pick<CartItem, "narx" | "sotuvNarxi" | "son
 type PosState = {
   cart: CartItem[];
   // Bosh sahifada tanlangan narx turi (chakana/ulgurji): headerdagi tezkor qidiruv savatchaga shu narx bilan qo'shadi.
-  narxTuri: "chakana" | "ulgurji";
+  narxTuri: NarxTuri;
   addToCart: (item: Omit<CartItem, "soni">, quantity?: number) => void;
   // Qatorning sotuv birligini almashtiradi (dona ↔ pochka): narx, qoldiq va miqdor yangi birlikda.
   setBirlik: (productId: string, birlikId: string) => void;
   updateQuantity: (productId: string, nextQuantity: number) => void;
-  updatePriceType: (priceType: "chakana" | "ulgurji") => void;
+  // Umumiy narx turi: barcha qatorlar shu turga o'tadi. `faqatBelgilanmaganlar` — faqat o'z turi yo'q (eski) qatorlar tenglashtiriladi.
+  updatePriceType: (priceType: NarxTuri, faqatBelgilanmaganlar?: boolean) => void;
+  // Bitta qatorning narx turini almashtiradi (chakana ↔ ulgurji): katalog narxi shu turga o'tadi.
+  setItemNarxTuri: (productId: string, tur: NarxTuri) => void;
   setSotuvNarxi: (productId: string, narx?: number) => void;
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
@@ -90,17 +107,19 @@ export const usePosStore = create<PosState>()(
                 if (cartItem.id !== item.id) return cartItem;
                 const birlik = birlikTopish(item.birliklar, cartItem.birlikId);
                 // Qator qo'shimcha birlikda bo'lsa, yangi (asosiy birlikdagi) qiymatlar shu birlikka o'giriladi.
+                const tur = savatchaNarxTuri(cartItem, state.narxTuri);
                 if (birlik && !birlik.asosiy) {
-                  const qiymat = savatchaBirlikQiymatlari(bazaOlish(item), birlik, state.narxTuri);
-                  return { ...cartItem, ...item, ...qiymat, baza: bazaOlish(item), birlikId: cartItem.birlikId, soni: Math.min(cartItem.soni + quantity, qiymat.qoldiq) };
+                  const qiymat = savatchaBirlikQiymatlari(bazaOlish(item), birlik, tur);
+                  return { ...cartItem, ...item, ...qiymat, narxTuri: tur, baza: bazaOlish(item), birlikId: cartItem.birlikId, soni: Math.min(cartItem.soni + quantity, qiymat.qoldiq) };
                 }
-                return { ...cartItem, ...item, ...(item.birliklar?.length ? { baza: bazaOlish(item) } : {}), soni: Math.min(cartItem.soni + quantity, item.qoldiq) };
+                // Qatorning o'z narx turi saqlanadi: qo'shilayotgan mahsulot umumiy tur bo'yicha narxlangan bo'lishi mumkin.
+                return { ...cartItem, ...item, narx: narxTurigaKoraNarx(item, tur), narxTuri: tur, ...(item.birliklar?.length ? { baza: bazaOlish(item) } : {}), soni: Math.min(cartItem.soni + quantity, item.qoldiq) };
               }),
             };
           }
 
           return {
-            cart: [...state.cart, { ...item, ...(item.birliklar?.length ? { baza: bazaOlish(item) } : {}), soni: Math.min(quantity, item.qoldiq) }],
+            cart: [...state.cart, { ...item, narxTuri: item.narxTuri ?? state.narxTuri, ...(item.birliklar?.length ? { baza: bazaOlish(item) } : {}), soni: Math.min(quantity, item.qoldiq) }],
           };
         });
       },
@@ -121,7 +140,7 @@ export const usePosStore = create<PosState>()(
           cart: state.cart.map((item) => {
             if (item.id !== productId || !item.baza) return item;
             const birlik = birlikTopish(item.birliklar, birlikId);
-            const qiymat = savatchaBirlikQiymatlari(item.baza, birlik, state.narxTuri);
+            const qiymat = savatchaBirlikQiymatlari(item.baza, birlik, savatchaNarxTuri(item, state.narxTuri));
             // Qo'shimcha birlikda (pochka, korobka) miqdor butun bo'lishi kerak (kasrli birlikdan tashqari); qoldiqdan oshmaydi.
             const butun = birlik && !birlik.asosiy && !birlik.kasr;
             const soni = Math.min(butun ? Math.max(Math.round(item.soni), 1) : item.soni, qiymat.qoldiq);
@@ -130,14 +149,25 @@ export const usePosStore = create<PosState>()(
           }),
         }));
       },
-      updatePriceType: (priceType) => {
+      updatePriceType: (priceType, faqatBelgilanmaganlar = false) => {
         set((state) => ({
           narxTuri: priceType,
           cart: state.cart.map((item) => {
-            const narx = priceType === "ulgurji" ? item.ulgurjiNarx || item.chakanaNarx : item.chakanaNarx;
+            // Sahifa ochilganda faqat o'z turi yo'q (eski) qatorlar umumiy turga tenglashadi; qatorning o'z turi saqlanadi.
+            if (faqatBelgilanmaganlar && item.narxTuri) return item;
+            const narx = narxTurigaKoraNarx(item, priceType);
             // Katalog narxi haqiqatan o'zgargandagina qo'lda kiritilgan sotuv narxi tashlab yuboriladi
             // (sahifa qayta ochilganda saqlangan narxlar yo'qolmasligi uchun).
-            return { ...item, narx, sotuvNarxi: narx === item.narx ? item.sotuvNarxi : undefined };
+            return { ...item, narx, narxTuri: priceType, sotuvNarxi: narx === item.narx ? item.sotuvNarxi : undefined };
+          }),
+        }));
+      },
+      setItemNarxTuri: (productId, tur) => {
+        set((state) => ({
+          cart: state.cart.map((item) => {
+            if (item.id !== productId) return item;
+            const narx = narxTurigaKoraNarx(item, tur);
+            return { ...item, narx, narxTuri: tur, sotuvNarxi: narx === item.narx ? item.sotuvNarxi : undefined };
           }),
         }));
       },

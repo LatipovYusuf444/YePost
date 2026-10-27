@@ -24,7 +24,7 @@ import {
 } from "@/api/savdoApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
-import { savatchaChegirma, savatchaSotuvNarxi, savatchaUstama, usePosStore } from "@/store/posStore";
+import { savatchaChegirma, savatchaNarxTuri, savatchaSotuvNarxi, savatchaUstama, usePosStore } from "@/store/posStore";
 import { sotuvBirliklari } from "@/lib/kopBirlik";
 import SotuvNarxiMaydoni from "./SotuvNarxiMaydoni";
 import SavatchaMiqdoriMaydoni from "./SavatchaMiqdoriMaydoni";
@@ -195,8 +195,9 @@ export default function BoshSahifa() {
     void mijozlarniOldindanYuklash();
   }, [mijozlarniOldindanYuklash]);
 
+  // Faqat o'z narx turi yo'q (eski) qatorlar umumiy turga tenglashadi; qatorning o'zi tanlagan turi (Mahsulot tanlash oynasida) saqlanadi.
   useEffect(() => {
-    updatePriceType(narxTuri);
+    updatePriceType(narxTuri, true);
   }, [narxTuri, updatePriceType]);
 
   // Katalog narxlarida jami; kassir sotuv narxini pasaytirgan bo'lsa, farqi avtomatik "narx chegirmasi" bo'ladi.
@@ -342,8 +343,8 @@ export default function BoshSahifa() {
         price: qatorUstamasi > 0 ? savatchaSotuvNarxi(item) : item.narx,
         discount: narxChegirmasi + lineDiscount,
         sof: lineTotal - lineDiscount,
-        dollar: qatorUstamasi > 0 ? null : dollarNarxi(item, narxTuri),
-        priceType: narxTuriKodi(narxTuri),
+        dollar: qatorUstamasi > 0 ? null : dollarNarxi(item, savatchaNarxTuri(item, narxTuri)),
+        priceType: narxTuriKodi(savatchaNarxTuri(item, narxTuri)),
         unitId: item.birlikId || undefined,
       };
     });
@@ -640,10 +641,10 @@ export default function BoshSahifa() {
                             </span>
                           </p>
                         )}
-                        {dollarNarxi(item, narxTuri) && (
+                        {dollarNarxi(item, savatchaNarxTuri(item, narxTuri)) && (
                           <p className="text-xs">
                             <span className="rounded-md bg-gold-50 px-1.5 py-0.5 font-semibold tabular-nums text-gold-600">
-                              ${dollarNarxi(item, narxTuri)?.narx.toLocaleString("uz-UZ", { maximumFractionDigits: 2 })}
+                              ${dollarNarxi(item, savatchaNarxTuri(item, narxTuri))?.narx.toLocaleString("uz-UZ", { maximumFractionDigits: 2 })}
                             </span>
                           </p>
                         )}
