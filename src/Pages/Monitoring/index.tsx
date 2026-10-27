@@ -56,13 +56,27 @@ import {
   ProductRanking,
   StockQuantityTiles,
 } from "./AnalyticsVisuals";
+import {
+  anchorOraligi,
+  davrGuruhi,
+  hujjatSanasi,
+  omborHarakatOynasi,
+  omborlarBoyichaYigish,
+  oqimdanHarakatlar,
+  oqimdanNuqtalar,
+  oqimdanOmborlar,
+  oqimOraliqlari,
+  sanaOraligiMatni,
+  type Davr,
+  type OmborHarakat,
+  type OmborHarakatNuqtasi,
+} from "./omborHarakatOynasi";
+import { useOmborOqimi } from "./useOmborOqimi";
 
-type Davr = "kunlik" | "oylik" | "yillik";
 type Tab = "savdo" | "ombor";
 
 type Nuqta = { nom: string; summa: number };
 type Bucket = { key: string; nom: string };
-type OmborHarakatNuqtasi = { nom: string; kirim: number; chiqim: number };
 type ChiqimMahsulotQatori = {
   id: string;
   sana: string;
@@ -203,10 +217,6 @@ function sotuvSanasi(sotuv: Sotuv) {
   return sotuv.confirmedAt || sotuv.date || sotuv.createdAt || "";
 }
 
-function hujjatSanasi(hujjat: KirimHujjati | ChiqimHujjati) {
-  return hujjat.confirmedAt || hujjat.date || hujjat.createdAt || "";
-}
-
 function hujjatTasdiqlanganmi(hujjat: KirimHujjati | ChiqimHujjati) {
   return String(hujjat.status ?? "").toUpperCase() === "CONFIRMED";
 }
@@ -239,11 +249,6 @@ function hujjatSummasi(
     );
     return jami + son(satr.quantity) * narx;
   }, 0);
-}
-
-function kochirmaSanasi(hujjat: KochirishHujjati, tomon: "manba" | "qabul" = "manba") {
-  if (tomon === "qabul") return hujjat.receivedAt || hujjat.updatedAt || hujjat.createdAt || "";
-  return hujjat.sentAt || (String(hujjat.status).toUpperCase() === "RECEIVED" ? hujjat.receivedAt : undefined) || hujjat.updatedAt || hujjat.createdAt || "";
 }
 
 function kochirmaSummasi(
@@ -338,30 +343,6 @@ function sanadanKalit(date: Date, davr: Davr) {
   if (davr === "kunlik") return kun;
   if (davr === "oylik") return kun.slice(0, 7);
   return kun.slice(0, 4);
-}
-
-// Vaqt-qatori emas, balki "joriy yig'indi" ko'rinishidagi grafiklar uchun (to'lov turlari,
-// omborlar kirim/chiqim, top/kam sotilgan mahsulotlar) — tanlangan [dateFrom, dateTo]
-// oralig'ini davr turiga qarab "oxirgi" pastki oynaga toraytiradi: kunlik = faqat dateTo kuni,
-// oylik = dateTo joylashgan taqvim oyi, yillik = dateTo joylashgan yil — lekin tashqi
-// tanlangan oraliqdan chetga chiqmaydi (dateFrom dan oldinga siljimaydi).
-function anchorOraligi(
-  dateFrom: string,
-  dateTo: string,
-  davr: Davr,
-): { from: string; to: string } {
-  const end = new Date(`${dateTo}T00:00:00.000Z`);
-  if (Number.isNaN(end.getTime())) return { from: dateFrom, to: dateTo };
-  let start: Date;
-  if (davr === "kunlik") {
-    start = new Date(end);
-  } else if (davr === "oylik") {
-    start = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1));
-  } else {
-    start = new Date(Date.UTC(end.getUTCFullYear(), 0, 1));
-  }
-  const startKey = kunKaliti(start);
-  return { from: startKey < dateFrom ? dateFrom : startKey, to: dateTo };
 }
 
 // Tanlangan [dateFrom, dateTo] oralig'idan bevosita oldingi, xuddi shu uzunlikdagi
@@ -1080,73 +1061,120 @@ export default function Monitoring() {
     return { qiymat, omborlarSoni: omborlar.length, kamQolgan, manfiyQoldiq, qatorlarSoni: stockItems.length };
   }, [stockItems, omborlar]);
 
-  // Omborlar bo'yicha kirim/chiqim grafigi ham o'z mustaqil davriga (omborHarakatDavr) ega.
-  const omborHarakatOraliq = useMemo(
-    () => anchorOraligi(dateFrom, dateTo, omborHarakatDavr),
-    [dateFrom, dateTo, omborHarakatDavr],
-  );
-  const omborHarakati = useMemo<OmborHarakatNuqtasi[]>(() => {
-    const xarita = new Map<string, OmborHarakatNuqtasi>();
+  // ZAXIRA hisob (server hisoboti ishlamasa): kirim, hisobdan chiqarish va ko'chirma hujjatlari. Sotuv va qaytarishlar kirmaydi,
+  // chiqim/ko'chirma qiymati mahsulotning hozirgi tannarxidan olinadi. Har bir tasdiqlangan hujjat bitta "harakat"
+  // (kun, ombor, tur, summa) bo'lib yig'iladi; davr oynasi keyingi qadamda qo'llanadi.
+  const hujjatHarakatlari = useMemo<OmborHarakat[]>(() => {
+    const harakatlar: OmborHarakat[] = [];
+    const qosh = (
+      kun: string,
+      warehouseId: string,
+      nom: string,
+      turi: OmborHarakat["turi"],
+      summa: number,
+    ) => {
+      if (kun) harakatlar.push({ kun, warehouseId, nom, turi, summa });
+    };
     kirimHujjatlari.forEach((hujjat) => {
       if (!hujjatTasdiqlanganmi(hujjat)) return;
-      const kun = kunniOlish(hujjatSanasi(hujjat));
-      if (!kun || kun < omborHarakatOraliq.from || kun > omborHarakatOraliq.to)
-        return;
-      const nom =
-        hujjat.warehouse?.name ??
-        omborNomXaritasi.get(hujjat.warehouseId) ??
-        "-";
-      const joriy = xarita.get(hujjat.warehouseId) ?? {
-        nom,
-        kirim: 0,
-        chiqim: 0,
-      };
-      joriy.kirim += hujjatSummasi(hujjat, modifikatsiyaXaritasi);
-      xarita.set(hujjat.warehouseId, joriy);
+      qosh(
+        kunniOlish(hujjatSanasi(hujjat)),
+        hujjat.warehouseId,
+        hujjat.warehouse?.name ?? omborNomXaritasi.get(hujjat.warehouseId) ?? "-",
+        "kirim",
+        hujjatSummasi(hujjat, modifikatsiyaXaritasi),
+      );
     });
     chiqimHujjatlari.forEach((hujjat) => {
       if (!hujjatTasdiqlanganmi(hujjat)) return;
-      const kun = kunniOlish(hujjatSanasi(hujjat));
-      if (!kun || kun < omborHarakatOraliq.from || kun > omborHarakatOraliq.to)
-        return;
-      const nom =
-        hujjat.warehouse?.name ??
-        omborNomXaritasi.get(hujjat.warehouseId) ??
-        "-";
-      const joriy = xarita.get(hujjat.warehouseId) ?? {
-        nom,
-        kirim: 0,
-        chiqim: 0,
-      };
-      joriy.chiqim += hujjatSummasi(hujjat, modifikatsiyaXaritasi);
-      xarita.set(hujjat.warehouseId, joriy);
+      qosh(
+        kunniOlish(hujjatSanasi(hujjat)),
+        hujjat.warehouseId,
+        hujjat.warehouse?.name ?? omborNomXaritasi.get(hujjat.warehouseId) ?? "-",
+        "chiqim",
+        hujjatSummasi(hujjat, modifikatsiyaXaritasi),
+      );
     });
-    const qoshKochirma = (warehouseId: string, nom: string, turi: "kirim" | "chiqim", summa: number) => {
-      const joriy = xarita.get(warehouseId) ?? { nom, kirim: 0, chiqim: 0 };
-      joriy[turi] += summa;
-      xarita.set(warehouseId, joriy);
-    };
     kochirmaHujjatlari.forEach((hujjat) => {
       const status = String(hujjat.status ?? "").toUpperCase();
       if (!["SENT", "RECEIVED", "CONFIRMED"].includes(status)) return;
       const summa = kochirmaSummasi(hujjat, modifikatsiyaXaritasi);
-      const chiqimKun = kunniOlish(kochirmaSanasi(hujjat, "manba"));
-      if (chiqimKun >= omborHarakatOraliq.from && chiqimKun <= omborHarakatOraliq.to) {
-        const nom = hujjat.sourceWarehouse?.name ?? omborNomXaritasi.get(hujjat.sourceWarehouseId) ?? "-";
-        qoshKochirma(hujjat.sourceWarehouseId, nom, "chiqim", summa);
-      }
+      qosh(
+        kunniOlish(hujjatSanasi(hujjat)),
+        hujjat.sourceWarehouseId,
+        hujjat.sourceWarehouse?.name ?? omborNomXaritasi.get(hujjat.sourceWarehouseId) ?? "-",
+        "chiqim",
+        summa,
+      );
       if (["RECEIVED", "CONFIRMED"].includes(status)) {
-        const kirimKun = kunniOlish(kochirmaSanasi(hujjat, "qabul"));
-        if (kirimKun >= omborHarakatOraliq.from && kirimKun <= omborHarakatOraliq.to) {
-          const nom = hujjat.destWarehouse?.name ?? omborNomXaritasi.get(hujjat.destWarehouseId) ?? "-";
-          qoshKochirma(hujjat.destWarehouseId, nom, "kirim", summa);
-        }
+        qosh(
+          kunniOlish(hujjatSanasi(hujjat)),
+          hujjat.destWarehouseId,
+          hujjat.destWarehouse?.name ?? omborNomXaritasi.get(hujjat.destWarehouseId) ?? "-",
+          "kirim",
+          summa,
+        );
       }
     });
-    return Array.from(xarita.values()).sort(
-      (a, b) => b.kirim + b.chiqim - (a.kirim + a.chiqim),
-    );
-  }, [kirimHujjatlari, chiqimHujjatlari, kochirmaHujjatlari, omborHarakatOraliq, omborNomXaritasi, modifikatsiyaXaritasi]);
+    return harakatlar;
+  }, [kirimHujjatlari, chiqimHujjatlari, kochirmaHujjatlari, omborNomXaritasi, modifikatsiyaXaritasi]);
+  // ASOSIY hisob — server hisoboti (GET /reports/warehouse-flow): kirim/chiqim tannarxda, sotuv va qaytarishlar bilan. Kunlik
+  // so'rov butun oraliqni qamraydi va ikki ish qiladi: oxirgi harakat kunini topadi hamda hisobot ishlayotganini tekshiradi.
+  // U ishlamasa (backend yangilanmagan, ruxsat yo'q) — barcha ombor grafiklari hujjatlar bo'yicha zaxira hisobga o'tadi.
+  const oqimKunlari = useOmborOqimi({ dateFrom, dateTo, groupBy: "DAY", faol: !demoMode, yangilanish });
+  const serverOqim = oqimKunlari.holat === "tayyor";
+  const serverXato = oqimKunlari.holat === "xato" ? oqimKunlari.xato : "";
+  const serverTekshirilmoqda = oqimKunlari.holat === "yuklanmoqda";
+  const omborHarakatlari = useMemo(
+    () => (serverOqim ? oqimdanHarakatlar(oqimKunlari.qatorlar) : hujjatHarakatlari),
+    [serverOqim, oqimKunlari.qatorlar, hujjatHarakatlari],
+  );
+  // Standart oyna dateTo'ga tayanadi; unda harakat bo'lmasa (masalan bugun hujjat yo'q), oxirgi harakat davriga siljiydi.
+  const omborHarakatOyna = useMemo(
+    () => omborHarakatOynasi(omborHarakatlari, dateFrom, dateTo, omborHarakatDavr),
+    [omborHarakatlari, dateFrom, dateTo, omborHarakatDavr],
+  );
+  const oqimOmborlar = useOmborOqimi({
+    dateFrom: omborHarakatOyna.from,
+    dateTo: omborHarakatOyna.to,
+    groupBy: "WAREHOUSE",
+    faol: serverOqim,
+    yangilanish,
+  });
+  const omborHarakati = useMemo<OmborHarakatNuqtasi[]>(
+    () =>
+      serverOqim
+        ? oqimdanOmborlar(oqimOmborlar.qatorlar)
+        : omborlarBoyichaYigish(omborHarakatlari, omborHarakatOyna),
+    [serverOqim, oqimOmborlar.qatorlar, omborHarakatlari, omborHarakatOyna],
+  );
+  const omborOqimiYuklanmoqda =
+    serverTekshirilmoqda ||
+    (serverOqim ? oqimOmborlar.holat === "yuklanmoqda" : omborHarakatiYuklanmoqda);
+  const omborOqimiXato = serverOqim
+    ? oqimOmborlar.holat === "xato" ? oqimOmborlar.xato : ""
+    : omborHarakatiXato;
+  const omborOqimiEslatma = [
+    omborHarakatOyna.almashgan ? t("charts.warehouseFlow.fallback") : "",
+    serverXato ? t("charts.warehouseFlow.serverXato", { xato: serverXato }) : "",
+  ].filter(Boolean).join(" · ");
+  // Tanlangan ombor dinamikasi (kirim va chiqim grafiklari o'z davri bilan): server har bir davr uchun alohida so'raladi.
+  const oqimKirim = useOmborOqimi({
+    dateFrom,
+    dateTo,
+    groupBy: davrGuruhi(omborKirimDavr),
+    warehouseId: tanlanganOmborId,
+    faol: serverOqim && !!tanlanganOmborId,
+    yangilanish,
+  });
+  const oqimChiqim = useOmborOqimi({
+    dateFrom,
+    dateTo,
+    groupBy: davrGuruhi(omborChiqimDavr),
+    warehouseId: tanlanganOmborId,
+    faol: serverOqim && !!tanlanganOmborId,
+    yangilanish,
+  });
 
   const chiqimMahsulotQatorlari = useMemo<ChiqimMahsulotQatori[]>(() => {
     return chiqimHujjatlari
@@ -1180,7 +1208,7 @@ export default function Monitoring() {
     return kochirmaHujjatlari
       .filter((hujjat) => !["CANCELLED", "CANCELED"].includes(String(hujjat.status ?? "").toUpperCase()))
       .flatMap((hujjat) => {
-        const sana = kunniOlish(kochirmaSanasi(hujjat));
+        const sana = kunniOlish(hujjatSanasi(hujjat));
         if (!sana || sana < dateFrom || sana > dateTo) return [];
         return (hujjat.items ?? []).map((item, index) => {
           const mod = item.modification ?? modifikatsiyaXaritasi.get(item.modificationId);
@@ -1242,8 +1270,8 @@ export default function Monitoring() {
             omborKirimDavr,
           );
       const transferlar = nuqtalarGaGuruhlash(
-        kochirmaHujjatlari.filter((h) => ["RECEIVED", "CONFIRMED"].includes(String(h.status ?? "").toUpperCase()) && h.destWarehouseId === tanlanganOmborId && kunniOlish(kochirmaSanasi(h, "qabul")) >= dateFrom && kunniOlish(kochirmaSanasi(h, "qabul")) <= dateTo),
-        (h) => kochirmaSanasi(h, "qabul"),
+        kochirmaHujjatlari.filter((h) => ["RECEIVED", "CONFIRMED"].includes(String(h.status ?? "").toUpperCase()) && h.destWarehouseId === tanlanganOmborId && kunniOlish(hujjatSanasi(h)) >= dateFrom && kunniOlish(hujjatSanasi(h)) <= dateTo),
+        (h) => hujjatSanasi(h),
         (h) => kochirmaSummasi(h, modifikatsiyaXaritasi),
         omborKirimOraliqlari,
         omborKirimDavr,
@@ -1281,8 +1309,8 @@ export default function Monitoring() {
             omborChiqimDavr,
           );
       const transferlar = nuqtalarGaGuruhlash(
-        kochirmaHujjatlari.filter((h) => ["SENT", "RECEIVED", "CONFIRMED"].includes(String(h.status ?? "").toUpperCase()) && h.sourceWarehouseId === tanlanganOmborId && kunniOlish(kochirmaSanasi(h, "manba")) >= dateFrom && kunniOlish(kochirmaSanasi(h, "manba")) <= dateTo),
-        (h) => kochirmaSanasi(h, "manba"),
+        kochirmaHujjatlari.filter((h) => ["SENT", "RECEIVED", "CONFIRMED"].includes(String(h.status ?? "").toUpperCase()) && h.sourceWarehouseId === tanlanganOmborId && kunniOlish(hujjatSanasi(h)) >= dateFrom && kunniOlish(hujjatSanasi(h)) <= dateTo),
+        (h) => hujjatSanasi(h),
         (h) => kochirmaSummasi(h, modifikatsiyaXaritasi),
         omborChiqimOraliqlari,
         omborChiqimDavr,
@@ -1300,6 +1328,27 @@ export default function Monitoring() {
       modifikatsiyaXaritasi,
     ],
   );
+
+  const tafsilotKirim = useMemo(
+    () =>
+      serverOqim
+        ? oqimdanNuqtalar(oqimKirim.qatorlar, oqimOraliqlari(omborKirimOraliqlari, dateFrom), "kirim", tanlanganOmborId)
+        : tanlanganOmborKirim,
+    [serverOqim, oqimKirim.qatorlar, omborKirimOraliqlari, dateFrom, tanlanganOmborId, tanlanganOmborKirim],
+  );
+  const tafsilotChiqim = useMemo(
+    () =>
+      serverOqim
+        ? oqimdanNuqtalar(oqimChiqim.qatorlar, oqimOraliqlari(omborChiqimOraliqlari, dateFrom), "chiqim", tanlanganOmborId)
+        : tanlanganOmborChiqim,
+    [serverOqim, oqimChiqim.qatorlar, omborChiqimOraliqlari, dateFrom, tanlanganOmborId, tanlanganOmborChiqim],
+  );
+  const tafsilotKirimYuklanmoqda =
+    serverTekshirilmoqda || (serverOqim ? oqimKirim.holat === "yuklanmoqda" : omborHarakatiYuklanmoqda);
+  const tafsilotChiqimYuklanmoqda =
+    serverTekshirilmoqda || (serverOqim ? oqimChiqim.holat === "yuklanmoqda" : omborHarakatiYuklanmoqda);
+  const tafsilotKirimXato = serverOqim ? (oqimKirim.holat === "xato" ? oqimKirim.xato : "") : omborHarakatiXato;
+  const tafsilotChiqimXato = serverOqim ? (oqimChiqim.holat === "xato" ? oqimChiqim.xato : "") : omborHarakatiXato;
 
   // Demo values live only in this page's presentation state. No sample is sent to APIs.
   const demoSavdoNuqtalar = useMemo(
@@ -1707,7 +1756,7 @@ export default function Monitoring() {
 
           <ChartCard
             title={t("charts.warehouseFlow.title")}
-            subtitle={t("charts.warehouseFlow.subtitle")}
+            subtitle={`${t(serverOqim ? "charts.warehouseFlow.subtitleCost" : "charts.warehouseFlow.subtitle")} · ${t("charts.warehouseFlow.period", { range: sanaOraligiMatni(omborHarakatOyna.from, omborHarakatOyna.to) })}`}
             icon={Warehouse}
             accent="blue"
             headerExtra={
@@ -1716,11 +1765,18 @@ export default function Monitoring() {
                 onChange={setOmborHarakatDavr}
               />
             }
-            xato={demoMode ? "" : omborHarakatiXato}
-            yuklanmoqda={!demoMode && omborHarakatiYuklanmoqda}
-            bosh={!demoMode && omborHarakati.length === 0 ? t("noData") : undefined}
+            xato={demoMode ? "" : omborOqimiXato}
+            yuklanmoqda={!demoMode && omborOqimiYuklanmoqda}
+            bosh={
+              !demoMode && omborHarakati.length === 0
+                ? t("charts.warehouseFlow.empty", { range: sanaOraligiMatni(dateFrom, dateTo) })
+                : undefined
+            }
           >
-            <WarehouseFlow items={demoMode ? demoOmborHarakati : omborHarakati} />
+            <WarehouseFlow
+              items={demoMode ? demoOmborHarakati : omborHarakati}
+              eslatma={!demoMode && omborOqimiEslatma ? omborOqimiEslatma : undefined}
+            />
           </ChartCard>
 
           <section className="monitoring-enter min-w-0 overflow-hidden rounded-[24px] border border-rose-100 bg-gradient-to-br from-rose-50/50 via-white to-white p-5 shadow-sm sm:p-6">
@@ -1828,7 +1884,7 @@ export default function Monitoring() {
                 <div className="grid gap-6 lg:grid-cols-2">
                   <ChartCard
                     title={t("charts.warehouseDetail.income")}
-                    subtitle={t("charts.warehouseDetail.incomeSubtitle")}
+                    subtitle={t(serverOqim ? "charts.warehouseDetail.incomeSubtitleCost" : "charts.warehouseDetail.incomeSubtitle")}
                     icon={ArrowDownLeft}
                     accent="green"
                     headerExtra={
@@ -1837,24 +1893,24 @@ export default function Monitoring() {
                         onChange={setOmborKirimDavr}
                       />
                     }
-                    xato={demoMode ? "" : omborHarakatiXato}
-                    yuklanmoqda={!demoMode && omborHarakatiYuklanmoqda}
+                    xato={demoMode ? "" : tafsilotKirimXato}
+                    yuklanmoqda={!demoMode && tafsilotKirimYuklanmoqda}
                     height={280}
                     bosh={
-                      !demoMode && jamiSumma(tanlanganOmborKirim) === 0
+                      !demoMode && jamiSumma(tafsilotKirim) === 0
                         ? t("noData")
                         : undefined
                     }
                   >
                     <WarehouseTimeline
-                      items={demoMode ? demoTafsilotKirim : tanlanganOmborKirim}
+                      items={demoMode ? demoTafsilotKirim : tafsilotKirim}
                       kind="income"
                     />
                   </ChartCard>
 
                   <ChartCard
                     title={t("charts.warehouseDetail.expense")}
-                    subtitle={t("charts.warehouseDetail.expenseSubtitle")}
+                    subtitle={t(serverOqim ? "charts.warehouseDetail.expenseSubtitleCost" : "charts.warehouseDetail.expenseSubtitle")}
                     icon={ArrowUpRight}
                     accent="rose"
                     headerExtra={
@@ -1863,17 +1919,17 @@ export default function Monitoring() {
                         onChange={setOmborChiqimDavr}
                       />
                     }
-                    xato={demoMode ? "" : omborHarakatiXato}
-                    yuklanmoqda={!demoMode && omborHarakatiYuklanmoqda}
+                    xato={demoMode ? "" : tafsilotChiqimXato}
+                    yuklanmoqda={!demoMode && tafsilotChiqimYuklanmoqda}
                     height={280}
                     bosh={
-                      !demoMode && jamiSumma(tanlanganOmborChiqim) === 0
+                      !demoMode && jamiSumma(tafsilotChiqim) === 0
                         ? t("noData")
                         : undefined
                     }
                   >
                     <WarehouseTimeline
-                      items={demoMode ? demoTafsilotChiqim : tanlanganOmborChiqim}
+                      items={demoMode ? demoTafsilotChiqim : tafsilotChiqim}
                       kind="expense"
                     />
                   </ChartCard>

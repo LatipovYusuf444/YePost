@@ -130,13 +130,27 @@ export function WarehouseStock({ items }: { items: Point[] }) {
 
 export function WarehouseFlow({
   items,
+  eslatma,
 }: {
   items: Array<{ nom: string; kirim: number; chiqim: number }>;
+  eslatma?: string;
 }) {
   const { t, money, compact } = useFormat();
   const values = items.map((item) => ({ ...item, chiqim: -item.chiqim }));
+  // Hujjatlar bor, lekin summa 0 — odatda chiqim/ko'chirma qatorlarida narx yo'q va mahsulot tannarxi kiritilmagan.
+  const summaYoq = items.length > 0 && items.every((item) => item.kirim === 0 && item.chiqim === 0);
   return (
     <div className="flex h-full flex-col gap-4">
+      {eslatma && (
+        <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
+          {eslatma}
+        </p>
+      )}
+      {summaYoq && (
+        <p className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">
+          {t("charts.warehouseFlow.zeroHint")}
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-emerald-50 p-3">
           <p className="text-xs text-emerald-600">

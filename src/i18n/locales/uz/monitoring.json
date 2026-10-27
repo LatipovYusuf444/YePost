@@ -284,9 +284,15 @@
     },
     "warehouseFlow": {
       "title": "Omborlar bo'yicha kirim va chiqim",
-      "subtitle": "Tanlangan davrda har bir omborga kirgan va chiqqan mahsulotlar summasi",
+      "subtitle": "Tasdiqlangan kirim, hisobdan chiqarish va ko'chirma hujjatlari summasi (sotuvlar kirmaydi)",
       "income": "Kirim",
-      "expense": "Chiqim"
+      "expense": "Chiqim",
+      "period": "Davr: {{range}}",
+      "empty": "Tanlangan oraliqda ({{range}}) tasdiqlangan kirim, chiqim yoki ko'chirma hujjati topilmadi",
+      "fallback": "Tanlangan davrda harakat yo'q — oxirgi harakat bo'lgan davr ko'rsatilmoqda",
+      "zeroHint": "Hujjatlar topildi, lekin mahsulot tannarxi kiritilmagan — summa 0 bo'lib ko'rinmoqda",
+      "subtitleCost": "Tannarxda: xarid, sotuv, qaytarish, ko'chirma, hisobdan chiqarish va inventarizatsiya",
+      "serverXato": "Tannarx hisoboti olinmadi ({{xato}}) — hujjatlar bo'yicha taxminiy hisob ko'rsatilmoqda"
     },
     "warehouseDetail": {
       "title": "Ombor tafsilotlari",
@@ -296,9 +302,11 @@
       "empty": "Bu omborda qoldiq mavjud emas",
       "quantity": "Miqdor",
       "income": "Kirim dinamikasi",
-      "incomeSubtitle": "Shu ombor bo'yicha tushgan mahsulotlar",
+      "incomeSubtitle": "Tasdiqlangan kirim va qabul qilingan ko'chirmalar (qaytarishlar kirmaydi)",
       "expense": "Chiqim dinamikasi",
-      "expenseSubtitle": "Shu ombor bo'yicha chiqqan mahsulotlar",
+      "expenseSubtitle": "Hisobdan chiqarish va jo'natilgan ko'chirmalar (sotuvlar kirmaydi)",
+      "incomeSubtitleCost": "Tannarxda: xarid, qaytarish, ko'chirma va inventarizatsiya kirimi",
+      "expenseSubtitleCost": "Tannarxda: sotuv, hisobdan chiqarish, ko'chirma va inventarizatsiya chiqimi",
       "table": {
         "product": "Mahsulot",
         "quantity": "Miqdor",
