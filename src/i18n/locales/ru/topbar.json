@@ -58,6 +58,8 @@
     "selectedProducts": "Выбранные товары",
     "unit": "шт.",
     "addToCart": "Добавить в корзину",
+    "cartProducts": "Товары в корзине",
+    "done": "Готово",
     "errors": {
       "warehousesLoadFailed": "Не удалось получить список складов",
       "stockLoadFailed": "Не удалось получить остатки товаров",

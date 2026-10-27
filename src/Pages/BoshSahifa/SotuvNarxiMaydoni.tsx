@@ -5,15 +5,20 @@ import { savatchaChegirma, savatchaSotuvNarxi, savatchaUstama, type CartItem } f
 
 // Savatchadagi mahsulot narxi: kassir haqiqiy sotuv narxini kiritadi, katalog narxidan farqi avtomatik hisoblanadi:
 // past bo'lsa chegirma (18 000 → 17 800: 200 so'm chegirma), baland bo'lsa ustama (13 500 → 19 000: 5 500 so'm ustama).
+// `jadval` — savatcha jadvali ustuni uchun: faqat maydonning o'zi (yorliq va izohlarsiz, chegirma/ustama alohida ustunda ko'rinadi).
 export default function SotuvNarxiMaydoni({
   item,
   onChange,
   formatSumma,
+  jadval = false,
+  className,
 }: {
   item: CartItem;
   // undefined — katalog narxiga qaytarish.
   onChange: (narx: number | undefined) => void;
   formatSumma: (value: number) => string;
+  jadval?: boolean;
+  className?: string;
 }) {
   const { t } = useTranslation("bosh_sahifa");
   const joriy = savatchaSotuvNarxi(item);
@@ -38,6 +43,33 @@ export default function SotuvNarxiMaydoni({
     const narx = Number(raqamlar);
     // 0 dan katta har qanday narx saqlanadi: katalog narxidan past (chegirma) ham, baland (ustama) ham.
     if (raqamlar && narx > 0) onChange(narx === item.narx ? undefined : narx);
+  }
+
+  if (jadval) {
+    return (
+      <input
+        type="text"
+        inputMode="numeric"
+        aria-label={t("cart.salePriceLabel")}
+        value={matn ? Number(matn).toLocaleString("uz-UZ") : ""}
+        onFocus={(event) => {
+          setFokus(true);
+          event.currentTarget.select();
+        }}
+        onBlur={() => {
+          setFokus(false);
+          if (!matn || kiritilgan <= 0) setMatn(String(joriy));
+        }}
+        onChange={(event) => ozgardi(event.target.value)}
+        className={`${className ?? ""} ${
+          ustama > 0
+            ? "!border-amber-300 !text-amber-700 focus:!border-amber-500 focus:!ring-amber-100"
+            : chegirma > 0
+              ? "!border-emerald-300 !text-emerald-700 focus:!border-emerald-500 focus:!ring-emerald-200"
+              : ""
+        }`}
+      />
+    );
   }
 
   return (

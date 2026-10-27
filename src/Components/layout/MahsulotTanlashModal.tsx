@@ -1,252 +1,45 @@
 import { pulMatni } from "@/lib/valyuta";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, ChevronDown, LoaderCircle, PackageOpen, PackagePlus, RefreshCw, Search, ShoppingCart, X } from "lucide-react";
+import { PackagePlus, RefreshCw, ShoppingCart, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import {
-  katalogModifikatsiyalariniQoldiqTanlovigaOlish,
-  omborlarRoyxatiniOlish,
-  omborQoldiqlariniOlish,
-  qoldiqNomlariniBoyitish,
-} from "@/api/savdoApi";
+import { omborlarRoyxatiniOlish } from "@/api/savdoApi";
 import { usePosStore } from "@/store/posStore";
-import { useKassaNarxTurlari } from "@/store/savdoSozlamalariStore";
-import SavatchaMiqdoriMaydoni from "@/Pages/BoshSahifa/SavatchaMiqdoriMaydoni";
-import type { OmborTanlovi, QoldiqTanlovi } from "@/types/savdo";
-import {
-  dollarMalumoti,
-  mahsulotNomi,
-  qoldiqBirlashtirish,
-  qoldiqMiqdori,
-  qoldiqNarxi,
-  savatNomi,
-  tanlovKaliti,
-  tanlashQoldigi,
-  variantNomi,
-} from "./posMahsulotlari";
+import SavatchaJadvali from "@/Pages/BoshSahifa/SavatchaJadvali";
+import { jadvalXulosasi } from "@/Pages/BoshSahifa/savatchaHisobi";
+import type { OmborTanlovi } from "@/types/savdo";
 
-// Topbar'dagi "Mahsulot tanlash" oynasi: ombor qoldig'i + katalog narxlari birlashtirilib,
-// tanlangan mahsulotlar savatchaga qo'shiladi.
-
-const KAM_QOLDIQ = 10;
+// Topbar'dagi "Mahsulot tanlash" oynasi: Yangi sotuvdagi kabi qatorli jadval (shtrix-kod, kategoriya, mahsulot tanlash,
+// narx turi, chegirma). Qatorlar to'g'ridan-to'g'ri Bosh sahifadagi savatchaga yoziladi — jadval shu savatchaning o'zi.
 
 function formatSumma(value: number) {
   return pulMatni(Number(value) || 0, "UZS", true);
 }
 
-function nomniOlish(item?: OmborTanlovi | null) {
-  if (!item) return "";
-  return item.fullName || item.name || item.id;
-}
-
-function qisqartma(nom: string) {
-  const sozlar = nom.split(/\s+/).filter(Boolean);
-  return (sozlar.length > 1 ? sozlar[0][0] + sozlar[1][0] : nom.slice(0, 2)).toUpperCase();
-}
-
-type TanlovMalumoti = { item: QoldiqTanlovi; warehouseId: string; warehouseName: string };
-
-
 export default function MahsulotTanlashModal({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation("topbar");
-  const addToCart = usePosStore((state) => state.addToCart);
   const cart = usePosStore((state) => state.cart);
   const [omborlar, setOmborlar] = useState<OmborTanlovi[]>([]);
   const [warehouseId, setWarehouseId] = useState("");
-  const [mahsulotlar, setMahsulotlar] = useState<QoldiqTanlovi[]>([]);
-  const [qidiruv, setQidiruv] = useState("");
-  const narxTuri = usePosStore((state) => state.narxTuri);
-  const setNarxTuri = usePosStore((state) => state.updatePriceType);
-  // Sozlamalar → Sotuv: faqat yoqilgan narx turlari tanlanadi.
-  const narxRuxsati = useKassaNarxTurlari();
-  const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [xabar, setXabar] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
-  const [katalogSorovi, setKatalogSorovi] = useState<Promise<QoldiqTanlovi[]> | null>(null);
-  const [omborDropdownOchiq, setOmborDropdownOchiq] = useState(false);
-  // Tanlovlar (modificationId + ombor) kaliti bo'yicha saqlanadi — omborlar almashganda yo'qolmaydi.
-  const [tanlanganMiqdorlar, setTanlanganMiqdorlar] = useState<Record<string, number>>({});
-  const [tanlanganMalumot, setTanlanganMalumot] = useState<Record<string, TanlovMalumoti>>({});
-
-  const tanlanganOmbor = omborlar.find((ombor) => String(ombor.id) === warehouseId);
-  const nomsiz = t("posModal.unnamed");
+  const [yangilash, setYangilash] = useState(0);
+  const xulosa = jadvalXulosasi(cart);
 
   useEffect(() => {
     let active = true;
-    const load = async () => {
-      setYuklanmoqda(true);
-      try {
-        const warehouses = await omborlarRoyxatiniOlish();
+    omborlarRoyxatiniOlish()
+      .then((royxat) => {
         if (!active) return;
-        setOmborlar(warehouses);
-        setWarehouseId(String(warehouses[0]?.id ?? ""));
-        if (!warehouses.length) setYuklanmoqda(false);
-      } catch {
-        if (active) {
-          setXabar("posModal.errors.warehousesLoadFailed");
-          setYuklanmoqda(false);
-        }
-      }
-    };
-
-    void load();
+        setOmborlar(royxat);
+        setWarehouseId((joriy) => joriy || String(royxat[0]?.id ?? ""));
+      })
+      .catch(() => {
+        if (active) setXabar("posModal.errors.warehousesLoadFailed");
+      });
     return () => {
       active = false;
     };
   }, []);
-
-  useEffect(() => {
-    const sorov = katalogModifikatsiyalariniQoldiqTanlovigaOlish(reloadKey > 0);
-    // Omborlar so'rovi tugashidan oldingi reject unhandled bo'lib qolmasin.
-    void sorov.catch(() => undefined);
-    setKatalogSorovi(sorov);
-  }, [reloadKey]);
-
-  useEffect(() => {
-    if (!warehouseId || !katalogSorovi) return;
-    let active = true;
-    const load = async () => {
-      setYuklanmoqda(true);
-      setXabar("");
-      const [stockResult, catalogResult] = await Promise.allSettled([
-        omborQoldiqlariniOlish(warehouseId),
-        katalogSorovi,
-      ]);
-
-      if (!active) return;
-
-      const stock =
-        stockResult.status === "fulfilled"
-          ? stockResult.value.filter((item) => {
-              const itemWarehouseId = item.warehouseId ?? item.warehouse?.id;
-              return !warehouseId || !itemWarehouseId || String(itemWarehouseId) === warehouseId;
-            })
-          : [];
-      const catalog = catalogResult.status === "fulfilled" ? catalogResult.value : [];
-
-      const birlashgan = qoldiqBirlashtirish(stock, catalog);
-      setMahsulotlar(birlashgan);
-      if (stockResult.status === "rejected" && catalogResult.status === "rejected") {
-        setXabar("posModal.errors.stockLoadFailed");
-      } else if (stockResult.status === "rejected") {
-        setXabar("posModal.errors.warehouseStockLoadFailed");
-      } else if (catalogResult.status === "rejected") {
-        setXabar("posModal.errors.catalogLoadFailed");
-      }
-      setYuklanmoqda(false);
-
-      // Nomi yoki narxi hali topilmagan mahsulotlar katalogdan to'ldiriladi (faqat qoldig'i borlari).
-      const toldirish = birlashgan.filter((item) => qoldiqMiqdori(item) > 0 && (!mahsulotNomi(item) || !qoldiqNarxi(item, "chakana")));
-      if (toldirish.length) {
-        try {
-          const boyitilgan = await qoldiqNomlariniBoyitish(toldirish);
-          if (!active) return;
-          const xaritasi = new Map(boyitilgan.map((item) => [item.modificationId, item]));
-          setMahsulotlar((joriy) =>
-            joriy.map((item) => {
-              const yangi = xaritasi.get(item.modificationId);
-              if (!yangi) return item;
-              return qoldiqBirlashtirish([item], [yangi])[0] ?? item;
-            })
-          );
-        } catch {
-          // to'ldirish muvaffaqiyatsiz bo'lsa, mavjud ma'lumot bilan davom etiladi
-        }
-      }
-    };
-
-    void load();
-    return () => {
-      active = false;
-    };
-  }, [warehouseId, katalogSorovi]);
-
-  const filteredProducts = useMemo(() => {
-    const query = qidiruv.trim().toLowerCase();
-    return mahsulotlar
-      .filter((item) => {
-        if (qoldiqMiqdori(item) <= 0) return false;
-        if (!query) return true;
-        return [savatNomi(item), item.modification?.barcode, item.modification?.article].join(" ").toLowerCase().includes(query);
-      })
-      .sort((a, b) => (savatNomi(a) || "￿").localeCompare(savatNomi(b) || "￿", "uz"));
-  }, [mahsulotlar, qidiruv]);
-
-  function miqdorniYangilash(item: QoldiqTanlovi, miqdor: number) {
-    if (!Number.isFinite(miqdor)) return;
-    const qoldiq = tanlashQoldigi(item, warehouseId, cart);
-    const narx = qoldiqNarxi(item, narxTuri);
-
-    if (qoldiq <= 0) {
-      setXabar("posModal.errors.noStock");
-      return;
-    }
-
-    if (narx <= 0) {
-      setXabar("posModal.errors.noPrice");
-      return;
-    }
-
-    setXabar("");
-    const kalit = tanlovKaliti(item.modificationId, warehouseId);
-    const yangi = Math.min(Math.max(miqdor, 0), qoldiq);
-    setTanlanganMiqdorlar((joriy) => {
-      const keyingi = { ...joriy };
-      if (yangi === 0) delete keyingi[kalit];
-      else keyingi[kalit] = yangi;
-      return keyingi;
-    });
-    setTanlanganMalumot((joriy) => {
-      const keyingi = { ...joriy };
-      if (yangi === 0) delete keyingi[kalit];
-      else keyingi[kalit] = { item, warehouseId, warehouseName: tanlanganOmbor ? nomniOlish(tanlanganOmbor) : warehouseId };
-      return keyingi;
-    });
-  }
-
-  const tanlovlar = useMemo(
-    () => Object.entries(tanlanganMalumot).map(([kalit, malumot]) => ({ kalit, ...malumot, soni: tanlanganMiqdorlar[kalit] ?? 0 })),
-    [tanlanganMalumot, tanlanganMiqdorlar]
-  );
-  const tanlanganSoni = tanlovlar.reduce((sum, tanlov) => sum + tanlov.soni, 0);
-  const tanlanganJami = tanlovlar.reduce((sum, tanlov) => sum + tanlov.soni * qoldiqNarxi(tanlov.item, narxTuri), 0);
-  // Ombor bo'yicha: nechta dona tanlangan
-  const omborBoyicha = useMemo(() => {
-    const xarita = new Map<string, { nom: string; soni: number }>();
-    tanlovlar.forEach((tanlov) => {
-      const joriy = xarita.get(tanlov.warehouseId) ?? { nom: tanlov.warehouseName, soni: 0 };
-      joriy.soni += tanlov.soni;
-      xarita.set(tanlov.warehouseId, joriy);
-    });
-    return xarita;
-  }, [tanlovlar]);
-
-  function savatchagaQoshish() {
-    if (tanlovlar.length === 0) return;
-    // Har bir mahsulot o'z omborining ma'lumoti bilan saqlanadi — sotuv tasdiqlanganda
-    // qoldiq aynan shu ombordan chiqariladi.
-    tanlovlar.forEach((tanlov) => {
-      addToCart(
-        {
-          id: tanlov.kalit,
-          modificationId: tanlov.item.modificationId,
-          nom: savatNomi(tanlov.item) || nomsiz,
-          narx: qoldiqNarxi(tanlov.item, narxTuri),
-          chakanaNarx: qoldiqNarxi(tanlov.item, "chakana"),
-          ulgurjiNarx: qoldiqNarxi(tanlov.item, "ulgurji"),
-          ...dollarMalumoti(tanlov.item),
-          qoldiq: qoldiqMiqdori(tanlov.item),
-          ...(tanlov.item.birliklar?.length ? { birliklar: tanlov.item.birliklar } : {}),
-          warehouseId: tanlov.warehouseId,
-          warehouseName: tanlov.warehouseName,
-        },
-        tanlov.soni
-      );
-    });
-    setTanlanganMiqdorlar({});
-    setTanlanganMalumot({});
-    onClose();
-  }
 
   return createPortal(
     <div className="app-modal-compact fixed inset-0 z-[220] flex items-center justify-center bg-slate-950/55 px-5 backdrop-blur-md">
@@ -262,26 +55,11 @@ export default function MahsulotTanlashModal({ onClose }: { onClose: () => void 
           </button>
           <button
             type="button"
-            onClick={() => setReloadKey((value) => value + 1)}
+            onClick={() => setYangilash((value) => value + 1)}
             className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-gold-500 shadow-md ring-1 ring-gold-100 transition hover:bg-gold-50"
             aria-label={t("posModal.refreshAria")}
           >
-            <RefreshCw size={22} className={yuklanmoqda ? "animate-spin" : ""} />
-          </button>
-          <button
-            type="button"
-            onClick={() => setQidiruv("")}
-            className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-gold-500 shadow-md ring-1 ring-gold-100 transition hover:bg-gold-50"
-            aria-label={t("posModal.clearSearchAria")}
-          >
-            <Search size={22} />
-          </button>
-          <button
-            type="button"
-            className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-gold-500 shadow-md ring-1 ring-gold-100"
-            aria-label={t("posModal.productsAria")}
-          >
-            <PackagePlus size={22} />
+            <RefreshCw size={22} />
           </button>
         </div>
 
@@ -300,11 +78,9 @@ export default function MahsulotTanlashModal({ onClose }: { onClose: () => void 
               </div>
             </div>
             <div className="relative flex items-center gap-3">
-              {!yuklanmoqda && (
-                <span className="hidden rounded-full bg-white/10 px-4 py-1.5 text-xs font-bold text-white/80 ring-1 ring-white/15 sm:inline-flex">
-                  {t("posModal.results", { count: filteredProducts.length })}
-                </span>
-              )}
+              <span className="hidden rounded-full bg-white/10 px-4 py-1.5 text-xs font-bold text-white/80 ring-1 ring-white/15 sm:inline-flex">
+                {t("posModal.results", { count: cart.length })}
+              </span>
               <button
                 type="button"
                 onClick={onClose}
@@ -316,189 +92,19 @@ export default function MahsulotTanlashModal({ onClose }: { onClose: () => void 
             </div>
           </header>
 
-          {/* Asboblar paneli */}
-          <div className="grid shrink-0 gap-3 border-b border-slate-100 bg-slate-50/60 px-8 py-5 lg:grid-cols-[minmax(0,1fr)_280px_260px]">
-            <label className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 shadow-sm transition focus-within:border-gold-400 focus-within:ring-4 focus-within:ring-gold-50">
-              <Search size={18} className="text-slate-400" />
-              <input
-                value={qidiruv}
-                onChange={(event) => setQidiruv(event.target.value)}
-                placeholder={t("posModal.searchPlaceholder")}
-                className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none placeholder:text-slate-400"
-              />
-              {qidiruv && (
-                <button type="button" onClick={() => setQidiruv("")} aria-label={t("posModal.clearSearchAria")} className="text-slate-400 hover:text-slate-600">
-                  <X size={16} />
-                </button>
-              )}
-            </label>
-
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setOmborDropdownOchiq((value) => !value)}
-                className={`flex h-12 w-full items-center justify-between rounded-2xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
-                  omborDropdownOchiq ? "border-gold-400 ring-4 ring-gold-50" : "border-slate-200 hover:border-gold-200"
-                }`}
-              >
-                <span className={tanlanganOmbor ? "text-slate-700" : "text-slate-400"}>
-                  {tanlanganOmbor ? nomniOlish(tanlanganOmbor) : t("posModal.selectWarehouse")}
-                </span>
-                <ChevronDown size={18} className={`shrink-0 text-slate-400 transition ${omborDropdownOchiq ? "rotate-180 text-gold-500" : ""}`} />
-              </button>
-
-              {omborDropdownOchiq && (
-                <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[260] max-h-72 overflow-auto rounded-2xl border border-slate-100 bg-white p-2 shadow-[0_18px_55px_rgba(15,23,42,.18)]">
-                  {omborlar.length === 0 ? (
-                    <div className="rounded-xl px-3 py-3 text-sm font-bold text-slate-400">{t("posModal.warehouseNotFound")}</div>
-                  ) : (
-                    omborlar.map((ombor) => {
-                      const active = String(ombor.id) === warehouseId;
-                      return (
-                        <button
-                          key={ombor.id}
-                          type="button"
-                          onClick={() => {
-                            setWarehouseId(String(ombor.id));
-                            setOmborDropdownOchiq(false);
-                          }}
-                          className={`flex w-full items-center justify-between rounded-xl px-3 py-3 text-left text-sm font-bold transition ${
-                            active ? "bg-gold-50 text-gold-600" : "text-slate-600 hover:bg-slate-50"
-                          }`}
-                        >
-                          <span className="truncate">{nomniOlish(ombor)}</span>
-                          <span className="flex shrink-0 items-center gap-2">
-                            {(omborBoyicha.get(String(ombor.id))?.soni ?? 0) > 0 && (
-                              <span className="rounded-full bg-gold-500 px-2 py-0.5 text-[11px] font-black text-white">
-                                {omborBoyicha.get(String(ombor.id))?.soni}
-                              </span>
-                            )}
-                            {active && <Check size={16} />}
-                          </span>
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 rounded-2xl bg-slate-200/70 p-1">
-              {(["chakana", "ulgurji"] as const).map((tur) => (
-                <button
-                  key={tur}
-                  type="button"
-                  onClick={() => setNarxTuri(tur)}
-                  disabled={!narxRuxsati[tur]}
-                  className={`rounded-xl text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${
-                    narxTuri === tur ? "bg-gold-500 text-white shadow-md shadow-gold-200" : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  {t(tur === "chakana" ? "posModal.retail" : "posModal.wholesale")}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {xabar && (
             <div className="mx-8 mt-4 shrink-0 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{t(xabar)}</div>
           )}
 
-          {/* Mahsulotlar */}
+          {/* Qatorli jadval */}
           <div className="min-h-0 flex-1 overflow-auto p-8">
-            {yuklanmoqda ? (
-              <div className="flex h-full min-h-[360px] flex-col items-center justify-center gap-3 text-sm font-semibold text-slate-500">
-                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-gold-50 ring-1 ring-gold-100">
-                  <LoaderCircle className="animate-spin text-gold-500" size={28} />
-                </span>
-                {t("posModal.loading")}
-              </div>
-            ) : filteredProducts.length === 0 ? (
-              <div className="flex h-full min-h-[360px] flex-col items-center justify-center gap-3 rounded-[28px] border border-dashed border-slate-200 text-center">
-                <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-100 text-slate-400"><PackageOpen size={30} /></span>
-                <p className="max-w-sm text-sm font-semibold text-slate-400">{t("posModal.noProducts")}</p>
-              </div>
-            ) : (
-              <div className="grid gap-5 lg:grid-cols-2 2xl:grid-cols-3">
-                {filteredProducts.map((item) => {
-                  const qoldiq = qoldiqMiqdori(item);
-                  const qoshishMumkin = tanlashQoldigi(item, warehouseId, cart);
-                  const narx = qoldiqNarxi(item, narxTuri);
-                  const sotishMumkin = qoldiq > 0 && narx > 0;
-                  const nom = mahsulotNomi(item) || variantNomi(item) || nomsiz;
-                  const variant = mahsulotNomi(item) ? variantNomi(item) : "";
-                  const tanlangan = tanlanganMiqdorlar[tanlovKaliti(item.modificationId, warehouseId)] ?? 0;
-                  const kod = item.modification?.barcode || item.modification?.article;
-                  const qoldiqRangi = qoldiq <= 0 ? "bg-red-500" : qoldiq <= KAM_QOLDIQ ? "bg-amber-500" : "bg-emerald-500";
-
-                  return (
-                    <article
-                      key={item.modificationId}
-                      className={`group relative flex flex-col gap-4 rounded-[26px] border bg-white p-5 transition duration-300 ${
-                        tanlangan
-                          ? "border-gold-400 shadow-[0_14px_36px_rgba(37,99,235,.16)] ring-2 ring-gold-200"
-                          : "border-slate-100 shadow-[0_6px_20px_rgba(15,23,42,.05)] hover:-translate-y-0.5 hover:border-gold-200 hover:shadow-[0_16px_36px_rgba(15,23,42,.10)]"
-                      } ${sotishMumkin ? "" : "opacity-75"}`}
-                    >
-                      <div className="flex items-start gap-4">
-                        <span
-                          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-base font-black tracking-wide ${
-                            tanlangan ? "bg-gradient-to-br from-gold-500 to-gold-600 text-white shadow-md shadow-gold-200" : "bg-gradient-to-br from-slate-100 to-slate-200 text-slate-500"
-                          }`}
-                        >
-                          {tanlangan ? <Check size={24} strokeWidth={3} /> : qisqartma(nom)}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <h3 className="line-clamp-2 text-[15px] font-black leading-5 text-slate-900" title={nom}>{nom}</h3>
-                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                            {variant && <span className="rounded-md bg-gold-50 px-2 py-0.5 text-[11px] font-bold text-gold-600">{variant}</span>}
-                            <span className="truncate text-[11px] font-semibold text-slate-400">{kod || t("posModal.noCode")}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                          <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{t("posModal.stock")}</p>
-                          <p className="mt-1 flex items-center gap-2 text-lg font-black text-slate-800">
-                            <span className={`h-2 w-2 rounded-full ${qoldiqRangi}`} />
-                            {qoldiq.toLocaleString("uz-UZ")}
-                          </p>
-                        </div>
-                        <div className="rounded-2xl bg-gold-50 px-4 py-3">
-                          <p className="text-[10px] font-black uppercase tracking-wider text-gold-400">{t("posModal.price")}</p>
-                          <p className={`mt-1 text-lg font-black ${narx > 0 ? "text-gold-600" : "text-slate-300"}`}>{narx > 0 ? formatSumma(narx) : "—"}</p>
-                        </div>
-                      </div>
-
-                      {!sotishMumkin ? (
-                        <p className="rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-500">
-                          {qoldiq <= 0 ? t("posModal.noStock") : t("posModal.noPrice")}
-                        </p>
-                      ) : (
-                        <div className={`flex min-h-16 items-center justify-between gap-3 rounded-2xl border px-4 py-2.5 transition ${tanlangan ? "border-gold-500 bg-gold-500 text-white shadow-lg shadow-gold-100" : "border-gold-200 bg-gold-50/50 text-gold-600"}`}>
-                          <label className="flex min-w-0 items-center gap-3">
-                            <span className="text-xs font-bold">{t("posModal.quantity")}</span>
-                            <SavatchaMiqdoriMaydoni
-                              soni={tanlangan}
-                              qoldiq={qoshishMumkin}
-                              label={t("posModal.quantityAria", { name: nom })}
-                              nolMumkin
-                              onChange={(miqdor) => miqdorniYangilash(item, miqdor)}
-                              className="h-10 w-24 min-w-0 rounded-xl border border-gold-200 bg-white px-2 text-center text-base font-black tabular-nums text-slate-900 outline-none transition focus:border-gold-400 focus:ring-4 focus:ring-white/30 disabled:cursor-not-allowed disabled:opacity-50"
-                            />
-                          </label>
-                          <div className="min-w-0 text-right leading-tight">
-                            <p className="text-[10px] font-semibold opacity-75">{qoshishMumkin < qoldiq ? t("posModal.canAdd", { count: qoshishMumkin }) : t("posModal.lineTotal")}</p>
-                            <p className="mt-1 truncate text-xs font-black tabular-nums">{formatSumma(tanlangan * narx)}</p>
-                          </div>
-                        </div>
-                      )}
-                    </article>
-                  );
-                })}
-              </div>
-            )}
+            <SavatchaJadvali
+              omborlar={omborlar}
+              warehouseId={warehouseId}
+              onWarehouseChange={setWarehouseId}
+              formatSumma={formatSumma}
+              yangilash={yangilash}
+            />
           </div>
 
           {/* Pastki panel */}
@@ -506,48 +112,25 @@ export default function MahsulotTanlashModal({ onClose }: { onClose: () => void 
             <div className="flex items-center gap-4">
               <span className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gold-50 text-gold-600 ring-1 ring-gold-100">
                 <ShoppingCart size={24} />
-                {tanlanganSoni > 0 && (
-                  <span className="absolute -right-2 -top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-gold-500 px-1.5 text-[11px] font-black text-white ring-2 ring-white">{tanlanganSoni}</span>
+                {cart.length > 0 && (
+                  <span className="absolute -right-2 -top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-gold-500 px-1.5 text-[11px] font-black text-white ring-2 ring-white">{cart.length}</span>
                 )}
               </span>
               <div>
-                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">{t("posModal.selectedProducts")}</p>
+                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">{t("posModal.cartProducts")}</p>
                 <p className="mt-0.5 text-lg font-black text-slate-900">
-                  {tanlanganSoni} {t("posModal.unit")} <span className="mx-1 text-slate-300">·</span> <span className="text-gold-600">{formatSumma(tanlanganJami)}</span>
+                  {xulosa.miqdor.toLocaleString("uz-UZ", { maximumFractionDigits: 3 })} {t("posModal.unit")} <span className="mx-1 text-slate-300">·</span>{" "}
+                  <span className="text-gold-600">{formatSumma(xulosa.jami)}</span>
                 </p>
-                {omborBoyicha.size > 0 && (
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {Array.from(omborBoyicha.entries()).map(([id, malumot]) => (
-                      <button
-                        key={id}
-                        type="button"
-                        onClick={() => setWarehouseId(id)}
-                        className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold transition ${
-                          id === warehouseId ? "bg-gold-500 text-white" : "bg-gold-50 text-gold-600 hover:bg-gold-100"
-                        }`}
-                      >
-                        {malumot.nom}: {malumot.soni} {t("posModal.unit")}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              {tanlanganSoni > 0 && (
-                <button type="button" onClick={() => { setTanlanganMiqdorlar({}); setTanlanganMalumot({}); }} className="h-12 rounded-2xl border border-slate-200 px-5 text-sm font-bold text-slate-500 transition hover:bg-slate-50">
-                  {t("posModal.clearSelection")}
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={savatchagaQoshish}
-                disabled={tanlanganSoni === 0}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-gold-500 to-gold-600 px-8 text-sm font-black text-white shadow-lg shadow-gold-200 transition hover:scale-[1.02] disabled:scale-100 disabled:cursor-not-allowed disabled:bg-none disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
-              >
-                <ShoppingCart size={18} /> {t("posModal.addToCart")} {tanlanganSoni > 0 ? `(${tanlanganSoni})` : ""}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-gold-500 to-gold-600 px-8 text-sm font-black text-white shadow-lg shadow-gold-200 transition hover:scale-[1.02]"
+            >
+              <ShoppingCart size={18} /> {t("posModal.done")}
+            </button>
           </footer>
         </section>
       </div>

@@ -58,6 +58,8 @@
     "selectedProducts": "Tanlangan mahsulotlar",
     "unit": "dona",
     "addToCart": "Savatchaga qo'shish",
+    "cartProducts": "Savatchadagi mahsulotlar",
+    "done": "Tayyor",
     "errors": {
       "warehousesLoadFailed": "Omborlar ro'yxati olinmadi",
       "stockLoadFailed": "Mahsulot qoldiqlari olinmadi",

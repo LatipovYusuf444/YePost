@@ -20,6 +20,51 @@
     "autoDiscount": "Chegirma: −{{summa}}",
     "autoDiscountEach": "({{bir}} × {{soni}} dona)"
   },
+  "jadval": {
+    "unnamed": "Nomsiz mahsulot",
+    "noPriceBadge": "Narx yo'q",
+    "stockShort": "qoldiq",
+    "priceShort": "narx",
+    "errors": {
+      "noStock": "Bu mahsulotdan omborda qoldiq yo'q (savatchada butun qoldiq bor)",
+      "noPrice": "Mahsulot narxi belgilanmagan yoki dollar kursi kiritilmagan"
+    },
+    "loadErrors": {
+      "stock": "Ombor qoldig'i va katalog yuklanmadi",
+      "warehouseStock": "Ombor qoldig'i yuklanmadi",
+      "catalog": "Katalog (nom va narxlar) yuklanmadi"
+    },
+    "scan": {
+      "notFound": "Bu shtrix-kod bo'yicha mahsulot topilmadi",
+      "added": "Qo'shildi: {{name}}"
+    },
+    "scanPlaceholder": "Shtrix kodni skanerlang yoki yozib Enter bosing",
+    "scanAria": "Shtrix kod",
+    "clear": "Tozalash",
+    "category": "Kategoriya",
+    "allCategories": "Barcha kategoriyalar",
+    "categoryFailed": "Kategoriya mahsulotlari yuklanmadi — kategoriyani qayta tanlang",
+    "hint": "Shtrix kodni skanerlang yoki mahsulotni ro'yxatdan tanlang. Kategoriya tanlansa, ro'yxatda faqat shu kategoriya mahsulotlari ko'rinadi.",
+    "product": "Mahsulot",
+    "catalogPrice": "Katalog narxi",
+    "salePrice": "Sotuv narxi",
+    "discount": "Chegirma",
+    "discountUnit": "Chegirma birligi",
+    "currencySuffix": "so'm",
+    "loading": "Yuklanmoqda...",
+    "selectProduct": "Mahsulotni tanlang",
+    "availableStock": "Mavjud qoldiq",
+    "pricePlaceholder": "Narx",
+    "priceLocked": "Katalog narxi o'zgarmaydi: sotuv narxini yoki chegirmani o'zgartiring",
+    "markupHint": "Katalog narxi {{katalog}}, sotuv narxi {{sotuv}}: ustama {{jami}} (jami).",
+    "discountHint": "Katalog narxi {{katalog}}, sotuv narxi {{sotuv}}: chegirma {{jami}} (jami).",
+    "summary": {
+      "products": "Mahsulotlar soni",
+      "quantity": "Umumiy miqdor",
+      "discount": "Chegirma",
+      "total": "Jami summa"
+    }
+  },
   "customerType": {
     "donalik": "Donalik mijoz",
     "doimiy": "Doimiy mijozlar"
