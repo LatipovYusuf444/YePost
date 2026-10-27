@@ -44,9 +44,11 @@ export const mediaApi = {
 
 // Mahsulotlar sahifasi: Swagger catalog/categories to'liq CRUD.
 export const kategoriyalarApi = {
-  royxat: async () => {
+  // `jim` — fon rejimi (masalan, headerdagi filtr): xato bo'lsa qizil toast chiqmaydi.
+  royxat: async (jim = false) => {
     const response = await apiClient.get<Kategoriya[] | ApiListEnvelope<Kategoriya>>(
-      "/catalog/categories"
+      "/catalog/categories",
+      jim ? { xatoniYashirish: true } : undefined
     );
     return apiList(response.data);
   },

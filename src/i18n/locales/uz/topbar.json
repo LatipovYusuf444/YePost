@@ -105,6 +105,13 @@
     "outOfStock": "Qoldiq yo'q",
     "outOfStockMessage": "{{name}}: qoldiq yo'q",
     "notExact": "Aniq mos mahsulot topilmadi — ro'yxatdan tanlang.",
+    "shortPlaceholder": "Mahsulot qidirish...",
+    "category": "Kategoriya",
+    "allCategories": "Barcha kategoriyalar",
+    "categoryAria": "Kategoriya bo'yicha filtr",
+    "clearCategory": "Kategoriya filtrini olib tashlash",
+    "categoryEmpty": "Bu kategoriyada qoldig'i bor mahsulot yo'q",
+    "categoryFailed": "Kategoriya mahsulotlari olinmadi.",
     "hint": "↑↓ tanlash · Enter qo'shish · Esc yopish"
   }
 }

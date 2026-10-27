@@ -216,7 +216,10 @@ export default function YuqoriPanel({
           </div>
           {pathname === "/" && (
             <div className="mt-3 flex gap-2">
-              <HeaderMahsulotQidiruvi className="theme-search flex h-11 min-w-0 flex-1 items-center rounded-2xl border border-white/10 bg-white/10 px-3" />
+              <HeaderMahsulotQidiruvi
+                oramClassName="flex-1"
+                className="theme-search flex h-11 items-center rounded-2xl border border-white/10 bg-white/10 px-3"
+              />
               <button type="button" onClick={() => setMahsulotModalOchiq(true)} aria-label={t("addProduct")} className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white focus-visible:outline-2 focus-visible:outline-white"><PackagePlus size={20} /></button>
             </div>
           )}
@@ -241,7 +244,8 @@ export default function YuqoriPanel({
           <Menu size={20} />
         </button>
         <HeaderMahsulotQidiruvi
-          className={`theme-search flex h-11 min-w-0 items-center rounded-2xl border border-white/10 bg-white/10 px-4 transition focus-within:border-white/30 focus-within:bg-white/15 ${rejim === "menyu" ? "order-last basis-full" : "flex-1"}`}
+          oramClassName={rejim === "menyu" ? "order-last basis-full" : "flex-1"}
+          className="theme-search flex h-11 items-center rounded-2xl border border-white/10 bg-white/10 px-4 transition focus-within:border-white/30 focus-within:bg-white/15"
         />
         <button
           type="button"

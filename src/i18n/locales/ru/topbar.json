@@ -105,6 +105,13 @@
     "outOfStock": "Нет в наличии",
     "outOfStockMessage": "{{name}}: нет в наличии",
     "notExact": "Точное совпадение не найдено — выберите из списка.",
+    "shortPlaceholder": "Поиск товара...",
+    "category": "Категория",
+    "allCategories": "Все категории",
+    "categoryAria": "Фильтр по категории",
+    "clearCategory": "Сбросить фильтр категории",
+    "categoryEmpty": "В этой категории нет товаров в наличии",
+    "categoryFailed": "Не удалось получить товары категории.",
     "hint": "↑↓ выбор · Enter добавить · Esc закрыть"
   }
 }
