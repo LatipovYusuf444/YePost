@@ -12,6 +12,7 @@ import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import { useOmborStore } from "@/store/omborStore";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
+import { chiqimJamilari, chiqimTannarxi } from "@/lib/chiqimTannarxi";
 import type { ChiqimHujjati, ChiqimSababi, MahsulotModifikatsiyasi } from "@/types/ombor";
 import { holat, hujjatRaqami, modificationNomi, pul, sana } from "./omborYordamchilari";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
@@ -76,18 +77,17 @@ export default function ChiqimTafsilotModal({ id, onClose }: Props) {
       const modification: MahsulotModifikatsiyasi | undefined =
         item.modification ?? modMap.get(item.modificationId);
       const quantity = Number(item.quantity ?? 0);
-      const price = Number(modification?.price?.costPrice ?? 0);
-      return { ...item, modification, quantity, price, summa: quantity * price };
+      // Tannarx katalogdagi o'z valyutasida (dollar bo'lsa $), so'm deb ko'rsatilmaydi.
+      const { narx: price, valyuta } = chiqimTannarxi(modification);
+      return { ...item, modification, quantity, price, valyuta, summa: quantity * price };
     }),
     [hujjat?.items, modMap]
   );
 
-  const jami = useMemo(() => {
-    const backendSummasi = hujjat?.totalAmount ?? hujjat?.total;
-    return backendSummasi !== undefined && backendSummasi !== null
-      ? Number(backendSummasi)
-      : qatorlar.reduce((sum, item) => sum + item.summa, 0);
-  }, [hujjat?.total, hujjat?.totalAmount, qatorlar]);
+  const jamiMatni = useMemo(
+    () => chiqimJamilari(qatorlar, hujjat?.totalAmount ?? hujjat?.total).map((item) => pul(item.summa, item.valyuta)).join(" + "),
+    [hujjat?.total, hujjat?.totalAmount, qatorlar]
+  );
 
   const omborNomi = hujjat?.warehouse?.name ??
     store.omborlar.find((item) => item.id === hujjat?.warehouseId)?.name ??
@@ -147,7 +147,7 @@ export default function ChiqimTafsilotModal({ id, onClose }: Props) {
                 <SectionTitle icon={<PackageMinus size={18} />} text={t("chiqimTafsilotModal.aboutSection")} />
                 <div className="rounded-[24px] bg-orange-50 px-7 py-10 sm:px-8">
                   <p className="text-sm font-black uppercase text-orange-600">{t("chiqimTafsilotModal.totalAmount")}</p>
-                  <p className="mt-2 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">{pul(jami)}</p>
+                  <p className="mt-2 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">{jamiMatni}</p>
                 </div>
                 <div className="mt-5 grid gap-5 sm:grid-cols-2">
                   <Info label={t("chiqimTafsilotModal.reasonLabel")} value={sabab} className="sm:col-span-2" />
@@ -176,10 +176,10 @@ export default function ChiqimTafsilotModal({ id, onClose }: Props) {
                         <td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td>
                         <td className="px-4 py-4 font-black text-slate-800">{modificationNomi(item.modification)}</td>
                         <td className="px-4 py-4 font-medium text-slate-500">{item.modification?.barcode || "—"}</td>
-                        <td className="px-4 py-4 font-semibold text-slate-600">{pul(item.price)}</td>
+                        <td className="px-4 py-4 font-semibold text-slate-600">{pul(item.price, item.valyuta)}</td>
                         <td className="px-4 py-4 font-semibold text-slate-700">{item.quantity.toLocaleString("uz-UZ")}</td>
                         <td className="px-4 py-4 text-slate-600">{omborNomi}</td>
-                        <td className="px-4 py-4 font-black text-emerald-600">{pul(item.summa)}</td>
+                        <td className="px-4 py-4 font-black text-emerald-600">{pul(item.summa, item.valyuta)}</td>
                         <td />
                       </tr>
                     ))}

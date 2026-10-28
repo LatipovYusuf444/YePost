@@ -13,6 +13,7 @@ import {
 import DateRangePicker from "@/Components/ui/DateRangePicker";
 import { useOmborStore } from "@/store/omborStore";
 import { toshkentKuni } from "@/lib/hujjatSanasi";
+import { chiqimJamilari, chiqimTannarxi } from "@/lib/chiqimTannarxi";
 import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import type {
@@ -165,14 +166,17 @@ export default function Chiqim() {
     return chiqimSabablari[item.reason as keyof typeof chiqimSabablari] ?? item.reason ?? "—";
   }
 
-  function hujjatSummasi(item: ChiqimHujjati) {
-    const backendSummasi = item.totalAmount ?? item.total;
-    if (backendSummasi !== undefined && backendSummasi !== null) return Number(backendSummasi);
-    return (item.items ?? []).reduce((sum, row) => {
+  // Tannarx o'z valyutasida (dollar bo'lsa $), aralash valyutada har biri alohida.
+  function hujjatSummasiMatni(item: ChiqimHujjati) {
+    const qatorlar = (item.items ?? []).map((row) => {
       const mod: MahsulotModifikatsiyasi | undefined =
         row.modification ?? modMap.get(row.modificationId);
-      return sum + Number(row.quantity ?? 0) * Number(mod?.price?.costPrice ?? 0);
-    }, 0);
+      const { narx, valyuta } = chiqimTannarxi(mod);
+      return { summa: Number(row.quantity ?? 0) * narx, valyuta };
+    });
+    return chiqimJamilari(qatorlar, item.totalAmount ?? item.total)
+      .map((jami) => pul(jami.summa, jami.valyuta))
+      .join(" + ");
   }
 
   const royxat = useMemo(() => {
@@ -312,7 +316,7 @@ export default function Chiqim() {
       case "ozgartirgan":
         return <span className="font-semibold text-slate-600">{ozgartirganNomi(item)}</span>;
       case "summa":
-        return <span className="whitespace-nowrap font-black text-slate-700">{pul(hujjatSummasi(item))}</span>;
+        return <span className="whitespace-nowrap font-black text-slate-700">{hujjatSummasiMatni(item)}</span>;
     }
   }
 

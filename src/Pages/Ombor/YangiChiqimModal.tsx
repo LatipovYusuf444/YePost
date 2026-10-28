@@ -15,6 +15,7 @@ import {
 import AppModal from "@/Components/common/AppModal";
 import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
 import { bugungiToshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
+import { chiqimJamilari, chiqimTannarxi } from "@/lib/chiqimTannarxi";
 import { useTranslation } from "react-i18next";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useOmborStore } from "@/store/omborStore";
@@ -104,14 +105,15 @@ export default function YangiChiqimModal({ onClose }: Props) {
     [omborQoldiqlari]
   );
 
-  const chiqimQiymati = useMemo(
-    () =>
-      qatorlar.reduce((sum, row) => {
-        const mod = store.modifikatsiyalar.find((item) => item.id === row.modificationId);
-        return sum + row.quantity * Number(mod?.price?.costPrice ?? 0);
-      }, 0),
-    [qatorlar, store.modifikatsiyalar]
-  );
+  // Tannarx o'z valyutasida (dollar bo'lsa $); tanlanmagan qator jamiga kirmaydi.
+  const chiqimQiymatiMatni = useMemo(() => {
+    const tanlangan = qatorlar.filter((row) => row.modificationId).map((row) => {
+      const mod = store.modifikatsiyalar.find((item) => item.id === row.modificationId);
+      const { narx, valyuta } = chiqimTannarxi(mod);
+      return { summa: row.quantity * narx, valyuta };
+    });
+    return chiqimJamilari(tanlangan).map((jami) => pul(jami.summa, jami.valyuta)).join(" + ");
+  }, [qatorlar, store.modifikatsiyalar]);
 
   function qatorniYangilash(id: string, value: Partial<Qator>) {
     setQatorlar((rows) => rows.map((row) => (row.id === id ? { ...row, ...value } : row)));
@@ -306,7 +308,7 @@ export default function YangiChiqimModal({ onClose }: Props) {
                   const mod = store.modifikatsiyalar.find((item) => item.id === row.modificationId);
                   const stock = omborQoldiqlari.find((item) => item.modificationId === row.modificationId);
                   const mavjud = Number(stock ? qoldiqMiqdori(stock) : 0);
-                  const narx = Number(mod?.price?.costPrice ?? 0);
+                  const { narx, valyuta: narxValyutasi } = chiqimTannarxi(mod);
                   return (
                     <div key={row.id} className="grid grid-cols-[42px_76px_2.1fr_1fr_1fr_1fr_1.35fr_1fr_1fr_48px] items-center gap-3 rounded-2xl border border-orange-100 bg-[#FFFFFF] p-3">
                       <span className="text-center text-sm font-black text-slate-400">{index + 1}</span>
@@ -329,7 +331,7 @@ export default function YangiChiqimModal({ onClose }: Props) {
                       <div className="relative"><input type="number" min="0.001" max={mavjud || undefined} step="0.001" value={row.quantity} data-chiqim-miqdor={row.id} onChange={(event) => qatorniYangilash(row.id, { quantity: Number(event.target.value) })} onKeyDown={(event) => { if (event.key !== "Enter" || event.nativeEvent.isComposing) return; event.preventDefault(); keyingiQatorgaOtish(row.id); }} className={`${input} pr-14`} /><span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400">{t("yangiChiqimModal.items.unit")}</span></div>
                       <div className="relative"><Warehouse size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><AppSelect value={warehouseId} onChange={(event) => omborniAlmashtirish(event.target.value)} className={`${input} appearance-none pl-9 pr-8`}><option value="">{t("yangiChiqimModal.items.selectWarehouse")}</option>{store.omborlar.filter((item) => item.isActive !== false).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</AppSelect><ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" /></div>
                       <div className="rounded-xl bg-slate-50 px-3 py-2.5"><p className="font-black text-slate-700">{mavjud.toLocaleString("uz-UZ")}</p><p className="truncate text-[10px] font-semibold text-slate-400">{store.omborlar.find((item) => item.id === warehouseId)?.name ?? t("yangiChiqimModal.items.warehouseFallback")}</p></div>
-                      <p className="font-black text-emerald-600">{pul(row.quantity * narx)}</p>
+                      <p className="font-black text-emerald-600">{pul(row.quantity * narx, narxValyutasi)}</p>
                       <button type="button" disabled={qatorlar.length === 1} onClick={() => setQatorlar((rows) => rows.filter((item) => item.id !== row.id))} aria-label={t("yangiChiqimModal.items.removeRowAria")} className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100 disabled:opacity-30"><Trash2 size={17} /></button>
                     </div>
                   );
@@ -338,7 +340,7 @@ export default function YangiChiqimModal({ onClose }: Props) {
             </div>
 
             <div className="mt-4 flex justify-end border-t border-orange-100 pt-4 text-right">
-              <div><p className="text-xs font-black uppercase text-slate-400">{t("yangiChiqimModal.items.total")}</p><p className="mt-1 text-2xl font-black text-slate-950">{pul(chiqimQiymati)}</p></div>
+              <div><p className="text-xs font-black uppercase text-slate-400">{t("yangiChiqimModal.items.total")}</p><p className="mt-1 text-2xl font-black text-slate-950">{chiqimQiymatiMatni}</p></div>
             </div>
           </section>
         </div>
