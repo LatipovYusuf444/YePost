@@ -118,6 +118,11 @@ export default function ProfilBolimi() {
         <Maydon label={t("profil.fields.telegramId")}><input value={telegramId} onChange={(e) => setTelegramId(e.target.value)} className={maydonKlass}/></Maydon>
         <Maydon label={t("profil.fields.login")}><input value={profil?.username ?? ""} disabled className={maydonKlass}/></Maydon>
         <Maydon label={t("profil.fields.role")}><input value={profil?.role ?? ""} disabled className={maydonKlass}/></Maydon>
+        {/* Kirishdagi "Do'kon kodi" (Workspace.slug): xodimlarga aytish uchun. Platforma xodimida do'kon yo'q. */}
+        {profil?.workspace?.slug && <div className="sm:col-span-2">
+          <Maydon label={t("profil.fields.workspaceCode")}><input value={profil.workspace.slug} readOnly onFocus={(e) => e.currentTarget.select()} className={`${maydonKlass} font-mono`}/></Maydon>
+          <p className="mt-1.5 text-xs font-medium text-slate-400">{t("profil.workspaceCodeHint")}</p>
+        </div>}
       </div>
       <div className="mt-6 flex justify-end"><SaqlashTugma disabled={amalBajarilmoqda || rasmSaqlanmoqda} onClick={() => void saqlash()}/></div>
       {amalBajarilmoqda && <p className="mt-3 text-right text-xs font-bold text-slate-400">{t("savingToBackend")}</p>}

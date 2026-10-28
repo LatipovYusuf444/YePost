@@ -31,8 +31,10 @@
       "position": "Lavozim",
       "telegramId": "Telegram ID",
       "login": "Login",
-      "role": "Tizim roli"
-    }
+      "role": "Tizim roli",
+      "workspaceCode": "Do'kon kodi"
+    },
+    "workspaceCodeHint": "Xodimlar tizimga kirishda shu kodni kiritadi (login boshqa do'konda ham bo'lsa)."
   },
   "kompaniya": {
     "title": "Kompaniya ma'lumotlari",

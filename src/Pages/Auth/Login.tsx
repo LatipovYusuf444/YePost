@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import {
   ArrowRight,
   BarChart3,
@@ -7,6 +7,7 @@ import {
   EyeOff,
   LoaderCircle,
   LockKeyhole,
+  Store,
   Truck,
   UserRound,
   Users,
@@ -19,6 +20,13 @@ import {
 import { useTranslation } from "react-i18next";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import {
+  dokonKodiKerakmi,
+  dokonKodiniSaqlash,
+  dokonKodiniTozalash,
+  loginMalumoti,
+  saqlanganDokonKodi,
+} from "@/lib/dokonKodi";
 import { isAuthSessionValid, useAuthStore } from "@/store/authStore";
 import LanguageSwitcher from "@/Components/common/LanguageSwitcher";
 
@@ -107,6 +115,11 @@ export default function Login() {
   const accessToken = useAuthStore((state) => state.accessToken);
   const expiresAt = useAuthStore((state) => state.expiresAt);
   const login = useAuthStore((state) => state.login);
+  // Do'kon kodi (Workspace.slug): oxirgi muvaffaqiyatli kirishdagi kod oldindan to'ladi; backend "kod kerak" desa majburiy bo'ladi.
+  const [dokonKodi, setDokonKodi] = useState(saqlanganDokonKodi);
+  const [dokonKodiKerak, setDokonKodiKerak] = useState(false);
+  const [dokonKodiXatosi, setDokonKodiXatosi] = useState("");
+  const dokonKodiRef = useRef<HTMLInputElement | null>(null);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -143,19 +156,29 @@ export default function Login() {
     setErrorMessage("");
 
     const errors = validateLogin(username, password, errorMessages);
-    if (errors.username || errors.password) return;
+    // Backend "do'kon kodi kerak" degandan keyin maydon majburiy: bo'sh bo'lsa so'rov yuborilmaydi.
+    const kodXatosi = dokonKodiKerak && !dokonKodiniTozalash(dokonKodi) ? t("errors.workspaceRequired") : "";
+    setDokonKodiXatosi(kodXatosi);
+    if (errors.username || errors.password || kodXatosi) {
+      if (kodXatosi) dokonKodiRef.current?.focus();
+      return;
+    }
 
     setIsSubmitting(true);
 
     try {
-      await login({
-        username: username.trim(),
-        password,
-      });
+      await login(loginMalumoti(username.trim(), password, dokonKodi));
+      // Keyingi safar so'ralmasligi uchun eslab qolinadi (olib tashlangan bo'lsa — o'chiriladi).
+      dokonKodiniSaqlash(dokonKodi);
 
       const state = location.state as LoginLocationState | null;
       navigate(state?.from?.pathname || "/", { replace: true });
     } catch (error) {
+      // errors.user.workspace_required: login bir nechta do'konda bor — kodni so'raymiz (backend xabari bilan).
+      if (dokonKodiKerakmi(error)) {
+        setDokonKodiKerak(true);
+        dokonKodiRef.current?.focus();
+      }
       setErrorMessage(getApiErrorMessage(error));
     } finally {
       setIsSubmitting(false);
@@ -360,6 +383,47 @@ export default function Login() {
                 <p className="mt-2 text-sm font-medium leading-5 text-blue-100/70">Tizimga kirish uchun o'z ma'lumotlaringizni kiriting</p>
 
                 <form className="mt-8 space-y-5" onSubmit={handleSubmit} noValidate>
+                  <label className="block">
+                    <span className="mb-2 flex items-baseline justify-between gap-2 text-sm font-bold text-blue-50">
+                      {t("workspaceLabel")}
+                      <small className={`text-[11px] font-semibold ${dokonKodiKerak ? "text-amber-300" : "text-blue-200/60"}`}>
+                        {dokonKodiKerak ? t("workspaceRequiredTag") : t("workspaceOptional")}
+                      </small>
+                    </span>
+                    <span
+                      className={`login-input flex h-14 items-center gap-3 rounded-2xl border bg-white/[0.035] px-4 transition focus-within:bg-white/[0.055] focus-within:ring-[3px] ${
+                        dokonKodiXatosi
+                          ? "border-red-300 focus-within:ring-red-100"
+                          : dokonKodiKerak
+                            ? "border-amber-300/70 focus-within:border-amber-300 focus-within:ring-amber-300/20"
+                            : "border-blue-300/35 focus-within:border-blue-400 focus-within:ring-blue-500/20"
+                      }`}
+                    >
+                      <Store size={18} className={dokonKodiXatosi ? "shrink-0 text-red-500" : "shrink-0 text-blue-500"} />
+                      <input
+                        ref={dokonKodiRef}
+                        name="workspace"
+                        value={dokonKodi}
+                        onChange={(event) => {
+                          setDokonKodi(event.target.value);
+                          setDokonKodiXatosi("");
+                          setErrorMessage("");
+                        }}
+                        autoComplete="off"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        placeholder={t("workspacePlaceholder")}
+                        className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-white outline-none placeholder:text-blue-200/70"
+                        aria-invalid={Boolean(dokonKodiXatosi)}
+                      />
+                    </span>
+                    {dokonKodiXatosi ? (
+                      <p className="mt-2 text-xs font-bold text-red-500">{dokonKodiXatosi}</p>
+                    ) : (
+                      <p className="mt-2 text-[11px] font-medium leading-4 text-blue-100/55">{t("workspaceHint")}</p>
+                    )}
+                  </label>
+
                   <label className="block">
                     <span className="mb-2 block text-sm font-bold text-blue-50">
                       {t("usernameLabel")}

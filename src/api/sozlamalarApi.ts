@@ -4,6 +4,8 @@ import { apiTilHeaderi, apiTiliniOlish } from "./apiLanguage";
 import { xatoKodiMatni } from "./xatoKodlari";
 
 export type LoginPayload = {
+  // Do'kon kodi (Workspace.slug): bir xil login bir nechta do'konda bo'lsa kerak. Bo'sh bo'lsa umuman yuborilmaydi (src/lib/dokonKodi.ts).
+  workspace?: string;
   username: string;
   password: string;
 };

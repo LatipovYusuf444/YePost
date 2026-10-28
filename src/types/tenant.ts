@@ -4,6 +4,8 @@ export type JoriyFoydalanuvchi = {
   id: string;
   // Super admin (isStaff: true) hech qanday kompaniyaga tegishli emas — workspaceId null.
   workspaceId: string | null;
+  // /auth/me do'konni ham qaytaradi (platforma xodimi uchun null): `slug` — kirishda kiritiladigan "Do'kon kodi".
+  workspace?: { id: string; name: string; slug: string } | null;
   branchId?: string | null;
   username: string;
   fullName?: string | null;
