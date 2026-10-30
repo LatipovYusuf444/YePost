@@ -54,6 +54,7 @@ import { useAuthProfileStore } from "@/store/authProfileStore";
 import { cn } from "@/lib/utils";
 import NarxTuriTanlovi from "./NarxTuriTanlovi";
 import { sotuvNomiIzohi } from "@/lib/sotuvNomi";
+import { yaratishValyutasi } from "@/lib/mijozValyutasi";
 import { useValyutaStore } from "@/lib/valyuta";
 import type {
   MijozTanlovi,
@@ -715,7 +716,7 @@ export default function YangiSotuvModal({
         phone: xaridor.telefonlar.find((item) => item.trim())?.trim() ?? "",
         address: xaridor.manzil.trim() || undefined,
         telegramId: xaridor.ijtimoiy.telegram.trim() || undefined,
-        companyId: xaridor.kompaniyaId || undefined, customFields,
+        companyId: xaridor.kompaniyaId || undefined, ...yaratishValyutasi(xaridor.valyuta), customFields,
       });
       const mijoz: MijozTanlovi = {
         id: saved.id, firstName: saved.firstName, lastName: saved.lastName,

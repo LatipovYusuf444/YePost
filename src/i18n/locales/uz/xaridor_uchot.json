@@ -278,7 +278,15 @@
     "company": "Kompaniya",
     "companyUnassigned": "Biriktirilmagan",
     "position": "Lavozim",
-    "positionPlaceholder": "Bo'lim boshlig'i"
+    "positionPlaceholder": "Bo'lim boshlig'i",
+    "accountSectionTitle": "Mijoz hisobi",
+    "currencyLabel": "Hisob valyutasi",
+    "currencyUzs": "So'm",
+    "currencyUsd": "Dollar ($)",
+    "currencyUnset": "Belgilanmagan",
+    "currencyHint": "Belgilanmagan bo'lsa, dollar rejimida mijoz hisobi dollarda yuritiladi. Valyuta faqat mijoz hisobi bo'sh bo'lganda o'zgaradi.",
+    "currentAccount": "Hozirgi hisob",
+    "currencyPending": "Hisobda pul bor — valyuta o'zgarishi hisob bo'shagach kuchga kiradi."
   },
   "kompaniyaModal": {
     "editTitle": "Kompaniyani tahrirlash",
@@ -367,6 +375,7 @@
     "totalSales": "Jami realizatsiya",
     "totalPaid": "Jami to'langan",
     "accountBalance": "Mijoz hisobi",
+    "currencyPendingShort": "hisob bo'shagach kuchga kiradi",
     "debtorYes": "Qarzdor: HA",
     "debtorNo": "Qarzdor emas"
   },

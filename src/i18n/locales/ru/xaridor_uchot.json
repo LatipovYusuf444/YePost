@@ -278,7 +278,15 @@
     "company": "Компания",
     "companyUnassigned": "Не привязано",
     "position": "Должность",
-    "positionPlaceholder": "Начальник отдела"
+    "positionPlaceholder": "Начальник отдела",
+    "accountSectionTitle": "Счёт клиента",
+    "currencyLabel": "Валюта счёта",
+    "currencyUzs": "Сум",
+    "currencyUsd": "Доллар ($)",
+    "currencyUnset": "Не задана",
+    "currencyHint": "Если не задана, в долларовом режиме счёт клиента ведётся в долларах. Валюта меняется только когда счёт клиента пуст.",
+    "currentAccount": "Текущий счёт",
+    "currencyPending": "На счёте есть деньги — смена валюты вступит в силу, когда счёт опустеет."
   },
   "kompaniyaModal": {
     "editTitle": "Редактирование компании",
@@ -367,6 +375,7 @@
     "totalSales": "Всего реализовано",
     "totalPaid": "Всего оплачено",
     "accountBalance": "Счёт клиента",
+    "currencyPendingShort": "вступит в силу, когда счёт опустеет",
     "debtorYes": "Должник: ДА",
     "debtorNo": "Не должник"
   },

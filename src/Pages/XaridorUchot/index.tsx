@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { mijozKompaniyalariApi, mijozlarApi, yetkazibBeruvchilarApi } from "@/api/partnersApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { sotuvlarRoyxatiniOlish } from "@/api/savdoApi";
+import { tahrirValyutasi, yaratishValyutasi } from "@/lib/mijozValyutasi";
 import { kirimApi, omborlarApi, omborMasullari } from "@/api/omborApi";
 import Kompaniyalar from "./Kompaniyalar";
 import Xaridorlar from "./Xaridorlar";
@@ -87,17 +88,20 @@ export default function XaridorUchot({ faolTab = "xaridorlar" }: Props) {
         instagram: xaridor.ijtimoiy.instagram.trim() || undefined,
         extraPhones: xaridor.telefonlar.slice(1).map((item) => item.trim()).filter(Boolean),
       });
+      const eskisi = xaridorlar.find((item) => item.id === xaridor.id);
+      const mavjud = Boolean(eskisi);
       const payload = {
         firstName: xaridor.ism.trim(),
         // Familiya ixtiyoriy: yangi mijozda bo'sh bo'lsa yuborilmaydi; mavjud mijozda tozalansa "" yuboriladi.
-        lastName: xaridor.familiya.trim() || (xaridorlar.find((item) => item.id === xaridor.id)?.familiya ? "" : undefined),
+        lastName: xaridor.familiya.trim() || (eskisi?.familiya ? "" : undefined),
         phone: xaridor.telefonlar.find((item) => item.trim())?.trim() ?? "",
         address: xaridor.manzil.trim() || undefined,
         telegramId: xaridor.ijtimoiy.telegram.trim() || undefined,
         companyId: xaridor.kompaniyaId || undefined,
+        // Hisob valyutasi: yangi mijozda faqat tanlangan bo'lsa, mavjudda faqat o'zgargan bo'lsa yuboriladi (valyuta rejimi o'chiq bo'lsa o'zgarmaydi).
+        ...(eskisi ? tahrirValyutasi(eskisi.valyuta, xaridor.valyuta) : yaratishValyutasi(xaridor.valyuta)),
         customFields,
       };
-      const mavjud = xaridorlar.some((item) => item.id === xaridor.id);
       const saved = mavjud ? await mijozlarApi.yangilash(xaridor.id, payload) : await mijozlarApi.yaratish(payload);
       const ui = mijozniUiGa(saved);
       setXaridorlar((current) => mavjud ? current.map((item) => item.id === ui.id ? ui : item) : [ui, ...current]);

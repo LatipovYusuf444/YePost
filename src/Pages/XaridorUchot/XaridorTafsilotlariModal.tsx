@@ -1,5 +1,7 @@
-import { pulMatni, valyutaKodi } from "@/lib/valyuta";
+import { pulMatni, useValyutaStore, valyutaKodi } from "@/lib/valyuta";
 import { mijozQarzXulosasi } from "@/lib/boshlangichQarz";
+import { mijozHisobi } from "@/lib/mijozHisobi";
+import { valyutaKutmoqda } from "@/lib/mijozValyutasi";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, BookOpen, Briefcase, Building2, Phone, Trash2, Wallet } from "lucide-react";
 import BoshlangichQarzModal from "./BoshlangichQarzModal";
@@ -151,6 +153,8 @@ function MalumotlarTab({
   savdolar: XaridorSavdosi[];
 }) {
   const { t } = useTranslation("xaridor_uchot");
+  const rejimYoniq = useValyutaStore((holat) => holat.rejimYoniq);
+  const hisob = mijozHisobi({ balance: xaridor.balans, balanceCurrency: xaridor.balansValyutasi });
   const xulosa = mijozQarzXulosasi(savdolar);
   const qarzdor = xulosa.qarz.UZS > 0 || xulosa.qarz.USD > 0;
   const summaMatni = (summa: { UZS: number; USD: number }) => [
@@ -229,6 +233,19 @@ function MalumotlarTab({
               nom={t("xaridorDetails.accountBalance")}
               qiymat={pulniFormatlash(Math.max(xaridor.balans, 0), valyutaKodi(xaridor.balansValyutasi))}
             />
+            {rejimYoniq && (
+              <Qator
+                nom={t("xaridorModal.currencyLabel")}
+                qiymat={[
+                  xaridor.valyuta === "UZS"
+                    ? t("xaridorModal.currencyUzs")
+                    : xaridor.valyuta === "USD"
+                      ? t("xaridorModal.currencyUsd")
+                      : t("xaridorModal.currencyUnset"),
+                  ...(valyutaKutmoqda(xaridor.valyuta, hisob) ? [`(${t("xaridorDetails.currencyPendingShort")})`] : []),
+                ].join(" ")}
+              />
+            )}
             <Qator
               icon={qarzdor ? <AlertTriangle size={14} /> : undefined}
               nom={qarzdor ? t("xaridorDetails.debtorYes") : t("xaridorDetails.debtorNo")}

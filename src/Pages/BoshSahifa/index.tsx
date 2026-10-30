@@ -1,4 +1,4 @@
-import { pulMatni, useValyutaStore } from "@/lib/valyuta";
+import { pulMatni, useValyutaStore } from "@/lib/valyuta";
 import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -26,6 +26,7 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { savatchaChegirma, savatchaNarxTuri, savatchaSotuvNarxi, savatchaUstama, usePosStore } from "@/store/posStore";
 import { sotuvBirliklari } from "@/lib/kopBirlik";
+import { yaratishValyutasi } from "@/lib/mijozValyutasi";
 import SotuvNarxiMaydoni from "./SotuvNarxiMaydoni";
 import SavatchaMiqdoriMaydoni from "./SavatchaMiqdoriMaydoni";
 import { doimiySotuvniModalgaTayyorlash } from "./doimiySotuv";
@@ -269,6 +270,7 @@ export default function BoshSahifa() {
         address: xaridor.manzil.trim() || undefined,
         telegramId: xaridor.ijtimoiy.telegram.trim() || undefined,
         companyId: xaridor.kompaniyaId || undefined,
+        ...yaratishValyutasi(xaridor.valyuta),
         customFields,
       });
       const mijoz: MijozTanlovi = {

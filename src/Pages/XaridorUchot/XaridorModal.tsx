@@ -8,11 +8,17 @@ import {
   Plus,
   Trash2,
   UserRound,
+  Wallet,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import PhoneInput from "@/Components/ui/PhoneInput";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { mijozHisobi } from "@/lib/mijozHisobi";
+import { valyutaKutmoqda, type MijozValyutasi } from "@/lib/mijozValyutasi";
+import { cn } from "@/lib/utils";
+import { useValyutaStore } from "@/lib/valyuta";
+import { pulniFormatlash } from "@/Pages/Savdo/savdoYordamchilari";
 import FaoliyatPaneli from "./FaoliyatPaneli";
 import IjtimoiyTanlov from "./IjtimoiyTanlov";
 import Tanlov from "./Tanlov";
@@ -64,9 +70,20 @@ export default function XaridorModal({
   const [kompaniyaId, setKompaniyaId] = useState(boshlangich?.kompaniyaId ?? "");
   const [lavozim, setLavozim] = useState(boshlangich?.lavozim ?? "");
   const [yaratilganSana, setYaratilganSana] = useState(boshlangich?.yaratilganSana ?? bugun());
+  const [valyuta, setValyuta] = useState<MijozValyutasi>(boshlangich?.valyuta ?? null);
   const [xato, setXato] = useState("");
   const [saqlanmoqda, setSaqlanmoqda] = useState(false);
   const [faolTab, setFaolTab] = useState<MalumotTab>("malumotlar");
+
+  // Hisob valyutasi faqat valyuta rejimi yoniq bo'lganda tanlanadi; hisobda pul bo'lsa o'zgarish hisob bo'shaguncha kutadi.
+  const rejimYoniq = useValyutaStore((holat) => holat.rejimYoniq);
+  const hisob = mijozHisobi({ balance: boshlangich?.balans, balanceCurrency: boshlangich?.balansValyutasi });
+  const valyutaKutadi = Boolean(boshlangich) && valyutaKutmoqda(valyuta, hisob);
+  const valyutaVariantlari: Array<{ qiymat: MijozValyutasi; nom: string }> = [
+    { qiymat: "UZS", nom: t("xaridorModal.currencyUzs") },
+    { qiymat: "USD", nom: t("xaridorModal.currencyUsd") },
+    { qiymat: null, nom: t("xaridorModal.currencyUnset") },
+  ];
 
   const xaridorSavdolari = useMemo(
     () => savdolar.filter((savdo) => savdo.xaridorId === boshlangich?.id),
@@ -124,6 +141,7 @@ export default function XaridorModal({
       kompaniyaId,
       lavozim: lavozim.trim(),
       balans: boshlangich?.balans ?? 0,
+      valyuta,
       yaratganMasul: boshlangich?.yaratganMasul ?? t("shared.defaultResponsible"),
       yaratilganSana,
       ozgartirilganSana: bugun(),
@@ -319,6 +337,66 @@ export default function XaridorModal({
                     </label>
                   </div>
                 </section>
+
+                {rejimYoniq && (
+                  <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80">
+                    <h2 className="border-b border-orange-100/80 pb-3 text-sm font-black uppercase tracking-wide text-slate-600">
+                      {t("xaridorModal.accountSectionTitle")}
+                    </h2>
+
+                    <div className="mt-5 space-y-3">
+                      <div className="grid gap-2">
+                        <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
+                          <Wallet size={14} className="text-[#2563EB]" />
+                          {t("xaridorModal.currencyLabel")}
+                        </span>
+                        <div
+                          role="radiogroup"
+                          aria-label={t("xaridorModal.currencyLabel")}
+                          className="inline-flex w-fit max-w-full gap-0.5 rounded-xl bg-slate-100 p-1"
+                        >
+                          {valyutaVariantlari.map((variant) => {
+                            const faol = valyuta === variant.qiymat;
+                            return (
+                              <button
+                                key={variant.qiymat ?? "unset"}
+                                type="button"
+                                role="radio"
+                                aria-checked={faol}
+                                onClick={() => setValyuta(variant.qiymat)}
+                                className={cn(
+                                  "rounded-lg px-4 py-2 text-xs font-bold transition",
+                                  faol
+                                    ? "bg-white text-[#2563EB] shadow-sm ring-2 ring-blue-200"
+                                    : "text-slate-600 hover:bg-white/70 hover:text-slate-900"
+                                )}
+                              >
+                                {variant.nom}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <p className="text-xs font-semibold leading-5 text-slate-400">{t("xaridorModal.currencyHint")}</p>
+
+                      {boshlangich && hisob.miqdor > 0 && (
+                        <p className="text-sm font-bold text-slate-600">
+                          {t("xaridorModal.currentAccount")}: {pulniFormatlash(hisob.miqdor, hisob.valyuta)}
+                        </p>
+                      )}
+
+                      {valyutaKutadi && (
+                        <p
+                          role="status"
+                          className="rounded-xl bg-amber-50 px-3.5 py-2.5 text-xs font-bold leading-5 text-amber-700 ring-1 ring-amber-100"
+                        >
+                          {t("xaridorModal.currencyPending")}
+                        </p>
+                      )}
+                    </div>
+                  </section>
+                )}
               </div>
 
               <FaoliyatPaneli partnerId={boshlangich?.partnerId} customerId={boshlangich?.id} />

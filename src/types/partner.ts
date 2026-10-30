@@ -61,6 +61,9 @@ export type Mijoz = {
   // Mijoz hisobi (oldindan to'langan pul) va uning valyutasi (valyuta rejimida USD).
   balance?: number | string | null;
   balanceCurrency?: string | null;
+  // Mijoz kartasida tanlangan hisob valyutasi ("UZS" | "USD"); null — belgilanmagan (dollar rejimida hisob dollarda yuritiladi).
+  // Hisobda pul bo'lsa o'zgarish hisob bo'shaguncha kutadi, shu sabab `balanceCurrency`dan farq qilishi mumkin.
+  currency?: string | null;
   // Telegram bot: ulangan mijozning chat id'si (null — ulanmagan), ulangan vaqt, xabar yoqilganligi (mijoz /stop bossa false)
   // va mijoz botni bloklaganmi.
   telegramChatId?: string | null;
@@ -82,6 +85,8 @@ export type MijozMalumoti = {
   address?: string;
   telegramId?: string;
   companyId?: string;
+  // PATCH'da null — tanlovni olib tashlash; POST'da belgilanmagan valyuta yuborilmaydi.
+  currency?: "UZS" | "USD" | null;
   customFields?: Record<string, unknown>;
 };
 
