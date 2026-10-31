@@ -265,6 +265,7 @@
     "mijozniTahrirlash": "Tahrirlash"
   },
   "tolovModal": {
+    "tengQiymat": "{{kiritilgan}} = {{summa}}",
     "belgisi": "To'lov",
     "sarlavha": "To'lovni qabul qilish",
     "avvalgiTolovlar": "Avvalgi to'lovlar",
@@ -395,6 +396,8 @@
     }
   },
   "tolovQatori": {
+    "hisobdanAvto": "Hisobdan avtomatik",
+    "kassadan": "Kassa to'lovidan",
     "sarlavha": "Qabul qilingan to'lovlar",
     "nomi": "To'lov №{{raqam}}",
     "summa": "to'lov summasi: {{summa}}",
@@ -525,6 +528,9 @@
     }
   },
   "tolovTafsilot": {
+    "manba": "Manba",
+    "manbaHisob": "Mijoz hisobidagi pul bilan avtomatik yopildi",
+    "manbaKassa": "Kassadagi \"Mijoz hisobini to'ldirish\" to'lovi bilan yopildi",
     "belgisi": "To'lov",
     "summa": "To'lov summasi",
     "sotuv": "Sotuv",

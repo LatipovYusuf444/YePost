@@ -288,6 +288,7 @@ test('tahrirlanadiganTolovmi: faqat id bor naqd/karta/bank to‘lovi', () => {
   assert.equal(lib.tahrirlanadiganTolovmi({ id: 'a', paymentType: 'DEBT', amount: 5 }), false);
   assert.equal(lib.tahrirlanadiganTolovmi({ paymentType: 'CASH', amount: 5 }), false);
   assert.equal(lib.tahrirlanadiganTolovmi({ id: 'a', paymentType: 'CASH', amount: 0 }), false);
+  assert.equal(lib.tahrirlanadiganTolovmi({ id: 'a', paymentType: 'CASH', amount: 5, cashOperationId: 'op1' }), false);
 });
 
 const topish = [

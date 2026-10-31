@@ -248,6 +248,26 @@
       "supplierNotFound": "Bunday zavod topilmadi."
     }
   },
+  "taqsimot": {
+    "title": "Qarzlarni yopish",
+    "loading": "Yuklanmoqda...",
+    "empty": "Ochiq qarz yo'q — to'lov mijoz hisobiga tushadi.",
+    "orderHint": "Ochiq qarzlar to'lov tartibida: eng eskisi birinchi yopiladi (boshlang'ich qarz ham o'z sanasi bo'yicha).",
+    "sale": "Savdo",
+    "openingDebt": "Boshlang'ich qarz",
+    "first": "Avval shu",
+    "firstHint": "Savdoni bossangiz u birinchi yopiladi, qolgani eng eskisidan davom etadi. Tanlanmasa — eng eski qarzdan.",
+    "previewTitle": "Yopiladi",
+    "previewUnavailable": "Oldindan ko'rish hozir mavjud emas — aniq taqsimot tasdiqlashda chiqadi.",
+    "closed": "yopildi",
+    "partial": "qisman",
+    "rate": "kurs {{kurs}}",
+    "remaining": "qoldiq {{summa}}",
+    "toAccount": "Hisobga: {{summa}}",
+    "closedTitle": "Yopilgan qarzlar",
+    "closedShort": "Yopildi: {{raqamlar}}",
+    "cancelledHint": "Hujjat bekor qilinganda yopilgan qarzlar qayta ochilgan, hisobga tushgan pul olingan."
+  },
   "view": {
     "amountIncome": "Tushum summasi",
     "amountExpense": "Chiqim summasi",

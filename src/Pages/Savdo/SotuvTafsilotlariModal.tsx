@@ -2136,6 +2136,9 @@ function TolovQabulQilishModal({
                           · {t("tolovModal.hisobgaQatori", { summa: pulniFormatlash(tolovlarQaytimi([tolov]).hisobga, sotuvVal) })}
                         </span>
                       )}
+                      {(tolov.fromAccount || tolov.cashOperationId) && (
+                        <span className="ml-1.5 font-semibold text-violet-600">· {t(tolov.fromAccount ? "tolovQatori.hisobdanAvto" : "tolovQatori.kassadan")}</span>
+                      )}
                     </span>
                   ))}
                 </div>
@@ -2243,7 +2246,7 @@ function TolovQabulQilishModal({
                     <span className="text-xs font-semibold text-slate-500">
                       {t(kassirKursi ? "tolovModal.kassirKursQatori" : "tolovModal.kursQatori", { kurs: hisobKursi.toLocaleString("uz-UZ", { maximumFractionDigits: 4 }) })}
                       {yangiSumma > 0 &&
-                        ` · ${t("tolovModal.sotuvValyutasidagiQiymat", { summa: pulniFormatlash(yangiSummaSotuvValyutasida, sotuvVal) })}`}
+                        ` · ${t("tolovModal.tengQiymat", { kiritilgan: pulniFormatlash(yangiSumma, tolovVal), summa: pulniFormatlash(yangiSummaSotuvValyutasida, sotuvVal) })}`}
                     </span>
                   )}
                 </div>

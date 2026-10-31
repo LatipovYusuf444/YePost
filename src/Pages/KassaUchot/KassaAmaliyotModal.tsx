@@ -21,6 +21,7 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useValyutaStore, valyutaKodi, type Valyuta } from "@/lib/valyuta";
 import KassaAmaliyotKorinishi from "./KassaAmaliyotKorinishi";
+import QarzTaqsimotiPaneli from "./QarzTaqsimotiPaneli";
 import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali } from "./types";
 import {
   hozir,
@@ -89,6 +90,8 @@ export default function KassaAmaliyotModal({
   const [nomi, setNomi] = useState(boshlangich?.nomi ?? "");
   // partiya id — xaridorId (mijoz) yoki kontragent nomi (xodim/yetkazib)
   const [xaridorId, setXaridorId] = useState(boshlangich?.xaridorId ?? "");
+  // Mijoz to'lovida birinchi yopiladigan savdo (ixtiyoriy, `saleId`); tanlanmasa eng eski qarzdan boshlanadi.
+  const [saleId, setSaleId] = useState(boshlangich?.saleId ?? "");
   const [supplierId, setSupplierId] = useState(boshlangich?.supplierId ?? "");
   const [employeeId, setEmployeeId] = useState(boshlangich?.employeeId ?? "");
   const [responsibleId, setResponsibleId] = useState(boshlangich?.responsibleId ?? "");
@@ -191,14 +194,17 @@ export default function KassaAmaliyotModal({
             ? summaSoni / amalKurs
             : summaSoni * amalKurs
           : null;
-  // To'lov hisobni to'ldiradi (+), qaytarish kamaytiradi (−).
-  const balansDelta =
-    hisoblanganSumma === null ? 0 : turi === "xaridor_tolovi" ? hisoblanganSumma : turi === "xaridorga_qaytarish" ? -hisoblanganSumma : 0;
+  // Qaytarish hisobni kamaytiradi. Mijoz to'lovida pul avval ochiq qarzlarni yopadi: hisobga qancha tushishini oldindan ko'rish paneli ko'rsatadi.
+  const yangiBalans =
+    turi === "xaridorga_qaytarish" && summaSoni > 0 && hisoblanganSumma !== null && tanlanganXaridor
+      ? tanlanganXaridor.balans - hisoblanganSumma
+      : null;
 
   function turniOzgartir(yangiTuri: KassaAmaliyotTuri) {
     setTuri(yangiTuri);
     // Tur o'zgarsa partiya tozalanadi (chalkashmasligi uchun).
     setXaridorId("");
+    setSaleId("");
     setSupplierId("");
     setEmployeeId("");
     setKontragent("");
@@ -261,7 +267,7 @@ export default function KassaAmaliyotModal({
       izoh: izoh.trim(),
       backendSource: boshlangich?.backendSource,
       backendRefId: boshlangich?.backendRefId,
-      saleId: boshlangich?.saleId,
+      saleId: turi === "xaridor_tolovi" ? saleId || undefined : boshlangich?.saleId,
       purchaseId: boshlangich?.purchaseId,
       readonly: boshlangich?.readonly,
     });
@@ -377,7 +383,7 @@ export default function KassaAmaliyotModal({
                   <Maydon label={t("modal.customerLabel")}>
                     <Tanlov
                       qiymat={xaridorId}
-                      onChange={setXaridorId}
+                      onChange={(id) => { setXaridorId(id); setSaleId(""); }}
                       placeholder={t("modal.customerPlaceholder")}
                       qidiruv
                       variantlar={xaridorlar.map((x) => ({
@@ -394,9 +400,9 @@ export default function KassaAmaliyotModal({
                           }`}
                         >
                           {kassaSummasi(tanlanganXaridor.balans, tanlanganXaridor.balansValyutasi)}
-                          {summaSoni > 0 && hisoblanganSumma !== null && (
+                          {yangiBalans !== null && (
                             <span className="ml-2 text-xs text-slate-500">
-                              → {kassaSummasi(tanlanganXaridor.balans + balansDelta, tanlanganXaridor.balansValyutasi)}
+                              → {kassaSummasi(yangiBalans, tanlanganXaridor.balansValyutasi)}
                             </span>
                           )}
                         </span>
@@ -524,6 +530,18 @@ export default function KassaAmaliyotModal({
                       </span>
                     )}
                   </Maydon>
+                )}
+
+                {/* Mijoz hisobini to'ldirish: ochiq qarzlar (eng eskisi birinchi) va kiritilgan summa qaysi qarzlarni yopishi */}
+                {turi === "xaridor_tolovi" && tanlanganXaridor && !readonly && (
+                  <QarzTaqsimotiPaneli
+                    customerId={tanlanganXaridor.id}
+                    amount={summaSoni}
+                    currency={tanlanganValyuta}
+                    rate={kursKerak && kiritilganKurs > 0 ? kiritilganKurs : undefined}
+                    saleId={saleId}
+                    onSaleIdChange={setSaleId}
+                  />
                 )}
 
                 {/* To'lov turi / hisob */}

@@ -1,6 +1,9 @@
 import apiClient from "./axios";
 import { apiData, type ApiEnvelope } from "./response";
+import { taqsimotniOqish } from "@/lib/qarzTaqsimoti";
 import type { CashOperation, CashOperationFilter, CashOperationPayload } from "@/types/cashOperation";
+import type { TaqsimotOldindanKorishSorovi } from "@/types/qarzTaqsimoti";
+import type { MajburlashTanasi } from "./valyutaShubhasi";
 
 type Page<T> = { data?: T[]; items?: T[]; page?: number; pageSize?: number; total?: number; totalPages?: number };
 
@@ -24,10 +27,17 @@ export const cashOperationsApi = {
       items: [first.items, ...pages.map((page) => page.items)].flat(),
     };
   },
-  olish: async (id: string) => apiData((await apiClient.get<CashOperation | ApiEnvelope<CashOperation>>(`/finance/cash-operations/${id}`)).data),
+  // `fon` — xato bo'lsa qizil toast chiqmaydi (masalan, ko'rinish oynasi yopilgan qarzlar ro'yxatini fonda oladi).
+  olish: async (id: string, fon = false) =>
+    apiData((await apiClient.get<CashOperation | ApiEnvelope<CashOperation>>(`/finance/cash-operations/${id}`, fon ? { xatoniYashirish: true } : undefined)).data),
   yaratish: async (data: CashOperationPayload) => apiData((await apiClient.post<CashOperation | ApiEnvelope<CashOperation>>("/finance/cash-operations", data)).data),
   yangilash: async (id: string, data: Partial<CashOperationPayload>) => apiData((await apiClient.patch<CashOperation | ApiEnvelope<CashOperation>>(`/finance/cash-operations/${id}`, data)).data),
   ochirish: async (id: string) => apiClient.delete(`/finance/cash-operations/${id}`),
-  tasdiqlash: async (id: string) => apiData((await apiClient.post<CashOperation | ApiEnvelope<CashOperation>>(`/finance/cash-operations/${id}/confirm`)).data),
+  // Tasdiqlashda mijozning ochiq qarzlari eng eskisidan yopiladi (javobda `allocation`); `tana` — "Valyuta to'g'rimi?" dan keyin `{ force: true }`.
+  tasdiqlash: async (id: string, tana?: MajburlashTanasi) =>
+    apiData((await apiClient.post<CashOperation | ApiEnvelope<CashOperation>>(`/finance/cash-operations/${id}/confirm`, tana)).data),
   bekorQilish: async (id: string) => apiData((await apiClient.post<CashOperation | ApiEnvelope<CashOperation>>(`/finance/cash-operations/${id}/cancel`)).data),
+  // POST /finance/cash-operations/allocation-preview — hech narsa saqlanmaydi: mijoz to'lovi qaysi qarzlarni (eng eskisidan) yopishini oldindan ko'rsatadi.
+  taqsimotOldindanKorish: async (sorov: TaqsimotOldindanKorishSorovi) =>
+    taqsimotniOqish((await apiClient.post<unknown>("/finance/cash-operations/allocation-preview", sorov, { xatoniYashirish: true })).data),
 };

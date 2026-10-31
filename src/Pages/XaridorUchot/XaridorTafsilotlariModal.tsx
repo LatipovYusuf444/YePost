@@ -16,13 +16,14 @@ import { InstagramIkonka, TelegramIkonka, WhatsappIkonka } from "./IjtimoiyIkonk
 import TezkorPanel from "./TezkorPanel";
 import { SavdolarTab, TarixTab } from "./XaridorTablari";
 import XaridorTolovlariTab from "./XaridorTolovlariTab";
+import MijozQarzlariTab from "./MijozQarzlariTab";
 import { timelineniTarixga } from "./backendAdapters";
 import type { TarixYozuvi, Xaridor, XaridorKompaniyasi, XaridorSavdosi } from "./types";
 import { kompaniyaNomi, sanaFormat, xaridorNomi } from "./yordamchilar";
 
 import ModalTablari from "@/Components/common/ModalTablari";
-type Tab = "malumotlar" | "savdolar" | "tolovlar" | "tarix";
-const tabKalitlari: Tab[] = ["malumotlar", "savdolar", "tolovlar", "tarix"];
+type Tab = "malumotlar" | "savdolar" | "qarzlar" | "tolovlar" | "tarix";
+const tabKalitlari: Tab[] = ["malumotlar", "savdolar", "qarzlar", "tolovlar", "tarix"];
 
 type Props = {
   xaridor: Xaridor;
@@ -133,6 +134,7 @@ export default function XaridorTafsilotlariModal({
                 barchaSavdolar={savdolar}
               />
             )}
+            {faolTab === "qarzlar" && <MijozQarzlariTab xaridorId={xaridor.id} />}
             {faolTab === "tolovlar" && <XaridorTolovlariTab xaridorId={xaridor.id} />}
             {faolTab === "tarix" && <TarixTab tarix={xaridorTarixi} />}
           </div>

@@ -265,6 +265,7 @@
     "mijozniTahrirlash": "Изменить"
   },
   "tolovModal": {
+    "tengQiymat": "{{kiritilgan}} = {{summa}}",
     "belgisi": "Оплата",
     "sarlavha": "Принять оплату",
     "avvalgiTolovlar": "Предыдущие оплаты",
@@ -395,6 +396,8 @@
     }
   },
   "tolovQatori": {
+    "hisobdanAvto": "Со счёта автоматически",
+    "kassadan": "Из кассовой оплаты",
     "sarlavha": "Принятые оплаты",
     "nomi": "Оплата №{{raqam}}",
     "summa": "сумма оплаты: {{summa}}",
@@ -525,6 +528,9 @@
     }
   },
   "tolovTafsilot": {
+    "manba": "Источник",
+    "manbaHisob": "Погашено автоматически деньгами со счёта клиента",
+    "manbaKassa": "Погашено кассовой оплатой «Пополнение счёта клиента»",
     "belgisi": "Оплата",
     "summa": "Сумма оплаты",
     "sotuv": "Продажа",

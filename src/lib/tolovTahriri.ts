@@ -128,15 +128,19 @@ export function tolovOzgarganmi(asl: TolovFormasi, forma: TolovFormasi): boolean
 const TAHRIRLANADIGAN_TURLAR = ["CASH", "CARD", "BANK"];
 
 type TopiladiganTolov = SaqlanganTolov & {
+  cashOperationId?: string | null;
   settledAmount?: number | string | null;
   date?: string | null;
   paidAt?: string | null;
   createdAt?: string | null;
 };
 
-/** To'lovni tahrirlash mumkinmi: naqd, karta yoki bank to'lovi, `id`si bor va summasi musbat (hisobdan to'lov va qarz qatori emas). */
-export function tahrirlanadiganTolovmi(tolov: Pick<TopiladiganTolov, "id" | "paymentType" | "amount">): boolean {
-  return Boolean(tolov.id) && TAHRIRLANADIGAN_TURLAR.includes(tolov.paymentType) && Number(tolov.amount) > 0;
+/**
+ * To'lovni tahrirlash mumkinmi: naqd, karta yoki bank to'lovi, `id`si bor va summasi musbat (hisobdan to'lov va qarz qatori emas).
+ * Kassa hujjati yopgan to'lov (`cashOperationId`) o'sha hujjatni bekor qilish orqali o'zgaradi.
+ */
+export function tahrirlanadiganTolovmi(tolov: Pick<TopiladiganTolov, "id" | "paymentType" | "amount" | "cashOperationId">): boolean {
+  return Boolean(tolov.id) && TAHRIRLANADIGAN_TURLAR.includes(tolov.paymentType) && Number(tolov.amount) > 0 && !tolov.cashOperationId;
 }
 
 /** Kassa yoki to'lovlar ro'yxatidagi yozuv haqida ma'lum bo'lgan narsa: sotuvdagi qaysi to'lovga tegishli ekanini topish uchun. */

@@ -92,6 +92,12 @@ export default function SotuvTolovlari({ sotuv, mijoz }: { sotuv: Sotuv; mijoz: 
                     {t("tolovQatori.hisobga", { summa: pulniFormatlash(qaytim.hisobga, sotuvValyutasi(sotuv)) })}
                   </span>
                 )}
+                {(qator.tolov.fromAccount || qator.tolov.cashOperationId) && (
+                  <span className="inline-flex h-6 items-center gap-1 rounded-full bg-violet-50 px-2.5 text-[11px] font-bold text-violet-700 ring-1 ring-violet-100">
+                    <Wallet size={12} />
+                    {t(qator.tolov.fromAccount ? "tolovQatori.hisobdanAvto" : "tolovQatori.kassadan")}
+                  </span>
+                )}
                 <div className="relative">
                   <button
                     type="button"
@@ -168,7 +174,7 @@ function TolovTafsilotModal({ sotuv, mijoz, qator, onYopish }: { sotuv: Sotuv; m
   const [tahrir, setTahrir] = useState(false);
   const [band, setBand] = useState(false);
   const tahrirlanadi =
-    sotuvHolati(sotuv) === "CONFIRMED" && Boolean(tolov.id) && (tolov.paymentType === "CASH" || tolov.paymentType === "CARD" || tolov.paymentType === "BANK");
+    sotuvHolati(sotuv) === "CONFIRMED" && Boolean(tolov.id) && !tolov.cashOperationId && (tolov.paymentType === "CASH" || tolov.paymentType === "CARD" || tolov.paymentType === "BANK");
 
   return (
     <AppModal
@@ -253,6 +259,9 @@ function TolovTafsilotModal({ sotuv, mijoz, qator, onYopish }: { sotuv: Sotuv; m
               label={t("tolovTafsilot.tolovTuri")}
               value={tolovTuriMatni[tolov.paymentType] ?? tolov.paymentType}
             />
+            {(tolov.fromAccount || tolov.cashOperationId) && (
+              <TafsilotQatori icon={<Wallet size={17} />} label={t("tolovTafsilot.manba")} value={t(tolov.fromAccount ? "tolovTafsilot.manbaHisob" : "tolovTafsilot.manbaKassa")} />
+            )}
             {qaytim.qaytim > 0 && (
               <TafsilotQatori icon={<Banknote size={17} />} label={t("tolovTafsilot.qaytim")} value={somMatni(qaytim.qaytim, t("tolovModal.somBelgisi"))} />
             )}

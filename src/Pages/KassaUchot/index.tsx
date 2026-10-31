@@ -16,6 +16,9 @@ import {
 import { useTranslation } from "react-i18next";
 import { barchaFinanceTransactionsHisoboti } from "@/api/tolovApi";
 import { cashOperationsApi } from "@/api/cashOperationsApi";
+import { shubhaliValyutaBilanBajarish } from "@/api/valyutaShubhasi";
+import { taqsimotniOqish } from "@/lib/qarzTaqsimoti";
+import { taqsimotXabariniKorsatish } from "./taqsimotXabari";
 import { kassaKirimApi, xarajatApi } from "@/api/financeApi";
 import { sotuvniBekorQilish, sotuvniOchirish } from "@/api/savdoApi";
 import { foydalanuvchilarApi } from "@/api/accountsApi";
@@ -192,6 +195,8 @@ export default function KassaUchot() {
       hisobValyutasi: item.settleCurrency === "USD" ? "USD" : item.settleCurrency === "UZS" ? "UZS" : undefined,
       hisoblanganSumma: item.settledAmount != null && Number(item.settledAmount) > 0 ? Number(item.settledAmount) : undefined,
       kurs: item.rate != null && Number(item.rate) > 0 ? Number(item.rate) : undefined,
+      taqsimot: taqsimotniOqish(item)?.allocated,
+      hisobgaTushgan: item.accountAmount != null ? Number(item.accountAmount) : undefined,
       sana: item.date,
       kiritilgan: item.createdAt,
       masul:
@@ -312,6 +317,7 @@ export default function KassaUchot() {
 
   async function saqlash(amaliyot: KassaAmaliyoti) {
     setXatolik("");
+    let tasdiqlanmagan: CashOperation | null = null;
     try {
       const paymentMethod: TolovUsuli =
         amaliyot.kanal === "bank" ? "BANK" : amaliyot.kanal === "ilova" ? "CARD" : "CASH";
@@ -334,14 +340,17 @@ export default function KassaUchot() {
         saleId: amaliyot.saleId,
         purchaseId: amaliyot.purchaseId,
       };
-      let saved: CashOperation;
-      if (amaliyot.backendSource === "CASH_OPERATION" && amaliyot.backendRefId) {
-        saved = await cashOperationsApi.yangilash(amaliyot.backendRefId, payload);
-      } else {
-        saved = await cashOperationsApi.yaratish(payload);
-      }
+      // Savdo ko'rsatilgan mijoz to'lovida dollar savdoga juda kichik so'm summasi (400 suspicious_currency): "Valyuta to'g'rimi?" so'raladi,
+      // "ha" bo'lsa xuddi shu so'rov `force: true` bilan qayta yuboriladi.
+      const mavjudId = amaliyot.backendSource === "CASH_OPERATION" ? amaliyot.backendRefId : undefined;
+      const saved: CashOperation = await shubhaliValyutaBilanBajarish((tana) =>
+        mavjudId ? cashOperationsApi.yangilash(mavjudId, { ...payload, ...tana }) : cashOperationsApi.yaratish({ ...payload, ...tana })
+      );
       if (amaliyot.holat === "tasdiqlangan" && saved.status === "DRAFT") {
-        await cashOperationsApi.tasdiqlash(saved.id);
+        tasdiqlanmagan = saved;
+        // Tasdiqlashda mijozning ochiq qarzlari eng eskisidan yopiladi: javobdagi `allocation` kassirga ko'rsatiladi.
+        const tasdiq = await shubhaliValyutaBilanBajarish((tana) => cashOperationsApi.tasdiqlash(saved.id, tana), saved.docNumber);
+        taqsimotXabariniKorsatish(tasdiq);
       }
       setKanal(amaliyot.kanal);
       setYonalish(amaliyot.yonalish);
@@ -349,6 +358,13 @@ export default function KassaUchot() {
       raqamManbasi.current = null;
       await yuklash();
     } catch (error) {
+      // Qoralama saqlangan, tasdiqlash o'tmagan ("Valyuta to'g'rimi?" ga "yo'q" yoki boshqa xato): oyna shu qoralamaga bog'lanadi —
+      // qayta bosish ikkinchi hujjat yaratmaydi, ro'yxatda ham qoralama ko'rinadi.
+      if (tasdiqlanmagan) {
+        setTahrirAmaliyot({ ...amaliyot, id: tasdiqlanmagan.id, holat: "qoralama", raqam: tasdiqlanmagan.docNumber, backendSource: "CASH_OPERATION", backendRefId: tasdiqlanmagan.id });
+        raqamManbasi.current = null;
+        await yuklash();
+      }
       setXatolik(getApiErrorMessage(error));
     }
   }

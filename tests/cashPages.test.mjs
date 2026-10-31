@@ -7,6 +7,7 @@ import ts from 'typescript';
 import * as dates from '../src/lib/hujjatSanasi.ts';
 import * as cash from '../src/lib/cashReports.ts';
 import * as numbering from '../src/lib/kassaNomlari.ts';
+import * as taqsimot from '../src/lib/qarzTaqsimoti.ts';
 
 const require = createRequire(import.meta.url);
 const nodes = value => Array.isArray(value) ? value.flatMap(nodes) : !value || typeof value !== 'object' ? [] : [value, ...nodes(value.props?.children)];
@@ -134,6 +135,7 @@ test('kassa uses server totals, preserves ledger currencies, excludes duplicate/
     '@/store/authProfileStore': { useAuthProfileStore: selector => selector({ profil: { role: 'DIREKTOR' } }) },
     '@/lib/roles': { rolniNormallashtirish: value => value },
     '@/lib/kassaNomlari': numbering,
+    '@/lib/qarzTaqsimoti': taqsimot,
     '@/hooks/useKassaSotuvlari': { useKassaSotuvKeshi: () => ({ olingan: () => undefined }) },
     './yordamchilar': { kassaSummasi: cash.cashAmount, sanaFormat: dates.kunMatni },
     '@/api/accountsApi': { foydalanuvchilarApi: { royxat: async () => [] } },
@@ -161,6 +163,55 @@ test('kassa uses server totals, preserves ledger currencies, excludes duplicate/
   tree = await screen.settle();
   assert.equal(table()?.props.qatorlar[0]?.id, 'operation', 'displayed K-number remains searchable');
   assert.equal(calls.at(-1).search, undefined, 'UI-generated K-number must not be sent as a backend document search');
+});
+
+test('customer payment confirm shows the allocation; a failed confirm rebinds the modal to the saved draft instead of creating a second one', async () => {
+  const calls = [];
+  const shown = [];
+  let confirmFails = true;
+  const screen = page('../src/Pages/KassaUchot/index.tsx', {
+    'react-i18next': { useTranslation: () => ({ t: key => key }) },
+    '@/hooks/useHujjatniOchirishMumkinmi': { useHujjatniBekorQilishMumkinmi: () => true },
+    '@/store/authProfileStore': { useAuthProfileStore: selector => selector({ profil: { role: 'DIREKTOR' } }) },
+    '@/lib/roles': { rolniNormallashtirish: value => value },
+    '@/lib/kassaNomlari': numbering,
+    '@/lib/qarzTaqsimoti': taqsimot,
+    '@/hooks/useKassaSotuvlari': { useKassaSotuvKeshi: () => ({ olingan: () => undefined }) },
+    './yordamchilar': { kassaSummasi: cash.cashAmount, sanaFormat: dates.kunMatni },
+    './taqsimotXabari': { taqsimotXabariniKorsatish: value => shown.push(value) },
+    '@/api/valyutaShubhasi': { shubhaliValyutaBilanBajarish: action => action() },
+    '@/api/accountsApi': { foydalanuvchilarApi: { royxat: async () => [] } },
+    '@/api/omborApi': { filiallarApi: { royxat: async () => [] } },
+    '@/api/tolovApi': { barchaFinanceTransactionsHisoboti: async () => ({ items: [], summary: {} }) },
+    '@/api/cashOperationsApi': { cashOperationsApi: {
+      barchasi: async () => ({ items: [] }),
+      yaratish: async payload => { calls.push(['create', payload.saleId]); return { id: 'op1', docNumber: 'KAS-1', status: 'DRAFT' }; },
+      yangilash: async id => { calls.push(['update', id]); return { id, docNumber: 'KAS-1', status: 'DRAFT' }; },
+      tasdiqlash: async id => {
+        calls.push(['confirm', id]);
+        if (confirmFails) throw new Error('declined');
+        return { id, status: 'CONFIRMED', allocation: { allocated: [] } };
+      },
+    } },
+  });
+  let tree = await screen.settle();
+  nodes(tree).find(node => node.type === 'button' && text(node).includes('createButton')).props.onClick();
+  tree = screen.render();
+  const modal = () => nodes(tree).find(node => node.type === 'KassaAmaliyotModal');
+  const amaliyot = { id: 'tmp', kanal: 'naqd', yonalish: 'tushum', turi: 'xaridor_tolovi', holat: 'tasdiqlangan', xaridorId: 'c1', saleId: 'sale-1', raqam: 'FP1', nomi: 'x', kontragent: '', summa: 100, sana: '2026-10-24', masul: '', izoh: '' };
+  await modal().props.onSaqlash(amaliyot);
+  tree = await screen.settle();
+  assert.deepEqual(calls, [['create', 'sale-1'], ['confirm', 'op1']]);
+  assert.equal(shown.length, 0, 'nothing is reported as closed when the confirm failed');
+  assert.equal(modal().props.boshlangich.backendRefId, 'op1');
+  assert.equal(modal().props.boshlangich.holat, 'qoralama');
+  confirmFails = false;
+  await modal().props.onSaqlash({ ...amaliyot, backendSource: modal().props.boshlangich.backendSource, backendRefId: modal().props.boshlangich.backendRefId });
+  tree = await screen.settle();
+  assert.deepEqual(calls.slice(2), [['update', 'op1'], ['confirm', 'op1']], 'the same draft is confirmed, no second document');
+  assert.equal(shown.length, 1);
+  assert.equal(shown[0].status, 'CONFIRMED');
+  assert.equal(modal(), undefined, 'modal closes after a successful confirm');
 });
 
 test('cash-flow details preserve server order for identical document dates and running balances', async () => {

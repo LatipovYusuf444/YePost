@@ -1,3 +1,5 @@
+import type { QarzTaqsimoti, QarzTaqsimotQatori } from "./qarzTaqsimoti";
+
 export type CashOperationType =
   | "CUSTOMER_PAYMENT"
   | "EMPLOYEE_RETURN"
@@ -26,6 +28,11 @@ export type CashOperation = {
   settleCurrency?: "UZS" | "USD" | null;
   settledAmount?: string | number | null;
   rate?: string | number | null;
+  // Mijoz to'lovi (CUSTOMER_PAYMENT) tasdiqlanganda ochiq qarzlar eng eskisidan yopiladi: hisobga tushgan qism va taqsimot
+  // (`allocation` — tasdiqlash javobida, `allocations` — GET /:id tafsilotida).
+  accountAmount?: string | number | null;
+  allocation?: QarzTaqsimoti | null;
+  allocations?: QarzTaqsimotQatori[] | null;
   date: string;
   name?: string | null;
   note?: string | null;
@@ -64,8 +71,11 @@ export type CashOperationPayload = {
   customerId?: string;
   supplierId?: string;
   employeeId?: string;
+  // Mijoz to'lovida `saleId` — shu savdo birinchi yopiladi (qolgani eng eskisidan); savdo shu mijozniki va tasdiqlangan bo'lishi kerak.
   saleId?: string;
   purchaseId?: string;
+  // "Summa juda kichik. Valyuta to'g'rimi?" (400 suspicious_currency) tasdiqlangach xuddi shu so'rov `force: true` bilan qayta yuboriladi.
+  force?: boolean;
 };
 
 export type CashOperationFilter = {

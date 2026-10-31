@@ -1,4 +1,5 @@
 // Kassa UI modeli backenddagi finance transactionlardan shakllantiriladi.
+import type { QarzTaqsimotQatori } from "@/types/qarzTaqsimoti";
 
 export type KassaKanali = "naqd" | "bank" | "ilova"; // to'lov turi / hisob
 export type KassaYonalishi = "tushum" | "chiqim";
@@ -53,5 +54,8 @@ export type KassaAmaliyoti = {
   hisobValyutasi?: "UZS" | "USD";
   hisoblanganSumma?: number;
   kurs?: number;
+  // Mijoz to'lovi tasdiqlanganda yopilgan qarzlar (backend `allocations`) va hisobga tushgan qism; ro'yxatda kelmasa ko'rinish oynasi o'zi oladi.
+  taqsimot?: QarzTaqsimotQatori[];
+  hisobgaTushgan?: number;
   readonly?: boolean;
 };

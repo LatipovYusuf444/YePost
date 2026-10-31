@@ -146,7 +146,7 @@
       "malumotlar": "Ma'lumotlar",
       "savdolar": "Savdolar",
       "kirim": "Kirim",
-      "tolovlar": "To'lovlar",
+      "tolovlar": "To'lovlar", "qarzlar": "Qarzlar",
       "tarix": "Tarix"
     },
     "notEntered": "Kiritilmagan",
@@ -406,6 +406,16 @@
       "kutilmoqda": "Kutilmoqda",
       "bekor": "Bekor qilingan"
     }
+  },
+  "qarzlarTab": {
+    "loading": "Qarzlar yuklanmoqda...",
+    "empty": "Ochiq qarz yo'q",
+    "noDebt": "Qarzdor emas",
+    "total": "Jami qarz ({{valyuta}})",
+    "account": "Mijoz hisobi",
+    "hint": "To'lov tartibi: eng eski qarz birinchi yopiladi, boshlang'ich qarz ham o'z sanasi bo'yicha. Kassadagi \"Mijoz hisobini to'ldirish\" va mijoz hisobidagi pul shu tartibda yopadi.",
+    "columns": { "hujjat": "Hujjat", "sana": "Sana", "jami": "Jami", "tolangan": "To'langan", "qarz": "Qarz", "holat": "Holat" },
+    "status": { "UNPAID": "To'lanmagan", "PARTIALLY_PAID": "Qisman to'langan" }
   },
   "tablari": {
     "nomi": "Nomi",

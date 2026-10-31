@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -11,6 +11,7 @@ import {
   Info,
   Landmark,
   Link2,
+  ListOrdered,
   MessageSquare,
   PenLine,
   PencilLine,
@@ -23,6 +24,10 @@ import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 import { toshkentKuni } from "@/lib/hujjatSanasi";
 import SotuvTolovTahrirlash from "@/Pages/Savdo/SotuvTolovTahrirlash";
+import { cashOperationsApi } from "@/api/cashOperationsApi";
+import { taqsimotniOqish } from "@/lib/qarzTaqsimoti";
+import type { QarzTaqsimoti } from "@/types/qarzTaqsimoti";
+import TaqsimotQatorlari from "./TaqsimotQatorlari";
 import type { KassaAmaliyoti, KassaHolati, KassaKanali } from "./types";
 import { kassaSummasi, partiyaTuri, sanaFormat } from "./yordamchilar";
 
@@ -75,6 +80,22 @@ export default function KassaAmaliyotKorinishi({ amaliyot, onYopish }: Props) {
   const { t } = useTranslation("kassa_uchot");
   const bekorMumkin = useHujjatniBekorQilishMumkinmi("savdo");
   const [tolovTahrirlanmoqda, setTolovTahrirlanmoqda] = useState(false);
+  // Mijoz hisobini to'ldirish: tasdiqlashda qaysi qarzlar (eng eskisidan) yopilgani. Ro'yxatda `allocations` kelmasa hujjat tafsiloti fonda olinadi.
+  const taqsimotKerak = amaliyot.backendSource === "CASH_OPERATION" && amaliyot.turi === "xaridor_tolovi" && (amaliyot.holat ?? "tasdiqlangan") !== "qoralama";
+  const [taqsimot, setTaqsimot] = useState<QarzTaqsimoti | null>(() =>
+    amaliyot.taqsimot?.length
+      ? { allocated: amaliyot.taqsimot, toAccount: amaliyot.hisobgaTushgan ?? null, accountCurrency: amaliyot.hisobValyutasi ?? null, closedSales: null }
+      : null
+  );
+  useEffect(() => {
+    if (!taqsimotKerak || amaliyot.taqsimot?.length || !amaliyot.backendRefId) return;
+    let faol = true;
+    cashOperationsApi
+      .olish(amaliyot.backendRefId, true)
+      .then((hujjat) => { if (faol) setTaqsimot(taqsimotniOqish(hujjat)); })
+      .catch(() => undefined);
+    return () => { faol = false; };
+  }, [taqsimotKerak, amaliyot.taqsimot, amaliyot.backendRefId]);
   const tushum = amaliyot.yonalish === "tushum";
   const holat: KassaHolati = amaliyot.holat ?? "tasdiqlangan";
   const holatUslubi = holatUslublari[holat];
@@ -193,6 +214,14 @@ export default function KassaAmaliyotKorinishi({ amaliyot, onYopish }: Props) {
             </Qator>
           </div>
         </section>
+
+        {taqsimotKerak && taqsimot && (
+          <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm sm:p-6">
+            <KartaSarlavhasi ikonka={<ListOrdered size={18} />} matn={t("taqsimot.closedTitle")} />
+            <TaqsimotQatorlari taqsimot={taqsimot} tolovValyutasi={amaliyot.valyuta} />
+            {holat === "bekor_qilingan" && <p className="mt-3 text-xs font-semibold leading-5 text-slate-500">{t("taqsimot.cancelledHint")}</p>}
+          </section>
+        )}
       </div>
 
       {/* O'ng: holat, izoh */}
