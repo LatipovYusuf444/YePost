@@ -78,7 +78,6 @@ import {
 } from "@/lib/savdoNarxlari";
 import {
   asosiyMiqdor,
-  birlikNarxi,
   birlikTopish,
   miqdorYaroqlimi,
   qoldiqMatni,
@@ -273,7 +272,8 @@ function dollarNarxi(valyuta?: QoldiqTanlovi["valyuta"]) {
 // so'mda narxlangan mahsulot esa bugungi kurs bo'yicha o'girilgan (sentgacha yaxlitlangan) narxda.
 // Tanlangan narx turi (tan narx / chakana / ulgurji) bo'yicha; narx yo'q bo'lsa 0.
 function qoldiqNarxiValyutada(qoldiq: QoldiqTanlovi | undefined, valyuta: "UZS" | "USD", kurs: number, tur: SotuvNarxTuri = "RETAIL", birlik?: TovarBirligi) {
-  return narxSotuvValyutasida(birlikNarxi(turNarxi(qoldiq, tur, kurs), birlik, tur), valyuta, kurs);
+  const donaNarxi = narxSotuvValyutasida(turNarxi(qoldiq, tur, kurs), valyuta, kurs);
+  return asosiyMiqdor(birlik, donaNarxi);
 }
 
 function qoldiqKaliti(qoldiq: Pick<QoldiqTanlovi, "modificationId" | "warehouseId">) {
@@ -906,6 +906,7 @@ export default function YangiSotuvModal({
           foiz: raqamgaAylantirish(mahsulot.discountFoiz),
           ustama: raqamgaAylantirish(mahsulot.ustama),
           birlik: birlikTopish(qoldiqlar.find((item) => qoldiqKaliti(item) === mahsulot.qoldiqKaliti)?.birliklar, mahsulot.birlikId),
+          donalikNarx: true,
         })
       );
 
@@ -1732,6 +1733,10 @@ export default function YangiSotuvModal({
                         const butunMiqdor = Boolean(tanlanganBirlik && !tanlanganBirlik.asosiy && !tanlanganBirlik.kasr);
                         const katalogNarxi = raqamgaAylantirish(mahsulot.price);
                         const ustama = raqamgaAylantirish(mahsulot.ustama);
+                        // UI narxi asosiy birlikda (dona); holat va backend narxi tanlangan sotuv birligida qoladi.
+                        const narxKoeff = tanlanganBirlik && !tanlanganBirlik.asosiy ? tanlanganBirlik.koeff : 1;
+                        const donaNarxi = (qiymat: number) => Number((qiymat / narxKoeff).toFixed(6));
+                        const narxBirligi = asosiyBirlikNomi || t("common.unit");
                         // Bir dona narxi = katalog narxi + ustama.
                         const narx = qatorBirNarxi(mahsulot);
                         const chegirma = qatorChegirmasi(mahsulot);
@@ -1813,13 +1818,15 @@ export default function YangiSotuvModal({
                                 type="number"
                                 min="0"
                                 step="0.01"
-                                value={mahsulot.price}
+                                value={mahsulot.price === "" ? "" : donaNarxi(katalogNarxi)}
+                                aria-label={`${t("table.catalogPrice")} / ${narxBirligi}`}
                                 readOnly
                                 disabled
                                 title={t("labels.priceLocked")}
                                 className={maydonKlassi}
                                 placeholder={t("placeholders.price")}
                               />
+                              <p className="mt-1 text-[11px] font-semibold text-slate-400">/ {narxBirligi}</p>
                               <NarxTuriTanlovi
                                 kichik
                                 qiymat={mahsulot.priceType}
@@ -1838,7 +1845,9 @@ export default function YangiSotuvModal({
                               <p className={mobilYorliqKlassi}>{t(sotuvVal === "USD" ? "labels.salePriceUsd" : "labels.salePrice")}</p>
                               <SummaMaydoni
                                 disabled={narx <= 0}
-                                value={narxTahriri?.qator === index ? narxTahriri.matn : narx > 0 ? sotuvNarxi : ""}
+                                value={narxTahriri?.qator === index ? narxTahriri.matn : narx > 0 ? donaNarxi(sotuvNarxi) : ""}
+                                kasr={6}
+                                aria-label={`${t("table.salePrice")} / ${narxBirligi}`}
                                 data-sotuv-narx={index}
                                 onFocus={(event) => event.currentTarget.select()}
                                 onBlur={() => setNarxTahriri(null)}
@@ -1850,7 +1859,7 @@ export default function YangiSotuvModal({
                                 }}
                                 onChange={(qiymat) => {
                                   setNarxTahriri({ qator: index, matn: qiymat });
-                                  const kiritilgan = raqamgaAylantirish(qiymat);
+                                  const kiritilgan = raqamgaAylantirish(qiymat) * narxKoeff;
                                   // Bo'sh yoki noto'g'ri qiymat katalog narxiga qaytaradi; katalogdan past narx chegirma, baland narx ustama bo'ladi.
                                   const { ustama: yangiUstama, chegirma: yangiChegirma } = kiritilganNarx({ katalog: katalogNarxi, kiritilgan, miqdor });
                                   const ustamaMatni = yangiUstama > 0 ? String(yangiUstama) : "";
@@ -1868,6 +1877,7 @@ export default function YangiSotuvModal({
                                 )}
                                 placeholder={t("placeholders.price")}
                               />
+                              <p className="mt-1 text-[11px] font-semibold text-slate-400">/ {narxBirligi}</p>
                             </div>
 
                             <div className="min-w-0">
@@ -1985,9 +1995,9 @@ export default function YangiSotuvModal({
                             {ustama > 0 && miqdor > 0 && (
                               <p className="rounded-xl bg-amber-50 px-3.5 py-2 text-xs font-semibold text-amber-700 ring-2 ring-amber-100 lg:col-span-full">
                                 {t("products.autoMarkupHint", {
-                                  katalog: pulniFormatlash(katalogNarxi, sotuvVal),
-                                  sotuv: pulniFormatlash(narx, sotuvVal),
-                                  bir: pulniFormatlash(ustama, sotuvVal),
+                                  katalog: pulniFormatlash(donaNarxi(katalogNarxi), sotuvVal),
+                                  sotuv: pulniFormatlash(donaNarxi(narx), sotuvVal),
+                                  bir: pulniFormatlash(donaNarxi(ustama), sotuvVal),
                                   jami: pulniFormatlash(ustama * miqdor, sotuvVal),
                                 })}
                               </p>
@@ -1996,9 +2006,9 @@ export default function YangiSotuvModal({
                             {birDonaChegirma > 0 && miqdor > 0 && ustama <= 0 && (
                               <p className="rounded-xl bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-700 ring-2 ring-emerald-200 lg:col-span-full">
                                 {t("products.autoDiscountHint", {
-                                  katalog: pulniFormatlash(narx, sotuvVal),
-                                  sotuv: pulniFormatlash(sotuvNarxi, sotuvVal),
-                                  bir: pulniFormatlash(birDonaChegirma, sotuvVal),
+                                  katalog: pulniFormatlash(donaNarxi(narx), sotuvVal),
+                                  sotuv: pulniFormatlash(donaNarxi(sotuvNarxi), sotuvVal),
+                                  bir: pulniFormatlash(donaNarxi(birDonaChegirma), sotuvVal),
                                   jami: pulniFormatlash(chegirma, sotuvVal),
                                 })}
                               </p>

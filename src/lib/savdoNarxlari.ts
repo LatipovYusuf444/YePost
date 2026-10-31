@@ -1,7 +1,7 @@
 // "Sotuv yaratish" jadvali uchun narx turi (tannarx / chakana / ulgurji) va chegirma (summa yoki foiz) hisob-kitobi.
 // UI'siz yozilgan (faqat tur importlari) — testlarda to'g'ridan-to'g'ri ishlaydi.
 import type { QoldiqTanlovi, SotuvNarxTuri } from "../types/savdo.ts";
-import { birlikNarxi, type TovarBirligi } from "./kopBirlik.ts";
+import { asosiyMiqdor, birlikNarxi, type TovarBirligi } from "./kopBirlik.ts";
 
 export type NarxValyutasi = "UZS" | "USD";
 export type ChegirmaTuri = "sum" | "foiz";
@@ -144,6 +144,8 @@ export function yuboriladiganQator(p: {
   ustama?: number;
   /** Tanlangan birlik: miqdor, narx va chegirma shu birlikda (qo'shimcha birlikda `unitId` yuboriladi). */
   birlik?: TovarBirligi;
+  /** UI katalogdagi asosiy birlik narxidan hisoblaydi; `narx` va `ustama` allaqachon sotuv birligida. */
+  donalikNarx?: boolean;
 }): YuboriladiganQator {
   const ustama = Math.max(p.ustama ?? 0, 0);
   const asos = {
@@ -154,7 +156,10 @@ export function yuboriladiganQator(p: {
     ...(p.birlik && !p.birlik.asosiy ? { unitId: p.birlik.unitId } : {}),
   };
   if (p.sotuvVal === "UZS") return { ...asos, price: ustamaliNarx(p.narx, ustama), discount: p.chegirma };
-  const narx = birlikNarxi(turNarxi(p.qoldiq, p.tur, p.kurs), p.birlik, p.tur);
+  const katalog = turNarxi(p.qoldiq, p.tur, p.kurs);
+  const narx = p.donalikNarx && katalog
+    ? { ...katalog, asl: asosiyMiqdor(p.birlik, katalog.asl) }
+    : birlikNarxi(katalog, p.birlik, p.tur);
   if (narx && narx.valyuta === "UZS") {
     return { ...asos, price: narx.asl + Math.round(ustama * p.kurs), discount: yaxlit2(p.chegirma * p.kurs), currency: "UZS" };
   }
