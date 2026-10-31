@@ -305,6 +305,9 @@
       "unitRequired": "Har bir qatorda birlikni tanlang.",
       "unitDuplicate": "Bir birlik ikki marta kiritilgan (yoki asosiy birlik qo'shilgan).",
       "factorInvalid": "Koeffitsient noldan katta son bo'lishi kerak."
-    }
+    },
+    "baseNotRepeated": "Asosiy birlik koeffitsienti 1. U qo‘shimcha birliklar ro‘yxatida takrorlanmaydi.",
+    "pieceOption": "Dona",
+    "creatingPiece": "Dona birligi qo‘shilmoqda..."
   }
 }

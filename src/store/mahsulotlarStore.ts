@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { donaBirliginiTaminlash } from "@/api/donaBirligiApi";
 import {
   birliklarApi,
   getStandardUnits,
@@ -40,6 +41,7 @@ type MahsulotlarState = {
   birlikSaqlash: (id: string | null, data: OlchovBirligiMalumoti) => Promise<boolean>;
   birlikOchirish: (id: string) => Promise<boolean>;
   standardBirlikniWorkspacegaOtkazish: (unit: StandardUnit) => Promise<string | null>;
+  donaBirliginiQoshish: () => Promise<OlchovBirligi>;
   mahsulotOlish: (id: string) => Promise<Mahsulot | null>;
   mahsulotSaqlash: (id: string | null, data: MahsulotMalumoti) => Promise<boolean>;
   // `birliklar` — qo'shimcha birliklar (korobka, pochka): mahsulot yaratilgach PUT /catalog/products/:id/units bilan saqlanadi.
@@ -247,6 +249,11 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
       return false;
     }
+  },
+  donaBirliginiQoshish: async () => {
+    const unit = await donaBirliginiTaminlash();
+    set((state) => ({ birliklar: state.birliklar.some((item) => item.id === unit.id) ? state.birliklar : [...state.birliklar, unit] }));
+    return unit;
   },
   standardBirlikniWorkspacegaOtkazish: async (standard) => {
     const mavjud = standardBirlikkaMosiniTopish(get().birliklar, standard);

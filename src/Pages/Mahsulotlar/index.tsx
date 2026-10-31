@@ -795,6 +795,11 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
   const [categoryId,setCategoryId]=useState(editing?item.categoryId:store.kategoriyalar[0]?.id??"");
   const [unitId,setUnitId]=useState(editing?item.unitId:defaultProductUnit(store.birliklar,store.standardBirliklar)?.id??"");
   const [unitResolving,setUnitResolving]=useState(false);
+  async function donaQoshish() {
+    setUnitResolving(true);
+    try { return await store.donaBirliginiQoshish(); }
+    finally { setUnitResolving(false); }
+  }
   // Qo'shimcha birliklar (masalan 1 korobka = 3 kg): faqat ADMIN/DIREKTOR (backend PUT /catalog/products/:id/units).
   // Yangi mahsulotda ular mahsulot yaratilgach saqlanadi; tahrirlashda mavjudlari yuklanadi (birlikBoshlangich — yuklangan holat imzosi).
   const profil=useAuthProfileStore((state)=>state.profil);
@@ -1363,7 +1368,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
     </header>
 
     {editing && <div className="px-6 pt-5"><ProductStockSummary productId={item.id} /></div>}
-    <fieldset disabled={!tahrirFaol} className="product-modal-fields min-w-0 border-0 px-6 py-6">
+    <fieldset disabled={!tahrirFaol || unitResolving} className="product-modal-fields min-w-0 border-0 px-6 py-6">
       <main className="min-w-0 space-y-8">
         {store.xatolik&&<div className="mb-4"><ErrorBox/></div>}
         <section className="space-y-5">
@@ -1444,7 +1449,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
             </div>
             {birlikYuklanmoqda
               ?<div className="flex h-24 items-center justify-center"><LoaderCircle className="animate-spin text-orange-500" size={26}/></div>
-              :<BirlikQatorlariMaydoni qatorlar={birlikQatorlari} onChange={(qatorlar)=>{setBirlikQatorlari(qatorlar);setBirlikXato("")}} birliklar={store.birliklar} asosiyId={unitId} asosiyNomi={asosiyQisqaNomi||t("fallback.unit")}/>}
+              :<BirlikQatorlariMaydoni qatorlar={birlikQatorlari} onChange={(qatorlar)=>{setBirlikQatorlari(qatorlar);setBirlikXato("")}} birliklar={store.birliklar} asosiyId={unitId} asosiyNomi={asosiyQisqaNomi||asosiyBirlikNomi||t("fallback.unit")} onDonaQoshish={donaQoshish}/>}
             {birlikXato&&<p role="alert" className="rounded-xl bg-red-50 p-3 text-sm font-bold text-red-600">{birlikXato}</p>}
           </div>}
           <div className="space-y-4 pt-2">

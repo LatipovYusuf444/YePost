@@ -1,3 +1,4 @@
+import { useMahsulotlarStore } from "@/store/mahsulotlarStore";
 import { useEffect, useState, type FormEvent } from "react";
 import { LoaderCircle, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -18,6 +19,13 @@ export default function BirliklarModal({ product, birliklar, onClose }: { produc
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [saqlanmoqda, setSaqlanmoqda] = useState(false);
   const [xato, setXato] = useState("");
+  const [birlikYaratilmoqda, setBirlikYaratilmoqda] = useState(false);
+  const donaBirliginiQoshish = useMahsulotlarStore((state) => state.donaBirliginiQoshish);
+  async function donaQoshish() {
+    setBirlikYaratilmoqda(true);
+    try { return await donaBirliginiQoshish(); }
+    finally { setBirlikYaratilmoqda(false); }
+  }
   const asosiy = birliklar.find((birlik) => birlik.id === product.unitId) ?? product.unit;
   const asosiyNomi = asosiy?.shortName ?? asosiy?.name ?? t("fallback.unit");
 
@@ -34,6 +42,7 @@ export default function BirliklarModal({ product, birliklar, onClose }: { produc
 
   async function saqlash(event: FormEvent) {
     event.preventDefault();
+    if (birlikYaratilmoqda || saqlanmoqda) return;
     setXato("");
     const yigilgan = birlikRoyxatiniYigish(qatorlar, birliklar, { unitId: product.unitId, nomi: asosiyNomi });
     if ("xato" in yigilgan) return setXato(t(`units.errors.${yigilgan.xato}`));
@@ -68,14 +77,14 @@ export default function BirliklarModal({ product, birliklar, onClose }: { produc
           <div className="flex h-40 items-center justify-center"><LoaderCircle className="animate-spin text-orange-500" size={30} /></div>
         ) : (
           <div className="mt-4">
-            <BirlikQatorlariMaydoni qatorlar={qatorlar} onChange={setQatorlar} birliklar={birliklar} asosiyId={product.unitId} asosiyNomi={asosiyNomi} />
+            <BirlikQatorlariMaydoni qatorlar={qatorlar} onChange={setQatorlar} birliklar={birliklar} asosiyId={product.unitId} asosiyNomi={asosiyNomi} onDonaQoshish={donaQoshish} />
           </div>
         )}
 
         {xato && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-600">{xato}</p>}
         <div className="mt-6 flex justify-end gap-3">
           <button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t("actions.cancel")}</button>
-          <button disabled={saqlanmoqda || yuklanmoqda} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{saqlanmoqda && <LoaderCircle size={16} className="animate-spin" />}{t("actions.save")}</button>
+          <button disabled={saqlanmoqda || yuklanmoqda || birlikYaratilmoqda} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{saqlanmoqda && <LoaderCircle size={16} className="animate-spin" />}{t("actions.save")}</button>
         </div>
       </form>
     </AppModal>
