@@ -171,7 +171,7 @@ test('shared Axios success interceptor emits stock notifications before DTO unwr
   compile('../src/api/axios.ts', {
     axios: { __esModule: true, default: { create: () => client } },
     './apiConfig': { API_BASE_URL: '/api/v1' },
-    './sozlamalarApi': {}, './hujjatOgohlantirishi': {},
+    './sozlamalarApi': {}, './hujjatOgohlantirishi': {}, './valyutaShubhasi': {},
     './apiLanguage': { apiTiliniOlish: () => 'uz' },
     '@/lib/authTokenStorage': {},
     '@/lib/toast': { muvaffaqiyatXabari() {}, xatolikXabari() {} },

@@ -115,6 +115,10 @@ export type SotuvTolovi = {
   // Shu to'lovdan mijozga berilgan qaytim (so'mda; sotuvni tasdiqlashda berilgani oxirgi naqd qatorda turadi) va mijoz hisobiga o'tgan pul.
   changeAmount?: number | string | null;
   keptAmount?: number | string | null;
+  // Mijoz hisobidagi pul qarzni o'zi yopgan to'lov (`paymentType: "BALANCE"`, `fromAccount: true`) va kassadagi "Mijoz hisobini
+  // to'ldirish" yopgan bo'lsa — o'sha kassa hujjatining id'si.
+  fromAccount?: boolean | null;
+  cashOperationId?: string | null;
 };
 
 // Tasdiqlangan sotuvga to'lov qo'shish (POST /sales/:id/payments). Qarzdan ortiq NAQD to'lovda ortgan pul qaytim bo'ladi (so'mda, so'm kassasidan
@@ -123,6 +127,8 @@ export type SotuvTolovi = {
 export type TolovQoshishMalumoti = Pick<SotuvTolovi, "paymentType" | "amount" | "currency" | "rate" | "date" | "note"> & {
   roundChange?: boolean;
   keepExcess?: boolean;
+  // "Summa juda kichik. Valyuta to'g'rimi?" (400 suspicious_currency) tasdiqlangach xuddi shu so'rov `force: true` bilan qayta yuboriladi.
+  force?: boolean;
 };
 
 export type Sotuv = {

@@ -2,11 +2,15 @@
 // uchun "Davom etasizmi?" so'rovi. API qatlami `ogohlantirishniSorash` ni chaqirib javobni kutadi, oyna esa
 // (Components/common/HujjatOgohlantirishOynasi) shu navbatni ko'rsatadi. UI'siz yozilgan — alohida sinash mumkin.
 
+/** Oyna matnlari (ixtiyoriy): berilmasa "Ogohlantirish / Davom etasizmi?" standart matnlari ishlatiladi. */
+export type OgohlantirishMatnlari = { sarlavha?: string; savol?: string; ha?: string; yoq?: string };
+
 export type OgohlantirishSorovi = {
   id: number;
   /** Hujjat belgisi (masalan, inventarizatsiya raqami va sanasi); bo'lmasa bo'sh. */
   nom: string;
   matn: string;
+  matnlar?: OgohlantirishMatnlari;
 };
 
 type Kutayotgan = OgohlantirishSorovi & { hal: (rozi: boolean) => void };
@@ -20,10 +24,10 @@ function xabarBerish() {
 }
 
 /** Foydalanuvchidan "davom etamizmi?" deb so'raydi; `true` — ha, `false` — yo'q (yoki oyna yopildi). */
-export function ogohlantirishniSorash(matn: string, nom = ""): Promise<boolean> {
+export function ogohlantirishniSorash(matn: string, nom = "", matnlar?: OgohlantirishMatnlari): Promise<boolean> {
   return new Promise<boolean>((hal) => {
     hisoblagich += 1;
-    navbat = [...navbat, { id: hisoblagich, nom, matn, hal }];
+    navbat = [...navbat, { id: hisoblagich, nom, matn, ...(matnlar ? { matnlar } : {}), hal }];
     xabarBerish();
   });
 }

@@ -93,7 +93,7 @@ export default function TasdiqlashOynasi({
       <div className="w-full max-w-sm rounded-[26px] bg-white p-6 text-center shadow-[0_28px_80px_rgba(15,23,42,.28)]">
         <span className={`mx-auto flex h-14 w-14 items-center justify-center rounded-2xl ring-8 ${ranglar.ikonka}`}>{ikonka}</span>
         <h3 id="tasdiqlash-sarlavha" className="mt-4 text-lg font-black text-slate-950">{sarlavha}</h3>
-        <p className="mx-auto mt-3 max-w-full truncate rounded-full bg-slate-100 px-4 py-1.5 text-sm font-black text-slate-700">{nom}</p>
+        {nom && <p className="mx-auto mt-3 max-w-full truncate rounded-full bg-slate-100 px-4 py-1.5 text-sm font-black text-slate-700">{nom}</p>}
         <p className="mt-3 text-sm leading-6 text-slate-500">{tavsif}</p>
         {izoh && <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs font-bold leading-5 text-amber-700">{izoh}</p>}
         <div className="mt-6 flex gap-3">

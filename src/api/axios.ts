@@ -2,6 +2,7 @@ import axios, { type InternalAxiosRequestConfig } from "axios";
 import { API_BASE_URL } from "./apiConfig";
 import { accessTokenniAjratish, accessTokenniYangilash, getApiErrorMessage } from "./sozlamalarApi";
 import { ogohlantirishXatosimi } from "./hujjatOgohlantirishi";
+import { shubhaliValyutaXatosimi } from "./valyutaShubhasi";
 import { apiTiliniOlish } from "./apiLanguage";
 import {
   accessTokenniSaqlash,
@@ -119,8 +120,9 @@ apiClient.interceptors.response.use(
   },
   async (error: unknown) => {
     if (!axios.isAxiosError(error) || error.response?.status !== 401 || !error.config) {
-      // 409 before_stock_take — xato emas, "Davom etasizmi?" ogohlantirishi: toast o'rniga tasdiqlash oynasi chiqadi (api/hujjatOgohlantirishi).
-      if (axios.isAxiosError(error) && toastKerakmi(error.config?.url) && !rolCheklanganRoyxat403Mi(error) && !fonSozlamaXatosiMi(error) && !ogohlantirishXatosimi(error) && !error.config?.xatoniYashirish) {
+      // 409 before_stock_take va 400 suspicious_currency — xato emas, "Davom etasizmi?" / "Valyuta to'g'rimi?" so'rovi:
+      // toast o'rniga tasdiqlash oynasi chiqadi (api/hujjatOgohlantirishi, api/valyutaShubhasi).
+      if (axios.isAxiosError(error) && toastKerakmi(error.config?.url) && !rolCheklanganRoyxat403Mi(error) && !fonSozlamaXatosiMi(error) && !ogohlantirishXatosimi(error) && !shubhaliValyutaXatosimi(error) && !error.config?.xatoniYashirish) {
         xatolikXabari(getApiErrorMessage(error));
       }
       return Promise.reject(error);

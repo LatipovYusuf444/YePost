@@ -1,4 +1,5 @@
 import apiClient from "./axios";
+import { shubhaliValyutaBilanBajarish } from "./valyutaShubhasi";
 import axios from "axios";
 import { modifikatsiyalarApi } from "./catalogApi";
 import { ogohlantirishBilanBajarish } from "./hujjatOgohlantirishi";
@@ -198,7 +199,8 @@ export async function sotuvgaTolovQoshish(
   sotuvId: string,
   tolov: TolovQoshishMalumoti
 ): Promise<{ sotuv: Sotuv } & TolovNatijasi> {
-  const javob = await apiClient.post<unknown>(`/sales/${sotuvId}/payments`, tolov);
+  // Dollar savdoga juda kichik so'm summasi (400 suspicious_currency): kassirdan "Valyuta to'g'rimi?" so'raladi, "ha" bo'lsa `force: true` bilan qayta yuboriladi.
+  const javob = await shubhaliValyutaBilanBajarish((tana) => apiClient.post<unknown>(`/sales/${sotuvId}/payments`, { ...tolov, ...tana }));
   const natija = tolovNatijasi(javob.data);
   return { sotuv: await sotuvTafsilotiniOlish(sotuvId), ...natija };
 }
