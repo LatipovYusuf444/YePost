@@ -100,7 +100,6 @@
     "disabled": "Do‘konda o‘chirilgan",
     "allowed": "Sizda minusga sotish ruxsati bor",
     "notAllowed": "Sizda minusga sotish ruxsati yo‘q",
-    "releasePending": "Minusga sotishni yoqish vaqtincha yopiq. Xizmat yangilanishidan so‘ng foydalanish mumkin bo‘ladi.",
     "adminOnly": "Bu sozlamani faqat direktor yoki administrator o‘zgartira oladi.",
     "historyHint": "Sozlamani o‘chirish eski minuslarni yo‘qotmaydi; kirim ularni yopadi. Minusga faqat bugungi sana bilan sotiladi. Taxminiy tannarx va foyda keyingi kirimda o‘zgarmaydi.",
     "retry": "Qayta urinish",

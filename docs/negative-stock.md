@@ -36,14 +36,13 @@ Ixtiyoriy `/inventory/stock-check` oldindan tekshiruvi qo‘shilmagan.
 
 ## Yoqish tartibi
 
-Hozir `VITE_NEGATIVE_STOCK_ENABLE_READY` qiymati berilmagan yoki `false`:
-do‘konlarda yoqish tugmasi bloklangan, `PATCH true` ham frontend API qatlamida
-yuborilmaydi. Avval serverda o‘tgan sanaga minusga sotish/chiqim/ko‘chirish
-cheklovi chiqqanini tasdiqlash kerak. Shundan keyin frontend joylashtirish
-muhitida `VITE_NEGATIVE_STOCK_ENABLE_READY=true` berilib qayta build qilinadi.
-Bu faqat tugmani ochadi: do‘kon sozlamasini avtomatik yoqmaydi.
-`PATCH /settings/inventory`ni server faqat DIRECTOR/ADMIN uchun qabul qiladi.
-Oldindan yoqilgan do‘konni o‘chirish imkoniyati saqlangan.
+Server o‘tgan sanaga minusga sotish/chiqim/ko‘chirish cheklovini
+(`errors.inventory.negative_stock_after`) qo‘llaydi, shu sababli oldingi
+`VITE_NEGATIVE_STOCK_ENABLE_READY` rollout bayrog‘i olib tashlangan (2026-10-31).
+Direktor yoki administrator `Sozlamalar → Ombor` da tugmani to‘g‘ridan-to‘g‘ri
+yoqadi: `PATCH /settings/inventory { allowNegativeStock: true }`. Server bu
+so‘rovni faqat DIRECTOR/ADMIN uchun qabul qiladi; boshqalarga tugma o‘chiq.
+Frontend do‘kon sozlamasini avtomatik yoqmaydi.
 
 Haqiqiy do‘kon sozlamalari va hujjatlari ushbu ish davomida o‘zgartirilmadi.
 Keyingi kirim eski sotuv tannarxi/foydasini frontendda qayta hisoblamaydi.

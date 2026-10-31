@@ -104,40 +104,39 @@ test('real POS store accepts zero/negative stock only with the current server pe
   usePosStore.setState({ cart: [] });
 });
 
-test('settings API never enables shops while rollout is locked, but can disable existing negative selling', async () => {
+test('settings API reads and patches /settings/inventory directly: the server is live, no frontend rollout gate remains', async () => {
   const calls = [];
-  const settings = { allowNegativeStock: false, canSellNegative: false };
-  const dependencies = {
+  const settings = { allowNegativeStock: true, canSellNegative: true };
+  const api = compile('../src/api/inventorySettingsApi.ts', {
     './axios': { __esModule: true, default: { get: async (...args) => { calls.push(['get', ...args]); return { data: { data: settings } }; }, patch: async (...args) => { calls.push(['patch', ...args]); return { data: settings }; } } },
     './response': { apiData: response => response.data ?? response },
-  };
-  const loadApi = enabled => compile('../src/api/inventorySettingsApi.ts', dependencies, {}, source => source.replace('import.meta.env.VITE_NEGATIVE_STOCK_ENABLE_READY', JSON.stringify(String(enabled))));
-  const locked = loadApi(false);
-  assert.deepEqual(await locked.inventorySettingsApi.get(), settings);
-  await assert.rejects(locked.inventorySettingsApi.update(true));
-  assert.equal(calls.length, 1);
-  await locked.inventorySettingsApi.update(false);
-  assert.deepEqual(plain(calls.at(-1)), ['patch', '/settings/inventory', { allowNegativeStock: false }]);
-  await loadApi(true).inventorySettingsApi.update(true);
+  });
+  assert.deepEqual(await api.inventorySettingsApi.get(), settings);
+  assert.deepEqual(await api.inventorySettingsApi.update(true), settings);
   assert.deepEqual(plain(calls.at(-1)), ['patch', '/settings/inventory', { allowNegativeStock: true }]);
+  await api.inventorySettingsApi.update(false);
+  assert.deepEqual(plain(calls.at(-1)), ['patch', '/settings/inventory', { allowNegativeStock: false }]);
+  assert.equal(calls.length, 3);
+  assert.equal('negativeStockEnableReady' in api, false);
 });
 
-test('settings UI is read-only for cashier, locked for rollout, and enabled only for admin/director after rollout', () => {
+test('settings toggle is enabled for admin/director once loaded and read-only for other roles or while loading', () => {
   const nodes = value => Array.isArray(value) ? value.flatMap(nodes) : !value || typeof value !== 'object' ? [] : [value, ...nodes(value.props?.children)];
-  for (const [role, ready, allowNegativeStock, expectedDisabled] of [['CASHIER', true, false, true], ['DIRECTOR', false, false, true], ['DIRECTOR', false, true, false], ['ADMIN', true, false, false]]) {
-    const state = { loaded: true, loading: false, saving: false, error: '', canSellNegative: allowNegativeStock, allowNegativeStock, load() {}, update() {} };
+  for (const [role, loaded, allowNegativeStock, expectedDisabled] of [['CASHIER', true, false, true], ['DIRECTOR', true, false, false], ['DIRECTOR', true, true, false], ['ADMIN', true, false, false], ['ADMIN', false, false, true]]) {
+    const state = { loaded, loading: false, saving: false, error: '', canSellNegative: allowNegativeStock, allowNegativeStock, load() {}, update() {} };
     const component = compile('../src/Pages/SozlamalarUchot/InventoryBolimi.tsx', {
       react: { useEffect() {} }, 'react-i18next': { useTranslation: () => ({ t: key => key }) },
       'lucide-react': new Proxy({}, { get: (_, name) => String(name) }),
-      '@/api/inventorySettingsApi': { negativeStockEnableReady: ready },
       '@/store/inventorySettingsStore': { useInventorySettingsStore: () => state },
       '@/store/authProfileStore': { useAuthProfileStore: selector => selector({ profil: { role } }) },
       '@/lib/roles': { rolniNormallashtirish: value => value === 'DIRECTOR' ? 'DIREKTOR' : value },
       './UmumiyUI': { BolimKarta: 'BolimKarta' },
     }).default;
-    const toggle = nodes(component()).find(node => node.props.role === 'switch');
-    assert.equal(toggle.props.disabled, expectedDisabled, `${role}, ready=${ready}, enabled=${allowNegativeStock}`);
+    const rendered = nodes(component());
+    const toggle = rendered.find(node => node.props.role === 'switch');
+    assert.equal(toggle.props.disabled, expectedDisabled, `${role}, loaded=${loaded}, enabled=${allowNegativeStock}`);
     assert.equal(toggle.props['aria-checked'], allowNegativeStock);
+    assert.equal(rendered.some(node => node.props?.children === 'negativeStock.releasePending'), false);
   }
 });
 

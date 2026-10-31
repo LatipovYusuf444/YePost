@@ -1,7 +1,6 @@
 import { useEffect } from "react";
-import { AlertTriangle, CheckCircle2, LoaderCircle, PackageMinus, RefreshCw, ShieldCheck } from "lucide-react";
+import { CheckCircle2, LoaderCircle, PackageMinus, RefreshCw, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { negativeStockEnableReady } from "@/api/inventorySettingsApi";
 import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { rolniNormallashtirish } from "@/lib/roles";
@@ -15,7 +14,7 @@ export default function InventoryBolimi() {
   const canEdit = role === "DIREKTOR" || role === "ADMIN";
   const load = state.load;
   useEffect(() => { void load(); }, [load]);
-  const blocked = !state.loaded || state.loading || state.saving || !canEdit || (!state.allowNegativeStock && !negativeStockEnableReady);
+  const blocked = !state.loaded || state.loading || state.saving || !canEdit;
   return <BolimKarta sarlavha={t("negativeStock.settingsTitle")} izoh={t("negativeStock.settingsSubtitle")}>
     <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5 sm:p-6">
       <div className="flex items-start gap-4">
@@ -29,7 +28,6 @@ export default function InventoryBolimi() {
         {(state.loading || state.saving) && <LoaderCircle size={18} className="animate-spin text-blue-600" />}
       </div>
     </div>
-    {!negativeStockEnableReady && !state.allowNegativeStock && <p className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800"><AlertTriangle size={18} className="mt-1 shrink-0" />{t("negativeStock.releasePending")}</p>}
     {!canEdit && <p className="mt-4 text-sm text-slate-500">{t("negativeStock.adminOnly")}</p>}
     <p className="mt-4 text-xs leading-6 text-slate-500">{t("negativeStock.historyHint")}</p>
     {state.error && <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-red-50 p-4 text-sm text-red-700">{state.error}<button type="button" disabled={state.loading} onClick={() => void state.load()} className="inline-flex items-center gap-2 font-semibold"><RefreshCw size={15} />{t("negativeStock.retry")}</button></div>}
