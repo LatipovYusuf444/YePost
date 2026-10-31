@@ -7,6 +7,7 @@ import { mijozNomi, pulniFormatlash, sananiFormatlash, sotuvHolati, sotuvQarzdor
 import TablePagination from "@/Components/common/TablePagination";
 import { sotuvlarRoyxatiniOlish } from "@/api/savdoApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { useSavdoStore } from "@/store/savdoStore";
 
 type Props = {
   sotuvlar: Sotuv[];
@@ -31,6 +32,15 @@ export default function Qarzdorliklar({ sotuvlar, onSotuvniOchish, onYangilash, 
   const [openingLoading, setOpeningLoading] = useState(true);
   const [openingError, setOpeningError] = useState("");
   const [revision, setRevision] = useState(0);
+  // GET /sales?openingDebt=true qatorlarida faqat customerId bor (customer obyekti kelmaydi): Savdo sahifasidagidek
+  // do'kon ro'yxatlaridan boyitiladi, ro'yxatda yo'q mijozlar id bo'yicha olinadi — aks holda nom "Doimiy mijoz" bo'lib qoladi.
+  const sotuvlarniBoyitish = useSavdoStore((state) => state.sotuvlarniBoyitish);
+  const mijozlarniTuldirish = useSavdoStore((state) => state.mijozlarniTuldirish);
+  const mijozlarniOldindanYuklash = useSavdoStore((state) => state.mijozlarniOldindanYuklash);
+  const mijozlar = useSavdoStore((state) => state.mijozlar);
+  const mijozKompaniyalari = useSavdoStore((state) => state.mijozKompaniyalari);
+  const [mijozlarTayyor, setMijozlarTayyor] = useState(false);
+  useEffect(() => { void mijozlarniOldindanYuklash().finally(() => setMijozlarTayyor(true)); }, [mijozlarniOldindanYuklash]);
   useEffect(() => {
     const refresh = () => setRevision((value) => value + 1);
     window.addEventListener("savdo:yangilandi", refresh);
@@ -46,10 +56,20 @@ export default function Qarzdorliklar({ sotuvlar, onSotuvniOchish, onYangilash, 
       .finally(() => { if (active) setOpeningLoading(false); });
     return () => { active = false; };
   }, [revision]);
+  const boyitilganQarzlar = useMemo(
+    () => sotuvlarniBoyitish(openingDebts),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sotuvlarniBoyitish do'kon holatidagi mijozlar/kompaniyalar ro'yxatini o'qiydi
+    [openingDebts, mijozlar, mijozKompaniyalari, sotuvlarniBoyitish]
+  );
+  useEffect(() => {
+    if (!mijozlarTayyor) return;
+    const idlar = boyitilganQarzlar.flatMap((sotuv) => (sotuv.customerId && !sotuv.customer ? [sotuv.customerId] : []));
+    if (idlar.length > 0) void mijozlarniTuldirish(idlar);
+  }, [mijozlarTayyor, boyitilganQarzlar, mijozlarniTuldirish]);
   const hujjatlar = useMemo(() => Array.from(new Map([
     ...(openingLoaded ? sotuvlar.filter((item) => !item.isOpeningDebt) : sotuvlar),
-    ...openingDebts,
-  ].map((item) => [item.id, item])).values()), [sotuvlar, openingDebts, openingLoaded]);
+    ...boyitilganQarzlar,
+  ].map((item) => [item.id, item])).values()), [sotuvlar, boyitilganQarzlar, openingLoaded]);
   const qarzlar = useMemo(() => hujjatlar
     .filter((sotuv) => sotuvHolati(sotuv) === "CONFIRMED" && sotuvQarzdorlikSummasi(sotuv) > 0)
     .sort((a, b) => sotuvQarzdorlikSummasi(b) - sotuvQarzdorlikSummasi(a)), [hujjatlar]);
