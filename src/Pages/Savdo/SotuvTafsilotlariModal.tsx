@@ -1,3 +1,4 @@
+import { nakladnoyHtmlMatni, nakladnoyQatori } from "@/lib/nakladnoyBirligi";
 import { StockQuantity } from "@/Components/common/NegativeStockBadge";
 import NegativeStockBadge from "@/Components/common/NegativeStockBadge";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
@@ -830,9 +831,9 @@ function YukXatiGeneratorModal({
           <tr>
             <td>${index + 1}</td>
             <td>${mahsulotNomi(item, t)}</td>
-            <td>${t("common.dona")}</td>
-            <td>${item.quantity}</td>
-            <td>${pulniFormatlash(item.price, qatorValyutasi(item, sotuv))}</td>
+            <td>${nakladnoyHtmlMatni(nakladnoyQatori(item, t("common.dona")).birlik)}</td>
+            <td>${nakladnoyQatori(item).miqdor}</td>
+            <td>${pulniFormatlash(nakladnoyQatori(item).narx, qatorValyutasi(item, sotuv))}</td>
             <td>${pulniFormatlash(mahsulotJami(item), qatorValyutasi(item, sotuv))}</td>
           </tr>
         `
@@ -984,9 +985,9 @@ function YukXatiGeneratorModal({
       colX.slice(1, -1).forEach((x) => line(x, y, x, y + rowHeight));
       text(String(index + 1), 55, y + 8, 9, "F2");
       text(mahsulotNomi(item, t).slice(0, 26), 82, y + 8, 9);
-      text("dona", 254, y + 8, 9);
-      text(String(item.quantity), 310, y + 8, 9);
-      text(pulniFormatlash(item.price, qatorValyutasi(item, sotuv)), 360, y + 8, 9);
+      text(nakladnoyQatori(item, t("common.dona")).birlik, 254, y + 8, 9);
+      text(String(nakladnoyQatori(item).miqdor), 310, y + 8, 9);
+      text(pulniFormatlash(nakladnoyQatori(item).narx, qatorValyutasi(item, sotuv)), 360, y + 8, 9);
       text(pulniFormatlash(mahsulotJami(item), qatorValyutasi(item, sotuv)), 438, y + 8, 9, "F2");
       y -= rowHeight;
     });
@@ -1147,9 +1148,9 @@ function YukXatiGeneratorModal({
                           <tr key={item.id ?? `${item.modificationId}-${index}`}>
                             <td className="border-t border-r border-slate-950 px-3 py-1.5 text-center font-bold">{index + 1}</td>
                             <td className="border-t border-r border-slate-950 px-3 py-1.5 font-semibold">{mahsulotNomi(item, t)}</td>
-                            <td className="border-t border-r border-slate-950 px-3 py-1.5 text-center">{t("common.dona")}</td>
-                            <td className="border-t border-r border-slate-950 px-3 py-1.5 text-center">{item.quantity}</td>
-                            <td className="border-t border-r border-slate-950 px-3 py-1.5 text-center">{pulniFormatlash(item.price, qatorValyutasi(item, sotuv))}</td>
+                            <td className="border-t border-r border-slate-950 px-3 py-1.5 text-center">{nakladnoyQatori(item, t("common.dona")).birlik}</td>
+                            <td className="border-t border-r border-slate-950 px-3 py-1.5 text-center">{nakladnoyQatori(item).miqdor}</td>
+                            <td className="border-t border-r border-slate-950 px-3 py-1.5 text-center">{pulniFormatlash(nakladnoyQatori(item).narx, qatorValyutasi(item, sotuv))}</td>
                             <td className="border-t border-slate-950 px-3 py-1.5 text-center font-bold">{pulniFormatlash(mahsulotJami(item), qatorValyutasi(item, sotuv))}</td>
                           </tr>
                         ))}
