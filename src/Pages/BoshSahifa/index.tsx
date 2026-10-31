@@ -1,3 +1,4 @@
+import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
 import { pulMatni, useValyutaStore } from "@/lib/valyuta";
 import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -71,6 +72,7 @@ function xatoMatni(error: unknown, fallback: string) {
 
 export default function BoshSahifa() {
   const { t } = useTranslation("bosh_sahifa");
+  const canSellNegative = useInventorySettingsStore((s) => s.canSellNegative);
   const customerSearchRef = useRef<HTMLInputElement>(null);
   const cart = usePosStore((state) => state.cart);
   const updateCartQuantity = usePosStore((state) => state.updateQuantity);
@@ -708,7 +710,7 @@ export default function BoshSahifa() {
                         <button
                           type="button"
                           aria-label={t("cart.increaseQuantity", { name: item.nom })}
-                          disabled={item.soni >= item.qoldiq}
+                          disabled={!canSellNegative && item.soni >= item.qoldiq}
                           onClick={() => updateQuantity(item.id, item.soni + 1)}
                           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-500 transition hover:bg-gold-50 hover:text-gold-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-300 disabled:cursor-not-allowed disabled:opacity-40"
                         >

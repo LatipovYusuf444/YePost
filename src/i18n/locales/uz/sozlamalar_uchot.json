@@ -14,7 +14,8 @@
     "bildirishnoma": "Bildirishnomalar",
     "valyuta": "Valyuta",
     "narxTurlari": "Sotuv narx turlari",
-    "davrniYopish": "Davrni yopish"
+    "davrniYopish": "Davrni yopish",
+    "inventory": "Ombor"
   },
   "saved": "Saqlandi ✓",
   "savingToBackend": "Backendga saqlanmoqda...",
@@ -94,7 +95,8 @@
       "reports": "Hisobotlar",
       "expense": "Xarajat",
       "cashIn": "Kassa kirimi",
-      "returnCancel": "Qaytarish / bekor qilish"
+      "returnCancel": "Qaytarish / bekor qilish",
+      "negativeStock": "Minusga sotish"
     }
   },
   "integratsiya": {

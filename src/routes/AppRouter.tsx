@@ -1,5 +1,8 @@
 import AsosiyLayout from "@/Components/layout/AsosiyPanel"
 import Login from "@/Pages/Auth/Login"
+import ForgotPassword from "@/Pages/Auth/ForgotPassword"
+import ResetPassword from "@/Pages/Auth/ResetPassword"
+import AuthLayout from "@/Pages/Auth/AuthLayout"
 import BoshSahifa from "@/Pages/BoshSahifa"
 import Monitoring from "@/Pages/Monitoring"
 import KassaUchot from "@/Pages/KassaUchot"
@@ -32,7 +35,11 @@ import ProtectedRoute from "./ProtectedRoute"
 export default function AppRouter() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      <Route element={<AuthLayout />}>
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+      </Route>
       {/* Super admin (isStaff) paneli: ProtectedRoute faqat shu foydalanuvchini /admin ga kiritadi. */}
       <Route
         element={

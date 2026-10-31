@@ -5,6 +5,7 @@ export type VakolatKodi =
   | "REPORTS"
   | "EXPENSE"
   | "CASH_IN"
+  | "NEGATIVE_STOCK_SALE"
   | "RETURN_CANCEL";
 
 export type AccountFoydalanuvchi = {

@@ -1,3 +1,4 @@
+import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { AlertTriangle, Check, ChevronDown, LayoutGrid, LoaderCircle, RefreshCw, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -82,7 +83,7 @@ async function malumotlarniOlish(majbur = false): Promise<Malumot> {
           return !itemOmborId || String(itemOmborId) === omborId;
         });
         qoldiqBirlashtirish(qoldiqlar, katalog)
-          .filter((item) => qoldiqMiqdori(item) > 0)
+          .filter((item) => Number.isFinite(qoldiqMiqdori(item)))
           .forEach((item) =>
             qatorlar.push({
               kalit: tanlovKaliti(item.modificationId, omborId),
@@ -140,6 +141,7 @@ type Props = {
 
 export default function HeaderMahsulotQidiruvi({ className, oramClassName = "flex-1" }: Props) {
   const { t } = useTranslation("topbar");
+  const canSellNegative = useInventorySettingsStore((s) => s.canSellNegative);
   const narxTuri = usePosStore((state) => state.narxTuri);
   // Sozlamalar → Sotuv: o'chirilgan narx turi tanlangan bo'lsa, savatchaga qo'shishdan oldin ruxsat etilgan turga o'tkaziladi.
   useKassaNarxTurlari();
@@ -326,7 +328,7 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
 
   function qoshish(qator: Qator) {
     const nom = savatNomi(qator.item) || t("posModal.unnamed");
-    if (qator.qoldiq <= 0) {
+    if (!canSellNegative && qator.qoldiq <= 0) {
       xabarBerish(true, t("search.outOfStockMessage", { name: nom }));
       return;
     }
@@ -337,7 +339,7 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
     }
     const holat = usePosStore.getState();
     const savatdagi = holat.cart.find((item) => item.id === qator.kalit)?.soni ?? 0;
-    if (savatdagi >= qator.qoldiq) {
+    if (!canSellNegative && savatdagi >= qator.qoldiq) {
       xabarBerish(true, t("search.notEnough", { name: nom, available: qator.qoldiq }));
       return;
     }

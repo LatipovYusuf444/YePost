@@ -1,3 +1,4 @@
+import type { ClosedNegative, NegativeStockWarning } from "@/lib/negativeStock";
 export type HujjatHolati = "DRAFT" | "CONFIRMED" | "CANCELLED" | "SENT" | "RECEIVED";
 
 export type Ombor = {
@@ -135,6 +136,7 @@ export type KirimOgohlantirishi = {
 };
 
 export type KirimHujjati = {
+  closedNegative?: ClosedNegative[];
   id: string;
   currency?: "UZS" | "USD" | string;
   number?: string;
@@ -180,6 +182,7 @@ export type KirimYaratishMalumoti = {
 export type ChiqimSababi = "DAMAGE" | "EXPIRY" | "THEFT" | "OTHER";
 
 export type ChiqimHujjati = {
+  warnings?: NegativeStockWarning[];
   id: string;
   number?: string;
   documentNumber?: string;
@@ -202,6 +205,7 @@ export type ChiqimHujjati = {
   createdBy?: NomliEntity;
   updatedBy?: NomliEntity;
   items?: Array<{
+    wentNegative?: boolean;
     id?: string;
     modificationId: string;
     quantity: number;
@@ -223,6 +227,8 @@ export type ChiqimYaratishMalumoti = {
 };
 
 export type KochirishHujjati = {
+  warnings?: NegativeStockWarning[];
+  closedNegative?: ClosedNegative[];
   id: string;
   number?: string;
   documentNumber?: string;
@@ -248,6 +254,7 @@ export type KochirishHujjati = {
   createdBy?: NomliEntity;
   updatedBy?: NomliEntity;
   items?: Array<{
+    wentNegative?: boolean;
     id?: string;
     modificationId: string;
     quantity: number;
@@ -271,6 +278,7 @@ export type KochirishYaratishMalumoti = {
 export type InventarizatsiyaTuri = "FULL" | "PARTIAL";
 
 export type InventarizatsiyaHujjati = {
+  closedNegative?: ClosedNegative[];
   id: string;
   docNumber?: string;
   documentNumber?: string;

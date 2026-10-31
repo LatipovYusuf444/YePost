@@ -1,3 +1,4 @@
+import ProductStockSummary from "./ProductStockSummary";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
 import {
@@ -1361,6 +1362,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
       {editing&&(!tahrirFaol?<button key="edit" type="button" onClick={event=>{event.preventDefault();setTahrirFaol(true)}} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white transition hover:bg-blue-700"><Edit3 size={17}/>{t("actions.edit")}</button>:<button key="save" type="submit" disabled={store.amalBajarilmoqda||unitResolving||saqlanmoqda} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white transition hover:bg-blue-700 disabled:opacity-50">{store.amalBajarilmoqda||unitResolving||saqlanmoqda?<LoaderCircle size={17} className="animate-spin"/>:<Save size={17}/>} {t("productModal.save")}</button>)}
     </header>
 
+    {editing && <div className="px-6 pt-5"><ProductStockSummary productId={item.id} /></div>}
     <fieldset disabled={!tahrirFaol} className="product-modal-fields min-w-0 border-0 px-6 py-6">
       <main className="min-w-0 space-y-8">
         {store.xatolik&&<div className="mb-4"><ErrorBox/></div>}

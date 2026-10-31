@@ -17,6 +17,10 @@ const vakolatMatnlari: Record<
   VakolatKodi,
   { nom: string; izoh: string }
 > = {
+  NEGATIVE_STOCK_SALE: {
+    nom: "Minusga sotish",
+    izoh: "Qoldiq yetmasa ham sotish, chiqim va ko'chirish. Do'konda minusga sotish yoqilgan bo'lishi kerak.",
+  },
   DELETE: {
     nom: "Ma'lumotlarni o'chirish",
     izoh: "Ruxsat etilgan bo'limlarda o'chirish amallarini bajaradi.",
@@ -91,7 +95,10 @@ export default function Ruxsatlar() {
   async function saqlash(event: FormEvent) {
     event.preventDefault();
     if (!userId) return;
-    const ok = editing
+    const codes = store.vakolatlar.filter((grant) => grant.userId === userId && grant.isActive && !grant.isDeleted && grant.code !== code).map((grant) => grant.code);
+    const ok = code === "NEGATIVE_STOCK_SALE"
+      ? await store.vakolatKodlariniSaqlash(userId, [...codes, ...(isActive ? [code] : [])])
+      : editing
       ? await store.vakolatYangilash(editing.id, { isActive })
       : await store.vakolatYaratish({ userId, code, isActive });
     if (ok) setModal(false);
@@ -100,6 +107,10 @@ export default function Ruxsatlar() {
   async function ochirish(item: AccountVakolati) {
     const matn = vakolatMatnlari[item.code as VakolatKodi]?.nom ?? item.code;
     if (!window.confirm(`"${matn}" vakolatini olib tashlaysizmi?`)) return;
+    if (item.code === "NEGATIVE_STOCK_SALE") {
+      await store.vakolatKodlariniSaqlash(item.userId, store.vakolatlar.filter((grant) => grant.userId === item.userId && grant.isActive && !grant.isDeleted && grant.code !== item.code).map((grant) => grant.code));
+      return;
+    }
     await store.vakolatOchirish(item.id);
   }
 

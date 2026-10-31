@@ -1,3 +1,4 @@
+import type { NegativeStockWarning } from "@/lib/negativeStock";
 export type SotuvHolati = "DRAFT" | "CONFIRMED" | "CANCELLED";
 export type SotuvTuri = "QUICK" | "CLIENT";
 // Savdo narx turi (Sozlamalar → Sotuv: qaysilari yoqilgan bo'lsa shular ishlatiladi; o'chirilgan tur yuborilsa backend rad etadi).
@@ -56,6 +57,8 @@ export type NomliMalumot = {
 };
 
 export type SotuvMahsuloti = {
+  wentNegative?: boolean;
+  costEstimated?: boolean;
   id?: string;
   saleItemId?: string;
   modificationId: string;
@@ -123,6 +126,7 @@ export type TolovQoshishMalumoti = Pick<SotuvTolovi, "paymentType" | "amount" | 
 };
 
 export type Sotuv = {
+  warnings?: NegativeStockWarning[];
   id: string;
   // Tovarsiz boshlang'ich qarz: qarzdorlikda qatnashadi, savdo aylanmasi va foydaga kirmaydi.
   isOpeningDebt?: boolean;

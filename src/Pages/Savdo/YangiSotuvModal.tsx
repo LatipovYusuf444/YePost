@@ -1,3 +1,4 @@
+import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import {
   BadgeCheck,
@@ -330,6 +331,7 @@ export default function YangiSotuvModal({
   onYopish,
 }: YangiSotuvModalProps) {
   const { t } = useTranslation("savdo_yangi");
+  const canSellNegative = useInventorySettingsStore((s) => s.canSellNegative);
   const [warehouseId, setWarehouseId] = useState("");
   const [customerId, setCustomerId] = useState("");
   const [mijozQoshishOchiq, setMijozQoshishOchiq] = useState(false);
@@ -618,7 +620,7 @@ export default function YangiSotuvModal({
         const miqdor = qoldiqMiqdori(item);
         // Dollarda narxlangan mahsulotga kurs kiritilmagan bo'lsa so'mdagi narx yo'q: sotuvga qo'shib bo'lmaydi.
         const kursYoq = item.valyuta?.currency === "USD" && item.valyuta.uzs === null;
-        const mavjud = miqdor > 0 && !kursYoq;
+        const mavjud = (canSellNegative || miqdor > 0) && !kursYoq;
         const oziNomi = qoldiqNomi(item, t);
         const nom =
           oziNomi !== t("common.unknownProduct")
@@ -789,7 +791,7 @@ export default function YangiSotuvModal({
       return;
     }
     const sotuvga = mos.filter(
-      (item) => item.warehouseId && qoldiqMiqdori(item) > 0 && !(item.valyuta?.currency === "USD" && item.valyuta.uzs === null)
+      (item) => (item.warehouseId || canSellNegative && warehouseId) && (canSellNegative || qoldiqMiqdori(item) > 0) && !(item.valyuta?.currency === "USD" && item.valyuta.uzs === null)
     );
     if (sotuvga.length === 0) {
       const nom = qoldiqNomi(mos[0], t);
@@ -812,7 +814,7 @@ export default function YangiSotuvModal({
 
     if (bor >= 0) {
       const yangiMiqdor = raqamgaAylantirish(mahsulotlar[bor].quantity) + 1;
-      if (asosiyMiqdor(skanBirligi, yangiMiqdor) > mavjudMiqdor) {
+      if (!canSellNegative && asosiyMiqdor(skanBirligi, yangiMiqdor) > mavjudMiqdor) {
         xato(t("products.scanNotEnough", { name: nom, available: mavjudMiqdor }));
         return;
       }
@@ -943,7 +945,7 @@ export default function YangiSotuvModal({
       }
       // Qoldiq asosiy birlikda: pochkada kiritilgan miqdor asosiy birlikka o'giriladi.
       const talab = asosiyMiqdor(birlik, soralganMiqdor);
-      if (talab > mavjudMiqdor) {
+      if (!canSellNegative && talab > mavjudMiqdor) {
         setXatolik(
           t("errors.insufficientStock", {
             name: tanlanganQoldiq ? qoldiqNomi(tanlanganQoldiq, t) : t("common.selectedProductFallback"),

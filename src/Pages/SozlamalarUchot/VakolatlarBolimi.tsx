@@ -5,10 +5,12 @@ import { foydalanuvchilarApi, vakolatlarApi } from "@/api/accountsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { AccountFoydalanuvchi, AccountVakolati, VakolatKodi } from "@/types/account";
 import { BolimKarta, Switch } from "./UmumiyUI";
+import { rolniNormallashtirish } from "@/lib/roles";
 
 export default function VakolatlarBolimi() {
   const { t } = useTranslation("sozlamalar_uchot");
   const vakolatlar: Array<{ code: VakolatKodi; nom: string }> = [
+    { code: "NEGATIVE_STOCK_SALE", nom: t("vakolatlar.codes.negativeStock") },
     { code: "DELETE", nom: t("vakolatlar.codes.delete") },
     { code: "REPORTS", nom: t("vakolatlar.codes.reports") },
     { code: "EXPENSE", nom: t("vakolatlar.codes.expense") },
@@ -41,10 +43,9 @@ export default function VakolatlarBolimi() {
     const mavjud = grantlar.find((g) => g.userId === userId && g.code === code && !g.isDeleted);
     setAmal(key); setXato("");
     try {
-      const saved = mavjud
-        ? await vakolatlarApi.yangilash(mavjud.id, { isActive: !mavjud.isActive })
-        : await vakolatlarApi.yaratish({ userId, code, isActive: true });
-      setGrantlar((items) => items.some((g) => g.id === saved.id) ? items.map((g) => g.id === saved.id ? saved : g) : [...items, saved]);
+      const codes = grantlar.filter((grant) => grant.userId === userId && grant.isActive && !grant.isDeleted && grant.code !== code).map((grant) => grant.code);
+      const saved = await vakolatlarApi.foydalanuvchiKodlariniSaqlash(userId, [...codes, ...(!mavjud?.isActive ? [code] : [])]);
+      setGrantlar((items) => [...items.filter((grant) => grant.userId !== userId), ...saved]);
     } catch (error) { setXato(getApiErrorMessage(error)); }
     finally { setAmal(""); }
   }
@@ -52,6 +53,6 @@ export default function VakolatlarBolimi() {
   return <BolimKarta sarlavha={t("vakolatlar.title")} izoh={t("vakolatlar.subtitle")}>
     {xato && <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
     <label className="mb-4 flex h-11 max-w-md items-center gap-2 rounded-xl border border-slate-200 px-3 focus-within:border-orange-400"><Search size={17} className="text-slate-400"/><input value={qidiruv} onChange={(e) => setQidiruv(e.target.value)} placeholder={t("vakolatlar.searchPlaceholder")} className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none"/></label>
-    {yuklanmoqda ? <div className="flex h-40 items-center justify-center gap-2 text-sm font-bold text-slate-400"><LoaderCircle className="animate-spin" size={20}/>{t("vakolatlar.loading")}</div> : <div className="overflow-x-auto rounded-2xl border border-orange-100"><table className="min-w-[820px] w-full text-left"><thead className="bg-slate-50"><tr><th className="px-4 py-3 text-xs font-black uppercase text-orange-600">{t("vakolatlar.employeeColumn")}</th>{vakolatlar.map((v) => <th key={v.code} className="px-3 py-3 text-center text-xs font-black uppercase text-orange-600">{v.nom}</th>)}</tr></thead><tbody className="divide-y divide-orange-100">{korinadiganlar.map((user) => <tr key={user.id} className="hover:bg-orange-50/30"><td className="px-4 py-3"><p className="font-black text-slate-800">{user.fullName || user.username}</p><p className="text-xs font-bold text-slate-400">{user.role}</p></td>{vakolatlar.map((v) => { const grant = grantlar.find((g) => g.userId === user.id && g.code === v.code && !g.isDeleted); const key = `${user.id}:${v.code}`; return <td key={v.code} className="px-3 py-3"><div className="flex justify-center"><Switch yoniq={Boolean(grant?.isActive)} onChange={() => amal || void almashtir(user.id, v.code)}/>{amal === key && <LoaderCircle className="ml-2 animate-spin text-orange-500" size={16}/>}</div></td>; })}</tr>)}{korinadiganlar.length === 0 && <tr><td colSpan={vakolatlar.length + 1} className="p-10 text-center text-sm font-bold text-slate-400">{t("vakolatlar.notFound")}</td></tr>}</tbody></table></div>}
+    {yuklanmoqda ? <div className="flex h-40 items-center justify-center gap-2 text-sm font-bold text-slate-400"><LoaderCircle className="animate-spin" size={20}/>{t("vakolatlar.loading")}</div> : <div className="overflow-x-auto rounded-2xl border border-orange-100"><table className="min-w-[820px] w-full text-left"><thead className="bg-slate-50"><tr><th className="px-4 py-3 text-xs font-black uppercase text-orange-600">{t("vakolatlar.employeeColumn")}</th>{vakolatlar.map((v) => <th key={v.code} className="px-3 py-3 text-center text-xs font-black uppercase text-orange-600">{v.nom}</th>)}</tr></thead><tbody className="divide-y divide-orange-100">{korinadiganlar.map((user) => <tr key={user.id} className="hover:bg-orange-50/30"><td className="px-4 py-3"><p className="font-black text-slate-800">{user.fullName || user.username}</p><p className="text-xs font-bold text-slate-400">{user.role}</p></td>{vakolatlar.map((v) => { const grant = grantlar.find((g) => g.userId === user.id && g.code === v.code && !g.isDeleted); const key = `${user.id}:${v.code}`; return <td key={v.code} className="px-3 py-3"><div className="flex justify-center"><Switch yoniq={v.code === "NEGATIVE_STOCK_SALE" && rolniNormallashtirish(user.role) === "DIREKTOR" || Boolean(grant?.isActive)} disabled={Boolean(amal) || v.code === "NEGATIVE_STOCK_SALE" && rolniNormallashtirish(user.role) === "DIREKTOR"} onChange={() => amal || void almashtir(user.id, v.code)}/>{amal === key && <LoaderCircle className="ml-2 animate-spin text-orange-500" size={16}/>}</div></td>; })}</tr>)}{korinadiganlar.length === 0 && <tr><td colSpan={vakolatlar.length + 1} className="p-10 text-center text-sm font-bold text-slate-400">{t("vakolatlar.notFound")}</td></tr>}</tbody></table></div>}
   </BolimKarta>;
 }

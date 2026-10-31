@@ -6,7 +6,7 @@ import { foydalanuvchilarApi, vakolatlarApi } from "@/api/accountsApi";
 import { filiallarApi } from "@/api/omborApi";
 import { bolimlarApi, lavozimlarApi } from "@/api/hrApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
-import type { AccountFoydalanuvchi, AccountRoli, AccountVakolati, VakolatKodi } from "@/types/account";
+import type { AccountFoydalanuvchi, AccountRoli, AccountVakolati } from "@/types/account";
 import type { Filial } from "@/types/ombor";
 import type { Bolim, Lavozim, Xodim } from "./types";
 import type { HrDepartment, HrPosition } from "@/types/hr";
@@ -78,7 +78,7 @@ export default function XodimUchot() {
   const [lavozimlar, setLavozimlar] = useState<Lavozim[]>([]);
   const [bolimlar, setBolimlar] = useState<Bolim[]>([]);
   const [filiallar, setFiliallar] = useState<Filial[]>([]);
-  const [grantlar, setGrantlar] = useState<AccountVakolati[]>([]);
+  const [, setGrantlar] = useState<AccountVakolati[]>([]);
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [xato, setXato] = useState("");
 
@@ -135,16 +135,7 @@ export default function XodimUchot() {
         await avatarApi.olibTashlash(saved.id);
       }
 
-      const userGrantlari = grantlar.filter((grant) => grant.userId === saved.id);
-      const kerakli = new Set(xodim.vakolatlar);
-      await Promise.all([
-        ...userGrantlari.map((grant) =>
-          vakolatlarApi.yangilash(grant.id, { isActive: kerakli.has(grant.code) })
-        ),
-        ...[...kerakli]
-          .filter((code) => !userGrantlari.some((grant) => grant.code === code))
-          .map((code) => vakolatlarApi.yaratish({ userId: saved.id, code: code as VakolatKodi, isActive: true })),
-      ]);
+      await vakolatlarApi.foydalanuvchiKodlariniSaqlash(saved.id, xodim.vakolatlar);
       await yuklash();
     } catch (error) {
       setXato(getApiErrorMessage(error));

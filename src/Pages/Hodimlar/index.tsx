@@ -69,6 +69,7 @@ const korinishlar: Array<{ id: Korinish; nom: string; icon: typeof Monitor }> = 
 ];
 
 const vakolatMatnlari: Record<VakolatKodi, { nom: string; izoh: string }> = {
+  NEGATIVE_STOCK_SALE: { nom: "Minusga sotish", izoh: "Qoldiq yetmasa ham sotish, chiqim va ko‘chirish" },
   DELETE: {
     nom: "Ma'lumotlarni o'chirish",
     izoh: "Ruxsat etilgan bo'limlarda o'chirish amallarini bajaradi.",

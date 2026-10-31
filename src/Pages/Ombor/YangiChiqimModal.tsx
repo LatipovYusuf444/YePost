@@ -1,3 +1,4 @@
+import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -34,6 +35,7 @@ const yangiQator = (): Qator => ({ id: crypto.randomUUID(), modificationId: "", 
 export default function YangiChiqimModal({ onClose }: Props) {
   const { t } = useTranslation("ombor_modal");
   const store = useOmborStore();
+  const canSellNegative = useInventorySettingsStore((s) => s.canSellNegative);
   const chiqimSabablari: Record<ChiqimSababi, string> = {
     DAMAGE: t("yangiChiqimModal.reasons.damage"),
     EXPIRY: t("yangiChiqimModal.reasons.expiry"),
@@ -101,8 +103,8 @@ export default function YangiChiqimModal({ onClose }: Props) {
   );
 
   const mavjudMahsulotlar = useMemo(
-    () => omborQoldiqlari.filter((item) => Number(qoldiqMiqdori(item)) > 0),
-    [omborQoldiqlari]
+    () => canSellNegative ? [...omborQoldiqlari, ...store.modifikatsiyalar.filter((mod) => !omborQoldiqlari.some((row) => row.modificationId === mod.id)).map((mod) => ({ modificationId: mod.id, modification: mod, warehouseId, quantity: 0 }))] : omborQoldiqlari.filter((item) => Number(qoldiqMiqdori(item)) > 0),
+    [omborQoldiqlari, canSellNegative, store.modifikatsiyalar, warehouseId]
   );
 
   // Tannarx o'z valyutasida (dollar bo'lsa $); tanlanmagan qator jamiga kirmaydi.
@@ -159,7 +161,7 @@ export default function YangiChiqimModal({ onClose }: Props) {
   // Shtrix-kod (yoki artikul) to'liq mos kelsa mahsulot qo'shiladi; qator bor bo'lsa miqdori 1 taga oshadi (qoldiqdan oshmaydi).
   function kodniQoshish(kod: string): SkanNatijasi {
     const mos = kodBilanTopish(
-      omborQoldiqlari,
+      mavjudMahsulotlar,
       kod,
       (item) => item.modification ?? store.modifikatsiyalar.find((modification) => modification.id === item.modificationId)
     );
@@ -169,11 +171,11 @@ export default function YangiChiqimModal({ onClose }: Props) {
     const mod = qoldiq.modification ?? store.modifikatsiyalar.find((modification) => modification.id === qoldiq.modificationId);
     const nom = modificationNomi(mod);
     const mavjud = Number(qoldiqMiqdori(qoldiq));
-    if (!(mavjud > 0)) return { xato: true, matn: tk("shtrixKod.outOfStock", { name: nom }) };
+    if (!canSellNegative && !(mavjud > 0)) return { xato: true, matn: tk("shtrixKod.outOfStock", { name: nom }) };
     const bor = qatorlar.find((row) => row.modificationId === qoldiq.modificationId);
     if (bor) {
       const yangiMiqdor = Number(bor.quantity || 0) + 1;
-      if (yangiMiqdor > mavjud) return { xato: true, matn: tk("shtrixKod.notEnough", { name: nom, available: mavjud }) };
+      if (!canSellNegative && yangiMiqdor > mavjud) return { xato: true, matn: tk("shtrixKod.notEnough", { name: nom, available: mavjud }) };
       qatorniYangilash(bor.id, { quantity: yangiMiqdor });
       return { xato: false, matn: tk("shtrixKod.added", { name: nom, qty: yangiMiqdor }) };
     }
@@ -206,7 +208,7 @@ export default function YangiChiqimModal({ onClose }: Props) {
       const stock = omborQoldiqlari.find((item) => item.modificationId === row.modificationId);
       return row.quantity > Number(stock ? qoldiqMiqdori(stock) : 0);
     });
-    if (ortiqcha) return setXato("yangiChiqimModal.errors.exceedsStock");
+    if (!canSellNegative && ortiqcha) return setXato("yangiChiqimModal.errors.exceedsStock");
 
     const hujjat = await store.chiqimYaratish({
       ...yangiHujjatSanasi(hujjatSanasi),
@@ -328,7 +330,7 @@ export default function YangiChiqimModal({ onClose }: Props) {
                       />
                       <div className="relative"><Barcode size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={mod?.barcode ?? ""} readOnly placeholder={t("yangiChiqimModal.items.barcodePlaceholder")} className={`${input} pl-9`} /></div>
                       <input value={narx ? narx.toLocaleString("uz-UZ") : ""} placeholder="0" readOnly className={input} />
-                      <div className="relative"><input type="number" min="0.001" max={mavjud || undefined} step="0.001" value={row.quantity} data-chiqim-miqdor={row.id} onChange={(event) => qatorniYangilash(row.id, { quantity: Number(event.target.value) })} onKeyDown={(event) => { if (event.key !== "Enter" || event.nativeEvent.isComposing) return; event.preventDefault(); keyingiQatorgaOtish(row.id); }} className={`${input} pr-14`} /><span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400">{t("yangiChiqimModal.items.unit")}</span></div>
+                      <div className="relative"><input type="number" min="0.001" max={canSellNegative ? undefined : mavjud || undefined} step="0.001" value={row.quantity} data-chiqim-miqdor={row.id} onChange={(event) => qatorniYangilash(row.id, { quantity: Number(event.target.value) })} onKeyDown={(event) => { if (event.key !== "Enter" || event.nativeEvent.isComposing) return; event.preventDefault(); keyingiQatorgaOtish(row.id); }} className={`${input} pr-14`} /><span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400">{t("yangiChiqimModal.items.unit")}</span></div>
                       <div className="relative"><Warehouse size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><AppSelect value={warehouseId} onChange={(event) => omborniAlmashtirish(event.target.value)} className={`${input} appearance-none pl-9 pr-8`}><option value="">{t("yangiChiqimModal.items.selectWarehouse")}</option>{store.omborlar.filter((item) => item.isActive !== false).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</AppSelect><ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" /></div>
                       <div className="rounded-xl bg-slate-50 px-3 py-2.5"><p className="font-black text-slate-700">{mavjud.toLocaleString("uz-UZ")}</p><p className="truncate text-[10px] font-semibold text-slate-400">{store.omborlar.find((item) => item.id === warehouseId)?.name ?? t("yangiChiqimModal.items.warehouseFallback")}</p></div>
                       <p className="font-black text-emerald-600">{pul(row.quantity * narx, narxValyutasi)}</p>

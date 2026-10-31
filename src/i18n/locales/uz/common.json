@@ -90,5 +90,25 @@
     "title": "Kutilmagan xatolik yuz berdi",
     "description": "Sahifani qayta yuklab ko'ring. Xato takrorlansa, quyidagi matnni dasturchiga yuboring.",
     "reload": "Sahifani qayta yuklash"
+  },
+  "negativeStock": {
+    "settingsTitle": "Ombor sozlamalari",
+    "settingsSubtitle": "Qoldiq va minusga sotish qoidalari",
+    "title": "Minusga sotish",
+    "description": "Qoldiq yetmasa ham sotish mumkin. Qoldiq minusga tushadi, keyingi kirim uni yopadi. Bu qoida chiqim va ko‘chirish uchun ham amal qiladi.",
+    "enabled": "Do‘konda yoqilgan",
+    "disabled": "Do‘konda o‘chirilgan",
+    "allowed": "Sizda minusga sotish ruxsati bor",
+    "notAllowed": "Sizda minusga sotish ruxsati yo‘q",
+    "releasePending": "Minusga sotishni yoqish vaqtincha yopiq. Xizmat yangilanishidan so‘ng foydalanish mumkin bo‘ladi.",
+    "adminOnly": "Bu sozlamani faqat direktor yoki administrator o‘zgartira oladi.",
+    "historyHint": "Sozlamani o‘chirish eski minuslarni yo‘qotmaydi; kirim ularni yopadi. Minusga faqat bugungi sana bilan sotiladi. Taxminiy tannarx va foyda keyingi kirimda o‘zgarmaydi.",
+    "retry": "Qayta urinish",
+    "badge": "minus",
+    "badgeHint": "Bu qator qoldiqni minusga tushirgan.",
+    "costEstimated": "Tannarx taxminiy",
+    "costHint": "Minusga sotilgan qismning tannarxi sotuv kunidagi taxminiy qiymatda qoladi; keyingi kirim uni o‘zgartirmaydi.",
+    "productStock": "Ombordagi qoldiq",
+    "noStock": "Bu mahsulot uchun ombor qoldig‘i yozuvi yo‘q."
   }
 }

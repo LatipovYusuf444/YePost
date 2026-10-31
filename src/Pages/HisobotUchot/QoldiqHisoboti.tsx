@@ -1,3 +1,4 @@
+import { StockQuantity } from "@/Components/common/NegativeStockBadge";
 import { useEffect, useMemo, useState } from "react";
 import {
   Bookmark,
@@ -49,7 +50,7 @@ const qoldiqVariantlari: { value: string; nomi: string }[] = [
   { value: "hammasi", nomi: "Hammasi" },
   { value: "musbat", nomi: "Musbat" },
   { value: "nol", nomi: "Nol" },
-  { value: "manfiy", nomi: "Manfiy" },
+  { value: "manfiy", nomi: "Minusda" },
 ];
 
 const bugungiSana = new Date().toISOString().slice(0, 10);
@@ -195,7 +196,7 @@ export default function QoldiqHisoboti() {
               q.qoldiq > 0 ? "text-emerald-600" : q.qoldiq < 0 ? "text-red-500" : "text-gray-400"
             }`}
           >
-            {son(q.qoldiq)}
+            {<StockQuantity value={q.qoldiq} />}
             {q.bolingan && <span className="block text-[11px] font-semibold text-slate-500">{q.bolingan}</span>}
             {q.taxminan && <span className="block text-[11px] font-semibold text-slate-400">{q.taxminan}</span>}
           </span>

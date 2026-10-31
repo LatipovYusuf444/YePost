@@ -1,3 +1,4 @@
+import { stockQuantity } from "@/lib/negativeStock";
 import { useEffect, useMemo, useState } from "react";
 import { Boxes, Layers3, LoaderCircle, PackageSearch, RefreshCw, Search, TriangleAlert, Warehouse, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -11,7 +12,7 @@ import type { Kategoriya, Mahsulot, OlchovBirligi } from "@/types/catalog";
 import { kategoriyaMahsulotlariniBirlashtirish, kategoriyaMiqdorJamilari, kategoriyaQatorlari } from "@/lib/kategoriyaQoldigi";
 
 type Props = { kategoriya: Kategoriya; mahsulotlar: Mahsulot[]; birliklar: OlchovBirligi[]; onYopish: () => void; onMahsulotOchish: (id: string) => void; yashirin?: boolean };
-const sonMatni = (son: number) => son.toLocaleString("uz-UZ", { maximumFractionDigits: 3 });
+const sonMatni = (son: number) => stockQuantity(son);
 
 export default function KategoriyaQoldigiModal({ kategoriya, mahsulotlar, birliklar, onYopish, onMahsulotOchish, yashirin = false }: Props) {
   const { t } = useTranslation("mahsulotlar");
@@ -134,7 +135,7 @@ export default function KategoriyaQoldigiModal({ kategoriya, mahsulotlar, birlik
                     <td className="px-6 py-4"><p className="font-semibold text-slate-900">{item.nom}{item.nofaol && <span className="ml-2 rounded-md bg-slate-100 px-2 py-1 text-[10px] text-slate-500">{t("status.inactive")}</span>}</p>{item.variant && <p className="mt-1 text-xs text-slate-500">{item.variant}</p>}</td>
                     <td className="px-4 py-4 text-slate-500">{item.shtrix || "—"}</td>
                     <td className="px-4 py-4"><span className={item.omborId ? "font-medium text-slate-700" : "text-xs text-slate-400"}>{item.omborNomi || t(item.omborId ? "categoryStock.unnamedWarehouse" : "categoryStock.noStockRecord")}</span></td>
-                    <td className="whitespace-nowrap px-4 py-4 text-right font-semibold tabular-nums text-slate-800">{miqdor(item.qoldiq, item.birlik)}</td>
+                    <td className="whitespace-nowrap px-4 py-4 text-right font-semibold tabular-nums text-slate-800">{<span className={item.qoldiq !== null && item.qoldiq < 0 ? "text-red-600" : ""}>{miqdor(item.qoldiq, item.birlik)}</span>}</td>
                     <td className="whitespace-nowrap px-4 py-4 text-right tabular-nums text-slate-500">{miqdor(item.rezerv, item.birlik)}</td>
                     <td className="whitespace-nowrap px-6 py-4 text-right"><span className={`inline-flex rounded-lg border px-3 py-1.5 font-bold tabular-nums ${item.mavjud === null ? "border-slate-100 bg-slate-50 text-slate-400" : item.mavjud < 0 ? "border-red-100 bg-red-50 text-red-600" : "border-emerald-100 bg-emerald-50 text-emerald-700"}`}>{miqdor(item.mavjud, item.birlik)}</span></td>
                   </tr>)}

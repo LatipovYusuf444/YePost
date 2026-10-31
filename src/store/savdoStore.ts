@@ -61,9 +61,6 @@ function xatolikKodi(error: unknown): string | undefined {
 export type NakladnoyNatijasi = { ok: true } | { ok: false; xato: string };
 
 function tasdiqlashXatoligiMatni(error: unknown) {
-  if (xatolikKodi(error) === "errors.inventory.out_of_stock") {
-    return "Ombordagi mahsulot qoldig'i yetarli emas. Sotuvni tasdiqlashdan oldin ombor qoldig'ini to'ldiring yoki sotuvdagi miqdorni kamaytiring.";
-  }
   return getApiErrorMessage(error);
 }
 

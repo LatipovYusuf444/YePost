@@ -1,4 +1,6 @@
-﻿import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { StockQuantity } from "@/Components/common/NegativeStockBadge";
+import NegativeStockBadge from "@/Components/common/NegativeStockBadge";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import HujjatSanasiMaydoni, { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import { bugungiToshkentKuni, hujjatVaqtiMatni, kelajakKunmi, kunMatni, saqlanganTolovMaydonlari, tolovQoshimchasi, toshkentKuni } from "@/lib/hujjatSanasi";
@@ -3093,7 +3095,7 @@ function TovarlarTab({
 
                   <div className="flex items-center gap-3">
                     <div className="flex h-12 min-w-0 flex-1 items-center rounded-md border border-slate-300 bg-white px-3">
-                      <span className="min-w-0 flex-1 truncate text-slate-800">{mahsulotNomi(item, t)}</span>
+                      <span className="min-w-0 flex-1 truncate text-slate-800">{mahsulotNomi(item, t)}<NegativeStockBadge wentNegative={item.wentNegative} costEstimated={item.costEstimated} /></span>
                       <ChevronDown size={18} className="-rotate-90 text-slate-400" />
                     </div>
                     <div className="flex h-12 w-12 items-center justify-center rounded-md border border-dashed border-sky-300 text-slate-400">
@@ -3126,7 +3128,7 @@ function TovarlarTab({
                     <Search size={18} className="text-slate-500" />
                   </button>
 
-                  <span className="text-[#2563EB] underline underline-offset-4">{Math.max(mavjudQoldiq, 0)} {t("common.dona")}</span>
+                  <span className="text-[#2563EB] underline underline-offset-4">{<StockQuantity value={mavjudQoldiq} />} {t("common.dona")}</span>
 
                   <div>
                     <div className="flex h-12 items-center justify-end rounded-md border border-slate-300 bg-white px-3">{rezerv}</div>
@@ -3267,7 +3269,7 @@ function TovarlarTab({
                     )}
                   </div>
 
-                  <span className="text-[#2563EB] underline underline-offset-4">{Math.max(qator.availableQty, 0)} {t("common.dona")}</span>
+                  <span className="text-[#2563EB] underline underline-offset-4">{<StockQuantity value={qator.availableQty} />} {t("common.dona")}</span>
                   <div className="flex h-12 items-center justify-end rounded-md border border-slate-300 bg-white px-3">0</div>
                   <span>0 {t("common.dona")}</span>
                   <div className="flex items-center justify-between gap-3">
@@ -3492,7 +3494,7 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
 
                   <div className="flex items-center gap-3">
                     <div className="flex h-12 min-w-0 flex-1 items-center rounded-md border border-slate-300 bg-white px-3">
-                      <span className="min-w-0 flex-1 truncate text-slate-800">{mahsulotNomi(item, t)}</span>
+                      <span className="min-w-0 flex-1 truncate text-slate-800">{mahsulotNomi(item, t)}<NegativeStockBadge wentNegative={item.wentNegative} costEstimated={item.costEstimated} /></span>
                       <ChevronDown size={18} className="-rotate-90 text-slate-400" />
                     </div>
                     <div className="flex h-12 w-12 items-center justify-center rounded-md border border-dashed border-sky-300 text-slate-400">
@@ -3771,7 +3773,7 @@ function YetkazishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; 
                       <label className="text-sm text-slate-600">
                         {t("yetkazishPanel.mahsulot")}
                         <div className="mt-2 flex h-12 items-center rounded-md border border-slate-300 bg-white px-3">
-                          <span className="min-w-0 flex-1 truncate text-slate-600">{mahsulotNomi(item, t)}</span>
+                          <span className="min-w-0 flex-1 truncate text-slate-600">{mahsulotNomi(item, t)}<NegativeStockBadge wentNegative={item.wentNegative} costEstimated={item.costEstimated} /></span>
                           <Search size={19} className="text-slate-500" />
                         </div>
                       </label>
@@ -4170,7 +4172,7 @@ function OmbordanChiqarishHujjatMazmuni({
                                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-orange-200 bg-orange-50 text-[#2563EB]">
                                     <Package size={17} />
                                   </span>
-                                  <span className="min-w-0 break-words font-bold text-slate-900">{mahsulotNomi(item, t)}</span>
+                                  <span className="min-w-0 break-words font-bold text-slate-900">{mahsulotNomi(item, t)}<NegativeStockBadge wentNegative={item.wentNegative} costEstimated={item.costEstimated} /></span>
                                 </div>
                               </td>
                               <td className="whitespace-nowrap px-3 py-4 tabular-nums">{pulniFormatlash(item.price, qatorValyutasi(item, sotuv))}</td>
@@ -4178,7 +4180,7 @@ function OmbordanChiqarishHujjatMazmuni({
                                 {item.quantity} <span className="font-medium text-slate-400">{t("common.dona")}</span>
                               </td>
                               <td className="whitespace-nowrap px-3 py-4 font-bold tabular-nums text-[#2563EB]">
-                                {Math.max(mavjudQoldiq, 0)} {t("common.dona")}
+                                {<StockQuantity value={mavjudQoldiq} />} {t("common.dona")}
                               </td>
                               <td className="px-3 py-4">
                                 <span

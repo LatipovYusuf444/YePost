@@ -1,3 +1,5 @@
+import { movementStockTotals } from "@/lib/negativeStock";
+import { StockQuantity } from "@/Components/common/NegativeStockBadge";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, Search } from "lucide-react";
 import KengaytiriladiganJadval, { type Ustun } from "./KengaytiriladiganJadval";
@@ -116,6 +118,8 @@ export default function TovarHarakati() {
             categoryId?: string;
             modificationId?: string;
             quantity?: number | string;
+            openingBalance?: number | string;
+            closingBalance?: number | string;
             customerId?: string;
             supplierId?: string;
           }>;
@@ -124,6 +128,8 @@ export default function TovarHarakati() {
           (raw.items ?? []).map((row, index) => ({
             id: `${row.refId ?? index}-${row.modificationId ?? ""}-${row.date ?? ""}`,
             sana: row.date ?? "",
+            openingBalance: row.openingBalance,
+            closingBalance: row.closingBalance,
             hujjatTuri:
               row.type === "PURCHASE" || row.type === "RETURN" || row.type === "TRANSFER_IN"
                 ? "kirim"
@@ -194,25 +200,28 @@ export default function TovarHarakati() {
         .sort((a, b) => a.sana.localeCompare(b.sana));
       if (guruh.length === 0) continue;
 
-      let qoldiq = tovarHarakati
-        .filter((r) => r.productId === mahsulot.id && r.sana.slice(0, 10) < filter.dateFrom)
-        .filter((r) => ichida(filter.warehouseIds, r.warehouseId) && ichida(filter.categoryIds, r.categoryId) && ichida(filter.xarakteristikaIds, r.xarakteristikaId))
-        .reduce((summa, r) => summa + (kirimTuri(r) ? r.miqdor : -r.miqdor), 0);
-      const boshlangichQoldiq = qoldiq;
+      const streamKey = (row: TovarHarakati) => row.warehouseId + ':' + row.xarakteristikaId;
+      const previous = new Map<string, number>();
+      for (const row of tovarHarakati.filter((r) => r.productId === mahsulot.id && r.sana.slice(0, 10) < filter.dateFrom)) {
+        const key = streamKey(row);
+        previous.set(key, (previous.get(key) ?? 0) + (kirimTuri(row) ? row.miqdor : -row.miqdor));
+      }
+      const stock = movementStockTotals(guruh.map((row) => ({ key: streamKey(row), movement: kirimTuri(row) ? row.miqdor : -row.miqdor, openingBalance: row.openingBalance, closingBalance: row.closingBalance })), previous);
+      let qoldiq = stock.opening;
+      const boshlangichQoldiq = stock.opening;
       let kirimJami = 0;
       let chiqimJami = 0;
       const detaylar: KorinishQator[] = [];
 
-      for (const r of guruh) {
-        const bosh = qoldiq;
+      for (const [rowIndex, r] of guruh.entries()) {
+        const bosh = stock.lines[rowIndex].opening;
         const kirimmi = kirimTuri(r);
         if (kirimmi) {
-          qoldiq += r.miqdor;
           kirimJami += r.miqdor;
         } else {
-          qoldiq -= r.miqdor;
           chiqimJami += r.miqdor;
         }
+        qoldiq = stock.lines[rowIndex].closing;
         detaylar.push({
           kind: "detail",
           id: r.id,
@@ -319,7 +328,7 @@ export default function TovarHarakati() {
         id: "boshQoldiq",
         nom: "Boshlang'ich qoldiq",
         kenglik: 160,
-        katak: (r) => son(r.boshQoldiq),
+        katak: (r) => <StockQuantity value={r.boshQoldiq} />,
       },
       {
         id: "kirim",
@@ -349,7 +358,7 @@ export default function TovarHarakati() {
           ),
         jami: () => <span className="text-red-500">−{son(jami.chiqim)}</span>,
       },
-      { id: "oxirgiQoldiq", nom: "Oxirgi qoldiq", kenglik: 140, katak: (r) => son(r.oxirgiQoldiq) },
+      { id: "oxirgiQoldiq", nom: "Oxirgi qoldiq", kenglik: 140, katak: (r) => <StockQuantity value={r.oxirgiQoldiq} /> },
     ],
     [jami, mahsulotOchish]
   );

@@ -1,3 +1,4 @@
+import NegativeStockBadge from "@/Components/common/NegativeStockBadge";
 import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
@@ -174,7 +175,7 @@ export default function ChiqimTafsilotModal({ id, onClose }: Props) {
                     {qatorlar.map((item, index) => (
                       <tr key={item.id ?? `${item.modificationId}-${index}`}>
                         <td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td>
-                        <td className="px-4 py-4 font-black text-slate-800">{modificationNomi(item.modification)}</td>
+                        <td className="px-4 py-4 font-black text-slate-800">{modificationNomi(item.modification)}<NegativeStockBadge wentNegative={item.wentNegative} /></td>
                         <td className="px-4 py-4 font-medium text-slate-500">{item.modification?.barcode || "—"}</td>
                         <td className="px-4 py-4 font-semibold text-slate-600">{pul(item.price, item.valyuta)}</td>
                         <td className="px-4 py-4 font-semibold text-slate-700">{item.quantity.toLocaleString("uz-UZ")}</td>

@@ -55,6 +55,11 @@ export const foydalanuvchilarApi = {
 
 // Hodimlar/Ruxsatlar.tsx: Swagger accounts/grants bo'limining to'liq CRUD amallari.
 export const vakolatlarApi = {
+  foydalanuvchiKodlariniSaqlash: async (userId: string, codes: string[]): Promise<AccountVakolati[]> => {
+    await apiClient.put(`/accounts/grants/users/${userId}`, { codes: [...new Set(codes)] });
+    const response = await apiClient.get<AccountVakolati[] | ApiListEnvelope<AccountVakolati>>("/accounts/grants");
+    return apiList(response.data).filter((grant) => grant.userId === userId);
+  },
   royxat: async () => {
     const response = await apiClient.get<AccountVakolati[] | ApiListEnvelope<AccountVakolati>>(
       "/accounts/grants"

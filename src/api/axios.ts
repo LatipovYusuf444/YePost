@@ -10,6 +10,8 @@ import {
   authTokenlarniTozalash,
 } from "@/lib/authTokenStorage";
 import { muvaffaqiyatXabari, xatolikXabari } from "@/lib/toast";
+import { toast } from "sonner";
+import { negativeStockMessages } from "@/lib/negativeStock";
 
 // Toast ko'rsatilmaydigan yo'llar: auth oqimi (o'zi navigatsiya qiladi),
 // bildirishnoma o'qilgan deb belgilash va chat/support xabar yuborish
@@ -104,6 +106,11 @@ apiClient.interceptors.request.use((config) => {
 
 apiClient.interceptors.response.use(
   (response) => {
+    for (const message of negativeStockMessages(response.data, response.config.url ?? "", response.config.method, apiTiliniOlish())) {
+      const options = { id: message.text, duration: 12_000 };
+      if (message.kind === "warning") toast.warning(message.text, options);
+      else toast.success(message.text, options);
+    }
     const usul = response.config.method?.toLowerCase();
     if (usul && MUTATSIYA_USULLARI.has(usul) && toastKerakmi(response.config.url)) {
       muvaffaqiyatXabari(muvaffaqiyatMatni(usul));

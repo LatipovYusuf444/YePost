@@ -27,6 +27,8 @@ export type HujjatTuri = "kirim" | "inventarizatsiya" | "chiqim" | "realizatsiya
 
 // Tovar harakati — bitta hujjat qatori (barcha filtrlarga bog'langan)
 export type TovarHarakati = {
+  openingBalance?: number | string;
+  closingBalance?: number | string;
   id: string;
   sana: string;
   hujjatTuri: HujjatTuri;

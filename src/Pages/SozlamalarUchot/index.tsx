@@ -29,6 +29,7 @@ import ProfilBolimi from "./ProfilBolimi";
 import TelegramBotKarti from "./TelegramBotKarti";
 import VakolatlarBolimi from "./VakolatlarBolimi";
 import ValyutaBolimi from "./ValyutaBolimi";
+import InventoryBolimi from "./InventoryBolimi";
 import type { SozlamaBolim } from "./types";
 
 // faqatDirektor: true — bo'lim faqat superadmin/direktor uchun ochiladi.
@@ -39,6 +40,7 @@ const bolimlar: { id: SozlamaBolim; icon: typeof UserRound; faqatDirektor?: bool
   { id: "birliklar", icon: Ruler },
   { id: "vakolatlar", icon: ShieldCheck },
   { id: "valyuta", icon: CircleDollarSign },
+  { id: "inventory", icon: Building2 },
   { id: "narxTurlari", icon: Tags },
   { id: "davrniYopish", icon: Lock },
   { id: "integratsiya", icon: PlugZap, faqatDirektor: true },
@@ -101,6 +103,7 @@ export default function SozlamalarUchot() {
           {bolim === "filiallar" && <FiliallarBolimi />}
           {bolim === "birliklar" && <OlchovBirligiBolimi />}
           {bolim === "valyuta" && <ValyutaBolimi />}
+          {bolim === "inventory" && <InventoryBolimi />}
           {bolim === "narxTurlari" && <NarxTurlariBolimi />}
           {bolim === "davrniYopish" && <DavrniYopishBolimi />}
           {bolim === "vakolatlar" && <VakolatlarBolimi />}

@@ -1,3 +1,5 @@
+import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
+import NegativeStockBadge from "@/Components/common/NegativeStockBadge";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -77,6 +79,7 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
   const bekorMumkin = useHujjatniBekorQilishMumkinmi("ombor");
   const { t } = useTranslation("ombor_modal");
   const store = useOmborStore();
+  const canSellNegative = useInventorySettingsStore((s) => s.canSellNegative);
   const [hujjat, setHujjat] = useState<KochirishHujjati | null>(null);
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [tahrir, setTahrir] = useState(false);
@@ -199,7 +202,7 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
       const avvalgi = hujjat?.items?.find((qator) => qator.modificationId === item.modificationId);
       return qoldiq && item.quantity > qoldiqMiqdori(qoldiq) + Number(avvalgi?.quantity ?? 0);
     });
-    if (ortiqcha) {
+    if (!canSellNegative && ortiqcha) {
       setXato("kochirishKorishModal.errors.exceedsStock");
       return;
     }
@@ -321,7 +324,7 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
                   <div className="mt-5 overflow-x-auto rounded-2xl border border-orange-100">
                     <table className="w-full min-w-[900px] text-left text-sm">
                       <thead className="bg-[#F8FAFC] text-xs font-black uppercase text-slate-500"><tr><th className="px-4 py-4">{t("kochirishKorishModal.view.columns.number")}</th><th className="px-4 py-4">{t("kochirishKorishModal.view.columns.product")}</th><th className="px-4 py-4">{t("kochirishKorishModal.view.columns.barcode")}</th><th className="px-4 py-4">{t("kochirishKorishModal.view.columns.price")}</th><th className="px-4 py-4">{t("kochirishKorishModal.view.columns.quantity")}</th><th className="px-4 py-4">{t("kochirishKorishModal.view.columns.amount")}</th></tr></thead>
-                      <tbody className="divide-y divide-orange-100">{toliqItems.map(({ item, mod }, index) => { const narx = narxniOlish(item, mod); return <tr key={item.id ?? `${item.modificationId}-${index}`}><td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td><td className="px-4 py-4 font-black text-slate-800">{modificationNomi(mod)}</td><td className="px-4 py-4 text-slate-500">{mod?.barcode ?? "—"}</td><td className="px-4 py-4">{pul(narx)}</td><td className="px-4 py-4">{item.quantity} {item.unit ?? t("kochirishKorishModal.view.unit")}</td><td className="px-4 py-4 font-black text-emerald-600">{pul(Number(item.quantity) * narx)}</td></tr>; })}{!toliqItems.length && <tr><td colSpan={6} className="px-5 py-12 text-center font-bold text-slate-400">{t("kochirishKorishModal.states.noItems")}</td></tr>}</tbody>
+                      <tbody className="divide-y divide-orange-100">{toliqItems.map(({ item, mod }, index) => { const narx = narxniOlish(item, mod); return <tr key={item.id ?? `${item.modificationId}-${index}`}><td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td><td className="px-4 py-4 font-black text-slate-800">{modificationNomi(mod)}<NegativeStockBadge wentNegative={item.wentNegative} /></td><td className="px-4 py-4 text-slate-500">{mod?.barcode ?? "—"}</td><td className="px-4 py-4">{pul(narx)}</td><td className="px-4 py-4">{item.quantity} {item.unit ?? t("kochirishKorishModal.view.unit")}</td><td className="px-4 py-4 font-black text-emerald-600">{pul(Number(item.quantity) * narx)}</td></tr>; })}{!toliqItems.length && <tr><td colSpan={6} className="px-5 py-12 text-center font-bold text-slate-400">{t("kochirishKorishModal.states.noItems")}</td></tr>}</tbody>
                     </table>
                   </div>
                 </section>

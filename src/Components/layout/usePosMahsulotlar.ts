@@ -5,7 +5,7 @@ import {
   qoldiqNomlariniBoyitish,
 } from "@/api/savdoApi";
 import type { QoldiqTanlovi } from "@/types/savdo";
-import { mahsulotNomi, qoldiqBirlashtirish, qoldiqMiqdori, qoldiqNarxi } from "./posMahsulotlari";
+import { mahsulotNomi, qoldiqBirlashtirish, qoldiqNarxi } from "./posMahsulotlari";
 
 export type PosMahsulotlarXatosi = "" | "stock" | "warehouseStock" | "catalog";
 
@@ -47,7 +47,7 @@ export function usePosMahsulotlar(warehouseId: string, yangilash = 0) {
       setNatija({ kalit, mahsulotlar: birlashgan, xato });
 
       // Nomi yoki narxi hali topilmagan mahsulotlar katalogdan to'ldiriladi (faqat qoldig'i borlari).
-      const toldirish = birlashgan.filter((item) => qoldiqMiqdori(item) > 0 && (!mahsulotNomi(item) || !qoldiqNarxi(item, "chakana")));
+      const toldirish = birlashgan.filter((item) => (!mahsulotNomi(item) || !qoldiqNarxi(item, "chakana")));
       if (!toldirish.length) return;
       try {
         const boyitilgan = await qoldiqNomlariniBoyitish(toldirish);

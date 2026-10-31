@@ -1,3 +1,4 @@
+import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -56,6 +57,7 @@ function hozirgiVaqt() {
 export default function KochirishYaratishModal({ onClose }: Props) {
   const { t } = useTranslation("ombor_modal");
   const store = useOmborStore();
+  const canSellNegative = useInventorySettingsStore((s) => s.canSellNegative);
   const [sourceWarehouseId, setSource] = useState("");
   const [destWarehouseId, setDest] = useState("");
   const [responsibleId, setResponsible] = useState("");
@@ -97,8 +99,9 @@ export default function KochirishYaratishModal({ onClose }: Props) {
         map.set(qoldiq.modificationId, qoldiq);
       }
     });
+    if (canSellNegative) for (const mod of store.modifikatsiyalar) { if (!map.has(mod.id)) map.set(mod.id, { modificationId: mod.id, modification: mod, warehouseId: sourceWarehouseId, quantity: 0 }); }
     return Array.from(map.values());
-  }, [sourceWarehouseId, store.qoldiqlar]);
+  }, [sourceWarehouseId, store.qoldiqlar, canSellNegative, store.modifikatsiyalar]);
 
   const qatorMalumotlari = useMemo(
     () =>
@@ -182,11 +185,11 @@ export default function KochirishYaratishModal({ onClose }: Props) {
     const qoldiq = mos[0];
     const nom = modificationNomi(qoldiq.modification);
     const mavjud = qoldiqMiqdori(qoldiq);
-    if (!(mavjud > 0)) return { xato: true, matn: tk("shtrixKod.outOfStock", { name: nom }) };
+    if (!canSellNegative && !(mavjud > 0)) return { xato: true, matn: tk("shtrixKod.outOfStock", { name: nom }) };
     const bor = items.find((item) => item.modificationId === qoldiq.modificationId);
     if (bor) {
       const yangiMiqdor = Number(bor.quantity || 0) + 1;
-      if (yangiMiqdor > mavjud) return { xato: true, matn: tk("shtrixKod.notEnough", { name: nom, available: mavjud }) };
+      if (!canSellNegative && yangiMiqdor > mavjud) return { xato: true, matn: tk("shtrixKod.notEnough", { name: nom, available: mavjud }) };
       qatorniYangilash(bor.id, { quantity: yangiMiqdor });
       return { xato: false, matn: tk("shtrixKod.added", { name: nom, qty: yangiMiqdor }) };
     }
@@ -212,7 +215,7 @@ export default function KochirishYaratishModal({ onClose }: Props) {
       const qoldiq = qoldiqlar.find((qator) => qator.modificationId === item.modificationId);
       return !qoldiq || item.quantity > qoldiqMiqdori(qoldiq);
     });
-    if (ortiqcha) return "kochirishYaratishModal.errors.exceedsStock";
+    if (!canSellNegative && ortiqcha) return "kochirishYaratishModal.errors.exceedsStock";
     return "";
   }
 
@@ -337,7 +340,7 @@ export default function KochirishYaratishModal({ onClose }: Props) {
                         <td className="px-3 py-3"><MahsulotTanlov value={item.modificationId} variantlar={mahsulotVariantlari(item.id)} disabled={!sourceWarehouseId} onChange={(id) => { qatorniYangilash(item.id, { modificationId: id }); fokusSoralish(item.id, "miqdor"); }} placeholder={sourceWarehouseId ? t("kochirishYaratishModal.items.selectProduct") : t("kochirishYaratishModal.items.selectWarehouseFirst")} className="input" tanlanganNomi={mod ? modificationNomi(mod) : undefined} ochishSorovi={fokus?.maydon === "mahsulot" && fokus.qatorId === item.id ? fokus.n : 0} /></td>
                         <td className="px-3 py-3"><span className="flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 text-slate-500"><Barcode size={16} />{mod?.barcode ?? "—"}</span></td>
                         <td className="px-3 py-3 font-black text-slate-700">{pul(narx)}</td>
-                        <td className="px-3 py-3"><label className="relative block"><input type="number" min="0.001" max={qoldiq ? qoldiqMiqdori(qoldiq) : undefined} step="0.001" value={item.quantity} data-kochirish-miqdor={item.id} onChange={(event) => qatorniYangilash(item.id, { quantity: Number(event.target.value) })} onKeyDown={(event) => { if (event.key !== "Enter" || event.nativeEvent.isComposing) return; event.preventDefault(); keyingiQatorgaOtish(item.id); }} className="input pr-12" /><span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{t("kochirishYaratishModal.items.unit")}</span></label></td>
+                        <td className="px-3 py-3"><label className="relative block"><input type="number" min="0.001" max={canSellNegative ? undefined : qoldiq ? qoldiqMiqdori(qoldiq) : undefined} step="0.001" value={item.quantity} data-kochirish-miqdor={item.id} onChange={(event) => qatorniYangilash(item.id, { quantity: Number(event.target.value) })} onKeyDown={(event) => { if (event.key !== "Enter" || event.nativeEvent.isComposing) return; event.preventDefault(); keyingiQatorgaOtish(item.id); }} className="input pr-12" /><span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{t("kochirishYaratishModal.items.unit")}</span></label></td>
                         <td className="px-3 py-3"><p className="font-black text-slate-700">{qoldiq ? qoldiqMiqdori(qoldiq) : 0}</p><p className="text-xs font-bold text-slate-400">{store.omborlar.find((ombor) => ombor.id === sourceWarehouseId)?.name ?? "—"}</p></td>
                         <td className="px-3 py-3 font-black text-emerald-600">{pul(summa)}</td>
                         <td className="px-3 py-3"><button type="button" onClick={() => setItems((oldingi) => oldingi.filter((qator) => qator.id !== item.id))} disabled={items.length === 1} className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 disabled:opacity-30" aria-label={t("kochirishYaratishModal.items.removeRowAria")}><Trash2 size={16} /></button></td>

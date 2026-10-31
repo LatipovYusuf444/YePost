@@ -1,3 +1,4 @@
+import { StockQuantity } from "@/Components/common/NegativeStockBadge";
 import { ArrowDownRight, ArrowUpRight, Barcode, CalendarDays, Check, CheckCircle2, ClipboardCheck, ClipboardList, Info, MessageSquareText, Minus, Package, PackageSearch, UserRound, Warehouse, type LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
@@ -73,7 +74,7 @@ export default function InventarizatsiyaKorinish({ hujjat, modifikatsiyalar, omb
               <td className="px-4 py-4"><div className="flex items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 text-slate-400"><Package size={18} /></span><p className="max-w-sm break-words font-semibold text-slate-900">{modificationNomi(mod)}</p></div></td>
               <td className="px-4 py-4"><span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-1.5 font-mono text-xs text-slate-500"><Barcode size={14} />{mod?.barcode || "—"}</span></td>
               <td className="px-4 py-4"><span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-slate-600"><Warehouse size={14} className="text-slate-400" />{omborNomi}</span></td>
-              <td className="px-4 py-4 text-right font-semibold tabular-nums text-slate-600">{sonMatni(item.expectedQuantity ?? item.systemQuantity)}</td>
+              <td className="px-4 py-4 text-right font-semibold tabular-nums text-slate-600">{<StockQuantity value={item.expectedQuantity ?? item.systemQuantity} />}</td>
               <td className="px-4 py-4 text-right"><span className="inline-flex min-w-14 justify-center rounded-lg border-2 border-blue-300 bg-blue-50 px-3 py-2 font-bold tabular-nums text-blue-700">{sonMatni(item.actualQuantity)}</span></td>
               <td className="px-5 py-4 text-right"><span className={`inline-flex min-w-20 items-center justify-center gap-1 rounded-lg border-2 px-2.5 py-2 font-bold tabular-nums ${farqStili}`}><FarqIcon size={15} />{farq === null ? "—" : `${farq > 0 ? "+" : ""}${sonMatni(farq)}`}</span></td>
             </tr>;

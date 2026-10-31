@@ -1,3 +1,4 @@
+import { canSellNegativeStock, limitedStockQuantity } from "../lib/negativeStock.ts";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { birlikTopish, savatchaBirlikQiymatlari, type SavatchaBaza, type TovarBirligi } from "../lib/kopBirlik.ts";
@@ -97,7 +98,8 @@ export const usePosStore = create<PosState>()(
       cart: [],
       narxTuri: "chakana",
       addToCart: (item, quantity = 1) => {
-        if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(item.qoldiq) || item.qoldiq <= 0) return;
+        const canSellNegative = canSellNegativeStock();
+        if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(item.qoldiq) || (!canSellNegative && item.qoldiq <= 0)) return;
         set((state) => {
           const exists = state.cart.find((cartItem) => cartItem.id === item.id);
 
@@ -110,16 +112,16 @@ export const usePosStore = create<PosState>()(
                 const tur = savatchaNarxTuri(cartItem, state.narxTuri);
                 if (birlik && !birlik.asosiy) {
                   const qiymat = savatchaBirlikQiymatlari(bazaOlish(item), birlik, tur);
-                  return { ...cartItem, ...item, ...qiymat, narxTuri: tur, baza: bazaOlish(item), birlikId: cartItem.birlikId, soni: Math.min(cartItem.soni + quantity, qiymat.qoldiq) };
+                  return { ...cartItem, ...item, ...qiymat, narxTuri: tur, baza: bazaOlish(item), birlikId: cartItem.birlikId, soni: limitedStockQuantity(cartItem.soni + quantity, qiymat.qoldiq, canSellNegative) };
                 }
                 // Qatorning o'z narx turi saqlanadi: qo'shilayotgan mahsulot umumiy tur bo'yicha narxlangan bo'lishi mumkin.
-                return { ...cartItem, ...item, narx: narxTurigaKoraNarx(item, tur), narxTuri: tur, ...(item.birliklar?.length ? { baza: bazaOlish(item) } : {}), soni: Math.min(cartItem.soni + quantity, item.qoldiq) };
+                return { ...cartItem, ...item, narx: narxTurigaKoraNarx(item, tur), narxTuri: tur, ...(item.birliklar?.length ? { baza: bazaOlish(item) } : {}), soni: limitedStockQuantity(cartItem.soni + quantity, item.qoldiq, canSellNegative) };
               }),
             };
           }
 
           return {
-            cart: [...state.cart, { ...item, narxTuri: item.narxTuri ?? state.narxTuri, ...(item.birliklar?.length ? { baza: bazaOlish(item) } : {}), soni: Math.min(quantity, item.qoldiq) }],
+            cart: [...state.cart, { ...item, narxTuri: item.narxTuri ?? state.narxTuri, ...(item.birliklar?.length ? { baza: bazaOlish(item) } : {}), soni: limitedStockQuantity(quantity, item.qoldiq, canSellNegative) }],
           };
         });
       },
@@ -129,7 +131,7 @@ export const usePosStore = create<PosState>()(
           cart: state.cart
             .map((item) =>
               item.id === productId
-                ? { ...item, soni: Math.min(Math.max(nextQuantity, 0), Number.isFinite(item.qoldiq) ? Math.max(0, item.qoldiq) : 0) }
+                ? { ...item, soni: limitedStockQuantity(nextQuantity, Number.isFinite(item.qoldiq) ? item.qoldiq : 0, canSellNegativeStock()) }
                 : item
             )
             .filter((item) => item.soni > 0),
@@ -143,7 +145,7 @@ export const usePosStore = create<PosState>()(
             const qiymat = savatchaBirlikQiymatlari(item.baza, birlik, savatchaNarxTuri(item, state.narxTuri));
             // Qo'shimcha birlikda (pochka, korobka) miqdor butun bo'lishi kerak (kasrli birlikdan tashqari); qoldiqdan oshmaydi.
             const butun = birlik && !birlik.asosiy && !birlik.kasr;
-            const soni = Math.min(butun ? Math.max(Math.round(item.soni), 1) : item.soni, qiymat.qoldiq);
+            const soni = limitedStockQuantity(butun ? Math.max(Math.round(item.soni), 1) : item.soni, qiymat.qoldiq, canSellNegativeStock());
             // Narxlar yangi birlikdagi; qo'lda yozilgan sotuv narxi (eski birlikdagi) tashlanadi.
             return { ...item, ...qiymat, birlikId: birlik && !birlik.asosiy ? birlik.unitId : "", sotuvNarxi: undefined, soni };
           }),

@@ -1,3 +1,4 @@
+import { StockQuantity } from "@/Components/common/NegativeStockBadge";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -13,7 +14,7 @@ import { useSavdoStore } from "@/store/savdoStore";
 import { inventarizatsiyaTahririMumkin, inventarizatsiyaTahrirSorovi, inventarizatsiyaTahrirTanlovlari } from "@/lib/inventarizatsiyaTahriri";
 import { bugungiToshkentKuni, kunMatni, toshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
 import type { InventarizatsiyaHujjati, InventarizatsiyaTuri, OmborQoldigi } from "@/types/ombor";
-import { holat, hujjatRaqami, mahsulotQidiruvi, modificationNomi, qoldiqMiqdori, sana } from "./omborYordamchilari";
+import { holat, hujjatRaqami, mahsulotQidiruvi, modificationNomi, sana } from "./omborYordamchilari";
 import InventoryHujjatModal from "./InventoryHujjatModal";
 import HujjatStatistikaKartalari from "./HujjatStatistikaKartalari";
 import OmborJadval from "./OmborJadval";
@@ -52,8 +53,8 @@ const INVENTORY_BLUE_THEME = {
 // Backend hisoblaydigan umumiy qoldiq: rezerv qilingan miqdor ham kiradi (availableQuantity emas).
 function tizimQoldigi(qoldiq: OmborQoldigi) {
   const raw = qoldiq as OmborQoldigi & { quantity?: number | string; balance?: number | string; availableQuantity?: number | string };
-  const qiymatlar = [raw.quantity, raw.balance, raw.availableQuantity].map((value) => Number(value)).filter((value) => Number.isFinite(value) && value >= 0);
-  return qiymatlar.length ? Math.max(...qiymatlar) : 0;
+  const value = Number(raw.quantity ?? raw.balance ?? raw.availableQuantity ?? 0);
+  return Number.isFinite(value) ? value : 0;
 }
 
 export default function Inventarizatsiya() {
@@ -256,7 +257,7 @@ export default function Inventarizatsiya() {
         continue;
       }
       counted += 1;
-      const system = qoldiqMiqdori(row);
+      const system = tizimQoldigi(row);
       const difference = actual - system;
       if (difference > 0) surplus += difference;
       if (difference < 0) shortage += Math.abs(difference);
@@ -1113,7 +1114,7 @@ export default function Inventarizatsiya() {
                             </div>
                             <div className="divide-y divide-slate-100">
                               {inventarizatsiyaQatorlari.map((qoldiq, index) => {
-                                const tizim = qoldiqMiqdori(qoldiq);
+                                const tizim = tizimQoldigi(qoldiq);
                                 const haqiqiyRaw = actuals[qoldiq.modificationId] ?? "";
                                 const haqiqiy = Number(haqiqiyRaw);
                                 const sanaldi = haqiqiyRaw.trim() !== "" && Number.isFinite(haqiqiy) && haqiqiy >= 0;
@@ -1136,12 +1137,12 @@ export default function Inventarizatsiya() {
                                         <span className="truncate">{qoldiq.modification?.barcode ?? "—"}</span>
                                         <span className="flex items-center gap-1.5 sm:hidden">
                                           <span className="text-slate-300">·</span>
-                                          {t("inventarizatsiya.createModal.table.systemShort")}: <b className="text-slate-600">{tizim}</b>
+                                          {t("inventarizatsiya.createModal.table.systemShort")}: <b className="text-slate-600">{<StockQuantity value={tizim} />}</b>
                                           {farqChipi}
                                         </span>
                                       </p>
                                     </div>
-                                    <span className="hidden text-right text-[15px] font-bold tabular-nums text-slate-600 sm:block">{tizim}</span>
+                                    <span className="hidden text-right text-[15px] font-bold tabular-nums text-slate-600 sm:block">{<StockQuantity value={tizim} />}</span>
                                     <input
                                       type="number"
                                       min="0"

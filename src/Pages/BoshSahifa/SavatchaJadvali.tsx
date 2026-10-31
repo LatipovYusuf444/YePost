@@ -1,3 +1,5 @@
+import { StockQuantity } from "@/Components/common/NegativeStockBadge";
+import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ClipboardList,
@@ -96,6 +98,7 @@ export default function SavatchaJadvali({
   yangilash?: number;
 }) {
   const { t } = useTranslation("bosh_sahifa");
+  const canSellNegative = useInventorySettingsStore((s) => s.canSellNegative);
   const cart = usePosStore((state) => state.cart);
   const umumiyNarxTuri = usePosStore((state) => state.narxTuri);
   const addToCart = usePosStore((state) => state.addToCart);
@@ -152,7 +155,7 @@ export default function SavatchaJadvali({
 
   const mahsulotOptionlari = useMemo<SavdoSelectOption[]>(() => {
     return korinadigan
-      .filter((item) => qoldiqMiqdori(item) > 0)
+      .filter((item) => canSellNegative || qoldiqMiqdori(item) > 0)
       .map((item) => {
         const nom = savatNomi(item) || t("jadval.unnamed");
         const narx = qoldiqNarxi(item, umumiyNarxTuri);
@@ -180,11 +183,11 @@ export default function SavatchaJadvali({
         };
       })
       .sort((a, b) => String(a.searchLabel).localeCompare(String(b.searchLabel), "uz"));
-  }, [korinadigan, umumiyNarxTuri, formatSumma, t]);
+  }, [korinadigan, umumiyNarxTuri, formatSumma, t, canSellNegative]);
 
   // Mahsulotni savatchaga bitta dona qo'shadi; sabab qaytadi ("" — qo'shildi).
   function qoshish(item: QoldiqTanlovi): "" | "noStock" | "noPrice" {
-    if (tanlashQoldigi(item, warehouseId, cart) <= 0) return "noStock";
+    if (!canSellNegative && tanlashQoldigi(item, warehouseId, cart) <= 0) return "noStock";
     const narx = qoldiqNarxi(item, umumiyNarxTuri);
     if (narx <= 0) return "noPrice";
     addToCart(
@@ -534,7 +537,7 @@ function SavatchaQatori({
             </p>
             <p className="mt-1 truncate text-xs font-semibold text-slate-500">
               {t("jadval.availableStock")}:{" "}
-              <span className="font-bold text-[#2563EB]">{item.qoldiq.toLocaleString("uz-UZ", { maximumFractionDigits: 3 })}</span>
+              <span className="font-bold text-[#2563EB]">{<StockQuantity value={item.qoldiq} />}</span>
               {omborNomiKorsatish && omborNomi ? <span className="text-slate-400"> · {omborNomi}</span> : null}
             </p>
           </div>

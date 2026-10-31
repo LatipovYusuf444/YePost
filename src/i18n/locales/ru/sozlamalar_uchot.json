@@ -14,7 +14,8 @@
     "bildirishnoma": "Уведомления",
     "valyuta": "Валюта",
     "narxTurlari": "Типы цен продаж",
-    "davrniYopish": "Закрытие периода"
+    "davrniYopish": "Закрытие периода",
+    "inventory": "Склад"
   },
   "saved": "Сохранено ✓",
   "savingToBackend": "Сохраняется в backend...",
@@ -94,7 +95,8 @@
       "reports": "Отчёты",
       "expense": "Расход",
       "cashIn": "Приход в кассу",
-      "returnCancel": "Возврат / отмена"
+      "returnCancel": "Возврат / отмена",
+      "negativeStock": "Продажа в минус"
     }
   },
   "integratsiya": {

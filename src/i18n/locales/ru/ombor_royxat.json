@@ -44,7 +44,12 @@
     "createButton": "Создать",
     "searchPlaceholder": "По названию, причине, ответственному лицу, дате или статусу",
     "documentLabel": "Документ расхода",
-    "stats": { "total": "Всего документов", "completed": "Подтверждено", "inProgress": "В процессе", "cancelled": "Отменено" },
+    "stats": {
+      "total": "Всего документов",
+      "completed": "Подтверждено",
+      "inProgress": "В процессе",
+      "cancelled": "Отменено"
+    },
     "statsAria": "Статистика документов",
     "loadingStats": "Загрузка...",
     "columns": {
@@ -113,7 +118,7 @@
         "hammasi": "Все",
         "musbat": "Положительный остаток",
         "nol": "Нулевой остаток",
-        "manfiy": "Отрицательный остаток"
+        "manfiy": "В минусе"
       },
       "groupByWarehouse": "Разделить по складам",
       "showBarcode": "Показывать штрихкод",

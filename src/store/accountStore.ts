@@ -23,6 +23,7 @@ type AccountState = {
   profil: JoriyFoydalanuvchi | null;
   foydalanuvchilar: AccountFoydalanuvchi[];
   vakolatlar: AccountVakolati[];
+  vakolatKodlariniSaqlash: (userId: string, codes: string[]) => Promise<boolean>;
   filiallar: Filial[];
   yuklanmoqda: boolean;
   amalBajarilmoqda: boolean;
@@ -51,7 +52,7 @@ function almashtirish<T extends { id: string }>(royxat: T[], yangi: T) {
   return royxat.map((item) => (item.id === yangi.id ? yangi : item));
 }
 
-export const useAccountStore = create<AccountState>((set) => ({
+export const useAccountStore = create<AccountState>((set, get) => ({
   profil: null,
   foydalanuvchilar: [],
   vakolatlar: [],
@@ -146,7 +147,22 @@ export const useAccountStore = create<AccountState>((set) => ({
       return null;
     }
   },
+  vakolatKodlariniSaqlash: async (userId, codes) => {
+    set({ amalBajarilmoqda: true, xatolik: null });
+    try {
+      const grants = await vakolatlarApi.foydalanuvchiKodlariniSaqlash(userId, codes);
+      set((state) => ({ vakolatlar: [...state.vakolatlar.filter((grant) => grant.userId !== userId), ...grants], amalBajarilmoqda: false }));
+      return true;
+    } catch (error) {
+      set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
+      return false;
+    }
+  },
   vakolatYaratish: async (data) => {
+    if (data.code === "NEGATIVE_STOCK_SALE") {
+      const codes = get().vakolatlar.filter((grant) => grant.userId === data.userId && grant.isActive && !grant.isDeleted && grant.code !== data.code).map((grant) => grant.code);
+      return get().vakolatKodlariniSaqlash(data.userId, [...codes, ...(data.isActive !== false ? [data.code] : [])]);
+    }
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const item = await vakolatlarApi.yaratish(data);
@@ -161,6 +177,11 @@ export const useAccountStore = create<AccountState>((set) => ({
     }
   },
   vakolatYangilash: async (id, data) => {
+    const existing = get().vakolatlar.find((grant) => grant.id === id);
+    if (existing?.code === "NEGATIVE_STOCK_SALE") {
+      const codes = get().vakolatlar.filter((grant) => grant.userId === existing.userId && grant.isActive && !grant.isDeleted && grant.code !== existing.code).map((grant) => grant.code);
+      return get().vakolatKodlariniSaqlash(existing.userId, [...codes, ...((data.isActive ?? existing.isActive) ? [existing.code] : [])]);
+    }
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       const item = await vakolatlarApi.yangilash(id, data);
@@ -175,6 +196,10 @@ export const useAccountStore = create<AccountState>((set) => ({
     }
   },
   vakolatOchirish: async (id) => {
+    const existing = get().vakolatlar.find((grant) => grant.id === id);
+    if (existing?.code === "NEGATIVE_STOCK_SALE") {
+      return get().vakolatKodlariniSaqlash(existing.userId, get().vakolatlar.filter((grant) => grant.userId === existing.userId && grant.isActive && !grant.isDeleted && grant.code !== existing.code).map((grant) => grant.code));
+    }
     set({ amalBajarilmoqda: true, xatolik: null });
     try {
       await vakolatlarApi.ochirish(id);
