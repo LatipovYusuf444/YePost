@@ -36,7 +36,16 @@ export default {
 };
 
 export const modifikatsiyalarApi = {
-  async qidiruv() { calls.push({ url: '/catalog/search' }); return []; },
+  async qidiruv(q) {
+    calls.push({ url: handlers.has('qidiruv') ? 'qidiruv' : '/catalog/search', q });
+    return handlers.has('qidiruv') ? handlers.get('qidiruv')(q) : [];
+  },
+  async olish(id) { calls.push({ url: 'olish', id }); return handlers.get('olish')(id); },
+  async qidiruvSahifasi(sorov) {
+    calls.push({ url: 'qidiruvSahifasi', sorov });
+    const javob = await handlers.get('qidiruvSahifasi')(sorov);
+    return { total: javob.items.length, ...javob };
+  },
 };
 export const mijozlarApi = {};
 export const getApiErrorMessage = error => error.message;

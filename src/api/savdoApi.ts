@@ -25,7 +25,8 @@ import type {
 } from "@/types/savdo";
 import { tolovNatijasi, type TolovNatijasi } from "../lib/tolovOrtiqchasi.ts";
 import type { Mahsulot, MahsulotModifikatsiyasi } from "@/types/catalog";
-import { katalogNarxiniQoldiqqaMoslash } from "./catalogSearch";
+import { katalogNarxiniQoldiqqaMoslash, katalogQidiruvQatoriniMoslash, katalogQidiruvQoldigi } from "./catalogSearch";
+import { parallelBajarish } from "../lib/parallelBajarish.ts";
 
 type RoyxatJavobi<T> = T[] | { value?: T[]; items?: T[]; results?: T[]; data?: T[] };
 
@@ -448,6 +449,9 @@ const KESH_MUDDATI = 5 * 60 * 1000;
 type KeshYozuvi<T> = { vaqt: number; qiymat: Promise<T | null> };
 const modifikatsiyaKeshi = new Map<string, KeshYozuvi<MahsulotModifikatsiyasi>>();
 const mahsulotKeshi = new Map<string, KeshYozuvi<Mahsulot>>();
+// Shundan ko'p qatorni to'ldirishda har biri uchun alohida so'rov yuborilmaydi: katalog bir marta o'qiladi.
+const YAKKA_QIDIRUV_CHEGARASI = 6;
+const TOLDIRISH_PARALLEL_SOROVLAR = 6;
 
 function keshdanOlish<T>(kesh: Map<string, KeshYozuvi<T>>, kalit: string, yuklash: () => Promise<T | null>) {
   const mavjud = kesh.get(kalit);
@@ -464,6 +468,18 @@ function narxBormi(narx?: { retailPrice?: number | string; wholesalePrice?: numb
 // Qoldiq javobida faqat modificationId kelgan yozuvlarning katalogdagi haqiqiy
 // mahsulot nomini tiklaydi. Shu orqali selectda UUID nom o'rnida ko'rinmaydi.
 export async function qoldiqNomlariniBoyitish(qoldiqlar: QoldiqTanlovi[]) {
+  const tayyor = (qoldiq: QoldiqTanlovi) => Boolean(qoldiq.modification?.product?.name && qoldiq.narxAniq !== false && narxBormi(qoldiq.modification.price));
+  // Narxi yo'q yuzlab qator bir vaqtda search=<shtrix-kod> yuborib, serverda navbat hosil qilardi. Katalog 30 s keshda: odatda chaqiruvchi uni allaqachon olgan.
+  const toldiriladigan = qoldiqlar.filter((qoldiq) => !tayyor(qoldiq) && (qoldiq.modificationId || qoldiq.modification?.id)).length;
+  let katalog: Map<string, MahsulotModifikatsiyasi> | null = null;
+  if (toldiriladigan > YAKKA_QIDIRUV_CHEGARASI) {
+    try {
+      katalog = new Map((await modifikatsiyalarApi.qidiruv()).map((item) => [item.id, item]));
+    } catch {
+      return qoldiqlar;
+    }
+  }
+
   function mahsulotniOlish(productId: string) {
     return keshdanOlish(mahsulotKeshi, productId, async () => {
       try {
@@ -474,18 +490,20 @@ export async function qoldiqNomlariniBoyitish(qoldiqlar: QoldiqTanlovi[]) {
     });
   }
 
-  return Promise.all(
-    qoldiqlar.map(async (qoldiq) => {
-      if (qoldiq.modification?.product?.name && qoldiq.narxAniq !== false && narxBormi(qoldiq.modification.price)) return qoldiq;
+  return parallelBajarish(
+    qoldiqlar,
+    TOLDIRISH_PARALLEL_SOROVLAR,
+    async (qoldiq) => {
+      if (tayyor(qoldiq)) return qoldiq;
 
       // ID yo'q bo'lsa so'rov yuborilmaydi (aks holda `/catalog/modifications/undefined` → 400).
       const modificationId = qoldiq.modificationId || qoldiq.modification?.id;
       if (!modificationId) return qoldiq;
 
       try {
-        const modification = await keshdanOlish(modifikatsiyaKeshi, modificationId, async () => {
+        const modification = katalog?.get(modificationId) ?? await keshdanOlish(modifikatsiyaKeshi, modificationId, async () => {
           const soz = qoldiq.modification?.barcode || qoldiq.modification?.article || qoldiq.modification?.product?.name;
-          if (soz) {
+          if (soz && !katalog) {
             try {
               const mos = (await modifikatsiyalarApi.qidiruv(soz)).find((item) => item.id === modificationId);
               if (mos) return mos;
@@ -519,8 +537,58 @@ export async function qoldiqNomlariniBoyitish(qoldiqlar: QoldiqTanlovi[]) {
       } catch {
         return qoldiq;
       }
+    }
+  );
+}
+
+// Katalog yozuvini sotuv tanloviga o'giradi: nom, narx (dollar narx ham), birliklar va berilgan qoldiq.
+function modifikatsiyaniQoldiqqa(modification: MahsulotModifikatsiyasi, quantity = 0): QoldiqTanlovi {
+  const productId = modification.productId ?? modification.product?.id;
+  const { modificationPrice, ...narxlar } = katalogNarxiniQoldiqqaMoslash(modification.price);
+  return {
+    productId,
+    modificationId: modification.id,
+    quantity,
+    balance: quantity,
+    ...narxlar,
+    ...(modification.birliklar?.length ? { birliklar: modification.birliklar } : {}),
+    ...(modification.qidiruvBirligi ? { qidiruvBirligi: modification.qidiruvBirligi } : {}),
+    modification: {
+      id: modification.id,
+      name: modification.name ?? "Asosiy variant",
+      barcode: modification.barcode,
+      article: modification.article,
+      product: {
+        id: productId ?? "",
+        name: modification.product?.name ?? "",
+      },
+      price: modificationPrice,
+    },
+  };
+}
+
+// Bosh sahifa qidiruvi: so'z serverga yuboriladi, narx va qoldiq shu javobning o'zida. Savatchaga ombor kerak bo'lgani uchun har ombor bo'yicha
+// bitta so'rov ketadi (ombor ro'yxati bo'sh bo'lsa — bitta so'rov, qoldiq hamma omborlar yig'indisi). Bir ombor xato bersa qolganlari ko'rsatiladi.
+export async function mahsulotlarniServerdanQidirish({ search, page = 1, pageSize = 20, warehouseIds, signal }: {
+  search: string;
+  page?: number;
+  pageSize?: number;
+  warehouseIds: string[];
+  signal?: AbortSignal;
+}) {
+  const natijalar = await Promise.allSettled(
+    (warehouseIds.length ? warehouseIds : [""]).map(async (warehouseId) => {
+      const sahifa = await modifikatsiyalarApi.qidiruvSahifasi({ search, page, pageSize, warehouseId: warehouseId || undefined, signal });
+      const qatorlar = sahifa.items.flatMap((qator) => {
+        const modification = katalogQidiruvQatoriniMoslash(qator);
+        return modification?.id && modification.product?.isActive !== false ? [modifikatsiyaniQoldiqqa(modification, katalogQidiruvQoldigi(qator))] : [];
+      });
+      return { warehouseId, jami: sahifa.total, qatorlar };
     })
   );
+  const tayyorlar = natijalar.flatMap((natija) => (natija.status === "fulfilled" ? [natija.value] : []));
+  if (tayyorlar.length === 0) throw (natijalar[0] as PromiseRejectedResult).reason;
+  return tayyorlar;
 }
 
 // YangiSotuvModal.tsx: ombor qoldig'ida bo'lmasa ham katalogdagi real mahsulot
@@ -539,29 +607,7 @@ export async function katalogModifikatsiyalariniQoldiqTanlovigaOlish(majbur = fa
       if (!idBor && import.meta.env.DEV) console.warn("Katalog qidiruvida ID'siz yozuv:", modification);
       return idBor;
     })
-    .map((modification) => {
-      const productId = modification.productId ?? modification.product?.id;
-      const { modificationPrice, ...narxlar } = katalogNarxiniQoldiqqaMoslash(modification.price);
-      return {
-        productId,
-        modificationId: modification.id,
-        quantity: 0,
-        balance: 0,
-        ...narxlar,
-        ...(modification.birliklar?.length ? { birliklar: modification.birliklar } : {}),
-        modification: {
-          id: modification.id,
-          name: modification.name ?? "Asosiy variant",
-          barcode: modification.barcode,
-          article: modification.article,
-          product: {
-            id: productId ?? "",
-            name: modification.product?.name ?? "",
-          },
-          price: modificationPrice,
-        },
-      };
-    });
+    .map((modification) => modifikatsiyaniQoldiqqa(modification));
 }
 
 // Sotuvning saqlangan hujjatlari: tasdiqlashda olingan chek nusxasi (RECEIPT) va talab bo'yicha yaratiladigan hisob-faktura (INVOICE).

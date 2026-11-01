@@ -2,6 +2,10 @@ import type { MahsulotModifikatsiyasi, MahsulotNarxi } from "@/types/catalog";
 import type { QoldiqValyutasi } from "@/types/savdo";
 import { narxValyutalari } from "../lib/narxValyutasi.ts";
 import { birliklarniMoslash } from "../lib/kopBirlik.ts";
+import { parallelBajarish } from "../lib/parallelBajarish.ts";
+
+// Butun katalog kerak bo'lgan ekranlar uchun: sahifalar shuncha tadan parallel olinadi (47 sahifa ketma-ket ~42 s edi).
+const KATALOG_PARALLEL_SAHIFALAR = 5;
 
 /** Qisqa kesh + umumiy in-flight so'rov: remount/ombor almashishi katalogni qayta yuklamaydi. */
 export function katalogQidiruvYuklagich<T>(
@@ -19,10 +23,10 @@ export function katalogQidiruvYuklagich<T>(
         try {
           const birinchi = await sahifaOlish(q, 1);
           const items = [...birinchi.items];
-          // Barcha sahifalar lokal qidiruv uchun kerak, lekin backendga birdan yuborilmaydi.
-          for (let page = 2; page <= birinchi.totalPages; page++) {
-            items.push(...(await sahifaOlish(q, page)).items);
-          }
+          // Barcha sahifalar lokal qidiruv uchun kerak, lekin backendga birdan yuborilmaydi: bir paytda cheklangan son.
+          const sahifalar = Array.from({ length: Math.max(birinchi.totalPages - 1, 0) }, (_, indeks) => indeks + 2);
+          const qolganlar = await parallelBajarish(sahifalar, KATALOG_PARALLEL_SAHIFALAR, (page) => sahifaOlish(q, page));
+          items.push(...qolganlar.flatMap((sahifa) => sahifa.items));
           yozuv.tugadi = true;
           yozuv.muddati = vaqt() + 30_000;
           return items;
@@ -45,7 +49,15 @@ export type KatalogQidiruvQatori = MahsulotModifikatsiyasi | {
   // Tovar birliklari va (pochka shtrix-kodi o'qilgan bo'lsa) shu birlik.
   units?: unknown;
   unitId?: string | null;
+  // Qoldiq: warehouseId berilsa shu ombor bo'yicha, berilmasa hamma omborlar yig'indisi (asosiy birlikda).
+  quantity?: number | string | null;
 };
+
+/** Qidiruv qatoridagi qoldiq: `/reports/stock-balance` ni alohida so'rash shart emas. Noto'g'ri qiymat 0 hisoblanadi. */
+export function katalogQidiruvQoldigi(qator: KatalogQidiruvQatori) {
+  const son = Number((qator as { quantity?: unknown }).quantity ?? 0);
+  return Number.isFinite(son) ? son : 0;
+}
 
 /** Search API qoldiq qatorini qaytaradi: variant, uning narxi va valyutasi `modification` ichida. */
 export function katalogQidiruvQatoriniMoslash(qator: KatalogQidiruvQatori): MahsulotModifikatsiyasi | null {

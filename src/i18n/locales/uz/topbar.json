@@ -101,6 +101,7 @@
     "loadFailed": "Mahsulotlar ro'yxati olinmadi.",
     "retry": "Qayta urinish",
     "added": "{{name}} savatchaga qo'shildi: {{qty}} dona",
+    "addedUnit": "{{name}} savatchaga qo'shildi: {{qty}} {{birlik}}",
     "notEnough": "{{name}}: qoldiq yetarli emas (mavjud {{available}})",
     "outOfStock": "Qoldiq yo'q",
     "outOfStockMessage": "{{name}}: qoldiq yo'q",

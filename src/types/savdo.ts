@@ -374,6 +374,8 @@ export type QoldiqTanlovi = {
   narxAniq?: boolean;
   /** Tovarning birliklari (asosiy birlik birinchi); qoldiq `quantity` har doim asosiy birlikda. */
   birliklar?: import("../lib/kopBirlik.ts").TovarBirligi[];
+  /** Qidiruv shtrix-kodi qo'shimcha birlikka (pochka) tegishli bo'lsa — qaysi birlikda sotiladi (javobdagi `unitId`). */
+  qidiruvBirligi?: string | null;
   id?: string;
   warehouseId?: string;
   productId?: string;

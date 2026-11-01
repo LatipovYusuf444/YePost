@@ -211,6 +211,16 @@ export const modifikatsiyalarApi = {
       .filter((item): item is MahsulotModifikatsiyasi => item !== null);
     return Array.from(new Map(modifikatsiyalar.map((item) => [item.id, item])).values());
   },
+  // Bitta qidiruv sahifasi: so'z serverda filtrlanadi va aniq mos (shtrix-kod, artikul, nom) birinchi keladi. Butun katalog yuklanmaydi.
+  // Qoldiq javobda: `warehouseId` berilsa shu ombor bo'yicha, berilmasa hamma omborlar yig'indisi. Yordamchi so'rov: xato toasti chiqmaydi.
+  qidiruvSahifasi: async ({ search, page = 1, pageSize = 20, warehouseId, signal }: { search: string; page?: number; pageSize?: number; warehouseId?: string; signal?: AbortSignal }) => {
+    const response = await apiClient.get<unknown>("/catalog/modifications/search", {
+      params: { search, page, pageSize, ...(warehouseId ? { warehouseId } : {}) },
+      signal,
+      xatoniYashirish: true,
+    });
+    return sahifaJavobi<KatalogQidiruvQatori>(response.data, page, pageSize);
+  },
   royxat: async (productId: string) => {
     const response = await apiClient.get<
       MahsulotModifikatsiyasi[] | ApiListEnvelope<MahsulotModifikatsiyasi>

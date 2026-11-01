@@ -101,6 +101,7 @@
     "loadFailed": "Не удалось получить список товаров.",
     "retry": "Повторить",
     "added": "{{name}} добавлен в корзину: {{qty}} шт.",
+    "addedUnit": "{{name}} добавлен в корзину: {{qty}} {{birlik}}",
     "notEnough": "{{name}}: недостаточно на складе (доступно {{available}})",
     "outOfStock": "Нет в наличии",
     "outOfStockMessage": "{{name}}: нет в наличии",

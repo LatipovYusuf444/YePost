@@ -1,10 +1,12 @@
 import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type UIEvent } from "react";
 import { AlertTriangle, Check, ChevronDown, LayoutGrid, LoaderCircle, RefreshCw, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { pulMatni } from "@/lib/valyuta";
+import { asosiyMiqdor, birlikTopish } from "@/lib/kopBirlik";
 import {
   katalogModifikatsiyalariniQoldiqTanlovigaOlish,
+  mahsulotlarniServerdanQidirish,
   omborlarRoyxatiniOlish,
   omborQoldiqlariniOlish,
   qoldiqNomlariniBoyitish,
@@ -31,17 +33,26 @@ import {
   savatNomi,
   tanlovKaliti,
 } from "./posMahsulotlari";
-import { qidirish, type Qator } from "./headerQidiruv";
+import { qatorlarniUlash, qidirish, serverQatorlari, SERVER_SAHIFA_HAJMI, type Qator } from "./headerQidiruv";
 
 // Bosh sahifa (POS) headeridagi tezkor qidiruv: mahsulot nomi, shtrix-kod yoki artikul bo'yicha qidiriladi,
 // ↑/↓ bilan tanlanadi, Enter (yoki skaner: kod + Enter) mahsulotni savatchaga qo'shadi.
-// Ma'lumot MahsulotTanlashModal bilan bir xil manbadan olinadi: omborlar, har ombor qoldig'i va katalog narxlari.
+// So'z serverga yuboriladi (GET /catalog/modifications/search, 300 ms kechikish bilan): narx va qoldiq shu javobda, butun katalog yuklanmaydi.
+// Skaner kodi Enter bosilgach kutmasdan so'raladi va maydon darrov bo'shaydi — ketma-ket skanlar bir-biriga qo'shilib ketmaydi.
 // Kategoriya filtri: qidiruv maydoni yonidagi tugma bilan kategoriya tanlanadi — natijalar faqat shu kategoriya mahsulotlari
 // bo'ladi, yozuvsiz esa kategoriyaning butun ro'yxati ko'rinadi (skaner kodi esa kategoriyadan qat'i nazar topiladi).
+// Qidiruv endpointida kategoriya filtri yo'q: bu rejimda ro'yxat MahsulotTanlashModal bilan bir xil manbadan (katalog + ombor qoldig'i) brauzerda filtrlanadi.
 
 type Malumot = { qatorlar: Qator[]; omborlarSoni: number };
+type ServerNatija = { qatorlar: Array<Qator & { daraja: number }>; jami: number; omborlarSoni: number };
 
 const KESH_MUDDATI = 60_000;
+// Yozish to'xtagach serverga so'rov ketguncha kutiladigan vaqt.
+const QIDIRUV_KECHIKISHI = 300;
+// Skaner kodlari keshi: bir xil mahsulotni ketma-ket skanlash serverni kutmaydi.
+const KOD_KESHI_HAJMI = 200;
+// Ro'yxat oxiriga shuncha piksel qolganda keyingi sahifa olinadi.
+const KEYINGI_SAHIFA_MASOFASI = 80;
 // Kategoriya menyusi (hover): kursor tugmaga kelgach shu vaqtdan keyin ochiladi (tasodifiy o'tishda chaqnamasligi uchun),
 // tugma/menyudan chiqqach shu vaqtdan keyin yopiladi (tugmadan menyuga o'tishda yopilib ketmasligi uchun).
 const HOVER_OCHISH_KECHIKISHI = 80;
@@ -52,9 +63,47 @@ let kesh: { vaqt: number; malumot: Malumot } | null = null;
 let yuklanayotgan: Promise<Malumot> | null = null;
 // Kategoriyalar ro'yxati kam o'zgaradi: sahifa almashganda qayta so'ralmasligi uchun modul darajasida saqlanadi.
 let kategoriyalarKeshi: Kategoriya[] | null = null;
+let omborlarKeshi: { vaqt: number; sorov: Promise<Array<{ id: string; nom: string }>> } | null = null;
+const kodKeshi = new Map<string, { vaqt: number; natija: Promise<ServerNatija> }>();
 
 function omborNomi(ombor: { fullName?: string; name?: string; id: string }) {
   return ombor.fullName || ombor.name || ombor.id;
+}
+
+function omborlarniOlish() {
+  if (omborlarKeshi && Date.now() - omborlarKeshi.vaqt < KESH_MUDDATI) return omborlarKeshi.sorov;
+  const yozuv = {
+    vaqt: Date.now(),
+    sorov: omborlarRoyxatiniOlish().then((royxat) => royxat.map((ombor) => ({ id: String(ombor.id), nom: omborNomi(ombor) }))),
+  };
+  omborlarKeshi = yozuv;
+  yozuv.sorov.catch(() => {
+    if (omborlarKeshi === yozuv) omborlarKeshi = null;
+  });
+  return yozuv.sorov;
+}
+
+async function serverdanOlish(soz: string, sahifa: number, signal?: AbortSignal): Promise<ServerNatija> {
+  // Ombor ro'yxati olinmasa ham qidiruv ishlaydi: qoldiq hamma omborlar yig'indisi, ombor sotuvda tanlanadi.
+  const omborlar = await omborlarniOlish().catch(() => []);
+  const natijalar = await mahsulotlarniServerdanQidirish({ search: soz, page: sahifa, pageSize: SERVER_SAHIFA_HAJMI, warehouseIds: omborlar.map((ombor) => ombor.id), signal });
+  const nomlar = new Map(omborlar.map((ombor) => [ombor.id, ombor.nom]));
+  return {
+    qatorlar: serverQatorlari(natijalar.map((natija) => ({ ...natija, warehouseName: nomlar.get(natija.warehouseId) ?? "" })), soz),
+    jami: Math.max(...natijalar.map((natija) => natija.jami)),
+    omborlarSoni: omborlar.length,
+  };
+}
+
+function koddanOlish(kod: string) {
+  const kalit = kod.toLowerCase();
+  const mavjud = kodKeshi.get(kalit);
+  if (mavjud && Date.now() - mavjud.vaqt < KESH_MUDDATI) return mavjud.natija;
+  if (kodKeshi.size >= KOD_KESHI_HAJMI) kodKeshi.clear();
+  const natija = serverdanOlish(kod, 1);
+  kodKeshi.set(kalit, { vaqt: Date.now(), natija });
+  natija.catch(() => kodKeshi.delete(kalit));
+  return natija;
 }
 
 async function malumotlarniOlish(majbur = false): Promise<Malumot> {
@@ -152,8 +201,13 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
   const [xato, setXato] = useState(false);
   const [faol, setFaol] = useState(-1);
   const [xabar, setXabar] = useState<{ xato: boolean; matn: string } | null>(null);
-  // Ma'lumot yuklanishi tugamasdan Enter bosilsa (masalan, skaner), yuklangach aniq mos kelgan mahsulot qo'shiladi.
-  const [kutilmoqda, setKutilmoqda] = useState(false);
+  // Server qidiruvi: `server.soz` — javob qaysi so'z uchun. Yangi so'z javobi kelguncha eski ro'yxat ko'rinib turadi (miltillamasligi uchun).
+  const [server, setServer] = useState<(ServerNatija & { soz: string; sahifa: number }) | null>(null);
+  const [qidirilmoqda, setQidirilmoqda] = useState(false);
+  const [serverXato, setServerXato] = useState(false);
+  const qidiruvRaqami = useRef(0);
+  const qidiruvBekor = useRef<AbortController | null>(null);
+  const kechikishTaymeri = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const oramRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -177,11 +231,19 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
   const kategoriyaXatosi = Boolean(kategoriyaId) && kategoriyaNatijasi?.id === kategoriyaId && kategoriyaNatijasi.idlar === null;
   const kategoriyaIdlari = kategoriyaId && kategoriyaNatijasi?.id === kategoriyaId ? kategoriyaNatijasi.idlar : null;
 
+  const matn = soz.trim();
+  const natijaTayyor = Boolean(matn) && server?.soz === matn;
   // Kategoriya tanlangan, lekin uning mahsulotlari hali kelmagan (yoki olinmagan) bo'lsa — filtrsiz ro'yxat ko'rsatilmaydi.
-  const natijalar = useMemo(
-    () => (kategoriyaId && !kategoriyaIdlari ? [] : qidirish(malumot?.qatorlar ?? [], soz, kategoriyaIdlari)),
-    [malumot, soz, kategoriyaId, kategoriyaIdlari]
-  );
+  // Skaner kodi (aniq mos) kategoriyadan qat'i nazar serverdan topiladi.
+  const natijalar = useMemo(() => {
+    const serverdagi = server?.qatorlar ?? [];
+    if (!kategoriyaId) return matn ? serverdagi : [];
+    if (!kategoriyaIdlari) return [];
+    const mahalliy = qidirish(malumot?.qatorlar ?? [], soz, kategoriyaIdlari);
+    const kodlar = natijaTayyor ? serverdagi.filter((qator) => qator.daraja === 0 && !mahalliy.some((item) => item.kalit === qator.kalit)) : [];
+    return [...kodlar, ...mahalliy];
+  }, [server, malumot, soz, matn, natijaTayyor, kategoriyaId, kategoriyaIdlari]);
+  const omborlarSoni = (kategoriyaId ? malumot?.omborlarSoni : server?.omborlarSoni) ?? 0;
   const panelKorinadi = ochiq && (Boolean(soz.trim()) || Boolean(xabar) || Boolean(kategoriyaId));
 
   const yukla = useCallback(async (majbur = false) => {
@@ -195,6 +257,53 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
       setYuklanmoqda(false);
     }
   }, []);
+
+  const qidiruvniBekorQilish = useCallback(() => {
+    qidiruvRaqami.current += 1;
+    qidiruvBekor.current?.abort();
+    qidiruvBekor.current = null;
+    setQidirilmoqda(false);
+  }, []);
+
+  const serverdanQidirish = useCallback(async (qidiruvSozi: string, sahifa = 1) => {
+    qidiruvBekor.current?.abort();
+    const boshqaruv = new AbortController();
+    qidiruvBekor.current = boshqaruv;
+    const raqam = ++qidiruvRaqami.current;
+    setQidirilmoqda(true);
+    setServerXato(false);
+    try {
+      const natija = await serverdanOlish(qidiruvSozi, sahifa, boshqaruv.signal);
+      if (raqam !== qidiruvRaqami.current) return;
+      setServer((joriy) => ({
+        ...natija,
+        soz: qidiruvSozi,
+        sahifa,
+        qatorlar: sahifa > 1 && joriy?.soz === qidiruvSozi ? qatorlarniUlash(joriy.qatorlar, natija.qatorlar) : natija.qatorlar,
+      }));
+    } catch {
+      if (raqam === qidiruvRaqami.current) setServerXato(true);
+    } finally {
+      if (raqam === qidiruvRaqami.current) {
+        qidiruvBekor.current = null;
+        setQidirilmoqda(false);
+      }
+    }
+  }, []);
+
+  // Yozish to'xtagach so'z serverga yuboriladi; eski (kech kelgan) javob yangi ro'yxatni bosib ketmaydi.
+  useEffect(() => {
+    if (!matn) {
+      qidiruvniBekorQilish();
+      setServer(null);
+      setServerXato(false);
+      return;
+    }
+    kechikishTaymeri.current = window.setTimeout(() => void serverdanQidirish(matn), QIDIRUV_KECHIKISHI);
+    return () => {
+      if (kechikishTaymeri.current) window.clearTimeout(kechikishTaymeri.current);
+    };
+  }, [matn, qidiruvniBekorQilish, serverdanQidirish]);
 
   // Telefon ekrani: qidiruv maydonida qisqa maslahat va ixcham kategoriya tugmasi (joy tejaladi).
   const [kichikEkran, setKichikEkran] = useState(() => window.matchMedia("(max-width: 639px)").matches);
@@ -271,8 +380,6 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
     if (hoverTaymeri.current) window.clearTimeout(hoverTaymeri.current);
     if (!ochildi) hoverBilanOchilgan.current = false;
     setKategoriyaOchiq(ochildi);
-    // Ma'lumot menyu ochilgan paytdayoq fonda yuklanadi (kategoriya tanlangach kutib qolmaslik uchun).
-    if (ochildi && !malumot && !yuklanmoqda) void yukla();
   }
 
   // Kursor (sichqoncha) bilan: tugmaga kelganda ochiladi, tugma yoki menyudan chiqqanda biroz kutib yopiladi.
@@ -309,7 +416,8 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
     setFaol(-1);
     // Kategoriya tanlansa natijalar darrov ochiladi (yozuvsiz ham ro'yxat ko'rinadi).
     setOchiq(Boolean(id) || Boolean(soz.trim()));
-    if (!malumot && !yuklanmoqda) void yukla();
+    // Kategoriya ro'yxati faqat kategoriya tanlanganda yuklanadi (kesh yangi bo'lsa so'rov ketmaydi).
+    if (id && !yuklanmoqda) void yukla();
     inputRef.current?.focus();
   }
 
@@ -326,7 +434,8 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
     xabarTaymeri.current = window.setTimeout(() => setXabar(null), 3500);
   }
 
-  function qoshish(qator: Qator) {
+  // `tozalash` — maydon bo'shatiladi. Skaner kodi javobini kutganda u allaqachon bo'sh, keyingi skanni o'chirib yubormaslik uchun tegilmaydi.
+  function qoshish(qator: Qator, tozalash = true) {
     const nom = savatNomi(qator.item) || t("posModal.unnamed");
     if (!canSellNegative && qator.qoldiq <= 0) {
       xabarBerish(true, t("search.outOfStockMessage", { name: nom }));
@@ -338,8 +447,13 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
       return;
     }
     const holat = usePosStore.getState();
-    const savatdagi = holat.cart.find((item) => item.id === qator.kalit)?.soni ?? 0;
-    if (!canSellNegative && savatdagi >= qator.qoldiq) {
+    const savatQatori = holat.cart.find((item) => item.id === qator.kalit);
+    const savatdagi = savatQatori?.soni ?? 0;
+    // Pochka shtrix-kodi: 1 pochka qo'shiladi. Qoldiq asosiy birlikda, savatchadagi qator esa boshqa birlikda turgan bo'lishi mumkin.
+    const birlik = qator.birlik;
+    const savatBirligi = birlikTopish(savatQatori?.birliklar, savatQatori?.birlikId);
+    const yetmaydi = birlik ? asosiyMiqdor(savatBirligi, savatdagi) + asosiyMiqdor(birlik, 1) > qator.qoldiq : savatdagi >= qator.qoldiq;
+    if (!canSellNegative && yetmaydi) {
       xabarBerish(true, t("search.notEnough", { name: nom, available: qator.qoldiq }));
       return;
     }
@@ -357,24 +471,44 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
         warehouseId: qator.warehouseId,
         warehouseName: qator.warehouseName,
       },
-      1
+      birlik && savatQatori ? asosiyMiqdor(birlik, 1) / asosiyMiqdor(savatBirligi, 1) : 1
     );
-    xabarBerish(false, t("search.added", { name: nom, qty: savatdagi + 1 }));
+    if (birlik && !savatQatori) usePosStore.getState().setBirlik(qator.kalit, birlik.unitId);
+    const yangiSoni = usePosStore.getState().cart.find((item) => item.id === qator.kalit)?.soni ?? savatdagi + 1;
+    xabarBerish(false, birlik ? t("search.addedUnit", { name: nom, qty: yangiSoni, birlik: birlik.nomi }) : t("search.added", { name: nom, qty: yangiSoni }));
+    if (!tozalash) return;
     // Keyingi mahsulot (yoki keyingi skan) uchun maydon tozalanadi va fokus qoladi.
     setSoz("");
     setFaol(-1);
     inputRef.current?.focus();
   }
 
-  // Yuklanish tugaganda kutib turgan Enter (skaner) bajariladi: faqat shtrix-kod/artikul aniq mos kelsa.
-  useEffect(() => {
-    if (!kutilmoqda || yuklanmoqda || !malumot) return;
-    setKutilmoqda(false);
-    const birinchi = natijalar[0];
-    if (birinchi && birinchi.daraja === 0) qoshish(birinchi);
-    else if (soz.trim()) xabarBerish(true, t("search.notExact"));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kutilmoqda, yuklanmoqda, malumot]);
+  // Enter natija kelishidan oldin bosilgan (skaner): kod bitta so'rov bilan tekshiriladi, faqat shtrix-kod/artikul aniq mos kelsa qo'shiladi.
+  // Topilmasa kod maydonga qaytadi (agar kassir shu orada yangi narsa yozmagan bo'lsa) va belgilanadi: keyingi skan uni almashtiradi.
+  async function kodBilanQoshish(kod: string) {
+    let xato = false;
+    try {
+      const birinchi = (await koddanOlish(kod)).qatorlar[0];
+      if (birinchi?.daraja === 0) {
+        qoshish(birinchi, false);
+        return;
+      }
+    } catch {
+      xato = true;
+    }
+    setSoz((joriy) => joriy || kod);
+    setFaol(0);
+    setOchiq(true);
+    xabarBerish(true, t(xato ? "search.loadFailed" : "search.notExact"));
+    window.requestAnimationFrame(() => inputRef.current?.select());
+  }
+
+  function royxatSuriladi(event: UIEvent<HTMLDivElement>) {
+    // Scroll hodisalari holat yangilanishidan tezroq keladi: ketayotgan so'rov ref orqali tekshiriladi, aks holda bir sahifa ikki marta so'raladi.
+    if (kategoriyaId || !server || !natijaTayyor || qidiruvBekor.current || server.sahifa * SERVER_SAHIFA_HAJMI >= server.jami) return;
+    const royxat = event.currentTarget;
+    if (royxat.scrollHeight - royxat.scrollTop - royxat.clientHeight <= KEYINGI_SAHIFA_MASOFASI) void serverdanQidirish(matn, server.sahifa + 1);
+  }
 
   function klavish(event: KeyboardEvent<HTMLInputElement>) {
     if (event.nativeEvent.isComposing) return;
@@ -395,10 +529,14 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
     } else if (event.key === "Enter") {
       event.preventDefault();
       // Yozuvsiz Enter faqat kategoriya ro'yxatida ↑/↓ bilan tanlangan mahsulotni qo'shadi.
-      if (!soz.trim() && !(kategoriyaId && faol >= 0)) return;
-      if (yuklanmoqda || !malumot) {
-        setKutilmoqda(true);
+      if (!matn && !(kategoriyaId && faol >= 0)) return;
+      if (matn && !natijaTayyor) {
+        if (kechikishTaymeri.current) window.clearTimeout(kechikishTaymeri.current);
+        qidiruvniBekorQilish();
+        setSoz("");
+        setFaol(-1);
         setOchiq(true);
+        void kodBilanQoshish(matn);
         return;
       }
       const tanlangan = natijalar[faol];
@@ -416,7 +554,11 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
     }
   }
 
-  const royxatKorinadi = Boolean(soz.trim()) || Boolean(kategoriyaId);
+  const royxatKorinadi = Boolean(matn) || Boolean(kategoriyaId);
+  const serverKutilmoqda = Boolean(matn) && !natijaTayyor && !serverXato;
+  const royxatYuklanmoqda = kategoriyaId ? (yuklanmoqda && !malumot) || kategoriyaYuklanmoqda : serverKutilmoqda && natijalar.length === 0;
+  const royxatXatosi = kategoriyaId ? xato && !malumot : serverXato && natijalar.length === 0;
+  const yangilash = () => void (kategoriyaId ? yukla(true) : serverdanQidirish(matn));
 
   return (
     <Popover
@@ -530,14 +672,14 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
                 setSoz(event.target.value);
                 setFaol(event.target.value.trim() ? 0 : -1);
                 setOchiq(true);
-                if (!malumot && !yuklanmoqda) void yukla();
               }}
               // Maydon allaqachon fokusda bo'lsa (masalan, Escape'dan keyin) onFocus qayta ishlamaydi: bosish panelni qayta ochadi.
               onClick={() => setOchiq(true)}
               onFocus={() => {
                 setOchiq(true);
-                // Qoldiq o'zgargan bo'lishi mumkin: kesh eskirgan bo'lsa fonda yangilanadi.
-                if (!yuklanmoqda) void yukla();
+                // Ombor ro'yxati oldindan tayyorlanadi (birinchi skan kutmasligi uchun); kategoriya ro'yxati kesh eskirgan bo'lsa yangilanadi.
+                void omborlarniOlish().catch(() => undefined);
+                if (kategoriyaId && !yuklanmoqda) void yukla();
               }}
               onKeyDown={klavish}
               placeholder={kichikEkran ? t("search.shortPlaceholder") : t("posModal.searchPlaceholder")}
@@ -611,18 +753,18 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
         )}
 
         {royxatKorinadi && (
-          <div id="header-mahsulot-royxati" role="listbox" className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1.5">
-            {(yuklanmoqda && !malumot) || kategoriyaYuklanmoqda ? (
+          <div id="header-mahsulot-royxati" role="listbox" onScroll={royxatSuriladi} className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1.5">
+            {royxatYuklanmoqda ? (
               <p className="flex items-center gap-2 px-3 py-4 text-sm font-semibold text-slate-400">
                 <LoaderCircle size={16} className="animate-spin text-gold-500" />
                 {t("search.loading")}
               </p>
-            ) : xato && !malumot ? (
+            ) : royxatXatosi ? (
               <div className="flex items-center justify-between gap-3 px-3 py-3 text-sm font-semibold text-red-500">
                 <span>{t("search.loadFailed")}</span>
                 <button
                   type="button"
-                  onClick={() => void yukla(true)}
+                  onClick={yangilash}
                   className="shrink-0 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-black text-red-600 hover:bg-red-100"
                 >
                   {t("search.retry")}
@@ -678,7 +820,7 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-extrabold text-slate-900">{nom}</span>
                       <span className="block truncate text-xs font-semibold text-slate-400">
-                        {[barcode, malumot && malumot.omborlarSoni > 1 ? qator.warehouseName : ""].filter(Boolean).join(" · ") ||
+                        {[barcode, omborlarSoni > 1 ? qator.warehouseName : ""].filter(Boolean).join(" · ") ||
                           t("posModal.noCode")}
                       </span>
                     </span>
@@ -711,11 +853,11 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
             <button
               type="button"
               onMouseDown={(event) => event.preventDefault()}
-              onClick={() => void yukla(true)}
+              onClick={yangilash}
               aria-label={t("posModal.refreshAria")}
               className="ml-auto inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-slate-500 transition hover:bg-white hover:text-slate-700"
             >
-              <RefreshCw size={12} className={yuklanmoqda ? "animate-spin" : ""} />
+              <RefreshCw size={12} className={yuklanmoqda || qidirilmoqda ? "animate-spin" : ""} />
               {t("posModal.refreshAria")}
             </button>
           </div>

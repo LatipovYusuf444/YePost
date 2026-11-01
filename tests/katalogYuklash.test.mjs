@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { katalogQidiruvYuklagich } from '../src/api/catalogSearch.ts';
 
-test('7-page catalogue loads sequentially and repeated consumers reuse the completed result', async () => {
+test('7-page catalogue loads in parallel batches, keeps page order and repeated consumers reuse the completed result', async () => {
   const calls = [];
   let active = 0;
   let peak = 0;
   const loader = katalogQidiruvYuklagich(async (q, page) => {
     calls.push([q, page]);
     peak = Math.max(peak, ++active);
-    await Promise.resolve();
+    await new Promise(resolve => setImmediate(resolve));
     --active;
     return { items: [{ id: String(page) }], totalPages: 7 };
   });
@@ -19,7 +19,8 @@ test('7-page catalogue loads sequentially and repeated consumers reuse the compl
   assert.deepEqual(concurrent, first);
   assert.deepEqual(reopened, first);
   assert.deepEqual(calls.map(x => x[1]), [1, 2, 3, 4, 5, 6, 7]);
-  assert.equal(peak, 1);
+  assert.deepEqual(first.map(item => item.id), ['1', '2', '3', '4', '5', '6', '7']);
+  assert.equal(peak, 5, 'server gets at most 5 pages at once');
 });
 
 test('expiry and explicit refresh reload prices, while concurrent refreshes share one request', async () => {
