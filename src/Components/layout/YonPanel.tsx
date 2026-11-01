@@ -153,11 +153,19 @@ export default function YonPanel({
   const oqilmaganSoniniYangilash = useSupportStore((state) => state.oqilmaganSoniniYangilash);
 
   // Qo'llab-quvvatlash bo'limidagi o'qilmagan xabarlar soni sidebar
-  // ikonkasida badge sifatida ko'rsatiladi — taxminan har 30 soniyada yangilanadi.
+  // ikonkasida badge sifatida ko'rsatiladi — har 60 soniyada, faqat sahifa ko'rinib turganda
+  // yangilanadi; yashirin vkladka so'rov yubormaydi, foydalanuvchi qaytganda darrov yangilanadi.
   useEffect(() => {
-    void oqilmaganSoniniYangilash();
-    const oraliq = setInterval(() => void oqilmaganSoniniYangilash(), 30000);
-    return () => clearInterval(oraliq);
+    const yangilash = () => {
+      if (document.visibilityState === "visible") void oqilmaganSoniniYangilash();
+    };
+    yangilash();
+    const oraliq = setInterval(yangilash, 60000);
+    document.addEventListener("visibilitychange", yangilash);
+    return () => {
+      clearInterval(oraliq);
+      document.removeEventListener("visibilitychange", yangilash);
+    };
   }, [oqilmaganSoniniYangilash]);
 
   // Profil hali yuklanmagan bo'lsa hamma bandni ko'rsatamiz (bir lahzalik
