@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { idempotentBajarish, idempotentKalitOlish, natijaNomalummi } from '../src/lib/idempotentKalit.ts';
 import { ishlabChiqarishRuxsati, ishlabChiqarishYoliRuxsati, sahifagaRuxsatBormi } from '../src/lib/roles.ts';
-import { xatoKodiMatni } from '../src/api/xatoKodlari.ts';
+import { serverMatniUstunmi, xatoKodiMatni } from '../src/api/xatoKodlari.ts';
 import * as lib from '../src/lib/ishlabChiqarish.ts';
 
 const huquq = (role, ...kodlar) => ({ role, grants: kodlar.map((code) => ({ code, isActive: true })) });
@@ -115,12 +115,16 @@ test('serial charset, names from either response shape and availability fallback
   assert.equal(lib.qatorNomi({ productName: 'Sement' }), 'Sement');
   assert.equal(lib.qatorNomi({ modification: { name: 'Asosiy', product: { name: 'Plyonka' } } }), 'Plyonka');
   assert.equal(lib.qatorNomi({}), '—');
-  assert.deepEqual(lib.mavjudlikOqish({ items: [{ shortage: '3' }] }), { items: [{ shortage: '3' }], hasShortage: true });
-  assert.equal(lib.mavjudlikOqish({ items: [{ shortage: '3' }], hasShortage: false }).hasShortage, false);
+  const javob = { orderId: 'o1', items: [{ productName: 'Jumbo roll', required: '2300', issued: '0', available: '1150', shortage: '1150' }], hasShortage: true };
+  assert.deepEqual(lib.mavjudlikOqish(javob), { items: javob.items, hasShortage: true });
+  assert.equal(lib.mavjudlikOqish({ items: [], hasShortage: false }).hasShortage, false);
   assert.deepEqual(lib.mavjudlikOqish(undefined), { items: [], hasShortage: false });
-  assert.equal(lib.portlashQatorlari({ items: [{ quantity: 2 }] }).length, 1);
-  assert.equal(lib.portlashQatorlari({ data: { requirements: [{ required: 2 }] } }).length, 1);
-  assert.equal(lib.portlashMiqdori({ required: '4.5' }), 4.5);
+  const portlash = lib.portlashOqish({ recipeId: 'r1', quantity: '300', inputs: [{ productName: 'Jumbo roll', kind: 'FIXED', quantity: '138', min: null, max: null }], outputs: [{ productName: 'Skotch', role: 'MAIN', quantity: '300' }, { productName: 'Kromka', role: 'WASTE', quantity: '1.8' }] });
+  assert.equal(portlash.inputs.length, 1);
+  assert.equal(portlash.outputs.length, 2);
+  assert.equal(lib.portlashMiqdori(portlash.outputs[1]), 1.8);
+  assert.equal(lib.portlashMiqdori({ kind: 'FREE', quantity: null }), undefined);
+  assert.deepEqual(lib.portlashOqish(undefined), { inputs: [], outputs: [] });
 });
 
 test('every documented production error has a clear text in both languages', () => {
@@ -144,5 +148,40 @@ test('uz and ru module texts have the same keys and every key used in the screen
   for (const fayl of fayllar) {
     const manba = readFileSync(new URL(`../${fayl}`, import.meta.url), 'utf8');
     for (const [, kalit] of manba.matchAll(/\bt\("([a-zA-Z.]+)"/g)) assert.ok(kalitlar.has(kalit), `${fayl}: ${kalit}`);
+  }
+});
+
+test('real response shapes: empty draft number, linked document numbers, corrected output', () => {
+  assert.equal(lib.hujjatRaqami({ docNumber: '' }), '');
+  assert.equal(lib.hujjatRaqami({ docNumber: 'ICHB-000001' }), 'ICHB-000001');
+  assert.equal(lib.hujjatRaqami(null), '');
+  assert.equal(lib.raqamXaritasi([{ id: 'o1', docNumber: 'ICHB-000001' }]).get('o1'), 'ICHB-000001');
+  assert.equal(lib.raqamXaritasi(null).size, 0);
+  const chiqim = { quantity: '1920', corrections: [{ delta: '-5', reason: 'Qayta sanaldi' }] };
+  assert.equal(lib.chiqimMiqdori(chiqim), 1915);
+  assert.equal(lib.chiqimMiqdori({ quantity: '12.5' }), 12.5);
+  const chiqindi = { role: 'WASTE', productName: 'Kromka' };
+  const asosiy = { role: 'MAIN', productName: 'Skotch 48x100' };
+  assert.equal(lib.hisobotMahsuloti({ outputs: [chiqindi, asosiy] }), asosiy);
+  assert.equal(lib.hisobotMahsuloti({ outputs: [chiqindi] }), chiqindi);
+  assert.equal(lib.hisobotMahsuloti({}), undefined);
+});
+
+test('production errors show the server message in the user language; the code only drives branching', () => {
+  assert.equal(serverMatniUstunmi('errors.production.report_output_sold', "Hisobotdagi mahsulot sotilgan"), true);
+  assert.equal(serverMatniUstunmi('errors.production.report_output_sold', 'errors.production.report_output_sold'), false, 'message kod bo‘lsa mahalliy matn');
+  assert.equal(serverMatniUstunmi('errors.production.report_output_sold', ''), false);
+  assert.equal(serverMatniUstunmi('errors.inventory.serial_required', 'Seriya kerak'), false);
+  assert.equal(serverMatniUstunmi(undefined, 'Matn'), false);
+});
+
+test('order pages use the backend status names', () => {
+  const sahifa = readFileSync(new URL('../src/Pages/IshlabChiqarish/Buyurtmalar.tsx', import.meta.url), 'utf8');
+  assert.equal(sahifa.includes('COMPLETED'), false);
+  assert.match(sahifa, /"IN_PROGRESS", "DONE", "CLOSED", "CANCELLED"/);
+  for (const til of ['uz', 'ru']) {
+    const matnlar = JSON.parse(readFileSync(new URL(`../src/i18n/locales/${til}/ishlab_chiqarish.json`, import.meta.url), 'utf8'));
+    for (const holat of ['DRAFT', 'RELEASED', 'IN_PROGRESS', 'DONE', 'CLOSED', 'CANCELLED', 'CONFIRMED', 'ACTIVE', 'ARCHIVED', 'IN_STOCK', 'USED']) assert.ok(matnlar.status[holat], `${til} ${holat}`);
+    assert.equal(matnlar.status.COMPLETED, undefined);
   }
 });

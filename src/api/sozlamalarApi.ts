@@ -1,7 +1,7 @@
 import axios from "axios";
 import { API_BASE_URL } from "./apiConfig";
 import { apiTilHeaderi, apiTiliniOlish } from "./apiLanguage";
-import { xatoKodiMatni } from "./xatoKodlari";
+import { serverMatniUstunmi, xatoKodiMatni } from "./xatoKodlari";
 
 export type LoginPayload = {
   // Do'kon kodi (Workspace.slug): bir xil login bir nechta do'konda bo'lsa kerak. Bo'sh bo'lsa umuman yuborilmaydi (src/lib/dokonKodi.ts).
@@ -142,6 +142,7 @@ export function getApiErrorMessage(error: unknown) {
 
   // Mijoz hisobi va valyuta xato kodlari: tushunarli (va kontekstga mos) matn; boshqa kodlar avvalgidek ko'rsatiladi.
   const xabar = error.response.data?.message;
+  if (serverMatniUstunmi(error.response.data?.code, xabar)) return String(xabar);
   const kodMatni = xatoKodiMatni(
     error.response.data?.code ?? (typeof xabar === "string" && xabar.startsWith("errors.") ? xabar : undefined),
     error.config?.url,

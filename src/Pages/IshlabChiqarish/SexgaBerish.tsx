@@ -5,11 +5,11 @@ import { useTranslation } from "react-i18next";
 import ModalTablari from "@/Components/common/ModalTablari";
 import { ishlabChiqarishApi } from "@/api/ishlabChiqarishApi";
 import { kunMatni } from "@/lib/hujjatSanasi";
-import { miqdorMatni, qatorNomi, seriyaYaroqlimi, sonMaydoni, tozaTana } from "@/lib/ishlabChiqarish";
+import { hujjatRaqami, miqdorMatni, qatorNomi, raqamXaritasi, seriyaYaroqlimi, sonMaydoni, tozaTana } from "@/lib/ishlabChiqarish";
 import { foydalanuvchiKursniOzgartiraOladimi } from "@/lib/roles";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import type { BerishTanasi, SexdanQaytarish, SexgaBerish as Berish } from "@/types/ishlabChiqarish";
-import { Holat, Jadval, MahsulotQidiruvi, Maydon, Ogohlantirish, OmborTanlash, Oyna, QatorOchirish, QatorQoshish, Sahifa, XatoQutisi, Yuklanmoqda, inputKlass, tugmaAsosiy, tugmaIkkinchi, tugmaXavfli, type Ustun } from "./umumiy";
+import { Holat, Jadval, MahsulotQidiruvi, Maydon, OmborTanlash, Oyna, QatorOchirish, QatorQoshish, Sahifa, XatoQutisi, Yuklanmoqda, inputKlass, tugmaAsosiy, tugmaIkkinchi, tugmaXavfli, type Ustun } from "./umumiy";
 import { useAmal, useMalumot, useOmborlar } from "./hooklar";
 
 // Oynadagi qator: rulon — batchId va seriya bilan (miqdor butun og'irligi), oddiy qator — mahsulot va miqdor.
@@ -30,25 +30,20 @@ function Berishlar() {
   const { t } = useTranslation("ishlab_chiqarish");
   const [parametrlar, setParametrlar] = useSearchParams();
   const royxat = useMalumot(() => ishlabChiqarishApi.berishlar.royxat(), "issues");
+  const buyurtmalar = useMalumot(() => ishlabChiqarishApi.buyurtmalar.royxat(), "orders");
+  const buyurtmaRaqamlari = raqamXaritasi(buyurtmalar.malumot);
   const [ochiq, setOchiq] = useState<{ id?: string } | null>(() => (parametrlar.get("hujjat") ? { id: parametrlar.get("hujjat") ?? undefined } : null));
-  // GET /production/issues hujjatda yozilmagan: bo'lmasa shu sessiyada ochilgan hujjatlar ko'rinadi.
-  const [sessiyadagi, setSessiyadagi] = useState<Berish[]>([]);
   const [buyurtmaOynasi, setBuyurtmaOynasi] = useState(false);
-  const qatorlar = [...sessiyadagi.filter((item) => !royxat.malumot?.some((hujjat) => hujjat.id === item.id)), ...(royxat.malumot ?? [])];
   useEffect(() => {
     if (parametrlar.get("hujjat")) setParametrlar({}, { replace: true });
   }, [parametrlar, setParametrlar]);
   const ustunlar: Ustun<Berish>[] = [
-    { nom: t("fields.document"), katak: (hujjat) => <span className="font-black text-slate-900">{hujjat.docNumber ?? "—"}</span> },
-    { nom: t("fields.order"), katak: (hujjat) => hujjat.order?.docNumber ?? "—" },
+    { nom: t("fields.document"), katak: (hujjat) => <span className="font-black text-slate-900">{hujjatRaqami(hujjat) || "—"}</span> },
+    { nom: t("fields.order"), katak: (hujjat) => buyurtmaRaqamlari.get(hujjat.orderId ?? "") || "—" },
     { nom: t("fields.date"), katak: (hujjat) => kunMatni(hujjat.date ?? undefined) || "—" },
     { nom: t("fields.lines"), ong: true, katak: (hujjat) => hujjat.lines?.length ?? "—" },
     { nom: t("fields.status"), katak: (hujjat) => <Holat status={hujjat.status} /> },
   ];
-  const ozgardi = (hujjat?: Berish) => {
-    if (hujjat) setSessiyadagi((joriy) => [hujjat, ...joriy.filter((item) => item.id !== hujjat.id)]);
-    royxat.qayta();
-  };
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap justify-end gap-2">
@@ -56,24 +51,24 @@ function Berishlar() {
         <button type="button" onClick={() => setOchiq({})} className={tugmaAsosiy}><Plus size={16} />{t("issues.create")}</button>
       </div>
       <XatoQutisi matn={royxat.xato} />
-      {royxat.topilmadi && <Ogohlantirish>{t("issues.listUnavailable")}</Ogohlantirish>}
-      {royxat.yuklanmoqda && !royxat.malumot ? <Yuklanmoqda /> : <Jadval ustunlar={ustunlar} qatorlar={qatorlar} kalit={(hujjat) => hujjat.id} onBos={(hujjat) => setOchiq({ id: hujjat.id })} bosh={t("empty.issues")} />}
-      {ochiq && <BerishOynasi id={ochiq.id} onYopish={() => setOchiq(null)} onOzgardi={ozgardi} />}
-      {buyurtmaOynasi && <BuyurtmaTanlash onYopish={() => setBuyurtmaOynasi(false)} onYaratildi={(hujjat) => { setBuyurtmaOynasi(false); ozgardi(hujjat); setOchiq({ id: hujjat.id }); }} />}
+      {royxat.yuklanmoqda && !royxat.malumot ? <Yuklanmoqda /> : <Jadval ustunlar={ustunlar} qatorlar={royxat.malumot ?? []} kalit={(hujjat) => hujjat.id} onBos={(hujjat) => setOchiq({ id: hujjat.id })} bosh={t("empty.issues")} />}
+      {ochiq && <BerishOynasi id={ochiq.id} onYopish={() => setOchiq(null)} onOzgardi={royxat.qayta} />}
+      {buyurtmaOynasi && <BuyurtmaTanlash onYopish={() => setBuyurtmaOynasi(false)} onYaratildi={(hujjat) => { setBuyurtmaOynasi(false); royxat.qayta(); setOchiq({ id: hujjat.id }); }} />}
     </div>
   );
 }
 
 function BuyurtmaTanlash({ onYopish, onYaratildi }: { onYopish: () => void; onYaratildi: (hujjat: Berish) => void }) {
   const { t } = useTranslation("ishlab_chiqarish");
-  const buyurtmalar = useMalumot(() => ishlabChiqarishApi.buyurtmalar.royxat({ status: "RELEASED" }), "released");
+  // Sexga bir necha marta berish mumkin: birinchi berishdan keyin buyurtma IN_PROGRESS bo'ladi.
+  const buyurtmalar = useMalumot(async () => (await ishlabChiqarishApi.buyurtmalar.royxat()).filter((buyurtma) => buyurtma.status === "RELEASED" || buyurtma.status === "IN_PROGRESS"), "ishdagi");
   const amal = useAmal();
   return (
     <Oyna sarlavha={t("issues.fromOrder")} onYopish={onYopish}>
       <XatoQutisi matn={buyurtmalar.xato || amal.xato} />
       {!buyurtmalar.malumot ? <Yuklanmoqda /> : (
         <Jadval
-          ustunlar={[{ nom: t("fields.document"), katak: (qator) => qator.docNumber ?? "—" }, { nom: t("fields.product"), katak: (qator) => qatorNomi(qator) }, { nom: t("fields.quantity"), ong: true, katak: (qator) => miqdorMatni(qator.quantity) }]}
+          ustunlar={[{ nom: t("fields.document"), katak: (qator) => hujjatRaqami(qator) || "—" }, { nom: t("fields.product"), katak: (qator) => qatorNomi(qator) }, { nom: t("fields.quantity"), ong: true, katak: (qator) => miqdorMatni(qator.quantity) }]}
           qatorlar={buyurtmalar.malumot}
           kalit={(qator) => qator.id}
           onBos={(qator) => void amal.bajar(async () => onYaratildi(await ishlabChiqarishApi.berishlar.buyurtmadan(qator.id)))}
@@ -84,7 +79,7 @@ function BuyurtmaTanlash({ onYopish, onYaratildi }: { onYopish: () => void; onYa
   );
 }
 
-function BerishOynasi({ id: boshlangichId, onYopish, onOzgardi }: { id?: string; onYopish: () => void; onOzgardi: (hujjat?: Berish) => void }) {
+function BerishOynasi({ id: boshlangichId, onYopish, onOzgardi }: { id?: string; onYopish: () => void; onOzgardi: () => void }) {
   const { t } = useTranslation("ishlab_chiqarish");
   const omborlar = useOmborlar();
   const profil = useAuthProfileStore((holat) => holat.profil);
@@ -107,7 +102,7 @@ function BerishOynasi({ id: boshlangichId, onYopish, onOzgardi }: { id?: string;
     setWip(yangi.wipWarehouseId ?? "");
     setConsumeOnIssue(Boolean(yangi.consumeOnIssue));
     setNote(yangi.note ?? "");
-    setQatorlar((yangi.lines ?? []).map((qator) => ({ id: qator.id, modificationId: qator.modificationId ?? "", nom: qatorNomi(qator), quantity: qator.quantity != null ? String(qator.quantity) : "", batchId: qator.batchId ?? "", serial: qator.serial ?? "", ogirlik: qator.weight != null ? String(qator.weight) : "" })));
+    setQatorlar((yangi.lines ?? []).map((qator) => ({ id: qator.id, modificationId: qator.modificationId ?? "", nom: qatorNomi(qator), quantity: qator.quantity != null ? String(qator.quantity) : "", batchId: qator.batchId ?? "", serial: qator.serial ?? "", ogirlik: qator.batchId && qator.quantity != null ? String(qator.quantity) : "" })));
   }
 
   useEffect(() => {
@@ -134,7 +129,7 @@ function BerishOynasi({ id: boshlangichId, onYopish, onOzgardi }: { id?: string;
     const rulon = await amal.bajar(() => ishlabChiqarishApi.rulonlar.seriyaBoyicha(seriya));
     if (!rulon) return;
     if (sourceWarehouseId && rulon.warehouseId && rulon.warehouseId !== sourceWarehouseId) return setSkanXato(t("errors.rollWarehouse", { seriya }));
-    setQatorlar((joriy) => [...joriy, { modificationId: "", nom: rulon.productName ?? "—", quantity: "", batchId: rulon.batchId, serial: rulon.serial ?? seriya, ogirlik: String(rulon.weightLeft ?? rulon.weight ?? "") }]);
+    setQatorlar((joriy) => [...joriy, { modificationId: rulon.modificationId ?? "", nom: rulon.productName ?? "—", quantity: "", batchId: rulon.batchId, serial: rulon.serial ?? seriya, ogirlik: String(rulon.weightLeft ?? rulon.weight ?? "") }]);
     setSkan("");
   }
   const skanKlavishi = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -161,7 +156,7 @@ function BerishOynasi({ id: boshlangichId, onYopish, onOzgardi }: { id?: string;
     if (!tana) return null;
     const yangi = id ? await ishlabChiqarishApi.berishlar.yangilash(id, tana) : await ishlabChiqarishApi.berishlar.yaratish(tana);
     hujjatniQollash(yangi);
-    onOzgardi(yangi);
+    onOzgardi();
     return yangi;
   }
 
@@ -171,13 +166,13 @@ function BerishOynasi({ id: boshlangichId, onYopish, onOzgardi }: { id?: string;
     if (!yangi) return;
     const tasdiq = await ishlabChiqarishApi.berishlar.tasdiqlash(yangi.id);
     hujjatniQollash(tasdiq);
-    onOzgardi(tasdiq);
+    onOzgardi();
   });
   const bekorQilish = () => void amal.bajar(async () => {
     if (!id) return;
     const yangi = await ishlabChiqarishApi.berishlar.bekorQilish(id);
     hujjatniQollash(yangi);
-    onOzgardi(yangi);
+    onOzgardi();
   });
   const ochirish = () => void amal.bajar(async () => {
     if (!id) return;
@@ -187,7 +182,7 @@ function BerishOynasi({ id: boshlangichId, onYopish, onOzgardi }: { id?: string;
   });
 
   return (
-    <Oyna keng sarlavha={hujjat?.docNumber ?? t("issues.create")} belgi={<Holat status={hujjat?.status} />} onYopish={onYopish} pastki={<>
+    <Oyna keng sarlavha={hujjatRaqami(hujjat) || t("issues.create")} belgi={<Holat status={hujjat?.status} />} onYopish={onYopish} pastki={<>
       {qoralama && id && <button type="button" disabled={amal.band} onClick={ochirish} className={tugmaXavfli}>{t("actions.delete")}</button>}
       {hujjat?.status === "CONFIRMED" && foydalanuvchiKursniOzgartiraOladimi(profil) && <button type="button" disabled={amal.band} onClick={bekorQilish} className={tugmaXavfli}>{t("actions.cancelDocument")}</button>}
       {qoralama && <button type="button" disabled={amal.band} onClick={saqlash} className={tugmaIkkinchi}>{t("actions.save")}</button>}
@@ -235,12 +230,14 @@ function BerishOynasi({ id: boshlangichId, onYopish, onOzgardi }: { id?: string;
 function Qaytarishlar() {
   const { t } = useTranslation("ishlab_chiqarish");
   const royxat = useMalumot(() => ishlabChiqarishApi.qaytarishlar.royxat(), "wip-returns");
+  const berishlar = useMalumot(() => ishlabChiqarishApi.berishlar.royxat(), "issues");
+  const berishRaqamlari = raqamXaritasi(berishlar.malumot);
   const amal = useAmal();
   const [yaratish, setYaratish] = useState(false);
   const amalBajarish = (ish: () => Promise<unknown>) => void amal.bajar(async () => { await ish(); royxat.qayta(); });
   const ustunlar: Ustun<SexdanQaytarish>[] = [
-    { nom: t("fields.document"), katak: (hujjat) => <span className="font-black text-slate-900">{hujjat.docNumber ?? "—"}</span> },
-    { nom: t("fields.issue"), katak: (hujjat) => hujjat.issue?.docNumber ?? "—" },
+    { nom: t("fields.document"), katak: (hujjat) => <span className="font-black text-slate-900">{hujjatRaqami(hujjat) || "—"}</span> },
+    { nom: t("fields.issue"), katak: (hujjat) => berishRaqamlari.get(hujjat.issueId ?? "") || "—" },
     { nom: t("fields.date"), katak: (hujjat) => kunMatni(hujjat.date ?? undefined) || "—" },
     { nom: t("fields.status"), katak: (hujjat) => <Holat status={hujjat.status} /> },
     {
@@ -294,11 +291,10 @@ function QaytarishOynasi({ onYopish, onSaqlandi }: { onYopish: () => void; onSaq
       <button type="button" disabled={amal.band || !issueId} onClick={saqlash} className={tugmaAsosiy}>{t("actions.save")}</button>
     </>}>
       <XatoQutisi matn={berishlar.xato || hujjat.xato || amal.xato} />
-      {berishlar.topilmadi && <Ogohlantirish>{t("issues.listUnavailable")}</Ogohlantirish>}
       <Maydon nom={t("fields.issue")}>
         <select value={issueId} onChange={(event) => { setIssueId(event.target.value); setTanlov({}); }} className={inputKlass}>
           <option value="">{t("fields.selectIssue")}</option>
-          {(berishlar.malumot ?? []).map((item) => <option key={item.id} value={item.id}>{item.docNumber ?? item.id}</option>)}
+          {(berishlar.malumot ?? []).map((item) => <option key={item.id} value={item.id}>{hujjatRaqami(item) || "—"}</option>)}
         </select>
       </Maydon>
       {qatorlar.map((qator) => {

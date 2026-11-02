@@ -69,7 +69,9 @@ export type RetseptTanasi = {
   outputs: Array<{ modificationId: string; role: RetseptChiqimi["role"]; quantity: number; quantityType?: "PROPORTIONAL" | "PER_BATCH" }>;
 };
 
-export type PortlashQatori = NomliQator & { modificationId?: string; quantity?: Son; required?: Son; min?: Son; max?: Son; kind?: string | null };
+export type PortlashQatori = NomliQator & { modificationId?: string; quantity?: Son; min?: Son; max?: Son; kind?: string | null; role?: string | null };
+/** GET /production/recipes/:id/explode: kirishlar va chiqishlar alohida keladi. */
+export type Portlash = { inputs: PortlashQatori[]; outputs: PortlashQatori[] };
 
 export type KalkulyatsiyaQatori = NomliQator & {
   id?: string;
@@ -95,6 +97,9 @@ export type KalkulyatsiyaKartasi = NomliQator & {
   lines?: KalkulyatsiyaQatori[];
 };
 
+/** GET /production/costing-cards/price: shu kuni amaldagi 1 dona narxi. */
+export type KunNarxi = { cardId?: string; version?: number | null; unitCost?: Son };
+
 export type KalkulyatsiyaTanasi = {
   modificationId: string;
   recipeId?: string;
@@ -104,7 +109,8 @@ export type KalkulyatsiyaTanasi = {
   lines: Array<{ modificationId: string; quantity: number; price: number; currency?: "UZS" | "USD"; costingRate?: number }>;
 };
 
-export type MavjudlikQatori = NomliQator & { modificationId?: string; required?: Son; issued?: Son; available?: Son; shortage?: Son };
+// Buyurtma `requirements` qatorida faqat `quantity` keladi; required/issued/available/shortage — availability javobida.
+export type MavjudlikQatori = NomliQator & { modificationId?: string; quantity?: Son; required?: Son; issued?: Son; available?: Son; shortage?: Son };
 export type Mavjudlik = { items: MavjudlikQatori[]; hasShortage: boolean };
 
 export type Buyurtma = NomliQator & {
@@ -122,6 +128,7 @@ export type Buyurtma = NomliQator & {
   dueDate?: string | null;
   date?: string | null;
   note?: string | null;
+  completionNote?: string | null;
   availability?: Mavjudlik;
 };
 
@@ -142,7 +149,6 @@ export type BerishQatori = NomliQator & {
   quantity?: Son;
   batchId?: string | null;
   serial?: string | null;
-  weight?: Son;
 };
 
 export type SexgaBerish = {
@@ -150,7 +156,6 @@ export type SexgaBerish = {
   docNumber?: string | null;
   status: string;
   orderId?: string | null;
-  order?: { id: string; docNumber?: string | null } | null;
   sourceWarehouseId?: string | null;
   wipWarehouseId?: string | null;
   consumeOnIssue?: boolean;
@@ -174,14 +179,16 @@ export type SexdanQaytarish = {
   docNumber?: string | null;
   status: string;
   issueId?: string | null;
-  issue?: { id: string; docNumber?: string | null } | null;
   date?: string | null;
-  lines?: Array<NomliQator & { id?: string; issueLineId?: string; quantity?: Son; serial?: string | null }>;
+  // Qatorda mahsulot nomi yo'q: u `issueLineId` orqali sexga berish hujjatidan olinadi.
+  lines?: Array<{ id?: string; issueLineId?: string; quantity?: Son; restored?: Array<{ batchId: string; quantity: Son }> }>;
 };
 
 export type NavbatQatori = {
   orderId: string;
   docNumber?: string | null;
+  modificationId?: string;
+  status?: string | null;
   productName?: string | null;
   quantity?: Son;
   produced?: Son;
@@ -191,6 +198,8 @@ export type NavbatQatori = {
 
 export type TozaxtashSababi = "BREAKDOWN" | "MAINTENANCE" | "NO_STAFF" | "OTHER_WORK" | "NO_MATERIAL" | "NO_POWER" | "OTHER";
 
+export type SmenaTuzatishi = { id?: string; outputId?: string; delta: Son; reason?: string | null; createdById?: string | null; createdAt?: string | null };
+
 export type SmenaChiqimi = NomliQator & {
   id?: string;
   quantity?: Son;
@@ -199,20 +208,22 @@ export type SmenaChiqimi = NomliQator & {
   modificationId?: string | null;
   role?: string | null;
   batchId?: string | null;
+  corrections?: SmenaTuzatishi[];
 };
 
-export type SmenaKirimi = NomliQator & { id?: string; modificationId: string; quantity?: Son; entryMethod?: "NORM" | "ACTUAL" | null; offRecipe?: boolean | null };
+export type SmenaKirimi = NomliQator & { id?: string; modificationId: string; normQuantity?: Son; quantity?: Son; entryMethod?: "NORM" | "ACTUAL" | null; offRecipe?: boolean | null };
 
 export type SmenaHisoboti = {
   id: string;
   docNumber?: string | null;
   status: string;
+  date?: string | null;
   orderId?: string | null;
-  order?: { id: string; docNumber?: string | null } | null;
   recipeId?: string | null;
   destWarehouseId?: string | null;
   shiftEndsAt?: string | null;
   comment?: string | null;
+  cancelReason?: string | null;
   outputs?: SmenaChiqimi[];
   inputs?: SmenaKirimi[];
   downtime?: Array<{ reason: TozaxtashSababi; hours: Son; note?: string | null }>;
@@ -229,15 +240,16 @@ export type SmenaTanasi = {
   downtime?: Array<{ reason: TozaxtashSababi; hours: number; note?: string }>;
 };
 
+// Javobda ombor nomi va holat yo'q: nom omborlar ro'yxatidan olinadi, holat so'rov filtri bilan tanlanadi.
 export type Rulon = {
   batchId: string;
   serial?: string | null;
+  modificationId?: string;
   productName?: string | null;
   warehouseId?: string | null;
-  warehouseName?: string | null;
   weight?: Son;
   weightLeft?: Son;
-  status?: string | null;
+  receivedAt?: string | null;
 };
 
-export type RulonXulosasi = { productName?: string | null; rolls?: Son; weight?: Son };
+export type RulonXulosasi = { modificationId?: string; warehouseId?: string | null; productName?: string | null; rolls?: Son; weight?: Son };

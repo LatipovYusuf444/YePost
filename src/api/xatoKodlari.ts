@@ -176,6 +176,11 @@ export function xatoMaydoni(tafsilot: unknown, kalit: string): unknown {
 }
 
 /** Xato javobidan kod: `code` maydoni, bo'lmasa "errors." bilan boshlangan `message`. */
+/** Ishlab chiqarish xatolarida `message` foydalanuvchi tilida keladi: shu ko'rsatiladi, kod esa faqat tarmoqlash uchun. */
+export function serverMatniUstunmi(kod: unknown, xabar: unknown): boolean {
+  return typeof kod === "string" && kod.startsWith("errors.production.") && typeof xabar === "string" && xabar.trim() !== "" && !xabar.startsWith("errors.");
+}
+
 export function xatoKodi(tafsilot: unknown): string | undefined {
   const asosiy = obyekt(tafsilot);
   if (!asosiy) return undefined;

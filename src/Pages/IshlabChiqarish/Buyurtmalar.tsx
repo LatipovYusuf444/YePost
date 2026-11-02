@@ -4,12 +4,12 @@ import { CheckCircle2, ClipboardCheck, PackageOpen, Plus, RefreshCw, Rocket } fr
 import { useTranslation } from "react-i18next";
 import { ishlabChiqarishApi } from "@/api/ishlabChiqarishApi";
 import { kunMatni } from "@/lib/hujjatSanasi";
-import { miqdorMatni, qatorNomi, sonMaydoni, tozaTana } from "@/lib/ishlabChiqarish";
+import { hujjatRaqami, miqdorMatni, qatorNomi, sonMaydoni, tozaTana } from "@/lib/ishlabChiqarish";
 import type { Buyurtma, BuyurtmaTanasi, Mavjudlik } from "@/types/ishlabChiqarish";
 import { HolatFiltri, Holat, Jadval, MahsulotQidiruvi, Maydon, Ogohlantirish, OmborTanlash, Oyna, Sahifa, XatoQutisi, Yuklanmoqda, inputKlass, tugmaAsosiy, tugmaIkkinchi, tugmaXavfli, type Ustun } from "./umumiy";
 import { useAmal, useMalumot, useOmborlar } from "./hooklar";
 
-const TUGAGAN = ["DRAFT", "COMPLETED", "CLOSED", "CANCELLED"];
+const TUGAGAN = ["DRAFT", "DONE", "CLOSED", "CANCELLED"];
 
 export default function Buyurtmalar() {
   const { t } = useTranslation("ishlab_chiqarish");
@@ -18,7 +18,7 @@ export default function Buyurtmalar() {
   const [ochiq, setOchiq] = useState<string | null>(null);
   const [forma, setForma] = useState<{ hujjat?: Buyurtma } | null>(null);
   const ustunlar: Ustun<Buyurtma>[] = [
-    { nom: t("fields.document"), katak: (hujjat) => <span className="font-black text-slate-900">{hujjat.docNumber ?? "—"}</span> },
+    { nom: t("fields.document"), katak: (hujjat) => <span className="font-black text-slate-900">{hujjatRaqami(hujjat) || "—"}</span> },
     { nom: t("fields.product"), katak: (hujjat) => qatorNomi(hujjat) },
     { nom: t("fields.quantity"), ong: true, katak: (hujjat) => miqdorMatni(hujjat.quantity) },
     { nom: t("fields.produced"), ong: true, katak: (hujjat) => miqdorMatni(hujjat.produced ?? 0) },
@@ -30,7 +30,7 @@ export default function Buyurtmalar() {
       sarlavha={t("orders.title")}
       izoh={t("orders.subtitle")}
       amal={<>
-        <HolatFiltri qiymat={status} onChange={setStatus} holatlar={["DRAFT", "RELEASED", "COMPLETED", "CLOSED", "CANCELLED"]} />
+        <HolatFiltri qiymat={status} onChange={setStatus} holatlar={["DRAFT", "RELEASED", "IN_PROGRESS", "DONE", "CLOSED", "CANCELLED"]} />
         <button type="button" onClick={() => setForma({})} className={tugmaAsosiy}><Plus size={16} />{t("orders.create")}</button>
       </>}
     >
@@ -116,14 +116,14 @@ function BuyurtmaKorish({ id, onYopish, onOzgardi, onTahrir }: { id: string; onY
   }
 
   return (
-    <Oyna keng sarlavha={buyurtma?.docNumber ?? t("loading")} belgi={<Holat status={status} />} onYopish={onYopish} pastki={buyurtma && <>
+    <Oyna keng sarlavha={buyurtma ? hujjatRaqami(buyurtma) || qatorNomi(buyurtma) : t("loading")} belgi={<Holat status={status} />} onYopish={onYopish} pastki={buyurtma && <>
       {(qoralama || status === "CANCELLED") && <button type="button" disabled={amal.band} onClick={() => void amal.bajar(async () => { await ishlabChiqarishApi.buyurtmalar.ochirish(id); onOzgardi(); onYopish(); })} className={tugmaXavfli}>{t("actions.delete")}</button>}
       {qoralama && <button type="button" onClick={() => onTahrir(buyurtma)} className={tugmaIkkinchi}>{t("actions.edit")}</button>}
       {(qoralama || ishda) && <button type="button" disabled={amal.band} onClick={() => bajarish(() => ishlabChiqarishApi.buyurtmalar.bekorQilish(id))} className={tugmaXavfli}>{t("actions.cancelDocument")}</button>}
       {ishda && <button type="button" disabled={amal.band} onClick={() => void amal.bajar(async () => setMavjudlik(await ishlabChiqarishApi.buyurtmalar.mavjudlik(id)))} className={tugmaIkkinchi}><RefreshCw size={15} />{t("orders.checkAvailability")}</button>}
       {ishda && <button type="button" disabled={amal.band} onClick={() => void amal.bajar(async () => { const berish = await ishlabChiqarishApi.berishlar.buyurtmadan(id); navigate(`/ishlab-chiqarish/sexga-berish?hujjat=${berish.id}`); })} className={tugmaIkkinchi}><PackageOpen size={15} />{t("orders.issue")}</button>}
       {ishda && <button type="button" disabled={amal.band} onClick={() => setYakun(true)} className={tugmaAsosiy}><CheckCircle2 size={16} />{t("orders.complete")}</button>}
-      {status === "COMPLETED" && <button type="button" disabled={amal.band} onClick={() => bajarish(() => ishlabChiqarishApi.buyurtmalar.yopish(id))} className={tugmaAsosiy}><ClipboardCheck size={16} />{t("orders.close")}</button>}
+      {status === "DONE" && <button type="button" disabled={amal.band} onClick={() => bajarish(() => ishlabChiqarishApi.buyurtmalar.yopish(id))} className={tugmaAsosiy}><ClipboardCheck size={16} />{t("orders.close")}</button>}
       {qoralama && <button type="button" disabled={amal.band} onClick={() => void amal.bajar(async () => { const javob = await ishlabChiqarishApi.buyurtmalar.chiqarish(id); setMavjudlik(javob.availability); hujjat.qayta(); onOzgardi(); })} className={tugmaAsosiy}><Rocket size={16} />{t("orders.release")}</button>}
     </>}>
       <XatoQutisi matn={hujjat.xato || amal.xato} />
@@ -133,12 +133,13 @@ function BuyurtmaKorish({ id, onYopish, onOzgardi, onTahrir }: { id: string; onY
           <div><dt className="text-xs font-bold text-slate-400">{t("fields.quantity")}</dt><dd className="font-black text-slate-800">{miqdorMatni(buyurtma.quantity)}</dd></div>
           <div><dt className="text-xs font-bold text-slate-400">{t("fields.produced")}</dt><dd className="font-black text-slate-800">{miqdorMatni(buyurtma.produced ?? 0)}</dd></div>
         </dl>
+        {buyurtma.completionNote && <p className="rounded-2xl bg-slate-50 p-3 text-sm font-semibold text-slate-600"><span className="font-black">{t("orders.completeReason")}:</span> {buyurtma.completionNote}</p>}
         {buyurtma.completionSuggested && ishda && <Ogohlantirish>{t("orders.completionSuggested")}</Ogohlantirish>}
         {mavjudlik?.hasShortage && <Ogohlantirish>{t("orders.shortageWarning")}</Ogohlantirish>}
         <Jadval
           ustunlar={[
             { nom: t("fields.product"), katak: (qator) => qatorNomi(qator) },
-            { nom: t("fields.required"), ong: true, katak: (qator) => miqdorMatni(qator.required) },
+            { nom: t("fields.required"), ong: true, katak: (qator) => miqdorMatni(qator.required ?? qator.quantity) },
             { nom: t("fields.issued"), ong: true, katak: (qator) => miqdorMatni(qator.issued) },
             { nom: t("fields.available"), ong: true, katak: (qator) => miqdorMatni(qator.available) },
             { nom: t("fields.shortage"), ong: true, katak: (qator) => <span className={Number(qator.shortage ?? 0) > 0 ? "font-black text-red-600" : ""}>{miqdorMatni(qator.shortage)}</span> },

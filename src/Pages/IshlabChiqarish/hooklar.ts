@@ -5,31 +5,27 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { xatoKodi } from "@/api/xatoKodlari";
 import type { Ombor } from "@/types/ombor";
 
-/** Ro'yxat/hujjat yuklash. `kalit` o'zgarganda qayta olinadi; `topilmadi` — endpoint yo'q (404). */
+/** Ro'yxat/hujjat yuklash. `kalit` o'zgarganda qayta olinadi. */
 export function useMalumot<T>(yuklash: () => Promise<T>, kalit: string) {
   const [malumot, setMalumot] = useState<T | null>(null);
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [xato, setXato] = useState("");
-  const [topilmadi, setTopilmadi] = useState(false);
   const [urinish, setUrinish] = useState(0);
   useEffect(() => {
     let faol = true;
     setYuklanmoqda(true);
     setXato("");
-    setTopilmadi(false);
     yuklash()
       .then((natija) => { if (faol) setMalumot(natija); })
       .catch((error) => {
-        if (!faol) return;
-        if (axios.isAxiosError(error) && error.response?.status === 404) setTopilmadi(true);
-        else setXato(getApiErrorMessage(error));
+        if (faol) setXato(getApiErrorMessage(error));
       })
       .finally(() => { if (faol) setYuklanmoqda(false); });
     return () => { faol = false; };
     // `yuklash` har chizishda yangi funksiya: so'rov faqat `kalit` yoki qayta urinish bilan yuboriladi.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kalit, urinish]);
-  return { malumot, yuklanmoqda, xato, topilmadi, qayta: useCallback(() => setUrinish((son) => son + 1), []) };
+  return { malumot, yuklanmoqda, xato, qayta: useCallback(() => setUrinish((son) => son + 1), []) };
 }
 
 /** Tugma amali: ikki marta bosish bloklanadi, xato matni va kodi saqlanadi. */

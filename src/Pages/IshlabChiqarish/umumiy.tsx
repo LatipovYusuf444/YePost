@@ -47,7 +47,7 @@ const HOLAT_RANGI: Record<string, string> = {
   RELEASED: "bg-sky-50 text-sky-700 ring-sky-100",
   IN_PROGRESS: "bg-sky-50 text-sky-700 ring-sky-100",
   CONFIRMED: "bg-emerald-50 text-emerald-700 ring-emerald-100",
-  COMPLETED: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+  DONE: "bg-emerald-50 text-emerald-700 ring-emerald-100",
   IN_STOCK: "bg-emerald-50 text-emerald-700 ring-emerald-100",
   CLOSED: "bg-slate-100 text-slate-600 ring-slate-200",
   ARCHIVED: "bg-slate-100 text-slate-600 ring-slate-200",

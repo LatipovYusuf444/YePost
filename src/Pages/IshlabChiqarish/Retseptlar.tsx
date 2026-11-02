@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import { ishlabChiqarishApi } from "@/api/ishlabChiqarishApi";
 import { miqdorMatni, portlashMiqdori, qatorNomi, retseptTanasiniYigish, sonMaydoni, type RetseptFormasi } from "@/lib/ishlabChiqarish";
-import type { PortlashQatori, Retsept } from "@/types/ishlabChiqarish";
+import type { Portlash, PortlashQatori, Retsept } from "@/types/ishlabChiqarish";
 import { HolatFiltri, Holat, Jadval, MahsulotQidiruvi, Maydon, OmborTanlash, Oyna, QatorOchirish, QatorQoshish, Sahifa, XatoQutisi, Yuklanmoqda, inputKlass, tugmaAsosiy, tugmaIkkinchi, tugmaXavfli, type Ustun } from "./umumiy";
 import { useAmal, useMalumot, useOmborlar } from "./hooklar";
 
@@ -13,6 +13,7 @@ type ChiqimQatori = RetseptFormasi["outputs"][number] & { nom?: string };
 type Forma = Omit<RetseptFormasi, "inputs" | "outputs"> & { nom?: string; inputs: KirimQatori[]; outputs: ChiqimQatori[] };
 
 const matn = (qiymat: unknown) => (qiymat === null || qiymat === undefined ? "" : String(qiymat));
+const portlashMiqdorMatni = (qator: PortlashQatori) => (qator.min != null && qator.max != null ? `${miqdorMatni(qator.min)} – ${miqdorMatni(qator.max)}` : miqdorMatni(portlashMiqdori(qator)));
 const bosh = (): Forma => ({ modificationId: "", warehouseId: "", baseQuantity: "", outputMin: "", outputMax: "", normalScrapPercent: "", consumeOnIssue: false, note: "", inputs: [], outputs: [] });
 const bo = (retsept: Retsept): Forma => ({
   modificationId: retsept.modificationId,
@@ -152,7 +153,7 @@ function RetseptKorish({ id, onYopish, onOzgardi, onTahrir, onOchish }: { id: st
   const amal = useAmal();
   const [tasdiq, setTasdiq] = useState(false);
   const [miqdor, setMiqdor] = useState("");
-  const [portlash, setPortlash] = useState<PortlashQatori[] | null>(null);
+  const [portlash, setPortlash] = useState<Portlash | null>(null);
   const retsept = hujjat.malumot;
   const qoralama = retsept?.status === "DRAFT";
 
@@ -202,12 +203,28 @@ function RetseptKorish({ id, onYopish, onOzgardi, onTahrir, onOchish }: { id: st
             <input type="number" min="0" step="any" value={miqdor} aria-label={t("fields.quantity")} placeholder="300" onChange={(event) => setMiqdor(event.target.value)} className={`${inputKlass} max-w-40`} />
             <button type="button" disabled={amal.band} onClick={hisoblash} className={tugmaIkkinchi}><BookOpenCheck size={15} />{t("recipes.explode")}</button>
           </div>
-          {portlash && <div className="mt-3"><Jadval
-            ustunlar={[{ nom: t("fields.product"), katak: (qator) => qatorNomi(qator) }, { nom: t("fields.quantity"), ong: true, katak: (qator) => (qator.min != null && qator.max != null ? `${miqdorMatni(qator.min)} – ${miqdorMatni(qator.max)}` : miqdorMatni(portlashMiqdori(qator))) }]}
-            qatorlar={portlash}
-            kalit={(qator, indeks) => qator.modificationId ?? String(indeks)}
-            bosh={t("empty.lines")}
-          /></div>}
+          {portlash && <div className="mt-3 space-y-3">
+            <Jadval
+              ustunlar={[
+                { nom: t("recipes.inputs"), katak: (qator) => qatorNomi(qator) },
+                { nom: t("fields.inputKind"), katak: (qator) => t(`inputKind.${qator.kind}`, { defaultValue: qator.kind ?? "—" }) },
+                { nom: t("fields.quantity"), ong: true, katak: portlashMiqdorMatni },
+              ]}
+              qatorlar={portlash.inputs}
+              kalit={(qator, indeks) => `${qator.modificationId ?? ""}-${indeks}`}
+              bosh={t("empty.lines")}
+            />
+            <Jadval
+              ustunlar={[
+                { nom: t("recipes.outputs"), katak: (qator) => qatorNomi(qator) },
+                { nom: t("fields.outputRole"), katak: (qator) => t(`outputRole.${qator.role}`, { defaultValue: qator.role ?? "—" }) },
+                { nom: t("fields.quantity"), ong: true, katak: portlashMiqdorMatni },
+              ]}
+              qatorlar={portlash.outputs}
+              kalit={(qator, indeks) => `${qator.modificationId ?? ""}-${indeks}`}
+              bosh={t("empty.lines")}
+            />
+          </div>}
         </div>
       </>}
       {tasdiq && retsept && (

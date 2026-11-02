@@ -4,8 +4,11 @@ import type {
   Mavjudlik,
   MavjudlikQatori,
   NomliQator,
+  Portlash,
   PortlashQatori,
   RetseptTanasi,
+  SmenaChiqimi,
+  SmenaHisoboti,
   SmenaTanasi,
   TozaxtashSababi,
 } from "../types/ishlabChiqarish.ts";
@@ -17,6 +20,27 @@ const SERIYA = /^[A-Za-z0-9._-]+$/;
 /** Rulon seriyasi faqat A-Z a-z 0-9 . _ - belgilaridan. */
 export function seriyaYaroqlimi(seriya: string) {
   return SERIYA.test(seriya.trim());
+}
+
+/** Qoralamada server `docNumber: ""` qaytaradi (raqam tasdiqlashda yoki releaseda paydo bo'ladi). */
+export function hujjatRaqami(hujjat?: { docNumber?: string | null } | null) {
+  return hujjat?.docNumber?.trim() ?? "";
+}
+
+/** Hujjatlarda bog'langan hujjat raqami kelmaydi, faqat id: raqam shu ro'yxatdan topiladi. */
+export function raqamXaritasi(hujjatlar?: ReadonlyArray<{ id: string; docNumber?: string | null }> | null) {
+  return new Map((hujjatlar ?? []).map((hujjat) => [hujjat.id, hujjatRaqami(hujjat)]));
+}
+
+/** Smena chiqimining hozirgi miqdori: quantity + barcha tuzatishlar. */
+export function chiqimMiqdori(qator: Pick<SmenaChiqimi, "quantity" | "corrections">) {
+  return (qator.corrections ?? []).reduce((jami, tuzatish) => jami + (Number(tuzatish.delta) || 0), Number(qator.quantity) || 0);
+}
+
+/** Hisobot mahsuloti: yaroqli mahsulot qatori (bo'lmasa birinchi qator). */
+export function hisobotMahsuloti(hisobot: Pick<SmenaHisoboti, "outputs">) {
+  const qatorlar = hisobot.outputs ?? [];
+  return qatorlar.find((qator) => qator.role === "MAIN") ?? qatorlar[0];
 }
 
 export function qatorNomi(qator?: NomliQator | null) {
@@ -52,31 +76,22 @@ export function tozaTana<T extends Record<string, unknown>>(tana: T): T {
 type Obyekt = Record<string, unknown>;
 const obyekt = (value: unknown): Obyekt => (value && typeof value === "object" && !Array.isArray(value) ? (value as Obyekt) : {});
 
-function royxatOqish<T>(raw: unknown, kalitlar: string[]): T[] {
-  if (Array.isArray(raw)) return raw as T[];
-  const tashqi = obyekt(raw);
-  const ichki = obyekt(tashqi.data);
-  for (const manba of [tashqi, ichki]) {
-    for (const kalit of kalitlar) if (Array.isArray(manba[kalit])) return manba[kalit] as T[];
-  }
-  return Array.isArray(tashqi.data) ? (tashqi.data as T[]) : [];
-}
-
-/** GET /production/recipes/:id/explode: «300 uchun nima kerak». Javob shakli hujjatda yozilmagan, odatiy ro'yxat nomlari o'qiladi. */
-export function portlashQatorlari(raw: unknown) {
-  return royxatOqish<PortlashQatori>(raw, ["items", "requirements", "inputs", "lines"]);
+/** GET /production/recipes/:id/explode: «300 uchun nima kerak» (kirishlar) va nima chiqadi (mahsulot, chiqindi). */
+export function portlashOqish(raw: unknown): Portlash {
+  const malumot = obyekt(raw);
+  const royxat = (kalit: string) => (Array.isArray(malumot[kalit]) ? (malumot[kalit] as PortlashQatori[]) : []);
+  return { inputs: royxat("inputs"), outputs: royxat("outputs") };
 }
 
 export function portlashMiqdori(qator: PortlashQatori) {
-  return sonMaydoni(qator.quantity ?? qator.required ?? undefined);
+  return sonMaydoni(qator.quantity ?? undefined);
 }
 
-/** availability: { items, hasShortage }; hasShortage kelmasa qatorlardagi yetishmovchilikdan aniqlanadi. */
+/** availability: { orderId, items, hasShortage }. hasShortage faqat ogohlantirish: hech narsa band qilinmaydi. */
 export function mavjudlikOqish(raw: unknown): Mavjudlik {
-  const items = royxatOqish<MavjudlikQatori>(raw, ["items", "requirements"]);
-  const tashqi = obyekt(raw);
-  const belgi = tashqi.hasShortage ?? obyekt(tashqi.data).hasShortage;
-  return { items, hasShortage: typeof belgi === "boolean" ? belgi : items.some((qator) => Number(qator.shortage ?? 0) > 0) };
+  const malumot = obyekt(raw);
+  const items = Array.isArray(malumot.items) ? (malumot.items as MavjudlikQatori[]) : [];
+  return { items, hasShortage: malumot.hasShortage === true };
 }
 
 export type RetseptFormasi = {

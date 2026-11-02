@@ -1,7 +1,7 @@
 import apiClient from "./axios";
 import { apiData, apiList, sahifaJavobi, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import { idempotentBajarish } from "@/lib/idempotentKalit";
-import { mavjudlikOqish, portlashQatorlari } from "@/lib/ishlabChiqarish";
+import { mavjudlikOqish, portlashOqish } from "@/lib/ishlabChiqarish";
 import type {
   BerishTanasi,
   Buyurtma,
@@ -9,6 +9,7 @@ import type {
   IshlabChiqarishSozlamasi,
   KalkulyatsiyaKartasi,
   KalkulyatsiyaTanasi,
+  KunNarxi,
   NavbatQatori,
   Retsept,
   RetseptTanasi,
@@ -63,7 +64,7 @@ export const ishlabChiqarishApi = {
     faollashtirish: (id: string) => yuborish<Retsept>(`${YOL}/recipes/${id}/activate`),
     yangiVersiya: (id: string) => yuborish<Retsept>(`${YOL}/recipes/${id}/new-version`),
     // «300 uchun nima kerak»; qty=1 kalkulyatsiya kartasiga miqdorlarni olish uchun.
-    portlash: async (id: string, qty: number) => portlashQatorlari(await olish<unknown>(`${YOL}/recipes/${id}/explode`, { qty })),
+    portlash: async (id: string, qty: number) => portlashOqish(await olish<unknown>(`${YOL}/recipes/${id}/explode`, { qty })),
   },
 
   kalkulyatsiya: {
@@ -71,7 +72,7 @@ export const ishlabChiqarishApi = {
     faollashtirish: (id: string) => yuborish<KalkulyatsiyaKartasi>(`${YOL}/costing-cards/${id}/activate`),
     arxivlash: (id: string) => yuborish<KalkulyatsiyaKartasi>(`${YOL}/costing-cards/${id}/archive`),
     yangiVersiya: (id: string) => yuborish<KalkulyatsiyaKartasi>(`${YOL}/costing-cards/${id}/new-version`),
-    kunNarxi: (modificationId: string, date: string) => olish<unknown>(`${YOL}/costing-cards/price`, { modificationId, date }),
+    kunNarxi: (modificationId: string, date: string) => olish<KunNarxi>(`${YOL}/costing-cards/price`, { modificationId, date }),
   },
 
   buyurtmalar: {

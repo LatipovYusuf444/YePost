@@ -6,7 +6,7 @@
     "ARCHIVED": "Arxivda",
     "RELEASED": "Ishga berilgan",
     "IN_PROGRESS": "Jarayonda",
-    "COMPLETED": "Yakunlangan",
+    "DONE": "Yakunlangan",
     "CLOSED": "Yopilgan",
     "CONFIRMED": "Tasdiqlangan",
     "CANCELLED": "Bekor qilingan",
@@ -30,6 +30,7 @@
   "common": { "yes": "Ha", "no": "Yo'q" },
   "filters": { "status": "Holat bo'yicha", "allStatuses": "Barcha holatlar" },
   "fields": {
+    "norm": "Norma",
     "product": "Mahsulot",
     "productSearch": "Nomi yoki shtrix-kod...",
     "selectWip": "Sex omborini tanlang",
@@ -189,7 +190,6 @@
     "tabReturns": "Sexdan qaytarish",
     "fromOrder": "Buyurtmadan",
     "create": "Yangi hujjat",
-    "listUnavailable": "Hujjatlar ro'yxati serverda hali yo'q: faqat shu sahifada ochilganlar ko'rinadi.",
     "scan": "Rulon seriyasi",
     "scanHint": "Skaner bilan o'qing yoki yozib Enter bosing: rulon butun og'irligi bilan qo'shiladi.",
     "addLine": "Qator qo'shish",
@@ -203,7 +203,6 @@
     "withoutOrder": "Buyurtmasiz",
     "reports": "Hisobotlar",
     "report": "Hisobot",
-    "listUnavailable": "Hisobotlar ro'yxati serverda hali yo'q. Navbat va yangi hisobot ishlaydi.",
     "produced": "{{miqdor}} / {{reja}}",
     "remaining": "Qoldi: {{miqdor}}",
     "saveDraft": "Qoralama saqlash",
@@ -221,6 +220,7 @@
     "downtime": "To'xtashlar",
     "addDowntime": "To'xtash qo'shish",
     "correction": "Tuzatish",
+    "corrections": "Tuzatishlar",
     "soldHint": "Mahsulot sotilgan: bekor qilish o'rniga tuzatish kiriting.",
     "cancelReason": "Bekor qilish sababi",
     "cancelHint": "Hisobotni yozgan smena boshlig'i 2 soat ichida bekor qila oladi; undan keyin ADMIN yoki direktor sabab bilan.",
@@ -234,6 +234,7 @@
     "weightLeft": "Qolgan",
     "label": "Yorliq",
     "printLabel": "Yorliq chop etish",
+    "receivedAt": "Kelgan sana",
     "summary": "{{soni}} dona · {{ogirlik}} kg"
   },
   "disabled": {

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ishlabChiqarishApi, yorliqniChopEtish } from "@/api/ishlabChiqarishApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { kunMatni } from "@/lib/hujjatSanasi";
-import { TOXTASH_SABABLARI, miqdorMatni, qatorNomi, smenaTanasiniYigish, sonMaydoni, type SmenaFormasi } from "@/lib/ishlabChiqarish";
+import { TOXTASH_SABABLARI, chiqimMiqdori, hisobotMahsuloti, hujjatRaqami, miqdorMatni, qatorNomi, raqamXaritasi, smenaTanasiniYigish, sonMaydoni, type SmenaFormasi } from "@/lib/ishlabChiqarish";
 import { foydalanuvchiKursniOzgartiraOladimi } from "@/lib/roles";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import type { NavbatQatori, SmenaChiqimi, SmenaHisoboti } from "@/types/ishlabChiqarish";
@@ -22,6 +22,8 @@ export default function Smena() {
   const [warehouseId, setWarehouseId] = useState("");
   const navbat = useMalumot(() => ishlabChiqarishApi.smena.navbat(warehouseId || undefined), warehouseId);
   const hisobotlar = useMalumot(() => ishlabChiqarishApi.smena.royxat(), "reports");
+  const buyurtmalar = useMalumot(() => ishlabChiqarishApi.buyurtmalar.royxat(), "orders");
+  const buyurtmaRaqamlari = raqamXaritasi(buyurtmalar.malumot);
   const [forma, setForma] = useState<{ id?: string; qiymat: Forma } | null>(null);
   const [ochiq, setOchiq] = useState<string | null>(null);
   const yangilash = () => { navbat.qayta(); hisobotlar.qayta(); };
@@ -45,11 +47,11 @@ export default function Smena() {
       )}
       <h2 className="pt-2 text-sm font-black uppercase tracking-wide text-slate-500">{t("shift.reports")}</h2>
       <XatoQutisi matn={hisobotlar.xato} />
-      {hisobotlar.topilmadi && <Ogohlantirish>{t("shift.listUnavailable")}</Ogohlantirish>}
       {hisobotlar.malumot && <Jadval
         ustunlar={[
-          { nom: t("fields.document"), katak: (hujjat) => <span className="font-black text-slate-900">{hujjat.docNumber ?? "—"}</span> },
-          { nom: t("fields.order"), katak: (hujjat) => hujjat.order?.docNumber ?? "—" },
+          { nom: t("fields.document"), katak: (hujjat) => <span className="font-black text-slate-900">{hujjatRaqami(hujjat) || "—"}</span> },
+          { nom: t("fields.order"), katak: (hujjat) => buyurtmaRaqamlari.get(hujjat.orderId ?? "") || "—" },
+          { nom: t("fields.product"), katak: (hujjat) => qatorNomi(hisobotMahsuloti(hujjat)) },
           { nom: t("fields.shiftEndsAt"), katak: (hujjat) => kunMatni(hujjat.shiftEndsAt ?? undefined) || "—" },
           { nom: t("fields.status"), katak: (hujjat) => <Holat status={hujjat.status} /> },
         ]}
@@ -238,6 +240,7 @@ function HisobotKorish({ id, onYopish, onOzgardi, onTahrir }: { id: string; onYo
   const qoralama = hisobot?.status === "DRAFT";
   const tasdiqlangan = hisobot?.status === "CONFIRMED";
   const sotilgan = amal.xatoKodi === "errors.production.report_output_sold";
+  const tuzatishlar = (hisobot?.outputs ?? []).flatMap((qator) => (qator.corrections ?? []).map((tuzatish) => ({ ...tuzatish, nom: qatorNomi(qator) })));
 
   const tasdiqlash = () => void amal.bajar(async () => { await ishlabChiqarishApi.smena.tasdiqlash(id); hujjat.qayta(); onOzgardi(); });
   const bekorQilish = () => void amal.bajar(async () => { await ishlabChiqarishApi.smena.bekorQilish(id, sabab.trim() || undefined); hujjat.qayta(); onOzgardi(); });
@@ -255,7 +258,7 @@ function HisobotKorish({ id, onYopish, onOzgardi, onTahrir }: { id: string; onYo
   }
 
   return (
-    <Oyna keng sarlavha={hisobot?.docNumber ?? t("loading")} belgi={<Holat status={hisobot?.status} />} onYopish={onYopish} pastki={hisobot && <>
+    <Oyna keng sarlavha={hisobot ? hujjatRaqami(hisobot) || t("shift.report") : t("loading")} belgi={<Holat status={hisobot?.status} />} onYopish={onYopish} pastki={hisobot && <>
       {qoralama && <button type="button" disabled={amal.band} onClick={() => void amal.bajar(async () => { await ishlabChiqarishApi.smena.ochirish(id); onOzgardi(); onYopish(); })} className={tugmaXavfli}>{t("actions.delete")}</button>}
       {qoralama && <button type="button" onClick={() => onTahrir(hisobot)} className={tugmaIkkinchi}>{t("actions.edit")}</button>}
       {qoralama && <button type="button" disabled={amal.band} onClick={tasdiqlash} className={tugmaAsosiy}><CheckCircle2 size={16} />{t("shift.close")}</button>}
@@ -269,7 +272,7 @@ function HisobotKorish({ id, onYopish, onOzgardi, onTahrir }: { id: string; onYo
           ustunlar={[
             { nom: t("fields.product"), katak: (qator) => qatorNomi(qator) },
             { nom: t("fields.serial"), katak: (qator) => qator.serial ?? "—" },
-            { nom: t("fields.quantity"), ong: true, katak: (qator) => miqdorMatni(qator.quantity) },
+            { nom: t("fields.quantity"), ong: true, katak: (qator) => miqdorMatni(chiqimMiqdori(qator)) },
             { nom: t("fields.scrapQuantity"), ong: true, katak: (qator) => miqdorMatni(qator.scrapQuantity) },
             { nom: t("rolls.label"), katak: (qator) => <YorliqTugmasi qator={qator} /> },
           ]}
@@ -277,10 +280,22 @@ function HisobotKorish({ id, onYopish, onOzgardi, onTahrir }: { id: string; onYo
           kalit={(qator, indeks) => qator.id ?? String(indeks)}
           bosh={t("empty.lines")}
         />
+        {tuzatishlar.length > 0 && <Jadval
+          ustunlar={[
+            { nom: t("shift.corrections"), katak: (qator) => qator.nom },
+            { nom: t("fields.delta"), ong: true, katak: (qator) => `${Number(qator.delta) > 0 ? "+" : ""}${miqdorMatni(qator.delta)}` },
+            { nom: t("fields.reason"), katak: (qator) => qator.reason || "—" },
+            { nom: t("fields.date"), katak: (qator) => kunMatni(qator.createdAt ?? undefined) || "—" },
+          ]}
+          qatorlar={tuzatishlar}
+          kalit={(qator, indeks) => qator.id ?? String(indeks)}
+          bosh={t("empty.lines")}
+        />}
         {(hisobot.inputs ?? []).length > 0 && <Jadval
           ustunlar={[
             { nom: t("shift.inputs"), katak: (qator) => `${qatorNomi(qator)}${qator.offRecipe ? ` · ${t("shift.offRecipeLine")}` : ""}` },
             { nom: t("fields.entryMethod"), katak: (qator) => (qator.entryMethod ? t(`entryMethod.${qator.entryMethod}`) : "—") },
+            { nom: t("fields.norm"), ong: true, katak: (qator) => miqdorMatni(qator.normQuantity) },
             { nom: t("fields.quantity"), ong: true, katak: (qator) => miqdorMatni(qator.quantity) },
           ]}
           qatorlar={hisobot.inputs ?? []}
@@ -298,6 +313,7 @@ function HisobotKorish({ id, onYopish, onOzgardi, onTahrir }: { id: string; onYo
           bosh={t("empty.lines")}
         />}
         {hisobot.comment && <p className="rounded-2xl bg-slate-50 p-3 text-sm font-semibold text-slate-600">{hisobot.comment}</p>}
+        {hisobot.cancelReason && <p className="rounded-2xl bg-red-50 p-3 text-sm font-semibold text-red-600"><span className="font-black">{t("shift.cancelReason")}:</span> {hisobot.cancelReason}</p>}
         {tasdiqlangan && <Maydon nom={t("shift.cancelReason")} izoh={t("shift.cancelHint")}><input value={sabab} onChange={(event) => setSabab(event.target.value)} className={inputKlass} /></Maydon>}
         {tuzatishOchiq && (
           <div className="space-y-3 rounded-2xl bg-slate-50 p-4">
@@ -306,7 +322,7 @@ function HisobotKorish({ id, onYopish, onOzgardi, onTahrir }: { id: string; onYo
               <Maydon nom={t("fields.output")}>
                 <select value={outputId} onChange={(event) => setOutputId(event.target.value)} className={inputKlass}>
                   <option value="">{t("fields.selectOutput")}</option>
-                  {(hisobot.outputs ?? []).filter((qator) => qator.id).map((qator) => <option key={qator.id} value={qator.id}>{qatorNomi(qator)} · {qator.serial ?? miqdorMatni(qator.quantity)}</option>)}
+                  {(hisobot.outputs ?? []).filter((qator) => qator.id).map((qator) => <option key={qator.id} value={qator.id}>{qatorNomi(qator)} · {qator.serial ?? miqdorMatni(chiqimMiqdori(qator))}</option>)}
                 </select>
               </Maydon>
               <Maydon nom={t("fields.delta")} izoh={t("shift.deltaHint")}><input type="number" step="any" value={delta} onChange={(event) => setDelta(event.target.value)} placeholder="-900" className={inputKlass} /></Maydon>

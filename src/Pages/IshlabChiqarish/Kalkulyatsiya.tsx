@@ -55,7 +55,7 @@ export default function Kalkulyatsiya() {
   );
 }
 
-// GET /production/costing-cards/price: tanlangan kunga amaldagi narx (javob shakli hujjatda yozilmagan: `price`, `total` yoki son).
+// GET /production/costing-cards/price: tanlangan kunga amaldagi 1 dona narxi va karta versiyasi.
 function KunNarxi() {
   const { t } = useTranslation("ishlab_chiqarish");
   const [mahsulot, setMahsulot] = useState({ id: "", nom: "" });
@@ -67,8 +67,7 @@ function KunNarxi() {
     setNatija(null);
     void amal.bajar(async () => {
       const javob = await ishlabChiqarishApi.kalkulyatsiya.kunNarxi(mahsulot.id, sana);
-      const qiymat = typeof javob === "object" && javob ? (javob as { price?: unknown; total?: unknown }).price ?? (javob as { total?: unknown }).total : javob;
-      setNatija(taqsimotSummasi(qiymat, "UZS"));
+      setNatija(`${taqsimotSummasi(javob.unitCost, "UZS")}${javob.version ? ` · v${javob.version}` : ""}`);
     });
   }
   return (
@@ -94,8 +93,8 @@ function KartaOynasi({ boshlangich, onYopish, onSaqlandi }: { boshlangich: { id?
   function retseptdanOlish() {
     if (!forma.recipeId) return amal.setXato(t("errors.recipe"));
     void amal.bajar(async () => {
-      const qatorlar = await ishlabChiqarishApi.retseptlar.portlash(forma.recipeId, 1);
-      ozgar({ lines: qatorlar.filter((item) => item.modificationId).map((item) => ({ modificationId: item.modificationId as string, nom: qatorNomi(item), quantity: matn(portlashMiqdori(item)), price: "", currency: "UZS", costingRate: "" })) });
+      const { inputs } = await ishlabChiqarishApi.retseptlar.portlash(forma.recipeId, 1);
+      ozgar({ lines: inputs.filter((item) => item.modificationId).map((item) => ({ modificationId: item.modificationId as string, nom: qatorNomi(item), quantity: matn(portlashMiqdori(item)), price: "", currency: "UZS", costingRate: "" })) });
     });
   }
   function saqlash() {

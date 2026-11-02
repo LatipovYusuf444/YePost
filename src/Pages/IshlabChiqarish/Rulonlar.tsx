@@ -3,9 +3,10 @@ import { Printer } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TablePagination from "@/Components/common/TablePagination";
 import { ishlabChiqarishApi, yorliqniChopEtish } from "@/api/ishlabChiqarishApi";
+import { kunMatni } from "@/lib/hujjatSanasi";
 import { miqdorMatni } from "@/lib/ishlabChiqarish";
 import type { Rulon } from "@/types/ishlabChiqarish";
-import { Holat, HolatFiltri, Jadval, OmborTanlash, Sahifa, XatoQutisi, Yuklanmoqda, type Ustun } from "./umumiy";
+import { HolatFiltri, Jadval, OmborTanlash, Sahifa, XatoQutisi, Yuklanmoqda, type Ustun } from "./umumiy";
 import { useAmal, useMalumot, useOmborlar } from "./hooklar";
 
 export default function Rulonlar() {
@@ -23,10 +24,10 @@ export default function Rulonlar() {
   const ustunlar: Ustun<Rulon>[] = [
     { nom: t("fields.serial"), katak: (rulon) => <span className="font-black text-slate-900">{rulon.serial ?? "—"}</span> },
     { nom: t("fields.product"), katak: (rulon) => rulon.productName ?? "—" },
-    { nom: t("fields.warehouse"), katak: (rulon) => rulon.warehouseName ?? nomlar.get(rulon.warehouseId ?? "") ?? "—" },
+    { nom: t("fields.warehouse"), katak: (rulon) => nomlar.get(rulon.warehouseId ?? "") ?? "—" },
     { nom: t("rolls.weight"), ong: true, katak: (rulon) => miqdorMatni(rulon.weight) },
     { nom: t("rolls.weightLeft"), ong: true, katak: (rulon) => miqdorMatni(rulon.weightLeft) },
-    { nom: t("fields.status"), katak: (rulon) => <Holat status={rulon.status} /> },
+    { nom: t("rolls.receivedAt"), katak: (rulon) => kunMatni(rulon.receivedAt ?? undefined) || "—" },
     { nom: t("rolls.label"), katak: (rulon) => <button type="button" disabled={yorliq.band} onClick={() => void yorliq.bajar(() => yorliqniChopEtish(rulon.batchId))} className="inline-flex items-center gap-1.5 text-xs font-black text-orange-600 hover:underline disabled:opacity-50"><Printer size={14} />{t("rolls.printLabel")}</button> },
   ];
   return (
@@ -41,7 +42,7 @@ export default function Rulonlar() {
       <XatoQutisi matn={royxat.xato || xulosa.xato || yorliq.xato} />
       <div className="flex flex-wrap gap-2">
         {(xulosa.malumot ?? []).map((qator, indeks) => (
-          <span key={`${qator.productName}-${indeks}`} className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-200">
+          <span key={`${qator.modificationId ?? qator.productName}-${qator.warehouseId ?? ""}-${indeks}`} className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-200">
             <span className="font-black text-slate-900">{qator.productName}</span>
             {t("rolls.summary", { soni: miqdorMatni(qator.rolls), ogirlik: miqdorMatni(qator.weight) })}
           </span>
