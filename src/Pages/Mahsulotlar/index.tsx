@@ -36,6 +36,8 @@ import { pulMatni, valyutaKodi } from "@/lib/valyuta";
 import { rolniNormallashtirish } from "@/lib/roles";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useMahsulotlarStore } from "@/store/mahsulotlarStore";
+import { useIshlabChiqarishStore } from "@/store/ishlabChiqarishStore";
+import type { MahsulotTuri } from "@/types/ishlabChiqarish";
 import type { TovarBirligi } from "@/lib/kopBirlik";
 import type {
   Kategoriya,
@@ -813,6 +815,11 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
   const [article,setArticle]=useState(editing?item.article??"":"");
   const [imageUrl,setImageUrl]=useState(editing?item.imageUrl??"":"");
   const [isActive,setIsActive]=useState(editing?item.isActive:true);
+  // Ishlab chiqarish moduli yoqilgan bo'lsa: mahsulot turi va seriya bilan hisob.
+  const { t: tIc } = useTranslation("ishlab_chiqarish");
+  const ishlabChiqarish=useIshlabChiqarishStore((state)=>state.enabled);
+  const [kind,setKind]=useState<MahsulotTuri>((editing?item.kind:null)??"FINISHED");
+  const [trackSerial,setTrackSerial]=useState(editing?Boolean(item.trackSerial):false);
   const [variationRows,setVariationRows]=useState<VariationRow[]>([
     { id: Date.now(), attribute: "", attributeAdded: false, value: "", options: [] },
   ]);
@@ -1044,7 +1051,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
     }
     setBirlikXato("");
     const safeImageUrl=cleanRemoteImage(imageUrl);
-    const data={name:name.trim(),categoryId,unitId:productUnitId,barcode:barcode.trim()||undefined,article:article.trim()||undefined,imageUrl:safeImageUrl||undefined,isActive};
+    const data={name:name.trim(),categoryId,unitId:productUnitId,barcode:barcode.trim()||undefined,article:article.trim()||undefined,imageUrl:safeImageUrl||undefined,isActive,...(ishlabChiqarish?{kind,trackSerial}:{})};
     let ok=editing
       ?await store.mahsulotSaqlash(item.id,data)
       :generatedVariants.length>0
@@ -1417,6 +1424,14 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
                     </button>
                   </div>
                 </div>
+              {ishlabChiqarish&&<div className="grid gap-3 rounded-2xl bg-orange-50/60 p-3">
+                <label className="grid gap-1.5"><span className="text-sm font-black text-gray-500">{tIc("product.kind")}</span>
+                  <AppSelect value={kind} onChange={e=>setKind(e.target.value as MahsulotTuri)} className="input">
+                    {(["RAW","SEMI","FINISHED","PACKAGING","WASTE","SERVICE"] as const).map(x=><option key={x} value={x}>{tIc(`product.kinds.${x}`)}</option>)}
+                  </AppSelect>
+                </label>
+                <label className="flex items-start gap-3 text-sm font-bold text-gray-700"><input type="checkbox" checked={trackSerial} onChange={e=>setTrackSerial(e.target.checked)} className="mt-0.5 h-5 w-5 accent-orange-500"/><span>{tIc("product.trackSerial")}<span className="mt-0.5 block text-xs font-semibold text-gray-500">{tIc("product.trackSerialHint")}</span></span></label>
+              </div>}
               <div className="space-y-2">
                 <p className="text-sm font-black text-gray-500">{t("productModal.photoLabel")}</p>
                 <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden"/>

@@ -142,6 +142,9 @@
     },
     "errors": {
       "quantityNotWhole": "Pochka, qop, korobka kabi birliklarda faqat butun miqdor kiritiladi.",
+      "serialRequired": "Seriyali tovarda har rulon qatoriga seriya yozing.",
+      "serialFormat": "Seriyada faqat A-Z, a-z, 0-9 va . _ - belgilari bo'ladi.",
+      "serialDuplicate": "Bir xil seriya ikki marta yozilgan.",
       "supplierRequired": "Yetkazib beruvchini ro'yxatdan tanlang yoki yangi qo'shing.",
       "exchangeRateRequired": "USD mahsulotini kirim qilish uchun Sozlamalar → Valyuta bo‘limida dollar kursini kiriting. Kurssiz USD narxi so‘m deb saqlanmaydi.",
       "rowsIncomplete": "Har bir qatorda mahsulot, ombor, miqdor va tan narxni to'liq kiriting.",

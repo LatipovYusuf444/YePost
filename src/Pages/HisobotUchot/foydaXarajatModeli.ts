@@ -32,7 +32,7 @@ export function foydaXarajatniMoslash(value: IncomeExpenseResponse, sana: string
   const qaytarilgan = son(value.income?.returns ?? 0, "qaytarish");
   if (bonus < 0 || bonus > Math.max(boshqa, 0) + aniqlik(1)) throw new Error("Backend bonusi boshqa daromad jami bilan mos kelmadi.");
   const qator = (id: string, tur: FoydaXarajatYozuvi["tur"], kategoriya: string, summa: number): FoydaXarajatYozuvi => ({ id, tur, kategoriya, summa, sana, filialId: "" });
-  const xarajatlar = (value.expenses?.items ?? []).map((item, index) => qator(`expense-${index}`, "xarajat", item.name || item.category || "Xarajat", son(item.amount, "xarajat")));
+  const xarajatlar = (value.expenses?.items ?? []).map((item, index) => qator(`expense-${index}`, "xarajat", item.name || (item.category === "PRODUCTION_VARIANCE" ? "Ishlab chiqarish sarf farqi" : item.category) || "Xarajat", son(item.amount, "xarajat")));
   const refunds = son(value.expenses?.refunds ?? 0, "qaytarilgan pul");
   // CUSTOMER_REFUND savdo qaytarishidan alohida; expenses.total = items + refunds.
   if (refunds !== 0) xarajatlar.push(qator("refunds", "xarajat", "Mijozga kassadan qaytarilgan pul", refunds));

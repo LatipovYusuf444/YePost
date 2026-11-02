@@ -1,5 +1,7 @@
 import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useIshlabChiqarishStore } from "@/store/ishlabChiqarishStore";
+import type { OmborTuri } from "@/types/ishlabChiqarish";
 import {
   CalendarDays,
   ChevronDown,
@@ -79,6 +81,9 @@ export default function Ombor() {
   const [closingTime, setClosingTime] = useState("18:00");
   const [responsibleId, setResponsibleId] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [omborTuri, setOmborTuri] = useState<OmborTuri>("STORE");
+  const { t: tIc } = useTranslation("ishlab_chiqarish");
+  const ishlabChiqarish = useIshlabChiqarishStore((holat) => holat.enabled);
   const [gpsYuklanmoqda, setGpsYuklanmoqda] = useState(false);
   const [formaXatosi, setFormaXatosi] = useState<string | null>(null);
   const [gpsXatoTafsiloti, setGpsXatoTafsiloti] = useState("");
@@ -156,6 +161,7 @@ export default function Ombor() {
     setTahrirOmbor(toliqOmbor);
     setName(toliqOmbor?.name ?? "");
     setBranchId(toliqOmbor?.branchId ?? "");
+    setOmborTuri(toliqOmbor?.kind ?? "STORE");
     setGps(
       toliqOmbor?.latitude != null && toliqOmbor?.longitude != null
         ? `${toliqOmbor.latitude}, ${toliqOmbor.longitude}`
@@ -212,6 +218,7 @@ export default function Ombor() {
       closingTime: closingTime || null,
       responsibleId: responsibleId || null,
       isActive,
+      ...(ishlabChiqarish ? { kind: omborTuri } : {}),
     };
     const muvaffaqiyatli = tahrirOmbor
       ? await omborYangilash(tahrirOmbor.id, data)
@@ -832,6 +839,15 @@ export default function Ombor() {
                       {t("omborModali.sectionResponsible")}
                     </div>
                     <div className="mt-4 space-y-4">
+                      {ishlabChiqarish && (
+                        <label className="grid gap-2">
+                          <span className="text-sm font-bold text-slate-500">{tIc("warehouse.kind")}</span>
+                          <AppSelect value={omborTuri} onChange={(event) => setOmborTuri(event.target.value as OmborTuri)} className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-700 outline-none">
+                            <option value="STORE">{tIc("warehouse.kinds.STORE")}</option>
+                            <option value="WIP">{tIc("warehouse.kinds.WIP")}</option>
+                          </AppSelect>
+                        </label>
+                      )}
                       <label className="grid gap-2">
                         <span className="text-sm font-bold text-slate-500">{t("omborModali.responsibleNameLabel")}</span>
                         <AppSelect

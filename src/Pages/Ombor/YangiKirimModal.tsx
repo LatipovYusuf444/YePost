@@ -38,6 +38,7 @@ import { kodBilanTopish, modificationNomi, qoldiqMiqdori } from "./omborYordamch
 import { korsatiladiganValyuta, useValyuta, type Valyuta } from "@/lib/valyuta";
 import { narxValyutalari } from "@/lib/narxValyutasi";
 import { kirimElementiniYigish, kirimNarxiniOgirish } from "./kirimValyuta";
+import { seriyaYaroqlimi } from "@/lib/ishlabChiqarish";
 import { mahsulotBirliklariApi } from "@/api/catalogApi";
 import { asosiyMiqdor, birlikTopish, koeffTekshiruvi, miqdorYaroqlimi, qabulBirliklari, type TovarBirligi } from "@/lib/kopBirlik";
 import type { KirimOgohlantirishi } from "@/types/ombor";
@@ -51,6 +52,8 @@ type Qator = {
   modificationId: string;
   warehouseId: string;
   quantity: number;
+  // Seriyali tovar (jumbo rulon): har qator bitta rulon, `quantity` — og'irligi (kg).
+  serial?: string;
   price: string;
   retailPrice: string;
   wholesalePrice: string;
@@ -290,6 +293,7 @@ export default function YangiKirimModal({ onClose }: Props) {
     const wholesale = Number(mod?.price?.wholesalePrice ?? 0);
     yangilash(id, {
       modificationId,
+      serial: "",
       price: cost ? String(cost) : "",
       retailPrice: retail ? String(retail) : "",
       wholesalePrice: wholesale ? String(wholesale) : "",
@@ -351,7 +355,8 @@ export default function YangiKirimModal({ onClose }: Props) {
     if (mos.length > 1) return { xato: true, matn: tk("shtrixKod.ambiguous") };
     const mod = mos[0];
     const nom = modificationNomi(mod);
-    const bor = qatorlar.find((row) => row.modificationId === mod.id);
+    // Seriyali tovarda har rulon alohida qator: miqdor qo'shilmaydi.
+    const bor = mod.product?.trackSerial ? undefined : qatorlar.find((row) => row.modificationId === mod.id);
     if (bor) {
       const yangiMiqdor = Number(bor.quantity || 0) + 1;
       yangilash(bor.id, { quantity: yangiMiqdor });
@@ -401,6 +406,11 @@ export default function YangiKirimModal({ onClose }: Props) {
       return setXato("yangiKirim.errors.mixedWarehouse");
     if (valid.some((row) => !miqdorYaroqlimi(birlikTopish(row.birliklar, row.birlikId), row.quantity)))
       return setXato("yangiKirim.errors.quantityNotWhole");
+    const seriyalilar = valid.filter((row) => store.modifikatsiyalar.find((item) => item.id === row.modificationId)?.product?.trackSerial);
+    const seriyalar = seriyalilar.map((row) => row.serial?.trim() ?? "");
+    if (seriyalar.some((seriya) => !seriya)) return setXato("yangiKirim.errors.serialRequired");
+    if (seriyalar.some((seriya) => !seriyaYaroqlimi(seriya))) return setXato("yangiKirim.errors.serialFormat");
+    if (new Set(seriyalar).size !== seriyalar.length) return setXato("yangiKirim.errors.serialDuplicate");
 
     const izohQismlari = [`Nomi: ${kirimNomi.trim() || "Kirim hujjati"}`];
     if (note.trim()) izohQismlari.push(note.trim());
@@ -792,6 +802,15 @@ export default function YangiKirimModal({ onClose }: Props) {
                         }}
                         className={inputSm}
                       />
+                      {mod?.product?.trackSerial && (
+                        <input
+                          value={row.serial ?? ""}
+                          aria-label={t("yangiKirim.table.serial")}
+                          placeholder={t("yangiKirim.table.serial")}
+                          onChange={(event) => yangilash(row.id, { serial: event.target.value })}
+                          className="h-9 w-full min-w-0 rounded-xl border border-orange-300 bg-white px-2 text-[11px] font-bold text-slate-700 outline-none focus:border-orange-400"
+                        />
+                      )}
                       {qabulOptlari.length > 0 && (
                         <select
                           aria-label={t("yangiKirim.units.unit")}

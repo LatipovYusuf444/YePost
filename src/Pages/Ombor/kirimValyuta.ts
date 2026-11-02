@@ -21,6 +21,8 @@ export function kirimElementiniYigish(row: {
   // Koeffitsient tekshiruvi: sanalgan birlik (pochka) va uning soni; backend haqiqiy koeffitsientni kartochka bilan solishtiradi.
   sanashBirligi?: TovarBirligi;
   sanashSoni?: number;
+  // Seriyali tovar: har qator = bitta rulon, `quantity` — og'irligi.
+  serial?: string;
 }, kurs: number | null) {
   const koeff = row.birlik && !row.birlik.asosiy ? row.birlik.koeff : 1;
   const boshlangich = (row.boshlangichTanNarx ?? 0) * koeff;
@@ -28,6 +30,7 @@ export function kirimElementiniYigish(row: {
     modificationId: row.modificationId,
     quantity: row.quantity,
     price: Math.round(kirimNarxiniOgirish(row.price === "" ? boshlangich : Number(row.price), row.currency, "UZS", kurs) * 100) / 100,
+    ...(row.serial?.trim() ? { serial: row.serial.trim() } : {}),
     ...(row.birlik && !row.birlik.asosiy ? { unitId: row.birlik.unitId } : {}),
     ...(row.sanashBirligi && (row.sanashSoni ?? 0) > 0 ? { checkUnitId: row.sanashBirligi.unitId, checkCount: row.sanashSoni } : {}),
   };
