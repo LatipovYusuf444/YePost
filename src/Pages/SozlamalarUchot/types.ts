@@ -2,6 +2,7 @@
 
 export type SozlamaBolim =
   | "inventory"
+  | "ishlabChiqarish"
   | "profil"
   | "kompaniya"
   | "filiallar"

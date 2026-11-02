@@ -9,11 +9,15 @@ import {
   Activity,
   Ban,
   BarChart3,
+  BookOpenCheck,
   Boxes,
   Building2,
+  Calculator,
   CheckCircle2,
   ChevronDown,
   ClipboardList,
+  Disc3,
+  Factory,
   FileText,
   Gauge,
   HandCoins,
@@ -23,10 +27,12 @@ import {
   Home,
   LogOut,
   Layers,
+  PackageOpen,
   PackageSearch,
   ReceiptText,
   Settings,
   Scale,
+  Timer,
   ShoppingCart,
   Truck,
   TrendingUp,
@@ -41,6 +47,7 @@ import {
 import { useAuthStore } from "@/store/authStore";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useSupportStore } from "@/store/supportStore";
+import { useIshlabChiqarishStore } from "@/store/ishlabChiqarishStore";
 import { sahifagaRuxsatBormi } from "@/lib/roles";
 import MobilNavigatsiya from "./MobilNavigatsiya";
 
@@ -81,6 +88,19 @@ const menyular: Menyu[] = [
       { key: "qoldiq", path: "/ombor/qoldiq", icon: Boxes },
       { key: "amalgaOshirilganlar", path: "/ombor/amalga-oshirilganlar", icon: CheckCircle2 },
       { key: "omborlar", path: "/ombor/omborlar", icon: Warehouse },
+    ],
+  },
+  {
+    key: "ishlabChiqarish",
+    path: "/ishlab-chiqarish",
+    icon: Factory,
+    bolalar: [
+      { key: "icBuyurtmalar", path: "/ishlab-chiqarish/buyurtmalar", icon: ClipboardList },
+      { key: "icRetseptlar", path: "/ishlab-chiqarish/retseptlar", icon: BookOpenCheck },
+      { key: "icKalkulyatsiya", path: "/ishlab-chiqarish/kalkulyatsiya", icon: Calculator },
+      { key: "icSexgaBerish", path: "/ishlab-chiqarish/sexga-berish", icon: PackageOpen },
+      { key: "icSmena", path: "/ishlab-chiqarish/smena", icon: Timer },
+      { key: "icRulonlar", path: "/ishlab-chiqarish/rulonlar", icon: Disc3 },
     ],
   },
   {
@@ -130,7 +150,7 @@ function bolaFaolmi(bola: MenyuBolasi, pathname: string, search: string) {
 
 // Yopiq holatda (64px) faqat ikonka ko'rinadi: qator 48px kenglikda, ikonka 18px va 15px chetlari.
 const qatorKlass =
-  "relative flex h-[46px] max-h-[calc((100vh-230px)/11)] min-h-8 w-full items-center gap-3 px-[15px] text-[14.5px] transition-colors duration-200";
+  "relative flex h-[46px] max-h-[calc((100vh-230px)/12)] min-h-8 w-full items-center gap-3 px-[15px] text-[14.5px] transition-colors duration-200";
 const qatorFaolKlass = "theme-sidebar-active rounded-[14px] font-semibold text-white shadow-[0_8px_20px_rgba(2,6,23,.28)]";
 const qatorOddiyKlass = "theme-sidebar-item rounded-[14px] font-medium text-[#8391A7] hover:bg-[#122036] hover:text-slate-100";
 // Matn faqat sidebar ochiq (toggle) bo'lganda ko'rinadi.
@@ -151,6 +171,7 @@ export default function YonPanel({
   const profil = useAuthProfileStore((state) => state.profil);
   const oqilmaganXabarSoni = useSupportStore((state) => state.oqilmaganSoni);
   const oqilmaganSoniniYangilash = useSupportStore((state) => state.oqilmaganSoniniYangilash);
+  const ishlabChiqarishYoqilgan = useIshlabChiqarishStore((state) => state.enabled);
 
   // Qo'llab-quvvatlash bo'limidagi o'qilmagan xabarlar soni sidebar
   // ikonkasida badge sifatida ko'rsatiladi — har 60 soniyada, faqat sahifa ko'rinib turganda
@@ -173,15 +194,17 @@ export default function YonPanel({
   // holda KASSIR/OMBORCHI uchun ruxsati yo'q bandlar (va ularning bolalari)
   // menyudan yashiriladi.
   const korinadiganMenyular = useMemo(() => {
-    if (!profil) return menyular;
-    return menyular
+    // Ishlab chiqarish moduli yoqilmaguncha server hamma yo'lda 403 qaytaradi: menyuda ko'rsatilmaydi.
+    const yoqilganlar = ishlabChiqarishYoqilgan ? menyular : menyular.filter((menu) => menu.key !== "ishlabChiqarish");
+    if (!profil) return yoqilganlar;
+    return yoqilganlar
       .filter((menu) => sahifagaRuxsatBormi(profil, menu.path))
       .map((menu) =>
         menu.bolalar
           ? { ...menu, bolalar: menu.bolalar.filter((bola) => sahifagaRuxsatBormi(profil, bola.path.split("?")[0])) }
           : menu
       );
-  }, [profil]);
+  }, [profil, ishlabChiqarishYoqilgan]);
 
   // Joriy marshrut tegishli bo'lim ochiq turadi (yangilashdan keyin ham); qolganlarini foydalanuvchi ochadi.
   const faolBolim = menyular.find((menu) => menu.bolalar && yolIchida(pathname, menu.path))?.path;

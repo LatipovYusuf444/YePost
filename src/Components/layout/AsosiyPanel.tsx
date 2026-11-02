@@ -6,6 +6,7 @@ import YuqoriPanel from "./YuqoriPanel";
 import QollabQuvvatlashVidjeti from "@/Components/common/QollabQuvvatlashVidjeti";
 import { useValyutaStore } from "@/lib/valyuta";
 import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
+import { useIshlabChiqarishStore } from "@/store/ishlabChiqarishStore";
 
 const sahifaVariantlari = {
   initial: { opacity: 0, y: 16, scale: 0.99 },
@@ -17,6 +18,9 @@ export default function AsosiyLayout() {
   const location = useLocation();
   const loadInventorySettings = useInventorySettingsStore((state) => state.load);
   useEffect(() => { void loadInventorySettings(); }, [loadInventorySettings, location.pathname]);
+  // Menyu modul holatiga bog'liq; 5 daqiqada bir yangilanadi, har sahifaga so'rov ketmaydi.
+  const loadIshlabChiqarish = useIshlabChiqarishStore((state) => state.load);
+  useEffect(() => { void loadIshlabChiqarish(); }, [loadIshlabChiqarish, location.pathname]);
   // Valyuta yoki kurs o'zgarganda sahifa qayta yig'iladi — barcha narxlar yangi valyutada qayta hisoblanadi.
   const valyutaKaliti = useValyutaStore((holat) => `${holat.rejimYoniq}:${holat.hisobotValyutasi}:${holat.kursBor ? holat.kurs : 0}`);
   // Yon panel faqat navbar tugmasi bilan ochiladi/yopiladi (hover emas); holat shu yerda bitta joyda.

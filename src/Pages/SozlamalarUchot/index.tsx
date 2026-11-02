@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   Bell,
   Building2,
+  Factory,
   CircleDollarSign,
   Lock,
   MapPin,
@@ -30,6 +31,7 @@ import TelegramBotKarti from "./TelegramBotKarti";
 import VakolatlarBolimi from "./VakolatlarBolimi";
 import ValyutaBolimi from "./ValyutaBolimi";
 import InventoryBolimi from "./InventoryBolimi";
+import IshlabChiqarishBolimi from "./IshlabChiqarishBolimi";
 import type { SozlamaBolim } from "./types";
 
 // faqatDirektor: true — bo'lim faqat superadmin/direktor uchun ochiladi.
@@ -41,6 +43,7 @@ const bolimlar: { id: SozlamaBolim; icon: typeof UserRound; faqatDirektor?: bool
   { id: "vakolatlar", icon: ShieldCheck },
   { id: "valyuta", icon: CircleDollarSign },
   { id: "inventory", icon: Building2 },
+  { id: "ishlabChiqarish", icon: Factory, faqatDirektor: true },
   { id: "narxTurlari", icon: Tags },
   { id: "davrniYopish", icon: Lock },
   { id: "integratsiya", icon: PlugZap, faqatDirektor: true },
@@ -104,6 +107,7 @@ export default function SozlamalarUchot() {
           {bolim === "birliklar" && <OlchovBirligiBolimi />}
           {bolim === "valyuta" && <ValyutaBolimi />}
           {bolim === "inventory" && <InventoryBolimi />}
+          {bolim === "ishlabChiqarish" && direktor && <IshlabChiqarishBolimi />}
           {bolim === "narxTurlari" && <NarxTurlariBolimi />}
           {bolim === "davrniYopish" && <DavrniYopishBolimi />}
           {bolim === "vakolatlar" && <VakolatlarBolimi />}

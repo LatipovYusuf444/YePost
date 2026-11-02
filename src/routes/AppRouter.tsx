@@ -6,6 +6,7 @@ import AuthLayout from "@/Pages/Auth/AuthLayout"
 import BoshSahifa from "@/Pages/BoshSahifa"
 import Monitoring from "@/Pages/Monitoring"
 import KassaUchot from "@/Pages/KassaUchot"
+import IshlabChiqarish from "@/Pages/IshlabChiqarish"
 import HisobotUchot from "@/Pages/HisobotUchot"
 import KunlikKassa from "@/Pages/HisobotUchot/KunlikKassa"
 import XodimUchot from "@/Pages/XodimUchot"
@@ -83,6 +84,13 @@ export default function AppRouter() {
         <Route path="/ombor/inventarizatsiya" element={<Inventarizatsiya />} />
         {/* Mock Kassa uchoti eski backendli Kassa sahifasi o'rnida
             (backend kodi Pages/Kassa da tegilmagan holda qoladi). */}
+        <Route path="/ishlab-chiqarish" element={<IshlabChiqarish />} />
+        <Route path="/ishlab-chiqarish/buyurtmalar" element={<IshlabChiqarish bolim="buyurtmalar" />} />
+        <Route path="/ishlab-chiqarish/retseptlar" element={<IshlabChiqarish bolim="retseptlar" />} />
+        <Route path="/ishlab-chiqarish/kalkulyatsiya" element={<IshlabChiqarish bolim="kalkulyatsiya" />} />
+        <Route path="/ishlab-chiqarish/sexga-berish" element={<IshlabChiqarish bolim="sexga-berish" />} />
+        <Route path="/ishlab-chiqarish/smena" element={<IshlabChiqarish bolim="smena" />} />
+        <Route path="/ishlab-chiqarish/rulonlar" element={<IshlabChiqarish bolim="rulonlar" />} />
         <Route path="/kassa" element={<KassaUchot />} />
         <Route path="/hisobotlar" element={<Navigate to="/hisobotlar/tovar-harakati" replace />} />
         <Route path="/hisobotlar/tovar-harakati" element={<HisobotUchot tab="stock" />} />
