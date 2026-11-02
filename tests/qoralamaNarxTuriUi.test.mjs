@@ -36,8 +36,7 @@ function editor() {
   runInNewContext(outputText, { exports, require: name => mocks[name] ?? (name === 'react/jsx-runtime' ? require(name) : new Proxy({}, { get: (_, key) => key === 'default' ? name : noop })) });
   const props = {
     sotuv: { id: 'draft', status: 'DRAFT', warehouseId: 'w', currency: 'UZS', items: [item('a'), item('b')] },
-    qoldiqlar: [stock('a'), stock('b')], amalBajarilmoqda: false, footerContainer: {},
-    umumiyTahrir: { malumot: { note: 'kept' }, ozgarishlarSoni: 0, warehouseId: 'w', currency: 'UZS', xatoBor: false, onBekor: noop, onSaqlandi: noop },
+    qoldiqlar: [stock('a'), stock('b')], amalBajarilmoqda: false,
     onYangilash: async (...args) => { calls.push(args); return true; },
   };
   return { calls, render() { cursor = 0; return exports.default(props); } };
@@ -55,7 +54,7 @@ test('draft editor exposes a bulk selector and saves selected price types in the
   let tree = edit.render();
   const bulk = controls(tree).find(node => !node.props.kichik);
   assert.ok(bulk, 'draft editing must include the price type control');
-  assert.equal(save(tree).props.disabled, true, 'opening a draft does not change prices');
+  assert.equal(save(tree), undefined, 'opening a draft does not change prices');
   assert.equal(bulk.props.holat('COST').ruxsat, false);
   bulk.props.onChange('WHOLESALE');
   tree = edit.render();
@@ -63,7 +62,6 @@ test('draft editor exposes a bulk selector and saves selected price types in the
   save(tree).props.onClick();
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(edit.calls[0][0], 'draft');
-  assert.equal(edit.calls[0][1].note, 'kept');
   for (const row of edit.calls[0][1].items) { assert.equal(row.priceType, 'WHOLESALE'); assert.equal(row.price, 22000); }
 });
 

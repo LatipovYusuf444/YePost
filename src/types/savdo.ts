@@ -48,6 +48,8 @@ export type NomliMalumot = {
   phone?: string;
   email?: string;
   address?: string;
+  // Xodim roli (GET /accounts/users).
+  role?: string | null;
   companyId?: string | null;
   company?: NomliMalumot | null;
   partner?: { id: string } | null;
@@ -145,6 +147,8 @@ export type Sotuv = {
   customerId?: string;
   clientCompanyId?: string;
   responsibleId?: string;
+  // Sotuvni yaratgan xodim: backend odatda shuni qaytaradi, ismi /accounts/users ro'yxatidan olinadi.
+  cashierId?: string | null;
   saleType?: SotuvTuri;
   status?: SotuvHolati | string;
   note?: string;

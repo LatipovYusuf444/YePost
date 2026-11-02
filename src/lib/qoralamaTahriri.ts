@@ -3,14 +3,7 @@
 // Backend: PATCH /sales/:id (faqat qoralama) `items` ro'yxatini TO'LIQ almashtiradi, shuning uchun o'zgarmagan qatorlar ham qayta yuboriladi.
 import type { QoldiqTanlovi, SotuvMahsuloti, SotuvNarxTuri } from "../types/savdo.ts";
 import { asosiyMiqdor, birlikdagiMiqdor, birlikNarxi, birlikTopish, miqdorYaroqlimi, qatorBirligida } from "./kopBirlik.ts";
-import {
-  narxSotuvValyutasida,
-  qatorNarxTuri,
-  turNarxi,
-  yuboriladiganQator,
-  type NarxValyutasi,
-  type YuboriladiganQator,
-} from "./savdoNarxlari.ts";
+import { narxSotuvValyutasida, qatorNarxTuri, turNarxi, type NarxValyutasi } from "./savdoNarxlari.ts";
 
 export type TahrirQatori = {
   /** Barqaror kalit (mavjud qatorda — backend id, yangisida — vaqtinchalik). */
@@ -23,7 +16,7 @@ export type TahrirQatori = {
   nom: string;
   /** Almashtirilgan yoki yangi qatorda tanlangan qoldiq; mavjud qatorda qoldiq ro'yxatdan qidiriladi. */
   qoldiq: QoldiqTanlovi | null;
-  /** Narx va chegirma ko'rsatiladigan valyuta: mavjud qatorda — qator valyutasi, yangi/almashtirilganda — sotuv valyutasi. */
+  /** Narx va chegirma valyutasi: doim sotuv valyutasi (faqat kurs yo'qligi sababli o'girilmagan saqlangan qatorda boshqacha bo'ladi). */
   valyuta: NarxValyutasi;
   /** Qo'shimcha birlik (pochka) nomi; asosiy birlikda bo'sh. */
   birlikNomi: string;
@@ -35,15 +28,10 @@ export type TahrirQatori = {
   chegirma: string;
   /** Chegirma foizda berilgan bo'lsa — foiz: miqdor o'zgarganda summa shu foizdan qayta hisoblanadi. */
   chegirmaFoiz: number | null;
-  /**
-   * Almashtirilgan/yangi qatorda mahsulotning katalogdagi narxi (qator valyutasida; "" — katalogda narx yo'q yoki valyuta o'zgargan).
-   * Narx va valyuta erkin tahrirlanadi: narx shu qiymatga teng bo'lsa "Sotuv yaratish" qoidasi, boshqacha bo'lsa qo'lda narx yuboriladi.
-   */
-  katalogNarxi: string;
-  /** Mavjud qatorning saqlangan valyutasi (yangi qatorda `null`): valyuta almashtirilsa, qaytib kelganda aniq qiymatlar tiklanadi. */
+  /** Mavjud qatorning saqlangan valyutasi (yangi qatorda `null`): sotuv valyutasidan farq qilsa qator o'zgargan hisoblanadi va qayta saqlanadi. */
   aslValyuta: NarxValyutasi | null;
-  /** Valyuta qayta almashtirilganda hozir tahrirlangan narx yaxlitlashsiz tiklanadi. */
-  valyutaAsosi?: { valyuta: NarxValyutasi; narx: string; chegirma: string; katalogNarxi: string };
+  /** Sotuv valyutasi qaytarilganda hozir tahrirlangan narx yaxlitlashsiz tiklanadi. */
+  valyutaAsosi?: { valyuta: NarxValyutasi; narx: string; chegirma: string };
   tur: SotuvNarxTuri | null;
   ochirildi: boolean;
 };
@@ -190,7 +178,6 @@ export function qatorniBoshlash(
     narx: raqamMatni(birlik.narx),
     chegirma: chegirma > 0 ? raqamMatni(chegirma) : "",
     chegirmaFoiz: foiz > 0 ? foiz : null,
-    katalogNarxi: "",
     aslValyuta: p.qatorValyutasi,
     tur: item.priceType ?? null,
     ochirildi: false,
@@ -212,7 +199,6 @@ export function yangiQatorYaratish(kalit: string, sotuvVal: NarxValyutasi): Tahr
     narx: "",
     chegirma: "",
     chegirmaFoiz: null,
-    katalogNarxi: "",
     aslValyuta: null,
     tur: null,
     ochirildi: false,
@@ -273,7 +259,7 @@ export function qatorNarxTuriniOzgartirish(q: TahrirQatori, tur: SotuvNarxTuri, 
   const katalog = birlikNarxi(turNarxi(qoldiq, tur, ctx.kurs), birlik, tur);
   const narx = narxSotuvValyutasida(katalog, q.valyuta, ctx.kurs);
   if (!(narx > 0)) return q;
-  return narxniOzgartirish({ ...q, tur, qoldiq, katalogNarxi: raqamMatni(narx) }, raqamMatni(narx));
+  return narxniOzgartirish({ ...q, tur, qoldiq }, raqamMatni(narx));
 }
 
 export function narxniOzgartirish(q: TahrirQatori, matn: string): TahrirQatori {
@@ -286,14 +272,20 @@ export function chegirmaniOzgartirish(q: TahrirQatori, matn: string): TahrirQato
   return { ...q, chegirma: matn, chegirmaFoiz: null, valyutaAsosi: undefined };
 }
 
+/** So'm → dollar: 2 xonagacha, lekin musbat summa hech qachon 0 ga yaxlitlanmaydi (0.0001$ aniq qiymat bilan qoladi). */
+export function dollargaOgirish(son: number, kurs: number) {
+  const yaxlit = yaxlit2(son / kurs);
+  return son > 0 && yaxlit === 0 ? son / kurs : yaxlit;
+}
+
 /**
- * Qator valyutasini almashtiradi (so'm ↔ dollar): narx va chegirma kurs bilan o'giriladi (dollar 2 xonagacha, so'm butun songacha).
- * Almashtirishdan oldingi valyutaga qaytsa, oxirgi tahrirlangan aniq narx va chegirma tiklanadi (yaxlitlash xatosi yig'ilmasin).
+ * Qatorni boshqa valyutaga o'tkazadi (sotuv valyutasi o'zgarganda): narx va chegirma kurs bilan o'giriladi (so'm butun songacha).
+ * Oldingi valyutaga qaytsa, oxirgi tahrirlangan aniq narx va chegirma tiklanadi (yaxlitlash xatosi yig'ilmasin).
  * Kurs yo'q bo'lsa (va dastlabki valyutaga qaytilmasa) qator o'zgarmaydi.
  */
 export function valyutaniOzgartirish(q: TahrirQatori, nishon: NarxValyutasi, kurs: number): TahrirQatori {
   if (nishon === q.valyuta) return q;
-  const asos = q.valyutaAsosi ?? { valyuta: q.valyuta, narx: q.narx, chegirma: q.chegirma, katalogNarxi: q.katalogNarxi };
+  const asos = q.valyutaAsosi ?? { valyuta: q.valyuta, narx: q.narx, chegirma: q.chegirma };
   if (nishon === asos.valyuta) {
     const yangi = { ...q, ...asos };
     return { ...yangi, chegirma: foizdanChegirma(yangi, sonniOqish(yangi.miqdor), sonniOqish(yangi.narx)) };
@@ -302,10 +294,22 @@ export function valyutaniOzgartirish(q: TahrirQatori, nishon: NarxValyutasi, kur
   const ogirish = (matn: string) => {
     const son = sonniOqish(matn);
     if (son === null) return matn;
-    return raqamMatni(nishon === "USD" ? yaxlit2(son / kurs) : Math.round(son * kurs));
+    return raqamMatni(nishon === "USD" ? dollargaOgirish(son, kurs) : Math.round(son * kurs));
   };
-  const yangi = { ...q, valyuta: nishon, narx: ogirish(q.narx), chegirma: ogirish(q.chegirma), katalogNarxi: "", valyutaAsosi: asos };
+  const yangi = { ...q, valyuta: nishon, narx: ogirish(q.narx), chegirma: ogirish(q.chegirma), valyutaAsosi: asos };
   return { ...yangi, chegirma: foizdanChegirma(yangi, sonniOqish(yangi.miqdor), sonniOqish(yangi.narx)) };
+}
+
+/**
+ * Qator valyutasi doim sotuv valyutasiga teng: tahrirlagich ochilganda va sotuv valyutasi o'zgarganda qator shunga keltiriladi.
+ * Dollarli sotuvda "UZS" deb saqlangan, 1 sentdan arzon narx (1.25 so'm) haqiqiy so'm emas: u dollarda yozilgan, lekin `currency` yuborilmagani
+ * uchun server so'm deb saqlagan (jami $0 bo'lib qolgan). Bunday qatorda raqam saqlanadi, faqat valyutasi tuzatiladi.
+ */
+export function sotuvValyutasigaKeltirish(q: TahrirQatori, sotuvVal: NarxValyutasi, kurs: number, aslSotuvVal: NarxValyutasi): TahrirQatori {
+  if (q.valyuta === sotuvVal) return q;
+  const narx = sonniOqish(q.narx);
+  const buzilganQator = sotuvVal === "USD" && aslSotuvVal === "USD" && q.aslValyuta === "UZS" && kurs > 0 && narx !== null && narx > 0 && yaxlit2(narx / kurs) === 0;
+  return buzilganQator ? { ...q, valyuta: "USD" } : valyutaniOzgartirish(q, sotuvVal, kurs);
 }
 
 /**
@@ -337,7 +341,6 @@ export function mahsulotniAlmashtirish(
     miqdor: q.birlikId === null && oldingiMiqdor !== null && oldingiMiqdor > 0 ? q.miqdor : "1",
     // Katalog narxi oldindan yoziladi (kurs bo'lmasa o'girib bo'lmaydi — narx bo'sh qoladi); uni erkin o'zgartirish mumkin.
     narx: narx > 0 ? raqamMatni(narx) : "",
-    katalogNarxi: narx > 0 ? raqamMatni(narx) : "",
     chegirma: "",
     chegirmaFoiz: null,
     tur,
@@ -424,24 +427,21 @@ export function qatorXatolari(q: TahrirQatori, qoldiq: QoldiqTanlovi | null | un
 
 // ── Backendga yuboriladigan qatorlar ──────────────────────────────────────────────────────────────
 
-export type TahrirQatoriTanasi =
-  | YuboriladiganQator
-  | {
-      modificationId: string;
-      quantity: number;
-      price: number;
-      discount: number;
-      unitId?: string;
-      currency?: NarxValyutasi;
-      priceType?: SotuvNarxTuri;
-      discountPercent?: number;
-    };
+export type TahrirQatoriTanasi = {
+  modificationId: string;
+  quantity: number;
+  price: number;
+  discount: number;
+  unitId?: string;
+  currency: NarxValyutasi;
+  priceType?: SotuvNarxTuri;
+  discountPercent?: number;
+};
 
 /**
  * Qatorlarni PATCH /sales/:id `items` tanasiga aylantiradi (o'chirilgan qatorlar tushmaydi, tartib saqlanadi).
- * Mavjud qator (mahsuloti almashtirilmagan) o'z birligi, valyutasi va narx turi bilan qayta yuboriladi — faqat miqdor/chegirma
- * o'zgaradi; yangi va almashtirilgan qator katalog narxida qolsa "Sotuv yaratish" bilan bir xil qoida (`yuboriladiganQator`),
- * narxi yoki valyutasi o'zgartirilgan bo'lsa foydalanuvchi yozgan narx o'z valyutasida (qo'lda narx) yuboriladi.
+ * `currency` har qatorda sotuv valyutasi: u yuborilmasa server qatorni so'm deb saqlaydi va dollarli qoralamada jami $0 bo'lib qoladi.
+ * Mavjud qator (mahsuloti almashtirilmagan) o'z birligi va narx turi bilan, yangi va almashtirilgan qator asosiy birlikda yuboriladi.
  */
 export function tahrirItemlari(qatorlar: readonly TahrirQatori[], ctx: TahrirKonteksti): TahrirQatoriTanasi[] {
   const natija: TahrirQatoriTanasi[] = [];
@@ -459,7 +459,7 @@ export function tahrirItemlari(qatorlar: readonly TahrirQatori[], ctx: TahrirKon
         price: narx ?? birlik.narx,
         discount: chegirma,
         ...(birlik.unitId ? { unitId: birlik.unitId } : {}),
-        ...(q.valyuta !== ctx.sotuvVal ? { currency: q.valyuta } : {}),
+        currency: ctx.sotuvVal,
         ...(tur && ctx.turRuxsati(tur) ? { priceType: tur } : {}),
         ...(q.chegirmaFoiz && chegirma > 0 ? { discountPercent: Math.min(q.chegirmaFoiz, 100) } : {}),
       });
@@ -467,32 +467,12 @@ export function tahrirItemlari(qatorlar: readonly TahrirQatori[], ctx: TahrirKon
     }
 
     const tur = q.tur ?? "RETAIL";
-    // Narx katalogdagidek qolgan va valyuta o'zgarmagan bo'lsa — "Sotuv yaratish" qoidasi (mahsulot o'z valyutasida);
-    // aks holda foydalanuvchi yozgan narx o'z valyutasida (qo'lda narx) yuboriladi.
-    const katalogdagidek = narx !== null && q.katalogNarxi !== "" && q.valyuta === ctx.sotuvVal && Math.abs(narx - Number(q.katalogNarxi)) < EPS;
-    if (katalogdagidek) {
-      natija.push(
-        yuboriladiganQator({
-          modificationId: q.modificationId,
-          miqdor,
-          tur,
-          qoldiq: q.qoldiq ?? undefined,
-          sotuvVal: ctx.sotuvVal,
-          kurs: ctx.kurs,
-          narx,
-          chegirma,
-          chegirmaTuri: q.chegirmaFoiz ? "foiz" : "sum",
-          foiz: q.chegirmaFoiz ?? 0,
-        })
-      );
-      continue;
-    }
     natija.push({
       modificationId: q.modificationId,
       quantity: miqdor,
       price: narx ?? 0,
       discount: chegirma,
-      ...(q.valyuta !== ctx.sotuvVal ? { currency: q.valyuta } : {}),
+      currency: ctx.sotuvVal,
       ...(ctx.turRuxsati(tur) ? { priceType: tur } : {}),
       ...(q.chegirmaFoiz && chegirma > 0 ? { discountPercent: Math.min(q.chegirmaFoiz, 100) } : {}),
     });

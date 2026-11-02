@@ -16,8 +16,18 @@
     "printTitle": "Chop etish",
     "closeAriaLabel": "Oynani yopish"
   },
+  "unsaved": {
+    "indicator": "{{count}} ta o'zgarish saqlanmagan",
+    "title": "Saqlanmagan o'zgarishlar bor",
+    "description": "Kiritilgan o'zgarishlar saqlanmagan. Yopsangiz, ular yo'qoladi.",
+    "stay": "Oynada qolish",
+    "leave": "Saqlamasdan yopish",
+    "leaving": "Yopilmoqda..."
+  },
   "errors": {
     "dismiss": "Yopish",
+    "lineNeedsRate": "Qator valyutasi sotuv valyutasidan farq qiladi: uni o'girish uchun bugungi dollar kursini kiriting (Sozlamalar → Valyuta).",
+    "rateRequired": "Valyutani almashtirish uchun bugungi dollar kursini kiriting.",
     "quantityNotWhole": "Pochka, qop, korobka kabi birliklarda faqat butun miqdor kiritiladi.",
     "usdUnavailable": "Dollarda sotuv uchun valyuta rejimi yoqilgan va bugungi kurs kiritilgan bo'lishi kerak (Sozlamalar → Valyuta).",
     "selectClientForActivity": "CRM faoliyatini saqlash uchun mijozni tanlang.",
@@ -42,7 +52,9 @@
     "namePlaceholderFallback": "Faoliyat nomi",
     "detailsPlaceholderFallback": "Faoliyat haqida batafsil yozing...",
     "savedNotice": "Faoliyat qoralamaga qo'shildi",
-    "fallbackName": "Faoliyat"
+    "fallbackName": "Faoliyat",
+    "savedTitle": "Saqlangan faoliyat",
+    "savedLoading": "Faoliyat yuklanmoqda..."
   },
   "activityTabs": {
     "work": "Ish",
@@ -90,6 +102,7 @@
   },
   "modal": {
     "draftTitle": "Qoralama qo'shish",
+    "draftEditTitle": "Qoralamani tahrirlash",
     "draftBadge": "Qoralama",
     "draftSectionTitle": "Qoralama haqida",
     "draftNameLabel": "Qoralama nomi",
@@ -122,6 +135,8 @@
   },
   "labels": {
     "zeroAmountPlaceholder": "0 so'm",
+    "walkInName": "Donalik mijoz ismi",
+    "walkInPhone": "Telefon raqami",
     "contact": "Kontakt",
     "company": "Kompaniya",
     "responsible": "Mas'ul xodim",

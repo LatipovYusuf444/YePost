@@ -160,7 +160,7 @@ function sotuvniBoglanganMalumotlarBilanBoyitish(
     sotuv.clientCompany ??
     malumotlar.mijozKompaniyalari.find((item) => item.id === sotuv.clientCompanyId);
   const responsible =
-    sotuv.responsible ?? malumotlar.xodimlar.find((item) => item.id === sotuv.responsibleId);
+    sotuv.responsible ?? malumotlar.xodimlar.find((item) => item.id === (sotuv.responsibleId ?? sotuv.cashierId));
   const warehouse = sotuv.warehouse ?? malumotlar.omborlar.find((item) => item.id === sotuv.warehouseId);
   const items = sotuv.items?.map((item) => {
     const qoldiq = malumotlar.qoldiqlar?.find(

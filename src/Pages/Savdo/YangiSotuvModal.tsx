@@ -1,5 +1,5 @@
 import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
-import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type UIEvent } from "react";
 import {
   BadgeCheck,
   Bell,
@@ -31,6 +31,7 @@ import {
   Send,
   Settings,
   Trash2,
+  TriangleAlert,
   Upload,
   UserRound,
   Users,
@@ -41,6 +42,7 @@ import {
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
 import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import { bugungiToshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
@@ -54,13 +56,26 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { cn } from "@/lib/utils";
 import NarxTuriTanlovi from "./NarxTuriTanlovi";
-import { sotuvNomiIzohi } from "@/lib/sotuvNomi";
+import { mijozgaMosSotuvNomi, sotuvNomiIzohi } from "@/lib/sotuvNomi";
+import {
+  qoralamaFormasi,
+  qoralamaOzgarishlari,
+  qoralamaPatch,
+  qoralamaQatoriniOgirish,
+  qoralamaQatorlari,
+  qoralamaQatorTanasi,
+  sotuvMasulTafsiloti,
+  suzishQadami,
+  type QoralamaHolati,
+  type QoralamaQatori,
+} from "@/lib/qoralamaUmumiyTahrir";
 import { yaratishValyutasi } from "@/lib/mijozValyutasi";
 import { useValyutaStore } from "@/lib/valyuta";
 import type {
   MijozTanlovi,
   OmborTanlovi,
   QoldiqTanlovi,
+  Sotuv,
   SotuvNarxTuri,
   SotuvYaratishMalumoti,
   XodimTanlovi,
@@ -86,7 +101,8 @@ import {
   type TovarBirligi,
 } from "@/lib/kopBirlik";
 import { useSavdoSozlamalariStore } from "@/store/savdoSozlamalariStore";
-import { pulniFormatlash } from "./savdoYordamchilari";
+import { pulniFormatlash, sotuvJadvalId } from "./savdoYordamchilari";
+import QoralamaFaoliyatlari from "./QoralamaFaoliyatlari";
 import SavdoSelect, { type SavdoSelectOption } from "./SavdoSelect";
 
 type YangiSotuvModalProps = {
@@ -98,26 +114,16 @@ type YangiSotuvModalProps = {
   qoldiqlar: QoldiqTanlovi[];
   amalBajarilmoqda: boolean;
   onOmborTanlash: (omborId: string) => void;
-  onSaqlash: (malumot: SotuvYaratishMalumoti) => Promise<boolean>;
+  onSaqlash?: (malumot: SotuvYaratishMalumoti) => Promise<boolean>;
+  // Tahrirlash rejimi: oyna shu qoralama qiymatlari bilan ochiladi va PATCH bilan saqlaydi. Maydonlar, tartib va matnlar yaratish bilan bir xil.
+  tahrir?: {
+    sotuv: Sotuv;
+    onYangilash: (sotuvId: string, malumot: Partial<SotuvYaratishMalumoti>) => Promise<boolean>;
+  };
   onYopish: () => void;
 };
 
-type MahsulotQatori = {
-  modificationId: string;
-  qoldiqKaliti: string;
-  quantity: string;
-  price: string;
-  discount: string;
-  // Narx turi (tan narx / chakana / ulgurji): `price` shu turdagi katalog narxi.
-  priceType: SotuvNarxTuri;
-  // Chegirma summada (`discount`) yoki foizda (`discountFoiz`) kiritiladi; backendga summa ketadi, foizda kiritilsa foiz ham (hisobot uchun).
-  discountTuri: ChegirmaTuri;
-  discountFoiz: string;
-  // Sotuv birligi (pochka, qop): "" — asosiy birlik. `quantity`, `price` va chegirma shu birlikda.
-  birlikId: string;
-  // Sotuvchi "Sotuv narxi"ga katalog narxidan baland narx yozsa — farq (bir dona uchun ustama); backendga qo'lda narx bo'lib ketadi.
-  ustama: string;
-};
+type MahsulotQatori = QoralamaQatori;
 
 function bosQator(priceType: SotuvNarxTuri): MahsulotQatori {
   return { modificationId: "", qoldiqKaliti: "", quantity: "1", price: "", discount: "", priceType, discountTuri: "sum", discountFoiz: "", birlikId: "", ustama: "" };
@@ -328,12 +334,15 @@ export default function YangiSotuvModal({
   amalBajarilmoqda,
   onOmborTanlash,
   onSaqlash,
+  tahrir,
   onYopish,
 }: YangiSotuvModalProps) {
   const { t } = useTranslation("savdo_yangi");
   const canSellNegative = useInventorySettingsStore((s) => s.canSellNegative);
-  const [warehouseId, setWarehouseId] = useState("");
-  const [customerId, setCustomerId] = useState("");
+  // Tahrirlash rejimida saqlangan qiymatlar (nom, bosqich, sanalar va izoh sotuv `note`idan o'qiladi).
+  const [asl] = useState(() => (tahrir ? qoralamaFormasi(tahrir.sotuv) : null));
+  const [warehouseId, setWarehouseId] = useState(asl?.warehouseId ?? "");
+  const [customerId, setCustomerId] = useState(asl?.customerId ?? "");
   const [mijozQoshishOchiq, setMijozQoshishOchiq] = useState(false);
   const [qoshilganMijozlar, setQoshilganMijozlar] = useState<MijozTanlovi[]>([]);
   const mijozSaqlanmoqda = useRef(false);
@@ -341,10 +350,10 @@ export default function YangiSotuvModal({
     ...mijozlar,
     ...qoshilganMijozlar.filter((item) => !mijozlar.some((mijoz) => mijoz.id === item.id)),
   ], [mijozlar, qoshilganMijozlar]);
-  const [clientCompanyId, setClientCompanyId] = useState("");
+  const [clientCompanyId, setClientCompanyId] = useState(asl?.clientCompanyId ?? "");
   const [responsibleId, setResponsibleId] = useState("");
   // Sotuv sanasi: bugun yoki o'tgan kun (kelajak yo'q); o'tgan kun tanlansa backend hujjatni shu kunning oxirida yozadi.
-  const [hujjatSanasi, setHujjatSanasi] = useState(() => bugungiToshkentKuni());
+  const [hujjatSanasi, setHujjatSanasi] = useState(() => asl?.date || bugungiToshkentKuni());
   const joriyProfil = useAuthProfileStore((state) => state.profil);
   const profilniYuklash = useAuthProfileStore((state) => state.profilniYuklash);
 
@@ -357,15 +366,19 @@ export default function YangiSotuvModal({
     // o'zi bo'lishi kerak (masalan, direktor kirsa - direktor, admin kirsa - admin).
     if (joriyProfil?.id) setResponsibleId(joriyProfil.id);
   }, [joriyProfil]);
-  const [sotuvNomi, setSotuvNomi] = useState("");
-  const [bosqich, setBosqich] = useState("Yangi");
-  const [valyuta, setValyuta] = useState("UZS");
+  const [sotuvNomi, setSotuvNomi] = useState(asl?.nom ?? "");
+  const [bosqich, setBosqich] = useState(asl?.bosqich || "Yangi");
+  const [valyuta, setValyuta] = useState(asl?.currency ?? "UZS");
+  const [walkInNomi, setWalkInNomi] = useState(asl?.walkInCustomerName ?? "");
+  const [walkInTelefon, setWalkInTelefon] = useState(asl?.walkInCustomerPhone ?? "");
   // Dollarda sotuv faqat valyuta rejimi yoqilgan va bugungi kurs kiritilgan bo'lsa mumkin (backend tasdiqlashda shu kurs bilan o'giradi).
   const kurs = useValyutaStore((holat) => holat.kurs);
   const usdMumkin = useValyutaStore((holat) => holat.rejimYoniq && holat.kursBor && holat.kurs > 0);
+  // Tahrirlashda saqlangan narxlar faqat haqiqiy (bugungi) kurs bilan o'giriladi.
+  const aniqKurs = useValyutaStore((holat) => (holat.kursBor && holat.kurs > 0 ? holat.kurs : 0));
   const sotuvVal: "UZS" | "USD" = valyuta === "USD" ? "USD" : "UZS";
-  const [boshlanishSanasi, setBoshlanishSanasi] = useState(bugungiSana());
-  const [tugashSanasi, setTugashSanasi] = useState(kelasiHafta());
+  const [boshlanishSanasi, setBoshlanishSanasi] = useState(asl ? asl.boshlanish : bugungiSana());
+  const [tugashSanasi, setTugashSanasi] = useState(asl ? asl.tugash : kelasiHafta());
   const [faolTab, setFaolTab] = useState("Ish");
   const [faoliyatSarlavha, setFaoliyatSarlavha] = useState("");
   const [faoliyatTafsilot, setFaoliyatTafsilot] = useState("");
@@ -375,16 +388,34 @@ export default function YangiSotuvModal({
   const [faoliyatOchiq, setFaoliyatOchiq] = useState(false);
   const [sanaMenyuOchiq, setSanaMenyuOchiq] = useState(false);
   const [sotuvBackendgaSaqlandi, setSotuvBackendgaSaqlandi] = useState(false);
-  const [mahsulotlar, setMahsulotlar] = useState<MahsulotQatori[]>([bosQator("RETAIL")]);
+  const saqlanganQatorlar = () => {
+    if (!tahrir) return [];
+    const aslVal = asl?.currency === "USD" ? "USD" : "UZS";
+    return qoralamaQatorlari(tahrir.sotuv, {
+      warehouseId: asl?.warehouseId ?? "",
+      sotuvVal: aslVal,
+      kurs: aniqKurs,
+      standartTur: "RETAIL",
+      katalogNarxi: (item, tur) => {
+        const qoldiq = qatorQoldigi(`${item.modificationId}::${asl?.warehouseId ?? ""}`);
+        return qoldiqNarxiValyutada(qoldiq, aslVal, kurs, tur, birlikTopish(qoldiq?.birliklar, item.unitId));
+      },
+    });
+  };
+  const [mahsulotlar, setMahsulotlar] = useState<MahsulotQatori[]>(() => {
+    const saqlangan = saqlanganQatorlar();
+    return saqlangan.length ? saqlangan : [bosQator("RETAIL")];
+  });
   // Narx turlari (Sozlamalar → Sotuv): yoqilganlari tanlanadi; sozlama noma'lum bo'lsa chakana va ulgurji ochiq (tannarx — faqat yoqilgan bo'lsa).
   const narxSozlamasi = useSavdoSozlamalariStore((holat) => holat.narxTurlari);
   const narxSozlamasiniYuklash = useSavdoSozlamalariStore((holat) => holat.yuklash);
-  const [narxTuri, setNarxTuri] = useState<SotuvNarxTuri>("RETAIL");
+  const [narxTuri, setNarxTuri] = useState<SotuvNarxTuri>(() => umumiyNarxTuri(mahsulotlar));
   const [narxXabari, setNarxXabari] = useState("");
   // "Sotuv narxi" maydoni hisoblangan qiymatni ko'rsatadi (katalog + ustama − chegirma / miqdor), shuning uchun yozilayotgan matn alohida
   // saqlanadi: aks holda maydonni bo'shatib bo'lmaydi (bo'sh qiymat darrov katalog narxiga qaytadi). Maydondan chiqilganda hisoblangan narx ko'rinadi.
   const [narxTahriri, setNarxTahriri] = useState<{ qator: number; matn: string } | null>(null);
-  const narxTuriTanlandi = useRef(false);
+  // Tahrirlashda narx turi saqlangan qatorlardan olinadi: sozlamaning standart turi uni almashtirmaydi.
+  const narxTuriTanlandi = useRef(Boolean(tahrir));
   const turRuxsati = (tur: SotuvNarxTuri) => (narxSozlamasi ? narxSozlamasi.includes(tur) : tur !== "COST");
   useEffect(() => {
     void narxSozlamasiniYuklash();
@@ -405,13 +436,35 @@ export default function YangiSotuvModal({
   const skanInputRef = useRef<HTMLInputElement | null>(null);
   const qatorlarRef = useRef<HTMLDivElement | null>(null);
   // UI: ixtiyoriy izoh (backend izohiga qo'shiladi), import natijasi va bosqichlar uchun bo'limlarga o'tish.
-  const [izoh, setIzoh] = useState("");
+  const [izoh, setIzoh] = useState(asl?.izoh.slice(0, IZOH_MAKS_UZUNLIK) ?? "");
   const [importXabari, setImportXabari] = useState<{ xato: boolean; matn: string } | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const mijozKartasiRef = useRef<HTMLElement | null>(null);
   const mahsulotKartasiRef = useRef<HTMLElement | null>(null);
   const xulosaKartasiRef = useRef<HTMLDivElement | null>(null);
   const saqlashTugmasiRef = useRef<HTMLButtonElement | null>(null);
+  // Stepper pastga surilganda ko'rinayotgan kartani kuzatadi (`null` — oyna tepada, qadam to'ldirilganlikdan olinadi).
+  const [suzilganQadam, setSuzilganQadam] = useState<number | null>(null);
+  const [chiqishSorovi, setChiqishSorovi] = useState(false);
+  // Sotuv valyutasi almashtirilib, qator tegilmay qaytarilsa aniq narxlar tiklanadi (yaxlitlash xatosi yig'ilmasin).
+  const valyutaOldingi = useRef<{ oldingi: MahsulotQatori[]; natija: MahsulotQatori[] } | null>(null);
+
+  // Saqlanmagan o'zgarishlar: oyna ochilgandagi holat bilan solishtiriladi (ikkala rejimda bir xil).
+  const joriyHolat: QoralamaHolati = {
+    maydonlar: { warehouseId, customerId, clientCompanyId, sotuvNomi, bosqich, valyuta, boshlanishSanasi, tugashSanasi, izoh, hujjatSanasi, walkInNomi, walkInTelefon },
+    qatorlar: mahsulotlar,
+  };
+  const [aslHolat, setAslHolat] = useState<QoralamaHolati>(joriyHolat);
+
+  // Kurs modal ochilgandan keyin kelsa, kurs yo'qligi sababli o'girilmagan saqlangan qatorlar endi sotuv valyutasiga keltiriladi.
+  useEffect(() => {
+    if (!tahrir || !(aniqKurs > 0) || !mahsulotlar.some((qator) => qator.kutilayotganValyuta)) return;
+    const saqlangan = saqlanganQatorlar();
+    const yangi = mahsulotlar.map((qator, indeks) => (qator.kutilayotganValyuta ? saqlangan[indeks] ?? qator : qator));
+    setMahsulotlar(yangi);
+    setAslHolat((joriy) => ({ ...joriy, qatorlar: joriy.qatorlar.map((qator, indeks) => (qator.kutilayotganValyuta ? saqlangan[indeks] ?? qator : qator)) }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aniqKurs]);
 
   // Mahsulot ro'yxatini ochishni SavdoSelect o'zi bajaradi (`ochishSorovi`); miqdor maydoniga fokusni shu yerda beramiz.
   useEffect(() => {
@@ -452,9 +505,10 @@ export default function YangiSotuvModal({
   const tanlanganKompaniya = mijozKompaniyalari.find((item) => item.id === clientCompanyId);
   const tanlanganXodim = xodimlar.find((item) => item.id === responsibleId);
   const draftMode = variant === "draft";
+  const masulXodim = tahrir ? sotuvMasulTafsiloti(tahrir.sotuv, xodimlar, joriyProfil) : null;
   const modalMatnlari = draftMode
     ? {
-        title: t("modal.draftTitle"),
+        title: t(tahrir ? "modal.draftEditTitle" : "modal.draftTitle"),
         badge: t("modal.draftBadge"),
         sectionTitle: t("modal.draftSectionTitle"),
         nameLabel: t("modal.draftNameLabel"),
@@ -491,7 +545,13 @@ export default function YangiSotuvModal({
   async function faoliyatniBackendgaSaqlash() {
     const faoliyatOzgarilgan = faoliyatSaqlangan || Boolean(faoliyatSarlavha.trim()) || Boolean(faoliyatTafsilot.trim());
     if (!faoliyatOzgarilgan) return true;
-    const partnerId = tanlanganMijoz?.partner?.id;
+    // Tahrirlashda saqlangan mijoz va kompaniyaning hamkori sotuv javobida keladi (ro'yxatda bo'lmasligi mumkin).
+    const saqlanganPartnerId = tahrir?.sotuv.customer?.id === customerId
+      ? tahrir?.sotuv.customer?.partner?.id
+      : !customerId && tahrir?.sotuv.clientCompany?.id === clientCompanyId
+        ? tahrir?.sotuv.clientCompany?.partner?.id
+        : undefined;
+    const partnerId = tanlanganMijoz?.partner?.id ?? saqlanganPartnerId;
     if (!partnerId) {
       setXatolik("errors.selectClientForActivity");
       return false;
@@ -536,9 +596,21 @@ export default function YangiSotuvModal({
       return;
     }
     setXatolik("");
+    if (tahrir) {
+      const qaytish = valyutaOldingi.current?.natija === mahsulotlar ? valyutaOldingi.current.oldingi : null;
+      if (!qaytish && !(aniqKurs > 0)) {
+        setXatolik("errors.rateRequired");
+        return;
+      }
+      const natija = qaytish ?? mahsulotlar.map((qator) => qoralamaQatoriniOgirish(qator, yangiVal, aniqKurs));
+      valyutaOldingi.current = qaytish ? null : { oldingi: mahsulotlar, natija };
+      setMahsulotlar(natija);
+      setValyuta(yangiVal);
+      return;
+    }
     setMahsulotlar((joriy) =>
       joriy.map((qator) => {
-        const qoldiq = qoldiqlar.find((item) => qoldiqKaliti(item) === qator.qoldiqKaliti);
+        const qoldiq = qatorQoldigi(qator.qoldiqKaliti);
         if (!qoldiq) return qator;
         const narx = qoldiqNarxiValyutada(qoldiq, yangiVal, kurs, qator.priceType, birlikTopish(qoldiq.birliklar, qator.birlikId));
         // Foizdagi chegirma valyutaga bog'liq emas; summadagisi yangi valyutaga o'giriladi.
@@ -571,7 +643,7 @@ export default function YangiSotuvModal({
     // faqat modificationId emas, aynan modificationId+warehouseId kombinatsiyasi
     // bo'yicha aniq qoldiq yozuvini topamiz (aks holda boshqa ombordagi
     // qoldiq/narx tasodifan tanlanib qolishi mumkin edi).
-    const qoldiq = qoldiqlar.find((item) => qoldiqKaliti(item) === tanlanganQoldiqKaliti);
+    const qoldiq = qatorQoldigi(tanlanganQoldiqKaliti);
     // Tanlangan narx turida narx yo'q bo'lsa (masalan, ulgurji narx belgilanmagan) mos boshqa tur olinadi.
     const tur = qatorNarxTuri(qoldiq, narxTuri, turRuxsati, kurs) ?? narxTuri;
     const narx = qoldiqNarxiValyutada(qoldiq, sotuvVal, kurs, tur);
@@ -582,6 +654,8 @@ export default function YangiSotuvModal({
       price: narx ? String(narx) : "",
       birlikId: "",
       ustama: "",
+      kutilayotganValyuta: undefined,
+      tuzatilgan: undefined,
     });
 
     if (qoldiq?.warehouseId && qoldiq.warehouseId !== warehouseId) {
@@ -590,9 +664,24 @@ export default function YangiSotuvModal({
     }
   }
 
+  // Qator qoldig'i: aniq ombor yozuvi. Tahrirlashda saqlangan mahsulotning shu omborda yozuvi bo'lmasa, omborsiz katalog yozuvi olinadi.
+  function qatorQoldigi(kalit: string) {
+    const mos = qoldiqlar.find((item) => qoldiqKaliti(item) === kalit);
+    if (mos || !tahrir || !kalit.includes("::")) return mos;
+    const modificationId = kalit.split("::")[0];
+    return qoldiqlar.find((item) => !item.warehouseId && item.modificationId === modificationId);
+  }
+
+  // Saqlangan qatordagi mahsulot hozirgi qoldiq ro'yxatida bo'lmasa ham tanlangan holda ko'rinadi.
+  function mahsulotOptionlari(qator?: MahsulotQatori): SavdoSelectOption[] {
+    const royxat = katalogOptionlari();
+    if (!qator?.saqlanganNom || royxat.some((option) => option.value === qator.qoldiqKaliti)) return royxat;
+    return [{ value: qator.qoldiqKaliti, searchLabel: qator.saqlanganNom, label: qator.saqlanganNom }, ...royxat];
+  }
+
   // Mahsulot tanlash ro'yxati: tanlangan ombordagi qoldig'i borlar tanlanadi, qoldig'i yo'qlar
   // (ombordan tugagan yoki umuman kirim qilinmagan) qizil belgi bilan o'chirilgan holda pastda ko'rsatiladi.
-  function mahsulotOptionlari(): SavdoSelectOption[] {
+  function katalogOptionlari(): SavdoSelectOption[] {
     const korinadigan = qoldiqlar.filter(
       (item) => !warehouseId || !item.warehouseId || item.warehouseId === warehouseId
     );
@@ -683,13 +772,15 @@ export default function YangiSotuvModal({
 
   function mijozniTanlash(tanlanganCustomerId: string) {
     setCustomerId(tanlanganCustomerId);
+    const mijoz = barchaMijozlar.find((item) => item.id === tanlanganCustomerId);
+    // Tahrirlashda avtomatik sotuv nomi yangi mijozga moslanadi (qo'lda yozilgan nom saqlanadi).
+    if (tahrir) setSotuvNomi((joriy) => mijozgaMosSotuvNomi(joriy, mijoz ? mijozKorinishi(mijoz, t) : ""));
 
     if (!tanlanganCustomerId) {
       setClientCompanyId("");
       return;
     }
 
-    const mijoz = barchaMijozlar.find((item) => item.id === tanlanganCustomerId);
     const boglanganKompaniyaId = mijozKompaniyaId(mijoz);
 
     if (boglanganKompaniyaId) {
@@ -736,6 +827,10 @@ export default function YangiSotuvModal({
   }
 
   function kompaniyaniTanlash(tanlanganCompanyId: string) {
+    if (tahrir && !customerId) {
+      const kompaniya = mijozKompaniyalari.find((item) => item.id === tanlanganCompanyId);
+      setSotuvNomi((joriy) => (kompaniya ? mijozgaMosSotuvNomi(joriy, kompaniyaNomi(kompaniya)) : joriy));
+    }
     setClientCompanyId(tanlanganCompanyId);
 
     if (!tanlanganCompanyId) {
@@ -887,17 +982,29 @@ export default function YangiSotuvModal({
     setXatolik("");
 
     // Backendga ketadigan qatorlar: narx turi (priceType), narx va chegirma summasi (foizda kiritilsa discountPercent ham).
-    // Dollarli sotuvda mahsulot o'z valyutasida (dollarda yoki so'mda) yuboriladi: backend tasdiqlash kunidagi kurs bilan o'giradi.
+    // Yangi sotuvda mahsulot o'z valyutasida (dollarda yoki so'mda) yuboriladi: backend tasdiqlash kunidagi kurs bilan o'giradi.
+    // Tahrirlashda (PATCH) qator valyutasi doim sotuv valyutasi.
     const yuboriladiganQatorlar = mahsulotlar
       .filter(
         (mahsulot) => mahsulot.modificationId && raqamgaAylantirish(mahsulot.quantity) > 0 && raqamgaAylantirish(mahsulot.price) >= 0
       )
-      .map((mahsulot) =>
-        yuboriladiganQator({
+      .map((mahsulot) => tahrir
+        ? qoralamaQatorTanasi({
+            modificationId: mahsulot.modificationId,
+            miqdor: raqamgaAylantirish(mahsulot.quantity),
+            narx: qatorBirNarxi(mahsulot),
+            chegirma: qatorChegirmasi(mahsulot),
+            birlikId: mahsulot.birlikId,
+            sotuvVal,
+            tur: mahsulot.priceType,
+            turRuxsati,
+            foiz: mahsulot.discountTuri === "foiz" ? raqamgaAylantirish(mahsulot.discountFoiz) : null,
+          })
+        : yuboriladiganQator({
           modificationId: mahsulot.modificationId,
           miqdor: raqamgaAylantirish(mahsulot.quantity),
           tur: mahsulot.priceType,
-          qoldiq: qoldiqlar.find((item) => qoldiqKaliti(item) === mahsulot.qoldiqKaliti),
+          qoldiq: qatorQoldigi(mahsulot.qoldiqKaliti),
           sotuvVal,
           kurs,
           narx: raqamgaAylantirish(mahsulot.price),
@@ -905,7 +1012,7 @@ export default function YangiSotuvModal({
           chegirmaTuri: mahsulot.discountTuri,
           foiz: raqamgaAylantirish(mahsulot.discountFoiz),
           ustama: raqamgaAylantirish(mahsulot.ustama),
-          birlik: birlikTopish(qoldiqlar.find((item) => qoldiqKaliti(item) === mahsulot.qoldiqKaliti)?.birliklar, mahsulot.birlikId),
+          birlik: birlikTopish(qatorQoldigi(mahsulot.qoldiqKaliti)?.birliklar, mahsulot.birlikId),
           donalikNarx: true,
         })
       );
@@ -920,8 +1027,13 @@ export default function YangiSotuvModal({
       return;
     }
 
-    if (sotuvVal === "USD" && !usdMumkin) {
+    if (sotuvVal === "USD" && !usdMumkin && valyuta !== asl?.currency) {
       setXatolik("errors.usdUnavailable");
+      return;
+    }
+
+    if (mahsulotlar.some((mahsulot) => mahsulot.kutilayotganValyuta)) {
+      setXatolik("errors.lineNeedsRate");
       return;
     }
 
@@ -933,12 +1045,16 @@ export default function YangiSotuvModal({
     for (const mahsulot of mahsulotlar) {
       const soralganMiqdor = raqamgaAylantirish(mahsulot.quantity);
       if (!mahsulot.modificationId || soralganMiqdor <= 0) continue;
-      const tanlanganQoldiq = qoldiqlar.find((item) => qoldiqKaliti(item) === mahsulot.qoldiqKaliti);
+      const tanlanganQoldiq = qatorQoldigi(mahsulot.qoldiqKaliti);
       if (tanlanganQoldiq?.warehouseId && tanlanganQoldiq.warehouseId !== warehouseId) {
         setXatolik("errors.productOtherWarehouse");
         return;
       }
-      const mavjudMiqdor = tanlanganQoldiq ? qoldiqMiqdori(tanlanganQoldiq) : 0;
+      // Qoralama shu mahsulotni shu omborda allaqachon band qilgan (asosiy birlikda): tahrirlashda bu miqdor ham ruxsat etiladi.
+      const rezerv = tahrir && warehouseId === asl?.warehouseId
+        ? (tahrir.sotuv.items ?? []).filter((item) => item.modificationId === mahsulot.modificationId).reduce((summa, item) => summa + (Number(item.quantity) || 0), 0)
+        : 0;
+      const mavjudMiqdor = (tanlanganQoldiq ? qoldiqMiqdori(tanlanganQoldiq) : 0) + rezerv;
       const birlik = birlikTopish(tanlanganQoldiq?.birliklar, mahsulot.birlikId);
       if (!miqdorYaroqlimi(birlik, soralganMiqdor)) {
         setXatolik("errors.quantityNotWhole");
@@ -964,8 +1080,26 @@ export default function YangiSotuvModal({
     }
 
     let muvaffaqiyatli = sotuvBackendgaSaqlandi;
-    if (!sotuvBackendgaSaqlandi) {
-      muvaffaqiyatli = await onSaqlash({
+    if (!sotuvBackendgaSaqlandi && tahrir && asl) {
+      const patch = qoralamaPatch(tahrir.sotuv, {
+        ...asl,
+        nom: sotuvNomi,
+        bosqich,
+        boshlanish: boshlanishSanasi,
+        tugash: tugashSanasi,
+        izoh,
+        warehouseId,
+        customerId,
+        clientCompanyId,
+        currency: sotuvVal,
+        date: hujjatSanasi,
+        walkInCustomerName: walkInNomi,
+        walkInCustomerPhone: walkInTelefon,
+      });
+      muvaffaqiyatli = await tahrir.onYangilash(tahrir.sotuv.id, { ...patch, items: yuboriladiganQatorlar as SotuvYaratishMalumoti["items"] });
+      if (muvaffaqiyatli) setSotuvBackendgaSaqlandi(true);
+    } else if (!sotuvBackendgaSaqlandi) {
+      muvaffaqiyatli = (await onSaqlash?.({
         ...yangiHujjatSanasi(hujjatSanasi),
         warehouseId,
         customerId: customerId || undefined,
@@ -976,7 +1110,7 @@ export default function YangiSotuvModal({
         // Tanlangan sotuv valyutasi har doim aniq yuboriladi (berilmasa backend mijozli savdoni USD deb oladi).
         currency: sotuvVal,
         items: yuboriladiganQatorlar,
-      });
+      })) ?? false;
       if (muvaffaqiyatli) setSotuvBackendgaSaqlandi(true);
     }
 
@@ -993,7 +1127,8 @@ export default function YangiSotuvModal({
   const tolovQadamiTayyor = mahsulotQadamiTayyor && jami > 0;
   const qadamHolatlari = [mijozQadamiTayyor, mahsulotQadamiTayyor, tolovQadamiTayyor, false];
   // Joriy bosqich: birinchi tugallanmagan bosqich (mahsulot tanlangan bo'lsa mijoz bosqichi ixtiyoriy deb o'tkazib yuboriladi).
-  const joriyQadam = Math.min(Math.max(qadamHolatlari.findIndex((tayyor, index) => !tayyor && index >= (mahsulotQadamiTayyor ? 1 : 0)), 0), 3);
+  const toldirishQadami = Math.min(Math.max(qadamHolatlari.findIndex((tayyor, index) => !tayyor && index >= (mahsulotQadamiTayyor ? 1 : 0)), 0), 3);
+  const joriyQadam = suzilganQadam ?? toldirishQadami;
   const qadamlar = [
     { kalit: "customer", ikonka: UserRound },
     { kalit: "products", ikonka: Package },
@@ -1001,6 +1136,26 @@ export default function YangiSotuvModal({
     { kalit: "confirm", ikonka: BadgeCheck },
   ] as const;
   const formaBandmi = sotuvBackendgaSaqlandi || amalBajarilmoqda;
+  // Faoliyat maydonlariga yozilgan, hali yuborilmagan matn ham saqlanmagan o'zgarish.
+  const ozgarishlarSoni = sotuvBackendgaSaqlandi
+    ? 0
+    : qoralamaOzgarishlari(aslHolat, joriyHolat) + (faoliyatSarlavha.trim() || faoliyatTafsilot.trim() ? 1 : 0);
+
+  // Barcha yopish tugmalari shu yerdan o'tadi: saqlanmagan o'zgarish bo'lsa avval so'raladi (yaratish va tahrirlashda bir xil).
+  function yopishniSoraymiz() {
+    if (ozgarishlarSoni > 0) setChiqishSorovi(true);
+    else onYopish();
+  }
+
+  // Pastga surilganda stepper ko'rinayotgan bo'limni ko'rsatadi: mijoz, mahsulotlar, xulosa.
+  function suzishKuzatuvi(event: UIEvent<HTMLDivElement>) {
+    const oyna = event.currentTarget;
+    const tepa = oyna.getBoundingClientRect().top;
+    const tepalar = [mijozKartasiRef, mahsulotKartasiRef, xulosaKartasiRef].map((ref) => ref.current?.getBoundingClientRect().top ?? Number.POSITIVE_INFINITY);
+    const oxirida = oyna.scrollHeight - oyna.scrollTop - oyna.clientHeight < 8;
+    // Oxirigacha surilganda to'ldirilgan forma "Yakun" bosqichida; to'ldirilmagan bo'lsa oxirgi karta.
+    setSuzilganQadam(oxirida && toldirishQadami === 3 ? 3 : suzishQadami(tepalar, tepa + oyna.clientHeight / 3, { tepada: oyna.scrollTop < 24, oxirida }));
+  }
 
   function qadamgaOtish(index: number) {
     if (index === 3) {
@@ -1015,7 +1170,7 @@ export default function YangiSotuvModal({
     narxTuriTanlandi.current = true;
     setNarxTuri(tur);
     const narxi = (qator: MahsulotQatori) => {
-      const qoldiq = qoldiqlar.find((item) => qoldiqKaliti(item) === qator.qoldiqKaliti);
+      const qoldiq = qatorQoldigi(qator.qoldiqKaliti);
       return qoldiqNarxiValyutada(qoldiq, sotuvVal, kurs, tur, birlikTopish(qoldiq?.birliklar, qator.birlikId));
     };
     setMahsulotlar((joriy) =>
@@ -1036,7 +1191,7 @@ export default function YangiSotuvModal({
   // Bitta qator uchun narx turi (sotuvchi shu mahsulotni boshqa narxda sotishi mumkin).
   function qatorNarxTuriniOzgartirish(index: number, tur: SotuvNarxTuri) {
     const qator = mahsulotlar[index];
-    const qoldiq = qoldiqlar.find((item) => qoldiqKaliti(item) === qator?.qoldiqKaliti);
+    const qoldiq = qatorQoldigi(qator?.qoldiqKaliti);
     const narx = qoldiqNarxiValyutada(qoldiq, sotuvVal, kurs, tur, birlikTopish(qoldiq?.birliklar, qator?.birlikId));
     if (!qator || !narx) return;
     setNarxXabari("");
@@ -1046,7 +1201,7 @@ export default function YangiSotuvModal({
   // Sotuv birligini almashtirish (dona ↔ pochka): narx yangi birlikdagi narxga o'tadi, ustama va summadagi chegirma tozalanadi.
   function birlikniOzgartirish(index: number, birlikId: string) {
     const qator = mahsulotlar[index];
-    const qoldiq = qoldiqlar.find((item) => qoldiqKaliti(item) === qator?.qoldiqKaliti);
+    const qoldiq = qatorQoldigi(qator?.qoldiqKaliti);
     const narx = qoldiqNarxiValyutada(qoldiq, sotuvVal, kurs, qator?.priceType, birlikTopish(qoldiq?.birliklar, birlikId));
     if (!qator || !narx) return;
     setNarxXabari("");
@@ -1080,8 +1235,13 @@ export default function YangiSotuvModal({
   function omborniOzgartirish(value: string) {
     setWarehouseId(value);
     onOmborTanlash(value);
+    if (tahrir) {
+      // Saqlangan qatorlar yangi omborga o'tadi; qoldig'i saqlashda shu ombor bo'yicha tekshiriladi.
+      setMahsulotlar((joriy) => joriy.map((qator) => (qator.modificationId ? { ...qator, qoldiqKaliti: value ? `${qator.modificationId}::${value}` : qator.modificationId } : qator)));
+      return;
+    }
     const yangiQatorlar = mahsulotlar.map((qator) => {
-      const tanlangan = qoldiqlar.find((item) => qoldiqKaliti(item) === qator.qoldiqKaliti);
+      const tanlangan = qatorQoldigi(qator.qoldiqKaliti);
       return tanlangan?.warehouseId && tanlangan.warehouseId !== value
         ? bosQator(narxTuri)
         : qator;
@@ -1153,6 +1313,31 @@ export default function YangiSotuvModal({
   // Formani boshlang'ich holatga qaytaradi (faqat shu oynadagi kiritilgan ma'lumotlar; saqlangan sotuvga tegmaydi).
   function formaniTozalash() {
     if (formaBandmi) return;
+    if (tahrir && asl) {
+      // Tahrirlashda "Tozalash" oynani saqlangan qiymatlarga qaytaradi.
+      if (warehouseId !== asl.warehouseId) onOmborTanlash(asl.warehouseId);
+      setWarehouseId(asl.warehouseId);
+      setCustomerId(asl.customerId);
+      setClientCompanyId(asl.clientCompanyId);
+      setSotuvNomi(asl.nom);
+      setBosqich(asl.bosqich || "Yangi");
+      setValyuta(asl.currency);
+      setBoshlanishSanasi(asl.boshlanish);
+      setTugashSanasi(asl.tugash);
+      setIzoh(asl.izoh.slice(0, IZOH_MAKS_UZUNLIK));
+      setHujjatSanasi(asl.date || bugungiToshkentKuni());
+      setWalkInNomi(asl.walkInCustomerName);
+      setWalkInTelefon(asl.walkInCustomerPhone);
+      setMahsulotlar(aslHolat.qatorlar);
+      setNarxTuri(umumiyNarxTuri(aslHolat.qatorlar));
+      valyutaOldingi.current = null;
+      setNarxXabari("");
+      setSkanMatni("");
+      setSkanXabari(null);
+      setImportXabari(null);
+      setXatolik("");
+      return;
+    }
     if (warehouseId) onOmborTanlash("");
     setWarehouseId("");
     setCustomerId("");
@@ -1205,7 +1390,7 @@ export default function YangiSotuvModal({
       const qatorlar: MahsulotQatori[] = [];
       let otkazilgan = 0;
       for (const qator of malumot.items as Array<Partial<MahsulotQatori>>) {
-        const qoldiq = qoldiqlar.find((item) => qoldiqKaliti(item) === qator?.qoldiqKaliti);
+        const qoldiq = qatorQoldigi(qator?.qoldiqKaliti ?? "");
         const mosOmbor = !ombor || !qoldiq?.warehouseId || qoldiq.warehouseId === ombor;
         if (!qoldiq || !mosOmbor) {
           if (qator?.qoldiqKaliti) otkazilgan += 1;
@@ -1270,7 +1455,7 @@ export default function YangiSotuvModal({
         <div className="absolute -left-[46px] top-5 z-[90] hidden flex-col items-center gap-2 sm:flex">
           <button
             type="button"
-            onClick={onYopish}
+            onClick={yopishniSoraymiz}
             title={t("header.closeButtonTitle")}
             className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[#2563EB] text-white shadow-[0_10px_22px_rgba(37,99,235,.32)] ring-2 ring-white/80 transition duration-300 hover:-translate-x-0.5 hover:scale-105 hover:bg-[#1D4ED8]"
           >
@@ -1328,13 +1513,13 @@ export default function YangiSotuvModal({
                   <Copy size={17} />
                 </button>
                 <span className="rounded-full bg-[#EFF6FF] px-3 py-1 text-xs font-bold text-[#2563EB] ring-2 ring-blue-200">
-                  {modalMatnlari.badge}
+                  {tahrir ? `№${sotuvJadvalId(tahrir.sotuv)}` : modalMatnlari.badge}
                 </span>
               </div>
 
               <button
                 type="button"
-                onClick={onYopish}
+                onClick={yopishniSoraymiz}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-white text-slate-600 shadow-sm ring-2 ring-slate-300 transition hover:bg-slate-50 hover:text-slate-900"
                 aria-label={t("header.closeAriaLabel")}
               >
@@ -1400,7 +1585,7 @@ export default function YangiSotuvModal({
             </div>
           )}
 
-          <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-7">
+          <div onScroll={suzishKuzatuvi} className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-7">
             <div className="grid items-start gap-5 xl:grid-cols-[minmax(360px,0.42fr)_minmax(0,1fr)]">
               <div className="min-w-0 space-y-4">
                 <section ref={mijozKartasiRef} className={kartaKlassi}>
@@ -1468,6 +1653,19 @@ export default function YangiSotuvModal({
                         </p>
                       )}
                     </label>
+
+                    {tahrir && !customerId && !clientCompanyId && (asl?.walkInCustomerName || asl?.walkInCustomerPhone) && (
+                      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                        <label className="grid gap-1.5">
+                          <span className={yorliqKlassi}>{t("labels.walkInName")}</span>
+                          <input value={walkInNomi} maxLength={200} onChange={(event) => setWalkInNomi(event.target.value)} className={maydonKlassi} />
+                        </label>
+                        <label className="grid gap-1.5">
+                          <span className={yorliqKlassi}>{t("labels.walkInPhone")}</span>
+                          <input type="tel" value={walkInTelefon} maxLength={50} onChange={(event) => setWalkInTelefon(event.target.value)} className={maydonKlassi} />
+                        </label>
+                      </div>
+                    )}
                   </div>
                 </section>
 
@@ -1492,7 +1690,7 @@ export default function YangiSotuvModal({
                           value={bosqich}
                           onChange={setBosqich}
                           klaviatura
-                          options={bosqichlar}
+                          options={bosqichlar.some((item) => item.value === bosqich) ? bosqichlar : [{ value: bosqich, label: bosqich }, ...bosqichlar]}
                           className="w-full"
                           buttonClassName={`${selectTugmasiKlassi} pl-10`}
                           dropdownClassName="[&>div>div]:text-center min-w-[320px]"
@@ -1554,17 +1752,19 @@ export default function YangiSotuvModal({
                       <div className="flex h-11 items-center gap-2 rounded-xl border-2 border-slate-300 bg-slate-50 px-3.5 text-sm font-semibold text-slate-600">
                         <UserRound size={16} className="shrink-0 text-slate-400" />
                         <span className="truncate">
-                          {joriyProfil
-                            ? joriyProfil.fullName?.trim() || joriyProfil.username
-                            : t("common.loading")}
+                          {masulXodim
+                            ? masulXodim.nom || "—"
+                            : joriyProfil
+                              ? joriyProfil.fullName?.trim() || joriyProfil.username
+                              : t("common.loading")}
                         </span>
-                        {joriyProfil?.role && (
+                        {(masulXodim ? masulXodim.rol : joriyProfil?.role) && (
                           <span className="ml-auto shrink-0 rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-black uppercase text-[#2563EB]">
-                            {joriyProfil.role}
+                            {masulXodim ? masulXodim.rol : joriyProfil?.role}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-400">{t("hints.saleCreatedByCurrentUser")}</p>
+                      {!tahrir && <p className="text-xs text-slate-400">{t("hints.saleCreatedByCurrentUser")}</p>}
                     </div>
                   </div>
                 </section>
@@ -1722,9 +1922,7 @@ export default function YangiSotuvModal({
 
                     <div ref={qatorlarRef} className="space-y-3 lg:space-y-0 lg:rounded-b-2xl lg:border-2 lg:border-slate-300">
                       {mahsulotlar.map((mahsulot, index) => {
-                        const qoldiq = qoldiqlar.find(
-                          (item) => qoldiqKaliti(item) === mahsulot.qoldiqKaliti
-                        );
+                        const qoldiq = qatorQoldigi(mahsulot.qoldiqKaliti);
                         const miqdor = raqamgaAylantirish(mahsulot.quantity);
                         const qatorBirliklari = sotuvBirliklari(qoldiq?.birliklar);
                         const tanlanganBirlik = birlikTopish(qoldiq?.birliklar, mahsulot.birlikId);
@@ -1742,7 +1940,9 @@ export default function YangiSotuvModal({
                         const chegirma = qatorChegirmasi(mahsulot);
                         const qatorJami = Math.max(miqdor * narx - chegirma, 0);
                         // Sotuv narxi = katalog narxi + ustama − chegirma / miqdor. Narxni pasaytirsangiz chegirma, oshirsangiz ustama avtomatik hisoblanadi.
-                        const sotuvNarxi = miqdor > 0 ? Math.round(Math.max(narx - chegirma / miqdor, 0) * 100) / 100 : narx;
+                        const aniqSotuvNarxi = Math.max(narx - chegirma / Math.max(miqdor, 1), 0);
+                        // Juda kichik musbat narx (o'girilgan 0.0001$) 0 ga yaxlitlanib ko'rinmaydi.
+                        const sotuvNarxi = miqdor > 0 ? (Math.round(aniqSotuvNarxi * 100) / 100 || aniqSotuvNarxi) : narx;
                         const birDonaChegirma = Math.max(narx - sotuvNarxi, 0);
 
                         return (
@@ -1797,7 +1997,7 @@ export default function YangiSotuvModal({
                                     klaviatura
                                     ochishSorovi={fokusSorovi?.maydon === "mahsulot" && fokusSorovi.qator === index ? fokusSorovi.n : 0}
                                     placeholder={t("placeholders.selectProduct")}
-                                    options={mahsulotOptionlari()}
+                                    options={mahsulotOptionlari(mahsulot)}
                                     buttonClassName={selectTugmasiKlassi}
                                     dropdownClassName="[&>div>div]:text-center min-w-[520px] max-w-[min(720px,calc(100vw-32px))]"
                                     portal
@@ -2275,13 +2475,21 @@ export default function YangiSotuvModal({
                       </div>
                     </div>
                   )}
+
+                  {tahrir && <QoralamaFaoliyatlari customerId={customerId} clientCompanyId={clientCompanyId} />}
                 </section>
               </div>
             </div>
           </div>
 
           <footer className="shrink-0 border-t-2 border-slate-300 bg-white px-4 py-3 sm:px-7">
-            <div className="flex items-center justify-end gap-2 sm:gap-3">
+            <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+              {ozgarishlarSoni > 0 && (
+                <p role="status" className="mr-auto flex items-center gap-2 text-sm font-semibold text-slate-700">
+                  <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-amber-500" />
+                  {t("unsaved.indicator", { count: ozgarishlarSoni })}
+                </p>
+              )}
               <button
                 type="button"
                 onClick={formaniTozalash}
@@ -2293,7 +2501,7 @@ export default function YangiSotuvModal({
               </button>
               <button
                 type="button"
-                onClick={onYopish}
+                onClick={yopishniSoraymiz}
                 className="inline-flex h-11 items-center gap-2 rounded-xl border-2 border-slate-300 bg-white px-3 text-sm font-extrabold text-slate-700 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-100 sm:h-12 sm:px-5"
               >
                 <X size={17} />
@@ -2313,6 +2521,20 @@ export default function YangiSotuvModal({
         </form>
       </div>
     </AppModal>
+    {chiqishSorovi && (
+      <TasdiqlashOynasi
+        ikonka={<TriangleAlert size={26} />}
+        ohang="sariq"
+        sarlavha={t("unsaved.title")}
+        nom={modalMatnlari.title}
+        tavsif={t("unsaved.description")}
+        ortgaMatni={t("unsaved.stay")}
+        tasdiqMatni={t("unsaved.leave")}
+        jarayonMatni={t("unsaved.leaving")}
+        onTasdiq={async () => onYopish()}
+        onYopish={() => setChiqishSorovi(false)}
+      />
+    )}
     {mijozQoshishOchiq && <XaridorModal
       boshlangich={null}
       kompaniyalar={mijozKompaniyalari.map((item) => kompaniyaniUiGa({ id: item.id, name: kompaniyaNomi(item), phone: item.phone }))}
@@ -2321,6 +2543,12 @@ export default function YangiSotuvModal({
     />}
     </>
   );
+}
+
+// Saqlangan qatorlar bitta narx turida bo'lsa shu tur tanlangan ko'rinadi, aks holda standart tur.
+function umumiyNarxTuri(qatorlar: MahsulotQatori[]): SotuvNarxTuri {
+  const turlar = new Set(qatorlar.filter((qator) => qator.modificationId).map((qator) => qator.priceType));
+  return turlar.size === 1 ? [...turlar][0] : "RETAIL";
 }
 
 // ── UI qismlari (faqat ko'rinish; mantiq YangiSotuvModal ichida) ──────────────────────────────
