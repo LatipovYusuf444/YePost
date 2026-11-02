@@ -12,6 +12,8 @@ export type Ombor = {
   closingTime?: string | null;
   responsibleId?: string | null;
   createdById?: string | null;
+  // STORE — oddiy ombor, WIP — sex ombori (ishlab chiqarish).
+  kind?: import("./ishlabChiqarish").OmborTuri | null;
   isActive?: boolean;
   isDeleted?: boolean;
   createdAt?: string;
@@ -31,6 +33,7 @@ export type OmborSaqlashMalumoti = {
   closingTime?: string | null;
   responsibleId?: string | null;
   isActive?: boolean;
+  kind?: import("./ishlabChiqarish").OmborTuri;
 };
 
 export type Filial = {
@@ -89,7 +92,7 @@ export type MahsulotModifikatsiyasi = {
   barcode?: string;
   article?: string;
   productId?: string;
-  product?: NomliEntity;
+  product?: NomliEntity & { trackSerial?: boolean | null };
   params?: Record<string, string | number | null | undefined>;
   price?: {
     costPrice?: number | string;
@@ -171,6 +174,8 @@ export type KirimYaratishMalumoti = {
     modificationId: string;
     quantity: number;
     price: number;
+    // Seriyali tovar (jumbo rulon): har qator = bitta rulon, `quantity` — og'irligi (kg).
+    serial?: string;
     // Qo'shimcha birlik (qop, korobka): `quantity` va `price` shu birlikda.
     unitId?: string;
     // Koeffitsient tekshiruvi: sanalgan birlik va uning soni (masalan 120 pochka).

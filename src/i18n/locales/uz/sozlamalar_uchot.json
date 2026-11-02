@@ -15,7 +15,8 @@
     "valyuta": "Valyuta",
     "narxTurlari": "Sotuv narx turlari",
     "davrniYopish": "Davrni yopish",
-    "inventory": "Ombor"
+    "inventory": "Ombor",
+    "ishlabChiqarish": "Ishlab chiqarish"
   },
   "saved": "Saqlandi ✓",
   "savingToBackend": "Backendga saqlanmoqda...",
@@ -96,7 +97,11 @@
       "expense": "Xarajat",
       "cashIn": "Kassa kirimi",
       "returnCancel": "Qaytarish / bekor qilish",
-      "negativeStock": "Minusga sotish"
+      "negativeStock": "Minusga sotish",
+      "productionRecipe": "Retseptlar",
+      "costing": "Kalkulyatsiya",
+      "productionIssue": "Sexga berish",
+      "productionReport": "Smena hisoboti"
     }
   },
   "integratsiya": {

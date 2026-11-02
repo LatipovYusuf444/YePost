@@ -108,6 +108,9 @@ export type Mahsulot = {
   article?: string | null;
   // 1 asosiy birlik og'irligi (kg), faqat ma'lumot uchun.
   infoWeightKg?: number | string | null;
+  // Ishlab chiqarish: mahsulot turi (standart FINISHED) va seriya bilan hisob (jumbo rulon).
+  kind?: import("./ishlabChiqarish").MahsulotTuri | null;
+  trackSerial?: boolean | null;
   isActive: boolean;
   category?: Kategoriya;
   unit?: OlchovBirligi;
@@ -125,6 +128,8 @@ export type MahsulotMalumoti = {
   article?: string;
   infoWeightKg?: number | null;
   isActive?: boolean;
+  kind?: import("./ishlabChiqarish").MahsulotTuri;
+  trackSerial?: boolean;
 };
 
 export type MahsulotImportNatijasi = {

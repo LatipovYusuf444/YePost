@@ -70,6 +70,10 @@ const korinishlar: Array<{ id: Korinish; nom: string; icon: typeof Monitor }> = 
 
 const vakolatMatnlari: Record<VakolatKodi, { nom: string; izoh: string }> = {
   NEGATIVE_STOCK_SALE: { nom: "Minusga sotish", izoh: "Qoldiq yetmasa ham sotish, chiqim va ko‘chirish" },
+  PRODUCTION_RECIPE: { nom: "Retseptlar", izoh: "Ishlab chiqarish retseptlarini yaratish va faollashtirish." },
+  COSTING: { nom: "Kalkulyatsiya", izoh: "Kalkulyatsiya kartalari va xomashyo narxlarini ko'rish, yuritish." },
+  PRODUCTION_ISSUE: { nom: "Sexga berish", izoh: "Xomashyoni sexga berish va sexdan qaytarish." },
+  PRODUCTION_REPORT: { nom: "Smena hisoboti", izoh: "Smena hisobotini yozish va smenani yopish." },
   DELETE: {
     nom: "Ma'lumotlarni o'chirish",
     izoh: "Ruxsat etilgan bo'limlarda o'chirish amallarini bajaradi.",

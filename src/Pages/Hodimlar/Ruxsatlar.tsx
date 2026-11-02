@@ -10,13 +10,17 @@ import {
   UserRound,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
-import { useAccountStore } from "@/store/accountStore";
+import { kodlarBilanSaqlanadimi, useAccountStore } from "@/store/accountStore";
 import type { AccountVakolati, VakolatKodi } from "@/types/account";
 
 const vakolatMatnlari: Record<
   VakolatKodi,
   { nom: string; izoh: string }
 > = {
+  PRODUCTION_RECIPE: { nom: "Retseptlar", izoh: "Ishlab chiqarish retseptlarini yaratish va faollashtirish." },
+  COSTING: { nom: "Kalkulyatsiya", izoh: "Kalkulyatsiya kartalari va xomashyo narxlarini ko'rish, yuritish." },
+  PRODUCTION_ISSUE: { nom: "Sexga berish", izoh: "Xomashyoni sexga berish va sexdan qaytarish." },
+  PRODUCTION_REPORT: { nom: "Smena hisoboti", izoh: "Smena hisobotini yozish va smenani yopish." },
   NEGATIVE_STOCK_SALE: {
     nom: "Minusga sotish",
     izoh: "Qoldiq yetmasa ham sotish, chiqim va ko'chirish. Do'konda minusga sotish yoqilgan bo'lishi kerak.",
@@ -96,7 +100,7 @@ export default function Ruxsatlar() {
     event.preventDefault();
     if (!userId) return;
     const codes = store.vakolatlar.filter((grant) => grant.userId === userId && grant.isActive && !grant.isDeleted && grant.code !== code).map((grant) => grant.code);
-    const ok = code === "NEGATIVE_STOCK_SALE"
+    const ok = kodlarBilanSaqlanadimi(code)
       ? await store.vakolatKodlariniSaqlash(userId, [...codes, ...(isActive ? [code] : [])])
       : editing
       ? await store.vakolatYangilash(editing.id, { isActive })
@@ -107,7 +111,7 @@ export default function Ruxsatlar() {
   async function ochirish(item: AccountVakolati) {
     const matn = vakolatMatnlari[item.code as VakolatKodi]?.nom ?? item.code;
     if (!window.confirm(`"${matn}" vakolatini olib tashlaysizmi?`)) return;
-    if (item.code === "NEGATIVE_STOCK_SALE") {
+    if (kodlarBilanSaqlanadimi(item.code)) {
       await store.vakolatKodlariniSaqlash(item.userId, store.vakolatlar.filter((grant) => grant.userId === item.userId && grant.isActive && !grant.isDeleted && grant.code !== item.code).map((grant) => grant.code));
       return;
     }

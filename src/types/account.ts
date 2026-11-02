@@ -6,7 +6,11 @@ export type VakolatKodi =
   | "EXPENSE"
   | "CASH_IN"
   | "NEGATIVE_STOCK_SALE"
-  | "RETURN_CANCEL";
+  | "RETURN_CANCEL"
+  | "PRODUCTION_RECIPE"
+  | "COSTING"
+  | "PRODUCTION_ISSUE"
+  | "PRODUCTION_REPORT";
 
 export type AccountFoydalanuvchi = {
   id: string;

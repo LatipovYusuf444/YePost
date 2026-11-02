@@ -52,6 +52,12 @@ function almashtirish<T extends { id: string }>(royxat: T[], yangi: T) {
   return royxat.map((item) => (item.id === yangi.id ? yangi : item));
 }
 
+// Bu kodlar PUT /accounts/grants/users/:userId (codes[]) orqali saqlanadi.
+const KODLAR_BILAN_SAQLANADIGAN = new Set<string>(["NEGATIVE_STOCK_SALE", "PRODUCTION_RECIPE", "COSTING", "PRODUCTION_ISSUE", "PRODUCTION_REPORT"]);
+export function kodlarBilanSaqlanadimi(kod: string) {
+  return KODLAR_BILAN_SAQLANADIGAN.has(kod);
+}
+
 export const useAccountStore = create<AccountState>((set, get) => ({
   profil: null,
   foydalanuvchilar: [],
@@ -159,7 +165,7 @@ export const useAccountStore = create<AccountState>((set, get) => ({
     }
   },
   vakolatYaratish: async (data) => {
-    if (data.code === "NEGATIVE_STOCK_SALE") {
+    if (kodlarBilanSaqlanadimi(data.code)) {
       const codes = get().vakolatlar.filter((grant) => grant.userId === data.userId && grant.isActive && !grant.isDeleted && grant.code !== data.code).map((grant) => grant.code);
       return get().vakolatKodlariniSaqlash(data.userId, [...codes, ...(data.isActive !== false ? [data.code] : [])]);
     }
@@ -178,7 +184,7 @@ export const useAccountStore = create<AccountState>((set, get) => ({
   },
   vakolatYangilash: async (id, data) => {
     const existing = get().vakolatlar.find((grant) => grant.id === id);
-    if (existing?.code === "NEGATIVE_STOCK_SALE") {
+    if (existing && kodlarBilanSaqlanadimi(existing.code)) {
       const codes = get().vakolatlar.filter((grant) => grant.userId === existing.userId && grant.isActive && !grant.isDeleted && grant.code !== existing.code).map((grant) => grant.code);
       return get().vakolatKodlariniSaqlash(existing.userId, [...codes, ...((data.isActive ?? existing.isActive) ? [existing.code] : [])]);
     }
@@ -197,7 +203,7 @@ export const useAccountStore = create<AccountState>((set, get) => ({
   },
   vakolatOchirish: async (id) => {
     const existing = get().vakolatlar.find((grant) => grant.id === id);
-    if (existing?.code === "NEGATIVE_STOCK_SALE") {
+    if (existing && kodlarBilanSaqlanadimi(existing.code)) {
       return get().vakolatKodlariniSaqlash(existing.userId, get().vakolatlar.filter((grant) => grant.userId === existing.userId && grant.isActive && !grant.isDeleted && grant.code !== existing.code).map((grant) => grant.code));
     }
     set({ amalBajarilmoqda: true, xatolik: null });

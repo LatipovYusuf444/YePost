@@ -15,7 +15,8 @@
     "valyuta": "Валюта",
     "narxTurlari": "Типы цен продаж",
     "davrniYopish": "Закрытие периода",
-    "inventory": "Склад"
+    "inventory": "Склад",
+    "ishlabChiqarish": "Производство"
   },
   "saved": "Сохранено ✓",
   "savingToBackend": "Сохраняется в backend...",
@@ -96,7 +97,11 @@
       "expense": "Расход",
       "cashIn": "Приход в кассу",
       "returnCancel": "Возврат / отмена",
-      "negativeStock": "Продажа в минус"
+      "negativeStock": "Продажа в минус",
+      "productionRecipe": "Рецепты",
+      "costing": "Калькуляция",
+      "productionIssue": "Выдача в цех",
+      "productionReport": "Отчёт смены"
     }
   },
   "integratsiya": {

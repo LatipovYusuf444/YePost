@@ -8,6 +8,51 @@ type Til = "uz" | "ru";
 type KodMatni = { uz: string; ru: string };
 
 const MATNLAR: Record<string, KodMatni> = {
+  // Ishlab chiqarish moduli va seriyali tovarlar (rulon).
+  "errors.production.disabled": {
+    uz: "Ishlab chiqarish moduli yoqilmagan. Direktor uni Sozlamalar → Ishlab chiqarish bo'limida yoqadi.",
+    ru: "Модуль производства не включён. Директор включает его в разделе Настройки → Производство.",
+  },
+  "errors.production.idempotency_mismatch": {
+    uz: "Bu amal boshqa ma'lumot bilan allaqachon yuborilgan. Sahifani yangilab, qayta urinib ko'ring.",
+    ru: "Это действие уже отправлено с другими данными. Обновите страницу и повторите.",
+  },
+  "errors.production.request_in_progress": {
+    uz: "Oldingi so'rov hali tugamagan. Bir oz kutib, qayta bosing.",
+    ru: "Предыдущий запрос ещё выполняется. Подождите и нажмите снова.",
+  },
+  "errors.production.serial_needs_on_issue": {
+    uz: "Rulon (seriyali tovar) faqat \"berilganda sarf\" belgilangan retseptga xomashyo bo'la oladi.",
+    ru: "Рулон (серийный товар) может быть сырьём только в рецепте с отметкой «расход при выдаче».",
+  },
+  "errors.production.costing_card_date_taken": {
+    uz: "Shu kunga faol kalkulyatsiya kartasi bor. Boshqa sanani tanlang.",
+    ru: "На эту дату уже есть активная калькуляция. Выберите другую дату.",
+  },
+  "errors.production.completion_reason_required": {
+    uz: "Reja bajarilmagan: yakunlash sababini yozing.",
+    ru: "План не выполнен: укажите причину завершения.",
+  },
+  "errors.production.costing_card_missing": {
+    uz: "Bu mahsulotga faol kalkulyatsiya kartasi yo'q. Hisobot qoralamada qoldi: kalkulyatsiya faollashtirilgach smenani yoping.",
+    ru: "Для этого товара нет активной калькуляции. Отчёт остался черновиком: закройте смену после активации калькуляции.",
+  },
+  "errors.production.report_output_sold": {
+    uz: "Bu hisobot mahsuloti allaqachon sotilgan, bekor qilib bo'lmaydi. Tuzatish kiriting.",
+    ru: "Продукция этого отчёта уже продана, отменить нельзя. Внесите корректировку.",
+  },
+  "errors.inventory.serial_required": {
+    uz: "Seriya kerak. Rulon kirimda seriya bilan kiritiladi; sotuv, ko'chirish, hisobdan chiqarish va inventarizatsiyada seriyali tovarni hozircha tanlab bo'lmaydi.",
+    ru: "Нужна серия. Рулон приходуется с серией; в продаже, перемещении, списании и инвентаризации серийный товар пока выбрать нельзя.",
+  },
+  "errors.inventory.serial_tracking_in_use": {
+    uz: "Qoldig'i bor tovarda seriya hisobini o'zgartirib bo'lmaydi.",
+    ru: "Нельзя менять учёт по сериям у товара с остатком.",
+  },
+  "errors.inventory.draft_only_confirmable": {
+    uz: "Bu hujjat allaqachon tasdiqlangan.",
+    ru: "Этот документ уже подтверждён.",
+  },
   "errors.inventory.document_changed": {
     uz: "Hujjat o'zgargan. Sahifani yangilang va qayta ochib tahrirlang.",
     ru: "Документ изменён. Обновите страницу и откройте его заново для редактирования.",
@@ -206,6 +251,15 @@ const DINAMIK_MATNLAR: Record<string, DinamikMatn> = {
     return til === "ru"
       ? `Из-за этого документа остаток на складе уйдёт в минус${kun ? ` ${kun}` : " в одном из следующих дней"}${yetishmaydi ? ` (не хватает: ${yetishmaydi})` : ""}. Измените дату или количество.`
       : `Bu hujjat tufayli ombor qoldig'i${kun ? ` ${kun} kuni` : " keyingi kunda"} minusga tushadi${yetishmaydi ? ` (yetishmaydi: ${yetishmaydi})` : ""}. Sanani yoki miqdorni o'zgartiring.`;
+  },
+  // Smenani yopishda: "{name} {percent}%" — izoh yozdirib qayta yuboriladi.
+  "errors.production.comment_required": (til, tafsilot) => {
+    const nom = String(xatoMaydoni(tafsilot, "name") ?? "");
+    const foiz = String(xatoMaydoni(tafsilot, "percent") ?? "");
+    const qism = [nom, foiz ? `${foiz}%` : ""].filter(Boolean).join(" ");
+    return til === "ru"
+      ? `Отклонение от нормы${qism ? `: ${qism}` : ""}. Напишите комментарий и закройте смену снова.`
+      : `Normadan chetlanish${qism ? `: ${qism}` : ""}. Izoh yozing va smenani qayta yoping.`;
   },
   "errors.finance.negative_cash_after": (til, tafsilot) => {
     const kun = kunMatni(String(xatoMaydoni(tafsilot, "date") ?? ""));
