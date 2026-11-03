@@ -1,4 +1,5 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
+import { apiXatosiniYozish } from "@/lib/maydonXatolari";
 import { API_BASE_URL } from "./apiConfig";
 import { accessTokenniAjratish, accessTokenniYangilash, getApiErrorMessage } from "./sozlamalarApi";
 import { ogohlantirishXatosimi } from "./hujjatOgohlantirishi";
@@ -119,6 +120,8 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error: unknown) => {
+    // Forma maydon xatolari uchun: store xatoni matnga aylantirsa ham javob tanasi saqlanadi (lib/maydonXatolari).
+    if (axios.isAxiosError(error) && error.response) apiXatosiniYozish(error.response.data, error.config?.url, error.config?.method);
     if (!axios.isAxiosError(error) || error.response?.status !== 401 || !error.config) {
       // 409 before_stock_take va 400 suspicious_currency — xato emas, "Davom etasizmi?" / "Valyuta to'g'rimi?" so'rovi:
       // toast o'rniga tasdiqlash oynasi chiqadi (api/hujjatOgohlantirishi, api/valyutaShubhasi).

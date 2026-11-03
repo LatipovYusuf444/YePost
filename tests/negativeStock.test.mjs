@@ -175,6 +175,7 @@ test('shared Axios success interceptor emits stock notifications before DTO unwr
     './apiLanguage': { apiTiliniOlish: () => 'uz' },
     '@/lib/authTokenStorage': {},
     '@/lib/toast': { muvaffaqiyatXabari() {}, xatolikXabari() {} },
+    '@/lib/maydonXatolari': { apiXatosiniYozish() {} },
     sonner: { toast: { warning: value => messages.push(['warning', value]), success: value => messages.push(['success', value]) } },
     '@/lib/negativeStock': { negativeStockMessages },
   });
