@@ -1,7 +1,11 @@
 import AppSelect from "@/Components/ui/AppSelect";
 import { useState, type FormEvent } from "react";
 import { Eye, LoaderCircle, Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { useTenantStore } from "@/store/tenantStore";
 import type { Obuna, ObunaDavri, ObunaHolati } from "@/types/tenant";
 import {
@@ -10,12 +14,23 @@ import {
   tarifTuriMatni,
 } from "./tenantMatnlari";
 
+// Server xatosini obuna formasi maydoniga bog'lash (kalit — backend maydon nomi). Avval tugash sanasi: "endDate startDate dan keyin" xabari.
+const OBUNA_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  tariffId: { maydonlar: ["tariffId"], kodlar: ["tariff"], sozlar: ["tarif", "tariff", "тариф"] },
+  endDate: { maydonlar: ["endDate"], kodlar: ["end_date", "date_range"], sozlar: ["end date", "enddate", "tugash sana", "дата окончания"] },
+  startDate: { maydonlar: ["startDate"], kodlar: ["start_date"], sozlar: ["start date", "startdate", "boshlanish sana", "дата начала"] },
+  period: { maydonlar: ["period"], kodlar: ["period"], sozlar: ["obuna davri", "period", "период"] },
+  status: { maydonlar: ["status"], kodlar: ["status"], sozlar: ["obuna holati", "status", "статус"] },
+};
+
 function sanaMaydoni(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
 export default function Profil() {
+  const { t } = useTranslation("sozlamalar_uchot");
   const store = useTenantStore();
+  const fx = useMaydonXatolari(OBUNA_XATO_QOIDALARI);
   const [modal, setModal] = useState(false);
   const [detail, setDetail] = useState<Obuna | null>(null);
   const [tariffId, setTariffId] = useState("");
@@ -38,7 +53,14 @@ export default function Profil() {
 
   async function saqlash(event: FormEvent) {
     event.preventDefault();
-    if (!tariffId || !startDate || !endDate) return;
+    if (!tariffId || !startDate || !endDate) {
+      fx.ornat({
+        ...(!tariffId ? { tariffId: t("legacyForm.fieldRequired") } : {}),
+        ...(!startDate ? { startDate: t("legacyForm.fieldRequired") } : {}),
+        ...(!endDate ? { endDate: t("legacyForm.fieldRequired") } : {}),
+      });
+      return;
+    }
     if (
       !window.confirm(
         "Yangi obuna yaratilsinmi? Yaratilgan obunani keyin tahrirlash yoki o'chirish imkoniyati mavjud emas."
@@ -46,13 +68,16 @@ export default function Profil() {
     )
       return;
 
-    const ok = await store.obunaYaratish({
-      tariffId,
-      period,
-      status,
-      startDate: new Date(`${startDate}T00:00:00Z`).toISOString(),
-      endDate: new Date(`${endDate}T00:00:00Z`).toISOString(),
-    });
+    fx.ornat({});
+    const ok = await fx.kuzat(() =>
+      store.obunaYaratish({
+        tariffId,
+        period,
+        status,
+        startDate: new Date(`${startDate}T00:00:00Z`).toISOString(),
+        endDate: new Date(`${endDate}T00:00:00Z`).toISOString(),
+      })
+    );
     if (ok) setModal(false);
   }
 
@@ -68,7 +93,7 @@ export default function Profil() {
             Obunalarni ko'rish, tafsilotlarini ochish va yangi obuna yaratish mumkin.
           </p>
         </div>
-        <button onClick={() => { setTariffId(store.tariflar[0]?.id ?? ""); setModal(true); }} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-4 font-black text-white">
+        <button onClick={() => { setTariffId(store.tariflar[0]?.id ?? ""); fx.ornat({}); setModal(true); }} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-4 font-black text-white">
           <Plus size={17} /> Yangi obuna
         </button>
       </div>
@@ -117,11 +142,12 @@ export default function Profil() {
         <AppModal>
           <form onSubmit={saqlash} className="w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl">
             <h2 className="text-2xl font-black">Yangi obuna</h2>
-            {store.xatolik && <div className="mt-4 rounded-xl bg-red-50 p-3 font-bold text-red-600">{store.xatolik}</div>}
+            {(fx.tepadagi || (fx.bor ? "" : store.xatolik)) && <div className="mt-4 rounded-xl bg-red-50 p-3 font-bold text-red-600">{fx.tepadagi || store.xatolik}</div>}
             <div className="mt-5 space-y-3">
+              <XatoliMaydon xato={fx.xato("tariffId")}>
               <label className="block text-sm font-bold">
                 Tarif *
-                <AppSelect value={tariffId} onChange={(event) => setTariffId(event.target.value)} className="mt-2 h-12 w-full rounded-2xl border px-4">
+                <AppSelect value={tariffId} onChange={(event) => { fx.tozala("tariffId"); setTariffId(event.target.value); }} className="mt-2 h-12 w-full rounded-2xl border px-4">
                   <option value="">Tarifni tanlang</option>
                   {store.tariflar.filter((x) => x.isActive).map((x) => (
                     <option key={x.id} value={x.id}>
@@ -130,32 +156,41 @@ export default function Profil() {
                   ))}
                 </AppSelect>
               </label>
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("period")}>
               <label className="block text-sm font-bold">
                 Obuna davri
-                <AppSelect value={period} onChange={(event) => setPeriod(event.target.value as ObunaDavri)} className="mt-2 h-12 w-full rounded-2xl border px-4">
+                <AppSelect value={period} onChange={(event) => { fx.tozala("period"); setPeriod(event.target.value as ObunaDavri); }} className="mt-2 h-12 w-full rounded-2xl border px-4">
                   <option value="MONTHLY">Oylik</option>
                   <option value="QUARTERLY">Choraklik</option>
                   <option value="ANNUAL">Yillik</option>
                 </AppSelect>
               </label>
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("status")}>
               <label className="block text-sm font-bold">
                 Obuna holati
-                <AppSelect value={status} onChange={(event) => setStatus(event.target.value as ObunaHolati)} className="mt-2 h-12 w-full rounded-2xl border px-4">
+                <AppSelect value={status} onChange={(event) => { fx.tozala("status"); setStatus(event.target.value as ObunaHolati); }} className="mt-2 h-12 w-full rounded-2xl border px-4">
                   <option value="TRIAL">Sinov muddati</option>
                   <option value="ACTIVE">Faol</option>
                   <option value="EXPIRED">Muddati tugagan</option>
                   <option value="CANCELLED">Bekor qilingan</option>
                 </AppSelect>
               </label>
+              </XatoliMaydon>
               <div className="grid gap-3 sm:grid-cols-2">
+                <XatoliMaydon xato={fx.xato("startDate")}>
                 <label className="text-sm font-bold">
                   Boshlanish sanasi
-                  <input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} className="mt-2 h-12 w-full rounded-2xl border px-4" />
+                  <input type="date" value={startDate} onChange={(event) => { fx.tozala("startDate"); setStartDate(event.target.value); }} className="mt-2 h-12 w-full rounded-2xl border px-4" />
                 </label>
+                </XatoliMaydon>
+                <XatoliMaydon xato={fx.xato("endDate")}>
                 <label className="text-sm font-bold">
                   Tugash sanasi
-                  <input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} className="mt-2 h-12 w-full rounded-2xl border px-4" />
+                  <input type="date" value={endDate} onChange={(event) => { fx.tozala("endDate"); setEndDate(event.target.value); }} className="mt-2 h-12 w-full rounded-2xl border px-4" />
                 </label>
+                </XatoliMaydon>
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-3">

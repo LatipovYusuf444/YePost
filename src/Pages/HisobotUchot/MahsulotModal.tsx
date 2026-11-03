@@ -10,6 +10,22 @@ import { useHisobotRealData } from "./HisobotRealData";
 import type { Maxsulot } from "./types";
 import { ustamaFoizi } from "@/Pages/Mahsulotlar/narxHisobi";
 import { narxQoralamaValyutalari } from "@/Pages/Mahsulotlar/narxValyutaYuklama";
+import { useTranslation } from "react-i18next";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
+
+// Server xatosi qaysi maydonga tushadi (mahsulot, variant va narx so'rovlari tanasidagi nomlar).
+const XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  barcode: { maydonlar: ["barcode"], kodlar: ["barcode"], sozlar: ["barcode", "barkod", "shtrix", "штрих"] },
+  article: { maydonlar: ["article"], kodlar: ["article"], sozlar: ["artikul", "артикул"] },
+  categoryId: { maydonlar: ["categoryId"], kodlar: ["category"], sozlar: ["kategoriya", "категори"] },
+  unitId: { maydonlar: ["unitId"], kodlar: ["unit"], sozlar: ["o'lchov birlig", "единиц"] },
+  costPrice: { maydonlar: ["costPrice"], kodlar: ["cost"] },
+  retailPrice: { maydonlar: ["retailPrice"], kodlar: ["retail"] },
+  wholesalePrice: { maydonlar: ["wholesalePrice"], kodlar: ["wholesale"] },
+  name: { maydonlar: ["name"] },
+};
 
 // Hisobotdan ochilgan mahsulot real katalog endpointlari orqali tahrirlanadi.
 
@@ -27,6 +43,8 @@ export default function MahsulotModal({
   onClose: () => void;
 }) {
   const { kategoriyalar } = useHisobotRealData();
+  const { t } = useTranslation("mahsulotlar");
+  const fx = useMaydonXatolari(XATO_QOIDALARI);
   const [nomi, setNomi] = useState(mahsulot.nomi);
   const [barkod, setBarkod] = useState(mahsulot.barkod);
   const [artikul, setArtikul] = useState(mahsulot.artikul);
@@ -81,7 +99,14 @@ export default function MahsulotModal({
   }
 
   async function saqlash() {
-    if (!asosiyMahsulot || !nomi.trim() || !kategoriya || !birlik) return;
+    if (!asosiyMahsulot) return;
+    // Majburiy maydonlar: bo'shlari o'z maydoni ostida ko'rsatiladi (saqlash avvalgidek to'xtaydi).
+    const majburiy: Record<string, string> = {};
+    if (!nomi.trim()) majburiy.name = t("validation.nameRequired");
+    if (!kategoriya) majburiy.categoryId = t("validation.categoryRequired");
+    if (!birlik) majburiy.unitId = t("validation.unitRequired");
+    fx.ornat(majburiy);
+    if (Object.keys(majburiy).length > 0) return;
     setSaqlanmoqda(true);
     setXato("");
     try {
@@ -108,6 +133,7 @@ export default function MahsulotModal({
       onClose();
     } catch (error) {
       setXato(getApiErrorMessage(error));
+      fx.serverdan((error as { response?: { data?: unknown } })?.response?.data);
     } finally {
       setSaqlanmoqda(false);
     }
@@ -138,7 +164,7 @@ export default function MahsulotModal({
         </div>
 
         <div className="px-6 py-6">
-          {xato && <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
+          {(fx.tepadagi || (!fx.bor && xato)) && <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{fx.tepadagi || xato}</p>}
           <section className="space-y-5">
             <div className="flex items-center gap-4">
               <h3 className="text-xl font-black">Asosiy</h3>
@@ -147,51 +173,58 @@ export default function MahsulotModal({
 
             <div className="grid gap-5 xl:grid-cols-3">
               <div className="space-y-4">
+                <XatoliMaydon xato={fx.xato("name")}>
                 <label className="block text-sm font-black text-gray-500">
                   Nomi *
                   <div className="relative mt-2">
-                    <input value={nomi} onChange={(e) => setNomi(e.target.value)} className="input pr-16" placeholder="Nomi kiriting" />
+                    <input value={nomi} onChange={(e) => { setNomi(e.target.value); fx.tozala("name"); }} className="input pr-16" placeholder="Nomi kiriting" />
                     <button
                       type="button"
-                      onClick={() => setNomi(mahsulot.nomi)}
+                      onClick={() => { setNomi(mahsulot.nomi); fx.tozala("name"); }}
                       className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1.5 text-xs font-black text-orange-600 hover:bg-orange-50"
                     >
                       Tez
                     </button>
                   </div>
                 </label>
+                </XatoliMaydon>
+                <XatoliMaydon xato={fx.xato("article")}>
                 <label className="block text-sm font-black text-gray-500">
                   Artikul *
                   <div className="relative mt-2">
-                    <input value={artikul} onChange={(e) => setArtikul(e.target.value)} className="input pr-16" placeholder="Artikul" />
+                    <input value={artikul} onChange={(e) => { setArtikul(e.target.value); fx.tozala("article"); }} className="input pr-16" placeholder="Artikul" />
                     <button
                       type="button"
-                      onClick={() => setArtikul(`${nomi.slice(0, 3).toUpperCase()}-${tasodifiyRaqam(6)}`)}
+                      onClick={() => { setArtikul(`${nomi.slice(0, 3).toUpperCase()}-${tasodifiyRaqam(6)}`); fx.tozala("article"); }}
                       className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1.5 text-xs font-black text-orange-600 hover:bg-orange-50"
                     >
                       Gen
                     </button>
                   </div>
                 </label>
+                </XatoliMaydon>
               </div>
 
               <div className="space-y-4">
+                <XatoliMaydon xato={fx.xato("barcode")}>
                 <label className="block text-sm font-black text-gray-500">
                   Barkod
                   <div className="relative mt-2">
-                    <input value={barkod} onChange={(e) => setBarkod(e.target.value)} className="input pr-16" placeholder="Barkod" />
+                    <input value={barkod} onChange={(e) => { setBarkod(e.target.value); fx.tozala("barcode"); }} className="input pr-16" placeholder="Barkod" />
                     <button
                       type="button"
-                      onClick={() => setBarkod(tasodifiyRaqam(13))}
+                      onClick={() => { setBarkod(tasodifiyRaqam(13)); fx.tozala("barcode"); }}
                       className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1.5 text-xs font-black text-orange-600 hover:bg-orange-50"
                     >
                       Gen
                     </button>
                   </div>
                 </label>
+                </XatoliMaydon>
+                <XatoliMaydon xato={fx.xato("categoryId")}>
                 <label className="block text-sm font-black text-gray-500">
                   Kategoriya *
-                  <AppSelect value={kategoriya} onChange={(e) => setKategoriya(e.target.value)} className="input mt-2">
+                  <AppSelect value={kategoriya} onChange={(e) => { setKategoriya(e.target.value); fx.tozala("categoryId"); }} className="input mt-2">
                     <option value="">Kategoriya</option>
               {kategoriyalar.map((k) => (
                       <option key={k.id} value={k.id}>
@@ -200,13 +233,15 @@ export default function MahsulotModal({
                     ))}
                   </AppSelect>
                 </label>
+                </XatoliMaydon>
               </div>
 
               <div className="space-y-4">
+                <XatoliMaydon xato={fx.xato("unitId")}>
                 <div className="block text-sm font-black text-gray-500">
                   <p>O'lchov birligi *</p>
                   <div className="mt-2 flex items-center gap-3">
-                    <AppSelect value={birlik} onChange={(e) => setBirlik(e.target.value)} className="input min-w-0 flex-1">
+                    <AppSelect value={birlik} onChange={(e) => { setBirlik(e.target.value); fx.tozala("unitId"); }} className="input min-w-0 flex-1">
                       {birliklar.map((b) => (
                         <option key={b.id} value={b.id}>
                           {b.name}
@@ -225,6 +260,7 @@ export default function MahsulotModal({
                     </button>
                   </div>
                 </div>
+                </XatoliMaydon>
 
                 <div className="space-y-2">
                   <p className="text-sm font-black text-gray-500">Foto</p>
@@ -305,7 +341,7 @@ export default function MahsulotModal({
                   </p>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                  <Narx label="Kelish narxi" value={tanNarx} onChange={setTanNarx} />
+                  <XatoliMaydon xato={fx.xato("costPrice")}><Narx label="Kelish narxi" value={tanNarx} onChange={(v) => { setTanNarx(v); fx.tozala("costPrice"); }} /></XatoliMaydon>
                   <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">
                     Ustama
                     <div className="relative mt-2">
@@ -313,8 +349,8 @@ export default function MahsulotModal({
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">%</span>
                     </div>
                   </label>
-                  <Narx label="Sotuv narxi" value={sotuvNarx} onChange={setSotuvNarx} />
-                  <Narx label="Ulgurji narx" value={ulgurji} onChange={setUlgurji} />
+                  <XatoliMaydon xato={fx.xato("retailPrice")}><Narx label="Sotuv narxi" value={sotuvNarx} onChange={(v) => { setSotuvNarx(v); fx.tozala("retailPrice"); }} /></XatoliMaydon>
+                  <XatoliMaydon xato={fx.xato("wholesalePrice")}><Narx label="Ulgurji narx" value={ulgurji} onChange={(v) => { setUlgurji(v); fx.tozala("wholesalePrice"); }} /></XatoliMaydon>
                 </div>
               </div>
             </div>

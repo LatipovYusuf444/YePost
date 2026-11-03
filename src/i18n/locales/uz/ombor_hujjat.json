@@ -33,7 +33,12 @@
   },
   "errors": {
     "invalidStockTakeQuantity": "Har bir mahsulot uchun haqiqiy miqdor 0 yoki undan katta raqam bo'lishi kerak.",
-    "invalidItems": "Mahsulot, miqdor va narx qiymatlarini to'g'ri kiriting."
+    "invalidItems": "Mahsulot, miqdor va narx qiymatlarini to'g'ri kiriting.",
+    "supplierRequired": "Yetkazib beruvchini tanlang.",
+    "warehouseRequired": "Omborni tanlang.",
+    "sourceWarehouseRequired": "Manba omborni tanlang.",
+    "destWarehouseRequired": "Qabul qiluvchi omborni tanlang.",
+    "sameWarehouse": "Manba va qabul qiluvchi ombor bir xil bo'lmasligi kerak."
   },
   "confirm": {
     "cancelStockTake": "Tasdiqlangan inventarizatsiyani bekor qilasizmi? Ombor qoldiqlari qayta hisoblanadi."

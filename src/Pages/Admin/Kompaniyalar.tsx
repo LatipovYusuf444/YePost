@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import axios from "axios";
 import { Building2, Clock, Pencil, Plus, Power, PowerOff, Trash2, Users } from "lucide-react";
 import LoadingState from "@/Components/common/LoadingState";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import { platformApi } from "@/api/platformApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import type { PlatformKompaniya, PlatformKompaniyaYaratish } from "@/types/platform";
 import { AdminModal, AmalTugmasi, Avatar, BoshHolat, Belgi, Maydon, MiniKarta, QidiruvMaydoni, SahifaSarlavhasi, ShakldaTugmalar, XatoXabari, asosiyTugmaKlass, inputKlass, jadvalKlass, tbodyKlass, tdKlass, theadKlass, thKlass, trKlass } from "./AdminUI";
 
@@ -43,6 +46,17 @@ const BOSH_FORMA: FormaHolati = {
   fullName: "",
 };
 
+// Server xatosi → forma maydoni (kalitlar — so'rov tanasidagi yo'llar). Masalan, 409 errors.user.username_exists → direktor logini.
+const KOMPANIYA_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  // "name" kodi yolg'iz emas: u "username_exists" ichida ham bor (direktor logini xatosi nomga tushmasin).
+  name: { maydonlar: ["name"], kodlar: ["workspace_name", "company_name"] },
+  slug: { maydonlar: ["slug"], kodlar: ["slug"], sozlar: ["slug"] },
+  timezone: { maydonlar: ["timezone"], kodlar: ["timezone"] },
+  "director.username": { maydonlar: ["director.username", "username"], kodlar: ["username"], sozlar: ["login", "логин", "username"] },
+  "director.password": { maydonlar: ["director.password", "password"], kodlar: ["password"], sozlar: ["parol", "пароль", "password"] },
+  "director.fullName": { maydonlar: ["director.fullName", "fullName"] },
+};
+
 function KompaniyaModali({ tahrir, onYopish, onSaqlandi }: { tahrir: PlatformKompaniya | null; onYopish: () => void; onSaqlandi: () => void }) {
   const { t } = useTranslation("admin");
   const [forma, setForma] = useState<FormaHolati>(() =>
@@ -50,6 +64,7 @@ function KompaniyaModali({ tahrir, onYopish, onSaqlandi }: { tahrir: PlatformKom
   );
   const [bajarilmoqda, setBajarilmoqda] = useState(false);
   const [xato, setXato] = useState("");
+  const fx = useMaydonXatolari(KOMPANIYA_QOIDALARI);
 
   function ozgartirish<K extends keyof FormaHolati>(kalit: K, qiymat: FormaHolati[K]) {
     setForma((joriy) => ({ ...joriy, [kalit]: qiymat }));
@@ -58,13 +73,17 @@ function KompaniyaModali({ tahrir, onYopish, onSaqlandi }: { tahrir: PlatformKom
   async function yuborish(event: FormEvent) {
     event.preventDefault();
     setXato("");
-    if (!forma.name.trim()) return setXato(t("kompaniyalar.xatolar.nomKerak"));
-    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(forma.slug)) return setXato(t("kompaniyalar.xatolar.slugNotogri"));
+    fx.ornat({});
+    // Har bir xatoli maydon o'z joyida ko'rsatiladi (qoidalar va matnlar o'sha-o'sha).
+    const xatolar: Record<string, string> = {};
+    if (!forma.name.trim()) xatolar.name = t("kompaniyalar.xatolar.nomKerak");
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(forma.slug)) xatolar.slug = t("kompaniyalar.xatolar.slugNotogri");
     const direktor = !tahrir && forma.direktorYaratish;
     if (direktor) {
-      if (forma.username.trim().length < 3) return setXato(t("kompaniyalar.xatolar.loginKerak"));
-      if (forma.password.length < 6) return setXato(t("kompaniyalar.xatolar.parolQisqa"));
+      if (forma.username.trim().length < 3) xatolar["director.username"] = t("kompaniyalar.xatolar.loginKerak");
+      if (forma.password.length < 6) xatolar["director.password"] = t("kompaniyalar.xatolar.parolQisqa");
     }
+    if (Object.keys(xatolar).length) return fx.ornat(xatolar);
     setBajarilmoqda(true);
     try {
       if (tahrir) {
@@ -84,6 +103,7 @@ function KompaniyaModali({ tahrir, onYopish, onSaqlandi }: { tahrir: PlatformKom
     } catch (error) {
       // Masalan, 409 errors.user.username_exists: kompaniya ham yaratilmaydi.
       setXato(getApiErrorMessage(error));
+      fx.serverdan(axios.isAxiosError(error) ? error.response?.data : undefined);
     } finally {
       setBajarilmoqda(false);
     }
@@ -92,12 +112,14 @@ function KompaniyaModali({ tahrir, onYopish, onSaqlandi }: { tahrir: PlatformKom
   return (
     <AdminModal sarlavha={t(tahrir ? "kompaniyalar.tahrirlash" : "kompaniyalar.yangi")} onYopish={onYopish} kenglik="max-w-xl" ikonka={<Building2 size={20} />}>
       <form onSubmit={(event) => void yuborish(event)} className="space-y-4">
-        <Maydon nom={t("kompaniyalar.nomi")}>
+        <Maydon nom={t("kompaniyalar.nomi")} xato={fx.xato("name")}>
           <input
             autoFocus
             value={forma.name}
             onChange={(event) => {
               const nom = event.target.value;
+              fx.tozala("name");
+              if (!forma.slugQolda) fx.tozala("slug");
               setForma((joriy) => ({ ...joriy, name: nom, slug: joriy.slugQolda ? joriy.slug : slugYasash(nom) }));
             }}
             placeholder={t("kompaniyalar.nomiPlaceholder")}
@@ -105,16 +127,26 @@ function KompaniyaModali({ tahrir, onYopish, onSaqlandi }: { tahrir: PlatformKom
           />
         </Maydon>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Maydon nom="Slug" izoh={t("kompaniyalar.slugIzoh")}>
+          <Maydon nom="Slug" izoh={t("kompaniyalar.slugIzoh")} xato={fx.xato("slug")}>
             <input
               value={forma.slug}
-              onChange={(event) => setForma((joriy) => ({ ...joriy, slug: slugYasash(event.target.value), slugQolda: true }))}
+              onChange={(event) => {
+                fx.tozala("slug");
+                setForma((joriy) => ({ ...joriy, slug: slugYasash(event.target.value), slugQolda: true }));
+              }}
               placeholder="my-company"
               className={inputKlass}
             />
           </Maydon>
-          <Maydon nom={t("kompaniyalar.vaqtZonasi")}>
-            <select value={forma.timezone} onChange={(event) => ozgartirish("timezone", event.target.value)} className={inputKlass}>
+          <Maydon nom={t("kompaniyalar.vaqtZonasi")} xato={fx.xato("timezone")}>
+            <select
+              value={forma.timezone}
+              onChange={(event) => {
+                fx.tozala("timezone");
+                ozgartirish("timezone", event.target.value);
+              }}
+              className={inputKlass}
+            >
               {[...new Set([forma.timezone, ...VAQT_ZONALARI])].map((zona) => (
                 <option key={zona} value={zona}>
                   {zona}
@@ -133,21 +165,53 @@ function KompaniyaModali({ tahrir, onYopish, onSaqlandi }: { tahrir: PlatformKom
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
               <label className="flex cursor-pointer items-center gap-3 text-sm font-black text-slate-800">
-                <input type="checkbox" checked={forma.direktorYaratish} onChange={(event) => ozgartirish("direktorYaratish", event.target.checked)} className="h-4 w-4 accent-orange-500" />
+                <input
+                  type="checkbox"
+                  checked={forma.direktorYaratish}
+                  onChange={(event) => {
+                    fx.tozala("director");
+                    ozgartirish("direktorYaratish", event.target.checked);
+                  }}
+                  className="h-4 w-4 accent-orange-500"
+                />
                 {t("kompaniyalar.direktorYaratish")}
               </label>
               <p className="mt-1 pl-7 text-xs font-medium text-slate-400">{t("kompaniyalar.direktorIzoh")}</p>
               {forma.direktorYaratish && (
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  <Maydon nom={t("kompaniyalar.login")}>
-                    <input value={forma.username} onChange={(event) => ozgartirish("username", event.target.value.replace(/\s/g, ""))} autoComplete="off" className={inputKlass} />
+                  <Maydon nom={t("kompaniyalar.login")} xato={fx.xato("director.username")}>
+                    <input
+                      value={forma.username}
+                      onChange={(event) => {
+                        fx.tozala("director.username");
+                        ozgartirish("username", event.target.value.replace(/\s/g, ""));
+                      }}
+                      autoComplete="off"
+                      className={inputKlass}
+                    />
                   </Maydon>
-                  <Maydon nom={t("kompaniyalar.parol")} izoh={t("kompaniyalar.parolIzoh")}>
-                    <input type="password" value={forma.password} onChange={(event) => ozgartirish("password", event.target.value)} autoComplete="new-password" className={inputKlass} />
+                  <Maydon nom={t("kompaniyalar.parol")} izoh={t("kompaniyalar.parolIzoh")} xato={fx.xato("director.password")}>
+                    <input
+                      type="password"
+                      value={forma.password}
+                      onChange={(event) => {
+                        fx.tozala("director.password");
+                        ozgartirish("password", event.target.value);
+                      }}
+                      autoComplete="new-password"
+                      className={inputKlass}
+                    />
                   </Maydon>
                   <div className="sm:col-span-2">
-                    <Maydon nom={t("kompaniyalar.toliqIsm")}>
-                      <input value={forma.fullName} onChange={(event) => ozgartirish("fullName", event.target.value)} className={inputKlass} />
+                    <Maydon nom={t("kompaniyalar.toliqIsm")} xato={fx.xato("director.fullName")}>
+                      <input
+                        value={forma.fullName}
+                        onChange={(event) => {
+                          fx.tozala("director.fullName");
+                          ozgartirish("fullName", event.target.value);
+                        }}
+                        className={inputKlass}
+                      />
                     </Maydon>
                   </div>
                 </div>
@@ -156,7 +220,7 @@ function KompaniyaModali({ tahrir, onYopish, onSaqlandi }: { tahrir: PlatformKom
           </>
         )}
 
-        {xato && <XatoXabari matn={xato} />}
+        {(fx.tepadagi || (fx.bor ? "" : xato)) && <XatoXabari matn={fx.tepadagi || xato} />}
         <ShakldaTugmalar ortga={{ matn: t("common.bekor"), onClick: onYopish }} bajarilmoqda={bajarilmoqda} saqlashMatni={t(tahrir ? "common.saqlash" : "kompaniyalar.yaratish")} />
       </form>
     </AdminModal>

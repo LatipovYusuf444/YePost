@@ -21,6 +21,9 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon, { MaydonXatosi } from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
 import { bugungiToshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
@@ -88,6 +91,28 @@ function tovarBirliklari(productId: string) {
 }
 
 type Props = { onClose: () => void };
+
+// Server xatosini maydonga bog'lash: kalit — so'rov tanasidagi yo'l (qatorlar "items.<i>.price"; faqat to'liq qatorlar yuborilgani uchun
+// tartibi ekrandagi qatorlar bilan bir xil). Yetkazib beruvchini shu oynada yaratishdagi `name` xatosi ham shu maydonga.
+const KIRIM_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  supplierId: { maydonlar: ["supplierId", "name"], kodlar: ["supplier"], sozlar: ["yetkazib beruvchi", "поставщик"] },
+  warehouseId: { maydonlar: ["warehouseId"], kodlar: ["warehouse"], sozlar: ["ombor topilmadi", "склад не найден"] },
+  date: { maydonlar: ["date"], kodlar: ["date_in_future", "period_closed", "before_stock_take"], sozlar: ["hujjat sanasi", "дата документа"] },
+  responsibleId: { maydonlar: ["responsibleId"], kodlar: ["responsible"], sozlar: ["mas'ul xodim", "ответственн"] },
+  note: { maydonlar: ["note"] },
+  items: { maydonlar: ["items"], kodlar: ["serial_required", "quantity_not_whole", "unit_not_allowed", "unit_not_found"] },
+};
+
+// Yangi mahsulot oynasi: ikki so'rov (mahsulot, keyin modifikatsiya narxi) maydonlari.
+const MAHSULOT_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  name: { maydonlar: ["name"] },
+  barcode: { maydonlar: ["barcode"], kodlar: ["barcode"], sozlar: ["shtrix", "штрих"] },
+  categoryId: { maydonlar: ["categoryId"], kodlar: ["category"], sozlar: ["kategoriya", "категори"] },
+  unitId: { maydonlar: ["unitId"], kodlar: ["unit_not_found"], sozlar: ["o'lchov birlig", "единиц измерения"] },
+  costPrice: { maydonlar: ["price.costPrice", "costPrice"] },
+  retailPrice: { maydonlar: ["price.retailPrice", "retailPrice"] },
+  wholesalePrice: { maydonlar: ["price.wholesalePrice", "wholesalePrice"] },
+};
 
 function yangiQator(warehouseId = ""): Qator {
   return {
@@ -172,7 +197,8 @@ export default function YangiKirimModal({ onClose }: Props) {
   }, [fokus]);
   const [tanlangan, setTanlangan] = useState<Set<string>>(new Set());
   const [xato, setXato] = useState("");
-  const [ogohlantirishlar, setOgohlantirishlar] = useState<KirimOgohlantirishi[]>([]);
+  const fx = useMaydonXatolari(KIRIM_XATO_QOIDALARI);
+  const [ogohlantirishlar,setOgohlantirishlar] = useState<KirimOgohlantirishi[]>([]);
   const [yaratishOchiqUchun, setYaratishOchiqUchun] = useState<string | null>(null);
   const [fayllar, setFayllar] = useState<Fayl[]>([]);
   const [faylYuklanmoqda, setFaylYuklanmoqda] = useState(false);
@@ -268,6 +294,7 @@ export default function YangiKirimModal({ onClose }: Props) {
   );
 
   function supplierTanlash(id: string, name: string) {
+    fx.tozala("supplierId");
     setSupplierId(id);
     setSupplierQuery(name);
     setSupplierOchiq(false);
@@ -276,7 +303,7 @@ export default function YangiKirimModal({ onClose }: Props) {
   async function yangiSupplierQoshish() {
     const nomi = supplierQuery.trim();
     if (!nomi) return;
-    const ok = await store.yetkazibBeruvchiYaratish({ name: nomi });
+    const ok = await fx.kuzat(() => store.yetkazibBeruvchiYaratish({ name: nomi }));
     if (!ok) return;
     const yaratilgan = useOmborStore.getState().yetkazibBeruvchilar[0];
     if (yaratilgan) supplierTanlash(yaratilgan.id, yaratilgan.name ?? nomi);
@@ -389,34 +416,57 @@ export default function YangiKirimModal({ onClose }: Props) {
   }
 
   function tanlanganlarniOchirish() {
+    fx.tozala("items");
     setQatorlar((rows) => (rows.length > tanlangan.size ? rows.filter((row) => !tanlangan.has(row.id)) : rows));
     setTanlangan(new Set());
   }
 
   async function saqlash(tasdiqlash: boolean) {
     setXato("");
+    fx.ornat({});
     if (kursKerak) return setXato("yangiKirim.errors.exchangeRateRequired");
+    const miqdorTogri = (row: Qator) => Number.isFinite(row.quantity) && row.quantity > 0;
+    const narxTogri = (row: Qator) => Number.isFinite(Number(row.price)) && Number(row.price) >= 0;
     const valid = qatorlar.filter(
-      (row) => row.modificationId && row.warehouseId && Number.isFinite(row.quantity) && row.quantity > 0 && Number.isFinite(Number(row.price)) && Number(row.price) >= 0
+      (row) => row.modificationId && row.warehouseId && miqdorTogri(row) && narxTogri(row)
     );
-    if (!supplierId) return setXato("yangiKirim.errors.supplierRequired");
-    if (!valid.length || valid.length !== qatorlar.length)
-      return setXato("yangiKirim.errors.rowsIncomplete");
+    // Xato o'sha maydonning o'zida (qatorda — qator katagida); bo'sh maydonlarning hammasi birdaniga belgilanadi.
+    const xatolar: Record<string, string> = {};
+    if (!supplierId) xatolar.supplierId = t("yangiKirim.errors.supplierRequired");
+    if (!valid.length || valid.length !== qatorlar.length) {
+      if (!qatorlar.length) xatolar.items = t("yangiKirim.errors.rowsIncomplete");
+      qatorlar.forEach((row, index) => {
+        if (!row.modificationId) xatolar[`items.${index}.modificationId`] = t("yangiKirim.fieldErrors.productRequired");
+        if (!row.warehouseId) xatolar[`items.${index}.warehouseId`] = t("yangiKirim.fieldErrors.warehouseRequired");
+        if (!miqdorTogri(row)) xatolar[`items.${index}.quantity`] = t("yangiKirim.fieldErrors.quantityInvalid");
+        if (!narxTogri(row)) xatolar[`items.${index}.price`] = t("yangiKirim.fieldErrors.priceInvalid");
+      });
+    }
+    if (Object.keys(xatolar).length) return fx.ornat(xatolar);
+    // Qatorlar to'liq: `valid` — `qatorlar`ning o'zi, indeks so'rov tanasidagi `items.<i>` bilan bir xil.
+    const qatorXatolari = (shart: (row: Qator) => boolean, kalit: string, maydon: string) =>
+      Object.fromEntries(valid.flatMap((row, index) => (shart(row) ? [[`items.${index}.${maydon}`, t(kalit)] as const] : [])));
     if (new Set(valid.map((row) => row.warehouseId)).size !== 1)
-      return setXato("yangiKirim.errors.mixedWarehouse");
-    if (valid.some((row) => !miqdorYaroqlimi(birlikTopish(row.birliklar, row.birlikId), row.quantity)))
-      return setXato("yangiKirim.errors.quantityNotWhole");
-    const seriyalilar = valid.filter((row) => store.modifikatsiyalar.find((item) => item.id === row.modificationId)?.product?.trackSerial);
+      return fx.ornat(qatorXatolari((row) => row.warehouseId !== valid[0].warehouseId, "yangiKirim.fieldErrors.mixedWarehouse", "warehouseId"));
+    const butunEmas = (row: Qator) => !miqdorYaroqlimi(birlikTopish(row.birliklar, row.birlikId), row.quantity);
+    if (valid.some(butunEmas))
+      return fx.ornat(qatorXatolari(butunEmas, "yangiKirim.fieldErrors.quantityNotWhole", "quantity"));
+    const seriyalimi = (row: Qator) => Boolean(store.modifikatsiyalar.find((item) => item.id === row.modificationId)?.product?.trackSerial);
+    const seriyalilar = valid.filter(seriyalimi);
     const seriyalar = seriyalilar.map((row) => row.serial?.trim() ?? "");
-    if (seriyalar.some((seriya) => !seriya)) return setXato("yangiKirim.errors.serialRequired");
-    if (seriyalar.some((seriya) => !seriyaYaroqlimi(seriya))) return setXato("yangiKirim.errors.serialFormat");
-    if (new Set(seriyalar).size !== seriyalar.length) return setXato("yangiKirim.errors.serialDuplicate");
+    const seriyasi = (row: Qator) => row.serial?.trim() ?? "";
+    if (seriyalar.some((seriya) => !seriya))
+      return fx.ornat(qatorXatolari((row) => seriyalimi(row) && !seriyasi(row), "yangiKirim.fieldErrors.serialRequired", "serial"));
+    if (seriyalar.some((seriya) => !seriyaYaroqlimi(seriya)))
+      return fx.ornat(qatorXatolari((row) => seriyalimi(row) && !seriyaYaroqlimi(seriyasi(row)), "yangiKirim.errors.serialFormat", "serial"));
+    if (new Set(seriyalar).size !== seriyalar.length)
+      return fx.ornat(qatorXatolari((row) => seriyalimi(row) && seriyalilar.findIndex((boshqa) => seriyasi(boshqa) === seriyasi(row)) < seriyalilar.indexOf(row), "yangiKirim.fieldErrors.serialDuplicate", "serial"));
 
     const izohQismlari = [`Nomi: ${kirimNomi.trim() || "Kirim hujjati"}`];
     if (note.trim()) izohQismlari.push(note.trim());
     fayllar.forEach((fayl) => izohQismlari.push(`Fayl: ${fayl.nomi} (${fayl.url})`));
 
-    const hujjat = await store.kirimYaratish({
+    const hujjat = await fx.kuzat(() => store.kirimYaratish({
       ...yangiHujjatSanasi(hujjatSanasi),
       supplierId,
       warehouseId: valid[0].warehouseId,
@@ -426,7 +476,7 @@ export default function YangiKirimModal({ onClose }: Props) {
         const { birlik, sanashBirligi } = qatorBirliklari(row);
         return kirimElementiniYigish({ ...row, birlik, sanashBirligi, sanashSoni: Number(row.sanash) || 0 }, amaldagiKurs);
       }),
-    });
+    }));
     if (!hujjat) return;
 
     const narxOzgarganlar = valid.filter((row) => {
@@ -451,7 +501,7 @@ export default function YangiKirimModal({ onClose }: Props) {
       await store.malumotlarniYuklash();
     }
 
-    if (tasdiqlash && !(await store.kirimTasdiqlash(hujjat.id))) return;
+    if (tasdiqlash && !(await fx.kuzat(() => store.kirimTasdiqlash(hujjat.id)))) return;
     // Sanalgan miqdor kartochkadagi koeffitsientdan farq qilsa hujjat saqlangan: foydalanuvchiga ko'rsatib, keyin yopiladi.
     if (hujjat.warnings?.length) {
       setOgohlantirishlar(hujjat.warnings);
@@ -459,6 +509,9 @@ export default function YangiKirimModal({ onClose }: Props) {
     }
     onClose();
   }
+
+  // Maydoni ko'rsatilgan xato faqat maydon ostida; kurs, fayl va maydonga bog'lanmagan server xatosi tepada.
+  const tepadagiXato = fx.tepadagi || (xato ? t(xato) : fx.bor ? "" : store.xatolik);
 
   return (
     <AppModal onClose={onClose} className="sidebar-aligned-document-modal items-stretch p-3 sm:p-5">
@@ -485,13 +538,14 @@ export default function YangiKirimModal({ onClose }: Props) {
               <button type="button" onClick={onClose} className="mt-3 h-10 rounded-xl bg-amber-500 px-5 text-sm font-black text-white hover:bg-amber-600">{t("yangiKirim.units.continue")}</button>
             </div>
           )}
-          {(xato || store.xatolik) && (
+          {tepadagiXato && (
             <div className="mb-4 flex justify-between gap-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
-              <span>{xato ? t(xato) : store.xatolik}</span>
+              <span>{tepadagiXato}</span>
               <button
                 type="button"
                 onClick={() => {
                   setXato("");
+                  if (fx.tepadagi) fx.ornat({});
                   store.xatolikniTozalash();
                 }}
               >
@@ -514,11 +568,13 @@ export default function YangiKirimModal({ onClose }: Props) {
                   />
                 </label>
 
+                <XatoliMaydon xato={fx.xato("supplierId")}>
                 <div ref={supplierRef} className="relative space-y-2 text-sm font-bold text-slate-500">
                   <span>{t("yangiKirim.supplierLabel")}</span>
                   <input
                     value={supplierQuery}
                     onChange={(event) => {
+                      fx.tozala("supplierId");
                       setSupplierQuery(event.target.value);
                       setSupplierId("");
                       setSupplierOchiq(true);
@@ -559,11 +615,16 @@ export default function YangiKirimModal({ onClose }: Props) {
                     </div>
                   )}
                 </div>
+                </XatoliMaydon>
 
                 <SelectField
                   label={t("yangiKirim.responsibleLabel")}
                   value={responsibleId}
-                  onChange={setResponsibleId}
+                  xato={fx.xato("responsibleId")}
+                  onChange={(value) => {
+                    fx.tozala("responsibleId");
+                    setResponsibleId(value);
+                  }}
                   placeholder={t("yangiKirim.responsiblePlaceholder")}
                   options={store.xodimlar.map((item) => ({
                     id: item.id,
@@ -571,23 +632,38 @@ export default function YangiKirimModal({ onClose }: Props) {
                   }))}
                 />
 
-                <label className="space-y-2 text-sm font-bold text-slate-500">
-                  <span>{t("yangiKirim.dateLabel")}</span>
-                  <HujjatSanasiMaydoni value={hujjatSanasi} onChange={setHujjatSanasi} className={input} aria-label={t("yangiKirim.dateLabel")} />
-                </label>
+                <XatoliMaydon xato={fx.xato("date")}>
+                  <label className="space-y-2 text-sm font-bold text-slate-500">
+                    <span>{t("yangiKirim.dateLabel")}</span>
+                    <HujjatSanasiMaydoni
+                      value={hujjatSanasi}
+                      onChange={(kun) => {
+                        fx.tozala("date");
+                        setHujjatSanasi(kun);
+                      }}
+                      className={input}
+                      aria-label={t("yangiKirim.dateLabel")}
+                    />
+                  </label>
+                </XatoliMaydon>
               </div>
             </section>
 
             <div className="space-y-5">
               <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
                 <SectionTitle icon={<MessageSquare size={18} />} text={t("yangiKirim.commentSection")} />
-                <textarea
-                  value={note}
-                  onChange={(event) => setNote(event.target.value)}
-                  rows={3}
-                  placeholder={t("yangiKirim.commentPlaceholder")}
-                  className="w-full resize-none rounded-2xl border border-slate-200 p-4 text-sm font-medium outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
-                />
+                <XatoliMaydon xato={fx.xato("note")}>
+                  <textarea
+                    value={note}
+                    onChange={(event) => {
+                      fx.tozala("note");
+                      setNote(event.target.value);
+                    }}
+                    rows={3}
+                    placeholder={t("yangiKirim.commentPlaceholder")}
+                    className="w-full resize-none rounded-2xl border border-slate-200 p-4 text-sm font-medium outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+                  />
+                </XatoliMaydon>
               </section>
               <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
                 <SectionTitle icon={<Clock3 size={18} />} text={t("yangiKirim.historySection")} />
@@ -668,9 +744,10 @@ export default function YangiKirimModal({ onClose }: Props) {
                 </button>
                 <button
                   type="button"
-                  onClick={() =>
-                    setQatorlar((rows) => [...rows, yangiQator(rows[0]?.warehouseId || birinchiOmbor)])
-                  }
+                  onClick={() => {
+                    fx.tozala("items");
+                    setQatorlar((rows) => [...rows, yangiQator(rows[0]?.warehouseId || birinchiOmbor)]);
+                  }}
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-lg shadow-orange-100 hover:bg-orange-600"
                 >
                   <Plus size={18} /> {t("yangiKirim.addRow")}
@@ -680,7 +757,14 @@ export default function YangiKirimModal({ onClose }: Props) {
 
             {kursKerak && <p role="alert" className="mb-4 rounded-xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">{t("yangiKirim.errors.exchangeRateRequired")}</p>}
             <div className="mb-4">
-              <ShtrixKodMaydoni onSkan={kodniQoshish} inputClassName={inputSm} />
+              <ShtrixKodMaydoni
+                onSkan={(kod) => {
+                  const natija = kodniQoshish(kod);
+                  if (natija && !natija.xato) fx.tozala("items");
+                  return natija;
+                }}
+                inputClassName={inputSm}
+              />
             </div>
 
             <div className="scrollbar-orange overflow-x-auto pb-2">
@@ -731,10 +815,12 @@ export default function YangiKirimModal({ onClose }: Props) {
                         )}
                       </button>
                       <span className="text-center text-sm font-black text-slate-400">{index + 1}</span>
+                      <XatoliMaydon xato={fx.xato(`items.${index}.modificationId`)}>
                       <MahsulotTanlov
                         value={row.modificationId}
                         variantlar={mahsulotVariantlari}
                         onChange={(id) => {
+                          fx.tozala(`items.${index}`);
                           mahsulotTanlash(row.id, id);
                           // Mahsulot tanlangach fokus shu qatorning miqdoriga o'tadi.
                           fokusSoralish(row.id, "miqdor");
@@ -744,15 +830,19 @@ export default function YangiKirimModal({ onClose }: Props) {
                         tanlanganNomi={mod ? modificationNomi(mod) : undefined}
                         ochishSorovi={fokus?.maydon === "mahsulot" && fokus.qatorId === row.id ? fokus.n : 0}
                       />
+                      </XatoliMaydon>
                       <div className="relative">
                         <Barcode size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input value={mod?.barcode ?? ""} readOnly placeholder={t("yangiKirim.table.barcodePlaceholder")} className={`${inputSm} pl-8`} />
                       </div>
-                      <div className="relative"><SummaMaydoni
+                      <XatoliMaydon xato={fx.xato(`items.${index}.price`)}><div className="relative"><SummaMaydoni
                         aria-label={`${t("yangiKirim.table.costPriceHeader")} (${korsatishValyutasi(row, "price")})`}
                         value={narxQiymati(row, "price")}
                         data-kirim-narx={row.id}
-                        onChange={(qiymat) => narxniKiritish(row, "price", qiymat)}
+                        onChange={(qiymat) => {
+                          fx.tozala(`items.${index}.price`);
+                          narxniKiritish(row, "price", qiymat);
+                        }}
                         onKeyDown={(event) => {
                           if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
                           event.preventDefault();
@@ -760,7 +850,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                         }}
                         placeholder={t("yangiKirim.table.pricePlaceholder")}
                         className={`${inputSm} pr-16`}
-                      /><span className="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{korsatishValyutasi(row, "price")}</span></div>
+                      /><span className="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{korsatishValyutasi(row, "price")}</span></div></XatoliMaydon>
                       <div className="relative"><SummaMaydoni
                         aria-label={`${t("yangiKirim.table.retailPriceHeader")} (${korsatishValyutasi(row, "retailPrice")})`}
                         value={narxQiymati(row, "retailPrice")}
@@ -786,13 +876,17 @@ export default function YangiKirimModal({ onClose }: Props) {
                         className={`${inputSm} pr-16`}
                       /><span className="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{korsatishValyutasi(row, "wholesalePrice")}</span></div>
                       <div className="min-w-0 space-y-1.5">
+                      <XatoliMaydon xato={fx.xato(`items.${index}.quantity`)}>
                       <input
                         type="number"
                         min="0.001"
                         step="0.001"
                         value={row.miqdorMatni ?? row.quantity}
                         data-kirim-miqdor={row.id}
-                        onChange={(event) => yangilash(row.id, { miqdorMatni: event.target.value, quantity: Number(event.target.value) })}
+                        onChange={(event) => {
+                          fx.tozala(`items.${index}.quantity`);
+                          yangilash(row.id, { miqdorMatni: event.target.value, quantity: Number(event.target.value) });
+                        }}
                         onBlur={() => yangilash(row.id, { miqdorMatni: null })}
                         onKeyDown={(event) => {
                           if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
@@ -802,39 +896,56 @@ export default function YangiKirimModal({ onClose }: Props) {
                         }}
                         className={inputSm}
                       />
+                      </XatoliMaydon>
                       {mod?.product?.trackSerial && (
+                        <XatoliMaydon xato={fx.xato(`items.${index}.serial`)}>
                         <input
                           value={row.serial ?? ""}
                           aria-label={t("yangiKirim.table.serial")}
                           placeholder={t("yangiKirim.table.serial")}
-                          onChange={(event) => yangilash(row.id, { serial: event.target.value })}
+                          onChange={(event) => {
+                            fx.tozala(`items.${index}.serial`);
+                            yangilash(row.id, { serial: event.target.value });
+                          }}
                           className="h-9 w-full min-w-0 rounded-xl border border-orange-300 bg-white px-2 text-[11px] font-bold text-slate-700 outline-none focus:border-orange-400"
                         />
+                        </XatoliMaydon>
                       )}
                       {qabulOptlari.length > 0 && (
+                        <XatoliMaydon xato={fx.xato(`items.${index}.unitId`)}>
                         <select
                           aria-label={t("yangiKirim.units.unit")}
                           value={row.birlikId}
-                          onChange={(event) => birlikniOzgartirish(row, event.target.value)}
+                          onChange={(event) => {
+                            // Butun son tekshiruvi birlikka bog'liq: miqdor xatosi ham tozalanadi.
+                            fx.tozala(`items.${index}.unitId`, `items.${index}.quantity`);
+                            birlikniOzgartirish(row, event.target.value);
+                          }}
                           className="h-9 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-1 text-[11px] font-bold text-slate-700 outline-none focus:border-orange-400"
                         >
                           {qabulOptlari.map((birlik) => (
                             <option key={birlik.unitId} value={birlik.asosiy ? "" : birlik.unitId}>{birlik.qisqa || birlik.nomi}</option>
                           ))}
                         </select>
+                        </XatoliMaydon>
                       )}
                       {sanashBirligi && (
                         <div>
+                          <XatoliMaydon xato={fx.xato(`items.${index}.checkCount`) ?? fx.xato(`items.${index}.checkUnitId`)}>
                           <input
                             type="number"
                             min="0"
                             step="1"
                             value={row.sanash}
-                            onChange={(event) => yangilash(row.id, { sanash: event.target.value })}
+                            onChange={(event) => {
+                              fx.tozala(`items.${index}.checkCount`, `items.${index}.checkUnitId`);
+                              yangilash(row.id, { sanash: event.target.value });
+                            }}
                             aria-label={t("yangiKirim.units.countLabel", { unit: sanashBirligi.nomi })}
                             placeholder={t("yangiKirim.units.countPlaceholder", { unit: sanashBirligi.qisqa || sanashBirligi.nomi })}
                             className="h-9 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-2 text-[11px] font-bold text-slate-700 outline-none focus:border-orange-400"
                           />
+                          </XatoliMaydon>
                           {tekshiruv && (
                             <p className={`mt-1 text-[11px] font-semibold ${tekshiruv.ogohlantirish ? "text-amber-600" : "text-slate-400"}`}>
                               {t("yangiKirim.units.factorLine", { unit: sanashBirligi.qisqa || sanashBirligi.nomi, actual: tekshiruv.haqiqiy, base: asosiyNomi, card: sanashBirligi.koeff })}
@@ -843,11 +954,15 @@ export default function YangiKirimModal({ onClose }: Props) {
                         </div>
                       )}
                       </div>
+                      <XatoliMaydon xato={fx.xato(`items.${index}.warehouseId`) ?? (index === 0 ? fx.xato("warehouseId") : undefined)}>
                       <div className="relative">
                         <Warehouse size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                         <AppSelect
                           value={row.warehouseId}
-                          onChange={(event) => yangilash(row.id, { warehouseId: event.target.value })}
+                          onChange={(event) => {
+                            fx.tozala(`items.${index}.warehouseId`, "warehouseId");
+                            yangilash(row.id, { warehouseId: event.target.value });
+                          }}
                           className={`${inputSm} appearance-none pl-8 pr-7`}
                         >
                           <option value="">{t("yangiKirim.table.selectWarehouseOption")}</option>
@@ -861,13 +976,17 @@ export default function YangiKirimModal({ onClose }: Props) {
                         </AppSelect>
                         <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       </div>
+                      </XatoliMaydon>
                       <p className="truncate text-center text-xs font-bold text-slate-500">
                         {stock ? qoldiqMiqdori(stock) : 0}
                       </p>
                       <button
                         type="button"
                         disabled={qatorlar.length === 1}
-                        onClick={() => setQatorlar((rows) => rows.filter((item) => item.id !== row.id))}
+                        onClick={() => {
+                          fx.tozala("items");
+                          setQatorlar((rows) => rows.filter((item) => item.id !== row.id));
+                        }}
                         aria-label={t("yangiKirim.table.deleteRowAria")}
                         className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-100 disabled:opacity-30"
                       >
@@ -878,6 +997,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                 })}
               </div>
             </div>
+            <div className="mt-3 empty:hidden"><MaydonXatosi matn={fx.xato("items")} /></div>
 
             <div className="mt-4 flex flex-col gap-3 border-t border-orange-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <button
@@ -913,6 +1033,8 @@ export default function YangiKirimModal({ onClose }: Props) {
         <MahsulotYaratishPanel
           onClose={() => setYaratishOchiqUchun(null)}
           onYaratildi={(modification) => {
+            const index = qatorlar.findIndex((row) => row.id === yaratishOchiqUchun);
+            if (index >= 0) fx.tozala(`items.${index}`);
             mahsulotTanlash(yaratishOchiqUchun, modification.id);
             setYaratishOchiqUchun(null);
           }}
@@ -935,6 +1057,7 @@ function MahsulotYaratishPanel({
   const [birliklar, setBirliklar] = useState<OlchovBirligi[]>([]);
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [xato, setXato] = useState("");
+  const fx = useMaydonXatolari(MAHSULOT_XATO_QOIDALARI);
   const [saqlanmoqda, setSaqlanmoqda] = useState(false);
   const [nomi, setNomi] = useState("");
   const [barcode, setBarcode] = useState("");
@@ -966,25 +1089,36 @@ function MahsulotYaratishPanel({
 
   async function saqlash() {
     setXato("");
+    fx.ornat({});
     if (!nomi.trim() || !barcode.trim() || !categoryId || !unitId) {
-      setXato("mahsulotYaratish.errors.required");
+      // Bo'sh majburiy maydonlarning har biri o'z joyida belgilanadi.
+      const majburiy = t("mahsulotYaratish.fieldErrors.required");
+      fx.ornat({
+        ...(!nomi.trim() ? { name: majburiy } : {}),
+        ...(!barcode.trim() ? { barcode: majburiy } : {}),
+        ...(!categoryId ? { categoryId: majburiy } : {}),
+        ...(!unitId ? { unitId: majburiy } : {}),
+      });
       return;
     }
     setSaqlanmoqda(true);
     try {
-      const mahsulot = await mahsulotlarApi.yaratish({
-        name: nomi.trim(),
-        categoryId,
-        unitId,
-        barcode: barcode.trim(),
-      });
-      const modification = await modifikatsiyalarApi.yaratish(mahsulot.id, {
-        barcode: barcode.trim(),
-        price: {
-          costPrice: Number(costPrice || 0),
-          retailPrice: Number(retailPrice || 0),
-          wholesalePrice: Number(wholesalePrice || 0),
-        },
+      // Server xatosi (validatsiya maydoni yoki kodi) shu oynaning maydoniga bog'lanadi.
+      const modification = await fx.kuzat(async () => {
+        const mahsulot = await mahsulotlarApi.yaratish({
+          name: nomi.trim(),
+          categoryId,
+          unitId,
+          barcode: barcode.trim(),
+        });
+        return modifikatsiyalarApi.yaratish(mahsulot.id, {
+          barcode: barcode.trim(),
+          price: {
+            costPrice: Number(costPrice || 0),
+            retailPrice: Number(retailPrice || 0),
+            wholesalePrice: Number(wholesalePrice || 0),
+          },
+        });
       });
       await store.malumotlarniYuklash();
       onYaratildi({ id: modification.id });
@@ -1011,30 +1145,40 @@ function MahsulotYaratishPanel({
           </div>
         ) : (
           <div className="mt-5 space-y-4">
-            {xato && <div className="rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-600">{t(xato)}</div>}
+            {(fx.tepadagi || (!fx.bor && xato)) && <div className="rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-600">{fx.tepadagi || t(xato)}</div>}
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="space-y-2 text-sm font-bold text-slate-500 sm:col-span-2">
-                <span>{t("mahsulotYaratish.nameLabel")}</span>
-                <input value={nomi} onChange={(event) => setNomi(event.target.value)} className={inputSm} placeholder={t("mahsulotYaratish.namePlaceholder")} />
-              </label>
-              <label className="space-y-2 text-sm font-bold text-slate-500">
-                <span>{t("mahsulotYaratish.barcodeLabel")}</span>
-                <input value={barcode} onChange={(event) => setBarcode(event.target.value)} className={inputSm} placeholder={t("mahsulotYaratish.barcodePlaceholder")} />
-              </label>
-              <SelectField label={t("mahsulotYaratish.categoryLabel")} value={categoryId} onChange={setCategoryId} placeholder={t("mahsulotYaratish.selectPlaceholder")} options={kategoriyalar.map((item) => ({ id: item.id, name: item.name }))} />
-              <SelectField label={t("mahsulotYaratish.unitLabel")} value={unitId} onChange={setUnitId} placeholder={t("mahsulotYaratish.selectPlaceholder")} options={birliklar.map((item) => ({ id: item.id, name: item.shortName ? `${item.name} (${item.shortName})` : item.name }))} />
-              <label className="space-y-2 text-sm font-bold text-slate-500">
-                <span>{t("mahsulotYaratish.costPriceLabel")}</span>
-                <SummaMaydoni value={costPrice} onChange={setCostPrice} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
-              </label>
-              <label className="space-y-2 text-sm font-bold text-slate-500">
-                <span>{t("mahsulotYaratish.retailPriceLabel")}</span>
-                <SummaMaydoni value={retailPrice} onChange={setRetailPrice} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
-              </label>
-              <label className="space-y-2 text-sm font-bold text-slate-500">
-                <span>{t("mahsulotYaratish.wholesalePriceLabel")}</span>
-                <SummaMaydoni value={wholesalePrice} onChange={setWholesalePrice} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
-              </label>
+              <XatoliMaydon xato={fx.xato("name")} className="sm:col-span-2">
+                <label className="space-y-2 text-sm font-bold text-slate-500 sm:col-span-2">
+                  <span>{t("mahsulotYaratish.nameLabel")}</span>
+                  <input value={nomi} onChange={(event) => { fx.tozala("name"); setNomi(event.target.value); }} className={inputSm} placeholder={t("mahsulotYaratish.namePlaceholder")} />
+                </label>
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("barcode")}>
+                <label className="space-y-2 text-sm font-bold text-slate-500">
+                  <span>{t("mahsulotYaratish.barcodeLabel")}</span>
+                  <input value={barcode} onChange={(event) => { fx.tozala("barcode"); setBarcode(event.target.value); }} className={inputSm} placeholder={t("mahsulotYaratish.barcodePlaceholder")} />
+                </label>
+              </XatoliMaydon>
+              <SelectField label={t("mahsulotYaratish.categoryLabel")} value={categoryId} xato={fx.xato("categoryId")} onChange={(value) => { fx.tozala("categoryId"); setCategoryId(value); }} placeholder={t("mahsulotYaratish.selectPlaceholder")} options={kategoriyalar.map((item) => ({ id: item.id, name: item.name }))} />
+              <SelectField label={t("mahsulotYaratish.unitLabel")} value={unitId} xato={fx.xato("unitId")} onChange={(value) => { fx.tozala("unitId"); setUnitId(value); }} placeholder={t("mahsulotYaratish.selectPlaceholder")} options={birliklar.map((item) => ({ id: item.id, name: item.shortName ? `${item.name} (${item.shortName})` : item.name }))} />
+              <XatoliMaydon xato={fx.xato("costPrice")}>
+                <label className="space-y-2 text-sm font-bold text-slate-500">
+                  <span>{t("mahsulotYaratish.costPriceLabel")}</span>
+                  <SummaMaydoni value={costPrice} onChange={(qiymat) => { fx.tozala("costPrice"); setCostPrice(qiymat); }} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
+                </label>
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("retailPrice")}>
+                <label className="space-y-2 text-sm font-bold text-slate-500">
+                  <span>{t("mahsulotYaratish.retailPriceLabel")}</span>
+                  <SummaMaydoni value={retailPrice} onChange={(qiymat) => { fx.tozala("retailPrice"); setRetailPrice(qiymat); }} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
+                </label>
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("wholesalePrice")}>
+                <label className="space-y-2 text-sm font-bold text-slate-500">
+                  <span>{t("mahsulotYaratish.wholesalePriceLabel")}</span>
+                  <SummaMaydoni value={wholesalePrice} onChange={(qiymat) => { fx.tozala("wholesalePrice"); setWholesalePrice(qiymat); }} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
+                </label>
+              </XatoliMaydon>
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <button type="button" onClick={onClose} className="h-11 rounded-2xl bg-slate-100 px-5 text-sm font-bold text-slate-600">
@@ -1072,14 +1216,17 @@ function SelectField({
   onChange,
   placeholder,
   options,
+  xato,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
   options: Array<{ id: string; name: string }>;
+  xato?: string;
 }) {
   return (
+    <XatoliMaydon xato={xato}>
     <label className="space-y-2 text-sm font-bold text-slate-500">
       <span>{label}</span>
       <div className="relative">
@@ -1094,6 +1241,7 @@ function SelectField({
         <ChevronDown size={17} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
       </div>
     </label>
+    </XatoliMaydon>
   );
 }
 

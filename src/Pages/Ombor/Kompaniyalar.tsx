@@ -2,12 +2,23 @@ import { useState, type FormEvent } from "react";
 import { Building2, Edit3, LoaderCircle, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import PhoneInput from "@/Components/ui/PhoneInput";
 import { useOmborStore } from "@/store/omborStore";
 import type { Kompaniya } from "@/types/ombor";
 
 const maydonKlass =
   "h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 outline-none transition-colors focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70";
+
+// Server xatosi qaysi maydonga tegishli (kalit — so'rov tanasidagi backend nomi).
+const KOMPANIYA_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  name: { maydonlar: ["name"], kodlar: ["name"], sozlar: ["kompaniya nomi", "название компании"] },
+  inn: { maydonlar: ["inn"], kodlar: ["inn"], sozlar: ["stir", "инн"] },
+  phone: { maydonlar: ["phone"], kodlar: ["phone"], sozlar: ["telefon", "телефон"] },
+  address: { maydonlar: ["address"], kodlar: ["address"], sozlar: ["manzil", "адрес"] },
+};
 
 export default function Kompaniyalar() {
   const { t } = useTranslation("ombor_kichik");
@@ -18,6 +29,7 @@ export default function Kompaniyalar() {
   const [inn, setInn] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
+  const fx = useMaydonXatolari(KOMPANIYA_XATO_QOIDALARI);
 
   function tozalash() {
     setEditing(null);
@@ -25,6 +37,7 @@ export default function Kompaniyalar() {
     setInn("");
     setAddress("");
     setPhone("");
+    fx.ornat({});
     store.xatolikniTozalash();
   }
 
@@ -35,6 +48,7 @@ export default function Kompaniyalar() {
 
   async function tahrirlash(id: string) {
     store.xatolikniTozalash();
+    fx.ornat({});
     const kompaniya = await store.kompaniyaOlish(id);
     if (!kompaniya) return;
     setEditing(kompaniya);
@@ -47,16 +61,20 @@ export default function Kompaniyalar() {
 
   async function saqlash(event: FormEvent) {
     event.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      fx.ornat({ name: t("kompaniyalar.errors.nameRequired") });
+      return;
+    }
+    fx.ornat({});
     const data = {
       name: name.trim(),
       inn: inn.trim() || undefined,
       address: address.trim() || undefined,
       phone: phone.trim() || undefined,
     };
-    const ok = editing
-      ? await store.kompaniyaYangilash(editing.id, data)
-      : await store.kompaniyaYaratish(data);
+    const ok = await fx.kuzat(() => (editing
+      ? store.kompaniyaYangilash(editing.id, data)
+      : store.kompaniyaYaratish(data)));
     if (ok) setModal(false);
   }
 
@@ -105,12 +123,12 @@ export default function Kompaniyalar() {
         <AppModal>
           <form onSubmit={saqlash} className="w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl">
             <h2 className="text-2xl font-black">{editing ? t("kompaniyalar.modalEditTitle") : t("kompaniyalar.modalNewTitle")}</h2>
-            {store.xatolik && <div className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-600">{store.xatolik}</div>}
+            {(fx.tepadagi || (!fx.bor && store.xatolik)) && <div className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-600">{fx.tepadagi || store.xatolik}</div>}
             <div className="mt-5 space-y-3">
-              <input value={name} onChange={(e)=>setName(e.target.value)} className={maydonKlass} placeholder={t("kompaniyalar.namePlaceholder")}/>
-              <input value={inn} onChange={(e)=>setInn(e.target.value)} className={maydonKlass} placeholder={t("kompaniyalar.innPlaceholder")}/>
-              <PhoneInput value={phone} onChange={setPhone}/>
-              <textarea value={address} onChange={(e)=>setAddress(e.target.value)} className={`${maydonKlass} h-auto min-h-24 py-3`} placeholder={t("kompaniyalar.addressPlaceholder")}/>
+              <XatoliMaydon xato={fx.xato("name")}><input value={name} onChange={(e)=>{ fx.tozala("name"); setName(e.target.value); }} className={maydonKlass} placeholder={t("kompaniyalar.namePlaceholder")}/></XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("inn")}><input value={inn} onChange={(e)=>{ fx.tozala("inn"); setInn(e.target.value); }} className={maydonKlass} placeholder={t("kompaniyalar.innPlaceholder")}/></XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("phone")}><PhoneInput value={phone} onChange={(qiymat)=>{ fx.tozala("phone"); setPhone(qiymat); }} invalid={Boolean(fx.xato("phone"))}/></XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("address")}><textarea value={address} onChange={(e)=>{ fx.tozala("address"); setAddress(e.target.value); }} className={`${maydonKlass} h-auto min-h-24 py-3`} placeholder={t("kompaniyalar.addressPlaceholder")}/></XatoliMaydon>
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button type="button" onClick={()=>setModal(false)} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t("kompaniyalar.closeButton")}</button>

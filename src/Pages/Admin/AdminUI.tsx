@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AlertCircle, Inbox, LoaderCircle, Search, X } from "lucide-react";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
 import { cn } from "@/lib/utils";
 
 // Super admin sahifalari uchun umumiy kichik komponentlar.
@@ -27,13 +28,16 @@ export function SahifaSarlavhasi({ eyebrow, sarlavha, tavsif, amallar, ikonka }:
   );
 }
 
-export function Maydon({ nom, children, izoh }: { nom: string; children: ReactNode; izoh?: string }) {
+// `xato` bo'lsa maydon qizil ramkada va ostida xato matni (o'ram doim bor — xato paydo bo'lganda kiritish qayta yaratilmaydi).
+export function Maydon({ nom, children, izoh, xato }: { nom: string; children: ReactNode; izoh?: string; xato?: string }) {
   return (
-    <label className="block">
-      <span className="mb-1.5 block text-xs font-bold text-slate-600">{nom}</span>
-      {children}
-      {izoh && <span className="mt-1.5 block text-xs text-slate-400">{izoh}</span>}
-    </label>
+    <XatoliMaydon xato={xato}>
+      <label className="block">
+        <span className="mb-1.5 block text-xs font-bold text-slate-600">{nom}</span>
+        {children}
+        {izoh && <span className="mt-1.5 block text-xs text-slate-400">{izoh}</span>}
+      </label>
+    </XatoliMaydon>
   );
 }
 

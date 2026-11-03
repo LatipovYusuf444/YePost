@@ -10,14 +10,25 @@ import {
   RefreshCw,
   Save,
 } from "lucide-react";
+import axios from "axios";
 import { integratsiyalarApi } from "@/api/integrationsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { botTokenKerakmi } from "@/lib/telegramXabarnoma";
 
-type FormaXatolari = {
-  telegram?: string;
-  printer?: string;
+// Server xatosini Telegram / printer formasi maydoniga bog'lash (kalit — backend maydon nomi).
+const TELEGRAM_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  botToken: { maydonlar: ["botToken"], kodlar: ["bot_token", "token"], sozlar: ["bot token", "bot_token", "bottoken", "токен"] },
+  chatId: { maydonlar: ["chatId"], kodlar: ["chat_id", "chat"], sozlar: ["chat id", "chat_id", "chatid"] },
 };
+const PRINTER_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  ipAddress: { maydonlar: ["ipAddress"], kodlar: ["ip_address", "invalid_ip"], sozlar: ["ip manzil", "ip address", "ipaddress", "ip-адрес", "ip адрес"] },
+  port: { maydonlar: ["port"], kodlar: ["invalid_port", "port_invalid"], sozlar: ["port must", "port 1", "порт"] },
+};
+
+const xatoTanasi = (error: unknown) => (axios.isAxiosError(error) ? error.response?.data : undefined);
 
 export default function Integratsiyalar() {
   const [telegramToken, setTelegramToken] = useState("");
@@ -38,7 +49,8 @@ export default function Integratsiyalar() {
   );
   const [xatolik, setXatolik] = useState("");
   const [muvaffaqiyat, setMuvaffaqiyat] = useState("");
-  const [formaXatolari, setFormaXatolari] = useState<FormaXatolari>({});
+  const telegramXato = useMaydonXatolari(TELEGRAM_XATO_QOIDALARI);
+  const printerXato = useMaydonXatolari(PRINTER_XATO_QOIDALARI);
 
   async function malumotlarniYuklash() {
     setYuklanmoqda(true);
@@ -76,14 +88,14 @@ export default function Integratsiyalar() {
     return "";
   }
 
-  function printerniTekshirish() {
-    if (!printerFaol) return "";
-    if (!printerIp.trim()) return "Printer IP manzili kiritilishi kerak.";
+  function printerniTekshirish(): Record<string, string> {
+    if (!printerFaol) return {};
+    if (!printerIp.trim()) return { ipAddress: "Printer IP manzili kiritilishi kerak." };
     const port = Number(printerPort);
     if (!Number.isInteger(port) || port < 1 || port > 65535) {
-      return "Port 1 dan 65535 gacha butun son bo'lishi kerak.";
+      return { port: "Port 1 dan 65535 gacha butun son bo'lishi kerak." };
     }
-    return "";
+    return {};
   }
 
   async function telegramniSaqlash(event: FormEvent) {
@@ -91,7 +103,7 @@ export default function Integratsiyalar() {
     setXatolik("");
     setMuvaffaqiyat("");
     const xato = telegramniTekshirish();
-    setFormaXatolari((old) => ({ ...old, telegram: xato || undefined }));
+    telegramXato.ornat(xato ? { botToken: xato } : {});
     if (xato) return;
 
     setSaqlanmoqda("telegram");
@@ -109,7 +121,7 @@ export default function Integratsiyalar() {
       setCrmBotFaol(Boolean(data.crmBotEnabled));
       setMuvaffaqiyat("Telegram integratsiyasi saqlandi.");
     } catch (error) {
-      setXatolik(getApiErrorMessage(error));
+      if (!telegramXato.serverdan(xatoTanasi(error))) setXatolik(getApiErrorMessage(error));
     } finally {
       setSaqlanmoqda(null);
     }
@@ -119,9 +131,9 @@ export default function Integratsiyalar() {
     event.preventDefault();
     setXatolik("");
     setMuvaffaqiyat("");
-    const xato = printerniTekshirish();
-    setFormaXatolari((old) => ({ ...old, printer: xato || undefined }));
-    if (xato) return;
+    const xatolar = printerniTekshirish();
+    printerXato.ornat(xatolar);
+    if (Object.keys(xatolar).length) return;
 
     setSaqlanmoqda("printer");
     try {
@@ -135,11 +147,14 @@ export default function Integratsiyalar() {
       setPrinterFaol(Boolean(data.isActive));
       setMuvaffaqiyat("Printer integratsiyasi saqlandi.");
     } catch (error) {
-      setXatolik(getApiErrorMessage(error));
+      if (!printerXato.serverdan(xatoTanasi(error))) setXatolik(getApiErrorMessage(error));
     } finally {
       setSaqlanmoqda(null);
     }
   }
+
+  // Maydoniga bog'langan server xatosi faqat maydon ostida ko'rinadi; bog'lanmagani (va yuklash xatosi) tepada qoladi.
+  const tepadagiXato = telegramXato.tepadagi || printerXato.tepadagi || xatolik;
 
   if (yuklanmoqda) {
     return (
@@ -171,9 +186,9 @@ export default function Integratsiyalar() {
         </button>
       </div>
 
-      {xatolik && (
+      {tepadagiXato && (
         <div className="flex justify-between rounded-2xl bg-red-50 p-4 font-bold text-red-600">
-          <span>{xatolik}</span>
+          <span>{tepadagiXato}</span>
           <button onClick={() => setXatolik("")}>Yopish</button>
         </div>
       )}
@@ -206,15 +221,19 @@ export default function Integratsiyalar() {
           </div>
 
           <div className="space-y-4 p-6">
+            <XatoliMaydon xato={telegramXato.xato("botToken")}>
             <label className="block text-sm font-bold text-gray-700">
               Bot token
-              <div className="mt-2 flex h-12 items-center rounded-2xl border border-gray-200 bg-white px-4 focus-within:border-orange-300 focus-within:ring-4 focus-within:ring-orange-50">
+              <div data-maydon-boshqaruvi className="mt-2 flex h-12 items-center rounded-2xl border border-gray-200 bg-white px-4 focus-within:border-orange-300 focus-within:ring-4 focus-within:ring-orange-50">
                 <MessageCircle size={17} className="text-orange-500" />
                 <input
                   type={tokenKorinsin ? "text" : "password"}
                   value={telegramToken}
-                  onChange={(event) => setTelegramToken(event.target.value)}
-                  className="h-full min-w-0 flex-1 bg-transparent px-3 font-semibold outline-none"
+                  onChange={(event) => {
+                    telegramXato.tozala("botToken");
+                    setTelegramToken(event.target.value);
+                  }}
+                  className="h-full min-w-0 flex-1 bg-transparent px-3 font-semibold outline-none !ring-0"
                   placeholder={tokenOxirgi4 ? `••••${tokenOxirgi4}` : "123456789:AAExampleBotTokenString"}
                   autoComplete="off"
                 />
@@ -228,16 +247,22 @@ export default function Integratsiyalar() {
                 </button>
               </div>
             </label>
+            </XatoliMaydon>
 
+            <XatoliMaydon xato={telegramXato.xato("chatId")}>
             <label className="block text-sm font-bold text-gray-700">
               Chat ID (ixtiyoriy)
               <input
                 value={telegramChatId}
-                onChange={(event) => setTelegramChatId(event.target.value)}
+                onChange={(event) => {
+                  telegramXato.tozala("chatId");
+                  setTelegramChatId(event.target.value);
+                }}
                 className="mt-2 h-12 w-full rounded-2xl border border-gray-200 px-4 font-semibold outline-none focus:border-orange-300 focus:ring-4 focus:ring-orange-50"
                 placeholder="-1001234567890"
               />
             </label>
+            </XatoliMaydon>
 
             <label className="flex items-center justify-between gap-4 rounded-2xl bg-gray-50 p-4 font-bold text-gray-700">
               <span>
@@ -248,12 +273,6 @@ export default function Integratsiyalar() {
               </span>
               <Toggle checked={crmBotFaol} onChange={setCrmBotFaol} compact />
             </label>
-
-            {formaXatolari.telegram && (
-              <p className="rounded-xl bg-red-50 p-3 text-sm font-bold text-red-600">
-                {formaXatolari.telegram}
-              </p>
-            )}
 
             <button
               disabled={saqlanmoqda === "telegram"}
@@ -289,16 +308,22 @@ export default function Integratsiyalar() {
           </div>
 
           <div className="space-y-4 p-6">
+            <XatoliMaydon xato={printerXato.xato("ipAddress")}>
             <label className="block text-sm font-bold text-gray-700">
               IP manzil
               <input
                 value={printerIp}
-                onChange={(event) => setPrinterIp(event.target.value)}
+                onChange={(event) => {
+                  printerXato.tozala("ipAddress");
+                  setPrinterIp(event.target.value);
+                }}
                 className="mt-2 h-12 w-full rounded-2xl border border-gray-200 px-4 font-semibold outline-none focus:border-orange-300 focus:ring-4 focus:ring-orange-50"
                 placeholder="192.168.1.100"
               />
             </label>
+            </XatoliMaydon>
 
+            <XatoliMaydon xato={printerXato.xato("port")}>
             <label className="block text-sm font-bold text-gray-700">
               Port
               <input
@@ -306,22 +331,20 @@ export default function Integratsiyalar() {
                 min="1"
                 max="65535"
                 value={printerPort}
-                onChange={(event) => setPrinterPort(event.target.value)}
+                onChange={(event) => {
+                  printerXato.tozala("port");
+                  setPrinterPort(event.target.value);
+                }}
                 className="mt-2 h-12 w-full rounded-2xl border border-gray-200 px-4 font-semibold outline-none focus:border-orange-300 focus:ring-4 focus:ring-orange-50"
                 placeholder="9100"
               />
             </label>
+            </XatoliMaydon>
 
             <div className="rounded-2xl bg-gray-50 p-4 text-sm text-gray-500">
               Odatda ESC/POS printerlar 9100 port orqali ishlaydi. Printer va
               kompyuter bir xil lokal tarmoqda bo'lishi kerak.
             </div>
-
-            {formaXatolari.printer && (
-              <p className="rounded-xl bg-red-50 p-3 text-sm font-bold text-red-600">
-                {formaXatolari.printer}
-              </p>
-            )}
 
             <button
               disabled={saqlanmoqda === "printer"}

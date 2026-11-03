@@ -3,6 +3,8 @@ import { ArrowRight, ChevronRight, Eye, EyeOff, KeyRound, LoaderCircle, LockKeyh
 import { useTranslation } from "react-i18next";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import {
   dokonKodiKerakmi,
   dokonKodiniSaqlash,
@@ -26,6 +28,17 @@ type FieldErrors = {
   username?: string;
   password?: string;
 };
+
+// Server xatosi → maydon (so'rov tanasi: { workspace?, username, password }). invalid_credentials qaysi maydonligi noma'lum —
+// shuning uchun xabar so'zi bo'yicha login/parolga bog'lanmaydi, tepada qoladi.
+const LOGIN_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  workspace: { maydonlar: ["workspace"], kodlar: ["workspace"] },
+  username: { maydonlar: ["username"] },
+  password: { maydonlar: ["password"] },
+};
+
+// Faqat axios xatosining javob tanasi (axios import qilinmaydi — xato strukturasi bo'yicha).
+const javobTanasi = (error: unknown) => (error as { response?: { data?: unknown } } | null | undefined)?.response?.data;
 
 
 function validateLogin(username: string, password: string, errors: Record<string, string>) {
@@ -68,6 +81,8 @@ export default function Login() {
   const [errorMessage, setErrorMessage] = useState("");
   const [touched, setTouched] = useState({ username: false, password: false });
   const [submitTried, setSubmitTried] = useState(false);
+  // Server xatosi tegishli maydon ostida (do'kon kodi kerak → do'kon kodi maydoni); mos maydon bo'lmasa — tepadagi xabar.
+  const fx = useMaydonXatolari(LOGIN_QOIDALARI);
 
   const errorMessages = useMemo(
     () => ({
@@ -86,6 +101,11 @@ export default function Login() {
   );
   const showUsernameError = (touched.username || submitTried) && validationErrors.username;
   const showPasswordError = (touched.password || submitTried) && validationErrors.password;
+  // Mijoz tekshiruvi ustun, keyin server xatosi.
+  const kodMaydonXatosi = dokonKodiXatosi || fx.xato("workspace") || "";
+  const usernameXatosi = (showUsernameError ? validationErrors.username : "") || fx.xato("username") || "";
+  const passwordXatosi = (showPasswordError ? validationErrors.password : "") || fx.xato("password") || "";
+  const tepaXatosi = fx.tepadagi || (fx.bor ? "" : errorMessage);
 
   if (isAuthSessionValid({ accessToken, expiresAt })) {
     return <Navigate to="/" replace />;
@@ -95,6 +115,7 @@ export default function Login() {
     event.preventDefault();
     setSubmitTried(true);
     setErrorMessage("");
+    fx.ornat({});
 
     const errors = validateLogin(username, password, errorMessages);
     // Backend "do'kon kodi kerak" degandan keyin maydon majburiy: bo'sh bo'lsa so'rov yuborilmaydi.
@@ -121,6 +142,7 @@ export default function Login() {
         dokonKodiRef.current?.focus();
       }
       setErrorMessage(getApiErrorMessage(error));
+      fx.serverdan(javobTanasi(error));
     } finally {
       setIsSubmitting(false);
     }
@@ -129,7 +151,7 @@ export default function Login() {
   return (
     <AuthPanel title="Xush kelibsiz!" subtitle="Tizimga kirish uchun o'z ma'lumotlaringizni kiriting">
                 <form className="mt-8 space-y-5" onSubmit={handleSubmit} noValidate>
-                  <label className="block">
+                  <label className="block" data-maydon-xato={kodMaydonXatosi ? "true" : undefined}>
                     <span className="mb-2 flex items-baseline justify-between gap-2 text-sm font-bold text-blue-50">
                       {t("workspaceLabel")}
                       <small className={`text-[11px] font-semibold ${dokonKodiKerak ? "text-amber-300" : "text-blue-200/60"}`}>
@@ -138,14 +160,14 @@ export default function Login() {
                     </span>
                     <span
                       className={`login-input flex h-14 items-center gap-3 rounded-2xl border bg-white/[0.035] px-4 transition focus-within:bg-white/[0.055] focus-within:ring-[3px] ${
-                        dokonKodiXatosi
+                        kodMaydonXatosi
                           ? "border-red-300 focus-within:ring-red-100"
                           : dokonKodiKerak
                             ? "border-amber-300/70 focus-within:border-amber-300 focus-within:ring-amber-300/20"
                             : "border-blue-300/35 focus-within:border-blue-400 focus-within:ring-blue-500/20"
                       }`}
                     >
-                      <Store size={18} className={dokonKodiXatosi ? "shrink-0 text-red-500" : "shrink-0 text-blue-500"} />
+                      <Store size={18} className={kodMaydonXatosi ? "shrink-0 text-red-500" : "shrink-0 text-blue-500"} />
                       <input
                         ref={dokonKodiRef}
                         id="workspace"
@@ -155,36 +177,37 @@ export default function Login() {
                           setDokonKodi(event.target.value);
                           setDokonKodiXatosi("");
                           setErrorMessage("");
+                          fx.tozala("workspace");
                         }}
                         autoComplete="off"
                         autoCapitalize="none"
                         spellCheck={false}
                         placeholder={t("workspacePlaceholder")}
                         className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-white outline-none placeholder:text-blue-200/70"
-                        aria-invalid={Boolean(dokonKodiXatosi)}
+                        aria-invalid={Boolean(kodMaydonXatosi)}
                       />
                     </span>
-                    {dokonKodiXatosi ? (
-                      <p className="mt-2 text-xs font-bold text-red-500">{dokonKodiXatosi}</p>
+                    {kodMaydonXatosi ? (
+                      <p className="mt-2 text-xs font-bold text-red-500">{kodMaydonXatosi}</p>
                     ) : (
                       <p className="mt-2 text-[11px] font-medium leading-4 text-blue-100/55">{t("workspaceHint")}</p>
                     )}
                   </label>
 
-                  <label className="block">
+                  <label className="block" data-maydon-xato={usernameXatosi ? "true" : undefined}>
                     <span className="mb-2 block text-sm font-bold text-blue-50">
                       {t("usernameLabel")}
                     </span>
                     <span
                       className={`login-input flex h-14 items-center gap-3 rounded-2xl border bg-white/[0.035] px-4 transition focus-within:bg-white/[0.055] focus-within:ring-[3px] ${
-                        showUsernameError
+                        usernameXatosi
                           ? "border-red-300 focus-within:ring-red-100"
                           : "border-blue-300/35 focus-within:border-blue-400 focus-within:ring-blue-500/20"
                       }`}
                     >
                       <UserRound
                         size={18}
-                        className={showUsernameError ? "shrink-0 text-red-500" : "shrink-0 text-blue-500"}
+                        className={usernameXatosi ? "shrink-0 text-red-500" : "shrink-0 text-blue-500"}
                       />
                       <input
                         value={username}
@@ -192,31 +215,32 @@ export default function Login() {
                         onChange={(event) => {
                           setUsername(event.target.value);
                           setErrorMessage("");
+                          fx.tozala("username");
                         }}
                         onBlur={() => setTouched((current) => ({ ...current, username: true }))}
                         autoComplete="off"
                         placeholder={t("usernamePlaceholder")}
                         className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-white outline-none placeholder:text-blue-200/70"
-                        aria-invalid={Boolean(showUsernameError)}
+                        aria-invalid={Boolean(usernameXatosi)}
                       />
                     </span>
-                    {showUsernameError && (
-                      <p className="mt-2 text-xs font-bold text-red-500">{validationErrors.username}</p>
+                    {usernameXatosi && (
+                      <p className="mt-2 text-xs font-bold text-red-500">{usernameXatosi}</p>
                     )}
                   </label>
 
-                  <label className="block">
+                  <label className="block" data-maydon-xato={passwordXatosi ? "true" : undefined}>
                     <span className="mb-2 block text-sm font-bold text-blue-50">{t("passwordLabel")}</span>
                     <span
                       className={`login-input flex h-14 items-center gap-3 rounded-2xl border bg-white/[0.035] px-4 transition focus-within:bg-white/[0.055] focus-within:ring-[3px] ${
-                        showPasswordError
+                        passwordXatosi
                           ? "border-red-300 focus-within:ring-red-100"
                           : "border-blue-300/35 focus-within:border-blue-400 focus-within:ring-blue-500/20"
                       }`}
                     >
                       <LockKeyhole
                         size={18}
-                        className={showPasswordError ? "shrink-0 text-red-500" : "shrink-0 text-blue-500"}
+                        className={passwordXatosi ? "shrink-0 text-red-500" : "shrink-0 text-blue-500"}
                       />
                       <input
                         value={password}
@@ -224,13 +248,14 @@ export default function Login() {
                         onChange={(event) => {
                           setPassword(event.target.value);
                           setErrorMessage("");
+                          fx.tozala("password");
                         }}
                         onBlur={() => setTouched((current) => ({ ...current, password: true }))}
                         type={showPassword ? "text" : "password"}
                         autoComplete="off"
                         placeholder={t("passwordLabel")}
                         className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-white outline-none placeholder:text-blue-200/70"
-                        aria-invalid={Boolean(showPasswordError)}
+                        aria-invalid={Boolean(passwordXatosi)}
                       />
                       <button
                         type="button"
@@ -241,18 +266,18 @@ export default function Login() {
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </span>
-                    {showPasswordError && (
-                      <p className="mt-2 text-xs font-bold text-red-500">{validationErrors.password}</p>
+                    {passwordXatosi && (
+                      <p className="mt-2 text-xs font-bold text-red-500">{passwordXatosi}</p>
                     )}
                   </label>
 
                   {(location.state as LoginLocationState | null)?.passwordReset && <div role="status" className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-200">{t("reset.success")}</div>}
-                  {errorMessage && (
+                  {tepaXatosi && (
                     <div
                       role="alert"
                       className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600"
                     >
-                      {errorMessage}
+                      {tepaXatosi}
                     </div>
                   )}
 

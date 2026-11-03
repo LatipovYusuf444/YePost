@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { Building2, X } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import type { Bolim, Lavozim, Xodim } from "./types";
 import { bosHarflar, lavozimNomi, maydonKlass, xodimNomi, yangiId } from "./yordamchilar";
 
@@ -28,7 +30,7 @@ export default function BolimModal({
   const [rahbarlar, setRahbarlar] = useState<Set<string>>(
     () => new Set(boshlangich?.rahbarIdlar ?? [])
   );
-  const [xato, setXato] = useState("");
+  const fx = useMaydonXatolari();
 
   function toggle(id: string) {
     setRahbarlar((oldingi) => {
@@ -42,9 +44,10 @@ export default function BolimModal({
   function saqlash(event: FormEvent) {
     event.preventDefault();
     if (!nomi.trim()) {
-      setXato("Bo'lim nomi to'ldirilishi shart.");
+      fx.ornat({ nomi: "Bo'lim nomi to'ldirilishi shart." });
       return;
     }
+    fx.ornat({});
 
     onSaqlash({
       id: boshlangich?.id ?? yangiId("bol"),
@@ -85,20 +88,25 @@ export default function BolimModal({
         </header>
 
         <div className="scrollbar-orange flex-1 space-y-5 overflow-y-auto px-7 py-6">
-          {xato && (
-            <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>
+          {fx.tepadagi && (
+            <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{fx.tepadagi}</p>
           )}
 
           <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80">
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-slate-400">Bo'lim nomi *</span>
-              <input
-                value={nomi}
-                onChange={(event) => setNomi(event.target.value)}
-                placeholder="Savdo bo'limi"
-                className={maydonKlass}
-              />
-            </label>
+            <XatoliMaydon xato={fx.xato("nomi")}>
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-400">Bo'lim nomi *</span>
+                <input
+                  value={nomi}
+                  onChange={(event) => {
+                    setNomi(event.target.value);
+                    fx.tozala("nomi");
+                  }}
+                  placeholder="Savdo bo'limi"
+                  className={maydonKlass}
+                />
+              </label>
+            </XatoliMaydon>
           </section>
 
           <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80">

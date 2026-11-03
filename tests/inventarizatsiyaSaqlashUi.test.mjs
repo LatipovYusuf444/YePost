@@ -22,6 +22,7 @@ function review(summary, action = 'save') {
     warehouseId: 'warehouse', inventarizatsiyaQatorlari: [{ modificationId: 'a' }, { modificationId: 'b' }],
     sanoqXulosasi: summary,
     store: { xatolikniTozalash() {} },
+    fx: { ornat() {} }, t: key => key,
     setFormaXatosi: error => errors.push(error), setReviewAction: step => steps.push(step),
   };
   runInNewContext(outputText + `\nkoribChiqish(${JSON.stringify(action)});`, context);

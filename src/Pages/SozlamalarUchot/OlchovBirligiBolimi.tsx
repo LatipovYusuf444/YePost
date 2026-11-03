@@ -2,13 +2,24 @@ import { useEffect, useMemo, useState } from "react";
 import { Edit3, LoaderCircle, Lock, Plus, Ruler, Trash2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { birliklarApi, mahsulotlarApi } from "@/api/catalogApi";
+import axios from "axios";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { foydalanuvchiDirektormi } from "@/lib/roles";
 import type { Mahsulot, OlchovBirligi } from "@/types/catalog";
 import BirlikMahsulotlari from "./BirlikMahsulotlari";
 import { BolimKarta } from "./UmumiyUI";
 import { maydonKlass } from "./yordamchilar";
+
+// Server xatosini birlik formasi maydoniga bog'lash (kalit — backend maydon nomi). "short name" "name" dan oldin.
+const BIRLIK_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  code: { maydonlar: ["code"], kodlar: ["code"], sozlar: ["kodi", "code", "код"] },
+  shortName: { maydonlar: ["shortName"], kodlar: ["short_name"], sozlar: ["qisqa", "short name", "shortname", "сокращ"] },
+  name: { maydonlar: ["name"], sozlar: ["nomi", "name", "название"] },
+};
 
 export default function OlchovBirligiBolimi() {
   const { t } = useTranslation(["sozlamalar_uchot", "common"]);
@@ -26,6 +37,7 @@ export default function OlchovBirligiBolimi() {
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [saqlanmoqda, setSaqlanmoqda] = useState(false);
   const [xato, setXato] = useState("");
+  const fx = useMaydonXatolari(BIRLIK_XATO_QOIDALARI);
   // Birlik ustiga bosilganda shu birlikdagi mahsulotlar ro'yxati ochiladi. Mahsulotlar kartalardagi soni uchun ham kerak:
   // yuklanmasa (null) son ko'rsatilmaydi, ro'yxat esa baribir ochiladi.
   const [mahsulotlar, setMahsulotlar] = useState<Mahsulot[] | null>(null);
@@ -75,6 +87,7 @@ export default function OlchovBirligiBolimi() {
     setNomi(birlik?.name ?? "");
     setQisqa(birlik?.shortName ?? "");
     setKasr(birlik?.isFractional === true);
+    fx.ornat({});
     setFormOchiq(true);
   }
 
@@ -84,16 +97,19 @@ export default function OlchovBirligiBolimi() {
     setKod("");
     setNomi("");
     setQisqa("");
+    fx.ornat({});
   }
 
   async function saqlash() {
     if (!direktor) return;
     if (!nomi.trim()) {
-      setXato(t("birliklar.nameRequired"));
+      setXato("");
+      fx.ornat({ name: t("birliklar.nameRequired") });
       return;
     }
     setSaqlanmoqda(true);
     setXato("");
+    fx.ornat({});
     try {
       const payload = { code: kod.trim() || undefined, name: nomi.trim(), shortName: qisqa.trim() || undefined, isFractional: kasr };
       const saved = tahrir ? await birliklarApi.yangilash(tahrir.id, payload) : await birliklarApi.yaratish(payload);
@@ -102,7 +118,8 @@ export default function OlchovBirligiBolimi() {
       );
       yopish();
     } catch (error) {
-      setXato(getApiErrorMessage(error));
+      // Maydoniga bog'langan xato faqat maydon ostida; bog'lanmagani tepada.
+      if (!fx.serverdan(axios.isAxiosError(error) ? error.response?.data : undefined)) setXato(getApiErrorMessage(error));
     } finally {
       setSaqlanmoqda(false);
     }
@@ -144,7 +161,7 @@ export default function OlchovBirligiBolimi() {
         </p>
       )}
 
-      {xato && <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
+      {(fx.tepadagi || xato) && <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{fx.tepadagi || xato}</p>}
 
       {formOchiq && direktor && (
         <div className="mb-5 rounded-2xl border border-orange-100 bg-[#F8FAFC]/70 p-4">
@@ -160,15 +177,24 @@ export default function OlchovBirligiBolimi() {
             </button>
           </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-[110px_minmax(0,1fr)_140px]">
-            <input value={kod} onChange={(e) => setKod(e.target.value)} placeholder={t("birliklar.codePlaceholder")} className={maydonKlass} />
-            <input
-              value={nomi}
-              onChange={(e) => setNomi(e.target.value)}
-              placeholder={t("birliklar.namePlaceholder")}
-              className={maydonKlass}
-              autoFocus
-            />
-            <input value={qisqa} onChange={(e) => setQisqa(e.target.value)} placeholder={t("birliklar.shortNamePlaceholder")} className={maydonKlass} />
+            <XatoliMaydon xato={fx.xato("code")}>
+              <input value={kod} onChange={(e) => { fx.tozala("code"); setKod(e.target.value); }} placeholder={t("birliklar.codePlaceholder")} className={maydonKlass} />
+            </XatoliMaydon>
+            <XatoliMaydon xato={fx.xato("name")}>
+              <input
+                value={nomi}
+                onChange={(e) => {
+                  fx.tozala("name");
+                  setNomi(e.target.value);
+                }}
+                placeholder={t("birliklar.namePlaceholder")}
+                className={maydonKlass}
+                autoFocus
+              />
+            </XatoliMaydon>
+            <XatoliMaydon xato={fx.xato("shortName")}>
+              <input value={qisqa} onChange={(e) => { fx.tozala("shortName"); setQisqa(e.target.value); }} placeholder={t("birliklar.shortNamePlaceholder")} className={maydonKlass} />
+            </XatoliMaydon>
             <label className="flex items-center gap-2 text-sm font-bold text-gray-600 sm:col-span-full">
               <input type="checkbox" checked={kasr} onChange={(e) => setKasr(e.target.checked)} />
               {t("birliklar.fractional")}

@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import axios from "axios";
 import { Gift, Info, LoaderCircle, X } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
 import { bugungiToshkentKuni, toshkentKuni } from "@/lib/hujjatSanasi";
 import AppSelect from "@/Components/ui/AppSelect";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import { serverXatoMaydonlari, type XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { yetkazibBeruvchilar, filiallarApi } from "@/api/omborApi";
 import { zavodBonusiApi } from "@/api/zavodBonusiApi";
 import type { ZavodBonusi, ZavodBonusiPayload } from "@/types/zavodBonusi";
@@ -14,6 +18,15 @@ import { zavodBonusiXatosi } from "./zavodBonusiXato";
 type Tanlov = { id: string; nomi: string };
 
 const raqamlar = (matn: string) => matn.replace(/\D/g, "");
+
+// Server xatosi qaysi maydonga tegishli (kalit — so'rov tanasidagi backend nomi).
+const XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  supplierId: { maydonlar: ["supplierId"], kodlar: ["supplier"], sozlar: ["zavod", "yetkazib beruvchi", "поставщик", "завод"] },
+  amount: { maydonlar: ["amount"], kodlar: ["amount"], sozlar: ["summa", "сумм"] },
+  date: { maydonlar: ["date"], kodlar: ["date_in_future", "period_closed", "date"], sozlar: ["sana", "дат"] },
+  branchId: { maydonlar: ["branchId"], kodlar: ["branch"], sozlar: ["filial", "филиал"] },
+  note: { maydonlar: ["note"], kodlar: ["note"], sozlar: ["izoh", "примечан", "комментар"] },
+};
 
 type Props = {
   bonus: ZavodBonusi | null;
@@ -38,6 +51,7 @@ export default function ZavodBonusiModal({ bonus, onYopish, onYangilash }: Props
   const [joriyId, setJoriyId] = useState<string | null>(bonus?.id ?? null);
   const [xato, setXato] = useState("");
   const [jarayon, setJarayon] = useState<"saqlash" | "tasdiqlash" | null>(null);
+  const fx = useMaydonXatolari(XATO_QOIDALARI);
 
   useEffect(() => {
     let faol = true;
@@ -71,15 +85,17 @@ export default function ZavodBonusiModal({ bonus, onYopish, onYangilash }: Props
   const ishlayapti = jarayon !== null;
 
   async function saqlash(tasdiqlash: boolean) {
-    if (!zavodId) {
-      setXato(t("zavodBonusi.errors.supplierRequired"));
-      return;
-    }
-    if (!(miqdor > 0)) {
-      setXato(t("zavodBonusi.errors.amountInvalid"));
+    // Bo'sh/noto'g'ri maydonlar o'z joyida (hammasi birdan) ko'rsatiladi.
+    const tekshiruv: Record<string, string> = {};
+    if (!zavodId) tekshiruv.supplierId = t("zavodBonusi.errors.supplierRequired");
+    if (!(miqdor > 0)) tekshiruv.amount = t("zavodBonusi.errors.amountInvalid");
+    if (Object.keys(tekshiruv).length) {
+      setXato("");
+      fx.ornat(tekshiruv);
       return;
     }
     setXato("");
+    fx.ornat({});
     setJarayon(tasdiqlash ? "tasdiqlash" : "saqlash");
     const payload: ZavodBonusiPayload = {
       supplierId: zavodId,
@@ -103,7 +119,14 @@ export default function ZavodBonusiModal({ bonus, onYopish, onYangilash }: Props
       await onYangilash();
       onYopish();
     } catch (error) {
-      setXato(zavodBonusiXatosi(error, t));
+      const matn = zavodBonusiXatosi(error, t);
+      setXato(matn);
+      // Validatsiyada har maydon o'z xabari bilan; biznes xatosida (kod/xabar bo'yicha) tarjima qilingan matn bilan.
+      const tafsilot: unknown = axios.isAxiosError(error) ? error.response?.data : undefined;
+      const maydonlar = serverXatoMaydonlari(tafsilot, XATO_QOIDALARI);
+      const sabablar = (tafsilot as { errors?: unknown } | null | undefined)?.errors;
+      const validatsiya = Array.isArray(sabablar) && sabablar.length > 0;
+      fx.ornat(validatsiya ? maydonlar : Object.fromEntries(Object.keys(maydonlar).map((kalit) => [kalit, matn])));
       await onYangilash();
     } finally {
       setJarayon(null);
@@ -139,56 +162,67 @@ export default function ZavodBonusiModal({ bonus, onYopish, onYangilash }: Props
             </p>
           )}
 
-          <Maydon nom={t("zavodBonusi.form.supplier")} majburiy>
-            <AppSelect value={zavodId} onChange={(event) => setZavodId(event.target.value)} disabled={faqatKorish || ishlayapti} aria-label={t("zavodBonusi.form.supplier")} className={maydonKlass}>
-              <option value="">{t("zavodBonusi.form.supplierPlaceholder")}</option>
-              {zavodVariantlari.map((item) => (
-                <option key={item.id} value={item.id}>{item.nomi}</option>
-              ))}
-            </AppSelect>
-          </Maydon>
+          <XatoliMaydon xato={fx.xato("supplierId")}>
+            <Maydon nom={t("zavodBonusi.form.supplier")} majburiy>
+              <AppSelect value={zavodId} onChange={(event) => { fx.tozala("supplierId"); setZavodId(event.target.value); }} disabled={faqatKorish || ishlayapti} aria-label={t("zavodBonusi.form.supplier")} className={maydonKlass}>
+                <option value="">{t("zavodBonusi.form.supplierPlaceholder")}</option>
+                {zavodVariantlari.map((item) => (
+                  <option key={item.id} value={item.id}>{item.nomi}</option>
+                ))}
+              </AppSelect>
+            </Maydon>
+          </XatoliMaydon>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Maydon nom={t("zavodBonusi.form.amount")} majburiy>
-              <input
-                inputMode="numeric"
-                value={summa ? Number(summa).toLocaleString("uz-UZ") : ""}
-                onChange={(event) => setSumma(raqamlar(event.target.value))}
-                disabled={faqatKorish || ishlayapti}
-                placeholder="0"
-                className={maydonKlass}
-              />
-            </Maydon>
-            <Maydon nom={t("zavodBonusi.form.date")}>
-              <HujjatSanasiMaydoni value={sana} onChange={setSana} disabled={faqatKorish || ishlayapti} className={maydonKlass} aria-label={t("zavodBonusi.form.date")} korsatma={!faqatKorish} />
-            </Maydon>
+            <XatoliMaydon xato={fx.xato("amount")}>
+              <Maydon nom={t("zavodBonusi.form.amount")} majburiy>
+                <input
+                  inputMode="numeric"
+                  value={summa ? Number(summa).toLocaleString("uz-UZ") : ""}
+                  onChange={(event) => { fx.tozala("amount"); setSumma(raqamlar(event.target.value)); }}
+                  disabled={faqatKorish || ishlayapti}
+                  placeholder="0"
+                  className={maydonKlass}
+                />
+              </Maydon>
+            </XatoliMaydon>
+            <XatoliMaydon xato={fx.xato("date")}>
+              <Maydon nom={t("zavodBonusi.form.date")}>
+                <HujjatSanasiMaydoni value={sana} onChange={(qiymat) => { fx.tozala("date"); setSana(qiymat); }} disabled={faqatKorish || ishlayapti} className={maydonKlass} aria-label={t("zavodBonusi.form.date")} korsatma={!faqatKorish} />
+              </Maydon>
+            </XatoliMaydon>
           </div>
 
           {(filiallar.length > 0 || filialId) && (
-            <Maydon nom={t("zavodBonusi.form.branch")}>
-              <AppSelect value={filialId} onChange={(event) => setFilialId(event.target.value)} disabled={faqatKorish || ishlayapti} aria-label={t("zavodBonusi.form.branch")} className={maydonKlass}>
-                <option value="">{t("zavodBonusi.form.branchNone")}</option>
-                {filiallar.map((item) => (
-                  <option key={item.id} value={item.id}>{item.nomi}</option>
-                ))}
-                {filialId && !filiallar.some((item) => item.id === filialId) && <option value={filialId}>{bonus?.branch?.name ?? filialId}</option>}
-              </AppSelect>
-            </Maydon>
+            <XatoliMaydon xato={fx.xato("branchId")}>
+              <Maydon nom={t("zavodBonusi.form.branch")}>
+                <AppSelect value={filialId} onChange={(event) => { fx.tozala("branchId"); setFilialId(event.target.value); }} disabled={faqatKorish || ishlayapti} aria-label={t("zavodBonusi.form.branch")} className={maydonKlass}>
+                  <option value="">{t("zavodBonusi.form.branchNone")}</option>
+                  {filiallar.map((item) => (
+                    <option key={item.id} value={item.id}>{item.nomi}</option>
+                  ))}
+                  {filialId && !filiallar.some((item) => item.id === filialId) && <option value={filialId}>{bonus?.branch?.name ?? filialId}</option>}
+                </AppSelect>
+              </Maydon>
+            </XatoliMaydon>
           )}
 
-          <Maydon nom={t("zavodBonusi.form.note")}>
-            <textarea
-              value={izoh}
-              onChange={(event) => setIzoh(event.target.value)}
-              disabled={faqatKorish || ishlayapti}
-              rows={3}
-              placeholder={t("zavodBonusi.form.notePlaceholder")}
-              className={`${maydonKlass} h-auto min-h-24 resize-y py-2.5`}
-            />
-          </Maydon>
+          <XatoliMaydon xato={fx.xato("note")}>
+            <Maydon nom={t("zavodBonusi.form.note")}>
+              <textarea
+                value={izoh}
+                onChange={(event) => { fx.tozala("note"); setIzoh(event.target.value); }}
+                disabled={faqatKorish || ishlayapti}
+                rows={3}
+                placeholder={t("zavodBonusi.form.notePlaceholder")}
+                className={`${maydonKlass} h-auto min-h-24 resize-y py-2.5`}
+              />
+            </Maydon>
+          </XatoliMaydon>
 
-          {xato && (
-            <p role="alert" className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>
+          {/* Maydoniga bog'langan xato faqat maydon ostida; bog'lanmagani shu yerda */}
+          {(fx.tepadagi || (fx.bor ? "" : xato)) && (
+            <p role="alert" className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{fx.tepadagi || xato}</p>
           )}
         </div>
 

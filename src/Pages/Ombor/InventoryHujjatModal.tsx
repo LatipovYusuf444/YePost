@@ -16,6 +16,9 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon, { MaydonXatosi } from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import HujjatSanasiMaydoni, { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import { tahrirSanasi, toshkentKuni } from "@/lib/hujjatSanasi";
@@ -75,6 +78,19 @@ const documentTypes: Record<InventoryHujjatTuri, InventoryDocumentType> = {
 
 const chiqimSabablari: ChiqimSababi[] = ["DAMAGE", "EXPIRY", "THEFT", "OTHER"];
 
+// Tahrirda server xatosi qaysi maydonga tegishli (kalit — PATCH tanasidagi backend nomi).
+const HUJJAT_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  date: { maydonlar: ["date"], kodlar: ["period_closed", "date_in_future"] },
+  supplierId: { maydonlar: ["supplierId"], kodlar: ["supplier"], sozlar: ["yetkazib beruvchi", "поставщик"] },
+  sourceWarehouseId: { maydonlar: ["sourceWarehouseId"], kodlar: ["source"], sozlar: ["manba ombor", "склад-источник", "исходн"] },
+  destWarehouseId: { maydonlar: ["destWarehouseId"], kodlar: ["dest"], sozlar: ["qabul qiluvchi ombor", "склад назначения", "склад-получател"] },
+  warehouseId: { maydonlar: ["warehouseId"], kodlar: ["warehouse"] },
+  reason: { maydonlar: ["reason"] },
+  type: { maydonlar: ["type"] },
+  responsibleId: { maydonlar: ["responsibleId"], kodlar: ["responsible"] },
+  note: { maydonlar: ["note"] },
+};
+
 function hujjatHolati(hujjat: Hujjat | null) {
   return String(hujjat?.status ?? "DRAFT").toUpperCase();
 }
@@ -110,6 +126,7 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
   const [note, setNote] = useState("");
   const [items, setItems] = useState<Qator[]>([]);
   const [validatsiyaXatosi, setValidatsiyaXatosi] = useState("");
+  const fx = useMaydonXatolari(HUJJAT_XATO_QOIDALARI);
   // Klaviatura bilan tez kiritish: keyingi fokus (mahsulot ro'yxati, miqdor yoki tannarx maydoni).
   const [fokus, setFokus] = useState<{ qator: number; maydon: "mahsulot" | "miqdor" | "narx"; n: number } | null>(null);
   const fokusNavbati = useRef(0);
@@ -224,6 +241,7 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
     formaniToldirish(hujjat);
     store.xatolikniTozalash();
     setValidatsiyaXatosi("");
+    fx.ornat({});
     setTahrir(true);
   }
 
@@ -263,14 +281,32 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
         (tur === "inventarizatsiya" ? Number(item.quantity) < 0 : Number(item.quantity) <= 0) ||
         (tur === "kirim" && (!Number.isFinite(Number(item.price)) || Number(item.price) < 0))
     );
+    // Majburiy maydonlar (avval jim to'xtardi): endi maydon ostida ko'rsatiladi; qatorlar xatosi qaysi qatorda ekanini bildiradi.
+    const maydonXatolari: Record<string, string> = {};
+    if (tur === "kirim" && !supplierId) maydonXatolari.supplierId = t("errors.supplierRequired");
+    if (tur !== "kochirish" && !warehouseId) maydonXatolari.warehouseId = t("errors.warehouseRequired");
+    if (tur === "kochirish" && !sourceWarehouseId) maydonXatolari.sourceWarehouseId = t("errors.sourceWarehouseRequired");
+    if (tur === "kochirish" && !destWarehouseId) maydonXatolari.destWarehouseId = t("errors.destWarehouseRequired");
+    else if (tur === "kochirish" && sourceWarehouseId === destWarehouseId) maydonXatolari.destWarehouseId = t("errors.sameWarehouse");
     if (items.length === 0 || yaroqsizQator) {
-      setValidatsiyaXatosi(
-        tur === "inventarizatsiya"
-          ? "errors.invalidStockTakeQuantity"
-          : "errors.invalidItems"
-      );
+      const kalit = tur === "inventarizatsiya" ? "errors.invalidStockTakeQuantity" : "errors.invalidItems";
+      const matn = t(kalit);
+      if (items.length === 0) maydonXatolari.items = matn;
+      items.forEach((item, index) => {
+        const miqdor = Number(item.quantity);
+        if (!item.modificationId) maydonXatolari[`items.${index}.modificationId`] = matn;
+        if (!Number.isFinite(miqdor) || (tur === "inventarizatsiya" ? miqdor < 0 : miqdor <= 0)) maydonXatolari[`items.${index}.quantity`] = matn;
+        if (tur === "kirim" && (!Number.isFinite(Number(item.price)) || Number(item.price) < 0)) maydonXatolari[`items.${index}.price`] = matn;
+      });
+      setValidatsiyaXatosi(kalit);
+      fx.ornat(maydonXatolari);
       return;
     }
+    if (Object.keys(maydonXatolari).length) {
+      fx.ornat(maydonXatolari);
+      return;
+    }
+    fx.ornat({});
     const tozaItems = items.map((item) => ({
       ...item,
       quantity: Number(item.quantity),
@@ -280,7 +316,7 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
     let ok = false;
     if (tur === "kirim") {
       if (!supplierId || !warehouseId) return;
-      ok = await store.kirimYangilash(id, {
+      ok = await fx.kuzat(() => store.kirimYangilash(id, {
         ...tahrirSanasi(hujjatSanasi, boshlangichSana),
         supplierId,
         warehouseId,
@@ -291,10 +327,10 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
           quantity,
           price,
         })),
-      });
+      }));
     } else if (tur === "chiqim") {
       if (!warehouseId) return;
-      ok = await store.chiqimYangilash(id, {
+      ok = await fx.kuzat(() => store.chiqimYangilash(id, {
         ...tahrirSanasi(hujjatSanasi, boshlangichSana),
         warehouseId,
         reason,
@@ -304,7 +340,7 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
           modificationId,
           quantity,
         })),
-      });
+      }));
     } else if (tur === "kochirish") {
       if (
         !sourceWarehouseId ||
@@ -312,7 +348,7 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
         sourceWarehouseId === destWarehouseId
       )
         return;
-      ok = await store.kochirishYangilash(id, {
+      ok = await fx.kuzat(() => store.kochirishYangilash(id, {
         ...tahrirSanasi(hujjatSanasi, boshlangichSana),
         sourceWarehouseId,
         destWarehouseId,
@@ -322,10 +358,10 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
           modificationId,
           quantity,
         })),
-      });
+      }));
     } else {
       if (!warehouseId) return;
-      ok = await store.inventarizatsiyaYangilash(id, {
+      ok = await fx.kuzat(() => store.inventarizatsiyaYangilash(id, {
         ...tahrirSanasi(hujjatSanasi, boshlangichSana),
         warehouseId,
         type: stockTakeType,
@@ -335,7 +371,7 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
           modificationId,
           actualQuantity: quantity,
         })),
-      });
+      }));
     }
 
     if (!ok) return;
@@ -352,6 +388,7 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
   }
 
   function qatorQoshish() {
+    fx.tozala("items");
     setItems((oldingi) => [
       ...oldingi,
       { modificationId: "", quantity: 1, price: 0 },
@@ -380,6 +417,8 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
   }
 
   function qatorniYangilash(index: number, data: Partial<Qator>) {
+    // Inventarizatsiyada miqdor backendda `actualQuantity`.
+    fx.tozala(...Object.keys(data).flatMap((maydon) => (maydon === "quantity" ? [`items.${index}.quantity`, `items.${index}.actualQuantity`] : [`items.${index}.${maydon}`])));
     setItems((oldingi) =>
       oldingi.map((item, itemIndex) =>
         itemIndex === index ? { ...item, ...data } : item
@@ -543,9 +582,9 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
           </div>
         ) : (
           <div className="p-5 sm:p-7">
-            {(store.xatolik || validatsiyaXatosi) && (
+            {(fx.tepadagi || (!(tahrir && fx.bor) && (store.xatolik || validatsiyaXatosi))) && (
               <div className="mb-5 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">
-                {validatsiyaXatosi ? t(validatsiyaXatosi) : store.xatolik}
+                {fx.tepadagi || (validatsiyaXatosi ? t(validatsiyaXatosi) : store.xatolik)}
               </div>
             )}
 
@@ -826,19 +865,28 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
             )) : (
               <div>
                 <div className="grid gap-4 md:grid-cols-2">
+                  <XatoliMaydon xato={fx.xato("date")}>
                   <label className="grid gap-1.5 text-sm font-bold text-slate-500">
                     <span>{t("form.dateLabel")}</span>
                     <HujjatSanasiMaydoni
                       value={hujjatSanasi}
-                      onChange={setHujjatSanasi}
+                      onChange={(kun) => {
+                        fx.tozala("date");
+                        setHujjatSanasi(kun);
+                      }}
                       aria-label={t("form.dateLabel")}
                       className="h-12 w-full rounded-2xl border px-4 text-slate-700"
                     />
                   </label>
+                  </XatoliMaydon>
                   {tur === "kirim" && (
+                    <XatoliMaydon xato={fx.xato("supplierId")}>
                     <AppSelect
                       value={supplierId}
-                      onChange={(event) => setSupplierId(event.target.value)}
+                      onChange={(event) => {
+                        fx.tozala("supplierId");
+                        setSupplierId(event.target.value);
+                      }}
                       className="h-12 rounded-2xl border px-4"
                     >
                       <option value="">{t("form.supplierPlaceholder")}</option>
@@ -848,13 +896,18 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
                         </option>
                       ))}
                     </AppSelect>
+                    </XatoliMaydon>
                   )}
                   {(tur === "kirim" ||
                     tur === "chiqim" ||
                     tur === "inventarizatsiya") && (
+                    <XatoliMaydon xato={fx.xato("warehouseId")}>
                     <AppSelect
                       value={warehouseId}
-                      onChange={(event) => setWarehouseId(event.target.value)}
+                      onChange={(event) => {
+                        fx.tozala("warehouseId");
+                        setWarehouseId(event.target.value);
+                      }}
                       className="h-12 rounded-2xl border px-4"
                     >
                       <option value="">{t("form.warehousePlaceholder")}</option>
@@ -864,14 +917,17 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
                         </option>
                       ))}
                     </AppSelect>
+                    </XatoliMaydon>
                   )}
                   {tur === "kochirish" && (
                     <>
+                      <XatoliMaydon xato={fx.xato("sourceWarehouseId")}>
                       <AppSelect
                         value={sourceWarehouseId}
-                        onChange={(event) =>
-                          setSourceWarehouseId(event.target.value)
-                        }
+                        onChange={(event) => {
+                          fx.tozala("sourceWarehouseId", "destWarehouseId");
+                          setSourceWarehouseId(event.target.value);
+                        }}
                         className="h-12 rounded-2xl border px-4"
                       >
                         <option value="">{t("form.sourceWarehousePlaceholder")}</option>
@@ -881,11 +937,14 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
                           </option>
                         ))}
                       </AppSelect>
+                      </XatoliMaydon>
+                      <XatoliMaydon xato={fx.xato("destWarehouseId")}>
                       <AppSelect
                         value={destWarehouseId}
-                        onChange={(event) =>
-                          setDestWarehouseId(event.target.value)
-                        }
+                        onChange={(event) => {
+                          fx.tozala("destWarehouseId");
+                          setDestWarehouseId(event.target.value);
+                        }}
                         className="h-12 rounded-2xl border px-4"
                       >
                         <option value="">{t("form.destWarehousePlaceholder")}</option>
@@ -897,14 +956,17 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
                             </option>
                           ))}
                       </AppSelect>
+                      </XatoliMaydon>
                     </>
                   )}
                   {tur === "chiqim" && (
+                    <XatoliMaydon xato={fx.xato("reason")}>
                     <AppSelect
                       value={reason}
-                      onChange={(event) =>
-                        setReason(event.target.value as ChiqimSababi)
-                      }
+                      onChange={(event) => {
+                        fx.tozala("reason");
+                        setReason(event.target.value as ChiqimSababi);
+                      }}
                       className="h-12 rounded-2xl border px-4"
                     >
                       {chiqimSabablari.map((value) => (
@@ -913,24 +975,32 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
                         </option>
                       ))}
                     </AppSelect>
+                    </XatoliMaydon>
                   )}
                   {tur === "inventarizatsiya" && (
+                    <XatoliMaydon xato={fx.xato("type")}>
                     <AppSelect
                       value={stockTakeType}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        fx.tozala("type");
                         setStockTakeType(
                           event.target.value as InventarizatsiyaTuri
-                        )
-                      }
+                        );
+                      }}
                       className="h-12 rounded-2xl border px-4"
                     >
                       <option value="FULL">{t("stockTakeType.full")}</option>
                       <option value="PARTIAL">{t("stockTakeType.partial")}</option>
                     </AppSelect>
+                    </XatoliMaydon>
                   )}
+                  <XatoliMaydon xato={fx.xato("responsibleId")}>
                   <AppSelect
                     value={responsibleId}
-                    onChange={(event) => setResponsibleId(event.target.value)}
+                    onChange={(event) => {
+                      fx.tozala("responsibleId");
+                      setResponsibleId(event.target.value);
+                    }}
                     className="h-12 rounded-2xl border px-4"
                   >
                     <option value="">{t("form.responsibleUnassigned")}</option>
@@ -940,6 +1010,7 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
                       </option>
                     ))}
                   </AppSelect>
+                  </XatoliMaydon>
                 </div>
 
                 <div ref={qatorlarRef} className="mt-5 space-y-3">
@@ -952,6 +1023,7 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
                           : "md:grid-cols-[1fr_140px_44px]"
                       }`}
                     >
+                      <XatoliMaydon xato={fx.xato(`items.${index}.modificationId`)}>
                       <MahsulotTanlov
                         value={item.modificationId}
                         variantlar={mahsulotVariantlari}
@@ -964,6 +1036,9 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
                         className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 outline-none transition-colors focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                         ochishSorovi={fokus?.maydon === "mahsulot" && fokus.qator === index ? fokus.n : 0}
                       />
+                      </XatoliMaydon>
+                      {/* Inventarizatsiyada backend miqdorni `actualQuantity` deb qaytaradi. */}
+                      <XatoliMaydon xato={fx.xato(`items.${index}.quantity`) ?? fx.xato(`items.${index}.actualQuantity`)}>
                       <input
                         type="number"
                         min="0.001"
@@ -982,14 +1057,16 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
                             quantity: Number(event.target.value),
                           })
                         }
-                        className="h-11 rounded-xl border border-slate-200 bg-white px-3 outline-none transition-colors focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 outline-none transition-colors focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                         placeholder={
                           tur === "inventarizatsiya"
                             ? t("form.actualQuantityPlaceholder")
                             : t("form.quantityPlaceholder")
                         }
                       />
+                      </XatoliMaydon>
                       {tur === "kirim" && (
+                        <XatoliMaydon xato={fx.xato(`items.${index}.price`)}>
                         <SummaMaydoni
                           data-hujjat-narx={index}
                           onKeyDown={(event) => {
@@ -1003,20 +1080,22 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
                               price: Number(qiymat),
                             })
                           }
-                          className="h-11 rounded-xl border border-slate-200 bg-white px-3 outline-none transition-colors focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 outline-none transition-colors focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                           placeholder={t("form.costPricePlaceholder")}
                         />
+                        </XatoliMaydon>
                       )}
                       <button
                         type="button"
                         disabled={items.length === 1}
-                        onClick={() =>
+                        onClick={() => {
+                          fx.tozala("items");
                           setItems((oldingi) =>
                             oldingi.filter(
                               (_, itemIndex) => itemIndex !== index
                             )
-                          )
-                        }
+                          );
+                        }}
                         className="flex h-11 items-center justify-center rounded-xl bg-red-50 text-red-500 disabled:opacity-30"
                       >
                         <Trash2 size={16} />
@@ -1031,6 +1110,7 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
                     <Plus size={16} />
                     {t("actions.addProduct")}
                   </button>
+                  <MaydonXatosi matn={fx.xato("items")} />
                 </div>
 
                 {tur === "kirim" && (
@@ -1041,17 +1121,25 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
                   </div>
                 )}
 
+                <XatoliMaydon xato={fx.xato("note")}>
                 <textarea
                   value={note}
-                  onChange={(event) => setNote(event.target.value)}
+                  onChange={(event) => {
+                    fx.tozala("note");
+                    setNote(event.target.value);
+                  }}
                   className="mt-5 min-h-24 w-full rounded-2xl border border-slate-200 p-4 outline-none transition-colors focus:border-orange-300 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                   placeholder={t("form.notePlaceholder")}
                 />
+                </XatoliMaydon>
 
                 <div className="mt-6 flex justify-end gap-3">
                   <button
                     type="button"
-                    onClick={() => setTahrir(false)}
+                    onClick={() => {
+                      fx.ornat({});
+                      setTahrir(false);
+                    }}
                     className="h-11 rounded-2xl bg-gray-100 px-5 font-bold text-gray-600"
                   >
                     {t("actions.cancel")}

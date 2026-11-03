@@ -1,18 +1,31 @@
 import { useRef, useState, type FormEvent } from "react";
 import { BookOpen, LoaderCircle, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import axios from "axios";
 import AppModal from "@/Components/common/AppModal";
 import SummaMaydoni from "@/Components/common/SummaMaydoni";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
 import { boshlangichQarzYaratish } from "@/api/boshlangichQarzApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import { boshlangichQarzMalumoti } from "@/lib/boshlangichQarz";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { bugungiToshkentKuni } from "@/lib/hujjatSanasi";
 import { muvaffaqiyatXabari } from "@/lib/toast";
 import type { Xaridor } from "./types";
 import { xaridorNomi } from "./yordamchilar";
 
+// Server xatosi qaysi maydonga tegishli (opening-debt so'rovi tanasi: amount, currency, date, note). Sana birinchi: "yopilgan davr" sanaga.
+const QARZ_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  date: { maydonlar: ["date"], kodlar: ["date", "period"], sozlar: ["sana", "davr", "дата", "период"] },
+  currency: { maydonlar: ["currency"], kodlar: ["currency"], sozlar: ["valyuta", "валют"] },
+  amount: { maydonlar: ["amount"], kodlar: ["amount"], sozlar: ["summa", "сумм"] },
+  note: { maydonlar: ["note"] },
+};
+
 export default function BoshlangichQarzModal({ xaridor, onClose }: { xaridor: Xaridor; onClose: () => void }) {
   const { t } = useTranslation("xaridor_uchot");
+  const fx = useMaydonXatolari(QARZ_XATO_QOIDALARI);
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("UZS");
   const [date, setDate] = useState(bugungiToshkentKuni);
@@ -26,16 +39,19 @@ export default function BoshlangichQarzModal({ xaridor, onClose }: { xaridor: Xa
     event.preventDefault();
     if (lock.current) return;
     const result = boshlangichQarzMalumoti({ amount, currency, date, note }, bugungiToshkentKuni());
-    if (result.error) { setError(t(`openingDebt.errors.${result.error}`)); return; }
+    // Tekshiruv xatosi kaliti — maydon nomi (amount/currency/date): matn shu maydon ostida.
+    if (result.error) { setError(""); fx.ornat({ [result.error]: t(`openingDebt.errors.${result.error}`) }); return; }
     lock.current = true;
     setSaving(true);
     setError("");
+    fx.ornat({});
     try {
       await boshlangichQarzYaratish(xaridor.id, result.payload);
       muvaffaqiyatXabari(t("openingDebt.saved"));
       onClose();
       window.dispatchEvent(new Event("savdo:yangilandi"));
     } catch (cause) {
+      fx.serverdan(axios.isAxiosError(cause) ? cause.response?.data : undefined);
       setError(getApiErrorMessage(cause));
     } finally {
       lock.current = false;
@@ -56,12 +72,12 @@ export default function BoshlangichQarzModal({ xaridor, onClose }: { xaridor: Xa
         <form onSubmit={(event) => void saqlash(event)} className="space-y-5 p-5 sm:p-6">
           <p className="rounded-xl bg-blue-50 p-3 text-sm leading-6 text-blue-800">{t("openingDebt.hint")}</p>
           <div className="grid grid-cols-[minmax(0,1fr)_110px] gap-3">
-            <label className="grid gap-1.5 text-sm font-semibold text-slate-600">{t("openingDebt.amount")}<SummaMaydoni autoFocus required value={amount} onChange={setAmount} disabled={saving} placeholder="1 200 000" className={fieldClass} /></label>
-            <label className="grid gap-1.5 text-sm font-semibold text-slate-600">{t("openingDebt.currency")}<select value={currency} onChange={(event) => setCurrency(event.target.value)} disabled={saving} className={fieldClass}><option value="UZS">UZS</option><option value="USD">USD</option></select></label>
+            <XatoliMaydon xato={fx.xato("amount")}><label className="grid gap-1.5 text-sm font-semibold text-slate-600">{t("openingDebt.amount")}<SummaMaydoni autoFocus required value={amount} onChange={(qiymat) => { fx.tozala("amount"); setAmount(qiymat); }} disabled={saving} placeholder="1 200 000" className={fieldClass} /></label></XatoliMaydon>
+            <XatoliMaydon xato={fx.xato("currency")}><label className="grid gap-1.5 text-sm font-semibold text-slate-600">{t("openingDebt.currency")}<select value={currency} onChange={(event) => { fx.tozala("currency"); setCurrency(event.target.value); }} disabled={saving} className={fieldClass}><option value="UZS">UZS</option><option value="USD">USD</option></select></label></XatoliMaydon>
           </div>
-          <label className="grid gap-1.5 text-sm font-semibold text-slate-600">{t("openingDebt.date")}<input type="date" value={date} max={bugungiToshkentKuni()} onChange={(event) => setDate(event.target.value)} disabled={saving} className={fieldClass} /></label>
-          <label className="grid gap-1.5 text-sm font-semibold text-slate-600">{t("openingDebt.note")}<textarea value={note} onChange={(event) => setNote(event.target.value)} disabled={saving} rows={3} placeholder={t("openingDebt.notePlaceholder")} className={`${fieldClass} h-auto resize-y py-3`} /></label>
-          {error && <p role="alert" className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+          <XatoliMaydon xato={fx.xato("date")}><label className="grid gap-1.5 text-sm font-semibold text-slate-600">{t("openingDebt.date")}<input type="date" value={date} max={bugungiToshkentKuni()} onChange={(event) => { fx.tozala("date"); setDate(event.target.value); }} disabled={saving} className={fieldClass} /></label></XatoliMaydon>
+          <XatoliMaydon xato={fx.xato("note")}><label className="grid gap-1.5 text-sm font-semibold text-slate-600">{t("openingDebt.note")}<textarea value={note} onChange={(event) => { fx.tozala("note"); setNote(event.target.value); }} disabled={saving} rows={3} placeholder={t("openingDebt.notePlaceholder")} className={`${fieldClass} h-auto resize-y py-3`} /></label></XatoliMaydon>
+          {(fx.tepadagi || (fx.bor ? "" : error)) && <p role="alert" className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{fx.tepadagi || error}</p>}
           <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
             <button type="button" onClick={onClose} disabled={saving} className="h-11 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 disabled:opacity-50">{t("openingDebt.cancel")}</button>
             <button type="submit" disabled={saving || !amount.trim()} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">{saving && <LoaderCircle size={16} className="animate-spin" />}{t(saving ? "openingDebt.saving" : "openingDebt.save")}</button>

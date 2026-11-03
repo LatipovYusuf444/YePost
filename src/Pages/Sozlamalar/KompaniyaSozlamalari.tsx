@@ -1,11 +1,23 @@
 import { useState, type FormEvent } from "react";
 import { Edit3, LoaderCircle, Plus, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { useTenantStore } from "@/store/tenantStore";
 import type { Workspace } from "@/types/tenant";
 
+// Server xatosini ish maydoni formasi maydoniga bog'lash (kalit — backend maydon nomi). Avval slug: "slug band" xabari nomga tushmasin.
+const WORKSPACE_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  slug: { maydonlar: ["slug"], kodlar: ["slug"], sozlar: ["slug", "manzil kaliti"] },
+  name: { maydonlar: ["name"], kodlar: ["name"], sozlar: ["nomi", "name", "название"] },
+};
+
 export default function KompaniyaSozlamalari() {
+  const { t } = useTranslation("sozlamalar_uchot");
   const store = useTenantStore();
+  const fx = useMaydonXatolari(WORKSPACE_XATO_QOIDALARI);
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<Workspace | null>(null);
   const [name, setName] = useState("");
@@ -18,6 +30,7 @@ export default function KompaniyaSozlamalari() {
     setSlug("");
     setIsActive(true);
     store.xatolikniTozalash();
+    fx.ornat({});
     setModal(true);
   }
 
@@ -29,17 +42,25 @@ export default function KompaniyaSozlamalari() {
     setName(item.name);
     setSlug(item.slug);
     setIsActive(item.isActive);
+    fx.ornat({});
     setModal(true);
   }
 
   async function saqlash(event: FormEvent) {
     event.preventDefault();
-    if (!name.trim() || !slug.trim()) return;
+    if (!name.trim() || !slug.trim()) {
+      fx.ornat({
+        ...(!name.trim() ? { name: t("legacyForm.fieldRequired") } : {}),
+        ...(!slug.trim() ? { slug: t("legacyForm.fieldRequired") } : {}),
+      });
+      return;
+    }
 
+    fx.ornat({});
     const data = { name: name.trim(), slug: slug.trim(), isActive };
-    const ok = editing
-      ? await store.workspaceYangilash(editing.id, data)
-      : await store.workspaceYaratish(data);
+    const ok = await fx.kuzat(() =>
+      editing ? store.workspaceYangilash(editing.id, data) : store.workspaceYaratish(data)
+    );
     if (ok) setModal(false);
   }
 
@@ -125,32 +146,40 @@ export default function KompaniyaSozlamalari() {
             <h2 className="text-2xl font-black">
               {editing ? "Ish maydonini tahrirlash" : "Yangi ish maydoni"}
             </h2>
-            {store.xatolik && (
+            {(fx.tepadagi || (fx.bor ? "" : store.xatolik)) && (
               <div className="mt-4 rounded-xl bg-red-50 p-3 font-bold text-red-600">
-                {store.xatolik}
+                {fx.tepadagi || store.xatolik}
               </div>
             )}
             <div className="mt-5 space-y-4">
+              <XatoliMaydon xato={fx.xato("name")}>
               <label className="block text-sm font-bold">
                 Ish maydoni nomi *
                 <input
                   value={name}
-                  onChange={(event) => setName(event.target.value)}
+                  onChange={(event) => {
+                    fx.tozala("name");
+                    setName(event.target.value);
+                  }}
                   className="mt-2 h-12 w-full rounded-2xl border px-4"
                   placeholder="Masalan: Asosiy savdo tizimi"
                 />
               </label>
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("slug")}>
               <label className="block text-sm font-bold">
                 Manzil kaliti *
                 <input
                   value={slug}
-                  onChange={(event) =>
-                    setSlug(event.target.value.toLowerCase().replace(/\s+/g, "-"))
-                  }
+                  onChange={(event) => {
+                    fx.tozala("slug");
+                    setSlug(event.target.value.toLowerCase().replace(/\s+/g, "-"));
+                  }}
                   className="mt-2 h-12 w-full rounded-2xl border px-4"
                   placeholder="asosiy-savdo"
                 />
               </label>
+              </XatoliMaydon>
               <p className="text-xs text-gray-400">
                 Manzil kaliti ish maydonini tizim ichida ajratib turadigan noyob nomdir.
               </p>

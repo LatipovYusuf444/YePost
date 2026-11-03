@@ -1,5 +1,6 @@
 {
   "yangiChiqimModal": {
+    "fieldErrors": {"productRequired":"Mahsulotni tanlang.","quantityInvalid":"Miqdorni to'g'ri kiriting.","duplicateProduct":"Bu mahsulot boshqa qatorda bor.","exceedsStock":"Qoldiqdan oshdi ({{available}})."},
     "title": "Yangi chiqim",
     "badge": "YANGI",
     "docNameTemplate": "Chiqim hujjati #{{number}}",

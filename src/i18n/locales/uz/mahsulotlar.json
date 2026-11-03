@@ -309,5 +309,10 @@
     "baseNotRepeated": "Asosiy birlik koeffitsienti 1. U qo‘shimcha birliklar ro‘yxatida takrorlanmaydi.",
     "pieceOption": "Dona",
     "creatingPiece": "Dona birligi qo‘shilmoqda..."
+  },
+  "validation": {
+    "nameRequired": "Nomini kiriting.",
+    "categoryRequired": "Kategoriyani tanlang.",
+    "unitRequired": "O'lchov birligini tanlang."
   }
 }

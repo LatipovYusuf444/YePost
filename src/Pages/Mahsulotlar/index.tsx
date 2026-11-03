@@ -58,6 +58,69 @@ import { narxValyutalari } from "@/lib/narxValyutasi";
 import BirliklarModal from "./BirliklarModal";
 import BirlikQatorlariMaydoni from "./BirlikQatorlari";
 import { birlikQatorlariImzosi, birlikQatorlariniOlish, birlikRoyxatiniYigish, type BirlikQatori } from "./birlikQatorlariMantiq";
+import XatoliMaydon, { MaydonXatosi } from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import { serverXatoMaydonlari, type XatoMaydonQoidasi } from "@/lib/maydonXatolari";
+
+// Mahsulot formasi: server xatosi (validatsiya maydoni, kod yoki xabar so'zi) qaysi maydonga tushadi. Kalitlar — so'rov tanasidagi nomlar.
+// Asosiy variant narxi va min. qoldig'i (variant tanasida price.*, /price tanasida to'g'ridan-to'g'ri).
+const ASOSIY_NARX_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  "price.costPrice": { maydonlar: ["price.costPrice", "costPrice"], kodlar: ["cost"] },
+  "price.retailPrice": { maydonlar: ["price.retailPrice", "retailPrice"], kodlar: ["retail"] },
+  "price.wholesalePrice": { maydonlar: ["price.wholesalePrice", "wholesalePrice"], kodlar: ["wholesale"] },
+  minStock: { maydonlar: ["minStock"] },
+};
+// Qo'shimcha birliklar ro'yxati va asosiy birlik: kodlar kesishmaydi (har mos qoida o'rnatiladi).
+const BIRLIK_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  units: { maydonlar: ["units"], kodlar: ["unit_duplicate", "unit_factor", "unit_not_allowed"], sozlar: ["birlik ikki marta", "koeffitsient", "коэффициент", "единица указана дважды"] },
+  unitId: { maydonlar: ["unitId"], kodlar: ["base_unit_in_use", "unit_not_found"], sozlar: ["o'lchov birlig", "измерени", "базов"] },
+};
+const MAHSULOT_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  barcode: { maydonlar: ["barcode"], kodlar: ["barcode"], sozlar: ["barcode", "barkod", "shtrix", "штрих"] },
+  article: { maydonlar: ["article"], kodlar: ["article"], sozlar: ["artikul", "артикул"] },
+  categoryId: { maydonlar: ["categoryId"], kodlar: ["category"], sozlar: ["kategoriya", "категори"] },
+  ...BIRLIK_XATO_QOIDALARI,
+  name: { maydonlar: ["name"] },
+  ...ASOSIY_NARX_XATO_QOIDALARI,
+};
+// Variantli yangi mahsulot: har variant alohida so'rovda yaratiladi va javobda qaysi qator ekani yo'q — shtrix-kod, narx va min. qoldiq
+// xatosi variantlar jadvali ostida. Asosiy shtrix-kod ham kiritilgan bo'lsa (mahsulot tanasida ketadi), kod bo'yicha xato unda ham ko'rinadi.
+const VARIANTLAR_XATO_QOIDASI: XatoMaydonQoidasi = {
+  maydonlar: ["barcode", "params", ...Object.values(ASOSIY_NARX_XATO_QOIDALARI).flatMap((qoida) => qoida.maydonlar)],
+  kodlar: ["barcode", "cost", "retail", "wholesale"],
+  sozlar: ["barcode", "barkod", "shtrix", "штрих"],
+};
+function mahsulotXatoQoidalari(variantli: boolean, asosiyShtrixKod: boolean): Record<string, XatoMaydonQoidasi> {
+  if (!variantli) return MAHSULOT_XATO_QOIDALARI;
+  const qoidalar: Record<string, XatoMaydonQoidasi> = {};
+  for (const [kalit, qoida] of Object.entries(MAHSULOT_XATO_QOIDALARI)) {
+    if (kalit in ASOSIY_NARX_XATO_QOIDALARI) continue;
+    if (kalit === "barcode") {
+      if (asosiyShtrixKod) qoidalar.barcode = { maydonlar: ["barcode"], kodlar: ["barcode"] };
+      continue;
+    }
+    qoidalar[kalit] = qoida;
+  }
+  return { ...qoidalar, variants: VARIANTLAR_XATO_QOIDASI };
+}
+// Kategoriya (yaratish/tahrirlash): yagona maydon — nomi.
+const KATEGORIYA_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  name: { maydonlar: ["name"], kodlar: ["name", "exist", "duplicate", "conflict"], sozlar: ["kategoriya", "категори", "mavjud", "существует"] },
+};
+// Variant (modifikatsiya) va uning narxi.
+const VARIANT_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  barcode: { maydonlar: ["barcode"], kodlar: ["barcode"], sozlar: ["barcode", "barkod", "shtrix", "штрих"] },
+  article: { maydonlar: ["article"], kodlar: ["article"], sozlar: ["artikul", "артикул"] },
+  params: { maydonlar: ["params"], kodlar: ["params"] },
+  costPrice: { maydonlar: ["costPrice", "price.costPrice"], kodlar: ["cost"] },
+  retailPrice: { maydonlar: ["retailPrice", "price.retailPrice"], kodlar: ["retail"] },
+  wholesalePrice: { maydonlar: ["wholesalePrice", "price.wholesalePrice"], kodlar: ["wholesale"] },
+  name: { maydonlar: ["name"] },
+};
+// Excel import: fayl maydoni.
+const IMPORT_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  file: { maydonlar: ["file"], kodlar: ["file", "xlsx", "format", "size"], sozlar: ["fayl", "файл", "xlsx"] },
+};
 type Tab = "mahsulotlar" | "kategoriyalar";
 type Korinish = "kartochka" | "jadval";
 type VariationRow = {
@@ -591,6 +654,7 @@ async function excelXatoXabariniOlish(error: unknown) {
 
 function MahsulotImportModal({onClose,onImported}:{onClose:()=>void;onImported:()=>Promise<void>}) {
   const { t } = useTranslation("mahsulotlar");
+  const fx = useMaydonXatolari(IMPORT_XATO_QOIDALARI);
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [natija, setNatija] = useState<MahsulotImportNatijasi | null>(null);
@@ -603,12 +667,14 @@ function MahsulotImportModal({onClose,onImported}:{onClose:()=>void;onImported:(
     if (band) return;
     setAmal("dryRun");
     setXatolik("");
+    fx.ornat({});
     setNatija(null);
     setBosqich("preview");
     try {
       setNatija(await mahsulotlarApi.importQilish(chosenFile, true));
     } catch (error) {
       setXatolik(getApiErrorMessage(error));
+      fx.serverdan((error as { response?: { data?: unknown } })?.response?.data);
     } finally {
       setAmal(null);
     }
@@ -622,12 +688,14 @@ function MahsulotImportModal({onClose,onImported}:{onClose:()=>void;onImported:(
       setFile(null);
       setNatija(null);
       setXatolik("excelImport.onlyXlsx");
+      fx.ornat({ file: t("excelImport.onlyXlsx") });
       return;
     }
     if (chosenFile.size > 2 * 1024 * 1024) {
       setFile(null);
       setNatija(null);
       setXatolik("excelImport.maxSizeError");
+      fx.ornat({ file: t("excelImport.maxSizeError") });
       return;
     }
     setFile(chosenFile);
@@ -638,6 +706,7 @@ function MahsulotImportModal({onClose,onImported}:{onClose:()=>void;onImported:(
     if (!file || band) return;
     setAmal("import");
     setXatolik("");
+    fx.ornat({});
     try {
       const result = await mahsulotlarApi.importQilish(file);
       setNatija(result);
@@ -645,6 +714,7 @@ function MahsulotImportModal({onClose,onImported}:{onClose:()=>void;onImported:(
       await onImported();
     } catch (error) {
       setXatolik(getApiErrorMessage(error));
+      fx.serverdan((error as { response?: { data?: unknown } })?.response?.data);
     } finally {
       setAmal(null);
     }
@@ -655,6 +725,7 @@ function MahsulotImportModal({onClose,onImported}:{onClose:()=>void;onImported:(
     setNatija(null);
     setBosqich("preview");
     setXatolik("");
+    fx.ornat({});
     inputRef.current?.click();
   }
 
@@ -666,13 +737,15 @@ function MahsulotImportModal({onClose,onImported}:{onClose:()=>void;onImported:(
     </div>
     <div className="space-y-5 p-6">
       <input ref={inputRef} type="file" accept=".xlsx" disabled={band} onChange={(event)=>void faylTanlandi(event)} className="sr-only"/>
-      <button type="button" disabled={band} onClick={()=>inputRef.current?.click()} className="flex w-full items-center justify-center gap-3 rounded-2xl border border-dashed border-blue-200 bg-blue-50/60 px-5 py-5 font-black text-blue-700 disabled:opacity-50 hover:bg-blue-50">
+      <XatoliMaydon xato={fx.xato("file")}>
+      <button type="button" data-maydon-boshqaruvi disabled={band} onClick={()=>inputRef.current?.click()} className="flex w-full items-center justify-center gap-3 rounded-2xl border border-dashed border-blue-200 bg-blue-50/60 px-5 py-5 font-black text-blue-700 disabled:opacity-50 hover:bg-blue-50">
         {amal==="dryRun"?<LoaderCircle size={21} className="animate-spin"/>:<FileSpreadsheet size={21}/>}
         {amal==="dryRun"?t("excelImport.checking"):file?file.name:t("excelImport.chooseFile")}
       </button>
+      </XatoliMaydon>
       <p className="text-center text-xs font-bold text-slate-400">{t("excelImport.maxSizeHint")}</p>
 
-      {xatolik&&<div className="rounded-2xl bg-red-50 p-4 font-bold text-red-600">{t(xatolik)}</div>}
+      {(fx.tepadagi||(!fx.bor&&xatolik))&&<div className="rounded-2xl bg-red-50 p-4 font-bold text-red-600">{fx.tepadagi||t(xatolik)}</div>}
 
       {natija&&<>
         <div className={`rounded-2xl border p-4 ${preview?"border-blue-100 bg-blue-50/50":"border-emerald-100 bg-emerald-50/60"}`}>
@@ -791,6 +864,8 @@ function numericOrZero(value: string) {
 function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|"new";onClose:()=>void;boshlangichTahrir?:boolean}) {
   const { t } = useTranslation("mahsulotlar");
   const store=useMahsulotlarStore();
+  // Oyna ichidagi kategoriya yaratish/tahrirlash: xato kategoriya nomi maydoni ostida.
+  const kategoriyaFx=useMaydonXatolari(KATEGORIYA_XATO_QOIDALARI);
   const editing=item!=="new";
   const [tahrirFaol,setTahrirFaol]=useState(!editing||boshlangichTahrir);
   const [name,setName]=useState(editing?item.name:"");
@@ -883,6 +958,9 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
       );
     }, []);
   }, [variationRows]);
+  // Yangi mahsulot faol variantlar bilan yaratilsa (saqlash() dagi generatedVariants), variant so'rovlari xatosi jadval ostida.
+  const variantliYaratish=!editing&&variantCombinations.some((combo)=>variantDrafts[combo.key]?.active!==false);
+  const fx=useMaydonXatolari(mahsulotXatoQoidalari(variantliYaratish,Boolean(barcode.trim())));
 
   useEffect(() => {
     setVariantDrafts((drafts) => {
@@ -1029,14 +1107,21 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
         params:{...combo.params,...characteristicParams},
         price:narxYigish(variantDrafts[combo.key]),
       }));
-    if(!name.trim()||!categoryId||!unitId||(!editing&&generatedVariants.length===0&&!barcode.trim()))return;
+    // Majburiy maydonlar: bo'shlari o'z maydoni ostida ko'rsatiladi (saqlash avvalgidek to'xtaydi).
+    const majburiy:Record<string,string>={};
+    if(!name.trim())majburiy.name=t("validation.nameRequired");
+    if(!categoryId)majburiy.categoryId=t("validation.categoryRequired");
+    if(!unitId)majburiy.unitId=t("validation.unitRequired");
+    if(!editing&&generatedVariants.length===0&&!barcode.trim())majburiy.barcode=t("modForm.barcodeRequired");
+    fx.ornat(majburiy);
+    if(Object.keys(majburiy).length>0)return;
     let productUnitId=unitId;
     if(unitId.startsWith(STANDARD_UNIT_PREFIX)){
       const standardId=Number(unitId.slice(STANDARD_UNIT_PREFIX.length));
       const standardUnit=store.standardBirliklar.find((unit)=>unit.id===standardId);
       if(!standardUnit)return;
       setUnitResolving(true);
-      const workspaceUnitId=await store.standardBirlikniWorkspacegaOtkazish(standardUnit);
+      const workspaceUnitId=await fx.kuzat(()=>store.standardBirlikniWorkspacegaOtkazish(standardUnit));
       setUnitResolving(false);
       if(!workspaceUnitId)return;
       productUnitId=workspaceUnitId;
@@ -1046,17 +1131,17 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
     let yangiBirliklar:TovarBirligi[]|undefined;
     if(birlikRuxsati&&birlikQatorlari.length>0){
       const yigilgan=birlikRoyxatiniYigish(birlikQatorlari,store.birliklar,{unitId:productUnitId,nomi:asosiyQisqaNomi||asosiyBirlikNomi});
-      if("xato" in yigilgan){setBirlikXato(t(`units.errors.${yigilgan.xato}`));return}
+      if("xato" in yigilgan){fx.ornat({units:t(`units.errors.${yigilgan.xato}`)});return}
       yangiBirliklar=yigilgan.royxat;
     }
     setBirlikXato("");
     const safeImageUrl=cleanRemoteImage(imageUrl);
     const data={name:name.trim(),categoryId,unitId:productUnitId,barcode:barcode.trim()||undefined,article:article.trim()||undefined,imageUrl:safeImageUrl||undefined,isActive,...(ishlabChiqarish?{kind,trackSerial}:{})};
-    let ok=editing
-      ?await store.mahsulotSaqlash(item.id,data)
+    let ok=await fx.kuzat(()=>editing
+      ?store.mahsulotSaqlash(item.id,data)
       :generatedVariants.length>0
-        ?await store.mahsulotVariantlarBilanYaratish(data,generatedVariants,yangiBirliklar)
-        :await store.mahsulotNarxBilanYaratish(data,{
+        ?store.mahsulotVariantlarBilanYaratish(data,generatedVariants,yangiBirliklar)
+        :store.mahsulotNarxBilanYaratish(data,{
           name:hasVariantParams?Object.values(variantParams).flat().join(", "):"Asosiy variant",
           barcode:barcode.trim(),
           article:article.trim()||undefined,
@@ -1064,7 +1149,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
           minStock:numericOrZero(baseStock.minStock),
           params:hasDefaultParams?defaultParams:undefined,
           price:narxYigish(baseDraft),
-        },yangiBirliklar);
+        },yangiBirliklar));
     // Tahrirlashda, oddiy (variatsiyasiz) mahsulotning "Asosiy variant narxlari"
     // bo'limi alohida — mavjud variantga (yoki hali yo'q bo'lsa, yangisiga) saqlanadi,
     // aks holda mahsulotning o'z maydonlari saqlanib, narx o'zgarishi tashlab ketilardi.
@@ -1073,28 +1158,32 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
       const narx=narxYigish(baseDraft);
       // Narx kiritilmagan va asosiy variant ham yo'q bo'lsa, narxsiz yangi variant yaratilmaydi.
       if(narx||asosiyVariant){
-        ok=await store.modifikatsiyaSaqlash(item.id,asosiyVariant?.id??null,{
+        ok=await fx.kuzat(()=>store.modifikatsiyaSaqlash(item.id,asosiyVariant?.id??null,{
           name:asosiyVariant?.name||undefined,
           barcode:asosiyVariant?.barcode||barcode.trim()||generateBarcodeValue(),
           article:asosiyVariant?.article||article.trim()||undefined,
           price:narx,
-        });
+        }));
         // Mavjud variantni tahrirlashda backend narxni asosiy PATCH orqali qabul qilmaydi —
         // narx faqat alohida /price endpointi orqali haqiqiy saqlanadi (ModForm'dagi kabi),
         // aks holda so'rov ketadi-yu, jadvalda eski narx qolib ketaveradi.
-        if(ok&&narx&&asosiyVariant)ok=await store.narxYangilash(item.id,asosiyVariant.id,narx);
+        if(ok&&narx&&asosiyVariant)ok=await fx.kuzat(()=>store.narxYangilash(item.id,asosiyVariant.id,narx));
       }
     }
     // Tahrirlashda birliklar mahsulot saqlangach alohida PUT bilan yoziladi. Faqat ular yuklangan va o'zgargan bo'lsa (yuklanmagan ro'yxat
     // bo'sh deb yuborilib, mavjud birliklarni o'chirib yubormasligi uchun). Xato bo'lsa oyna ochiq qoladi.
     if(ok&&editing&&birlikRuxsati&&birlikBoshlangich!==null&&birlikQatorlariImzosi(birlikQatorlari)!==birlikBoshlangich){
       const yigilgan=birlikRoyxatiniYigish(birlikQatorlari,store.birliklar,{unitId:productUnitId,nomi:asosiyQisqaNomi||asosiyBirlikNomi});
-      if("xato" in yigilgan){setBirlikXato(t(`units.errors.${yigilgan.xato}`));return}
+      if("xato" in yigilgan){fx.ornat({units:t(`units.errors.${yigilgan.xato}`)});return}
       try{
         await mahsulotBirliklariApi.saqlash(item.id,yigilgan.royxat);
         setBirlikBoshlangich(birlikQatorlariImzosi(birlikQatorlari));
       }catch(error){
-        setBirlikXato(getApiErrorMessage(error));
+        const matn=getApiErrorMessage(error);
+        setBirlikXato(matn);
+        // Bu so'rov faqat birliklar ro'yxati: har qanday xatosi (qator shtrix-kodi ham) ro'yxat ostida, validatsiya izohlari bilan.
+        const izohlar=Object.values(serverXatoMaydonlari((error as {response?:{data?:unknown}})?.response?.data,{}));
+        fx.ornat({units:izohlar.join(" ")||matn});
         ok=false;
       }
     }
@@ -1104,6 +1193,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
   function generateArticle() {
     const prefix=name.trim().slice(0,3).toUpperCase().replace(/[^A-Z0-9]/g,"")||"PRD";
     setArticle(`${prefix}-${Date.now().toString().slice(-6)}`);
+    fx.tozala("article");
   }
 
   function generateBarcodeValue() {
@@ -1112,6 +1202,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
 
   function generateBarcode() {
     setBarcode(generateBarcodeValue());
+    fx.tozala("barcode");
   }
 
   function quickFill() {
@@ -1134,6 +1225,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
   }
 
   function updateVariationRow(id:number, patch:Partial<{attribute:string;attributeAdded:boolean;value:string;options:string[]}>) {
+    if(patch.options)fx.tozala("variants");
     setVariationRows((rows)=>rows.map((row)=>row.id===id?{...row,...patch}:row));
   }
 
@@ -1147,6 +1239,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
     const row=variationRows.find((item)=>item.id===id);
     const value=row?.value.trim()??"";
     if(!row||!value||row.options.includes(value))return;
+    fx.tozala("variants");
     const attribute=row.attribute.trim();
     if(attribute)setSavedVariationOptions((saved)=>({...saved,[attribute]:Array.from(new Set([...(saved[attribute]??[]),value]))}));
     const nextRows=variationRows.map((item)=>item.id===id?{...item,value:"",options:[...item.options,value]}:item);
@@ -1162,6 +1255,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
   }
 
   function removeVariationRow(id:number) {
+    fx.tozala("variants");
     setVariationRows((rows)=>{
       const next=rows.filter((row)=>row.id!==id);
       return next.length>0?next:[{id:Date.now(),attribute:"",attributeAdded:false,value:"",options:[]}];
@@ -1169,6 +1263,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
   }
 
   function removeVariationOption(id:number, option:string) {
+    fx.tozala("variants");
     setVariationRows((rows)=>rows.map((row)=>row.id===id?{...row,options:row.options.filter((item)=>item!==option)}:row));
   }
 
@@ -1213,18 +1308,20 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
     );
     if(existing){
       setCategoryId(existing.id);
+      fx.tozala("categoryId");
       setCategorySearch("");
       setNewCategoryName("");
       return;
     }
     setCategoryCreating(true);
-    const ok=await store.kategoriyaSaqlash(null,{name:nameValue});
+    kategoriyaFx.ornat({});
+    const ok=await kategoriyaFx.kuzat(()=>store.kategoriyaSaqlash(null,{name:nameValue}));
     setCategoryCreating(false);
     if(!ok)return;
     const created=useMahsulotlarStore.getState().kategoriyalar.find((kategoriya)=>
       kategoriya.name.toLowerCase()===nameValue.toLowerCase()
     );
-    if(created)setCategoryId(created.id);
+    if(created){setCategoryId(created.id);fx.tozala("categoryId")}
     setCategorySearch("");
     setNewCategoryName("");
   }
@@ -1232,13 +1329,15 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
   function startCategoryEdit(kategoriya:Kategoriya) {
     setEditingCategoryId(kategoriya.id);
     setEditingCategoryName(kategoriya.name);
+    kategoriyaFx.ornat({});
   }
 
   async function saveCategoryEdit() {
     const nameValue=editingCategoryName.trim();
     if(!editingCategoryId||!nameValue)return;
     setCategoryUpdating(true);
-    const ok=await store.kategoriyaSaqlash(editingCategoryId,{name:nameValue});
+    kategoriyaFx.ornat({});
+    const ok=await kategoriyaFx.kuzat(()=>store.kategoriyaSaqlash(editingCategoryId,{name:nameValue}));
     setCategoryUpdating(false);
     if(!ok)return;
     setEditingCategoryId(null);
@@ -1246,6 +1345,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
   }
 
   function updateVariantDraft(key:string, patch:Partial<VariantDraft>) {
+    fx.tozala("variants");
     setVariantDrafts((drafts)=>({
       ...drafts,
       [key]: {...(drafts[key]??{barcode:"",imageUrl:"",active:true,costPrice:"",costCurrency:"UZS",markup:"",retailPrice:"",retailCurrency:"UZS",wholesalePrice:"",wholesaleCurrency:"UZS"}),...patch},
@@ -1253,6 +1353,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
   }
 
   function updateVariantStockDraft(key:string, patch:Partial<VariantStockDraft>) {
+    if(patch.open===undefined)fx.tozala("variants");
     setVariantStockDrafts((drafts)=>({
       ...drafts,
       [key]: {...(drafts[key]??{open:false,warehouseId:omborlar[0]?.id??"",quantity:"",minStock:""}),...patch},
@@ -1280,6 +1381,8 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
 
   function updateBasePrice(field:"costPrice"|"markup"|"retailPrice"|"wholesalePrice", value:string) {
     const numericValue=sanitizeMoneyInput(value);
+    // Ustama/tannarx sotuv narxini ham o'zgartiradi: narx xatolari birga tozalanadi.
+    fx.tozala("price");
     setBaseDraft((current)=>{
       const patch:Partial<VariantDraft>={[field]:numericValue};
       // Ustama va sotuv narxi bir-biridan faqat tannarx va chakana narx bir valyutada bo'lsagina hisoblanadi.
@@ -1304,6 +1407,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
 
   function applyCostToAll(sourceKey:string) {
     const source=variantDrafts[sourceKey];
+    fx.tozala("variants");
     if(!source?.costPrice)return;
     setVariantDrafts((drafts)=>{
       const next={...drafts};
@@ -1324,6 +1428,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
 
   function applyMarkupToAll(sourceKey:string) {
     const source=variantDrafts[sourceKey];
+    fx.tozala("variants");
     if(!source?.markup)return;
     setVariantDrafts((drafts)=>{
       const next={...drafts};
@@ -1343,6 +1448,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
 
   function applyRetailToAll(sourceKey:string) {
     const source=variantDrafts[sourceKey];
+    fx.tozala("variants");
     if(!source?.retailPrice)return;
     setVariantDrafts((drafts)=>{
       const next={...drafts};
@@ -1377,40 +1483,49 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
     {editing && <div className="px-6 pt-5"><ProductStockSummary productId={item.id} /></div>}
     <fieldset disabled={!tahrirFaol || unitResolving} className="product-modal-fields min-w-0 border-0 px-6 py-6">
       <main className="min-w-0 space-y-8">
-        {store.xatolik&&<div className="mb-4"><ErrorBox/></div>}
+        {(fx.tepadagi||kategoriyaFx.tepadagi||(!fx.bor&&!kategoriyaFx.bor&&store.xatolik))&&<div className="mb-4"><ErrorBox matn={fx.tepadagi||kategoriyaFx.tepadagi}/></div>}
         <section className="space-y-5">
           <div className="flex items-center gap-4"><h3 className="text-xl font-black">{t("productModal.sectionMain")}</h3><div className="h-px flex-1 bg-gray-100"/></div>
           <div className="grid gap-5 xl:grid-cols-3">
             <div className="space-y-4">
+                <XatoliMaydon xato={fx.xato("name")}>
                 <label className="block text-sm font-black text-gray-500">{t("productModal.nameLabel")}
                   <div className="relative mt-2">
-                    <input value={name} onChange={e=>setName(e.target.value)} className="input pr-28" placeholder={t("productModal.namePlaceholder")}/>
+                    <input value={name} onChange={e=>{setName(e.target.value);fx.tozala("name")}} className="input pr-28" placeholder={t("productModal.namePlaceholder")}/>
                     <button type="button" onClick={quickFill} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1.5 text-xs font-black text-orange-600 hover:bg-orange-50">{t("productModal.quickFill")}</button>
                   </div>
                 </label>
+                </XatoliMaydon>
+                <XatoliMaydon xato={fx.xato("article")}>
                 <label className="block text-sm font-black text-gray-500">{t("productModal.articleLabel")}
                   <div className="relative mt-2">
-                    <input value={article} onChange={e=>setArticle(e.target.value)} className="input pr-24" placeholder={t("productModal.articlePlaceholder")}/>
+                    <input value={article} onChange={e=>{setArticle(e.target.value);fx.tozala("article")}} className="input pr-24" placeholder={t("productModal.articlePlaceholder")}/>
                     <button type="button" onClick={generateArticle} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1.5 text-xs font-black text-orange-600 hover:bg-orange-50">{t("productModal.generate")}</button>
                   </div>
                 </label>
+                </XatoliMaydon>
             </div>
             <div className="space-y-4">
+                <XatoliMaydon xato={fx.xato("barcode")}>
                 <label className="block text-sm font-black text-gray-500">{t("productModal.barcodeLabel")}{editing?"":" *"}
                   <div className="relative mt-2">
-                    <input value={barcode} onChange={e=>setBarcode(e.target.value)} className="input pr-24" placeholder={t("productModal.barcodePlaceholder")}/>
+                    <input value={barcode} onChange={e=>{setBarcode(e.target.value);fx.tozala("barcode")}} className="input pr-24" placeholder={t("productModal.barcodePlaceholder")}/>
                     <button type="button" onClick={generateBarcode} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1.5 text-xs font-black text-orange-600 hover:bg-orange-50">{t("productModal.generate")}</button>
                   </div>
                 </label>
+                </XatoliMaydon>
+                <XatoliMaydon xato={fx.xato("categoryId")}>
                 <label className="block text-sm font-black text-gray-500">{t("productModal.categoryLabel")}
-                  <AppSelect value={categoryId} onChange={e=>setCategoryId(e.target.value)} className="input mt-2"><option value="">{t("productModal.categoryPlaceholder")}</option>{store.kategoriyalar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</AppSelect>
+                  <AppSelect value={categoryId} onChange={e=>{setCategoryId(e.target.value);fx.tozala("categoryId")}} className="input mt-2"><option value="">{t("productModal.categoryPlaceholder")}</option>{store.kategoriyalar.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</AppSelect>
                 </label>
+                </XatoliMaydon>
             </div>
             <div className="space-y-4">
+                <XatoliMaydon xato={fx.xato("unitId")}>
                 <div className="block text-sm font-black text-gray-500">
                   <p>{t("productModal.unitLabel")}</p>
                   <div className="mt-2 flex items-center gap-3">
-                    <AppSelect value={unitId} onChange={e=>{const yangi=e.target.value;setUnitId(yangi);setBirlikQatorlari((qatorlar)=>qatorlar.filter((qator)=>qator.unitId!==yangi))}} className="input min-w-0 flex-1">
+                    <AppSelect value={unitId} onChange={e=>{const yangi=e.target.value;setUnitId(yangi);setBirlikQatorlari((qatorlar)=>qatorlar.filter((qator)=>qator.unitId!==yangi));fx.tozala("unitId","units")}} className="input min-w-0 flex-1">
                       <option value="">{t("productModal.unitPlaceholder")}</option>
                       <optgroup label={t("productModal.unitGroupWorkspace")}>
                         {productWorkspaceUnits.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}
@@ -1424,6 +1539,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
                     </button>
                   </div>
                 </div>
+                </XatoliMaydon>
               {ishlabChiqarish&&<div className="grid gap-3 rounded-2xl bg-orange-50/60 p-3">
                 <label className="grid gap-1.5"><span className="text-sm font-black text-gray-500">{tIc("product.kind")}</span>
                   <AppSelect value={kind} onChange={e=>setKind(e.target.value as MahsulotTuri)} className="input">
@@ -1464,8 +1580,9 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
             </div>
             {birlikYuklanmoqda
               ?<div className="flex h-24 items-center justify-center"><LoaderCircle className="animate-spin text-orange-500" size={26}/></div>
-              :<BirlikQatorlariMaydoni qatorlar={birlikQatorlari} onChange={(qatorlar)=>{setBirlikQatorlari(qatorlar);setBirlikXato("")}} birliklar={store.birliklar} asosiyId={unitId} asosiyNomi={asosiyQisqaNomi||asosiyBirlikNomi||t("fallback.unit")} onDonaQoshish={donaQoshish}/>}
-            {birlikXato&&<p role="alert" className="rounded-xl bg-red-50 p-3 text-sm font-bold text-red-600">{birlikXato}</p>}
+              :<BirlikQatorlariMaydoni qatorlar={birlikQatorlari} onChange={(qatorlar)=>{setBirlikQatorlari(qatorlar);setBirlikXato("");fx.tozala("units")}} birliklar={store.birliklar} asosiyId={unitId} asosiyNomi={asosiyQisqaNomi||asosiyBirlikNomi||t("fallback.unit")} onDonaQoshish={donaQoshish}/>}
+            <MaydonXatosi matn={fx.xato("units")}/>
+            {birlikXato&&!fx.xato("units")&&<p role="alert" className="rounded-xl bg-red-50 p-3 text-sm font-bold text-red-600">{birlikXato}</p>}
           </div>}
           <div className="space-y-4 pt-2">
             <div className="flex items-center gap-4"><h3 className="text-xl font-black">{t("productModal.sectionVariations")}</h3><div className="h-px flex-1 bg-gray-100"/></div>
@@ -1549,27 +1666,36 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
                 })}
               </div>
             </div>}
+            {variantCombinations.length>0&&<MaydonXatosi matn={fx.xato("variants")}/>}
             {variantCombinations.length===0&&<div className="rounded-[24px] border border-orange-100 bg-orange-50/30 p-4">
               <div className="mb-4">
                 <p className="text-base font-black text-gray-700">{t("productModal.baseVariant.title")}</p>
                 <p className="mt-1 text-sm font-bold text-gray-400">{t("productModal.baseVariant.subtitle")}</p>
               </div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                <XatoliMaydon xato={fx.xato("price.costPrice")}>
                 <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">{t("productModal.baseVariant.costPrice")}
-                  <div className="mt-2"><MoneyInput value={baseDraft.costPrice} currency={baseDraft.costCurrency} onChange={(value)=>updateBasePrice("costPrice",value)} onCurrencyChange={(value)=>setBaseDraft((draft)=>({...draft,costCurrency:value}))}/></div>
+                  <div className="mt-2"><MoneyInput value={baseDraft.costPrice} currency={baseDraft.costCurrency} onChange={(value)=>updateBasePrice("costPrice",value)} onCurrencyChange={(value)=>{setBaseDraft((draft)=>({...draft,costCurrency:value}));fx.tozala("price")}}/></div>
                 </label>
+                </XatoliMaydon>
                 <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">{t("productModal.baseVariant.markup")}
                   <div className="mt-2"><MoneyInput value={baseDraft.markup} suffix="%" onChange={(value)=>updateBasePrice("markup",value)}/></div>
                 </label>
+                <XatoliMaydon xato={fx.xato("price.retailPrice")}>
                 <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">{t("productModal.baseVariant.retailPrice")}
-                  <div className="mt-2"><MoneyInput value={baseDraft.retailPrice} currency={baseDraft.retailCurrency} onChange={(value)=>updateBasePrice("retailPrice",value)} onCurrencyChange={(value)=>setBaseDraft((draft)=>({...draft,retailCurrency:value}))}/></div>
+                  <div className="mt-2"><MoneyInput value={baseDraft.retailPrice} currency={baseDraft.retailCurrency} onChange={(value)=>updateBasePrice("retailPrice",value)} onCurrencyChange={(value)=>{setBaseDraft((draft)=>({...draft,retailCurrency:value}));fx.tozala("price")}}/></div>
                 </label>
+                </XatoliMaydon>
+                <XatoliMaydon xato={fx.xato("price.wholesalePrice")}>
                 <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">{t("productModal.baseVariant.wholesalePrice")}
-                  <div className="mt-2"><MoneyInput value={baseDraft.wholesalePrice} currency={baseDraft.wholesaleCurrency} onChange={(value)=>updateBasePrice("wholesalePrice",value)} onCurrencyChange={(value)=>setBaseDraft((draft)=>({...draft,wholesaleCurrency:value}))}/></div>
+                  <div className="mt-2"><MoneyInput value={baseDraft.wholesalePrice} currency={baseDraft.wholesaleCurrency} onChange={(value)=>updateBasePrice("wholesalePrice",value)} onCurrencyChange={(value)=>{setBaseDraft((draft)=>({...draft,wholesaleCurrency:value}));fx.tozala("price")}}/></div>
                 </label>
+                </XatoliMaydon>
+                <XatoliMaydon xato={fx.xato("minStock")}>
                 <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">{t("productModal.baseVariant.minStock")}
-                  <div className="mt-2"><StockInput value={baseStock.minStock} onChange={(value)=>setBaseStock((stock)=>({...stock,minStock:value}))} warning/></div>
+                  <div className="mt-2"><StockInput value={baseStock.minStock} onChange={(value)=>{setBaseStock((stock)=>({...stock,minStock:value}));fx.tozala("minStock")}} warning/></div>
                 </label>
+                </XatoliMaydon>
               </div>
             </div>}
             {variantCombinations.length>0&&<div className="space-y-3">
@@ -1634,20 +1760,24 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
               <div className="space-y-2">
                 <p className="text-sm font-black text-gray-500">{t("productModal.categorySection.title")}</p>
                 <div className="rounded-[24px] border border-gray-200 p-4">
+                  <XatoliMaydon xato={editingCategoryId===null?kategoriyaFx.xato("name"):undefined}>
                   <div className="relative">
                     <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
-                    <input value={categorySearch} onChange={(e)=>setCategorySearch(e.target.value)} onKeyDown={(e)=>{if(e.key==="Enter"){e.preventDefault();void createCategoryFromCharacteristics()}}} className="input bg-gray-100 pl-11" placeholder={t("productModal.categorySection.searchPlaceholder")}/>
+                    <input value={categorySearch} onChange={(e)=>{setCategorySearch(e.target.value);if(editingCategoryId===null)kategoriyaFx.tozala("name")}} onKeyDown={(e)=>{if(e.key==="Enter"){e.preventDefault();void createCategoryFromCharacteristics()}}} className="input bg-gray-100 pl-11" placeholder={t("productModal.categorySection.searchPlaceholder")}/>
                   </div>
+                  </XatoliMaydon>
                   <div className="scrollbar-hidden mt-3 max-h-40 space-y-2 overflow-y-auto">
                     {filteredCategories.map((kategoriya)=>(
                       editingCategoryId===kategoriya.id?
-                        <div key={kategoriya.id} className="flex items-center gap-2 rounded-2xl bg-orange-50 p-2 ring-1 ring-orange-100">
-                          <input value={editingCategoryName} onChange={(e)=>setEditingCategoryName(e.target.value)} onKeyDown={(e)=>{if(e.key==="Enter"){e.preventDefault();void saveCategoryEdit()}if(e.key==="Escape"){setEditingCategoryId(null);setEditingCategoryName("")}}} className="h-10 min-w-0 flex-1 rounded-xl border border-orange-100 bg-white px-3 text-sm font-black text-gray-700 outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100" autoFocus/>
+                        <XatoliMaydon key={kategoriya.id} xato={kategoriyaFx.xato("name")}>
+                        <div className="flex items-center gap-2 rounded-2xl bg-orange-50 p-2 ring-1 ring-orange-100">
+                          <input value={editingCategoryName} onChange={(e)=>{setEditingCategoryName(e.target.value);kategoriyaFx.tozala("name")}} onKeyDown={(e)=>{if(e.key==="Enter"){e.preventDefault();void saveCategoryEdit()}if(e.key==="Escape"){setEditingCategoryId(null);setEditingCategoryName("");kategoriyaFx.ornat({})}}} className="h-10 min-w-0 flex-1 rounded-xl border border-orange-100 bg-white px-3 text-sm font-black text-gray-700 outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100" autoFocus/>
                           <button type="button" disabled={categoryUpdating||!editingCategoryName.trim()} onClick={()=>void saveCategoryEdit()} className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500 text-white disabled:opacity-50">{categoryUpdating?<LoaderCircle size={16} className="animate-spin"/>:<Edit3 size={16}/>}</button>
-                          <button type="button" onClick={()=>{setEditingCategoryId(null);setEditingCategoryName("")}} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-gray-400 hover:text-red-500"><X size={16}/></button>
-                        </div>:
+                          <button type="button" onClick={()=>{setEditingCategoryId(null);setEditingCategoryName("");kategoriyaFx.ornat({})}} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-gray-400 hover:text-red-500"><X size={16}/></button>
+                        </div>
+                        </XatoliMaydon>:
                         <div key={kategoriya.id} className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black transition ${categoryId===kategoriya.id?"bg-orange-50 text-orange-600 ring-1 ring-orange-100":"bg-gray-100 text-gray-600 hover:bg-orange-50 hover:text-orange-600"}`}>
-                          <button type="button" onClick={()=>setCategoryId(kategoriya.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                          <button type="button" onClick={()=>{setCategoryId(kategoriya.id);fx.tozala("categoryId")}} className="flex min-w-0 flex-1 items-center gap-3 text-left">
                             <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${categoryId===kategoriya.id?"border-orange-500 bg-orange-500":"border-gray-300 bg-white"}`}>
                               {categoryId===kategoriya.id&&<span className="h-1.5 w-1.5 rounded-sm bg-white"/>}
                             </span>
@@ -1738,8 +1868,9 @@ void MahsulotModal;
 function OddiyModal({item,onClose}:{item:Kategoriya|"new";onClose:()=>void}) {
   const { t } = useTranslation("mahsulotlar");
   const store=useMahsulotlarStore();const editing=item!=="new";const [name,setName]=useState(editing?item.name:"");
-  async function save(e:FormEvent){e.preventDefault();if(!name.trim())return;const ok=await store.kategoriyaSaqlash(editing?item.id:null,{name:name.trim()});if(ok)onClose()}
-  return <Modal title={editing?t("categoryModal.editTitle"):t("categoryModal.createTitle")} onClose={onClose}><form onSubmit={save} className="space-y-4">{store.xatolik&&<ErrorBox/>}<input value={name} onChange={e=>setName(e.target.value)} className="input" placeholder={t("categoryModal.namePlaceholder")}/><Actions loading={store.amalBajarilmoqda} onClose={onClose}/></form></Modal>
+  const fx=useMaydonXatolari(KATEGORIYA_XATO_QOIDALARI);
+  async function save(e:FormEvent){e.preventDefault();if(!name.trim()){fx.ornat({name:t("validation.nameRequired")});return}fx.ornat({});const ok=await fx.kuzat(()=>store.kategoriyaSaqlash(editing?item.id:null,{name:name.trim()}));if(ok)onClose()}
+  return <Modal title={editing?t("categoryModal.editTitle"):t("categoryModal.createTitle")} onClose={onClose}><form onSubmit={save} className="space-y-4">{(fx.tepadagi||(!fx.bor&&store.xatolik))&&<ErrorBox matn={fx.tepadagi}/>}<XatoliMaydon xato={fx.xato("name")}><input value={name} onChange={e=>{setName(e.target.value);fx.tozala("name")}} className="input" placeholder={t("categoryModal.namePlaceholder")}/></XatoliMaydon><Actions loading={store.amalBajarilmoqda} onClose={onClose}/></form></Modal>
 }
 
 function ModifikatsiyalarModal({product,onClose}:{product:Mahsulot;onClose:()=>void}) {
@@ -1772,7 +1903,8 @@ function ModifikatsiyalarModal({product,onClose}:{product:Mahsulot;onClose:()=>v
 
 function ModForm({productId,item,onClose}:{productId:string;item:MahsulotModifikatsiyasi|"new";onClose:()=>void}) {
   const { t } = useTranslation("mahsulotlar");
-  const store=useMahsulotlarStore();const editing=item!=="new";const [name,setName]=useState(editing?item.name??"":"");const [barcode,setBarcode]=useState(editing?item.barcode:"");const [article,setArticle]=useState(editing?item.article??"":"");const [params,setParams]=useState(editing&&item.params?JSON.stringify(item.params):"");const [cost,setCost]=useState(Number(editing?item.price?.costPrice??0:0));const [retail,setRetail]=useState(Number(editing?item.price?.retailPrice??0:0));const [wholesale,setWholesale]=useState(Number(editing?item.price?.wholesalePrice??0:0));const [jsonError,setJsonError]=useState("");
+  const store=useMahsulotlarStore();const editing=item!=="new";const [name,setName]=useState(editing?item.name??"":"");const [barcode,setBarcode]=useState(editing?item.barcode:"");const [article,setArticle]=useState(editing?item.article??"":"");const [params,setParams]=useState(editing&&item.params?JSON.stringify(item.params):"");const [cost,setCost]=useState(Number(editing?item.price?.costPrice??0:0));const [retail,setRetail]=useState(Number(editing?item.price?.retailPrice??0:0));const [wholesale,setWholesale]=useState(Number(editing?item.price?.wholesalePrice??0:0));
+  const fx=useMaydonXatolari(VARIANT_XATO_QOIDALARI);
   // Variant nomi bo'sh qoldirilsa, ro'yxatlarda mahsulot nomi ko'rsatiladi (modificationNomi) —
   // shu haqiqatni maydonda ham ko'rsatish uchun mahsulot nomi placeholder sifatida beriladi.
   const mahsulotNomi=store.mahsulotlar.find(m=>m.id===productId)?.name??"";
@@ -1781,12 +1913,13 @@ function ModForm({productId,item,onClose}:{productId:string;item:MahsulotModifik
   const parametrlarKerak=editing&&Boolean(item.params&&Object.keys(item.params).length>0);
   // Bu oynada narxlar valyutasiz kiritiladi: mavjud variantni tahrirlashda har bir narxning o'z valyutasi saqlanib qoladi (yangi variant so'mda).
   const saqlanganValyutalar=editing&&item.price?narxQoralamaValyutalari(item.price):{};
-  async function save(e:FormEvent){e.preventDefault();if(!barcode.trim()){setJsonError("modForm.barcodeRequired");return}let parsed:Record<string,unknown>|undefined;try{parsed=params.trim()?JSON.parse(params):undefined;setJsonError("")}catch{setJsonError("modForm.invalidJson");return}const ok=await store.modifikatsiyaSaqlash(productId,editing?item.id:null,{name:name.trim()||undefined,barcode:barcode.trim(),article:article.trim()||undefined,params:parsed,price:{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale,...saqlanganValyutalar}});if(ok&&editing)await store.narxYangilash(productId,item.id,{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale,...saqlanganValyutalar});if(ok)onClose()}
-  return <AppModal><form onSubmit={save} className="w-full max-w-2xl rounded-[28px] bg-white p-6 shadow-2xl"><div className="flex justify-between"><h2 className="text-2xl font-black">{editing?t("modForm.editTitle"):t("modForm.createTitle")}</h2><button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100"><X size={18}/></button></div><div className="mt-5 grid gap-3 sm:grid-cols-2"><label className="grid gap-1.5 sm:col-span-2"><span className="text-xs font-bold text-slate-400">{t("modForm.namePlaceholder")}</span><input value={name} onChange={e=>setName(e.target.value)} className="input" placeholder={mahsulotNomi||t("modForm.namePlaceholder")}/>{mahsulotNomi&&<span className="text-[11px] font-medium text-slate-400">{t("modForm.nameHint",{product:mahsulotNomi})}</span>}</label><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.barcodePlaceholder")}</span><input value={barcode} onChange={e=>{setBarcode(e.target.value);if(jsonError==="modForm.barcodeRequired")setJsonError("")}} aria-invalid={jsonError==="modForm.barcodeRequired"} className="input" placeholder={t("modForm.barcodePlaceholder")}/></label><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.articlePlaceholder")}</span><input value={article} onChange={e=>setArticle(e.target.value)} className="input" placeholder={t("modForm.articlePlaceholder")}/></label>{parametrlarKerak&&<label className="grid gap-1.5 sm:col-span-2"><span className="text-xs font-bold text-slate-400">{t("modForm.paramsLabel")}</span><input value={params} onChange={e=>setParams(e.target.value)} className="input" placeholder={t("modForm.paramsPlaceholder")}/></label>}<label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.costPlaceholder")}</span><input type="number" min="0" step="0.01" value={cost} onChange={e=>setCost(Number(e.target.value))} className="input" placeholder={t("modForm.costPlaceholder")}/></label><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.retailPlaceholder")}</span><input type="number" min="0" step="0.01" value={retail} onChange={e=>setRetail(Number(e.target.value))} className="input" placeholder={t("modForm.retailPlaceholder")}/></label><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.wholesalePlaceholder")}</span><input type="number" min="0" step="0.01" value={wholesale} onChange={e=>setWholesale(Number(e.target.value))} className="input" placeholder={t("modForm.wholesalePlaceholder")}/></label></div>{jsonError&&<p className="mt-3 text-sm font-bold text-red-500">{t(jsonError)}</p>}<Actions loading={store.amalBajarilmoqda} onClose={onClose}/></form></AppModal>
+  async function save(e:FormEvent){e.preventDefault();if(!barcode.trim()){fx.ornat({barcode:t("modForm.barcodeRequired")});return}let parsed:Record<string,unknown>|undefined;try{parsed=params.trim()?JSON.parse(params):undefined;fx.ornat({})}catch{fx.ornat({params:t("modForm.invalidJson")});return}const ok=await fx.kuzat(()=>store.modifikatsiyaSaqlash(productId,editing?item.id:null,{name:name.trim()||undefined,barcode:barcode.trim(),article:article.trim()||undefined,params:parsed,price:{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale,...saqlanganValyutalar}}));if(ok&&editing)await fx.kuzat(()=>store.narxYangilash(productId,item.id,{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale,...saqlanganValyutalar}));if(ok)onClose()}
+  return <AppModal><form onSubmit={save} className="w-full max-w-2xl rounded-[28px] bg-white p-6 shadow-2xl"><div className="flex justify-between"><h2 className="text-2xl font-black">{editing?t("modForm.editTitle"):t("modForm.createTitle")}</h2><button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100"><X size={18}/></button></div><div className="mt-5 grid gap-3 sm:grid-cols-2"><XatoliMaydon xato={fx.xato("name")} className="sm:col-span-2"><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.namePlaceholder")}</span><input value={name} onChange={e=>{setName(e.target.value);fx.tozala("name")}} className="input" placeholder={mahsulotNomi||t("modForm.namePlaceholder")}/>{mahsulotNomi&&<span className="text-[11px] font-medium text-slate-400">{t("modForm.nameHint",{product:mahsulotNomi})}</span>}</label></XatoliMaydon><XatoliMaydon xato={fx.xato("barcode")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.barcodePlaceholder")}</span><input value={barcode} onChange={e=>{setBarcode(e.target.value);fx.tozala("barcode")}} aria-invalid={Boolean(fx.xato("barcode"))} className="input" placeholder={t("modForm.barcodePlaceholder")}/></label></XatoliMaydon><XatoliMaydon xato={fx.xato("article")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.articlePlaceholder")}</span><input value={article} onChange={e=>{setArticle(e.target.value);fx.tozala("article")}} className="input" placeholder={t("modForm.articlePlaceholder")}/></label></XatoliMaydon>{parametrlarKerak&&<XatoliMaydon xato={fx.xato("params")} className="sm:col-span-2"><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.paramsLabel")}</span><input value={params} onChange={e=>{setParams(e.target.value);fx.tozala("params")}} className="input" placeholder={t("modForm.paramsPlaceholder")}/></label></XatoliMaydon>}<XatoliMaydon xato={fx.xato("costPrice")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.costPlaceholder")}</span><input type="number" min="0" step="0.01" value={cost} onChange={e=>{setCost(Number(e.target.value));fx.tozala("costPrice")}} className="input" placeholder={t("modForm.costPlaceholder")}/></label></XatoliMaydon><XatoliMaydon xato={fx.xato("retailPrice")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.retailPlaceholder")}</span><input type="number" min="0" step="0.01" value={retail} onChange={e=>{setRetail(Number(e.target.value));fx.tozala("retailPrice")}} className="input" placeholder={t("modForm.retailPlaceholder")}/></label></XatoliMaydon><XatoliMaydon xato={fx.xato("wholesalePrice")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.wholesalePlaceholder")}</span><input type="number" min="0" step="0.01" value={wholesale} onChange={e=>{setWholesale(Number(e.target.value));fx.tozala("wholesalePrice")}} className="input" placeholder={t("modForm.wholesalePlaceholder")}/></label></XatoliMaydon></div>{fx.tepadagi&&<p className="mt-3 text-sm font-bold text-red-500">{fx.tepadagi}</p>}<Actions loading={store.amalBajarilmoqda} onClose={onClose}/></form></AppModal>
 }
 
 const modalSizeClass={normal:"max-w-xl",medium:"max-w-3xl",wide:"max-w-5xl"} as const;
 function Modal({title,onClose,children,size="normal"}:{title:string;onClose:()=>void;children:React.ReactNode;size?:"normal"|"medium"|"wide"}){return <AppModal><div className={`scrollbar-hidden max-h-[94vh] w-full overflow-y-auto rounded-[30px] bg-white p-6 shadow-2xl ${modalSizeClass[size]}`}><div className="mb-5 flex justify-between gap-4"><h2 className="text-2xl font-black">{title}</h2><button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 hover:bg-orange-500 hover:text-white"><X size={18}/></button></div>{children}</div></AppModal>}
 function Actions({loading,onClose}:{loading:boolean;onClose:()=>void}){const { t } = useTranslation("mahsulotlar");return <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t("actions.cancel")}</button><button disabled={loading} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{loading&&<LoaderCircle size={16} className="animate-spin"/>}{t("actions.save")}</button></div>}
-function ErrorBox(){const x=useMahsulotlarStore(s=>s.xatolik);return <div className="rounded-xl bg-red-50 p-3 font-bold text-red-600">{x}</div>}
+// matn — maydoni ekranda topilmagan forma xatosi (useMaydonXatolari.tepadagi); bo'lmasa store xatosi.
+function ErrorBox({matn}:{matn?:string}){const x=useMahsulotlarStore(s=>s.xatolik);return <div className="rounded-xl bg-red-50 p-3 font-bold text-red-600">{matn||x}</div>}
 function money(value:number|string|undefined,currency?:string|null){return pulMatni(value,valyutaKodi(currency))}

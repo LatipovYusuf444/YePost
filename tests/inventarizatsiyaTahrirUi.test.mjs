@@ -19,6 +19,7 @@ function editor(options = {}) {
     '@/store/omborStore': { useOmborStore: () => store }, '@/store/authProfileStore': { useAuthProfileStore: selector => selector({ profil: { id: 'admin', role: 'ADMIN' } }) },
     '@/store/savdoStore': { useSavdoStore: { getState: () => ({ qoldiqlarniYuklash: async id => stockCalls.push(id) }) } },
     '@/lib/hujjatSanasi': require('../src/lib/hujjatSanasi.ts'), '@/lib/inventarizatsiyaTahriri': require('../src/lib/inventarizatsiyaTahriri.ts'),
+    '@/hooks/useMaydonXatolari': { useMaydonXatolari: () => ({ xato: () => undefined, bor: false, tepadagi: '', ornat() {}, tozala() {}, tekshiruv() {}, serverdan: () => false, kuzat: (f) => f() }) },
     './omborYordamchilari': { holat: String, hujjatRaqami: doc => doc.docNumber, sana: String, mahsulotQidiruvi: () => true, modificationNomi: mod => mod?.name || 'Product', qoldiqMiqdori: row => Number(row.availableQuantity ?? row.quantity ?? 0) },
   };
   const source = readFileSync(new URL('../src/Pages/Ombor/Inventarizatsiya.tsx', import.meta.url), 'utf8');

@@ -47,6 +47,7 @@ function screen(pageName, { state = null, token = '', forgot = async () => ({ se
       resetTokenInvalid: error => error.response?.data?.code === 'errors.auth.reset_token_invalid',
     },
     '@/lib/authTokenStorage': { authTokenlarniTozalash: () => { cleared++; } },
+    '@/hooks/useMaydonXatolari': { useMaydonXatolari: () => ({ xato: () => undefined, bor: false, tepadagi: '', ornat() {}, tozala() {}, tekshiruv() {}, serverdan: () => false, kuzat: (f) => f() }) },
     '@/store/authStore': { isAuthSessionValid: () => authenticated, useAuthStore: selector => selector({ accessToken: null, expiresAt: null, login }) },
   }).default;
   const render = () => { cursor = 0; return component(); };

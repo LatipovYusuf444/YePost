@@ -5,6 +5,9 @@ import { createPortal } from "react-dom";
 import { AlertTriangle, Check, ClipboardList, FileText, Filter, Info, LoaderCircle, Lock, MessageSquareText, Package, Plus, ScanLine, Search, Settings, Trash2, UserRound, Warehouse, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon, { MaydonXatosi } from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import HujjatSanasiMaydoni, { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
 import { useAuthProfileStore } from "@/store/authProfileStore";
@@ -37,6 +40,13 @@ type FormaXatosi = { key: string; params?: Record<string, string | number> } | n
 
 // Yangi inventarizatsiyada faqat qidirib qo'shilgan mahsulotlar sanaladi, ombordagi qolganlarga tegilmaydi.
 const YARATISH_TURI: InventarizatsiyaTuri = "PARTIAL";
+
+// Server xatosi qaysi maydonga tegishli (kalit — so'rov tanasidagi backend nomi; qatorlar "items.N.actualQuantity").
+const INVENTARIZATSIYA_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  warehouseId: { maydonlar: ["warehouseId"], kodlar: ["warehouse"] },
+  date: { maydonlar: ["date"], kodlar: ["period_closed", "date_in_future"] },
+  note: { maydonlar: ["note"] },
+};
 
 const INVENTORY_BLUE_THEME = {
   "--color-blue-50": "#EFF6FF",
@@ -92,6 +102,7 @@ export default function Inventarizatsiya() {
   const jadvalRef = useRef<HTMLDivElement | null>(null);
   const [note, setNote] = useState("");
   const [formaXatosi, setFormaXatosi] = useState<FormaXatosi>(null);
+  const fx = useMaydonXatolari(INVENTARIZATSIYA_XATO_QOIDALARI);
   const [qoldiqYuklanmoqda, setQoldiqYuklanmoqda] = useState(false);
   const [qidiruv, setQidiruv] = useState("");
   const [sanaDan, setSanaDan] = useState("");
@@ -297,6 +308,7 @@ export default function Inventarizatsiya() {
     // Tez-tez bosilgan Enter yoki ikki marta bosish bitta mahsulotni ikki marta qo'shmasin.
     if (inventarizatsiyaQatorlari.some((item) => item.modificationId === modificationId)) return;
     setFormaXatosi(null);
+    fx.tozala("items");
     setTanlanganModifikatsiyaIds((oldingi) => (oldingi.includes(modificationId) ? oldingi : [...oldingi, modificationId]));
     setMahsulotQidiruv("");
     // Qidiruv matni tozalandi: keyingi mahsulot yozilmaguncha ro'yxat yopiq turadi.
@@ -408,6 +420,7 @@ export default function Inventarizatsiya() {
     }
     const row = matches[0];
     if (!inventarizatsiyaQatorlari.some((item) => item.modificationId === row.modificationId)) {
+      fx.tozala("items");
       setTanlanganModifikatsiyaIds((previous) => previous.includes(row.modificationId) ? previous : [...previous, row.modificationId]);
     }
     setActuals((previous) => {
@@ -520,6 +533,7 @@ export default function Inventarizatsiya() {
     setMahsulotFaolIndeks(-1);
     setNote("");
     setFormaXatosi(null);
+    fx.ornat({});
     setModal(true);
   }
 
@@ -529,6 +543,7 @@ export default function Inventarizatsiya() {
     if (tahrirHujjati) setTanlanganId(tahrirHujjati.id);
     setTahrirHujjati(null);
     setFormaXatosi(null);
+    fx.ornat({});
     store.xatolikniTozalash();
   }
 
@@ -544,6 +559,7 @@ export default function Inventarizatsiya() {
     setMahsulotDropdownOchiq(false);
     setMahsulotFaolIndeks(-1);
     setFormaXatosi(null);
+    fx.ornat({});
     store.xatolikniTozalash();
     if (!id) return;
 
@@ -571,9 +587,11 @@ export default function Inventarizatsiya() {
   async function tahrirniSaqlash() {
     if (!tahrirHujjati || tahrirQulfi.current || !inventarizatsiyaTahririMumkin(tahrirHujjati, joriyProfil?.role)) return;
     setFormaXatosi(null);
+    fx.ornat({});
     store.xatolikniTozalash();
     if (!inventarizatsiyaQatorlari.length) {
-      setFormaXatosi({ key: "inventarizatsiya.createModal.errors.selectAtLeastOne" });
+      // Ro'yxat darajasidagi xato: mahsulotlar jadvali ustida ko'rsatiladi.
+      fx.ornat({ items: t("inventarizatsiya.createModal.errors.selectAtLeastOne") });
       return;
     }
     if (sanoqXulosasi.uncounted.length) {
@@ -588,7 +606,7 @@ export default function Inventarizatsiya() {
     setTahrirSaqlanmoqda(true);
     try {
       const payload = inventarizatsiyaTahrirSorovi(tahrirHujjati, { ids: tanlanganModifikatsiyaIds, actuals, note });
-      const hujjat = await store.inventarizatsiyaTahrirlash(tahrirHujjati.id, payload);
+      const hujjat = await fx.kuzat(() => store.inventarizatsiyaTahrirlash(tahrirHujjati.id, payload));
       if (!hujjat) return;
       // Savdo/POS ham alohida qoldiq keshini yuritadi.
       await useSavdoStore.getState().qoldiqlarniYuklash(hujjat.warehouseId);
@@ -603,13 +621,15 @@ export default function Inventarizatsiya() {
 
   function koribChiqish(action: "save" | "confirm") {
     setFormaXatosi(null);
+    fx.ornat({});
     store.xatolikniTozalash();
+    // Ombor va mahsulotlar ro'yxati xatosi maydonning o'zida (ombor tanlovi ostida, jadval ustida) ko'rsatiladi.
     if (!warehouseId) {
-      setFormaXatosi({ key: "inventarizatsiya.createModal.errors.selectWarehouse" });
+      fx.ornat({ warehouseId: t("inventarizatsiya.createModal.errors.selectWarehouse") });
       return;
     }
     if (inventarizatsiyaQatorlari.length === 0) {
-      setFormaXatosi({ key: "inventarizatsiya.createModal.errors.selectAtLeastOne" });
+      fx.ornat({ items: t("inventarizatsiya.createModal.errors.selectAtLeastOne") });
       return;
     }
     if (sanoqXulosasi.uncounted.length > 0) {
@@ -626,6 +646,7 @@ export default function Inventarizatsiya() {
   async function yaratish() {
     if (!reviewAction) return;
     setFormaXatosi(null);
+    fx.ornat({});
     store.xatolikniTozalash();
     if (sanoqXulosasi.uncounted.length > 0) {
       setFormaXatosi({ key: "inventarizatsiya.createModal.errors.uncounted", params: { count: sanoqXulosasi.uncounted.length } });
@@ -674,14 +695,14 @@ export default function Inventarizatsiya() {
       });
     }
 
-    const hujjat = await store.inventarizatsiyaYaratish({
+    const hujjat = await fx.kuzat(() => store.inventarizatsiyaYaratish({
       ...yangiHujjatSanasi(hujjatSanasi),
       warehouseId,
       type: YARATISH_TURI,
       responsibleId: responsibleId || undefined,
       note: note.trim() || undefined,
       items: Array.from(itemMap.values()),
-    });
+    }));
     if (!hujjat) return;
 
     if (reviewAction === "confirm") {
@@ -880,11 +901,11 @@ export default function Inventarizatsiya() {
               </div>
             </header>
 
-            {(formaXatosi || store.xatolik) && (
+            {(fx.tepadagi || formaXatosi || (!fx.bor && store.xatolik)) && (
               <div id="inventory-form-error" role="alert" aria-atomic="true" className={`mx-4 mt-4 flex shrink-0 items-start gap-3 rounded-xl border px-4 py-3 text-sm shadow-sm sm:mx-6 ${sanalmaganXato ? "border-amber-200 bg-amber-50 text-amber-900" : "border-red-200 bg-red-50 text-red-700"}`}>
                 <AlertTriangle size={19} className="mt-0.5 shrink-0" aria-hidden />
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold leading-6">{formaXatosi ? t(formaXatosi.key, formaXatosi.params) : tahrirHujjati && store.inventarizatsiyaTahrirXatosi?.code === "errors.inventory.movements_after_stock_take" ? t("inventarizatsiya.editModal.movementsError") : store.xatolik}</p>
+                  <p className="font-semibold leading-6">{fx.tepadagi && !formaXatosi ? fx.tepadagi : formaXatosi ? t(formaXatosi.key, formaXatosi.params) : tahrirHujjati && store.inventarizatsiyaTahrirXatosi?.code === "errors.inventory.movements_after_stock_take" ? t("inventarizatsiya.editModal.movementsError") : store.xatolik}</p>
                   {tahrirHujjati && store.inventarizatsiyaTahrirXatosi?.movements && store.inventarizatsiyaTahrirXatosi.movements.length > 0 && (
                     <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto text-xs font-medium">
                       {store.inventarizatsiyaTahrirXatosi.movements.map((movement, index) => <li key={index} className="break-words">{movement.type} · {movement.docId} · {sana(movement.date)} · {movement.quantity}</li>)}
@@ -892,7 +913,7 @@ export default function Inventarizatsiya() {
                   )}
                   {sanalmaganXato && <p className="mt-1 line-clamp-2 text-xs font-medium leading-5">{sanoqXulosasi.uncounted.slice(0, 3).join(", ")}{sanoqXulosasi.uncounted.length > 3 ? "…" : ""}</p>}
                 </div>
-                <button type="button" aria-label={t("inventarizatsiya.createModal.closeAria")} onClick={() => { setFormaXatosi(null); store.xatolikniTozalash(); }} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current"><X size={16} /></button>
+                <button type="button" aria-label={t("inventarizatsiya.createModal.closeAria")} onClick={() => { setFormaXatosi(null); fx.ornat({}); store.xatolikniTozalash(); }} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current"><X size={16} /></button>
               </div>
             )}
 
@@ -906,6 +927,7 @@ export default function Inventarizatsiya() {
                       {t("inventarizatsiya.createModal.aboutTitle")}
                     </div>
                     <div className="grid gap-3.5">
+                      <XatoliMaydon xato={fx.xato("warehouseId")}>
                       <label className="block">
                         <span className="mb-1.5 block text-xs font-semibold text-slate-600">{t("inventarizatsiya.createModal.warehouseLabel")}</span>
                         <AppSelect
@@ -921,16 +943,19 @@ export default function Inventarizatsiya() {
                           ))}
                         </AppSelect>
                       </label>
+                      </XatoliMaydon>
+                      <XatoliMaydon xato={fx.xato("date")}>
                       <label className="block">
                         <span className="mb-1.5 block text-xs font-semibold text-slate-600">{t("inventarizatsiya.createModal.dateLabel")}</span>
                         <HujjatSanasiMaydoni
                           value={hujjatSanasi}
                           disabled={Boolean(tahrirHujjati)}
-                          onChange={setHujjatSanasi}
+                          onChange={(kun) => { fx.tozala("date"); setHujjatSanasi(kun); }}
                           aria-label={t("inventarizatsiya.createModal.dateLabel")}
                           className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3.5 text-sm font-medium text-slate-800 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                         />
                       </label>
+                      </XatoliMaydon>
                       {tahrirHujjati && <p className="flex items-start gap-1.5 text-xs leading-5 text-blue-700"><Lock size={13} className="mt-1 shrink-0" />{t("inventarizatsiya.editModal.lockedFields")}</p>}
                       <div className="block">
                         <span className="mb-1.5 block text-xs font-semibold text-slate-600">{t("inventarizatsiya.createModal.responsibleLabel")}</span>
@@ -944,13 +969,15 @@ export default function Inventarizatsiya() {
                       </div>
                       <label className="block">
                         <span className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-600"><MessageSquareText size={13} className="text-slate-400" />{t("inventarizatsiya.createModal.noteTitle")}</span>
+                        <XatoliMaydon xato={fx.xato("note")}>
                         <textarea
                           value={note}
-                          onChange={(event) => setNote(event.target.value)}
+                          onChange={(event) => { fx.tozala("note"); setNote(event.target.value); }}
                           rows={3}
                           className="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                           placeholder={t("inventarizatsiya.createModal.notePlaceholder")}
                         />
+                        </XatoliMaydon>
                         <p className="mt-2 flex items-start gap-1.5 text-xs font-medium leading-5 text-slate-500">
                           <Info size={12} className="mt-px shrink-0" />
                           {t(tahrirHujjati ? "inventarizatsiya.editModal.noteHelper" : "inventarizatsiya.createModal.noteHelper")}
@@ -1100,6 +1127,7 @@ export default function Inventarizatsiya() {
                           <p className="mt-2 px-1 text-xs font-medium leading-5 text-slate-500">{t("inventarizatsiya.createModal.addNextProductHint")}</p>
                         </div>
                       )}
+                      {fx.xato("items") && <div className="mx-5 mb-3 shrink-0"><MaydonXatosi matn={fx.xato("items")} /></div>}
                       {/* Jadval sarlavhasi 40px, har qator 80px: 5 qatorgacha to'liq ko'rinadi. */}
                       <div ref={jadvalRef} className={`mx-5 mb-5 box-content max-h-[720px] min-h-40 shrink-0 rounded-2xl border border-slate-200 bg-white sm:max-h-[440px] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 ${inventarizatsiyaQatorlari.length > 5 ? "overflow-y-auto" : "overflow-y-hidden"}`}>
                         {inventarizatsiyaQatorlari.length > 0 ? (
@@ -1120,6 +1148,9 @@ export default function Inventarizatsiya() {
                                 const sanaldi = haqiqiyRaw.trim() !== "" && Number.isFinite(haqiqiy) && haqiqiy >= 0;
                                 const miqdorXato = (sanalmaganXato && !haqiqiyRaw.trim()) || (formaXatosi?.key === "inventarizatsiya.createModal.errors.invalidQuantity" && !sanaldi);
                                 const farq = sanaldi ? haqiqiy - tizim : null;
+                                // So'rovdagi qator raqami: tahrirda tanlangan id'lar tartibi, yaratishda jadval tartibi.
+                                const serverIndeks = tahrirHujjati ? tanlanganModifikatsiyaIds.indexOf(qoldiq.modificationId) : index;
+                                const serverXatosi = fx.xato(`items.${serverIndeks}.actualQuantity`) ?? fx.xato(`items.${serverIndeks}.modificationId`);
                                 const farqChipi = (
                                   <span
                                     title={farq != null && farq < 0 ? t("inventarizatsiya.createModal.notDeducted") : undefined}
@@ -1129,7 +1160,7 @@ export default function Inventarizatsiya() {
                                   </span>
                                 );
                                 return (
-                                  <div key={`${qoldiq.modificationId}-${index}`} className="grid h-36 grid-cols-[24px_minmax(0,1fr)_36px] items-center gap-x-3 gap-y-2.5 px-4 py-3 transition hover:bg-slate-50/80 sm:h-20 sm:grid-cols-[32px_minmax(0,1fr)_88px_136px_104px_36px] sm:gap-y-0">
+                                  <div key={`${qoldiq.modificationId}-${index}`} className="grid min-h-36 grid-cols-[24px_minmax(0,1fr)_36px] items-center gap-x-3 gap-y-2.5 px-4 py-3 transition hover:bg-slate-50/80 sm:min-h-20 sm:grid-cols-[32px_minmax(0,1fr)_88px_136px_104px_36px] sm:gap-y-0">
                                     <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-[11px] font-black tabular-nums text-slate-500">{index + 1}</span>
                                     <div className="min-w-0">
                                       <p className="line-clamp-2 text-[15px] font-bold leading-snug text-slate-900" title={modificationNomi(qoldiq.modification)}>{modificationNomi(qoldiq.modification)}</p>
@@ -1143,6 +1174,7 @@ export default function Inventarizatsiya() {
                                       </p>
                                     </div>
                                     <span className="hidden text-right text-[15px] font-bold tabular-nums text-slate-600 sm:block">{<StockQuantity value={tizim} />}</span>
+                                    <XatoliMaydon xato={serverXatosi} className="col-[2/4] row-start-2 sm:col-auto sm:row-auto">
                                     <input
                                       type="number"
                                       min="0"
@@ -1152,6 +1184,7 @@ export default function Inventarizatsiya() {
                                       placeholder={t("inventarizatsiya.createModal.quantityPlaceholder")}
                                       onChange={(event) => {
                                         setFormaXatosi(null);
+                                        fx.tozala(`items.${serverIndeks}`);
                                         setActuals((oldingi) => ({ ...oldingi, [qoldiq.modificationId]: event.target.value }));
                                       }}
                                       onKeyDown={(event) => {
@@ -1170,11 +1203,13 @@ export default function Inventarizatsiya() {
                                       aria-describedby={miqdorXato ? "inventory-form-error" : undefined}
                                       aria-label={t("inventarizatsiya.createModal.actualQuantityAria", { name: modificationNomi(qoldiq.modification) })}
                                     />
+                                    </XatoliMaydon>
                                     <div className="hidden sm:block">{farqChipi}</div>
                                     <button
                                       type="button"
                                       onClick={() => {
                                         setFormaXatosi(null);
+                                        fx.tozala("items");
                                         setTanlanganModifikatsiyaIds((oldingi) => oldingi.filter((id) => id !== qoldiq.modificationId));
                                         setActuals((oldingi) => {
                                           const keyingi = { ...oldingi };
@@ -1229,7 +1264,7 @@ export default function Inventarizatsiya() {
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
                   <div role="heading" aria-level={3} className="text-sm font-bold text-slate-800">{t("inventarizatsiya.createModal.varianceTitle")}</div>
                   {sanoqXulosasi.variances.length === 0 ? <p className="mt-3 text-sm font-medium text-slate-500">{t("inventarizatsiya.createModal.noVariance")}</p> : <div className="mt-3 max-h-60 divide-y divide-slate-100 overflow-y-auto rounded-2xl border border-slate-100">{sanoqXulosasi.variances.map((item) => <div key={item.id} className="flex items-center justify-between gap-3 px-3.5 py-3 text-sm"><span className="min-w-0 truncate font-semibold text-slate-700">{item.name} <span className="font-normal text-slate-400">({item.system} → {item.actual})</span></span><span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-black tabular-nums ${item.difference > 0 ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"}`}>{item.difference > 0 ? "+" : ""}{item.difference}</span></div>)}</div>}
-                  {sanoqXulosasi.variances.length > 0 && <><label htmlFor="inventory-variance-reason" className="mt-4 block text-xs font-semibold text-slate-600">{t("inventarizatsiya.createModal.varianceReason")}</label><textarea id="inventory-variance-reason" value={note} onChange={(event) => setNote(event.target.value)} rows={2} placeholder={t("inventarizatsiya.createModal.varianceReasonPlaceholder")} className="mt-1.5 w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100" /><p className="mt-1.5 text-xs font-medium leading-5 text-slate-500">{t("inventarizatsiya.createModal.variancePolicyHint")}</p></>}
+                  {sanoqXulosasi.variances.length > 0 && <><label htmlFor="inventory-variance-reason" className="mt-4 block text-xs font-semibold text-slate-600">{t("inventarizatsiya.createModal.varianceReason")}</label><XatoliMaydon xato={fx.xato("note")}><textarea id="inventory-variance-reason" value={note} onChange={(event) => { fx.tozala("note"); setNote(event.target.value); }} rows={2} placeholder={t("inventarizatsiya.createModal.varianceReasonPlaceholder")} className="mt-1.5 w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100" /></XatoliMaydon><p className="mt-1.5 text-xs font-medium leading-5 text-slate-500">{t("inventarizatsiya.createModal.variancePolicyHint")}</p></>}
                 </div>
               </div>}
             </div>

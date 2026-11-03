@@ -8,8 +8,17 @@ import {
   Send,
   UserRound,
 } from "lucide-react";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import type { FoydalanuvchiRoli } from "@/types/tenant";
+
+// Server xatosini profil formasi maydoniga bog'lash (kalit — backend maydon nomi).
+const PROFIL_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  fullName: { maydonlar: ["fullName"], kodlar: ["full_name"], sozlar: ["full name", "fullname", "f.i.sh", "фио"] },
+  telegramId: { maydonlar: ["telegramId"], kodlar: ["telegram"], sozlar: ["telegram"] },
+};
 
 const rolNomlari: Record<FoydalanuvchiRoli, string> = {
   DIREKTOR: "Direktor",
@@ -22,6 +31,7 @@ export default function ShaxsiyProfil() {
   const store = useAuthProfileStore();
   const [fullName, setFullName] = useState("");
   const [telegramId, setTelegramId] = useState("");
+  const fx = useMaydonXatolari(PROFIL_XATO_QOIDALARI);
 
   useEffect(() => {
     setFullName(store.profil?.fullName ?? "");
@@ -30,14 +40,19 @@ export default function ShaxsiyProfil() {
 
   async function saqlash(event: FormEvent) {
     event.preventDefault();
-    await store.profilniYangilash({
-      fullName: fullName.trim(),
-      telegramId: telegramId.trim(),
-    });
+    fx.ornat({});
+    await fx.kuzat(() =>
+      store.profilniYangilash({
+        fullName: fullName.trim(),
+        telegramId: telegramId.trim(),
+      })
+    );
   }
 
   const profil = store.profil;
   if (!profil) return null;
+  // Maydoniga bog'langan xato faqat maydon ostida; bog'lanmagani tepada.
+  const tepadagiXato = fx.tepadagi || (fx.bor ? "" : store.xatolik);
 
   return (
     <section className="grid gap-5 xl:grid-cols-[320px_1fr]">
@@ -89,9 +104,9 @@ export default function ShaxsiyProfil() {
           </p>
         </div>
 
-        {store.xatolik && (
+        {tepadagiXato && (
           <div className="mt-5 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">
-            {store.xatolik}
+            {tepadagiXato}
           </div>
         )}
         {store.muvaffaqiyat && (
@@ -101,6 +116,7 @@ export default function ShaxsiyProfil() {
         )}
 
         <div className="mt-6 grid gap-5 md:grid-cols-2">
+          <XatoliMaydon xato={fx.xato("fullName")}>
           <label className="text-sm font-bold">
             F.I.Sh.
             <div className="relative mt-2">
@@ -110,12 +126,17 @@ export default function ShaxsiyProfil() {
               />
               <input
                 value={fullName}
-                onChange={(event) => setFullName(event.target.value)}
+                onChange={(event) => {
+                  fx.tozala("fullName");
+                  setFullName(event.target.value);
+                }}
                 className="h-12 w-full rounded-2xl border border-gray-200 pl-11 pr-4 font-medium outline-none focus:border-orange-300"
                 placeholder="To'liq ismingiz"
               />
             </div>
           </label>
+          </XatoliMaydon>
+          <XatoliMaydon xato={fx.xato("telegramId")}>
           <label className="text-sm font-bold">
             Telegram ID
             <div className="relative mt-2">
@@ -125,12 +146,16 @@ export default function ShaxsiyProfil() {
               />
               <input
                 value={telegramId}
-                onChange={(event) => setTelegramId(event.target.value)}
+                onChange={(event) => {
+                  fx.tozala("telegramId");
+                  setTelegramId(event.target.value);
+                }}
                 className="h-12 w-full rounded-2xl border border-gray-200 pl-11 pr-4 font-medium outline-none focus:border-orange-300"
                 placeholder="Telegram foydalanuvchi ID"
               />
             </div>
           </label>
+          </XatoliMaydon>
           <label className="text-sm font-bold">
             Login
             <div className="relative mt-2">

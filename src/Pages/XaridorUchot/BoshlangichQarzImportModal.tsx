@@ -3,13 +3,22 @@ import axios from "axios";
 import { CheckCircle2, Download, FileSpreadsheet, LoaderCircle, Upload, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
 import { boshlangichQarzImporti, boshlangichQarzShabloni } from "@/api/boshlangichQarzApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import { qarzImportJavobi, qarzImportiniSaqlashMumkin, type QarzImportNatijasi } from "@/lib/boshlangichQarz";
+import { serverXatoMaydonlari, type XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { muvaffaqiyatXabari } from "@/lib/toast";
+
+// Faylning o'ziga tegishli server xatosi (format, bo'sh fayl) fayl tanlash maydoniga; qator xatolari jadvalda qoladi.
+const IMPORT_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  file: { maydonlar: ["file"], kodlar: ["file", "xlsx", "excel"], sozlar: ["fayl", "файл", "xlsx", "excel"] },
+};
 
 export default function BoshlangichQarzImportModal({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation("xaridor_uchot");
+  const fx = useMaydonXatolari(IMPORT_XATO_QOIDALARI);
   const input = useRef<HTMLInputElement>(null);
   const checkedFile = useRef<File | null>(null);
   const lock = useRef(false);
@@ -41,8 +50,9 @@ export default function BoshlangichQarzImportModal({ onClose }: { onClose: () =>
     checkedFile.current = null;
     setResult(null);
     setError("");
+    fx.ornat({});
     setFile(chosen);
-    if (!/\.xlsx$/i.test(chosen.name) || chosen.size === 0) { setError(t("openingDebt.import.onlyXlsx")); return; }
+    if (!/\.xlsx$/i.test(chosen.name) || chosen.size === 0) { fx.ornat({ file: t("openingDebt.import.onlyXlsx") }); return; }
     lock.current = true;
     setOperation("check");
     try {
@@ -52,8 +62,16 @@ export default function BoshlangichQarzImportModal({ onClose }: { onClose: () =>
       else if (report.errors.length === 0) setError(t("openingDebt.import.unverified"));
     } catch (cause) {
       if (axios.isAxiosError(cause)) setResult(qarzImportJavobi(cause.response?.data));
+      faylXatosi(cause);
       setError(await xatoMatni(cause));
     } finally { lock.current = false; setOperation(null); }
+  }
+
+  // Faqat faylga tegishli server xatosi maydonga bog'lanadi (qator xatolari maydonlarga emas, jadvalga tegishli).
+  function faylXatosi(cause: unknown) {
+    const tafsilot = axios.isAxiosError(cause) ? cause.response?.data : undefined;
+    const maydonlar = serverXatoMaydonlari(tafsilot, IMPORT_XATO_QOIDALARI);
+    if (maydonlar.file && qarzImportJavobi(tafsilot).errors.length === 0) fx.ornat({ file: maydonlar.file });
   }
 
   function faylTanlandi(event: ChangeEvent<HTMLInputElement>) {
@@ -68,6 +86,7 @@ export default function BoshlangichQarzImportModal({ onClose }: { onClose: () =>
     checkedFile.current = null;
     setOperation("save");
     setError("");
+    fx.ornat({});
     try {
       const report = qarzImportJavobi(await boshlangichQarzImporti(file, false));
       if (report.radEtildi || report.errors.length > 0) {
@@ -80,6 +99,7 @@ export default function BoshlangichQarzImportModal({ onClose }: { onClose: () =>
       window.dispatchEvent(new Event("savdo:yangilandi"));
     } catch (cause) {
       if (axios.isAxiosError(cause)) setResult(qarzImportJavobi(cause.response?.data));
+      faylXatosi(cause);
       setError(await xatoMatni(cause));
     } finally { lock.current = false; setOperation(null); }
   }
@@ -107,9 +127,9 @@ export default function BoshlangichQarzImportModal({ onClose }: { onClose: () =>
           <ol className="grid gap-3 text-sm sm:grid-cols-3">{["templateStep", "checkStep", "saveStep"].map((step, index) => <li key={step} className="flex items-center gap-2 rounded-xl bg-slate-50 p-3 text-slate-600"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-blue-600 ring-1 ring-blue-100">{index + 1}</span>{t(`openingDebt.import.${step}`)}</li>)}</ol>
           <button type="button" onClick={() => void shablon()} disabled={busy} className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">{operation === "template" ? <LoaderCircle size={16} className="animate-spin" /> : <Download size={16} />}{t("openingDebt.import.template")}</button>
           <input ref={input} type="file" accept=".xlsx" onChange={faylTanlandi} disabled={busy} aria-label={t("openingDebt.import.chooseFile")} className="sr-only" />
-          <button type="button" onClick={() => input.current?.click()} disabled={busy} className="flex min-h-28 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-blue-200 bg-blue-50/50 p-5 text-center text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50">{operation === "check" ? <LoaderCircle size={26} className="animate-spin" /> : <FileSpreadsheet size={26} />}<span className="break-all">{operation === "check" ? t("openingDebt.import.checking") : file?.name || t("openingDebt.import.chooseFile")}</span></button>
+          <XatoliMaydon xato={fx.xato("file")}><button type="button" data-maydon-boshqaruvi onClick={() => input.current?.click()} disabled={busy} className="flex min-h-28 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-blue-200 bg-blue-50/50 p-5 text-center text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50">{operation === "check" ? <LoaderCircle size={26} className="animate-spin" /> : <FileSpreadsheet size={26} />}<span className="break-all">{operation === "check" ? t("openingDebt.import.checking") : file?.name || t("openingDebt.import.chooseFile")}</span></button></XatoliMaydon>
           <p className="text-sm leading-6 text-slate-500">{t("openingDebt.import.phoneHint")}</p>
-          {error && <p role="alert" className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+          {(fx.tepadagi || (fx.bor ? "" : error)) && <p role="alert" className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{fx.tepadagi || error}</p>}
           {ready && <div role="status" className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"><CheckCircle2 size={19} className="shrink-0" /><span>{t("openingDebt.import.ready", { count: result?.totalRows })}</span></div>}
           {result && result.errors.length > 0 && <div className="overflow-hidden rounded-xl border border-red-200">
             <p className="bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{t("openingDebt.import.noChanges")}</p>

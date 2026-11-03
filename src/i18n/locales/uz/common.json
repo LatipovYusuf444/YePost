@@ -109,5 +109,8 @@
     "costHint": "Minusga sotilgan qismning tannarxi sotuv kunidagi taxminiy qiymatda qoladi; keyingi kirim uni o‘zgartirmaydi.",
     "productStock": "Ombordagi qoldiq",
     "noStock": "Bu mahsulot uchun ombor qoldig‘i yozuvi yo‘q."
+  },
+  "validation": {
+    "fieldRequired": "To'ldirilishi shart."
   }
 }

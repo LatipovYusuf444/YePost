@@ -361,5 +361,8 @@
       "description": "Davr to'liq ochiladi va o'tgan sanalardagi hujjatlarni yana o'zgartirish mumkin bo'ladi.",
       "yes": "Ha, ochish"
     }
+  },
+  "legacyForm": {
+    "fieldRequired": "Bu maydon to'ldirilishi shart."
   }
 }

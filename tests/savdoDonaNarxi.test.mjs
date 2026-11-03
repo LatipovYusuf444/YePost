@@ -31,6 +31,7 @@ function editor({ currency = 'USD', sourceCurrency = currency, units = [base, ca
     '@/store/inventorySettingsStore': { useInventorySettingsStore: selector => selector({ canSellNegative: false }) },
     '@/store/savdoSozlamalariStore': { useSavdoSozlamalariStore: selector => selector({ narxTurlari: ['RETAIL', 'WHOLESALE'], yuklash: noop }) },
     './savdoYordamchilari': { pulniFormatlash: String },
+    '@/hooks/useMaydonXatolari': { useMaydonXatolari: () => ({ xato: () => undefined, bor: false, tepadagi: '', ornat() {}, tozala() {}, tekshiruv() {}, serverdan: () => false, kuzat: (f) => f() }) },
   };
   const source = readFileSync(new URL('../src/Pages/Savdo/YangiSotuvModal.tsx', import.meta.url), 'utf8');
   const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;

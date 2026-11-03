@@ -2,8 +2,11 @@ import { useMemo, useState, type FormEvent } from "react";
 import { Briefcase, Building2, CalendarDays, Hash, Phone, Truck, UserRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
 import PhoneInput from "@/Components/ui/PhoneInput";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import FaoliyatPaneli from "./FaoliyatPaneli";
 import IjtimoiyTanlov from "./IjtimoiyTanlov";
 import TezkorPanel from "./TezkorPanel";
@@ -14,6 +17,16 @@ import { bugun, maydonKlass, yangiId } from "./yordamchilar";
 import ModalTablari from "@/Components/common/ModalTablari";
 type MalumotTab = "malumotlar" | "kirim" | "tolovlar" | "tarix";
 const malumotTabKalitlari: MalumotTab[] = ["malumotlar", "kirim", "tolovlar", "tarix"];
+
+// Server xatosi qaysi maydonga tegishli. Kalit — so'rov tanasidagi backend nomi (STIR — inn, ijtimoiy tarmoqlar — socials.*).
+const YETKAZIB_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  inn: { maydonlar: ["inn"], kodlar: ["inn"], sozlar: ["stir", "инн"] },
+  phone: { maydonlar: ["phone"], kodlar: ["phone"], sozlar: ["telefon", "телефон"] },
+  contactPerson: { maydonlar: ["contactPerson"], kodlar: ["contact"], sozlar: ["aloqa shaxsi", "контактн"] },
+  position: { maydonlar: ["position"], kodlar: ["position"], sozlar: ["lavozim", "должност"] },
+  socials: { maydonlar: ["socials", "socials.telegram", "socials.whatsapp", "socials.instagram", "socials.website"], kodlar: ["social", "telegram"], sozlar: ["telegram", "whatsapp", "instagram"] },
+  name: { maydonlar: ["name"], kodlar: ["name"], sozlar: ["nomi", "названи"] },
+};
 
 type Props = {
   boshlangich: YetkazibBeruvchi | null;
@@ -38,6 +51,7 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
   const [xato, setXato] = useState("");
   const [saqlanmoqda, setSaqlanmoqda] = useState(false);
   const [faolTab, setFaolTab] = useState<MalumotTab>("malumotlar");
+  const fx = useMaydonXatolari(YETKAZIB_XATO_QOIDALARI);
 
   const beruvchiKirimlari = useMemo(
     () => kirimlar.filter((kirim) => kirim.yetkazibBeruvchiId === boshlangich?.id),
@@ -48,13 +62,17 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
     event.preventDefault();
 
     if (!nomi.trim()) {
-      setXato(t("yetkazibModal.requiredError"));
+      // Xato maydon ostida ko'rinadi; tepadagi eski xabar qolmasin.
+      setXato("");
+      setFaolTab("malumotlar");
+      fx.ornat({ name: t("yetkazibModal.requiredError") });
       return;
     }
 
     setSaqlanmoqda(true);
+    fx.ornat({});
     try {
-      await onSaqlash({
+      await fx.kuzat(() => onSaqlash({
       id: boshlangich?.id ?? yangiId("ytk"),
       partnerId: boshlangich?.partnerId,
       nomi: nomi.trim(),
@@ -74,7 +92,7 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
       ozgartirilganSana: bugun(),
       ozgartirganMasul: t("shared.defaultResponsible"),
       customFields: boshlangich?.customFields ?? {},
-      });
+      }));
     } catch (error) {
       setXato(getApiErrorMessage(error));
     } finally {
@@ -124,9 +142,9 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
           <div className="scrollbar-orange flex-1 overflow-y-auto">
             {faolTab === "malumotlar" && (
               <div className="px-9 py-7">
-                {xato && (
+                {(fx.tepadagi || (fx.bor ? "" : xato)) && (
                   <p className="mb-5 rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
-                    {xato}
+                    {fx.tepadagi || xato}
                   </p>
                 )}
 
@@ -138,6 +156,7 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
                       </h2>
 
                       <div className="mt-5 space-y-4">
+                        <XatoliMaydon xato={fx.xato("name")}>
                         <label className="grid gap-2">
                           <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                             <Building2 size={14} className="text-[#2563EB]" />
@@ -145,12 +164,14 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
                           </span>
                           <input
                             value={nomi}
-                            onChange={(event) => setNomi(event.target.value)}
+                            onChange={(event) => { fx.tozala("name"); setNomi(event.target.value); }}
                             placeholder={t("yetkazibModal.namePlaceholder")}
                             className={maydonKlass}
                           />
                         </label>
+                        </XatoliMaydon>
 
+                        <XatoliMaydon xato={fx.xato("inn")}>
                         <label className="grid gap-2">
                           <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                             <Hash size={14} className="text-[#2563EB]" />
@@ -158,20 +179,24 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
                           </span>
                           <input
                             value={stir}
-                            onChange={(event) => setStir(event.target.value)}
+                            onChange={(event) => { fx.tozala("inn"); setStir(event.target.value); }}
                             placeholder={t("yetkazibModal.stirPlaceholder")}
                             className={maydonKlass}
                           />
                         </label>
+                        </XatoliMaydon>
 
+                        <XatoliMaydon xato={fx.xato("phone")}>
                         <label className="grid gap-2">
                           <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                             <Phone size={14} className="text-[#2563EB]" />
                             {t("yetkazibModal.phone")}
                           </span>
-                          <PhoneInput value={telefon} onChange={setTelefon} />
+                          <PhoneInput value={telefon} onChange={(qiymat) => { fx.tozala("phone"); setTelefon(qiymat); }} invalid={Boolean(fx.xato("phone"))} />
                         </label>
+                        </XatoliMaydon>
 
+                        <XatoliMaydon xato={fx.xato("contactPerson")}>
                         <label className="grid gap-2">
                           <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                             <UserRound size={14} className="text-[#2563EB]" />
@@ -179,11 +204,12 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
                           </span>
                           <input
                             value={aloqaShaxsi}
-                            onChange={(event) => setAloqaShaxsi(event.target.value)}
+                            onChange={(event) => { fx.tozala("contactPerson"); setAloqaShaxsi(event.target.value); }}
                             placeholder={t("yetkazibModal.contactPersonPlaceholder")}
                             className={maydonKlass}
                           />
                         </label>
+                        </XatoliMaydon>
 
                         <label className="grid gap-2">
                           <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
@@ -193,6 +219,7 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
                           <PhoneInput value={aloqaTelefoni} onChange={setAloqaTelefoni} />
                         </label>
 
+                        <XatoliMaydon xato={fx.xato("position")}>
                         <label className="grid gap-2">
                           <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                             <Briefcase size={14} className="text-[#2563EB]" />
@@ -200,20 +227,24 @@ export default function YetkazibBeruvchiModal({ boshlangich, kirimlar, onYopish,
                           </span>
                           <input
                             value={lavozim}
-                            onChange={(event) => setLavozim(event.target.value)}
+                            onChange={(event) => { fx.tozala("position"); setLavozim(event.target.value); }}
                             placeholder={t("yetkazibModal.positionPlaceholder")}
                             className={maydonKlass}
                           />
                         </label>
+                        </XatoliMaydon>
 
+                        <XatoliMaydon xato={fx.xato("socials")}>
                         <IjtimoiyTanlov
                           qiymatlar={{ telegram, whatsapp, instagram }}
                           onChange={(tarmoq, qiymat) => {
+                            fx.tozala("socials");
                             if (tarmoq === "telegram") setTelegram(qiymat);
                             else if (tarmoq === "whatsapp") setWhatsapp(qiymat);
                             else setInstagram(qiymat);
                           }}
                         />
+                        </XatoliMaydon>
 
                         <label className="grid gap-2">
                           <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">

@@ -2,7 +2,10 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Building2, Info, LoaderCircle, MapPin, Phone, UserRound } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
 import PhoneInput from "@/Components/ui/PhoneInput";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import { xatoRamkasi, type XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { mijozKompaniyalariRoyxatiniOlish, mijozlarRoyxatiniOlish } from "@/api/savdoApi";
 import { mijozKompaniyalariApi, mijozlarApi } from "@/api/partnersApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
@@ -24,6 +27,26 @@ type KompaniyaForma = { id: string; nomi: string; stir: string; telefon: string 
 const MAYDON =
   "h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-normal placeholder:text-slate-300 focus:border-[#2563EB] focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
 const XATO_MAYDON = "!border-red-400 !ring-4 !ring-red-100";
+
+// Server xatosi qaysi maydonga tegishli. Uch so'rov (mijoz kartasi, kompaniya kartasi, sotuv) — har biriga o'z qoidasi, chunki
+// "phone" ham mijozda, ham kompaniyada bor. Kalit — o'sha so'rov tanasidagi backend nomi.
+const MIJOZ_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  phone: { maydonlar: ["phone"], kodlar: ["phone"], sozlar: ["telefon", "phone", "телефон"] },
+  firstName: { maydonlar: ["firstName"], kodlar: ["first_name", "firstname"], sozlar: ["ismi", "ismni", "имя"] },
+  lastName: { maydonlar: ["lastName"], kodlar: ["last_name", "lastname"], sozlar: ["familiya", "фамили"] },
+  address: { maydonlar: ["address"], kodlar: ["address"], sozlar: ["manzil", "адрес"] },
+};
+const KOMPANIYA_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  inn: { maydonlar: ["inn"], kodlar: ["inn", "stir"], sozlar: ["stir"] },
+  phone: { maydonlar: ["phone"], kodlar: ["phone"], sozlar: ["telefon", "phone", "телефон"] },
+  name: { maydonlar: ["name"], kodlar: ["name"], sozlar: ["nomi", "назван"] },
+};
+const SOTUV_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  walkInCustomerPhone: { maydonlar: ["walkInCustomerPhone"], kodlar: ["walk_in_customer_phone", "walkin_phone"], sozlar: ["telefon", "телефон"] },
+  walkInCustomerName: { maydonlar: ["walkInCustomerName"], kodlar: ["walk_in_customer_name", "walkin_name"] },
+  clientCompanyId: { maydonlar: ["clientCompanyId"], kodlar: ["company"], sozlar: ["kompaniya", "company", "компани"] },
+  customerId: { maydonlar: ["customerId"], kodlar: ["customer_not", "customer_id"], sozlar: ["mijoz", "customer", "клиент"] },
+};
 
 function mijozFormasi(mijoz: {
   id: string;
@@ -121,10 +144,6 @@ function Izoh({ children }: { children: ReactNode }) {
   );
 }
 
-function XatoMatni({ children }: { children: ReactNode }) {
-  return <span className="text-xs font-semibold text-red-500">{children}</span>;
-}
-
 export default function MijozniTahrirlashOynasi({ sotuv, onSotuvniYangilash, onYopish }: Props) {
   const { t } = useTranslation("savdo_tafsilot");
   const storeMijozlar = useSavdoStore((holat) => holat.mijozlar);
@@ -166,6 +185,9 @@ export default function MijozniTahrirlashOynasi({ sotuv, onSotuvniYangilash, onY
   const [urinildi, setUrinildi] = useState(false);
   const [saqlanmoqda, setSaqlanmoqda] = useState(false);
   const [xato, setXato] = useState("");
+  const fxMijoz = useMaydonXatolari(MIJOZ_XATO_QOIDALARI);
+  const fxKompaniya = useMaydonXatolari(KOMPANIYA_XATO_QOIDALARI);
+  const fxSotuv = useMaydonXatolari(SOTUV_XATO_QOIDALARI);
 
   useEffect(() => {
     if (storeMijozlar.length > 0) return;
@@ -226,6 +248,8 @@ export default function MijozniTahrirlashOynasi({ sotuv, onSotuvniYangilash, onY
 
   function mijozniTanlash(id: string) {
     if (!id || id === mijozId) return;
+    fxSotuv.tozala("customerId");
+    fxMijoz.ornat({});
     setMijozId(id);
     const royxatdagi = mijozlar.find((mijoz) => mijoz.id === id);
     if (royxatdagi) {
@@ -243,6 +267,8 @@ export default function MijozniTahrirlashOynasi({ sotuv, onSotuvniYangilash, onY
 
   function kompaniyaniTanlash(id: string) {
     if (!id || id === kompaniyaId) return;
+    fxSotuv.tozala("clientCompanyId");
+    fxKompaniya.ornat({});
     setKompaniyaId(id);
     const royxatdagi = kompaniyalar.find((kompaniya) => kompaniya.id === id);
     if (royxatdagi) {
@@ -255,11 +281,17 @@ export default function MijozniTahrirlashOynasi({ sotuv, onSotuvniYangilash, onY
     }
   }
 
+  // Forma maydoni → mijoz/kompaniya kartasi so'rovidagi backend nomi (server xatosini tozalash uchun).
+  const mijozBackendNomi = { ism: "firstName", familiya: "lastName", telefon: "phone", manzil: "address" } as const;
+  const kompaniyaBackendNomi = { nomi: "name", stir: "inn", telefon: "phone" } as const;
+
   function mijozMaydoni(maydon: keyof Omit<MijozForma, "id">, qiymat: string) {
+    fxMijoz.tozala(mijozBackendNomi[maydon]);
     setMijozForma((joriy) => (joriy ? { ...joriy, [maydon]: qiymat, tahrirlandi: true } : joriy));
   }
 
   function kompaniyaMaydoni(maydon: keyof Omit<KompaniyaForma, "id">, qiymat: string) {
+    fxKompaniya.tozala(kompaniyaBackendNomi[maydon]);
     setKompaniyaForma((joriy) => (joriy ? { ...joriy, [maydon]: qiymat, tahrirlandi: true } : joriy));
   }
 
@@ -298,31 +330,45 @@ export default function MijozniTahrirlashOynasi({ sotuv, onSotuvniYangilash, onY
   const telefonXatosi = Boolean(mijozId && mijozForma && !mijozForma.telefon.trim());
   const kompaniyaXatosi = Boolean(kompaniyaId && kompaniyaForma && !kompaniyaForma.nomi.trim());
   const yaroqsiz = ismXatosi || telefonXatosi || kompaniyaXatosi;
+  // Maydon xatosi: bo'sh majburiy maydon (saqlashga urinilgandan keyin, jonli) yoki server xatosi.
+  const ismXato = (urinildi && ismXatosi ? t("mijozTahrir.xatolar.ism") : undefined) ?? fxMijoz.xato("firstName");
+  const telefonXato = (urinildi && telefonXatosi ? t("mijozTahrir.xatolar.telefon") : undefined) ?? fxMijoz.xato("phone");
+  const kompaniyaNomiXato = (urinildi && kompaniyaXatosi ? t("mijozTahrir.xatolar.kompaniyaNomi") : undefined) ?? fxKompaniya.xato("name");
+  const tepadagiXato =
+    fxMijoz.tepadagi || fxKompaniya.tepadagi || fxSotuv.tepadagi || (fxMijoz.bor || fxKompaniya.bor || fxSotuv.bor ? "" : xato);
   const mijozYuklanmoqda = Boolean(mijozId) && !mijozForma;
   const kompaniyaYuklanmoqda = Boolean(kompaniyaId) && !kompaniyaForma;
 
   async function saqlash() {
     setUrinildi(true);
     setXato("");
+    fxSotuv.ornat({});
+    // Bo'sh majburiy maydonlar: matn maydon ostida (urinildi bilan), birinchisiga suriladi.
+    fxMijoz.ornat({
+      ...(ismXatosi ? { firstName: t("mijozTahrir.xatolar.ism") } : {}),
+      ...(telefonXatosi ? { phone: t("mijozTahrir.xatolar.telefon") } : {}),
+    });
+    fxKompaniya.ornat(kompaniyaXatosi ? { name: t("mijozTahrir.xatolar.kompaniyaNomi") } : {});
     if (!ozgarish || yaroqsiz) return;
     setSaqlanmoqda(true);
     try {
       // Avval mijoz va kompaniya kartalari, oxirida sotuv: sotuv javobida yangi nom/telefon/manzil keladi.
+      // Har bir so'rov o'z `kuzat`i bilan: server xatosi o'sha kartaning maydonlariga bog'lanadi.
       if (mijozOzgardi) {
-        const yangilangan = await mijozlarApi.yangilash(mijozId, mijozPatch);
+        const yangilangan = await fxMijoz.kuzat(() => mijozlarApi.yangilash(mijozId, mijozPatch));
         mijozniStoreDaYangilash(yangilangan as unknown as MijozTanlovi);
         const yangi = mijozFormasi(yangilangan);
         setMijozAsl(yangi);
         setMijozForma({ ...yangi, tahrirlandi: false });
       }
       if (kompaniyaOzgardi) {
-        const yangilangan = await mijozKompaniyalariApi.yangilash(kompaniyaId, kompaniyaPatch);
+        const yangilangan = await fxKompaniya.kuzat(() => mijozKompaniyalariApi.yangilash(kompaniyaId, kompaniyaPatch));
         kompaniyaniStoreDaYangilash(yangilangan as unknown as MijozTanlovi);
         const yangi = kompaniyaFormasi(yangilangan);
         setKompaniyaAsl(yangi);
         setKompaniyaForma({ ...yangi, tahrirlandi: false });
       }
-      if (sotuvOzgardi && !(await onSotuvniYangilash(sotuv.id, sotuvPatch))) return;
+      if (sotuvOzgardi && !(await fxSotuv.kuzat(() => onSotuvniYangilash(sotuv.id, sotuvPatch)))) return;
       onYopish();
     } catch (error) {
       setXato(getApiErrorMessage(error));
@@ -375,32 +421,36 @@ export default function MijozniTahrirlashOynasi({ sotuv, onSotuvniYangilash, onY
         <div className="scrollbar-hidden min-h-0 flex-1 space-y-5 overflow-y-auto px-8 pb-6">
           <Qism ikonka={<UserRound size={14} />} sarlavha={t("mijozTahrir.biriktirish.sarlavha")}>
             <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-              <Yorliq matn={t("mijozTahrir.biriktirish.mijoz")}>
-                <SavdoSelect
-                  value={mijozId}
-                  onChange={mijozniTanlash}
-                  klaviatura
-                  placeholder={t("mijozTahrir.biriktirish.mijozPlaceholder")}
-                  selectedLabel={mijozTanlovMatni}
-                  buttonClassName="h-11 rounded-xl px-3.5 text-sm"
-                  options={mijozlar.map((mijoz) => ({ value: mijoz.id, label: mijozMatni(mijoz) }))}
-                  dropdownClassName="min-w-[320px]"
-                  portal
-                />
-              </Yorliq>
-              <Yorliq matn={t("mijozTahrir.biriktirish.kompaniya")}>
-                <SavdoSelect
-                  value={kompaniyaId}
-                  onChange={kompaniyaniTanlash}
-                  klaviatura
-                  placeholder={t("mijozTahrir.biriktirish.kompaniyaPlaceholder")}
-                  selectedLabel={kompaniyaTanlovMatni}
-                  buttonClassName="h-11 rounded-xl px-3.5 text-sm"
-                  options={kompaniyalar.map((kompaniya) => ({ value: kompaniya.id, label: kompaniyaMatni(kompaniya) }))}
-                  dropdownClassName="min-w-[320px]"
-                  portal
-                />
-              </Yorliq>
+              <XatoliMaydon xato={fxSotuv.xato("customerId")}>
+                <Yorliq matn={t("mijozTahrir.biriktirish.mijoz")}>
+                  <SavdoSelect
+                    value={mijozId}
+                    onChange={mijozniTanlash}
+                    klaviatura
+                    placeholder={t("mijozTahrir.biriktirish.mijozPlaceholder")}
+                    selectedLabel={mijozTanlovMatni}
+                    buttonClassName={`h-11 rounded-xl px-3.5 text-sm ${fxSotuv.xato("customerId") ? xatoRamkasi : ""}`}
+                    options={mijozlar.map((mijoz) => ({ value: mijoz.id, label: mijozMatni(mijoz) }))}
+                    dropdownClassName="min-w-[320px]"
+                    portal
+                  />
+                </Yorliq>
+              </XatoliMaydon>
+              <XatoliMaydon xato={fxSotuv.xato("clientCompanyId")}>
+                <Yorliq matn={t("mijozTahrir.biriktirish.kompaniya")}>
+                  <SavdoSelect
+                    value={kompaniyaId}
+                    onChange={kompaniyaniTanlash}
+                    klaviatura
+                    placeholder={t("mijozTahrir.biriktirish.kompaniyaPlaceholder")}
+                    selectedLabel={kompaniyaTanlovMatni}
+                    buttonClassName={`h-11 rounded-xl px-3.5 text-sm ${fxSotuv.xato("clientCompanyId") ? xatoRamkasi : ""}`}
+                    options={kompaniyalar.map((kompaniya) => ({ value: kompaniya.id, label: kompaniyaMatni(kompaniya) }))}
+                    dropdownClassName="min-w-[320px]"
+                    portal
+                  />
+                </Yorliq>
+              </XatoliMaydon>
             </div>
             <p className="mt-3 text-xs leading-5 text-slate-400">
               {t("mijozTahrir.biriktirish.izoh")}
@@ -417,24 +467,28 @@ export default function MijozniTahrirlashOynasi({ sotuv, onSotuvniYangilash, onY
                 </p>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]" key={mijozForma.id}>
-                  <Yorliq matn={t("mijozTahrir.mijozKarta.ism")}>
-                    <input
-                      value={mijozForma.ism}
-                      onChange={(event) => mijozMaydoni("ism", event.target.value)}
-                      maxLength={120}
-                      aria-invalid={urinildi && ismXatosi}
-                      className={`${MAYDON} ${urinildi && ismXatosi ? XATO_MAYDON : ""}`}
-                    />
-                    {urinildi && ismXatosi && <XatoMatni>{t("mijozTahrir.xatolar.ism")}</XatoMatni>}
-                  </Yorliq>
-                  <Yorliq matn={t("mijozTahrir.mijozKarta.familiya")}>
-                    <input
-                      value={mijozForma.familiya}
-                      onChange={(event) => mijozMaydoni("familiya", event.target.value)}
-                      maxLength={120}
-                      className={MAYDON}
-                    />
-                  </Yorliq>
+                  <XatoliMaydon xato={ismXato}>
+                    <Yorliq matn={t("mijozTahrir.mijozKarta.ism")}>
+                      <input
+                        value={mijozForma.ism}
+                        onChange={(event) => mijozMaydoni("ism", event.target.value)}
+                        maxLength={120}
+                        aria-invalid={Boolean(ismXato)}
+                        className={MAYDON}
+                      />
+                    </Yorliq>
+                  </XatoliMaydon>
+                  <XatoliMaydon xato={fxMijoz.xato("lastName")}>
+                    <Yorliq matn={t("mijozTahrir.mijozKarta.familiya")}>
+                      <input
+                        value={mijozForma.familiya}
+                        onChange={(event) => mijozMaydoni("familiya", event.target.value)}
+                        maxLength={120}
+                        className={MAYDON}
+                      />
+                    </Yorliq>
+                  </XatoliMaydon>
+                  <XatoliMaydon xato={telefonXato}>
                   <div className="grid gap-1.5">
                     <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                       <Phone size={13} className="text-[#2563EB]" />
@@ -444,12 +498,13 @@ export default function MijozniTahrirlashOynasi({ sotuv, onSotuvniYangilash, onY
                       key={mijozForma.id}
                       value={mijozForma.telefon}
                       onChange={(qiymat) => mijozMaydoni("telefon", qiymat)}
-                      invalid={urinildi && telefonXatosi}
+                      invalid={Boolean(telefonXato)}
                       ariaLabel={t("mijozTahrir.mijozKarta.telefon")}
                     />
-                    {urinildi && telefonXatosi && <XatoMatni>{t("mijozTahrir.xatolar.telefon")}</XatoMatni>}
                   </div>
-                  <div className="grid gap-1.5 sm:col-span-2">
+                  </XatoliMaydon>
+                  <XatoliMaydon xato={fxMijoz.xato("address")} className="sm:col-span-2">
+                  <div className="grid gap-1.5">
                     <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                       <MapPin size={13} className="text-[#2563EB]" />
                       {t("mijozTahrir.mijozKarta.manzil")}
@@ -462,6 +517,7 @@ export default function MijozniTahrirlashOynasi({ sotuv, onSotuvniYangilash, onY
                       className="min-h-18 w-full rounded-xl border border-slate-200 bg-white p-3.5 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-normal placeholder:text-slate-300 focus:border-[#2563EB] focus:ring-4 focus:ring-blue-100"
                     />
                   </div>
+                  </XatoliMaydon>
                 </div>
               )}
               <Izoh>{t("mijozTahrir.mijozKarta.ogohlantirish")}</Izoh>
@@ -477,27 +533,29 @@ export default function MijozniTahrirlashOynasi({ sotuv, onSotuvniYangilash, onY
                 </p>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]" key={kompaniyaForma.id}>
-                  <div className="sm:col-span-2">
+                  <XatoliMaydon xato={kompaniyaNomiXato} className="sm:col-span-2">
                     <Yorliq matn={t("mijozTahrir.kompaniyaKarta.nomi")}>
                       <input
                         value={kompaniyaForma.nomi}
                         onChange={(event) => kompaniyaMaydoni("nomi", event.target.value)}
                         maxLength={200}
-                        aria-invalid={urinildi && kompaniyaXatosi}
-                        className={`${MAYDON} ${urinildi && kompaniyaXatosi ? XATO_MAYDON : ""}`}
+                        aria-invalid={Boolean(kompaniyaNomiXato)}
+                        className={MAYDON}
                       />
-                      {urinildi && kompaniyaXatosi && <XatoMatni>{t("mijozTahrir.xatolar.kompaniyaNomi")}</XatoMatni>}
                     </Yorliq>
-                  </div>
-                  <Yorliq matn={t("mijozTahrir.kompaniyaKarta.stir")}>
-                    <input
-                      value={kompaniyaForma.stir}
-                      onChange={(event) => kompaniyaMaydoni("stir", event.target.value)}
-                      inputMode="numeric"
-                      maxLength={20}
-                      className={MAYDON}
-                    />
-                  </Yorliq>
+                  </XatoliMaydon>
+                  <XatoliMaydon xato={fxKompaniya.xato("inn")}>
+                    <Yorliq matn={t("mijozTahrir.kompaniyaKarta.stir")}>
+                      <input
+                        value={kompaniyaForma.stir}
+                        onChange={(event) => kompaniyaMaydoni("stir", event.target.value)}
+                        inputMode="numeric"
+                        maxLength={20}
+                        className={MAYDON}
+                      />
+                    </Yorliq>
+                  </XatoliMaydon>
+                  <XatoliMaydon xato={fxKompaniya.xato("phone")}>
                   <div className="grid gap-1.5">
                     <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                       <Phone size={13} className="text-[#2563EB]" />
@@ -507,9 +565,11 @@ export default function MijozniTahrirlashOynasi({ sotuv, onSotuvniYangilash, onY
                       key={kompaniyaForma.id}
                       value={kompaniyaForma.telefon}
                       onChange={(qiymat) => kompaniyaMaydoni("telefon", qiymat)}
+                      invalid={Boolean(fxKompaniya.xato("phone"))}
                       ariaLabel={t("mijozTahrir.kompaniyaKarta.telefon")}
                     />
                   </div>
+                  </XatoliMaydon>
                 </div>
               )}
               <Izoh>
@@ -521,16 +581,37 @@ export default function MijozniTahrirlashOynasi({ sotuv, onSotuvniYangilash, onY
           {mijozTanlanmagan && (
             <Qism ikonka={<UserRound size={14} />} sarlavha={t("mijozTahrir.donalik.sarlavha")}>
               <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                <Yorliq matn={t("mijozTahrir.donalik.ism")}>
-                  <input value={donalikIsm} onChange={(event) => setDonalikIsm(event.target.value)} maxLength={200} className={MAYDON} />
-                </Yorliq>
+                <XatoliMaydon xato={fxSotuv.xato("walkInCustomerName")}>
+                  <Yorliq matn={t("mijozTahrir.donalik.ism")}>
+                    <input
+                      value={donalikIsm}
+                      onChange={(event) => {
+                        fxSotuv.tozala("walkInCustomerName");
+                        setDonalikIsm(event.target.value);
+                      }}
+                      maxLength={200}
+                      className={MAYDON}
+                    />
+                  </Yorliq>
+                </XatoliMaydon>
+                <XatoliMaydon xato={fxSotuv.xato("walkInCustomerPhone")}>
                 <div className="grid gap-1.5">
                   <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                     <Phone size={13} className="text-[#2563EB]" />
                     {t("mijozTahrir.donalik.telefon")}
                   </span>
-                  <TelefonMaydoni value={donalikTelefon} onChange={setDonalikTelefon} maxLength={50} ariaLabel={t("mijozTahrir.donalik.telefon")} />
+                  <TelefonMaydoni
+                    value={donalikTelefon}
+                    onChange={(qiymat) => {
+                      fxSotuv.tozala("walkInCustomerPhone");
+                      setDonalikTelefon(qiymat);
+                    }}
+                    invalid={Boolean(fxSotuv.xato("walkInCustomerPhone"))}
+                    maxLength={50}
+                    ariaLabel={t("mijozTahrir.donalik.telefon")}
+                  />
                 </div>
+                </XatoliMaydon>
               </div>
               <Izoh>
                 {t("mijozTahrir.donalik.izoh")} {t("mijozTahrir.donalik.manzilIzoh")}
@@ -538,7 +619,7 @@ export default function MijozniTahrirlashOynasi({ sotuv, onSotuvniYangilash, onY
             </Qism>
           )}
 
-          {xato && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
+          {tepadagiXato && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{tepadagiXato}</p>}
         </div>
 
         <footer className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/70 px-8 py-5">

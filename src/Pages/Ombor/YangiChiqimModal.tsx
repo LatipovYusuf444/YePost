@@ -14,6 +14,9 @@ import {
   Warehouse,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon, { MaydonXatosi } from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
 import { bugungiToshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
 import { chiqimJamilari, chiqimTannarxi } from "@/lib/chiqimTannarxi";
@@ -31,6 +34,16 @@ type Qator = { id: string; modificationId: string; quantity: number };
 const input =
   "h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70";
 const yangiQator = (): Qator => ({ id: crypto.randomUUID(), modificationId: "", quantity: 1 });
+
+// Server xatosini maydonga bog'lash: kalit — so'rov tanasidagi yo'l (qatorlar "items.<i>.quantity", tartibi ekrandagi qatorlar bilan bir xil).
+const CHIQIM_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  reason: { maydonlar: ["reason"], kodlar: ["reason"] },
+  warehouseId: { maydonlar: ["warehouseId"], kodlar: ["warehouse"], sozlar: ["ombor topilmadi", "склад не найден"] },
+  date: { maydonlar: ["date"], kodlar: ["date_in_future", "period_closed", "before_stock_take"], sozlar: ["hujjat sanasi", "дата документа"] },
+  responsibleId: { maydonlar: ["responsibleId"], kodlar: ["responsible"], sozlar: ["mas'ul xodim", "ответственн"] },
+  note: { maydonlar: ["note"] },
+  items: { maydonlar: ["items"], kodlar: ["negative_stock", "insufficient", "serial_required"] },
+};
 
 export default function YangiChiqimModal({ onClose }: Props) {
   const { t } = useTranslation("ombor_modal");
@@ -62,7 +75,7 @@ export default function YangiChiqimModal({ onClose }: Props) {
   const [reason, setReason] = useState<ChiqimSababi | "">("");
   const [note, setNote] = useState("");
   const [qatorlar, setQatorlar] = useState<Qator[]>([yangiQator()]);
-  const [xato, setXato] = useState("");
+  const fx = useMaydonXatolari(CHIQIM_XATO_QOIDALARI);
   // Klaviatura bilan tez kiritish: keyingi fokus (mahsulot ro'yxati yoki miqdor maydoni).
   const { t: tk } = useTranslation("ombor_kichik");
   const [fokus, setFokus] = useState<{ qatorId: string; maydon: "mahsulot" | "miqdor"; n: number } | null>(null);
@@ -189,39 +202,55 @@ export default function YangiChiqimModal({ onClose }: Props) {
   }
 
   function omborniAlmashtirish(value: string) {
+    fx.tozala("warehouseId", "items");
     setWarehouseId(value);
     setQatorlar((rows) => rows.map((row) => ({ ...row, modificationId: "" })));
   }
 
   async function saqlash(tasdiqlash: boolean) {
-    setXato("");
+    fx.ornat({});
     store.xatolikniTozalash();
-    if (!reason) return setXato("yangiChiqimModal.errors.reasonRequired");
-    if (!warehouseId) return setXato("yangiChiqimModal.errors.warehouseRequired");
-    if (!qatorlar.length || qatorlar.some((row) => !row.modificationId || row.quantity <= 0)) {
-      return setXato("yangiChiqimModal.errors.rowsInvalid");
-    }
-    if (new Set(qatorlar.map((row) => row.modificationId)).size !== qatorlar.length) {
-      return setXato("yangiChiqimModal.errors.duplicateProduct");
-    }
-    const ortiqcha = qatorlar.find((row) => {
-      const stock = omborQoldiqlari.find((item) => item.modificationId === row.modificationId);
-      return row.quantity > Number(stock ? qoldiqMiqdori(stock) : 0);
+    // Xato o'sha maydonning o'zida ko'rsatiladi; bo'sh maydonlarning hammasi birdaniga belgilanadi.
+    const xatolar: Record<string, string> = {};
+    if (!reason) xatolar.reason = t("yangiChiqimModal.errors.reasonRequired");
+    if (!warehouseId) xatolar.warehouseId = t("yangiChiqimModal.errors.warehouseRequired");
+    if (!qatorlar.length) xatolar.items = t("yangiChiqimModal.errors.rowsInvalid");
+    qatorlar.forEach((row, index) => {
+      if (!row.modificationId) xatolar[`items.${index}.modificationId`] = t("yangiChiqimModal.fieldErrors.productRequired");
+      if (row.quantity <= 0) xatolar[`items.${index}.quantity`] = t("yangiChiqimModal.fieldErrors.quantityInvalid");
     });
-    if (!canSellNegative && ortiqcha) return setXato("yangiChiqimModal.errors.exceedsStock");
+    // Sabab bo'sh bo'lsa `xatolar.reason` bor; `!reason` sharti TypeScript uchun sababni toraytiradi.
+    if (!reason || Object.keys(xatolar).length) return fx.ornat(xatolar);
+    const takrorlar = qatorlar.flatMap((row, index) =>
+      qatorlar.findIndex((boshqa) => boshqa.modificationId === row.modificationId) < index ? [index] : []
+    );
+    if (takrorlar.length) {
+      return fx.ornat(Object.fromEntries(takrorlar.map((index) => [`items.${index}.modificationId`, t("yangiChiqimModal.fieldErrors.duplicateProduct")])));
+    }
+    const ortiqchalar = qatorlar.flatMap((row, index) => {
+      const stock = omborQoldiqlari.find((item) => item.modificationId === row.modificationId);
+      const mavjud = Number(stock ? qoldiqMiqdori(stock) : 0);
+      return row.quantity > mavjud
+        ? [[`items.${index}.quantity`, t("yangiChiqimModal.fieldErrors.exceedsStock", { available: mavjud.toLocaleString("uz-UZ") })] as const]
+        : [];
+    });
+    if (!canSellNegative && ortiqchalar.length) return fx.ornat(Object.fromEntries(ortiqchalar));
 
-    const hujjat = await store.chiqimYaratish({
+    const hujjat = await fx.kuzat(() => store.chiqimYaratish({
       ...yangiHujjatSanasi(hujjatSanasi),
       warehouseId,
       reason,
       responsibleId: responsibleId || undefined,
       note: note.trim() || undefined,
       items: qatorlar.map(({ modificationId, quantity }) => ({ modificationId, quantity })),
-    });
+    }));
     if (!hujjat) return;
-    if (tasdiqlash && !(await store.chiqimTasdiqlash(hujjat.id))) return;
+    if (tasdiqlash && !(await fx.kuzat(() => store.chiqimTasdiqlash(hujjat.id)))) return;
     onClose();
   }
+
+  // Maydoni ko'rsatilgan xato faqat maydon ostida; maydonga bog'lanmagan server xatosi tepada.
+  const tepadagiXato = fx.tepadagi || (fx.bor ? "" : store.xatolik);
 
   return (
     <AppModal onClose={onClose} className="sidebar-aligned-document-modal items-stretch p-3 sm:p-5">
@@ -234,10 +263,10 @@ export default function YangiChiqimModal({ onClose }: Props) {
         </header>
 
         <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-8">
-          {(xato || store.xatolik) && (
+          {tepadagiXato && (
             <div className="mb-4 flex items-start justify-between gap-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
-              <span>{xato ? t(xato) : store.xatolik}</span>
-              <button type="button" onClick={() => { setXato(""); store.xatolikniTozalash(); }}>{t("yangiChiqimModal.errors.close")}</button>
+              <span>{tepadagiXato}</span>
+              <button type="button" onClick={() => { fx.ornat({}); store.xatolikniTozalash(); }}>{t("yangiChiqimModal.errors.close")}</button>
             </div>
           )}
 
@@ -251,17 +280,21 @@ export default function YangiChiqimModal({ onClose }: Props) {
                 <SelectField
                   label={t("yangiChiqimModal.fields.reason")}
                   value={reason}
-                  onChange={(value) => setReason(value as ChiqimSababi | "")}
+                  xato={fx.xato("reason")}
+                  onChange={(value) => { fx.tozala("reason"); setReason(value as ChiqimSababi | ""); }}
                   placeholder={t("yangiChiqimModal.fields.reasonPlaceholder")}
                   options={Object.entries(chiqimSabablari).map(([id, name]) => ({ id, name }))}
                 />
-                <Field label={t("yangiChiqimModal.fields.docDate")}>
-                  <HujjatSanasiMaydoni value={hujjatSanasi} onChange={setHujjatSanasi} className={input} aria-label={t("yangiChiqimModal.fields.docDate")} />
-                </Field>
+                <XatoliMaydon xato={fx.xato("date")}>
+                  <Field label={t("yangiChiqimModal.fields.docDate")}>
+                    <HujjatSanasiMaydoni value={hujjatSanasi} onChange={(kun) => { fx.tozala("date"); setHujjatSanasi(kun); }} className={input} aria-label={t("yangiChiqimModal.fields.docDate")} />
+                  </Field>
+                </XatoliMaydon>
                 <SelectField
                   label={t("yangiChiqimModal.fields.responsible")}
                   value={responsibleId}
-                  onChange={setResponsibleId}
+                  xato={fx.xato("responsibleId")}
+                  onChange={(value) => { fx.tozala("responsibleId"); setResponsibleId(value); }}
                   placeholder={t("yangiChiqimModal.fields.responsiblePlaceholder")}
                   options={store.xodimlar.map((item) => ({
                     id: item.id,
@@ -274,7 +307,9 @@ export default function YangiChiqimModal({ onClose }: Props) {
             <div className="space-y-5">
               <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
                 <SectionTitle icon={<MessageSquare size={18} />} text={t("yangiChiqimModal.sections.comment")} />
-                <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={4} placeholder={t("yangiChiqimModal.fields.commentPlaceholder")} className="w-full resize-none rounded-2xl border border-slate-200 p-4 text-sm font-medium text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100" />
+                <XatoliMaydon xato={fx.xato("note")}>
+                  <textarea value={note} onChange={(event) => { fx.tozala("note"); setNote(event.target.value); }} rows={4} placeholder={t("yangiChiqimModal.fields.commentPlaceholder")} className="w-full resize-none rounded-2xl border border-slate-200 p-4 text-sm font-medium text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100" />
+                </XatoliMaydon>
               </section>
               <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
                 <SectionTitle icon={<Clock3 size={18} />} text={t("yangiChiqimModal.sections.history")} />
@@ -292,13 +327,20 @@ export default function YangiChiqimModal({ onClose }: Props) {
                 <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">{t("yangiChiqimModal.sections.items")}</h3>
                 <p className="mt-1 text-xs font-medium text-slate-400">{t("yangiChiqimModal.items.hint")}</p>
               </div>
-              <button type="button" onClick={() => setQatorlar((rows) => [...rows, yangiQator()])} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-lg shadow-orange-100 transition hover:bg-orange-600">
+              <button type="button" onClick={() => { fx.tozala("items"); setQatorlar((rows) => [...rows, yangiQator()]); }} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 text-sm font-black text-white shadow-lg shadow-orange-100 transition hover:bg-orange-600">
                 <Plus size={18} /> {t("yangiChiqimModal.items.addRow")}
               </button>
             </div>
 
             <div className="mb-4">
-              <ShtrixKodMaydoni onSkan={kodniQoshish} inputClassName={input} />
+              <ShtrixKodMaydoni
+                onSkan={(kod) => {
+                  const natija = kodniQoshish(kod);
+                  if (natija && !natija.xato) fx.tozala("items");
+                  return natija;
+                }}
+                inputClassName={input}
+              />
             </div>
 
             <div className="scrollbar-orange overflow-x-auto pb-2">
@@ -315,10 +357,12 @@ export default function YangiChiqimModal({ onClose }: Props) {
                     <div key={row.id} className="grid grid-cols-[42px_76px_2.1fr_1fr_1fr_1fr_1.35fr_1fr_1fr_48px] items-center gap-3 rounded-2xl border border-orange-100 bg-[#FFFFFF] p-3">
                       <span className="text-center text-sm font-black text-slate-400">{index + 1}</span>
                       <div className="flex h-12 items-center justify-center rounded-xl border border-dashed border-orange-200 bg-white text-slate-300"><Image size={20} /></div>
+                      <XatoliMaydon xato={fx.xato(`items.${index}.modificationId`)}>
                       <MahsulotTanlov
                         value={row.modificationId}
                         variantlar={mahsulotVariantlari(row.id)}
                         onChange={(id) => {
+                          fx.tozala(`items.${index}`);
                           qatorniYangilash(row.id, { modificationId: id });
                           // Mahsulot tanlangach fokus shu qatorning miqdoriga o'tadi.
                           fokusSoralish(row.id, "miqdor");
@@ -328,18 +372,20 @@ export default function YangiChiqimModal({ onClose }: Props) {
                         tanlanganNomi={mod ? modificationNomi(mod) : undefined}
                         ochishSorovi={fokus?.maydon === "mahsulot" && fokus.qatorId === row.id ? fokus.n : 0}
                       />
+                      </XatoliMaydon>
                       <div className="relative"><Barcode size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={mod?.barcode ?? ""} readOnly placeholder={t("yangiChiqimModal.items.barcodePlaceholder")} className={`${input} pl-9`} /></div>
                       <input value={narx ? narx.toLocaleString("uz-UZ") : ""} placeholder="0" readOnly className={input} />
-                      <div className="relative"><input type="number" min="0.001" max={canSellNegative ? undefined : mavjud || undefined} step="0.001" value={row.quantity} data-chiqim-miqdor={row.id} onChange={(event) => qatorniYangilash(row.id, { quantity: Number(event.target.value) })} onKeyDown={(event) => { if (event.key !== "Enter" || event.nativeEvent.isComposing) return; event.preventDefault(); keyingiQatorgaOtish(row.id); }} className={`${input} pr-14`} /><span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400">{t("yangiChiqimModal.items.unit")}</span></div>
-                      <div className="relative"><Warehouse size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><AppSelect value={warehouseId} onChange={(event) => omborniAlmashtirish(event.target.value)} className={`${input} appearance-none pl-9 pr-8`}><option value="">{t("yangiChiqimModal.items.selectWarehouse")}</option>{store.omborlar.filter((item) => item.isActive !== false).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</AppSelect><ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" /></div>
+                      <XatoliMaydon xato={fx.xato(`items.${index}.quantity`)}><div className="relative"><input type="number" min="0.001" max={canSellNegative ? undefined : mavjud || undefined} step="0.001" value={row.quantity} data-chiqim-miqdor={row.id} onChange={(event) => { fx.tozala(`items.${index}.quantity`); qatorniYangilash(row.id, { quantity: Number(event.target.value) }); }} onKeyDown={(event) => { if (event.key !== "Enter" || event.nativeEvent.isComposing) return; event.preventDefault(); keyingiQatorgaOtish(row.id); }} className={`${input} pr-14`} /><span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400">{t("yangiChiqimModal.items.unit")}</span></div></XatoliMaydon>
+                      <XatoliMaydon xato={index === 0 ? fx.xato("warehouseId") : undefined}><div className="relative"><Warehouse size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><AppSelect value={warehouseId} onChange={(event) => omborniAlmashtirish(event.target.value)} className={`${input} appearance-none pl-9 pr-8`}><option value="">{t("yangiChiqimModal.items.selectWarehouse")}</option>{store.omborlar.filter((item) => item.isActive !== false).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</AppSelect><ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" /></div></XatoliMaydon>
                       <div className="rounded-xl bg-slate-50 px-3 py-2.5"><p className="font-black text-slate-700">{mavjud.toLocaleString("uz-UZ")}</p><p className="truncate text-[10px] font-semibold text-slate-400">{store.omborlar.find((item) => item.id === warehouseId)?.name ?? t("yangiChiqimModal.items.warehouseFallback")}</p></div>
                       <p className="font-black text-emerald-600">{pul(row.quantity * narx, narxValyutasi)}</p>
-                      <button type="button" disabled={qatorlar.length === 1} onClick={() => setQatorlar((rows) => rows.filter((item) => item.id !== row.id))} aria-label={t("yangiChiqimModal.items.removeRowAria")} className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100 disabled:opacity-30"><Trash2 size={17} /></button>
+                      <button type="button" disabled={qatorlar.length === 1} onClick={() => { fx.tozala("items"); setQatorlar((rows) => rows.filter((item) => item.id !== row.id)); }} aria-label={t("yangiChiqimModal.items.removeRowAria")} className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100 disabled:opacity-30"><Trash2 size={17} /></button>
                     </div>
                   );
                 })}
               </div>
             </div>
+            <div className="mt-3 empty:hidden"><MaydonXatosi matn={fx.xato("items")} /></div>
 
             <div className="mt-4 flex justify-end border-t border-orange-100 pt-4 text-right">
               <div><p className="text-xs font-black uppercase text-slate-400">{t("yangiChiqimModal.items.total")}</p><p className="mt-1 text-2xl font-black text-slate-950">{chiqimQiymatiMatni}</p></div>
@@ -365,8 +411,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return <label className="space-y-2 text-sm font-bold text-slate-500"><span>{label}</span>{children}</label>;
 }
 
-function SelectField({ label, value, onChange, placeholder, options }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; options: Array<{ id: string; name: string }> }) {
-  return <label className="space-y-2 text-sm font-bold text-slate-500"><span>{label}</span><div className="relative"><AppSelect value={value} onChange={(event) => onChange(event.target.value)} className={`${input} appearance-none pr-10`}><option value="">{placeholder}</option>{options.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}</AppSelect><ChevronDown size={17} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" /></div></label>;
+function SelectField({ label, value, onChange, placeholder, options, xato }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; options: Array<{ id: string; name: string }>; xato?: string }) {
+  return <XatoliMaydon xato={xato}><label className="space-y-2 text-sm font-bold text-slate-500"><span>{label}</span><div className="relative"><AppSelect value={value} onChange={(event) => onChange(event.target.value)} className={`${input} appearance-none pr-10`}><option value="">{placeholder}</option>{options.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}</AppSelect><ChevronDown size={17} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" /></div></label></XatoliMaydon>;
 }
 
 function ActionButton({ children, busy, outline, onClick }: { children: React.ReactNode; busy: boolean; outline?: boolean; onClick: () => void }) {

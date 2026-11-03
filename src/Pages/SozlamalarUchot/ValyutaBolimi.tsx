@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { CalendarDays, CircleAlert, Info, LoaderCircle, Lock, RefreshCw, TrendingUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import axios from "axios";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import SummaMaydoni from "@/Components/common/SummaMaydoni";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import {
   kursniSongaAylantirish,
   valyutaApi,
@@ -16,6 +20,13 @@ import { BolimKarta, Maydon, Switch } from "./UmumiyUI";
 import { maydonKlass } from "./yordamchilar";
 
 const TARIX_KUNLARI = 90;
+
+// Kurs formasi xatolari: sana — so'rov manzilida (/settings/exchange-rates/:date), kurs — tanada (rate). Avval sana:
+// "kelajak sanasiga kurs kiritib bo'lmaydi" kabi xabar sana maydoniga tushadi. ("date" so'zi "validate" ichida ham bor — ishlatilmaydi.)
+const KURS_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  date: { maydonlar: ["date"], kodlar: ["invalid_date", "future_date", "date_in_future"], sozlar: ["sana", "date must", "invalid date", "future date", "дата", "дату"] },
+  rate: { maydonlar: ["rate"], kodlar: ["invalid_rate", "rate_invalid", "rate_required"], sozlar: ["kurs", "rate must", "exchange rate", "курс"] },
+};
 const SANA_NAMUNASI = /^\d{4}-\d{2}-\d{2}$/;
 
 function mahalliyBugun() {
@@ -69,7 +80,7 @@ export default function ValyutaBolimi() {
   const [rejimSaqlanmoqda, setRejimSaqlanmoqda] = useState(false);
   const [kursSaqlanmoqda, setKursSaqlanmoqda] = useState(false);
   const [xato, setXato] = useState("");
-  const [forma, setFormaXato] = useState<"" | "rate" | "date">("");
+  const fx = useMaydonXatolari(KURS_XATO_QOIDALARI);
   const [xabar, setXabar] = useState("");
 
   // Bo'sh bo'lsa kompaniya vaqt mintaqasidagi bugungi kun (backend javobidan) ishlatiladi.
@@ -148,15 +159,15 @@ export default function ValyutaBolimi() {
     setXato("");
 
     if (!sanaToGri(sana)) {
-      setFormaXato("date");
+      fx.ornat({ date: t("valyuta.form.dateInvalid") });
       return;
     }
     const kurs = kursniOqish(kursKiritma);
     if (!Number.isFinite(kurs) || kurs <= 0) {
-      setFormaXato("rate");
+      fx.ornat({ rate: t("valyuta.form.rateInvalid") });
       return;
     }
-    setFormaXato("");
+    fx.ornat({});
 
     setKursSaqlanmoqda(true);
     try {
@@ -166,7 +177,8 @@ export default function ValyutaBolimi() {
       await yuklash();
       void navbarniYangilash();
     } catch (error) {
-      setXato(getApiErrorMessage(error));
+      // Maydoniga bog'langan xato faqat maydon ostida; bog'lanmagani tepada.
+      if (!fx.serverdan(axios.isAxiosError(error) ? error.response?.data : undefined)) setXato(getApiErrorMessage(error));
     } finally {
       setKursSaqlanmoqda(false);
     }
@@ -176,12 +188,12 @@ export default function ValyutaBolimi() {
     if (!tahrirlaydi) return;
     setSana(yozuv.date);
     setKursKiritma(String(kursniSongaAylantirish(yozuv.rate) ?? ""));
-    setFormaXato("");
+    fx.ornat({});
   }
 
   return (
     <div className="space-y-5">
-      {xato && <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
+      {(fx.tepadagi || xato) && <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{fx.tepadagi || xato}</p>}
       {xabar && <p role="status" className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">{xabar}</p>}
 
       {/* Rejim */}
@@ -275,18 +287,21 @@ export default function ValyutaBolimi() {
       {tahrirlaydi && (
         <BolimKarta sarlavha={t("valyuta.form.title")} izoh={t("valyuta.form.subtitle")}>
           <form onSubmit={(event) => void kursniSaqlash(event)} noValidate className="grid gap-4 sm:grid-cols-[minmax(0,200px)_minmax(0,1fr)_auto] sm:items-end">
+            <XatoliMaydon xato={fx.xato("date")}>
             <Maydon label={t("valyuta.form.date")}>
               <input
                 type="date"
                 value={sana}
                 onChange={(event) => {
                   setSana(event.target.value);
-                  setFormaXato("");
+                  fx.tozala("date");
                 }}
-                aria-invalid={forma === "date"}
+                aria-invalid={Boolean(fx.xato("date"))}
                 className={maydonKlass}
               />
             </Maydon>
+            </XatoliMaydon>
+            <XatoliMaydon xato={fx.xato("rate")}>
             <Maydon label={t("valyuta.form.rate")}>
               <div className="relative">
                 <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">1 $ =</span>
@@ -295,15 +310,16 @@ export default function ValyutaBolimi() {
                   value={kursKiritma}
                   onChange={(qiymat) => {
                     setKursKiritma(qiymat);
-                    setFormaXato("");
+                    fx.tozala("rate");
                   }}
                   placeholder="12 650"
-                  aria-invalid={forma === "rate"}
+                  aria-invalid={Boolean(fx.xato("rate"))}
                   className={`${maydonKlass} pl-14 pr-14`}
                 />
                 <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{t("valyuta.som")}</span>
               </div>
             </Maydon>
+            </XatoliMaydon>
             <button
               type="submit"
               disabled={kursSaqlanmoqda}
@@ -313,9 +329,7 @@ export default function ValyutaBolimi() {
               {mavjudKurs ? t("valyuta.form.replace") : t("valyuta.form.save")}
             </button>
           </form>
-          {forma === "date" && <p role="alert" className="mt-2 text-xs font-bold text-red-600">{t("valyuta.form.dateInvalid")}</p>}
-          {forma === "rate" && <p role="alert" className="mt-2 text-xs font-bold text-red-600">{t("valyuta.form.rateInvalid")}</p>}
-          {mavjudKurs && forma === "" && (
+          {mavjudKurs && !fx.bor && (
             <p className="mt-2 text-xs font-bold text-amber-700">
               {t("valyuta.form.willReplace", { sana: mavjudKurs.date, kurs: kursMatni(mavjudKurs.rate) })}
             </p>

@@ -1,5 +1,6 @@
 {
   "yangiChiqimModal": {
+    "fieldErrors": {"productRequired":"Выберите товар.","quantityInvalid":"Укажите корректное количество.","duplicateProduct":"Этот товар уже есть в другой строке.","exceedsStock":"Больше остатка ({{available}})."},
     "title": "Новый расход",
     "badge": "НОВЫЙ",
     "docNameTemplate": "Расходный документ #{{number}}",

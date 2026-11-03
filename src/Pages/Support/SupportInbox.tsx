@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon, { MaydonXatosi } from "@/Components/common/XatoliMaydon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/Components/ui/avatar";
 import { Button } from "@/Components/ui/button";
 import { ScrollArea } from "@/Components/ui/scroll-area";
@@ -25,6 +26,8 @@ import { Textarea } from "@/Components/ui/textarea";
 import { crmIlovalarApi } from "@/api/crmAttachmentsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { supportApi } from "@/api/supportApi";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import { xatoRamkasi, type XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useSupportStore } from "@/store/supportStore";
 import type { QollabQuvvatlashXabari, SupportTicket, SupportTicketHolati } from "@/types/support";
@@ -49,6 +52,19 @@ const HOLAT_NUQTASI: Record<SupportTicketHolati, string> = {
 };
 
 type Rejim = "yuklanmoqda" | "tickets" | "yagona";
+
+// Server xatosi → maydon (so'rov tanalari: xabar { text, attachmentIds }, murojaat { subject, text }, fayl yuklash { file }).
+// Xabar so'zi bo'yicha "xabar"ga bog'lanmaydi: "murojaat yopilgan" kabi xatolar ham shu so'zni o'z ichiga oladi.
+const YOZISH_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  text: { maydonlar: ["text"], kodlar: ["text"] },
+  attachmentIds: { maydonlar: ["attachmentIds", "file"], kodlar: ["attachment", "file"], sozlar: ["fayl", "файл"] },
+};
+const MUROJAAT_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  subject: { maydonlar: ["subject"], kodlar: ["subject"], sozlar: ["mavzu", "subject"] },
+  text: { maydonlar: ["text"], kodlar: ["text"] },
+};
+
+const javobTanasi = (error: unknown) => (axios.isAxiosError(error) ? error.response?.data : undefined);
 
 function backendYoqmi(error: unknown) {
   return axios.isAxiosError(error) && [404, 405, 501].includes(error.response?.status ?? 0);
@@ -111,6 +127,9 @@ export default function SupportInbox() {
   const [yangiMavzu, setYangiMavzu] = useState("");
   const [yangiMatn, setYangiMatn] = useState("");
   const [yaratilmoqda, setYaratilmoqda] = useState(false);
+  // Xabar yozish va yangi murojaat maydonlari xatolari (server xatosi maydon ostida; mos maydon bo'lmasa — tepadagi xabar).
+  const fxYozish = useMaydonXatolari(YOZISH_QOIDALARI);
+  const fxMurojaat = useMaydonXatolari(MUROJAAT_QOIDALARI);
 
   // ---- Murojaatlar ro'yxati ----
   const yagonaTicket = useMemo<SupportTicket>(() => {
@@ -263,12 +282,17 @@ export default function SupportInbox() {
     setMatn("");
     setFayllar([]);
     setXatolik(null);
+    fxYozish.ornat({});
   }
 
   function tabniOzgartirish(yangi: SupportTicketHolati) {
     setTab(yangi);
     const royxat = barchaTicketlar.filter((item) => item.status === yangi);
-    if (royxat.length && !royxat.some((item) => item.id === tanlanganId)) setTanlanganId(royxat[0].id);
+    if (royxat.length && !royxat.some((item) => item.id === tanlanganId)) {
+      setTanlanganId(royxat[0].id);
+      // Boshqa murojaatga o'tildi: oldingi javob xatosi uning yozish maydonida qolmasin.
+      fxYozish.ornat({});
+    }
   }
 
   async function eskilarniYuklash() {
@@ -291,6 +315,7 @@ export default function SupportInbox() {
     const yuboriladiganFayllar = fayllar;
     setYuborilmoqda(true);
     setXatolik(null);
+    fxYozish.ornat({});
     try {
       const ilovalar = yuboriladiganFayllar.length
         ? await Promise.all(yuboriladiganFayllar.map((fayl) => crmIlovalarApi.yuklash(fayl)))
@@ -304,7 +329,7 @@ export default function SupportInbox() {
       setMatn("");
       setFayllar([]);
     } catch (error) {
-      setXatolik(getApiErrorMessage(error));
+      if (!fxYozish.serverdan(javobTanasi(error))) setXatolik(getApiErrorMessage(error));
     } finally {
       setYuborilmoqda(false);
     }
@@ -326,17 +351,19 @@ export default function SupportInbox() {
   async function ticketYaratish() {
     if (!yangiMavzu.trim() || !yangiMatn.trim() || yaratilmoqda) return;
     setYaratilmoqda(true);
+    fxMurojaat.ornat({});
     try {
       const yangi = await supportApi.ticketYaratish({ subject: yangiMavzu.trim(), text: yangiMatn.trim() });
       setTickets((joriy) => [yangi, ...joriy]);
       setTab(yangi.status ?? "ACTIVE");
       setTanlanganId(yangi.id);
+      fxYozish.ornat({});
       setMobilChat(true);
       setYangiOchiq(false);
       setYangiMavzu("");
       setYangiMatn("");
     } catch (error) {
-      setXatolik(getApiErrorMessage(error));
+      if (!fxMurojaat.serverdan(javobTanasi(error))) setXatolik(getApiErrorMessage(error));
     } finally {
       setYaratilmoqda(false);
     }
@@ -345,7 +372,10 @@ export default function SupportInbox() {
   function fayllarTanlandi(event: React.ChangeEvent<HTMLInputElement>) {
     const tanlanganlar = Array.from(event.target.files ?? []);
     event.target.value = "";
-    if (tanlanganlar.length) setFayllar((joriy) => [...joriy, ...tanlanganlar]);
+    if (tanlanganlar.length) {
+      fxYozish.tozala("attachmentIds");
+      setFayllar((joriy) => [...joriy, ...tanlanganlar]);
+    }
   }
 
   const ilovalar = useMemo(() => xabarlar.flatMap((x) => x.attachments ?? []), [xabarlar]);
@@ -353,6 +383,8 @@ export default function SupportInbox() {
   // "Umumiy suhbat" yakunlanmaydi (backend 403 qaytaradi), shuning uchun unda "Yakunlash" tugmasi ko'rsatilmaydi.
   const umumiySuhbat = tanlangan?.id === YAGONA_ID || Boolean(tanlangan?.isGeneral);
   const mutaxassis = tanlangan?.assignee ?? null;
+  const yozishXatosi = fxYozish.xato("text") || fxYozish.xato("attachmentIds");
+  const tepaXatolik = xatolik || fxYozish.tepadagi;
 
   return (
     <div className="grid h-[calc(100vh-140px)] min-h-[560px] gap-4 xl:grid-cols-[340px_minmax(0,1fr)_320px]">
@@ -372,7 +404,10 @@ export default function SupportInbox() {
             {rejim === "tickets" && (
               <button
                 type="button"
-                onClick={() => setYangiOchiq(true)}
+                onClick={() => {
+                  fxMurojaat.ornat({});
+                  setYangiOchiq(true);
+                }}
                 aria-label={t("inbox.newTicket")}
                 title={t("inbox.newTicket")}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-sky-500 text-white shadow-md shadow-blue-200 transition hover:scale-105"
@@ -525,10 +560,10 @@ export default function SupportInbox() {
               )}
             </header>
 
-            {xatolik && (
+            {tepaXatolik && (
               <div className="flex shrink-0 items-center justify-between gap-3 border-b border-red-100 bg-red-50 px-4 py-2 text-xs font-medium text-red-700 sm:px-6">
-                <span>{xatolik}</span>
-                <button type="button" onClick={() => setXatolik(null)} aria-label={t("closeErrorAria")} className="shrink-0 rounded-md p-1 text-red-500 hover:bg-red-100">
+                <span>{tepaXatolik}</span>
+                <button type="button" onClick={() => (xatolik ? setXatolik(null) : fxYozish.ornat({}))} aria-label={t("closeErrorAria")} className="shrink-0 rounded-md p-1 text-red-500 hover:bg-red-100">
                   <X size={16} />
                 </button>
               </div>
@@ -591,21 +626,35 @@ export default function SupportInbox() {
                       <span key={`${fayl.name}-${index}`} className="flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-800">
                         <FileText size={13} className="shrink-0 text-blue-500" />
                         <span className="max-w-[140px] truncate">{fayl.name}</span>
-                        <button type="button" onClick={() => setFayllar((joriy) => joriy.filter((_, i) => i !== index))} aria-label={t("removeAttachmentAria")} className="shrink-0 text-blue-500 hover:text-red-600">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            fxYozish.tozala("attachmentIds");
+                            setFayllar((joriy) => joriy.filter((_, i) => i !== index));
+                          }}
+                          aria-label={t("removeAttachmentAria")}
+                          className="shrink-0 text-blue-500 hover:text-red-600"
+                        >
                           <X size={13} />
                         </button>
                       </span>
                     ))}
                   </div>
                 )}
-                <div className="mx-auto flex w-full max-w-3xl items-end gap-2 rounded-[26px] border border-slate-200 bg-slate-50 p-2 shadow-sm transition focus-within:border-blue-300 focus-within:bg-white focus-within:shadow-[0_8px_28px_rgba(37,99,235,.12)] focus-within:ring-4 focus-within:ring-blue-50">
+                <div
+                  data-maydon-xato={yozishXatosi ? "true" : undefined}
+                  className={`mx-auto flex w-full max-w-3xl items-end gap-2 rounded-[26px] border border-slate-200 bg-slate-50 p-2 shadow-sm transition focus-within:border-blue-300 focus-within:bg-white focus-within:shadow-[0_8px_28px_rgba(37,99,235,.12)] focus-within:ring-4 focus-within:ring-blue-50 ${yozishXatosi ? xatoRamkasi : ""}`}
+                >
                   <input ref={faylInputRef} type="file" multiple onChange={fayllarTanlandi} className="hidden" />
                   <Button type="button" variant="ghost" size="icon" aria-label={t("attachAria")} onClick={() => faylInputRef.current?.click()} className="!size-10 shrink-0 rounded-full text-slate-500 hover:bg-blue-50 hover:text-blue-600">
                     <Paperclip size={17} />
                   </Button>
                   <Textarea
                     value={matn}
-                    onChange={(event) => setMatn(event.target.value)}
+                    onChange={(event) => {
+                      fxYozish.tozala("text");
+                      setMatn(event.target.value);
+                    }}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" && !event.shiftKey) {
                         event.preventDefault();
@@ -627,6 +676,7 @@ export default function SupportInbox() {
                     {yuborilmoqda ? <LoaderCircle size={17} className="animate-spin" /> : <Send size={17} />}
                   </Button>
                 </div>
+                {yozishXatosi && <p role="alert" className="mx-auto mt-1.5 w-full max-w-3xl px-3 text-xs font-bold leading-5 text-red-600">{yozishXatosi}</p>}
               </div>
             )}
           </>
@@ -746,25 +796,36 @@ export default function SupportInbox() {
               <button type="button" onClick={() => setYangiOchiq(false)} aria-label={t("closeChatAria")} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100"><X size={18} /></button>
             </div>
             <div className="mt-5 space-y-4">
-              <label className="block text-sm font-bold text-slate-600">
-                {t("inbox.subjectLabel")}
-                <input
-                  value={yangiMavzu}
-                  onChange={(event) => setYangiMavzu(event.target.value)}
-                  placeholder={t("inbox.subjectPlaceholder")}
-                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                />
-              </label>
-              <label className="block text-sm font-bold text-slate-600">
-                {t("inbox.firstMessageLabel")}
-                <textarea
-                  value={yangiMatn}
-                  onChange={(event) => setYangiMatn(event.target.value)}
-                  rows={5}
-                  placeholder={t("inbox.firstMessagePlaceholder")}
-                  className="mt-2 w-full resize-none rounded-2xl border border-slate-200 p-4 text-sm font-medium text-slate-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                />
-              </label>
+              <XatoliMaydon xato={fxMurojaat.xato("subject")}>
+                <label className="block text-sm font-bold text-slate-600">
+                  {t("inbox.subjectLabel")}
+                  <input
+                    value={yangiMavzu}
+                    onChange={(event) => {
+                      fxMurojaat.tozala("subject");
+                      setYangiMavzu(event.target.value);
+                    }}
+                    placeholder={t("inbox.subjectPlaceholder")}
+                    className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  />
+                </label>
+              </XatoliMaydon>
+              <XatoliMaydon xato={fxMurojaat.xato("text")}>
+                <label className="block text-sm font-bold text-slate-600">
+                  {t("inbox.firstMessageLabel")}
+                  <textarea
+                    value={yangiMatn}
+                    onChange={(event) => {
+                      fxMurojaat.tozala("text");
+                      setYangiMatn(event.target.value);
+                    }}
+                    rows={5}
+                    placeholder={t("inbox.firstMessagePlaceholder")}
+                    className="mt-2 w-full resize-none rounded-2xl border border-slate-200 p-4 text-sm font-medium text-slate-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  />
+                </label>
+              </XatoliMaydon>
+              <MaydonXatosi matn={fxMurojaat.tepadagi} />
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button type="button" onClick={() => setYangiOchiq(false)} className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-500 hover:bg-slate-50">{t("inbox.cancel")}</button>

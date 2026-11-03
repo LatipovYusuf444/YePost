@@ -30,7 +30,10 @@
     "addressPlaceholder": "Manzil",
     "responsiblePlaceholder": "Mas'ul biriktirilmagan",
     "closeButton": "Yopish",
-    "saveButton": "Saqlash"
+    "saveButton": "Saqlash",
+    "errors": {
+      "nameRequired": "Filial nomini kiriting."
+    }
   },
   "inventoryDocumentActivity": {
     "system": "Tizim",
@@ -116,7 +119,10 @@
     "phonePlaceholder": "+998...",
     "addressPlaceholder": "Manzil",
     "closeButton": "Yopish",
-    "saveButton": "Saqlash"
+    "saveButton": "Saqlash",
+    "errors": {
+      "nameRequired": "Kompaniya nomini kiriting."
+    }
   },
   "kirimTafsilotModal": {
     "title": "Kirim hujjati",

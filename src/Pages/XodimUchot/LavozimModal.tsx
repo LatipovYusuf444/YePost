@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { ShieldCheck, X } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import { backendVakolatlar } from "./backendMetadata";
 import type { Lavozim } from "./types";
 import { bugun, maydonKlass, yangiId } from "./yordamchilar";
@@ -19,7 +21,7 @@ export default function LavozimModal({ boshlangich, onYopish, onSaqlash }: Props
   const [vakolatlar, setVakolatlar] = useState<Set<string>>(
     () => new Set(boshlangich?.vakolatlar ?? [])
   );
-  const [xato, setXato] = useState("");
+  const fx = useMaydonXatolari();
 
   const guruhlar = [...new Set(backendVakolatlar.map((vakolat) => vakolat.guruh))];
 
@@ -35,9 +37,10 @@ export default function LavozimModal({ boshlangich, onYopish, onSaqlash }: Props
   function saqlash(event: FormEvent) {
     event.preventDefault();
     if (!nomi.trim()) {
-      setXato("Lavozim nomi to'ldirilishi shart.");
+      fx.ornat({ nomi: "Lavozim nomi to'ldirilishi shart." });
       return;
     }
+    fx.ornat({});
 
     onSaqlash({
       id: boshlangich?.id ?? yangiId("lav"),
@@ -81,20 +84,25 @@ export default function LavozimModal({ boshlangich, onYopish, onSaqlash }: Props
         </header>
 
         <div className="scrollbar-orange flex-1 space-y-5 overflow-y-auto px-7 py-6">
-          {xato && (
-            <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>
+          {fx.tepadagi && (
+            <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{fx.tepadagi}</p>
           )}
 
           <section className="space-y-4 rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80">
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-slate-400">Lavozim nomi *</span>
-              <input
-                value={nomi}
-                onChange={(event) => setNomi(event.target.value)}
-                placeholder="Sotuv menejeri"
-                className={maydonKlass}
-              />
-            </label>
+            <XatoliMaydon xato={fx.xato("nomi")}>
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-400">Lavozim nomi *</span>
+                <input
+                  value={nomi}
+                  onChange={(event) => {
+                    setNomi(event.target.value);
+                    fx.tozala("nomi");
+                  }}
+                  placeholder="Sotuv menejeri"
+                  className={maydonKlass}
+                />
+              </label>
+            </XatoliMaydon>
             <label className="grid gap-2">
               <span className="text-sm font-bold text-slate-400">Izoh</span>
               <textarea

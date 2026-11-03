@@ -8,6 +8,14 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { Mahsulot, OlchovBirligi } from "@/types/catalog";
 import BirlikQatorlariMaydoni from "./BirlikQatorlari";
 import { birlikQatorlariniOlish, birlikRoyxatiniYigish, type BirlikQatori } from "./birlikQatorlariMantiq";
+import { MaydonXatosi } from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
+
+// PUT /catalog/products/:id/units xatosi birliklar ro'yxatiga tegishli (qator yo'li bo'lsa — ro'yxat ostida emas, tepada).
+const BIRLIK_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  units: { maydonlar: ["units"], kodlar: ["unit", "factor", "coefficient"], sozlar: ["birlik", "koeffitsient", "единиц", "коэффициент"] },
+};
 
 // Tovar birliklari: asosiy birlikda qoldiq yuritiladi, qo'shimcha birliklar (pochka, qop, korobka) koeffitsient bilan qo'yiladi.
 // Koeffitsient — 1 shu birlikda nechta asosiy birlik. Narx bo'sh bo'lsa asosiy narx × koeffitsient olinadi.
@@ -19,6 +27,7 @@ export default function BirliklarModal({ product, birliklar, onClose }: { produc
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [saqlanmoqda, setSaqlanmoqda] = useState(false);
   const [xato, setXato] = useState("");
+  const fx = useMaydonXatolari(BIRLIK_XATO_QOIDALARI);
   const [birlikYaratilmoqda, setBirlikYaratilmoqda] = useState(false);
   const donaBirliginiQoshish = useMahsulotlarStore((state) => state.donaBirliginiQoshish);
   async function donaQoshish() {
@@ -44,14 +53,16 @@ export default function BirliklarModal({ product, birliklar, onClose }: { produc
     event.preventDefault();
     if (birlikYaratilmoqda || saqlanmoqda) return;
     setXato("");
+    fx.ornat({});
     const yigilgan = birlikRoyxatiniYigish(qatorlar, birliklar, { unitId: product.unitId, nomi: asosiyNomi });
-    if ("xato" in yigilgan) return setXato(t(`units.errors.${yigilgan.xato}`));
+    if ("xato" in yigilgan) return fx.ornat({ units: t(`units.errors.${yigilgan.xato}`) });
     setSaqlanmoqda(true);
     try {
       await mahsulotBirliklariApi.saqlash(product.id, yigilgan.royxat);
       onClose();
     } catch (error) {
       setXato(getApiErrorMessage(error));
+      fx.serverdan((error as { response?: { data?: unknown } })?.response?.data);
     } finally {
       setSaqlanmoqda(false);
     }
@@ -77,11 +88,12 @@ export default function BirliklarModal({ product, birliklar, onClose }: { produc
           <div className="flex h-40 items-center justify-center"><LoaderCircle className="animate-spin text-orange-500" size={30} /></div>
         ) : (
           <div className="mt-4">
-            <BirlikQatorlariMaydoni qatorlar={qatorlar} onChange={setQatorlar} birliklar={birliklar} asosiyId={product.unitId} asosiyNomi={asosiyNomi} onDonaQoshish={donaQoshish} />
+            <BirlikQatorlariMaydoni qatorlar={qatorlar} onChange={(yangi) => { setQatorlar(yangi); fx.tozala("units"); }} birliklar={birliklar} asosiyId={product.unitId} asosiyNomi={asosiyNomi} onDonaQoshish={donaQoshish} />
+            {fx.xato("units") && <div className="mt-3"><MaydonXatosi matn={fx.xato("units")} /></div>}
           </div>
         )}
 
-        {xato && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-600">{xato}</p>}
+        {(fx.tepadagi || (!fx.bor && xato)) && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-600">{fx.tepadagi || xato}</p>}
         <div className="mt-6 flex justify-end gap-3">
           <button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t("actions.cancel")}</button>
           <button disabled={saqlanmoqda || yuklanmoqda || birlikYaratilmoqda} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{saqlanmoqda && <LoaderCircle size={16} className="animate-spin" />}{t("actions.save")}</button>

@@ -34,6 +34,7 @@
   "empty": "Ma'lumot mavjud emas",
   "deleteConfirm": "{{name}} ma'lumotini o'chirasizmi?",
   "modal": {
+    "errors": {"firstNameRequired":"Ism kiritilishi shart.","phoneRequired":"Telefon kiritilishi shart.","nameRequired":"Nomi kiritilishi shart."},
     "eyebrow": "Hamkor ma'lumotlari",
     "companyUnassigned": "Kompaniya biriktirilmagan",
     "placeholders": {

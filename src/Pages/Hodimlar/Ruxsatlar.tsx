@@ -12,6 +12,15 @@ import {
 import AppModal from "@/Components/common/AppModal";
 import { kodlarBilanSaqlanadimi, useAccountStore } from "@/store/accountStore";
 import type { AccountVakolati, VakolatKodi } from "@/types/account";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
+
+// Vakolat formasi: server xatosi qaysi maydonga tegishli (umumiy "ruxsat yo'q" xabari maydonga bog'lanmasin — so'zlar tor).
+const VAKOLAT_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  code: { maydonlar: ["code", "codes"], kodlar: ["grant", "code"], sozlar: ["vakolat turi", "vakolat kodi", "allaqachon mavjud", "already exists", "уже существует"] },
+  userId: { maydonlar: ["userId"], kodlar: ["user"], sozlar: ["foydalanuvchi topilmadi", "user not found", "пользователь не найден"] },
+};
 
 const vakolatMatnlari: Record<
   VakolatKodi,
@@ -56,6 +65,7 @@ export default function Ruxsatlar() {
   const [userId, setUserId] = useState("");
   const [code, setCode] = useState<VakolatKodi>("REPORTS");
   const [isActive, setIsActive] = useState(true);
+  const fx = useMaydonXatolari(VAKOLAT_QOIDALARI);
 
   const mavjudKodlar = useMemo(
     () =>
@@ -82,11 +92,13 @@ export default function Ruxsatlar() {
     setCode(ishlatilmagan);
     setIsActive(true);
     store.xatolikniTozalash();
+    fx.ornat({});
     setModal(true);
   }
 
   async function tahrirlash(id: string) {
     store.xatolikniTozalash();
+    fx.ornat({});
     const item = await store.vakolatOlish(id);
     if (!item) return;
     setEditing(item);
@@ -100,11 +112,14 @@ export default function Ruxsatlar() {
     event.preventDefault();
     if (!userId) return;
     const codes = store.vakolatlar.filter((grant) => grant.userId === userId && grant.isActive && !grant.isDeleted && grant.code !== code).map((grant) => grant.code);
-    const ok = kodlarBilanSaqlanadimi(code)
-      ? await store.vakolatKodlariniSaqlash(userId, [...codes, ...(isActive ? [code] : [])])
-      : editing
-      ? await store.vakolatYangilash(editing.id, { isActive })
-      : await store.vakolatYaratish({ userId, code, isActive });
+    fx.ornat({});
+    const ok = await fx.kuzat(() =>
+      kodlarBilanSaqlanadimi(code)
+        ? store.vakolatKodlariniSaqlash(userId, [...codes, ...(isActive ? [code] : [])])
+        : editing
+        ? store.vakolatYangilash(editing.id, { isActive })
+        : store.vakolatYaratish({ userId, code, isActive })
+    );
     if (ok) setModal(false);
   }
 
@@ -235,6 +250,7 @@ export default function Ruxsatlar() {
                             setCode(kod);
                             setIsActive(true);
                             store.xatolikniTozalash();
+                            fx.ornat({});
                             setModal(true);
                           }}
                           className="inline-flex h-9 w-fit items-center justify-center gap-2 rounded-xl bg-orange-500 px-3 text-sm font-bold text-white"
@@ -273,12 +289,13 @@ export default function Ruxsatlar() {
             <h2 className="mt-1 text-2xl font-black">
               {editing ? "Vakolatni tahrirlash" : "Yangi vakolat"}
             </h2>
-            {store.xatolik && (
+            {(fx.tepadagi || (!fx.bor && store.xatolik)) && (
               <div className="mt-4 rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-600">
-                {store.xatolik}
+                {fx.tepadagi || store.xatolik}
               </div>
             )}
             <div className="mt-6 space-y-4">
+              <XatoliMaydon xato={fx.xato("userId")}>
               <label className="block text-sm font-bold">
                 Foydalanuvchi *
                 <AppSelect
@@ -296,6 +313,7 @@ export default function Ruxsatlar() {
                           )
                       ) ?? "REPORTS";
                     setCode(yangiKod);
+                    fx.tozala("userId", "code");
                   }}
                   disabled={Boolean(editing)}
                   className="mt-2 h-12 w-full rounded-2xl border bg-white px-4 font-medium disabled:bg-gray-50"
@@ -307,13 +325,16 @@ export default function Ruxsatlar() {
                   ))}
                 </AppSelect>
               </label>
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("code")}>
               <label className="block text-sm font-bold">
                 Vakolat turi *
                 <AppSelect
                   value={code}
-                  onChange={(event) =>
-                    setCode(event.target.value as VakolatKodi)
-                  }
+                  onChange={(event) => {
+                    setCode(event.target.value as VakolatKodi);
+                    fx.tozala("code");
+                  }}
                   disabled={Boolean(editing)}
                   className="mt-2 h-12 w-full rounded-2xl border bg-white px-4 font-medium disabled:bg-gray-50"
                 >
@@ -329,6 +350,7 @@ export default function Ruxsatlar() {
                   ))}
                 </AppSelect>
               </label>
+              </XatoliMaydon>
               <div className="rounded-2xl bg-orange-50 p-4 text-sm text-orange-800">
                 {vakolatMatnlari[code].izoh}
               </div>

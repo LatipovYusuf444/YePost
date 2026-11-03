@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import axios from "axios";
 import { Building2, Crown, Gem, Pencil, Plus, Sparkles, Tag, Trash2, Users, type LucideIcon } from "lucide-react";
 import LoadingState from "@/Components/common/LoadingState";
 import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import { platformApi } from "@/api/platformApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import type { PlatformTarif, PlatformTarifSaqlash, TarifTuri } from "@/types/platform";
 import { AdminModal, AmalTugmasi, BoshHolat, Belgi, Maydon, SahifaSarlavhasi, ShakldaTugmalar, XatoXabari, asosiyTugmaKlass, inputKlass, type BelgiRangi } from "./AdminUI";
 
@@ -23,6 +26,15 @@ function limitMatni(qiymat: number | null | undefined, cheksiz: string) {
   return qiymat === null || qiymat === undefined ? cheksiz : String(qiymat);
 }
 
+// Server xatosi → forma maydoni (kalitlar — so'rov tanasidagi nomlar).
+const TARIF_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  type: { maydonlar: ["type"], kodlar: ["type"] },
+  name: { maydonlar: ["name"], kodlar: ["name"] },
+  maxBranches: { maydonlar: ["maxBranches"], kodlar: ["branch"] },
+  maxUsers: { maydonlar: ["maxUsers"], kodlar: ["max_users"] },
+  monthlyPrice: { maydonlar: ["monthlyPrice"], kodlar: ["price"], sozlar: ["narx", "цен"] },
+};
+
 function TarifModali({ tahrir, onYopish, onSaqlandi }: { tahrir: PlatformTarif | null; onYopish: () => void; onSaqlandi: () => void }) {
   const { t } = useTranslation("admin");
   const [turi, setTuri] = useState<TarifTuri>(tahrir?.type ?? "BASIC");
@@ -34,17 +46,26 @@ function TarifModali({ tahrir, onYopish, onSaqlandi }: { tahrir: PlatformTarif |
   const [faol, setFaol] = useState(tahrir?.isActive ?? true);
   const [bajarilmoqda, setBajarilmoqda] = useState(false);
   const [xato, setXato] = useState("");
+  const fx = useMaydonXatolari(TARIF_QOIDALARI);
 
   async function yuborish(event: FormEvent) {
     event.preventDefault();
     setXato("");
-    if (!nomi.trim()) return setXato(t("tariflar.xatolar.nomKerak"));
+    fx.ornat({});
+    if (!nomi.trim()) return fx.ornat({ name: t("tariflar.xatolar.nomKerak") });
     const limit = (qiymat: string) => (qiymat.trim() === "" ? null : Number(qiymat));
     const filial = limit(maxBranches);
     const foydalanuvchi = limit(maxUsers);
     const oylik = Number(narx);
-    if ([filial, foydalanuvchi].some((son) => son !== null && (!Number.isInteger(son) || son < 0)) || !Number.isFinite(oylik) || oylik < 0) {
-      return setXato(t("tariflar.xatolar.qiymatNotogri"));
+    const limitNotogri = (son: number | null) => son !== null && (!Number.isInteger(son) || son < 0);
+    if ([filial, foydalanuvchi].some(limitNotogri) || !Number.isFinite(oylik) || oylik < 0) {
+      // Noto'g'ri qiymatli har bir maydon belgilanadi (matn o'sha-o'sha).
+      const matn = t("tariflar.xatolar.qiymatNotogri");
+      return fx.ornat({
+        ...(limitNotogri(filial) ? { maxBranches: matn } : {}),
+        ...(limitNotogri(foydalanuvchi) ? { maxUsers: matn } : {}),
+        ...(!Number.isFinite(oylik) || oylik < 0 ? { monthlyPrice: matn } : {}),
+      });
     }
     const body: PlatformTarifSaqlash = { name: nomi.trim(), maxBranches: filial, maxUsers: foydalanuvchi, monthlyPrice: oylik, isActive: faol, ...(tahrir ? {} : { type: turi }) };
     setBajarilmoqda(true);
@@ -55,6 +76,7 @@ function TarifModali({ tahrir, onYopish, onSaqlandi }: { tahrir: PlatformTarif |
       onYopish();
     } catch (error) {
       setXato(getApiErrorMessage(error));
+      fx.serverdan(axios.isAxiosError(error) ? error.response?.data : undefined);
     } finally {
       setBajarilmoqda(false);
     }
@@ -64,8 +86,16 @@ function TarifModali({ tahrir, onYopish, onSaqlandi }: { tahrir: PlatformTarif |
     <AdminModal sarlavha={t(tahrir ? "tariflar.tahrirlash" : "tariflar.yangi")} onYopish={onYopish} ikonka={<Tag size={20} />}>
       <form onSubmit={(event) => void yuborish(event)} className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Maydon nom={t("tariflar.turi")}>
-            <select value={turi} onChange={(event) => setTuri(event.target.value as TarifTuri)} disabled={Boolean(tahrir)} className={inputKlass}>
+          <Maydon nom={t("tariflar.turi")} xato={fx.xato("type")}>
+            <select
+              value={turi}
+              onChange={(event) => {
+                fx.tozala("type");
+                setTuri(event.target.value as TarifTuri);
+              }}
+              disabled={Boolean(tahrir)}
+              className={inputKlass}
+            >
               {TARIF_TURLARI.map((item) => (
                 <option key={item} value={item}>
                   {item}
@@ -73,18 +103,54 @@ function TarifModali({ tahrir, onYopish, onSaqlandi }: { tahrir: PlatformTarif |
               ))}
             </select>
           </Maydon>
-          <Maydon nom={t("tariflar.nomi")}>
-            <input autoFocus value={nomi} onChange={(event) => setNomi(event.target.value)} className={inputKlass} />
+          <Maydon nom={t("tariflar.nomi")} xato={fx.xato("name")}>
+            <input
+              autoFocus
+              value={nomi}
+              onChange={(event) => {
+                fx.tozala("name");
+                setNomi(event.target.value);
+              }}
+              className={inputKlass}
+            />
           </Maydon>
-          <Maydon nom={t("tariflar.maxFilial")} izoh={t("tariflar.cheksizIzoh")}>
-            <input type="number" min={0} value={maxBranches} onChange={(event) => setMaxBranches(event.target.value)} placeholder={t("tariflar.cheksiz")} className={inputKlass} />
+          <Maydon nom={t("tariflar.maxFilial")} izoh={t("tariflar.cheksizIzoh")} xato={fx.xato("maxBranches")}>
+            <input
+              type="number"
+              min={0}
+              value={maxBranches}
+              onChange={(event) => {
+                fx.tozala("maxBranches");
+                setMaxBranches(event.target.value);
+              }}
+              placeholder={t("tariflar.cheksiz")}
+              className={inputKlass}
+            />
           </Maydon>
-          <Maydon nom={t("tariflar.maxFoydalanuvchi")} izoh={t("tariflar.cheksizIzoh")}>
-            <input type="number" min={0} value={maxUsers} onChange={(event) => setMaxUsers(event.target.value)} placeholder={t("tariflar.cheksiz")} className={inputKlass} />
+          <Maydon nom={t("tariflar.maxFoydalanuvchi")} izoh={t("tariflar.cheksizIzoh")} xato={fx.xato("maxUsers")}>
+            <input
+              type="number"
+              min={0}
+              value={maxUsers}
+              onChange={(event) => {
+                fx.tozala("maxUsers");
+                setMaxUsers(event.target.value);
+              }}
+              placeholder={t("tariflar.cheksiz")}
+              className={inputKlass}
+            />
           </Maydon>
           <div className="sm:col-span-2">
-            <Maydon nom={t("tariflar.oylikNarx")}>
-              <SummaMaydoni value={narx} onChange={setNarx} placeholder="0" className={inputKlass} />
+            <Maydon nom={t("tariflar.oylikNarx")} xato={fx.xato("monthlyPrice")}>
+              <SummaMaydoni
+                value={narx}
+                onChange={(qiymat) => {
+                  fx.tozala("monthlyPrice");
+                  setNarx(qiymat);
+                }}
+                placeholder="0"
+                className={inputKlass}
+              />
             </Maydon>
           </div>
         </div>
@@ -92,7 +158,7 @@ function TarifModali({ tahrir, onYopish, onSaqlandi }: { tahrir: PlatformTarif |
           <input type="checkbox" checked={faol} onChange={(event) => setFaol(event.target.checked)} className="h-4 w-4 accent-orange-500" />
           {t("common.faol")}
         </label>
-        {xato && <XatoXabari matn={xato} />}
+        {(fx.tepadagi || (fx.bor ? "" : xato)) && <XatoXabari matn={fx.tepadagi || xato} />}
         <ShakldaTugmalar ortga={{ matn: t("common.bekor"), onClick: onYopish }} bajarilmoqda={bajarilmoqda} saqlashMatni={t("common.saqlash")} />
       </form>
     </AdminModal>

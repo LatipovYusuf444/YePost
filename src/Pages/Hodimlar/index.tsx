@@ -38,6 +38,20 @@ import Rollar from "./Rollar";
 import Ruxsatlar from "./Ruxsatlar";
 
 import ModalTablari from "@/Components/common/ModalTablari";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
+
+// Foydalanuvchi formasi: server xatosi (maydon, kod yoki xabar so'zi) qaysi maydonga tegishli.
+const FOYDALANUVCHI_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  username: { maydonlar: ["username", "login"], kodlar: ["username", "login"], sozlar: ["login", "username", "логин"] },
+  password: { maydonlar: ["password"], kodlar: ["password"], sozlar: ["parol", "password", "пароль"] },
+  fullName: { maydonlar: ["fullName"], kodlar: ["full_name", "fullname"], sozlar: ["f.i.sh", "full name", "fullname"] },
+  role: { maydonlar: ["role"], kodlar: ["role"] },
+  branchId: { maydonlar: ["branchId", "branch"], kodlar: ["branch"], sozlar: ["filial", "branch", "филиал"] },
+  telegramId: { maydonlar: ["telegramId"], kodlar: ["telegram"], sozlar: ["telegram"] },
+};
+
 type Tab = "foydalanuvchilar" | "vakolatlar" | "rollar";
 type Korinish = "kartochka" | "kichik" | "royxat" | "jadval";
 
@@ -133,6 +147,7 @@ function Foydalanuvchilar() {
   );
   const [kameraOchiq, setKameraOchiq] = useState(false);
   const [kameraXatolik, setKameraXatolik] = useState("");
+  const fx = useMaydonXatolari(FOYDALANUVCHI_QOIDALARI);
   const firstInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const kameraStreamRef = useRef<MediaStream | null>(null);
@@ -161,11 +176,13 @@ function Foydalanuvchilar() {
     setAvatarPreview("");
     setTanlanganVakolatlar(new Set());
     store.xatolikniTozalash();
+    fx.ornat({});
     setModal(true);
   }
 
   async function tahrirlash(id: string) {
     store.xatolikniTozalash();
+    fx.ornat({});
     const item = await store.foydalanuvchiOlish(id);
     if (!item) return;
     setEditing(item);
@@ -319,15 +336,19 @@ function Foydalanuvchilar() {
       telegramId: telegramId.trim() || undefined,
       isActive,
     };
-    const saqlangan = editing
-      ? await store.foydalanuvchiYangilash(editing.id, {
-          ...umumiy,
-          ...(password.trim() ? { password: password.trim() } : {}),
-        })
-      : await store.foydalanuvchiYaratish({
-          ...umumiy,
-          password: password.trim(),
-        });
+    fx.ornat({});
+    // Store xatoni matnga aylantiradi: kuzat server javobini maydonlarga bog'laydi.
+    const saqlangan = await fx.kuzat(() =>
+      editing
+        ? store.foydalanuvchiYangilash(editing.id, {
+            ...umumiy,
+            ...(password.trim() ? { password: password.trim() } : {}),
+          })
+        : store.foydalanuvchiYaratish({
+            ...umumiy,
+            password: password.trim(),
+          })
+    );
     if (!saqlangan) return;
     const vakolatOk = await vakolatlarniSinxronlash(saqlangan.id);
     if (vakolatOk) setModal(false);
@@ -725,9 +746,9 @@ function Foydalanuvchilar() {
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto bg-orange-50/40 p-5 md:p-7">
-              {store.xatolik && (
+              {(fx.tepadagi || (!fx.bor && store.xatolik)) && (
                 <div className="mb-5 rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-600">
-                  {store.xatolik}
+                  {fx.tepadagi || store.xatolik}
                 </div>
               )}
               <div className="grid gap-5 lg:grid-cols-[330px_minmax(0,1fr)]">
@@ -835,80 +856,110 @@ function Foydalanuvchilar() {
                       Kontakt ma'lumotlari
                     </h3>
                     <div className="mt-5 grid gap-4">
-                      <label className="text-sm font-bold text-gray-400">
-                        F.I.Sh.
-                        <input
-                          ref={firstInputRef}
-                          value={fullName}
-                          onChange={(event) => setFullName(event.target.value)}
-                          className="mt-2 h-12 w-full rounded-xl border border-gray-200 bg-white px-4 font-semibold text-gray-700 outline-none transition focus:border-orange-300 focus:ring-4 focus:ring-orange-100"
-                          placeholder="Masalan: Ali Valiyev"
-                        />
-                      </label>
+                      <XatoliMaydon xato={fx.xato("fullName")}>
+                        <label className="text-sm font-bold text-gray-400">
+                          F.I.Sh.
+                          <input
+                            ref={firstInputRef}
+                            value={fullName}
+                            onChange={(event) => {
+                              setFullName(event.target.value);
+                              fx.tozala("fullName");
+                            }}
+                            className="mt-2 h-12 w-full rounded-xl border border-gray-200 bg-white px-4 font-semibold text-gray-700 outline-none transition focus:border-orange-300 focus:ring-4 focus:ring-orange-100"
+                            placeholder="Masalan: Ali Valiyev"
+                          />
+                        </label>
+                      </XatoliMaydon>
                       <div className="grid gap-4 md:grid-cols-2">
-                        <label className="text-sm font-bold text-gray-400">
-                          Login *
-                          <input
-                            value={username}
-                            onChange={(event) => setUsername(event.target.value)}
-                            className="mt-2 h-12 w-full rounded-xl border border-gray-200 bg-white px-4 font-semibold text-gray-700 outline-none transition focus:border-orange-300 focus:ring-4 focus:ring-orange-100"
-                            placeholder="ali.valiyev"
-                            autoComplete="off"
-                          />
-                        </label>
-                        <label className="text-sm font-bold text-gray-400">
-                          {editing ? "Yangi parol" : "Parol *"}
-                          <input
-                            type="password"
-                            value={password}
-                            onChange={(event) => setPassword(event.target.value)}
-                            className="mt-2 h-12 w-full rounded-xl border border-gray-200 bg-white px-4 font-semibold text-gray-700 outline-none transition focus:border-orange-300 focus:ring-4 focus:ring-orange-100"
-                            placeholder={editing ? "O'zgarmasa bo'sh qoldiring" : "Parol kiriting"}
-                            autoComplete="new-password"
-                          />
-                        </label>
+                        <XatoliMaydon xato={fx.xato("username")}>
+                          <label className="text-sm font-bold text-gray-400">
+                            Login *
+                            <input
+                              value={username}
+                              onChange={(event) => {
+                                setUsername(event.target.value);
+                                fx.tozala("username");
+                              }}
+                              className="mt-2 h-12 w-full rounded-xl border border-gray-200 bg-white px-4 font-semibold text-gray-700 outline-none transition focus:border-orange-300 focus:ring-4 focus:ring-orange-100"
+                              placeholder="ali.valiyev"
+                              autoComplete="off"
+                            />
+                          </label>
+                        </XatoliMaydon>
+                        <XatoliMaydon xato={fx.xato("password")}>
+                          <label className="text-sm font-bold text-gray-400">
+                            {editing ? "Yangi parol" : "Parol *"}
+                            <input
+                              type="password"
+                              value={password}
+                              onChange={(event) => {
+                                setPassword(event.target.value);
+                                fx.tozala("password");
+                              }}
+                              className="mt-2 h-12 w-full rounded-xl border border-gray-200 bg-white px-4 font-semibold text-gray-700 outline-none transition focus:border-orange-300 focus:ring-4 focus:ring-orange-100"
+                              placeholder={editing ? "O'zgarmasa bo'sh qoldiring" : "Parol kiriting"}
+                              autoComplete="new-password"
+                            />
+                          </label>
+                        </XatoliMaydon>
                       </div>
                       <div className="grid gap-4 md:grid-cols-2">
-                        <label className="text-sm font-bold text-gray-400">
-                          Rol
-                          <AppSelect
-                            value={role}
-                            onChange={(event) => setRole(event.target.value as AccountRoli)}
-                            className="mt-2 h-12 w-full rounded-xl border border-gray-200 bg-white px-4 font-semibold text-gray-700 outline-none transition focus:border-orange-300 focus:ring-4 focus:ring-orange-100"
-                          >
-                            {Object.entries(rolNomi).map(([value, label]) => (
-                              <option key={value} value={value}>
-                                {label}
-                              </option>
-                            ))}
-                          </AppSelect>
-                        </label>
-                        <label className="text-sm font-bold text-gray-400">
-                          Filial
-                          <AppSelect
-                            value={branchId}
-                            onChange={(event) => setBranchId(event.target.value)}
-                            className="mt-2 h-12 w-full rounded-xl border border-gray-200 bg-white px-4 font-semibold text-gray-700 outline-none transition focus:border-orange-300 focus:ring-4 focus:ring-orange-100"
-                          >
-                            <option value="">Filial biriktirilmagan</option>
-                            {store.filiallar.map((item) => (
-                              <option key={item.id} value={item.id}>
-                                {item.name}
-                              </option>
-                            ))}
-                          </AppSelect>
-                        </label>
+                        <XatoliMaydon xato={fx.xato("role")}>
+                          <label className="text-sm font-bold text-gray-400">
+                            Rol
+                            <AppSelect
+                              value={role}
+                              onChange={(event) => {
+                                setRole(event.target.value as AccountRoli);
+                                fx.tozala("role");
+                              }}
+                              className="mt-2 h-12 w-full rounded-xl border border-gray-200 bg-white px-4 font-semibold text-gray-700 outline-none transition focus:border-orange-300 focus:ring-4 focus:ring-orange-100"
+                            >
+                              {Object.entries(rolNomi).map(([value, label]) => (
+                                <option key={value} value={value}>
+                                  {label}
+                                </option>
+                              ))}
+                            </AppSelect>
+                          </label>
+                        </XatoliMaydon>
+                        <XatoliMaydon xato={fx.xato("branchId")}>
+                          <label className="text-sm font-bold text-gray-400">
+                            Filial
+                            <AppSelect
+                              value={branchId}
+                              onChange={(event) => {
+                                setBranchId(event.target.value);
+                                fx.tozala("branchId");
+                              }}
+                              className="mt-2 h-12 w-full rounded-xl border border-gray-200 bg-white px-4 font-semibold text-gray-700 outline-none transition focus:border-orange-300 focus:ring-4 focus:ring-orange-100"
+                            >
+                              <option value="">Filial biriktirilmagan</option>
+                              {store.filiallar.map((item) => (
+                                <option key={item.id} value={item.id}>
+                                  {item.name}
+                                </option>
+                              ))}
+                            </AppSelect>
+                          </label>
+                        </XatoliMaydon>
                       </div>
                       <div className="grid gap-4 md:grid-cols-2">
-                        <label className="text-sm font-bold text-gray-400">
-                          Telegram ID
-                          <input
-                            value={telegramId}
-                            onChange={(event) => setTelegramId(event.target.value)}
-                            className="mt-2 h-12 w-full rounded-xl border border-gray-200 bg-white px-4 font-semibold text-gray-700 outline-none transition focus:border-orange-300 focus:ring-4 focus:ring-orange-100"
-                            placeholder="Ixtiyoriy"
-                          />
-                        </label>
+                        <XatoliMaydon xato={fx.xato("telegramId")}>
+                          <label className="text-sm font-bold text-gray-400">
+                            Telegram ID
+                            <input
+                              value={telegramId}
+                              onChange={(event) => {
+                                setTelegramId(event.target.value);
+                                fx.tozala("telegramId");
+                              }}
+                              className="mt-2 h-12 w-full rounded-xl border border-gray-200 bg-white px-4 font-semibold text-gray-700 outline-none transition focus:border-orange-300 focus:ring-4 focus:ring-orange-100"
+                              placeholder="Ixtiyoriy"
+                            />
+                          </label>
+                        </XatoliMaydon>
                         <label className="flex items-center gap-3 self-end rounded-xl border border-orange-100 bg-orange-50 p-4 font-bold text-gray-700">
                           <input
                             type="checkbox"

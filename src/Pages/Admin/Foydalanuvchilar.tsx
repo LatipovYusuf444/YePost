@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import axios from "axios";
 import { Building2, KeyRound, Lock, ShieldCheck, Unlock, Users } from "lucide-react";
 import LoadingState from "@/Components/common/LoadingState";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import { platformApi } from "@/api/platformApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import type { PlatformFoydalanuvchi, PlatformKompaniya } from "@/types/platform";
 import { AdminModal, AmalTugmasi, Avatar, BoshHolat, Belgi, Maydon, QidiruvMaydoni, SahifaSarlavhasi, ShakldaTugmalar, XatoXabari, inputKlass, jadvalKlass, tbodyKlass, tdKlass, theadKlass, thKlass, trKlass, type BelgiRangi } from "./AdminUI";
@@ -13,16 +16,24 @@ import { AdminModal, AmalTugmasi, Avatar, BoshHolat, Belgi, Maydon, QidiruvMaydo
 const ROLLAR = ["DIRECTOR", "ADMIN", "STOREKEEPER", "CASHIER"] as const;
 const ROL_RANGI: Record<string, BelgiRangi> = { DIRECTOR: "binafsha", ADMIN: "kok", STOREKEEPER: "sariq", CASHIER: "yashil" };
 
+// Server xatosi → parol maydoni (so'rov tanasi: { password }). Xabar so'zi bo'yicha emas: cannot_modify_self kabi xatolar
+// matnida ham "parol" bo'lishi mumkin — ular tepada qoladi.
+const PAROL_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  password: { maydonlar: ["password"], kodlar: ["password"] },
+};
+
 function ParolModali({ foydalanuvchi, onYopish }: { foydalanuvchi: PlatformFoydalanuvchi; onYopish: () => void }) {
   const { t } = useTranslation("admin");
   const [parol, setParol] = useState("");
   const [bajarilmoqda, setBajarilmoqda] = useState(false);
   const [xato, setXato] = useState("");
+  const fx = useMaydonXatolari(PAROL_QOIDALARI);
 
   async function yuborish(event: FormEvent) {
     event.preventDefault();
     setXato("");
-    if (parol.length < 6) return setXato(t("foydalanuvchilar.parolQisqa"));
+    fx.ornat({});
+    if (parol.length < 6) return fx.ornat({ password: t("foydalanuvchilar.parolQisqa") });
     setBajarilmoqda(true);
     try {
       await platformApi.foydalanuvchilar.parolniTiklash(foydalanuvchi.id, parol);
@@ -30,6 +41,7 @@ function ParolModali({ foydalanuvchi, onYopish }: { foydalanuvchi: PlatformFoyda
     } catch (error) {
       // 403 errors.user.cannot_modify_self / cannot_modify_staff
       setXato(getApiErrorMessage(error));
+      fx.serverdan(axios.isAxiosError(error) ? error.response?.data : undefined);
     } finally {
       setBajarilmoqda(false);
     }
@@ -38,10 +50,20 @@ function ParolModali({ foydalanuvchi, onYopish }: { foydalanuvchi: PlatformFoyda
   return (
     <AdminModal sarlavha={t("foydalanuvchilar.parolniTiklash")} tavsif={`${foydalanuvchi.fullName || foydalanuvchi.username} (@${foydalanuvchi.username})`} onYopish={onYopish} ikonka={<KeyRound size={20} />}>
       <form onSubmit={(event) => void yuborish(event)} className="space-y-4">
-        <Maydon nom={t("foydalanuvchilar.yangiParol")} izoh={t("foydalanuvchilar.parolIzoh")}>
-          <input autoFocus type="password" value={parol} onChange={(event) => setParol(event.target.value)} autoComplete="new-password" className={inputKlass} />
+        <Maydon nom={t("foydalanuvchilar.yangiParol")} izoh={t("foydalanuvchilar.parolIzoh")} xato={fx.xato("password")}>
+          <input
+            autoFocus
+            type="password"
+            value={parol}
+            onChange={(event) => {
+              fx.tozala("password");
+              setParol(event.target.value);
+            }}
+            autoComplete="new-password"
+            className={inputKlass}
+          />
         </Maydon>
-        {xato && <XatoXabari matn={xato} />}
+        {(fx.tepadagi || (fx.bor ? "" : xato)) && <XatoXabari matn={fx.tepadagi || xato} />}
         <ShakldaTugmalar ortga={{ matn: t("common.bekor"), onClick: onYopish }} bajarilmoqda={bajarilmoqda} saqlashMatni={t("common.saqlash")} />
       </form>
     </AdminModal>

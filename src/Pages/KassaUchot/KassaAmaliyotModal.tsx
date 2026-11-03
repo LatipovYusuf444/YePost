@@ -13,6 +13,9 @@ import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import { belgidanKeyingiXato, xatoBelgisi, type XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { bugungiToshkentKuni, toshkentKuni } from "@/lib/hujjatSanasi";
 import Tanlov from "@/Pages/XaridorUchot/Tanlov";
 import { foydalanuvchilarApi } from "@/api/accountsApi";
@@ -55,12 +58,28 @@ const chiqimTurlari: KassaAmaliyotTuri[] = [
   "boshqa_chiqim",
 ];
 
+// Server xatosi qaysi maydonga tegishli (kalit — kassa operatsiyasi so'rovidagi backend nomi).
+const XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  customerId: { maydonlar: ["customerId"], kodlar: ["customer"], sozlar: ["mijoz", "клиент", "покупател"] },
+  employeeId: { maydonlar: ["employeeId"], kodlar: ["employee"], sozlar: ["xodim", "сотрудник"] },
+  supplierId: { maydonlar: ["supplierId"], kodlar: ["supplier"], sozlar: ["yetkazib beruvchi", "поставщик"] },
+  amount: { maydonlar: ["amount"], kodlar: ["amount"], sozlar: ["summa", "сумм"] },
+  rate: { maydonlar: ["rate"], kodlar: ["rate"], sozlar: ["kurs", "курс"] },
+  date: { maydonlar: ["date"], kodlar: ["date_in_future", "period_closed", "date"], sozlar: ["sana", "дат"] },
+  note: { maydonlar: ["note"], kodlar: ["note", "comment"], sozlar: ["izoh", "комментар", "примечан"] },
+  name: { maydonlar: ["name"] },
+};
+
+// Tanlov tugmasida aria-haspopup yo'q: xatoli bo'lsa uning ramkasi ham qizil bo'ladi.
+const TANLOV_XATOSI = "[&_[data-maydon-boshqaruvi]>div>button:first-child]:!border-red-400";
+
 type Props = {
   boshlangich: KassaAmaliyoti | null;
   boshlangichKanal: KassaKanali;
   boshlangichTuri: KassaAmaliyotTuri;
   onYopish: () => void;
-  onSaqlash: (amaliyot: KassaAmaliyoti) => void;
+  // Ota so'rovni yuborib xatoni o'zi ko'rsatadi; Promise qaytarsa, server xatosi maydonlarga ham bog'lanadi.
+  onSaqlash: (amaliyot: KassaAmaliyoti) => void | Promise<void>;
 };
 
 // balans — mijoz hisobi (oldindan to'langan pul) va uning valyutasi (valyuta rejimida dollar).
@@ -102,6 +121,7 @@ export default function KassaAmaliyotModal({
   const [sana, setSana] = useState(() => toshkentKuni(boshlangich?.sana) || bugungiToshkentKuni());
   const [izoh, setIzoh] = useState(boshlangich?.izoh ?? "");
   const [xato, setXato] = useState("");
+  const fx = useMaydonXatolari(XATO_QOIDALARI);
   // Valyuta (so'm/dollar) va kurs: faqat valyuta rejimi yoqilgan va bugungi kurs kiritilgan bo'lsa; kurs yozilmasa backend kunlik kursni oladi.
   const rejimYoniq = useValyutaStore((holat) => holat.rejimYoniq);
   const kursBor = useValyutaStore((holat) => holat.kursBor);
@@ -211,29 +231,23 @@ export default function KassaAmaliyotModal({
     setValyuta("UZS");
     setKursMatni("");
     setQarzVal(null);
+    fx.tozala("customerId", "saleId", "supplierId", "employeeId", "rate", "note");
   }
 
-  function yubor(tasdiqla: boolean) {
-    if (partiya === "xaridor" && !xaridorId) {
-      setXato(t("modal.errors.selectCustomer"));
+  async function yubor(tasdiqla: boolean) {
+    // Bo'sh/noto'g'ri maydonlar o'z joyida (hammasi birdan) ko'rsatiladi; qoidalar va matnlar avvalgidek.
+    const tekshiruv: Record<string, string> = {};
+    if (partiya === "xaridor" && !xaridorId) tekshiruv.customerId = t("modal.errors.selectCustomer");
+    if (partiya === "xodim" && !employeeId) tekshiruv.employeeId = t("modal.errors.selectEmployee");
+    if (partiya === "yetkazib" && !supplierId) tekshiruv.supplierId = t("modal.errors.selectSupplier");
+    if (!summa.trim() || Number.isNaN(Number(summa)) || Number(summa) <= 0) tekshiruv.amount = t("modal.errors.invalidAmount");
+    if (izohMajburiy(turi) && !izoh.trim()) tekshiruv.note = t("modal.errors.commentRequired");
+    if (kursKerak && kursMatni.trim() && !(kiritilganKurs > 0)) tekshiruv.rate = t("modal.errors.invalidRate");
+    if (Object.keys(tekshiruv).length) {
+      fx.ornat(tekshiruv);
       return;
     }
-    if ((partiya === "xodim" && !employeeId) || (partiya === "yetkazib" && !supplierId)) {
-      setXato(partiya === "xodim" ? t("modal.errors.selectEmployee") : t("modal.errors.selectSupplier"));
-      return;
-    }
-    if (!summa.trim() || Number.isNaN(Number(summa)) || Number(summa) <= 0) {
-      setXato(t("modal.errors.invalidAmount"));
-      return;
-    }
-    if (izohMajburiy(turi) && !izoh.trim()) {
-      setXato(t("modal.errors.commentRequired"));
-      return;
-    }
-    if (kursKerak && kursMatni.trim() && !(kiritilganKurs > 0)) {
-      setXato(t("modal.errors.invalidRate"));
-      return;
-    }
+    fx.ornat({});
 
     const yakuniyKontragent = partiya === "xaridor" && tanlanganXaridor
       ? tanlanganXaridor.nomi
@@ -243,7 +257,9 @@ export default function KassaAmaliyotModal({
           ? yetkazibBeruvchilar.find((item) => item.id === supplierId)?.nomi ?? kontragent.trim()
           : kontragent.trim();
 
-    onSaqlash({
+    // Ota xatoni o'zi ushlaydi (matnga aylantiradi): shu so'rovlardan keyin kelgan server xatosi maydonlarga bog'lanadi.
+    const belgi = xatoBelgisi();
+    await onSaqlash({
       id: boshlangich?.id ?? yangiId("ks"),
       kanal,
       yonalish,
@@ -271,6 +287,8 @@ export default function KassaAmaliyotModal({
       purchaseId: boshlangich?.purchaseId,
       readonly: boshlangich?.readonly,
     });
+    const tafsilot = belgidanKeyingiXato(belgi);
+    if (tafsilot !== undefined) fx.serverdan(tafsilot);
   }
 
   return (
@@ -335,10 +353,11 @@ export default function KassaAmaliyotModal({
         </header>
 
         <div className="scrollbar-orange min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-8">
-          {xato && (
+          {/* Maydoniga bog'langan xato faqat maydon ostida; bog'lanmagani (yoki yuklash xatosi) shu yerda */}
+          {(fx.tepadagi || (fx.bor ? "" : xato)) && (
             <div className="mb-4 flex justify-between gap-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
-              <span>{xato}</span>
-              <button type="button" onClick={() => setXato("")}>
+              <span>{fx.tepadagi || xato}</span>
+              <button type="button" onClick={() => { if (fx.tepadagi) fx.ornat({}); else setXato(""); }}>
                 {t("common:actions.close")}
               </button>
             </div>
@@ -357,14 +376,16 @@ export default function KassaAmaliyotModal({
               />
               <div className="grid gap-4">
                 {/* 1. Nomi */}
-                <Maydon label={tushum ? t("modal.incomeNameLabel") : t("modal.expenseNameLabel")}>
-                  <input
-                    value={nomi}
-                    onChange={(event) => setNomi(event.target.value)}
-                    placeholder={t(`types.${turi}`)}
-                    className={maydonKlass}
-                  />
-                </Maydon>
+                <XatoliMaydon xato={fx.xato("name")}>
+                  <Maydon label={tushum ? t("modal.incomeNameLabel") : t("modal.expenseNameLabel")}>
+                    <input
+                      value={nomi}
+                      onChange={(event) => { fx.tozala("name"); setNomi(event.target.value); }}
+                      placeholder={t(`types.${turi}`)}
+                      className={maydonKlass}
+                    />
+                  </Maydon>
+                </XatoliMaydon>
 
                 {/* 2. Tur */}
                 <Maydon label={tushum ? t("modal.incomeTypeLabel") : t("modal.expenseTypeLabel")}>
@@ -380,17 +401,20 @@ export default function KassaAmaliyotModal({
 
                 {/* 3. Partiya — turga qarab: mijoz / xodim / yetkazib */}
                 {partiya === "xaridor" && (
+                  <XatoliMaydon xato={fx.xato("customerId")} className={fx.xato("customerId") ? TANLOV_XATOSI : ""}>
                   <Maydon label={t("modal.customerLabel")}>
-                    <Tanlov
-                      qiymat={xaridorId}
-                      onChange={(id) => { setXaridorId(id); setSaleId(""); }}
-                      placeholder={t("modal.customerPlaceholder")}
-                      qidiruv
-                      variantlar={xaridorlar.map((x) => ({
-                        value: x.id,
-                        label: `${x.nomi}${x.telefon ? ` — ${x.telefon}` : ""}`,
-                      }))}
-                    />
+                    <div data-maydon-boshqaruvi className="rounded-2xl">
+                      <Tanlov
+                        qiymat={xaridorId}
+                        onChange={(id) => { fx.tozala("customerId", "saleId"); setXaridorId(id); setSaleId(""); }}
+                        placeholder={t("modal.customerPlaceholder")}
+                        qidiruv
+                        variantlar={xaridorlar.map((x) => ({
+                          value: x.id,
+                          label: `${x.nomi}${x.telefon ? ` — ${x.telefon}` : ""}`,
+                        }))}
+                      />
+                    </div>
                     {tanlanganXaridor && (
                       <div className="mt-2 flex items-center justify-between rounded-xl bg-orange-50 px-3.5 py-2.5 text-sm">
                         <span className="font-bold text-slate-500">{t("modal.currentDebtLabel")}</span>
@@ -409,36 +433,45 @@ export default function KassaAmaliyotModal({
                       </div>
                     )}
                   </Maydon>
+                  </XatoliMaydon>
                 )}
 
                 {partiya === "xodim" && (
-                  <Maydon label={t("modal.employeeLabel")}>
-                    <Tanlov
-                      qiymat={employeeId}
-                      onChange={setEmployeeId}
-                      placeholder={t("modal.employeePlaceholder")}
-                      qidiruv
-                      variantlar={xodimlar.map((x) => ({
-                        value: x.id,
-                        label: x.nomi,
-                      }))}
-                    />
-                  </Maydon>
+                  <XatoliMaydon xato={fx.xato("employeeId")} className={fx.xato("employeeId") ? TANLOV_XATOSI : ""}>
+                    <Maydon label={t("modal.employeeLabel")}>
+                      <div data-maydon-boshqaruvi className="rounded-2xl">
+                        <Tanlov
+                          qiymat={employeeId}
+                          onChange={(id) => { fx.tozala("employeeId"); setEmployeeId(id); }}
+                          placeholder={t("modal.employeePlaceholder")}
+                          qidiruv
+                          variantlar={xodimlar.map((x) => ({
+                            value: x.id,
+                            label: x.nomi,
+                          }))}
+                        />
+                      </div>
+                    </Maydon>
+                  </XatoliMaydon>
                 )}
 
                 {partiya === "yetkazib" && (
-                  <Maydon label={t("modal.supplierLabel")}>
-                    <Tanlov
-                      qiymat={supplierId}
-                      onChange={setSupplierId}
-                      placeholder={t("modal.supplierPlaceholder")}
-                      qidiruv
-                      variantlar={yetkazibBeruvchilar.map((b) => ({
-                        value: b.id,
-                        label: b.nomi,
-                      }))}
-                    />
-                  </Maydon>
+                  <XatoliMaydon xato={fx.xato("supplierId")} className={fx.xato("supplierId") ? TANLOV_XATOSI : ""}>
+                    <Maydon label={t("modal.supplierLabel")}>
+                      <div data-maydon-boshqaruvi className="rounded-2xl">
+                        <Tanlov
+                          qiymat={supplierId}
+                          onChange={(id) => { fx.tozala("supplierId"); setSupplierId(id); }}
+                          placeholder={t("modal.supplierPlaceholder")}
+                          qidiruv
+                          variantlar={yetkazibBeruvchilar.map((b) => ({
+                            value: b.id,
+                            label: b.nomi,
+                          }))}
+                        />
+                      </div>
+                    </Maydon>
+                  </XatoliMaydon>
                 )}
 
                 {partiya === null && (
@@ -463,6 +496,7 @@ export default function KassaAmaliyotModal({
                           type="button"
                           onClick={() => {
                             if (kod === valyuta) return;
+                            fx.tozala("amount", "rate");
                             setValyuta(kod);
                             setSumma("");
                             setKursMatni("");
@@ -503,23 +537,26 @@ export default function KassaAmaliyotModal({
                 )}
 
                 {/* Summa */}
-                <Maydon label={valyutaTanlovi ? t("modal.amountLabelCurrency", { valyuta: tanlanganValyuta === "USD" ? "$" : t("modal.currencyUzs") }) : t("modal.amountLabel")}>
-                  <SummaMaydoni
-                    kasr={tanlanganValyuta === "USD" ? 2 : 0}
-                    value={summa}
-                    onChange={setSumma}
-                    placeholder={tanlanganValyuta === "USD" ? "100" : "450 000"}
-                    className={maydonKlass}
-                  />
-                </Maydon>
+                <XatoliMaydon xato={fx.xato("amount")}>
+                  <Maydon label={valyutaTanlovi ? t("modal.amountLabelCurrency", { valyuta: tanlanganValyuta === "USD" ? "$" : t("modal.currencyUzs") }) : t("modal.amountLabel")}>
+                    <SummaMaydoni
+                      kasr={tanlanganValyuta === "USD" ? 2 : 0}
+                      value={summa}
+                      onChange={(qiymat) => { fx.tozala("amount"); setSumma(qiymat); }}
+                      placeholder={tanlanganValyuta === "USD" ? "100" : "450 000"}
+                      className={maydonKlass}
+                    />
+                  </Maydon>
+                </XatoliMaydon>
 
                 {/* Kurs: so'mda berilgan pul dollar hisobiga (yoki aksincha) o'tganda; yozilmasa kunlik kurs */}
                 {kursKerak && (
+                  <XatoliMaydon xato={fx.xato("rate")}>
                   <Maydon label={t("modal.rateLabel")}>
                     <SummaMaydoni
                       kasr={4}
                       value={kursMatni}
-                      onChange={setKursMatni}
+                      onChange={(qiymat) => { fx.tozala("rate"); setKursMatni(qiymat); }}
                       placeholder={kunlikKurs > 0 ? t("modal.ratePlaceholder", { kurs: kunlikKurs.toLocaleString("uz-UZ") }) : ""}
                       className={maydonKlass}
                     />
@@ -530,6 +567,7 @@ export default function KassaAmaliyotModal({
                       </span>
                     )}
                   </Maydon>
+                  </XatoliMaydon>
                 )}
 
                 {/* Mijoz hisobini to'ldirish: ochiq qarzlar (eng eskisi birinchi) va kiritilgan summa qaysi qarzlarni yopishi */}
@@ -574,14 +612,16 @@ export default function KassaAmaliyotModal({
                 </Maydon>
 
                 {/* Sana */}
-                <Maydon label={tushum ? t("modal.incomeDateLabel") : t("modal.expenseDateLabel")}>
-                  <HujjatSanasiMaydoni
-                    value={sana}
-                    onChange={setSana}
-                    aria-label={tushum ? t("modal.incomeDateLabel") : t("modal.expenseDateLabel")}
-                    className={maydonKlass}
-                  />
-                </Maydon>
+                <XatoliMaydon xato={fx.xato("date")}>
+                  <Maydon label={tushum ? t("modal.incomeDateLabel") : t("modal.expenseDateLabel")}>
+                    <HujjatSanasiMaydoni
+                      value={sana}
+                      onChange={(qiymat) => { fx.tozala("date"); setSana(qiymat); }}
+                      aria-label={tushum ? t("modal.incomeDateLabel") : t("modal.expenseDateLabel")}
+                      className={maydonKlass}
+                    />
+                  </Maydon>
+                </XatoliMaydon>
               </div>
             </section>
 
@@ -592,15 +632,17 @@ export default function KassaAmaliyotModal({
                   icon={<MessageSquare size={18} />}
                   text={izohMajburiy(turi) ? t("modal.commentTitleRequired") : t("modal.commentTitle")}
                 />
-                <textarea
-                  value={izoh}
-                  onChange={(event) => setIzoh(event.target.value)}
-                  rows={4}
-                  placeholder={
-                    izohMajburiy(turi) ? t("modal.commentPlaceholderRequired") : t("modal.commentPlaceholder")
-                  }
-                  className="w-full resize-none rounded-2xl border border-slate-200 p-4 text-sm font-medium outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
-                />
+                <XatoliMaydon xato={fx.xato("note")}>
+                  <textarea
+                    value={izoh}
+                    onChange={(event) => { fx.tozala("note"); setIzoh(event.target.value); }}
+                    rows={4}
+                    placeholder={
+                      izohMajburiy(turi) ? t("modal.commentPlaceholderRequired") : t("modal.commentPlaceholder")
+                    }
+                    className="w-full resize-none rounded-2xl border border-slate-200 p-4 text-sm font-medium outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+                  />
+                </XatoliMaydon>
               </section>
               <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
                 <SectionTitle icon={<Clock3 size={18} />} text={t("modal.historyTitle")} />
@@ -621,14 +663,14 @@ export default function KassaAmaliyotModal({
           <footer className="flex shrink-0 flex-col-reverse gap-3 border-t border-orange-100 bg-white/75 px-5 py-4 sm:flex-row sm:justify-end sm:px-8">
             <button
               type="button"
-              onClick={() => yubor(false)}
+              onClick={() => void yubor(false)}
               className="h-12 rounded-2xl border border-orange-300 bg-white px-7 text-sm font-black text-orange-600 hover:bg-orange-50"
             >
               {t("common:actions.save")}
             </button>
             <button
               type="button"
-              onClick={() => yubor(true)}
+              onClick={() => void yubor(true)}
               className="h-12 rounded-2xl bg-orange-500 px-7 text-sm font-black text-white shadow-lg shadow-orange-100 hover:bg-orange-600"
             >
               {t("modal.saveAndConfirm")}

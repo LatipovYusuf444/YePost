@@ -30,7 +30,10 @@
     "addressPlaceholder": "Адрес",
     "responsiblePlaceholder": "Ответственный не назначен",
     "closeButton": "Закрыть",
-    "saveButton": "Сохранить"
+    "saveButton": "Сохранить",
+    "errors": {
+      "nameRequired": "Введите название филиала."
+    }
   },
   "inventoryDocumentActivity": {
     "system": "Система",
@@ -116,7 +119,10 @@
     "phonePlaceholder": "+998...",
     "addressPlaceholder": "Адрес",
     "closeButton": "Закрыть",
-    "saveButton": "Сохранить"
+    "saveButton": "Сохранить",
+    "errors": {
+      "nameRequired": "Введите название компании."
+    }
   },
   "kirimTafsilotModal": {
     "title": "Приходный документ",

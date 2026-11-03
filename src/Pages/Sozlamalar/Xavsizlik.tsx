@@ -9,8 +9,25 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useAuthStore } from "@/store/authStore";
+
+// Server xatosini parol formasi maydoniga bog'lash (kalit — backend maydon nomi). Tartib muhim: avval amaldagi parol.
+const PAROL_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  oldPassword: {
+    maydonlar: ["oldPassword", "currentPassword"],
+    kodlar: ["old_password", "current_password", "wrong_password", "invalid_password", "incorrect_password"],
+    sozlar: ["amaldagi parol", "eski parol", "joriy parol", "old password", "current password", "wrong password", "incorrect password", "invalid password", "текущий пароль", "старый пароль", "неверный пароль"],
+  },
+  newPassword: {
+    maydonlar: ["newPassword"],
+    kodlar: ["new_password", "weak_password", "same_password"],
+    sozlar: ["yangi parol", "new password", "новый пароль"],
+  },
+};
 
 export default function Xavsizlik() {
   const store = useAuthProfileStore();
@@ -20,6 +37,7 @@ export default function Xavsizlik() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [korinsin, setKorinsin] = useState(false);
+  const fx = useMaydonXatolari(PAROL_XATO_QOIDALARI);
 
   const mos = newPassword === confirmPassword;
   const yetarli = newPassword.length >= 6;
@@ -29,7 +47,8 @@ export default function Xavsizlik() {
     store.xabarlarniTozalash();
     if (!oldPassword || !newPassword || !mos || !yetarli) return;
 
-    const ok = await store.parolniYangilash({ oldPassword, newPassword });
+    fx.ornat({});
+    const ok = await fx.kuzat(() => store.parolniYangilash({ oldPassword, newPassword }));
     if (ok) {
       setOldPassword("");
       setNewPassword("");
@@ -41,6 +60,9 @@ export default function Xavsizlik() {
       navigate("/login", { replace: true });
     }
   }
+
+  // Maydoniga bog'langan xato faqat maydon ostida; bog'lanmagani tepada.
+  const tepadagiXato = fx.tepadagi || (fx.bor ? "" : store.xatolik);
 
   return (
     <section className="grid gap-5 xl:grid-cols-[1fr_340px]">
@@ -63,9 +85,9 @@ export default function Xavsizlik() {
           </div>
         </div>
 
-        {store.xatolik && (
+        {tepadagiXato && (
           <div className="mt-5 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">
-            {store.xatolik}
+            {tepadagiXato}
           </div>
         )}
         {store.muvaffaqiyat && (
@@ -76,6 +98,7 @@ export default function Xavsizlik() {
         )}
 
         <div className="mt-6 space-y-5">
+          <XatoliMaydon xato={fx.xato("oldPassword")}>
           <label className="block text-sm font-bold">
             Amaldagi parol *
             <div className="relative mt-2">
@@ -86,7 +109,10 @@ export default function Xavsizlik() {
               <input
                 type={korinsin ? "text" : "password"}
                 value={oldPassword}
-                onChange={(event) => setOldPassword(event.target.value)}
+                onChange={(event) => {
+                  fx.tozala("oldPassword");
+                  setOldPassword(event.target.value);
+                }}
                 className="h-12 w-full rounded-2xl border pl-11 pr-12 font-medium outline-none focus:border-orange-300"
                 autoComplete="current-password"
               />
@@ -100,17 +126,23 @@ export default function Xavsizlik() {
               </button>
             </div>
           </label>
+          </XatoliMaydon>
+          <XatoliMaydon xato={fx.xato("newPassword")}>
           <label className="block text-sm font-bold">
             Yangi parol *
             <input
               type={korinsin ? "text" : "password"}
               value={newPassword}
-              onChange={(event) => setNewPassword(event.target.value)}
+              onChange={(event) => {
+                fx.tozala("newPassword");
+                setNewPassword(event.target.value);
+              }}
               className="mt-2 h-12 w-full rounded-2xl border px-4 font-medium outline-none focus:border-orange-300"
               autoComplete="new-password"
               placeholder="Kamida 6 ta belgi"
             />
           </label>
+          </XatoliMaydon>
           <label className="block text-sm font-bold">
             Yangi parolni takrorlang *
             <input

@@ -259,6 +259,8 @@
     }
   },
   "xaridorModal": {
+    "phoneRequired": "Kamida bitta telefon kiritilishi shart.",
+    "firstNameRequired": "Ism kiritilishi shart.",
     "editTitle": "Xaridorni tahrirlash",
     "newTitle": "Yangi xaridor",
     "badge": "Xaridor ma'lumotlari",

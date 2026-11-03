@@ -16,6 +16,9 @@ import {
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon, { MaydonXatosi } from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import { useTranslation } from "react-i18next";
 import { useOmborStore } from "@/store/omborStore";
@@ -28,6 +31,14 @@ import InventoryDocumentActivity from "./InventoryDocumentActivity";
 
 type Props = { id: string; onClose: () => void };
 type TahrirQatori = { modificationId: string; quantity: number };
+
+// Tahrirda server xatosi qaysi maydonga tegishli (kalit — backend maydon nomi).
+const KOCHIRISH_TAHRIR_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  sourceWarehouseId: { maydonlar: ["sourceWarehouseId"], kodlar: ["source"], sozlar: ["manba ombor", "склад-источник", "исходн"] },
+  destWarehouseId: { maydonlar: ["destWarehouseId"], kodlar: ["dest"], sozlar: ["qabul qiluvchi ombor", "склад назначения", "склад-получател"] },
+  responsibleId: { maydonlar: ["responsibleId"], kodlar: ["responsible"] },
+  note: { maydonlar: ["note"] },
+};
 type KengaytirilganItem = NonNullable<KochirishHujjati["items"]>[number] & {
   price?: number | string;
   unitPrice?: number | string;
@@ -89,6 +100,7 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
   const [note, setNote] = useState("");
   const [items, setItems] = useState<TahrirQatori[]>([]);
   const [xato, setXato] = useState("");
+  const fx = useMaydonXatolari(KOCHIRISH_TAHRIR_XATO_QOIDALARI);
 
   async function hujjatniYuklash() {
     setYuklanmoqda(true);
@@ -176,6 +188,7 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
       quantity: Number(item.quantity),
     })));
     setXato("");
+    fx.ornat({});
     setTahrir(true);
     await store.qoldiqlarniYuklash(hujjat.sourceWarehouseId);
   }
@@ -184,6 +197,7 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
     setSource(value);
     setDest((oldingi) => (oldingi === value ? "" : oldingi));
     setItems([]);
+    fx.tozala("sourceWarehouseId", "destWarehouseId", "items");
     if (value) await store.qoldiqlarniYuklash(value);
   }
 
@@ -191,28 +205,44 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
     const tozaItems = items.filter((item) => item.modificationId && item.quantity > 0);
     if (!sourceWarehouseId || !destWarehouseId || sourceWarehouseId === destWarehouseId) {
       setXato("kochirishKorishModal.errors.warehousesInvalid");
+      const matn = t("kochirishKorishModal.errors.warehousesInvalid");
+      fx.ornat({
+        ...(!sourceWarehouseId ? { sourceWarehouseId: matn } : {}),
+        ...(!destWarehouseId || sourceWarehouseId === destWarehouseId ? { destWarehouseId: matn } : {}),
+      });
       return;
     }
     if (!tozaItems.length || tozaItems.length !== items.length) {
       setXato("kochirishKorishModal.errors.rowsIncomplete");
+      const matn = t("kochirishKorishModal.errors.rowsIncomplete");
+      const maydonlar: Record<string, string> = items.length ? {} : { items: matn };
+      items.forEach((item, index) => {
+        if (!item.modificationId) maydonlar[`items.${index}.modificationId`] = matn;
+        if (!(item.quantity > 0)) maydonlar[`items.${index}.quantity`] = matn;
+      });
+      fx.ornat(maydonlar);
       return;
     }
-    const ortiqcha = tozaItems.some((item) => {
+    const ortiqchaQatorlar = tozaItems.map((item) => {
       const qoldiq = store.qoldiqlar.find((qator) => qator.modificationId === item.modificationId);
       const avvalgi = hujjat?.items?.find((qator) => qator.modificationId === item.modificationId);
-      return qoldiq && item.quantity > qoldiqMiqdori(qoldiq) + Number(avvalgi?.quantity ?? 0);
+      return Boolean(qoldiq && item.quantity > qoldiqMiqdori(qoldiq) + Number(avvalgi?.quantity ?? 0));
     });
+    const ortiqcha = ortiqchaQatorlar.some(Boolean);
     if (!canSellNegative && ortiqcha) {
       setXato("kochirishKorishModal.errors.exceedsStock");
+      const matn = t("kochirishKorishModal.errors.exceedsStock");
+      fx.ornat(Object.fromEntries(ortiqchaQatorlar.flatMap((ortiq, index) => (ortiq ? [[`items.${index}.quantity`, matn]] : []))));
       return;
     }
-    const ok = await store.kochirishYangilash(id, {
+    fx.ornat({});
+    const ok = await fx.kuzat(() => store.kochirishYangilash(id, {
       sourceWarehouseId,
       destWarehouseId,
       responsibleId: responsibleId || undefined,
       note: note.trim() || undefined,
       items: tozaItems,
-    });
+    }));
     if (!ok) return;
     setTahrir(false);
     await hujjatniYuklash();
@@ -271,22 +301,23 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
               <section className="mx-auto max-w-5xl rounded-[28px] border border-orange-100 bg-white p-6 shadow-sm">
                 <h3 className="border-b border-orange-100 pb-4 text-lg font-black text-slate-700">{t("kochirishKorishModal.edit.title")}</h3>
                 <div className="mt-5 grid gap-4 md:grid-cols-3">
-                  <AppSelect value={sourceWarehouseId} onChange={(event) => void manbaniAlmashtirish(event.target.value)} className="input"><option value="">{t("kochirishKorishModal.edit.sourceWarehouse")}</option>{store.omborlar.map((ombor) => <option key={ombor.id} value={ombor.id}>{ombor.name}</option>)}</AppSelect>
-                  <AppSelect value={destWarehouseId} onChange={(event) => setDest(event.target.value)} className="input"><option value="">{t("kochirishKorishModal.edit.destWarehouse")}</option>{store.omborlar.filter((ombor) => ombor.id !== sourceWarehouseId).map((ombor) => <option key={ombor.id} value={ombor.id}>{ombor.name}</option>)}</AppSelect>
-                  <AppSelect value={responsibleId} onChange={(event) => setResponsible(event.target.value)} className="input"><option value="">{t("kochirishKorishModal.edit.responsible")}</option>{store.xodimlar.map((xodim) => <option key={xodim.id} value={xodim.id}>{shaxsNomi(xodim)}</option>)}</AppSelect>
+                  <XatoliMaydon xato={fx.xato("sourceWarehouseId")}><AppSelect value={sourceWarehouseId} onChange={(event) => void manbaniAlmashtirish(event.target.value)} className="input"><option value="">{t("kochirishKorishModal.edit.sourceWarehouse")}</option>{store.omborlar.map((ombor) => <option key={ombor.id} value={ombor.id}>{ombor.name}</option>)}</AppSelect></XatoliMaydon>
+                  <XatoliMaydon xato={fx.xato("destWarehouseId")}><AppSelect value={destWarehouseId} onChange={(event) => { fx.tozala("destWarehouseId"); setDest(event.target.value); }} className="input"><option value="">{t("kochirishKorishModal.edit.destWarehouse")}</option>{store.omborlar.filter((ombor) => ombor.id !== sourceWarehouseId).map((ombor) => <option key={ombor.id} value={ombor.id}>{ombor.name}</option>)}</AppSelect></XatoliMaydon>
+                  <XatoliMaydon xato={fx.xato("responsibleId")}><AppSelect value={responsibleId} onChange={(event) => { fx.tozala("responsibleId"); setResponsible(event.target.value); }} className="input"><option value="">{t("kochirishKorishModal.edit.responsible")}</option>{store.xodimlar.map((xodim) => <option key={xodim.id} value={xodim.id}>{shaxsNomi(xodim)}</option>)}</AppSelect></XatoliMaydon>
                 </div>
                 <div className="mt-5 space-y-3">
                   {items.map((item, index) => (
                     <div key={`${item.modificationId}-${index}`} className="grid gap-3 rounded-2xl bg-orange-50/60 p-3 md:grid-cols-[1fr_160px_44px]">
-                      <AppSelect value={item.modificationId} onChange={(event) => setItems((oldingi) => oldingi.map((qator, i) => i === index ? { ...qator, modificationId: event.target.value } : qator))} className="input"><option value="">{t("kochirishKorishModal.edit.productPlaceholder")}</option>{store.qoldiqlar.map((qoldiq) => <option key={`${qoldiq.modificationId}-${qoldiq.id ?? "q"}`} value={qoldiq.modificationId}>{modificationNomi(qoldiq.modification)} — {qoldiqMiqdori(qoldiq)}</option>)}</AppSelect>
-                      <input type="number" min="0.001" step="0.001" value={item.quantity} onChange={(event) => setItems((oldingi) => oldingi.map((qator, i) => i === index ? { ...qator, quantity: Number(event.target.value) } : qator))} className="input" />
-                      <button type="button" disabled={items.length === 1} onClick={() => setItems((oldingi) => oldingi.filter((_, i) => i !== index))} className="flex h-12 items-center justify-center rounded-2xl bg-red-50 text-red-500 disabled:opacity-30"><Trash2 size={17} /></button>
+                      <XatoliMaydon xato={fx.xato(`items.${index}.modificationId`)}><AppSelect value={item.modificationId} onChange={(event) => { fx.tozala(`items.${index}.modificationId`); setItems((oldingi) => oldingi.map((qator, i) => i === index ? { ...qator, modificationId: event.target.value } : qator)); }} className="input"><option value="">{t("kochirishKorishModal.edit.productPlaceholder")}</option>{store.qoldiqlar.map((qoldiq) => <option key={`${qoldiq.modificationId}-${qoldiq.id ?? "q"}`} value={qoldiq.modificationId}>{modificationNomi(qoldiq.modification)} — {qoldiqMiqdori(qoldiq)}</option>)}</AppSelect></XatoliMaydon>
+                      <XatoliMaydon xato={fx.xato(`items.${index}.quantity`)}><input type="number" min="0.001" step="0.001" value={item.quantity} onChange={(event) => { fx.tozala(`items.${index}.quantity`); setItems((oldingi) => oldingi.map((qator, i) => i === index ? { ...qator, quantity: Number(event.target.value) } : qator)); }} className="input" /></XatoliMaydon>
+                      <button type="button" disabled={items.length === 1} onClick={() => { fx.tozala("items"); setItems((oldingi) => oldingi.filter((_, i) => i !== index)); }} className="flex h-12 items-center justify-center rounded-2xl bg-red-50 text-red-500 disabled:opacity-30"><Trash2 size={17} /></button>
                     </div>
                   ))}
-                  <button type="button" onClick={() => setItems((oldingi) => [...oldingi, { modificationId: "", quantity: 1 }])} className="rounded-xl bg-orange-50 px-4 py-2.5 text-sm font-black text-orange-600">{t("kochirishKorishModal.edit.addItem")}</button>
+                  <MaydonXatosi matn={fx.xato("items")} />
+                  <button type="button" onClick={() => { fx.tozala("items"); setItems((oldingi) => [...oldingi, { modificationId: "", quantity: 1 }]); }} className="rounded-xl bg-orange-50 px-4 py-2.5 text-sm font-black text-orange-600">{t("kochirishKorishModal.edit.addItem")}</button>
                 </div>
-                <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={3} className="mt-5 w-full rounded-2xl border border-slate-200 p-4 outline-none focus:border-orange-300" placeholder={t("kochirishKorishModal.edit.commentPlaceholder")} />
-                {(xato || store.xatolik) && <p className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">{xato ? t(xato) : store.xatolik}</p>}
+                <XatoliMaydon xato={fx.xato("note")}><textarea value={note} onChange={(event) => { fx.tozala("note"); setNote(event.target.value); }} rows={3} className="mt-5 w-full rounded-2xl border border-slate-200 p-4 outline-none focus:border-orange-300" placeholder={t("kochirishKorishModal.edit.commentPlaceholder")} /></XatoliMaydon>
+                {(fx.tepadagi || (!fx.bor && (xato || store.xatolik))) && <p className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">{fx.tepadagi || (xato ? t(xato) : store.xatolik)}</p>}
                 <div className="mt-6 flex justify-end gap-3">
                   <button type="button" onClick={() => setTahrir(false)} className="h-12 rounded-2xl bg-slate-100 px-6 font-black text-slate-600">{t("kochirishKorishModal.edit.cancel")}</button>
                   <button type="button" onClick={() => void saqlash()} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#2563EB] px-6 font-black text-white disabled:opacity-50"><Save size={17} /> {t("kochirishKorishModal.edit.save")}</button>

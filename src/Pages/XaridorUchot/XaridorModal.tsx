@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   Briefcase,
   Building2,
@@ -12,8 +12,11 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
 import PhoneInput from "@/Components/ui/PhoneInput";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { mijozHisobi } from "@/lib/mijozHisobi";
 import { valyutaKutmoqda, type MijozValyutasi } from "@/lib/mijozValyutasi";
 import { cn } from "@/lib/utils";
@@ -36,6 +39,22 @@ import { bugun, maydonKlass, xaridorNomi, yangiId } from "./yordamchilar";
 import ModalTablari from "@/Components/common/ModalTablari";
 type MalumotTab = "malumotlar" | "savdolar" | "tolovlar" | "tarix";
 const malumotTabKalitlari: MalumotTab[] = ["malumotlar", "savdolar", "tolovlar", "tarix"];
+
+// Server xatosi qaysi maydonga tegishli. Kalit — mijoz so'rovi tanasidagi backend nomi. Telefon birinchi: "telefon band" ko'p uchraydi.
+const XARIDOR_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  phone: { maydonlar: ["phone"], kodlar: ["phone"], sozlar: ["telefon", "телефон"] },
+  telegramId: { maydonlar: ["telegramId", "customFields.whatsapp", "customFields.instagram"], kodlar: ["telegram"], sozlar: ["telegram"] },
+  companyId: { maydonlar: ["companyId"], kodlar: ["company"], sozlar: ["kompaniya", "компани"] },
+  currency: { maydonlar: ["currency"], kodlar: ["currency"], sozlar: ["valyuta", "валют"] },
+  firstName: { maydonlar: ["firstName"], kodlar: ["first_name", "firstname"], sozlar: ["имя"] },
+  lastName: { maydonlar: ["lastName"], kodlar: ["last_name", "lastname"], sozlar: ["familiya", "фамили"] },
+  address: { maydonlar: ["address"], kodlar: ["address"], sozlar: ["manzil", "адрес"] },
+  position: { maydonlar: ["customFields.position"] },
+};
+
+// Tanlov tugmasida aria-haspopup yo'q: xato bo'lsa uning ramkasi shu klass bilan qizil bo'ladi.
+const TANLOV_XATOSI =
+  "[&_div.relative>button:first-child]:!border-red-400 [&_div.relative>button:first-child]:ring-4 [&_div.relative>button:first-child]:ring-red-100";
 
 type Props = {
   boshlangich: Xaridor | null;
@@ -74,6 +93,9 @@ export default function XaridorModal({
   const [xato, setXato] = useState("");
   const [saqlanmoqda, setSaqlanmoqda] = useState(false);
   const [faolTab, setFaolTab] = useState<MalumotTab>("malumotlar");
+  const fx = useMaydonXatolari(XARIDOR_XATO_QOIDALARI);
+  // Backend "phone" — birinchi to'ldirilgan telefon; uning xatosi shu qatorda ko'rinadi.
+  const asosiyTelefon = Math.max(0, telefonlar.findIndex((telefon) => telefon.trim()));
 
   // Hisob valyutasi faqat valyuta rejimi yoniq bo'lganda tanlanadi; hisobda pul bo'lsa o'zgarish hisob bo'shaguncha kutadi.
   const rejimYoniq = useValyutaStore((holat) => holat.rejimYoniq);
@@ -84,6 +106,20 @@ export default function XaridorModal({
     { qiymat: "USD", nom: t("xaridorModal.currencyUsd") },
     { qiymat: null, nom: t("xaridorModal.currencyUnset") },
   ];
+
+  // Shu oynada chiziladigan maydonlar. Oyna boshqa oyna (masalan, Yangi sotuv) ustida ochilsa, hook orqadagi oynaning xatoli maydonini
+  // topib `tepadagi`ni bo'sh qoldirishi mumkin — shuning uchun tepadagi xabar faqat shu yerdagi maydonda xato ko'ringanda yashiriladi.
+  const formaRef = useRef<HTMLFormElement>(null);
+  const chiziladiganMaydonlar = ["firstName", "lastName", "phone", "address", "telegramId", "companyId", "position", ...(rejimYoniq ? ["currency"] : [])];
+  const ichidagiXato = chiziladiganMaydonlar.some((yol) => Boolean(fx.xato(yol)));
+  useEffect(() => {
+    if (!ichidagiXato) return;
+    // Hook birinchi xatoli maydonni butun hujjatdan qidiradi; shu oynadagisiga ham surilsin.
+    const taymer = window.setTimeout(() => {
+      formaRef.current?.querySelector("[data-maydon-xato='true']")?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 80);
+    return () => window.clearTimeout(taymer);
+  }, [ichidagiXato]);
 
   const xaridorSavdolari = useMemo(
     () => savdolar.filter((savdo) => savdo.xaridorId === boshlangich?.id),
@@ -102,14 +138,17 @@ export default function XaridorModal({
   );
 
   function telefonYangilash(index: number, qiymat: string) {
+    fx.tozala("phone");
     setTelefonlar((joriy) => joriy.map((telefon, i) => (i === index ? qiymat : telefon)));
   }
 
   function telefonQoshish() {
+    fx.tozala("phone");
     setTelefonlar((joriy) => [...joriy, ""]);
   }
 
   function telefonOchirish(index: number) {
+    fx.tozala("phone");
     setTelefonlar((joriy) => (joriy.length === 1 ? [""] : joriy.filter((_, i) => i !== index)));
   }
 
@@ -120,13 +159,20 @@ export default function XaridorModal({
 
     // Familiya majburiy emas (backend uni ixtiyoriy qabul qiladi).
     if (!ism.trim() || tozaTelefonlar.length === 0) {
-      setXato(t("xaridorModal.requiredError"));
+      // Xato maydon ostida ko'rinadi; tepadagi eski xabar qolmasin.
+      setXato("");
+      setFaolTab("malumotlar");
+      fx.ornat({
+        ...(!ism.trim() ? { firstName: t("xaridorModal.firstNameRequired") } : {}),
+        ...(tozaTelefonlar.length === 0 ? { phone: t("xaridorModal.phoneRequired") } : {}),
+      });
       return;
     }
 
     setSaqlanmoqda(true);
+    fx.ornat({});
     try {
-      await onSaqlash({
+      await fx.kuzat(() => onSaqlash({
       id: boshlangich?.id ?? yangiId("xrd"),
       partnerId: boshlangich?.partnerId,
       ism: ism.trim(),
@@ -146,7 +192,7 @@ export default function XaridorModal({
       yaratilganSana,
       ozgartirilganSana: bugun(),
       customFields: boshlangich?.customFields ?? {},
-      });
+      }));
     } catch (error) {
       setXato(getApiErrorMessage(error));
     } finally {
@@ -165,6 +211,7 @@ export default function XaridorModal({
         />
 
         <form
+          ref={formaRef}
           onSubmit={saqlash}
           className="relative flex h-full w-full flex-col overflow-hidden rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80"
         >
@@ -196,9 +243,9 @@ export default function XaridorModal({
           <div className="scrollbar-orange flex-1 overflow-y-auto">
             {faolTab === "malumotlar" && (
             <div className="px-9 py-7">
-            {xato && (
+            {(fx.tepadagi || (ichidagiXato ? "" : xato)) && (
               <p className="mb-5 rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
-                {xato}
+                {fx.tepadagi || xato}
               </p>
             )}
 
@@ -211,25 +258,29 @@ export default function XaridorModal({
                   </h2>
 
                   <div className="mt-5 space-y-4">
+                    <XatoliMaydon xato={fx.xato("firstName")}>
                     <label className="grid gap-2">
                       <span className="text-sm font-bold text-slate-400">{t("xaridorModal.firstName")}</span>
                       <input
                         value={ism}
-                        onChange={(event) => setIsm(event.target.value)}
+                        onChange={(event) => { fx.tozala("firstName"); setIsm(event.target.value); }}
                         placeholder={t("xaridorModal.firstNamePlaceholder")}
                         className={maydonKlass}
                       />
                     </label>
+                    </XatoliMaydon>
 
+                    <XatoliMaydon xato={fx.xato("lastName")}>
                     <label className="grid gap-2">
                       <span className="text-sm font-bold text-slate-400">{t("xaridorModal.lastName")}</span>
                       <input
                         value={familiya}
-                        onChange={(event) => setFamiliya(event.target.value)}
+                        onChange={(event) => { fx.tozala("lastName"); setFamiliya(event.target.value); }}
                         placeholder={t("xaridorModal.lastNamePlaceholder")}
                         className={maydonKlass}
                       />
                     </label>
+                    </XatoliMaydon>
 
                     <div className="grid gap-2">
                       <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
@@ -238,8 +289,9 @@ export default function XaridorModal({
                       </span>
 
                       {telefonlar.map((telefon, index) => (
-                        <div key={index} className="flex gap-2">
-                          <PhoneInput value={telefon} onChange={(qiymat) => telefonYangilash(index, qiymat)} className="min-w-0 flex-1" />
+                        <XatoliMaydon key={index} xato={index === asosiyTelefon ? fx.xato("phone") : undefined}>
+                        <div className="flex gap-2">
+                          <PhoneInput value={telefon} onChange={(qiymat) => telefonYangilash(index, qiymat)} className="min-w-0 flex-1" invalid={index === asosiyTelefon && Boolean(fx.xato("phone"))} />
                           <button
                             type="button"
                             onClick={() => telefonOchirish(index)}
@@ -249,6 +301,7 @@ export default function XaridorModal({
                             <Trash2 size={16} />
                           </button>
                         </div>
+                        </XatoliMaydon>
                       ))}
 
                       <button
@@ -261,6 +314,7 @@ export default function XaridorModal({
                       </button>
                     </div>
 
+                    <XatoliMaydon xato={fx.xato("address")}>
                     <label className="grid gap-2">
                       <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                         <MapPin size={14} className="text-[#2563EB]" />
@@ -268,11 +322,12 @@ export default function XaridorModal({
                       </span>
                       <textarea
                         value={manzil}
-                        onChange={(event) => setManzil(event.target.value)}
+                        onChange={(event) => { fx.tozala("address"); setManzil(event.target.value); }}
                         placeholder={t("xaridorModal.addressPlaceholder")}
                         className="min-h-24 w-full rounded-xl border border-slate-200 bg-white p-3.5 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
                       />
                     </label>
+                    </XatoliMaydon>
                   </div>
                 </section>
 
@@ -282,15 +337,19 @@ export default function XaridorModal({
                   </h2>
 
                   <div className="mt-5 space-y-4">
+                    <XatoliMaydon xato={fx.xato("telegramId")}>
                     <IjtimoiyTanlov
                       qiymatlar={{ telegram, whatsapp, instagram }}
                       onChange={(tarmoq, qiymat) => {
+                        fx.tozala("telegramId");
                         if (tarmoq === "telegram") setTelegram(qiymat);
                         else if (tarmoq === "whatsapp") setWhatsapp(qiymat);
                         else setInstagram(qiymat);
                       }}
                     />
+                    </XatoliMaydon>
 
+                    <XatoliMaydon xato={fx.xato("companyId")} className={fx.xato("companyId") ? TANLOV_XATOSI : ""}>
                     <label className="grid gap-2">
                       <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                         <Building2 size={14} className="text-[#2563EB]" />
@@ -298,7 +357,7 @@ export default function XaridorModal({
                       </span>
                       <Tanlov
                         qiymat={kompaniyaId}
-                        onChange={setKompaniyaId}
+                        onChange={(qiymat) => { fx.tozala("companyId"); setKompaniyaId(qiymat); }}
                         placeholder={t("xaridorModal.companyUnassigned")}
                         variantlar={[
                           { value: "", label: t("xaridorModal.companyUnassigned") },
@@ -309,7 +368,9 @@ export default function XaridorModal({
                         ]}
                       />
                     </label>
+                    </XatoliMaydon>
 
+                    <XatoliMaydon xato={fx.xato("position")}>
                     <label className="grid gap-2">
                       <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                         <Briefcase size={14} className="text-[#2563EB]" />
@@ -317,11 +378,12 @@ export default function XaridorModal({
                       </span>
                       <input
                         value={lavozim}
-                        onChange={(event) => setLavozim(event.target.value)}
+                        onChange={(event) => { fx.tozala("position"); setLavozim(event.target.value); }}
                         placeholder={t("xaridorModal.positionPlaceholder")}
                         className={maydonKlass}
                       />
                     </label>
+                    </XatoliMaydon>
 
                     <label className="grid gap-2">
                       <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
@@ -345,6 +407,7 @@ export default function XaridorModal({
                     </h2>
 
                     <div className="mt-5 space-y-3">
+                      <XatoliMaydon xato={fx.xato("currency")}>
                       <div className="grid gap-2">
                         <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                           <Wallet size={14} className="text-[#2563EB]" />
@@ -353,6 +416,7 @@ export default function XaridorModal({
                         <div
                           role="radiogroup"
                           aria-label={t("xaridorModal.currencyLabel")}
+                          data-maydon-boshqaruvi
                           className="inline-flex w-fit max-w-full gap-0.5 rounded-xl bg-slate-100 p-1"
                         >
                           {valyutaVariantlari.map((variant) => {
@@ -363,7 +427,7 @@ export default function XaridorModal({
                                 type="button"
                                 role="radio"
                                 aria-checked={faol}
-                                onClick={() => setValyuta(variant.qiymat)}
+                                onClick={() => { fx.tozala("currency"); setValyuta(variant.qiymat); }}
                                 className={cn(
                                   "rounded-lg px-4 py-2 text-xs font-bold transition",
                                   faol
@@ -377,6 +441,7 @@ export default function XaridorModal({
                           })}
                         </div>
                       </div>
+                      </XatoliMaydon>
 
                       <p className="text-xs font-semibold leading-5 text-slate-400">{t("xaridorModal.currencyHint")}</p>
 

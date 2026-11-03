@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import axios from "axios";
 import { ArrowRight, Ban, CalendarPlus, CreditCard, Pencil, Plus } from "lucide-react";
 import LoadingState from "@/Components/common/LoadingState";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import { platformApi } from "@/api/platformApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { mahalliySanaKaliti } from "@/lib/sanaKaliti";
 import type { ObunaDavri, ObunaHolati, PlatformKompaniya, PlatformObuna, PlatformTarif } from "@/types/platform";
 import { AdminModal, AmalTugmasi, Avatar, BoshHolat, Belgi, Maydon, SahifaSarlavhasi, ShakldaTugmalar, XatoXabari, asosiyTugmaKlass, inputKlass, jadvalKlass, tbodyKlass, tdKlass, theadKlass, thKlass, trKlass } from "./AdminUI";
@@ -35,6 +38,16 @@ function sanaKorinishi(qiymat?: string) {
   return kalit ? kalit.split("-").reverse().join(".") : "—";
 }
 
+// Server xatosi → forma maydoni (kalitlar — so'rov tanasidagi nomlar).
+const OBUNA_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  workspaceId: { maydonlar: ["workspaceId"], kodlar: ["workspace"], sozlar: ["kompaniya", "компани"] },
+  tariffId: { maydonlar: ["tariffId"], kodlar: ["tariff"], sozlar: ["tarif", "тариф"] },
+  period: { maydonlar: ["period"], kodlar: ["period"] },
+  status: { maydonlar: ["status"], kodlar: ["status"] },
+  startDate: { maydonlar: ["startDate"], kodlar: ["start_date"] },
+  endDate: { maydonlar: ["endDate"], kodlar: ["end_date"] },
+};
+
 function ObunaModali({ tahrir, kompaniyalar, tariflar, onYopish, onSaqlandi }: { tahrir: PlatformObuna | null; kompaniyalar: PlatformKompaniya[]; tariflar: PlatformTarif[]; onYopish: () => void; onSaqlandi: () => void }) {
   const { t } = useTranslation("admin");
   const bugun = mahalliySanaKaliti(new Date());
@@ -47,13 +60,18 @@ function ObunaModali({ tahrir, kompaniyalar, tariflar, onYopish, onSaqlandi }: {
   const [tugashQolda, setTugashQolda] = useState(Boolean(tahrir));
   const [bajarilmoqda, setBajarilmoqda] = useState(false);
   const [xato, setXato] = useState("");
+  const fx = useMaydonXatolari(OBUNA_QOIDALARI);
 
   async function yuborish(event: FormEvent) {
     event.preventDefault();
     setXato("");
-    if (!tahrir && !workspaceId) return setXato(t("obunalar.xatolar.kompaniyaKerak"));
-    if (!tariffId) return setXato(t("obunalar.xatolar.tarifKerak"));
-    if (!boshlanish || !tugash || tugash < boshlanish) return setXato(t("obunalar.xatolar.sanaNotogri"));
+    fx.ornat({});
+    // Har bir xatoli maydon o'z joyida (qoidalar va matnlar o'sha-o'sha): sana xatosi bo'sh sanada, aks holda tugash sanasida.
+    const xatolar: Record<string, string> = {};
+    if (!tahrir && !workspaceId) xatolar.workspaceId = t("obunalar.xatolar.kompaniyaKerak");
+    if (!tariffId) xatolar.tariffId = t("obunalar.xatolar.tarifKerak");
+    if (!boshlanish || !tugash || tugash < boshlanish) xatolar[!boshlanish ? "startDate" : "endDate"] = t("obunalar.xatolar.sanaNotogri");
+    if (Object.keys(xatolar).length) return fx.ornat(xatolar);
     setBajarilmoqda(true);
     try {
       if (tahrir) await platformApi.obunalar.yangilash(tahrir.id, { tariffId, period: davr, status: holat, endDate: tugash });
@@ -62,6 +80,7 @@ function ObunaModali({ tahrir, kompaniyalar, tariflar, onYopish, onSaqlandi }: {
       onYopish();
     } catch (error) {
       setXato(getApiErrorMessage(error));
+      fx.serverdan(axios.isAxiosError(error) ? error.response?.data : undefined);
     } finally {
       setBajarilmoqda(false);
     }
@@ -70,8 +89,16 @@ function ObunaModali({ tahrir, kompaniyalar, tariflar, onYopish, onSaqlandi }: {
   return (
     <AdminModal sarlavha={t(tahrir ? "obunalar.tahrirlash" : "obunalar.yangi")} onYopish={onYopish} kenglik="max-w-xl" ikonka={<CreditCard size={20} />}>
       <form onSubmit={(event) => void yuborish(event)} className="space-y-4">
-        <Maydon nom={t("obunalar.kompaniya")}>
-          <select value={workspaceId} onChange={(event) => setWorkspaceId(event.target.value)} disabled={Boolean(tahrir)} className={inputKlass}>
+        <Maydon nom={t("obunalar.kompaniya")} xato={fx.xato("workspaceId")}>
+          <select
+            value={workspaceId}
+            onChange={(event) => {
+              fx.tozala("workspaceId");
+              setWorkspaceId(event.target.value);
+            }}
+            disabled={Boolean(tahrir)}
+            className={inputKlass}
+          >
             <option value="">{t("obunalar.kompaniyaTanlang")}</option>
             {kompaniyalar.map((item) => (
               <option key={item.id} value={item.id}>
@@ -81,8 +108,15 @@ function ObunaModali({ tahrir, kompaniyalar, tariflar, onYopish, onSaqlandi }: {
           </select>
         </Maydon>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Maydon nom={t("obunalar.tarif")}>
-            <select value={tariffId} onChange={(event) => setTariffId(event.target.value)} className={inputKlass}>
+          <Maydon nom={t("obunalar.tarif")} xato={fx.xato("tariffId")}>
+            <select
+              value={tariffId}
+              onChange={(event) => {
+                fx.tozala("tariffId");
+                setTariffId(event.target.value);
+              }}
+              className={inputKlass}
+            >
               <option value="">{t("obunalar.tarifTanlang")}</option>
               {tariflar.map((item) => (
                 <option key={item.id} value={item.id}>
@@ -91,11 +125,13 @@ function ObunaModali({ tahrir, kompaniyalar, tariflar, onYopish, onSaqlandi }: {
               ))}
             </select>
           </Maydon>
-          <Maydon nom={t("obunalar.davr")}>
+          <Maydon nom={t("obunalar.davr")} xato={fx.xato("period")}>
             <select
               value={davr}
               onChange={(event) => {
                 const yangi = event.target.value as ObunaDavri;
+                fx.tozala("period");
+                if (!tugashQolda) fx.tozala("endDate");
                 setDavr(yangi);
                 if (!tugashQolda) setTugash(davrQoshish(boshlanish, yangi));
               }}
@@ -108,8 +144,15 @@ function ObunaModali({ tahrir, kompaniyalar, tariflar, onYopish, onSaqlandi }: {
               ))}
             </select>
           </Maydon>
-          <Maydon nom={t("obunalar.holati")}>
-            <select value={holat} onChange={(event) => setHolat(event.target.value as ObunaHolati)} className={inputKlass}>
+          <Maydon nom={t("obunalar.holati")} xato={fx.xato("status")}>
+            <select
+              value={holat}
+              onChange={(event) => {
+                fx.tozala("status");
+                setHolat(event.target.value as ObunaHolati);
+              }}
+              className={inputKlass}
+            >
               {HOLATLAR.map((item) => (
                 <option key={item} value={item}>
                   {t(`obunalar.holatlar.${item}`)}
@@ -118,23 +161,25 @@ function ObunaModali({ tahrir, kompaniyalar, tariflar, onYopish, onSaqlandi }: {
             </select>
           </Maydon>
           <div />
-          <Maydon nom={t("obunalar.boshlanish")}>
+          <Maydon nom={t("obunalar.boshlanish")} xato={fx.xato("startDate")}>
             <input
               type="date"
               value={boshlanish}
               disabled={Boolean(tahrir)}
               onChange={(event) => {
+                fx.tozala("startDate", "endDate");
                 setBoshlanish(event.target.value);
                 if (!tugashQolda && event.target.value) setTugash(davrQoshish(event.target.value, davr));
               }}
               className={inputKlass}
             />
           </Maydon>
-          <Maydon nom={t("obunalar.tugash")}>
+          <Maydon nom={t("obunalar.tugash")} xato={fx.xato("endDate")}>
             <input
               type="date"
               value={tugash}
               onChange={(event) => {
+                fx.tozala("endDate");
                 setTugash(event.target.value);
                 setTugashQolda(true);
               }}
@@ -142,7 +187,7 @@ function ObunaModali({ tahrir, kompaniyalar, tariflar, onYopish, onSaqlandi }: {
             />
           </Maydon>
         </div>
-        {xato && <XatoXabari matn={xato} />}
+        {(fx.tepadagi || (fx.bor ? "" : xato)) && <XatoXabari matn={fx.tepadagi || xato} />}
         <ShakldaTugmalar ortga={{ matn: t("common.bekor"), onClick: onYopish }} bajarilmoqda={bajarilmoqda} saqlashMatni={t("common.saqlash")} />
       </form>
     </AdminModal>

@@ -1,15 +1,30 @@
 import AppSelect from "@/Components/ui/AppSelect";
 import { useState, type FormEvent } from "react";
 import { Edit3, LoaderCircle, Plus, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { useTenantStore } from "@/store/tenantStore";
 import type { Tarif, TarifTuri } from "@/types/tenant";
 import { tarifTuriMatni } from "./tenantMatnlari";
 
 const barchaTurlar: TarifTuri[] = ["FREE", "BASIC", "PRO", "ENTERPRISE"];
 
+// Server xatosini tarif formasi maydoniga bog'lash (kalit — backend maydon nomi). Umumiy "nomi" oxirida.
+const TARIF_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  type: { maydonlar: ["type"], kodlar: ["type", "tariff_exists"], sozlar: ["tarif turi", "tariff type", "тип тарифа"] },
+  maxBranches: { maydonlar: ["maxBranches"], kodlar: ["max_branches"], sozlar: ["filiallar", "maxbranches", "branches", "филиал"] },
+  maxUsers: { maydonlar: ["maxUsers"], kodlar: ["max_users"], sozlar: ["foydalanuvchilar", "maxusers", "пользовател"] },
+  monthlyPrice: { maydonlar: ["monthlyPrice"], kodlar: ["monthly_price", "price"], sozlar: ["oylik narx", "monthlyprice", "price", "цена"] },
+  name: { maydonlar: ["name"], kodlar: ["name"], sozlar: ["tarif nomi", "name", "название"] },
+};
+
 export default function TolovSozlamalari() {
+  const { t } = useTranslation("sozlamalar_uchot");
   const store = useTenantStore();
+  const fx = useMaydonXatolari(TARIF_XATO_QOIDALARI);
   const mavjudTurlar = new Set(store.tariflar.map((item) => item.type));
   const boshTurlar = barchaTurlar.filter((item) => !mavjudTurlar.has(item));
   const [modal, setModal] = useState(false);
@@ -32,6 +47,7 @@ export default function TolovSozlamalari() {
     setMonthlyPrice("0");
     setIsActive(true);
     store.xatolikniTozalash();
+    fx.ornat({});
     setModal(true);
   }
 
@@ -46,12 +62,17 @@ export default function TolovSozlamalari() {
     setMaxUsers(item.maxUsers === null ? "" : String(item.maxUsers));
     setMonthlyPrice(String(item.monthlyPrice));
     setIsActive(item.isActive);
+    fx.ornat({});
     setModal(true);
   }
 
   async function saqlash(event: FormEvent) {
     event.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      fx.ornat({ name: t("legacyForm.fieldRequired") });
+      return;
+    }
+    fx.ornat({});
     const data = {
       type,
       name: name.trim(),
@@ -60,9 +81,9 @@ export default function TolovSozlamalari() {
       monthlyPrice: Number(monthlyPrice) || 0,
       isActive,
     };
-    const ok = editing
-      ? await store.tarifYangilash(editing.id, data)
-      : await store.tarifYaratish(data);
+    const ok = await fx.kuzat(() =>
+      editing ? store.tarifYangilash(editing.id, data) : store.tarifYaratish(data)
+    );
     if (ok) setModal(false);
   }
 
@@ -132,32 +153,42 @@ export default function TolovSozlamalari() {
             <h2 className="text-2xl font-black">
               {editing ? "Tarifni tahrirlash" : "Yangi tarif"}
             </h2>
-            {store.xatolik && <div className="mt-4 rounded-xl bg-red-50 p-3 font-bold text-red-600">{store.xatolik}</div>}
+            {(fx.tepadagi || (fx.bor ? "" : store.xatolik)) && <div className="mt-4 rounded-xl bg-red-50 p-3 font-bold text-red-600">{fx.tepadagi || store.xatolik}</div>}
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <XatoliMaydon xato={fx.xato("type")}>
               <label className="text-sm font-bold">
                 Tarif turi
-                <AppSelect value={type} onChange={(event) => setType(event.target.value as TarifTuri)} disabled={Boolean(editing)} className="mt-2 h-12 w-full rounded-2xl border px-4 disabled:bg-gray-100">
+                <AppSelect value={type} onChange={(event) => { fx.tozala("type"); setType(event.target.value as TarifTuri); }} disabled={Boolean(editing)} className="mt-2 h-12 w-full rounded-2xl border px-4 disabled:bg-gray-100">
                   {(editing ? [editing.type] : boshTurlar).map((item) => (
                     <option key={item} value={item}>{tarifTuriMatni[item]}</option>
                   ))}
                 </AppSelect>
               </label>
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("name")}>
               <label className="text-sm font-bold">
                 Tarif nomi *
-                <input value={name} onChange={(event) => setName(event.target.value)} className="mt-2 h-12 w-full rounded-2xl border px-4" placeholder="Tarif nomi" />
+                <input value={name} onChange={(event) => { fx.tozala("name"); setName(event.target.value); }} className="mt-2 h-12 w-full rounded-2xl border px-4" placeholder="Tarif nomi" />
               </label>
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("maxBranches")}>
               <label className="text-sm font-bold">
                 Filiallar chegarasi
-                <input type="number" min="0" value={maxBranches} onChange={(event) => setMaxBranches(event.target.value)} className="mt-2 h-12 w-full rounded-2xl border px-4" placeholder="Bo'sh qolsa cheksiz" />
+                <input type="number" min="0" value={maxBranches} onChange={(event) => { fx.tozala("maxBranches"); setMaxBranches(event.target.value); }} className="mt-2 h-12 w-full rounded-2xl border px-4" placeholder="Bo'sh qolsa cheksiz" />
               </label>
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("maxUsers")}>
               <label className="text-sm font-bold">
                 Foydalanuvchilar chegarasi
-                <input type="number" min="0" value={maxUsers} onChange={(event) => setMaxUsers(event.target.value)} className="mt-2 h-12 w-full rounded-2xl border px-4" placeholder="Bo'sh qolsa cheksiz" />
+                <input type="number" min="0" value={maxUsers} onChange={(event) => { fx.tozala("maxUsers"); setMaxUsers(event.target.value); }} className="mt-2 h-12 w-full rounded-2xl border px-4" placeholder="Bo'sh qolsa cheksiz" />
               </label>
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("monthlyPrice")} className="sm:col-span-2">
               <label className="text-sm font-bold sm:col-span-2">
                 Oylik narx
-                <input type="number" min="0" value={monthlyPrice} onChange={(event) => setMonthlyPrice(event.target.value)} className="mt-2 h-12 w-full rounded-2xl border px-4" />
+                <input type="number" min="0" value={monthlyPrice} onChange={(event) => { fx.tozala("monthlyPrice"); setMonthlyPrice(event.target.value); }} className="mt-2 h-12 w-full rounded-2xl border px-4" />
               </label>
+              </XatoliMaydon>
               <label className="flex items-center gap-3 font-bold sm:col-span-2">
                 <input type="checkbox" checked={isActive} onChange={(event) => setIsActive(event.target.checked)} className="h-5 w-5 accent-orange-500" />
                 Tarif faol

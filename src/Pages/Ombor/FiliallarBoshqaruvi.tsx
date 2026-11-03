@@ -3,6 +3,9 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Edit3, GitBranch, LoaderCircle, MapPin, Plus, Trash2, UserRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import LoadingState from "@/Components/common/LoadingState";
 import TablePagination from "@/Components/common/TablePagination";
 import { useOmborStore } from "@/store/omborStore";
@@ -12,6 +15,14 @@ import OmborJadval from "./OmborJadval";
 
 const maydonKlass =
   "h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 outline-none transition-colors focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70";
+
+// Server xatosi qaysi maydonga tegishli (kalit — so'rov tanasidagi backend nomi).
+const FILIAL_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  name: { maydonlar: ["name"], kodlar: ["name"], sozlar: ["filial nomi", "название филиала"] },
+  address: { maydonlar: ["address"], kodlar: ["address"], sozlar: ["manzil", "адрес"] },
+  status: { maydonlar: ["status"] },
+  responsibleId: { maydonlar: ["responsibleId"], kodlar: ["responsible"], sozlar: ["mas'ul", "ответствен"] },
+};
 
 function ismBoshHarflari(nom: string) {
   return nom
@@ -31,6 +42,7 @@ export default function FiliallarBoshqaruvi() {
   const [address,setAddress]=useState("");
   const [status,setStatus]=useState<"ACTIVE"|"INACTIVE">("ACTIVE");
   const [responsibleId,setResponsibleId]=useState("");
+  const fx = useMaydonXatolari(FILIAL_XATO_QOIDALARI);
   const [korinish, setKorinish] = useState<RoyxatKorinishi>("kartochka");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -38,9 +50,9 @@ export default function FiliallarBoshqaruvi() {
   const sahifadagiFiliallar = useMemo(() => store.filiallar.slice((page - 1) * pageSize, page * pageSize), [store.filiallar, page, pageSize]);
   useEffect(() => setPage(1), [store.filiallar, pageSize]);
 
-  function yangi(){setEditing(null);setName("");setAddress("");setStatus("ACTIVE");setResponsibleId("");store.xatolikniTozalash();setModal(true)}
-  async function tahrirlash(id:string){store.xatolikniTozalash();const item=await store.filialOlish(id);if(!item)return;setEditing(item);setName(item.name);setAddress(item.address??"");setStatus(item.status==="INACTIVE"?"INACTIVE":"ACTIVE");setResponsibleId(item.responsibleId??"");setModal(true)}
-  async function saqlash(e:FormEvent){e.preventDefault();if(!name.trim())return;const data={name:name.trim(),address:address.trim()||undefined,status,responsibleId:responsibleId||undefined};const ok=editing?await store.filialYangilash(editing.id,data):Boolean(await store.filialYaratish(data));if(ok)setModal(false)}
+  function yangi(){setEditing(null);setName("");setAddress("");setStatus("ACTIVE");setResponsibleId("");store.xatolikniTozalash();fx.ornat({});setModal(true)}
+  async function tahrirlash(id:string){store.xatolikniTozalash();fx.ornat({});const item=await store.filialOlish(id);if(!item)return;setEditing(item);setName(item.name);setAddress(item.address??"");setStatus(item.status==="INACTIVE"?"INACTIVE":"ACTIVE");setResponsibleId(item.responsibleId??"");setModal(true)}
+  async function saqlash(e:FormEvent){e.preventDefault();if(!name.trim()){fx.ornat({name:t("filiallarBoshqaruvi.errors.nameRequired")});return;}fx.ornat({});const data={name:name.trim(),address:address.trim()||undefined,status,responsibleId:responsibleId||undefined};const ok=editing?await fx.kuzat(()=>store.filialYangilash(editing.id,data)):Boolean(await fx.kuzat(()=>store.filialYaratish(data)));if(ok)setModal(false)}
   async function ochirish(id:string){if(!window.confirm(t("filiallarBoshqaruvi.confirmDelete")))return;await store.filialOchirish(id)}
 
   const masulNomi = (item: Filial) => store.xodimlar.find((x) => x.id === item.responsibleId)?.fullName;
@@ -238,6 +250,6 @@ export default function FiliallarBoshqaruvi() {
       </>
     )}
 
-    {modal&&<AppModal><form onSubmit={saqlash} className="w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl"><h2 className="text-2xl font-black">{editing?t("filiallarBoshqaruvi.modalEditTitle"):t("filiallarBoshqaruvi.modalNewTitle")}</h2>{store.xatolik&&<div className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-600">{store.xatolik}</div>}<div className="mt-5 space-y-3"><input value={name} onChange={e=>setName(e.target.value)} className={maydonKlass} placeholder={t("filiallarBoshqaruvi.namePlaceholder")}/><textarea value={address} onChange={e=>setAddress(e.target.value)} className={`${maydonKlass} h-auto min-h-24 py-3`} placeholder={t("filiallarBoshqaruvi.addressPlaceholder")}/><AppSelect value={status} onChange={e=>setStatus(e.target.value as "ACTIVE"|"INACTIVE")} className={maydonKlass}><option value="ACTIVE">{t("filiallarBoshqaruvi.statusActive")}</option><option value="INACTIVE">{t("filiallarBoshqaruvi.statusInactive")}</option></AppSelect><AppSelect value={responsibleId} onChange={e=>setResponsibleId(e.target.value)} className={maydonKlass}><option value="">{t("filiallarBoshqaruvi.responsiblePlaceholder")}</option>{store.xodimlar.map(x=><option key={x.id} value={x.id}>{x.fullName??x.username??x.id}</option>)}</AppSelect></div><div className="mt-6 flex justify-end gap-3"><button type="button" onClick={()=>setModal(false)} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t("filiallarBoshqaruvi.closeButton")}</button><button disabled={store.amalBajarilmoqda} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-5 font-black text-white disabled:opacity-50">{store.amalBajarilmoqda&&<LoaderCircle size={16} className="animate-spin"/>}{t("filiallarBoshqaruvi.saveButton")}</button></div></form></AppModal>}
+    {modal&&<AppModal><form onSubmit={saqlash} className="w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl"><h2 className="text-2xl font-black">{editing?t("filiallarBoshqaruvi.modalEditTitle"):t("filiallarBoshqaruvi.modalNewTitle")}</h2>{(fx.tepadagi||(!fx.bor&&store.xatolik))&&<div className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-600">{fx.tepadagi||store.xatolik}</div>}<div className="mt-5 space-y-3"><XatoliMaydon xato={fx.xato("name")}><input value={name} onChange={e=>{fx.tozala("name");setName(e.target.value)}} className={maydonKlass} placeholder={t("filiallarBoshqaruvi.namePlaceholder")}/></XatoliMaydon><XatoliMaydon xato={fx.xato("address")}><textarea value={address} onChange={e=>{fx.tozala("address");setAddress(e.target.value)}} className={`${maydonKlass} h-auto min-h-24 py-3`} placeholder={t("filiallarBoshqaruvi.addressPlaceholder")}/></XatoliMaydon><XatoliMaydon xato={fx.xato("status")}><AppSelect value={status} onChange={e=>{fx.tozala("status");setStatus(e.target.value as "ACTIVE"|"INACTIVE")}} className={maydonKlass}><option value="ACTIVE">{t("filiallarBoshqaruvi.statusActive")}</option><option value="INACTIVE">{t("filiallarBoshqaruvi.statusInactive")}</option></AppSelect></XatoliMaydon><XatoliMaydon xato={fx.xato("responsibleId")}><AppSelect value={responsibleId} onChange={e=>{fx.tozala("responsibleId");setResponsibleId(e.target.value)}} className={maydonKlass}><option value="">{t("filiallarBoshqaruvi.responsiblePlaceholder")}</option>{store.xodimlar.map(x=><option key={x.id} value={x.id}>{x.fullName??x.username??x.id}</option>)}</AppSelect></XatoliMaydon></div><div className="mt-6 flex justify-end gap-3"><button type="button" onClick={()=>setModal(false)} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t("filiallarBoshqaruvi.closeButton")}</button><button disabled={store.amalBajarilmoqda} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-5 font-black text-white disabled:opacity-50">{store.amalBajarilmoqda&&<LoaderCircle size={16} className="animate-spin"/>}{t("filiallarBoshqaruvi.saveButton")}</button></div></form></AppModal>}
   </div>
 }

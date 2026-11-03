@@ -3,6 +3,10 @@ import { StockQuantity } from "@/Components/common/NegativeStockBadge";
 import NegativeStockBadge from "@/Components/common/NegativeStockBadge";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import axios from "axios";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import XatoliMaydon, { MaydonXatosi } from "@/Components/common/XatoliMaydon";
+import { belgidanKeyingiXato, xatoBelgisi, xatoRamkasi, type FormaXatosi, type XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import HujjatSanasiMaydoni, { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import { bugungiToshkentKuni, hujjatVaqtiMatni, kelajakKunmi, kunMatni, saqlanganTolovMaydonlari, tolovQoshimchasi, toshkentKuni } from "@/lib/hujjatSanasi";
 import { ombordanChiqarishSanasi } from "@/lib/hujjatHarakatlari";
@@ -1728,6 +1732,17 @@ function KelishuvCard({
 // Saqlashni kutayotgan to'lov (bir sotuvga bir nechta to'lov: masalan, bir qismi dollarda, qolgani so'mda).
 type YangiTolovQatori = { paymentType: TolovTuri; amount: number; currency: Valyuta; rate?: number; date: string; note: string };
 
+// Qoralama payments[] xatosidan faqat shakldagi to'lov (indeks bo'yicha) validatsiya sabablari; qolgani maydonga bog'lanmaydi.
+function formaTolovigaTegishli(tafsilot: unknown, indeks: number) {
+  if (!tafsilot || typeof tafsilot !== "object") return undefined;
+  const { message, errors } = tafsilot as { message?: unknown; errors?: unknown };
+  const sabablar = (Array.isArray(errors) ? errors : []).filter((sabab) => {
+    const yol = String((sabab as { field?: unknown } | null)?.field ?? "").replace(/\[(\d+)\]/g, ".$1").replace(/^\./, "");
+    return yol.startsWith(`payments.${indeks}.`);
+  });
+  return sabablar.length ? { message, errors: sabablar } : undefined;
+}
+
 function TolovQabulQilishModal({
   sotuv,
   jami,
@@ -1817,6 +1832,25 @@ function TolovQabulQilishModal({
   const [tugatildi, setTugatildi] = useState(false);
   // To'lovlar ketma-ket yuborilganda `amalBajarilmoqda` har so'rov orasida o'chib qoladi — ikki marta bosish takroriy to'lov yaratmasin.
   const saqlashQulfi = useRef(false);
+  // Bir qismi saqlanib keyingisi xato bergan bo'lsa: bu eslatma maydon xatosi bilan birga tepada qoladi.
+  const [qismanXabar, setQismanXabar] = useState("");
+  // Maydon xatolari: tasdiqlangan sotuvda to'lov bittadan yuboriladi (amount, date...), qoralamada payments[] ro'yxati —
+  // shakldagi to'lov ro'yxatda avvalgi va navbatdagi to'lovlardan keyin turadi.
+  const formaIndeksi = mavjudTolovlar.length + qatorlar.length;
+  const tolovMaydoni = (nom: string) => [nom, `payments.${formaIndeksi}.${nom}`];
+  const fx = useMaydonXatolari({
+    date: { maydonlar: [...tolovMaydoni("date"), "paidAt"], kodlar: ["date", "period", "before_sale"], sozlar: ["sana", "дата", "davr", "период"] },
+    rate: { maydonlar: tolovMaydoni("rate"), kodlar: ["rate", "change"], sozlar: ["kurs", "курс", "qaytim", "сдач"] },
+    currency: { maydonlar: tolovMaydoni("currency"), kodlar: ["currency"], sozlar: ["valyuta", "валют"] },
+    paymentType: { maydonlar: tolovMaydoni("paymentType"), kodlar: ["payment_type", "method"], sozlar: ["to'lov turi", "способ оплаты", "тип оплаты"] },
+    amount: { maydonlar: tolovMaydoni("amount"), kodlar: ["amount", "overpayment", "insufficient", "balance"], sozlar: ["summa", "сумм", "hisobda", "баланс"] },
+    note: { maydonlar: tolovMaydoni("note") },
+  });
+  // Maydon o'zgarganda: shu maydon xatoli bo'lsa, tepadagi (o'sha xatoning) matni ham olib tashlanadi.
+  function maydonniTozalash(...yollar: string[]) {
+    if (yollar.some((yol) => fx.xato(yol))) setXatolik("");
+    fx.tozala(...yollar);
+  }
 
   const boshqaValyuta = valyutaTanlashMumkin && tolovVal !== sotuvVal;
   const hisobKursi = kassirKursi ?? kurs;
@@ -1900,15 +1934,20 @@ function TolovQabulQilishModal({
     setKassirKursi(null);
     setQaytimKiritilgan(null);
     setXatolik("");
+    fx.tozala("amount", "rate", "_");
   }
   function qaytimOzgardi(matn: string) {
     setQaytimKiritilgan(matn);
     setXatolik("");
+    fx.tozala("rate", "_");
     // Oldingi qatorlar chekdan oshgan bo'lsa, ularning ortiqchasi ham jami qaytimga kiradi.
     const qolgan = jami - mavjudYigindisi - qatorlarYigindisi;
     const yangiKurs = Math.round(((qolgan + (Number(matn) || 0)) / yangiSumma) * 1e4) / 1e4;
     setKassirKursi(Number.isFinite(yangiKurs) && yangiKurs > 0 ? yangiKurs : 0);
-    if (!(yangiKurs > 0) || !Number.isFinite(yangiKurs)) setXatolik(t("tolovModal.errors.qaytimMosEmas"));
+    if (!(yangiKurs > 0) || !Number.isFinite(yangiKurs)) {
+      setXatolik(t("tolovModal.errors.qaytimMosEmas"));
+      fx.ornat({ rate: t("tolovModal.errors.qaytimMosEmas") });
+    }
     if ((Number(matn) || 0) % 1000 !== 0) setQaytimYaxlitlash(false);
   }
 
@@ -1927,6 +1966,7 @@ function TolovQabulQilishModal({
     setTolovVal(yangi);
     summaniOzgartirish("0");
     setXatolik("");
+    fx.tozala("currency");
   }
 
   function tolovTuriniOzgartirish(yangi: TolovTuri) {
@@ -1934,47 +1974,54 @@ function TolovQabulQilishModal({
     setTolovTuri(yangi);
     summaniOzgartirish("0");
     setXatolik("");
+    fx.tozala("paymentType", "currency");
     // Hisobdan to'lov faqat hisob valyutasida yechiladi; boshqa usulga qaytganda valyuta sotuv valyutasiga qaytadi.
     if (yangi === "BALANCE") setTolovVal(hisob.valyuta);
     else if (tolovTuri === "BALANCE") setTolovVal(sotuvVal);
   }
 
-  // Saqlanadigan to'lovlar (ro'yxat + shakldagi summa) bo'yicha xato matni; xato bo'lmasa bo'sh qator.
-  function tolovlarniTekshirish(tolovlarSoni: number) {
-    if (kassirKursi !== null && !(kassirKursi > 0)) return t("tolovModal.errors.qaytimMosEmas");
-    if (yangiSumma < 0) return draft ? t("tolovModal.errors.manfiyBolmasin") : t("tolovModal.errors.nolDanKatta");
-    if (!draft && tolovlarSoni === 0) return t("tolovModal.errors.nolDanKatta");
+  // Saqlanadigan to'lovlar (ro'yxat + shakldagi summa) bo'yicha xato matni va xatoli maydon; xato bo'lmasa bo'sh matn.
+  // Maydon yo'q bo'lsa (masalan, ro'yxatdagi to'lov sanasi) xato oyna tepasida ko'rsatiladi.
+  function tolovlarniTekshirish(tolovlarSoni: number): FormaXatosi {
+    if (kassirKursi !== null && !(kassirKursi > 0)) return { xato: t("tolovModal.errors.qaytimMosEmas"), maydon: "rate" };
+    if (yangiSumma < 0) return { xato: draft ? t("tolovModal.errors.manfiyBolmasin") : t("tolovModal.errors.nolDanKatta"), maydon: "amount" };
+    if (!draft && tolovlarSoni === 0) return { xato: t("tolovModal.errors.nolDanKatta"), maydon: "amount" };
     if (balansTanlangan && yangiSumma > balansMax + 1e-9) {
-      return t("tolovModal.errors.hisobdanOshmasin", { maksimal: pulniFormatlash(balansMax, tolovVal) });
+      return { xato: t("tolovModal.errors.hisobdanOshmasin", { maksimal: pulniFormatlash(balansMax, tolovVal) }), maydon: "amount" };
     }
     if (draft) {
       if (!mijozId && tahlil.ortiqcha > 0 && tahlil.naqdEmas) {
-        return t("tolovModal.errors.ortiqchaFaqatNaqd", { maksimal: pulniFormatlash(maxTolov, tolovVal) });
+        return { xato: t("tolovModal.errors.ortiqchaFaqatNaqd", { maksimal: pulniFormatlash(maxTolov, tolovVal) }), maydon: "amount" };
       }
     } else if (tahlil.ortiqcha > 0) {
       // Qarz yo'q bo'lsa ortiqcha to'lov qabul qilinmaydi; qarz bor bo'lsa ortiqchani faqat naqd to'lov hosil qilishi mumkin.
-      if (!qarzBor) return t("tolovModal.errors.qarzdorlikdanOshmasin", { maksimal: pulniFormatlash(maxTolov, tolovVal) });
-      if (tahlil.naqdEmas) return t("tolovModal.errors.ortiqchaFaqatNaqd", { maksimal: pulniFormatlash(maxTolov, tolovVal) });
+      if (!qarzBor) return { xato: t("tolovModal.errors.qarzdorlikdanOshmasin", { maksimal: pulniFormatlash(maxTolov, tolovVal) }), maydon: "amount" };
+      if (tahlil.naqdEmas) return { xato: t("tolovModal.errors.ortiqchaFaqatNaqd", { maksimal: pulniFormatlash(maxTolov, tolovVal) }), maydon: "amount" };
     }
     // To'lov sanasi: kelajak kun va yopilgan davr kuni backendda rad etiladi (date_in_future, period_closed).
     const kunlar = [...qatorlar.map((qator) => qator.date), ...(yangiSumma > 0 ? [tolovKuni] : [])];
-    if (kunlar.some((kun) => kelajakKunmi(kun))) return t("tolovModal.errors.sanaKelajak");
+    // Shakldagi sana xato bo'lsa — sana maydoni ostida, faqat ro'yxatdagi to'lov sanasi bo'lsa — tepada.
+    const sanaMaydoni = (yaroqsiz: (kun: string) => boolean) => (yangiSumma > 0 && yaroqsiz(tolovKuni) ? "date" : undefined);
+    if (kunlar.some((kun) => kelajakKunmi(kun))) return { xato: t("tolovModal.errors.sanaKelajak"), maydon: sanaMaydoni(kelajakKunmi) };
     // To'lov sotuv kunidan oldingi kunga yozilmaydi (backend: 400 errors.sales.payment_before_sale).
     const sotuvKuni = toshkentKuni(sotuv.date ?? sotuv.createdAt);
     if (sotuvKuni && kunlar.some((kun) => kun && kun < sotuvKuni)) {
-      return t("tolovModal.errors.sanaSotuvdanOldin", { sana: kunMatni(sotuvKuni) });
+      return { xato: t("tolovModal.errors.sanaSotuvdanOldin", { sana: kunMatni(sotuvKuni) }), maydon: sanaMaydoni((kun) => Boolean(kun) && kun < sotuvKuni) };
     }
     if (yopilganKun && kunlar.some((kun) => kun && kun <= yopilganKun)) {
-      return t("tolovModal.errors.davrYopilgan", { sana: kunMatni(yopilganKun) });
+      return { xato: t("tolovModal.errors.davrYopilgan", { sana: kunMatni(yopilganKun) }), maydon: sanaMaydoni((kun) => Boolean(kun) && kun <= yopilganKun) };
     }
-    return "";
+    return { xato: "" };
   }
 
   function qatorQoshish() {
     setXatolik("");
-    const xato = yangiSumma > 0 ? tolovlarniTekshirish(1) : t("tolovModal.errors.nolDanKatta");
+    fx.ornat({});
+    const tekshiruv: FormaXatosi = yangiSumma > 0 ? tolovlarniTekshirish(1) : { xato: t("tolovModal.errors.nolDanKatta"), maydon: "amount" };
+    const xato = tekshiruv.xato;
     if (xato) {
       setXatolik(xato);
+      fx.tekshiruv(tekshiruv, xato);
       return;
     }
     setQatorlar((joriy) => [...joriy, { paymentType: tolovTuri, amount: yangiSumma, currency: tolovVal, ...yangiKursMaydoni, date: tolovKuni, note: izoh.trim() }]);
@@ -1989,14 +2036,18 @@ function TolovQabulQilishModal({
   async function submit() {
     if (saqlashQulfi.current) return;
     setXatolik("");
+    setQismanXabar("");
+    fx.ornat({});
 
     const tolovlar: YangiTolovQatori[] = [
       ...qatorlar,
       ...(yangiSumma > 0 ? [{ paymentType: tolovTuri, amount: yangiSumma, currency: tolovVal, ...yangiKursMaydoni, date: tolovKuni, note: izoh.trim() }] : []),
     ];
-    const xato = tolovlarniTekshirish(tolovlar.length);
+    const tekshiruv = tolovlarniTekshirish(tolovlar.length);
+    const xato = tekshiruv.xato;
     if (xato) {
       setXatolik(xato);
+      fx.tekshiruv(tekshiruv, xato);
       return;
     }
 
@@ -2016,7 +2067,7 @@ function TolovQabulQilishModal({
         const natijalar: TolovNatijasi[] = natija ? [natija] : [];
         for (let i = 0; i < tolovlar.length; i += 1) {
           const tolov = tolovlar[i];
-          const saqlandi = await onTolovQoshish(sotuv.id, {
+          const yuborish = () => onTolovQoshish(sotuv.id, {
             paymentType: tolov.paymentType,
             amount: tolov.amount,
             ...farqliValyuta(tolov.currency, sotuv),
@@ -2024,6 +2075,8 @@ function TolovQabulQilishModal({
             ...tolovQoshimchasi(tolov.date, tolov.note),
             ...(tahlil.birinchiOshgan !== -1 && i >= tahlil.birinchiOshgan ? bayroqlar : {}),
           });
+          // Shakldagi to'lovning server xatosi (masalan, sana yoki summa) shu maydonga bog'lanadi; ro'yxatdagi to'lovniki — tepada.
+          const saqlandi = yangiSumma > 0 && i === tolovlar.length - 1 ? await fx.kuzat(yuborish) : await yuborish();
           if (!saqlandi) {
             // Oldingilari saqlangan: ular ro'yxatdan chiqariladi, qolganlari qayta urinish uchun turadi.
             setQatorlar(qatorlar.slice(i));
@@ -2032,9 +2085,11 @@ function TolovQabulQilishModal({
             if (oldingi.qaytim > 0 || oldingi.hisobga > 0) setNatija(oldingi);
             // Backendning aniq sababi (masalan, hisobda pul yetmaydi) bo'lsa, shu ko'rsatiladi.
             const sabab = useSavdoStore.getState().xatolik;
+            const qisman = i > 0 ? t("tolovModal.errors.qismanSaqlandi", { saqlandi: i, jami: tolovlar.length }) : "";
+            setQismanXabar(qisman);
             setXatolik(
               i > 0
-                ? `${t("tolovModal.errors.qismanSaqlandi", { saqlandi: i, jami: tolovlar.length })}${sabab ? ` ${sabab}` : ""}`
+                ? `${qisman}${sabab ? ` ${sabab}` : ""}`
                 : sabab || t("tolovModal.errors.saqlanmadi")
             );
             return;
@@ -2070,12 +2125,25 @@ function TolovQabulQilishModal({
         })),
       ];
 
-      const saqlandi = await onYangilash(sotuv.id, {
+      const yangilash = () => onYangilash(sotuv.id, {
         payments: yangiTolovlar,
         // Chekdan ortiq pul bo'lsa tanlov aniq yuboriladi (eski qarzlar yopilgach qolgani qaytim yoki mijoz hisobiga).
         keepExcess: hisobgaYozish && ortiqchaSumma > 0,
         ...(dollarQatnashdi ? { roundChange: qaytimYaxlitlash } : {}),
       });
+      // Server xatosi shakl maydonlariga faqat shakldagi to'lov ro'yxatda bo'lsa bog'lanadi (tasdiqlangan sotuvdagi kabi). Ro'yxatda
+      // avvalgi yoki navbatdagi to'lovlar ham bo'lsa, kod/so'z bo'yicha xato (masalan, yopilgan davr) qaysi to'lovniki ekani noma'lum —
+      // u tepada qoladi; maydonga faqat shakldagi to'lov indeksi (payments.<formaIndeksi>.*) bilan kelgan validatsiya xatosi bog'lanadi.
+      let saqlandi: Awaited<ReturnType<typeof yangilash>>;
+      if (!(yangiSumma > 0)) {
+        saqlandi = await yangilash();
+      } else if (formaIndeksi === 0) {
+        saqlandi = await fx.kuzat(yangilash);
+      } else {
+        const belgi = xatoBelgisi();
+        saqlandi = await yangilash();
+        if (!saqlandi) fx.serverdan(formaTolovigaTegishli(belgidanKeyingiXato(belgi), formaIndeksi));
+      }
       if (!saqlandi) {
         setXatolik(useSavdoStore.getState().xatolik || t("tolovModal.errors.saqlanmadi"));
         return;
@@ -2090,6 +2158,12 @@ function TolovQabulQilishModal({
       setSaqlanmoqda(false);
     }
   }
+
+  // Maydonga bog'langan xato faqat maydon ostida; tepada — maydoni topilmagan xato va qisman saqlanganlik eslatmasi.
+  const qismanKorinadi = xatolik ? qismanXabar : "";
+  const tepadagiXato = fx.tepadagi
+    ? [qismanKorinadi, fx.tepadagi].filter(Boolean).join(" ")
+    : fx.bor ? qismanKorinadi : xatolik;
 
   return (
     <AppModal onClose={onYopish}>
@@ -2197,16 +2271,19 @@ function TolovQabulQilishModal({
             )}
 
             <div className="grid gap-4 sm:grid-cols-2">
+              <XatoliMaydon xato={fx.xato("paymentType")}>
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-400">{t("tolovModal.tolovTuri")}</span>
                 <SavdoSelect
                   value={tolovTuri}
                   onChange={(value) => tolovTuriniOzgartirish(value as TolovTuri)}
                   options={tolovTuriOptions}
-                  buttonClassName="h-12 rounded-xl px-4 text-sm"
+                  buttonClassName={`h-12 rounded-xl px-4 text-sm ${fx.xato("paymentType") ? xatoRamkasi : ""}`}
                   portal
                 />
               </label>
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("amount")}>
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-400">{t("tolovModal.tolovSummasi")}</span>
                 <div className="relative">
@@ -2226,9 +2303,11 @@ function TolovQabulQilishModal({
                   )}
                 </div>
               </label>
+              </XatoliMaydon>
             </div>
 
             {valyutaTanlashMumkin && (
+              <XatoliMaydon xato={fx.xato("currency")}>
               <div className="grid gap-2">
                 <span className="text-sm font-bold text-slate-400">{t("tolovModal.tolovValyutasi")}</span>
                 <div className="flex flex-wrap items-center gap-3">
@@ -2237,7 +2316,7 @@ function TolovQabulQilishModal({
                       {t("tolovModal.hisobValyutasi", { valyuta: tolovVal === "USD" ? t("tolovModal.valyutaDollar") : t("tolovModal.valyutaSom") })}
                     </span>
                   ) : (
-                  <div className="inline-flex rounded-xl bg-gray-100 p-1">
+                  <div data-maydon-boshqaruvi className="inline-flex rounded-xl bg-gray-100 p-1">
                     {(["UZS", "USD"] as const).map((valyuta) => (
                       <button
                         key={valyuta}
@@ -2261,30 +2340,35 @@ function TolovQabulQilishModal({
                   )}
                 </div>
               </div>
+              </XatoliMaydon>
             )}
 
             <div className="grid gap-4 sm:grid-cols-[200px_minmax(0,1fr)]">
+              <XatoliMaydon xato={fx.xato("date")}>
               <label className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2">
                 <span className="text-sm font-bold text-slate-400">{t("tolovModal.tolovSanasi")}</span>
                 <HujjatSanasiMaydoni
                   value={tolovKuni}
-                  onChange={setTolovKuni}
+                  onChange={(kun: string) => { setTolovKuni(kun); maydonniTozalash("date"); }}
                   aria-label={t("tolovModal.tolovSanasi")}
                   korsatma={false}
                   className="h-12 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
                 />
               </label>
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("note")}>
               <label className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2">
                 <span className="text-sm font-bold text-slate-400">{t("tolovModal.izoh")}</span>
                 <input
                   type="text"
                   value={izoh}
                   maxLength={300}
-                  onChange={(event) => setIzoh(event.target.value)}
+                  onChange={(event) => { setIzoh(event.target.value); maydonniTozalash("note"); }}
                   placeholder={t("tolovModal.izohPlaceholder")}
                   className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-normal placeholder:text-slate-300 focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
                 />
               </label>
+              </XatoliMaydon>
             </div>
             {tolovKuni !== bugungiToshkentKuni() && (
               <p className="-mt-2 text-xs font-semibold leading-5 text-amber-600">{t("tolovModal.sanaOtganIzoh", { sana: kunMatni(tolovKuni) })}</p>
@@ -2305,7 +2389,7 @@ function TolovQabulQilishModal({
               )}
               <button
                 type="button"
-                onClick={() => { setSumma(String(korsatiladiganMax)); setQaytimKiritilgan(null); setXatolik(""); }}
+                onClick={() => { setSumma(String(korsatiladiganMax)); setQaytimKiritilgan(null); setXatolik(""); fx.tozala("amount", "rate", "_"); }}
                 className="rounded-xl bg-orange-50 px-4 py-2.5 text-xs font-bold text-[#2563EB] transition hover:bg-orange-100"
               >
                 {t("tolovModal.tolashToliq", { summa: pulniFormatlash(korsatiladiganMax, tolovVal) })}
@@ -2390,13 +2474,15 @@ function TolovQabulQilishModal({
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="text-sm font-bold text-emerald-800">{t("tolovTahriri.qaytim.sarlavha")}</span>
                   {qaytimTahrirlanadi ? (
+                    <XatoliMaydon xato={fx.xato("rate")} className="w-48">
                     <div className="relative w-48">
                       <SummaMaydoni value={qaytimKiritilgan ?? String(qaytimTaxmini)} onChange={qaytimOzgardi} kasr={0}
                         aria-label={t("tolovTahriri.qaytim.sarlavha")} data-testid="qaytim-kiritish"
                         className="h-11 w-full rounded-xl border border-emerald-200 bg-white pl-3 pr-14 text-right text-lg font-bold text-emerald-700 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100" />
                       <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-emerald-600">{t("tolovModal.somBelgisi")}</span>
                     </div>
-                  ) : <span className="text-xl font-bold tabular-nums text-emerald-700">{somMatni(qaytimTaxmini, t("tolovModal.somBelgisi"))}</span>}
+                    </XatoliMaydon>
+                  ) :<span className="text-xl font-bold tabular-nums text-emerald-700">{somMatni(qaytimTaxmini, t("tolovModal.somBelgisi"))}</span>}
                 </div>
                 <p className="mt-2 text-xs leading-5 text-slate-500">{t(qaytimTahrirlanadi ? "tolovTahriri.qaytim.tahrir" : "tolovTahriri.qaytim.taxminiy")}</p>
                 {!mijozId && dollarQatnashdi && (
@@ -2422,8 +2508,8 @@ function TolovQabulQilishModal({
               </div>
             )}
 
-            {xatolik && (
-              <div className="rounded-2xl bg-red-50 p-3.5 text-sm font-bold text-red-600">{xatolik}</div>
+            {tepadagiXato && (
+              <div className="rounded-2xl bg-red-50 p-3.5 text-sm font-bold text-red-600">{tepadagiXato}</div>
             )}
 
             <div className="flex justify-end gap-3 pt-1">
@@ -2857,6 +2943,9 @@ function TovarlarTab({
   const [mahsulotQidiruv, setMahsulotQidiruv] = useState("");
   const [yangiQatorlar, setYangiQatorlar] = useState<YangiTovarQatori[]>([]);
   const [saqlashgaUrinildi, setSaqlashgaUrinildi] = useState(false);
+  // Server validatsiyasi xatolari (items.N.quantity...): yangi qator N = mavjud qatorlar soni + qator tartibi.
+  const fx = useMaydonXatolari();
+  const yangiQatorYoli = (index: number, nom: string) => `items.${items.length + index}.${nom}`;
   const [omborPopover, setOmborPopover] = useState<{
     key: string;
     left: number;
@@ -2893,6 +2982,7 @@ function TovarlarTab({
 
   function yangiMahsulotQatoriQoshish() {
     const id = `yangi-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    fx.tozala("items");
     setYangiQatorlar((rows) => [
       ...rows,
       {
@@ -2915,6 +3005,8 @@ function TovarlarTab({
 
   function qoldiqniTanlash(qatorId: string, qoldiq: QoldiqTanlovi) {
     const katalogNarxi = qoldiqNarxi(qoldiq);
+    const qatorIndeksi = yangiQatorlar.findIndex((qator) => qator.id === qatorId);
+    if (qatorIndeksi >= 0) fx.tozala(yangiQatorYoli(qatorIndeksi, "modificationId"), yangiQatorYoli(qatorIndeksi, "price"));
     yangiQatorniYangilash(qatorId, {
       modificationId: qoldiq.modificationId,
       price: katalogNarxi,
@@ -2994,7 +3086,8 @@ function TovarlarTab({
       return;
     }
 
-    const muvaffaqiyatli = await onYangilash(sotuv.id, {
+    fx.ornat({});
+    const muvaffaqiyatli = await fx.kuzat(() => onYangilash(sotuv.id, {
       items: [
         ...items.map((item) => ({
           modificationId: item.modificationId,
@@ -3010,7 +3103,7 @@ function TovarlarTab({
           discount: qator.discount ?? 0,
         })),
       ],
-    });
+    }));
 
     if (muvaffaqiyatli) {
       setYangiQatorlar([]);
@@ -3071,6 +3164,7 @@ function TovarlarTab({
         )}
       </div>
 
+      {fx.tepadagi && <div className="mb-4"><MaydonXatosi matn={fx.tepadagi} /></div>}
       <section className="rounded-2xl bg-white shadow-sm">
         <div className="overflow-x-auto">
           <div className="min-w-[1870px]">
@@ -3161,6 +3255,13 @@ function TovarlarTab({
               const qatorRaqami = items.length + index + 1;
               const xatolar = yangiQatorXatolari(qator);
               const xatoKorsatish = saqlashgaUrinildi;
+              // Mijoz tekshiruvi xatosi bo'lmasa, shu qator maydoniga kelgan server xatosi ko'rsatiladi.
+              const korinadigan = {
+                mahsulot: (xatoKorsatish && xatolar.mahsulot) || fx.xato(yangiQatorYoli(index, "modificationId")) || "",
+                narx: (xatoKorsatish && xatolar.narx) || fx.xato(yangiQatorYoli(index, "price")) || "",
+                chegirma: (xatoKorsatish && xatolar.chegirma) || fx.xato(yangiQatorYoli(index, "discount")) || "",
+                miqdor: (xatoKorsatish && xatolar.miqdor) || fx.xato(yangiQatorYoli(index, "quantity")) || "",
+              };
 
               return (
                 <div
@@ -3186,7 +3287,7 @@ function TovarlarTab({
                           );
                         }}
                         className={`flex h-12 min-w-0 flex-1 items-center rounded-md border bg-white px-3 text-left transition hover:border-orange-300 focus:border-orange-400 focus:ring-4 focus:ring-orange-500/10 ${
-                          xatoKorsatish && xatolar.mahsulot ? "border-red-400 ring-4 ring-red-100" : "border-slate-300"
+                          korinadigan.mahsulot ? "border-red-400 ring-4 ring-red-100" : "border-slate-300"
                         }`}
                       >
                         <span className={`min-w-0 flex-1 truncate ${qatorNomi ? "text-slate-800" : "text-slate-400"}`}>
@@ -3198,8 +3299,8 @@ function TovarlarTab({
                         <ImageIcon size={19} />
                       </div>
                     </div>
-                    {xatoKorsatish && xatolar.mahsulot && (
-                      <p className="mt-1.5 text-xs font-semibold text-red-500">{xatolar.mahsulot}</p>
+                    {korinadigan.mahsulot && (
+                      <p data-maydon-xato="true" className="mt-1.5 text-xs font-semibold text-red-500">{korinadigan.mahsulot}</p>
                     )}
                   </div>
 
@@ -3210,52 +3311,52 @@ function TovarlarTab({
                       value={qator.price ? `${formatlanganRaqam(qator.price)} so'm` : ""}
                       readOnly={qator.priceLocked}
                       title={qator.priceLocked ? t("tovarlarTab.narxQulflangan") : undefined}
-                      onChange={(event) => yangiQatorniYangilash(qator.id, { price: raqamniAjratish(event.target.value) })}
+                      onChange={(event) => { yangiQatorniYangilash(qator.id, { price: raqamniAjratish(event.target.value) }); fx.tozala(yangiQatorYoli(index, "price")); }}
                       onFocus={(event) => event.currentTarget.select()}
                       placeholder="0 so'm"
                       className={`h-12 w-full rounded-md border px-3 text-right outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-500/10 ${
                         qator.priceLocked ? "cursor-not-allowed bg-slate-50 text-slate-500" : "bg-white"
-                      } ${xatoKorsatish && xatolar.narx ? "border-red-400 ring-4 ring-red-100" : "border-slate-300"}`}
+                      } ${korinadigan.narx ? "border-red-400 ring-4 ring-red-100" : "border-slate-300"}`}
                     />
-                    {xatoKorsatish && xatolar.narx && (
-                      <p className="mt-1.5 text-xs font-semibold text-red-500">{xatolar.narx}</p>
+                    {korinadigan.narx && (
+                      <p data-maydon-xato="true" className="mt-1.5 text-xs font-semibold text-red-500">{korinadigan.narx}</p>
                     )}
                     <input
                       type="text"
                       inputMode="numeric"
                       aria-label={t("tovarlarTab.chegirmaPlaceholder")}
                       value={qator.discount ? `${formatlanganRaqam(qator.discount)} so'm` : ""}
-                      onChange={(event) => yangiQatorniYangilash(qator.id, { discount: raqamniAjratish(event.target.value) })}
+                      onChange={(event) => { yangiQatorniYangilash(qator.id, { discount: raqamniAjratish(event.target.value) }); fx.tozala(yangiQatorYoli(index, "discount")); }}
                       onFocus={(event) => event.currentTarget.select()}
                       placeholder={t("tovarlarTab.chegirmaPlaceholder")}
                       className={`mt-2 h-10 w-full rounded-md border bg-white px-3 text-right text-sm outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-500/10 ${
-                        xatoKorsatish && xatolar.chegirma ? "border-red-400 ring-4 ring-red-100" : "border-slate-300"
+                        korinadigan.chegirma ? "border-red-400 ring-4 ring-red-100" : "border-slate-300"
                       }`}
                     />
-                    {xatoKorsatish && xatolar.chegirma && (
-                      <p className="mt-1.5 text-xs font-semibold text-red-500">{xatolar.chegirma}</p>
+                    {korinadigan.chegirma && (
+                      <p data-maydon-xato="true" className="mt-1.5 text-xs font-semibold text-red-500">{korinadigan.chegirma}</p>
                     )}
                   </div>
 
                   <div>
                     <div
                       className={`flex h-12 items-center gap-2 rounded-md border bg-white px-3 transition ${
-                        xatoKorsatish && xatolar.miqdor ? "border-red-400 ring-4 ring-red-100" : "border-slate-300"
+                        korinadigan.miqdor ? "border-red-400 ring-4 ring-red-100" : "border-slate-300"
                       }`}
                     >
                       <input
                         type="text"
                         inputMode="numeric"
                         value={qator.quantity ? formatlanganRaqam(qator.quantity) : ""}
-                        onChange={(event) => yangiQatorniYangilash(qator.id, { quantity: raqamniAjratish(event.target.value) })}
+                        onChange={(event) => { yangiQatorniYangilash(qator.id, { quantity: raqamniAjratish(event.target.value) }); fx.tozala(yangiQatorYoli(index, "quantity")); }}
                         onFocus={(event) => event.currentTarget.select()}
                         placeholder="1"
                         className="min-w-0 flex-1 bg-transparent text-right outline-none"
                       />
                       <span className="text-slate-400">{t("common.dona")}</span>
                     </div>
-                    {xatoKorsatish && xatolar.miqdor && (
-                      <p className="mt-1.5 text-xs font-semibold text-red-500">{xatolar.miqdor}</p>
+                    {korinadigan.miqdor && (
+                      <p data-maydon-xato="true" className="mt-1.5 text-xs font-semibold text-red-500">{korinadigan.miqdor}</p>
                     )}
                   </div>
 
@@ -3290,7 +3391,7 @@ function TovarlarTab({
                     <span className="font-bold text-emerald-600">{pulniFormatlash(qatorJami)}</span>
                     <button
                       type="button"
-                      onClick={() => setYangiQatorlar((rows) => rows.filter((row) => row.id !== qator.id))}
+                      onClick={() => { setYangiQatorlar((rows) => rows.filter((row) => row.id !== qator.id)); fx.tozala("items"); }}
                       className="rounded-lg bg-red-50 px-3 py-2 text-xs font-bold text-red-500 transition hover:bg-red-100"
                     >
                       {t("tovarlarTab.ochirish")}
@@ -3674,8 +3775,20 @@ function crmXabarniFaoliyatga(message: ChatMessage, t: TFunction): SaqlanganFaol
   };
 }
 
+// Yetkazish formasi: server xatosi qaysi maydonga tegishli (validatsiya maydoni, xato kodi yoki xabardagi so'z).
+const YETKAZISH_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  recipientPhone: { maydonlar: ["recipientPhone"], kodlar: ["phone"], sozlar: ["telefon", "телефон"] },
+  recipientName: { maydonlar: ["recipientName"], kodlar: ["recipient"], sozlar: ["qabul qiluvchi", "получател"] },
+  address: { maydonlar: ["address"], kodlar: ["address"], sozlar: ["manzil", "адрес"] },
+  courierName: { maydonlar: ["courierName"], kodlar: ["courier"], sozlar: ["kuryer", "курьер"] },
+  cost: { maydonlar: ["cost"], kodlar: ["cost"], sozlar: ["yetkazish narxi", "стоимост"] },
+  scheduledAt: { maydonlar: ["scheduledAt"], kodlar: ["scheduled"], sozlar: ["rejalashtirilgan", "запланирован"] },
+  note: { maydonlar: ["note"] },
+};
+
 function YetkazishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; onClose: () => void }) {
   const { t } = useTranslation("savdo_tafsilot");
+  const fx = useMaydonXatolari(YETKAZISH_XATO_QOIDALARI);
   const items = sotuv.items ?? [];
   const [yetkazish, setYetkazish] = useState<YetkazishMalumoti | null>(null);
   const [forma, setForma] = useState({ recipientName: "", recipientPhone: "", address: "", courierName: "", cost: "", scheduledAt: "", note: "" });
@@ -3715,19 +3828,23 @@ function YetkazishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; 
   }
 
   async function saqlash() {
-    setSaqlanmoqda(true); setXato("");
+    setSaqlanmoqda(true); setXato(""); fx.ornat({});
     try {
       const data = yetkazish
         ? await yetkazishniYangilash(sotuv.id, payloadniYigish())
         : await yetkazishYaratish(sotuv.id, payloadniYigish());
       await Promise.all([sotuvTafsilotiniOlish(sotuv.id), sotuvTarixiniOlish(sotuv.id)]);
       setYetkazish(data); formaniToldirish(data);
-    } catch (error) { setXato(getApiErrorMessage(error)); }
+    } catch (error) {
+      setXato(getApiErrorMessage(error));
+      // Server xatosi tegishli maydon ostida ko'rsatiladi.
+      fx.serverdan(axios.isAxiosError(error) ? error.response?.data : undefined);
+    }
     finally { setSaqlanmoqda(false); }
   }
 
   async function holatAmali(action: "dispatch" | "complete" | "cancel") {
-    setSaqlanmoqda(true); setXato("");
+    setSaqlanmoqda(true); setXato(""); fx.ornat({});
     try {
       const data = action === "dispatch"
         ? await yetkazishniJonatish(sotuv.id)
@@ -3825,21 +3942,25 @@ function YetkazishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; 
                     </p>
                     {yetkazish && <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-orange-600">{yetkazish.status}</span>}
                   </div>
-                  {xato && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{xato}</p>}
+                  {(fx.tepadagi || (fx.bor ? "" : xato)) && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{fx.tepadagi || xato}</p>}
                   <div className="grid gap-4 md:grid-cols-2">
                     {([
                       ["recipientName", t("yetkazishPanel.forma.qabulQiluvchi"), "text"], ["recipientPhone", t("yetkazishPanel.forma.telefon"), "tel"],
                       ["address", t("yetkazishPanel.forma.manzil"), "text"], ["courierName", t("yetkazishPanel.forma.kuryer"), "text"],
                       ["cost", t("yetkazishPanel.forma.yetkazishNarxi"), "number"], ["scheduledAt", t("yetkazishPanel.forma.rejalashtirilganVaqt"), "datetime-local"],
                     ] as const).map(([key, label, type]) => (
-                      <label key={key} className="text-sm font-semibold text-slate-600">{label}
-                        <input type={type} min={type === "number" ? 0 : undefined} value={forma[key]} onChange={(event) => setForma((old) => ({ ...old, [key]: event.target.value }))} disabled={yetkazish?.status === "DELIVERED" || yetkazish?.status === "CANCELLED"} className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 outline-none focus:border-orange-400 disabled:bg-slate-100" />
+                      <XatoliMaydon key={key} xato={fx.xato(key)}>
+                      <label className="text-sm font-semibold text-slate-600">{label}
+                        <input type={type} min={type === "number" ? 0 : undefined} value={forma[key]} onChange={(event) => { setForma((old) => ({ ...old, [key]: event.target.value })); fx.tozala(key); }} disabled={yetkazish?.status === "DELIVERED" || yetkazish?.status === "CANCELLED"} className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 outline-none focus:border-orange-400 disabled:bg-slate-100" />
                       </label>
+                      </XatoliMaydon>
                     ))}
                   </div>
+                  <XatoliMaydon xato={fx.xato("note")}>
                   <label className="block text-sm font-semibold text-slate-600">{t("yetkazishPanel.forma.izoh")}
-                    <textarea value={forma.note} onChange={(event) => setForma((old) => ({ ...old, note: event.target.value }))} disabled={yetkazish?.status === "DELIVERED" || yetkazish?.status === "CANCELLED"} rows={3} className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-white p-3 outline-none focus:border-orange-400 disabled:bg-slate-100" />
+                    <textarea value={forma.note} onChange={(event) => { setForma((old) => ({ ...old, note: event.target.value })); fx.tozala("note"); }} disabled={yetkazish?.status === "DELIVERED" || yetkazish?.status === "CANCELLED"} rows={3} className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-white p-3 outline-none focus:border-orange-400 disabled:bg-slate-100" />
                   </label>
+                  </XatoliMaydon>
                   <div className="flex flex-wrap gap-3">
                     {(!yetkazish || (yetkazish.status !== "DELIVERED" && yetkazish.status !== "CANCELLED")) && <button type="button" onClick={() => void saqlash()} disabled={saqlanmoqda || (!yetkazish && sotuvHolati(sotuv) !== "CONFIRMED")} className="rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-black text-white disabled:opacity-40">{yetkazish ? t("yetkazishPanel.saqlash") : t("yetkazishPanel.yetkazishniYaratish")}</button>}
                     {yetkazish?.status === "PENDING" && <button type="button" onClick={() => void holatAmali("dispatch")} disabled={saqlanmoqda} className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white">{t("yetkazishPanel.jonatish")}</button>}
@@ -4419,15 +4540,22 @@ function QoshimchaMalumotCard({
   const hujjatKuni = toshkentKuni(sotuv.date ?? sotuv.createdAt);
   const [kun, setKun] = useState(hujjatKuni);
   const [sanaSaqlanmoqda, setSanaSaqlanmoqda] = useState(false);
+  // Sana rad etilsa (kelajak kun, yopilgan davr...) server sababi sana maydoni ostida ko'rsatiladi. Maydon backenddagi (to'g'ri) sanaga
+  // qaytgani uchun qizil ramka va `data-maydon-xato` belgisi qo'yilmaydi: aks holda ustidagi oynalar xatosi orqa fondagi shu belgiga suriladi.
+  const [sanaRadSababi, setSanaRadSababi] = useState("");
   useEffect(() => setKun(hujjatKuni), [hujjatKuni]);
 
   async function sananiSaqlash() {
     if (!kun || kun === hujjatKuni || sanaSaqlanmoqda) return;
     setSanaSaqlanmoqda(true);
+    setSanaRadSababi("");
     try {
       const saqlandi = await onSanaSaqlash(kun);
       // Xato toasti ko'rsatilgan: maydon backenddagi sanaga qaytadi.
-      if (!saqlandi) setKun(hujjatKuni);
+      if (!saqlandi) {
+        setKun(hujjatKuni);
+        setSanaRadSababi(useSavdoStore.getState().xatolik || "");
+      }
     } finally {
       setSanaSaqlanmoqda(false);
     }
@@ -4452,7 +4580,7 @@ function QoshimchaMalumotCard({
               <div className="mt-1 flex flex-wrap items-start gap-2">
                 <HujjatSanasiMaydoni
                   value={kun}
-                  onChange={setKun}
+                  onChange={(yangiKun: string) => { setKun(yangiKun); setSanaRadSababi(""); }}
                   disabled={sanaSaqlanmoqda}
                   aria-label={t("umumiyTab.sana")}
                   className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100 disabled:opacity-60"
@@ -4468,6 +4596,7 @@ function QoshimchaMalumotCard({
                   </button>
                 )}
               </div>
+              {sanaRadSababi && <p role="alert" className="mt-1.5 text-xs font-bold leading-5 text-red-600">{sanaRadSababi}</p>}
               <KiritilganBelgisi date={sotuv.date} createdAt={sotuv.createdAt} className="mt-1" />
             </div>
           </div>

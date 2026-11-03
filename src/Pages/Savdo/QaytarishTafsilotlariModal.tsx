@@ -24,6 +24,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon, { MaydonXatosi } from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import { xatoRamkasi, type XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { qaytarishniOldindanKorish, sotuvTafsilotiniOlish } from "@/api/savdoApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { mahsulotlarApi, modifikatsiyalarApi } from "@/api/catalogApi";
@@ -83,6 +86,18 @@ const refundMethodMatni: Record<RefundMethod, string> = {
   CARD: "refundMethods.card",
   BALANCE: "refundMethods.balance",
   NONE: "refundMethods.none",
+};
+
+// Qaytarishni tahrirlash: server xatosi qaysi maydonga tegishli. Kalit — PATCH tanasidagi backend nomi; miqdor so'zi birinchi
+// ("Qaytarish miqdori sotilganidan ko'p" mahsulotlar ro'yxatiga tushadi).
+const QAYTARISH_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  items: { maydonlar: ["items"], kodlar: ["quantity", "exceed"], sozlar: ["miqdor", "количеств"] },
+  saleId: { maydonlar: ["saleId"], kodlar: ["sale_not"], sozlar: ["sotuv topilmadi", "sotuv tasdiqlanmagan", "продажа не"] },
+  warehouseId: { maydonlar: ["warehouseId"], kodlar: ["warehouse"], sozlar: ["ombor", "склад"] },
+  responsibleId: { maydonlar: ["responsibleId"], kodlar: ["responsible"], sozlar: ["mas'ul", "ответствен"] },
+  reason: { maydonlar: ["reason"] },
+  reasonComment: { maydonlar: ["reasonComment"], kodlar: ["comment"], sozlar: ["izoh", "комментар"] },
+  note: { maydonlar: ["note"] },
 };
 
 function mahsulotNomi(
@@ -177,6 +192,9 @@ export default function QaytarishTafsilotlariModal({
   const [qoralamaHisobi, setQoralamaHisobi] = useState<OldindanKorinishHolati>({ turi: "bosh" });
   const [qoralamaUrinish, setQoralamaUrinish] = useState(0);
   const [items, setItems] = useState<Qator[]>([]);
+  const fx = useMaydonXatolari(QAYTARISH_XATO_QOIDALARI);
+  // Oxirgi yuborilgan qatorlar (saleItemId): server xatosidagi "items.N" shu tartibda — ekrandagi qatorga shu orqali bog'lanadi.
+  const [yuborilganQatorlar, setYuborilganQatorlar] = useState<string[]>([]);
 
   useEffect(() => {
     let faol = true;
@@ -291,6 +309,7 @@ export default function QaytarishTafsilotlariModal({
   async function tahrirlashniBoshlash() {
     if (!qaytarish) return;
     xatolikniTozalash();
+    fx.ornat({});
     setSaleId(qaytarish.saleId);
     setWarehouseId(qaytarish.warehouseId);
     setResponsibleId(qaytarish.responsibleId ?? "");
@@ -316,6 +335,7 @@ export default function QaytarishTafsilotlariModal({
   }
 
   async function sotuvniTanlash(yangiSaleId: string) {
+    fx.tozala("saleId", "warehouseId", "responsibleId", "items");
     setSaleId(yangiSaleId);
     if (!yangiSaleId) {
       setItems([]);
@@ -354,7 +374,9 @@ export default function QaytarishTafsilotlariModal({
     )
       return;
 
-    const yangilangan = await qaytarishniYangilash(qaytarish.id, {
+    fx.ornat({});
+    setYuborilganQatorlar(tanlanganQatorlar.map((qator) => qator.saleItemId));
+    const yangilangan = await fx.kuzat(() => qaytarishniYangilash(qaytarish.id, {
       saleId,
       warehouseId,
       responsibleId: responsibleId || undefined,
@@ -369,7 +391,7 @@ export default function QaytarishTafsilotlariModal({
           price,
         })
       ),
-    });
+    }));
     if (!yangilangan) return;
 
     const toliq = await qaytarishTafsilotiniYuklash(qaytarish.id);
@@ -436,6 +458,21 @@ export default function QaytarishTafsilotlariModal({
     if (bajarildi) await holatniQaytaYuklash(id);
     return bajarildi;
   }
+  // Qator xatosi: noto'g'ri miqdor (bunday qator saqlashga kirmaydi) yoki server xatosi (yuborilgan tartibdagi "items.N").
+  function qatorXatosi(item: Qator) {
+    if (item.quantity < 0) return t("wizard.items.errors.negative");
+    if (item.quantity > item.maxQuantity) return t("wizard.items.errors.exceeds", { max: item.maxQuantity });
+    const tartib = yuborilganQatorlar.indexOf(item.saleItemId);
+    return tartib === -1 ? undefined : fx.xato(`items.${tartib}.quantity`) ?? fx.xato(`items.${tartib}`);
+  }
+
+  function qatorXatosiniTozalash(item: Qator) {
+    const tartib = yuborilganQatorlar.indexOf(item.saleItemId);
+    // Ro'yxat darajasidagi xato ("items") bo'lsa u ham (ichidagi qatorlar bilan) tozalanadi; aks holda faqat shu qator.
+    if (fx.xato("items")) fx.tozala("items");
+    else if (tartib !== -1) fx.tozala(`items.${tartib}`);
+  }
+
   const tasdiqlanganSotuvlar = sotuvlar.filter(
     (sotuv) =>
       String(sotuv.status).toUpperCase() === "CONFIRMED" &&
@@ -496,9 +533,9 @@ export default function QaytarishTafsilotlariModal({
           </div>
         ) : (
           <div className="p-5 lg:p-9">
-            {xatolik && (
+            {(fx.tepadagi || (fx.bor ? "" : xatolik)) && (
               <div className="mb-5 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">
-                {xatolik}
+                {fx.tepadagi || xatolik}
               </div>
             )}
 
@@ -736,6 +773,7 @@ export default function QaytarishTafsilotlariModal({
             ) : (
               <div>
                 <div className="grid gap-4 md:grid-cols-2">
+                  <XatoliMaydon xato={fx.xato("saleId")}>
                   <label className="text-sm font-bold">
                     {t("form.saleLabel")}
                     <SavdoSelect
@@ -743,7 +781,7 @@ export default function QaytarishTafsilotlariModal({
                       onChange={(value) => void sotuvniTanlash(value)}
                       placeholder={t("form.salePlaceholder")}
                       className="mt-2"
-                      buttonClassName="h-12"
+                      buttonClassName={`h-12 ${fx.xato("saleId") ? xatoRamkasi : ""}`}
                       options={[
                         ...tasdiqlanganSotuvlar.map((sotuv) => ({
                           value: sotuv.id,
@@ -760,47 +798,63 @@ export default function QaytarishTafsilotlariModal({
                       ]}
                     />
                   </label>
+                  </XatoliMaydon>
+                  <XatoliMaydon xato={fx.xato("warehouseId")}>
                   <label className="text-sm font-bold">
                     {t("form.warehouseLabel")}
                     <SavdoSelect
                       value={warehouseId}
-                      onChange={setWarehouseId}
+                      onChange={(value) => {
+                        fx.tozala("warehouseId");
+                        setWarehouseId(value);
+                      }}
                       placeholder={t("form.warehousePlaceholder")}
                       className="mt-2"
-                      buttonClassName="h-12"
+                      buttonClassName={`h-12 ${fx.xato("warehouseId") ? xatoRamkasi : ""}`}
                       options={omborlar.map((item) => ({
                         value: item.id,
                         label: item.name ?? item.id,
                       }))}
                     />
                   </label>
+                  </XatoliMaydon>
+                  <XatoliMaydon xato={fx.xato("reason")}>
                   <label className="text-sm font-bold">
                     {t("form.reasonLabel")}
                     <SavdoSelect
                       value={reason}
-                      onChange={(value) => setReason(value as QaytarishSababi)}
+                      onChange={(value) => {
+                        fx.tozala("reason");
+                        setReason(value as QaytarishSababi);
+                      }}
                       className="mt-2"
-                      buttonClassName="h-12"
+                      buttonClassName={`h-12 ${fx.xato("reason") ? xatoRamkasi : ""}`}
                       options={Object.entries(sababMatni).map(([value, key]) => ({
                         value,
                         label: t(key),
                       }))}
                     />
                   </label>
+                  </XatoliMaydon>
+                  <XatoliMaydon xato={fx.xato("responsibleId")}>
                   <label className="text-sm font-bold">
                     {t("form.responsibleLabel")}
                     <SavdoSelect
                       value={responsibleId}
-                      onChange={setResponsibleId}
+                      onChange={(value) => {
+                        fx.tozala("responsibleId");
+                        setResponsibleId(value);
+                      }}
                       placeholder={t("form.responsiblePlaceholder")}
                       className="mt-2"
-                      buttonClassName="h-12"
+                      buttonClassName={`h-12 ${fx.xato("responsibleId") ? xatoRamkasi : ""}`}
                       options={xodimlar.map((item) => ({
                         value: item.id,
                         label: item.fullName ?? item.name ?? item.id,
                       }))}
                     />
                   </label>
+                  </XatoliMaydon>
                 </div>
 
                 <div className="mt-6">
@@ -819,6 +873,14 @@ export default function QaytarishTafsilotlariModal({
                     )}
                   </div>
                   <div className="space-y-3">
+                    <MaydonXatosi
+                      matn={
+                        fx.xato("items") ??
+                        (items.length > 0 && tanlanganQatorlar.length === 0 && items.every((item) => !qatorXatosi(item))
+                          ? t("wizard.errors.noItems")
+                          : undefined)
+                      }
+                    />
                     {items.map((item, index) => (
                       <div
                         key={item.saleItemId}
@@ -830,13 +892,15 @@ export default function QaytarishTafsilotlariModal({
                             {t("form.soldQuantity", { count: item.maxQuantity })}
                           </p>
                         </div>
+                        <XatoliMaydon xato={qatorXatosi(item)} className="grid">
                         <input
                           type="number"
                           min="0"
                           max={item.maxQuantity}
                           step="0.001"
                           value={item.quantity}
-                          onChange={(event) =>
+                          onChange={(event) => {
+                            qatorXatosiniTozalash(item);
                             setItems((oldingi) =>
                               oldingi.map((qator, qatorIndex) =>
                                 qatorIndex === index
@@ -846,28 +910,30 @@ export default function QaytarishTafsilotlariModal({
                                     }
                                   : qator
                               )
-                            )
-                          }
+                            );
+                          }}
                           className={`h-11 rounded-xl border bg-white px-3 ${
                             item.quantity > item.maxQuantity
                               ? "border-red-300"
                               : ""
                           }`}
                         />
+                        </XatoliMaydon>
                         <div className="rounded-xl bg-white px-3 py-3 text-sm font-bold">
                           {pulniFormatlash(item.quantity * item.price)}
                         </div>
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={() => {
+                            fx.tozala("items");
                             setItems((oldingi) =>
                               oldingi.map((qator, qatorIndex) =>
                                 qatorIndex === index
                                   ? { ...qator, quantity: 0 }
                                   : qator
                               )
-                            )
-                          }
+                            );
+                          }}
                           className="flex h-11 items-center justify-center rounded-xl bg-red-50 text-red-500"
                           aria-label={t("form.removeItemAria")}
                         >
@@ -883,20 +949,30 @@ export default function QaytarishTafsilotlariModal({
                   </div>
                 </div>
 
+                <XatoliMaydon xato={fx.xato("reasonComment")}>
                 <textarea
                   value={reasonComment}
-                  onChange={(event) => setReasonComment(event.target.value)}
+                  onChange={(event) => {
+                    fx.tozala("reasonComment");
+                    setReasonComment(event.target.value);
+                  }}
                   className="mt-5 min-h-20 w-full rounded-2xl border p-4 outline-none focus:border-orange-300"
                   placeholder={t("form.reasonCommentPlaceholder")}
                   aria-label={t("form.reasonCommentPlaceholder")}
                 />
+                </XatoliMaydon>
 
+                <XatoliMaydon xato={fx.xato("note")}>
                 <textarea
                   value={note}
-                  onChange={(event) => setNote(event.target.value)}
+                  onChange={(event) => {
+                    fx.tozala("note");
+                    setNote(event.target.value);
+                  }}
                   className="mt-5 min-h-24 w-full rounded-2xl border p-4 outline-none focus:border-orange-300"
                   placeholder={t("form.notePlaceholder")}
                 />
+                </XatoliMaydon>
 
                 <div className="mt-4 flex justify-end rounded-2xl bg-orange-50 p-4">
                   <span className="font-black text-orange-700">
@@ -907,7 +983,10 @@ export default function QaytarishTafsilotlariModal({
                 <div className="mt-6 flex justify-end gap-3">
                   <button
                     type="button"
-                    onClick={() => setTahrir(false)}
+                    onClick={() => {
+                      fx.ornat({});
+                      setTahrir(false);
+                    }}
                     className="h-11 rounded-2xl bg-gray-100 px-5 font-bold text-gray-600"
                   >
                     {t("form.cancel")}

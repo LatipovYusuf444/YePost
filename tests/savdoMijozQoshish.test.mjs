@@ -28,6 +28,7 @@ function component(path, overrides = {}) {
     '@/store/savdoSozlamalariStore': { useSavdoSozlamalariStore: selector => selector({ narxTurlari: ['RETAIL', 'WHOLESALE'], yuklash: noop }) },
     './savdoYordamchilari': { pulniFormatlash: String },
     '@/Pages/XaridorUchot/backendAdapters': { kompaniyaniUiGa: item => ({ id: item.id, nomi: item.name }) },
+    '@/hooks/useMaydonXatolari': { useMaydonXatolari: () => ({ xato: () => undefined, bor: false, tepadagi: '', ornat() {}, tozala() {}, tekshiruv() {}, serverdan: () => false, kuzat: (f) => f() }) },
     ...overrides,
   };
   const compiled = ts.transpileModule(readFileSync(new URL(path, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 } }).outputText;

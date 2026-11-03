@@ -15,6 +15,9 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import TablePagination from "@/Components/common/TablePagination";
 import { Children, isValidElement } from "react";
 import { useFinanceStore } from "@/store/financeStore";
@@ -83,6 +86,20 @@ const kassaKirimManbasiMatni: Record<KassaKirimManbasi, string> = {
   INVESTOR: "incomeSources.INVESTOR",
   LOAN: "incomeSources.LOAN",
   OTHER: "incomeSources.OTHER",
+};
+
+// Server xatosi qaysi maydonga tegishli (kalit — so'rov tanasidagi backend nomi). Qaytarish muddati sanadan oldin: "muddat" so'zi.
+const XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  amount: { maydonlar: ["amount"], kodlar: ["amount"], sozlar: ["summa", "сумм"] },
+  counterparty: { maydonlar: ["counterparty"], kodlar: ["counterparty"], sozlar: ["kontragent", "контрагент"] },
+  dueDate: { maydonlar: ["dueDate"], kodlar: ["due_date", "duedate"], sozlar: ["muddat", "срок"] },
+  date: { maydonlar: ["date"], kodlar: ["date_in_future", "period_closed", "invalid_date"], sozlar: ["sana", "дат"] },
+  branchId: { maydonlar: ["branchId"], kodlar: ["branch"], sozlar: ["filial", "филиал"] },
+  category: { maydonlar: ["category"], kodlar: ["category"], sozlar: ["xarajat turi", "тип расход"] },
+  direction: { maydonlar: ["direction"], kodlar: ["direction"], sozlar: ["qarz turi", "тип долг"] },
+  source: { maydonlar: ["source"], kodlar: ["source"], sozlar: ["kirim manba", "источник"] },
+  paymentMethod: { maydonlar: ["paymentMethod"], kodlar: ["payment_method"], sozlar: ["to'lov usul", "способ оплат"] },
+  note: { maydonlar: ["note"], kodlar: ["note"], sozlar: ["izoh", "примечан", "комментар"] },
 };
 
 function pul(value?: number | string) {
@@ -498,10 +515,19 @@ function FinanceModal({
   const [dueDate, setDueDate] = useState(toDateInput(qarz?.dueDate));
   const [isReturned, setIsReturned] = useState(Boolean(qarz?.isReturned));
   const [note, setNote] = useState(joriy?.note ?? "");
+  const fx = useMaydonXatolari(XATO_QOIDALARI);
 
   async function save(event: FormEvent) {
     event.preventDefault();
-    if (!amount || Number(amount) <= 0) return;
+    // Bo'sh/noto'g'ri maydon o'z joyida ko'rsatiladi; saqlash avvalgidek to'xtaydi.
+    const tekshiruv: Record<string, string> = {};
+    if (!amount || Number(amount) <= 0) tekshiruv.amount = t("modal.errors.amountInvalid");
+    if (modal.tur === "qarz" && !counterparty.trim()) tekshiruv.counterparty = t("modal.errors.counterpartyRequired");
+    if (Object.keys(tekshiruv).length) {
+      fx.ornat(tekshiruv);
+      return;
+    }
+    fx.ornat({});
 
     let ok = false;
     if (modal.tur === "xarajat") {
@@ -513,9 +539,8 @@ function FinanceModal({
         paymentMethod,
         note: note.trim() || undefined,
       };
-      ok = await store.xarajatSaqlash(xarajat?.id ?? null, data);
+      ok = await fx.kuzat(() => store.xarajatSaqlash(xarajat?.id ?? null, data));
     } else if (modal.tur === "qarz") {
-      if (!counterparty.trim()) return;
       const data: QarzSaqlash = {
         date: new Date(`${date}T00:00:00Z`).toISOString(),
         direction,
@@ -526,7 +551,7 @@ function FinanceModal({
         isReturned,
         note: note.trim() || undefined,
       };
-      ok = await store.qarzSaqlash(qarz?.id ?? null, data);
+      ok = await fx.kuzat(() => store.qarzSaqlash(qarz?.id ?? null, data));
     } else {
       const data: KassaKirimSaqlash = {
         branchId: branchId || undefined,
@@ -536,7 +561,7 @@ function FinanceModal({
         paymentMethod,
         note: note.trim() || undefined,
       };
-      ok = await store.kassaKirimSaqlash(kirim?.id ?? null, data);
+      ok = await fx.kuzat(() => store.kassaKirimSaqlash(kirim?.id ?? null, data));
     }
     if (ok) onClose();
   }
@@ -576,141 +601,160 @@ function FinanceModal({
           </button>
         </div>
 
-        {store.xatolik && (
+        {/* Maydoniga bog'langan xato faqat maydon ostida; bog'lanmagani shu yerda */}
+        {(fx.tepadagi || (fx.bor ? "" : store.xatolik)) && (
           <div className="mt-4 rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-600">
-            {store.xatolik}
+            {fx.tepadagi || store.xatolik}
           </div>
         )}
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <label className="text-sm font-bold">
-            {t("modal.fields.sana")}
-            <input
-              type="date"
-              value={date}
-              onChange={(event) => setDate(event.target.value)}
-              className="mt-2 h-12 w-full rounded-2xl border px-4"
-            />
-          </label>
+          <XatoliMaydon xato={fx.xato("date")}>
+            <label className="text-sm font-bold">
+              {t("modal.fields.sana")}
+              <input
+                type="date"
+                value={date}
+                onChange={(event) => { fx.tozala("date"); setDate(event.target.value); }}
+                className="mt-2 h-12 w-full rounded-2xl border px-4"
+              />
+            </label>
+          </XatoliMaydon>
 
           {modal.tur !== "qarz" && (
-            <label className="text-sm font-bold">
-              {t("modal.fields.filial")}
-              <AppSelect
-                value={branchId}
-                onChange={(event) => setBranchId(event.target.value)}
-                className="mt-2 h-12 w-full rounded-2xl border bg-white px-4"
-              >
-                <option value="">{t("modal.fields.filialTanlanmagan")}</option>
-                {store.filiallar.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </AppSelect>
-            </label>
+            <XatoliMaydon xato={fx.xato("branchId")}>
+              <label className="text-sm font-bold">
+                {t("modal.fields.filial")}
+                <AppSelect
+                  value={branchId}
+                  onChange={(event) => { fx.tozala("branchId"); setBranchId(event.target.value); }}
+                  className="mt-2 h-12 w-full rounded-2xl border bg-white px-4"
+                >
+                  <option value="">{t("modal.fields.filialTanlanmagan")}</option>
+                  {store.filiallar.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </AppSelect>
+              </label>
+            </XatoliMaydon>
           )}
 
           {modal.tur === "xarajat" && (
-            <label className="text-sm font-bold">
-              {t("modal.fields.xarajatTuri")}
-              <AppSelect
-                value={category}
-                onChange={(event) => setCategory(event.target.value as XarajatKategoriyasi)}
-                className="mt-2 h-12 w-full rounded-2xl border bg-white px-4"
-              >
-                {Object.entries(xarajatMatni).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {t(label)}
-                  </option>
-                ))}
-              </AppSelect>
-            </label>
-          )}
-
-          {modal.tur === "qarz" && (
-            <>
+            <XatoliMaydon xato={fx.xato("category")}>
               <label className="text-sm font-bold">
-                {t("modal.fields.qarzTuri")}
+                {t("modal.fields.xarajatTuri")}
                 <AppSelect
-                  value={direction}
-                  onChange={(event) => setDirection(event.target.value as QarzYonlishi)}
+                  value={category}
+                  onChange={(event) => { fx.tozala("category"); setCategory(event.target.value as XarajatKategoriyasi); }}
                   className="mt-2 h-12 w-full rounded-2xl border bg-white px-4"
                 >
-                  {Object.entries(qarzYonlishiMatni).map(([value, label]) => (
+                  {Object.entries(xarajatMatni).map(([value, label]) => (
                     <option key={value} value={value}>
                       {t(label)}
                     </option>
                   ))}
                 </AppSelect>
               </label>
-              <label className="text-sm font-bold">
-                {t("modal.fields.kontragent")}
-                <input
-                  value={counterparty}
-                  onChange={(event) => setCounterparty(event.target.value)}
-                  className="mt-2 h-12 w-full rounded-2xl border px-4"
-                  placeholder={t("modal.fields.kontragentPlaceholder")}
-                />
-              </label>
+            </XatoliMaydon>
+          )}
+
+          {modal.tur === "qarz" && (
+            <>
+              <XatoliMaydon xato={fx.xato("direction")}>
+                <label className="text-sm font-bold">
+                  {t("modal.fields.qarzTuri")}
+                  <AppSelect
+                    value={direction}
+                    onChange={(event) => { fx.tozala("direction"); setDirection(event.target.value as QarzYonlishi); }}
+                    className="mt-2 h-12 w-full rounded-2xl border bg-white px-4"
+                  >
+                    {Object.entries(qarzYonlishiMatni).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {t(label)}
+                      </option>
+                    ))}
+                  </AppSelect>
+                </label>
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("counterparty")}>
+                <label className="text-sm font-bold">
+                  {t("modal.fields.kontragent")}
+                  <input
+                    value={counterparty}
+                    onChange={(event) => { fx.tozala("counterparty"); setCounterparty(event.target.value); }}
+                    className="mt-2 h-12 w-full rounded-2xl border px-4"
+                    placeholder={t("modal.fields.kontragentPlaceholder")}
+                  />
+                </label>
+              </XatoliMaydon>
             </>
           )}
 
           {modal.tur === "kirim" && (
+            <XatoliMaydon xato={fx.xato("source")}>
+              <label className="text-sm font-bold">
+                {t("modal.fields.kirimManbasi")}
+                <AppSelect
+                  value={source}
+                  onChange={(event) => { fx.tozala("source"); setSource(event.target.value as KassaKirimManbasi); }}
+                  className="mt-2 h-12 w-full rounded-2xl border bg-white px-4"
+                >
+                  {Object.entries(kassaKirimManbasiMatni).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {t(label)}
+                    </option>
+                  ))}
+                </AppSelect>
+              </label>
+            </XatoliMaydon>
+          )}
+
+          <XatoliMaydon xato={fx.xato("amount")}>
             <label className="text-sm font-bold">
-              {t("modal.fields.kirimManbasi")}
+              {t("modal.fields.summa")}
+              <input
+                type="number"
+                min="0"
+                value={amount}
+                onChange={(event) => { fx.tozala("amount"); setAmount(event.target.value); }}
+                className="mt-2 h-12 w-full rounded-2xl border px-4"
+                placeholder={t("modal.fields.summaPlaceholder")}
+              />
+            </label>
+          </XatoliMaydon>
+
+          <XatoliMaydon xato={fx.xato("paymentMethod")}>
+            <label className="text-sm font-bold">
+              {t("modal.fields.tolovUsuli")}
               <AppSelect
-                value={source}
-                onChange={(event) => setSource(event.target.value as KassaKirimManbasi)}
+                value={paymentMethod}
+                onChange={(event) => { fx.tozala("paymentMethod"); setPaymentMethod(event.target.value as TolovUsuli); }}
                 className="mt-2 h-12 w-full rounded-2xl border bg-white px-4"
               >
-                {Object.entries(kassaKirimManbasiMatni).map(([value, label]) => (
+                {Object.entries(tolovMatni).map(([value, label]) => (
                   <option key={value} value={value}>
                     {t(label)}
                   </option>
                 ))}
               </AppSelect>
             </label>
-          )}
-
-          <label className="text-sm font-bold">
-            {t("modal.fields.summa")}
-            <input
-              type="number"
-              min="0"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              className="mt-2 h-12 w-full rounded-2xl border px-4"
-              placeholder={t("modal.fields.summaPlaceholder")}
-            />
-          </label>
-
-          <label className="text-sm font-bold">
-            {t("modal.fields.tolovUsuli")}
-            <AppSelect
-              value={paymentMethod}
-              onChange={(event) => setPaymentMethod(event.target.value as TolovUsuli)}
-              className="mt-2 h-12 w-full rounded-2xl border bg-white px-4"
-            >
-              {Object.entries(tolovMatni).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {t(label)}
-                </option>
-              ))}
-            </AppSelect>
-          </label>
+          </XatoliMaydon>
 
           {modal.tur === "qarz" && (
             <>
-              <label className="text-sm font-bold">
-                {t("modal.fields.qaytarishMuddati")}
-                <input
-                  type="date"
-                  value={dueDate}
-                  onChange={(event) => setDueDate(event.target.value)}
-                  className="mt-2 h-12 w-full rounded-2xl border px-4"
-                />
-              </label>
+              <XatoliMaydon xato={fx.xato("dueDate")}>
+                <label className="text-sm font-bold">
+                  {t("modal.fields.qaytarishMuddati")}
+                  <input
+                    type="date"
+                    value={dueDate}
+                    onChange={(event) => { fx.tozala("dueDate"); setDueDate(event.target.value); }}
+                    className="mt-2 h-12 w-full rounded-2xl border px-4"
+                  />
+                </label>
+              </XatoliMaydon>
               <label className="flex items-center gap-3 rounded-2xl bg-orange-50 p-4 font-bold sm:mt-7">
                 <input
                   type="checkbox"
@@ -723,15 +767,17 @@ function FinanceModal({
             </>
           )}
 
-          <label className="text-sm font-bold sm:col-span-2">
-            {t("modal.fields.izoh")}
-            <textarea
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-              className="mt-2 min-h-24 w-full rounded-2xl border p-4"
-              placeholder={t("modal.fields.izohPlaceholder")}
-            />
-          </label>
+          <XatoliMaydon xato={fx.xato("note")} className="sm:col-span-2">
+            <label className="text-sm font-bold sm:col-span-2">
+              {t("modal.fields.izoh")}
+              <textarea
+                value={note}
+                onChange={(event) => { fx.tozala("note"); setNote(event.target.value); }}
+                className="mt-2 min-h-24 w-full rounded-2xl border p-4"
+                placeholder={t("modal.fields.izohPlaceholder")}
+              />
+            </label>
+          </XatoliMaydon>
         </div>
 
         <div className="mt-7 flex flex-col justify-between gap-3 sm:flex-row">

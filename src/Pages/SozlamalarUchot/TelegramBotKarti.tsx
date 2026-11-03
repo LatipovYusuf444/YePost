@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
 import { KeyRound, LoaderCircle, Send } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import axios from "axios";
 import { integratsiyalarApi, type TelegramIntegratsiya, type TelegramIntegratsiyaSaqlash } from "@/api/integrationsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { botTokenKerakmi } from "@/lib/telegramXabarnoma";
 import { BolimKarta, SaqlashTugma, Switch } from "./UmumiyUI";
 import { maydonKlass } from "./yordamchilar";
@@ -32,6 +36,12 @@ function formaga(holat: TelegramIntegratsiya): Forma {
 
 const XABAR_TUGMALARI = ["sendOnSale", "sendOnPayment", "sendOnCancel", "attachPdf"] as const;
 
+// Server xatosini Telegram formasi maydoniga bog'lash: 400 errors.integrations.invalid_bot_token — token maydoniga.
+const TELEGRAM_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  botToken: { maydonlar: ["botToken"], kodlar: ["bot_token", "token"], sozlar: ["bot token", "bot_token", "bottoken", "токен"] },
+  chatId: { maydonlar: ["chatId"], kodlar: ["chat_id", "chat"], sozlar: ["chat id", "chat_id", "chatid"] },
+};
+
 // Sozlamalar → Integratsiya → Telegram bot: GET/PATCH /integrations/telegram.
 // Backend tokenni qaytarmaydi (faqat oxirgi 4 belgisi): token maydoni bo'sh turadi va PATCH'ga faqat YANGI token yozilganda qo'shiladi.
 export default function TelegramBotKarti() {
@@ -39,7 +49,7 @@ export default function TelegramBotKarti() {
   const [holat, setHolat] = useState<TelegramIntegratsiya>({});
   const [forma, setForma] = useState<Forma>(() => formaga({}));
   const [token, setToken] = useState("");
-  const [tokenXatosi, setTokenXatosi] = useState(false);
+  const fx = useMaydonXatolari(TELEGRAM_XATO_QOIDALARI);
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [saqlanmoqda, setSaqlanmoqda] = useState(false);
   const [xato, setXato] = useState("");
@@ -77,10 +87,10 @@ export default function TelegramBotKarti() {
     const yangiToken = token.trim();
     // Maydon bo'sh bo'lsa eski token saqlanadi: faqat saqlangan token (botTokenLast4) yo'q bo'lsa token so'raladi. Chat ID majburiy emas.
     if (botTokenKerakmi({ yoniq: forma.isActive, yangiToken, oxirgi4: holat.botTokenLast4 })) {
-      setTokenXatosi(true);
-      setXato(t("integratsiya.botTokenRequired"));
+      fx.ornat({ botToken: t("integratsiya.botTokenRequired") });
       return;
     }
+    fx.ornat({});
     setSaqlanmoqda(true);
     const tana: TelegramIntegratsiyaSaqlash = {
       // Bo'sh token yuborilmaydi (backend 400 beradi); yuborilmasa eski token saqlanadi.
@@ -100,11 +110,10 @@ export default function TelegramBotKarti() {
       setHolat(yangi);
       setForma(formaga(yangi));
       setToken("");
-      setTokenXatosi(false);
       setXabar(t("integratsiya.telegramSaved"));
     } catch (error) {
-      // Noto'g'ri token: 400 errors.integrations.invalid_bot_token — token maydoni yozilgan holda qoladi.
-      setXato(getApiErrorMessage(error));
+      // Noto'g'ri token: 400 errors.integrations.invalid_bot_token — token maydoni yozilgan holda qoladi, xato uning ostida.
+      if (!fx.serverdan(axios.isAxiosError(error) ? error.response?.data : undefined)) setXato(getApiErrorMessage(error));
     } finally {
       setSaqlanmoqda(false);
     }
@@ -126,7 +135,7 @@ export default function TelegramBotKarti() {
         </div>
       ) : (
         <div className="space-y-4">
-          {xato && <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
+          {(fx.tepadagi || xato) && <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{fx.tepadagi || xato}</p>}
           {xabar && <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-600">{xabar}</p>}
 
           <div className="rounded-2xl border border-orange-100 p-4">
@@ -159,6 +168,7 @@ export default function TelegramBotKarti() {
             </div>
 
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <XatoliMaydon xato={fx.xato("botToken")}>
               <label className="grid content-start gap-1.5">
                 <span className="text-xs font-bold text-slate-400">{t("integratsiya.botTokenLabel")}</span>
                 <div className="relative">
@@ -170,29 +180,35 @@ export default function TelegramBotKarti() {
                     disabled={saqlanmoqda}
                     onChange={(event) => {
                       setToken(event.target.value);
-                      setTokenXatosi(false);
+                      fx.tozala("botToken");
                       setXabar("");
                     }}
-                    aria-invalid={tokenXatosi || undefined}
+                    aria-invalid={Boolean(fx.xato("botToken")) || undefined}
                     placeholder={oxirgi4 ? `••••${oxirgi4}` : t("integratsiya.botTokenPlaceholder")}
-                    className={`${maydonKlass} pl-10 ${tokenXatosi ? "!border-red-400 !ring-4 !ring-red-100" : ""}`}
+                    className={`${maydonKlass} pl-10`}
                   />
                 </div>
                 <span className="text-[11px] font-semibold leading-4 text-slate-400">
                   {oxirgi4 ? t("integratsiya.botTokenSaved", { oxirgi4 }) : t("integratsiya.botTokenHint")}
                 </span>
               </label>
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("chatId")}>
               <label className="grid content-start gap-1.5">
                 <span className="text-xs font-bold text-slate-400">{t("integratsiya.chatIdLabel")}</span>
                 <input
                   value={forma.chatId}
                   disabled={saqlanmoqda}
-                  onChange={(event) => ozgartirish("chatId", event.target.value)}
+                  onChange={(event) => {
+                    fx.tozala("chatId");
+                    ozgartirish("chatId", event.target.value);
+                  }}
                   placeholder={t("integratsiya.chatIdPlaceholder")}
                   className={maydonKlass}
                 />
                 <span className="text-[11px] font-semibold leading-4 text-slate-400">{t("integratsiya.chatIdHint")}</span>
               </label>
+              </XatoliMaydon>
             </div>
 
             <label className="mt-3 flex items-center gap-2 text-sm font-bold text-slate-600">

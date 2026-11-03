@@ -16,6 +16,9 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { useMijozlarStore } from "@/store/mijozlarStore";
 import { tolovSummasiniFormatlash } from "@/utils/tolovFormatters";
 import type { Mijoz, MijozKompaniyasi, YetkazibBeruvchi } from "@/types/partner";
@@ -23,6 +26,19 @@ import type { Mijoz, MijozKompaniyasi, YetkazibBeruvchi } from "@/types/partner"
 import ModalTablari from "@/Components/common/ModalTablari";
 type Tab = "xaridorlar" | "kompaniyalar" | "yetkazib-beruvchilar";
 type Partner = Mijoz | MijozKompaniyasi | YetkazibBeruvchi;
+
+// Server xatosi qaysi maydonga tegishli. Kalit — so'rov tanasidagi backend nomi (uchala tab uchun umumiy). Telefon birinchi: "telefon band" ko'p uchraydi.
+const PARTNER_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  phone: { maydonlar: ["phone"], kodlar: ["phone"], sozlar: ["telefon", "телефон"] },
+  telegramId: { maydonlar: ["telegramId"], kodlar: ["telegram"], sozlar: ["telegram"] },
+  companyId: { maydonlar: ["companyId"], kodlar: ["company"], sozlar: ["kompaniya", "компани"] },
+  inn: { maydonlar: ["inn"], kodlar: ["inn"], sozlar: ["stir", "инн"] },
+  address: { maydonlar: ["address"], kodlar: ["address"], sozlar: ["manzil", "адрес"] },
+  middleName: { maydonlar: ["middleName"], kodlar: ["middle_name", "middlename"], sozlar: ["otasining", "отчеств"] },
+  lastName: { maydonlar: ["lastName"], kodlar: ["last_name", "lastname"], sozlar: ["familiya", "фамили"] },
+  firstName: { maydonlar: ["firstName"], kodlar: ["first_name", "firstname"], sozlar: ["имя"] },
+  name: { maydonlar: ["name"], kodlar: ["name"], sozlar: ["nomi", "названи"] },
+};
 
 const tabIkonlar = {
   xaridorlar: UsersRound,
@@ -226,6 +242,7 @@ function PartnerModal({
 }) {
   const { t } = useTranslation("mijozlar");
   const store = useMijozlarStore();
+  const fx = useMaydonXatolari(PARTNER_XATO_QOIDALARI);
   const editing = item !== "new";
 
   const xaridor = editing && tab === "xaridorlar" ? (item as Mijoz) : null;
@@ -256,8 +273,15 @@ function PartnerModal({
 
     if (tab === "xaridorlar") {
       // Familiya majburiy emas (backend uni ixtiyoriy qabul qiladi).
-      if (!firstName.trim() || !phone.trim()) return;
-      ok = await store.mijozSaqlash(editing ? item.id : null, {
+      if (!firstName.trim() || !phone.trim()) {
+        fx.ornat({
+          ...(!firstName.trim() ? { firstName: t("modal.errors.firstNameRequired") } : {}),
+          ...(!phone.trim() ? { phone: t("modal.errors.phoneRequired") } : {}),
+        });
+        return;
+      }
+      fx.ornat({});
+      ok = await fx.kuzat(() => store.mijozSaqlash(editing ? item.id : null, {
         firstName: firstName.trim(),
         // Yangi mijozda bo'sh familiya yuborilmaydi; mavjud mijozda tozalansa "" yuboriladi.
         lastName: lastName.trim() || (xaridor?.lastName ? "" : undefined),
@@ -266,20 +290,22 @@ function PartnerModal({
         address: address.trim() || undefined,
         telegramId: telegramId.trim() || undefined,
         companyId: companyId || undefined,
-      });
+      }));
     } else if (tab === "kompaniyalar") {
-      if (!name.trim()) return;
-      ok = await store.kompaniyaSaqlash(editing ? item.id : null, {
+      if (!name.trim()) { fx.ornat({ name: t("modal.errors.nameRequired") }); return; }
+      fx.ornat({});
+      ok = await fx.kuzat(() => store.kompaniyaSaqlash(editing ? item.id : null, {
         name: name.trim(),
         inn: inn.trim() || undefined,
         phone: phone.trim() || undefined,
-      });
+      }));
     } else {
-      if (!name.trim()) return;
-      ok = await store.yetkazibBeruvchiSaqlash(editing ? item.id : null, {
+      if (!name.trim()) { fx.ornat({ name: t("modal.errors.nameRequired") }); return; }
+      fx.ornat({});
+      ok = await fx.kuzat(() => store.yetkazibBeruvchiSaqlash(editing ? item.id : null, {
         name: name.trim(),
         phone: phone.trim() || undefined,
-      });
+      }));
     }
 
     if (ok) onClose();
@@ -309,84 +335,104 @@ function PartnerModal({
           </button>
         </div>
 
-        {store.xatolik && (
-          <div className="mt-4 rounded-xl bg-red-50 p-3 font-bold text-red-600">{store.xatolik}</div>
+        {(fx.tepadagi || (fx.bor ? "" : store.xatolik)) && (
+          <div className="mt-4 rounded-xl bg-red-50 p-3 font-bold text-red-600">{fx.tepadagi || store.xatolik}</div>
         )}
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           {tab === "xaridorlar" ? (
             <>
-              <input
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="input"
-                placeholder={t("modal.placeholders.firstName")}
-              />
-              <input
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="input"
-                placeholder={t("modal.placeholders.lastName")}
-              />
-              <input
-                value={middleName}
-                onChange={(e) => setMiddleName(e.target.value)}
-                className="input"
-                placeholder={t("modal.placeholders.middleName")}
-              />
-              <input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="input"
-                placeholder={t("modal.placeholders.phoneRequired")}
-              />
-              <input
-                value={telegramId}
-                onChange={(e) => setTelegramId(e.target.value)}
-                className="input"
-                placeholder={t("modal.placeholders.telegramId")}
-              />
-              <AppSelect
-                value={companyId}
-                onChange={(e) => setCompanyId(e.target.value)}
-                className="input"
-              >
-                <option value="">{t("modal.companyUnassigned")}</option>
-                {store.kompaniyalar.map((x) => (
-                  <option key={x.id} value={x.id}>
-                    {x.name}
-                  </option>
-                ))}
-              </AppSelect>
-              <textarea
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className="min-h-24 rounded-2xl border p-4 sm:col-span-2"
-                placeholder={t("modal.placeholders.address")}
-              />
+              <XatoliMaydon xato={fx.xato("firstName")} className="grid">
+                <input
+                  value={firstName}
+                  onChange={(e) => { fx.tozala("firstName"); setFirstName(e.target.value); }}
+                  className="input"
+                  placeholder={t("modal.placeholders.firstName")}
+                />
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("lastName")} className="grid">
+                <input
+                  value={lastName}
+                  onChange={(e) => { fx.tozala("lastName"); setLastName(e.target.value); }}
+                  className="input"
+                  placeholder={t("modal.placeholders.lastName")}
+                />
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("middleName")} className="grid">
+                <input
+                  value={middleName}
+                  onChange={(e) => { fx.tozala("middleName"); setMiddleName(e.target.value); }}
+                  className="input"
+                  placeholder={t("modal.placeholders.middleName")}
+                />
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("phone")} className="grid">
+                <input
+                  value={phone}
+                  onChange={(e) => { fx.tozala("phone"); setPhone(e.target.value); }}
+                  className="input"
+                  placeholder={t("modal.placeholders.phoneRequired")}
+                />
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("telegramId")} className="grid">
+                <input
+                  value={telegramId}
+                  onChange={(e) => { fx.tozala("telegramId"); setTelegramId(e.target.value); }}
+                  className="input"
+                  placeholder={t("modal.placeholders.telegramId")}
+                />
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("companyId")} className="grid">
+                <AppSelect
+                  value={companyId}
+                  onChange={(e) => { fx.tozala("companyId"); setCompanyId(e.target.value); }}
+                  className="input"
+                >
+                  <option value="">{t("modal.companyUnassigned")}</option>
+                  {store.kompaniyalar.map((x) => (
+                    <option key={x.id} value={x.id}>
+                      {x.name}
+                    </option>
+                  ))}
+                </AppSelect>
+              </XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("address")} className="grid sm:col-span-2">
+                <textarea
+                  value={address}
+                  onChange={(e) => { fx.tozala("address"); setAddress(e.target.value); }}
+                  className="min-h-24 rounded-2xl border p-4"
+                  placeholder={t("modal.placeholders.address")}
+                />
+              </XatoliMaydon>
             </>
           ) : (
             <>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="input sm:col-span-2"
-                placeholder={t("modal.placeholders.nameRequired")}
-              />
-              {tab === "kompaniyalar" && (
+              <XatoliMaydon xato={fx.xato("name")} className="grid sm:col-span-2">
                 <input
-                  value={inn}
-                  onChange={(e) => setInn(e.target.value)}
+                  value={name}
+                  onChange={(e) => { fx.tozala("name"); setName(e.target.value); }}
                   className="input"
-                  placeholder={t("modal.placeholders.inn")}
+                  placeholder={t("modal.placeholders.nameRequired")}
                 />
+              </XatoliMaydon>
+              {tab === "kompaniyalar" && (
+                <XatoliMaydon xato={fx.xato("inn")} className="grid">
+                  <input
+                    value={inn}
+                    onChange={(e) => { fx.tozala("inn"); setInn(e.target.value); }}
+                    className="input"
+                    placeholder={t("modal.placeholders.inn")}
+                  />
+                </XatoliMaydon>
               )}
-              <input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="input"
-                placeholder={t("modal.placeholders.phone")}
-              />
+              <XatoliMaydon xato={fx.xato("phone")} className="grid">
+                <input
+                  value={phone}
+                  onChange={(e) => { fx.tozala("phone"); setPhone(e.target.value); }}
+                  className="input"
+                  placeholder={t("modal.placeholders.phone")}
+                />
+              </XatoliMaydon>
             </>
           )}
         </div>

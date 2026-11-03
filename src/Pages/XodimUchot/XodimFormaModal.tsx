@@ -27,6 +27,9 @@ import AvatarYuklash, { type TanlanganRasm } from "@/Components/common/AvatarYuk
 import { Checkbox } from "@/Components/ui/checkbox";
 import { useAvatarUrl } from "@/store/avatarStore";
 import ModalTablari from "@/Components/common/ModalTablari";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import { useTranslation } from "react-i18next";
 const malumotTablari = ["Ma'lumotlar", "Vakolatlar", "Tarix"] as const;
 type MalumotTab = (typeof malumotTablari)[number];
 
@@ -74,7 +77,9 @@ export default function XodimFormaModal({
   const [rasmOlibTashlandi, setRasmOlibTashlandi] = useState(false);
   const mavjudRasm = useAvatarUrl(boshlangich?.id, boshlangich?.rasmUrl);
   const korinadiganRasm = tanlanganRasm?.dataUrl ?? (rasmOlibTashlandi ? "" : mavjudRasm);
-  const [xato, setXato] = useState("");
+  const { t } = useTranslation("common");
+  // Maydon xatolari: kalit — forma maydoni (telefonda qator: "telefonlar.0").
+  const fx = useMaydonXatolari();
   const [faolTab, setFaolTab] = useState<MalumotTab>("Ma'lumotlar");
 
   const lavozim = lavozimlar.find((item) => item.id === lavozimId);
@@ -93,10 +98,12 @@ export default function XodimFormaModal({
 
   function telefonYangilash(index: number, qiymat: string) {
     setTelefonlar((joriy) => joriy.map((telefon, i) => (i === index ? qiymat : telefon)));
+    fx.tozala("telefonlar");
   }
 
   function telefonOchirish(index: number) {
     setTelefonlar((joriy) => (joriy.length === 1 ? [""] : joriy.filter((_, i) => i !== index)));
+    fx.tozala("telefonlar");
   }
 
   function vakolatToggle(kod: string) {
@@ -114,9 +121,26 @@ export default function XodimFormaModal({
     const tozaTelefonlar = telefonlar.map((telefon) => telefon.trim()).filter(Boolean);
 
     if (!ism.trim() || !familiya.trim() || !login.trim() || tozaTelefonlar.length === 0 || (!boshlangich && !parol.trim())) {
-      setXato("Ism, familiya, login, telefon va yangi xodim uchun parol to'ldirilishi shart.");
+      // Har bir bo'sh majburiy maydon o'z joyida: birinchisida umumiy xabar, qolganlarida qisqasi.
+      const boshlar = [
+        !ism.trim() && "ism",
+        !familiya.trim() && "familiya",
+        tozaTelefonlar.length === 0 && "telefonlar.0",
+        !login.trim() && "login",
+        !boshlangich && !parol.trim() && "parol",
+      ].filter((yol): yol is string => Boolean(yol));
+      setFaolTab("Ma'lumotlar");
+      fx.ornat(
+        Object.fromEntries(
+          boshlar.map((yol, index) => [
+            yol,
+            index === 0 ? "Ism, familiya, login, telefon va yangi xodim uchun parol to'ldirilishi shart." : t("validation.fieldRequired"),
+          ])
+        )
+      );
       return;
     }
+    fx.ornat({});
 
     onSaqlash({
       id: boshlangich?.id ?? yangiId("xod"),
@@ -203,9 +227,9 @@ export default function XodimFormaModal({
           <div className="scrollbar-orange flex-1 overflow-y-auto">
             {faolTab === "Ma'lumotlar" && (
               <div className="px-9 py-7">
-                {xato && (
+                {fx.tepadagi && (
                   <p className="mb-5 rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
-                    {xato}
+                    {fx.tepadagi}
                   </p>
                 )}
 
@@ -229,25 +253,35 @@ export default function XodimFormaModal({
                             setRasmOlibTashlandi(true);
                           }}
                         />
-                        <label className="grid gap-2">
-                          <span className="text-sm font-bold text-slate-400">Ism *</span>
-                          <input
-                            value={ism}
-                            onChange={(event) => setIsm(event.target.value)}
-                            placeholder="Sardor"
-                            className={maydonKlass}
-                          />
-                        </label>
+                        <XatoliMaydon xato={fx.xato("ism")}>
+                          <label className="grid gap-2">
+                            <span className="text-sm font-bold text-slate-400">Ism *</span>
+                            <input
+                              value={ism}
+                              onChange={(event) => {
+                                setIsm(event.target.value);
+                                fx.tozala("ism");
+                              }}
+                              placeholder="Sardor"
+                              className={maydonKlass}
+                            />
+                          </label>
+                        </XatoliMaydon>
 
-                        <label className="grid gap-2">
-                          <span className="text-sm font-bold text-slate-400">Familiya *</span>
-                          <input
-                            value={familiya}
-                            onChange={(event) => setFamiliya(event.target.value)}
-                            placeholder="To'xtayev"
-                            className={maydonKlass}
-                          />
-                        </label>
+                        <XatoliMaydon xato={fx.xato("familiya")}>
+                          <label className="grid gap-2">
+                            <span className="text-sm font-bold text-slate-400">Familiya *</span>
+                            <input
+                              value={familiya}
+                              onChange={(event) => {
+                                setFamiliya(event.target.value);
+                                fx.tozala("familiya");
+                              }}
+                              placeholder="To'xtayev"
+                              className={maydonKlass}
+                            />
+                          </label>
+                        </XatoliMaydon>
 
                         <div className="grid gap-2">
                           <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
@@ -256,22 +290,32 @@ export default function XodimFormaModal({
                           </span>
 
                           {telefonlar.map((telefon, index) => (
-                            <div key={index} className="flex gap-2">
-                              <PhoneInput value={telefon} onChange={(qiymat) => telefonYangilash(index, qiymat)} className="min-w-0 flex-1" />
-                              <button
-                                type="button"
-                                onClick={() => telefonOchirish(index)}
-                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100"
-                                aria-label="Telefonni o'chirish"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
+                            <XatoliMaydon key={index} xato={fx.xato(`telefonlar.${index}`)}>
+                              <div className="flex gap-2">
+                                <PhoneInput
+                                  value={telefon}
+                                  onChange={(qiymat) => telefonYangilash(index, qiymat)}
+                                  invalid={Boolean(fx.xato(`telefonlar.${index}`))}
+                                  className="min-w-0 flex-1"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => telefonOchirish(index)}
+                                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100"
+                                  aria-label="Telefonni o'chirish"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </XatoliMaydon>
                           ))}
 
                           <button
                             type="button"
-                            onClick={() => setTelefonlar((joriy) => [...joriy, ""])}
+                            onClick={() => {
+                              setTelefonlar((joriy) => [...joriy, ""]);
+                              fx.tozala("telefonlar");
+                            }}
                             className="inline-flex h-10 w-fit items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-3.5 text-xs font-black uppercase text-[#2563EB] transition hover:bg-orange-100"
                           >
                             <Plus size={15} />
@@ -300,16 +344,21 @@ export default function XodimFormaModal({
                       </h2>
 
                       <div className="mt-5 space-y-4">
-                        <label className="grid gap-2">
-                          <span className="text-sm font-bold text-slate-400">Login *</span>
-                          <input
-                            value={login}
-                            onChange={(event) => setLogin(event.target.value)}
-                            placeholder="sardor.t"
-                            autoComplete="off"
-                            className={maydonKlass}
-                          />
-                        </label>
+                        <XatoliMaydon xato={fx.xato("login")}>
+                          <label className="grid gap-2">
+                            <span className="text-sm font-bold text-slate-400">Login *</span>
+                            <input
+                              value={login}
+                              onChange={(event) => {
+                                setLogin(event.target.value);
+                                fx.tozala("login");
+                              }}
+                              placeholder="sardor.t"
+                              autoComplete="off"
+                              className={maydonKlass}
+                            />
+                          </label>
+                        </XatoliMaydon>
 
                         <label className="grid gap-2">
                           <span className="text-sm font-bold text-slate-400">Tizim roli</span>
@@ -325,18 +374,23 @@ export default function XodimFormaModal({
                           </AppSelect>
                         </label>
 
-                        <label className="grid gap-2">
-                          <span className="text-sm font-bold text-slate-400">
-                            {boshlangich ? "Yangi parol (ixtiyoriy)" : "Parol *"}
-                          </span>
-                          <input
-                            type="password"
-                            value={parol}
-                            onChange={(event) => setParol(event.target.value)}
-                            autoComplete="new-password"
-                            className={maydonKlass}
-                          />
-                        </label>
+                        <XatoliMaydon xato={fx.xato("parol")}>
+                          <label className="grid gap-2">
+                            <span className="text-sm font-bold text-slate-400">
+                              {boshlangich ? "Yangi parol (ixtiyoriy)" : "Parol *"}
+                            </span>
+                            <input
+                              type="password"
+                              value={parol}
+                              onChange={(event) => {
+                                setParol(event.target.value);
+                                fx.tozala("parol");
+                              }}
+                              autoComplete="new-password"
+                              className={maydonKlass}
+                            />
+                          </label>
+                        </XatoliMaydon>
 
                         <label className="grid gap-2">
                           <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">

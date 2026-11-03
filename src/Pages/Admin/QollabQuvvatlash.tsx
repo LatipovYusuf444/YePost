@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import axios from "axios";
 import { ArrowLeft, Building2, CheckCircle2, Headset, LoaderCircle, MessageSquare, RotateCcw, Search, Send, UserCheck } from "lucide-react";
 import { platformSupportApi } from "@/api/supportApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import type { PlatformSupportTicket, QollabQuvvatlashXabari, SupportTicketHolati } from "@/types/support";
 import { KunlarRoyxati } from "@/Pages/Support/SupportXabarlari";
@@ -10,6 +14,9 @@ import { guruhlash } from "@/Pages/Support/supportYordamchilar";
 import { Avatar, SahifaSarlavhasi, XatoXabari } from "./AdminUI";
 
 type HolatFiltri = "ALL" | SupportTicketHolati;
+
+// Javob xatosi → javob maydoni (so'rov tanasi: { text }). Xabar so'zi bo'yicha emas — murojaat holati xatolari tepada qoladi.
+const JAVOB_QOIDALARI: Record<string, XatoMaydonQoidasi> = { text: { maydonlar: ["text"], kodlar: ["text"] } };
 
 const FILTRLAR: HolatFiltri[] = ["ACTIVE", "IN_PROGRESS", "COMPLETED", "ALL"];
 const HOLAT_RANGI: Record<SupportTicketHolati, string> = {
@@ -54,6 +61,7 @@ export default function AdminQollabQuvvatlash() {
   const [yuborilmoqda, setYuborilmoqda] = useState(false);
   const [amalBajarilmoqda, setAmalBajarilmoqda] = useState(false);
   const [xato, setXato] = useState("");
+  const fx = useMaydonXatolari(JAVOB_QOIDALARI);
   const oxirigaRef = useRef<HTMLDivElement | null>(null);
   const tanlanganId = tanlangan?.id ?? null;
 
@@ -168,12 +176,14 @@ export default function AdminQollabQuvvatlash() {
     if (!tanlanganId || !toza || yuborilmoqda) return;
     setYuborilmoqda(true);
     setXato("");
+    fx.ornat({});
     try {
       const xabar = await platformSupportApi.javob(tanlanganId, toza);
       setXabarlar((joriy) => xabarlarniBirlashtirish(joriy, [xabar]));
       setMatn("");
     } catch (error) {
-      setXato(getApiErrorMessage(error));
+      // Javob maydoniga bog'langan xato o'sha yerda; bog'lanmagani umumiy xato qatorida (boshqa amallar xatosi ham shu qatorda qoladi).
+      if (!fx.serverdan(axios.isAxiosError(error) ? error.response?.data : undefined)) setXato(getApiErrorMessage(error));
     } finally {
       setYuborilmoqda(false);
     }
@@ -189,7 +199,15 @@ export default function AdminQollabQuvvatlash() {
     <div className="space-y-5">
       <SahifaSarlavhasi eyebrow={t("eyebrow")} sarlavha={t("qollabQuvvatlash.sarlavha")} tavsif={t("qollabQuvvatlash.tavsif")} ikonka={<Headset size={26} />} />
 
-      {xato && <XatoXabari matn={xato} yopish={() => setXato("")} />}
+      {(xato || fx.tepadagi) && (
+        <XatoXabari
+          matn={xato || fx.tepadagi}
+          yopish={() => {
+            setXato("");
+            fx.ornat({});
+          }}
+        />
+      )}
 
       <div className="grid h-[calc(100vh-260px)] min-h-[520px] gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
         <aside className={`${tanlangan ? "hidden lg:flex" : "flex"} min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-[0_4px_20px_rgba(15,23,42,.05)]`}>
@@ -237,6 +255,7 @@ export default function AdminQollabQuvvatlash() {
                   onClick={() => {
                     setTanlangan(ticket);
                     setMatn("");
+                    fx.ornat({});
                   }}
                   className={`relative flex w-full flex-col gap-1.5 border-b border-slate-100 px-4 py-3.5 text-left transition ${
                     tanlanganId === ticket.id ? "bg-orange-50/70" : "hover:bg-slate-50"
@@ -357,19 +376,24 @@ export default function AdminQollabQuvvatlash() {
                 <p className="border-t border-slate-100 bg-slate-50 px-5 py-4 text-sm font-medium text-slate-500">{t("qollabQuvvatlash.yakunlanganEslatma")}</p>
               ) : (
                 <div className="flex items-end gap-3 border-t border-slate-100 bg-white px-5 py-4">
-                  <textarea
-                    value={matn}
-                    onChange={(event) => setMatn(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" && !event.shiftKey) {
-                        event.preventDefault();
-                        void javobYuborish();
-                      }
-                    }}
-                    rows={2}
-                    placeholder={t("qollabQuvvatlash.javobYozing")}
-                    className="min-h-12 flex-1 resize-none rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
-                  />
+                  <XatoliMaydon xato={fx.xato("text")} className="flex-1">
+                    <textarea
+                      value={matn}
+                      onChange={(event) => {
+                        fx.tozala("text");
+                        setMatn(event.target.value);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" && !event.shiftKey) {
+                          event.preventDefault();
+                          void javobYuborish();
+                        }
+                      }}
+                      rows={2}
+                      placeholder={t("qollabQuvvatlash.javobYozing")}
+                      className="block min-h-12 w-full flex-1 resize-none rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+                    />
+                  </XatoliMaydon>
                   <button
                     type="button"
                     onClick={() => void javobYuborish()}

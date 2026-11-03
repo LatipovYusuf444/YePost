@@ -4,9 +4,19 @@ import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
 import { forgotPassword } from "@/api/passwordRecoveryApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { dokonKodiKerakmi, saqlanganDokonKodi } from "@/lib/dokonKodi";
 import { AuthPanel as AuthLayout, type AuthLocationState } from "./AuthLayout";
 import { AuthField, AuthMessage, SubmitButton } from "./AuthFields";
+
+// Server xatosi → maydon (so'rov tanasi: { username, workspace? }); workspace_required → do'kon kodi maydoni.
+const TIKLASH_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  workspace: { maydonlar: ["workspace"], kodlar: ["workspace"] },
+  username: { maydonlar: ["username"] },
+};
+
+const javobTanasi = (error: unknown) => (error as { response?: { data?: unknown } } | null | undefined)?.response?.data;
 
 export default function ForgotPassword() {
   const { t } = useTranslation("auth");
@@ -20,6 +30,7 @@ export default function ForgotPassword() {
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+  const fx = useMaydonXatolari(TIKLASH_QOIDALARI);
   const usernameError = !username.trim() ? t("errors.usernameRequired") : "";
   const workspaceError = workspaceRequired && !workspace.trim() ? t("errors.workspaceRequired") : "";
 
@@ -28,6 +39,7 @@ export default function ForgotPassword() {
     if (busy) return;
     setTried(true);
     setError("");
+    fx.ornat({});
     if (usernameError || workspaceError) {
       if (workspaceError) workspaceRef.current?.focus();
       return;
@@ -42,6 +54,7 @@ export default function ForgotPassword() {
         workspaceRef.current?.focus();
       }
       setError(getApiErrorMessage(e));
+      fx.serverdan(javobTanasi(e));
     } finally { setBusy(false); }
   }
 
@@ -49,9 +62,9 @@ export default function ForgotPassword() {
     <AuthLayout title={t(sent ? "forgot.sentTitle" : "forgot.title")} subtitle={t(sent ? "forgot.sentSubtitle" : "forgot.subtitle")}>
       {sent ? <div className="auth-sent"><MailCheck size={34} /><AuthMessage success>{t("forgot.sent")}</AuthMessage></div> : (
         <form className="auth-form" onSubmit={handleSubmit} noValidate aria-busy={busy}>
-          <AuthField id="workspace" label={t("workspaceLabel")} tag={t(workspaceRequired ? "workspaceRequiredTag" : "workspaceOptional")} icon={<Store size={18} />} inputRef={workspaceRef} value={workspace} onChange={(e) => { setWorkspace(e.target.value); setError(""); }} placeholder={t("workspacePlaceholder")} autoComplete="organization" autoCapitalize="none" spellCheck={false} hint={workspaceRequired ? t("forgot.workspaceHint") : undefined} error={tried ? workspaceError : ""} />
-          <AuthField id="username" label={t("usernameLabel")} icon={<UserRound size={18} />} value={username} onChange={(e) => { setUsername(e.target.value); setError(""); }} placeholder={t("usernamePlaceholder")} autoComplete="username" autoCapitalize="none" spellCheck={false} error={tried ? usernameError : ""} />
-          {error && <AuthMessage>{error}</AuthMessage>}
+          <AuthField id="workspace" label={t("workspaceLabel")} tag={t(workspaceRequired ? "workspaceRequiredTag" : "workspaceOptional")} icon={<Store size={18} />} inputRef={workspaceRef} value={workspace} onChange={(e) => { setWorkspace(e.target.value); setError(""); fx.tozala("workspace"); }} placeholder={t("workspacePlaceholder")} autoComplete="organization" autoCapitalize="none" spellCheck={false} hint={workspaceRequired ? t("forgot.workspaceHint") : undefined} error={(tried ? workspaceError : "") || fx.xato("workspace")} data-maydon-xato={(tried && workspaceError) || fx.xato("workspace") ? "true" : undefined} />
+          <AuthField id="username" label={t("usernameLabel")} icon={<UserRound size={18} />} value={username} onChange={(e) => { setUsername(e.target.value); setError(""); fx.tozala("username"); }} placeholder={t("usernamePlaceholder")} autoComplete="username" autoCapitalize="none" spellCheck={false} error={(tried ? usernameError : "") || fx.xato("username")} data-maydon-xato={(tried && usernameError) || fx.xato("username") ? "true" : undefined} />
+          {(fx.tepadagi || (fx.bor ? "" : error)) && <AuthMessage>{fx.tepadagi || error}</AuthMessage>}
           <SubmitButton busy={busy}>{t(busy ? "forgot.submitting" : "forgot.submit")}</SubmitButton>
         </form>
       )}

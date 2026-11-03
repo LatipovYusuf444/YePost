@@ -45,6 +45,9 @@ import AppModal from "@/Components/common/AppModal";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
 import SummaMaydoni from "@/Components/common/SummaMaydoni";
+import XatoliMaydon, { MaydonXatosi } from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import { xatoRamkasi, type XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { bugungiToshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
 import { crmApi } from "@/api/crmApi";
 import { mijozlarApi } from "@/api/partnersApi";
@@ -143,6 +146,43 @@ function qatorChegirmasi(mahsulot: MahsulotQatori) {
     summa: raqamgaAylantirish(mahsulot.discount),
     foiz: raqamgaAylantirish(mahsulot.discountFoiz),
   });
+}
+
+// Backendga ketadigan qator: mahsulot tanlangan va miqdori musbat (bo'sh qatorlar tanaga kirmaydi).
+function tanagaKiradimi(mahsulot: MahsulotQatori) {
+  return Boolean(mahsulot.modificationId) && raqamgaAylantirish(mahsulot.quantity) > 0 && raqamgaAylantirish(mahsulot.price) >= 0;
+}
+
+// Server xatosini forma maydoniga bog'lash: validatsiya maydoni, xato kodining oxirgi qismi yoki xabardagi so'z bo'yicha.
+// Xabar so'zlarida birinchi mos qoida olinadi: aniqroq (qoldiq, kompaniya) qoidalar oldinda.
+const SOTUV_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  items: { maydonlar: ["items"], kodlar: ["stock", "item", "product", "modification", "quantity"], sozlar: ["qoldiq", "yetarli emas", "остат", "недостаточно", "mahsulot", "товар"] },
+  warehouseId: { maydonlar: ["warehouseId"], kodlar: ["warehouse"], sozlar: ["ombor", "warehouse", "склад"] },
+  clientCompanyId: { maydonlar: ["clientCompanyId"], kodlar: ["company"], sozlar: ["kompaniya", "company", "компани"] },
+  customerId: { maydonlar: ["customerId"], kodlar: ["customer"], sozlar: ["mijoz", "customer", "клиент", "покупател"] },
+  currency: { maydonlar: ["currency"], kodlar: ["currency", "exchange_rate"], sozlar: ["valyuta", "kurs", "валют", "курс"] },
+  date: { maydonlar: ["date"], kodlar: ["period", "date"], sozlar: ["sanasi", "davr", "период", "дата"] },
+  walkInCustomerPhone: { maydonlar: ["walkInCustomerPhone"], kodlar: ["phone"], sozlar: ["telefon", "телефон"] },
+  walkInCustomerName: { maydonlar: ["walkInCustomerName"] },
+  note: { maydonlar: ["note"], kodlar: ["note"], sozlar: ["izoh", "примечан", "коммент"] },
+  assigneeId: { maydonlar: ["assigneeId", "responsibleId"], kodlar: ["assignee", "responsible"], sozlar: ["mas'ul", "ответствен"] },
+};
+
+// Server qator xatosi (`items.N.quantity`) yuborilgan tanadagi tartib bo'yicha keladi: bo'sh qatorlar tanaga kirmaydi, shuning uchun N
+// ko'rinadigan qator tartibidan farq qilishi mumkin. Har bir yuborilgan qator uchun "items.<tana>.*" → "items.<ko'rinish>.*" qoidasi
+// tuziladi (`indekslar[tana] = ko'rinish`); forma xatolari doim ko'rinadigan qator tartibida saqlanadi.
+function qatorXatoQoidalari(indekslar: number[]) {
+  const qoidalar: Record<string, XatoMaydonQoidasi> = {};
+  indekslar.forEach((korinish, tana) => {
+    const t = `items.${tana}`;
+    const k = `items.${korinish}`;
+    qoidalar[k] = { maydonlar: [t, `${t}.currency`] };
+    qoidalar[`${k}.modificationId`] = { maydonlar: [`${t}.modificationId`] };
+    qoidalar[`${k}.quantity`] = { maydonlar: [`${t}.quantity`, `${t}.unitId`] };
+    qoidalar[`${k}.price`] = { maydonlar: [`${t}.price`, `${t}.priceType`] };
+    qoidalar[`${k}.discount`] = { maydonlar: [`${t}.discount`, `${t}.discountPercent`] };
+  });
+  return qoidalar;
 }
 
 const faoliyatTablar = ["Ish", "Izoh", "Xabar", "Vazifa", "Uchrashuv"];
@@ -406,6 +446,13 @@ export default function YangiSotuvModal({
     const saqlangan = saqlanganQatorlar();
     return saqlangan.length ? saqlangan : [bosQator("RETAIL")];
   });
+  // Maydon xatolari: kalit — backend maydon yo'li; qatorlar ko'rinadigan tartibda ("items.<ko'rinish>.quantity").
+  const fx = useMaydonXatolari({
+    ...SOTUV_XATO_QOIDALARI,
+    ...qatorXatoQoidalari(mahsulotlar.flatMap((mahsulot, indeks) => (tanagaKiradimi(mahsulot) ? [indeks] : []))),
+  });
+  // SavdoSelect tugmasi (input emas): xato bo'lsa qizil ramka.
+  const tugmaXatosi = (yol: string) => (fx.xato(yol) ? xatoRamkasi : "");
   // Narx turlari (Sozlamalar → Sotuv): yoqilganlari tanlanadi; sozlama noma'lum bo'lsa chakana va ulgurji ochiq (tannarx — faqat yoqilgan bo'lsa).
   const narxSozlamasi = useSavdoSozlamalariStore((holat) => holat.narxTurlari);
   const narxSozlamasiniYuklash = useSavdoSozlamalariStore((holat) => holat.yuklash);
@@ -553,7 +600,7 @@ export default function YangiSotuvModal({
         : undefined;
     const partnerId = tanlanganMijoz?.partner?.id ?? saqlanganPartnerId;
     if (!partnerId) {
-      setXatolik("errors.selectClientForActivity");
+      fx.ornat({ customerId: t("errors.selectClientForActivity") });
       return false;
     }
     try {
@@ -566,7 +613,7 @@ export default function YangiSotuvModal({
         await crmApi.partnerChatXabarYuborish(partnerId, matn);
       } else {
         if (!responsibleId) {
-          setXatolik("errors.selectResponsibleForTask");
+          fx.ornat({ assigneeId: t("errors.selectResponsibleForTask") });
           return false;
         }
         const dueAt = new Date(`${faoliyatSana}T${faoliyatSoat || "00:00"}`).toISOString();
@@ -583,6 +630,7 @@ export default function YangiSotuvModal({
       return true;
     } catch (error) {
       setXatolik(getApiErrorMessage(error));
+      fx.serverdan((error as { response?: { data?: unknown } } | null)?.response?.data);
       return false;
     }
   }
@@ -592,14 +640,15 @@ export default function YangiSotuvModal({
     const yangiVal: "UZS" | "USD" = yangi === "USD" ? "USD" : "UZS";
     if (yangiVal === sotuvVal) return;
     if (yangiVal === "USD" && !usdMumkin) {
-      setXatolik("errors.usdUnavailable");
+      fx.ornat({ currency: t("errors.usdUnavailable") });
       return;
     }
     setXatolik("");
+    fx.tozala("currency");
     if (tahrir) {
       const qaytish = valyutaOldingi.current?.natija === mahsulotlar ? valyutaOldingi.current.oldingi : null;
       if (!qaytish && !(aniqKurs > 0)) {
-        setXatolik("errors.rateRequired");
+        fx.ornat({ currency: t("errors.rateRequired") });
         return;
       }
       const natija = qaytish ?? mahsulotlar.map((qator) => qoralamaQatoriniOgirish(qator, yangiVal, aniqKurs));
@@ -644,6 +693,9 @@ export default function YangiSotuvModal({
     // bo'yicha aniq qoldiq yozuvini topamiz (aks holda boshqa ombordagi
     // qoldiq/narx tasodifan tanlanib qolishi mumkin edi).
     const qoldiq = qatorQoldigi(tanlanganQoldiqKaliti);
+    // Ro'yxat xatosi ("kamida bitta mahsulot") bo'lsa u, aks holda shu qatorning xatolari tozalanadi.
+    if (fx.xato("items")) fx.tozala("items");
+    else fx.tozala(`items.${index}`);
     // Tanlangan narx turida narx yo'q bo'lsa (masalan, ulgurji narx belgilanmagan) mos boshqa tur olinadi.
     const tur = qatorNarxTuri(qoldiq, narxTuri, turRuxsati, kurs) ?? narxTuri;
     const narx = qoldiqNarxiValyutada(qoldiq, sotuvVal, kurs, tur);
@@ -659,6 +711,7 @@ export default function YangiSotuvModal({
     });
 
     if (qoldiq?.warehouseId && qoldiq.warehouseId !== warehouseId) {
+      fx.tozala("warehouseId");
       setWarehouseId(qoldiq.warehouseId);
       onOmborTanlash(qoldiq.warehouseId);
     }
@@ -771,6 +824,7 @@ export default function YangiSotuvModal({
   }
 
   function mijozniTanlash(tanlanganCustomerId: string) {
+    fx.tozala("customerId", "clientCompanyId");
     setCustomerId(tanlanganCustomerId);
     const mijoz = barchaMijozlar.find((item) => item.id === tanlanganCustomerId);
     // Tahrirlashda avtomatik sotuv nomi yangi mijozga moslanadi (qo'lda yozilgan nom saqlanadi).
@@ -818,6 +872,7 @@ export default function YangiSotuvModal({
       };
       setQoshilganMijozlar((current) => [...current.filter((item) => item.id !== mijoz.id), mijoz]);
       useSavdoStore.getState().mijozMalumotiniYangilash(mijoz);
+      fx.tozala("customerId", "clientCompanyId");
       setCustomerId(mijoz.id);
       setClientCompanyId(mijozKompaniyaId(mijoz));
       setMijozQoshishOchiq(false);
@@ -827,6 +882,7 @@ export default function YangiSotuvModal({
   }
 
   function kompaniyaniTanlash(tanlanganCompanyId: string) {
+    fx.tozala("customerId", "clientCompanyId");
     if (tahrir && !customerId) {
       const kompaniya = mijozKompaniyalari.find((item) => item.id === tanlanganCompanyId);
       setSotuvNomi((joriy) => (kompaniya ? mijozgaMosSotuvNomi(joriy, kompaniyaNomi(kompaniya)) : joriy));
@@ -843,6 +899,7 @@ export default function YangiSotuvModal({
   }
 
   function qatorQoshish() {
+    fx.tozala("items");
     setMahsulotlar((joriy) => [...joriy, bosQator(narxTuri)]);
   }
 
@@ -913,6 +970,7 @@ export default function YangiSotuvModal({
         xato(t("products.scanNotEnough", { name: nom, available: mavjudMiqdor }));
         return;
       }
+      fx.tozala(`items.${bor}.quantity`);
       mahsulotniYangilash(bor, { quantity: String(yangiMiqdor) });
       setSkanXabari({ xato: false, matn: t("products.scanAdded", { name: nom, qty: yangiMiqdor }) });
     } else {
@@ -926,11 +984,13 @@ export default function YangiSotuvModal({
         birlikId: skanBirlikId,
       };
       // Birinchi bo'sh qator to'ldiriladi, bo'lmasa yangi qator qo'shiladi.
+      fx.tozala("items");
       setMahsulotlar((joriy) => {
         const bosh = joriy.findIndex((mahsulot) => !mahsulot.modificationId);
         return bosh >= 0 ? joriy.map((mahsulot, qatorIndex) => (qatorIndex === bosh ? yangiQator : mahsulot)) : [...joriy, yangiQator];
       });
       if (item.warehouseId && item.warehouseId !== warehouseId) {
+        fx.tozala("warehouseId");
         setWarehouseId(item.warehouseId);
         onOmborTanlash(item.warehouseId);
       }
@@ -980,14 +1040,13 @@ export default function YangiSotuvModal({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setXatolik("");
+    fx.ornat({});
 
     // Backendga ketadigan qatorlar: narx turi (priceType), narx va chegirma summasi (foizda kiritilsa discountPercent ham).
     // Yangi sotuvda mahsulot o'z valyutasida (dollarda yoki so'mda) yuboriladi: backend tasdiqlash kunidagi kurs bilan o'giradi.
     // Tahrirlashda (PATCH) qator valyutasi doim sotuv valyutasi.
     const yuboriladiganQatorlar = mahsulotlar
-      .filter(
-        (mahsulot) => mahsulot.modificationId && raqamgaAylantirish(mahsulot.quantity) > 0 && raqamgaAylantirish(mahsulot.price) >= 0
-      )
+      .filter(tanagaKiradimi)
       .map((mahsulot) => tahrir
         ? qoralamaQatorTanasi({
             modificationId: mahsulot.modificationId,
@@ -1017,38 +1076,28 @@ export default function YangiSotuvModal({
         })
       );
 
-    if (!warehouseId) {
-      setXatolik("errors.selectWarehouseFirst");
+    // Mijoz tekshiruvi: xato o'z maydoni ostida ko'rsatiladi; bir vaqtda bir nechta maydon xatoli bo'lsa hammasi belgilanadi.
+    const formaXatolari: Record<string, string> = {};
+    if (!warehouseId) formaXatolari.warehouseId = t("errors.selectWarehouseFirst");
+    if (boshlanishSanasi && tugashSanasi && tugashSanasi < boshlanishSanasi) formaXatolari.endDate = t("errors.endDateBeforeStart");
+    if (sotuvVal === "USD" && !usdMumkin && valyuta !== asl?.currency) formaXatolari.currency = t("errors.usdUnavailable");
+    mahsulotlar.forEach((mahsulot, indeks) => {
+      if (mahsulot.kutilayotganValyuta) formaXatolari[`items.${indeks}`] = t("errors.lineNeedsRate");
+    });
+    if (yuboriladiganQatorlar.length === 0) formaXatolari.items = t("errors.selectAtLeastOneProduct");
+    if (Object.keys(formaXatolari).length) {
+      fx.ornat(formaXatolari);
       return;
     }
 
-    if (boshlanishSanasi && tugashSanasi && tugashSanasi < boshlanishSanasi) {
-      setXatolik("errors.endDateBeforeStart");
-      return;
-    }
-
-    if (sotuvVal === "USD" && !usdMumkin && valyuta !== asl?.currency) {
-      setXatolik("errors.usdUnavailable");
-      return;
-    }
-
-    if (mahsulotlar.some((mahsulot) => mahsulot.kutilayotganValyuta)) {
-      setXatolik("errors.lineNeedsRate");
-      return;
-    }
-
-    if (yuboriladiganQatorlar.length === 0) {
-      setXatolik("errors.selectAtLeastOneProduct");
-      return;
-    }
-
-    for (const mahsulot of mahsulotlar) {
+    const qatorXatolari: Record<string, string> = {};
+    for (const [indeks, mahsulot] of mahsulotlar.entries()) {
       const soralganMiqdor = raqamgaAylantirish(mahsulot.quantity);
       if (!mahsulot.modificationId || soralganMiqdor <= 0) continue;
       const tanlanganQoldiq = qatorQoldigi(mahsulot.qoldiqKaliti);
       if (tanlanganQoldiq?.warehouseId && tanlanganQoldiq.warehouseId !== warehouseId) {
-        setXatolik("errors.productOtherWarehouse");
-        return;
+        qatorXatolari[`items.${indeks}`] = t("errors.productOtherWarehouse");
+        continue;
       }
       // Qoralama shu mahsulotni shu omborda allaqachon band qilgan (asosiy birlikda): tahrirlashda bu miqdor ham ruxsat etiladi.
       const rezerv = tahrir && warehouseId === asl?.warehouseId
@@ -1057,25 +1106,26 @@ export default function YangiSotuvModal({
       const mavjudMiqdor = (tanlanganQoldiq ? qoldiqMiqdori(tanlanganQoldiq) : 0) + rezerv;
       const birlik = birlikTopish(tanlanganQoldiq?.birliklar, mahsulot.birlikId);
       if (!miqdorYaroqlimi(birlik, soralganMiqdor)) {
-        setXatolik("errors.quantityNotWhole");
-        return;
+        qatorXatolari[`items.${indeks}.quantity`] = t("errors.quantityNotWhole");
+        continue;
       }
       // Qoldiq asosiy birlikda: pochkada kiritilgan miqdor asosiy birlikka o'giriladi.
       const talab = asosiyMiqdor(birlik, soralganMiqdor);
       if (!canSellNegative && talab > mavjudMiqdor) {
-        setXatolik(
-          t("errors.insufficientStock", {
-            name: tanlanganQoldiq ? qoldiqNomi(tanlanganQoldiq, t) : t("common.selectedProductFallback"),
-            available: mavjudMiqdor,
-            requested: talab,
-          })
-        );
-        return;
+        qatorXatolari[`items.${indeks}.quantity`] = t("errors.insufficientStock", {
+          name: tanlanganQoldiq ? qoldiqNomi(tanlanganQoldiq, t) : t("common.selectedProductFallback"),
+          available: mavjudMiqdor,
+          requested: talab,
+        });
       }
+    }
+    if (Object.keys(qatorXatolari).length) {
+      fx.ornat(qatorXatolari);
+      return;
     }
 
     if (jami <= 0) {
-      setXatolik("errors.totalMustBePositive");
+      fx.ornat({ items: t("errors.totalMustBePositive") });
       return;
     }
 
@@ -1096,10 +1146,11 @@ export default function YangiSotuvModal({
         walkInCustomerName: walkInNomi,
         walkInCustomerPhone: walkInTelefon,
       });
-      muvaffaqiyatli = await tahrir.onYangilash(tahrir.sotuv.id, { ...patch, items: yuboriladiganQatorlar as SotuvYaratishMalumoti["items"] });
+      // Server xatosi maydonlarga bog'lanadi (qator yo'li tanadagi tartibdan ko'rinadigan qatorga — qatorXatoQoidalari).
+      muvaffaqiyatli = await fx.kuzat(() => tahrir.onYangilash(tahrir.sotuv.id, { ...patch, items: yuboriladiganQatorlar as SotuvYaratishMalumoti["items"] }));
       if (muvaffaqiyatli) setSotuvBackendgaSaqlandi(true);
     } else if (!sotuvBackendgaSaqlandi) {
-      muvaffaqiyatli = (await onSaqlash?.({
+      muvaffaqiyatli = (await fx.kuzat(async () => onSaqlash?.({
         ...yangiHujjatSanasi(hujjatSanasi),
         warehouseId,
         customerId: customerId || undefined,
@@ -1110,7 +1161,7 @@ export default function YangiSotuvModal({
         // Tanlangan sotuv valyutasi har doim aniq yuboriladi (berilmasa backend mijozli savdoni USD deb oladi).
         currency: sotuvVal,
         items: yuboriladiganQatorlar,
-      })) ?? false;
+      }))) ?? false;
       if (muvaffaqiyatli) setSotuvBackendgaSaqlandi(true);
     }
 
@@ -1136,6 +1187,8 @@ export default function YangiSotuvModal({
     { kalit: "confirm", ikonka: BadgeCheck },
   ] as const;
   const formaBandmi = sotuvBackendgaSaqlandi || amalBajarilmoqda;
+  // Tepadagi xato: maydoni ekranda bo'lmagan xato, aks holda (maydon xatosi yo'q bo'lsa) umumiy xato.
+  const tepaXatosi = fx.tepadagi || (fx.bor ? "" : xatolik ? t(xatolik) : "");
   // Faoliyat maydonlariga yozilgan, hali yuborilmagan matn ham saqlanmagan o'zgarish.
   const ozgarishlarSoni = sotuvBackendgaSaqlandi
     ? 0
@@ -1195,6 +1248,7 @@ export default function YangiSotuvModal({
     const narx = qoldiqNarxiValyutada(qoldiq, sotuvVal, kurs, tur, birlikTopish(qoldiq?.birliklar, qator?.birlikId));
     if (!qator || !narx) return;
     setNarxXabari("");
+    fx.tozala(`items.${index}.price`);
     mahsulotniYangilash(index, { priceType: tur, price: String(narx), ustama: "" });
   }
 
@@ -1205,11 +1259,13 @@ export default function YangiSotuvModal({
     const narx = qoldiqNarxiValyutada(qoldiq, sotuvVal, kurs, qator?.priceType, birlikTopish(qoldiq?.birliklar, birlikId));
     if (!qator || !narx) return;
     setNarxXabari("");
+    fx.tozala(`items.${index}.quantity`);
     mahsulotniYangilash(index, { birlikId, price: String(narx), ustama: "", discount: qator.discountTuri === "sum" ? "" : qator.discount });
   }
 
   // Chegirma birligi (summa yoki foiz): kiritilgan qiymat shu qator uchun ikkinchi birlikka o'giriladi.
   function chegirmaBirliginiOzgartirish(index: number, yangi: ChegirmaTuri) {
+    fx.tozala(`items.${index}.discount`);
     setMahsulotlar((joriy) =>
       joriy.map((qator, qatorIndex) => {
         if (qatorIndex !== index || qator.discountTuri === yangi) return qator;
@@ -1227,12 +1283,16 @@ export default function YangiSotuvModal({
 
   function qatorniOchirish(index: number) {
     setNarxTahriri(null);
+    // Qatorlar tartibi siljiydi: ro'yxatning barcha xatolari tozalanadi.
+    fx.tozala("items");
     setMahsulotlar((joriy) => joriy.filter((_, qatorIndex) => qatorIndex !== index));
   }
 
   // Ombor o'zgarganda: bitta sotuv bitta ombordan bo'ladi, boshqa ombordan tanlangan qatorlar tozalanadi.
   // Ombor tanlangach birinchi bo'sh qatorning mahsulot ro'yxati ochiladi: klaviaturada to'xtamay davom etish mumkin.
   function omborniOzgartirish(value: string) {
+    // Ombor almashganda qatorlar qoldig'i ham yangi ombor bo'yicha: ombor va qatorlar xatolari tozalanadi.
+    fx.tozala("warehouseId", "items");
     setWarehouseId(value);
     onOmborTanlash(value);
     if (tahrir) {
@@ -1336,6 +1396,7 @@ export default function YangiSotuvModal({
       setSkanXabari(null);
       setImportXabari(null);
       setXatolik("");
+      fx.ornat({});
       return;
     }
     if (warehouseId) onOmborTanlash("");
@@ -1354,6 +1415,7 @@ export default function YangiSotuvModal({
     setSkanXabari(null);
     setImportXabari(null);
     setXatolik("");
+    fx.ornat({});
     setFaolTab("Ish");
     setFaoliyatSarlavha("");
     setFaoliyatTafsilot("");
@@ -1437,6 +1499,7 @@ export default function YangiSotuvModal({
       if (sanami(malumot.tugashSanasi)) setTugashSanasi(malumot.tugashSanasi);
       if (qatorlar.length > 0) setMahsulotlar(qatorlar);
       setXatolik("");
+      fx.ornat({});
       setImportXabari({
         xato: false,
         matn:
@@ -1572,12 +1635,15 @@ export default function YangiSotuvModal({
             </ol>
           </header>
 
-          {xatolik && (
+          {tepaXatosi && (
             <div className="mx-4 mt-4 flex shrink-0 items-start justify-between gap-4 rounded-2xl border-2 border-red-200 bg-red-50 px-5 py-3.5 text-sm font-bold text-red-600 shadow-sm sm:mx-7">
-              <span>{t(xatolik)}</span>
+              <span>{tepaXatosi}</span>
               <button
                 type="button"
-                onClick={() => setXatolik("")}
+                onClick={() => {
+                  if (fx.tepadagi) fx.ornat({});
+                  setXatolik("");
+                }}
                 className="shrink-0 text-xs font-black uppercase text-red-500 hover:text-red-700"
               >
                 {t("errors.dismiss")}
@@ -1591,6 +1657,7 @@ export default function YangiSotuvModal({
                 <section ref={mijozKartasiRef} className={kartaKlassi}>
                   <KartaBoshi ikonka={UserRound} sarlavha={t("sections.clientInfo")} />
                   <div className="space-y-4">
+                    <XatoliMaydon xato={fx.xato("customerId")}>
                     <label className="grid gap-1.5">
                       <span className={yorliqKlassi}>{t("labels.contact")}</span>
                       <div className="relative">
@@ -1604,7 +1671,7 @@ export default function YangiSotuvModal({
                           klaviatura
                           placeholder={t("placeholders.clientSearch")}
                           className="w-full"
-                          buttonClassName={`${selectTugmasiKlassi} pl-10`}
+                          buttonClassName={`${selectTugmasiKlassi} pl-10 ${tugmaXatosi("customerId")}`}
                           options={barchaMijozlar.map((mijoz) => ({
                             value: mijoz.id,
                             label: `${mijozKorinishi(mijoz, t)}${mijoz.phone ? ` - ${mijoz.phone}` : ""}`,
@@ -1622,7 +1689,9 @@ export default function YangiSotuvModal({
                         </p>
                       )}
                     </label>
+                    </XatoliMaydon>
 
+                    <XatoliMaydon xato={fx.xato("clientCompanyId")}>
                     <label className="grid gap-1.5">
                       <span className={yorliqKlassi}>{t("labels.company")}</span>
                       <div className="relative">
@@ -1636,7 +1705,7 @@ export default function YangiSotuvModal({
                           klaviatura
                           placeholder={t("placeholders.companySearch")}
                           className="w-full"
-                          buttonClassName={`${selectTugmasiKlassi} pl-10`}
+                          buttonClassName={`${selectTugmasiKlassi} pl-10 ${tugmaXatosi("clientCompanyId")}`}
                           options={mijozKompaniyalari.map((kompaniya) => ({
                             value: kompaniya.id,
                             label: `${kompaniyaNomi(kompaniya)}${kompaniya.phone ? ` - ${kompaniya.phone}` : ""}`,
@@ -1653,17 +1722,22 @@ export default function YangiSotuvModal({
                         </p>
                       )}
                     </label>
+                    </XatoliMaydon>
 
                     {tahrir && !customerId && !clientCompanyId && (asl?.walkInCustomerName || asl?.walkInCustomerPhone) && (
                       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                        <XatoliMaydon xato={fx.xato("walkInCustomerName")}>
                         <label className="grid gap-1.5">
                           <span className={yorliqKlassi}>{t("labels.walkInName")}</span>
-                          <input value={walkInNomi} maxLength={200} onChange={(event) => setWalkInNomi(event.target.value)} className={maydonKlassi} />
+                          <input value={walkInNomi} maxLength={200} onChange={(event) => { fx.tozala("walkInCustomerName"); setWalkInNomi(event.target.value); }} className={maydonKlassi} />
                         </label>
+                        </XatoliMaydon>
+                        <XatoliMaydon xato={fx.xato("walkInCustomerPhone")}>
                         <label className="grid gap-1.5">
                           <span className={yorliqKlassi}>{t("labels.walkInPhone")}</span>
-                          <input type="tel" value={walkInTelefon} maxLength={50} onChange={(event) => setWalkInTelefon(event.target.value)} className={maydonKlassi} />
+                          <input type="tel" value={walkInTelefon} maxLength={50} onChange={(event) => { fx.tozala("walkInCustomerPhone"); setWalkInTelefon(event.target.value); }} className={maydonKlassi} />
                         </label>
+                        </XatoliMaydon>
                       </div>
                     )}
                   </div>
@@ -1672,34 +1746,45 @@ export default function YangiSotuvModal({
                 <section className={kartaKlassi}>
                   <KartaBoshi ikonka={Settings} sarlavha={draftMode ? t("sections.draftSettings") : t("sections.saleSettings")} />
                   <div className="space-y-4">
+                    <XatoliMaydon xato={fx.xato("name")}>
                     <label className="grid gap-1.5">
                       <span className={yorliqKlassi}>{modalMatnlari.nameLabel}</span>
                       <input
                         value={sotuvNomi}
-                        onChange={(event) => setSotuvNomi(event.target.value)}
+                        onChange={(event) => {
+                          fx.tozala("name");
+                          setSotuvNomi(event.target.value);
+                        }}
                         placeholder={modalMatnlari.namePlaceholder}
                         className={maydonKlassi}
                       />
                     </label>
+                    </XatoliMaydon>
 
+                    <XatoliMaydon xato={fx.xato("stage")}>
                     <label className="grid gap-1.5">
                       <span className={yorliqKlassi}>{t("note.stageLabel")}</span>
                       <div className="relative">
                         <span aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-emerald-500 ring-4 ring-emerald-200" />
                         <SavdoSelect
                           value={bosqich}
-                          onChange={setBosqich}
+                          onChange={(value) => {
+                            fx.tozala("stage");
+                            setBosqich(value);
+                          }}
                           klaviatura
                           options={bosqichlar.some((item) => item.value === bosqich) ? bosqichlar : [{ value: bosqich, label: bosqich }, ...bosqichlar]}
                           className="w-full"
-                          buttonClassName={`${selectTugmasiKlassi} pl-10`}
+                          buttonClassName={`${selectTugmasiKlassi} pl-10 ${tugmaXatosi("stage")}`}
                           dropdownClassName="[&>div>div]:text-center min-w-[320px]"
                           portal
                         />
                       </div>
                     </label>
+                    </XatoliMaydon>
 
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                      <XatoliMaydon xato={fx.xato("currency")}>
                       <label className="grid gap-1.5">
                         <span className={yorliqKlassi}>{t("note.currencyLabel")}</span>
                         <div className="relative">
@@ -1713,12 +1798,13 @@ export default function YangiSotuvModal({
                             klaviatura
                             options={valyutalar}
                             className="w-full"
-                            buttonClassName={`${selectTugmasiKlassi} pl-10`}
+                            buttonClassName={`${selectTugmasiKlassi} pl-10 ${tugmaXatosi("currency")}`}
                             dropdownClassName="[&>div>div]:text-center min-w-[180px]"
                             portal
                           />
                         </div>
                       </label>
+                      </XatoliMaydon>
                       <label className="grid gap-1.5">
                         <span className={yorliqKlassi}>{modalMatnlari.amountLabel}</span>
                         <input
@@ -1737,14 +1823,30 @@ export default function YangiSotuvModal({
                     )}
 
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                      <XatoliMaydon xato={fx.xato("startDate")}>
                       <label className="grid gap-1.5">
                         <span className={yorliqKlassi}>{t("note.startDateLabel")}</span>
-                        <SanaMaydoni value={boshlanishSanasi} onChange={setBoshlanishSanasi} />
+                        <SanaMaydoni
+                          value={boshlanishSanasi}
+                          onChange={(value) => {
+                            fx.tozala("startDate", "endDate");
+                            setBoshlanishSanasi(value);
+                          }}
+                        />
                       </label>
+                      </XatoliMaydon>
+                      <XatoliMaydon xato={fx.xato("endDate")}>
                       <label className="grid gap-1.5">
                         <span className={yorliqKlassi}>{t("note.endDateLabel")}</span>
-                        <SanaMaydoni value={tugashSanasi} onChange={setTugashSanasi} />
+                        <SanaMaydoni
+                          value={tugashSanasi}
+                          onChange={(value) => {
+                            fx.tozala("startDate", "endDate");
+                            setTugashSanasi(value);
+                          }}
+                        />
                       </label>
+                      </XatoliMaydon>
                     </div>
 
                     <div className="grid gap-1.5">
@@ -1813,30 +1915,37 @@ export default function YangiSotuvModal({
                     </button>
                     <div className="flex min-w-[200px] items-center gap-2 sm:ml-auto">
                       <span className="hidden shrink-0 text-sm font-semibold text-slate-600 sm:inline">{t("labels.saleDate")}</span>
-                      <HujjatSanasiMaydoni
-                        value={hujjatSanasi}
-                        onChange={setHujjatSanasi}
-                        disabled={formaBandmi}
-                        aria-label={t("labels.saleDate")}
-                        className={maydonKlassi}
-                      />
+                      <XatoliMaydon xato={fx.xato("date")}>
+                        <HujjatSanasiMaydoni
+                          value={hujjatSanasi}
+                          onChange={(value) => {
+                            fx.tozala("date");
+                            setHujjatSanasi(value);
+                          }}
+                          disabled={formaBandmi}
+                          aria-label={t("labels.saleDate")}
+                          className={maydonKlassi}
+                        />
+                      </XatoliMaydon>
                     </div>
                     <div className="flex min-w-[220px] flex-1 items-center gap-2 sm:max-w-[420px]">
                       <span className="hidden shrink-0 text-sm font-semibold text-slate-600 sm:inline">{t("labels.warehouse")}</span>
-                      <SavdoSelect
-                        className="min-w-0 flex-1"
-                        value={warehouseId}
-                        onChange={omborniOzgartirish}
-                        klaviatura
-                        placeholder={t("placeholders.selectWarehouse")}
-                        options={omborlar.map((ombor) => ({
-                          value: ombor.id,
-                          label: ombor.name ?? ombor.id,
-                        }))}
-                        buttonClassName={selectTugmasiKlassi}
-                        dropdownClassName="[&>div>div]:text-center"
-                        portal
-                      />
+                      <XatoliMaydon xato={fx.xato("warehouseId")} className="flex-1">
+                        <SavdoSelect
+                          className="min-w-0 flex-1"
+                          value={warehouseId}
+                          onChange={omborniOzgartirish}
+                          klaviatura
+                          placeholder={t("placeholders.selectWarehouse")}
+                          options={omborlar.map((ombor) => ({
+                            value: ombor.id,
+                            label: ombor.name ?? ombor.id,
+                          }))}
+                          buttonClassName={`${selectTugmasiKlassi} ${tugmaXatosi("warehouseId")}`}
+                          dropdownClassName="[&>div>div]:text-center"
+                          portal
+                        />
+                      </XatoliMaydon>
                     </div>
                   </div>
 
@@ -1944,11 +2053,13 @@ export default function YangiSotuvModal({
                         // Juda kichik musbat narx (o'girilgan 0.0001$) 0 ga yaxlitlanib ko'rinmaydi.
                         const sotuvNarxi = miqdor > 0 ? (Math.round(aniqSotuvNarxi * 100) / 100 || aniqSotuvNarxi) : narx;
                         const birDonaChegirma = Math.max(narx - sotuvNarxi, 0);
+                        // Qator xatolari ko'rinadigan qator tartibida (server tanadagi tartibi qatorXatoQoidalari orqali o'giriladi).
+                        const qatorXatosi = fx.xato(`items.${index}`);
 
                         return (
                           <div
                             key={index}
-                            className={`grid grid-cols-1 gap-3 rounded-2xl border-2 border-slate-300 bg-white p-3.5 transition sm:grid-cols-2 lg:items-start lg:rounded-none lg:border-0 lg:border-b-2 lg:border-slate-200 lg:px-4 lg:py-3 lg:last:border-b-0 ${qatorUstunlari}`}
+                            className={`grid grid-cols-1 gap-3 rounded-2xl border-2 border-slate-300 bg-white p-3.5 transition sm:grid-cols-2 lg:items-start lg:rounded-none lg:border-0 lg:border-b-2 lg:border-slate-200 lg:px-4 lg:py-3 lg:last:border-b-0 ${qatorUstunlari} ${qatorXatosi ? xatoRamkasi : ""}`}
                           >
                             <div className="flex items-center justify-between sm:col-span-2 lg:col-span-1 lg:block lg:pt-3">
                               <span className="text-sm font-black text-slate-400">
@@ -1986,6 +2097,7 @@ export default function YangiSotuvModal({
                                     if (qatorKlavishlari(event, index, "mahsulot")) event.stopPropagation();
                                   }}
                                 >
+                                  <XatoliMaydon xato={fx.xato(`items.${index}.modificationId`)}>
                                   <SavdoSelect
                                     value={mahsulot.qoldiqKaliti}
                                     onChange={(value) => {
@@ -1998,10 +2110,11 @@ export default function YangiSotuvModal({
                                     ochishSorovi={fokusSorovi?.maydon === "mahsulot" && fokusSorovi.qator === index ? fokusSorovi.n : 0}
                                     placeholder={t("placeholders.selectProduct")}
                                     options={mahsulotOptionlari(mahsulot)}
-                                    buttonClassName={selectTugmasiKlassi}
+                                    buttonClassName={`${selectTugmasiKlassi} ${tugmaXatosi(`items.${index}.modificationId`)}`}
                                     dropdownClassName="[&>div>div]:text-center min-w-[520px] max-w-[min(720px,calc(100vw-32px))]"
                                     portal
                                   />
+                                  </XatoliMaydon>
                                   <p className="mt-1 truncate text-xs font-semibold text-slate-500">
                                     {t("labels.availableStock")}:{" "}
                                     <span className="font-bold text-[#2563EB]">
@@ -2043,6 +2156,7 @@ export default function YangiSotuvModal({
 
                             <div className="min-w-0">
                               <p className={mobilYorliqKlassi}>{t(sotuvVal === "USD" ? "labels.salePriceUsd" : "labels.salePrice")}</p>
+                              <XatoliMaydon xato={fx.xato(`items.${index}.price`)}>
                               <SummaMaydoni
                                 disabled={narx <= 0}
                                 value={narxTahriri?.qator === index ? narxTahriri.matn : narx > 0 ? donaNarxi(sotuvNarxi) : ""}
@@ -2058,6 +2172,7 @@ export default function YangiSotuvModal({
                                   fokusSoralish(index, "miqdor");
                                 }}
                                 onChange={(qiymat) => {
+                                  fx.tozala(`items.${index}.price`);
                                   setNarxTahriri({ qator: index, matn: qiymat });
                                   const kiritilgan = raqamgaAylantirish(qiymat) * narxKoeff;
                                   // Bo'sh yoki noto'g'ri qiymat katalog narxiga qaytaradi; katalogdan past narx chegirma, baland narx ustama bo'ladi.
@@ -2077,20 +2192,23 @@ export default function YangiSotuvModal({
                                 )}
                                 placeholder={t("placeholders.price")}
                               />
+                              </XatoliMaydon>
                               <p className="mt-1 text-[11px] font-semibold text-slate-400">/ {narxBirligi}</p>
                             </div>
 
                             <div className="min-w-0">
                               <p className={mobilYorliqKlassi}>{t("labels.quantity")}</p>
+                              <XatoliMaydon xato={fx.xato(`items.${index}.quantity`)}>
                               <input
                                 type="number"
                                 min="0.001"
                                 step={butunMiqdor ? "any" : "0.001"}
                                 value={mahsulot.quantity}
                                 data-sotuv-miqdor={index}
-                                onChange={(event) =>
-                                  mahsulotniYangilash(index, { quantity: event.target.value })
-                                }
+                                onChange={(event) => {
+                                  fx.tozala(`items.${index}.quantity`);
+                                  mahsulotniYangilash(index, { quantity: event.target.value });
+                                }}
                                 onKeyDown={(event) => {
                                   if (qatorKlavishlari(event, index, "miqdor")) return;
                                   if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
@@ -2100,6 +2218,7 @@ export default function YangiSotuvModal({
                                 className={maydonKlassi}
                                 placeholder={t("placeholders.quantity")}
                               />
+                              </XatoliMaydon>
                               {qatorBirliklari.length > 0 && (
                                 <div className="mt-1.5">
                                   <select
@@ -2123,18 +2242,20 @@ export default function YangiSotuvModal({
 
                             <div className="min-w-0">
                               <p className={mobilYorliqKlassi}>{t(sotuvVal === "USD" ? "labels.discountUsd" : "labels.discount")}</p>
+                              <XatoliMaydon xato={fx.xato(`items.${index}.discount`)}>
                               <div className="relative">
                                 <SummaMaydoni
                                   value={mahsulot.discountTuri === "foiz" ? mahsulot.discountFoiz : mahsulot.discount}
                                   data-sotuv-chegirma={index}
-                                  onChange={(qiymat) =>
+                                  onChange={(qiymat) => {
+                                    fx.tozala(`items.${index}.discount`);
                                     mahsulotniYangilash(
                                       index,
                                       mahsulot.discountTuri === "foiz"
                                         ? { discountFoiz: raqamgaAylantirish(qiymat) > 100 ? "100" : qiymat }
                                         : { discount: qiymat }
-                                    )
-                                  }
+                                    );
+                                  }}
                                   onKeyDown={(event) => {
                                     if (qatorKlavishlari(event, index, "chegirma")) return;
                                     if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
@@ -2168,6 +2289,7 @@ export default function YangiSotuvModal({
                                   ))}
                                 </div>
                               </div>
+                              </XatoliMaydon>
                               {mahsulot.discountTuri === "foiz" && chegirma > 0 && (
                                 <p className="mt-1 text-[11px] font-semibold text-emerald-600">= {pulniFormatlash(chegirma, sotuvVal)}</p>
                               )}
@@ -2213,10 +2335,21 @@ export default function YangiSotuvModal({
                                 })}
                               </p>
                             )}
+
+                            {qatorXatosi && (
+                              <div className="sm:col-span-2 lg:col-span-full">
+                                <MaydonXatosi matn={qatorXatosi} />
+                              </div>
+                            )}
                           </div>
                         );
                       })}
                     </div>
+                    {fx.xato("items") && (
+                      <div className="mt-3">
+                        <MaydonXatosi matn={fx.xato("items")} />
+                      </div>
+                    )}
                   </div>
 
                   <div ref={xulosaKartasiRef} className="mt-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -2233,6 +2366,7 @@ export default function YangiSotuvModal({
                     </div>
                   )}
 
+                  <XatoliMaydon xato={fx.xato("note")}>
                   <label className="mt-5 grid gap-1.5">
                     <span className="flex items-center justify-between gap-3">
                       <span className={yorliqKlassi}>{t("comment.label")}</span>
@@ -2240,13 +2374,17 @@ export default function YangiSotuvModal({
                     </span>
                     <textarea
                       value={izoh}
-                      onChange={(event) => setIzoh(event.target.value.slice(0, IZOH_MAKS_UZUNLIK))}
+                      onChange={(event) => {
+                        fx.tozala("note");
+                        setIzoh(event.target.value.slice(0, IZOH_MAKS_UZUNLIK));
+                      }}
                       maxLength={IZOH_MAKS_UZUNLIK}
                       rows={3}
                       placeholder={t("comment.placeholder")}
                       className={cn(maydonKlassi, "h-auto min-h-[88px] resize-y py-3 font-medium")}
                     />
                   </label>
+                  </XatoliMaydon>
                 </section>
 
                 <section className={kartaKlassi}>
@@ -2287,7 +2425,7 @@ export default function YangiSotuvModal({
                     </button>
                   ) : (
                     <div className="animate-in slide-in-from-top-2 fade-in-0 duration-300">
-                      <div className="rounded-2xl border-2 border-orange-300 bg-gradient-to-br from-white to-[#F8FAFC] p-4 shadow-inner transition-all duration-300 ease-in-out focus-within:ring-4 focus-within:ring-orange-100">
+                      <div className={`rounded-2xl border-2 border-orange-300 bg-gradient-to-br from-white to-[#F8FAFC] p-4 shadow-inner transition-all duration-300 ease-in-out focus-within:ring-4 focus-within:ring-orange-100 ${fx.xato("assigneeId") ? xatoRamkasi : ""}`}>
                         <div className="flex items-start gap-4">
                           <div className="min-w-0 flex-1">
                             <input
@@ -2322,6 +2460,7 @@ export default function YangiSotuvModal({
                             <SavdoSelect
                               value={responsibleId}
                               onChange={(value) => {
+                                fx.tozala("assigneeId");
                                 setResponsibleId(value);
                                 setFaoliyatSaqlangan(false);
                               }}
@@ -2438,6 +2577,11 @@ export default function YangiSotuvModal({
                           </button>
                         </div>
                       </div>
+                      {fx.xato("assigneeId") && (
+                        <div className="mt-3">
+                          <MaydonXatosi matn={fx.xato("assigneeId")} />
+                        </div>
+                      )}
 
                       <div className="mt-4 flex flex-wrap items-center gap-4">
                         <button
@@ -2462,6 +2606,7 @@ export default function YangiSotuvModal({
                             setFaoliyatSoat("15:00");
                             setFaoliyatSaqlangan(false);
                             setFaoliyatOchiq(false);
+                            fx.tozala("assigneeId");
                           }}
                           className="text-xs font-bold uppercase text-slate-600 transition hover:text-slate-900"
                         >

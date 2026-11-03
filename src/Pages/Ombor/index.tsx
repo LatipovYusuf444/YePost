@@ -22,6 +22,9 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
+import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import ModalYuklanmoqda from "@/Components/common/ModalYuklanmoqda";
 import { useModalYuklash } from "@/hooks/useModalYuklash";
 import LoadingState from "@/Components/common/LoadingState";
@@ -37,6 +40,16 @@ import OrganizationTablari, { type OrganizationTab } from "./OrganizationTablari
 import OmborJadval from "./OmborJadval";
 
 type Korinish = "jadval" | "kartochka";
+
+// Ombor oynasida server xatosi qaysi maydonga tegishli (kalit — so'rov tanasidagi backend nomi).
+const OMBOR_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  name: { maydonlar: ["name"], kodlar: ["name"], sozlar: ["ombor nomi", "название склада"] },
+  latitude: { maydonlar: ["latitude", "longitude"], kodlar: ["latitude", "longitude", "coordinate"], sozlar: ["koordinata", "координат"] },
+  address: { maydonlar: ["address"], kodlar: ["address"], sozlar: ["manzil", "адрес"] },
+  openingTime: { maydonlar: ["openingTime", "closingTime"], kodlar: ["opening", "closing", "working_hours"], sozlar: ["ish vaqti", "ishlash vaqti", "время работы"] },
+  responsibleId: { maydonlar: ["responsibleId"], kodlar: ["responsible"], sozlar: ["mas'ul", "ответствен"] },
+  kind: { maydonlar: ["kind"], kodlar: ["kind"] },
+};
 
 function ismBoshHarflari(nom: string) {
   return nom
@@ -86,6 +99,7 @@ export default function Ombor() {
   const ishlabChiqarish = useIshlabChiqarishStore((holat) => holat.enabled);
   const [gpsYuklanmoqda, setGpsYuklanmoqda] = useState(false);
   const [formaXatosi, setFormaXatosi] = useState<string | null>(null);
+  const fx = useMaydonXatolari(OMBOR_XATO_QOIDALARI);
   const [gpsXatoTafsiloti, setGpsXatoTafsiloti] = useState("");
   const sahifadagiOmborlar = useMemo(() => omborlar.slice((tablePage - 1) * tablePageSize, tablePage * tablePageSize), [omborlar, tablePage, tablePageSize]);
   useEffect(() => setTablePage(1), [omborlar, tablePageSize]);
@@ -183,13 +197,17 @@ export default function Ombor() {
     setIsActive(toliqOmbor?.isActive ?? true);
     setGpsYuklanmoqda(false);
     setFormaXatosi(null);
+    fx.ornat({});
     setGpsXatoTafsiloti("");
     setModalOchiq(true);
   }
 
   async function saqlash(event: FormEvent) {
     event.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      fx.ornat({ name: t("omborModali.errors.nameRequired") });
+      return;
+    }
 
     const koordinatalar = gps
       .split(",")
@@ -203,11 +221,14 @@ export default function Ombor() {
         koordinatalar[1] < -180 ||
         koordinatalar[1] > 180)
     ) {
-      setFormaXatosi("omborModali.errors.gpsFormat");
+      // GPS formati xatosi GPS maydonining o'zida ko'rsatiladi.
+      setFormaXatosi(null);
+      fx.ornat({ latitude: t("omborModali.errors.gpsFormat") });
       return;
     }
 
     setFormaXatosi(null);
+    fx.ornat({});
     const data: OmborSaqlashMalumoti = {
       name: name.trim(),
       ...(branchId ? { branchId } : {}),
@@ -220,9 +241,9 @@ export default function Ombor() {
       isActive,
       ...(ishlabChiqarish ? { kind: omborTuri } : {}),
     };
-    const muvaffaqiyatli = tahrirOmbor
-      ? await omborYangilash(tahrirOmbor.id, data)
-      : await omborYaratish(data);
+    const muvaffaqiyatli = await fx.kuzat(() => (tahrirOmbor
+      ? omborYangilash(tahrirOmbor.id, data)
+      : omborYaratish(data)));
 
     if (muvaffaqiyatli) setModalOchiq(false);
   }
@@ -239,6 +260,7 @@ export default function Ombor() {
       async ({ coords }) => {
         const latitude = Number(coords.latitude.toFixed(6));
         const longitude = Number(coords.longitude.toFixed(6));
+        fx.tozala("latitude", "longitude");
         setGps(`${latitude}, ${longitude}`);
 
         try {
@@ -721,10 +743,10 @@ export default function Ombor() {
             </header>
 
             <div className="scrollbar-hidden flex-1 overflow-y-auto px-6 py-6 sm:px-9">
-              {xatolik && (
+              {(fx.tepadagi || (!fx.bor && xatolik)) && (
                 <div className="mb-4 flex items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">
-                  <span>{xatolik}</span>
-                  <button type="button" onClick={xatolikniTozalash} className="text-xs uppercase">
+                  <span>{fx.tepadagi || xatolik}</span>
+                  <button type="button" onClick={() => { fx.ornat({}); xatolikniTozalash(); }} className="text-xs uppercase">
                     {t("omborModali.close")}
                   </button>
                 </div>
@@ -745,18 +767,24 @@ export default function Ombor() {
                   </h3>
 
                   <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                    <XatoliMaydon xato={fx.xato("name")} className="sm:col-span-2">
                     <label className="grid gap-2 sm:col-span-2">
                       <span className="text-sm font-bold text-slate-500">{t("omborModali.nameLabel")}</span>
                       <input
                         value={name}
-                        onChange={(event) => setName(event.target.value)}
+                        onChange={(event) => {
+                          fx.tozala("name");
+                          setName(event.target.value);
+                        }}
                         required
                         autoFocus
                         className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                         placeholder={t("omborModali.namePlaceholder")}
                       />
                     </label>
+                    </XatoliMaydon>
 
+                    <XatoliMaydon xato={fx.xato("latitude") ?? fx.xato("longitude")} className="sm:col-span-2">
                     <div className="grid gap-2 sm:col-span-2">
                       <span className="flex items-center gap-2 text-sm font-bold text-slate-500">
                         <MapPin size={16} className="text-orange-500" />
@@ -765,7 +793,10 @@ export default function Ombor() {
                       <div className="flex gap-2">
                         <input
                           value={gps}
-                          onChange={(event) => setGps(event.target.value)}
+                          onChange={(event) => {
+                            fx.tozala("latitude", "longitude");
+                            setGps(event.target.value);
+                          }}
                           className="h-14 min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                           placeholder={t("omborModali.gpsPlaceholder")}
                         />
@@ -784,17 +815,24 @@ export default function Ombor() {
                         </button>
                       </div>
                     </div>
+                    </XatoliMaydon>
 
+                    <XatoliMaydon xato={fx.xato("address")} className="sm:col-span-2">
                     <label className="grid gap-2 sm:col-span-2">
                       <span className="text-sm font-bold text-slate-500">{t("omborModali.addressLabel")}</span>
                       <input
                         value={address}
-                        onChange={(event) => setAddress(event.target.value)}
+                        onChange={(event) => {
+                          fx.tozala("address");
+                          setAddress(event.target.value);
+                        }}
                         className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                         placeholder={t("omborModali.addressPlaceholder")}
                       />
                     </label>
+                    </XatoliMaydon>
 
+                    <XatoliMaydon xato={fx.xato("openingTime") ?? fx.xato("closingTime")}>
                     <div className="grid gap-2">
                       <span className="flex items-center gap-2 text-sm font-bold text-slate-500">
                         <Clock3 size={16} className="text-orange-500" />
@@ -804,18 +842,25 @@ export default function Ombor() {
                         <input
                           type="time"
                           value={openingTime}
-                          onChange={(event) => setOpeningTime(event.target.value)}
+                          onChange={(event) => {
+                            fx.tozala("openingTime", "closingTime");
+                            setOpeningTime(event.target.value);
+                          }}
                           className="h-14 min-w-0 rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                         />
                         <span className="text-slate-400">—</span>
                         <input
                           type="time"
                           value={closingTime}
-                          onChange={(event) => setClosingTime(event.target.value)}
+                          onChange={(event) => {
+                            fx.tozala("openingTime", "closingTime");
+                            setClosingTime(event.target.value);
+                          }}
                           className="h-14 min-w-0 rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-800 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                         />
                       </div>
                     </div>
+                    </XatoliMaydon>
 
                     <label className="grid gap-2">
                       <span className="flex items-center gap-2 text-sm font-bold text-slate-500">
@@ -840,19 +885,25 @@ export default function Ombor() {
                     </div>
                     <div className="mt-4 space-y-4">
                       {ishlabChiqarish && (
+                        <XatoliMaydon xato={fx.xato("kind")}>
                         <label className="grid gap-2">
                           <span className="text-sm font-bold text-slate-500">{tIc("warehouse.kind")}</span>
-                          <AppSelect value={omborTuri} onChange={(event) => setOmborTuri(event.target.value as OmborTuri)} className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-700 outline-none">
+                          <AppSelect value={omborTuri} onChange={(event) => { fx.tozala("kind"); setOmborTuri(event.target.value as OmborTuri); }} className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-700 outline-none">
                             <option value="STORE">{tIc("warehouse.kinds.STORE")}</option>
                             <option value="WIP">{tIc("warehouse.kinds.WIP")}</option>
                           </AppSelect>
                         </label>
+                        </XatoliMaydon>
                       )}
+                      <XatoliMaydon xato={fx.xato("responsibleId")}>
                       <label className="grid gap-2">
                         <span className="text-sm font-bold text-slate-500">{t("omborModali.responsibleNameLabel")}</span>
                         <AppSelect
                           value={responsibleId}
-                          onChange={(event) => setResponsibleId(event.target.value)}
+                          onChange={(event) => {
+                            fx.tozala("responsibleId");
+                            setResponsibleId(event.target.value);
+                          }}
                           className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                         >
                           <option value="">{t("omborModali.responsiblePlaceholder")}</option>
@@ -863,6 +914,7 @@ export default function Ombor() {
                           ))}
                         </AppSelect>
                       </label>
+                      </XatoliMaydon>
                       <label className="grid gap-2">
                         <span className="flex items-center gap-2 text-sm font-bold text-slate-500">
                           <Phone size={16} className="text-orange-500" />

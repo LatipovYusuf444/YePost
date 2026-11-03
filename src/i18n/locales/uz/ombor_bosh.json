@@ -75,7 +75,8 @@
       "gpsFormat": "GPS koordinatasini latitude, longitude formatida kiriting.",
       "geoUnsupported": "Brauzeringiz GPS aniqlashni qo'llab-quvvatlamaydi.",
       "gpsAddressFailed": "GPS aniqlandi, lekin yozma manzil olinmadi: {{error}}",
-      "geoFailed": "GPS joylashuvini aniqlab bo'lmadi. Brauzer ruxsatini tekshiring."
+      "geoFailed": "GPS joylashuvini aniqlab bo'lmadi. Brauzer ruxsatini tekshiring.",
+      "nameRequired": "Ombor nomini kiriting."
     }
   },
   "yangiKirim": {
@@ -149,6 +150,16 @@
       "exchangeRateRequired": "USD mahsulotini kirim qilish uchun Sozlamalar → Valyuta bo‘limida dollar kursini kiriting. Kurssiz USD narxi so‘m deb saqlanmaydi.",
       "rowsIncomplete": "Har bir qatorda mahsulot, ombor, miqdor va tan narxni to'liq kiriting.",
       "mixedWarehouse": "Barcha qatorlarda bir xil omborni tanlang."
+    },
+    "fieldErrors": {
+      "productRequired": "Mahsulotni tanlang.",
+      "warehouseRequired": "Omborni tanlang.",
+      "quantityInvalid": "Miqdorni kiriting.",
+      "priceInvalid": "Tan narxni to'g'ri kiriting.",
+      "mixedWarehouse": "Boshqa ombor tanlangan.",
+      "quantityNotWhole": "Faqat butun son kiriting.",
+      "serialRequired": "Seriyani yozing.",
+      "serialDuplicate": "Bu seriya takrorlangan."
     }
   },
   "mahsulotYaratish": {
@@ -168,6 +179,9 @@
     "create": "Yaratish",
     "errors": {
       "required": "Nomi, shtrix kod, kategoriya va o'lchov birligini to'ldiring."
+    },
+    "fieldErrors": {
+      "required": "Bu maydonni to'ldiring."
     }
   }
 }
