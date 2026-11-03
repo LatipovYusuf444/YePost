@@ -16,6 +16,7 @@ const compiled = ts.transpileModule(declarations.join('\n') + '\nexports.Modal =
 const noop = () => {};
 const helpers = require('../src/lib/tolovOrtiqchasi.ts');
 const dates = require('../src/lib/hujjatSanasi.ts');
+const kursChegarasi = require('../src/lib/kursChegarasi.ts');
 const elements = node => Array.isArray(node) ? node.flatMap(elements) : !node || typeof node !== 'object' ? [] : [node, ...elements(node.props?.children)];
 function editor(overrides = {}) {
   const states = [];
@@ -32,7 +33,7 @@ function editor(overrides = {}) {
     sotuvValyutasi: sale => sale.currency || 'UZS', tolovValyutasi: (payment, sale) => payment.currency || sale.currency || 'UZS',
     tolovSotuvValyutasida: payment => Number(payment.settledAmount ?? payment.amount),
     sotuvQarzdorlikSummasi: () => 0, pulniFormatlash: (amount, currency) => `${amount} ${currency}`,
-    tolovTuriMatni: {}, ...helpers, ...dates,
+    tolovTuriMatni: {}, ...helpers, ...dates, ...kursChegarasi,
     useMaydonXatolari: () => ({ xato: () => undefined, bor: false, tepadagi: '', ornat() {}, tozala() {}, tekshiruv() {}, serverdan: () => false, kuzat: (f) => f() }), xatoRamkasi: '',
     xatoBelgisi: () => 0, belgidanKeyingiXato: () => undefined, formaTolovigaTegishli: () => undefined,
   };
@@ -208,4 +209,13 @@ test('cashier rate must be a positive number', async () => {
   kassirKursiniYoz(edit, '0');
   await save(edit);
   assert.equal(edit.changes.length, 0, 'noto‘g‘ri kurs bilan saqlanmaydi');
+});
+
+test('cashier rate below 1 000 is rejected before sending (backend returns 400 for rate < 1000)', async () => {
+  const edit = editor({ sotuv: { id: 's', currency: 'USD', payments: [], date: kunBugun() }, jami: 426.54 });
+  node(edit, 'button', props => props.children === 'tolovModal.valyutaSom').props.onClick();
+  node(edit, 'SummaMaydoni', props => props['aria-label']?.startsWith('tolovModal.tolovSummasi')).props.onChange('312000');
+  kassirKursiniYoz(edit, '999');
+  await save(edit);
+  assert.equal(edit.changes.length, 0, '1 000 dan past kurs bilan saqlanmaydi');
 });

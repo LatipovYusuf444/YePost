@@ -7,7 +7,7 @@ import { holatBoyicha, tahrirTanasi, hujjatRaqami, kalkulyatsiyaJami, kalkulyats
 import { taqsimotSummasi } from "@/lib/qarzTaqsimoti";
 import type { KalkulyatsiyaKartasi, KunNarxi as KunNarxiJavobi } from "@/types/ishlabChiqarish";
 import { Asboblar, Bolim, HolatFiltri, HolatKartalari, Holat, Jadval, MahsulotQidiruvi, Maydon, MaydonXatosi, Ogohlantirish, Oyna, QatorKartasi, QatorOchirish, QatorQoshish, QidiruvMaydoni, Sahifa, Tafsilotlar, XatoQutisi, Yuklanmoqda, inputKlass, tugmaAsosiy, tugmaIkkinchi, tugmaXavfli, xatoRamkasi, type HolatGuruhi, type Ustun } from "./umumiy";
-import { useAmal, useMalumot, useMaydonXatolari } from "./hooklar";
+import { useAmal, useMalumot, useMaydonXatolari, useQoralamaNazorati } from "./hooklar";
 
 type Qator = KalkulyatsiyaFormasi["lines"][number] & { nom?: string };
 type Forma = Omit<KalkulyatsiyaFormasi, "lines"> & { nom?: string; lines: Qator[] };
@@ -179,6 +179,7 @@ function KartaOynasi({ boshlangich, onYopish, onSaqlandi }: { boshlangich: { id?
   const [forma, setForma] = useState(boshlangich.qiymat);
   const amal = useAmal();
   const fx = useMaydonXatolari(KARTA_XATO_QOIDALARI);
+  const qoralamaNazorati = useQoralamaNazorati(boshlangich.id ? () => ishlabChiqarishApi.kalkulyatsiya.olish(boshlangich.id as string) : null);
   // Maydonga bog'langan server xatosi tepada qayta chiqmasin (maydon tuzatilgach ham).
   const serverXatosi = (tafsilot: unknown) => { if (fx.serverdan(tafsilot)) amal.setXato(""); };
   const retseptlar = useMalumot(() => ishlabChiqarishApi.retseptlar.royxat({ status: "ACTIVE", modificationId: forma.modificationId || undefined }), forma.modificationId);
@@ -209,16 +210,26 @@ function KartaOynasi({ boshlangich, onYopish, onSaqlandi }: { boshlangich: { id?
     void amal.bajar(async () => {
       const saqlangan = boshlangich.id ? await ishlabChiqarishApi.kalkulyatsiya.yangilash(boshlangich.id, tahrirTanasi(natija.tana, { recipeId: null, validFrom: null, normalScrapPercent: 0, note: "" })) : await ishlabChiqarishApi.kalkulyatsiya.yaratish(natija.tana);
       onSaqlandi(saqlangan.id);
-    }, serverXatosi);
+    }, (tafsilot) => {
+      serverXatosi(tafsilot);
+      // Shu orada faollashtirilgan bo'lsa tahrir rad etiladi: karta holati qayta o'qiladi.
+      if (boshlangich.id) qoralamaNazorati.tekshir();
+    });
   }
 
   return (
     <Oyna keng ikonka={Calculator} sarlavha={t(boshlangich.id ? "costing.edit" : "costing.create")} izoh={t("costing.formHint")} onYopish={onYopish} pastki={<>
       <span className="mr-auto text-sm font-black text-slate-700">{t("costing.estimate", { summa: taqsimotSummasi(jami, "UZS") })}</span>
       <button type="button" onClick={onYopish} className={tugmaIkkinchi}>{t("actions.cancel")}</button>
-      <button type="button" disabled={amal.band} onClick={saqlash} className={`${tugmaAsosiy} min-w-40`}><CheckCircle2 size={18} />{t("actions.save")}</button>
+      <button type="button" disabled={amal.band || qoralamaNazorati.qoralamaEmas} onClick={saqlash} className={`${tugmaAsosiy} min-w-40`}><CheckCircle2 size={18} />{t("actions.save")}</button>
     </>}>
       <XatoQutisi matn={fx.tepadagi || (fx.bor ? "" : amal.xato)} />
+      {qoralamaNazorati.qoralamaEmas && boshlangich.id && (
+        <Ogohlantirish>
+          {t("errors.notDraftAnymore")}{" "}
+          <button type="button" onClick={() => onSaqlandi(boshlangich.id as string)} className="font-black text-[#2563EB] underline underline-offset-2">{t("actions.openUpdated")}</button>
+        </Ogohlantirish>
+      )}
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <Bolim ikonka={Package} sarlavha={t("costing.sectionMain")}>
           <div className="grid gap-4 sm:grid-cols-2">

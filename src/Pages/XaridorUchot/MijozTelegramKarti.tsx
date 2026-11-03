@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Copy, ExternalLink, LoaderCircle, QrCode, RefreshCw, Send, Unlink } from "lucide-react";
+import { Check, Copy, ExternalLink, LoaderCircle, QrCode, RefreshCw, Send, Unlink, User, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import QrKod from "@/Components/common/QrKod";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
@@ -20,6 +20,8 @@ export default function MijozTelegramKarti({ xaridor, havolaBilanOchish = false 
   const { t } = useTranslation("xaridor_uchot");
   const [bot, setBot] = useState<MijozTelegramHolati>(() => xaridor.telegramBot ?? mijozTelegramHolati({}));
   const [havola, setHavola] = useState<TelegramHavola | null>(null);
+  // Qaysi havola ko'rsatiladi: shaxsiy (url, mijozning o'zi) yoki guruh (groupUrl, mijoz jamoasi). Ikkalasi bitta kod — birinchi ishlatilgani ulanadi.
+  const [havolaTuri, setHavolaTuri] = useState<"shaxsiy" | "guruh">("shaxsiy");
   const [jarayon, setJarayon] = useState<"" | "yaratilmoqda" | "yangilanmoqda">("");
   const [uzishOchiq, setUzishOchiq] = useState(false);
   const [nusxalandi, setNusxalandi] = useState(false);
@@ -103,7 +105,10 @@ export default function MijozTelegramKarti({ xaridor, havolaBilanOchish = false 
     setNusxalandi(false);
     try {
       const yangi = await telegramApi.mijozHavolasi(xaridor.id);
-      if (faolRef.current) setHavola(yangi);
+      if (faolRef.current) {
+        setHavola(yangi);
+        setHavolaTuri("shaxsiy");
+      }
     } catch (error) {
       // Bot yoqilmagan bo'lsa 400 errors.integrations.invalid_bot_token: tushunarli matn toastda ham chiqadi.
       if (faolRef.current) setXato(getApiErrorMessage(error));
@@ -127,10 +132,14 @@ export default function MijozTelegramKarti({ xaridor, havolaBilanOchish = false 
     }
   }
 
+  // Guruh havolasi faqat backend uni qaytarsa tanlanadi.
+  const guruhUrl = havola?.groupUrl ?? null;
+  const korsatilgan = havola ? (havolaTuri === "guruh" && guruhUrl ? guruhUrl : havola.url) : "";
+
   async function nusxalash() {
-    if (!havola) return;
+    if (!korsatilgan) return;
     try {
-      await navigator.clipboard.writeText(havola.url);
+      await navigator.clipboard.writeText(korsatilgan);
       setNusxalandi(true);
       window.setTimeout(() => {
         if (faolRef.current) setNusxalandi(false);
@@ -167,18 +176,41 @@ export default function MijozTelegramKarti({ xaridor, havolaBilanOchish = false 
 
       {havola && !ulangan && (
         <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50/50 p-4">
+          {guruhUrl && (
+            <div role="tablist" aria-label={t("telegramBot.linkTitle")} className="mb-4 inline-flex rounded-xl bg-white p-1 ring-1 ring-sky-100">
+              {(["shaxsiy", "guruh"] as const).map((tur) => (
+                <button
+                  key={tur}
+                  type="button"
+                  role="tab"
+                  aria-selected={havolaTuri === tur}
+                  data-testid={`telegram-havola-${tur}`}
+                  onClick={() => {
+                    setHavolaTuri(tur);
+                    setNusxalandi(false);
+                  }}
+                  className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3.5 text-xs font-bold transition ${
+                    havolaTuri === tur ? "bg-[#229ED9] text-white shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  {tur === "guruh" ? <Users size={14} /> : <User size={14} />}
+                  {t(tur === "guruh" ? "telegramBot.groupLink" : "telegramBot.personalLink")}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="flex flex-wrap items-start gap-4">
             <div className="shrink-0 rounded-xl bg-white p-2 shadow-sm ring-1 ring-sky-100">
-              <QrKod qiymat={havola.url} olcham={152} aria-label={t("telegramBot.qrAria")} />
+              <QrKod qiymat={korsatilgan} olcham={152} aria-label={t("telegramBot.qrAria")} />
             </div>
             <div className="min-w-0 flex-1 space-y-2.5">
               <p className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wide text-slate-500">
                 <QrCode size={14} className="text-[#229ED9]" />
-                {t("telegramBot.linkTitle")}
+                {t(havolaTuri === "guruh" && guruhUrl ? "telegramBot.groupLinkTitle" : "telegramBot.linkTitle")}
               </p>
               <input
                 readOnly
-                value={havola.url}
+                value={korsatilgan}
                 onFocus={(event) => event.currentTarget.select()}
                 aria-label={t("telegramBot.linkTitle")}
                 className="h-10 w-full rounded-xl border border-sky-100 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-[#229ED9]"
@@ -188,11 +220,14 @@ export default function MijozTelegramKarti({ xaridor, havolaBilanOchish = false 
                   {nusxalandi ? <Check size={15} className="text-emerald-600" /> : <Copy size={15} />}
                   {nusxalandi ? t("telegramBot.copied") : t("telegramBot.copy")}
                 </button>
-                <a href={havola.url} target="_blank" rel="noopener noreferrer" className={`${tugmaKlassi} bg-[#229ED9] text-white hover:bg-[#1c8bc0]`}>
+                <a href={korsatilgan} target="_blank" rel="noopener noreferrer" className={`${tugmaKlassi} bg-[#229ED9] text-white hover:bg-[#1c8bc0]`}>
                   <ExternalLink size={15} />
                   {t("telegramBot.openInTelegram")}
                 </a>
               </div>
+              {havolaTuri === "guruh" && guruhUrl && (
+                <p className="text-xs font-semibold leading-5 text-slate-600">{t("telegramBot.groupHint")}</p>
+              )}
               <p className="text-xs font-semibold leading-5 text-slate-500">
                 {havola.expiresAt ? t("telegramBot.expires", { vaqt: vaqtMatni(havola.expiresAt) }) : t("telegramBot.oneTime")}
               </p>

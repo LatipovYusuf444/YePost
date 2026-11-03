@@ -22,6 +22,8 @@ import { useKursniTayyorlash, useValyutaStore, type Valyuta } from "@/lib/valyut
 import { useDavrStore } from "@/store/davrStore";
 import { useSavdoStore, type NakladnoyNatijasi } from "@/store/savdoStore";
 import type { Sotuv, SotuvTolovi, TolovTuri } from "@/types/savdo";
+import { ENG_KAM_KURS, kursJudaKichik } from "@/lib/kursChegarasi";
+import XatoliMaydon from "@/Components/common/XatoliMaydon";
 import SavdoSelect from "./SavdoSelect";
 import TolovNatijasiKarta from "./TolovNatijasi";
 import { qatorValyutasi, sotuvQarzdorlikSummasi, sotuvSummasi, sotuvValyutasi, tolovSotuvValyutasida, tolovValyutasi } from "./savdoYordamchilari";
@@ -221,12 +223,15 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
   const yangiForma = { paymentType: tur, amount: yangiSumma, currency: val, kun, izoh, kurs: kassirKursi };
   const ozgardi = tolovOzgarganmi(aslForma, yangiForma);
 
+  // Kassir kursi 1 000 dan past: xato kurs maydoni ostida (qizil ramka bilan) chiqadi.
+  const kursKamMatni = t("tolovModal.errors.kursKam", { min: ENG_KAM_KURS.toLocaleString("uz-UZ") });
   function tekshirish() {
     if (!(yangiSumma > 0)) return t("tolovModal.errors.nolDanKatta");
     // Qayta tasdiqlash (mode_off, rate_missing) PATCH'dan keyin tekshiriladi: xato bo'lsa sotuv bekor qilinib qoralamada qolardi — shuning uchun oldindan.
     if (dollarHujjatRejimsiz) return t("tolovTahriri.dollarRejimOchiq");
     // Boshqa valyutada to'lov kursni talab qiladi (kunlik kurs yo'q bo'lsa kassir kiritadi); PATCH kursni tekshirmaydi, tasdiqlash tekshiradi.
     if (val !== sotuvVal && !(hisobKursi > 0)) return t("tolovTahriri.kurs.kiriting");
+    if (val !== sotuvVal && kursJudaKichik(kassirKursi)) return kursKamMatni;
     if (kelajakKunmi(kun)) return t("tolovModal.errors.sanaKelajak");
     if (asos.sotuvKuni && kun < asos.sotuvKuni) return t("tolovModal.errors.sanaSotuvdanOldin", { sana: kunMatni(asos.sotuvKuni) });
     // Bekor qilish va qayta tasdiqlash sotuv sanasida ham, yangi to'lov sanasida ham yopilgan davrga tegmasligi kerak (backend 423).
@@ -510,6 +515,7 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
                   </div>
                 </div>
                 {val !== sotuvVal && (
+                  <XatoliMaydon xato={xatolik === kursKamMatni ? xatolik : undefined}>
                   <div className="mt-1 grid gap-1.5" data-testid="kassir-kursi">
                     <span className={belgiSinfi}>{t("tolovTahriri.kurs.nomi")}</span>
                     <div className="flex items-stretch gap-2">
@@ -534,6 +540,7 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
                     </div>
                     <span className="text-[11px] font-medium leading-4 text-slate-500">{t("tolovTahriri.kurs.izoh")}</span>
                   </div>
+                  </XatoliMaydon>
                 )}
                 {val !== sotuvVal && kurs > 0 && (
                   <span className="text-xs font-semibold leading-5 text-slate-500" data-testid="sotuv-kursi">
@@ -713,7 +720,7 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
       </div>
 
       <div className="shrink-0 space-y-3 border-t border-slate-100 bg-white px-6 py-4 sm:px-7">
-        {xatolik && (
+        {xatolik && xatolik !== kursKamMatni && (
           <div role="alert" className="rounded-xl bg-red-50 px-4 py-2.5 text-sm font-bold text-red-600">
             {xatolik}
           </div>

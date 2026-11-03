@@ -66,3 +66,10 @@ test('natijalar soni cheklanadi: yozuv bilan 50 ta, kategoriya ro‘yxatida 200 
   assert.equal(qidirish(kop, 'mahsulot').length, KO_RSATILADIGAN_SONI);
   assert.equal(qidirish(kop, '', hammasi).length, KATEGORIYA_RO_YXATI_SONI);
 });
+
+test('serverQatorlari: so‘zsiz (faqat kategoriya) ro‘yxatda shtrix-kodsiz mahsulot "aniq mos" bo‘lmaydi, tartib serverniki', async () => {
+  const { serverQatorlari } = await import('../src/Components/layout/headerQidiruv.ts');
+  const item = (id, barcode) => ({ modificationId: id, productId: `p${id}`, quantity: 2, modification: { id, name: 'Asosiy variant', barcode, product: { id: `p${id}`, name: `Mahsulot ${id}` } } });
+  const natija = serverQatorlari([{ warehouseId: 'w1', warehouseName: 'Asosiy', qatorlar: [item('b', '111'), item('a', undefined)] }], '');
+  assert.deepEqual(natija.map((qator) => [qator.item.modificationId, qator.daraja]), [['b', 2], ['a', 2]]);
+});

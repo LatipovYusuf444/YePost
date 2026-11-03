@@ -213,9 +213,10 @@ export const modifikatsiyalarApi = {
   },
   // Bitta qidiruv sahifasi: so'z serverda filtrlanadi va aniq mos (shtrix-kod, artikul, nom) birinchi keladi. Butun katalog yuklanmaydi.
   // Qoldiq javobda: `warehouseId` berilsa shu ombor bo'yicha, berilmasa hamma omborlar yig'indisi. Yordamchi so'rov: xato toasti chiqmaydi.
-  qidiruvSahifasi: async ({ search, page = 1, pageSize = 20, warehouseId, signal }: { search: string; page?: number; pageSize?: number; warehouseId?: string; signal?: AbortSignal }) => {
+  // `categoryId` — kategoriya filtri (so'z bilan ham, so'zsiz ham ishlaydi: so'zsiz — kategoriyaning butun ro'yxati sahifalab).
+  qidiruvSahifasi: async ({ search, page = 1, pageSize = 20, warehouseId, categoryId, signal }: { search: string; page?: number; pageSize?: number; warehouseId?: string; categoryId?: string; signal?: AbortSignal }) => {
     const response = await apiClient.get<unknown>("/catalog/modifications/search", {
-      params: { search, page, pageSize, ...(warehouseId ? { warehouseId } : {}) },
+      params: { page, pageSize, ...(search ? { search } : {}), ...(warehouseId ? { warehouseId } : {}), ...(categoryId ? { categoryId } : {}) },
       signal,
       xatoniYashirish: true,
     });

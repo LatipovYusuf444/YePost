@@ -569,16 +569,17 @@ function modifikatsiyaniQoldiqqa(modification: MahsulotModifikatsiyasi, quantity
 
 // Bosh sahifa qidiruvi: so'z serverga yuboriladi, narx va qoldiq shu javobning o'zida. Savatchaga ombor kerak bo'lgani uchun har ombor bo'yicha
 // bitta so'rov ketadi (ombor ro'yxati bo'sh bo'lsa — bitta so'rov, qoldiq hamma omborlar yig'indisi). Bir ombor xato bersa qolganlari ko'rsatiladi.
-export async function mahsulotlarniServerdanQidirish({ search, page = 1, pageSize = 20, warehouseIds, signal }: {
+export async function mahsulotlarniServerdanQidirish({ search, page = 1, pageSize = 20, warehouseIds, categoryId, signal }: {
   search: string;
   page?: number;
   pageSize?: number;
   warehouseIds: string[];
+  categoryId?: string;
   signal?: AbortSignal;
 }) {
   const natijalar = await Promise.allSettled(
     (warehouseIds.length ? warehouseIds : [""]).map(async (warehouseId) => {
-      const sahifa = await modifikatsiyalarApi.qidiruvSahifasi({ search, page, pageSize, warehouseId: warehouseId || undefined, signal });
+      const sahifa = await modifikatsiyalarApi.qidiruvSahifasi({ search, page, pageSize, warehouseId: warehouseId || undefined, ...(categoryId ? { categoryId } : {}), signal });
       const qatorlar = sahifa.items.flatMap((qator) => {
         const modification = katalogQidiruvQatoriniMoslash(qator);
         return modification?.id && modification.product?.isActive !== false ? [modifikatsiyaniQoldiqqa(modification, katalogQidiruvQoldigi(qator))] : [];

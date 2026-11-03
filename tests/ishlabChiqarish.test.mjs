@@ -100,7 +100,8 @@ test('shift body: stock is left to the norm when empty, off-recipe is flagged, s
   assert.equal('downtime' in tana, false);
   assert.match(tana.shiftEndsAt, /^2026-11-02T\d\d:00:00\.000Z$/);
   const toliq = lib.smenaTanasiniYigish(smena({ inputs: [{ modificationId: 'm1', quantity: '5', entryMethod: 'ACTUAL', offRecipe: true }], downtime: [{ reason: 'NO_POWER', hours: '1.5', note: '' }] })).tana;
-  assert.deepEqual(toliq.inputs, [{ modificationId: 'm1', quantity: 5, entryMethod: 'ACTUAL', offRecipe: true }]);
+  // offRecipe serverda aniqlanadi (2026-11-02): formada belgilangan bo'lsa ham yuborilmaydi.
+  assert.deepEqual(toliq.inputs, [{ modificationId: 'm1', quantity: 5, entryMethod: 'ACTUAL' }]);
   assert.deepEqual(toliq.downtime, [{ reason: 'NO_POWER', hours: 1.5 }]);
   assert.deepEqual(lib.smenaTanasiniYigish(smena({ orderId: '', recipeId: 'r1', destWarehouseId: 'w2' })).tana.recipeId, 'r1');
   assert.equal(lib.smenaTanasiniYigish(smena({ orderId: '', recipeId: 'r1' })).xato, 'errors.orderOrRecipe');
@@ -237,4 +238,18 @@ test('client validators point at the exact field, including the row index', () =
 test('server validation paths map to row fields when no rule claims them', () => {
   const tafsilot = { message: 'Input validation failed', errors: [{ field: 'inputs[1].quantity', constraints: [{ message: 'Musbat son' }] }, { field: 'lines.0.price', constraints: [] }] };
   assert.deepEqual(lib.serverXatoMaydonlari(tafsilot, {}), { 'inputs.1.quantity': 'Musbat son', 'lines.0.price': 'Input validation failed' });
+});
+
+test('butunMiqdorXatolari: quantity_not_whole qator yo‘lisiz — yagona kasr miqdorli qator belgilanadi', () => {
+  const xato = { code: 'errors.catalog.quantity_not_whole', message: 'not whole' };
+  const qatorlar = [{ yol: 'lines.0.quantity', miqdor: '3' }, { yol: 'lines.1.quantity', miqdor: '2,5' }];
+  assert.deepEqual(lib.butunMiqdorXatolari(xato, qatorlar, 'butun'), { 'lines.1.quantity': 'butun' });
+  // Kasr qator bir nechta (12,5 kg va 2,5 dona): qaysi biri dona ekani noma'lum — kg qatori qizil bo'lmasin, xabar tepada.
+  assert.equal(lib.butunMiqdorXatolari(xato, [...qatorlar, { yol: 'lines.2.quantity', miqdor: 12.5 }], 'butun'), null);
+  // Boshqa xato yoki kasr qator yo'q — null (odatdagi bog'lash ishlaydi).
+  assert.equal(lib.butunMiqdorXatolari({ code: 'errors.production.comment_required' }, qatorlar, 'butun'), null);
+  assert.equal(lib.butunMiqdorXatolari(xato, [{ yol: 'lines.0.quantity', miqdor: '4' }], 'butun'), null);
+  // Server qator yo'lini bergan bo'lsa — uning o'zi ishlatiladi.
+  const maydonli = { ...xato, errors: [{ field: 'lines.1.quantity', constraints: [{ message: 'x' }] }] };
+  assert.equal(lib.butunMiqdorXatolari(maydonli, qatorlar, 'butun'), null);
 });

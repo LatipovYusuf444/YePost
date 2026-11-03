@@ -294,7 +294,8 @@
       "dateInvalid": "Sanani to'g'ri tanlang.",
       "rateInvalid": "Kursni to'g'ri kiriting (0 dan katta son).",
       "willReplace": "{{sana}} uchun kurs allaqachon kiritilgan ({{kurs}} so'm) — saqlasangiz almashtiriladi.",
-      "rules": "Kiritilgan kurs shu kundan keyingi kurs kiritilguncha amal qiladi va oldingi kunlarga ta'sir qilmaydi. So'mdagi narx butun so'mgacha yaxlitlanadi."
+      "rules": "Kiritilgan kurs shu kundan keyingi kurs kiritilguncha amal qiladi va oldingi kunlarga ta'sir qilmaydi. So'mdagi narx butun so'mgacha yaxlitlanadi.",
+      "rateTooLow": "Dollar kursi {{min}} so'mdan kam bo'lishi mumkin emas."
     },
     "history": {
       "title": "Kurslar tarixi",

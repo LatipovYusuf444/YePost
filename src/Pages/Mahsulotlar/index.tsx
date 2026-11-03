@@ -81,6 +81,8 @@ const MAHSULOT_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
   categoryId: { maydonlar: ["categoryId"], kodlar: ["category"], sozlar: ["kategoriya", "категори"] },
   ...BIRLIK_XATO_QOIDALARI,
   name: { maydonlar: ["name"] },
+  // Retseptda yoki ishlab chiqarish hujjatida ishlatilgan mahsulotda seriya hisobini o'zgartirib bo'lmaydi.
+  trackSerial: { maydonlar: ["trackSerial"], kodlar: ["serial_tracking_in_use"] },
   ...ASOSIY_NARX_XATO_QOIDALARI,
 };
 // Variantli yangi mahsulot: har variant alohida so'rovda yaratiladi va javobda qaysi qator ekani yo'q — shtrix-kod, narx va min. qoldiq
@@ -1546,7 +1548,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
                     {(["RAW","SEMI","FINISHED","PACKAGING","WASTE","SERVICE"] as const).map(x=><option key={x} value={x}>{tIc(`product.kinds.${x}`)}</option>)}
                   </AppSelect>
                 </label>
-                <label className="flex items-start gap-3 text-sm font-bold text-gray-700"><input type="checkbox" checked={trackSerial} onChange={e=>setTrackSerial(e.target.checked)} className="mt-0.5 h-5 w-5 accent-orange-500"/><span>{tIc("product.trackSerial")}<span className="mt-0.5 block text-xs font-semibold text-gray-500">{tIc("product.trackSerialHint")}</span></span></label>
+                <XatoliMaydon xato={fx.xato("trackSerial")}><label className="flex items-start gap-3 text-sm font-bold text-gray-700"><input type="checkbox" checked={trackSerial} onChange={e=>{setTrackSerial(e.target.checked);fx.tozala("trackSerial");}} className="mt-0.5 h-5 w-5 accent-orange-500"/><span>{tIc("product.trackSerial")}<span className="mt-0.5 block text-xs font-semibold text-gray-500">{tIc("product.trackSerialHint")}</span></span></label></XatoliMaydon>
               </div>}
               <div className="space-y-2">
                 <p className="text-sm font-black text-gray-500">{t("productModal.photoLabel")}</p>

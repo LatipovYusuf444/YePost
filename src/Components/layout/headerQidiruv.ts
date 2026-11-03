@@ -95,9 +95,10 @@ export function serverQatorlari(natijalar: OmborQidiruvNatijasi[], soz: string) 
     })
     .map((qator) => {
       const mod = qator.item.modification;
-      const birlik = aniqBirlik(qator.item, q);
-      const kodAniq = kichik(mod?.barcode) === q || kichik(mod?.article) === q || Boolean(birlik);
-      const nomAniq = [savatNomi(qator.item), mahsulotNomi(qator.item), mod?.name].some((nom) => kichik(nom) === q);
+      // So'zsiz (faqat kategoriya) ro'yxatda aniq moslik yo'q: shtrix-kodi bo'sh mahsulot "skaner kodi" bo'lib qolmasin.
+      const birlik = q ? aniqBirlik(qator.item, q) : undefined;
+      const kodAniq = Boolean(q) && (kichik(mod?.barcode) === q || kichik(mod?.article) === q || Boolean(birlik));
+      const nomAniq = Boolean(q) && [savatNomi(qator.item), mahsulotNomi(qator.item), mod?.name].some((nom) => kichik(nom) === q);
       return { ...qator, ...(birlik ? { birlik } : {}), daraja: kodAniq ? 0 : nomAniq ? 1 : 2 };
     })
     .sort((a, b) => a.daraja - b.daraja);

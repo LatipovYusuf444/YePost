@@ -46,8 +46,8 @@ const MATNLAR: Record<string, KodMatni> = {
     ru: "Нужна серия. Рулон приходуется с серией; в продаже, перемещении, списании и инвентаризации серийный товар пока выбрать нельзя.",
   },
   "errors.inventory.serial_tracking_in_use": {
-    uz: "Qoldig'i bor tovarda seriya hisobini o'zgartirib bo'lmaydi.",
-    ru: "Нельзя менять учёт по сериям у товара с остатком.",
+    uz: "Bu tovar qoldiqda, retseptda yoki ishlab chiqarish hujjatida ishlatilgan: seriya hisobini o'zgartirib bo'lmaydi.",
+    ru: "Товар есть в остатке, рецепте или производственном документе: учёт по сериям менять нельзя.",
   },
   "errors.inventory.draft_only_confirmable": {
     uz: "Bu hujjat allaqachon tasdiqlangan.",

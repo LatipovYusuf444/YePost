@@ -312,6 +312,7 @@
     "izohPlaceholder": "Masalan: kim berdi, qachon va nima uchun",
     "sanaOtganIzoh": "To'lov {{sana}} kuni berilgan deb yoziladi.",
     "errors": {
+      "kursKam": "Kurs {{min}} so'mdan kam bo'lishi mumkin emas (1 $ = necha so'm).",
       "kursNotogri": "Kursni to'g'ri kiriting: 0 dan katta son.",
       "manfiyBolmasin": "To'lov summasi manfiy bo'lishi mumkin emas.",
       "nolDanKatta": "To'lov summasi 0 dan katta bo'lishi kerak.",

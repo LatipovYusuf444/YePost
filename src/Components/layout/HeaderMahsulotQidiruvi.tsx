@@ -4,13 +4,7 @@ import { AlertTriangle, Check, ChevronDown, LayoutGrid, LoaderCircle, RefreshCw,
 import { useTranslation } from "react-i18next";
 import { pulMatni } from "@/lib/valyuta";
 import { asosiyMiqdor, birlikTopish } from "@/lib/kopBirlik";
-import {
-  katalogModifikatsiyalariniQoldiqTanlovigaOlish,
-  mahsulotlarniServerdanQidirish,
-  omborlarRoyxatiniOlish,
-  omborQoldiqlariniOlish,
-  qoldiqNomlariniBoyitish,
-} from "@/api/savdoApi";
+import { mahsulotlarniServerdanQidirish, omborlarRoyxatiniOlish } from "@/api/savdoApi";
 import { Popover, PopoverAnchor, PopoverContent } from "@/Components/ui/popover";
 import {
   DropdownMenu,
@@ -20,20 +14,11 @@ import {
   DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu";
 import { kategoriyalarApi } from "@/api/catalogApi";
-import { kategoriyaMahsulotlariniOlish } from "@/api/kategoriyaQoldigiApi";
 import { usePosStore } from "@/store/posStore";
 import { useKassaNarxTurlari } from "@/store/savdoSozlamalariStore";
 import type { Kategoriya } from "@/types/catalog";
-import {
-  dollarMalumoti,
-  mahsulotNomi,
-  qoldiqBirlashtirish,
-  qoldiqMiqdori,
-  qoldiqNarxi,
-  savatNomi,
-  tanlovKaliti,
-} from "./posMahsulotlari";
-import { qatorlarniUlash, qidirish, serverQatorlari, SERVER_SAHIFA_HAJMI, type Qator } from "./headerQidiruv";
+import { dollarMalumoti, qoldiqNarxi, savatNomi } from "./posMahsulotlari";
+import { qatorlarniUlash, serverQatorlari, SERVER_SAHIFA_HAJMI, type Qator } from "./headerQidiruv";
 
 // Bosh sahifa (POS) headeridagi tezkor qidiruv: mahsulot nomi, shtrix-kod yoki artikul bo'yicha qidiriladi,
 // ↑/↓ bilan tanlanadi, Enter (yoki skaner: kod + Enter) mahsulotni savatchaga qo'shadi.
@@ -41,9 +26,8 @@ import { qatorlarniUlash, qidirish, serverQatorlari, SERVER_SAHIFA_HAJMI, type Q
 // Skaner kodi Enter bosilgach kutmasdan so'raladi va maydon darrov bo'shaydi — ketma-ket skanlar bir-biriga qo'shilib ketmaydi.
 // Kategoriya filtri: qidiruv maydoni yonidagi tugma bilan kategoriya tanlanadi — natijalar faqat shu kategoriya mahsulotlari
 // bo'ladi, yozuvsiz esa kategoriyaning butun ro'yxati ko'rinadi (skaner kodi esa kategoriyadan qat'i nazar topiladi).
-// Qidiruv endpointida kategoriya filtri yo'q: bu rejimda ro'yxat MahsulotTanlashModal bilan bir xil manbadan (katalog + ombor qoldig'i) brauzerda filtrlanadi.
+// Kategoriya ham serverda filtrlanadi (search?categoryId=, so'z bilan ham, so'zsiz ham): butun katalog yuklanmaydi, ro'yxat sahifalab olinadi.
 
-type Malumot = { qatorlar: Qator[]; omborlarSoni: number };
 type ServerNatija = { qatorlar: Array<Qator & { daraja: number }>; jami: number; omborlarSoni: number };
 
 const KESH_MUDDATI = 60_000;
@@ -59,8 +43,6 @@ const HOVER_OCHISH_KECHIKISHI = 80;
 const HOVER_YOPISH_KECHIKISHI = 220;
 // "Barcha kategoriyalar" varianti uchun (menyu elementining qiymati bo'sh bo'lmasligi kerak).
 const HAMMA_KATEGORIYA = "__hammasi__";
-let kesh: { vaqt: number; malumot: Malumot } | null = null;
-let yuklanayotgan: Promise<Malumot> | null = null;
 // Kategoriyalar ro'yxati kam o'zgaradi: sahifa almashganda qayta so'ralmasligi uchun modul darajasida saqlanadi.
 let kategoriyalarKeshi: Kategoriya[] | null = null;
 let omborlarKeshi: { vaqt: number; sorov: Promise<Array<{ id: string; nom: string }>> } | null = null;
@@ -83,10 +65,17 @@ function omborlarniOlish() {
   return yozuv.sorov;
 }
 
-async function serverdanOlish(soz: string, sahifa: number, signal?: AbortSignal): Promise<ServerNatija> {
+async function serverdanOlish(soz: string, sahifa: number, signal?: AbortSignal, kategoriyaId = ""): Promise<ServerNatija> {
   // Ombor ro'yxati olinmasa ham qidiruv ishlaydi: qoldiq hamma omborlar yig'indisi, ombor sotuvda tanlanadi.
   const omborlar = await omborlarniOlish().catch(() => []);
-  const natijalar = await mahsulotlarniServerdanQidirish({ search: soz, page: sahifa, pageSize: SERVER_SAHIFA_HAJMI, warehouseIds: omborlar.map((ombor) => ombor.id), signal });
+  const natijalar = await mahsulotlarniServerdanQidirish({
+    search: soz,
+    page: sahifa,
+    pageSize: SERVER_SAHIFA_HAJMI,
+    warehouseIds: omborlar.map((ombor) => ombor.id),
+    categoryId: kategoriyaId || undefined,
+    signal,
+  });
   const nomlar = new Map(omborlar.map((ombor) => [ombor.id, ombor.nom]));
   return {
     qatorlar: serverQatorlari(natijalar.map((natija) => ({ ...natija, warehouseName: nomlar.get(natija.warehouseId) ?? "" })), soz),
@@ -104,76 +93,6 @@ function koddanOlish(kod: string) {
   kodKeshi.set(kalit, { vaqt: Date.now(), natija });
   natija.catch(() => kodKeshi.delete(kalit));
   return natija;
-}
-
-async function malumotlarniOlish(majbur = false): Promise<Malumot> {
-  if (!majbur && kesh && Date.now() - kesh.vaqt < KESH_MUDDATI) return kesh.malumot;
-  if (yuklanayotgan) return yuklanayotgan;
-
-  yuklanayotgan = (async () => {
-    try {
-      const omborlar = await omborlarRoyxatiniOlish();
-      const [katalogNatija, ...qoldiqNatijalari] = await Promise.allSettled([
-        katalogModifikatsiyalariniQoldiqTanlovigaOlish(majbur),
-        ...omborlar.map((ombor) => omborQoldiqlariniOlish(String(ombor.id))),
-      ]);
-      if (katalogNatija.status === "rejected" && qoldiqNatijalari.every((natija) => natija.status === "rejected")) {
-        throw new Error("search-load-failed");
-      }
-      const katalog = katalogNatija.status === "fulfilled" ? katalogNatija.value : [];
-
-      const qatorlar: Qator[] = [];
-      omborlar.forEach((ombor, index) => {
-        const natija = qoldiqNatijalari[index];
-        if (!natija || natija.status !== "fulfilled") return;
-        const omborId = String(ombor.id);
-        const qoldiqlar = natija.value.filter((item) => {
-          const itemOmborId = item.warehouseId ?? item.warehouse?.id;
-          return !itemOmborId || String(itemOmborId) === omborId;
-        });
-        qoldiqBirlashtirish(qoldiqlar, katalog)
-          .filter((item) => Number.isFinite(qoldiqMiqdori(item)))
-          .forEach((item) =>
-            qatorlar.push({
-              kalit: tanlovKaliti(item.modificationId, omborId),
-              item,
-              warehouseId: omborId,
-              warehouseName: omborNomi(ombor),
-              qoldiq: qoldiqMiqdori(item),
-            })
-          );
-      });
-
-      // Nomi yoki narxi hali topilmagan mahsulotlar katalogdan to'ldiriladi (MahsulotTanlashModal bilan bir xil).
-      const toldirish = qatorlar.filter((qator) => !mahsulotNomi(qator.item) || !qoldiqNarxi(qator.item, "chakana"));
-      if (toldirish.length) {
-        try {
-          const boyitilgan = await qoldiqNomlariniBoyitish(toldirish.map((qator) => qator.item));
-          const xarita = new Map(boyitilgan.map((item) => [item.modificationId, item]));
-          qatorlar.forEach((qator) => {
-            const yangi = xarita.get(qator.item.modificationId);
-            if (yangi) qator.item = qoldiqBirlashtirish([qator.item], [yangi])[0] ?? qator.item;
-          });
-        } catch {
-          // to'ldirib bo'lmasa, mavjud ma'lumot bilan davom etiladi
-        }
-      }
-
-      // Hech bir omborda qoldig'i yo'q katalog mahsulotlari ham topiladi (qizil "Qoldiq yo'q" belgisi bilan).
-      const qoldiqliIdlar = new Set(qatorlar.map((qator) => qator.item.modificationId));
-      katalog.forEach((item) => {
-        if (!item.modificationId || qoldiqliIdlar.has(item.modificationId)) return;
-        qatorlar.push({ kalit: tanlovKaliti(item.modificationId, ""), item, warehouseId: "", warehouseName: "", qoldiq: 0 });
-      });
-
-      const malumot = { qatorlar, omborlarSoni: omborlar.length };
-      kesh = { vaqt: Date.now(), malumot };
-      return malumot;
-    } finally {
-      yuklanayotgan = null;
-    }
-  })();
-  return yuklanayotgan;
 }
 
 function qisqartma(nom: string) {
@@ -196,13 +115,11 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
   useKassaNarxTurlari();
   const [soz, setSoz] = useState("");
   const [ochiq, setOchiq] = useState(false);
-  const [malumot, setMalumot] = useState<Malumot | null>(() => kesh?.malumot ?? null);
-  const [yuklanmoqda, setYuklanmoqda] = useState(false);
-  const [xato, setXato] = useState(false);
   const [faol, setFaol] = useState(-1);
   const [xabar, setXabar] = useState<{ xato: boolean; matn: string } | null>(null);
-  // Server qidiruvi: `server.soz` — javob qaysi so'z uchun. Yangi so'z javobi kelguncha eski ro'yxat ko'rinib turadi (miltillamasligi uchun).
-  const [server, setServer] = useState<(ServerNatija & { soz: string; sahifa: number }) | null>(null);
+  // Server qidiruvi: `server.soz`/`server.kategoriya` — javob qaysi so'rov uchun. Yangi so'z javobi kelguncha eski ro'yxat ko'rinib turadi
+  // (miltillamasligi uchun); boshqa kategoriyaning ro'yxati esa ko'rsatilmaydi.
+  const [server, setServer] = useState<(ServerNatija & { soz: string; kategoriya: string; sahifa: number }) | null>(null);
   const [qidirilmoqda, setQidirilmoqda] = useState(false);
   const [serverXato, setServerXato] = useState(false);
   const qidiruvRaqami = useRef(0);
@@ -217,8 +134,6 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
   const [kategoriyalar, setKategoriyalar] = useState<Kategoriya[]>(() => kategoriyalarKeshi ?? []);
   const [kategoriyaId, setKategoriyaId] = useState("");
   const [kategoriyaOchiq, setKategoriyaOchiq] = useState(false);
-  const [kategoriyaNatijasi, setKategoriyaNatijasi] = useState<{ id: string; idlar: Set<string> | null } | null>(null);
-  const [kategoriyaUrinish, setKategoriyaUrinish] = useState(0);
   // Menyu kursor bilan ochilganmi (shunda fokus qidiruv maydonidan olinmaydi) va hover kechikish taymeri.
   const hoverBilanOchilgan = useRef(false);
   const hoverTaymeri = useRef<number | null>(null);
@@ -227,36 +142,13 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
   const tugmaRef = useRef<HTMLButtonElement | null>(null);
 
   const tanlanganKategoriya = kategoriyalar.find((kategoriya) => kategoriya.id === kategoriyaId);
-  const kategoriyaYuklanmoqda = Boolean(kategoriyaId) && kategoriyaNatijasi?.id !== kategoriyaId;
-  const kategoriyaXatosi = Boolean(kategoriyaId) && kategoriyaNatijasi?.id === kategoriyaId && kategoriyaNatijasi.idlar === null;
-  const kategoriyaIdlari = kategoriyaId && kategoriyaNatijasi?.id === kategoriyaId ? kategoriyaNatijasi.idlar : null;
-
   const matn = soz.trim();
-  const natijaTayyor = Boolean(matn) && server?.soz === matn;
-  // Kategoriya tanlangan, lekin uning mahsulotlari hali kelmagan (yoki olinmagan) bo'lsa — filtrsiz ro'yxat ko'rsatilmaydi.
-  // Skaner kodi (aniq mos) kategoriyadan qat'i nazar serverdan topiladi.
-  const natijalar = useMemo(() => {
-    const serverdagi = server?.qatorlar ?? [];
-    if (!kategoriyaId) return matn ? serverdagi : [];
-    if (!kategoriyaIdlari) return [];
-    const mahalliy = qidirish(malumot?.qatorlar ?? [], soz, kategoriyaIdlari);
-    const kodlar = natijaTayyor ? serverdagi.filter((qator) => qator.daraja === 0 && !mahalliy.some((item) => item.kalit === qator.kalit)) : [];
-    return [...kodlar, ...mahalliy];
-  }, [server, malumot, soz, matn, natijaTayyor, kategoriyaId, kategoriyaIdlari]);
-  const omborlarSoni = (kategoriyaId ? malumot?.omborlarSoni : server?.omborlarSoni) ?? 0;
+  // So'z yoki kategoriya bo'lsa ro'yxat serverdan so'raladi; javob aynan shu so'rov uchun kelgan bo'lsa — tayyor.
+  const sorovBor = Boolean(matn) || Boolean(kategoriyaId);
+  const natijaTayyor = sorovBor && server?.soz === matn && server?.kategoriya === kategoriyaId;
+  const natijalar = useMemo(() => (sorovBor && server?.kategoriya === kategoriyaId ? server.qatorlar : []), [server, sorovBor, kategoriyaId]);
+  const omborlarSoni = server?.omborlarSoni ?? 0;
   const panelKorinadi = ochiq && (Boolean(soz.trim()) || Boolean(xabar) || Boolean(kategoriyaId));
-
-  const yukla = useCallback(async (majbur = false) => {
-    setXato(false);
-    setYuklanmoqda(true);
-    try {
-      setMalumot(await malumotlarniOlish(majbur));
-    } catch {
-      setXato(true);
-    } finally {
-      setYuklanmoqda(false);
-    }
-  }, []);
 
   const qidiruvniBekorQilish = useCallback(() => {
     qidiruvRaqami.current += 1;
@@ -265,7 +157,7 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
     setQidirilmoqda(false);
   }, []);
 
-  const serverdanQidirish = useCallback(async (qidiruvSozi: string, sahifa = 1) => {
+  const serverdanQidirish = useCallback(async (qidiruvSozi: string, sahifa = 1, kategoriya = "") => {
     qidiruvBekor.current?.abort();
     const boshqaruv = new AbortController();
     qidiruvBekor.current = boshqaruv;
@@ -273,13 +165,15 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
     setQidirilmoqda(true);
     setServerXato(false);
     try {
-      const natija = await serverdanOlish(qidiruvSozi, sahifa, boshqaruv.signal);
+      const natija = await serverdanOlish(qidiruvSozi, sahifa, boshqaruv.signal, kategoriya);
       if (raqam !== qidiruvRaqami.current) return;
       setServer((joriy) => ({
         ...natija,
         soz: qidiruvSozi,
+        kategoriya,
         sahifa,
-        qatorlar: sahifa > 1 && joriy?.soz === qidiruvSozi ? qatorlarniUlash(joriy.qatorlar, natija.qatorlar) : natija.qatorlar,
+        qatorlar:
+          sahifa > 1 && joriy?.soz === qidiruvSozi && joriy.kategoriya === kategoriya ? qatorlarniUlash(joriy.qatorlar, natija.qatorlar) : natija.qatorlar,
       }));
     } catch {
       if (raqam === qidiruvRaqami.current) setServerXato(true);
@@ -291,19 +185,20 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
     }
   }, []);
 
-  // Yozish to'xtagach so'z serverga yuboriladi; eski (kech kelgan) javob yangi ro'yxatni bosib ketmaydi.
+  // Yozish to'xtagach so'z (va tanlangan kategoriya) serverga yuboriladi; eski (kech kelgan) javob yangi ro'yxatni bosib ketmaydi.
+  // Faqat kategoriya tanlansa (yozuvsiz) ro'yxat darrov so'raladi.
   useEffect(() => {
-    if (!matn) {
+    if (!matn && !kategoriyaId) {
       qidiruvniBekorQilish();
       setServer(null);
       setServerXato(false);
       return;
     }
-    kechikishTaymeri.current = window.setTimeout(() => void serverdanQidirish(matn), QIDIRUV_KECHIKISHI);
+    kechikishTaymeri.current = window.setTimeout(() => void serverdanQidirish(matn, 1, kategoriyaId), matn ? QIDIRUV_KECHIKISHI : 0);
     return () => {
       if (kechikishTaymeri.current) window.clearTimeout(kechikishTaymeri.current);
     };
-  }, [matn, qidiruvniBekorQilish, serverdanQidirish]);
+  }, [matn, kategoriyaId, qidiruvniBekorQilish, serverdanQidirish]);
 
   // Telefon ekrani: qidiruv maydonida qisqa maslahat va ixcham kategoriya tugmasi (joy tejaladi).
   const [kichikEkran, setKichikEkran] = useState(() => window.matchMedia("(max-width: 639px)").matches);
@@ -350,22 +245,6 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
       active = false;
     };
   }, []);
-
-  // Tanlangan kategoriyadagi mahsulotlar (GET /catalog/products?categoryId=): qoldiq qatorlari shu mahsulot id'lari bilan filtrlanadi.
-  useEffect(() => {
-    if (!kategoriyaId) return;
-    let active = true;
-    kategoriyaMahsulotlariniOlish(kategoriyaId)
-      .then((royxat) => {
-        if (active) setKategoriyaNatijasi({ id: kategoriyaId, idlar: new Set(royxat.map((mahsulot) => mahsulot.id)) });
-      })
-      .catch(() => {
-        if (active) setKategoriyaNatijasi({ id: kategoriyaId, idlar: null });
-      });
-    return () => {
-      active = false;
-    };
-  }, [kategoriyaId, kategoriyaUrinish]);
 
   useEffect(
     () => () => {
@@ -416,14 +295,7 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
     setFaol(-1);
     // Kategoriya tanlansa natijalar darrov ochiladi (yozuvsiz ham ro'yxat ko'rinadi).
     setOchiq(Boolean(id) || Boolean(soz.trim()));
-    // Kategoriya ro'yxati faqat kategoriya tanlanganda yuklanadi (kesh yangi bo'lsa so'rov ketmaydi).
-    if (id && !yuklanmoqda) void yukla();
     inputRef.current?.focus();
-  }
-
-  function kategoriyaniQaytaUrinish() {
-    setKategoriyaNatijasi(null);
-    setKategoriyaUrinish((value) => value + 1);
   }
 
   function xabarBerish(xatoMi: boolean, matn: string) {
@@ -503,11 +375,25 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
     window.requestAnimationFrame(() => inputRef.current?.select());
   }
 
+  // Kod (shtrix-kod/artikul) kategoriyadan qat'i nazar aniq mos kelsa o'sha mahsulot, aks holda ro'yxatda tanlangan qator qo'shiladi.
+  async function kodYokiTanlangan(kod: string, tanlangan: Qator) {
+    try {
+      const aniq = (await koddanOlish(kod)).qatorlar[0];
+      if (aniq?.daraja === 0) {
+        qoshish(aniq);
+        return;
+      }
+    } catch {
+      // Tekshirib bo'lmasa ro'yxatdagi tanlov qo'shiladi.
+    }
+    qoshish(tanlangan);
+  }
+
   function royxatSuriladi(event: UIEvent<HTMLDivElement>) {
     // Scroll hodisalari holat yangilanishidan tezroq keladi: ketayotgan so'rov ref orqali tekshiriladi, aks holda bir sahifa ikki marta so'raladi.
-    if (kategoriyaId || !server || !natijaTayyor || qidiruvBekor.current || server.sahifa * SERVER_SAHIFA_HAJMI >= server.jami) return;
+    if (!server || !natijaTayyor || qidiruvBekor.current || server.sahifa * SERVER_SAHIFA_HAJMI >= server.jami) return;
     const royxat = event.currentTarget;
-    if (royxat.scrollHeight - royxat.scrollTop - royxat.clientHeight <= KEYINGI_SAHIFA_MASOFASI) void serverdanQidirish(matn, server.sahifa + 1);
+    if (royxat.scrollHeight - royxat.scrollTop - royxat.clientHeight <= KEYINGI_SAHIFA_MASOFASI) void serverdanQidirish(matn, server.sahifa + 1, kategoriyaId);
   }
 
   function klavish(event: KeyboardEvent<HTMLInputElement>) {
@@ -540,8 +426,15 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
         return;
       }
       const tanlangan = natijalar[faol];
-      if (tanlangan) qoshish(tanlangan);
-      else if (natijalar.length === 0) xabarBerish(true, t("search.empty"));
+      // Kategoriya ichidagi qator kodga aniq mos emas: yozilgan kod boshqa kategoriyadagi mahsulotniki bo'lishi mumkin — avval kategoriyasiz tekshiriladi.
+      if (tanlangan && kategoriyaId && matn && tanlangan.daraja !== 0) void kodYokiTanlangan(matn, tanlangan);
+      else if (tanlangan) qoshish(tanlangan);
+      // Kategoriya ichida topilmagan kod (masalan, boshqa kategoriyadagi mahsulot skanerlandi) kategoriyadan qat'i nazar tekshiriladi.
+      else if (natijalar.length === 0 && matn && kategoriyaId) {
+        setSoz("");
+        setFaol(-1);
+        void kodBilanQoshish(matn);
+      } else if (natijalar.length === 0) xabarBerish(true, t("search.empty"));
     } else if (event.key === "Escape") {
       if (soz || ochiq) {
         event.preventDefault();
@@ -554,11 +447,11 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
     }
   }
 
-  const royxatKorinadi = Boolean(matn) || Boolean(kategoriyaId);
-  const serverKutilmoqda = Boolean(matn) && !natijaTayyor && !serverXato;
-  const royxatYuklanmoqda = kategoriyaId ? (yuklanmoqda && !malumot) || kategoriyaYuklanmoqda : serverKutilmoqda && natijalar.length === 0;
-  const royxatXatosi = kategoriyaId ? xato && !malumot : serverXato && natijalar.length === 0;
-  const yangilash = () => void (kategoriyaId ? yukla(true) : serverdanQidirish(matn));
+  const royxatKorinadi = sorovBor;
+  const serverKutilmoqda = sorovBor && !natijaTayyor && !serverXato;
+  const royxatYuklanmoqda = serverKutilmoqda && natijalar.length === 0;
+  const royxatXatosi = serverXato && natijalar.length === 0;
+  const yangilash = () => void serverdanQidirish(matn, 1, kategoriyaId);
 
   return (
     <Popover
@@ -677,9 +570,8 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
               onClick={() => setOchiq(true)}
               onFocus={() => {
                 setOchiq(true);
-                // Ombor ro'yxati oldindan tayyorlanadi (birinchi skan kutmasligi uchun); kategoriya ro'yxati kesh eskirgan bo'lsa yangilanadi.
+                // Ombor ro'yxati oldindan tayyorlanadi (birinchi skan kutmasligi uchun).
                 void omborlarniOlish().catch(() => undefined);
-                if (kategoriyaId && !yuklanmoqda) void yukla();
               }}
               onKeyDown={klavish}
               placeholder={kichikEkran ? t("search.shortPlaceholder") : t("posModal.searchPlaceholder")}
@@ -770,17 +662,6 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
                   {t("search.retry")}
                 </button>
               </div>
-            ) : kategoriyaXatosi ? (
-              <div className="flex items-center justify-between gap-3 px-3 py-3 text-sm font-semibold text-red-500">
-                <span>{t("search.categoryFailed")}</span>
-                <button
-                  type="button"
-                  onClick={kategoriyaniQaytaUrinish}
-                  className="shrink-0 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-black text-red-600 hover:bg-red-100"
-                >
-                  {t("search.retry")}
-                </button>
-              </div>
             ) : natijalar.length === 0 ? (
               <p className="px-3 py-4 text-sm font-semibold text-slate-400">
                 {soz.trim() ? t("search.empty") : t("search.categoryEmpty")}
@@ -857,7 +738,7 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
               aria-label={t("posModal.refreshAria")}
               className="ml-auto inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-slate-500 transition hover:bg-white hover:text-slate-700"
             >
-              <RefreshCw size={12} className={yuklanmoqda || qidirilmoqda ? "animate-spin" : ""} />
+              <RefreshCw size={12} className={qidirilmoqda ? "animate-spin" : ""} />
               {t("posModal.refreshAria")}
             </button>
           </div>

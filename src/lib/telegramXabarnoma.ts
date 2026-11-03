@@ -228,14 +228,16 @@ export function mijozTelegramTuri(holat: MijozTelegramHolati): MijozTelegramTuri
   return "ulangan";
 }
 
-export type TelegramHavola = { url: string; expiresAt: string | null };
+// `groupUrl` (?startgroup=) — mijoz jamoasi uchun: havolani ochgan kishi guruhni tanlaydi, bot guruhga qo'shiladi va xabarlar guruhga keladi.
+// Ikkalasi bitta kod (7 kun, bir martalik): qaysi biri birinchi ishlatilsa, o'sha ulanadi.
+export type TelegramHavola = { url: string; groupUrl: string | null; expiresAt: string | null };
 
-/** POST /partners/customers/:id/telegram-link javobi (`{ url, expiresAt }`, o'rovli ham bo'lishi mumkin); url bo'lmasa `null`. */
+/** POST /partners/customers/:id/telegram-link javobi (`{ url, groupUrl, expiresAt }`, o'rovli ham bo'lishi mumkin); url bo'lmasa `null`. */
 export function telegramHavolasi(raw: unknown): TelegramHavola | null {
   const asosiy = obyekt(raw);
   const manba = matn(asosiy?.url) ? asosiy : obyekt(asosiy?.data);
   const url = matn(manba?.url);
-  return url ? { url, expiresAt: matn(manba?.expiresAt) } : null;
+  return url ? { url, groupUrl: matn(manba?.groupUrl), expiresAt: matn(manba?.expiresAt) } : null;
 }
 
 // ── Nakladnoy PDF ──────────────────────────────────────────────────────────────────────────────────

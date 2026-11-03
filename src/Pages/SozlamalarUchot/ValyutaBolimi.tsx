@@ -13,6 +13,7 @@ import {
   type AmaldagiKurs,
   type KursYozuvi,
 } from "@/api/valyutaApi";
+import { ENG_KAM_KURS, kursJudaKichik } from "@/lib/kursChegarasi";
 import { foydalanuvchiKursniOzgartiraOladimi } from "@/lib/roles";
 import { useValyutaStore, valyutaKodi, type Valyuta } from "@/lib/valyuta";
 import { useAuthProfileStore } from "@/store/authProfileStore";
@@ -165,6 +166,10 @@ export default function ValyutaBolimi() {
     const kurs = kursniOqish(kursKiritma);
     if (!Number.isFinite(kurs) || kurs <= 0) {
       fx.ornat({ rate: t("valyuta.form.rateInvalid") });
+      return;
+    }
+    if (kursJudaKichik(kurs)) {
+      fx.ornat({ rate: t("valyuta.form.rateTooLow", { min: ENG_KAM_KURS.toLocaleString("uz-UZ") }) });
       return;
     }
     fx.ornat({});

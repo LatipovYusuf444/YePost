@@ -10,6 +10,7 @@ import { belgidanKeyingiXato, xatoBelgisi, xatoRamkasi, type FormaXatosi, type X
 import HujjatSanasiMaydoni, { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import { bugungiToshkentKuni, hujjatVaqtiMatni, kelajakKunmi, kunMatni, saqlanganTolovMaydonlari, tolovQoshimchasi, toshkentKuni } from "@/lib/hujjatSanasi";
 import { ombordanChiqarishSanasi } from "@/lib/hujjatHarakatlari";
+import { ENG_KAM_KURS, kursJudaKichik } from "@/lib/kursChegarasi";
 import { useHujjatHarakatlari } from "@/hooks/useHujjatHarakatlari";
 import { useNakladnoy } from "@/hooks/useNakladnoy";
 import { useDavrStore } from "@/store/davrStore";
@@ -1996,6 +1997,11 @@ function TolovQabulQilishModal({
   function tolovlarniTekshirish(tolovlarSoni: number): FormaXatosi {
     if (kassirKursi !== null && !(kassirKursi > 0)) return { xato: t("tolovModal.errors.qaytimMosEmas"), maydon: "rate" };
     if (boshqaValyuta && qoldaKurs.trim() && !(Number(qoldaKurs) > 0)) return { xato: t("tolovModal.errors.kursNotogri"), maydon: "rate" };
+    // Kassir kursi (yozilgan yoki qaytimdan chiqqan) 1 000 dan past bo'lsa backend 400 qaytaradi.
+    // Faqat ekrandagi kurs tekshiriladi: qaytim tahrirlanayotganda kurs qaytimdan chiqadi (kurs maydoni yashirin, xato qaytim maydonida),
+    // hisobdan to'lovda kurs maydoni yo'q — u yerda qolib ketgan eski yozuv saqlashni to'smasin.
+    const korinadiganKurs = qaytimTahrirlanadi ? kassirKursi : tolovKursi;
+    if (boshqaValyuta && !balansTanlangan && kursJudaKichik(korinadiganKurs)) return { xato: t("tolovModal.errors.kursKam", { min: ENG_KAM_KURS.toLocaleString("uz-UZ") }), maydon: "rate" };
     if (yangiSumma < 0) return { xato: draft ? t("tolovModal.errors.manfiyBolmasin") : t("tolovModal.errors.nolDanKatta"), maydon: "amount" };
     if (!draft && tolovlarSoni === 0) return { xato: t("tolovModal.errors.nolDanKatta"), maydon: "amount" };
     if (balansTanlangan && yangiSumma > balansMax + 1e-9) {

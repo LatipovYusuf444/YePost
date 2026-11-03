@@ -329,6 +329,10 @@
     "positionPlaceholder": "Savdo vakili"
   },
   "telegramBot": {
+    "groupHint": "Mijoz jamoasi uchun: jamoadan biri havolani ochib guruhni tanlaydi, bot guruhga qo'shiladi. Nakladnoy, to'lov va qarz xabarlari guruhga keladi.",
+    "groupLinkTitle": "Guruhga ulash havolasi",
+    "groupLink": "Guruhga ulash",
+    "personalLink": "Shaxsiy ulash",
     "title": "Telegram bot",
     "subtitle": "Mijoz botga ulansa, sotuv, to'lov va bekor qilish haqida xabar oladi; sotuvda PDF nakladnoy ham keladi.",
     "status": {

@@ -14,6 +14,7 @@
     "USED": "Ishlatilgan"
   },
   "actions": {
+    "openUpdated": "Yangilangan hujjatni ochish",
     "clearSearch": "Qidiruvni tozalash",
     "resetFilters": "Filtrni tozalash",
     "close": "Yopish",
@@ -105,6 +106,8 @@
     "rolls": "Rulonlar topilmadi"
   },
   "errors": {
+    "notDraftAnymore": "Hujjat shu orada faollashtirildi: faqat qoralama tahrirlanadi, o'zgarishlar saqlanmadi.",
+    "quantityNotWhole": "Dona mahsulotda miqdor butun son bo'lishi kerak (masalan, 3 — 2,5 emas).",
     "sourceWarehouse": "Xomashyo omborini tanlang.",
     "destWarehouse": "Tayyor mahsulot omborini tanlang.",
     "noActiveRecipe": "Bu mahsulotga faol retsept yo'q. Avval Retseptlar bo'limida retseptni faollashtiring.",

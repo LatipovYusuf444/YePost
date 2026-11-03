@@ -5,8 +5,8 @@ import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import { ishlabChiqarishApi } from "@/api/ishlabChiqarishApi";
 import { holatBoyicha, tahrirTanasi, miqdorMatni, portlashMiqdori, qatorNomi, qidiruvgaMos, retseptTanasiniYigish, sonMaydoni, type RetseptFormasi, type XatoMaydonQoidasi } from "@/lib/ishlabChiqarish";
 import type { Portlash, PortlashQatori, Retsept, RetseptKirimi } from "@/types/ishlabChiqarish";
-import { Asboblar, Bolim, HolatFiltri, HolatKartalari, Holat, Jadval, MahsulotQidiruvi, Maydon, MaydonXatosi, OmborTanlash, Oyna, QatorKartasi, QatorOchirish, QatorQoshish, QidiruvMaydoni, Sahifa, Tafsilotlar, XatoQutisi, Yuklanmoqda, inputKlass, tugmaAsosiy, tugmaIkkinchi, tugmaXavfli, xatoRamkasi, type HolatGuruhi, type Ustun } from "./umumiy";
-import { useAmal, useMaydonXatolari, useMalumot, useOmborlar } from "./hooklar";
+import { Asboblar, Bolim, HolatFiltri, HolatKartalari, Holat, Jadval, MahsulotQidiruvi, Maydon, MaydonXatosi, Ogohlantirish, OmborTanlash, Oyna, QatorKartasi, QatorOchirish, QatorQoshish, QidiruvMaydoni, Sahifa, Tafsilotlar, XatoQutisi, Yuklanmoqda, inputKlass, tugmaAsosiy, tugmaIkkinchi, tugmaXavfli, xatoRamkasi, type HolatGuruhi, type Ustun } from "./umumiy";
+import { useAmal, useMaydonXatolari, useMalumot, useOmborlar, useQoralamaNazorati } from "./hooklar";
 
 type KirimQatori = RetseptFormasi["inputs"][number] & { nom?: string };
 type ChiqimQatori = RetseptFormasi["outputs"][number] & { nom?: string };
@@ -167,6 +167,7 @@ function RetseptOynasi({ boshlangich, onYopish, onSaqlandi }: { boshlangich: { i
   const [forma, setForma] = useState(boshlangich.qiymat);
   const amal = useAmal();
   const fx = useMaydonXatolari(RETSEPT_XATO_QOIDALARI);
+  const qoralamaNazorati = useQoralamaNazorati(boshlangich.id ? () => ishlabChiqarishApi.retseptlar.olish(boshlangich.id as string) : null);
   // Maydon o'zgarsa uning xatosi olib tashlanadi; "inputs"/"outputs" o'zgarsa (qator qo'shildi/o'chdi) — butun ro'yxat xatolari.
   const ozgar = (qism: Partial<Forma>) => {
     fx.tozala(...Object.keys(qism).filter((kalit) => kalit !== "nom"));
@@ -200,15 +201,25 @@ function RetseptOynasi({ boshlangich, onYopish, onSaqlandi }: { boshlangich: { i
     void amal.bajar(async () => {
       const saqlangan = boshlangich.id ? await ishlabChiqarishApi.retseptlar.yangilash(boshlangich.id, tahrirTanasi(natija.tana, { outputMin: null, outputMax: null, normalScrapPercent: 0, note: "" })) : await ishlabChiqarishApi.retseptlar.yaratish(natija.tana);
       onSaqlandi(saqlangan.id);
-    }, fx.serverdan);
+    }, (tafsilot) => {
+      fx.serverdan(tafsilot);
+      // Shu orada faollashtirilgan bo'lsa tahrir rad etiladi: hujjat holati qayta o'qiladi.
+      if (boshlangich.id) qoralamaNazorati.tekshir();
+    });
   }
 
   return (
     <Oyna keng ikonka={BookOpen} sarlavha={t(boshlangich.id ? "recipes.edit" : "recipes.create")} izoh={t("recipes.formHint")} onYopish={onYopish} pastki={<>
       <button type="button" onClick={onYopish} className={tugmaIkkinchi}>{t("actions.cancel")}</button>
-      <button type="button" disabled={amal.band} onClick={saqlash} className={`${tugmaAsosiy} min-w-40`}><CheckCircle2 size={18} />{t("actions.save")}</button>
+      <button type="button" disabled={amal.band || qoralamaNazorati.qoralamaEmas} onClick={saqlash} className={`${tugmaAsosiy} min-w-40`}><CheckCircle2 size={18} />{t("actions.save")}</button>
     </>}>
       <XatoQutisi matn={fx.tepadagi || (fx.bor ? "" : amal.xato)} />
+      {qoralamaNazorati.qoralamaEmas && boshlangich.id && (
+        <Ogohlantirish>
+          {t("errors.notDraftAnymore")}{" "}
+          <button type="button" onClick={() => onSaqlandi(boshlangich.id as string)} className="font-black text-[#2563EB] underline underline-offset-2">{t("actions.openUpdated")}</button>
+        </Ogohlantirish>
+      )}
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <Bolim ikonka={SlidersHorizontal} sarlavha={t("recipes.sectionMain")} izoh={t("recipes.mainHint")}>
           <div className="grid gap-4 md:grid-cols-2">

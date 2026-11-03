@@ -6,7 +6,7 @@ import { apiTiliniOlish } from "@/api/apiLanguage";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { serverMatniUstunmi, xatoKodi, xatoKodiMatni } from "@/api/xatoKodlari";
 import { bugungiToshkentKuni, kunMatni, toshkentKuni, vaqtMatni } from "@/lib/hujjatSanasi";
-import { TOXTASH_SABABLARI, chiqimMiqdori, hisobotMahsuloti, holatBoyicha, hujjatRaqami, miqdorMatni, qatorNomi, qidiruvgaMos, raqamXaritasi, serverXatoMaydonlari, smenaTanasiniYigish, sonMaydoni, type SmenaFormasi, type XatoMaydonQoidasi } from "@/lib/ishlabChiqarish";
+import { TOXTASH_SABABLARI, butunMiqdorXatolari, chiqimMiqdori, hisobotMahsuloti, holatBoyicha, hujjatRaqami, miqdorMatni, qatorNomi, qidiruvgaMos, raqamXaritasi, serverXatoMaydonlari, smenaTanasiniYigish, sonMaydoni, type SmenaFormasi, type XatoMaydonQoidasi } from "@/lib/ishlabChiqarish";
 import { foydalanuvchiKursniOzgartiraOladimi } from "@/lib/roles";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import type { NavbatQatori, SmenaChiqimi, SmenaHisoboti, SmenaTanasi } from "@/types/ishlabChiqarish";
@@ -268,7 +268,26 @@ function SmenaOynasi({ boshlangich, omborlar, onYopish, onOzgardi, onOchish }: {
   const [id, setId] = useState(boshlangich.id);
   const [xatoMatni, setXatoMatni] = useState("");
   const amal = useAmal();
-  const fx = useSmenaXatolari(SMENA_XATO_QOIDALARI, amal.setXato);
+  const smenaXatolari = useSmenaXatolari(SMENA_XATO_QOIDALARI, amal.setXato);
+  // Dona mahsulotga kasr miqdor (quantity_not_whole), qator aytilmagan: kasr miqdorli chiqish va qo'lda kiritilgan sarf qatorlari belgilanadi
+  // (norma bo'yicha to'lgan qator kasr bo'lishi mumkin — u belgilanmaydi).
+  const fx = {
+    ...smenaXatolari,
+    serverdan: (tafsilot: unknown) => {
+      const butun = butunMiqdorXatolari(
+        tafsilot,
+        [
+          ...forma.outputs.map((qator, i) => ({ yol: `outputs.${i}.quantity`, miqdor: qator.quantity })),
+          ...forma.inputs.flatMap((qator, i) => (qator.entryMethod === "NORM" ? [] : [{ yol: `inputs.${i}.quantity`, miqdor: qator.quantity }])),
+        ],
+        t("errors.quantityNotWhole")
+      );
+      if (!butun) return smenaXatolari.serverdan(tafsilot);
+      smenaXatolari.ornat(butun);
+      amal.setXato("");
+      return true;
+    },
+  };
   const izohXatosi = fx.xato("comment");
   const buyurtmasiz = !forma.orderId;
   const retseptlar = useMalumot(() => (buyurtmasiz ? ishlabChiqarishApi.retseptlar.royxat({ status: "ACTIVE" }) : Promise.resolve([])), String(buyurtmasiz));

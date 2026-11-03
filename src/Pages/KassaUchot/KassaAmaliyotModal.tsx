@@ -17,6 +17,7 @@ import XatoliMaydon from "@/Components/common/XatoliMaydon";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import { belgidanKeyingiXato, xatoBelgisi, type XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { bugungiToshkentKuni, toshkentKuni } from "@/lib/hujjatSanasi";
+import { ENG_KAM_KURS, kursJudaKichik } from "@/lib/kursChegarasi";
 import Tanlov from "@/Pages/XaridorUchot/Tanlov";
 import { foydalanuvchilarApi } from "@/api/accountsApi";
 import { mijozlarApi, yetkazibBeruvchilarApi } from "@/api/partnersApi";
@@ -243,6 +244,7 @@ export default function KassaAmaliyotModal({
     if (!summa.trim() || Number.isNaN(Number(summa)) || Number(summa) <= 0) tekshiruv.amount = t("modal.errors.invalidAmount");
     if (izohMajburiy(turi) && !izoh.trim()) tekshiruv.note = t("modal.errors.commentRequired");
     if (kursKerak && kursMatni.trim() && !(kiritilganKurs > 0)) tekshiruv.rate = t("modal.errors.invalidRate");
+    else if (kursKerak && kursJudaKichik(kiritilganKurs)) tekshiruv.rate = t("modal.errors.rateTooLow", { min: ENG_KAM_KURS.toLocaleString("uz-UZ") });
     if (Object.keys(tekshiruv).length) {
       fx.ornat(tekshiruv);
       return;
@@ -576,7 +578,7 @@ export default function KassaAmaliyotModal({
                     customerId={tanlanganXaridor.id}
                     amount={summaSoni}
                     currency={tanlanganValyuta}
-                    rate={kursKerak && kiritilganKurs > 0 ? kiritilganKurs : undefined}
+                    rate={kursKerak && kiritilganKurs > 0 && !kursJudaKichik(kiritilganKurs) ? kiritilganKurs : undefined}
                     saleId={saleId}
                     onSaleIdChange={setSaleId}
                   />

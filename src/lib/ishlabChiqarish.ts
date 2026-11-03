@@ -12,7 +12,7 @@ import type {
   SmenaTanasi,
   TozaxtashSababi,
 } from "../types/ishlabChiqarish.ts";
-import type { FormaXatosi } from "./maydonXatolari.ts";
+import { serverXatoMaydonlari as maydonlarniOqish, type FormaXatosi } from "./maydonXatolari.ts";
 
 // Forma maydon xatolari butun loyiha uchun umumiy (lib/maydonXatolari): eski importlar uchun shu yerdan ham beriladi.
 export { serverXatoMaydonlari, type FormaXatosi, type XatoMaydonQoidasi } from "./maydonXatolari.ts";
@@ -57,6 +57,30 @@ export function qatorNomi(qator?: NomliQator | null) {
     qator?.name?.trim() ||
     "—"
   );
+}
+
+/**
+ * Dona (kasrsiz birlik) mahsulotda sexga berish, qaytarish, smena chiqishi va kiritilgan sarf butun son bo'lishi kerak: aks holda server
+ * 400 `errors.catalog.quantity_not_whole` qaytaradi. Server qator yo'lini (`errors[].field`, masalan "lines.1.quantity") bersa — `null`
+ * (odatdagi bog'lash ishlaydi); bermasa kasr miqdorli qator belgilanadi. Qator birligi formada yo'q: kasr qator bittadan ko'p bo'lsa (masalan,
+ * 12,5 kg xomashyo va 2,5 dona) qaysi biri dona ekani noma'lum — kg qatorini noto'g'ri qizil qilmaslik uchun `null` (xabar tepada chiqadi).
+ * Norma bo'yicha to'lgan qatorni bermang: u kasr bo'lishi mumkin.
+ */
+export function butunMiqdorXatolari(
+  tafsilot: unknown,
+  qatorlar: ReadonlyArray<{ yol: string; miqdor: string | number | null | undefined }>,
+  matn: string
+): Record<string, string> | null {
+  const kod = tafsilot && typeof tafsilot === "object" ? (tafsilot as { code?: unknown }).code : undefined;
+  if (typeof kod !== "string" || !kod.endsWith("quantity_not_whole")) return null;
+  if (Object.keys(maydonlarniOqish(tafsilot, {})).some((yol) => /\.\d+\./.test(yol))) return null;
+  const yollar = qatorlar
+    .filter(({ miqdor }) => {
+      const son = sonMaydoni(miqdor);
+      return son !== undefined && son > 0 && !Number.isInteger(Math.round(son * 1e6) / 1e6);
+    })
+    .map(({ yol }) => yol);
+  return yollar.length === 1 ? { [yollar[0]]: matn } : null;
 }
 
 /** Formadagi son maydoni: bo'sh yoki noto'g'ri bo'lsa `undefined` (so'rovga qo'shilmaydi). */
@@ -238,7 +262,8 @@ export function smenaTanasiniYigish(forma: SmenaFormasi): { tana: SmenaTanasi } 
     const quantity = sonMaydoni(qator.quantity);
     if (!qator.modificationId) return { xato: "errors.lineProduct", maydon: `inputs.${i}.modificationId` };
     if (!(quantity && quantity > 0)) return { xato: "errors.lineQuantity", maydon: `inputs.${i}.quantity` };
-    inputs.push({ modificationId: qator.modificationId, quantity, entryMethod: qator.entryMethod, ...(qator.offRecipe ? { offRecipe: true } : {}) });
+    // offRecipe yuborilmaydi: server o'zi aniqlaydi (retseptda yo'q xomashyo), so'rovdagi qiymat e'tiborga olinmaydi.
+    inputs.push({ modificationId: qator.modificationId, quantity, entryMethod: qator.entryMethod });
   }
   const downtime: NonNullable<SmenaTanasi["downtime"]> = [];
   for (const [i, qator] of forma.downtime.entries()) {

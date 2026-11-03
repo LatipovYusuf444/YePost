@@ -122,7 +122,8 @@
       "selectSupplier": "Yetkazib beruvchi tanlanishi shart.",
       "invalidAmount": "Summa 0 dan katta son bo'lishi kerak.",
       "invalidRate": "Kurs 0 dan katta son bo'lishi kerak.",
-      "commentRequired": "Boshqa pul xarajatlari uchun kommentariya (nega chiqim) to'ldirilishi shart."
+      "commentRequired": "Boshqa pul xarajatlari uchun kommentariya (nega chiqim) to'ldirilishi shart.",
+      "rateTooLow": "Kurs {{min}} so'mdan kam bo'lishi mumkin emas."
     }
   },
   "deleteDialog": {

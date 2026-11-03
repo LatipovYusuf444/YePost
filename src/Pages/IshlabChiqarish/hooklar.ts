@@ -55,6 +55,21 @@ export function useAmal() {
   return { band, xato, xatoKodi: xatoKodiQiymati, bajar, setXato };
 }
 
+/**
+ * Faqat qoralama tahrirlanadi: tahrir faollashtirish bilan bir vaqtda kelsa server uni rad etadi. Tahrir xato bersa hujjat serverdan qayta
+ * o'qiladi; u endi qoralama bo'lmasa `qoralamaEmas` — oyna server xabarini ko'rsatib, saqlashni yopadi va yangilangan hujjatni ochishni taklif qiladi.
+ */
+export function useQoralamaNazorati(olish: (() => Promise<{ status?: string | null }>) | null) {
+  const [qoralamaEmas, setQoralamaEmas] = useState(false);
+  const tekshir = () => {
+    if (!olish) return;
+    olish()
+      .then((hujjat) => { if (hujjat?.status && hujjat.status !== "DRAFT") setQoralamaEmas(true); })
+      .catch(() => undefined);
+  };
+  return { qoralamaEmas, tekshir };
+}
+
 export function useOmborlar() {
   const [omborlar, setOmborlar] = useState<Ombor[]>([]);
   useEffect(() => {

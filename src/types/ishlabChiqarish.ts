@@ -236,7 +236,7 @@ export type SmenaTanasi = {
   shiftEndsAt?: string;
   comment?: string;
   outputs: Array<{ quantity: number; scrapQuantity?: number; serial?: string; modificationId?: string; role?: string }>;
-  inputs?: Array<{ modificationId: string; quantity: number; entryMethod?: "NORM" | "ACTUAL"; offRecipe?: boolean }>;
+  inputs?: Array<{ modificationId: string; quantity: number; entryMethod?: "NORM" | "ACTUAL" }>;
   downtime?: Array<{ reason: TozaxtashSababi; hours: number; note?: string }>;
 };
 

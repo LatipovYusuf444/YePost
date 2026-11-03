@@ -173,3 +173,12 @@ test('parallelBajarish respects the limit, keeps order and stops on the first fa
   await assert.rejects(parallelBajarish([1, 2, 3, 4], 1, async (son) => { boshlangan.push(son); if (son === 2) throw new Error('fail'); }), /fail/);
   assert.deepEqual(boshlangan, [1, 2]);
 });
+
+test('category filter goes to the search endpoint as categoryId (with or without a search word)', async () => {
+  reset();
+  handlers.set('qidiruvSahifasi', () => ({ items: [qator('m1', 4)], total: 1 }));
+  await mahsulotlarniServerdanQidirish({ search: '', page: 1, pageSize: 20, warehouseIds: ['w1'], categoryId: 'cat-1' });
+  assert.deepEqual(calls.filter((call) => call.url === 'qidiruvSahifasi').map((call) => call.sorov), [
+    { search: '', page: 1, pageSize: 20, warehouseId: 'w1', categoryId: 'cat-1', signal: undefined },
+  ]);
+});

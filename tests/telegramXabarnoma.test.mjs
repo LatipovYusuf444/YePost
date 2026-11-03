@@ -123,8 +123,13 @@ test('mijozTelegramHolati va mijozTelegramTuri', () => {
 });
 
 test('telegramHavolasi: url va muddat; o‘rovli javob; url yo‘q — null', () => {
-  assert.deepEqual(telegramHavolasi({ url: 'https://t.me/bot?start=abc', expiresAt: '2026-10-27T08:00:00Z' }), { url: 'https://t.me/bot?start=abc', expiresAt: '2026-10-27T08:00:00Z' });
-  assert.deepEqual(telegramHavolasi({ data: { url: 'https://t.me/bot?start=x' } }), { url: 'https://t.me/bot?start=x', expiresAt: null });
+  assert.deepEqual(telegramHavolasi({ url: 'https://t.me/bot?start=abc', expiresAt: '2026-10-27T08:00:00Z' }), { url: 'https://t.me/bot?start=abc', groupUrl: null, expiresAt: '2026-10-27T08:00:00Z' });
+  assert.deepEqual(telegramHavolasi({ data: { url: 'https://t.me/bot?start=x' } }), { url: 'https://t.me/bot?start=x', groupUrl: null, expiresAt: null });
+  // Mijoz jamoasi uchun guruh havolasi (bitta kod, ?startgroup=).
+  assert.deepEqual(
+    telegramHavolasi({ url: 'https://t.me/bot?start=k', groupUrl: 'https://t.me/bot?startgroup=k', expiresAt: '2026-11-10T08:00:00Z' }),
+    { url: 'https://t.me/bot?start=k', groupUrl: 'https://t.me/bot?startgroup=k', expiresAt: '2026-11-10T08:00:00Z' }
+  );
   assert.equal(telegramHavolasi({}), null);
   assert.equal(telegramHavolasi(null), null);
   assert.equal(telegramHavolasi({ url: '   ' }), null);

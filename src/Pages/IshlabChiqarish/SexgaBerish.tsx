@@ -6,7 +6,7 @@ import ModalTablari from "@/Components/common/ModalTablari";
 import { ishlabChiqarishApi } from "@/api/ishlabChiqarishApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { kunMatni } from "@/lib/hujjatSanasi";
-import { holatBoyicha, hujjatRaqami, miqdorMatni, qatorNomi, qidiruvgaMos, raqamXaritasi, seriyaYaroqlimi, serverXatoMaydonlari, sonMaydoni, tozaTana, type XatoMaydonQoidasi } from "@/lib/ishlabChiqarish";
+import { butunMiqdorXatolari, holatBoyicha, hujjatRaqami, miqdorMatni, qatorNomi, qidiruvgaMos, raqamXaritasi, seriyaYaroqlimi, serverXatoMaydonlari, sonMaydoni, tozaTana, type XatoMaydonQoidasi } from "@/lib/ishlabChiqarish";
 import { foydalanuvchiKursniOzgartiraOladimi } from "@/lib/roles";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import type { BerishTanasi, SexdanQaytarish, SexgaBerish as Berish } from "@/types/ishlabChiqarish";
@@ -271,6 +271,9 @@ function BerishOynasi({ id: boshlangichId, buyurtmaRaqamlari, onYopish, onOzgard
   // Server xatosi maydonga. Tana qatorlari oynadagi tartibda yuboriladi — "lines.2.*" indeksi oynadagi 2-qator. Rulon qatorining har qanday
   // maydoni rulon kartasiga; seriya/rulon xatosi javobda seriyasi yoki batchId si bor qatorga, topilmasa skanerga.
   function serverXatosi(tafsilot: unknown) {
+    // Dona mahsulotga kasr miqdor (quantity_not_whole): qaysi qator ekani aytilmasa, kasr miqdorli oddiy qatorlar belgilanadi.
+    const butun = butunMiqdorXatolari(tafsilot, qatorlar.flatMap((qator, i) => (qator.batchId ? [] : [{ yol: `lines.${i}.quantity`, miqdor: qator.quantity }])), t("errors.quantityNotWhole"));
+    if (butun) return fx.ornat(butun);
     const maydonlar = serverXatoMaydonlari(tafsilot, BERISH_XATO_QOIDALARI);
     // serial_needs_on_issue "serial" so'zini ham o'z ichiga oladi: bu belgilash katagining xatosi.
     if (maydonlar.consumeOnIssue) delete maydonlar.serial;
@@ -527,6 +530,8 @@ function QaytarishOynasi({ onYopish, onSaqlandi }: { onYopish: () => void; onSaq
   type QaytarishQatori = { issueLineId: string; quantity?: number };
 
   function serverXatosi(tafsilot: unknown, lines: QaytarishQatori[]) {
+    const butun = butunMiqdorXatolari(tafsilot, lines.flatMap((qator) => (qator.quantity === undefined ? [] : [{ yol: `lines.${qator.issueLineId}.quantity`, miqdor: qator.quantity }])), t("errors.quantityNotWhole"));
+    if (butun) return fx.ornat(butun);
     const maydonlar = serverXatoMaydonlari(tafsilot, QAYTARISH_XATO_QOIDALARI);
     const javob = JSON.stringify(tafsilot ?? "");
     const natija: Record<string, string> = {};
