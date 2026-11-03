@@ -239,6 +239,8 @@
     "mijozniTahrirlash": "Tahrirlash"
   },
   "tolovModal": {
+    "kassirKursiIzoh": "Mijoz bilan kelishilgan kurs. Bo'sh qolsa bugungi kurs olinadi: 1 $ = {{kurs}} so'm.",
+    "kassirKursi": "To'lov kursi",
     "tengQiymat": "{{kiritilgan}} = {{summa}}",
     "belgisi": "To'lov",
     "sarlavha": "To'lovni qabul qilish",
@@ -310,6 +312,7 @@
     "izohPlaceholder": "Masalan: kim berdi, qachon va nima uchun",
     "sanaOtganIzoh": "To'lov {{sana}} kuni berilgan deb yoziladi.",
     "errors": {
+      "kursNotogri": "Kursni to'g'ri kiriting: 0 dan katta son.",
       "manfiyBolmasin": "To'lov summasi manfiy bo'lishi mumkin emas.",
       "nolDanKatta": "To'lov summasi 0 dan katta bo'lishi kerak.",
       "qaytimMosEmas": "Qaytim summasi oldingi to'lovlar bilan mos kelmayapti. To'lovlarni yoki qaytimni tekshiring.",

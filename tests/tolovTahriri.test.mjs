@@ -57,12 +57,12 @@ test('tolovlarniYangilash: backend namunasi — dollar, 100, kerakli kun; boshqa
   );
   assert.deepEqual(natija, [
     { id: 'p1', paymentType: 'CASH', amount: 100, currency: 'USD', date: '2026-10-20' },
-    { paymentType: 'CARD', amount: 13600, id: 'p2' },
+    { paymentType: 'CARD', amount: 13600, currency: 'UZS', id: 'p2' },
   ]);
 });
 
-test('tolovlarniYangilash: valyuta faqat sotuv valyutasidan farq qilsa; sana va izoh faqat o‘zgargan bo‘lsa', () => {
-  // Dollardagi sotuvda to'lov so'mda: currency "UZS" yuboriladi; sotuv valyutasidagi to'lovda — yuborilmaydi.
+test('tolovlarniYangilash: valyuta doim yuboriladi (sotuv valyutasidagi to‘lovda ham); sana va izoh faqat o‘zgargan bo‘lsa', () => {
+  // Dollardagi sotuvda: $ to'lov currency "USD", so'm to'lov "UZS" bilan — berilmasa backend so'm deb saqlardi ($400 → 400 so'm).
   const usdSotuv = lib.tolovlarniYangilash(
     [{ id: 'a', paymentType: 'CASH', amount: 20, currency: 'USD' }, { id: 'b', paymentType: 'CASH', amount: 500000, currency: 'UZS' }],
     { id: 'a', indeks: 0 },
@@ -70,19 +70,19 @@ test('tolovlarniYangilash: valyuta faqat sotuv valyutasidan farq qilsa; sana va 
     'USD'
   );
   assert.deepEqual(usdSotuv, [
-    { id: 'a', paymentType: 'CASH', amount: 25 },
+    { id: 'a', paymentType: 'CASH', amount: 25, currency: 'USD' },
     { paymentType: 'CASH', amount: 500000, currency: 'UZS', id: 'b' },
   ]);
   // Izoh o'zgargan (bo'sh — o'chirish) va sana berilmagan.
   const izohli = lib.tolovlarniYangilash(tolovlar(), { id: 'p1', indeks: 0 }, { paymentType: 'BANK', amount: 1, currency: 'UZS', note: '' }, 'UZS');
-  assert.deepEqual(izohli[0], { id: 'p1', paymentType: 'BANK', amount: 1, note: '' });
+  assert.deepEqual(izohli[0], { id: 'p1', paymentType: 'BANK', amount: 1, currency: 'UZS', note: '' });
   assert.ok(!('date' in izohli[0]));
 });
 
 test('tolovlarniYangilash: to‘lov topilmasa null; id yo‘q to‘lov o‘rni bo‘yicha topiladi', () => {
   assert.equal(lib.tolovlarniYangilash(tolovlar(), { id: 'yo‘q', indeks: 9 }, { paymentType: 'CASH', amount: 1, currency: 'UZS' }, 'UZS'), null);
   const idsiz = lib.tolovlarniYangilash([{ paymentType: 'CASH', amount: 5 }], { id: null, indeks: 0 }, { paymentType: 'CASH', amount: 7, currency: 'UZS' }, 'UZS');
-  assert.deepEqual(idsiz, [{ paymentType: 'CASH', amount: 7 }]);
+  assert.deepEqual(idsiz, [{ paymentType: 'CASH', amount: 7, currency: 'UZS' }]);
 });
 
 test('tolovTahririTanasi: payments va (berilsa) aniq keepExcess', () => {
@@ -156,7 +156,7 @@ test('zanjir: bekor → tiklash → (qoralamani olish) PATCH payments → tasdiq
   assert.deepEqual(patch.data, {
     payments: [
       { id: 'q1', paymentType: 'CASH', amount: 100, currency: 'USD', date: '2026-10-20' },
-      { paymentType: 'CARD', amount: 13600, id: 'q2' },
+      { paymentType: 'CARD', amount: 13600, currency: 'UZS', id: 'q2' },
     ],
   });
   assert.deepEqual(voqealar, ['bekor:boshlandi', 'bekor:tugadi', 'tiklash:boshlandi', 'tiklash:tugadi', 'yangilash:boshlandi', 'yangilash:tugadi', 'tasdiqlash:boshlandi', 'tasdiqlash:tugadi']);
@@ -355,7 +355,7 @@ test('tolovlarniYangilash: rate faqat boshqa valyutadagi qatorga (sotuv valyutas
     'UZS'
   );
   assert.deepEqual(natija, [
-    { id: 'a', paymentType: 'CASH', amount: 90000 },
+    { id: 'a', paymentType: 'CASH', amount: 90000, currency: 'UZS' },
     { paymentType: 'CASH', amount: 10, currency: 'USD', id: 'b' },
   ]);
 });
@@ -456,4 +456,15 @@ test('tolovlarKassaXulosasi: qarz qatori (DEBT) pul emas; hisobga o‘tgan pul v
   assert.deepEqual(x, { kirim: [{ tur: 'CASH', valyuta: 'UZS', summa: 101000 }], qaytim: 2000, hisobga: 25000 });
   assert.deepEqual(lib.tolovlarKassaXulosasi(null, 'UZS'), { kirim: [], qaytim: 0, hisobga: 0 });
   assert.deepEqual(lib.tolovlarKassaXulosasi([{ paymentType: 'CASH', amount: '0' }, { paymentType: 'CASH', amount: 'abc' }], 'UZS').kirim, []);
+});
+
+test('tolovlarniYangilash: valyutasi yozilmagan eski to‘lov sotuv valyutasida qaytariladi (dollar sotuvda USD, so‘m emas)', () => {
+  const natija = lib.tolovlarniYangilash(
+    [{ id: 'a', paymentType: 'CASH', amount: '400', currency: null }, { id: 'b', paymentType: 'CASH', amount: '312000', currency: 'UZS', rate: '11743' }],
+    { id: 'b', indeks: 1 },
+    { paymentType: 'CASH', amount: 312000, currency: 'UZS', rate: 11743 },
+    'USD'
+  );
+  assert.equal(natija[0].currency, 'USD');
+  assert.deepEqual(natija[1], { id: 'b', paymentType: 'CASH', amount: 312000, currency: 'UZS', rate: 11743 });
 });

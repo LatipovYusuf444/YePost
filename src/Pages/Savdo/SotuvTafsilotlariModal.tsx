@@ -412,6 +412,11 @@ function farqliValyuta(valyuta: Valyuta, sotuv: Pick<Sotuv, "currency">) {
   return valyuta !== sotuvValyutasi(sotuv) ? { currency: valyuta } : {};
 }
 
+// To'lov valyutasi DOIM yuboriladi: berilmasa backend to'lovni so'm deb saqlaydi (dollar sotuvdagi $400 "400 so'm" bo'lib qolardi).
+function tolovValyutaMaydoni(valyuta: Valyuta) {
+  return { currency: valyuta };
+}
+
 // Dollarni sentgacha, so'mni butungacha YUQORIGA yaxlitlaydi (qarzni to'liq yopish uchun).
 function valyutaYaxlitlash(summa: number, valyuta: Valyuta) {
   return valyuta === "USD" ? Math.ceil(summa * 100 - 1e-9) / 100 : Math.ceil(summa - 1e-9);
@@ -1812,6 +1817,8 @@ function TolovQabulQilishModal({
   const [tolovVal, setTolovVal] = useState<Valyuta>(sotuvVal);
   const [summa, setSumma] = useState("0");
   const [kassirKursi, setKassirKursi] = useState<number | null>(null);
+  // Kassir kiritgan kurs (1 $ necha so'm): to'lov sotuvdan boshqa valyutada bo'lsa. Bo'sh — bugungi kurs.
+  const [qoldaKurs, setQoldaKurs] = useState("");
   const [qaytimKiritilgan, setQaytimKiritilgan] = useState<string | null>(null);
   // To'lov sanasi (qachon berilgani; kun, Toshkent) va izoh. Bugun/bo'sh bo'lsa so'rovga qo'shilmaydi — backend hozirgi vaqtni oladi.
   const [tolovKuni, setTolovKuni] = useState(() => bugungiToshkentKuni());
@@ -1853,7 +1860,10 @@ function TolovQabulQilishModal({
   }
 
   const boshqaValyuta = valyutaTanlashMumkin && tolovVal !== sotuvVal;
-  const hisobKursi = kassirKursi ?? kurs;
+  const qoldaKursSoni = boshqaValyuta && Number(qoldaKurs) > 0 ? Number(qoldaKurs) : null;
+  // Shu to'lov kursi: qaytimdan chiqarilgan yoki kassir yozgan kurs; ikkalasi ham bo'lmasa bugungi kurs.
+  const tolovKursi = kassirKursi ?? qoldaKursSoni;
+  const hisobKursi = tolovKursi ?? kurs;
   // To'lov valyutasidagi summani sotuv valyutasiga (va aksincha) bugungi kurs bilan o'giradi.
   const sotuvValyutasigaOgirish = (miqdor: number, valyuta: Valyuta, qatorKursi = hisobKursi) =>
     valyuta === sotuvVal || !(qatorKursi > 0) ? miqdor : valyuta === "USD" ? miqdor * qatorKursi : miqdor / qatorKursi;
@@ -1927,7 +1937,7 @@ function TolovQabulQilishModal({
     : 0;
   const qaytimTahrirlanadi = draft && sotuvVal === "UZS" && tolovVal === "USD" && tolovTuri === "CASH" && yangiSumma > 0;
   const hisobgaYozish = Boolean(mijozId) && ortiqchaniHisobga;
-  const yangiKursMaydoni = boshqaValyuta && kassirKursi && kassirKursi > 0 ? { rate: kassirKursi } : {};
+  const yangiKursMaydoni = boshqaValyuta && tolovKursi && tolovKursi > 0 ? { rate: tolovKursi } : {};
 
   function summaniOzgartirish(matn: string) {
     setSumma(matn);
@@ -1964,6 +1974,7 @@ function TolovQabulQilishModal({
   function valyutaniOzgartirish(yangi: Valyuta) {
     if (yangi === tolovVal) return;
     setTolovVal(yangi);
+    setQoldaKurs("");
     summaniOzgartirish("0");
     setXatolik("");
     fx.tozala("currency");
@@ -1984,6 +1995,7 @@ function TolovQabulQilishModal({
   // Maydon yo'q bo'lsa (masalan, ro'yxatdagi to'lov sanasi) xato oyna tepasida ko'rsatiladi.
   function tolovlarniTekshirish(tolovlarSoni: number): FormaXatosi {
     if (kassirKursi !== null && !(kassirKursi > 0)) return { xato: t("tolovModal.errors.qaytimMosEmas"), maydon: "rate" };
+    if (boshqaValyuta && qoldaKurs.trim() && !(Number(qoldaKurs) > 0)) return { xato: t("tolovModal.errors.kursNotogri"), maydon: "rate" };
     if (yangiSumma < 0) return { xato: draft ? t("tolovModal.errors.manfiyBolmasin") : t("tolovModal.errors.nolDanKatta"), maydon: "amount" };
     if (!draft && tolovlarSoni === 0) return { xato: t("tolovModal.errors.nolDanKatta"), maydon: "amount" };
     if (balansTanlangan && yangiSumma > balansMax + 1e-9) {
@@ -2027,6 +2039,8 @@ function TolovQabulQilishModal({
     setQatorlar((joriy) => [...joriy, { paymentType: tolovTuri, amount: yangiSumma, currency: tolovVal, ...yangiKursMaydoni, date: tolovKuni, note: izoh.trim() }]);
     summaniOzgartirish("0");
     setIzoh("");
+    // Kurs shu to'lovniki edi: keyingi to'lov (odatda boshqa valyutada) o'z kursi bilan kiritiladi.
+    setQoldaKurs("");
     // Hisobdan to'lovdan keyin qolgani odatda naqd to'lanadi.
     if (tolovTuri === "BALANCE") setTolovTuri("CASH");
     // Ikkinchi to'lov odatda boshqa valyutada bo'ladi (masalan, dollardan keyin qolgani so'mda).
@@ -2070,7 +2084,7 @@ function TolovQabulQilishModal({
           const yuborish = () => onTolovQoshish(sotuv.id, {
             paymentType: tolov.paymentType,
             amount: tolov.amount,
-            ...farqliValyuta(tolov.currency, sotuv),
+            ...tolovValyutaMaydoni(tolov.currency),
             ...(tolov.rate ? { rate: tolov.rate } : {}),
             ...tolovQoshimchasi(tolov.date, tolov.note),
             ...(tahlil.birinchiOshgan !== -1 && i >= tahlil.birinchiOshgan ? bayroqlar : {}),
@@ -2111,7 +2125,7 @@ function TolovQabulQilishModal({
         ...mavjudTolovlar.map((tolov) => ({
           paymentType: tolov.paymentType,
           amount: Number(tolov.amount ?? 0),
-          ...farqliValyuta(tolovValyutasi(tolov, sotuv), sotuv),
+          ...tolovValyutaMaydoni(tolovValyutasi(tolov, sotuv)),
           ...(tolovValyutasi(tolov, sotuv) !== sotuvVal && Number(tolov.rate) > 0 ? { rate: Number(tolov.rate) } : {}),
           // Qoralamada to'lovlar ro'yxati to'liq almashtiriladi: eski to'lov `id` bilan qaytariladi, shunda uning sanasi va izohi saqlanadi.
           ...saqlanganTolovMaydonlari(tolov),
@@ -2119,7 +2133,7 @@ function TolovQabulQilishModal({
         ...tolovlar.map((tolov) => ({
           paymentType: tolov.paymentType,
           amount: tolov.amount,
-          ...farqliValyuta(tolov.currency, sotuv),
+          ...tolovValyutaMaydoni(tolov.currency),
           ...(tolov.rate ? { rate: tolov.rate } : {}),
           ...tolovQoshimchasi(tolov.date, tolov.note),
         })),
@@ -2333,13 +2347,34 @@ function TolovQabulQilishModal({
                   )}
                   {boshqaValyuta && (
                     <span className="text-xs font-semibold text-slate-500">
-                      {t(kassirKursi ? "tolovModal.kassirKursQatori" : "tolovModal.kursQatori", { kurs: hisobKursi.toLocaleString("uz-UZ", { maximumFractionDigits: 4 }) })}
+                      {t(tolovKursi ? "tolovModal.kassirKursQatori" : "tolovModal.kursQatori", { kurs: hisobKursi.toLocaleString("uz-UZ", { maximumFractionDigits: 4 }) })}
                       {yangiSumma > 0 &&
                         ` · ${t("tolovModal.tengQiymat", { kiritilgan: pulniFormatlash(yangiSumma, tolovVal), summa: pulniFormatlash(yangiSummaSotuvValyutasida, sotuvVal) })}`}
                     </span>
                   )}
                 </div>
               </div>
+              </XatoliMaydon>
+            )}
+
+            {boshqaValyuta && !balansTanlangan && !qaytimTahrirlanadi && (
+              <XatoliMaydon xato={fx.xato("rate")}>
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-400">{t("tolovModal.kassirKursi")}</span>
+                <div className="relative max-w-xs">
+                  <span aria-hidden className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">1 $ =</span>
+                  <SummaMaydoni
+                    value={qoldaKurs}
+                    onChange={(matn) => { setQoldaKurs(matn); setXatolik(""); fx.tozala("rate", "amount", "_"); }}
+                    kasr={4}
+                    aria-label={t("tolovModal.kassirKursi")}
+                    placeholder={kurs > 0 ? kurs.toLocaleString("uz-UZ", { maximumFractionDigits: 4 }) : "0"}
+                    className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-14 pr-14 text-sm font-semibold outline-none transition focus:border-[#2563EB] focus:ring-4 focus:ring-orange-100"
+                  />
+                  <span aria-hidden className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{t("tolovModal.somBelgisi")}</span>
+                </div>
+                <span className="text-xs font-semibold text-slate-400">{t("tolovModal.kassirKursiIzoh", { kurs: kurs.toLocaleString("uz-UZ", { maximumFractionDigits: 4 }) })}</span>
+              </label>
               </XatoliMaydon>
             )}
 

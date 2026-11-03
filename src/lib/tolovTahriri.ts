@@ -65,17 +65,19 @@ export function tolovlarniYangilash(
 ): Array<Record<string, unknown>> | null {
   const tanlanganIndeks = tahrirlanadiganTolovIndeksi(tolovlar, tanlov);
   if (tanlanganIndeks === -1) return null;
-  const farqliValyuta = (valyuta?: string | null) => (valyutaKodi(valyuta) !== valyutaKodi(sotuvValyutasi) ? { currency: valyutaKodi(valyuta) } : {});
+  // To'lov valyutasi doim yuboriladi (berilmasa backend so'm deb saqlaydi); valyutasi yozilmagan to'lov — sotuv valyutasida.
+  const valyutasi = (valyuta?: string | null) => valyutaKodi(valyuta || sotuvValyutasi);
+  const valyutaMaydoni = (valyuta?: string | null) => ({ currency: valyutasi(valyuta) });
   // Kurs faqat boshqa valyutadagi to'lov qatorida ma'noga ega (sotuv valyutasidagi to'lovga ta'sir qilmaydi).
   const kursi = (valyuta: string | null | undefined, kurs: unknown) =>
-    valyutaKodi(valyuta) !== valyutaKodi(sotuvValyutasi) && Number(kurs) > 0 ? { rate: Number(kurs) } : {};
+    valyutasi(valyuta) !== valyutaKodi(sotuvValyutasi) && Number(kurs) > 0 ? { rate: Number(kurs) } : {};
   return tolovlar.map((tolov, indeks) => {
     if (indeks !== tanlanganIndeks) {
       // PATCH qatorlarni qayta yozadi: kassir kursini saqlab qolish uchun boshqa to'lovlar ham o'z kursi bilan qaytariladi (rate'siz qator kunlik kursni oladi).
       return {
         paymentType: tolov.paymentType,
         amount: Number(tolov.amount ?? 0),
-        ...farqliValyuta(tolov.currency),
+        ...valyutaMaydoni(tolov.currency),
         ...kursi(tolov.currency, tolov.rate),
         ...saqlanganTolovMaydonlari(tolov),
       };
@@ -84,7 +86,7 @@ export function tolovlarniYangilash(
       ...(tolov.id ? { id: tolov.id } : {}),
       paymentType: yangi.paymentType,
       amount: yangi.amount,
-      ...farqliValyuta(yangi.currency),
+      ...valyutaMaydoni(yangi.currency),
       ...kursi(yangi.currency, yangi.rate),
       ...(yangi.date ? { date: yangi.date } : {}),
       ...(yangi.note !== undefined ? { note: yangi.note } : {}),

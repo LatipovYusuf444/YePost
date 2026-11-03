@@ -8,7 +8,7 @@ import ts from 'typescript';
 const require = createRequire(import.meta.url);
 const source = readFileSync(new URL('../src/Pages/Savdo/SotuvTafsilotlariModal.tsx', import.meta.url), 'utf8');
 const file = ts.createSourceFile('modal.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-const names = ['TolovQabulQilishModal', 'farqliValyuta', 'valyutaYaxlitlash', 'mijozIdOlish'];
+const names = ['TolovQabulQilishModal', 'farqliValyuta', 'tolovValyutaMaydoni', 'valyutaYaxlitlash', 'mijozIdOlish'];
 const declarations = file.statements.filter(node => ts.isFunctionDeclaration(node) && names.includes(node.name?.text)).map(node => node.getText(file));
 const compiled = ts.transpileModule(declarations.join('\n') + '\nexports.Modal = TolovQabulQilishModal;', {
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 },
@@ -165,4 +165,47 @@ test('balance option is absent for walk-ins and remains available for named cust
     assert.equal(options.length, customer ? 2 : 1);
     assert.equal(options[0].props.tanlangan, true);
   }
+});
+
+// Bug: dollar sotuvga $400 + 312 000 so'm (kassir kursi 11 743) — $400 "400 so'm" bo'lib, so'm to'lov kunlik kurs bilan qayta hisoblanib saqlanardi.
+const kunBugun = () => dates.bugungiToshkentKuni();
+function kassirKursiniYoz(edit, kurs) {
+  node(edit, 'SummaMaydoni', props => props['aria-label'] === 'tolovModal.kassirKursi').props.onChange(kurs);
+}
+
+test('confirmed USD sale: the $ payment is sent with currency USD and the so‘m payment with the cashier amount and rate', async () => {
+  const edit = editor({
+    sotuv: { id: 's', status: 'CONFIRMED', currency: 'USD', payments: [], date: kunBugun() }, jami: 426.54, draft: false,
+    onTolovQoshish: async (id, payload) => { edit.payments.push({ id, payload }); return { qaytim: 0, hisobga: 0 }; },
+  });
+  node(edit, 'SummaMaydoni', props => props['aria-label']?.startsWith('tolovModal.tolovSummasi')).props.onChange('400');
+  node(edit, 'button', props => Array.isArray(props.children) && props.children.includes('tolovModal.yanaTolovQoshish')).props.onClick();
+  // Ikkinchi to'lov o'zi so'mga o'tadi: kassir summa va kursni yozadi.
+  node(edit, 'SummaMaydoni', props => props['aria-label']?.startsWith('tolovModal.tolovSummasi')).props.onChange('312000');
+  kassirKursiniYoz(edit, '11743');
+  await save(edit);
+  assert.equal(edit.payments.length, 2);
+  assert.deepEqual({ amount: edit.payments[0].payload.amount, currency: edit.payments[0].payload.currency, rate: edit.payments[0].payload.rate }, { amount: 400, currency: 'USD', rate: undefined });
+  assert.deepEqual({ amount: edit.payments[1].payload.amount, currency: edit.payments[1].payload.currency, rate: edit.payments[1].payload.rate }, { amount: 312000, currency: 'UZS', rate: 11743 });
+});
+
+test('draft USD sale: an old payment without currency is re-sent as USD, the new so‘m payment keeps the cashier amount and rate', async () => {
+  const edit = editor({ sotuv: { id: 's', currency: 'USD', payments: [{ id: 'p1', paymentType: 'CASH', amount: '400', currency: null }], date: kunBugun() }, jami: 426.54 });
+  node(edit, 'button', props => props.children === 'tolovModal.valyutaSom').props.onClick();
+  node(edit, 'SummaMaydoni', props => props['aria-label']?.startsWith('tolovModal.tolovSummasi')).props.onChange('312000');
+  kassirKursiniYoz(edit, '11743');
+  await save(edit);
+  const [eski, yangi] = edit.changes[0].payload.payments;
+  assert.equal(eski.currency, 'USD');
+  assert.equal(eski.amount, 400);
+  assert.deepEqual({ amount: yangi.amount, currency: yangi.currency, rate: yangi.rate }, { amount: 312000, currency: 'UZS', rate: 11743 });
+});
+
+test('cashier rate must be a positive number', async () => {
+  const edit = editor({ sotuv: { id: 's', currency: 'USD', payments: [], date: kunBugun() }, jami: 426.54 });
+  node(edit, 'button', props => props.children === 'tolovModal.valyutaSom').props.onClick();
+  node(edit, 'SummaMaydoni', props => props['aria-label']?.startsWith('tolovModal.tolovSummasi')).props.onChange('312000');
+  kassirKursiniYoz(edit, '0');
+  await save(edit);
+  assert.equal(edit.changes.length, 0, 'noto‘g‘ri kurs bilan saqlanmaydi');
 });
