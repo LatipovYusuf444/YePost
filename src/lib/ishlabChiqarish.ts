@@ -12,6 +12,10 @@ import type {
   SmenaTanasi,
   TozaxtashSababi,
 } from "../types/ishlabChiqarish.ts";
+import type { FormaXatosi } from "./maydonXatolari.ts";
+
+// Forma maydon xatolari butun loyiha uchun umumiy (lib/maydonXatolari): eski importlar uchun shu yerdan ham beriladi.
+export { serverXatoMaydonlari, type FormaXatosi, type XatoMaydonQoidasi } from "./maydonXatolari.ts";
 
 export const TOXTASH_SABABLARI: TozaxtashSababi[] = ["BREAKDOWN", "MAINTENANCE", "NO_STAFF", "OTHER_WORK", "NO_MATERIAL", "NO_POWER", "OTHER"];
 
@@ -68,6 +72,14 @@ export function miqdorMatni(qiymat: unknown) {
   return son.toLocaleString("uz-UZ", { maximumFractionDigits: 3 });
 }
 
+/**
+ * Qoralamani tahrirlash (PATCH): formada tozalangan ixtiyoriy maydon ham yuboriladi, aks holda server eski qiymatni saqlab qoladi.
+ * `bosh` — tozalangan maydon qiymati: matn uchun "", raqam uchun 0, sana va bog'lanish uchun null.
+ */
+export function tahrirTanasi<T extends Record<string, unknown>>(tana: T, bosh: Record<string, string | number | null>): T {
+  return { ...Object.fromEntries(Object.entries(bosh).filter(([kalit]) => !(kalit in tana))), ...tana } as T;
+}
+
 /** Bo'sh qiymatlarni tashlaydi: so'rovga `undefined`/bo'sh satr ketmaydi. */
 export function tozaTana<T extends Record<string, unknown>>(tana: T): T {
   return Object.fromEntries(Object.entries(tana).filter(([, qiymat]) => qiymat !== undefined && qiymat !== "")) as T;
@@ -108,19 +120,20 @@ export type RetseptFormasi = {
 };
 
 /** Forma → so'rov tanasi. Xato bo'lsa `{ xato: <i18n kaliti> }`. */
-export function retseptTanasiniYigish(forma: RetseptFormasi): { tana: RetseptTanasi } | { xato: string } {
+
+export function retseptTanasiniYigish(forma: RetseptFormasi): { tana: RetseptTanasi } | FormaXatosi {
   const baseQuantity = sonMaydoni(forma.baseQuantity);
-  if (!forma.modificationId) return { xato: "errors.product" };
-  if (!forma.warehouseId) return { xato: "errors.wipWarehouse" };
-  if (!(baseQuantity && baseQuantity > 0)) return { xato: "errors.baseQuantity" };
+  if (!forma.modificationId) return { xato: "errors.product", maydon: "modificationId" };
+  if (!forma.warehouseId) return { xato: "errors.wipWarehouse", maydon: "warehouseId" };
+  if (!(baseQuantity && baseQuantity > 0)) return { xato: "errors.baseQuantity", maydon: "baseQuantity" };
   const inputs: RetseptTanasi["inputs"] = [];
-  for (const qator of forma.inputs) {
-    if (!qator.modificationId) return { xato: "errors.lineProduct" };
+  for (const [i, qator] of forma.inputs.entries()) {
+    if (!qator.modificationId) return { xato: "errors.lineProduct", maydon: `inputs.${i}.modificationId` };
     const quantity = sonMaydoni(qator.quantity);
     const min = sonMaydoni(qator.min);
     const max = sonMaydoni(qator.max);
-    if (qator.kind === "FIXED" && !(quantity && quantity > 0)) return { xato: "errors.lineQuantity" };
-    if (qator.kind === "RANGE" && !(min !== undefined && max !== undefined && min >= 0 && max >= min)) return { xato: "errors.lineRange" };
+    if (qator.kind === "FIXED" && !(quantity && quantity > 0)) return { xato: "errors.lineQuantity", maydon: `inputs.${i}.quantity` };
+    if (qator.kind === "RANGE" && !(min !== undefined && max !== undefined && min >= 0 && max >= min)) return { xato: "errors.lineRange", maydon: min === undefined || min < 0 ? `inputs.${i}.min` : `inputs.${i}.max` };
     inputs.push(tozaTana({
       modificationId: qator.modificationId,
       kind: qator.kind,
@@ -128,15 +141,15 @@ export function retseptTanasiniYigish(forma: RetseptFormasi): { tana: RetseptTan
       ...(qator.kind === "RANGE" ? { min, max } : {}),
     }));
   }
-  if (inputs.length === 0) return { xato: "errors.noInputs" };
+  if (inputs.length === 0) return { xato: "errors.noInputs", maydon: "inputs" };
   const outputs: RetseptTanasi["outputs"] = [];
-  for (const qator of forma.outputs) {
+  for (const [i, qator] of forma.outputs.entries()) {
     const quantity = sonMaydoni(qator.quantity);
-    if (!qator.modificationId) return { xato: "errors.lineProduct" };
-    if (!(quantity && quantity > 0)) return { xato: "errors.lineQuantity" };
+    if (!qator.modificationId) return { xato: "errors.lineProduct", maydon: `outputs.${i}.modificationId` };
+    if (!(quantity && quantity > 0)) return { xato: "errors.lineQuantity", maydon: `outputs.${i}.quantity` };
     outputs.push(tozaTana({ modificationId: qator.modificationId, role: qator.role, quantity, quantityType: qator.quantityType || undefined }));
   }
-  if (!outputs.some((qator) => qator.role === "MAIN")) return { xato: "errors.noMainOutput" };
+  if (!outputs.some((qator) => qator.role === "MAIN")) return { xato: "errors.noMainOutput", maydon: "outputs" };
   return {
     tana: tozaTana({
       modificationId: forma.modificationId,
@@ -162,18 +175,18 @@ export type KalkulyatsiyaFormasi = {
   lines: Array<{ modificationId: string; quantity: string; price: string; currency: "UZS" | "USD"; costingRate: string }>;
 };
 
-export function kalkulyatsiyaTanasiniYigish(forma: KalkulyatsiyaFormasi): { tana: KalkulyatsiyaTanasi } | { xato: string } {
-  if (!forma.modificationId) return { xato: "errors.product" };
-  if (forma.lines.length === 0) return { xato: "errors.noInputs" };
+export function kalkulyatsiyaTanasiniYigish(forma: KalkulyatsiyaFormasi): { tana: KalkulyatsiyaTanasi } | FormaXatosi {
+  if (!forma.modificationId) return { xato: "errors.product", maydon: "modificationId" };
+  if (forma.lines.length === 0) return { xato: "errors.noInputs", maydon: "lines" };
   const lines: KalkulyatsiyaTanasi["lines"] = [];
-  for (const qator of forma.lines) {
+  for (const [i, qator] of forma.lines.entries()) {
     const quantity = sonMaydoni(qator.quantity);
     const price = sonMaydoni(qator.price);
     const costingRate = sonMaydoni(qator.costingRate);
-    if (!qator.modificationId) return { xato: "errors.lineProduct" };
-    if (!(quantity && quantity > 0)) return { xato: "errors.lineQuantity" };
-    if (!(price !== undefined && price >= 0)) return { xato: "errors.linePrice" };
-    if (qator.currency === "USD" && !(costingRate && costingRate > 0)) return { xato: "errors.lineRate" };
+    if (!qator.modificationId) return { xato: "errors.lineProduct", maydon: `lines.${i}.modificationId` };
+    if (!(quantity && quantity > 0)) return { xato: "errors.lineQuantity", maydon: `lines.${i}.quantity` };
+    if (!(price !== undefined && price >= 0)) return { xato: "errors.linePrice", maydon: `lines.${i}.price` };
+    if (qator.currency === "USD" && !(costingRate && costingRate > 0)) return { xato: "errors.lineRate", maydon: `lines.${i}.costingRate` };
     lines.push(tozaTana({ modificationId: qator.modificationId, quantity, price, currency: qator.currency, costingRate: qator.currency === "USD" ? costingRate : undefined }));
   }
   return {
@@ -207,28 +220,30 @@ export type SmenaFormasi = {
   downtime: Array<{ reason: TozaxtashSababi; hours: string; note: string }>;
 };
 
-export function smenaTanasiniYigish(forma: SmenaFormasi): { tana: SmenaTanasi } | { xato: string } {
-  if (!forma.orderId && !(forma.recipeId && forma.destWarehouseId)) return { xato: "errors.orderOrRecipe" };
+export function smenaTanasiniYigish(forma: SmenaFormasi): { tana: SmenaTanasi } | FormaXatosi {
+  if (!forma.orderId && !(forma.recipeId && forma.destWarehouseId)) return { xato: "errors.orderOrRecipe", maydon: forma.recipeId ? "destWarehouseId" : "recipeId" };
   const outputs: SmenaTanasi["outputs"] = [];
-  for (const qator of forma.outputs) {
+  for (const [i, qator] of forma.outputs.entries()) {
     const quantity = sonMaydoni(qator.quantity);
-    if (!(quantity && quantity > 0)) return { xato: "errors.lineQuantity" };
+    if (!(quantity && quantity > 0)) return { xato: "errors.lineQuantity", maydon: `outputs.${i}.quantity` };
     const serial = qator.serial.trim();
-    if (serial && !seriyaYaroqlimi(serial)) return { xato: "errors.serialFormat" };
+    if (serial && !seriyaYaroqlimi(serial)) return { xato: "errors.serialFormat", maydon: `outputs.${i}.serial` };
     outputs.push(tozaTana({ quantity, scrapQuantity: sonMaydoni(qator.scrapQuantity), serial, modificationId: qator.modificationId, role: qator.role }));
   }
-  if (outputs.length === 0) return { xato: "errors.noOutputs" };
+  if (outputs.length === 0) return { xato: "errors.noOutputs", maydon: "outputs" };
+  // Hamma qator normadan (qoralamani qayta ochganda server to'ldirgan qatorlar) — yuborilmaydi: server chiqqan mahsulotga qarab normani qayta hisoblaydi.
+  const faqatNorma = forma.inputs.length > 0 && forma.inputs.every((qator) => qator.entryMethod === "NORM" && !qator.offRecipe);
   const inputs: NonNullable<SmenaTanasi["inputs"]> = [];
-  for (const qator of forma.inputs) {
+  for (const [i, qator] of (faqatNorma ? [] : forma.inputs).entries()) {
     const quantity = sonMaydoni(qator.quantity);
-    if (!qator.modificationId) return { xato: "errors.lineProduct" };
-    if (!(quantity && quantity > 0)) return { xato: "errors.lineQuantity" };
+    if (!qator.modificationId) return { xato: "errors.lineProduct", maydon: `inputs.${i}.modificationId` };
+    if (!(quantity && quantity > 0)) return { xato: "errors.lineQuantity", maydon: `inputs.${i}.quantity` };
     inputs.push({ modificationId: qator.modificationId, quantity, entryMethod: qator.entryMethod, ...(qator.offRecipe ? { offRecipe: true } : {}) });
   }
   const downtime: NonNullable<SmenaTanasi["downtime"]> = [];
-  for (const qator of forma.downtime) {
+  for (const [i, qator] of forma.downtime.entries()) {
     const hours = sonMaydoni(qator.hours);
-    if (!(hours && hours > 0)) return { xato: "errors.downtimeHours" };
+    if (!(hours && hours > 0)) return { xato: "errors.downtimeHours", maydon: `downtime.${i}.hours` };
     downtime.push(tozaTana({ reason: qator.reason, hours, note: qator.note.trim() }));
   }
   return {
@@ -242,4 +257,16 @@ export function smenaTanasiniYigish(forma: SmenaFormasi): { tana: SmenaTanasi } 
       ...(downtime.length ? { downtime } : {}),
     }),
   };
+}
+
+/** Ro'yxat qidiruvi: so'z berilgan qiymatlardan birida uchrasa mos (katta-kichik harf farqsiz). Bo'sh so'z — hammasi mos. */
+export function qidiruvgaMos(soz: string, qiymatlar: ReadonlyArray<unknown>) {
+  const qidiruv = soz.trim().toLocaleLowerCase();
+  if (!qidiruv) return true;
+  return qiymatlar.some((qiymat) => qiymat !== null && qiymat !== undefined && String(qiymat).toLocaleLowerCase().includes(qidiruv));
+}
+
+/** Holat filtri (bitta holat yoki holatlar guruhi): `null` — hammasi. */
+export function holatBoyicha<T extends { status?: string | null }>(qatorlar: readonly T[], holatlar: readonly string[] | null) {
+  return holatlar ? qatorlar.filter((qator) => holatlar.includes(qator.status ?? "")) : [...qatorlar];
 }

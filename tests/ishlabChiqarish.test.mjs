@@ -185,3 +185,56 @@ test('order pages use the backend status names', () => {
     assert.equal(matnlar.status.COMPLETED, undefined);
   }
 });
+
+test('list search and status-group filter used by the production tables', () => {
+  assert.equal(lib.qidiruvgaMos('', ['x']), true);
+  assert.equal(lib.qidiruvgaMos('ichb-0002', ['ICHB-0002', 'Skotch']), true);
+  assert.equal(lib.qidiruvgaMos('rulon', [null, undefined, 'Skotch']), false);
+  const qatorlar = [{ status: 'DRAFT' }, { status: 'RELEASED' }, { status: 'IN_PROGRESS' }, { status: 'DONE' }];
+  assert.equal(lib.holatBoyicha(qatorlar, null).length, 4);
+  assert.deepEqual(lib.holatBoyicha(qatorlar, ['RELEASED', 'IN_PROGRESS']).map((q) => q.status), ['RELEASED', 'IN_PROGRESS']);
+});
+
+test('editing a draft sends cleared optional fields so the server does not keep the old value', () => {
+  const tana = lib.tahrirTanasi({ modificationId: 'm1', quantity: 5 }, { recipeId: null, dueDate: null, note: '' });
+  assert.deepEqual(JSON.parse(JSON.stringify(tana)), { recipeId: null, dueDate: null, note: '', modificationId: 'm1', quantity: 5 });
+  assert.equal(lib.tahrirTanasi({ recipeId: 'r2' }, { recipeId: null }).recipeId, 'r2', 'filled field wins');
+});
+
+test('a reopened draft whose inputs all came from the norm lets the server recompute the norm', () => {
+  const norma = smena({ inputs: [{ modificationId: 'm1', quantity: '883.2', entryMethod: 'NORM', offRecipe: false }] });
+  assert.equal(lib.smenaTanasiniYigish(norma).tana.inputs, undefined);
+  const aralash = smena({ inputs: [{ modificationId: 'm1', quantity: '883.2', entryMethod: 'NORM', offRecipe: false }, { modificationId: 'm2', quantity: '3', entryMethod: 'ACTUAL', offRecipe: false }] });
+  assert.equal(lib.smenaTanasiniYigish(aralash).tana.inputs.length, 2);
+});
+
+test('server errors are attached to the form field they belong to', () => {
+  const qoidalar = {
+    retsept: { maydonlar: ['recipeId'], kodlar: ['recipe'], sozlar: ['retsept'] },
+    mahsulot: { maydonlar: ['modificationId'], kodlar: ['modification'], sozlar: ['mahsulot'] },
+    miqdor: { maydonlar: ['quantity'], kodlar: ['quantity'], sozlar: ['miqdor'] },
+  };
+  assert.deepEqual(lib.serverXatoMaydonlari({ code: 'errors.production.recipe_not_active', message: 'Retsept faol emas' }, qoidalar), { retsept: 'Retsept faol emas' });
+  assert.deepEqual(lib.serverXatoMaydonlari({ code: 'errors.http.400', message: 'Input validation failed', errors: [{ field: 'quantity', constraints: [{ message: "Miqdor musbat bo'lishi kerak" }] }] }, qoidalar), { miqdor: "Miqdor musbat bo'lishi kerak" });
+  assert.deepEqual(lib.serverXatoMaydonlari({ code: 'errors.x', message: 'Mahsulot retsepti faol emas' }, qoidalar), { retsept: 'Mahsulot retsepti faol emas' }, 'xabarda ikkalasi bo‘lsa retsept birinchi');
+  assert.deepEqual(lib.serverXatoMaydonlari({ code: 'errors.production.disabled', message: 'Modul yoqilmagan' }, qoidalar), {});
+  assert.deepEqual(lib.serverXatoMaydonlari(undefined, qoidalar), {});
+  const mahsulotli = { ...qoidalar, mahsulot: { maydonlar: ["modificationId"], kodlar: ["product"], sozlar: [] } };
+  assert.deepEqual(lib.serverXatoMaydonlari({ code: "errors.production.recipe_not_active", message: "Retsept faol emas" }, mahsulotli), { retsept: "Retsept faol emas" }, "modul nomi production mahsulotga tushmaydi");
+});
+
+test('client validators point at the exact field, including the row index', () => {
+  assert.equal(lib.retseptTanasiniYigish(retsept({ modificationId: '' })).maydon, 'modificationId');
+  assert.equal(lib.retseptTanasiniYigish(retsept({ inputs: [kirim(), kirim({ quantity: '' })] })).maydon, 'inputs.1.quantity');
+  assert.equal(lib.retseptTanasiniYigish(retsept({ inputs: [kirim({ kind: 'RANGE', quantity: '', min: '5', max: '2' })] })).maydon, 'inputs.0.max');
+  assert.equal(lib.retseptTanasiniYigish(retsept({ outputs: [chiqim({ role: 'WASTE' })] })).maydon, 'outputs');
+  const karta = { modificationId: 'm9', recipeId: '', validFrom: '', normalScrapPercent: '', note: '', lines: [{ modificationId: 'm1', quantity: '1', price: '5', currency: 'USD', costingRate: '' }] };
+  assert.equal(lib.kalkulyatsiyaTanasiniYigish(karta).maydon, 'lines.0.costingRate');
+  assert.equal(lib.smenaTanasiniYigish(smena({ orderId: '', recipeId: 'r1', destWarehouseId: '' })).maydon, 'destWarehouseId');
+  assert.equal(lib.smenaTanasiniYigish(smena({ downtime: [{ reason: 'OTHER', hours: '', note: '' }] })).maydon, 'downtime.0.hours');
+});
+
+test('server validation paths map to row fields when no rule claims them', () => {
+  const tafsilot = { message: 'Input validation failed', errors: [{ field: 'inputs[1].quantity', constraints: [{ message: 'Musbat son' }] }, { field: 'lines.0.price', constraints: [] }] };
+  assert.deepEqual(lib.serverXatoMaydonlari(tafsilot, {}), { 'inputs.1.quantity': 'Musbat son', 'lines.0.price': 'Input validation failed' });
+});

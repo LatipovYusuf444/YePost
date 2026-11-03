@@ -28,13 +28,13 @@ export function useMalumot<T>(yuklash: () => Promise<T>, kalit: string) {
   return { malumot, yuklanmoqda, xato, qayta: useCallback(() => setUrinish((son) => son + 1), []) };
 }
 
-/** Tugma amali: ikki marta bosish bloklanadi, xato matni va kodi saqlanadi. */
+/** Tugma amali: ikki marta bosish bloklanadi, xato matni va kodi saqlanadi. `onXato` — server javobini (masalan, maydon xatolari uchun) olish. */
 export function useAmal() {
   const [band, setBand] = useState(false);
   const [xato, setXato] = useState("");
   const [xatoKodiQiymati, setXatoKodi] = useState("");
   const qulf = useRef(false);
-  const bajar = useCallback(async <T,>(ish: () => Promise<T>): Promise<T | undefined> => {
+  const bajar = useCallback(async <T,>(ish: () => Promise<T>, onXato?: (tafsilot: unknown) => void): Promise<T | undefined> => {
     if (qulf.current) return undefined;
     qulf.current = true;
     setBand(true);
@@ -45,6 +45,7 @@ export function useAmal() {
     } catch (error) {
       setXato(getApiErrorMessage(error));
       setXatoKodi((axios.isAxiosError(error) ? xatoKodi(error.response?.data) : "") ?? "");
+      onXato?.(axios.isAxiosError(error) ? error.response?.data : undefined);
       return undefined;
     } finally {
       qulf.current = false;
@@ -63,3 +64,16 @@ export function useOmborlar() {
   }, []);
   return omborlar;
 }
+
+/** Qiymat o'zgarishini kechiktiradi (yozib bo'lingach so'rov yuborish uchun). */
+export function useKechiktirilgan<T>(qiymat: T, ms = 400) {
+  const [kechiktirilgan, setKechiktirilgan] = useState(qiymat);
+  useEffect(() => {
+    const taymer = window.setTimeout(() => setKechiktirilgan(qiymat), ms);
+    return () => window.clearTimeout(taymer);
+  }, [qiymat, ms]);
+  return kechiktirilgan;
+}
+
+// Forma maydon xatolari: butun loyiha uchun umumiy hook.
+export { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
