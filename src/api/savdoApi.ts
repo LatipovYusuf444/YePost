@@ -199,11 +199,14 @@ export async function sotuvniOchirish(sotuvId: string) {
 export async function sotuvgaTolovQoshish(
   sotuvId: string,
   tolov: TolovQoshishMalumoti
-): Promise<{ sotuv: Sotuv } & TolovNatijasi> {
+): Promise<{ sotuv: Sotuv | null } & TolovNatijasi> {
+  // TODO(K2): backend `Idempotency-Key` qabul qilganda bu POST'ga kalit qo'shiladi (sekin internetda qayta yuborish dublikat bermasin).
   // Dollar savdoga juda kichik so'm summasi (400 suspicious_currency): kassirdan "Valyuta to'g'rimi?" so'raladi, "ha" bo'lsa `force: true` bilan qayta yuboriladi.
   const javob = await shubhaliValyutaBilanBajarish((tana) => apiClient.post<unknown>(`/sales/${sotuvId}/payments`, { ...tolov, ...tana }));
   const natija = tolovNatijasi(javob.data);
-  return { sotuv: await sotuvTafsilotiniOlish(sotuvId), ...natija };
+  // To'lov saqlandi: keyingi GET xato bersa ham natija qaytadi (aks holda kassir "saqlanmadi" deb qayta to'laydi). `sotuv: null` — yangi holatni keyin olish kerak.
+  const sotuv = await sotuvTafsilotiniFondaOlish(sotuvId).catch(() => null);
+  return { sotuv, ...natija };
 }
 
 export async function yetkazishniOlish(sotuvId: string) {

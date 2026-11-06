@@ -249,3 +249,76 @@ test('Tashkent date presets use Tashkent day in a UTC browser around midnight', 
   nodes(tree).find(node => node.type === 'Button' && text(node) === 'dateRange.apply').props.onClick();
   assert.deepEqual(changes, [['2026-10-24', '2026-10-24']]);
 });
+
+// K3 + K8: kassa amaliyoti oynasi — ikki marta bosish bitta yozuv; kurs yo'q kuni $ tanlovi qoladi, saqlash bloklanadi.
+function kassaModal({ kursBor, onSaqlash }) {
+  const fxHolat = { oxirgi: null };
+  const fx = { xato: key => fxHolat.oxirgi?.[key], ornat: value => { fxHolat.oxirgi = value; }, tozala() {}, serverdan() {} };
+  const screen = page('../src/Pages/KassaUchot/KassaAmaliyotModal.tsx', {
+    'react-i18next': { useTranslation: () => ({ t: key => key }) },
+    '@/hooks/useMaydonXatolari': { useMaydonXatolari: () => fx },
+    '@/lib/maydonXatolari': { xatoBelgisi: () => 0, belgidanKeyingiXato: () => undefined },
+    '@/lib/kursChegarasi': { ENG_KAM_KURS: 1000, kursJudaKichik: value => value > 0 && value < 1000 },
+    '@/lib/valyuta': { useValyutaStore: selector => selector({ rejimYoniq: true, kursBor, kurs: kursBor ? 12100 : 0 }), valyutaKodi: value => value ?? 'UZS' },
+    '@/store/authProfileStore': { useAuthProfileStore: selector => selector({ profil: { id: 'u1', username: 'kassir' }, profilniYuklash: async () => {} }) },
+    '@/api/partnersApi': { mijozlarApi: { royxat: async () => [] }, yetkazibBeruvchilarApi: { royxat: async () => [{ id: 'sup1', name: 'Taminotchi' }] } },
+    '@/api/accountsApi': { foydalanuvchilarApi: { royxat: async () => [] } },
+    './yordamchilar': {
+      hozir: () => '2026-11-06T10:00', izohMajburiy: () => false, kassaSummasi: String, keyingiRaqam: () => 'FP1', maydonKlass: '',
+      partiyaTuri: turi => (turi === 'taminot_tolovi' ? 'yetkazib' : null), turYonalishi: { taminot_tolovi: 'chiqim', boshqa_kirim: 'tushum' },
+      valyutaTanlanadiganTur: turi => turi === 'taminot_tolovi', yangiId: () => 'ks-1',
+    },
+  }, { boshlangich: null, boshlangichKanal: 'naqd', boshlangichTuri: 'taminot_tolovi', onYopish() {}, onSaqlash });
+  return { screen, fxHolat };
+}
+const tugma = (tree, matn) => nodes(tree).find(node => node.type === 'button' && text(node) === matn);
+const yetkazibTanlash = tree => nodes(tree).find(node => node.type === 'Tanlov' && node.props.qiymat === '').props.onChange('sup1');
+
+test('K3: kassa oynasida ikki marta bosish bitta saqlash, so‘rov tugaguncha tugmalar o‘chiq', async () => {
+  const saqlanganlar = [];
+  let tugat;
+  const { screen } = kassaModal({ kursBor: true, onSaqlash: amaliyot => { saqlanganlar.push(amaliyot); return new Promise(resolve => { tugat = resolve; }); } });
+  let tree = await screen.settle();
+  yetkazibTanlash(tree);
+  tree = screen.render();
+  nodes(tree).find(node => node.type === 'SummaMaydoni').props.onChange('5000');
+  tree = screen.render();
+  tugma(tree, 'common:actions.save').props.onClick();
+  tugma(tree, 'modal.saveAndConfirm').props.onClick();
+  tree = screen.render();
+  assert.equal(saqlanganlar.length, 1, 'ikkinchi bosish yangi yozuv yubormaydi');
+  assert.equal(tugma(tree, 'common:actions.save').props.disabled, true);
+  assert.equal(tugma(tree, 'modal.saveAndConfirm').props.disabled, true);
+  tugat();
+  await new Promise(resolve => setImmediate(resolve));
+  tree = screen.render();
+  assert.equal(tugma(tree, 'common:actions.save').props.disabled, false, 'tugagach yana bosish mumkin');
+});
+
+test('K8: bugungi kurs yo‘q kuni $ tanlovi ko‘rinadi, dollar summani saqlash "Bugungi kursni kiriting" bilan bloklanadi', async () => {
+  const saqlanganlar = [];
+  const { screen, fxHolat } = kassaModal({ kursBor: false, onSaqlash: amaliyot => { saqlanganlar.push(amaliyot); } });
+  let tree = await screen.settle();
+  yetkazibTanlash(tree);
+  tree = screen.render();
+  const dollar = tugma(tree, 'modal.currencyUsd');
+  assert.ok(dollar, '$ tanlovi kurs bo‘lmasa ham yo‘qolmaydi');
+  dollar.props.onClick();
+  tree = screen.render();
+  nodes(tree).find(node => node.type === 'SummaMaydoni').props.onChange('100');
+  tree = screen.render();
+  tugma(tree, 'common:actions.save').props.onClick();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(saqlanganlar.length, 0, '$100 so‘m bo‘lib saqlanmaydi');
+  assert.equal(fxHolat.oxirgi.amount, 'modal.errors.dailyRateMissing');
+  // So'mda esa kurssiz ham saqlanadi.
+  tree = screen.render();
+  tugma(tree, 'modal.currencyUzs').props.onClick();
+  tree = screen.render();
+  nodes(tree).find(node => node.type === 'SummaMaydoni').props.onChange('100000');
+  tree = screen.render();
+  tugma(tree, 'common:actions.save').props.onClick();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(saqlanganlar.length, 1);
+  assert.equal(saqlanganlar[0].valyuta, 'UZS');
+});

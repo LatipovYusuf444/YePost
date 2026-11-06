@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Banknote,
   Clock3,
@@ -190,7 +190,8 @@ export default function KassaAmaliyotModal({
     [xaridorlar, xaridorId]
   );
   const summaSoni = Number(summa) || 0;
-  const valyutaTanlovi = rejimYoniq && kursBor && valyutaTanlanadiganTur(turi);
+  // Kurs kiritilmagan kunda ham $ tanlovi qoladi (aks holda $100 "100 so'm" bo'lib saqlanardi); saqlash esa kurs kiritilguncha bloklanadi.
+  const valyutaTanlovi = rejimYoniq && valyutaTanlanadiganTur(turi);
   const tanlanganValyuta: Valyuta = valyutaTanlovi ? valyuta : "UZS";
   // Hisob valyutasi: mijozda — uning hisobi valyutasi (faqat ko'rsatish uchun); yetkazib beruvchida — kassir tanlagan qarz valyutasi.
   const hisobVal: Valyuta | null =
@@ -235,7 +236,12 @@ export default function KassaAmaliyotModal({
     fx.tozala("customerId", "saleId", "supplierId", "employeeId", "rate", "note");
   }
 
+  // Ikki marta bosish ikkita kassa yozuvi yaratmasin: ref darrov qulflaydi, holat tugmalarni o'chiradi.
+  const saqlashQulfi = useRef(false);
+  const [saqlanmoqda, setSaqlanmoqda] = useState(false);
+
   async function yubor(tasdiqla: boolean) {
+    if (saqlashQulfi.current) return;
     // Bo'sh/noto'g'ri maydonlar o'z joyida (hammasi birdan) ko'rsatiladi; qoidalar va matnlar avvalgidek.
     const tekshiruv: Record<string, string> = {};
     if (partiya === "xaridor" && !xaridorId) tekshiruv.customerId = t("modal.errors.selectCustomer");
@@ -243,6 +249,7 @@ export default function KassaAmaliyotModal({
     if (partiya === "yetkazib" && !supplierId) tekshiruv.supplierId = t("modal.errors.selectSupplier");
     if (!summa.trim() || Number.isNaN(Number(summa)) || Number(summa) <= 0) tekshiruv.amount = t("modal.errors.invalidAmount");
     if (izohMajburiy(turi) && !izoh.trim()) tekshiruv.note = t("modal.errors.commentRequired");
+    if (tanlanganValyuta === "USD" && !kursBor && !(kursKerak && kiritilganKurs > 0)) tekshiruv.amount = t("modal.errors.dailyRateMissing");
     if (kursKerak && kursMatni.trim() && !(kiritilganKurs > 0)) tekshiruv.rate = t("modal.errors.invalidRate");
     else if (kursKerak && kursJudaKichik(kiritilganKurs)) tekshiruv.rate = t("modal.errors.rateTooLow", { min: ENG_KAM_KURS.toLocaleString("uz-UZ") });
     if (Object.keys(tekshiruv).length) {
@@ -261,7 +268,9 @@ export default function KassaAmaliyotModal({
 
     // Ota xatoni o'zi ushlaydi (matnga aylantiradi): shu so'rovlardan keyin kelgan server xatosi maydonlarga bog'lanadi.
     const belgi = xatoBelgisi();
-    await onSaqlash({
+    saqlashQulfi.current = true;
+    setSaqlanmoqda(true);
+    const jarayon = Promise.resolve(onSaqlash({
       id: boshlangich?.id ?? yangiId("ks"),
       kanal,
       yonalish,
@@ -288,7 +297,13 @@ export default function KassaAmaliyotModal({
       saleId: turi === "xaridor_tolovi" ? saleId || undefined : boshlangich?.saleId,
       purchaseId: boshlangich?.purchaseId,
       readonly: boshlangich?.readonly,
-    });
+    }));
+    try {
+      await jarayon;
+    } finally {
+      saqlashQulfi.current = false;
+      setSaqlanmoqda(false);
+    }
     const tafsilot = belgidanKeyingiXato(belgi);
     if (tafsilot !== undefined) fx.serverdan(tafsilot);
   }
@@ -666,14 +681,16 @@ export default function KassaAmaliyotModal({
             <button
               type="button"
               onClick={() => void yubor(false)}
-              className="h-12 rounded-2xl border border-orange-300 bg-white px-7 text-sm font-black text-orange-600 hover:bg-orange-50"
+              disabled={saqlanmoqda}
+              className="h-12 disabled:cursor-not-allowed disabled:opacity-60 rounded-2xl border border-orange-300 bg-white px-7 text-sm font-black text-orange-600 hover:bg-orange-50"
             >
               {t("common:actions.save")}
             </button>
             <button
               type="button"
               onClick={() => void yubor(true)}
-              className="h-12 rounded-2xl bg-orange-500 px-7 text-sm font-black text-white shadow-lg shadow-orange-100 hover:bg-orange-600"
+              disabled={saqlanmoqda}
+              className="h-12 disabled:cursor-not-allowed disabled:opacity-60 rounded-2xl bg-orange-500 px-7 text-sm font-black text-white shadow-lg shadow-orange-100 hover:bg-orange-600"
             >
               {t("modal.saveAndConfirm")}
             </button>

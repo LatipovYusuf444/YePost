@@ -77,6 +77,28 @@ test('do‘kon: sotuvgaTolovQoshish natijani (qaytim, hisobga) qaytaradi va ochi
   assert.equal(holat.xatolik, null);
 });
 
+test('K1: to‘lov saqlanib, keyingi GET xato bersa ham natija qaytadi (sotuv: null), qayta to‘lov so‘ralmaydi', async () => {
+  reset();
+  handlers.set('POST /sales/s1/payments', () => ({ id: 's1', change: '13000', keptAmount: '0' }));
+  handlers.set('/sales/s1', () => { throw new Error('Network Error'); });
+  const natija = await sotuvgaTolovQoshish('s1', { paymentType: 'CASH', amount: 100000 });
+  assert.equal(natija.sotuv, null);
+  assert.equal(natija.qaytim, 13000);
+});
+
+test('K1 do‘kon: GET xato bersa ham to‘lov muvaffaqiyatli, xatolik yo‘q, eski sotuv joyida qoladi', async () => {
+  reset();
+  useSavdoStore.setState({ ...initial, sotuvlar: [sotuv()], tanlanganSotuv: sotuv() }, true);
+  handlers.set('POST /sales/s1/payments', () => ({ id: 's1', change: '0', keptAmount: '0' }));
+  handlers.set('/sales/s1', () => { throw new Error('Network Error'); });
+  const natija = await useSavdoStore.getState().sotuvgaTolovQoshish('s1', { paymentType: 'CASH', amount: 1000 });
+  assert.deepEqual(natija, { qaytim: 0, hisobga: 0 });
+  const holat = useSavdoStore.getState();
+  assert.equal(holat.xatolik, null);
+  assert.equal(holat.amalBajarilmoqda, false);
+  assert.equal(holat.tanlanganSotuv.id, 's1');
+});
+
 test('do‘kon: to‘lov xato bersa null va xato sababi (modal shuni ko‘rsatadi)', async () => {
   reset();
   useSavdoStore.setState({ ...initial, sotuvlar: [sotuv()], tanlanganSotuv: sotuv() }, true);

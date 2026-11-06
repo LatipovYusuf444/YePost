@@ -315,7 +315,19 @@ export default function KassaUchot() {
     setModalOchiq(true);
   }
 
+  // Modal tugmasi qulflangan bo'lsa ham (K3) bu yerda ikkinchi himoya: bir vaqtda faqat bitta saqlash.
+  const saqlashQulfi = useRef(false);
   async function saqlash(amaliyot: KassaAmaliyoti) {
+    if (saqlashQulfi.current) return;
+    saqlashQulfi.current = true;
+    try {
+      await saqlashniBajarish(amaliyot);
+    } finally {
+      saqlashQulfi.current = false;
+    }
+  }
+
+  async function saqlashniBajarish(amaliyot: KassaAmaliyoti) {
     setXatolik("");
     let tasdiqlanmagan: CashOperation | null = null;
     try {

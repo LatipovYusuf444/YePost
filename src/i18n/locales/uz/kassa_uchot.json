@@ -123,7 +123,8 @@
       "invalidAmount": "Summa 0 dan katta son bo'lishi kerak.",
       "invalidRate": "Kurs 0 dan katta son bo'lishi kerak.",
       "commentRequired": "Boshqa pul xarajatlari uchun kommentariya (nega chiqim) to'ldirilishi shart.",
-      "rateTooLow": "Kurs {{min}} so'mdan kam bo'lishi mumkin emas."
+      "rateTooLow": "Kurs {{min}} so'mdan kam bo'lishi mumkin emas.",
+      "dailyRateMissing": "Bugungi kursni kiriting: kurssiz dollar summani saqlab bo'lmaydi."
     }
   },
   "deleteDialog": {
