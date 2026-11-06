@@ -18,7 +18,15 @@
     "no": "Yo'q",
     "print": "Chop etish",
     "export": "Eksport",
-    "import": "Import"
+    "import": "Import",
+    "download": "Yuklab olish",
+    "more": "Boshqa amallar",
+    "remove": "Olib tashlash",
+    "clear": "Tozalash",
+    "copyLink": "Havolani nusxalash",
+    "linkCopied": "Havola nusxalandi",
+    "downloadModal": "Modal ma'lumotini yuklab olish",
+    "openExternal": "Alohida oynada ochish"
   },
   "select": {
     "placeholder": "Tanlang",

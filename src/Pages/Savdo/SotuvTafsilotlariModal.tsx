@@ -553,7 +553,7 @@ function OddiySotuvTafsilotlariModal({
   }
 
   return (
-    <AppModal className="items-start justify-start p-0 py-4 pl-[88px] pr-4 bg-[rgba(15,23,42,.50)] backdrop-blur-[3px]">
+    <AppModal className="items-start justify-start p-0 py-4 pl-4 pr-4 md:pl-[88px] bg-[rgba(15,23,42,.50)] backdrop-blur-[3px]">
       <div className="relative h-[calc(100vh-32px)] w-full min-w-0">
         <ModalTezkorPanel sotuv={sotuv} onYopish={yopishniSoraymiz} />
         <section className="relative h-full w-full overflow-hidden rounded-l-[46px] rounded-r-[36px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80">
@@ -2187,7 +2187,7 @@ function TolovQabulQilishModal({
 
   return (
     <AppModal onClose={onYopish}>
-      <div className="w-full max-w-2xl rounded-[32px] bg-white p-8 shadow-2xl">
+      <div className="w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-[32px] bg-white p-8 shadow-2xl">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
             <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-[#2563EB]">
@@ -3189,7 +3189,7 @@ function TovarlarTab({
             {t("tovarlarTab.mahsulotQoshish")}
           </button>
         </div>
-        <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm transition hover:text-[#2563EB]">
+        <button aria-label={t("common:actions.more")} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm transition hover:text-[#2563EB]">
           <MoreHorizontal size={20} />
         </button>
         {yangiQatorlar.length > 0 && (
@@ -3483,7 +3483,7 @@ function TovarlarTab({
                 autoFocus
               />
               {mahsulotQidiruv ? (
-                <button type="button" onClick={() => setMahsulotQidiruv("")} className="text-slate-400 transition hover:text-slate-700">
+                <button aria-label={t("common:actions.clear")} type="button" onClick={() => setMahsulotQidiruv("")} className="text-slate-400 transition hover:text-slate-700">
                   <X size={17} />
                 </button>
               ) : (
@@ -3549,7 +3549,7 @@ function TovarlarTab({
                 autoFocus
               />
               {skladQidiruv ? (
-                <button type="button" onClick={() => setSkladQidiruv("")} className="text-slate-400 transition hover:text-slate-700">
+                <button aria-label={t("common:actions.clear")} type="button" onClick={() => setSkladQidiruv("")} className="text-slate-400 transition hover:text-slate-700">
                   <X size={17} />
                 </button>
               ) : (
@@ -3611,7 +3611,7 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
             {t("eskiTovarlarTab.mahsulotTanlash")}
           </button>
         </div>
-        <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm transition hover:text-[#2563EB]">
+        <button aria-label={t("common:actions.more")} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm transition hover:text-[#2563EB]">
           <MoreHorizontal size={20} />
         </button>
       </div>
@@ -3755,7 +3755,7 @@ export function EskiTovarlarTab({ sotuv }: { sotuv: Sotuv }) {
                 autoFocus
               />
               {skladQidiruv ? (
-                <button type="button" onClick={() => setSkladQidiruv("")} className="text-slate-400 transition hover:text-slate-700">
+                <button aria-label={t("common:actions.clear")} type="button" onClick={() => setSkladQidiruv("")} className="text-slate-400 transition hover:text-slate-700">
                   <X size={17} />
                 </button>
               ) : (
@@ -4034,7 +4034,7 @@ export function OmbordanChiqarishHujjatModal({ sotuv, jami, onClose }: { sotuv: 
   const [saqlanmaganSoni, setSaqlanmaganSoni] = useState(0);
   const [yopishSorovi, setYopishSorovi] = useState(false);
   return (
-    <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
+    <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-0 py-4 pl-4 pr-4 md:pl-[88px] backdrop-blur-[3px]">
       <div className="relative h-[calc(100vh-32px)] w-full">
         <ModalTezkorPanel sotuv={sotuv} onYopish={() => (saqlanmaganSoni > 0 ? setYopishSorovi(true) : onClose())} />
         <OmbordanChiqarishHujjatMazmuni sotuv={sotuv} jami={jami} onClose={onClose} onOzgarish={setSaqlanmaganSoni} />

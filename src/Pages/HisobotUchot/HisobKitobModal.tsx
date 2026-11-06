@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Download, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import KengaytiriladiganJadval, { type Ustun } from "./KengaytiriladiganJadval";
 import HisobKitobHujjatKorish from "./HisobKitobHujjatKorish";
@@ -48,6 +49,7 @@ export default function HisobKitobModal({
   dateTo: string;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("common");
   const { hisobKitob } = useHisobotRealData();
   const [ochilganHujjat, setOchilganHujjat] = useState<HisobKitobHujjati | null>(null);
 
@@ -164,7 +166,7 @@ export default function HisobKitobModal({
               Oy oxiridagi qoldiq ko'k rangda. Tovar hujjatiga bosing — ochiladi.
             </p>
           </div>
-          <button
+          <button aria-label={t("common:actions.close")}
             type="button"
             onClick={onClose}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white"

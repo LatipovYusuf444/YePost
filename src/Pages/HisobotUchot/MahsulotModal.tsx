@@ -152,7 +152,7 @@ export default function MahsulotModal({
       >
         <div className="flex items-center justify-between gap-4 border-b border-gray-100 px-6 py-5">
           <div className="flex min-w-0 items-center gap-4">
-            <button
+            <button aria-label={t("common:actions.close")}
               type="button"
               onClick={onClose}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white"
@@ -279,7 +279,7 @@ export default function MahsulotModal({
                     {rasm ? (
                       <div className="relative">
                         <img src={rasm} alt="Mahsulot rasmi" className="max-h-24 rounded-2xl object-contain" />
-                        <button
+                        <button aria-label={t("common:actions.remove")}
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();

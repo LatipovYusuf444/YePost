@@ -39,6 +39,7 @@ import XaridorModal from "@/Pages/XaridorUchot/XaridorModal";
 import { kompaniyaniUiGa } from "@/Pages/XaridorUchot/backendAdapters";
 import type { Xaridor, XaridorKompaniyasi } from "@/Pages/XaridorUchot/types";
 import { mijozKompaniyalariApi, mijozlarApi } from "@/api/partnersApi";
+import { enterTolovniTasdiqlaydimi, posQidiruvigaFokus, posQidiruvigaFokusKeyin } from "@/lib/skanerFokusi";
 
 type CustomerType = "donalik" | "doimiy";
 
@@ -145,6 +146,11 @@ export default function BoshSahifa() {
   const [qaytimYaxlitlash, setQaytimYaxlitlash] = useState(true);
   const kurs = useValyutaStore((holat) => holat.kurs);
   const dollarTolovMumkin = useValyutaStore((holat) => holat.rejimYoniq && holat.kursBor && holat.kurs > 0);
+
+  // POS ochilganda fokus skaner uchun sarlavhadagi qidiruv maydonida turadi.
+  useEffect(() => {
+    posQidiruvigaFokus();
+  }, []);
 
   useEffect(() => {
     if (!mijozQoshishOchiq) {
@@ -452,6 +458,7 @@ export default function BoshSahifa() {
       clearCart();
       setTolovModalOchiq(false);
       setMessage({ type: "success", text: t("errors.paymentSuccess") });
+      posQidiruvigaFokusKeyin();
     } catch (error) {
       const xato = xatoMatni(error, t("errors.finalizeFailed"));
       setMessage({
@@ -1133,10 +1140,10 @@ export default function BoshSahifa() {
       )}
       {tolovModalOchiq && (
         <AppModal className="bg-slate-950/60 backdrop-blur-md">
-          <section className="max-h-[94vh] w-full max-w-6xl overflow-y-auto rounded-[38px] border border-gold-100 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E8EEF7] shadow-[0_35px_120px_rgba(15,23,42,.38)]">
+          <section onKeyDown={(event) => { if (enterTolovniTasdiqlaydimi(event, { mumkin: tolovYaroqli, band: saving })) { event.preventDefault(); void tolovniTasdiqlash(); } }} className="max-h-[94vh] w-full max-w-6xl overflow-y-auto rounded-[38px] border border-gold-100 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E8EEF7] shadow-[0_35px_120px_rgba(15,23,42,.38)]">
             <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-gold-100 bg-white/85 px-9 py-7 backdrop-blur-xl">
               <div><p className="text-xs font-black uppercase tracking-[.22em] text-gold-500">{t("paymentModal.eyebrow")}</p><h2 className="mt-1 text-2xl font-black text-slate-950">{t("paymentModal.title")}</h2><p className="mt-1 text-sm font-semibold text-slate-400">{t("paymentModal.subtitle")}</p></div>
-              <button type="button" onClick={() => setTolovModalOchiq(false)} disabled={saving} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm ring-1 ring-gold-100 hover:bg-gold-500 hover:text-white disabled:opacity-50"><X size={20}/></button>
+              <button aria-label={t("common:actions.close")} type="button" onClick={() => setTolovModalOchiq(false)} disabled={saving} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm ring-1 ring-gold-100 hover:bg-gold-500 hover:text-white disabled:opacity-50"><X size={20}/></button>
             </header>
 
             <div className="grid gap-8 p-9 lg:grid-cols-[minmax(0,1fr)_400px]">

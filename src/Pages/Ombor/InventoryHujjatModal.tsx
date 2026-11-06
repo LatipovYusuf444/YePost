@@ -1085,7 +1085,7 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
                         />
                         </XatoliMaydon>
                       )}
-                      <button
+                      <button aria-label={t("common:actions.delete")}
                         type="button"
                         disabled={items.length === 1}
                         onClick={() => {

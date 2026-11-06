@@ -13,7 +13,7 @@ export default function XodimModal({ xodim, onYopish }: Props) {
   const { t } = useTranslation(["xaridor_uchot", "common"]);
   return (
     <AppModal className="bg-[rgba(15,23,42,.45)] p-4 backdrop-blur-[3px]">
-      <div className="w-full max-w-md overflow-hidden rounded-[28px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80">
+      <div className="w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-[28px] bg-gradient-to-br from-[#F8FAFC] via-[#FFFFFF] to-[#E8EEF7] text-[#253044] shadow-[0_34px_120px_rgba(15,23,42,.42)] ring-1 ring-white/80">
         <header className="flex items-center justify-between gap-4 border-b border-orange-100/80 bg-[#F8FAFC]/90 px-7 py-5 backdrop-blur-xl">
           <div className="flex items-center gap-3">
             <span className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#EFF6FF] text-[#2563EB]">

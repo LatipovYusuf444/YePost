@@ -560,6 +560,7 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
             <Search size={18} className="mr-2 shrink-0 text-white/60 sm:mr-3" aria-hidden />
             <input
               ref={inputRef}
+              data-pos-qidiruv="true"
               value={soz}
               onChange={(event) => {
                 setSoz(event.target.value);

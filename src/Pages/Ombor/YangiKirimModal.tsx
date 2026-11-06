@@ -1134,7 +1134,7 @@ function MahsulotYaratishPanel({
       <div className="w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl">
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-black text-slate-950">{t("mahsulotYaratish.title")}</h3>
-          <button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+          <button aria-label={t("common:actions.close")} type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
             <X size={18} />
           </button>
         </div>
