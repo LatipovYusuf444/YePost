@@ -1,10 +1,10 @@
 import apiClient from "./axios";
-import { idempotentPost } from "./idempotentSorov";
 import { apiData, type ApiEnvelope } from "./response";
 import { taqsimotniOqish } from "@/lib/qarzTaqsimoti";
 import type { CashOperation, CashOperationFilter, CashOperationPayload } from "@/types/cashOperation";
 import type { TaqsimotOldindanKorishSorovi } from "@/types/qarzTaqsimoti";
 import type { MajburlashTanasi } from "./valyutaShubhasi";
+import { idempotentPost } from "./idempotentSorov";
 
 type Page<T> = { data?: T[]; items?: T[]; page?: number; pageSize?: number; total?: number; totalPages?: number };
 
