@@ -10,6 +10,7 @@ import {
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { sotuvTafsilotiniOlish, sotuvlarSahifasiniOlish, sotuvlarXulosasiniOlish, type SotuvlarXulosasi } from "@/api/savdoApi";
+import { useShallow } from "zustand/react/shallow";
 import { useSavdoStore } from "@/store/savdoStore";
 import type { Sotuv, SotuvHolati, SotuvYaratishMalumoti, TolovTuri } from "@/types/savdo";
 import BekorQilinganlar from "./BekorQilinganlar";
@@ -78,7 +79,44 @@ export default function Savdo() {
     sotuvlarniBoyitish,
     mijozlarniOldindanYuklash,
     mijozlarniTuldirish,
-  } = useSavdoStore();
+    qaytarishlarniYuklash,
+  } = useSavdoStore(useShallow((holat) => ({
+    sotuvlar: holat.sotuvlar,
+    sotuvlarToliq: holat.sotuvlarToliq,
+    qaytarishlar: holat.qaytarishlar,
+    omborlar: holat.omborlar,
+    mijozlar: holat.mijozlar,
+    mijozKompaniyalari: holat.mijozKompaniyalari,
+    xodimlar: holat.xodimlar,
+    qoldiqlar: holat.qoldiqlar,
+    tanlanganSotuv: holat.tanlanganSotuv,
+    tafsilotYuklanmoqda: holat.tafsilotYuklanmoqda,
+    qoldiqYuklanmoqda: holat.qoldiqYuklanmoqda,
+    yuklanmoqda: holat.yuklanmoqda,
+    amalBajarilmoqda: holat.amalBajarilmoqda,
+    xatolik: holat.xatolik,
+    boshlangichMalumotlarniYuklash: holat.boshlangichMalumotlarniYuklash,
+    qoldiqlarniYuklash: holat.qoldiqlarniYuklash,
+    sotuvTafsilotiniYuklash: holat.sotuvTafsilotiniYuklash,
+    yangiSotuvYaratish: holat.yangiSotuvYaratish,
+    sotuvniYangilash: holat.sotuvniYangilash,
+    sotuvniTasdiqlash: holat.sotuvniTasdiqlash,
+    sotuvgaTolovQoshish: holat.sotuvgaTolovQoshish,
+    sotuvniBekorQilish: holat.sotuvniBekorQilish,
+    sotuvniOchirish: holat.sotuvniOchirish,
+    sotuvniTiklash: holat.sotuvniTiklash,
+    yangiQaytarishYaratish: holat.yangiQaytarishYaratish,
+    qaytarishniTasdiqlash: holat.qaytarishniTasdiqlash,
+    qaytarishniBekorQilish: holat.qaytarishniBekorQilish,
+    qaytarishniOchirish: holat.qaytarishniOchirish,
+    qaytarishniTiklash: holat.qaytarishniTiklash,
+    tanlanganSotuvniTozalash: holat.tanlanganSotuvniTozalash,
+    xatolikniTozalash: holat.xatolikniTozalash,
+    sotuvlarniBoyitish: holat.sotuvlarniBoyitish,
+    mijozlarniOldindanYuklash: holat.mijozlarniOldindanYuklash,
+    mijozlarniTuldirish: holat.mijozlarniTuldirish,
+    qaytarishlarniYuklash: holat.qaytarishlarniYuklash,
+  })));
   const [searchParams, setSearchParams] = useSearchParams();
   const [qidiruv, setQidiruv] = useState("");
   const [sanaDan, setSanaDan] = useState(() => mahalliySanaKaliti(subMonths(new Date(), 1)));
@@ -146,6 +184,16 @@ export default function Savdo() {
   }, [boshlangichMalumotlarniYuklash]);
   useEffect(() => () => tanlanganSotuvniTozalash(), [tanlanganSotuvniTozalash]);
 
+  // Qaytarishlar va ombor qoldig'i ochilishda olinmaydi: faqat ularni ishlatadigan bo'lim yoki oyna ochilganda (qoldiq 30 s keshlanadi).
+  const qaytarishKerak = faolTab === "tarix" || faolTab === "tolovlar" || faolTab === "qaytarish";
+  useEffect(() => {
+    if (qaytarishKerak) void qaytarishlarniYuklash();
+  }, [qaytarishKerak, qaytarishlarniYuklash]);
+  const qoldiqKerak = faolTab === "savatcha" || yangiSotuvOchiq;
+  useEffect(() => {
+    if (qoldiqKerak) void qoldiqlarniYuklash(undefined, { kesh: true });
+  }, [qoldiqKerak, qoldiqlarniYuklash]);
+
   // Mijozlar ro'yxati og'ir boshlang'ich yuklash (ombor qoldig'i, katalog) tugashini kutmaydi: sotuvlar ro'yxatida nomlar darrov chiqadi.
   const [mijozlarTayyor, setMijozlarTayyor] = useState(false);
   useEffect(() => {
@@ -167,7 +215,7 @@ export default function Savdo() {
     );
     void (async () => {
       const sotuv = await sotuvTafsilotiniYuklash(havolaSotuvi);
-      if (sotuv) await qoldiqlarniYuklash(sotuv.warehouseId);
+      if (sotuv) await qoldiqlarniYuklash(sotuv.warehouseId, { kesh: true });
     })();
   }, [havolaSotuvi, setSearchParams, sotuvTafsilotiniYuklash, qoldiqlarniYuklash]);
 
@@ -342,7 +390,7 @@ export default function Savdo() {
     setTahrirRejimi(tahrirlash);
     await Promise.all([
       sotuvTafsilotiniYuklash(sotuv.id),
-      qoldiqlarniYuklash(sotuv.warehouseId),
+      qoldiqlarniYuklash(sotuv.warehouseId, { kesh: true }),
     ]);
   }
 
@@ -356,9 +404,10 @@ export default function Savdo() {
 
   async function mahsulotQaytarishniOchish(sotuv: Sotuv) {
     try {
-      const toliqSotuv = await sotuvTafsilotiniOlish(sotuv.id);
+      const [toliqSotuv] = await Promise.all([sotuvTafsilotiniOlish(sotuv.id), qaytarishlarniYuklash()]);
       setQaytarishModalSotuv(toliqSotuv);
     } catch {
+      await qaytarishlarniYuklash();
       setQaytarishModalSotuv(sotuv);
     }
   }
@@ -436,7 +485,7 @@ export default function Savdo() {
               onDavomEttirish={async (sotuv) => {
                 await sotuvniOchish(sotuv);
               }}
-              onRefresh={boshlangichMalumotlarniYuklash}
+              onRefresh={() => Promise.all([boshlangichMalumotlarniYuklash(), qoldiqlarniYuklash()]).then(() => undefined)}
               onXabar={setXabar}
             />
           )}
@@ -655,7 +704,7 @@ export default function Savdo() {
           xodimlar={xodimlar}
           qoldiqlar={qoldiqlar}
           amalBajarilmoqda={amalBajarilmoqda}
-          onOmborTanlash={(omborId) => void qoldiqlarniYuklash(omborId)}
+          onOmborTanlash={(omborId) => void qoldiqlarniYuklash(omborId, { kesh: true })}
           onSaqlash={yangiSotuvniSaqlash}
           onYopish={() => setYangiSotuvOchiq(false)}
         />

@@ -9,18 +9,19 @@ import type {
   VakolatYaratishMalumoti,
 } from "@/types/account";
 import type { Filial } from "@/types/ombor";
+import { malumotnomaniOlish, ozgartirishdanKeyinTozalash } from "@/lib/malumotnomaKeshi";
 
 // Hodimlar/index.tsx: Swagger accounts/users bo'limining to'liq CRUD amallari.
 export const foydalanuvchilarApi = {
   // KASSIR/OMBORCHI uchun /accounts/users 403 qaytaradi — bo'sh ro'yxat
   // sifatida qabul qilinadi, sahifa yiqilib qolmasligi uchun.
-  royxat: async () => ruxsatsizBulsaBosh(async () => {
+  royxat: () => malumotnomaniOlish("foydalanuvchilar", "royxat", () => ruxsatsizBulsaBosh(async () => {
     const response = await apiClient.get<AccountFoydalanuvchi[] | ApiListEnvelope<AccountFoydalanuvchi>>(
       "/accounts/users"
     );
 
     return apiList(response.data);
-  }),
+  })),
   olish: async (id: string) => {
     const response = await apiClient.get<AccountFoydalanuvchi | ApiEnvelope<AccountFoydalanuvchi>>(
       `/accounts/users/${id}`
@@ -28,29 +29,29 @@ export const foydalanuvchilarApi = {
 
     return apiData(response.data);
   },
-  yaratish: async (data: FoydalanuvchiYaratishMalumoti) => {
+  yaratish: (data: FoydalanuvchiYaratishMalumoti) => ozgartirishdanKeyinTozalash("foydalanuvchilar", async () => {
     const response = await apiClient.post<AccountFoydalanuvchi | ApiEnvelope<AccountFoydalanuvchi>>(
       "/accounts/users",
       data
     );
 
     return apiData(response.data);
-  },
-  yangilash: async (id: string, data: FoydalanuvchiYangilashMalumoti) => {
+  }),
+  yangilash: (id: string, data: FoydalanuvchiYangilashMalumoti) => ozgartirishdanKeyinTozalash("foydalanuvchilar", async () => {
     const response = await apiClient.patch<AccountFoydalanuvchi | ApiEnvelope<AccountFoydalanuvchi>>(
       `/accounts/users/${id}`,
       data
     );
 
     return apiData(response.data);
-  },
-  ochirish: async (id: string) => {
+  }),
+  ochirish: (id: string) => ozgartirishdanKeyinTozalash("foydalanuvchilar", async () => {
     const response = await apiClient.delete<AccountFoydalanuvchi | ApiEnvelope<AccountFoydalanuvchi>>(
       `/accounts/users/${id}`
     );
 
     return apiData(response.data);
-  },
+  }),
 };
 
 // Hodimlar/Ruxsatlar.tsx: Swagger accounts/grants bo'limining to'liq CRUD amallari.

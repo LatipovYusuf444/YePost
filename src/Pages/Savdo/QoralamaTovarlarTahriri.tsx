@@ -291,7 +291,7 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
     if (muvaffaqiyatli) {
       setUrinildi(false);
       // Qoralama rezervi o'zgargan bo'lishi mumkin (eski mahsulot bo'shaydi, yangisi band bo'ladi): "Omborda" raqamlari yangilanadi.
-      void useSavdoStore.getState().qoldiqlarniYuklash(omborId);
+      void useSavdoStore.getState().qoldiqlarniYuklash(omborId, { kesh: true });
     }
   }
 

@@ -50,6 +50,7 @@ import {
   type TolovTahririSorovi,
 } from "@/api/tolovTahririApi";
 import { sotuvQarzdorlikSummasi } from "@/Pages/Savdo/savdoYordamchilari";
+import { malumotnomaKeshiniTozalash, malumotnomaniOlish } from "@/lib/malumotnomaKeshi";
 
 function xatolikKodi(error: unknown): string | undefined {
   if (typeof error !== "object" || error === null) return undefined;
@@ -143,6 +144,25 @@ function qoldiqlarniKatalogBilanBirlashtirish(
     const bName = b.modification?.product?.name ?? b.modification?.name ?? b.modificationId;
     return aName.localeCompare(bName, "uz");
   });
+}
+
+// Ombor qoldig'i (+ katalog narxlari) har sotuv ochilganda qayta olinmasligi uchun omborlar bo'yicha qisqa muddat eslab qolinadi.
+export const QOLDIQ_KESH_MUDDATI = 30_000;
+
+// Qoldiq keyin kelsa, ochiq sotuv mahsulotlariga nom qo'shiladi; hech narsa o'zgarmasa o'sha obyekt qaytadi (oyna qayta chizilmasligi uchun).
+function sotuvniQoldiqNomlariBilanToldirish(sotuv: Sotuv, qoldiqlar: QoldiqTanlovi[]) {
+  const boyitilgan = sotuvniBoglanganMalumotlarBilanBoyitish(sotuv, {
+    mijozlar: [],
+    mijozKompaniyalari: [],
+    xodimlar: [],
+    omborlar: [],
+    qoldiqlar,
+  });
+  const ozgardi = (boyitilgan.items ?? []).some((item, indeks) => {
+    const eski = sotuv.items?.[indeks]?.modification;
+    return item.modification?.name !== eski?.name || item.modification?.product?.name !== eski?.product?.name;
+  });
+  return ozgardi ? { ...sotuv, items: boyitilgan.items } : sotuv;
 }
 
 function sotuvniBoglanganMalumotlarBilanBoyitish(
@@ -254,8 +274,12 @@ type SavdoState = {
   yuklanmoqda: boolean;
   amalBajarilmoqda: boolean;
   xatolik: string | null;
+  // Sotuvlar ro'yxati va ma'lumotnomalar (ombor, mijoz, xodim). Qaytarishlar va ombor qoldig'i kerak bo'lganda alohida yuklanadi.
   boshlangichMalumotlarniYuklash: () => Promise<void>;
-  qoldiqlarniYuklash: (warehouseId?: string) => Promise<void>;
+  // `kesh: true` — shu ombor qoldig'i yaqinda olingan bo'lsa qayta so'ralmaydi (sotuvni ochish, yangi sotuv oynasi).
+  // Berilmasa qoldiq har doim yangidan olinadi (tasdiqlash, bekor qilish, inventarizatsiyadan keyin) va kesh yangilanadi.
+  qoldiqlarniYuklash: (warehouseId?: string, sozlama?: { kesh?: boolean }) => Promise<void>;
+  qaytarishlarniYuklash: () => Promise<void>;
   sotuvTafsilotiniYuklash: (sotuvId: string) => Promise<Sotuv | null>;
   yangiSotuvYaratish: (malumot: SotuvYaratishMalumoti) => Promise<Sotuv | null>;
   sotuvniYangilash: (
@@ -305,6 +329,19 @@ type SavdoState = {
 export const useSavdoStore = create<SavdoState>((set, get) => {
   let qoldiqSorovi = 0;
   let boshlangichSorov: Promise<void> | null = null;
+  let qaytarishlarSorovi: Promise<void> | null = null;
+  async function qoldiqlarniOlish(warehouseId?: string) {
+    const [stockQoldiqlar, katalogQoldiqlar] = await Promise.all([
+      omborQoldiqlariniOlish(warehouseId),
+      katalogModifikatsiyalariniQoldiqTanlovigaOlish(),
+    ]);
+    return qoldiqNomlariniBoyitish(qoldiqlarniKatalogBilanBirlashtirish(stockQoldiqlar, katalogQoldiqlar));
+  }
+  function qoldiqlarniKeshdanOlish(warehouseId: string | undefined, keshdan: boolean) {
+    // Kesh o'tkazib yuborilsa qoldiq o'zgargan: boshqa omborlar va "hamma omborlar" nusxalari ham eskirgan hisoblanadi.
+    if (!keshdan) malumotnomaKeshiniTozalash("qoldiqlar");
+    return malumotnomaniOlish("qoldiqlar", warehouseId || "hamma", () => qoldiqlarniOlish(warehouseId), QOLDIQ_KESH_MUDDATI);
+  }
   let mijozlarSorovi: Promise<MijozTanlovi[]> | null = null;
   // StrictMode/remount va mijozlarni oldindan yuklash bir xil so'rovlarni ko'paytirmaydi.
   // Yakunlangach so'rov bo'shatiladi: keyingi yangilash yangi ma'lumot oladi.
@@ -340,45 +377,35 @@ export const useSavdoStore = create<SavdoState>((set, get) => {
     set({ yuklanmoqda: true, xatolik: null, sotuvlarToliq: false });
 
     try {
+      // Qaytarishlar va ombor qoldig'i bu yerda olinmaydi: ularni faqat ayrim bo'limlar va oynalar ishlatadi (qaytarishlarniYuklash, qoldiqlarniYuklash).
       const [
         sotuvlar,
-        qaytarishlar,
         omborlar,
         mijozlar,
         mijozKompaniyalari,
         xodimlar,
-        stockQoldiqlar,
-        katalogQoldiqlar,
       ] = await Promise.all([
         sotuvlarRoyxatiniOlish(),
-        qaytarishlarRoyxatiniOlish(),
         omborlarRoyxatiniOlish(),
         mijozlarniBirMartaOlish(),
         mijozKompaniyalariRoyxatiniOlish(),
         xodimlarRoyxatiniOlish(),
-        omborQoldiqlariniOlish(),
-        katalogModifikatsiyalariniQoldiqTanlovigaOlish(),
       ]);
 
-      const qoldiqlar = await qoldiqNomlariniBoyitish(
-        qoldiqlarniKatalogBilanBirlashtirish(stockQoldiqlar, katalogQoldiqlar)
-      );
       // Yuklash davomida id bo'yicha olingan mijozlar (ro'yxatda yo'q edi) yangi ro'yxat ustidan yozilib ketmasin.
       const yuklanganIdlar = new Set(mijozlar.map((mijoz) => mijoz.id));
       const barchaMijozlar = [...mijozlar, ...get().mijozlar.filter((mijoz) => !yuklanganIdlar.has(mijoz.id))];
-      const boglanganMalumotlar = { mijozlar: barchaMijozlar, mijozKompaniyalari, xodimlar, omborlar, qoldiqlar };
+      const boglanganMalumotlar = { mijozlar: barchaMijozlar, mijozKompaniyalari, xodimlar, omborlar, qoldiqlar: get().qoldiqlar };
 
       set({
         sotuvlar: sotuvlar.map((sotuv) =>
           sotuvniBoglanganMalumotlarBilanBoyitish(sotuv, boglanganMalumotlar)
         ),
         sotuvlarToliq: true,
-        qaytarishlar,
         omborlar,
         mijozlar: barchaMijozlar,
         mijozKompaniyalari,
         xodimlar,
-        qoldiqlar,
         yuklanmoqda: false,
       });
     } catch (error) {
@@ -388,18 +415,27 @@ export const useSavdoStore = create<SavdoState>((set, get) => {
     return boshlangichSorov;
   },
 
-  qoldiqlarniYuklash: async (warehouseId) => {
+  // Qaytarishlar faqat ularni ko'rsatadigan bo'limlar (Tarix, To'lovlar, Qaytarish) va qaytarish oynasi ochilganda olinadi.
+  qaytarishlarniYuklash: () => {
+    qaytarishlarSorovi ??= qaytarishlarRoyxatiniOlish()
+      .then((qaytarishlar) => { set({ qaytarishlar }); })
+      .catch((error) => { set({ xatolik: getApiErrorMessage(error) }); })
+      .finally(() => { qaytarishlarSorovi = null; });
+    return qaytarishlarSorovi;
+  },
+
+  qoldiqlarniYuklash: async (warehouseId, sozlama) => {
     const sorov = ++qoldiqSorovi;
     set({ qoldiqYuklanmoqda: true });
     try {
-      const [stockQoldiqlar, katalogQoldiqlar] = await Promise.all([
-        omborQoldiqlariniOlish(warehouseId),
-        katalogModifikatsiyalariniQoldiqTanlovigaOlish(),
-      ]);
-      const qoldiqlar = await qoldiqNomlariniBoyitish(
-        qoldiqlarniKatalogBilanBirlashtirish(stockQoldiqlar, katalogQoldiqlar)
-      );
-      if (sorov === qoldiqSorovi) set({ qoldiqlar });
+      const qoldiqlar = await qoldiqlarniKeshdanOlish(warehouseId, sozlama?.kesh === true);
+      if (sorov === qoldiqSorovi) {
+        set((state) => ({
+          qoldiqlar,
+          // Sotuv qoldiqdan oldin ochilgan bo'lsa, mahsulot nomlari endi qo'shiladi.
+          tanlanganSotuv: state.tanlanganSotuv ? sotuvniQoldiqNomlariBilanToldirish(state.tanlanganSotuv, qoldiqlar) : state.tanlanganSotuv,
+        }));
+      }
     } catch (error) {
       if (sorov === qoldiqSorovi) set({ xatolik: getApiErrorMessage(error) });
     } finally {

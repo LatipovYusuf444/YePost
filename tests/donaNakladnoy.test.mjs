@@ -40,6 +40,7 @@ function pieceApi(lists, create) {
     } },
     './response': { apiList: value => value.data ?? value, apiData: value => value.data ?? value },
     '../lib/donaBirligi.ts': { donaBirliginiTopish },
+    '../lib/malumotnomaKeshi.ts': { malumotnomaKeshiniTozalash() {} },
   });
   return { run: api.donaBirliginiTaminlash, calls };
 }

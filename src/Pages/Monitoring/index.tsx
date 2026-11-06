@@ -737,59 +737,6 @@ export default function Monitoring() {
     };
   }, [yangilanish]);
 
-  // Tanlangan davr bo'yicha ombor kirim/chiqim hujjatlari — omborlar aro taqqoslash uchun.
-  useEffect(() => {
-    let active = true;
-    setOmborHarakatiYuklanmoqda(true);
-    setOmborHarakatiXato("");
-    Promise.all([kirimApi.royxat(), chiqimApi.royxat(), kochirishApi.royxat()])
-      .then(async ([kirimlar, chiqimlar, kochirmalar]) => {
-        if (!active) return;
-        const modifikatsiyalar = await barchaModifikatsiyalar().catch(() => []);
-        const toliqChiqimlar = await Promise.all(
-          chiqimlar.map(async (hujjat) => {
-            if (
-              String(hujjat.status ?? "").toUpperCase() !== "CONFIRMED" ||
-              (hujjat.items?.length ?? 0) > 0
-            ) {
-              return hujjat;
-            }
-            try {
-              const tafsilot = await chiqimApi.olish(hujjat.id);
-              return { ...hujjat, ...tafsilot, items: tafsilot.items ?? hujjat.items };
-            } catch {
-              return hujjat;
-            }
-          }),
-        );
-        const toliqKochirmalar = await Promise.all(
-          kochirmalar.map(async (hujjat) => {
-            if ((hujjat.items?.length ?? 0) > 0) return hujjat;
-            try {
-              const tafsilot = await kochirishApi.olish(hujjat.id);
-              return { ...hujjat, ...tafsilot, items: tafsilot.items ?? hujjat.items };
-            } catch {
-              return hujjat;
-            }
-          }),
-        );
-        if (!active) return;
-        setKirimHujjatlari(kirimlar);
-        setChiqimHujjatlari(toliqChiqimlar);
-        setKochirmaHujjatlari(toliqKochirmalar);
-        setMahsulotModifikatsiyalari(modifikatsiyalar);
-      })
-      .catch((error) => {
-        if (active) setOmborHarakatiXato(getApiErrorMessage(error));
-      })
-      .finally(() => {
-        if (active) setOmborHarakatiYuklanmoqda(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [yangilanish]);
-
   const savdoOraliqlari = useMemo(
     () => davrOraliqlari(dateFrom, dateTo, savdoDavr),
     [dateFrom, dateTo, savdoDavr],
@@ -1125,6 +1072,68 @@ export default function Monitoring() {
   const serverOqim = oqimKunlari.holat === "tayyor";
   const serverXato = oqimKunlari.holat === "xato" ? oqimKunlari.xato : "";
   const serverTekshirilmoqda = oqimKunlari.holat === "yuklanmoqda";
+  // Tanlangan davr bo'yicha ombor kirim/chiqim hujjatlari: mahsulot qatorlari jadvallari va (server hisoboti ishlamasa) zaxira hisob uchun.
+  // Hujjatlar faqat tanlangan kunlar bo'yicha so'raladi (backend dateFrom/dateTo); butun tarix faqat zaxira hisobda, server hisoboti xato bergandagina olinadi.
+  // Qatorlari ro'yxat javobida kelmagan hujjatning tafsiloti faqat tanlangan davr ichidagilar uchun alohida so'raladi.
+  const zaxiraTarixKerak = oqimKunlari.holat === "xato";
+  useEffect(() => {
+    let active = true;
+    setOmborHarakatiYuklanmoqda(true);
+    setOmborHarakatiXato("");
+    const oraliq = zaxiraTarixKerak ? undefined : { dateFrom, dateTo };
+    const davrichida = (hujjat: KirimHujjati | ChiqimHujjati | KochirishHujjati) => {
+      const kun = kunniOlish(hujjatSanasi(hujjat));
+      return kun >= dateFrom && kun <= dateTo;
+    };
+    Promise.all([kirimApi.royxat(oraliq), chiqimApi.royxat(oraliq), kochirishApi.royxat(oraliq)])
+      .then(async ([kirimlar, chiqimlar, kochirmalar]) => {
+        if (!active) return;
+        const modifikatsiyalar = await barchaModifikatsiyalar().catch(() => []);
+        const toliqChiqimlar = await Promise.all(
+          chiqimlar.map(async (hujjat) => {
+            if (
+              String(hujjat.status ?? "").toUpperCase() !== "CONFIRMED" ||
+              (hujjat.items?.length ?? 0) > 0 ||
+              !davrichida(hujjat)
+            ) {
+              return hujjat;
+            }
+            try {
+              const tafsilot = await chiqimApi.olish(hujjat.id);
+              return { ...hujjat, ...tafsilot, items: tafsilot.items ?? hujjat.items };
+            } catch {
+              return hujjat;
+            }
+          }),
+        );
+        const toliqKochirmalar = await Promise.all(
+          kochirmalar.map(async (hujjat) => {
+            if ((hujjat.items?.length ?? 0) > 0 || !davrichida(hujjat)) return hujjat;
+            try {
+              const tafsilot = await kochirishApi.olish(hujjat.id);
+              return { ...hujjat, ...tafsilot, items: tafsilot.items ?? hujjat.items };
+            } catch {
+              return hujjat;
+            }
+          }),
+        );
+        if (!active) return;
+        setKirimHujjatlari(kirimlar);
+        setChiqimHujjatlari(toliqChiqimlar);
+        setKochirmaHujjatlari(toliqKochirmalar);
+        setMahsulotModifikatsiyalari(modifikatsiyalar);
+      })
+      .catch((error) => {
+        if (active) setOmborHarakatiXato(getApiErrorMessage(error));
+      })
+      .finally(() => {
+        if (active) setOmborHarakatiYuklanmoqda(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [dateFrom, dateTo, zaxiraTarixKerak, yangilanish]);
+
   const omborHarakatlari = useMemo(
     () => (serverOqim ? oqimdanHarakatlar(oqimKunlari.qatorlar) : hujjatHarakatlari),
     [serverOqim, oqimKunlari.qatorlar, hujjatHarakatlari],

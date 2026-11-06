@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
-import { calls, errors, handlers, reset } from './helpers/savdoYuklashClient.mjs';
+import { calls, errors, handlers, reset as bazaniTozalash } from './helpers/savdoYuklashClient.mjs';
 
 const fixture = new URL('./helpers/savdoYuklashClient.mjs', import.meta.url).href;
 const src = new URL('../src/', import.meta.url);
@@ -25,6 +25,8 @@ const { useSavdoStore } = await import('../src/store/savdoStore.ts');
 const { omborQoldiqlariniOlish, sotuvlarRoyxatiniOlish } = await import('../src/api/savdoApi.ts');
 const { stockBalanceReport } = await import('../src/api/reportsApi.ts');
 const initial = useSavdoStore.getState();
+const { malumotnomaKeshiniTozalash } = await import('../src/lib/malumotnomaKeshi.ts');
+const reset = () => { bazaniTozalash(); malumotnomaKeshiniTozalash(); };
 const count = url => calls.filter(call => call.url === url).length;
 
 test('sales statistics load all explicitly paginated sales instead of trusting a partial first list', async () => {
@@ -74,8 +76,12 @@ test('concurrent page mounts and customer prefetch share one initial request set
     initial.mijozlarniOldindanYuklash(),
     initial.mijozlarniOldindanYuklash(),
   ]);
-  for (const url of ['/sales', '/returns', '/organization/warehouses', '/partners/customers', '/partners/client-companies', '/accounts/users', '/reports/stock-balance', '/catalog/search']) {
+  for (const url of ['/sales', '/organization/warehouses', '/partners/customers', '/partners/client-companies', '/accounts/users']) {
     assert.equal(count(url), 1, url);
+  }
+  // Qaytarishlar, ombor qoldig'i va katalog ochilishda olinmaydi: ularni faqat ayrim bo'limlar va oynalar so'raydi.
+  for (const url of ['/returns', '/reports/stock-balance', '/catalog/search']) {
+    assert.equal(count(url), 0, url);
   }
   assert.equal(useSavdoStore.getState().mijozlar[0].id, 'customer-1');
   assert.equal(useSavdoStore.getState().yuklanmoqda, false);
