@@ -267,6 +267,8 @@ export type Qaytarish = {
   // Backend `confirm` da hisoblaydi (satr ko'rinishida kelishi mumkin): mijozga qaytariladigan pul va sotuvdagi qarzdan ayirilgan summa.
   refundAmount?: number | string | null;
   debtReduction?: number | string | null;
+  // Tasdiqlashda yoziladigan qaytgan tovar qiymati (chegirma ulushi ayirilgan); qoralama va eski hujjatlarda null.
+  goodsValue?: number | string | null;
   // Tasdiqlash vaqtidagi sotuv qarzi snapshot'i (qaytarishdan oldin / keyin). Eski hujjatlarda null bo'lishi mumkin —
   // null "ma'lumot yo'q" degani, 0 emas.
   debtBefore?: number | string | null;

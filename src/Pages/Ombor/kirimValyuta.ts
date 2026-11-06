@@ -9,7 +9,15 @@ export function kirimNarxiniOgirish(qiymat: number, manba: Valyuta, maqsad: Valy
   return manba === "USD" ? qiymat * kurs : qiymat / kurs;
 }
 
-/** Mavjud purchase API narxlari UZS: har bir mahsulot o‘z valyutasidan bir marta o‘giriladi. */
+/**
+ * Kirim hujjati valyutasi (backend `currency` — bitta hujjatga bitta). Hamma qator dollarda bo'lsa — USD: narxlar asl holida ketadi,
+ * tannarx va yetkazib beruvchi qarzi brauzer kursiga bog'lanib qolmaydi (K7). Aralash yoki so'mda — UZS (dollar qatorlar kurs bilan o'giriladi).
+ */
+export function kirimHujjatValyutasi(rows: ReadonlyArray<{ currency: Valyuta }>): Valyuta {
+  return rows.length > 0 && rows.every((row) => row.currency === "USD") ? "USD" : "UZS";
+}
+
+/** Purchase API narxlari hujjat valyutasida (`maqsad`, standart UZS): har bir mahsulot o‘z valyutasidan bir marta o‘giriladi. */
 export function kirimElementiniYigish(row: {
   modificationId: string;
   quantity: number;
@@ -23,13 +31,13 @@ export function kirimElementiniYigish(row: {
   sanashSoni?: number;
   // Seriyali tovar: har qator = bitta rulon, `quantity` — og'irligi.
   serial?: string;
-}, kurs: number | null) {
+}, kurs: number | null, maqsad: Valyuta = "UZS") {
   const koeff = row.birlik && !row.birlik.asosiy ? row.birlik.koeff : 1;
   const boshlangich = (row.boshlangichTanNarx ?? 0) * koeff;
   return {
     modificationId: row.modificationId,
     quantity: row.quantity,
-    price: Math.round(kirimNarxiniOgirish(row.price === "" ? boshlangich : Number(row.price), row.currency, "UZS", kurs) * 100) / 100,
+    price: Math.round(kirimNarxiniOgirish(row.price === "" ? boshlangich : Number(row.price), row.currency, maqsad, kurs) * 100) / 100,
     ...(row.serial?.trim() ? { serial: row.serial.trim() } : {}),
     ...(row.birlik && !row.birlik.asosiy ? { unitId: row.birlik.unitId } : {}),
     ...(row.sanashBirligi && (row.sanashSoni ?? 0) > 0 ? { checkUnitId: row.sanashBirligi.unitId, checkCount: row.sanashSoni } : {}),

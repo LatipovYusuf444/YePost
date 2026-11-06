@@ -1,4 +1,5 @@
 // Hisobot UI yordamchilari.
+import { bugungiToshkentKuni, kunniSurish, toshkentKuni } from "@/lib/hujjatSanasi";
 import { pulMatni } from "@/lib/valyuta";
 
 export function pul(summa: number) {
@@ -9,28 +10,23 @@ export function son(qiymat: number) {
   return qiymat.toLocaleString("uz-UZ");
 }
 
+// "Bugun" va davr chegaralari Toshkent kuni bo'yicha (M3): UTC bo'yicha olinsa 00:00–05:00 da kechagi kun chiqardi.
 export function bugun() {
-  return new Date().toISOString().slice(0, 10);
+  return bugungiToshkentKuni();
 }
 
 export function bugunMinus(kun: number) {
-  const sana = new Date();
-  sana.setDate(sana.getDate() - kun);
-  return sana.toISOString().slice(0, 10);
+  return kunniSurish(bugungiToshkentKuni(), -kun);
 }
 
 export function oyBoshi() {
-  const sana = new Date();
-  sana.setDate(1);
-  return sana.toISOString().slice(0, 10);
+  return `${bugungiToshkentKuni().slice(0, 7)}-01`;
 }
 
 // N oy oldingi oyning 1-sanasi (masalan oyBoshiMinus(2) → 3 oylik davr boshi).
 export function oyBoshiMinus(oy: number) {
-  const sana = new Date();
-  sana.setDate(1);
-  sana.setMonth(sana.getMonth() - oy);
-  return sana.toISOString().slice(0, 10);
+  const [yil, oyRaqami] = bugungiToshkentKuni().split("-").map(Number);
+  return new Date(Date.UTC(yil, oyRaqami - 1 - oy, 1)).toISOString().slice(0, 10);
 }
 
 const OY_NOMLARI = [
@@ -76,7 +72,8 @@ export function oyNomi(oyKaliti: string, yilKorsat = false) {
 
 // Sana oralig'iga tushadimi (dateFrom/dateTo "" bo'lsa cheklamaydi).
 export function sanadaMi(sana: string, dateFrom: string, dateTo: string) {
-  const kun = sana.slice(0, 10);
+  // ISO vaqt (UTC) Toshkent kuniga o'giriladi; "YYYY-MM-DD" o'zgarishsiz.
+  const kun = toshkentKuni(sana) || sana.slice(0, 10);
   if (dateFrom && kun < dateFrom) return false;
   if (dateTo && kun > dateTo) return false;
   return true;

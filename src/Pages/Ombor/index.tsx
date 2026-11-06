@@ -1,3 +1,4 @@
+import { bugungiToshkentKuni, toshkentKuni } from "@/lib/hujjatSanasi";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useIshlabChiqarishStore } from "@/store/ishlabChiqarishStore";
@@ -133,7 +134,7 @@ export default function Ombor() {
       null;
   }
   const yaratilganSana =
-    tahrirOmbor?.createdAt?.slice(0, 10) ?? new Date().toISOString().slice(0, 10);
+    toshkentKuni(tahrirOmbor?.createdAt) || bugungiToshkentKuni();
 
   useEffect(() => {
     if (organizationTab === "omborlar") {

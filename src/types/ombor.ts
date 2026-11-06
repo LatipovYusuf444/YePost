@@ -166,6 +166,8 @@ export type KirimHujjati = {
 export type KirimYaratishMalumoti = {
   // Hujjat sanasi (kun, YYYY-MM-DD, Toshkent): berilmasa yoki bugun bo'lsa — hozirgi vaqt; o'tgan kun — o'sha kunning 23:59:59.
   date?: string;
+  // Narxlar valyutasi (hujjatga bitta); berilmasa UZS. USD faqat valyuta rejimida.
+  currency?: "UZS" | "USD";
   supplierId: string;
   warehouseId: string;
   responsibleId?: string;

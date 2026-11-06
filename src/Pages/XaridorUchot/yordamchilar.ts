@@ -1,3 +1,4 @@
+import { bugungiToshkentKuni } from "@/lib/hujjatSanasi";
 import { pulMatni } from "@/lib/valyuta";
 import type { KirimHolati, SavdoHolati, Xaridor, XaridorKompaniyasi } from "./types";
 
@@ -9,7 +10,7 @@ export function yangiId(prefix: string) {
 }
 
 export function bugun() {
-  return new Date().toISOString().slice(0, 10);
+  return bugungiToshkentKuni();
 }
 
 export function summaFormat(summa: number) {

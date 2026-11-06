@@ -1,3 +1,4 @@
+import { bugungiToshkentKuni } from "@/lib/hujjatSanasi";
 import { StockQuantity } from "@/Components/common/NegativeStockBadge";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -53,7 +54,7 @@ const qoldiqVariantlari: { value: string; nomi: string }[] = [
   { value: "manfiy", nomi: "Minusda" },
 ];
 
-const bugungiSana = new Date().toISOString().slice(0, 10);
+const bugungiSana = bugungiToshkentKuni();
 
 // Tanlov maydonlari (Narx turi, Qoldiqlar) ko'p tanlovli maydonlar bilan bir xil ko'rinishda.
 const SELECT_KLASS =

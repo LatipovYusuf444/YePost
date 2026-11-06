@@ -75,3 +75,16 @@ test('kirim qatori: pochkalar soni yuborilsa checkUnitId va checkCount qo‘shil
   const soniYoq = kirimElementiniYigish({ modificationId: 'm', quantity: 24.2, price: '27000', currency: 'UZS', birlik: KG, sanashBirligi: POCHKA, sanashSoni: 0 }, null);
   assert.ok(!('checkUnitId' in soniYoq) && !('checkCount' in soniYoq));
 });
+
+test('K7: hamma qator dollarda — hujjat USD, narx asl holida (kurs bilan o‘girilmaydi, kurs kerak emas)', async () => {
+  const { kirimHujjatValyutasi } = await import('../src/Pages/Ombor/kirimValyuta.ts');
+  const rows = [
+    { modificationId: 'a', quantity: 10, price: '12.5', currency: 'USD' },
+    { modificationId: 'b', quantity: 1, price: '100', currency: 'USD' },
+  ];
+  assert.equal(kirimHujjatValyutasi(rows), 'USD');
+  assert.deepEqual(rows.map(row => kirimElementiniYigish(row, null, 'USD').price), [12.5, 100]);
+  assert.equal(kirimHujjatValyutasi([...rows, { modificationId: 'c', quantity: 1, price: '5000', currency: 'UZS' }]), 'UZS', 'aralash — so‘m');
+  assert.equal(kirimHujjatValyutasi([{ currency: 'UZS' }]), 'UZS');
+  assert.equal(kirimHujjatValyutasi([]), 'UZS');
+});

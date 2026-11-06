@@ -243,16 +243,13 @@ const valyutaKodlari = [
 ];
 
 function bugungiSana() {
-  const date = new Date();
-  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return offsetDate.toISOString().slice(0, 10);
+  return bugungiToshkentKuni();
 }
 
+// Toshkent kunidan 7 kun keyin (kun arifmetikasi UTC'da, vaqt mintaqasi siljitmaydi).
 function kelasiHafta() {
-  const date = new Date();
-  date.setDate(date.getDate() + 7);
-  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return offsetDate.toISOString().slice(0, 10);
+  const [yil, oy, kun] = bugungiToshkentKuni().split("-").map(Number);
+  return new Date(Date.UTC(yil, oy - 1, kun + 7)).toISOString().slice(0, 10);
 }
 
 function faoliyatSanasiMatni(dateValue: string, timeValue: string, t: TFunction) {

@@ -27,7 +27,7 @@ import Tarix from "./Tarix";
 import Tolovlar from "./Tolovlar";
 import Qarzdorliklar from "../Qarzdorlik";
 import YangiSotuvModal from "./YangiSotuvModal";
-import { mijozNomi, pulniFormatlash, sotuvHolati, sotuvQarzdorlikSummasi, sotuvRaqami, sotuvSummasiniSomga } from "./savdoYordamchilari";
+import { aralashJamiMatni, mijozNomi, sotuvHolati, sotuvQarzdorlikSummasi, sotuvRaqami, sotuvValyutasi } from "./savdoYordamchilari";
 import SavdoSelect from "./SavdoSelect";
 import DateRangePicker from "@/Components/ui/DateRangePicker";
 
@@ -334,7 +334,7 @@ export default function Savdo() {
     return {
       sotuvlar: qidirilganSotuvlar.length,
       qarzdorlar: qarzdorlar.size,
-      jami: qidirilganSotuvlar.reduce((summa, sotuv) => summa + sotuvSummasiniSomga(sotuvQarzdorlikSummasi(sotuv), sotuv), 0),
+      jami: aralashJamiMatni(qidirilganSotuvlar.map((sotuv) => ({ summa: sotuvQarzdorlikSummasi(sotuv), valyuta: sotuvValyutasi(sotuv) }))),
     };
   }, [qidirilganSotuvlar, tolovFilteri]);
 
@@ -539,7 +539,7 @@ export default function Savdo() {
                     {t("savdoSahifasi.qarzXulosasi.sotuvlar", { count: qarzXulosasi.sotuvlar })}
                   </span>
                   <span className="text-sm text-rose-600">
-                    {t("savdoSahifasi.qarzXulosasi.jami")} <b className="font-black text-rose-700">{pulniFormatlash(qarzXulosasi.jami)}</b>
+                    {t("savdoSahifasi.qarzXulosasi.jami")} <b className="font-black text-rose-700">{qarzXulosasi.jami}</b>
                   </span>
                   <button
                     type="button"

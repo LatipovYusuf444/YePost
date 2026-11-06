@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
+import * as kassaNomlari from '../src/lib/kassaNomlari.ts';
 
 // Qarzdorliklar ro'yxati: GET /sales?openingDebt=true boshlang'ich qarzlari faqat customerId bilan keladi.
 // Sahifa ularni do'kon ro'yxatidan boyitishi va ro'yxatda yo'q mijozni id bo'yicha so'rashi kerak — aks holda "Doimiy mijoz" chiqadi.
@@ -64,6 +65,7 @@ const texts = value => Array.isArray(value) ? value.flatMap(texts) : value && ty
 
 const yordamchilar = compile('../src/Pages/Savdo/savdoYordamchilari.ts', {
   '@/lib/valyuta': { pulMatni: value => String(value), oziValyutadaMatn: value => String(value), useValyutaStore: { getState: () => ({}) }, valyutaKodi: value => value },
+  '@/lib/kassaNomlari': kassaNomlari,
 });
 
 function sahifaniYaratish({ openingDebts, mijozlar }) {

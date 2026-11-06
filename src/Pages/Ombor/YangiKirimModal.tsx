@@ -38,9 +38,9 @@ import {
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { Kategoriya, OlchovBirligi } from "@/types/catalog";
 import { kodBilanTopish, modificationNomi, qoldiqMiqdori } from "./omborYordamchilari";
-import { korsatiladiganValyuta, useValyuta, type Valyuta } from "@/lib/valyuta";
+import { korsatiladiganValyuta, useValyuta, useValyutaStore, type Valyuta } from "@/lib/valyuta";
 import { narxValyutalari } from "@/lib/narxValyutasi";
-import { kirimElementiniYigish, kirimNarxiniOgirish } from "./kirimValyuta";
+import { kirimElementiniYigish, kirimHujjatValyutasi, kirimNarxiniOgirish } from "./kirimValyuta";
 import { seriyaYaroqlimi } from "@/lib/ishlabChiqarish";
 import { mahsulotBirliklariApi } from "@/api/catalogApi";
 import { asosiyMiqdor, birlikTopish, koeffTekshiruvi, miqdorYaroqlimi, qabulBirliklari, type TovarBirligi } from "@/lib/kopBirlik";
@@ -466,15 +466,18 @@ export default function YangiKirimModal({ onClose }: Props) {
     if (note.trim()) izohQismlari.push(note.trim());
     fayllar.forEach((fayl) => izohQismlari.push(`Fayl: ${fayl.nomi} (${fayl.url})`));
 
+    // Hamma qator dollarda bo'lsa hujjat USD da, narxlar asl holida (K7). Backend USD ni faqat valyuta rejimida qabul qiladi.
+    const hujjatValyutasi = useValyutaStore.getState().rejimYoniq ? kirimHujjatValyutasi(valid) : "UZS";
     const hujjat = await fx.kuzat(() => store.kirimYaratish({
       ...yangiHujjatSanasi(hujjatSanasi),
+      currency: hujjatValyutasi,
       supplierId,
       warehouseId: valid[0].warehouseId,
       responsibleId: responsibleId || undefined,
       note: izohQismlari.join(" | "),
       items: valid.map((row) => {
         const { birlik, sanashBirligi } = qatorBirliklari(row);
-        return kirimElementiniYigish({ ...row, birlik, sanashBirligi, sanashSoni: Number(row.sanash) || 0 }, amaldagiKurs);
+        return kirimElementiniYigish({ ...row, birlik, sanashBirligi, sanashSoni: Number(row.sanash) || 0 }, amaldagiKurs, hujjatValyutasi);
       }),
     }));
     if (!hujjat) return;

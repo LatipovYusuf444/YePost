@@ -1,3 +1,4 @@
+import { bugungiToshkentKuni } from "@/lib/hujjatSanasi";
 import {
   useEffect,
   useRef,
@@ -152,7 +153,7 @@ export default function ChiqimKorishModal({
   function faylTanlash(event: ChangeEvent<HTMLInputElement>) {
     const tanlanganFayllar = event.target.files;
     if (!tanlanganFayllar || tanlanganFayllar.length === 0) return;
-    const bugun = new Date().toISOString().slice(0, 10);
+    const bugun = bugungiToshkentKuni();
     const yangiFayllar: ChiqimFayl[] = Array.from(tanlanganFayllar).map((fayl) => ({
       id: crypto.randomUUID(),
       nomi: fayl.name,

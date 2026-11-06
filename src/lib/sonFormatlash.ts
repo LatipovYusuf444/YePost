@@ -5,11 +5,28 @@ const GURUH_BELGISI = " ";
 const ENG_KO_P_BUTUN_XONA = 15;
 
 /**
+ * Ming ajratgichlarini olib, kasr belgisini nuqtaga keltiradi (M4). Vergul ham, nuqta ham bo'lsa — oxirgisi kasr belgisi, boshqasi ming
+ * ajratgichi ("1,234.56" → "1234.56", "1.234,56" → "1234.56"). Faqat vergul bir necha marta bo'lsa — ming ajratgichi ("1,234,567");
+ * bitta vergul — kasr ("12,5" → "12.5", yozilayotgan "12," ham).
+ */
+function kasrBelgisiniAjratish(matn: string): string {
+  const vergul = matn.lastIndexOf(",");
+  const nuqta = matn.lastIndexOf(".");
+  if (vergul !== -1 && nuqta !== -1) {
+    const ajratgich = vergul > nuqta ? "." : ",";
+    const qolgan = matn.split(ajratgich).join("");
+    return vergul > nuqta ? qolgan.replace(/,/g, ".") : qolgan;
+  }
+  if (vergul !== -1) return (matn.match(/,/g) ?? []).length > 1 ? matn.replace(/,/g, "") : matn.replace(",", ".");
+  return matn;
+}
+
+/**
  * Kiritilgan matnni toza raqam matniga keltiradi: vergul nuqtaga aylanadi, raqam va (kasr bo'lsa) bitta nuqtadan boshqa belgilar tashlanadi,
  * kasr `kasr` xonagacha qisqartiriladi, ortiqcha bosh nollar ("007" → "7") olinadi. Yozilayotgan "12." saqlanadi (kasr > 0 bo'lsa).
  */
 export function sonniTozalash(matn: string, kasr = 2): string {
-  const oddiy = String(matn ?? "").replace(/,/g, ".").replace(/[^\d.]/g, "");
+  const oddiy = kasrBelgisiniAjratish(String(matn ?? "")).replace(/[^\d.]/g, "");
   const nuqta = oddiy.indexOf(".");
   let butun = (nuqta === -1 ? oddiy : oddiy.slice(0, nuqta)).slice(0, ENG_KO_P_BUTUN_XONA);
   butun = butun.replace(/^0+(?=\d)/, "");

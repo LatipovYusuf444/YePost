@@ -1,3 +1,4 @@
+import { bugungiToshkentKuni, kunniSurish } from "@/lib/hujjatSanasi";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarDays, ChevronDown, Clock, LogIn, LogOut, PencilLine, Plus, RotateCcw, Save, Timer, Trash2, TriangleAlert, UserCheck } from "lucide-react";
@@ -25,9 +26,7 @@ const reverseStatus: Record<DavomatHolati, AttendanceStatus> = {
 };
 
 function sanaMinus(kun: number) {
-  const sana = new Date();
-  sana.setDate(sana.getDate() - kun);
-  return sana.toISOString().slice(0, 10);
+  return kunniSurish(bugungiToshkentKuni(), -kun);
 }
 function vaqt(value?: string | null) {
   return value ? new Date(value).toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit", hour12: false }) : "";

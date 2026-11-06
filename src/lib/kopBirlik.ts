@@ -1,5 +1,6 @@
 // Ko'p birlikli tovarlar: qoldiq bitta asosiy birlikda (masalan dona) yuritiladi, qo'shimcha birliklar (pochka, qop, korobka)
 // koeffitsient bilan qo'yiladi: `koeff` — 1 shu birlikda nechta asosiy birlik. UI'siz va `@/` importlarisiz yozilgan — testlarda ishlaydi.
+import { yaxlitHalfUp } from "./yaxlitlash.ts";
 
 /**
  * Backend hisoblagan birlik narxi (`GET /catalog/modifications/search` har bir birlikda): birlikning o'z narxi, bo'lmasa
@@ -51,7 +52,7 @@ function musbatYokiNull(value: unknown) {
 }
 
 const yaxlit6 = (son: number) => Math.round(son * 1e6) / 1e6;
-const yaxlit2 = (son: number) => Math.round(son * 100) / 100;
+const yaxlit2 = (son: number) => yaxlitHalfUp(son, 2);
 
 function valyutaKodi(value: unknown): "UZS" | "USD" | null {
   const kod = typeof value === "string" ? value.trim().toUpperCase() : "";
@@ -179,7 +180,7 @@ export function birlikNarxi(narx: NarxJufti | null, birlik: TovarBirligi | undef
   const oz = tur === "RETAIL" ? birlik.chakana : tur === "WHOLESALE" ? birlik.ulgurji : null;
   const asl = oz ?? yaxlit6(narx.asl * birlik.koeff);
   const nisbat = narx.asl > 0 ? asl / narx.asl : 0;
-  return { valyuta: narx.valyuta, asl: Math.round(asl * 100) / 100, som: Math.round(narx.som * nisbat) };
+  return { valyuta: narx.valyuta, asl: yaxlit2(asl), som: Math.round(narx.som * nisbat) };
 }
 
 function sonMatni(son: number) {
