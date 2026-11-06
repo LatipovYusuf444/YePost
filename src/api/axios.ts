@@ -125,7 +125,8 @@ apiClient.interceptors.response.use(
     if (!axios.isAxiosError(error) || error.response?.status !== 401 || !error.config) {
       // 409 before_stock_take va 400 suspicious_currency — xato emas, "Davom etasizmi?" / "Valyuta to'g'rimi?" so'rovi:
       // toast o'rniga tasdiqlash oynasi chiqadi (api/hujjatOgohlantirishi, api/valyutaShubhasi).
-      if (axios.isAxiosError(error) && toastKerakmi(error.config?.url) && !rolCheklanganRoyxat403Mi(error) && !fonSozlamaXatosiMi(error) && !ogohlantirishXatosimi(error) && !shubhaliValyutaXatosimi(error) && !error.config?.xatoniYashirish) {
+      // Bekor qilingan so'rov (AbortController) xato emas — toast chiqmaydi.
+      if (axios.isAxiosError(error) && !axios.isCancel(error) && toastKerakmi(error.config?.url) && !rolCheklanganRoyxat403Mi(error) && !fonSozlamaXatosiMi(error) && !ogohlantirishXatosimi(error) && !shubhaliValyutaXatosimi(error) && !error.config?.xatoniYashirish) {
         xatolikXabari(getApiErrorMessage(error));
       }
       return Promise.reject(error);

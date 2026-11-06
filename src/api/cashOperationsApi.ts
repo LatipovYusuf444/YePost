@@ -1,4 +1,5 @@
 import apiClient from "./axios";
+import { qolganSahifalar } from "../lib/parallelBajarish.ts";
 import { apiData, type ApiEnvelope } from "./response";
 import { taqsimotniOqish } from "@/lib/qarzTaqsimoti";
 import type { CashOperation, CashOperationFilter, CashOperationPayload } from "@/types/cashOperation";
@@ -17,11 +18,7 @@ export const cashOperationsApi = {
   barchasi: async () => {
     const first = await cashOperationsApi.royxat({ page: 1, pageSize: 100 });
     if (first.totalPages <= 1) return first;
-    const pages = await Promise.all(
-      Array.from({ length: first.totalPages - 1 }, (_, index) =>
-        cashOperationsApi.royxat({ page: index + 2, pageSize: 100 })
-      )
-    );
+    const pages = await qolganSahifalar(first.totalPages, (page) => cashOperationsApi.royxat({ page, pageSize: 100 }));
     return {
       ...first,
       items: [first.items, ...pages.map((page) => page.items)].flat(),

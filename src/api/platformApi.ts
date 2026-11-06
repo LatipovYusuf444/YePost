@@ -1,4 +1,5 @@
 import axios from "axios";
+import { qolganSahifalar } from "../lib/parallelBajarish.ts";
 import apiClient from "./axios";
 import { apiData, sahifaJavobi, sonlarJavobi, type ApiEnvelope } from "./response";
 import type {
@@ -32,10 +33,8 @@ function son(value: unknown) {
 async function barchasiniOlish<T>(yol: string, params: Record<string, unknown> = {}): Promise<T[]> {
   const birinchi = sahifaJavobi<T>((await apiClient.get<unknown>(yol, { params })).data, 1, 100);
   if (birinchi.totalPages <= 1) return birinchi.items;
-  const qolganlar = await Promise.all(
-    Array.from({ length: birinchi.totalPages - 1 }, async (_, index) =>
-      sahifaJavobi<T>((await apiClient.get<unknown>(yol, { params: { ...params, page: index + 2, pageSize: birinchi.pageSize } })).data).items
-    )
+  const qolganlar = await qolganSahifalar(birinchi.totalPages, async (page) =>
+    sahifaJavobi<T>((await apiClient.get<unknown>(yol, { params: { ...params, page, pageSize: birinchi.pageSize } })).data).items
   );
   return [birinchi.items, ...qolganlar].flat();
 }
