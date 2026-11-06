@@ -129,12 +129,15 @@ export default function Login() {
     setIsSubmitting(true);
 
     try {
-      await login(loginMalumoti(username.trim(), password, dokonKodi));
+      const boshqaEgasi = await login(loginMalumoti(username.trim(), password, dokonKodi));
       // Keyingi safar so'ralmasligi uchun eslab qolinadi (olib tashlangan bo'lsa — o'chiriladi).
       dokonKodiniSaqlash(dokonKodi);
 
       const state = location.state as LoginLocationState | null;
-      navigate(state?.from?.pathname || "/", { replace: true });
+      const manzil = state?.from?.pathname || "/";
+      // Boshqa do'kon/foydalanuvchi: xotirada oldingi sessiyaning store'lari qolmasligi uchun sahifa to'liq yuklanadi (K4).
+      if (boshqaEgasi) window.location.assign(manzil);
+      else navigate(manzil, { replace: true });
     } catch (error) {
       // errors.user.workspace_required: login bir nechta do'konda bor — kodni so'raymiz (backend xabari bilan).
       if (dokonKodiKerakmi(error)) {

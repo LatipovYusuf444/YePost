@@ -14,13 +14,15 @@ import {
   authTokenlarniTozalash,
   type AuthTokenlar,
 } from "@/lib/authTokenStorage";
+import { ishJoyiMalumotlariniTozalash, sessiyaEgasi, sessiyaEgasiniAlmashtirish, tokenMuddati } from "@/lib/sessiyaIzolyatsiyasi";
 
 type AuthState = {
   accessToken: string | null;
   refreshToken: string | null;
   username: string | null;
   expiresAt: number | null;
-  login: (payload: LoginPayload) => Promise<void>;
+  // `true` — boshqa do'kon/foydalanuvchi kirdi: eski ma'lumot tozalandi, sahifani to'liq qayta yuklash kerak.
+  login: (payload: LoginPayload) => Promise<boolean>;
   accessTokenniYangilash: (accessToken: string) => void;
   logout: () => Promise<void>;
 };
@@ -69,11 +71,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       accessToken: normalizedTokens.accessToken,
       refreshToken: normalizedTokens.refreshToken,
       username: payload.username,
-      expiresAt: Date.now() + AUTH_SESSION_DURATION_MS,
+      // Sessiya refresh token tugaguncha (backend 7 kun) yashaydi; muddatini o'qib bo'lmasa — avvalgidek 24 soat (M8).
+      expiresAt: tokenMuddati(normalizedTokens.refreshToken) ?? Date.now() + AUTH_SESSION_DURATION_MS,
     };
 
     authTokenlarniSaqlash(authHolati);
     set(authHolati);
+    return sessiyaEgasiniAlmashtirish(sessiyaEgasi(normalizedTokens.accessToken, payload.username));
   },
 
   // axios.ts POST /auth/refresh javobidan keyin yangi access tokenni saqlaydi.
@@ -101,12 +105,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Backend sessiyasi allaqachon tugagan bo'lsa ham foydalanuvchi lokal tizimdan chiqadi.
     } finally {
       authTokenlarniTozalash();
+      ishJoyiMalumotlariniTozalash();
       set({
         accessToken: null,
         refreshToken: null,
         username: null,
         expiresAt: null,
       });
+      // Xotiradagi barcha store va keshlar (mijozlar, savatcha, katalog) keyingi foydalanuvchiga o'tmasin (K4).
+      window.location.assign("/login");
     }
   },
 }));
