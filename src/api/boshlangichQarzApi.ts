@@ -1,4 +1,5 @@
 import apiClient from "./axios";
+import { idempotentPost } from "./idempotentSorov";
 import { apiData, type ApiEnvelope } from "./response";
 import type { BoshlangichQarzMalumoti } from "@/lib/boshlangichQarz";
 import { tolovNatijasi, type TolovNatijasi } from "../lib/tolovOrtiqchasi.ts";
@@ -39,6 +40,6 @@ export async function mijozQarziniTolash(data: {
   roundChange?: boolean;
   keepExcess?: boolean;
 }): Promise<TolovNatijasi> {
-  const javob = await apiClient.post<unknown>("/finance/debt-repayment", data);
+  const javob = await idempotentPost<unknown>("/finance/debt-repayment", data);
   return tolovNatijasi(javob.data);
 }

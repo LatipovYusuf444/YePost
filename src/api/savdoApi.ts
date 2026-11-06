@@ -1,4 +1,5 @@
 import apiClient from "./axios";
+import { idempotentPost } from "./idempotentSorov";
 import { shubhaliValyutaBilanBajarish } from "./valyutaShubhasi";
 import axios from "axios";
 import { modifikatsiyalarApi } from "./catalogApi";
@@ -159,7 +160,7 @@ export async function sotuvTafsilotiniFondaOlish(sotuvId: string) {
 
 // Savdo/index.tsx: yangi sotuvni qoralama holatida yaratadi.
 export async function sotuvYaratish(malumot: SotuvYaratishMalumoti) {
-  const response = await apiClient.post<Sotuv | ApiEnvelope<Sotuv>>("/sales", malumot);
+  const response = await idempotentPost<Sotuv | ApiEnvelope<Sotuv>>("/sales", malumot);
   return apiData(response.data);
 }
 
@@ -176,7 +177,7 @@ export async function sotuvniYangilash(
 export async function sotuvniTasdiqlash(sotuvId: string) {
   // Sana tasdiqlangan inventarizatsiyadan oldin bo'lsa backend 409 ogohlantirish qaytaradi: "ha" bo'lsa confirmWarnings bilan qayta yuboriladi.
   const response = await ogohlantirishBilanBajarish((tana) =>
-    apiClient.post<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${sotuvId}/confirm`, tana)
+    idempotentPost<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${sotuvId}/confirm`, tana)
   );
   return apiData(response.data);
 }
@@ -200,9 +201,8 @@ export async function sotuvgaTolovQoshish(
   sotuvId: string,
   tolov: TolovQoshishMalumoti
 ): Promise<{ sotuv: Sotuv | null } & TolovNatijasi> {
-  // TODO(K2): backend `Idempotency-Key` qabul qilganda bu POST'ga kalit qo'shiladi (sekin internetda qayta yuborish dublikat bermasin).
   // Dollar savdoga juda kichik so'm summasi (400 suspicious_currency): kassirdan "Valyuta to'g'rimi?" so'raladi, "ha" bo'lsa `force: true` bilan qayta yuboriladi.
-  const javob = await shubhaliValyutaBilanBajarish((tana) => apiClient.post<unknown>(`/sales/${sotuvId}/payments`, { ...tolov, ...tana }));
+  const javob = await shubhaliValyutaBilanBajarish((tana) => idempotentPost<unknown>(`/sales/${sotuvId}/payments`, { ...tolov, ...tana }));
   const natija = tolovNatijasi(javob.data);
   // To'lov saqlandi: keyingi GET xato bersa ham natija qaytadi (aks holda kassir "saqlanmadi" deb qayta to'laydi). `sotuv: null` — yangi holatni keyin olish kerak.
   const sotuv = await sotuvTafsilotiniFondaOlish(sotuvId).catch(() => null);

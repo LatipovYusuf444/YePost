@@ -99,6 +99,34 @@ test('K1 do‘kon: GET xato bersa ham to‘lov muvaffaqiyatli, xatolik yo‘q, e
   assert.equal(holat.tanlanganSotuv.id, 's1');
 });
 
+test('K2: to‘lov POST’i Idempotency-Key bilan; javob yo‘qolsa qayta urinish o‘sha kalit, muvaffaqiyatdan keyin yangi kalit', async () => {
+  reset();
+  const kalit = () => calls.filter((qo) => qo.method === 'post').at(-1).config.headers['Idempotency-Key'];
+  const tana = { paymentType: 'CASH', amount: 50000, currency: 'UZS' };
+  handlers.set('/sales/s1', () => sotuv());
+  // 1) Tarmoq uzildi (javob yo'q): natija noma'lum — kalit saqlanadi.
+  handlers.set('POST /sales/s1/payments', () => { throw new Error('timeout of 30000ms exceeded'); });
+  await assert.rejects(sotuvgaTolovQoshish('s1', tana));
+  const birinchi = kalit();
+  assert.match(birinchi, /^[0-9a-f-]{36}$/);
+  // 2) Kassir qayta bosadi: o'sha kalit (backend birinchi javobni qaytaradi, ikkinchi to'lov yozilmaydi).
+  handlers.set('POST /sales/s1/payments', () => ({ id: 's1', change: '0', keptAmount: '0' }));
+  await sotuvgaTolovQoshish('s1', tana);
+  assert.equal(kalit(), birinchi);
+  // 3) Keyingi alohida to'lov (xuddi shu summa bo'lsa ham) — yangi kalit.
+  await sotuvgaTolovQoshish('s1', tana);
+  assert.notEqual(kalit(), birinchi);
+  // 4) Aniq xato (4xx) — kalit tashlanadi, tuzatilgan urinish yangi kalit oladi.
+  const oldingi = kalit();
+  handlers.set('POST /sales/s1/payments', () => { throw Object.assign(new Error('400'), { response: { status: 400 } }); });
+  await assert.rejects(sotuvgaTolovQoshish('s1', tana));
+  const xatodagi = kalit();
+  assert.notEqual(xatodagi, oldingi);
+  handlers.set('POST /sales/s1/payments', () => ({ id: 's1' }));
+  await sotuvgaTolovQoshish('s1', tana);
+  assert.notEqual(kalit(), xatodagi);
+});
+
 test('do‘kon: to‘lov xato bersa null va xato sababi (modal shuni ko‘rsatadi)', async () => {
   reset();
   useSavdoStore.setState({ ...initial, sotuvlar: [sotuv()], tanlanganSotuv: sotuv() }, true);

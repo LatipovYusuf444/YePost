@@ -1,4 +1,5 @@
 import apiClient from "./axios";
+import { idempotentPost } from "./idempotentSorov";
 import { ogohlantirishBilanBajarish } from "./hujjatOgohlantirishi";
 import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import { qatorniQaytaYuborish } from "../lib/kopBirlik";
@@ -112,7 +113,7 @@ export const draftSalesService = {
     return saleToDraftSale(apiData(response.data));
   },
   createDraft: async (data: SotuvYaratishMalumoti) => {
-    const response = await apiClient.post<Sotuv | ApiEnvelope<Sotuv>>("/sales", data);
+    const response = await idempotentPost<Sotuv | ApiEnvelope<Sotuv>>("/sales", data);
     return saleToDraftSale(apiData(response.data));
   },
   updateDraft: async (id: string, data: Partial<SotuvYaratishMalumoti>) => {
@@ -150,7 +151,7 @@ export const draftSalesService = {
       })),
       payments: [],
     };
-    const created = await apiClient.post<Sotuv | ApiEnvelope<Sotuv>>("/sales", payload);
+    const created = await idempotentPost<Sotuv | ApiEnvelope<Sotuv>>("/sales", payload);
     return saleToDraftSale(apiData(created.data));
   },
   cancelDraft: async (id: string, reason?: string) => {
@@ -161,7 +162,7 @@ export const draftSalesService = {
   },
   payDraft: async (id: string) => {
     const response = await ogohlantirishBilanBajarish((tana) =>
-      apiClient.post<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${id}/confirm`, tana)
+      idempotentPost<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${id}/confirm`, tana)
     );
     return saleToDraftSale(apiData(response.data));
   },
