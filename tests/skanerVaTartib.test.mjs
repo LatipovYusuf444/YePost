@@ -73,7 +73,7 @@ test('faqat ikonkali tugmalarda (X, Trash2, Edit3, Pencil, Download, MoreHorizon
 test('aria-label kalitlari uz va ru common.json da bor', () => {
   for (const til of ['uz', 'ru']) {
     const actions = JSON.parse(readFileSync(new URL(`../src/i18n/locales/${til}/common.json`, import.meta.url), 'utf8')).actions;
-    for (const kalit of ['close', 'delete', 'edit', 'download', 'more', 'remove', 'clear', 'cancel', 'copyLink', 'linkCopied', 'downloadModal', 'openExternal']) {
+    for (const kalit of ['close', 'delete', 'edit', 'download', 'more', 'remove', 'clear', 'cancel', 'copyLink', 'linkCopied', 'openExternal']) {
       assert.ok(actions[kalit], `${til}.actions.${kalit}`);
     }
   }

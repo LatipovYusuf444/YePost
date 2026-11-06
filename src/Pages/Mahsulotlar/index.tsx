@@ -33,7 +33,7 @@ import { mahsulotBirliklariApi, mahsulotlarApi } from "@/api/catalogApi";
 import { omborlarApi } from "@/api/omborApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { pulMatni, valyutaKodi } from "@/lib/valyuta";
-import { rolniNormallashtirish } from "@/lib/roles";
+import { foydalanuvchiAdminmi, rolniNormallashtirish } from "@/lib/roles";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useMahsulotlarStore } from "@/store/mahsulotlarStore";
 import { useIshlabChiqarishStore } from "@/store/ishlabChiqarishStore";
@@ -1910,9 +1910,9 @@ function ModForm({productId,item,onClose}:{productId:string;item:MahsulotModifik
   // Variant nomi bo'sh qoldirilsa, ro'yxatlarda mahsulot nomi ko'rsatiladi (modificationNomi) —
   // shu haqiqatni maydonda ham ko'rsatish uchun mahsulot nomi placeholder sifatida beriladi.
   const mahsulotNomi=store.mahsulotlar.find(m=>m.id===productId)?.name??"";
-  // Parametrlar (JSON) — faqat shu variantda avvaldan xarakteristika (rang, o'lcham va h.k.) bo'lsa ko'rsatiladi;
+  // Parametrlar (JSON) — faqat ADMIN/DIREKTOR va shu variantda avvaldan xarakteristika (rang, o'lcham va h.k.) bo'lsa ko'rsatiladi;
   // oddiy variantlarda bu texnik maydon shart emas, "Mahsulot" oynasidagi "Xarakteristikalar" bo'limidan boshqariladi.
-  const parametrlarKerak=editing&&Boolean(item.params&&Object.keys(item.params).length>0);
+  const parametrlarKerak=foydalanuvchiAdminmi(useAuthProfileStore((state)=>state.profil))&&editing&&Boolean(item.params&&Object.keys(item.params).length>0);
   // Bu oynada narxlar valyutasiz kiritiladi: mavjud variantni tahrirlashda har bir narxning o'z valyutasi saqlanib qoladi (yangi variant so'mda).
   const saqlanganValyutalar=editing&&item.price?narxQoralamaValyutalari(item.price):{};
   async function save(e:FormEvent){e.preventDefault();if(!barcode.trim()){fx.ornat({barcode:t("modForm.barcodeRequired")});return}let parsed:Record<string,unknown>|undefined;try{parsed=params.trim()?JSON.parse(params):undefined;fx.ornat({})}catch{fx.ornat({params:t("modForm.invalidJson")});return}const ok=await fx.kuzat(()=>store.modifikatsiyaSaqlash(productId,editing?item.id:null,{name:name.trim()||undefined,barcode:barcode.trim(),article:article.trim()||undefined,params:parsed,price:{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale,...saqlanganValyutalar}}));if(ok&&editing)await fx.kuzat(()=>store.narxYangilash(productId,item.id,{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale,...saqlanganValyutalar}));if(ok)onClose()}

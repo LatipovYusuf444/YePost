@@ -1,15 +1,16 @@
-import { Download, ExternalLink, Link as LinkIcon, X } from "lucide-react";
+import { ExternalLink, Link as LinkIcon, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 type Props = {
   havolaId: string;
-  faylNomi: string;
-  malumot: unknown;
+  // Eski chaqiruvlar uchun qoldirilgan: JSON yuklab olish tugmasi olib tashlangan, endi ishlatilmaydi.
+  faylNomi?: string;
+  malumot?: unknown;
   onYopish: () => void;
 };
 
 // Modalkaning chap chetidagi tezkor amallar ustuni (sotuv modalkasidagi kabi).
-export default function TezkorPanel({ havolaId, faylNomi, malumot, onYopish }: Props) {
+export default function TezkorPanel({ havolaId, onYopish }: Props) {
   const { t } = useTranslation("xaridor_uchot");
   const havola = `${window.location.origin}${window.location.pathname}?xaridor=${havolaId}`;
 
@@ -17,20 +18,9 @@ export default function TezkorPanel({ havolaId, faylNomi, malumot, onYopish }: P
     void navigator.clipboard?.writeText(havola);
   }
 
-  function jsonYuklash() {
-    const blob = new Blob([JSON.stringify(malumot, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${faylNomi}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
   const amallar = [
     { label: t("tezkorPanel.close"), icon: X, onClick: onYopish },
     { label: t("tezkorPanel.copyLink"), icon: LinkIcon, onClick: havolaniNusxalash },
-    { label: t("tezkorPanel.downloadData"), icon: Download, onClick: jsonYuklash },
     {
       label: t("tezkorPanel.openInNewTab"),
       icon: ExternalLink,

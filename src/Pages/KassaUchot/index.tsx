@@ -54,6 +54,7 @@ import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumki
 import { useKassaSotuvKeshi } from "@/hooks/useKassaSotuvlari";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { rolniNormallashtirish } from "@/lib/roles";
+import { hujjatRaqamiMatni } from "@/lib/hujjatRaqamiMatni";
 type Bolim = { yonalish: KassaYonalishi };
 type Guruh = { kanal: KassaKanali; icon: typeof Banknote; bolimlar: Bolim[] };
 
@@ -136,7 +137,7 @@ export default function KassaUchot() {
       // Backend sotuv to'lovlarini ham holati bilan qaytaradi — bekor qilingan sotuvning to'lovi kassada hisobga olinmaydi.
       holat: item.status === "CANCELLED" ? "bekor_qilingan" : item.status === "DRAFT" ? "qoralama" : "tasdiqlangan",
       // `raqam` ro'yxat yig'ilganda K1, K2... ga almashadi; hujjatning o'z raqami (SOT-000014) `hujjatRaqami`da qoladi.
-      raqam: item.refDocNumber || item.id.slice(0, 8).toUpperCase(),
+      raqam: hujjatRaqamiMatni(item.refDocNumber),
       hujjatRaqami: item.refDocNumber || undefined,
       nomi: item.refDocNumber || item.note || t(`types.${backendTuriniMoslash(item)}`),
       kontragent: item.counterpartyName || branch?.name || "",

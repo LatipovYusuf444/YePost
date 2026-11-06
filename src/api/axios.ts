@@ -14,6 +14,9 @@ import {
 import { muvaffaqiyatXabari, xatolikXabari } from "@/lib/toast";
 import { toast } from "sonner";
 import { negativeStockMessages } from "@/lib/negativeStock";
+import { blobXatosiniOqish } from "@/lib/blobXatosi";
+import { muvaffaqiyatKaliti } from "@/lib/muvaffaqiyatToasti";
+import i18n from "i18next";
 
 // Toast ko'rsatilmaydigan yo'llar: auth oqimi (o'zi navigatsiya qiladi),
 // bildirishnoma o'qilgan deb belgilash va chat/support xabar yuborish
@@ -62,14 +65,6 @@ declare module "axios" {
   }
 }
 
-const MUTATSIYA_USULLARI = new Set(["post", "put", "patch", "delete"]);
-
-function muvaffaqiyatMatni(usul?: string) {
-  if (usul === "delete") return "Muvaffaqiyatli o'chirildi";
-  if (usul === "post") return "Muvaffaqiyatli yaratildi";
-  return "Muvaffaqiyatli saqlandi";
-}
-
 export { API_BASE_URL };
 
 const apiClient = axios.create({
@@ -113,13 +108,15 @@ apiClient.interceptors.response.use(
       if (message.kind === "warning") toast.warning(message.text, options);
       else toast.success(message.text, options);
     }
-    const usul = response.config.method?.toLowerCase();
-    if (usul && MUTATSIYA_USULLARI.has(usul) && toastKerakmi(response.config.url)) {
-      muvaffaqiyatXabari(muvaffaqiyatMatni(usul));
+    const toastKaliti = muvaffaqiyatKaliti(response.config.method, response.config.url);
+    if (toastKaliti && toastKerakmi(response.config.url)) {
+      muvaffaqiyatXabari(i18n.t(`common:toast.${toastKaliti}`));
     }
     return response;
   },
   async (error: unknown) => {
+    // Excel/PDF yuklashda (responseType: "blob") xato tanasi ham Blob bo'ladi: backend xabari yo'qolmasligi uchun JSON'ga o'giramiz.
+    if (axios.isAxiosError(error) && error.response) error.response.data = await blobXatosiniOqish(error.response.data);
     // Forma maydon xatolari uchun: store xatoni matnga aylantirsa ham javob tanasi saqlanadi (lib/maydonXatolari).
     if (axios.isAxiosError(error) && error.response) apiXatosiniYozish(error.response.data, error.config?.url, error.config?.method);
     if (!axios.isAxiosError(error) || error.response?.status !== 401 || !error.config) {

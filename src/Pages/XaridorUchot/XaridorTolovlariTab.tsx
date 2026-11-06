@@ -9,6 +9,7 @@ import { qisqaHujjatRaqami, taqsimotQatoriRaqami, taqsimotniOqish } from "@/lib/
 import { sotuvlarRoyxatiniOlish } from "@/api/savdoApi";
 import { barchaFinanceTransactions } from "@/api/tolovApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { hujjatRaqamiMatni } from "@/lib/hujjatRaqamiMatni";
 
 // Mijozning kassadagi to'lovlari: sotuv to'lovlari va kassadagi "Mijoz hisobini to'ldirish" / "Hisobdan naqd qaytarish" hujjatlari
 // (tasdiqlanganda qaysi qarzlar eng eskisidan yopilgani bilan). Qatorni bosganda kassa amaliyoti oynasi ochiladi.
@@ -83,7 +84,7 @@ export default function XaridorTolovlariTab({ xaridorId }: { xaridorId: string }
             turi: "xaridor_sotuv_tolovi",
             holat: "tasdiqlangan",
             xaridorId,
-            raqam: item.refDocNumber || item.id.slice(0, 8).toUpperCase(),
+            raqam: hujjatRaqamiMatni(item.refDocNumber),
             nomi: item.refDocNumber || t("xaridorTab.salePayment"),
             kontragent: "",
             summa: Number(item.amount ?? 0),

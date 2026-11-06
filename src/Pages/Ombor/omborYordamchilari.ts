@@ -1,5 +1,6 @@
 import { pulMatni, type Valyuta } from "@/lib/valyuta";
 import type { MahsulotModifikatsiyasi, OmborQoldigi } from "@/types/ombor";
+import { RAQAM_YOQ } from "@/lib/hujjatRaqamiMatni";
 
 export function sana(value?: string) {
   if (!value) return "—";
@@ -87,8 +88,7 @@ export function hujjatRaqami(hujjat: { id?: string; documentNumber?: string; doc
     hujjat.documentNumber ||
     hujjat.docNumber ||
     hujjat.number ||
-    hujjat.id?.slice(0, 8).toUpperCase() ||
-    "Hujjat"
+    RAQAM_YOQ
   );
 }
 

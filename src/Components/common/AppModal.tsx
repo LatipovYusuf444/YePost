@@ -129,20 +129,6 @@ export default function AppModal({ children, className = "", onClose, actionRail
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
   }
 
-  function modalniYuklash() {
-    const matn = overlayRef.current?.innerText.trim();
-    if (!matn) return;
-    const blob = new Blob([matn], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `modal-${new Date().toISOString().slice(0, 10)}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-  }
-
   if (typeof document === "undefined") return null;
 
   return createPortal(
@@ -158,7 +144,6 @@ export default function AppModal({ children, className = "", onClose, actionRail
           left={railHolati.left}
           ixcham={railHolati.ixcham}
           onClose={modalniYopish}
-          onDownload={modalniYuklash}
           onOpenExternal={() => window.open(window.location.href, "_blank", "noopener,noreferrer")}
         />
       )}

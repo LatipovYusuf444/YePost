@@ -5,6 +5,7 @@ import { sotuvHujjatiPdfOchish, sotuvHujjatiYaratish, sotuvHujjatlariniOlish, ty
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { Sotuv } from "@/types/savdo";
 import { sananiFormatlash, sotuvHolati } from "./savdoYordamchilari";
+import { hujjatRaqamiMatni } from "@/lib/hujjatRaqamiMatni";
 
 // Sotuvning saqlangan hujjatlari: tasdiqlashda olingan chek nusxasi (RECEIPT) va talab bo'yicha
 // yaratiladigan hisob-faktura (INVOICE). Ro'yxat GET /sales/:id/documents, yaratish POST /sales/:id/documents.
@@ -110,7 +111,7 @@ export default function SotuvHujjatlariTab({ sotuv }: { sotuv: Sotuv }) {
                 <td className="px-5 py-4">
                   <span className="inline-flex items-center gap-2 font-bold text-slate-900">
                     {String(hujjat.type).toUpperCase() === "INVOICE" ? <FileText size={16} className="text-[#2563EB]" /> : <Receipt size={16} className="text-emerald-500" />}
-                    {hujjat.content?.docNumber || hujjat.docNumber || hujjat.number || hujjat.id.slice(0, 8).toUpperCase()}
+                    {hujjatRaqamiMatni(hujjat.content?.docNumber, hujjat.docNumber, hujjat.number)}
                   </span>
                 </td>
                 <td className="px-3 py-4">{turiMatni(hujjat.type)}</td>

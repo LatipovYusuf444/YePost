@@ -1,5 +1,6 @@
 import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
 import { pulMatni, useValyutaStore } from "@/lib/valyuta";
+import i18n from "i18next";
 import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -51,7 +52,7 @@ type PaymentType = {
 const quickDiscounts = [15, 30, 50, 75];
 
 function formatSumma(value: number) {
-  return pulMatni(Number(value) || 0, "UZS", true, "uzs");
+  return pulMatni(Number(value) || 0, "UZS", true, i18n.t("bosh_sahifa:customer.currency"));
 }
 
 function readNumber(value: unknown, fallback = 0) {
@@ -1190,7 +1191,6 @@ export default function BoshSahifa() {
                 <div className="mt-4 flex gap-3"><button type="button" onClick={() => { setTolovSummasi(String(payableTotal)); setDollarTolovi(""); }} className="flex-1 rounded-2xl bg-gold-50 px-3 py-3 text-xs font-black text-gold-600">{t("paymentModal.fullAmount")}</button><button type="button" onClick={() => { setTolovSummasi(String(Math.round(payableTotal / 2))); setDollarTolovi(""); }} className="flex-1 rounded-2xl bg-slate-100 px-3 py-3 text-xs font-black text-slate-600">50%</button></div>
                 {message?.type === "error" && <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 p-3 text-xs font-bold leading-5 text-red-600">{message.text}</div>}
                 <button type="button" onClick={() => void tolovniTasdiqlash()} disabled={saving || !tolovYaroqli} className="mt-auto flex w-full items-center justify-center gap-2 rounded-2xl bg-gold-500 px-5 py-4 text-sm font-black text-white shadow-lg shadow-gold-200 transition hover:bg-gold-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none">{saving && <LoaderCircle size={17} className="animate-spin"/>} {t("paymentModal.confirm")}</button>
-                <p className="mt-3 text-center text-xs font-semibold leading-5 text-slate-400">{t("paymentModal.apiNote")}</p>
               </aside>
             </div>
           </section>

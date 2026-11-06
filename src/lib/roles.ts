@@ -50,6 +50,12 @@ export function foydalanuvchiKursniOzgartiraOladimi(user?: RoleLike | null) {
   return rol === "ADMIN" || rol === "DIREKTOR";
 }
 
+// Texnik (xom) maydonlar — masalan variantning JSON parametrlari — faqat ADMIN va DIREKTOR'ga ko'rsatiladi.
+export function foydalanuvchiAdminmi(user?: RoleLike | null) {
+  const rol = foydalanuvchiRoli(user);
+  return rol === "ADMIN" || rol === "DIREKTOR";
+}
+
 export type IshlabChiqarishBolimi = "buyurtmalar" | "retseptlar" | "kalkulyatsiya" | "sexga-berish" | "smena" | "rulonlar";
 
 function faolHuquqBormi(user: RoleLike | null | undefined, kod: string) {

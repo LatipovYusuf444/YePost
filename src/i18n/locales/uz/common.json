@@ -25,7 +25,6 @@
     "clear": "Tozalash",
     "copyLink": "Havolani nusxalash",
     "linkCopied": "Havola nusxalandi",
-    "downloadModal": "Modal ma'lumotini yuklab olish",
     "openExternal": "Alohida oynada ochish"
   },
   "select": {
@@ -120,5 +119,10 @@
   },
   "validation": {
     "fieldRequired": "To'ldirilishi shart."
+  },
+  "toast": {
+    "created": "Muvaffaqiyatli yaratildi",
+    "deleted": "Muvaffaqiyatli o'chirildi",
+    "saved": "Muvaffaqiyatli saqlandi"
   }
 }
