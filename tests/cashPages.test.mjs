@@ -257,6 +257,8 @@ function kassaModal({ kursBor, onSaqlash }) {
   const screen = page('../src/Pages/KassaUchot/KassaAmaliyotModal.tsx', {
     'react-i18next': { useTranslation: () => ({ t: key => key }) },
     '@/hooks/useMaydonXatolari': { useMaydonXatolari: () => fx },
+    // #11 (saqlanmagan o'zgarish ogohlantirishi) birlashgach kerak bo'ladi; undan oldin ishlatilmaydi.
+    '@/hooks/useOzgarishBormi': { useOzgarishBormi: () => false },
     '@/lib/maydonXatolari': { xatoBelgisi: () => 0, belgidanKeyingiXato: () => undefined },
     '@/lib/kursChegarasi': { ENG_KAM_KURS: 1000, kursJudaKichik: value => value > 0 && value < 1000 },
     '@/lib/valyuta': { useValyutaStore: selector => selector({ rejimYoniq: true, kursBor, kurs: kursBor ? 12100 : 0 }), valyutaKodi: value => value ?? 'UZS' },
