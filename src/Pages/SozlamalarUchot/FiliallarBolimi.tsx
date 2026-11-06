@@ -1,3 +1,4 @@
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import AppSelect from "@/Components/ui/AppSelect";
 import PhoneInput from "@/Components/ui/PhoneInput";
 import { useEffect, useState, type FormEvent } from "react";
@@ -30,7 +31,7 @@ export default function FiliallarBolimi() {
   const [xato, setXato] = useState(""); const [amal, setAmal] = useState("");
   async function yuklash() { setYuklanmoqda(true); setXato(""); try { const [branches, people] = await Promise.all([filiallarApi.royxat(), filiallarApi.masullar()]); setFiliallar(branches); setMasullar(people); } catch (error) { setXato(getApiErrorMessage(error)); } finally { setYuklanmoqda(false); } }
   useEffect(() => { void yuklash(); }, []);
-  async function ochirish(filial: Filial) { if (!window.confirm(t("filiallar.deleteConfirm", { name: filial.name }))) return; setAmal(filial.id); try { await filiallarApi.ochirish(filial.id); setFiliallar((items) => items.filter((item) => item.id !== filial.id)); } catch (error) { setXato(getApiErrorMessage(error)); } finally { setAmal(""); } }
+  async function ochirish(filial: Filial) { if (!(await tasdiqSorash(t("filiallar.deleteConfirm", { name: filial.name }), { ochirish: true })).rozi) return; setAmal(filial.id); try { await filiallarApi.ochirish(filial.id); setFiliallar((items) => items.filter((item) => item.id !== filial.id)); } catch (error) { setXato(getApiErrorMessage(error)); } finally { setAmal(""); } }
   async function asosiyQilish(filial: Filial) { setAmal(filial.id); setXato(""); try { const saved = await filiallarApi.asosiyQilish(filial.id); setFiliallar((items) => items.map((item) => ({ ...item, isPrimary: item.id === saved.id }))); } catch (error) { setXato(getApiErrorMessage(error)); } finally { setAmal(""); } }
   const masulNomi = (id?: string | null) => masullar.find((x) => x.id === id)?.fullName || masullar.find((x) => x.id === id)?.username || t("filiallar.unassigned");
   return <BolimKarta sarlavha={t("filiallar.title")} izoh={t("filiallar.subtitle")} amal={<button type="button" onClick={() => setModal("yangi")} className="inline-flex h-10 items-center gap-2 rounded-2xl bg-orange-500 px-4 text-sm font-black text-white"><Plus size={16}/>{t("filiallar.addButton")}</button>}>

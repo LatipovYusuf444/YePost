@@ -1,3 +1,4 @@
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import AppSelect from "@/Components/ui/AppSelect";
 import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -438,7 +439,7 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
 
   async function inventarizatsiyaniBekorQilish() {
     if (tur !== "inventarizatsiya" || !hujjat || hujjatHolati(hujjat) !== "CONFIRMED") return;
-    if (!window.confirm(t("confirm.cancelStockTake"))) return;
+    if (!(await tasdiqSorash(t("confirm.cancelStockTake"))).rozi) return;
     setValidatsiyaXatosi("");
     store.xatolikniTozalash();
     const ok = await store.inventarizatsiyaBekorQilish(id);

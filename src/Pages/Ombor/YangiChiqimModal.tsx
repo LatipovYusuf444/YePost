@@ -14,6 +14,7 @@ import {
   Warehouse,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import { useOzgarishBormi } from "@/hooks/useOzgarishBormi";
 import XatoliMaydon, { MaydonXatosi } from "@/Components/common/XatoliMaydon";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
@@ -95,6 +96,7 @@ export default function YangiChiqimModal({ onClose }: Props) {
 
   // Hujjat sanasi: bugun yoki o'tgan kun (kelajak yo'q); o'tgan kun tanlansa backend hujjatni shu kunning oxirida yozadi.
   const [hujjatSanasi, setHujjatSanasi] = useState(() => bugungiToshkentKuni());
+  const ozgarishBor = useOzgarishBormi({ reason, note, hujjatSanasi, qatorlar });
   const hozir = useMemo(
     () => new Intl.DateTimeFormat("uz-UZ", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date()),
     []
@@ -253,7 +255,7 @@ export default function YangiChiqimModal({ onClose }: Props) {
   const tepadagiXato = fx.tepadagi || (fx.bor ? "" : store.xatolik);
 
   return (
-    <AppModal onClose={onClose} className="sidebar-aligned-document-modal items-stretch p-3 sm:p-5">
+    <AppModal onClose={onClose} ozgarishBor={ozgarishBor} className="sidebar-aligned-document-modal items-stretch p-3 sm:p-5">
       <div className="flex min-h-0 w-full flex-col overflow-hidden rounded-[34px] border border-orange-100 bg-[#F8FAFC] shadow-[0_28px_90px_rgba(15,23,42,.32)]">
         <header className="flex shrink-0 items-center border-b border-orange-100 bg-white/80 px-5 py-4 sm:px-8">
           <div className="flex items-center gap-3">
@@ -394,7 +396,7 @@ export default function YangiChiqimModal({ onClose }: Props) {
         </div>
 
         <footer className="flex shrink-0 flex-col-reverse gap-3 border-t border-orange-100 bg-white/80 px-5 py-4 sm:flex-row sm:justify-end sm:px-8">
-          <button type="button" onClick={onClose} className="h-12 rounded-2xl bg-slate-100 px-7 text-sm font-black text-slate-600 transition hover:bg-slate-200">{t("yangiChiqimModal.footer.cancel")}</button>
+          <button type="button" data-modal-yopish onClick={onClose} className="h-12 rounded-2xl bg-slate-100 px-7 text-sm font-black text-slate-600 transition hover:bg-slate-200">{t("yangiChiqimModal.footer.cancel")}</button>
           <ActionButton busy={store.amalBajarilmoqda} outline onClick={() => void saqlash(false)}>{t("yangiChiqimModal.footer.save")}</ActionButton>
           <ActionButton busy={store.amalBajarilmoqda} onClick={() => void saqlash(true)}>{t("yangiChiqimModal.footer.saveAndConfirm")}</ActionButton>
         </footer>

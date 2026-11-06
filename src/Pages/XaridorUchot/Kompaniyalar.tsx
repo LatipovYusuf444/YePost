@@ -1,3 +1,4 @@
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import { useMemo, useState } from "react";
 import { Building2, Hash, Phone, Plus, Search, Trash2, UserRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -81,7 +82,7 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, savdolar, onSaq
   }
 
   async function ochirish(kompaniya: XaridorKompaniyasi) {
-    if (!window.confirm(t("kompaniyalar.deleteConfirm", { name: kompaniya.nomi }))) return;
+    if (!(await tasdiqSorash(t("kompaniyalar.deleteConfirm", { name: kompaniya.nomi }), { ochirish: true })).rozi) return;
     return onOchirish(kompaniya.id);
   }
 

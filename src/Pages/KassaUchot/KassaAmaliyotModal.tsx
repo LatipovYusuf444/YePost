@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import { useOzgarishBormi } from "@/hooks/useOzgarishBormi";
 import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
 import XatoliMaydon from "@/Components/common/XatoliMaydon";
@@ -170,6 +171,8 @@ export default function KassaAmaliyotModal({
   const mavjudHolat = boshlangich?.holat ?? "qoralama";
   // Yangi hujjat darrov tahrirlanadi; mavjudi avval ko'rish rejimida ochiladi.
   const [tahrirRejim, setTahrirRejim] = useState(boshlangich === null);
+  // Saqlanmagan o'zgarish: faqat tahrir rejimida (ko'rish rejimida hech narsa o'zgarmaydi). Mas'ul va kurs avtomatik to'ldiriladi — hisobga olinmaydi.
+  const ozgarishBor = useOzgarishBormi({ turi, kanal, nomi, xaridorId, saleId, supplierId, employeeId, kontragent, summa, sana, izoh, valyuta }, tahrirRejim);
   const readonly =
     Boolean(boshlangich?.readonly) ||
     mavjudHolat === "tasdiqlangan" ||
@@ -294,11 +297,12 @@ export default function KassaAmaliyotModal({
   }
 
   return (
-    <AppModal className={`${korishRejimi ? "!items-center" : "!items-stretch"} !p-3 sm:!p-5 sm:!pl-[88px]`}>
+    <AppModal onClose={onYopish} ozgarishBor={ozgarishBor} className={`${korishRejimi ? "!items-center" : "!items-stretch"} !p-3 sm:!p-5 sm:!pl-[88px]`}>
       <div className={`relative flex min-h-0 w-full ${korishRejimi ? "max-h-full max-w-[1120px]" : ""}`}>
         {/* Modaldan chiqib turadigan yopish (X) — chap chetда */}
         <button
           type="button"
+          data-modal-yopish
           onClick={onYopish}
           aria-label={t("common:actions.close")}
           className="absolute -left-[58px] top-3 z-50 flex h-12 w-12 items-center justify-center rounded-[15px] bg-[#2563EB] text-white shadow-[0_10px_24px_rgba(15,23,42,.18)] ring-1 ring-white/70 transition hover:-translate-x-0.5 hover:bg-[#1D4ED8]"

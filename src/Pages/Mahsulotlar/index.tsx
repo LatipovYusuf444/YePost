@@ -34,6 +34,8 @@ import { omborlarApi } from "@/api/omborApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { pulMatni, valyutaKodi } from "@/lib/valyuta";
 import { foydalanuvchiAdminmi, rolniNormallashtirish } from "@/lib/roles";
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
+import { useOzgarishBormi } from "@/hooks/useOzgarishBormi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useMahsulotlarStore } from "@/store/mahsulotlarStore";
 import { useIshlabChiqarishStore } from "@/store/ishlabChiqarishStore";
@@ -276,7 +278,7 @@ export default function Mahsulotlar() {
   const paginatedMahsulotlar = mahsulotlar.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   async function oddiyOchirish(id: string) {
-    if (!window.confirm(t("confirm.deleteCategory"))) return;
+    if (!(await tasdiqSorash(t("confirm.deleteCategory"), { ochirish: true })).rozi) return;
     await store.kategoriyaOchirish(id);
   }
 
@@ -297,7 +299,7 @@ export default function Mahsulotlar() {
   }
 
   async function mahsulotOchirish(id: string) {
-    if (!window.confirm(t("confirm.deleteProduct"))) return;
+    if (!(await tasdiqSorash(t("confirm.deleteProduct"), { ochirish: true })).rozi) return;
     await store.mahsulotOchirish(id);
   }
 
@@ -932,6 +934,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
   const [categorySearch,setCategorySearch]=useState("");
   const [newCategoryName,setNewCategoryName]=useState("");
   const [categoryCreating,setCategoryCreating]=useState(false);
+  const ozgarishBor=useOzgarishBormi({name,categoryId,unitId,barcode,article,imageUrl,isActive,kind,trackSerial,baseDraft,baseStock,brand,variantDrafts},tahrirFaol);
   const [editingCategoryId,setEditingCategoryId]=useState<string|null>(null);
   const [editingCategoryName,setEditingCategoryName]=useState("");
   const [categoryUpdating,setCategoryUpdating]=useState(false);
@@ -1474,7 +1477,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
     updateVariantDraft(key,{imageUrl:URL.createObjectURL(file)});
   }
 
-  return <AppModal className="product-modal-overlay" onClose={onClose}><form onSubmit={save} className="product-modal-panel scrollbar-hidden max-h-[94vh] w-full overflow-y-auto rounded-[30px] bg-white shadow-2xl">
+  return <AppModal className="product-modal-overlay" onClose={onClose} ozgarishBor={ozgarishBor}><form onSubmit={save} className="product-modal-panel scrollbar-hidden max-h-[94vh] w-full overflow-y-auto rounded-[30px] bg-white shadow-2xl">
     <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 bg-white/95 px-6 py-5 backdrop-blur-xl">
       <div className="flex min-w-0 items-center gap-4">
         <h2 className="truncate text-2xl font-black">{editing?(tahrirFaol?t("productModal.editTitle"):name):t("productModal.createTitle")}</h2>
@@ -1807,7 +1810,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
     </fieldset>
 
     <div className="flex justify-end gap-3 border-t border-gray-100 px-6 py-4">
-      <button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t(tahrirFaol?"productModal.cancel":"actions.close")}</button>
+      <button type="button" data-modal-yopish onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t(tahrirFaol?"productModal.cancel":"actions.close")}</button>
       {tahrirFaol&&<button disabled={store.amalBajarilmoqda||unitResolving||saqlanmoqda} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{(store.amalBajarilmoqda||unitResolving||saqlanmoqda)&&<LoaderCircle size={16} className="animate-spin"/>}{editing?t("productModal.save"):t("productModal.create")}</button>}
     </div>
   </form></AppModal>
@@ -1878,7 +1881,7 @@ function OddiyModal({item,onClose}:{item:Kategoriya|"new";onClose:()=>void}) {
 function ModifikatsiyalarModal({product,onClose}:{product:Mahsulot;onClose:()=>void}) {
   const { t } = useTranslation("mahsulotlar");
   const store=useMahsulotlarStore();const items=store.modifikatsiyalar[product.id]??[];const [editing,setEditing]=useState<MahsulotModifikatsiyasi|"new"|null>(null);
-  async function remove(id:string){if(window.confirm(t("confirm.deleteVariant")))await store.modifikatsiyaOchirish(product.id,id)}
+  async function remove(id:string){if((await tasdiqSorash(t("confirm.deleteVariant"),{ochirish:true})).rozi)await store.modifikatsiyaOchirish(product.id,id)}
   async function edit(item:MahsulotModifikatsiyasi){const [toliq,narx]=await Promise.all([store.modifikatsiyaOlish(item.id),store.narxOlish(item.id)]);if(toliq)setEditing({...toliq,price:narx??toliq.price})}
   return <Modal size="medium" title={t("variantsModal.title",{product:product.name})} onClose={onClose}>
     <div className="flex justify-end"><button onClick={()=>setEditing("new")} className="inline-flex h-10 items-center gap-2 rounded-xl bg-orange-500 px-4 font-black text-white"><PackagePlus size={16}/>{t("variantsModal.addVariant")}</button></div>

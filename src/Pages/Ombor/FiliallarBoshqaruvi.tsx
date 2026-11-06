@@ -1,3 +1,4 @@
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Edit3, GitBranch, LoaderCircle, MapPin, Plus, Trash2, UserRound } from "lucide-react";
@@ -53,7 +54,7 @@ export default function FiliallarBoshqaruvi() {
   function yangi(){setEditing(null);setName("");setAddress("");setStatus("ACTIVE");setResponsibleId("");store.xatolikniTozalash();fx.ornat({});setModal(true)}
   async function tahrirlash(id:string){store.xatolikniTozalash();fx.ornat({});const item=await store.filialOlish(id);if(!item)return;setEditing(item);setName(item.name);setAddress(item.address??"");setStatus(item.status==="INACTIVE"?"INACTIVE":"ACTIVE");setResponsibleId(item.responsibleId??"");setModal(true)}
   async function saqlash(e:FormEvent){e.preventDefault();if(!name.trim()){fx.ornat({name:t("filiallarBoshqaruvi.errors.nameRequired")});return;}fx.ornat({});const data={name:name.trim(),address:address.trim()||undefined,status,responsibleId:responsibleId||undefined};const ok=editing?await fx.kuzat(()=>store.filialYangilash(editing.id,data)):Boolean(await fx.kuzat(()=>store.filialYaratish(data)));if(ok)setModal(false)}
-  async function ochirish(id:string){if(!window.confirm(t("filiallarBoshqaruvi.confirmDelete")))return;await store.filialOchirish(id)}
+  async function ochirish(id:string){if(!(await tasdiqSorash(t("filiallarBoshqaruvi.confirmDelete"), { ochirish: true })).rozi)return;await store.filialOchirish(id)}
 
   const masulNomi = (item: Filial) => store.xodimlar.find((x) => x.id === item.responsibleId)?.fullName;
   const faolmi = (item: Filial) => item.status !== "INACTIVE";

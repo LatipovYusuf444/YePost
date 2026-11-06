@@ -1,3 +1,4 @@
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import { useMemo, useState } from "react";
 import { Hash, Phone, Plus, Search, Trash2, Truck, UserRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -83,7 +84,7 @@ export default function YetkazibBeruvchilar({
   }
 
   async function ochirish(beruvchi: YetkazibBeruvchi) {
-    if (!window.confirm(t("yetkazibBeruvchilar.deleteConfirm", { name: beruvchi.nomi }))) return;
+    if (!(await tasdiqSorash(t("yetkazibBeruvchilar.deleteConfirm", { name: beruvchi.nomi }), { ochirish: true })).rozi) return;
     return onOchirish(beruvchi.id);
   }
 

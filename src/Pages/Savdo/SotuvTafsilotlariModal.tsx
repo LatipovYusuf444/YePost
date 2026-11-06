@@ -1,4 +1,6 @@
 import { nakladnoyHtmlMatni, nakladnoyQatori } from "@/lib/nakladnoyBirligi";
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
+import { useOzgarishBormi } from "@/hooks/useOzgarishBormi";
 import { StockQuantity } from "@/Components/common/NegativeStockBadge";
 import NegativeStockBadge from "@/Components/common/NegativeStockBadge";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
@@ -1842,6 +1844,8 @@ function TolovQabulQilishModal({
   const saqlashQulfi = useRef(false);
   // Bir qismi saqlanib keyingisi xato bergan bo'lsa: bu eslatma maydon xatosi bilan birga tepada qoladi.
   const [qismanXabar, setQismanXabar] = useState("");
+  // Saqlanmagan to'lov ma'lumoti: yopishdan oldin so'raladi (to'lov saqlangach natija kartasida so'ralmaydi).
+  const ozgarishBor = useOzgarishBormi({ tolovTuri, tolovVal, summa, tolovKuni, izoh, qatorlar }) && !tugatildi && !saqlanmoqda;
   // Maydon xatolari: tasdiqlangan sotuvda to'lov bittadan yuboriladi (amount, date...), qoralamada payments[] ro'yxati —
   // shakldagi to'lov ro'yxatda avvalgi va navbatdagi to'lovlardan keyin turadi.
   const formaIndeksi = mavjudTolovlar.length + qatorlar.length;
@@ -2186,7 +2190,7 @@ function TolovQabulQilishModal({
     : fx.bor ? qismanKorinadi : xatolik;
 
   return (
-    <AppModal onClose={onYopish}>
+    <AppModal onClose={onYopish} ozgarishBor={ozgarishBor}>
       <div className="w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-[32px] bg-white p-8 shadow-2xl">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -2556,6 +2560,7 @@ function TolovQabulQilishModal({
             <div className="flex justify-end gap-3 pt-1">
               <button
                 type="button"
+                data-modal-yopish
                 onClick={onYopish}
                 className="h-12 rounded-2xl bg-gray-100 px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-200"
               >
@@ -3885,6 +3890,15 @@ function YetkazishPanel({ sotuv, jami, onClose }: { sotuv: Sotuv; jami: number; 
   }
 
   async function holatAmali(action: "dispatch" | "complete" | "cancel") {
+    if (action === "cancel") {
+      const { rozi } = await tasdiqSorash(t("yetkazishPanel.bekorTasdigi.tavsif"), {
+        sarlavha: t("yetkazishPanel.bekorTasdigi.sarlavha"),
+        nom: sotuvJadvalId(sotuv),
+        ha: t("yetkazishPanel.bekorTasdigi.ha"),
+        ohang: "qizil",
+      });
+      if (!rozi) return;
+    }
     setSaqlanmoqda(true); setXato(""); fx.ornat({});
     try {
       const data = action === "dispatch"

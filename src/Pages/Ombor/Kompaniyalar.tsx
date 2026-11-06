@@ -1,3 +1,4 @@
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import { useState, type FormEvent } from "react";
 import { Building2, Edit3, LoaderCircle, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -79,7 +80,7 @@ export default function Kompaniyalar() {
   }
 
   async function ochirish(id: string) {
-    if (!window.confirm(t("kompaniyalar.confirmDelete"))) return;
+    if (!(await tasdiqSorash(t("kompaniyalar.confirmDelete"), { ochirish: true })).rozi) return;
     await store.kompaniyaOchirish(id);
   }
 

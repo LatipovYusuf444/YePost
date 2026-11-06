@@ -31,7 +31,6 @@ import {
   Send,
   Settings,
   Trash2,
-  TriangleAlert,
   Upload,
   UserRound,
   Users,
@@ -42,7 +41,6 @@ import {
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
-import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
 import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import XatoliMaydon, { MaydonXatosi } from "@/Components/common/XatoliMaydon";
@@ -492,7 +490,6 @@ export default function YangiSotuvModal({
   const saqlashTugmasiRef = useRef<HTMLButtonElement | null>(null);
   // Stepper pastga surilganda ko'rinayotgan kartani kuzatadi (`null` — oyna tepada, qadam to'ldirilganlikdan olinadi).
   const [suzilganQadam, setSuzilganQadam] = useState<number | null>(null);
-  const [chiqishSorovi, setChiqishSorovi] = useState(false);
   // Sotuv valyutasi almashtirilib, qator tegilmay qaytarilsa aniq narxlar tiklanadi (yaxlitlash xatosi yig'ilmasin).
   const valyutaOldingi = useRef<{ oldingi: MahsulotQatori[]; natija: MahsulotQatori[] } | null>(null);
 
@@ -1194,12 +1191,6 @@ export default function YangiSotuvModal({
     ? 0
     : qoralamaOzgarishlari(aslHolat, joriyHolat) + (faoliyatSarlavha.trim() || faoliyatTafsilot.trim() ? 1 : 0);
 
-  // Barcha yopish tugmalari shu yerdan o'tadi: saqlanmagan o'zgarish bo'lsa avval so'raladi (yaratish va tahrirlashda bir xil).
-  function yopishniSoraymiz() {
-    if (ozgarishlarSoni > 0) setChiqishSorovi(true);
-    else onYopish();
-  }
-
   // Pastga surilganda stepper ko'rinayotgan bo'limni ko'rsatadi: mijoz, mahsulotlar, xulosa.
   function suzishKuzatuvi(event: UIEvent<HTMLDivElement>) {
     const oyna = event.currentTarget;
@@ -1513,12 +1504,12 @@ export default function YangiSotuvModal({
 
   return (
     <>
-    <AppModal className="items-start justify-start bg-slate-950/55 p-0 py-3 pl-3 pr-3 backdrop-blur-[3px] sm:pl-[78px]">
+    <AppModal ozgarishBor={ozgarishlarSoni > 0} className="items-start justify-start bg-slate-950/55 p-0 py-3 pl-3 pr-3 backdrop-blur-[3px] sm:pl-[78px]">
       <div className="relative h-[calc(100vh-24px)] w-full min-w-0">
         <div className="absolute -left-[46px] top-5 z-[90] hidden flex-col items-center gap-2 sm:flex">
           <button
             type="button"
-            onClick={yopishniSoraymiz}
+            data-modal-yopish onClick={onYopish}
             title={t("header.closeButtonTitle")}
             className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[#2563EB] text-white shadow-[0_10px_22px_rgba(37,99,235,.32)] ring-2 ring-white/80 transition duration-300 hover:-translate-x-0.5 hover:scale-105 hover:bg-[#1D4ED8]"
           >
@@ -1582,7 +1573,7 @@ export default function YangiSotuvModal({
 
               <button
                 type="button"
-                onClick={yopishniSoraymiz}
+                data-modal-yopish onClick={onYopish}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-white text-slate-600 shadow-sm ring-2 ring-slate-300 transition hover:bg-slate-50 hover:text-slate-900"
                 aria-label={t("header.closeAriaLabel")}
               >
@@ -2646,7 +2637,7 @@ export default function YangiSotuvModal({
               </button>
               <button
                 type="button"
-                onClick={yopishniSoraymiz}
+                data-modal-yopish onClick={onYopish}
                 className="inline-flex h-11 items-center gap-2 rounded-xl border-2 border-slate-300 bg-white px-3 text-sm font-extrabold text-slate-700 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-100 sm:h-12 sm:px-5"
               >
                 <X size={17} />
@@ -2666,20 +2657,6 @@ export default function YangiSotuvModal({
         </form>
       </div>
     </AppModal>
-    {chiqishSorovi && (
-      <TasdiqlashOynasi
-        ikonka={<TriangleAlert size={26} />}
-        ohang="sariq"
-        sarlavha={t("unsaved.title")}
-        nom={modalMatnlari.title}
-        tavsif={t("unsaved.description")}
-        ortgaMatni={t("unsaved.stay")}
-        tasdiqMatni={t("unsaved.leave")}
-        jarayonMatni={t("unsaved.leaving")}
-        onTasdiq={async () => onYopish()}
-        onYopish={() => setChiqishSorovi(false)}
-      />
-    )}
     {mijozQoshishOchiq && <XaridorModal
       boshlangich={null}
       kompaniyalar={mijozKompaniyalari.map((item) => kompaniyaniUiGa({ id: item.id, name: kompaniyaNomi(item), phone: item.phone }))}

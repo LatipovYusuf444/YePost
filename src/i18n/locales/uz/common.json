@@ -75,6 +75,21 @@
     "createdAt": "Kiritilgan: {{vaqt}}",
     "createdAtTitle": "Hujjat sanasi va kiritilgan vaqt har xil kunda"
   },
+  "unsavedGuard": {
+    "title": "Saqlanmagan o'zgarishlar bor",
+    "description": "Kiritilgan o'zgarishlar saqlanmagan. Yopsangiz, ular yo'qoladi.",
+    "stay": "Oynada qolish",
+    "leave": "Saqlamasdan yopish",
+    "leaving": "Yopilmoqda..."
+  },
+  "tasdiq": {
+    "title": "Tasdiqlaysizmi?",
+    "yes": "Ha, tasdiqlash",
+    "delete": "Ha, o'chirish",
+    "no": "Yo'q, qaytish",
+    "working": "Bajarilmoqda...",
+    "reason": "Sabab (ixtiyoriy)"
+  },
   "hujjatOgohlantirish": {
     "title": "Ogohlantirish",
     "defaultName": "Inventarizatsiya",

@@ -21,6 +21,7 @@ import SotuvlarJadvali from "./SotuvlarJadvali";
 import SotuvStatistikasi from "./SotuvStatistikasi";
 import JadvalYuklanmoqda from "./JadvalYuklanmoqda";
 import { bugungiSanaKaliti, mahalliySanaKaliti } from "@/lib/sanaKaliti";
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import SotuvTafsilotlariModal from "./SotuvTafsilotlariModal";
 import ModalYuklanmoqda from "@/Components/common/ModalYuklanmoqda";
 import Tarix from "./Tarix";
@@ -382,8 +383,8 @@ export default function Savdo() {
   }
 
   async function bekorQilish(sotuvId: string) {
-    const rozilik = window.confirm(t("savdoSahifasi.confirmCancel"));
-    if (!rozilik) return;
+    const { rozi } = await tasdiqSorash(t("savdoSahifasi.confirmCancel"), { ohang: "qizil" });
+    if (!rozi) return;
 
     const muvaffaqiyatli = await sotuvniBekorQilish(sotuvId);
     if (muvaffaqiyatli) setXabar("savdoSahifasi.messages.saleCancelled");

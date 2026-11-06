@@ -1,3 +1,4 @@
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Building2, FileSpreadsheet, Phone, Plus, Search, Send, Trash2, UserRound } from "lucide-react";
 import BoshlangichQarzImportModal from "./BoshlangichQarzImportModal";
@@ -156,7 +157,7 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
   }
 
   async function ochirish(xaridor: Xaridor) {
-    if (!window.confirm(t("xaridorlar.deleteConfirm", { name: xaridorNomi(xaridor) }))) return;
+    if (!(await tasdiqSorash(t("xaridorlar.deleteConfirm", { name: xaridorNomi(xaridor) }), { ochirish: true })).rozi) return;
     return onOchirish(xaridor.id);
   }
 

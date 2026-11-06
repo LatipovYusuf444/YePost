@@ -1,6 +1,7 @@
 import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useIshlabChiqarishStore } from "@/store/ishlabChiqarishStore";
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import type { OmborTuri } from "@/types/ishlabChiqarish";
 import {
   CalendarDays,
@@ -282,7 +283,7 @@ export default function Ombor() {
   }
 
   async function ochirish(id: string) {
-    if (!window.confirm(t("omborlarSahifasi.confirmDelete"))) return;
+    if (!(await tasdiqSorash(t("omborlarSahifasi.confirmDelete"), { ochirish: true })).rozi) return;
     await omborOchirish(id);
   }
 

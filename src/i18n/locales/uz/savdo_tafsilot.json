@@ -732,6 +732,11 @@
     "biriktirilganOmborTopilmadi": "Bu sotuvga biriktirilgan ombor topilmadi"
   },
   "yetkazishPanel": {
+    "bekorTasdigi": {
+      "sarlavha": "Yetkazish bekor qilinsinmi?",
+      "tavsif": "Yetkazish bekor qilinadi. Bu amalni qaytarib bo'lmaydi.",
+      "ha": "Ha, bekor qilish"
+    },
     "oynaniYopish": "Yetkazish oynasini yopish",
     "sarlavha": "Tovarlarni yetkazib berishni tashkil qilish",
     "buyurtmaniSozlash": "Buyurtmani sozlash",

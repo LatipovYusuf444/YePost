@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { AlertTriangle, Check, ClipboardList, FileText, Filter, Info, LoaderCircle, Lock, MessageSquareText, Package, Plus, ScanLine, Search, Settings, Trash2, UserRound, Warehouse, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import { useOzgarishBormi } from "@/hooks/useOzgarishBormi";
 import XatoliMaydon, { MaydonXatosi } from "@/Components/common/XatoliMaydon";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
@@ -101,6 +102,7 @@ export default function Inventarizatsiya() {
   const barcodeInputRef = useRef<HTMLInputElement | null>(null);
   const jadvalRef = useRef<HTMLDivElement | null>(null);
   const [note, setNote] = useState("");
+  const ozgarishBor = useOzgarishBormi({ warehouseId, hujjatSanasi, actuals, tanlanganModifikatsiyaIds, note }, modal);
   const [formaXatosi, setFormaXatosi] = useState<FormaXatosi>(null);
   const fx = useMaydonXatolari(INVENTARIZATSIYA_XATO_QOIDALARI);
   const [qoldiqYuklanmoqda, setQoldiqYuklanmoqda] = useState(false);
@@ -866,7 +868,7 @@ export default function Inventarizatsiya() {
         )}
 
       {modal && (
-        <AppModal onClose={formaniYopish} className="p-3 sm:p-5">
+        <AppModal onClose={formaniYopish} ozgarishBor={ozgarishBor} className="p-3 sm:p-5">
           <div role="dialog" aria-modal="true" aria-labelledby="inventory-create-title" className="flex max-h-[min(94dvh,940px)] w-full max-w-[1360px] flex-col overflow-hidden rounded-[26px] border border-slate-200 bg-slate-50 shadow-[0_28px_90px_-24px_rgba(15,23,42,.45)]" style={INVENTORY_BLUE_THEME}>
             <header className="shrink-0 border-b border-blue-100 bg-gradient-to-r from-blue-50 via-white to-blue-50/50 px-5 py-5 sm:px-6">
               <div className="flex items-center gap-3 sm:gap-4">
@@ -897,7 +899,7 @@ export default function Inventarizatsiya() {
                     );
                   })}
                 </ol>}
-                <button type="button" onClick={formaniYopish} aria-label={t("inventarizatsiya.createModal.closeAria")} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"><X size={20} /></button>
+                <button type="button" data-modal-yopish onClick={formaniYopish} aria-label={t("inventarizatsiya.createModal.closeAria")} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"><X size={20} /></button>
               </div>
             </header>
 
@@ -1272,6 +1274,7 @@ export default function Inventarizatsiya() {
             <footer className="flex shrink-0 flex-col-reverse gap-2.5 border-t border-slate-200/70 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-8">
               <button
                 type="button"
+                data-modal-yopish
                 onClick={formaniYopish}
                 disabled={store.amalBajarilmoqda}
                 className="h-12 rounded-2xl px-5 text-sm font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50 sm:mr-auto"

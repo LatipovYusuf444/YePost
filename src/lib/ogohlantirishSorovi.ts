@@ -3,7 +3,16 @@
 // (Components/common/HujjatOgohlantirishOynasi) shu navbatni ko'rsatadi. UI'siz yozilgan — alohida sinash mumkin.
 
 /** Oyna matnlari (ixtiyoriy): berilmasa "Ogohlantirish / Davom etasizmi?" standart matnlari ishlatiladi. */
-export type OgohlantirishMatnlari = { sarlavha?: string; savol?: string; ha?: string; yoq?: string };
+export type OgohlantirishMatnlari = {
+  sarlavha?: string;
+  savol?: string;
+  ha?: string;
+  yoq?: string;
+  /** Oyna rangi: standart "sariq"; o'chirish uchun "qizil". */
+  ohang?: "qizil" | "sariq" | "yashil" | "kok";
+  /** Berilsa, oynada ixtiyoriy sabab maydoni chiqadi (yorlig'i shu matn). */
+  sababYorligi?: string;
+};
 
 export type OgohlantirishSorovi = {
   id: number;
@@ -13,7 +22,7 @@ export type OgohlantirishSorovi = {
   matnlar?: OgohlantirishMatnlari;
 };
 
-type Kutayotgan = OgohlantirishSorovi & { hal: (rozi: boolean) => void };
+type Kutayotgan = OgohlantirishSorovi & { hal: (rozi: boolean, sabab: string) => void };
 
 let hisoblagich = 0;
 let navbat: Kutayotgan[] = [];
@@ -25,9 +34,17 @@ function xabarBerish() {
 
 /** Foydalanuvchidan "davom etamizmi?" deb so'raydi; `true` — ha, `false` — yo'q (yoki oyna yopildi). */
 export function ogohlantirishniSorash(matn: string, nom = "", matnlar?: OgohlantirishMatnlari): Promise<boolean> {
-  return new Promise<boolean>((hal) => {
+  return tasdiqniSorash(matn, nom, matnlar).then((javob) => javob.rozi);
+}
+
+/** Xuddi shu so'rov, lekin foydalanuvchi yozgan sababni ham qaytaradi (`window.confirm`/`prompt` o'rnida). */
+export function tasdiqniSorash(matn: string, nom = "", matnlar?: OgohlantirishMatnlari): Promise<{ rozi: boolean; sabab: string }> {
+  return new Promise((hal) => {
     hisoblagich += 1;
-    navbat = [...navbat, { id: hisoblagich, nom, matn, ...(matnlar ? { matnlar } : {}), hal }];
+    navbat = [
+      ...navbat,
+      { id: hisoblagich, nom, matn, ...(matnlar ? { matnlar } : {}), hal: (rozi, sabab) => hal({ rozi, sabab }) },
+    ];
     xabarBerish();
   });
 }
@@ -38,11 +55,11 @@ export function joriyOgohlantirish(): OgohlantirishSorovi | null {
 }
 
 /** So'rovga javob: oyna ikki marta chaqirsa ham (tasdiq + yopish) birinchi javob hisobga olinadi. */
-export function ogohlantirishgaJavob(id: number, rozi: boolean) {
+export function ogohlantirishgaJavob(id: number, rozi: boolean, sabab = "") {
   const sorov = navbat.find((element) => element.id === id);
   if (!sorov) return;
   navbat = navbat.filter((element) => element.id !== id);
-  sorov.hal(rozi);
+  sorov.hal(rozi, sabab);
   xabarBerish();
 }
 

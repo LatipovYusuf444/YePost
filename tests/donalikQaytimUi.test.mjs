@@ -26,7 +26,7 @@ function editor(overrides = {}) {
     exports: {}, require,
     useState(initial) { const i = cursor++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial; return [states[i], value => { states[i] = typeof value === 'function' ? value(states[i]) : value; }]; },
     useRef(value) { return context.useState(() => ({ current: value }))[0]; }, useEffect: noop,
-    useTranslation: () => ({ t: key => key }),
+    useTranslation: () => ({ t: key => key }), useOzgarishBormi: () => false,
     useValyutaStore: selector => selector({ rejimYoniq: true, kursBor: true, kurs: 12100 }),
     useDavrStore: selector => selector({ holat: null }), mijozHisobi: () => ({ miqdor: 0, valyuta: 'UZS' }),
     useSavdoStore: { getState: () => ({ xatolik: null }) },

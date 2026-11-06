@@ -17,12 +17,7 @@
     "closeAriaLabel": "Oynani yopish"
   },
   "unsaved": {
-    "indicator": "{{count}} ta o'zgarish saqlanmagan",
-    "title": "Saqlanmagan o'zgarishlar bor",
-    "description": "Kiritilgan o'zgarishlar saqlanmagan. Yopsangiz, ular yo'qoladi.",
-    "stay": "Oynada qolish",
-    "leave": "Saqlamasdan yopish",
-    "leaving": "Yopilmoqda..."
+    "indicator": "{{count}} ta o'zgarish saqlanmagan"
   },
   "errors": {
     "dismiss": "Yopish",

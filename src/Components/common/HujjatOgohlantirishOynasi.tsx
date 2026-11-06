@@ -16,7 +16,8 @@ export default function HujjatOgohlantirishOynasi() {
     <TasdiqlashOynasi
       key={sorov.id}
       ikonka={<TriangleAlert size={24} />}
-      ohang="sariq"
+      ohang={sorov.matnlar?.ohang ?? "sariq"}
+      sabab={sorov.matnlar?.sababYorligi ? { yorliq: sorov.matnlar.sababYorligi } : undefined}
       sarlavha={sorov.matnlar?.sarlavha ?? t("hujjatOgohlantirish.title")}
       nom={sorov.nom || (sorov.matnlar ? "" : t("hujjatOgohlantirish.defaultName"))}
       tavsif={sorov.matn}
@@ -24,7 +25,7 @@ export default function HujjatOgohlantirishOynasi() {
       ortgaMatni={sorov.matnlar?.yoq ?? t("hujjatOgohlantirish.no")}
       tasdiqMatni={sorov.matnlar?.ha ?? t("hujjatOgohlantirish.yes")}
       jarayonMatni={t("hujjatOgohlantirish.continuing")}
-      onTasdiq={async () => ogohlantirishgaJavob(sorov.id, true)}
+      onTasdiq={async (sabab) => ogohlantirishgaJavob(sorov.id, true, sabab)}
       onYopish={() => ogohlantirishgaJavob(sorov.id, false)}
     />
   );

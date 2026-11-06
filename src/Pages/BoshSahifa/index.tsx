@@ -1,3 +1,4 @@
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
 import { pulMatni, useValyutaStore } from "@/lib/valyuta";
 import i18n from "i18next";
@@ -580,7 +581,7 @@ export default function BoshSahifa() {
   }
 
   async function doimiySotuvniBekorQilish(sotuvId: string) {
-    if (!window.confirm(t("doimiySotuv.confirmCancel"))) return;
+    if (!(await tasdiqSorash(t("doimiySotuv.confirmCancel"))).rozi) return;
     if (await sotuvniBekorQilish(sotuvId)) {
       doimiySotuvniYopish();
       setMessage({ type: "success", text: t("doimiySotuv.cancelled") });
