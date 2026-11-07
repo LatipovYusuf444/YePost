@@ -1,6 +1,7 @@
 import apiClient from "./axios";
 import { idempotentPost } from "./idempotentSorov";
 import { ogohlantirishBilanBajarish } from "./hujjatOgohlantirishi";
+import { bekorQilishSababi } from "../lib/bekorQilishSababi.ts";
 import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import { qatorniQaytaYuborish } from "../lib/kopBirlik";
 import type {
@@ -155,9 +156,9 @@ export const draftSalesService = {
     return saleToDraftSale(apiData(created.data));
   },
   cancelDraft: async (id: string, reason?: string) => {
-    const response = await apiClient.post<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${id}/cancel`, {
-      reason,
-    });
+    // Backend sababni saqlaydi (`cancelReason`): bo'sh sabab yuborilmaydi, uzuni 500 belgigacha qisqartiriladi.
+    const sabab = bekorQilishSababi(reason);
+    const response = await apiClient.post<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${id}/cancel`, sabab ? { reason: sabab } : undefined);
     return saleToDraftSale(apiData(response.data));
   },
   payDraft: async (id: string) => {

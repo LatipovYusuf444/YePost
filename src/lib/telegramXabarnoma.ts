@@ -4,10 +4,19 @@
 /**
  * Telegram bot sozlamasida bot token kiritilishi kerakmi: bot yoqilgan, maydonga yangi token yozilmagan va saqlangan token yo'q
  * (backend javobida `botTokenLast4` bo'sh). Maydon bo'sh qolsa eski token saqlanadi, shuning uchun faqat `botTokenLast4` bor-yo'qligi tekshiriladi.
- * Chat ID tekshirilmaydi: mijozlarga xabar yuboradigan bot uchun u kerak emas (backend bo'sh qiymatni qabul qiladi).
+ * Chat ID bu yerda tekshirilmaydi (bo'sh bo'lishi mumkin) — uning ko'rinishini `chatIdNotogrimi` tekshiradi.
  */
 export function botTokenKerakmi(p: { yoniq: boolean; yangiToken: string; oxirgi4?: string | null }): boolean {
   return p.yoniq && !p.yangiToken.trim() && !String(p.oxirgi4 ?? "").trim();
+}
+
+/**
+ * Chat ID — do'kon chati (qarz eslatmalari shu yerga boradi): Telegram chat raqami, guruhda manfiy (masalan -1001234567890).
+ * 2026-11-07: uchala do'konda u yerda raqam emas, so'z yozilgan edi — eslatmalar yetib bormayapti. Bo'sh qiymat mumkin (backend tozalaydi).
+ */
+export function chatIdNotogrimi(matn: string): boolean {
+  const qiymat = matn.trim();
+  return qiymat !== "" && !/^-?\d+$/.test(qiymat);
 }
 
 export type XabarnomaHodisasi = "SALE_CONFIRMED" | "PAYMENT" | "SALE_CANCELLED";

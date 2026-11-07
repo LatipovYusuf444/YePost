@@ -7,7 +7,7 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import XatoliMaydon from "@/Components/common/XatoliMaydon";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
-import { botTokenKerakmi } from "@/lib/telegramXabarnoma";
+import { botTokenKerakmi, chatIdNotogrimi } from "@/lib/telegramXabarnoma";
 import { BolimKarta, SaqlashTugma, Switch } from "./UmumiyUI";
 import { maydonKlass } from "./yordamchilar";
 
@@ -88,6 +88,11 @@ export default function TelegramBotKarti() {
     // Maydon bo'sh bo'lsa eski token saqlanadi: faqat saqlangan token (botTokenLast4) yo'q bo'lsa token so'raladi. Chat ID majburiy emas.
     if (botTokenKerakmi({ yoniq: forma.isActive, yangiToken, oxirgi4: holat.botTokenLast4 })) {
       fx.ornat({ botToken: t("integratsiya.botTokenRequired") });
+      return;
+    }
+    // Chat ID faqat raqam: so'z yozilsa qarz eslatmalari do'kon chatiga yetib bormaydi.
+    if (chatIdNotogrimi(forma.chatId)) {
+      fx.ornat({ chatId: t("integratsiya.chatIdInvalid") });
       return;
     }
     fx.ornat({});

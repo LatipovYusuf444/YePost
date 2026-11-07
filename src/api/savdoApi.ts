@@ -1,5 +1,6 @@
 import apiClient from "./axios";
 import { idempotentPost } from "./idempotentSorov";
+import { bekorQilishSababi } from "../lib/bekorQilishSababi.ts";
 import { shubhaliValyutaBilanBajarish } from "./valyutaShubhasi";
 import axios from "axios";
 import { modifikatsiyalarApi } from "./catalogApi";
@@ -26,7 +27,7 @@ import type {
 } from "@/types/savdo";
 import { tolovNatijasi, type TolovNatijasi } from "../lib/tolovOrtiqchasi.ts";
 import type { Mahsulot, MahsulotModifikatsiyasi } from "@/types/catalog";
-import { katalogNarxiniQoldiqqaMoslash, katalogQidiruvQatoriniMoslash, katalogQidiruvQoldigi } from "./catalogSearch";
+import { katalogNarxiniQoldiqqaMoslash, katalogOmborQoldiqlari, katalogQidiruvQatoriniMoslash, katalogQidiruvQoldigi } from "./catalogSearch";
 import { parallelBajarish } from "../lib/parallelBajarish.ts";
 import { malumotnomaniOlish } from "../lib/malumotnomaKeshi.ts";
 
@@ -184,8 +185,10 @@ export async function sotuvniTasdiqlash(sotuvId: string) {
 }
 
 // Savdo/index.tsx: sotuvni bekor qiladi va ombor qoldig'ini tiklaydi.
-export async function sotuvniBekorQilish(sotuvId: string) {
-  const response = await apiClient.post<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${sotuvId}/cancel`);
+// `reason` — bekor qilish sababi (backend saqlaydi, javobda `cancelReason`; ko'pi bilan 500 belgi). Bo'sh bo'lsa tana yuborilmaydi (avvalgidek).
+export async function sotuvniBekorQilish(sotuvId: string, reason?: string) {
+  const sabab = bekorQilishSababi(reason);
+  const response = await apiClient.post<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${sotuvId}/cancel`, sabab ? { reason: sabab } : undefined);
   return apiData(response.data);
 }
 
@@ -573,12 +576,44 @@ function modifikatsiyaniQoldiqqa(modification: MahsulotModifikatsiyasi, quantity
   };
 }
 
-// Bosh sahifa qidiruvi: so'z serverga yuboriladi, narx va qoldiq shu javobning o'zida. Savatchaga ombor kerak bo'lgani uchun har ombor bo'yicha
-// bitta so'rov ketadi (ombor ro'yxati bo'sh bo'lsa — bitta so'rov, qoldiq hamma omborlar yig'indisi). Bir ombor xato bersa qolganlari ko'rsatiladi.
+// Bosh sahifa qidiruvi: so'z serverga yuboriladi, narx va qoldiq shu javobning o'zida. Savatchaga ombor kerak: 2026-11-07 dan har qatorda
+// `stockByWarehouse` (har ombor qoldig'i) keladi, shuning uchun omborlar soniga qaramay BITTA so'rov (warehouseId'siz) ketadi va natija har ombor
+// bo'yicha ajratiladi. Backend bu maydonni bermasa (eski versiya) avvalgidek har ombor uchun alohida so'rov yuboriladi.
+// Ombor ro'yxati bo'sh bo'lsa — bitta so'rov, qoldiq hamma omborlar yig'indisi.
 export async function mahsulotlarniServerdanQidirish({ search, page = 1, pageSize = 20, warehouseIds, categoryId, signal }: {
   search: string;
   page?: number;
   pageSize?: number;
+  warehouseIds: string[];
+  categoryId?: string;
+  signal?: AbortSignal;
+}) {
+  const sahifa = await modifikatsiyalarApi.qidiruvSahifasi({ search, page, pageSize, ...(categoryId ? { categoryId } : {}), signal });
+  const qatorlar = sahifa.items.flatMap((qator) => {
+    const modification = katalogQidiruvQatoriniMoslash(qator);
+    return modification?.id && modification.product?.isActive !== false
+      ? [{ item: modifikatsiyaniQoldiqqa(modification, katalogQidiruvQoldigi(qator)), omborlar: katalogOmborQoldiqlari(qator) }]
+      : [];
+  });
+  if (!warehouseIds.length) return [{ warehouseId: "", jami: sahifa.total, qatorlar: qatorlar.map((qator) => qator.item) }];
+  if (qatorlar.every((qator) => qator.omborlar)) {
+    return warehouseIds.map((warehouseId) => ({
+      warehouseId,
+      jami: sahifa.total,
+      qatorlar: qatorlar.map(({ item, omborlar }) => {
+        const quantity = omborlar?.get(warehouseId) ?? 0;
+        return { ...item, quantity, balance: quantity };
+      }),
+    }));
+  }
+  return omborlarBoyichaQidirish({ search, page, pageSize, warehouseIds, categoryId, signal });
+}
+
+// Zaxira (eski backend, `stockByWarehouse` yo'q): har ombor bo'yicha bitta so'rov. Bir ombor xato bersa qolganlari ko'rsatiladi.
+async function omborlarBoyichaQidirish({ search, page, pageSize, warehouseIds, categoryId, signal }: {
+  search: string;
+  page: number;
+  pageSize: number;
   warehouseIds: string[];
   categoryId?: string;
   signal?: AbortSignal;

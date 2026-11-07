@@ -214,5 +214,7 @@ test('foydalanuvchi oynalarida window.confirm/prompt qolmagan (ilova ichidagi Ta
 
 test('Savatcha: sotuvni bekor qilishda sabab API ga avvalgidek yuboriladi', () => {
   const matn = readFileSync(new URL('../src/Pages/Savdo/Savatcha.tsx', import.meta.url), 'utf8');
-  assert.match(matn, /cancelDraft\(sotuv\.id, javob\.sabab\.trim\(\) \|\| t\("savatcha\.alerts\.cancelReasonMissing"\)\)/);
+  // 2026-11-07: backend sababni saqlaydi (cancelReason) — yozilgan sabab o'zi yuboriladi, bo'sh bo'lsa "Sabab kiritilmagan" matni sabab bo'lib qolmaydi.
+  assert.match(matn, /cancelDraft\(sotuv\.id, javob\.sabab\)/);
+  assert.doesNotMatch(matn, /cancelReasonMissing/);
 });

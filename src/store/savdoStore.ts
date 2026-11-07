@@ -302,7 +302,7 @@ type SavdoState = {
     | { ok: true; sotuv: Sotuv; nakladnoy: NakladnoyNatijasi | null }
     | { ok: false; bosqich: TolovTahririBosqichi | null; xato: string; kod: string | null }
   >;
-  sotuvniBekorQilish: (sotuvId: string) => Promise<boolean>;
+  sotuvniBekorQilish: (sotuvId: string, sabab?: string) => Promise<boolean>;
   sotuvniOchirish: (sotuvId: string) => Promise<boolean>;
   sotuvniTiklash: (sotuvId: string) => Promise<boolean>;
   yangiQaytarishYaratish: (malumot: QaytarishYaratishMalumoti) => Promise<Qaytarish | null>;
@@ -678,11 +678,11 @@ export const useSavdoStore = create<SavdoState>((set, get) => {
     }
   },
 
-  sotuvniBekorQilish: async (sotuvId) => {
+  sotuvniBekorQilish: async (sotuvId, sabab) => {
     set({ amalBajarilmoqda: true, xatolik: null });
 
     try {
-      const yangilangan = await sotuvniBekorQilish(sotuvId);
+      const yangilangan = await sotuvniBekorQilish(sotuvId, sabab);
       const boyitilgan = sotuvniBoglanganMalumotlarBilanBoyitish(yangilangan, get());
       const warehouseId =
         yangilangan.warehouseId ?? get().sotuvlar.find((sotuv) => sotuv.id === sotuvId)?.warehouseId;

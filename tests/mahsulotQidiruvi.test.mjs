@@ -27,12 +27,40 @@ const mod = (id, nom, barcode, qism = {}) => ({ id, productId: `p-${id}`, name: 
 const qator = (id, quantity, qism = {}) => ({ modificationId: id, productId: `p-${id}`, quantity, modification: mod(id, qism.nom ?? `Mahsulot ${id}`, qism.barcode ?? `BC${id}`, qism), ...qism });
 const yozuv = (id, quantity, qism = {}) => ({ modificationId: id, productId: `p-${id}`, quantity, modification: { id, name: 'Asosiy variant', barcode: qism.barcode ?? `BC${id}`, article: qism.article, product: { id: `p-${id}`, name: qism.nom ?? `Mahsulot ${id}` } }, ...(qism.birliklar ? { birliklar: qism.birliklar } : {}), ...(qism.qidiruvBirligi ? { qidiruvBirligi: qism.qidiruvBirligi } : {}) });
 
-test('search goes to the server once per warehouse with search, page, pageSize and warehouseId; stock comes from the search row', async () => {
+test('stockByWarehouse: one search for all warehouses (no warehouseId), stock split per warehouse, missing warehouse = 0', async () => {
+  reset();
+  handlers.set('qidiruvSahifasi', () => ({
+    items: [
+      { ...qator('m1', '7'), stockByWarehouse: [{ warehouseId: 'w1', warehouseName: 'Main', quantity: '5' }, { warehouseId: 'w2', warehouseName: 'Second', quantity: '2' }] },
+      { ...qator('m2', '0'), stockByWarehouse: [] },
+    ],
+    total: 41,
+  }));
+  const natija = await mahsulotlarniServerdanQidirish({ search: 'sement', page: 2, pageSize: 20, warehouseIds: ['w1', 'w2', 'w3'] });
+  assert.deepEqual(calls.filter((call) => call.url === 'qidiruvSahifasi').map((call) => call.sorov), [
+    { search: 'sement', page: 2, pageSize: 20, signal: undefined },
+  ]);
+  assert.deepEqual(natija.map((ombor) => [ombor.warehouseId, ombor.jami, ombor.qatorlar.map((row) => row.quantity)]), [
+    ['w1', 41, [5, 0]],
+    ['w2', 41, [2, 0]],
+    ['w3', 41, [0, 0]],
+  ]);
+  assert.equal(natija[0].qatorlar[0].modification.price.retailPrice, 5000);
+  // Ajratilgan natija avvalgi ko'rinishda: qoldig'i bor omborlar alohida qator, hech qayerda yo'q mahsulot bitta qator.
+  assert.deepEqual(serverQatorlari(natija.map((ombor) => ({ ...ombor, warehouseName: ombor.warehouseId })), 'sement').map((row) => [row.kalit, row.qoldiq]), [
+    ['m1::w1', 5],
+    ['m1::w2', 2],
+    ['m2::', 0],
+  ]);
+});
+
+test('old backend without stockByWarehouse: falls back to one search per warehouse with warehouseId; stock comes from the search row', async () => {
   reset();
   handlers.set('qidiruvSahifasi', (sorov) => ({ items: [qator('m1', sorov.warehouseId === 'w1' ? '7' : '0')], total: 41 }));
   const natija = await mahsulotlarniServerdanQidirish({ search: 'sement', page: 2, pageSize: 20, warehouseIds: ['w1', 'w2'] });
   const sorovlar = calls.filter((call) => call.url === 'qidiruvSahifasi');
   assert.deepEqual(sorovlar.map((call) => call.sorov), [
+    { search: 'sement', page: 2, pageSize: 20, signal: undefined },
     { search: 'sement', page: 2, pageSize: 20, warehouseId: 'w1', signal: undefined },
     { search: 'sement', page: 2, pageSize: 20, warehouseId: 'w2', signal: undefined },
   ]);
@@ -176,9 +204,9 @@ test('parallelBajarish respects the limit, keeps order and stops on the first fa
 
 test('category filter goes to the search endpoint as categoryId (with or without a search word)', async () => {
   reset();
-  handlers.set('qidiruvSahifasi', () => ({ items: [qator('m1', 4)], total: 1 }));
+  handlers.set('qidiruvSahifasi', () => ({ items: [{ ...qator('m1', 4), stockByWarehouse: [{ warehouseId: 'w1', quantity: 4 }] }], total: 1 }));
   await mahsulotlarniServerdanQidirish({ search: '', page: 1, pageSize: 20, warehouseIds: ['w1'], categoryId: 'cat-1' });
   assert.deepEqual(calls.filter((call) => call.url === 'qidiruvSahifasi').map((call) => call.sorov), [
-    { search: '', page: 1, pageSize: 20, warehouseId: 'w1', categoryId: 'cat-1', signal: undefined },
+    { search: '', page: 1, pageSize: 20, categoryId: 'cat-1', signal: undefined },
   ]);
 });

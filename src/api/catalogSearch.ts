@@ -51,12 +51,30 @@ export type KatalogQidiruvQatori = MahsulotModifikatsiyasi | {
   unitId?: string | null;
   // Qoldiq: warehouseId berilsa shu ombor bo'yicha, berilmasa hamma omborlar yig'indisi (asosiy birlikda).
   quantity?: number | string | null;
+  // 2026-11-07: har ombor qoldig'i (faqat qoldig'i bor omborlar; hech qayerda yo'q bo'lsa []). `quantity` — shularning yig'indisi.
+  stockByWarehouse?: Array<{ warehouseId?: string | null; warehouseName?: string | null; quantity?: number | string | null }> | null;
 };
 
 /** Qidiruv qatoridagi qoldiq: `/reports/stock-balance` ni alohida so'rash shart emas. Noto'g'ri qiymat 0 hisoblanadi. */
 export function katalogQidiruvQoldigi(qator: KatalogQidiruvQatori) {
   const son = Number((qator as { quantity?: unknown }).quantity ?? 0);
   return Number.isFinite(son) ? son : 0;
+}
+
+/**
+ * Qidiruv qatoridagi har ombor qoldig'i (`stockByWarehouse`): ombor id → miqdor. Ro'yxatda yo'q ombor qoldig'i 0.
+ * Maydon umuman kelmasa (eski backend) `null` — chaqiruvchi har ombor uchun alohida so'rovga qaytadi.
+ */
+export function katalogOmborQoldiqlari(qator: KatalogQidiruvQatori): Map<string, number> | null {
+  const royxat = (qator as { stockByWarehouse?: unknown }).stockByWarehouse;
+  if (!Array.isArray(royxat)) return null;
+  const natija = new Map<string, number>();
+  for (const yozuv of royxat) {
+    const id = String((yozuv as { warehouseId?: unknown } | null)?.warehouseId ?? "");
+    const son = Number((yozuv as { quantity?: unknown } | null)?.quantity ?? 0);
+    if (id) natija.set(id, (natija.get(id) ?? 0) + (Number.isFinite(son) ? son : 0));
+  }
+  return natija;
 }
 
 /** Search API qoldiq qatorini qaytaradi: variant, uning narxi va valyutasi `modification` ichida. */

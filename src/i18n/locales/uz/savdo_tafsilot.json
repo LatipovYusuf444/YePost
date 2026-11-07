@@ -1,6 +1,7 @@
 {
   "fullEdit": {
     "details": "Sotuv tafsilotlari",
+    "cancelReason": "Bekor qilish sababi",
     "edit": "Tahrirlash",
     "discardConfirm": "O'zgarishlarni bekor qilish",
     "discardDescription": "Kiritilgan o'zgarishlar saqlanmagan. Davom etsangiz, ular bekor qilinadi.",

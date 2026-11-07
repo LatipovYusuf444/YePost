@@ -273,7 +273,8 @@ export default function Savatcha({
       } else if (action === "cancel") {
         const javob = await tasdiqSorash(t("savatcha.alerts.cancelPrompt"), { sabab: true });
         if (!javob.rozi) return;
-        await draftSalesService.cancelDraft(sotuv.id, javob.sabab.trim() || t("savatcha.alerts.cancelReasonMissing"));
+        // Sabab endi backendda saqlanadi: yozilmagan bo'lsa "Sabab kiritilmagan" matni sabab bo'lib qolmasligi uchun hech narsa yuborilmaydi.
+        await draftSalesService.cancelDraft(sotuv.id, javob.sabab);
         onXabar("savatcha.messages.cancelled");
       }
       await onRefresh();

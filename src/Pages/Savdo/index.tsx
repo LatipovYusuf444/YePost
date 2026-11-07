@@ -432,10 +432,11 @@ export default function Savdo() {
   }
 
   async function bekorQilish(sotuvId: string) {
-    const { rozi } = await tasdiqSorash(t("savdoSahifasi.confirmCancel"), { ohang: "qizil" });
+    // Tasdiqlash oynasida ixtiyoriy sabab ham so'raladi (backend `cancelReason` sifatida saqlaydi); bo'sh qoldirilsa sababsiz bekor qilinadi.
+    const { rozi, sabab } = await tasdiqSorash(t("savdoSahifasi.confirmCancel"), { ohang: "qizil", sabab: true });
     if (!rozi) return;
 
-    const muvaffaqiyatli = await sotuvniBekorQilish(sotuvId);
+    const muvaffaqiyatli = await sotuvniBekorQilish(sotuvId, sabab);
     if (muvaffaqiyatli) setXabar("savdoSahifasi.messages.saleCancelled");
   }
 

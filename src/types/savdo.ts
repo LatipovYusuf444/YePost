@@ -168,6 +168,8 @@ export type Sotuv = {
   updatedAt?: string;
   confirmedAt?: string;
   cancelledAt?: string;
+  // POST /sales/:id/cancel { reason } da yozilgan sabab (yuborilmasa yoki sotuv tiklansa null).
+  cancelReason?: string | null;
   warehouse?: NomliMalumot;
   customer?: NomliMalumot;
   clientCompany?: NomliMalumot;
