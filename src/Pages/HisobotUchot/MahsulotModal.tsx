@@ -152,14 +152,14 @@ export default function MahsulotModal({
       >
         <div className="flex items-center justify-between gap-4 border-b border-gray-100 px-6 py-5">
           <div className="flex min-w-0 items-center gap-4">
-            <button
+            <button aria-label={t("common:actions.close")}
               type="button"
               onClick={onClose}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white"
             >
               <X size={18} />
             </button>
-            <h2 className="truncate text-2xl font-black">Mahsulotni tahrirlash</h2>
+            <h2 className="truncate text-2xl font-black">{t("hisobotModal.title")}</h2>
           </div>
         </div>
 
@@ -167,7 +167,7 @@ export default function MahsulotModal({
           {(fx.tepadagi || (!fx.bor && xato)) && <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{fx.tepadagi || xato}</p>}
           <section className="space-y-5">
             <div className="flex items-center gap-4">
-              <h3 className="text-xl font-black">Asosiy</h3>
+              <h3 className="text-xl font-black">{t("hisobotModal.main")}</h3>
               <div className="h-px flex-1 bg-gray-100" />
             </div>
 
@@ -175,30 +175,30 @@ export default function MahsulotModal({
               <div className="space-y-4">
                 <XatoliMaydon xato={fx.xato("name")}>
                 <label className="block text-sm font-black text-gray-500">
-                  Nomi *
+                  {t("hisobotModal.name")}
                   <div className="relative mt-2">
-                    <input value={nomi} onChange={(e) => { setNomi(e.target.value); fx.tozala("name"); }} className="input pr-16" placeholder="Nomi kiriting" />
+                    <input value={nomi} onChange={(e) => { setNomi(e.target.value); fx.tozala("name"); }} className="input pr-16" placeholder={t("hisobotModal.namePlaceholder")} />
                     <button
                       type="button"
                       onClick={() => { setNomi(mahsulot.nomi); fx.tozala("name"); }}
                       className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1.5 text-xs font-black text-orange-600 hover:bg-orange-50"
                     >
-                      Tez
+                      {t("hisobotModal.quick")}
                     </button>
                   </div>
                 </label>
                 </XatoliMaydon>
                 <XatoliMaydon xato={fx.xato("article")}>
                 <label className="block text-sm font-black text-gray-500">
-                  Artikul *
+                  {t("hisobotModal.article")}
                   <div className="relative mt-2">
-                    <input value={artikul} onChange={(e) => { setArtikul(e.target.value); fx.tozala("article"); }} className="input pr-16" placeholder="Artikul" />
+                    <input value={artikul} onChange={(e) => { setArtikul(e.target.value); fx.tozala("article"); }} className="input pr-16" placeholder={t("hisobotModal.articlePlaceholder")} />
                     <button
                       type="button"
                       onClick={() => { setArtikul(`${nomi.slice(0, 3).toUpperCase()}-${tasodifiyRaqam(6)}`); fx.tozala("article"); }}
                       className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1.5 text-xs font-black text-orange-600 hover:bg-orange-50"
                     >
-                      Gen
+                      {t("hisobotModal.generate")}
                     </button>
                   </div>
                 </label>
@@ -208,24 +208,24 @@ export default function MahsulotModal({
               <div className="space-y-4">
                 <XatoliMaydon xato={fx.xato("barcode")}>
                 <label className="block text-sm font-black text-gray-500">
-                  Barkod
+                  {t("hisobotModal.barcode")}
                   <div className="relative mt-2">
-                    <input value={barkod} onChange={(e) => { setBarkod(e.target.value); fx.tozala("barcode"); }} className="input pr-16" placeholder="Barkod" />
+                    <input value={barkod} onChange={(e) => { setBarkod(e.target.value); fx.tozala("barcode"); }} className="input pr-16" placeholder={t("hisobotModal.barcode")} />
                     <button
                       type="button"
                       onClick={() => { setBarkod(tasodifiyRaqam(13)); fx.tozala("barcode"); }}
                       className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1.5 text-xs font-black text-orange-600 hover:bg-orange-50"
                     >
-                      Gen
+                      {t("hisobotModal.generate")}
                     </button>
                   </div>
                 </label>
                 </XatoliMaydon>
                 <XatoliMaydon xato={fx.xato("categoryId")}>
                 <label className="block text-sm font-black text-gray-500">
-                  Kategoriya *
+                  {t("hisobotModal.category")}
                   <AppSelect value={kategoriya} onChange={(e) => { setKategoriya(e.target.value); fx.tozala("categoryId"); }} className="input mt-2">
-                    <option value="">Kategoriya</option>
+                    <option value="">{t("hisobotModal.categoryOption")}</option>
               {kategoriyalar.map((k) => (
                       <option key={k.id} value={k.id}>
                         {k.nomi}
@@ -239,7 +239,7 @@ export default function MahsulotModal({
               <div className="space-y-4">
                 <XatoliMaydon xato={fx.xato("unitId")}>
                 <div className="block text-sm font-black text-gray-500">
-                  <p>O'lchov birligi *</p>
+                  <p>{t("hisobotModal.unit")}</p>
                   <div className="mt-2 flex items-center gap-3">
                     <AppSelect value={birlik} onChange={(e) => { setBirlik(e.target.value); fx.tozala("unitId"); }} className="input min-w-0 flex-1">
                       {birliklar.map((b) => (
@@ -251,7 +251,7 @@ export default function MahsulotModal({
                     <button
                       type="button"
                       onClick={() => setFaol(!faol)}
-                      aria-label="Mahsulot holatini o'zgartirish"
+                      aria-label={t("hisobotModal.toggleActive")}
                       className={`flex h-8 w-14 shrink-0 items-center rounded-full p-1 transition ${
                         faol ? "bg-orange-500 shadow-sm shadow-orange-100" : "bg-gray-200"
                       }`}
@@ -263,7 +263,7 @@ export default function MahsulotModal({
                 </XatoliMaydon>
 
                 <div className="space-y-2">
-                  <p className="text-sm font-black text-gray-500">Foto</p>
+                  <p className="text-sm font-black text-gray-500">{t("hisobotModal.photo")}</p>
                   <input ref={rasmInput} type="file" accept="image/*" onChange={(e) => rasmTanlash(e.target.files?.[0])} className="hidden" />
                   <div
                     role="button"
@@ -278,8 +278,8 @@ export default function MahsulotModal({
                   >
                     {rasm ? (
                       <div className="relative">
-                        <img src={rasm} alt="Mahsulot rasmi" className="max-h-24 rounded-2xl object-contain" />
-                        <button
+                        <img src={rasm} alt={t("hisobotModal.imageAlt")} className="max-h-24 rounded-2xl object-contain" />
+                        <button aria-label={t("common:actions.remove")}
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -295,8 +295,8 @@ export default function MahsulotModal({
                         <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-orange-500 shadow-sm">
                           <ImagePlus size={20} />
                         </div>
-                        <p className="text-sm font-black text-gray-600">Rasmni tashlang</p>
-                        <p className="text-sm font-black text-orange-600">Tanlash uchun bosing</p>
+                        <p className="text-sm font-black text-gray-600">{t("hisobotModal.dropImage")}</p>
+                        <p className="text-sm font-black text-orange-600">{t("hisobotModal.clickToChoose")}</p>
                       </>
                     )}
                   </div>
@@ -306,15 +306,15 @@ export default function MahsulotModal({
 
             <div className="space-y-4 pt-2">
               <div className="flex items-center gap-4">
-                <h3 className="text-xl font-black">Variatsiyalar</h3>
+                <h3 className="text-xl font-black">{t("hisobotModal.variations")}</h3>
                 <div className="h-px flex-1 bg-gray-100" />
               </div>
               <div>
-                <p className="text-sm font-black text-gray-500">Variatsiya atributini tanlang *</p>
-                <p className="mt-1 text-xs font-bold text-gray-400">Masalan: Rang</p>
+                <p className="text-sm font-black text-gray-500">{t("hisobotModal.chooseAttribute")}</p>
+                <p className="mt-1 text-xs font-bold text-gray-400">{t("hisobotModal.attributeExample")}</p>
                 <div className="mt-3 max-w-md space-y-2">
                   <div className="relative">
-                    <input value={atribut} onChange={(e) => setAtribut(e.target.value)} className="input pr-12" placeholder="Atribut kiriting" />
+                    <input value={atribut} onChange={(e) => setAtribut(e.target.value)} className="input pr-12" placeholder={t("hisobotModal.attributePlaceholder")} />
                     <ChevronDown size={17} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
                   </div>
                   {atribut.trim() ? (
@@ -323,11 +323,11 @@ export default function MahsulotModal({
                       className="flex w-full items-center gap-2 rounded-2xl bg-gray-100 px-4 py-3 text-left text-sm font-black text-gray-600 hover:bg-orange-50 hover:text-orange-600"
                     >
                       <Plus size={16} />
-                      Qo'shish "{atribut.trim()}"
+                      {t("hisobotModal.addAttribute", { name: atribut.trim() })}
                     </button>
                   ) : (
                     <div className="rounded-2xl bg-gray-50 px-4 py-3 text-center text-sm font-bold text-gray-400">
-                      Variantlar yo'q
+                      {t("hisobotModal.noVariants")}
                     </div>
                   )}
                 </div>
@@ -335,22 +335,22 @@ export default function MahsulotModal({
 
               <div className="rounded-[24px] border border-orange-100 bg-orange-50/30 p-4">
                 <div className="mb-4">
-                  <p className="text-base font-black text-gray-700">Asosiy variant narxlari</p>
+                  <p className="text-base font-black text-gray-700">{t("hisobotModal.mainVariantPrices")}</p>
                   <p className="mt-1 text-sm font-bold text-gray-400">
-                    Variatsiya kiritilmasa, mahsulot uchun bitta asosiy variant yaratiladi.
+                    {t("hisobotModal.mainVariantHint")}
                   </p>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                  <XatoliMaydon xato={fx.xato("costPrice")}><Narx label="Kelish narxi" value={tanNarx} onChange={(v) => { setTanNarx(v); fx.tozala("costPrice"); }} /></XatoliMaydon>
+                  <XatoliMaydon xato={fx.xato("costPrice")}><Narx label={t("hisobotModal.costPrice")} value={tanNarx} onChange={(v) => { setTanNarx(v); fx.tozala("costPrice"); }} /></XatoliMaydon>
                   <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">
-                    Ustama
+                    {t("hisobotModal.markup")}
                     <div className="relative mt-2">
                       <input value={ustama} readOnly className="input pr-10 bg-gray-50" />
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">%</span>
                     </div>
                   </label>
-                  <XatoliMaydon xato={fx.xato("retailPrice")}><Narx label="Sotuv narxi" value={sotuvNarx} onChange={(v) => { setSotuvNarx(v); fx.tozala("retailPrice"); }} /></XatoliMaydon>
-                  <XatoliMaydon xato={fx.xato("wholesalePrice")}><Narx label="Ulgurji narx" value={ulgurji} onChange={(v) => { setUlgurji(v); fx.tozala("wholesalePrice"); }} /></XatoliMaydon>
+                  <XatoliMaydon xato={fx.xato("retailPrice")}><Narx label={t("hisobotModal.salePrice")} value={sotuvNarx} onChange={(v) => { setSotuvNarx(v); fx.tozala("retailPrice"); }} /></XatoliMaydon>
+                  <XatoliMaydon xato={fx.xato("wholesalePrice")}><Narx label={t("hisobotModal.wholesalePrice")} value={ulgurji} onChange={(v) => { setUlgurji(v); fx.tozala("wholesalePrice"); }} /></XatoliMaydon>
                 </div>
               </div>
             </div>
@@ -358,10 +358,10 @@ export default function MahsulotModal({
 
           <div className="mt-6 flex justify-end gap-3">
             <button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">
-              Bekor qilish
+              {t("actions.cancel")}
             </button>
             <button disabled={saqlanmoqda || !asosiyMahsulot} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">
-              {saqlanmoqda ? "Saqlanmoqda..." : "Saqlash"}
+              {saqlanmoqda ? t("hisobotModal.saving") : t("actions.save")}
             </button>
           </div>
         </div>
@@ -371,12 +371,13 @@ export default function MahsulotModal({
 }
 
 function Narx({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const { t } = useTranslation("mahsulotlar");
   return (
     <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">
       {label}
       <div className="relative mt-2">
         <SummaMaydoni value={value} onChange={onChange} className="input pr-14" placeholder="0" />
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">so'm</span>
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">{t("hisobotModal.som")}</span>
       </div>
     </label>
   );

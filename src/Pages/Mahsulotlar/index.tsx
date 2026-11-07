@@ -33,7 +33,9 @@ import { mahsulotBirliklariApi, mahsulotlarApi } from "@/api/catalogApi";
 import { omborlarApi } from "@/api/omborApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { pulMatni, valyutaKodi } from "@/lib/valyuta";
-import { rolniNormallashtirish } from "@/lib/roles";
+import { foydalanuvchiAdminmi, rolniNormallashtirish } from "@/lib/roles";
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
+import { useOzgarishBormi } from "@/hooks/useOzgarishBormi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useMahsulotlarStore } from "@/store/mahsulotlarStore";
 import { useIshlabChiqarishStore } from "@/store/ishlabChiqarishStore";
@@ -276,7 +278,7 @@ export default function Mahsulotlar() {
   const paginatedMahsulotlar = mahsulotlar.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   async function oddiyOchirish(id: string) {
-    if (!window.confirm(t("confirm.deleteCategory"))) return;
+    if (!(await tasdiqSorash(t("confirm.deleteCategory"), { ochirish: true })).rozi) return;
     await store.kategoriyaOchirish(id);
   }
 
@@ -297,7 +299,7 @@ export default function Mahsulotlar() {
   }
 
   async function mahsulotOchirish(id: string) {
-    if (!window.confirm(t("confirm.deleteProduct"))) return;
+    if (!(await tasdiqSorash(t("confirm.deleteProduct"), { ochirish: true })).rozi) return;
     await store.mahsulotOchirish(id);
   }
 
@@ -360,7 +362,7 @@ export default function Mahsulotlar() {
         {!ixcham&&<button onClick={()=>{setModProduct(item);void store.modifikatsiyalarniYuklash(item.id)}} className="inline-flex items-center justify-center gap-1 rounded-xl bg-slate-50 py-2.5 text-sm font-bold text-slate-600"><Eye size={15}/>{t("actions.variants")}</button>}
         {birlikTahrirlashMumkin&&<button type="button" onClick={()=>setBirlikProduct(item)} title={t("actions.units")} aria-label={t("actions.units")} className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-500 hover:bg-orange-50 hover:text-orange-600"><Ruler size={16}/></button>}
         <button onClick={()=>void mahsulotTahrirlash(item)} className={`inline-flex items-center justify-center gap-1 rounded-xl bg-orange-50 font-bold text-orange-600 ${ixcham ? "h-10 px-3 text-sm" : "py-2.5 text-sm"}`}><Edit3 size={15}/>{!ixcham&&t("actions.edit")}</button>
-        <button onClick={()=>void mahsulotOchirish(item.id)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500"><Trash2 size={16}/></button>
+        <button aria-label={t("common:actions.delete")} onClick={()=>void mahsulotOchirish(item.id)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500"><Trash2 size={16}/></button>
       </div>
     );
   }
@@ -452,7 +454,7 @@ export default function Mahsulotlar() {
               <div className="mt-5 grid grid-cols-[1fr_1fr_42px] gap-2 border-t pt-4">
                 <button onClick={()=>{setModProduct(item);void store.modifikatsiyalarniYuklash(item.id)}} className="inline-flex items-center justify-center gap-1 rounded-xl bg-slate-50 py-2.5 text-sm font-bold text-slate-600"><Eye size={15}/>{t("actions.variants")}</button>
                 <button onClick={()=>void mahsulotTahrirlash(item)} className="inline-flex items-center justify-center gap-1 rounded-xl bg-orange-50 py-2.5 text-sm font-bold text-orange-600"><Edit3 size={15}/>{t("actions.edit")}</button>
-                <button onClick={()=>void mahsulotOchirish(item.id)} className="flex items-center justify-center rounded-xl bg-red-50 text-red-500"><Trash2 size={16}/></button>
+                <button aria-label={t("common:actions.delete")} onClick={()=>void mahsulotOchirish(item.id)} className="flex items-center justify-center rounded-xl bg-red-50 text-red-500"><Trash2 size={16}/></button>
               </div>
             </article>)}
             {mahsulotlar.length===0&&<Empty matn={t("empty.products")}/>}
@@ -735,7 +737,7 @@ function MahsulotImportModal({onClose,onImported}:{onClose:()=>void;onImported:(
   return <AppModal><div className="scrollbar-hidden max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-[30px] bg-white shadow-2xl">
     <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
       <div><p className="text-sm font-bold uppercase tracking-[0.16em] text-blue-600">{t("excelImport.eyebrow")}</p><h2 className="mt-1 text-2xl font-black text-slate-900">{t("excelImport.title")}</h2><p className="mt-1 text-sm text-slate-500">{t("excelImport.subtitle")}</p></div>
-      <button type="button" disabled={band} onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 disabled:opacity-50 hover:bg-slate-200"><X size={18}/></button>
+      <button aria-label={t("common:actions.close")} type="button" disabled={band} onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 disabled:opacity-50 hover:bg-slate-200"><X size={18}/></button>
     </div>
     <div className="space-y-5 p-6">
       <input ref={inputRef} type="file" accept=".xlsx" disabled={band} onChange={(event)=>void faylTanlandi(event)} className="sr-only"/>
@@ -932,6 +934,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
   const [categorySearch,setCategorySearch]=useState("");
   const [newCategoryName,setNewCategoryName]=useState("");
   const [categoryCreating,setCategoryCreating]=useState(false);
+  const ozgarishBor=useOzgarishBormi({name,categoryId,unitId,barcode,article,imageUrl,isActive,kind,trackSerial,baseDraft,baseStock,brand,variantDrafts},tahrirFaol);
   const [editingCategoryId,setEditingCategoryId]=useState<string|null>(null);
   const [editingCategoryName,setEditingCategoryName]=useState("");
   const [categoryUpdating,setCategoryUpdating]=useState(false);
@@ -1474,7 +1477,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
     updateVariantDraft(key,{imageUrl:URL.createObjectURL(file)});
   }
 
-  return <AppModal className="product-modal-overlay" onClose={onClose}><form onSubmit={save} className="product-modal-panel scrollbar-hidden max-h-[94vh] w-full overflow-y-auto rounded-[30px] bg-white shadow-2xl">
+  return <AppModal className="product-modal-overlay" onClose={onClose} ozgarishBor={ozgarishBor}><form onSubmit={save} className="product-modal-panel scrollbar-hidden max-h-[94vh] w-full overflow-y-auto rounded-[30px] bg-white shadow-2xl">
     <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 bg-white/95 px-6 py-5 backdrop-blur-xl">
       <div className="flex min-w-0 items-center gap-4">
         <h2 className="truncate text-2xl font-black">{editing?(tahrirFaol?t("productModal.editTitle"):name):t("productModal.createTitle")}</h2>
@@ -1564,7 +1567,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
                 >
                   {imageUrl ? <div className="relative">
                     <img src={imageUrl} alt={t("productModal.photoAlt")} className="max-h-24 rounded-2xl object-contain"/>
-                    <button type="button" onClick={(event)=>{event.stopPropagation();setImageUrl("")}} className="absolute -right-3 -top-3 flex h-7 w-7 items-center justify-center rounded-full bg-white text-red-500 shadow-lg ring-1 ring-red-100 hover:bg-red-500 hover:text-white"><X size={15}/></button>
+                    <button aria-label={t("common:actions.remove")} type="button" onClick={(event)=>{event.stopPropagation();setImageUrl("")}} className="absolute -right-3 -top-3 flex h-7 w-7 items-center justify-center rounded-full bg-white text-red-500 shadow-lg ring-1 ring-red-100 hover:bg-red-500 hover:text-white"><X size={15}/></button>
                   </div> : <>
                     <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-orange-500 shadow-sm"><ImagePlus size={20}/></div>
                     <p className="text-sm font-black text-gray-600">{t("productModal.photoDrop")}</p>
@@ -1605,11 +1608,11 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
                     {row.attributeAdded&&<div className="relative space-y-2">
                       <div className="flex min-h-12 items-center gap-2 rounded-2xl border bg-white px-3 py-2 focus-within:border-orange-300 focus-within:ring-2 focus-within:ring-orange-100">
                         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                          {row.options.map((option)=><span key={option} className="inline-flex max-w-full items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-sm font-black text-orange-600"><span className="truncate">{option}</span><button type="button" onClick={()=>removeVariationOption(row.id,option)} className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-white"><X size={12}/></button></span>)}
+                          {row.options.map((option)=><span key={option} className="inline-flex max-w-full items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-sm font-black text-orange-600"><span className="truncate">{option}</span><button aria-label={t("common:actions.close")} type="button" onClick={()=>removeVariationOption(row.id,option)} className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-white"><X size={12}/></button></span>)}
                           <input value={row.value} onFocus={()=>setActiveVariationRow(row.id)} onChange={e=>{updateVariationRow(row.id,{value:e.target.value});setActiveVariationRow(row.id)}} onKeyDown={e=>{if(e.key==="Enter"||e.key===","){e.preventDefault();addVariationOption(row.id)}}} className="h-8 min-w-28 flex-1 bg-transparent text-sm font-bold text-gray-700 outline-none" placeholder={row.options.length?t("productModal.optionPlaceholderMore"):t("productModal.optionPlaceholder",{attribute:row.attribute})}/>
                         </div>
                         <span className="shrink-0 text-gray-300">в‹®в‹®</span>
-                        <button type="button" onClick={()=>removeVariationRow(row.id)} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-500"><X size={14}/></button>
+                        <button aria-label={t("common:actions.remove")} type="button" onClick={()=>removeVariationRow(row.id)} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-500"><X size={14}/></button>
                       </div>
                       {activeVariationRow===row.id&&savedOptionsFor(row).length>0&&<div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-gray-100">
                         {savedOptionsFor(row).map((option)=><button key={option} type="button" onMouseDown={(e)=>{e.preventDefault();selectSavedVariationOption(row.id,option)}} className="block w-full px-5 py-3 text-left text-sm font-black text-gray-600 hover:bg-orange-50 hover:text-orange-600">{option}</button>)}
@@ -1754,7 +1757,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
                     <div key={field.id} className="grid gap-3 md:grid-cols-[1fr_1fr_44px]">
                       <input value={field.name} onChange={(e)=>updateOptionalField(field.id,{name:e.target.value})} className="input bg-gray-100" placeholder={t("productModal.optionalField.namePlaceholder")}/>
                       <input value={field.value} onChange={(e)=>updateOptionalField(field.id,{value:e.target.value})} className="input bg-gray-100" placeholder={t("productModal.optionalField.valuePlaceholder")}/>
-                      <button type="button" onClick={()=>removeOptionalField(field.id)} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white"><X size={18}/></button>
+                      <button aria-label={t("common:actions.remove")} type="button" onClick={()=>removeOptionalField(field.id)} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white"><X size={18}/></button>
                     </div>
                   ))}
                 </div>}
@@ -1775,7 +1778,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
                         <div className="flex items-center gap-2 rounded-2xl bg-orange-50 p-2 ring-1 ring-orange-100">
                           <input value={editingCategoryName} onChange={(e)=>{setEditingCategoryName(e.target.value);kategoriyaFx.tozala("name")}} onKeyDown={(e)=>{if(e.key==="Enter"){e.preventDefault();void saveCategoryEdit()}if(e.key==="Escape"){setEditingCategoryId(null);setEditingCategoryName("");kategoriyaFx.ornat({})}}} className="h-10 min-w-0 flex-1 rounded-xl border border-orange-100 bg-white px-3 text-sm font-black text-gray-700 outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100" autoFocus/>
                           <button type="button" disabled={categoryUpdating||!editingCategoryName.trim()} onClick={()=>void saveCategoryEdit()} className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500 text-white disabled:opacity-50">{categoryUpdating?<LoaderCircle size={16} className="animate-spin"/>:<Edit3 size={16}/>}</button>
-                          <button type="button" onClick={()=>{setEditingCategoryId(null);setEditingCategoryName("");kategoriyaFx.ornat({})}} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-gray-400 hover:text-red-500"><X size={16}/></button>
+                          <button aria-label={t("common:actions.cancel")} type="button" onClick={()=>{setEditingCategoryId(null);setEditingCategoryName("");kategoriyaFx.ornat({})}} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-gray-400 hover:text-red-500"><X size={16}/></button>
                         </div>
                         </XatoliMaydon>:
                         <div key={kategoriya.id} className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black transition ${categoryId===kategoriya.id?"bg-orange-50 text-orange-600 ring-1 ring-orange-100":"bg-gray-100 text-gray-600 hover:bg-orange-50 hover:text-orange-600"}`}>
@@ -1785,7 +1788,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
                             </span>
                             <span className="min-w-0 flex-1 truncate">{kategoriya.name}</span>
                           </button>
-                          <button type="button" onClick={()=>startCategoryEdit(kategoriya)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-blue-500 hover:bg-white hover:text-orange-500"><Edit3 size={16}/></button>
+                          <button aria-label={t("common:actions.edit")} type="button" onClick={()=>startCategoryEdit(kategoriya)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-blue-500 hover:bg-white hover:text-orange-500"><Edit3 size={16}/></button>
                         </div>
                     ))}
                     {filteredCategories.length===0&&<div className="rounded-2xl bg-gray-50 px-4 py-3 text-center text-sm font-bold text-gray-400">{t("productModal.categorySection.notFound")}</div>}
@@ -1807,7 +1810,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
     </fieldset>
 
     <div className="flex justify-end gap-3 border-t border-gray-100 px-6 py-4">
-      <button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t(tahrirFaol?"productModal.cancel":"actions.close")}</button>
+      <button type="button" data-modal-yopish onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t(tahrirFaol?"productModal.cancel":"actions.close")}</button>
       {tahrirFaol&&<button disabled={store.amalBajarilmoqda||unitResolving||saqlanmoqda} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{(store.amalBajarilmoqda||unitResolving||saqlanmoqda)&&<LoaderCircle size={16} className="animate-spin"/>}{editing?t("productModal.save"):t("productModal.create")}</button>}
     </div>
   </form></AppModal>
@@ -1878,7 +1881,7 @@ function OddiyModal({item,onClose}:{item:Kategoriya|"new";onClose:()=>void}) {
 function ModifikatsiyalarModal({product,onClose}:{product:Mahsulot;onClose:()=>void}) {
   const { t } = useTranslation("mahsulotlar");
   const store=useMahsulotlarStore();const items=store.modifikatsiyalar[product.id]??[];const [editing,setEditing]=useState<MahsulotModifikatsiyasi|"new"|null>(null);
-  async function remove(id:string){if(window.confirm(t("confirm.deleteVariant")))await store.modifikatsiyaOchirish(product.id,id)}
+  async function remove(id:string){if((await tasdiqSorash(t("confirm.deleteVariant"),{ochirish:true})).rozi)await store.modifikatsiyaOchirish(product.id,id)}
   async function edit(item:MahsulotModifikatsiyasi){const [toliq,narx]=await Promise.all([store.modifikatsiyaOlish(item.id),store.narxOlish(item.id)]);if(toliq)setEditing({...toliq,price:narx??toliq.price})}
   return <Modal size="medium" title={t("variantsModal.title",{product:product.name})} onClose={onClose}>
     <div className="flex justify-end"><button onClick={()=>setEditing("new")} className="inline-flex h-10 items-center gap-2 rounded-xl bg-orange-500 px-4 font-black text-white"><PackagePlus size={16}/>{t("variantsModal.addVariant")}</button></div>
@@ -1895,7 +1898,7 @@ function ModifikatsiyalarModal({product,onClose}:{product:Mahsulot;onClose:()=>v
         </div>
         {items.length>1&&<div className="flex shrink-0 gap-2">
           <button onClick={()=>void edit(item)} className="rounded-xl bg-orange-50 px-3 py-2 text-sm font-bold text-orange-600">{t("variantsModal.edit")}</button>
-          <button onClick={()=>void remove(item.id)} className="rounded-xl bg-red-50 px-3 py-2 text-red-500"><Trash2 size={16}/></button>
+          <button aria-label={t("common:actions.delete")} onClick={()=>void remove(item.id)} className="rounded-xl bg-red-50 px-3 py-2 text-red-500"><Trash2 size={16}/></button>
         </div>}
       </div>
     </div>)}{items.length===0&&<Empty matn={t("empty.variants")}/>}</div>
@@ -1910,17 +1913,17 @@ function ModForm({productId,item,onClose}:{productId:string;item:MahsulotModifik
   // Variant nomi bo'sh qoldirilsa, ro'yxatlarda mahsulot nomi ko'rsatiladi (modificationNomi) —
   // shu haqiqatni maydonda ham ko'rsatish uchun mahsulot nomi placeholder sifatida beriladi.
   const mahsulotNomi=store.mahsulotlar.find(m=>m.id===productId)?.name??"";
-  // Parametrlar (JSON) — faqat shu variantda avvaldan xarakteristika (rang, o'lcham va h.k.) bo'lsa ko'rsatiladi;
+  // Parametrlar (JSON) — faqat ADMIN/DIREKTOR va shu variantda avvaldan xarakteristika (rang, o'lcham va h.k.) bo'lsa ko'rsatiladi;
   // oddiy variantlarda bu texnik maydon shart emas, "Mahsulot" oynasidagi "Xarakteristikalar" bo'limidan boshqariladi.
-  const parametrlarKerak=editing&&Boolean(item.params&&Object.keys(item.params).length>0);
+  const parametrlarKerak=foydalanuvchiAdminmi(useAuthProfileStore((state)=>state.profil))&&editing&&Boolean(item.params&&Object.keys(item.params).length>0);
   // Bu oynada narxlar valyutasiz kiritiladi: mavjud variantni tahrirlashda har bir narxning o'z valyutasi saqlanib qoladi (yangi variant so'mda).
   const saqlanganValyutalar=editing&&item.price?narxQoralamaValyutalari(item.price):{};
   async function save(e:FormEvent){e.preventDefault();if(!barcode.trim()){fx.ornat({barcode:t("modForm.barcodeRequired")});return}let parsed:Record<string,unknown>|undefined;try{parsed=params.trim()?JSON.parse(params):undefined;fx.ornat({})}catch{fx.ornat({params:t("modForm.invalidJson")});return}const ok=await fx.kuzat(()=>store.modifikatsiyaSaqlash(productId,editing?item.id:null,{name:name.trim()||undefined,barcode:barcode.trim(),article:article.trim()||undefined,params:parsed,price:{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale,...saqlanganValyutalar}}));if(ok&&editing)await fx.kuzat(()=>store.narxYangilash(productId,item.id,{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale,...saqlanganValyutalar}));if(ok)onClose()}
-  return <AppModal><form onSubmit={save} className="w-full max-w-2xl rounded-[28px] bg-white p-6 shadow-2xl"><div className="flex justify-between"><h2 className="text-2xl font-black">{editing?t("modForm.editTitle"):t("modForm.createTitle")}</h2><button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100"><X size={18}/></button></div><div className="mt-5 grid gap-3 sm:grid-cols-2"><XatoliMaydon xato={fx.xato("name")} className="sm:col-span-2"><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.namePlaceholder")}</span><input value={name} onChange={e=>{setName(e.target.value);fx.tozala("name")}} className="input" placeholder={mahsulotNomi||t("modForm.namePlaceholder")}/>{mahsulotNomi&&<span className="text-[11px] font-medium text-slate-400">{t("modForm.nameHint",{product:mahsulotNomi})}</span>}</label></XatoliMaydon><XatoliMaydon xato={fx.xato("barcode")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.barcodePlaceholder")}</span><input value={barcode} onChange={e=>{setBarcode(e.target.value);fx.tozala("barcode")}} aria-invalid={Boolean(fx.xato("barcode"))} className="input" placeholder={t("modForm.barcodePlaceholder")}/></label></XatoliMaydon><XatoliMaydon xato={fx.xato("article")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.articlePlaceholder")}</span><input value={article} onChange={e=>{setArticle(e.target.value);fx.tozala("article")}} className="input" placeholder={t("modForm.articlePlaceholder")}/></label></XatoliMaydon>{parametrlarKerak&&<XatoliMaydon xato={fx.xato("params")} className="sm:col-span-2"><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.paramsLabel")}</span><input value={params} onChange={e=>{setParams(e.target.value);fx.tozala("params")}} className="input" placeholder={t("modForm.paramsPlaceholder")}/></label></XatoliMaydon>}<XatoliMaydon xato={fx.xato("costPrice")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.costPlaceholder")}</span><input type="number" min="0" step="0.01" value={cost} onChange={e=>{setCost(Number(e.target.value));fx.tozala("costPrice")}} className="input" placeholder={t("modForm.costPlaceholder")}/></label></XatoliMaydon><XatoliMaydon xato={fx.xato("retailPrice")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.retailPlaceholder")}</span><input type="number" min="0" step="0.01" value={retail} onChange={e=>{setRetail(Number(e.target.value));fx.tozala("retailPrice")}} className="input" placeholder={t("modForm.retailPlaceholder")}/></label></XatoliMaydon><XatoliMaydon xato={fx.xato("wholesalePrice")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.wholesalePlaceholder")}</span><input type="number" min="0" step="0.01" value={wholesale} onChange={e=>{setWholesale(Number(e.target.value));fx.tozala("wholesalePrice")}} className="input" placeholder={t("modForm.wholesalePlaceholder")}/></label></XatoliMaydon></div>{fx.tepadagi&&<p className="mt-3 text-sm font-bold text-red-500">{fx.tepadagi}</p>}<Actions loading={store.amalBajarilmoqda} onClose={onClose}/></form></AppModal>
+  return <AppModal><form onSubmit={save} className="w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl"><div className="flex justify-between"><h2 className="text-2xl font-black">{editing?t("modForm.editTitle"):t("modForm.createTitle")}</h2><button aria-label={t("common:actions.close")} type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100"><X size={18}/></button></div><div className="mt-5 grid gap-3 sm:grid-cols-2"><XatoliMaydon xato={fx.xato("name")} className="sm:col-span-2"><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.namePlaceholder")}</span><input value={name} onChange={e=>{setName(e.target.value);fx.tozala("name")}} className="input" placeholder={mahsulotNomi||t("modForm.namePlaceholder")}/>{mahsulotNomi&&<span className="text-[11px] font-medium text-slate-400">{t("modForm.nameHint",{product:mahsulotNomi})}</span>}</label></XatoliMaydon><XatoliMaydon xato={fx.xato("barcode")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.barcodePlaceholder")}</span><input value={barcode} onChange={e=>{setBarcode(e.target.value);fx.tozala("barcode")}} aria-invalid={Boolean(fx.xato("barcode"))} className="input" placeholder={t("modForm.barcodePlaceholder")}/></label></XatoliMaydon><XatoliMaydon xato={fx.xato("article")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.articlePlaceholder")}</span><input value={article} onChange={e=>{setArticle(e.target.value);fx.tozala("article")}} className="input" placeholder={t("modForm.articlePlaceholder")}/></label></XatoliMaydon>{parametrlarKerak&&<XatoliMaydon xato={fx.xato("params")} className="sm:col-span-2"><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.paramsLabel")}</span><input value={params} onChange={e=>{setParams(e.target.value);fx.tozala("params")}} className="input" placeholder={t("modForm.paramsPlaceholder")}/></label></XatoliMaydon>}<XatoliMaydon xato={fx.xato("costPrice")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.costPlaceholder")}</span><input type="number" min="0" step="0.01" value={cost} onChange={e=>{setCost(Number(e.target.value));fx.tozala("costPrice")}} className="input" placeholder={t("modForm.costPlaceholder")}/></label></XatoliMaydon><XatoliMaydon xato={fx.xato("retailPrice")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.retailPlaceholder")}</span><input type="number" min="0" step="0.01" value={retail} onChange={e=>{setRetail(Number(e.target.value));fx.tozala("retailPrice")}} className="input" placeholder={t("modForm.retailPlaceholder")}/></label></XatoliMaydon><XatoliMaydon xato={fx.xato("wholesalePrice")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.wholesalePlaceholder")}</span><input type="number" min="0" step="0.01" value={wholesale} onChange={e=>{setWholesale(Number(e.target.value));fx.tozala("wholesalePrice")}} className="input" placeholder={t("modForm.wholesalePlaceholder")}/></label></XatoliMaydon></div>{fx.tepadagi&&<p className="mt-3 text-sm font-bold text-red-500">{fx.tepadagi}</p>}<Actions loading={store.amalBajarilmoqda} onClose={onClose}/></form></AppModal>
 }
 
 const modalSizeClass={normal:"max-w-xl",medium:"max-w-3xl",wide:"max-w-5xl"} as const;
-function Modal({title,onClose,children,size="normal"}:{title:string;onClose:()=>void;children:React.ReactNode;size?:"normal"|"medium"|"wide"}){return <AppModal><div className={`scrollbar-hidden max-h-[94vh] w-full overflow-y-auto rounded-[30px] bg-white p-6 shadow-2xl ${modalSizeClass[size]}`}><div className="mb-5 flex justify-between gap-4"><h2 className="text-2xl font-black">{title}</h2><button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 hover:bg-orange-500 hover:text-white"><X size={18}/></button></div>{children}</div></AppModal>}
+function Modal({title,onClose,children,size="normal"}:{title:string;onClose:()=>void;children:React.ReactNode;size?:"normal"|"medium"|"wide"}){const { t } = useTranslation("common");return <AppModal><div className={`scrollbar-hidden max-h-[94vh] w-full overflow-y-auto rounded-[30px] bg-white p-6 shadow-2xl ${modalSizeClass[size]}`}><div className="mb-5 flex justify-between gap-4"><h2 className="text-2xl font-black">{title}</h2><button aria-label={t("common:actions.close")} onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 hover:bg-orange-500 hover:text-white"><X size={18}/></button></div>{children}</div></AppModal>}
 function Actions({loading,onClose}:{loading:boolean;onClose:()=>void}){const { t } = useTranslation("mahsulotlar");return <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t("actions.cancel")}</button><button disabled={loading} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{loading&&<LoaderCircle size={16} className="animate-spin"/>}{t("actions.save")}</button></div>}
 // matn — maydoni ekranda topilmagan forma xatosi (useMaydonXatolari.tepadagi); bo'lmasa store xatosi.
 function ErrorBox({matn}:{matn?:string}){const x=useMahsulotlarStore(s=>s.xatolik);return <div className="rounded-xl bg-red-50 p-3 font-bold text-red-600">{matn||x}</div>}

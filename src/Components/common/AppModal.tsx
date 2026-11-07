@@ -1,6 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { TriangleAlert } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import ModalActionRail from "./ModalActionRail";
+import TasdiqlashOynasi from "./TasdiqlashOynasi";
 
 // Modal panelining yuqori qismida o'zining yopish tugmasi (X) bormi? Telefonda yon "amallar ustuni"
 // uchun joy yo'q: tugma bor bo'lsa ustun yashiriladi, yo'q bo'lsa faqat "Yopish" qoladi.
@@ -21,16 +24,31 @@ function oziningYopishTugmasiBormi(overlay: HTMLElement) {
 let ochiqModallarSoni = 0;
 let oldingiBodyOverflow = "";
 let oldingiHtmlOverflow = "";
+// Saqlanmagan o'zgarishlar tekshiruvi yoqilgan modallar (ochilish tartibida): Esc faqat eng ustkisiga tegishli.
+const himoyaliModallar: symbol[] = [];
+
+// Yopish tugmasi: `ozgarishBor` bo'lganda shu atribut qo'yilgan tugma bosilsa avval tasdiq so'raladi.
+export const MODAL_YOPISH_ATRIBUTI = "data-modal-yopish";
 
 type AppModalProps = {
   children: ReactNode;
   className?: string;
   onClose?: () => void;
   actionRail?: boolean;
+  // Foydalanuvchi forma ma'lumotini o'zgartirgan (saqlanmagan). `true` bo'lsa yon "Yopish", Esc va
+  // `data-modal-yopish` tugmalari yopishdan oldin tasdiq so'raydi.
+  ozgarishBor?: boolean;
 };
 
-export default function AppModal({ children, className = "", onClose, actionRail = true }: AppModalProps) {
+export default function AppModal({ children, className = "", onClose, actionRail = true, ozgarishBor = false }: AppModalProps) {
+  const { t } = useTranslation("common");
   const overlayRef = useRef<HTMLDivElement>(null);
+  const [yopishSorovi, setYopishSorovi] = useState<{ amal: () => void } | null>(null);
+  const bypass = useRef(false);
+  const holat = useRef({ ozgarishBor, sorovOchiq: false, yopish: () => {} });
+  useEffect(() => {
+    holat.current = { ozgarishBor, sorovOchiq: yopishSorovi !== null, yopish: modalniAslYopish };
+  });
   const [railHolati, setRailHolati] = useState<{ top: number; left: number; ixcham: boolean } | null>(null);
 
   useLayoutEffect(() => {
@@ -105,7 +123,60 @@ export default function AppModal({ children, className = "", onClose, actionRail
     };
   }, [actionRail, children]);
 
+  // Esc va `data-modal-yopish` tugmalarini ushlaydi: saqlanmagan o'zgarish bo'lsa avval tasdiq so'raladi.
+  useEffect(() => {
+    const id = Symbol("modal");
+    himoyaliModallar.push(id);
+    function ushlash(amal: () => void) {
+      setYopishSorovi({ amal });
+    }
+    function tugma(event: KeyboardEvent) {
+      const joriy = holat.current;
+      if (event.key !== "Escape" || bypass.current || !joriy.ozgarishBor || joriy.sorovOchiq) return;
+      if (himoyaliModallar[himoyaliModallar.length - 1] !== id) return;
+      event.stopImmediatePropagation();
+      event.preventDefault();
+      ushlash(() => holat.current.yopish());
+    }
+    function bosish(event: MouseEvent) {
+      const joriy = holat.current;
+      if (bypass.current || !joriy.ozgarishBor) return;
+      const nishon = (event.target as Element | null)?.closest<HTMLButtonElement>(`button[${MODAL_YOPISH_ATRIBUTI}]`);
+      if (!nishon || nishon.disabled) return;
+      event.stopPropagation();
+      event.preventDefault();
+      ushlash(() => {
+        bypass.current = true;
+        try { nishon.click(); } finally { bypass.current = false; }
+      });
+    }
+    const overlay = overlayRef.current;
+    window.addEventListener("keydown", tugma, true);
+    overlay?.addEventListener("click", bosish, true);
+    return () => {
+      window.removeEventListener("keydown", tugma, true);
+      overlay?.removeEventListener("click", bosish, true);
+      const indeks = himoyaliModallar.indexOf(id);
+      if (indeks >= 0) himoyaliModallar.splice(indeks, 1);
+    };
+  }, []);
+
+  // Yon "Yopish" tugmasi ham shu yerdan o'tadi.
   function modalniYopish() {
+    if (ozgarishBor && !bypass.current) setYopishSorovi({ amal: modalniAslYopish });
+    else modalniAslYopish();
+  }
+
+  function modalniAslYopish() {
+    bypass.current = true;
+    try {
+      modalniYopishAmali();
+    } finally {
+      bypass.current = false;
+    }
+  }
+
+  function modalniYopishAmali() {
     if (onClose) {
       onClose();
       return;
@@ -129,20 +200,6 @@ export default function AppModal({ children, className = "", onClose, actionRail
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
   }
 
-  function modalniYuklash() {
-    const matn = overlayRef.current?.innerText.trim();
-    if (!matn) return;
-    const blob = new Blob([matn], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `modal-${new Date().toISOString().slice(0, 10)}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-  }
-
   if (typeof document === "undefined") return null;
 
   return createPortal(
@@ -158,8 +215,21 @@ export default function AppModal({ children, className = "", onClose, actionRail
           left={railHolati.left}
           ixcham={railHolati.ixcham}
           onClose={modalniYopish}
-          onDownload={modalniYuklash}
           onOpenExternal={() => window.open(window.location.href, "_blank", "noopener,noreferrer")}
+        />
+      )}
+      {yopishSorovi && (
+        <TasdiqlashOynasi
+          ikonka={<TriangleAlert size={26} />}
+          ohang="sariq"
+          sarlavha={t("unsavedGuard.title")}
+          nom=""
+          tavsif={t("unsavedGuard.description")}
+          ortgaMatni={t("unsavedGuard.stay")}
+          tasdiqMatni={t("unsavedGuard.leave")}
+          jarayonMatni={t("unsavedGuard.leaving")}
+          onTasdiq={async () => yopishSorovi.amal()}
+          onYopish={() => setYopishSorovi(null)}
         />
       )}
     </div>,

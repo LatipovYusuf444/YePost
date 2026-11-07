@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
+import { useOzgarishBormi } from "@/hooks/useOzgarishBormi";
 import XatoliMaydon from "@/Components/common/XatoliMaydon";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
@@ -90,6 +91,7 @@ export default function KochirishYaratishModal({ onClose }: Props) {
   // Hujjat sanasi: bugun yoki o'tgan kun (kelajak yo'q); o'tgan kun tanlansa backend hujjatni shu kunning oxirida yozadi.
   const [hujjatSanasi, setHujjatSanasi] = useState(() => bugungiToshkentKuni());
   const [items, setItems] = useState<Qator[]>([yangiQator()]);
+  const ozgarishBor = useOzgarishBormi({ note, hujjatSanasi, items });
   const [xato, setXato] = useState("");
   const fx = useMaydonXatolari(KOCHIRISH_XATO_QOIDALARI);
   const [jonatilmoqda, setJonatilmoqda] = useState(false);
@@ -299,10 +301,10 @@ export default function KochirishYaratishModal({ onClose }: Props) {
   }
 
   return (
-    <AppModal className="items-start justify-start overflow-hidden bg-slate-950/60 p-0 py-4 pl-[92px] pr-4 backdrop-blur-[3px]">
+    <AppModal onClose={onClose} ozgarishBor={ozgarishBor} className="items-start justify-start overflow-hidden bg-slate-950/60 p-0 py-4 pl-[92px] pr-4 backdrop-blur-[3px]">
       <div className="relative h-[calc(100dvh-32px)] w-full">
         <aside className="absolute -left-[58px] top-6 z-30 flex flex-col items-center gap-3">
-          <button type="button" onClick={onClose} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#2563EB] text-white shadow-xl ring-1 ring-white/80" aria-label={t("kochirishYaratishModal.closeAria")}>
+          <button type="button" data-modal-yopish onClick={onClose} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#2563EB] text-white shadow-xl ring-1 ring-white/80" aria-label={t("kochirishYaratishModal.closeAria")}>
             <X size={21} />
           </button>
           <button type="button" onClick={() => window.print()} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#2563EB] shadow-lg ring-1 ring-orange-100" aria-label={t("kochirishYaratishModal.printAria")}>
@@ -414,7 +416,7 @@ export default function KochirishYaratishModal({ onClose }: Props) {
           </div>
 
           <footer className="flex shrink-0 justify-end gap-3 border-t border-orange-100 bg-[#F8FAFC]/95 px-8 py-4 backdrop-blur-xl">
-            <button type="button" onClick={onClose} disabled={store.amalBajarilmoqda} className="h-12 rounded-2xl bg-slate-100 px-7 font-black text-slate-600 disabled:opacity-50">{t("kochirishYaratishModal.footer.cancel")}</button>
+            <button type="button" data-modal-yopish onClick={onClose} disabled={store.amalBajarilmoqda} className="h-12 rounded-2xl bg-slate-100 px-7 font-black text-slate-600 disabled:opacity-50">{t("kochirishYaratishModal.footer.cancel")}</button>
             <button type="button" onClick={() => void saqlashVaYopish(false)} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-300 bg-white px-7 font-black text-[#2563EB] disabled:opacity-50">{store.amalBajarilmoqda && !jonatilmoqda ? <LoaderCircle size={17} className="animate-spin" /> : <Save size={17} />} {t("kochirishYaratishModal.footer.save")}</button>
             <button type="button" onClick={() => void saqlashVaYopish(true)} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#2563EB] px-7 font-black text-white shadow-lg shadow-orange-100 disabled:opacity-50">{store.amalBajarilmoqda && jonatilmoqda ? <LoaderCircle size={17} className="animate-spin" /> : <Send size={17} />} {t("kochirishYaratishModal.footer.saveAndSend")}</button>
           </footer>

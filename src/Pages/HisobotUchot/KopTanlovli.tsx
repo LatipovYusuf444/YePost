@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { Tanlov } from "./types";
 
 // Ko'p tanlovli maydon — yozib qidiriladi (combobox). Hisobot filtrlari uchun umumiy.
@@ -16,6 +17,7 @@ export default function KopTanlovli({
   onChange: (value: string[]) => void;
   placeholder?: string;
 }) {
+  const { t } = useTranslation("common");
   const [open, setOpen] = useState(false);
   const [qidiruv, setQidiruv] = useState("");
   const ref = useRef<HTMLDivElement | null>(null);
@@ -73,7 +75,7 @@ export default function KopTanlovli({
               className="inline-flex items-center gap-1 rounded-lg bg-orange-50 px-2 py-0.5 text-xs font-bold text-orange-600"
             >
               {o.nomi}
-              <button
+              <button aria-label={t("common:actions.remove")}
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();

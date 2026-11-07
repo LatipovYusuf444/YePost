@@ -1,4 +1,6 @@
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import {
   ChevronDown,
   ChevronLeft,
@@ -23,90 +25,35 @@ import { bugun, bugunMinus, vaqtFormat } from "./yordamchilar";
 // Audit loglari: tizimda kim, qachon, nima qilganini ko'rsatadigan nazorat jurnali.
 const PAGE_SIZE = 20;
 
+// `nom` - hisobotlar.json dagi i18n kaliti.
 type Amal = { nom: string; fel: string; icon: LucideIcon; ton: string; nuqta: string };
 
 const AMALLAR: Record<string, Amal> = {
-  CREATE: { nom: "Yaratildi", fel: "yaratildi", icon: FilePlus2, ton: "bg-emerald-50 text-emerald-600", nuqta: "bg-emerald-500" },
-  UPDATE: { nom: "O‘zgartirildi", fel: "o‘zgartirildi", icon: PencilLine, ton: "bg-amber-50 text-amber-600", nuqta: "bg-amber-500" },
-  DELETE: { nom: "O‘chirildi", fel: "o‘chirildi", icon: Trash2, ton: "bg-red-50 text-red-500", nuqta: "bg-red-500" },
-  LOGIN: { nom: "Tizimga kirdi", fel: "tizimga kirdi", icon: LogIn, ton: "bg-blue-50 text-blue-600", nuqta: "bg-blue-500" },
-  LOGOUT: { nom: "Tizimdan chiqdi", fel: "tizimdan chiqdi", icon: LogOut, ton: "bg-slate-100 text-slate-500", nuqta: "bg-slate-400" },
+  CREATE: { nom: "auditLog.actions.CREATE", fel: "yaratildi", icon: FilePlus2, ton: "bg-emerald-50 text-emerald-600", nuqta: "bg-emerald-500" },
+  UPDATE: { nom: "auditLog.actions.UPDATE", fel: "o‘zgartirildi", icon: PencilLine, ton: "bg-amber-50 text-amber-600", nuqta: "bg-amber-500" },
+  DELETE: { nom: "auditLog.actions.DELETE", fel: "o‘chirildi", icon: Trash2, ton: "bg-red-50 text-red-500", nuqta: "bg-red-500" },
+  LOGIN: { nom: "auditLog.actions.LOGIN", fel: "tizimga kirdi", icon: LogIn, ton: "bg-blue-50 text-blue-600", nuqta: "bg-blue-500" },
+  LOGOUT: { nom: "auditLog.actions.LOGOUT", fel: "tizimdan chiqdi", icon: LogOut, ton: "bg-slate-100 text-slate-500", nuqta: "bg-slate-400" },
 };
-const NOMA_LUM_AMAL: Amal = { nom: "Amal", fel: "amal bajarildi", icon: Info, ton: "bg-slate-100 text-slate-500", nuqta: "bg-slate-400" };
+const NOMA_LUM_AMAL: Amal = { nom: "auditLog.actions.UNKNOWN", fel: "amal bajarildi", icon: Info, ton: "bg-slate-100 text-slate-500", nuqta: "bg-slate-400" };
 
-const RESURSLAR: Record<string, string> = {
-  CashOperation: "Kassa amaliyoti",
-  Sale: "Sotuv",
-  SaleItem: "Sotuv tovari",
-  SaleReturn: "Sotuv qaytarish",
-  Product: "Mahsulot",
-  ProductVariant: "Mahsulot varianti",
-  Category: "Kategoriya",
-  Customer: "Xaridor",
-  Supplier: "Yetkazib beruvchi",
-  Partner: "Hamkor",
-  Company: "Kompaniya",
-  User: "Foydalanuvchi",
-  Employee: "Xodim",
-  Warehouse: "Ombor",
-  Branch: "Filial",
-  Stock: "Ombor qoldig‘i",
-  StockMovement: "Tovar harakati",
-  Inventory: "Inventarizatsiya",
-  InventoryCount: "Inventarizatsiya",
-  Receipt: "Kirim",
-  Purchase: "Xarid",
-  Payment: "To‘lov",
-  Expense: "Xarajat",
-  Discount: "Chegirma",
-  Order: "Buyurtma",
-  Workspace: "Ish maydoni",
-  Auth: "Autentifikatsiya",
-};
+// Resurs kalitlari; nomlari `auditLog.resources.*` da.
+const RESURSLAR = ["CashOperation", "Sale", "SaleItem", "SaleReturn", "Product", "ProductVariant", "Category", "Customer", "Supplier", "Partner", "Company", "User", "Employee", "Warehouse", "Branch", "Stock", "StockMovement", "Inventory", "InventoryCount", "Receipt", "Purchase", "Payment", "Expense", "Discount", "Order", "Workspace", "Auth"] as const;
 
-const MAYDONLAR: Record<string, string> = {
-  id: "ID",
-  name: "Nomi",
-  title: "Sarlavha",
-  type: "Turi",
-  status: "Holati",
-  amount: "Summa",
-  total: "Jami",
-  price: "Narx",
-  quantity: "Miqdor",
-  qty: "Miqdor",
-  channel: "To‘lov kanali",
-  method: "Usul",
-  note: "Izoh",
-  comment: "Izoh",
-  phone: "Telefon",
-  email: "Email",
-  username: "Login",
-  fullName: "F.I.SH.",
-  role: "Rol",
-  category: "Kategoriya",
-  currency: "Valyuta",
-  date: "Sana",
-  warehouseId: "Ombor",
-  branchId: "Filial",
-  customerId: "Xaridor",
-  supplierId: "Yetkazib beruvchi",
-  userId: "Foydalanuvchi",
-};
 
-function resursNomi(resurs: string) {
-  if (!resurs) return "Noma’lum obyekt";
-  return RESURSLAR[resurs] ?? resurs.replace(/([a-z])([A-Z])/g, "$1 $2");
+function resursNomi(resurs: string, t: TFunction) {
+  if (!resurs) return t("auditLog.unknownObject");
+  return t(`auditLog.resources.${resurs}`, { defaultValue: resurs.replace(/([a-z])([A-Z])/g, "$1 $2") });
 }
 
-function maydonNomi(kalit: string) {
-  return MAYDONLAR[kalit] ?? kalit.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
+function maydonNomi(kalit: string, t: TFunction) {
+  return t(`auditLog.fields.${kalit}`, { defaultValue: kalit.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase()) });
 }
 
-function qiymatMatni(kalit: string, qiymat: unknown): string {
+function qiymatMatni(kalit: string, qiymat: unknown, t: TFunction): string {
   if (qiymat === null || qiymat === undefined || qiymat === "") return "—";
-  if (typeof qiymat === "boolean") return qiymat ? "Ha" : "Yo‘q";
-  if (typeof qiymat === "number") return /amount|total|price|sum/i.test(kalit) ? `${qiymat.toLocaleString("uz-UZ")} so‘m` : qiymat.toLocaleString("uz-UZ");
+  if (typeof qiymat === "boolean") return qiymat ? t("auditLog.yes") : t("auditLog.no");
+  if (typeof qiymat === "number") return /amount|total|price|sum/i.test(kalit) ? `${qiymat.toLocaleString("uz-UZ")} ${t("auditLog.som")}` : qiymat.toLocaleString("uz-UZ");
   if (typeof qiymat === "string") {
     if (/^\d{4}-\d{2}-\d{2}T/.test(qiymat)) return vaqtFormat(qiymat);
     return qiymat;
@@ -140,29 +87,30 @@ function ozgarishlar(log: AuditLog): Ozgarish[] {
     .map(([kalit, value]) => ({ kalit, keyin: value }));
 }
 
-function nisbiVaqt(sana: string) {
+function nisbiVaqt(sana: string, t: TFunction) {
   const vaqt = new Date(sana).getTime();
   if (Number.isNaN(vaqt)) return "";
   const daqiqa = Math.round((Date.now() - vaqt) / 60000);
-  if (daqiqa < 1) return "hozirgina";
-  if (daqiqa < 60) return `${daqiqa} daqiqa oldin`;
+  if (daqiqa < 1) return t("auditLog.relative.justNow");
+  if (daqiqa < 60) return t("auditLog.relative.minutesAgo", { n: daqiqa });
   const soat = Math.round(daqiqa / 60);
-  if (soat < 24) return `${soat} soat oldin`;
+  if (soat < 24) return t("auditLog.relative.hoursAgo", { n: soat });
   const kun = Math.round(soat / 24);
-  return kun < 31 ? `${kun} kun oldin` : "";
+  return kun < 31 ? t("auditLog.relative.daysAgo", { n: kun }) : "";
 }
 
 type Filter = { dateFrom: string; dateTo: string; action: string; resource: string };
 const BOSH_FILTER: Filter = { dateFrom: bugunMinus(30), dateTo: bugun(), action: "", resource: "" };
 
 const AMAL_FILTRLARI = [
-  { qiymat: "", nom: "Barchasi" },
-  { qiymat: "CREATE", nom: "Yaratildi" },
-  { qiymat: "UPDATE", nom: "O‘zgartirildi" },
-  { qiymat: "DELETE", nom: "O‘chirildi" },
+  { qiymat: "", nom: "auditLog.all" },
+  { qiymat: "CREATE", nom: "auditLog.actions.CREATE" },
+  { qiymat: "UPDATE", nom: "auditLog.actions.UPDATE" },
+  { qiymat: "DELETE", nom: "auditLog.actions.DELETE" },
 ];
 
 export default function AuditLoglari() {
+  const { t } = useTranslation("hisobotlar");
   const [filter, setFilter] = useState<Filter>(BOSH_FILTER);
   const [resursMatni, setResursMatni] = useState("");
   const [page, setPage] = useState(1);
@@ -228,13 +176,12 @@ export default function AuditLoglari() {
         <div className="mb-5 flex items-start gap-3 rounded-2xl bg-blue-50/70 px-4 py-3 text-sm text-blue-900">
           <Info size={18} className="mt-0.5 shrink-0 text-blue-600" />
           <p className="font-medium leading-6">
-            Bu yerda tizimdagi barcha muhim amallar yozib boriladi: kim, qachon, nimani yaratdi, o‘zgartirdi yoki o‘chirdi.
-            Kassa, sotuv va boshqa bo‘limlardagi harakatlarni tekshirish uchun foydalaning.
+            {t("auditLog.intro")}
           </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Maydon nom="Boshlanish sanasi">
+          <Maydon nom={t("auditLog.dateFrom")}>
             <input
               type="date"
               value={filter.dateFrom}
@@ -243,7 +190,7 @@ export default function AuditLoglari() {
               className={maydonKlass}
             />
           </Maydon>
-          <Maydon nom="Tugash sanasi">
+          <Maydon nom={t("auditLog.dateTo")}>
             <input
               type="date"
               value={filter.dateTo}
@@ -252,24 +199,24 @@ export default function AuditLoglari() {
               className={maydonKlass}
             />
           </Maydon>
-          <Maydon nom="Obyekt (resurs)" className="sm:col-span-2">
+          <Maydon nom={t("auditLog.resource")} className="sm:col-span-2">
             <input
               list="audit-resurslar"
               value={resursMatni}
               onChange={(event) => setResursMatni(event.target.value)}
-              placeholder="Masalan: Product, Sale, CashOperation"
+              placeholder={t("auditLog.resourcePlaceholder")}
               className={maydonKlass}
             />
             <datalist id="audit-resurslar">
-              {Object.entries(RESURSLAR).map(([kalit, nom]) => (
-                <option key={kalit} value={kalit}>{nom}</option>
+              {RESURSLAR.map((kalit) => (
+                <option key={kalit} value={kalit}>{t(`auditLog.resources.${kalit}`)}</option>
               ))}
             </datalist>
           </Maydon>
         </div>
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Amal turi">
+          <div className="flex flex-wrap gap-2" role="group" aria-label={t("auditLog.actionType")}>
             {AMAL_FILTRLARI.map((item) => (
               <button
                 key={item.qiymat || "all"}
@@ -282,7 +229,7 @@ export default function AuditLoglari() {
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
-                {item.nom}
+                {t(item.nom)}
               </button>
             ))}
           </div>
@@ -293,7 +240,7 @@ export default function AuditLoglari() {
               className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 px-4 text-sm font-bold text-slate-500 transition hover:bg-slate-50"
             >
               <RotateCcw size={14} />
-              Tozalash
+              {t("auditLog.clear")}
             </button>
           )}
         </div>
@@ -304,8 +251,8 @@ export default function AuditLoglari() {
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><FileClock size={19} /></span>
             <div>
-              <h3 className="font-black text-slate-800">Amallar tarixi</h3>
-              <p className="text-xs font-semibold text-slate-400">Jami yozuvlar: {total.toLocaleString("uz-UZ")}</p>
+              <h3 className="font-black text-slate-800">{t("auditLog.history")}</h3>
+              <p className="text-xs font-semibold text-slate-400">{t("auditLog.totalRecords", { total: total.toLocaleString("uz-UZ") })}</p>
             </div>
           </div>
         </header>
@@ -317,19 +264,19 @@ export default function AuditLoglari() {
         ) : loglar.length === 0 ? (
           <div className="flex h-72 flex-col items-center justify-center gap-3 text-center">
             <span className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400"><FileClock size={26} /></span>
-            <p className="font-bold text-slate-500">Tanlangan davrda amallar topilmadi</p>
-            <p className="text-sm text-slate-400">Sana oralig‘ini yoki filtrlarni o‘zgartirib ko‘ring.</p>
+            <p className="font-bold text-slate-500">{t("auditLog.emptyTitle")}</p>
+            <p className="text-sm text-slate-400">{t("auditLog.emptyHint")}</p>
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50/70 hover:bg-slate-50/70">
                 <TableHead className="w-16 pl-5 text-center font-black text-slate-500">№</TableHead>
-                <TableHead className="font-black text-slate-500">Amal</TableHead>
-                <TableHead className="font-black text-slate-500">Obyekt</TableHead>
-                <TableHead className="font-black text-slate-500">Foydalanuvchi</TableHead>
-                <TableHead className="font-black text-slate-500">Sana va vaqt</TableHead>
-                <TableHead className="w-36 pr-5 text-right font-black text-slate-500">Tafsilot</TableHead>
+                <TableHead className="font-black text-slate-500">{t("auditLog.columns.action")}</TableHead>
+                <TableHead className="font-black text-slate-500">{t("auditLog.columns.object")}</TableHead>
+                <TableHead className="font-black text-slate-500">{t("auditLog.columns.user")}</TableHead>
+                <TableHead className="font-black text-slate-500">{t("auditLog.columns.dateTime")}</TableHead>
+                <TableHead className="w-36 pr-5 text-right font-black text-slate-500">{t("auditLog.columns.details")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -337,7 +284,7 @@ export default function AuditLoglari() {
                 const id = log.id ?? `audit-${page}-${index}`;
                 const amal = AMALLAR[String(log.action ?? "").toUpperCase()] ?? NOMA_LUM_AMAL;
                 const Ikonka = amal.icon;
-                const foydalanuvchi = log.user?.fullName || log.user?.username || "Tizim";
+                const foydalanuvchi = log.user?.fullName || log.user?.username || t("auditLog.system");
                 const sana = log.createdAt ?? log.timestamp ?? "";
                 const ozgarishRoyxati = ozgarishlar(log);
                 const ochiqmi = ochiq === id;
@@ -350,10 +297,10 @@ export default function AuditLoglari() {
                       <TableCell>
                         <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${amal.ton}`}>
                           <Ikonka size={14} />
-                          {amal.nom}
+                          {t(amal.nom)}
                         </span>
                       </TableCell>
-                      <TableCell className="font-bold text-slate-800">{resursNomi(String(log.resource ?? ""))}</TableCell>
+                      <TableCell className="font-bold text-slate-800">{resursNomi(String(log.resource ?? ""), t)}</TableCell>
                       <TableCell>
                         <span className="flex items-center gap-2.5">
                           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-black text-blue-600">
@@ -364,7 +311,7 @@ export default function AuditLoglari() {
                       </TableCell>
                       <TableCell>
                         <p className="font-bold text-slate-700">{vaqtFormat(sana)}</p>
-                        {nisbiVaqt(sana) && <p className="text-xs font-semibold text-slate-400">{nisbiVaqt(sana)}</p>}
+                        {nisbiVaqt(sana, t) && <p className="text-xs font-semibold text-slate-400">{nisbiVaqt(sana, t)}</p>}
                       </TableCell>
                       <TableCell className="pr-5 text-right">
                         {ozgarishRoyxati.length > 0 ? (
@@ -374,11 +321,11 @@ export default function AuditLoglari() {
                             aria-expanded={ochiqmi}
                             className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm font-bold text-blue-600 transition hover:bg-blue-50"
                           >
-                            {ochiqmi ? "Yashirish" : `Ko‘rish (${ozgarishRoyxati.length})`}
+                            {ochiqmi ? t("auditLog.hide") : t("auditLog.view", { count: ozgarishRoyxati.length })}
                             <ChevronDown size={15} className={`transition ${ochiqmi ? "rotate-180" : ""}`} />
                           </button>
                         ) : (
-                          <span className="text-xs font-semibold text-slate-300">Ma’lumot yo‘q</span>
+                          <span className="text-xs font-semibold text-slate-300">{t("auditLog.noData")}</span>
                         )}
                       </TableCell>
                     </TableRow>
@@ -389,15 +336,15 @@ export default function AuditLoglari() {
                           <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                             {ozgarishRoyxati.map((item) => (
                               <div key={item.kalit} className="min-w-0 rounded-xl bg-white p-3 ring-1 ring-slate-100">
-                                <dt className="text-xs font-bold text-slate-400">{maydonNomi(item.kalit)}</dt>
+                                <dt className="text-xs font-bold text-slate-400">{maydonNomi(item.kalit, t)}</dt>
                                 <dd className="mt-0.5 whitespace-normal break-words text-sm font-semibold text-slate-700">
                                   {item.oldin !== undefined && (
                                     <>
-                                      <span className="text-slate-400 line-through">{qiymatMatni(item.kalit, item.oldin)}</span>
+                                      <span className="text-slate-400 line-through">{qiymatMatni(item.kalit, item.oldin, t)}</span>
                                       <span className="mx-1.5 text-slate-300">→</span>
                                     </>
                                   )}
-                                  {qiymatMatni(item.kalit, item.keyin)}
+                                  {qiymatMatni(item.kalit, item.keyin, t)}
                                 </dd>
                               </div>
                             ))}
@@ -415,7 +362,7 @@ export default function AuditLoglari() {
         {!yuklanmoqda && loglar.length > 0 && (
           <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-4">
             <p className="text-sm font-semibold text-slate-400">
-              {page}-sahifa, jami {totalPages} ta
+              {t("auditLog.pageOf", { page, total: totalPages })}
             </p>
             <div className="flex gap-2">
               <button
@@ -424,7 +371,7 @@ export default function AuditLoglari() {
                 onClick={() => setPage((p) => p - 1)}
                 className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
               >
-                <ChevronLeft size={16} /> Oldingi
+                <ChevronLeft size={16} /> {t("auditLog.prev")}
               </button>
               <button
                 type="button"
@@ -432,7 +379,7 @@ export default function AuditLoglari() {
                 onClick={() => setPage((p) => p + 1)}
                 className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-blue-600 px-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:opacity-40"
               >
-                Keyingi <ChevronRight size={16} />
+                {t("auditLog.next")} <ChevronRight size={16} />
               </button>
             </div>
           </footer>

@@ -201,7 +201,7 @@ export default function XaridorModal({
   }
 
   return (
-    <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-0 py-4 pl-[88px] pr-4 backdrop-blur-[3px]">
+    <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-0 py-4 pl-4 pr-4 md:pl-[88px] backdrop-blur-[3px]">
       <div className="relative h-[calc(100vh-32px)] w-full">
         <TezkorPanel
           havolaId={boshlangich?.id ?? "yangi"}

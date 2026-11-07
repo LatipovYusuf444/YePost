@@ -82,8 +82,6 @@ export default function AppRouter() {
         <Route path="/ombor/mahsulotlar" element={<OmborMahsulotlar />} />
         <Route path="/ombor/qoldiq" element={<OmborQoldigi />} />
         <Route path="/ombor/inventarizatsiya" element={<Inventarizatsiya />} />
-        {/* Mock Kassa uchoti eski backendli Kassa sahifasi o'rnida
-            (backend kodi Pages/Kassa da tegilmagan holda qoladi). */}
         <Route path="/ishlab-chiqarish" element={<IshlabChiqarish />} />
         <Route path="/ishlab-chiqarish/buyurtmalar" element={<IshlabChiqarish bolim="buyurtmalar" />} />
         <Route path="/ishlab-chiqarish/retseptlar" element={<IshlabChiqarish bolim="retseptlar" />} />
@@ -102,12 +100,8 @@ export default function AppRouter() {
         <Route path="/hisobotlar/kunlik-kassa" element={<KunlikKassa />} />
         <Route path="/hisobotlar/chegirmalar" element={<HisobotUchot tab="discount" />} />
         <Route path="/hisobotlar/audit-loglari" element={<HisobotUchot tab="audit" />} />
-        {/* Mock Xodim uchoti eski backendli Hodimlar sahifasi o'rnida
-            (backend kodi Pages/Hodimlar + accountStore da tegilmagan holda qoladi). */}
         <Route path="/hodimlar" element={<XodimUchot />} />
         <Route path="/qollab-quvvatlash" element={<QollabQuvvatlash />} />
-        {/* Mock Sozlamalar uchoti eski backendli Sozlamalar sahifasi o'rnida
-            (backend kodi Pages/Sozlamalar da tegilmagan holda qoladi). */}
         <Route path="/sozlamalar" element={<SozlamalarUchot />} />
 
         {/* Noto‘g‘ri route bo‘lsa bosh sahifaga qaytaradi */}

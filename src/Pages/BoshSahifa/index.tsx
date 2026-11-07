@@ -1,5 +1,7 @@
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
 import { pulMatni, useValyutaStore } from "@/lib/valyuta";
+import i18n from "i18next";
 import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -39,6 +41,7 @@ import XaridorModal from "@/Pages/XaridorUchot/XaridorModal";
 import { kompaniyaniUiGa } from "@/Pages/XaridorUchot/backendAdapters";
 import type { Xaridor, XaridorKompaniyasi } from "@/Pages/XaridorUchot/types";
 import { mijozKompaniyalariApi, mijozlarApi } from "@/api/partnersApi";
+import { enterTolovniTasdiqlaydimi, posQidiruvigaFokus, posQidiruvigaFokusKeyin } from "@/lib/skanerFokusi";
 
 type CustomerType = "donalik" | "doimiy";
 
@@ -50,7 +53,7 @@ type PaymentType = {
 const quickDiscounts = [15, 30, 50, 75];
 
 function formatSumma(value: number) {
-  return pulMatni(Number(value) || 0, "UZS", true, "uzs");
+  return pulMatni(Number(value) || 0, "UZS", true, i18n.t("bosh_sahifa:customer.currency"));
 }
 
 function readNumber(value: unknown, fallback = 0) {
@@ -145,6 +148,11 @@ export default function BoshSahifa() {
   const [qaytimYaxlitlash, setQaytimYaxlitlash] = useState(true);
   const kurs = useValyutaStore((holat) => holat.kurs);
   const dollarTolovMumkin = useValyutaStore((holat) => holat.rejimYoniq && holat.kursBor && holat.kurs > 0);
+
+  // POS ochilganda fokus skaner uchun sarlavhadagi qidiruv maydonida turadi.
+  useEffect(() => {
+    posQidiruvigaFokus();
+  }, []);
 
   useEffect(() => {
     if (!mijozQoshishOchiq) {
@@ -452,6 +460,7 @@ export default function BoshSahifa() {
       clearCart();
       setTolovModalOchiq(false);
       setMessage({ type: "success", text: t("errors.paymentSuccess") });
+      posQidiruvigaFokusKeyin();
     } catch (error) {
       const xato = xatoMatni(error, t("errors.finalizeFailed"));
       setMessage({
@@ -572,7 +581,7 @@ export default function BoshSahifa() {
   }
 
   async function doimiySotuvniBekorQilish(sotuvId: string) {
-    if (!window.confirm(t("doimiySotuv.confirmCancel"))) return;
+    if (!(await tasdiqSorash(t("doimiySotuv.confirmCancel"))).rozi) return;
     if (await sotuvniBekorQilish(sotuvId)) {
       doimiySotuvniYopish();
       setMessage({ type: "success", text: t("doimiySotuv.cancelled") });
@@ -1133,10 +1142,10 @@ export default function BoshSahifa() {
       )}
       {tolovModalOchiq && (
         <AppModal className="bg-slate-950/60 backdrop-blur-md">
-          <section className="max-h-[94vh] w-full max-w-6xl overflow-y-auto rounded-[38px] border border-gold-100 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E8EEF7] shadow-[0_35px_120px_rgba(15,23,42,.38)]">
+          <section onKeyDown={(event) => { if (enterTolovniTasdiqlaydimi(event, { mumkin: tolovYaroqli, band: saving })) { event.preventDefault(); void tolovniTasdiqlash(); } }} className="max-h-[94vh] w-full max-w-6xl overflow-y-auto rounded-[38px] border border-gold-100 bg-gradient-to-br from-[#F8FAFC] via-white to-[#E8EEF7] shadow-[0_35px_120px_rgba(15,23,42,.38)]">
             <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-gold-100 bg-white/85 px-9 py-7 backdrop-blur-xl">
               <div><p className="text-xs font-black uppercase tracking-[.22em] text-gold-500">{t("paymentModal.eyebrow")}</p><h2 className="mt-1 text-2xl font-black text-slate-950">{t("paymentModal.title")}</h2><p className="mt-1 text-sm font-semibold text-slate-400">{t("paymentModal.subtitle")}</p></div>
-              <button type="button" onClick={() => setTolovModalOchiq(false)} disabled={saving} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm ring-1 ring-gold-100 hover:bg-gold-500 hover:text-white disabled:opacity-50"><X size={20}/></button>
+              <button aria-label={t("common:actions.close")} type="button" onClick={() => setTolovModalOchiq(false)} disabled={saving} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm ring-1 ring-gold-100 hover:bg-gold-500 hover:text-white disabled:opacity-50"><X size={20}/></button>
             </header>
 
             <div className="grid gap-8 p-9 lg:grid-cols-[minmax(0,1fr)_400px]">
@@ -1183,7 +1192,6 @@ export default function BoshSahifa() {
                 <div className="mt-4 flex gap-3"><button type="button" onClick={() => { setTolovSummasi(String(payableTotal)); setDollarTolovi(""); }} className="flex-1 rounded-2xl bg-gold-50 px-3 py-3 text-xs font-black text-gold-600">{t("paymentModal.fullAmount")}</button><button type="button" onClick={() => { setTolovSummasi(String(Math.round(payableTotal / 2))); setDollarTolovi(""); }} className="flex-1 rounded-2xl bg-slate-100 px-3 py-3 text-xs font-black text-slate-600">50%</button></div>
                 {message?.type === "error" && <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 p-3 text-xs font-bold leading-5 text-red-600">{message.text}</div>}
                 <button type="button" onClick={() => void tolovniTasdiqlash()} disabled={saving || !tolovYaroqli} className="mt-auto flex w-full items-center justify-center gap-2 rounded-2xl bg-gold-500 px-5 py-4 text-sm font-black text-white shadow-lg shadow-gold-200 transition hover:bg-gold-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none">{saving && <LoaderCircle size={17} className="animate-spin"/>} {t("paymentModal.confirm")}</button>
-                <p className="mt-3 text-center text-xs font-semibold leading-5 text-slate-400">{t("paymentModal.apiNote")}</p>
               </aside>
             </div>
           </section>

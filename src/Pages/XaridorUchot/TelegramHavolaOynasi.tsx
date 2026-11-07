@@ -12,7 +12,7 @@ export default function TelegramHavolaOynasi({ xaridor, onYopish }: { xaridor: X
 
   return (
     <AppModal onClose={onYopish}>
-      <div className="w-full max-w-lg overflow-hidden rounded-[28px] bg-white shadow-[0_30px_90px_rgba(15,23,42,.24)]" data-testid="telegram-havola-oynasi">
+      <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-[28px] bg-white shadow-[0_30px_90px_rgba(15,23,42,.24)]" data-testid="telegram-havola-oynasi">
         <header className="flex items-start justify-between gap-3 border-b border-slate-100 bg-linear-to-r from-orange-50 to-white px-6 py-4">
           <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-[0.16em] text-[#2563EB]">{t("telegramBot.createLink")}</p>

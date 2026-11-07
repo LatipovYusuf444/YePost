@@ -790,7 +790,7 @@ export default function SupportInbox() {
       {/* ================= Yangi murojaat ================= */}
       {yangiOchiq && (
         <AppModal onClose={() => setYangiOchiq(false)} className="p-4">
-          <div className="w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl">
+          <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-lg font-black text-slate-900">{t("inbox.newTicketTitle")}</h3>
               <button type="button" onClick={() => setYangiOchiq(false)} aria-label={t("closeChatAria")} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100"><X size={18} /></button>

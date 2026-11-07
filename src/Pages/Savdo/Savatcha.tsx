@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import type { DraftStatus, MijozTanlovi, QoldiqTanlovi, Sotuv, XodimTanlovi } from "@/types/savdo";
 import { draftSalesService, saleToDraftSale } from "@/api/draftSalesService";
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import { pulniFormatlash, sotuvHolati, sotuvRaqami } from "./savdoYordamchilari";
 import { valyutaKodi } from "@/lib/valyuta";
 import { HujjatOchirishOynasi } from "@/Components/common/HujjatOchirish";
@@ -270,9 +271,9 @@ export default function Savatcha({
         await draftSalesService.duplicateDraft(sotuv.id);
         onXabar("savatcha.messages.duplicated");
       } else if (action === "cancel") {
-        const reason = window.prompt(t("savatcha.alerts.cancelPrompt"));
-        if (reason === null) return;
-        await draftSalesService.cancelDraft(sotuv.id, reason.trim() || t("savatcha.alerts.cancelReasonMissing"));
+        const javob = await tasdiqSorash(t("savatcha.alerts.cancelPrompt"), { sabab: true });
+        if (!javob.rozi) return;
+        await draftSalesService.cancelDraft(sotuv.id, javob.sabab.trim() || t("savatcha.alerts.cancelReasonMissing"));
         onXabar("savatcha.messages.cancelled");
       }
       await onRefresh();

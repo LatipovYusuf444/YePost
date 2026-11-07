@@ -1,3 +1,4 @@
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import { useState, type FormEvent } from "react";
 import { Building2, Edit3, LoaderCircle, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -79,7 +80,7 @@ export default function Kompaniyalar() {
   }
 
   async function ochirish(id: string) {
-    if (!window.confirm(t("kompaniyalar.confirmDelete"))) return;
+    if (!(await tasdiqSorash(t("kompaniyalar.confirmDelete"), { ochirish: true })).rozi) return;
     await store.kompaniyaOchirish(id);
   }
 
@@ -113,7 +114,7 @@ export default function Kompaniyalar() {
             </div>
             <div className="mt-5 flex gap-2 border-t pt-4">
               <button onClick={() => void tahrirlash(item.id)} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-orange-50 py-2.5 font-bold text-orange-600"><Edit3 size={15}/>{t("kompaniyalar.editButton")}</button>
-              <button onClick={() => void ochirish(item.id)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500"><Trash2 size={16}/></button>
+              <button aria-label={t("common:actions.delete")} onClick={() => void ochirish(item.id)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500"><Trash2 size={16}/></button>
             </div>
           </article>
         ))}
@@ -121,7 +122,7 @@ export default function Kompaniyalar() {
       </div>
       {modal && (
         <AppModal>
-          <form onSubmit={saqlash} className="w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl">
+          <form onSubmit={saqlash} className="w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl">
             <h2 className="text-2xl font-black">{editing ? t("kompaniyalar.modalEditTitle") : t("kompaniyalar.modalNewTitle")}</h2>
             {(fx.tepadagi || (!fx.bor && store.xatolik)) && <div className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-600">{fx.tepadagi || store.xatolik}</div>}
             <div className="mt-5 space-y-3">

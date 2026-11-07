@@ -179,6 +179,9 @@ test('shared Axios success interceptor emits stock notifications before DTO unwr
     '@/lib/maydonXatolari': { apiXatosiniYozish() {} },
     sonner: { toast: { warning: value => messages.push(['warning', value]), success: value => messages.push(['success', value]) } },
     '@/lib/negativeStock': { negativeStockMessages },
+    '@/lib/blobXatosi': { blobXatosiniOqish: async data => data },
+    '@/lib/muvaffaqiyatToasti': { muvaffaqiyatKaliti: () => null },
+    i18next: { __esModule: true, default: { t: key => key } },
   });
   const outgoing = { data: { data: { id: 's', status: 'CONFIRMED' }, warnings: [warning] }, config: { method: 'post', url: '/sales/s/confirm' } };
   assert.equal(success(outgoing), outgoing);

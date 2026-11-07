@@ -1,3 +1,4 @@
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import { useEffect, useMemo, useState } from "react";
 import { Edit3, LoaderCircle, Lock, Plus, Ruler, Trash2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -127,7 +128,7 @@ export default function OlchovBirligiBolimi() {
 
   async function ochirish(birlik: OlchovBirligi) {
     if (!direktor) return;
-    if (!window.confirm(t("birliklar.deleteConfirm", { name: birlik.name }))) return;
+    if (!(await tasdiqSorash(t("birliklar.deleteConfirm", { name: birlik.name }), { ochirish: true })).rozi) return;
     setXato("");
     try {
       await birliklarApi.ochirish(birlik.id);

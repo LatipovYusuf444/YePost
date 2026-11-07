@@ -13,7 +13,10 @@ type TasdiqlashOynasiProps = {
   ortgaMatni: string;
   tasdiqMatni: string;
   jarayonMatni: string;
-  onTasdiq: () => Promise<boolean | void>;
+  // Berilsa, oynada ixtiyoriy sabab matni maydoni chiqadi; yozilgan matn `onTasdiq` ga uzatiladi.
+  sabab?: { yorliq: string; joyTutuvchi?: string };
+  // `false` yoki xato — amal bajarilmadi: oyna ochiq qoladi. `true` yoki hech narsa — oyna yopiladi.
+  onTasdiq: (sabab: string) => Promise<boolean | void>;
   onYopish: () => void;
 };
 
@@ -49,10 +52,12 @@ export default function TasdiqlashOynasi({
   ortgaMatni,
   tasdiqMatni,
   jarayonMatni,
+  sabab,
   onTasdiq,
   onYopish,
 }: TasdiqlashOynasiProps) {
   const [bajarilmoqda, setBajarilmoqda] = useState(false);
+  const [sababMatni, setSababMatni] = useState("");
   const ranglar = OHANGLAR[ohang];
 
   useEffect(() => {
@@ -69,13 +74,16 @@ export default function TasdiqlashOynasi({
 
   async function tasdiqlash() {
     setBajarilmoqda(true);
+    let bajarildi = false;
     try {
-      await onTasdiq();
+      // `false` yoki xato — amal bajarilmagan (xato toasti ko'rsatilgan): oyna ochiq qoladi, qayta urinish mumkin.
+      bajarildi = (await onTasdiq(sababMatni.trim())) !== false;
+    } catch {
+      bajarildi = false;
     } finally {
-      // Muvaffaqiyatsiz bo'lsa ham yopamiz: xato toasti ko'rsatilgan va ro'yxat backend holatiga moslangan.
       setBajarilmoqda(false);
-      onYopish();
     }
+    if (bajarildi) onYopish();
   }
 
   return createPortal(
@@ -96,6 +104,19 @@ export default function TasdiqlashOynasi({
         {nom && <p className="mx-auto mt-3 max-w-full truncate rounded-full bg-slate-100 px-4 py-1.5 text-sm font-black text-slate-700">{nom}</p>}
         <p className="mt-3 text-sm leading-6 text-slate-500">{tavsif}</p>
         {izoh && <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs font-bold leading-5 text-amber-700">{izoh}</p>}
+        {sabab && (
+          <label className="mt-4 block text-left text-xs font-bold text-slate-500">
+            {sabab.yorliq}
+            <textarea
+              value={sababMatni}
+              onChange={(event) => setSababMatni(event.target.value)}
+              disabled={bajarilmoqda}
+              placeholder={sabab.joyTutuvchi}
+              rows={2}
+              className="mt-1.5 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 outline-none transition focus:border-slate-400 disabled:opacity-60"
+            />
+          </label>
+        )}
         <div className="mt-6 flex gap-3">
           <button
             type="button"
@@ -109,7 +130,7 @@ export default function TasdiqlashOynasi({
             type="button"
             onClick={() => void tasdiqlash()}
             disabled={bajarilmoqda}
-            autoFocus
+            autoFocus={!sabab}
             className={`inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl text-sm font-black text-white shadow-md transition disabled:opacity-60 ${ranglar.tugma}`}
           >
             {bajarilmoqda && <LoaderCircle size={16} className="animate-spin" />}

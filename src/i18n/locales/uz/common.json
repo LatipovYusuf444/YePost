@@ -18,7 +18,14 @@
     "no": "Yo'q",
     "print": "Chop etish",
     "export": "Eksport",
-    "import": "Import"
+    "import": "Import",
+    "download": "Yuklab olish",
+    "more": "Boshqa amallar",
+    "remove": "Olib tashlash",
+    "clear": "Tozalash",
+    "copyLink": "Havolani nusxalash",
+    "linkCopied": "Havola nusxalandi",
+    "openExternal": "Alohida oynada ochish"
   },
   "select": {
     "placeholder": "Tanlang",
@@ -68,6 +75,21 @@
     "createdAt": "Kiritilgan: {{vaqt}}",
     "createdAtTitle": "Hujjat sanasi va kiritilgan vaqt har xil kunda"
   },
+  "unsavedGuard": {
+    "title": "Saqlanmagan o'zgarishlar bor",
+    "description": "Kiritilgan o'zgarishlar saqlanmagan. Yopsangiz, ular yo'qoladi.",
+    "stay": "Oynada qolish",
+    "leave": "Saqlamasdan yopish",
+    "leaving": "Yopilmoqda..."
+  },
+  "tasdiq": {
+    "title": "Tasdiqlaysizmi?",
+    "yes": "Ha, tasdiqlash",
+    "delete": "Ha, o'chirish",
+    "no": "Yo'q, qaytish",
+    "working": "Bajarilmoqda...",
+    "reason": "Sabab (ixtiyoriy)"
+  },
   "hujjatOgohlantirish": {
     "title": "Ogohlantirish",
     "defaultName": "Inventarizatsiya",
@@ -112,5 +134,10 @@
   },
   "validation": {
     "fieldRequired": "To'ldirilishi shart."
+  },
+  "toast": {
+    "created": "Muvaffaqiyatli yaratildi",
+    "deleted": "Muvaffaqiyatli o'chirildi",
+    "saved": "Muvaffaqiyatli saqlandi"
   }
 }

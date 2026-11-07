@@ -1,3 +1,4 @@
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import { useMemo, useState } from "react";
 import { Plus, Search, ShieldCheck, Trash2, UsersRound } from "lucide-react";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
@@ -36,12 +37,12 @@ export default function Lavozimlar({ lavozimlar, xodimlar, onSaqlash, onOchirish
     setModalOchiq(true);
   }
 
-  function ochirish(lavozim: Lavozim) {
+  async function ochirish(lavozim: Lavozim) {
     const soni = xodimSoni(lavozim.id);
     const savol = soni
       ? `"${lavozim.nomi}" lavozimini o'chirasizmi? ${soni} ta xodimdan biriktirish olib tashlanadi.`
       : `"${lavozim.nomi}" lavozimini o'chirasizmi?`;
-    if (!window.confirm(savol)) return;
+    if (!(await tasdiqSorash(savol, { ochirish: true })).rozi) return;
     onOchirish(lavozim.id);
   }
 

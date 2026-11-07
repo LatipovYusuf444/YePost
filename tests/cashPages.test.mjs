@@ -8,8 +8,12 @@ import * as dates from '../src/lib/hujjatSanasi.ts';
 import * as cash from '../src/lib/cashReports.ts';
 import * as numbering from '../src/lib/kassaNomlari.ts';
 import * as taqsimot from '../src/lib/qarzTaqsimoti.ts';
+import * as raqamMatni from '../src/lib/hujjatRaqamiMatni.ts';
 
 const require = createRequire(import.meta.url);
+// Haqiqiy uz tarjimalar bilan t(): kalit bo'yicha matn va {{o'zgaruvchi}} almashtirish.
+const hisobotlarUz = JSON.parse(readFileSync(new URL('../src/i18n/locales/uz/hisobotlar.json', import.meta.url), 'utf8'));
+const tUz = (key, args = {}) => String(key.split('.').reduce((x, k) => x?.[k], hisobotlarUz) ?? key).replace(/\{\{(\w+)\}\}/g, (_, name) => args[name]);
 const nodes = value => Array.isArray(value) ? value.flatMap(nodes) : !value || typeof value !== 'object' ? [] : [value, ...nodes(value.props?.children)];
 const text = value => Array.isArray(value) ? value.map(text).join('') : value && typeof value === 'object' ? text(value.props?.children) : String(value ?? '');
 const same = (left, right) => left && right && left.length === right.length && left.every((item, i) => Object.is(item, right[i]));
@@ -47,6 +51,7 @@ const daily = params => ({ ...params, timezone: 'Asia/Tashkent', days: [{ date: 
 test('daily page uses Tashkent today, keeps historical range independent, and applies branch/payment filters to both requests', async () => {
   const calls = [];
   const screen = page('../src/Pages/HisobotUchot/KunlikKassa.tsx', {
+    'react-i18next': { useTranslation: () => ({ t: tUz }) },
     '@/api/reportsApi': { cashDailyReportApi: { olish: async params => { calls.push(params); return daily(params); } } },
     '@/api/omborApi': { filiallarApi: { royxat: async () => [{ id: 'b1', name: 'Branch' }] } },
   });
@@ -135,6 +140,7 @@ test('kassa uses server totals, preserves ledger currencies, excludes duplicate/
     '@/store/authProfileStore': { useAuthProfileStore: selector => selector({ profil: { role: 'DIREKTOR' } }) },
     '@/lib/roles': { rolniNormallashtirish: value => value },
     '@/lib/kassaNomlari': numbering,
+    '@/lib/hujjatRaqamiMatni': raqamMatni,
     '@/lib/qarzTaqsimoti': taqsimot,
     '@/hooks/useKassaSotuvlari': { useKassaSotuvKeshi: () => ({ olingan: () => undefined }) },
     './yordamchilar': { kassaSummasi: cash.cashAmount, sanaFormat: dates.kunMatni },
@@ -175,6 +181,7 @@ test('customer payment confirm shows the allocation; a failed confirm rebinds th
     '@/store/authProfileStore': { useAuthProfileStore: selector => selector({ profil: { role: 'DIREKTOR' } }) },
     '@/lib/roles': { rolniNormallashtirish: value => value },
     '@/lib/kassaNomlari': numbering,
+    '@/lib/hujjatRaqamiMatni': raqamMatni,
     '@/lib/qarzTaqsimoti': taqsimot,
     '@/hooks/useKassaSotuvlari': { useKassaSotuvKeshi: () => ({ olingan: () => undefined }) },
     './yordamchilar': { kassaSummasi: cash.cashAmount, sanaFormat: dates.kunMatni },

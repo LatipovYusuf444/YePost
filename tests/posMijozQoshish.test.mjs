@@ -48,6 +48,8 @@ function page(path, routeState = null, overrides = {}) {
     'react-router-dom': { useLocation: () => ({ state: routeState, pathname: '/' }), useNavigate: () => navigate },
     'react-router': { useLocation: () => ({ state: routeState, pathname: '/' }), useNavigate: () => navigate },
     '@/lib/valyuta': { pulMatni: String, useValyutaStore: useStore },
+    i18next: { __esModule: true, default: { t: key => key } },
+    '@/lib/tolovOrtiqchasi': { somMatni: (qiymat, belgi) => `${qiymat} ${belgi}` },
     '@/store/posStore': { usePosStore: useStore },
     '@/store/savdoStore': { useSavdoStore: useStore },
     '@/store/authProfileStore': { useAuthProfileStore: useStore },

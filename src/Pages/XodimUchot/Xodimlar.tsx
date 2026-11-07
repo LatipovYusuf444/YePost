@@ -1,3 +1,4 @@
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { Briefcase, Building2, CalendarDays, Phone, Plus, Search, Trash2, UserRound, Wallet } from "lucide-react";
@@ -145,8 +146,8 @@ export default function Xodimlar({ xodimlar, lavozimlar, bolimlar, filiallar = [
     setModalOchiq(true);
   }
 
-  function ochirish(xodim: Xodim) {
-    if (!window.confirm(`${xodimNomi(xodim)} ma'lumotini o'chirasizmi?`)) return;
+  async function ochirish(xodim: Xodim) {
+    if (!(await tasdiqSorash(`${xodimNomi(xodim)} ma'lumotini o'chirasizmi?`, { ochirish: true })).rozi) return;
     onOchirish(xodim.id);
   }
 

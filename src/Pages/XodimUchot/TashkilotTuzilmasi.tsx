@@ -1,3 +1,4 @@
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import { useMemo, useState } from "react";
 import {
   Building2,
@@ -61,12 +62,12 @@ export default function TashkilotTuzilmasi({
 
   const bolimXodimlari = (bolimId: string) => xodimlar.filter((xodim) => xodim.bolimId === bolimId);
 
-  function bolimniOchirish(bolim: Bolim) {
+  async function bolimniOchirish(bolim: Bolim) {
     const ostidagilar = bolalar.get(bolim.id) ?? [];
     const savol = ostidagilar.length
       ? `"${bolim.nomi}" bo'limini o'chirasizmi? Ostidagi ${ostidagilar.length} ta bo'lim yuqoriga ko'chadi.`
       : `"${bolim.nomi}" bo'limini o'chirasizmi?`;
-    if (!window.confirm(savol)) return;
+    if (!(await tasdiqSorash(savol, { ochirish: true })).rozi) return;
     onBolimOchirish(bolim.id);
     setMenyuId(null);
   }

@@ -383,7 +383,7 @@ function TolovTafsilotlariModal({
 
   return (
     <AppModal>
-      <div className="w-full max-w-2xl overflow-hidden rounded-[32px] border border-orange-100 bg-[#F8FAFC] shadow-[0_30px_90px_rgba(15,23,42,.24)]">
+      <div className="w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-[32px] border border-orange-100 bg-[#F8FAFC] shadow-[0_30px_90px_rgba(15,23,42,.24)]">
         <div className="flex items-start justify-between gap-4 border-b border-orange-100 bg-white/70 px-6 py-5">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-500">{t("tolovlar.modal.eyebrow")}</p>

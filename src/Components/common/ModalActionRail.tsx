@@ -1,17 +1,18 @@
-import { Check, Download, ExternalLink, Link as LinkIcon, X } from "lucide-react";
+import { Check, ExternalLink, Link as LinkIcon, X } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   top: number;
   left: number;
   onClose: () => void;
-  onDownload: () => void;
   onOpenExternal: () => void;
   // Telefon: chapda joy yo'q — faqat "Yopish" tugmasi ko'rsatiladi.
   ixcham?: boolean;
 };
 
-export default function ModalActionRail({ top, left, onClose, onDownload, onOpenExternal, ixcham = false }: Props) {
+export default function ModalActionRail({ top, left, onClose, onOpenExternal, ixcham = false }: Props) {
+  const { t } = useTranslation("common");
   const [copied, setCopied] = useState(false);
 
   async function copyLink() {
@@ -33,10 +34,9 @@ export default function ModalActionRail({ top, left, onClose, onDownload, onOpen
   }
 
   const barchaAmallar = [
-    { label: "Yopish", icon: X, onClick: onClose, close: true },
-    { label: copied ? "Havola nusxalandi" : "Havolani nusxalash", icon: copied ? Check : LinkIcon, onClick: () => void copyLink() },
-    { label: "Modal ma'lumotini yuklab olish", icon: Download, onClick: onDownload },
-    { label: "Alohida oynada ochish", icon: ExternalLink, onClick: onOpenExternal },
+    { label: t("actions.close"), icon: X, onClick: onClose, close: true },
+    { label: copied ? t("actions.linkCopied") : t("actions.copyLink"), icon: copied ? Check : LinkIcon, onClick: () => void copyLink() },
+    { label: t("actions.openExternal"), icon: ExternalLink, onClick: onOpenExternal },
   ];
   const actions = ixcham ? barchaAmallar.slice(0, 1) : barchaAmallar;
 

@@ -23,6 +23,7 @@ import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import XatoliMaydon, { MaydonXatosi } from "@/Components/common/XatoliMaydon";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import { useOzgarishBormi } from "@/hooks/useOzgarishBormi";
 import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
 import { bugungiToshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
@@ -173,6 +174,7 @@ export default function YangiKirimModal({ onClose }: Props) {
   // Hujjat sanasi: bugun yoki o'tgan kun (kelajak yo'q); o'tgan kun tanlansa backend hujjatni shu kunning oxirida yozadi.
   const [hujjatSanasi, setHujjatSanasi] = useState(() => bugungiToshkentKuni());
   const [qatorlar, setQatorlar] = useState<Qator[]>([yangiQator(birinchiOmbor)]);
+  const ozgarishBor = useOzgarishBormi({ kirimNomi, supplierId, note, hujjatSanasi, qatorlar });
   // Klaviatura bilan tez kiritish: keyingi fokus (mahsulot ro'yxati, miqdor yoki tannarx maydoni).
   const { t: tk } = useTranslation("ombor_kichik");
   const [fokus, setFokus] = useState<{ qatorId: string; maydon: "mahsulot" | "miqdor" | "narx"; n: number } | null>(null);
@@ -514,7 +516,7 @@ export default function YangiKirimModal({ onClose }: Props) {
   const tepadagiXato = fx.tepadagi || (xato ? t(xato) : fx.bor ? "" : store.xatolik);
 
   return (
-    <AppModal onClose={onClose} className="sidebar-aligned-document-modal items-stretch p-3 sm:p-5">
+    <AppModal onClose={onClose} ozgarishBor={ozgarishBor} className="sidebar-aligned-document-modal items-stretch p-3 sm:p-5">
       <div className="flex min-h-0 w-full flex-col overflow-hidden rounded-[32px] border border-orange-100 bg-[#F8FAFC] shadow-[0_28px_90px_rgba(15,23,42,.32)]">
         <header className="flex shrink-0 items-center border-b border-orange-100 bg-white/75 px-5 py-4 sm:px-8">
           <div className="flex items-center gap-3">
@@ -1017,7 +1019,7 @@ export default function YangiKirimModal({ onClose }: Props) {
         </div>
 
         <footer className="flex shrink-0 flex-col-reverse gap-3 border-t border-orange-100 bg-white/75 px-5 py-4 sm:flex-row sm:justify-end sm:px-8">
-          <button type="button" onClick={onClose} className="h-12 rounded-2xl bg-slate-100 px-7 text-sm font-black text-slate-600 hover:bg-slate-200">
+          <button type="button" data-modal-yopish onClick={onClose} className="h-12 rounded-2xl bg-slate-100 px-7 text-sm font-black text-slate-600 hover:bg-slate-200">
             {t("yangiKirim.cancel")}
           </button>
           <ActionButton busy={store.amalBajarilmoqda} outline onClick={() => void saqlash(false)}>
@@ -1134,7 +1136,7 @@ function MahsulotYaratishPanel({
       <div className="w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl">
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-black text-slate-950">{t("mahsulotYaratish.title")}</h3>
-          <button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+          <button aria-label={t("common:actions.close")} type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
             <X size={18} />
           </button>
         </div>

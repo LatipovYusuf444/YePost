@@ -4,6 +4,7 @@ import { CalendarDays, ChevronDown, Clock, LogIn, LogOut, PencilLine, Plus, Rota
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/Components/ui/table";
 import TablePagination from "@/Components/common/TablePagination";
 import { davomatApi } from "@/api/hrApi";
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { Attendance, AttendanceStatus } from "@/types/hr";
 import type { Davomat as DavomatYozuvi, DavomatHolati, Xodim } from "./types";
@@ -154,7 +155,7 @@ export default function Davomat({ xodimlar }: Props) {
     setFormaOchiq(true);
   }
   async function ochirish(row: DavomatYozuvi) {
-    if (!window.confirm("Davomat yozuvini o'chirasizmi?")) return;
+    if (!(await tasdiqSorash("Davomat yozuvini o'chirasizmi?", { ochirish: true })).rozi) return;
     try { await davomatApi.ochirish(row.id); await yuklash(); }
     catch (error) { setXato(getApiErrorMessage(error)); }
   }
