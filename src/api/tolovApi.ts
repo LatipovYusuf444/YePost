@@ -1,4 +1,5 @@
 import { kassaKirimApi, xarajatApi } from "./financeApi";
+import { qolganSahifalar } from "../lib/parallelBajarish.ts";
 import type { TolovMoliyaManbalari } from "@/types/tolov";
 import apiClient from "./axios";
 import type { FinanceTransaction, TolovManbasi } from "@/types/tolov";
@@ -30,11 +31,7 @@ export async function barchaFinanceTransactionsHisoboti(
   const first = await financeTransactions({ ...params, page: 1, pageSize: 100 });
   if (first.totalPages <= 1) return first;
 
-  const pages = await Promise.all(
-    Array.from({ length: first.totalPages - 1 }, (_, index) =>
-      financeTransactions({ ...params, page: index + 2, pageSize: 100 })
-    )
-  );
+  const pages = await qolganSahifalar(first.totalPages, (page) => financeTransactions({ ...params, page, pageSize: 100 }));
   return { ...first, items: [first.items, ...pages.map((page) => page.items)].flat() };
 }
 

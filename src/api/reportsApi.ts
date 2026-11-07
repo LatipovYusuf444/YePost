@@ -1,4 +1,5 @@
 import apiClient from "./axios";
+import { qolganSahifalar } from "../lib/parallelBajarish.ts";
 import { getApiErrorMessage } from "./sozlamalarApi";
 import { chegirmaParametrlari } from "./hisobotParametrlari";
 import type { CashCurrency, CashDailyParams, CashDailyReport, CashFlowBalance, CashFlowCurrencySummary } from "@/types/cashReports";
@@ -36,9 +37,10 @@ function reportData<T>(raw: T | { data?: T; success?: boolean }): T {
   return raw as T;
 }
 
-async function getReport<T = HisobotJavobi>(path: string, params: Record<string, unknown>): Promise<T> {
+async function getReport<T = HisobotJavobi>(path: string, params: Record<string, unknown>, signal?: AbortSignal): Promise<T> {
   const raw = (await apiClient.get<T | { data?: T; success?: boolean }>(path, {
     params: tozaParams(params),
+    ...(signal ? { signal } : {}),
   })).data;
   return reportData(raw);
 }
@@ -52,15 +54,11 @@ type PagedReport = {
   summary?: unknown;
 };
 
-async function getAllReport(path: string, params: Record<string, unknown>, pageSize = 500) {
-  const first = await getReport<PagedReport>(path, { ...params, page: 1, pageSize });
+async function getAllReport(path: string, params: Record<string, unknown>, pageSize = 500, signal?: AbortSignal) {
+  const first = await getReport<PagedReport>(path, { ...params, page: 1, pageSize }, signal);
   const totalPages = Number(first.totalPages ?? 1);
   if (totalPages <= 1) return first;
-  const pages = await Promise.all(
-    Array.from({ length: totalPages - 1 }, (_, index) =>
-      getReport<PagedReport>(path, { ...params, page: index + 2, pageSize })
-    )
-  );
+  const pages = await qolganSahifalar(totalPages, (page) => getReport<PagedReport>(path, { ...params, page, pageSize }, signal));
   return {
     ...first,
     items: [first.items ?? [], ...pages.map((page) => page.items ?? [])].flat(),
@@ -98,13 +96,14 @@ export const stockMovementReportApi = {
       warehouseIds: rest.warehouseIds ?? warehouseId,
     });
   },
-  barchasi: (params: StockMovementFilter) => {
+  // `signal` — filtr o'zgarsa eski (hali tugamagan) yuklash bekor qilinadi, DB'ga keraksiz sahifa so'rovlari ketmaydi.
+  barchasi: (params: StockMovementFilter, signal?: AbortSignal) => {
     const { modificationId, warehouseId, ...rest } = params;
     return getAllReport("/reports/stock-movement", {
       ...rest,
       modificationIds: rest.modificationIds ?? modificationId,
       warehouseIds: rest.warehouseIds ?? warehouseId,
-    });
+    }, 500, signal);
   },
   export: (params: StockMovementFilter, exportTuri: ExportTuri = "excel") => {
     void exportTuri;
@@ -276,9 +275,9 @@ export type CashFlowReport = {
 export const cashFlowReportApi = {
   olish: async (params: CashFlowParams) => {
     const first = await getReport<CashFlowReport>("/reports/cash-flow", { ...params, page: 1, pageSize: 500 });
-    const pages = await Promise.all(Array.from({ length: Math.max(0, Number(first.totalPages ?? 1) - 1) }, (_, index) =>
-      getReport<CashFlowReport>("/reports/cash-flow", { ...params, page: index + 2, pageSize: 500 })
-    ));
+    const pages = await qolganSahifalar(Number(first.totalPages ?? 1), (page) =>
+      getReport<CashFlowReport>("/reports/cash-flow", { ...params, page, pageSize: 500 })
+    );
     const raw = { ...first, items: [first.items ?? [], ...pages.map((page) => page.items ?? [])].flat() };
     if (!raw.summary?.byCurrency?.[params.currency ?? "UZS"] && Array.isArray(raw.byPaymentMethod)) return raw;
     const byPaymentMethod = Object.entries(raw.summary?.byCurrency?.[params.currency ?? "UZS"]?.byPaymentMethod ?? raw.summary?.byPaymentMethod ?? {}).map(
@@ -391,10 +390,6 @@ export async function stockBalanceReportAll(params: StockBalanceParams, pageSize
   const first = await stockBalanceReport({ ...params, page: 1, pageSize }, sozlama);
   const totalPages = Number(first.totalPages ?? 1);
   if (totalPages <= 1) return first.items;
-  const pages = await Promise.all(
-    Array.from({ length: totalPages - 1 }, (_, index) =>
-      stockBalanceReport({ ...params, page: index + 2, pageSize }, sozlama)
-    )
-  );
+  const pages = await qolganSahifalar(totalPages, (page) => stockBalanceReport({ ...params, page, pageSize }, sozlama));
   return [first.items, ...pages.map((page) => page.items)].flat();
 }

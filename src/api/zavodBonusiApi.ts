@@ -1,4 +1,5 @@
 import apiClient from "./axios";
+import { qolganSahifalar } from "../lib/parallelBajarish.ts";
 import { apiData, type ApiEnvelope } from "./response";
 import type { ZavodBonusi, ZavodBonusiFiltri, ZavodBonusiPayload } from "@/types/zavodBonusi";
 
@@ -33,11 +34,7 @@ export const zavodBonusiApi = {
   barchasi: async (filtr: Omit<ZavodBonusiFiltri, "page" | "pageSize"> = {}) => {
     const birinchi = await zavodBonusiApi.royxat({ ...filtr, page: 1, pageSize: MAX_SAHIFA_HAJMI });
     if (birinchi.totalPages <= 1) return birinchi.items;
-    const qolgan = await Promise.all(
-      Array.from({ length: birinchi.totalPages - 1 }, (_, index) =>
-        zavodBonusiApi.royxat({ ...filtr, page: index + 2, pageSize: MAX_SAHIFA_HAJMI }),
-      ),
-    );
+    const qolgan = await qolganSahifalar(birinchi.totalPages, (page) => zavodBonusiApi.royxat({ ...filtr, page, pageSize: MAX_SAHIFA_HAJMI }));
     return [birinchi.items, ...qolgan.map((sahifa) => sahifa.items)].flat();
   },
   olish: async (id: string) => apiData((await apiClient.get<Bonus>(`${YOL}/${id}`)).data),

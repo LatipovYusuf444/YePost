@@ -3,38 +3,54 @@ import Login from "@/Pages/Auth/Login"
 import ForgotPassword from "@/Pages/Auth/ForgotPassword"
 import ResetPassword from "@/Pages/Auth/ResetPassword"
 import AuthLayout from "@/Pages/Auth/AuthLayout"
-import BoshSahifa from "@/Pages/BoshSahifa"
-import Monitoring from "@/Pages/Monitoring"
-import KassaUchot from "@/Pages/KassaUchot"
-import IshlabChiqarish from "@/Pages/IshlabChiqarish"
-import HisobotUchot from "@/Pages/HisobotUchot"
-import KunlikKassa from "@/Pages/HisobotUchot/KunlikKassa"
-import XodimUchot from "@/Pages/XodimUchot"
-import QollabQuvvatlash from "@/Pages/Support"
-import Mahsulotlar from "@/Pages/Mahsulotlar"
-import AmalgaOshirilganlar from "@/Pages/Ombor/AmalgaOshirilganlar"
-import Chiqimlar from "@/Pages/Ombor/Chiqim"
-import Kochirishlar from "@/Pages/Ombor/Kochirish"
-import OmborMahsulotlar from "@/Pages/Ombor/Mahsulotlar"
-import OmborQoldigi from "@/Pages/Ombor/OmborQoldigi"
-import Inventarizatsiya from "@/Pages/Ombor/Inventarizatsiya"
-import Xaridlar from "@/Pages/Ombor/Xaridlar"
-import Ombor from "@/Pages/Ombor"
-import XaridorUchot from "@/Pages/XaridorUchot"
-import Savdo from "@/Pages/Savdo"
-import SozlamalarUchot from "@/Pages/SozlamalarUchot"
 import AdminLayout from "@/Pages/Admin/AdminLayout"
-import AdminDashboard from "@/Pages/Admin/Dashboard"
-import AdminKompaniyalar from "@/Pages/Admin/Kompaniyalar"
-import AdminTariflar from "@/Pages/Admin/Tariflar"
-import AdminObunalar from "@/Pages/Admin/Obunalar"
-import AdminFoydalanuvchilar from "@/Pages/Admin/Foydalanuvchilar"
-import AdminQollabQuvvatlash from "@/Pages/Admin/QollabQuvvatlash"
 import { Navigate, Route, Routes } from "react-router"
 import ProtectedRoute from "./ProtectedRoute"
+import { lazy, Suspense } from "react"
+import { useTranslation } from "react-i18next"
+import { LoaderCircle } from "lucide-react"
+
+// Sahifalar alohida bo'lak (chunk) bo'lib yuklanadi: login va POS butun ilovani (4 MB) kutmaydi.
+// Kirish sahifalari va layout'lar darrov kerak — ular asosiy bo'lakda qoladi.
+const BoshSahifa = lazy(() => import("@/Pages/BoshSahifa"))
+const Monitoring = lazy(() => import("@/Pages/Monitoring"))
+const KassaUchot = lazy(() => import("@/Pages/KassaUchot"))
+const IshlabChiqarish = lazy(() => import("@/Pages/IshlabChiqarish"))
+const HisobotUchot = lazy(() => import("@/Pages/HisobotUchot"))
+const KunlikKassa = lazy(() => import("@/Pages/HisobotUchot/KunlikKassa"))
+const XodimUchot = lazy(() => import("@/Pages/XodimUchot"))
+const QollabQuvvatlash = lazy(() => import("@/Pages/Support"))
+const Mahsulotlar = lazy(() => import("@/Pages/Mahsulotlar"))
+const AmalgaOshirilganlar = lazy(() => import("@/Pages/Ombor/AmalgaOshirilganlar"))
+const Chiqimlar = lazy(() => import("@/Pages/Ombor/Chiqim"))
+const Kochirishlar = lazy(() => import("@/Pages/Ombor/Kochirish"))
+const OmborMahsulotlar = lazy(() => import("@/Pages/Ombor/Mahsulotlar"))
+const OmborQoldigi = lazy(() => import("@/Pages/Ombor/OmborQoldigi"))
+const Inventarizatsiya = lazy(() => import("@/Pages/Ombor/Inventarizatsiya"))
+const Xaridlar = lazy(() => import("@/Pages/Ombor/Xaridlar"))
+const Ombor = lazy(() => import("@/Pages/Ombor"))
+const XaridorUchot = lazy(() => import("@/Pages/XaridorUchot"))
+const Savdo = lazy(() => import("@/Pages/Savdo"))
+const SozlamalarUchot = lazy(() => import("@/Pages/SozlamalarUchot"))
+const AdminDashboard = lazy(() => import("@/Pages/Admin/Dashboard"))
+const AdminKompaniyalar = lazy(() => import("@/Pages/Admin/Kompaniyalar"))
+const AdminTariflar = lazy(() => import("@/Pages/Admin/Tariflar"))
+const AdminObunalar = lazy(() => import("@/Pages/Admin/Obunalar"))
+const AdminFoydalanuvchilar = lazy(() => import("@/Pages/Admin/Foydalanuvchilar"))
+const AdminQollabQuvvatlash = lazy(() => import("@/Pages/Admin/QollabQuvvatlash"))
+
+function SahifaYuklanmoqda() {
+  const { t } = useTranslation("common")
+  return (
+    <div role="status" aria-label={t("actions.loading")} className="flex min-h-[50vh] w-full items-center justify-center">
+      <LoaderCircle size={28} className="animate-spin text-blue-600" />
+    </div>
+  )
+}
 
 export default function AppRouter() {
   return (
+    <Suspense fallback={<SahifaYuklanmoqda />}>
     <Routes>
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
@@ -108,5 +124,6 @@ export default function AppRouter() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
+    </Suspense>
   )
 }

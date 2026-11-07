@@ -8,6 +8,7 @@ import MuddatTanlov from "./MuddatTanlov";
 import MahsulotModal from "./MahsulotModal";
 import HujjatKorish from "./HujjatKorish";
 import { useHisobotRealData } from "./HisobotRealData";
+import axios from "axios";
 import { stockMovementReportApi } from "@/api/reportsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { Maxsulot, Tanlov, TovarHarakati, TovarHarakatiFilter } from "./types";
@@ -84,9 +85,17 @@ export default function TovarHarakati() {
   const [eksportYuklanmoqda, setEksportYuklanmoqda] = useState(false);
   const [tovarHarakati, setTovarHarakati] = useState<TovarHarakati[]>([]);
   const [yuklanmoqda, setYuklanmoqda] = useState(false);
+  // Serverga ketadigan qidiruv yozish to'xtagandan keyin (T1): har harf butun hisobotni (N × 500 qator) qayta yuklamaydi.
+  // Ro'yxat esa darrov, klientda filtrlanadi (pastdagi `korinishQatorlar`).
+  const [serverQidiruvi, setServerQidiruvi] = useState("");
+  useEffect(() => {
+    const kechiktirish = window.setTimeout(() => setServerQidiruvi(qidiruv.trim()), 400);
+    return () => window.clearTimeout(kechiktirish);
+  }, [qidiruv]);
 
   useEffect(() => {
     let active = true;
+    const bekor = new AbortController();
     setYuklanmoqda(true);
     setXato("");
     stockMovementReportApi
@@ -102,8 +111,8 @@ export default function TovarHarakati() {
           : undefined,
         customerIds: filter.customerIds.length ? filter.customerIds.join(",") : undefined,
         supplierIds: filter.supplierIds.length ? filter.supplierIds.join(",") : undefined,
-        search: qidiruv || undefined,
-      })
+        search: serverQidiruvi || undefined,
+      }, bekor.signal)
       .then((response) => {
         if (!active) return;
         const raw = response as {
@@ -151,15 +160,16 @@ export default function TovarHarakati() {
         );
       })
       .catch((error) => {
-        if (active) setXato(getApiErrorMessage(error));
+        if (active && !axios.isCancel(error)) setXato(getApiErrorMessage(error));
       })
       .finally(() => {
         if (active) setYuklanmoqda(false);
       });
     return () => {
       active = false;
+      bekor.abort();
     };
-  }, [filter, qidiruv]);
+  }, [filter, serverQidiruvi]);
 
   const mahsulotOchish = useCallback((productId?: string) => {
     const mahsulot = maxsulotlar.find((m) => m.id === productId);

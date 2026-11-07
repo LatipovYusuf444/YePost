@@ -1,4 +1,5 @@
 import axios from "axios";
+import { qolganSahifalar } from "@/lib/parallelBajarish";
 import { discountReportApi } from "@/api/reportsApi";
 import { sotuvlarSahifasiniOlish } from "@/api/savdoApi";
 import { masulNomi, mijozNomi, sotuvChegirmaSummasi, sotuvHolati, sotuvSummasi } from "@/Pages/Savdo/savdoYordamchilari";
@@ -67,9 +68,7 @@ export async function tasdiqlanganSotuvlar(dateFrom: string, dateTo: string): Pr
   const filtr = { dateFrom: oldingiKun(dateFrom), dateTo, status: "CONFIRMED" as const, pageSize: 100 };
   const birinchi = await sotuvlarSahifasiniOlish({ ...filtr, page: 1 });
   const qolgan = birinchi.totalPages > 1
-    ? await Promise.all(
-        Array.from({ length: birinchi.totalPages - 1 }, (_, index) => sotuvlarSahifasiniOlish({ ...filtr, page: index + 2 })),
-      )
+    ? await qolganSahifalar(birinchi.totalPages, (page) => sotuvlarSahifasiniOlish({ ...filtr, page }))
     : [];
   return [birinchi.items, ...qolgan.map((sahifa) => sahifa.items)]
     .flat()
