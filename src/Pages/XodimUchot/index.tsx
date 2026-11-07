@@ -6,7 +6,7 @@ import { foydalanuvchilarApi, vakolatlarApi } from "@/api/accountsApi";
 import { filiallarApi } from "@/api/omborApi";
 import { bolimlarApi, lavozimlarApi } from "@/api/hrApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
-import type { AccountFoydalanuvchi, AccountRoli, AccountVakolati } from "@/types/account";
+import type { AccountFoydalanuvchi, AccountRoli } from "@/types/account";
 import type { Filial } from "@/types/ombor";
 import type { Bolim, Lavozim, Xodim } from "./types";
 import type { HrDepartment, HrPosition } from "@/types/hr";
@@ -78,7 +78,6 @@ export default function XodimUchot() {
   const [lavozimlar, setLavozimlar] = useState<Lavozim[]>([]);
   const [bolimlar, setBolimlar] = useState<Bolim[]>([]);
   const [filiallar, setFiliallar] = useState<Filial[]>([]);
-  const [, setGrantlar] = useState<AccountVakolati[]>([]);
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [xato, setXato] = useState("");
 
@@ -94,7 +93,6 @@ export default function XodimUchot() {
         lavozimlarApi.royxat(),
       ]);
       setFiliallar(branches);
-      setGrantlar(grants);
       setBolimlar(departments.map(hrBolimi));
       setLavozimlar(positions.map(hrLavozimi));
       setXodimlar(users.map((user) => accountXodimi({ ...user, grants: grants.filter((grant) => grant.userId === user.id) }, branches)));

@@ -490,19 +490,19 @@ export default function YangiKirimModal({ onClose }: Props) {
       return retail !== row.boshlangichRetail || wholesale !== row.boshlangichWholesale;
     });
     if (narxOzgarganlar.length > 0) {
-      await Promise.all(
-        narxOzgarganlar.map((row) =>
-          modifikatsiyalarApi
-            .narxYangilash(row.modificationId, {
-              retailPrice: Number(row.retailPrice || 0) || undefined,
-              wholesalePrice: Number(row.wholesalePrice || 0) || undefined,
-              // Valyuta faqat yuborilayotgan narx uchun, har biri o'z valyutasida (eski umumiy `currency` endi faqat chakana narxniki).
-              ...(Number(row.retailPrice || 0) ? { retailCurrency: maydonValyutasi(row, "retailPrice") } : {}),
-              ...(Number(row.wholesalePrice || 0) ? { wholesaleCurrency: maydonValyutasi(row, "wholesalePrice") } : {}),
-            })
-            .catch(() => null)
+      // O'zgargan narxlar bitta tranzaksiyada (har bir variant uchun alohida PATCH o'rniga): xato bo'lsa hech biri o'zgarmaydi, kirim baribir saqlanadi.
+      await modifikatsiyalarApi
+        .narxlarniYangilash(
+          narxOzgarganlar.map((row) => ({
+            modificationId: row.modificationId,
+            retailPrice: Number(row.retailPrice || 0) || undefined,
+            wholesalePrice: Number(row.wholesalePrice || 0) || undefined,
+            // Valyuta faqat yuborilayotgan narx uchun, har biri o'z valyutasida (eski umumiy `currency` endi faqat chakana narxniki).
+            ...(Number(row.retailPrice || 0) ? { retailCurrency: maydonValyutasi(row, "retailPrice") } : {}),
+            ...(Number(row.wholesalePrice || 0) ? { wholesaleCurrency: maydonValyutasi(row, "wholesalePrice") } : {}),
+          }))
         )
-      );
+        .catch(() => null);
       await store.malumotlarniYuklash();
     }
 

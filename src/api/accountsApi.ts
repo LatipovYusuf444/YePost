@@ -56,10 +56,14 @@ export const foydalanuvchilarApi = {
 
 // Hodimlar/Ruxsatlar.tsx: Swagger accounts/grants bo'limining to'liq CRUD amallari.
 export const vakolatlarApi = {
+  // Foydalanuvchining faol vakolatlari to'liq ro'yxatini bitta so'rovda o'rnatadi. Backend shu foydalanuvchining
+  // yangilangan grant'larini qaytaradi, shuning uchun keyin butun /accounts/grants ro'yxati qayta olinmaydi.
   foydalanuvchiKodlariniSaqlash: async (userId: string, codes: string[]): Promise<AccountVakolati[]> => {
-    await apiClient.put(`/accounts/grants/users/${userId}`, { codes: [...new Set(codes)] });
-    const response = await apiClient.get<AccountVakolati[] | ApiListEnvelope<AccountVakolati>>("/accounts/grants");
-    return apiList(response.data).filter((grant) => grant.userId === userId);
+    const response = await apiClient.put<AccountVakolati[] | ApiListEnvelope<AccountVakolati>>(
+      `/accounts/grants/users/${userId}`,
+      { codes: [...new Set(codes)] }
+    );
+    return apiList(response.data);
   },
   royxat: async () => {
     const response = await apiClient.get<AccountVakolati[] | ApiListEnvelope<AccountVakolati>>(
