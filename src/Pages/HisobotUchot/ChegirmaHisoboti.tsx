@@ -326,7 +326,7 @@ export default function ChegirmaHisoboti() {
       <label className="relative sm:w-72"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/><input value={qidiruv} onChange={(event) => setQidiruv(event.target.value)} placeholder={joriyGuruh.qidiruv} className="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-orange-400"/></label>
     </div>
     <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm">
-      {yuklanmoqda ? <LoadingState matn="Chegirmalar jadvali yuklanmoqda..." ikonka={<BadgePercent size={24} />} className="min-h-[300px] rounded-none border-0 bg-transparent py-12" /> : korinadigan.length ? <KengaytiriladiganJadval ustunlar={ustunlar} qatorlar={korinadigan} jamiBor /> : <div className="flex h-72 items-center justify-center font-bold text-slate-400">Tanlangan filtr bo‘yicha chegirma topilmadi.</div>}
+      {yuklanmoqda ? <LoadingState matn="Chegirmalar jadvali yuklanmoqda..." ikonka={<BadgePercent size={24} />} className="min-h-[300px] rounded-none border-0 bg-transparent py-12" /> : korinadigan.length ? <KengaytiriladiganJadval tableId="HisobotUchot/ChegirmaHisoboti/kengaytiriladiganjadval-1" ustunlar={ustunlar} qatorlar={korinadigan} jamiBor /> : <div className="flex h-72 items-center justify-center font-bold text-slate-400">Tanlangan filtr bo‘yicha chegirma topilmadi.</div>}
     </section>
   </div>;
 }

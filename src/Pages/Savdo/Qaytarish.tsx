@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, CircleCheck, Clock3, Plus, RotateCcw, Search, Undo2, Wallet } from "lucide-react";
@@ -266,19 +267,19 @@ export default function Qaytarish({
       {/* Planshet va kompyuter: jadval */}
       <div className="hidden overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-[0_14px_38px_rgba(37,99,235,.06)] md:block">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1180px] text-left text-sm">
+          <SmartTable tableId="Savdo/Qaytarish/table-1" replaceColumnControls><table className="w-full min-w-[1180px] text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                <th className="px-4 py-4">{tq("list.columns.number")}</th>
-                <th className="px-4 py-4">{tq("list.columns.customer")}</th>
-                <th className="px-4 py-4">{tq("list.columns.sale")}</th>
-                <th className="px-4 py-4 text-right">{tq("list.columns.goodsValue")}</th>
-                <th className="px-4 py-4 text-right">{tq("list.columns.refunded")}</th>
-                <th className="px-4 py-4 text-right">{tq("list.columns.debtReduced")}</th>
-                <th className="px-4 py-4 text-right">{tq("list.columns.remainingDebt")}</th>
-                <th className="px-4 py-4">{tq("list.columns.status")}</th>
-                <th className="px-4 py-4">{tq("list.columns.date")}</th>
-                <th className="w-20 px-4 py-4" />
+                <th data-column-id="h1" className="px-4 py-4">{tq("list.columns.number")}</th>
+                <th data-column-id="h2" className="px-4 py-4">{tq("list.columns.customer")}</th>
+                <th data-column-id="h3" className="px-4 py-4">{tq("list.columns.sale")}</th>
+                <th data-column-id="h4" className="px-4 py-4 text-right">{tq("list.columns.goodsValue")}</th>
+                <th data-column-id="h5" className="px-4 py-4 text-right">{tq("list.columns.refunded")}</th>
+                <th data-column-id="h6" className="px-4 py-4 text-right">{tq("list.columns.debtReduced")}</th>
+                <th data-column-id="h7" className="px-4 py-4 text-right">{tq("list.columns.remainingDebt")}</th>
+                <th data-column-id="h8" className="px-4 py-4">{tq("list.columns.status")}</th>
+                <th data-column-id="h9" className="px-4 py-4">{tq("list.columns.date")}</th>
+                <th data-column-id="h10" className="w-20 px-4 py-4" />
               </tr>
             </thead>
             <tbody className="divide-y divide-orange-100/70">
@@ -330,7 +331,7 @@ export default function Qaytarish({
                 </tr>
               )}
             </tbody>
-          </table>
+          </table></SmartTable>
         </div>
       </div>
 

@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ReceiptText, RotateCcw, UserRound } from "lucide-react";
@@ -5,9 +6,11 @@ import TablePagination from "@/Components/common/TablePagination";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import { sotuvJadvalNomi, sotuvSarlavhaMijozi } from "@/lib/sotuvNomi";
+import { sotuvMasulMalumoti } from "@/lib/sotuvMasulMalumoti";
+import { useSavdoStore } from "@/store/savdoStore";
+import { useAuthProfileStore } from "@/store/authProfileStore";
 import type { Qaytarish, Sotuv, TolovTuri } from "@/types/savdo";
 import {
-  masulNomi,
   mijozNomi,
   sotuvdaMijozBiriktirilganmi,
   pulniFormatlash,
@@ -24,6 +27,7 @@ import {
 } from "./savdoYordamchilari";
 
 type SotuvlarJadvaliProps = {
+  tableId: string;
   sotuvlar: Sotuv[];
   onSotuvniOchish: (sotuv: Sotuv) => void;
   qaytarishlar?: Qaytarish[];
@@ -42,12 +46,6 @@ type SotuvlarJadvaliProps = {
     onPageSizeChange: (pageSize: number) => void;
   };
 };
-
-function telefonRaqam(sotuv: Sotuv) {
-  // "Mas'ul shaxs" ustuniga mos — tizimga kirgan (sotuvni amalga oshirgan)
-  // xodimning real telefon raqami, mijozning emas.
-  return sotuv.responsible?.phone || "-";
-}
 
 function qaytarishTasdiqlangan(qaytarish: Qaytarish) {
   return String(qaytarish.status ?? "").toUpperCase() === "CONFIRMED";
@@ -157,6 +155,7 @@ function sanaVaVaqt(value?: string) {
 }
 
 export default function SotuvlarJadvali({
+  tableId,
   sotuvlar,
   onSotuvniOchish,
   qaytarishlar = [],
@@ -168,6 +167,8 @@ export default function SotuvlarJadvali({
   serverSahifalash,
 }: SotuvlarJadvaliProps) {
   const { t } = useTranslation("savdo_kichik");
+  const xodimlar = useSavdoStore(state => state.xodimlar);
+  const profil = useAuthProfileStore(state => state.profil);
   const effectiveBoshMatn = boshMatn ?? t("sotuvlarJadvali.boshMatn");
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -186,35 +187,35 @@ export default function SotuvlarJadvali({
   return (
     <div className="px-5 pb-6 sm:px-10 sm:pb-10">
       <div className={`overflow-x-auto transition-opacity ${serverSahifalash?.yuklanmoqda ? "opacity-50" : ""}`}>
-        <table className={`w-full border-collapse text-left text-sm ${tarixKorinish ? "min-w-[1280px]" : "min-w-[1220px]"}`}>
+        <SmartTable tableId={tableId} replaceColumnControls><table className={`w-full border-collapse text-left text-sm ${tarixKorinish ? "min-w-[1280px]" : "min-w-[1220px]"}`}>
           <thead className="text-[13px] font-medium text-slate-500">
             <tr>
-              <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.sotuvNomi")}</th>
-              <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.mijozNomi")}</th>
+              <th data-column-id="h1" className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.sotuvNomi")}</th>
+              <th data-column-id="h2" className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.mijozNomi")}</th>
               {tarixKorinish && (
-                <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.tolovTuri")}</th>
+                <th data-column-id="h3" className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.tolovTuri")}</th>
               )}
-              <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.summa")}</th>
-              <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.chegirma")}</th>
+              <th data-column-id="h4" className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.summa")}</th>
+              <th data-column-id="h5" className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.chegirma")}</th>
               {!tarixKorinish && (
                 <>
-                  <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.tolov")}</th>
-                  <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.holat")}</th>
+                  <th data-column-id="h6" className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.tolov")}</th>
+                  <th data-column-id="h7" className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.holat")}</th>
                 </>
               )}
               {tarixKorinish && (
                 <>
-                  <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.holati")}</th>
-                  <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.qaytarilganSumma")}</th>
+                  <th data-column-id="h8" className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.holati")}</th>
+                  <th data-column-id="h9" className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.qaytarilganSumma")}</th>
                 </>
               )}
-              <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.sana")}</th>
-              <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.masulShaxs")}</th>
-              <th className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.telefonRaqam")}</th>
+              <th data-column-id="h10" className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.sana")}</th>
+              <th data-column-id="h11" className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.masulShaxs")}</th>
+              <th data-column-id="h12" className="border-b border-gray-200 px-4 py-3 font-medium">{t("sotuvlarJadvali.columns.telefonRaqam")}</th>
               {tarixKorinish && (
-                <th className="border-b border-gray-200 px-4 py-3 text-right font-medium">{t("sotuvlarJadvali.columns.amallar")}</th>
+                <th data-column-id="h13" className="border-b border-gray-200 px-4 py-3 text-right font-medium">{t("sotuvlarJadvali.columns.amallar")}</th>
               )}
-              {!tarixKorinish && onOchirish && <th className="w-16 border-b border-gray-200 px-4 py-3" />}
+              {!tarixKorinish && onOchirish && <th data-column-id="h14" className="w-16 border-b border-gray-200 px-4 py-3" />}
             </tr>
           </thead>
           <tbody className="text-[13px] text-[#4B4B4B]">
@@ -233,7 +234,8 @@ export default function SotuvlarJadvali({
               const tolovToliq = jami > 0 && qarz <= 0;
               const mijoz = mijozNomi(sotuv);
               const mijozYoq = !sotuvdaMijozBiriktirilganmi(sotuv);
-              const masul = masulNomi(sotuv);
+              const masulMalumoti = sotuvMasulMalumoti(sotuv, xodimlar, profil);
+              const masul = masulMalumoti.nom;
 
               return (
                 <tr
@@ -246,7 +248,7 @@ export default function SotuvlarJadvali({
                     <span className="inline-flex max-w-full rounded-lg border border-gold-200 bg-gold-50 px-3 py-2 text-[13px] font-semibold leading-5 text-gold-700 [overflow-wrap:anywhere]">
                       {nom}
                     </span>
-                    {sotuv.isOpeningDebt && <span className="mt-1 block w-fit rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">{t("xaridor_uchot:openingDebt.title")}</span>}
+                    {sotuv.isOpeningDebt && <span className="ml-2 inline-flex w-fit rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">{t("xaridor_uchot:openingDebt.title")}</span>}
                   </td>
                   <td className="border-b border-gray-100 px-4 py-3.5 font-medium">
                     {tarixKorinish ? (
@@ -281,7 +283,7 @@ export default function SotuvlarJadvali({
                         {holat === "CANCELLED" ? (
                           <span className="text-slate-300">—</span>
                         ) : (
-                          <div className="w-36">
+                          <div className="inline-flex items-center gap-3">
                             <div className="flex items-center justify-between gap-2 text-xs font-bold">
                               <span className={tolovToliq ? "text-emerald-600" : tolangan > 0 ? "text-[#2563EB]" : "text-slate-400"}>
                                 {tolovToliq
@@ -292,14 +294,14 @@ export default function SotuvlarJadvali({
                               </span>
                               <span className="tabular-nums text-slate-400">{tolanganFoiz}%</span>
                             </div>
-                            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                            <div className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-slate-100">
                               <div
                                 className={`h-full rounded-full transition-all duration-500 ${tolovToliq ? "bg-emerald-500" : "bg-[#2563EB]"}`}
                                 style={{ width: `${tolanganFoiz}%` }}
                               />
                             </div>
                             {holat === "CONFIRMED" && qarz > 0 && (
-                              <p className="mt-1.5 whitespace-nowrap text-[11px] font-bold text-rose-500">
+                              <p className="whitespace-nowrap text-[11px] font-bold text-rose-500">
                                 {t("sotuvlarJadvali.qarzSummasi", { summa: pulniFormatlash(qarz, sotuvValyutasi(sotuv)) })}
                               </p>
                             )}
@@ -326,9 +328,9 @@ export default function SotuvlarJadvali({
                     </>
                   )}
                   <td className="border-b border-gray-100 px-4 py-3.5">
-                    <span className="block">{sana.sana}</span>
+                    <span className="whitespace-nowrap">{sana.sana}</span>
                     {sana.vaqt && (
-                      <span className="mt-0.5 block text-[10px] text-[#4B4B4B]">
+                      <span className="ml-2 whitespace-nowrap text-[10px] text-[#4B4B4B]">
                         {sana.vaqt}
                       </span>
                     )}
@@ -345,7 +347,7 @@ export default function SotuvlarJadvali({
                     )}
                   </td>
                   <td className="border-b border-gray-100 px-4 py-3.5">
-                    {telefonRaqam(sotuv)}
+                    {masulMalumoti.telefon}
                   </td>
                   {tarixKorinish && (
                     <td className="border-b border-gray-100 px-4 py-3.5 text-right align-middle">
@@ -392,7 +394,7 @@ export default function SotuvlarJadvali({
               </tr>
             )}
           </tbody>
-        </table>
+        </table></SmartTable>
       </div>
 
       {serverSahifalash ? (

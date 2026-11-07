@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown, Banknote, Calculator, CircleDollarSign, Download, Package, ReceiptText, Search, TrendingUp, TriangleAlert, Wallet } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -292,14 +293,14 @@ export default function FoydaHisoboti() {
         ) : (
           <>
             <div className="scrollbar-orange hidden overflow-x-auto xl:block">
-              <table className="w-full min-w-[760px] text-sm">
+              <SmartTable tableId="HisobotUchot/FoydaHisoboti/table-1" replaceColumnControls><table className="w-full min-w-[760px] text-sm">
                 <thead>
                   <tr className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                     {ustunlar.map((ustun) => {
                       const faol = saralash.kalit === ustun.kalit;
                       const Belgi = faol ? (saralash.kamayish ? ArrowDown : ArrowUp) : ArrowUpDown;
                       return (
-                        <th key={ustun.kalit} scope="col" aria-sort={faol ? (saralash.kamayish ? "descending" : "ascending") : "none"} className={`px-4 py-3.5 font-bold ${ustun.chap ? "text-left" : "text-right"}`}>
+                        <th data-column-id={"h1:" + (ustun.kalit)} key={ustun.kalit} scope="col" aria-sort={faol ? (saralash.kamayish ? "descending" : "ascending") : "none"} className={`px-4 py-3.5 font-bold ${ustun.chap ? "text-left" : "text-right"}`}>
                           <button type="button" onClick={() => saralashniOzgartirish(ustun.kalit)} className={`inline-flex items-center gap-1 whitespace-nowrap uppercase tracking-wide transition hover:text-orange-600 ${faol ? "text-orange-600" : ""}`}>
                             {ustun.nom}<Belgi size={13} className={faol ? "" : "opacity-40"} />
                           </button>
@@ -333,7 +334,7 @@ export default function FoydaHisoboti() {
                     <td className="whitespace-nowrap px-4 py-3.5 text-right tabular-nums">{jami.rentabellik.toFixed(1)}%</td>
                   </tr>
                 </tfoot>
-              </table>
+              </table></SmartTable>
             </div>
 
             <ul className="divide-y divide-slate-100 xl:hidden">

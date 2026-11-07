@@ -189,7 +189,7 @@ export default function Xodimlar({ xodimlar, lavozimlar, bolimlar, filiallar = [
       </div>
 
       {korinish === "jadval" && (
-        <KengaytiriladiganJadval
+        <KengaytiriladiganJadval tableId="XodimUchot/Xodimlar/kengaytiriladiganjadval-1"
           ustunlar={ustunlar}
           qatorlar={royxat}
           kengaytir

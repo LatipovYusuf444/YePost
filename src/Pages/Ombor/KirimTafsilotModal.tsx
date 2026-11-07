@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useEffect, useMemo, useState } from "react";
 import { Ban, CheckCircle2, FileText, LoaderCircle, RotateCcw } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -135,8 +136,8 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
           <section className="mt-5 rounded-[26px] border border-orange-100 bg-white p-4 shadow-sm sm:p-5">
             <SectionTitle icon={<FileText size={18}/>} text={t("kirimTafsilotModal.itemsSection")} />
             <div className="scrollbar-orange overflow-x-auto">
-              <table className="w-full min-w-[1050px] text-left text-sm">
-                <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-500"><tr><th className="rounded-l-2xl px-4 py-4">{t("kirimTafsilotModal.table.number")}</th><th className="px-4 py-4">{t("kirimTafsilotModal.table.product")}</th><th className="px-4 py-4">{t("kirimTafsilotModal.table.barcode")}</th><th className="px-4 py-4">{t("kirimTafsilotModal.table.costPrice")}</th><th className="px-4 py-4">{t("kirimTafsilotModal.table.retailPrice")}</th><th className="px-4 py-4">{t("kirimTafsilotModal.table.wholesalePrice")}</th><th className="px-4 py-4">{t("kirimTafsilotModal.table.quantity")}</th><th className="px-4 py-4">{t("kirimTafsilotModal.table.warehouse")}</th><th className="rounded-r-2xl px-4 py-4">{t("kirimTafsilotModal.table.amount")}</th></tr></thead>
+              <SmartTable tableId="Ombor/KirimTafsilotModal/table-1" replaceColumnControls><table className="w-full min-w-[1050px] text-left text-sm">
+                <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-500"><tr><th data-column-id="h1" className="rounded-l-2xl px-4 py-4">{t("kirimTafsilotModal.table.number")}</th><th data-column-id="h2" className="px-4 py-4">{t("kirimTafsilotModal.table.product")}</th><th data-column-id="h3" className="px-4 py-4">{t("kirimTafsilotModal.table.barcode")}</th><th data-column-id="h4" className="px-4 py-4">{t("kirimTafsilotModal.table.costPrice")}</th><th data-column-id="h5" className="px-4 py-4">{t("kirimTafsilotModal.table.retailPrice")}</th><th data-column-id="h6" className="px-4 py-4">{t("kirimTafsilotModal.table.wholesalePrice")}</th><th data-column-id="h7" className="px-4 py-4">{t("kirimTafsilotModal.table.quantity")}</th><th data-column-id="h8" className="px-4 py-4">{t("kirimTafsilotModal.table.warehouse")}</th><th data-column-id="h9" className="rounded-r-2xl px-4 py-4">{t("kirimTafsilotModal.table.amount")}</th></tr></thead>
                 <tbody className="divide-y divide-orange-100">
                   {(hujjat.items ?? []).map((item, index) => {
                     const mod: MahsulotModifikatsiyasi | undefined = item.modification ?? modMap.get(item.modificationId);
@@ -149,7 +150,7 @@ export default function KirimTafsilotModal({ id, onClose }: Props) {
                     return <tr key={item.id ?? `${item.modificationId}-${index}`} className="hover:bg-orange-50/30"><td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td><td className="px-4 py-4 font-black text-slate-800">{modificationNomi(mod)}</td><td className="px-4 py-4 font-medium text-slate-500">{mod?.barcode || "—"}</td><td className="px-4 py-4 font-semibold text-slate-600">{pul(tanNarx, tanValyutasi)}</td><td className="px-4 py-4 text-slate-600">{pul(sotuvNarx, katalogValyutalari.retail)}</td><td className="px-4 py-4 text-slate-600">{pul(ulgurjiNarx, katalogValyutalari.wholesale)}</td><td className="px-4 py-4 font-bold text-slate-700">{item.unitId && item.unitQuantity != null ? <>{qatorMiqdoriMatni(item)}<span className="block text-[11px] font-semibold text-slate-400">= {Number(item.quantity).toLocaleString("uz-UZ", { maximumFractionDigits: 3 })} {item.baseUnitName ?? ""}</span></> : Number(item.quantity).toLocaleString("uz-UZ")}</td><td className="px-4 py-4 text-slate-600">{warehouse?.name ?? hujjatRaqamiMatni()}</td><td className="px-4 py-4 font-black text-emerald-600">{pul(Number(item.quantity) * tanNarx, tanValyutasi)}</td></tr>;
                   })}
                 </tbody>
-              </table>
+              </table></SmartTable>
             </div>
             {(!hujjat.items || hujjat.items.length === 0) && <div className="py-12 text-center text-sm font-bold text-slate-400">{t("kirimTafsilotModal.emptyItems")}</div>}
           </section>

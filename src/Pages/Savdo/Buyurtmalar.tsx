@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -295,16 +296,16 @@ export default function Buyurtmalar({ onSotuvniOchish, onOchirish, onTiklash }: 
         <div className={`transition-opacity duration-200 ${yuklanmoqda ? "opacity-60" : ""}`}>
           {/* Katta ekran: jadval */}
           <div className="hidden overflow-x-auto bg-white/70 lg:block">
-            <table className="w-full min-w-[980px] text-left text-sm">
+            <SmartTable tableId="Savdo/Buyurtmalar/table-1" replaceColumnControls><table className="w-full min-w-[980px] text-left text-sm">
               <thead className="bg-[#EFF6FF] text-xs font-black uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="px-8 py-4">{t("buyurtmalar.columns.buyurtma")}</th>
-                  <th className="px-5 py-4">{t("buyurtmalar.columns.mijoz")}</th>
-                  <th className="px-5 py-4">{t("buyurtmalar.columns.manzil")}</th>
-                  <th className="px-5 py-4">{t("buyurtmalar.columns.summa")}</th>
-                  <th className="px-5 py-4">{t("buyurtmalar.columns.sana")}</th>
-                  <th className="px-5 py-4">{t("buyurtmalar.columns.holati")}</th>
-                  <th className="w-28 px-5 py-4" />
+                  <th data-column-id="h1" className="px-8 py-4">{t("buyurtmalar.columns.buyurtma")}</th>
+                  <th data-column-id="h2" className="px-5 py-4">{t("buyurtmalar.columns.mijoz")}</th>
+                  <th data-column-id="h3" className="px-5 py-4">{t("buyurtmalar.columns.manzil")}</th>
+                  <th data-column-id="h4" className="px-5 py-4">{t("buyurtmalar.columns.summa")}</th>
+                  <th data-column-id="h5" className="px-5 py-4">{t("buyurtmalar.columns.sana")}</th>
+                  <th data-column-id="h6" className="px-5 py-4">{t("buyurtmalar.columns.holati")}</th>
+                  <th data-column-id="h7" className="w-28 px-5 py-4" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-orange-100/70">
@@ -385,7 +386,7 @@ export default function Buyurtmalar({ onSotuvniOchish, onOchirish, onTiklash }: 
                   );
                 })}
               </tbody>
-            </table>
+            </table></SmartTable>
           </div>
 
           {/* Planshet va telefon: kartalar */}

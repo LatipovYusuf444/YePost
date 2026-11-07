@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { nakladnoyHtmlMatni, nakladnoyQatori } from "@/lib/nakladnoyBirligi";
 import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import { useOzgarishBormi } from "@/hooks/useOzgarishBormi";
@@ -4332,17 +4333,17 @@ function OmbordanChiqarishHujjatMazmuni({
 
                 {items.length > 0 ? (
                   <div className="overflow-x-auto">
-                    <table className="w-full min-w-[880px] text-left text-sm">
+                    <SmartTable tableId="Savdo/SotuvTafsilotlariModal/table-2" replaceColumnControls><table className="w-full min-w-[880px] text-left text-sm">
                       <thead className="border-b border-slate-300 bg-slate-50 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">
                         <tr>
-                          <th className="w-14 px-7 py-3.5">#</th>
-                          <th className="px-3 py-3.5">{t("common.jadval.mahsulot")}</th>
-                          <th className="px-3 py-3.5">{t("common.jadval.narx")}</th>
-                          <th className="px-3 py-3.5">{t("common.jadval.miqdor")}</th>
-                          <th className="px-3 py-3.5">{t("common.jadval.mavjudQoldiq")}</th>
-                          <th className="px-3 py-3.5">{t("common.jadval.rezervda")}</th>
-                          <th className="px-3 py-3.5">{t("common.jadval.ombordanChiqdi")}</th>
-                          <th className="px-7 py-3.5 text-right">{t("common.jadval.summa")}</th>
+                          <th data-column-id="h1" className="w-14 px-7 py-3.5">#</th>
+                          <th data-column-id="h2" className="px-3 py-3.5">{t("common.jadval.mahsulot")}</th>
+                          <th data-column-id="h3" className="px-3 py-3.5">{t("common.jadval.narx")}</th>
+                          <th data-column-id="h4" className="px-3 py-3.5">{t("common.jadval.miqdor")}</th>
+                          <th data-column-id="h5" className="px-3 py-3.5">{t("common.jadval.mavjudQoldiq")}</th>
+                          <th data-column-id="h6" className="px-3 py-3.5">{t("common.jadval.rezervda")}</th>
+                          <th data-column-id="h7" className="px-3 py-3.5">{t("common.jadval.ombordanChiqdi")}</th>
+                          <th data-column-id="h8" className="px-7 py-3.5 text-right">{t("common.jadval.summa")}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-300 text-slate-700">
@@ -4397,7 +4398,7 @@ function OmbordanChiqarishHujjatMazmuni({
                           );
                         })}
                       </tbody>
-                    </table>
+                    </table></SmartTable>
                   </div>
                 ) : (
                   <p className="px-7 py-16 text-center text-sm text-slate-400">{t("common.tovarlarYoq")}</p>

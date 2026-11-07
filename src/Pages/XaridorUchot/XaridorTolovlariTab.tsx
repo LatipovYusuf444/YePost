@@ -178,7 +178,7 @@ export default function XaridorTolovlariTab({ xaridorId }: { xaridorId: string }
 
   return (
     <div className="px-9 py-7">
-      <KengaytiriladiganJadval
+      <KengaytiriladiganJadval tableId="XaridorUchot/XaridorTolovlariTab/kengaytiriladiganjadval-1"
         ustunlar={ustunlar}
         qatorlar={tolovlar}
         kengaytir

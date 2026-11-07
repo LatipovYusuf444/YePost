@@ -268,15 +268,15 @@ export default function AuditLoglari() {
             <p className="text-sm text-slate-400">{t("auditLog.emptyHint")}</p>
           </div>
         ) : (
-          <Table>
+          <Table tableId="HisobotUchot/AuditLoglari/table-1">
             <TableHeader>
               <TableRow className="bg-slate-50/70 hover:bg-slate-50/70">
-                <TableHead className="w-16 pl-5 text-center font-black text-slate-500">№</TableHead>
-                <TableHead className="font-black text-slate-500">{t("auditLog.columns.action")}</TableHead>
-                <TableHead className="font-black text-slate-500">{t("auditLog.columns.object")}</TableHead>
-                <TableHead className="font-black text-slate-500">{t("auditLog.columns.user")}</TableHead>
-                <TableHead className="font-black text-slate-500">{t("auditLog.columns.dateTime")}</TableHead>
-                <TableHead className="w-36 pr-5 text-right font-black text-slate-500">{t("auditLog.columns.details")}</TableHead>
+                <TableHead data-column-id="h1" className="w-16 pl-5 text-center font-black text-slate-500">№</TableHead>
+                <TableHead data-column-id="h2" className="font-black text-slate-500">{t("auditLog.columns.action")}</TableHead>
+                <TableHead data-column-id="h3" className="font-black text-slate-500">{t("auditLog.columns.object")}</TableHead>
+                <TableHead data-column-id="h4" className="font-black text-slate-500">{t("auditLog.columns.user")}</TableHead>
+                <TableHead data-column-id="h5" className="font-black text-slate-500">{t("auditLog.columns.dateTime")}</TableHead>
+                <TableHead data-column-id="h6" className="w-36 pr-5 text-right font-black text-slate-500">{t("auditLog.columns.details")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

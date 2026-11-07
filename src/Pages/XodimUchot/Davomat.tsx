@@ -395,18 +395,18 @@ export default function Davomat({ xodimlar }: Props) {
           <div className={`transition-opacity ${yuklanmoqda ? "pointer-events-none opacity-50" : ""}`}>
             {royxat.length ? (
               <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
-                <Table>
+                <Table tableId="XodimUchot/Davomat/table-1">
                   <TableHeader>
                     <TableRow className="bg-slate-50/70 hover:bg-slate-50/70">
-                      <TableHead className="w-14 pl-5 text-center font-black text-slate-500">№</TableHead>
-                      <TableHead className="font-black text-slate-500">Xodim</TableHead>
-                      <TableHead className="font-black text-slate-500">Sana</TableHead>
-                      <TableHead className="font-black text-slate-500">Holat</TableHead>
-                      <TableHead className="font-black text-slate-500">Kelgan</TableHead>
-                      <TableHead className="font-black text-slate-500">Ketgan</TableHead>
-                      <TableHead className="text-right font-black text-slate-500">Ish soati</TableHead>
-                      <TableHead className="font-black text-slate-500">Izoh</TableHead>
-                      <TableHead className="w-16 pr-5" />
+                      <TableHead data-column-id="h1" className="w-14 pl-5 text-center font-black text-slate-500">№</TableHead>
+                      <TableHead data-column-id="h2" className="font-black text-slate-500">Xodim</TableHead>
+                      <TableHead data-column-id="h3" className="font-black text-slate-500">Sana</TableHead>
+                      <TableHead data-column-id="h4" className="font-black text-slate-500">Holat</TableHead>
+                      <TableHead data-column-id="h5" className="font-black text-slate-500">Kelgan</TableHead>
+                      <TableHead data-column-id="h6" className="font-black text-slate-500">Ketgan</TableHead>
+                      <TableHead data-column-id="h7" className="text-right font-black text-slate-500">Ish soati</TableHead>
+                      <TableHead data-column-id="h8" className="font-black text-slate-500">Izoh</TableHead>
+                      <TableHead data-column-id="h9" className="w-16 pr-5" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>

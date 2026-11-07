@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { bugungiToshkentKuni } from "@/lib/hujjatSanasi";
 import { StockQuantity } from "@/Components/common/NegativeStockBadge";
 import { pulMatni } from "@/lib/valyuta";
@@ -629,22 +630,22 @@ export default function OmborQoldigi() {
       )}
 
       <OmborJadval className="[&_thead_th]:!h-auto [&_thead_th]:!py-3 [&_thead_th]:!px-5 [&_tbody_td]:!px-5 [&_tbody_td]:!py-3.5 [&_thead_th]:!border-slate-200 [&_thead_th]:!text-slate-500 [&_tbody]:!divide-slate-100 shadow-[0_8px_30px_-18px_rgba(15,23,42,.25)]">
-          <table className="w-full min-w-[900px] text-sm">
+          <SmartTable tableId="Ombor/OmborQoldigi/table-1" replaceColumnControls><table className="w-full min-w-[900px] text-sm">
             <thead className="text-xs font-black uppercase tracking-wide">
               <tr>
-                <th rowSpan={2} className="text-left">{t("omborQoldigi.columns.name")}</th>
-                {qollangan.shtrixKodniKorsatish && <th rowSpan={2} className="text-left">{t("omborQoldigi.columns.barcode")}</th>}
-                {qollangan.variatsiyalarniKorsatish && <th rowSpan={2} className="text-left">{t("omborQoldigi.columns.variation")}</th>}
-                {qollangan.omborlarBoyichaAjratish && <th rowSpan={2} className="text-left">{t("omborQoldigi.columns.warehouse")}</th>}
-                <th rowSpan={2} className="text-left">{t("omborQoldigi.columns.unit")}</th>
-                <th colSpan={2} className="border-b border-slate-200 text-center">{t("omborQoldigi.columns.totalStock")}</th>
-                <th colSpan={2} className="border-b border-slate-200 text-center">{narxTuriNomi}</th>
+                <th data-column-id="h1" rowSpan={2} className="text-left">{t("omborQoldigi.columns.name")}</th>
+                {qollangan.shtrixKodniKorsatish && <th data-column-id="h2" rowSpan={2} className="text-left">{t("omborQoldigi.columns.barcode")}</th>}
+                {qollangan.variatsiyalarniKorsatish && <th data-column-id="h3" rowSpan={2} className="text-left">{t("omborQoldigi.columns.variation")}</th>}
+                {qollangan.omborlarBoyichaAjratish && <th data-column-id="h4" rowSpan={2} className="text-left">{t("omborQoldigi.columns.warehouse")}</th>}
+                <th data-column-id="h5" rowSpan={2} className="text-left">{t("omborQoldigi.columns.unit")}</th>
+                <th data-column-id="h6" colSpan={2} className="border-b border-slate-200 text-center">{t("omborQoldigi.columns.totalStock")}</th>
+                <th data-column-id="h7" colSpan={2} className="border-b border-slate-200 text-center">{narxTuriNomi}</th>
               </tr>
               <tr>
-                <th className="text-right">{t("omborQoldigi.columns.total")}</th>
-                <th className="text-right">{t("omborQoldigi.columns.available")}</th>
-                <th className="text-right">{t("omborQoldigi.columns.unitPrice")}</th>
-                <th className="text-right">{t("omborQoldigi.columns.totalAmount")}</th>
+                <th data-column-id="h8" className="text-right">{t("omborQoldigi.columns.total")}</th>
+                <th data-column-id="h9" className="text-right">{t("omborQoldigi.columns.available")}</th>
+                <th data-column-id="h10" className="text-right">{t("omborQoldigi.columns.unitPrice")}</th>
+                <th data-column-id="h11" className="text-right">{t("omborQoldigi.columns.totalAmount")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -693,7 +694,7 @@ export default function OmborQoldigi() {
                 </tr>
               </tfoot>
             )}
-          </table>
+          </table></SmartTable>
         {!yuklanmoqda && satrlar.length === 0 && (
           <div className="flex flex-col items-center gap-3 px-6 py-14 text-center">
             <span aria-hidden className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400"><PackageOpen size={26} /></span>

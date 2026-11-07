@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
@@ -322,17 +323,17 @@ export default function AdminObunalar() {
       ) : (
         <div className={jadvalKlass}>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px]">
+            <SmartTable tableId="Admin/Obunalar/table-1" replaceColumnControls><table className="w-full min-w-[900px]">
               <thead className={theadKlass}>
                 <tr>
-                  <th className={thKlass}>{t("obunalar.kompaniya")}</th>
-                  <th className={thKlass}>{t("obunalar.tarif")}</th>
-                  <th className={thKlass}>{t("obunalar.davr")}</th>
-                  <th className={thKlass}>
+                  <th data-column-id="h1" className={thKlass}>{t("obunalar.kompaniya")}</th>
+                  <th data-column-id="h2" className={thKlass}>{t("obunalar.tarif")}</th>
+                  <th data-column-id="h3" className={thKlass}>{t("obunalar.davr")}</th>
+                  <th data-column-id="h4" className={thKlass}>
                     {t("obunalar.boshlanish")} → {t("obunalar.tugash")}
                   </th>
-                  <th className={thKlass}>{t("obunalar.holati")}</th>
-                  <th className="w-40 px-5 py-4" />
+                  <th data-column-id="h5" className={thKlass}>{t("obunalar.holati")}</th>
+                  <th data-column-id="h6" className="w-40 px-5 py-4" />
                 </tr>
               </thead>
               <tbody className={tbodyKlass}>
@@ -375,7 +376,7 @@ export default function AdminObunalar() {
                   );
                 })}
               </tbody>
-            </table>
+            </table></SmartTable>
           </div>
           <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-3 text-xs font-semibold text-slate-400">{t("common.natija", { count: korinadigan.length })}</div>
         </div>

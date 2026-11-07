@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useMemo } from "react";
 import { LoaderCircle, PackageCheck, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -67,14 +68,14 @@ export default function SotuvOmbordanChiqqanlar({ sotuv, className }: { sotuv: S
         <p className="mt-3 rounded-xl bg-slate-50 px-3 py-3 text-xs font-semibold leading-5 text-slate-500">{t("ombordanChiqqan.bosh")}</p>
       ) : (
         <div className="mt-3 overflow-x-auto rounded-xl border border-slate-400/60 bg-white">
-          <table className="w-full min-w-[460px] text-left text-sm">
+          <SmartTable tableId="Savdo/SotuvOmbordanChiqqanlar/table-1" replaceColumnControls><table className="w-full min-w-[460px] text-left text-sm">
             <thead className="border-b border-slate-300 bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-500">
               <tr>
-                <th className="px-3 py-2.5">{t("ombordanChiqqan.jadval.mahsulot")}</th>
-                <th className="px-3 py-2.5">{t("ombordanChiqqan.jadval.ombor")}</th>
-                <th className="px-3 py-2.5 text-right">{t("ombordanChiqqan.jadval.chiqdi")}</th>
-                {qaytganBor && <th className="px-3 py-2.5 text-right">{t("ombordanChiqqan.jadval.qaytdi")}</th>}
-                <th className="px-3 py-2.5 text-right">{t("ombordanChiqqan.jadval.vaqt")}</th>
+                <th data-column-id="h1" className="px-3 py-2.5">{t("ombordanChiqqan.jadval.mahsulot")}</th>
+                <th data-column-id="h2" className="px-3 py-2.5">{t("ombordanChiqqan.jadval.ombor")}</th>
+                <th data-column-id="h3" className="px-3 py-2.5 text-right">{t("ombordanChiqqan.jadval.chiqdi")}</th>
+                {qaytganBor && <th data-column-id="h4" className="px-3 py-2.5 text-right">{t("ombordanChiqqan.jadval.qaytdi")}</th>}
+                <th data-column-id="h5" className="px-3 py-2.5 text-right">{t("ombordanChiqqan.jadval.vaqt")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-300 text-slate-700">
@@ -99,7 +100,7 @@ export default function SotuvOmbordanChiqqanlar({ sotuv, className }: { sotuv: S
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></SmartTable>
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-slate-300 bg-slate-50 px-3 py-2.5 text-xs font-bold text-slate-600">
             <span>{t("ombordanChiqqan.tovarSoni", { soni: tovarSoni })}</span>
             <span className="text-emerald-700">

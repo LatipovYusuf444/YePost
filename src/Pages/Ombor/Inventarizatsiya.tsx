@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { StockQuantity } from "@/Components/common/NegativeStockBadge";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
@@ -786,12 +787,12 @@ export default function Inventarizatsiya() {
       )}
 
       <OmborJadval className="border-blue-100 shadow-[0_3px_14px_rgba(37,99,235,.06)] [&_thead]:!bg-[#F4F8FF] [&_thead]:!text-blue-800 [&_thead_th]:!border-blue-100 [&_tbody]:!divide-blue-100 [&>div:last-child]:!border-blue-100 [&>div:last-child>button]:!border-blue-100 [&>div:last-child>button]:!text-blue-600 [&>div:last-child>button:hover]:!bg-blue-50 [&>div:last-child>div]:!bg-blue-50 [&>div:last-child>div>div]:!bg-blue-500">
-        <table className="w-full min-w-[1050px] text-left text-sm">
+        <SmartTable tableId="Ombor/Inventarizatsiya/table-1" replaceColumnControls><table className="w-full min-w-[1050px] text-left text-sm">
           <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500">
             <tr>
-              {faolUstunlar.map((ustun) => <th key={ustun.id}>{t(ustun.nom)}</th>)}
-              <th className="sticky right-0 z-10 w-20 min-w-20 bg-[#F8FAFC] px-5 py-3 text-right">
-                <button
+              {faolUstunlar.map((ustun) => <th data-column-id={"h1:" + (ustun.id)} key={ustun.id}>{t(ustun.nom)}</th>)}
+              <th data-column-id="h2" className="sticky right-0 z-10 w-20 min-w-20 bg-[#F8FAFC] px-5 py-3 text-right">
+                <button data-table-control
                   ref={sozlamaTugmaRef}
                   type="button"
                   onClick={() => {
@@ -840,7 +841,7 @@ export default function Inventarizatsiya() {
               </tr>
             )}
           </tbody>
-        </table>
+        </table></SmartTable>
       </OmborJadval>
       {!store.yuklanmoqda && <div className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-[0_2px_8px_rgba(37,99,235,.05)] [&>div]:!border-0"><TablePagination accent="blue" page={page} pageSize={pageSize} totalItems={korinadiganHujjatlar.length} onPageChange={setPage} onPageSizeChange={setPageSize} /></div>}
 

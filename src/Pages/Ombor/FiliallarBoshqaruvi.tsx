@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
@@ -166,14 +167,14 @@ export default function FiliallarBoshqaruvi() {
     {!yuklanmoqda && korinish === "jadval" && (
       <>
         <OmborJadval>
-          <table className="w-full text-left">
+          <SmartTable tableId="Ombor/FiliallarBoshqaruvi/table-1" replaceColumnControls><table className="w-full text-left">
             <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500">
               <tr>
-                <th className="px-4! py-4">{t("filiallarBoshqaruvi.table.name")}</th>
-                <th className="px-4! py-4">{t("filiallarBoshqaruvi.table.address")}</th>
-                <th className="px-4! py-4">{t("filiallarBoshqaruvi.table.responsible")}</th>
-                <th className="px-4! py-4">{t("filiallarBoshqaruvi.table.status")}</th>
-                <th className="w-28 px-4! py-4 text-right">
+                <th data-column-id="h1" className="px-4! py-4">{t("filiallarBoshqaruvi.table.name")}</th>
+                <th data-column-id="h2" className="px-4! py-4">{t("filiallarBoshqaruvi.table.address")}</th>
+                <th data-column-id="h3" className="px-4! py-4">{t("filiallarBoshqaruvi.table.responsible")}</th>
+                <th data-column-id="h4" className="px-4! py-4">{t("filiallarBoshqaruvi.table.status")}</th>
+                <th data-column-id="h5" className="w-28 px-4! py-4 text-right">
                   <span className="sr-only">{t("filiallarBoshqaruvi.table.actions")}</span>
                 </th>
               </tr>
@@ -245,7 +246,7 @@ export default function FiliallarBoshqaruvi() {
                 </tr>
               )}
             </tbody>
-          </table>
+          </table></SmartTable>
         </OmborJadval>
         <TablePagination page={page} pageSize={pageSize} totalItems={store.filiallar.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
       </>

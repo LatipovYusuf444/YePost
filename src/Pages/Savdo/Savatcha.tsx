@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { type MouseEvent, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
@@ -395,7 +396,7 @@ export default function Savatcha({
 
         <div className="px-6 pb-6 xl:px-10">
           <div className="overflow-x-auto rounded-[24px] border border-orange-100">
-            <table className="w-full min-w-[1210px] border-collapse text-left text-sm">
+            <SmartTable tableId="Savdo/Savatcha/table-1" replaceColumnControls><table className="w-full min-w-[1210px] border-collapse text-left text-sm">
               <colgroup>
                 <col className="w-[66px]" />
                 <col className="w-[190px]" />
@@ -421,8 +422,8 @@ export default function Savatcha({
                     t("savatcha.table.headers.date"),
                     t("savatcha.table.headers.lastEdit"),
                     t("savatcha.table.headers.actions"),
-                  ].map((title) => (
-                    <th key={title} className="whitespace-nowrap border-b border-orange-100 px-4 py-3 align-middle font-black">
+                  ].map((title, columnIndex) => (
+                    <th data-column-id={"h1:" + columnIndex} key={title} className="whitespace-nowrap border-b border-orange-100 px-4 py-3 align-middle font-black">
                       {title}
                     </th>
                   ))}
@@ -553,7 +554,7 @@ export default function Savatcha({
                   </tr>
                 )}
               </tbody>
-            </table>
+            </table></SmartTable>
           </div>
 
           <div className="table-pagination mt-4 flex flex-col gap-3 text-sm font-semibold text-slate-500 sm:flex-row sm:items-center sm:justify-between">

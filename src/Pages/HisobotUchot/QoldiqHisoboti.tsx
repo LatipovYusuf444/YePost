@@ -439,7 +439,7 @@ export default function QoldiqHisoboti() {
             <p className="mb-3 text-xs font-semibold text-gray-400">
               Ustun chetini tortib kengaytiring, sarlavhani sudrab joyini almashtiring.
             </p>
-            <KengaytiriladiganJadval ustunlar={ustunlar} qatorlar={qatorlar} jamiBor />
+            <KengaytiriladiganJadval tableId="HisobotUchot/QoldiqHisoboti/kengaytiriladiganjadval-1" ustunlar={ustunlar} qatorlar={qatorlar} jamiBor />
           </>
         )}
       </section>

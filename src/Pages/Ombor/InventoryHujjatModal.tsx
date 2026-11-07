@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import AppSelect from "@/Components/ui/AppSelect";
 import SummaMaydoni from "@/Components/common/SummaMaydoni";
@@ -725,25 +726,25 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
                 <section className="mt-5 rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm sm:p-6">
                   <h3 className="border-b border-orange-100 pb-4 text-sm font-black uppercase tracking-wide text-slate-600">{t("table.sectionTitle")}</h3>
                 <div className="mt-5 overflow-x-auto rounded-2xl border border-orange-100">
-                  <table className="w-full min-w-[700px] text-left text-sm">
+                  <SmartTable tableId="Ombor/InventoryHujjatModal/table-1" replaceColumnControls><table className="w-full min-w-[700px] text-left text-sm">
                     <thead className="bg-slate-50 text-gray-600">
                       <tr>
-                        <th className="px-4 py-3">{t("table.product")}</th>
+                        <th data-column-id="h1" className="px-4 py-3">{t("table.product")}</th>
                         {tur === "inventarizatsiya" ? (
                           <>
-                            <th className="px-4 py-3">{t("table.barcode")}</th>
-                            <th className="px-4 py-3">{t("table.warehouse")}</th>
-                            <th className="px-4 py-3">{t("table.systemQuantity")}</th>
-                            <th className="px-4 py-3">{t("table.actualQuantity")}</th>
-                            <th className="px-4 py-3">{t("table.difference")}</th>
+                            <th data-column-id="h2" className="px-4 py-3">{t("table.barcode")}</th>
+                            <th data-column-id="h3" className="px-4 py-3">{t("table.warehouse")}</th>
+                            <th data-column-id="h4" className="px-4 py-3">{t("table.systemQuantity")}</th>
+                            <th data-column-id="h5" className="px-4 py-3">{t("table.actualQuantity")}</th>
+                            <th data-column-id="h6" className="px-4 py-3">{t("table.difference")}</th>
                           </>
                         ) : (
                           <>
-                            <th className="px-4 py-3">{t("table.quantity")}</th>
+                            <th data-column-id="h7" className="px-4 py-3">{t("table.quantity")}</th>
                             {tur === "kirim" && (
                               <>
-                                <th className="px-4 py-3">{t("table.price")}</th>
-                                <th className="px-4 py-3">{t("table.total")}</th>
+                                <th data-column-id="h8" className="px-4 py-3">{t("table.price")}</th>
+                                <th data-column-id="h9" className="px-4 py-3">{t("table.total")}</th>
                               </>
                             )}
                           </>
@@ -843,7 +844,7 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
                         </tr>
                       )}
                     </tbody>
-                  </table>
+                  </table></SmartTable>
                 </div>
                 </section>
 

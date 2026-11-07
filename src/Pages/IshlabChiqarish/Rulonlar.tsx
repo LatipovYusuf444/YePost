@@ -70,7 +70,7 @@ export default function Rulonlar() {
     return !warehouseId && qator.warehouseId ? `${nom} · ${ombor(qator.warehouseId)}` : nom;
   };
   const ustunlar: Ustun<Rulon>[] = [
-    {
+    { id: "rulonlar-column-1",
       nom: t("fields.serial"),
       katak: (rulon) => (
         <span className="inline-flex items-center gap-2.5">
@@ -79,16 +79,16 @@ export default function Rulonlar() {
         </span>
       ),
     },
-    { nom: t("fields.product"), katak: (rulon) => <span className="block max-w-[260px] truncate font-bold text-slate-800">{rulon.productName ?? "—"}</span> },
-    { nom: t("fields.warehouse"), katak: (rulon) => ombor(rulon.warehouseId) },
-    {
+    { id: "rulonlar-column-2", nom: t("fields.product"), katak: (rulon) => <span className="block max-w-[260px] truncate font-bold text-slate-800">{rulon.productName ?? "—"}</span> },
+    { id: "rulonlar-column-3", nom: t("fields.warehouse"), katak: (rulon) => ombor(rulon.warehouseId) },
+    { id: "rulonlar-column-4",
       nom: t("rolls.weight"),
       ong: true,
       katak: (rulon) => <>{miqdorMatni(rulon.weight)}{miqdorMatni(rulon.weight) !== "—" && <span className="ml-1 text-xs font-bold text-slate-400">{kg}</span>}</>,
     },
-    { nom: t("rolls.weightLeft"), ong: true, katak: (rulon) => <QoldiqChizigi qolgan={rulon.weightLeft} jami={rulon.weight} birlik={kg} /> },
-    { nom: t("rolls.receivedAt"), katak: (rulon) => kunMatni(rulon.receivedAt ?? undefined) || "—" },
-    {
+    { id: "rulonlar-column-5", nom: t("rolls.weightLeft"), ong: true, katak: (rulon) => <QoldiqChizigi qolgan={rulon.weightLeft} jami={rulon.weight} birlik={kg} /> },
+    { id: "rulonlar-column-6", nom: t("rolls.receivedAt"), katak: (rulon) => kunMatni(rulon.receivedAt ?? undefined) || "—" },
+    { id: "rulonlar-column-7",
       nom: t("rolls.label"),
       katak: (rulon) => (
         <button type="button" disabled={yorliq.band} onClick={() => void yorliq.bajar(() => yorliqniChopEtish(rulon.batchId))} className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-orange-200 bg-white px-3 text-xs font-black text-[#2563EB] transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50">
@@ -144,7 +144,7 @@ export default function Rulonlar() {
         <HolatFiltri qiymat={status} onChange={(qiymat) => { setStatus(qiymat); setPage(1); }} holatlar={["IN_STOCK", "USED"]} />
       </Asboblar>
       <XatoQutisi matn={royxat.xato || xulosa.xato || yorliq.xato} />
-      <Jadval
+      <Jadval tableId="IshlabChiqarish/Rulonlar/jadval-1"
         ustunlar={ustunlar}
         qatorlar={qatorlar}
         kalit={(rulon) => rulon.batchId}

@@ -88,7 +88,7 @@ export default function Retseptlar() {
     { kalit: "arxiv", nom: t("recipes.kpi.archived"), holatlar: ["ARCHIVED"], rang: "violet", ikonka: Archive },
   ];
   const ustunlar: Ustun<Retsept>[] = [
-    {
+    { id: "retseptlar-column-1",
       nom: t("fields.product"),
       katak: (retsept) => (
         <span className="block max-w-[280px]">
@@ -97,13 +97,13 @@ export default function Retseptlar() {
         </span>
       ),
     },
-    { nom: t("fields.version"), katak: (retsept) => <span className="font-bold text-slate-600">{versiyaMatni(retsept)}</span> },
-    { nom: t("fields.wipWarehouse"), katak: ombor },
-    { nom: t("fields.baseQuantity"), ong: true, katak: (retsept) => <span className="font-black text-slate-800">{miqdorMatni(retsept.baseQuantity)}</span> },
-    { nom: t("recipes.inputs"), ong: true, katak: (retsept) => (retsept.inputs ? t("recipes.inputsCount", { soni: retsept.inputs.length }) : "—") },
-    { nom: t("fields.normalScrapPercent"), ong: true, katak: (retsept) => foizMatni(retsept.normalScrapPercent) },
-    { nom: t("fields.consumeOnIssue"), katak: (retsept) => <HaYoq qiymat={retsept.consumeOnIssue} /> },
-    { nom: t("fields.status"), katak: (retsept) => <Holat status={retsept.status} /> },
+    { id: "retseptlar-column-2", nom: t("fields.version"), katak: (retsept) => <span className="font-bold text-slate-600">{versiyaMatni(retsept)}</span> },
+    { id: "retseptlar-column-3", nom: t("fields.wipWarehouse"), katak: ombor },
+    { id: "retseptlar-column-4", nom: t("fields.baseQuantity"), ong: true, katak: (retsept) => <span className="font-black text-slate-800">{miqdorMatni(retsept.baseQuantity)}</span> },
+    { id: "retseptlar-column-5", nom: t("recipes.inputs"), ong: true, katak: (retsept) => (retsept.inputs ? t("recipes.inputsCount", { soni: retsept.inputs.length }) : "—") },
+    { id: "retseptlar-column-6", nom: t("fields.normalScrapPercent"), ong: true, katak: (retsept) => foizMatni(retsept.normalScrapPercent) },
+    { id: "retseptlar-column-7", nom: t("fields.consumeOnIssue"), katak: (retsept) => <HaYoq qiymat={retsept.consumeOnIssue} /> },
+    { id: "retseptlar-column-8", nom: t("fields.status"), katak: (retsept) => <Holat status={retsept.status} /> },
   ];
   const yangi = <button type="button" onClick={() => setForma({ qiymat: bosh() })} className={tugmaAsosiy}><Plus size={18} />{t("recipes.create")}</button>;
   // Retsept bor, lekin qidiruv yoki filtr hech narsa qoldirmagan.
@@ -116,7 +116,7 @@ export default function Retseptlar() {
         <HolatFiltri qiymat={filtr?.holatlar.length === 1 ? filtr.holatlar[0] : ""} onChange={(holat) => setFiltr(holat ? { kalit: holat, holatlar: [holat] } : null)} holatlar={HOLATLAR} />
       </Asboblar>
       <XatoQutisi matn={royxat.xato} />
-      <Jadval
+      <Jadval tableId="IshlabChiqarish/Retseptlar/jadval-1"
         ustunlar={ustunlar}
         qatorlar={qatorlar}
         kalit={(retsept) => retsept.id}
@@ -347,13 +347,13 @@ function RetseptKorish({ id, nomlar, onYopish, onOzgardi, onTahrir, onOchish }: 
         {retsept.note && <p className="rounded-2xl border border-orange-100 bg-white p-4 text-sm font-semibold text-slate-600"><span className="font-black text-slate-800">{t("fields.note")}:</span> {retsept.note}</p>}
         <div className="grid items-start gap-5 xl:grid-cols-2">
           <Bolim ikonka={Package} sarlavha={t("recipes.inputs")} izoh={t("recipes.viewInputsHint", { miqdor: miqdorMatni(retsept.baseQuantity) })}>
-            <Jadval
+            <Jadval tableId="IshlabChiqarish/Retseptlar/jadval-2"
               ixcham
               ustunlar={[
-                { nom: t("fields.product"), katak: (qator) => <span className="block max-w-[240px] truncate font-bold text-slate-800">{qatorNomi(qator)}</span> },
-                { nom: t("fields.inputKind"), katak: (qator) => t(`inputKind.${qator.kind}`, { defaultValue: qator.kind }) },
-                { nom: t("fields.quantity"), ong: true, katak: (qator) => (qator.kind === "FREE" ? <span className="text-slate-400">—</span> : kirimMiqdori(qator)) },
-                { nom: t("fields.tolerancePercent"), ong: true, katak: (qator) => (qator.kind === "FIXED" && qator.tolerancePercent != null && qator.tolerancePercent !== "" ? `±${miqdorMatni(qator.tolerancePercent)}%` : "—") },
+                { id: "retseptlar-column-9", nom: t("fields.product"), katak: (qator) => <span className="block max-w-[240px] truncate font-bold text-slate-800">{qatorNomi(qator)}</span> },
+                { id: "retseptlar-column-10", nom: t("fields.inputKind"), katak: (qator) => t(`inputKind.${qator.kind}`, { defaultValue: qator.kind }) },
+                { id: "retseptlar-column-11", nom: t("fields.quantity"), ong: true, katak: (qator) => (qator.kind === "FREE" ? <span className="text-slate-400">—</span> : kirimMiqdori(qator)) },
+                { id: "retseptlar-column-12", nom: t("fields.tolerancePercent"), ong: true, katak: (qator) => (qator.kind === "FIXED" && qator.tolerancePercent != null && qator.tolerancePercent !== "" ? `±${miqdorMatni(qator.tolerancePercent)}%` : "—") },
               ]}
               qatorlar={retsept.inputs ?? []}
               kalit={(qator, indeks) => qator.id ?? String(indeks)}
@@ -361,13 +361,13 @@ function RetseptKorish({ id, nomlar, onYopish, onOzgardi, onTahrir, onOchish }: 
             />
           </Bolim>
           <Bolim ikonka={PackageCheck} sarlavha={t("recipes.outputs")}>
-            <Jadval
+            <Jadval tableId="IshlabChiqarish/Retseptlar/jadval-3"
               ixcham
               ustunlar={[
-                { nom: t("fields.product"), katak: (qator) => <span className="block max-w-[240px] truncate font-bold text-slate-800">{qatorNomi(qator)}</span> },
-                { nom: t("fields.outputRole"), katak: (qator) => t(`outputRole.${qator.role}`, { defaultValue: qator.role }) },
-                { nom: t("fields.quantity"), ong: true, katak: (qator) => miqdorMatni(qator.quantity) },
-                { nom: t("fields.quantityType"), katak: (qator) => t(`quantityType.${qator.quantityType || "default"}`, { defaultValue: qator.quantityType ?? "" }) },
+                { id: "retseptlar-column-13", nom: t("fields.product"), katak: (qator) => <span className="block max-w-[240px] truncate font-bold text-slate-800">{qatorNomi(qator)}</span> },
+                { id: "retseptlar-column-14", nom: t("fields.outputRole"), katak: (qator) => t(`outputRole.${qator.role}`, { defaultValue: qator.role }) },
+                { id: "retseptlar-column-15", nom: t("fields.quantity"), ong: true, katak: (qator) => miqdorMatni(qator.quantity) },
+                { id: "retseptlar-column-16", nom: t("fields.quantityType"), katak: (qator) => t(`quantityType.${qator.quantityType || "default"}`, { defaultValue: qator.quantityType ?? "" }) },
               ]}
               qatorlar={retsept.outputs ?? []}
               kalit={(qator, indeks) => qator.id ?? String(indeks)}
@@ -396,23 +396,23 @@ function RetseptKorish({ id, nomlar, onYopish, onOzgardi, onTahrir, onOchish }: 
             {fx.xato("qty") && <span role="alert" className="text-xs font-bold leading-5 text-red-600">{fx.xato("qty")}</span>}
           </div>
           {portlash && <div className="grid items-start gap-4 xl:grid-cols-2">
-            <Jadval
+            <Jadval tableId="IshlabChiqarish/Retseptlar/jadval-4"
               ixcham
               ustunlar={[
-                { nom: t("recipes.inputs"), katak: (qator) => qatorNomi(qator) },
-                { nom: t("fields.inputKind"), katak: (qator) => t(`inputKind.${qator.kind}`, { defaultValue: qator.kind ?? "—" }) },
-                { nom: t("fields.required"), ong: true, katak: portlashMiqdorMatni },
+                { id: "retseptlar-column-17", nom: t("recipes.inputs"), katak: (qator) => qatorNomi(qator) },
+                { id: "retseptlar-column-18", nom: t("fields.inputKind"), katak: (qator) => t(`inputKind.${qator.kind}`, { defaultValue: qator.kind ?? "—" }) },
+                { id: "retseptlar-column-19", nom: t("fields.required"), ong: true, katak: portlashMiqdorMatni },
               ]}
               qatorlar={portlash.inputs}
               kalit={(qator, indeks) => `${qator.modificationId ?? ""}-${indeks}`}
               bosh={t("empty.lines")}
             />
-            <Jadval
+            <Jadval tableId="IshlabChiqarish/Retseptlar/jadval-5"
               ixcham
               ustunlar={[
-                { nom: t("recipes.outputs"), katak: (qator) => qatorNomi(qator) },
-                { nom: t("fields.outputRole"), katak: (qator) => t(`outputRole.${qator.role}`, { defaultValue: qator.role ?? "—" }) },
-                { nom: t("fields.quantity"), ong: true, katak: portlashMiqdorMatni },
+                { id: "retseptlar-column-20", nom: t("recipes.outputs"), katak: (qator) => qatorNomi(qator) },
+                { id: "retseptlar-column-21", nom: t("fields.outputRole"), katak: (qator) => t(`outputRole.${qator.role}`, { defaultValue: qator.role ?? "—" }) },
+                { id: "retseptlar-column-22", nom: t("fields.quantity"), ong: true, katak: portlashMiqdorMatni },
               ]}
               qatorlar={portlash.outputs}
               kalit={(qator, indeks) => `${qator.modificationId ?? ""}-${indeks}`}

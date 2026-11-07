@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { stockQuantity } from "@/lib/negativeStock";
 import { useEffect, useMemo, useState } from "react";
 import { Boxes, Layers3, LoaderCircle, PackageSearch, RefreshCw, Search, TriangleAlert, Warehouse, X } from "lucide-react";
@@ -121,9 +122,9 @@ export default function KategoriyaQoldigiModal({ kategoriya, mahsulotlar, birlik
             <div className="px-6 py-14 text-center"><PackageSearch size={36} className="mx-auto text-slate-300" /><p className="mt-3 font-semibold text-slate-600">{t(qatorlar.length ? "categoryStock.noMatches" : "categoryStock.empty")}</p></div>
           ) : (
             <div className="overflow-x-auto border-t border-slate-100">
-              <table className="w-full min-w-[850px] text-left text-sm">
+              <SmartTable tableId="Mahsulotlar/KategoriyaQoldigiModal/table-1" replaceColumnControls><table className="w-full min-w-[850px] text-left text-sm">
                 <thead className="bg-slate-50 text-xs font-semibold text-slate-500"><tr>
-                  <th className="px-6 py-3">{t("table.product")}</th><th className="px-4 py-3">{t("table.barcode")}</th><th className="px-4 py-3">{t("categoryStock.warehouse")}</th><th className="px-4 py-3 text-right">{t("categoryStock.stock")}</th><th className="px-4 py-3 text-right">{t("categoryStock.reserved")}</th><th className="px-6 py-3 text-right">{t("categoryStock.available")}</th>
+                  <th data-column-id="h1" className="px-6 py-3">{t("table.product")}</th><th data-column-id="h2" className="px-4 py-3">{t("table.barcode")}</th><th data-column-id="h3" className="px-4 py-3">{t("categoryStock.warehouse")}</th><th data-column-id="h4" className="px-4 py-3 text-right">{t("categoryStock.stock")}</th><th data-column-id="h5" className="px-4 py-3 text-right">{t("categoryStock.reserved")}</th><th data-column-id="h6" className="px-6 py-3 text-right">{t("categoryStock.available")}</th>
                 </tr></thead>
                 <tbody className="divide-y divide-slate-100">
                   {korinadigan.map(item => <tr key={item.kalit} tabIndex={0} aria-label={t("categoryStock.openProduct", { name: item.nom })} onClick={() => onMahsulotOchish(item.mahsulotId)} onKeyDown={event => {
@@ -140,7 +141,7 @@ export default function KategoriyaQoldigiModal({ kategoriya, mahsulotlar, birlik
                     <td className="whitespace-nowrap px-6 py-4 text-right"><span className={`inline-flex rounded-lg border px-3 py-1.5 font-bold tabular-nums ${item.mavjud === null ? "border-slate-100 bg-slate-50 text-slate-400" : item.mavjud < 0 ? "border-red-100 bg-red-50 text-red-600" : "border-emerald-100 bg-emerald-50 text-emerald-700"}`}>{miqdor(item.mavjud, item.birlik)}</span></td>
                   </tr>)}
                 </tbody>
-              </table>
+              </table></SmartTable>
             </div>
           )}
         </div>

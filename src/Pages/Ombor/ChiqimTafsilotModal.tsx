@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import NegativeStockBadge from "@/Components/common/NegativeStockBadge";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -167,9 +168,9 @@ export default function ChiqimTafsilotModal({ id, onClose }: Props) {
             <section className="mt-5 rounded-[26px] border border-orange-100 bg-white p-4 shadow-sm sm:p-5">
               <SectionTitle icon={<PackageMinus size={18} />} text={t("chiqimTafsilotModal.itemsSection")} />
               <div className="overflow-x-auto rounded-[22px] border border-orange-100">
-                <table className="w-full min-w-[960px] text-left text-sm">
+                <SmartTable tableId="Ombor/ChiqimTafsilotModal/table-1" replaceColumnControls><table className="w-full min-w-[960px] text-left text-sm">
                   <thead className="bg-[#F8FAFC] text-[11px] font-black uppercase tracking-wide text-slate-500">
-                    <tr><th className="px-4 py-4">{t("chiqimTafsilotModal.table.number")}</th><th className="px-4 py-4">{t("chiqimTafsilotModal.table.product")}</th><th className="px-4 py-4">{t("chiqimTafsilotModal.table.barcode")}</th><th className="px-4 py-4">{t("chiqimTafsilotModal.table.costPrice")}</th><th className="px-4 py-4">{t("chiqimTafsilotModal.table.quantity")}</th><th className="px-4 py-4">{t("chiqimTafsilotModal.table.warehouse")}</th><th className="px-4 py-4">{t("chiqimTafsilotModal.table.amount")}</th><th className="w-14 px-4 py-4 text-right"><Settings size={16} className="ml-auto text-slate-400" /></th></tr>
+                    <tr><th data-column-id="h1" className="px-4 py-4">{t("chiqimTafsilotModal.table.number")}</th><th data-column-id="h2" className="px-4 py-4">{t("chiqimTafsilotModal.table.product")}</th><th data-column-id="h3" className="px-4 py-4">{t("chiqimTafsilotModal.table.barcode")}</th><th data-column-id="h4" className="px-4 py-4">{t("chiqimTafsilotModal.table.costPrice")}</th><th data-column-id="h5" className="px-4 py-4">{t("chiqimTafsilotModal.table.quantity")}</th><th data-column-id="h6" className="px-4 py-4">{t("chiqimTafsilotModal.table.warehouse")}</th><th data-column-id="h7" className="px-4 py-4">{t("chiqimTafsilotModal.table.amount")}</th><th data-column-id="h8" className="w-14 px-4 py-4 text-right"><Settings size={16} className="ml-auto text-slate-400" /></th></tr>
                   </thead>
                   <tbody className="divide-y divide-orange-100">
                     {qatorlar.map((item, index) => (
@@ -185,7 +186,7 @@ export default function ChiqimTafsilotModal({ id, onClose }: Props) {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></SmartTable>
                 {qatorlar.length === 0 && <div className="p-10 text-center text-sm font-bold text-slate-400">{t("chiqimTafsilotModal.emptyItems")}</div>}
               </div>
             </section>

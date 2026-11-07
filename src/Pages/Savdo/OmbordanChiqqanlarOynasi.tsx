@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useEffect, useMemo, type ReactNode } from "react";
 import { Boxes, CalendarDays, ChevronRight, FileText, LoaderCircle, PackageCheck, PackageSearch, RefreshCw, TriangleAlert, Warehouse, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -184,15 +185,15 @@ export default function OmbordanChiqqanlarOynasi({ sotuv, onYopish }: { sotuv: S
               </div>
             ) : (
               <div className="overflow-x-auto rounded-2xl border border-slate-400/60">
-                <table className="w-full min-w-[640px] text-left text-sm">
+                <SmartTable tableId="Savdo/OmbordanChiqqanlarOynasi/table-1" replaceColumnControls><table className="w-full min-w-[640px] text-left text-sm">
                   <thead className="border-b border-slate-300 bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-500">
                     <tr>
-                      <th className="w-12 px-4 py-3">#</th>
-                      <th className="px-3 py-3">{t("ombordanChiqqan.jadval.mahsulot")}</th>
-                      <th className="px-3 py-3">{t("ombordanChiqqan.jadval.ombor")}</th>
-                      <th className="px-3 py-3 text-right">{t("ombordanChiqqan.jadval.chiqdi")}</th>
-                      {qaytganBor && <th className="px-3 py-3 text-right">{t("ombordanChiqqan.jadval.qaytdi")}</th>}
-                      <th className="px-4 py-3 text-right">{t("ombordanChiqqan.oyna.sanaVaVaqt")}</th>
+                      <th data-column-id="h1" className="w-12 px-4 py-3">#</th>
+                      <th data-column-id="h2" className="px-3 py-3">{t("ombordanChiqqan.jadval.mahsulot")}</th>
+                      <th data-column-id="h3" className="px-3 py-3">{t("ombordanChiqqan.jadval.ombor")}</th>
+                      <th data-column-id="h4" className="px-3 py-3 text-right">{t("ombordanChiqqan.jadval.chiqdi")}</th>
+                      {qaytganBor && <th data-column-id="h5" className="px-3 py-3 text-right">{t("ombordanChiqqan.jadval.qaytdi")}</th>}
+                      <th data-column-id="h6" className="px-4 py-3 text-right">{t("ombordanChiqqan.oyna.sanaVaVaqt")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-300 text-slate-700">
@@ -226,7 +227,7 @@ export default function OmbordanChiqqanlarOynasi({ sotuv, onYopish }: { sotuv: S
                       );
                     })}
                   </tbody>
-                </table>
+                </table></SmartTable>
               </div>
             )}
           </div>

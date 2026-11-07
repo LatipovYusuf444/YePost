@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { CalendarDays, CircleAlert, Info, LoaderCircle, Lock, RefreshCw, TrendingUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -356,12 +357,12 @@ export default function ValyutaBolimi() {
           </p>
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-slate-100">
-            <table className="w-full min-w-[420px] text-left text-sm">
+            <SmartTable tableId="SozlamalarUchot/ValyutaBolimi/table-1" replaceColumnControls><table className="w-full min-w-[420px] text-left text-sm">
               <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="px-4 py-3">{t("valyuta.history.date")}</th>
-                  <th className="px-4 py-3 text-right">{t("valyuta.history.rate")}</th>
-                  <th className="px-4 py-3">{t("valyuta.history.updatedAt")}</th>
+                  <th data-column-id="h1" className="px-4 py-3">{t("valyuta.history.date")}</th>
+                  <th data-column-id="h2" className="px-4 py-3 text-right">{t("valyuta.history.rate")}</th>
+                  <th data-column-id="h3" className="px-4 py-3">{t("valyuta.history.updatedAt")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -387,7 +388,7 @@ export default function ValyutaBolimi() {
                   );
                 })}
               </tbody>
-            </table>
+            </table></SmartTable>
           </div>
         )}
       </BolimKarta>

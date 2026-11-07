@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { bugungiToshkentKuni } from "@/lib/hujjatSanasi";
 import { useMemo, useState } from "react";
 import { Check, Lock, Search } from "lucide-react";
@@ -112,14 +113,14 @@ export default function Vakolatlar({ xodimlar, lavozimlar, onSaqlash, embedded =
       </div>
 
       <div className="scrollbar-orange overflow-x-auto rounded-2xl border border-orange-100 bg-white">
-        <table className="w-full border-collapse text-left text-sm">
+        <SmartTable tableId="XodimUchot/Vakolatlar/table-1" replaceColumnControls><table className="w-full border-collapse text-left text-sm">
           <thead>
             <tr className="bg-orange-50/70">
-              <th className="sticky left-0 z-10 min-w-[220px] bg-orange-50/95 px-5 py-4 font-black text-slate-600">
+              <th data-column-id="h1" className="sticky left-0 z-10 min-w-[220px] bg-orange-50/95 px-5 py-4 font-black text-slate-600">
                 Xodim
               </th>
               {korsatiladiganVakolatlar.map((vakolat) => (
-                <th
+                <th data-column-id={"h2:" + (vakolat.kod)}
                   key={vakolat.kod}
                   className="min-w-[112px] px-3 py-4 text-center align-bottom text-xs font-black text-slate-500"
                   title={vakolat.izoh}
@@ -174,7 +175,7 @@ export default function Vakolatlar({ xodimlar, lavozimlar, onSaqlash, embedded =
               );
             })}
           </tbody>
-        </table>
+        </table></SmartTable>
       </div>
 
       {royxat.length === 0 && (

@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -389,9 +390,9 @@ export default function KochirishYaratishModal({ onClose }: Props) {
               </div>
 
               <div className="mt-5 overflow-x-auto rounded-2xl border border-orange-100">
-                <table className="w-full min-w-[1150px] table-fixed text-left text-sm">
+                <SmartTable tableId="Ombor/KochirishYaratishModal/table-1" replaceColumnControls><table className="w-full min-w-[1150px] table-fixed text-left text-sm">
                   <thead className="bg-[#F8FAFC] text-xs font-black uppercase text-slate-500">
-                    <tr><th className="w-12 px-3 py-4">{t("kochirishYaratishModal.items.columns.number")}</th><th className="w-[310px] px-3 py-4">{t("kochirishYaratishModal.items.columns.product")}</th><th className="w-44 px-3 py-4">{t("kochirishYaratishModal.items.columns.barcode")}</th><th className="w-36 px-3 py-4">{t("kochirishYaratishModal.items.columns.price")}</th><th className="w-36 px-3 py-4">{t("kochirishYaratishModal.items.columns.quantity")}</th><th className="w-44 px-3 py-4">{t("kochirishYaratishModal.items.columns.stockAtWarehouse")}</th><th className="w-40 px-3 py-4">{t("kochirishYaratishModal.items.columns.amount")}</th><th className="w-16 px-3 py-4"><Package size={16} /></th></tr>
+                    <tr><th data-column-id="h1" className="w-12 px-3 py-4">{t("kochirishYaratishModal.items.columns.number")}</th><th data-column-id="h2" className="w-[310px] px-3 py-4">{t("kochirishYaratishModal.items.columns.product")}</th><th data-column-id="h3" className="w-44 px-3 py-4">{t("kochirishYaratishModal.items.columns.barcode")}</th><th data-column-id="h4" className="w-36 px-3 py-4">{t("kochirishYaratishModal.items.columns.price")}</th><th data-column-id="h5" className="w-36 px-3 py-4">{t("kochirishYaratishModal.items.columns.quantity")}</th><th data-column-id="h6" className="w-44 px-3 py-4">{t("kochirishYaratishModal.items.columns.stockAtWarehouse")}</th><th data-column-id="h7" className="w-40 px-3 py-4">{t("kochirishYaratishModal.items.columns.amount")}</th><th data-column-id="h8" className="w-16 px-3 py-4"><Package size={16} /></th></tr>
                   </thead>
                   <tbody ref={qatorlarRef} className="divide-y divide-orange-100">
                     {qatorMalumotlari.map(({ item, qoldiq, mod, narx, summa }, index) => (
@@ -407,7 +408,7 @@ export default function KochirishYaratishModal({ onClose }: Props) {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></SmartTable>
               </div>
               <div className="mt-5 flex justify-end"><div className="text-right"><p className="text-xs font-black uppercase text-slate-400">{t("kochirishYaratishModal.items.total")}</p><p className="mt-1 text-2xl font-black text-slate-950">{pul(jami)}</p></div></div>
             </section>

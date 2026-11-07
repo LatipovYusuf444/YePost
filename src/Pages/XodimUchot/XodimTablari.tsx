@@ -49,7 +49,7 @@ export function DavomatTab({ davomat }: { davomat: Davomat[] }) {
 
   return (
     <div className="px-9 py-7">
-      <KengaytiriladiganJadval ustunlar={ustunlar} qatorlar={davomat} kengaytir sozlamaBor />
+      <KengaytiriladiganJadval tableId="XodimUchot/XodimTablari/kengaytiriladiganjadval-1" ustunlar={ustunlar} qatorlar={davomat} kengaytir sozlamaBor />
     </div>
   );
 }

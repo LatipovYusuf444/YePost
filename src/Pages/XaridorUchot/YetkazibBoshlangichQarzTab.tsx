@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BookOpen, LoaderCircle, RefreshCw, RotateCcw, XCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -121,15 +122,15 @@ export default function YetkazibBoshlangichQarzTab({
           <p className="mt-5 text-sm font-semibold text-slate-400">{t("yetkazibDetails.openingDebt.empty")}</p>
         ) : (
           <div className="mt-5 overflow-x-auto rounded-2xl border border-slate-200">
-            <table className="w-full min-w-[720px] text-left text-sm">
+            <SmartTable tableId="XaridorUchot/YetkazibBoshlangichQarzTab/table-1" replaceColumnControls><table className="w-full min-w-[720px] text-left text-sm">
               <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="px-4 py-3">{t("yetkazibDetails.openingDebt.columns.document")}</th>
-                  <th className="px-4 py-3">{t("yetkazibDetails.openingDebt.columns.date")}</th>
-                  <th className="px-4 py-3 text-right">{t("yetkazibDetails.openingDebt.columns.amount")}</th>
-                  <th className="px-4 py-3">{t("yetkazibDetails.openingDebt.columns.note")}</th>
-                  <th className="px-4 py-3">{t("yetkazibDetails.openingDebt.columns.status")}</th>
-                  <th className="px-4 py-3" />
+                  <th data-column-id="h1" className="px-4 py-3">{t("yetkazibDetails.openingDebt.columns.document")}</th>
+                  <th data-column-id="h2" className="px-4 py-3">{t("yetkazibDetails.openingDebt.columns.date")}</th>
+                  <th data-column-id="h3" className="px-4 py-3 text-right">{t("yetkazibDetails.openingDebt.columns.amount")}</th>
+                  <th data-column-id="h4" className="px-4 py-3">{t("yetkazibDetails.openingDebt.columns.note")}</th>
+                  <th data-column-id="h5" className="px-4 py-3">{t("yetkazibDetails.openingDebt.columns.status")}</th>
+                  <th data-column-id="h6" className="px-4 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -177,7 +178,7 @@ export default function YetkazibBoshlangichQarzTab({
                   );
                 })}
               </tbody>
-            </table>
+            </table></SmartTable>
           </div>
         )}
       </section>

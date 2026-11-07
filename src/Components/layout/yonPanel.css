@@ -1,0 +1,423 @@
+/* YePost yon paneli — solid deep navy (shisha/blur yo'q).
+   Ranglar mavjud mavzu klasslaridan keladi: .theme-sidebar, .theme-sidebar-active, .theme-sidebar-subactive,
+   .theme-sidebar-item (yashil/binafsha mavzular index.css da shularni qayta bo'yaydi). */
+
+/* Tooltip va flyout panel tashqarisida chiziladi — o'zgaruvchilar uchalasida ham bo'lishi kerak. */
+.yp-aside,
+.yp-tip,
+.yp-fly {
+  --yp-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --yp-dur: 280ms;
+  --yp-muted: #8391a7;
+  --yp-hover: #122036;
+}
+
+.yp-aside {
+  position: fixed;
+  left: 12px;
+  top: 12px;
+  z-index: 50;
+  display: none;
+  flex-direction: column;
+  width: 76px;
+  height: calc(100vh - 24px);
+  height: calc(100dvh - 24px);
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.09);
+  border-radius: 26px;
+  background: #0b1424;
+  color: var(--yp-muted);
+  box-shadow: 0 28px 70px rgb(2 6 23 / 0.38);
+  transition: width var(--yp-dur) var(--yp-ease), box-shadow var(--yp-dur) var(--yp-ease);
+  animation: yp-aside-in 600ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+@media (min-width: 768px) {
+  .yp-aside { display: flex; }
+}
+
+.yp-aside[data-ochiq="true"] { width: 288px; }
+.yp-aside[data-ochiq="true"][data-ustida="true"] { box-shadow: 0 32px 90px rgb(2 6 23 / 0.55); }
+
+/* ---------- Sarlavha (logo) ---------- */
+.yp-head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
+  height: 72px;
+  padding: 0 15px;
+}
+
+.yp-logo {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgb(37 99 235 / 0.28);
+  animation: yp-logo-in 500ms cubic-bezier(0.16, 1, 0.3, 1) 150ms backwards;
+}
+
+.yp-brand { min-width: 0; }
+.yp-brand-name { overflow: hidden; color: #fff; font-size: 17px; font-weight: 700; line-height: 24px; letter-spacing: 0.025em; text-overflow: ellipsis; white-space: nowrap; }
+.yp-brand-tag { overflow: hidden; color: var(--yp-muted); font-size: 12.5px; font-weight: 500; line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
+
+.yp-sep { flex-shrink: 0; height: 1px; margin: 0 12px; background: rgb(255 255 255 / 0.08); }
+
+/* Panel kengayganda yorliqlar biroz kechikib, chapdan siljib paydo bo'ladi; yopilganda darrov so'nadi. */
+.yp-fade {
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 120ms ease, transform 200ms var(--yp-ease);
+}
+
+.yp-aside[data-ochiq="true"] .yp-fade {
+  opacity: 1;
+  transform: none;
+  transition: opacity 200ms ease 90ms, transform 280ms var(--yp-ease) 60ms;
+}
+
+/* ---------- Navigatsiya ---------- */
+.yp-nav {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  padding: 8px 10px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #26364f transparent;
+  scrollbar-width: thin;
+}
+
+.yp-enter { animation: yp-item-in 420ms cubic-bezier(0.16, 1, 0.3, 1) backwards; animation-delay: calc(180ms + var(--i, 0) * 40ms); }
+
+.yp-item {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 44px;
+  /* 76px panel: chegara 1 + nav 10 + 17 + ikonka 10 = 38 — ikonka markazi panel markazida; ochiqda ham shu joyda qoladi. */
+  padding: 0 12px 0 17px;
+  border-radius: 14px;
+  color: var(--yp-muted);
+  font-size: 14.5px;
+  font-weight: 500;
+  text-align: left;
+  transition: background-color 160ms ease, color 160ms ease, box-shadow 200ms ease, transform 120ms ease;
+}
+
+.yp-item:hover { background-color: var(--yp-hover); color: #f1f5f9; }
+.yp-item:active { transform: scale(0.98); }
+.yp-item:focus-visible,
+.yp-child:focus-visible,
+.yp-foot-btn:focus-visible {
+  outline: 2px solid rgb(56 189 248 / 0.8);
+  outline-offset: -2px;
+}
+
+.yp-item[data-faol="true"],
+.yp-item[aria-current="page"] {
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 8px 20px rgb(2 6 23 / 0.28);
+}
+
+.yp-item[data-ochiq-bolim="true"]:not([data-faol="true"]) { color: #e2e8f0; }
+
+.yp-icon {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  transition: color 160ms ease, transform 200ms var(--yp-ease);
+}
+.yp-item:hover .yp-icon { transform: translateX(1px); }
+
+.yp-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.yp-item[aria-expanded] .yp-label { padding-right: 18px; }
+
+/* Faol band chap chetidagi chiziq (bg-sky-400 — mavzu uni o'z rangiga bo'yaydi). */
+.yp-bar {
+  position: absolute;
+  top: 50%;
+  left: -10px;
+  width: 3px;
+  height: 20px;
+  border-radius: 0 3px 3px 0;
+  transform: translateY(-50%) scaleY(0);
+  transition: transform 260ms var(--yp-ease);
+}
+
+.yp-item[data-faol="true"] .yp-bar,
+.yp-item[aria-current="page"] .yp-bar { transform: translateY(-50%) scaleY(1); }
+
+.yp-chev {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  margin-top: -8px;
+  transition: transform 260ms var(--yp-ease), opacity 160ms ease;
+}
+
+.yp-chev[data-ochiq="true"] { transform: rotate(180deg); }
+.yp-aside:not([data-ochiq="true"]) .yp-chev { opacity: 0; }
+
+/* Yopiq panelda ichki bo'limli band belgisi: ikonka yonidagi kichik nuqta. */
+.yp-dot {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  width: 4px;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.55;
+  transition: opacity 160ms ease;
+}
+
+.yp-aside[data-ochiq="true"] .yp-dot { opacity: 0; }
+
+.yp-badge {
+  position: absolute;
+  top: -6px;
+  right: -7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  box-shadow: 0 0 0 2px #0b1424;
+}
+
+/* ---------- Accordion (ichki bo'limlar) ---------- */
+.yp-sub {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--yp-dur) var(--yp-ease);
+}
+
+.yp-sub[data-ochiq="true"] { grid-template-rows: 1fr; }
+.yp-sub-inner { min-height: 0; overflow: hidden; }
+
+.yp-sub-list {
+  display: grid;
+  gap: 2px;
+  margin: 4px 0 4px 27px;
+  padding-left: 5px;
+  border-left: 1px solid rgb(255 255 255 / 0.1);
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 160ms ease, transform 240ms var(--yp-ease);
+}
+
+.yp-sub[data-ochiq="true"] .yp-sub-list {
+  opacity: 1;
+  transform: none;
+  transition: opacity 220ms ease 50ms, transform 280ms var(--yp-ease) 30ms;
+}
+
+.yp-child {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  color: var(--yp-muted);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background-color 160ms ease, color 160ms ease, transform 120ms ease;
+}
+
+.yp-child:hover { background-color: var(--yp-hover); color: #f1f5f9; }
+.yp-child:active { transform: scale(0.985); }
+.yp-child[data-faol="true"] { color: #e0f2fe; font-weight: 600; }
+.yp-child .yp-label { padding-right: 0; }
+
+.yp-child-bar {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 0;
+  width: 3px;
+  border-radius: 999px;
+}
+
+/* ---------- Pastki profil ---------- */
+.yp-foot { flex-shrink: 0; padding: 8px; border-top: 1px solid rgb(255 255 255 / 0.08); }
+
+.yp-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #111c30;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05);
+}
+
+.yp-aside:not([data-ochiq="true"]) .yp-profile { flex-direction: column; gap: 4px; padding: 6px; }
+.yp-aside:not([data-ochiq="true"]) .yp-profile-info { display: none; }
+
+.yp-avatar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #123a55;
+  color: #bae6fd;
+  font-size: 15px;
+  font-weight: 700;
+  transition: box-shadow 160ms ease, transform 120ms ease;
+}
+
+a.yp-avatar:hover { box-shadow: 0 0 0 2px rgb(56 189 248 / 0.45); }
+a.yp-avatar:active { transform: scale(0.95); }
+a.yp-avatar:focus-visible { outline: 2px solid rgb(56 189 248 / 0.8); outline-offset: 2px; }
+
+.yp-profile-info { flex: 1; min-width: 0; }
+.yp-profile-name { overflow: hidden; color: #f1f5f9; font-size: 14.5px; font-weight: 600; line-height: 20px; text-overflow: ellipsis; white-space: nowrap; }
+.yp-profile-role { overflow: hidden; color: var(--yp-muted); font-size: 12.5px; line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
+
+.yp-foot-btn {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  color: var(--yp-muted);
+  transition: background-color 160ms ease, color 160ms ease, transform 120ms ease;
+}
+
+.yp-foot-btn:hover { background-color: rgb(239 68 68 / 0.12); color: #fca5a5; }
+.yp-foot-btn:active { transform: scale(0.94); }
+
+/* ---------- Tooltip (yopiq panel) ---------- */
+.yp-tip {
+  position: fixed;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  max-width: min(320px, calc(100vw - 120px));
+  padding: 7px 12px;
+  border: 1px solid rgb(148 163 184 / 0.18);
+  border-radius: 10px;
+  background: #0f1a2e;
+  box-shadow: 0 14px 32px rgb(2 6 23 / 0.45);
+  pointer-events: none;
+  transform: translateY(-50%);
+  transition: top 140ms var(--yp-ease, ease);
+  animation: yp-tip-in 150ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.yp-tip::before {
+  position: absolute;
+  top: 50%;
+  left: -5px;
+  width: 9px;
+  height: 9px;
+  border-bottom: 1px solid rgb(148 163 184 / 0.18);
+  border-left: 1px solid rgb(148 163 184 / 0.18);
+  background: inherit;
+  content: "";
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.yp-tip-text { overflow: hidden; color: #f8fafc; font-size: 12.5px; font-weight: 600; line-height: 18px; text-overflow: ellipsis; white-space: nowrap; }
+.yp-tip-sub { overflow: hidden; color: #94a3b8; font-size: 11.5px; line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Flyout (yopiq panelda ichki bo'limlar) ---------- */
+.yp-fly {
+  position: fixed;
+  z-index: 70;
+  width: 244px;
+  max-height: calc(100vh - 24px);
+  padding: 8px;
+  overflow-y: auto;
+  border: 1px solid rgb(148 163 184 / 0.16);
+  border-radius: 16px;
+  background: #0b1424;
+  box-shadow: 0 24px 60px rgb(2 6 23 / 0.5);
+  overscroll-behavior: contain;
+  scrollbar-color: #26364f transparent;
+  scrollbar-width: thin;
+  transform-origin: left top;
+  animation: yp-fly-in 170ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.yp-fly-title { padding: 6px 10px 8px; overflow: hidden; color: #94a3b8; font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.yp-fly-list { display: grid; gap: 2px; }
+
+/* ---------- Planshet: ochiq panel ostidagi solid fon ---------- */
+.yp-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: none;
+  background: rgb(2 6 23 / 0.45);
+  animation: yp-fade-in 200ms ease backwards;
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .yp-backdrop { display: block; }
+}
+
+/* ---------- Past ekranlar ---------- */
+@media (min-width: 768px) and (max-height: 720px) {
+  .yp-head { height: 62px; }
+  .yp-logo { width: 40px; height: 40px; }
+  .yp-head { padding: 0 17px; }
+  .yp-item { height: 40px; }
+  .yp-child { height: 36px; }
+  .yp-nav { gap: 2px; padding-top: 6px; padding-bottom: 6px; }
+}
+
+@keyframes yp-aside-in { from { opacity: 0; transform: translateX(-64px); } }
+@keyframes yp-logo-in { from { opacity: 0; transform: scale(0.7); } }
+@keyframes yp-item-in { from { opacity: 0; transform: translateX(-12px); } }
+@keyframes yp-tip-in { from { opacity: 0; transform: translate(-4px, -50%); } }
+@keyframes yp-fly-in { from { opacity: 0; transform: translateX(-6px) scale(0.98); } }
+@keyframes yp-fade-in { from { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .yp-aside,
+  .yp-aside *,
+  .yp-tip,
+  .yp-fly,
+  .yp-fly *,
+  .yp-backdrop {
+    animation: none !important;
+    transition: none !important;
+  }
+}

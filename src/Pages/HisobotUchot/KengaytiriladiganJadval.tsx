@@ -1,5 +1,6 @@
-import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
-import { Check, Settings, Trash2 } from "lucide-react";
+import SmartTable from "@/Components/common/smart-table/SmartTable";
+import { useEffect, useState, type ReactNode } from "react";
+import { Trash2 } from "lucide-react";
 import TablePagination from "@/Components/common/TablePagination";
 
 // Ustun kengligini sichqoncha bilan o'zgartirsa (resize) va sudrab joyini
@@ -18,10 +19,10 @@ function hizKlass(hizalash?: "left" | "right" | "center") {
   return hizalash === "right" ? "text-right" : hizalash === "center" ? "text-center" : "text-left";
 }
 
-const MIN_KENGLIK = 70;
 const ODATIY_KENGLIK = 140;
 
 export default function KengaytiriladiganJadval<T extends { id: string }>({
+  tableId,
   ustunlar,
   qatorlar,
   jamiBor = false,
@@ -32,6 +33,7 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
   onQatorOchirish,
   qatorOchirishHolati,
 }: {
+  tableId: string;
   ustunlar: Ustun<T>[];
   qatorlar: T[];
   jamiBor?: boolean;
@@ -43,43 +45,11 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
   // Qator o'chirilishi mumkin emas bo'lsa tugma o'chirib qo'yiladi va sarlavhada sababi ko'rsatiladi.
   qatorOchirishHolati?: (row: T) => { mumkin: boolean; sarlavha?: string };
 }) {
-  const [tartib, setTartib] = useState<string[]>(() => ustunlar.map((u) => u.id));
-  const [kengliklar, setKengliklar] = useState<Record<string, number>>(() =>
-    Object.fromEntries(ustunlar.map((u) => [u.id, u.kenglik ?? ODATIY_KENGLIK]))
-  );
-  const [sudralayotgan, setSudralayotgan] = useState<string | null>(null);
-  const [nishon, setNishon] = useState<string | null>(null);
-  const [yashirin, setYashirin] = useState<Set<string>>(() => new Set());
-  const [sozlamaOchiq, setSozlamaOchiq] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const SOZLAMA_KENGLIK = 52;
 
-  // Ustunlar ro'yxati o'zgarsa (qo'shildi/olib tashlandi) tartib va kengliklarni moslaymiz.
-  useEffect(() => {
-    setTartib((old) => {
-      const mavjud = old.filter((id) => ustunlar.some((u) => u.id === id));
-      const yangi = ustunlar.filter((u) => !old.includes(u.id)).map((u) => u.id);
-      return yangi.length === 0 && mavjud.length === old.length ? old : [...mavjud, ...yangi];
-    });
-    setKengliklar((old) => {
-      let ozgardi = false;
-      const natija = { ...old };
-      for (const u of ustunlar) {
-        if (!(u.id in natija)) {
-          natija[u.id] = u.kenglik ?? ODATIY_KENGLIK;
-          ozgardi = true;
-        }
-      }
-      return ozgardi ? natija : old;
-    });
-  }, [ustunlar]);
-
-  const tartiblangan = tartib
-    .map((id) => ustunlar.find((u) => u.id === id))
-    .filter((u): u is Ustun<T> => Boolean(u));
-
-  const korinadigan = tartiblangan.filter((u) => !yashirin.has(u.id));
+  const korinadigan = ustunlar;
   const visibleRows = qatorlar.slice((page - 1) * pageSize, page * pageSize);
   useEffect(() => setPage(1), [qatorlar, pageSize]);
 
@@ -87,51 +57,12 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
   const amallarUstuni = sozlamaBor || Boolean(onQatorOchirish);
 
   const jamiKenglik =
-    korinadigan.reduce((s, u) => s + (kengliklar[u.id] ?? ODATIY_KENGLIK), 0) +
+    korinadigan.reduce((s, u) => s + (u.kenglik ?? ODATIY_KENGLIK), 0) +
     (amallarUstuni ? SOZLAMA_KENGLIK : 0);
-
-  // --- Kenglikni o'zgartirish (self-contained listenerlar) ---
-  function resizeBoshla(e: MouseEvent, id: string) {
-    e.preventDefault();
-    e.stopPropagation();
-    const startX = e.clientX;
-    const startW = kengliklar[id] ?? ODATIY_KENGLIK;
-    document.body.style.userSelect = "none";
-    document.body.style.cursor = "col-resize";
-
-    function harakat(ev: globalThis.MouseEvent) {
-      const yangi = Math.max(MIN_KENGLIK, startW + (ev.clientX - startX));
-      setKengliklar((old) => ({ ...old, [id]: yangi }));
-    }
-    function tugat() {
-      document.body.style.userSelect = "";
-      document.body.style.cursor = "";
-      window.removeEventListener("mousemove", harakat);
-      window.removeEventListener("mouseup", tugat);
-    }
-    window.addEventListener("mousemove", harakat);
-    window.addEventListener("mouseup", tugat);
-  }
-
-  // --- Joyini almashtirish (drag & drop) ---
-  function tashla(maqsadId: string) {
-    setNishon(null);
-    if (!sudralayotgan || sudralayotgan === maqsadId) {
-      setSudralayotgan(null);
-      return;
-    }
-    setTartib((old) => {
-      const yangi = old.filter((id) => id !== sudralayotgan);
-      const idx = yangi.indexOf(maqsadId);
-      yangi.splice(idx < 0 ? yangi.length : idx, 0, sudralayotgan);
-      return yangi;
-    });
-    setSudralayotgan(null);
-  }
 
   return (
     <div className="scrollbar-orange w-full overflow-x-auto rounded-2xl border border-orange-100">
-      <table
+      <SmartTable tableId={tableId} replaceColumnControls><table
         className="min-w-full text-left text-sm"
         style={
           kengaytir
@@ -141,107 +72,16 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
       >
         <colgroup>
           {korinadigan.map((u) => (
-            <col key={u.id} style={{ width: kengliklar[u.id] ?? ODATIY_KENGLIK }} />
+            <col key={u.id} style={{ width: u.kenglik ?? ODATIY_KENGLIK }} />
           ))}
           {amallarUstuni && <col style={{ width: SOZLAMA_KENGLIK }} />}
         </colgroup>
         <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
             {korinadigan.map((u) => (
-              <th
-                key={u.id}
-                className={`relative select-none px-4 py-4 ${
-                  nishon === u.id ? "bg-orange-100" : ""
-                }`}
-              >
-                <span
-                  draggable
-                  onDragStart={() => setSudralayotgan(u.id)}
-                  onDragEnter={() => sudralayotgan && setNishon(u.id)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => tashla(u.id)}
-                  onDragEnd={() => {
-                    setSudralayotgan(null);
-                    setNishon(null);
-                  }}
-                  title={u.nom}
-                  className={`block cursor-grab truncate pr-2 active:cursor-grabbing ${hizKlass(
-                    u.hizalash
-                  )} ${sudralayotgan === u.id ? "opacity-40" : ""}`}
-                >
-                  {u.nom}
-                </span>
-                <span
-                  onMouseDown={(e) => resizeBoshla(e, u.id)}
-                  className="absolute right-0 top-0 z-10 h-full w-1.5 cursor-col-resize hover:bg-orange-300"
-                />
-              </th>
+              <th key={u.id} data-column-id={u.id} className={`relative px-4 py-4 ${hizKlass(u.hizalash)}`}>{u.nom}</th>
             ))}
-            {amallarUstuni && (
-              <th className="relative px-3 py-4">
-                <div className="flex justify-end">
-                  {sozlamaBor && (
-                  <button
-                    type="button"
-                    onClick={() => setSozlamaOchiq((old) => !old)}
-                    title="Ustunlarni sozlash"
-                    aria-label="Ustunlarni sozlash"
-                    className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition ${
-                      sozlamaOchiq
-                        ? "bg-orange-100 text-orange-600"
-                        : "text-orange-400 hover:bg-orange-100 hover:text-orange-600"
-                    }`}
-                  >
-                    <Settings size={16} />
-                  </button>
-                  )}
-                </div>
-                {sozlamaOchiq && (
-                  <>
-                    <button
-                      type="button"
-                      aria-label="Yopish"
-                      onClick={() => setSozlamaOchiq(false)}
-                      className="fixed inset-0 z-40 cursor-default"
-                    />
-                    <div className="absolute right-2 top-12 z-50 w-56 rounded-2xl border border-orange-100 bg-white p-1.5 text-left normal-case tracking-normal shadow-[0_18px_50px_rgba(15,23,42,.16)]">
-                      <p className="px-3 py-1.5 text-xs font-black uppercase tracking-wide text-slate-400">
-                        Ustunlar
-                      </p>
-                      {tartiblangan.map((u) => {
-                        const korinmoqda = !yashirin.has(u.id);
-                        return (
-                          <button
-                            key={u.id}
-                            type="button"
-                            onClick={() =>
-                              setYashirin((old) => {
-                                const yangi = new Set(old);
-                                if (yangi.has(u.id)) yangi.delete(u.id);
-                                else yangi.add(u.id);
-                                return yangi;
-                              })
-                            }
-                            className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-orange-50"
-                          >
-                            <span className="truncate">{u.nom}</span>
-                            <span
-                              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md ${
-                                korinmoqda
-                                  ? "bg-[#2563EB] text-white"
-                                  : "bg-slate-100 text-slate-300"
-                              }`}
-                            >
-                              {korinmoqda && <Check size={13} />}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
-              </th>
-            )}
+            {amallarUstuni && <th data-column-id="h1" className="px-3 py-4" aria-label="Amallar" />}
           </tr>
         </thead>
         <tbody className="divide-y divide-orange-100/70">
@@ -297,7 +137,7 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
             </tr>
           </tfoot>
         )}
-      </table>
+      </table></SmartTable>
       <TablePagination page={page} pageSize={pageSize} totalItems={qatorlar.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
     </div>
   );

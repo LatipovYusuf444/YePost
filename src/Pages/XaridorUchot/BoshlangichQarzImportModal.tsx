@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useRef, useState, type ChangeEvent } from "react";
 import axios from "axios";
 import { CheckCircle2, Download, FileSpreadsheet, LoaderCircle, Upload, X } from "lucide-react";
@@ -133,7 +134,7 @@ export default function BoshlangichQarzImportModal({ onClose }: { onClose: () =>
           {ready && <div role="status" className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"><CheckCircle2 size={19} className="shrink-0" /><span>{t("openingDebt.import.ready", { count: result?.totalRows })}</span></div>}
           {result && result.errors.length > 0 && <div className="overflow-hidden rounded-xl border border-red-200">
             <p className="bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{t("openingDebt.import.noChanges")}</p>
-            <div className="max-h-64 overflow-auto"><table className="w-full text-left text-sm"><thead className="sticky top-0 bg-slate-50 text-xs text-slate-500"><tr>{["row", "column", "error"].map((key) => <th key={key} className="px-4 py-3 font-semibold">{t(`openingDebt.import.${key}`)}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{result.errors.map((item, index) => <tr key={index}><td className="px-4 py-3 font-semibold text-slate-800">{item.row ?? "—"}</td><td className="px-4 py-3 text-slate-500">{item.column || "—"}</td><td className="min-w-48 break-words px-4 py-3 text-red-700">{item.message}{item.value && <span className="mt-1 block text-xs text-slate-500">{item.value}</span>}</td></tr>)}</tbody></table></div>
+            <div className="max-h-64 overflow-auto"><SmartTable tableId="XaridorUchot/BoshlangichQarzImportModal/table-1" replaceColumnControls><table className="w-full text-left text-sm"><thead className="sticky top-0 bg-slate-50 text-xs text-slate-500"><tr>{["row", "column", "error"].map((key) => <th data-column-id={"h1:" + (key)} key={key} className="px-4 py-3 font-semibold">{t(`openingDebt.import.${key}`)}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{result.errors.map((item, index) => <tr key={index}><td className="px-4 py-3 font-semibold text-slate-800">{item.row ?? "—"}</td><td className="px-4 py-3 text-slate-500">{item.column || "—"}</td><td className="min-w-48 break-words px-4 py-3 text-red-700">{item.message}{item.value && <span className="mt-1 block text-xs text-slate-500">{item.value}</span>}</td></tr>)}</tbody></table></SmartTable></div>
           </div>}
         </div>
         <footer className="flex flex-wrap justify-end gap-2 border-t border-slate-100 p-5">

@@ -238,7 +238,7 @@ export default function YuqoriPanel({
           type="button"
           onClick={onSidebarToggle}
           aria-label={sidebarAcik ? t("sidebarClose") : t("sidebarOpen")}
-          aria-expanded={sidebarAcik}
+          aria-expanded={sidebarAcik} data-yon-panel-tugmasi=""
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-white/90 hover:bg-white/20 hover:text-white transition-colors"
         >
           <Menu size={20} />
@@ -291,7 +291,7 @@ export default function YuqoriPanel({
         type="button"
         onClick={onSidebarToggle}
         aria-label={sidebarAcik ? t("sidebarClose") : t("sidebarOpen")}
-        aria-expanded={sidebarAcik}
+        aria-expanded={sidebarAcik} data-yon-panel-tugmasi=""
         className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-white/90 hover:bg-white/20 hover:text-white transition-colors"
       >
         <Menu size={20} />

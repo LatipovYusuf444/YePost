@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { korsatiladiganValyuta, pulMatni, type Valyuta } from "@/lib/valyuta";
 import { hisobotPulMatni, hisobotValyutasiniTekshirish } from "@/Pages/HisobotUchot/hisobotValyutasi";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
@@ -1805,9 +1806,9 @@ export default function Monitoring() {
               <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-rose-100 text-sm font-semibold text-slate-400">Tanlangan davrda tasdiqlangan mahsulot chiqimi topilmadi.</div>
             ) : (
               <div className="max-h-[360px] overflow-auto rounded-2xl border border-slate-100">
-                <table className="w-full min-w-[850px] text-left text-sm">
+                <SmartTable tableId="Monitoring/index/table-1" replaceColumnControls><table className="w-full min-w-[850px] text-left text-sm">
                   <thead className="sticky top-0 z-10 bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500">
-                    <tr><th className="px-4 py-3">Sana</th><th className="px-4 py-3">Hujjat</th><th className="px-4 py-3">Ombor</th><th className="px-4 py-3">Mahsulot</th><th className="px-4 py-3 text-right">Miqdor</th><th className="px-4 py-3 text-right">Birlik narxi</th><th className="px-4 py-3 text-right">Jami</th></tr>
+                    <tr><th data-column-id="h1" className="px-4 py-3">Sana</th><th data-column-id="h2" className="px-4 py-3">Hujjat</th><th data-column-id="h3" className="px-4 py-3">Ombor</th><th data-column-id="h4" className="px-4 py-3">Mahsulot</th><th data-column-id="h5" className="px-4 py-3 text-right">Miqdor</th><th data-column-id="h6" className="px-4 py-3 text-right">Birlik narxi</th><th data-column-id="h7" className="px-4 py-3 text-right">Jami</th></tr>
                   </thead>
                   <tbody>
                     {(demoMode ? demoChiqimMahsulotQatorlari : chiqimMahsulotQatorlari).map((row) => (
@@ -1816,7 +1817,7 @@ export default function Monitoring() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></SmartTable>
               </div>
             )}
           </section>
@@ -1840,9 +1841,9 @@ export default function Monitoring() {
               <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-blue-100 text-sm font-semibold text-slate-400">Tanlangan davrda omborlararo ko‘chirma yo‘q.</div>
             ) : (
               <div className="max-h-[380px] overflow-auto rounded-2xl border border-slate-100">
-                <table className="w-full min-w-[1250px] text-left text-sm">
+                <SmartTable tableId="Monitoring/index/table-2" replaceColumnControls><table className="w-full min-w-[1250px] text-left text-sm">
                   <thead className="sticky top-0 z-10 bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500">
-                    <tr><th className="px-3 py-3">Sana</th><th className="px-3 py-3">Hujjat</th><th className="px-3 py-3">Holat</th><th className="px-3 py-3">Qayerdan</th><th className="px-3 py-3">Qayerga</th><th className="px-3 py-3">Mahsulot</th><th className="px-3 py-3 text-right">Miqdor</th><th className="px-3 py-3 text-right">Birlik narxi</th><th className="px-3 py-3 text-right">Summa</th><th className="px-3 py-3 text-right">Manba qoldig‘i</th><th className="px-3 py-3 text-right">Qabul qoldig‘i</th></tr>
+                    <tr><th data-column-id="h1" className="px-3 py-3">Sana</th><th data-column-id="h2" className="px-3 py-3">Hujjat</th><th data-column-id="h3" className="px-3 py-3">Holat</th><th data-column-id="h4" className="px-3 py-3">Qayerdan</th><th data-column-id="h5" className="px-3 py-3">Qayerga</th><th data-column-id="h6" className="px-3 py-3">Mahsulot</th><th data-column-id="h7" className="px-3 py-3 text-right">Miqdor</th><th data-column-id="h8" className="px-3 py-3 text-right">Birlik narxi</th><th data-column-id="h9" className="px-3 py-3 text-right">Summa</th><th data-column-id="h10" className="px-3 py-3 text-right">Manba qoldig‘i</th><th data-column-id="h11" className="px-3 py-3 text-right">Qabul qoldig‘i</th></tr>
                   </thead>
                   <tbody>
                     {(demoMode ? demoKochirmaMahsulotQatorlari : kochirmaMahsulotQatorlari).map((row) => (
@@ -1855,7 +1856,7 @@ export default function Monitoring() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></SmartTable>
               </div>
             )}
           </section>
@@ -1980,16 +1981,16 @@ export default function Monitoring() {
                     />
 
                     <div className="overflow-x-auto rounded-2xl border border-gray-100">
-                      <table className="w-full text-left text-sm">
+                      <SmartTable tableId="Monitoring/index/table-3" replaceColumnControls><table className="w-full text-left text-sm">
                         <thead>
                           <tr className="border-b border-gray-100 bg-gray-50/70 text-xs font-black uppercase tracking-wide text-gray-400">
-                            <th className="px-4 py-3">
+                            <th data-column-id="h1" className="px-4 py-3">
                               {t("charts.warehouseDetail.table.product")}
                             </th>
-                            <th className="px-4 py-3 text-right">
+                            <th data-column-id="h2" className="px-4 py-3 text-right">
                               {t("charts.warehouseDetail.table.quantity")}
                             </th>
-                            <th className="px-4 py-3 text-right">
+                            <th data-column-id="h3" className="px-4 py-3 text-right">
                               {t("charts.warehouseDetail.table.value")}
                             </th>
                           </tr>
@@ -2013,7 +2014,7 @@ export default function Monitoring() {
                             </tr>
                           ))}
                         </tbody>
-                      </table>
+                      </table></SmartTable>
                     </div>
                   </div>
                 )}

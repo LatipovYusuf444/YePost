@@ -229,7 +229,7 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
       )}
 
       {korinish === "jadval" && (
-        <KengaytiriladiganJadval
+        <KengaytiriladiganJadval tableId="XaridorUchot/Xaridorlar/kengaytiriladiganjadval-1"
           ustunlar={ustunlar}
           qatorlar={royxat}
           kengaytir

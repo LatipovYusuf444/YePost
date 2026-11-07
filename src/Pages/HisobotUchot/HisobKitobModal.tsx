@@ -189,7 +189,7 @@ export default function HisobKitobModal({
               Tanlangan muddatda hujjat yo'q.
             </div>
           ) : (
-            <KengaytiriladiganJadval
+            <KengaytiriladiganJadval tableId="HisobotUchot/HisobKitobModal/kengaytiriladiganjadval-1"
               ustunlar={ustunlar}
               qatorlar={qatorlar}
               jamiBor

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { enterTolovniTasdiqlaydimi, posQidiruvigaFokus, POS_QIDIRUV_BELGISI } from '../src/lib/skanerFokusi.ts';
 
@@ -53,7 +54,7 @@ function tsxFayllar(papka) {
 test('faqat ikonkali tugmalarda (X, Trash2, Edit3, Pencil, Download, MoreHorizontal) aria-label bor', () => {
   const belgilanishi = new Set(['X', 'Trash2', 'Edit3', 'Pencil', 'Download', 'MoreHorizontal']);
   const topilmadi = [];
-  for (const fayl of tsxFayllar(new URL('../src', import.meta.url).pathname)) {
+  for (const fayl of tsxFayllar(fileURLToPath(new URL('../src', import.meta.url)))) {
     const sf = ts.createSourceFile(fayl, readFileSync(fayl, 'utf8'), ts.ScriptTarget.ES2022, true, ts.ScriptKind.TSX);
     (function yur(n) {
       if (ts.isJsxElement(n) && n.openingElement.tagName.getText() === 'button') {
@@ -84,7 +85,7 @@ test('modal panellari kichik ekranda scroll qiladi va sidebar chekinishi faqat m
   for (const yol of ['Pages/Mahsulotlar/index.tsx', 'Pages/Ombor/Kompaniyalar.tsx', 'Pages/SozlamalarUchot/FiliallarBolimi.tsx']) {
     assert.match(oqish(yol), /max-h-\[90dvh\] overflow-y-auto/, yol);
   }
-  for (const fayl of tsxFayllar(new URL('../src', import.meta.url).pathname)) {
+  for (const fayl of tsxFayllar(fileURLToPath(new URL('../src', import.meta.url)))) {
     assert.doesNotMatch(readFileSync(fayl, 'utf8'), /py-4 pl-\[88px\]/, fayl);
   }
   assert.match(oqish('Pages/Savdo/SotuvTafsilotlariModal.tsx'), /pl-4 pr-4 md:pl-\[88px\]/);

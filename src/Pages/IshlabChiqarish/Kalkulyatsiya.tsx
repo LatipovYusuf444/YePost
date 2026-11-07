@@ -61,7 +61,7 @@ export default function Kalkulyatsiya() {
     { kalit: "arxiv", nom: t("costing.kpi.archived"), holatlar: ["ARCHIVED"], rang: "violet", ikonka: Archive },
   ];
   const ustunlar: Ustun<KalkulyatsiyaKartasi>[] = [
-    {
+    { id: "kalkulyatsiya-column-1",
       nom: t("fields.product"),
       katak: (karta) => (
         <span className="block max-w-[300px]">
@@ -70,12 +70,12 @@ export default function Kalkulyatsiya() {
         </span>
       ),
     },
-    { nom: t("fields.version"), katak: (karta) => (versiya(karta) ? <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">{versiya(karta)}</span> : "—") },
-    { nom: t("fields.validFrom"), katak: (karta) => kunMatni(karta.validFrom ?? undefined) || <span className="text-slate-400">—</span> },
-    { nom: t("costing.linesCount"), ong: true, katak: (karta) => (karta.lines ? karta.lines.length : "—") },
-    { nom: t("fields.normalScrapPercent"), ong: true, katak: (karta) => miqdorMatni(karta.normalScrapPercent) },
-    { nom: t("costing.unitCost"), ong: true, katak: (karta) => <span className="font-black text-slate-900">{summa(karta.total)}</span> },
-    { nom: t("fields.status"), katak: (karta) => <Holat status={karta.status} /> },
+    { id: "kalkulyatsiya-column-2", nom: t("fields.version"), katak: (karta) => (versiya(karta) ? <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">{versiya(karta)}</span> : "—") },
+    { id: "kalkulyatsiya-column-3", nom: t("fields.validFrom"), katak: (karta) => kunMatni(karta.validFrom ?? undefined) || <span className="text-slate-400">—</span> },
+    { id: "kalkulyatsiya-column-4", nom: t("costing.linesCount"), ong: true, katak: (karta) => (karta.lines ? karta.lines.length : "—") },
+    { id: "kalkulyatsiya-column-5", nom: t("fields.normalScrapPercent"), ong: true, katak: (karta) => miqdorMatni(karta.normalScrapPercent) },
+    { id: "kalkulyatsiya-column-6", nom: t("costing.unitCost"), ong: true, katak: (karta) => <span className="font-black text-slate-900">{summa(karta.total)}</span> },
+    { id: "kalkulyatsiya-column-7", nom: t("fields.status"), katak: (karta) => <Holat status={karta.status} /> },
   ];
   const yangi = <button type="button" onClick={() => setForma({ qiymat: bosh() })} className={tugmaAsosiy}><Plus size={18} />{t("costing.create")}</button>;
   // Karta bor, lekin qidiruv yoki filtr hech narsa qoldirmagan.
@@ -89,7 +89,7 @@ export default function Kalkulyatsiya() {
         <HolatFiltri qiymat={filtr?.holatlar.length === 1 ? filtr.holatlar[0] : ""} onChange={(holat) => setFiltr(holat ? { kalit: holat, holatlar: [holat] } : null)} holatlar={HOLATLAR} />
       </Asboblar>
       <XatoQutisi matn={royxat.xato} />
-      <Jadval
+      <Jadval tableId="IshlabChiqarish/Kalkulyatsiya/jadval-1"
         ustunlar={ustunlar}
         qatorlar={qatorlar}
         kalit={(karta) => karta.id}
@@ -318,14 +318,14 @@ function KartaKorish({ id, onYopish, onOzgardi, onTahrir, onOchish }: { id: stri
         {qoralama && !karta.validFrom && <Ogohlantirish>{t("costing.activateNeedsDate")}</Ogohlantirish>}
         {karta.note && <p className="rounded-2xl border border-orange-100 bg-white p-4 text-sm font-semibold text-slate-600"><span className="font-black text-slate-800">{t("fields.note")}:</span> {karta.note}</p>}
         <Bolim ikonka={Layers} sarlavha={t("costing.sectionLines")} izoh={t("costing.rawOnlyHint")}>
-          <Jadval
+          <Jadval tableId="IshlabChiqarish/Kalkulyatsiya/jadval-2"
             ixcham
             ustunlar={[
-              { nom: t("fields.product"), katak: (qator) => qatorNomi(qator) },
-              { nom: t("fields.quantity"), ong: true, katak: (qator) => miqdorMatni(qator.quantity) },
-              { nom: t("fields.price"), ong: true, katak: (qator) => taqsimotSummasi(qator.price, qator.currency) },
-              { nom: t("fields.costingRate"), ong: true, katak: (qator) => (qator.currency === "USD" && qator.costingRate ? miqdorMatni(qator.costingRate) : "—") },
-              { nom: t("fields.amount"), ong: true, katak: (qator) => <span className="font-black text-slate-900">{summa(qator.amount)}</span> },
+              { id: "kalkulyatsiya-column-8", nom: t("fields.product"), katak: (qator) => qatorNomi(qator) },
+              { id: "kalkulyatsiya-column-9", nom: t("fields.quantity"), ong: true, katak: (qator) => miqdorMatni(qator.quantity) },
+              { id: "kalkulyatsiya-column-10", nom: t("fields.price"), ong: true, katak: (qator) => taqsimotSummasi(qator.price, qator.currency) },
+              { id: "kalkulyatsiya-column-11", nom: t("fields.costingRate"), ong: true, katak: (qator) => (qator.currency === "USD" && qator.costingRate ? miqdorMatni(qator.costingRate) : "—") },
+              { id: "kalkulyatsiya-column-12", nom: t("fields.amount"), ong: true, katak: (qator) => <span className="font-black text-slate-900">{summa(qator.amount)}</span> },
             ]}
             qatorlar={karta.lines ?? []}
             kalit={(qator, indeks) => qator.id ?? String(indeks)}

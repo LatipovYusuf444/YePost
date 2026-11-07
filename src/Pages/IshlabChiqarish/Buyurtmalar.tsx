@@ -41,14 +41,14 @@ export default function Buyurtmalar() {
   ];
   const ombor = (id?: string) => (id ? nomlar.get(id) ?? "—" : "—");
   const ustunlar: Ustun<Buyurtma>[] = [
-    { nom: t("fields.document"), katak: (hujjat) => hujjatRaqami(hujjat) ? <span className="font-black text-slate-900">{hujjatRaqami(hujjat)}</span> : <span className="text-slate-400">{t("status.DRAFT")}</span> },
-    { nom: t("fields.product"), katak: (hujjat) => <span className="block max-w-[260px] truncate font-bold text-slate-800">{qatorNomi(hujjat)}</span> },
-    { nom: t("fields.progress"), katak: (hujjat) => <Jarayon bajarilgan={hujjat.produced ?? 0} reja={hujjat.quantity} /> },
-    { nom: t("fields.sourceWarehouse"), katak: (hujjat) => ombor(hujjat.sourceWarehouseId) },
-    { nom: t("fields.destWarehouse"), katak: (hujjat) => ombor(hujjat.destWarehouseId) },
-    { nom: t("fields.date"), katak: (hujjat) => kunMatni(hujjat.date ?? undefined) || "—" },
-    { nom: t("fields.dueDate"), katak: (hujjat) => (hujjat.dueDate ? <span className={muddatOtganmi(hujjat) ? "font-black text-red-600" : ""}>{kunMatni(hujjat.dueDate)}</span> : "—") },
-    { nom: t("fields.status"), katak: (hujjat) => <Holat status={hujjat.status} /> },
+    { id: "buyurtmalar-column-1", nom: t("fields.document"), katak: (hujjat) => hujjatRaqami(hujjat) ? <span className="font-black text-slate-900">{hujjatRaqami(hujjat)}</span> : <span className="text-slate-400">{t("status.DRAFT")}</span> },
+    { id: "buyurtmalar-column-2", nom: t("fields.product"), katak: (hujjat) => <span className="block max-w-[260px] truncate font-bold text-slate-800">{qatorNomi(hujjat)}</span> },
+    { id: "buyurtmalar-column-3", nom: t("fields.progress"), katak: (hujjat) => <Jarayon bajarilgan={hujjat.produced ?? 0} reja={hujjat.quantity} /> },
+    { id: "buyurtmalar-column-4", nom: t("fields.sourceWarehouse"), katak: (hujjat) => ombor(hujjat.sourceWarehouseId) },
+    { id: "buyurtmalar-column-5", nom: t("fields.destWarehouse"), katak: (hujjat) => ombor(hujjat.destWarehouseId) },
+    { id: "buyurtmalar-column-6", nom: t("fields.date"), katak: (hujjat) => kunMatni(hujjat.date ?? undefined) || "—" },
+    { id: "buyurtmalar-column-7", nom: t("fields.dueDate"), katak: (hujjat) => (hujjat.dueDate ? <span className={muddatOtganmi(hujjat) ? "font-black text-red-600" : ""}>{kunMatni(hujjat.dueDate)}</span> : "—") },
+    { id: "buyurtmalar-column-8", nom: t("fields.status"), katak: (hujjat) => <Holat status={hujjat.status} /> },
   ];
   const yangi = <button type="button" onClick={() => setForma({})} className={tugmaAsosiy}><Plus size={18} />{t("orders.create")}</button>;
   // Buyurtma bor, lekin qidiruv yoki filtr hech narsa qoldirmagan.
@@ -61,7 +61,7 @@ export default function Buyurtmalar() {
         <HolatFiltri qiymat={filtr?.holatlar.length === 1 ? filtr.holatlar[0] : ""} onChange={(holat) => setFiltr(holat ? { kalit: holat, holatlar: [holat] } : null)} holatlar={HOLATLAR} />
       </Asboblar>
       <XatoQutisi matn={royxat.xato} />
-      <Jadval
+      <Jadval tableId="IshlabChiqarish/Buyurtmalar/jadval-1"
         ustunlar={ustunlar}
         qatorlar={qatorlar}
         kalit={(hujjat) => hujjat.id}
@@ -291,23 +291,23 @@ function XomashyoHisobi({ modificationId, recipeId, retseptYuklanmoqda, quantity
       ) : (
         <>
           <XatoQutisi matn={hisob.xato} />
-          <Jadval
+          <Jadval tableId="IshlabChiqarish/Buyurtmalar/jadval-2"
             ixcham
             yuklanmoqda={hisob.yuklanmoqda}
             ustunlar={[
-              { nom: t("recipes.inputs"), katak: (qator) => qatorNomi(qator) },
-              { nom: t("fields.required"), ong: true, katak: qatorMiqdori },
+              { id: "buyurtmalar-column-9", nom: t("recipes.inputs"), katak: (qator) => qatorNomi(qator) },
+              { id: "buyurtmalar-column-10", nom: t("fields.required"), ong: true, katak: qatorMiqdori },
             ]}
             qatorlar={hisob.yuklanmoqda ? [] : hisob.malumot?.inputs ?? []}
             kalit={(qator, indeks) => `${qator.modificationId ?? ""}-${indeks}`}
             bosh={t("empty.lines")}
           />
           {!hisob.yuklanmoqda && (hisob.malumot?.outputs ?? []).length > 0 && (
-            <Jadval
+            <Jadval tableId="IshlabChiqarish/Buyurtmalar/jadval-3"
               ixcham
               ustunlar={[
-                { nom: t("recipes.outputs"), katak: (qator) => <span className="inline-flex items-center gap-2">{qatorNomi(qator)}{qator.role === "WASTE" && <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-black text-amber-700">{t("outputRole.WASTE")}</span>}</span> },
-                { nom: t("fields.quantity"), ong: true, katak: qatorMiqdori },
+                { id: "buyurtmalar-column-11", nom: t("recipes.outputs"), katak: (qator) => <span className="inline-flex items-center gap-2">{qatorNomi(qator)}{qator.role === "WASTE" && <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-black text-amber-700">{t("outputRole.WASTE")}</span>}</span> },
+                { id: "buyurtmalar-column-12", nom: t("fields.quantity"), ong: true, katak: qatorMiqdori },
               ]}
               qatorlar={hisob.malumot?.outputs ?? []}
               kalit={(qator, indeks) => `${qator.modificationId ?? ""}-${indeks}`}
@@ -374,14 +374,14 @@ function BuyurtmaKorish({ id, nomlar, onYopish, onOzgardi, onTahrir }: { id: str
         {buyurtma.completionSuggested && ishda && <Ogohlantirish>{t("orders.completionSuggested")}</Ogohlantirish>}
         {mavjudlik?.hasShortage && <Ogohlantirish>{t("orders.shortageWarning")}</Ogohlantirish>}
         <Bolim ikonka={BookOpenCheck} sarlavha={t("orders.sectionRequirements")} izoh={qoralama ? t("orders.requirementsDraftHint") : undefined}>
-          <Jadval
+          <Jadval tableId="IshlabChiqarish/Buyurtmalar/jadval-4"
             ixcham
             ustunlar={[
-              { nom: t("fields.product"), katak: (qator) => qatorNomi(qator) },
-              { nom: t("fields.required"), ong: true, katak: (qator) => miqdorMatni(qator.required ?? qator.quantity) },
-              { nom: t("fields.issued"), ong: true, katak: (qator) => miqdorMatni(qator.issued) },
-              { nom: t("fields.available"), ong: true, katak: (qator) => miqdorMatni(qator.available) },
-              { nom: t("fields.shortage"), ong: true, katak: (qator) => <span className={Number(qator.shortage ?? 0) > 0 ? "font-black text-red-600" : ""}>{miqdorMatni(qator.shortage)}</span> },
+              { id: "buyurtmalar-column-13", nom: t("fields.product"), katak: (qator) => qatorNomi(qator) },
+              { id: "buyurtmalar-column-14", nom: t("fields.required"), ong: true, katak: (qator) => miqdorMatni(qator.required ?? qator.quantity) },
+              { id: "buyurtmalar-column-15", nom: t("fields.issued"), ong: true, katak: (qator) => miqdorMatni(qator.issued) },
+              { id: "buyurtmalar-column-16", nom: t("fields.available"), ong: true, katak: (qator) => miqdorMatni(qator.available) },
+              { id: "buyurtmalar-column-17", nom: t("fields.shortage"), ong: true, katak: (qator) => <span className={Number(qator.shortage ?? 0) > 0 ? "font-black text-red-600" : ""}>{miqdorMatni(qator.shortage)}</span> },
             ]}
             qatorlar={qatorlar}
             kalit={(qator, indeks) => qator.modificationId ?? String(indeks)}

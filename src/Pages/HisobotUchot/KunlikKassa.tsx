@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -156,9 +157,9 @@ export default function KunlikKassa() {
       </section>
       <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_6px_24px_rgba(15,23,42,0.03)]">
         <div className="overflow-x-auto px-2 pb-4 sm:px-3">
-          <table className="w-full min-w-[1120px] border-separate border-spacing-x-2 border-spacing-y-0 whitespace-nowrap text-sm">
+          <SmartTable tableId="HisobotUchot/KunlikKassa/table-1" replaceColumnControls><table className="w-full min-w-[1120px] border-separate border-spacing-x-2 border-spacing-y-0 whitespace-nowrap text-sm">
             <caption className="px-2 py-4 text-left text-xs text-slate-500">{t("kunlikKassa.caption", { count: report.totals.operationsCount })}</caption>
-            <thead className="text-left"><tr><th scope="col" className="rounded-t-xl px-4 py-3">{t("kunlikKassa.date")}</th>{columns.map((column) => <th scope="col" key={column.label} className="rounded-t-xl border-x border-t-2 px-4 py-3 text-right" style={{ borderColor: column.border, borderTopColor: column.accent, backgroundColor: column.background }}><span className="inline-flex items-center gap-2" style={{ color: column.accent }}><span aria-hidden className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: column.accent }} />{t(`kunlikKassa.columns.${column.label}`)}</span></th>)}</tr></thead>
+            <thead className="text-left"><tr><th data-column-id="h1" scope="col" className="rounded-t-xl px-4 py-3">{t("kunlikKassa.date")}</th>{columns.map((column) => <th data-column-id={"h2:" + (column.label)} scope="col" key={column.label} className="rounded-t-xl border-x border-t-2 px-4 py-3 text-right" style={{ borderColor: column.border, borderTopColor: column.accent, backgroundColor: column.background }}><span className="inline-flex items-center gap-2" style={{ color: column.accent }}><span aria-hidden className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: column.accent }} />{t(`kunlikKassa.columns.${column.label}`)}</span></th>)}</tr></thead>
             <tbody>{report.days.map((day) => <tr key={day.date}>
               <th scope="row" className="border-b border-slate-100 px-4 py-3 text-left font-semibold">{kunMatni(day.date)}</th>
               {columns.map((column) => <td key={column.label} className={`border-x border-b px-4 py-3 text-right tabular-nums ${column.payment ? "font-medium" : "font-bold"}`} style={{ borderColor: column.border, backgroundColor: column.background }}>
@@ -166,7 +167,7 @@ export default function KunlikKassa() {
               </td>)}
             </tr>)}</tbody>
             <tfoot><tr><th scope="row" className="px-4 py-4 text-left font-bold text-slate-900">{t("kunlikKassa.periodTotal")}</th>{columns.map((column) => <td key={column.label} className="rounded-b-xl border-x border-b-2 border-t-2 px-4 py-4 text-right tabular-nums" style={{ borderColor: column.border, borderBottomColor: column.accent, borderTopColor: column.accent, backgroundColor: column.background }}><span className="text-base font-black" style={{ color: column.accent }}>{cashAmount(dailyNet(report.totals, column.currency, column.payment), column.currency)}</span></td>)}</tr></tfoot>
-          </table>
+          </table></SmartTable>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 bg-slate-50/80 px-5 py-5 sm:px-6">
           <div><h3 className="font-bold text-slate-800">{t("kunlikKassa.netTitle")}</h3><p className="mt-1 text-xs text-slate-500">{t("kunlikKassa.netSub")}</p></div>

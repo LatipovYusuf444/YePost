@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { bugungiToshkentKuni, toshkentKuni } from "@/lib/hujjatSanasi";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
@@ -422,18 +423,18 @@ export default function Ombor() {
       ) : korinish === "jadval" ? (
         <>
         <OmborJadval>
-            <table className="w-full text-left">
+            <SmartTable tableId="Ombor/index/table-1" replaceColumnControls><table className="w-full text-left">
               <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500">
                 <tr>
-                  <th className="px-4! py-4">{t("omborlarSahifasi.table.headers.name")}</th>
-                  <th className="px-4! py-4">{t("omborlarSahifasi.table.headers.location")}</th>
-                  <th className="px-4! py-4">{t("omborlarSahifasi.table.headers.workingHours")}</th>
-                  <th className="px-4! py-4">{t("omborlarSahifasi.table.headers.createdBy")}</th>
-                  <th className="px-4! py-4">{t("omborlarSahifasi.table.headers.createdAt")}</th>
-                  <th className="px-4! py-4">{t("omborlarSahifasi.table.headers.responsible")}</th>
-                  <th className="px-4! py-4">{t("omborlarSahifasi.table.headers.responsiblePhone")}</th>
-                  <th className="px-4! py-4">{t("omborlarSahifasi.table.headers.status")}</th>
-                  <th className="w-16 px-4! py-4 text-right">
+                  <th data-column-id="h1" className="px-4! py-4">{t("omborlarSahifasi.table.headers.name")}</th>
+                  <th data-column-id="h2" className="px-4! py-4">{t("omborlarSahifasi.table.headers.location")}</th>
+                  <th data-column-id="h3" className="px-4! py-4">{t("omborlarSahifasi.table.headers.workingHours")}</th>
+                  <th data-column-id="h4" className="px-4! py-4">{t("omborlarSahifasi.table.headers.createdBy")}</th>
+                  <th data-column-id="h5" className="px-4! py-4">{t("omborlarSahifasi.table.headers.createdAt")}</th>
+                  <th data-column-id="h6" className="px-4! py-4">{t("omborlarSahifasi.table.headers.responsible")}</th>
+                  <th data-column-id="h7" className="px-4! py-4">{t("omborlarSahifasi.table.headers.responsiblePhone")}</th>
+                  <th data-column-id="h8" className="px-4! py-4">{t("omborlarSahifasi.table.headers.status")}</th>
+                  <th data-column-id="h9" className="w-16 px-4! py-4 text-right">
                     <span className="sr-only">{t("omborlarSahifasi.table.headers.actions")}</span>
                   </th>
                 </tr>
@@ -593,7 +594,7 @@ export default function Ombor() {
             </tr>
           )}
               </tbody>
-            </table>
+            </table></SmartTable>
         </OmborJadval>
         <TablePagination page={tablePage} pageSize={tablePageSize} totalItems={omborlar.length} onPageChange={setTablePage} onPageSizeChange={setTablePageSize} />
         </>

@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Inbox, LoaderCircle, Plus, Search, Trash2, X, type LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -161,9 +162,10 @@ export function Jarayon({ bajarilgan, reja }: { bajarilgan: unknown; reja: unkno
   );
 }
 
-export type Ustun<T> = { nom: string; katak: (qator: T, indeks: number) => ReactNode; ong?: boolean };
+export type Ustun<T> = { id: string; nom: string; katak: (qator: T, indeks: number) => ReactNode; ong?: boolean };
 
 type JadvalProps<T> = {
+  tableId: string;
   ustunlar: Ustun<T>[];
   qatorlar: T[];
   kalit: (qator: T, indeks: number) => string;
@@ -183,7 +185,7 @@ type JadvalProps<T> = {
 };
 
 /** Jadval: sarlavha qatori doim ko'rinadi; bo'sh yoki yuklanayotgan holat jadval ichida. */
-export function Jadval<T>({ ustunlar, qatorlar, kalit, onBos, bosh, boshIzoh, boshAmal, boshIkonka: BoshIkonka = Inbox, yuklanmoqda = false, ixcham = false, sahifaHajmi = 0, pastki }: JadvalProps<T>) {
+export function Jadval<T>({ tableId, ustunlar, qatorlar, kalit, onBos, bosh, boshIzoh, boshAmal, boshIkonka: BoshIkonka = Inbox, yuklanmoqda = false, ixcham = false, sahifaHajmi = 0, pastki }: JadvalProps<T>) {
   const { t } = useTranslation("ishlab_chiqarish");
   const [sahifa, setSahifa] = useState(1);
   const [hajm, setHajm] = useState(sahifaHajmi || 20);
@@ -228,19 +230,19 @@ export function Jadval<T>({ ustunlar, qatorlar, kalit, onBos, bosh, boshIzoh, bo
         tabIndex={onBos ? 0 : undefined}
         className={onBos ? "group cursor-pointer transition hover:bg-orange-50/40 focus-visible:bg-orange-50 focus-visible:outline-none" : ""}
       >
-        {ustunlar.map((ustun) => <td key={ustun.nom} className={`${td} whitespace-nowrap font-semibold text-slate-700 ${ustun.ong ? "text-right tabular-nums" : ""}`}>{ustun.katak(qator, boshlanish + indeks)}</td>)}
+        {ustunlar.map((ustun) => <td key={ustun.id} className={`${td} whitespace-nowrap font-semibold text-slate-700 ${ustun.ong ? "text-right tabular-nums" : ""}`}>{ustun.katak(qator, boshlanish + indeks)}</td>)}
       </tr>
     ))
   );
   return (
     <div className={ixcham ? "overflow-hidden rounded-2xl border border-slate-200 bg-white" : "overflow-hidden rounded-[30px] border border-orange-100 bg-white shadow-sm"}>
       <div className="overflow-x-auto">
-        <table className={`w-full border-collapse text-left ${ixcham ? "" : "min-w-[880px]"}`}>
+        <SmartTable tableId={tableId} replaceColumnControls><table className={`w-full border-collapse text-left ${ixcham ? "" : "min-w-[880px]"}`}>
           <thead className={`font-black uppercase ${ixcham ? "bg-slate-50 text-slate-400" : "bg-[#F8FAFC] text-slate-500"}`}>
-            <tr>{ustunlar.map((ustun) => <th key={ustun.nom} scope="col" className={`${th} whitespace-nowrap ${ustun.ong ? "text-right" : ""}`}>{ustun.nom}</th>)}</tr>
+            <tr>{ustunlar.map((ustun) => <th data-column-id={ustun.id} key={ustun.id} scope="col" className={`${th} whitespace-nowrap ${ustun.ong ? "text-right" : ""}`}>{ustun.nom}</th>)}</tr>
           </thead>
           <tbody className={`divide-y ${ixcham ? "divide-slate-100" : "divide-orange-100"}`}>{tana}</tbody>
-        </table>
+        </table></SmartTable>
       </div>
       {sahifaHajmi > 0 && qatorlar.length > 0 && (
         <TablePagination page={joriySahifa} pageSize={hajm} totalItems={qatorlar.length} onPageChange={setSahifa} onPageSizeChange={(yangi) => { setHajm(yangi); setSahifa(1); }} />

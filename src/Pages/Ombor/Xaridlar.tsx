@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { FileText, LoaderCircle, Plus, Search, Settings } from "lucide-react";
@@ -272,7 +273,7 @@ export default function Xaridlar() {
       )}
 
       <OmborJadval>
-          <table
+          <SmartTable tableId="Ombor/Xaridlar/table-1" replaceColumnControls><table
             className="w-full table-fixed text-left text-sm"
             style={{ minWidth: Math.max(560, faolUstunlar.reduce((jami, ustun) => jami + ustun.kenglik, 76)) }}
           >
@@ -282,9 +283,9 @@ export default function Xaridlar() {
             </colgroup>
             <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500">
               <tr>
-                {faolUstunlar.map((ustun) => <th key={ustun.kalit}>{ustun.nom}</th>)}
-                <th className="sticky right-0 z-10 bg-[#F8FAFC] text-right">
-                  <button
+                {faolUstunlar.map((ustun) => <th data-column-id={"h1:" + (ustun.kalit)} key={ustun.kalit}>{ustun.nom}</th>)}
+                <th data-column-id="h2" className="sticky right-0 z-10 bg-[#F8FAFC] text-right">
+                  <button data-table-control
                     ref={sozlamaTugmaRef}
                     type="button"
                     onClick={() => {
@@ -345,7 +346,7 @@ export default function Xaridlar() {
                 </tr>
               )}
             </tbody>
-          </table>
+          </table></SmartTable>
       </OmborJadval>
       {!store.yuklanmoqda && <TablePagination page={page} pageSize={pageSize} totalItems={royxat.length} onPageChange={setPage} onPageSizeChange={setPageSize} />}
 

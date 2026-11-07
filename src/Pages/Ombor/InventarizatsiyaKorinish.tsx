@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { StockQuantity } from "@/Components/common/NegativeStockBadge";
 import { ArrowDownRight, ArrowUpRight, Barcode, CalendarDays, Check, CheckCircle2, ClipboardCheck, ClipboardList, Info, MessageSquareText, Minus, Package, PackageSearch, UserRound, Warehouse, type LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -60,9 +61,9 @@ export default function InventarizatsiyaKorinish({ hujjat, modifikatsiyalar, omb
       </div>
       {xulosa.noaniq > 0 && <p className="flex items-start gap-2 border-b border-amber-100 bg-amber-50/60 px-5 py-2.5 text-xs text-amber-800"><Info size={15} className="shrink-0" />{t("inventoryView.unknown", { count: xulosa.noaniq })}</p>}
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[850px] text-left text-sm">
+        <SmartTable tableId="Ombor/InventarizatsiyaKorinish/table-1" replaceColumnControls><table className="w-full min-w-[850px] text-left text-sm">
           <thead className="border-b-2 border-blue-200 bg-slate-50/80 text-xs font-semibold text-slate-500"><tr>
-            <th className="w-12 px-5 py-3.5">№</th><th className="min-w-64 px-4 py-3.5">{t("table.product")}</th><th className="px-4 py-3.5">{t("table.barcode")}</th><th className="px-4 py-3.5">{t("table.warehouse")}</th><th className="px-4 py-3.5 text-right">{t("table.systemQuantity")}</th><th className="px-4 py-3.5 text-right text-blue-600">{t("table.actualQuantity")}</th><th className="px-5 py-3.5 text-right">{t("table.difference")}</th>
+            <th data-column-id="h1" className="w-12 px-5 py-3.5">№</th><th data-column-id="h2" className="min-w-64 px-4 py-3.5">{t("table.product")}</th><th data-column-id="h3" className="px-4 py-3.5">{t("table.barcode")}</th><th data-column-id="h4" className="px-4 py-3.5">{t("table.warehouse")}</th><th data-column-id="h5" className="px-4 py-3.5 text-right">{t("table.systemQuantity")}</th><th data-column-id="h6" className="px-4 py-3.5 text-right text-blue-600">{t("table.actualQuantity")}</th><th data-column-id="h7" className="px-5 py-3.5 text-right">{t("table.difference")}</th>
           </tr></thead>
           <tbody className="divide-y divide-blue-200">{items.map((item, index) => {
             const mod = item.modification ?? modXarita.get(item.modificationId);
@@ -79,7 +80,7 @@ export default function InventarizatsiyaKorinish({ hujjat, modifikatsiyalar, omb
               <td className="px-5 py-4 text-right"><span className={`inline-flex min-w-20 items-center justify-center gap-1 rounded-lg border-2 px-2.5 py-2 font-bold tabular-nums ${farqStili}`}><FarqIcon size={15} />{farq === null ? "—" : `${farq > 0 ? "+" : ""}${sonMatni(farq)}`}</span></td>
             </tr>;
           })}</tbody>
-        </table>
+        </table></SmartTable>
         {items.length === 0 && <div className="px-5 py-12 text-center text-slate-400"><PackageSearch size={32} className="mx-auto mb-3" /><p className="text-sm">{t("table.empty")}</p></div>}
       </div>
       <p className="border-t border-slate-100 px-5 py-2.5 text-xs text-slate-400 sm:hidden">{t("inventoryView.scrollHint")}</p>

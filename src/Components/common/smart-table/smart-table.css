@@ -1,0 +1,116 @@
+.smart-table-frame {
+  --smart-cell-border: #d5dde8;
+  --smart-header-border: #b9c7d8;
+  --smart-outer-border: #c4d0df;
+  --smart-surface: #fff;
+  --smart-header: #f1f5f9;
+  --smart-hover: #eff6ff;
+  --smart-accent: var(--theme-primary, #2563eb);
+  width: 100%; min-width: 0; max-width: 100%;
+  color: var(--foreground, #0f172a);
+}
+.dark .smart-table-frame, .dark .smart-table-settings {
+  --smart-cell-border: #334155; --smart-header-border: #475569; --smart-outer-border: #475569;
+  --smart-surface: #0f172a; --smart-header: #162338; --smart-hover: #1e293b;
+}
+.smart-table-toolbar { display: flex; justify-content: flex-end; align-items: center; height: 48px; padding: 6px 12px; position: sticky; left: 0; background: var(--smart-surface); }
+.smart-settings-trigger, .smart-reset { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 6px 12px; border: 1px solid var(--smart-cell-border, #d5dde8); border-radius: 10px; font-size: 12px; font-weight: 600; background: var(--smart-surface, var(--popover)); color: inherit; cursor: pointer; transition: background-color 150ms; }
+.smart-settings-trigger:hover, .smart-reset:hover { background: var(--smart-hover, var(--muted)); }
+.smart-table-settings { display: flex; flex-direction: column; gap: 0; box-sizing: border-box; width: min(336px, calc(100vw - 24px), var(--radix-popover-content-available-width, 336px)); max-height: min(460px, var(--radix-popover-content-available-height, 460px), calc(100dvh - 24px)); min-height: 0; overflow: hidden; padding: 0; border-radius: 14px; z-index: 200; background: var(--popover); color: var(--popover-foreground); box-shadow: 0 12px 36px #0f172a24; }
+.smart-settings-header { flex-shrink: 0; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.smart-settings-title { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.smart-settings-icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--muted); color: var(--primary); }
+.smart-settings-close { display: grid; place-items: center; width: 28px; height: 28px; margin-left: auto; border-radius: 7px; color: var(--muted-foreground); cursor: pointer; }
+.smart-settings-close:hover { background: var(--muted); color: var(--foreground); }
+.smart-settings-help { margin: 5px 0 9px; font-size: 11px; line-height: 1.4; color: var(--muted-foreground); }
+.smart-density-control { display: flex; padding: 3px; border-radius: 8px; background: var(--muted); gap: 2px; }
+.smart-density-control button { flex: 1; min-width: 0; min-height: 28px; padding: 3px 4px; border-radius: 6px; font-size: 11px; cursor: pointer; }
+.smart-density-control button[aria-pressed=true] { background: var(--background); box-shadow: 0 1px 4px #0f172a1a; color: var(--primary); }
+.smart-column-list { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: 4px 8px; scrollbar-width: thin; scroll-padding-block: 4px; }
+.smart-column-option { padding: 2px 0; border-bottom: 1px solid var(--border); }
+.smart-column-option:last-child { border-bottom: 0; }
+.smart-column-option[data-expanded=true] { background: var(--muted); border-radius: 9px; }
+.smart-column-row { display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 4px; }
+.smart-column-row:hover { background: var(--muted); border-radius: 8px; }
+.smart-column-row > label { display: flex; flex: 1; min-width: 0; gap: 9px; align-items: center; font-size: 12px; font-weight: 500; cursor: pointer; }
+.smart-column-row > label > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.smart-column-option input[type=checkbox] { width: 15px; height: 15px; margin: 0; flex-shrink: 0; accent-color: var(--primary); }
+.smart-column-pin { flex-shrink: 0; color: var(--primary); }
+.smart-column-toggle { display: grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; border-radius: 6px; color: var(--muted-foreground); cursor: pointer; }
+.smart-column-toggle:hover, .smart-column-toggle[aria-expanded=true] { background: var(--background); color: var(--primary); }
+.smart-column-details { display: grid; gap: 5px; padding: 3px 8px 8px 28px; }
+.smart-column-details[hidden] { display: none; }
+.smart-column-actions { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.smart-column-actions button { display: grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 6px; background: var(--popover); cursor: pointer; }
+.smart-column-actions button:hover:enabled { background: var(--muted); }
+.smart-column-actions button:disabled { opacity: .35; cursor: default; }
+.smart-column-actions select { flex: 1; width: 100%; min-width: 0; height: 28px; padding: 3px 6px; font-size: 11px; border: 1px solid var(--border); border-radius: 6px; background: var(--popover); }
+.smart-width-option { display: grid; grid-template-columns: auto minmax(0, 1fr) 42px; align-items: center; gap: 8px; min-width: 0; min-height: 26px; font-size: 10px; color: var(--muted-foreground); }
+.smart-width-option > span { white-space: nowrap; }
+.smart-width-option input { min-width: 0; width: 100%; margin: 0; accent-color: var(--primary); cursor: ew-resize; }
+.smart-width-value { text-align: right; font-variant-numeric: tabular-nums; }
+.smart-settings-footer { flex-shrink: 0; padding: 8px; border-top: 1px solid var(--border); background: var(--popover); }
+.smart-reset { width: 100%; min-height: 32px; padding: 5px 8px; border-radius: 8px; font-size: 11px; }
+/* One shared border per cell edge also works with merged and sticky cells. */
+table.smart-data-table { table-layout: auto !important; width: max-content !important; min-width: 100% !important; border-collapse: separate !important; border-spacing: 0 !important; border: 1px solid var(--smart-outer-border) !important; background: var(--smart-surface) !important; }
+table.smart-data-table > :is(thead, tbody, tfoot) > tr { border: 0 !important; }
+table.smart-data-table > :is(thead, tbody, tfoot) > tr > :is(th, td) { border: 0 !important; border-right: 1px solid var(--smart-cell-border) !important; border-bottom: 1px solid var(--smart-cell-border) !important; background-clip: padding-box; transition: background-color 150ms; }
+/* Values stay on one line. Intrinsic column widths take priority over old narrow
+   preferences, so long names/statuses widen the table rather than the rows. */
+table.smart-data-table > :is(thead, tbody, tfoot) > tr > :is(th, td) { max-inline-size: none; white-space: nowrap; overflow-wrap: normal; word-break: normal; }
+table.smart-data-table > :is(thead, tbody, tfoot) > tr > :is(th, td):not([colspan]) :where(div, span, p, a, button, label) { box-sizing: border-box; min-inline-size: max-content; max-inline-size: none; white-space: nowrap; overflow-wrap: normal; word-break: normal; }
+table.smart-data-table > :is(thead, tbody, tfoot) > tr > :is(th, td):not([colspan]) :where(input, select, textarea) { box-sizing: border-box; min-inline-size: 0; max-inline-size: 100%; }
+table.smart-data-table > :is(thead, tbody, tfoot) > tr > :is(th, td) :where(.flex, .inline-flex) { flex-wrap: nowrap; }
+table.smart-data-table > tbody > tr > td[colspan] { white-space: normal; }
+/* Floating UI owns its own size. Restore its existing utility styles instead of
+   making menus (or their options) inherit the width of a narrow data cell. */
+table.smart-data-table :is(.absolute, .fixed, [role="menu"], [role="listbox"], [role="dialog"], [data-slot$="-content"], [style*="position: absolute"], [style*="position:absolute"], [style*="position: fixed"], [style*="position:fixed"]),
+table.smart-data-table :is(.absolute, .fixed, [role="menu"], [role="listbox"], [role="dialog"], [data-slot$="-content"], [style*="position: absolute"], [style*="position:absolute"], [style*="position: fixed"], [style*="position:fixed"]) * { min-inline-size: revert-layer; max-inline-size: revert-layer; white-space: revert-layer; overflow-wrap: revert-layer; flex-wrap: revert-layer; }
+table.smart-data-table > :is(thead, tbody, tfoot) > tr > :last-child { border-right: 0 !important; }
+table.smart-data-table > :last-child > tr:last-child > :is(th, td) { border-bottom: 0 !important; }
+table.smart-data-table > thead > tr > th { border-color: var(--smart-header-border) !important; }
+table.smart-data-table .smart-table-heading { position: relative; padding-right: 32px !important; white-space: nowrap; overflow: visible; }
+.smart-heading-content { display: block; min-width: max-content; white-space: nowrap; overflow-wrap: normal; }
+/* Keep the existing scroll owner (including warehouse arrow/track refs). Only the
+   table container scrolls; the page and the compact settings menu keep their width. */
+:where(div, section):has(> .smart-table-frame) { min-width: 0; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin !important; scrollbar-color: #93c5fd transparent; -ms-overflow-style: auto !important; }
+:where(div, section):has(> .smart-table-frame)::-webkit-scrollbar { display: block !important; height: 10px; }
+:where(div, section):has(> .smart-table-frame)::-webkit-scrollbar-thumb { background: #93c5fd; border-radius: 8px; }
+.smart-column-grip { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 18px; height: 28px; border-radius: 5px; color: var(--muted-foreground); opacity: .35; cursor: grab; }
+.smart-table-heading:hover .smart-column-grip, .smart-column-grip:focus-visible { opacity: 1; }
+.smart-column-grip:active { cursor: grabbing; }
+.smart-table-heading[data-dragging-cell=true] .smart-heading-content { opacity: .5; }
+.smart-column-resize { position: absolute; right: -4px; top: 0; width: 9px; height: 100%; z-index: 6; cursor: col-resize; touch-action: none; }
+.smart-column-resize::after { content: ""; position: absolute; left: 4px; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: var(--smart-accent); opacity: 0; }
+.smart-column-resize:hover::after, .smart-column-resize:focus-visible::after, [data-resizing=true] .smart-column-resize::after { opacity: 1; }
+.smart-pin-icon { position: absolute; top: 4px; right: 14px; color: var(--smart-accent); }
+table.smart-data-table [data-pinned] { background: var(--smart-surface) !important; }
+table.smart-data-table thead [data-pinned] { background: var(--smart-header) !important; }
+table.smart-data-table [data-pinned=left] { box-shadow: 2px 0 0 var(--smart-header-border); }
+table.smart-data-table [data-pinned=right] { box-shadow: -2px 0 0 var(--smart-header-border); }
+table.smart-data-table [data-drop=true] { box-shadow: inset 3px 0 var(--smart-accent); }
+table.smart-data-table[data-resizing=true] { cursor: col-resize; user-select: none; }
+.smart-table-frame[data-dragging] .smart-table-heading { transition: background-color 150ms; }
+.smart-table-frame[data-density=comfortable] table.smart-data-table > :is(tbody, tfoot) > tr > :is(td, th):not([colspan]) { height: 56px; padding-top: 12px !important; padding-bottom: 12px !important; }
+.smart-table-frame[data-density=standard] table.smart-data-table > :is(tbody, tfoot) > tr > :is(td, th):not([colspan]) { height: 44px; padding-top: 6px !important; padding-bottom: 6px !important; }
+.smart-table-frame[data-density=compact] table.smart-data-table > :is(tbody, tfoot) > tr > :is(td, th):not([colspan]) { height: 34px; padding-top: 4px !important; padding-bottom: 4px !important; }
+table.smart-data-table tbody tr:hover:not([data-state=selected]):not([aria-selected=true]) { background-color: var(--smart-hover) !important; }
+table.smart-data-table tbody tr:hover [data-pinned] { background: var(--smart-hover) !important; }
+table.smart-data-table tbody tr[data-state=selected] [data-pinned], table.smart-data-table tbody tr[aria-selected=true] [data-pinned] { background: var(--muted) !important; }
+.dark table.smart-data-table :is(thead, thead tr, thead th) { background-color: var(--smart-header) !important; color: #cbd5e1 !important; }
+.dark table.smart-data-table tbody { color: #e2e8f0; }
+.dark table.smart-data-table tbody :is(td, th) { color: #e2e8f0 !important; }
+.dark table.smart-data-table tbody :is(.text-slate-400, .text-slate-500, .text-gray-400, .text-gray-500):not([class*="bg-"]) { color: #94a3b8 !important; }
+.dark table.smart-data-table tbody :is(.text-slate-600, .text-slate-700, .text-slate-800, .text-slate-900, .text-slate-950, .text-gray-600, .text-gray-700, .text-gray-800, .text-gray-900, .text-gray-950):not([class*="bg-"]) { color: #e2e8f0 !important; }
+.smart-table-frame :is(button, [role=separator]):focus-visible, .smart-table-settings :is(button, input, select):focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.smart-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+@media (max-width: 640px) {
+  table.smart-data-table [data-pinned] { position: static !important; box-shadow: none; }
+  .smart-column-grip { opacity: .65; }
+  .smart-column-row { min-height: 40px; }
+  .smart-column-toggle { width: 36px; height: 36px; }
+  .smart-column-actions button, .smart-column-actions select { min-height: 36px; }
+  .smart-column-actions button { width: 36px; }
+}
+@media (prefers-reduced-motion: reduce) { .smart-table-frame *, .smart-table-settings * { transition: none !important; animation: none !important; } }
+@media print { .smart-table-toolbar, .smart-column-grip, .smart-column-resize, .smart-pin-icon { display: none !important; } .smart-data-table [data-pinned] { position: static !important; } }

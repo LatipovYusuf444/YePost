@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useState } from "react";
 import { ArrowDownLeft, ArrowUpRight, Banknote, CreditCard, Landmark, LoaderCircle, PenLine, ReceiptText, RefreshCw, Scale, Search, Wallet, WalletCards, X } from "lucide-react";
 import JadvalYuklanmoqda from "./JadvalYuklanmoqda";
@@ -215,15 +216,15 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
 
       <div className={`overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-sm ${korinish === "jadval" ? "hidden md:block" : "hidden"}`}>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[920px] border-collapse text-left text-sm">
+          <SmartTable tableId="Savdo/Tolovlar/table-1" replaceColumnControls><table className="w-full min-w-[920px] border-collapse text-left text-sm">
             <thead className="bg-[#F8FAFC] text-xs font-black uppercase tracking-wide text-slate-500">
               <tr>
-                <th className="px-6 py-4">{t("tolovlar.table.columns.sotuvId")}</th>
-                <th className="px-6 py-4">{t("tolovlar.table.columns.mijoz")}</th>
-                <th className="px-6 py-4">{t("tolovlar.table.columns.turi")}</th>
-                <th className="px-6 py-4">{t("tolovlar.table.columns.tolovTuri")}</th>
-                <th className="px-6 py-4">{t("tolovlar.table.columns.summa")}</th>
-                <th className="px-6 py-4">{t("tolovlar.table.columns.sana")}</th>
+                <th data-column-id="h1" className="px-6 py-4">{t("tolovlar.table.columns.sotuvId")}</th>
+                <th data-column-id="h2" className="px-6 py-4">{t("tolovlar.table.columns.mijoz")}</th>
+                <th data-column-id="h3" className="px-6 py-4">{t("tolovlar.table.columns.turi")}</th>
+                <th data-column-id="h4" className="px-6 py-4">{t("tolovlar.table.columns.tolovTuri")}</th>
+                <th data-column-id="h5" className="px-6 py-4">{t("tolovlar.table.columns.summa")}</th>
+                <th data-column-id="h6" className="px-6 py-4">{t("tolovlar.table.columns.sana")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-orange-100/80 text-slate-800">
@@ -285,7 +286,7 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
                 </tr>
               )}
             </tbody>
-          </table>
+          </table></SmartTable>
         </div>
       </div>
 

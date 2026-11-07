@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useEffect, useId, useMemo, useState } from "react";
 import { ArrowDownLeft, ArrowRightLeft, ArrowUpRight, Banknote, CreditCard, Download, Landmark, RotateCw, Wallet } from "lucide-react";
 import MuddatTanlov from "./MuddatTanlov";
@@ -416,7 +417,7 @@ export default function KirimChiqimHisoboti() {
       </button>
 
       {/* Kassa oboroti matritsasi */}
-      <MatritsaJadval
+      <MatritsaJadval tableId="HisobotUchot/KirimChiqimHisoboti/matritsajadval-1"
         birinchiSarlavha=""
         ustunlar={ustunlar}
         satrlar={satrlar}
@@ -443,7 +444,7 @@ export default function KirimChiqimHisoboti() {
               <span className="ml-auto shrink-0 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700">{currency === "USD" ? "Dollar · USD" : "So'm · UZS"}</span>
             </div>
             <div className="flex min-h-0 flex-1 flex-col p-3 sm:p-5">
-              <MatritsaJadval
+              <MatritsaJadval tableId="HisobotUchot/KirimChiqimHisoboti/matritsajadval-2"
                 ichkiScroll
                 birinchiSarlavha="Hujjatlar"
                 ustunlar={ustunlar}
@@ -477,6 +478,7 @@ export default function KirimChiqimHisoboti() {
 }
 
 function MatritsaJadval({
+  tableId,
   birinchiSarlavha,
   ustunlar,
   satrlar,
@@ -486,6 +488,7 @@ function MatritsaJadval({
   bosh,
   ichkiScroll = false,
 }: {
+  tableId: string;
   birinchiSarlavha: string;
   ustunlar: Guruh[];
   satrlar: Satr[];
@@ -516,7 +519,7 @@ function MatritsaJadval({
   return (
     <section className={`${ichkiScroll ? "flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl" : "rounded-[28px]"} border border-orange-100 bg-white shadow-sm`}>
       <div className={`aylanma-scroll ${ichkiScroll ? "min-h-0 flex-1 overflow-auto" : "overflow-x-auto rounded-[28px]"}`}>
-        <table className={ichkiScroll ? "border-separate border-spacing-0 text-sm [&_td]:border-b [&_td]:border-slate-100" : "text-sm"} style={{ tableLayout: "fixed", width: ichkiScroll ? "100%" : jamiEn, minWidth: ichkiScroll ? jamiEn : undefined }}>
+        <SmartTable tableId={tableId} replaceColumnControls><table className={ichkiScroll ? "border-separate border-spacing-0 text-sm [&_td]:border-b [&_td]:border-slate-100" : "text-sm"} style={{ tableLayout: "fixed", width: ichkiScroll ? "100%" : jamiEn, minWidth: ichkiScroll ? jamiEn : undefined }}>
           <colgroup>
             {leaflar.map((l) => (
               <col key={l} style={{ width: enOl(l) }} />
@@ -524,11 +527,11 @@ function MatritsaJadval({
           </colgroup>
           <thead className={ichkiScroll ? "sticky top-0 z-20 bg-slate-50 shadow-[0_1px_0_#e2e8f0] [&_th]:bg-slate-50!" : undefined}>
             <tr className="border-b border-orange-100">
-              <th className="px-4 py-3" />
+              <th data-column-id="h1" className="px-4 py-3" />
               {ustunlar.map((g) => {
                 const sudralishi = onReorder && g.id !== "jami";
                 return (
-                  <th
+                  <th data-column-id={"h2:" + (g.id)}
                     key={g.id}
                     colSpan={3}
                     draggable={sudralishi || undefined}
@@ -568,13 +571,13 @@ function MatritsaJadval({
               })}
             </tr>
             <tr className="border-b border-orange-100 text-xs font-black uppercase tracking-wide text-gray-400">
-              <th className="relative px-4 py-2.5 text-left align-bottom text-gray-500">
+              <th data-column-id="h3" className="relative px-4 py-2.5 text-left align-bottom text-gray-500">
                 {birinchiSarlavha}
                 <Tutqich onDown={(e) => boshlaResize("label", e)} />
               </th>
               {ustunlar.map((g) =>
                 metrikalar.map(([m, nomi]) => (
-                  <th
+                  <th data-column-id={"h4:" + (`${g.id}-${m}`)}
                     key={`${g.id}-${m}`}
                     className={`relative border-l px-4 py-2.5 text-center ${
                       g.id === "jami" ? "border-orange-100 bg-orange-50/40" : "border-orange-50"
@@ -605,7 +608,7 @@ function MatritsaJadval({
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></SmartTable>
       </div>
     </section>
   );

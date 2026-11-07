@@ -233,7 +233,7 @@ export default function ZavodBonusi({ ochirishMumkin }: Props) {
           {!filtrFaol && <p className="mt-1 text-sm font-medium text-gray-400">{t("zavodBonusi.emptyHint")}</p>}
         </div>
       ) : royxat.length > 0 ? (
-        <KengaytiriladiganJadval
+        <KengaytiriladiganJadval tableId="KassaUchot/ZavodBonusi/kengaytiriladiganjadval-1"
           ustunlar={ustunlar}
           qatorlar={royxat}
           jamiBor

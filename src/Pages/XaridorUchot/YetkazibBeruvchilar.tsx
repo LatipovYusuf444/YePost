@@ -127,7 +127,7 @@ export default function YetkazibBeruvchilar({
       </div>
 
       {korinish === "jadval" && (
-        <KengaytiriladiganJadval
+        <KengaytiriladiganJadval tableId="XaridorUchot/YetkazibBeruvchilar/kengaytiriladiganjadval-1"
           ustunlar={ustunlar}
           qatorlar={royxat}
           kengaytir

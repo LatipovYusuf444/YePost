@@ -88,14 +88,14 @@ function Berishlar() {
   );
   const ombor = (id?: string | null) => (id ? nomlar.get(id) ?? "—" : "—");
   const ustunlar: Ustun<Berish>[] = [
-    { nom: t("fields.document"), katak: (hujjat) => <RaqamKatagi hujjat={hujjat} /> },
-    { nom: t("fields.order"), katak: (hujjat) => (hujjat.orderId ? buyurtmaRaqamlari.get(hujjat.orderId) || "—" : <span className="text-slate-400">{t("issues.manual")}</span>) },
-    { nom: t("fields.date"), katak: (hujjat) => kunMatni(hujjat.date ?? undefined) || "—" },
-    { nom: t("fields.sourceWarehouse"), katak: (hujjat) => ombor(hujjat.sourceWarehouseId) },
-    { nom: t("fields.wipWarehouse"), katak: (hujjat) => ombor(hujjat.wipWarehouseId) },
-    { nom: t("fields.lines"), ong: true, katak: (hujjat) => hujjat.lines?.length ?? "—" },
-    { nom: t("issues.colRolls"), ong: true, katak: (hujjat) => rulonlarSoni(hujjat) ?? "—" },
-    { nom: t("fields.status"), katak: (hujjat) => <Holat status={hujjat.status} /> },
+    { id: "sexgaberish-column-1", nom: t("fields.document"), katak: (hujjat) => <RaqamKatagi hujjat={hujjat} /> },
+    { id: "sexgaberish-column-2", nom: t("fields.order"), katak: (hujjat) => (hujjat.orderId ? buyurtmaRaqamlari.get(hujjat.orderId) || "—" : <span className="text-slate-400">{t("issues.manual")}</span>) },
+    { id: "sexgaberish-column-3", nom: t("fields.date"), katak: (hujjat) => kunMatni(hujjat.date ?? undefined) || "—" },
+    { id: "sexgaberish-column-4", nom: t("fields.sourceWarehouse"), katak: (hujjat) => ombor(hujjat.sourceWarehouseId) },
+    { id: "sexgaberish-column-5", nom: t("fields.wipWarehouse"), katak: (hujjat) => ombor(hujjat.wipWarehouseId) },
+    { id: "sexgaberish-column-6", nom: t("fields.lines"), ong: true, katak: (hujjat) => hujjat.lines?.length ?? "—" },
+    { id: "sexgaberish-column-7", nom: t("issues.colRolls"), ong: true, katak: (hujjat) => rulonlarSoni(hujjat) ?? "—" },
+    { id: "sexgaberish-column-8", nom: t("fields.status"), katak: (hujjat) => <Holat status={hujjat.status} /> },
   ];
   const buyurtmadanTugma = <button type="button" onClick={() => setBuyurtmaOynasi(true)} className={tugmaIkkinchi}><ClipboardList size={16} />{t("issues.fromOrder")}</button>;
   const yangiTugma = <button type="button" onClick={() => setOchiq({})} className={tugmaAsosiy}><Plus size={18} />{t("issues.create")}</button>;
@@ -110,7 +110,7 @@ function Berishlar() {
         <HolatFiltri qiymat={filtr?.holatlar.length === 1 ? filtr.holatlar[0] : ""} onChange={(holat) => setFiltr(holat ? { kalit: holat, holatlar: [holat] } : null)} holatlar={HOLATLAR} />
       </Asboblar>
       <XatoQutisi matn={royxat.xato} />
-      <Jadval
+      <Jadval tableId="IshlabChiqarish/SexgaBerish/jadval-1"
         ustunlar={ustunlar}
         qatorlar={qatorlar}
         kalit={(hujjat) => hujjat.id}
@@ -163,15 +163,15 @@ function BuyurtmaTanlash({ nomlar, onYopish, onYaratildi }: { nomlar: Map<string
     <Oyna keng ikonka={ClipboardList} sarlavha={t("issues.fromOrder")} izoh={t("issues.fromOrderHint")} onYopish={onYopish}>
       <XatoQutisi matn={buyurtmalar.xato || amal.xato} />
       <QidiruvMaydoni qiymat={qidiruv} onChange={setQidiruv} placeholder={t("issues.fromOrderSearch")} />
-      <Jadval
+      <Jadval tableId="IshlabChiqarish/SexgaBerish/jadval-2"
         ustunlar={[
-          { nom: t("fields.document"), katak: (qator) => <RaqamKatagi hujjat={qator} /> },
-          { nom: t("fields.product"), katak: (qator) => <span className="block max-w-[260px] truncate font-bold text-slate-800">{qatorNomi(qator)}</span> },
-          { nom: t("fields.progress"), katak: (qator) => <Jarayon bajarilgan={qator.produced ?? 0} reja={qator.quantity} /> },
-          { nom: t("fields.sourceWarehouse"), katak: (qator) => ombor(qator.sourceWarehouseId) },
-          { nom: t("fields.dueDate"), katak: (qator) => (qator.dueDate ? kunMatni(qator.dueDate) : "—") },
-          { nom: t("fields.status"), katak: (qator) => <Holat status={qator.status} /> },
-          { nom: t("fields.actions"), katak: () => <span className="inline-flex items-center gap-1.5 text-sm font-black text-[#2563EB]">{t("issues.pickOrder")}<ArrowRight size={15} /></span> },
+          { id: "sexgaberish-column-9", nom: t("fields.document"), katak: (qator) => <RaqamKatagi hujjat={qator} /> },
+          { id: "sexgaberish-column-10", nom: t("fields.product"), katak: (qator) => <span className="block max-w-[260px] truncate font-bold text-slate-800">{qatorNomi(qator)}</span> },
+          { id: "sexgaberish-column-11", nom: t("fields.progress"), katak: (qator) => <Jarayon bajarilgan={qator.produced ?? 0} reja={qator.quantity} /> },
+          { id: "sexgaberish-column-12", nom: t("fields.sourceWarehouse"), katak: (qator) => ombor(qator.sourceWarehouseId) },
+          { id: "sexgaberish-column-13", nom: t("fields.dueDate"), katak: (qator) => (qator.dueDate ? kunMatni(qator.dueDate) : "—") },
+          { id: "sexgaberish-column-14", nom: t("fields.status"), katak: (qator) => <Holat status={qator.status} /> },
+          { id: "sexgaberish-column-15", nom: t("fields.actions"), katak: () => <span className="inline-flex items-center gap-1.5 text-sm font-black text-[#2563EB]">{t("issues.pickOrder")}<ArrowRight size={15} /></span> },
         ]}
         qatorlar={qatorlar}
         kalit={(qator) => qator.id}
@@ -465,12 +465,12 @@ function Qaytarishlar() {
   );
   const amalBajarish = (ish: () => Promise<unknown>) => void amal.bajar(async () => { await ish(); royxat.qayta(); });
   const ustunlar: Ustun<SexdanQaytarish>[] = [
-    { nom: t("fields.document"), katak: (hujjat) => <RaqamKatagi hujjat={hujjat} /> },
-    { nom: t("fields.issue"), katak: (hujjat) => berishRaqamlari.get(hujjat.issueId ?? "") || "—" },
-    { nom: t("fields.date"), katak: (hujjat) => kunMatni(hujjat.date ?? undefined) || "—" },
-    { nom: t("fields.lines"), ong: true, katak: (hujjat) => hujjat.lines?.length ?? "—" },
-    { nom: t("fields.status"), katak: (hujjat) => <Holat status={hujjat.status} /> },
-    {
+    { id: "sexgaberish-column-16", nom: t("fields.document"), katak: (hujjat) => <RaqamKatagi hujjat={hujjat} /> },
+    { id: "sexgaberish-column-17", nom: t("fields.issue"), katak: (hujjat) => berishRaqamlari.get(hujjat.issueId ?? "") || "—" },
+    { id: "sexgaberish-column-18", nom: t("fields.date"), katak: (hujjat) => kunMatni(hujjat.date ?? undefined) || "—" },
+    { id: "sexgaberish-column-19", nom: t("fields.lines"), ong: true, katak: (hujjat) => hujjat.lines?.length ?? "—" },
+    { id: "sexgaberish-column-20", nom: t("fields.status"), katak: (hujjat) => <Holat status={hujjat.status} /> },
+    { id: "sexgaberish-column-21",
       nom: t("fields.actions"),
       katak: (hujjat) => (
         <span className="flex flex-wrap gap-2">
@@ -494,7 +494,7 @@ function Qaytarishlar() {
         <HolatFiltri qiymat={filtr?.holatlar.length === 1 ? filtr.holatlar[0] : ""} onChange={(holat) => setFiltr(holat ? { kalit: holat, holatlar: [holat] } : null)} holatlar={HOLATLAR} />
       </Asboblar>
       <XatoQutisi matn={royxat.xato || amal.xato} />
-      <Jadval
+      <Jadval tableId="IshlabChiqarish/SexgaBerish/jadval-3"
         ustunlar={ustunlar}
         qatorlar={qatorlar}
         kalit={(hujjat) => hujjat.id}

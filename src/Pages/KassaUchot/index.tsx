@@ -673,7 +673,7 @@ export default function KassaUchot() {
           {t("emptyList", { section: joriyBolimNomi })}
         </p>
       ) : (
-        <KengaytiriladiganJadval
+        <KengaytiriladiganJadval tableId="KassaUchot/index/kengaytiriladiganjadval-1"
           ustunlar={ustunlar}
           qatorlar={royxat}
           kengaytir

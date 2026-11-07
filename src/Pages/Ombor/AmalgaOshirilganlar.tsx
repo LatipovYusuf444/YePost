@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
@@ -387,7 +388,7 @@ export default function AmalgaOshirilganlar() {
       ) : (
       <div className="relative overflow-visible">
         <OmborJadval>
-          <table className="w-full table-fixed text-left text-sm" style={{ minWidth: jadvalMinKengligi }}>
+          <SmartTable tableId="Ombor/AmalgaOshirilganlar/table-1" replaceColumnControls><table className="w-full table-fixed text-left text-sm" style={{ minWidth: jadvalMinKengligi }}>
             <colgroup>
               <col style={{ width: NOMI_KENGLIGI }} />
               {faolUstunlar.map((ustun) => (
@@ -397,14 +398,14 @@ export default function AmalgaOshirilganlar() {
             </colgroup>
             <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500">
               <tr>
-                <th className="px-6 py-5">{t("amalgaOshirilganlar.columns.nomi")}</th>
+                <th data-column-id="h1" className="px-6 py-5">{t("amalgaOshirilganlar.columns.nomi")}</th>
                 {faolUstunlar.map((ustun) => (
-                  <th key={ustun.kalit} className="border-l border-orange-200/70 px-6 py-5">
+                  <th data-column-id={"h2:" + (ustun.kalit)} key={ustun.kalit} className="border-l border-orange-200/70 px-6 py-5">
                     {t(`amalgaOshirilganlar.columns.${ustun.kalit}`)}
                   </th>
                 ))}
-                <th className="px-5 py-4 text-right">
-                  <button
+                <th data-column-id="h3" className="px-5 py-4 text-right">
+                  <button data-table-control
                     type="button"
                     onClick={() => setSozlamaOchiq((oldingi) => !oldingi)}
                     aria-label={t("umumiy.ustunlarniSozlash")}
@@ -472,7 +473,7 @@ export default function AmalgaOshirilganlar() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></SmartTable>
         </OmborJadval>
         {!store.yuklanmoqda && <TablePagination page={page} pageSize={pageSize} totalItems={filtrlanganRows.length} onPageChange={setPage} onPageSizeChange={setPageSize} />}
 

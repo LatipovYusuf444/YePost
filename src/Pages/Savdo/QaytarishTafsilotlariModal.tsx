@@ -1,4 +1,5 @@
-﻿import { useEffect, useMemo, useState, type ReactNode } from "react";
+﻿import SmartTable from "@/Components/common/smart-table/SmartTable";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
 import {
@@ -589,13 +590,13 @@ export default function QaytarishTafsilotlariModal({
                         <p className="px-5 py-10 text-center text-sm font-semibold text-gray-400">{t("table.empty")}</p>
                       ) : (
                         <>
-                          <table className="hidden w-full text-left text-sm md:table">
+                          <SmartTable tableId="Savdo/QaytarishTafsilotlariModal/table-1" replaceColumnControls><table className="hidden w-full text-left text-sm md:table">
                             <thead className="text-[11px] font-black uppercase tracking-wide text-slate-400">
                               <tr className="border-b border-slate-100">
-                                <th className="px-5 py-3">{t("table.product")}</th>
-                                <th className="px-5 py-3 text-center">{t("table.quantity")}</th>
-                                <th className="px-5 py-3 text-right">{t("table.price")}</th>
-                                <th className="px-5 py-3 text-right">{t("table.total")}</th>
+                                <th data-column-id="h1" className="px-5 py-3">{t("table.product")}</th>
+                                <th data-column-id="h2" className="px-5 py-3 text-center">{t("table.quantity")}</th>
+                                <th data-column-id="h3" className="px-5 py-3 text-right">{t("table.price")}</th>
+                                <th data-column-id="h4" className="px-5 py-3 text-right">{t("table.total")}</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -625,7 +626,7 @@ export default function QaytarishTafsilotlariModal({
                                 );
                               })}
                             </tbody>
-                          </table>
+                          </table></SmartTable>
                           <ul className="divide-y divide-slate-100 md:hidden">
                             {(qaytarish.items ?? []).map((item, index) => {
                               const qism = mahsulotQismlari(item, t("table.unknownProduct"));

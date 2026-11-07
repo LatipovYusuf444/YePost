@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import {
   useCallback,
   useEffect,
@@ -494,7 +495,7 @@ export default function Kochirish() {
           onScroll={scrollHolatiniYangilash}
           className="scrollbar-hidden overflow-x-auto"
         >
-          <table
+          <SmartTable tableId="Ombor/Kochirish/table-1" replaceColumnControls><table
             className="border-collapse text-left"
             style={{ tableLayout: "fixed", width: jadvalKengligi, minWidth: "100%" }}
           >
@@ -507,9 +508,9 @@ export default function Kochirish() {
             <thead className="bg-[#F8FAFC] text-[13px] font-black uppercase text-slate-500">
               <tr>
                 {korinadiganUstunlarRoyxati.map((ustun) => (
-                  <th key={ustun.kalit} className="relative h-[58px] overflow-visible px-7 py-3">
+                  <th data-column-id={"h1:" + (ustun.kalit)} key={ustun.kalit} className="relative h-[58px] overflow-visible px-7 py-3">
                     <span className="block max-w-[190px] truncate">{t(ustun.nom)}</span>
-                    <span
+                    <span data-table-control
                       role="separator"
                       aria-orientation="vertical"
                       aria-label={t("kochirish.columnResizeAria", { name: t(ustun.nom) })}
@@ -520,9 +521,9 @@ export default function Kochirish() {
                     </span>
                   </th>
                 ))}
-                <th className="sticky right-0 z-10 w-20 min-w-20 bg-[#F8FAFC] px-5 py-4 text-right">
+                <th data-column-id="h2" className="sticky right-0 z-10 w-20 min-w-20 bg-[#F8FAFC] px-5 py-4 text-right">
                   <div className="relative inline-block">
-                    <button
+                    <button data-table-control
                       ref={sozlamalarTugmaRef}
                       type="button"
                       onClick={() => {
@@ -618,7 +619,7 @@ export default function Kochirish() {
                 </tr>
               )}
             </tbody>
-          </table>
+          </table></SmartTable>
         </div>
         <div className="flex h-[70px] items-center gap-4 border-t border-orange-100 px-5">
           <button type="button" onClick={() => jadvalniSurish(-1)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-white text-[#2563EB] shadow-sm hover:bg-orange-50" aria-label={t("kochirish.scrollLeftAria")}>

@@ -604,7 +604,7 @@ export default function Savdo() {
 
               {((yuklanmoqda && sotuvlar.length === 0) || (faolTab === "barchasi" && serverRejimi && serverYuklanganKalit === "")) && <JadvalYuklanmoqda />}
               {!(yuklanmoqda && sotuvlar.length === 0) && !(faolTab === "barchasi" && serverRejimi && serverYuklanganKalit === "") && faolTab === "barchasi" && (
-                <SotuvlarJadvali
+                <SotuvlarJadvali tableId="Savdo/index/sotuvlarjadvali-1"
                   sotuvlar={serverRejimi ? serverQatorlar : qidirilganSotuvlar}
                   serverSahifalash={
                     serverRejimi

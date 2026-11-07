@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, ChevronRight, Eye, EyeOff, KeyRound, LoaderCircle, LockKeyhole, Store, UserRound } from "lucide-react";
+import { ChevronRight, KeyRound, Store, UserRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
@@ -14,6 +14,14 @@ import {
 } from "@/lib/dokonKodi";
 import { isAuthSessionValid, useAuthStore } from "@/store/authStore";
 import { AuthPanel } from "./AuthLayout";
+import { AuthField, AuthMessage, PasswordField, SubmitButton } from "./AuthFields";
+
+// Muvaffaqiyatli kirishdan keyin tugmadagi "✓" holati ko'rinib ulgurishi uchun qisqa pauza (harakat kamaytirilgan rejimda — yo'q).
+const MUVAFFAQIYAT_PAUZASI = 320;
+
+function harakatKamaytirilganmi() {
+  return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
 
 type LoginLocationState = {
   workspace?: string;
@@ -76,8 +84,12 @@ export default function Login() {
   const dokonKodiRef = useRef<HTMLInputElement | null>(null);
   const [username, setUsername] = useState((location.state as LoginLocationState | null)?.username ?? "");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Faqat haqiqiy muvaffaqiyatli kirishdan keyin: tugma "✓ Kirildi" holatiga o'tadi va qayta yuborilmaydi.
+  const [kirildi, setKirildi] = useState(false);
+  // Shu formadan kirish ketayotganda store'ga token yozilishi bilan darhol yo'naltirilmaydi: avval "✓ Kirildi" ko'rinadi,
+  // keyin pastdagi navigate (yoki boshqa sessiya egasida — to'liq yuklash) o'sha manzilga olib boradi.
+  const [kirishJarayoni, setKirishJarayoni] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [touched, setTouched] = useState({ username: false, password: false });
   const [submitTried, setSubmitTried] = useState(false);
@@ -107,12 +119,14 @@ export default function Login() {
   const passwordXatosi = (showPasswordError ? validationErrors.password : "") || fx.xato("password") || "";
   const tepaXatosi = fx.tepadagi || (fx.bor ? "" : errorMessage);
 
-  if (isAuthSessionValid({ accessToken, expiresAt })) {
+  if (isAuthSessionValid({ accessToken, expiresAt }) && !kirishJarayoni) {
     return <Navigate to="/" replace />;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    // Yuklanish paytida takroriy yuborish yo'q.
+    if (isSubmitting || kirildi) return;
     setSubmitTried(true);
     setErrorMessage("");
     fx.ornat({});
@@ -127,6 +141,7 @@ export default function Login() {
     }
 
     setIsSubmitting(true);
+    setKirishJarayoni(true);
 
     try {
       const boshqaEgasi = await login(loginMalumoti(username.trim(), password, dokonKodi));
@@ -135,10 +150,13 @@ export default function Login() {
 
       const state = location.state as LoginLocationState | null;
       const manzil = state?.from?.pathname || "/";
+      setKirildi(true);
+      if (!harakatKamaytirilganmi()) await new Promise((tayyor) => setTimeout(tayyor, MUVAFFAQIYAT_PAUZASI));
       // Boshqa do'kon/foydalanuvchi: xotirada oldingi sessiyaning store'lari qolmasligi uchun sahifa to'liq yuklanadi (K4).
       if (boshqaEgasi) window.location.assign(manzil);
       else navigate(manzil, { replace: true });
     } catch (error) {
+      setKirishJarayoni(false);
       // errors.user.workspace_required: login bir nechta do'konda bor — kodni so'raymiz (backend xabari bilan).
       if (dokonKodiKerakmi(error)) {
         setDokonKodiKerak(true);
@@ -151,163 +169,96 @@ export default function Login() {
     }
   }
 
+  const holat = location.state as LoginLocationState | null;
+
   return (
-    <AuthPanel title="Xush kelibsiz!" subtitle="Tizimga kirish uchun o'z ma'lumotlaringizni kiriting">
-                <form className="mt-8 space-y-5" onSubmit={handleSubmit} noValidate>
-                  <label className="block" data-maydon-xato={kodMaydonXatosi ? "true" : undefined}>
-                    <span className="mb-2 flex items-baseline justify-between gap-2 text-sm font-bold text-blue-50">
-                      {t("workspaceLabel")}
-                      <small className={`text-[11px] font-semibold ${dokonKodiKerak ? "text-amber-300" : "text-blue-200/60"}`}>
-                        {dokonKodiKerak ? t("workspaceRequiredTag") : t("workspaceOptional")}
-                      </small>
-                    </span>
-                    <span
-                      className={`login-input flex h-14 items-center gap-3 rounded-2xl border bg-white/[0.035] px-4 transition focus-within:bg-white/[0.055] focus-within:ring-[3px] ${
-                        kodMaydonXatosi
-                          ? "border-red-300 focus-within:ring-red-100"
-                          : dokonKodiKerak
-                            ? "border-amber-300/70 focus-within:border-amber-300 focus-within:ring-amber-300/20"
-                            : "border-blue-300/35 focus-within:border-blue-400 focus-within:ring-blue-500/20"
-                      }`}
-                    >
-                      <Store size={18} className={kodMaydonXatosi ? "shrink-0 text-red-500" : "shrink-0 text-blue-500"} />
-                      <input
-                        ref={dokonKodiRef}
-                        id="workspace"
-                        name="workspace"
-                        value={dokonKodi}
-                        onChange={(event) => {
-                          setDokonKodi(event.target.value);
-                          setDokonKodiXatosi("");
-                          setErrorMessage("");
-                          fx.tozala("workspace");
-                        }}
-                        autoComplete="off"
-                        autoCapitalize="none"
-                        spellCheck={false}
-                        placeholder={t("workspacePlaceholder")}
-                        className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-white outline-none placeholder:text-blue-200/70"
-                        aria-invalid={Boolean(kodMaydonXatosi)}
-                      />
-                    </span>
-                    {kodMaydonXatosi ? (
-                      <p className="mt-2 text-xs font-bold text-red-500">{kodMaydonXatosi}</p>
-                    ) : (
-                      <p className="mt-2 text-[11px] font-medium leading-4 text-blue-100/55">{t("workspaceHint")}</p>
-                    )}
-                  </label>
+    <AuthPanel title={t("sapphire.welcome")} subtitle={t("sapphire.welcomeText")}>
+      <form className="auth-form" onSubmit={handleSubmit} noValidate aria-busy={isSubmitting}>
+        <AuthField
+          id="workspace"
+          name="workspace"
+          label={t("workspaceLabel")}
+          tag={dokonKodiKerak ? t("workspaceRequiredTag") : t("workspaceOptional")}
+          ohang={dokonKodiKerak ? "ogohlantirish" : "oddiy"}
+          icon={<Store size={19} />}
+          inputRef={dokonKodiRef}
+          value={dokonKodi}
+          onChange={(event) => {
+            setDokonKodi(event.target.value);
+            setDokonKodiXatosi("");
+            setErrorMessage("");
+            fx.tozala("workspace");
+          }}
+          autoComplete="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          placeholder={t("workspacePlaceholder")}
+          readOnly={isSubmitting || kirildi}
+          error={kodMaydonXatosi}
+          hint={t("workspaceHint")}
+          data-maydon-xato={kodMaydonXatosi ? "true" : undefined}
+        />
 
-                  <label className="block" data-maydon-xato={usernameXatosi ? "true" : undefined}>
-                    <span className="mb-2 block text-sm font-bold text-blue-50">
-                      {t("usernameLabel")}
-                    </span>
-                    <span
-                      className={`login-input flex h-14 items-center gap-3 rounded-2xl border bg-white/[0.035] px-4 transition focus-within:bg-white/[0.055] focus-within:ring-[3px] ${
-                        usernameXatosi
-                          ? "border-red-300 focus-within:ring-red-100"
-                          : "border-blue-300/35 focus-within:border-blue-400 focus-within:ring-blue-500/20"
-                      }`}
-                    >
-                      <UserRound
-                        size={18}
-                        className={usernameXatosi ? "shrink-0 text-red-500" : "shrink-0 text-blue-500"}
-                      />
-                      <input
-                        value={username}
-                        id="username"
-                        onChange={(event) => {
-                          setUsername(event.target.value);
-                          setErrorMessage("");
-                          fx.tozala("username");
-                        }}
-                        onBlur={() => setTouched((current) => ({ ...current, username: true }))}
-                        autoComplete="off"
-                        placeholder={t("usernamePlaceholder")}
-                        className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-white outline-none placeholder:text-blue-200/70"
-                        aria-invalid={Boolean(usernameXatosi)}
-                      />
-                    </span>
-                    {usernameXatosi && (
-                      <p className="mt-2 text-xs font-bold text-red-500">{usernameXatosi}</p>
-                    )}
-                  </label>
+        <AuthField
+          id="username"
+          name="username"
+          label={t("usernameLabel")}
+          icon={<UserRound size={19} />}
+          value={username}
+          onChange={(event) => {
+            setUsername(event.target.value);
+            setErrorMessage("");
+            fx.tozala("username");
+          }}
+          onBlur={() => setTouched((current) => ({ ...current, username: true }))}
+          autoComplete="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          placeholder={t("usernamePlaceholder")}
+          readOnly={isSubmitting || kirildi}
+          error={usernameXatosi}
+          data-maydon-xato={usernameXatosi ? "true" : undefined}
+        />
 
-                  <label className="block" data-maydon-xato={passwordXatosi ? "true" : undefined}>
-                    <span className="mb-2 block text-sm font-bold text-blue-50">{t("passwordLabel")}</span>
-                    <span
-                      className={`login-input flex h-14 items-center gap-3 rounded-2xl border bg-white/[0.035] px-4 transition focus-within:bg-white/[0.055] focus-within:ring-[3px] ${
-                        passwordXatosi
-                          ? "border-red-300 focus-within:ring-red-100"
-                          : "border-blue-300/35 focus-within:border-blue-400 focus-within:ring-blue-500/20"
-                      }`}
-                    >
-                      <LockKeyhole
-                        size={18}
-                        className={passwordXatosi ? "shrink-0 text-red-500" : "shrink-0 text-blue-500"}
-                      />
-                      <input
-                        value={password}
-                        id="password"
-                        onChange={(event) => {
-                          setPassword(event.target.value);
-                          setErrorMessage("");
-                          fx.tozala("password");
-                        }}
-                        onBlur={() => setTouched((current) => ({ ...current, password: true }))}
-                        type={showPassword ? "text" : "password"}
-                        autoComplete="off"
-                        placeholder={t("passwordLabel")}
-                        className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-white outline-none placeholder:text-blue-200/70"
-                        aria-invalid={Boolean(passwordXatosi)}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword((current) => !current)}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl text-blue-200/70 transition hover:bg-slate-100 hover:text-blue-600"
-                        aria-label={showPassword ? t("hidePassword") : t("showPassword")}
-                      >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
-                    </span>
-                    {passwordXatosi && (
-                      <p className="mt-2 text-xs font-bold text-red-500">{passwordXatosi}</p>
-                    )}
-                  </label>
+        <PasswordField
+          id="password"
+          name="password"
+          label={t("passwordLabel")}
+          value={password}
+          onChange={(event) => {
+            setPassword(event.target.value);
+            setErrorMessage("");
+            fx.tozala("password");
+          }}
+          onBlur={() => setTouched((current) => ({ ...current, password: true }))}
+          autoComplete="off"
+          placeholder={t("passwordPlaceholder")}
+          readOnly={isSubmitting || kirildi}
+          error={passwordXatosi}
+          data-maydon-xato={passwordXatosi ? "true" : undefined}
+        />
 
-                  {(location.state as LoginLocationState | null)?.passwordReset && <div role="status" className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-200">{t("reset.success")}</div>}
-                  {tepaXatosi && (
-                    <div
-                      role="alert"
-                      className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600"
-                    >
-                      {tepaXatosi}
-                    </div>
-                  )}
+        {holat?.passwordReset && <AuthMessage success>{t("reset.success")}</AuthMessage>}
+        {tepaXatosi && <AuthMessage>{tepaXatosi}</AuthMessage>}
 
-                  <div className="flex items-center gap-3 text-xs text-blue-100/75">
-                    <label className="inline-flex items-center gap-2"><input type="checkbox" className="h-4 w-4 accent-blue-500" /> Meni eslab qolish</label>
-                  </div>
+        <label className="auth-remember">
+          <input type="checkbox" defaultChecked />
+          <span className="auth-remember-box" aria-hidden="true" />
+          <span>{t("sapphire.remember")}</span>
+        </label>
 
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="group flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 text-sm font-black text-white shadow-[0_16px_36px_rgba(37,99,235,.4)] transition duration-300 hover:-translate-y-0.5 hover:from-blue-700 hover:to-blue-600 hover:shadow-[0_20px_44px_rgba(37,99,235,.5)] active:scale-[.98] disabled:cursor-not-allowed disabled:translate-y-0 disabled:from-blue-300 disabled:to-blue-300"
-                  >
-                    {isSubmitting ? (
-                      <LoaderCircle size={19} className="animate-spin" />
-                    ) : (
-                      <ArrowRight size={18} className="transition group-hover:translate-x-0.5" />
-                    )}
-                    {isSubmitting ? t("submitting") : t("submit")}
-                  </button>
-                  <div className="auth-forgot-row">
-                    <Link to="/forgot-password" state={{ workspace: dokonKodi, username, from: (location.state as LoginLocationState | null)?.from }} className="auth-forgot-action">
-                      <span className="auth-forgot-icon" aria-hidden="true"><KeyRound size={16} strokeWidth={1.8} /></span>
-                      <span>{t("forgot.link")}</span>
-                      <ChevronRight size={15} className="auth-forgot-arrow" aria-hidden="true" />
-                    </Link>
-                  </div>
-                </form>
+        <SubmitButton busy={isSubmitting} done={kirildi}>
+          {kirildi ? t("sapphire.signedIn") : isSubmitting ? t("submitting") : t("submit")}
+        </SubmitButton>
+
+        <div className="auth-forgot-row">
+          <Link to="/forgot-password" state={{ workspace: dokonKodi, username, from: holat?.from }} className="auth-forgot-action">
+            <span className="auth-forgot-icon" aria-hidden="true"><KeyRound size={16} strokeWidth={1.8} /></span>
+            <span>{t("forgot.link")}</span>
+            <ChevronRight size={15} className="auth-forgot-arrow" aria-hidden="true" />
+          </Link>
+        </div>
+      </form>
     </AuthPanel>
   );
 }

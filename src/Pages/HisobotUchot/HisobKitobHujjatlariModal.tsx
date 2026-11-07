@@ -62,7 +62,7 @@ export default function HisobKitobHujjatlariModal({ counterpartyId, counterparty
           <div className="flex items-center gap-3"><span className="rounded-full bg-orange-50 px-3 py-1.5 text-xs font-bold text-orange-700">{currency === "USD" ? "Dollar · USD" : "So'm · UZS"}</span>{!yuklanmoqda && <span className="text-sm text-slate-500">{qatorlar.length} ta hujjat</span>}</div>
         </div>
         {xato && <div role="alert" className="rounded-2xl bg-red-50 p-4 text-sm text-red-700"><p>{xato}</p><button type="button" disabled={yuklanmoqda} onClick={() => setYangilanish((value) => value + 1)} className="mt-2 inline-flex items-center gap-2 font-semibold"><RefreshCw size={14} />Qayta yuklash</button></div>}
-        {yuklanmoqda ? <YuklanmoqdaHolati /> : qatorlar.length ? <KengaytiriladiganJadval ustunlar={ustunlar} qatorlar={qatorlar} /> : !xato && <div className="rounded-2xl border border-dashed border-slate-200 px-5 py-12 text-center text-sm text-slate-500">Bu valyutada hujjatlar topilmadi.</div>}
+        {yuklanmoqda ? <YuklanmoqdaHolati /> : qatorlar.length ? <KengaytiriladiganJadval tableId="HisobotUchot/HisobKitobHujjatlariModal/kengaytiriladiganjadval-1" ustunlar={ustunlar} qatorlar={qatorlar} /> : !xato && <div className="rounded-2xl border border-dashed border-slate-200 px-5 py-12 text-center text-sm text-slate-500">Bu valyutada hujjatlar topilmadi.</div>}
       </div>
     </section>
   </AppModal>;

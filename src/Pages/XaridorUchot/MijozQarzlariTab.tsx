@@ -86,7 +86,7 @@ export default function MijozQarzlariTab({ xaridorId }: { xaridorId: string }) {
       {qatorlar.length === 0 ? (
         <p className="rounded-[26px] border border-dashed border-orange-200 bg-white/60 p-16 text-center font-bold text-slate-400">{t("qarzlarTab.empty")}</p>
       ) : (
-        <KengaytiriladiganJadval ustunlar={ustunlar} qatorlar={qatorlar} kengaytir />
+        <KengaytiriladiganJadval tableId="XaridorUchot/MijozQarzlariTab/kengaytiriladiganjadval-1" ustunlar={ustunlar} qatorlar={qatorlar} kengaytir />
       )}
     </div>
   );

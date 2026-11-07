@@ -111,14 +111,14 @@ export default function Smena() {
     { kalit: "bekor", nom: t("shift.kpi.cancelled"), holatlar: ["CANCELLED"], rang: "rose", ikonka: Ban },
   ];
   const ustunlar: Ustun<SmenaHisoboti>[] = [
-    { nom: t("fields.document"), katak: (hujjat) => hujjatRaqami(hujjat) ? <span className="font-black text-slate-900">{hujjatRaqami(hujjat)}</span> : <span className="text-slate-400">{t("status.DRAFT")}</span> },
-    { nom: t("fields.order"), katak: (hujjat) => (hujjat.orderId ? buyurtmaRaqamlari.get(hujjat.orderId) || "—" : <span className="text-slate-400">{t("shift.withoutOrder")}</span>) },
-    { nom: t("fields.product"), katak: (hujjat) => <span className="block max-w-[260px] truncate font-bold text-slate-800">{qatorNomi(hisobotMahsuloti(hujjat))}</span> },
-    { nom: t("shift.goodOutput"), ong: true, katak: (hujjat) => miqdorYokiChiziq(hisobotJamlari(hujjat).yaroqli, "font-black text-slate-900") },
-    { nom: t("fields.scrapQuantity"), ong: true, katak: (hujjat) => miqdorYokiChiziq(hisobotJamlari(hujjat).brak, "font-bold text-amber-600") },
-    { nom: t("shift.downtimeHours"), ong: true, katak: (hujjat) => miqdorYokiChiziq(hisobotJamlari(hujjat).toxtash, "font-bold text-red-600") },
-    { nom: t("shift.shiftEndsAt"), katak: (hujjat) => vaqtMatni(hujjat.shiftEndsAt ?? undefined) || "—" },
-    { nom: t("fields.status"), katak: (hujjat) => <Holat status={hujjat.status} /> },
+    { id: "smena-column-1", nom: t("fields.document"), katak: (hujjat) => hujjatRaqami(hujjat) ? <span className="font-black text-slate-900">{hujjatRaqami(hujjat)}</span> : <span className="text-slate-400">{t("status.DRAFT")}</span> },
+    { id: "smena-column-2", nom: t("fields.order"), katak: (hujjat) => (hujjat.orderId ? buyurtmaRaqamlari.get(hujjat.orderId) || "—" : <span className="text-slate-400">{t("shift.withoutOrder")}</span>) },
+    { id: "smena-column-3", nom: t("fields.product"), katak: (hujjat) => <span className="block max-w-[260px] truncate font-bold text-slate-800">{qatorNomi(hisobotMahsuloti(hujjat))}</span> },
+    { id: "smena-column-4", nom: t("shift.goodOutput"), ong: true, katak: (hujjat) => miqdorYokiChiziq(hisobotJamlari(hujjat).yaroqli, "font-black text-slate-900") },
+    { id: "smena-column-5", nom: t("fields.scrapQuantity"), ong: true, katak: (hujjat) => miqdorYokiChiziq(hisobotJamlari(hujjat).brak, "font-bold text-amber-600") },
+    { id: "smena-column-6", nom: t("shift.downtimeHours"), ong: true, katak: (hujjat) => miqdorYokiChiziq(hisobotJamlari(hujjat).toxtash, "font-bold text-red-600") },
+    { id: "smena-column-7", nom: t("shift.shiftEndsAt"), katak: (hujjat) => vaqtMatni(hujjat.shiftEndsAt ?? undefined) || "—" },
+    { id: "smena-column-8", nom: t("fields.status"), katak: (hujjat) => <Holat status={hujjat.status} /> },
   ];
   const buyurtmasizTugma = <button type="button" onClick={buyurtmasizOchish} className={tugmaIkkinchi}><Plus size={16} />{t("shift.withoutOrder")}</button>;
   // Hisobot bor, lekin qidiruv yoki filtr hech narsa qoldirmagan.
@@ -155,7 +155,7 @@ export default function Smena() {
           <HolatFiltri qiymat={filtr?.holatlar.length === 1 ? filtr.holatlar[0] : ""} onChange={(holat) => setFiltr(holat ? { kalit: holat, holatlar: [holat] } : null)} holatlar={HOLATLAR} />
         </Asboblar>
         <XatoQutisi matn={hisobotlar.xato} />
-        <Jadval
+        <Jadval tableId="IshlabChiqarish/Smena/jadval-1"
           ustunlar={ustunlar}
           qatorlar={qatorlar}
           kalit={(hujjat) => hujjat.id}
@@ -520,15 +520,15 @@ function HisobotKorish({ id, nomlar, buyurtmaRaqamlari, onYopish, onOzgardi, onT
         {hisobot.cancelReason && <p className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-600"><span className="font-black">{t("shift.cancelReason")}:</span> {hisobot.cancelReason}</p>}
         {hisobot.comment && <p className="rounded-2xl border border-orange-100 bg-white p-4 text-sm font-semibold text-slate-600"><span className="font-black text-slate-800">{t("fields.comment")}:</span> {hisobot.comment}</p>}
         <Bolim ikonka={Package} sarlavha={t("shift.outputs")}>
-          <Jadval
+          <Jadval tableId="IshlabChiqarish/Smena/jadval-2"
             ixcham
             ustunlar={[
-              { nom: t("fields.product"), katak: (qator) => qatorNomi(qator) },
-              { nom: t("fields.outputRole"), katak: (qator) => (qator.role ? t(`outputRole.${qator.role}`, { defaultValue: qator.role }) : "—") },
-              { nom: t("fields.serial"), katak: (qator) => qator.serial ?? "—" },
-              { nom: t("fields.quantity"), ong: true, katak: (qator) => <span className="font-black text-slate-900">{miqdorMatni(chiqimMiqdori(qator))}</span> },
-              { nom: t("fields.scrapQuantity"), ong: true, katak: (qator) => miqdorMatni(qator.scrapQuantity) },
-              { nom: t("rolls.label"), katak: (qator) => <YorliqTugmasi qator={qator} /> },
+              { id: "smena-column-9", nom: t("fields.product"), katak: (qator) => qatorNomi(qator) },
+              { id: "smena-column-10", nom: t("fields.outputRole"), katak: (qator) => (qator.role ? t(`outputRole.${qator.role}`, { defaultValue: qator.role }) : "—") },
+              { id: "smena-column-11", nom: t("fields.serial"), katak: (qator) => qator.serial ?? "—" },
+              { id: "smena-column-12", nom: t("fields.quantity"), ong: true, katak: (qator) => <span className="font-black text-slate-900">{miqdorMatni(chiqimMiqdori(qator))}</span> },
+              { id: "smena-column-13", nom: t("fields.scrapQuantity"), ong: true, katak: (qator) => miqdorMatni(qator.scrapQuantity) },
+              { id: "smena-column-14", nom: t("rolls.label"), katak: (qator) => <YorliqTugmasi qator={qator} /> },
             ]}
             qatorlar={hisobot.outputs ?? []}
             kalit={(qator, indeks) => qator.id ?? String(indeks)}
@@ -537,13 +537,13 @@ function HisobotKorish({ id, nomlar, buyurtmaRaqamlari, onYopish, onOzgardi, onT
         </Bolim>
         {tuzatishlar.length > 0 && (
           <Bolim ikonka={PencilLine} sarlavha={t("shift.corrections")}>
-            <Jadval
+            <Jadval tableId="IshlabChiqarish/Smena/jadval-3"
               ixcham
               ustunlar={[
-                { nom: t("fields.product"), katak: (qator) => qator.nom },
-                { nom: t("fields.delta"), ong: true, katak: (qator) => <span className={Number(qator.delta) < 0 ? "font-black text-red-600" : "font-black text-emerald-600"}>{`${Number(qator.delta) > 0 ? "+" : ""}${miqdorMatni(qator.delta)}`}</span> },
-                { nom: t("fields.reason"), katak: (qator) => qator.reason || "—" },
-                { nom: t("fields.date"), katak: (qator) => kunMatni(qator.createdAt ?? undefined) || "—" },
+                { id: "smena-column-15", nom: t("fields.product"), katak: (qator) => qator.nom },
+                { id: "smena-column-16", nom: t("fields.delta"), ong: true, katak: (qator) => <span className={Number(qator.delta) < 0 ? "font-black text-red-600" : "font-black text-emerald-600"}>{`${Number(qator.delta) > 0 ? "+" : ""}${miqdorMatni(qator.delta)}`}</span> },
+                { id: "smena-column-17", nom: t("fields.reason"), katak: (qator) => qator.reason || "—" },
+                { id: "smena-column-18", nom: t("fields.date"), katak: (qator) => kunMatni(qator.createdAt ?? undefined) || "—" },
               ]}
               qatorlar={tuzatishlar}
               kalit={(qator, indeks) => qator.id ?? String(indeks)}
@@ -553,14 +553,14 @@ function HisobotKorish({ id, nomlar, buyurtmaRaqamlari, onYopish, onOzgardi, onT
         )}
         {(hisobot.inputs ?? []).length > 0 && (
           <Bolim ikonka={BookOpenCheck} sarlavha={t("shift.inputs")}>
-            <Jadval
+            <Jadval tableId="IshlabChiqarish/Smena/jadval-4"
               ixcham
               ustunlar={[
-                { nom: t("fields.product"), katak: (qator) => <>{qatorNomi(qator)}{qator.offRecipe && <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-black text-amber-700 ring-1 ring-amber-100">{t("shift.offRecipeLine")}</span>}</> },
-                { nom: t("fields.entryMethod"), katak: (qator) => (qator.entryMethod ? t(`entryMethod.${qator.entryMethod}`) : "—") },
-                { nom: t("fields.norm"), ong: true, katak: (qator) => miqdorMatni(qator.normQuantity) },
-                { nom: t("fields.quantity"), ong: true, katak: (qator) => <span className="font-black text-slate-900">{miqdorMatni(qator.quantity)}</span> },
-                { nom: t("shift.difference"), ong: true, katak: (qator) => {
+                { id: "smena-column-19", nom: t("fields.product"), katak: (qator) => <>{qatorNomi(qator)}{qator.offRecipe && <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-black text-amber-700 ring-1 ring-amber-100">{t("shift.offRecipeLine")}</span>}</> },
+                { id: "smena-column-20", nom: t("fields.entryMethod"), katak: (qator) => (qator.entryMethod ? t(`entryMethod.${qator.entryMethod}`) : "—") },
+                { id: "smena-column-21", nom: t("fields.norm"), ong: true, katak: (qator) => miqdorMatni(qator.normQuantity) },
+                { id: "smena-column-22", nom: t("fields.quantity"), ong: true, katak: (qator) => <span className="font-black text-slate-900">{miqdorMatni(qator.quantity)}</span> },
+                { id: "smena-column-23", nom: t("shift.difference"), ong: true, katak: (qator) => {
                   const norma = sonMaydoni(qator.normQuantity);
                   const haqiqiy = sonMaydoni(qator.quantity);
                   if (norma === undefined || haqiqiy === undefined) return "—";
@@ -576,12 +576,12 @@ function HisobotKorish({ id, nomlar, buyurtmaRaqamlari, onYopish, onOzgardi, onT
         )}
         {(hisobot.downtime ?? []).length > 0 && (
           <Bolim ikonka={TimerOff} sarlavha={t("shift.downtime")}>
-            <Jadval
+            <Jadval tableId="IshlabChiqarish/Smena/jadval-5"
               ixcham
               ustunlar={[
-                { nom: t("fields.downtimeReason"), katak: (qator) => t(`downtime.${qator.reason}`, { defaultValue: qator.reason }) },
-                { nom: t("fields.hours"), ong: true, katak: (qator) => miqdorMatni(qator.hours) },
-                { nom: t("fields.note"), katak: (qator) => qator.note ?? "—" },
+                { id: "smena-column-24", nom: t("fields.downtimeReason"), katak: (qator) => t(`downtime.${qator.reason}`, { defaultValue: qator.reason }) },
+                { id: "smena-column-25", nom: t("fields.hours"), ong: true, katak: (qator) => miqdorMatni(qator.hours) },
+                { id: "smena-column-26", nom: t("fields.note"), katak: (qator) => qator.note ?? "—" },
               ]}
               qatorlar={hisobot.downtime ?? []}
               kalit={(_, indeks) => String(indeks)}

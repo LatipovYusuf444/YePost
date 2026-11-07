@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -312,14 +313,14 @@ export default function AdminKompaniyalar() {
       ) : (
         <div className={jadvalKlass}>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px]">
+            <SmartTable tableId="Admin/Kompaniyalar/table-1" replaceColumnControls><table className="w-full min-w-[760px]">
               <thead className={theadKlass}>
                 <tr>
-                  <th className={thKlass}>{t("kompaniyalar.nomi")}</th>
-                  <th className={thKlass}>{t("kompaniyalar.vaqtZonasi")}</th>
-                  <th className={thKlass}>{t("common.holati")}</th>
-                  <th className={thKlass}>{t("common.yaratilgan")}</th>
-                  <th className="w-52 px-5 py-4" />
+                  <th data-column-id="h1" className={thKlass}>{t("kompaniyalar.nomi")}</th>
+                  <th data-column-id="h2" className={thKlass}>{t("kompaniyalar.vaqtZonasi")}</th>
+                  <th data-column-id="h3" className={thKlass}>{t("common.holati")}</th>
+                  <th data-column-id="h4" className={thKlass}>{t("common.yaratilgan")}</th>
+                  <th data-column-id="h5" className="w-52 px-5 py-4" />
                 </tr>
               </thead>
               <tbody className={tbodyKlass}>
@@ -364,7 +365,7 @@ export default function AdminKompaniyalar() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></SmartTable>
           </div>
           <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-3 text-xs font-semibold text-slate-400">{t("common.natija", { count: korinadigan.length })}</div>
         </div>

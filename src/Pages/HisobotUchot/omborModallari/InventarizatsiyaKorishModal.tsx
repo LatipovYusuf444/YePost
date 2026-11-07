@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { bugungiToshkentKuni } from "@/lib/hujjatSanasi";
 import {
   useEffect,
@@ -428,7 +429,7 @@ export default function InventarizatsiyaKorishModal({
 
               <div className="relative">
                 <div className="overflow-x-auto rounded-2xl border border-orange-100">
-                  <table
+                  <SmartTable tableId="HisobotUchot/omborModallari/InventarizatsiyaKorishModal/table-1" replaceColumnControls><table
                     className="border-collapse text-sm"
                     style={{ tableLayout: "fixed", width: "100%", minWidth: "max-content" }}
                   >
@@ -442,19 +443,19 @@ export default function InventarizatsiyaKorishModal({
                     </colgroup>
                     <thead className="bg-slate-50 text-left text-[11px] font-black uppercase tracking-wide text-slate-500">
                       <tr>
-                        <th className="px-3 py-3">№</th>
+                        <th data-column-id="h1" className="px-3 py-3">№</th>
                         {korinadiganUstunSozlamalari.map((ustun) => (
-                          <th key={ustun.kalit} className="relative truncate px-3 py-3">
+                          <th data-column-id={"h2:" + (ustun.kalit)} key={ustun.kalit} className="relative truncate px-3 py-3">
                             {ustun.nom}
-                            <span
+                            <span data-table-control
                               onMouseDown={(event) => ustunOlchaminiOzgartirish(ustun.kalit, event)}
                               className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none hover:bg-orange-300/70"
                             />
                           </th>
                         ))}
-                        <th />
-                        <th className="px-3 py-3 text-right">
-                          <button
+                        <th data-column-id="h3" />
+                        <th data-column-id="h4" className="px-3 py-3 text-right">
+                          <button data-table-control
                             ref={ustunlarTugmaRef}
                             type="button"
                             onClick={() => setUstunlarMenyusiOchiq((old) => !old)}
@@ -495,7 +496,7 @@ export default function InventarizatsiyaKorishModal({
                         </tr>
                       )}
                     </tbody>
-                  </table>
+                  </table></SmartTable>
                 </div>
 
                 {ustunlarMenyusiOchiq && (

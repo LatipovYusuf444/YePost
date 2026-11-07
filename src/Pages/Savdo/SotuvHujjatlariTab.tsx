@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FileDown, FilePlus2, FileText, LoaderCircle, Receipt, RefreshCw } from "lucide-react";
@@ -95,14 +96,14 @@ export default function SotuvHujjatlariTab({ sotuv }: { sotuv: Sotuv }) {
 
         {xatolik && <div className="mx-5 mt-4 rounded-2xl bg-red-50 p-3.5 text-sm font-bold text-red-600">{xatolik}</div>}
 
-        <table className="w-full text-left text-[13px] text-slate-600">
+        <SmartTable tableId="Savdo/SotuvHujjatlariTab/table-1" replaceColumnControls><table className="w-full text-left text-[13px] text-slate-600">
           <thead className="border-b border-slate-100 bg-slate-50/60 text-slate-500">
             <tr>
-              <th className="px-5 py-4 font-medium">{t("hujjatlarTab.columns.raqam")}</th>
-              <th className="px-3 py-4 font-medium">{t("hujjatlarTab.columns.turi")}</th>
-              <th className="px-3 py-4 font-medium">{t("hujjatlarTab.columns.kimYaratgan")}</th>
-              <th className="px-3 py-4 font-medium">{t("hujjatlarTab.columns.sana")}</th>
-              <th className="w-28 px-5 py-4" />
+              <th data-column-id="h1" className="px-5 py-4 font-medium">{t("hujjatlarTab.columns.raqam")}</th>
+              <th data-column-id="h2" className="px-3 py-4 font-medium">{t("hujjatlarTab.columns.turi")}</th>
+              <th data-column-id="h3" className="px-3 py-4 font-medium">{t("hujjatlarTab.columns.kimYaratgan")}</th>
+              <th data-column-id="h4" className="px-3 py-4 font-medium">{t("hujjatlarTab.columns.sana")}</th>
+              <th data-column-id="h5" className="w-28 px-5 py-4" />
             </tr>
           </thead>
           <tbody>
@@ -145,7 +146,7 @@ export default function SotuvHujjatlariTab({ sotuv }: { sotuv: Sotuv }) {
               </tr>
             )}
           </tbody>
-        </table>
+        </table></SmartTable>
       </div>
     </div>
   );

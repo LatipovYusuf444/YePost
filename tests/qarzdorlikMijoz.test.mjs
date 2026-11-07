@@ -88,6 +88,7 @@ function sahifaniYaratish({ openingDebts, mijozlar }) {
     '@/Pages/Savdo/JadvalYuklanmoqda': { __esModule: true, default: 'JadvalYuklanmoqda' },
     '@/Pages/Savdo/savdoYordamchilari': yordamchilar,
     '@/Components/common/TablePagination': { __esModule: true, default: 'TablePagination' },
+    '@/Components/common/smart-table/SmartTable': { __esModule: true, default: 'SmartTable' },
     '@/api/savdoApi': { sotuvlarRoyxatiniOlish: async () => openingDebts },
     '@/api/sozlamalarApi': { getApiErrorMessage: error => error.message },
     '@/store/savdoStore': { useSavdoStore: selector => selector(store) },

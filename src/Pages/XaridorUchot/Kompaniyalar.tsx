@@ -125,7 +125,7 @@ export default function Kompaniyalar({ kompaniyalar, xaridorlar, savdolar, onSaq
       </div>
 
       {korinish === "jadval" && (
-        <KengaytiriladiganJadval
+        <KengaytiriladiganJadval tableId="XaridorUchot/Kompaniyalar/kengaytiriladiganjadval-1"
           ustunlar={ustunlar}
           qatorlar={royxat}
           kengaytir

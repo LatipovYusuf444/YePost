@@ -1,6 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FocusEvent,
+  type KeyboardEvent,
+  type MouseEvent,
+  type Ref,
+} from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowDownToLine,
@@ -52,6 +63,8 @@ import { sahifagaRuxsatBormi } from "@/lib/roles";
 import MobilNavigatsiya from "./MobilNavigatsiya";
 
 import { useAvatarUrl } from "@/store/avatarStore";
+import type { YonPanelRejimi } from "./yonPanelHolati";
+import "./yonPanel.css";
 type MenyuBolasi = { key: string; path: string; icon: LucideIcon };
 type Menyu = { key: string; path: string; icon: LucideIcon; bolalar?: MenyuBolasi[] };
 
@@ -148,23 +161,153 @@ function bolaFaolmi(bola: MenyuBolasi, pathname: string, search: string) {
   return joriyTab === bolaTabi;
 }
 
-// Yopiq holatda (64px) faqat ikonka ko'rinadi: qator 48px kenglikda, ikonka 18px va 15px chetlari.
-const qatorKlass =
-  "relative flex h-[46px] max-h-[calc((100vh-230px)/12)] min-h-8 w-full items-center gap-3 px-[15px] text-[14.5px] transition-colors duration-200";
-const qatorFaolKlass = "theme-sidebar-active rounded-[14px] font-semibold text-white shadow-[0_8px_20px_rgba(2,6,23,.28)]";
-const qatorOddiyKlass = "theme-sidebar-item rounded-[14px] font-medium text-[#8391A7] hover:bg-[#122036] hover:text-slate-100";
-// Matn faqat sidebar ochiq (toggle) bo'lganda ko'rinadi.
-const yorliqKlass =
-  "min-w-0 truncate whitespace-nowrap transition-opacity duration-200";
+type MaslahatHolati = { matn: string; qoshimcha?: string; top: number; left: number };
+type MaslahatBoshqaruvi = {
+  korsat: (element: HTMLElement, matn: string, qoshimcha?: string) => void;
+  yashir: (darhol?: boolean) => void;
+};
+
+// Tooltip alohida komponent: sichqoncha bandlar ustida yurganda butun menyu qayta chizilmaydi.
+// Bandlar orasidagi 4px bo'shliqdan o'tganda yo'qolib-qaytmasligi uchun yashirish 90ms kechiktiriladi.
+function MaslahatQatlami({ boshqaruv }: { boshqaruv: Ref<MaslahatBoshqaruvi> }) {
+  const [holat, setHolat] = useState<MaslahatHolati | null>(null);
+  const taymer = useRef<number | undefined>(undefined);
+
+  useImperativeHandle(boshqaruv, () => ({
+    korsat(element, matn, qoshimcha) {
+      window.clearTimeout(taymer.current);
+      const rect = element.getBoundingClientRect();
+      const panel = element.closest(".yp-aside")?.getBoundingClientRect();
+      const markaz = rect.top + rect.height / 2;
+      setHolat({
+        matn,
+        qoshimcha,
+        // Ekran chetidan chiqib ketmasin.
+        top: Math.min(Math.max(markaz, 28), window.innerHeight - 28),
+        left: (panel?.right ?? rect.right) + 12,
+      });
+    },
+    yashir(darhol = false) {
+      window.clearTimeout(taymer.current);
+      if (darhol) setHolat(null);
+      else taymer.current = window.setTimeout(() => setHolat(null), 90);
+    },
+  }), []);
+
+  useEffect(() => () => window.clearTimeout(taymer.current), []);
+
+  if (!holat) return null;
+  return (
+    <div role="tooltip" className="yp-tip theme-sidebar" style={{ top: holat.top, left: holat.left }}>
+      <span className="yp-tip-text">{holat.matn}</span>
+      {holat.qoshimcha && <span className="yp-tip-sub">{holat.qoshimcha}</span>}
+    </div>
+  );
+}
+
+type FlyoutHolati = { path: string; top: number; left: number; klaviatura: boolean };
+
+// Yopiq panelda ichki bo'limli band bosilganda: panel kengaymaydi, o'ng tomonda ixcham ro'yxat ochiladi.
+// Faqat ruxsat berilgan bolalar keladi (korinadiganMenyular orqali).
+function BolimFlyouti({
+  menu,
+  holat,
+  onYopish,
+}: {
+  menu: Menyu & { bolalar: MenyuBolasi[] };
+  holat: FlyoutHolati;
+  onYopish: (fokusQaytsin: boolean) => void;
+}) {
+  const { t } = useTranslation("nav");
+  const { pathname, search } = useLocation();
+  const ref = useRef<HTMLDivElement>(null);
+  const sarlavha = t(`menu.${menu.key}`);
+
+  // Ekran pastidan chiqib ketmasin; klaviatura bilan ochilganda fokus ichkariga o'tadi.
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const top = Math.max(12, Math.min(holat.top, window.innerHeight - element.offsetHeight - 12));
+    element.style.top = `${top}px`;
+    if (holat.klaviatura) {
+      (element.querySelector<HTMLElement>('[aria-current="page"]') ?? element.querySelector<HTMLElement>("a"))?.focus({ preventScroll: true });
+    }
+  }, [holat]);
+
+  function klaviatura(event: KeyboardEvent<HTMLDivElement>) {
+    const havolalar = Array.from(ref.current?.querySelectorAll<HTMLElement>("a") ?? []);
+    if (havolalar.length === 0) return;
+    const joriy = havolalar.indexOf(document.activeElement as HTMLElement);
+    const otish = (indeks: number) => {
+      event.preventDefault();
+      havolalar[(indeks + havolalar.length) % havolalar.length]?.focus();
+    };
+    if (event.key === "ArrowDown") otish(joriy + 1);
+    else if (event.key === "ArrowUp") otish(joriy - 1);
+    else if (event.key === "Home") otish(0);
+    else if (event.key === "End") otish(havolalar.length - 1);
+    else if (event.key === "Escape" || event.key === "ArrowLeft") {
+      event.preventDefault();
+      event.stopPropagation();
+      onYopish(true);
+    } else if (event.key === "Tab") {
+      // Fokus trigger'ga qaytadi, Tab esa undan keyingi bandga o'tadi.
+      onYopish(true);
+    }
+  }
+
+  return (
+    <div
+      ref={ref}
+      id={`yp-fly-${menu.key}`}
+      role="group"
+      aria-label={sarlavha}
+      tabIndex={-1}
+      className="yp-fly theme-sidebar"
+      style={{ top: holat.top, left: holat.left }}
+      onKeyDown={klaviatura}
+      onBlur={(event) => {
+        const keyingi = event.relatedTarget as HTMLElement | null;
+        if (keyingi && (event.currentTarget.contains(keyingi) || keyingi.closest(`[data-flyout="${menu.key}"]`))) return;
+        onYopish(false);
+      }}
+    >
+      <p className="yp-fly-title">{sarlavha}</p>
+      <div className="yp-fly-list">
+        {menu.bolalar.map((bola) => {
+          const faol = bolaFaolmi(bola, pathname, search);
+          const BolaIcon = bola.icon;
+          return (
+            <Link
+              key={bola.path}
+              to={bola.path}
+              onClick={() => onYopish(false)}
+              aria-current={faol ? "page" : undefined}
+              data-faol={faol || undefined}
+              className={`yp-child ${faol ? "theme-sidebar-subactive" : "theme-sidebar-item"}`}
+            >
+              {faol && <span className="yp-child-bar bg-sky-400" aria-hidden="true" />}
+              <BolaIcon size={16} strokeWidth={2} className={`shrink-0 ${faol ? "text-sky-300" : ""}`} />
+              <span className="yp-label">{t(`menu.${bola.key}`)}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function YonPanel({
   acik,
+  rejim = "keng",
+  onYopish,
 }: {
   acik: boolean;
+  rejim?: YonPanelRejimi;
+  onYopish?: () => void;
 }) {
   const { t } = useTranslation("nav");
   const navigate = useNavigate();
-  const [maslahat, setMaslahat] = useState<{ matn: string; top: number; left: number } | null>(null);
   const { pathname, search } = useLocation();
   const logout = useAuthStore((state) => state.logout);
   const username = useAuthStore((state) => state.username);
@@ -172,6 +315,11 @@ export default function YonPanel({
   const oqilmaganXabarSoni = useSupportStore((state) => state.oqilmaganSoni);
   const oqilmaganSoniniYangilash = useSupportStore((state) => state.oqilmaganSoniniYangilash);
   const ishlabChiqarishYoqilgan = useIshlabChiqarishStore((state) => state.enabled);
+  const maslahatRef = useRef<MaslahatBoshqaruvi>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const [flyout, setFlyout] = useState<FlyoutHolati | null>(null);
+  // Planshetda (768–1279px) ochiq panel kontent ustida turadi: fon, Escape va band tanlanganda yopiladi.
+  const ustida = rejim === "orta" && acik;
 
   // Qo'llab-quvvatlash bo'limidagi o'qilmagan xabarlar soni sidebar
   // ikonkasida badge sifatida ko'rsatiladi — har 60 soniyada, faqat sahifa ko'rinib turganda
@@ -216,11 +364,77 @@ export default function YonPanel({
     if (faolBolim) setOchiqBolimlar((joriy) => (joriy[faolBolim] ? joriy : { ...joriy, [faolBolim]: true }));
   }, [faolBolim]);
 
+  // Panel holati yoki marshrut o'zgarsa ochiq flyout va tooltip yopiladi.
+  useEffect(() => {
+    setFlyout(null);
+    maslahatRef.current?.yashir(true);
+  }, [acik, pathname, search]);
+
+  // Uzun menyuda faol band ko'rinmay qolgan bo'lsa, u ko'rinadigan joyga siljiydi; aks holda scroll pozitsiyasi o'zgarmaydi.
+  useEffect(() => {
+    const nav = navRef.current;
+    const faol = nav?.querySelector<HTMLElement>('.yp-item[data-faol="true"], .yp-item[aria-current="page"]');
+    if (!nav || !faol) return;
+    const navRect = nav.getBoundingClientRect();
+    const faolRect = faol.getBoundingClientRect();
+    if (faolRect.top < navRect.top || faolRect.bottom > navRect.bottom) faol.scrollIntoView({ block: "nearest" });
+  }, [pathname, search]);
+
+  // Flyout tashqarisiga bosilganda, oyna o'lchami o'zgarganda yoki menyu aylantirilganda yopiladi.
+  useEffect(() => {
+    if (!flyout) return;
+    const nav = navRef.current;
+    const tashqariBosish = (event: PointerEvent) => {
+      const nishon = event.target as HTMLElement | null;
+      if (nishon?.closest(".yp-fly") || nishon?.closest("[data-flyout]")) return;
+      setFlyout(null);
+    };
+    const yopish = () => setFlyout(null);
+    // Sichqoncha bilan ochilganda fokus trigger'da qoladi — Escape baribir yopadi va fokusni trigger'ga qaytaradi.
+    const escape = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      setFlyout(null);
+      const kalit = menyular.find((menu) => menu.path === flyout.path)?.key;
+      if (kalit) document.querySelector<HTMLElement>(`[data-flyout="${kalit}"]`)?.focus({ preventScroll: true });
+    };
+    document.addEventListener("pointerdown", tashqariBosish);
+    document.addEventListener("keydown", escape);
+    window.addEventListener("resize", yopish);
+    nav?.addEventListener("scroll", yopish, { passive: true });
+    return () => {
+      document.removeEventListener("pointerdown", tashqariBosish);
+      document.removeEventListener("keydown", escape);
+      window.removeEventListener("resize", yopish);
+      nav?.removeEventListener("scroll", yopish);
+    };
+  }, [flyout]);
+
+  // Planshetdagi ochiq panel Escape bilan yopiladi va fokus navbardagi toggle tugmasiga qaytadi.
+  useEffect(() => {
+    if (!ustida || !onYopish) return;
+    const tugma = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      onYopish();
+      document.querySelector<HTMLElement>("[data-yon-panel-tugmasi]")?.focus({ preventScroll: true });
+    };
+    document.addEventListener("keydown", tugma);
+    return () => document.removeEventListener("keydown", tugma);
+  }, [ustida, onYopish]);
+
   // Bo'lim sarlavhasi faqat ochadi/yopadi; yopiq bo'limga tashqaridan kirilsa birinchi (asosiy) sahifaga o'tadi.
-  function bolimniBosish(menu: Menyu) {
+  // Yopiq (ikonkali) panelda esa bolalar flyout'da ko'rsatiladi.
+  function bolimniBosish(menu: Menyu, event: MouseEvent<HTMLButtonElement>) {
     const bolalar = menu.bolalar ?? [];
     if (!acik) {
-      if (!yolIchida(pathname, menu.path) && bolalar[0]) navigate(bolalar[0].path);
+      if (flyout?.path === menu.path) {
+        setFlyout(null);
+        return;
+      }
+      maslahatRef.current?.yashir(true);
+      const rect = event.currentTarget.getBoundingClientRect();
+      const panel = event.currentTarget.closest(".yp-aside")?.getBoundingClientRect();
+      setFlyout({ path: menu.path, top: rect.top - 8, left: (panel?.right ?? rect.right) + 10, klaviatura: event.detail === 0 });
       return;
     }
     if (ochiqBolimlar[menu.path]) {
@@ -231,216 +445,211 @@ export default function YonPanel({
     if (!yolIchida(pathname, menu.path) && bolalar[0]) navigate(bolalar[0].path);
   }
 
-  // Tor (faqat ikonka) rejimda ikonka ustiga kelganda nomi ko'rsatiladi.
-  const maslahatEvents = (matn: string) =>
-    acik
-      ? {}
-      : {
-          onMouseEnter: (event: React.MouseEvent<HTMLElement> | React.FocusEvent<HTMLElement>) => {
-            const rect = event.currentTarget.getBoundingClientRect();
-            setMaslahat({ matn, top: rect.top + rect.height / 2, left: rect.right + 14 });
-          },
-          onMouseLeave: () => setMaslahat(null),
-          onFocus: (event: React.FocusEvent<HTMLElement>) => {
-            const rect = event.currentTarget.getBoundingClientRect();
-            setMaslahat({ matn, top: rect.top + rect.height / 2, left: rect.right + 14 });
-          },
-          onBlur: () => setMaslahat(null),
-        };
+  function flyoutniYopish(fokusQaytsin: boolean) {
+    const kalit = korinadiganMenyular.find((menu) => menu.path === flyout?.path)?.key;
+    setFlyout(null);
+    if (fokusQaytsin && kalit) document.querySelector<HTMLElement>(`[data-flyout="${kalit}"]`)?.focus({ preventScroll: true });
+  }
+
+  // Tooltip: yopiq panelda har bir ikonkada; ochiq panelda faqat nomi qisqargan (…) bandlarda va ikonkali tugmalarda.
+  function maslahatniKorsat(element: HTMLElement, matn: string, qoshimcha: string | undefined, doim: boolean) {
+    if (acik && !doim) {
+      const yorliq = element.querySelector<HTMLElement>(".yp-label");
+      if (!yorliq || yorliq.scrollWidth <= yorliq.clientWidth) return;
+    }
+    if (!acik && flyout && element.dataset.flyout) return;
+    maslahatRef.current?.korsat(element, matn, qoshimcha);
+  }
+
+  const maslahatHodisalari = (matn: string, qoshimcha?: string, doim = false) => ({
+    onMouseEnter: (event: MouseEvent<HTMLElement>) => maslahatniKorsat(event.currentTarget, matn, qoshimcha, doim),
+    onMouseLeave: () => maslahatRef.current?.yashir(),
+    onFocus: (event: FocusEvent<HTMLElement>) => {
+      if (event.currentTarget.matches(":focus-visible")) maslahatniKorsat(event.currentTarget, matn, qoshimcha, doim);
+    },
+    onBlur: () => maslahatRef.current?.yashir(true),
+  });
+
+  const bandTanlandi = ustida ? onYopish : undefined;
 
   const ism = profil?.fullName?.trim() || profil?.username || username || "";
   const rolNomi = profil ? t(`roles.${profil.role}`, { defaultValue: profil.role }) : "";
   const rasmUrl = useAvatarUrl(profil?.id, profil?.avatarUrl);
+  const profilgaRuxsat = !profil || sahifagaRuxsatBormi(profil, "/sozlamalar");
 
   async function handleLogout() {
     await logout();
     navigate("/login", { replace: true });
   }
 
-  const panelIchki = (
-    <>
-      <div className="flex h-[72px] shrink-0 items-center gap-3 px-[11px]">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.7 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="theme-logo flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[10px] bg-linear-to-br from-sky-400 to-blue-600 text-lg font-black text-white"
-        >
-          Y
-        </motion.div>
-        <div className={`min-w-0 transition-opacity duration-200 ${acik ? "opacity-100" : "opacity-0"}`}>
-          <h2 className="truncate text-[17px] font-bold leading-6 tracking-wide text-white">{t("brand")}</h2>
-          <p className="truncate text-[12.5px] font-medium leading-4 text-[#8391A7]">{t("brandTagline")}</p>
-        </div>
-      </div>
+  const flyoutMenyusi = flyout && !acik
+    ? korinadiganMenyular.find((menu): menu is Menyu & { bolalar: MenyuBolasi[] } => menu.path === flyout.path && Boolean(menu.bolalar))
+    : undefined;
 
-      <span className="mx-3 h-px shrink-0 bg-white/10" />
-
-      <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden px-2 py-2 [scrollbar-color:#26364F_transparent] [scrollbar-width:thin]">
-        {korinadiganMenyular.map((menu, index) => {
-          const Icon = menu.icon;
-
-          if (menu.bolalar) {
-            const guruhFaol = yolIchida(pathname, menu.path);
-            const ochiq = Boolean(ochiqBolimlar[menu.path]);
-
-            return (
-              <motion.div
-                key={menu.path}
-                initial={{ opacity: 0, x: -14 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.2 + index * 0.045, ease: [0.16, 1, 0.3, 1] }}
-              >
-                <button
-                  type="button"
-                  onClick={() => bolimniBosish(menu)}
-                  aria-expanded={ochiq}
-                  aria-label={t(`menu.${menu.key}`)}
-                  {...maslahatEvents(t(`menu.${menu.key}`))}
-                  className={`${qatorKlass} ${guruhFaol ? qatorFaolKlass : qatorOddiyKlass}`}
-                >
-                  <Icon size={18} strokeWidth={2} className={`shrink-0 ${guruhFaol ? "text-sky-300" : ""}`} />
-                  <span className={`${yorliqKlass} ${acik ? "opacity-100" : "opacity-0"} flex-1 text-left`}>{t(`menu.${menu.key}`)}</span>
-                  <ChevronDown
-                    size={16}
-                    className={`shrink-0 transition-[transform,opacity] duration-200 ${acik ? "opacity-100" : "opacity-0"} ${
-                      ochiq ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-
-                {/* Yopiq (64px) holatda bolalar ko'rinmaydi va joy egallamaydi. */}
-                <div
-                  className={`transition-[grid-template-rows] duration-200 ${acik ? "grid" : "hidden"} ${
-                    ochiq ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-                  }`}
-                >
-                  <div className="min-h-0 overflow-hidden">
-                  <div className="theme-sidebar-children ml-6 mt-1.5 grid gap-1 border-l border-white/10 pl-0.5">
-                      {menu.bolalar.map((bola) => {
-                        const faol = bolaFaolmi(bola, pathname, search);
-                        const BolaIcon = bola.icon;
-
-                        return (
-                          <Link
-                            key={bola.path}
-                            to={bola.path}
-                            tabIndex={ochiq ? 0 : -1}
-                            className={`relative flex h-10 items-center gap-2.5 truncate whitespace-nowrap px-3 text-[14px] transition-colors duration-200 ${
-                              faol
-                              ? "theme-sidebar-subactive rounded-xl font-semibold text-sky-100 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-[3px] before:rounded-full before:bg-sky-400"
-                                : "theme-sidebar-item rounded-lg font-medium text-[#8391A7] hover:bg-[#122036] hover:text-slate-100"
-                            }`}
-                          >
-                            <BolaIcon
-                              size={16}
-                              strokeWidth={2}
-                              className={`shrink-0 ${faol ? "text-sky-300" : ""}`}
-                            />
-                            <span className="truncate">{t(`menu.${bola.key}`)}</span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          }
-
-          return (
-            <motion.div
-              key={menu.path}
-              initial={{ opacity: 0, x: -14 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 + index * 0.045, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <NavLink
-                to={menu.path}
-                aria-label={t(`menu.${menu.key}`)}
-                {...maslahatEvents(t(`menu.${menu.key}`))}
-                className={({ isActive }) => `${qatorKlass} ${isActive ? qatorFaolKlass : qatorOddiyKlass}`}
-              >
-                {({ isActive }) => (
-                  <>
-                    <span className="relative shrink-0">
-                      <Icon
-                        size={18}
-                        strokeWidth={2}
-                        className={isActive ? "text-sky-300" : ""}
-                      />
-                      {menu.key === "qollabQuvvatlash" && oqilmaganXabarSoni > 0 && (
-                        <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-black text-white">
-                          {oqilmaganXabarSoni > 9 ? "9+" : oqilmaganXabarSoni}
-                        </span>
-                      )}
-                    </span>
-                    <span className={`${yorliqKlass} ${acik ? "opacity-100" : "opacity-0"}`}>{t(`menu.${menu.key}`)}</span>
-                  </>
-                )}
-              </NavLink>
-            </motion.div>
-          );
-        })}
-      </nav>
-
-      <div className="shrink-0 border-t border-white/10 p-2">
-        <div
-          className={`theme-sidebar-profile flex overflow-hidden rounded-[10px] bg-[#111C30] ring-1 ring-white/5 ${
-            acik ? "items-center gap-3 p-2.5" : "flex-col items-center gap-1 p-1.5"
-          }`}
-        >
-          {ism && (
-            <>
-              <span className="theme-sidebar-avatar flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#123A55] text-[15px] font-bold text-sky-200">
-                {rasmUrl ? (
-                  <img src={rasmUrl} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  ism.charAt(0).toUpperCase()
-                )}
-              </span>
-              <div className={`min-w-0 flex-1 ${acik ? "" : "hidden"}`}>
-                <p className="truncate text-[14.5px] font-semibold leading-5 text-slate-100">{ism}</p>
-                {rolNomi && <p className="truncate text-[12.5px] leading-4 text-[#8391A7]">{rolNomi}</p>}
-              </div>
-            </>
-          )}
-          <button
-            onClick={() => void handleLogout()}
-            aria-label={t("logout")}
-            {...maslahatEvents(t("logout"))}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#8391A7] transition-colors duration-200 hover:bg-red-500/10 hover:text-red-300"
-          >
-            <LogOut size={18} strokeWidth={2} />
-          </button>
-        </div>
-      </div>
-    </>
-  );
+  const avatarIchi = rasmUrl ? <img src={rasmUrl} alt="" className="h-full w-full object-cover" /> : ism.charAt(0).toUpperCase();
 
   return (
     <>
-      <motion.aside
-        initial={{ x: -64, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
-        className={`theme-sidebar fixed left-3 top-3 z-50 hidden h-[calc(100vh-24px)] flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#0B1424] text-[#8391A7] shadow-[0_28px_70px_rgba(2,6,23,.38)] transition-[width] duration-200 ease-in-out md:flex ${
-          acik ? "w-70" : "w-16"
-        }`}
-      >
-        {panelIchki}
-      </motion.aside>
+      {ustida && <div className="yp-backdrop" aria-hidden="true" onClick={onYopish} />}
 
-      {maslahat && !acik && (
-        <div
-          role="tooltip"
-          style={{ top: maslahat.top, left: maslahat.left }}
-          className="pointer-events-none fixed z-[70] hidden md:block -translate-y-1/2 whitespace-nowrap rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-lg ring-1 ring-white/10"
-        >
-          <span className="absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rotate-45 bg-slate-900" />
-          {maslahat.matn}
+      <aside className="yp-aside theme-sidebar" data-ochiq={acik || undefined} data-ustida={ustida || undefined}>
+        <div className="yp-head">
+          <div className="yp-logo theme-logo bg-linear-to-br from-sky-400 to-blue-600" aria-hidden="true">Y</div>
+          <div className="yp-brand yp-fade">
+            <h2 className="yp-brand-name">{t("brand")}</h2>
+            <p className="yp-brand-tag">{t("brandTagline")}</p>
+          </div>
         </div>
-      )}
+
+        <span className="yp-sep" aria-hidden="true" />
+
+        <nav ref={navRef} aria-label={t("sidebar.label")} className="yp-nav">
+          {korinadiganMenyular.map((menu, index) => {
+            const Icon = menu.icon;
+            const nom = t(`menu.${menu.key}`);
+            const tartib = { "--i": index } as CSSProperties;
+
+            if (menu.bolalar) {
+              const guruhFaol = yolIchida(pathname, menu.path);
+              const ochiq = Boolean(ochiqBolimlar[menu.path]);
+              const korinadi = acik && ochiq;
+              const flyoutOchiq = !acik && flyout?.path === menu.path;
+              const bolimId = `yp-bolim-${menu.key}`;
+
+              return (
+                <div key={menu.path} className="yp-enter" style={tartib}>
+                  <button
+                    type="button"
+                    data-flyout={menu.key}
+                    data-faol={guruhFaol || undefined}
+                    data-ochiq-bolim={korinadi || flyoutOchiq || undefined}
+                    onClick={(event) => bolimniBosish(menu, event)}
+                    onKeyDown={(event) => {
+                      if (!acik && event.key === "ArrowRight" && !flyoutOchiq) {
+                        event.preventDefault();
+                        event.currentTarget.click();
+                      }
+                    }}
+                    aria-expanded={acik ? ochiq : flyoutOchiq}
+                    aria-controls={acik ? bolimId : flyoutOchiq ? `yp-fly-${menu.key}` : undefined}
+                    aria-label={nom}
+                    {...maslahatHodisalari(nom)}
+                    className={`yp-item ${guruhFaol ? "theme-sidebar-active" : "theme-sidebar-item"}`}
+                  >
+                    <span className="yp-bar bg-sky-400" aria-hidden="true" />
+                    <span className={`yp-icon ${guruhFaol ? "text-sky-300" : ""}`}>
+                      <Icon size={18} strokeWidth={2} />
+                    </span>
+                    <span className="yp-label yp-fade">{nom}</span>
+                    <ChevronDown size={16} aria-hidden="true" className="yp-chev" data-ochiq={ochiq || undefined} />
+                    <span className="yp-dot" aria-hidden="true" />
+                  </button>
+
+                  {/* Yopiq panelda accordion balandligi 0 ga tushadi (bolalar flyout orqali ochiladi). */}
+                  <div id={bolimId} className="yp-sub" data-ochiq={korinadi || undefined} inert={!korinadi}>
+                    <div className="yp-sub-inner">
+                      <div className="yp-sub-list theme-sidebar-children">
+                        {menu.bolalar.map((bola) => {
+                          const faol = bolaFaolmi(bola, pathname, search);
+                          const BolaIcon = bola.icon;
+                          const bolaNomi = t(`menu.${bola.key}`);
+
+                          return (
+                            <Link
+                              key={bola.path}
+                              to={bola.path}
+                              onClick={bandTanlandi}
+                              aria-current={faol ? "page" : undefined}
+                              data-faol={faol || undefined}
+                              {...maslahatHodisalari(bolaNomi)}
+                              className={`yp-child ${faol ? "theme-sidebar-subactive" : "theme-sidebar-item"}`}
+                            >
+                              {faol && <span className="yp-child-bar bg-sky-400" aria-hidden="true" />}
+                              <BolaIcon size={16} strokeWidth={2} className={`shrink-0 ${faol ? "text-sky-300" : ""}`} />
+                              <span className="yp-label">{bolaNomi}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            const badge = menu.key === "qollabQuvvatlash" && oqilmaganXabarSoni > 0 ? oqilmaganXabarSoni : 0;
+
+            return (
+              <div key={menu.path} className="yp-enter" style={tartib}>
+                <NavLink
+                  to={menu.path}
+                  aria-label={nom}
+                  onClick={bandTanlandi}
+                  {...maslahatHodisalari(nom)}
+                  className={({ isActive }) => `yp-item ${isActive ? "theme-sidebar-active" : "theme-sidebar-item"}`}
+                >
+                  {({ isActive }) => (
+                    <>
+                      <span className="yp-bar bg-sky-400" aria-hidden="true" />
+                      <span className={`yp-icon ${isActive ? "text-sky-300" : ""}`}>
+                        <Icon size={18} strokeWidth={2} />
+                        {badge > 0 && <span className="yp-badge">{badge > 9 ? "9+" : badge}</span>}
+                      </span>
+                      <span className="yp-label yp-fade">{nom}</span>
+                    </>
+                  )}
+                </NavLink>
+              </div>
+            );
+          })}
+        </nav>
+
+        <div className="yp-foot">
+          <div className="yp-profile theme-sidebar-profile">
+            {ism && (
+              <>
+                {profilgaRuxsat ? (
+                  <Link
+                    to="/sozlamalar"
+                    onClick={bandTanlandi}
+                    aria-label={t("sidebar.profile", { name: ism })}
+                    {...maslahatHodisalari(ism, rolNomi || undefined)}
+                    className="yp-avatar theme-sidebar-avatar"
+                  >
+                    {avatarIchi}
+                  </Link>
+                ) : (
+                  <span
+                    role="img"
+                    tabIndex={acik ? -1 : 0}
+                    aria-label={rolNomi ? `${ism}, ${rolNomi}` : ism}
+                    {...maslahatHodisalari(ism, rolNomi || undefined)}
+                    className="yp-avatar theme-sidebar-avatar"
+                  >
+                    {avatarIchi}
+                  </span>
+                )}
+                <div className="yp-profile-info yp-fade">
+                  <p className="yp-profile-name">{ism}</p>
+                  {rolNomi && <p className="yp-profile-role">{rolNomi}</p>}
+                </div>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={() => void handleLogout()}
+              aria-label={t("logout")}
+              {...maslahatHodisalari(t("logout"), undefined, true)}
+              className="yp-foot-btn"
+            >
+              <LogOut size={18} strokeWidth={2} />
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <MaslahatQatlami boshqaruv={maslahatRef} />
+      {flyoutMenyusi && flyout && <BolimFlyouti menu={flyoutMenyusi} holat={flyout} onYopish={flyoutniYopish} />}
 
       <MobilNavigatsiya menyular={korinadiganMenyular.map((menu) => ({
         ...menu,

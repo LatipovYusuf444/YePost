@@ -117,7 +117,7 @@ export function SavdolarTab({
 
   return (
     <div className="px-9 py-7">
-      <KengaytiriladiganJadval ustunlar={ustunlar} qatorlar={savdolar} kengaytir sozlamaBor />
+      <KengaytiriladiganJadval tableId="XaridorUchot/XaridorTablari/kengaytiriladiganjadval-1" ustunlar={ustunlar} qatorlar={savdolar} kengaytir sozlamaBor />
 
       {korilayotganSavdo && (
         <XaridorSavdoModal
@@ -209,7 +209,7 @@ export function KirimTab({
 
   return (
     <div className="px-9 py-7">
-      <KengaytiriladiganJadval ustunlar={ustunlar} qatorlar={kirimlar} kengaytir sozlamaBor />
+      <KengaytiriladiganJadval tableId="XaridorUchot/XaridorTablari/kengaytiriladiganjadval-2" ustunlar={ustunlar} qatorlar={kirimlar} kengaytir sozlamaBor />
 
       {korilayotganKirim && (
         <KirimModal
@@ -269,7 +269,7 @@ export function TolovlarTab({ tolovlar }: { tolovlar: XaridorTolovi[] }) {
 
   return (
     <div className="px-9 py-7">
-      <KengaytiriladiganJadval ustunlar={ustunlar} qatorlar={tolovlar} kengaytir sozlamaBor />
+      <KengaytiriladiganJadval tableId="XaridorUchot/XaridorTablari/kengaytiriladiganjadval-3" ustunlar={ustunlar} qatorlar={tolovlar} kengaytir sozlamaBor />
     </div>
   );
 }

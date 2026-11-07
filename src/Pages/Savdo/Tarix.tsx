@@ -22,7 +22,7 @@ export default function Tarix({
   );
 
   return (
-    <SotuvlarJadvali
+    <SotuvlarJadvali tableId="Savdo/Tarix/sotuvlarjadvali-1"
       sotuvlar={tasdiqlanganlar}
       onSotuvniOchish={onSotuvniOchish}
       qaytarishlar={qaytarishlar}

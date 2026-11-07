@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LoaderCircle, PackageSearch, RefreshCw, Ruler, Search, TriangleAlert, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -303,15 +304,15 @@ export default function BirlikMahsulotlari({ birlik, mahsulotlar, onYopish }: Pr
               </p>
             </div>
           ) : (
-            <table className="w-full min-w-[720px] text-left text-sm">
+            <SmartTable tableId="SozlamalarUchot/BirlikMahsulotlari/table-1" replaceColumnControls><table className="w-full min-w-[720px] text-left text-sm">
               <thead className="sticky top-0 bg-[#F8FAFC] text-xs uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="px-6 py-3">{t("birliklar.products.columns.product")}</th>
-                  <th className="px-4 py-3">{t("birliklar.products.columns.barcode")}</th>
-                  <th className="px-4 py-3">{t("birliklar.products.columns.warehouse")}</th>
-                  <th className="px-4 py-3 text-right">{t("birliklar.products.columns.stock")}</th>
-                  <th className="px-4 py-3 text-right">{t("birliklar.products.columns.reserved")}</th>
-                  <th className="px-6 py-3 text-right">{t("birliklar.products.columns.available")}</th>
+                  <th data-column-id="h1" className="px-6 py-3">{t("birliklar.products.columns.product")}</th>
+                  <th data-column-id="h2" className="px-4 py-3">{t("birliklar.products.columns.barcode")}</th>
+                  <th data-column-id="h3" className="px-4 py-3">{t("birliklar.products.columns.warehouse")}</th>
+                  <th data-column-id="h4" className="px-4 py-3 text-right">{t("birliklar.products.columns.stock")}</th>
+                  <th data-column-id="h5" className="px-4 py-3 text-right">{t("birliklar.products.columns.reserved")}</th>
+                  <th data-column-id="h6" className="px-6 py-3 text-right">{t("birliklar.products.columns.available")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -344,7 +345,7 @@ export default function BirlikMahsulotlari({ birlik, mahsulotlar, onYopish }: Pr
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></SmartTable>
           )}
         </div>
         {!yuklanmoqda && filtrlangan.length > 0 && (

@@ -88,6 +88,7 @@ export default function OmborJadval({ children, className = "" }: OmborJadvalPro
     const target = event.target as HTMLElement;
     const th = target.closest("th") as HTMLTableCellElement | null;
     if (!th || !scrollRef.current?.contains(th)) return;
+    if (th.closest("[data-compatible=true]")) return;
 
     const rect = th.getBoundingClientRect();
     if (Math.abs(event.clientX - rect.right) > 9) return;
@@ -131,7 +132,7 @@ export default function OmborJadval({ children, className = "" }: OmborJadvalPro
   const resizeCursor = (event: ReactMouseEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
     const th = target.closest("th") as HTMLTableCellElement | null;
-    if (!th) {
+    if (!th || th.closest("[data-compatible=true]")) {
       event.currentTarget.style.cursor = "";
       return;
     }

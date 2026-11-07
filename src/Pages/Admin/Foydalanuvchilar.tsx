@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -169,14 +170,14 @@ export default function AdminFoydalanuvchilar() {
       ) : (
         <div className={jadvalKlass}>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px]">
+            <SmartTable tableId="Admin/Foydalanuvchilar/table-1" replaceColumnControls><table className="w-full min-w-[860px]">
               <thead className={theadKlass}>
                 <tr>
-                  <th className={thKlass}>{t("foydalanuvchilar.foydalanuvchi")}</th>
-                  <th className={thKlass}>{t("foydalanuvchilar.rol")}</th>
-                  <th className={thKlass}>{t("foydalanuvchilar.kompaniya")}</th>
-                  <th className={thKlass}>{t("common.holati")}</th>
-                  <th className="w-32 px-5 py-4" />
+                  <th data-column-id="h1" className={thKlass}>{t("foydalanuvchilar.foydalanuvchi")}</th>
+                  <th data-column-id="h2" className={thKlass}>{t("foydalanuvchilar.rol")}</th>
+                  <th data-column-id="h3" className={thKlass}>{t("foydalanuvchilar.kompaniya")}</th>
+                  <th data-column-id="h4" className={thKlass}>{t("common.holati")}</th>
+                  <th data-column-id="h5" className="w-32 px-5 py-4" />
                 </tr>
               </thead>
               <tbody className={tbodyKlass}>
@@ -233,7 +234,7 @@ export default function AdminFoydalanuvchilar() {
                   );
                 })}
               </tbody>
-            </table>
+            </table></SmartTable>
           </div>
           <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-3 text-xs font-semibold text-slate-400">{t("common.natija", { count: royxat.length })}</div>
         </div>

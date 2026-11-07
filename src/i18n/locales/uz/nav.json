@@ -65,5 +65,9 @@
     "KASSIR": "Kassir",
     "OMBORCHI": "Omborchi"
   },
+  "sidebar": {
+    "label": "Asosiy menyu",
+    "profile": "{{name}} — profil va sozlamalar"
+  },
   "logout": "Tizimdan chiqish"
 }

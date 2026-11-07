@@ -115,7 +115,7 @@ export default function Lavozimlar({ lavozimlar, xodimlar, onSaqlash, onOchirish
       </div>
 
       {korinish === "jadval" && (
-        <KengaytiriladiganJadval
+        <KengaytiriladiganJadval tableId="XodimUchot/Lavozimlar/kengaytiriladiganjadval-1"
           ustunlar={ustunlar}
           qatorlar={royxat}
           kengaytir

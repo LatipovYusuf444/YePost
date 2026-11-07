@@ -1,0 +1,2675 @@
+{
+  "date": "2026-11-07",
+  "counts": {
+    "logicalTableUsages": 93,
+    "full": 89,
+    "partialGrouped": 3,
+    "fixedDocument": 1,
+    "gridlines": 92,
+    "nativeDefinitions": 53,
+    "reusableUsages": 45
+  },
+  "integrity": {
+    "changedFrontendFiles": 76,
+    "structurallyIdenticalAfterRemovingPresentationMetadata": 71,
+    "intentionalPresentationAdapters": [
+      "src/Components/ui/table.tsx",
+      "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "src/Pages/Ombor/OmborJadval.tsx",
+      "src/Pages/Savdo/SotuvlarJadvali.tsx"
+    ],
+    "unexpected": [],
+    "protectedFilesChecked": 156,
+    "protectedChanges": [],
+    "preservedUserChanges": true,
+    "changedFiles": [
+      "src/Components/ui/table.tsx",
+      "src/Pages/Admin/Foydalanuvchilar.tsx",
+      "src/Pages/Admin/Kompaniyalar.tsx",
+      "src/Pages/Admin/Obunalar.tsx",
+      "src/Pages/HisobotUchot/AuditLoglari.tsx",
+      "src/Pages/HisobotUchot/ChegirmaHisoboti.tsx",
+      "src/Pages/HisobotUchot/FoydaHisoboti.tsx",
+      "src/Pages/HisobotUchot/HisobKitobHujjatlariModal.tsx",
+      "src/Pages/HisobotUchot/HisobKitobModal.tsx",
+      "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "src/Pages/HisobotUchot/KirimChiqimHisoboti.tsx",
+      "src/Pages/HisobotUchot/KunlikKassa.tsx",
+      "src/Pages/HisobotUchot/omborModallari/ChiqimKorishModal.tsx",
+      "src/Pages/HisobotUchot/omborModallari/InventarizatsiyaKorishModal.tsx",
+      "src/Pages/HisobotUchot/omborModallari/KirimKorishModal.tsx",
+      "src/Pages/HisobotUchot/omborModallari/RealizatsiyaKorishModal.tsx",
+      "src/Pages/HisobotUchot/OzaroHisobKitob.tsx",
+      "src/Pages/HisobotUchot/QoldiqHisoboti.tsx",
+      "src/Pages/HisobotUchot/TovarHarakati.tsx",
+      "src/Pages/IshlabChiqarish/Buyurtmalar.tsx",
+      "src/Pages/IshlabChiqarish/Kalkulyatsiya.tsx",
+      "src/Pages/IshlabChiqarish/Retseptlar.tsx",
+      "src/Pages/IshlabChiqarish/Rulonlar.tsx",
+      "src/Pages/IshlabChiqarish/SexgaBerish.tsx",
+      "src/Pages/IshlabChiqarish/Smena.tsx",
+      "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "src/Pages/KassaUchot/index.tsx",
+      "src/Pages/KassaUchot/ZavodBonusi.tsx",
+      "src/Pages/Mahsulotlar/index.tsx",
+      "src/Pages/Mahsulotlar/KategoriyaQoldigiModal.tsx",
+      "src/Pages/Monitoring/index.tsx",
+      "src/Pages/Ombor/AmalgaOshirilganlar.tsx",
+      "src/Pages/Ombor/Chiqim.tsx",
+      "src/Pages/Ombor/ChiqimTafsilotModal.tsx",
+      "src/Pages/Ombor/FiliallarBoshqaruvi.tsx",
+      "src/Pages/Ombor/index.tsx",
+      "src/Pages/Ombor/Inventarizatsiya.tsx",
+      "src/Pages/Ombor/InventarizatsiyaKorinish.tsx",
+      "src/Pages/Ombor/InventoryHujjatModal.tsx",
+      "src/Pages/Ombor/KirimTafsilotModal.tsx",
+      "src/Pages/Ombor/Kochirish.tsx",
+      "src/Pages/Ombor/KochirishKorishModal.tsx",
+      "src/Pages/Ombor/KochirishYaratishModal.tsx",
+      "src/Pages/Ombor/OmborJadval.tsx",
+      "src/Pages/Ombor/OmborQoldigi.tsx",
+      "src/Pages/Ombor/Xaridlar.tsx",
+      "src/Pages/Qarzdorlik/index.tsx",
+      "src/Pages/Savdo/BekorQilinganlar.tsx",
+      "src/Pages/Savdo/Buyurtmalar.tsx",
+      "src/Pages/Savdo/index.tsx",
+      "src/Pages/Savdo/OmbordanChiqqanlarOynasi.tsx",
+      "src/Pages/Savdo/Qaytarish.tsx",
+      "src/Pages/Savdo/QaytarishTafsilotlariModal.tsx",
+      "src/Pages/Savdo/Savatcha.tsx",
+      "src/Pages/Savdo/SotuvHujjatlariTab.tsx",
+      "src/Pages/Savdo/SotuvlarJadvali.tsx",
+      "src/Pages/Savdo/SotuvOmbordanChiqqanlar.tsx",
+      "src/Pages/Savdo/SotuvTafsilotlariModal.tsx",
+      "src/Pages/Savdo/Tarix.tsx",
+      "src/Pages/Savdo/Tolovlar.tsx",
+      "src/Pages/SozlamalarUchot/BirlikMahsulotlari.tsx",
+      "src/Pages/SozlamalarUchot/VakolatlarBolimi.tsx",
+      "src/Pages/SozlamalarUchot/ValyutaBolimi.tsx",
+      "src/Pages/XaridorUchot/BoshlangichQarzImportModal.tsx",
+      "src/Pages/XaridorUchot/Kompaniyalar.tsx",
+      "src/Pages/XaridorUchot/MijozQarzlariTab.tsx",
+      "src/Pages/XaridorUchot/Xaridorlar.tsx",
+      "src/Pages/XaridorUchot/XaridorTablari.tsx",
+      "src/Pages/XaridorUchot/XaridorTolovlariTab.tsx",
+      "src/Pages/XaridorUchot/YetkazibBeruvchilar.tsx",
+      "src/Pages/XaridorUchot/YetkazibBoshlangichQarzTab.tsx",
+      "src/Pages/XodimUchot/Davomat.tsx",
+      "src/Pages/XodimUchot/Lavozimlar.tsx",
+      "src/Pages/XodimUchot/Vakolatlar.tsx",
+      "src/Pages/XodimUchot/Xodimlar.tsx",
+      "src/Pages/XodimUchot/XodimTablari.tsx"
+    ]
+  },
+  "tables": [
+    {
+      "tableId": "Admin/Foydalanuvchilar/table-1",
+      "source": "src/Pages/Admin/Foydalanuvchilar.tsx",
+      "sourceLineBeforeChanges": 172,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Admin/Foydalanuvchilar.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className={thKlass}>{t(\"foydalanuvchilar.foydalanuvchi\")}</th>",
+        "<th className={thKlass}>{t(\"foydalanuvchilar.rol\")}</th>",
+        "<th className={thKlass}>{t(\"foydalanuvchilar.kompaniya\")}</th>",
+        "<th className={thKlass}>{t(\"common.holati\")}</th>",
+        "<tr>\n                  <th className={thKlass}>{t(\"foydalanuvchilar.foydalanuvchi\")}</th>\n                  <th className={thKlass}>{t(\"foydalanuvchilar.rol\")}</th>\n                  <th className={thKlass}>{t(\"foydalanuvchilar.kompaniya\")}</th>\n                  <th className={thKlass}>{t(\"common.holati\")}</th>\n                  <th className=\"w-3"
+      ],
+      "dataSource": [
+        "royxat"
+      ],
+      "customRenderers": [
+        "Avatar",
+        "ShieldCheck",
+        "Belgi",
+        "Building2",
+        "AmalTugmasi",
+        "KeyRound",
+        "Lock",
+        "Unlock"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Admin/Kompaniyalar/table-1",
+      "source": "src/Pages/Admin/Kompaniyalar.tsx",
+      "sourceLineBeforeChanges": 315,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Admin/Kompaniyalar.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className={thKlass}>{t(\"kompaniyalar.nomi\")}</th>",
+        "<th className={thKlass}>{t(\"kompaniyalar.vaqtZonasi\")}</th>",
+        "<th className={thKlass}>{t(\"common.holati\")}</th>",
+        "<th className={thKlass}>{t(\"common.yaratilgan\")}</th>",
+        "<tr>\n                  <th className={thKlass}>{t(\"kompaniyalar.nomi\")}</th>\n                  <th className={thKlass}>{t(\"kompaniyalar.vaqtZonasi\")}</th>\n                  <th className={thKlass}>{t(\"common.holati\")}</th>\n                  <th className={thKlass}>{t(\"common.yaratilgan\")}</th>\n                  <th className=\"w-52 px-5 py-4\" />\n   "
+      ],
+      "dataSource": [
+        "korinadigan"
+      ],
+      "customRenderers": [
+        "Avatar",
+        "Clock",
+        "Belgi",
+        "Link",
+        "Users",
+        "AmalTugmasi",
+        "Pencil",
+        "PowerOff",
+        "Power",
+        "Trash2"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Admin/Obunalar/table-1",
+      "source": "src/Pages/Admin/Obunalar.tsx",
+      "sourceLineBeforeChanges": 325,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Admin/Obunalar.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className={thKlass}>{t(\"obunalar.kompaniya\")}</th>",
+        "<th className={thKlass}>{t(\"obunalar.tarif\")}</th>",
+        "<th className={thKlass}>{t(\"obunalar.davr\")}</th>",
+        "<th className={thKlass}>\n                    {t(\"obunalar.boshlanish\")} → {t(\"obunalar.tugash\")}\n                  </th>",
+        "<th className={thKlass}>{t(\"obunalar.holati\")}</th>",
+        "<tr>\n                  <th className={thKlass}>{t(\"obunalar.kompaniya\")}</th>\n                  <th className={thKlass}>{t(\"obunalar.tarif\")}</th>\n                  <th className={thKlass}>{t(\"obunalar.davr\")}</th>\n                  <th className={thKlass}>\n                    {t(\"obunalar.boshlanish\")} → {t(\"obunalar.tugash\")}\n                  </"
+      ],
+      "dataSource": [
+        "korinadigan"
+      ],
+      "customRenderers": [
+        "Avatar",
+        "ArrowRight",
+        "Belgi",
+        "AmalTugmasi",
+        "CalendarPlus",
+        "Pencil",
+        "Ban"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "HisobotUchot/AuditLoglari/table-1",
+      "source": "src/Pages/HisobotUchot/AuditLoglari.tsx",
+      "sourceLineBeforeChanges": 271,
+      "component": "Table",
+      "behaviorSource": "src/Components/ui/table.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [],
+      "dataSource": [],
+      "customRenderers": [
+        "Table"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "HisobotUchot/ChegirmaHisoboti/kengaytiriladiganjadval-1",
+      "source": "src/Pages/HisobotUchot/ChegirmaHisoboti.tsx",
+      "sourceLineBeforeChanges": 329,
+      "component": "KengaytiriladiganJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{korinadigan}",
+      "customRenderers": [
+        "KengaytiriladiganJadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing local page/pageSize (initial 1/10), callbacks unchanged.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "Existing page export/import implementation retained; visibility does not drive exports."
+    },
+    {
+      "tableId": "HisobotUchot/FoydaHisoboti/table-1",
+      "source": "src/Pages/HisobotUchot/FoydaHisoboti.tsx",
+      "sourceLineBeforeChanges": 295,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/HisobotUchot/FoydaHisoboti.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th key={ustun.kalit} scope=\"col\" aria-sort={faol ? (saralash.kamayish ? \"descending\" : \"ascending\") : \"none\"} className={`px-4 py-3.5 font-bold ${ustun.chap ? \"text-left\" : \"text-right\"}`}>\r\n                          <button type=\"button\" onClick={() => saralashniOzgartirish(ustun.kalit)} className={`inline-flex items-center gap-1 whitespace-nowra"
+      ],
+      "dataSource": [
+        "ustunlar",
+        "sahifa"
+      ],
+      "customRenderers": [
+        "Belgi",
+        "QatorIzohi",
+        "SummaKatagi",
+        "RentabellikBelgisi"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing page-level pagination/server paging retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "Existing page export/import implementation retained; visibility does not drive exports."
+    },
+    {
+      "tableId": "HisobotUchot/HisobKitobHujjatlariModal/kengaytiriladiganjadval-1",
+      "source": "src/Pages/HisobotUchot/HisobKitobHujjatlariModal.tsx",
+      "sourceLineBeforeChanges": 65,
+      "component": "KengaytiriladiganJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{qatorlar}",
+      "customRenderers": [
+        "KengaytiriladiganJadval"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing local page/pageSize (initial 1/10), callbacks unchanged.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "HisobotUchot/HisobKitobModal/kengaytiriladiganjadval-1",
+      "source": "src/Pages/HisobotUchot/HisobKitobModal.tsx",
+      "sourceLineBeforeChanges": 192,
+      "component": "KengaytiriladiganJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{qatorlar}",
+      "customRenderers": [
+        "KengaytiriladiganJadval"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing local page/pageSize (initial 1/10), callbacks unchanged.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "Existing page export/import implementation retained; visibility does not drive exports."
+    },
+    {
+      "tableId": "HisobotUchot/KirimChiqimHisoboti/matritsajadval-1",
+      "source": "src/Pages/HisobotUchot/KirimChiqimHisoboti.tsx",
+      "sourceLineBeforeChanges": 419,
+      "component": "MatritsaJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KirimChiqimHisoboti.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "grouped-safe-fallback",
+      "columns": "{ustunlar}",
+      "dataSource": [],
+      "customRenderers": [
+        "MatritsaJadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "Existing page export/import implementation retained; visibility does not drive exports."
+    },
+    {
+      "tableId": "HisobotUchot/KirimChiqimHisoboti/matritsajadval-2",
+      "source": "src/Pages/HisobotUchot/KirimChiqimHisoboti.tsx",
+      "sourceLineBeforeChanges": 446,
+      "component": "MatritsaJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KirimChiqimHisoboti.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "grouped-safe-fallback",
+      "columns": "{ustunlar}",
+      "dataSource": [],
+      "customRenderers": [
+        "MatritsaJadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "Existing page export/import implementation retained; visibility does not drive exports."
+    },
+    {
+      "tableId": "HisobotUchot/KunlikKassa/table-1",
+      "source": "src/Pages/HisobotUchot/KunlikKassa.tsx",
+      "sourceLineBeforeChanges": 159,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/HisobotUchot/KunlikKassa.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th scope=\"col\" className=\"rounded-t-xl px-4 py-3\">{t(\"kunlikKassa.date\")}</th>",
+        "<th scope=\"col\" key={column.label} className=\"rounded-t-xl border-x border-t-2 px-4 py-3 text-right\" style={{ borderColor: column.border, borderTopColor: column.accent, backgroundColor: column.background }}><span className=\"inline-flex items-center gap-2\" style={{ color: column.accent }}><span aria-hidden className=\"h-1.5 w-1.5 rounded-full\" style=",
+        "<th scope=\"row\" className=\"border-b border-slate-100 px-4 py-3 text-left font-semibold\">{kunMatni(day.date)}</th>",
+        "<th scope=\"row\" className=\"px-4 py-4 text-left font-bold text-slate-900\">{t(\"kunlikKassa.periodTotal\")}</th>"
+      ],
+      "dataSource": [
+        "columns",
+        "report.days"
+      ],
+      "customRenderers": [],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "HisobotUchot/omborModallari/ChiqimKorishModal/table-1",
+      "source": "src/Pages/HisobotUchot/omborModallari/ChiqimKorishModal.tsx",
+      "sourceLineBeforeChanges": 431,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/HisobotUchot/omborModallari/ChiqimKorishModal.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-3 py-3\">№</th>",
+        "<th key={ustun.kalit} className=\"relative truncate px-3 py-3\">\r\n                            {ustun.nom}\r\n                            <span\r\n                              onMouseDown={(event) => ustunOlchaminiOzgartirish(ustun.kalit, event)}\r\n                              className=\"absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none h",
+        "<tr>\r\n                        <th className=\"px-3 py-3\">№</th>\r\n                        {korinadiganUstunSozlamalari.map((ustun) => (\r\n                          <th key={ustun.kalit} className=\"relative truncate px-3 py-3\">\r\n                            {ustun.nom}\r\n                            <span\r\n                              onMouseDown={(event",
+        "<th className=\"px-3 py-3 text-right\">\r\n                          <button\r\n                            ref={ustunlarTugmaRef}\r\n                            type=\"button\"\r\n                            onClick={() => setUstunlarMenyusiOchiq((old) => !old)}\r\n                            aria-label=\"Ustunlarni sozlash\"\r\n                            title=\"U"
+      ],
+      "dataSource": [
+        "korinadiganUstunSozlamalari",
+        "hujjat.satrlar"
+      ],
+      "customRenderers": [
+        "Settings"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": true,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "HisobotUchot/omborModallari/InventarizatsiyaKorishModal/table-1",
+      "source": "src/Pages/HisobotUchot/omborModallari/InventarizatsiyaKorishModal.tsx",
+      "sourceLineBeforeChanges": 431,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/HisobotUchot/omborModallari/InventarizatsiyaKorishModal.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-3 py-3\">№</th>",
+        "<th key={ustun.kalit} className=\"relative truncate px-3 py-3\">\r\n                            {ustun.nom}\r\n                            <span\r\n                              onMouseDown={(event) => ustunOlchaminiOzgartirish(ustun.kalit, event)}\r\n                              className=\"absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none h",
+        "<tr>\r\n                        <th className=\"px-3 py-3\">№</th>\r\n                        {korinadiganUstunSozlamalari.map((ustun) => (\r\n                          <th key={ustun.kalit} className=\"relative truncate px-3 py-3\">\r\n                            {ustun.nom}\r\n                            <span\r\n                              onMouseDown={(event",
+        "<th className=\"px-3 py-3 text-right\">\r\n                          <button\r\n                            ref={ustunlarTugmaRef}\r\n                            type=\"button\"\r\n                            onClick={() => setUstunlarMenyusiOchiq((old) => !old)}\r\n                            aria-label=\"Ustunlarni sozlash\"\r\n                            title=\"U"
+      ],
+      "dataSource": [
+        "korinadiganUstunSozlamalari",
+        "hujjat.satrlar"
+      ],
+      "customRenderers": [
+        "Settings"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": true,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "HisobotUchot/omborModallari/KirimKorishModal/table-1",
+      "source": "src/Pages/HisobotUchot/omborModallari/KirimKorishModal.tsx",
+      "sourceLineBeforeChanges": 445,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/HisobotUchot/omborModallari/KirimKorishModal.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-3 py-3\">№</th>",
+        "<th key={ustun.kalit} className=\"relative truncate px-3 py-3\">\r\n                            {ustun.nom}\r\n                            <span\r\n                              onMouseDown={(event) => ustunOlchaminiOzgartirish(ustun.kalit, event)}\r\n                              className=\"absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none h",
+        "<tr>\r\n                        <th className=\"px-3 py-3\">№</th>\r\n                        {korinadiganUstunSozlamalari.map((ustun) => (\r\n                          <th key={ustun.kalit} className=\"relative truncate px-3 py-3\">\r\n                            {ustun.nom}\r\n                            <span\r\n                              onMouseDown={(event",
+        "<th className=\"px-3 py-3 text-right\">\r\n                          <button\r\n                            ref={ustunlarTugmaRef}\r\n                            type=\"button\"\r\n                            onClick={() => setUstunlarMenyusiOchiq((old) => !old)}\r\n                            aria-label=\"Ustunlarni sozlash\"\r\n                            title=\"U"
+      ],
+      "dataSource": [
+        "korinadiganUstunSozlamalari",
+        "hujjat.satrlar"
+      ],
+      "customRenderers": [
+        "Settings"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": true,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "HisobotUchot/omborModallari/RealizatsiyaKorishModal/table-1",
+      "source": "src/Pages/HisobotUchot/omborModallari/RealizatsiyaKorishModal.tsx",
+      "sourceLineBeforeChanges": 457,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/HisobotUchot/omborModallari/RealizatsiyaKorishModal.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-3 py-3\">№</th>",
+        "<th key={ustun.kalit} className=\"relative truncate px-3 py-3\">\r\n                            {ustun.nom}\r\n                            <span\r\n                              onMouseDown={(event) => ustunOlchaminiOzgartirish(ustun.kalit, event)}\r\n                              className=\"absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none h",
+        "<tr>\r\n                        <th className=\"px-3 py-3\">№</th>\r\n                        {korinadiganUstunSozlamalari.map((ustun) => (\r\n                          <th key={ustun.kalit} className=\"relative truncate px-3 py-3\">\r\n                            {ustun.nom}\r\n                            <span\r\n                              onMouseDown={(event",
+        "<th className=\"px-3 py-3 text-right\">\r\n                          <button\r\n                            ref={ustunlarTugmaRef}\r\n                            type=\"button\"\r\n                            onClick={() => setUstunlarMenyusiOchiq((old) => !old)}\r\n                            aria-label=\"Ustunlarni sozlash\"\r\n                            title=\"U"
+      ],
+      "dataSource": [
+        "korinadiganUstunSozlamalari",
+        "hujjat.satrlar"
+      ],
+      "customRenderers": [
+        "Settings"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": true,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "HisobotUchot/OzaroHisobKitob/kengaytiriladiganjadval-1",
+      "source": "src/Pages/HisobotUchot/OzaroHisobKitob.tsx",
+      "sourceLineBeforeChanges": 183,
+      "component": "KengaytiriladiganJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{korinadigan}",
+      "customRenderers": [
+        "KengaytiriladiganJadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing local page/pageSize (initial 1/10), callbacks unchanged.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "Existing page export/import implementation retained; visibility does not drive exports."
+    },
+    {
+      "tableId": "HisobotUchot/QoldiqHisoboti/kengaytiriladiganjadval-1",
+      "source": "src/Pages/HisobotUchot/QoldiqHisoboti.tsx",
+      "sourceLineBeforeChanges": 442,
+      "component": "KengaytiriladiganJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{qatorlar}",
+      "customRenderers": [
+        "KengaytiriladiganJadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing local page/pageSize (initial 1/10), callbacks unchanged.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "Existing page export/import implementation retained; visibility does not drive exports."
+    },
+    {
+      "tableId": "HisobotUchot/TovarHarakati/kengaytiriladiganjadval-1",
+      "source": "src/Pages/HisobotUchot/TovarHarakati.tsx",
+      "sourceLineBeforeChanges": 462,
+      "component": "KengaytiriladiganJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{korinishQatorlar}",
+      "customRenderers": [
+        "KengaytiriladiganJadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing local page/pageSize (initial 1/10), callbacks unchanged.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "Existing page export/import implementation retained; visibility does not drive exports."
+    },
+    {
+      "tableId": "IshlabChiqarish/Buyurtmalar/jadval-1",
+      "source": "src/Pages/IshlabChiqarish/Buyurtmalar.tsx",
+      "sourceLineBeforeChanges": 64,
+      "component": "Jadval",
+      "behaviorSource": "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{qatorlar}",
+      "customRenderers": [
+        "Jadval",
+        "IshTartibi"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing sahifaHajmi/pastki: {20}; original business pagination retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "IshlabChiqarish/Buyurtmalar/jadval-2",
+      "source": "src/Pages/IshlabChiqarish/Buyurtmalar.tsx",
+      "sourceLineBeforeChanges": 294,
+      "component": "Jadval",
+      "behaviorSource": "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{[\n              { nom: t(\"recipes.inputs\"), katak: (qator) => qatorNomi(qator) },\n              { nom: t(\"fields.required\"), ong: true, katak: qatorMiqdori },\n            ]}",
+      "dataSource": "{hisob.yuklanmoqda ? [] : hisob.malumot?.inputs ?? []}",
+      "customRenderers": [
+        "Jadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing sahifaHajmi/pastki: default; original business pagination retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "IshlabChiqarish/Buyurtmalar/jadval-3",
+      "source": "src/Pages/IshlabChiqarish/Buyurtmalar.tsx",
+      "sourceLineBeforeChanges": 306,
+      "component": "Jadval",
+      "behaviorSource": "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{[\n                { nom: t(\"recipes.outputs\"), katak: (qator) => <span className=\"inline-flex items-center gap-2\">{qatorNomi(qator)}{qator.role === \"WASTE\" && <span className=\"rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-black text-amber-700\">{t(\"outputRole.WASTE\")}</span>}</span> },\n                { nom: t(\"fields.quantity\"), ong: true, katak: qatorMiqdori },\n              ]}",
+      "dataSource": "{hisob.malumot?.outputs ?? []}",
+      "customRenderers": [
+        "Jadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing sahifaHajmi/pastki: default; original business pagination retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "IshlabChiqarish/Buyurtmalar/jadval-4",
+      "source": "src/Pages/IshlabChiqarish/Buyurtmalar.tsx",
+      "sourceLineBeforeChanges": 377,
+      "component": "Jadval",
+      "behaviorSource": "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{[\n              { nom: t(\"fields.product\"), katak: (qator) => qatorNomi(qator) },\n              { nom: t(\"fields.required\"), ong: true, katak: (qator) => miqdorMatni(qator.required ?? qator.quantity) },\n              { nom: t(\"fields.issued\"), ong: true, katak: (qator) => miqdorMatni(qator.issued) },\n              { nom: t(\"fields.available\"), ong: true, katak: (qator) => miqdorMatni(qator.available) },\n              { nom: t(\"fields.shortage\"), ong: true, katak: (qator) => <span className={Number(qator.shortage ?? 0) > 0 ? \"font-black text-red-600\" : \"\"}>{miqdorMatni(qator.shortage)}</span> },\n            ]}",
+      "dataSource": "{qatorlar}",
+      "customRenderers": [
+        "Jadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing sahifaHajmi/pastki: default; original business pagination retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "IshlabChiqarish/Kalkulyatsiya/jadval-1",
+      "source": "src/Pages/IshlabChiqarish/Kalkulyatsiya.tsx",
+      "sourceLineBeforeChanges": 92,
+      "component": "Jadval",
+      "behaviorSource": "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{qatorlar}",
+      "customRenderers": [
+        "Jadval",
+        "KartaTartibi"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing sahifaHajmi/pastki: {20}; original business pagination retained.",
+      "permissions": "No permission logic added or changed.",
+      "export": "Existing page export/import implementation retained; visibility does not drive exports."
+    },
+    {
+      "tableId": "IshlabChiqarish/Kalkulyatsiya/jadval-2",
+      "source": "src/Pages/IshlabChiqarish/Kalkulyatsiya.tsx",
+      "sourceLineBeforeChanges": 321,
+      "component": "Jadval",
+      "behaviorSource": "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{[\n              { nom: t(\"fields.product\"), katak: (qator) => qatorNomi(qator) },\n              { nom: t(\"fields.quantity\"), ong: true, katak: (qator) => miqdorMatni(qator.quantity) },\n              { nom: t(\"fields.price\"), ong: true, katak: (qator) => taqsimotSummasi(qator.price, qator.currency) },\n              { nom: t(\"fields.costingRate\"), ong: true, katak: (qator) => (qator.currency === \"USD\" && qator.costingRate ? miqdorMatni(qator.costingRate) : \"—\") },\n              { nom: t(\"fields.amount\"), ong: true, katak: (qator) => <span className=\"font-black text-slate-900\">{summa(qator.amount)}</span> },\n            ]}",
+      "dataSource": "{karta.lines ?? []}",
+      "customRenderers": [
+        "Jadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing sahifaHajmi/pastki: default; original business pagination retained.",
+      "permissions": "No permission logic added or changed.",
+      "export": "Existing page export/import implementation retained; visibility does not drive exports."
+    },
+    {
+      "tableId": "IshlabChiqarish/Retseptlar/jadval-1",
+      "source": "src/Pages/IshlabChiqarish/Retseptlar.tsx",
+      "sourceLineBeforeChanges": 119,
+      "component": "Jadval",
+      "behaviorSource": "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{qatorlar}",
+      "customRenderers": [
+        "Jadval",
+        "RetseptTartibi"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing sahifaHajmi/pastki: {20}; original business pagination retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "IshlabChiqarish/Retseptlar/jadval-2",
+      "source": "src/Pages/IshlabChiqarish/Retseptlar.tsx",
+      "sourceLineBeforeChanges": 350,
+      "component": "Jadval",
+      "behaviorSource": "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{[\n                { nom: t(\"fields.product\"), katak: (qator) => <span className=\"block max-w-[240px] truncate font-bold text-slate-800\">{qatorNomi(qator)}</span> },\n                { nom: t(\"fields.inputKind\"), katak: (qator) => t(`inputKind.${qator.kind}`, { defaultValue: qator.kind }) },\n                { nom: t(\"fields.quantity\"), ong: true, katak: (qator) => (qator.kind === \"FREE\" ? <span className=\"text-slate-400\">—</span> : kirimMiqdori(qator)) },\n                { nom: t(\"fields.tolerancePercent\"), ong: true, katak: (qator) => (qator.kind === \"FIXED\" && qator.tolerancePercent != null && qator.tolerancePercent !== \"\" ? `±${miqdorMatni(qator.tolerancePercent)}%` : \"—\") },\n              ]}",
+      "dataSource": "{retsept.inputs ?? []}",
+      "customRenderers": [
+        "Jadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing sahifaHajmi/pastki: default; original business pagination retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "IshlabChiqarish/Retseptlar/jadval-3",
+      "source": "src/Pages/IshlabChiqarish/Retseptlar.tsx",
+      "sourceLineBeforeChanges": 364,
+      "component": "Jadval",
+      "behaviorSource": "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{[\n                { nom: t(\"fields.product\"), katak: (qator) => <span className=\"block max-w-[240px] truncate font-bold text-slate-800\">{qatorNomi(qator)}</span> },\n                { nom: t(\"fields.outputRole\"), katak: (qator) => t(`outputRole.${qator.role}`, { defaultValue: qator.role }) },\n                { nom: t(\"fields.quantity\"), ong: true, katak: (qator) => miqdorMatni(qator.quantity) },\n                { nom: t(\"fields.quantityType\"), katak: (qator) => t(`quantityType.${qator.quantityType || \"default\"}`, { defaultValue: qator.quantityType ?? \"\" }) },\n              ]}",
+      "dataSource": "{retsept.outputs ?? []}",
+      "customRenderers": [
+        "Jadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing sahifaHajmi/pastki: default; original business pagination retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "IshlabChiqarish/Retseptlar/jadval-4",
+      "source": "src/Pages/IshlabChiqarish/Retseptlar.tsx",
+      "sourceLineBeforeChanges": 399,
+      "component": "Jadval",
+      "behaviorSource": "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{[\n                { nom: t(\"recipes.inputs\"), katak: (qator) => qatorNomi(qator) },\n                { nom: t(\"fields.inputKind\"), katak: (qator) => t(`inputKind.${qator.kind}`, { defaultValue: qator.kind ?? \"—\" }) },\n                { nom: t(\"fields.required\"), ong: true, katak: portlashMiqdorMatni },\n              ]}",
+      "dataSource": "{portlash.inputs}",
+      "customRenderers": [
+        "Jadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing sahifaHajmi/pastki: default; original business pagination retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "IshlabChiqarish/Retseptlar/jadval-5",
+      "source": "src/Pages/IshlabChiqarish/Retseptlar.tsx",
+      "sourceLineBeforeChanges": 410,
+      "component": "Jadval",
+      "behaviorSource": "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{[\n                { nom: t(\"recipes.outputs\"), katak: (qator) => qatorNomi(qator) },\n                { nom: t(\"fields.outputRole\"), katak: (qator) => t(`outputRole.${qator.role}`, { defaultValue: qator.role ?? \"—\" }) },\n                { nom: t(\"fields.quantity\"), ong: true, katak: portlashMiqdorMatni },\n              ]}",
+      "dataSource": "{portlash.outputs}",
+      "customRenderers": [
+        "Jadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing sahifaHajmi/pastki: default; original business pagination retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "IshlabChiqarish/Rulonlar/jadval-1",
+      "source": "src/Pages/IshlabChiqarish/Rulonlar.tsx",
+      "sourceLineBeforeChanges": 147,
+      "component": "Jadval",
+      "behaviorSource": "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{qatorlar}",
+      "customRenderers": [
+        "Jadval",
+        "PackagePlus",
+        "Factory",
+        "TablePagination"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing sahifaHajmi/pastki: default; original business pagination retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "IshlabChiqarish/SexgaBerish/jadval-1",
+      "source": "src/Pages/IshlabChiqarish/SexgaBerish.tsx",
+      "sourceLineBeforeChanges": 113,
+      "component": "Jadval",
+      "behaviorSource": "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{qatorlar}",
+      "customRenderers": [
+        "Jadval",
+        "BerishUsullari"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing sahifaHajmi/pastki: {20}; original business pagination retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "IshlabChiqarish/SexgaBerish/jadval-2",
+      "source": "src/Pages/IshlabChiqarish/SexgaBerish.tsx",
+      "sourceLineBeforeChanges": 166,
+      "component": "Jadval",
+      "behaviorSource": "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{[\n          { nom: t(\"fields.document\"), katak: (qator) => <RaqamKatagi hujjat={qator} /> },\n          { nom: t(\"fields.product\"), katak: (qator) => <span className=\"block max-w-[260px] truncate font-bold text-slate-800\">{qatorNomi(qator)}</span> },\n          { nom: t(\"fields.progress\"), katak: (qator) => <Jarayon bajarilgan={qator.produced ?? 0} reja={qator.quantity} /> },\n          { nom: t(\"fields.sourceWarehouse\"), katak: (qator) => ombor(qator.sourceWarehouseId) },\n          { nom: t(\"fields.dueDate\"), katak: (qator) => (qator.dueDate ? kunMatni(qator.dueDate) : \"—\") },\n          { nom: t(\"fields.status\"), katak: (qator) => <Holat status={qator.status} /> },\n          { nom: t(\"fields.actions\"), katak: () => <span className=\"inline-flex items-center gap-1.5 text-sm font-black text-[#2563EB]\">{t(\"issues.pickOrder\")}<ArrowRight size={15} /></span> },\n        ]}",
+      "dataSource": "{qatorlar}",
+      "customRenderers": [
+        "Jadval",
+        "RaqamKatagi",
+        "Jarayon",
+        "Holat",
+        "ArrowRight"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing sahifaHajmi/pastki: default; original business pagination retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "IshlabChiqarish/SexgaBerish/jadval-3",
+      "source": "src/Pages/IshlabChiqarish/SexgaBerish.tsx",
+      "sourceLineBeforeChanges": 497,
+      "component": "Jadval",
+      "behaviorSource": "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{qatorlar}",
+      "customRenderers": [
+        "Jadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing sahifaHajmi/pastki: {20}; original business pagination retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "IshlabChiqarish/Smena/jadval-1",
+      "source": "src/Pages/IshlabChiqarish/Smena.tsx",
+      "sourceLineBeforeChanges": 158,
+      "component": "Jadval",
+      "behaviorSource": "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{qatorlar}",
+      "customRenderers": [
+        "Jadval",
+        "IshTartibi"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing sahifaHajmi/pastki: {20}; original business pagination retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "IshlabChiqarish/Smena/jadval-2",
+      "source": "src/Pages/IshlabChiqarish/Smena.tsx",
+      "sourceLineBeforeChanges": 523,
+      "component": "Jadval",
+      "behaviorSource": "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{[\n              { nom: t(\"fields.product\"), katak: (qator) => qatorNomi(qator) },\n              { nom: t(\"fields.outputRole\"), katak: (qator) => (qator.role ? t(`outputRole.${qator.role}`, { defaultValue: qator.role }) : \"—\") },\n              { nom: t(\"fields.serial\"), katak: (qator) => qator.serial ?? \"—\" },\n              { nom: t(\"fields.quantity\"), ong: true, katak: (qator) => <span className=\"font-black text-slate-900\">{miqdorMatni(chiqimMiqdori(qator))}</span> },\n              { nom: t(\"fields.scrapQuantity\"), ong: true, katak: (qator) => miqdorMatni(qator.scrapQuantity) },\n              { nom: t(\"rolls.label\"), katak: (qator) => <YorliqTugmasi qator={qator} /> },\n            ]}",
+      "dataSource": "{hisobot.outputs ?? []}",
+      "customRenderers": [
+        "Jadval",
+        "YorliqTugmasi"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing sahifaHajmi/pastki: default; original business pagination retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "IshlabChiqarish/Smena/jadval-3",
+      "source": "src/Pages/IshlabChiqarish/Smena.tsx",
+      "sourceLineBeforeChanges": 540,
+      "component": "Jadval",
+      "behaviorSource": "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{[\n                { nom: t(\"fields.product\"), katak: (qator) => qator.nom },\n                { nom: t(\"fields.delta\"), ong: true, katak: (qator) => <span className={Number(qator.delta) < 0 ? \"font-black text-red-600\" : \"font-black text-emerald-600\"}>{`${Number(qator.delta) > 0 ? \"+\" : \"\"}${miqdorMatni(qator.delta)}`}</span> },\n                { nom: t(\"fields.reason\"), katak: (qator) => qator.reason || \"—\" },\n                { nom: t(\"fields.date\"), katak: (qator) => kunMatni(qator.createdAt ?? undefined) || \"—\" },\n              ]}",
+      "dataSource": "{tuzatishlar}",
+      "customRenderers": [
+        "Jadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing sahifaHajmi/pastki: default; original business pagination retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "IshlabChiqarish/Smena/jadval-4",
+      "source": "src/Pages/IshlabChiqarish/Smena.tsx",
+      "sourceLineBeforeChanges": 556,
+      "component": "Jadval",
+      "behaviorSource": "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{[\n                { nom: t(\"fields.product\"), katak: (qator) => <>{qatorNomi(qator)}{qator.offRecipe && <span className=\"ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-black text-amber-700 ring-1 ring-amber-100\">{t(\"shift.offRecipeLine\")}</span>}</> },\n                { nom: t(\"fields.entryMethod\"), katak: (qator) => (qator.entryMethod ? t(`entryMethod.${qator.entryMethod}`) : \"—\") },\n                { nom: t(\"fields.norm\"), ong: true, katak: (qator) => miqdorMatni(qator.normQuantity) },\n                { nom: t(\"fields.quantity\"), ong: true, katak: (qator) => <span className=\"font-black text-slate-900\">{miqdorMatni(qator.quantity)}</span> },\n                { nom: t(\"shift.difference\"), ong: true, katak: (qator) => {\n                  const norma = sonMaydoni(qator.normQuantity);\n                  const haqiqiy = sonMaydoni(qator.quantity);\n                  if (norma === undefined || haqiqiy === undefined) return \"—\";\n                  const farq = haqiqiy - norma;\n                  return <span className={farq > 0 ? \"font-black text-red-600\" : farq < 0 ? \"font-black text-emerald-600\" : \"text-slate-400\"}>{`${farq > 0 ? \"+\" : \"\"}${miqdorMatni(farq)}`}</span>;\n                } },\n              ]}",
+      "dataSource": "{hisobot.inputs ?? []}",
+      "customRenderers": [
+        "Jadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing sahifaHajmi/pastki: default; original business pagination retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "IshlabChiqarish/Smena/jadval-5",
+      "source": "src/Pages/IshlabChiqarish/Smena.tsx",
+      "sourceLineBeforeChanges": 579,
+      "component": "Jadval",
+      "behaviorSource": "src/Pages/IshlabChiqarish/umumiy.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{[\n                { nom: t(\"fields.downtimeReason\"), katak: (qator) => t(`downtime.${qator.reason}`, { defaultValue: qator.reason }) },\n                { nom: t(\"fields.hours\"), ong: true, katak: (qator) => miqdorMatni(qator.hours) },\n                { nom: t(\"fields.note\"), katak: (qator) => qator.note ?? \"—\" },\n              ]}",
+      "dataSource": "{hisobot.downtime ?? []}",
+      "customRenderers": [
+        "Jadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing sahifaHajmi/pastki: default; original business pagination retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "KassaUchot/index/kengaytiriladiganjadval-1",
+      "source": "src/Pages/KassaUchot/index.tsx",
+      "sourceLineBeforeChanges": 676,
+      "component": "KengaytiriladiganJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{royxat}",
+      "customRenderers": [
+        "KengaytiriladiganJadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing local page/pageSize (initial 1/10), callbacks unchanged.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "KassaUchot/ZavodBonusi/kengaytiriladiganjadval-1",
+      "source": "src/Pages/KassaUchot/ZavodBonusi.tsx",
+      "sourceLineBeforeChanges": 236,
+      "component": "KengaytiriladiganJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{royxat}",
+      "customRenderers": [
+        "KengaytiriladiganJadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing local page/pageSize (initial 1/10), callbacks unchanged.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Mahsulotlar/index/table-1",
+      "source": "src/Pages/Mahsulotlar/index.tsx",
+      "sourceLineBeforeChanges": 465,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Mahsulotlar/index.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-5 py-4\">{t(\"table.index\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"table.product\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"table.category\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"table.unit\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"card.salePrice\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"card.costPrice\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"table.barcode\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"table.article\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"table.status\")}</th>",
+        "<th className=\"product-table-actions sticky right-0 z-20 min-w-44 bg-blue-50 px-5 py-4 text-right\">{t(\"table.action\")}</th>"
+      ],
+      "dataSource": [
+        "paginatedMahsulotlar",
+        "(store.modifikatsiyalar[item.id] ?? [])"
+      ],
+      "customRenderers": [
+        "NarxYuklanmoqda"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": true,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "Existing page export/import implementation retained; visibility does not drive exports."
+    },
+    {
+      "tableId": "Mahsulotlar/index/table-2",
+      "source": "src/Pages/Mahsulotlar/index.tsx",
+      "sourceLineBeforeChanges": 570,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Mahsulotlar/index.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"w-16 px-5 py-4\">{t(\"table.index\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"categoriesTab.name\")}</th>",
+        "<th className=\"w-32 px-5 py-4 text-right\"><span className=\"sr-only\">{t(\"table.action\")}</span></th>"
+      ],
+      "dataSource": [
+        "store.kategoriyalar"
+      ],
+      "customRenderers": [
+        "Tags",
+        "Edit3",
+        "Trash2"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": true,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "Existing page export/import implementation retained; visibility does not drive exports."
+    },
+    {
+      "tableId": "Mahsulotlar/index/table-3",
+      "source": "src/Pages/Mahsulotlar/index.tsx",
+      "sourceLineBeforeChanges": 776,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Mahsulotlar/index.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-4 py-3\">{t(\"excelImport.table.row\")}</th>",
+        "<th className=\"px-4 py-3\">{t(\"excelImport.table.column\")}</th>",
+        "<th className=\"px-4 py-3\">{t(\"excelImport.table.message\")}</th>",
+        "<th className=\"px-4 py-3\">{t(\"excelImport.table.value\")}</th>"
+      ],
+      "dataSource": [
+        "natija.errors"
+      ],
+      "customRenderers": [],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": true,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "Existing page export/import implementation retained; visibility does not drive exports."
+    },
+    {
+      "tableId": "Mahsulotlar/KategoriyaQoldigiModal/table-1",
+      "source": "src/Pages/Mahsulotlar/KategoriyaQoldigiModal.tsx",
+      "sourceLineBeforeChanges": 124,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Mahsulotlar/KategoriyaQoldigiModal.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-6 py-3\">{t(\"table.product\")}</th>",
+        "<th className=\"px-4 py-3\">{t(\"table.barcode\")}</th>",
+        "<th className=\"px-4 py-3\">{t(\"categoryStock.warehouse\")}</th>",
+        "<th className=\"px-4 py-3 text-right\">{t(\"categoryStock.stock\")}</th>",
+        "<th className=\"px-4 py-3 text-right\">{t(\"categoryStock.reserved\")}</th>",
+        "<th className=\"px-6 py-3 text-right\">{t(\"categoryStock.available\")}</th>"
+      ],
+      "dataSource": [
+        "korinadigan"
+      ],
+      "customRenderers": [],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing page-level pagination/server paging retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Monitoring/index/table-1",
+      "source": "src/Pages/Monitoring/index.tsx",
+      "sourceLineBeforeChanges": 1808,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Monitoring/index.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-4 py-3\">Sana</th>",
+        "<th className=\"px-4 py-3\">Hujjat</th>",
+        "<th className=\"px-4 py-3\">Ombor</th>",
+        "<th className=\"px-4 py-3\">Mahsulot</th>",
+        "<th className=\"px-4 py-3 text-right\">Miqdor</th>",
+        "<th className=\"px-4 py-3 text-right\">Birlik narxi</th>",
+        "<th className=\"px-4 py-3 text-right\">Jami</th>"
+      ],
+      "dataSource": [
+        "(demoMode ? demoChiqimMahsulotQatorlari : chiqimMahsulotQatorlari)"
+      ],
+      "customRenderers": [],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": true,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Monitoring/index/table-2",
+      "source": "src/Pages/Monitoring/index.tsx",
+      "sourceLineBeforeChanges": 1843,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Monitoring/index.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-3 py-3\">Sana</th>",
+        "<th className=\"px-3 py-3\">Hujjat</th>",
+        "<th className=\"px-3 py-3\">Holat</th>",
+        "<th className=\"px-3 py-3\">Qayerdan</th>",
+        "<th className=\"px-3 py-3\">Qayerga</th>",
+        "<th className=\"px-3 py-3\">Mahsulot</th>",
+        "<th className=\"px-3 py-3 text-right\">Miqdor</th>",
+        "<th className=\"px-3 py-3 text-right\">Birlik narxi</th>",
+        "<th className=\"px-3 py-3 text-right\">Summa</th>",
+        "<th className=\"px-3 py-3 text-right\">Manba qoldig‘i</th>",
+        "<th className=\"px-3 py-3 text-right\">Qabul qoldig‘i</th>"
+      ],
+      "dataSource": [
+        "(demoMode ? demoKochirmaMahsulotQatorlari : kochirmaMahsulotQatorlari)"
+      ],
+      "customRenderers": [],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": true,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Monitoring/index/table-3",
+      "source": "src/Pages/Monitoring/index.tsx",
+      "sourceLineBeforeChanges": 1983,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Monitoring/index.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-4 py-3\">\r\n                              {t(\"charts.warehouseDetail.table.product\")}\r\n                            </th>",
+        "<th className=\"px-4 py-3 text-right\">\r\n                              {t(\"charts.warehouseDetail.table.quantity\")}\r\n                            </th>",
+        "<th className=\"px-4 py-3 text-right\">\r\n                              {t(\"charts.warehouseDetail.table.value\")}\r\n                            </th>"
+      ],
+      "dataSource": [
+        "(demoMode ? demoOmborMahsulotlari.map((item) => ({ modificationId: item.id, productName: item.name, quantity: item.quantity, totalAmount: item.value })) : tanlanganOmborMahsulotlari)",
+        "demoOmborMahsulotlari"
+      ],
+      "customRenderers": [],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Ombor/AmalgaOshirilganlar/table-1",
+      "source": "src/Pages/Ombor/AmalgaOshirilganlar.tsx",
+      "sourceLineBeforeChanges": 390,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Ombor/AmalgaOshirilganlar.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-6 py-5\">{t(\"amalgaOshirilganlar.columns.nomi\")}</th>",
+        "<th key={ustun.kalit} className=\"border-l border-orange-200/70 px-6 py-5\">\r\n                    {t(`amalgaOshirilganlar.columns.${ustun.kalit}`)}\r\n                  </th>",
+        "<th className=\"px-5 py-4 text-right\">\r\n                  <button\r\n                    type=\"button\"\r\n                    onClick={() => setSozlamaOchiq((oldingi) => !oldingi)}\r\n                    aria-label={t(\"umumiy.ustunlarniSozlash\")}\r\n                    title={t(\"umumiy.ustunlarniSozlash\")}\r\n                    className=\"inline-flex h-8 w-8"
+      ],
+      "dataSource": [
+        "faolUstunlar",
+        "sahifadagiRows"
+      ],
+      "customRenderers": [
+        "Settings",
+        "HujjatBekorQilish",
+        "HujjatOchirish",
+        "FileText"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing page-level pagination/server paging retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Ombor/Chiqim/table-1",
+      "source": "src/Pages/Ombor/Chiqim.tsx",
+      "sourceLineBeforeChanges": 396,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Ombor/Chiqim.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th key={column.id} className=\"relative h-[58px] border-r border-orange-200/80 px-7 py-3\">\n                    <span className=\"block truncate\">{t(`chiqim.columns.${column.id}`)}</span>\n                    <button\n                      type=\"button\"\n                      aria-label={t(\"chiqim.columnResizeAria\", { column: t(`chiqim.columns.${column.",
+        "<th className=\"sticky right-0 z-10 w-20 min-w-20 bg-[#F8FAFC] px-5 py-3\">\n                  <div className=\"relative flex justify-end\">\n                    <button\n                      ref={sozlamaTugmaRef}\n                      type=\"button\"\n                      onClick={() => {\n                        if (!sozlama) sozlamaJoylashuviniYangilash("
+      ],
+      "dataSource": [
+        "faolUstunlar",
+        "sahifadagiRoyxat"
+      ],
+      "customRenderers": [
+        "Settings",
+        "LoaderCircle",
+        "HujjatOchirish"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": true,
+      "groupedOrMergedCells": true,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing page-level pagination/server paging retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Ombor/ChiqimTafsilotModal/table-1",
+      "source": "src/Pages/Ombor/ChiqimTafsilotModal.tsx",
+      "sourceLineBeforeChanges": 170,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Ombor/ChiqimTafsilotModal.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-4 py-4\">{t(\"chiqimTafsilotModal.table.number\")}</th>",
+        "<th className=\"px-4 py-4\">{t(\"chiqimTafsilotModal.table.product\")}</th>",
+        "<th className=\"px-4 py-4\">{t(\"chiqimTafsilotModal.table.barcode\")}</th>",
+        "<th className=\"px-4 py-4\">{t(\"chiqimTafsilotModal.table.costPrice\")}</th>",
+        "<th className=\"px-4 py-4\">{t(\"chiqimTafsilotModal.table.quantity\")}</th>",
+        "<th className=\"px-4 py-4\">{t(\"chiqimTafsilotModal.table.warehouse\")}</th>",
+        "<th className=\"px-4 py-4\">{t(\"chiqimTafsilotModal.table.amount\")}</th>",
+        "<th className=\"w-14 px-4 py-4 text-right\"><Settings size={16} className=\"ml-auto text-slate-400\" /></th>"
+      ],
+      "dataSource": [
+        "qatorlar"
+      ],
+      "customRenderers": [
+        "Settings",
+        "NegativeStockBadge"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Ombor/FiliallarBoshqaruvi/table-1",
+      "source": "src/Pages/Ombor/FiliallarBoshqaruvi.tsx",
+      "sourceLineBeforeChanges": 169,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Ombor/FiliallarBoshqaruvi.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-4! py-4\">{t(\"filiallarBoshqaruvi.table.name\")}</th>",
+        "<th className=\"px-4! py-4\">{t(\"filiallarBoshqaruvi.table.address\")}</th>",
+        "<th className=\"px-4! py-4\">{t(\"filiallarBoshqaruvi.table.responsible\")}</th>",
+        "<th className=\"px-4! py-4\">{t(\"filiallarBoshqaruvi.table.status\")}</th>",
+        "<th className=\"w-28 px-4! py-4 text-right\">\r\n                  <span className=\"sr-only\">{t(\"filiallarBoshqaruvi.table.actions\")}</span>\r\n                </th>"
+      ],
+      "dataSource": [
+        "sahifadagiFiliallar"
+      ],
+      "customRenderers": [
+        "GitBranch",
+        "Edit3",
+        "Trash2"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": true,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing page-level pagination/server paging retained.",
+      "permissions": "No permission logic added or changed.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Ombor/index/table-1",
+      "source": "src/Pages/Ombor/index.tsx",
+      "sourceLineBeforeChanges": 425,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Ombor/index.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-4! py-4\">{t(\"omborlarSahifasi.table.headers.name\")}</th>",
+        "<th className=\"px-4! py-4\">{t(\"omborlarSahifasi.table.headers.location\")}</th>",
+        "<th className=\"px-4! py-4\">{t(\"omborlarSahifasi.table.headers.workingHours\")}</th>",
+        "<th className=\"px-4! py-4\">{t(\"omborlarSahifasi.table.headers.createdBy\")}</th>",
+        "<th className=\"px-4! py-4\">{t(\"omborlarSahifasi.table.headers.createdAt\")}</th>",
+        "<th className=\"px-4! py-4\">{t(\"omborlarSahifasi.table.headers.responsible\")}</th>",
+        "<th className=\"px-4! py-4\">{t(\"omborlarSahifasi.table.headers.responsiblePhone\")}</th>",
+        "<th className=\"px-4! py-4\">{t(\"omborlarSahifasi.table.headers.status\")}</th>",
+        "<th className=\"w-16 px-4! py-4 text-right\">\r\n                    <span className=\"sr-only\">{t(\"omborlarSahifasi.table.headers.actions\")}</span>\r\n                  </th>"
+      ],
+      "dataSource": [
+        "sahifadagiOmborlar"
+      ],
+      "customRenderers": [
+        "Warehouse",
+        "MapPin",
+        "Clock3",
+        "UserRound",
+        "CalendarDays",
+        "Phone",
+        "Trash2"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": true,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing page-level pagination/server paging retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Ombor/Inventarizatsiya/table-1",
+      "source": "src/Pages/Ombor/Inventarizatsiya.tsx",
+      "sourceLineBeforeChanges": 789,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Ombor/Inventarizatsiya.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th key={ustun.id}>{t(ustun.nom)}</th>",
+        "<th className=\"sticky right-0 z-10 w-20 min-w-20 bg-[#F8FAFC] px-5 py-3 text-right\">\r\n                <button\r\n                  ref={sozlamaTugmaRef}\r\n                  type=\"button\"\r\n                  onClick={() => {\r\n                    if (!ustunlarMenyusi) sozlamaJoylashuviniYangilash();\r\n                    setUstunlarMenyusi((oldingi) => !o"
+      ],
+      "dataSource": [
+        "faolUstunlar",
+        "sahifadagiHujjatlar"
+      ],
+      "customRenderers": [
+        "Settings",
+        "HujjatOchirish",
+        "LoaderCircle"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": true,
+      "groupedOrMergedCells": true,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing page-level pagination/server paging retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "Existing page export/import implementation retained; visibility does not drive exports."
+    },
+    {
+      "tableId": "Ombor/InventarizatsiyaKorinish/table-1",
+      "source": "src/Pages/Ombor/InventarizatsiyaKorinish.tsx",
+      "sourceLineBeforeChanges": 63,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Ombor/InventarizatsiyaKorinish.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"w-12 px-5 py-3.5\">№</th>",
+        "<th className=\"min-w-64 px-4 py-3.5\">{t(\"table.product\")}</th>",
+        "<th className=\"px-4 py-3.5\">{t(\"table.barcode\")}</th>",
+        "<th className=\"px-4 py-3.5\">{t(\"table.warehouse\")}</th>",
+        "<th className=\"px-4 py-3.5 text-right\">{t(\"table.systemQuantity\")}</th>",
+        "<th className=\"px-4 py-3.5 text-right text-blue-600\">{t(\"table.actualQuantity\")}</th>",
+        "<th className=\"px-5 py-3.5 text-right\">{t(\"table.difference\")}</th>"
+      ],
+      "dataSource": [
+        "items"
+      ],
+      "customRenderers": [
+        "Package",
+        "Barcode",
+        "Warehouse",
+        "StockQuantity",
+        "FarqIcon"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Ombor/InventoryHujjatModal/table-1",
+      "source": "src/Pages/Ombor/InventoryHujjatModal.tsx",
+      "sourceLineBeforeChanges": 728,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Ombor/InventoryHujjatModal.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-4 py-3\">{t(\"table.product\")}</th>",
+        "<th className=\"px-4 py-3\">{t(\"table.barcode\")}</th>",
+        "<th className=\"px-4 py-3\">{t(\"table.warehouse\")}</th>",
+        "<th className=\"px-4 py-3\">{t(\"table.systemQuantity\")}</th>",
+        "<th className=\"px-4 py-3\">{t(\"table.actualQuantity\")}</th>",
+        "<th className=\"px-4 py-3\">{t(\"table.difference\")}</th>",
+        "<th className=\"px-4 py-3\">{t(\"table.quantity\")}</th>",
+        "<th className=\"px-4 py-3\">{t(\"table.price\")}</th>",
+        "<th className=\"px-4 py-3\">{t(\"table.total\")}</th>"
+      ],
+      "dataSource": [
+        "(hujjat.items ?? [])"
+      ],
+      "customRenderers": [],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": true,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Ombor/KirimTafsilotModal/table-1",
+      "source": "src/Pages/Ombor/KirimTafsilotModal.tsx",
+      "sourceLineBeforeChanges": 138,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Ombor/KirimTafsilotModal.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"rounded-l-2xl px-4 py-4\">{t(\"kirimTafsilotModal.table.number\")}</th>",
+        "<th className=\"px-4 py-4\">{t(\"kirimTafsilotModal.table.product\")}</th>",
+        "<th className=\"px-4 py-4\">{t(\"kirimTafsilotModal.table.barcode\")}</th>",
+        "<th className=\"px-4 py-4\">{t(\"kirimTafsilotModal.table.costPrice\")}</th>",
+        "<th className=\"px-4 py-4\">{t(\"kirimTafsilotModal.table.retailPrice\")}</th>",
+        "<th className=\"px-4 py-4\">{t(\"kirimTafsilotModal.table.wholesalePrice\")}</th>",
+        "<th className=\"px-4 py-4\">{t(\"kirimTafsilotModal.table.quantity\")}</th>",
+        "<th className=\"px-4 py-4\">{t(\"kirimTafsilotModal.table.warehouse\")}</th>",
+        "<th className=\"rounded-r-2xl px-4 py-4\">{t(\"kirimTafsilotModal.table.amount\")}</th>"
+      ],
+      "dataSource": [
+        "(hujjat.items ?? [])"
+      ],
+      "customRenderers": [],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Ombor/Kochirish/table-1",
+      "source": "src/Pages/Ombor/Kochirish.tsx",
+      "sourceLineBeforeChanges": 497,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Ombor/Kochirish.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th key={ustun.kalit} className=\"relative h-[58px] overflow-visible px-7 py-3\">\n                    <span className=\"block max-w-[190px] truncate\">{t(ustun.nom)}</span>\n                    <span\n                      role=\"separator\"\n                      aria-orientation=\"vertical\"\n                      aria-label={t(\"kochirish.columnResizeAria\", ",
+        "<th className=\"sticky right-0 z-10 w-20 min-w-20 bg-[#F8FAFC] px-5 py-4 text-right\">\n                  <div className=\"relative inline-block\">\n                    <button\n                      ref={sozlamalarTugmaRef}\n                      type=\"button\"\n                      onClick={() => {\n                        if (!ustunlarMenyusi) sozlamalarJ"
+      ],
+      "dataSource": [
+        "korinadiganUstunlarRoyxati",
+        "sahifadagiHujjatlar"
+      ],
+      "customRenderers": [
+        "Settings",
+        "LoaderCircle",
+        "HujjatBekorQilish",
+        "HujjatOchirish",
+        "Eye"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": true,
+      "groupedOrMergedCells": true,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing page-level pagination/server paging retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Ombor/KochirishKorishModal/table-1",
+      "source": "src/Pages/Ombor/KochirishKorishModal.tsx",
+      "sourceLineBeforeChanges": 356,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Ombor/KochirishKorishModal.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-4 py-4\">{t(\"kochirishKorishModal.view.columns.number\")}</th>",
+        "<th className=\"px-4 py-4\">{t(\"kochirishKorishModal.view.columns.product\")}</th>",
+        "<th className=\"px-4 py-4\">{t(\"kochirishKorishModal.view.columns.barcode\")}</th>",
+        "<th className=\"px-4 py-4\">{t(\"kochirishKorishModal.view.columns.price\")}</th>",
+        "<th className=\"px-4 py-4\">{t(\"kochirishKorishModal.view.columns.quantity\")}</th>",
+        "<th className=\"px-4 py-4\">{t(\"kochirishKorishModal.view.columns.amount\")}</th>"
+      ],
+      "dataSource": [
+        "toliqItems"
+      ],
+      "customRenderers": [
+        "NegativeStockBadge"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": true,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Ombor/KochirishYaratishModal/table-1",
+      "source": "src/Pages/Ombor/KochirishYaratishModal.tsx",
+      "sourceLineBeforeChanges": 392,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Ombor/KochirishYaratishModal.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"w-12 px-3 py-4\">{t(\"kochirishYaratishModal.items.columns.number\")}</th>",
+        "<th className=\"w-[310px] px-3 py-4\">{t(\"kochirishYaratishModal.items.columns.product\")}</th>",
+        "<th className=\"w-44 px-3 py-4\">{t(\"kochirishYaratishModal.items.columns.barcode\")}</th>",
+        "<th className=\"w-36 px-3 py-4\">{t(\"kochirishYaratishModal.items.columns.price\")}</th>",
+        "<th className=\"w-36 px-3 py-4\">{t(\"kochirishYaratishModal.items.columns.quantity\")}</th>",
+        "<th className=\"w-44 px-3 py-4\">{t(\"kochirishYaratishModal.items.columns.stockAtWarehouse\")}</th>",
+        "<th className=\"w-40 px-3 py-4\">{t(\"kochirishYaratishModal.items.columns.amount\")}</th>",
+        "<th className=\"w-16 px-3 py-4\"><Package size={16} /></th>"
+      ],
+      "dataSource": [
+        "qatorMalumotlari"
+      ],
+      "customRenderers": [
+        "Package",
+        "GripVertical",
+        "XatoliMaydon",
+        "MahsulotTanlov",
+        "Barcode",
+        "Trash2"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Ombor/OmborQoldigi/table-1",
+      "source": "src/Pages/Ombor/OmborQoldigi.tsx",
+      "sourceLineBeforeChanges": 632,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Ombor/OmborQoldigi.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "grouped-safe-fallback",
+      "columns": [
+        "<th rowSpan={2} className=\"text-left\">{t(\"omborQoldigi.columns.name\")}</th>",
+        "<th rowSpan={2} className=\"text-left\">{t(\"omborQoldigi.columns.barcode\")}</th>",
+        "<th rowSpan={2} className=\"text-left\">{t(\"omborQoldigi.columns.variation\")}</th>",
+        "<th rowSpan={2} className=\"text-left\">{t(\"omborQoldigi.columns.warehouse\")}</th>",
+        "<th rowSpan={2} className=\"text-left\">{t(\"omborQoldigi.columns.unit\")}</th>",
+        "<th colSpan={2} className=\"border-b border-slate-200 text-center\">{t(\"omborQoldigi.columns.totalStock\")}</th>",
+        "<th colSpan={2} className=\"border-b border-slate-200 text-center\">{narxTuriNomi}</th>",
+        "<th className=\"text-right\">{t(\"omborQoldigi.columns.total\")}</th>",
+        "<th className=\"text-right\">{t(\"omborQoldigi.columns.available\")}</th>",
+        "<th className=\"text-right\">{t(\"omborQoldigi.columns.unitPrice\")}</th>",
+        "<th className=\"text-right\">{t(\"omborQoldigi.columns.totalAmount\")}</th>"
+      ],
+      "dataSource": [
+        "satrlar"
+      ],
+      "customRenderers": [
+        "Package",
+        "Warehouse",
+        "StockQuantity"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": true,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing page-level pagination/server paging retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "Existing page export/import implementation retained; visibility does not drive exports."
+    },
+    {
+      "tableId": "Ombor/Xaridlar/table-1",
+      "source": "src/Pages/Ombor/Xaridlar.tsx",
+      "sourceLineBeforeChanges": 275,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Ombor/Xaridlar.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th key={ustun.kalit}>{ustun.nom}</th>",
+        "<th className=\"sticky right-0 z-10 bg-[#F8FAFC] text-right\">\n                  <button\n                    ref={sozlamaTugmaRef}\n                    type=\"button\"\n                    onClick={() => {\n                      if (!sozlamaOchiq) sozlamaJoylashuviniYangilash();\n                      setSozlamaOchiq((oldingi) => !oldingi);\n               "
+      ],
+      "dataSource": [
+        "faolUstunlar",
+        "sahifadagiKirimlar"
+      ],
+      "customRenderers": [
+        "Settings",
+        "LoaderCircle",
+        "HujjatOchirish",
+        "FileText"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": true,
+      "groupedOrMergedCells": true,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing page-level pagination/server paging retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Qarzdorlik/index/table-1",
+      "source": "src/Pages/Qarzdorlik/index.tsx",
+      "sourceLineBeforeChanges": 118,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Qarzdorlik/index.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-8 py-4\">{t(\"table.customer\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"table.sale\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"table.total\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"table.paid\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"table.debt\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"table.date\")}</th>"
+      ],
+      "dataSource": [
+        "visibleRows"
+      ],
+      "customRenderers": [
+        "Building2",
+        "UserRound"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing page-level pagination/server paging retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Savdo/BekorQilinganlar/table-1",
+      "source": "src/Pages/Savdo/BekorQilinganlar.tsx",
+      "sourceLineBeforeChanges": 75,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Savdo/BekorQilinganlar.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-8 py-4\">{t(\"bekorQilinganlar.columns.sotuv\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"bekorQilinganlar.columns.mijoz\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"bekorQilinganlar.columns.summa\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"bekorQilinganlar.columns.bekorSana\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"bekorQilinganlar.columns.masul\")}</th>",
+        "<th className=\"px-8 py-4\">{t(\"bekorQilinganlar.columns.holati\")}</th>",
+        "<tr><th className=\"px-8 py-4\">{t(\"bekorQilinganlar.columns.sotuv\")}</th><th className=\"px-5 py-4\">{t(\"bekorQilinganlar.columns.mijoz\")}</th><th className=\"px-5 py-4\">{t(\"bekorQilinganlar.columns.summa\")}</th><th className=\"px-5 py-4\">{t(\"bekorQilinganlar.columns.bekorSana\")}</th><th className=\"px-5 py-4\">{t(\"bekorQilinganlar.columns.masul\")}</th><t"
+      ],
+      "dataSource": [
+        "visibleRows"
+      ],
+      "customRenderers": [
+        "UserRound",
+        "HujjatOchirish"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing page-level pagination/server paging retained.",
+      "permissions": "No permission logic added or changed.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Savdo/Buyurtmalar/table-1",
+      "source": "src/Pages/Savdo/Buyurtmalar.tsx",
+      "sourceLineBeforeChanges": 298,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Savdo/Buyurtmalar.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-8 py-4\">{t(\"buyurtmalar.columns.buyurtma\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"buyurtmalar.columns.mijoz\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"buyurtmalar.columns.manzil\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"buyurtmalar.columns.summa\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"buyurtmalar.columns.sana\")}</th>",
+        "<th className=\"px-5 py-4\">{t(\"buyurtmalar.columns.holati\")}</th>",
+        "<tr>\n                  <th className=\"px-8 py-4\">{t(\"buyurtmalar.columns.buyurtma\")}</th>\n                  <th className=\"px-5 py-4\">{t(\"buyurtmalar.columns.mijoz\")}</th>\n                  <th className=\"px-5 py-4\">{t(\"buyurtmalar.columns.manzil\")}</th>\n                  <th className=\"px-5 py-4\">{t(\"buyurtmalar.columns.summa\")}</th>\n             "
+      ],
+      "dataSource": [
+        "royxat"
+      ],
+      "customRenderers": [
+        "Ikona",
+        "Phone",
+        "MapPin",
+        "CalendarClock",
+        "AlarmClock",
+        "HujjatOchirish",
+        "ChevronRight"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing page-level pagination/server paging retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Savdo/index/sotuvlarjadvali-1",
+      "source": "src/Pages/Savdo/index.tsx",
+      "sourceLineBeforeChanges": 607,
+      "component": "SotuvlarJadvali",
+      "behaviorSource": "src/Pages/Savdo/SotuvlarJadvali.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [],
+      "dataSource": [],
+      "customRenderers": [
+        "SotuvlarJadvali"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing page-level pagination/server paging retained.",
+      "permissions": "No permission logic added or changed.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Savdo/OmbordanChiqqanlarOynasi/table-1",
+      "source": "src/Pages/Savdo/OmbordanChiqqanlarOynasi.tsx",
+      "sourceLineBeforeChanges": 187,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Savdo/OmbordanChiqqanlarOynasi.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"w-12 px-4 py-3\">#</th>",
+        "<th className=\"px-3 py-3\">{t(\"ombordanChiqqan.jadval.mahsulot\")}</th>",
+        "<th className=\"px-3 py-3\">{t(\"ombordanChiqqan.jadval.ombor\")}</th>",
+        "<th className=\"px-3 py-3 text-right\">{t(\"ombordanChiqqan.jadval.chiqdi\")}</th>",
+        "<th className=\"px-3 py-3 text-right\">{t(\"ombordanChiqqan.jadval.qaytdi\")}</th>",
+        "<th className=\"px-4 py-3 text-right\">{t(\"ombordanChiqqan.oyna.sanaVaVaqt\")}</th>"
+      ],
+      "dataSource": [
+        "qatorlar"
+      ],
+      "customRenderers": [],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Savdo/Qaytarish/table-1",
+      "source": "src/Pages/Savdo/Qaytarish.tsx",
+      "sourceLineBeforeChanges": 269,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Savdo/Qaytarish.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-4 py-4\">{tq(\"list.columns.number\")}</th>",
+        "<th className=\"px-4 py-4\">{tq(\"list.columns.customer\")}</th>",
+        "<th className=\"px-4 py-4\">{tq(\"list.columns.sale\")}</th>",
+        "<th className=\"px-4 py-4 text-right\">{tq(\"list.columns.goodsValue\")}</th>",
+        "<th className=\"px-4 py-4 text-right\">{tq(\"list.columns.refunded\")}</th>",
+        "<th className=\"px-4 py-4 text-right\">{tq(\"list.columns.debtReduced\")}</th>",
+        "<th className=\"px-4 py-4 text-right\">{tq(\"list.columns.remainingDebt\")}</th>",
+        "<th className=\"px-4 py-4\">{tq(\"list.columns.status\")}</th>",
+        "<th className=\"px-4 py-4\">{tq(\"list.columns.date\")}</th>",
+        "<tr>\n                <th className=\"px-4 py-4\">{tq(\"list.columns.number\")}</th>\n                <th className=\"px-4 py-4\">{tq(\"list.columns.customer\")}</th>\n                <th className=\"px-4 py-4\">{tq(\"list.columns.sale\")}</th>\n                <th className=\"px-4 py-4 text-right\">{tq(\"list.columns.goodsValue\")}</th>\n                <th className="
+      ],
+      "dataSource": [
+        "visibleRows"
+      ],
+      "customRenderers": [
+        "Undo2",
+        "Holat",
+        "HujjatOchirish",
+        "JadvalYuklanmoqda",
+        "RotateCcw"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": true,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing page-level pagination/server paging retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Savdo/QaytarishTafsilotlariModal/table-1",
+      "source": "src/Pages/Savdo/QaytarishTafsilotlariModal.tsx",
+      "sourceLineBeforeChanges": 592,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Savdo/QaytarishTafsilotlariModal.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-5 py-3\">{t(\"table.product\")}</th>",
+        "<th className=\"px-5 py-3 text-center\">{t(\"table.quantity\")}</th>",
+        "<th className=\"px-5 py-3 text-right\">{t(\"table.price\")}</th>",
+        "<th className=\"px-5 py-3 text-right\">{t(\"table.total\")}</th>"
+      ],
+      "dataSource": [
+        "(qaytarish.items ?? [])"
+      ],
+      "customRenderers": [
+        "Package"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Savdo/Savatcha/table-1",
+      "source": "src/Pages/Savdo/Savatcha.tsx",
+      "sourceLineBeforeChanges": 398,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Savdo/Savatcha.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th key={title} className=\"whitespace-nowrap border-b border-orange-100 px-4 py-3 align-middle font-black\">\r\n                      {title}\r\n                    </th>"
+      ],
+      "dataSource": [
+        "[\r\n                    t(\"savatcha.table.headers.number\"),\r\n                    t(\"savatcha.table.headers.customerName\"),\r\n                    t(\"savatcha.table.headers.phone\"),\r\n                    t(\"savatcha.table.headers.itemsCount\"),\r\n                    t(\"savatcha.table.headers.amount\"),\r\n   ",
+        "visibleRows",
+        "[\r\n                                { key: \"continue\", label: t(\"savatcha.table.actions.continue\"), icon: PlayCircle },\r\n                                { key: \"edit\", label: t(\"savatcha.table.actions.edit\"), icon: Edit3 },\r\n                                { key: \"duplicate\", label: t(\"savatcha.table"
+      ],
+      "customRenderers": [
+        "LoaderCircle",
+        "MoreHorizontal",
+        "Icon",
+        "JadvalYuklanmoqda",
+        "FileText",
+        "PackageOpen"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": true,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Savdo/SotuvHujjatlariTab/table-1",
+      "source": "src/Pages/Savdo/SotuvHujjatlariTab.tsx",
+      "sourceLineBeforeChanges": 98,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Savdo/SotuvHujjatlariTab.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-5 py-4 font-medium\">{t(\"hujjatlarTab.columns.raqam\")}</th>",
+        "<th className=\"px-3 py-4 font-medium\">{t(\"hujjatlarTab.columns.turi\")}</th>",
+        "<th className=\"px-3 py-4 font-medium\">{t(\"hujjatlarTab.columns.kimYaratgan\")}</th>",
+        "<th className=\"px-3 py-4 font-medium\">{t(\"hujjatlarTab.columns.sana\")}</th>",
+        "<tr>\r\n              <th className=\"px-5 py-4 font-medium\">{t(\"hujjatlarTab.columns.raqam\")}</th>\r\n              <th className=\"px-3 py-4 font-medium\">{t(\"hujjatlarTab.columns.turi\")}</th>\r\n              <th className=\"px-3 py-4 font-medium\">{t(\"hujjatlarTab.columns.kimYaratgan\")}</th>\r\n              <th className=\"px-3 py-4 font-medium\">{t(\"hujjatl"
+      ],
+      "dataSource": [
+        "hujjatlar"
+      ],
+      "customRenderers": [
+        "FileText",
+        "Receipt",
+        "LoaderCircle",
+        "FileDown"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": true,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "No permission logic added or changed.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Savdo/SotuvOmbordanChiqqanlar/table-1",
+      "source": "src/Pages/Savdo/SotuvOmbordanChiqqanlar.tsx",
+      "sourceLineBeforeChanges": 70,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Savdo/SotuvOmbordanChiqqanlar.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-3 py-2.5\">{t(\"ombordanChiqqan.jadval.mahsulot\")}</th>",
+        "<th className=\"px-3 py-2.5\">{t(\"ombordanChiqqan.jadval.ombor\")}</th>",
+        "<th className=\"px-3 py-2.5 text-right\">{t(\"ombordanChiqqan.jadval.chiqdi\")}</th>",
+        "<th className=\"px-3 py-2.5 text-right\">{t(\"ombordanChiqqan.jadval.qaytdi\")}</th>",
+        "<th className=\"px-3 py-2.5 text-right\">{t(\"ombordanChiqqan.jadval.vaqt\")}</th>"
+      ],
+      "dataSource": [
+        "qatorlar"
+      ],
+      "customRenderers": [],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Savdo/SotuvTafsilotlariModal/table-1",
+      "source": "src/Pages/Savdo/SotuvTafsilotlariModal.tsx",
+      "sourceLineBeforeChanges": 1157,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Savdo/SotuvTafsilotlariModal.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "fixed-document",
+      "columns": [
+        "<th className=\"border-r border-slate-950 px-3 py-2 text-center\">{t(\"nakladnoy.jadval.raqam\")}</th>",
+        "<th className=\"border-r border-slate-950 px-3 py-2 text-center\">{t(\"nakladnoy.jadval.nomi\")}</th>",
+        "<th className=\"border-r border-slate-950 px-3 py-2 text-center\">{t(\"nakladnoy.jadval.birlik\")}</th>",
+        "<th className=\"border-r border-slate-950 px-3 py-2 text-center\">{t(\"nakladnoy.jadval.miqdor\")}</th>",
+        "<th className=\"border-r border-slate-950 px-3 py-2 text-center\">{t(\"nakladnoy.jadval.narx\")}</th>",
+        "<th className=\"px-3 py-2 text-center\">{t(\"nakladnoy.jadval.summa\")}</th>"
+      ],
+      "dataSource": [
+        "mahsulotlar"
+      ],
+      "customRenderers": [],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": true,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "Existing page export/import implementation retained; visibility does not drive exports."
+    },
+    {
+      "tableId": "Savdo/SotuvTafsilotlariModal/table-2",
+      "source": "src/Pages/Savdo/SotuvTafsilotlariModal.tsx",
+      "sourceLineBeforeChanges": 4335,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Savdo/SotuvTafsilotlariModal.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"w-14 px-7 py-3.5\">#</th>",
+        "<th className=\"px-3 py-3.5\">{t(\"common.jadval.mahsulot\")}</th>",
+        "<th className=\"px-3 py-3.5\">{t(\"common.jadval.narx\")}</th>",
+        "<th className=\"px-3 py-3.5\">{t(\"common.jadval.miqdor\")}</th>",
+        "<th className=\"px-3 py-3.5\">{t(\"common.jadval.mavjudQoldiq\")}</th>",
+        "<th className=\"px-3 py-3.5\">{t(\"common.jadval.rezervda\")}</th>",
+        "<th className=\"px-3 py-3.5\">{t(\"common.jadval.ombordanChiqdi\")}</th>",
+        "<th className=\"px-7 py-3.5 text-right\">{t(\"common.jadval.summa\")}</th>"
+      ],
+      "dataSource": [
+        "items"
+      ],
+      "customRenderers": [
+        "Package",
+        "NegativeStockBadge",
+        "StockQuantity"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "Existing page export/import implementation retained; visibility does not drive exports."
+    },
+    {
+      "tableId": "Savdo/Tarix/sotuvlarjadvali-1",
+      "source": "src/Pages/Savdo/Tarix.tsx",
+      "sourceLineBeforeChanges": 25,
+      "component": "SotuvlarJadvali",
+      "behaviorSource": "src/Pages/Savdo/SotuvlarJadvali.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [],
+      "dataSource": [],
+      "customRenderers": [
+        "SotuvlarJadvali"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "No permission logic added or changed.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "Savdo/Tolovlar/table-1",
+      "source": "src/Pages/Savdo/Tolovlar.tsx",
+      "sourceLineBeforeChanges": 218,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/Savdo/Tolovlar.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-6 py-4\">{t(\"tolovlar.table.columns.sotuvId\")}</th>",
+        "<th className=\"px-6 py-4\">{t(\"tolovlar.table.columns.mijoz\")}</th>",
+        "<th className=\"px-6 py-4\">{t(\"tolovlar.table.columns.turi\")}</th>",
+        "<th className=\"px-6 py-4\">{t(\"tolovlar.table.columns.tolovTuri\")}</th>",
+        "<th className=\"px-6 py-4\">{t(\"tolovlar.table.columns.summa\")}</th>",
+        "<th className=\"px-6 py-4\">{t(\"tolovlar.table.columns.sana\")}</th>"
+      ],
+      "dataSource": [
+        "rows"
+      ],
+      "customRenderers": [
+        "JadvalYuklanmoqda",
+        "CreditCard",
+        "ReceiptText"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": true,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing page-level pagination/server paging retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "SozlamalarUchot/BirlikMahsulotlari/table-1",
+      "source": "src/Pages/SozlamalarUchot/BirlikMahsulotlari.tsx",
+      "sourceLineBeforeChanges": 306,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/SozlamalarUchot/BirlikMahsulotlari.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-6 py-3\">{t(\"birliklar.products.columns.product\")}</th>",
+        "<th className=\"px-4 py-3\">{t(\"birliklar.products.columns.barcode\")}</th>",
+        "<th className=\"px-4 py-3\">{t(\"birliklar.products.columns.warehouse\")}</th>",
+        "<th className=\"px-4 py-3 text-right\">{t(\"birliklar.products.columns.stock\")}</th>",
+        "<th className=\"px-4 py-3 text-right\">{t(\"birliklar.products.columns.reserved\")}</th>",
+        "<th className=\"px-6 py-3 text-right\">{t(\"birliklar.products.columns.available\")}</th>"
+      ],
+      "dataSource": [
+        "korinadigan"
+      ],
+      "customRenderers": [],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": true,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing page-level pagination/server paging retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "SozlamalarUchot/VakolatlarBolimi/table-1",
+      "source": "src/Pages/SozlamalarUchot/VakolatlarBolimi.tsx",
+      "sourceLineBeforeChanges": 60,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/SozlamalarUchot/VakolatlarBolimi.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-4 py-3 text-xs font-black uppercase text-orange-600\">{t(\"vakolatlar.employeeColumn\")}</th>",
+        "<th key={v.code} className=\"px-3 py-3 text-center text-xs font-black uppercase text-orange-600\">{v.nom}</th>"
+      ],
+      "dataSource": [
+        "vakolatlar",
+        "korinadiganlar"
+      ],
+      "customRenderers": [
+        "Switch",
+        "LoaderCircle"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": true,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "SozlamalarUchot/ValyutaBolimi/table-1",
+      "source": "src/Pages/SozlamalarUchot/ValyutaBolimi.tsx",
+      "sourceLineBeforeChanges": 359,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/SozlamalarUchot/ValyutaBolimi.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-4 py-3\">{t(\"valyuta.history.date\")}</th>",
+        "<th className=\"px-4 py-3 text-right\">{t(\"valyuta.history.rate\")}</th>",
+        "<th className=\"px-4 py-3\">{t(\"valyuta.history.updatedAt\")}</th>"
+      ],
+      "dataSource": [
+        "royxat"
+      ],
+      "customRenderers": [
+        "CalendarDays"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "XaridorUchot/BoshlangichQarzImportModal/table-1",
+      "source": "src/Pages/XaridorUchot/BoshlangichQarzImportModal.tsx",
+      "sourceLineBeforeChanges": 136,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/XaridorUchot/BoshlangichQarzImportModal.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th key={key} className=\"px-4 py-3 font-semibold\">{t(`openingDebt.import.${key}`)}</th>"
+      ],
+      "dataSource": [
+        "[\"row\", \"column\", \"error\"]",
+        "result.errors"
+      ],
+      "customRenderers": [],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": true,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "Existing page export/import implementation retained; visibility does not drive exports."
+    },
+    {
+      "tableId": "XaridorUchot/Kompaniyalar/kengaytiriladiganjadval-1",
+      "source": "src/Pages/XaridorUchot/Kompaniyalar.tsx",
+      "sourceLineBeforeChanges": 128,
+      "component": "KengaytiriladiganJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{royxat}",
+      "customRenderers": [
+        "KengaytiriladiganJadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing local page/pageSize (initial 1/10), callbacks unchanged.",
+      "permissions": "No permission logic added or changed.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "XaridorUchot/MijozQarzlariTab/kengaytiriladiganjadval-1",
+      "source": "src/Pages/XaridorUchot/MijozQarzlariTab.tsx",
+      "sourceLineBeforeChanges": 89,
+      "component": "KengaytiriladiganJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{qatorlar}",
+      "customRenderers": [
+        "KengaytiriladiganJadval"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing local page/pageSize (initial 1/10), callbacks unchanged.",
+      "permissions": "No permission logic added or changed.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "XaridorUchot/Xaridorlar/kengaytiriladiganjadval-1",
+      "source": "src/Pages/XaridorUchot/Xaridorlar.tsx",
+      "sourceLineBeforeChanges": 232,
+      "component": "KengaytiriladiganJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{royxat}",
+      "customRenderers": [
+        "KengaytiriladiganJadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing local page/pageSize (initial 1/10), callbacks unchanged.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "XaridorUchot/XaridorTablari/kengaytiriladiganjadval-1",
+      "source": "src/Pages/XaridorUchot/XaridorTablari.tsx",
+      "sourceLineBeforeChanges": 120,
+      "component": "KengaytiriladiganJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{savdolar}",
+      "customRenderers": [
+        "KengaytiriladiganJadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing local page/pageSize (initial 1/10), callbacks unchanged.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "XaridorUchot/XaridorTablari/kengaytiriladiganjadval-2",
+      "source": "src/Pages/XaridorUchot/XaridorTablari.tsx",
+      "sourceLineBeforeChanges": 212,
+      "component": "KengaytiriladiganJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{kirimlar}",
+      "customRenderers": [
+        "KengaytiriladiganJadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing local page/pageSize (initial 1/10), callbacks unchanged.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "XaridorUchot/XaridorTablari/kengaytiriladiganjadval-3",
+      "source": "src/Pages/XaridorUchot/XaridorTablari.tsx",
+      "sourceLineBeforeChanges": 272,
+      "component": "KengaytiriladiganJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{tolovlar}",
+      "customRenderers": [
+        "KengaytiriladiganJadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing local page/pageSize (initial 1/10), callbacks unchanged.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "XaridorUchot/XaridorTolovlariTab/kengaytiriladiganjadval-1",
+      "source": "src/Pages/XaridorUchot/XaridorTolovlariTab.tsx",
+      "sourceLineBeforeChanges": 181,
+      "component": "KengaytiriladiganJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{tolovlar}",
+      "customRenderers": [
+        "KengaytiriladiganJadval"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing local page/pageSize (initial 1/10), callbacks unchanged.",
+      "permissions": "No permission logic added or changed.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "XaridorUchot/YetkazibBeruvchilar/kengaytiriladiganjadval-1",
+      "source": "src/Pages/XaridorUchot/YetkazibBeruvchilar.tsx",
+      "sourceLineBeforeChanges": 130,
+      "component": "KengaytiriladiganJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{royxat}",
+      "customRenderers": [
+        "KengaytiriladiganJadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing local page/pageSize (initial 1/10), callbacks unchanged.",
+      "permissions": "No permission logic added or changed.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "XaridorUchot/YetkazibBoshlangichQarzTab/table-1",
+      "source": "src/Pages/XaridorUchot/YetkazibBoshlangichQarzTab.tsx",
+      "sourceLineBeforeChanges": 124,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/XaridorUchot/YetkazibBoshlangichQarzTab.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"px-4 py-3\">{t(\"yetkazibDetails.openingDebt.columns.document\")}</th>",
+        "<th className=\"px-4 py-3\">{t(\"yetkazibDetails.openingDebt.columns.date\")}</th>",
+        "<th className=\"px-4 py-3 text-right\">{t(\"yetkazibDetails.openingDebt.columns.amount\")}</th>",
+        "<th className=\"px-4 py-3\">{t(\"yetkazibDetails.openingDebt.columns.note\")}</th>",
+        "<th className=\"px-4 py-3\">{t(\"yetkazibDetails.openingDebt.columns.status\")}</th>",
+        "<tr>\r\n                  <th className=\"px-4 py-3\">{t(\"yetkazibDetails.openingDebt.columns.document\")}</th>\r\n                  <th className=\"px-4 py-3\">{t(\"yetkazibDetails.openingDebt.columns.date\")}</th>\r\n                  <th className=\"px-4 py-3 text-right\">{t(\"yetkazibDetails.openingDebt.columns.amount\")}</th>\r\n                  <th className=\""
+      ],
+      "dataSource": [
+        "qarzlar"
+      ],
+      "customRenderers": [
+        "XCircle",
+        "RotateCcw"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "XodimUchot/Davomat/table-1",
+      "source": "src/Pages/XodimUchot/Davomat.tsx",
+      "sourceLineBeforeChanges": 398,
+      "component": "Table",
+      "behaviorSource": "src/Components/ui/table.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [],
+      "dataSource": [],
+      "customRenderers": [
+        "Table"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing page-level pagination/server paging retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "XodimUchot/Lavozimlar/kengaytiriladiganjadval-1",
+      "source": "src/Pages/XodimUchot/Lavozimlar.tsx",
+      "sourceLineBeforeChanges": 118,
+      "component": "KengaytiriladiganJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{royxat}",
+      "customRenderers": [
+        "KengaytiriladiganJadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing local page/pageSize (initial 1/10), callbacks unchanged.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "XodimUchot/Vakolatlar/table-1",
+      "source": "src/Pages/XodimUchot/Vakolatlar.tsx",
+      "sourceLineBeforeChanges": 115,
+      "component": "native React HTML table",
+      "behaviorSource": "src/Pages/XodimUchot/Vakolatlar.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": [
+        "<th className=\"sticky left-0 z-10 min-w-[220px] bg-orange-50/95 px-5 py-4 font-black text-slate-600\">\r\n                Xodim\r\n              </th>",
+        "<th\r\n                  key={vakolat.kod}\r\n                  className=\"min-w-[112px] px-3 py-4 text-center align-bottom text-xs font-black text-slate-500\"\r\n                  title={vakolat.izoh}\r\n                >\r\n                  {vakolat.nom}\r\n                </th>"
+      ],
+      "dataSource": [
+        "korsatiladiganVakolatlar",
+        "royxat"
+      ],
+      "customRenderers": [
+        "Lock",
+        "Check"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": true,
+      "existingStickyCells": true,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "No pagination added; original behavior retained.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "XodimUchot/Xodimlar/kengaytiriladiganjadval-1",
+      "source": "src/Pages/XodimUchot/Xodimlar.tsx",
+      "sourceLineBeforeChanges": 192,
+      "component": "KengaytiriladiganJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{royxat}",
+      "customRenderers": [
+        "KengaytiriladiganJadval"
+      ],
+      "editableControlsInInspectedSource": true,
+      "existingSortingFiltering": true,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing local page/pageSize (initial 1/10), callbacks unchanged.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    },
+    {
+      "tableId": "XodimUchot/XodimTablari/kengaytiriladiganjadval-1",
+      "source": "src/Pages/XodimUchot/XodimTablari.tsx",
+      "sourceLineBeforeChanges": 52,
+      "component": "KengaytiriladiganJadval",
+      "behaviorSource": "src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx",
+      "library": "Existing React/native HTML; Radix popover for settings. No table library migration.",
+      "status": "full-with-runtime-structure-guard",
+      "columns": "{ustunlar}",
+      "dataSource": "{davomat}",
+      "customRenderers": [
+        "KengaytiriladiganJadval"
+      ],
+      "editableControlsInInspectedSource": false,
+      "existingSortingFiltering": false,
+      "existingStickyCells": false,
+      "groupedOrMergedCells": false,
+      "virtualization": "No virtualized table implementation or grid library found in this frontend.",
+      "pagination": "Existing local page/pageSize (initial 1/10), callbacks unchanged.",
+      "permissions": "Existing page permission conditions/callbacks retained; current rendered schema is revalidated.",
+      "export": "No export behavior added or changed."
+    }
+  ],
+  "validation": {
+    "frontendRegression": {
+      "tests": 704,
+      "passed": 704,
+      "failed": 0,
+      "skipped": 0
+    },
+    "smartTableTests": {
+      "tests": 21,
+      "passed": 21,
+      "failed": 0
+    },
+    "typecheck": "passed (tsc -b)",
+    "lint": "passed (0 errors, 0 warnings)",
+    "productionBuild": "passed; pre-existing large-chunk warning",
+    "gitDiffCheck": "passed",
+    "backendTestsRun": false,
+    "productionBackendMutations": false,
+    "browserVisualVerification": "blocked: browser access host unavailable; Computer Use could not confidently determine Chrome URL",
+    "overflowRegression": "passed: single-line names/codes/dates/statuses/amounts, intrinsic auto/max-content table, horizontal scrolling in existing container, menus/callbacks/editor values preserved; DOM/computed-style verification",
+    "compactMenuRegression": "passed: available-height size constraint, non-scrolling header/reset, scrollable column list, single-column disclosure, preferences retained on close/reset; DOM/computed-style test",
+    "intrinsicPinRegression": "passed: left/right offsets use observed rendered header widths, including widths greater than saved preferences; observer cleanup verified",
+    "employeeDisplayRegression": "passed: ID-only/partial responsible relation, matching directory/current profile, first/last names and username, reactive late data, reordered columns, immutable records and row callbacks; missing or unrelated employee data stays dash; no API requests added"
+  },
+  "nonTableFormsReviewed": [
+    {
+      "source": "src/Pages/BoshSahifa/SavatchaJadvali.tsx",
+      "status": "unchanged responsive CSS-grid cart form; excluded from native table count"
+    }
+  ]
+}

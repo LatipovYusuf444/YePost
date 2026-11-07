@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import ProductStockSummary from "./ProductStockSummary";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
@@ -462,19 +463,19 @@ export default function Mahsulotlar() {
           ) : (
             <div className="min-w-0 max-w-full overflow-hidden rounded-[26px] border border-orange-100 bg-white shadow-sm">
               <div className="scrollbar-orange max-w-full overflow-x-auto">
-                <table className="w-max min-w-full whitespace-nowrap text-left text-sm">
+                <SmartTable tableId="Mahsulotlar/index/table-1" replaceColumnControls><table className="w-max min-w-full whitespace-nowrap text-left text-sm">
                   <thead className="bg-slate-50 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
                     <tr>
-                      <th className="px-5 py-4">{t("table.index")}</th>
-                      <th className="px-5 py-4">{t("table.product")}</th>
-                      <th className="px-5 py-4">{t("table.category")}</th>
-                      <th className="px-5 py-4">{t("table.unit")}</th>
-                      <th className="px-5 py-4">{t("card.salePrice")}</th>
-                      <th className="px-5 py-4">{t("card.costPrice")}</th>
-                      <th className="px-5 py-4">{t("table.barcode")}</th>
-                      <th className="px-5 py-4">{t("table.article")}</th>
-                      <th className="px-5 py-4">{t("table.status")}</th>
-                      <th className="product-table-actions sticky right-0 z-20 min-w-44 bg-blue-50 px-5 py-4 text-right">{t("table.action")}</th>
+                      <th data-column-id="h1" className="px-5 py-4">{t("table.index")}</th>
+                      <th data-column-id="h2" className="px-5 py-4">{t("table.product")}</th>
+                      <th data-column-id="h3" className="px-5 py-4">{t("table.category")}</th>
+                      <th data-column-id="h4" className="px-5 py-4">{t("table.unit")}</th>
+                      <th data-column-id="h5" className="px-5 py-4">{t("card.salePrice")}</th>
+                      <th data-column-id="h6" className="px-5 py-4">{t("card.costPrice")}</th>
+                      <th data-column-id="h7" className="px-5 py-4">{t("table.barcode")}</th>
+                      <th data-column-id="h8" className="px-5 py-4">{t("table.article")}</th>
+                      <th data-column-id="h9" className="px-5 py-4">{t("table.status")}</th>
+                      <th data-column-id="h10" className="product-table-actions sticky right-0 z-20 min-w-44 bg-blue-50 px-5 py-4 text-right">{t("table.action")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-orange-100">
@@ -522,7 +523,7 @@ export default function Mahsulotlar() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></SmartTable>
               </div>
               {mahsulotlar.length===0&&<Empty matn={t("empty.products")}/>}
               {mahsulotlar.length>0&&<div className="flex flex-col gap-3 border-t border-orange-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -567,12 +568,12 @@ export default function Mahsulotlar() {
             </div>
           ):(
             <div className="overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-[0_10px_30px_rgba(37,99,235,.06)]">
-              <table className="w-full text-left text-sm">
+              <SmartTable tableId="Mahsulotlar/index/table-2" replaceColumnControls><table className="w-full text-left text-sm">
                 <thead className="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-500">
                   <tr>
-                    <th className="w-16 px-5 py-4">{t("table.index")}</th>
-                    <th className="px-5 py-4">{t("categoriesTab.name")}</th>
-                    <th className="w-32 px-5 py-4 text-right"><span className="sr-only">{t("table.action")}</span></th>
+                    <th data-column-id="h1" className="w-16 px-5 py-4">{t("table.index")}</th>
+                    <th data-column-id="h2" className="px-5 py-4">{t("categoriesTab.name")}</th>
+                    <th data-column-id="h3" className="w-32 px-5 py-4 text-right"><span className="sr-only">{t("table.action")}</span></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-orange-100/70">
@@ -586,7 +587,7 @@ export default function Mahsulotlar() {
                   </tr>)}
                   {store.kategoriyalar.length===0&&<tr><td colSpan={3} className="px-6 py-14 text-center"><Tags className="mx-auto text-orange-200" size={40}/><p className="mt-3 font-semibold text-gray-400">{t("empty.noData")}</p></td></tr>}
                 </tbody>
-              </table>
+              </table></SmartTable>
             </div>
           )}
         </section>
@@ -773,7 +774,7 @@ function MahsulotImportModal({onClose,onImported}:{onClose:()=>void;onImported:(
         {natija.errorsTruncated&&<div className="rounded-2xl bg-amber-50 p-4 font-bold text-amber-800">{t("excelImport.errorsTruncated")}</div>}
         {natija.errors.length>0&&<div className="overflow-hidden rounded-2xl border border-red-100">
           <div className="border-b border-red-100 bg-red-50 px-4 py-3"><h3 className="font-black text-red-700">{t("excelImport.rowErrorsTitle")}</h3></div>
-          <div className="max-h-80 overflow-auto"><table className="min-w-full text-left text-sm"><thead className="sticky top-0 bg-slate-50 text-xs font-black uppercase tracking-[0.1em] text-slate-500"><tr><th className="px-4 py-3">{t("excelImport.table.row")}</th><th className="px-4 py-3">{t("excelImport.table.column")}</th><th className="px-4 py-3">{t("excelImport.table.message")}</th><th className="px-4 py-3">{t("excelImport.table.value")}</th></tr></thead><tbody className="divide-y divide-slate-100">{natija.errors.map((error,index)=><tr key={`${error.row}-${error.column??""}-${index}`}><td className="px-4 py-3 font-black text-slate-800">{error.row}</td><td className="px-4 py-3 font-bold text-slate-600">{error.column??"—"}</td><td className="min-w-72 px-4 py-3 text-slate-700">{error.message}</td><td className="max-w-64 break-all px-4 py-3 text-slate-500">{error.value??"—"}</td></tr>)}</tbody></table></div>
+          <div className="max-h-80 overflow-auto"><SmartTable tableId="Mahsulotlar/index/table-3" replaceColumnControls><table className="min-w-full text-left text-sm"><thead className="sticky top-0 bg-slate-50 text-xs font-black uppercase tracking-[0.1em] text-slate-500"><tr><th data-column-id="h1" className="px-4 py-3">{t("excelImport.table.row")}</th><th data-column-id="h2" className="px-4 py-3">{t("excelImport.table.column")}</th><th data-column-id="h3" className="px-4 py-3">{t("excelImport.table.message")}</th><th data-column-id="h4" className="px-4 py-3">{t("excelImport.table.value")}</th></tr></thead><tbody className="divide-y divide-slate-100">{natija.errors.map((error,index)=><tr key={`${error.row}-${error.column??""}-${index}`}><td className="px-4 py-3 font-black text-slate-800">{error.row}</td><td className="px-4 py-3 font-bold text-slate-600">{error.column??"—"}</td><td className="min-w-72 px-4 py-3 text-slate-700">{error.message}</td><td className="max-w-64 break-all px-4 py-3 text-slate-500">{error.value??"—"}</td></tr>)}</tbody></table></SmartTable></div>
         </div>}
       </>}
     </div>

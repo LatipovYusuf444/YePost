@@ -1,3 +1,4 @@
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
@@ -393,7 +394,7 @@ export default function Chiqim() {
 
       <div className="overflow-visible rounded-[30px] border border-orange-100 bg-white shadow-sm">
         <div ref={jadvalRef} className="scrollbar-hidden overflow-x-auto rounded-t-[30px]">
-          <table className="table-fixed text-left text-sm" style={{ width: jadvalKengligi, minWidth: "100%" }}>
+          <SmartTable tableId="Ombor/Chiqim/table-1" replaceColumnControls><table className="table-fixed text-left text-sm" style={{ width: jadvalKengligi, minWidth: "100%" }}>
             <colgroup>
               {faolUstunlar.map((column) => <col key={column.id} style={{ width: ustunKengliklari[column.id] }} />)}
               <col style={{ width: 80 }} />
@@ -401,9 +402,9 @@ export default function Chiqim() {
             <thead className="bg-[#F8FAFC] text-[11px] font-black uppercase tracking-wide text-slate-500">
               <tr>
                 {faolUstunlar.map((column) => (
-                  <th key={column.id} className="relative h-[58px] border-r border-orange-200/80 px-7 py-3">
+                  <th data-column-id={"h1:" + (column.id)} key={column.id} className="relative h-[58px] border-r border-orange-200/80 px-7 py-3">
                     <span className="block truncate">{t(`chiqim.columns.${column.id}`)}</span>
-                    <button
+                    <button data-table-control
                       type="button"
                       aria-label={t("chiqim.columnResizeAria", { column: t(`chiqim.columns.${column.id}`) })}
                       onPointerDown={(event) => ustunniTortishniBoshlash(event, column.id)}
@@ -411,9 +412,9 @@ export default function Chiqim() {
                     />
                   </th>
                 ))}
-                <th className="sticky right-0 z-10 w-20 min-w-20 bg-[#F8FAFC] px-5 py-3">
+                <th data-column-id="h2" className="sticky right-0 z-10 w-20 min-w-20 bg-[#F8FAFC] px-5 py-3">
                   <div className="relative flex justify-end">
-                    <button
+                    <button data-table-control
                       ref={sozlamaTugmaRef}
                       type="button"
                       onClick={() => {
@@ -448,7 +449,7 @@ export default function Chiqim() {
                   </tr>
                 ))}
             </tbody>
-          </table>
+          </table></SmartTable>
           {!store.yuklanmoqda && royxat.length === 0 && (
             <div className="p-14 text-center"><FileText className="mx-auto text-orange-200" size={42} /><p className="mt-3 font-bold text-slate-500">{t("chiqim.emptyTitle")}</p><p className="mt-1 text-sm text-slate-400">{t("chiqim.emptyHint")}</p></div>
           )}
