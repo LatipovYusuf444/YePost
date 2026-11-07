@@ -86,8 +86,8 @@ export default function FoydaXarajatHisoboti() {
     setXato("");
     incomeExpenseReportApi
       .olish({
-        dateFrom: new Date(`${dateFrom}T00:00:00.000Z`).toISOString(),
-        dateTo: new Date(`${dateTo}T23:59:59.999Z`).toISOString(),
+        dateFrom: dateFrom, // Toshkent kuni: backend kun boshidan oladi (M3)
+        dateTo: dateTo,
         branchIds: filiallar.length ? filiallar.join(",") : undefined,
         currency: tanlanganValyuta,
       })
@@ -127,8 +127,8 @@ export default function FoydaXarajatHisoboti() {
     setXato("");
     try {
       await incomeExpenseReportApi.export({
-        dateFrom: new Date(`${dateFrom}T00:00:00.000Z`).toISOString(),
-        dateTo: new Date(`${dateTo}T23:59:59.999Z`).toISOString(),
+        dateFrom: dateFrom, // Toshkent kuni: backend kun boshidan oladi (M3)
+        dateTo: dateTo,
         branchIds: filiallar.length ? filiallar.join(",") : undefined,
         currency: tanlanganValyuta,
       }, "excel");

@@ -1,4 +1,5 @@
 import { oziValyutadaMatn, pulMatni, useValyutaStore, valyutaKodi, type Valyuta } from "@/lib/valyuta";
+import { sotuvHujjatRaqami } from "@/lib/kassaNomlari";
 import type { Qaytarish, QaytarishMahsuloti, Sotuv, SotuvHolati, SotuvMahsuloti, SotuvTolovi, TolovTuri } from "@/types/savdo";
 
 type MoslashuvchanSotuvMahsuloti = SotuvMahsuloti &
@@ -120,6 +121,23 @@ export function sotuvSummasiniSomga(summa: number, sotuv: Pick<Sotuv, "currency"
   return summaniSomga(summa, sotuvValyutasi(sotuv));
 }
 
+/**
+ * Turli valyutadagi summalar jami matni (M5). Kurs bo'lsa hammasi so'mga o'giriladi; kurs yuklanmagan bo'lsa dollar so'mga
+ * qo'shilmaydi ("1 000 000 so'm + $200"), aks holda $200 "200 so'm" bo'lib jamga kirib ketardi.
+ */
+export function aralashJamiMatni(qatorlar: ReadonlyArray<{ summa: number; valyuta: Valyuta }>) {
+  let som = 0;
+  let dollar = 0;
+  for (const { summa, valyuta } of qatorlar) {
+    if (valyuta === "USD") dollar += summa;
+    else som += summa;
+  }
+  if (dollar === 0) return pulniFormatlash(som);
+  const { kurs, kursBor } = useValyutaStore.getState();
+  if (kursBor && kurs > 0) return pulniFormatlash(som + dollar * kurs);
+  return som === 0 ? oziValyutadaMatn(dollar, "USD") : `${pulniFormatlash(som)} + ${oziValyutadaMatn(dollar, "USD")}`;
+}
+
 /** Qaytarish hujjati summalari valyutasi: hujjatning o'zi, bo'lmasa bog'langan sotuv, bo'lmasa so'm. */
 export function qaytarishValyutasi(qaytarish: Pick<Qaytarish, "currency" | "sale">): Valyuta {
   return valyutaKodi(qaytarish.currency ?? qaytarish.sale?.currency);
@@ -228,7 +246,13 @@ export function qaytarishSummasi(qaytarish: Qaytarish) {
       (jami, mahsulot) => jami + raqamgaAylantirish(mahsulot.quantity) * raqamgaAylantirish(mahsulot.price),
       0
     ) ?? 0;
-  const backendJami = raqamgaAylantirish(qaytarish.totalAmount ?? qaytarish.total);
+  // Tasdiqlangan qaytarishda backend `goodsValue` (chegirma ulushi ayirilgan qaytgan tovar qiymati) — asosiy manba (K6).
+  // Qoralamada u yo'q: pul qaytarish + qarzdan ayirilgan summa, bo'lmasa narx × miqdor.
+  const tovarQiymati = raqamgaAylantirish(qaytarish.goodsValue);
+  if (tovarQiymati > 0) return tovarQiymati;
+  const backendJami =
+    raqamgaAylantirish(qaytarish.totalAmount ?? qaytarish.total) ||
+    raqamgaAylantirish(qaytarish.refundAmount) + raqamgaAylantirish(qaytarish.debtReduction);
   return backendJami > 0 || itemsJami === 0 ? backendJami : itemsJami;
 }
 
@@ -273,7 +297,10 @@ export function masulNomi(sotuv: Sotuv) {
 }
 
 export function sotuvJadvalId(sotuv: Sotuv) {
-  const id = sotuv.documentNumber || sotuv.number || sotuv.id || "SOTUV";
+  // Backend hujjat raqamini `docNumber` da beradi (SOT-000014): u bo'lsa shuning o'zi ko'rsatiladi va qidiriladi (M6).
+  const hujjatRaqami = sotuvHujjatRaqami(sotuv);
+  if (hujjatRaqami) return hujjatRaqami;
+  const id = sotuv.id || "SOTUV";
   const onlyDigits = id.replace(/\D/g, "");
 
   if (onlyDigits.length >= 8) return onlyDigits.slice(0, 8);

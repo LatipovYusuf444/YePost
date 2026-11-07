@@ -117,8 +117,8 @@ export default function ChegirmaHisoboti() {
 
   const filtr = useMemo<DiscountReportFilter>(() => ({
     groupBy: guruh,
-    dateFrom: new Date(`${dateFrom}T00:00:00.000Z`).toISOString(),
-    dateTo: new Date(`${dateTo}T23:59:59.999Z`).toISOString(),
+    dateFrom: dateFrom, // Toshkent kuni: backend kun boshidan oladi (M3)
+    dateTo: dateTo,
     branchId: branchId || undefined,
     responsibleId: responsibleId || undefined,
   }), [branchId, dateFrom, dateTo, guruh, responsibleId]);

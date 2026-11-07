@@ -1,3 +1,4 @@
+import { bugungiToshkentKuni } from "@/lib/hujjatSanasi";
 import { useMemo, useState } from "react";
 import { Check, Lock, Search } from "lucide-react";
 import { backendVakolatlar } from "./backendMetadata";
@@ -43,7 +44,7 @@ export default function Vakolatlar({ xodimlar, lavozimlar, onSaqlash, embedded =
       vakolatlar: bor
         ? xodim.vakolatlar.filter((item) => item !== kod)
         : [...xodim.vakolatlar, kod],
-      ozgartirilganSana: new Date().toISOString().slice(0, 10),
+      ozgartirilganSana: bugungiToshkentKuni(),
       ozgartirganMasul: "Administrator",
     });
   }

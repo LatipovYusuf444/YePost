@@ -2,6 +2,7 @@
 // UI'siz yozilgan (faqat tur importlari) — testlarda to'g'ridan-to'g'ri ishlaydi.
 import type { QoldiqTanlovi, SotuvNarxTuri } from "../types/savdo.ts";
 import { asosiyMiqdor, birlikNarxi, type TovarBirligi } from "./kopBirlik.ts";
+import { yaxlitHalfUp } from "./yaxlitlash.ts";
 
 export type NarxValyutasi = "UZS" | "USD";
 export type ChegirmaTuri = "sum" | "foiz";
@@ -11,7 +12,7 @@ export type TurNarxi = { valyuta: NarxValyutasi; asl: number; som: number };
 
 export const NARX_TURLARI_TARTIBI: readonly SotuvNarxTuri[] = ["COST", "RETAIL", "WHOLESALE"];
 
-const yaxlit2 = (son: number) => Math.round(son * 100) / 100;
+const yaxlit2 = (son: number) => yaxlitHalfUp(son, 2);
 
 function musbat(qiymat: unknown) {
   const son = Number(qiymat);

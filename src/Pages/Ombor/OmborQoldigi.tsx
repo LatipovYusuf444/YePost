@@ -1,3 +1,4 @@
+import { bugungiToshkentKuni } from "@/lib/hujjatSanasi";
 import { StockQuantity } from "@/Components/common/NegativeStockBadge";
 import { pulMatni } from "@/lib/valyuta";
 import { qoldiqTaqsimotiMatni } from "@/lib/kopBirlik";
@@ -91,7 +92,7 @@ type Satr = {
 };
 
 
-const bugun = () => new Date().toISOString().slice(0, 10);
+const bugun = () => bugungiToshkentKuni();
 
 const BOSHLANGICH_FILTR: Filtr = {
   sana: bugun(),

@@ -1,3 +1,4 @@
+import { toshkentKuni } from "@/lib/hujjatSanasi";
 import { movementStockTotals } from "@/lib/negativeStock";
 import { StockQuantity } from "@/Components/common/NegativeStockBadge";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -100,8 +101,8 @@ export default function TovarHarakati() {
     setXato("");
     stockMovementReportApi
       .barchasi({
-        dateFrom: new Date(`${filter.dateFrom}T00:00:00.000Z`).toISOString(),
-        dateTo: new Date(`${filter.dateTo}T23:59:59.999Z`).toISOString(),
+        dateFrom: filter.dateFrom, // Toshkent kuni: backend kun boshidan oladi (M3)
+        dateTo: filter.dateTo,
         warehouseIds: filter.warehouseIds.length ? filter.warehouseIds.join(",") : undefined,
         branchIds: filter.filialIds.length ? filter.filialIds.join(",") : undefined,
         categoryIds: filter.categoryIds.length ? filter.categoryIds.join(",") : undefined,
@@ -212,7 +213,7 @@ export default function TovarHarakati() {
 
       const streamKey = (row: TovarHarakati) => row.warehouseId + ':' + row.xarakteristikaId;
       const previous = new Map<string, number>();
-      for (const row of tovarHarakati.filter((r) => r.productId === mahsulot.id && r.sana.slice(0, 10) < filter.dateFrom)) {
+      for (const row of tovarHarakati.filter((r) => r.productId === mahsulot.id && (toshkentKuni(r.sana) || r.sana.slice(0, 10)) < filter.dateFrom)) {
         const key = streamKey(row);
         previous.set(key, (previous.get(key) ?? 0) + (kirimTuri(row) ? row.miqdor : -row.miqdor));
       }
@@ -279,8 +280,8 @@ export default function TovarHarakati() {
     setEksportYuklanmoqda(true);
     try {
       await stockMovementReportApi.export({
-        dateFrom: new Date(`${filter.dateFrom}T00:00:00.000Z`).toISOString(),
-        dateTo: new Date(`${filter.dateTo}T23:59:59.999Z`).toISOString(),
+        dateFrom: filter.dateFrom, // Toshkent kuni: backend kun boshidan oladi (M3)
+        dateTo: filter.dateTo,
         warehouseIds: filter.warehouseIds.length ? filter.warehouseIds.join(",") : undefined,
         branchIds: filter.filialIds.length ? filter.filialIds.join(",") : undefined,
         categoryIds: filter.categoryIds.length ? filter.categoryIds.join(",") : undefined,
