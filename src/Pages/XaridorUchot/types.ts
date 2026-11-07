@@ -64,6 +64,8 @@ export type YetkazibBeruvchi = {
   ozgartirilganSana: string;
   ozgartirganMasul: string;
   customFields?: Record<string, unknown>;
+  // Telegram bot holati (GET /partners/suppliers: telegramChatId, telegramLinkedAt, telegramNotify, telegramBlocked).
+  telegramBot?: MijozTelegramHolati;
 };
 
 export type Xodim = {

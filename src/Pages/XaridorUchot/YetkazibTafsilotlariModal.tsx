@@ -1,19 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, Hash, Phone, Trash2, UserRound } from "lucide-react";
+import { BookOpen, ChevronDown, Hash, Phone, Trash2, UserRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import { crmApi, royxatniAjratish } from "@/api/crmApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { rolniNormallashtirish } from "@/lib/roles";
+import { yetkazibQarzRuxsati } from "@/lib/yetkazibBoshlangichQarz";
+import { useAuthProfileStore } from "@/store/authProfileStore";
 import FaoliyatPaneli from "./FaoliyatPaneli";
 import { InstagramIkonka, TelegramIkonka, WhatsappIkonka } from "./IjtimoiyIkonkalar";
 import TezkorPanel from "./TezkorPanel";
+import YetkazibBoshlangichQarzModal from "./YetkazibBoshlangichQarzModal";
+import YetkazibBoshlangichQarzTab from "./YetkazibBoshlangichQarzTab";
+import YetkazibTelegramKarti from "./YetkazibTelegramKarti";
 import { KirimTab, TarixTab, TolovlarTab } from "./XaridorTablari";
 import { timelineniTarixga, timelineniTolovga } from "./backendAdapters";
 import type { IjtimoiyTarmoqlar, Kirim, TarixYozuvi, XaridorTolovi, YetkazibBeruvchi } from "./types";
 import { sanaFormat } from "./yordamchilar";
 
 import ModalTablari from "@/Components/common/ModalTablari";
-type Tab = "malumotlar" | "kirim" | "tolovlar" | "tarix";
+type Tab = "malumotlar" | "kirim" | "tolovlar" | "boshlangichQarz" | "tarix";
 const tabKalitlari: Tab[] = ["malumotlar", "kirim", "tolovlar", "tarix"];
 
 type Props = {
@@ -32,8 +38,22 @@ export default function YetkazibTafsilotlariModal({
   onYopish,
 }: Props) {
   const { t } = useTranslation("xaridor_uchot");
-  const tablar = tabKalitlari.map((kalit) => ({ kalit, nom: t(`shared.tabs.${kalit}`) }));
+  // Boshlang'ich qarz (kiritish, bekor qilish, tiklash) — faqat admin va direktor; boshqa rollarda tugma va tab ko'rsatilmaydi.
+  const profil = useAuthProfileStore((state) => state.profil);
+  const profilniYuklash = useAuthProfileStore((state) => state.profilniYuklash);
+  useEffect(() => {
+    if (!profil) void profilniYuklash();
+  }, [profil, profilniYuklash]);
+  const qarzRuxsati = yetkazibQarzRuxsati(rolniNormallashtirish(profil?.role));
+  const tablar = [
+    ...tabKalitlari.slice(0, 3).map((kalit) => ({ kalit, nom: t(`shared.tabs.${kalit}`) })),
+    ...(qarzRuxsati ? [{ kalit: "boshlangichQarz" as Tab, nom: t("yetkazibDetails.openingDebtTab") }] : []),
+    { kalit: "tarix" as Tab, nom: t("shared.tabs.tarix") },
+  ];
   const [faolTab, setFaolTab] = useState<Tab>("malumotlar");
+  const [qarzOchiq, setQarzOchiq] = useState(false);
+  // Yangi boshlang'ich qarz saqlansa tabdagi ro'yxat qayta o'qiladi.
+  const [qarzYangilanishi, setQarzYangilanishi] = useState(0);
   const [tarix, setTarix] = useState<TarixYozuvi[]>([]);
   const [tolovlar, setTolovlar] = useState<XaridorTolovi[]>([]);
   const [xatolik, setXatolik] = useState("");
@@ -79,6 +99,16 @@ export default function YetkazibTafsilotlariModal({
                 <h1 className="truncate text-2xl font-bold text-slate-900">{beruvchi.nomi}</h1>
 
                 <div className="flex shrink-0 items-center gap-2">
+                  {qarzRuxsati && (
+                    <button
+                      type="button"
+                      onClick={() => setQarzOchiq(true)}
+                      className="inline-flex h-9 items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                    >
+                      <BookOpen size={16} aria-hidden />
+                      {t("openingDebt.title")}
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="inline-flex h-9 items-center gap-2 rounded-xl bg-white px-3 text-sm text-slate-600 shadow-sm transition hover:text-orange-600"
@@ -115,6 +145,7 @@ export default function YetkazibTafsilotlariModal({
 
             {faolTab === "malumotlar" && (
               <div className="grid gap-6 px-9 py-7 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                <div className="space-y-6">
                 <section className="rounded-[26px] bg-white/92 p-6 shadow-[0_18px_46px_rgba(37,99,235,.08)] ring-1 ring-orange-100/80">
                   <div className="border-b border-orange-100/80 pb-3">
                     <h2 className="text-sm font-black uppercase tracking-wide text-slate-600">
@@ -135,16 +166,33 @@ export default function YetkazibTafsilotlariModal({
                   </dl>
                 </section>
 
+                {/* Telegram bot: ulash havolasi / QR, holat (Ulangan / Ulanmagan / Xabar o'chirilgan) va yuborilgan xabarlar. */}
+                <YetkazibTelegramKarti beruvchi={beruvchi} />
+                </div>
+
                 <FaoliyatPaneli partnerId={beruvchi.partnerId} />
               </div>
             )}
             {xatolik && <div className="mx-9 mt-5 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">{xatolik}</div>}
             {faolTab === "kirim" && <KirimTab kirimlar={kirimlar} beruvchiNomi={beruvchi.nomi} />}
             {faolTab === "tolovlar" && <TolovlarTab tolovlar={tolovlar} />}
+            {faolTab === "boshlangichQarz" && qarzRuxsati && (
+              <YetkazibBoshlangichQarzTab beruvchi={beruvchi} yangilanish={qarzYangilanishi} onQoshish={() => setQarzOchiq(true)} />
+            )}
             {faolTab === "tarix" && <TarixTab tarix={tarix} />}
           </div>
         </section>
       </div>
+      {qarzOchiq && qarzRuxsati && (
+        <YetkazibBoshlangichQarzModal
+          beruvchi={beruvchi}
+          onClose={() => setQarzOchiq(false)}
+          onSaqlandi={() => {
+            setQarzYangilanishi((n) => n + 1);
+            setFaolTab("boshlangichQarz");
+          }}
+        />
+      )}
     </AppModal>
   );
 }

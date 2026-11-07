@@ -392,7 +392,84 @@
   "yetkazibDetails": {
     "aboutTitle": "Yetkazib beruvchi haqida",
     "contactPerson": "Aloqa shaxs",
-    "contactPhone": "Aloqa tel raqami"
+    "contactPhone": "Aloqa tel raqami",
+    "openingDebtTab": "Boshlang'ich qarz",
+    "telegram": {
+      "subtitle": "Yetkazib beruvchi botga ulansa, har bir kirim tasdiqlanganda yoki bekor qilinganda, har bir to'lovda va boshlang'ich qarzda xabar oladi; oxirida qoldiq yoziladi.",
+      "groupHint": "Yetkazib beruvchi jamoasi uchun: ulardan biri havolani ochib guruhni tanlaydi, bot guruhga qo'shiladi. Kirim, to'lov va qarz xabarlari guruhga keladi.",
+      "expires": "Havola bir martalik, {{vaqt}} gacha amal qiladi. Yetkazib beruvchiga yuboring yoki QR kodni skanerlating.",
+      "oneTime": "Havola bir martalik, 7 kun amal qiladi. Yetkazib beruvchiga yuboring yoki QR kodni skanerlating.",
+      "waiting": "Yetkazib beruvchi ulanishini kutyapmiz...",
+      "botOff": "Do'konda Telegram bot yoqilmagan. Avval Sozlamalar → Integratsiya bo'limida botni ulang.",
+      "hints": {
+        "ochirgan": "Yetkazib beruvchi botda /stop bosgan: xabar yuborilmaydi. U botda /start bosib qayta yoqishi mumkin.",
+        "bloklagan": "Yetkazib beruvchi botni bloklagan: xabar yetib bormaydi. Qayta ulash uchun u botni blokdan chiqarib /start bosishi kerak."
+      },
+      "disconnectConfirm": {
+        "title": "Yetkazib beruvchi botdan uzilsinmi?",
+        "description": "Yetkazib beruvchi kirim, to'lov va qarz xabarlarini olmaydi. Keyin yangi havola bilan qayta ulash mumkin."
+      },
+      "history": "Yuborilgan xabarlar",
+      "historyEmpty": "Hali xabar yuborilmagan.",
+      "historyError": "Xabarlar ro'yxatini olib bo'lmadi.",
+      "attempts": "{{soni}} urinish",
+      "events": {
+        "PURCHASE_CONFIRMED": "Kirim tasdiqlandi",
+        "PURCHASE_CANCELLED": "Kirim bekor qilindi",
+        "SUPPLIER_OPENING_DEBT": "Boshlang'ich qarz kiritildi",
+        "SUPPLIER_OPENING_DEBT_CANCELLED": "Boshlang'ich qarz bekor qilindi",
+        "SUPPLIER_PAYMENT": "Yetkazib beruvchiga to'lov",
+        "SUPPLIER_PAYMENT_CANCELLED": "To'lov bekor qilindi"
+      },
+      "logStatus": {
+        "yuborildi": "Yuborildi",
+        "navbatda": "Navbatda",
+        "xato": "Xato",
+        "bloklangan": "Botni bloklagan",
+        "ulanmagan": "Ulanmagan",
+        "ochirilgan": "Bot o'chirilgan",
+        "mijozOchirgan": "O'zi o'chirgan",
+        "otkazilgan": "Yuborilmadi",
+        "yuborilmagan": "Yuborilmagan"
+      }
+    },
+    "openingDebt": {
+      "hint": "Dasturdan oldin shu yetkazib beruvchiga bo'lgan qarzimiz. Darhol tasdiqlanadi. Bu kirim emas: omborga va qoldiqqa tushmaydi. Yetkazib beruvchiga to'lov uni kirimlar kabi yopadi.",
+      "add": "Boshlang'ich qarz kiritish",
+      "listTitle": "Boshlang'ich qarzlar",
+      "empty": "Bu yetkazib beruvchiga boshlang'ich qarz kiritilmagan.",
+      "loadError": "Ro'yxatni olib bo'lmadi.",
+      "noteHint": "300 belgigacha",
+      "saved": "Boshlang'ich qarz saqlandi: {{raqam}}",
+      "columns": {
+        "document": "Hujjat",
+        "date": "Sana",
+        "amount": "Summa",
+        "note": "Izoh",
+        "status": "Holat"
+      },
+      "status": {
+        "CONFIRMED": "Tasdiqlangan",
+        "CANCELLED": "Bekor qilingan"
+      },
+      "cancelAction": "Bekor qilish",
+      "restoreAction": "Qayta tiklash",
+      "cancelConfirm": {
+        "title": "Boshlang'ich qarz bekor qilinsinmi?",
+        "description": "Qarz hisobdan chiqadi, yetkazib beruvchiga xabar boradi. Keyin uni qayta tiklash mumkin.",
+        "yes": "Ha, bekor qilish",
+        "working": "Bekor qilinmoqda..."
+      },
+      "restoreConfirm": {
+        "title": "Boshlang'ich qarz qayta tiklansinmi?",
+        "description": "Qarz yana tasdiqlangan holatga qaytadi va hisobga qo'shiladi.",
+        "yes": "Ha, tiklash",
+        "working": "Tiklanmoqda..."
+      },
+      "back": "Qaytish",
+      "cancelled": "Boshlang'ich qarz bekor qilindi",
+      "restored": "Boshlang'ich qarz qayta tiklandi"
+    }
   },
   "statuses": {
     "savdoHolat": {

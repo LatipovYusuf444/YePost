@@ -103,6 +103,7 @@ export function yetkazibBeruvchiniUiGa(item: YetkazibBeruvchi): UiYetkazibBeruvc
     ozgartirilganSana: item.partner?.updatedAt ?? item.updatedAt ?? item.createdAt ?? "",
     ozgartirganMasul: item.partner?.updatedBy?.fullName || item.partner?.createdBy?.fullName || "Tizim",
     customFields: item.partner?.customFields ?? {},
+    telegramBot: mijozTelegramHolati(item),
   };
 }
 

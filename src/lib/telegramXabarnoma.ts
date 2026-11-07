@@ -19,7 +19,17 @@ export function chatIdNotogrimi(matn: string): boolean {
   return qiymat !== "" && !/^-?\d+$/.test(qiymat);
 }
 
-export type XabarnomaHodisasi = "SALE_CONFIRMED" | "PAYMENT" | "SALE_CANCELLED";
+export type XabarnomaHodisasi =
+  | "SALE_CONFIRMED"
+  | "PAYMENT"
+  | "SALE_CANCELLED"
+  // Yetkazib beruvchiga (GET /notification-logs?supplierId=): kirim tasdiqlandi/bekor, boshlang'ich qarz kiritildi/bekor, to'lov/bekor.
+  | "PURCHASE_CONFIRMED"
+  | "PURCHASE_CANCELLED"
+  | "SUPPLIER_OPENING_DEBT"
+  | "SUPPLIER_OPENING_DEBT_CANCELLED"
+  | "SUPPLIER_PAYMENT"
+  | "SUPPLIER_PAYMENT_CANCELLED";
 export type XabarnomaHolati = "QUEUED" | "SENT" | "FAILED" | "BLOCKED" | "SKIPPED";
 
 export type XabarnomaYozuvi = {

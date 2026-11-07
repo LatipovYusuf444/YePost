@@ -15,6 +15,7 @@ import {
 export type XabarnomaSorovi = {
   saleId?: string;
   customerId?: string;
+  supplierId?: string;
   status?: string;
   page?: number;
   pageSize?: number;
@@ -63,7 +64,21 @@ export const telegramApi = {
     await apiClient.delete(`/partners/customers/${mijozId}/telegram-link`);
   },
 
-  // GET /notification-logs?saleId=&customerId=&status=&page=&pageSize= — sotuv kartasida fon rejimida o'qiladi
+  // Yetkazib beruvchi kartasi (mijozdagi bilan bir xil): POST /partners/suppliers/:id/telegram-link → { url, groupUrl, expiresAt }.
+  // Bot yoqilmagan bo'lsa 400 errors.integrations.invalid_bot_token.
+  yetkazibHavolasi: async (yetkazibId: string): Promise<TelegramHavola> => {
+    const javob = (await apiClient.post<unknown>(`/partners/suppliers/${yetkazibId}/telegram-link`)).data;
+    const havola = telegramHavolasi(javob);
+    if (!havola) throw new Error("Backend Telegram havolasini qaytarmadi.");
+    return havola;
+  },
+
+  // DELETE /partners/suppliers/:id/telegram-link — yetkazib beruvchini botdan uzadi.
+  yetkazibniUzish: async (yetkazibId: string) => {
+    await apiClient.delete(`/partners/suppliers/${yetkazibId}/telegram-link`);
+  },
+
+  // GET /notification-logs?saleId=&customerId=&supplierId=&status=&page=&pageSize= — sotuv kartasida fon rejimida o'qiladi
   // (rolga ruxsat bo'lmasa yoki endpoint yo'q bo'lsa qizil toast chiqmaydi, karta o'zi buni ko'rsatadi).
   xabarnomalar: async (sorov: XabarnomaSorovi): Promise<XabarnomaYozuvi[]> =>
     xabarnomaYozuvlari(

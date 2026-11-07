@@ -70,9 +70,10 @@ export const yetkazibBeruvchilarApi = {
         )
       ).data
     ),
-  olish: async (id: string) =>
+  // `fon` — yordamchi so'rov (masalan, Telegram holatini qayta o'qish): xato toasti chiqmaydi, chaqiruvchi o'zi hal qiladi.
+  olish: async (id: string, fon = false) =>
     apiData(
-      (await apiClient.get<YetkazibBeruvchi | ApiEnvelope<YetkazibBeruvchi>>(`/partners/suppliers/${id}`))
+      (await apiClient.get<YetkazibBeruvchi | ApiEnvelope<YetkazibBeruvchi>>(`/partners/suppliers/${id}`, fon ? { xatoniYashirish: true } : undefined))
         .data
     ),
   yaratish: async (data: YetkazibBeruvchiMalumoti) =>

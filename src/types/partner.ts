@@ -101,6 +101,11 @@ export type YetkazibBeruvchi = {
   partner?: Partner | null;
   createdAt?: string;
   updatedAt?: string;
+  // Telegram bot (mijozdagi bilan bir xil): telegramChatId null — ulanmagan; telegramNotify false — /stop bosgan; telegramBlocked true — botni bloklagan.
+  telegramChatId?: string | number | null;
+  telegramLinkedAt?: string | null;
+  telegramNotify?: boolean | null;
+  telegramBlocked?: boolean | null;
 };
 
 export type YetkazibBeruvchiMalumoti = {

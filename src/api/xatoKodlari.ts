@@ -129,6 +129,19 @@ const MATNLAR: Record<string, KodMatni> = {
     uz: "Bu sotuvning qarzi keyingi sotuvdagi ortiqcha pul bilan yopilgan, shuning uchun uni bekor qilib bo'lmaydi. Avval o'sha keyingi sotuvni bekor qiling.",
     ru: "Долг по этой продаже погашен излишком оплаты по более поздней продаже, поэтому её нельзя отменить. Сначала отмените ту, более позднюю продажу.",
   },
+  // Yetkazib beruvchiga boshlang'ich qarz: bekor qilish / qayta tiklash.
+  "errors.inventory.confirmed_only_cancelable": {
+    uz: "Faqat tasdiqlangan hujjatni bekor qilish mumkin. Ro'yxatni yangilang.",
+    ru: "Отменить можно только подтверждённый документ. Обновите список.",
+  },
+  "errors.inventory.cancelled_only_restorable": {
+    uz: "Faqat bekor qilingan hujjatni qayta tiklash mumkin. Ro'yxatni yangilang.",
+    ru: "Восстановить можно только отменённый документ. Обновите список.",
+  },
+  "errors.partners.supplier_opening_debt_not_found": {
+    uz: "Boshlang'ich qarz topilmadi: u o'chirilgan yoki boshqa yetkazib beruvchiga tegishli. Ro'yxatni yangilang.",
+    ru: "Начальный долг не найден: он удалён или относится к другому поставщику. Обновите список.",
+  },
   // Telegram bot (nakladnoy va xabarnomalar).
   "errors.integrations.invalid_bot_token": {
     uz: "Telegram bot tokeni noto'g'ri yoki bot yoqilmagan. Sozlamalar → Integratsiya bo'limida tokenni tekshiring.",
