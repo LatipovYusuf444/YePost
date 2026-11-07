@@ -4,6 +4,7 @@ import { katalogQidiruvQatoriniMoslash, katalogQidiruvYuklagich, type KatalogQid
 import { authTokenlarniOlish } from "@/lib/authTokenStorage";
 import { birliklarniMoslash, birliklarTanasi, type TovarBirligi } from "@/lib/kopBirlik";
 import { apiTiliniOlish } from "./apiLanguage";
+import { malumotnomaniOlish, ozgartirishdanKeyinTozalash } from "@/lib/malumotnomaKeshi";
 import type {
   Kategoriya,
   KategoriyaMalumoti,
@@ -76,25 +77,28 @@ export async function getStandardUnits() {
 }
 
 export const birliklarApi = {
-  royxat: async () => {
+  royxat: () => malumotnomaniOlish("birliklar", "royxat", async () => {
     const response = await apiClient.get<OlchovBirligi[] | ApiListEnvelope<OlchovBirligi>>(
       "/catalog/units"
     );
     return apiList(response.data);
-  },
+  }),
   olish: async (id: string) =>
     apiData((await apiClient.get<OlchovBirligi | ApiEnvelope<OlchovBirligi>>(`/catalog/units/${id}`)).data),
-  yaratish: async (data: OlchovBirligiMalumoti) =>
-    apiData((await apiClient.post<OlchovBirligi | ApiEnvelope<OlchovBirligi>>("/catalog/units", data)).data),
-  yangilash: async (id: string, data: Partial<OlchovBirligiMalumoti>) =>
-    apiData(
-      (await apiClient.patch<OlchovBirligi | ApiEnvelope<OlchovBirligi>>(
-        `/catalog/units/${id}`,
-        data
-      )).data
-    ),
-  ochirish: async (id: string) =>
-    apiData((await apiClient.delete<OlchovBirligi | ApiEnvelope<OlchovBirligi>>(`/catalog/units/${id}`)).data),
+  yaratish: (data: OlchovBirligiMalumoti) =>
+    ozgartirishdanKeyinTozalash("birliklar", async () =>
+      apiData((await apiClient.post<OlchovBirligi | ApiEnvelope<OlchovBirligi>>("/catalog/units", data)).data)),
+  yangilash: (id: string, data: Partial<OlchovBirligiMalumoti>) =>
+    ozgartirishdanKeyinTozalash("birliklar", async () =>
+      apiData(
+        (await apiClient.patch<OlchovBirligi | ApiEnvelope<OlchovBirligi>>(
+          `/catalog/units/${id}`,
+          data
+        )).data
+      )),
+  ochirish: (id: string) =>
+    ozgartirishdanKeyinTozalash("birliklar", async () =>
+      apiData((await apiClient.delete<OlchovBirligi | ApiEnvelope<OlchovBirligi>>(`/catalog/units/${id}`)).data)),
 };
 
 // Tovar birliklari (pochka, qop, korobka): koeffitsient bilan qo'shimcha birliklar. PUT ro'yxatni to'liq almashtiradi (ADMIN, DIRECTOR).

@@ -739,7 +739,7 @@ function OddiySotuvTafsilotlariModal({
             xodimlar={xodimlar}
             qoldiqlar={qoldiqlar}
             amalBajarilmoqda={amalJarayoni}
-            onOmborTanlash={(omborId) => void useSavdoStore.getState().qoldiqlarniYuklash(omborId)}
+            onOmborTanlash={(omborId) => void useSavdoStore.getState().qoldiqlarniYuklash(omborId, { kesh: true })}
             tahrir={{ sotuv, onYangilash }}
             onYopish={tahrirniTugatish}
           />
@@ -4122,7 +4122,7 @@ function OmbordanChiqarishHujjatMazmuni({
 
   function tahrirniBoshlash() {
     // Ombordagi qoldiq (tahrirlagichdagi "Omborda" va miqdor tekshiruvi) shu sotuv ombori bo'yicha yangilanadi.
-    void qoldiqlarniYuklash(sotuv.warehouseId ?? sotuv.warehouse?.id);
+    void qoldiqlarniYuklash(sotuv.warehouseId ?? sotuv.warehouse?.id, { kesh: true });
     setTahrirRejimi(true);
   }
   function tahrirdanChiqish() {

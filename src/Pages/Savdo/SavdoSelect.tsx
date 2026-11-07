@@ -14,6 +14,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Check, ChevronDown, Plus, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { optionlarniCheklash } from "@/lib/optionlarniCheklash";
 
 export type SavdoSelectOption = {
   value: string;
@@ -112,6 +113,8 @@ export default function SavdoSelect({
       return klaviatura && Boolean(qidiruv) && (option.kodlar ?? []).some((kod) => kod.toLowerCase().includes(qidiruv));
     });
     if (klaviatura && qidiruv) korinadiganOptions = aniqMoslikTartibi(korinadiganOptions, qidiruv);
+    // Minglab variantli ro'yxat to'liq chizilmaydi: dastlabki 100 tasi ko'rinadi, qolganlari qidiruv bilan topiladi.
+    korinadiganOptions = optionlarniCheklash(korinadiganOptions);
   }
 
   const updateDropdownPosition = useCallback(() => {

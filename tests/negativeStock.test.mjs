@@ -146,6 +146,7 @@ test('grant codes use the documented PUT user endpoint, retain unknown codes and
   const api = compile('../src/api/accountsApi.ts', {
     './axios': { __esModule: true, default: { put: async (...args) => calls.push(args), get: async () => ({ data: grants }) } },
     './response': { apiList: response => response, apiData: response => response, ruxsatsizBulsaBosh: callback => callback() },
+    '@/lib/malumotnomaKeshi': { malumotnomaniOlish: (guruh, nom, yuklash) => yuklash(), ozgartirishdanKeyinTozalash: (guruh, amal) => amal() },
   });
   const result = await api.vakolatlarApi.foydalanuvchiKodlariniSaqlash('employee', ['REPORTS', 'FUTURE_CODE', 'NEGATIVE_STOCK_SALE', 'REPORTS']);
   assert.deepEqual(plain(calls), [['/accounts/grants/users/employee', { codes: ['REPORTS', 'FUTURE_CODE', 'NEGATIVE_STOCK_SALE'] }]]);

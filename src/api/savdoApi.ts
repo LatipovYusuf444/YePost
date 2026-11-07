@@ -27,6 +27,7 @@ import { tolovNatijasi, type TolovNatijasi } from "../lib/tolovOrtiqchasi.ts";
 import type { Mahsulot, MahsulotModifikatsiyasi } from "@/types/catalog";
 import { katalogNarxiniQoldiqqaMoslash, katalogQidiruvQatoriniMoslash, katalogQidiruvQoldigi } from "./catalogSearch";
 import { parallelBajarish } from "../lib/parallelBajarish.ts";
+import { malumotnomaniOlish } from "../lib/malumotnomaKeshi.ts";
 
 type RoyxatJavobi<T> = T[] | { value?: T[]; items?: T[]; results?: T[]; data?: T[] };
 
@@ -348,9 +349,11 @@ export async function qaytarishniOchirish(qaytarishId: string) {
 }
 
 // Savdo/index.tsx: yangi sotuv formasidagi ombor tanlovi uchun.
-export async function omborlarRoyxatiniOlish() {
-  const response = await apiClient.get<RoyxatJavobi<OmborTanlovi> | ApiListEnvelope<OmborTanlovi>>("/organization/warehouses");
-  return royxatniAjratish(response.data);
+export function omborlarRoyxatiniOlish() {
+  return malumotnomaniOlish("omborlar", "savdo", async () => {
+    const response = await apiClient.get<RoyxatJavobi<OmborTanlovi> | ApiListEnvelope<OmborTanlovi>>("/organization/warehouses");
+    return royxatniAjratish(response.data);
+  });
 }
 
 // Savdo/index.tsx: sotuvga biriktiriladigan jismoniy mijozlar uchun.
@@ -368,11 +371,11 @@ export async function mijozKompaniyalariRoyxatiniOlish() {
 // Savdo/index.tsx: sotuv uchun mas'ul xodim tanlovi.
 // KASSIR/OMBORCHI uchun /accounts/users 403 qaytaradi — bo'sh ro'yxat
 // sifatida qabul qilinadi, sahifa yiqilib qolmasligi uchun.
-export async function xodimlarRoyxatiniOlish() {
-  return ruxsatsizBulsaBosh(async () => {
+export function xodimlarRoyxatiniOlish() {
+  return malumotnomaniOlish("foydalanuvchilar", "savdo", () => ruxsatsizBulsaBosh(async () => {
     const response = await apiClient.get<RoyxatJavobi<XodimTanlovi> | ApiListEnvelope<XodimTanlovi>>("/accounts/users");
     return royxatniAjratish(response.data);
-  });
+  }));
 }
 
 // Savdo/index.tsx: ombordagi mavjud modifikatsiya, qoldiq va narxlarni oladi.

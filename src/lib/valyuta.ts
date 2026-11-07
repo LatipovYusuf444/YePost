@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { create } from "zustand";
+import { useShallow } from "zustand/react/shallow";
 import { persist } from "zustand/middleware";
 import { kursniSongaAylantirish, valyutaApi } from "@/api/valyutaApi";
 
@@ -80,7 +81,17 @@ export const useValyutaStore = create<ValyutaHolati>()(
 
 /** Komponentlar uchun: valyuta yoki kurs o'zgarganda qayta chizilishi kerak bo'lsa. */
 export function useValyuta() {
-  return useValyutaStore();
+  // Kurs so'rovi bir xil qiymat qaytarsa ham `set` yangi obyekt yaratadi: useShallow tengligi bo'yicha qayta chizilmaydi.
+  return useValyutaStore(useShallow((holat) => ({
+    hisobotValyutasi: holat.hisobotValyutasi,
+    rejimYoniq: holat.rejimYoniq,
+    kurs: holat.kurs,
+    kursBor: holat.kursBor,
+    kursSanasi: holat.kursSanasi,
+    bugun: holat.bugun,
+    yuklandi: holat.yuklandi,
+    kursniYuklash: holat.kursniYuklash,
+  })));
 }
 
 /**

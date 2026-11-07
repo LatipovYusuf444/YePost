@@ -727,14 +727,15 @@ export default function YangiSotuvModal({
 
   // Saqlangan qatordagi mahsulot hozirgi qoldiq ro'yxatida bo'lmasa ham tanlangan holda ko'rinadi.
   function mahsulotOptionlari(qator?: MahsulotQatori): SavdoSelectOption[] {
-    const royxat = katalogOptionlari();
+    const royxat = katalogOptionlariRoyxati;
     if (!qator?.saqlanganNom || royxat.some((option) => option.value === qator.qoldiqKaliti)) return royxat;
     return [{ value: qator.qoldiqKaliti, searchLabel: qator.saqlanganNom, label: qator.saqlanganNom }, ...royxat];
   }
 
   // Mahsulot tanlash ro'yxati: tanlangan ombordagi qoldig'i borlar tanlanadi, qoldig'i yo'qlar
   // (ombordan tugagan yoki umuman kirim qilinmagan) qizil belgi bilan o'chirilgan holda pastda ko'rsatiladi.
-  function katalogOptionlari(): SavdoSelectOption[] {
+  // Butun katalog har qator va har renderda qayta saralanmasin: ro'yxat faqat qoldiq, ombor, valyuta yoki kurs o'zgarganda qayta quriladi.
+  const katalogOptionlariRoyxati = useMemo<SavdoSelectOption[]>(() => {
     const korinadigan = qoldiqlar.filter(
       (item) => !warehouseId || !item.warehouseId || item.warehouseId === warehouseId
     );
@@ -821,7 +822,7 @@ export default function YangiSotuvModal({
       // Avval qoldig'i borlar, keyin yo'qlar; ichida nom bo'yicha.
       .sort((x, y) => Number(y.mavjud) - Number(x.mavjud) || x.nom.localeCompare(y.nom, "uz"))
       .map((x) => x.option);
-  }
+  }, [qoldiqlar, warehouseId, omborlar, canSellNegative, sotuvVal, kurs, t]);
 
   function mijozniTanlash(tanlanganCustomerId: string) {
     fx.tozala("customerId", "clientCompanyId");

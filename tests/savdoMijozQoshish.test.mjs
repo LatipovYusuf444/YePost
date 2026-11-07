@@ -20,6 +20,7 @@ function component(path, overrides = {}) {
     react: hooks, 'react-dom': { createPortal: node => node },
     'react-i18next': { useTranslation: () => ({ t: key => key }) },
     '@/lib/utils': { cn: (...args) => args.join(' ') },
+    '@/lib/optionlarniCheklash': require('../src/lib/optionlarniCheklash.ts'),
     '@/lib/hujjatSanasi': { bugungiToshkentKuni: () => '2026-10-24' },
     '@/lib/savdoNarxlari': require('../src/lib/savdoNarxlari.ts'),
     '@/lib/kopBirlik': require('../src/lib/kopBirlik.ts'),

@@ -9,6 +9,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useOmborStore } from "@/store/omborStore";
+import { useShallow } from "zustand/react/shallow";
 import { useSavdoStore } from "@/store/savdoStore";
 import type { Sotuv } from "@/types/savdo";
 import {
@@ -132,7 +133,18 @@ function Status({ value }: { value: string }) {
 export default function AmalgaOshirilganlar() {
   const navigate = useNavigate();
   const store = useOmborStore();
-  const savdo = useSavdoStore();
+  const savdo = useSavdoStore(useShallow((holat) => ({
+    boshlangichMalumotlarniYuklash: holat.boshlangichMalumotlarniYuklash,
+    tanlanganSotuvniTozalash: holat.tanlanganSotuvniTozalash,
+    xatolikniTozalash: holat.xatolikniTozalash,
+    sotuvTafsilotiniYuklash: holat.sotuvTafsilotiniYuklash,
+    sotuvniBekorQilish: holat.sotuvniBekorQilish,
+    sotuvniOchirish: holat.sotuvniOchirish,
+    sotuvniTiklash: holat.sotuvniTiklash,
+    xatolik: holat.xatolik,
+    tafsilotYuklanmoqda: holat.tafsilotYuklanmoqda,
+    tanlanganSotuv: holat.tanlanganSotuv,
+  })));
   const { t } = useTranslation("ombor_royxat");
   const amalgaOshirilganlarniYuklash = store.amalgaOshirilganlarniYuklash;
   const [qidiruv, setQidiruv] = useState("");

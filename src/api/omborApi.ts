@@ -24,6 +24,8 @@ import type {
 } from "@/types/ombor";
 import { profilApi } from "./authProfileApi";
 import { kirimYetkazibBeruvchilariniToldirish } from "@/lib/kirimYetkazibBeruvchi";
+import { hujjatOraligiParametrlari, type HujjatOraligi } from "@/lib/hujjatOraligi";
+import { malumotnomaniOlish, ozgartirishdanKeyinTozalash } from "@/lib/malumotnomaKeshi";
 
 type RoyxatJavobi<T> = T[] | { value?: T[]; items?: T[]; results?: T[]; data?: T[] };
 
@@ -146,35 +148,43 @@ export const kompaniyalarApi = {
 export const filiallarApi = {
   // KASSIR/OMBORCHI uchun /organization/branches 403 qaytaradi — bo'sh
   // ro'yxat sifatida qabul qilinadi, sahifa yiqilib qolmasligi uchun.
-  royxat: async () =>
-    ruxsatsizBulsaBosh(async () =>
-      apiList((await apiClient.get<Filial[] | ApiListEnvelope<Filial>>("/organization/branches")).data)
+  royxat: () =>
+    malumotnomaniOlish("filiallar", "royxat", () =>
+      ruxsatsizBulsaBosh(async () =>
+        apiList((await apiClient.get<Filial[] | ApiListEnvelope<Filial>>("/organization/branches")).data)
+      )
     ),
   olish: async (id: string) =>
     apiData((await apiClient.get<Filial | ApiEnvelope<Filial>>(`/organization/branches/${id}`)).data),
-  yaratish: async (data: FilialYaratishMalumoti) =>
-    apiData((await apiClient.post<Filial | ApiEnvelope<Filial>>("/organization/branches", data)).data),
-  yangilash: async (id: string, data: Partial<FilialYaratishMalumoti>) =>
-    apiData((await apiClient.patch<Filial | ApiEnvelope<Filial>>(`/organization/branches/${id}`, data)).data),
-  ochirish: async (id: string) =>
-    apiData((await apiClient.delete<Filial | ApiEnvelope<Filial>>(`/organization/branches/${id}`)).data),
+  yaratish: (data: FilialYaratishMalumoti) =>
+    ozgartirishdanKeyinTozalash(["filiallar", "omborlar"], async () =>
+      apiData((await apiClient.post<Filial | ApiEnvelope<Filial>>("/organization/branches", data)).data)),
+  yangilash: (id: string, data: Partial<FilialYaratishMalumoti>) =>
+    ozgartirishdanKeyinTozalash(["filiallar", "omborlar"], async () =>
+      apiData((await apiClient.patch<Filial | ApiEnvelope<Filial>>(`/organization/branches/${id}`, data)).data)),
+  ochirish: (id: string) =>
+    ozgartirishdanKeyinTozalash(["filiallar", "omborlar"], async () =>
+      apiData((await apiClient.delete<Filial | ApiEnvelope<Filial>>(`/organization/branches/${id}`)).data)),
   masullar: async () =>
     apiList((await apiClient.get<NomliEntity[] | ApiListEnvelope<NomliEntity>>("/organization/branches/responsibles")).data),
-  asosiyQilish: async (id: string) =>
-    apiData((await apiClient.post<Filial | ApiEnvelope<Filial>>(`/organization/branches/${id}/set-primary`)).data),
+  asosiyQilish: (id: string) =>
+    ozgartirishdanKeyinTozalash(["filiallar", "omborlar"], async () =>
+      apiData((await apiClient.post<Filial | ApiEnvelope<Filial>>(`/organization/branches/${id}/set-primary`)).data)),
 };
 
 // Ombor/index.tsx: omborlar ro'yxati va CRUD amallari.
 export const omborlarApi = {
-  royxat: async () =>
-    apiList((await apiClient.get<Ombor[] | ApiListEnvelope<Ombor>>("/organization/warehouses")).data)
-      .map((item) => omborniMoslash(item as OmborBackendJavobi)),
+  royxat: () =>
+    malumotnomaniOlish("omborlar", "royxat", async () =>
+      apiList((await apiClient.get<Ombor[] | ApiListEnvelope<Ombor>>("/organization/warehouses")).data)
+        .map((item) => omborniMoslash(item as OmborBackendJavobi))),
   olish: async (id: string) =>
     omborniMoslash(apiData((await apiClient.get<Ombor | ApiEnvelope<Ombor>>(`/organization/warehouses/${id}`)).data) as OmborBackendJavobi),
-  yaratish: omborYaratishToliq,
-  yangilash: omborYangilashToliq,
-  ochirish: async (id: string) =>
-    apiData((await apiClient.delete<Ombor | ApiEnvelope<Ombor>>(`/organization/warehouses/${id}`)).data),
+  yaratish: ((...args) => ozgartirishdanKeyinTozalash("omborlar", () => omborYaratishToliq(...args))) as typeof omborYaratishToliq,
+  yangilash: ((...args) => ozgartirishdanKeyinTozalash("omborlar", () => omborYangilashToliq(...args))) as typeof omborYangilashToliq,
+  ochirish: (id: string) =>
+    ozgartirishdanKeyinTozalash("omborlar", async () =>
+      apiData((await apiClient.delete<Ombor | ApiEnvelope<Ombor>>(`/organization/warehouses/${id}`)).data)),
 };
 
 // Ombor/Xaridlar.tsx va Kirim.tsx: kirim hujjatlari.
@@ -191,9 +201,10 @@ async function kirimYetkazibBeruvchisiniOlish(id: string): Promise<NomliEntity> 
 }
 
 export const kirimApi = {
-  royxat: async () => {
+  // `oraliq` (YYYY-MM-DD, ikkala chet kiradi) berilsa backend faqat shu kunlardagi hujjatlarni qaytaradi.
+  royxat: async (oraliq?: HujjatOraligi) => {
     const response = await apiClient.get<RoyxatJavobi<KirimHujjati>>(
-      "/inventory/purchases"
+      "/inventory/purchases", hujjatOraligiParametrlari(oraliq)
     );
     return kirimYetkazibBeruvchilariniToldirish(royxatniAjratish(response.data), kirimYetkazibBeruvchisiniOlish);
   },
@@ -234,9 +245,9 @@ export const kirimApi = {
 
 // Ombor/Chiqim.tsx: ombordan hisobdan chiqarish hujjatlari.
 export const chiqimApi = {
-  royxat: async () => {
+  royxat: async (oraliq?: HujjatOraligi) => {
     const response = await apiClient.get<RoyxatJavobi<ChiqimHujjati>>(
-      "/inventory/write-offs"
+      "/inventory/write-offs", hujjatOraligiParametrlari(oraliq)
     );
     return royxatniAjratish(response.data);
   },
@@ -283,9 +294,9 @@ export const chiqimApi = {
 
 // Ombor/Kochirish.tsx: omborlar orasida ko'chirish hujjatlari.
 export const kochirishApi = {
-  royxat: async () => {
+  royxat: async (oraliq?: HujjatOraligi) => {
     const response = await apiClient.get<RoyxatJavobi<KochirishHujjati>>(
-      "/inventory/transfers"
+      "/inventory/transfers", hujjatOraligiParametrlari(oraliq)
     );
     return royxatniAjratish(response.data);
   },
