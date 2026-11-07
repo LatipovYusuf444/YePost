@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import AppSelect from "@/Components/ui/AppSelect";
 import SotuvTafsilotlariModal from "@/Pages/Savdo/SotuvTafsilotlariModal";
 import GoldCartIllustration from "@/Components/illustrations/GoldCartIllustration";
@@ -33,7 +34,7 @@ import { yaratishValyutasi } from "@/lib/mijozValyutasi";
 import SotuvNarxiMaydoni from "./SotuvNarxiMaydoni";
 import SavatchaMiqdoriMaydoni from "./SavatchaMiqdoriMaydoni";
 import { doimiySotuvniModalgaTayyorlash } from "./doimiySotuv";
-import { aralashTolovniTaqsimlash, dollarNarxi, dollarniSomga, narxTuriKodi, sotuvQatori } from "./aralashTolov";
+import { aralashTolovniTaqsimlash, dollarNarxi, dollarniSomga, narxTuriKodi, posQaytimi, posTolovYaroqli, sotuvQatori } from "./aralashTolov";
 import { useSavdoStore } from "@/store/savdoStore";
 import { useKassaNarxTurlari } from "@/store/savdoSozlamalariStore";
 import type { MijozTanlovi, OmborTanlovi, Sotuv, SotuvTolovi, TolovTuri } from "@/types/savdo";
@@ -141,6 +142,8 @@ export default function BoshSahifa() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [tolovModalOchiq, setTolovModalOchiq] = useState(false);
+  // "Kechiktirish" savatni tozalaydi: mahsulot bo'lsa avval so'raladi (K5).
+  const [kechiktirishOchiq, setKechiktirishOchiq] = useState(false);
   const [tolovSummasi, setTolovSummasi] = useState("");
   // Dollarda qabul qilinadigan to'lov ($). Faqat valyuta rejimi yoqilgan va bugungi kurs kiritilgan bo'lsa ishlatiladi.
   const [dollarTolovi, setDollarTolovi] = useState("");
@@ -232,11 +235,10 @@ export default function BoshSahifa() {
   const qabulJami = somTolovi + dollarSomda;
   const qaytim = Math.max(qabulJami - payableTotal, 0);
   // Dollar qatnashsa backend qaytimni so'mda eng yaqin minggacha yaxlitlaydi (roundChange standart holatda yoqilgan): kassir shu summani beradi.
-  const qaytimBerish = dollarTiyin > 0 && qaytimYaxlitlash ? Math.round(qaytim / 1000) * 1000 : qaytim;
+  const qaytimBerish = posQaytimi({ qabul: qabulJami, jami: payableTotal, dollarBor: dollarTiyin > 0, yaxlitlash: qaytimYaxlitlash });
   const qarzQoldi = Math.max(payableTotal - qabulJami, 0);
-  // Dollar bilan to'langanda so'm qismi qolgan summadan oshmaydi (qaytim faqat dollar banknota katta bo'lganda chiqadi).
-  const tolovYaroqli =
-    qabulJami > 0 && (dollarTiyin > 0 ? somTolovi <= Math.max(payableTotal - dollarSomda, 0) : somTolovi <= payableTotal);
+  // Naqd so'mda ortiqcha berish mumkin (qaytim); dollar bilan to'langanda so'm qismi qolgan summadan oshmaydi.
+  const tolovYaroqli = posTolovYaroqli({ som: somTolovi, dollarSomda, jami: payableTotal, naqd: selectedPayment.apiTuri === "CASH" });
   const somMatni = (qiymat: number) => `${Math.round(qiymat).toLocaleString("uz-UZ")} uzs`;
 
   function dollarOzgardi(qiymat: string) {
@@ -367,10 +369,7 @@ export default function BoshSahifa() {
     const usdSent = dollarTolovMumkin ? Math.max(Math.round(readNumber(dollarTolovi) * 100), 0) : 0;
     const usdSomda = usdSent > 0 ? dollarniSomga(usdSent, kurs) : 0;
     const qabulQilinadiganSumma = somQismi + usdSomda;
-    if (
-      qabulQilinadiganSumma <= 0 ||
-      (usdSent > 0 ? somQismi > Math.max(payableTotal - usdSomda, 0) : qabulQilinadiganSumma > payableTotal)
-    ) {
+    if (!posTolovYaroqli({ som: somQismi, dollarSomda: usdSomda, jami: payableTotal, naqd: selectedPayment.apiTuri === "CASH" })) {
       setMessage({ type: "error", text: t("errors.amountRange", { max: formatSumma(payableTotal) }) });
       return;
     }
@@ -441,6 +440,8 @@ export default function BoshSahifa() {
           // so'mdagi narx/to'lovlar dollar sifatida o'qilib qolardi. Kassa hisob-kitobi so'mda, dollar qatorlari o'z valyutasi bilan ketadi.
           currency: "UZS",
           ...(usdSent > 0 && !qaytimYaxlitlash ? { roundChange: false } : {}),
+          // Ortiqcha naqd pul kassir ko'rsatgan qaytim bo'lib qaytadi (mijozning eski qarzlariga o'tib ketmaydi).
+          ...(qabulQilinadiganSumma > payableTotal && mijozTuri === "doimiy" && selectedCustomerId ? { applyExcessToDebt: false } : {}),
           items: qatorlarRoyxati.map(({ modificationId, quantity, price, discount, dollar, priceType, unitId }) =>
             sotuvQatori({ modificationId, quantity, price, discount, dollar, priceType, unitId })
           ),
@@ -978,7 +979,7 @@ export default function BoshSahifa() {
               </button>
 
               <button
-                onClick={clearCart}
+                onClick={() => (cart.length > 0 ? setKechiktirishOchiq(true) : clearCart())}
                 className="mt-2 h-10 w-full rounded-xl bg-white text-xs font-bold text-[#64748B] transition hover:text-gold-600"
               >
                 {t("customer.postpone")}
@@ -1196,6 +1197,20 @@ export default function BoshSahifa() {
             </div>
           </section>
         </AppModal>
+      )}
+      {kechiktirishOchiq && (
+        <TasdiqlashOynasi
+          ikonka={<Trash2 size={24} />}
+          ohang="sariq"
+          sarlavha={t("customer.postponeConfirm.title")}
+          nom={t("customer.postponeConfirm.items", { count: cart.length })}
+          tavsif={t("customer.postponeConfirm.description")}
+          ortgaMatni={t("customer.postponeConfirm.no")}
+          tasdiqMatni={t("customer.postponeConfirm.yes")}
+          jarayonMatni={t("customer.postponeConfirm.yes")}
+          onTasdiq={async () => { clearCart(); setKechiktirishOchiq(false); }}
+          onYopish={() => setKechiktirishOchiq(false)}
+        />
       )}
     </div>
   );

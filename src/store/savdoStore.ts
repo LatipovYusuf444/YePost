@@ -23,6 +23,7 @@ import {
   sotuvniTiklash,
   sotuvgaTolovQoshish as sotuvgaTolovQoshishApi,
   sotuvTafsilotiniOlish,
+  sotuvTafsilotiniFondaOlish,
   sotuvniYangilash as sotuvniYangilashApi,
   sotuvYaratish,
   xodimlarRoyxatiniOlish,
@@ -534,14 +535,26 @@ export const useSavdoStore = create<SavdoState>((set, get) => {
 
     try {
       const { sotuv: yangilangan, qaytim, hisobga } = await sotuvgaTolovQoshishApi(sotuvId, tolov);
-      const boyitilgan = sotuvniBoglanganMalumotlarBilanBoyitish(yangilangan, get());
-      set((state) => ({
-        sotuvlar: state.sotuvlar.map((sotuv) =>
-          sotuv.id === sotuvId ? boyitilgan : sotuv
-        ),
-        tanlanganSotuv: boyitilgan,
-        amalBajarilmoqda: false,
-      }));
+      if (yangilangan) {
+        const boyitilgan = sotuvniBoglanganMalumotlarBilanBoyitish(yangilangan, get());
+        set((state) => ({
+          sotuvlar: state.sotuvlar.map((sotuv) =>
+            sotuv.id === sotuvId ? boyitilgan : sotuv
+          ),
+          tanlanganSotuv: boyitilgan,
+          amalBajarilmoqda: false,
+        }));
+      } else {
+        // To'lov saqlangan, faqat yangi holatni olib bo'lmadi: muvaffaqiyat qaytadi, sotuv fonda qayta olinadi.
+        set({ amalBajarilmoqda: false });
+        void sotuvTafsilotiniFondaOlish(sotuvId).then((qayta) => {
+          const boyitilgan = sotuvniBoglanganMalumotlarBilanBoyitish(qayta, get());
+          set((state) => ({
+            sotuvlar: state.sotuvlar.map((sotuv) => (sotuv.id === sotuvId ? boyitilgan : sotuv)),
+            tanlanganSotuv: state.tanlanganSotuv?.id === sotuvId ? boyitilgan : state.tanlanganSotuv,
+          }));
+        }).catch(() => undefined);
+      }
       window.dispatchEvent(new CustomEvent("savdo:yangilandi", { detail: { sotuvId } }));
       return { qaytim, hisobga };
     } catch (error) {

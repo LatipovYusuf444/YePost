@@ -40,6 +40,27 @@ export function dollarniSomga(sent: number, kurs: number) {
   return Math.round((sent / 100) * kurs);
 }
 
+/**
+ * POS to'lov oynasida "Tasdiqlash" mumkinmi (M2). Naqd so'm to'lovda summa jamidan ko'p bo'lishi mumkin — ortig'i qaytim bo'ladi
+ * (87 000 lik savdoga 100 000 berilsa qaytim 13 000). Karta/bank to'lovi jamidan oshmaydi (backend `overpayment_not_allowed`).
+ * Dollar qatnashganda avvalgidek: so'm qismi qolgan summadan oshmaydi (qaytim faqat dollar banknota katta bo'lganda chiqadi).
+ */
+export function posTolovYaroqli(p: { som: number; dollarSomda: number; jami: number; naqd: boolean }) {
+  const qabul = p.som + p.dollarSomda;
+  if (qabul <= 0) return false;
+  if (p.dollarSomda > 0) return p.som <= Math.max(p.jami - p.dollarSomda, 0);
+  return p.naqd || p.som <= p.jami;
+}
+
+/**
+ * Kassir beradigan qaytim (so'mda), backend bilan bir xil: dollar qatnashsa va yaxlitlash yoqilgan bo'lsa eng yaqin minggacha
+ * (HALF_UP, `roundChange`), faqat so'm to'lovda esa aniq.
+ */
+export function posQaytimi(p: { qabul: number; jami: number; dollarBor: boolean; yaxlitlash: boolean }) {
+  const qaytim = Math.max(p.qabul - p.jami, 0);
+  return p.dollarBor && p.yaxlitlash ? Math.round(qaytim / 1000) * 1000 : qaytim;
+}
+
 type QatorMalumoti = {
   modificationId: string;
   quantity: number;

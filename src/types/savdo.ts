@@ -215,6 +215,8 @@ export type SotuvYaratishMalumoti = {
   roundChange?: boolean;
   // Ortiqcha pul (eski qarzlar yopilgach) qaytim emas, mijoz hisobiga yoziladi. Faqat mijozli savdoda (standart false).
   keepExcess?: boolean;
+  // Mijozli savdoda ortiqcha pul avval mijozning eski qarzlarini yopadi (backend standart true); false — qaytim bo'lib qaytadi.
+  applyExcessToDebt?: boolean;
   note?: string;
   // Donalik savdo uchun mijoz ismi (≤200 belgi) va telefoni (≤50 belgi). Qarzga sotish uchun baribir customerId kerak.
   walkInCustomerName?: string;

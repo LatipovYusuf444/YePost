@@ -97,6 +97,13 @@
     "total": "Jami",
     "pay": "To'lash",
     "postpone": "Kechiktirish",
+    "postponeConfirm": {
+      "title": "Savatcha tozalansinmi?",
+      "items": "{{count}} ta mahsulot",
+      "description": "Kechiktirilgan savdo saqlanmaydi: savatchadagi mahsulotlar, chegirma va mijoz tanlovi o'chiriladi.",
+      "no": "Yo'q, qolsin",
+      "yes": "Ha, tozalash"
+    },
     "regularCustomers": "Doimiy mijozlar",
     "searchPlaceholder": "Doimiy mijozni qidirish",
     "noPhone": "Telefon kiritilmagan",

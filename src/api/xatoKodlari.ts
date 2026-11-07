@@ -13,6 +13,15 @@ const MATNLAR: Record<string, KodMatni> = {
     uz: "Ishlab chiqarish moduli yoqilmagan. Direktor uni Sozlamalar → Ishlab chiqarish bo'limida yoqadi.",
     ru: "Модуль производства не включён. Директор включает его в разделе Настройки → Производство.",
   },
+  // Idempotency-Key (savdo, to'lov, kassa, qarz to'lash va ishlab chiqarish): backend endi umumiy kodlarni qaytaradi; eskilari ham qoladi.
+  "errors.common.idempotency_mismatch": {
+    uz: "Bu amal boshqa ma'lumot bilan allaqachon yuborilgan. Sahifani yangilab, qayta urinib ko'ring.",
+    ru: "Это действие уже отправлено с другими данными. Обновите страницу и повторите.",
+  },
+  "errors.common.request_in_progress": {
+    uz: "Oldingi so'rov hali tugamagan. Bir oz kutib, qayta bosing.",
+    ru: "Предыдущий запрос ещё выполняется. Подождите и нажмите снова.",
+  },
   "errors.production.idempotency_mismatch": {
     uz: "Bu amal boshqa ma'lumot bilan allaqachon yuborilgan. Sahifani yangilab, qayta urinib ko'ring.",
     ru: "Это действие уже отправлено с другими данными. Обновите страницу и повторите.",
