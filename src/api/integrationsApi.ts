@@ -1,5 +1,6 @@
 import apiClient from "./axios";
 import { apiData, type ApiEnvelope } from "./response";
+import { telegramHavolasi, type TelegramHavola } from "@/lib/telegramXabarnoma";
 
 // Telegram bot (TZ 701): javobda botToken va webhookSecret ENDI YO'Q — tokenning oxirgi 4 belgisi (`botTokenLast4`) va bot nomi (`botUsername`) keladi.
 // Mijozga xabar yuborish tugmalari (`sendOn*`, `attachPdf`) standart holatda yoqilgan.
@@ -13,6 +14,11 @@ export type TelegramIntegratsiya = {
   sendOnPayment?: boolean;
   sendOnCancel?: boolean;
   attachPdf?: boolean;
+  // Do'kon chati: chatIdValid — chatId raqammi; chatLinkedAt — bot orqali oxirgi ulangan vaqt; chatLastError — oxirgi yuborish xatosi.
+  chatIdValid?: boolean;
+  chatLinkedAt?: string | null;
+  chatLastError?: string | null;
+  chatLastErrorAt?: string | null;
 };
 export type PrinterIntegratsiya = { ipAddress?: string | null; port?: number | null; isActive?: boolean };
 // `botToken` faqat YANGI token kiritilganda yuboriladi: yuborilmasa eski token saqlanadi, bo'sh matn esa 400 beradi.
@@ -57,6 +63,13 @@ export const integratsiyalarApi = {
       apiData((await apiClient.get<TelegramIntegratsiya | ApiEnvelope<TelegramIntegratsiya>>("/integrations/telegram", jim ? { xatoniYashirish: true } : undefined)).data)
     ),
   telegramYangilash: async (data: TelegramIntegratsiyaSaqlash) => sozlamaObyekti(apiData((await apiClient.patch<TelegramIntegratsiya | ApiEnvelope<TelegramIntegratsiya>>("/integrations/telegram", data)).data)),
+  // POST /integrations/telegram/shop-link → { url, groupUrl, expiresAt }: do'kon chatini botga ulash (bir martalik, 7 kun).
+  // Bot yoqilmagan bo'lsa 400 errors.integrations.invalid_bot_token.
+  dokonChatHavolasi: async (): Promise<TelegramHavola> => {
+    const havola = telegramHavolasi((await apiClient.post<unknown>("/integrations/telegram/shop-link")).data);
+    if (!havola) throw new Error("Backend Telegram havolasini qaytarmadi.");
+    return havola;
+  },
   printerOlish: async () => sozlamaObyekti(apiData((await apiClient.get<PrinterIntegratsiya | ApiEnvelope<PrinterIntegratsiya>>("/integrations/printer")).data)),
   printerYangilash: async (data: PrinterIntegratsiyaSaqlash) => sozlamaObyekti(apiData((await apiClient.patch<PrinterIntegratsiya | ApiEnvelope<PrinterIntegratsiya>>("/integrations/printer", data)).data)),
   tolovOlish: async (provider: TolovProvayderi) => apiData((await apiClient.get<TolovIntegratsiyasi | ApiEnvelope<TolovIntegratsiyasi>>(`/integrations/payments/${provider}`)).data),

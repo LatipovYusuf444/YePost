@@ -19,6 +19,34 @@ export function chatIdNotogrimi(matn: string): boolean {
   return qiymat !== "" && !/^-?\d+$/.test(qiymat);
 }
 
+/**
+ * Saqlashda Chat ID yuboriladimi: faqat qo'lda o'zgartirilganda. O'zgarmagan bo'lsa yuborilmaydi — aks holda eski forma
+ * bot orqali endigina ulangan chatni ustidan yozib yuboradi, eski noto'g'ri (so'zli) chat esa boshqa sozlamalarni saqlashga xalaqit beradi.
+ */
+export function chatIdYuborilsinmi(formadagi: string, saqlangan: string | null | undefined): string | undefined {
+  const yangi = formadagi.trim();
+  return yangi === String(saqlangan ?? "").trim() ? undefined : yangi;
+}
+
+/**
+ * Do'kon chati (qarz eslatmalari va sotuv xabarlari): GET /integrations/telegram dagi chatId, chatIdValid va chatLastError'dan.
+ * `notogri` — chatda raqam emas so'z yozilgan (eski do'konlar), `xato` — oxirgi yuborish Telegram'da xato berdi.
+ */
+export type DokonChatHolati = "ulanmagan" | "ulangan" | "notogri" | "xato";
+
+export function dokonChatHolati(sozlama: { chatId?: string | null; chatIdValid?: boolean | null; chatLastError?: string | null }): DokonChatHolati {
+  const chatId = String(sozlama.chatId ?? "").trim();
+  if (!chatId) return "ulanmagan";
+  const raqammi = typeof sozlama.chatIdValid === "boolean" ? sozlama.chatIdValid : !chatIdNotogrimi(chatId);
+  if (!raqammi) return "notogri";
+  return String(sozlama.chatLastError ?? "").trim() ? "xato" : "ulangan";
+}
+
+/** Havola berilgandan keyin chat bot orqali ulandimi: `chatLinkedAt` havola berilgan paytdagidan boshqa (yangi) qiymatga o'zgargan. */
+export function dokonChatUlandimi(oldingi: string | null | undefined, hozirgi: string | null | undefined): boolean {
+  return Boolean(hozirgi) && hozirgi !== oldingi;
+}
+
 export type XabarnomaHodisasi =
   | "SALE_CONFIRMED"
   | "PAYMENT"
