@@ -23,12 +23,13 @@ import { useDavrStore } from "@/store/davrStore";
 import { useSavdoStore, type NakladnoyNatijasi } from "@/store/savdoStore";
 import type { Sotuv, SotuvTolovi, TolovTuri } from "@/types/savdo";
 import { ENG_KAM_KURS, kursJudaKichik } from "@/lib/kursChegarasi";
+import { useTolovTahririRuxsati } from "@/hooks/useTolovTahririRuxsati";
 import XatoliMaydon from "@/Components/common/XatoliMaydon";
 import SavdoSelect from "./SavdoSelect";
 import TolovNatijasiKarta from "./TolovNatijasi";
 import { qatorValyutasi, sotuvQarzdorlikSummasi, sotuvSummasi, sotuvValyutasi, tolovSotuvValyutasida, tolovValyutasi } from "./savdoYordamchilari";
 
-/** Sotuv sanasidagi dollar kursi (GET /settings/exchange-rates/effective?date=): `kurs` null — shu kunda ham, undan oldin ham kiritilmagan. */
+/** To'lov sanasidagi dollar kursi: `kurs` null — shu kunda ham, undan oldin ham kiritilmagan. */
 type SotuvKursi = { holat: "yuklanmoqda" } | { holat: "xato" } | { holat: "tayyor"; kurs: number | null; kursSanasi: string | null };
 type BosqichHolati = "kutilmoqda" | "bajarilmoqda" | "tugadi" | "xato";
 type Holatlar = Record<TolovTahririBosqichi, BosqichHolati>;
@@ -84,6 +85,8 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
   const aslKun = toshkentKuni(tolov.date ?? tolov.paidAt ?? tolov.createdAt) || bugungiToshkentKuni();
   const aslIzoh = tolov.note ?? "";
   const aslSumma = Number(tolov.amount ?? 0);
+  const tahrirCheklovi = useTolovTahririRuxsati();
+  const [kun, setKun] = useState(aslKun);
 
   // Oyna ochilgandagi holat: zanjir davomida sotuv o'zgaradi (bekor qilingan, qoralama), so'rov esa boshlang'ich ma'lumotdan yig'iladi.
   const [asos] = useState(() => {
@@ -92,6 +95,7 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
     const indeks = idBoyicha !== -1 ? idBoyicha : tolovlar.indexOf(tolov);
     return {
       sotuvId: sotuv.id,
+      qoralama: String(sotuv.status ?? "DRAFT").toUpperCase() === "DRAFT",
       tolovId: tolov.id ?? null,
       indeks,
       jami: sotuvSummasi(sotuv),
@@ -105,18 +109,19 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
       dollarHujjat: sotuvVal === "USD" || (sotuv.items ?? []).some((qator) => qatorValyutasi(qator, sotuv) === "USD"),
     };
   });
+  const bosqichlar = asos.qoralama ? ["yangilash"] as const : TOLOV_TAHRIRI_BOSQICHLARI;
 
-  // Backend boshqa valyutadagi to'lovni SOTUV SANASIDAGI kurs bilan o'giradi (shu kunga kurs kiritilmagan bo'lsa undan oldingi oxirgisi), bugungi bilan emas:
-  // shu kursni backenddan so'raymiz. So'm sotuvga dollar to'lov (`payments[].currency: "USD"`) valyuta rejimi o'chiq bo'lsa ham qabul qilinadi — kurs
-  // yetarli; rejim (yoqilgan/o'chiq, umumiy sozlama, uni store o'qiydi) faqat dollar sotuv va dollar qatorlar uchun kerak.
+  // Standart kurs to'lov kunidan olinadi va saqlashda rate sifatida aniq yuboriladi.
+  // Saqlangan yoki kassir kiritgan kurs undan ustun turadi.
   const rejimYoniq = useValyutaStore((holat) => holat.rejimYoniq);
   const rejimYuklandi = useValyutaStore((holat) => holat.yuklandi);
   useKursniTayyorlash();
   const [sotuvKursi, setSotuvKursi] = useState<SotuvKursi>({ holat: "yuklanmoqda" });
   useEffect(() => {
     let faol = true;
+    setSotuvKursi({ holat: "yuklanmoqda" });
     valyutaApi
-      .amaldagiKurs(asos.sotuvKuni || undefined)
+      .amaldagiKurs(kun || undefined)
       .then((javob) => {
         if (faol) setSotuvKursi({ holat: "tayyor", kurs: kursniSongaAylantirish(javob.rate), kursSanasi: javob.rateDate ?? null });
       })
@@ -126,7 +131,7 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
     return () => {
       faol = false;
     };
-  }, [asos.sotuvKuni]);
+  }, [kun]);
   // Kunlik kurs (sozlamadagi); kassir kursi (`payments[].rate`) bo'lsa u shu to'lov uchun undan ustun turadi.
   const kurs = sotuvKursi.holat === "tayyor" && sotuvKursi.kurs ? sotuvKursi.kurs : 0;
   const kursYuklandi = rejimYuklandi && sotuvKursi.holat !== "yuklanmoqda";
@@ -135,13 +140,12 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
   const valyutaTanlashMumkin = !dollarHujjatRejimsiz;
   const dollarXabari = dollarHujjatRejimsiz ? t("tolovTahriri.dollarRejimOchiq") : "";
   const kunlikKursXabari =
-    kursYuklandi && kurs === 0 ? (sotuvKursi.holat === "xato" ? t("tolovTahriri.kursOqilmadi") : t("tolovTahriri.dollarKursYoq", { sana: kunMatni(asos.sotuvKuni) })) : "";
+    kursYuklandi && kurs === 0 ? (sotuvKursi.holat === "xato" ? t("tolovTahriri.kursOqilmadi") : t("tolovTahriri.dollarKursYoq", { sana: kunMatni(kun) })) : "";
   const yopilganKun = useDavrStore((holat) => holat.holat?.closedUntil ?? null);
 
   const [tur, setTur] = useState<TolovTuri>(tolov.paymentType);
   const [val, setVal] = useState<Valyuta>(aslVal);
   const [summa, setSumma] = useState(String(aslSumma));
-  const [kun, setKun] = useState(aslKun);
   const [izoh, setIzoh] = useState(aslIzoh);
   const [ortiqchaniHisobga, setOrtiqchaniHisobga] = useState(false);
   // Dollar qatnashganda backend qaytimni minggacha yaxlitlaydi (`roundChange`, standart yoqilgan); belgi olinsa aniq qaytim.
@@ -226,11 +230,14 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
   // Kassir kursi 1 000 dan past: xato kurs maydoni ostida (qizil ramka bilan) chiqadi.
   const kursKamMatni = t("tolovModal.errors.kursKam", { min: ENG_KAM_KURS.toLocaleString("uz-UZ") });
   function tekshirish() {
+    const cheklov = tahrirCheklovi(sotuv, tolov);
+    if (cheklov) return t(cheklov);
     if (!(yangiSumma > 0)) return t("tolovModal.errors.nolDanKatta");
     // Qayta tasdiqlash (mode_off, rate_missing) PATCH'dan keyin tekshiriladi: xato bo'lsa sotuv bekor qilinib qoralamada qolardi — shuning uchun oldindan.
     if (dollarHujjatRejimsiz) return t("tolovTahriri.dollarRejimOchiq");
     // Boshqa valyutada to'lov kursni talab qiladi (kunlik kurs yo'q bo'lsa kassir kiritadi); PATCH kursni tekshirmaydi, tasdiqlash tekshiradi.
     if (val !== sotuvVal && !(hisobKursi > 0)) return t("tolovTahriri.kurs.kiriting");
+    if (val !== sotuvVal && !(kassirKursi > 0) && !kursYuklandi) return t("tolovTahriri.yuklanmoqda");
     if (val !== sotuvVal && kursJudaKichik(kassirKursi)) return kursKamMatni;
     if (kelajakKunmi(kun)) return t("tolovModal.errors.sanaKelajak");
     if (asos.sotuvKuni && kun < asos.sotuvKuni) return t("tolovModal.errors.sanaSotuvdanOldin", { sana: kunMatni(asos.sotuvKuni) });
@@ -241,14 +248,17 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
     if (tahlil.ortiqcha > 0 && tahlil.naqdEmas) {
       return t("tolovModal.errors.ortiqchaFaqatNaqd", { maksimal: pul(maksimalTolov, val) });
     }
-    if (qarz > 0 && !asos.mijozBor && !asos.kompaniyaBor) return t("tolovTahriri.errors.qarzMijozsiz");
+    if (!asos.qoralama && qarz > 0 && !asos.mijozBor && !asos.kompaniyaBor) return t("tolovTahriri.errors.qarzMijozsiz");
     return "";
   }
 
   function saqlashniSorash() {
     const xato = tekshirish();
     setXatolik(xato);
-    if (!xato) setTasdiqOchiq(true);
+    if (!xato) {
+      if (asos.qoralama) jarayonniBoshlash();
+      else setTasdiqOchiq(true);
+    }
   }
 
   async function bajarish(boshlash: TolovTahririBosqichi) {
@@ -287,15 +297,25 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
     const izohMatni = izoh.trim();
     sorov.current = {
       sotuvId: asos.sotuvId,
+      ...(asos.qoralama ? { qoralama: true } : {}),
       tolovId: asos.tolovId,
       tolovIndeksi: asos.indeks,
-      yangi: tolovYangilanishi({ kun: aslKun, izoh: aslIzoh }, { paymentType: tur, amount: yangiSumma, currency: val, kun, izoh: izohMatni, kurs: kassirKursi }),
+      yangi: tolovYangilanishi({ kun: aslKun, izoh: aslIzoh }, { paymentType: tur, amount: yangiSumma, currency: val, kun, izoh: izohMatni, kurs: val !== sotuvVal ? hisobKursi : 0 }),
       // Qarzdan ortiq pul bo'lsa tanlov aniq yuboriladi (mijozli sotuvda: hisobga yozish yoki qaytim).
       ...(tahlil.ortiqcha > 0 && asos.mijozBor ? { keepExcess: ortiqchaniHisobga } : {}),
       ...(qaytimTaxmini > 0 && dollarQatnashdi && !qaytimniYaxlitlash ? { roundChange: false as const } : {}),
-      ...(asos.mijozBor && nakladnoyniYuborish ? { nakladnoyYuborish: true } : {}),
+      ...(!asos.qoralama && asos.mijozBor && nakladnoyniYuborish ? { nakladnoyYuborish: true } : {}),
     };
-    void bajarish("bekor");
+    void bajarish(asos.qoralama ? "yangilash" : "bekor");
+  }
+
+  if (faza === "tugadi" && yakuniy && asos.qoralama) {
+    return <div className="space-y-4 px-7 py-6" data-testid="qoralama-tolov-tugadi">
+      <p className="flex items-center gap-2 font-bold text-emerald-700"><CheckCircle2 size={20} />{t("tolovTahriri.tugadi")}</p>
+      <p className="text-sm text-slate-600">{t("tolovTahriri.qoralamaIzoh")}</p>
+      <p className="font-semibold">{t("tolovTahriri.hisob.qarz")}: {sotuvPuli(sotuvQarzdorlikSummasi(yakuniy))}</p>
+      <button type="button" onClick={onYopish} className="h-11 rounded-xl bg-blue-600 px-5 font-bold text-white">{t("tolovTahriri.yopish")}</button>
+    </div>;
   }
 
   if (faza === "tugadi" && yakuniy) {
@@ -382,7 +402,7 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
           {zanjirXatosi ? t("tolovTahriri.jarayonToxtadi") : t("tolovTahriri.jarayonIzoh")}
         </p>
         <ol className="space-y-2.5">
-          {TOLOV_TAHRIRI_BOSQICHLARI.map((bosqich) => (
+          {bosqichlar.map((bosqich) => (
             <BosqichQatori key={bosqich} holat={holatlar[bosqich]} matn={t(`tolovTahriri.bosqichlar.${bosqich}`)} />
           ))}
         </ol>
@@ -449,7 +469,7 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5 sm:px-7">
         <div className="flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-semibold leading-5 text-amber-800">
           <TriangleAlert size={16} aria-hidden className="mt-0.5 shrink-0" />
-          {t("tolovTahriri.ogohlantirish")}
+          {t(asos.qoralama ? "tolovTahriri.qoralamaIzoh" : "tolovTahriri.ogohlantirish")}
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
@@ -544,10 +564,15 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
                 )}
                 {val !== sotuvVal && kurs > 0 && (
                   <span className="text-xs font-semibold leading-5 text-slate-500" data-testid="sotuv-kursi">
-                    {t("tolovTahriri.kursQatori", { sana: kunMatni(asos.sotuvKuni), kurs: kurs.toLocaleString("uz-UZ", { maximumFractionDigits: 2 }) })}
-                    {sotuvKursi.holat === "tayyor" && sotuvKursi.kursSanasi && sotuvKursi.kursSanasi !== asos.sotuvKuni && ` ${t("tolovTahriri.kursKiritilganKun", { sana: kunMatni(sotuvKursi.kursSanasi) })}`}
+                    {t("tolovTahriri.kursQatori", { sana: kunMatni(kun), kurs: kurs.toLocaleString("uz-UZ", { maximumFractionDigits: 2 }) })}
+                    {sotuvKursi.holat === "tayyor" && sotuvKursi.kursSanasi && sotuvKursi.kursSanasi !== kun && ` ${t("tolovTahriri.kursKiritilganKun", { sana: kunMatni(sotuvKursi.kursSanasi) })}`}
                     {yangiSumma > 0 && ` · ${t("tolovModal.sotuvValyutasidagiQiymat", { summa: sotuvPuli(yangiQiymat) })}`}
                   </span>
+                )}
+                {val !== sotuvVal && hisobKursi > 0 && (
+                  <p className="text-sm font-bold text-blue-700" data-testid="tolov-kurs-hisobi">
+                    {pul(yangiSumma, val)} {val === "USD" ? "×" : "÷"} {hisobKursi.toLocaleString("uz-UZ", { maximumFractionDigits: 4 })} = {sotuvPuli(yangiQiymat)}
+                  </p>
                 )}
                 {val !== sotuvVal && kunlikKursXabari && (
                   <p className="text-xs font-semibold leading-5 text-amber-700" data-testid="kunlik-kurs-yoq">
@@ -589,7 +614,7 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
               </div>
             </section>
 
-            {asos.mijozBor && (
+            {asos.mijozBor && !asos.qoralama && (
               <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-100">
                 <input
                   type="checkbox"
@@ -741,7 +766,7 @@ export default function TolovTahriri({ sotuv, tolov, raqam, onBand, onOrqaga, on
               onClick={saqlashniSorash}
               className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#2563EB] px-6 text-sm font-black text-white shadow-[0_10px_24px_rgba(37,99,235,.24)] transition hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {t("tolovTahriri.saqlash")}
+              {t(asos.qoralama ? "tolovTahriri.qoralamaSaqlash" : "tolovTahriri.saqlash")}
             </button>
           </div>
         </div>

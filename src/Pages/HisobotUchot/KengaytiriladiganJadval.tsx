@@ -2,6 +2,7 @@ import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useEffect, useState, type ReactNode } from "react";
 import { Trash2 } from "lucide-react";
 import TablePagination from "@/Components/common/TablePagination";
+import { guruhSahifasi } from "@/lib/guruhSahifasi";
 
 // Ustun kengligini sichqoncha bilan o'zgartirsa (resize) va sudrab joyini
 // almashtirsa (reorder) bo'ladigan umumiy hisobot jadvali.
@@ -13,6 +14,7 @@ export type Ustun<T> = {
   hizalash?: "left" | "right" | "center"; // katak matnini tekislash
   katak: (row: T) => ReactNode;
   jami?: () => ReactNode; // footer katagi (ixtiyoriy)
+  boshlangichYashirin?: boolean;
 };
 
 function hizKlass(hizalash?: "left" | "right" | "center") {
@@ -32,6 +34,7 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
   sozlamaBor = false,
   onQatorOchirish,
   qatorOchirishHolati,
+  qatorGuruhKaliti,
 }: {
   tableId: string;
   ustunlar: Ustun<T>[];
@@ -44,13 +47,15 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
   onQatorOchirish?: (row: T) => void; // oxirgi ustunda (⚙ ostida) har qator uchun o'chirish tugmasi
   // Qator o'chirilishi mumkin emas bo'lsa tugma o'chirib qo'yiladi va sarlavhada sababi ko'rsatiladi.
   qatorOchirishHolati?: (row: T) => { mumkin: boolean; sarlavha?: string };
+  qatorGuruhKaliti?: (row: T) => string;
 }) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const SOZLAMA_KENGLIK = 52;
 
   const korinadigan = ustunlar;
-  const visibleRows = qatorlar.slice((page - 1) * pageSize, page * pageSize);
+  const grouped = qatorGuruhKaliti ? guruhSahifasi(qatorlar, qatorGuruhKaliti, page, pageSize) : null;
+  const visibleRows = grouped?.rows ?? qatorlar.slice((page - 1) * pageSize, page * pageSize);
   useEffect(() => setPage(1), [qatorlar, pageSize]);
 
   // Oxirgi (amallar) ustuni: header'da ⚙, qatorlarda o'chirish tugmasi.
@@ -79,7 +84,7 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
         <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
             {korinadigan.map((u) => (
-              <th key={u.id} data-column-id={u.id} className={`relative px-4 py-4 ${hizKlass(u.hizalash)}`}>{u.nom}</th>
+              <th key={u.id} data-column-id={u.id} data-default-hidden={u.boshlangichYashirin || undefined} className={`relative px-4 py-4 ${hizKlass(u.hizalash)}`}>{u.nom}</th>
             ))}
             {amallarUstuni && <th data-column-id="h1" className="px-3 py-4" aria-label="Amallar" />}
           </tr>
@@ -138,7 +143,7 @@ export default function KengaytiriladiganJadval<T extends { id: string }>({
           </tfoot>
         )}
       </table></SmartTable>
-      <TablePagination page={page} pageSize={pageSize} totalItems={qatorlar.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
+      <TablePagination page={grouped?.page ?? page} pageSize={pageSize} totalItems={grouped?.total ?? qatorlar.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
     </div>
   );
 }

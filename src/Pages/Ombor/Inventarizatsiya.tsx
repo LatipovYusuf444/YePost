@@ -80,6 +80,12 @@ export default function Inventarizatsiya() {
   const [tahrirSaqlanmoqda, setTahrirSaqlanmoqda] = useState(false);
   const tahrirQulfi = useRef(false);
   const [tanlanganId, setTanlanganId] = useState<string | null>(null);
+  useEffect(() => {
+    const search = window.location?.search;
+    if (!search) return;
+    const documentId = new URLSearchParams(search).get("hujjat");
+    if (documentId) setTanlanganId(documentId);
+  }, []);
   const [warehouseId, setWarehouseId] = useState("");
   const [responsibleId, setResponsibleId] = useState("");
   // Hujjat sanasi: bugun yoki o'tgan kun (kelajak yo'q); o'tgan kun tanlansa backend hujjatni shu kunning oxirida yozadi.

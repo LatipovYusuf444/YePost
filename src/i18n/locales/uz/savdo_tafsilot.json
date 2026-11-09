@@ -399,6 +399,16 @@
   },
   "tolovTahriri": {
     "tugma": "Tahrirlash",
+    "qoralamaSaqlash": "Saqlash",
+    "qoralamaIzoh": "To'lov qoralamada saqlanadi. Savdo qoralama holatida qoladi.",
+    "cheklov": {
+      "bekorQilingan": "Bekor qilingan savdodagi to'lov tahrirlanmaydi.",
+      "davrYopilgan": "Savdo yoki to'lov tegishli bo'lgan davr yopilgan.",
+      "kassaHujjati": "Bu to'lov alohida kassa hujjatidan kelgan. Tuzatish uchun Kassa bo'limida asl hujjatni bekor qilib, to'g'ri to'lov kiriting.",
+      "avtomatikTolov": "Hisobdan avtomatik yechilgan to'lov va qarz qatori bu yerda tahrirlanmaydi.",
+      "tolovIdYoq": "To'lovning IDsi yuklanmagan. Savdoni qayta oching.",
+      "profilYuklanmoqda": "Foydalanuvchi huquqlari hali yuklanmagan. Qayta urinib ko'ring."
+    },
     "ruxsatYoq": "To'lovni tahrirlash sotuvni bekor qilishni talab qiladi: faqat direktor yoki RETURN_CANCEL ruxsati bor admin tahrirlay oladi.",
     "sarlavha": "To'lovni tahrirlash",
     "tavsif": "To'lov turi, summa, valyuta va sanani to'g'rilang: masalan, summa adashib boshqa yozilgan yoki to'lov dollarda olingan bo'lsa.",
@@ -447,7 +457,7 @@
     "kursQatori": "Kunlik kurs ({{sana}}): 1 $ = {{kurs}} so'm",
     "kursKiritilganKun": "({{sana}} da kiritilgan)",
     "dollarRejimOchiq": "Bu sotuv dollarda (sotuvi yoki qatorlari dollarda), uni qayta tasdiqlash uchun valyuta rejimi yoqilgan bo'lishi kerak (Sozlamalar → Valyuta).",
-    "dollarKursYoq": "Sotuv sanasi ({{sana}}) uchun kunlik dollar kursi kiritilmagan: to'lov uchun kursni o'zingiz kiriting.",
+    "dollarKursYoq": "To'lov sanasi ({{sana}}) uchun kunlik dollar kursi kiritilmagan: to'lov uchun kursni o'zingiz kiriting.",
     "kurs": {
       "nomi": "Kurs (1 $ = necha so'm)",
       "placeholder": "Masalan: 10 570",
@@ -455,7 +465,7 @@
       "izoh": "Kassir kursi faqat shu to'lov uchun; sozlamadagi kunlik kurs o'zgarmaydi.",
       "kiriting": "Dollar to'lov uchun kursni kiriting."
     },
-    "kursOqilmadi": "Sotuv sanasidagi kunlik kursni o'qib bo'lmadi: dollar to'lov uchun kursni o'zingiz kiriting.",
+    "kursOqilmadi": "To'lov sanasidagi kunlik kursni o'qib bo'lmadi: dollar to'lov uchun kursni o'zingiz kiriting.",
     "nakladnoy": {
       "yuborish": "Tuzatilgan nakladnoyni mijozga yuborish",
       "izoh": "Telegram orqali yuboriladi. Qayta tasdiqlashda yangi nakladnoy o'zi ketmaydi (xabar bu sotuvga avval yuborilgan).",

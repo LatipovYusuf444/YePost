@@ -24,6 +24,7 @@ import {
   sotuvRaqami,
   sotuvSummasi,
   sotuvTolanganSummasi,
+  tolovFoizi,
 } from "./savdoYordamchilari";
 
 type SotuvlarJadvaliProps = {
@@ -229,8 +230,8 @@ export default function SotuvlarJadvali({
               const jami = sotuvSummasi(sotuv);
               const chegirma = sotuvChegirmaSummasi(sotuv);
               const tolangan = sotuvTolanganSummasi(sotuv);
-              const tolanganFoiz = jami > 0 ? Math.min(100, Math.round((tolangan / jami) * 100)) : 0;
               const qarz = sotuvQarzdorlikSummasi(sotuv);
+              const tolanganFoiz = tolovFoizi(tolangan, jami, qarz);
               const tolovToliq = jami > 0 && qarz <= 0;
               const mijoz = mijozNomi(sotuv);
               const mijozYoq = !sotuvdaMijozBiriktirilganmi(sotuv);

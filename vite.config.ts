@@ -8,7 +8,8 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     port: 5173,
-    strictPort: true,
+    // 5173 band bo'lsa keyingi bo'sh portda ishga tushadi (5174, 5175, ...).
+    strictPort: false,
     proxy: {
       // Backend CORS yoqmaganligi uchun brauzer so'rovlarini Vite orqali uzatamiz.
       '/backend-api': {

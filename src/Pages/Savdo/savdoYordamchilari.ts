@@ -95,16 +95,18 @@ export function tolovValyutasi(tolov: Pick<SotuvTolovi, "currency">, sotuv: Pick
   return tolov.currency ? valyutaKodi(tolov.currency) : sotuvValyutasi(sotuv);
 }
 
-// Sotuvdagi so'm/dollar kursi (1 USD = necha so'm): avval boshqa valyutadagi to'lovdan (`amount` va `settledAmount` nisbati —
-// tasdiqlangan kundagi kurs), bo'lmasa bugungi kursdan. Topilmasa 0.
+// Sotuvdagi so'm/dollar kursi: avval to'lovning saqlangan kursi, bo'lmasa amount/settledAmount nisbati,
+// faqat ikkalasi ham topilmasa bugungi kurs. Topilmasa 0.
 function sotuvKursi(sotuv: Pick<Sotuv, "currency" | "payments">) {
   const sotuvVal = sotuvValyutasi(sotuv);
   for (const tolov of sotuv.payments ?? []) {
     const summa = raqamgaAylantirish(tolov.amount);
     const hisoblangan = raqamgaAylantirish(tolov.settledAmount);
     const tolovVal = tolov.currency ? valyutaKodi(tolov.currency) : sotuvVal;
-    if (tolovVal === sotuvVal || !(summa > 0) || !(hisoblangan > 0)) continue;
-    return tolovVal === "USD" ? hisoblangan / summa : summa / hisoblangan;
+    if (tolovVal === sotuvVal || !(summa > 0)) continue;
+    const kurs = raqamgaAylantirish(tolov.rate);
+    if (kurs > 0) return kurs;
+    if (hisoblangan > 0) return tolovVal === "USD" ? hisoblangan / summa : summa / hisoblangan;
   }
   const { kurs, kursBor } = useValyutaStore.getState();
   return kursBor && kurs > 0 ? kurs : 0;
@@ -201,12 +203,22 @@ export function sotuvChegirmaSummasi(sotuv: Sotuv) {
   return qatorlarChegirmasi > 0 ? qatorlarChegirmasi : raqamgaAylantirish(sotuv.discountAmount);
 }
 
-// To'lov sotuv valyutasidagi qiymati: boshqa valyutadagi to'lovda backend hisoblab saqlagan `settledAmount`.
+// Backend hisoblagan qiymat asosiy manba; qoralamada u bo'sh bo'lsa shu to'lovning o'z kursi olinadi.
 export function tolovSotuvValyutasida(tolov: SotuvTolovi, sotuv: Pick<Sotuv, "currency" | "payments">) {
   const summa = raqamgaAylantirish(tolov.amount);
-  if (tolovValyutasi(tolov, sotuv) === sotuvValyutasi(sotuv)) return summa;
+  const tolovVal = tolovValyutasi(tolov, sotuv);
+  if (tolovVal === sotuvValyutasi(sotuv)) return summa;
   const hisoblangan = raqamgaAylantirish(tolov.settledAmount);
-  return hisoblangan > 0 ? hisoblangan : (sotuvValyutasigaOgirish(summa, tolovValyutasi(tolov, sotuv), sotuv) ?? 0);
+  if (hisoblangan > 0) return hisoblangan;
+  const kurs = raqamgaAylantirish(tolov.rate);
+  if (kurs > 0) return tolovVal === "USD" ? summa * kurs : summa / kurs;
+  return sotuvValyutasigaOgirish(summa, tolovVal, sotuv) ?? 0;
+}
+
+/** Qarz qolganida yaxlitlash to'lovni 100% qilib ko'rsatmasin. */
+export function tolovFoizi(tolangan: number, jami: number, qarz = Math.max(jami - tolangan, 0)) {
+  if (!(jami > 0)) return 0;
+  return Math.max(0, Math.min(qarz > 0 ? 99 : 100, Math.round((tolangan / jami) * 100)));
 }
 
 export function sotuvTolanganSummasi(sotuv: Sotuv) {

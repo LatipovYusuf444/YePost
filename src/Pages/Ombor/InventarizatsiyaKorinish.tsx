@@ -1,3 +1,5 @@
+import { useHisobotQatori } from "@/hooks/useHisobotQatori";
+import type { HujjatQatoriTanlovi } from "@/lib/hujjatQatoriTanlovi";
 import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { StockQuantity } from "@/Components/common/NegativeStockBadge";
 import { ArrowDownRight, ArrowUpRight, Barcode, CalendarDays, Check, CheckCircle2, ClipboardCheck, ClipboardList, Info, MessageSquareText, Minus, Package, PackageSearch, UserRound, Warehouse, type LucideIcon } from "lucide-react";
@@ -9,6 +11,7 @@ import InventoryDocumentActivity from "./InventoryDocumentActivity";
 import { modificationNomi, sana } from "./omborYordamchilari";
 
 type Props = {
+  ajratilganQator?: HujjatQatoriTanlovi;
   hujjat: InventarizatsiyaHujjati;
   modifikatsiyalar: MahsulotModifikatsiyasi[];
   omborNomi: string;
@@ -16,8 +19,9 @@ type Props = {
 };
 const sonMatni = (value: string | number | undefined) => value == null || String(value).trim() === "" || !Number.isFinite(Number(value)) ? "—" : Number(value).toLocaleString("uz-UZ", { maximumFractionDigits: 6 });
 
-export default function InventarizatsiyaKorinish({ hujjat, modifikatsiyalar, omborNomi, masulNomi }: Props) {
+export default function InventarizatsiyaKorinish({ hujjat, modifikatsiyalar, omborNomi, masulNomi, ajratilganQator }: Props) {
   const { t } = useTranslation("ombor_hujjat");
+  const ajratish = useHisobotQatori(ajratilganQator);
   const items = hujjat.items ?? [];
   const xulosa = inventarizatsiyaQatorXulosasi(items);
   const holat = String(hujjat.status ?? "DRAFT").toUpperCase();
@@ -70,7 +74,7 @@ export default function InventarizatsiyaKorinish({ hujjat, modifikatsiyalar, omb
             const farq = inventarizatsiyaQatorFarqi(item);
             const FarqIcon = farq === null ? Minus : farq > 0 ? ArrowUpRight : farq < 0 ? ArrowDownRight : Check;
             const farqStili = farq === null ? "border-slate-300 bg-slate-50 text-slate-400" : farq > 0 ? "border-emerald-300 bg-emerald-50 text-emerald-700" : farq < 0 ? "border-rose-300 bg-rose-50 text-rose-600" : "border-teal-300 bg-teal-50 text-teal-700";
-            return <tr key={item.id ?? `${item.modificationId}-${index}`} className="transition hover:bg-blue-50/30">
+            return <tr {...ajratish(item)} key={item.id ?? `${item.modificationId}-${index}`} className="transition hover:bg-blue-50/30">
               <td className="px-5 py-4 tabular-nums text-slate-400">{index + 1}</td>
               <td className="px-4 py-4"><div className="flex items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 text-slate-400"><Package size={18} /></span><p className="max-w-sm break-words font-semibold text-slate-900">{modificationNomi(mod)}</p></div></td>
               <td className="px-4 py-4"><span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-1.5 font-mono text-xs text-slate-500"><Barcode size={14} />{mod?.barcode || "—"}</span></td>

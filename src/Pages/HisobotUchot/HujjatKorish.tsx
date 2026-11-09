@@ -1,191 +1,32 @@
-import KirimKorishModal from "./omborModallari/KirimKorishModal";
-import RealizatsiyaKorishModal from "./omborModallari/RealizatsiyaKorishModal";
-import ChiqimKorishModal from "./omborModallari/ChiqimKorishModal";
-import InventarizatsiyaKorishModal from "./omborModallari/InventarizatsiyaKorishModal";
-import type { Mahsulot as OmborMahsulot, OmborItem } from "./omborModallari/types";
-import { useHisobotRealData } from "./HisobotRealData";
-import type { Maxsulot, Tanlov, TovarHarakati } from "./types";
+import AppModal from "@/Components/common/AppModal";
+import "@/Components/common/report-document.css";
+import InventoryHujjatModal from "@/Pages/Ombor/InventoryHujjatModal";
+import KirimTafsilotModal from "@/Pages/Ombor/KirimTafsilotModal";
+import ChiqimTafsilotModal from "@/Pages/Ombor/ChiqimTafsilotModal";
+import KochirishKorishModal from "@/Pages/Ombor/KochirishKorishModal";
+import QaytarishTafsilotlariModal from "@/Pages/Savdo/QaytarishTafsilotlariModal";
+import HisobotSotuvKorish from "./HisobotSotuvKorish";
+import { harakatHavolasi, harakatTuriNomi } from "./tovarHarakatiModeli";
+import type { TovarHarakati } from "./types";
 
-// Hisobotdagi real ombor harakatini hujjat ko'rinishida ochadi.
-// Har bir harakat qatoridan mos hujjat obyekti yasab beramiz (bitta satrli).
-
-const MASUL_SHAXS = "Tizim";
-
-function nomTop(royxat: { id: string; nomi: string }[], id: string) {
-  return royxat.find((item) => item.id === id)?.nomi ?? "";
-}
-
-// HisobotUchot mahsulotlarini OmborUchot Mahsulot ko'rinishiga o'tkazamiz.
-function omborMahsulotlarga(maxsulotlar: Maxsulot[]): OmborMahsulot[] {
-  return maxsulotlar.map((m) => ({
-  id: m.id,
-  nomi: m.nomi,
-  birlik: m.birlik,
-  narx: m.sotuvNarx,
-  shtrixKod: m.barkod,
-  tanNarx: m.tanNarx,
-  sotuvNarx: m.sotuvNarx,
-  ulgurjiNarx: m.ulgurjiNarx,
-  }));
-}
-
-function omborlarga(tanlovlar: Tanlov[]): OmborItem[] {
-  return tanlovlar.map((o) => ({
-  id: o.id,
-  nomi: o.nomi,
-  manzil: "—",
-  faol: true,
-  }));
-}
-
-export default function HujjatKorish({
-  harakat,
-  onYopish,
-}: {
-  harakat: TovarHarakati;
-  onYopish: () => void;
-}) {
-  const { maxsulotlar, omborlar: omborTanlovlari, mijozlar, yetkazibBeruvchilar } = useHisobotRealData();
-  const omborMahsulotlar = omborMahsulotlarga(maxsulotlar);
-  const omborlar = omborlarga(omborTanlovlari);
-  const mahsulot = maxsulotlar.find((m) => m.id === harakat.productId);
-  const nomi = `${HUJJAT_PREFIX[harakat.hujjatTuri]} №${harakat.hujjatRaqam}`;
-  const shtrixKod = mahsulot?.barkod ?? "";
-  const tanNarx = mahsulot?.tanNarx ?? 0;
-
-  // Report faqat ko'rish uchun — tahrirlash/tasdiqlash/bekor amallari yo'q.
-  const yoq = () => {};
-
-  if (harakat.hujjatTuri === "kirim") {
-    return (
-      <KirimKorishModal
-        hujjat={{
-          id: harakat.id,
-          nomi,
-          yetkazibBeruvchi: nomTop(yetkazibBeruvchilar, harakat.supplierId),
-          sana: harakat.sana,
-          masulShaxs: MASUL_SHAXS,
-          holati: "tasdiqlangan",
-          satrlar: [
-            {
-              id: `${harakat.id}-1`,
-              mahsulotId: harakat.productId,
-              shtrixKod,
-              omborId: harakat.warehouseId,
-              soni: harakat.miqdor,
-              tanNarx,
-              sotuvNarx: mahsulot?.sotuvNarx ?? 0,
-              ulgurjiNarx: mahsulot?.ulgurjiNarx ?? 0,
-            },
-          ],
-        }}
-        mahsulotlar={omborMahsulotlar}
-        omborlar={omborlar}
-        onYopish={onYopish}
-        onTahrirlash={yoq}
-        onBekorQilish={yoq}
-        onTasdiqlash={yoq}
-      />
-    );
+// Har doim asl hujjat IDsi ishlatiladi. Hisobot qatoridan hujjat yasalmaydi.
+export default function HujjatKorish({ harakat, onYopish }: { harakat: TovarHarakati; onYopish: () => void }) {
+  const props = { id: harakat.refId || "", onClose: onYopish,
+    ajratilganQator: { modificationId: harakat.xarakteristikaId, productId: harakat.productId },
+    hisobotManbasi: harakatHavolasi(harakat) ?? undefined };
+  if (harakat.refId) {
+    switch (harakat.type) {
+      case "SALE": return <HisobotSotuvKorish harakat={harakat} onYopish={onYopish} />;
+      case "STOCK_TAKE": return <InventoryHujjatModal {...props} tur="inventarizatsiya" />;
+      case "WRITE_OFF": return <ChiqimTafsilotModal {...props} />;
+      case "PURCHASE": return <KirimTafsilotModal {...props} />;
+      case "TRANSFER": case "TRANSFER_IN": case "TRANSFER_OUT": return <KochirishKorishModal {...props} />;
+      case "RETURN": case "SALE_RETURN": return <QaytarishTafsilotlariModal qaytarishId={harakat.refId} onYopish={onYopish} ajratilganQator={props.ajratilganQator} />;
+    }
   }
-
-  if (harakat.hujjatTuri === "realizatsiya") {
-    return (
-      <RealizatsiyaKorishModal
-        hujjat={{
-          id: harakat.id,
-          nomi,
-          mijoz: nomTop(mijozlar, harakat.customerId),
-          kompaniya: "",
-          sana: harakat.sana,
-          masulShaxs: MASUL_SHAXS,
-          holati: "tasdiqlangan",
-          satrlar: [
-            {
-              id: `${harakat.id}-1`,
-              mahsulotId: harakat.productId,
-              shtrixKod,
-              omborId: harakat.warehouseId,
-              soni: harakat.miqdor,
-              tanNarx,
-              sotuvNarx: mahsulot?.sotuvNarx ?? 0,
-              ulgurjiNarx: mahsulot?.ulgurjiNarx ?? 0,
-            },
-          ],
-        }}
-        mahsulotlar={omborMahsulotlar}
-        omborlar={omborlar}
-        onYopish={onYopish}
-        onTahrirlash={yoq}
-        onBekorQilish={yoq}
-        onTasdiqlash={yoq}
-      />
-    );
-  }
-
-  if (harakat.hujjatTuri === "chiqim") {
-    return (
-      <ChiqimKorishModal
-        hujjat={{
-          id: harakat.id,
-          nomi,
-          sabab: "Ichki chiqim",
-          sana: harakat.sana,
-          masulShaxs: MASUL_SHAXS,
-          holati: "tasdiqlangan",
-          satrlar: [
-            {
-              id: `${harakat.id}-1`,
-              mahsulotId: harakat.productId,
-              shtrixKod,
-              omborId: harakat.warehouseId,
-              soni: harakat.miqdor,
-              tanNarx,
-            },
-          ],
-        }}
-        mahsulotlar={omborMahsulotlar}
-        omborlar={omborlar}
-        onYopish={onYopish}
-        onTahrirlash={yoq}
-        onBekorQilish={yoq}
-        onTasdiqlash={yoq}
-      />
-    );
-  }
-
-  return (
-    <InventarizatsiyaKorishModal
-      hujjat={{
-        id: harakat.id,
-        nomi,
-        sana: harakat.sana,
-        masulShaxs: MASUL_SHAXS,
-        holati: "tasdiqlangan",
-        satrlar: [
-          {
-            id: `${harakat.id}-1`,
-            mahsulotId: harakat.productId,
-            shtrixKod,
-            omborId: harakat.warehouseId,
-            soni: harakat.miqdor,
-            tanNarx,
-          },
-        ],
-      }}
-      mahsulotlar={omborMahsulotlar}
-      omborlar={omborlar}
-      onYopish={onYopish}
-      onTahrirlash={yoq}
-      onBekorQilish={yoq}
-      onTasdiqlash={yoq}
-    />
-  );
+  return <AppModal onClose={onYopish}><div className="w-full max-w-lg space-y-4 rounded-3xl bg-white p-7 shadow-xl">
+    <h2 className="text-xl font-bold">{harakatTuriNomi(harakat)} {harakat.hujjatRaqam}</h2>
+    <p role="alert" className="text-sm text-slate-600">{harakat.refId ? "Ushbu harakat turi uchun asl hujjat oynasi hali mavjud emas." : "Hisobotda asl hujjat IDsi ko'rsatilmagan. Hujjatni ochib bo'lmaydi."}</p>
+    <button type="button" onClick={onYopish} className="rounded-xl bg-slate-100 px-4 py-3 font-semibold">Yopish</button>
+  </div></AppModal>;
 }
-
-const HUJJAT_PREFIX: Record<TovarHarakati["hujjatTuri"], string> = {
-  kirim: "Kirim",
-  inventarizatsiya: "Inver",
-  chiqim: "Chiqim",
-  realizatsiya: "Real",
-};

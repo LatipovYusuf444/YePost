@@ -27,6 +27,19 @@ export type HujjatTuri = "kirim" | "inventarizatsiya" | "chiqim" | "realizatsiya
 
 // Tovar harakati — bitta hujjat qatori (barcha filtrlarga bog'langan)
 export type TovarHarakati = {
+  refId?: string;
+  type?: string;
+  productName?: string;
+  modificationName?: string;
+  counterpartyName?: string;
+  warehouseName?: string;
+  harakatMiqdori?: number;
+  narx?: number | null;
+  summa?: number | null;
+  valyuta?: "UZS" | "USD" | null;
+  kurs?: number | null;
+  narxSom?: number | null;
+  summaSom?: number | null;
   openingBalance?: number | string;
   closingBalance?: number | string;
   id: string;

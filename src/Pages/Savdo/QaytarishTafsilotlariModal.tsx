@@ -1,5 +1,7 @@
 ﻿import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useHisobotQatori } from "@/hooks/useHisobotQatori";
+import type { HujjatQatoriTanlovi } from "@/lib/hujjatQatoriTanlovi";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
 import {
@@ -63,6 +65,7 @@ import { qaytarishMijozi, qaytarishRaqami } from "./qaytarish/qaytarishYordamchi
 
 type Props = {
   qaytarishId: string;
+  ajratilganQator?: HujjatQatoriTanlovi;
   onYopish: () => void;
 };
 
@@ -143,8 +146,10 @@ function refundMethodniOzbekcha(method?: string) {
 
 export default function QaytarishTafsilotlariModal({
   qaytarishId,
+  ajratilganQator,
   onYopish,
 }: Props) {
+  const ajratish = useHisobotQatori(ajratilganQator);
   const { t } = useTranslation("savdo_qaytarish");
   const qaytarishTafsilotiniYuklash = useSavdoStore(
     (state) => state.qaytarishTafsilotiniYuklash
@@ -603,7 +608,7 @@ export default function QaytarishTafsilotlariModal({
                               {(qaytarish.items ?? []).map((item, index) => {
                                 const qism = mahsulotQismlari(item, t("table.unknownProduct"));
                                 return (
-                                  <tr key={item.id ?? `${item.saleItemId}-${index}`} className="transition hover:bg-orange-50/40">
+                                  <tr key={item.id ?? `${item.saleItemId}-${index}`} {...ajratish(item)} className="transition hover:bg-orange-50/40">
                                     <td className="px-5 py-4">
                                       <div className="flex items-center gap-3">
                                         <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600 ring-1 ring-orange-100">
@@ -631,7 +636,7 @@ export default function QaytarishTafsilotlariModal({
                             {(qaytarish.items ?? []).map((item, index) => {
                               const qism = mahsulotQismlari(item, t("table.unknownProduct"));
                               return (
-                                <li key={item.id ?? `${item.saleItemId}-${index}`} className="flex items-start gap-3 px-5 py-4">
+                                <li key={item.id ?? `${item.saleItemId}-${index}`} {...ajratish(item)} className="flex items-start gap-3 px-5 py-4">
                                   <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600 ring-1 ring-orange-100">
                                     <Package size={18} />
                                   </span>

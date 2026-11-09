@@ -1,8 +1,6 @@
-import { toshkentKuni } from "@/lib/hujjatSanasi";
-import { movementStockTotals } from "@/lib/negativeStock";
 import { StockQuantity } from "@/Components/common/NegativeStockBadge";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, Search } from "lucide-react";
+import { AlertTriangle, Download, ExternalLink, Search } from "lucide-react";
 import KengaytiriladiganJadval, { type Ustun } from "./KengaytiriladiganJadval";
 import KopTanlovli from "./KopTanlovli";
 import MuddatTanlov from "./MuddatTanlov";
@@ -13,7 +11,9 @@ import axios from "axios";
 import { stockMovementReportApi } from "@/api/reportsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { Maxsulot, Tanlov, TovarHarakati, TovarHarakatiFilter } from "./types";
-import { bugun, bugunMinus, sanadaMi, son } from "./yordamchilar";
+import { bugun, bugunMinus, son } from "./yordamchilar";
+import { harakatGuruhlari, harakatHavolasi, harakatKontragenti, harakatlarniMoslash, harakatPulJami, harakatPulMatni, harakatRaqamiTakrormi, harakatSanaMatni, harakatTuriNomi, takroriyHujjatRaqamlari, type HarakatKorinishQatori } from "./tovarHarakatiModeli";
+import { tovarHarakatiniEksport } from "./tovarHarakatiEksporti";
 
 import YuklanmoqdaHolati from "./YuklanmoqdaHolati";
 const boshFilter: TovarHarakatiFilter = {
@@ -28,43 +28,8 @@ const boshFilter: TovarHarakatiFilter = {
   supplierIds: [],
 };
 
-function nomTop(royxat: Tanlov[], id: string) {
-  return royxat.find((item) => item.id === id)?.nomi ?? "—";
-}
-
 const tire = <span className="text-gray-300">—</span>;
-
-// Kirim/inventarizatsiya qoldiqni oshiradi (Kirim ustuni), chiqim/realizatsiya kamaytiradi.
-function kirimTuri(r: TovarHarakati) {
-  return r.hujjatTuri === "kirim" || r.hujjatTuri === "inventarizatsiya";
-}
-
-const HUJJAT_PREFIX: Record<TovarHarakati["hujjatTuri"], string> = {
-  kirim: "Kirim",
-  inventarizatsiya: "Inver",
-  chiqim: "Chiqim",
-  realizatsiya: "Real",
-};
-
-function hujjatNomi(r: TovarHarakati) {
-  return `${HUJJAT_PREFIX[r.hujjatTuri]} №${r.hujjatRaqam}`;
-}
-
-// Jadvalda ko'rsatiladigan qator: mahsulot sarlavhasi yoki hujjat qatori.
-type KorinishQator = {
-  kind: "header" | "detail";
-  id: string;
-  nomi: string;
-  hujjat: string;
-  xaridor: string;
-  yetkazib: string;
-  boshQoldiq: number;
-  kirim: number | null;
-  chiqim: number | null;
-  oxirgiQoldiq: number;
-  productId?: string; // sarlavha qatorida — mahsulot modalini ochish uchun
-  harakat?: TovarHarakati; // hujjat qatorida — hujjat modalini ochish uchun
-};
+const guruhKaliti = (row: HarakatKorinishQatori) => row.guruhId;
 
 export default function TovarHarakati() {
   const {
@@ -72,6 +37,8 @@ export default function TovarHarakati() {
     omborlar,
     kategoriyalar,
     variatsiyalar,
+    mijozlar,
+    yetkazibBeruvchilar,
   } = useHisobotRealData();
   const maxsulotTanlovlari: Tanlov[] = useMemo(
     () => maxsulotlar.map((m) => ({ id: m.id, nomi: m.nomi })),
@@ -86,14 +53,6 @@ export default function TovarHarakati() {
   const [eksportYuklanmoqda, setEksportYuklanmoqda] = useState(false);
   const [tovarHarakati, setTovarHarakati] = useState<TovarHarakati[]>([]);
   const [yuklanmoqda, setYuklanmoqda] = useState(false);
-  // Serverga ketadigan qidiruv yozish to'xtagandan keyin (T1): har harf butun hisobotni (N × 500 qator) qayta yuklamaydi.
-  // Ro'yxat esa darrov, klientda filtrlanadi (pastdagi `korinishQatorlar`).
-  const [serverQidiruvi, setServerQidiruvi] = useState("");
-  useEffect(() => {
-    const kechiktirish = window.setTimeout(() => setServerQidiruvi(qidiruv.trim()), 400);
-    return () => window.clearTimeout(kechiktirish);
-  }, [qidiruv]);
-
   useEffect(() => {
     let active = true;
     const bekor = new AbortController();
@@ -112,56 +71,16 @@ export default function TovarHarakati() {
           : undefined,
         customerIds: filter.customerIds.length ? filter.customerIds.join(",") : undefined,
         supplierIds: filter.supplierIds.length ? filter.supplierIds.join(",") : undefined,
-        search: serverQidiruvi || undefined,
       }, bekor.signal)
       .then((response) => {
         if (!active) return;
-        const raw = response as {
-          items?: Array<{
-            date?: string;
-            type?: string;
-            docNumber?: string;
-            refId?: string;
-            warehouseId?: string;
-            branchId?: string;
-            productId?: string;
-            categoryId?: string;
-            modificationId?: string;
-            quantity?: number | string;
-            openingBalance?: number | string;
-            closingBalance?: number | string;
-            customerId?: string;
-            supplierId?: string;
-          }>;
-        };
-        setTovarHarakati(
-          (raw.items ?? []).map((row, index) => ({
-            id: `${row.refId ?? index}-${row.modificationId ?? ""}-${row.date ?? ""}`,
-            sana: row.date ?? "",
-            openingBalance: row.openingBalance,
-            closingBalance: row.closingBalance,
-            hujjatTuri:
-              row.type === "PURCHASE" || row.type === "RETURN" || row.type === "TRANSFER_IN"
-                ? "kirim"
-                : row.type === "STOCK_TAKE"
-                  ? "inventarizatsiya"
-                  : row.type === "SALE"
-                    ? "realizatsiya"
-                    : "chiqim",
-            hujjatRaqam: row.docNumber ?? row.refId ?? "",
-            productId: row.productId ?? "",
-            xarakteristikaId: row.modificationId ?? "",
-            categoryId: row.categoryId ?? "",
-            warehouseId: row.warehouseId ?? "",
-            filialId: row.branchId ?? "",
-            miqdor: Math.abs(Number(row.quantity ?? 0)),
-            customerId: row.customerId ?? "",
-            supplierId: row.supplierId ?? "",
-          }))
-        );
+        setTovarHarakati(harakatlarniMoslash(response));
       })
       .catch((error) => {
-        if (active && !axios.isCancel(error)) setXato(getApiErrorMessage(error));
+        if (active && !axios.isCancel(error)) {
+          setTovarHarakati([]);
+          setXato(getApiErrorMessage(error));
+        }
       })
       .finally(() => {
         if (active) setYuklanmoqda(false);
@@ -170,7 +89,7 @@ export default function TovarHarakati() {
       active = false;
       bekor.abort();
     };
-  }, [filter, serverQidiruvi]);
+  }, [filter]);
 
   const mahsulotOchish = useCallback((productId?: string) => {
     const mahsulot = maxsulotlar.find((m) => m.id === productId);
@@ -181,90 +100,9 @@ export default function TovarHarakati() {
     setIsh((old) => ({ ...old, [kalit]: qiymat }));
   }
 
-  // Filterlangan harakatlar → mahsulot bo'yicha guruhlab, sarlavha + hujjat qatorlariga aylantiramiz.
-  const korinishQatorlar = useMemo<KorinishQator[]>(() => {
-    const ichida = (massiv: string[], id: string) => massiv.length === 0 || massiv.includes(id);
-    const kalit = qidiruv.trim().toLowerCase();
-
-    const yozuvlar = tovarHarakati.filter((r) => {
-      const asosiy =
-        sanadaMi(r.sana, filter.dateFrom, filter.dateTo) &&
-        ichida(filter.warehouseIds, r.warehouseId) &&
-        ichida(filter.categoryIds, r.categoryId) &&
-        ichida(filter.productIds, r.productId) &&
-        ichida(filter.xarakteristikaIds, r.xarakteristikaId);
-      if (!asosiy) return false;
-      if (!kalit) return true;
-      return [
-        nomTop(maxsulotTanlovlari, r.productId),
-        hujjatNomi(r),
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(kalit);
-    });
-
-    const natija: KorinishQator[] = [];
-    for (const mahsulot of maxsulotlar) {
-      const guruh = yozuvlar
-        .filter((r) => r.productId === mahsulot.id)
-        .sort((a, b) => a.sana.localeCompare(b.sana));
-      if (guruh.length === 0) continue;
-
-      const streamKey = (row: TovarHarakati) => row.warehouseId + ':' + row.xarakteristikaId;
-      const previous = new Map<string, number>();
-      for (const row of tovarHarakati.filter((r) => r.productId === mahsulot.id && (toshkentKuni(r.sana) || r.sana.slice(0, 10)) < filter.dateFrom)) {
-        const key = streamKey(row);
-        previous.set(key, (previous.get(key) ?? 0) + (kirimTuri(row) ? row.miqdor : -row.miqdor));
-      }
-      const stock = movementStockTotals(guruh.map((row) => ({ key: streamKey(row), movement: kirimTuri(row) ? row.miqdor : -row.miqdor, openingBalance: row.openingBalance, closingBalance: row.closingBalance })), previous);
-      let qoldiq = stock.opening;
-      const boshlangichQoldiq = stock.opening;
-      let kirimJami = 0;
-      let chiqimJami = 0;
-      const detaylar: KorinishQator[] = [];
-
-      for (const [rowIndex, r] of guruh.entries()) {
-        const bosh = stock.lines[rowIndex].opening;
-        const kirimmi = kirimTuri(r);
-        if (kirimmi) {
-          kirimJami += r.miqdor;
-        } else {
-          chiqimJami += r.miqdor;
-        }
-        qoldiq = stock.lines[rowIndex].closing;
-        detaylar.push({
-          kind: "detail",
-          id: r.id,
-          nomi: "",
-          hujjat: hujjatNomi(r),
-          xaridor: "",
-          yetkazib: "",
-          boshQoldiq: bosh,
-          kirim: kirimmi ? r.miqdor : null,
-          chiqim: kirimmi ? null : r.miqdor,
-          oxirgiQoldiq: qoldiq,
-          harakat: r,
-        });
-      }
-
-      natija.push({
-        kind: "header",
-        id: `h-${mahsulot.id}`,
-        nomi: mahsulot.nomi,
-        hujjat: "",
-        xaridor: "",
-        yetkazib: "",
-        boshQoldiq: boshlangichQoldiq,
-        kirim: kirimJami,
-        chiqim: chiqimJami,
-        oxirgiQoldiq: qoldiq,
-        productId: mahsulot.id,
-      });
-      natija.push(...detaylar);
-    }
-    return natija;
-  }, [filter, maxsulotlar, maxsulotTanlovlari, qidiruv, tovarHarakati]);
+  const korinishQatorlar = useMemo(() => harakatGuruhlari(tovarHarakati, maxsulotlar, filter, qidiruv, mijozlar, yetkazibBeruvchilar, omborlar), [tovarHarakati, maxsulotlar, filter, qidiruv, mijozlar, yetkazibBeruvchilar, omborlar]);
+  const takrorlar = useMemo(() => takroriyHujjatRaqamlari(tovarHarakati), [tovarHarakati]);
+  const pulJami = useMemo(() => harakatPulJami(korinishQatorlar.flatMap(row => row.harakat ? [row.harakat] : [])), [korinishQatorlar]);
 
   const jami = useMemo(() => {
     const sarlavhalar = korinishQatorlar.filter((r) => r.kind === "header");
@@ -279,18 +117,7 @@ export default function TovarHarakati() {
     setXato("");
     setEksportYuklanmoqda(true);
     try {
-      await stockMovementReportApi.export({
-        dateFrom: filter.dateFrom, // Toshkent kuni: backend kun boshidan oladi (M3)
-        dateTo: filter.dateTo,
-        warehouseIds: filter.warehouseIds.length ? filter.warehouseIds.join(",") : undefined,
-        branchIds: filter.filialIds.length ? filter.filialIds.join(",") : undefined,
-        categoryIds: filter.categoryIds.length ? filter.categoryIds.join(",") : undefined,
-        productIds: filter.productIds.length ? filter.productIds.join(",") : undefined,
-        modificationIds: filter.xarakteristikaIds.length ? filter.xarakteristikaIds.join(",") : undefined,
-        customerIds: filter.customerIds.length ? filter.customerIds.join(",") : undefined,
-        supplierIds: filter.supplierIds.length ? filter.supplierIds.join(",") : undefined,
-        search: qidiruv || undefined,
-      }, "excel");
+      await tovarHarakatiniEksport(korinishQatorlar, mijozlar, yetkazibBeruvchilar, omborlar, filter.dateFrom, filter.dateTo);
     } catch (error) {
       setXato(getApiErrorMessage(error));
     } finally {
@@ -298,7 +125,7 @@ export default function TovarHarakati() {
     }
   }
 
-  const ustunlar: Ustun<KorinishQator>[] = useMemo(
+  const ustunlar: Ustun<HarakatKorinishQatori>[] = useMemo(
     () => [
       {
         id: "nomi",
@@ -318,23 +145,22 @@ export default function TovarHarakati() {
           ),
         jami: () => `Jami: ${jami.mahsulot} mahsulot`,
       },
+      { id: "sana", nom: "Sana va vaqt", kenglik: 170, katak: row => row.harakat ? harakatSanaMatni(row.harakat.sana) : "" },
+      { id: "tur", nom: "Hujjat turi", kenglik: 170, katak: row => row.harakat ? harakatTuriNomi(row.harakat) : "" },
       {
-        id: "hujjat",
-        nom: "Xujjat",
-        kenglik: 160,
-        katak: (r) =>
-          r.harakat ? (
-            <button
-              type="button"
-              onClick={() => setOchilganHarakat(r.harakat ?? null)}
-              className="font-bold text-orange-600 hover:underline"
-            >
-              {r.hujjat}
-            </button>
-          ) : (
-            ""
-          ),
+        id: "hujjat", nom: "Hujjat №", kenglik: 180,
+        katak: row => row.harakat ? <div className="space-y-1">
+          <button type="button" disabled={!row.harakat.refId} title={row.harakat.refId || "Hujjat IDsi ko'rsatilmagan"} onClick={() => setOchilganHarakat(row.harakat ?? null)} className="font-bold text-blue-600 hover:underline disabled:cursor-not-allowed disabled:text-slate-400">
+            {row.harakat.hujjatRaqam || "Raqam berilmagan"}
+          </button>
+          {harakatRaqamiTakrormi(row.harakat, takrorlar) && <span className="block text-[11px] text-amber-700">ID: {row.harakat.refId?.slice(0, 8)}</span>}
+        </div> : "",
       },
+      { id: "kontragent", nom: "Mijoz / Kontragent", kenglik: 210, katak: row => row.harakat ? harakatKontragenti(row.harakat, mijozlar, yetkazibBeruvchilar) : "" },
+      { id: "ombor", nom: "Ombor", kenglik: 170, katak: row => row.harakat ? row.harakat.warehouseName || omborlar.find(item => item.id === row.harakat?.warehouseId)?.nomi || "—" : "" },
+      { id: "narx", nom: "Narx", kenglik: 240, boshlangichYashirin: true, katak: row => row.harakat ? harakatPulMatni(row.harakat, "narx") : "" },
+      { id: "summa", nom: "Summa", kenglik: 260, boshlangichYashirin: true, katak: row => row.harakat ? harakatPulMatni(row.harakat, "summa") : "",
+        jami: () => pulJami.toliq ? <span>Kirim: {son(pulJami.kirim)} so'm · Chiqim: {son(pulJami.chiqim)} so'm</span> : "Jami uchun valyuta yoki kurs yetishmaydi" },
       {
         id: "boshQoldiq",
         nom: "Boshlang'ich qoldiq",
@@ -370,8 +196,12 @@ export default function TovarHarakati() {
         jami: () => <span className="text-red-500">−{son(jami.chiqim)}</span>,
       },
       { id: "oxirgiQoldiq", nom: "Oxirgi qoldiq", kenglik: 140, katak: (r) => <StockQuantity value={r.oxirgiQoldiq} /> },
+      { id: "ochish", nom: "Amallar", kenglik: 210, katak: row => {
+        const link = row.harakat ? harakatHavolasi(row.harakat) : null;
+        return link ? <a href={link.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 font-semibold text-blue-600 hover:underline">{link.nom}<ExternalLink size={14} /></a> : null;
+      } },
     ],
-    [jami, mahsulotOchish]
+    [jami, mahsulotOchish, takrorlar, mijozlar, yetkazibBeruvchilar, omborlar, pulJami]
   );
 
   return (
@@ -428,7 +258,7 @@ export default function TovarHarakati() {
           </button>
           <button
             onClick={() => void eksport()}
-            disabled={eksportYuklanmoqda}
+            disabled={eksportYuklanmoqda || yuklanmoqda || korinishQatorlar.length === 0}
             className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 text-sm font-bold text-orange-600 shadow-sm transition hover:bg-orange-50"
           >
             <Download size={16} />
@@ -440,13 +270,16 @@ export default function TovarHarakati() {
           <input
             value={qidiruv}
             onChange={(e) => setQidiruv(e.target.value)}
-            placeholder="Jadval bo'yicha qidiruv"
+            placeholder="Mahsulot, mijoz yoki hujjat №"
             className="h-11 w-full rounded-2xl border border-gray-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-orange-400"
           />
         </div>
       </div>
 
       {xato && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
+
+      {takrorlar.size > 0 && <p role="status" className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><AlertTriangle size={18} className="mt-0.5 shrink-0" />{takrorlar.size} ta hujjat raqami bir nechta hujjatga tegishli. Sana, mijoz va ID orqali ajrating. Har biri o'z hujjatini ochadi.</p>}
+      {!pulJami.toliq && <p role="status" className="rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-600">Ayrim narxlarda valyuta yoki hujjat kursi ko'rsatilmagan. Ular so'mga aylantirilmaydi va pul jamiga qo'shilmaydi. Excelda asl qiymatlar alohida beriladi.</p>}
 
       {/* Natija jadvali */}
       <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm">
@@ -462,6 +295,7 @@ export default function TovarHarakati() {
             <KengaytiriladiganJadval tableId="HisobotUchot/TovarHarakati/kengaytiriladiganjadval-1"
               ustunlar={ustunlar}
               qatorlar={korinishQatorlar}
+              qatorGuruhKaliti={guruhKaliti}
               jamiBor
               qatorKlass={(r) => (r.kind === "header" ? "bg-orange-50/70 text-gray-950" : "")}
             />

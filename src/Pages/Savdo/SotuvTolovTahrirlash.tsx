@@ -4,13 +4,13 @@ import { CreditCard, LoaderCircle, PenLine, RefreshCw, TriangleAlert } from "luc
 import AppModal from "@/Components/common/AppModal";
 import { sotuvTafsilotiniOlish } from "@/api/savdoApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
-import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
+import { useTolovTahririRuxsati } from "@/hooks/useTolovTahririRuxsati";
 import { kunMatni } from "@/lib/hujjatSanasi";
 import { valyutadaMatn } from "@/lib/tolovOrtiqchasi";
 import { tahrirlanadiganTolovmi, tolovniTopish, type TolovIshorasi } from "@/lib/tolovTahriri";
 import type { Sotuv } from "@/types/savdo";
 import TolovTahriri from "./TolovTahriri";
-import { sotuvHolati, sotuvRaqami, tolovTuriMatni, tolovValyutasi } from "./savdoYordamchilari";
+import { sotuvRaqami, tolovTuriMatni, tolovValyutasi } from "./savdoYordamchilari";
 
 type Props = {
   sotuvId: string;
@@ -25,7 +25,7 @@ type Props = {
 // topiladi (aniqlab bo'lmasa to'lovlar ro'yxatidan tanlanadi) va `TolovTahriri` ochiladi. Saqlangach sotuv, ro'yxatlar va kassa yangilanadi.
 export default function SotuvTolovTahrirlash({ sotuvId, ishora, onYopish, onTugadi }: Props) {
   const { t } = useTranslation("savdo_tafsilot");
-  const bekorMumkin = useHujjatniBekorQilishMumkinmi("savdo");
+  const tahrirCheklovi = useTolovTahririRuxsati();
   const [sotuv, setSotuv] = useState<Sotuv | null>(null);
   const [yuklanmoqda, setYuklanmoqda] = useState(true);
   const [xato, setXato] = useState("");
@@ -71,13 +71,12 @@ export default function SotuvTolovTahrirlash({ sotuvId, ishora, onYopish, onTuga
     .filter(({ element }) => tahrirlanadiganTolovmi(element));
   const xabar = !sotuv
     ? ""
-    : !bekorMumkin
-      ? t("tolovTahriri.ruxsatYoq")
-      : sotuvHolati(sotuv) !== "CONFIRMED"
-        ? t("tolovTahriri.errors.tasdiqlanmagan")
-        : tahrirlanadiganlar.length === 0
-          ? t("tolovTahriri.errors.tolovYoq")
-          : "";
+    : tahrirlanadiganlar.length === 0
+      ? t("tolovTahriri.errors.tolovYoq")
+      : (() => {
+          const cheklov = tahrirCheklovi(sotuv, tolov ?? tahrirlanadiganlar[0].element);
+          return cheklov ? t(cheklov) : "";
+        })();
 
   return (
     <AppModal

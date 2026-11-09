@@ -1,6 +1,6 @@
 export type Density = "comfortable" | "standard" | "compact";
 export type Pin = "left" | "right";
-export type TableColumn = { id: string; label: string; required: boolean; min: number; max: number; defaultPin?: Pin };
+export type TableColumn = { id: string; label: string; required: boolean; min: number; max: number; defaultPin?: Pin; defaultHidden?: boolean };
 export type Preferences = {
   version: 1;
   order: string[];
@@ -11,7 +11,7 @@ export type Preferences = {
 };
 
 export function defaults(columns: TableColumn[]): Preferences {
-  return { version: 1, order: columns.map(c => c.id), hidden: [], widths: {}, pins: Object.fromEntries(columns.filter(c => c.defaultPin).map(c => [c.id, c.defaultPin!])), density: "standard" };
+  return { version: 1, order: columns.map(c => c.id), hidden: columns.filter(c => c.defaultHidden && !c.required).map(c => c.id), widths: {}, pins: Object.fromEntries(columns.filter(c => c.defaultPin).map(c => [c.id, c.defaultPin!])), density: "standard" };
 }
 
 /** Only known presentation fields and current column IDs may enter storage. */
@@ -22,7 +22,7 @@ export function normalizePreferences(value: unknown, columns: TableColumn[]): Pr
   const ids = new Set(result.order);
   const strings = (v: unknown) => Array.isArray(v) ? [...new Set(v.filter((id): id is string => typeof id === "string" && ids.has(id)))] : [];
   result.order = [...strings(input.order), ...result.order.filter(id => !strings(input.order).includes(id))];
-  result.hidden = strings(input.hidden).filter(id => !columns.find(c => c.id === id)?.required);
+  result.hidden = [...new Set([...strings(input.hidden), ...columns.filter(c => c.defaultHidden && !strings(input.order).includes(c.id)).map(c => c.id)])].filter(id => !columns.find(c => c.id === id)?.required);
   const primary = columns.filter(c => !c.required);
   if (primary.length && primary.every(c => result.hidden.includes(c.id))) result.hidden = result.hidden.filter(id => id !== primary[0].id);
   for (const column of columns) {

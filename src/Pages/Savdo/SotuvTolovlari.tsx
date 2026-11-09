@@ -2,7 +2,8 @@ import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Banknote, CalendarDays, CheckCircle2, ChevronDown, CreditCard, FileText, Landmark, PenLine, UserCheck, UserRound, Wallet } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
-import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
+import { useTolovTahririRuxsati } from "@/hooks/useTolovTahririRuxsati";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/Components/ui/dropdown-menu";
 import { bugungiToshkentKuni, kunMatni, toshkentKuni, vaqtMatni } from "@/lib/hujjatSanasi";
 import { somMatni, tolovlarQaytimi } from "@/lib/tolovOrtiqchasi";
 import type { Sotuv, SotuvTolovi, TolovTuri } from "@/types/savdo";
@@ -10,10 +11,10 @@ import TolovTahriri from "./TolovTahriri";
 import {
   masulNomi,
   pulniFormatlash,
-  sotuvHolati,
   sotuvRaqami,
   sotuvSummasi,
   sotuvValyutasi,
+  tolovFoizi,
   tolovSotuvValyutasida,
   tolovTuriMatni,
   tolovValyutasi,
@@ -48,8 +49,8 @@ function qatorlarniYigish(sotuv: Sotuv): TolovQatori[] {
 // Havola bosilsa shu to'lovning ma'lumotlari ochiladi.
 export default function SotuvTolovlari({ sotuv, mijoz }: { sotuv: Sotuv; mijoz: string }) {
   const { t } = useTranslation("savdo_tafsilot");
-  const [ochiqMenuId, setOchiqMenuId] = useState<string | null>(null);
-  const [tanlangan, setTanlangan] = useState<TolovQatori | null>(null);
+  const [tanlangan, setTanlangan] = useState<(TolovQatori & { tahrir?: boolean }) | null>(null);
+  const tahrirCheklovi = useTolovTahririRuxsati();
   const qatorlar = qatorlarniYigish(sotuv);
 
   // Tahrirlash zanjiri (bekor qilish → tiklash → qayta tasdiqlash) paytida to'lovlar ro'yxati vaqtincha bo'sh ko'rinishi mumkin: ochiq oyna yo'qolmasligi kerak.
@@ -64,7 +65,7 @@ export default function SotuvTolovlari({ sotuv, mijoz }: { sotuv: Sotuv; mijoz: 
         {qatorlar.map((qator) => {
           const sanaMatni = kunMatni(qator.sana);
           const qarz = qator.tolov.paymentType === "DEBT";
-          const menuOchiq = ochiqMenuId === qator.raqam;
+          const cheklov = tahrirCheklovi(sotuv, qator.tolov);
           const qaytim = tolovlarQaytimi([qator.tolov]);
           return (
             <div
@@ -98,33 +99,26 @@ export default function SotuvTolovlari({ sotuv, mijoz }: { sotuv: Sotuv; mijoz: 
                     {t(qator.tolov.fromAccount ? "tolovQatori.hisobdanAvto" : "tolovQatori.kassadan")}
                   </span>
                 )}
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setOchiqMenuId(menuOchiq ? null : qator.raqam)}
-                    className="inline-flex h-6 items-center gap-1 rounded-full bg-slate-100 px-2.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-200"
-                  >
-                    {t("tolovQatori.amallar")}
-                    <ChevronDown size={12} className={`transition ${menuOchiq ? "rotate-180" : ""}`} />
-                  </button>
-                  {menuOchiq && (
-                    <>
-                      <button type="button" aria-label={t("tolovTafsilot.yopish")} className="fixed inset-0 z-30 cursor-default" onClick={() => setOchiqMenuId(null)} />
-                      <div className="absolute right-0 top-8 z-40 w-[190px] rounded-2xl bg-white py-2 shadow-[0_18px_50px_rgba(15,23,42,.16)] ring-1 ring-slate-100">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setOchiqMenuId(null);
-                            setTanlangan(qator);
-                          }}
-                          className="flex h-9 w-full items-center px-4 text-left text-sm text-slate-700 transition hover:bg-slate-50 hover:text-[#2563EB]"
-                        >
-                          {t("tolovQatori.ochish")}
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
+                <DropdownMenu modal={false}>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex h-6 items-center gap-1 rounded-full bg-slate-100 px-2.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-200"
+                    >
+                      {t("tolovQatori.amallar")}
+                      <ChevronDown size={12} />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" collisionPadding={12} className="z-[10000] w-[220px] max-w-[calc(100vw-24px)] rounded-2xl bg-white p-2">
+                    <DropdownMenuItem onSelect={() => setTanlangan(qator)}>{t("tolovQatori.ochish")}</DropdownMenuItem>
+                    <div title={cheklov ? t(cheklov) : undefined}>
+                      <DropdownMenuItem disabled={Boolean(cheklov)} onSelect={() => setTanlangan({ ...qator, tahrir: true })}>
+                        <PenLine size={15} />{t("tolovTahriri.tugma")}
+                      </DropdownMenuItem>
+                      {cheklov && <p className="px-2 pb-1 text-[11px] leading-4 text-slate-500">{t(cheklov)}</p>}
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <span
                   className={`inline-flex h-6 items-center gap-1 rounded-full px-2.5 text-[11px] font-bold ${
                     qarz ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600"
@@ -141,7 +135,7 @@ export default function SotuvTolovlari({ sotuv, mijoz }: { sotuv: Sotuv; mijoz: 
       </div>
       )}
 
-      {tanlangan && <TolovTafsilotModal sotuv={sotuv} mijoz={mijoz} qator={tanlangan} onYopish={() => setTanlangan(null)} />}
+      {tanlangan && <TolovTafsilotModal sotuv={sotuv} mijoz={mijoz} qator={tanlangan} boshlangichTahrir={tanlangan.tahrir} onYopish={() => setTanlangan(null)} />}
     </>
   );
 }
@@ -159,22 +153,19 @@ function tolovTuriIkonkasi(turi: TolovTuri) {
   }
 }
 
-function TolovTafsilotModal({ sotuv, mijoz, qator, onYopish }: { sotuv: Sotuv; mijoz: string; qator: TolovQatori; onYopish: () => void }) {
+function TolovTafsilotModal({ sotuv, mijoz, qator, boshlangichTahrir = false, onYopish }: { sotuv: Sotuv; mijoz: string; qator: TolovQatori; boshlangichTahrir?: boolean; onYopish: () => void }) {
   const { t } = useTranslation("savdo_tafsilot");
   const { tolov } = qator;
   const qarz = tolov.paymentType === "DEBT";
   const sotuvJami = sotuvSummasi(sotuv);
   const tolovVal = tolovValyutasi(tolov, sotuv);
   const sotuvVal = sotuvValyutasi(sotuv);
-  const sotuvUlushi = sotuvJami > 0 ? Math.min(100, Math.round((tolovSotuvValyutasida(tolov, sotuv) / sotuvJami) * 100)) : 0;
+  const sotuvUlushi = tolovFoizi(tolovSotuvValyutasida(tolov, sotuv), sotuvJami);
   const qaytim = tolovlarQaytimi([tolov]);
-  // Tahrirlash: tasdiqlangan sotuvdagi naqd, karta yoki bank to'lovi (hisobdan to'lov va qarz qatori emas). Zanjir sotuvni bekor qiladi,
-  // shuning uchun faqat sotuvni bekor qilish ruxsati bor foydalanuvchiga (direktor yoki RETURN_CANCEL ruxsati bor admin).
-  const bekorMumkin = useHujjatniBekorQilishMumkinmi("savdo");
-  const [tahrir, setTahrir] = useState(false);
+  const tahrirCheklovi = useTolovTahririRuxsati();
+  const cheklov = tahrirCheklovi(sotuv, tolov);
+  const [tahrir, setTahrir] = useState(boshlangichTahrir && !cheklov);
   const [band, setBand] = useState(false);
-  const tahrirlanadi =
-    sotuvHolati(sotuv) === "CONFIRMED" && Boolean(tolov.id) && !tolov.cashOperationId && (tolov.paymentType === "CASH" || tolov.paymentType === "CARD" || tolov.paymentType === "BANK");
 
   return (
     <AppModal
@@ -194,11 +185,11 @@ function TolovTafsilotModal({ sotuv, mijoz, qator, onYopish }: { sotuv: Sotuv; m
               <h2 className="mt-1 text-2xl font-black text-slate-900">№{qator.raqam}</h2>
             </div>
           </div>
-          {tahrirlanadi && !tahrir && (
+          {!tahrir && (
             <button
               type="button"
-              disabled={!bekorMumkin}
-              title={bekorMumkin ? undefined : t("tolovTahriri.ruxsatYoq")}
+              disabled={Boolean(cheklov)}
+              title={cheklov ? t(cheklov) : undefined}
               onClick={() => setTahrir(true)}
               className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl bg-[#2563EB] px-4 text-sm font-bold text-white shadow-[0_8px_20px_rgba(37,99,235,.22)] transition hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -212,6 +203,7 @@ function TolovTafsilotModal({ sotuv, mijoz, qator, onYopish }: { sotuv: Sotuv; m
           <TolovTahriri sotuv={sotuv} tolov={tolov} raqam={qator.raqam} onBand={setBand} onOrqaga={() => setTahrir(false)} onYopish={onYopish} />
         ) : (
         <div className="min-h-0 space-y-5 overflow-y-auto px-7 py-6">
+          {cheklov && <p role="status" className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">{t(cheklov)}</p>}
           <div className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-100">
             <div className="flex items-start justify-between gap-4">
               <div>

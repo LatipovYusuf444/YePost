@@ -1,3 +1,6 @@
+import HisobotHavolasi from "@/Components/common/HisobotHavolasi";
+import { useHisobotQatori } from "@/hooks/useHisobotQatori";
+import type { HujjatQatoriTanlovi, HujjatHisobotManbasi } from "@/lib/hujjatQatoriTanlovi";
 import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { nakladnoyHtmlMatni, nakladnoyQatori } from "@/lib/nakladnoyBirligi";
 import { tasdiqSorash } from "@/lib/tasdiqSorovi";
@@ -101,6 +104,7 @@ import {
   sotuvTolanganSummasi,
   sotuvValyutasi,
   sotuvValyutasigaOgirish,
+  tolovFoizi,
   tolovSotuvValyutasida,
   tolovTuriMatni,
   tolovValyutasi,
@@ -129,6 +133,8 @@ import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 type SotuvTafsilotlariModalProps = {
+  ajratilganQator?: HujjatQatoriTanlovi;
+  hisobotManbasi?: HujjatHisobotManbasi;
   sotuv: Sotuv;
   qoldiqlar: QoldiqTanlovi[];
   xodimlar: XodimTanlovi[];
@@ -472,6 +478,8 @@ function OddiySotuvTafsilotlariModal({
   onTolovQoshish,
   onBekorQilish,
   boshlangichTab,
+  ajratilganQator,
+  hisobotManbasi,
   qoldiqYuklanmoqda = false,
 }: SotuvTafsilotlariModalProps) {
   const { t } = useTranslation("savdo_tafsilot");
@@ -644,6 +652,7 @@ function OddiySotuvTafsilotlariModal({
               </div>
             </div>
 
+            <HisobotHavolasi manba={hisobotManbasi} />
             <ModalTablari
                 className="mt-6"
                 tablar={tabs.map((tab) => ({ id: tab, nom: t(TAB_LABEL_KEYS[tab] ?? tab) }))}
@@ -670,6 +679,7 @@ function OddiySotuvTafsilotlariModal({
 
           {activeTab === "Tovarlar" ? (
               <TovarlarTab
+                ajratilganQator={ajratilganQator}
                 sotuv={sotuv}
                 qoldiqlar={qoldiqlar}
                 amalBajarilmoqda={amalBajarilmoqda}
@@ -1559,7 +1569,7 @@ function KelishuvCard({
     if (bolim === "To'lov") onTolovOchish();
   }
 
-  const tolanganFoiz = jami > 0 ? Math.min(100, Math.round((tolanganSumma / jami) * 100)) : 0;
+  const tolanganFoiz = tolovFoizi(tolanganSumma, jami, qarzdorlikSumma);
   const telefon = mijozTelefon(sotuv);
   const holatStili =
     holat === "CONFIRMED"
@@ -2733,7 +2743,9 @@ function tarixChiplari(item: SaleAuditLog, t: TFunction, valyuta?: Valyuta): Tar
   } else {
     for (const [maydon, qiymat] of Object.entries(diff)) {
       if (maydon === "before" || maydon === "after") continue;
-      const record = qiymat as { from?: unknown; to?: unknown } | null;
+      const record = qiymat !== null && typeof qiymat === "object"
+        ? qiymat as { from?: unknown; to?: unknown }
+        : null;
       const yangiQiymat = record && "to" in record ? record.to : qiymat;
       const yangi = tarixQiymatMatni(maydon, yangiQiymat, t, valyuta);
       if (!yangi) continue;
@@ -2966,11 +2978,13 @@ function TarixTab({ sotuv }: { sotuv: Sotuv }) {
 
 function TovarlarTab({
   sotuv,
+  ajratilganQator,
   qoldiqlar,
   amalBajarilmoqda,
   onYangilash,
 }: {
   sotuv: Sotuv;
+  ajratilganQator?: HujjatQatoriTanlovi;
   qoldiqlar: QoldiqTanlovi[];
   amalBajarilmoqda: boolean;
   onYangilash: (
@@ -2979,6 +2993,7 @@ function TovarlarTab({
   ) => Promise<boolean>;
 }) {
   const { t } = useTranslation("savdo_tafsilot");
+  const ajratish = useHisobotQatori(ajratilganQator);
   const items = sotuv.items ?? [];
   const backendJami = sotuvSummasi(sotuv);
   const qatorlarJami = qatorlarYigindisi(sotuv, items, mahsulotJami, backendJami);
@@ -3240,6 +3255,7 @@ function TovarlarTab({
 
               return (
                 <div
+                  {...ajratish(item)}
                   key={omborKey}
                   className={`grid ${jadvalUstunlari} items-center gap-x-5 border-b border-slate-100 px-7 py-4 text-sm text-slate-700`}
                 >

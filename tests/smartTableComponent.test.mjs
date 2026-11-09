@@ -7,6 +7,7 @@ import { JSDOM } from 'jsdom';
 import ts from 'typescript';
 import * as preferences from '../src/Components/common/smart-table/preferences.ts';
 import { sotuvMasulMalumoti } from '../src/lib/sotuvMasulMalumoti.ts';
+import { guruhSahifasi } from '../src/lib/guruhSahifasi.ts';
 
 const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', { url: 'http://localhost/' });
 for (const key of ['window', 'document', 'HTMLElement', 'Element', 'Node', 'Event', 'MouseEvent', 'KeyboardEvent', 'localStorage']) Object.defineProperty(globalThis, key, { configurable: true, value: key === 'window' ? dom.window : dom.window[key] });
@@ -25,6 +26,7 @@ function compile(file, dependencies = {}) {
   }).outputText;
   const context = { exports: {}, window, document, localStorage, requestAnimationFrame, cancelAnimationFrame, console, require(name) {
     if (name in dependencies) return dependencies[name];
+    if (name === '@/lib/guruhSahifasi') return { guruhSahifasi };
     if (name.endsWith('.css')) return {};
     return require(name);
   } };
@@ -367,6 +369,7 @@ test('sales employee/phone columns refresh from matching directory/profile data 
       sotuvHolati: sale => sale.status, sotuvSummasi: sale => Number(sale.totalAmount),
       sotuvChegirmaSummasi: () => 0, sotuvTolanganSummasi: sale => Number(sale.paidAmount),
       sotuvQarzdorlikSummasi: () => 0, sotuvRaqami: sale => sale.number,
+      tolovFoizi: () => 100,
       qaytarishSummasi: () => 0, sotuvMahsulotiId: item => item.id, sotuvMahsulotiMiqdori: item => Number(item.quantity),
     },
   }).default;

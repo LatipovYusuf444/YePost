@@ -79,6 +79,12 @@ export default function Chiqim() {
   const [pageSize, setPageSize] = useState(10);
   const [modal, setModal] = useState(false);
   const [tanlanganId, setTanlanganId] = useState<string | null>(null);
+  useEffect(() => {
+    const search = window.location?.search;
+    if (!search) return;
+    const documentId = new URLSearchParams(search).get("hujjat");
+    if (documentId) setTanlanganId(documentId);
+  }, []);
   const [sozlama, setSozlama] = useState(false);
   const [korinadigan, setKorinadigan] = useState<Set<Ustun>>(
     () => new Set(ustunlar.map((item) => item.id))

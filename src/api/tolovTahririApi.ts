@@ -12,6 +12,8 @@ import { sotuvniBekorQilish, sotuvniTasdiqlash, sotuvniTiklash, sotuvniYangilash
 
 export type TolovTahririSorovi = {
   sotuvId: string;
+  /** Qoralamada faqat payments yangilanadi: bekor qilish va tasdiqlash chaqirilmaydi. */
+  qoralama?: boolean;
   /** Tahrirlanadigan to'lovning id'si va (id topilmasa) sotuv `payments[]`idagi o'rni. */
   tolovId: string | null;
   tolovIndeksi: number;
@@ -60,6 +62,13 @@ async function bosqichniBajarish(bosqich: TolovTahririBosqichi, sorov: TolovTahr
   } else if (bosqich === "yangilash") {
     // Javobda to'lovlar to'liq kelmasligi mumkin, id'lar ham o'zgargan bo'lishi mumkin: qoralamaning joriy holati qayta olinadi.
     const qoralama = await sotuvTafsilotiniOlish(sorov.sotuvId);
+    if (sorov.qoralama && String(qoralama.status).toUpperCase() !== "DRAFT") {
+      throw new Error("Qoralama holati o'zgargan. Sotuvni qayta oching.");
+    }
+    // Qoralamada ID almashmaydi: boshqa oynada o'chirilgan to'lov o'rniga keyingi qatorni tahrirlamaymiz.
+    if (sorov.qoralama && sorov.tolovId && !qoralama.payments?.some(tolov => tolov.id === sorov.tolovId)) {
+      throw new Error(TOLOV_TOPILMADI);
+    }
     const tolovlar = tolovlarniYangilash(
       qoralama.payments ?? [],
       { id: sorov.tolovId, indeks: sorov.tolovIndeksi },
@@ -79,7 +88,8 @@ async function bosqichniBajarish(bosqich: TolovTahririBosqichi, sorov: TolovTahr
  * oxirgi holati (to'lovlar, qarz, `changeAmount`) qaytadi. Bosqichda xato bo'lsa `TolovTahririXatosi` (qaysi bosqichda) otiladi.
  */
 export async function tolovniTahrirlash(sorov: TolovTahririSorovi, parametrlar: TolovTahririParametrlari = {}): Promise<Sotuv> {
-  for (const bosqich of qolganBosqichlar(parametrlar.boshlash)) {
+  const bosqichlar: TolovTahririBosqichi[] = sorov.qoralama ? ["yangilash"] : qolganBosqichlar(parametrlar.boshlash);
+  for (const bosqich of bosqichlar) {
     parametrlar.onBosqich?.(bosqich, "boshlandi");
     try {
       await bosqichniBajarish(bosqich, sorov);

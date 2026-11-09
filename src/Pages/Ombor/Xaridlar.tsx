@@ -62,6 +62,12 @@ export default function Xaridlar() {
   const [pageSize, setPageSize] = useState(10);
   const [modal, setModal] = useState(false);
   const [tanlanganId, setTanlanganId] = useState<string | null>(null);
+  useEffect(() => {
+    const search = window.location?.search;
+    if (!search) return;
+    const documentId = new URLSearchParams(search).get("hujjat");
+    if (documentId) setTanlanganId(documentId);
+  }, []);
   const [sozlamaOchiq, setSozlamaOchiq] = useState(false);
   const [sozlamaJoylashuvi, setSozlamaJoylashuvi] = useState({ top: 0, left: 0 });
   const sozlamaTugmaRef = useRef<HTMLButtonElement | null>(null);

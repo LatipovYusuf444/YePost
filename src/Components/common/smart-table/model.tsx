@@ -5,6 +5,7 @@ export type NodeProps = {
   children?: ReactNode; className?: string; style?: React.CSSProperties; colSpan?: number; rowSpan?: number;
   hidden?: boolean;
   "data-column-id"?: string; "data-table-control"?: boolean; "aria-label"?: string; title?: string;
+  "data-default-hidden"?: boolean;
 };
 export type TableNode = ReactElement<NodeProps>;
 
@@ -33,6 +34,7 @@ export function analyzeTable(table: TableNode, actionLabel = "Amallar") {
     const className = cell.props.className ?? "";
     return { id: cell.props["data-column-id"] ?? (cell.key ? String(cell.key) : `column-${index}`), label, required,
       min: required ? 48 : 80, max: required ? 240 : 800,
+      ...(cell.props["data-default-hidden"] ? { defaultHidden: true } : {}),
       defaultPin: className.includes("sticky") ? className.includes("right-0") ? "right" : className.includes("left-0") ? "left" : undefined : undefined };
   });
   if (new Set(columns.map(c => c.id)).size !== columns.length) compatible = false;

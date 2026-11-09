@@ -1,3 +1,6 @@
+import HisobotHavolasi from "@/Components/common/HisobotHavolasi";
+import { useHisobotQatori } from "@/hooks/useHisobotQatori";
+import type { HujjatQatoriTanlovi, HujjatHisobotManbasi } from "@/lib/hujjatQatoriTanlovi";
 import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
 import NegativeStockBadge from "@/Components/common/NegativeStockBadge";
@@ -30,7 +33,7 @@ import type { KochirishHujjati, MahsulotModifikatsiyasi, NomliEntity } from "@/t
 import { holat, hujjatRaqami, modificationNomi, pul, qoldiqMiqdori } from "./omborYordamchilari";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
 
-type Props = { id: string; onClose: () => void };
+type Props = { id: string; onClose: () => void; ajratilganQator?: HujjatQatoriTanlovi; hisobotManbasi?: HujjatHisobotManbasi };
 type TahrirQatori = { modificationId: string; quantity: number };
 
 // Tahrirda server xatosi qaysi maydonga tegishli (kalit — backend maydon nomi).
@@ -87,7 +90,8 @@ function statusKlasi(value: string) {
   return "bg-amber-50 text-amber-600";
 }
 
-export default function KochirishKorishModal({ id, onClose }: Props) {
+export default function KochirishKorishModal({ id, onClose, ajratilganQator, hisobotManbasi }: Props) {
+  const ajratish = useHisobotQatori(ajratilganQator);
   const bekorMumkin = useHujjatniBekorQilishMumkinmi("ombor");
   const { t } = useTranslation("ombor_modal");
   const store = useOmborStore();
@@ -292,6 +296,7 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
               )}
             </div>
           </header>
+        <HisobotHavolasi manba={hisobotManbasi} />
 
           <div className="scrollbar-hidden h-[calc(100%-92px)] overflow-y-auto p-6 sm:p-8">
             {yuklanmoqda ? (
@@ -356,7 +361,7 @@ export default function KochirishKorishModal({ id, onClose }: Props) {
                   <div className="mt-5 overflow-x-auto rounded-2xl border border-orange-100">
                     <SmartTable tableId="Ombor/KochirishKorishModal/table-1" replaceColumnControls><table className="w-full min-w-[900px] text-left text-sm">
                       <thead className="bg-[#F8FAFC] text-xs font-black uppercase text-slate-500"><tr><th data-column-id="h1" className="px-4 py-4">{t("kochirishKorishModal.view.columns.number")}</th><th data-column-id="h2" className="px-4 py-4">{t("kochirishKorishModal.view.columns.product")}</th><th data-column-id="h3" className="px-4 py-4">{t("kochirishKorishModal.view.columns.barcode")}</th><th data-column-id="h4" className="px-4 py-4">{t("kochirishKorishModal.view.columns.price")}</th><th data-column-id="h5" className="px-4 py-4">{t("kochirishKorishModal.view.columns.quantity")}</th><th data-column-id="h6" className="px-4 py-4">{t("kochirishKorishModal.view.columns.amount")}</th></tr></thead>
-                      <tbody className="divide-y divide-orange-100">{toliqItems.map(({ item, mod }, index) => { const narx = narxniOlish(item, mod); return <tr key={item.id ?? `${item.modificationId}-${index}`}><td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td><td className="px-4 py-4 font-black text-slate-800">{modificationNomi(mod)}<NegativeStockBadge wentNegative={item.wentNegative} /></td><td className="px-4 py-4 text-slate-500">{mod?.barcode ?? "—"}</td><td className="px-4 py-4">{pul(narx)}</td><td className="px-4 py-4">{item.quantity} {item.unit ?? t("kochirishKorishModal.view.unit")}</td><td className="px-4 py-4 font-black text-emerald-600">{pul(Number(item.quantity) * narx)}</td></tr>; })}{!toliqItems.length && <tr><td colSpan={6} className="px-5 py-12 text-center font-bold text-slate-400">{t("kochirishKorishModal.states.noItems")}</td></tr>}</tbody>
+                      <tbody className="divide-y divide-orange-100">{toliqItems.map(({ item, mod }, index) => { const narx = narxniOlish(item, mod); return <tr {...ajratish(item)} key={item.id ?? `${item.modificationId}-${index}`}><td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td><td className="px-4 py-4 font-black text-slate-800">{modificationNomi(mod)}<NegativeStockBadge wentNegative={item.wentNegative} /></td><td className="px-4 py-4 text-slate-500">{mod?.barcode ?? "—"}</td><td className="px-4 py-4">{pul(narx)}</td><td className="px-4 py-4">{item.quantity} {item.unit ?? t("kochirishKorishModal.view.unit")}</td><td className="px-4 py-4 font-black text-emerald-600">{pul(Number(item.quantity) * narx)}</td></tr>; })}{!toliqItems.length && <tr><td colSpan={6} className="px-5 py-12 text-center font-bold text-slate-400">{t("kochirishKorishModal.states.noItems")}</td></tr>}</tbody>
                     </table></SmartTable>
                   </div>
                 </section>

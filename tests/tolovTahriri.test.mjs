@@ -468,3 +468,56 @@ test('tolovlarniYangilash: valyutasi yozilmagan eski to‘lov sotuv valyutasida 
   assert.equal(natija[0].currency, 'USD');
   assert.deepEqual(natija[1], { id: 'b', paymentType: 'CASH', amount: 312000, currency: 'UZS', rate: 11743 });
 });
+
+test('draft editing only PATCHes payments, preserves other rows and remains DRAFT', async () => {
+  reset();
+  let document = { id: 'draft-1', status: 'DRAFT', currency: 'UZS', totalAmount: '720000', payments: [
+    { id: 'p1', paymentType: 'CASH', amount: '60', currency: 'USD', rate: '11980', date: '2026-11-05' },
+    { id: 'p2', paymentType: 'CARD', amount: '5000', currency: 'UZS', note: 'other payment' },
+  ] };
+  handlers.set('/sales/draft-1', () => document);
+  handlers.set('PATCH /sales/draft-1', body => { document = { ...document, payments: body.payments }; return document; });
+  const stages = [];
+  const result = await tolovniTahrirlash({ sotuvId: 'draft-1', qoralama: true, tolovId: 'p1', tolovIndeksi: 0, yangi: {
+    paymentType: 'BANK', amount: 60, currency: 'USD', rate: 12000, date: '2026-11-06', note: 'fixed',
+  } }, { onBosqich: (stage, state) => stages.push(`${stage}:${state}`) });
+  assert.equal(result.status, 'DRAFT');
+  assert.equal(result.payments[0].rate, 12000);
+  assert.equal(result.payments[0].paymentType, 'BANK');
+  assert.equal(result.payments[0].date, '2026-11-06');
+  assert.deepEqual(result.payments[1], { id: 'p2', paymentType: 'CARD', amount: 5000, currency: 'UZS', note: 'other payment' });
+  assert.deepEqual(stages, ['yangilash:boshlandi', 'yangilash:tugadi']);
+  assert.deepEqual(calls.filter(call => call.method).map(call => `${call.method} ${call.url}`), ['patch /sales/draft-1']);
+});
+
+test('a draft confirmed in another window is never PATCHed or cancelled by draft editing', async () => {
+  reset();
+  handlers.set('/sales/draft-1', () => ({ id: 'draft-1', status: 'CONFIRMED', payments: [{ id: 'p1', paymentType: 'CASH', amount: 60 }] }));
+  await assert.rejects(tolovniTahrirlash({ sotuvId: 'draft-1', qoralama: true, tolovId: 'p1', tolovIndeksi: 0, yangi: { paymentType: 'CASH', amount: 50, currency: 'USD' } }), error => {
+    assert.equal(error.bosqich, 'yangilash');
+    assert.match(error.message, /holati o'zgargan/);
+    return true;
+  });
+  assert.equal(calls.filter(call => call.method).length, 0);
+});
+
+test('draft payment removed in another window never falls back to editing the next row', async () => {
+  reset();
+  handlers.set('/sales/draft-1', () => ({ id: 'draft-1', status: 'DRAFT', payments: [{ id: 'p2', paymentType: 'CASH', amount: 60 }] }));
+  await assert.rejects(tolovniTahrirlash({ sotuvId: 'draft-1', qoralama: true, tolovId: 'p1', tolovIndeksi: 0, yangi: { paymentType: 'CASH', amount: 50, currency: 'USD' } }), error => error.message === lib.TOLOV_TOPILMADI);
+  assert.equal(calls.filter(call => call.method).length, 0);
+});
+
+test('draft save updates the store and never sends a confirmed-sale notification', async () => {
+  reset();
+  const document = { id: 'draft-1', status: 'DRAFT', currency: 'UZS', payments: [{ id: 'p1', paymentType: 'CASH', amount: 60, currency: 'USD' }] };
+  handlers.set('/sales/draft-1', () => document);
+  handlers.set('PATCH /sales/draft-1', body => { document.payments = body.payments; return document; });
+  useSavdoStore.setState({ ...initial, sotuvlar: [document], tanlanganSotuv: document }, true);
+  const result = await useSavdoStore.getState().tolovniTahrirlash({ sotuvId: 'draft-1', qoralama: true, tolovId: 'p1', tolovIndeksi: 0,
+    yangi: { paymentType: 'CASH', amount: 60, currency: 'USD', rate: 12000 }, nakladnoyYuborish: true });
+  assert.equal(result.ok, true);
+  assert.equal(useSavdoStore.getState().tanlanganSotuv.payments[0].rate, 12000);
+  assert.equal(useSavdoStore.getState().tanlanganSotuv.status, 'DRAFT');
+  assert.equal(calls.some(call => call.method === 'post'), false);
+});

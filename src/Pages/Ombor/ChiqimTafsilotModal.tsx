@@ -1,3 +1,6 @@
+import HisobotHavolasi from "@/Components/common/HisobotHavolasi";
+import { useHisobotQatori } from "@/hooks/useHisobotQatori";
+import type { HujjatQatoriTanlovi, HujjatHisobotManbasi } from "@/lib/hujjatQatoriTanlovi";
 import SmartTable from "@/Components/common/smart-table/SmartTable";
 import NegativeStockBadge from "@/Components/common/NegativeStockBadge";
 import { useEffect, useMemo, useState } from "react";
@@ -19,7 +22,7 @@ import type { ChiqimHujjati, ChiqimSababi, MahsulotModifikatsiyasi } from "@/typ
 import { holat, hujjatRaqami, modificationNomi, pul, sana } from "./omborYordamchilari";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
 
-type Props = { id: string; onClose: () => void };
+type Props = { id: string; onClose: () => void; ajratilganQator?: HujjatQatoriTanlovi; hisobotManbasi?: HujjatHisobotManbasi };
 
 const sababKalitlari: Record<ChiqimSababi, string> = {
   DAMAGE: "chiqimTafsilotModal.reasons.damage",
@@ -35,7 +38,8 @@ function statusSinfi(status?: string) {
   return "bg-amber-50 text-amber-600";
 }
 
-export default function ChiqimTafsilotModal({ id, onClose }: Props) {
+export default function ChiqimTafsilotModal({ id, onClose, ajratilganQator, hisobotManbasi }: Props) {
+  const ajratish = useHisobotQatori(ajratilganQator);
   const bekorMumkin = useHujjatniBekorQilishMumkinmi("ombor");
   const { t } = useTranslation("ombor_kichik");
   const store = useOmborStore();
@@ -135,6 +139,7 @@ export default function ChiqimTafsilotModal({ id, onClose }: Props) {
             {tasdiqlangan && bekorMumkin && <button type="button" onClick={() => setBekorTasdiq(true)} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-slate-700 px-5 text-sm font-black text-white shadow-lg disabled:opacity-50"><RotateCcw size={18} />{t("chiqimTafsilotModal.cancelButton")}</button>}
           </div>
         </header>
+        <HisobotHavolasi manba={hisobotManbasi} />
 
         {yuklanmoqda ? (
           <div className="flex flex-1 items-center justify-center"><LoaderCircle size={36} className="animate-spin text-orange-500" /></div>
@@ -174,7 +179,7 @@ export default function ChiqimTafsilotModal({ id, onClose }: Props) {
                   </thead>
                   <tbody className="divide-y divide-orange-100">
                     {qatorlar.map((item, index) => (
-                      <tr key={item.id ?? `${item.modificationId}-${index}`}>
+                      <tr {...ajratish(item)} key={item.id ?? `${item.modificationId}-${index}`}>
                         <td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td>
                         <td className="px-4 py-4 font-black text-slate-800">{modificationNomi(item.modification)}<NegativeStockBadge wentNegative={item.wentNegative} /></td>
                         <td className="px-4 py-4 font-medium text-slate-500">{item.modification?.barcode || "—"}</td>

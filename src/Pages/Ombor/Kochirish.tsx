@@ -163,6 +163,12 @@ export default function Kochirish() {
   const sozlamalarTugmaRef = useRef<HTMLButtonElement | null>(null);
   const [modal, setModal] = useState(false);
   const [tanlanganId, setTanlanganId] = useState<string | null>(null);
+  useEffect(() => {
+    const search = window.location?.search;
+    if (!search) return;
+    const documentId = new URLSearchParams(search).get("hujjat");
+    if (documentId) setTanlanganId(documentId);
+  }, []);
   const [qidiruv, setQidiruv] = useState("");
   const [sanaDan, setSanaDan] = useState("");
   const [sanaGacha, setSanaGacha] = useState("");

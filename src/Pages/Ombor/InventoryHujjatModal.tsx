@@ -1,3 +1,5 @@
+import HisobotHavolasi from "@/Components/common/HisobotHavolasi";
+import type { HujjatQatoriTanlovi, HujjatHisobotManbasi } from "@/lib/hujjatQatoriTanlovi";
 import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import AppSelect from "@/Components/ui/AppSelect";
@@ -57,6 +59,8 @@ export type InventoryHujjatTuri =
 
 type Props = {
   tur: InventoryHujjatTuri;
+  ajratilganQator?: HujjatQatoriTanlovi;
+  hisobotManbasi?: HujjatHisobotManbasi;
   id: string;
   onClose: () => void;
   onTasdiqlanganTahrir?: (hujjat: InventarizatsiyaHujjati) => void | Promise<void>;
@@ -97,7 +101,7 @@ function hujjatHolati(hujjat: Hujjat | null) {
   return String(hujjat?.status ?? "DRAFT").toUpperCase();
 }
 
-export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganTahrir }: Props) {
+export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganTahrir, ajratilganQator, hisobotManbasi }: Props) {
   const profil = useAuthProfileStore(state => state.profil);
   const bekorMumkin = useHujjatniBekorQilishMumkinmi("ombor");
   const { t } = useTranslation("ombor_hujjat");
@@ -489,6 +493,7 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
   </> : null;
   const inventarizatsiyaKorinish = hujjat && tur === "inventarizatsiya" ? <div className="space-y-5"><InventarizatsiyaKorinish
     hujjat={hujjat as InventarizatsiyaHujjati}
+    ajratilganQator={ajratilganQator}
     modifikatsiyalar={store.modifikatsiyalar}
     omborNomi={(hujjat as InventarizatsiyaHujjati).warehouse?.name ?? store.omborlar.find(item => item.id === (hujjat as InventarizatsiyaHujjati).warehouseId)?.name ?? t("view.unknownWarehouse")}
     masulNomi={hujjat.responsible?.fullName ?? hujjat.responsible?.username ?? store.xodimlar.find(item => item.id === hujjat.responsibleId)?.fullName ?? t("view.unassigned")}
@@ -573,6 +578,7 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
             {inventarizatsiyaAmallari}
           </div>
         </header>
+        <HisobotHavolasi manba={hisobotManbasi} />
 
         {yuklanmoqda ? (
           <div className="flex h-72 items-center justify-center">

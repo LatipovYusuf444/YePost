@@ -579,7 +579,7 @@ export const useSavdoStore = create<SavdoState>((set, get) => {
       // Zanjir tugadi: xabar yuborilmasa ham to'lov o'zgargan, shuning uchun nakladnoy xatosi natijaga xato bo'lib o'tmaydi. Yangilanish hodisasi
       // xabardan keyin yuboriladi: sotuv kartasidagi Telegram bloki yangi (navbatdagi) yozuvni o'qiydi.
       let nakladnoy: NakladnoyNatijasi | null = null;
-      if (sorov.nakladnoyYuborish) {
+      if (sorov.nakladnoyYuborish && !sorov.qoralama) {
         try {
           await nakladnoyniMijozgaYuborish(sorov.sotuvId);
           nakladnoy = { ok: true };
