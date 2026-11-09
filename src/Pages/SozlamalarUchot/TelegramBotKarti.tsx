@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { KeyRound, LoaderCircle, Send } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
@@ -7,7 +7,8 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import XatoliMaydon from "@/Components/common/XatoliMaydon";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
-import { botTokenKerakmi, chatIdNotogrimi } from "@/lib/telegramXabarnoma";
+import { botTokenKerakmi, chatIdNotogrimi, chatIdYuborilsinmi } from "@/lib/telegramXabarnoma";
+import DokonChatiKarti from "./DokonChatiKarti";
 import { BolimKarta, SaqlashTugma, Switch } from "./UmumiyUI";
 import { maydonKlass } from "./yordamchilar";
 
@@ -75,6 +76,17 @@ export default function TelegramBotKarti() {
     };
   }, []);
 
+  // Do'kon chati bot orqali ulandi: yangi chat formaga ham yoziladi (eski Chat ID uni saqlashda ustidan yozmasin).
+  const chatXatosiniTozala = fx.tozala;
+  const chatUlandi = useCallback(
+    (yangi: TelegramIntegratsiya) => {
+      setHolat((joriy) => ({ ...joriy, ...yangi }));
+      setForma((joriy) => ({ ...joriy, chatId: yangi.chatId ?? "" }));
+      chatXatosiniTozala("chatId");
+    },
+    [chatXatosiniTozala]
+  );
+
   function ozgartirish<K extends keyof Forma>(kalit: K, qiymat: Forma[K]) {
     setForma((joriy) => ({ ...joriy, [kalit]: qiymat }));
     setXabar("");
@@ -90,8 +102,9 @@ export default function TelegramBotKarti() {
       fx.ornat({ botToken: t("integratsiya.botTokenRequired") });
       return;
     }
-    // Chat ID faqat raqam: so'z yozilsa qarz eslatmalari do'kon chatiga yetib bormaydi.
-    if (chatIdNotogrimi(forma.chatId)) {
+    // Chat ID faqat qo'lda o'zgartirilganda yuboriladi va tekshiriladi: so'z yozilsa qarz eslatmalari do'kon chatiga yetib bormaydi.
+    const yangiChatId = chatIdYuborilsinmi(forma.chatId, holat.chatId);
+    if (yangiChatId !== undefined && chatIdNotogrimi(yangiChatId)) {
       fx.ornat({ chatId: t("integratsiya.chatIdInvalid") });
       return;
     }
@@ -101,7 +114,7 @@ export default function TelegramBotKarti() {
       // Bo'sh token yuborilmaydi (backend 400 beradi); yuborilmasa eski token saqlanadi.
       ...(yangiToken ? { botToken: yangiToken } : {}),
       // Bo'sh Chat ID ham yuboriladi (backend qabul qiladi, avval yozilgan bo'lsa tozalanadi).
-      chatId: forma.chatId.trim(),
+      ...(yangiChatId !== undefined ? { chatId: yangiChatId } : {}),
       isActive: forma.isActive,
       crmBotEnabled: forma.crmBotEnabled,
       sendOnSale: forma.sendOnSale,
@@ -198,6 +211,13 @@ export default function TelegramBotKarti() {
                 </span>
               </label>
               </XatoliMaydon>
+            </div>
+
+            <DokonChatiKarti holat={holat} onYangilandi={chatUlandi} />
+
+            <details className="mt-3 rounded-xl border border-slate-100 px-4 py-3" open={Boolean(fx.xato("chatId")) || undefined}>
+              <summary className="cursor-pointer text-xs font-bold text-slate-500">{t("integratsiya.shopChat.manualTitle")}</summary>
+              <div className="mt-3 sm:max-w-sm">
               <XatoliMaydon xato={fx.xato("chatId")}>
               <label className="grid content-start gap-1.5">
                 <span className="text-xs font-bold text-slate-400">{t("integratsiya.chatIdLabel")}</span>
@@ -214,7 +234,8 @@ export default function TelegramBotKarti() {
                 <span className="text-[11px] font-semibold leading-4 text-slate-400">{t("integratsiya.chatIdHint")}</span>
               </label>
               </XatoliMaydon>
-            </div>
+              </div>
+            </details>
 
             <label className="mt-3 flex items-center gap-2 text-sm font-bold text-slate-600">
               <input
