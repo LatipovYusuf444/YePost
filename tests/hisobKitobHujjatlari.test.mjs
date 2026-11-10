@@ -2,6 +2,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as model from '../src/Pages/HisobotUchot/hisobKitobHujjatlari.ts';
 
+test('actual backend docType and refId retain payment and opening-debt identities without changing money', () => {
+  const rows = model.hisobKitobHujjatlariniMoslash({ documents: [
+    { refId: 'cash-25', docType: 'CUSTOMER_PAYMENT', docNumber: 'KAS-000025', date: '2026-11-10', debit: 0, credit: 100, balance: 858.85 },
+    { refId: 'qb-4', docType: 'OPENING_DEBT', docNumber: 'QB-000004', date: '2026-10-01', debit: 915.57, credit: 0, balance: 915.57 },
+  ] }, 'USD');
+  assert.equal(rows[0].turi, 'CUSTOMER_PAYMENT');
+  assert.equal(rows[0].id, 'cash-25:0');
+  assert.equal(rows[0].kredit, 100);
+  assert.equal(rows[0].qoldiq, 858.85);
+  assert.equal(rows[1].turi, 'OPENING_DEBT');
+});
+
 test('document balances and USD fractions come from the server without conversion or recalculation', () => {
   const rows = model.hisobKitobHujjatlariniMoslash({ currency: 'USD', items: [
     { id: 'qb2', type: 'OPENING_DEBT', docNumber: 'QB-000002', date: '2026-10-22', debit: '1979.25', credit: '0', runningBalance: '1979.25' },

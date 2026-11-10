@@ -545,6 +545,22 @@
     "kirimCreated": "Kirim yaratildi",
     "kirimCreatedText": "{{supplier}} dan {{number}} kirim qabul qilindi."
   },
+  "hisob": {
+    "uzs": "so'm",
+    "title": "O'zaro hisob-kitob",
+    "qarz": "Qarz",
+    "avans": "Avans",
+    "yuklanmoqda": "Hisob-kitob yuklanmoqda…",
+    "xato": "Hisob-kitobni yuklab bo'lmadi",
+    "hujjatlar": "{{currency}} hisob-kitob hujjatlari",
+    "faqatQarzdorlar": "Faqat qarzdorlar",
+    "sortLabel": "Qarz bo'yicha saralash",
+    "sortDefault": "Standart tartib",
+    "sortUzs": "Qarz: so'm, kattadan kichikka",
+    "sortUsd": "Qarz: dollar, kattadan kichikka",
+    "details": "Mijoz tafsilotlari",
+    "acceptPayment": "To'lov qabul qilish"
+  },
   "root": {
     "retry": "Qayta urinish",
     "loading": "Ma’lumot yuklanmoqda...",

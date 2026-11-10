@@ -11,7 +11,7 @@ export function useKassaSotuvKeshi(): KassaSotuvKeshi {
     () =>
       new KassaSotuvKeshi(async (sotuvId) => {
         const sotuv = await sotuvTafsilotiniFondaOlish(sotuvId);
-        return { raqam: sotuvHujjatRaqami(sotuv), mahsulotlar: sotuvMahsulotNomlari(sotuv.items) };
+        return { raqam: sotuvHujjatRaqami(sotuv), mahsulotlar: sotuvMahsulotNomlari(sotuv.items), isOpeningDebt: sotuv.isOpeningDebt };
       })
   );
   return kesh;

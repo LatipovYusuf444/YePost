@@ -27,9 +27,9 @@ export function hisobKitobHujjatlariniMoslash(raw: unknown, currency: HisobotVal
     const row = item as Record<string, unknown>;
     if (row.currency && row.currency !== currency) throw new Error("Hujjat valyutasi tanlangan valyutaga mos kelmadi.");
     return {
-      id: `${row.documentId ?? row.id ?? "hujjat"}:${index}`,
+      id: `${row.documentId ?? row.refId ?? row.id ?? "hujjat"}:${index}`,
       hujjat: String(row.docNumber ?? row.documentNumber ?? row.number ?? "—"),
-      turi: String(row.type ?? row.documentType ?? ""),
+      turi: String(row.docType ?? row.type ?? row.documentType ?? ""),
       sana: String(row.date ?? row.createdAt ?? ""),
       debet: summa(row.debit),
       kredit: summa(row.credit),

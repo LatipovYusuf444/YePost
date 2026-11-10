@@ -9,6 +9,7 @@ import * as cash from '../src/lib/cashReports.ts';
 import * as numbering from '../src/lib/kassaNomlari.ts';
 import * as taqsimot from '../src/lib/qarzTaqsimoti.ts';
 import * as raqamMatni from '../src/lib/hujjatRaqamiMatni.ts';
+import * as customerBalances from '../src/lib/mijozHisobQoldigi.ts';
 
 const require = createRequire(import.meta.url);
 // Haqiqiy uz tarjimalar bilan t(): kalit bo'yicha matn va {{o'zgaruvchi}} almashtirish.
@@ -18,7 +19,7 @@ const nodes = value => Array.isArray(value) ? value.flatMap(nodes) : !value || t
 const text = value => Array.isArray(value) ? value.map(text).join('') : value && typeof value === 'object' ? text(value.props?.children) : String(value ?? '');
 const same = (left, right) => left && right && left.length === right.length && left.every((item, i) => Object.is(item, right[i]));
 
-function page(path, dependencies, props = {}, globals = {}) {
+function page(path, dependencies, props = {}, globals = {}, exportName = 'default') {
   const compiled = ts.transpileModule(readFileSync(new URL(path, import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 },
   }).outputText;
@@ -39,14 +40,94 @@ function page(path, dependencies, props = {}, globals = {}) {
     if (name === '@/lib/cashReports') return cash;
     if (name === '@/api/sozlamalarApi') return { getApiErrorMessage: String };
     if (name in dependencies) return dependencies[name];
+    if (name === 'react-router-dom') return { useSearchParams: () => [new URLSearchParams(), () => {}], Link: 'Link' };
     return new Proxy({ __esModule: true, default: name.split('/').at(-1) }, { get(target, key) { return target[key] ?? String(key); } });
   } };
   runInNewContext(compiled, context);
-  const render = () => { cursor = 0; return context.exports.default(props); };
+  const render = () => { cursor = 0; return context.exports[exportName](props); };
   return { render, async settle() { render(); pending.splice(0).forEach(fn => fn()); await new Promise(resolve => setImmediate(resolve)); return render(); } };
 }
 const zero = (opening = 0) => ({ opening, income: 0, expense: 0, closing: opening, byPaymentType: { CASH: { income: 0, expense: 0 }, CARD: { income: 0, expense: 0 }, BANK: { income: 0, expense: 0 } } });
 const daily = params => ({ ...params, timezone: 'Asia/Tashkent', days: [{ date: params.from, operationsCount: 0, UZS: zero(1000), USD: zero(100.25) }], totals: { operationsCount: 0, UZS: zero(1000), USD: zero(100.25) } });
+
+test('customer balances load both report currencies, and partial failures show unavailable rather than debt-free', async () => {
+  const calls = [];
+  let failUsd = false;
+  const screen = page('../src/hooks/useMijozHisoblari.ts', {
+    '@/lib/mijozHisobQoldigi': customerBalances,
+    '@/api/reportsApi': { counterpartyBalanceReportApi: { barchasi: async params => {
+      calls.push(params);
+      if (failUsd && params.currency === 'USD') throw new Error('unavailable');
+      return { items: [{ counterpartyId: 'c', closingBalance: params.currency === 'USD' ? '858.85' : '0' }] };
+    } } },
+  }, true, {}, 'useMijozHisoblari');
+  let result = await screen.settle();
+  assert.equal(result.holat, 'tayyor');
+  assert.equal(result.hisoblar.c.USD, 858.85);
+  assert.deepEqual(calls.map(call => call.currency), ['UZS', 'USD']);
+  assert.ok(calls.every(call => call.counterpartyType === 'CUSTOMER' && call.debtStatus === 'ALL'));
+  failUsd = true;
+  result.yangilash();
+  result = await screen.settle();
+  assert.equal(result.holat, 'xato');
+  assert.equal(Object.keys(result.hisoblar).length, 0);
+});
+
+test('customer cards open the report, filter/sort debt per currency and keep payment links tied to the customer', async () => {
+  const customers = ['a', 'b', 'c'].map(id => ({ id, ism: id, familiya: '', telefonlar: [], ijtimoiy: {}, kompaniyaId: '', yaratganMasul: 'System' }));
+  const screen = page('../src/Pages/XaridorUchot/Xaridorlar.tsx', {
+    '@/hooks/useMijozHisoblari': { useMijozHisoblari: () => ({ hisoblar: { a: { UZS: -100000, USD: 858.85 }, b: { UZS: 12000, USD: 100 }, c: { UZS: 0, USD: 0 } }, holat: 'tayyor', yangilash() {} }) },
+    '@/lib/mijozHisobQoldigi': customerBalances,
+    'react-i18next': { useTranslation: () => ({ t: key => key }) },
+    '@/api/integrationsApi': { integratsiyalarApi: { telegramOlish: async () => null } },
+    '@/lib/telegramXabarnoma': { MIJOZ_TELEGRAM_FILTRLARI: [], botSozlanganmi: () => false, telegramUstuniKorinadimi: () => false, mijozTelegramSonlari: () => ({}), mijozTelegramFiltridanOtadimi: () => true },
+    './yordamchilar': { xaridorNomi: x => x.ism, asosiyTelefon: () => '', kompaniyaNomi: () => '', sanaFormat: () => '' },
+  }, { xaridorlar: customers, kompaniyalar: [], savdolar: [] });
+  let tree = await screen.settle();
+  const cards = () => nodes(tree).filter(node => node.type === 'article');
+  assert.equal(cards().length, 3);
+  const summary = nodes(cards()[0]).find(node => node.type === 'MijozHisobSummalari');
+  assert.equal(summary.props.hisob.USD, 858.85);
+  summary.props.onValyuta('USD');
+  tree = screen.render();
+  const report = nodes(tree).find(node => node.type === 'HisobKitobHujjatlariModal');
+  assert.equal(report.props.counterpartyId, 'a');
+  assert.equal(report.props.currency, 'USD');
+  const payment = nodes(cards()[0]).find(node => node.type === 'Link');
+  assert.equal(payment.props.to, '/kassa?customerId=a');
+  nodes(tree).find(node => node.type === 'input' && node.props.type === 'checkbox').props.onChange({ target: { checked: true } });
+  tree = screen.render();
+  assert.equal(cards().length, 2, 'USD debtor stays visible even with UZS advance');
+  nodes(tree).find(node => node.type === 'select').props.onChange({ target: { value: 'UZS' } });
+  tree = screen.render();
+  assert.deepEqual(cards().map(node => node.key), ['b', 'a']);
+  nodes(tree).find(node => node.type === 'select').props.onChange({ target: { value: 'USD' } });
+  tree = screen.render();
+  assert.deepEqual(cards().map(node => node.key), ['a', 'b']);
+});
+
+test('customer payment link opens a new payment with the selected customer and clears the selection on close', () => {
+  let params = new URLSearchParams('customerId=customer-454');
+  const screen = page('../src/Pages/KassaUchot/index.tsx', {
+    'react-router-dom': { useSearchParams: () => [params, () => { params = new URLSearchParams(); }] },
+    'react-i18next': { useTranslation: () => ({ t: key => key }) },
+    '@/hooks/useHujjatniOchirishMumkinmi': { useHujjatniBekorQilishMumkinmi: () => true },
+    '@/store/authProfileStore': { useAuthProfileStore: selector => selector({ profil: { role: 'DIREKTOR' } }) },
+    '@/lib/roles': { rolniNormallashtirish: value => value },
+    '@/lib/kassaNomlari': numbering,
+    '@/hooks/useKassaSotuvlari': { useKassaSotuvKeshi: () => ({ olingan: () => undefined }) },
+    './yordamchilar': { kassaSummasi: cash.cashAmount },
+  });
+  let tree = screen.render();
+  const modal = nodes(tree).find(node => node.type === 'KassaAmaliyotModal');
+  assert.equal(modal.props.boshlangich, null);
+  assert.equal(modal.props.boshlangichTuri, 'xaridor_tolovi');
+  assert.equal(modal.props.boshlangichXaridorId, 'customer-454');
+  modal.props.onYopish();
+  tree = screen.render();
+  assert.equal(nodes(tree).some(node => node.type === 'KassaAmaliyotModal'), false);
+  assert.equal(params.has('customerId'), false);
+});
 
 test('daily page uses Tashkent today, keeps historical range independent, and applies branch/payment filters to both requests', async () => {
   const calls = [];
@@ -152,6 +233,7 @@ test('kassa uses server totals, preserves ledger currencies, excludes duplicate/
   let tree = await screen.settle();
   const table = () => nodes(tree).find(node => node.type === 'KengaytiriladiganJadval');
   const loaded = table().props.qatorlar;
+  assert.deepEqual(Array.from(loaded, row => row.id), ['draft', 'operation', 'sale-payment'], 'newest first without changing historical K numbers');
   assert.equal(loaded.length, 3, 'only ledger rows plus manageable draft are shown');
   assert.equal(loaded.find(row => row.id === 'operation').valyuta, 'USD');
   assert.equal(loaded.find(row => row.id === 'operation').summa, 100.25);

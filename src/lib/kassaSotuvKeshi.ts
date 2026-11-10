@@ -2,7 +2,7 @@
 // Faqat ekranda turgan qatorlar so'raydi (qator ko'rinmay qolsa, hali yuborilmagan so'rov bekor bo'ladi); har bir sotuv bir marta olinadi.
 // UI'siz va importlarsiz yozilgan — alohida sinash mumkin.
 
-export type KassaSotuvi = { raqam: string; mahsulotlar: string[] };
+export type KassaSotuvi = { raqam: string; mahsulotlar: string[]; isOpeningDebt?: boolean };
 
 export class KassaSotuvKeshi {
   private readonly olish: (sotuvId: string) => Promise<KassaSotuvi>;

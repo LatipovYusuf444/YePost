@@ -9,18 +9,25 @@ export function amaliyotSotuvIdsi(amaliyot: KassaAmaliyoti): string | undefined 
   return amaliyot.saleId;
 }
 
-// Jadvaldagi "Nomi": sotuv to'lovi — "Sotuv SOT-000014" va ostida sotilgan mahsulotlar; sotuvga bog'langan kassa amaliyoti —
-// o'z nomi va ostida shu sotuv; qolganlari — o'z nomi. Sotuv hali olinmagan bo'lsa ham sarlavha tayyor (hujjat raqami to'lovning o'zida bor).
+// Mijoz to'lovi o'z KAS raqami bilan, bog'langan boshlang'ich qarz esa savdodan alohida nom bilan ko'rsatiladi.
 export function nomQismlari(amaliyot: KassaAmaliyoti, sotuv: KassaSotuvi | undefined, t: TFunction): { sarlavha: string; tafsilot: string } {
   const { korinadi, yana } = mahsulotlarQisqacha(sotuv?.mahsulotlar ?? []);
   const mahsulotlar = korinadi.length ? `${korinadi.join(", ")}${yana ? ` ${t("names.moreProducts", { count: yana })}` : ""}` : "";
+  const boshlangichQarz = sotuv?.isOpeningDebt || /^QB-/i.test(sotuv?.raqam || amaliyot.hujjatRaqami || "");
+  const hujjatNomi = (raqam: string) => t(boshlangichQarz ? "names.openingDebt" : "names.sale", { raqam });
+  if (amaliyot.backendSource === "CASH_OPERATION" && amaliyot.turi === "xaridor_tolovi") {
+    return {
+      sarlavha: [t("types.xaridor_tolovi"), amaliyot.hujjatRaqami].filter(Boolean).join(" · "),
+      tafsilot: sotuv?.raqam ? t(boshlangichQarz ? "names.paidOpeningDebt" : "names.paidSale", { raqam: sotuv.raqam }) : "",
+    };
+  }
   if (amaliyot.backendSource === "SALE") {
     const raqam = sotuv?.raqam || amaliyot.hujjatRaqami;
-    return { sarlavha: raqam ? t("names.sale", { raqam }) : t("names.salePayment"), tafsilot: mahsulotlar };
+    return { sarlavha: raqam ? hujjatNomi(raqam) : t("names.salePayment"), tafsilot: mahsulotlar };
   }
   if (amaliyot.backendSource === "RETURN" && amaliyot.hujjatRaqami) {
     return { sarlavha: t("names.return", { raqam: amaliyot.hujjatRaqami }), tafsilot: "" };
   }
-  const sotuvMatni = sotuv?.raqam ? t("names.sale", { raqam: sotuv.raqam }) : "";
+  const sotuvMatni = sotuv?.raqam ? hujjatNomi(sotuv.raqam) : "";
   return { sarlavha: amaliyot.nomi, tafsilot: [sotuvMatni, mahsulotlar].filter(Boolean).join(" · ") };
 }

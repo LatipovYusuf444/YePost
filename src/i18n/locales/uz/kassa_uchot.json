@@ -45,7 +45,7 @@
     "summa": "Summa"
   },
   "types": {
-    "xaridor_tolovi": "Mijoz hisobini to'ldirish",
+    "xaridor_tolovi": "Mijoz to'lovi",
     "hisobdor_qaytardi": "Hisobdor shaxs mablag'ini qaytarish",
     "taminotchi_qaytardi": "Yetkazib beruvchi mablag'ini qaytarishi",
     "boshqa_kirim": "Boshqa pul mablag'lari tushumi",
@@ -160,6 +160,9 @@
   },
   "saleNoPermission": "Sotuvni bekor qilish uchun direktor yoki RETURN_CANCEL ruxsati bor admin kerak.",
   "names": {
+    "openingDebt": "Boshlang'ich qarz {{raqam}}",
+    "paidOpeningDebt": "→ {{raqam}} boshlang'ich qarziga",
+    "paidSale": "→ {{raqam}} sotuviga",
     "sale": "Sotuv {{raqam}}",
     "salePayment": "Sotuv to'lovi",
     "return": "Qaytarish {{raqam}}",

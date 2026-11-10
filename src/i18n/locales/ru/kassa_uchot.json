@@ -45,7 +45,7 @@
     "summa": "Сумма"
   },
   "types": {
-    "xaridor_tolovi": "Пополнение счёта клиента",
+    "xaridor_tolovi": "Платёж клиента",
     "hisobdor_qaytardi": "Возврат средств подотчётным лицом",
     "taminotchi_qaytardi": "Возврат средств поставщиком",
     "boshqa_kirim": "Прочие денежные поступления",
@@ -160,6 +160,9 @@
   },
   "saleNoPermission": "Для отмены продажи нужен директор или администратор с правом RETURN_CANCEL.",
   "names": {
+    "openingDebt": "Начальный долг {{raqam}}",
+    "paidOpeningDebt": "→ в счёт начального долга {{raqam}}",
+    "paidSale": "→ в счёт продажи {{raqam}}",
     "sale": "Продажа {{raqam}}",
     "salePayment": "Оплата продажи",
     "return": "Возврат {{raqam}}",

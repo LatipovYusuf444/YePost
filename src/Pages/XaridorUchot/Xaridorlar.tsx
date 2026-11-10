@@ -1,6 +1,11 @@
 import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Building2, FileSpreadsheet, Phone, Plus, Search, Send, Trash2, UserRound } from "lucide-react";
+import { Building2, FileSpreadsheet, Info, Phone, Plus, RefreshCw, Search, Send, Trash2, UserRound } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useMijozHisoblari } from "@/hooks/useMijozHisoblari";
+import { mijozQarzdormi } from "@/lib/mijozHisobQoldigi";
+import HisobKitobHujjatlariModal from "../HisobotUchot/HisobKitobHujjatlariModal";
+import MijozHisobSummalari from "./MijozHisobSummalari";
 import BoshlangichQarzImportModal from "./BoshlangichQarzImportModal";
 import { useTranslation } from "react-i18next";
 import KengaytiriladiganJadval, { type Ustun } from "../HisobotUchot/KengaytiriladiganJadval";
@@ -35,6 +40,10 @@ type Props = {
 export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqlash, onOchirish }: Props) {
   const { t } = useTranslation("xaridor_uchot");
   const [qidiruv, setQidiruv] = useState("");
+  const { hisoblar, holat: hisobHolati, yangilash: hisobniYangilash } = useMijozHisoblari();
+  const [faqatQarzdorlar, setFaqatQarzdorlar] = useState(false);
+  const [qarzTartibi, setQarzTartibi] = useState<"NONE" | "UZS" | "USD">("NONE");
+  const [hisobXaridor, setHisobXaridor] = useState<{ xaridor: Xaridor; currency: "UZS" | "USD" } | null>(null);
   const [korinish, setKorinish] = useState<Korinish>("karta");
   const [modalOchiq, setModalOchiq] = useState(false);
   const xaridorSaqlanmoqda = useRef(false);
@@ -99,11 +108,14 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
   }
 
   const korinadi = (id: string) => !yashirinMaydon.has(id);
+  const hisobniOchish = (xaridor: Xaridor, currency: "UZS" | "USD") => setHisobXaridor({ xaridor, currency });
+  const asosiyHisobniOchish = (xaridor: Xaridor) => hisobniOchish(xaridor, hisoblar[xaridor.id]?.USD && !hisoblar[xaridor.id]?.UZS ? "USD" : "UZS");
 
   const ustunlar: Ustun<Xaridor>[] = [
     { id: "ism", nom: t("xaridorlar.columns.ismi"), kenglik: 130, katak: (x) => <span className="font-black text-slate-900">{x.ism}</span> },
     { id: "familiya", nom: t("xaridorlar.columns.familiya"), kenglik: 140, katak: (x) => <span className="text-slate-600">{x.familiya}</span> },
     { id: "tel", nom: t("xaridorlar.columns.tel"), kenglik: 160, katak: (x) => <span className="text-slate-500">{asosiyTelefon(x) || "—"}</span> },
+    { id: "hisob", nom: t("hisob.title"), kenglik: 240, katak: (x) => <MijozHisobSummalari hisob={hisoblar[x.id]} holat={hisobHolati} onValyuta={(currency) => hisobniOchish(x, currency)} /> },
     { id: "lavozim", nom: t("xaridorlar.columns.lavozim"), kenglik: 150, katak: (x) => <span className="text-slate-500">{x.lavozim || "—"}</span> },
     { id: "ijtimoiy", nom: t("xaridorlar.columns.ijtimoiy"), kenglik: 130, katak: (x) => <IjtimoiyIkonlar ijtimoiy={x.ijtimoiy} /> },
     ...(telegramKorinadi
@@ -131,8 +143,9 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
 
   const royxat = useMemo(() => {
     const soz = qidiruv.trim().toLowerCase();
-    return xaridorlar.filter(
+    const natija = xaridorlar.filter(
       (xaridor) =>
+        (hisobHolati !== "tayyor" || !faqatQarzdorlar || mijozQarzdormi(hisoblar[xaridor.id])) &&
         mijozTelegramFiltridanOtadimi(telegramHolati(xaridor), faolFiltr) &&
         (!soz ||
           [
@@ -149,7 +162,11 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
             .toLowerCase()
             .includes(soz))
     );
-  }, [faolFiltr, kompaniyalar, qidiruv, telegramHolati, xaridorlar]);
+    if (hisobHolati === "tayyor" && qarzTartibi !== "NONE") {
+      natija.sort((a, b) => Math.max(hisoblar[b.id]?.[qarzTartibi] ?? 0, 0) - Math.max(hisoblar[a.id]?.[qarzTartibi] ?? 0, 0));
+    }
+    return natija;
+  }, [faolFiltr, kompaniyalar, qidiruv, telegramHolati, xaridorlar, hisobHolati, hisoblar, faqatQarzdorlar, qarzTartibi]);
 
   function modalniOchish(xaridor?: Xaridor) {
     setTahrirXaridor(xaridor ?? null);
@@ -200,6 +217,13 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600"><input type="checkbox" checked={faqatQarzdorlar} disabled={hisobHolati !== "tayyor"} onChange={(event) => setFaqatQarzdorlar(event.target.checked)} />{t("hisob.faqatQarzdorlar")}</label>
+        <select aria-label={t("hisob.sortLabel")} value={qarzTartibi} disabled={hisobHolati !== "tayyor"} onChange={(event) => setQarzTartibi(event.target.value as typeof qarzTartibi)} className="h-10 rounded-xl border border-orange-100 bg-white px-3 text-sm font-semibold text-slate-600 disabled:opacity-50"><option value="NONE">{t("hisob.sortDefault")}</option><option value="UZS">{t("hisob.sortUzs")}</option><option value="USD">{t("hisob.sortUsd")}</option></select>
+        {hisobHolati === "yuklanmoqda" && <span role="status" className="text-sm text-slate-400">{t("hisob.yuklanmoqda")}</span>}
+        {hisobHolati === "xato" && <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-red-600"><span>{t("hisob.xato")}</span><button type="button" onClick={hisobniYangilash} className="inline-flex items-center gap-1 font-bold"><RefreshCw size={14} />{t("root.retry")}</button></div>}
+      </div>
+
       {/* Telegram holati bo'yicha filtr: qaysi mijozlar botga ulanmagan yoki xabar olmayotgani ko'rinadi (faqat bot sozlangan do'konda). */}
       {telegramKorinadi && (
       <div role="group" aria-label={t("xaridorlar.telegramFilter.nomi")} className="flex flex-wrap items-center gap-2" data-testid="telegram-filtr">
@@ -244,7 +268,7 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
         {royxat.map((xaridor) => (
           <article
             key={xaridor.id}
-            onClick={() => setTafsilotXaridor(xaridor)}
+            onClick={() => asosiyHisobniOchish(xaridor)}
             className="cursor-pointer rounded-[24px] border border-orange-100 bg-white p-5 shadow-sm transition hover:border-orange-200 hover:shadow-md"
           >
             <div className="flex items-start justify-between gap-3">
@@ -252,6 +276,7 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
                 <UserRound size={22} />
               </div>
               <div className="flex items-center gap-2">
+                <button type="button" aria-label={t("hisob.details")} title={t("hisob.details")} onClick={(event) => { event.stopPropagation(); setTafsilotXaridor(xaridor); }} className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100"><Info size={16} /></button>
                 <KartaSozlama
                   maydonlar={kartaMaydonlari}
                   yashirin={yashirinMaydon}
@@ -274,8 +299,11 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
 
             {/* 1 Ism Familiya */}
             {korinadi("ism") && (
-              <h2 className="mt-5 text-xl font-black text-gray-950">{xaridorNomi(xaridor)}</h2>
+              <h2 className="mt-5 text-xl font-black text-gray-950"><button type="button" onClick={(event) => { event.stopPropagation(); asosiyHisobniOchish(xaridor); }} className="text-left hover:text-orange-600">{xaridorNomi(xaridor)}</button></h2>
             )}
+
+            <div className="mt-4"><MijozHisobSummalari hisob={hisoblar[xaridor.id]} holat={hisobHolati} onValyuta={(currency) => hisobniOchish(xaridor, currency)} /></div>
+            <Link to={`/kassa?customerId=${encodeURIComponent(xaridor.id)}`} onClick={(event) => event.stopPropagation()} className="mt-3 inline-flex rounded-xl bg-orange-50 px-3 py-2 text-sm font-bold text-orange-600 hover:bg-orange-100">{t("hisob.acceptPayment")}</Link>
 
             {/* 2 Tel nomer */}
             {korinadi("tel") && (
@@ -350,6 +378,8 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
           xaridor={tafsilotXaridor}
           kompaniyalar={kompaniyalar}
           savdolar={savdolar}
+          hisob={hisoblar[tafsilotXaridor.id]}
+          hisobHolati={hisobHolati}
           onTahrirlash={() => modalniOchish(tafsilotXaridor)}
           onOchirish={async () => {
             if (await ochirish(tafsilotXaridor)) setTafsilotXaridor(null);
@@ -357,6 +387,8 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
           onYopish={() => setTafsilotXaridor(null)}
         />
       )}
+
+      {hisobXaridor && <HisobKitobHujjatlariModal counterpartyId={hisobXaridor.xaridor.id} counterpartyType="CUSTOMER" nomi={xaridorNomi(hisobXaridor.xaridor)} currency={hisobXaridor.currency} onClose={() => setHisobXaridor(null)} />}
 
       {importOchiq && <BoshlangichQarzImportModal onClose={() => setImportOchiq(false)} />}
 

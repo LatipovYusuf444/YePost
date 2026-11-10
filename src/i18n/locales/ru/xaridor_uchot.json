@@ -545,6 +545,22 @@
     "kirimCreated": "Приход создан",
     "kirimCreatedText": "Приход {{number}} принят от {{supplier}}."
   },
+  "hisob": {
+    "uzs": "сум",
+    "title": "Взаиморасчёты",
+    "qarz": "Долг",
+    "avans": "Аванс",
+    "yuklanmoqda": "Загружаем взаиморасчёты…",
+    "xato": "Не удалось загрузить взаиморасчёты",
+    "hujjatlar": "Документы взаиморасчётов в {{currency}}",
+    "faqatQarzdorlar": "Только должники",
+    "sortLabel": "Сортировка по долгу",
+    "sortDefault": "Обычный порядок",
+    "sortUzs": "Долг: сумы, по убыванию",
+    "sortUsd": "Долг: доллары, по убыванию",
+    "details": "Карточка клиента",
+    "acceptPayment": "Принять платёж"
+  },
   "root": {
     "retry": "Повторить",
     "loading": "Загрузка данных backend...",

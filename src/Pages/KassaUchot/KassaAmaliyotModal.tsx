@@ -79,6 +79,7 @@ type Props = {
   boshlangich: KassaAmaliyoti | null;
   boshlangichKanal: KassaKanali;
   boshlangichTuri: KassaAmaliyotTuri;
+  boshlangichXaridorId?: string;
   onYopish: () => void;
   // Ota so'rovni yuborib xatoni o'zi ko'rsatadi; Promise qaytarsa, server xatosi maydonlarga ham bog'lanadi.
   onSaqlash: (amaliyot: KassaAmaliyoti) => void | Promise<void>;
@@ -94,6 +95,7 @@ export default function KassaAmaliyotModal({
   boshlangich,
   boshlangichKanal,
   boshlangichTuri,
+  boshlangichXaridorId,
   onYopish,
   onSaqlash,
 }: Props) {
@@ -110,7 +112,7 @@ export default function KassaAmaliyotModal({
   const [kanal, setKanal] = useState<KassaKanali>(boshlangich?.kanal ?? boshlangichKanal);
   const [nomi, setNomi] = useState(boshlangich?.nomi ?? "");
   // partiya id — xaridorId (mijoz) yoki kontragent nomi (xodim/yetkazib)
-  const [xaridorId, setXaridorId] = useState(boshlangich?.xaridorId ?? "");
+  const [xaridorId, setXaridorId] = useState(boshlangich?.xaridorId ?? boshlangichXaridorId ?? "");
   // Mijoz to'lovida birinchi yopiladigan savdo (ixtiyoriy, `saleId`); tanlanmasa eng eski qarzdan boshlanadi.
   const [saleId, setSaleId] = useState(boshlangich?.saleId ?? "");
   const [supplierId, setSupplierId] = useState(boshlangich?.supplierId ?? "");

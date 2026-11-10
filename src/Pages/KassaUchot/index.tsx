@@ -14,6 +14,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import { barchaFinanceTransactionsHisoboti } from "@/api/tolovApi";
 import { cashOperationsApi } from "@/api/cashOperationsApi";
 import { shubhaliValyutaBilanBajarish } from "@/api/valyutaShubhasi";
@@ -109,6 +110,8 @@ const uiOperationTuri: Record<KassaAmaliyotTuri, CashOperationType> = {
 
 export default function KassaUchot() {
   const { t } = useTranslation(["kassa_uchot", "common"]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const boshlangichXaridorId = searchParams.get("customerId") || undefined;
   const sotuvniBekorQilishMumkin = useHujjatniBekorQilishMumkinmi("savdo");
   // Zavod bonusi: yaratish/tasdiqlash — direktor yoki CASH_IN huquqi; o'chirish — DELETE huquqi (direktor ham).
   const profil = useAuthProfileStore((holat) => holat.profil);
@@ -228,7 +231,7 @@ export default function KassaUchot() {
   const yuklashId = useRef(0);
   const raqamManbasi = useRef<Promise<FinanceTransaction[]> | null>(null);
   const [hujjatRaqamlari, setHujjatRaqamlari] = useState<Map<string, string>>(new Map());
-  const [modalOchiq, setModalOchiq] = useState(false);
+  const [modalOchiq, setModalOchiq] = useState(Boolean(boshlangichXaridorId));
   const [tahrirAmaliyot, setTahrirAmaliyot] = useState<KassaAmaliyoti | null>(null);
   const [tasdiqAmaliyot, setTasdiqAmaliyot] = useState<KassaAmaliyoti | null>(null);
 
@@ -344,7 +347,7 @@ export default function KassaUchot() {
         ...(amaliyot.kurs ? { rate: amaliyot.kurs } : {}),
         paymentMethod,
         name: amaliyot.nomi,
-        note: amaliyot.izoh || amaliyot.nomi,
+        note: amaliyot.izoh || undefined,
         branchId: amaliyot.backendBranchId,
         responsibleId: amaliyot.responsibleId,
         customerId: amaliyot.xaridorId,
@@ -368,6 +371,7 @@ export default function KassaUchot() {
       setKanal(amaliyot.kanal);
       setYonalish(amaliyot.yonalish);
       setModalOchiq(false);
+      if (boshlangichXaridorId) setSearchParams({}, { replace: true });
       raqamManbasi.current = null;
       await yuklash();
     } catch (error) {
@@ -460,11 +464,11 @@ export default function KassaUchot() {
     setYonalish(yangiYonalish);
   }
 
-  // Har bir bo'limda eng eskisi K1, keyingisi K2... — jadval ham shu tartibda. Raqam qidiruvga bog'liq emas.
+  // K raqamlari eski tartibda saqlanadi; ekranda eng yangi amaliyot birinchi.
   const raqamlangan = useMemo(() => {
     return amaliyotlar
       .map((amaliyot) => ({ ...amaliyot, raqam: hujjatRaqamlari.get(amaliyot.id) ?? amaliyot.raqam }))
-      .sort((a, b) => kassaTartibi(a, b));
+      .sort((a, b) => kassaTartibi(b, a));
   }, [amaliyotlar, hujjatRaqamlari]);
 
   // "Nomi" katagidagi sotuv raqami va mahsulot nomlari ekranda turgan qatorlar uchungina, fonda olinadi (NomiKatagi).
@@ -710,8 +714,9 @@ export default function KassaUchot() {
         <KassaAmaliyotModal
           boshlangich={tahrirAmaliyot}
           boshlangichKanal={kanal}
-          boshlangichTuri={boshlangichTuri}
-          onYopish={() => setModalOchiq(false)}
+          boshlangichTuri={boshlangichXaridorId ? "xaridor_tolovi" : boshlangichTuri}
+          boshlangichXaridorId={boshlangichXaridorId}
+          onYopish={() => { setModalOchiq(false); if (boshlangichXaridorId) setSearchParams({}, { replace: true }); }}
           onSaqlash={saqlash}
         />
       )}

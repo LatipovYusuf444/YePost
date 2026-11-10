@@ -13,6 +13,7 @@ const HUJJAT_TURLARI: Record<string, string> = {
   SALE: "Sotuv", OPENING_DEBT: "Boshlang'ich qarz", PURCHASE: "Xarid", PAYMENT: "To'lov",
   CUSTOMER_PAYMENT: "Mijoz to'lovi", SUPPLIER_PAYMENT: "Yetkazib beruvchiga to'lov",
   SALE_RETURN: "Sotuvni qaytarish", PURCHASE_RETURN: "Xaridni qaytarish", SUPPLIER_BONUS: "Zavod bonusi",
+  ACCOUNT: "Hisob harakati", CHANGE: "Qaytim", RETURN: "Qaytarish", CUSTOMER_REFUND: "Mijozga qaytarish",
 };
 
 export default function HisobKitobHujjatlariModal({ counterpartyId, counterpartyType, nomi, currency, onClose }: {

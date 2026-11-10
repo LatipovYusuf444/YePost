@@ -1,9 +1,13 @@
-import { pulMatni, useValyutaStore, valyutaKodi } from "@/lib/valyuta";
+import { pulMatni, useValyutaStore } from "@/lib/valyuta";
+import { Link } from "react-router-dom";
+import { useMijozHisoblari } from "@/hooks/useMijozHisoblari";
+import type { MijozHisobHolati, MijozHisobQoldigi } from "@/lib/mijozHisobQoldigi";
+import MijozHisobSummalari from "./MijozHisobSummalari";
 import { mijozQarzXulosasi } from "@/lib/boshlangichQarz";
 import { mijozHisobi } from "@/lib/mijozHisobi";
 import { valyutaKutmoqda } from "@/lib/mijozValyutasi";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, BookOpen, Briefcase, Building2, Phone, Trash2, Wallet } from "lucide-react";
+import { BookOpen, Briefcase, Building2, Phone, Trash2 } from "lucide-react";
 import BoshlangichQarzModal from "./BoshlangichQarzModal";
 import { pulniFormatlash } from "@/Pages/Savdo/savdoYordamchilari";
 import { useTranslation } from "react-i18next";
@@ -29,6 +33,8 @@ type Props = {
   xaridor: Xaridor;
   kompaniyalar: XaridorKompaniyasi[];
   savdolar: XaridorSavdosi[];
+  hisob?: MijozHisobQoldigi;
+  hisobHolati?: MijozHisobHolati;
   onTahrirlash: () => void;
   onOchirish?: () => void;
   onYopish: () => void;
@@ -38,11 +44,16 @@ export default function XaridorTafsilotlariModal({
   xaridor,
   kompaniyalar,
   savdolar,
+  hisob,
+  hisobHolati,
   onTahrirlash,
   onOchirish,
   onYopish,
 }: Props) {
   const { t } = useTranslation("xaridor_uchot");
+  const alohidaHisob = useMijozHisoblari(hisobHolati === undefined, xaridor.id);
+  const qoldiq = hisobHolati === undefined ? alohidaHisob.hisoblar[xaridor.id] : hisob;
+  const qoldiqHolati = hisobHolati ?? alohidaHisob.holat;
   const tablar = tabKalitlari.map((kalit) => ({ kalit, nom: t(`shared.tabs.${kalit}`) }));
   const [faolTab, setFaolTab] = useState<Tab>("malumotlar");
   const [xaridorTarixi, setXaridorTarixi] = useState<TarixYozuvi[]>([]);
@@ -87,6 +98,7 @@ export default function XaridorTafsilotlariModal({
                 </h1>
 
                 <div className="flex flex-wrap items-center gap-2">
+                  <Link to={`/kassa?customerId=${encodeURIComponent(xaridor.id)}`} className="inline-flex h-9 items-center rounded-xl bg-orange-50 px-3 text-sm font-bold text-orange-600">{t("hisob.acceptPayment")}</Link>
                   <button type="button" onClick={() => setQarzOchiq(true)} className="inline-flex h-9 items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"><BookOpen size={16} aria-hidden />{t("openingDebt.title")}</button>
                   {onOchirish && (
                     <button
@@ -123,6 +135,8 @@ export default function XaridorTafsilotlariModal({
                 xaridor={xaridor}
                 kompaniyalar={kompaniyalar}
                 savdolar={xaridorSavdolari}
+                qoldiq={qoldiq}
+                hisobHolati={qoldiqHolati}
               />
             )}
             {faolTab === "savdolar" && (
@@ -149,16 +163,19 @@ function MalumotlarTab({
   xaridor,
   kompaniyalar,
   savdolar,
+  qoldiq,
+  hisobHolati,
 }: {
   xaridor: Xaridor;
   kompaniyalar: XaridorKompaniyasi[];
   savdolar: XaridorSavdosi[];
+  qoldiq?: MijozHisobQoldigi;
+  hisobHolati: MijozHisobHolati;
 }) {
   const { t } = useTranslation("xaridor_uchot");
   const rejimYoniq = useValyutaStore((holat) => holat.rejimYoniq);
   const hisob = mijozHisobi({ balance: xaridor.balans, balanceCurrency: xaridor.balansValyutasi });
   const xulosa = mijozQarzXulosasi(savdolar);
-  const qarzdor = xulosa.qarz.UZS > 0 || xulosa.qarz.USD > 0;
   const summaMatni = (summa: { UZS: number; USD: number }) => [
     ...(summa.UZS !== 0 || summa.USD === 0 ? [pulMatni(summa.UZS, "UZS", true)] : []),
     ...(summa.USD !== 0 ? [pulniFormatlash(summa.USD, "USD")] : []),
@@ -229,12 +246,7 @@ function MalumotlarTab({
             <Qator nom={t("shared.registeredDateLabel")} qiymat={sanaFormat(xaridor.yaratilganSana)} />
             <Qator nom={t("xaridorDetails.totalSales")} qiymat={summaMatni(xulosa.aylanma)} />
             <Qator nom={t("xaridorDetails.totalPaid")} qiymat={summaMatni(xulosa.tolangan)} />
-            {/* Mijoz hisobi: oldindan to'langan pul (ortiqcha to'lov yoki kassa orqali to'ldirilgan); o'z valyutasida ko'rsatiladi. */}
-            <Qator
-              icon={<Wallet size={14} />}
-              nom={t("xaridorDetails.accountBalance")}
-              qiymat={pulniFormatlash(Math.max(xaridor.balans, 0), valyutaKodi(xaridor.balansValyutasi))}
-            />
+            <div><dt className="mb-2 text-sm font-bold text-slate-400">{t("hisob.title")}</dt><dd><MijozHisobSummalari hisob={qoldiq} holat={hisobHolati} /></dd></div>
             {rejimYoniq && (
               <Qator
                 nom={t("xaridorModal.currencyLabel")}
@@ -248,12 +260,6 @@ function MalumotlarTab({
                 ].join(" ")}
               />
             )}
-            <Qator
-              icon={qarzdor ? <AlertTriangle size={14} /> : undefined}
-              nom={qarzdor ? t("xaridorDetails.debtorYes") : t("xaridorDetails.debtorNo")}
-              qiymat={summaMatni(xulosa.qarz)}
-              qarz={qarzdor}
-            />
           </dl>
         </section>
 
