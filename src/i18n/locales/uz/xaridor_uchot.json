@@ -42,6 +42,8 @@
       "chooseFile": ".xlsx faylni tanlash va tekshirish",
       "checking": "Fayl tekshirilmoqda…",
       "phoneHint": "Mijoz telefon orqali topiladi. Topilmasa yangi mijoz ochiladi. Tekshiruv vaqtida hech narsa saqlanmaydi.",
+      "modeHintUZS": "Do'kon \"Faqat so'm\" rejimida: fayldagi barcha qarzlar so'mda (UZS) bo'lishi kerak. Boshqa valyutadagi qatorlar rad etiladi.",
+      "modeHintUSD": "Do'kon \"Faqat dollar\" rejimida: fayldagi barcha qarzlar dollarda (USD) bo'lishi kerak. Boshqa valyutadagi qatorlar rad etiladi.",
       "onlyXlsx": "Bo'sh bo'lmagan .xlsx faylni tanlang.",
       "unverified": "Fayl to'liq tasdiqlanmadi. Ma'lumotlar saqlanmadi. Faylni tekshirib, qayta urinib ko'ring.",
       "ready": "{{count}} ta qator xatosiz tekshirildi. Hali hech narsa saqlanmadi. Saqlash uchun tasdiqlang.",
@@ -62,6 +64,7 @@
       "BANK": "Bank",
       "pay": "To'lovni saqlash",
       "tooMuch": "To'lov qolgan qarzdan oshmasligi kerak.",
+      "modeMismatch": "Bu qarz {{currency}} da. Do'kon hozir faqat {{allowed}} bilan ishlaydi, shuning uchun {{currency}} dagi to'lov qabul qilinmaydi.",
       "history": "To'lovlar tarixi"
     }
   },

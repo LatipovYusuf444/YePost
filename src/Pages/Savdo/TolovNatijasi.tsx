@@ -1,15 +1,17 @@
 import type { ReactNode } from "react";
 import { Banknote, CheckCircle2, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { somMatni } from "@/lib/tolovOrtiqchasi";
+import { qaytimMatni } from "@/lib/tolovOrtiqchasi";
 import type { Valyuta } from "@/lib/valyuta";
 import { pulniFormatlash } from "./savdoYordamchilari";
 
 type Props = {
   /** Sarlavha (standart: "To'lov qabul qilindi"). */
   sarlavha?: string;
-  /** Mijozga qaytim berilishi kerak bo'lgan summa, so'mda (server hisoblagani). */
+  /** Mijozga qaytim berilishi kerak bo'lgan summa (server hisoblagani): `qaytimValyutasi`da, standart — so'mda. */
   qaytim: number;
+  /** Qaytim valyutasi: bir valyutali rejimda (masalan "Faqat dollar") sotuv valyutasi; standart — so'm. */
+  qaytimValyutasi?: Valyuta;
   /** Mijoz hisobiga o'tgan pul, sotuv valyutasida. */
   hisobga: number;
   sotuvValyutasi: Valyuta;
@@ -23,7 +25,7 @@ type Props = {
 };
 
 // To'lov saqlangach: kassir mijozga qancha qaytim berishi (yoki qancha pul hisobga o'tgani) aniq ko'rinadi. Oyna "Yopish" bilan yopiladi.
-export default function TolovNatijasiKarta({ sarlavha, qaytim, hisobga, sotuvValyutasi, qolganQarz, pul, qoshimcha, onYopish }: Props) {
+export default function TolovNatijasiKarta({ sarlavha, qaytim, qaytimValyutasi = "UZS", hisobga, sotuvValyutasi, qolganQarz, pul, qoshimcha, onYopish }: Props) {
   const { t } = useTranslation("savdo_tafsilot");
   const somBelgisi = t("tolovModal.somBelgisi");
   const pulMatni = (miqdor: number) => (pul ? pul(miqdor) : pulniFormatlash(miqdor, sotuvValyutasi));
@@ -52,9 +54,11 @@ export default function TolovNatijasiKarta({ sarlavha, qaytim, hisobga, sotuvVal
           </span>
           <p className="mt-3 text-xs font-black uppercase tracking-[0.16em] text-emerald-700">{t("tolovModal.natija.qaytimSarlavha")}</p>
           <p className="mt-2 text-4xl font-black tabular-nums tracking-tight text-emerald-600" data-testid="tolov-natijasi-qaytim">
-            {somMatni(qaytim, somBelgisi)}
+            {qaytimMatni(qaytim, qaytimValyutasi, somBelgisi)}
           </p>
-          <p className="mx-auto mt-3 max-w-md text-xs font-semibold leading-5 text-slate-500">{t("tolovModal.natija.qaytimIzoh")}</p>
+          <p className="mx-auto mt-3 max-w-md text-xs font-semibold leading-5 text-slate-500">
+            {t(qaytimValyutasi === "USD" ? "tolovModal.natija.qaytimIzohDollar" : "tolovModal.natija.qaytimIzoh")}
+          </p>
         </section>
       )}
 

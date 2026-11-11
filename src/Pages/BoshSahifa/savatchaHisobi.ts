@@ -17,11 +17,12 @@ export function jadvalXulosasi(cart: ReadonlyArray<NarxQatori>): JadvalXulosasi 
 }
 
 // Qator chegirmasi (so'm, butun qator uchun) → bir dona sotuv narxi. 0 yoki bo'sh chegirma — katalog narxiga qaytish (undefined).
-// Sotuv narxi 0 bo'la olmaydi (savatcha 0 ni katalog narxi deb hisoblaydi), shuning uchun kamida 1 so'm qoladi.
-export function chegirmadanSotuvNarxi(item: Pick<NarxQatori, "narx" | "soni">, chegirma: number): number | undefined {
+// Sotuv narxi 0 bo'la olmaydi (savatcha 0 ni katalog narxi deb hisoblaydi), shuning uchun kamida `engKam` qoladi: 1 so'm
+// (dollardagi savatchada — 1 sent, 0.01).
+export function chegirmadanSotuvNarxi(item: Pick<NarxQatori, "narx" | "soni">, chegirma: number, engKam = 1): number | undefined {
   if (!Number.isFinite(chegirma) || chegirma <= 0 || item.soni <= 0 || item.narx <= 0) return undefined;
   const narx = Math.round((item.narx - chegirma / item.soni) * 10000) / 10000;
-  return Math.max(narx, Math.min(1, item.narx));
+  return Math.max(narx, Math.min(engKam, item.narx));
 }
 
 // Foiz (0–100) → qator chegirmasi (so'm).

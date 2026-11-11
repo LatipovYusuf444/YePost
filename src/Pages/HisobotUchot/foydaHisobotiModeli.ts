@@ -190,6 +190,24 @@ export function qatorJufti(qator: Pick<FoydaQatori, "uzs" | "usd" | "tushum" | "
   return valyutaJufti(uzs, qator.usd?.[kalit] ?? null, afzal);
 }
 
+/** Asosiy summa va (bo'lsa) ikkinchi valyutadagi qo'shimcha summa. */
+export type SummaJufti = {
+  asosiy: { summa: number; valyuta: HisobotValyutasi };
+  qoshimcha: { summa: number; valyuta: HisobotValyutasi } | null;
+};
+
+/**
+ * Bir valyutali rejim (Faqat so'm / Faqat dollar): faqat rejim valyutasidagi summa, ikkinchi valyuta (≈) ko'rsatilmaydi va kurs talab
+ * qilinmaydi. Rejim valyutasidagi summa juftda bo'lmasa (masalan, kurs yo'qligidan dollar summasi kelmagan) — `zaxira`: hisobot
+ * valyutasida (rejim valyutasida) server qaytargan summa. Ikki valyuta rejimida (`yagona` null) juft o'zgarmaydi.
+ */
+export function yagonaValyutaJufti(juft: SummaJufti, yagona: HisobotValyutasi | null, zaxira: number | null = null): SummaJufti {
+  if (!yagona) return juft;
+  if (juft.asosiy.valyuta === yagona) return { asosiy: juft.asosiy, qoshimcha: null };
+  if (juft.qoshimcha?.valyuta === yagona) return { asosiy: juft.qoshimcha, qoshimcha: null };
+  return zaxira === null ? { asosiy: juft.asosiy, qoshimcha: null } : { asosiy: { summa: zaxira, valyuta: yagona }, qoshimcha: null };
+}
+
 export type FoydaSaralashKaliti = "nomi" | "sotilgan" | "tushum" | "tannarx" | "foyda" | "rentabellik";
 
 /** Jadval tartibi: nom bo'yicha harf tartibida, qolganlari son bo'yicha; asl ro'yxat o'zgarmaydi. */

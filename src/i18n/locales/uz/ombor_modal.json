@@ -192,5 +192,8 @@
       "ozgartirilgan": "O'zgartirilgan vaqt",
       "summa": "Summa"
     }
+  },
+  "kirimValyutaRejimi": {
+    "checkPrices": "Do'kon faqat {{currency}} da ishlaydi. Bu mahsulotlar narxi boshqa valyutada saqlangan va o'girilmadi: {{products}}. Narxlarni {{currency}} da tekshiring."
   }
 }

@@ -123,7 +123,8 @@ export const stockMovementReportApi = {
 // Monitoring ombor grafiklari: GET /reports/warehouse-flow — omborlar kirim/chiqimi TANNARXDA (sotuv, qaytarish, ko'chirma,
 // hisobdan chiqarish, inventarizatsiya va boshlang'ich qoldiq; bekor qilingan hujjat nolga tushadi).
 // groupBy: WAREHOUSE | DAY | MONTH | YEAR (katta harf). Javob: { currency, items: [{ warehouseId, warehouseName, bucket,
-// incomeAmount, expenseAmount }], totals }. Valyuta doim so'm: Monitoringdagi summalar so'mdan ko'rsatiladigan valyutaga o'giriladi.
+// incomeAmount, expenseAmount }], totals }. `currency` (UZS | USD) — summalar shu valyutada hisoblanadi (chaqiruvchi
+// korsatiladiganValyuta() yuboradi: bir valyutali rejimda rejim valyutasi, ikki valyutada hisobot valyutasi); frontend ularni o'girmaydi.
 // Fon so'rovi: xato bo'lsa toast chiqmaydi, sahifa o'zi zaxira hisobga o'tadi.
 export const warehouseFlowReportApi = {
   olish: async (params: {
@@ -131,9 +132,10 @@ export const warehouseFlowReportApi = {
     dateTo: string;
     groupBy: "WAREHOUSE" | "DAY" | "MONTH" | "YEAR";
     warehouseIds?: string;
+    currency: "UZS" | "USD";
   }): Promise<unknown> => {
     const raw = (await apiClient.get<unknown>("/reports/warehouse-flow", {
-      params: tozaParams({ ...params, currency: "UZS" }),
+      params: tozaParams({ ...params }),
       xatoniYashirish: true,
     })).data;
     return reportData(raw);

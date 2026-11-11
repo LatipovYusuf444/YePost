@@ -10,6 +10,7 @@ import XatoliMaydon from "@/Components/common/XatoliMaydon";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import type { Kompaniya } from "@/types/ombor";
+import { useYagonaValyuta } from "@/lib/valyuta";
 import { BolimKarta, Maydon, SaqlashTugma } from "./UmumiyUI";
 import { maydonKlass } from "./yordamchilar";
 
@@ -24,6 +25,8 @@ const KOMPANIYA_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
 
 export default function KompaniyaBolimi() {
   const { t } = useTranslation("sozlamalar_uchot");
+  // Bir valyutali rejimda (Faqat so'm / Faqat dollar) valyuta tanlovi yashirin va rejim valyutasi yuboriladi.
+  const yagona = useYagonaValyuta();
   const [joriy, setJoriy] = useState<Kompaniya | null>(null);
   const [nomi, setNomi] = useState(""); const [stir, setStir] = useState("");
   const [telefon, setTelefon] = useState(""); const [manzil, setManzil] = useState("");
@@ -43,7 +46,7 @@ export default function KompaniyaBolimi() {
     if (!nomi.trim()) { setXato(""); fx.ornat({ name: t("kompaniya.nameRequired") }); return; }
     setSaqlanmoqda(true); setXato(""); setXabar(""); fx.ornat({});
     try {
-      const payload = { name: nomi.trim(), inn: stir.trim() || undefined, phone: telefon.trim() || undefined, address: manzil.trim() || undefined, currency: valyuta };
+      const payload = { name: nomi.trim(), inn: stir.trim() || undefined, phone: telefon.trim() || undefined, address: manzil.trim() || undefined, currency: yagona ?? valyuta };
       const saved = joriy ? await kompaniyalarApi.yangilash(joriy.id, payload) : await kompaniyalarApi.yaratish(payload);
       setJoriy(saved); setXabar(t("kompaniya.savedMessage"));
     } catch (error) { fx.serverdan(axios.isAxiosError(error) ? error.response?.data : undefined); setXato(getApiErrorMessage(error)); } finally { setSaqlanmoqda(false); }
@@ -56,7 +59,7 @@ export default function KompaniyaBolimi() {
         <XatoliMaydon xato={fx.xato("name")}><Maydon label={t("kompaniya.fields.name")}><input value={nomi} onChange={(e) => { fx.tozala("name"); setNomi(e.target.value); }} className={maydonKlass}/></Maydon></XatoliMaydon>
         <XatoliMaydon xato={fx.xato("inn")}><Maydon label={t("kompaniya.fields.inn")}><input value={stir} onChange={(e) => { fx.tozala("inn"); setStir(e.target.value); }} className={maydonKlass}/></Maydon></XatoliMaydon>
         <XatoliMaydon xato={fx.xato("phone")}><Maydon label={t("kompaniya.fields.phone")}><PhoneInput value={telefon} onChange={(qiymat) => { fx.tozala("phone"); setTelefon(qiymat); }}/></Maydon></XatoliMaydon>
-        <XatoliMaydon xato={fx.xato("currency")}><Maydon label={t("kompaniya.fields.currency")}><AppSelect value={valyuta} onChange={(e) => { fx.tozala("currency"); setValyuta(e.target.value as "UZS" | "USD"); }} className={maydonKlass}><option value="UZS">{t("kompaniya.currencyOptions.uzs")}</option><option value="USD">{t("kompaniya.currencyOptions.usd")}</option></AppSelect></Maydon></XatoliMaydon>
+        {!yagona && <XatoliMaydon xato={fx.xato("currency")}><Maydon label={t("kompaniya.fields.currency")}><AppSelect value={valyuta} onChange={(e) => { fx.tozala("currency"); setValyuta(e.target.value as "UZS" | "USD"); }} className={maydonKlass}><option value="UZS">{t("kompaniya.currencyOptions.uzs")}</option><option value="USD">{t("kompaniya.currencyOptions.usd")}</option></AppSelect></Maydon></XatoliMaydon>}
         <div className="sm:col-span-2"><XatoliMaydon xato={fx.xato("address")}><Maydon label={t("kompaniya.fields.address")}><input value={manzil} onChange={(e) => { fx.tozala("address"); setManzil(e.target.value); }} className={maydonKlass}/></Maydon></XatoliMaydon></div>
       </div>
       <div className="mt-6 flex justify-end"><SaqlashTugma disabled={saqlanmoqda} onClick={() => void saqlash()}/></div>

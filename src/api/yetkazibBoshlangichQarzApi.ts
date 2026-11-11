@@ -3,7 +3,7 @@ import type { BoshlangichQarzMalumoti } from "../lib/boshlangichQarz.ts";
 import { yetkazibQarzi, yetkazibQarzlari, type YetkazibBoshlangichQarzi } from "../lib/yetkazibBoshlangichQarz.ts";
 
 // Yetkazib beruvchiga boshlang'ich qarz (faqat admin va direktor). Javoblar odatdagi { success, statusCode, data } ichida.
-// Xatolar: errors.currency.mode_off, errors.document.date_in_future, 423 yopilgan davr, errors.inventory.confirmed_only_cancelable,
+// Xatolar: errors.currency.not_allowed (rejimga zid valyuta), errors.document.date_in_future, 423 yopilgan davr, errors.inventory.confirmed_only_cancelable,
 // errors.inventory.cancelled_only_restorable, errors.partners.supplier_opening_debt_not_found — matnlari api/xatoKodlari'da.
 const yol = (yetkazibId: string) => `/partners/suppliers/${yetkazibId}`;
 

@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import * as model from '../src/Pages/HisobotUchot/foydaHisobotiModeli.ts';
-import { hisobotPulMatni } from '../src/Pages/HisobotUchot/hisobotValyutasi.ts';
+import * as hisobotValyutasi from '../src/Pages/HisobotUchot/hisobotValyutasi.ts';
 import * as dates from '../src/lib/hujjatSanasi.ts';
 
 const require = createRequire(import.meta.url);
@@ -32,9 +32,10 @@ function screen() {
     if (name === 'react') return react;
     if (name === 'react/jsx-runtime') return require(name);
     if (name === './foydaHisobotiModeli') return model;
-    if (name === './hisobotValyutasi') return { hisobotPulMatni };
+    if (name === './hisobotValyutasi') return hisobotValyutasi;
     if (name === './HisobotRealData') return { useHisobotRealData: () => ({ kategoriyalar: [] }) };
-    if (name === '@/lib/valyuta') return { korsatiladiganValyuta: () => 'USD' };
+    // Ikki valyuta rejimi (yagona valyuta yo'q) — avvalgi xatti-harakat.
+    if (name === '@/lib/valyuta') return { korsatiladiganValyuta: () => 'USD', useYagonaValyuta: () => null };
     if (name === '@/lib/hujjatSanasi') return { ...dates, bugungiToshkentKuni: () => '2026-10-24' };
     if (name === './yordamchilar') return { son: String };
     if (name === '@/api/sozlamalarApi') return { getApiErrorMessage: String };

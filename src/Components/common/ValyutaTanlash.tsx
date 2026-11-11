@@ -1,4 +1,4 @@
-import { useEffect, useState, type SVGProps } from "react";
+import { useState, type SVGProps } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, ChevronDown, CircleAlert, FileText, Settings2, TrendingUp } from "lucide-react";
@@ -51,9 +51,6 @@ function BayroqBelgisi({ Bayroq, katta = false }: { Bayroq: (props: SVGProps<SVG
 }
 
 
-// Kurs backenddan qayta olinadigan oraliq (varaq qayta ko'ringanda ham darhol yangilanadi).
-const YANGILASH_ORALIGI = 15 * 60 * 1000;
-
 // Navbar: hisobot valyutasi va bugungi dollar kursi (faqat ma'lumot). Hujjatlar (sotuv, to'lov, qaytarish) har doim O'Z valyutasida ko'rsatiladi,
 // jami summalar va hisobotlar — hisobot valyutasida (Sozlamalar → Valyuta): ko'rinish valyutasini tanlash yo'q, u so'mdagi hujjatlarni ham dollarga
 // aylantirib yuborardi. Valyuta rejimi (Sozlamalar → Valyuta) o'chiq bo'lsa hech narsa ko'rsatilmaydi.
@@ -62,23 +59,12 @@ export default function ValyutaTanlash() {
   const { t } = useTranslation("topbar");
   const navigate = useNavigate();
   const profil = useAuthProfileStore((holat) => holat.profil);
-  const { hisobotValyutasi, rejimYoniq, kurs, kursBor, kursSanasi, kursniYuklash } = useValyuta();
+  // Rejim va kurs asosiy layoutda (useValyutaRejiminiKuzatish) yuklanadi va yangilanadi — bu yerda faqat ko'rsatiladi.
+  const { hisobotValyutasi, rejimYoniq, kurs, kursBor, kursSanasi } = useValyuta();
   const [ochiq, setOchiq] = useState(false);
   const kursniOzgartira = foydalanuvchiKursniOzgartiraOladimi(profil);
 
-  useEffect(() => {
-    void kursniYuklash();
-    const oraliq = window.setInterval(() => void kursniYuklash(), YANGILASH_ORALIGI);
-    const koringanda = () => {
-      if (document.visibilityState === "visible") void kursniYuklash();
-    };
-    document.addEventListener("visibilitychange", koringanda);
-    return () => {
-      window.clearInterval(oraliq);
-      document.removeEventListener("visibilitychange", koringanda);
-    };
-  }, [kursniYuklash]);
-
+  // Faqat ikki valyuta rejimida (DUAL) ko'rinadi: "Faqat so'm" / "Faqat dollar" rejimida so'm/$ ko'rsatkichi va kurs yashirin.
   if (!rejimYoniq) return null;
 
   // Kurs kiritilmagan bo'lsa jami summalarni dollarga o'girib bo'lmaydi: doim so'm.

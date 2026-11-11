@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { warehouseFlowReportApi } from "@/api/reportsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
+import { korsatiladiganValyuta, useValyutaStore, type Valyuta } from "@/lib/valyuta";
 import { hisobotValyutasiniTekshirish } from "@/Pages/HisobotUchot/hisobotValyutasi";
 import { omborOqiminiMoslash, type OmborOqimiGuruhi, type OmborOqimiQatori } from "./omborHarakatOynasi";
 
@@ -10,6 +11,8 @@ const BOSH: OmborOqimiQatori[] = [];
 
 // GET /reports/warehouse-flow so'rovi. `faol` false bo'lsa so'rov yuborilmaydi. So'rov parametrlari o'zgarganda eski natija
 // ko'rsatilmaydi (holat "yuklanmoqda"); xato yoki valyuta mos kelmasa holat "xato" bo'ladi — chaqiruvchi zaxira hisobga o'tadi.
+// Summalar korsatiladiganValyuta() da so'raladi (bir valyutali rejimda — rejim valyutasi) va server shu valyutada hisoblaydi;
+// qaytarilgan `valyuta` — qatorlar summasining valyutasi, grafiklar ularni o'girmasdan shu valyutada formatlaydi.
 export function useOmborOqimi({
   dateFrom,
   dateTo,
@@ -25,17 +28,19 @@ export function useOmborOqimi({
   faol: boolean;
   yangilanish: number;
 }) {
-  const kalit = `${dateFrom}|${dateTo}|${groupBy}|${warehouseId}|${yangilanish}`;
+  // Rejim, kurs yoki hisobot valyutasi o'zgarsa qayta chiziladi va (kalit o'zgargani uchun) qayta so'raladi.
+  const valyuta: Valyuta = useValyutaStore(() => korsatiladiganValyuta());
+  const kalit = `${dateFrom}|${dateTo}|${groupBy}|${warehouseId}|${valyuta}|${yangilanish}`;
   const [natija, setNatija] = useState<Natija | null>(null);
 
   useEffect(() => {
     if (!faol) return;
     let active = true;
     warehouseFlowReportApi
-      .olish({ dateFrom, dateTo, groupBy, warehouseIds: warehouseId || undefined })
+      .olish({ dateFrom, dateTo, groupBy, warehouseIds: warehouseId || undefined, currency: valyuta })
       .then((javob) => {
         const moslangan = omborOqiminiMoslash(javob, groupBy);
-        hisobotValyutasiniTekshirish(moslangan.currency, "UZS");
+        hisobotValyutasiniTekshirish(moslangan.currency, valyuta);
         if (active) setNatija({ kalit, qatorlar: moslangan.qatorlar, xato: "" });
       })
       .catch((error) => {
@@ -44,7 +49,7 @@ export function useOmborOqimi({
     return () => {
       active = false;
     };
-  }, [dateFrom, dateTo, groupBy, warehouseId, faol, kalit]);
+  }, [dateFrom, dateTo, groupBy, warehouseId, valyuta, faol, kalit]);
 
   const joriy = faol && natija?.kalit === kalit ? natija : null;
   const holat: "ochiq-emas" | "yuklanmoqda" | "tayyor" | "xato" = !faol
@@ -54,5 +59,5 @@ export function useOmborOqimi({
       : joriy.xato
         ? "xato"
         : "tayyor";
-  return { holat, qatorlar: joriy?.qatorlar ?? BOSH, xato: joriy?.xato ?? "" };
+  return { holat, qatorlar: joriy?.qatorlar ?? BOSH, xato: joriy?.xato ?? "", valyuta };
 }

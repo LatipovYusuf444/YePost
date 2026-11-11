@@ -104,6 +104,7 @@
     "ratePlaceholder": "Kunlik kurs: {{kurs}}",
     "rateHint": "Ixtiyoriy. Bo'sh qoldirsangiz kunlik kurs ishlatiladi.",
     "settledPreview": "Hisobga o'tadi: {{summa}}",
+    "modeCurrencyChanged": "Bu qoralama boshqa valyutada ({{eski}}) saqlangan edi. Do'kon endi faqat {{yangi}} bilan ishlaydi — summani tekshiring.",
     "paymentTypeLabel": "To'lov turi",
     "responsibleLabel": "Mas'ul shaxs",
     "responsiblePlaceholder": "Mas'ul shaxsni tanlang",
@@ -310,5 +311,78 @@
     "editPayment": "To'lovni tahrirlash",
     "editPaymentHint": "Summa, valyuta yoki sanani to'g'rilash uchun sotuv vaqtincha bekor qilinib, yangi to'lov bilan qayta tasdiqlanadi.",
     "editPaymentNoPermission": "To'lovni tahrirlash sotuvni bekor qilishni talab qiladi: faqat direktor yoki RETURN_CANCEL ruxsati bor admin tahrirlay oladi."
+  },
+  "amallar": {
+    "edit": "Tahrirlash",
+    "cancel": "Bekor qilish",
+    "delete": "O'chirish",
+    "openSale": "Savdoni ochish",
+    "openReturn": "Qaytarishni ochish",
+    "linkHint": "Bu qator boshqa hujjatdan avtomatik keladi: tahrir o'sha hujjatning o'zida qilinadi.",
+    "periodClosed": "Davr yopilgan",
+    "periodClosedHint": "Davr yopilgan ({{kun}} gacha): bu sanadagi amaliyotni o'zgartirib, bekor qilib yoki o'chirib bo'lmaydi.",
+    "noPermission": "Tasdiqlangan amaliyotni faqat direktor yoki admin tahrirlay oladi.",
+    "cancelQuestion": "{{nom}} bekor qilinsinmi? Summa kassadan va kontragent hisobidan teskari yozuv bilan qaytariladi. Sababini yozing.",
+    "cancelled": "{{raqam}} bekor qilindi.",
+    "deleteQuestion": "{{nom}} butunlay o'chirilsinmi?",
+    "deleted": "{{raqam}} o'chirildi.",
+    "replaceNotice": "Tasdiqlangan amaliyot joyida o'zgartirilmaydi: saqlanganda {{raqam}} bekor qilinadi va tuzatilgan yangi amaliyot tasdiqlanadi (yangi raqam bilan). Kassa jami va kontragent hisobi qayta hisoblanadi, eski yozuv tarixda qoladi.",
+    "replaceReason": "Tahrirlandi: tuzatilgan amaliyot bilan almashtirildi",
+    "replaceReasonLabel": "Tahrir sababi (ixtiyoriy)",
+    "replaced": "{{eski}} bekor qilindi, tuzatilgan amaliyot {{yangi}} tasdiqlandi.",
+    "replaceCancelFailed": "Eski amaliyotni bekor qilib bo'lmadi — hech narsa o'zgarmadi: {{xato}}",
+    "replaceConfirmFailed": "Eski amaliyot bekor qilindi, lekin tuzatilgani tasdiqlanmadi va qoralama bo'lib qoldi: {{xato}}. Xatoni tuzatib «Saqlash va tasdiqlash»ni bosing.",
+    "legacyTitle": "Yozuvni tahrirlash",
+    "legacyHint": "Eski kassa yozuvi: summa, sana, to'lov turi va izohni o'zgartirish mumkin.",
+    "saved": "O'zgarishlar saqlandi.",
+    "replaceCancelFailedDraftLeft": "Eski amaliyotni bekor qilib bo'lmadi va tuzatilgan qoralama {{yangi}} o'chirilmadi: {{xato}}. Ro'yxatdagi shu qoralamani o'chiring yoki tahrirlab tasdiqlang.",
+    "note": {
+      "orniga": "o'rniga (tahrir)",
+      "summa": "Summa",
+      "sana": "Sana",
+      "tolovTuri": "To'lov turi",
+      "turi": "Turi",
+      "kontragent": "Kontragent",
+      "sabab": "Sabab"
+    }
+  },
+  "tarix": {
+    "title": "Tarix",
+    "empty": "Bu amaliyot bo'yicha o'zgarishlar yozilmagan.",
+    "unavailable": "Tarixni ko'rish uchun ruxsat yo'q yoki u hozircha mavjud emas.",
+    "actions": {
+      "CREATE": "Yaratildi",
+      "UPDATE": "O'zgartirildi",
+      "DELETE": "O'chirildi",
+      "CANCEL": "Bekor qilindi",
+      "CONFIRM": "Tasdiqlandi",
+      "other": "Amal bajarildi"
+    },
+    "fields": {
+      "amount": "Summa",
+      "currency": "Valyuta",
+      "date": "Sana",
+      "paymentMethod": "To'lov turi",
+      "type": "Turi",
+      "name": "Nomi",
+      "note": "Izoh",
+      "supplierId": "Yetkazib beruvchi",
+      "customerId": "Mijoz",
+      "employeeId": "Xodim",
+      "status": "Holat",
+      "settleCurrency": "Hisob valyutasi",
+      "rate": "Kurs"
+    },
+    "statuses": {
+      "DRAFT": "Qoralama",
+      "CONFIRMED": "Tasdiqlangan",
+      "CANCELLED": "Bekor qilingan"
+    },
+    "methods": {
+      "CASH": "Naqd",
+      "CARD": "Ilova/karta",
+      "BANK": "Bank"
+    },
+    "system": "Tizim"
   }
 }

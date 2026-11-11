@@ -11,3 +11,12 @@ export function yaxlitHalfUp(son: number, xona = 2): number {
   const butun = Math.round(surilgan);
   return belgi * Number(`${butun}e-${xona}`);
 }
+
+/**
+ * Valyuta narxini kurs bilan o'giradi ($3.50 × 12 600 = 44 100 so'm) — natija YAXLITLANMAYDI (butun so'mgacha ham emas).
+ * Faqat ikkilik kasr shovqini tozalanadi (117.65 × 11 780 → 1 385 917, 1 385 916.9999… emas). Ko'rsatishda formatlanadi.
+ */
+export function kursBilanOgirish(asl: number, kurs: number): number {
+  const natija = asl * kurs;
+  return Number.isFinite(natija) ? Math.round(natija * 1e6) / 1e6 : 0;
+}

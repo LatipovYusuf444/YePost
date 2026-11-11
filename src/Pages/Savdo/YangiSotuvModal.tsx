@@ -72,6 +72,7 @@ import {
 } from "@/lib/qoralamaUmumiyTahrir";
 import { yaratishValyutasi } from "@/lib/mijozValyutasi";
 import { useValyutaStore } from "@/lib/valyuta";
+import { rejimValyutasi } from "@/api/valyutaApi";
 import type {
   MijozTanlovi,
   OmborTanlovi,
@@ -85,6 +86,7 @@ import {
   chegirmaFoizi,
   chegirmaSummasi,
   kiritilganNarx,
+  NARX_TURLARI_TARTIBI,
   narxSotuvValyutasida,
   qatorNarxTuri,
   turNarxi,
@@ -149,6 +151,12 @@ function qatorChegirmasi(mahsulot: MahsulotQatori) {
 // Backendga ketadigan qator: mahsulot tanlangan va miqdori musbat (bo'sh qatorlar tanaga kirmaydi).
 function tanagaKiradimi(mahsulot: MahsulotQatori) {
   return Boolean(mahsulot.modificationId) && raqamgaAylantirish(mahsulot.quantity) > 0 && raqamgaAylantirish(mahsulot.price) >= 0;
+}
+
+// Bir valyutali rejimda yuboriladigan qatorning bir dona narxi (ustama bilan) 0: sotuvga ketmaydi. Ikki valyutali rejimda (yagona null) —
+// avvalgidek tekshirilmaydi (faqat sotuv jami 0 dan katta bo'lishi kerak).
+function qatorNarxiYoqmi(mahsulot: MahsulotQatori, yagona: "UZS" | "USD" | null) {
+  return Boolean(yagona) && tanagaKiradimi(mahsulot) && !(qatorBirNarxi(mahsulot) > 0);
 }
 
 // Server xatosini forma maydoniga bog'lash: validatsiya maydoni, xato kodining oxirgi qismi yoki xabardagi so'z bo'yicha.
@@ -309,6 +317,54 @@ function dollarNarxi(valyuta?: QoldiqTanlovi["valyuta"]) {
   return valyuta ? `$${valyuta.asl.toLocaleString("uz-UZ", { maximumFractionDigits: 2 })}` : "";
 }
 
+// Dollarda narxlangan mahsulotning so'mdagi narxi yo'q (kurs kiritilmagan): so'mda sotib bo'lmaydi. "Faqat dollar" rejimida bu muhim emas —
+// sotuv dollarda va dollar narxi o'girilmasdan ishlatiladi.
+function dollarKursYoq(qoldiq: QoldiqTanlovi, yagona: "UZS" | "USD" | null) {
+  return qoldiq.valyuta?.currency === "USD" && qoldiq.valyuta.uzs === null && yagona !== "USD";
+}
+
+// Narx turlari sozlamasi (Sozlamalar → Sotuv): yoqilganlari tanlanadi; sozlama noma'lum bo'lsa chakana va ulgurji ochiq (tannarx — faqat yoqilgan bo'lsa).
+function narxTuriRuxsati(sozlama: readonly SotuvNarxTuri[] | null | undefined) {
+  return (tur: SotuvNarxTuri) => (sozlama ? sozlama.includes(tur) : tur !== "COST");
+}
+
+// Bir valyutali rejimda kurs yo'q: boshqa valyutada narxlangan tovarni rejim valyutasiga o'girib bo'lmaydi (masalan "Faqat dollar"da
+// so'mdagi narx $0 bo'lib qolardi). Ruxsat etilgan narx turlaridan kamida birida narx bor-u, birortasi ham rejim valyutasida musbat
+// chiqmasa — tovar sotuvga qo'shilmaydi. Narxi umuman yo'q tovar bunga kirmaydi (avvalgidek). Ikki valyutali rejimda (yagona null) yoki
+// kurs bo'lsa doim false.
+function rejimdaKursYoq(qoldiq: QoldiqTanlovi, yagona: "UZS" | "USD" | null, kurs: number, ruxsat: (tur: SotuvNarxTuri) => boolean) {
+  if (!yagona || kurs > 0) return false;
+  const narxlar = NARX_TURLARI_TARTIBI.filter(ruxsat)
+    .map((tur) => turNarxi(qoldiq, tur, kurs))
+    .filter((narx): narx is NonNullable<typeof narx> => narx !== null);
+  return narxlar.length > 0 && narxlar.every((narx) => !(narxSotuvValyutasida(narx, yagona, kurs) > 0));
+}
+
+// Bloklangan tovar narxi o'z valyutasida (o'girilmagan): ruxsat etilgan birinchi narx turi bo'yicha.
+function blokNarxMatni(qoldiq: QoldiqTanlovi, kurs: number, ruxsat: (tur: SotuvNarxTuri) => boolean) {
+  const narx = NARX_TURLARI_TARTIBI.filter(ruxsat)
+    .map((tur) => turNarxi(qoldiq, tur, kurs))
+    .find((item) => item !== null);
+  return narx ? pulniFormatlash(narx.asl, narx.valyuta) : "";
+}
+
+// Qator narx turi: bir valyutali rejimda kurs yo'q bo'lsa avval rejim valyutasida musbat narxi bor tur tanlanadi (boshqa valyutadagi
+// narx o'girilmay 0 bo'lib qolmasin); bunday tur bo'lmasa yoki ikki valyutali rejimda — avvalgidek `qatorNarxTuri`.
+function sotiladiganNarxTuri(
+  qoldiq: QoldiqTanlovi | undefined,
+  soralgan: SotuvNarxTuri,
+  ruxsat: (tur: SotuvNarxTuri) => boolean,
+  kurs: number,
+  yagona: "UZS" | "USD" | null
+) {
+  if (qoldiq && yagona && !(kurs > 0)) {
+    const musbat = (tur: SotuvNarxTuri) => ruxsat(tur) && narxSotuvValyutasida(turNarxi(qoldiq, tur, kurs), yagona, kurs) > 0;
+    const tur = qatorNarxTuri(qoldiq, soralgan, musbat, kurs);
+    if (tur) return tur;
+  }
+  return qatorNarxTuri(qoldiq, soralgan, ruxsat, kurs);
+}
+
 // Mahsulot narxi sotuv valyutasida. So'mda: katalogdagi so'mdagi narx. Dollarda: dollarda narxlangan mahsulot o'z dollar narxida,
 // so'mda narxlangan mahsulot esa bugungi kurs bo'yicha o'girilgan (sentgacha yaxlitlangan) narxda.
 // Tanlangan narx turi (tan narx / chakana / ulgurji) bo'yicha; narx yo'q bo'lsa 0.
@@ -403,12 +459,18 @@ export default function YangiSotuvModal({
   }, [joriyProfil]);
   const [sotuvNomi, setSotuvNomi] = useState(asl?.nom ?? "");
   const [bosqich, setBosqich] = useState(asl?.bosqich || "Yangi");
-  const [valyuta, setValyuta] = useState(asl?.currency ?? "UZS");
+  // Bir valyutali rejimda (Faqat so'm / Faqat dollar) sotuv valyutasi doim rejim valyutasi: tanlov yashirin, kurs so'ralmaydi.
+  const yagona = useValyutaStore((holat) => (holat.rejimYoniq ? null : rejimValyutasi(holat.rejim)));
+  // Rejim backenddan o'qilganmi: o'qilguncha store boshlang'ich holati ("Faqat so'm") ikki valyutali do'kondagi dollar qoralamani
+  // o'zgartirib yoki to'xtatib qo'ymasin (o'tkazish va bloklash faqat haqiqiy rejim bo'yicha).
+  const rejimYuklandi = useValyutaStore((holat) => holat.yuklandi);
+  const [valyuta, setValyuta] = useState(asl?.currency ?? yagona ?? "UZS");
   const [walkInNomi, setWalkInNomi] = useState(asl?.walkInCustomerName ?? "");
   const [walkInTelefon, setWalkInTelefon] = useState(asl?.walkInCustomerPhone ?? "");
   // Dollarda sotuv faqat valyuta rejimi yoqilgan va bugungi kurs kiritilgan bo'lsa mumkin (backend tasdiqlashda shu kurs bilan o'giradi).
+  // "Faqat dollar" rejimida esa kurs talab qilinmaydi: dollar narxlar o'girilmasdan ishlatiladi.
   const kurs = useValyutaStore((holat) => holat.kurs);
-  const usdMumkin = useValyutaStore((holat) => holat.rejimYoniq && holat.kursBor && holat.kurs > 0);
+  const usdMumkin = useValyutaStore((holat) => holat.rejim === "USD_ONLY" || (holat.rejimYoniq && holat.kursBor && holat.kurs > 0));
   // Tahrirlashda saqlangan narxlar faqat haqiqiy (bugungi) kurs bilan o'giriladi.
   const aniqKurs = useValyutaStore((holat) => (holat.kursBor && holat.kurs > 0 ? holat.kurs : 0));
   const sotuvVal: "UZS" | "USD" = valyuta === "USD" ? "USD" : "UZS";
@@ -458,7 +520,9 @@ export default function YangiSotuvModal({
   const [narxTahriri, setNarxTahriri] = useState<{ qator: number; matn: string } | null>(null);
   // Tahrirlashda narx turi saqlangan qatorlardan olinadi: sozlamaning standart turi uni almashtirmaydi.
   const narxTuriTanlandi = useRef(Boolean(tahrir));
-  const turRuxsati = (tur: SotuvNarxTuri) => (narxSozlamasi ? narxSozlamasi.includes(tur) : tur !== "COST");
+  const turRuxsati = narxTuriRuxsati(narxSozlamasi);
+  // Kurs yo'qligi bo'yicha bloklash faqat haqiqiy rejim o'qilgach (boshlang'ich "Faqat so'm" holati ikki valyutali do'konni to'xtatmasin).
+  const blokYagona = rejimYuklandi ? yagona : null;
   useEffect(() => {
     void narxSozlamasiniYuklash();
   }, [narxSozlamasiniYuklash]);
@@ -506,6 +570,19 @@ export default function YangiSotuvModal({
     setAslHolat((joriy) => ({ ...joriy, qatorlar: joriy.qatorlar.map((qator, indeks) => (qator.kutilayotganValyuta ? saqlangan[indeks] ?? qator : qator)) }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aniqKurs]);
+
+  // Bir valyutali rejimda boshqa valyutadagi forma (rejim almashgan yoki boshqa valyutada saqlangan qoralama) rejim valyutasiga o'tkaziladi:
+  // boshqa valyutadagi yozuvni backend rad etadi (errors.currency.not_allowed). Qoralamani o'girish uchun kurs kerak — kelguncha kutiladi.
+  useEffect(() => {
+    if (!rejimYuklandi || !yagona || sotuvVal === yagona) return;
+    if (tahrir && !(aniqKurs > 0)) {
+      if (mahsulotlar.some((qator) => qator.modificationId)) fx.ornat({ currency: t("errors.modeCurrencyNeedsRate") });
+      else setValyuta(yagona);
+      return;
+    }
+    valyutaniOzgartirish(yagona);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rejimYuklandi, yagona, sotuvVal, aniqKurs]);
 
   // Mahsulot ro'yxatini ochishni SavdoSelect o'zi bajaradi (`ochishSorovi`); miqdor maydoniga fokusni shu yerda beramiz.
   useEffect(() => {
@@ -657,11 +734,13 @@ export default function YangiSotuvModal({
         if (!qoldiq) return qator;
         const narx = qoldiqNarxiValyutada(qoldiq, yangiVal, kurs, qator.priceType, birlikTopish(qoldiq.birliklar, qator.birlikId));
         // Foizdagi chegirma valyutaga bog'liq emas; summadagisi yangi valyutaga o'giriladi.
+        // Kurs yo'q bo'lsa ("Faqat dollar" rejimiga o'tilganda) summalarni o'girib bo'lmaydi: chegirma va ustama 0 bo'ladi.
+        const ogir = (son: number) =>
+          !(kurs > 0) ? 0 : yangiVal === "USD" ? Math.round((son / kurs) * 100) / 100 : Math.round(son * kurs);
         const eskiChegirma = qator.discountTuri === "sum" ? raqamgaAylantirish(qator.discount) : 0;
-        const yangiChegirma =
-          yangiVal === "USD" ? Math.round((eskiChegirma / kurs) * 100) / 100 : Math.round(eskiChegirma * kurs);
+        const yangiChegirma = ogir(eskiChegirma);
         const eskiUstama = raqamgaAylantirish(qator.ustama);
-        const yangiUstama = yangiVal === "USD" ? Math.round((eskiUstama / kurs) * 100) / 100 : Math.round(eskiUstama * kurs);
+        const yangiUstama = ogir(eskiUstama);
         return {
           ...qator,
           price: narx ? String(narx) : "",
@@ -691,7 +770,7 @@ export default function YangiSotuvModal({
     if (fx.xato("items")) fx.tozala("items");
     else fx.tozala(`items.${index}`);
     // Tanlangan narx turida narx yo'q bo'lsa (masalan, ulgurji narx belgilanmagan) mos boshqa tur olinadi.
-    const tur = qatorNarxTuri(qoldiq, narxTuri, turRuxsati, kurs) ?? narxTuri;
+    const tur = sotiladiganNarxTuri(qoldiq, narxTuri, turRuxsati, kurs, blokYagona) ?? narxTuri;
     const narx = qoldiqNarxiValyutada(qoldiq, sotuvVal, kurs, tur);
     mahsulotniYangilash(index, {
       modificationId: qoldiq?.modificationId ?? tanlanganQoldiqKaliti,
@@ -752,12 +831,16 @@ export default function YangiSotuvModal({
       if (narx > 0 && !narxlar.has(item.modificationId)) narxlar.set(item.modificationId, narx);
     }
 
+    const ruxsat = narxTuriRuxsati(narxSozlamasi);
     return royxat
       .map((item) => {
         const miqdor = qoldiqMiqdori(item);
-        // Dollarda narxlangan mahsulotga kurs kiritilmagan bo'lsa so'mdagi narx yo'q: sotuvga qo'shib bo'lmaydi.
-        const kursYoq = item.valyuta?.currency === "USD" && item.valyuta.uzs === null;
-        const mavjud = (canSellNegative || miqdor > 0) && !kursYoq;
+        // Dollarda narxlangan mahsulotga kurs kiritilmagan bo'lsa so'mdagi narx yo'q: sotuvga qo'shib bo'lmaydi
+        // ("Faqat dollar" rejimida so'mdagi narx kerak emas — dollar narxi o'zi ishlatiladi).
+        // "Faqat dollar" rejimida esa teskarisi: so'mda narxlangan mahsulotning kurssiz dollar narxi yo'q ("mavjud, $0" bo'lmasin).
+        const kursYoq = dollarKursYoq(item, yagona);
+        const rejimKursYoq = !kursYoq && rejimdaKursYoq(item, blokYagona, kurs, ruxsat);
+        const mavjud = (canSellNegative || miqdor > 0) && !kursYoq && !rejimKursYoq;
         const oziNomi = qoldiqNomi(item, t);
         const nom =
           oziNomi !== t("common.unknownProduct")
@@ -769,9 +852,13 @@ export default function YangiSotuvModal({
         const narxMatni =
           kursYoq && item.valyuta
             ? dollarNarxi(item.valyuta)
+            : rejimKursYoq
+            ? blokNarxMatni(item, kurs, ruxsat)
             : sotuvVal === "USD"
               ? pulniFormatlash(
-                  qoldiqNarxiValyutada(item, "USD", kurs) ||
+                  // Bir valyutali rejimda kurs bo'lmasa: chakana so'mda, ulgurji dollarda bo'lgan tovar ulgurji narxda sotiladi —
+                  // yorliqda ham shu (sotiladigan) narx turi ko'rsatiladi ("$0" emas).
+                  qoldiqNarxiValyutada(item, "USD", kurs, (blokYagona ? sotiladiganNarxTuri(item, "RETAIL", ruxsat, kurs, blokYagona) : null) ?? "RETAIL") ||
                     (kurs > 0 && item.modificationId ? Math.round(((narxlar.get(item.modificationId) ?? 0) / kurs) * 100) / 100 : 0),
                   "USD"
                 )
@@ -806,7 +893,7 @@ export default function YangiSotuvModal({
                       {nom} - {t("products.priceLabelShort")}: {narxMatni}
                     </span>
                     <span className="shrink-0 rounded-md bg-red-100 px-2 py-0.5 text-[11px] font-black uppercase text-red-600">
-                      {kursYoq ? t("products.noRate") : t("products.outOfStock")}
+                      {kursYoq ? t("products.noRate") : rejimKursYoq ? t(blokYagona === "USD" ? "products.somPriceNoRate" : "products.noRate") : t("products.outOfStock")}
                     </span>
                   </span>
                 ),
@@ -816,7 +903,7 @@ export default function YangiSotuvModal({
       // Avval qoldig'i borlar, keyin yo'qlar; ichida nom bo'yicha.
       .sort((x, y) => Number(y.mavjud) - Number(x.mavjud) || x.nom.localeCompare(y.nom, "uz"))
       .map((x) => x.option);
-  }, [qoldiqlar, warehouseId, omborlar, canSellNegative, sotuvVal, kurs, t]);
+  }, [qoldiqlar, warehouseId, omborlar, canSellNegative, sotuvVal, kurs, yagona, blokYagona, narxSozlamasi, t]);
 
   function mijozniTanlash(tanlanganCustomerId: string) {
     fx.tozala("customerId", "clientCompanyId");
@@ -858,7 +945,8 @@ export default function YangiSotuvModal({
         phone: xaridor.telefonlar.find((item) => item.trim())?.trim() ?? "",
         address: xaridor.manzil.trim() || undefined,
         telegramId: xaridor.ijtimoiy.telegram.trim() || undefined,
-        companyId: xaridor.kompaniyaId || undefined, ...yaratishValyutasi(xaridor.valyuta), customFields,
+        // Bir valyutali rejimda mijoz valyutasi rejim valyutasi (boshqasini backend rad etadi).
+        companyId: xaridor.kompaniyaId || undefined, ...yaratishValyutasi(yagona ?? xaridor.valyuta), customFields,
       });
       const mijoz: MijozTanlovi = {
         id: saved.id, firstName: saved.firstName, lastName: saved.lastName,
@@ -938,19 +1026,25 @@ export default function YangiSotuvModal({
       return;
     }
     const sotuvga = mos.filter(
-      (item) => (item.warehouseId || canSellNegative && warehouseId) && (canSellNegative || qoldiqMiqdori(item) > 0) && !(item.valyuta?.currency === "USD" && item.valyuta.uzs === null)
+      (item) => (item.warehouseId || canSellNegative && warehouseId) && (canSellNegative || qoldiqMiqdori(item) > 0) && !(item.valyuta?.currency === "USD" && item.valyuta.uzs === null && yagona !== "USD")
     );
     if (sotuvga.length === 0) {
       const nom = qoldiqNomi(mos[0], t);
-      const kursYoq = mos[0].valyuta?.currency === "USD" && mos[0].valyuta.uzs === null;
+      const kursYoq = dollarKursYoq(mos[0], yagona);
       xato(t(kursYoq ? "products.scanNoRate" : "products.scanOutOfStock", { name: nom }));
       return;
     }
-    if (!warehouseId && new Set(sotuvga.map((item) => item.warehouseId)).size > 1) {
-      xato(t("products.scanPickWarehouse", { name: qoldiqNomi(sotuvga[0], t) }));
+    // Bir valyutali rejimda kurs yo'q: narxi boshqa valyutada bo'lgan tovar qo'shilmaydi ("Faqat dollar"da so'mdagi narx $0 bo'lib qolardi).
+    const sotiladigan = sotuvga.filter((item) => !rejimdaKursYoq(item, blokYagona, kurs, turRuxsati));
+    if (sotiladigan.length === 0) {
+      xato(t(blokYagona === "USD" ? "products.scanSomPriceNoRate" : "products.scanNoRate", { name: qoldiqNomi(sotuvga[0], t) }));
       return;
     }
-    const item = [...sotuvga].sort((x, y) => qoldiqMiqdori(y) - qoldiqMiqdori(x))[0];
+    if (!warehouseId && new Set(sotiladigan.map((item) => item.warehouseId)).size > 1) {
+      xato(t("products.scanPickWarehouse", { name: qoldiqNomi(sotiladigan[0], t) }));
+      return;
+    }
+    const item = [...sotiladigan].sort((x, y) => qoldiqMiqdori(y) - qoldiqMiqdori(x))[0];
     const nom = qoldiqNomi(item, t);
     const kalit = qoldiqKaliti(item);
     const mavjudMiqdor = qoldiqMiqdori(item);
@@ -969,7 +1063,7 @@ export default function YangiSotuvModal({
       mahsulotniYangilash(bor, { quantity: String(yangiMiqdor) });
       setSkanXabari({ xato: false, matn: t("products.scanAdded", { name: nom, qty: yangiMiqdor }) });
     } else {
-      const tur = qatorNarxTuri(item, narxTuri, turRuxsati, kurs) ?? narxTuri;
+      const tur = sotiladiganNarxTuri(item, narxTuri, turRuxsati, kurs, blokYagona) ?? narxTuri;
       const narx = qoldiqNarxiValyutada(item, sotuvVal, kurs, tur, skanBirligi);
       const yangiQator: MahsulotQatori = {
         ...bosQator(tur),
@@ -1068,6 +1162,7 @@ export default function YangiSotuvModal({
           ustama: raqamgaAylantirish(mahsulot.ustama),
           birlik: birlikTopish(qatorQoldigi(mahsulot.qoldiqKaliti)?.birliklar, mahsulot.birlikId),
           donalikNarx: true,
+          yagonaValyuta: Boolean(yagona),
         })
       );
 
@@ -1076,8 +1171,15 @@ export default function YangiSotuvModal({
     if (!warehouseId) formaXatolari.warehouseId = t("errors.selectWarehouseFirst");
     if (boshlanishSanasi && tugashSanasi && tugashSanasi < boshlanishSanasi) formaXatolari.endDate = t("errors.endDateBeforeStart");
     if (sotuvVal === "USD" && !usdMumkin && valyuta !== asl?.currency) formaXatolari.currency = t("errors.usdUnavailable");
+    // Bir valyutali rejimda boshqa valyutadagi sotuv yuborilmaydi (backend rad etadi): qoralama hali o'girilmagan (kurs yo'q).
+    if (rejimYuklandi && yagona && sotuvVal !== yagona) formaXatolari.currency = t("errors.modeCurrencyNeedsRate");
     mahsulotlar.forEach((mahsulot, indeks) => {
       if (mahsulot.kutilayotganValyuta) formaXatolari[`items.${indeks}`] = t("errors.lineNeedsRate");
+      // Bir valyutali rejimda narxi 0 bo'lgan qator yuborilmaydi: odatda boshqa valyutadagi narx kurssiz o'girilmagan (masalan "Faqat
+      // dollar"da so'mda narxlangan tovar $0). Narxni rejim valyutasida kiritish so'raladi.
+      else if (qatorNarxiYoqmi(mahsulot, blokYagona)) {
+        formaXatolari[`items.${indeks}.price`] = t(blokYagona === "USD" ? "errors.linePriceUsd" : "errors.linePriceUzs");
+      }
     });
     if (yuboriladiganQatorlar.length === 0) formaXatolari.items = t("errors.selectAtLeastOneProduct");
     if (Object.keys(formaXatolari).length) {
@@ -1394,7 +1496,7 @@ export default function YangiSotuvModal({
     setClientCompanyId("");
     setSotuvNomi("");
     setBosqich("Yangi");
-    setValyuta("UZS");
+    setValyuta(yagona ?? "UZS");
     setBoshlanishSanasi(bugungiSana());
     setTugashSanasi(kelasiHafta());
     setIzoh("");
@@ -1435,7 +1537,8 @@ export default function YangiSotuvModal({
       const sanami = (qiymat: unknown): qiymat is string => typeof qiymat === "string" && /^\d{4}-\d{2}-\d{2}$/.test(qiymat);
       // Fayldagi narx va chegirmalar fayl valyutasida saqlangan: dollar mumkin bo'lmasa joriy (so'm) valyuta qoladi va chegirmalar olinmaydi.
       const faylValyutasi = malumot.valyuta === "USD" ? "USD" : malumot.valyuta === "UZS" ? "UZS" : sotuvVal;
-      const yangiVal: "UZS" | "USD" = faylValyutasi === "USD" && !usdMumkin ? "UZS" : faylValyutasi;
+      // Bir valyutali rejimda doim rejim valyutasi (fayl boshqa valyutada bo'lsa chegirma va ustama olinmaydi).
+      const yangiVal: "UZS" | "USD" = yagona ?? (faylValyutasi === "USD" && !usdMumkin ? "UZS" : faylValyutasi);
       const chegirmaOlinadi = yangiVal === faylValyutasi;
       const ombor = omborlar.find((item) => item.id === malumot.warehouseId)?.id ?? "";
       const qatorlar: MahsulotQatori[] = [];
@@ -1773,6 +1876,8 @@ export default function YangiSotuvModal({
                     </XatoliMaydon>
 
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                      {/* Bir valyutali rejimda valyuta tanlovi yashirin: sotuv doim rejim valyutasida. */}
+                      {!yagona && (
                       <XatoliMaydon xato={fx.xato("currency")}>
                       <label className="grid gap-1.5">
                         <span className={yorliqKlassi}>{t("note.currencyLabel")}</span>
@@ -1794,6 +1899,7 @@ export default function YangiSotuvModal({
                         </div>
                       </label>
                       </XatoliMaydon>
+                      )}
                       <label className="grid gap-1.5">
                         <span className={yorliqKlassi}>{modalMatnlari.amountLabel}</span>
                         <input
@@ -1805,9 +1911,15 @@ export default function YangiSotuvModal({
                       </label>
                     </div>
 
-                    {sotuvVal === "USD" && (
+                    {sotuvVal === "USD" && !yagona && (
                       <p className="-mt-2 rounded-xl bg-[#EFF6FF] px-3.5 py-2 text-xs font-semibold leading-5 text-[#1E40AF] ring-2 ring-blue-200">
                         {t("hints.usdSale", { kurs: kurs.toLocaleString("uz-UZ", { maximumFractionDigits: 2 }) })}
+                      </p>
+                    )}
+                    {/* Boshqa valyutada saqlangan qoralama rejim valyutasiga o'girildi: summalarni tekshirish kerak. */}
+                    {yagona && tahrir && asl && asl.currency !== yagona && sotuvVal === yagona && (
+                      <p className="-mt-2 rounded-xl bg-amber-50 px-3.5 py-2 text-xs font-semibold leading-5 text-amber-700 ring-2 ring-amber-100">
+                        {t("hints.modeConverted", { from: asl.currency, to: yagona })}
                       </p>
                     )}
 

@@ -123,6 +123,8 @@ export type AuditLog = {
   };
   before?: unknown;
   after?: unknown;
+  /** Backend o'zgarishni shu ustunda saqlaydi: POST — `{ after }`, servisdagi UPDATE — `{ maydon: { from, to } }`. */
+  diff?: unknown;
   meta?: unknown;
   createdAt?: string;
   timestamp?: string;

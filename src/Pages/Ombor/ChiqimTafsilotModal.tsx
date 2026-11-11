@@ -18,6 +18,7 @@ import { useOmborStore } from "@/store/omborStore";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 import { chiqimJamilari, chiqimTannarxi } from "@/lib/chiqimTannarxi";
+import { useYagonaValyuta } from "@/lib/valyuta";
 import type { ChiqimHujjati, ChiqimSababi, MahsulotModifikatsiyasi } from "@/types/ombor";
 import { holat, hujjatRaqami, modificationNomi, pul, sana } from "./omborYordamchilari";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
@@ -43,6 +44,8 @@ export default function ChiqimTafsilotModal({ id, onClose, ajratilganQator, hiso
   const bekorMumkin = useHujjatniBekorQilishMumkinmi("ombor");
   const { t } = useTranslation("ombor_kichik");
   const store = useOmborStore();
+  // Qator ma'lumoti bo'lmasa backend jami: bir valyutali rejimda shu valyutada, aks holda so'm (avvalgidek).
+  const yagona = useYagonaValyuta();
   const chiqimOlish = useOmborStore((state) => state.chiqimOlish);
   const xatolikniTozalash = useOmborStore((state) => state.xatolikniTozalash);
   const [hujjat, setHujjat] = useState<ChiqimHujjati | null>(null);
@@ -91,8 +94,8 @@ export default function ChiqimTafsilotModal({ id, onClose, ajratilganQator, hiso
   );
 
   const jamiMatni = useMemo(
-    () => chiqimJamilari(qatorlar, hujjat?.totalAmount ?? hujjat?.total).map((item) => pul(item.summa, item.valyuta)).join(" + "),
-    [hujjat?.total, hujjat?.totalAmount, qatorlar]
+    () => chiqimJamilari(qatorlar, hujjat?.totalAmount ?? hujjat?.total, yagona ?? "UZS").map((item) => pul(item.summa, item.valyuta)).join(" + "),
+    [hujjat?.total, hujjat?.totalAmount, qatorlar, yagona]
   );
 
   const omborNomi = hujjat?.warehouse?.name ??

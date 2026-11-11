@@ -1,4 +1,4 @@
-import { pulMatni, type Valyuta } from "@/lib/valyuta";
+import { oziValyutadaMatn, pulMatni, yagonaValyuta, type Valyuta } from "@/lib/valyuta";
 import type { MahsulotModifikatsiyasi, OmborQoldigi } from "@/types/ombor";
 import { RAQAM_YOQ } from "@/lib/hujjatRaqamiMatni";
 
@@ -16,7 +16,11 @@ export function sana(value?: string) {
       }).format(date);
 }
 
-export function pul(value?: number, manba: Valyuta = "UZS") {
+export function pul(value?: number, manba?: Valyuta) {
+  // Bir valyutali rejimda boshqa valyutadagi summa (rejim almashguncha yaratilgan hujjat yoki narx) o'z valyutasida ko'rsatiladi:
+  // `pulMatni` uni o'girmasdan rejim valyutasi belgisi bilan chiqarar edi. Valyutasi berilmagan (jami) summa — avvalgidek.
+  const yagona = yagonaValyuta();
+  if (manba && yagona && manba !== yagona) return oziValyutadaMatn(value, manba);
   return pulMatni(value, manba);
 }
 

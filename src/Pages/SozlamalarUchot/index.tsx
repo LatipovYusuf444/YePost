@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Bell,
@@ -56,9 +55,10 @@ const bolimlar: { id: SozlamaBolim; icon: typeof UserRound; faqatDirektor?: bool
 export default function SozlamalarUchot() {
   const { t } = useTranslation("sozlamalar_uchot");
   // Boshqa sahifadan to'g'ridan-to'g'ri bo'limga o'tish: /sozlamalar?bolim=valyuta
-  const [qidiruvParametrlari] = useSearchParams();
-  const boshlangichBolim = bolimlar.find((b) => b.id === qidiruvParametrlari.get("bolim"))?.id ?? "profil";
-  const [bolim, setBolim] = useState<SozlamaBolim>(boshlangichBolim);
+  // Tanlangan bo'lim URL'da saqlanadi: valyuta rejimi yoki kurs o'zgarganda sahifa qayta yig'iladi (AsosiyPanel), bo'lim esa saqlanib qoladi.
+  const [qidiruvParametrlari, setQidiruvParametrlari] = useSearchParams();
+  const bolim: SozlamaBolim = bolimlar.find((b) => b.id === qidiruvParametrlari.get("bolim"))?.id ?? "profil";
+  const setBolim = (yangi: SozlamaBolim) => setQidiruvParametrlari({ bolim: yangi }, { replace: true });
 
   // Rol: SUPERADMIN/OWNER ham DIREKTOR sifatida normallashadi (lib/roles).
   const profil = useAuthProfileStore((s) => s.profil);

@@ -506,3 +506,21 @@ export function qatorlarJami(
   }
   return { jami, chegirma, chegirmasiz: jami + chegirma, aniq };
 }
+
+/**
+ * Bir valyutali rejimda (Faqat so'm / Faqat dollar) qoralamada rejim valyutasidan boshqa valyuta — sotuv yoki qator valyutasi — bormi.
+ * Bunday qatorlarni saqlash yoki qoralamadan nusxa (yangi hujjat) olishni backend rad etadi (errors.currency.not_allowed).
+ * Topilgan boshqa valyutani qaytaradi; ikki valyuta rejimida (`yagona` = null) doim `null`.
+ */
+export function rejimgaMosEmasValyuta(
+  sotuv: { currency?: string | null; items?: readonly { currency?: string | null }[] | null },
+  yagona: NarxValyutasi | null
+): NarxValyutasi | null {
+  if (!yagona) return null;
+  const kod = (qiymat: string | null | undefined, standart: NarxValyutasi): NarxValyutasi =>
+    String(qiymat ?? standart).toUpperCase() === "USD" ? "USD" : "UZS";
+  const sotuvVal = kod(sotuv.currency, "UZS");
+  if (sotuvVal !== yagona) return sotuvVal;
+  const boshqa = (sotuv.items ?? []).map((item) => kod(item.currency, sotuvVal)).find((val) => val !== yagona);
+  return boshqa ?? null;
+}

@@ -39,9 +39,9 @@ import {
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { Kategoriya, OlchovBirligi } from "@/types/catalog";
 import { kodBilanTopish, modificationNomi, qoldiqMiqdori } from "./omborYordamchilari";
-import { korsatiladiganValyuta, useValyuta, useValyutaStore, type Valyuta } from "@/lib/valyuta";
+import { korsatiladiganValyuta, useValyuta, useYagonaValyuta, yagonaValyuta, type Valyuta } from "@/lib/valyuta";
 import { narxValyutalari } from "@/lib/narxValyutasi";
-import { kirimElementiniYigish, kirimHujjatValyutasi, kirimNarxiniOgirish } from "./kirimValyuta";
+import { kirimElementiniYigish, kirimHujjatValyutasi, kirimNarxiniOgirish, rejimNarxi } from "./kirimValyuta";
 import { seriyaYaroqlimi } from "@/lib/ishlabChiqarish";
 import { mahsulotBirliklariApi } from "@/api/catalogApi";
 import { asosiyMiqdor, birlikTopish, koeffTekshiruvi, miqdorYaroqlimi, qabulBirliklari, type TovarBirligi } from "@/lib/kopBirlik";
@@ -68,6 +68,8 @@ type Qator = {
   currency: Valyuta;
   retailValyuta?: Valyuta;
   wholesaleValyuta?: Valyuta;
+  // Bir valyutali rejimda katalog narxi boshqa valyutada edi va kurssiz o'girilmadi: summani tekshirish haqida ogohlantiriladi.
+  valyutaTekshirish?: boolean;
   // Tovar birliklari (pochka, qop, korobka) mahsulot tanlangach yuklanadi; `birlikId` "" — asosiy birlik.
   birliklar: TovarBirligi[];
   birlikId: string;
@@ -127,7 +129,8 @@ function yangiQator(warehouseId = ""): Qator {
     boshlangichRetail: 0,
     boshlangichWholesale: 0,
     boshlangichTanNarx: 0,
-    currency: "UZS",
+    // Bir valyutali rejimda — rejim valyutasi (bo'sh qatorga yozilgan narx kurssiz o'giriladigan bo'lib qolmaydi).
+    currency: yagonaValyuta() ?? "UZS",
     birliklar: [],
     birlikId: "",
     sanash: "",
@@ -143,7 +146,10 @@ const inputSm =
 export default function YangiKirimModal({ onClose }: Props) {
   const { t } = useTranslation("ombor_bosh");
   const store = useOmborStore();
+  const { t: tm } = useTranslation("ombor_modal");
   const { kurs, kursBor } = useValyuta();
+  // Bir valyutali rejim (Faqat so'm / Faqat dollar): hamma narx shu valyutada, valyuta tanlovi va kurs talabi yo'q.
+  const yagona = useYagonaValyuta();
   const [narxValyutasi, setNarxValyutasi] = useState<Valyuta>(() => korsatiladiganValyuta());
   const amaldagiKurs = kursBor ? kurs : null;
   const birinchiOmbor =
@@ -229,12 +235,25 @@ export default function YangiKirimModal({ onClose }: Props) {
   const jami = useMemo(() => {
     try {
       return qatorlar.reduce((sum, row) => {
-        const item = kirimElementiniYigish({ ...row, birlik: birlikTopish(row.birliklar, row.birlikId) }, amaldagiKurs);
+        const item = kirimElementiniYigish({ ...row, birlik: birlikTopish(row.birliklar, row.birlikId) }, amaldagiKurs, yagona ?? "UZS");
         return sum + item.quantity * item.price;
       }, 0);
     } catch { return null; }
-  }, [qatorlar, amaldagiKurs]);
-  const kursKerak = qatorlar.some((row) => row.modificationId && row.currency === "USD") && !kursBor;
+  }, [qatorlar, amaldagiKurs, yagona]);
+  const kursKerak = !yagona && qatorlar.some((row) => row.modificationId && row.currency === "USD") && !kursBor;
+  const tekshiriladiganlar = yagona ? qatorlar.filter((row) => row.modificationId && row.valyutaTekshirish) : [];
+
+  // Rejim forma ochiq turganda bir valyutaliga o'tsa (masalan, keshdagi rejim backenddan yangilansa), qatorlar rejim valyutasiga o'tadi.
+  useEffect(() => {
+    if (!yagona) return;
+    setQatorlar((rows) => {
+      const boshqa = (row: Qator) => row.currency !== yagona || (row.retailValyuta ?? yagona) !== yagona || (row.wholesaleValyuta ?? yagona) !== yagona;
+      if (!rows.some(boshqa)) return rows;
+      return rows.map((row) => boshqa(row)
+        ? { ...row, currency: yagona, retailValyuta: yagona, wholesaleValyuta: yagona, valyutaTekshirish: row.valyutaTekshirish || Boolean(row.modificationId) }
+        : row);
+    });
+  }, [yagona]);
 
   // Har bir narx o'z valyutasida saqlanadi: tannarx — `currency`, chakana va ulgurji — o'z valyutasida (berilmasa tannarxniki).
   function maydonValyutasi(row: Qator, maydon: "price" | "retailPrice" | "wholesalePrice"): Valyuta {
@@ -245,6 +264,7 @@ export default function YangiKirimModal({ onClose }: Props) {
 
   // Ko'rsatiladigan valyuta: kurs bor bo'lsa tanlangan valyuta, aks holda narxning o'z valyutasi.
   function korsatishValyutasi(row: Qator, maydon: "price" | "retailPrice" | "wholesalePrice"): Valyuta {
+    if (yagona) return yagona;
     return !kursBor ? maydonValyutasi(row, maydon) : narxValyutasi;
   }
 
@@ -262,8 +282,9 @@ export default function YangiKirimModal({ onClose }: Props) {
 
   function jamiMatni() {
     if (jami === null) return "—";
-    const valyuta = kursBor ? narxValyutasi : "UZS";
-    const qiymat = kirimNarxiniOgirish(jami, "UZS", valyuta, amaldagiKurs);
+    // Jami `jami` hisobida hujjat valyutasida: bir valyutali rejimda shu valyuta (o'girilmaydi), aks holda so'm.
+    const valyuta = yagona ?? (kursBor ? narxValyutasi : "UZS");
+    const qiymat = kirimNarxiniOgirish(jami, yagona ?? "UZS", valyuta, amaldagiKurs);
     const matn = qiymat.toLocaleString("uz-UZ", { maximumFractionDigits: 2 });
     return valyuta === "USD" ? `$${matn}` : `${matn} so'm`;
   }
@@ -317,9 +338,14 @@ export default function YangiKirimModal({ onClose }: Props) {
 
   function mahsulotTanlash(id: string, modificationId: string) {
     const mod = store.modifikatsiyalar.find((item) => item.id === modificationId);
-    const cost = Number(mod?.price?.costPrice ?? 0);
-    const retail = Number(mod?.price?.retailPrice ?? 0);
-    const wholesale = Number(mod?.price?.wholesalePrice ?? 0);
+    const valyutalar = narxValyutalari(mod?.price);
+    // Bir valyutali rejimda narxlar rejim valyutasida (boshqa valyutadagi eski narx kurs bo'lsa o'giriladi); ikki valyutada — o'zgarishsiz.
+    const tan = rejimNarxi(Number(mod?.price?.costPrice ?? 0), valyutalar.cost, yagona, amaldagiKurs);
+    const chakana = rejimNarxi(Number(mod?.price?.retailPrice ?? 0), valyutalar.retail, yagona, amaldagiKurs);
+    const ulgurji = rejimNarxi(Number(mod?.price?.wholesalePrice ?? 0), valyutalar.wholesale, yagona, amaldagiKurs);
+    const cost = tan.qiymat;
+    const retail = chakana.qiymat;
+    const wholesale = ulgurji.qiymat;
     yangilash(id, {
       modificationId,
       serial: "",
@@ -330,9 +356,10 @@ export default function YangiKirimModal({ onClose }: Props) {
       boshlangichWholesale: wholesale,
       boshlangichTanNarx: cost,
       // Har bir narxning o'z valyutasi: kirim narxi (tannarx) costCurrency'da, chakana/ulgurji o'z valyutasida.
-      currency: narxValyutalari(mod?.price).cost,
-      retailValyuta: narxValyutalari(mod?.price).retail,
-      wholesaleValyuta: narxValyutalari(mod?.price).wholesale,
+      currency: yagona ?? valyutalar.cost,
+      retailValyuta: yagona ?? valyutalar.retail,
+      wholesaleValyuta: yagona ?? valyutalar.wholesale,
+      valyutaTekshirish: tan.tekshirish || chakana.tekshirish || ulgurji.tekshirish,
       birliklar: [],
       birlikId: "",
       sanash: "",
@@ -468,8 +495,9 @@ export default function YangiKirimModal({ onClose }: Props) {
     if (note.trim()) izohQismlari.push(note.trim());
     fayllar.forEach((fayl) => izohQismlari.push(`Fayl: ${fayl.nomi} (${fayl.url})`));
 
-    // Hamma qator dollarda bo'lsa hujjat USD da, narxlar asl holida (K7). Backend USD ni faqat valyuta rejimida qabul qiladi.
-    const hujjatValyutasi = useValyutaStore.getState().rejimYoniq ? kirimHujjatValyutasi(valid) : "UZS";
+    // Ikki valyuta rejimida: hamma qator dollarda bo'lsa hujjat USD da, narxlar asl holida (K7). Bir valyutali rejimda — doim rejim
+    // valyutasi (boshqasini backend `errors.currency.not_allowed` bilan rad etadi).
+    const hujjatValyutasi = yagona ?? kirimHujjatValyutasi(valid);
     const hujjat = await fx.kuzat(() => store.kirimYaratish({
       ...yangiHujjatSanasi(hujjatSanasi),
       currency: hujjatValyutasi,
@@ -493,14 +521,22 @@ export default function YangiKirimModal({ onClose }: Props) {
       // O'zgargan narxlar bitta tranzaksiyada (har bir variant uchun alohida PATCH o'rniga): xato bo'lsa hech biri o'zgarmaydi, kirim baribir saqlanadi.
       await modifikatsiyalarApi
         .narxlarniYangilash(
-          narxOzgarganlar.map((row) => ({
-            modificationId: row.modificationId,
-            retailPrice: Number(row.retailPrice || 0) || undefined,
-            wholesalePrice: Number(row.wholesalePrice || 0) || undefined,
-            // Valyuta faqat yuborilayotgan narx uchun, har biri o'z valyutasida (eski umumiy `currency` endi faqat chakana narxniki).
-            ...(Number(row.retailPrice || 0) ? { retailCurrency: maydonValyutasi(row, "retailPrice") } : {}),
-            ...(Number(row.wholesalePrice || 0) ? { wholesaleCurrency: maydonValyutasi(row, "wholesalePrice") } : {}),
-          }))
+          narxOzgarganlar.map((row) => {
+            const retail = Number(row.retailPrice || 0);
+            const wholesale = Number(row.wholesalePrice || 0);
+            // Bir valyutali rejimda faqat o'zgargan narx yuboriladi: o'zgarmagan (kursiz o'girilmagan eski valyutadagi) narx rejim valyutasida
+            // qayta yozilib qolmaydi. Ikki valyutada — avvalgidek, ikkalasi ham.
+            const retailYuborilsin = Boolean(retail) && (!yagona || retail !== row.boshlangichRetail);
+            const wholesaleYuborilsin = Boolean(wholesale) && (!yagona || wholesale !== row.boshlangichWholesale);
+            return {
+              modificationId: row.modificationId,
+              retailPrice: retailYuborilsin ? retail : undefined,
+              wholesalePrice: wholesaleYuborilsin ? wholesale : undefined,
+              // Valyuta faqat yuborilayotgan narx uchun, har biri o'z valyutasida (eski umumiy `currency` endi faqat chakana narxniki).
+              ...(retailYuborilsin ? { retailCurrency: maydonValyutasi(row, "retailPrice") } : {}),
+              ...(wholesaleYuborilsin ? { wholesaleCurrency: maydonValyutasi(row, "wholesalePrice") } : {}),
+            };
+          })
         )
         .catch(() => null);
       await store.malumotlarniYuklash();
@@ -733,6 +769,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                {!yagona && (
                 <label className="flex items-center gap-2 text-xs font-semibold text-slate-500">
                   {t("yangiKirim.currency")}
                   <AppSelect aria-label={t("yangiKirim.currency")} value={kursBor ? narxValyutasi : "UZS"} onChange={(event) => setNarxValyutasi(event.target.value as Valyuta)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700">
@@ -740,6 +777,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                     <option value="USD" disabled={!kursBor}>USD</option>
                   </AppSelect>
                 </label>
+                )}
                 <button
                   type="button"
                   onClick={() => setYaratishOchiqUchun(qatorlar[qatorlar.length - 1]?.id ?? null)}
@@ -761,6 +799,14 @@ export default function YangiKirimModal({ onClose }: Props) {
             </div>
 
             {kursKerak && <p role="alert" className="mb-4 rounded-xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">{t("yangiKirim.errors.exchangeRateRequired")}</p>}
+            {yagona && tekshiriladiganlar.length > 0 && (
+              <p role="status" className="mb-4 rounded-xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                {tm("kirimValyutaRejimi.checkPrices", {
+                  currency: yagona,
+                  products: tekshiriladiganlar.map((row) => modificationNomi(store.modifikatsiyalar.find((item) => item.id === row.modificationId))).join(", "),
+                })}
+              </p>
+            )}
             <div className="mb-4">
               <ShtrixKodMaydoni
                 onSkan={(kod) => {
@@ -1116,12 +1162,15 @@ function MahsulotYaratishPanel({
           unitId,
           barcode: barcode.trim(),
         });
+        // Bir valyutali rejimda narxlar valyutasi aniq rejim valyutasida; ikki valyutada avvalgidek yuborilmaydi (backend defaultCurrency).
+        const yagona = yagonaValyuta();
         return modifikatsiyalarApi.yaratish(mahsulot.id, {
           barcode: barcode.trim(),
           price: {
             costPrice: Number(costPrice || 0),
             retailPrice: Number(retailPrice || 0),
             wholesalePrice: Number(wholesalePrice || 0),
+            ...(yagona ? { costCurrency: yagona, retailCurrency: yagona, wholesaleCurrency: yagona } : {}),
           },
         });
       });

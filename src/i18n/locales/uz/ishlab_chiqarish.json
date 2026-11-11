@@ -121,6 +121,7 @@
     "noMainOutput": "Kamida bitta asosiy mahsulot qatori kerak.",
     "linePrice": "Narxni kiriting.",
     "lineRate": "Dollardagi qator uchun kurs majburiy.",
+    "lineCurrencyMode": "Do'kon bitta valyutada ishlaydi: qator valyutasini do'kon valyutasiga o'zgartiring va narxni tekshiring.",
     "orderOrRecipe": "Retsept va tayyor mahsulot omborini tanlang.",
     "serialFormat": "Seriyada faqat A-Z, a-z, 0-9 va . _ - belgilari bo'ladi.",
     "noOutputs": "Kamida bitta mahsulot qatori kerak.",
@@ -218,6 +219,7 @@
     "estimate": "Taxminiy jami: {{summa}}",
     "fromRecipe": "Miqdorlarni retseptdan olish",
     "rawOnlyHint": "Faqat xomashyo hisoblanadi: elektr, ijara va boshqa xarajatlar kirmaydi.",
+    "usdOnlyRateHint": "Kalkulyatsiya so'mda hisoblanadi: dollardagi narx uchun kurs kiritiladi.",
     "addLine": "Qator qo'shish"
   },
   "orders": {

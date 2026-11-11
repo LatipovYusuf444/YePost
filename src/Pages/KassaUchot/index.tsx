@@ -18,6 +18,11 @@ import { useSearchParams } from "react-router-dom";
 import { barchaFinanceTransactionsHisoboti } from "@/api/tolovApi";
 import { cashOperationsApi } from "@/api/cashOperationsApi";
 import { shubhaliValyutaBilanBajarish } from "@/api/valyutaShubhasi";
+import { useYagonaValyuta } from "@/lib/valyuta";
+import { muvaffaqiyatXabari } from "@/lib/toast";
+import type { EskiTahrirMalumoti } from "./KassaEskiTahrir";
+import { almashtirishIzohi } from "@/lib/kassaTahriri";
+import { kunMatni } from "@/lib/hujjatSanasi";
 import { taqsimotniOqish } from "@/lib/qarzTaqsimoti";
 import { taqsimotXabariniKorsatish } from "./taqsimotXabari";
 import { kassaKirimApi, xarajatApi } from "@/api/financeApi";
@@ -110,6 +115,8 @@ const uiOperationTuri: Record<KassaAmaliyotTuri, CashOperationType> = {
 
 export default function KassaUchot() {
   const { t } = useTranslation(["kassa_uchot", "common"]);
+  // Bir valyutali rejim (Faqat so'm / Faqat dollar): jami faqat shu valyutada; boshqa valyutadagi (rejimdan oldingi) summa bo'lsa — u ham.
+  const yagonaValyuta = useYagonaValyuta();
   const [searchParams, setSearchParams] = useSearchParams();
   const boshlangichXaridorId = searchParams.get("customerId") || undefined;
   const sotuvniBekorQilishMumkin = useHujjatniBekorQilishMumkinmi("savdo");
@@ -325,15 +332,31 @@ export default function KassaUchot() {
     if (saqlashQulfi.current) return;
     saqlashQulfi.current = true;
     try {
-      await saqlashniBajarish(amaliyot);
+      return await saqlashniBajarish(amaliyot);
     } finally {
       saqlashQulfi.current = false;
     }
   }
 
-  async function saqlashniBajarish(amaliyot: KassaAmaliyoti) {
+  // Matn qaytarsa — oyna tepasida ko'rsatiladi (almashtirish zanjiri yarim yo'lda to'xtaganini kassir oynaning o'zida ko'rishi kerak).
+  async function saqlashniBajarish(amaliyot: KassaAmaliyoti): Promise<string | undefined> {
     setXatolik("");
     let tasdiqlanmagan: CashOperation | null = null;
+    // Almashtirishda (tasdiqlangan amaliyot tahriri) yangi amaliyot izohiga "KAS-000001 o'rniga: Summa … → …; Sabab: …" qo'shiladi:
+    // backend bekor qilish sababini va tahrirni saqlamaydi, izoh esa saqlanadi va oynada, tarixda ko'rinadi.
+    const almashtirishMatni = amaliyot.almashtiriladi
+      ? almashtirishIzohi({
+          eskiRaqam: amaliyot.almashtiriladi.raqam ?? "",
+          oldin: amaliyot.almashtiriladi.oldin ?? { summa: amaliyot.summa, valyuta: amaliyot.valyuta, kun: kunMatni(amaliyot.sana), tolovTuri: t(`channels.${amaliyot.kanal}`), turi: t(`types.${amaliyot.turi}`), kontragent: amaliyot.kontragent },
+          keyin: { summa: amaliyot.summa, valyuta: amaliyot.valyuta, kun: kunMatni(amaliyot.sana), tolovTuri: t(`channels.${amaliyot.kanal}`), turi: t(`types.${amaliyot.turi}`), kontragent: amaliyot.kontragent },
+          sabab: amaliyot.almashtiriladi.sabab !== t("amallar.replaceReason") ? amaliyot.almashtiriladi.sabab : undefined,
+          summaMatni: (summa, valyuta) => kassaSummasi(summa, valyuta),
+          matn: {
+            orniga: t("amallar.note.orniga"), summa: t("amallar.note.summa"), sana: t("amallar.note.sana"), tolovTuri: t("amallar.note.tolovTuri"),
+            turi: t("amallar.note.turi"), kontragent: t("amallar.note.kontragent"), sabab: t("amallar.note.sabab"),
+          },
+        })
+      : "";
     try {
       const paymentMethod: TolovUsuli =
         amaliyot.kanal === "bank" ? "BANK" : amaliyot.kanal === "ilova" ? "CARD" : "CASH";
@@ -347,7 +370,7 @@ export default function KassaUchot() {
         ...(amaliyot.kurs ? { rate: amaliyot.kurs } : {}),
         paymentMethod,
         name: amaliyot.nomi,
-        note: amaliyot.izoh || undefined,
+        note: [amaliyot.izoh, almashtirishMatni].filter(Boolean).join("\n") || undefined,
         branchId: amaliyot.backendBranchId,
         responsibleId: amaliyot.responsibleId,
         customerId: amaliyot.xaridorId,
@@ -362,11 +385,30 @@ export default function KassaUchot() {
       const saved: CashOperation = await shubhaliValyutaBilanBajarish((tana) =>
         mavjudId ? cashOperationsApi.yangilash(mavjudId, { ...payload, ...tana }) : cashOperationsApi.yaratish({ ...payload, ...tana })
       );
+      // Tasdiqlangan amaliyot tahriri (backend uni joyida o'zgartirmaydi): tuzatilgani qoralama bo'lib yaratildi — endi eskisi sabab bilan bekor
+      // qilinadi (ledger teskari yozuv, kontragent hisobi qaytadi), keyin pastda yangisi tasdiqlanadi. Bekor qilish o'tmasa yangi qoralama
+      // o'chiriladi: hech narsa o'zgarmaydi.
+      const eski = amaliyot.almashtiriladi;
+      if (eski && saved.status === "DRAFT") {
+        try {
+          await cashOperationsApi.bekorQilish(eski.id, eski.sabab);
+        } catch (error) {
+          // Yangi qoralama orqaga qaytariladi. U ham o'chmasa (masalan, o'chirish huquqi yo'q) — kassirga aniq aytiladi va ro'yxat yangilanadi.
+          const ochirildi = await cashOperationsApi.ochirish(saved.id).then(() => true, () => false);
+          if (!ochirildi) {
+            raqamManbasi.current = null;
+            await yuklash();
+            throw new Error(t("amallar.replaceCancelFailedDraftLeft", { yangi: saved.docNumber ?? "", xato: getApiErrorMessage(error) }));
+          }
+          throw new Error(t("amallar.replaceCancelFailed", { xato: getApiErrorMessage(error) }));
+        }
+      }
       if (amaliyot.holat === "tasdiqlangan" && saved.status === "DRAFT") {
         tasdiqlanmagan = saved;
         // Tasdiqlashda mijozning ochiq qarzlari eng eskisidan yopiladi: javobdagi `allocation` kassirga ko'rsatiladi.
         const tasdiq = await shubhaliValyutaBilanBajarish((tana) => cashOperationsApi.tasdiqlash(saved.id, tana), saved.docNumber);
         taqsimotXabariniKorsatish(tasdiq);
+        if (eski) muvaffaqiyatXabari(t("amallar.replaced", { eski: eski.raqam ?? "", yangi: tasdiq?.docNumber ?? saved.docNumber ?? "" }));
       }
       setKanal(amaliyot.kanal);
       setYonalish(amaliyot.yonalish);
@@ -378,11 +420,18 @@ export default function KassaUchot() {
       // Qoralama saqlangan, tasdiqlash o'tmagan ("Valyuta to'g'rimi?" ga "yo'q" yoki boshqa xato): oyna shu qoralamaga bog'lanadi —
       // qayta bosish ikkinchi hujjat yaratmaydi, ro'yxatda ham qoralama ko'rinadi.
       if (tasdiqlanmagan) {
-        setTahrirAmaliyot({ ...amaliyot, id: tasdiqlanmagan.id, holat: "qoralama", raqam: tasdiqlanmagan.docNumber, backendSource: "CASH_OPERATION", backendRefId: tasdiqlanmagan.id });
+        // Almashtirishda eski amaliyot allaqachon bekor qilingan: oyna endi yangi qoralamaga bog'lanadi (qayta bekor qilinmaydi).
+        setTahrirAmaliyot({ ...amaliyot, id: tasdiqlanmagan.id, holat: "qoralama", raqam: tasdiqlanmagan.docNumber, backendSource: "CASH_OPERATION", backendRefId: tasdiqlanmagan.id, almashtiriladi: undefined });
         raqamManbasi.current = null;
         await yuklash();
       }
-      setXatolik(getApiErrorMessage(error));
+      const matn =
+        tasdiqlanmagan && amaliyot.almashtiriladi
+          ? t("amallar.replaceConfirmFailed", { xato: getApiErrorMessage(error) })
+          : error instanceof Error && !("isAxiosError" in error) ? error.message : getApiErrorMessage(error);
+      setXatolik(matn);
+      // Almashtirish xatolari oynaning o'zida ham (sahifa xabari oyna ortida qoladi); oddiy xatolar avvalgidek maydon/toast orqali.
+      return amaliyot.almashtiriladi ? matn : undefined;
     }
   }
 
@@ -450,6 +499,58 @@ export default function KassaUchot() {
     }
   }
 
+  // "Amaliyot" oynasidagi amallar (TZ 11.11.2026). Server xatosi interceptor toastida ko'rinadi; muvaffaqiyatda ro'yxat (va "Jami") yangilanib
+  // oyna yopiladi.
+  async function oynadanBekorQilish(amaliyot: KassaAmaliyoti, sabab: string) {
+    const id = amaliyot.backendRefId;
+    if (!id || amaliyot.backendSource !== "CASH_OPERATION") return false;
+    try {
+      await cashOperationsApi.bekorQilish(id, sabab);
+    } catch {
+      raqamManbasi.current = null;
+      await yuklash();
+      return false;
+    }
+    muvaffaqiyatXabari(t("amallar.cancelled", { raqam: amaliyot.hujjatRaqami ?? amaliyot.raqam }));
+    setModalOchiq(false);
+    raqamManbasi.current = null;
+    await yuklash();
+    return true;
+  }
+
+  async function oynadanOchirish(amaliyot: KassaAmaliyoti) {
+    const id = amaliyot.backendRefId;
+    if (!id) return false;
+    try {
+      if (amaliyot.backendSource === "CASH_OPERATION") await cashOperationsApi.ochirish(id);
+      else if (amaliyot.backendSource === "CASH_IN") await kassaKirimApi.ochirish(id);
+      else if (amaliyot.backendSource === "EXPENSE") await xarajatApi.ochirish(id);
+      else return false;
+    } catch {
+      raqamManbasi.current = null;
+      await yuklash();
+      return false;
+    }
+    muvaffaqiyatXabari(t("amallar.deleted", { raqam: amaliyot.hujjatRaqami ?? amaliyot.raqam }));
+    setModalOchiq(false);
+    raqamManbasi.current = null;
+    await yuklash();
+    return true;
+  }
+
+  // Eski kirim/xarajat yozuvi: PATCH /finance/cash-ins|expenses/:id. Xato rad etiladi — oyna maydonlariga bog'lanadi.
+  async function eskiYozuvniSaqlash(amaliyot: KassaAmaliyoti, malumot: EskiTahrirMalumoti) {
+    const id = amaliyot.backendRefId;
+    if (!id) return;
+    if (amaliyot.backendSource === "CASH_IN") await kassaKirimApi.yangilash(id, malumot);
+    else if (amaliyot.backendSource === "EXPENSE") await xarajatApi.yangilash(id, malumot);
+    else return;
+    muvaffaqiyatXabari(t("amallar.saved"));
+    setModalOchiq(false);
+    raqamManbasi.current = null;
+    await yuklash();
+  }
+
   // Bo'limga qarab modalning boshlang'ich turi.
   const boshlangichTuri: KassaAmaliyotTuri = yonalish === "tushum" ? "boshqa_kirim" : "xarajat";
 
@@ -494,7 +595,10 @@ export default function KassaUchot() {
   const dastlabkiYuklanish = yuklanmoqda && amaliyotlar.length === 0;
   // Dollardagi operatsiyalar so'mga qo'shilmaydi: jami valyutalar bo'yicha alohida ko'rsatiladi.
   const summaryField = tushum ? "income" : "expense";
-  const jamiMatni = `${cashAmount(summary?.UZS?.[summaryField], "UZS")} · ${cashAmount(summary?.USD?.[summaryField], "USD")}`;
+  const jamiMatni = (["UZS", "USD"] as const)
+    .filter((valyuta) => !yagonaValyuta || valyuta === yagonaValyuta || Number(summary?.[valyuta]?.[summaryField] ?? 0) !== 0)
+    .map((valyuta) => cashAmount(summary?.[valyuta]?.[summaryField], valyuta))
+    .join(" · ");
 
   const ustunlar: Ustun<KassaAmaliyoti>[] = [
     {
@@ -718,6 +822,9 @@ export default function KassaUchot() {
           boshlangichXaridorId={boshlangichXaridorId}
           onYopish={() => { setModalOchiq(false); if (boshlangichXaridorId) setSearchParams({}, { replace: true }); }}
           onSaqlash={saqlash}
+          onBekorQilish={oynadanBekorQilish}
+          onOchirish={oynadanOchirish}
+          onEskiSaqlash={eskiYozuvniSaqlash}
         />
       )}
         </>

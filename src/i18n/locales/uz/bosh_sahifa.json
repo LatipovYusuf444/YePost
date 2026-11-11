@@ -20,14 +20,25 @@
     "autoDiscount": "Chegirma: −{{summa}}",
     "autoDiscountEach": "({{bir}} × {{soni}} dona)"
   },
+  "productEdit": {
+    "edit": "Mahsulotni tahrirlash: {{name}}",
+    "view": "Mahsulotni ko'rish: {{name}}",
+    "notFound": "Mahsulot topilmadi",
+    "loadFailed": "Mahsulot ma'lumotlarini yuklab bo'lmadi",
+    "cartUpdated": "Savatchadagi narx va nom yangilandi",
+    "cartNotUpdated": "Mahsulot saqlandi, lekin savatchadagi narxni yangilab bo'lmadi — mahsulotni qayta qo'shing"
+  },
   "jadval": {
     "unnamed": "Nomsiz mahsulot",
     "noPriceBadge": "Narx yo'q",
+    "somPriceBadge": "Narx so'mda",
     "stockShort": "qoldiq",
     "priceShort": "narx",
     "errors": {
       "noStock": "Bu mahsulotdan omborda qoldiq yo'q (savatchada butun qoldiq bor)",
-      "noPrice": "Mahsulot narxi belgilanmagan yoki dollar kursi kiritilmagan"
+      "noPrice": "Mahsulot narxi belgilanmagan yoki dollar kursi kiritilmagan",
+      "noPriceUsd": "Mahsulot narxi belgilanmagan",
+      "somPrice": "Mahsulot narxi so'mda kiritilgan. «Faqat dollar» rejimida sotish uchun narxni dollarda kiriting"
     },
     "loadErrors": {
       "stock": "Ombor qoldig'i va katalog yuklanmadi",
@@ -83,6 +94,7 @@
     "discountPercentPlaceholder": "Foizni kiriting (0–100)",
     "discountModeSum": "so'm",
     "discountConverted": "= {{summa}} (so'mga avtomatik aylantiriladi)",
+    "discountConvertedUsd": "= {{summa}} (dollarga avtomatik aylantiriladi)",
     "autoDiscountLine": "Narx chegirmasi (avtomatik)",
     "markupLine": "Narx ustamasi (qo'lda)",
     "extraDiscountLine": "Umumiy chegirma",
@@ -143,7 +155,8 @@
     "receivedTotal": "Jami qabul qilinadi",
     "change": "Qaytim (so'mda beriladi)",
     "debtLeft": "Qarz qoladi",
-    "roundChange": "Qaytimni minglikkacha yaxlitlash"
+    "roundChange": "Qaytimni minglikkacha yaxlitlash",
+    "changePlain": "Qaytim"
   },
   "errors": {
     "loadFailed": "Bosh sahifa ma'lumotlari olinmadi",
@@ -157,6 +170,9 @@
     "paymentSuccess": "To'lov muvaffaqiyatli amalga oshirildi",
     "finalizeFailed": "Sotuvni yakunlab bo'lmadi",
     "selectCustomerFirst": "Avval mijoz tanlang",
-    "partialSuccess": "{{total}} ta ombordan {{done}} tasi tasdiqlandi, qolgan mahsulotlar savatchada qoldi: {{error}}"
+    "partialSuccess": "{{total}} ta ombordan {{done}} tasi tasdiqlandi, qolgan mahsulotlar savatchada qoldi: {{error}}",
+    "cartCurrencyChanged": "Valyuta rejimi o'zgardi — savatcha tozalandi. Mahsulotlarni qayta qo'shing.",
+    "noPriceInCart": "{{name}}: narx yo'q. Sotuv narxini kiriting yoki mahsulotni savatchadan olib tashlang.",
+    "somPriceInCart": "{{name}}: ulgurji narx so'mda kiritilgan. «Faqat dollar» rejimida chakana narxda soting yoki ulgurji narxni dollarda kiriting."
   }
 }

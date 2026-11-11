@@ -50,17 +50,18 @@ function birlashgan(narx) {
   return qoldiqBirlashtirish([stock], [katalog])[0];
 }
 
-test('wholesaleCurrency yuborilmagan, lekin kurs va wholesalePriceUzs bor: ulgurji so‘mda 14 173 (1.19 emas)', () => {
+test('wholesaleCurrency yuborilmagan, lekin kurs va wholesalePriceUzs bor: ulgurji so‘mda 14 172.9 (1.19 emas, yaxlitlanmagan)', () => {
   const bir = birlashgan({ retailPrice: 13500, wholesalePrice: 1.19, rate: 11910, retailPriceUzs: 13500, wholesalePriceUzs: 14173 });
   assert.equal(qoldiqNarxi(bir, 'chakana'), 13500);
-  assert.equal(qoldiqNarxi(bir, 'ulgurji'), 14173);
+  // 1.19 × 11 910 = 14 172.9 — backendning yaxlitlangan 14 173 si emas
+  assert.equal(qoldiqNarxi(bir, 'ulgurji'), 14172.9);
   // qator dollarda yuboriladi: asl dollar narx va kurs saqlanadi
   assert.deepEqual(dollarMalumoti(bir), { valyuta: 'USD', aslNarx: 0, aslUlgurjiNarx: 1.19, kurs: 11910 });
 });
 
 test('valyuta to‘liq yuborilgan bo‘lsa natija o‘zgarmaydi; so‘mdagi ulgurji narx dollar deb olinmaydi', () => {
   const toliq = birlashgan({ retailPrice: 13500, wholesalePrice: 1.19, retailCurrency: 'UZS', wholesaleCurrency: 'USD', rate: 11910, retailPriceUzs: 13500, wholesalePriceUzs: 14173 });
-  assert.equal(qoldiqNarxi(toliq, 'ulgurji'), 14173);
+  assert.equal(qoldiqNarxi(toliq, 'ulgurji'), 14172.9);
   const som = birlashgan({ retailPrice: 13500, wholesalePrice: 12000, rate: 11910, retailPriceUzs: 13500, wholesalePriceUzs: 12000 });
   assert.equal(qoldiqNarxi(som, 'ulgurji'), 12000);
   assert.deepEqual(dollarMalumoti(som), {});

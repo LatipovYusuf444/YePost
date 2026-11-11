@@ -1,14 +1,20 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
+  Ban,
   Banknote,
   Clock3,
+  ExternalLink,
+  Info,
   Landmark,
   Lock,
   MessageSquare,
   PackagePlus,
+  PenLine,
   Smartphone,
+  Trash2,
   X,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import { useOzgarishBormi } from "@/hooks/useOzgarishBormi";
@@ -17,7 +23,7 @@ import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
 import XatoliMaydon from "@/Components/common/XatoliMaydon";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import { belgidanKeyingiXato, xatoBelgisi, type XatoMaydonQoidasi } from "@/lib/maydonXatolari";
-import { bugungiToshkentKuni, toshkentKuni } from "@/lib/hujjatSanasi";
+import { bugungiToshkentKuni, kunMatni, toshkentKuni } from "@/lib/hujjatSanasi";
 import { ENG_KAM_KURS, kursJudaKichik } from "@/lib/kursChegarasi";
 import Tanlov from "@/Pages/XaridorUchot/Tanlov";
 import { foydalanuvchilarApi } from "@/api/accountsApi";
@@ -26,6 +32,11 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useValyutaStore, valyutaKodi, type Valyuta } from "@/lib/valyuta";
 import KassaAmaliyotKorinishi from "./KassaAmaliyotKorinishi";
+import KassaEskiTahrir, { type EskiTahrirMalumoti } from "./KassaEskiTahrir";
+import { kassaAmallari, type AmalHolati } from "@/lib/kassaTahriri";
+import { rolniNormallashtirish } from "@/lib/roles";
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
+import { useDavrStore } from "@/store/davrStore";
 import QarzTaqsimotiPaneli from "./QarzTaqsimotiPaneli";
 import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali } from "./types";
 import {
@@ -82,7 +93,14 @@ type Props = {
   boshlangichXaridorId?: string;
   onYopish: () => void;
   // Ota so'rovni yuborib xatoni o'zi ko'rsatadi; Promise qaytarsa, server xatosi maydonlarga ham bog'lanadi.
-  onSaqlash: (amaliyot: KassaAmaliyoti) => void | Promise<void>;
+  // Matn qaytarsa (masalan, almashtirish zanjiri yarim yo'lda to'xtadi) — oynaning tepasida ko'rsatiladi.
+  onSaqlash: (amaliyot: KassaAmaliyoti) => void | Promise<void | string>;
+  /** Tasdiqlangan amaliyotni sabab bilan bekor qilish (POST …/cancel); muvaffaqiyatda `true` (ota ro'yxatni yangilab oynani yopadi). */
+  onBekorQilish?: (amaliyot: KassaAmaliyoti, sabab: string) => Promise<boolean>;
+  /** Qoralama yoki bekor qilingan amaliyotni (eski kirim/xarajatni ham) o'chirish (DELETE). */
+  onOchirish?: (amaliyot: KassaAmaliyoti) => Promise<boolean>;
+  /** Eski kirim/xarajat yozuvini tahrirlash (PATCH /finance/cash-ins|expenses/:id); xato bo'lsa rad etadi. */
+  onEskiSaqlash?: (amaliyot: KassaAmaliyoti, malumot: EskiTahrirMalumoti) => Promise<void>;
 };
 
 // balans — mijoz hisobi (oldindan to'langan pul) va uning valyutasi (valyuta rejimida dollar).
@@ -98,8 +116,12 @@ export default function KassaAmaliyotModal({
   boshlangichXaridorId,
   onYopish,
   onSaqlash,
+  onBekorQilish,
+  onOchirish,
+  onEskiSaqlash,
 }: Props) {
   const { t } = useTranslation(["kassa_uchot", "common"]);
+  const navigate = useNavigate();
   const kanallar: { kalit: KassaKanali; nom: string; icon: typeof Banknote }[] = (
     ["naqd", "bank", "ilova"] as KassaKanali[]
   ).map((kalit) => ({ kalit, nom: t(`channels.${kalit}`), icon: kanalIkonlari[kalit] }));
@@ -130,6 +152,9 @@ export default function KassaAmaliyotModal({
   const rejimYoniq = useValyutaStore((holat) => holat.rejimYoniq);
   const kursBor = useValyutaStore((holat) => holat.kursBor);
   const kunlikKurs = useValyutaStore((holat) => holat.kurs);
+  // Bir valyutali rejim (Faqat so'm / Faqat dollar): pul ham, yopiladigan qarz ham shu valyutada; tanlov va kurs yashirin.
+  // Bu rejimda `asosiyValyuta` doim rejim valyutasi (useYagonaValyuta() bilan bir xil; do'kon selektori orqali o'qiladi).
+  const yagonaValyuta = useValyutaStore((holat): Valyuta | null => (holat.rejimYoniq ? null : holat.asosiyValyuta));
   const [valyuta, setValyuta] = useState<Valyuta>(boshlangich?.valyuta ?? "UZS");
   const [kursMatni, setKursMatni] = useState(boshlangich?.kurs ? String(boshlangich.kurs) : "");
   // Yetkazib beruvchiga to'lovda qaysi valyutadagi qarz yopilishi (`settleCurrency`); tanlanmasa to'lov valyutasi bilan bir xil.
@@ -173,17 +198,41 @@ export default function KassaAmaliyotModal({
   const mavjudHolat = boshlangich?.holat ?? "qoralama";
   // Yangi hujjat darrov tahrirlanadi; mavjudi avval ko'rish rejimida ochiladi.
   const [tahrirRejim, setTahrirRejim] = useState(boshlangich === null);
+  // Tasdiqlangan amaliyotni tahrirlash (yangi tuzatilgan amaliyot + eskisini bekor qilish) va eski kirim/xarajat yozuvi tahriri.
+  const [almashtirish, setAlmashtirish] = useState(false);
+  const [almashtirishSababi, setAlmashtirishSababi] = useState("");
+  const [eskiTahrir, setEskiTahrir] = useState(false);
+  const [eskiOzgarishBor, setEskiOzgarishBor] = useState(false);
+  // Almashtirish tasdiqlashda to'xtasa oyna yangi qoralamaga bog'lanadi: endi u oddiy qoralama tahriri (PATCH + tasdiqlash), qayta almashtirilmaydi.
+  useEffect(() => {
+    if (boshlangich?.holat !== "tasdiqlangan") setAlmashtirish(false);
+  }, [boshlangich?.backendRefId, boshlangich?.holat]);
+  const [amalBajarilmoqda, setAmalBajarilmoqda] = useState(false);
+  // Oynadagi amallar: davr yopilganligi (Sozlamalar → Davrni yopish) va huquq bo'yicha. Tasdiqlanganni tahrirlash — direktor yoki admin
+  // (backendda alohida grant yo'q); qoralamani yaratgan kassir avvalgidek tahrirlaydi.
+  const davr = useDavrStore((holat) => holat.holat);
+  const davrniYuklash = useDavrStore((holat) => holat.yuklash);
+  useEffect(() => { if (boshlangich) void davrniYuklash(); }, [boshlangich, davrniYuklash]);
+  const rol = rolniNormallashtirish(joriyProfil?.role);
+  const amallar = kassaAmallari({
+    manba: boshlangich?.backendSource,
+    holat: boshlangich?.holat ?? "tasdiqlangan",
+    refId: boshlangich?.backendRefId,
+    kun: toshkentKuni(boshlangich?.sana),
+    closedUntil: davr?.closedUntil,
+    tahrirRuxsati: rol === "DIREKTOR" || rol === "ADMIN",
+  });
   // Saqlanmagan o'zgarish: faqat tahrir rejimida (ko'rish rejimida hech narsa o'zgarmaydi). Mas'ul va kurs avtomatik to'ldiriladi — hisobga olinmaydi.
   const ozgarishBor = useOzgarishBormi({ turi, kanal, nomi, xaridorId, saleId, supplierId, employeeId, kontragent, summa, sana, izoh, valyuta }, tahrirRejim);
   const readonly =
     Boolean(boshlangich?.readonly) ||
-    mavjudHolat === "tasdiqlangan" ||
+    (mavjudHolat === "tasdiqlangan" && !almashtirish) ||
     mavjudHolat === "bekor_qilingan" ||
     !tahrirRejim;
 
   // Mavjud amaliyotni ko'rish: modal tarkibiga qarab o'lchamlanadi (pastda bo'sh joy qolmaydi).
   // Yaratish va tahrirlash formasi avvalgidek butun balandlikda.
-  const korishRejimi = Boolean(boshlangich) && readonly;
+  const korishRejimi = Boolean(boshlangich) && readonly && !eskiTahrir;
 
   const yonalish = turYonalishi[turi];
   const tushum = yonalish === "tushum";
@@ -197,7 +246,10 @@ export default function KassaAmaliyotModal({
   const summaSoni = Number(summa) || 0;
   // Kurs kiritilmagan kunda ham $ tanlovi qoladi (aks holda $100 "100 so'm" bo'lib saqlanardi); saqlash esa kurs kiritilguncha bloklanadi.
   const valyutaTanlovi = rejimYoniq && valyutaTanlanadiganTur(turi);
-  const tanlanganValyuta: Valyuta = valyutaTanlovi ? valyuta : "UZS";
+  // Valyuta tanlanmaydigan turdagi mavjud hujjat (masalan "Faqat dollar" davrida $ da yozilgan ish haqi) o'z valyutasini saqlaydi.
+  const tanlanganValyuta: Valyuta = yagonaValyuta ?? (valyutaTanlovi ? valyuta : boshlangich?.valyuta ?? "UZS");
+  // Rejim almashguncha boshqa valyutada saqlangan qoralama endi rejim valyutasida saqlanadi: kassir summani tekshirsin.
+  const eskiValyuta = yagonaValyuta && boshlangich?.valyuta && boshlangich.valyuta !== yagonaValyuta ? boshlangich.valyuta : null;
   // Hisob valyutasi: mijozda — uning hisobi valyutasi (faqat ko'rsatish uchun); yetkazib beruvchida — kassir tanlagan qarz valyutasi.
   const hisobVal: Valyuta | null =
     partiya === "xaridor"
@@ -205,14 +257,15 @@ export default function KassaAmaliyotModal({
         ? tanlanganXaridor.balansValyutasi
         : null
       : partiya === "yetkazib"
-        ? (qarzVal ?? tanlanganValyuta)
+        ? (yagonaValyuta ?? qarzVal ?? tanlanganValyuta)
         : null;
   const kursKerak = valyutaTanlovi && hisobVal !== null && tanlanganValyuta !== hisobVal;
   const kiritilganKurs = Number(kursMatni.replace(",", ".")) || 0;
   const amalKurs = kiritilganKurs > 0 ? kiritilganKurs : kunlikKurs;
   // Summaning hisob valyutasidagi taxminiy qiymati (aniq qiymatni backend tasdiqlaganda hisoblaydi).
   const hisoblanganSumma =
-    hisobVal === null
+    // Bir valyutali rejimda kurs so'ralmaydi: boshqa valyutadagi (eski) mijoz hisobiga taxmin ko'rsatilmaydi.
+    hisobVal === null || (yagonaValyuta !== null && hisobVal !== tanlanganValyuta)
       ? null
       : !kursKerak
         ? summaSoni
@@ -254,7 +307,7 @@ export default function KassaAmaliyotModal({
     if (partiya === "yetkazib" && !supplierId) tekshiruv.supplierId = t("modal.errors.selectSupplier");
     if (!summa.trim() || Number.isNaN(Number(summa)) || Number(summa) <= 0) tekshiruv.amount = t("modal.errors.invalidAmount");
     if (izohMajburiy(turi) && !izoh.trim()) tekshiruv.note = t("modal.errors.commentRequired");
-    if (tanlanganValyuta === "USD" && !kursBor && !(kursKerak && kiritilganKurs > 0)) tekshiruv.amount = t("modal.errors.dailyRateMissing");
+    if (tanlanganValyuta === "USD" && !yagonaValyuta && !kursBor && !(kursKerak && kiritilganKurs > 0)) tekshiruv.amount = t("modal.errors.dailyRateMissing");
     if (kursKerak && kursMatni.trim() && !(kiritilganKurs > 0)) tekshiruv.rate = t("modal.errors.invalidRate");
     else if (kursKerak && kursJudaKichik(kiritilganKurs)) tekshiruv.rate = t("modal.errors.rateTooLow", { min: ENG_KAM_KURS.toLocaleString("uz-UZ") });
     if (Object.keys(tekshiruv).length) {
@@ -289,9 +342,11 @@ export default function KassaAmaliyotModal({
       nomi: nomi.trim() || t(`types.${turi}`),
       kontragent: yakuniyKontragent,
       summa: Number(summa),
-      valyuta: valyutaTanlovi ? tanlanganValyuta : undefined,
+      // Bir valyutali rejimda har qanday amal rejim valyutasida aniq yuboriladi (boshqa valyutani backend rad etadi).
+      // Almashtirishda yangi hujjat yaratiladi: valyuta doim aniq (yuborilmasa backend so'm qo'yardi — $500 "500 so'm" bo'lib qolardi).
+      valyuta: valyutaTanlovi || yagonaValyuta || almashtirish ? tanlanganValyuta : undefined,
       // `settleCurrency` faqat yetkazib beruvchiga to'lovda yuboriladi; mijoz hisobida backend uni o'zi qo'yadi.
-      hisobValyutasi: valyutaTanlovi && partiya === "yetkazib" && hisobVal ? hisobVal : undefined,
+      hisobValyutasi: (valyutaTanlovi || (yagonaValyuta && valyutaTanlanadiganTur(turi))) && partiya === "yetkazib" && hisobVal ? hisobVal : undefined,
       kurs: valyutaTanlovi && kursKerak && kiritilganKurs > 0 ? kiritilganKurs : undefined,
       // Faqat kun yuboriladi (YYYY-MM-DD): bugun — hozirgi vaqt, o'tgan kun — shu kunning 23:59:59 (Toshkent).
       sana: sana || bugungiToshkentKuni(),
@@ -301,10 +356,33 @@ export default function KassaAmaliyotModal({
       backendRefId: boshlangich?.backendRefId,
       saleId: turi === "xaridor_tolovi" ? saleId || undefined : boshlangich?.saleId,
       purchaseId: boshlangich?.purchaseId,
+      // Filial saqlanadi (almashtirishda yangi hujjat eski hujjat filialida yaratiladi).
+      backendBranchId: boshlangich?.backendBranchId,
       readonly: boshlangich?.readonly,
+      // Tasdiqlangan amaliyot tahriri: yangi amaliyot yaratiladi (backendSource/backendRefId'siz), eskisi bekor qilinadi.
+      ...(almashtirish && mavjudHolat === "tasdiqlangan" && boshlangich?.backendRefId
+        ? {
+            backendSource: undefined,
+            backendRefId: undefined,
+            almashtiriladi: {
+              id: boshlangich.backendRefId,
+              raqam: boshlangich.hujjatRaqami ?? boshlangich.raqam,
+              sabab: almashtirishSababi.trim() || t("amallar.replaceReason"),
+              oldin: {
+                summa: boshlangich.summa,
+                valyuta: boshlangich.valyuta,
+                kun: kunMatni(boshlangich.sana),
+                tolovTuri: t(`channels.${boshlangich.kanal}`),
+                turi: t(`types.${boshlangich.turi}`),
+                kontragent: boshlangich.kontragent,
+              },
+            },
+          }
+        : {}),
     }));
     try {
-      await jarayon;
+      const natija = await jarayon;
+      if (typeof natija === "string" && natija) setXato(natija);
     } finally {
       saqlashQulfi.current = false;
       setSaqlanmoqda(false);
@@ -313,8 +391,62 @@ export default function KassaAmaliyotModal({
     if (tafsilot !== undefined) fx.serverdan(tafsilot);
   }
 
+  // Tasdiqlash oynalaridagi nom: "KAS-000001 (−4 500 000 so'm)".
+  const hujjatNomi = boshlangich
+    ? `${boshlangich.hujjatRaqami ?? boshlangich.raqam} (${boshlangich.yonalish === "tushum" ? "+" : "−"}${kassaSummasi(boshlangich.summa, boshlangich.valyuta)})`
+    : "";
+  // Tugma o'chiq bo'lsa sababi tooltip'da (davr yopilgan yoki huquq yo'q).
+  const amalSababi = (holat: AmalHolati) =>
+    holat.sabab === "davrYopilgan"
+      ? t("amallar.periodClosedHint", { kun: kunMatni(davr?.closedUntil) })
+      : holat.sabab === "ruxsatYoq"
+        ? t("amallar.noPermission")
+        : undefined;
+
+  function tahrirniBoshlash() {
+    if (!amallar.tahrir.mumkin) return;
+    if (amallar.tahrirUsuli === "eski") {
+      setEskiTahrir(true);
+      return;
+    }
+    setAlmashtirish(amallar.tahrirUsuli === "almashtirish");
+    setTahrirRejim(true);
+  }
+
+  async function bekorQilish() {
+    if (!boshlangich || !onBekorQilish || !amallar.bekor.mumkin || amalBajarilmoqda) return;
+    const javob = await tasdiqSorash(t("amallar.cancelQuestion", { nom: hujjatNomi }), { sabab: true, ha: t("amallar.cancel"), ohang: "sariq" });
+    if (!javob.rozi) return;
+    setAmalBajarilmoqda(true);
+    try {
+      await onBekorQilish(boshlangich, javob.sabab);
+    } finally {
+      setAmalBajarilmoqda(false);
+    }
+  }
+
+  async function ochirish() {
+    if (!boshlangich || !onOchirish || !amallar.ochirish.mumkin || amalBajarilmoqda) return;
+    if (!(await tasdiqSorash(t("amallar.deleteQuestion", { nom: hujjatNomi }), { ochirish: true })).rozi) return;
+    setAmalBajarilmoqda(true);
+    try {
+      await onOchirish(boshlangich);
+    } finally {
+      setAmalBajarilmoqda(false);
+    }
+  }
+
+  function manbaniOchish() {
+    const havola = amallar.havola;
+    if (!havola) return;
+    onYopish();
+    navigate(havola.tur === "sotuv" ? `/savdo?sotuv=${encodeURIComponent(havola.id)}` : `/savdo?tab=qaytarish&qaytarish=${encodeURIComponent(havola.id)}`);
+  }
+
+  const amalTugmasi = "inline-flex h-11 items-center gap-2 rounded-2xl px-4 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-50";
+
   return (
-    <AppModal onClose={onYopish} ozgarishBor={ozgarishBor} className={`${korishRejimi ? "!items-center" : "!items-stretch"} !p-3 sm:!p-5 sm:!pl-[88px]`}>
+    <AppModal onClose={onYopish} ozgarishBor={ozgarishBor || (eskiTahrir && eskiOzgarishBor)} className={`${korishRejimi ? "!items-center" : "!items-stretch"} !p-3 sm:!p-5 sm:!pl-[88px]`}>
       <div className={`relative flex min-h-0 w-full ${korishRejimi ? "max-h-full max-w-[1120px]" : ""}`}>
         {/* Modaldan chiqib turadigan yopish (X) — chap chetда */}
         <button
@@ -363,16 +495,41 @@ export default function KassaAmaliyotModal({
           {/* O'ngda (tepada) — faqat ko'rish rejimida.
               Qoralama → Tahrirlash; Tasdiqlangan → "Bekor qilish" (tasdiqlashni bekor
               qilib, o'sha oynada tahrirlashga o'tadi). Yopish faqat chapdagi X. */}
-          {!boshlangich?.readonly && !tahrirRejim && mavjudHolat === "qoralama" &&
-            (
-              <button
-                type="button"
-                onClick={() => setTahrirRejim(true)}
-                className="h-12 rounded-2xl bg-[#2563EB] px-6 text-sm font-black text-white shadow-lg shadow-orange-100 hover:bg-orange-600"
-              >
-                {t("common:actions.edit")}
-              </button>
-            )}
+          {/* Ko'rish rejimidagi amallar: Tahrirlash / Bekor qilish / O'chirish; savdo va qaytarish qatorida — o'sha hujjatni ochish havolasi.
+              Davr yopilgan yoki huquq yo'q bo'lsa tugma ko'rinadi, lekin o'chiq va sababi tooltip'da. */}
+          {boshlangich && korishRejimi && (
+            <div className="flex flex-wrap items-center justify-end gap-2" data-testid="kassa-amallari">
+              {amallar.havola && (
+                <button type="button" onClick={manbaniOchish} title={t("amallar.linkHint")} className={`${amalTugmasi} border border-orange-200 bg-white text-[#2563EB] hover:bg-orange-50`}>
+                  <ExternalLink size={16} aria-hidden />
+                  {t(amallar.havola.tur === "sotuv" ? "amallar.openSale" : "amallar.openReturn")}
+                </button>
+              )}
+              {amallar.tahrir.korinadi && (
+                <button type="button" onClick={tahrirniBoshlash} disabled={!amallar.tahrir.mumkin || amalBajarilmoqda} title={amalSababi(amallar.tahrir)} className={`${amalTugmasi} bg-[#2563EB] text-white shadow-lg shadow-orange-100 enabled:hover:bg-[#1D4ED8]`}>
+                  <PenLine size={16} aria-hidden />
+                  {t("common:actions.edit")}
+                </button>
+              )}
+              {amallar.bekor.korinadi && onBekorQilish && (
+                <button type="button" onClick={() => void bekorQilish()} disabled={!amallar.bekor.mumkin || amalBajarilmoqda} title={amalSababi(amallar.bekor)} className={`${amalTugmasi} border border-amber-200 bg-amber-50 text-amber-700 enabled:hover:bg-amber-100`}>
+                  <Ban size={16} aria-hidden />
+                  {t("amallar.cancel")}
+                </button>
+              )}
+              {amallar.ochirish.korinadi && onOchirish && (
+                <button type="button" onClick={() => void ochirish()} disabled={!amallar.ochirish.mumkin || amalBajarilmoqda} title={amalSababi(amallar.ochirish)} className={`${amalTugmasi} border border-red-200 bg-white text-red-600 enabled:hover:bg-red-50`}>
+                  <Trash2 size={16} aria-hidden />
+                  {t("amallar.delete")}
+                </button>
+              )}
+              {[amallar.tahrir, amallar.bekor, amallar.ochirish].some((holat) => holat.sabab === "davrYopilgan") && (
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-500" title={t("amallar.periodClosedHint", { kun: kunMatni(davr?.closedUntil) })}>
+                  <Lock size={13} aria-hidden /> {t("amallar.periodClosed")}
+                </span>
+              )}
+            </div>
+          )}
         </header>
 
         <div className="scrollbar-orange min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-8">
@@ -386,10 +543,36 @@ export default function KassaAmaliyotModal({
             </div>
           )}
 
-          {boshlangich && korishRejimi ? (
+          {boshlangich && eskiTahrir && onEskiSaqlash ? (
+            <KassaEskiTahrir
+              amaliyot={boshlangich}
+              onSaqlash={(malumot) => onEskiSaqlash(boshlangich, malumot)}
+              onBekor={() => { setEskiTahrir(false); setEskiOzgarishBor(false); }}
+              onOzgarish={setEskiOzgarishBor}
+            />
+          ) : boshlangich && korishRejimi ? (
             // Mavjud amaliyotni ko'rish: o'chirilgan forma o'rniga alohida ko'rinish (yaratish/tahrirlash formasi o'zgarmagan).
             <KassaAmaliyotKorinishi amaliyot={boshlangich} onYopish={onYopish} />
           ) : (
+          <>
+          {almashtirish && boshlangich && (
+            <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3" data-testid="kassa-almashtirish">
+              <p className="flex items-start gap-2 text-sm font-semibold leading-6 text-amber-800">
+                <Info size={17} aria-hidden className="mt-0.5 shrink-0 text-amber-600" />
+                {t("amallar.replaceNotice", { raqam: boshlangich.hujjatRaqami ?? boshlangich.raqam })}
+              </p>
+              <label className="mt-3 grid gap-1.5 text-xs font-bold text-amber-800">
+                {t("amallar.replaceReasonLabel")}
+                <input
+                  value={almashtirishSababi}
+                  onChange={(event) => setAlmashtirishSababi(event.target.value)}
+                  maxLength={500}
+                  placeholder={t("amallar.replaceReason")}
+                  className={`${maydonKlass} bg-white`}
+                />
+              </label>
+            </div>
+          )}
           <fieldset disabled={readonly} className="m-0 grid gap-5 border-0 p-0 xl:grid-cols-2">
             {/* --- Chap: pul tushumi haqida --- */}
             <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
@@ -561,7 +744,7 @@ export default function KassaAmaliyotModal({
 
                 {/* Summa */}
                 <XatoliMaydon xato={fx.xato("amount")}>
-                  <Maydon label={valyutaTanlovi ? t("modal.amountLabelCurrency", { valyuta: tanlanganValyuta === "USD" ? "$" : t("modal.currencyUzs") }) : t("modal.amountLabel")}>
+                  <Maydon label={valyutaTanlovi || yagonaValyuta === "USD" ? t("modal.amountLabelCurrency", { valyuta: tanlanganValyuta === "USD" ? "$" : t("modal.currencyUzs") }) : t("modal.amountLabel")}>
                     <SummaMaydoni
                       kasr={tanlanganValyuta === "USD" ? 2 : 0}
                       value={summa}
@@ -569,6 +752,14 @@ export default function KassaAmaliyotModal({
                       placeholder={tanlanganValyuta === "USD" ? "100" : "450 000"}
                       className={maydonKlass}
                     />
+                    {eskiValyuta && (
+                      <span className="block text-xs font-semibold text-amber-600">
+                        {t("modal.modeCurrencyChanged", {
+                          eski: eskiValyuta === "USD" ? "$" : t("modal.currencyUzs"),
+                          yangi: tanlanganValyuta === "USD" ? "$" : t("modal.currencyUzs"),
+                        })}
+                      </span>
+                    )}
                   </Maydon>
                 </XatoliMaydon>
 
@@ -679,19 +870,20 @@ export default function KassaAmaliyotModal({
               </section>
             </div>
           </fieldset>
+          </>
           )}
         </div>
 
         {tahrirRejim && (
           <footer className="flex shrink-0 flex-col-reverse gap-3 border-t border-orange-100 bg-white/75 px-5 py-4 sm:flex-row sm:justify-end sm:px-8">
-            <button
+            {!almashtirish && <button
               type="button"
               onClick={() => void yubor(false)}
               disabled={saqlanmoqda}
               className="h-12 disabled:cursor-not-allowed disabled:opacity-60 rounded-2xl border border-orange-300 bg-white px-7 text-sm font-black text-orange-600 hover:bg-orange-50"
             >
               {t("common:actions.save")}
-            </button>
+            </button>}
             <button
               type="button"
               onClick={() => void yubor(true)}

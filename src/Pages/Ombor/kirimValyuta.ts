@@ -17,6 +17,17 @@ export function kirimHujjatValyutasi(rows: ReadonlyArray<{ currency: Valyuta }>)
   return rows.length > 0 && rows.every((row) => row.currency === "USD") ? "USD" : "UZS";
 }
 
+/**
+ * Bir valyutali rejimda (Faqat so'm / Faqat dollar, `yagona`) kirim narxlari shu valyutada yoziladi. Katalogdagi boshqa valyutadagi
+ * (rejim almashguncha saqlangan) narx kurs bo'lsa o'giriladi; kurs bo'lmasa soni o'zgarmaydi va `tekshirish` — summani tekshirish kerak
+ * (kurs so'ralmaydi). Ikki valyuta rejimida (`yagona` null) narx o'z valyutasida, o'zgarishsiz qoladi.
+ */
+export function rejimNarxi(qiymat: number, manba: Valyuta, yagona: Valyuta | null, kurs: number | null) {
+  if (!yagona || manba === yagona || !(qiymat > 0)) return { qiymat, tekshirish: false };
+  if (kurs === null || !Number.isFinite(kurs) || kurs <= 0) return { qiymat, tekshirish: true };
+  return { qiymat: Math.round(kirimNarxiniOgirish(qiymat, manba, yagona, kurs) * 100) / 100, tekshirish: false };
+}
+
 /** Purchase API narxlari hujjat valyutasida (`maqsad`, standart UZS): har bir mahsulot o‘z valyutasidan bir marta o‘giriladi. */
 export function kirimElementiniYigish(row: {
   modificationId: string;

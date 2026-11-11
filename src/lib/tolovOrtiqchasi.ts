@@ -67,6 +67,42 @@ export function qaytimSomda(p: {
   return p.dollarQatnashdi && p.yaxlitlash ? Math.round(som / 1000) * 1000 : Math.round(som);
 }
 
+/**
+ * Bir valyutali rejimda (Faqat so'm / Faqat dollar) sotuv rejim valyutasida bo'lsa qaytim ham shu valyutada beriladi: kurs kerak emas,
+ * so'mni mingtagacha yaxlitlash (`roundChange`) qo'llanmaydi. `yagona` — rejim valyutasi, ikki valyuta rejimida `null`.
+ */
+export function yagonaValyutaliQaytim(sotuvValyutasi: string, yagona: string | null | undefined): boolean {
+  return Boolean(yagona) && sotuvValyutasi === yagona;
+}
+
+/** Qaytim valyutasi: bir valyutali rejimda sotuv shu valyutada bo'lsa — rejim valyutasi, aks holda doim so'm. */
+export function qaytimValyutasi(sotuvValyutasi: string, yagona: string | null | undefined): "UZS" | "USD" {
+  return yagonaValyutaliQaytim(sotuvValyutasi, yagona) && yagona === "USD" ? "USD" : "UZS";
+}
+
+/**
+ * Mijozga beriladigan qaytim va uning valyutasi (taxminiy). Bir valyutali rejimda sotuv rejim valyutasida bo'lsa — ortiqcha shu valyutada,
+ * yaxlitlashsiz (dollar sentgacha, so'm butungacha); aks holda `qaytimSomda` (so'mda, kerak bo'lsa kurs bilan).
+ */
+export function qaytimHisobi(p: {
+  ortiqcha: number;
+  sotuvValyutasi: string;
+  kurs: number;
+  dollarQatnashdi: boolean;
+  yaxlitlash: boolean;
+  yagona: string | null | undefined;
+}): { qiymat: number; valyuta: "UZS" | "USD" } {
+  const valyuta = qaytimValyutasi(p.sotuvValyutasi, p.yagona);
+  if (!yagonaValyutaliQaytim(p.sotuvValyutasi, p.yagona)) return { qiymat: qaytimSomda(p), valyuta };
+  if (!(p.ortiqcha > 0)) return { qiymat: 0, valyuta };
+  return { qiymat: valyuta === "USD" ? Math.round(p.ortiqcha * 100) / 100 : Math.round(p.ortiqcha), valyuta };
+}
+
+/** Qaytim o'z valyutasida: "$2.5" yoki "339 000 so'm". */
+export function qaytimMatni(qiymat: number, valyuta: string, somBelgisi: string): string {
+  return valyutadaMatn(qiymat, valyuta, somBelgisi);
+}
+
 export type OrtiqchaMaydonlari = { keepExcess?: true; roundChange?: false };
 
 /**

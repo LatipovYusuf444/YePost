@@ -3,6 +3,8 @@ import { qolganSahifalar } from "../lib/parallelBajarish.ts";
 import { apiData, type ApiEnvelope } from "./response";
 import { taqsimotniOqish } from "@/lib/qarzTaqsimoti";
 import type { CashOperation, CashOperationFilter, CashOperationPayload } from "@/types/cashOperation";
+import type { AuditLog } from "@/types/reports";
+import { bekorSababi } from "@/lib/kassaTahriri";
 import type { TaqsimotOldindanKorishSorovi } from "@/types/qarzTaqsimoti";
 import type { MajburlashTanasi } from "./valyutaShubhasi";
 import { idempotentPost } from "./idempotentSorov";
@@ -34,7 +36,18 @@ export const cashOperationsApi = {
   // Tasdiqlashda mijozning ochiq qarzlari eng eskisidan yopiladi (javobda `allocation`); `tana` — "Valyuta to'g'rimi?" dan keyin `{ force: true }`.
   tasdiqlash: async (id: string, tana?: MajburlashTanasi) =>
     apiData((await idempotentPost<CashOperation | ApiEnvelope<CashOperation>>(`/finance/cash-operations/${id}/confirm`, tana)).data),
-  bekorQilish: async (id: string) => apiData((await apiClient.post<CashOperation | ApiEnvelope<CashOperation>>(`/finance/cash-operations/${id}/cancel`)).data),
+  // `sabab` — bekor qilish sababi (sotuvni bekor qilishdagi kabi `reason`); bo'sh bo'lsa tana yuborilmaydi (avvalgidek).
+  bekorQilish: async (id: string, sabab?: string) => {
+    const reason = bekorSababi(sabab);
+    return apiData((await apiClient.post<CashOperation | ApiEnvelope<CashOperation>>(`/finance/cash-operations/${id}/cancel`, reason ? { reason } : undefined)).data);
+  },
+  // GET /audit/logs?resourceId= — amaliyot tarixi (kim, qachon, nima o'zgardi). Fon rejimi: ruxsat bo'lmasa (403) toast chiqmaydi, bo'sh ro'yxat.
+  tarix: async (id: string): Promise<AuditLog[]> => {
+    const raw = (await apiClient.get<unknown>("/audit/logs", { params: { resourceId: id, page: 1, pageSize: 50 }, xatoniYashirish: true })).data;
+    const obj = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+    const royxat = Array.isArray(raw) ? raw : [obj.items, obj.data, obj.results].find(Array.isArray) ?? [];
+    return royxat as AuditLog[];
+  },
   // POST /finance/cash-operations/allocation-preview — hech narsa saqlanmaydi: mijoz to'lovi qaysi qarzlarni (eng eskisidan) yopishini oldindan ko'rsatadi.
   taqsimotOldindanKorish: async (sorov: TaqsimotOldindanKorishSorovi) =>
     taqsimotniOqish((await apiClient.post<unknown>("/finance/cash-operations/allocation-preview", sorov, { xatoniYashirish: true })).data),

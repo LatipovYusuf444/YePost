@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Bell, ChevronDown, MessageSquare, Package } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import { oziValyutadaMatn, useYagonaValyuta, valyutaKodi } from "@/lib/valyuta";
 import BoshlangichQarzTafsilotlariModal from "./BoshlangichQarzTafsilotlariModal";
 import FaoliyatPaneli from "./FaoliyatPaneli";
 import TezkorPanel from "./TezkorPanel";
@@ -39,6 +40,9 @@ function OddiyXaridorSavdoModal({ savdo, xaridorNomi, customerId, partnerId, onY
   const [faolTab, setFaolTab] = useState<Tab>("umumiy");
 
   const qarzdorlik = savdo.qarz;
+  // Bir valyutali rejimda summa savdoning o'z valyutasida, o'girilmasdan (rejimdan oldingi so'mdagi savdo Faqat dollar rejimida "$" bo'lmasin).
+  const yagona = useYagonaValyuta();
+  const pul = (summa: number) => (yagona ? oziValyutadaMatn(summa, valyutaKodi(savdo.currency), true) : summaFormat(summa));
 
   return (
     <AppModal className="items-start justify-start bg-[rgba(15,23,42,.50)] p-0 py-4 pl-4 pr-4 md:pl-[88px] backdrop-blur-[3px]">
@@ -85,7 +89,7 @@ function OddiyXaridorSavdoModal({ savdo, xaridorNomi, customerId, partnerId, onY
                       <div>
                         <p className="text-sm text-slate-400">{t("savdoModal.amountCurrencyLabel")}</p>
                         <h2 className="mt-1 text-4xl font-light tracking-wide text-slate-700">
-                          {summaFormat(savdo.summa)}
+                          {pul(savdo.summa)}
                         </h2>
                       </div>
                       <span
@@ -111,7 +115,7 @@ function OddiyXaridorSavdoModal({ savdo, xaridorNomi, customerId, partnerId, onY
                         {savdo.tolangan > 0 && (
                           <div className="mt-4 flex flex-wrap gap-2">
                             <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-[#2563EB]">
-                              {t("savdoModal.cardPayment", { amount: summaFormat(savdo.tolangan) })}
+                              {t("savdoModal.cardPayment", { amount: pul(savdo.tolangan) })}
                             </span>
                           </div>
                         )}
@@ -119,11 +123,11 @@ function OddiyXaridorSavdoModal({ savdo, xaridorNomi, customerId, partnerId, onY
                         <div className="mt-6 space-y-2 text-sm">
                           <div className="flex justify-between text-slate-400">
                             <span>{t("savdoModal.saleTotal")}</span>
-                            <span>{summaFormat(savdo.summa)}</span>
+                            <span>{pul(savdo.summa)}</span>
                           </div>
                           <div className="flex justify-between text-[#2563EB]">
                             <span>{t("savdoModal.paymentReceived")}</span>
-                            <span className="font-bold">{summaFormat(savdo.tolangan)}</span>
+                            <span className="font-bold">{pul(savdo.tolangan)}</span>
                           </div>
                           <div
                             className={`flex justify-between ${
@@ -131,7 +135,7 @@ function OddiyXaridorSavdoModal({ savdo, xaridorNomi, customerId, partnerId, onY
                             }`}
                           >
                             <span>{qarzdorlik > 0 ? t("savdoModal.debtRemaining") : t("savdoModal.noDebt")}</span>
-                            <span className="font-bold">{summaFormat(Math.max(qarzdorlik, 0))}</span>
+                            <span className="font-bold">{pul(Math.max(qarzdorlik, 0))}</span>
                           </div>
                         </div>
                       </div>
@@ -155,7 +159,7 @@ function OddiyXaridorSavdoModal({ savdo, xaridorNomi, customerId, partnerId, onY
                   <FeedCard
                     title={t("savdoModal.calcModeChanged")}
                     time={qisqaVaqt(savdo.sana)}
-                    text={t("savdoModal.calcModeText", { amount: summaFormat(savdo.summa) })}
+                    text={t("savdoModal.calcModeText", { amount: pul(savdo.summa) })}
                   />
                   <FeedCard
                     title={t("savdoModal.saleCreated")}

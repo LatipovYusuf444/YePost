@@ -1,6 +1,6 @@
 import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { CalendarDays, CircleAlert, Info, LoaderCircle, Lock, RefreshCw, TrendingUp } from "lucide-react";
+import { CalendarDays, CheckCircle2, CircleAlert, Info, LoaderCircle, Lock, RefreshCw, TrendingUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
@@ -10,18 +10,31 @@ import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import {
   kursniSongaAylantirish,
+  rejimKodiniOlish,
   valyutaApi,
   type AmaldagiKurs,
   type KursYozuvi,
+  type ValyutaRejimKodi,
 } from "@/api/valyutaApi";
+import { asosiyXatoKodi, xatoKodi } from "@/api/xatoKodlari";
+import { tasdiqSorash } from "@/lib/tasdiqSorovi";
+import { muvaffaqiyatXabari } from "@/lib/toast";
 import { ENG_KAM_KURS, kursJudaKichik } from "@/lib/kursChegarasi";
 import { foydalanuvchiKursniOzgartiraOladimi } from "@/lib/roles";
 import { useValyutaStore, valyutaKodi, type Valyuta } from "@/lib/valyuta";
 import { useAuthProfileStore } from "@/store/authProfileStore";
-import { BolimKarta, Maydon, Switch } from "./UmumiyUI";
+import { BolimKarta, Maydon } from "./UmumiyUI";
 import { maydonKlass } from "./yordamchilar";
 
 const TARIX_KUNLARI = 90;
+const KURS_KIRITMA_ID = "valyuta-kurs-kiritma";
+
+// Do'kon valyuta rejimlari (Sozlamalar → Valyuta): tanlov kartalari shu tartibda; belgi — rejim valyutalari.
+const REJIMLAR: { kod: ValyutaRejimKodi; belgi: string }[] = [
+  { kod: "DUAL", belgi: "so'm·$" },
+  { kod: "UZS_ONLY", belgi: "so'm" },
+  { kod: "USD_ONLY", belgi: "$" },
+];
 
 // Kurs formasi xatolari: sana — so'rov manzilida (/settings/exchange-rates/:date), kurs — tanada (rate). Avval sana:
 // "kelajak sanasiga kurs kiritib bo'lmaydi" kabi xabar sana maydoniga tushadi. ("date" so'zi "validate" ichida ham bor — ishlatilmaydi.)
@@ -74,7 +87,12 @@ export default function ValyutaBolimi() {
   const tahrirlaydi = foydalanuvchiKursniOzgartiraOladimi(profil);
   const navbarniYangilash = useValyutaStore((holat) => holat.kursniYuklash);
 
-  const [yoniq, setYoniq] = useState(false);
+  // Do'kon valyuta rejimi: ikki valyuta / faqat so'm / faqat dollar. `yoniq` — ikki valyuta (hisobot valyutasi faqat shunda tanlanadi).
+  // `null` — hali o'qilmagan (yoki o'qib bo'lmadi): hech bir karta "Tanlangan" deb ko'rsatilmaydi.
+  const [rejim, setRejim] = useState<ValyutaRejimKodi | null>(null);
+  const yoniq = rejim === "DUAL";
+  // Rejimga o'tish uchun kurs kerak (errors.currency.rate_missing): kurs formasiga yo'naltiruvchi xabar.
+  const [kursKerak, setKursKerak] = useState(false);
   const [hisobotValyutasi, setHisobotValyutasi] = useState<Valyuta>("UZS");
   const [amaldagi, setAmaldagi] = useState<AmaldagiKurs | null>(null);
   const [royxat, setRoyxat] = useState<KursYozuvi[]>([]);
@@ -95,14 +113,18 @@ export default function ValyutaBolimi() {
     setYuklanmoqda(true);
     setXato("");
     try {
-      // Rejim (ruxsat bo'lmasa) alohida o'qiladi: kurslar baribir ko'rsatiladi.
+      // Rejim kurslardan alohida o'qiladi va darhol ko'rsatiladi: kurs so'rovi yiqilsa ham noto'g'ri rejim "Tanlangan" bo'lib qolmaydi.
       const [rejim, joriy] = await Promise.all([
-        valyutaApi.rejimniOlish().catch(() => null),
+        valyutaApi.rejimniOlish().then((javob) => {
+          setRejim(rejimKodiniOlish(javob));
+          setHisobotValyutasi(valyutaKodi(javob.reportCurrency));
+          return javob;
+        }).catch(() => null),
         valyutaApi.amaldagiKurs(),
       ]);
       const kurslar = await valyutaApi.kurslarRoyxati({ dateFrom: kunlarOldin(joriy.date, TARIX_KUNLARI) });
-      setYoniq(rejim ? Boolean(rejim.enabled) : kursniSongaAylantirish(joriy.rate) !== null);
-      setHisobotValyutasi(valyutaKodi(rejim?.reportCurrency));
+      // Rejimni o'qishga ruxsat bo'lmasa (eski xatti-harakat) — kurs kiritilganligiga qarab.
+      if (!rejim) setRejim(kursniSongaAylantirish(joriy.rate) !== null ? "DUAL" : "UZS_ONLY");
       setAmaldagi(joriy);
       setRoyxat([...kurslar].sort((a, b) => b.date.localeCompare(a.date)));
     } catch (error) {
@@ -120,22 +142,37 @@ export default function ValyutaBolimi() {
   const mavjudKurs = useMemo(() => royxat.find((yozuv) => yozuv.date === sana) ?? null, [royxat, sana]);
   const joriyKurs = kursniSongaAylantirish(amaldagi?.rate);
 
-  async function rejimniOzgartirish() {
-    if (!tahrirlaydi || rejimSaqlanmoqda) return;
+  async function rejimniOzgartirish(yangi: ValyutaRejimKodi) {
+    if (!tahrirlaydi || rejimSaqlanmoqda || rejim === null || yangi === rejim) return;
+    const nom = t(`valyuta.modes.${yangi}.title`);
+    // Rejim butun do'kon uchun: tasodifiy bosishdan oldin so'raladi.
+    if (!(await tasdiqSorash(t("valyuta.modes.confirm", { nom }), { ha: t("valyuta.modes.confirmYes") })).rozi) return;
     setRejimSaqlanmoqda(true);
     setXato("");
     setXabar("");
+    setKursKerak(false);
     try {
-      const saqlangan = await valyutaApi.rejimniYangilash(!yoniq);
-      setYoniq(Boolean(saqlangan.enabled));
-      if (saqlangan.reportCurrency) setHisobotValyutasi(valyutaKodi(saqlangan.reportCurrency));
-      setXabar(t(saqlangan.enabled ? "valyuta.modeEnabledMessage" : "valyuta.modeDisabledMessage"));
+      const saqlangan = await valyutaApi.rejimniYangilash(yangi);
+      const yangiRejim = saqlangan && (saqlangan.mode || typeof saqlangan.enabled === "boolean") ? rejimKodiniOlish(saqlangan) : yangi;
+      setRejim(yangiRejim);
+      if (saqlangan?.reportCurrency) setHisobotValyutasi(valyutaKodi(saqlangan.reportCurrency));
+      // Rejim o'zgargach sahifa qayta yig'iladi (AsosiyPanel): xabar toast bilan ko'rsatiladi, aks holda yo'qolib ketardi.
+      muvaffaqiyatXabari(t("valyuta.modes.saved", { nom: t(`valyuta.modes.${yangiRejim}.title`) }));
       void navbarniYangilash();
     } catch (error) {
-      setXato(getApiErrorMessage(error));
+      // Kurs kiritilmagan, do'konda esa boshqa valyutadagi narx/hujjat bor: kurs formasiga yo'naltiriladi.
+      const kod = asosiyXatoKodi(xatoKodi(axios.isAxiosError(error) ? error.response?.data : undefined));
+      if (kod === "errors.currency.rate_missing") setKursKerak(true);
+      else setXato(getApiErrorMessage(error));
     } finally {
       setRejimSaqlanmoqda(false);
     }
+  }
+
+  function kursFormasigaOtish() {
+    const maydon = document.getElementById(KURS_KIRITMA_ID);
+    maydon?.scrollIntoView({ behavior: "smooth", block: "center" });
+    maydon?.focus({ preventScroll: true });
   }
 
   async function hisobotValyutasiniOzgartirish(yangi: Valyuta) {
@@ -144,9 +181,11 @@ export default function ValyutaBolimi() {
     setXato("");
     setXabar("");
     try {
-      const saqlangan = await valyutaApi.rejimniYangilash(yoniq, yangi);
+      const saqlangan = await valyutaApi.rejimniYangilash("DUAL", yangi);
       setHisobotValyutasi(valyutaKodi(saqlangan.reportCurrency ?? yangi));
-      setXabar(t("valyuta.reportCurrency.savedMessage", { valyuta: t(yangi === "USD" ? "valyuta.reportCurrency.usd" : "valyuta.reportCurrency.uzs") }));
+      muvaffaqiyatXabari(t("valyuta.reportCurrency.savedMessage", { valyuta: t(yangi === "USD" ? "valyuta.reportCurrency.usd" : "valyuta.reportCurrency.uzs") }));
+      // Navbar, jami summalar va hisobotlar yangi hisobot valyutasini darhol olsin.
+      void navbarniYangilash();
     } catch (error) {
       setXato(getApiErrorMessage(error));
     } finally {
@@ -178,8 +217,9 @@ export default function ValyutaBolimi() {
     setKursSaqlanmoqda(true);
     try {
       await valyutaApi.kursniBelgilash(sana, kurs);
-      setXabar(t("valyuta.rateSavedMessage", { sana, kurs: kurs.toLocaleString("uz-UZ", { maximumFractionDigits: 2 }) }));
+      muvaffaqiyatXabari(t("valyuta.rateSavedMessage", { sana, kurs: kurs.toLocaleString("uz-UZ", { maximumFractionDigits: 2 }) }));
       setKursKiritma("");
+      setKursKerak(false);
       await yuklash();
       void navbarniYangilash();
     } catch (error) {
@@ -226,17 +266,62 @@ export default function ValyutaBolimi() {
           </div>
         ) : (
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <div className="flex items-start justify-between gap-4 rounded-2xl bg-slate-50 px-5 py-4">
-              <div className="min-w-0">
-                <p className="text-sm font-black text-slate-800">{t("valyuta.modeLabel")}</p>
-                <p className="mt-1 text-xs leading-5 text-slate-500">{t(yoniq ? "valyuta.modeOnHint" : "valyuta.modeOffHint")}</p>
-                {!tahrirlaydi && (
-                  <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-slate-400">
-                    <Lock size={12} aria-hidden /> {t("valyuta.readOnlyNotice")}
-                  </p>
-                )}
+            {/* Do'kon valyutasi: ikki valyuta / faqat so'm / faqat dollar */}
+            <div className="rounded-2xl bg-slate-50 px-5 py-4 lg:col-span-2">
+              <p className="text-sm font-black text-slate-800">{t("valyuta.modes.label")}</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">{t("valyuta.modes.hint")}</p>
+              {!tahrirlaydi && (
+                <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-slate-400">
+                  <Lock size={12} aria-hidden /> {t("valyuta.readOnlyNotice")}
+                </p>
+              )}
+              <div role="radiogroup" aria-label={t("valyuta.modes.label")} className="mt-3 grid gap-3 sm:grid-cols-3">
+                {REJIMLAR.map(({ kod, belgi }) => {
+                  const tanlangan = rejim === kod;
+                  return (
+                    <button
+                      key={kod}
+                      type="button"
+                      role="radio"
+                      aria-checked={tanlangan}
+                      onClick={() => void rejimniOzgartirish(kod)}
+                      disabled={!tahrirlaydi || rejimSaqlanmoqda}
+                      className={`relative flex min-w-0 flex-col items-start gap-2 rounded-2xl border-2 bg-white px-4 py-3.5 text-left transition disabled:cursor-not-allowed ${
+                        tanlangan
+                          ? "border-[#2563EB] shadow-[0_10px_24px_rgba(37,99,235,.14)]"
+                          : "border-slate-200 enabled:hover:border-slate-300 enabled:hover:shadow-sm disabled:opacity-70"
+                      }`}
+                    >
+                      <span className="flex w-full items-center gap-2.5">
+                        <span
+                          aria-hidden
+                          className={`flex h-9 min-w-9 shrink-0 items-center justify-center whitespace-nowrap rounded-xl px-2 font-black ${belgi === "$" ? "text-base" : "text-[11px]"} ${tanlangan ? "bg-[#2563EB] text-white" : "bg-slate-100 text-slate-500"}`}
+                        >
+                          {belgi}
+                        </span>
+                        <span className="min-w-0 flex-1 text-sm font-black text-slate-900">{t(`valyuta.modes.${kod}.title`)}</span>
+                        {tanlangan && (rejimSaqlanmoqda ? <LoaderCircle size={17} className="shrink-0 animate-spin text-[#2563EB]" aria-hidden /> : <CheckCircle2 size={18} className="shrink-0 text-[#2563EB]" aria-label={t("valyuta.modes.active")} />)}
+                      </span>
+                      <span className="text-xs leading-5 text-slate-500">{t(`valyuta.modes.${kod}.desc`)}</span>
+                    </button>
+                  );
+                })}
               </div>
-              <Switch yoniq={yoniq} onChange={() => void rejimniOzgartirish()} disabled={!tahrirlaydi || rejimSaqlanmoqda} />
+              {kursKerak && (
+                <div role="alert" className="mt-3 flex flex-wrap items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                  <CircleAlert size={18} className="mt-0.5 shrink-0 text-amber-600" aria-hidden />
+                  <p className="min-w-0 flex-1 text-sm font-semibold leading-6 text-amber-800">{t("valyuta.modes.rateMissing")}</p>
+                  {tahrirlaydi && (
+                    <button
+                      type="button"
+                      onClick={kursFormasigaOtish}
+                      className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-amber-500 px-4 text-xs font-black text-white transition hover:bg-amber-600"
+                    >
+                      <TrendingUp size={14} aria-hidden /> {t("valyuta.modes.rateMissingAction")}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             {yoniq && (
@@ -312,6 +397,7 @@ export default function ValyutaBolimi() {
               <div className="relative">
                 <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">1 $ =</span>
                 <SummaMaydoni
+                  id={KURS_KIRITMA_ID}
                   kasr={4}
                   value={kursKiritma}
                   onChange={(qiymat) => {

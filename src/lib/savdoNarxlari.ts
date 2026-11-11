@@ -147,6 +147,11 @@ export function yuboriladiganQator(p: {
   birlik?: TovarBirligi;
   /** UI katalogdagi asosiy birlik narxidan hisoblaydi; `narx` va `ustama` allaqachon sotuv birligida. */
   donalikNarx?: boolean;
+  /**
+   * Bir valyutali rejim (Faqat so'm / Faqat dollar): har bir qator sotuv valyutasida (ko'rinib turgan narxda) yuboriladi — boshqa
+   * valyutadagi qatorni backend rad etadi (errors.currency.not_allowed).
+   */
+  yagonaValyuta?: boolean;
 }): YuboriladiganQator {
   const ustama = Math.max(p.ustama ?? 0, 0);
   const asos = {
@@ -157,6 +162,7 @@ export function yuboriladiganQator(p: {
     ...(p.birlik && !p.birlik.asosiy ? { unitId: p.birlik.unitId } : {}),
   };
   if (p.sotuvVal === "UZS") return { ...asos, price: ustamaliNarx(p.narx, ustama), discount: p.chegirma };
+  if (p.yagonaValyuta) return { ...asos, price: ustamaliNarx(p.narx, ustama), discount: p.chegirma, currency: "USD" };
   const katalog = turNarxi(p.qoldiq, p.tur, p.kurs);
   const narx = p.donalikNarx && katalog
     ? { ...katalog, asl: asosiyMiqdor(p.birlik, katalog.asl) }

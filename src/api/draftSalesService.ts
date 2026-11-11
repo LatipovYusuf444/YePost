@@ -4,6 +4,10 @@ import { ogohlantirishBilanBajarish } from "./hujjatOgohlantirishi";
 import { bekorQilishSababi } from "../lib/bekorQilishSababi.ts";
 import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import { qatorniQaytaYuborish } from "../lib/kopBirlik";
+import { rejimgaMosEmasValyuta } from "../lib/qoralamaTahriri";
+import { useValyutaStore, yagonaValyuta } from "../lib/valyuta";
+import { xatolikXabari } from "../lib/toast";
+import i18n from "i18next";
 import type {
   DraftSale,
   DraftSaleItem,
@@ -132,6 +136,16 @@ export const draftSalesService = {
     const sale = apiData(response.data);
     // Nusxada valyutalar saqlanadi: dollar qator narxi so'm sifatida qayta yuborilmasligi kerak.
     const saleCurrency = String(sale.currency ?? "UZS").toUpperCase();
+    // Nusxa — yangi hujjat: bir valyutali rejimda boshqa valyutadagi qoralama (yoki qator) nusxasini backend rad etadi
+    // (errors.currency.not_allowed), shuning uchun so'rov yuborilmaydi. Rejim hali o'qilmagan bo'lsa tekshirilmaydi (ikki valyutali
+    // do'kon noto'g'ri to'xtatilmasin) — u holda backend xatosi chiqadi.
+    const yagona = useValyutaStore.getState().yuklandi ? yagonaValyuta() : null;
+    const boshqaValyuta = rejimgaMosEmasValyuta(sale, yagona);
+    if (yagona && boshqaValyuta) {
+      const matn = i18n.t("savdo_yangi:errors.modeDuplicateDraft", { from: boshqaValyuta, to: yagona });
+      xatolikXabari(matn);
+      throw new Error(matn);
+    }
     const payload: SotuvYaratishMalumoti = {
       // Valyuta har doim aniq yuboriladi: berilmasa backend mijozli savdoni USD deb oladi (so'mdagi narxlar dollar bo'lib qolardi).
       currency: saleCurrency,

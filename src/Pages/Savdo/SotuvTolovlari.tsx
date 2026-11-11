@@ -5,7 +5,8 @@ import AppModal from "@/Components/common/AppModal";
 import { useTolovTahririRuxsati } from "@/hooks/useTolovTahririRuxsati";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/Components/ui/dropdown-menu";
 import { bugungiToshkentKuni, kunMatni, toshkentKuni, vaqtMatni } from "@/lib/hujjatSanasi";
-import { somMatni, tolovlarQaytimi } from "@/lib/tolovOrtiqchasi";
+import { qaytimMatni, qaytimValyutasi, tolovlarQaytimi } from "@/lib/tolovOrtiqchasi";
+import { useValyutaStore, type Valyuta } from "@/lib/valyuta";
 import type { Sotuv, SotuvTolovi, TolovTuri } from "@/types/savdo";
 import TolovTahriri from "./TolovTahriri";
 import {
@@ -27,6 +28,13 @@ type TolovQatori = {
 };
 
 // Backend to'lov sanasini qaysi nom bilan qaytarishidan qat'i nazar o'qiymiz: kassir yozgan sana (date/paidAt) bo'lsa shu, aks holda kiritilgan vaqt.
+// Bir valyutali rejim valyutasi (`useYagonaValyuta()` bilan bir xil): ikki valyuta rejimida yoki rejim noma'lum bo'lsa — null.
+function useRejimValyutasi(): Valyuta | null {
+  return useValyutaStore((holat): Valyuta | null =>
+    holat.rejimYoniq ? null : holat.rejim === "USD_ONLY" ? "USD" : holat.rejim === "UZS_ONLY" ? "UZS" : null
+  );
+}
+
 function tolovSanasi(tolov: SotuvTolovi) {
   return tolov.date ?? tolov.paidAt ?? tolov.createdAt;
 }
@@ -52,6 +60,8 @@ export default function SotuvTolovlari({ sotuv, mijoz }: { sotuv: Sotuv; mijoz: 
   const [tanlangan, setTanlangan] = useState<(TolovQatori & { tahrir?: boolean }) | null>(null);
   const tahrirCheklovi = useTolovTahririRuxsati();
   const qatorlar = qatorlarniYigish(sotuv);
+  // Qaytim odatda so'mda; bir valyutali rejimda sotuv rejim valyutasida bo'lsa — shu valyutada.
+  const qaytimVal = qaytimValyutasi(sotuvValyutasi(sotuv), useRejimValyutasi());
 
   // Tahrirlash zanjiri (bekor qilish → tiklash → qayta tasdiqlash) paytida to'lovlar ro'yxati vaqtincha bo'sh ko'rinishi mumkin: ochiq oyna yo'qolmasligi kerak.
   if (qatorlar.length === 0 && !tanlangan) return null;
@@ -84,7 +94,7 @@ export default function SotuvTolovlari({ sotuv, mijoz }: { sotuv: Sotuv; mijoz: 
                 {qaytim.qaytim > 0 && (
                   <span className="inline-flex h-6 items-center gap-1 rounded-full bg-emerald-50 px-2.5 text-[11px] font-bold text-emerald-700 ring-1 ring-emerald-100">
                     <Banknote size={12} />
-                    {t("tolovQatori.qaytim", { summa: somMatni(qaytim.qaytim, t("tolovModal.somBelgisi")) })}
+                    {t("tolovQatori.qaytim", { summa: qaytimMatni(qaytim.qaytim, qaytimVal, t("tolovModal.somBelgisi")) })}
                   </span>
                 )}
                 {qaytim.hisobga > 0 && (
@@ -162,6 +172,7 @@ function TolovTafsilotModal({ sotuv, mijoz, qator, boshlangichTahrir = false, on
   const sotuvVal = sotuvValyutasi(sotuv);
   const sotuvUlushi = tolovFoizi(tolovSotuvValyutasida(tolov, sotuv), sotuvJami);
   const qaytim = tolovlarQaytimi([tolov]);
+  const qaytimVal = qaytimValyutasi(sotuvVal, useRejimValyutasi());
   const tahrirCheklovi = useTolovTahririRuxsati();
   const cheklov = tahrirCheklovi(sotuv, tolov);
   const [tahrir, setTahrir] = useState(boshlangichTahrir && !cheklov);
@@ -255,7 +266,7 @@ function TolovTafsilotModal({ sotuv, mijoz, qator, boshlangichTahrir = false, on
               <TafsilotQatori icon={<Wallet size={17} />} label={t("tolovTafsilot.manba")} value={t(tolov.fromAccount ? "tolovTafsilot.manbaHisob" : "tolovTafsilot.manbaKassa")} />
             )}
             {qaytim.qaytim > 0 && (
-              <TafsilotQatori icon={<Banknote size={17} />} label={t("tolovTafsilot.qaytim")} value={somMatni(qaytim.qaytim, t("tolovModal.somBelgisi"))} />
+              <TafsilotQatori icon={<Banknote size={17} />} label={t("tolovTafsilot.qaytim")} value={qaytimMatni(qaytim.qaytim, qaytimVal, t("tolovModal.somBelgisi"))} />
             )}
             {qaytim.hisobga > 0 && (
               <TafsilotQatori icon={<Wallet size={17} />} label={t("tolovTafsilot.hisobga")} value={pulniFormatlash(qaytim.hisobga, sotuvVal)} />

@@ -12,7 +12,7 @@ import { boshlangichQarzMalumoti } from "@/lib/boshlangichQarz";
 import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { bugungiToshkentKuni } from "@/lib/hujjatSanasi";
 import { muvaffaqiyatXabari } from "@/lib/toast";
-import { useValyutaStore } from "@/lib/valyuta";
+import { ruxsatEtilganValyuta, standartValyuta, useYagonaValyuta } from "@/lib/valyuta";
 import { YETKAZIB_QARZ_IZOH_UZUNLIGI, type YetkazibBoshlangichQarzi } from "@/lib/yetkazibBoshlangichQarz";
 import type { YetkazibBeruvchi } from "./types";
 
@@ -37,10 +37,12 @@ export default function YetkazibBoshlangichQarzModal({
 }) {
   const { t } = useTranslation("xaridor_uchot");
   const fx = useMaydonXatolari(QARZ_XATO_QOIDALARI);
-  // USD faqat valyuta rejimi yoqilgan bo'lsa (aks holda backend errors.currency.mode_off qaytaradi).
-  const dollarMumkin = useValyutaStore((holat) => holat.rejimYoniq);
+  // Valyuta tanlovi faqat ikki valyuta rejimida. Faqat so'm / Faqat dollar rejimida tanlov yashirin va qarz rejim valyutasida yuboriladi
+  // (boshqa valyutani backend errors.currency.not_allowed bilan rad etadi).
+  const yagona = useYagonaValyuta();
+  const tanlovBor = yagona === null;
   const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState("UZS");
+  const [currency, setCurrency] = useState<string>(standartValyuta);
   const [date, setDate] = useState(bugungiToshkentKuni);
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
@@ -51,7 +53,7 @@ export default function YetkazibBoshlangichQarzModal({
   async function saqlash(event: FormEvent) {
     event.preventDefault();
     if (lock.current) return;
-    const result = boshlangichQarzMalumoti({ amount, currency, date, note: note.slice(0, YETKAZIB_QARZ_IZOH_UZUNLIGI) }, bugungiToshkentKuni());
+    const result = boshlangichQarzMalumoti({ amount, currency: ruxsatEtilganValyuta(currency), date, note: note.slice(0, YETKAZIB_QARZ_IZOH_UZUNLIGI) }, bugungiToshkentKuni());
     if (result.error) {
       setError("");
       fx.ornat({ [result.error]: t(`openingDebt.errors.${result.error}`) });
@@ -90,14 +92,14 @@ export default function YetkazibBoshlangichQarzModal({
         </header>
         <form onSubmit={(event) => void saqlash(event)} className="space-y-5 p-5 sm:p-6">
           <p className="rounded-xl bg-blue-50 p-3 text-sm leading-6 text-blue-800">{t("yetkazibDetails.openingDebt.hint")}</p>
-          <div className={dollarMumkin ? "grid grid-cols-[minmax(0,1fr)_110px] gap-3" : "grid gap-3"}>
+          <div className={tanlovBor ? "grid grid-cols-[minmax(0,1fr)_110px] gap-3" : "grid gap-3"}>
             <XatoliMaydon xato={fx.xato("amount")}>
               <label className="grid gap-1.5 text-sm font-semibold text-slate-600">
-                {t("openingDebt.amount")}
+                {t("openingDebt.amount")}{yagona ? ` (${yagona})` : ""}
                 <SummaMaydoni autoFocus required value={amount} onChange={(qiymat) => { fx.tozala("amount"); setAmount(qiymat); }} disabled={saving} placeholder="10 150" className={fieldClass} />
               </label>
             </XatoliMaydon>
-            {dollarMumkin && (
+            {tanlovBor && (
               <XatoliMaydon xato={fx.xato("currency")}>
                 <label className="grid gap-1.5 text-sm font-semibold text-slate-600">
                   {t("openingDebt.currency")}
@@ -109,7 +111,7 @@ export default function YetkazibBoshlangichQarzModal({
               </XatoliMaydon>
             )}
           </div>
-          {!dollarMumkin && fx.xato("currency") && <p role="alert" className="text-sm font-semibold text-red-600">{fx.xato("currency")}</p>}
+          {!tanlovBor && fx.xato("currency") && <p role="alert" className="text-sm font-semibold text-red-600">{fx.xato("currency")}</p>}
           <XatoliMaydon xato={fx.xato("date")}>
             <label className="grid gap-1.5 text-sm font-semibold text-slate-600">
               {t("openingDebt.date")}

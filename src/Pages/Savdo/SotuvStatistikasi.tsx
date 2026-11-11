@@ -8,6 +8,7 @@ import type { sotuvValyutaStatistikasi } from "./sotuvValyutaStatistikasi";
 import { toshkentKuni, kunniSurish } from "@/lib/hujjatSanasi";
 import { savdoHujjatimi } from "@/lib/boshlangichQarz";
 import { sotuvHolati } from "./savdoYordamchilari";
+import { useYagonaValyuta } from "@/lib/valyuta";
 
 type SotuvStatistikasiProps = {
   sotuvlar: Sotuv[];
@@ -327,27 +328,44 @@ function ValyutaKarta({ natija, valyuta, tur, yuklanmoqda, qarzTugmasiBor }: {
 }
 
 // Har bir karta o'z holatini saqlaydi; ikkala yuz ham o'z valyutasidagi tayyor statistikani oladi.
-function AylanadiganValyutaKarta({ tur, natijalar, yuklanmoqda, onQarzniKorsatish }: {
+// `yagona` (bir valyutali rejim: Faqat so'm / Faqat dollar) berilsa karta aylanmaydi — faqat shu valyutadagi yuz ko'rsatiladi.
+// `asosiy` — rejim valyutasi: eski hujjatlar tufayli karta aylansa ham old yuz shu valyutada ochiladi (ikki valyuta rejimida — dollar).
+function AylanadiganValyutaKarta({ tur, natijalar, yuklanmoqda, onQarzniKorsatish, yagona = null, asosiy = null }: {
   tur: PulKartaTuri;
   natijalar: ReturnType<typeof sotuvValyutaStatistikasi>;
   yuklanmoqda: boolean;
   onQarzniKorsatish?: () => void;
+  yagona?: "UZS" | "USD" | null;
+  asosiy?: "UZS" | "USD" | null;
 }) {
   const { t } = useTranslation("savdo_bosh");
   const [orqa, setOrqa] = useState(false);
   const id = useId();
-  const valyuta = orqa ? "UZS" : "USD";
-  const keyingiValyuta = orqa ? "USD" : "UZS";
+  const oldi = asosiy ?? "USD";
+  const orqaValyuta = oldi === "USD" ? "UZS" : "USD";
+  const valyuta = yagona ?? (orqa ? orqaValyuta : oldi);
+  const keyingiValyuta = orqa ? oldi : orqaValyuta;
   const sarlavhaKaliti = tur === "savdo" ? "valyutaSavdo" : tur === "tolov" ? "valyutaTolov" : "valyutaQarz";
   const aylantirishMatni = t("savdoSahifasi.statistika.kartaniAylantirish", { valyuta: keyingiValyuta });
   const qarzTugmasiBor = tur === "qarz" && Boolean(onQarzniKorsatish);
   const qarzniOchishMumkin = qarzTugmasiBor && !yuklanmoqda && natijalar[valyuta].qarzToliq && natijalar[valyuta].qarz > 0;
+  const qarzTugmasi = qarzniOchishMumkin ? <button type="button" onClick={onQarzniKorsatish}
+      className="absolute bottom-5 left-5 z-20 max-w-[calc(100%-88px)] cursor-pointer text-left text-xs font-bold text-blue-700 underline decoration-blue-300 underline-offset-4 hover:text-blue-900 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+      {t("savdoSahifasi.statistika.qarzdorlarniKorsatish")}
+    </button> : null;
+
+  if (yagona) return <div className="relative min-w-0 transition-transform duration-300 hover:-translate-y-1 motion-reduce:transform-none">
+    <div className="grid h-full min-w-0 [&>div]:h-full [&>div]:w-full">
+      <ValyutaKarta tur={tur} natija={natijalar[yagona]} valyuta={yagona} yuklanmoqda={yuklanmoqda} qarzTugmasiBor={qarzTugmasiBor} />
+    </div>
+    {qarzTugmasi}
+  </div>;
 
   return <div className="relative min-w-0 transition-transform duration-300 hover:-translate-y-1 motion-reduce:transform-none" style={{ perspective: "1200px" }}>
     <div className="grid h-full transition-transform duration-700 motion-reduce:transition-none" style={{ transformStyle: "preserve-3d", transform: orqa ? "rotateY(180deg)" : "rotateY(0deg)" }}>
-      {(["USD", "UZS"] as const).map((code) => <div key={code} id={`${id}-${code}`} aria-hidden={code !== valyuta} inert={code !== valyuta}
+      {([oldi, orqaValyuta] as const).map((code) => <div key={code} id={`${id}-${code}`} aria-hidden={code !== valyuta} inert={code !== valyuta}
         className="pointer-events-none col-start-1 row-start-1 min-w-0 [&>div]:h-full [&>div]:w-full"
-        style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", transform: code === "UZS" ? "rotateY(180deg)" : "rotateY(0deg)" }}>
+        style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", transform: code === orqaValyuta ? "rotateY(180deg)" : "rotateY(0deg)" }}>
         <ValyutaKarta tur={tur} natija={natijalar[code]} valyuta={code} yuklanmoqda={yuklanmoqda} qarzTugmasiBor={qarzTugmasiBor} />
       </div>)}
     </div>
@@ -358,10 +376,7 @@ function AylanadiganValyutaKarta({ tur, natijalar, yuklanmoqda, onQarzniKorsatis
     <span aria-hidden className="pointer-events-none absolute bottom-3 right-3 z-20 inline-flex items-center gap-1 rounded-full border border-blue-200/70 bg-white/90 px-2 py-1 text-[10px] font-bold text-blue-600">
       <RotateCw size={12} />{keyingiValyuta === "USD" ? "$" : t("savdoSahifasi.statistika.som")}
     </span>
-    {qarzniOchishMumkin && <button type="button" onClick={onQarzniKorsatish}
-      className="absolute bottom-5 left-5 z-20 max-w-[calc(100%-88px)] cursor-pointer text-left text-xs font-bold text-blue-700 underline decoration-blue-300 underline-offset-4 hover:text-blue-900 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-      {t("savdoSahifasi.statistika.qarzdorlarniKorsatish")}
-    </button>}
+    {qarzTugmasi}
   </div>;
 }
 
@@ -401,6 +416,12 @@ export default function SotuvStatistikasi({
     ...valyutaStat.natija[valyuta], savdoToliq: false, tolovToliq: false, qarzToliq: false,
   };
   const soni = useSanab(natija.soni);
+  // Bir valyutali rejimda (Faqat so'm / Faqat dollar) pul kartalari aylanmaydi — faqat rejim valyutasi. Rejim almashguncha yaratilgan
+  // eski hujjatlardan boshqa valyutada summa qolgan karta esa avvalgidek ikki tomonli qoladi.
+  const yagona = useYagonaValyuta();
+  const valyutaNatijalari = { UZS: valyutaNatijasi("UZS"), USD: valyutaNatijasi("USD") };
+  const kartaYagonasi = (tur: PulKartaTuri) => yagona && !valyutaNatijalari[yagona === "UZS" ? "USD" : "UZS"][tur] ? yagona : null;
+  const kartalarAylanmaydi = (["savdo", "tolov", "qarz"] as const).every((tur) => kartaYagonasi(tur) !== null);
 
 
   if (yuklanmoqda && sotuvlar.length === 0) {
@@ -427,7 +448,7 @@ export default function SotuvStatistikasi({
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-blue-100 bg-white text-blue-600 shadow-sm"><CircleDollarSign size={25} aria-hidden /></span>
           <div className="min-w-0">
             <h2 className="text-base font-bold tracking-tight text-slate-900">{t("savdoSahifasi.statistika.hisobKitob")}</h2>
-            <p className="mt-0.5 text-xs text-slate-500">{t("savdoSahifasi.statistika.kartaAylanishIzoh")}</p>
+            {!kartalarAylanmaydi && <p className="mt-0.5 text-xs text-slate-500">{t("savdoSahifasi.statistika.kartaAylanishIzoh")}</p>}
           </div>
         </div>
       </header>
@@ -455,7 +476,7 @@ export default function SotuvStatistikasi({
 
         <div className="grid gap-4 md:grid-cols-3 xl:col-span-3">
           {(["savdo", "tolov", "qarz"] as const).map((tur) => <AylanadiganValyutaKarta key={tur} tur={tur}
-            natijalar={{ UZS: valyutaNatijasi("UZS"), USD: valyutaNatijasi("USD") }} yuklanmoqda={valyutaStat.yuklanmoqda} onQarzniKorsatish={onQarzniKorsatish} />)}
+            natijalar={valyutaNatijalari} yagona={kartaYagonasi(tur)} asosiy={yagona} yuklanmoqda={valyutaStat.yuklanmoqda} onQarzniKorsatish={onQarzniKorsatish} />)}
         </div>
       </div>
     </section>

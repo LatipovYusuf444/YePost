@@ -347,5 +347,12 @@
     "wholesalePrice": "Ulgurji narx",
     "saving": "Saqlanmoqda...",
     "som": "so'm"
+  },
+  "currencyMode": {
+    "priceConverted": "Bu narx boshqa valyutada saqlangan edi. Do'kon endi faqat {{currency}} da ishlaydi — saqlashdan oldin summalarni tekshiring.",
+    "reenterPrice": {
+      "UZS": "Narxni so'mda qayta kiriting",
+      "USD": "Narxni dollarda qayta kiriting"
+    }
   }
 }

@@ -1,7 +1,7 @@
 import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { bugungiToshkentKuni } from "@/lib/hujjatSanasi";
 import { StockQuantity } from "@/Components/common/NegativeStockBadge";
-import { pulMatni } from "@/lib/valyuta";
+import { oziValyutadaMatn, pulMatni, valyutaKodi, type Valyuta } from "@/lib/valyuta";
 import { qoldiqTaqsimotiMatni } from "@/lib/kopBirlik";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -87,6 +87,8 @@ type Satr = {
   bosh: number;
   birlikNarx: number;
   umumiy: number;
+  // Narx (va qator summasi) valyutasi — backend qatordagi `currency` (priceType bo'yicha tanlangan narxniki); kelmasa null.
+  narxValyutasi: Valyuta | null;
   // Ko'p birlikli tovar: "2 qop 4,367 kg" va "≈ 130,83 pochka" (qoldiq asosiy birlikda saqlanadi).
   bolingan?: string | null;
   taxminan?: string | null;
@@ -123,6 +125,17 @@ function raqam(value: unknown) {
 
 function pul(value: number) {
   return pulMatni(value);
+}
+
+// Mahsulot narxi va qator summasi O'Z valyutasida (o'girilmaydi). Backend qator valyutasini bermasa — avvalgidek (so'm, pulMatni).
+function narxPul(value: number, valyuta: Valyuta | null) {
+  return valyuta ? oziValyutadaMatn(value, valyuta) : pul(value);
+}
+
+// Qatordagi `currency` (UZS | USD | null) — StockBalanceItem turida hali yo'q, shuning uchun xavfsiz o'qiladi.
+function qatorValyutasi(item: object): Valyuta | null {
+  const qiymat = (item as { currency?: unknown }).currency;
+  return typeof qiymat === "string" && qiymat.trim() ? valyutaKodi(qiymat.trim()) : null;
 }
 
 // Miqdor: kasr bo'lishi mumkin (kg, litr), minglik ajratgich bilan.
@@ -273,7 +286,7 @@ export default function OmborQoldigi() {
   const satrlar = useMemo<Satr[]>(() => {
     return report.items.map((item) => {
       const birlikNarx = raqam(qollangan.narxTuri === "retailPrice" ? item.retailPrice : qollangan.narxTuri === "wholesalePrice" ? item.wholesalePrice : item.costPrice);
-      return { kalit: `${item.modificationId}:${item.warehouseId ?? "all"}`, mahsulotNomi: item.productName, birlik: item.unitName || "—", shtrixKod: item.barcode || "", variatsiya: item.modificationName || t("omborQoldigi.baseVariant"), omborNomi: item.warehouseName || t("omborQoldigi.allWarehouses"), ...qoldiqTaqsimotiMatni(item, item.unitName), jami: raqam(item.quantity), rezerv: raqam(item.reservedQuantity), bosh: raqam(item.availableQuantity), birlikNarx, umumiy: raqam(item.totalAmount) };
+      return { kalit: `${item.modificationId}:${item.warehouseId ?? "all"}`, mahsulotNomi: item.productName, birlik: item.unitName || "—", shtrixKod: item.barcode || "", variatsiya: item.modificationName || t("omborQoldigi.baseVariant"), omborNomi: item.warehouseName || t("omborQoldigi.allWarehouses"), ...qoldiqTaqsimotiMatni(item, item.unitName), jami: raqam(item.quantity), rezerv: raqam(item.reservedQuantity), bosh: raqam(item.availableQuantity), birlikNarx, umumiy: raqam(item.totalAmount), narxValyutasi: qatorValyutasi(item) };
     });
     /* Eski client-side hisoblash olib tashlandi.
     const qoldiqlar: never[] = [];
@@ -677,8 +690,8 @@ export default function OmborQoldigi() {
                   <td className="text-right">
                     <span className={`inline-flex min-w-12 justify-end rounded-lg px-2.5 py-1 font-extrabold tabular-nums ${item.bosh < 0 ? "bg-red-50 text-red-600" : item.bosh === 0 ? "bg-slate-100 text-slate-500" : "bg-emerald-50 text-emerald-700"}`}>{<StockQuantity value={item.bosh} />}</span>
                   </td>
-                  <td className="text-right tabular-nums text-gray-600">{pul(item.birlikNarx)}</td>
-                  <td className="text-right font-black tabular-nums text-gray-900">{pul(item.umumiy)}</td>
+                  <td className="text-right tabular-nums text-gray-600">{narxPul(item.birlikNarx, item.narxValyutasi)}</td>
+                  <td className="text-right font-black tabular-nums text-gray-900">{narxPul(item.umumiy, item.narxValyutasi)}</td>
                 </tr>
               ))}
             </tbody>

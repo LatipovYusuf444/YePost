@@ -19,11 +19,13 @@ export function chiqimTannarxi(modification?: TannarxManbasi) {
 /**
  * Hujjat jami, valyutalar bo'yicha.
  * Qatorlar bitta valyutada bo'lsa backend jami (bo'lsa) shu valyutada olinadi; aralash valyutada bitta son bo'lmaydi,
- * shuning uchun har valyutaning summasi qatorlardan alohida hisoblanadi. Qator ma'lumoti bo'lmasa — so'm (avvalgidek).
+ * shuning uchun har valyutaning summasi qatorlardan alohida hisoblanadi. Qator ma'lumoti bo'lmasa — `boshValyuta` (standart so'm, avvalgidek;
+ * bir valyutali rejimda chaqiruvchi rejim valyutasini beradi).
  */
 export function chiqimJamilari(
   qatorlar: ReadonlyArray<{ summa: number; valyuta: NarxValyutasi }>,
   backendJami?: number | string | null,
+  boshValyuta: NarxValyutasi = "UZS",
 ): ValyutaSummasi[] {
   const tartib: NarxValyutasi[] = [];
   const yigindi = new Map<NarxValyutasi, number>();
@@ -35,7 +37,7 @@ export function chiqimJamilari(
   const backend = backendJami === undefined || backendJami === null ? null : Number(backendJami);
   const backendSon = backend !== null && Number.isFinite(backend) ? backend : null;
 
-  if (tartib.length === 0) return [{ valyuta: "UZS", summa: backendSon ?? 0 }];
+  if (tartib.length === 0) return [{ valyuta: boshValyuta, summa: backendSon ?? 0 }];
   if (tartib.length === 1) return [{ valyuta: tartib[0], summa: backendSon ?? yigindi.get(tartib[0]) ?? 0 }];
   return tartib.map((valyuta) => ({ valyuta, summa: yigindi.get(valyuta) ?? 0 }));
 }

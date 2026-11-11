@@ -10,6 +10,8 @@ import * as numbering from '../src/lib/kassaNomlari.ts';
 import * as taqsimot from '../src/lib/qarzTaqsimoti.ts';
 import * as raqamMatni from '../src/lib/hujjatRaqamiMatni.ts';
 import * as customerBalances from '../src/lib/mijozHisobQoldigi.ts';
+import * as hisobotValyutasi from '../src/Pages/HisobotUchot/hisobotValyutasi.ts';
+import * as kassaTahriri from '../src/lib/kassaTahriri.ts';
 
 const require = createRequire(import.meta.url);
 // Haqiqiy uz tarjimalar bilan t(): kalit bo'yicha matn va {{o'zgaruvchi}} almashtirish.
@@ -40,7 +42,14 @@ function page(path, dependencies, props = {}, globals = {}, exportName = 'defaul
     if (name === '@/lib/cashReports') return cash;
     if (name === '@/api/sozlamalarApi') return { getApiErrorMessage: String };
     if (name in dependencies) return dependencies[name];
-    if (name === 'react-router-dom') return { useSearchParams: () => [new URLSearchParams(), () => {}], Link: 'Link' };
+    // Valyuta rejimi (11.11.2026): sahifalar rejim valyutasini so'raydi; standart — ikki valyuta (DUAL), ya'ni avvalgi xatti-harakat.
+    if (name === '@/lib/valyuta') return { useYagonaValyuta: () => null, yagonaValyuta: () => null, useValyutaStore: selector => selector({ rejim: 'DUAL', rejimYoniq: true, kursBor: true, kurs: 12100 }), valyutaKodi: value => value ?? 'UZS' };
+    if (name === './hisobotValyutasi') return hisobotValyutasi;
+    // Kassa amaliyoti oynasidagi amallar (11.11.2026): router, davr yopilishi, rol va amallar mantig'i.
+    if (name === '@/store/davrStore') return { useDavrStore: selector => selector({ holat: null, yuklash: async () => {} }) };
+    if (name === '@/lib/kassaTahriri') return kassaTahriri;
+    if (name === '@/lib/roles') return { rolniNormallashtirish: value => String(value ?? '').toUpperCase() };
+    if (name === 'react-router-dom') return { useSearchParams: () => [new URLSearchParams(), () => {}], useNavigate: () => () => {}, Link: 'Link' };
     return new Proxy({ __esModule: true, default: name.split('/').at(-1) }, { get(target, key) { return target[key] ?? String(key); } });
   } };
   runInNewContext(compiled, context);
@@ -350,7 +359,7 @@ function kassaModal({ kursBor, onSaqlash }) {
     '@/hooks/useOzgarishBormi': { useOzgarishBormi: () => false },
     '@/lib/maydonXatolari': { xatoBelgisi: () => 0, belgidanKeyingiXato: () => undefined },
     '@/lib/kursChegarasi': { ENG_KAM_KURS: 1000, kursJudaKichik: value => value > 0 && value < 1000 },
-    '@/lib/valyuta': { useValyutaStore: selector => selector({ rejimYoniq: true, kursBor, kurs: kursBor ? 12100 : 0 }), valyutaKodi: value => value ?? 'UZS' },
+    '@/lib/valyuta': { useValyutaStore: selector => selector({ rejim: 'DUAL', rejimYoniq: true, kursBor, kurs: kursBor ? 12100 : 0 }), useYagonaValyuta: () => null, yagonaValyuta: () => null, standartValyuta: () => 'UZS', ruxsatEtilganValyuta: value => value ?? 'UZS', valyutaKodi: value => value ?? 'UZS' },
     '@/store/authProfileStore': { useAuthProfileStore: selector => selector({ profil: { id: 'u1', username: 'kassir' }, profilniYuklash: async () => {} }) },
     '@/api/partnersApi': { mijozlarApi: { royxat: async () => [] }, yetkazibBeruvchilarApi: { royxat: async () => [{ id: 'sup1', name: 'Taminotchi' }] } },
     '@/api/accountsApi': { foydalanuvchilarApi: { royxat: async () => [] } },

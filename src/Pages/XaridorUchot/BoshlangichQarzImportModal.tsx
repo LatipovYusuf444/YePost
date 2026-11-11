@@ -11,6 +11,7 @@ import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import { qarzImportJavobi, qarzImportiniSaqlashMumkin, type QarzImportNatijasi } from "@/lib/boshlangichQarz";
 import { serverXatoMaydonlari, type XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { muvaffaqiyatXabari } from "@/lib/toast";
+import { useYagonaValyuta } from "@/lib/valyuta";
 
 // Faylning o'ziga tegishli server xatosi (format, bo'sh fayl) fayl tanlash maydoniga; qator xatolari jadvalda qoladi.
 const IMPORT_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
@@ -28,6 +29,8 @@ export default function BoshlangichQarzImportModal({ onClose }: { onClose: () =>
   const [operation, setOperation] = useState<"template" | "check" | "save" | null>(null);
   const [error, setError] = useState("");
   const busy = operation !== null;
+  // Bir valyutali rejimda fayldagi boshqa valyutadagi qatorlarni backend rad etadi (errors.currency.not_allowed) — oldindan aytiladi.
+  const yagona = useYagonaValyuta();
 
   async function shablon() {
     if (lock.current) return;
@@ -130,6 +133,7 @@ export default function BoshlangichQarzImportModal({ onClose }: { onClose: () =>
           <input ref={input} type="file" accept=".xlsx" onChange={faylTanlandi} disabled={busy} aria-label={t("openingDebt.import.chooseFile")} className="sr-only" />
           <XatoliMaydon xato={fx.xato("file")}><button type="button" data-maydon-boshqaruvi onClick={() => input.current?.click()} disabled={busy} className="flex min-h-28 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-blue-200 bg-blue-50/50 p-5 text-center text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50">{operation === "check" ? <LoaderCircle size={26} className="animate-spin" /> : <FileSpreadsheet size={26} />}<span className="break-all">{operation === "check" ? t("openingDebt.import.checking") : file?.name || t("openingDebt.import.chooseFile")}</span></button></XatoliMaydon>
           <p className="text-sm leading-6 text-slate-500">{t("openingDebt.import.phoneHint")}</p>
+          {yagona && <p className="text-sm leading-6 text-amber-700">{t(`openingDebt.import.modeHint${yagona}`)}</p>}
           {(fx.tepadagi || (fx.bor ? "" : error)) && <p role="alert" className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{fx.tepadagi || error}</p>}
           {ready && <div role="status" className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"><CheckCircle2 size={19} className="shrink-0" /><span>{t("openingDebt.import.ready", { count: result?.totalRows })}</span></div>}
           {result && result.errors.length > 0 && <div className="overflow-hidden rounded-xl border border-red-200">

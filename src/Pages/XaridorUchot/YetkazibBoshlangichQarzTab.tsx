@@ -7,7 +7,7 @@ import { yetkazibBoshlangichQarzApi } from "@/api/yetkazibBoshlangichQarzApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { kunMatni } from "@/lib/hujjatSanasi";
 import { muvaffaqiyatXabari } from "@/lib/toast";
-import { pulMatni } from "@/lib/valyuta";
+import { oziValyutadaMatn, pulMatni, useYagonaValyuta } from "@/lib/valyuta";
 import { yetkazibQarzAmali, type YetkazibBoshlangichQarzi } from "@/lib/yetkazibBoshlangichQarz";
 import type { YetkazibBeruvchi } from "./types";
 
@@ -74,7 +74,9 @@ export default function YetkazibBoshlangichQarzTab({
     }
   }
 
-  const summa = (qarz: YetkazibBoshlangichQarzi) => pulMatni(qarz.amount, qarz.currency);
+  // Bir valyutali rejimda qarz o'z valyutasida, o'girilmasdan (rejimdan oldingi so'mdagi qarz Faqat dollar rejimida "$" bo'lib qolmasin).
+  const yagona = useYagonaValyuta();
+  const summa = (qarz: YetkazibBoshlangichQarzi) => (yagona ? oziValyutadaMatn(qarz.amount, qarz.currency) : pulMatni(qarz.amount, qarz.currency));
 
   return (
     <div className="px-9 py-7">

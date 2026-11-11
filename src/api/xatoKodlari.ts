@@ -80,7 +80,7 @@ const MATNLAR: Record<string, KodMatni> = {
     uz: "Karta, bank yoki hisobdan qarz summasidan ko'p to'lab bo'lmaydi. Ortiqcha pulni faqat naqd to'lovda qabul qilish mumkin (qaytim yoki mijoz hisobiga). Summani kamaytiring.",
     ru: "Картой, банковским переводом или со счёта нельзя заплатить больше суммы долга. Излишек принимается только при оплате наличными (сдача или зачисление на счёт клиента). Уменьшите сумму.",
   },
-  // $ uchun valyuta rejimi o'chiq.
+  // Eski kod (backend 11.11.2026 dan beri qaytmaydi, o'rniga errors.currency.not_allowed): eski javoblar uchun qoldirilgan.
   "errors.currency.mode_off": {
     uz: "Dollar bilan ishlash uchun valyuta rejimi yoqilgan bo'lishi kerak (Sozlamalar → Valyuta).",
     ru: "Для работы с долларом должен быть включён валютный режим (Настройки → Валюта).",
@@ -260,6 +260,25 @@ const DINAMIK_MATNLAR: Record<string, DinamikMatn> = {
       },
       til
     ),
+  // Bir valyutali rejimda boshqa valyutadagi yozuv (savdo, to'lov, narx, kirim, kassa, boshlang'ich qarz...): javobda `mode` va `allowed`.
+  "errors.currency.not_allowed": (til, tafsilot) => {
+    const rejim = String(xatoMaydoni(tafsilot, "mode") ?? "").toUpperCase();
+    const ruxsat = xatoMaydoni(tafsilot, "allowed");
+    const ruxsatlar = (Array.isArray(ruxsat) ? ruxsat : [ruxsat]).map((qiymat) => String(qiymat ?? "").toUpperCase());
+    const valyuta = rejim === "USD_ONLY" || (rejim !== "UZS_ONLY" && ruxsatlar.includes("USD") && !ruxsatlar.includes("UZS"))
+      ? "USD"
+      : rejim === "UZS_ONLY" || (ruxsatlar.includes("UZS") && !ruxsatlar.includes("USD"))
+        ? "UZS"
+        : null;
+    if (til === "ru") {
+      if (valyuta === "USD") return "Магазин работает только в долларах (Настройки → Валюта: «Только доллар»). Запись в сумах не принимается — укажите сумму в долларах.";
+      if (valyuta === "UZS") return "Магазин работает только в сумах (Настройки → Валюта: «Только сум»). Запись в долларах не принимается — укажите сумму в сумах.";
+      return "Эта валюта не разрешена в текущем валютном режиме магазина (Настройки → Валюта).";
+    }
+    if (valyuta === "USD") return "Do'kon faqat dollarda ishlaydi (Sozlamalar → Valyuta: «Faqat dollar»). So'mdagi yozuv qabul qilinmaydi — summani dollarda kiriting.";
+    if (valyuta === "UZS") return "Do'kon faqat so'mda ishlaydi (Sozlamalar → Valyuta: «Faqat so'm»). Dollardagi yozuv qabul qilinmaydi — summani so'mda kiriting.";
+    return "Bu valyuta do'konning joriy valyuta rejimida ruxsat etilmagan (Sozlamalar → Valyuta).";
+  },
   "errors.document.period_closed": (til, tafsilot) => {
     const kun = kunMatni(String(xatoMaydoni(tafsilot, "closedUntil") ?? ""));
     return til === "ru"
@@ -338,6 +357,7 @@ const OXIRGI_QISM_KODLARI: Record<string, string> = {
   mode_off: "errors.currency.mode_off",
   currency_mode_off: "errors.currency.mode_off",
   rate_missing: "errors.currency.rate_missing",
+  currency_not_allowed: "errors.currency.not_allowed",
   currency_rate_missing: "errors.currency.rate_missing",
   paid_by_later_sale: "errors.sales.paid_by_later_sale",
 };

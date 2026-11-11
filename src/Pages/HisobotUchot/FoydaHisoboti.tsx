@@ -10,7 +10,7 @@ import { productProfitReportApi } from "@/api/reportsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { son } from "./yordamchilar";
 import { bugungiToshkentKuni, kunniSurish } from "@/lib/hujjatSanasi";
-import { korsatiladiganValyuta, type Valyuta } from "@/lib/valyuta";
+import { korsatiladiganValyuta, useYagonaValyuta, type Valyuta } from "@/lib/valyuta";
 import {
   engKopFoyda,
   foydaHisobotiniMoslash,
@@ -21,6 +21,7 @@ import {
   panelRoyxati,
   qatorJufti,
   valyutaJufti,
+  yagonaValyutaJufti,
   zararliQatorlar,
   type FoydaGuruhi,
   type FoydaQatori as Qator,
@@ -28,8 +29,9 @@ import {
   type FoydaSummalari,
   type FoydaTaklifi,
   type FoydaXulosasi,
+  type SummaJufti,
 } from "./foydaHisobotiModeli";
-import { hisobotPulMatni } from "./hisobotValyutasi";
+import { hisobotPulMatni, korinadiganValyutalar, nolEmasSummaBor } from "./hisobotValyutasi";
 
 import YuklanmoqdaHolati from "./YuklanmoqdaHolati";
 
@@ -66,7 +68,10 @@ function hisobotParametrlari(p: { guruh: FoydaGuruhi; dateFrom: string; dateTo: 
 }
 
 export default function FoydaHisoboti() {
-  const [tanlanganValyuta, setTanlanganValyuta] = useState<Valyuta>(korsatiladiganValyuta);
+  // Bir valyutali rejimda (Faqat so'm / Faqat dollar) valyuta tanlovi yashirin: hisobot doim rejim valyutasida, kurs so'ralmaydi.
+  const yagona = useYagonaValyuta();
+  const [tanlanganValyutaHolati, setTanlanganValyuta] = useState<Valyuta>(korsatiladiganValyuta);
+  const tanlanganValyuta = yagona ?? tanlanganValyutaHolati;
   const { kategoriyalar } = useHisobotRealData();
   const [dateFrom, setDateFrom] = useState(() => kunniSurish(bugungiToshkentKuni(), -30));
   const [dateTo, setDateTo] = useState(bugungiToshkentKuni);
@@ -155,12 +160,18 @@ export default function FoydaHisoboti() {
 
   const pul = (summa: number, valyuta: Valyuta = hisobotValyutasi) => hisobotPulMatni(summa, valyuta);
   // Jami summa: so'm va dollar bo'lsa tanlangan valyuta asosiy; yo'q bo'lsa hisobot valyutasidagi qiymat.
-  const jamiJufti = (kalit: keyof FoydaSummalari) => model.aslValyutada
+  // Bir valyutali rejimda faqat rejim valyutasidagi summa (≈ ikkinchi valyuta yo'q); u bo'lmasa — hisobot valyutasidagi server summasi.
+  const jamiJufti = (kalit: keyof FoydaSummalari) => yagonaValyutaJufti(model.aslValyutada
     ? { asosiy: { summa: aslJamilar[hisobotValyutasi][kalit], valyuta: hisobotValyutasi }, qoshimcha: null }
-    : jami.uzs ? valyutaJufti(jami.uzs[kalit], jami.usd?.[kalit] ?? null, hisobotValyutasi) : { asosiy: { summa: jami.asosiy[kalit], valyuta: hisobotValyutasi }, qoshimcha: null };
-  const panelJufti = (item: FoydaTaklifi) => model.aslValyutada
+    : jami.uzs ? valyutaJufti(jami.uzs[kalit], jami.usd?.[kalit] ?? null, hisobotValyutasi) : { asosiy: { summa: jami.asosiy[kalit], valyuta: hisobotValyutasi }, qoshimcha: null },
+  yagona, jami.asosiy[kalit]);
+  const panelJufti = (item: FoydaTaklifi) => yagonaValyutaJufti(model.aslValyutada
     ? { asosiy: { summa: hisobotValyutasi === "USD" ? item.foydaUsd ?? 0 : item.foydaUzs, valyuta: hisobotValyutasi }, qoshimcha: null }
-    : valyutaJufti(item.foydaUzs, item.foydaUsd, hisobotValyutasi);
+    : valyutaJufti(item.foydaUzs, item.foydaUsd, hisobotValyutasi),
+  yagona, korinadigan.find((qator) => qator.id === item.id)?.foyda ?? null);
+  const qatorJuftligi = (item: Qator, kalit: keyof FoydaSummalari) => yagonaValyutaJufti(qatorJufti(item, kalit, hisobotValyutasi), yagona, item[kalit]);
+  // Sotuv valyutasi kartalari: bir valyutali rejimda faqat rejim valyutasi (eski hujjatlardan boshqa valyutada qiymat qolgan bo'lsa u ham).
+  const kartaValyutalari = korinadiganValyutalar(yagona, (valyuta) => nolEmasSummaBor(aslJamilar[valyuta].tushum, aslJamilar[valyuta].tannarx, aslJamilar[valyuta].foyda));
 
   function saralashniOzgartirish(kalit: FoydaSaralashKaliti) {
     setSaralash((joriy) => (joriy.kalit === kalit ? { kalit, kamayish: !joriy.kamayish } : { kalit, kamayish: kalit !== "nomi" }));
@@ -212,7 +223,7 @@ export default function FoydaHisoboti() {
         <MuddatTanlov timeZone="Asia/Tashkent" dateFrom={dateFrom} dateTo={dateTo} onChange={(from, to) => { setDateFrom(from); setDateTo(to); }} />
         <Dropdown label="Mahsulot kategoriyasi" value={categoryId} options={[{ value: "", nomi: "Barchasi" }, ...kategoriyalar.map((item) => ({ value: item.id, nomi: item.nomi }))]} onChange={setCategoryId} />
         <Dropdown label="Narx turi" value={narxTuri} options={NARX_TURI_VARIANTLARI} onChange={(value) => setNarxTuri(value as NarxTuriFiltri)} />
-        <Dropdown label="Jadval va ro'yxatlar valyutasi" value={tanlanganValyuta} options={[{value:"UZS",nomi:"So'm (UZS)"},{value:"USD",nomi:"Dollar (USD)"}]} onChange={(value) => setTanlanganValyuta(value as Valyuta)} />
+        {!yagona && <Dropdown label="Jadval va ro'yxatlar valyutasi" value={tanlanganValyuta} options={[{value:"UZS",nomi:"So'm (UZS)"},{value:"USD",nomi:"Dollar (USD)"}]} onChange={(value) => setTanlanganValyuta(value as Valyuta)} />}
         <label className="block text-xs font-bold text-gray-700">
           {guruh === "CUSTOMER" ? "Mijoz" : "Mahsulot"}
           <span className="relative mt-1.5 block">
@@ -225,8 +236,8 @@ export default function FoydaHisoboti() {
 
     {xato && <p role="alert" className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
 
-    {model.aslValyutada ? <section aria-label="Sotuv valyutasi bo'yicha jami" className="grid gap-5 xl:grid-cols-2">
-      {(["UZS", "USD"] as const).map((currency) => {
+    {model.aslValyutada ? <section aria-label="Sotuv valyutasi bo'yicha jami" className={`grid gap-5 ${kartaValyutalari.length > 1 ? "xl:grid-cols-2" : ""}`}>
+      {kartaValyutalari.map((currency) => {
         const som = currency === "UZS";
         const qiymat = aslJamilar[currency];
         const zarar = qiymat.foyda < 0;
@@ -271,7 +282,7 @@ export default function FoydaHisoboti() {
       <Korsatkich nom="Tannarx" qiymat={yuklanmoqda ? "…" : pul(tannarxJufti.asosiy.summa, tannarxJufti.asosiy.valyuta)} izoh={qoshimcha(tannarxJufti) || "Sotilgan tovar tannarxi"} />
       <Korsatkich nom="Yalpi foyda" qiymat={yuklanmoqda ? "…" : pul(foydaJuftiJami.asosiy.summa, foydaJuftiJami.asosiy.valyuta)} izoh={qoshimcha(foydaJuftiJami) || "tushum − tannarx"} ton={jamiZarar ? "zarar" : "foyda"} keng />
       <Korsatkich nom="Rentabellik" qiymat={yuklanmoqda ? "…" : `${jami.rentabellik.toFixed(1)}%`} izoh="foyda ÷ tushum" />
-      {jami.ortachaKurs !== null
+      {jami.ortachaKurs !== null && !yagona
         ? <Korsatkich nom="O‘rtacha kurs" qiymat={yuklanmoqda ? "…" : son(Math.round(jami.ortachaKurs))} izoh="sotuv kunlari bo‘yicha" />
         : <Korsatkich nom="Sotilgan miqdor" qiymat={yuklanmoqda ? "…" : son(jami.sotilgan)} izoh={`${korinadigan.length} ta ${guruhSozi}`} />}
     </section>}
@@ -314,12 +325,12 @@ export default function FoydaHisoboti() {
                     <tr key={item.id} className={`align-top transition hover:bg-orange-50/50 ${item.zarar ? "bg-red-50/40" : ""}`}>
                       <td className="max-w-[260px] px-4 py-3.5 font-black text-slate-900">
                         <span className="block truncate" title={item.nomi}>{item.nomi}</span>
-                        <QatorIzohi item={item} pul={pul} />
+                        <QatorIzohi item={item} pul={pul} yagona={yagona} />
                       </td>
                       <td className="whitespace-nowrap px-4 py-3.5 text-right font-semibold tabular-nums text-gray-700">{son(item.sotilgan)}</td>
-                      <td className="px-4 py-3.5 text-right"><SummaKatagi juft={qatorJufti(item, "tushum", hisobotValyutasi)} pul={pul} /></td>
-                      <td className="px-4 py-3.5 text-right">{item.tannarxKiritilmagan ? "—" : <SummaKatagi juft={qatorJufti(item, "tannarx", hisobotValyutasi)} pul={pul} />}</td>
-                      <td className="px-4 py-3.5 text-right">{item.tannarxKiritilmagan ? "—" : <SummaKatagi juft={qatorJufti(item, "foyda", hisobotValyutasi)} pul={pul} rang={foydaRangi(item.zarar)} qalin />}</td>
+                      <td className="px-4 py-3.5 text-right"><SummaKatagi juft={qatorJuftligi(item, "tushum")} pul={pul} /></td>
+                      <td className="px-4 py-3.5 text-right">{item.tannarxKiritilmagan ? "—" : <SummaKatagi juft={qatorJuftligi(item, "tannarx")} pul={pul} />}</td>
+                      <td className="px-4 py-3.5 text-right">{item.tannarxKiritilmagan ? "—" : <SummaKatagi juft={qatorJuftligi(item, "foyda")} pul={pul} rang={foydaRangi(item.zarar)} qalin />}</td>
                       <td className="px-4 py-3.5 text-right"><RentabellikBelgisi qator={item} /></td>
                     </tr>
                   ))}
@@ -343,15 +354,15 @@ export default function FoydaHisoboti() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="break-words font-black text-slate-900">{item.nomi}</p>
-                      <QatorIzohi item={item} pul={pul} />
+                      <QatorIzohi item={item} pul={pul} yagona={yagona} />
                     </div>
                     <RentabellikBelgisi qator={item} />
                   </div>
                   <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm sm:grid-cols-4">
-                    <Maydon nom="Tushum"><SummaKatagi juft={qatorJufti(item, "tushum", hisobotValyutasi)} pul={pul} chap /></Maydon>
-                    <Maydon nom="Tannarx">{item.tannarxKiritilmagan ? "—" : <SummaKatagi juft={qatorJufti(item, "tannarx", hisobotValyutasi)} pul={pul} chap />}</Maydon>
+                    <Maydon nom="Tushum"><SummaKatagi juft={qatorJuftligi(item, "tushum")} pul={pul} chap /></Maydon>
+                    <Maydon nom="Tannarx">{item.tannarxKiritilmagan ? "—" : <SummaKatagi juft={qatorJuftligi(item, "tannarx")} pul={pul} chap />}</Maydon>
                     <Maydon nom="Miqdor">{son(item.sotilgan)}</Maydon>
-                    <Maydon nom="Yalpi foyda">{item.tannarxKiritilmagan ? "—" : <SummaKatagi juft={qatorJufti(item, "foyda", hisobotValyutasi)} pul={pul} rang={foydaRangi(item.zarar)} qalin chap />}</Maydon>
+                    <Maydon nom="Yalpi foyda">{item.tannarxKiritilmagan ? "—" : <SummaKatagi juft={qatorJuftligi(item, "foyda")} pul={pul} rang={foydaRangi(item.zarar)} qalin chap />}</Maydon>
                   </dl>
                 </li>
               ))}
@@ -411,7 +422,7 @@ export default function FoydaHisoboti() {
             <li><span className="font-bold text-slate-800">Rentabellik</span> = foyda ÷ tushum × 100%{model.aslValyutada ? " (har bir valyuta alohida)" : " (hisobot valyutasida)"}</li>
           </ul>
           <p className="mt-3 text-xs leading-relaxed text-slate-500">
-            {model.aslValyutada ? "Har bir sotuv foydasi o'z valyutasida: dollardagi sotuv dollarda, so'mdagi sotuv so'mda. So'mdagi sotuvning dollar tannarxi sotuv kunidagi kurs bilan backendda hisoblanadi. " : "Har bir sotuv o'z kunidagi kurs bilan hisoblanadi. "}Qaytarilgan tovarlar ayirilgan, operatsion xarajatlar hisobga olinmagan. Sof foyda (xarajatlar ayirilgan) — <Link to="/hisobotlar/foyda-xarajat" className="font-black text-orange-600 underline underline-offset-2">«Foyda va xarajat»</Link> sahifasida.
+            {yagona ? "" : model.aslValyutada ? "Har bir sotuv foydasi o'z valyutasida: dollardagi sotuv dollarda, so'mdagi sotuv so'mda. So'mdagi sotuvning dollar tannarxi sotuv kunidagi kurs bilan backendda hisoblanadi. " : "Har bir sotuv o'z kunidagi kurs bilan hisoblanadi. "}Qaytarilgan tovarlar ayirilgan, operatsion xarajatlar hisobga olinmagan. Sof foyda (xarajatlar ayirilgan) — <Link to="/hisobotlar/foyda-xarajat" className="font-black text-orange-600 underline underline-offset-2">«Foyda va xarajat»</Link> sahifasida.
           </p>
         </section>
       </aside>
@@ -439,7 +450,7 @@ function Maydon({ nom, children }: { nom: string; children: ReactNode }) {
   );
 }
 
-type Juft = ReturnType<typeof valyutaJufti> | { asosiy: { summa: number; valyuta: Valyuta }; qoshimcha: null };
+type Juft = SummaJufti;
 
 // Summa katagi: tanlangan valyutada, tagida kichik harfda ikkinchi valyutadagi qiymat (har sotuv o'z kursida hisoblangan).
 function SummaKatagi({ juft, pul, rang = "text-gray-700", qalin, chap }: { juft: Juft; pul: (summa: number, valyuta: Valyuta) => string; rang?: string; qalin?: boolean; chap?: boolean }) {
@@ -452,10 +463,11 @@ function SummaKatagi({ juft, pul, rang = "text-gray-700", qalin, chap }: { juft:
 }
 
 // Nom ostidagi qisqa izoh: 1 dona tannarxi (mahsulot), eng foydali mahsulot (mijoz) va cheklar soni.
-function QatorIzohi({ item, pul }: { item: Qator; pul: (summa: number, valyuta: Valyuta) => string }) {
+// Bir valyutali rejimda (`yagona`) boshqa valyutadagi summa ko'rsatilmaydi: Faqat so'mda $ tannarx, Faqat dollarda so'mdagi foyda.
+function QatorIzohi({ item, pul, yagona = null }: { item: Qator; pul: (summa: number, valyuta: Valyuta) => string; yagona?: Valyuta | null }) {
   const qismlar = [
-    item.birDonaTannarxUsd !== null ? `tannarx ${pul(item.birDonaTannarxUsd, "USD")} / dona` : "",
-    item.engYaxshiMahsulot ? `eng foydali: ${item.engYaxshiMahsulot.nomi} (${pul(item.engYaxshiMahsulot.foydaUzs, "UZS")})` : "",
+    item.birDonaTannarxUsd !== null && yagona !== "UZS" ? `tannarx ${pul(item.birDonaTannarxUsd, "USD")} / dona` : "",
+    item.engYaxshiMahsulot ? `eng foydali: ${item.engYaxshiMahsulot.nomi}${yagona === "USD" ? "" : ` (${pul(item.engYaxshiMahsulot.foydaUzs, "UZS")})`}` : "",
     item.cheklar !== null ? `${son(item.cheklar)} ta chek` : "",
   ].filter(Boolean);
   if (!qismlar.length && !item.tannarxKiritilmagan) return null;

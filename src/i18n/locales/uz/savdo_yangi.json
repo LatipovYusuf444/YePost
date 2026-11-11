@@ -23,7 +23,12 @@
     "dismiss": "Yopish",
     "lineNeedsRate": "Qator valyutasi sotuv valyutasidan farq qiladi: uni o'girish uchun bugungi dollar kursini kiriting (Sozlamalar → Valyuta).",
     "rateRequired": "Valyutani almashtirish uchun bugungi dollar kursini kiriting.",
+    "modeCurrencyNeedsRate": "Qoralama boshqa valyutada saqlangan, do'kon esa bitta valyutada ishlaydi. Uni o'girish uchun avval Sozlamalar → Kurs'da bitta dollar kursini kiriting.",
+    "modeOtherCurrencyDraft": "Qoralama {{from}} da saqlangan, do'kon esa faqat {{to}} da ishlaydi: bu yerda qatorlarni saqlab bo'lmaydi. Qoralamani \"Tahrirlash\" oynasida oching — u {{to}} ga o'giriladi.",
+    "modeDuplicateDraft": "Qoralamada {{from}} dagi narxlar bor, do'kon esa faqat {{to}} da ishlaydi: nusxa olib bo'lmaydi. Avval qoralamani \"Tahrirlash\" oynasida {{to}} ga o'girib saqlang, keyin nusxalang.",
     "quantityNotWhole": "Pochka, qop, korobka kabi birliklarda faqat butun miqdor kiritiladi.",
+    "linePriceUsd": "Narx 0 dan katta bo'lishi kerak — narxni dollarda kiriting.",
+    "linePriceUzs": "Narx 0 dan katta bo'lishi kerak — narxni so'mda kiriting.",
     "usdUnavailable": "Dollarda sotuv uchun valyuta rejimi yoqilgan va bugungi kurs kiritilgan bo'lishi kerak (Sozlamalar → Valyuta).",
     "selectClientForActivity": "CRM faoliyatini saqlash uchun mijozni tanlang.",
     "selectResponsibleForTask": "Ish yoki vazifa yaratish uchun mas'ul xodimni tanlang.",
@@ -176,7 +181,8 @@
   },
   "hints": {
     "saleCreatedByCurrentUser": "Sotuv har doim tizimga kirgan foydalanuvchi nomidan yaratiladi.",
-    "usdSale": "Sotuv dollarda yaratiladi: so'mda narxlangan mahsulotlar bugungi kurs bo'yicha ($1 = {{kurs}} so'm) ko'rsatiladi, backend tasdiqlash kunidagi kurs bilan hisoblaydi."
+    "usdSale": "Sotuv dollarda yaratiladi: so'mda narxlangan mahsulotlar bugungi kurs bo'yicha ($1 = {{kurs}} so'm) ko'rsatiladi, backend tasdiqlash kunidagi kurs bilan hisoblaydi.",
+    "modeConverted": "Qoralama {{from}} da saqlangan edi: do'kon faqat {{to}} da ishlagani uchun narxlar {{to}} ga o'girildi. Saqlashdan oldin summalarni tekshiring."
   },
   "actions": {
     "addCustomer": "Mijoz qo'shish",
@@ -198,6 +204,7 @@
     "priceLabelShort": "narx",
     "outOfStock": "Qoldiq yo'q",
     "noRate": "Kurs kiritilmagan",
+    "somPriceNoRate": "Narxi so'mda — dollarda kiriting",
     "usdHint": "{{usd}} × {{kurs}} so'm (bugungi kurs)",
     "keyboardHint": "Klaviatura: ↑/↓ — qatorlar orasida; Enter — keyingi qator (oxirgisida yangisi); ro'yxatda Shift+Enter — tanlab, darrov keyingi mahsulotga; Ctrl+↑/↓ — mahsulot maydoniga; Ctrl+Delete — qatorni o'chirish.",
     "scanPlaceholder": "Shtrix kodni skanerlang yoki yozib Enter bosing",
@@ -206,6 +213,7 @@
     "scanNotFound": "Bu shtrix kodli mahsulot topilmadi.",
     "scanOutOfStock": "{{name}}: qoldiq yo'q.",
     "scanNoRate": "{{name}}: so'mdagi narx yo'q (kurs kiritilmagan).",
+    "scanSomPriceNoRate": "{{name}}: narxi so'mda, dollardagi narx yo'q (kurs kiritilmagan). Mahsulot narxini dollarda kiriting.",
     "scanNotEnough": "{{name}}: qoldiq yetarli emas (mavjud {{available}}).",
     "scanPickWarehouse": "{{name}} bir nechta omborda bor. Avval omborni tanlang."
   },

@@ -1,4 +1,4 @@
-import { pulMatni, useValyutaStore } from "@/lib/valyuta";
+import { oziValyutadaMatn, pulMatni, useValyutaStore, useYagonaValyuta } from "@/lib/valyuta";
 import { Link } from "react-router-dom";
 import { useMijozHisoblari } from "@/hooks/useMijozHisoblari";
 import type { MijozHisobHolati, MijozHisobQoldigi } from "@/lib/mijozHisobQoldigi";
@@ -176,10 +176,17 @@ function MalumotlarTab({
   const rejimYoniq = useValyutaStore((holat) => holat.rejimYoniq);
   const hisob = mijozHisobi({ balance: xaridor.balans, balanceCurrency: xaridor.balansValyutasi });
   const xulosa = mijozQarzXulosasi(savdolar);
-  const summaMatni = (summa: { UZS: number; USD: number }) => [
-    ...(summa.UZS !== 0 || summa.USD === 0 ? [pulMatni(summa.UZS, "UZS", true)] : []),
-    ...(summa.USD !== 0 ? [pulniFormatlash(summa.USD, "USD")] : []),
-  ].join(" + ");
+  // Faqat dollar rejimida asosiy summa dollarda; rejimdan oldingi so'mdagi hujjatlar so'mda, o'girilmasdan ko'rsatiladi.
+  const yagona = useYagonaValyuta();
+  const summaMatni = (summa: { UZS: number; USD: number }) => (yagona === "USD"
+    ? [
+      ...(summa.USD !== 0 || summa.UZS === 0 ? [pulniFormatlash(summa.USD, "USD")] : []),
+      ...(summa.UZS !== 0 ? [oziValyutadaMatn(summa.UZS, "UZS", true)] : []),
+    ]
+    : [
+      ...(summa.UZS !== 0 || summa.USD === 0 ? [pulMatni(summa.UZS, "UZS", true)] : []),
+      ...(summa.USD !== 0 ? [pulniFormatlash(summa.USD, "USD")] : []),
+    ]).join(" + ");
 
   return (
     <div className="grid gap-6 px-9 py-7 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">

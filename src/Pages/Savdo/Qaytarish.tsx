@@ -1,5 +1,6 @@
 import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, CircleCheck, Clock3, Plus, RotateCcw, Search, Undo2, Wallet } from "lucide-react";
 import { sotuvTafsilotiniOlish } from "@/api/savdoApi";
@@ -78,7 +79,19 @@ export default function Qaytarish({
   const qaytarishTafsilotiniYuklash = useSavdoStore((state) => state.qaytarishTafsilotiniYuklash);
   const yuklashXatosi = useSavdoStore((state) => state.xatolik);
   const [yangiOchiq, setYangiOchiq] = useState(Boolean(boshlangichSotuvId));
-  const [tanlanganId, setTanlanganId] = useState<string | null>(null);
+  // Kassadan "Qaytarishni ochish" (/savdo?tab=qaytarish&qaytarish=<id>): shu hujjat oynasi ochiladi, havola tozalanadi.
+  const [qidiruvParametrlari, setQidiruvParametrlari] = useSearchParams();
+  const havolaQaytarishi = qidiruvParametrlari.get("qaytarish");
+  const [tanlanganId, setTanlanganId] = useState<string | null>(havolaQaytarishi);
+  useEffect(() => {
+    if (!havolaQaytarishi) return;
+    setTanlanganId(havolaQaytarishi);
+    setQidiruvParametrlari((joriy) => {
+      const yangi = new URLSearchParams(joriy);
+      yangi.delete("qaytarish");
+      return yangi;
+    }, { replace: true });
+  }, [havolaQaytarishi, setQidiruvParametrlari]);
   const [qidiruv, setQidiruv] = useState("");
   const [holatFiltri, setHolatFiltri] = useState<HolatFiltri>("ALL");
   const [page, setPage] = useState(1);

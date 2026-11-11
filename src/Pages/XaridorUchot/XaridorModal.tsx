@@ -20,7 +20,7 @@ import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { mijozHisobi } from "@/lib/mijozHisobi";
 import { valyutaKutmoqda, type MijozValyutasi } from "@/lib/mijozValyutasi";
 import { cn } from "@/lib/utils";
-import { useValyutaStore } from "@/lib/valyuta";
+import { useValyutaStore, yagonaValyuta } from "@/lib/valyuta";
 import { pulniFormatlash } from "@/Pages/Savdo/savdoYordamchilari";
 import FaoliyatPaneli from "./FaoliyatPaneli";
 import IjtimoiyTanlov from "./IjtimoiyTanlov";
@@ -187,7 +187,8 @@ export default function XaridorModal({
       kompaniyaId,
       lavozim: lavozim.trim(),
       balans: boshlangich?.balans ?? 0,
-      valyuta,
+      // Bir valyutali rejimda hisob valyutasi tanlovi yashirin: kartadagi qiymat o'zgarmaydi (yangi mijozda yuborilmaydi, backend o'zi qo'yadi).
+      valyuta: yagonaValyuta() ? (boshlangich?.valyuta ?? null) : valyuta,
       yaratganMasul: boshlangich?.yaratganMasul ?? t("shared.defaultResponsible"),
       yaratilganSana,
       ozgartirilganSana: bugun(),

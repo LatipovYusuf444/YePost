@@ -33,7 +33,7 @@ import { useModalYuklash } from "@/hooks/useModalYuklash";
 import { mahsulotBirliklariApi, mahsulotlarApi } from "@/api/catalogApi";
 import { omborlarApi } from "@/api/omborApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
-import { pulMatni, valyutaKodi } from "@/lib/valyuta";
+import { oziValyutadaMatn, pulMatni, useYagonaValyuta, valyutaKodi, yagonaValyuta } from "@/lib/valyuta";
 import { foydalanuvchiAdminmi, rolniNormallashtirish } from "@/lib/roles";
 import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import { useOzgarishBormi } from "@/hooks/useOzgarishBormi";
@@ -56,7 +56,7 @@ import ModalTablari from "@/Components/common/ModalTablari";
 import KorinishTanlash, { type RoyxatKorinishi } from "@/Pages/Ombor/KorinishTanlash";
 import KategoriyaQoldigiModal from "./KategoriyaQoldigiModal";
 import { sotuvNarxiUstamadan, ustamaFoizi } from "./narxHisobi";
-import { narxQoralamaValyutalari, narxYigish, ustamaHisoblashMumkin } from "./narxValyutaYuklama";
+import { narxQoralamaValyutalari, narxYigish, ozgarmaganBoshqaValyutaMaydonlar, ozgarmaganBoshqaValyutaNarx, rejimgaMosEmasNarx, ustamaHisoblashMumkin, yuboriladiganNarx } from "./narxValyutaYuklama";
 import { narxValyutalari } from "@/lib/narxValyutasi";
 import BirliklarModal from "./BirliklarModal";
 import BirlikQatorlariMaydoni from "./BirlikQatorlari";
@@ -807,9 +807,12 @@ function sanitizeMoneyInput(value:string) {
 
 function MoneyInput({value,suffix,onChange,currency,onCurrencyChange,onApplyAll}:{value:string;suffix?:string;onChange:(value:string)=>void;currency?:"UZS"|"USD";onCurrencyChange?:(value:"UZS"|"USD")=>void;onApplyAll?:()=>void}) {
   const { t } = useTranslation("mahsulotlar");
+  // Bir valyutali rejimda (Faqat so'm / Faqat dollar) valyuta tanlovi yashiriladi — o'rnida rejim valyutasi yoziladi.
+  const yagona=useYagonaValyuta();
+  const tanlov=Boolean(currency&&onCurrencyChange&&!yagona);
   return <div className="group relative">
-    <input value={formatNumberInput(value)} onChange={(e)=>onChange(e.target.value)} className={`h-12 w-full rounded-2xl border-0 bg-gray-100 px-4 text-sm font-black text-gray-700 outline-none focus:ring-2 focus:ring-orange-100 ${currency?"pr-32":"pr-12"}`} placeholder="0"/>
-    {currency&&onCurrencyChange?<AppSelect value={currency} onChange={(e)=>onCurrencyChange(e.target.value as "UZS"|"USD")} className="absolute right-2 top-1/2 h-9 min-w-[76px] -translate-y-1/2 rounded-xl border border-gray-200 bg-white px-2 text-xs font-black text-gray-600 outline-none hover:border-orange-200 focus:border-orange-300"><option value="UZS">UZS</option><option value="USD">USD</option></AppSelect>:<span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-gray-400">{suffix}</span>}
+    <input value={formatNumberInput(value)} onChange={(e)=>onChange(e.target.value)} className={`h-12 w-full rounded-2xl border-0 bg-gray-100 px-4 text-sm font-black text-gray-700 outline-none focus:ring-2 focus:ring-orange-100 ${tanlov?"pr-32":"pr-12"}`} placeholder="0"/>
+    {tanlov&&currency&&onCurrencyChange?<AppSelect value={currency} onChange={(e)=>onCurrencyChange(e.target.value as "UZS"|"USD")} className="absolute right-2 top-1/2 h-9 min-w-[76px] -translate-y-1/2 rounded-xl border border-gray-200 bg-white px-2 text-xs font-black text-gray-600 outline-none hover:border-orange-200 focus:border-orange-300"><option value="UZS">UZS</option><option value="USD">USD</option></AppSelect>:<span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-gray-400">{currency&&yagona?currency:suffix}</span>}
     {onApplyAll&&value&&<button type="button" onClick={onApplyAll} className="absolute left-0 top-[calc(100%+4px)] z-20 hidden rounded-lg bg-blue-600 px-2 py-1 text-[10px] font-black text-white shadow-lg group-focus-within:block hover:bg-blue-700">{t("moneyInput.applyToAll")}</button>}
   </div>;
 }
@@ -817,7 +820,7 @@ function MoneyInput({value,suffix,onChange,currency,onCurrencyChange,onApplyAll}
 function PriceField({label,value,currency}:{label:string;value:number|string|undefined;currency?:"UZS"|"USD"}) {
   return <label className="grid gap-1">
     <span className="truncate text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</span>
-    <input disabled value={pulMatni(value,currency)} className="input h-10 px-3 text-xs font-black sm:text-sm"/>
+    <input disabled value={money(value,currency)} className="input h-10 px-3 text-xs font-black sm:text-sm"/>
   </label>;
 }
 
@@ -830,18 +833,26 @@ function StockInput({value,onChange,warning}:{value:string;onChange:(value:strin
   </div>;
 }
 
-const emptyVariantDraft: VariantDraft = {
-  barcode: "",
-  imageUrl: "",
-  active: true,
-  costPrice: "",
-  costCurrency: "UZS",
-  markup: "",
-  retailPrice: "",
-  retailCurrency: "UZS",
-  wholesalePrice: "",
-  wholesaleCurrency: "UZS",
-};
+// Yangi narx valyutasi: bir valyutali rejimda — rejim valyutasi, ikki valyuta rejimida avvalgidek so'm.
+function yangiNarxValyutasi():"UZS"|"USD" {
+  return yagonaValyuta()??"UZS";
+}
+
+function emptyVariantDraft(): VariantDraft {
+  const valyuta=yangiNarxValyutasi();
+  return {
+    barcode: "",
+    imageUrl: "",
+    active: true,
+    costPrice: "",
+    costCurrency: valyuta,
+    markup: "",
+    retailPrice: "",
+    retailCurrency: valyuta,
+    wholesalePrice: "",
+    wholesaleCurrency: valyuta,
+  };
+}
 
 function cleanRemoteImage(value: string) {
   const clean = value.trim();
@@ -866,13 +877,15 @@ function numericOrZero(value: string) {
   return Number.isFinite(number) && number > 0 ? number : 0;
 }
 
-function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|"new";onClose:()=>void;boshlangichTahrir?:boolean}) {
+// Bosh sahifa savatchasidan ham ochiladi (mahsulot nomi bosilganda): `faqatKorish` — tahrirlash huquqi yo'q xodim uchun
+// ("Tahrirlash" tugmasi ko'rsatilmaydi), `onSaqlandi` — saqlash muvaffaqiyatli tugaganda (oyna yopilishidan oldin) chaqiriladi.
+export function MahsulotModalKeng({item,onClose,boshlangichTahrir=true,faqatKorish=false,onSaqlandi}:{item:Mahsulot|"new";onClose:()=>void;boshlangichTahrir?:boolean;faqatKorish?:boolean;onSaqlandi?:()=>void}) {
   const { t } = useTranslation("mahsulotlar");
   const store=useMahsulotlarStore();
   // Oyna ichidagi kategoriya yaratish/tahrirlash: xato kategoriya nomi maydoni ostida.
   const kategoriyaFx=useMaydonXatolari(KATEGORIYA_XATO_QOIDALARI);
   const editing=item!=="new";
-  const [tahrirFaol,setTahrirFaol]=useState(!editing||boshlangichTahrir);
+  const [tahrirFaol,setTahrirFaol]=useState(!editing||(boshlangichTahrir&&!faqatKorish));
   const [name,setName]=useState(editing?item.name:"");
   const [categoryId,setCategoryId]=useState(editing?item.categoryId:store.kategoriyalar[0]?.id??"");
   const [unitId,setUnitId]=useState(editing?item.unitId:defaultProductUnit(store.birliklar,store.standardBirliklar)?.id??"");
@@ -909,13 +922,16 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
   const [variantStockDrafts,setVariantStockDrafts]=useState<Record<string,VariantStockDraft>>({});
   // Tahrirlashda (oddiy, variatsiyasiz mahsulot) — mavjud "Asosiy variant"ning
   // haqiqiy narxlari shu yerga oldindan to'ldiriladi, aks holda doim "0" ko'rinardi.
+  // Bir valyutali rejim valyutasi (Faqat so'm / Faqat dollar): narx valyutasi tanlovi yashirin, hammasi shu valyutada yuboriladi.
+  const yagona=useYagonaValyuta();
   const [baseDraft,setBaseDraft]=useState<VariantDraft>(()=>{
-    if(item==="new")return emptyVariantDraft;
+    if(item==="new")return emptyVariantDraft();
     const asosiyVariant=store.modifikatsiyalar[item.id]?.[0];
-    if(!asosiyVariant?.price)return emptyVariantDraft;
-    const valyutalar=narxQoralamaValyutalari(asosiyVariant.price);
+    if(!asosiyVariant?.price)return emptyVariantDraft();
+    // Ko'rish rejimida narx o'z (saqlangan) valyutasida ko'rsatiladi; rejim valyutasiga faqat tahrir yoqilganda o'tiladi.
+    const valyutalar=narxQoralamaValyutalari(asosiyVariant.price,tahrirFaol?yagona:null);
     return {
-      ...emptyVariantDraft,
+      ...emptyVariantDraft(),
       costPrice:asosiyVariant.price.costPrice!=null?String(asosiyVariant.price.costPrice):"",
       costCurrency:valyutalar.costCurrency,
       // Ustama faqat tannarx va chakana narx bir valyutada bo'lsagina hisoblanadi.
@@ -973,16 +989,8 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
       const next: Record<string, VariantDraft> = {};
       variantCombinations.forEach((combo) => {
         next[combo.key] = drafts[combo.key] ?? {
+          ...emptyVariantDraft(),
           barcode: generateBarcodeValue(),
-          imageUrl: "",
-          active: true,
-          costPrice: "",
-          costCurrency: "UZS",
-          markup: "",
-          retailPrice: "",
-          retailCurrency: "UZS",
-          wholesalePrice: "",
-          wholesaleCurrency: "UZS",
         };
       });
       return next;
@@ -1022,7 +1030,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
     if(!asosiyVariant?.price)return;
     setBaseDraft((draft)=>{
       if(draft.costPrice||draft.retailPrice||draft.wholesalePrice)return draft;
-      const valyutalar=narxQoralamaValyutalari(asosiyVariant.price);
+      const valyutalar=narxQoralamaValyutalari(asosiyVariant.price,tahrirFaol?yagonaValyuta():null);
       return {
         ...draft,
         costPrice:asosiyVariant.price!.costPrice!=null?String(asosiyVariant.price!.costPrice):"",
@@ -1034,7 +1042,18 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
         wholesaleCurrency:valyutalar.wholesaleCurrency,
       };
     });
-  }, [item, store.modifikatsiyalar]);
+  }, [item, store.modifikatsiyalar, tahrirFaol]);
+
+  // "Tahrirlash" bosilganda: bir valyutali rejimda narx formasi rejim valyutasiga o'tadi (ko'rishda saqlangan valyutada edi).
+  function tahrirniBoshlash(){
+    setTahrirFaol(true);
+    if(!yagona)return;
+    setBaseDraft((draft)=>({
+      ...draft,
+      ...narxQoralamaValyutalari(null,yagona),
+      markup:draft.costCurrency===draft.retailCurrency?draft.markup:ustamaniHisoblash(draft.costPrice,draft.retailPrice),
+    }));
+  }
 
   const filteredCategories=useMemo(()=>{
     const query=categorySearch.trim().toLowerCase();
@@ -1111,7 +1130,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
         imageUrl:cleanRemoteImage(variantDrafts[combo.key]?.imageUrl??"")||undefined,
         minStock:numericOrZero(variantStockDrafts[combo.key]?.minStock??""),
         params:{...combo.params,...characteristicParams},
-        price:narxYigish(variantDrafts[combo.key]),
+        price:narxYigish(variantDrafts[combo.key],yagona),
       }));
     // Majburiy maydonlar: bo'shlari o'z maydoni ostida ko'rsatiladi (saqlash avvalgidek to'xtaydi).
     const majburiy:Record<string,string>={};
@@ -1119,6 +1138,12 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
     if(!categoryId)majburiy.categoryId=t("validation.categoryRequired");
     if(!unitId)majburiy.unitId=t("validation.unitRequired");
     if(!editing&&generatedVariants.length===0&&!barcode.trim())majburiy.barcode=t("modForm.barcodeRequired");
+    // Bir valyutali rejimda faqat bir narx o'zgartirilsa: boshqa valyutada saqlangan, tegilmagan narxlar ($8) rejim valyutasida
+    // jimgina "8 so'm" bo'lib ketmasligi uchun saqlash to'xtaydi — shu maydonlarda narxni qayta kiritish so'raladi.
+    if(editing&&generatedVariants.length===0&&yagona){
+      ozgarmaganBoshqaValyutaMaydonlar(baseDraft,store.modifikatsiyalar[item.id]?.[0]?.price,yagona)
+        .forEach((maydon)=>{majburiy[`price.${maydon}`]=t(`currencyMode.reenterPrice.${yagona}`)});
+    }
     fx.ornat(majburiy);
     if(Object.keys(majburiy).length>0)return;
     let productUnitId=unitId;
@@ -1154,14 +1179,15 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
           imageUrl:safeImageUrl||undefined,
           minStock:numericOrZero(baseStock.minStock),
           params:hasDefaultParams?defaultParams:undefined,
-          price:narxYigish(baseDraft),
+          price:narxYigish(baseDraft,yagona),
         },yangiBirliklar));
     // Tahrirlashda, oddiy (variatsiyasiz) mahsulotning "Asosiy variant narxlari"
     // bo'limi alohida — mavjud variantga (yoki hali yo'q bo'lsa, yangisiga) saqlanadi,
     // aks holda mahsulotning o'z maydonlari saqlanib, narx o'zgarishi tashlab ketilardi.
     if(ok&&editing&&generatedVariants.length===0){
       const asosiyVariant=store.modifikatsiyalar[item.id]?.[0];
-      const narx=narxYigish(baseDraft);
+      // Bir valyutali rejimda boshqa valyutadagi narx raqamlari o'zgartirilmagan bo'lsa, narx qayta yuborilmaydi.
+      const narx=yuboriladiganNarx(baseDraft,asosiyVariant?.price,yagona);
       // Narx kiritilmagan va asosiy variant ham yo'q bo'lsa, narxsiz yangi variant yaratilmaydi.
       if(narx||asosiyVariant){
         ok=await fx.kuzat(()=>store.modifikatsiyaSaqlash(item.id,asosiyVariant?.id??null,{
@@ -1193,7 +1219,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
         ok=false;
       }
     }
-    if(ok)onClose()
+    if(ok){onSaqlandi?.();onClose()}
   }
 
   function generateArticle() {
@@ -1354,7 +1380,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
     fx.tozala("variants");
     setVariantDrafts((drafts)=>({
       ...drafts,
-      [key]: {...(drafts[key]??{barcode:"",imageUrl:"",active:true,costPrice:"",costCurrency:"UZS",markup:"",retailPrice:"",retailCurrency:"UZS",wholesalePrice:"",wholesaleCurrency:"UZS"}),...patch},
+      [key]: {...(drafts[key]??emptyVariantDraft()),...patch},
     }));
   }
 
@@ -1368,7 +1394,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
 
   function updateVariantPrice(key:string, field:"costPrice"|"markup"|"retailPrice"|"wholesalePrice", value:string) {
     const numericValue=sanitizeMoneyInput(value);
-    const current=variantDrafts[key]??{barcode:"",imageUrl:"",active:true,costPrice:"",costCurrency:"UZS",markup:"",retailPrice:"",retailCurrency:"UZS",wholesalePrice:"",wholesaleCurrency:"UZS"};
+    const current=variantDrafts[key]??emptyVariantDraft();
     const patch:Partial<VariantDraft>={[field]:numericValue};
     // Ustama va sotuv narxi bir-biridan faqat tannarx va chakana narx bir valyutada bo'lsagina hisoblanadi.
     const birValyuta=ustamaHisoblashMumkin(current);
@@ -1418,7 +1444,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
     setVariantDrafts((drafts)=>{
       const next={...drafts};
       variantCombinations.forEach((combo)=>{
-        const current=next[combo.key]??{barcode:"",imageUrl:"",active:true,costPrice:"",costCurrency:"UZS",markup:"",retailPrice:"",retailCurrency:"UZS",wholesalePrice:"",wholesaleCurrency:"UZS"};
+        const current=next[combo.key]??emptyVariantDraft();
         const cost=Number(source.costPrice||0);
         const markup=Number(current.markup||0);
         next[combo.key]={
@@ -1439,7 +1465,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
     setVariantDrafts((drafts)=>{
       const next={...drafts};
       variantCombinations.forEach((combo)=>{
-        const current=next[combo.key]??{barcode:"",imageUrl:"",active:true,costPrice:"",costCurrency:"UZS",markup:"",retailPrice:"",retailCurrency:"UZS",wholesalePrice:"",wholesaleCurrency:"UZS"};
+        const current=next[combo.key]??emptyVariantDraft();
         const cost=Number(current.costPrice||0);
         const markup=Number(source.markup||0);
         next[combo.key]={
@@ -1459,7 +1485,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
     setVariantDrafts((drafts)=>{
       const next={...drafts};
       variantCombinations.forEach((combo)=>{
-        const current=next[combo.key]??{barcode:"",imageUrl:"",active:true,costPrice:"",costCurrency:"UZS",markup:"",retailPrice:"",retailCurrency:"UZS",wholesalePrice:"",wholesaleCurrency:"UZS"};
+        const current=next[combo.key]??emptyVariantDraft();
         const cost=Number(current.costPrice||0);
         const retail=Number(source.retailPrice||0);
         next[combo.key]={
@@ -1483,7 +1509,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
       <div className="flex min-w-0 items-center gap-4">
         <h2 className="truncate text-2xl font-black">{editing?(tahrirFaol?t("productModal.editTitle"):name):t("productModal.createTitle")}</h2>
       </div>
-      {editing&&(!tahrirFaol?<button key="edit" type="button" onClick={event=>{event.preventDefault();setTahrirFaol(true)}} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white transition hover:bg-blue-700"><Edit3 size={17}/>{t("actions.edit")}</button>:<button key="save" type="submit" disabled={store.amalBajarilmoqda||unitResolving||saqlanmoqda} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white transition hover:bg-blue-700 disabled:opacity-50">{store.amalBajarilmoqda||unitResolving||saqlanmoqda?<LoaderCircle size={17} className="animate-spin"/>:<Save size={17}/>} {t("productModal.save")}</button>)}
+      {editing&&!faqatKorish&&(!tahrirFaol?<button key="edit" type="button" onClick={event=>{event.preventDefault();tahrirniBoshlash()}} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white transition hover:bg-blue-700"><Edit3 size={17}/>{t("actions.edit")}</button>:<button key="save" type="submit" disabled={store.amalBajarilmoqda||unitResolving||saqlanmoqda} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white transition hover:bg-blue-700 disabled:opacity-50">{store.amalBajarilmoqda||unitResolving||saqlanmoqda?<LoaderCircle size={17} className="animate-spin"/>:<Save size={17}/>} {t("productModal.save")}</button>)}
     </header>
 
     {editing && <div className="px-6 pt-5"><ProductStockSummary productId={item.id} /></div>}
@@ -1661,7 +1687,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
               </div>
               <div className="divide-y divide-gray-100">
                 {variantCombinations.map((combo)=>{
-                  const draft=variantDrafts[combo.key]??{barcode:"",imageUrl:"",active:true,costPrice:"",costCurrency:"UZS",markup:"",retailPrice:"",retailCurrency:"UZS",wholesalePrice:"",wholesaleCurrency:"UZS"};
+                  const draft=variantDrafts[combo.key]??emptyVariantDraft();
                   return <div key={combo.key} className="grid min-w-[1080px] grid-cols-[1fr_230px_150px_230px_230px] items-center gap-4 px-4 py-3">
                     <div className="font-black text-gray-600">{combo.label}</div>
                     <MoneyInput value={draft.costPrice} currency={draft.costCurrency} onChange={(value)=>updateVariantPrice(combo.key,"costPrice",value)} onCurrencyChange={(value)=>updateVariantDraft(combo.key,{costCurrency:value})} onApplyAll={()=>applyCostToAll(combo.key)}/>
@@ -1677,6 +1703,7 @@ function MahsulotModalKeng({item,onClose,boshlangichTahrir=true}:{item:Mahsulot|
               <div className="mb-4">
                 <p className="text-base font-black text-gray-700">{t("productModal.baseVariant.title")}</p>
                 <p className="mt-1 text-sm font-bold text-gray-400">{t("productModal.baseVariant.subtitle")}</p>
+                {editing&&tahrirFaol&&rejimgaMosEmasNarx(store.modifikatsiyalar[item.id]?.[0]?.price,yagona)&&<p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700">{t("currencyMode.priceConverted",{currency:yagona})}</p>}
               </div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
                 <XatoliMaydon xato={fx.xato("price.costPrice")}>
@@ -1918,9 +1945,16 @@ function ModForm({productId,item,onClose}:{productId:string;item:MahsulotModifik
   // oddiy variantlarda bu texnik maydon shart emas, "Mahsulot" oynasidagi "Xarakteristikalar" bo'limidan boshqariladi.
   const parametrlarKerak=foydalanuvchiAdminmi(useAuthProfileStore((state)=>state.profil))&&editing&&Boolean(item.params&&Object.keys(item.params).length>0);
   // Bu oynada narxlar valyutasiz kiritiladi: mavjud variantni tahrirlashda har bir narxning o'z valyutasi saqlanib qoladi (yangi variant so'mda).
-  const saqlanganValyutalar=editing&&item.price?narxQoralamaValyutalari(item.price):{};
-  async function save(e:FormEvent){e.preventDefault();if(!barcode.trim()){fx.ornat({barcode:t("modForm.barcodeRequired")});return}let parsed:Record<string,unknown>|undefined;try{parsed=params.trim()?JSON.parse(params):undefined;fx.ornat({})}catch{fx.ornat({params:t("modForm.invalidJson")});return}const ok=await fx.kuzat(()=>store.modifikatsiyaSaqlash(productId,editing?item.id:null,{name:name.trim()||undefined,barcode:barcode.trim(),article:article.trim()||undefined,params:parsed,price:{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale,...saqlanganValyutalar}}));if(ok&&editing)await fx.kuzat(()=>store.narxYangilash(productId,item.id,{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale,...saqlanganValyutalar}));if(ok)onClose()}
-  return <AppModal><form onSubmit={save} className="w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl"><div className="flex justify-between"><h2 className="text-2xl font-black">{editing?t("modForm.editTitle"):t("modForm.createTitle")}</h2><button aria-label={t("common:actions.close")} type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100"><X size={18}/></button></div><div className="mt-5 grid gap-3 sm:grid-cols-2"><XatoliMaydon xato={fx.xato("name")} className="sm:col-span-2"><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.namePlaceholder")}</span><input value={name} onChange={e=>{setName(e.target.value);fx.tozala("name")}} className="input" placeholder={mahsulotNomi||t("modForm.namePlaceholder")}/>{mahsulotNomi&&<span className="text-[11px] font-medium text-slate-400">{t("modForm.nameHint",{product:mahsulotNomi})}</span>}</label></XatoliMaydon><XatoliMaydon xato={fx.xato("barcode")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.barcodePlaceholder")}</span><input value={barcode} onChange={e=>{setBarcode(e.target.value);fx.tozala("barcode")}} aria-invalid={Boolean(fx.xato("barcode"))} className="input" placeholder={t("modForm.barcodePlaceholder")}/></label></XatoliMaydon><XatoliMaydon xato={fx.xato("article")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.articlePlaceholder")}</span><input value={article} onChange={e=>{setArticle(e.target.value);fx.tozala("article")}} className="input" placeholder={t("modForm.articlePlaceholder")}/></label></XatoliMaydon>{parametrlarKerak&&<XatoliMaydon xato={fx.xato("params")} className="sm:col-span-2"><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.paramsLabel")}</span><input value={params} onChange={e=>{setParams(e.target.value);fx.tozala("params")}} className="input" placeholder={t("modForm.paramsPlaceholder")}/></label></XatoliMaydon>}<XatoliMaydon xato={fx.xato("costPrice")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.costPlaceholder")}</span><input type="number" min="0" step="0.01" value={cost} onChange={e=>{setCost(Number(e.target.value));fx.tozala("costPrice")}} className="input" placeholder={t("modForm.costPlaceholder")}/></label></XatoliMaydon><XatoliMaydon xato={fx.xato("retailPrice")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.retailPlaceholder")}</span><input type="number" min="0" step="0.01" value={retail} onChange={e=>{setRetail(Number(e.target.value));fx.tozala("retailPrice")}} className="input" placeholder={t("modForm.retailPlaceholder")}/></label></XatoliMaydon><XatoliMaydon xato={fx.xato("wholesalePrice")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.wholesalePlaceholder")}</span><input type="number" min="0" step="0.01" value={wholesale} onChange={e=>{setWholesale(Number(e.target.value));fx.tozala("wholesalePrice")}} className="input" placeholder={t("modForm.wholesalePlaceholder")}/></label></XatoliMaydon></div>{fx.tepadagi&&<p className="mt-3 text-sm font-bold text-red-500">{fx.tepadagi}</p>}<Actions loading={store.amalBajarilmoqda} onClose={onClose}/></form></AppModal>
+  // Bir valyutali rejimda esa har doim rejim valyutasi aniq yuboriladi (boshqa valyutadagi eski narx ham shu valyutaga o'tadi).
+  const yagona=useYagonaValyuta();
+  const saqlanganValyutalar=yagona?narxQoralamaValyutalari(null,yagona):editing&&item.price?narxQoralamaValyutalari(item.price):{};
+  const valyutaOzgardi=editing&&rejimgaMosEmasNarx(item.price,yagona);
+  // Bunday (boshqa valyutadagi) narx raqamlari o'zgartirilmagan bo'lsa narx yuborilmaydi — aks holda u jimgina rejim valyutasiga o'tib qolardi.
+  const narxOzgarmagan=editing&&ozgarmaganBoshqaValyutaNarx({costPrice:cost,retailPrice:retail,wholesalePrice:wholesale},item.price,yagona);
+  // Faqat bir narx o'zgartirilsa, boshqa valyutadagi tegilmagan narxlar (masalan $8) shu maydonda qayta kiritilishi kerak (aks holda "8 so'm" bo'lib ketardi).
+  const qaytaKiritilsin=editing?ozgarmaganBoshqaValyutaMaydonlar({costPrice:cost,retailPrice:retail,wholesalePrice:wholesale},item.price,yagona):[];
+  async function save(e:FormEvent){e.preventDefault();if(!barcode.trim()){fx.ornat({barcode:t("modForm.barcodeRequired")});return}if(yagona&&qaytaKiritilsin.length>0){fx.ornat(Object.fromEntries(qaytaKiritilsin.map((maydon)=>[maydon,t(`currencyMode.reenterPrice.${yagona}`)])));return}let parsed:Record<string,unknown>|undefined;try{parsed=params.trim()?JSON.parse(params):undefined;fx.ornat({})}catch{fx.ornat({params:t("modForm.invalidJson")});return}const narx=narxOzgarmagan?undefined:{costPrice:cost,retailPrice:retail,wholesalePrice:wholesale,...saqlanganValyutalar};const ok=await fx.kuzat(()=>store.modifikatsiyaSaqlash(productId,editing?item.id:null,{name:name.trim()||undefined,barcode:barcode.trim(),article:article.trim()||undefined,params:parsed,price:narx}));if(ok&&editing&&narx)await fx.kuzat(()=>store.narxYangilash(productId,item.id,narx));if(ok)onClose()}
+  return <AppModal><form onSubmit={save} className="w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl"><div className="flex justify-between"><h2 className="text-2xl font-black">{editing?t("modForm.editTitle"):t("modForm.createTitle")}</h2><button aria-label={t("common:actions.close")} type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100"><X size={18}/></button></div><div className="mt-5 grid gap-3 sm:grid-cols-2"><XatoliMaydon xato={fx.xato("name")} className="sm:col-span-2"><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.namePlaceholder")}</span><input value={name} onChange={e=>{setName(e.target.value);fx.tozala("name")}} className="input" placeholder={mahsulotNomi||t("modForm.namePlaceholder")}/>{mahsulotNomi&&<span className="text-[11px] font-medium text-slate-400">{t("modForm.nameHint",{product:mahsulotNomi})}</span>}</label></XatoliMaydon><XatoliMaydon xato={fx.xato("barcode")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.barcodePlaceholder")}</span><input value={barcode} onChange={e=>{setBarcode(e.target.value);fx.tozala("barcode")}} aria-invalid={Boolean(fx.xato("barcode"))} className="input" placeholder={t("modForm.barcodePlaceholder")}/></label></XatoliMaydon><XatoliMaydon xato={fx.xato("article")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.articlePlaceholder")}</span><input value={article} onChange={e=>{setArticle(e.target.value);fx.tozala("article")}} className="input" placeholder={t("modForm.articlePlaceholder")}/></label></XatoliMaydon>{parametrlarKerak&&<XatoliMaydon xato={fx.xato("params")} className="sm:col-span-2"><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.paramsLabel")}</span><input value={params} onChange={e=>{setParams(e.target.value);fx.tozala("params")}} className="input" placeholder={t("modForm.paramsPlaceholder")}/></label></XatoliMaydon>}<XatoliMaydon xato={fx.xato("costPrice")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.costPlaceholder")}</span><input type="number" min="0" step="0.01" value={cost} onChange={e=>{setCost(Number(e.target.value));fx.tozala("costPrice")}} className="input" placeholder={t("modForm.costPlaceholder")}/></label></XatoliMaydon><XatoliMaydon xato={fx.xato("retailPrice")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.retailPlaceholder")}</span><input type="number" min="0" step="0.01" value={retail} onChange={e=>{setRetail(Number(e.target.value));fx.tozala("retailPrice")}} className="input" placeholder={t("modForm.retailPlaceholder")}/></label></XatoliMaydon><XatoliMaydon xato={fx.xato("wholesalePrice")}><label className="grid gap-1.5"><span className="text-xs font-bold text-slate-400">{t("modForm.wholesalePlaceholder")}</span><input type="number" min="0" step="0.01" value={wholesale} onChange={e=>{setWholesale(Number(e.target.value));fx.tozala("wholesalePrice")}} className="input" placeholder={t("modForm.wholesalePlaceholder")}/></label></XatoliMaydon></div>{valyutaOzgardi&&<p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700">{t("currencyMode.priceConverted",{currency:yagona})}</p>}{fx.tepadagi&&<p className="mt-3 text-sm font-bold text-red-500">{fx.tepadagi}</p>}<Actions loading={store.amalBajarilmoqda} onClose={onClose}/></form></AppModal>
 }
 
 const modalSizeClass={normal:"max-w-xl",medium:"max-w-3xl",wide:"max-w-5xl"} as const;
@@ -1928,4 +1962,5 @@ function Modal({title,onClose,children,size="normal"}:{title:string;onClose:()=>
 function Actions({loading,onClose}:{loading:boolean;onClose:()=>void}){const { t } = useTranslation("mahsulotlar");return <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={onClose} className="h-11 rounded-2xl bg-gray-100 px-5 font-bold">{t("actions.cancel")}</button><button disabled={loading} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-orange-500 px-6 font-black text-white disabled:opacity-50">{loading&&<LoaderCircle size={16} className="animate-spin"/>}{t("actions.save")}</button></div>}
 // matn — maydoni ekranda topilmagan forma xatosi (useMaydonXatolari.tepadagi); bo'lmasa store xatosi.
 function ErrorBox({matn}:{matn?:string}){const x=useMahsulotlarStore(s=>s.xatolik);return <div className="rounded-xl bg-red-50 p-3 font-bold text-red-600">{matn||x}</div>}
-function money(value:number|string|undefined,currency?:string|null){return pulMatni(value,valyutaKodi(currency))}
+// Narx o'z valyutasida: bir valyutali rejimda o'girilmaydi (aks holda eski so'mdagi narx "Faqat dollar"da $ belgisi bilan chiqardi).
+function money(value:number|string|undefined,currency?:string|null){return yagonaValyuta()?oziValyutadaMatn(value,valyutaKodi(currency)):pulMatni(value,valyutaKodi(currency))}

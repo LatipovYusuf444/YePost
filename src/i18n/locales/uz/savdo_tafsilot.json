@@ -241,6 +241,8 @@
   },
   "tolovModal": {
     "kassirKursiIzoh": "Mijoz bilan kelishilgan kurs. Bo'sh qolsa bugungi kurs olinadi: 1 $ = {{kurs}} so'm.",
+    "kassirKursiKerak": "Bugungi kurs kiritilmagan: shu to'lov uchun kursni kiriting (1 $ = necha so'm).",
+    "yagonaRejimIzoh": "Do'kon bir valyutali rejimda: to'lov valyutasi — {{tolov}}, sotuv valyutasi — {{sotuv}}. To'lov kurs bilan sotuv valyutasiga o'giriladi.",
     "kassirKursi": "To'lov kursi",
     "tengQiymat": "{{kiritilgan}} = {{summa}}",
     "belgisi": "To'lov",
@@ -266,7 +268,7 @@
       "qiymati": "Ortiqcha to'lov",
       "qaytim": {
         "nom": "Qaytimni kassadan berish",
-        "tavsif": "Mijozga {{summa}} qaytim beriladi. Qaytim so'm kassasidan chiqim (REFUND) bo'lib yoziladi.",
+        "tavsif": "Mijozga {{summa}} qaytim beriladi. Qaytim kassadan chiqim (REFUND) bo'lib yoziladi.",
         "tavsifQoralama": "Eski qarzlar yopilgach qolgan pul mijozga qaytim bo'lib beriladi."
       },
       "hisobga": {
@@ -285,6 +287,7 @@
       "qarzQoldi": "Qolgan qarz: {{summa}}",
       "qaytimSarlavha": "Mijozga qaytim bering",
       "qaytimIzoh": "Qaytim so'm kassasidan chiqim (REFUND) bo'lib yozildi. Mijozga shu summani qaytarib bering.",
+      "qaytimIzohDollar": "Qaytim dollar kassasidan chiqim (REFUND) bo'lib yozildi. Mijozga shu summani qaytarib bering.",
       "hisobgaSarlavha": "Mijoz hisobiga o'tkazildi",
       "hisobgaIzoh": "Bu pul mijozning hisobida turadi va keyingi xaridlarda ishlatiladi. Qaytim berilmaydi.",
       "yopish": "Yopish",
@@ -315,6 +318,7 @@
     "errors": {
       "kursKam": "Kurs {{min}} so'mdan kam bo'lishi mumkin emas (1 $ = necha so'm).",
       "kursNotogri": "Kursni to'g'ri kiriting: 0 dan katta son.",
+      "kursKiriting": "To'lov kursini kiriting (1 $ = necha so'm): sotuv boshqa valyutada, bugungi kurs esa kiritilmagan.",
       "manfiyBolmasin": "To'lov summasi manfiy bo'lishi mumkin emas.",
       "nolDanKatta": "To'lov summasi 0 dan katta bo'lishi kerak.",
       "qaytimMosEmas": "Qaytim summasi oldingi to'lovlar bilan mos kelmayapti. To'lovlarni yoki qaytimni tekshiring.",
@@ -325,7 +329,8 @@
       "qismanSaqlandi": "{{jami}} ta to'lovdan {{saqlandi}} tasi saqlandi, qolganlari saqlanmadi. Qolganlarini qaytadan urinib ko'ring.",
       "sanaKelajak": "To'lov sanasi bugundan keyin bo'lishi mumkin emas.",
       "davrYopilgan": "Davr yopilgan: {{sana}} va undan oldingi kunlarga to'lov yozib bo'lmaydi.",
-      "sanaSotuvdanOldin": "To'lov sanasi sotuv sanasidan ({{sana}}) oldin bo'lishi mumkin emas."
+      "sanaSotuvdanOldin": "To'lov sanasi sotuv sanasidan ({{sana}}) oldin bo'lishi mumkin emas.",
+      "yagonaBoshqaTolovlar": "Bu qoralamada boshqa valyutadagi to'lovlar bor. Do'kon bir valyutali rejimda ({{valyuta}}), ularni qayta saqlab bo'lmaydi — shuning uchun bu sotuvga to'lov qo'shib bo'lmaydi."
     },
     "tolovniSaqlash": "To'lovni saqlash",
     "tolovniQoshish": "To'lovni qo'shish"
@@ -438,6 +443,7 @@
     },
     "qaytim": {
       "sarlavha": "Qaytim (so'mda)",
+      "sarlavhaValyutada": "Qaytim",
       "taxminiy": "Taxminiy: aniq summa saqlangach ko'rsatiladi.",
       "tahrir": "Qaytimni o'zgartirsangiz, kurs undan hisoblanadi: (qolgan summa + qaytim) ÷ dollar.",
       "yaxlitlash": "Minglikkacha yaxlitlash",
@@ -456,7 +462,6 @@
     },
     "kursQatori": "Kunlik kurs ({{sana}}): 1 $ = {{kurs}} so'm",
     "kursKiritilganKun": "({{sana}} da kiritilgan)",
-    "dollarRejimOchiq": "Bu sotuv dollarda (sotuvi yoki qatorlari dollarda), uni qayta tasdiqlash uchun valyuta rejimi yoqilgan bo'lishi kerak (Sozlamalar → Valyuta).",
     "dollarKursYoq": "To'lov sanasi ({{sana}}) uchun kunlik dollar kursi kiritilmagan: to'lov uchun kursni o'zingiz kiriting.",
     "kurs": {
       "nomi": "Kurs (1 $ = necha so'm)",
@@ -466,6 +471,10 @@
       "kiriting": "Dollar to'lov uchun kursni kiriting."
     },
     "kursOqilmadi": "To'lov sanasidagi kunlik kursni o'qib bo'lmadi: dollar to'lov uchun kursni o'zingiz kiriting.",
+    "yagonaRejim": {
+      "valyutaAlmashdi": "Do'kon bir valyutali rejimda ({{valyuta}}): to'lov shu valyutada saqlanadi. Avvalgi summa ({{asl}}) boshqa valyutada edi — summani qaytadan kiriting.",
+      "boshqaTolovlar": "Bu sotuvda boshqa valyutadagi to'lovlar bor. Do'kon bir valyutali rejimda ({{valyuta}}), ularni qayta saqlab bo'lmaydi — shuning uchun bu to'lovni tahrirlab bo'lmaydi."
+    },
     "nakladnoy": {
       "yuborish": "Tuzatilgan nakladnoyni mijozga yuborish",
       "izoh": "Telegram orqali yuboriladi. Qayta tasdiqlashda yangi nakladnoy o'zi ketmaydi (xabar bu sotuvga avval yuborilgan).",
@@ -476,6 +485,7 @@
     "saqlash": "Saqlash va qayta tasdiqlash",
     "ozgarishYoq": "Hozircha o'zgarish yo'q",
     "qaytimBoladi": "Ortiqcha pul qaytim bo'ladi (so'mda). Mijozsiz sotuvda uni hisobga o'tkazib bo'lmaydi.",
+    "qaytimBoladiValyutada": "Ortiqcha pul sotuv valyutasida qaytim bo'ladi. Mijozsiz sotuvda uni hisobga o'tkazib bo'lmaydi.",
     "tasdiq": {
       "sarlavha": "To'lov tahrirlansinmi?",
       "tavsif": "Sotuv bekor qilinib, yangi to'lov bilan qayta tasdiqlanadi. Jarayon tugamaguncha oynani yopmang.",
@@ -497,7 +507,7 @@
       "tiklash": "Sotuv bekor qilingan holatda qoldi. «Qayta urinish» bilan davom ettiring.",
       "yangilash": "Sotuv qoralama holatida qoldi, to'lov hali o'zgarmagan. «Qayta urinish» bilan davom ettiring.",
       "tasdiqlash": "To'lov yangilandi, lekin sotuv qoralamada qoldi (tovar hali ombordan chiqmagan). «Qayta urinish» bilan tasdiqlang.",
-      "tasdiqlashKurs": "To'lov yangilandi, lekin sotuv qoralamada qoldi: sotuv sanasi uchun dollar kursi topilmadi yoki (dollar sotuv uchun) valyuta rejimi o'chiq. Sozlamalar → Valyuta bo'limida sotuv sanasidagi (yoki undan oldingi) kursni kiriting yoki rejimni yoqing va «Qayta urinish»ni bosing.",
+      "tasdiqlashKurs": "To'lov yangilandi, lekin sotuv qoralamada qoldi: sotuv sanasi uchun dollar kursi topilmadi yoki do'konning valyuta rejimi bu valyutaga ruxsat bermaydi (masalan, «Faqat so'm» rejimida dollar). Sozlamalar → Valyuta bo'limida sotuv sanasidagi (yoki undan oldingi) kursni kiriting yoki rejimni tekshiring va «Qayta urinish»ni bosing.",
       "tasdiqlashHisob": "Mijoz hisobidan to'langan qism uchun hisobda pul yetmadi (mijoz uni shu orada ishlatgan bo'lishi mumkin). To'lov yangilandi, lekin sotuv qoralamada qoldi. Mijoz hisobini to'ldiring va «Qayta urinish»ni bosing."
     },
     "qaytaUrinish": "Qayta urinish",
@@ -621,9 +631,10 @@
       "miqdorKatta": "Miqdor 0 dan katta bo'lishi kerak.",
       "miqdorOshmasin": "Miqdor qoldiqdan oshmasin: {{qty}} dona.",
       "omborniTanlang": "Omborni tanlang.",
-      "chegirmaOshmasin": "Chegirma qator summasidan oshmasin."
+      "chegirmaOshmasin": "Chegirma qator summasidan oshmasin.",
+      "rejimgaZidValyuta": "Bu sotuvda {{valyuta}} dagi qatorlar bor, do'kon esa faqat {{rejim}} da ishlaydi: mahsulot qo'shib saqlab bo'lmaydi (backend boshqa valyutadagi qatorni qabul qilmaydi). Qoralamani \"Tahrirlash\" oynasida oching — u {{rejim}} ga o'giriladi."
     },
-    "chegirmaPlaceholder": "Chegirma (so'm)",
+    "chegirmaPlaceholder": "Chegirma ({{belgi}})",
     "chegirmaQatori": "Chegirma: {{summa}}",
     "narxQulflangan": "Narx ombordagi haqiqiy narx bo'yicha belgilanadi va o'zgartirilmaydi",
     "shtrixKod": "Shtrix-kod: {{value}}",

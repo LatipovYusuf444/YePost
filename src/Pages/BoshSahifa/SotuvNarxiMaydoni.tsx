@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { Undo2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import SummaMaydoni from "@/Components/common/SummaMaydoni";
+import { yaxlitHalfUp } from "@/lib/yaxlitlash";
 import { savatchaChegirma, savatchaSotuvNarxi, savatchaUstama, type CartItem } from "@/store/posStore";
+
+// Maydonda narx 2 xonagacha ko'rinadi (3.5, 11 728.39); savatchadagi narxning o'zi yaxlitlanmaydi.
+const maydonQiymati = (narx: number) => String(yaxlitHalfUp(narx, 2));
 
 // Savatchadagi mahsulot narxi: kassir haqiqiy sotuv narxini kiritadi, katalog narxidan farqi avtomatik hisoblanadi:
 // past bo'lsa chegirma (18 000 → 17 800: 200 so'm chegirma), baland bo'lsa ustama (13 500 → 19 000: 5 500 so'm ustama).
@@ -22,12 +27,12 @@ export default function SotuvNarxiMaydoni({
 }) {
   const { t } = useTranslation("bosh_sahifa");
   const joriy = savatchaSotuvNarxi(item);
-  const [matn, setMatn] = useState(String(joriy));
+  const [matn, setMatn] = useState(maydonQiymati(joriy));
   const [fokus, setFokus] = useState(false);
 
   // Narx turi (chakana/ulgurji) yoki katalog narxi tashqaridan o'zgarsa, maydon ham yangilanadi.
   useEffect(() => {
-    if (!fokus) setMatn(String(joriy));
+    if (!fokus) setMatn(maydonQiymati(joriy));
   }, [joriy, fokus]);
 
   const kiritilgan = Number(matn) || 0;
@@ -37,30 +42,30 @@ export default function SotuvNarxiMaydoni({
   const birDonaUstama = joriy - item.narx;
 
   function ozgardi(qiymat: string) {
-    // Faqat raqamlar; 12 xonadan oshmaydi (tasodifiy juda uzun qiymat narxni buzmasin).
-    const raqamlar = qiymat.replace(/\D/g, "").replace(/^0+/, "").slice(0, 12);
-    setMatn(raqamlar);
-    const narx = Number(raqamlar);
+    // SummaMaydoni toza raqam matnini beradi (guruhlarsiz, 2 xonagacha kasr: "3.5"); 12 butun xonadan oshmaydi.
+    const [butun = "", kasr] = qiymat.split(".");
+    const toza = kasr !== undefined ? `${butun.slice(0, 12)}.${kasr}` : butun.slice(0, 12);
+    setMatn(toza);
+    const narx = Number(toza);
     // 0 dan katta har qanday narx saqlanadi: katalog narxidan past (chegirma) ham, baland (ustama) ham.
-    if (raqamlar && narx > 0) onChange(narx === item.narx ? undefined : narx);
+    // Maydonda ko'ringan katalog narxi (2 xonagacha) qayta yozilsa — bu katalog narxining o'zi, chegirma emas.
+    if (toza && narx > 0) onChange(narx === item.narx || narx === yaxlitHalfUp(item.narx, 2) ? undefined : narx);
   }
 
   if (jadval) {
     return (
-      <input
-        type="text"
-        inputMode="numeric"
+      <SummaMaydoni
         aria-label={t("cart.salePriceLabel")}
-        value={matn ? Number(matn).toLocaleString("uz-UZ") : ""}
+        value={matn}
         onFocus={(event) => {
           setFokus(true);
           event.currentTarget.select();
         }}
         onBlur={() => {
           setFokus(false);
-          if (!matn || kiritilgan <= 0) setMatn(String(joriy));
+          if (!matn || kiritilgan <= 0) setMatn(maydonQiymati(joriy));
         }}
-        onChange={(event) => ozgardi(event.target.value)}
+        onChange={ozgardi}
         className={`${className ?? ""} ${
           ustama > 0
             ? "!border-amber-300 !text-amber-700 focus:!border-amber-500 focus:!ring-amber-100"
@@ -77,10 +82,8 @@ export default function SotuvNarxiMaydoni({
       <div className="relative">
         <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-slate-500">
           {t("cart.salePriceLabel")}
-          <input
-            type="text"
-            inputMode="numeric"
-            value={matn ? Number(matn).toLocaleString("uz-UZ") : ""}
+          <SummaMaydoni
+            value={matn}
             onFocus={(event) => {
               setFokus(true);
               event.currentTarget.select();
@@ -88,9 +91,9 @@ export default function SotuvNarxiMaydoni({
             onBlur={() => {
               setFokus(false);
               // Bo'sh yoki noto'g'ri qiymat qoldirilsa, oxirgi to'g'ri narx tiklanadi.
-              if (!matn || kiritilgan <= 0) setMatn(String(joriy));
+              if (!matn || kiritilgan <= 0) setMatn(maydonQiymati(joriy));
             }}
-            onChange={(event) => ozgardi(event.target.value)}
+            onChange={ozgardi}
             className={`h-10 w-full min-w-0 rounded-lg border bg-white pl-2.5 text-right text-sm font-semibold tabular-nums text-[#0F172A] outline-none transition focus:ring-2 ${chegirma > 0 || ustama > 0 ? "pr-9" : "pr-2.5"} ${
               ustama > 0
                 ? "border-amber-300 focus:border-amber-400 focus:ring-amber-100"

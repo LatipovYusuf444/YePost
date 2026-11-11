@@ -58,4 +58,13 @@ export type KassaAmaliyoti = {
   taqsimot?: QarzTaqsimotQatori[];
   hisobgaTushgan?: number;
   readonly?: boolean;
+  // Tasdiqlangan amaliyotni tahrirlash: backend uni joyida o'zgartirmaydi — saqlanganda shu yangi amaliyot yaratilib tasdiqlanadi,
+  // `id` dagi eskisi esa `sabab` bilan bekor qilinadi (kassa jami va kontragent hisobi qayta hisoblanadi).
+  almashtiriladi?: {
+    id: string;
+    raqam?: string;
+    sabab?: string;
+    /** Eski amaliyotning ko'rinadigan qiymatlari: yangi amaliyot izohiga "oldin → keyin" xulosasi uchun (backend tahrirni saqlamaydi). */
+    oldin?: { summa: number; valyuta?: "UZS" | "USD"; kun: string; tolovTuri: string; turi: string; kontragent: string };
+  };
 };

@@ -4,10 +4,29 @@ import {
   omborQoldiqlariniOlish,
   qoldiqNomlariniBoyitish,
 } from "@/api/savdoApi";
+import { useShallow } from "zustand/react/shallow";
 import type { QoldiqTanlovi } from "@/types/savdo";
-import { mahsulotNomi, qoldiqBirlashtirish, qoldiqNarxi } from "./posMahsulotlari";
+import { useValyutaStore } from "@/lib/valyuta";
+import { usePosStore } from "@/store/posStore";
+import { mahsulotNomi, posSavatValyutasi, qoldiqBirlashtirish, qoldiqNarxi, type PosNarxRejimi } from "./posMahsulotlari";
 
 export type PosMahsulotlarXatosi = "" | "stock" | "warehouseStock" | "catalog";
+
+/** Joriy valyuta rejimi (Sozlamalar → Valyuta) bo'yicha POS narx rejimi — hodisa ichida (getState). */
+export function posNarxRejimi(): PosNarxRejimi {
+  const { rejim, kurs, kursBor } = useValyutaStore.getState();
+  return { rejim, kurs: kursBor && kurs > 0 ? kurs : undefined };
+}
+
+/** Komponentlar uchun `posNarxRejimi()`: rejim yoki kurs o'zgarsa qayta chiziladi (qiymat sayoz teng bo'lsa o'sha obyekt). */
+export function usePosNarxRejimi(): PosNarxRejimi {
+  return useValyutaStore(useShallow((holat) => ({ rejim: holat.rejim, kurs: holat.kursBor && holat.kurs > 0 ? holat.kurs : undefined })));
+}
+
+/** Savatchaga qo'shishdan oldin: savatcha boshqa valyutada (rejim almashgan) bo'lsa tozalanadi, narxlar aralashib ketmaydi. */
+export function savatniRejimgaMoslash(rejim: PosNarxRejimi) {
+  usePosStore.getState().savatValyutasiniMoslash(posSavatValyutasi(rejim));
+}
 
 type Natija = { kalit: string; mahsulotlar: QoldiqTanlovi[]; xato: PosMahsulotlarXatosi };
 

@@ -1786,6 +1786,7 @@ export default function Monitoring() {
             <WarehouseFlow
               items={demoMode ? demoOmborHarakati : omborHarakati}
               eslatma={!demoMode && omborOqimiEslatma ? omborOqimiEslatma : undefined}
+              valyuta={!demoMode && serverOqim ? oqimOmborlar.valyuta : undefined}
             />
           </ChartCard>
 
@@ -1915,6 +1916,7 @@ export default function Monitoring() {
                     <WarehouseTimeline
                       items={demoMode ? demoTafsilotKirim : tafsilotKirim}
                       kind="income"
+                      valyuta={!demoMode && serverOqim ? oqimKirim.valyuta : undefined}
                     />
                   </ChartCard>
 
@@ -1941,6 +1943,7 @@ export default function Monitoring() {
                     <WarehouseTimeline
                       items={demoMode ? demoTafsilotChiqim : tafsilotChiqim}
                       kind="expense"
+                      valyuta={!demoMode && serverOqim ? oqimChiqim.valyuta : undefined}
                     />
                   </ChartCard>
                 </div>

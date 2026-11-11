@@ -8,10 +8,12 @@ import { filiallarApi } from "@/api/omborApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { bugungiToshkentKuni, kunniSurish, kunMatni } from "@/lib/hujjatSanasi";
 import { cashAmount, dailyNet, dailyRangeError } from "@/lib/cashReports";
+import { useYagonaValyuta } from "@/lib/valyuta";
 import type { CashCurrency, CashDailyReport, CashPaymentType } from "@/types/cashReports";
 import type { Filial } from "@/types/ombor";
 import MuddatTanlov from "./MuddatTanlov";
 import YuklanmoqdaHolati from "./YuklanmoqdaHolati";
+import { korinadiganValyutalar, nolEmasSummaBor } from "./hisobotValyutasi";
 
 // `label` - hisobotlar.json dagi `kunlikKassa.columns.*` kaliti.
 const columns: { label: string; currency: CashCurrency; payment?: CashPaymentType; accent: string; border: string; background: string }[] = [
@@ -41,6 +43,14 @@ export default function KunlikKassa() {
   const [todayError, setTodayError] = useState("");
   const [branchesError, setBranchesError] = useState("");
   const rangeError = dailyRangeError(from, to);
+  // Bir valyutali rejimda (Faqat so'm / Faqat dollar) faqat rejim valyutasi; rejim almashguncha qolgan boshqa valyutadagi pul ham yashirilmaydi.
+  const yagona = useYagonaValyuta();
+  const valyutalar = korinadiganValyutalar(yagona, (currency) => [report, todayReport].some((item) => {
+    const total = item?.totals[currency];
+    return nolEmasSummaBor(total?.opening, total?.income, total?.expense, total?.closing);
+  }));
+  const ikkiValyuta = valyutalar.length > 1;
+  const korinadiganUstunlar = columns.filter((column) => valyutalar.includes(column.currency));
 
   useEffect(() => {
     let active = true;
@@ -96,8 +106,8 @@ export default function KunlikKassa() {
         </div>
         <div className="min-w-0 flex-1" aria-live="polite" aria-busy={todayLoading}>
           <span className="sr-only">{t("kunlikKassa.inCash")}</span>
-          <dl className="grid gap-3 min-[480px]:grid-cols-2">
-            {(["UZS", "USD"] as const).map((currency) => <div key={currency} className={`min-w-0 rounded-2xl border bg-white/85 px-5 py-4 ${currency === "UZS" ? "border-[#D8E2F0]" : "border-[#E7DDCC]"}`}>
+          <dl className={`grid gap-3 ${ikkiValyuta ? "min-[480px]:grid-cols-2" : ""}`}>
+            {valyutalar.map((currency) => <div key={currency} className={`min-w-0 rounded-2xl border bg-white/85 px-5 py-4 ${currency === "UZS" ? "border-[#D8E2F0]" : "border-[#E7DDCC]"}`}>
               <dt className="flex items-center gap-2 text-[11px] font-medium text-slate-500"><span aria-hidden className={`h-1.5 w-1.5 shrink-0 rounded-full ${currency === "UZS" ? "bg-[#647DA6]" : "bg-[#B39560]"}`} />{currency === "UZS" ? t("kunlikKassa.balanceSom") : t("kunlikKassa.balanceUsd")}<span className="ml-auto text-[10px] font-bold tracking-wider text-slate-400">{currency}</span></dt>
               <dd className={`mt-1.5 break-words font-bold leading-tight tracking-tight text-[#18273F] tabular-nums ${todayLoading ? "text-sm" : "text-2xl 2xl:text-[28px]"}`}>{todayLoading ? t("kunlikKassa.loading") : cashAmount(todayReport?.totals[currency].closing, currency)}</dd>
             </div>)}
@@ -125,8 +135,8 @@ export default function KunlikKassa() {
     {[rangeError, error, branchesError].filter(Boolean).map((message) => <p key={message} role="alert" className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{message}</p>)}
     {loading && <YuklanmoqdaHolati className="h-48" />}
     {report && <>
-      <section className="grid gap-5 lg:grid-cols-2" aria-label={t("kunlikKassa.periodAria")}>
-        {(["UZS", "USD"] as const).map((currency) => {
+      <section className={`grid gap-5 ${ikkiValyuta ? "lg:grid-cols-2" : ""}`} aria-label={t("kunlikKassa.periodAria")}>
+        {valyutalar.map((currency) => {
           const som = currency === "UZS";
           const Ikonka = som ? Wallet : CircleDollarSign;
           return <article key={currency} className={`relative isolate overflow-hidden rounded-[28px] border p-5 shadow-[0_8px_30px_rgba(15,23,42,0.06)] sm:p-6 ${som ? "border-[#25344D] bg-gradient-to-br from-[#111C30] via-[#18273F] to-[#25364E] text-white" : "border-[#E6DFD0] bg-gradient-to-br from-[#FFFEFB] via-[#FCFAF5] to-[#F3EFE5] text-[#18273F]"}`}>
@@ -159,20 +169,20 @@ export default function KunlikKassa() {
         <div className="overflow-x-auto px-2 pb-4 sm:px-3">
           <SmartTable tableId="HisobotUchot/KunlikKassa/table-1" replaceColumnControls><table className="w-full min-w-[1120px] border-separate border-spacing-x-2 border-spacing-y-0 whitespace-nowrap text-sm">
             <caption className="px-2 py-4 text-left text-xs text-slate-500">{t("kunlikKassa.caption", { count: report.totals.operationsCount })}</caption>
-            <thead className="text-left"><tr><th data-column-id="h1" scope="col" className="rounded-t-xl px-4 py-3">{t("kunlikKassa.date")}</th>{columns.map((column) => <th data-column-id={"h2:" + (column.label)} scope="col" key={column.label} className="rounded-t-xl border-x border-t-2 px-4 py-3 text-right" style={{ borderColor: column.border, borderTopColor: column.accent, backgroundColor: column.background }}><span className="inline-flex items-center gap-2" style={{ color: column.accent }}><span aria-hidden className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: column.accent }} />{t(`kunlikKassa.columns.${column.label}`)}</span></th>)}</tr></thead>
+            <thead className="text-left"><tr><th data-column-id="h1" scope="col" className="rounded-t-xl px-4 py-3">{t("kunlikKassa.date")}</th>{korinadiganUstunlar.map((column) => <th data-column-id={"h2:" + (column.label)} scope="col" key={column.label} className="rounded-t-xl border-x border-t-2 px-4 py-3 text-right" style={{ borderColor: column.border, borderTopColor: column.accent, backgroundColor: column.background }}><span className="inline-flex items-center gap-2" style={{ color: column.accent }}><span aria-hidden className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: column.accent }} />{t(`kunlikKassa.columns.${column.label}`)}</span></th>)}</tr></thead>
             <tbody>{report.days.map((day) => <tr key={day.date}>
               <th scope="row" className="border-b border-slate-100 px-4 py-3 text-left font-semibold">{kunMatni(day.date)}</th>
-              {columns.map((column) => <td key={column.label} className={`border-x border-b px-4 py-3 text-right tabular-nums ${column.payment ? "font-medium" : "font-bold"}`} style={{ borderColor: column.border, backgroundColor: column.background }}>
+              {korinadiganUstunlar.map((column) => <td key={column.label} className={`border-x border-b px-4 py-3 text-right tabular-nums ${column.payment ? "font-medium" : "font-bold"}`} style={{ borderColor: column.border, backgroundColor: column.background }}>
                 {cashAmount(dailyNet(day, column.currency, column.payment), column.currency)}
               </td>)}
             </tr>)}</tbody>
-            <tfoot><tr><th scope="row" className="px-4 py-4 text-left font-bold text-slate-900">{t("kunlikKassa.periodTotal")}</th>{columns.map((column) => <td key={column.label} className="rounded-b-xl border-x border-b-2 border-t-2 px-4 py-4 text-right tabular-nums" style={{ borderColor: column.border, borderBottomColor: column.accent, borderTopColor: column.accent, backgroundColor: column.background }}><span className="text-base font-black" style={{ color: column.accent }}>{cashAmount(dailyNet(report.totals, column.currency, column.payment), column.currency)}</span></td>)}</tr></tfoot>
+            <tfoot><tr><th scope="row" className="px-4 py-4 text-left font-bold text-slate-900">{t("kunlikKassa.periodTotal")}</th>{korinadiganUstunlar.map((column) => <td key={column.label} className="rounded-b-xl border-x border-b-2 border-t-2 px-4 py-4 text-right tabular-nums" style={{ borderColor: column.border, borderBottomColor: column.accent, borderTopColor: column.accent, backgroundColor: column.background }}><span className="text-base font-black" style={{ color: column.accent }}>{cashAmount(dailyNet(report.totals, column.currency, column.payment), column.currency)}</span></td>)}</tr></tfoot>
           </table></SmartTable>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 bg-slate-50/80 px-5 py-5 sm:px-6">
           <div><h3 className="font-bold text-slate-800">{t("kunlikKassa.netTitle")}</h3><p className="mt-1 text-xs text-slate-500">{t("kunlikKassa.netSub")}</p></div>
-          <div className="grid w-full gap-3 min-[480px]:grid-cols-2 sm:w-auto">
-            {(["UZS", "USD"] as const).map((currency) => <div key={currency} className={`min-w-0 rounded-2xl border px-5 py-3 sm:min-w-44 ${currency === "UZS" ? "border-[#DCC79F] bg-[#FBF7EC]" : "border-[#E5C5AD] bg-[#FCF5EF]"}`}>
+          <div className={`grid w-full gap-3 sm:w-auto ${ikkiValyuta ? "min-[480px]:grid-cols-2" : ""}`}>
+            {valyutalar.map((currency) => <div key={currency} className={`min-w-0 rounded-2xl border px-5 py-3 sm:min-w-44 ${currency === "UZS" ? "border-[#DCC79F] bg-[#FBF7EC]" : "border-[#E5C5AD] bg-[#FCF5EF]"}`}>
               <p className="text-[11px] font-semibold text-slate-500">{currency === "UZS" ? t("kunlikKassa.netTotalSom") : t("kunlikKassa.netTotalUsd")}</p>
               <p className="mt-1 break-words text-2xl font-black tracking-tight text-slate-900 tabular-nums">{cashAmount(dailyNet(report.totals, currency), currency)}</p>
             </div>)}

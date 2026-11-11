@@ -67,6 +67,7 @@
       "catalogLoadFailed": "Katalog olinmadi, ombordagi mavjud qoldiqlar ko'rsatildi",
       "noStock": "Bu mahsulot bo'yicha qoldiq yo'q",
       "noPrice": "Bu mahsulot narxi backendda kiritilmagan",
+      "somPrice": "narxi so'mda kiritilgan. «Faqat dollar» rejimida sotish uchun narxni dollarda kiriting",
       "mixedWarehouse": "Savatchada boshqa ombor mahsuloti bor. Bitta sotuv faqat bitta ombordan qilinadi."
     },
     "unnamed": "Nomsiz mahsulot",
@@ -109,6 +110,8 @@
     "shortPlaceholder": "Mahsulot qidirish...",
     "category": "Kategoriya",
     "allCategories": "Barcha kategoriyalar",
+    "categorySearch": "Kategoriyani qidirish…",
+    "categoryNotFound": "Kategoriya topilmadi",
     "categoryAria": "Kategoriya bo'yicha filtr",
     "clearCategory": "Kategoriya filtrini olib tashlash",
     "categoryEmpty": "Bu kategoriyada qoldig'i bor mahsulot yo'q",

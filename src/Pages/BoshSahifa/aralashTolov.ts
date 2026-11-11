@@ -80,7 +80,7 @@ export type SotuvQatori = {
   quantity: number;
   price: number;
   discount: number;
-  currency?: "USD";
+  currency?: "UZS" | "USD";
   priceType?: "RETAIL" | "WHOLESALE";
   unitId?: string;
 };
@@ -99,6 +99,16 @@ export function sotuvQatori(qator: QatorMalumoti): SotuvQatori {
     currency: "USD",
     ...narxTuri,
   };
+}
+
+/**
+ * Valyuta rejimiga ko'ra backendga ketadigan qator. Ikki valyuta rejimida (`yagona` null) — avvalgidek (`sotuvQatori`).
+ * Bir valyutali rejimda savatcha shu valyutada hisoblangan: qator narxi va chegirmasi o'girilmasdan, rejim valyutasi aniq yozilib
+ * ketadi ("Faqat so'm"da dollar narxli tovar ham kurs bo'yicha so'mdagi narxi bilan) — boshqa valyutani backend rad etadi.
+ */
+export function rejimSotuvQatori(qator: QatorMalumoti, yagona: "UZS" | "USD" | null): SotuvQatori {
+  if (!yagona) return sotuvQatori(qator);
+  return { ...sotuvQatori({ ...qator, dollar: null }), currency: yagona };
 }
 
 /** POS narx turi (chakana/ulgurji) → backend `priceType`. */

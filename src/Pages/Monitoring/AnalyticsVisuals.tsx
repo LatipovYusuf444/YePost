@@ -1,4 +1,5 @@
-import { pulMatni, summaniOgirish } from "@/lib/valyuta";
+import { pulMatni, summaniOgirish, type Valyuta } from "@/lib/valyuta";
+import { hisobotPulMatni } from "@/Pages/HisobotUchot/hisobotValyutasi";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -26,14 +27,19 @@ const tooltipStyle = {
   padding: "12px 16px",
 };
 
-function useFormat() {
+// `valyuta` berilsa summalar server shu valyutada hisoblagan (masalan, GET /reports/warehouse-flow): o'girilmasdan formatlanadi.
+// Berilmasa — so'mdagi summa ko'rsatiladigan valyutada (pulMatni).
+function useFormat(valyuta?: Valyuta) {
   const { t, i18n } = useTranslation("monitoring");
   const locale = i18n.resolvedLanguage === "ru" ? "ru-RU" : "uz-UZ";
   const number = (value: number) =>
     value.toLocaleString(locale, { maximumFractionDigits: 2 });
-  const money = (value: number) => pulMatni(value, "UZS", true, t("dynamics.currency"));
+  const money = (value: number) =>
+    valyuta
+      ? hisobotPulMatni(value, valyuta, t("dynamics.currency"))
+      : pulMatni(value, "UZS", true, t("dynamics.currency"));
   const compact = (qiymat: number) => {
-    const n = Math.abs(summaniOgirish(qiymat));
+    const n = Math.abs(valyuta ? qiymat : summaniOgirish(qiymat));
     if (n >= 1_000_000)
       return `${number(n / 1_000_000)} ${t("dynamics.million")}`;
     if (n >= 1_000) return `${number(n / 1_000)} ${t("dynamics.thousand")}`;
@@ -131,11 +137,14 @@ export function WarehouseStock({ items }: { items: Point[] }) {
 export function WarehouseFlow({
   items,
   eslatma,
+  valyuta,
 }: {
   items: Array<{ nom: string; kirim: number; chiqim: number }>;
   eslatma?: string;
+  /** Server hisoboti summalarining valyutasi; berilmasa (zaxira hisob, demo) summalar so'mda deb olinadi. */
+  valyuta?: Valyuta;
 }) {
-  const { t, money, compact } = useFormat();
+  const { t, money, compact } = useFormat(valyuta);
   const values = items.map((item) => ({ ...item, chiqim: -item.chiqim }));
   // Hujjatlar bor, lekin summa 0 — odatda chiqim/ko'chirma qatorlarida narx yo'q va mahsulot tannarxi kiritilmagan.
   const summaYoq = items.length > 0 && items.every((item) => item.kirim === 0 && item.chiqim === 0);
@@ -249,13 +258,15 @@ function WarehouseTimelineTooltip({
   label,
   items,
   kind,
+  valyuta,
 }: {
   active?: boolean;
   label?: string | number;
   items: Point[];
   kind: "income" | "expense";
+  valyuta?: Valyuta;
 }) {
-  const { t, money } = useFormat();
+  const { t, money } = useFormat(valyuta);
   const point = items.find((item) => item.nom === String(label));
   if (!active || !point) return null;
   return (
@@ -270,13 +281,16 @@ function WarehouseTimelineTooltip({
 export function WarehouseTimeline({
   items,
   kind,
+  valyuta,
 }: {
   items: Point[];
   kind: "income" | "expense";
+  /** Server hisoboti summalarining valyutasi; berilmasa (zaxira hisob, demo) summalar so'mda deb olinadi. */
+  valyuta?: Valyuta;
 }) {
-  const { money, compact } = useFormat();
+  const { money, compact } = useFormat(valyuta);
   const id = useId().replace(/:/g, "");
-  const tooltip = <Tooltip content={<WarehouseTimelineTooltip items={items} kind={kind} />} cursor={{ stroke: kind === "income" ? "#06b6d4" : "#e11d48", strokeDasharray: "4 4", strokeOpacity: 0.3 }} />;
+  const tooltip = <Tooltip content={<WarehouseTimelineTooltip items={items} kind={kind} valyuta={valyuta} />} cursor={{ stroke: kind === "income" ? "#06b6d4" : "#e11d48", strokeDasharray: "4 4", strokeOpacity: 0.3 }} />;
   const x = (
     <XAxis
       dataKey="nom"

@@ -21,6 +21,7 @@ import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
 import { bugungiToshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
 import { chiqimJamilari, chiqimTannarxi } from "@/lib/chiqimTannarxi";
+import { useYagonaValyuta } from "@/lib/valyuta";
 import { useTranslation } from "react-i18next";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useOmborStore } from "@/store/omborStore";
@@ -123,14 +124,16 @@ export default function YangiChiqimModal({ onClose }: Props) {
   );
 
   // Tannarx o'z valyutasida (dollar bo'lsa $); tanlanmagan qator jamiga kirmaydi.
+  // Mahsulot hali tanlanmagan bo'lsa bo'sh jami bir valyutali rejimda rejim valyutasida chiqadi ("Faqat dollar"da "$0", "0 so'm" emas).
+  const yagona = useYagonaValyuta();
   const chiqimQiymatiMatni = useMemo(() => {
     const tanlangan = qatorlar.filter((row) => row.modificationId).map((row) => {
       const mod = store.modifikatsiyalar.find((item) => item.id === row.modificationId);
       const { narx, valyuta } = chiqimTannarxi(mod);
       return { summa: row.quantity * narx, valyuta };
     });
-    return chiqimJamilari(tanlangan).map((jami) => pul(jami.summa, jami.valyuta)).join(" + ");
-  }, [qatorlar, store.modifikatsiyalar]);
+    return chiqimJamilari(tanlangan, undefined, yagona ?? "UZS").map((jami) => pul(jami.summa, jami.valyuta)).join(" + ");
+  }, [qatorlar, store.modifikatsiyalar, yagona]);
 
   function qatorniYangilash(id: string, value: Partial<Qator>) {
     setQatorlar((rows) => rows.map((row) => (row.id === id ? { ...row, ...value } : row)));

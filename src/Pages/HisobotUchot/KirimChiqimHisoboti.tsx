@@ -8,6 +8,8 @@ import type { Tanlov } from "./types";
 import { son } from "./yordamchilar";
 import { bugungiToshkentKuni, kunniSurish, kunMatni } from "@/lib/hujjatSanasi";
 import { cashAmount } from "@/lib/cashReports";
+import { useYagonaValyuta } from "@/lib/valyuta";
+import { korinadiganValyutalar, nolEmasSummaBor } from "./hisobotValyutasi";
 import type { CashCurrency } from "@/types/cashReports";
 import type { KassaHujjati } from "./types";
 import KassaAmaliyotModal from "@/Pages/KassaUchot/KassaAmaliyotModal";
@@ -101,8 +103,18 @@ export default function KirimChiqimHisoboti() {
   const { filiallar: filialTanlovlari } = useHisobotRealData();
   const [dateFrom, setDateFrom] = useState(() => kunniSurish(bugungiToshkentKuni(), -30));
   const [dateTo, setDateTo] = useState(bugungiToshkentKuni);
-  const [currency, setCurrency] = useState<CashCurrency>("UZS");
+  // Bir valyutali rejimda (Faqat so'm / Faqat dollar) jadval valyutasi tanlovi yashirin: doim rejim valyutasi, kurs so'ralmaydi.
+  const yagona = useYagonaValyuta();
+  const [tanlanganCurrency, setCurrency] = useState<CashCurrency>("UZS");
+  const currency = yagona ?? tanlanganCurrency;
   const [currencySummary, setCurrencySummary] = useState<CashFlowReport["summary"]["byCurrency"]>();
+  // Kassa kartalari: bir valyutali rejimda faqat rejim valyutasi (aylanmaydi); rejim almashguncha qolgan boshqa valyutadagi pul bo'lsa —
+  // avvalgidek ikki tomonli karta.
+  const kartaValyutalari = korinadiganValyutalar(yagona, (code) => {
+    const summary = currencySummary?.[code];
+    return nolEmasSummaBor(summary?.openingBalance, summary?.income, summary?.expense, summary?.closingBalance);
+  });
+  const kartaAylanadi = kartaValyutalari.length > 1;
   const [dollarKartalar, setDollarKartalar] = useState<Record<string, boolean>>({});
   const kartalarId = useId();
   const [kassalar, setKassalar] = useState<string[]>([]);
@@ -344,11 +356,11 @@ export default function KirimChiqimHisoboti() {
             selected={tolovTurlari}
             onChange={setTolovTurlari}
           />
-          <label className="text-xs font-bold text-gray-700">Jadval valyutasi
+          {!yagona && <label className="text-xs font-bold text-gray-700">Jadval valyutasi
             <select aria-label="Hisobot valyutasi" value={currency} onChange={(event) => setCurrency(event.target.value as CashCurrency)} className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm">
               <option value="UZS">So'm</option><option value="USD">Dollar ($)</option>
             </select>
-          </label>
+          </label>}
         </div>
       </section>
 
@@ -358,23 +370,24 @@ export default function KirimChiqimHisoboti() {
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Kassa qoldiqlari">
         {[...kassaIdlar, "jami"].map((id) => {
           const nomi = id === "jami" ? "Jami" : kassaNomi(id);
-          const dollar = Boolean(dollarKartalar[id]);
+          // Faqat dollar rejimida eski so'm qoldig'i tufayli karta aylansa ham, old yuz dollarda ochiladi.
+          const dollar = kartaAylanadi ? (yagona === "USD" ? !dollarKartalar[id] : Boolean(dollarKartalar[id])) : kartaValyutalari[0] === "USD";
           const keyingi = dollar ? "So'm" : "Dollar ($)";
           const jami = id === "jami";
           const Ikonka = id === "BANK" ? Landmark : id === "CARD" ? CreditCard : id === "CASH" ? Banknote : Wallet;
           const ohang = id === "BANK" ? "border-blue-100 from-white to-blue-50/80" : id === "CARD" ? "border-violet-100 from-white to-violet-50/80" : "border-emerald-100 from-white to-emerald-50/80";
           const ikonkaStili = id === "BANK" ? "bg-blue-100 text-blue-600" : id === "CARD" ? "bg-violet-100 text-violet-600" : "bg-emerald-100 text-emerald-600";
           return <button key={id} type="button"
-            onClick={() => setDollarKartalar((old) => ({ ...old, [id]: !old[id] }))}
-            aria-label={`${nomi}: ${dollar ? "Dollar ($)" : "So'm"}. ${keyingi} ko'rsatish uchun aylantirish`}
+            onClick={kartaAylanadi ? () => setDollarKartalar((old) => ({ ...old, [id]: !old[id] })) : undefined}
+            aria-label={kartaAylanadi ? `${nomi}: ${dollar ? "Dollar ($)" : "So'm"}. ${keyingi} ko'rsatish uchun aylantirish` : `${nomi}: ${dollar ? "Dollar ($)" : "So'm"}`}
             aria-describedby={`${kartalarId}-${id}-${dollar ? "USD" : "UZS"}`}
-            aria-pressed={dollar}
-            title={`${keyingi} ko'rsatish uchun bosing`}
-            className="group relative min-w-0 cursor-pointer rounded-3xl text-left transition-transform duration-300 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:ring-offset-2 motion-reduce:transform-none"
+            aria-pressed={kartaAylanadi ? dollar : undefined}
+            title={kartaAylanadi ? `${keyingi} ko'rsatish uchun bosing` : undefined}
+            className={`group relative min-w-0 ${kartaAylanadi ? "cursor-pointer" : "cursor-default"} rounded-3xl text-left transition-transform duration-300 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:ring-offset-2 motion-reduce:transform-none`}
             style={{ perspective: "1200px" }}>
             <span className="grid h-full transition-transform duration-700 motion-reduce:transition-none"
               style={{ transformStyle: "preserve-3d", transform: dollar ? "rotateY(180deg)" : "rotateY(0deg)" }}>
-            {(["UZS", "USD"] as const).map((code) => {
+            {kartaValyutalari.map((code) => {
               const summary = currencySummary?.[code];
               const balance = id === "jami" ? summary : summary?.byPaymentMethod[id as "BANK" | "CARD" | "CASH"];
               const usd = code === "USD";
@@ -399,7 +412,7 @@ export default function KirimChiqimHisoboti() {
                     <span className="mt-1 block break-words text-xs font-bold tabular-nums">{cashAmount(balance?.expense, code)}</span>
                   </span>
                 </span>
-                <span className={`mt-4 flex items-center justify-end gap-1.5 text-[10px] font-bold ${jami ? "text-blue-200" : "text-blue-600"}`}><RotateCw size={12} aria-hidden />{usd ? "So'mga o'tish" : "Dollarga o'tish"}</span>
+                {kartaAylanadi && <span className={`mt-4 flex items-center justify-end gap-1.5 text-[10px] font-bold ${jami ? "text-blue-200" : "text-blue-600"}`}><RotateCw size={12} aria-hidden />{usd ? "So'mga o'tish" : "Dollarga o'tish"}</span>}
               </span>;
             })}
             </span>

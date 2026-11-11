@@ -5,7 +5,7 @@ import KopTanlovli from "./KopTanlovli";
 import { useHisobotRealData } from "./HisobotRealData";
 import { counterpartyBalanceReportApi } from "@/api/reportsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
-import { useKursniTayyorlash, useValyuta, type Valyuta } from "@/lib/valyuta";
+import { useKursniTayyorlash, useValyuta, useYagonaValyuta, type Valyuta } from "@/lib/valyuta";
 import { hisobotPulMatni } from "./hisobotValyutasi";
 import HisobKitobHujjatlariModal from "./HisobKitobHujjatlariModal";
 
@@ -30,8 +30,10 @@ type BalancePage = { items?: BalanceItem[] };
 export default function OzaroHisobKitob() {
   useKursniTayyorlash();
   const { rejimYoniq } = useValyuta();
+  // Bir valyutali rejimda (Faqat so'm / Faqat dollar) tanlov yashirin, hisobot rejim valyutasida; ikki valyutada — tanlangan.
+  const yagona = useYagonaValyuta();
   const [tanlanganValyuta, setTanlanganValyuta] = useState<Valyuta>("UZS");
-  const valyuta = rejimYoniq ? tanlanganValyuta : "UZS";
+  const valyuta = yagona ?? tanlanganValyuta;
   const pul = (summa: number) => hisobotPulMatni(summa, valyuta);
   const { mijozlar, yetkazibBeruvchilar } = useHisobotRealData();
   const [customerIds, setCustomerIds] = useState<string[]>([]);

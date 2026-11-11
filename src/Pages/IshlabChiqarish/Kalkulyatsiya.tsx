@@ -5,6 +5,7 @@ import { ishlabChiqarishApi } from "@/api/ishlabChiqarishApi";
 import { bugungiToshkentKuni, kunMatni } from "@/lib/hujjatSanasi";
 import { holatBoyicha, tahrirTanasi, hujjatRaqami, kalkulyatsiyaJami, kalkulyatsiyaTanasiniYigish, miqdorMatni, portlashMiqdori, qatorNomi, qidiruvgaMos, type KalkulyatsiyaFormasi, type XatoMaydonQoidasi } from "@/lib/ishlabChiqarish";
 import { taqsimotSummasi } from "@/lib/qarzTaqsimoti";
+import { useYagonaValyuta, yagonaValyuta } from "@/lib/valyuta";
 import type { KalkulyatsiyaKartasi, KunNarxi as KunNarxiJavobi } from "@/types/ishlabChiqarish";
 import { Asboblar, Bolim, HolatFiltri, HolatKartalari, Holat, Jadval, MahsulotQidiruvi, Maydon, MaydonXatosi, Ogohlantirish, Oyna, QatorKartasi, QatorOchirish, QatorQoshish, QidiruvMaydoni, Sahifa, Tafsilotlar, XatoQutisi, Yuklanmoqda, inputKlass, tugmaAsosiy, tugmaIkkinchi, tugmaXavfli, xatoRamkasi, type HolatGuruhi, type Ustun } from "./umumiy";
 import { useAmal, useMalumot, useMaydonXatolari, useQoralamaNazorati } from "./hooklar";
@@ -26,6 +27,8 @@ const bo = (karta: KalkulyatsiyaKartasi): Forma => ({
   lines: (karta.lines ?? []).map((qator) => ({ modificationId: qator.modificationId, nom: qatorNomi(qator), quantity: matn(qator.quantity), price: matn(qator.price), currency: qator.currency === "USD" ? "USD" : "UZS", costingRate: matn(qator.costingRate) })),
 });
 const summa = (qiymat: unknown) => (qiymat != null && qiymat !== "" ? taqsimotSummasi(qiymat, "UZS") : "—");
+// Yangi qator valyutasi: bir valyutali rejimda (Faqat so'm / Faqat dollar) — rejim valyutasi, ikki valyuta rejimida avvalgidek so'm.
+const yangiQatorValyutasi = (): Qator["currency"] => yagonaValyuta() ?? "UZS";
 const versiya = (karta: KalkulyatsiyaKartasi) => (karta.version != null ? `v${karta.version}` : "");
 
 // Server xatosi qaysi maydonga tushadi (kalit — backend maydon yo'li). So'zlar tartibi muhim: "mahsulotga faol retsept yo'q" — retsept.
@@ -179,6 +182,7 @@ function KartaOynasi({ boshlangich, onYopish, onSaqlandi }: { boshlangich: { id?
   const [forma, setForma] = useState(boshlangich.qiymat);
   const amal = useAmal();
   const fx = useMaydonXatolari(KARTA_XATO_QOIDALARI);
+  const yagona = useYagonaValyuta();
   const qoralamaNazorati = useQoralamaNazorati(boshlangich.id ? () => ishlabChiqarishApi.kalkulyatsiya.olish(boshlangich.id as string) : null);
   // Maydonga bog'langan server xatosi tepada qayta chiqmasin (maydon tuzatilgach ham).
   const serverXatosi = (tafsilot: unknown) => { if (fx.serverdan(tafsilot)) amal.setXato(""); };
@@ -200,11 +204,12 @@ function KartaOynasi({ boshlangich, onYopish, onSaqlandi }: { boshlangich: { id?
     fx.ornat({});
     void amal.bajar(async () => {
       const { inputs } = await ishlabChiqarishApi.retseptlar.portlash(forma.recipeId, 1);
-      ozgar({ lines: inputs.filter((item) => item.modificationId).map((item) => ({ modificationId: item.modificationId as string, nom: qatorNomi(item), quantity: matn(portlashMiqdori(item)), price: "", currency: "UZS", costingRate: "" })) });
+      ozgar({ lines: inputs.filter((item) => item.modificationId).map((item) => ({ modificationId: item.modificationId as string, nom: qatorNomi(item), quantity: matn(portlashMiqdori(item)), price: "", currency: yangiQatorValyutasi(), costingRate: "" })) });
     }, serverXatosi);
   }
   function saqlash() {
-    const natija = kalkulyatsiyaTanasiniYigish(forma);
+    // Bir valyutali rejimda boshqa valyutadagi (eski) qator saqlanmaydi — valyutasi rejim valyutasiga o'zgartirilishi kerak.
+    const natija = kalkulyatsiyaTanasiniYigish(forma, yagona);
     if ("xato" in natija) { amal.setXato(""); return fx.tekshiruv(natija, t(natija.xato)); }
     fx.ornat({});
     void amal.bajar(async () => {
@@ -260,25 +265,41 @@ function KartaOynasi({ boshlangich, onYopish, onSaqlandi }: { boshlangich: { id?
         amal={<button type="button" disabled={amal.band} onClick={retseptdanOlish} title={t("costing.fromRecipe")} className={tugmaIkkinchi}><Download size={16} />{t("costing.fromRecipe")}</button>}
       >
         <MaydonXatosi matn={fx.xato("lines")} />
+        {/* "Faqat dollar": kalkulyatsiya serverda so'mda hisoblanadi, shuning uchun dollardagi qatorga kurs hamon kerak. */}
+        {yagona === "USD" && <p className="text-xs font-semibold leading-5 text-slate-400">{t("costing.usdOnlyRateHint")}</p>}
         {forma.lines.length === 0 && <p className="rounded-2xl bg-slate-50 px-4 py-6 text-center text-sm font-semibold leading-6 text-slate-400">{t("costing.linesEmpty")}</p>}
-        {forma.lines.map((item, indeks) => (
+        {forma.lines.map((item, indeks) => {
+          // Bir valyutali rejimda valyuta tanlovi yashirin (qator rejim valyutasida). Faqat rejimdan oldin boshqa valyutada saqlangan
+          // qatorda tanlov ko'rinadi — summa jimgina boshqa valyutaga o'tib qolmasligi uchun. Kurs faqat dollardagi qatorga kerak
+          // (backend: costingRate USD qatorida majburiy), shuning uchun "Faqat so'm" rejimida kurs maydoni chiqmaydi.
+          const valyutaTanlovi = !yagona || item.currency !== yagona;
+          const kursMaydoni = valyutaTanlovi || item.currency === "USD";
+          const ustunlar = valyutaTanlovi
+            ? "lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1.1fr)_110px_minmax(0,1fr)_minmax(0,1fr)_48px]"
+            : kursMaydoni
+              ? "lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1fr)_48px]"
+              : "lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1fr)_48px]";
+          return (
           // !items-start: bitta maydon ostida xato chiqsa, qatordagi boshqa maydonlar siljimaydi (yorliqlar bir qatorli).
-          <QatorKartasi key={indeks} className="!items-start sm:grid-cols-2 lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1.1fr)_110px_minmax(0,1fr)_minmax(0,1fr)_48px]">
+          <QatorKartasi key={indeks} className={`!items-start sm:grid-cols-2 ${ustunlar}`}>
             <Maydon nom={t("fields.product")} className="sm:col-span-2 lg:col-span-1" xato={qatorYoli(indeks, "modificationId")}><MahsulotQidiruvi value={item.modificationId} nom={item.nom} onChange={(modificationId, nom) => qator(indeks, { modificationId, nom })} /></Maydon>
             <Maydon nom={t("fields.quantity")} xato={qatorYoli(indeks, "quantity")}><input type="number" inputMode="decimal" min="0" step="any" value={item.quantity} onChange={(event) => qator(indeks, { quantity: event.target.value })} className={inputKlass} /></Maydon>
-            <Maydon nom={t("fields.price")} xato={qatorYoli(indeks, "price")}><input type="number" inputMode="decimal" min="0" step="any" value={item.price} onChange={(event) => qator(indeks, { price: event.target.value })} className={inputKlass} /></Maydon>
-            <Maydon nom={t("fields.currency")} xato={qatorYoli(indeks, "currency")}>
-              <select value={item.currency} onChange={(event) => qator(indeks, { currency: event.target.value as Qator["currency"] })} className={inputKlass}>
-                <option value="UZS">UZS</option>
-                <option value="USD">USD</option>
-              </select>
-            </Maydon>
-            <Maydon nom={t("fields.costingRate")} xato={qatorYoli(indeks, "costingRate")}><input type="number" inputMode="decimal" min="0" step="any" disabled={item.currency !== "USD"} value={item.costingRate} onChange={(event) => qator(indeks, { costingRate: event.target.value })} className={inputKlass} /></Maydon>
+            <Maydon nom={valyutaTanlovi ? t("fields.price") : `${t("fields.price")}, ${item.currency}`} xato={qatorYoli(indeks, "price")}><input type="number" inputMode="decimal" min="0" step="any" value={item.price} onChange={(event) => qator(indeks, { price: event.target.value })} className={inputKlass} /></Maydon>
+            {valyutaTanlovi && (
+              <Maydon nom={t("fields.currency")} xato={qatorYoli(indeks, "currency")}>
+                <select value={item.currency} onChange={(event) => qator(indeks, { currency: event.target.value as Qator["currency"] })} className={inputKlass}>
+                  <option value="UZS">UZS</option>
+                  <option value="USD">USD</option>
+                </select>
+              </Maydon>
+            )}
+            {kursMaydoni && <Maydon nom={t("fields.costingRate")} xato={qatorYoli(indeks, "costingRate")}><input type="number" inputMode="decimal" min="0" step="any" disabled={item.currency !== "USD"} value={item.costingRate} onChange={(event) => qator(indeks, { costingRate: event.target.value })} className={inputKlass} /></Maydon>}
             <Maydon nom={t("fields.amount")}><span className="flex h-12 items-center justify-end truncate rounded-2xl bg-white px-4 text-[15px] font-black text-slate-800 ring-1 ring-slate-200 tabular-nums">{qatorSummasi(item)}</span></Maydon>
             <div className="sm:mt-7"><QatorOchirish onClick={() => { ozgar({ lines: forma.lines.filter((_, i) => i !== indeks) }); fx.tozala("lines"); }} /></div>
           </QatorKartasi>
-        ))}
-        <QatorQoshish matn={t("costing.addLine")} onClick={() => { ozgar({ lines: [...forma.lines, { modificationId: "", quantity: "", price: "", currency: "UZS", costingRate: "" }] }); fx.tozala("lines"); }} />
+          );
+        })}
+        <QatorQoshish matn={t("costing.addLine")} onClick={() => { ozgar({ lines: [...forma.lines, { modificationId: "", quantity: "", price: "", currency: yangiQatorValyutasi(), costingRate: "" }] }); fx.tozala("lines"); }} />
       </Bolim>
       <Bolim ikonka={NotebookPen} sarlavha={t("fields.note")}>
         <textarea value={forma.note} rows={3} aria-label={t("fields.note")} aria-invalid={fx.xato("note") ? true : undefined} placeholder={t("costing.notePlaceholder")} onChange={(event) => { ozgar({ note: event.target.value }); fx.tozala("note"); }} className={`${inputKlass} h-auto py-3 ${fx.xato("note") ? xatoRamkasi : ""}`} />

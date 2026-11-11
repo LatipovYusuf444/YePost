@@ -112,10 +112,15 @@ function sotuvKursi(sotuv: Pick<Sotuv, "currency" | "payments">) {
   return kursBor && kurs > 0 ? kurs : 0;
 }
 
-/** Summani so'mga o'giradi (dollar bo'lsa bugungi kurs bilan; kurs yo'q bo'lsa — o'zgarishsiz). Turli valyutadagi hujjatlar yig'indisi uchun. */
+/**
+ * Summani so'mga o'giradi (dollar bo'lsa bugungi kurs bilan; kurs yo'q bo'lsa — o'zgarishsiz). Turli valyutadagi hujjatlar yig'indisi uchun.
+ * "Faqat dollar" rejimida jami summalar dollarda ko'rsatiladi (`pulMatni` ularni o'girmaydi): shuning uchun dollarga o'giriladi —
+ * dollar summa o'zgarmaydi, eski so'mdagi hujjat kurs bilan dollarga.
+ */
 export function summaniSomga(summa: number, valyuta: Valyuta) {
+  const { kurs, kursBor, rejim } = useValyutaStore.getState();
+  if (rejim === "USD_ONLY") return valyuta === "USD" || !(kursBor && kurs > 0) ? summa : summa / kurs;
   if (valyuta !== "USD") return summa;
-  const { kurs, kursBor } = useValyutaStore.getState();
   return kursBor && kurs > 0 ? summa * kurs : summa;
 }
 
@@ -134,8 +139,14 @@ export function aralashJamiMatni(qatorlar: ReadonlyArray<{ summa: number; valyut
     if (valyuta === "USD") dollar += summa;
     else som += summa;
   }
+  const { kurs, kursBor, rejim } = useValyutaStore.getState();
+  // "Faqat dollar" rejimi: jami dollarda; eski so'mdagi hujjatlar kurs bilan dollarga (kurs yo'q bo'lsa alohida "+ so'm").
+  if (rejim === "USD_ONLY") {
+    if (som === 0) return oziValyutadaMatn(dollar, "USD");
+    if (kursBor && kurs > 0) return oziValyutadaMatn(dollar + som / kurs, "USD");
+    return dollar === 0 ? oziValyutadaMatn(som, "UZS") : `${oziValyutadaMatn(dollar, "USD")} + ${oziValyutadaMatn(som, "UZS")}`;
+  }
   if (dollar === 0) return pulniFormatlash(som);
-  const { kurs, kursBor } = useValyutaStore.getState();
   if (kursBor && kurs > 0) return pulniFormatlash(som + dollar * kurs);
   return som === 0 ? oziValyutadaMatn(dollar, "USD") : `${pulniFormatlash(som)} + ${oziValyutadaMatn(dollar, "USD")}`;
 }

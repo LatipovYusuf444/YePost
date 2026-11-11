@@ -9,7 +9,9 @@ import type { Mahsulot, MahsulotModifikatsiyasi, OlchovBirligi } from "@/types/c
 import { useHisobotRealData } from "./HisobotRealData";
 import type { Maxsulot } from "./types";
 import { ustamaFoizi } from "@/Pages/Mahsulotlar/narxHisobi";
-import { narxQoralamaValyutalari } from "@/Pages/Mahsulotlar/narxValyutaYuklama";
+import { narxQoralamaValyutalari, ozgarmaganBoshqaValyutaMaydonlar, rejimgaMosEmasNarx } from "@/Pages/Mahsulotlar/narxValyutaYuklama";
+import type { NarxValyutasi } from "@/lib/narxValyutasi";
+import { useYagonaValyuta } from "@/lib/valyuta";
 import { useTranslation } from "react-i18next";
 import XatoliMaydon from "@/Components/common/XatoliMaydon";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
@@ -63,6 +65,11 @@ export default function MahsulotModal({
   const [saqlanmoqda, setSaqlanmoqda] = useState(false);
   const [xato, setXato] = useState("");
   const rasmInput = useRef<HTMLInputElement | null>(null);
+  // Bir valyutali rejimda (Faqat so'm / Faqat dollar) narxlar doim rejim valyutasida; ikki valyutada har narx o'z valyutasida.
+  const yagona = useYagonaValyuta();
+  const narxValyutalari = narxQoralamaValyutalari(modifikatsiya?.price, yagona);
+  // Bir valyutali rejimda boshqa valyutada saqlangan narx: summalarni tekshirish haqida ogohlantiriladi (Mahsulotlar sahifasidagi kabi).
+  const valyutaOzgardi = rejimgaMosEmasNarx(modifikatsiya?.price, yagona);
 
   useEffect(() => {
     let active = true;
@@ -105,6 +112,15 @@ export default function MahsulotModal({
     if (!nomi.trim()) majburiy.name = t("validation.nameRequired");
     if (!kategoriya) majburiy.categoryId = t("validation.categoryRequired");
     if (!birlik) majburiy.unitId = t("validation.unitRequired");
+    // Bir valyutali rejimda narxning faqat bir qismi o'zgartirilsa, boshqa valyutada saqlangan va tegilmagan narx (masalan "Faqat so'm"da
+    // $8 tannarx) jimgina "8 so'm" bo'lib ketmasin: shu maydonlarda narxni rejim valyutasida qayta kiritish so'raladi (Mahsulotlar'dagi kabi).
+    // Tekshiruv birinchi so'rovdan oldin: aks holda nom saqlanib, narx xato bilan qolardi.
+    if (modifikatsiya && yagona) {
+      const raqamlar = { costPrice: Number(tanNarx) || 0, retailPrice: Number(sotuvNarx) || 0, wholesalePrice: Number(ulgurji) || 0 };
+      for (const maydon of ozgarmaganBoshqaValyutaMaydonlar(raqamlar, modifikatsiya.price, yagona)) {
+        majburiy[maydon] = t(`currencyMode.reenterPrice.${yagona}`);
+      }
+    }
     fx.ornat(majburiy);
     if (Object.keys(majburiy).length > 0) return;
     setSaqlanmoqda(true);
@@ -122,13 +138,24 @@ export default function MahsulotModal({
           article: artikul.trim() || undefined,
           imageUrl: uploaded?.imageUrl ?? modifikatsiya.imageUrl ?? undefined,
         });
-        // Narxlar bu oynada valyutasiz tahrirlanadi: har bir narxning saqlangan valyutasi o'zgarmaydi.
-        const valyutalar = modifikatsiya.price ? narxQoralamaValyutalari(modifikatsiya.price) : {};
-        await modifikatsiyalarApi.narxYangilash(modifikatsiya.id, {
+        // Narx faqat raqamlari haqiqatan o'zgarganda yuboriladi (narx yo'q bo'lsa — biror narx kiritilganda). Aks holda faqat nomi
+        // tuzatilgan mahsulotning boshqa valyutadagi eski narxi (masalan, 9 000 so'm) jimgina rejim valyutasiga ($9 000) o'tib qolardi.
+        const saqlangan = modifikatsiya.price;
+        const raqamlar = {
           costPrice: Number(tanNarx) || 0, retailPrice: Number(sotuvNarx) || 0,
           wholesalePrice: Number(ulgurji) || 0,
-          ...valyutalar,
-        });
+        };
+        const teng = (a: number, b?: number | string | null) => a === (Number(b) || 0);
+        const narxOzgardi = saqlangan
+          ? !teng(raqamlar.costPrice, saqlangan.costPrice) || !teng(raqamlar.retailPrice, saqlangan.retailPrice)
+            || !teng(raqamlar.wholesalePrice, saqlangan.wholesalePrice)
+          : raqamlar.costPrice > 0 || raqamlar.retailPrice > 0 || raqamlar.wholesalePrice > 0;
+        if (narxOzgardi) {
+          // Narxlar bu oynada valyutasiz tahrirlanadi: ikki valyutada har narxning saqlangan valyutasi o'zgarmaydi (yangi narx — backend
+          // standarti), bir valyutali rejimda esa uchala narx ham rejim valyutasida yuboriladi (boshqasini backend rad etadi).
+          const valyutalar = saqlangan || yagona ? narxQoralamaValyutalari(saqlangan, yagona) : {};
+          await modifikatsiyalarApi.narxYangilash(modifikatsiya.id, { ...raqamlar, ...valyutalar });
+        }
       }
       onClose();
     } catch (error) {
@@ -341,7 +368,7 @@ export default function MahsulotModal({
                   </p>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                  <XatoliMaydon xato={fx.xato("costPrice")}><Narx label={t("hisobotModal.costPrice")} value={tanNarx} onChange={(v) => { setTanNarx(v); fx.tozala("costPrice"); }} /></XatoliMaydon>
+                  <XatoliMaydon xato={fx.xato("costPrice")}><Narx label={t("hisobotModal.costPrice")} valyuta={narxValyutalari.costCurrency} value={tanNarx} onChange={(v) => { setTanNarx(v); fx.tozala("costPrice"); }} /></XatoliMaydon>
                   <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">
                     {t("hisobotModal.markup")}
                     <div className="relative mt-2">
@@ -349,9 +376,10 @@ export default function MahsulotModal({
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">%</span>
                     </div>
                   </label>
-                  <XatoliMaydon xato={fx.xato("retailPrice")}><Narx label={t("hisobotModal.salePrice")} value={sotuvNarx} onChange={(v) => { setSotuvNarx(v); fx.tozala("retailPrice"); }} /></XatoliMaydon>
-                  <XatoliMaydon xato={fx.xato("wholesalePrice")}><Narx label={t("hisobotModal.wholesalePrice")} value={ulgurji} onChange={(v) => { setUlgurji(v); fx.tozala("wholesalePrice"); }} /></XatoliMaydon>
+                  <XatoliMaydon xato={fx.xato("retailPrice")}><Narx label={t("hisobotModal.salePrice")} valyuta={narxValyutalari.retailCurrency} value={sotuvNarx} onChange={(v) => { setSotuvNarx(v); fx.tozala("retailPrice"); }} /></XatoliMaydon>
+                  <XatoliMaydon xato={fx.xato("wholesalePrice")}><Narx label={t("hisobotModal.wholesalePrice")} valyuta={narxValyutalari.wholesaleCurrency} value={ulgurji} onChange={(v) => { setUlgurji(v); fx.tozala("wholesalePrice"); }} /></XatoliMaydon>
                 </div>
+                {valyutaOzgardi && <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700">{t("currencyMode.priceConverted", { currency: yagona })}</p>}
               </div>
             </div>
           </section>
@@ -370,14 +398,15 @@ export default function MahsulotModal({
   );
 }
 
-function Narx({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+// valyuta — narxning valyutasi: bir valyutali rejimda rejim valyutasi, ikki valyutada shu narxning saqlangan valyutasi.
+function Narx({ label, valyuta, value, onChange }: { label: string; valyuta: NarxValyutasi; value: string; onChange: (v: string) => void }) {
   const { t } = useTranslation("mahsulotlar");
   return (
     <label className="block text-xs font-black uppercase tracking-[0.06em] text-gray-500">
       {label}
       <div className="relative mt-2">
         <SummaMaydoni value={value} onChange={onChange} className="input pr-14" placeholder="0" />
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">{t("hisobotModal.som")}</span>
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">{valyuta === "USD" ? "$" : t("hisobotModal.som")}</span>
       </div>
     </label>
   );

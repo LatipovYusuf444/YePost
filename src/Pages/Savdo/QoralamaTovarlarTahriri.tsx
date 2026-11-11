@@ -32,6 +32,7 @@ import {
 import { narxSotuvValyutasida, qatorNarxTuri, turNarxi } from "@/lib/savdoNarxlari";
 import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import { useValyutaStore, type Valyuta } from "@/lib/valyuta";
+import { rejimValyutasi } from "@/api/valyutaApi";
 import { useSavdoSozlamalariStore } from "@/store/savdoSozlamalariStore";
 import { useSavdoStore } from "@/store/savdoStore";
 import type { QoldiqTanlovi, Sotuv, SotuvMahsuloti, SotuvNarxTuri, SotuvYaratishMalumoti } from "@/types/savdo";
@@ -97,6 +98,9 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
   const sotuvVal = sotuvValyutasi(sotuv);
   const omborId = sotuv.warehouseId ?? sotuv.warehouse?.id;
   const kurs = useValyutaStore((holat) => (holat.kursBor && holat.kurs > 0 ? holat.kurs : 0));
+  const yagona = useValyutaStore((holat) => (holat.rejimYoniq ? null : rejimValyutasi(holat.rejim)));
+  // Rejim backenddan o'qilganmi: o'qilguncha store boshlang'ich holati ("Faqat so'm") ikki valyutali do'konni ham to'xtatib qo'ymasin.
+  const rejimYuklandi = useValyutaStore((holat) => holat.yuklandi);
   const narxTurlari = useSavdoSozlamalariStore((holat) => holat.narxTurlari);
   const sozlamaniYuklash = useSavdoSozlamalariStore((holat) => holat.yuklash);
 
@@ -140,7 +144,10 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
   const ozgarish = ozgarishlarSoni(qatorlar);
   // Kurs yo'qligi sababli sotuv valyutasiga o'tmagan qator saqlanmaydi: noto'g'ri valyuta bilan yozilib ketmasligi kerak.
   const valyutaMosEmas = faol.some((q) => q.valyuta !== sotuvVal);
-  const xatoBor = valyutaMosEmas || qatorlar.some((q) => xatoBormi(qatorXatolari(q, qoldiqOl(q))));
+  // Bir valyutali rejimda boshqa valyutadagi qoralama bu yerda saqlanmaydi: qatorlar sotuv valyutasida ketadi, uni backend rad etadi
+  // (errors.currency.not_allowed). O'girish — "Tahrirlash" oynasida.
+  const rejimMosEmas = rejimYuklandi && Boolean(yagona) && sotuvVal !== yagona;
+  const xatoBor = valyutaMosEmas || rejimMosEmas || qatorlar.some((q) => xatoBormi(qatorXatolari(q, qoldiqOl(q))));
 
   useEffect(() => {
     onOzgarish?.(ozgarish);
@@ -335,7 +342,9 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
     }
   }
 
-  const kursYoq = (sotuvVal === "USD" && kurs <= 0) || valyutaMosEmas;
+  // "Faqat dollar" rejimida dollar qoralama uchun kurs so'ralmaydi (dollar narxlar o'girilmaydi); o'girilmagan qator bo'lsa ogohlantirish qoladi.
+  // Rejimga mos bo'lmagan qoralamada kurs ogohlantirishi o'rniga rejim ogohlantirishi chiqadi (bu yerda baribir saqlanmaydi).
+  const kursYoq = !rejimMosEmas && ((sotuvVal === "USD" && kurs <= 0 && yagona !== "USD") || valyutaMosEmas);
   const jamiTaxminiy = ozgarish > 0 && !jami.aniq;
 
   const saqlashPaneli = ozgarish > 0 ? (
@@ -415,6 +424,14 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
         <div className="mb-4 flex items-start gap-2.5 rounded-xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 ring-1 ring-amber-100">
           <TriangleAlert size={17} className="mt-0.5 shrink-0" />
           {t("qoralamaTahrir.kursYoqOgohlantirish")}
+        </div>
+      )}
+
+      {/* Qoralama boshqa valyutada saqlangan, do'kon esa bir valyutali rejimda: backend bunday qatorlarni rad etadi, saqlash to'xtatiladi. */}
+      {rejimMosEmas && yagona && (
+        <div className="mb-4 flex items-start gap-2.5 rounded-xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 ring-1 ring-amber-100">
+          <TriangleAlert size={17} className="mt-0.5 shrink-0" />
+          {yangiT("errors.modeOtherCurrencyDraft", { from: sotuvVal, to: yagona })}
         </div>
       )}
 

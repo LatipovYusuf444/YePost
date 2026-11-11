@@ -21,12 +21,14 @@ import NarxTuriTanlovi from "@/Pages/Savdo/NarxTuriTanlovi";
 import { cn } from "@/lib/utils";
 import { kategoriyalarApi } from "@/api/catalogApi";
 import { kategoriyaMahsulotlariniOlish } from "@/api/kategoriyaQoldigiApi";
-import { usePosMahsulotlar } from "@/Components/layout/usePosMahsulotlar";
+import { savatniRejimgaMoslash, usePosMahsulotlar, usePosNarxRejimi } from "@/Components/layout/usePosMahsulotlar";
 import {
   dollarMalumoti,
+  mahsulotIdOlish,
   qoldiqMiqdori,
   qoldiqNarxi,
   savatNomi,
+  somdagiNarxmi,
   tanlashQoldigi,
   tanlovKaliti,
 } from "@/Components/layout/posMahsulotlari";
@@ -41,6 +43,7 @@ import {
 } from "@/store/posStore";
 import { useKassaNarxTurlari } from "@/store/savdoSozlamalariStore";
 import { sotuvBirliklari } from "@/lib/kopBirlik";
+import { useYagonaValyuta } from "@/lib/valyuta";
 import type { Kategoriya } from "@/types/catalog";
 import type { OmborTanlovi, QoldiqTanlovi, SotuvNarxTuri } from "@/types/savdo";
 import SavatchaMiqdoriMaydoni from "./SavatchaMiqdoriMaydoni";
@@ -102,6 +105,8 @@ export default function SavatchaJadvali({
   const cart = usePosStore((state) => state.cart);
   const umumiyNarxTuri = usePosStore((state) => state.narxTuri);
   const addToCart = usePosStore((state) => state.addToCart);
+  // Valyuta rejimi: "Faqat dollar"da narxlar dollarda (o'girilmaydi), qolganlarida so'mda.
+  const narxRejimi = usePosNarxRejimi();
   const { mahsulotlar, yuklanmoqda, xato: yuklashXatosi } = usePosMahsulotlar(warehouseId, yangilash);
   const skanInputRef = useRef<HTMLInputElement>(null);
   const [skanMatni, setSkanMatni] = useState("");
@@ -158,7 +163,7 @@ export default function SavatchaJadvali({
       .filter((item) => canSellNegative || qoldiqMiqdori(item) > 0)
       .map((item) => {
         const nom = savatNomi(item) || t("jadval.unnamed");
-        const narx = qoldiqNarxi(item, umumiyNarxTuri);
+        const narx = qoldiqNarxi(item, umumiyNarxTuri, narxRejimi);
         const kodlar = [item.modification?.barcode, item.modification?.article].filter((kod): kod is string => Boolean(kod?.trim()));
         const aniqNomlar = [nom, item.modification?.product?.name].filter((matn): matn is string => Boolean(matn?.trim()));
         const asos = { value: item.modificationId, searchLabel: nom, kodlar, nomlar: aniqNomlar };
@@ -171,7 +176,7 @@ export default function SavatchaJadvali({
               <span className="flex w-full min-w-0 items-center justify-between gap-3">
                 <span className="min-w-0 truncate text-slate-500">{nom}</span>
                 <span className="shrink-0 rounded-md bg-red-100 px-2 py-0.5 text-[11px] font-black uppercase text-red-600">
-                  {t("jadval.noPriceBadge")}
+                  {t(narxRejimi.rejim === "USD_ONLY" && somdagiNarxmi(item, umumiyNarxTuri) ? "jadval.somPriceBadge" : "jadval.noPriceBadge")}
                 </span>
               </span>
             ),
@@ -183,22 +188,29 @@ export default function SavatchaJadvali({
         };
       })
       .sort((a, b) => String(a.searchLabel).localeCompare(String(b.searchLabel), "uz"));
-  }, [korinadigan, umumiyNarxTuri, formatSumma, t, canSellNegative]);
+  }, [korinadigan, umumiyNarxTuri, narxRejimi, formatSumma, t, canSellNegative]);
 
   // Mahsulotni savatchaga bitta dona qo'shadi; sabab qaytadi ("" — qo'shildi).
-  function qoshish(item: QoldiqTanlovi): "" | "noStock" | "noPrice" {
+  // "somPrice" — "Faqat dollar" rejimida narxi so'mda belgilangan mahsulot (narxni dollarda kiritish kerak).
+  // "noPriceUsd" — "Faqat dollar" rejimida narx umuman yo'q: kurs ishlatilmaydi, xabarda kurs tilga olinmaydi.
+  function qoshish(item: QoldiqTanlovi): "" | "noStock" | "noPrice" | "noPriceUsd" | "somPrice" {
     if (!canSellNegative && tanlashQoldigi(item, warehouseId, cart) <= 0) return "noStock";
-    const narx = qoldiqNarxi(item, umumiyNarxTuri);
-    if (narx <= 0) return "noPrice";
+    const narx = qoldiqNarxi(item, umumiyNarxTuri, narxRejimi);
+    if (narx <= 0) {
+      if (narxRejimi.rejim !== "USD_ONLY") return "noPrice";
+      return somdagiNarxmi(item, umumiyNarxTuri) ? "somPrice" : "noPriceUsd";
+    }
+    savatniRejimgaMoslash(narxRejimi);
     addToCart(
       {
         id: tanlovKaliti(item.modificationId, warehouseId),
         modificationId: item.modificationId,
+        productId: mahsulotIdOlish(item),
         nom: savatNomi(item) || t("jadval.unnamed"),
         narx,
-        chakanaNarx: qoldiqNarxi(item, "chakana"),
-        ulgurjiNarx: qoldiqNarxi(item, "ulgurji"),
-        ...dollarMalumoti(item),
+        chakanaNarx: qoldiqNarxi(item, "chakana", narxRejimi),
+        ulgurjiNarx: qoldiqNarxi(item, "ulgurji", narxRejimi),
+        ...dollarMalumoti(item, narxRejimi),
         qoldiq: qoldiqMiqdori(item),
         ...(item.birliklar?.length ? { birliklar: item.birliklar } : {}),
         warehouseId,
@@ -482,7 +494,9 @@ function SavatchaQatori({
   const chegirma = savatchaChegirma(item);
   const ustama = savatchaUstama(item);
   const foiz = chegirmaFoizi(item);
-  const dollar = dollarNarxi(item, tur);
+  // Bir valyutali rejimda qator narxi o'sha valyutaning o'zida: alohida "$" narx ko'rsatilmaydi.
+  const yagonaValyuta = useYagonaValyuta();
+  const dollar = yagonaValyuta ? null : dollarNarxi(item, tur);
   const qatorJami = sotuvNarxi * item.soni;
   const birliklar = item.baza ? sotuvBirliklari(item.birliklar) : [];
   const omborNomi = item.warehouseName || omborlar.find((ombor) => String(ombor.id) === item.warehouseId)?.name || "";
@@ -494,7 +508,8 @@ function SavatchaQatori({
     const son = Number(matn) || 0;
     const summa = chegirmaTuri === "foiz" ? foizdanChegirma(item, son) : son;
     // Chegirma sotuv narxini pasaytiradi (bo'sh yoki 0 — katalog narxiga qaytadi); savatcha chegirmani shundan hisoblaydi.
-    setSotuvNarxi(item.id, chegirmadanSotuvNarxi(item, summa));
+    // Dollardagi savatchada eng kam narx 1 sent (1 so'm o'rniga $1 bo'lib qolmasin).
+    setSotuvNarxi(item.id, chegirmadanSotuvNarxi(item, summa, yagonaValyuta === "USD" ? 0.01 : 1));
   }
 
   function chegirmaBirliginiOzgartirish(yangi: "sum" | "foiz") {
@@ -646,7 +661,7 @@ function SavatchaQatori({
                   chegirmaTuri === birlik ? "bg-white text-[#2563EB] shadow-sm ring-2 ring-blue-200" : "text-slate-500 hover:text-slate-800",
                 )}
               >
-                {birlik === "foiz" ? "%" : t("jadval.currencySuffix")}
+                {birlik === "foiz" ? "%" : yagonaValyuta === "USD" ? "$" : t("jadval.currencySuffix")}
               </button>
             ))}
           </div>

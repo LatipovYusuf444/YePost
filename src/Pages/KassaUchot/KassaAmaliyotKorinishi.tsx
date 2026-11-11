@@ -28,6 +28,7 @@ import { cashOperationsApi } from "@/api/cashOperationsApi";
 import { taqsimotniOqish } from "@/lib/qarzTaqsimoti";
 import type { QarzTaqsimoti } from "@/types/qarzTaqsimoti";
 import TaqsimotQatorlari from "./TaqsimotQatorlari";
+import KassaAmaliyotTarixi from "./KassaAmaliyotTarixi";
 import type { KassaAmaliyoti, KassaHolati, KassaKanali } from "./types";
 import { kassaSummasi, partiyaTuri, sanaFormat } from "./yordamchilar";
 
@@ -287,6 +288,11 @@ export default function KassaAmaliyotKorinishi({ amaliyot, onYopish }: Props) {
             </p>
           )}
         </section>
+
+        {/* Tarix (audit): kassa amaliyoti va eski kirim/xarajat yozuvlari uchun; savdo/qaytarish tarixi o'z hujjatida. */}
+        {amaliyot.backendRefId && (manba === "CASH_OPERATION" || manba === "CASH_IN" || manba === "EXPENSE") && (
+          <KassaAmaliyotTarixi refId={amaliyot.backendRefId} valyuta={amaliyot.valyuta} />
+        )}
       </div>
 
       {tolovTahrirlanmoqda && tahrirlanadiganSotuvId && (

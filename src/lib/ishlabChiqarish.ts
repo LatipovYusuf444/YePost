@@ -199,7 +199,11 @@ export type KalkulyatsiyaFormasi = {
   lines: Array<{ modificationId: string; quantity: string; price: string; currency: "UZS" | "USD"; costingRate: string }>;
 };
 
-export function kalkulyatsiyaTanasiniYigish(forma: KalkulyatsiyaFormasi): { tana: KalkulyatsiyaTanasi } | FormaXatosi {
+/**
+ * `yagona` — bir valyutali rejim valyutasi (Faqat so'm / Faqat dollar). Berilsa, rejimdan oldin boshqa valyutada saqlangan qator
+ * yuborilmaydi: foydalanuvchi uning valyutasini o'zgartirib, narxini tekshirishi kerak (summa jimgina boshqa valyutaga o'tmasligi uchun).
+ */
+export function kalkulyatsiyaTanasiniYigish(forma: KalkulyatsiyaFormasi, yagona?: "UZS" | "USD" | null): { tana: KalkulyatsiyaTanasi } | FormaXatosi {
   if (!forma.modificationId) return { xato: "errors.product", maydon: "modificationId" };
   if (forma.lines.length === 0) return { xato: "errors.noInputs", maydon: "lines" };
   const lines: KalkulyatsiyaTanasi["lines"] = [];
@@ -210,6 +214,7 @@ export function kalkulyatsiyaTanasiniYigish(forma: KalkulyatsiyaFormasi): { tana
     if (!qator.modificationId) return { xato: "errors.lineProduct", maydon: `lines.${i}.modificationId` };
     if (!(quantity && quantity > 0)) return { xato: "errors.lineQuantity", maydon: `lines.${i}.quantity` };
     if (!(price !== undefined && price >= 0)) return { xato: "errors.linePrice", maydon: `lines.${i}.price` };
+    if (yagona && qator.currency !== yagona) return { xato: "errors.lineCurrencyMode", maydon: `lines.${i}.currency` };
     if (qator.currency === "USD" && !(costingRate && costingRate > 0)) return { xato: "errors.lineRate", maydon: `lines.${i}.costingRate` };
     lines.push(tozaTana({ modificationId: qator.modificationId, quantity, price, currency: qator.currency, costingRate: qator.currency === "USD" ? costingRate : undefined }));
   }

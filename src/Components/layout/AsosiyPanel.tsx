@@ -5,7 +5,7 @@ import YonPanel from "./YonPanel";
 import { useYonPanelHolati } from "./yonPanelHolati";
 import YuqoriPanel from "./YuqoriPanel";
 import QollabQuvvatlashVidjeti from "@/Components/common/QollabQuvvatlashVidjeti";
-import { useValyutaStore } from "@/lib/valyuta";
+import { useValyutaRejiminiKuzatish, useValyutaStore } from "@/lib/valyuta";
 import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
 import { useIshlabChiqarishStore } from "@/store/ishlabChiqarishStore";
 
@@ -22,8 +22,10 @@ export default function AsosiyLayout() {
   // Menyu modul holatiga bog'liq; 5 daqiqada bir yangilanadi, har sahifaga so'rov ketmaydi.
   const loadIshlabChiqarish = useIshlabChiqarishStore((state) => state.load);
   useEffect(() => { void loadIshlabChiqarish(); }, [loadIshlabChiqarish, location.pathname]);
-  // Valyuta yoki kurs o'zgarganda sahifa qayta yig'iladi — barcha narxlar yangi valyutada qayta hisoblanadi.
-  const valyutaKaliti = useValyutaStore((holat) => `${holat.rejimYoniq}:${holat.hisobotValyutasi}:${holat.kursBor ? holat.kurs : 0}`);
+  // Valyuta rejimi (ikki valyuta / faqat so'm / faqat dollar), hisobot valyutasi yoki kurs o'zgarganda sahifa qayta yig'iladi — barcha
+  // narxlar va valyuta maydonlari yangi rejimda qayta hisoblanadi.
+  useValyutaRejiminiKuzatish();
+  const valyutaKaliti = useValyutaStore((holat) => `${holat.rejim}:${holat.hisobotValyutasi}:${holat.kursBor ? holat.kurs : 0}`);
   // Yon panel faqat navbar tugmasi bilan ochiladi/yopiladi (hover emas); holat shu yerda bitta joyda.
   // Keng ekranda (>= 1280px) tanlov localStorage'da saqlanadi; planshetda panel kontent ustiga chiqadi.
   const { acik: sidebarAcik, rejim: sidebarRejimi, almashtirish: sidebarniAlmashtirish, yopish: sidebarniYopish } = useYonPanelHolati();

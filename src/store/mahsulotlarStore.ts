@@ -34,6 +34,9 @@ type MahsulotlarState = {
   amalBajarilmoqda: boolean;
   xatolik: string | null;
   yuklash: () => Promise<void>;
+  // Mahsulot oynasi uchun kerakli ma'lumotnomalar (kategoriyalar, birliklar, standart birliklar) — butun katalogsiz.
+  // Mahsulotlar sahifasidan tashqarida (Bosh sahifa savatchasi) oynani ochishda ishlatiladi; allaqachon yuklangan bo'lsa so'rov ketmaydi.
+  malumotnomalarniYuklash: () => Promise<void>;
   kategoriyaOlish: (id: string) => Promise<Kategoriya | null>;
   kategoriyaSaqlash: (id: string | null, data: KategoriyaMalumoti) => Promise<boolean>;
   kategoriyaOchirish: (id: string) => Promise<boolean>;
@@ -181,6 +184,21 @@ export const useMahsulotlarStore = create<MahsulotlarState>((set, get) => ({
     } catch (error) {
       set({ yuklanmoqda: false, xatolik: getApiErrorMessage(error) });
     }
+  },
+
+  malumotnomalarniYuklash: async () => {
+    const joriy = get();
+    const [kategoriyalar, birliklar, standardBirliklar] = await Promise.allSettled([
+      joriy.kategoriyalar.length ? Promise.resolve(joriy.kategoriyalar) : kategoriyalarApi.royxat(),
+      joriy.birliklar.length ? Promise.resolve(joriy.birliklar) : birliklarApi.royxat(),
+      joriy.standardBirliklar.length ? Promise.resolve(joriy.standardBirliklar) : getStandardUnits(),
+    ]);
+    // Qaysi biri olinsa — shu saqlanadi (masalan standart birliklar ro'yxati yopiq bo'lsa ham oyna ochiladi).
+    set((state) => ({
+      ...(kategoriyalar.status === "fulfilled" ? { kategoriyalar: kategoriyalar.value } : {}),
+      ...(birliklar.status === "fulfilled" ? { birliklar: birliklar.value } : {}),
+      ...(standardBirliklar.status === "fulfilled" ? { standardBirliklar: standardBirliklar.value } : { standardBirliklar: state.standardBirliklar }),
+    }));
   },
 
   kategoriyaOlish: async (id) => {

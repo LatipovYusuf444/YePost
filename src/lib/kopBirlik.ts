@@ -1,6 +1,6 @@
 // Ko'p birlikli tovarlar: qoldiq bitta asosiy birlikda (masalan dona) yuritiladi, qo'shimcha birliklar (pochka, qop, korobka)
 // koeffitsient bilan qo'yiladi: `koeff` — 1 shu birlikda nechta asosiy birlik. UI'siz va `@/` importlarisiz yozilgan — testlarda ishlaydi.
-import { yaxlitHalfUp } from "./yaxlitlash.ts";
+import { kursBilanOgirish, yaxlitHalfUp } from "./yaxlitlash.ts";
 
 /**
  * Backend hisoblagan birlik narxi (`GET /catalog/modifications/search` har bir birlikda): birlikning o'z narxi, bo'lmasa
@@ -278,17 +278,19 @@ export function savatchaBirlikQiymatlari(baza: SavatchaBaza, birlik: TovarBirlig
   let aslUlgurjiNarx = baza.aslUlgurjiNarx;
   if (!boshqa) {
     // Backend hisoblagan narx (`effective*`) birinchi o'rinda; u kelmasa — birlikning o'z narxi, keyin asosiy narx × koeff.
+    // Dollar narxning so'mdagi qiymati asl dollar narx × kurs, yaxlitlanmasdan (backendning `effective*Uzs` qiymati butun so'mgacha
+    // yaxlitlangan — sotuv narxi sifatida ishlatilmaydi).
     if ((baza.aslNarx ?? 0) > 0 && kurs > 0) {
       const backend = samaraliNarx(birlik, "RETAIL", "USD");
       aslNarx = backend?.asl ?? birlik.chakana ?? yaxlit2((baza.aslNarx ?? 0) * k);
-      chakanaNarx = backend?.som != null ? Math.round(backend.som) : Math.round(aslNarx * kurs);
+      chakanaNarx = kursBilanOgirish(aslNarx, kurs);
     } else {
       chakanaNarx = samaraliNarx(birlik, "RETAIL", "UZS")?.asl ?? birlik.chakana ?? Math.round(baza.chakanaNarx * k);
     }
     if ((baza.aslUlgurjiNarx ?? 0) > 0 && kurs > 0) {
       const backend = samaraliNarx(birlik, "WHOLESALE", "USD");
       aslUlgurjiNarx = backend?.asl ?? birlik.ulgurji ?? yaxlit2((baza.aslUlgurjiNarx ?? 0) * k);
-      ulgurjiNarx = backend?.som != null ? Math.round(backend.som) : Math.round(aslUlgurjiNarx * kurs);
+      ulgurjiNarx = kursBilanOgirish(aslUlgurjiNarx, kurs);
     } else {
       ulgurjiNarx = samaraliNarx(birlik, "WHOLESALE", "UZS")?.asl ?? birlik.ulgurji ?? (baza.ulgurjiNarx > 0 ? Math.round(baza.ulgurjiNarx * k) : 0);
     }

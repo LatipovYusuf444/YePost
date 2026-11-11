@@ -328,7 +328,7 @@
       "dateInvalid": "Sanani to'g'ri tanlang.",
       "rateInvalid": "Kursni to'g'ri kiriting (0 dan katta son).",
       "willReplace": "{{sana}} uchun kurs allaqachon kiritilgan ({{kurs}} so'm) — saqlasangiz almashtiriladi.",
-      "rules": "Kiritilgan kurs shu kundan keyingi kurs kiritilguncha amal qiladi va oldingi kunlarga ta'sir qilmaydi. So'mdagi narx butun so'mgacha yaxlitlanadi.",
+      "rules": "Kiritilgan kurs shu kundan keyingi kurs kiritilguncha amal qiladi va oldingi kunlarga ta'sir qilmaydi.",
       "rateTooLow": "Dollar kursi {{min}} so'mdan kam bo'lishi mumkin emas."
     },
     "history": {
@@ -340,6 +340,28 @@
       "empty": "Hali kurs kiritilmagan.",
       "today": "Bugun",
       "active": "Amalda"
+    },
+    "modes": {
+      "label": "Do'kon valyutasi",
+      "hint": "Do'kon qaysi valyutada ishlashini tanlang. Bir valyutali rejimda valyuta tanlash maydonlari yashiriladi va kurs so'ralmaydi.",
+      "DUAL": {
+        "title": "Ikki valyuta",
+        "desc": "So'm va dollar. Har bir narx, savdo va to'lovda valyutani tanlash mumkin; dollar kursi kerak."
+      },
+      "UZS_ONLY": {
+        "title": "Faqat so'm",
+        "desc": "Barcha narx, savdo, to'lov va hisobotlar so'mda. Dollar ishlatilmaydi."
+      },
+      "USD_ONLY": {
+        "title": "Faqat dollar",
+        "desc": "Barcha narx, savdo, to'lov va hisobotlar dollarda ($). So'm ishlatilmaydi."
+      },
+      "active": "Tanlangan",
+      "confirm": "Do'kon valyutasini «{{nom}}» ga o'zgartirasizmi? Yangi narx, savdo va to'lovlar shu rejim bo'yicha yoziladi; eski hujjatlar o'z valyutasida qoladi.",
+      "confirmYes": "O'zgartirish",
+      "saved": "Do'kon valyutasi o'zgartirildi: {{nom}}.",
+      "rateMissing": "Avval Sozlamalar → Kurs'da bitta dollar kursini kiriting. Do'konda boshqa valyutadagi narx yoki hujjat bor — ularni hisoblash uchun kamida bitta kurs kerak (masalan, 12 000). Kursni bir marta kiritish yetadi.",
+      "rateMissingAction": "Kurs kiritish"
     }
   },
   "narxTurlari": {

@@ -46,12 +46,14 @@ test('savatcha birlikda: backend hisoblagan narx (effective*) birinchi o‘rinda
   assert.equal(savatchaBirlikQiymatlari(som, { ...korobka, samarali: samarali({ chakana: 50000 }) }, 'chakana').chakanaNarx, 50000);
   // so'mdagi savatchada dollar belgili backend narxi ishlatilmaydi
   assert.equal(savatchaBirlikQiymatlari(som, { ...korobka, samarali: samarali({ chakana: 15, chakanaValyuta: 'USD' }) }, 'chakana').chakanaNarx, 53100);
-  // dollar narx: asl narx backenddan, so'mi backenddagi so'm qiymatdan (yo'q bo'lsa kurs bilan)
+  // dollar narx: asl narx backenddan, so'mi esa asl × kurs — yaxlitlanmagan (backendning butun so'mgacha yaxlitlangan so'm qiymati olinmaydi)
   const dollar = { chakanaNarx: 14400, ulgurjiNarx: 0, qoldiq: 100, aslNarx: 1.2, kurs: 12000 };
   const dollarBirlik = { ...korobka, samarali: samarali({ chakana: 3.5, chakanaValyuta: 'USD', chakanaSom: 42500 }) };
   const q = savatchaBirlikQiymatlari(dollar, dollarBirlik, 'chakana');
   assert.equal(q.aslNarx, 3.5);
-  assert.equal(q.chakanaNarx, 42500);
+  assert.equal(q.chakanaNarx, 42000);
+  // kurs 1 bo'lganda $3.50 → 3.5 (4 emas)
+  assert.equal(savatchaBirlikQiymatlari({ ...dollar, kurs: 1 }, { ...dollarBirlik, samarali: samarali({ chakana: 3.5, chakanaValyuta: 'USD', chakanaSom: 4 }) }, 'chakana').chakanaNarx, 3.5);
   assert.equal(savatchaBirlikQiymatlari(dollar, { ...dollarBirlik, samarali: samarali({ chakana: 3.5, chakanaValyuta: 'USD' }) }, 'chakana').chakanaNarx, 42000);
 });
 
