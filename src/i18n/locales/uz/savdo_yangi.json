@@ -237,6 +237,17 @@
     "noPrice": "Bu mahsulotda bu narx turi yo'q",
     "skipped": "{{count}} ta mahsulotda \"{{type}}\" narxi yo'q — ular avvalgi narx turida qoldi."
   },
+  "generalDiscount": {
+    "label": "Umumiy chegirma",
+    "hint": "Tanlangan foiz hamma mahsulotga qo'yiladi. Har qatorda alohida ham o'zgartirish mumkin.",
+    "hintSum": "Summa butun sotuvga beriladi va qatorlarga ularning summasiga mutanosib taqsimlanadi.",
+    "mixed": "Aralash",
+    "mixedTitle": "Ayrim qatorlarda chegirma qo'lda o'zgartirilgan",
+    "clear": "Umumiy chegirmani olib tashlash",
+    "unit": "Umumiy chegirma birligi",
+    "applied": "Umumiy chegirma: −{{summa}}",
+    "belowCost": "{{count}} ta mahsulot tannarxdan arzon"
+  },
   "discountUnit": {
     "label": "Chegirma birligi",
     "percentTitle": "Chegirma foizda (0–100)"

@@ -23,6 +23,8 @@ function component(path, overrides = {}) {
     '@/lib/optionlarniCheklash': require('../src/lib/optionlarniCheklash.ts'),
     '@/lib/hujjatSanasi': { bugungiToshkentKuni: () => '2026-10-24' },
     '@/lib/savdoNarxlari': require('../src/lib/savdoNarxlari.ts'),
+    '@/lib/umumiyChegirma': require('../src/lib/umumiyChegirma.ts'),
+    '@/lib/mijozQidiruvi': require('../src/lib/mijozQidiruvi.ts'),
     '@/lib/kopBirlik': require('../src/lib/kopBirlik.ts'),
     '@/lib/valyuta': { useValyutaStore: selector => selector({ kurs: 12000, kursBor: true, rejimYoniq: true }) },
     '@/store/authProfileStore': { useAuthProfileStore: selector => selector({ profil: { id: 'cashier' }, profilniYuklash: noop }) },

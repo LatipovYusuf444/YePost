@@ -33,6 +33,8 @@ import { useAuthProfileStore } from "@/store/authProfileStore";
 import { savatchaChegirma, savatchaNarxTuri, savatchaSotuvNarxi, savatchaUstama, usePosStore, type CartItem } from "@/store/posStore";
 import { sotuvBirliklari } from "@/lib/kopBirlik";
 import { yaratishValyutasi } from "@/lib/mijozValyutasi";
+import { mijozMosmi, telefonKorinishi } from "@/lib/mijozQidiruvi";
+import { qidiruvKorinishi } from "@/lib/kategoriyaQidiruvi";
 import SotuvNarxiMaydoni from "./SotuvNarxiMaydoni";
 import SavatchaMiqdoriMaydoni from "./SavatchaMiqdoriMaydoni";
 import { doimiySotuvniModalgaTayyorlash } from "./doimiySotuv";
@@ -134,6 +136,12 @@ export default function BoshSahifa() {
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
   const [mijozQoshishOchiq, setMijozQoshishOchiq] = useState(false);
+  // "Yangi xaridor" oynasi qayerdan ochilgani va qidiruvga yozilgan matn (oyna shu matn bilan to'ladi): "donalik" — Donalik mijoz ismi
+  // takliflaridan, "doimiy" — Doimiy mijozlar qidiruvidan. Saqlangach mijoz Doimiy mijozlarga tanlangan bo'lib tushadi.
+  const [mijozQoshishManbasi, setMijozQoshishManbasi] = useState<{ joy: CustomerType; matn: string }>({ joy: "doimiy", matn: "" });
+  // Donalik mijoz ismi ostidagi bazadagi mijoz takliflari (2 ta belgidan keyin).
+  const [nomTaklifiOchiq, setNomTaklifiOchiq] = useState(false);
+  const [nomTaklifiFaol, setNomTaklifiFaol] = useState(-1);
   const [mijozKompaniyalari, setMijozKompaniyalari] = useState<XaridorKompaniyasi[]>([]);
   const mijozSaqlanmoqda = useRef(false);
   const narxTuri = usePosStore((state) => state.narxTuri);
@@ -284,18 +292,43 @@ export default function BoshSahifa() {
     setTolovSummasi(String(Math.max(pul(payableTotal - (tiyin > 0 ? dollarniSomga(tiyin, kurs) : 0)), 0)));
   }
 
+  // Qidiruv kirill ↔ lotin bir xil ("жам" → JAMSHID) va telefon raqami qismi bo'yicha ("77777").
   const filteredCustomers = useMemo(() => {
-    const value = customerSearch.toLowerCase().trim();
+    const value = customerSearch.trim();
 
     if (!value) return [];
 
     return mijozlar.filter((customer) =>
-      [mijozNomi(customer), customer.phone, customer.email, customer.address]
-        .join(" ")
-        .toLowerCase()
-        .includes(value)
+      mijozMosmi([mijozNomi(customer), customer.email, customer.address], customer.phone, value)
     );
   }, [customerSearch, mijozlar]);
+
+  // Donalik mijoz ismi: 2 ta harf (yoki raqam) yozilgach bazadagi mos mijozlar taklif qilinadi (eng ko'pi 8 ta).
+  const nomTakliflari = useMemo(() => {
+    const soz = customerName.trim();
+    if (qidiruvKorinishi(soz).length < 2) return [];
+    return mijozlar
+      .filter((customer) => mijozMosmi([mijozNomi(customer), customer.email, customer.address], customer.phone, soz))
+      .slice(0, 8);
+  }, [customerName, mijozlar]);
+  const nomTaklifiKorinadi = nomTaklifiOchiq && qidiruvKorinishi(customerName.trim()).length >= 2;
+
+  function mijozQoshishniOchish(joy: CustomerType, matn: string) {
+    setNomTaklifiOchiq(false);
+    setMijozQoshishManbasi({ joy, matn: matn.trim() });
+    setMijozQoshishOchiq(true);
+  }
+
+  // Donalik mijoz ismidan bazadagi mijoz tanlandi: Doimiy mijozlardagi kabi biriktiriladi.
+  function nomTaklifiniTanlash(customer: MijozTanlovi) {
+    setNomTaklifiOchiq(false);
+    setNomTaklifiFaol(-1);
+    setCustomerName("");
+    setCustomerPhone("");
+    setCustomerSearch(mijozNomi(customer));
+    setSelectedCustomerId(String(customer.id));
+    setMijozTuri("doimiy");
+  }
 
   async function mijozQoshish(xaridor: Xaridor) {
     if (mijozSaqlanmoqda.current) return;
@@ -330,6 +363,12 @@ export default function BoshSahifa() {
       useSavdoStore.getState().mijozMalumotiniYangilash(mijoz);
       setCustomerSearch(mijozNomi(mijoz));
       setSelectedCustomerId(mijoz.id);
+      // Donalik mijoz ismidan qo'shilgan mijoz ham Doimiy mijozlarga tanlangan bo'lib tushadi (savatcha joyida qoladi).
+      if (mijozQoshishManbasi.joy === "donalik") {
+        setCustomerName("");
+        setCustomerPhone("");
+      }
+      setMijozTuri("doimiy");
       setMijozQoshishOchiq(false);
     } finally {
       mijozSaqlanmoqda.current = false;
@@ -846,13 +885,80 @@ export default function BoshSahifa() {
                 <p className="text-sm font-bold text-[#0F172A]">{t("customer.label")}</p>
               </div>
 
+              <div className="relative">
               <input
                 value={customerName}
-                onChange={(event) => setCustomerName(event.target.value)}
+                onChange={(event) => {
+                  setCustomerName(event.target.value);
+                  setNomTaklifiOchiq(true);
+                  setNomTaklifiFaol(-1);
+                }}
+                onFocus={() => setNomTaklifiOchiq(true)}
+                onBlur={() => setNomTaklifiOchiq(false)}
+                onKeyDown={(event) => {
+                  if (!nomTaklifiKorinadi || event.nativeEvent.isComposing) return;
+                  const soni = nomTakliflari.length;
+                  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                    event.preventDefault();
+                    if (soni === 0) return;
+                    setNomTaklifiFaol((joriy) => (event.key === "ArrowDown" ? (joriy + 1) % soni : joriy <= 0 ? soni - 1 : joriy - 1));
+                  } else if (event.key === "Enter" && nomTakliflari[nomTaklifiFaol]) {
+                    event.preventDefault();
+                    nomTaklifiniTanlash(nomTakliflari[nomTaklifiFaol]);
+                  } else if (event.key === "Escape") {
+                    setNomTaklifiOchiq(false);
+                  }
+                }}
                 maxLength={200}
+                autoComplete="off"
+                role="combobox"
+                aria-expanded={nomTaklifiKorinadi}
+                aria-controls="donalik-mijoz-takliflari"
+                aria-autocomplete="list"
                 placeholder={t("customer.namePlaceholder")}
                 className="h-10 w-full rounded-xl bg-gold-50 px-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-gold-200"
               />
+              {nomTaklifiKorinadi && (
+                <div className="absolute left-0 right-0 top-full z-30 mt-1 flex max-h-72 flex-col overflow-hidden rounded-xl border border-gold-200 bg-white shadow-[0_18px_44px_rgba(15,23,42,.16)]">
+                  <div id="donalik-mijoz-takliflari" role="listbox" aria-label={t("customer.regularCustomers")} className="overflow-y-auto p-1">
+                    {nomTakliflari.length === 0 ? (
+                      <p className="px-3 py-2.5 text-xs font-semibold text-gray-400">{t("customer.notFound")}</p>
+                    ) : (
+                      nomTakliflari.map((customer, indeks) => (
+                        <button
+                          key={customer.id}
+                          type="button"
+                          role="option"
+                          aria-selected={indeks === nomTaklifiFaol}
+                          tabIndex={-1}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onMouseMove={() => indeks !== nomTaklifiFaol && setNomTaklifiFaol(indeks)}
+                          onClick={() => nomTaklifiniTanlash(customer)}
+                          className={[
+                            "flex w-full min-w-0 items-center gap-1.5 rounded-lg px-3 py-2 text-left text-sm transition",
+                            indeks === nomTaklifiFaol ? "bg-gold-50 text-gold-700" : "text-gray-800 hover:bg-gold-50",
+                          ].join(" ")}
+                        >
+                          <span className="truncate font-bold">{mijozNomi(customer)}</span>
+                          {customer.phone && <span className="shrink-0 text-xs font-medium text-gray-500">· {telefonKorinishi(customer.phone)}</span>}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                  <div className="shrink-0 border-t border-gold-100 bg-gold-50/60 p-1.5">
+                    <button
+                      type="button"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => mijozQoshishniOchish("donalik", customerName)}
+                      className="flex h-9 w-full items-center justify-center gap-2 rounded-lg text-xs font-bold text-gold-600 transition hover:bg-white"
+                    >
+                      <Plus size={15} />
+                      {t("customer.addCustomer")}
+                    </button>
+                  </div>
+                </div>
+              )}
+              </div>
               <input
                 value={customerPhone}
                 onChange={(event) => setCustomerPhone(event.target.value.replace(/[^\d+\-()\s]/g, ""))}
@@ -1073,6 +1179,18 @@ export default function BoshSahifa() {
                 />
                 <Search size={17} className="text-gray-300" />
               </div>
+              {/* "+ Mijoz qo'shish" doim ko'rinadi (hech narsa yozilmagan bo'lsa ham); oyna qidiruvdagi matn bilan to'ladi. "Mijoz topilmadi"
+                  holatida tugma ro'yxat o'rnidagi blokda turadi (ikki marta chiqmasin). */}
+              {!(customerSearch.trim() && filteredCustomers.length === 0 && !loading) && (
+              <button
+                type="button"
+                onClick={() => mijozQoshishniOchish("doimiy", customerSearch)}
+                className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-gold-300 bg-gold-50/60 text-xs font-bold text-gold-600 transition hover:bg-gold-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-300"
+              >
+                <Plus size={15} />
+                {t("customer.addCustomer")}
+              </button>
+              )}
             </div>
 
             <div className="mb-5 max-h-[420px] space-y-3 overflow-auto pr-1">
@@ -1116,7 +1234,7 @@ export default function BoshSahifa() {
                   {customerSearch.trim() && !loading && (
                     <button
                       type="button"
-                      onClick={() => setMijozQoshishOchiq(true)}
+                      onClick={() => mijozQoshishniOchish("doimiy", customerSearch)}
                       className="inline-flex h-10 w-full max-w-[220px] shrink-0 items-center justify-center gap-2 rounded-xl bg-gold-500 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-gold-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-300 focus-visible:ring-offset-2"
                     >
                       <Plus size={16} />
@@ -1169,6 +1287,7 @@ export default function BoshSahifa() {
       {mijozQoshishOchiq && (
         <XaridorModal
           boshlangich={null}
+          boshlangichMatn={mijozQoshishManbasi.matn}
           kompaniyalar={mijozKompaniyalari}
           onYopish={() => {
             if (!mijozSaqlanmoqda.current) setMijozQoshishOchiq(false);

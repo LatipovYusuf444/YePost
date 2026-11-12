@@ -25,6 +25,8 @@ function editor({ currency = 'USD', sourceCurrency = currency, units = [base, ca
     '@/lib/utils': { cn: (...args) => args.join(' ') },
     '@/lib/hujjatSanasi': { bugungiToshkentKuni: () => '2026-10-31', yangiHujjatSanasi: () => ({}) },
     '@/lib/savdoNarxlari': require('../src/lib/savdoNarxlari.ts'),
+    '@/lib/umumiyChegirma': require('../src/lib/umumiyChegirma.ts'),
+    '@/lib/mijozQidiruvi': require('../src/lib/mijozQidiruvi.ts'),
     '@/lib/kopBirlik': require('../src/lib/kopBirlik.ts'),
     '@/lib/valyuta': { useValyutaStore: selector => selector({ kurs: 12000, kursBor: true, rejimYoniq: true }) },
     '@/store/authProfileStore': { useAuthProfileStore: selector => selector({ profil: { id: 'cashier' } }) },

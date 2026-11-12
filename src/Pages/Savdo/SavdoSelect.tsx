@@ -49,8 +49,13 @@ type SavdoSelectProps = {
   ochishSorovi?: number;
   // Faqat `klaviatura` rejimida: Shift+Enter faol variantni `onChange` o'rniga shu funksiya bilan tanlaydi (tez ketma-ket kiritish uchun).
   tezTanlash?: (value: string) => void;
-  // Faqat chaqiruvchi bergan maydonda, qidiruv natijasi bo'sh bo'lsa ko'rsatiladi.
-  boshNatijaAmali?: { label: string; onClick: () => void };
+  // Faqat chaqiruvchi bergan maydonda, qidiruv natijasi bo'sh bo'lsa ko'rsatiladi; `doim` — ro'yxat pastida doim turadi (sticky).
+  // `onClick` yozilgan qidiruv matnini oladi (masalan, yangi mijoz oynasini shu matn bilan to'ldirish uchun).
+  boshNatijaAmali?: { label: string; onClick: (qidiruvMatni: string) => void; doim?: boolean };
+  // Ixtiyoriy qidiruv mosligi (masalan, kirill ↔ lotin va telefon raqami bo'yicha); berilmasa — oddiy matn bo'yicha.
+  qidiruvMosligi?: (option: SavdoSelectOption, qidiruvMatni: string) => boolean;
+  // Ro'yxat ochilganda qidiruv maydonidagi boshlang'ich matn (masalan, bekor qilingan yaratish oynasidan qaytilganda).
+  boshlangichQidiruv?: string;
 };
 
 function labelToText(label: ReactNode) {
@@ -89,6 +94,8 @@ export default function SavdoSelect({
   ochishSorovi = 0,
   tezTanlash,
   boshNatijaAmali,
+  qidiruvMosligi,
+  boshlangichQidiruv,
 }: SavdoSelectProps) {
   const { t } = useTranslation("savdo_kichik");
   const effectivePlaceholder = placeholder ?? t("savdoSelect.tanlang");
@@ -108,6 +115,7 @@ export default function SavdoSelect({
   let korinadiganOptions = options;
   if (qidirishFaol) {
     korinadiganOptions = options.filter((option) => {
+      if (qidiruvMosligi) return qidiruvMosligi(option, qidiruvMatni);
       const matn = (option.searchLabel ?? labelToText(option.label)).toLowerCase();
       if (matn.includes(qidiruv)) return true;
       return klaviatura && Boolean(qidiruv) && (option.kodlar ?? []).some((kod) => kod.toLowerCase().includes(qidiruv));
@@ -179,10 +187,12 @@ export default function SavdoSelect({
 
   useEffect(() => {
     if (open && qidirishFaol) {
-      setQidiruvMatni("");
-      setFaolIndeks(-1);
+      setQidiruvMatni(boshlangichQidiruv ?? "");
+      setFaolIndeks(boshlangichQidiruv?.trim() ? 0 : -1);
       window.requestAnimationFrame(() => qidiruvInputRef.current?.focus());
     }
+    // Boshlang'ich matn faqat ochilish paytida olinadi.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, qidirishFaol]);
 
   useEffect(() => {
@@ -324,10 +334,10 @@ export default function SavdoSelect({
           })
         )}
       </div>
-      {korinadiganOptions.length === 0 && boshNatijaAmali && (
+      {boshNatijaAmali && (boshNatijaAmali.doim || korinadiganOptions.length === 0) && (
         <div className="shrink-0 border-t border-blue-100 bg-blue-50/50 p-2">
-          <button type="button" aria-label={boshNatijaAmali.label}
-            onClick={() => { setOpen(false); boshNatijaAmali.onClick(); }}
+          <button type="button" aria-label={boshNatijaAmali.label} data-savdo-select-amal
+            onClick={() => { setOpen(false); boshNatijaAmali.onClick(qidiruvMatni.trim()); }}
             className="flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#2563EB] px-3 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#1D4ED8] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200">
             <Plus size={16} className="shrink-0" />{boshNatijaAmali.label}
           </button>

@@ -90,6 +90,8 @@ export type QoralamaQatori = {
   kutilayotganValyuta?: NarxValyutasi;
   /** Saqlangan valyutasi sotuvnikidan farq qilgan va tuzatilgan qator: saqlanmagan o'zgarish hisoblanadi. */
   tuzatilgan?: boolean;
+  /** Chegirma "Umumiy chegirma" foizidan qo'yilgan (qo'lda o'zgartirilmagan): umumiy chegirma tozalanganda olib tashlanadi. */
+  umumiyChegirmadan?: boolean;
 };
 
 const qoldiqKalitiniYigish = (modificationId: string, warehouseId: string) => (warehouseId ? `${modificationId}::${warehouseId}` : modificationId);

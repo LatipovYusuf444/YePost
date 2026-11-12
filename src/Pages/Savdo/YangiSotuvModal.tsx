@@ -108,6 +108,22 @@ import { pulniFormatlash, sotuvJadvalId } from "./savdoYordamchilari";
 import QoralamaFaoliyatlari from "./QoralamaFaoliyatlari";
 import SavdoSelect, { type SavdoSelectOption } from "./SavdoSelect";
 import { asosiyValyuta, valyutaYokiAsosiy } from "@/lib/asosiyValyuta";
+import { mijozMosmi } from "@/lib/mijozQidiruvi";
+import {
+  aralashmi,
+  chegirmaSoni,
+  chegirmaUlushBilan,
+  faolUmumiyFoiz,
+  faolUmumiySumma,
+  foizChegarasi,
+  qatorgaUmumiyFoiz,
+  summaUlushlari,
+  tannarxdanArzonmi,
+  umumiyChegirmaniTozalash,
+  umumiyFoizniQollash,
+  type UmumiyChegirma,
+  type UmumiyChegirmaTuri,
+} from "@/lib/umumiyChegirma";
 
 type YangiSotuvModalProps = {
   variant?: "sale" | "draft";
@@ -436,12 +452,25 @@ export default function YangiSotuvModal({
   const [warehouseId, setWarehouseId] = useState(asl?.warehouseId ?? "");
   const [customerId, setCustomerId] = useState(asl?.customerId ?? "");
   const [mijozQoshishOchiq, setMijozQoshishOchiq] = useState(false);
+  // "+ Mijoz qo'shish" bosilganda Kontakt qidiruvidagi matn: "Yangi xaridor" oynasi shu matn bilan to'ladi; bekor qilinsa Kontakt
+  // ro'yxati shu matn bilan qayta ochiladi.
+  const [mijozQidiruvMatni, setMijozQidiruvMatni] = useState("");
+  const [kontaktOchishSorovi, setKontaktOchishSorovi] = useState(0);
   const [qoshilganMijozlar, setQoshilganMijozlar] = useState<MijozTanlovi[]>([]);
   const mijozSaqlanmoqda = useRef(false);
   const barchaMijozlar = useMemo(() => [
     ...mijozlar,
     ...qoshilganMijozlar.filter((item) => !mijozlar.some((mijoz) => mijoz.id === item.id)),
   ], [mijozlar, qoshilganMijozlar]);
+  // Kontakt qidiruvi: kirill ↔ lotin bir xil ("жам" → JAMSHID) va telefon raqami qismi bo'yicha ("77777").
+  const mijozQidiruvMosligi = useMemo(() => {
+    const boyicha = new Map(barchaMijozlar.map((mijoz) => [mijoz.id, mijoz]));
+    return (option: SavdoSelectOption, soz: string) => {
+      const mijoz = boyicha.get(option.value);
+      const nomlar = [option.searchLabel ?? (typeof option.label === "string" ? option.label : ""), mijoz?.firstName, mijoz?.lastName, mijoz?.fullName, mijoz?.name, mijoz?.email, mijoz?.address];
+      return mijozMosmi(nomlar, mijoz?.phone, soz);
+    };
+  }, [barchaMijozlar]);
   const [clientCompanyId, setClientCompanyId] = useState(asl?.clientCompanyId ?? "");
   const [responsibleId, setResponsibleId] = useState("");
   // Sotuv sanasi: bugun yoki o'tgan kun (kelajak yo'q); o'tgan kun tanlansa backend hujjatni shu kunning oxirida yozadi.
@@ -516,6 +545,11 @@ export default function YangiSotuvModal({
   const narxSozlamasiniYuklash = useSavdoSozlamalariStore((holat) => holat.yuklash);
   const [narxTuri, setNarxTuri] = useState<SotuvNarxTuri>(() => umumiyNarxTuri(mahsulotlar));
   const [narxXabari, setNarxXabari] = useState("");
+  // "Umumiy chegirma" (Mahsulotlar qadami): foizda — har bir qatorning CHEGIRMA maydoniga yoziladi; summada — butun sotuvga beriladi va
+  // qatorlarga (o'z chegirmasidan keyingi) summasiga mutanosib taqsimlanadi (foyda hisobotida to'g'ri chiqishi uchun).
+  const [umumiyCheg, setUmumiyCheg] = useState<UmumiyChegirma>({ tur: "foiz", qiymat: "" });
+  const umumiyFoiz = faolUmumiyFoiz(umumiyCheg);
+  const umumiySumma = faolUmumiySumma(umumiyCheg);
   // "Sotuv narxi" maydoni hisoblangan qiymatni ko'rsatadi (katalog + ustama − chegirma / miqdor), shuning uchun yozilayotgan matn alohida
   // saqlanadi: aks holda maydonni bo'shatib bo'lmaydi (bo'sh qiymat darrov katalog narxiga qaytadi). Maydondan chiqilganda hisoblangan narx ko'rinadi.
   const [narxTahriri, setNarxTahriri] = useState<{ qator: number; matn: string } | null>(null);
@@ -596,6 +630,20 @@ export default function YangiSotuvModal({
     setFokusSorovi(null);
   }, [fokusSorovi]);
 
+  // Umumiy chegirma summada: har bir yuboriladigan qatorning ulushi (qolganlariga 0).
+  const umumiyUlushlar = useMemo(
+    () =>
+      summaUlushlari(
+        mahsulotlar.map((mahsulot) =>
+          tanagaKiradimi(mahsulot) ? raqamgaAylantirish(mahsulot.quantity) * qatorBirNarxi(mahsulot) - qatorChegirmasi(mahsulot) : 0
+        ),
+        umumiySumma,
+        // So'mda butun so'm, dollarda sent.
+        sotuvVal === "UZS" ? 0 : 2
+      ),
+    [mahsulotlar, umumiySumma, sotuvVal]
+  );
+  const umumiyUlushJami = umumiyUlushlar.reduce((summa, ulush) => summa + ulush, 0);
   const jami = useMemo(
     () =>
       mahsulotlar.reduce(
@@ -605,8 +653,8 @@ export default function YangiSotuvModal({
             qatorBirNarxi(mahsulot) -
           qatorChegirmasi(mahsulot),
         0
-      ),
-    [mahsulotlar]
+      ) - umumiyUlushJami,
+    [mahsulotlar, umumiyUlushJami]
   );
   const bosqichlar = useMemo(
     () => bosqichKodlari.map((item) => ({ value: item.value, label: t(item.labelKey) })),
@@ -717,6 +765,8 @@ export default function YangiSotuvModal({
     }
     setXatolik("");
     fx.tozala("currency");
+    // Umumiy chegirma summasi eski valyutada kiritilgan: valyuta almashganda olib tashlanadi (foizi valyutaga bog'liq emas, qoladi).
+    if (umumiyCheg.tur === "sum") setUmumiyCheg({ tur: "sum", qiymat: "" });
     if (tahrir) {
       const qaytish = valyutaOldingi.current?.natija === mahsulotlar ? valyutaOldingi.current.oldingi : null;
       if (!qaytish && !(aniqKurs > 0)) {
@@ -959,6 +1009,7 @@ export default function YangiSotuvModal({
       fx.tozala("customerId", "clientCompanyId");
       setCustomerId(mijoz.id);
       setClientCompanyId(mijozKompaniyaId(mijoz));
+      setMijozQidiruvMatni("");
       setMijozQoshishOchiq(false);
     } finally {
       mijozSaqlanmoqda.current = false;
@@ -984,7 +1035,8 @@ export default function YangiSotuvModal({
 
   function qatorQoshish() {
     fx.tozala("items");
-    setMahsulotlar((joriy) => [...joriy, bosQator(narxTuri)]);
+    // Umumiy foiz qo'yilgan bo'lsa, yangi qatorga ham shu foiz qo'yiladi.
+    setMahsulotlar((joriy) => [...joriy, qatorgaUmumiyFoiz(bosQator(narxTuri), umumiyFoiz)]);
   }
 
   function fokusSoralish(qator: number, maydon: "mahsulot" | "miqdor") {
@@ -1067,7 +1119,7 @@ export default function YangiSotuvModal({
       const tur = sotiladiganNarxTuri(item, narxTuri, turRuxsati, kurs, blokYagona) ?? narxTuri;
       const narx = qoldiqNarxiValyutada(item, sotuvVal, kurs, tur, skanBirligi);
       const yangiQator: MahsulotQatori = {
-        ...bosQator(tur),
+        ...qatorgaUmumiyFoiz(bosQator(tur), umumiyFoiz),
         modificationId: item.modificationId,
         qoldiqKaliti: kalit,
         price: narx ? String(narx) : "",
@@ -1135,19 +1187,20 @@ export default function YangiSotuvModal({
     // Backendga ketadigan qatorlar: narx turi (priceType), narx va chegirma summasi (foizda kiritilsa discountPercent ham).
     // Yangi sotuvda mahsulot o'z valyutasida (dollarda yoki so'mda) yuboriladi: backend tasdiqlash kunidagi kurs bilan o'giradi.
     // Tahrirlashda (PATCH) qator valyutasi doim sotuv valyutasi.
+    // Umumiy chegirma summada bo'lsa, qatorning ulushi uning chegirmasiga qo'shiladi (foizi yuborilmaydi — summa foizdan farq qiladi).
     const yuboriladiganQatorlar = mahsulotlar
-      .filter(tanagaKiradimi)
-      .map((mahsulot) => tahrir
+      .flatMap((mahsulot, indeks) => (tanagaKiradimi(mahsulot) ? [{ mahsulot, ulush: umumiyUlushlar[indeks] ?? 0 }] : []))
+      .map(({ mahsulot, ulush }) => tahrir
         ? qoralamaQatorTanasi({
             modificationId: mahsulot.modificationId,
             miqdor: raqamgaAylantirish(mahsulot.quantity),
             narx: qatorBirNarxi(mahsulot),
-            chegirma: qatorChegirmasi(mahsulot),
+            chegirma: chegirmaUlushBilan(qatorChegirmasi(mahsulot), ulush),
             birlikId: mahsulot.birlikId,
             sotuvVal,
             tur: mahsulot.priceType,
             turRuxsati,
-            foiz: mahsulot.discountTuri === "foiz" ? raqamgaAylantirish(mahsulot.discountFoiz) : null,
+            foiz: mahsulot.discountTuri === "foiz" && !(ulush > 0) ? raqamgaAylantirish(mahsulot.discountFoiz) : null,
           })
         : yuboriladiganQator({
           modificationId: mahsulot.modificationId,
@@ -1157,8 +1210,8 @@ export default function YangiSotuvModal({
           sotuvVal,
           kurs,
           narx: raqamgaAylantirish(mahsulot.price),
-          chegirma: qatorChegirmasi(mahsulot),
-          chegirmaTuri: mahsulot.discountTuri,
+          chegirma: chegirmaUlushBilan(qatorChegirmasi(mahsulot), ulush),
+          chegirmaTuri: ulush > 0 ? "sum" : mahsulot.discountTuri,
           foiz: raqamgaAylantirish(mahsulot.discountFoiz),
           ustama: raqamgaAylantirish(mahsulot.ustama),
           birlik: birlikTopish(qatorQoldigi(mahsulot.qoldiqKaliti)?.birliklar, mahsulot.birlikId),
@@ -1270,7 +1323,46 @@ export default function YangiSotuvModal({
   const mahsulotTanlanganQatorlar = mahsulotlar.filter((mahsulot) => mahsulot.modificationId);
   const mahsulotlarSoni = mahsulotTanlanganQatorlar.length;
   const umumiyMiqdor = mahsulotTanlanganQatorlar.reduce((summa, mahsulot) => summa + raqamgaAylantirish(mahsulot.quantity), 0);
-  const umumiyChegirma = mahsulotlar.reduce((summa, mahsulot) => summa + qatorChegirmasi(mahsulot), 0);
+  const umumiyChegirma = mahsulotlar.reduce((summa, mahsulot) => summa + qatorChegirmasi(mahsulot), 0) + umumiyUlushJami;
+  // "Aralash": umumiy foizdan keyin ayrim qatorlar qo'lda o'zgartirilgan.
+  const umumiyAralash = aralashmi(mahsulotlar, umumiyFoiz);
+  // Chegirmalardan keyin bir dona narxi tannarxdan past qatorlar (tannarx ko'rinadigan rollarda): ogohlantirish, saqlashni to'xtatmaydi.
+  const tannarxdanArzonSoni = mahsulotlar.filter((mahsulot, indeks) => {
+    if (!tanagaKiradimi(mahsulot)) return false;
+    const qoldiq = qatorQoldigi(mahsulot.qoldiqKaliti);
+    const tannarx = qoldiqNarxiValyutada(qoldiq, sotuvVal, kurs, "COST", birlikTopish(qoldiq?.birliklar, mahsulot.birlikId));
+    return tannarxdanArzonmi({
+      miqdor: raqamgaAylantirish(mahsulot.quantity),
+      birNarx: qatorBirNarxi(mahsulot),
+      chegirma: qatorChegirmasi(mahsulot) + (umumiyUlushlar[indeks] ?? 0),
+      tannarx,
+    });
+  }).length;
+
+  // Umumiy chegirma qiymati: foizda hamma qatorga darrov yoziladi (0 yoki bo'sh — umumiy foiz qo'ygan chegirmalar olib tashlanadi).
+  function umumiyChegirmaniOrnatish(tur: UmumiyChegirmaTuri, qiymat: string) {
+    fx.tozala("items");
+    if (tur === "foiz") {
+      const matn = chegirmaSoni(qiymat) > 100 ? "100" : qiymat;
+      setUmumiyCheg({ tur, qiymat: matn });
+      setMahsulotlar((joriy) => umumiyFoizniQollash(joriy, foizChegarasi(chegirmaSoni(matn))));
+      return;
+    }
+    if (umumiyCheg.tur === "foiz") setMahsulotlar((joriy) => umumiyChegirmaniTozalash(joriy));
+    setUmumiyCheg({ tur, qiymat });
+  }
+
+  // % ↔ summa: avvalgi umumiy chegirma olib tashlanadi, qiymat qaytadan kiritiladi.
+  function umumiyTuriniAlmashtirish(tur: UmumiyChegirmaTuri) {
+    if (tur === umumiyCheg.tur) return;
+    setMahsulotlar((joriy) => umumiyChegirmaniTozalash(joriy));
+    setUmumiyCheg({ tur, qiymat: "" });
+  }
+
+  function umumiyChegirmaniOlibTashlash() {
+    setMahsulotlar((joriy) => umumiyChegirmaniTozalash(joriy));
+    setUmumiyCheg((joriy) => ({ tur: joriy.tur, qiymat: "" }));
+  }
   const mijozQadamiTayyor = Boolean(customerId || clientCompanyId);
   const mahsulotQadamiTayyor = mahsulotTanlanganQatorlar.some((mahsulot) => raqamgaAylantirish(mahsulot.quantity) > 0);
   const tolovQadamiTayyor = mahsulotQadamiTayyor && jami > 0;
@@ -1365,10 +1457,10 @@ export default function YangiSotuvModal({
         const narx = qatorBirNarxi(qator);
         if (yangi === "foiz") {
           const foiz = chegirmaFoizi(miqdor, narx, raqamgaAylantirish(qator.discount));
-          return { ...qator, discountTuri: "foiz", discountFoiz: foiz > 0 ? String(foiz) : "" };
+          return { ...qator, discountTuri: "foiz", discountFoiz: foiz > 0 ? String(foiz) : "", umumiyChegirmadan: false };
         }
         const summa = chegirmaSummasi({ miqdor, narx, tur: "foiz", summa: 0, foiz: raqamgaAylantirish(qator.discountFoiz) });
-        return { ...qator, discountTuri: "sum", discount: summa > 0 ? String(summa) : "" };
+        return { ...qator, discountTuri: "sum", discount: summa > 0 ? String(summa) : "", umumiyChegirmadan: false };
       })
     );
   }
@@ -1395,7 +1487,7 @@ export default function YangiSotuvModal({
     const yangiQatorlar = mahsulotlar.map((qator) => {
       const tanlangan = qatorQoldigi(qator.qoldiqKaliti);
       return tanlangan?.warehouseId && tanlangan.warehouseId !== value
-        ? bosQator(narxTuri)
+        ? qatorgaUmumiyFoiz(bosQator(narxTuri), umumiyFoiz)
         : qator;
     });
     setMahsulotlar(yangiQatorlar);
@@ -1481,6 +1573,7 @@ export default function YangiSotuvModal({
       setWalkInNomi(asl.walkInCustomerName);
       setWalkInTelefon(asl.walkInCustomerPhone);
       setMahsulotlar(aslHolat.qatorlar);
+      setUmumiyCheg({ tur: "foiz", qiymat: "" });
       setNarxTuri(umumiyNarxTuri(aslHolat.qatorlar));
       valyutaOldingi.current = null;
       setNarxXabari("");
@@ -1502,6 +1595,7 @@ export default function YangiSotuvModal({
     setTugashSanasi(kelasiHafta());
     setIzoh("");
     setMahsulotlar([bosQator(narxTuri)]);
+    setUmumiyCheg({ tur: "foiz", qiymat: "" });
     setNarxXabari("");
     setSkanMatni("");
     setSkanXabari(null);
@@ -1760,7 +1854,7 @@ export default function YangiSotuvModal({
                         />
                         <SavdoSelect
                           value={customerId}
-                          onChange={mijozniTanlash}
+                          onChange={(id) => { setMijozQidiruvMatni(""); mijozniTanlash(id); }}
                           klaviatura
                           placeholder={t("placeholders.clientSearch")}
                           className="w-full"
@@ -1769,7 +1863,14 @@ export default function YangiSotuvModal({
                             value: mijoz.id,
                             label: `${mijozKorinishi(mijoz, t)}${mijoz.phone ? ` - ${mijoz.phone}` : ""}`,
                           }))}
-                          boshNatijaAmali={{ label: t("actions.addCustomer"), onClick: () => setMijozQoshishOchiq(true) }}
+                          qidiruvMosligi={mijozQidiruvMosligi}
+                          boshlangichQidiruv={mijozQidiruvMatni}
+                          ochishSorovi={kontaktOchishSorovi}
+                          boshNatijaAmali={{
+                            label: t("actions.addCustomer"),
+                            doim: true,
+                            onClick: (matn) => { setMijozQidiruvMatni(matn); setMijozQoshishOchiq(true); },
+                          }}
                           dropdownClassName="[&>div>div]:text-center min-w-[360px]"
                           portal
                         />
@@ -2066,6 +2167,90 @@ export default function YangiSotuvModal({
                     )}
                   </div>
 
+                  <div data-umumiy-chegirma className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-slate-50 p-3 ring-2 ring-slate-300">
+                    <span className="text-sm font-bold text-slate-600">{t("generalDiscount.label")}</span>
+                    <div className="flex items-center gap-1.5">
+                      <div className="relative w-40">
+                        <SummaMaydoni
+                          value={umumiyCheg.qiymat}
+                          data-umumiy-chegirma-qiymat
+                          onChange={(qiymat) => umumiyChegirmaniOrnatish(umumiyCheg.tur, qiymat)}
+                          aria-label={t("generalDiscount.label")}
+                          title={umumiyCheg.tur === "foiz" ? t("discountUnit.percentTitle") : t(sotuvVal === "USD" ? "labels.discountUsd" : "labels.discount")}
+                          placeholder="0"
+                          className={cn(maydonKlassi, "pr-[76px]")}
+                        />
+                        <div
+                          role="group"
+                          aria-label={t("generalDiscount.unit")}
+                          className="absolute right-1.5 top-1/2 flex -translate-y-1/2 gap-0.5 rounded-lg bg-slate-100 p-0.5 text-[10px] font-bold"
+                        >
+                          {(["foiz", "sum"] as const).map((tur) => (
+                            <button
+                              key={tur}
+                              type="button"
+                              aria-pressed={umumiyCheg.tur === tur}
+                              onClick={() => umumiyTuriniAlmashtirish(tur)}
+                              className={cn(
+                                "rounded-md px-1.5 py-1 transition",
+                                umumiyCheg.tur === tur ? "bg-white text-[#2563EB] shadow-sm ring-2 ring-blue-200" : "text-slate-500 hover:text-slate-800"
+                              )}
+                            >
+                              {tur === "foiz" ? "%" : t(sotuvVal === "USD" ? "table.currencySuffixUsd" : "table.currencySuffix")}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      {(umumiyFoiz > 0 || umumiySumma > 0) && (
+                        <button
+                          type="button"
+                          onClick={umumiyChegirmaniOlibTashlash}
+                          aria-label={t("generalDiscount.clear")}
+                          title={t("generalDiscount.clear")}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[5, 10, 15, 20].map((foiz) => (
+                        <button
+                          key={foiz}
+                          type="button"
+                          aria-pressed={umumiyFoiz === foiz}
+                          onClick={() => umumiyChegirmaniOrnatish("foiz", String(foiz))}
+                          className={cn(
+                            "rounded-full px-3 py-1.5 text-xs font-bold transition",
+                            umumiyFoiz === foiz
+                              ? "bg-[#2563EB] text-white shadow-sm"
+                              : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-[#2563EB] hover:ring-blue-200"
+                          )}
+                        >
+                          {foiz}%
+                        </button>
+                      ))}
+                    </div>
+                    {umumiyAralash && (
+                      <span title={t("generalDiscount.mixedTitle")} className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-700">
+                        {t("generalDiscount.mixed")}
+                      </span>
+                    )}
+                    {umumiyUlushJami > 0 && (
+                      <span className="text-xs font-bold text-emerald-600">
+                        {t("generalDiscount.applied", { summa: pulniFormatlash(umumiyUlushJami, sotuvVal) })}
+                      </span>
+                    )}
+                    <p className="basis-full text-xs font-medium leading-5 text-slate-500">
+                      {t(umumiyCheg.tur === "sum" ? "generalDiscount.hintSum" : "generalDiscount.hint")}
+                    </p>
+                    {tannarxdanArzonSoni > 0 && (
+                      <p role="status" className="basis-full rounded-lg bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700 ring-1 ring-amber-200">
+                        {t("generalDiscount.belowCost", { count: tannarxdanArzonSoni })}
+                      </p>
+                    )}
+                  </div>
+
                   <div className="mt-3">
                     <div className="relative">
                       <ScanLine size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -2282,10 +2467,10 @@ export default function YangiSotuvModal({
                                   const ustamaMatni = yangiUstama > 0 ? String(yangiUstama) : "";
                                   if (mahsulot.discountTuri === "foiz") {
                                     const foiz = kiritilgan > 0 && kiritilgan < katalogNarxi ? chegirmaFoizi(1, katalogNarxi, katalogNarxi - kiritilgan) : 0;
-                                    mahsulotniYangilash(index, { ustama: ustamaMatni, discountFoiz: foiz > 0 ? String(foiz) : "" });
+                                    mahsulotniYangilash(index, { ustama: ustamaMatni, discountFoiz: foiz > 0 ? String(foiz) : "", umumiyChegirmadan: false });
                                     return;
                                   }
-                                  mahsulotniYangilash(index, { ustama: ustamaMatni, discount: yangiChegirma > 0 ? String(yangiChegirma) : "" });
+                                  mahsulotniYangilash(index, { ustama: ustamaMatni, discount: yangiChegirma > 0 ? String(yangiChegirma) : "", umumiyChegirmadan: false });
                                 }}
                                 className={cn(
                                   maydonKlassi,
@@ -2353,9 +2538,10 @@ export default function YangiSotuvModal({
                                     fx.tozala(`items.${index}.discount`);
                                     mahsulotniYangilash(
                                       index,
+                                      // Qo'lda o'zgartirilgan qator umumiy chegirmadan ajraladi ("Aralash").
                                       mahsulot.discountTuri === "foiz"
-                                        ? { discountFoiz: raqamgaAylantirish(qiymat) > 100 ? "100" : qiymat }
-                                        : { discount: qiymat }
+                                        ? { discountFoiz: raqamgaAylantirish(qiymat) > 100 ? "100" : qiymat, umumiyChegirmadan: false }
+                                        : { discount: qiymat, umumiyChegirmadan: false }
                                     );
                                   }}
                                   onKeyDown={(event) => {
@@ -2770,8 +2956,14 @@ export default function YangiSotuvModal({
     </AppModal>
     {mijozQoshishOchiq && <XaridorModal
       boshlangich={null}
+      boshlangichMatn={mijozQidiruvMatni}
       kompaniyalar={mijozKompaniyalari.map((item) => kompaniyaniUiGa({ id: item.id, name: kompaniyaNomi(item), phone: item.phone }))}
-      onYopish={() => { if (!mijozSaqlanmoqda.current) setMijozQoshishOchiq(false); }}
+      onYopish={() => {
+        if (mijozSaqlanmoqda.current) return;
+        setMijozQoshishOchiq(false);
+        // Bekor qilindi: Kontakt ro'yxati yozilgan matn bilan qayta ochiladi.
+        if (mijozQidiruvMatni) setKontaktOchishSorovi((n) => n + 1);
+      }}
       onSaqlash={yangiMijozniSaqlash}
     />}
     </>

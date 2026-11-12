@@ -18,6 +18,7 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { mijozHisobi } from "@/lib/mijozHisobi";
+import { mijozMatniniAjratish } from "@/lib/mijozQidiruvi";
 import { valyutaKutmoqda, type MijozValyutasi } from "@/lib/mijozValyutasi";
 import { cn } from "@/lib/utils";
 import { useValyutaStore, yagonaValyuta } from "@/lib/valyuta";
@@ -64,6 +65,11 @@ type Props = {
   tarix?: TarixYozuvi[];
   onYopish: () => void;
   onSaqlash: (xaridor: Xaridor) => Promise<void>;
+  /**
+   * Yangi mijoz qidiruvdan ochilganda yozilgan matn: faqat raqam bo'lsa — telefon, aks holda birinchi so'z — ism, qolgani — familiya.
+   * Berilsa, kursor birinchi bo'sh majburiy maydonga (ism yoki telefon) qo'yiladi.
+   */
+  boshlangichMatn?: string;
 };
 
 export default function XaridorModal({
@@ -74,13 +80,16 @@ export default function XaridorModal({
   tarix = [],
   onYopish,
   onSaqlash,
+  boshlangichMatn,
 }: Props) {
   const { t } = useTranslation(["xaridor_uchot", "common"]);
   const malumotTablari = malumotTabKalitlari.map((kalit) => ({ kalit, nom: t(`shared.tabs.${kalit}`) }));
-  const [ism, setIsm] = useState(boshlangich?.ism ?? "");
-  const [familiya, setFamiliya] = useState(boshlangich?.familiya ?? "");
+  // Qidiruv matnidan to'ldirish faqat yangi mijozda (tahrirlashda saqlangan ma'lumot o'zgarmaydi).
+  const [matndan] = useState(() => (boshlangich ? null : mijozMatniniAjratish(boshlangichMatn)));
+  const [ism, setIsm] = useState(boshlangich?.ism ?? matndan?.ism ?? "");
+  const [familiya, setFamiliya] = useState(boshlangich?.familiya ?? matndan?.familiya ?? "");
   const [telefonlar, setTelefonlar] = useState<string[]>(
-    boshlangich?.telefonlar.length ? boshlangich.telefonlar : [""]
+    boshlangich?.telefonlar.length ? boshlangich.telefonlar : [matndan?.telefon ?? ""]
   );
   const [telegram, setTelegram] = useState(boshlangich?.ijtimoiy.telegram ?? "");
   const [whatsapp, setWhatsapp] = useState(boshlangich?.ijtimoiy.whatsapp ?? "");
@@ -110,6 +119,18 @@ export default function XaridorModal({
   // Shu oynada chiziladigan maydonlar. Oyna boshqa oyna (masalan, Yangi sotuv) ustida ochilsa, hook orqadagi oynaning xatoli maydonini
   // topib `tepadagi`ni bo'sh qoldirishi mumkin — shuning uchun tepadagi xabar faqat shu yerdagi maydonda xato ko'ringanda yashiriladi.
   const formaRef = useRef<HTMLFormElement>(null);
+  const ismRef = useRef<HTMLInputElement>(null);
+  // Qidiruvdan ochilgan yangi mijoz: kursor birinchi bo'sh majburiy maydonda (ism bo'sh bo'lsa — ism, aks holda telefon).
+  useEffect(() => {
+    if (boshlangich || boshlangichMatn === undefined) return;
+    const taymer = window.setTimeout(() => {
+      if (!ismRef.current?.value.trim()) ismRef.current?.focus();
+      else formaRef.current?.querySelector<HTMLInputElement>("#xaridor-telefon-0")?.focus();
+    }, 60);
+    return () => window.clearTimeout(taymer);
+    // Faqat oyna ochilganda bir marta.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const chiziladiganMaydonlar = ["firstName", "lastName", "phone", "address", "telegramId", "companyId", "position", ...(rejimYoniq ? ["currency"] : [])];
   const ichidagiXato = chiziladiganMaydonlar.some((yol) => Boolean(fx.xato(yol)));
   useEffect(() => {
@@ -263,6 +284,7 @@ export default function XaridorModal({
                     <label className="grid gap-2">
                       <span className="text-sm font-bold text-slate-400">{t("xaridorModal.firstName")}</span>
                       <input
+                        ref={ismRef}
                         value={ism}
                         onChange={(event) => { fx.tozala("firstName"); setIsm(event.target.value); }}
                         placeholder={t("xaridorModal.firstNamePlaceholder")}
@@ -292,7 +314,7 @@ export default function XaridorModal({
                       {telefonlar.map((telefon, index) => (
                         <XatoliMaydon key={index} xato={index === asosiyTelefon ? fx.xato("phone") : undefined}>
                         <div className="flex gap-2">
-                          <PhoneInput value={telefon} onChange={(qiymat) => telefonYangilash(index, qiymat)} className="min-w-0 flex-1" invalid={index === asosiyTelefon && Boolean(fx.xato("phone"))} />
+                          <PhoneInput id={`xaridor-telefon-${index}`} value={telefon} onChange={(qiymat) => telefonYangilash(index, qiymat)} className="min-w-0 flex-1" invalid={index === asosiyTelefon && Boolean(fx.xato("phone"))} />
                           <button
                             type="button"
                             onClick={() => telefonOchirish(index)}
