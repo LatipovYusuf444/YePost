@@ -1,3 +1,4 @@
+import { valyutaYokiAsosiy } from "./asosiyValyuta.ts";
 // Yetkazib beruvchiga boshlang'ich qarz (dasturdan oldin biz qarzdor bo'lgan summa): POST/GET /partners/suppliers/:id/opening-debt(s).
 // Darhol tasdiqlanadi (qoralama yo'q), bekor qilinadi va qayta tiklanadi. Bu kirim emas: omborga va qoldiqqa tushmaydi.
 // UI'siz va tashqi importlarsiz — alohida sinaladi.
@@ -46,7 +47,7 @@ export function yetkazibQarzi(raw: unknown): YetkazibBoshlangichQarzi | null {
     docNumber: matn(o.docNumber) || matn(o.documentNumber) || matn(o.number),
     status: (matn(o.status) || "CONFIRMED").toUpperCase(),
     amount: son(o.amount),
-    currency: matn(o.currency).toUpperCase() === "USD" ? "USD" : "UZS",
+    currency: valyutaYokiAsosiy(matn(o.currency)),
     rate: o.rate !== null && o.rate !== undefined && Number.isFinite(kurs) && kurs > 0 ? kurs : null,
     date: (matn(o.date) || matn(o.createdAt)).slice(0, 10),
     note: matn(o.note),

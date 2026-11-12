@@ -48,6 +48,7 @@ import { asosiyMiqdor, birlikTopish, koeffTekshiruvi, miqdorYaroqlimi, qabulBirl
 import type { KirimOgohlantirishi } from "@/types/ombor";
 import MahsulotTanlov, { type MahsulotVarianti } from "./MahsulotTanlov";
 import ShtrixKodMaydoni, { type SkanNatijasi } from "./ShtrixKodMaydoni";
+import { asosiyValyuta } from "@/lib/asosiyValyuta";
 
 type Fayl = { id: string; nomi: string; url: string };
 
@@ -130,7 +131,7 @@ function yangiQator(warehouseId = ""): Qator {
     boshlangichWholesale: 0,
     boshlangichTanNarx: 0,
     // Bir valyutali rejimda — rejim valyutasi (bo'sh qatorga yozilgan narx kurssiz o'giriladigan bo'lib qolmaydi).
-    currency: yagonaValyuta() ?? "UZS",
+    currency: yagonaValyuta() ?? asosiyValyuta(),
     birliklar: [],
     birlikId: "",
     sanash: "",
@@ -235,7 +236,7 @@ export default function YangiKirimModal({ onClose }: Props) {
   const jami = useMemo(() => {
     try {
       return qatorlar.reduce((sum, row) => {
-        const item = kirimElementiniYigish({ ...row, birlik: birlikTopish(row.birliklar, row.birlikId) }, amaldagiKurs, yagona ?? "UZS");
+        const item = kirimElementiniYigish({ ...row, birlik: birlikTopish(row.birliklar, row.birlikId) }, amaldagiKurs, yagona ?? asosiyValyuta());
         return sum + item.quantity * item.price;
       }, 0);
     } catch { return null; }
@@ -284,7 +285,7 @@ export default function YangiKirimModal({ onClose }: Props) {
     if (jami === null) return "—";
     // Jami `jami` hisobida hujjat valyutasida: bir valyutali rejimda shu valyuta (o'girilmaydi), aks holda so'm.
     const valyuta = yagona ?? (kursBor ? narxValyutasi : "UZS");
-    const qiymat = kirimNarxiniOgirish(jami, yagona ?? "UZS", valyuta, amaldagiKurs);
+    const qiymat = kirimNarxiniOgirish(jami, yagona ?? asosiyValyuta(), valyuta, amaldagiKurs);
     const matn = qiymat.toLocaleString("uz-UZ", { maximumFractionDigits: 2 });
     return valyuta === "USD" ? `$${matn}` : `${matn} so'm`;
   }

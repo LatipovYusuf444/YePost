@@ -1,3 +1,4 @@
+import { valyutaYokiAsosiy } from "./asosiyValyuta.ts";
 // Kassa amaliyoti oynasidagi amallar (Tahrirlash / Bekor qilish / O'chirish / manba hujjatini ochish) va tarix (audit) o'zgarishlari.
 // UI'siz, importlarsiz — testlarda to'g'ridan-to'g'ri ishlaydi.
 //
@@ -109,7 +110,7 @@ export function almashtirishIzohi(p: {
 }): string {
   const { oldin, keyin, matn } = p;
   const qismlar: string[] = [];
-  if (oldin.summa !== keyin.summa || (oldin.valyuta ?? "UZS") !== (keyin.valyuta ?? "UZS")) {
+  if (oldin.summa !== keyin.summa || valyutaYokiAsosiy(oldin.valyuta) !== valyutaYokiAsosiy(keyin.valyuta)) {
     qismlar.push(`${matn.summa} ${p.summaMatni(oldin.summa, oldin.valyuta)} → ${p.summaMatni(keyin.summa, keyin.valyuta)}`);
   }
   if (oldin.kun !== keyin.kun) qismlar.push(`${matn.sana} ${oldin.kun} → ${keyin.kun}`);

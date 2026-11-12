@@ -9,6 +9,7 @@ import { useYagonaValyuta, yagonaValyuta } from "@/lib/valyuta";
 import type { KalkulyatsiyaKartasi, KunNarxi as KunNarxiJavobi } from "@/types/ishlabChiqarish";
 import { Asboblar, Bolim, HolatFiltri, HolatKartalari, Holat, Jadval, MahsulotQidiruvi, Maydon, MaydonXatosi, Ogohlantirish, Oyna, QatorKartasi, QatorOchirish, QatorQoshish, QidiruvMaydoni, Sahifa, Tafsilotlar, XatoQutisi, Yuklanmoqda, inputKlass, tugmaAsosiy, tugmaIkkinchi, tugmaXavfli, xatoRamkasi, type HolatGuruhi, type Ustun } from "./umumiy";
 import { useAmal, useMalumot, useMaydonXatolari, useQoralamaNazorati } from "./hooklar";
+import { asosiyValyuta } from "@/lib/asosiyValyuta";
 
 type Qator = KalkulyatsiyaFormasi["lines"][number] & { nom?: string };
 type Forma = Omit<KalkulyatsiyaFormasi, "lines"> & { nom?: string; lines: Qator[] };
@@ -28,7 +29,7 @@ const bo = (karta: KalkulyatsiyaKartasi): Forma => ({
 });
 const summa = (qiymat: unknown) => (qiymat != null && qiymat !== "" ? taqsimotSummasi(qiymat, "UZS") : "—");
 // Yangi qator valyutasi: bir valyutali rejimda (Faqat so'm / Faqat dollar) — rejim valyutasi, ikki valyuta rejimida avvalgidek so'm.
-const yangiQatorValyutasi = (): Qator["currency"] => yagonaValyuta() ?? "UZS";
+const yangiQatorValyutasi = (): Qator["currency"] => yagonaValyuta() ?? asosiyValyuta();
 const versiya = (karta: KalkulyatsiyaKartasi) => (karta.version != null ? `v${karta.version}` : "");
 
 // Server xatosi qaysi maydonga tushadi (kalit — backend maydon yo'li). So'zlar tartibi muhim: "mahsulotga faol retsept yo'q" — retsept.

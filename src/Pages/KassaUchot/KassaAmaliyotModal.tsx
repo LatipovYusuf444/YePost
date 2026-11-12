@@ -39,6 +39,7 @@ import { tasdiqSorash } from "@/lib/tasdiqSorovi";
 import { useDavrStore } from "@/store/davrStore";
 import QarzTaqsimotiPaneli from "./QarzTaqsimotiPaneli";
 import type { KassaAmaliyoti, KassaAmaliyotTuri, KassaKanali } from "./types";
+import { asosiyValyuta } from "@/lib/asosiyValyuta";
 import {
   hozir,
   izohMajburiy,
@@ -155,7 +156,7 @@ export default function KassaAmaliyotModal({
   // Bir valyutali rejim (Faqat so'm / Faqat dollar): pul ham, yopiladigan qarz ham shu valyutada; tanlov va kurs yashirin.
   // Bu rejimda `asosiyValyuta` doim rejim valyutasi (useYagonaValyuta() bilan bir xil; do'kon selektori orqali o'qiladi).
   const yagonaValyuta = useValyutaStore((holat): Valyuta | null => (holat.rejimYoniq ? null : holat.asosiyValyuta));
-  const [valyuta, setValyuta] = useState<Valyuta>(boshlangich?.valyuta ?? "UZS");
+  const [valyuta, setValyuta] = useState<Valyuta>(boshlangich?.valyuta ?? asosiyValyuta());
   const [kursMatni, setKursMatni] = useState(boshlangich?.kurs ? String(boshlangich.kurs) : "");
   // Yetkazib beruvchiga to'lovda qaysi valyutadagi qarz yopilishi (`settleCurrency`); tanlanmasa to'lov valyutasi bilan bir xil.
   // Mijozda hisob valyutasini backend o'zi qo'yadi.
@@ -247,7 +248,7 @@ export default function KassaAmaliyotModal({
   // Kurs kiritilmagan kunda ham $ tanlovi qoladi (aks holda $100 "100 so'm" bo'lib saqlanardi); saqlash esa kurs kiritilguncha bloklanadi.
   const valyutaTanlovi = rejimYoniq && valyutaTanlanadiganTur(turi);
   // Valyuta tanlanmaydigan turdagi mavjud hujjat (masalan "Faqat dollar" davrida $ da yozilgan ish haqi) o'z valyutasini saqlaydi.
-  const tanlanganValyuta: Valyuta = yagonaValyuta ?? (valyutaTanlovi ? valyuta : boshlangich?.valyuta ?? "UZS");
+  const tanlanganValyuta: Valyuta = yagonaValyuta ?? (valyutaTanlovi ? valyuta : boshlangich?.valyuta ?? asosiyValyuta());
   // Rejim almashguncha boshqa valyutada saqlangan qoralama endi rejim valyutasida saqlanadi: kassir summani tekshirsin.
   const eskiValyuta = yagonaValyuta && boshlangich?.valyuta && boshlangich.valyuta !== yagonaValyuta ? boshlangich.valyuta : null;
   // Hisob valyutasi: mijozda — uning hisobi valyutasi (faqat ko'rsatish uchun); yetkazib beruvchida — kassir tanlagan qarz valyutasi.

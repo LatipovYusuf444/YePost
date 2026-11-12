@@ -13,6 +13,7 @@ import { bugungiToshkentKuni, kunMatni } from "@/lib/hujjatSanasi";
 import { useYagonaValyuta } from "@/lib/valyuta";
 import { mijozNomi, pulniFormatlash, sotuvQarzdorlikSummasi, sotuvRaqami, sotuvSummasi, sotuvTolanganSummasi, sotuvValyutasi, tolovValyutasi } from "@/Pages/Savdo/savdoYordamchilari";
 import type { Sotuv } from "@/types/savdo";
+import { asosiyValyuta } from "@/lib/asosiyValyuta";
 
 export default function BoshlangichQarzTafsilotlariModal({ sotuvId, boshlangich, onClose }: { sotuvId: string; boshlangich?: Sotuv; onClose: () => void }) {
   const { t } = useTranslation("xaridor_uchot");
@@ -41,7 +42,7 @@ export default function BoshlangichQarzTafsilotlariModal({ sotuvId, boshlangich,
     const current = request;
     return () => { ++current.current; };
   }, [yuklash]);
-  const currency = debt ? sotuvValyutasi(debt) : "UZS";
+  const currency = debt ? sotuvValyutasi(debt) : asosiyValyuta();
   // Qarz o'z valyutasida to'lanadi (to'lov shu valyutadagi qarzlarni yopadi). Bir valyutali rejimda boshqa valyutadagi eski qarzga to'lovni
   // backend errors.currency.not_allowed bilan rad etadi — oldindan ogohlantiriladi.
   const yagona = useYagonaValyuta();

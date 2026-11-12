@@ -29,6 +29,7 @@ import type { ChiqimSababi } from "@/types/ombor";
 import { kodBilanTopish, modificationNomi, pul, qoldiqMiqdori } from "./omborYordamchilari";
 import MahsulotTanlov, { type MahsulotVarianti } from "./MahsulotTanlov";
 import ShtrixKodMaydoni, { type SkanNatijasi } from "./ShtrixKodMaydoni";
+import { asosiyValyuta } from "@/lib/asosiyValyuta";
 
 type Props = { onClose: () => void };
 type Qator = { id: string; modificationId: string; quantity: number };
@@ -132,7 +133,7 @@ export default function YangiChiqimModal({ onClose }: Props) {
       const { narx, valyuta } = chiqimTannarxi(mod);
       return { summa: row.quantity * narx, valyuta };
     });
-    return chiqimJamilari(tanlangan, undefined, yagona ?? "UZS").map((jami) => pul(jami.summa, jami.valyuta)).join(" + ");
+    return chiqimJamilari(tanlangan, undefined, yagona ?? asosiyValyuta()).map((jami) => pul(jami.summa, jami.valyuta)).join(" + ");
   }, [qatorlar, store.modifikatsiyalar, yagona]);
 
   function qatorniYangilash(id: string, value: Partial<Qator>) {

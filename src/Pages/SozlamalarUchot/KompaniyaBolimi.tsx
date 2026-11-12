@@ -13,6 +13,7 @@ import type { Kompaniya } from "@/types/ombor";
 import { useYagonaValyuta } from "@/lib/valyuta";
 import { BolimKarta, Maydon, SaqlashTugma } from "./UmumiyUI";
 import { maydonKlass } from "./yordamchilar";
+import { valyutaYokiAsosiy } from "@/lib/asosiyValyuta";
 
 // Server xatosini kompaniya maydoniga bog'lash (kalit — backend maydon nomi). Umumiy "nomi" oxirida.
 const KOMPANIYA_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
@@ -37,7 +38,7 @@ export default function KompaniyaBolimi() {
 
   useEffect(() => {
     let active = true;
-    kompaniyalarApi.royxat().then((items) => { if (!active) return; const item = items[0] ?? null; setJoriy(item); setNomi(item?.name ?? ""); setStir(item?.inn ?? ""); setTelefon(item?.phone ?? ""); setManzil(item?.address ?? ""); setValyuta(item?.currency === "USD" ? "USD" : "UZS"); })
+    kompaniyalarApi.royxat().then((items) => { if (!active) return; const item = items[0] ?? null; setJoriy(item); setNomi(item?.name ?? ""); setStir(item?.inn ?? ""); setTelefon(item?.phone ?? ""); setManzil(item?.address ?? ""); setValyuta(valyutaYokiAsosiy(item?.currency)); })
       .catch((error) => active && setXato(getApiErrorMessage(error))).finally(() => active && setYuklanmoqda(false));
     return () => { active = false; };
   }, []);

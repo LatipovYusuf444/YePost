@@ -12,6 +12,7 @@ import { stockMovementReportApi } from "@/api/reportsApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { Maxsulot, Tanlov, TovarHarakati, TovarHarakatiFilter } from "./types";
 import { bugun, bugunMinus, son } from "./yordamchilar";
+import { useYagonaValyuta } from "@/lib/valyuta";
 import { harakatGuruhlari, harakatHavolasi, harakatKontragenti, harakatlarniMoslash, harakatPulJami, harakatPulMatni, harakatRaqamiTakrormi, harakatSanaMatni, harakatTuriNomi, takroriyHujjatRaqamlari, type HarakatKorinishQatori } from "./tovarHarakatiModeli";
 import { tovarHarakatiniEksport } from "./tovarHarakatiEksporti";
 
@@ -102,7 +103,9 @@ export default function TovarHarakati() {
 
   const korinishQatorlar = useMemo(() => harakatGuruhlari(tovarHarakati, maxsulotlar, filter, qidiruv, mijozlar, yetkazibBeruvchilar, omborlar), [tovarHarakati, maxsulotlar, filter, qidiruv, mijozlar, yetkazibBeruvchilar, omborlar]);
   const takrorlar = useMemo(() => takroriyHujjatRaqamlari(tovarHarakati), [tovarHarakati]);
-  const pulJami = useMemo(() => harakatPulJami(korinishQatorlar.flatMap(row => row.harakat ? [row.harakat] : [])), [korinishQatorlar]);
+  // "Faqat dollar" rejimida pul jami dollarda (kurssiz), aks holda avvalgidek so'mda.
+  const jamiValyutasi = useYagonaValyuta() === "USD" ? "USD" : "UZS";
+  const pulJami = useMemo(() => harakatPulJami(korinishQatorlar.flatMap(row => row.harakat ? [row.harakat] : []), jamiValyutasi), [korinishQatorlar, jamiValyutasi]);
 
   const jami = useMemo(() => {
     const sarlavhalar = korinishQatorlar.filter((r) => r.kind === "header");
@@ -160,7 +163,7 @@ export default function TovarHarakati() {
       { id: "ombor", nom: "Ombor", kenglik: 170, katak: row => row.harakat ? row.harakat.warehouseName || omborlar.find(item => item.id === row.harakat?.warehouseId)?.nomi || "—" : "" },
       { id: "narx", nom: "Narx", kenglik: 240, boshlangichYashirin: true, katak: row => row.harakat ? harakatPulMatni(row.harakat, "narx") : "" },
       { id: "summa", nom: "Summa", kenglik: 260, boshlangichYashirin: true, katak: row => row.harakat ? harakatPulMatni(row.harakat, "summa") : "",
-        jami: () => pulJami.toliq ? <span>Kirim: {son(pulJami.kirim)} so'm · Chiqim: {son(pulJami.chiqim)} so'm</span> : "Jami uchun valyuta yoki kurs yetishmaydi" },
+        jami: () => pulJami.toliq ? <span>Kirim: {jamiValyutasi === "USD" ? `$${son(pulJami.kirim)}` : `${son(pulJami.kirim)} so'm`} · Chiqim: {jamiValyutasi === "USD" ? `$${son(pulJami.chiqim)}` : `${son(pulJami.chiqim)} so'm`}</span> : "Jami uchun valyuta yoki kurs yetishmaydi" },
       {
         id: "boshQoldiq",
         nom: "Boshlang'ich qoldiq",
@@ -201,7 +204,7 @@ export default function TovarHarakati() {
         return link ? <a href={link.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 font-semibold text-blue-600 hover:underline">{link.nom}<ExternalLink size={14} /></a> : null;
       } },
     ],
-    [jami, mahsulotOchish, takrorlar, mijozlar, yetkazibBeruvchilar, omborlar, pulJami]
+    [jami, mahsulotOchish, takrorlar, mijozlar, yetkazibBeruvchilar, omborlar, pulJami, jamiValyutasi]
   );
 
   return (
@@ -279,7 +282,7 @@ export default function TovarHarakati() {
       {xato && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{xato}</p>}
 
       {takrorlar.size > 0 && <p role="status" className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><AlertTriangle size={18} className="mt-0.5 shrink-0" />{takrorlar.size} ta hujjat raqami bir nechta hujjatga tegishli. Sana, mijoz va ID orqali ajrating. Har biri o'z hujjatini ochadi.</p>}
-      {!pulJami.toliq && <p role="status" className="rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-600">Ayrim narxlarda valyuta yoki hujjat kursi ko'rsatilmagan. Ular so'mga aylantirilmaydi va pul jamiga qo'shilmaydi. Excelda asl qiymatlar alohida beriladi.</p>}
+      {!pulJami.toliq && <p role="status" className="rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-600">{jamiValyutasi === "USD" ? "Ayrim narxlar dollarda emas. Ular dollarga aylantirilmaydi va pul jamiga qo'shilmaydi." : "Ayrim narxlarda valyuta yoki hujjat kursi ko'rsatilmagan. Ular so'mga aylantirilmaydi va pul jamiga qo'shilmaydi."} Excelda asl qiymatlar alohida beriladi.</p>}
 
       {/* Natija jadvali */}
       <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm">

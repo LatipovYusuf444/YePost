@@ -1,4 +1,4 @@
-import { oziValyutadaMatn, pulMatni, useValyutaStore, valyutaKodi, type Valyuta } from "@/lib/valyuta";
+import { oziValyutadaMatn, pulMatni, useValyutaStore, valyutaKodi, yagonaValyuta, type Valyuta } from "@/lib/valyuta";
 import { sotuvHujjatRaqami } from "@/lib/kassaNomlari";
 import type { Qaytarish, QaytarishMahsuloti, Sotuv, SotuvHolati, SotuvMahsuloti, SotuvTolovi, TolovTuri } from "@/types/savdo";
 
@@ -80,9 +80,24 @@ export function pulniFormatlash(value: number | string | null | undefined, valyu
   return pulMatni(son);
 }
 
-/** Sotuv jami / qarz / foyda hisoblanadigan valyuta (backend `currency`; belgilanmagan bo'lsa — so'm). */
-export function sotuvValyutasi(sotuv: Pick<Sotuv, "currency">): Valyuta {
-  return valyutaKodi(sotuv.currency);
+type ValyutaManbasi = Pick<Sotuv, "currency"> & Partial<Pick<Sotuv, "status" | "items" | "totalsByCurrency">>;
+
+/**
+ * Sotuv jami / qarz / foyda hisoblanadigan valyuta (backend `currency`; belgilanmagan bo'lsa — do'konning asosiy valyutasi).
+ * Bir valyutali rejimda (Faqat so'm / Faqat dollar) OCHIQ qoralama rejim almashguncha yaratilgan bo'lsa, uning `currency`si eski (UZS)
+ * qolgan, qatorlari esa yangi valyutada bo'lishi mumkin (masalan currency "UZS", qatorlar $0.59, totalsByCurrency { USD: 1.18 }) —
+ * "1.18 so'm" chiqmasligi uchun valyuta ma'lumotdan olinadi: qatorlar valyutasi, bo'lmasa `totalsByCurrency`, bo'lmasa rejim valyutasi.
+ * Tasdiqlangan/bekor qilingan hujjatlar avvalgidek o'z valyutasida.
+ */
+export function sotuvValyutasi(sotuv: ValyutaManbasi): Valyuta {
+  // Rejim backenddan haqiqatan o'qilgandagina (standart boshlang'ich qiymat "rejim" emas).
+  const yagona = useValyutaStore.getState().yuklandi ? yagonaValyuta() : null;
+  if (!yagona || String(sotuv.status ?? "").toUpperCase() !== "DRAFT") return valyutaKodi(sotuv.currency);
+  const qatorlar = new Set((sotuv.items ?? []).filter((item) => item.currency).map((item) => valyutaKodi(item.currency)));
+  if (qatorlar.size === 1) return [...qatorlar][0];
+  const jamilar = Object.entries(sotuv.totalsByCurrency ?? {}).filter(([, summa]) => raqamgaAylantirish(summa) !== 0).map(([kod]) => valyutaKodi(kod));
+  if (new Set(jamilar).size === 1) return jamilar[0];
+  return yagona;
 }
 
 /** Qator o'z valyutasi (aralash sotuvda dollar qatori); belgilanmagan bo'lsa — sotuv valyutasi. */
@@ -198,8 +213,10 @@ export function sotuvSummasi(sotuv: Sotuv) {
       0
     ) ?? 0;
   const backendJami = raqamgaAylantirish(sotuv.totalAmount ?? sotuv.total);
-
-  return backendJami > 0 || itemsJami === 0 ? backendJami : itemsJami;
+  if (backendJami > 0) return backendJami;
+  if (itemsJami !== 0) return itemsJami;
+  // Ro'yxat javobida qatorlar yo'q, `totalAmount` esa 0 (masalan rejim almashguncha yaratilgan qoralama): valyutalar bo'yicha jami.
+  return raqamgaAylantirish(sotuv.totalsByCurrency?.[sotuvValyutasi(sotuv)]);
 }
 
 // Qatorlardagi chegirmalar yig'indisi; ro'yxat javobida qatorlar bo'lmasa backend `discountAmount` olinadi.

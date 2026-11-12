@@ -3,6 +3,7 @@ import { toshkentKuni } from "./hujjatSanasi.ts";
 import { dollargaOgirish, qatorniBoshlash, raqamMatni, sonniOqish, sotuvValyutasigaKeltirish } from "./qoralamaTahriri.ts";
 import type { ChegirmaTuri, NarxValyutasi } from "./savdoNarxlari.ts";
 import { mijozgaMosSotuvNomi, sotuvSarlavhaMijozi } from "./sotuvNomi.ts";
+import { valyutaYokiAsosiy } from "./asosiyValyuta.ts";
 
 const kalitlar = {
   nom: ["Sotuv nomi", "Qoralama nomi", "Название продажи", "Название черновика"],
@@ -39,7 +40,7 @@ export function qoralamaFormasi(sotuv: Sotuv) {
     warehouseId: sotuv.warehouseId ?? sotuv.warehouse?.id ?? "",
     customerId: sotuv.customerId ?? sotuv.customer?.id ?? "",
     clientCompanyId: sotuv.clientCompanyId ?? sotuv.clientCompany?.id ?? "",
-    currency: String(sotuv.currency || "UZS").toUpperCase(),
+    currency: valyutaYokiAsosiy(sotuv.currency || null),
     date: toshkentKuni(sotuv.date ?? sotuv.createdAt),
     walkInCustomerName: sotuv.walkInCustomerName ?? "",
     walkInCustomerPhone: sotuv.walkInCustomerPhone ?? "",
@@ -111,7 +112,7 @@ export function qoralamaQatorlari(sotuv: Sotuv, p: {
   katalogNarxi?: (item: SotuvMahsuloti, tur: SotuvNarxTuri) => number;
 }): QoralamaQatori[] {
   return (sotuv.items ?? []).map((item, indeks) => {
-    const aslVal: NarxValyutasi = String(item.currency ?? sotuv.currency ?? "UZS").toUpperCase() === "USD" ? "USD" : "UZS";
+    const aslVal: NarxValyutasi = valyutaYokiAsosiy(item.currency ?? sotuv.currency);
     const nom = saqlanganNomi(item);
     const q = sotuvValyutasigaKeltirish(qatorniBoshlash(item, indeks, { nom, qatorValyutasi: aslVal }), p.sotuvVal, p.kurs, p.sotuvVal);
     const tur = item.priceType ?? p.standartTur;

@@ -137,7 +137,7 @@ test('kod: almashtirish holati qoralamaga bog\'langach o\'chadi; valyuta, filial
   const modal = readFileSync(new URL('../src/Pages/KassaUchot/KassaAmaliyotModal.tsx', import.meta.url), 'utf8');
   assert.match(modal, /almashtirish && mavjudHolat === "tasdiqlangan" && boshlangich\?\.backendRefId/);
   assert.match(modal, /if \(boshlangich\?\.holat !== "tasdiqlangan"\) setAlmashtirish\(false\)/);
-  assert.match(modal, /boshlangich\?\.valyuta \?\? "UZS"/);
+  assert.match(modal, /boshlangich\?\.valyuta \?\? asosiyValyuta\(\)/);
   assert.match(modal, /backendBranchId: boshlangich\?\.backendBranchId/);
   assert.match(modal, /qaytarish=\$\{encodeURIComponent\(havola\.id\)\}/);
   const qaytarish = readFileSync(new URL('../src/Pages/Savdo/Qaytarish.tsx', import.meta.url), 'utf8');

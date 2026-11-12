@@ -10,6 +10,7 @@ import { sotuvlarRoyxatiniOlish } from "@/api/savdoApi";
 import { barchaFinanceTransactions } from "@/api/tolovApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { hujjatRaqamiMatni } from "@/lib/hujjatRaqamiMatni";
+import { valyutaYokiAsosiy } from "@/lib/asosiyValyuta";
 
 // Mijozning kassadagi to'lovlari: sotuv to'lovlari va kassadagi "Mijoz hisobini to'ldirish" / "Hisobdan naqd qaytarish" hujjatlari
 // (tasdiqlanganda qaysi qarzlar eng eskisidan yopilgani bilan). Qatorni bosganda kassa amaliyoti oynasi ochiladi.
@@ -59,7 +60,7 @@ export default function XaridorTolovlariTab({ xaridorId }: { xaridorId: string }
               nomi: item.name || t(`types.${turi}`),
               kontragent: "",
               summa: Number(item.amount ?? 0),
-              valyuta: item.currency === "USD" ? "USD" : "UZS",
+              valyuta: valyutaYokiAsosiy(item.currency),
               hisobValyutasi: item.settleCurrency === "USD" ? "USD" : item.settleCurrency === "UZS" ? "UZS" : undefined,
               hisoblanganSumma: item.settledAmount != null && Number(item.settledAmount) > 0 ? Number(item.settledAmount) : undefined,
               kurs: item.rate != null && Number(item.rate) > 0 ? Number(item.rate) : undefined,
@@ -88,7 +89,7 @@ export default function XaridorTolovlariTab({ xaridorId }: { xaridorId: string }
             nomi: item.refDocNumber || t("xaridorTab.salePayment"),
             kontragent: "",
             summa: Number(item.amount ?? 0),
-            valyuta: item.currency ?? "UZS",
+            valyuta: valyutaYokiAsosiy(item.currency),
             sana: item.date,
             masul: t("systemFallback"),
             izoh: item.note ?? "",

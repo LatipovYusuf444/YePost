@@ -64,7 +64,7 @@ function hooksRuntime() {
 const texts = value => Array.isArray(value) ? value.flatMap(texts) : value && typeof value === 'object' ? texts(value.props?.children) : value == null || typeof value === 'boolean' ? [] : [String(value)];
 
 const yordamchilar = compile('../src/Pages/Savdo/savdoYordamchilari.ts', {
-  '@/lib/valyuta': { pulMatni: value => String(value), oziValyutadaMatn: value => String(value), useValyutaStore: { getState: () => ({}) }, valyutaKodi: value => value },
+  '@/lib/valyuta': { pulMatni: value => String(value), oziValyutadaMatn: value => String(value), useValyutaStore: { getState: () => ({}) }, valyutaKodi: value => value, yagonaValyuta: () => null },
   '@/lib/kassaNomlari': kassaNomlari,
 });
 

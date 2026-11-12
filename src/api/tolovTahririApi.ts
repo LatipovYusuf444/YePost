@@ -9,6 +9,7 @@ import {
 } from "../lib/tolovTahriri.ts";
 import apiClient from "./axios";
 import { sotuvniBekorQilish, sotuvniTasdiqlash, sotuvniTiklash, sotuvniYangilash, sotuvTafsilotiniOlish } from "./savdoApi";
+import { valyutaYokiAsosiy } from "@/lib/asosiyValyuta";
 
 export type TolovTahririSorovi = {
   sotuvId: string;
@@ -73,7 +74,7 @@ async function bosqichniBajarish(bosqich: TolovTahririBosqichi, sorov: TolovTahr
       qoralama.payments ?? [],
       { id: sorov.tolovId, indeks: sorov.tolovIndeksi },
       sorov.yangi,
-      qoralama.currency ?? "UZS"
+      valyutaYokiAsosiy(qoralama.currency)
     );
     if (!tolovlar) throw new Error(TOLOV_TOPILMADI);
     await sotuvniYangilash(sorov.sotuvId, tolovTahririTanasi(tolovlar, sorov.keepExcess, sorov.roundChange) as Partial<SotuvYaratishMalumoti>);

@@ -31,6 +31,7 @@ import TaqsimotQatorlari from "./TaqsimotQatorlari";
 import KassaAmaliyotTarixi from "./KassaAmaliyotTarixi";
 import type { KassaAmaliyoti, KassaHolati, KassaKanali } from "./types";
 import { kassaSummasi, partiyaTuri, sanaFormat } from "./yordamchilar";
+import { valyutaYokiAsosiy } from "@/lib/asosiyValyuta";
 
 const kanalIkonlari: Record<KassaKanali, typeof Banknote> = {
   naqd: Banknote,
@@ -159,7 +160,7 @@ export default function KassaAmaliyotKorinishi({ amaliyot, onYopish }: Props) {
           >
             {tushum ? "+" : "−"} {kassaSummasi(amaliyot.summa, amaliyot.valyuta)}
           </p>
-          {amaliyot.hisoblanganSumma !== undefined && amaliyot.hisobValyutasi && (amaliyot.valyuta ?? "UZS") !== amaliyot.hisobValyutasi && (
+          {amaliyot.hisoblanganSumma !== undefined && amaliyot.hisobValyutasi && valyutaYokiAsosiy(amaliyot.valyuta) !== amaliyot.hisobValyutasi && (
             <p className="mt-2 text-sm font-bold text-slate-500">
               {t("view.settledLine", {
                 summa: kassaSummasi(amaliyot.hisoblanganSumma, amaliyot.hisobValyutasi),

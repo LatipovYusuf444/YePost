@@ -61,6 +61,7 @@ import { useKassaSotuvKeshi } from "@/hooks/useKassaSotuvlari";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { rolniNormallashtirish } from "@/lib/roles";
 import { hujjatRaqamiMatni } from "@/lib/hujjatRaqamiMatni";
+import { valyutaYokiAsosiy } from "@/lib/asosiyValyuta";
 type Bolim = { yonalish: KassaYonalishi };
 type Guruh = { kanal: KassaKanali; icon: typeof Banknote; bolimlar: Bolim[] };
 
@@ -152,7 +153,7 @@ export default function KassaUchot() {
       nomi: item.refDocNumber || item.note || t(`types.${backendTuriniMoslash(item)}`),
       kontragent: item.counterpartyName || branch?.name || "",
       summa: Number(item.amount ?? 0),
-      valyuta: item.currency ?? "UZS",
+      valyuta: valyutaYokiAsosiy(item.currency),
       sana: item.date,
       masul: item.responsibleName || responsible?.fullName || responsible?.username || t("systemFallback"),
       izoh: item.note ?? "",
@@ -284,7 +285,7 @@ export default function KassaUchot() {
       const transactionRows = report.items.map((item) => {
         const operation = item.source === "CASH_OPERATION" ? operationMap.get(item.refId ?? item.id) : undefined;
         if (!operation) return amaliyotgaMoslash(item, userMap, branchMap);
-        return { ...cashOperationgaMoslash(operation, userMap, branchMap), summa: Number(item.amount), valyuta: item.currency ?? "UZS", sana: item.date };
+        return { ...cashOperationgaMoslash(operation, userMap, branchMap), summa: Number(item.amount), valyuta: valyutaYokiAsosiy(item.currency), sana: item.date };
       });
       const transactionOperationIds = new Set(report.items.filter((item) => item.source === "CASH_OPERATION").map((item) => item.refId ?? item.id));
       // Tasdiqlangan pul harakatlari faqat umumiy ledgerdan. Qoralama/bekor hujjatlar boshqarish uchun qoladi.
@@ -296,7 +297,7 @@ export default function KassaUchot() {
           const text = [item.raqam, item.nomi, item.kontragent, item.masul, item.izoh].join(" ").toLowerCase();
           return item.kanal === kanal && item.yonalish === yonalish &&
             (!dateFrom || day >= dateFrom) && (!dateTo || day <= dateTo) &&
-            (currency === "ALL" || (item.valyuta ?? "UZS") === currency) &&
+            (currency === "ALL" || valyutaYokiAsosiy(item.valyuta) === currency) &&
             (raqamQidiruvi || !qidiruv.trim() || text.includes(qidiruv.trim().toLowerCase()));
         });
       setAmaliyotlar([...operationRows, ...transactionRows]);
@@ -595,8 +596,9 @@ export default function KassaUchot() {
   const dastlabkiYuklanish = yuklanmoqda && amaliyotlar.length === 0;
   // Dollardagi operatsiyalar so'mga qo'shilmaydi: jami valyutalar bo'yicha alohida ko'rsatiladi.
   const summaryField = tushum ? "income" : "expense";
+  // Bir valyutali rejimda "Jami" faqat asosiy valyutada (so'm/$ alohida ko'rsatilmaydi).
   const jamiMatni = (["UZS", "USD"] as const)
-    .filter((valyuta) => !yagonaValyuta || valyuta === yagonaValyuta || Number(summary?.[valyuta]?.[summaryField] ?? 0) !== 0)
+    .filter((valyuta) => !yagonaValyuta || valyuta === yagonaValyuta)
     .map((valyuta) => cashAmount(summary?.[valyuta]?.[summaryField], valyuta))
     .join(" · ");
 
@@ -668,7 +670,7 @@ export default function KassaUchot() {
       katak: (a) => (
         <span className={`font-black ${tushum ? "text-emerald-600" : "text-red-500"}`}>
           {tushum ? "+" : "−"} {kassaSummasi(a.summa, a.valyuta)}
-          {a.hisoblanganSumma !== undefined && a.hisobValyutasi && (a.valyuta ?? "UZS") !== a.hisobValyutasi && (
+          {a.hisoblanganSumma !== undefined && a.hisobValyutasi && valyutaYokiAsosiy(a.valyuta) !== a.hisobValyutasi && (
             <span className="block text-[11px] font-semibold text-slate-400">
               → {kassaSummasi(a.hisoblanganSumma, a.hisobValyutasi)}
               {a.kurs ? ` · ${a.kurs.toLocaleString("uz-UZ")}` : ""}
@@ -724,14 +726,17 @@ export default function KassaUchot() {
         <ZavodBonusi ochirishMumkin={zavodBonusiOchirish} />
       ) : (
         <>
-      <section className="grid gap-4 rounded-2xl border border-orange-100 bg-white p-4 sm:grid-cols-2">
+      <section className={`grid gap-4 rounded-2xl border border-orange-100 bg-white p-4 ${yagonaValyuta ? "" : "sm:grid-cols-2"}`}>
         <MuddatTanlov timeZone="Asia/Tashkent" dateFrom={dateFrom} dateTo={dateTo} onChange={(from, to) => { setDateFrom(from); setDateTo(to); }} />
+        {/* Bir valyutali rejimda (Faqat so'm / Faqat dollar) valyuta filtri ko'rsatilmaydi. */}
+        {!yagonaValyuta && (
         <label className="text-xs font-bold text-gray-700">
           Valyuta
           <select aria-label="Kassa valyutasi" value={currency} onChange={(event) => setCurrency(event.target.value as typeof currency)} className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm">
             <option value="ALL">So'm va dollar</option><option value="UZS">So'm</option><option value="USD">Dollar ($)</option>
           </select>
         </label>
+        )}
       </section>
       {/* Chapda: qidiruv + jami. O'ngda: yaratish tugmasi. */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

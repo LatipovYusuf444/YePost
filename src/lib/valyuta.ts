@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 import { persist } from "zustand/middleware";
 import { kursniSongaAylantirish, rejimKodiniOlish, rejimValyutasi, valyutaApi, type ValyutaRejimKodi } from "@/api/valyutaApi";
+import { asosiyValyutaniBelgilash, valyutaYokiAsosiy } from "./asosiyValyuta.ts";
 
 // Butun loyiha uchun yagona valyuta moduli.
 //
@@ -99,6 +100,11 @@ export const useValyutaStore = create<ValyutaHolati>()(
     }
   )
 );
+
+// Valyutasi yozilmagan yozuvlar uchun asosiy valyuta (lib/asosiyValyuta) rejim bilan doim bir xil: "Faqat dollar" — USD, "Faqat so'm" —
+// UZS, ikki valyuta — backend `defaultCurrency`. Saqlangan (persist) holat tiklanganda va har yangilanishda o'rnatiladi.
+asosiyValyutaniBelgilash(holatValyutasi(useValyutaStore.getState()) ?? useValyutaStore.getState().asosiyValyuta);
+useValyutaStore.subscribe((holat) => asosiyValyutaniBelgilash(holatValyutasi(holat) ?? holat.asosiyValyuta));
 
 /** Komponentlar uchun: valyuta yoki kurs o'zgarganda qayta chizilishi kerak bo'lsa. */
 export function useValyuta() {
@@ -246,5 +252,6 @@ export function pulMatni(summa: number | string | null | undefined, manba: Valyu
 
 /** Backenddan kelgan valyuta kodini ("USD" | "UZS" | boshqa) xavfsiz Valyuta'ga aylantiradi. */
 export function valyutaKodi(qiymat?: string | null): Valyuta {
-  return qiymat?.toUpperCase() === "USD" ? "USD" : "UZS";
+  // Bo'sh yoki noma'lum valyuta — do'konning asosiy valyutasi ("Faqat dollar" rejimida USD), doim "UZS" emas.
+  return valyutaYokiAsosiy(qiymat);
 }

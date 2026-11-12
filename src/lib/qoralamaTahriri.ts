@@ -4,6 +4,7 @@
 import type { QoldiqTanlovi, SotuvMahsuloti, SotuvNarxTuri } from "../types/savdo.ts";
 import { asosiyMiqdor, birlikdagiMiqdor, birlikNarxi, birlikTopish, miqdorYaroqlimi, qatorBirligida } from "./kopBirlik.ts";
 import { narxSotuvValyutasida, qatorNarxTuri, turNarxi, type NarxValyutasi } from "./savdoNarxlari.ts";
+import { valyutaYokiAsosiy } from "./asosiyValyuta.ts";
 
 export type TahrirQatori = {
   /** Barqaror kalit (mavjud qatorda — backend id, yangisida — vaqtinchalik). */
@@ -518,7 +519,7 @@ export function rejimgaMosEmasValyuta(
 ): NarxValyutasi | null {
   if (!yagona) return null;
   const kod = (qiymat: string | null | undefined, standart: NarxValyutasi): NarxValyutasi =>
-    String(qiymat ?? standart).toUpperCase() === "USD" ? "USD" : "UZS";
+    valyutaYokiAsosiy(qiymat ?? standart);
   const sotuvVal = kod(sotuv.currency, "UZS");
   if (sotuvVal !== yagona) return sotuvVal;
   const boshqa = (sotuv.items ?? []).map((item) => kod(item.currency, sotuvVal)).find((val) => val !== yagona);

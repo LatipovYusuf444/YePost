@@ -7,7 +7,9 @@ import { qatorniQaytaYuborish } from "../lib/kopBirlik";
 import { rejimgaMosEmasValyuta } from "../lib/qoralamaTahriri";
 import { useValyutaStore, yagonaValyuta } from "../lib/valyuta";
 import { xatolikXabari } from "../lib/toast";
+import { sotuvSummasi, sotuvValyutasi } from "../Pages/Savdo/savdoYordamchilari";
 import i18n from "i18next";
+import { valyutaYokiAsosiy } from "../lib/asosiyValyuta.ts";
 import type {
   DraftSale,
   DraftSaleItem,
@@ -70,9 +72,10 @@ export function saleToDraftSale(sale: Sotuv): DraftSale {
       stockAvailable: 0,
     };
   });
-  const totalAmount = numberValue(sale.totalAmount ?? sale.total);
+  // Backend jami; u 0 bo'lsa (rejim almashguncha yaratilgan qoralama) — qatorlar yoki `totalsByCurrency` bo'yicha (sotuv valyutasida).
+  const totalAmount = sotuvSummasi(sale);
   // Aralash sotuvda qator chegirmalari turli valyutada bo'lishi mumkin — ularni qo'shib bo'lmaydi, faqat backend `discountAmount` olinadi.
-  const saleCurrency = String(sale.currency ?? "UZS").toUpperCase();
+  const saleCurrency = sotuvValyutasi(sale);
   const aralash = (sale.items ?? []).some((item) => String(item.currency ?? saleCurrency).toUpperCase() !== saleCurrency);
   const discountAmount =
     numberValue(sale.discountAmount) ||
@@ -88,7 +91,8 @@ export function saleToDraftSale(sale: Sotuv): DraftSale {
     totalAmount,
     discountAmount,
     finalAmount: Math.max(totalAmount - discountAmount, 0),
-    currency: sale.currency,
+    // Ko'rsatish valyutasi: bir valyutali rejimdagi ochiq qoralama — haqiqiy (qatorlar) valyutasi ("1.18 so'm" emas, "$1.18").
+    currency: sotuvValyutasi(sale),
     status: draftStatus(sale.status),
     note: sale.note,
     responsibleUserId: sale.responsibleId,
@@ -135,7 +139,7 @@ export const draftSalesService = {
     const response = await apiClient.get<Sotuv | ApiEnvelope<Sotuv>>(`/sales/${id}`);
     const sale = apiData(response.data);
     // Nusxada valyutalar saqlanadi: dollar qator narxi so'm sifatida qayta yuborilmasligi kerak.
-    const saleCurrency = String(sale.currency ?? "UZS").toUpperCase();
+    const saleCurrency = valyutaYokiAsosiy(sale.currency);
     // Nusxa — yangi hujjat: bir valyutali rejimda boshqa valyutadagi qoralama (yoki qator) nusxasini backend rad etadi
     // (errors.currency.not_allowed), shuning uchun so'rov yuborilmaydi. Rejim hali o'qilmagan bo'lsa tekshirilmaydi (ikki valyutali
     // do'kon noto'g'ri to'xtatilmasin) — u holda backend xatosi chiqadi.

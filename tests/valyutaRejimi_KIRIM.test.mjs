@@ -79,7 +79,7 @@ test('YangiKirimModal: bir valyutali rejimda valyuta tanlovi yashirin, hujjat va
   assert.match(manba, /\{!yagona && \(\s*<label[^>]*>\s*\{t\("yangiKirim\.currency"\)\}/);
   assert.match(manba, /const hujjatValyutasi = yagona \?\? kirimHujjatValyutasi\(valid\);/);
   assert.match(manba, /const kursKerak = !yagona && /);
-  assert.match(manba, /currency: yagonaValyuta\(\) \?\? "UZS"/);
+  assert.match(manba, /currency: yagonaValyuta\(\) \?\? asosiyValyuta\(\)/);
   assert.match(manba, /\.\.\.\(yagona \? \{ costCurrency: yagona, retailCurrency: yagona, wholesaleCurrency: yagona \} : \{\}\)/);
   for (const til of ['uz', 'ru']) {
     const matn = JSON.parse(oqi(`src/i18n/locales/${til}/ombor_modal.json`)).kirimValyutaRejimi?.checkPrices;

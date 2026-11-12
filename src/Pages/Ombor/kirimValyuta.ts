@@ -1,5 +1,6 @@
 import type { Valyuta } from "@/lib/valyuta";
 import type { TovarBirligi } from "../../lib/kopBirlik.ts";
+import { asosiyValyuta } from "../../lib/asosiyValyuta.ts";
 
 /** Kirimdagi narxni manba valyutasidan o‘giradi; kurssiz summaga boshqa belgi qo‘ymaydi. */
 export function kirimNarxiniOgirish(qiymat: number, manba: Valyuta, maqsad: Valyuta, kurs: number | null) {
@@ -14,7 +15,8 @@ export function kirimNarxiniOgirish(qiymat: number, manba: Valyuta, maqsad: Valy
  * tannarx va yetkazib beruvchi qarzi brauzer kursiga bog'lanib qolmaydi (K7). Aralash yoki so'mda — UZS (dollar qatorlar kurs bilan o'giriladi).
  */
 export function kirimHujjatValyutasi(rows: ReadonlyArray<{ currency: Valyuta }>): Valyuta {
-  return rows.length > 0 && rows.every((row) => row.currency === "USD") ? "USD" : "UZS";
+  if (rows.length === 0) return asosiyValyuta();
+  return rows.every((row) => row.currency === "USD") ? "USD" : "UZS";
 }
 
 /**

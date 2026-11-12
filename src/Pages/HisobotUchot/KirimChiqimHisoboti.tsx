@@ -19,6 +19,7 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import AppModal from "@/Components/common/AppModal";
 
 import YuklanmoqdaHolati from "./YuklanmoqdaHolati";
+import { valyutaYokiAsosiy } from "@/lib/asosiyValyuta";
 // Kirim-chiqim (kassa oboroti) hisoboti — matritsa: kassalar × (Kirim/Chiqim/Qoldiq).
 // Qatorlar: Boshlang'ich qoldiq / Aylanma / Yakuniy qoldiq.
 // "Aylanma" bosilsa — backend tranzaksiyalari hujjatlar kesimida ochiladi.
@@ -64,7 +65,7 @@ function hujjatAmaliyoti(h: KassaHujjati, filiallar: Tanlov[]): KassaAmaliyoti {
     nomi: h.nomi,
     kontragent: filiallar.find((item) => item.id === h.branchId)?.nomi ?? h.branchId,
     summa: h.summa,
-    valyuta: h.currency ?? "UZS",
+    valyuta: valyutaYokiAsosiy(h.currency),
     readonly: true,
     sana: h.sana,
     masul: "",

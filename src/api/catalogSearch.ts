@@ -77,6 +77,33 @@ export function katalogOmborQoldiqlari(qator: KatalogQidiruvQatori): Map<string,
   return natija;
 }
 
+/**
+ * Qidiruv javobida narx valyutasi `modification.price` da yozilmagan bo'lishi mumkin, lekin u birliklarda keladi (`units[].currency` —
+ * chakana, `units[].wholesaleCurrency` — ulgurji; asosiy birlikniki narxning o'zi). Shunday holatda valyuta shu yerdan olinadi: aks holda
+ * "Faqat dollar" do'konidagi $0.17 narx so'mdagi narx deb o'qilardi. Narxda valyuta aniq yozilgan bo'lsa o'zgartirilmaydi.
+ */
+function birlikValyutasiBilan(narx: MahsulotNarxi | null | undefined, units: unknown): MahsulotNarxi | null | undefined {
+  if (!narx || !Array.isArray(units)) return narx;
+  const royxat = units.filter((unit): unit is Record<string, unknown> => Boolean(unit) && typeof unit === "object");
+  const asosiy = royxat.find((unit) => unit.isBase === true) ?? royxat[0];
+  if (!asosiy) return narx;
+  const kod = (qiymat: unknown) => {
+    const matn = typeof qiymat === "string" ? qiymat.trim().toUpperCase() : "";
+    return matn === "USD" || matn === "UZS" ? matn : null;
+  };
+  const chakana = kod(asosiy.currency);
+  const ulgurji = kod(asosiy.wholesaleCurrency) ?? chakana;
+  const yozilgan = (qiymat: unknown) => kod(qiymat) !== null;
+  const chakanaYoq = !yozilgan(narx.retailCurrency) && !yozilgan(narx.currency);
+  const ulgurjiYoq = !yozilgan(narx.wholesaleCurrency) && !yozilgan(narx.currency);
+  if (!(chakanaYoq && chakana) && !(ulgurjiYoq && ulgurji)) return narx;
+  return {
+    ...narx,
+    ...(chakanaYoq && chakana ? { retailCurrency: chakana } : {}),
+    ...(ulgurjiYoq && ulgurji ? { wholesaleCurrency: ulgurji } : {}),
+  };
+}
+
 /** Search API qoldiq qatorini qaytaradi: variant, uning narxi va valyutasi `modification` ichida. */
 export function katalogQidiruvQatoriniMoslash(qator: KatalogQidiruvQatori): MahsulotModifikatsiyasi | null {
   if ("modification" in qator || "modificationId" in qator) {
@@ -84,8 +111,10 @@ export function katalogQidiruvQatoriniMoslash(qator: KatalogQidiruvQatori): Mahs
     const id = qator.modificationId || mod?.id;
     if (!id || !mod || (mod.id && mod.id !== id)) return null;
     const birliklar = "units" in qator ? birliklarniMoslash(qator.units) : [];
+    const price = "units" in qator ? birlikValyutasiBilan(mod.price, qator.units) : mod.price;
     return {
       ...mod,
+      ...(price !== mod.price ? { price } : {}),
       id,
       productId: qator.productId ?? mod.productId,
       ...(birliklar.length ? { birliklar } : {}),

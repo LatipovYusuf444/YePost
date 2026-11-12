@@ -1,6 +1,8 @@
 // Mahsulot narxining valyutalari. Backend (4-qism) har bir narxga alohida valyuta beradi:
 // costCurrency (tannarx), retailCurrency (chakana), wholesaleCurrency (ulgurji). Eski `currency` hamon qabul qilinadi/qaytadi,
-// lekin endi u faqat chakana narx valyutasini bildiradi. Bu fayl hech narsani import qilmaydi (testlarda to'g'ridan-to'g'ri ishlaydi).
+// lekin endi u faqat chakana narx valyutasini bildiradi. Bu fayl faqat toza modulni import qiladi (testlarda to'g'ridan-to'g'ri ishlaydi).
+
+import { asosiyValyuta } from "./asosiyValyuta.ts";
 
 export type NarxValyutasi = "UZS" | "USD";
 
@@ -20,10 +22,10 @@ function valyutaKodi(qiymat?: string | null): NarxValyutasi | null {
 
 /**
  * Har bir narxning o'z valyutasi. Yangi maydon bo'lmasa — eski `currency` (eski serverda hamma narxniki, yangisida chakana narxniki),
- * u ham bo'lmasa so'm (valyutasi yozilmagan narx so'm hisoblanadi).
+ * u ham bo'lmasa do'konning asosiy valyutasi ("Faqat dollar" rejimida — dollar; ikki valyutada — backend `defaultCurrency`, odatda so'm).
  */
 export function narxValyutalari(narx?: NarxValyutaManbasi | null): NarxValyutalari {
-  const umumiy = valyutaKodi(narx?.currency) ?? "UZS";
+  const umumiy = valyutaKodi(narx?.currency) ?? asosiyValyuta();
   return {
     cost: valyutaKodi(narx?.costCurrency) ?? umumiy,
     retail: valyutaKodi(narx?.retailCurrency) ?? umumiy,

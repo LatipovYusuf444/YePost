@@ -22,6 +22,7 @@ import { useYagonaValyuta } from "@/lib/valyuta";
 import type { ChiqimHujjati, ChiqimSababi, MahsulotModifikatsiyasi } from "@/types/ombor";
 import { holat, hujjatRaqami, modificationNomi, pul, sana } from "./omborYordamchilari";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
+import { asosiyValyuta } from "@/lib/asosiyValyuta";
 
 type Props = { id: string; onClose: () => void; ajratilganQator?: HujjatQatoriTanlovi; hisobotManbasi?: HujjatHisobotManbasi };
 
@@ -94,7 +95,7 @@ export default function ChiqimTafsilotModal({ id, onClose, ajratilganQator, hiso
   );
 
   const jamiMatni = useMemo(
-    () => chiqimJamilari(qatorlar, hujjat?.totalAmount ?? hujjat?.total, yagona ?? "UZS").map((item) => pul(item.summa, item.valyuta)).join(" + "),
+    () => chiqimJamilari(qatorlar, hujjat?.totalAmount ?? hujjat?.total, yagona ?? asosiyValyuta()).map((item) => pul(item.summa, item.valyuta)).join(" + "),
     [hujjat?.total, hujjat?.totalAmount, qatorlar, yagona]
   );
 

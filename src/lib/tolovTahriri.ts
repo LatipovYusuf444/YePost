@@ -3,6 +3,7 @@
 // tasdiqlanadi (POST /sales/:id/confirm). Qaytim tasdiqlashda o'zi hisoblanadi (`payments[].changeAmount`), kassa shunga to'g'rilanadi.
 // UI'siz yozilgan — alohida sinash mumkin.
 import { saqlanganTolovMaydonlari, tahrirSanasi, toshkentKuni } from "./hujjatSanasi.ts";
+import { valyutaYokiAsosiy } from "./asosiyValyuta.ts";
 
 export type TolovTahririBosqichi = "bekor" | "tiklash" | "yangilash" | "tasdiqlash";
 
@@ -38,7 +39,7 @@ export type TolovYangilanishi = {
   rate?: number;
 };
 
-const valyutaKodi = (qiymat?: string | null) => (qiymat?.toUpperCase() === "USD" ? "USD" : "UZS");
+const valyutaKodi = (qiymat?: string | null) => valyutaYokiAsosiy(qiymat);
 
 /**
  * Tahrirlanadigan to'lovning ro'yxatdagi o'rni: avval `id` bo'yicha; `id` topilmasa (bekor qilish va tiklashdan keyin o'zgargan bo'lsa)

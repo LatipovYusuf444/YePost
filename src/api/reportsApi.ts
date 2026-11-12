@@ -3,6 +3,7 @@ import { qolganSahifalar } from "../lib/parallelBajarish.ts";
 import { getApiErrorMessage } from "./sozlamalarApi";
 import { chegirmaParametrlari } from "./hisobotParametrlari";
 import type { CashCurrency, CashDailyParams, CashDailyReport, CashFlowBalance, CashFlowCurrencySummary } from "@/types/cashReports";
+import { asosiyValyuta } from "../lib/asosiyValyuta.ts";
 import type {
   AuditFilter,
   AuditLog,
@@ -167,7 +168,7 @@ export const counterpartyBalanceReportApi = {
     params: Pick<CounterpartyBalanceFilter, "currency" | "dateFrom" | "dateTo"> = {}
   ) => getReport(`/reports/counterparty-balance/${type}/${id}/documents`, {
     ...params,
-    currency: params.currency ?? "UZS",
+    currency: params.currency ?? asosiyValyuta(),
   }),
   export: (params: CounterpartyBalanceFilter, exportTuri: ExportTuri = "excel") => {
     return exportReport(
@@ -281,8 +282,8 @@ export const cashFlowReportApi = {
       getReport<CashFlowReport>("/reports/cash-flow", { ...params, page, pageSize: 500 })
     );
     const raw = { ...first, items: [first.items ?? [], ...pages.map((page) => page.items ?? [])].flat() };
-    if (!raw.summary?.byCurrency?.[params.currency ?? "UZS"] && Array.isArray(raw.byPaymentMethod)) return raw;
-    const byPaymentMethod = Object.entries(raw.summary?.byCurrency?.[params.currency ?? "UZS"]?.byPaymentMethod ?? raw.summary?.byPaymentMethod ?? {}).map(
+    if (!raw.summary?.byCurrency?.[params.currency ?? asosiyValyuta()] && Array.isArray(raw.byPaymentMethod)) return raw;
+    const byPaymentMethod = Object.entries(raw.summary?.byCurrency?.[params.currency ?? asosiyValyuta()]?.byPaymentMethod ?? raw.summary?.byPaymentMethod ?? {}).map(
       ([paymentMethod, value]) => {
         const income = Number(value.income ?? 0);
         const expense = Number(value.expense ?? 0);

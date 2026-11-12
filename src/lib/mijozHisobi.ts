@@ -1,3 +1,4 @@
+import { valyutaYokiAsosiy } from "./asosiyValyuta.ts";
 // Mijoz hisobi: mijoz oldindan to'lagan pul (ortiqcha to'lov yoki kassa orqali to'ldirilgan hisob).
 // Hisob valyutasi valyuta rejimida USD. UI'siz va tashqi importlarsiz yozilgan — alohida sinash mumkin.
 
@@ -12,6 +13,6 @@ export function mijozHisobi(mijoz: HisobManbasi): MijozHisobi {
   const son = Number(mijoz?.balance ?? 0);
   return {
     miqdor: Number.isFinite(son) && son > 0 ? son : 0,
-    valyuta: mijoz?.balanceCurrency?.toUpperCase() === "USD" ? "USD" : "UZS",
+    valyuta: valyutaYokiAsosiy(mijoz?.balanceCurrency),
   };
 }

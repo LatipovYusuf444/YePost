@@ -107,6 +107,7 @@ import { useSavdoSozlamalariStore } from "@/store/savdoSozlamalariStore";
 import { pulniFormatlash, sotuvJadvalId } from "./savdoYordamchilari";
 import QoralamaFaoliyatlari from "./QoralamaFaoliyatlari";
 import SavdoSelect, { type SavdoSelectOption } from "./SavdoSelect";
+import { asosiyValyuta, valyutaYokiAsosiy } from "@/lib/asosiyValyuta";
 
 type YangiSotuvModalProps = {
   variant?: "sale" | "draft";
@@ -464,7 +465,7 @@ export default function YangiSotuvModal({
   // Rejim backenddan o'qilganmi: o'qilguncha store boshlang'ich holati ("Faqat so'm") ikki valyutali do'kondagi dollar qoralamani
   // o'zgartirib yoki to'xtatib qo'ymasin (o'tkazish va bloklash faqat haqiqiy rejim bo'yicha).
   const rejimYuklandi = useValyutaStore((holat) => holat.yuklandi);
-  const [valyuta, setValyuta] = useState(asl?.currency ?? yagona ?? "UZS");
+  const [valyuta, setValyuta] = useState(asl?.currency ?? yagona ?? asosiyValyuta());
   const [walkInNomi, setWalkInNomi] = useState(asl?.walkInCustomerName ?? "");
   const [walkInTelefon, setWalkInTelefon] = useState(asl?.walkInCustomerPhone ?? "");
   // Dollarda sotuv faqat valyuta rejimi yoqilgan va bugungi kurs kiritilgan bo'lsa mumkin (backend tasdiqlashda shu kurs bilan o'giradi).
@@ -487,7 +488,7 @@ export default function YangiSotuvModal({
   const [sotuvBackendgaSaqlandi, setSotuvBackendgaSaqlandi] = useState(false);
   const saqlanganQatorlar = () => {
     if (!tahrir) return [];
-    const aslVal = asl?.currency === "USD" ? "USD" : "UZS";
+    const aslVal = valyutaYokiAsosiy(asl?.currency);
     return qoralamaQatorlari(tahrir.sotuv, {
       warehouseId: asl?.warehouseId ?? "",
       sotuvVal: aslVal,
@@ -1496,7 +1497,7 @@ export default function YangiSotuvModal({
     setClientCompanyId("");
     setSotuvNomi("");
     setBosqich("Yangi");
-    setValyuta(yagona ?? "UZS");
+    setValyuta(yagona ?? asosiyValyuta());
     setBoshlanishSanasi(bugungiSana());
     setTugashSanasi(kelasiHafta());
     setIzoh("");

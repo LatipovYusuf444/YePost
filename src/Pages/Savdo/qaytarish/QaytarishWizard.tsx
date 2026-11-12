@@ -879,7 +879,7 @@ export default function QaytarishWizard({
                         {t("wizard.items.totalValue")}
                       </span>
                       {jamiSumma === null ? (
-                        <span className="text-2xl font-extrabold tabular-nums text-slate-300">0 so'm</span>
+                        <span className="text-2xl font-extrabold tabular-nums text-slate-300">{pulniFormatlash(0, sotuvValyutasi(sotuv))}</span>
                       ) : jamiSumma === "kutilmoqda" ? (
                         <span role="status" className="inline-flex items-center gap-2 text-sm font-bold text-slate-400">
                           <LoaderCircle size={16} className="animate-spin text-emerald-500" aria-hidden /> {t("wizard.items.calculating")}

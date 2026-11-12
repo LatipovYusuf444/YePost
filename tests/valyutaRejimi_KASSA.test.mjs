@@ -7,6 +7,7 @@ import ts from 'typescript';
 import * as dates from '../src/lib/hujjatSanasi.ts';
 import * as cash from '../src/lib/cashReports.ts';
 import * as kassaTahriri from '../src/lib/kassaTahriri.ts';
+import * as asosiyValyutaModuli from '../src/lib/asosiyValyuta.ts';
 
 // Valyuta rejimi (backend 11.11.2026) — kassa amaliyoti oynasi: Faqat so'm / Faqat dollar rejimida valyuta va "qaysi qarz" tanlovlari,
 // kurs maydoni yashirin, kurs talab qilinmaydi, `currency` va `settleCurrency` rejim valyutasida yuboriladi. Ikki valyuta rejimi o'zgarmaydi.
@@ -39,6 +40,7 @@ function page(path, dependencies, props = {}) {
     // Kassa amaliyoti oynasidagi amallar (11.11.2026): router, davr yopilishi, rol va amallar mantig'i.
     if (name === '@/store/davrStore') return { useDavrStore: selector => selector({ holat: null, yuklash: async () => {} }) };
     if (name === '@/lib/kassaTahriri') return kassaTahriri;
+    if (name === '@/lib/asosiyValyuta') return asosiyValyutaModuli;
     if (name === '@/lib/roles') return { rolniNormallashtirish: value => String(value ?? '').toUpperCase() };
     if (name === 'react-router-dom') return { useSearchParams: () => [new URLSearchParams(), () => {}], useNavigate: () => () => {}, Link: 'Link' };
     if (name in dependencies) return dependencies[name];

@@ -4,6 +4,7 @@ import type { TimelineItem } from "@/types/crm";
 import type { Mijoz, MijozKompaniyasi, YetkazibBeruvchi } from "@/types/partner";
 import type { Sotuv } from "@/types/savdo";
 import type { KirimHujjati } from "@/types/ombor";
+import { valyutaYokiAsosiy } from "@/lib/asosiyValyuta";
 import {
   sotuvQarzdorlikSummasi,
   sotuvSummasi,
@@ -116,7 +117,7 @@ export function sotuvniUiGa(item: Sotuv, lookup: HujjatLookup = {}): XaridorSavd
     id: item.id,
     xaridorId: item.customerId ?? item.customer?.id ?? "",
     isOpeningDebt: item.isOpeningDebt,
-    currency: item.currency ?? "UZS",
+    currency: valyutaYokiAsosiy(item.currency),
     kompaniyaId: item.clientCompanyId ?? item.clientCompany?.id ?? "",
     nomi: item.note?.split("\n")[0] || item.docNumber || item.documentNumber || "Sotuv",
     raqam: item.docNumber || item.documentNumber || item.number || item.id,

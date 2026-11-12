@@ -28,6 +28,7 @@ import TelegramHolatBelgisi from "./TelegramHolatBelgisi";
 import XaridorTafsilotlariModal from "./XaridorTafsilotlariModal";
 import type { Xaridor, XaridorKompaniyasi } from "./types";
 import { asosiyTelefon, kompaniyaNomi, sanaFormat, xaridorNomi } from "./yordamchilar";
+import { useYagonaValyuta } from "@/lib/valyuta";
 
 type Props = {
   xaridorlar: Xaridor[];
@@ -39,6 +40,8 @@ type Props = {
 
 export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqlash, onOchirish }: Props) {
   const { t } = useTranslation("xaridor_uchot");
+  // Bir valyutali rejimda qarz bo'yicha saralashda faqat asosiy valyuta varianti.
+  const yagonaValyuta = useYagonaValyuta();
   const [qidiruv, setQidiruv] = useState("");
   const { hisoblar, holat: hisobHolati, yangilash: hisobniYangilash } = useMijozHisoblari();
   const [faqatQarzdorlar, setFaqatQarzdorlar] = useState(false);
@@ -219,7 +222,7 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
 
       <div className="flex flex-wrap items-center gap-3">
         <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600"><input type="checkbox" checked={faqatQarzdorlar} disabled={hisobHolati !== "tayyor"} onChange={(event) => setFaqatQarzdorlar(event.target.checked)} />{t("hisob.faqatQarzdorlar")}</label>
-        <select aria-label={t("hisob.sortLabel")} value={qarzTartibi} disabled={hisobHolati !== "tayyor"} onChange={(event) => setQarzTartibi(event.target.value as typeof qarzTartibi)} className="h-10 rounded-xl border border-orange-100 bg-white px-3 text-sm font-semibold text-slate-600 disabled:opacity-50"><option value="NONE">{t("hisob.sortDefault")}</option><option value="UZS">{t("hisob.sortUzs")}</option><option value="USD">{t("hisob.sortUsd")}</option></select>
+        <select aria-label={t("hisob.sortLabel")} value={qarzTartibi} disabled={hisobHolati !== "tayyor"} onChange={(event) => setQarzTartibi(event.target.value as typeof qarzTartibi)} className="h-10 rounded-xl border border-orange-100 bg-white px-3 text-sm font-semibold text-slate-600 disabled:opacity-50"><option value="NONE">{t("hisob.sortDefault")}</option>{yagonaValyuta !== "USD" && <option value="UZS">{t("hisob.sortUzs")}</option>}{yagonaValyuta !== "UZS" && <option value="USD">{t("hisob.sortUsd")}</option>}</select>
         {hisobHolati === "yuklanmoqda" && <span role="status" className="text-sm text-slate-400">{t("hisob.yuklanmoqda")}</span>}
         {hisobHolati === "xato" && <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-red-600"><span>{t("hisob.xato")}</span><button type="button" onClick={hisobniYangilash} className="inline-flex items-center gap-1 font-bold"><RefreshCw size={14} />{t("root.retry")}</button></div>}
       </div>

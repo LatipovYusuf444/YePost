@@ -1,4 +1,5 @@
 import { bekorQilishRuxsatiBormi, type HujjatRuxsatiProfili } from "./hujjatRuxsati.ts";
+import { valyutaYokiAsosiy } from "./asosiyValyuta.ts";
 
 // Boshlang'ich qarz oddiy sotuv bilan bir xil rol va RETURN_CANCEL grant tekshiruvidan o'tadi.
 export function boshlangichQarzniBekorQilishMumkin(
@@ -92,7 +93,7 @@ export function mijozQarzXulosasi(hujjatlar: Array<{ summa: number; tolangan: nu
   const tolangan = { UZS: 0, USD: 0 };
   const qarz = { UZS: 0, USD: 0 };
   for (const item of hujjatlar) {
-    const valyuta = item.currency === "USD" ? "USD" : "UZS";
+    const valyuta = valyutaYokiAsosiy(item.currency);
     if (savdoHujjatimi(item)) aylanma[valyuta] += item.summa;
     tolangan[valyuta] += item.tolangan;
     qarz[valyuta] += item.qarz;

@@ -2,6 +2,7 @@
 // oldindan ko'rishda ildizdagi `allocated` va hujjat tafsilotidagi `allocations[]` (savdo ichki obyekt bilan) —
 // hammasi bitta `QarzTaqsimoti` ko'rinishiga keltiriladi. UI'siz, faqat tur importlari — testlarda to'g'ridan-to'g'ri ishlaydi.
 import type { QarzTaqsimoti, QarzTaqsimotQatori } from "../types/qarzTaqsimoti.ts";
+import { valyutaYokiAsosiy } from "./asosiyValyuta.ts";
 
 type Yozuv = Record<string, unknown>;
 const yozuv = (value: unknown): Yozuv => (value && typeof value === "object" && !Array.isArray(value) ? (value as Yozuv) : {});
@@ -12,7 +13,7 @@ const son = (value: unknown) => {
 const pulQiymati = (value: unknown): string | number | null => (typeof value === "string" || typeof value === "number" ? value : null);
 
 export function taqsimotValyutasi(value: unknown): "UZS" | "USD" {
-  return String(value ?? "").toUpperCase() === "USD" ? "USD" : "UZS";
+  return valyutaYokiAsosiy(value == null ? null : String(value));
 }
 
 /** Pul matni kassa formatida: so'm butun, dollar sentgacha. */

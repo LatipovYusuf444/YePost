@@ -1,6 +1,7 @@
 // Mahsulot formasi: narx va uning valyutalarini backendga yuborish/o'qish. Har bir narxning o'z valyutasi bor
 // (costCurrency / retailCurrency / wholesaleCurrency). UI yo'q — alohida sinash mumkin.
 import { narxValyutalari, type NarxValyutaManbasi, type NarxValyutasi } from "../../lib/narxValyutasi.ts";
+import { asosiyValyuta } from "../../lib/asosiyValyuta.ts";
 
 export type NarxQoralamasi = {
   costPrice: string;
@@ -23,11 +24,11 @@ export function narxYigish(qoralama?: NarxQoralamasi, yagona?: NarxValyutasi | n
   const ulgurjiKiritilgan = Boolean(qoralama.wholesalePrice);
   return {
     costPrice: Number(qoralama.costPrice || 0),
-    costCurrency: yagona ?? qoralama.costCurrency ?? "UZS",
+    costCurrency: yagona ?? qoralama.costCurrency ?? asosiyValyuta(),
     retailPrice: Number(qoralama.retailPrice || 0),
-    retailCurrency: yagona ?? qoralama.retailCurrency ?? "UZS",
+    retailCurrency: yagona ?? qoralama.retailCurrency ?? asosiyValyuta(),
     wholesalePrice: Number(qoralama.wholesalePrice || qoralama.retailPrice || 0),
-    wholesaleCurrency: yagona ?? (ulgurjiKiritilgan ? (qoralama.wholesaleCurrency ?? "UZS") : (qoralama.retailCurrency ?? "UZS")),
+    wholesaleCurrency: yagona ?? (ulgurjiKiritilgan ? (qoralama.wholesaleCurrency ?? asosiyValyuta()) : (qoralama.retailCurrency ?? asosiyValyuta())),
   };
 }
 

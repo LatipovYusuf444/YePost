@@ -131,8 +131,20 @@ export function harakatPulMatni(row: TovarHarakati, maydon: "narx" | "summa") {
   return own ?? "—";
 }
 
-export function harakatPulJami(rows: TovarHarakati[]) {
+/**
+ * Pul jami. Standart — so'mda (`summaSom`, kurs bilan o'girilgan). "Faqat dollar" rejimida (`valyuta` = "USD") — dollardagi qatorlarning
+ * o'z summasi (`summa`), kurs kerak emas; boshqa valyutadagi qator jamga qo'shilmaydi (jami to'liq emas deb belgilanadi).
+ */
+export function harakatPulJami(rows: TovarHarakati[], valyuta: "UZS" | "USD" = "UZS") {
   let kirim = 0, chiqim = 0, toliq = true;
+  if (valyuta === "USD") {
+    for (const row of rows) {
+      if (row.summa == null || row.valyuta !== "USD") { toliq = false; continue; }
+      if (harakatMiqdori(row) > 0) kirim += Math.abs(row.summa);
+      if (harakatMiqdori(row) < 0) chiqim += Math.abs(row.summa);
+    }
+    return { kirim, chiqim, toliq };
+  }
   for (const row of rows) {
     if (row.summa == null && row.summaSom == null) { toliq = false; continue; }
     if (row.summaSom == null) { toliq = false; continue; }

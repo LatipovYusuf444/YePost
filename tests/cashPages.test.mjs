@@ -12,6 +12,7 @@ import * as raqamMatni from '../src/lib/hujjatRaqamiMatni.ts';
 import * as customerBalances from '../src/lib/mijozHisobQoldigi.ts';
 import * as hisobotValyutasi from '../src/Pages/HisobotUchot/hisobotValyutasi.ts';
 import * as kassaTahriri from '../src/lib/kassaTahriri.ts';
+import * as asosiyValyutaModuli from '../src/lib/asosiyValyuta.ts';
 
 const require = createRequire(import.meta.url);
 // Haqiqiy uz tarjimalar bilan t(): kalit bo'yicha matn va {{o'zgaruvchi}} almashtirish.
@@ -48,6 +49,7 @@ function page(path, dependencies, props = {}, globals = {}, exportName = 'defaul
     // Kassa amaliyoti oynasidagi amallar (11.11.2026): router, davr yopilishi, rol va amallar mantig'i.
     if (name === '@/store/davrStore') return { useDavrStore: selector => selector({ holat: null, yuklash: async () => {} }) };
     if (name === '@/lib/kassaTahriri') return kassaTahriri;
+    if (name === '@/lib/asosiyValyuta') return asosiyValyutaModuli;
     if (name === '@/lib/roles') return { rolniNormallashtirish: value => String(value ?? '').toUpperCase() };
     if (name === 'react-router-dom') return { useSearchParams: () => [new URLSearchParams(), () => {}], useNavigate: () => () => {}, Link: 'Link' };
     return new Proxy({ __esModule: true, default: name.split('/').at(-1) }, { get(target, key) { return target[key] ?? String(key); } });
