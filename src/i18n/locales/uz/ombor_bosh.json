@@ -85,6 +85,8 @@
     "close": "Yopish",
     "title": "Yangi kirim",
     "badgeNew": "YANGI",
+    "editTitle": "Kirim hujjatini tahrirlash",
+    "badgeDraft": "QORALAMA",
     "sectionAbout": "Kirim haqida",
     "nameLabel": "Kirimni nomi",
     "namePlaceholder": "Masalan: Yangi partiya",

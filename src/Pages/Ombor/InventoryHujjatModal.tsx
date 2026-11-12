@@ -322,7 +322,7 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
     let ok = false;
     if (tur === "kirim") {
       if (!supplierId || !warehouseId) return;
-      ok = await fx.kuzat(() => store.kirimYangilash(id, {
+      ok = Boolean(await fx.kuzat(() => store.kirimYangilash(id, {
         ...tahrirSanasi(hujjatSanasi, boshlangichSana),
         supplierId,
         warehouseId,
@@ -333,7 +333,7 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
           quantity,
           price,
         })),
-      }));
+      })));
     } else if (tur === "chiqim") {
       if (!warehouseId) return;
       ok = await fx.kuzat(() => store.chiqimYangilash(id, {

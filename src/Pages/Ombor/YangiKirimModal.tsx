@@ -26,7 +26,7 @@ import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import { useOzgarishBormi } from "@/hooks/useOzgarishBormi";
 import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import HujjatSanasiMaydoni from "@/Components/common/HujjatSanasi";
-import { bugungiToshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
+import { bugungiToshkentKuni, kunMatni, tahrirSanasi, toshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useOmborStore } from "@/store/omborStore";
 import {
@@ -38,14 +38,16 @@ import {
 } from "@/api/catalogApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type { Kategoriya, OlchovBirligi } from "@/types/catalog";
-import { kodBilanTopish, modificationNomi, qoldiqMiqdori } from "./omborYordamchilari";
-import { korsatiladiganValyuta, useValyuta, useYagonaValyuta, yagonaValyuta, type Valyuta } from "@/lib/valyuta";
+import { hujjatRaqami, kodBilanTopish, modificationNomi, qoldiqMiqdori } from "./omborYordamchilari";
+import { korsatiladiganValyuta, useValyuta, useYagonaValyuta, valyutaKodi, yagonaValyuta, type Valyuta } from "@/lib/valyuta";
 import { narxValyutalari } from "@/lib/narxValyutasi";
 import { kirimElementiniYigish, kirimHujjatValyutasi, kirimNarxiniOgirish, rejimNarxi } from "./kirimValyuta";
 import { seriyaYaroqlimi } from "@/lib/ishlabChiqarish";
 import { mahsulotBirliklariApi } from "@/api/catalogApi";
 import { asosiyMiqdor, birlikTopish, koeffTekshiruvi, miqdorYaroqlimi, qabulBirliklari, type TovarBirligi } from "@/lib/kopBirlik";
-import type { KirimOgohlantirishi } from "@/types/ombor";
+import type { KirimHujjati, KirimOgohlantirishi, MahsulotModifikatsiyasi } from "@/types/ombor";
+import { birliklarniBirlashtirish, kirimIzohiniAjratish, kirimQatoriFormaga, saqlanganBirlik } from "@/lib/kirimTahriri";
+import { kirimYetkazibBeruvchiNomi } from "@/lib/kirimYetkazibBeruvchi";
 import MahsulotTanlov, { type MahsulotVarianti } from "./MahsulotTanlov";
 import ShtrixKodMaydoni, { type SkanNatijasi } from "./ShtrixKodMaydoni";
 import { asosiyValyuta } from "@/lib/asosiyValyuta";
@@ -78,6 +80,8 @@ type Qator = {
   sanash: string;
   // Miqdor maydonida yozilayotgan matn: "24." kabi tugallanmagan kasr son (raqamga aylantirilsa 0 bo'lib qolar edi) maydonda saqlanadi.
   miqdorMatni: string | null;
+  // Tahrirda saqlangan qatorning mahsulot nomi (katalog hali yuklanmagan bo'lsa ham ko'rinadi).
+  nomi?: string;
 };
 
 // Tovar birliklari bir marta olinadi (bir tovar bir nechta qatorda ham so'rovni takrorlamaydi); xatolik kesh qilinmaydi.
@@ -94,7 +98,9 @@ function tovarBirliklari(productId: string) {
   return sorov;
 }
 
-type Props = { onClose: () => void };
+// `tahrir` berilsa — oyna shu qoralama (DRAFT) bilan ochiladi va PATCH /inventory/purchases/:id bilan saqlaydi; maydonlar va qoidalar
+// yaratish bilan bir xil.
+type Props = { onClose: () => void; tahrir?: KirimHujjati };
 
 // Server xatosini maydonga bog'lash: kalit — so'rov tanasidagi yo'l (qatorlar "items.<i>.price"; faqat to'liq qatorlar yuborilgani uchun
 // tartibi ekrandagi qatorlar bilan bir xil). Yetkazib beruvchini shu oynada yaratishdagi `name` xatosi ham shu maydonga.
@@ -144,26 +150,32 @@ const input =
 const inputSm =
   "h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70";
 
-export default function YangiKirimModal({ onClose }: Props) {
+export default function YangiKirimModal({ onClose, tahrir }: Props) {
   const { t } = useTranslation("ombor_bosh");
   const store = useOmborStore();
   const { t: tm } = useTranslation("ombor_modal");
   const { kurs, kursBor } = useValyuta();
   // Bir valyutali rejim (Faqat so'm / Faqat dollar): hamma narx shu valyutada, valyuta tanlovi va kurs talabi yo'q.
   const yagona = useYagonaValyuta();
-  const [narxValyutasi, setNarxValyutasi] = useState<Valyuta>(() => korsatiladiganValyuta());
+  // Tahrirda narxlar hujjat valyutasida ko'rinadi (dollardagi kirim so'mga o'girilib ko'rsatilmaydi).
+  const [narxValyutasi, setNarxValyutasi] = useState<Valyuta>(() => (tahrir ? valyutaKodi(tahrir.currency) : korsatiladiganValyuta()));
   const amaldagiKurs = kursBor ? kurs : null;
   const birinchiOmbor =
     store.omborlar.find((item) => item.isActive !== false)?.id ?? store.omborlar[0]?.id ?? "";
 
-  const [kirimNomi, setKirimNomi] = useState(
-    t("yangiKirim.defaultName", { number: store.kirimlar.length + 1 })
+  // Tahrirda saqlangan izoh qismlari (nom, izoh, fayllar) o'z maydonlariga qaytadi.
+  const [saqlanganIzoh] = useState(() => (tahrir ? kirimIzohiniAjratish(tahrir.note) : null));
+  const [boshlangichSana] = useState(() => (tahrir ? toshkentKuni(tahrir.date ?? tahrir.createdAt) || bugungiToshkentKuni() : bugungiToshkentKuni()));
+  const [kirimNomi, setKirimNomi] = useState(() =>
+    tahrir
+      ? saqlanganIzoh?.nomi || hujjatRaqami(tahrir)
+      : t("yangiKirim.defaultName", { number: store.kirimlar.length + 1 })
   );
-  const [supplierQuery, setSupplierQuery] = useState("");
-  const [supplierId, setSupplierId] = useState("");
+  const [supplierQuery, setSupplierQuery] = useState(() => (tahrir ? kirimYetkazibBeruvchiNomi(tahrir, store.yetkazibBeruvchilar) : ""));
+  const [supplierId, setSupplierId] = useState(tahrir?.supplierId ?? "");
   const [supplierOchiq, setSupplierOchiq] = useState(false);
   const supplierRef = useRef<HTMLDivElement | null>(null);
-  const [responsibleId, setResponsibleId] = useState("");
+  const [responsibleId, setResponsibleId] = useState(tahrir?.responsibleId ?? "");
   const joriyProfil = useAuthProfileStore((state) => state.profil);
   const profilniYuklash = useAuthProfileStore((state) => state.profilniYuklash);
 
@@ -173,15 +185,18 @@ export default function YangiKirimModal({ onClose }: Props) {
 
   useEffect(() => {
     // Kirim hujjatining mas'ul xodimi har doim tizimga real kirgan
-    // foydalanuvchi bo'lishi kerak.
-    if (joriyProfil?.id) setResponsibleId(joriyProfil.id);
-  }, [joriyProfil]);
+    // foydalanuvchi bo'lishi kerak. Tahrirda saqlangan mas'ul o'zgarmaydi.
+    if (joriyProfil?.id && !tahrir?.responsibleId) setResponsibleId(joriyProfil.id);
+  }, [joriyProfil, tahrir?.responsibleId]);
 
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(saqlanganIzoh?.izoh ?? "");
   // Hujjat sanasi: bugun yoki o'tgan kun (kelajak yo'q); o'tgan kun tanlansa backend hujjatni shu kunning oxirida yozadi.
-  const [hujjatSanasi, setHujjatSanasi] = useState(() => bugungiToshkentKuni());
-  const [qatorlar, setQatorlar] = useState<Qator[]>([yangiQator(birinchiOmbor)]);
-  const ozgarishBor = useOzgarishBormi({ kirimNomi, supplierId, note, hujjatSanasi, qatorlar });
+  const [hujjatSanasi, setHujjatSanasi] = useState(boshlangichSana);
+  const [qatorlar, setQatorlar] = useState<Qator[]>(() =>
+    tahrir?.items?.length ? tahrir.items.map((item) => saqlanganQator(item)) : [yangiQator(tahrir?.warehouseId || birinchiOmbor)]
+  );
+  // Tovar birliklari fonda yuklanadi — ular foydalanuvchi o'zgarishi emas.
+  const ozgarishBor = useOzgarishBormi({ kirimNomi, supplierId, note, hujjatSanasi, qatorlar: qatorlar.map((row) => ({ ...row, birliklar: undefined })) });
   // Klaviatura bilan tez kiritish: keyingi fokus (mahsulot ro'yxati, miqdor yoki tannarx maydoni).
   const { t: tk } = useTranslation("ombor_kichik");
   const [fokus, setFokus] = useState<{ qatorId: string; maydon: "mahsulot" | "miqdor" | "narx"; n: number } | null>(null);
@@ -209,7 +224,24 @@ export default function YangiKirimModal({ onClose }: Props) {
   const fx = useMaydonXatolari(KIRIM_XATO_QOIDALARI);
   const [ogohlantirishlar,setOgohlantirishlar] = useState<KirimOgohlantirishi[]>([]);
   const [yaratishOchiqUchun, setYaratishOchiqUchun] = useState<string | null>(null);
-  const [fayllar, setFayllar] = useState<Fayl[]>([]);
+  const [fayllar, setFayllar] = useState<Fayl[]>(saqlanganIzoh?.fayllar ?? []);
+
+  // Tahrir: saqlangan qatorlarning birliklari (pochka, qop) yuklanadi — birlikda kiritilgan qator o'z birligida ko'rinadi.
+  useEffect(() => {
+    if (!tahrir?.items?.length) return;
+    let faol = true;
+    tahrir.items.forEach((item, index) => {
+      const productId = store.modifikatsiyalar.find((mod) => mod.id === item.modificationId)?.productId ?? item.modification?.productId;
+      const qatorId = qatorlar[index]?.id;
+      if (!productId || !qatorId) return;
+      void tovarBirliklari(productId).then((birliklar) => {
+        if (faol) yangilash(qatorId, { birliklar: birliklarniBirlashtirish(birliklar, saqlanganBirlik(item)) });
+      });
+    });
+    return () => { faol = false; };
+    // Faqat oyna ochilganda bir marta.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [faylYuklanmoqda, setFaylYuklanmoqda] = useState(false);
   const faylInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -339,6 +371,12 @@ export default function YangiKirimModal({ onClose }: Props) {
 
   function mahsulotTanlash(id: string, modificationId: string) {
     const mod = store.modifikatsiyalar.find((item) => item.id === modificationId);
+    yangilash(id, katalogQiymatlari(modificationId, mod));
+    if (mod?.productId) void tovarBirliklari(mod.productId).then((birliklar) => yangilash(id, { birliklar }));
+  }
+
+  // Tanlangan mahsulotning katalogdagi narxlari (tannarx, chakana, ulgurji) va ularning valyutalari.
+  function katalogQiymatlari(modificationId: string, mod?: MahsulotModifikatsiyasi): Partial<Qator> {
     const valyutalar = narxValyutalari(mod?.price);
     // Bir valyutali rejimda narxlar rejim valyutasida (boshqa valyutadagi eski narx kurs bo'lsa o'giriladi); ikki valyutada — o'zgarishsiz.
     const tan = rejimNarxi(Number(mod?.price?.costPrice ?? 0), valyutalar.cost, yagona, amaldagiKurs);
@@ -347,7 +385,7 @@ export default function YangiKirimModal({ onClose }: Props) {
     const cost = tan.qiymat;
     const retail = chakana.qiymat;
     const wholesale = ulgurji.qiymat;
-    yangilash(id, {
+    return {
       modificationId,
       serial: "",
       price: cost ? String(cost) : "",
@@ -364,8 +402,25 @@ export default function YangiKirimModal({ onClose }: Props) {
       birliklar: [],
       birlikId: "",
       sanash: "",
-    });
-    if (mod?.productId) void tovarBirliklari(mod.productId).then((birliklar) => yangilash(id, { birliklar }));
+    };
+  }
+
+  // Saqlangan qoralama qatori forma qatoriga: son va narx saqlangan birlikda, narx hujjat valyutasida; chakana/ulgurji — katalogdan.
+  function saqlanganQator(item: NonNullable<KirimHujjati["items"]>[number]): Qator {
+    const mod = store.modifikatsiyalar.find((m) => m.id === item.modificationId) ?? item.modification;
+    const forma = kirimQatoriFormaga(item);
+    return {
+      ...yangiQator(tahrir?.warehouseId || birinchiOmbor),
+      ...katalogQiymatlari(item.modificationId, mod),
+      quantity: forma.quantity,
+      price: String(forma.price),
+      currency: yagona ?? valyutaKodi(tahrir?.currency),
+      // Birliklar yuklanguncha saqlangan birlik qatorda turadi (`unitId` yo'qolmaydi).
+      birliklar: birliklarniBirlashtirish([], saqlanganBirlik(item)),
+      birlikId: forma.birlikId,
+      serial: forma.serial,
+      nomi: mod ? modificationNomi(mod) : undefined,
+    };
   }
 
   // Qabul birligini almashtirish: tannarx yangi birlikdagi narxga (asosiy narx × koeffitsient) o'tadi.
@@ -499,8 +554,7 @@ export default function YangiKirimModal({ onClose }: Props) {
     // Ikki valyuta rejimida: hamma qator dollarda bo'lsa hujjat USD da, narxlar asl holida (K7). Bir valyutali rejimda — doim rejim
     // valyutasi (boshqasini backend `errors.currency.not_allowed` bilan rad etadi).
     const hujjatValyutasi = yagona ?? kirimHujjatValyutasi(valid);
-    const hujjat = await fx.kuzat(() => store.kirimYaratish({
-      ...yangiHujjatSanasi(hujjatSanasi),
+    const tana = {
       currency: hujjatValyutasi,
       supplierId,
       warehouseId: valid[0].warehouseId,
@@ -510,7 +564,11 @@ export default function YangiKirimModal({ onClose }: Props) {
         const { birlik, sanashBirligi } = qatorBirliklari(row);
         return kirimElementiniYigish({ ...row, birlik, sanashBirligi, sanashSoni: Number(row.sanash) || 0 }, amaldagiKurs, hujjatValyutasi);
       }),
-    }));
+    };
+    // Tahrirda (PATCH) qatorlar to'liq almashadi; sana faqat o'zgartirilgan bo'lsa yuboriladi.
+    const hujjat = tahrir
+      ? await fx.kuzat(() => store.kirimYangilash(tahrir.id, { ...tahrirSanasi(hujjatSanasi, boshlangichSana), ...tana }))
+      : await fx.kuzat(() => store.kirimYaratish({ ...yangiHujjatSanasi(hujjatSanasi), ...tana }));
     if (!hujjat) return;
 
     const narxOzgarganlar = valid.filter((row) => {
@@ -560,8 +618,8 @@ export default function YangiKirimModal({ onClose }: Props) {
       <div className="flex min-h-0 w-full flex-col overflow-hidden rounded-[32px] border border-orange-100 bg-[#F8FAFC] shadow-[0_28px_90px_rgba(15,23,42,.32)]">
         <header className="flex shrink-0 items-center border-b border-orange-100 bg-white/75 px-5 py-4 sm:px-8">
           <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{t("yangiKirim.title")}</h2>
-            <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-black text-orange-500">{t("yangiKirim.badgeNew")}</span>
+            <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{tahrir ? t("yangiKirim.editTitle") : t("yangiKirim.title")}</h2>
+            <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-black text-orange-500">{tahrir ? t("yangiKirim.badgeDraft") : t("yangiKirim.badgeNew")}</span>
           </div>
         </header>
 
@@ -713,7 +771,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                   <span className="mt-1.5 h-2.5 w-2.5 rounded-full bg-orange-500" />
                   <div>
                     <p className="font-bold text-slate-700">{t("yangiKirim.historyDraftCreated")}</p>
-                    <p className="text-xs font-semibold text-slate-400">{bugun}</p>
+                    <p className="text-xs font-semibold text-slate-400">{tahrir ? kunMatni(tahrir.createdAt ?? tahrir.date) : bugun}</p>
                   </div>
                 </div>
               </section>
@@ -879,7 +937,7 @@ export default function YangiKirimModal({ onClose }: Props) {
                         }}
                         placeholder={t("yangiKirim.table.selectProductOption")}
                         className={inputSm}
-                        tanlanganNomi={mod ? modificationNomi(mod) : undefined}
+                        tanlanganNomi={mod ? modificationNomi(mod) : row.nomi}
                         ochishSorovi={fokus?.maydon === "mahsulot" && fokus.qatorId === row.id ? fokus.n : 0}
                       />
                       </XatoliMaydon>

@@ -85,6 +85,8 @@
     "close": "Закрыть",
     "title": "Новый приход",
     "badgeNew": "НОВЫЙ",
+    "editTitle": "Редактирование прихода",
+    "badgeDraft": "ЧЕРНОВИК",
     "sectionAbout": "О приходе",
     "nameLabel": "Название прихода",
     "namePlaceholder": "Например: Новая партия",

@@ -130,6 +130,7 @@
     "confirmButton": "Tasdiqlash",
     "cancelButton": "Bekor qilish",
     "loadError": "Kirim hujjatini backenddan olib bo'lmadi.",
+    "editButton": "Tahrirlash",
     "closeButton": "Yopish",
     "aboutSection": "Kirim haqida",
     "totalAmount": "Umumiy summa",

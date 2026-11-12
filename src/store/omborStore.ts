@@ -80,7 +80,8 @@ type OmborState = {
   yetkazibBeruvchiYaratish: (data: { name: string; phone?: string }) => Promise<boolean>;
   kirimYaratish: (data: KirimYaratishMalumoti) => Promise<KirimHujjati | null>;
   kirimOlish: (id: string) => Promise<KirimHujjati | null>;
-  kirimYangilash: (id: string, data: Partial<KirimYaratishMalumoti>) => Promise<boolean>;
+  // Saqlangan hujjat (javobdagi `warnings` bilan) yoki xato bo'lsa null.
+  kirimYangilash: (id: string, data: Partial<KirimYaratishMalumoti>) => Promise<KirimHujjati | null>;
   kirimTasdiqlash: (id: string) => Promise<boolean>;
   kirimBekorQilish: (id: string) => Promise<boolean>;
   kirimOchirish: (id: string) => Promise<boolean>;
@@ -566,10 +567,10 @@ export const useOmborStore = create<OmborState>((set, get) => ({
         kirimlar: hujjatniAlmashtirish(state.kirimlar, hujjat),
         amalBajarilmoqda: false,
       }));
-      return true;
+      return hujjat;
     } catch (error) {
       set({ amalBajarilmoqda: false, xatolik: getApiErrorMessage(error) });
-      return false;
+      return null;
     }
   },
   kirimTasdiqlash: async (id) => {

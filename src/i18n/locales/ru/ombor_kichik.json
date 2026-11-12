@@ -130,6 +130,7 @@
     "confirmButton": "Подтвердить",
     "cancelButton": "Отменить",
     "loadError": "Не удалось получить приходный документ с сервера.",
+    "editButton": "Редактировать",
     "closeButton": "Закрыть",
     "aboutSection": "О приходе",
     "totalAmount": "Общая сумма",

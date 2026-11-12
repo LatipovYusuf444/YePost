@@ -3,14 +3,15 @@ import { useHisobotQatori } from "@/hooks/useHisobotQatori";
 import type { HujjatQatoriTanlovi, HujjatHisobotManbasi } from "@/lib/hujjatQatoriTanlovi";
 import SmartTable from "@/Components/common/smart-table/SmartTable";
 import { useEffect, useMemo, useState } from "react";
-import { Ban, CheckCircle2, FileText, LoaderCircle, RotateCcw } from "lucide-react";
+import { Ban, CheckCircle2, FileText, LoaderCircle, PenLine, RotateCcw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { qatorMiqdoriMatni } from "@/lib/kopBirlik";
 import AppModal from "@/Components/common/AppModal";
 import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import { useOmborStore } from "@/store/omborStore";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
-import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
+import { useHujjatniBekorQilishMumkinmi, useHujjatniOchirishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
+import YangiKirimModal from "./YangiKirimModal";
 import type { KirimHujjati, MahsulotModifikatsiyasi } from "@/types/ombor";
 import { valyutaKodi } from "@/lib/valyuta";
 import { narxValyutalari } from "@/lib/narxValyutasi";
@@ -49,6 +50,9 @@ function notedanQismlar(note?: string) {
 export default function KirimTafsilotModal({ id, onClose, ajratilganQator, hisobotManbasi }: Props) {
   const ajratish = useHisobotQatori(ajratilganQator);
   const bekorMumkin = useHujjatniBekorQilishMumkinmi("ombor");
+  // Qoralamani tahrirlash (PATCH /inventory/purchases/:id): omborchi, admin, direktor; tasdiqlangan hujjat tahrirlanmaydi.
+  const tahrirMumkin = useHujjatniOchirishMumkinmi("ombor");
+  const [tahrirOchiq, setTahrirOchiq] = useState(false);
   const { t } = useTranslation("ombor_kichik");
   const store = useOmborStore();
   const kirimOlish = useOmborStore((state) => state.kirimOlish);
@@ -96,6 +100,11 @@ export default function KirimTafsilotModal({ id, onClose, ajratilganQator, hisob
     await qaytaYuklash();
   }
 
+  // Tahrir "Yangi kirim" oynasining o'zida (qoralama qiymatlari bilan); saqlangach yoki yopilgach hujjat qayta o'qiladi.
+  if (tahrirOchiq && hujjat) {
+    return <YangiKirimModal tahrir={hujjat} onClose={() => { setTahrirOchiq(false); void qaytaYuklash(); }} />;
+  }
+
   return <AppModal onClose={onClose} className="sidebar-aligned-document-modal items-stretch p-3 sm:p-5">
     <div className="flex min-h-0 w-full flex-col overflow-hidden rounded-[32px] border border-orange-100 bg-[#F8FAFC] shadow-[0_28px_90px_rgba(15,23,42,.34)]">
       <header className="flex shrink-0 flex-col gap-3 border-b border-orange-100 bg-white/75 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
@@ -106,6 +115,7 @@ export default function KirimTafsilotModal({ id, onClose, ajratilganQator, hisob
           {hujjat && <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-black uppercase ${statusSinfi(hujjat.status)}`}>{holat(hujjat.status)}</span>}
         </div>
         <div className="flex items-center justify-end gap-2">
+          {hujjat && status === "DRAFT" && tahrirMumkin && <button type="button" onClick={() => { store.xatolikniTozalash(); setTahrirOchiq(true); }} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl border border-orange-200 bg-white px-5 text-sm font-black text-orange-600 shadow-sm hover:bg-orange-50 disabled:opacity-50"><PenLine size={17}/>{t("kirimTafsilotModal.editButton")}</button>}
           {hujjat && status === "DRAFT" && <button type="button" onClick={() => void tasdiqlash()} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-emerald-600 px-5 text-sm font-black text-white shadow-lg shadow-emerald-100 disabled:opacity-50">{store.amalBajarilmoqda ? <LoaderCircle size={17} className="animate-spin"/> : <CheckCircle2 size={17}/>}{t("kirimTafsilotModal.confirmButton")}</button>}
           {hujjat && status === "CONFIRMED" && bekorMumkin && <button type="button" onClick={() => setBekorSorash(true)} disabled={store.amalBajarilmoqda} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-slate-700 px-5 text-sm font-black text-white shadow-lg shadow-slate-200 disabled:opacity-50"><RotateCcw size={17}/>{t("kirimTafsilotModal.cancelButton")}</button>}
         </div>
