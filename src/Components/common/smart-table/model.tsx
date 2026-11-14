@@ -6,6 +6,8 @@ export type NodeProps = {
   hidden?: boolean;
   "data-column-id"?: string; "data-table-control"?: boolean; "aria-label"?: string; title?: string;
   "data-default-hidden"?: boolean;
+  // Majburiy ustun (masalan Mahsulot, Soni): "Ustunlar" panelida o'chirib bo'lmaydi.
+  "data-required"?: boolean;
 };
 export type TableNode = ReactElement<NodeProps>;
 
@@ -30,7 +32,7 @@ export function analyzeTable(table: TableNode, actionLabel = "Amallar") {
   let compatible = cells.length > 0 && cells.every(c => tag(c) === "th" && (c.props.colSpan ?? 1) === 1 && (c.props.rowSpan ?? 1) === 1);
   const columns: TableColumn[] = cells.map((cell, index) => {
     const label = plainText(cell.props.children) || cell.props["aria-label"] || actionLabel;
-    const required = !plainText(cell.props.children) || /^(amal(?:lar)?|действи[ея]|actions?)$/i.test(label);
+    const required = Boolean(cell.props["data-required"]) || !plainText(cell.props.children) || /^(amal(?:lar)?|действи[ея]|actions?)$/i.test(label);
     const className = cell.props.className ?? "";
     return { id: cell.props["data-column-id"] ?? (cell.key ? String(cell.key) : `column-${index}`), label, required,
       min: required ? 48 : 80, max: required ? 240 : 800,

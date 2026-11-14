@@ -1,4 +1,5 @@
 import HisobotHavolasi from "@/Components/common/HisobotHavolasi";
+import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
 import { useHisobotQatori } from "@/hooks/useHisobotQatori";
 import type { HujjatQatoriTanlovi, HujjatHisobotManbasi } from "@/lib/hujjatQatoriTanlovi";
 import SmartTable from "@/Components/common/smart-table/SmartTable";
@@ -126,6 +127,9 @@ import SotuvOmbordanChiqqanlar from "./SotuvOmbordanChiqqanlar";
 import OmbordanChiqqanlarOynasi, { OmbordanChiqqanlarHavolasi } from "./OmbordanChiqqanlarOynasi";
 import YangiSotuvModal from "./YangiSotuvModal";
 import QoralamaTovarlarTahriri from "./QoralamaTovarlarTahriri";
+import MahsulotKartasiOynasi from "@/Components/common/MahsulotKartasiOynasi";
+import { yetmaydiganTovarlar, type Yetishmovchilik } from "@/lib/qoralamaQoldigi";
+import TolovTuriBelgisi from "@/Components/common/TolovTuriBelgisi";
 import BoshlangichQarzTafsilotlariModal from "@/Pages/XaridorUchot/BoshlangichQarzTafsilotlariModal";
 
 import ModalTablari from "@/Components/common/ModalTablari";
@@ -2273,9 +2277,10 @@ function TolovQabulQilishModal({
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {mavjudTolovlar.map((tolov, index) => (
-                    <span
+                    <TolovTuriBelgisi
                       key={tolov.id ?? `${tolov.paymentType}-${index}`}
-                      className="rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold text-[#2563EB]"
+                      turi={tolov.paymentType}
+                      className="rounded-full px-3.5 py-1.5"
                     >
                       {tolovTuriMatni[tolov.paymentType]}: {pulniFormatlash(tolov.amount, tolovValyutasi(tolov, sotuv))}
                       {kunMatni(tolov.date ?? tolov.paidAt ?? tolov.createdAt) && (
@@ -2299,7 +2304,7 @@ function TolovQabulQilishModal({
                       {(tolov.fromAccount || tolov.cashOperationId) && (
                         <span className="ml-1.5 font-semibold text-violet-600">· {t(tolov.fromAccount ? "tolovQatori.hisobdanAvto" : "tolovQatori.kassadan")}</span>
                       )}
-                    </span>
+                    </TolovTuriBelgisi>
                   ))}
                 </div>
               </div>
@@ -2317,7 +2322,8 @@ function TolovQabulQilishModal({
                       className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-2.5 ring-1 ring-slate-100"
                     >
                       <div className="min-w-0 text-sm font-bold text-slate-700">
-                        {tolovTuriMatni[qator.paymentType]}: {pulniFormatlash(qator.amount, qator.currency)}
+                        <TolovTuriBelgisi turi={qator.paymentType}>{tolovTuriMatni[qator.paymentType]}</TolovTuriBelgisi>{" "}
+                        {pulniFormatlash(qator.amount, qator.currency)}
                         {qator.currency !== sotuvVal && (
                           <span className="ml-2 text-xs font-semibold text-slate-400">
                             ≈ {pulniFormatlash(sotuvValyutasigaOgirish(qator.amount, qator.currency, qator.rate ?? kurs), sotuvVal)}
@@ -3053,6 +3059,7 @@ function TovarlarTab({
 }) {
   const { t } = useTranslation("savdo_tafsilot");
   const ajratish = useHisobotQatori(ajratilganQator);
+  const canSellNegative = useInventorySettingsStore((s) => s.canSellNegative);
   const items = sotuv.items ?? [];
   const backendJami = sotuvSummasi(sotuv);
   const qatorlarJami = qatorlarYigindisi(sotuv, items, mahsulotJami, backendJami);
@@ -3089,6 +3096,8 @@ function TovarlarTab({
     title: string;
     subtitle: string;
   } | null>(null);
+  // Mahsulot nomi bosilganda mahsulot kartasi (ruxsat bo'lsa tahrirlanadi, aks holda faqat ko'rish).
+  const [mahsulotKartasi, setMahsulotKartasi] = useState<{ modificationId: string; productId: string | null } | null>(null);
   const [mahsulotPopover, setMahsulotPopover] = useState<{
     key: string;
     left: number;
@@ -3178,12 +3187,8 @@ function TovarlarTab({
     return {
       mahsulot: !qator.modificationId ? t("tovarlarTab.errors.mahsulotniTanlang") : "",
       narx: qator.price <= 0 ? t("tovarlarTab.errors.narxKatta") : "",
-      miqdor:
-        qator.quantity <= 0
-          ? t("tovarlarTab.errors.miqdorKatta")
-          : qator.availableQty > 0 && qator.quantity > qator.availableQty
-            ? t("tovarlarTab.errors.miqdorOshmasin", { qty: formatlanganRaqam(qator.availableQty) })
-            : "",
+      // Qoralamada qoldiq tekshirilmaydi (faqat "Ombordan chiqarish"da): qoldiqdan oshsa — ogohlantirish (`qoldiqOgohlantirishi`).
+      miqdor: qator.quantity <= 0 ? t("tovarlarTab.errors.miqdorKatta") : "",
       ombor: !qator.warehouseName ? t("tovarlarTab.errors.omborniTanlang") : "",
       chegirma:
         qator.discount > 0 && qator.discount > qator.quantity * qator.price
@@ -3314,6 +3319,82 @@ function TovarlarTab({
         </div>
       )}
       <section className="rounded-2xl bg-white shadow-sm">
+        {/* Saqlangan qatorlar — ixcham jadval (ko'rish rejimi, inputlar yo'q). Kam ishlatiladigan ustunlar (shtrix kod, qoldiq, rezerv,
+            ombordan chiqqan) "Ustunlar" menyusida; tanlov foydalanuvchi uchun saqlanadi. 10 tadan ko'p qatorda faqat tana aylanadi. */}
+        {items.length > 0 && (
+          <div data-testid="sotuv-tovarlar-jadvali" className={items.length > 10 ? "max-h-[520px] overflow-auto" : "overflow-x-auto"}>
+            <SmartTable tableId="Savdo/SotuvTafsilotlari/tovarlar" replaceColumnControls>
+              <table className="w-full text-left text-sm">
+                <thead className="sticky top-0 z-[5] bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th data-column-id="raqam" className="w-10 px-3 py-2.5">{t("tovarlarTab.jadval.raqam")}</th>
+                    <th data-column-id="mahsulot" data-required className="px-3 py-2.5">{t("common.jadval.mahsulot")}</th>
+                    <th data-column-id="shtrix" data-default-hidden className="px-3 py-2.5">{t("tovarlarTab.jadval.shtrix")}</th>
+                    <th data-column-id="soni" data-required className="px-3 py-2.5 text-right">{t("common.jadval.miqdor")}</th>
+                    <th data-column-id="narx" className="px-3 py-2.5 text-right">{t("common.jadval.narx")}</th>
+                    <th data-column-id="chegirma" className="px-3 py-2.5 text-right">{t("tovarlarTab.jadval.chegirma")}</th>
+                    <th data-column-id="summa" className="px-3 py-2.5 text-right">{t("common.jadval.summa")}</th>
+                    <th data-column-id="ombor" className="px-3 py-2.5">{t("common.jadval.ombor")}</th>
+                    <th data-column-id="qoldiq" data-default-hidden className="px-3 py-2.5 text-right">{t("common.jadval.mavjudQoldiq")}</th>
+                    <th data-column-id="rezerv" data-default-hidden className="px-3 py-2.5 text-right">{t("common.jadval.rezervda")}</th>
+                    <th data-column-id="chiqdi" data-default-hidden className="px-3 py-2.5 text-right">{t("common.jadval.ombordanChiqdi")}</th>
+                  </tr>
+                </thead>
+                <tbody className="text-slate-700">
+                  {items.map((item, index) => {
+                    const valyuta = qatorValyutasi(item, sotuv);
+                    const birlikda = qatorBirligida(item);
+                    const chegirma = son(item.discount);
+                    const itemQoldiq = itemQoldiginiTopish(item);
+                    const productId = item.modification?.product?.id ?? null;
+                    // Shtrix kod: javobdagi variantda yoki ombor qoldig'idagi variantda.
+                    const shtrix = (item.modification as { barcode?: string | null } | undefined)?.barcode || itemQoldiq?.modification?.barcode;
+                    return (
+                      <tr {...ajratish(item)} key={item.id ?? `${item.modificationId}-${index}`} className="h-10 hover:bg-orange-50/40">
+                        <td className="px-3 py-2 text-slate-400 tabular-nums">{index + 1}</td>
+                        <td className="max-w-[320px] px-3 py-2">
+                          <button
+                            type="button"
+                            onClick={() => setMahsulotKartasi({ modificationId: item.modificationId, productId })}
+                            className="max-w-full truncate text-left font-semibold text-slate-800 hover:text-[#2563EB] hover:underline"
+                            title={mahsulotNomi(item, t)}
+                          >
+                            {mahsulotNomi(item, t)}
+                          </button>
+                          <NegativeStockBadge wentNegative={item.wentNegative} costEstimated={item.costEstimated} />
+                        </td>
+                        <td className="px-3 py-2 text-slate-500 tabular-nums">{shtrix || "—"}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{birlikda.miqdor} <span className="text-slate-400">{birlikda.birlik ?? t("common.dona")}</span></td>
+                        <td className="px-3 py-2 text-right tabular-nums">{pulniFormatlash(birlikda.narx, valyuta)}</td>
+                        <td className={`px-3 py-2 text-right tabular-nums ${chegirma > 0 ? "font-semibold text-lime-700" : "text-slate-300"}`}>{chegirma > 0 ? `−${pulniFormatlash(chegirma, valyuta)}` : "—"}</td>
+                        <td className="px-3 py-2 text-right font-bold tabular-nums text-emerald-700">{pulniFormatlash(mahsulotJami(item), valyuta)}</td>
+                        <td className="px-3 py-2 text-slate-600">{itemQoldiq?.warehouse?.name || omborNomi}</td>
+                        <td className="px-3 py-2 text-right tabular-nums"><StockQuantity value={itemQoldiq ? qoldiqMiqdori(itemQoldiq) : 0} /> {t("common.dona")}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{tasdiqlangan ? 0 : item.quantity}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{tasdiqlangan ? item.quantity : 0} {t("common.dona")}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan={11} className="bg-slate-50 px-3 py-2.5 text-right text-sm font-bold text-slate-700">
+                      {t("tovarlarTab.jamiQatori", {
+                        soni: items.reduce((summa, item) => summa + son(item.quantity), 0).toLocaleString("uz-UZ", { maximumFractionDigits: 3 }),
+                        birlik: t("common.dona"),
+                        chegirma: pulniFormatlash(qatorlarYigindisi(sotuv, items, (item) => son(item.discount), sotuvChegirmaSummasi(sotuv)), sotuvValyutasi(sotuv)),
+                        jami: pulniFormatlash(jami, sotuvValyutasi(sotuv)),
+                      })}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </SmartTable>
+          </div>
+        )}
+
+        {/* Qo'shilayotgan (hali saqlanmagan) qatorlar — tahrirlash formasi. */}
+        {yangiQatorlar.length > 0 && (
         <div className="overflow-x-auto">
           <div className="min-w-[1870px]">
             <div className={`grid ${jadvalUstunlari} gap-x-5 border-b border-slate-200 bg-white px-7 py-5 text-sm text-slate-600`}>
@@ -3327,76 +3408,6 @@ function TovarlarTab({
               <span>{t("common.jadval.ombordanChiqdi")}</span>
               <span>{t("common.jadval.summa")}</span>
             </div>
-
-            {items.map((item, index) => {
-              const itemJami = mahsulotJami(item);
-              const itemNarxi = qatorBirligida(item).narx;
-              const ombordanChiqdi = tasdiqlangan ? item.quantity : 0;
-              const rezerv = tasdiqlangan ? 0 : item.quantity;
-              const omborKey = item.id ?? `${item.modificationId}-${index}`;
-              const itemQoldiq = itemQoldiginiTopish(item);
-              const mavjudQoldiq = itemQoldiq ? qoldiqMiqdori(itemQoldiq) : 0;
-              const itemOmborNomi = itemQoldiq?.warehouse?.name || omborNomi;
-              const itemOmborManzili = itemQoldiq?.warehouse?.address || omborManzili;
-
-              return (
-                <div
-                  {...ajratish(item)}
-                  key={omborKey}
-                  className={`grid ${jadvalUstunlari} items-center gap-x-5 border-b border-slate-100 px-7 py-4 text-sm text-slate-700`}
-                >
-                  <div className="flex items-center gap-4 text-slate-400">
-                    <span className="text-lg">☰</span>
-                    <span>{index + 1}.</span>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-12 min-w-0 flex-1 items-center rounded-md border border-slate-300 bg-white px-3">
-                      <span className="min-w-0 flex-1 truncate text-slate-800">{mahsulotNomi(item, t)}<NegativeStockBadge wentNegative={item.wentNegative} costEstimated={item.costEstimated} /></span>
-                      <ChevronDown size={18} className="-rotate-90 text-slate-400" />
-                    </div>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-md border border-dashed border-sky-300 text-slate-400">
-                      <ImageIcon size={19} />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex h-12 items-center justify-end rounded-md border border-slate-300 bg-white px-3">
-                      {pulniFormatlash(itemNarxi, qatorValyutasi(item, sotuv))}
-                    </div>
-                    {son(item.discount) > 0 && (
-                      <span className="mt-1 block text-right text-xs font-semibold text-lime-700">
-                        {t("tovarlarTab.chegirmaQatori", { summa: pulniFormatlash(son(item.discount), qatorValyutasi(item, sotuv)) })}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex h-12 items-center justify-end gap-2 rounded-md border border-slate-300 bg-white px-3">
-                    <span>{qatorBirligida(item).miqdor}</span>
-                    <span className="text-slate-400">{qatorBirligida(item).birlik ?? t("common.dona")}</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={(event) => omborPopupOchish(omborKey, event.currentTarget, mavjudQoldiq, itemOmborNomi, itemOmborManzili)}
-                    className="flex h-12 w-full items-center gap-3 rounded-md border border-slate-300 bg-white px-3 text-left transition hover:border-orange-300 focus:border-orange-400 focus:ring-4 focus:ring-orange-500/10"
-                  >
-                    <span className="min-w-0 flex-1 truncate">{itemOmborNomi}</span>
-                    <Search size={18} className="text-slate-500" />
-                  </button>
-
-                  <span className="text-[#2563EB] underline underline-offset-4">{<StockQuantity value={mavjudQoldiq} />} {t("common.dona")}</span>
-
-                  <div>
-                    <div className="flex h-12 items-center justify-end rounded-md border border-slate-300 bg-white px-3">{rezerv}</div>
-                    {!tasdiqlangan && <span className="mt-1 block text-right text-xs text-[#2563EB] underline underline-offset-4">{t("tovarlarTab.qoralama")}</span>}
-                  </div>
-
-                  <span>{ombordanChiqdi} {t("common.dona")}</span>
-                  <span className="font-bold text-emerald-600">{pulniFormatlash(itemJami, qatorValyutasi(item, sotuv))}</span>
-                </div>
-              );
-            })}
 
             {yangiQatorlar.map((qator, index) => {
               const qatorNomi = yangiQatorNomi(qator);
@@ -3514,6 +3525,11 @@ function TovarlarTab({
                     {korinadigan.miqdor && (
                       <p data-maydon-xato="true" className="mt-1.5 text-xs font-semibold text-red-500">{korinadigan.miqdor}</p>
                     )}
+                    {!korinadigan.miqdor && !canSellNegative && qator.modificationId && qator.quantity > qator.availableQty && (
+                      <p data-qoldiq-ogohlantirish className="mt-1.5 text-xs font-semibold leading-4 text-amber-700">
+                        ⚠ {t("tovarlarTab.qoldiqOgohlantirish", { mavjud: formatlanganRaqam(qator.availableQty) || "0", soralgan: formatlanganRaqam(qator.quantity) })}
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -3557,11 +3573,13 @@ function TovarlarTab({
               );
             })}
 
-            {items.length === 0 && yangiQatorlar.length === 0 && (
-              <div className="px-7 py-20 text-center text-slate-400">{t("tovarlarTab.mahsulotYoq")}</div>
-            )}
           </div>
         </div>
+        )}
+
+        {items.length === 0 && yangiQatorlar.length === 0 && (
+          <div className="px-7 py-20 text-center text-slate-400">{t("tovarlarTab.mahsulotYoq")}</div>
+        )}
 
         <div className="border-t border-slate-100 px-7 py-8">
           <div className="ml-auto max-w-md space-y-4 text-right text-slate-600">
@@ -3576,6 +3594,10 @@ function TovarlarTab({
           </div>
         </div>
       </section>
+
+      {mahsulotKartasi && (
+        <MahsulotKartasiOynasi modificationId={mahsulotKartasi.modificationId} productId={mahsulotKartasi.productId} onYopish={() => setMahsulotKartasi(null)} />
+      )}
 
       {mahsulotPopover && (
         <>
@@ -4226,6 +4248,8 @@ function OmbordanChiqarishHujjatMazmuni({
   const sotuvniHaqiqiyTasdiqlash = useSavdoStore((state) => state.sotuvniTasdiqlash);
   const [ombordanChiqarishTasdiqlanmoqda, setOmbordanChiqarishTasdiqlanmoqda] = useState(false);
   const [ombordanChiqarishXatosi, setOmbordanChiqarishXatosi] = useState("");
+  // "Manfiy qoldiqqa ruxsat" o'chiq bo'lsa: qoldiq yetmaydigan tovarlar ro'yxati (chiqarish bajarilmaydi, qoralama o'zgarmaydi).
+  const [yetmaydiganlar, setYetmaydiganlar] = useState<Yetishmovchilik[]>([]);
   const [yaqindaTasdiqlandi, setYaqindaTasdiqlandi] = useState(false);
 
   // Qoralama hujjatni shu oynaning o'zida tahrirlash: barcha mahsulotlar (qo'shish, almashtirish, o'chirish, miqdor, narx, chegirma).
@@ -4267,12 +4291,40 @@ function OmbordanChiqarishHujjatMazmuni({
     return muvaffaqiyatli;
   }
 
+  // Qoralamaning ombordagi yetishmovchiligi (shu sotuv ombori, eng yangi qoldiq bo'yicha). `nomalumNol` — qoldiq yozuvi yo'q tovar 0 deb
+  // olinadi (backend rad etgandan keyin sababini ko'rsatish uchun); aks holda bunday tovarni backend tekshiradi.
+  function yetishmovchilikHisobi(nomalumNol: boolean) {
+    const omborId = sotuv.warehouseId ?? sotuv.warehouse?.id;
+    const royxat = useSavdoStore.getState().qoldiqlar;
+    return yetmaydiganTovarlar(
+      items.map((item) => ({ modificationId: item.modificationId, quantity: item.quantity, nom: mahsulotNomi(item, t) })),
+      (modificationId) => {
+        const qoldiq = royxat.find((q) => q.modificationId === modificationId && (!omborId || q.warehouseId === omborId || q.warehouse?.id === omborId));
+        return qoldiq ? qoldiqMiqdori(qoldiq) : nomalumNol ? 0 : null;
+      }
+    );
+  }
+
   async function ombordanChiqarishniTasdiqlash() {
     setOmbordanChiqarishXatosi("");
+    setYetmaydiganlar([]);
     setOmbordanChiqarishTasdiqlanmoqda(true);
+    // Qoldiq faqat shu yerda tekshiriladi (qoralama saqlashda emas): ruxsat o'chiq bo'lsa, qoldiq yetmasa chiqarish bajarilmaydi.
+    const ruxsatYoq = !useInventorySettingsStore.getState().canSellNegative;
+    if (ruxsatYoq) {
+      await qoldiqlarniYuklash(sotuv.warehouseId ?? sotuv.warehouse?.id);
+      const yetmaydi = yetishmovchilikHisobi(false);
+      if (yetmaydi.length > 0) {
+        setYetmaydiganlar(yetmaydi);
+        setOmbordanChiqarishTasdiqlanmoqda(false);
+        return;
+      }
+    }
     const muvaffaqiyatli = await sotuvniHaqiqiyTasdiqlash(sotuv.id);
     setOmbordanChiqarishTasdiqlanmoqda(false);
     if (!muvaffaqiyatli) {
+      // Backend qoldiq yetmasligi sababli rad etgan bo'lsa (errors.inventory.out_of_stock) — qaysi tovar yetmayotgani ham ko'rsatiladi.
+      if (ruxsatYoq) setYetmaydiganlar(yetishmovchilikHisobi(true));
       setOmbordanChiqarishXatosi(
         useSavdoStore.getState().xatolik || t("ombordanChiqarish.tasdiqlabBolmadi")
       );
@@ -4392,6 +4444,23 @@ function OmbordanChiqarishHujjatMazmuni({
                       <p className="mt-3 max-w-2xl rounded-xl border border-amber-200 bg-amber-50/80 px-3.5 py-2.5 text-xs leading-5 text-amber-800">
                         {tahrirdaMi ? t("ombordanChiqarish.tahrirdaTasdiqlab") : t("ombordanChiqarish.tasdiqlanmaguncha")}
                       </p>
+                    )}
+                    {!tasdiqlangan && yetmaydiganlar.length > 0 && (
+                      <div role="alert" data-qoldiq-yetmaydi className="mt-3 max-w-2xl rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs font-bold text-red-600">
+                        <p>{t("ombordanChiqarish.qoldiqYetmaydi")}</p>
+                        <ul className="mt-1.5 list-disc space-y-0.5 pl-5 font-semibold">
+                          {yetmaydiganlar.map((item) => (
+                            <li key={item.modificationId}>
+                              {t("ombordanChiqarish.qoldiqYetmaydiQatori", {
+                                nom: item.nom,
+                                mavjud: item.mavjud.toLocaleString("uz-UZ", { maximumFractionDigits: 3 }),
+                                kerak: item.kerak.toLocaleString("uz-UZ", { maximumFractionDigits: 3 }),
+                              })}
+                            </li>
+                          ))}
+                        </ul>
+                        <p className="mt-1.5 font-semibold text-red-500">{t("ombordanChiqarish.qoldiqYetmaydiIzoh")}</p>
+                      </div>
                     )}
                     {!tasdiqlangan && ombordanChiqarishXatosi && (
                       <p className="mt-3 max-w-2xl rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs font-bold text-red-600">{ombordanChiqarishXatosi}</p>

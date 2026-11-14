@@ -22,6 +22,7 @@ import {
   LoaderCircle,
   MessageSquare,
   Package,
+  PackageSearch,
   Percent,
   PenLine,
   Plus,
@@ -109,6 +110,9 @@ import QoralamaFaoliyatlari from "./QoralamaFaoliyatlari";
 import SavdoSelect, { type SavdoSelectOption } from "./SavdoSelect";
 import { asosiyValyuta, valyutaYokiAsosiy } from "@/lib/asosiyValyuta";
 import { mijozMosmi } from "@/lib/mijozQidiruvi";
+import { qoldiqYetmaydimi } from "@/lib/qoralamaQoldigi";
+import KatalogOynasi from "./KatalogOynasi";
+import { katalogniQatorlargaQoshish, type KatalogTanlovi } from "./katalogTanlovi";
 import {
   aralashmi,
   chegirmaSoni,
@@ -456,6 +460,8 @@ export default function YangiSotuvModal({
   // ro'yxati shu matn bilan qayta ochiladi.
   const [mijozQidiruvMatni, setMijozQidiruvMatni] = useState("");
   const [kontaktOchishSorovi, setKontaktOchishSorovi] = useState(0);
+  // "Katalog" oynasi: kategoriya bo'yicha ko'rib, bir nechta tovarni miqdori bilan birdan qo'shish.
+  const [katalogOchiq, setKatalogOchiq] = useState(false);
   const [qoshilganMijozlar, setQoshilganMijozlar] = useState<MijozTanlovi[]>([]);
   const mijozSaqlanmoqda = useRef(false);
   const barchaMijozlar = useMemo(() => [
@@ -573,7 +579,7 @@ export default function YangiSotuvModal({
   const [fokusSorovi, setFokusSorovi] = useState<{ qator: number; maydon: "mahsulot" | "miqdor"; n: number } | null>(null);
   const fokusNavbati = useRef(0);
   const [skanMatni, setSkanMatni] = useState("");
-  const [skanXabari, setSkanXabari] = useState<{ xato: boolean; matn: string } | null>(null);
+  const [skanXabari, setSkanXabari] = useState<{ xato: boolean; matn: string; ogoh?: boolean } | null>(null);
   const skanInputRef = useRef<HTMLInputElement | null>(null);
   const qatorlarRef = useRef<HTMLDivElement | null>(null);
   // UI: ixtiyoriy izoh (backend izohiga qo'shiladi), import natijasi va bosqichlar uchun bo'limlarga o'tish.
@@ -891,7 +897,10 @@ export default function YangiSotuvModal({
         // "Faqat dollar" rejimida esa teskarisi: so'mda narxlangan mahsulotning kurssiz dollar narxi yo'q ("mavjud, $0" bo'lmasin).
         const kursYoq = dollarKursYoq(item, yagona);
         const rejimKursYoq = !kursYoq && rejimdaKursYoq(item, blokYagona, kurs, ruxsat);
-        const mavjud = (canSellNegative || miqdor > 0) && !kursYoq && !rejimKursYoq;
+        // Qoralama omborga tegmaydi (qoldiq faqat "Ombordan chiqarish"da tekshiriladi): qoldig'i 0 bo'lgan tovar ham tanlanadi.
+        // Faqat narxi kurssiz o'girilmaydigan tovar bloklanadi.
+        const mavjud = !kursYoq && !rejimKursYoq;
+        const qoldiqYoq = !(miqdor > 0);
         const oziNomi = qoldiqNomi(item, t);
         const nom =
           oziNomi !== t("common.unknownProduct")
@@ -922,6 +931,7 @@ export default function YangiSotuvModal({
 
         return {
           mavjud,
+          qoldiqYoq,
           nom,
           option: mavjud
             ? {
@@ -929,7 +939,16 @@ export default function YangiSotuvModal({
                 searchLabel: nom,
                 kodlar,
                 nomlar: aniqNomlar,
-                label: `${nom}${itemOmborNomi ? ` (${itemOmborNomi})` : ""} - ${t("products.stockLabelShort")}: ${miqdor} - ${t("products.priceLabelShort")}: ${narxMatni}`,
+                label: qoldiqYoq && !canSellNegative ? (
+                  <span className="flex w-full min-w-0 items-center justify-between gap-3">
+                    <span className="min-w-0 truncate">
+                      {nom}{itemOmborNomi ? ` (${itemOmborNomi})` : ""} - {t("products.priceLabelShort")}: {narxMatni}
+                    </span>
+                    <span className="shrink-0 rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-black text-amber-700">
+                      ⚠ {t("products.stockLabelShort")}: {miqdor}
+                    </span>
+                  </span>
+                ) : `${nom}${itemOmborNomi ? ` (${itemOmborNomi})` : ""} - ${t("products.stockLabelShort")}: ${miqdor} - ${t("products.priceLabelShort")}: ${narxMatni}`,
               }
             : {
                 value: qoldiqKaliti(item),
@@ -951,8 +970,8 @@ export default function YangiSotuvModal({
               },
         };
       })
-      // Avval qoldig'i borlar, keyin yo'qlar; ichida nom bo'yicha.
-      .sort((x, y) => Number(y.mavjud) - Number(x.mavjud) || x.nom.localeCompare(y.nom, "uz"))
+      // Avval qoldig'i borlar, keyin qoldig'i 0 (tanlanadi), oxirida tanlab bo'lmaydiganlar; ichida nom bo'yicha.
+      .sort((x, y) => Number(y.mavjud) - Number(x.mavjud) || Number(x.qoldiqYoq) - Number(y.qoldiqYoq) || x.nom.localeCompare(y.nom, "uz"))
       .map((x) => x.option);
   }, [qoldiqlar, warehouseId, omborlar, canSellNegative, sotuvVal, kurs, yagona, blokYagona, narxSozlamasi, t]);
 
@@ -1079,7 +1098,8 @@ export default function YangiSotuvModal({
       return;
     }
     const sotuvga = mos.filter(
-      (item) => (item.warehouseId || canSellNegative && warehouseId) && (canSellNegative || qoldiqMiqdori(item) > 0) && !(item.valyuta?.currency === "USD" && item.valyuta.uzs === null && yagona !== "USD")
+      // Qoralamada qoldiq tekshirilmaydi: qoldig'i 0 bo'lgan (yoki omborga hali kirim qilinmagan) tovar ham qo'shiladi.
+      (item) => (item.warehouseId || warehouseId) && !(item.valyuta?.currency === "USD" && item.valyuta.uzs === null && yagona !== "USD")
     );
     if (sotuvga.length === 0) {
       const nom = qoldiqNomi(mos[0], t);
@@ -1108,13 +1128,14 @@ export default function YangiSotuvModal({
 
     if (bor >= 0) {
       const yangiMiqdor = raqamgaAylantirish(mahsulotlar[bor].quantity) + 1;
-      if (!canSellNegative && asosiyMiqdor(skanBirligi, yangiMiqdor) > mavjudMiqdor) {
-        xato(t("products.scanNotEnough", { name: nom, available: mavjudMiqdor }));
-        return;
-      }
       fx.tozala(`items.${bor}.quantity`);
       mahsulotniYangilash(bor, { quantity: String(yangiMiqdor) });
-      setSkanXabari({ xato: false, matn: t("products.scanAdded", { name: nom, qty: yangiMiqdor }) });
+      const yetmaydi = !canSellNegative && qoldiqYetmaydimi(asosiyMiqdor(skanBirligi, yangiMiqdor), mavjudMiqdor);
+      setSkanXabari({
+        xato: false,
+        ogoh: yetmaydi,
+        matn: yetmaydi ? t("products.scanAddedLowStock", { name: nom, qty: yangiMiqdor, available: mavjudMiqdor }) : t("products.scanAdded", { name: nom, qty: yangiMiqdor }),
+      });
     } else {
       const tur = sotiladiganNarxTuri(item, narxTuri, turRuxsati, kurs, blokYagona) ?? narxTuri;
       const narx = qoldiqNarxiValyutada(item, sotuvVal, kurs, tur, skanBirligi);
@@ -1136,7 +1157,12 @@ export default function YangiSotuvModal({
         setWarehouseId(item.warehouseId);
         onOmborTanlash(item.warehouseId);
       }
-      setSkanXabari({ xato: false, matn: t("products.scanAdded", { name: nom, qty: 1 }) });
+      const yetmaydi = !canSellNegative && qoldiqYetmaydimi(asosiyMiqdor(skanBirligi, 1), mavjudMiqdor);
+      setSkanXabari({
+        xato: false,
+        ogoh: yetmaydi,
+        matn: yetmaydi ? t("products.scanAddedLowStock", { name: nom, qty: 1, available: mavjudMiqdor }) : t("products.scanAdded", { name: nom, qty: 1 }),
+      });
     }
     setSkanMatni("");
     skanInputRef.current?.focus();
@@ -1250,25 +1276,13 @@ export default function YangiSotuvModal({
         qatorXatolari[`items.${indeks}`] = t("errors.productOtherWarehouse");
         continue;
       }
-      // Qoralama shu mahsulotni shu omborda allaqachon band qilgan (asosiy birlikda): tahrirlashda bu miqdor ham ruxsat etiladi.
-      const rezerv = tahrir && warehouseId === asl?.warehouseId
-        ? (tahrir.sotuv.items ?? []).filter((item) => item.modificationId === mahsulot.modificationId).reduce((summa, item) => summa + (Number(item.quantity) || 0), 0)
-        : 0;
-      const mavjudMiqdor = (tanlanganQoldiq ? qoldiqMiqdori(tanlanganQoldiq) : 0) + rezerv;
       const birlik = birlikTopish(tanlanganQoldiq?.birliklar, mahsulot.birlikId);
       if (!miqdorYaroqlimi(birlik, soralganMiqdor)) {
         qatorXatolari[`items.${indeks}.quantity`] = t("errors.quantityNotWhole");
         continue;
       }
-      // Qoldiq asosiy birlikda: pochkada kiritilgan miqdor asosiy birlikka o'giriladi.
-      const talab = asosiyMiqdor(birlik, soralganMiqdor);
-      if (!canSellNegative && talab > mavjudMiqdor) {
-        qatorXatolari[`items.${indeks}.quantity`] = t("errors.insufficientStock", {
-          name: tanlanganQoldiq ? qoldiqNomi(tanlanganQoldiq, t) : t("common.selectedProductFallback"),
-          available: mavjudMiqdor,
-          requested: talab,
-        });
-      }
+      // Qoldiq yetmasligi qoralamani to'xtatmaydi (backend ham POST/PATCH /sales da tekshirmaydi): qatorda sariq ogohlantirish
+      // turadi, qoldiq faqat "Ombordan chiqarish"da tekshiriladi.
     }
     if (Object.keys(qatorXatolari).length) {
       fx.ornat(qatorXatolari);
@@ -1324,6 +1338,19 @@ export default function YangiSotuvModal({
   const mahsulotlarSoni = mahsulotTanlanganQatorlar.length;
   const umumiyMiqdor = mahsulotTanlanganQatorlar.reduce((summa, mahsulot) => summa + raqamgaAylantirish(mahsulot.quantity), 0);
   const umumiyChegirma = mahsulotlar.reduce((summa, mahsulot) => summa + qatorChegirmasi(mahsulot), 0) + umumiyUlushJami;
+  // Qoldiq yetmaydigan qatorlar (faqat "Manfiy qoldiqqa ruxsat" o'chiq bo'lsa): qoralama saqlanadi, lekin ombordan chiqarishda tovar yetmaydi.
+  const qoldiqOgohlantirishlari = new Map<number, { mavjud: number; talab: number }>();
+  if (!canSellNegative) {
+    mahsulotlar.forEach((mahsulot, indeks) => {
+      const soralgan = raqamgaAylantirish(mahsulot.quantity);
+      if (!mahsulot.modificationId || !(soralgan > 0)) return;
+      const qoldiq = qatorQoldigi(mahsulot.qoldiqKaliti);
+      if (!qoldiq) return;
+      const talab = asosiyMiqdor(birlikTopish(qoldiq.birliklar, mahsulot.birlikId), soralgan);
+      const mavjud = qoldiqMiqdori(qoldiq);
+      if (qoldiqYetmaydimi(talab, mavjud)) qoldiqOgohlantirishlari.set(indeks, { mavjud: Math.max(mavjud, 0), talab });
+    });
+  }
   // "Aralash": umumiy foizdan keyin ayrim qatorlar qo'lda o'zgartirilgan.
   const umumiyAralash = aralashmi(mahsulotlar, umumiyFoiz);
   // Chegirmalardan keyin bir dona narxi tannarxdan past qatorlar (tannarx ko'rinadigan rollarda): ogohlantirish, saqlashni to'xtatmaydi.
@@ -1493,6 +1520,38 @@ export default function YangiSotuvModal({
     setMahsulotlar(yangiQatorlar);
     const bosh = yangiQatorlar.findIndex((qator) => !qator.modificationId);
     if (value && bosh >= 0) fokusSoralish(bosh, "mahsulot");
+  }
+
+  // Katalogdan tanlanganlar: bor tovarning miqdori qo'shiladi, yangisi bo'sh qatorga yoki oxiriga (narx turi, narx va umumiy foiz bilan).
+  function katalogdanQoshish(tanlangan: KatalogTanlovi[]) {
+    fx.tozala("items");
+    setMahsulotlar((joriy) =>
+      katalogniQatorlargaQoshish(joriy, tanlangan, {
+        kalit: (qator) => qator.qoldiqKaliti,
+        asosiyBirlikda: (qator) => !qator.birlikId,
+        boshmi: (qator) => !qator.modificationId,
+        miqdorQosh: (qator, miqdor) => ({ ...qator, quantity: String(Math.round((raqamgaAylantirish(qator.quantity) + miqdor) * 1000) / 1000) }),
+        yangi: (kalit, miqdor) => {
+          const qoldiq = qatorQoldigi(kalit);
+          const tur = sotiladiganNarxTuri(qoldiq, narxTuri, turRuxsati, kurs, blokYagona) ?? narxTuri;
+          const narx = qoldiqNarxiValyutada(qoldiq, sotuvVal, kurs, tur);
+          return {
+            ...qatorgaUmumiyFoiz(bosQator(tur), umumiyFoiz),
+            modificationId: qoldiq?.modificationId ?? kalit.split("::")[0],
+            qoldiqKaliti: kalit,
+            quantity: String(miqdor),
+            price: narx ? String(narx) : "",
+          };
+        },
+      })
+    );
+    setKatalogOchiq(false);
+  }
+
+  function katalogNarxi(kalit: string) {
+    const qoldiq = qatorQoldigi(kalit);
+    const tur = sotiladiganNarxTuri(qoldiq, narxTuri, turRuxsati, kurs, blokYagona) ?? narxTuri;
+    return qoldiqNarxiValyutada(qoldiq, sotuvVal, kurs, tur);
   }
 
   // "Mahsulot qo'shish": yangi qator qo'shiladi va uning mahsulot ro'yxati darrov ochiladi (sichqoncha ham, klaviatura ham).
@@ -2116,6 +2175,15 @@ export default function YangiSotuvModal({
                       <Plus size={18} />
                       {t("actions.addProduct")}
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setKatalogOchiq(true)}
+                      data-katalog-tugma
+                      className="inline-flex h-11 items-center gap-2 rounded-xl bg-white px-5 text-sm font-extrabold text-[#2563EB] ring-2 ring-blue-200 transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+                    >
+                      <PackageSearch size={18} />
+                      {t("katalog.button")}
+                    </button>
                     <div className="flex min-w-[200px] items-center gap-2 sm:ml-auto">
                       <span className="hidden shrink-0 text-sm font-semibold text-slate-600 sm:inline">{t("labels.saleDate")}</span>
                       <XatoliMaydon xato={fx.xato("date")}>
@@ -2291,7 +2359,7 @@ export default function YangiSotuvModal({
                       )}
                     </div>
                     {skanXabari && (
-                      <p role="status" className={`mt-2 text-xs font-bold ${skanXabari.xato ? "text-red-600" : "text-emerald-600"}`}>
+                      <p role="status" className={`mt-2 text-xs font-bold ${skanXabari.xato ? "text-red-600" : skanXabari.ogoh ? "text-amber-600" : "text-emerald-600"}`}>
                         {skanXabari.matn}
                       </p>
                     )}
@@ -2502,10 +2570,18 @@ export default function YangiSotuvModal({
                                   event.preventDefault();
                                   keyingiQatorgaOtish(index);
                                 }}
-                                className={maydonKlassi}
+                                className={cn(maydonKlassi, qoldiqOgohlantirishlari.has(index) && "border-amber-300 focus:border-amber-500 focus:ring-amber-100")}
                                 placeholder={t("placeholders.quantity")}
                               />
                               </XatoliMaydon>
+                              {qoldiqOgohlantirishlari.has(index) && (
+                                <p data-qoldiq-ogohlantirish={index} className="mt-1 text-[11px] font-semibold leading-4 text-amber-700">
+                                  ⚠ {t("stockWarning.row", {
+                                    available: qoldiqOgohlantirishlari.get(index)!.mavjud.toLocaleString("uz-UZ", { maximumFractionDigits: 3 }),
+                                    requested: qoldiqOgohlantirishlari.get(index)!.talab.toLocaleString("uz-UZ", { maximumFractionDigits: 3 }),
+                                  })}
+                                </p>
+                              )}
                               {qatorBirliklari.length > 0 && (
                                 <div className="mt-1.5">
                                   <select
@@ -2637,6 +2713,11 @@ export default function YangiSotuvModal({
                       <div className="mt-3">
                         <MaydonXatosi matn={fx.xato("items")} />
                       </div>
+                    )}
+                    {qoldiqOgohlantirishlari.size > 0 && (
+                      <p role="status" data-qoldiq-xulosa className="mt-3 rounded-xl bg-amber-50 px-4 py-2.5 text-xs font-bold text-amber-700 ring-1 ring-amber-200">
+                        ⚠ {t("stockWarning.summary", { count: qoldiqOgohlantirishlari.size })}
+                      </p>
                     )}
                   </div>
 
@@ -2954,6 +3035,18 @@ export default function YangiSotuvModal({
         </form>
       </div>
     </AppModal>
+    {katalogOchiq && (
+      <KatalogOynasi
+        variantlar={katalogOptionlariRoyxati}
+        qoldiqSoni={(kalit) => { const qoldiq = qatorQoldigi(kalit); return qoldiq ? qoldiqMiqdori(qoldiq) : 0; }}
+        narx={katalogNarxi}
+        modificationId={(kalit) => qatorQoldigi(kalit)?.modificationId ?? kalit.split("::")[0]}
+        narxMatni={(summa) => pulniFormatlash(summa, sotuvVal)}
+        omborTanlanmagan={!warehouseId}
+        onQoshish={katalogdanQoshish}
+        onYopish={() => setKatalogOchiq(false)}
+      />
+    )}
     {mijozQoshishOchiq && <XaridorModal
       boshlangich={null}
       boshlangichMatn={mijozQidiruvMatni}

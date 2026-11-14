@@ -614,6 +614,9 @@
     }
   },
   "tovarlarTab": {
+    "qoldiqOgohlantirish": "Omborda {{mavjud}} dona bor, {{soralgan}} dona so'ralgan. Qoralama saqlanadi, lekin ombordan chiqarish uchun tovar yetmaydi.",
+    "jadval": {"raqam": "№", "shtrix": "Shtrix kod", "chegirma": "Chegirma"},
+    "jamiQatori": "Jami: {{soni}} {{birlik}} · Chegirma −{{chegirma}} · Jami {{jami}}",
     "mahsulotQoshish": "Mahsulot qo'shish",
     "saqlash": "Saqlash",
     "sozlama": "Sozlama",
@@ -641,6 +644,7 @@
     "artikul": "Artikul: {{value}}"
   },
   "qoralamaTahrir": {
+    "qoldiqOgohlantirish": "Omborda ko'pi bilan {{mavjud}} bor. Qoralama saqlanadi, lekin ombordan chiqarish uchun tovar yetmaydi.",
     "sarlavha": "Qoralama tovarlari",
     "tavsif": "Miqdorni o'zgartiring, mahsulotni almashtiring yoki yangisini qo'shing. O'zgarishlar faqat «Saqlash» bosilgandan keyin yoziladi.",
     "valyuta": "Valyuta",
@@ -814,6 +818,9 @@
     "tahrirlash": "Tahrirlash",
     "tahrirdanChiqish": "Tahrirdan chiqish",
     "tahrirdaTasdiqlab": "Mahsulotlar tahrirlanmoqda. Tasdiqlashdan oldin pastdagi \"O'zgarishlarni saqlash\" tugmasini bosing yoki tahrirdan chiqing.",
+    "qoldiqYetmaydi": "Ombordan chiqarib bo'lmaydi — omborda tovar yetmaydi:",
+    "qoldiqYetmaydiQatori": "{{nom}}: {{mavjud}} dona bor, {{kerak}} dona kerak",
+    "qoldiqYetmaydiIzoh": "Qoralama o'zgarmadi. Tovar kirim qilingach qayta urinib ko'ring.",
     "tasdiqlabBolmadi": "Sotuvni ombordan chiqarish uchun tasdiqlab bo'lmadi.",
     "tasdiqlash": "Tasdiqlash",
     "orqaga": "Orqaga",

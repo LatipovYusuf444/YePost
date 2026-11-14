@@ -355,6 +355,8 @@ test('sales employee/phone columns refresh from matching directory/profile data 
   const profiles = create(() => ({ profil: null }));
   const Sales = compile('../src/Pages/Savdo/SotuvlarJadvali.tsx', {
     '@/Components/common/smart-table/SmartTable': { __esModule: true, default: SmartTable },
+    '@/Components/common/TolovTuriBelgisi': { __esModule: true, default: ({ children }) => children },
+    '@/lib/tolovTuriRanglari': require('../src/lib/tolovTuriRanglari.ts'),
     '@/Components/common/TablePagination': { __esModule: true, default: () => null },
     '@/Components/common/HujjatOchirish': { __esModule: true, default: () => null },
     '@/Components/common/HujjatSanasi': { KiritilganBelgisi: () => null },

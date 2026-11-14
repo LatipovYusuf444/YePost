@@ -37,7 +37,7 @@ function editor(overrides = {}) {
     useMaydonXatolari: () => ({ xato: () => undefined, bor: false, tepadagi: '', ornat() {}, tozala() {}, tekshiruv() {}, serverdan: () => false, kuzat: (f) => f() }), xatoRamkasi: '',
     xatoBelgisi: () => 0, belgidanKeyingiXato: () => undefined, formaTolovigaTegishli: () => undefined,
   };
-  for (const name of ['AppModal', 'CreditCard', 'SavdoSelect', 'SummaMaydoni', 'HujjatSanasiMaydoni', 'Plus', 'X', 'TriangleAlert', 'Banknote', 'OrtiqchaTanlovi', 'TolovNatijasiKarta', 'XatoliMaydon']) context[name] = name;
+  for (const name of ['AppModal', 'CreditCard', 'SavdoSelect', 'SummaMaydoni', 'HujjatSanasiMaydoni', 'Plus', 'X', 'TriangleAlert', 'Banknote', 'OrtiqchaTanlovi', 'TolovNatijasiKarta', 'XatoliMaydon', 'TolovTuriBelgisi']) context[name] = name;
   runInNewContext(compiled, context);
   const props = {
     sotuv: { id: 'walk-in', currency: 'UZS', payments: [], date: dates.bugungiToshkentKuni() }, jami: 396000, draft: true,

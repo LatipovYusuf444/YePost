@@ -61,6 +61,7 @@ function page(path, routeState = null, overrides = {}) {
     '@/Pages/Savdo/savdoYordamchilari': { sotuvHolati: () => 'CONFIRMED' },
     './yordamchilar': { xaridorNomi: x => `${x.ism} ${x.familiya}`, kompaniyaNomi: noop, asosiyTelefon: noop },
     '@/lib/telegramXabarnoma': { mijozTelegramSonlari: () => ({}), telegramUstuniKorinadimi: () => false },
+    '@/lib/tolovTuriRanglari': require('../src/lib/tolovTuriRanglari.ts'),
     '@/lib/mijozQidiruvi': require('../src/lib/mijozQidiruvi.ts'),
     '@/lib/kategoriyaQidiruvi': require('../src/lib/kategoriyaQidiruvi.ts'),
     ...overrides,

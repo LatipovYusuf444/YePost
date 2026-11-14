@@ -112,7 +112,7 @@
     "addRow": "Qator qo'shish",
     "table": {
       "selectAllAria": "Hammasini belgilash",
-      "numberHeader": "в„–",
+      "numberHeader": "№",
       "productHeader": "Mahsulot",
       "barcodeHeader": "Shtrix kod",
       "costPriceHeader": "Tan narxi",

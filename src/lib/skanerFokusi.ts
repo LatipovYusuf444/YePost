@@ -3,6 +3,12 @@
 
 export const POS_QIDIRUV_BELGISI = "data-pos-qidiruv";
 
+/**
+ * Qidiruv bo'sh bo'lganda ↓ bosilsa sarlavhadagi qidiruv shu hodisani (bekor qilinadigan) yuboradi: Bosh sahifa savatchasi bo'lsa
+ * uni ushlab (preventDefault) birinchi qatorga o'tadi, aks holda qidiruv avvalgidek ishlaydi.
+ */
+export const POS_SAVATCHAGA_OTISH = "pos:savatchaga-otish";
+
 type FokusMaydoni = { focus: (options?: { preventScroll?: boolean }) => void; offsetParent?: unknown };
 type QidiruvManbasi = { querySelectorAll: (selector: string) => ArrayLike<FokusMaydoni> };
 

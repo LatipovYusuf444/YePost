@@ -81,6 +81,7 @@ table.smart-data-table .smart-table-heading { position: relative; padding-right:
 .smart-column-grip:active { cursor: grabbing; }
 .smart-table-heading[data-dragging-cell=true] .smart-heading-content { opacity: .5; }
 .smart-column-resize { position: absolute; right: -4px; top: 0; width: 9px; height: 100%; z-index: 6; cursor: col-resize; touch-action: none; }
+[data-smart-last=true] > .smart-column-resize { right: 0; }
 .smart-column-resize::after { content: ""; position: absolute; left: 4px; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: var(--smart-accent); opacity: 0; }
 .smart-column-resize:hover::after, .smart-column-resize:focus-visible::after, [data-resizing=true] .smart-column-resize::after { opacity: 1; }
 .smart-pin-icon { position: absolute; top: 4px; right: 14px; color: var(--smart-accent); }

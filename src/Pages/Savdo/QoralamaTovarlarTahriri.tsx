@@ -317,12 +317,10 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
         const katalog = turNarxi(qoldiq, tur, kurs);
         const narx = narxSotuvValyutasida(katalog, sotuvVal, kurs);
         const miqdor = qoldiqMiqdori(qoldiq);
-        const asliMi = popoverQatori.asl?.modificationId === qoldiq.modificationId;
+        // Qoldig'i 0 bo'lgan tovar ham tanlanadi (qoralama omborga tegmaydi); ro'yxatda "Omborda: 0" sariq ko'rinadi.
         const holat = band.has(qoldiq.modificationId)
           ? "band"
-          : miqdor <= 0 && !asliMi
-            ? "yoq"
-            : katalog !== null && narx <= 0
+          : katalog !== null && narx <= 0
               ? "kurs"
               : "ok";
         const matn = [nom, qoldiq.modification?.name, qoldiq.modification?.barcode, qoldiq.modification?.article].join(" ").toLowerCase();
@@ -471,7 +469,9 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
             .filter(Boolean)
             .join(" · ");
           const mahsulotXatosi = urinildi && xatolar.mahsulot;
-          const miqdorXatoKorinadi = Boolean(xatolar.miqdor);
+          // Qoldiq yetmasligi — sariq ogohlantirish (saqlashga xalaqit bermaydi), boshqa miqdor xatolari — qizil.
+          const qoldiqOgohi = xatolar.miqdor?.kod === "qoldiq";
+          const miqdorXatoKorinadi = Boolean(xatolar.miqdor) && !qoldiqOgohi;
           const narxXatoKorinadi = Boolean(xatolar.narx) && (urinildi || mavjud);
           const chegirmaXatoKorinadi = Boolean(xatolar.chegirma);
           const holatStili =
@@ -551,6 +551,11 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
                   <span className="shrink-0 text-xs font-semibold text-slate-400">{q.birlikNomi || t("common.dona")}</span>
                 </div>
                 {miqdorXatoKorinadi && xatolar.miqdor && <XatoMatni>{miqdorXatosi(xatolar.miqdor, t)}</XatoMatni>}
+                {qoldiqOgohi && xatolar.miqdor?.kod === "qoldiq" && (
+                  <p data-qoldiq-ogohlantirish className="mt-1 text-xs font-semibold leading-4 text-amber-700">
+                    ⚠ {t("qoralamaTahrir.qoldiqOgohlantirish", { mavjud: formatSon(xatolar.miqdor.mavjud) })}
+                  </p>
+                )}
               </Maydon>
 
               <Maydon yorliq={t("common.jadval.narx")}>
@@ -751,7 +756,7 @@ export default function QoralamaTovarlarTahriri({ sotuv, qoldiqlar, amalBajarilm
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold text-slate-800">{element.nom}</span>
-                        <span className="mt-0.5 block truncate text-xs text-slate-400">
+                        <span className={`mt-0.5 block truncate text-xs ${mumkin && element.miqdor <= 0 ? "font-semibold text-amber-600" : "text-slate-400"}`}>
                           {mumkin ? `${t("qoralamaTahrir.omborda")}: ${formatSon(element.miqdor)} ${t("common.dona")}${element.holat === "kurs" ? ` · ${t("qoralamaTahrir.mavjudEmas.kurs")}` : ""}` : t(`qoralamaTahrir.mavjudEmas.${element.holat}`)}
                           {element.qoldiq.modification?.barcode ? ` · ${element.qoldiq.modification.barcode}` : ""}
                         </span>

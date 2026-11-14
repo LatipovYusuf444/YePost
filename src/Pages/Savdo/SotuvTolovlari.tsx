@@ -9,6 +9,7 @@ import { qaytimMatni, qaytimValyutasi, tolovlarQaytimi } from "@/lib/tolovOrtiqc
 import { useValyutaStore, type Valyuta } from "@/lib/valyuta";
 import type { Sotuv, SotuvTolovi, TolovTuri } from "@/types/savdo";
 import TolovTahriri from "./TolovTahriri";
+import TolovTuriBelgisi from "@/Components/common/TolovTuriBelgisi";
 import {
   masulNomi,
   pulniFormatlash,
@@ -91,6 +92,11 @@ export default function SotuvTolovlari({ sotuv, mijoz }: { sotuv: Sotuv; mijoz: 
                 {sanaMatni ? ` — ${sanaMatni}` : ""} ({t("tolovQatori.summa", { summa: pulniFormatlash(qator.tolov.amount, tolovValyutasi(qator.tolov, sotuv)) })})
               </button>
               <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                {!qarz && (
+                  <TolovTuriBelgisi turi={qator.tolov.paymentType} className="h-6 rounded-full py-0 text-[11px]">
+                    {tolovTuriMatni[qator.tolov.paymentType] ?? qator.tolov.paymentType}
+                  </TolovTuriBelgisi>
+                )}
                 {qaytim.qaytim > 0 && (
                   <span className="inline-flex h-6 items-center gap-1 rounded-full bg-emerald-50 px-2.5 text-[11px] font-bold text-emerald-700 ring-1 ring-emerald-100">
                     <Banknote size={12} />

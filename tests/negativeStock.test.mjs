@@ -224,7 +224,8 @@ test('out-of-stock errors keep product/barcode and forbidden messages supplied b
   }
 });
 
-test('barcode selection allows a catalogue item with no stock record only with permission and a selected warehouse', () => {
+// TZ 14.11.2026: qoralamada qoldiq tekshirilmaydi — qoldig'i 0 (yoki yozuvi yo'q) tovar ruxsatdan qat'i nazar qo'shiladi, faqat ombor tanlangan bo'lsa.
+test('barcode selection adds a catalogue item with no stock record to a draft whenever a warehouse is selected (stock is checked only on confirm)', () => {
   const source = readFileSync(new URL('../src/Pages/Savdo/YangiSotuvModal.tsx', import.meta.url), 'utf8');
   const file = ts.createSourceFile('YangiSotuvModal.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   let expression;
@@ -235,7 +236,7 @@ test('barcode selection allows a catalogue item with no stock record only with p
   find(file);
   assert.ok(expression);
   const item = { modificationId: 'cement', quantity: 0 };
-  for (const [canSellNegative, warehouseId, count] of [[false, 'w', 0], [true, '', 0], [true, 'w', 1]]) {
+  for (const [canSellNegative, warehouseId, count] of [[false, 'w', 1], [false, '', 0], [true, '', 0], [true, 'w', 1]]) {
     const result = runInNewContext(expression, { mos: [item], canSellNegative, warehouseId, qoldiqMiqdori: row => row.quantity });
     assert.equal(result.length, count);
   }

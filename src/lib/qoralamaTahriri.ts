@@ -386,8 +386,10 @@ export type QatorXatolari = {
   chegirma?: true;
 };
 
+// Qoldiq yetmasligi (`miqdor.kod === "qoldiq"`) xato emas — ogohlantirish: qoralama saqlanadi, qoldiq faqat "Ombordan chiqarish"da
+// (POST /sales/:id/confirm) tekshiriladi (TZ 14.11.2026).
 export function xatoBormi(xatolar: QatorXatolari) {
-  return Boolean(xatolar.mahsulot || xatolar.miqdor || xatolar.narx || xatolar.chegirma);
+  return Boolean(xatolar.mahsulot || (xatolar.miqdor && xatolar.miqdor.kod !== "qoldiq") || xatolar.narx || xatolar.chegirma);
 }
 
 /**

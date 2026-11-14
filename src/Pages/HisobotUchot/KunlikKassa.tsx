@@ -13,15 +13,21 @@ import type { CashCurrency, CashDailyReport, CashPaymentType } from "@/types/cas
 import type { Filial } from "@/types/ombor";
 import MuddatTanlov from "./MuddatTanlov";
 import YuklanmoqdaHolati from "./YuklanmoqdaHolati";
+import { tolovRangi } from "@/lib/tolovTuriRanglari";
 import { korinadiganValyutalar, nolEmasSummaBor } from "./hisobotValyutasi";
 
 // `label` - hisobotlar.json dagi `kunlikKassa.columns.*` kaliti.
+// To'lov turi kartochkalari TOLOV_TURI_RANGLARI bo'yicha: naqd — yashil, karta — ko'k, bank — siyohrang (so'm va dollar bir xil tur rangida).
+const rang = (payment: CashPaymentType) => {
+  const r = tolovRangi(payment);
+  return { accent: r.matn, border: r.chegara, background: r.fon };
+};
 const columns: { label: string; currency: CashCurrency; payment?: CashPaymentType; accent: string; border: string; background: string }[] = [
-  { label: "cashSom", currency: "UZS", payment: "CASH", accent: "#15805D", border: "#B0DDCA", background: "#F0FAF5" },
-  { label: "cashUsd", currency: "USD", payment: "CASH", accent: "#0F7B85", border: "#ACD9DF", background: "#F0FAFB" },
-  { label: "cardSom", currency: "UZS", payment: "CARD", accent: "#7C51BC", border: "#D3C1ED", background: "#F8F4FD" },
-  { label: "bankSom", currency: "UZS", payment: "BANK", accent: "#3268B9", border: "#B5CDF0", background: "#F2F7FE" },
-  { label: "bankUsd", currency: "USD", payment: "BANK", accent: "#5957B3", border: "#C8C5EB", background: "#F5F4FD" },
+  { label: "cashSom", currency: "UZS", payment: "CASH", ...rang("CASH") },
+  { label: "cashUsd", currency: "USD", payment: "CASH", ...rang("CASH") },
+  { label: "cardSom", currency: "UZS", payment: "CARD", ...rang("CARD") },
+  { label: "bankSom", currency: "UZS", payment: "BANK", ...rang("BANK") },
+  { label: "bankUsd", currency: "USD", payment: "BANK", ...rang("BANK") },
   { label: "totalSom", currency: "UZS", accent: "#9A7228", border: "#DCC79F", background: "#FBF7EC" },
   { label: "totalUsd", currency: "USD", accent: "#AD6439", border: "#E5C5AD", background: "#FCF5EF" },
 ];

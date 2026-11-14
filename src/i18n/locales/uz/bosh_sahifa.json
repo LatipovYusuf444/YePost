@@ -80,11 +80,70 @@
     "donalik": "Donalik mijoz",
     "doimiy": "Doimiy mijozlar"
   },
+  "keyboard": {
+    "hint": "↑↓ tanlash · +/− miqdor · Del o'chirish · F2 to'lash · Ctrl+/ tugmalar",
+    "title": "Tezkor tugmalar",
+    "rows": [
+      [
+        "↓",
+        "Qidiruv bo'sh bo'lsa — savatchaning birinchi qatoriga"
+      ],
+      [
+        "↑ / ↓",
+        "Savatcha qatorlari bo'ylab"
+      ],
+      [
+        "+ / −",
+        "Tanlangan qator miqdori ±1"
+      ],
+      [
+        "0–9",
+        "Miqdorga yozish (Enter — tasdiq)"
+      ],
+      [
+        "F4 / P",
+        "Sotuv narxi maydoni"
+      ],
+      [
+        "Delete",
+        "Qatorni o'chirish (Ctrl+Z — qaytarish)"
+      ],
+      [
+        "Esc",
+        "Qidiruvga qaytish"
+      ],
+      [
+        "F2",
+        "To'lash oynasi"
+      ],
+      [
+        "F3",
+        "Mijoz maydoni"
+      ],
+      [
+        "F8",
+        "Kechiktirish"
+      ],
+      [
+        "1–5",
+        "To'lov oynasida: 1 Naqd, 2 Karta, 3 Bank, 4 Click, 5 Payme (summa maydonida Alt + raqam)"
+      ],
+      [
+        "Enter",
+        "To'lov oynasida — to'lovni yakunlash"
+      ],
+      [
+        "Ctrl + /",
+        "Shu ro'yxat"
+      ]
+    ]
+  },
   "paymentTypes": {
     "payme": "Payme",
     "click": "Click",
     "cash": "Naqd",
-    "bank": "Bank"
+    "bank": "Bank",
+    "card": "Karta"
   },
   "customer": {
     "label": "Mijoz",

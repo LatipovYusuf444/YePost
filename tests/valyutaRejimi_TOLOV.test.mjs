@@ -46,7 +46,7 @@ function tolovOynasi(store, overrides = {}) {
     useMaydonXatolari: () => ({ xato: () => undefined, bor: false, tepadagi: '', ornat() {}, tozala() {}, tekshiruv() {}, serverdan: () => false, kuzat: f => f() }), xatoRamkasi: '',
     xatoBelgisi: () => 0, belgidanKeyingiXato: () => undefined, formaTolovigaTegishli: () => undefined,
   };
-  for (const name of ['AppModal', 'CreditCard', 'SavdoSelect', 'SummaMaydoni', 'HujjatSanasiMaydoni', 'Plus', 'X', 'TriangleAlert', 'Banknote', 'OrtiqchaTanlovi', 'TolovNatijasiKarta', 'XatoliMaydon', 'LoaderCircle']) context[name] = name;
+  for (const name of ['AppModal', 'CreditCard', 'SavdoSelect', 'SummaMaydoni', 'HujjatSanasiMaydoni', 'Plus', 'X', 'TriangleAlert', 'Banknote', 'OrtiqchaTanlovi', 'TolovNatijasiKarta', 'XatoliMaydon', 'LoaderCircle', 'TolovTuriBelgisi']) context[name] = name;
   runInNewContext(modalCompiled, context);
   const props = {
     sotuv: { id: 's', status: 'CONFIRMED', currency: 'USD', payments: [], date: dateLib.bugungiToshkentKuni() }, jami: 100, draft: false,

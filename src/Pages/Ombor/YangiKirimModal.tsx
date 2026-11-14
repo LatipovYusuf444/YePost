@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
+import SmartTable from "@/Components/common/smart-table/SmartTable";
 import XatoliMaydon, { MaydonXatosi } from "@/Components/common/XatoliMaydon";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import { useOzgarishBormi } from "@/hooks/useOzgarishBormi";
@@ -877,27 +878,35 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
               />
             </div>
 
-            <div className="scrollbar-orange overflow-x-auto pb-2">
-              <div ref={qatorlarRef} className="min-w-[1280px] space-y-3">
-                <div className="grid grid-cols-[28px_38px_2fr_1fr_1fr_1fr_1fr_1fr_1.2fr_1fr_48px] gap-3 px-3 text-[13px] font-semibold text-slate-600">
-                  <button type="button" onClick={barchasiniBelgilash} aria-label={t("yangiKirim.table.selectAllAria")}>
-                    {tanlangan.size === qatorlar.length && qatorlar.length > 0 ? (
-                      <CheckSquare size={16} className="text-orange-500" />
-                    ) : (
-                      <Square size={16} />
-                    )}
-                  </button>
-                  <span>{t("yangiKirim.table.numberHeader")}</span>
-                  <span>{t("yangiKirim.table.productHeader")}</span>
-                  <span>{t("yangiKirim.table.barcodeHeader")}</span>
-                  <span>{t("yangiKirim.table.costPriceHeader")}</span>
-                  <span>{t("yangiKirim.table.retailPriceHeader")}</span>
-                  <span>{t("yangiKirim.table.wholesalePriceHeader")}</span>
-                  <span>{t("yangiKirim.table.quantityHeader")}</span>
-                  <span>{t("yangiKirim.table.warehouseHeader")}</span>
-                  <span>{t("yangiKirim.table.stockHeader")}</span>
-                  <span />
-                </div>
+            {/* Tovarlar jadvali "Ustunlar" paneli bilan (yoqish/o'chirish, sudrab tartib, zichlik, standart holat); sozlama foydalanuvchi uchun
+                saqlanadi. Mahsulot va Soni majburiy. Yashirilgan ustundagi maydonlar o'chmaydi (faqat ko'rinmaydi). */}
+            <div ref={qatorlarRef} className="scrollbar-orange overflow-x-auto pb-2">
+              <SmartTable tableId="Ombor/YangiKirimModal/tovarlar" replaceColumnControls>
+              <table className="w-full text-left text-[13px]">
+                <thead className="text-[13px] font-semibold text-slate-600">
+                  <tr>
+                    <th data-column-id="belgi" className="w-10 px-1.5 py-2">
+                      <button type="button" onClick={barchasiniBelgilash} aria-label={t("yangiKirim.table.selectAllAria")}>
+                        {tanlangan.size === qatorlar.length && qatorlar.length > 0 ? (
+                          <CheckSquare size={16} className="text-orange-500" />
+                        ) : (
+                          <Square size={16} />
+                        )}
+                      </button>
+                    </th>
+                    <th data-column-id="raqam" className="w-12 px-1.5 py-2 text-center">{t("yangiKirim.table.numberHeader")}</th>
+                    <th data-column-id="mahsulot" data-required className="min-w-[240px] px-1.5 py-2">{t("yangiKirim.table.productHeader")}</th>
+                    <th data-column-id="shtrix" className="min-w-[150px] px-1.5 py-2">{t("yangiKirim.table.barcodeHeader")}</th>
+                    <th data-column-id="tannarx" className="min-w-[140px] px-1.5 py-2">{t("yangiKirim.table.costPriceHeader")}</th>
+                    <th data-column-id="chakana" className="min-w-[140px] px-1.5 py-2">{t("yangiKirim.table.retailPriceHeader")}</th>
+                    <th data-column-id="ulgurji" className="min-w-[140px] px-1.5 py-2">{t("yangiKirim.table.wholesalePriceHeader")}</th>
+                    <th data-column-id="soni" data-required className="min-w-[130px] px-1.5 py-2">{t("yangiKirim.table.quantityHeader")}</th>
+                    <th data-column-id="ombor" className="min-w-[170px] px-1.5 py-2">{t("yangiKirim.table.warehouseHeader")}</th>
+                    <th data-column-id="qoldiq" className="min-w-[80px] px-1.5 py-2 text-center">{t("yangiKirim.table.stockHeader")}</th>
+                    <th data-column-id="amal" className="w-14 px-1.5 py-2" aria-label={t("yangiKirim.table.deleteRowAria")} />
+                  </tr>
+                </thead>
+                <tbody>
                 {qatorlar.map((row, index) => {
                   const mod = store.modifikatsiyalar.find((item) => item.id === row.modificationId);
                   const stock = store.qoldiqlar.find(
@@ -909,10 +918,8 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                   // Sanalgan son kiritilgan bo'lsa: 1 pochka necha kg ekani va kartochkadan farqi (2% dan ko'p — ogohlantirish).
                   const tekshiruv = sanashBirligi ? koeffTekshiruvi(asosiyMiqdor(qabulBirligi, row.quantity), Number(row.sanash) || 0, sanashBirligi.koeff) : null;
                   return (
-                    <div
-                      key={row.id}
-                      className="grid grid-cols-[28px_38px_2fr_1fr_1fr_1fr_1fr_1fr_1.2fr_1fr_48px] items-center gap-3 rounded-2xl border border-orange-100 bg-[#FFFFFF] p-3"
-                    >
+                    <tr key={row.id} className="bg-white">
+                      <td className="px-1.5 py-2 align-middle">
                       <button
                         type="button"
                         onClick={() => belgilashniAlmashtirish(row.id)}
@@ -924,7 +931,11 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                           <Square size={16} className="text-slate-300" />
                         )}
                       </button>
+                      </td>
+                      <td className="px-1.5 py-2 align-middle text-center">
                       <span className="text-center text-sm font-black text-slate-400">{index + 1}</span>
+                      </td>
+                      <td className="px-1.5 py-2 align-middle">
                       <XatoliMaydon xato={fx.xato(`items.${index}.modificationId`)}>
                       <MahsulotTanlov
                         value={row.modificationId}
@@ -941,10 +952,14 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                         ochishSorovi={fokus?.maydon === "mahsulot" && fokus.qatorId === row.id ? fokus.n : 0}
                       />
                       </XatoliMaydon>
+                      </td>
+                      <td className="px-1.5 py-2 align-middle">
                       <div className="relative">
                         <Barcode size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input value={mod?.barcode ?? ""} readOnly placeholder={t("yangiKirim.table.barcodePlaceholder")} className={`${inputSm} pl-8`} />
                       </div>
+                      </td>
+                      <td className="px-1.5 py-2 align-middle">
                       <XatoliMaydon xato={fx.xato(`items.${index}.price`)}><div className="relative"><SummaMaydoni
                         aria-label={`${t("yangiKirim.table.costPriceHeader")} (${korsatishValyutasi(row, "price")})`}
                         value={narxQiymati(row, "price")}
@@ -961,6 +976,8 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                         placeholder={t("yangiKirim.table.pricePlaceholder")}
                         className={`${inputSm} pr-16`}
                       /><span className="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{korsatishValyutasi(row, "price")}</span></div></XatoliMaydon>
+                      </td>
+                      <td className="px-1.5 py-2 align-middle">
                       <div className="relative"><SummaMaydoni
                         aria-label={`${t("yangiKirim.table.retailPriceHeader")} (${korsatishValyutasi(row, "retailPrice")})`}
                         value={narxQiymati(row, "retailPrice")}
@@ -973,6 +990,8 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                         placeholder={t("yangiKirim.table.pricePlaceholder")}
                         className={`${inputSm} pr-16`}
                       /><span className="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{korsatishValyutasi(row, "retailPrice")}</span></div>
+                      </td>
+                      <td className="px-1.5 py-2 align-middle">
                       <div className="relative"><SummaMaydoni
                         aria-label={`${t("yangiKirim.table.wholesalePriceHeader")} (${korsatishValyutasi(row, "wholesalePrice")})`}
                         value={narxQiymati(row, "wholesalePrice")}
@@ -985,6 +1004,8 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                         placeholder={t("yangiKirim.table.pricePlaceholder")}
                         className={`${inputSm} pr-16`}
                       /><span className="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{korsatishValyutasi(row, "wholesalePrice")}</span></div>
+                      </td>
+                      <td className="px-1.5 py-2 align-middle">
                       <div className="min-w-0 space-y-1.5">
                       <XatoliMaydon xato={fx.xato(`items.${index}.quantity`)}>
                       <input
@@ -1064,6 +1085,8 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                         </div>
                       )}
                       </div>
+                      </td>
+                      <td className="px-1.5 py-2 align-middle">
                       <XatoliMaydon xato={fx.xato(`items.${index}.warehouseId`) ?? (index === 0 ? fx.xato("warehouseId") : undefined)}>
                       <div className="relative">
                         <Warehouse size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -1087,9 +1110,13 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                         <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       </div>
                       </XatoliMaydon>
+                      </td>
+                      <td className="px-1.5 py-2 align-middle">
                       <p className="truncate text-center text-xs font-bold text-slate-500">
                         {stock ? qoldiqMiqdori(stock) : 0}
                       </p>
+                      </td>
+                      <td className="px-1.5 py-2 align-middle">
                       <button
                         type="button"
                         disabled={qatorlar.length === 1}
@@ -1102,10 +1129,13 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                       >
                         <Trash2 size={17} />
                       </button>
-                    </div>
+                      </td>
+                    </tr>
                   );
                 })}
-              </div>
+                </tbody>
+              </table>
+              </SmartTable>
             </div>
             <div className="mt-3 empty:hidden"><MaydonXatosi matn={fx.xato("items")} /></div>
 

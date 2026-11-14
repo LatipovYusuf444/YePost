@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import TolovTuriBelgisi from "@/Components/common/TolovTuriBelgisi";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -212,7 +213,7 @@ export default function KassaAmaliyotKorinishi({ amaliyot, onYopish }: Props) {
               <KiritilganBelgisi date={amaliyot.sana} createdAt={amaliyot.kiritilgan} />
             </Qator>
             <Qator ikonka={<KanalIkonka size={17} />} nom={t("modal.paymentTypeLabel")}>
-              {t(`channels.${amaliyot.kanal}`)}
+              <TolovTuriBelgisi turi={amaliyot.kanal}>{t(`channels.${amaliyot.kanal}`)}</TolovTuriBelgisi>
             </Qator>
           </div>
         </section>

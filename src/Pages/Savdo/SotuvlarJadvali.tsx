@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { ReceiptText, RotateCcw, UserRound } from "lucide-react";
 import TablePagination from "@/Components/common/TablePagination";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
+import TolovTuriBelgisi from "@/Components/common/TolovTuriBelgisi";
+import { tolovlarniTurBoyichaYigish } from "@/lib/tolovTuriRanglari";
 import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import { sotuvJadvalNomi, sotuvSarlavhaMijozi } from "@/lib/sotuvNomi";
 import { sotuvMasulMalumoti } from "@/lib/sotuvMasulMalumoti";
@@ -225,7 +227,7 @@ export default function SotuvlarJadvali({
               // Hujjat sanasi (`date`); eski yozuvlarda — yaratilgan vaqt.
               const sana = sanaVaVaqt(sotuv.date ?? sotuv.createdAt);
               const stat = qaytarishStatistikasi(sotuv, qaytarishlar);
-              const paymentType = sotuv.payments?.[0]?.paymentType;
+              const tolovTurlari = tolovlarniTurBoyichaYigish(sotuv.payments);
               const holat = sotuvHolati(sotuv);
               const jami = sotuvSummasi(sotuv);
               const chegirma = sotuvChegirmaSummasi(sotuv);
@@ -263,7 +265,18 @@ export default function SotuvlarJadvali({
                   </td>
                   {tarixKorinish && (
                     <td className="border-b border-gray-100 px-4 py-3.5">
-                      {paymentType ? t(tolovTuriKaliti[paymentType]) : "-"}
+                      {/* Har bir to'lov turi o'z rangida (TOLOV_TURI_RANGLARI); tor ustunda faqat nomi. */}
+                      <span className="flex flex-wrap gap-1.5">
+                        {tolovTurlari.length > 0 ? (
+                          tolovTurlari.map(({ turi }) => (
+                            <TolovTuriBelgisi key={turi} turi={turi}>
+                              {turi in tolovTuriKaliti ? t(tolovTuriKaliti[turi as TolovTuri]) : turi}
+                            </TolovTuriBelgisi>
+                          ))
+                        ) : (
+                          <TolovTuriBelgisi turi={null}>{t("sotuvlarJadvali.tolovTuri.NONE")}</TolovTuriBelgisi>
+                        )}
+                      </span>
                     </td>
                   )}
                   <td className="whitespace-nowrap border-b border-gray-100 px-4 py-3.5">

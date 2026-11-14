@@ -10,6 +10,7 @@ import * as model from '../src/Pages/HisobotUchot/foydaHisobotiModeli.ts';
 import * as hisobotValyutasi from '../src/Pages/HisobotUchot/hisobotValyutasi.ts';
 import * as dates from '../src/lib/hujjatSanasi.ts';
 import * as cash from '../src/lib/cashReports.ts';
+import * as tolovRanglari from '../src/lib/tolovTuriRanglari.ts';
 
 const require = createRequire(import.meta.url);
 const hisobotlarUz = JSON.parse(readFileSync(new URL('../src/i18n/locales/uz/hisobotlar.json', import.meta.url), 'utf8'));
@@ -46,6 +47,7 @@ function page(path, { yagona = null, dependencies = {}, exportName = 'default', 
     if (name === './foydaHisobotiModeli') return model;
     if (name === '@/lib/hujjatSanasi') return { ...dates, bugungiToshkentKuni: () => '2026-11-11' };
     if (name === '@/lib/cashReports') return cash;
+    if (name === '@/lib/tolovTuriRanglari') return tolovRanglari;
     if (name === '@/api/sozlamalarApi') return { getApiErrorMessage: String };
     if (name === './yordamchilar') return { son: String };
     if (name === 'react-i18next') return { useTranslation: () => ({ t: tUz }) };

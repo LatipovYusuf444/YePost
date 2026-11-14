@@ -1,4 +1,5 @@
 import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
+import { POS_SAVATCHAGA_OTISH } from "@/lib/skanerFokusi";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type UIEvent } from "react";
 import { AlertTriangle, Check, LayoutGrid, LoaderCircle, RefreshCw, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -355,6 +356,16 @@ export default function HeaderMahsulotQidiruvi({ className, oramClassName = "fle
 
   function klavish(event: KeyboardEvent<HTMLInputElement>) {
     if (event.nativeEvent.isComposing) return;
+    // Qidiruv bo'sh (kategoriya ham tanlanmagan): ↓ — Bosh sahifa savatchasining birinchi qatoriga (savatcha bo'lsa).
+    if (event.key === "ArrowDown" && !matn && !kategoriyaId && typeof window !== "undefined") {
+      const hodisa = new CustomEvent(POS_SAVATCHAGA_OTISH, { cancelable: true });
+      window.dispatchEvent(hodisa);
+      if (hodisa.defaultPrevented) {
+        event.preventDefault();
+        setOchiq(false);
+        return;
+      }
+    }
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
       if (!ochiq) setOchiq(true);

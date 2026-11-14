@@ -4,7 +4,7 @@ import { pulMatni, useValyutaStore } from "@/lib/valyuta";
 import { yaxlitHalfUp } from "@/lib/yaxlitlash";
 import i18n from "i18next";
 import SummaMaydoni from "@/Components/common/SummaMaydoni";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import {
   LoaderCircle,
   Minus,
@@ -33,6 +33,7 @@ import { useAuthProfileStore } from "@/store/authProfileStore";
 import { savatchaChegirma, savatchaNarxTuri, savatchaSotuvNarxi, savatchaUstama, usePosStore, type CartItem } from "@/store/posStore";
 import { sotuvBirliklari } from "@/lib/kopBirlik";
 import { yaratishValyutasi } from "@/lib/mijozValyutasi";
+import { tolovRangi } from "@/lib/tolovTuriRanglari";
 import { mijozMosmi, telefonKorinishi } from "@/lib/mijozQidiruvi";
 import { qidiruvKorinishi } from "@/lib/kategoriyaQidiruvi";
 import SotuvNarxiMaydoni from "./SotuvNarxiMaydoni";
@@ -48,14 +49,18 @@ import XaridorModal from "@/Pages/XaridorUchot/XaridorModal";
 import { kompaniyaniUiGa } from "@/Pages/XaridorUchot/backendAdapters";
 import type { Xaridor, XaridorKompaniyasi } from "@/Pages/XaridorUchot/types";
 import { mijozKompaniyalariApi, mijozlarApi } from "@/api/partnersApi";
-import { enterTolovniTasdiqlaydimi, posQidiruvigaFokus, posQidiruvigaFokusKeyin } from "@/lib/skanerFokusi";
+import { enterTolovniTasdiqlaydimi, POS_SAVATCHAGA_OTISH, posQidiruvigaFokus, posQidiruvigaFokusKeyin } from "@/lib/skanerFokusi";
 
 type CustomerType = "donalik" | "doimiy";
 
 type PaymentType = {
   label: string;
   apiTuri: TolovTuri;
+  kalit: "payme" | "click" | "cash" | "bank" | "card";
 };
+
+// To'lov oynasidagi tezkor raqamlar: 1 Naqd, 2 Karta, 3 Bank, 4 Click, 5 Payme.
+const TOLOV_TEZKOR_TARTIBI = ["cash", "card", "bank", "click", "payme"] as const;
 
 const quickDiscounts = [15, 30, 50, 75];
 
@@ -113,10 +118,11 @@ export default function BoshSahifa() {
 
   const paymentTypes: PaymentType[] = useMemo(
     () => [
-      { label: t("paymentTypes.payme"), apiTuri: "CARD" },
-      { label: t("paymentTypes.click"), apiTuri: "CARD" },
-      { label: t("paymentTypes.cash"), apiTuri: "CASH" },
-      { label: t("paymentTypes.bank"), apiTuri: "BANK" },
+      { label: t("paymentTypes.payme"), apiTuri: "CARD", kalit: "payme" },
+      { label: t("paymentTypes.click"), apiTuri: "CARD", kalit: "click" },
+      { label: t("paymentTypes.cash"), apiTuri: "CASH", kalit: "cash" },
+      { label: t("paymentTypes.bank"), apiTuri: "BANK", kalit: "bank" },
+      { label: t("paymentTypes.card"), apiTuri: "CARD", kalit: "card" },
     ],
     [t]
   );
@@ -162,6 +168,12 @@ export default function BoshSahifa() {
   const [tolovModalOchiq, setTolovModalOchiq] = useState(false);
   // "Kechiktirish" savatni tozalaydi: mahsulot bo'lsa avval so'raladi (K5).
   const [kechiktirishOchiq, setKechiktirishOchiq] = useState(false);
+  // Savatchani klaviatura bilan boshqarish (TZ 13.11, 4-bag): tanlangan qator, o'chirilganlarni qaytarish (Ctrl+Z), tezkor tugmalar ro'yxati.
+  const [faolSavatQatori, setFaolSavatQatori] = useState<number | null>(null);
+  const [tezkorTugmalarOchiq, setTezkorTugmalarOchiq] = useState(false);
+  const savatRef = useRef<HTMLDivElement | null>(null);
+  const donalikNomRef = useRef<HTMLInputElement | null>(null);
+  const ochirilganQatorlar = useRef<Array<{ item: CartItem; indeks: number }>>([]);
   const [tolovSummasi, setTolovSummasi] = useState("");
   // Dollarda qabul qilinadigan to'lov ($). Faqat valyuta rejimi yoqilgan va bugungi kurs kiritilgan bo'lsa ishlatiladi.
   const [dollarTolovi, setDollarTolovi] = useState("");
@@ -378,6 +390,166 @@ export default function BoshSahifa() {
   function updateQuantity(productId: string, nextQuantity: number) {
     updateCartQuantity(productId, nextQuantity);
   }
+
+  // ── Savatchani klaviatura bilan boshqarish ──
+  const faolIndeks = faolSavatQatori !== null && cart.length > 0 ? Math.min(faolSavatQatori, cart.length - 1) : null;
+
+  function savatchagaOtish(indeks = 0) {
+    if (cart.length === 0) return false;
+    const chegara = Math.min(Math.max(indeks, 0), cart.length - 1);
+    setFaolSavatQatori(chegara);
+    savatRef.current?.focus({ preventScroll: true });
+    window.requestAnimationFrame(() => {
+      savatRef.current?.querySelector(`[data-savat-qator="${chegara}"]`)?.scrollIntoView({ block: "nearest" });
+    });
+    return true;
+  }
+
+  function savatQatoriniOchirish(indeks: number) {
+    const item = cart[indeks];
+    if (!item) return;
+    ochirilganQatorlar.current.push({ item, indeks });
+    removeFromCart(item.id);
+    if (cart.length <= 1) {
+      setFaolSavatQatori(null);
+      posQidiruvigaFokus();
+      return;
+    }
+    setFaolSavatQatori(Math.min(indeks, cart.length - 2));
+  }
+
+  // Ctrl+Z: oxirgi o'chirilgan qator o'z joyiga qaytadi (miqdori, narxi va birligi bilan).
+  function ochirilganniQaytarish() {
+    const oxirgi = ochirilganQatorlar.current.pop();
+    if (!oxirgi) return false;
+    usePosStore.setState((holat) => {
+      if (holat.cart.some((qator) => qator.id === oxirgi.item.id)) return holat;
+      const yangi = [...holat.cart];
+      yangi.splice(Math.min(oxirgi.indeks, yangi.length), 0, oxirgi.item);
+      return { cart: yangi };
+    });
+    window.requestAnimationFrame(() => savatchagaOtish(oxirgi.indeks));
+    return true;
+  }
+
+  function qatorMaydoni(indeks: number, belgi: "data-savat-miqdor" | "data-savat-narx") {
+    return savatRef.current?.querySelector<HTMLInputElement>(`[data-savat-qator="${indeks}"] [${belgi}] input`) ?? null;
+  }
+
+  // Savatcha ro'yxatidagi tugmalar (fokus ro'yxatning o'zida): ↑/↓ yurish, +/− miqdor, raqam — miqdorga yozish, F4/P — narx,
+  // Delete — o'chirish, Esc — qidiruvga. Qator ichidagi maydonda Enter/Esc ro'yxatga qaytaradi.
+  function savatKlavishi(event: ReactKeyboardEvent<HTMLDivElement>) {
+    if (event.nativeEvent.isComposing || event.altKey || event.metaKey) return;
+    const nishon = event.target as HTMLElement;
+    if (nishon !== event.currentTarget) {
+      if ((event.key === "Enter" || event.key === "Escape") && nishon.tagName === "INPUT") {
+        if (event.key === "Escape") event.preventDefault();
+        savatRef.current?.focus({ preventScroll: true });
+      }
+      return;
+    }
+    if (event.ctrlKey) return;
+    const indeks = faolIndeks ?? 0;
+    const item = cart[indeks];
+    if (!item) return;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      savatchagaOtish(indeks + (event.key === "ArrowDown" ? 1 : -1));
+    } else if (event.key === "+" || event.key === "=" || event.key === "Add") {
+      event.preventDefault();
+      if (canSellNegative || item.soni < item.qoldiq) updateQuantity(item.id, item.soni + 1);
+    } else if (event.key === "-" || event.key === "Subtract") {
+      event.preventDefault();
+      if (item.soni > 1) updateQuantity(item.id, item.soni - 1);
+    } else if (event.key === "Delete") {
+      event.preventDefault();
+      savatQatoriniOchirish(indeks);
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      setFaolSavatQatori(null);
+      posQidiruvigaFokus();
+    } else if (event.key === "F4" || event.key === "p" || event.key === "P") {
+      event.preventDefault();
+      const maydon = qatorMaydoni(indeks, "data-savat-narx");
+      maydon?.focus();
+      maydon?.select();
+    } else if (/^[0-9]$/.test(event.key)) {
+      event.preventDefault();
+      const maydon = qatorMaydoni(indeks, "data-savat-miqdor");
+      if (!maydon || maydon.disabled) return;
+      maydon.focus();
+      // Raqam maydonga yoziladi (React onChange orqali, miqdor savatchada darhol yangilanadi); keyingi raqamlar davom etadi.
+      const qiymatniYozish = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+      qiymatniYozish?.call(maydon, event.key);
+      maydon.dispatchEvent(new Event("input", { bubbles: true }));
+      maydon.setSelectionRange(maydon.value.length, maydon.value.length);
+    }
+  }
+
+  // To'lov oynasidagi tezkor to'lov turi: summa maydonida emas — raqam, istalgan joyda — Alt + raqam (1 Naqd ... 5 Payme).
+  function tolovTuriTezkor(event: { key: string; ctrlKey: boolean; metaKey: boolean; altKey: boolean; target: EventTarget | null }) {
+    if (event.ctrlKey || event.metaKey || !/^[1-5]$/.test(event.key)) return null;
+    const tag = (event.target as HTMLElement | null)?.tagName;
+    if (!event.altKey && (tag === "INPUT" || tag === "TEXTAREA")) return null;
+    const kalit = TOLOV_TEZKOR_TARTIBI[Number(event.key) - 1];
+    return paymentTypes.find((item) => item.kalit === kalit) ?? null;
+  }
+
+  function mijozMaydonigaOtish() {
+    if (mijozTuri === "doimiy") customerSearchRef.current?.focus();
+    else donalikNomRef.current?.focus();
+  }
+
+  // Sarlavhadagi qidiruvda (bo'sh) ↓ — savatchaga o'tish.
+  useEffect(() => {
+    function savatchaga(hodisa: Event) {
+      if (savatchagaOtish(0)) hodisa.preventDefault();
+    }
+    window.addEventListener(POS_SAVATCHAGA_OTISH, savatchaga);
+    return () => window.removeEventListener(POS_SAVATCHAGA_OTISH, savatchaga);
+  });
+
+  // Istalgan joyda: F2 — to'lash, F3 — mijoz maydoni, F8 — kechiktirish, Ctrl+/ — tezkor tugmalar, Ctrl+Z — o'chirilgan qatorni qaytarish.
+  // Ochiq oyna (to'lov, tasdiq, mahsulot va h.k.) bo'lsa F-tugmalar ishlamaydi.
+  useEffect(() => {
+    function tugma(hodisa: KeyboardEvent) {
+      if (hodisa.defaultPrevented || hodisa.isComposing) return;
+      if (hodisa.ctrlKey && (hodisa.key === "/" || hodisa.code === "Slash")) {
+        hodisa.preventDefault();
+        setTezkorTugmalarOchiq((joriy) => !joriy);
+        return;
+      }
+      if (tolovModalOchiq) {
+        // To'lov oynasi: 1–5 to'lov turi; fokus oyna ichida bo'lmasa (masalan, ochilgach hech narsa bosilmagan) Enter ham to'lovni yakunlaydi.
+        const tolovTuri = tolovTuriTezkor(hodisa);
+        if (tolovTuri) {
+          hodisa.preventDefault();
+          setPaymentType(tolovTuri.label);
+        } else if (hodisa.key === "Enter" && (hodisa.target === document.body || hodisa.target === document.documentElement) && tolovYaroqli && !saving) {
+          hodisa.preventDefault();
+          void tolovniTasdiqlash();
+        }
+        return;
+      }
+      if (document.querySelector(".app-modal-compact, [aria-modal='true']")) return;
+      if (hodisa.key === "F2") {
+        hodisa.preventDefault();
+        handlePay();
+      } else if (hodisa.key === "F3") {
+        hodisa.preventDefault();
+        mijozMaydonigaOtish();
+      } else if (hodisa.key === "F8") {
+        hodisa.preventDefault();
+        if (cart.length > 0) setKechiktirishOchiq(true);
+      } else if (hodisa.ctrlKey && !hodisa.shiftKey && (hodisa.key === "z" || hodisa.key === "Z")) {
+        const tag = (hodisa.target as HTMLElement | null)?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+        if (ochirilganniQaytarish()) hodisa.preventDefault();
+      }
+    }
+    window.addEventListener("keydown", tugma);
+    return () => window.removeEventListener("keydown", tugma);
+  });
 
   function clearCart() {
     clearPosCart();
@@ -738,12 +910,36 @@ export default function BoshSahifa() {
               </div>
             </div>
           ) : (
-            <div role="list" aria-label={t("cart.title")} className="flex-1 space-y-3 overflow-auto p-2.5 @min-[560px]/cart:p-3">
-              {cart.map((item) => (
+            <div
+              ref={savatRef}
+              role="list"
+              aria-label={t("cart.title")}
+              tabIndex={-1}
+              data-savatcha-royxati
+              onKeyDown={savatKlavishi}
+              onBlur={() => {
+                // Qator maydonidan (miqdor/narx) Enter bilan chiqilganda fokus bir lahzaga tashqarida bo'ladi va darhol ro'yxatga
+                // qaytadi — tanlov faqat fokus haqiqatan savatchadan ketganda tozalanadi.
+                window.setTimeout(() => {
+                  if (!savatRef.current?.contains(document.activeElement)) setFaolSavatQatori(null);
+                }, 0);
+              }}
+              className="flex-1 space-y-3 overflow-auto p-2.5 outline-none @min-[560px]/cart:p-3"
+            >
+              {cart.map((item, index) => (
                 <article
                   key={item.id}
                   role="listitem"
-                  className="min-w-0 rounded-xl border-2 border-gold-300 bg-gold-50/60 p-3.5 shadow-[0_4px_12px_rgba(15,23,42,0.04)] transition-colors hover:border-gold-400 focus-within:border-gold-400 @min-[560px]/cart:p-4"
+                  data-savat-qator={index}
+                  aria-current={faolIndeks === index ? "true" : undefined}
+                  onMouseDown={() => { if (faolIndeks !== null) setFaolSavatQatori(index); }}
+                  className={[
+                    "min-w-0 rounded-xl border-2 p-3.5 shadow-[0_4px_12px_rgba(15,23,42,0.04)] transition-colors @min-[560px]/cart:p-4",
+                    // Klaviatura bilan tanlangan qator aniq ko'rinadi: ko'k ramka va fon.
+                    faolIndeks === index
+                      ? "border-[#2563EB] bg-blue-50/70 ring-4 ring-blue-100"
+                      : "border-gold-300 bg-gold-50/60 hover:border-gold-400 focus-within:border-gold-400",
+                  ].join(" ")}
                 >
                   <div className="mb-3.5 flex items-start justify-between gap-3 border-b border-gold-200 pb-3">
                     <div className="min-w-0 flex-1">
@@ -806,14 +1002,16 @@ export default function BoshSahifa() {
                         <span className="flex h-10 items-center rounded-lg border border-slate-100 bg-slate-50 px-3 text-sm font-semibold text-slate-600">{t("cart.piece")}</span>
                       )}
                     </label>
+                    <div data-savat-narx className="min-w-0">
                     <SotuvNarxiMaydoni
                       item={item}
                       onChange={(narx) => setSotuvNarxi(item.id, narx)}
                       formatSumma={formatSumma}
                     />
+                    </div>
                     <div className="min-w-0">
                       <p className="mb-1.5 text-xs font-medium text-slate-500">{t("cart.quantity")}</p>
-                      <div className="flex h-10 items-center justify-between rounded-lg border border-gold-100 bg-white px-1 transition focus-within:border-gold-400 focus-within:ring-2 focus-within:ring-gold-100">
+                      <div data-savat-miqdor className="flex h-10 items-center justify-between rounded-lg border border-gold-100 bg-white px-1 transition focus-within:border-gold-400 focus-within:ring-2 focus-within:ring-gold-100">
                         <button
                           type="button"
                           aria-label={t("cart.decreaseQuantity", { name: item.nom })}
@@ -852,6 +1050,11 @@ export default function BoshSahifa() {
               ))}
             </div>
           )}
+          {cart.length > 0 && (
+            <p className="border-t border-gold-100 px-3 py-2 text-center text-[11px] font-semibold text-slate-400" data-savatcha-tezkor>
+              {t("keyboard.hint")}
+            </p>
+          )}
         </div>
       </section>
 
@@ -887,6 +1090,7 @@ export default function BoshSahifa() {
 
               <div className="relative">
               <input
+                ref={donalikNomRef}
                 value={customerName}
                 onChange={(event) => {
                   setCustomerName(event.target.value);
@@ -1093,23 +1297,20 @@ export default function BoshSahifa() {
                 <button
                   key={item.label}
                   onClick={() => setPaymentType(item.label)}
+                  aria-pressed={paymentType === item.label}
+                  // Tanlangan tur o'z rangida (TOLOV_TURI_RANGLARI): naqd — yashil, Payme/Click — ko'k, bank — siyohrang.
+                  style={paymentType === item.label ? { background: tolovRangi(item.apiTuri).fon, borderColor: tolovRangi(item.apiTuri).chegara, color: tolovRangi(item.apiTuri).matn } : undefined}
                   className={[
                     "flex h-11 items-center justify-center rounded-xl border bg-white text-sm font-bold transition",
                     paymentType === item.label
-                      ? "border-gold-400 bg-gold-50 text-[#0F172A] shadow-gold-soft"
+                      ? "shadow-gold-soft ring-2 ring-current/20"
                       : "border-gray-200 text-gray-700 hover:border-gold-200",
                   ].join(" ")}
                 >
                   <WalletCards
                     size={15}
-                    className={[
-                      "mr-2",
-                      item.label === t("paymentTypes.payme")
-                        ? "text-cyan-500"
-                        : item.label === t("paymentTypes.click")
-                          ? "text-blue-600"
-                          : "text-green-600",
-                    ].join(" ")}
+                    className="mr-2"
+                    style={{ color: tolovRangi(item.apiTuri).matn }}
                   />
                   {item.label}
                 </button>
@@ -1357,6 +1558,28 @@ export default function BoshSahifa() {
 
               <aside className="flex flex-col rounded-[30px] border border-gold-100 bg-white p-7 shadow-[0_18px_50px_rgba(37,99,235,.10)]">
                 <div className="rounded-[24px] bg-[#F8FAFC] p-5 ring-1 ring-gold-100"><p className="text-xs font-black uppercase tracking-wide text-slate-400">{t("paymentModal.totalPayable")}</p><p className="mt-2 text-3xl font-black text-slate-950">{formatSumma(payableTotal)}</p><p className="mt-2 text-sm font-bold text-gold-500">{t("paymentModal.selected", { type: paymentType })}</p></div>
+                <div role="radiogroup" aria-label={t("customer.choosePaymentType")} className="mt-5 flex flex-wrap gap-2">
+                  {TOLOV_TEZKOR_TARTIBI.map((kalit, raqam) => {
+                    const tur = paymentTypes.find((item) => item.kalit === kalit);
+                    if (!tur) return null;
+                    const tanlangan = paymentType === tur.label;
+                    const rang = tolovRangi(tur.apiTuri);
+                    return (
+                      <button
+                        key={kalit}
+                        type="button"
+                        role="radio"
+                        aria-checked={tanlangan}
+                        onClick={() => setPaymentType(tur.label)}
+                        style={tanlangan ? { background: rang.fon, color: rang.matn, borderColor: rang.chegara } : undefined}
+                        className={`inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-bold transition ${tanlangan ? "ring-2 ring-current/20" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}
+                      >
+                        <kbd className="rounded bg-white/70 px-1 text-[10px] font-black text-slate-500 ring-1 ring-slate-200">{raqam + 1}</kbd>
+                        {tur.label}
+                      </button>
+                    );
+                  })}
+                </div>
                 <label className="mt-6 block"><span className="text-xs font-black uppercase tracking-wide text-slate-400">{t("paymentModal.acceptedAmount")}</span><div className="mt-2 flex h-16 items-center rounded-2xl border border-gold-200 bg-[#F8FAFC] px-5 focus-within:ring-4 focus-within:ring-gold-50"><SummaMaydoni value={tolovSummasi} onChange={setTolovSummasi} placeholder="0" className="min-w-0 flex-1 bg-transparent text-2xl font-black text-slate-900 outline-none"/><span className="text-sm font-black text-gold-500">{dollarSavat ? "$" : t("customer.currency")}</span></div></label>
                 {dollarTolovMumkin && (
                   <div className="mt-4 rounded-2xl border border-gold-100 bg-white p-4">
@@ -1406,6 +1629,24 @@ export default function BoshSahifa() {
       )}
       {tahrirQatori && (
         <SavatchaMahsulotTahriri key={tahrirQatori.id} qator={tahrirQatori} onYopish={() => setTahrirQatori(null)} />
+      )}
+      {tezkorTugmalarOchiq && (
+        <AppModal onClose={() => setTezkorTugmalarOchiq(false)} actionRail={false}>
+          <section role="dialog" aria-modal="true" aria-label={t("keyboard.title")} data-tezkor-tugmalar className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-black text-slate-900">{t("keyboard.title")}</h2>
+              <button type="button" onClick={() => setTezkorTugmalarOchiq(false)} aria-label={t("common:actions.close")} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100"><X size={18} /></button>
+            </div>
+            <dl className="divide-y divide-slate-100 text-sm">
+              {(t("keyboard.rows", { returnObjects: true }) as Array<[string, string]>).map(([tugma, tavsif]) => (
+                <div key={tugma} className="flex items-center justify-between gap-4 py-2">
+                  <dt><kbd className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs font-bold text-slate-700 ring-1 ring-slate-200">{tugma}</kbd></dt>
+                  <dd className="text-right text-slate-600">{tavsif}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        </AppModal>
       )}
     </div>
   );

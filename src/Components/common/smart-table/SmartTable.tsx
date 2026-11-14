@@ -163,7 +163,9 @@ export default function SmartTable({ tableId, children, presentationOnly = false
       // Clear legacy stickiness when unpinned; actual offsets are based on the same colgroup widths.
       if (!pin && cell.props.className?.includes("sticky")) Object.assign(cellStyle, { position: "static", left: "auto", right: "auto", zIndex: "auto" });
       if (pin) Object.assign(cellStyle, { position: "sticky", left: "auto", right: "auto", [pin]: offset(column), zIndex: header ? 4 : 2 });
+      // Oxirgi ko'rinadigan ustunning kenglik tutqichi jadval chetidan chiqmaydi (aks holda sig'adigan jadvalda ham 2–4px gorizontal aylantirish chiqadi).
       const props = { style: cellStyle, "data-smart-id": column.id, "data-pinned": pin, "data-drop": header && drop === column.id ? "true" : undefined, "data-dragging-cell": header && dragging === column.id ? "true" : undefined,
+        "data-smart-last": header && column.id === visible[visible.length - 1]?.id ? "true" : undefined,
         className: `${cell.props.className ?? ""} ${header ? "smart-table-heading" : ""}` };
       if (!header) return cloneElement(cell, props);
       const original = replaceColumnControls ? stripControls(cell.props.children) : cell.props.children;

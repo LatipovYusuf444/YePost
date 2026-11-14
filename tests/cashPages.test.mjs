@@ -6,6 +6,7 @@ import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import * as dates from '../src/lib/hujjatSanasi.ts';
 import * as cash from '../src/lib/cashReports.ts';
+import * as tolovRanglari from '../src/lib/tolovTuriRanglari.ts';
 import * as numbering from '../src/lib/kassaNomlari.ts';
 import * as taqsimot from '../src/lib/qarzTaqsimoti.ts';
 import * as raqamMatni from '../src/lib/hujjatRaqamiMatni.ts';
@@ -41,6 +42,7 @@ function page(path, dependencies, props = {}, globals = {}, exportName = 'defaul
     if (name === 'react/jsx-runtime') return require(name);
     if (name === '@/lib/hujjatSanasi') return { ...dates, bugungiToshkentKuni: () => dates.bugungiToshkentKuni(new Date('2026-10-23T20:30:00Z')) };
     if (name === '@/lib/cashReports') return cash;
+    if (name === '@/lib/tolovTuriRanglari') return tolovRanglari;
     if (name === '@/api/sozlamalarApi') return { getApiErrorMessage: String };
     if (name in dependencies) return dependencies[name];
     // Valyuta rejimi (11.11.2026): sahifalar rejim valyutasini so'raydi; standart — ikki valyuta (DUAL), ya'ni avvalgi xatti-harakat.

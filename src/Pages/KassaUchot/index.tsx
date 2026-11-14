@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { tolovRangi } from "@/lib/tolovTuriRanglari";
 import {
   Ban,
   ArrowDownLeft,
@@ -705,7 +706,8 @@ export default function KassaUchot() {
             return guruh.bolimlar.map((bolim) => ({
               id: `${guruh.kanal}:${bolim.yonalish}`,
               nom: t(`groups.${guruh.kanal}.${bolim.yonalish}`),
-              icon: <Ikonka size={15} />,
+              // Ikonka to'lov turi rangida (TOLOV_TURI_RANGLARI): naqd — yashil, ilova/karta — ko'k, bank — siyohrang.
+              icon: <Ikonka size={15} style={{ color: tolovRangi(guruh.kanal).matn }} />,
             }));
           }),
           ...(zavodBonusiRuxsati ? [{ id: "zavod-bonusi", nom: t("zavodBonusi.tab"), icon: <Gift size={15} /> }] : []),

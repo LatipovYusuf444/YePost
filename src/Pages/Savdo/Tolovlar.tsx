@@ -1,4 +1,5 @@
 import SmartTable from "@/Components/common/smart-table/SmartTable";
+import TolovTuriBelgisi from "@/Components/common/TolovTuriBelgisi";
 import { useState } from "react";
 import { ArrowDownLeft, ArrowUpRight, Banknote, CreditCard, Landmark, LoaderCircle, PenLine, ReceiptText, RefreshCw, Scale, Search, Wallet, WalletCards, X } from "lucide-react";
 import JadvalYuklanmoqda from "./JadvalYuklanmoqda";
@@ -260,10 +261,10 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
                     </td>
                     <td className="px-6 py-4">{turiBadge(tolov, t)}</td>
                     <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-100">
-                        <span className="text-slate-400">{tolovIkonkasi(tolov.tolovTuri, 14)}</span>
+                      <TolovTuriBelgisi turi={tolov.tolovTuri} ikonka={false} className="py-1.5">
+                        <span className="opacity-80">{tolovIkonkasi(tolov.tolovTuri, 14)}</span>
                         {tolovUsuliMatni(tolov.tolovTuri)}
-                      </span>
+                      </TolovTuriBelgisi>
                     </td>
                     <td className={`whitespace-nowrap px-6 py-4 font-black tabular-nums ${tolov.turi === "CHIQIM" ? "text-red-600" : "text-emerald-700"}`}>
                       {tolov.turi === "CHIQIM" ? "-" : "+"}
@@ -330,10 +331,10 @@ export default function Tolovlar({ sotuvlar, qaytarishlar, onSotuvniOchish }: To
                 </div>
 
                 <div className="flex items-center justify-between gap-3 border-t border-orange-100 bg-orange-50/40 px-5 py-3">
-                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-100">
-                    <span className="text-slate-400">{tolovIkonkasi(tolov.tolovTuri, 14)}</span>
+                  <TolovTuriBelgisi turi={tolov.tolovTuri} ikonka={false} className="py-1.5">
+                    <span className="opacity-80">{tolovIkonkasi(tolov.tolovTuri, 14)}</span>
                     {tolovUsuliMatni(tolov.tolovTuri)}
-                  </span>
+                  </TolovTuriBelgisi>
                   <span className="text-xs font-semibold text-slate-500">{tolovSanasiniFormatlash(tolov.sana)}</span>
                 </div>
               </article>

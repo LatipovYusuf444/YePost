@@ -209,6 +209,7 @@
     "keyboardHint": "Klaviatura: ↑/↓ — qatorlar orasida; Enter — keyingi qator (oxirgisida yangisi); ro'yxatda Shift+Enter — tanlab, darrov keyingi mahsulotga; Ctrl+↑/↓ — mahsulot maydoniga; Ctrl+Delete — qatorni o'chirish.",
     "scanPlaceholder": "Shtrix kodni skanerlang yoki yozib Enter bosing",
     "scanAriaLabel": "Shtrix kod bilan mahsulot qo'shish",
+    "scanAddedLowStock": "{{name}} qo'shildi: {{qty}} dona. Omborda {{available}} dona bor — qoralama saqlanadi, lekin ombordan chiqarish uchun tovar yetmaydi.",
     "scanAdded": "{{name}} qo'shildi: {{qty}} dona",
     "scanNotFound": "Bu shtrix kodli mahsulot topilmadi.",
     "scanOutOfStock": "{{name}}: qoldiq yo'q.",
@@ -236,6 +237,31 @@
     "disabled": "Sozlamalarda o'chirilgan",
     "noPrice": "Bu mahsulotda bu narx turi yo'q",
     "skipped": "{{count}} ta mahsulotda \"{{type}}\" narxi yo'q — ular avvalgi narx turida qoldi."
+  },
+  "katalog": {
+    "button": "Katalog",
+    "title": "Katalog",
+    "search": "Qidirish: nomi, shtrix kod, artikul",
+    "categorySearch": "Kategoriyani qidirish",
+    "categories": "Kategoriyalar",
+    "all": "Hammasi",
+    "inStock": "Faqat qoldig'i bor",
+    "select": "Belgilash",
+    "product": "Mahsulot",
+    "stock": "Qoldiq",
+    "price": "Narx",
+    "qty": "Soni",
+    "selected": "Tanlandi: {{count}} ta · {{qty}} dona · {{summa}}",
+    "cancel": "Bekor qilish",
+    "add": "Qo'shish",
+    "empty": "Mahsulot topilmadi",
+    "chooseWarehouse": "Avval omborni tanlang — katalogda shu ombordagi qoldiq va narx ko'rinadi.",
+    "more": "Yana {{count}} ta mahsulot — qidiruv yoki kategoriya bilan toraytiring",
+    "keysHint": "↑↓ qatorlar · Space belgilash · raqam — miqdor · Enter qo'shish"
+  },
+  "stockWarning": {
+    "row": "Omborda {{available}} dona bor, {{requested}} dona so'ralgan. Qoralama saqlanadi, lekin ombordan chiqarish uchun tovar yetmaydi.",
+    "summary": "{{count}} ta tovarda qoldiq yetarli emas. Qoralama saqlanadi."
   },
   "generalDiscount": {
     "label": "Umumiy chegirma",
