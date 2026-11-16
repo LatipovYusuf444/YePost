@@ -77,7 +77,7 @@ test('pul(): DUAL va mos valyutada avvalgidek pulMatni; USD_ONLY da eski so\'mli
 test('YangiKirimModal: bir valyutali rejimda valyuta tanlovi yashirin, hujjat va yangi mahsulot narxi rejim valyutasida', () => {
   const manba = oqi('src/Pages/Ombor/YangiKirimModal.tsx');
   assert.match(manba, /\{!yagona && \(\s*<label[^>]*>\s*\{t\("yangiKirim\.currency"\)\}/);
-  assert.match(manba, /const hujjatValyutasi = yagona \?\? kirimHujjatValyutasi\(valid\);/);
+  assert.match(manba, /const hujjatValyutasi = yagona \?\? kirimHujjatValyutasi\(valid, kursBor \? narxValyutasi : null\);/);
   assert.match(manba, /const kursKerak = !yagona && /);
   assert.match(manba, /currency: yagonaValyuta\(\) \?\? asosiyValyuta\(\)/);
   assert.match(manba, /\.\.\.\(yagona \? \{ costCurrency: yagona, retailCurrency: yagona, wholesaleCurrency: yagona \} : \{\}\)/);

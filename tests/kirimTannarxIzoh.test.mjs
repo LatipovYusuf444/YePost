@@ -161,6 +161,32 @@ test('kirim tahriri: yangi formatdagi izoh o\'zgarmaydi ("Nomi: KR-2" qo\'shilma
   assert.equal(oyna.yuklanganlar.length, 1, 'yuklangan fayl ro\'yxatdan olingan — qayta yuklanmaydi');
 });
 
+test('kirim oynasi: so\'mdagi qoralamada "USD" tanlansa hujjat USD da saqlanadi, narxlar ekrandagidek', async () => {
+  const chaqiruvlar = [];
+  const store = {
+    omborlar: [{ id: 'w1', name: 'Tepa dokon' }], kirimlar: [], yetkazibBeruvchilar: [{ id: 's1', name: 'Asia Scotch' }], xodimlar: [], qoldiqlar: [], xatolik: null, xatolikniTozalash: noop,
+    modifikatsiyalar: [], amalBajarilmoqda: false,
+    kirimYaratish: async (d) => { chaqiruvlar.push(['yaratish', d]); return { id: 'yangi' }; },
+    kirimYangilash: async (id, d) => { chaqiruvlar.push(['yangilash', id, d]); return { id }; },
+    kirimTasdiqlash: async () => true, malumotlarniYuklash: async () => {},
+  };
+  const oyna = kirimOynasi(store);
+  const hujjat = { id: 'p1', number: 'KR-3', status: 'DRAFT', currency: 'UZS', supplierId: 's1', warehouseId: 'w1', date: '2026-11-16T10:00:00Z', note: '', items: [
+    { modificationId: 'm1', quantity: 10, price: 2160, modification: { id: 'm1', name: 'qizil 6*100', productId: 'p1' } },
+    { modificationId: 'm2', quantity: 72, price: 2160, modification: { id: 'm2', name: 'яшил 6*100', productId: 'p2' } },
+  ] };
+  const props = { tahrir: hujjat, onClose: noop };
+  const valyutaTanlovi = () => nodes(oyna.render(props)).find((n) => n.props?.['aria-label'] === 'yangiKirim.currency');
+  assert.equal(valyutaTanlovi().props.value, 'UZS');
+  valyutaTanlovi().props.onChange({ target: { value: 'USD' } });
+  assert.deepEqual(nodes(oyna.render(props)).filter((n) => n.props?.['data-kirim-narx'] !== undefined).map((n) => n.props.value), [0.18, 0.18], 'ekranda $0.18');
+  nodes(oyna.render(props)).filter((n) => typeof n.type === 'function' && n.props?.children === 'yangiKirim.save')[0].props.onClick();
+  for (let i = 0; i < 50 && !chaqiruvlar.length; i++) await new Promise((r) => setTimeout(r, 5));
+  const tana = plain(chaqiruvlar[0][2]);
+  assert.equal(tana.currency, 'USD', 'hujjat so\'mga qaytmaydi');
+  assert.deepEqual(tana.items.map((item) => item.price), [0.18, 0.18]);
+});
+
 test('Kirim hujjati oynasi: tan narx 3 xonali ko\'rinadi, izoh "Izoh" sifatida bot haqida yozuv bilan', () => {
   const kod = readFileSync(new URL('../src/Pages/Ombor/KirimTafsilotModal.tsx', import.meta.url), 'utf8');
   assert.match(kod, /tannarxMatni\(tanNarx, tanValyutasi\)/);

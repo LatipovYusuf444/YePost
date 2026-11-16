@@ -88,3 +88,17 @@ test('K7: hamma qator dollarda — hujjat USD, narx asl holida (kurs bilan o‘g
   assert.equal(kirimHujjatValyutasi([{ currency: 'UZS' }]), 'UZS');
   assert.equal(kirimHujjatValyutasi([]), 'UZS');
 });
+
+test('kirim oynasida USD tanlangan: katalogda so\'mli bitta tovar bo\'lsa ham hujjat USD (29 tovarli kirim, 16.11.2026)', async () => {
+  const { kirimHujjatValyutasi } = await import('../src/Pages/Ombor/kirimValyuta.ts');
+  const rows = [
+    { modificationId: 'a', quantity: 10, price: '0.18', currency: 'USD' },
+    // "яшил 6*100": katalogda costCurrency UZS, ekranda $0.18 deb kiritilgan — qatorda so'mda saqlangan (0.18 × 12 000).
+    { modificationId: 'b', quantity: 72, price: String(0.18 * 12000), currency: 'UZS' },
+  ];
+  assert.equal(kirimHujjatValyutasi(rows, 'USD'), 'USD');
+  assert.deepEqual(rows.map((row) => kirimElementiniYigish(row, 12000, 'USD').price), [0.18, 0.18], 'so\'mli qator ham ekrandagi $0.18');
+  assert.equal(kirimHujjatValyutasi(rows, 'UZS'), 'UZS', 'UZS tanlangan, aralash — avvalgidek so\'m');
+  assert.equal(kirimHujjatValyutasi(rows, null), 'UZS', 'kurs yo\'q (tanlov berilmaydi) — avvalgidek');
+  assert.equal(kirimHujjatValyutasi([{ currency: 'USD' }], 'UZS'), 'USD', 'K7 o\'zgarmagan');
+});

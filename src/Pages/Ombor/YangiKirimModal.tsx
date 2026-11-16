@@ -614,8 +614,9 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
     });
 
     // Ikki valyuta rejimida: hamma qator dollarda bo'lsa hujjat USD da, narxlar asl holida (K7). Bir valyutali rejimda — doim rejim
-    // valyutasi (boshqasini backend `errors.currency.not_allowed` bilan rad etadi).
-    const hujjatValyutasi = yagona ?? kirimHujjatValyutasi(valid);
+    // valyutasi (boshqasini backend `errors.currency.not_allowed` bilan rad etadi). Oynada "USD" tanlangan bo'lsa (kurs bor) — USD:
+    // narxlar ekranda $ da ko'rinadi va kiritiladi, katalogda so'mli bitta tovar butun kirimni so'mga o'tkazmaydi.
+    const hujjatValyutasi = yagona ?? kirimHujjatValyutasi(valid, kursBor ? narxValyutasi : null);
     const tana = {
       currency: hujjatValyutasi,
       supplierId,

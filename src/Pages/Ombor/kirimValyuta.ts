@@ -17,9 +17,14 @@ export function kirimNarxiniOgirish(qiymat: number, manba: Valyuta, maqsad: Valy
 /**
  * Kirim hujjati valyutasi (backend `currency` — bitta hujjatga bitta). Hamma qator dollarda bo'lsa — USD: narxlar asl holida ketadi,
  * tannarx va yetkazib beruvchi qarzi brauzer kursiga bog'lanib qolmaydi (K7). Aralash yoki so'mda — UZS (dollar qatorlar kurs bilan o'giriladi).
+ *
+ * `tanlangan` — kirim oynasidagi "Valyuta" tanlovi (faqat kurs bor bo'lsa beriladi). USD tanlangan bo'lsa narxlar ekranda $ da
+ * ko'rinadi va kiritiladi, shuning uchun hujjat ham USD da: katalogda tan narxi so'mda bo'lgan bitta tovar butun kirimni so'mga
+ * o'tkazib, $0.18 ni 2 160 so'mga aylantirmaydi (16.11.2026).
  */
-export function kirimHujjatValyutasi(rows: ReadonlyArray<{ currency: Valyuta }>): Valyuta {
+export function kirimHujjatValyutasi(rows: ReadonlyArray<{ currency: Valyuta }>, tanlangan?: Valyuta | null): Valyuta {
   if (rows.length === 0) return asosiyValyuta();
+  if (tanlangan === "USD") return "USD";
   return rows.every((row) => row.currency === "USD") ? "USD" : "UZS";
 }
 
