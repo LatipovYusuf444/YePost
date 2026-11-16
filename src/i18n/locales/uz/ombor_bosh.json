@@ -99,6 +99,8 @@
     "dateLabel": "Qachon kirim qilingan",
     "dateHint": "Backend hujjat sanasini avtomatik belgilaydi.",
     "commentSection": "Kommentariya",
+    "attachedFile": "Kirimga biriktirilgan",
+    "commentBotHint": "Kirim tasdiqlanganda bu izoh yetkazib beruvchiga Telegram bot orqali yuboriladi (yetkazib beruvchi botga ulangan bo'lsa).",
     "commentPlaceholder": "Izoh yozing...",
     "historySection": "Tarix",
     "historyDraftCreated": "Yangi hujjat qoralamasi ochildi",
@@ -144,6 +146,9 @@
       "continue": "Tushunarli"
     },
     "errors": {
+      "fileTooLarge": "Fayl hajmi 10 MB dan oshmasin.",
+      "fileFormat": "Bu formatdagi faylni yuklab bo'lmaydi (rasm, PDF, Word yoki Excel).",
+      "filesNotUploaded": "Kirim saqlandi, lekin fayllar yuklanmadi: {{names}}. Ularni kirim oynasidagi \"Biriktirilgan fayllar\"dan qayta yuklang.",
       "quantityNotWhole": "Pochka, qop, korobka kabi birliklarda faqat butun miqdor kiritiladi.",
       "serialRequired": "Seriyali tovarda har rulon qatoriga seriya yozing.",
       "serialFormat": "Seriyada faqat A-Z, a-z, 0-9 va . _ - belgilari bo'ladi.",

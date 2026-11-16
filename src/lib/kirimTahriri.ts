@@ -5,8 +5,8 @@ import type { TovarBirligi } from "./kopBirlik.ts";
 export type KirimIzohi = { nomi: string; izoh: string; fayllar: Array<{ id: string; nomi: string; url: string }> };
 
 /**
- * Yaratishda `note` shunday yig'iladi: "Nomi: <nom> | <izoh> | Fayl: <nom> (<url>)". Tahrirda qismlar o'z maydonlariga qaytadi,
- * saqlashda xuddi shu tartibda qayta yig'iladi (nom va fayllar yo'qolmaydi).
+ * `note` qismlari ("|" bilan): foydalanuvchi izohi, "Nomi: <nom>" (faqat qo'lda yozilgan nom) va eski hujjatlardagi
+ * "Fayl: <nom> (<url>)". Qismlar istalgan tartibda o'qiladi (eski format "Nomi: ... | izoh | Fayl: ..." ham).
  */
 export function kirimIzohiniAjratish(note?: string | null): KirimIzohi {
   const natija: KirimIzohi = { nomi: "", izoh: "", fayllar: [] };
@@ -69,4 +69,38 @@ export function saqlanganBirlik(item: SaqlanganQator): TovarBirligi | null {
 export function birliklarniBirlashtirish(yuklangan: readonly TovarBirligi[], saqlangan: TovarBirligi | null): TovarBirligi[] {
   if (!saqlangan || yuklangan.some((birlik) => birlik.unitId === saqlangan.unitId)) return [...yuklangan];
   return [...yuklangan, saqlangan];
+}
+
+/**
+ * Avtomatik kirim nomi — `note`ga yozilmaydi (ro'yxat va oynada o'rniga hujjat raqami ko'rinadi):
+ *  - `namunalar` — tarjimadagi shablonlar (uz va ru: "Kirim hujjati #{{number}}", "Приходный документ №{{number}}"), `{{number}}` — istalgan raqam;
+ *  - `aniqNomlar` — aynan shunday nomlar (eski kod yozgan raqamsiz "Kirim hujjati", hujjat raqami "KR-2", "—").
+ */
+export function avtomatikKirimNomimi(nom: string, namunalar: string | readonly string[], aniqNomlar: readonly string[] = []) {
+  const toza = nom.trim();
+  if (!toza) return true;
+  if (aniqNomlar.some((aniq) => aniq.trim() && aniq.trim() === toza)) return true;
+  return (typeof namunalar === "string" ? [namunalar] : namunalar).some((namuna) => {
+    const qismlar = namuna.split("{{number}}").map((q) => q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    return qismlar.length === 2 && new RegExp(`^${qismlar[0]}\\d+${qismlar[1]}$`).test(toza);
+  });
+}
+
+// Izohning "Nomi:" yoki "Fayl:" bilan boshlangan qismi texnik qism deb o'qilmasligi uchun boshiga ko'rinmas belgi (U+200B) qo'yiladi.
+const izohQisminiHimoyalash = (qism: string) => qism.replace(/^(\s*)(Nomi|Fayl):/, "$1​$2:");
+
+/**
+ * Kirim `note`i. Backend kirim TASDIQLANGANDA `note`ni yetkazib beruvchiga Telegram bot orqali "📝 Izoh: …" qilib yuboradi
+ * (backend `feat/purchase-note-to-supplier`), shuning uchun izoh BIRINCHI turadi va texnik qismlar iloji boricha yozilmaydi:
+ *  - avtomatik nom ("Kirim hujjati #N") yozilmaydi, faqat qo'lda o'zgartirilgan nom ("Nomi: …") izohdan keyin;
+ *  - yangi fayllar `note`ga emas, hujjat ilovalariga yuklanadi; faqat eski hujjatlarda allaqachon bor "Fayl: …" havolalari saqlanadi.
+ */
+export function kirimNotesiniYigish(p: { izoh: string; nomi: string; avtomatikNom: (nom: string) => boolean; eskiFayllar?: Array<{ nomi: string; url: string }> }) {
+  const qismlar: string[] = [];
+  const izoh = p.izoh.trim().split("|").map(izohQisminiHimoyalash).join("|");
+  if (izoh) qismlar.push(izoh);
+  const nomi = p.nomi.trim();
+  if (nomi && !p.avtomatikNom(nomi)) qismlar.push(`Nomi: ${nomi}`);
+  for (const fayl of p.eskiFayllar ?? []) qismlar.push(`Fayl: ${fayl.nomi} (${fayl.url})`);
+  return qismlar.join(" | ");
 }

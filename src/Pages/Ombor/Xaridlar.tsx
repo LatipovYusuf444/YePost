@@ -10,6 +10,7 @@ import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import { valyutaKodi } from "@/lib/valyuta";
 import type { KirimHujjati } from "@/types/ombor";
 import { holat, hujjatRaqami, pul, sana } from "./omborYordamchilari";
+import { kirimIzohiniAjratish } from "@/lib/kirimTahriri";
 import KirimTafsilotModal from "./KirimTafsilotModal";
 import YangiKirimModal from "./YangiKirimModal";
 import OmborJadval from "./OmborJadval";
@@ -144,9 +145,9 @@ export default function Xaridlar() {
     );
   }
 
+  // Qidiruv uchun: "Nomi:" qismi `note`ning istalgan joyida bo'lishi mumkin (yangi tartibda izoh birinchi turadi).
   function kirimNomi(hujjat: KirimHujjati) {
-    const match = (hujjat.note ?? "").trim().match(/^Nomi:\s*(.+?)\s*(?:\|.*)?$/);
-    return match?.[1]?.trim() || t("xaridlar.defaultDocName");
+    return kirimIzohiniAjratish(hujjat.note).nomi || t("xaridlar.defaultDocName");
   }
 
   const royxat = useMemo(() => {

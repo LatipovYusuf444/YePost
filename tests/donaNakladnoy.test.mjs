@@ -126,9 +126,18 @@ function invoice() {
   const file = ts.createSourceFile('Sotuv.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const fn = file.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'YukXatiGeneratorModal');
   const code = ts.transpileModule(fn.getText(file), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 } }).outputText;
-  let blob, html = '';
+  let blob, html = '', buyruqlar = '', shriftlar;
+  // PDF kirill harfli shrift bilan (src/lib/nakladnoyPdf): shriftlar diskdan o'qiladi, sahifa buyruqlari tekshirish uchun saqlanadi.
+  const pdfShrift = require('../src/lib/pdfShrift.ts');
+  const font = (fayl) => new Uint8Array(readFileSync(new URL(`../src/assets/fonts/${fayl}`, import.meta.url)));
+  const nakladnoyPdf = {
+    async nakladnoyPdfShriftlari() {
+      shriftlar = { F1: new pdfShrift.PdfShrifti(pdfShrift.ttfOqish(font('DejaVuSans.ttf'), 'DejaVuSans')), F2: new pdfShrift.PdfShrifti(pdfShrift.ttfOqish(font('DejaVuSans-Bold.ttf'), 'DejaVuSans-Bold', true)) };
+      return { shriftlar, pdf: (b) => { buyruqlar = b; return pdfShrift.pdfYigish(b, shriftlar); } };
+    },
+  };
   const context = {
-    require, exports: {}, useTranslation: () => ({ t: key => key === 'common.dona' ? 'dona' : key }), useState: () => [true, () => {}], useEffect() {},
+    require: (name) => (name === '@/lib/nakladnoyPdf' ? nakladnoyPdf : require(name)), exports: {}, xatolikXabari() {}, useTranslation: () => ({ t: key => key === 'common.dona' ? 'dona' : key }), useState: () => [true, () => {}], useEffect() {},
     HUJJAT_MENU_LABEL_KEYS: {}, mijozNomi: () => 'Test Buyer', mijozTelefon: () => '000',
     sotuvJadvalId: () => 'TEST-1', sotuvSummasi: sale => sale.totalAmount, sotuvValyutasi: () => 'UZS', sananiFormatlash: () => '31.10.2026',
     pulniFormatlash: value => `${Number(value)} UZS`, qatorValyutasi: () => 'UZS', mahsulotNomi: () => 'Test Product', mahsulotJami: row => Number(row.quantity) * Number(row.price) - Number(row.discount ?? 0),
@@ -144,7 +153,10 @@ function invoice() {
   icons(fn);
   runInNewContext(code, context);
   const tree = context.YukXatiGeneratorModal({ sotuv: { id: 'test', date: '2026-10-31', totalAmount: 71800, items: [carton], payments: [] }, hujjatTuri: 'Nakladnoy', onClose() {} });
-  return { tree, get blob() { return blob; }, get html() { return html; } };
+  // Glyph raqamlaridan matnga qaytarish: "BT /F1 9 Tf 254 y Td <...> Tj ET" -> "254 y Td (korobka)".
+  const ochiq = () => buyruqlar.replace(/BT \/(F\d) [\d.]+ Tf ([\d.]+) ([\d.]+) Td <([0-9A-F]*)> Tj ET/g, (_, f, x, y, hex) =>
+    `${x} ${y} Td (${(hex.match(/.{4}/g) ?? []).map((h) => shriftlar[f].ishlatilgan.get(parseInt(h, 16))).join('')})`);
+  return { tree, get blob() { return blob; }, get html() { return html; }, ochiq };
 }
 
 test('actual invoice preview and HTML printing show korobka/2/36000 without changing the discounted total', () => {
@@ -159,13 +171,15 @@ test('actual invoice preview and HTML printing show korobka/2/36000 without chan
 
 test('actual PDF download contains korobka and saved unit values with valid PDF object offsets', async () => {
   const view = invoice();
-  nodes(view.tree).find(node => node.type === 'button' && node.props.onClick?.name === 'pdfYuklash').props.onClick();
-  const pdf = await view.blob.text();
+  nodes(view.tree).find(node => node.type === 'button' && String(node.props.onClick).includes('pdfYuklash')).props.onClick();
+  for (let i = 0; i < 100 && !view.blob; i++) await new Promise(resolve => setTimeout(resolve, 10));
+  const pdf = Buffer.from(await view.blob.arrayBuffer()).toString('latin1');
   assert.equal(view.blob.type, 'application/pdf');
-  assert.match(pdf, /254 [\d.]+ Td \(korobka\)/);
-  assert.match(pdf, /310 [\d.]+ Td \(2\)/);
-  assert.match(pdf, /360 [\d.]+ Td \(36000 UZS\)/);
-  assert.match(pdf, /71800 UZS/);
+  const sahifa = view.ochiq();
+  assert.match(sahifa, /254 [\d.]+ Td \(korobka\)/);
+  assert.match(sahifa, /310 [\d.]+ Td \(2\)/);
+  assert.match(sahifa, /360 [\d.]+ Td \(36000 UZS\)/);
+  assert.match(sahifa, /71800 UZS/);
   const offset = Number(pdf.match(/startxref\n(\d+)/)[1]);
   assert.equal(pdf.slice(offset, offset + 4), 'xref');
   const offsets = [...pdf.matchAll(/(\d{10}) 00000 n/g)].map(match => Number(match[1]));

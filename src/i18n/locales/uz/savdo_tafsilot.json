@@ -116,6 +116,7 @@
     "yaratilmoqdaSarlavha": "PDF faylini yaratish",
     "yaratilmoqdaTavsif": "Hujjat sotuvdagi real mahsulot, mijoz va summa ma'lumotlari asosida tayyorlanmoqda.",
     "generatorTavsif": "Sotuv ma'lumotlari asosida hujjat generatsiya qilinmoqda.",
+    "pdfXatosi": "PDF yaratib bo'lmadi: shrift yuklanmadi. Internetni tekshirib, qayta urinib ko'ring.",
     "printTitle": "Nakladnoy {{raqam}}",
     "sarlavha": "Chiqim nakladnoyi № {{raqam}} от {{sana}}",
     "yetkazuvchi": "Yetkazuvchi",

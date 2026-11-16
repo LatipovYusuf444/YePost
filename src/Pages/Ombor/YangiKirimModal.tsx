@@ -34,7 +34,6 @@ import {
   birliklarApi,
   kategoriyalarApi,
   mahsulotlarApi,
-  mediaApi,
   modifikatsiyalarApi,
 } from "@/api/catalogApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
@@ -42,18 +41,23 @@ import type { Kategoriya, OlchovBirligi } from "@/types/catalog";
 import { hujjatRaqami, kodBilanTopish, modificationNomi, qoldiqMiqdori } from "./omborYordamchilari";
 import { korsatiladiganValyuta, useValyuta, useYagonaValyuta, valyutaKodi, yagonaValyuta, type Valyuta } from "@/lib/valyuta";
 import { narxValyutalari } from "@/lib/narxValyutasi";
-import { kirimElementiniYigish, kirimHujjatValyutasi, kirimNarxiniOgirish, rejimNarxi } from "./kirimValyuta";
+import { kirimElementiniYigish, kirimHujjatValyutasi, kirimNarxiniOgirish, rejimNarxi, TANNARX_KASRI } from "./kirimValyuta";
 import { seriyaYaroqlimi } from "@/lib/ishlabChiqarish";
 import { mahsulotBirliklariApi } from "@/api/catalogApi";
 import { asosiyMiqdor, birlikTopish, koeffTekshiruvi, miqdorYaroqlimi, qabulBirliklari, type TovarBirligi } from "@/lib/kopBirlik";
 import type { KirimHujjati, KirimOgohlantirishi, MahsulotModifikatsiyasi } from "@/types/ombor";
-import { birliklarniBirlashtirish, kirimIzohiniAjratish, kirimQatoriFormaga, saqlanganBirlik } from "@/lib/kirimTahriri";
+import { avtomatikKirimNomimi, birliklarniBirlashtirish, kirimIzohiniAjratish, kirimNotesiniYigish, kirimQatoriFormaga, saqlanganBirlik } from "@/lib/kirimTahriri";
+import { inventoryDocumentsApi } from "@/api/inventoryDocumentsApi";
+import { xatolikXabari } from "@/lib/toast";
+import { RAQAM_YOQ } from "@/lib/hujjatRaqamiMatni";
+import { HUJJAT_ILOVA_FORMATLARI, HUJJAT_ILOVA_TURLARI, HUJJAT_ILOVA_MAKS_HAJMI } from "@/lib/hujjatIlovalari";
 import { kirimYetkazibBeruvchiNomi } from "@/lib/kirimYetkazibBeruvchi";
 import MahsulotTanlov, { type MahsulotVarianti } from "./MahsulotTanlov";
 import ShtrixKodMaydoni, { type SkanNatijasi } from "./ShtrixKodMaydoni";
 import { asosiyValyuta } from "@/lib/asosiyValyuta";
 
-type Fayl = { id: string; nomi: string; url: string };
+// Fayl: yangi tanlangan (`fayl`) — kirim saqlangach hujjat ilovalariga yuklanadi; eski hujjatdagi (`url`) — `note`dagi havola.
+type Fayl = { id: string; nomi: string; url?: string; fayl?: File };
 
 type Qator = {
   id: string;
@@ -168,8 +172,9 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
   const [saqlanganIzoh] = useState(() => (tahrir ? kirimIzohiniAjratish(tahrir.note) : null));
   const [boshlangichSana] = useState(() => (tahrir ? toshkentKuni(tahrir.date ?? tahrir.createdAt) || bugungiToshkentKuni() : bugungiToshkentKuni()));
   const [kirimNomi, setKirimNomi] = useState(() =>
+    // Tahrirda faqat saqlangan (qo'lda yozilgan) nom; bo'sh bo'lsa maydonda hujjat raqami placeholder sifatida ko'rinadi va `note`ga yozilmaydi.
     tahrir
-      ? saqlanganIzoh?.nomi || hujjatRaqami(tahrir)
+      ? saqlanganIzoh?.nomi ?? ""
       : t("yangiKirim.defaultName", { number: store.kirimlar.length + 1 })
   );
   const [supplierQuery, setSupplierQuery] = useState(() => (tahrir ? kirimYetkazibBeruvchiNomi(tahrir, store.yetkazibBeruvchilar) : ""));
@@ -226,6 +231,18 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
   const [ogohlantirishlar,setOgohlantirishlar] = useState<KirimOgohlantirishi[]>([]);
   const [yaratishOchiqUchun, setYaratishOchiqUchun] = useState<string | null>(null);
   const [fayllar, setFayllar] = useState<Fayl[]>(saqlanganIzoh?.fayllar ?? []);
+  // Tahrirda kirimga avval biriktirilgan fayllar (hujjat ilovalari) — faqat ko'rsatiladi, qayta yuklanmaydi.
+  const [ilovalar, setIlovalar] = useState<Array<{ id: string; nomi: string }>>([]);
+  useEffect(() => {
+    if (!tahrir?.id) return;
+    let faol = true;
+    Promise.resolve(inventoryDocumentsApi.attachments("PURCHASE", tahrir.id))
+      .then((royxat) => {
+        if (faol && Array.isArray(royxat)) setIlovalar(royxat.map((ilova) => ({ id: ilova.id, nomi: ilova.originalName || ilova.fileName })));
+      })
+      .catch(() => {});
+    return () => { faol = false; };
+  }, [tahrir?.id]);
 
   // Tahrir: saqlangan qatorlarning birliklari (pochka, qop) yuklanadi — birlikda kiritilgan qator o'z birligida ko'rinadi.
   useEffect(() => {
@@ -250,16 +267,32 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-    setFaylYuklanmoqda(true);
     setXato("");
-    try {
-      const natija = await mediaApi.yuklash(file);
-      setFayllar((joriy) => [...joriy, { id: natija.id, nomi: file.name, url: natija.imageUrl }]);
-    } catch (error) {
-      setXato(getApiErrorMessage(error));
-    } finally {
-      setFaylYuklanmoqda(false);
+    // Fayl `note`ga havola bo'lib yozilmaydi (izoh yetkazib beruvchiga botda boradi): kirim saqlangach hujjat ilovalariga yuklanadi.
+    if (file.size > HUJJAT_ILOVA_MAKS_HAJMI) return setXato("yangiKirim.errors.fileTooLarge");
+    if (!HUJJAT_ILOVA_TURLARI.has(file.type)) return setXato("yangiKirim.errors.fileFormat");
+    setFayllar((joriy) => [...joriy, { id: crypto.randomUUID(), nomi: file.name, fayl: file }]);
+  }
+
+  // Kirim saqlangach yangi fayllar hujjat ilovalariga ("Biriktirilgan fayllar") yuklanadi; yuklanmaganlar xabarda ko'rsatiladi.
+  async function fayllarniYuklash(hujjatId: string) {
+    const yangi = fayllar.filter((item) => item.fayl);
+    if (yangi.length === 0) return;
+    setFaylYuklanmoqda(true);
+    const yuklanmagan: string[] = [];
+    const yuklangan = new Set<string>();
+    for (const item of yangi) {
+      try {
+        await inventoryDocumentsApi.upload("PURCHASE", hujjatId, item.fayl!);
+        yuklangan.add(item.id);
+      } catch {
+        yuklanmagan.push(item.nomi);
+      }
     }
+    // Yuklanganlar ro'yxatdan olinadi: tasdiqlash xato bersa va qayta saqlansa, ular ikkinchi marta yuklanmaydi.
+    setFayllar((joriy) => joriy.filter((item) => !yuklangan.has(item.id)));
+    setFaylYuklanmoqda(false);
+    if (yuklanmagan.length) xatolikXabari(t("yangiKirim.errors.filesNotUploaded", { names: yuklanmagan.join(", ") }));
   }
 
   function faylniOchirish(id: string) {
@@ -305,7 +338,9 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
   function narxQiymati(row: Qator, maydon: "price" | "retailPrice" | "wholesalePrice") {
     if (row[maydon] === "") return "";
     const qiymat = kirimNarxiniOgirish(Number(row[maydon]), maydonValyutasi(row, maydon), korsatishValyutasi(row, maydon), amaldagiKurs);
-    return Math.round(qiymat * 100) / 100;
+    // Tan narx 3 xonagacha ($0.115), sotuv va ulgurji narxlar avvalgidek 2 xona.
+    const kasr = maydon === "price" ? 10 ** TANNARX_KASRI : 100;
+    return Math.round(qiymat * kasr) / kasr;
   }
 
   function narxniKiritish(row: Qator, maydon: "price" | "retailPrice" | "wholesalePrice", qiymat: string) {
@@ -380,7 +415,7 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
   function katalogQiymatlari(modificationId: string, mod?: MahsulotModifikatsiyasi): Partial<Qator> {
     const valyutalar = narxValyutalari(mod?.price);
     // Bir valyutali rejimda narxlar rejim valyutasida (boshqa valyutadagi eski narx kurs bo'lsa o'giriladi); ikki valyutada — o'zgarishsiz.
-    const tan = rejimNarxi(Number(mod?.price?.costPrice ?? 0), valyutalar.cost, yagona, amaldagiKurs);
+    const tan = rejimNarxi(Number(mod?.price?.costPrice ?? 0), valyutalar.cost, yagona, amaldagiKurs, TANNARX_KASRI);
     const chakana = rejimNarxi(Number(mod?.price?.retailPrice ?? 0), valyutalar.retail, yagona, amaldagiKurs);
     const ulgurji = rejimNarxi(Number(mod?.price?.wholesalePrice ?? 0), valyutalar.wholesale, yagona, amaldagiKurs);
     const cost = tan.qiymat;
@@ -428,7 +463,7 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
   function birlikniOzgartirish(row: Qator, birlikId: string) {
     const birlik = birlikTopish(row.birliklar, birlikId);
     const koeff = birlik && !birlik.asosiy ? birlik.koeff : 1;
-    const narx = Math.round(row.boshlangichTanNarx * koeff * 100) / 100;
+    const narx = Math.round(row.boshlangichTanNarx * koeff * 10 ** TANNARX_KASRI) / 10 ** TANNARX_KASRI;
     yangilash(row.id, { birlikId, price: narx ? String(narx) : "", sanash: "" });
   }
 
@@ -507,7 +542,29 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
     setTanlangan(new Set());
   }
 
+  // Avtomatik nom `note`ga yozilmaydi: "Kirim hujjati #N" (uz va ru shablon — boshqa tilda yaratilgan kirim ham), eski kod yozgan
+  // raqamsiz nom va hujjat raqami.
+  function avtomatikNommi(nom: string) {
+    const shablonlar = (["uz", "ru"] as const).map((lng) => t("yangiKirim.defaultName", { lng, number: "@@N@@" }).replace("@@N@@", "{{number}}"));
+    return avtomatikKirimNomimi(nom, shablonlar, ["Kirim hujjati", "Приходный документ", RAQAM_YOQ, ...(tahrir ? [hujjatRaqami(tahrir)] : [])]);
+  }
+
+  // Saqlash (fayllar yuklanishi va tasdiqlash bilan) tugaguncha qayta bosilmaydi: ikkinchi kirim yoki ikkinchi tasdiqlash bo'lmasin.
+  const saqlanmoqdaRef = useRef(false);
+  const [saqlanmoqda, setSaqlanmoqda] = useState(false);
   async function saqlash(tasdiqlash: boolean) {
+    if (saqlanmoqdaRef.current) return;
+    saqlanmoqdaRef.current = true;
+    setSaqlanmoqda(true);
+    try {
+      await saqlashBajar(tasdiqlash);
+    } finally {
+      saqlanmoqdaRef.current = false;
+      setSaqlanmoqda(false);
+    }
+  }
+
+  async function saqlashBajar(tasdiqlash: boolean) {
     setXato("");
     fx.ornat({});
     if (kursKerak) return setXato("yangiKirim.errors.exchangeRateRequired");
@@ -548,9 +605,13 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
     if (new Set(seriyalar).size !== seriyalar.length)
       return fx.ornat(qatorXatolari((row) => seriyalimi(row) && seriyalilar.findIndex((boshqa) => seriyasi(boshqa) === seriyasi(row)) < seriyalilar.indexOf(row), "yangiKirim.fieldErrors.serialDuplicate", "serial"));
 
-    const izohQismlari = [`Nomi: ${kirimNomi.trim() || "Kirim hujjati"}`];
-    if (note.trim()) izohQismlari.push(note.trim());
-    fayllar.forEach((fayl) => izohQismlari.push(`Fayl: ${fayl.nomi} (${fayl.url})`));
+    // Izoh birinchi: kirim tasdiqlanganda backend `note`ni yetkazib beruvchiga bot orqali "📝 Izoh: …" qilib yuboradi.
+    const kirimNote = kirimNotesiniYigish({
+      izoh: note,
+      nomi: kirimNomi,
+      avtomatikNom: avtomatikNommi,
+      eskiFayllar: fayllar.flatMap((fayl) => (fayl.url ? [{ nomi: fayl.nomi, url: fayl.url }] : [])),
+    });
 
     // Ikki valyuta rejimida: hamma qator dollarda bo'lsa hujjat USD da, narxlar asl holida (K7). Bir valyutali rejimda — doim rejim
     // valyutasi (boshqasini backend `errors.currency.not_allowed` bilan rad etadi).
@@ -560,7 +621,7 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
       supplierId,
       warehouseId: valid[0].warehouseId,
       responsibleId: responsibleId || undefined,
-      note: izohQismlari.join(" | "),
+      note: kirimNote,
       items: valid.map((row) => {
         const { birlik, sanashBirligi } = qatorBirliklari(row);
         return kirimElementiniYigish({ ...row, birlik, sanashBirligi, sanashSoni: Number(row.sanash) || 0 }, amaldagiKurs, hujjatValyutasi);
@@ -571,6 +632,7 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
       ? await fx.kuzat(() => store.kirimYangilash(tahrir.id, { ...tahrirSanasi(hujjatSanasi, boshlangichSana), ...tana }))
       : await fx.kuzat(() => store.kirimYaratish({ ...yangiHujjatSanasi(hujjatSanasi), ...tana }));
     if (!hujjat) return;
+    await fayllarniYuklash(hujjat.id);
 
     const narxOzgarganlar = valid.filter((row) => {
       const retail = Number(row.retailPrice || 0);
@@ -665,7 +727,7 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                     value={kirimNomi}
                     onChange={(event) => setKirimNomi(event.target.value)}
                     className={input}
-                    placeholder={t("yangiKirim.namePlaceholder")}
+                    placeholder={tahrir ? hujjatRaqami(tahrir) : t("yangiKirim.namePlaceholder")}
                   />
                 </label>
 
@@ -765,6 +827,7 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                     className="w-full resize-none rounded-2xl border border-slate-200 p-4 text-sm font-medium outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                   />
                 </XatoliMaydon>
+                <p data-izoh-bot className="mt-2 text-xs font-semibold leading-5 text-slate-400">{t("yangiKirim.commentBotHint")}</p>
               </section>
               <section className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
                 <SectionTitle icon={<Clock3 size={18} />} text={t("yangiKirim.historySection")} />
@@ -782,7 +845,7 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
           <section className="mt-5 rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <SectionTitle icon={<Paperclip size={18} />} text={t("yangiKirim.filesSection")} />
-              <input ref={faylInputRef} type="file" onChange={(event) => void faylTanlandi(event)} className="hidden" />
+              <input ref={faylInputRef} type="file" accept={HUJJAT_ILOVA_FORMATLARI} onChange={(event) => void faylTanlandi(event)} className="hidden" />
               <button
                 type="button"
                 onClick={() => faylInputRef.current?.click()}
@@ -793,8 +856,21 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                 {t("yangiKirim.uploadFile")}
               </button>
             </div>
+            {ilovalar.length > 0 && (
+              <div className="mb-2 space-y-2" data-kirim-ilovalari>
+                {ilovalar.map((ilova) => (
+                  <div key={ilova.id} className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <FileText size={16} className="shrink-0 text-slate-400" />
+                      <span className="truncate text-sm font-bold text-slate-600">{ilova.nomi}</span>
+                    </div>
+                    <span className="shrink-0 text-xs font-semibold text-slate-400">{t("yangiKirim.attachedFile")}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             {fayllar.length === 0 ? (
-              <p className="py-4 text-center text-sm font-semibold text-slate-400">{t("yangiKirim.noFiles")}</p>
+              ilovalar.length === 0 && <p className="py-4 text-center text-sm font-semibold text-slate-400">{t("yangiKirim.noFiles")}</p>
             ) : (
               <div className="space-y-2">
                 {fayllar.map((fayl) => (
@@ -962,6 +1038,7 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                       <td className="px-1.5 py-2 align-middle">
                       <XatoliMaydon xato={fx.xato(`items.${index}.price`)}><div className="relative"><SummaMaydoni
                         aria-label={`${t("yangiKirim.table.costPriceHeader")} (${korsatishValyutasi(row, "price")})`}
+                        kasr={TANNARX_KASRI}
                         value={narxQiymati(row, "price")}
                         data-kirim-narx={row.id}
                         onChange={(qiymat) => {
@@ -1160,10 +1237,10 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
           <button type="button" data-modal-yopish onClick={onClose} className="h-12 rounded-2xl bg-slate-100 px-7 text-sm font-black text-slate-600 hover:bg-slate-200">
             {t("yangiKirim.cancel")}
           </button>
-          <ActionButton busy={store.amalBajarilmoqda} outline onClick={() => void saqlash(false)}>
+          <ActionButton busy={store.amalBajarilmoqda || saqlanmoqda} outline onClick={() => void saqlash(false)}>
             {t("yangiKirim.save")}
           </ActionButton>
-          <ActionButton busy={store.amalBajarilmoqda} onClick={() => void saqlash(true)}>
+          <ActionButton busy={store.amalBajarilmoqda || saqlanmoqda} onClick={() => void saqlash(true)}>
             {t("yangiKirim.saveAndConfirm")}
           </ActionButton>
         </footer>
@@ -1307,7 +1384,7 @@ function MahsulotYaratishPanel({
               <XatoliMaydon xato={fx.xato("costPrice")}>
                 <label className="space-y-2 text-sm font-bold text-slate-500">
                   <span>{t("mahsulotYaratish.costPriceLabel")}</span>
-                  <SummaMaydoni value={costPrice} onChange={(qiymat) => { fx.tozala("costPrice"); setCostPrice(qiymat); }} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
+                  <SummaMaydoni value={costPrice} kasr={TANNARX_KASRI} onChange={(qiymat) => { fx.tozala("costPrice"); setCostPrice(qiymat); }} className={inputSm} placeholder={t("mahsulotYaratish.pricePlaceholder")} />
                 </label>
               </XatoliMaydon>
               <XatoliMaydon xato={fx.xato("retailPrice")}>

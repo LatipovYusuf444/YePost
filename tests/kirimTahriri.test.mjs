@@ -44,11 +44,13 @@ function component(path, mocks) {
   };
   const all = {
     react: hooks,
-    'react-i18next': { useTranslation: () => ({ t: key => key }) },
+    // Avtomatik nom shabloni haqiqiy tarjimadagidek ("Kirim hujjati #{{number}}"), qolgan kalitlar o'zi.
+    'react-i18next': { useTranslation: () => ({ t: (key, p) => (key === 'yangiKirim.defaultName' ? `Kirim hujjati #${p?.number}` : key) }) },
     '@/hooks/useMaydonXatolari': { useMaydonXatolari: () => ({ xato: () => undefined, bor: false, tepadagi: '', ornat() {}, tozala() {}, kuzat: (f) => f() }) },
     '@/hooks/useOzgarishBormi': { useOzgarishBormi: () => false },
     '@/lib/hujjatSanasi': require('../src/lib/hujjatSanasi.ts'),
     '@/lib/kirimTahriri': require('../src/lib/kirimTahriri.ts'),
+    '@/lib/hujjatRaqamiMatni': require('../src/lib/hujjatRaqamiMatni.ts'),
     '@/lib/kopBirlik': require('../src/lib/kopBirlik.ts'),
     '@/lib/narxValyutasi': { narxValyutalari: () => ({ cost: 'USD', retail: 'UZS', wholesale: 'USD' }) },
     '@/lib/asosiyValyuta': { asosiyValyuta: () => 'UZS' },
@@ -99,7 +101,7 @@ test('YangiKirimModal tahrir: saqlangan qiymatlar bilan ochiladi, "Saqlash" PATC
   const tree = render(props);
   assert.ok(nodes(tree).some((n) => n.props?.children === 'yangiKirim.editTitle'), 'sarlavha — tahrirlash');
   assert.ok(nodes(tree).some((n) => n.props?.children === 'yangiKirim.badgeDraft'));
-  assert.equal(nodes(tree).find((n) => n.type === 'input' && n.props.placeholder === 'yangiKirim.namePlaceholder').props.value, 'Kirim hujjati #2');
+  assert.equal(nodes(tree).find((n) => n.type === 'input' && n.props.placeholder === 'KR-2').props.value, 'Kirim hujjati #2', 'tahrirda nom maydoni placeholderi — hujjat raqami');
   assert.equal(nodes(tree).find((n) => n.type === 'textarea').props.value, 'izoh');
   const saqlash = nodes(tree).filter((n) => typeof n.type === 'function' && n.props?.children === 'yangiKirim.save')[0];
   saqlash.props.onClick();
@@ -115,7 +117,9 @@ test('YangiKirimModal tahrir: saqlangan qiymatlar bilan ochiladi, "Saqlash" PATC
   assert.equal(body.warehouseId, 'w1');
   assert.equal(body.responsibleId, 'u7', 'saqlangan mas\'ul o\'zgarmaydi');
   assert.equal(body.currency, 'USD');
-  assert.equal(body.note, 'Nomi: Kirim hujjati #2 | izoh');
+  // Izoh birinchi va yolg'iz: avtomatik nom ("Kirim hujjati #2") `note`ga yozilmaydi — kirim tasdiqlanganda backend `note`ni
+  // yetkazib beruvchiga bot orqali "📝 Izoh: …" qilib yuboradi (TZ 16.11.2026).
+  assert.equal(body.note, 'izoh');
   assert.deepEqual(body.items.map((i) => [i.modificationId, i.quantity, i.price, i.unitId]), [['m1', 500, 0.11, undefined], ['m2', 10, 18, 'kor']], "birliklar yuklanmagan bo'lsa ham korobka saqlanadi");
   assert.equal(yopildi, 1);
 });

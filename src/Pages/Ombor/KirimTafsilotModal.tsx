@@ -15,7 +15,8 @@ import YangiKirimModal from "./YangiKirimModal";
 import type { KirimHujjati, MahsulotModifikatsiyasi } from "@/types/ombor";
 import { valyutaKodi } from "@/lib/valyuta";
 import { narxValyutalari } from "@/lib/narxValyutasi";
-import { holat, hujjatRaqami, modificationNomi, pul } from "./omborYordamchilari";
+import { holat, hujjatRaqami, modificationNomi, pul, tannarxMatni } from "./omborYordamchilari";
+import { kirimIzohiniAjratish } from "@/lib/kirimTahriri";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
 import { kirimYetkazibBeruvchiNomi } from "@/lib/kirimYetkazibBeruvchi";
 import { hujjatRaqamiMatni } from "@/lib/hujjatRaqamiMatni";
@@ -36,16 +37,6 @@ function statusSinfi(status?: string) {
   return "bg-amber-50 text-amber-600";
 }
 
-function notedanQismlar(note?: string) {
-  const qismlar = (note ?? "").split("|").map((qism) => qism.trim()).filter(Boolean);
-  let nomi = "";
-
-  for (const qism of qismlar) {
-    const nomiMatch = qism.match(/^Nomi:\s*(.+)$/);
-    if (nomiMatch) nomi = nomiMatch[1].trim();
-  }
-  return { nomi };
-}
 
 export default function KirimTafsilotModal({ id, onClose, ajratilganQator, hisobotManbasi }: Props) {
   const ajratish = useHisobotQatori(ajratilganQator);
@@ -87,7 +78,8 @@ export default function KirimTafsilotModal({ id, onClose, ajratilganQator, hisob
   const warehouse = hujjat?.warehouse ?? store.omborlar.find((item) => item.id === hujjat?.warehouseId);
   const jami = hujjat ? Number(hujjat.totalAmount ?? hujjat.total ?? 0) || (hujjat.items ?? []).reduce((sum, item) => sum + Number(item.quantity) * Number(item.price), 0) : 0;
   const status = String(hujjat?.status ?? "DRAFT").toUpperCase();
-  const { nomi } = notedanQismlar(hujjat?.note);
+  // `note`: foydalanuvchi izohi (kirim tasdiqlanganda yetkazib beruvchiga botda boradi), qo'lda yozilgan nom va eski fayl havolalari.
+  const { nomi, izoh } = kirimIzohiniAjratish(hujjat?.note);
 
   async function tasdiqlash() {
     if (!hujjat || !(await store.kirimTasdiqlash(hujjat.id))) return;
@@ -142,6 +134,12 @@ export default function KirimTafsilotModal({ id, onClose, ajratilganQator, hisob
                   <KiritilganBelgisi date={hujjat.date} createdAt={hujjat.createdAt} className="mt-1" />
                 </div>
                 <Info label={t("kirimTafsilotModal.responsibleLabel")} value={responsible?.fullName ?? responsible?.name ?? responsible?.username ?? t("kirimTafsilotModal.unassigned")}/>
+                {izoh && (
+                  <div data-kirim-izoh className="sm:col-span-2">
+                    <Info label={t("kirimTafsilotModal.noteLabel")} value={izoh}/>
+                    <p className="mt-1 text-xs font-semibold text-slate-400">{t(status === "CONFIRMED" ? "kirimTafsilotModal.noteSentHint" : "kirimTafsilotModal.noteBotHint")}</p>
+                  </div>
+                )}
               </div>
             </section>
 
@@ -162,7 +160,7 @@ export default function KirimTafsilotModal({ id, onClose, ajratilganQator, hisob
                     // Har bir narxning o'z valyutasi: tannarx, chakana va ulgurji narxlar turli valyutada bo'lishi mumkin.
                     const katalogValyutalari = narxValyutalari(mod?.price);
                     const tanValyutasi = item.price != null ? valyutaKodi(hujjat.currency) : katalogValyutalari.cost;
-                    return <tr {...ajratish(item)} key={item.id ?? `${item.modificationId}-${index}`} className="hover:bg-orange-50/30"><td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td><td className="px-4 py-4 font-black text-slate-800">{modificationNomi(mod)}</td><td className="px-4 py-4 font-medium text-slate-500">{mod?.barcode || "—"}</td><td className="px-4 py-4 font-semibold text-slate-600">{pul(tanNarx, tanValyutasi)}</td><td className="px-4 py-4 text-slate-600">{pul(sotuvNarx, katalogValyutalari.retail)}</td><td className="px-4 py-4 text-slate-600">{pul(ulgurjiNarx, katalogValyutalari.wholesale)}</td><td className="px-4 py-4 font-bold text-slate-700">{item.unitId && item.unitQuantity != null ? <>{qatorMiqdoriMatni(item)}<span className="block text-[11px] font-semibold text-slate-400">= {Number(item.quantity).toLocaleString("uz-UZ", { maximumFractionDigits: 3 })} {item.baseUnitName ?? ""}</span></> : Number(item.quantity).toLocaleString("uz-UZ")}</td><td className="px-4 py-4 text-slate-600">{warehouse?.name ?? hujjatRaqamiMatni()}</td><td className="px-4 py-4 font-black text-emerald-600">{pul(Number(item.quantity) * tanNarx, tanValyutasi)}</td></tr>;
+                    return <tr {...ajratish(item)} key={item.id ?? `${item.modificationId}-${index}`} className="hover:bg-orange-50/30"><td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td><td className="px-4 py-4 font-black text-slate-800">{modificationNomi(mod)}</td><td className="px-4 py-4 font-medium text-slate-500">{mod?.barcode || "—"}</td><td className="px-4 py-4 font-semibold text-slate-600">{tannarxMatni(tanNarx, tanValyutasi)}</td><td className="px-4 py-4 text-slate-600">{pul(sotuvNarx, katalogValyutalari.retail)}</td><td className="px-4 py-4 text-slate-600">{pul(ulgurjiNarx, katalogValyutalari.wholesale)}</td><td className="px-4 py-4 font-bold text-slate-700">{item.unitId && item.unitQuantity != null ? <>{qatorMiqdoriMatni(item)}<span className="block text-[11px] font-semibold text-slate-400">= {Number(item.quantity).toLocaleString("uz-UZ", { maximumFractionDigits: 3 })} {item.baseUnitName ?? ""}</span></> : Number(item.quantity).toLocaleString("uz-UZ")}</td><td className="px-4 py-4 text-slate-600">{warehouse?.name ?? hujjatRaqamiMatni()}</td><td className="px-4 py-4 font-black text-emerald-600">{pul(Number(item.quantity) * tanNarx, tanValyutasi)}</td></tr>;
                   })}
                 </tbody>
               </table></SmartTable>

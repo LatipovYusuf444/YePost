@@ -24,6 +24,12 @@ export function pul(value?: number, manba?: Valyuta) {
   return pulMatni(value, manba);
 }
 
+/** Kirim tan narxi: dollarda 3 xonagacha ($0.115), qolgani `pul` kabi (so'mda kasr baribir ko'rinadi). */
+export function tannarxMatni(value?: number, manba?: Valyuta) {
+  if (manba === "USD") return `$${(Number(value) || 0).toLocaleString("uz-UZ", { maximumFractionDigits: 3 })}`;
+  return pul(value, manba);
+}
+
 export function modificationNomi(modification?: MahsulotModifikatsiyasi) {
   const productName = modification?.product?.name;
   const variantName = modification?.name;

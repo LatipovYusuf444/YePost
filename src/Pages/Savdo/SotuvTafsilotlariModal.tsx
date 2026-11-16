@@ -982,18 +982,28 @@ function YukXatiGeneratorModal({
     printWindow?.document.close();
   }
 
-  function pdfYuklash() {
+  // Kirill harflari "?" bo'lib qolmasligi uchun PDF'ga kirill harfli shrift (DejaVu Sans, faqat ishlatilgan harflari) joylanadi.
+  async function pdfYuklash() {
     if (typeof window === "undefined") return;
-
-    const pdfText = (value: string | number | null | undefined) =>
-      String(value ?? "")
-        .replace(/\\/g, "\\\\")
-        .replace(/\(/g, "\\(")
-        .replace(/\)/g, "\\)")
-        .replace(/[^\x20-\x7E]/g, "?");
+    let pdfShriftlar: Awaited<ReturnType<typeof import("@/lib/nakladnoyPdf").nakladnoyPdfShriftlari>>;
+    try {
+      const { nakladnoyPdfShriftlari } = await import("@/lib/nakladnoyPdf");
+      pdfShriftlar = await nakladnoyPdfShriftlari();
+    } catch {
+      xatolikXabari(t("nakladnoy.pdfXatosi"));
+      return;
+    }
+    const { shriftlar } = pdfShriftlar;
     const commands: string[] = [];
-    const text = (value: string, x: number, y: number, size = 10, font = "F1") => {
-      commands.push(`BT /${font} ${size} Tf ${x} ${y} Td (${pdfText(value)}) Tj ET`);
+    const text = (value: string, x: number, y: number, size = 10, font: "F1" | "F2" = "F1") => {
+      commands.push(`BT /${font} ${size} Tf ${x} ${y} Td ${shriftlar[font].kodla(String(value ?? ""))} Tj ET`);
+    };
+    // Matn katakka sig'masa haqiqiy kengligi bo'yicha qirqiladi ("…" bilan): kirill harflari lotindan kengroq.
+    const sigdir = (value: string, kenglik: number, size: number, font: "F1" | "F2" = "F1") => {
+      if (shriftlar[font].kenglik(value, size) <= kenglik) return value;
+      let qism = value;
+      while (qism.length > 1 && shriftlar[font].kenglik(`${qism}…`, size) > kenglik) qism = qism.slice(0, -1);
+      return `${qism.trimEnd()}…`;
     };
     const line = (x1: number, y1: number, x2: number, y2: number) => {
       commands.push(`${x1} ${y1} m ${x2} ${y2} l S`);
@@ -1002,14 +1012,15 @@ function YukXatiGeneratorModal({
       commands.push(`${x} ${y} ${width} ${height} re S`);
     };
 
-    text(`Chiqim nakladnoyi No ${hujjatRaqam} ot ${qisqaSana}`, 130, 790, 16, "F2");
+    const sarlavha = sigdir(`Chiqim nakladnoyi No ${hujjatRaqam} ot ${qisqaSana}`, 505, 16, "F2");
+    text(sarlavha, Math.round((595 - shriftlar.F2.kenglik(sarlavha, 16)) / 2), 790, 16, "F2");
     rect(45, 710, 505, 60);
     line(160, 710, 160, 770);
     line(45, 740, 550, 740);
     text("Yetkazuvchi", 70, 752, 10, "F2");
-    text(`${yetkazuvchi}, ${yetkazuvchiManzil}`.slice(0, 70), 175, 752, 10);
+    text(sigdir(`${yetkazuvchi}, ${yetkazuvchiManzil}`, 365, 10), 175, 752, 10);
     text("Xaridor", 78, 722, 10, "F2");
-    text(`${mijoz} tel.: ${xaridorTelefon}`.slice(0, 70), 230, 722, 12, "F2");
+    text(sigdir(`${mijoz} tel.: ${xaridorTelefon}`, 310, 12, "F2"), 230, 722, 12, "F2");
 
     rect(45, 680, 505, 30);
     line(160, 680, 160, 710);
@@ -1031,7 +1042,7 @@ function YukXatiGeneratorModal({
       rect(45, y, 505, rowHeight);
       colX.slice(1, -1).forEach((x) => line(x, y, x, y + rowHeight));
       text(String(index + 1), 55, y + 8, 9, "F2");
-      text(mahsulotNomi(item, t).slice(0, 26), 82, y + 8, 9);
+      text(sigdir(mahsulotNomi(item, t), 158, 9), 82, y + 8, 9);
       text(nakladnoyQatori(item, t("common.dona")).birlik, 254, y + 8, 9);
       text(String(nakladnoyQatori(item).miqdor), 310, y + 8, 9);
       text(pulniFormatlash(nakladnoyQatori(item).narx, qatorValyutasi(item, sotuv)), 360, y + 8, 9);
@@ -1053,29 +1064,9 @@ function YukXatiGeneratorModal({
     line(360, y - 2, 520, y - 2);
 
     const stream = `q\n1 w\n${commands.join("\n")}\nQ`;
-    const encoder = new TextEncoder();
-    const objects = [
-      "<< /Type /Catalog /Pages 2 0 R >>",
-      "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-      "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>",
-      "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-      "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>",
-      `<< /Length ${encoder.encode(stream).length} >>\nstream\n${stream}\nendstream`,
-    ];
-    let pdf = "%PDF-1.4\n";
-    const offsets = [0];
-    objects.forEach((object, index) => {
-      offsets.push(encoder.encode(pdf).length);
-      pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
-    });
-    const xrefOffset = encoder.encode(pdf).length;
-    pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-    offsets.slice(1).forEach((offset) => {
-      pdf += `${String(offset).padStart(10, "0")} 00000 n \n`;
-    });
-    pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+    const pdf = await pdfShriftlar.pdf(stream);
 
-    const blob = new Blob([pdf], { type: "application/pdf" });
+    const blob = new Blob([pdf as BlobPart], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -1110,7 +1101,7 @@ function YukXatiGeneratorModal({
           </button>
           <button
             type="button"
-            onClick={pdfYuklash}
+            onClick={() => void pdfYuklash()}
             className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-[#2563EB] shadow-[0_10px_24px_rgba(15,23,42,.16)] ring-1 ring-orange-100 transition duration-200 hover:-translate-y-0.5 hover:bg-[#EFF6FF]"
             aria-label={t("nakladnoy.pdfYuklabTitle")}
             title={t("nakladnoy.pdfYuklab")}
@@ -1130,7 +1121,7 @@ function YukXatiGeneratorModal({
                 <Printer size={16} />
                 {t("nakladnoy.chopEtish")}
               </button>
-              <button onClick={pdfYuklash} type="button" className="inline-flex h-10 items-center gap-2 rounded-xl bg-white px-3.5 text-[13px] font-bold text-slate-600 shadow-sm transition hover:text-blue-600">
+              <button onClick={() => void pdfYuklash()} type="button" className="inline-flex h-10 items-center gap-2 rounded-xl bg-white px-3.5 text-[13px] font-bold text-slate-600 shadow-sm transition hover:text-blue-600">
                 {t("nakladnoy.pdfYuklab")} <ChevronDown size={15} />
               </button>
             </div>
