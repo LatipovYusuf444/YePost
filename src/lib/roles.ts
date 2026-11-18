@@ -56,13 +56,14 @@ export function foydalanuvchiAdminmi(user?: RoleLike | null) {
   return rol === "ADMIN" || rol === "DIREKTOR";
 }
 
-export type IshlabChiqarishBolimi = "buyurtmalar" | "retseptlar" | "kalkulyatsiya" | "sexga-berish" | "smena" | "rulonlar";
+export type IshlabChiqarishBolimi = "buyurtmalar" | "retseptlar" | "kalkulyatsiya" | "sexga-berish" | "smena" | "qabul" | "rulonlar";
 
 function faolHuquqBormi(user: RoleLike | null | undefined, kod: string) {
   return (user?.grants ?? []).some((huquq) => huquq.code === kod && huquq.isActive !== false && !huquq.isDeleted);
 }
 
-// Ishlab chiqarish: buyurtma — ADMIN/DIREKTOR; retsept va kalkulyatsiya — o'z huquqi yoki DIREKTOR; sexga berish va smena hisoboti — o'z huquqi, ADMIN yoki DIREKTOR.
+// Ishlab chiqarish: buyurtma — ADMIN/DIREKTOR; retsept va kalkulyatsiya — o'z huquqi yoki DIREKTOR; sexga berish va smena hisoboti — o'z huquqi, ADMIN yoki DIREKTOR;
+// qabul akti — PRODUCTION_ACCEPT yoki DIREKTOR (backend GrantsGuard ADMIN'ga avtomatik bermaydi).
 // Menyu uchun; yakuniy qarorni server beradi.
 export function ishlabChiqarishRuxsati(user: RoleLike | null | undefined, bolim: IshlabChiqarishBolimi) {
   const rol = foydalanuvchiRoli(user);
@@ -72,10 +73,11 @@ export function ishlabChiqarishRuxsati(user: RoleLike | null | undefined, bolim:
   if (bolim === "kalkulyatsiya") return rol === "DIREKTOR" || faolHuquqBormi(user, "COSTING");
   if (bolim === "sexga-berish") return rahbar || faolHuquqBormi(user, "PRODUCTION_ISSUE");
   if (bolim === "smena") return rahbar || faolHuquqBormi(user, "PRODUCTION_REPORT");
+  if (bolim === "qabul") return rol === "DIREKTOR" || faolHuquqBormi(user, "PRODUCTION_ACCEPT");
   return rahbar || faolHuquqBormi(user, "PRODUCTION_ISSUE") || faolHuquqBormi(user, "PRODUCTION_REPORT");
 }
 
-const ISHLAB_CHIQARISH_BOLIMLARI: IshlabChiqarishBolimi[] = ["buyurtmalar", "retseptlar", "kalkulyatsiya", "sexga-berish", "smena", "rulonlar"];
+const ISHLAB_CHIQARISH_BOLIMLARI: IshlabChiqarishBolimi[] = ["buyurtmalar", "retseptlar", "kalkulyatsiya", "sexga-berish", "smena", "qabul", "rulonlar"];
 
 export function ishlabChiqarishYoliRuxsati(user: RoleLike | null | undefined, pathname: string) {
   const bolim = pathname.split("/")[2];

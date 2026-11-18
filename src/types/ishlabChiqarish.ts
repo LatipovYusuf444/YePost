@@ -6,7 +6,17 @@ export type IshlabChiqarishSozlamasi = {
   deviationPercent?: Son;
   yieldWarnPercent?: Son;
   commentRequired?: boolean;
+  // Qabulda brak ulushi shu foizdan oshsa qizil ogohlantirish va do'kon Telegram guruhiga xabar (standart 10).
+  scrapAlertPercent?: Son;
+  // false: "Xomashyo berish" bosqichi yo'q — xomashyo qabulda asosiy ombordan sarflanadi (standart true).
+  issueStageEnabled?: boolean;
+  defaultSourceWarehouseId?: string | null;
+  defaultDestWarehouseId?: string | null;
+  scrapWarehouseId?: string | null;
 };
+
+/** Brak sababi (GET /production/scrap-reasons): tayyorlari (Kuygan, Xom qolgan, ...) birinchi o'qishda o'zi qo'shiladi. */
+export type BrakSababi = { id: string; name: string; isPreset?: boolean; position?: number };
 
 export type MahsulotTuri = "RAW" | "SEMI" | "FINISHED" | "PACKAGING" | "WASTE" | "SERVICE";
 export type OmborTuri = "STORE" | "WIP";
@@ -51,6 +61,8 @@ export type Retsept = NomliQator & {
   outputMax?: Son;
   normalScrapPercent?: Son;
   consumeOnIssue?: boolean;
+  // Qabul qilingan brak shu mahsulot bo'lib brak omboriga kiradi (masalan "Brak non").
+  scrapModificationId?: string | null;
   note?: string | null;
   inputs?: RetseptKirimi[];
   outputs?: RetseptChiqimi[];
@@ -64,6 +76,7 @@ export type RetseptTanasi = {
   outputMax?: number;
   normalScrapPercent?: number;
   consumeOnIssue?: boolean;
+  scrapModificationId?: string | null;
   note?: string;
   inputs: Array<{ modificationId: string; kind: RetseptKirimi["kind"]; quantity?: number; tolerancePercent?: number; min?: number; max?: number }>;
   outputs: Array<{ modificationId: string; role: RetseptChiqimi["role"]; quantity: number; quantityType?: "PROPORTIONAL" | "PER_BATCH" }>;
@@ -109,9 +122,15 @@ export type KalkulyatsiyaTanasi = {
   lines: Array<{ modificationId: string; quantity: number; price: number; currency?: "UZS" | "USD"; costingRate?: number }>;
 };
 
-// Buyurtma `requirements` qatorida faqat `quantity` keladi; required/issued/available/shortage — availability javobida.
-export type MavjudlikQatori = NomliQator & { modificationId?: string; quantity?: Son; required?: Son; issued?: Son; available?: Son; shortage?: Son };
-export type Mavjudlik = { items: MavjudlikQatori[]; hasShortage: boolean };
+// Buyurtma `requirements` qatorida faqat `quantity` keladi; required/issued/reserved/available/shortage — availability javobida.
+// reserved — shu buyurtmaga band qilingan; available — boshqa buyurtmalar bandi ayirilgan (ombor + sex).
+export type MavjudlikQatori = NomliQator & { modificationId?: string; quantity?: Son; required?: Son; issued?: Son; reserved?: Son; available?: Son; shortage?: Son };
+/** hasShortage — "Xomashyo kutilmoqda"; issuedFully: false — xomashyo to'liq berilmagan. */
+export type Mavjudlik = { items: MavjudlikQatori[]; hasShortage: boolean; issuedFully: boolean };
+
+/** Yopish hujjati qatori: berildi, sarflandi, ortishi kerak, qaytadi, sexda qoladi, yo'qotish. */
+export type YopishQatori = NomliQator & { modificationId: string; issued?: Son; consumed?: Son; expected?: Son; returned?: Son; kept?: Son; loss?: Son };
+export type YopishHujjati = { id?: string; date?: string | null; note?: string | null; createdById?: string | null; createdAt?: string | null; lines?: YopishQatori[] };
 
 export type Buyurtma = NomliQator & {
   id: string;
@@ -119,7 +138,9 @@ export type Buyurtma = NomliQator & {
   status: string;
   modificationId: string;
   quantity: Son;
+  // Qabul qilingan yaroqli va brak (qabul aktlaridan).
   produced?: Son;
+  scrap?: Son;
   completionSuggested?: boolean;
   requirements?: MavjudlikQatori[];
   sourceWarehouseId?: string;
@@ -129,14 +150,18 @@ export type Buyurtma = NomliQator & {
   date?: string | null;
   note?: string | null;
   completionNote?: string | null;
+  createdAt?: string | null;
   availability?: Mavjudlik;
+  // Yopilgan buyurtmaning yopish hujjati.
+  close?: YopishHujjati | null;
 };
 
 export type BuyurtmaTanasi = {
   modificationId: string;
   quantity: number;
-  sourceWarehouseId: string;
-  destWarehouseId: string;
+  // Berilmasa sozlamadagi standart ombor (u ham bo'lmasa server VALIDATION_FAILED, field: sourceWarehouseId/destWarehouseId).
+  sourceWarehouseId?: string;
+  destWarehouseId?: string;
   recipeId?: string;
   dueDate?: string;
   date?: string;
@@ -204,6 +229,7 @@ export type SmenaChiqimi = NomliQator & {
   id?: string;
   quantity?: Son;
   scrapQuantity?: Son;
+  scrapReasonId?: string | null;
   serial?: string | null;
   modificationId?: string | null;
   role?: string | null;
@@ -224,6 +250,8 @@ export type SmenaHisoboti = {
   shiftEndsAt?: string | null;
   comment?: string | null;
   cancelReason?: string | null;
+  // Oxirgi qabul akti: qaytarilgan bo'lsa ustaga sababi shu yerdan ko'rsatiladi.
+  acceptance?: { id?: string; status?: string | null; returnReason?: string | null; docNumber?: string | null; acceptedAt?: string | null } | null;
   outputs?: SmenaChiqimi[];
   inputs?: SmenaKirimi[];
   downtime?: Array<{ reason: TozaxtashSababi; hours: Son; note?: string | null }>;
@@ -235,7 +263,7 @@ export type SmenaTanasi = {
   destWarehouseId?: string;
   shiftEndsAt?: string;
   comment?: string;
-  outputs: Array<{ quantity: number; scrapQuantity?: number; serial?: string; modificationId?: string; role?: string }>;
+  outputs: Array<{ quantity: number; scrapQuantity?: number; scrapReasonId?: string; serial?: string; modificationId?: string; role?: string }>;
   inputs?: Array<{ modificationId: string; quantity: number; entryMethod?: "NORM" | "ACTUAL" }>;
   downtime?: Array<{ reason: TozaxtashSababi; hours: number; note?: string }>;
 };
@@ -253,3 +281,48 @@ export type Rulon = {
 };
 
 export type RulonXulosasi = { modificationId?: string; warehouseId?: string | null; productName?: string | null; rolls?: Son; weight?: Son };
+
+/** Qabul akti qatori: usta yozgani (master*) va PM soni (boshida ustanikiga teng), farqi bilan. */
+export type QabulQatori = {
+  id: string;
+  outputId?: string;
+  modificationId: string;
+  productName?: string | null;
+  masterGood?: Son;
+  masterScrap?: Son;
+  masterScrapReasonId?: string | null;
+  masterScrapReasonName?: string | null;
+  good?: Son;
+  scrap?: Son;
+  scrapReasonId?: string | null;
+  scrapReasonName?: string | null;
+  goodDifference?: Son;
+  scrapDifference?: Son;
+};
+
+/** Qabul akti (GET /production/acceptances): DRAFT — qabul kutilmoqda, CONFIRMED — qabul qilingan, CANCELLED — qaytarilgan yoki bekor. */
+export type QabulAkti = {
+  id: string;
+  docNumber?: string | null;
+  status: string;
+  date?: string | null;
+  reportId?: string;
+  orderId?: string | null;
+  scrapPercent?: Son;
+  scrapAlert?: boolean;
+  note?: string | null;
+  returnReason?: string | null;
+  cancelReason?: string | null;
+  acceptedById?: string | null;
+  acceptedAt?: string | null;
+  createdAt?: string | null;
+  returned?: boolean;
+  totals?: { good?: Son; scrap?: Son; total?: Son; planned?: Son; scrapPercent?: Son };
+  order?: { id?: string; docNumber?: string | null; quantity?: Son } | null;
+  report?: { id?: string; docNumber?: string | null; date?: string | null; shiftEndsAt?: string | null; warehouseId?: string | null } | null;
+  lines?: QabulQatori[];
+};
+
+export type QabulOgohlantirishi = { code: string; percent?: Son; limit?: Son };
+export type QabulTanasi = { lines?: Array<{ lineId: string; good?: number; scrap?: number; scrapReasonId?: string }>; note?: string };
+export type YopishTanasi = { lines?: Array<{ modificationId: string; returned?: number; kept?: number }>; note?: string };

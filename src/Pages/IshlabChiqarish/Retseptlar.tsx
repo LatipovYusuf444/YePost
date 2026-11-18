@@ -1,16 +1,17 @@
 import { useMemo, useState } from "react";
-import { Archive, ArrowRight, BookOpen, BookOpenCheck, Calculator, CheckCircle2, CircleCheckBig, Copy, Factory, FilePen, NotebookPen, Package, PackageCheck, Plus, SlidersHorizontal } from "lucide-react";
+import { Archive, ArrowRight, BookOpen, BookOpenCheck, Calculator, CheckCircle2, CircleCheckBig, Copy, Factory, FilePen, NotebookPen, Package, PackageCheck, Plus, Recycle, SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import { ishlabChiqarishApi } from "@/api/ishlabChiqarishApi";
 import { holatBoyicha, tahrirTanasi, miqdorMatni, portlashMiqdori, qatorNomi, qidiruvgaMos, retseptTanasiniYigish, sonMaydoni, type RetseptFormasi, type XatoMaydonQoidasi } from "@/lib/ishlabChiqarish";
 import type { Portlash, PortlashQatori, Retsept, RetseptKirimi } from "@/types/ishlabChiqarish";
 import { Asboblar, Bolim, HolatFiltri, HolatKartalari, Holat, Jadval, MahsulotQidiruvi, Maydon, MaydonXatosi, Ogohlantirish, OmborTanlash, Oyna, QatorKartasi, QatorOchirish, QatorQoshish, QidiruvMaydoni, Sahifa, Tafsilotlar, XatoQutisi, Yuklanmoqda, inputKlass, tugmaAsosiy, tugmaIkkinchi, tugmaXavfli, xatoRamkasi, type HolatGuruhi, type Ustun } from "./umumiy";
-import { useAmal, useMaydonXatolari, useMalumot, useOmborlar, useQoralamaNazorati } from "./hooklar";
+import { useAmal, useMaydonXatolari, useMalumot, useModifikatsiyaNomi, useOmborlar, useQoralamaNazorati } from "./hooklar";
 
 type KirimQatori = RetseptFormasi["inputs"][number] & { nom?: string };
 type ChiqimQatori = RetseptFormasi["outputs"][number] & { nom?: string };
-type Forma = Omit<RetseptFormasi, "inputs" | "outputs"> & { nom?: string; inputs: KirimQatori[]; outputs: ChiqimQatori[] };
+// `brakNom` — brak mahsuloti nomi (retsept javobida faqat id keladi: tahrirda serverdan olinadi).
+type Forma = Omit<RetseptFormasi, "inputs" | "outputs"> & { nom?: string; brakNom?: string; inputs: KirimQatori[]; outputs: ChiqimQatori[] };
 
 const HOLATLAR = ["DRAFT", "ACTIVE", "ARCHIVED"];
 
@@ -25,6 +26,7 @@ const RETSEPT_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
   outputs: { maydonlar: ["outputs"], kodlar: ["main_output", "no_output", "outputs"], sozlar: ["asosiy mahsulot", "основн"] },
   inputs: { maydonlar: ["inputs"], kodlar: ["no_input", "inputs"], sozlar: ["xomashyo", "сырь"] },
   note: { maydonlar: ["note"] },
+  scrapModificationId: { maydonlar: ["scrapModificationId"] },
   modificationId: { maydonlar: ["modificationId"], kodlar: ["modification", "product"], sozlar: ["mahsulot", "товар"] },
 };
 // Portlash kalkulyatori: miqdor maydoni.
@@ -42,6 +44,7 @@ const bo = (retsept: Retsept): Forma => ({
   outputMax: matn(retsept.outputMax),
   normalScrapPercent: matn(retsept.normalScrapPercent),
   consumeOnIssue: Boolean(retsept.consumeOnIssue),
+  scrapModificationId: retsept.scrapModificationId ?? "",
   note: retsept.note ?? "",
   inputs: (retsept.inputs ?? []).map((qator) => ({ modificationId: qator.modificationId, nom: qatorNomi(qator), kind: qator.kind, quantity: matn(qator.quantity), tolerancePercent: matn(qator.tolerancePercent), min: matn(qator.min), max: matn(qator.max) })),
   outputs: (retsept.outputs ?? []).map((qator) => ({ modificationId: qator.modificationId, nom: qatorNomi(qator), role: qator.role, quantity: matn(qator.quantity), quantityType: qator.quantityType ?? "" })),
@@ -169,8 +172,10 @@ function RetseptOynasi({ boshlangich, onYopish, onSaqlandi }: { boshlangich: { i
   const fx = useMaydonXatolari(RETSEPT_XATO_QOIDALARI);
   const qoralamaNazorati = useQoralamaNazorati(boshlangich.id ? () => ishlabChiqarishApi.retseptlar.olish(boshlangich.id as string) : null);
   // Maydon o'zgarsa uning xatosi olib tashlanadi; "inputs"/"outputs" o'zgarsa (qator qo'shildi/o'chdi) — butun ro'yxat xatolari.
+  // Tahrirda brak mahsuloti nomi serverdan olinadi (qidiruv maydonida ko'rinishi uchun).
+  const saqlanganBrakNomi = useModifikatsiyaNomi(boshlangich.qiymat.scrapModificationId || null);
   const ozgar = (qism: Partial<Forma>) => {
-    fx.tozala(...Object.keys(qism).filter((kalit) => kalit !== "nom"));
+    fx.tozala(...Object.keys(qism).filter((kalit) => kalit !== "nom" && kalit !== "brakNom"));
     setForma((joriy) => ({ ...joriy, ...qism }));
   };
   const kirim = (indeks: number, qism: Partial<KirimQatori>) => {
@@ -199,7 +204,7 @@ function RetseptOynasi({ boshlangich, onYopish, onSaqlandi }: { boshlangich: { i
     if ("xato" in natija) return fx.tekshiruv(natija, t(natija.xato));
     fx.ornat({});
     void amal.bajar(async () => {
-      const saqlangan = boshlangich.id ? await ishlabChiqarishApi.retseptlar.yangilash(boshlangich.id, tahrirTanasi(natija.tana, { outputMin: null, outputMax: null, normalScrapPercent: 0, note: "" })) : await ishlabChiqarishApi.retseptlar.yaratish(natija.tana);
+      const saqlangan = boshlangich.id ? await ishlabChiqarishApi.retseptlar.yangilash(boshlangich.id, tahrirTanasi(natija.tana, { outputMin: null, outputMax: null, normalScrapPercent: 0, scrapModificationId: null, note: "" })) : await ishlabChiqarishApi.retseptlar.yaratish(natija.tana);
       onSaqlandi(saqlangan.id);
     }, (tafsilot) => {
       fx.serverdan(tafsilot);
@@ -241,6 +246,15 @@ function RetseptOynasi({ boshlangich, onYopish, onSaqlandi }: { boshlangich: { i
                 {fx.xato("consumeOnIssue") && <span role="alert" className="mt-2 block text-xs font-bold leading-5 text-red-600">{fx.xato("consumeOnIssue")}</span>}
               </span>
             </label>
+          </Bolim>
+          {/* Qabulda brak kiritilsa u shu mahsulot bo'lib brak omboriga kiradi: bo'sh bo'lsa brakli qabul `scrap_target_missing` beradi. */}
+          <Bolim ikonka={Recycle} sarlavha={t("recipes.sectionScrap")} izoh={t("recipes.scrapHint")}>
+            <Maydon nom={t("fields.scrapProduct")} xato={fx.xato("scrapModificationId")}>
+              <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1"><MahsulotQidiruvi value={forma.scrapModificationId ?? ""} nom={forma.brakNom ?? saqlanganBrakNomi} ariaLabel={t("fields.scrapProduct")} onChange={(scrapModificationId, brakNom) => ozgar({ scrapModificationId, brakNom })} /></div>
+                {forma.scrapModificationId && <QatorOchirish onClick={() => ozgar({ scrapModificationId: "", brakNom: "" })} />}
+              </div>
+            </Maydon>
           </Bolim>
           <Bolim ikonka={NotebookPen} sarlavha={t("fields.note")}>
             <div data-maydon-xato={fx.xato("note") ? "true" : undefined} className="grid gap-2">
@@ -313,6 +327,7 @@ function RetseptKorish({ id, nomlar, onYopish, onOzgardi, onTahrir, onOchish }: 
   const [portlash, setPortlash] = useState<Portlash | null>(null);
   const retsept = hujjat.malumot;
   const qoralama = retsept?.status === "DRAFT";
+  const brakMahsuloti = useModifikatsiyaNomi(retsept?.scrapModificationId);
 
   function hisoblash() {
     const qty = sonMaydoni(miqdor);
@@ -343,6 +358,7 @@ function RetseptKorish({ id, nomlar, onYopish, onOzgardi, onTahrir, onOchish }: 
           { nom: t("fields.normalScrapPercent"), qiymat: foizMatni(retsept.normalScrapPercent) },
           { nom: t("recipes.outputRange"), qiymat: oraliqMatni(retsept.outputMin, retsept.outputMax) },
           { nom: t("fields.consumeOnIssue"), qiymat: retsept.consumeOnIssue ? t("common.yes") : t("common.no") },
+          { nom: t("fields.scrapProduct"), qiymat: retsept.scrapModificationId ? brakMahsuloti || "…" : <span className="text-slate-400">{t("recipes.noScrapProduct")}</span> },
         ]} />
         {retsept.note && <p className="rounded-2xl border border-orange-100 bg-white p-4 text-sm font-semibold text-slate-600"><span className="font-black text-slate-800">{t("fields.note")}:</span> {retsept.note}</p>}
         <div className="grid items-start gap-5 xl:grid-cols-2">

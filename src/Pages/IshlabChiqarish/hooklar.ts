@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
+import { foydalanuvchilarApi } from "@/api/accountsApi";
+import { modifikatsiyalarApi } from "@/api/catalogApi";
+import { ishlabChiqarishApi } from "@/api/ishlabChiqarishApi";
 import { omborlarApi } from "@/api/omborApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { xatoKodi } from "@/api/xatoKodlari";
@@ -78,6 +81,42 @@ export function useOmborlar() {
     return () => { faol = false; };
   }, []);
   return omborlar;
+}
+
+/** Xodim ismi id bo'yicha ("kim qabul qildi", "kim yopdi"). Ro'yxatga ruxsat bo'lmasa (KASSIR/OMBORCHI — 403) xarita bo'sh qoladi. */
+export function useXodimNomlari() {
+  const [nomlar, setNomlar] = useState<Map<string, string>>(() => new Map());
+  useEffect(() => {
+    let faol = true;
+    foydalanuvchilarApi.royxat()
+      .then((royxat) => { if (faol) setNomlar(new Map(royxat.map((xodim) => [xodim.id, xodim.fullName?.trim() || xodim.username]))); })
+      .catch(() => undefined);
+    return () => { faol = false; };
+  }, []);
+  return nomlar;
+}
+
+/** Mahsulot (variant) nomi id bo'yicha: javobda faqat id keladigan joylar uchun (masalan, retseptning brak mahsuloti). */
+export function useModifikatsiyaNomi(id?: string | null) {
+  const [nom, setNom] = useState("");
+  useEffect(() => {
+    if (!id) { setNom(""); return; }
+    let faol = true;
+    modifikatsiyalarApi.olish(id)
+      .then((mod) => {
+        if (!faol || !mod) return;
+        const variant = mod.name && mod.name !== "Asosiy variant" && mod.name !== mod.product?.name ? mod.name : "";
+        setNom([mod.product?.name, variant].filter(Boolean).join(" / ") || mod.name || mod.barcode || "");
+      })
+      .catch(() => undefined);
+    return () => { faol = false; };
+  }, [id]);
+  return nom;
+}
+
+/** Brak sabablari (GET /production/scrap-reasons): birinchi o'qishda tayyorlari o'zi qo'shiladi. */
+export function useBrakSabablari() {
+  return useMalumot(() => ishlabChiqarishApi.brakSabablari.royxat(), "scrap-reasons");
 }
 
 /** Qiymat o'zgarishini kechiktiradi (yozib bo'lingach so'rov yuborish uchun). */

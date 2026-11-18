@@ -117,9 +117,11 @@ test('serial charset, names from either response shape and availability fallback
   assert.equal(lib.qatorNomi({ modification: { name: 'Asosiy', product: { name: 'Plyonka' } } }), 'Plyonka');
   assert.equal(lib.qatorNomi({}), '—');
   const javob = { orderId: 'o1', items: [{ productName: 'Jumbo roll', required: '2300', issued: '0', available: '1150', shortage: '1150' }], hasShortage: true };
-  assert.deepEqual(lib.mavjudlikOqish(javob), { items: javob.items, hasShortage: true });
+  // issuedFully kelmasa (eski javob) "to'liq berilmadi" belgisi chiqmaydi.
+  assert.deepEqual(lib.mavjudlikOqish(javob), { items: javob.items, hasShortage: true, issuedFully: true });
   assert.equal(lib.mavjudlikOqish({ items: [], hasShortage: false }).hasShortage, false);
-  assert.deepEqual(lib.mavjudlikOqish(undefined), { items: [], hasShortage: false });
+  assert.equal(lib.mavjudlikOqish({ items: [], hasShortage: false, issuedFully: false }).issuedFully, false);
+  assert.deepEqual(lib.mavjudlikOqish(undefined), { items: [], hasShortage: false, issuedFully: true });
   const portlash = lib.portlashOqish({ recipeId: 'r1', quantity: '300', inputs: [{ productName: 'Jumbo roll', kind: 'FIXED', quantity: '138', min: null, max: null }], outputs: [{ productName: 'Skotch', role: 'MAIN', quantity: '300' }, { productName: 'Kromka', role: 'WASTE', quantity: '1.8' }] });
   assert.equal(portlash.inputs.length, 1);
   assert.equal(portlash.outputs.length, 2);
@@ -144,7 +146,7 @@ test('uz and ru module texts have the same keys and every key used in the screen
   const tekis = (obyekt, yol = '') => Object.entries(obyekt).flatMap(([kalit, qiymat]) => (typeof qiymat === 'object' ? tekis(qiymat, `${yol}${kalit}.`) : [`${yol}${kalit}`]));
   const uz = tekis(oqish('uz')).sort();
   assert.deepEqual(tekis(oqish('ru')).sort(), uz);
-  const fayllar = ['umumiy', 'Retseptlar', 'Kalkulyatsiya', 'Buyurtmalar', 'SexgaBerish', 'Smena', 'Rulonlar', 'index'].map((nom) => `src/Pages/IshlabChiqarish/${nom}.tsx`).concat('src/Pages/SozlamalarUchot/IshlabChiqarishBolimi.tsx');
+  const fayllar = ['umumiy', 'Retseptlar', 'Kalkulyatsiya', 'Buyurtmalar', 'SexgaBerish', 'Smena', 'QabulAktlari', 'Rulonlar', 'index'].map((nom) => `src/Pages/IshlabChiqarish/${nom}.tsx`).concat('src/Pages/SozlamalarUchot/IshlabChiqarishBolimi.tsx');
   const kalitlar = new Set(uz);
   for (const fayl of fayllar) {
     const manba = readFileSync(new URL(`../${fayl}`, import.meta.url), 'utf8');
@@ -179,10 +181,12 @@ test('production errors show the server message in the user language; the code o
 test('order pages use the backend status names', () => {
   const sahifa = readFileSync(new URL('../src/Pages/IshlabChiqarish/Buyurtmalar.tsx', import.meta.url), 'utf8');
   assert.equal(sahifa.includes('COMPLETED'), false);
-  assert.match(sahifa, /"IN_PROGRESS", "DONE", "CLOSED", "CANCELLED"/);
+  // 17.11 jarayoni: buyurtma holatlari lib'da, sahifa ularni ishlatadi.
+  assert.match(sahifa, /const HOLATLAR = BUYURTMA_HOLATLARI;/);
+  assert.deepEqual(lib.BUYURTMA_HOLATLARI, ['RELEASED', 'MATERIAL_ISSUED', 'IN_PROGRESS', 'AWAITING_ACCEPTANCE', 'RETURNED', 'ACCEPTED', 'CLOSED', 'CANCELLED', 'DRAFT', 'DONE']);
   for (const til of ['uz', 'ru']) {
     const matnlar = JSON.parse(readFileSync(new URL(`../src/i18n/locales/${til}/ishlab_chiqarish.json`, import.meta.url), 'utf8'));
-    for (const holat of ['DRAFT', 'RELEASED', 'IN_PROGRESS', 'DONE', 'CLOSED', 'CANCELLED', 'CONFIRMED', 'ACTIVE', 'ARCHIVED', 'IN_STOCK', 'USED']) assert.ok(matnlar.status[holat], `${til} ${holat}`);
+    for (const holat of ['DRAFT', 'RELEASED', 'MATERIAL_ISSUED', 'IN_PROGRESS', 'AWAITING_ACCEPTANCE', 'RETURNED', 'ACCEPTED', 'DONE', 'CLOSED', 'CANCELLED', 'CONFIRMED', 'ACTIVE', 'ARCHIVED', 'IN_STOCK', 'USED']) assert.ok(matnlar.status[holat], `${til} ${holat}`);
     assert.equal(matnlar.status.COMPLETED, undefined);
   }
 });

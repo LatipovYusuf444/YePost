@@ -101,7 +101,8 @@
       "productionRecipe": "Retseptlar",
       "costing": "Kalkulyatsiya",
       "productionIssue": "Sexga berish",
-      "productionReport": "Smena hisoboti"
+      "productionReport": "Smena hisoboti",
+      "productionAccept": "Qabul akti"
     }
   },
   "integratsiya": {

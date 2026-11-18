@@ -11,6 +11,7 @@ export const backendVakolatlar: Vakolat[] = [
   { kod: "COSTING", nom: "Kalkulyatsiya", izoh: "Kalkulyatsiya kartalari", guruh: "Ishlab chiqarish" },
   { kod: "PRODUCTION_ISSUE", nom: "Sexga berish", izoh: "Xomashyoni sexga berish va qaytarish", guruh: "Ishlab chiqarish" },
   { kod: "PRODUCTION_REPORT", nom: "Smena hisoboti", izoh: "Smena hisobotini yozish", guruh: "Ishlab chiqarish" },
+  { kod: "PRODUCTION_ACCEPT", nom: "Qabul akti", izoh: "Ishlab chiqarilgan mahsulotni qabul qilish", guruh: "Ishlab chiqarish" },
 ];
 
 export const backendLavozimlar: Lavozim[] = [

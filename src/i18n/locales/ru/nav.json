@@ -57,7 +57,8 @@
     "xodimlar": "Сотрудники",
     "qollabQuvvatlash": "Поддержка",
     "sozlamalar": "Настройки",
-    "buyurtmalar": "Заказы"
+    "buyurtmalar": "Заказы",
+    "icQabul": "Акт приёмки"
   },
   "roles": {
     "DIREKTOR": "Директор",

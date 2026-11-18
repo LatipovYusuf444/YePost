@@ -43,8 +43,45 @@ const MATNLAR: Record<string, KodMatni> = {
     ru: "План не выполнен: укажите причину завершения.",
   },
   "errors.production.costing_card_missing": {
-    uz: "Bu mahsulotga faol kalkulyatsiya kartasi yo'q. Hisobot qoralamada qoldi: kalkulyatsiya faollashtirilgach smenani yoping.",
-    ru: "Для этого товара нет активной калькуляции. Отчёт остался черновиком: закройте смену после активации калькуляции.",
+    uz: "Bu mahsulotga shu kun uchun faol kalkulyatsiya kartasi yo'q. Qabul akti kutishda qoldi: kalkulyatsiya faollashtirilgach qayta qabul qiling.",
+    ru: "Для этого товара нет активной калькуляции на этот день. Акт приёмки остался в ожидании: примите снова после активации калькуляции.",
+  },
+  // 17.11 jarayoni: brak sababi, qabul akti, yopish hujjati, xomashyo berish bosqichi. Server `message` (3 tilda) ustun, bu — zaxira matn.
+  "errors.production.scrap_reason_required": {
+    uz: "Brak kiritilgan: sababini tanlang.",
+    ru: "Указан брак: выберите причину.",
+  },
+  "errors.production.scrap_reason_not_found": {
+    uz: "Brak sababi topilmadi. Ro'yxatni yangilab, boshqa sababni tanlang.",
+    ru: "Причина брака не найдена. Обновите список и выберите другую.",
+  },
+  "errors.production.scrap_target_missing": {
+    uz: "Brak qayerga kirishi belgilanmagan: Sozlamalarda «Brak ombori» va retseptda «Brak mahsuloti» kerak.",
+    ru: "Не задано, куда поступает брак: нужны «Склад брака» в настройках и «Товар брака» в рецепте.",
+  },
+  "errors.production.acceptance_not_found": {
+    uz: "Qabul akti topilmadi. Ro'yxatni yangilang.",
+    ru: "Акт приёмки не найден. Обновите список.",
+  },
+  "errors.production.acceptance_pending": {
+    uz: "Qabul kutayotgan akt bor: avval uni qabul qiling yoki qaytaring.",
+    ru: "Есть акт, ожидающий приёмки: сначала примите или верните его.",
+  },
+  "errors.production.accept_quantity_required": {
+    uz: "Miqdorni kiriting: yaroqli va brak ikkalasi 0 bo'lmaydi.",
+    ru: "Введите количество: годные и брак не могут быть оба 0.",
+  },
+  "errors.production.close_return_exceeds": {
+    uz: "Qaytadigan va sexda qoladigan miqdor ortgan xomashyodan ko'p.",
+    ru: "Возврат и остаток в цехе больше, чем осталось сырья.",
+  },
+  "errors.production.issue_stage_off": {
+    uz: "Xomashyo berish bosqichi sozlamada o'chirilgan: xomashyo qabulda xomashyo omboridan sarflanadi.",
+    ru: "Этап выдачи сырья отключён в настройках: сырьё списывается со склада сырья при приёмке.",
+  },
+  "errors.production.order_closed": {
+    uz: "Buyurtma yopilgan: uning hujjatlari endi o'zgarmaydi.",
+    ru: "Заказ закрыт: его документы больше не меняются.",
   },
   "errors.production.report_output_sold": {
     uz: "Bu hisobot mahsuloti allaqachon sotilgan, bekor qilib bo'lmaydi. Tuzatish kiriting.",

@@ -11,6 +11,7 @@ import { modifikatsiyalarApi } from "@/api/catalogApi";
 import { miqdorMatni } from "@/lib/ishlabChiqarish";
 import { MAYDON_XATOSI } from "@/lib/maydonXatolari";
 import type { MahsulotModifikatsiyasi } from "@/types/catalog";
+import type { BrakSababi } from "@/types/ishlabChiqarish";
 import type { Ombor } from "@/types/ombor";
 
 // Ishlab chiqarish bo'limining umumiy UI qismlari: loyihadagi ro'yxat sahifalari (Ombor → Ko'chirish) uslubida.
@@ -54,7 +55,11 @@ const HOLAT_RANGI: Record<string, string> = {
   DRAFT: "bg-amber-50 text-amber-700 ring-amber-100",
   ACTIVE: "bg-emerald-50 text-emerald-700 ring-emerald-100",
   RELEASED: "bg-sky-50 text-sky-700 ring-sky-100",
+  MATERIAL_ISSUED: "bg-indigo-50 text-indigo-700 ring-indigo-100",
   IN_PROGRESS: "bg-violet-50 text-violet-700 ring-violet-100",
+  AWAITING_ACCEPTANCE: "bg-amber-50 text-amber-700 ring-amber-100",
+  RETURNED: "bg-rose-50 text-rose-700 ring-rose-100",
+  ACCEPTED: "bg-teal-50 text-teal-700 ring-teal-100",
   CONFIRMED: "bg-emerald-50 text-emerald-700 ring-emerald-100",
   DONE: "bg-emerald-50 text-emerald-700 ring-emerald-100",
   IN_STOCK: "bg-emerald-50 text-emerald-700 ring-emerald-100",
@@ -85,8 +90,8 @@ export function Maydon({ nom, children, izoh, className = "", majburiy = false, 
  * Oyna: sarlavha (ikonka, izoh, holat belgisi), suriladigan tana va pastki tugmalar. `keng` — hujjat va ko'p qatorli forma uchun
  * deyarli butun ekran; oddiy forma o'rtacha kenglikda.
  */
+// Yopish — faqat modal tashqarisidagi X (AppModal amallar ustuni; telefonda panel burchagida): ichki X takrorlanmaydi.
 export function Oyna({ sarlavha, izoh, ikonka: Ikonka, belgi, onYopish, keng = false, pastki, children }: { sarlavha: string; izoh?: string; ikonka?: LucideIcon; belgi?: ReactNode; onYopish: () => void; keng?: boolean; pastki?: ReactNode; children: ReactNode }) {
-  const { t } = useTranslation("ishlab_chiqarish");
   return (
     <AppModal onClose={onYopish} className="bg-slate-950/55 backdrop-blur-[3px]">
       <div className={`flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-[32px] border border-orange-100 bg-white shadow-[0_35px_110px_rgba(15,23,42,.38)] ${keng ? "min-h-[min(680px,calc(100dvh-2rem))] max-w-7xl" : "max-w-4xl"}`}>
@@ -99,7 +104,6 @@ export function Oyna({ sarlavha, izoh, ikonka: Ikonka, belgi, onYopish, keng = f
             </div>
             {izoh && <p className="mt-1 text-sm font-medium text-slate-500">{izoh}</p>}
           </div>
-          <button type="button" onClick={onYopish} aria-label={t("actions.close")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-100"><X size={19} /></button>
         </header>
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto bg-gradient-to-br from-[#F8FAFC] via-white to-[#EEF2F7] px-5 py-6 sm:px-8">{children}</div>
         {pastki && <footer className="flex shrink-0 flex-wrap items-center justify-end gap-3 border-t border-orange-100 bg-white px-6 py-4 sm:px-8">{pastki}</footer>}
@@ -323,6 +327,26 @@ export function OmborTanlash({ value, onChange, omborlar, sexMi, disabled, ariaL
       {variantlar.map((ombor) => <option key={ombor.id} value={ombor.id}>{ombor.name}</option>)}
     </AppSelect>
   );
+}
+
+/** Brak sababi tanlovi (Kuygan, Xom qolgan, ...). O'chirilgan sabab eski hujjatda nomi bilan ko'rinadi (`eskiNom`). */
+export function BrakSababiTanlash({ value, onChange, sabablar, disabled, ariaLabel, eskiNom, xato }: { value: string; onChange: (id: string) => void; sabablar: readonly BrakSababi[]; disabled?: boolean; ariaLabel?: string; eskiNom?: string | null; xato?: boolean }) {
+  const { t } = useTranslation("ishlab_chiqarish");
+  const royxatdaYoq = Boolean(value) && !sabablar.some((sabab) => sabab.id === value);
+  return (
+    <AppSelect value={value} disabled={disabled} aria-label={ariaLabel ?? t("fields.scrapReason")} aria-invalid={xato || undefined} onChange={(event) => onChange(event.target.value)} className={`${selectKlass} ${xato ? "[&>button]:!border-red-400 [&>button]:ring-4 [&>button]:ring-red-100" : ""}`}>
+      <option value="">{t("fields.selectScrapReason")}</option>
+      {royxatdaYoq && <option value={value}>{eskiNom || t("fields.scrapReasonDeleted")}</option>}
+      {sabablar.map((sabab) => <option key={sabab.id} value={sabab.id}>{sabab.name}</option>)}
+    </AppSelect>
+  );
+}
+
+/** Farq (PM soni − usta yozgani): sonning ostida, + yashil / − qizil; nol bo'lsa ko'rsatilmaydi. */
+export function Farq({ qiymat }: { qiymat: unknown }) {
+  const son = Math.round((Number(qiymat) || 0) * 1000) / 1000;
+  if (!son) return null;
+  return <span className={`block text-xs font-black tabular-nums ${son > 0 ? "text-emerald-600" : "text-red-600"}`}>{son > 0 ? "+" : "−"}{miqdorMatni(Math.abs(son))}</span>;
 }
 
 function modifikatsiyaNomi(mod: MahsulotModifikatsiyasi) {

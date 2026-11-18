@@ -21,6 +21,7 @@ export default function VakolatlarBolimi() {
     { code: "COSTING", nom: t("vakolatlar.codes.costing") },
     { code: "PRODUCTION_ISSUE", nom: t("vakolatlar.codes.productionIssue") },
     { code: "PRODUCTION_REPORT", nom: t("vakolatlar.codes.productionReport") },
+    { code: "PRODUCTION_ACCEPT", nom: t("vakolatlar.codes.productionAccept") },
   ];
 
   const [xodimlar, setXodimlar] = useState<AccountFoydalanuvchi[]>([]);

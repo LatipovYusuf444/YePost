@@ -10,7 +10,8 @@ export type VakolatKodi =
   | "PRODUCTION_RECIPE"
   | "COSTING"
   | "PRODUCTION_ISSUE"
-  | "PRODUCTION_REPORT";
+  | "PRODUCTION_REPORT"
+  | "PRODUCTION_ACCEPT";
 
 export type AccountFoydalanuvchi = {
   id: string;

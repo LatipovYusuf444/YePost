@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { ArrowRight, Ban, BookOpenCheck, CalendarClock, CheckCircle2, CircleCheckBig, ClipboardCheck, ClipboardList, Factory, FilePen, NotebookPen, Package, PencilLine, Plus, Printer, RefreshCw, TimerOff, Warehouse } from "lucide-react";
+import { ArrowRight, Ban, BookOpenCheck, CalendarClock, CheckCircle2, CircleCheckBig, ClipboardCheck, ClipboardList, Factory, FilePen, Hourglass, NotebookPen, Package, PackageCheck, PencilLine, Plus, Printer, RefreshCw, TimerOff, Undo2, Warehouse } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ishlabChiqarishApi, yorliqniChopEtish } from "@/api/ishlabChiqarishApi";
 import { apiTiliniOlish } from "@/api/apiLanguage";
@@ -10,15 +10,21 @@ import { TOXTASH_SABABLARI, butunMiqdorXatolari, chiqimMiqdori, hisobotMahsuloti
 import { foydalanuvchiKursniOzgartiraOladimi } from "@/lib/roles";
 import { useAuthProfileStore } from "@/store/authProfileStore";
 import type { NavbatQatori, SmenaChiqimi, SmenaHisoboti, SmenaTanasi } from "@/types/ishlabChiqarish";
-import { Asboblar, Bolim, HolatFiltri, HolatKartalari, Holat, Jadval, Jarayon, MahsulotQidiruvi, Maydon, MaydonXatosi, Ogohlantirish, OmborTanlash, Oyna, QatorKartasi, QatorOchirish, QatorQoshish, QidiruvMaydoni, Sahifa, Tafsilotlar, XatoQutisi, Yuklanmoqda, inputKlass, tugmaAsosiy, tugmaIkkinchi, tugmaXavfli, type HolatGuruhi, type Ustun } from "./umumiy";
-import { useAmal, useMalumot, useMaydonXatolari, useOmborlar } from "./hooklar";
+import { Asboblar, Bolim, BrakSababiTanlash, HolatFiltri, HolatKartalari, Holat, Jadval, Jarayon, MahsulotQidiruvi, Maydon, MaydonXatosi, Ogohlantirish, OmborTanlash, Oyna, QatorKartasi, QatorOchirish, QatorQoshish, QidiruvMaydoni, Sahifa, Tafsilotlar, XatoQutisi, Yuklanmoqda, inputKlass, tugmaAsosiy, tugmaIkkinchi, tugmaXavfli, type HolatGuruhi, type Ustun } from "./umumiy";
+import { useAmal, useBrakSabablari, useMalumot, useMaydonXatolari, useOmborlar } from "./hooklar";
 
 type KirimQatori = SmenaFormasi["inputs"][number] & { nom?: string };
-type Forma = Omit<SmenaFormasi, "inputs"> & { sarlavha: string; inputs: KirimQatori[] };
+// `qaytarishSababi` — qabul aktida PM qaytargan hisobot: usta sababni ko'rib, tuzatib yana topshiradi.
+type Forma = Omit<SmenaFormasi, "inputs"> & { sarlavha: string; inputs: KirimQatori[]; qaytarishSababi?: string };
+
+/** PM qaytargan hisobot: qoralamaga qaytgan, oxirgi akt qaytarilgan (sababi bilan). */
+function qaytarilganmi(hujjat: Pick<SmenaHisoboti, "status" | "acceptance">) {
+  return hujjat.status === "DRAFT" && hujjat.acceptance?.status === "CANCELLED" && Boolean(hujjat.acceptance.returnReason?.trim());
+}
 
 const HOLATLAR = ["DRAFT", "CONFIRMED", "CANCELLED"];
 
-const bosh = (qism: Partial<Forma>): Forma => ({ sarlavha: "", orderId: "", recipeId: "", destWarehouseId: "", shiftEndsAt: "", comment: "", outputs: [{ quantity: "", scrapQuantity: "", serial: "", modificationId: "", role: "" }], inputs: [], downtime: [], ...qism });
+const bosh = (qism: Partial<Forma>): Forma => ({ sarlavha: "", orderId: "", recipeId: "", destWarehouseId: "", shiftEndsAt: "", comment: "", outputs: [{ quantity: "", scrapQuantity: "", scrapReasonId: "", serial: "", modificationId: "", role: "" }], inputs: [], downtime: [], ...qism });
 
 const raqam = (qiymat: unknown) => Number(qiymat) || 0;
 
@@ -28,7 +34,7 @@ const SMENA_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
   destWarehouseId: { maydonlar: ["destWarehouseId"], kodlar: ["dest_warehouse", "warehouse"], sozlar: ["tayyor mahsulot ombori", "склад готов"] },
   // Xabar kodning o'zi bo'lishi ham mumkin ("errors.production.comment_required").
   comment: { maydonlar: ["comment"], kodlar: ["comment_required"], sozlar: ["comment_required"] },
-  outputs: { maydonlar: ["outputs"], kodlar: ["serial", "no_outputs"], sozlar: ["seriya", "серия"] },
+  outputs: { maydonlar: ["outputs"], kodlar: ["serial", "no_outputs", "scrap_reason"], sozlar: ["seriya", "серия"] },
   inputs: { maydonlar: ["inputs"], kodlar: ["input"] },
   downtime: { maydonlar: ["downtime"], kodlar: ["downtime"] },
 };
@@ -118,9 +124,10 @@ export default function Smena() {
     { id: "smena-column-5", nom: t("fields.scrapQuantity"), ong: true, katak: (hujjat) => miqdorYokiChiziq(hisobotJamlari(hujjat).brak, "font-bold text-amber-600") },
     { id: "smena-column-6", nom: t("shift.downtimeHours"), ong: true, katak: (hujjat) => miqdorYokiChiziq(hisobotJamlari(hujjat).toxtash, "font-bold text-red-600") },
     { id: "smena-column-7", nom: t("shift.shiftEndsAt"), katak: (hujjat) => vaqtMatni(hujjat.shiftEndsAt ?? undefined) || "—" },
-    { id: "smena-column-8", nom: t("fields.status"), katak: (hujjat) => <Holat status={hujjat.status} /> },
+    { id: "smena-column-8", nom: t("fields.status"), katak: (hujjat) => <QabulBelgisi hujjat={hujjat} /> },
   ];
   const buyurtmasizTugma = <button type="button" onClick={buyurtmasizOchish} className={tugmaIkkinchi}><Plus size={16} />{t("shift.withoutOrder")}</button>;
+  const qaytarilganlar = hammasi.filter(qaytarilganmi);
   // Hisobot bor, lekin qidiruv yoki filtr hech narsa qoldirmagan.
   const filtrlangan = hammasi.length > 0;
   return (
@@ -149,6 +156,18 @@ export default function Smena() {
       )}
       <div className="space-y-5 pt-2">
         <BolimSarlavhasi ikonka={ClipboardCheck} sarlavha={t("shift.reports")} soni={hisobotlar.malumot ? hammasi.length : undefined} />
+        {qaytarilganlar.length > 0 && (
+          <div role="alert" className="flex flex-col gap-3 rounded-[26px] border border-rose-200 bg-rose-50 p-5 sm:flex-row sm:items-center">
+            <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-rose-600 ring-1 ring-rose-100"><Undo2 size={20} /></span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-black text-rose-700">{t("shift.returnedBanner", { soni: qaytarilganlar.length })}</p>
+              <p className="mt-0.5 text-xs font-semibold leading-5 text-rose-600">{t("shift.returnedBannerHint")}</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {qaytarilganlar.slice(0, 4).map((hujjat) => <button key={hujjat.id} type="button" onClick={() => setOchiq(hujjat.id)} className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-white px-3 text-xs font-black text-rose-700 ring-1 ring-rose-200 hover:bg-rose-100">{hujjat.docNumber || t("shift.report")}<ArrowRight size={14} /></button>)}
+            </div>
+          </div>
+        )}
         <HolatKartalari guruhlar={guruhlar} qatorlar={hammasi} tanlangan={filtr?.kalit ?? ""} yuklanmoqda={hisobotlar.yuklanmoqda && !hisobotlar.malumot} onTanlash={(guruh) => setFiltr(guruh?.holatlar ? { kalit: guruh.kalit, holatlar: guruh.holatlar } : null)} />
         <Asboblar>
           <QidiruvMaydoni qiymat={qidiruv} onChange={setQidiruv} placeholder={t("shift.searchPlaceholder")} />
@@ -235,6 +254,15 @@ function NavbatKartasi({ qator, onBos }: { qator: NavbatQatori; onBos: () => voi
   );
 }
 
+/** Hisobot holati + qabul akti holati: qabul kutilmoqda, qabul qilindi yoki qaytarilgan. */
+function QabulBelgisi({ hujjat }: { hujjat: SmenaHisoboti }) {
+  const { t } = useTranslation("ishlab_chiqarish");
+  if (qaytarilganmi(hujjat)) return <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-rose-50 px-3 py-1 text-xs font-black text-rose-700 ring-1 ring-rose-100"><Undo2 size={13} />{t("acceptance.status.RETURNED")}</span>;
+  if (hujjat.status === "CONFIRMED" && hujjat.acceptance?.status === "DRAFT") return <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700 ring-1 ring-amber-100"><Hourglass size={13} />{t("acceptance.status.DRAFT")}</span>;
+  if (hujjat.status === "CONFIRMED" && hujjat.acceptance?.status === "CONFIRMED") return <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700 ring-1 ring-emerald-100"><PackageCheck size={13} />{t("acceptance.status.CONFIRMED")}</span>;
+  return <Holat status={hujjat.status} />;
+}
+
 function formagaOtkazish(hujjat: SmenaHisoboti, sarlavha: string): Forma {
   const matn = (qiymat: unknown) => (qiymat === null || qiymat === undefined ? "" : String(qiymat));
   return {
@@ -245,9 +273,10 @@ function formagaOtkazish(hujjat: SmenaHisoboti, sarlavha: string): Forma {
     // To'liq ISO saqlanadi: kesib qayta o'qilsa mahalliy vaqt deb olinib, har tahrirda +5 soat siljiydi.
     shiftEndsAt: hujjat.shiftEndsAt ?? "",
     comment: hujjat.comment ?? "",
-    outputs: (hujjat.outputs ?? []).map((qator) => ({ quantity: matn(qator.quantity), scrapQuantity: matn(qator.scrapQuantity), serial: qator.serial ?? "", modificationId: qator.modificationId ?? "", role: qator.role === "WASTE" || qator.role === "MAIN" ? qator.role : "" })),
+    outputs: (hujjat.outputs ?? []).map((qator) => ({ quantity: matn(qator.quantity), scrapQuantity: matn(qator.scrapQuantity), scrapReasonId: qator.scrapReasonId ?? "", serial: qator.serial ?? "", modificationId: qator.modificationId ?? "", role: qator.role === "WASTE" || qator.role === "MAIN" ? qator.role : "" })),
     inputs: (hujjat.inputs ?? []).map((qator) => ({ modificationId: qator.modificationId, nom: qatorNomi(qator), quantity: matn(qator.quantity), entryMethod: qator.entryMethod === "NORM" ? "NORM" : "ACTUAL", offRecipe: Boolean(qator.offRecipe) })),
     downtime: (hujjat.downtime ?? []).map((qator) => ({ reason: qator.reason, hours: matn(qator.hours), note: qator.note ?? "" })),
+    qaytarishSababi: qaytarilganmi(hujjat) ? hujjat.acceptance?.returnReason ?? "" : "",
   };
 }
 
@@ -289,6 +318,7 @@ function SmenaOynasi({ boshlangich, omborlar, onYopish, onOzgardi, onOchish }: {
     },
   };
   const izohXatosi = fx.xato("comment");
+  const sabablar = useBrakSabablari();
   const buyurtmasiz = !forma.orderId;
   const retseptlar = useMalumot(() => (buyurtmasiz ? ishlabChiqarishApi.retseptlar.royxat({ status: "ACTIVE" }) : Promise.resolve([])), String(buyurtmasiz));
   const ozgar = (qism: Partial<Forma>) => setForma((joriy) => ({ ...joriy, ...qism }));
@@ -356,6 +386,12 @@ function SmenaOynasi({ boshlangich, omborlar, onYopish, onOzgardi, onOchish }: {
       <button type="button" disabled={amal.band} onClick={smenaniYopish} className={`${tugmaAsosiy} h-14 px-8 text-base`}><CheckCircle2 size={20} />{t("shift.close")}</button>
     </>}>
       <XatoQutisi matn={fx.tepadagi || (fx.bor ? "" : xatoMatni || amal.xato)} />
+      {forma.qaytarishSababi && (
+        <div role="alert" className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-semibold text-rose-700">
+          <Undo2 size={19} className="mt-0.5 shrink-0" />
+          <span><span className="font-black">{t("shift.returnedReason")}:</span> {forma.qaytarishSababi}<span className="mt-1 block text-xs font-semibold text-rose-600">{t("shift.returnedFixHint")}</span></span>
+        </div>
+      )}
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
         <div className="space-y-5">
           {buyurtmasiz && (
@@ -373,15 +409,19 @@ function SmenaOynasi({ boshlangich, omborlar, onYopish, onOzgardi, onOchish }: {
           )}
           <Bolim ikonka={Package} sarlavha={t("shift.outputs")} izoh={t("shift.outputsHint")}>
             {forma.outputs.map((qator, indeks) => (
-              <QatorKartasi key={indeks} className="sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_48px]">
+              <QatorKartasi key={indeks} className="sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,1fr)_48px]">
                 <Maydon nom={t("shift.weightOrQuantity")} xato={fx.xato(`outputs.${indeks}.quantity`)}><input type="number" inputMode="decimal" min="0" step="any" value={qator.quantity} onChange={(event) => chiqim(indeks, { quantity: event.target.value })} className={`${inputKlass} h-14 text-lg`} /></Maydon>
-                <Maydon nom={t("fields.scrapQuantity")} xato={fx.xato(`outputs.${indeks}.scrapQuantity`)}><input type="number" inputMode="decimal" min="0" step="any" value={qator.scrapQuantity} onChange={(event) => chiqim(indeks, { scrapQuantity: event.target.value })} className={`${inputKlass} h-14 text-lg`} /></Maydon>
+                <Maydon nom={t("fields.scrapQuantity")} xato={fx.xato(`outputs.${indeks}.scrapQuantity`)}><input type="number" inputMode="decimal" min="0" step="any" value={qator.scrapQuantity} onChange={(event) => chiqim(indeks, (sonMaydoni(event.target.value) ?? 0) > 0 ? { scrapQuantity: event.target.value } : { scrapQuantity: event.target.value, scrapReasonId: "" })} className={`${inputKlass} h-14 text-lg`} /></Maydon>
+                {/* Brak bo'lsa sababi majburiy (Kuygan, Xom qolgan, ...): busiz brakli smena topshirilmaydi. */}
+                <Maydon nom={t("fields.scrapReason")} majburiy={(sonMaydoni(qator.scrapQuantity) ?? 0) > 0} xato={fx.xato(`outputs.${indeks}.scrapReasonId`)}>
+                  <div className="h-14 [&>div]:h-14"><BrakSababiTanlash value={qator.scrapReasonId ?? ""} disabled={!((sonMaydoni(qator.scrapQuantity) ?? 0) > 0)} sabablar={sabablar.malumot ?? []} xato={Boolean(fx.xato(`outputs.${indeks}.scrapReasonId`))} onChange={(scrapReasonId) => chiqim(indeks, { scrapReasonId })} /></div>
+                </Maydon>
                 <Maydon nom={t("fields.serial")} xato={fx.xato(`outputs.${indeks}.serial`)}><input value={qator.serial} placeholder={t("shift.serialAuto")} onChange={(event) => chiqim(indeks, { serial: event.target.value })} className={`${inputKlass} h-14`} /></Maydon>
                 <div className="flex h-14 items-center"><QatorOchirish disabled={forma.outputs.length === 1} onClick={() => qatorlarniOzgartir({ outputs: forma.outputs.filter((_, i) => i !== indeks) })} /></div>
               </QatorKartasi>
             ))}
             <MaydonXatosi matn={fx.xato("outputs")} />
-            <QatorQoshish matn={t("shift.addRoll")} onClick={() => qatorlarniOzgartir({ outputs: [...forma.outputs, { quantity: "", scrapQuantity: "", serial: "", modificationId: "", role: "" }] })} />
+            <QatorQoshish matn={t("shift.addRoll")} onClick={() => qatorlarniOzgartir({ outputs: [...forma.outputs, { quantity: "", scrapQuantity: "", scrapReasonId: "", serial: "", modificationId: "", role: "" }] })} />
           </Bolim>
           <Bolim ikonka={BookOpenCheck} sarlavha={t("shift.inputs")} izoh={t("shift.inputsHint")}>
             {forma.inputs.map((qator, indeks) => (
@@ -456,6 +496,8 @@ function HisobotKorish({ id, nomlar, buyurtmaRaqamlari, onYopish, onOzgardi, onT
   const { t } = useTranslation("ishlab_chiqarish");
   const profil = useAuthProfileStore((holat) => holat.profil);
   const hujjat = useMalumot(() => ishlabChiqarishApi.smena.olish(id), id);
+  const sabablar = useBrakSabablari();
+  const sababNomlari = useMemo(() => new Map((sabablar.malumot ?? []).map((sabab) => [sabab.id, sabab.name])), [sabablar.malumot]);
   const amal = useAmal();
   const fxBekor = useSmenaXatolari(BEKOR_XATO_QOIDALARI, amal.setXato);
   const fxTuzatish = useSmenaXatolari(TUZATISH_XATO_QOIDALARI, amal.setXato);
@@ -497,7 +539,7 @@ function HisobotKorish({ id, nomlar, buyurtmaRaqamlari, onYopish, onOzgardi, onT
   }
 
   return (
-    <Oyna keng ikonka={ClipboardCheck} sarlavha={hisobot ? hujjatRaqami(hisobot) || t("shift.report") : t("loading")} izoh={hisobot ? qatorNomi(hisobotMahsuloti(hisobot)) : undefined} belgi={<Holat status={hisobot?.status} />} onYopish={onYopish} pastki={hisobot && <>
+    <Oyna keng ikonka={ClipboardCheck} sarlavha={hisobot ? hujjatRaqami(hisobot) || t("shift.report") : t("loading")} izoh={hisobot ? qatorNomi(hisobotMahsuloti(hisobot)) : undefined} belgi={hisobot && <QabulBelgisi hujjat={hisobot} />} onYopish={onYopish} pastki={hisobot && <>
       {qoralama && <button type="button" disabled={amal.band} onClick={() => void bajar(async () => { await ishlabChiqarishApi.smena.ochirish(id); onOzgardi(); onYopish(); })} className={tugmaXavfli}>{t("actions.delete")}</button>}
       {qoralama && <button type="button" onClick={() => onTahrir(hisobot)} className={tugmaIkkinchi}>{t("actions.edit")}</button>}
       {qoralama && <button type="button" disabled={amal.band} onClick={tasdiqlash} className={tugmaAsosiy}><CheckCircle2 size={16} />{t("shift.close")}</button>}
@@ -517,6 +559,22 @@ function HisobotKorish({ id, nomlar, buyurtmaRaqamlari, onYopish, onOzgardi, onT
           { nom: t("fields.scrapQuantity"), qiymat: miqdorYokiChiziq(jamlar?.brak ?? 0, "text-amber-600") },
           { nom: t("shift.downtimeHours"), qiymat: miqdorYokiChiziq(jamlar?.toxtash ?? 0, "text-red-600") },
         ]} />
+        {qaytarilganmi(hisobot) && (
+          <div role="alert" className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-semibold text-rose-700">
+            <Undo2 size={19} className="mt-0.5 shrink-0" />
+            <span><span className="font-black">{t("shift.returnedReason")}:</span> {hisobot.acceptance?.returnReason}<span className="mt-1 block text-xs font-semibold text-rose-600">{t("shift.returnedFixHint")}</span></span>
+          </div>
+        )}
+        {hisobot.status === "CONFIRMED" && hisobot.acceptance && (
+          <div className={`flex flex-wrap items-center gap-3 rounded-2xl border px-5 py-4 text-sm font-semibold ${hisobot.acceptance.status === "CONFIRMED" ? "border-emerald-100 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-700"}`}>
+            {hisobot.acceptance.status === "CONFIRMED" ? <PackageCheck size={19} className="shrink-0" /> : <Hourglass size={19} className="shrink-0" />}
+            <span className="min-w-0 flex-1">
+              <span className="font-black">{t(hisobot.acceptance.status === "CONFIRMED" ? "shift.acceptedInfo" : "shift.waitingInfo")}</span>
+              {hisobot.acceptance.docNumber && <span> · {hisobot.acceptance.docNumber}</span>}
+              {hisobot.acceptance.acceptedAt && <span> · {vaqtMatni(hisobot.acceptance.acceptedAt)}</span>}
+            </span>
+          </div>
+        )}
         {hisobot.cancelReason && <p className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-600"><span className="font-black">{t("shift.cancelReason")}:</span> {hisobot.cancelReason}</p>}
         {hisobot.comment && <p className="rounded-2xl border border-orange-100 bg-white p-4 text-sm font-semibold text-slate-600"><span className="font-black text-slate-800">{t("fields.comment")}:</span> {hisobot.comment}</p>}
         <Bolim ikonka={Package} sarlavha={t("shift.outputs")}>
@@ -528,6 +586,7 @@ function HisobotKorish({ id, nomlar, buyurtmaRaqamlari, onYopish, onOzgardi, onT
               { id: "smena-column-11", nom: t("fields.serial"), katak: (qator) => qator.serial ?? "—" },
               { id: "smena-column-12", nom: t("fields.quantity"), ong: true, katak: (qator) => <span className="font-black text-slate-900">{miqdorMatni(chiqimMiqdori(qator))}</span> },
               { id: "smena-column-13", nom: t("fields.scrapQuantity"), ong: true, katak: (qator) => miqdorMatni(qator.scrapQuantity) },
+              { id: "smena-column-27", nom: t("fields.scrapReason"), katak: (qator) => (qator.scrapReasonId ? sababNomlari.get(qator.scrapReasonId) || "—" : "—") },
               { id: "smena-column-14", nom: t("rolls.label"), katak: (qator) => <YorliqTugmasi qator={qator} /> },
             ]}
             qatorlar={hisobot.outputs ?? []}

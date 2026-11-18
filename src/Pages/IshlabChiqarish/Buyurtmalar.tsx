@@ -1,18 +1,22 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, BookOpen, BookOpenCheck, Calculator, CheckCircle2, Circle, CircleAlert, CircleCheck, CircleCheckBig, ClipboardCheck, ClipboardList, Factory, FilePen, ListChecks, NotebookPen, Package, PackageCheck, PackageOpen, Plus, RefreshCw, Rocket, Warehouse } from "lucide-react";
+import { AlertTriangle, ArrowRight, BookOpen, BookOpenCheck, Calculator, CheckCircle2, Circle, CircleAlert, CircleCheck, CircleCheckBig, CircleDashed, CircleSlash, ClipboardCheck, ClipboardList, Factory, Hourglass, ListChecks, Lock, NotebookPen, Package, PackageCheck, PackageOpen, Plus, RefreshCw, Rocket, Sparkles, Undo2, Warehouse } from "lucide-react";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useTranslation } from "react-i18next";
 import { ishlabChiqarishApi } from "@/api/ishlabChiqarishApi";
-import { bugungiToshkentKuni, kunMatni, toshkentKuni } from "@/lib/hujjatSanasi";
-import { holatBoyicha, tahrirTanasi, hujjatRaqami, miqdorMatni, portlashMiqdori, qatorNomi, qidiruvgaMos, sonMaydoni, tozaTana } from "@/lib/ishlabChiqarish";
+import { bugungiToshkentKuni, kunMatni, toshkentKuni, vaqtMatni } from "@/lib/hujjatSanasi";
+import { BUYURTMA_HOLATLARI, OCHIQ_BUYURTMA, YOPILADIGAN_BUYURTMA, buyurtmaBosqichlari, buyurtmaTahrirlanadimi, buyurtmaYakunlanadimi, holatBoyicha, tahrirTanasi, hujjatRaqami, miqdorMatni, portlashMiqdori, qatorNomi, qidiruvgaMos, sonMaydoni, tozaTana, yopishFormasi, yopishTanasiniYigish, yopishYoqotishi, type Bosqich, type YopishFormaQatori } from "@/lib/ishlabChiqarish";
 import type { XatoMaydonQoidasi } from "@/lib/ishlabChiqarish";
-import type { Buyurtma, BuyurtmaTanasi, Mavjudlik, PortlashQatori } from "@/types/ishlabChiqarish";
+import { ishlabChiqarishRuxsati } from "@/lib/roles";
+import { useAuthProfileStore } from "@/store/authProfileStore";
+import { useIshlabChiqarishStore } from "@/store/ishlabChiqarishStore";
+import type { Buyurtma, BuyurtmaTanasi, Mavjudlik, PortlashQatori, YopishQatori } from "@/types/ishlabChiqarish";
 import { Asboblar, Bolim, HolatFiltri, HolatKartalari, Holat, Jadval, Jarayon, MahsulotQidiruvi, Maydon, Ogohlantirish, OmborTanlash, Oyna, QidiruvMaydoni, Sahifa, Tafsilotlar, XatoQutisi, Yuklanmoqda, inputKlass, selectKlass, tugmaAsosiy, tugmaIkkinchi, tugmaXavfli, xatoRamkasi, type HolatGuruhi, type Ustun } from "./umumiy";
-import { useAmal, useKechiktirilgan, useMalumot, useMaydonXatolari, useOmborlar } from "./hooklar";
+import { useAmal, useKechiktirilgan, useMalumot, useMaydonXatolari, useOmborlar, useXodimNomlari } from "./hooklar";
 
-const TUGAGAN = ["DRAFT", "DONE", "CLOSED", "CANCELLED"];
-const HOLATLAR = ["DRAFT", "RELEASED", "IN_PROGRESS", "DONE", "CLOSED", "CANCELLED"];
+// Muddat nazorati faqat ish davom etayotgan buyurtmada.
+const TUGAGAN = ["DRAFT", "ACCEPTED", "DONE", "CLOSED", "CANCELLED"];
+const HOLATLAR = BUYURTMA_HOLATLARI;
 
 /** Muddati o'tgan va hali ishda bo'lgan buyurtma. */
 function muddatOtganmi(buyurtma: Buyurtma) {
@@ -35,15 +39,16 @@ export default function Buyurtmalar() {
   );
   const guruhlar: HolatGuruhi[] = [
     { kalit: "jami", nom: t("orders.kpi.total"), holatlar: null, rang: "blue", ikonka: ClipboardList },
-    { kalit: "qoralama", nom: t("orders.kpi.draft"), holatlar: ["DRAFT"], rang: "amber", ikonka: FilePen },
-    { kalit: "ishda", nom: t("orders.kpi.active"), holatlar: ["RELEASED", "IN_PROGRESS"], rang: "violet", ikonka: Factory },
-    { kalit: "yakunlangan", nom: t("orders.kpi.done"), holatlar: ["DONE", "CLOSED"], rang: "emerald", ikonka: CircleCheckBig },
+    { kalit: "yangi", nom: t("orders.kpi.new"), holatlar: ["RELEASED", "DRAFT"], rang: "amber", ikonka: Sparkles },
+    { kalit: "ishda", nom: t("orders.kpi.active"), holatlar: ["MATERIAL_ISSUED", "IN_PROGRESS", "AWAITING_ACCEPTANCE", "RETURNED"], rang: "violet", ikonka: Factory },
+    { kalit: "yakunlangan", nom: t("orders.kpi.done"), holatlar: ["ACCEPTED", "DONE", "CLOSED"], rang: "emerald", ikonka: CircleCheckBig },
   ];
   const ombor = (id?: string) => (id ? nomlar.get(id) ?? "—" : "—");
   const ustunlar: Ustun<Buyurtma>[] = [
     { id: "buyurtmalar-column-1", nom: t("fields.document"), katak: (hujjat) => hujjatRaqami(hujjat) ? <span className="font-black text-slate-900">{hujjatRaqami(hujjat)}</span> : <span className="text-slate-400">{t("status.DRAFT")}</span> },
     { id: "buyurtmalar-column-2", nom: t("fields.product"), katak: (hujjat) => <span className="block max-w-[260px] truncate font-bold text-slate-800">{qatorNomi(hujjat)}</span> },
     { id: "buyurtmalar-column-3", nom: t("fields.progress"), katak: (hujjat) => <Jarayon bajarilgan={hujjat.produced ?? 0} reja={hujjat.quantity} /> },
+    { id: "buyurtmalar-column-18", nom: t("orders.scrap"), ong: true, katak: (hujjat) => (Number(hujjat.scrap) > 0 ? <span className="font-bold text-amber-600">{miqdorMatni(hujjat.scrap)}</span> : <span className="text-slate-300">—</span>) },
     { id: "buyurtmalar-column-4", nom: t("fields.sourceWarehouse"), katak: (hujjat) => ombor(hujjat.sourceWarehouseId) },
     { id: "buyurtmalar-column-5", nom: t("fields.destWarehouse"), katak: (hujjat) => ombor(hujjat.destWarehouseId) },
     { id: "buyurtmalar-column-6", nom: t("fields.date"), katak: (hujjat) => kunMatni(hujjat.date ?? undefined) || "—" },
@@ -82,7 +87,7 @@ export default function Buyurtmalar() {
 /** Bo'sh ro'yxatda: buyurtma nima va ish qaysi tartibda boradi. */
 function IshTartibi() {
   const { t } = useTranslation("ishlab_chiqarish");
-  const qadamlar = [t("orders.flow.recipe"), t("orders.flow.order"), t("orders.flow.release"), t("orders.flow.issue"), t("orders.flow.report")];
+  const qadamlar = [t("orders.flow.recipe"), t("orders.flow.order"), t("orders.flow.issue"), t("orders.flow.report"), t("orders.flow.acceptance"), t("orders.flow.close")];
   return (
     <div className="space-y-5">
       <p>{t("orders.emptyHint")}</p>
@@ -124,10 +129,14 @@ function BuyurtmaOynasi({ hujjat, onYopish, onSaqlandi }: { hujjat?: Buyurtma; o
   const omborlar = useOmborlar();
   const amal = useAmal();
   const fx = useMaydonXatolari(BUYURTMA_XATO_QOIDALARI);
+  // Sozlamadagi standart omborlar: buyurtmada ombor tanlanmasa server shularni oladi (oldindan to'ldiriladi, o'zgartirish mumkin).
+  const sozlama = useIshlabChiqarishStore((holat) => holat.sozlama);
+  const standartXomashyo = sozlama?.defaultSourceWarehouseId ?? "";
+  const standartTayyor = sozlama?.defaultDestWarehouseId ?? "";
   const [mahsulot, setMahsulot] = useState({ id: hujjat?.modificationId ?? "", nom: hujjat ? qatorNomi(hujjat) : "" });
   const [quantity, setQuantity] = useState(hujjat?.quantity != null ? String(hujjat.quantity) : "");
-  const [sourceWarehouseId, setSource] = useState(hujjat?.sourceWarehouseId ?? "");
-  const [destWarehouseId, setDest] = useState(hujjat?.destWarehouseId ?? "");
+  const [sourceWarehouseId, setSource] = useState(hujjat?.sourceWarehouseId ?? standartXomashyo);
+  const [destWarehouseId, setDest] = useState(hujjat?.destWarehouseId ?? standartTayyor);
   const [recipeId, setRecipeId] = useState(hujjat?.recipeId ?? "");
   const [dueDate, setDueDate] = useState(hujjat?.dueDate?.slice(0, 10) ?? "");
   const [note, setNote] = useState(hujjat?.note ?? "");
@@ -148,8 +157,8 @@ function BuyurtmaOynasi({ hujjat, onYopish, onSaqlandi }: { hujjat?: Buyurtma; o
     ...(!mahsulot.id ? { modificationId: t("errors.product") } : {}),
     ...(!(miqdor && miqdor > 0) ? { quantity: t("errors.lineQuantity") } : {}),
     ...(faolRetseptYoq ? { recipeId: t("errors.noActiveRecipe") } : {}),
-    ...(!sourceWarehouseId ? { sourceWarehouseId: t("errors.sourceWarehouse") } : {}),
-    ...(!destWarehouseId ? { destWarehouseId: t("errors.destWarehouse") } : {}),
+    ...(!sourceWarehouseId && !standartXomashyo ? { sourceWarehouseId: t("errors.sourceWarehouse") } : {}),
+    ...(!destWarehouseId && !standartTayyor ? { destWarehouseId: t("errors.destWarehouse") } : {}),
   };
   // Mijoz tekshiruvi urinishdan keyin jonli; serverdan kelgan xato maydon yonida turadi va shu maydon o'zgarsa yo'qoladi.
   const xato = (kalit: string) => (urinildi ? xatolar[kalit] : undefined) ?? fx.xato(kalit);
@@ -177,7 +186,7 @@ function BuyurtmaOynasi({ hujjat, onYopish, onSaqlandi }: { hujjat?: Buyurtma; o
       xato: Boolean(xato("recipeId")) || faolRetseptYoq,
       qiymat: hisobRetsepti ? `v${hisobRetsepti.version ?? 1}${recipeId ? "" : ` · ${t("orders.recipeAutoShort")}`}` : recipeId ? t("orders.recipeSelected") : faolRetseptYoq ? t("orders.noActiveRecipe") : "—",
     },
-    { kalit: "warehouses", nom: t("orders.sectionWarehouses"), tayyor: Boolean(sourceWarehouseId && destWarehouseId) && !xato("sourceWarehouseId") && !xato("destWarehouseId"), xato: Boolean(xato("sourceWarehouseId") || xato("destWarehouseId")), qiymat: sourceWarehouseId && destWarehouseId ? `${ombor(sourceWarehouseId)} → ${ombor(destWarehouseId)}` : "—" },
+    { kalit: "warehouses", nom: t("orders.sectionWarehouses"), tayyor: Boolean((sourceWarehouseId || standartXomashyo) && (destWarehouseId || standartTayyor)) && !xato("sourceWarehouseId") && !xato("destWarehouseId"), xato: Boolean(xato("sourceWarehouseId") || xato("destWarehouseId")), qiymat: (sourceWarehouseId || standartXomashyo) && (destWarehouseId || standartTayyor) ? `${ombor(sourceWarehouseId || standartXomashyo)} → ${ombor(destWarehouseId || standartTayyor)}` : "—" },
   ];
   const toldirilgan = tekshiruv.filter((qadam) => qadam.tayyor).length;
 
@@ -220,15 +229,16 @@ function BuyurtmaOynasi({ hujjat, onYopish, onSaqlandi }: { hujjat?: Buyurtma; o
           </Bolim>
           <Bolim ikonka={Warehouse} sarlavha={t("orders.sectionWarehouses")} izoh={t("orders.warehousesHint")}>
             <div className="grid items-start gap-4 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
-              <Maydon nom={t("fields.sourceWarehouse")} majburiy xato={xato("sourceWarehouseId")}><OmborTanlash value={sourceWarehouseId} omborlar={omborlar} onChange={(id) => { tozala("sourceWarehouseId", "destWarehouseId"); setSource(id); }} /></Maydon>
+              <Maydon nom={t("fields.sourceWarehouse")} majburiy={!standartXomashyo} izoh={standartXomashyo ? t("orders.defaultWarehouseHint", { nom: ombor(standartXomashyo) || "—" }) : undefined} xato={xato("sourceWarehouseId")}><OmborTanlash value={sourceWarehouseId} omborlar={omborlar} onChange={(id) => { tozala("sourceWarehouseId", "destWarehouseId"); setSource(id); }} /></Maydon>
               <ArrowRight aria-hidden size={20} className="mt-11 hidden text-slate-300 sm:block" />
-              <Maydon nom={t("fields.destWarehouse")} majburiy xato={xato("destWarehouseId")}><OmborTanlash value={destWarehouseId} omborlar={omborlar} onChange={(id) => { tozala("sourceWarehouseId", "destWarehouseId"); setDest(id); }} /></Maydon>
+              <Maydon nom={t("fields.destWarehouse")} majburiy={!standartTayyor} izoh={standartTayyor ? t("orders.defaultWarehouseHint", { nom: ombor(standartTayyor) || "—" }) : undefined} xato={xato("destWarehouseId")}><OmborTanlash value={destWarehouseId} omborlar={omborlar} onChange={(id) => { tozala("sourceWarehouseId", "destWarehouseId"); setDest(id); }} /></Maydon>
             </div>
+            <p className="flex items-start gap-2 rounded-2xl bg-sky-50 px-4 py-3 text-xs font-bold leading-5 text-sky-700"><Lock aria-hidden size={15} className="mt-0.5 shrink-0" />{t("orders.reserveHint")}</p>
             <ol aria-label={t("orders.routeTitle")} className="flex flex-wrap items-center gap-2">
               {[
-                { ikonka: Warehouse, nom: t("orders.routeRaw"), qiymat: ombor(sourceWarehouseId) },
+                { ikonka: Warehouse, nom: t("orders.routeRaw"), qiymat: ombor(sourceWarehouseId || standartXomashyo) },
                 { ikonka: Factory, nom: t("orders.routeWorkshop"), qiymat: hisobRetsepti?.warehouseId ? ombor(hisobRetsepti.warehouseId) : "" },
-                { ikonka: PackageCheck, nom: t("orders.routeFinished"), qiymat: ombor(destWarehouseId) },
+                { ikonka: PackageCheck, nom: t("orders.routeFinished"), qiymat: ombor(destWarehouseId || standartTayyor) },
               ].map((qadam, indeks, royxat) => (
                 <li key={qadam.nom} className="flex items-center gap-2">
                   <span className={`inline-flex items-center gap-2 rounded-2xl border px-3 py-2 text-xs font-bold ${qadam.qiymat ? "border-orange-100 bg-orange-50/60 text-slate-700" : "border-dashed border-slate-200 bg-white text-slate-400"}`}>
@@ -320,24 +330,81 @@ function XomashyoHisobi({ modificationId, recipeId, retseptYuklanmoqda, quantity
   );
 }
 
+const YOPISH_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
+  lines: { maydonlar: ["lines"], kodlar: ["close_return_exceeds"] },
+  note: { maydonlar: ["note"] },
+};
+
+/** Bosqichlar chizig'i: buyurtma → berish → kun yakuni → qabul → yopish; har bosqichda sana va kim. */
+function Bosqichlar({ bosqichlar, xodimlar, yuklanmoqda }: { bosqichlar: Bosqich[]; xodimlar: Map<string, string>; yuklanmoqda: boolean }) {
+  const { t } = useTranslation("ishlab_chiqarish");
+  const ikonka = { order: ClipboardList, issue: PackageOpen, report: Factory, acceptance: ClipboardCheck, close: Lock } as const;
+  return (
+    <ol aria-label={t("orders.timeline.title")} className="grid gap-3 sm:grid-cols-5">
+      {bosqichlar.map((bosqich, indeks) => {
+        const Ikonka = ikonka[bosqich.kalit];
+        const rang = bosqich.holat === "done" ? "border-emerald-200 bg-emerald-50/70" : bosqich.holat === "current" ? "border-[#2563EB] bg-blue-50/70 ring-4 ring-blue-50" : "border-slate-200 bg-white";
+        const belgi = bosqich.holat === "done" ? "bg-emerald-500 text-white" : bosqich.holat === "current" ? "bg-[#2563EB] text-white" : "bg-slate-100 text-slate-400";
+        return (
+          <li key={bosqich.kalit} className={`relative min-w-0 rounded-2xl border p-3.5 transition ${rang}`}>
+            <div className="flex items-center gap-2.5">
+              <span aria-hidden className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${belgi}`}>{bosqich.holat === "done" ? <CircleCheck size={17} /> : bosqich.holat === "skipped" ? <CircleSlash size={16} /> : <Ikonka size={16} />}</span>
+              <span className="min-w-0">
+                <span className="block text-[11px] font-black uppercase tracking-wide text-slate-400">{indeks + 1}-{t("orders.timeline.step")}</span>
+                <span className="block truncate text-sm font-black text-slate-800">{t(`orders.timeline.${bosqich.kalit}`)}</span>
+              </span>
+            </div>
+            <p className="mt-2 min-h-[2.5rem] text-xs font-semibold leading-5 text-slate-500">
+              {bosqich.holat === "skipped" ? t("orders.timeline.skipped") : bosqich.sana ? (
+                <>
+                  <span className="block font-bold text-slate-700">{vaqtMatni(bosqich.sana) || kunMatni(bosqich.sana)}</span>
+                  {(bosqich.raqam || (bosqich.kim && xodimlar.get(bosqich.kim))) && <span className="block truncate">{[bosqich.raqam, bosqich.kim ? xodimlar.get(bosqich.kim) : ""].filter(Boolean).join(" · ")}</span>}
+                </>
+              ) : yuklanmoqda && bosqich.kalit !== "close" ? <span className="text-slate-300">…</span> : bosqich.holat === "current" ? <span className="font-bold text-[#2563EB]">{t("orders.timeline.now")}</span> : <span className="text-slate-300">—</span>}
+            </p>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 function BuyurtmaKorish({ id, nomlar, onYopish, onOzgardi, onTahrir }: { id: string; nomlar: Map<string, string>; onYopish: () => void; onOzgardi: () => void; onTahrir: (hujjat: Buyurtma) => void }) {
   const { t } = useTranslation("ishlab_chiqarish");
   const navigate = useNavigate();
+  const profil = useAuthProfileStore((holat) => holat.profil);
+  const sozlama = useIshlabChiqarishStore((holat) => holat.sozlama);
+  // Sozlamada "Xomashyo berish" bosqichi o'chirilgan: sexga berish tugmasi yashiriladi (server issue_stage_off qaytaradi).
+  const berishYoq = sozlama?.issueStageEnabled === false;
   const hujjat = useMalumot(() => ishlabChiqarishApi.buyurtmalar.olish(id), id);
+  const xodimlar = useXodimNomlari();
   const amal = useAmal();
   const fx = useMaydonXatolari(YAKUN_XATO_QOIDALARI);
-  const [mavjudlik, setMavjudlik] = useState<Mavjudlik | null>(null);
   const [yakun, setYakun] = useState(false);
+  const [yopishOchiq, setYopishOchiq] = useState(false);
   const [sabab, setSabab] = useState("");
   const buyurtma = hujjat.malumot;
   const status = buyurtma?.status ?? "";
   const qoralama = status === "DRAFT";
-  const ishda = Boolean(buyurtma) && !TUGAGAN.includes(status);
-  const qatorlar = mavjudlik?.items ?? buyurtma?.requirements ?? [];
-  // Har amaldan oldin eski maydon xatosi tozalanadi: aks holda boshqa amal xatosi tepada ko'rinmay qoladi.
+  const ochiq = OCHIQ_BUYURTMA.includes(status);
+  const tahrirlanadi = buyurtmaTahrirlanadimi(status);
+  // Band va yetishmovchilik ochiq buyurtmada o'zi yuklanadi (har amaldan keyin ham).
+  const mavjudlik = useMalumot<Mavjudlik | null>(() => (ochiq ? ishlabChiqarishApi.buyurtmalar.mavjudlik(id) : Promise.resolve(null)), `${id}|${status}|${hujjat.malumot ? "1" : "0"}`);
+  // Bosqichlar: sexga berish va smena hisobotlari ro'yxatida orderId filtri yo'q — brauzerda shu buyurtmaga ajratiladi.
+  const bosqichManbasi = useMalumot(async () => {
+    const [berishlar, hisobotlar, aktlar] = await Promise.all([
+      ishlabChiqarishApi.berishlar.royxat().catch(() => []),
+      ishlabChiqarishApi.smena.royxat().catch(() => []),
+      ishlabChiqarishApi.qabul.royxat({ orderId: id }).catch(() => []),
+    ]);
+    return { berishlar, hisobotlar, aktlar };
+  }, `${id}|${status}`);
+  const qatorlar = mavjudlik.malumot?.items ?? buyurtma?.requirements ?? [];
   const bajar = <T,>(ish: () => Promise<T>, onXato?: (tafsilot: unknown) => void) => { fx.ornat({}); return amal.bajar(ish, onXato); };
   const bajarish = (ish: () => Promise<unknown>) => void bajar(async () => { await ish(); hujjat.qayta(); onOzgardi(); });
   const ombor = (omborId?: string) => (omborId ? nomlar.get(omborId) ?? "—" : "—");
+  const qabulRuxsati = ishlabChiqarishRuxsati(profil, "qabul");
+  const bosqichlar = buyurtma ? buyurtmaBosqichlari(buyurtma, bosqichManbasi.malumot ?? {}, berishYoq) : [];
 
   function yakunlash() {
     void bajar(async () => {
@@ -351,45 +418,60 @@ function BuyurtmaKorish({ id, nomlar, onYopish, onOzgardi, onTahrir }: { id: str
   return (
     <Oyna keng ikonka={ClipboardList} sarlavha={buyurtma ? hujjatRaqami(buyurtma) || qatorNomi(buyurtma) : t("loading")} izoh={buyurtma && hujjatRaqami(buyurtma) ? qatorNomi(buyurtma) : undefined} belgi={<Holat status={status} />} onYopish={onYopish} pastki={buyurtma && <>
       {(qoralama || status === "CANCELLED") && <button type="button" disabled={amal.band} onClick={() => void bajar(async () => { await ishlabChiqarishApi.buyurtmalar.ochirish(id); onOzgardi(); onYopish(); })} className={tugmaXavfli}>{t("actions.delete")}</button>}
-      {qoralama && <button type="button" onClick={() => onTahrir(buyurtma)} className={tugmaIkkinchi}>{t("actions.edit")}</button>}
-      {(qoralama || ishda) && <button type="button" disabled={amal.band} onClick={() => bajarish(() => ishlabChiqarishApi.buyurtmalar.bekorQilish(id))} className={tugmaXavfli}>{t("actions.cancelDocument")}</button>}
-      {ishda && <button type="button" disabled={amal.band} onClick={() => void bajar(async () => setMavjudlik(await ishlabChiqarishApi.buyurtmalar.mavjudlik(id)))} className={tugmaIkkinchi}><RefreshCw size={15} />{t("orders.checkAvailability")}</button>}
-      {ishda && <button type="button" disabled={amal.band} onClick={() => void bajar(async () => { const berish = await ishlabChiqarishApi.berishlar.buyurtmadan(id); navigate(`/ishlab-chiqarish/sexga-berish?hujjat=${berish.id}`); })} className={tugmaIkkinchi}><PackageOpen size={15} />{t("orders.issue")}</button>}
-      {ishda && <button type="button" disabled={amal.band} onClick={() => setYakun(true)} className={tugmaAsosiy}><CheckCircle2 size={16} />{t("orders.complete")}</button>}
-      {status === "DONE" && <button type="button" disabled={amal.band} onClick={() => bajarish(() => ishlabChiqarishApi.buyurtmalar.yopish(id))} className={tugmaAsosiy}><ClipboardCheck size={16} />{t("orders.close")}</button>}
-      {qoralama && <button type="button" disabled={amal.band} onClick={() => void bajar(async () => { const javob = await ishlabChiqarishApi.buyurtmalar.chiqarish(id); setMavjudlik(javob.availability); hujjat.qayta(); onOzgardi(); })} className={tugmaAsosiy}><Rocket size={16} />{t("orders.release")}</button>}
+      {tahrirlanadi && <button type="button" disabled={amal.band} onClick={() => bajarish(() => ishlabChiqarishApi.buyurtmalar.bekorQilish(id))} className={tugmaXavfli}>{t("actions.cancelDocument")}</button>}
+      {tahrirlanadi && <button type="button" onClick={() => onTahrir(buyurtma)} className={tugmaIkkinchi}>{t("actions.edit")}</button>}
+      {ochiq && <button type="button" disabled={amal.band || mavjudlik.yuklanmoqda} onClick={mavjudlik.qayta} className={tugmaIkkinchi}><RefreshCw size={15} />{t("orders.checkAvailability")}</button>}
+      {ochiq && !berishYoq && <button type="button" disabled={amal.band} onClick={() => void bajar(async () => { const berish = await ishlabChiqarishApi.berishlar.buyurtmadan(id); navigate(`/ishlab-chiqarish/sexga-berish?hujjat=${berish.id}`); })} className={tugmaIkkinchi}><PackageOpen size={15} />{t("orders.issue")}</button>}
+      {status === "AWAITING_ACCEPTANCE" && qabulRuxsati && <button type="button" onClick={() => navigate("/ishlab-chiqarish/qabul")} className={tugmaIkkinchi}><ClipboardCheck size={15} />{t("orders.openAcceptance")}</button>}
+      {buyurtmaYakunlanadimi(status) && status !== "AWAITING_ACCEPTANCE" && <button type="button" disabled={amal.band} onClick={() => setYakun(true)} className={tugmaIkkinchi}><CheckCircle2 size={16} />{t("orders.complete")}</button>}
+      {YOPILADIGAN_BUYURTMA.includes(status) && <button type="button" disabled={amal.band} onClick={() => setYopishOchiq(true)} className={tugmaAsosiy}><Lock size={16} />{t("orders.close")}</button>}
+      {qoralama && <button type="button" disabled={amal.band} onClick={() => void bajar(async () => { await ishlabChiqarishApi.buyurtmalar.chiqarish(id); hujjat.qayta(); onOzgardi(); })} className={tugmaAsosiy}><Rocket size={16} />{t("orders.release")}</button>}
     </>}>
       <XatoQutisi matn={hujjat.xato || fx.tepadagi || (fx.bor ? "" : amal.xato)} />
       {!buyurtma ? <Yuklanmoqda /> : <>
+        <Bosqichlar bosqichlar={bosqichlar} xodimlar={xodimlar} yuklanmoqda={bosqichManbasi.yuklanmoqda} />
         <Tafsilotlar qatorlar={[
           { nom: t("fields.product"), qiymat: qatorNomi(buyurtma), keng: true },
           { nom: t("fields.progress"), qiymat: <Jarayon bajarilgan={buyurtma.produced ?? 0} reja={buyurtma.quantity} />, keng: true },
           { nom: t("fields.sourceWarehouse"), qiymat: ombor(buyurtma.sourceWarehouseId) },
           { nom: t("fields.destWarehouse"), qiymat: ombor(buyurtma.destWarehouseId) },
-          { nom: t("fields.date"), qiymat: kunMatni(buyurtma.date ?? undefined) || "—" },
+          { nom: t("orders.scrap"), qiymat: Number(buyurtma.scrap) > 0 ? <span className="text-amber-600">{miqdorMatni(buyurtma.scrap)}</span> : "—" },
           { nom: t("fields.dueDate"), qiymat: buyurtma.dueDate ? <span className={muddatOtganmi(buyurtma) ? "text-red-600" : ""}>{kunMatni(buyurtma.dueDate)}</span> : "—" },
         ]} />
+        {status === "RETURNED" && <p className="flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-bold text-rose-700"><Undo2 size={18} className="mt-0.5 shrink-0" />{t("orders.returnedHint")}</p>}
+        {status === "AWAITING_ACCEPTANCE" && <p className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-bold text-amber-700"><Hourglass size={18} className="mt-0.5 shrink-0" />{t("orders.awaitingHint")}</p>}
+        {berishYoq && ochiq && <p className="flex items-start gap-2 rounded-2xl bg-slate-50 px-5 py-4 text-sm font-semibold text-slate-500"><CircleDashed size={18} className="mt-0.5 shrink-0" />{t("orders.issueStageOffHint")}</p>}
         {buyurtma.completionNote && <p className="rounded-2xl border border-orange-100 bg-white p-4 text-sm font-semibold text-slate-600"><span className="font-black text-slate-800">{t("orders.completeReason")}:</span> {buyurtma.completionNote}</p>}
         {buyurtma.note && <p className="rounded-2xl border border-orange-100 bg-white p-4 text-sm font-semibold text-slate-600"><span className="font-black text-slate-800">{t("fields.note")}:</span> {buyurtma.note}</p>}
-        {buyurtma.completionSuggested && ishda && <Ogohlantirish>{t("orders.completionSuggested")}</Ogohlantirish>}
-        {mavjudlik?.hasShortage && <Ogohlantirish>{t("orders.shortageWarning")}</Ogohlantirish>}
-        <Bolim ikonka={BookOpenCheck} sarlavha={t("orders.sectionRequirements")} izoh={qoralama ? t("orders.requirementsDraftHint") : undefined}>
-          <Jadval tableId="IshlabChiqarish/Buyurtmalar/jadval-4"
-            ixcham
-            ustunlar={[
-              { id: "buyurtmalar-column-13", nom: t("fields.product"), katak: (qator) => qatorNomi(qator) },
-              { id: "buyurtmalar-column-14", nom: t("fields.required"), ong: true, katak: (qator) => miqdorMatni(qator.required ?? qator.quantity) },
-              { id: "buyurtmalar-column-15", nom: t("fields.issued"), ong: true, katak: (qator) => miqdorMatni(qator.issued) },
-              { id: "buyurtmalar-column-16", nom: t("fields.available"), ong: true, katak: (qator) => miqdorMatni(qator.available) },
-              { id: "buyurtmalar-column-17", nom: t("fields.shortage"), ong: true, katak: (qator) => <span className={Number(qator.shortage ?? 0) > 0 ? "font-black text-red-600" : ""}>{miqdorMatni(qator.shortage)}</span> },
-            ]}
-            qatorlar={qatorlar}
-            kalit={(qator, indeks) => qator.modificationId ?? String(indeks)}
-            bosh={t("empty.requirements")}
-          />
-        </Bolim>
+        {buyurtma.completionSuggested && ochiq && <Ogohlantirish>{t("orders.completionSuggested")}</Ogohlantirish>}
+        {buyurtma.close ? <YopishHujjati buyurtma={buyurtma} xodimlar={xodimlar} /> : (
+          <Bolim ikonka={BookOpenCheck} sarlavha={t("orders.sectionRequirements")} izoh={qoralama ? t("orders.requirementsDraftHint") : ochiq ? t("orders.requirementsHint") : undefined} amal={ochiq && mavjudlik.malumot && (
+            <span className="flex flex-wrap gap-2">
+              {mavjudlik.malumot.hasShortage && <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-black text-red-600 ring-1 ring-red-100"><AlertTriangle size={13} />{t("orders.waitingMaterial")}</span>}
+              {!mavjudlik.malumot.issuedFully && status !== "RELEASED" && <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700 ring-1 ring-amber-100"><CircleDashed size={13} />{t("orders.notFullyIssued")}</span>}
+              {!mavjudlik.malumot.hasShortage && <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700 ring-1 ring-emerald-100"><CircleCheck size={13} />{t("orders.materialEnough")}</span>}
+            </span>
+          )}>
+            <XatoQutisi matn={mavjudlik.xato} />
+            <Jadval tableId="IshlabChiqarish/Buyurtmalar/jadval-4"
+              ixcham
+              yuklanmoqda={mavjudlik.yuklanmoqda && !mavjudlik.malumot}
+              ustunlar={[
+                { id: "buyurtmalar-column-13", nom: t("fields.product"), katak: (qator) => qatorNomi(qator) },
+                { id: "buyurtmalar-column-14", nom: t("fields.required"), ong: true, katak: (qator) => miqdorMatni(qator.required ?? qator.quantity) },
+                { id: "buyurtmalar-column-15", nom: t("fields.issued"), ong: true, katak: (qator) => miqdorMatni(qator.issued) },
+                { id: "buyurtmalar-column-19", nom: t("fields.reserved"), ong: true, katak: (qator) => <span className="inline-flex items-center gap-1 font-bold text-sky-700">{Number(qator.reserved) > 0 && <Lock aria-hidden size={12} />}{miqdorMatni(qator.reserved)}</span> },
+                { id: "buyurtmalar-column-16", nom: t("fields.available"), ong: true, katak: (qator) => miqdorMatni(qator.available) },
+                { id: "buyurtmalar-column-17", nom: t("fields.shortage"), ong: true, katak: (qator) => <span className={Number(qator.shortage ?? 0) > 0 ? "font-black text-red-600" : ""}>{miqdorMatni(qator.shortage)}</span> },
+              ]}
+              qatorlar={qatorlar}
+              kalit={(qator, indeks) => qator.modificationId ?? String(indeks)}
+              bosh={t("empty.requirements")}
+            />
+          </Bolim>
+        )}
         {yakun && (
-          <Bolim ikonka={CheckCircle2} sarlavha={t("orders.complete")}>
+          <Bolim ikonka={CheckCircle2} sarlavha={t("orders.complete")} izoh={t("orders.completeHint")}>
             <Maydon nom={t("orders.completeReason")} izoh={t("orders.completeReasonHint")} xato={fx.xato("reason")}><textarea value={sabab} rows={2} aria-invalid={Boolean(fx.xato("reason"))} onChange={(event) => { fx.tozala("reason"); setSabab(event.target.value); }} className={`${inputKlass} h-auto py-3`} /></Maydon>
             <div className="flex justify-end gap-3">
               <button type="button" onClick={() => { fx.ornat({}); setYakun(false); }} className={tugmaIkkinchi}>{t("actions.cancel")}</button>
@@ -398,6 +480,108 @@ function BuyurtmaKorish({ id, nomlar, onYopish, onOzgardi, onTahrir }: { id: str
           </Bolim>
         )}
       </>}
+      {yopishOchiq && buyurtma && <YopishOynasi buyurtma={buyurtma} onYopish={() => setYopishOchiq(false)} onYopildi={() => { setYopishOchiq(false); hujjat.qayta(); onOzgardi(); }} />}
+    </Oyna>
+  );
+}
+
+/** Yopilgan buyurtmaning yopish hujjati: har xomashyo bo'yicha berildi, sarflandi, qaytdi, sexda qoldi, yo'qotish. */
+function YopishHujjati({ buyurtma, xodimlar }: { buyurtma: Buyurtma; xodimlar: Map<string, string> }) {
+  const { t } = useTranslation("ishlab_chiqarish");
+  const yopish = buyurtma.close;
+  if (!yopish) return null;
+  return (
+    <Bolim ikonka={Lock} sarlavha={t("orders.closeDocument")} izoh={[vaqtMatni(yopish.date ?? yopish.createdAt ?? undefined), yopish.createdById ? xodimlar.get(yopish.createdById) : ""].filter(Boolean).join(" · ") || undefined}>
+      <Jadval tableId="IshlabChiqarish/Buyurtmalar/jadval-5"
+        ixcham
+        ustunlar={yopishUstunlari(t, (qator) => miqdorMatni(qator.returned), (qator) => miqdorMatni(qator.kept), (qator) => <YoqotishMatni qiymat={Number(qator.loss) || 0} />)}
+        qatorlar={yopish.lines ?? []}
+        kalit={(qator, indeks) => `${qator.modificationId}-${indeks}`}
+        bosh={t("orders.closeNoLines")}
+      />
+      {yopish.note && <p className="rounded-2xl bg-slate-50 p-4 text-sm font-semibold text-slate-600"><span className="font-black text-slate-800">{t("fields.note")}:</span> {yopish.note}</p>}
+    </Bolim>
+  );
+}
+
+function YoqotishMatni({ qiymat }: { qiymat: number }) {
+  return qiymat > 0 ? <span className="font-black text-red-600">{miqdorMatni(qiymat)}</span> : qiymat < 0 ? <span className="font-black text-red-600">{miqdorMatni(qiymat)}</span> : <span className="text-slate-300">0</span>;
+}
+
+function yopishUstunlari<T extends YopishQatori>(t: (kalit: string) => string, qaytadi: (qator: T, indeks: number) => ReactNode, qoladi: (qator: T, indeks: number) => ReactNode, yoqotish: (qator: T, indeks: number) => ReactNode): Ustun<T>[] {
+  return [
+    { id: "yopish-column-1", nom: t("fields.product"), katak: (qator) => <span className="block max-w-[220px] truncate font-bold text-slate-800">{qatorNomi(qator)}</span> },
+    { id: "yopish-column-2", nom: t("orders.closeIssued"), ong: true, katak: (qator) => miqdorMatni(qator.issued) },
+    { id: "yopish-column-3", nom: t("orders.closeConsumed"), ong: true, katak: (qator) => miqdorMatni(qator.consumed) },
+    { id: "yopish-column-4", nom: t("orders.closeExpected"), ong: true, katak: (qator) => <span className="font-black text-slate-900">{miqdorMatni(qator.expected)}</span> },
+    { id: "yopish-column-5", nom: t("orders.closeReturned"), ong: true, katak: qaytadi },
+    { id: "yopish-column-6", nom: t("orders.closeKept"), ong: true, katak: qoladi },
+    { id: "yopish-column-7", nom: t("orders.closeLoss"), ong: true, katak: yoqotish },
+  ];
+}
+
+/**
+ * Buyurtmani yopish (faqat qabul qilingan): har xomashyo bo'yicha qancha asosiy omborga qaytadi va qancha sexda keyingi buyurtmaga
+ * qoladi; qolgani yo'qotish. Standart — hammasi qaytadi. Masalan: 100 kg un berildi, 92 kg sarflandi → 8 kg ortishi kerak;
+ * 5 kg qaytadi, 1 kg qoladi → 2 kg yo'qotish.
+ */
+function YopishOynasi({ buyurtma, onYopish, onYopildi }: { buyurtma: Buyurtma; onYopish: () => void; onYopildi: () => void }) {
+  const { t } = useTranslation("ishlab_chiqarish");
+  const oldindan = useMalumot(() => ishlabChiqarishApi.buyurtmalar.yopishOldindan(buyurtma.id), buyurtma.id);
+  const amal = useAmal();
+  const fx = useMaydonXatolari(YOPISH_XATO_QOIDALARI);
+  const [forma, setForma] = useState<YopishFormaQatori[] | null>(null);
+  const [izoh, setIzoh] = useState("");
+  const manba = oldindan.malumot ?? [];
+  const qatorlar = forma ?? yopishFormasi(manba);
+  const ozgar = (indeks: number, qism: Partial<YopishFormaQatori>) => {
+    fx.tozala(`lines.${indeks}`, "lines");
+    setForma(qatorlar.map((qator, i) => (i === indeks ? { ...qator, ...qism } : qator)));
+  };
+  const jamiYoqotish = qatorlar.reduce((jami, qator) => jami + Math.max(0, yopishYoqotishi(qator)), 0);
+
+  function yopish() {
+    const natija = yopishTanasiniYigish(qatorlar, izoh);
+    if ("xato" in natija) return fx.tekshiruv(natija, t(natija.xato));
+    fx.ornat({});
+    void amal.bajar(async () => {
+      await ishlabChiqarishApi.buyurtmalar.yopish(buyurtma.id, natija.tana);
+      onYopildi();
+    }, fx.serverdan);
+  }
+
+  const sonKatagi = (kalit: "returned" | "kept") => (qator: YopishQatori, indeks: number) => {
+    const forma = qatorlar[indeks];
+    const yol = `lines.${indeks}.${kalit}`;
+    return (
+      <span data-maydon-xato={fx.xato(yol) ? "true" : undefined} className="inline-grid justify-items-end gap-1">
+        <input type="number" inputMode="decimal" min="0" step="any" value={forma?.[kalit] ?? ""} aria-label={`${t(kalit === "returned" ? "orders.closeReturned" : "orders.closeKept")} · ${qatorNomi(qator)}`} aria-invalid={Boolean(fx.xato(yol))} onChange={(event) => ozgar(indeks, { [kalit]: event.target.value })} className={`${inputKlass} h-11 w-28 text-right ${fx.xato(yol) ? xatoRamkasi : ""}`} />
+        {fx.xato(yol) && <span role="alert" className="max-w-40 whitespace-normal text-right text-[11px] font-bold leading-4 text-red-600">{fx.xato(yol)}</span>}
+      </span>
+    );
+  };
+
+  return (
+    <Oyna keng ikonka={Lock} sarlavha={t("orders.closeTitle", { raqam: hujjatRaqami(buyurtma) || qatorNomi(buyurtma) })} izoh={t("orders.closeHint")} onYopish={onYopish} pastki={<>
+      <p className="mr-auto text-sm font-bold text-slate-500">{t("orders.closeLossTotal")}: <YoqotishMatni qiymat={Math.round(jamiYoqotish * 1000) / 1000} /></p>
+      <button type="button" onClick={onYopish} className={tugmaIkkinchi}>{t("actions.cancel")}</button>
+      <button type="button" disabled={amal.band || oldindan.yuklanmoqda || Boolean(oldindan.xato)} onClick={yopish} className={`${tugmaAsosiy} min-w-44`}><Lock size={17} />{t("orders.closeSubmit")}</button>
+    </>}>
+      <XatoQutisi matn={oldindan.xato || fx.tepadagi || (fx.bor ? "" : amal.xato)} />
+      <p className="rounded-2xl border border-sky-100 bg-sky-50 px-5 py-4 text-sm font-semibold leading-6 text-sky-800">{t("orders.closeExample")}</p>
+      <Bolim ikonka={Package} sarlavha={t("orders.closeLines")} izoh={t("orders.closeLinesHint")}>
+        <Jadval tableId="IshlabChiqarish/Buyurtmalar/jadval-6"
+          ixcham
+          yuklanmoqda={oldindan.yuklanmoqda}
+          ustunlar={yopishUstunlari(t, sonKatagi("returned"), sonKatagi("kept"), (_qator, indeks) => <YoqotishMatni qiymat={qatorlar[indeks] ? yopishYoqotishi(qatorlar[indeks]) : 0} />)}
+          qatorlar={oldindan.yuklanmoqda ? [] : manba}
+          kalit={(qator, indeks) => `${qator.modificationId}-${indeks}`}
+          bosh={t("orders.closeNoLines")}
+        />
+      </Bolim>
+      <Bolim ikonka={NotebookPen} sarlavha={t("fields.note")}>
+        <textarea value={izoh} rows={2} aria-label={t("fields.note")} placeholder={t("orders.closeNotePlaceholder")} onChange={(event) => setIzoh(event.target.value)} className={`${inputKlass} h-auto py-3`} />
+      </Bolim>
     </Oyna>
   );
 }

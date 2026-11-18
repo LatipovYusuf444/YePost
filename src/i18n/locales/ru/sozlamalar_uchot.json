@@ -101,7 +101,8 @@
       "productionRecipe": "Рецепты",
       "costing": "Калькуляция",
       "productionIssue": "Выдача в цех",
-      "productionReport": "Отчёт смены"
+      "productionReport": "Отчёт смены",
+      "productionAccept": "Акт приёмки"
     }
   },
   "integratsiya": {

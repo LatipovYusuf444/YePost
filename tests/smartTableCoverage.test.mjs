@@ -25,7 +25,7 @@ test('every runtime native table is wrapped except the fixed printable invoice',
   assert.deepEqual(missing, ['Pages/Savdo/SotuvTafsilotlariModal.tsx']);
 });
 
-test('all 95 adapted table usages have unique explicit IDs and shared instances have no implicit keys', () => {
+test('all 98 adapted table usages have unique explicit IDs and shared instances have no implicit keys', () => {
   const ids = [], missing = [];
   const controlled = new Set(['SmartTable', 'KengaytiriladiganJadval', 'Jadval', 'Table', 'MatritsaJadval', 'SotuvlarJadvali']);
   for (const { file, source } of parsed) visit(source, node => {
@@ -35,7 +35,7 @@ test('all 95 adapted table usages have unique explicit IDs and shared instances 
     else if (attr.initializer && ts.isStringLiteral(attr.initializer)) ids.push(attr.initializer.text);
   });
   assert.deepEqual(missing, []);
-  assert.equal(ids.length, 95);
+  assert.equal(ids.length, 98);
   assert.equal(new Set(ids).size, ids.length);
 });
 
@@ -49,5 +49,5 @@ test('production column identities are explicit metadata independent of translat
     assert.ok(id && ts.isStringLiteral(id.initializer), file);
     columns++;
   });
-  assert.equal(columns, 105);
+  assert.equal(columns, 124);
 });

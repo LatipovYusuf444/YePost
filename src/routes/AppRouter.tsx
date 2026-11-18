@@ -104,6 +104,7 @@ export default function AppRouter() {
         <Route path="/ishlab-chiqarish/kalkulyatsiya" element={<IshlabChiqarish bolim="kalkulyatsiya" />} />
         <Route path="/ishlab-chiqarish/sexga-berish" element={<IshlabChiqarish bolim="sexga-berish" />} />
         <Route path="/ishlab-chiqarish/smena" element={<IshlabChiqarish bolim="smena" />} />
+        <Route path="/ishlab-chiqarish/qabul" element={<IshlabChiqarish bolim="qabul" />} />
         <Route path="/ishlab-chiqarish/rulonlar" element={<IshlabChiqarish bolim="rulonlar" />} />
         <Route path="/kassa" element={<KassaUchot />} />
         <Route path="/hisobotlar" element={<Navigate to="/hisobotlar/tovar-harakati" replace />} />

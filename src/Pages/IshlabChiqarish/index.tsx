@@ -8,6 +8,7 @@ import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useIshlabChiqarishStore } from "@/store/ishlabChiqarishStore";
 import Buyurtmalar from "./Buyurtmalar";
 import Kalkulyatsiya from "./Kalkulyatsiya";
+import QabulAktlari from "./QabulAktlari";
 import Retseptlar from "./Retseptlar";
 import Rulonlar from "./Rulonlar";
 import SexgaBerish from "./SexgaBerish";
@@ -20,6 +21,7 @@ const BOLIMLAR: Record<IshlabChiqarishBolimi, ComponentType> = {
   kalkulyatsiya: Kalkulyatsiya,
   "sexga-berish": SexgaBerish,
   smena: Smena,
+  qabul: QabulAktlari,
   rulonlar: Rulonlar,
 };
 const TARTIB = Object.keys(BOLIMLAR) as IshlabChiqarishBolimi[];

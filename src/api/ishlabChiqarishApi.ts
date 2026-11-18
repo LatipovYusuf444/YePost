@@ -1,9 +1,10 @@
 import apiClient from "./axios";
 import { apiData, apiList, sahifaJavobi, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import { idempotentBajarish } from "@/lib/idempotentKalit";
-import { mavjudlikOqish, portlashOqish } from "@/lib/ishlabChiqarish";
+import { mavjudlikOqish, portlashOqish, qabulOgohlantirishlari } from "@/lib/ishlabChiqarish";
 import type {
   BerishTanasi,
+  BrakSababi,
   Buyurtma,
   BuyurtmaTanasi,
   IshlabChiqarishSozlamasi,
@@ -11,6 +12,8 @@ import type {
   KalkulyatsiyaTanasi,
   KunNarxi,
   NavbatQatori,
+  QabulAkti,
+  QabulTanasi,
   Retsept,
   RetseptTanasi,
   Rulon,
@@ -19,6 +22,8 @@ import type {
   SexgaBerish,
   SmenaHisoboti,
   SmenaTanasi,
+  YopishQatori,
+  YopishTanasi,
 } from "@/types/ishlabChiqarish";
 
 // Ishlab chiqarish moduli. Modul yoqilmaguncha hamma yo'l 403 errors.production.disabled qaytaradi.
@@ -77,14 +82,25 @@ export const ishlabChiqarishApi = {
 
   buyurtmalar: {
     ...crud<Buyurtma, BuyurtmaTanasi>(`${YOL}/orders`),
-    // Yetishmovchilik faqat ogohlantirish: buyurtma baribir chiqariladi, material band qilinmaydi.
+    // Yangi buyurtma darhol RELEASED ("Yangi"), raqamli va xomashyo band qilingan holda yaratiladi; javobda availability ham bor.
+    yaratish: async (tana: BuyurtmaTanasi) => {
+      const javob = await yuborish<Buyurtma & { availability?: unknown }>(`${YOL}/orders`, tana);
+      return { ...javob, availability: javob?.availability === undefined ? undefined : mavjudlikOqish(javob.availability) };
+    },
+    // Faqat eski qoralama (DRAFT) uchun: yangi buyurtmaga kerak emas.
     chiqarish: async (id: string) => {
       const javob = await yuborish<Buyurtma & { availability?: unknown }>(`${YOL}/orders/${id}/release`);
       return { ...javob, availability: mavjudlikOqish(javob?.availability) };
     },
     mavjudlik: async (id: string) => mavjudlikOqish(await olish<unknown>(`${YOL}/orders/${id}/availability`)),
     yakunlash: (id: string, reason?: string) => yuborish<Buyurtma>(`${YOL}/orders/${id}/complete`, reason ? { reason } : {}),
-    yopish: (id: string) => yuborish<Buyurtma>(`${YOL}/orders/${id}/close`),
+    // Yopish hujjati oldindan: berildi, sarflandi, ortishi kerak (standart: hammasi qaytadi, sexda 0 qoladi).
+    yopishOldindan: async (id: string) => {
+      const javob = await olish<{ lines?: YopishQatori[] }>(`${YOL}/orders/${id}/close-preview`);
+      return Array.isArray(javob?.lines) ? javob.lines : [];
+    },
+    // Faqat ACCEPTED: qaytadi — asosiy omborga, kept — sexda qoladi, qolgani yo'qotish. Yozilmagan xomashyo to'liq qaytadi.
+    yopish: (id: string, tana: YopishTanasi = {}) => yuborish<Buyurtma>(`${YOL}/orders/${id}/close`, tana),
     bekorQilish: (id: string) => yuborish<Buyurtma>(`${YOL}/orders/${id}/cancel`),
   },
 
@@ -112,6 +128,26 @@ export const ishlabChiqarishApi = {
     tasdiqlash: (id: string) => idempotent<SmenaHisoboti>(`${YOL}/reports/${id}/confirm`),
     bekorQilish: (id: string, reason?: string) => yuborish<SmenaHisoboti>(`${YOL}/reports/${id}/cancel`, reason ? { reason } : {}),
     tuzatish: (id: string, tana: { outputId: string; delta: number; reason: string }) => idempotent<SmenaHisoboti>(`${YOL}/reports/${id}/corrections`, tana),
+  },
+
+  // Brak sabablari: ro'yxat hammaga, qo'shish/o'chirish — ADMIN, DIRECTOR.
+  brakSabablari: {
+    royxat: () => royxat<BrakSababi>(`${YOL}/scrap-reasons`),
+    yaratish: (name: string) => yuborish<BrakSababi>(`${YOL}/scrap-reasons`, { name }),
+    ochirish: (id: string) => ochirish(`${YOL}/scrap-reasons/${id}`),
+  },
+
+  // Qabul akti (grant PRODUCTION_ACCEPT; direktorga avtomatik).
+  qabul: {
+    royxat: (params?: { status?: string; orderId?: string; reportId?: string }) => royxat<QabulAkti>(`${YOL}/acceptances`, params),
+    olish: (id: string) => olish<QabulAkti>(`${YOL}/acceptances/${id}`),
+    // Javobda warnings: brak chegaradan oshsa [{ code: "SCRAP_ABOVE_LIMIT", percent, limit }]; Telegram xabarini backend o'zi yuboradi.
+    qabulQilish: async (id: string, tana: QabulTanasi) => {
+      const javob = await idempotent<QabulAkti & { warnings?: unknown }>(`${YOL}/acceptances/${id}/accept`, tana);
+      return { akt: javob, ogohlantirishlar: qabulOgohlantirishlari(javob) };
+    },
+    // Sabab majburiy: ombor o'zgarmaydi, smena hisoboti qoralamaga qaytadi, buyurtma RETURNED.
+    qaytarish: (id: string, reason: string) => yuborish<QabulAkti>(`${YOL}/acceptances/${id}/return`, { reason }),
   },
 
   rulonlar: {
