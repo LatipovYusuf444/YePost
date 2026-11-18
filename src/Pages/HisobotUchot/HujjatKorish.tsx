@@ -4,6 +4,7 @@ import InventoryHujjatModal from "@/Pages/Ombor/InventoryHujjatModal";
 import KirimTafsilotModal from "@/Pages/Ombor/KirimTafsilotModal";
 import ChiqimTafsilotModal from "@/Pages/Ombor/ChiqimTafsilotModal";
 import KochirishKorishModal from "@/Pages/Ombor/KochirishKorishModal";
+import QaytarishTafsilot from "@/Pages/Ombor/TaminotchiQaytarish/QaytarishTafsilot";
 import QaytarishTafsilotlariModal from "@/Pages/Savdo/QaytarishTafsilotlariModal";
 import HisobotSotuvKorish from "./HisobotSotuvKorish";
 import { harakatHavolasi, harakatTuriNomi } from "./tovarHarakatiModeli";
@@ -20,6 +21,7 @@ export default function HujjatKorish({ harakat, onYopish }: { harakat: TovarHara
       case "STOCK_TAKE": return <InventoryHujjatModal {...props} tur="inventarizatsiya" />;
       case "WRITE_OFF": return <ChiqimTafsilotModal {...props} />;
       case "PURCHASE": return <KirimTafsilotModal {...props} />;
+      case "SUPPLIER_RETURN": return <QaytarishTafsilot {...props} />;
       case "TRANSFER": case "TRANSFER_IN": case "TRANSFER_OUT": return <KochirishKorishModal {...props} />;
       case "RETURN": case "SALE_RETURN": return <QaytarishTafsilotlariModal qaytarishId={harakat.refId} onYopish={onYopish} ajratilganQator={props.ajratilganQator} />;
     }

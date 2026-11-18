@@ -23,6 +23,7 @@ const QollabQuvvatlash = lazy(() => import("@/Pages/Support"))
 const Mahsulotlar = lazy(() => import("@/Pages/Mahsulotlar"))
 const AmalgaOshirilganlar = lazy(() => import("@/Pages/Ombor/AmalgaOshirilganlar"))
 const Chiqimlar = lazy(() => import("@/Pages/Ombor/Chiqim"))
+const TaminotchiQaytarish = lazy(() => import("@/Pages/Ombor/TaminotchiQaytarish"))
 const Kochirishlar = lazy(() => import("@/Pages/Ombor/Kochirish"))
 const OmborMahsulotlar = lazy(() => import("@/Pages/Ombor/Mahsulotlar"))
 const OmborQoldigi = lazy(() => import("@/Pages/Ombor/OmborQoldigi"))
@@ -94,6 +95,7 @@ export default function AppRouter() {
         <Route path="/ombor/kirimlar" element={<Xaridlar />} />
         <Route path="/ombor/amalga-oshirilganlar" element={<AmalgaOshirilganlar />} />
         <Route path="/ombor/chiqimlar" element={<Chiqimlar />} />
+        <Route path="/ombor/yetkazib-beruvchiga-qaytarish" element={<TaminotchiQaytarish />} />
         <Route path="/ombor/kochirishlar" element={<Kochirishlar />} />
         <Route path="/ombor/mahsulotlar" element={<OmborMahsulotlar />} />
         <Route path="/ombor/qoldiq" element={<OmborQoldigi />} />

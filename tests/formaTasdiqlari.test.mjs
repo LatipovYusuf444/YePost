@@ -191,6 +191,7 @@ test('forma modallari AppModal ga ozgarishBor beradi va yopish tugmalarini belgi
   const fayllar = [
     '../src/Pages/Ombor/YangiKirimModal.tsx',
     '../src/Pages/Ombor/YangiChiqimModal.tsx',
+    '../src/Pages/Ombor/TaminotchiQaytarish/QaytarishOynasi.tsx',
     '../src/Pages/Ombor/KochirishYaratishModal.tsx',
     '../src/Pages/Ombor/Inventarizatsiya.tsx',
     '../src/Pages/Mahsulotlar/index.tsx',

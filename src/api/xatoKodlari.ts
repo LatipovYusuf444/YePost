@@ -47,6 +47,23 @@ const MATNLAR: Record<string, KodMatni> = {
     ru: "Для этого товара нет активной калькуляции на этот день. Акт приёмки остался в ожидании: примите снова после активации калькуляции.",
   },
   // 17.11 jarayoni: brak sababi, qabul akti, yopish hujjati, xomashyo berish bosqichi. Server `message` (3 tilda) ustun, bu — zaxira matn.
+  // Yetkazib beruvchiga qaytarish (/inventory/supplier-returns).
+  "errors.inventory.supplier_return_not_found": {
+    uz: "Qaytarish hujjati topilmadi. Ro'yxatni yangilang.",
+    ru: "Документ возврата не найден. Обновите список.",
+  },
+  "errors.inventory.supplier_return_price_required": {
+    uz: "Kirim tanlanmagan qatorda narxni kiriting.",
+    ru: "Укажите цену в строке без выбранного прихода.",
+  },
+  "errors.inventory.supplier_return_purchase_mismatch": {
+    uz: "Tanlangan kirim mos emas: u tasdiqlanmagan, boshqa yetkazib beruvchiniki yoki unda bu tovar yo'q. Kirimni qayta tanlang.",
+    ru: "Выбранный приход не подходит: он не подтверждён, принадлежит другому поставщику или в нём нет этого товара. Выберите приход заново.",
+  },
+  "errors.inventory.supplier_return_currency_mismatch": {
+    uz: "Hujjat valyutasi tanlangan kirim valyutasiga mos emas: valyutani kirimnikiga tenglang.",
+    ru: "Валюта документа не совпадает с валютой выбранного прихода: укажите валюту прихода.",
+  },
   "errors.production.scrap_reason_required": {
     uz: "Brak kiritilgan: sababini tanlang.",
     ru: "Указан брак: выберите причину.",
@@ -204,6 +221,12 @@ const NAKLADNOY_MATNLARI: Record<string, KodMatni> = {
 };
 
 // Sotuvni bekor qilishda hisobdan yechilgan pul qaytadi; hisobga yozilgan pul esa ishlatilgan bo'lsa bekor qilib bo'lmaydi.
+// Kirimni bekor qilish: kirim tovari yetkazib beruvchiga qaytarishda (yoki keyingi hujjatda) turibdi — avval o'sha hujjat bekor qilinadi.
+const KIRIM_BEKOR_SARFLANGAN: KodMatni = {
+  uz: "Kirimni bekor qilib bo'lmaydi: uning tovari keyingi hujjatda ishlatilgan (masalan, yetkazib beruvchiga qaytarilgan yoki sotilgan). Avval o'sha hujjatni (yetkazib beruvchiga qaytarishni) bekor qiling.",
+  ru: "Приход нельзя отменить: его товар уже использован в другом документе (например, возвращён поставщику или продан). Сначала отмените тот документ (возврат поставщику).",
+};
+
 const BEKOR_QILISH_MATNI: KodMatni = {
   uz: "Sotuvni bekor qilib bo'lmaydi: sotuvda hisobga yozilgan pul mijoz tomonidan allaqachon ishlatib bo'lingan.",
   ru: "Продажу нельзя отменить: деньги, записанные на счёт клиента по этой продаже, уже использованы.",
@@ -380,6 +403,9 @@ export function xatoKodiMatni(kod: unknown, url: string | undefined, til: string
   const tilKodi: Til = til === "ru" ? "ru" : "uz";
   if (kod === "errors.wallet.insufficient_balance" && /\/sales\/[^/?]+\/cancel/.test(url ?? "")) {
     return BEKOR_QILISH_MATNI[tilKodi];
+  }
+  if (kod === "errors.inventory.stock_already_consumed" && /\/inventory\/purchases\/[^/?]+\/cancel/.test(url ?? "")) {
+    return KIRIM_BEKOR_SARFLANGAN[tilKodi];
   }
   if (NAKLADNOY_MATNLARI[kod] && /\/sales\/[^/?]+\/(?:notify|nakladnoy\.pdf)/.test(url ?? "")) {
     return NAKLADNOY_MATNLARI[kod][tilKodi];

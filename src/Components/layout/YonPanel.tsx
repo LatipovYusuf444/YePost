@@ -98,6 +98,7 @@ const menyular: Menyu[] = [
       { key: "inventarizatsiya", path: "/ombor/inventarizatsiya", icon: ClipboardList },
       { key: "kirim", path: "/ombor/kirimlar", icon: ArrowDownToLine },
       { key: "chiqim", path: "/ombor/chiqimlar", icon: ArrowUpFromLine },
+      { key: "taminotchiQaytarish", path: "/ombor/yetkazib-beruvchiga-qaytarish", icon: Undo2 },
       { key: "kochirish", path: "/ombor/kochirishlar", icon: ArrowLeftRight },
       { key: "qoldiq", path: "/ombor/qoldiq", icon: Boxes },
       { key: "amalgaOshirilganlar", path: "/ombor/amalga-oshirilganlar", icon: CheckCircle2 },

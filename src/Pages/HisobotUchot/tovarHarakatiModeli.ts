@@ -8,7 +8,7 @@ const obyekt = (value: unknown): Record<string, unknown> => value && typeof valu
 
 export const HARAKAT_TURLARI: Record<string, string> = {
   SALE: "Savdo", PURCHASE: "Kirim", RETURN: "Sotuvdan qaytarish", SALE_RETURN: "Sotuvdan qaytarish",
-  PURCHASE_RETURN: "Yetkazib beruvchiga qaytarish", STOCK_TAKE: "Inventarizatsiya", WRITE_OFF: "Hisobdan chiqarish",
+  PURCHASE_RETURN: "Yetkazib beruvchiga qaytarish", SUPPLIER_RETURN: "Yetkazib beruvchiga qaytarish", STOCK_TAKE: "Inventarizatsiya", WRITE_OFF: "Hisobdan chiqarish",
   TRANSFER_IN: "Ko'chirish: kirim", TRANSFER_OUT: "Ko'chirish: chiqim", TRANSFER: "Ko'chirish",
   PRODUCTION_IN: "Ishlab chiqarish: kirim", PRODUCTION_OUT: "Ishlab chiqarish: chiqim",
   PRODUCTION_OUTPUT: "Ishlab chiqarish: tayyor mahsulot", PRODUCTION_CONSUMPTION: "Ishlab chiqarish: xomashyo",
@@ -158,6 +158,6 @@ export function harakatHavolasi(row: TovarHarakati) {
   if (!row.refId) return null;
   const id = encodeURIComponent(row.refId);
   if (row.type === "SALE") return { href: `/savdo?tab=tarix&sotuv=${id}`, nom: "Savdo tarixida ochish" };
-  const paths: Record<string, string> = { STOCK_TAKE: "inventarizatsiya", WRITE_OFF: "chiqimlar", PURCHASE: "kirimlar", TRANSFER_IN: "kochirishlar", TRANSFER_OUT: "kochirishlar", TRANSFER: "kochirishlar" };
+  const paths: Record<string, string> = { STOCK_TAKE: "inventarizatsiya", WRITE_OFF: "chiqimlar", PURCHASE: "kirimlar", TRANSFER_IN: "kochirishlar", TRANSFER_OUT: "kochirishlar", TRANSFER: "kochirishlar", SUPPLIER_RETURN: "yetkazib-beruvchiga-qaytarish" };
   return paths[row.type ?? ""] ? { href: `/ombor/${paths[row.type!]}?hujjat=${id}`, nom: row.type === "STOCK_TAKE" ? "Inventarizatsiyada ochish" : "Hujjat bo'limida ochish" } : null;
 }

@@ -35,7 +35,7 @@ const record = (value: unknown): RecordValue => value && typeof value === "objec
 export function negativeStockMessages(raw: unknown, url: string, method?: string, language = "uz") {
   if (method?.toLowerCase() !== "post") return [];
   const path = url.split("?")[0];
-  const negativeAction = /\/(?:sales\/[^/]+\/confirm|inventory\/(?:write-offs\/[^/]+\/confirm|transfers\/[^/]+\/send))$/.test(path);
+  const negativeAction = /\/(?:sales\/[^/]+\/confirm|inventory\/(?:write-offs\/[^/]+\/confirm|supplier-returns\/[^/]+\/confirm|transfers\/[^/]+\/send))$/.test(path);
   const receiptAction = /\/inventory\/(?:purchases\/[^/]+\/confirm|transfers\/[^/]+\/receive|stock-takes\/[^/]+\/confirm)$/.test(path);
   const outer = record(raw);
   const inner = record(outer.data);

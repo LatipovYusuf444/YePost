@@ -24,8 +24,8 @@ function compile(path, dependencies, globals = {}, replace = value => value) {
 const warning = { code: 'NEGATIVE_STOCK', modificationId: 'cement', productName: 'Sement M400', stockBefore: '2', stockAfter: '-3' };
 const closed = { modificationId: 'cement', productName: 'Sement M400', previousStock: '-3', stockAfter: '7' };
 
-test('all three outgoing confirmations show a warning without treating the confirmed document as an error', () => {
-  for (const url of ['/sales/s/confirm', '/inventory/write-offs/w/confirm', '/inventory/transfers/t/send']) {
+test('all outgoing confirmations (supplier return too) show a warning without treating the confirmed document as an error', () => {
+  for (const url of ['/sales/s/confirm', '/inventory/write-offs/w/confirm', '/inventory/supplier-returns/r/confirm', '/inventory/transfers/t/send']) {
     for (const raw of [{ warnings: [warning] }, { data: { id: 'doc', warnings: [warning] } }, { data: { id: 'doc' }, warnings: [warning] }]) {
       assert.deepEqual(negativeStockMessages(raw, url, 'post'), [{ kind: 'warning', text: 'Sement M400: qoldiq 2 edi, endi −3' }]);
     }
