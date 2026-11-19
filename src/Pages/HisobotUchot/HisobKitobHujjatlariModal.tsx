@@ -8,6 +8,12 @@ import KengaytiriladiganJadval, { type Ustun } from "./KengaytiriladiganJadval";
 import YuklanmoqdaHolati from "./YuklanmoqdaHolati";
 import { hisobotPulMatni, type HisobotValyutasi } from "./hisobotValyutasi";
 import { hisobKitobHujjatlariniMoslash, type HisobKitobHujjatQatori } from "./hisobKitobHujjatlari";
+import { boshlangichQoldiqTuri } from "@/lib/mijozAvansi";
+
+// Boshlang'ich qoldiq (OPENING_DEBT) ikki yo'nalishda: AVB- — mijoz avansi, YAB- — yetkazib beruvchining bizga qarzi.
+const BOSHLANGICH_TURLARI = { qarz: "Boshlang'ich qarz", avans: "Boshlang'ich avans", bizgaQarz: "Boshlang'ich qarz (bizga)" } as const;
+const hujjatTuriNomi = (row: HisobKitobHujjatQatori) =>
+  row.turi === "OPENING_DEBT" ? BOSHLANGICH_TURLARI[boshlangichQoldiqTuri(row.hujjat)] : HUJJAT_TURLARI[row.turi] ?? "Hujjat";
 
 const HUJJAT_TURLARI: Record<string, string> = {
   SALE: "Sotuv", OPENING_DEBT: "Boshlang'ich qarz", PURCHASE: "Xarid", PAYMENT: "To'lov",
@@ -42,7 +48,7 @@ export default function HisobKitobHujjatlariModal({ counterpartyId, counterparty
 
   const pul = (summa: number | null) => summa === null ? "—" : hisobotPulMatni(summa, currency);
   const ustunlar: Ustun<HisobKitobHujjatQatori>[] = [
-    { id: "hujjat", nom: "Hujjat", kenglik: 230, katak: (row) => <div><p className="font-bold text-slate-900">{row.hujjat}</p><p className="mt-1 text-xs text-slate-500">{HUJJAT_TURLARI[row.turi] ?? "Hujjat"}</p></div> },
+    { id: "hujjat", nom: "Hujjat", kenglik: 230, katak: (row) => <div><p className="font-bold text-slate-900">{row.hujjat}</p><p className="mt-1 text-xs text-slate-500">{hujjatTuriNomi(row)}</p></div> },
     { id: "sana", nom: "Sana", kenglik: 140, katak: (row) => kunMatni(row.sana) || "—" },
     { id: "debet", nom: "Debet", kenglik: 170, hizalash: "right", katak: (row) => pul(row.debet) },
     { id: "kredit", nom: "Kredit", kenglik: 170, hizalash: "right", katak: (row) => <span className="text-emerald-600">{pul(row.kredit)}</span> },

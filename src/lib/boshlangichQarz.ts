@@ -9,14 +9,22 @@ export function boshlangichQarzniBekorQilishMumkin(
   return hujjat?.isOpeningDebt === true && hujjat.status === "CONFIRMED" && bekorQilishRuxsatiBormi(profil, "savdo");
 }
 
+/**
+ * Boshlang'ich hisob yo'nalishi (backend 18.11 `direction`): DEBT (standart) — mijoz bizga / biz yetkazib beruvchiga qarzdor edik;
+ * CREDIT (teskari) — biz mijozga qarzdor edik (avans, AVB-: summa mijoz hisobiga tushadi) / yetkazib beruvchi bizga qarzdor edi (YAB-).
+ */
+export type BoshlangichYonalish = "DEBT" | "CREDIT";
+
 export type BoshlangichQarzMalumoti = {
   amount: number;
   currency?: "UZS" | "USD";
   date?: string;
   note?: string;
+  // Faqat teskari yo'nalishda yuboriladi; berilmasa backend DEBT deb oladi (eski so'rov o'zgarmaydi).
+  direction?: "CREDIT";
 };
 
-type QarzFormasi = { amount: string; currency: string; date: string; note: string };
+type QarzFormasi = { amount: string; currency: string; date: string; note: string; direction?: BoshlangichYonalish };
 type QarzTekshiruvi = { payload: BoshlangichQarzMalumoti; error?: never } | { error: "amount" | "currency" | "date"; payload?: never };
 
 // Eski qarz summasi o'z valyutasida yuboriladi; kursga aylantirilmaydi.
@@ -32,7 +40,7 @@ export function boshlangichQarzMalumoti(forma: QarzFormasi, bugun: string): Qarz
     }
   }
   const note = forma.note.trim();
-  return { payload: { amount, currency: forma.currency, ...(forma.date ? { date: forma.date } : {}), ...(note ? { note } : {}) } };
+  return { payload: { amount, currency: forma.currency, ...(forma.date ? { date: forma.date } : {}), ...(note ? { note } : {}), ...(forma.direction === "CREDIT" ? { direction: "CREDIT" as const } : {}) } };
 }
 
 // Qarz va to'lovlar saqlanadi, lekin boshlang'ich qoldiq savdo aylanmasi emas.

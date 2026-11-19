@@ -47,6 +47,11 @@ const MATNLAR: Record<string, KodMatni> = {
     ru: "Для этого товара нет активной калькуляции на этот день. Акт приёмки остался в ожидании: примите снова после активации калькуляции.",
   },
   // 17.11 jarayoni: brak sababi, qabul akti, yopish hujjati, xomashyo berish bosqichi. Server `message` (3 tilda) ustun, bu — zaxira matn.
+  // Boshlang'ich avans (18.11).
+  "errors.partners.customer_opening_credit_not_found": {
+    uz: "Avans topilmadi. Ro'yxatni yangilang.",
+    ru: "Аванс не найден. Обновите список.",
+  },
   // Yetkazib beruvchiga qaytarish (/inventory/supplier-returns).
   "errors.inventory.supplier_return_not_found": {
     uz: "Qaytarish hujjati topilmadi. Ro'yxatni yangilang.",
@@ -221,6 +226,12 @@ const NAKLADNOY_MATNLARI: Record<string, KodMatni> = {
 };
 
 // Sotuvni bekor qilishda hisobdan yechilgan pul qaytadi; hisobga yozilgan pul esa ishlatilgan bo'lsa bekor qilib bo'lmaydi.
+// Mijoz avansini bekor qilish: avans hisobga tushgan pul kassada (hisobdan to'lov bilan) sarflangan.
+const AVANS_BEKOR_SARFLANGAN: KodMatni = {
+  uz: "Avansni bekor qilib bo'lmaydi: mijoz hisobidagi bu pul kassada allaqachon sarflangan.",
+  ru: "Аванс нельзя отменить: эти деньги со счёта клиента уже потрачены в кассе.",
+};
+
 // Kirimni bekor qilish: kirim tovari yetkazib beruvchiga qaytarishda (yoki keyingi hujjatda) turibdi — avval o'sha hujjat bekor qilinadi.
 const KIRIM_BEKOR_SARFLANGAN: KodMatni = {
   uz: "Kirimni bekor qilib bo'lmaydi: uning tovari keyingi hujjatda ishlatilgan (masalan, yetkazib beruvchiga qaytarilgan yoki sotilgan). Avval o'sha hujjatni (yetkazib beruvchiga qaytarishni) bekor qiling.",
@@ -403,6 +414,9 @@ export function xatoKodiMatni(kod: unknown, url: string | undefined, til: string
   const tilKodi: Til = til === "ru" ? "ru" : "uz";
   if (kod === "errors.wallet.insufficient_balance" && /\/sales\/[^/?]+\/cancel/.test(url ?? "")) {
     return BEKOR_QILISH_MATNI[tilKodi];
+  }
+  if (kod === "errors.wallet.insufficient_balance" && /\/partners\/customers\/[^/?]+\/opening-credits\/[^/?]+\/cancel/.test(url ?? "")) {
+    return AVANS_BEKOR_SARFLANGAN[tilKodi];
   }
   if (kod === "errors.inventory.stock_already_consumed" && /\/inventory\/purchases\/[^/?]+\/cancel/.test(url ?? "")) {
     return KIRIM_BEKOR_SARFLANGAN[tilKodi];

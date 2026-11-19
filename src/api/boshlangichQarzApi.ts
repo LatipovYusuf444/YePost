@@ -4,12 +4,24 @@ import { apiData, type ApiEnvelope } from "./response";
 import type { BoshlangichQarzMalumoti } from "@/lib/boshlangichQarz";
 import { tolovNatijasi, type TolovNatijasi } from "../lib/tolovOrtiqchasi.ts";
 import type { Sotuv } from "@/types/savdo";
+import { mijozAvansi, mijozAvanslari, type MijozAvansi } from "../lib/mijozAvansi.ts";
 
+// `direction: "CREDIT"` (avans) bo'lsa javob sotuv emas, avans hujjati (AVB-, direction: "CREDIT") — lib/mijozAvansi avansJavobimi.
 export async function boshlangichQarzYaratish(customerId: string, data: BoshlangichQarzMalumoti): Promise<Sotuv> {
   const response = await apiClient.post<Sotuv | ApiEnvelope<Sotuv>>(
     `/partners/customers/${encodeURIComponent(customerId)}/opening-debt`, data,
   );
   return apiData(response.data);
+}
+
+// Mijoz avanslari (GET /partners/customers/:id/opening-credits): bekor qilinganlari ham, yangisi birinchi.
+export async function mijozAvanslariniOlish(customerId: string): Promise<MijozAvansi[]> {
+  return mijozAvanslari((await apiClient.get<unknown>(`/partners/customers/${encodeURIComponent(customerId)}/opening-credits`)).data);
+}
+
+// Avansni bekor qilish (tiklash yo'q). Hisobdagi pul kassada sarflangan bo'lsa — errors.wallet.insufficient_balance.
+export async function mijozAvansiniBekorQilish(customerId: string, creditId: string): Promise<MijozAvansi | null> {
+  return mijozAvansi((await apiClient.post<unknown>(`/partners/customers/${encodeURIComponent(customerId)}/opening-credits/${encodeURIComponent(creditId)}/cancel`)).data);
 }
 
 export async function boshlangichQarzShabloni(): Promise<Blob> {

@@ -3,7 +3,7 @@ import { Briefcase, Building2, CalendarDays, Hash, Phone, UserRound } from "luci
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import XatoliMaydon from "@/Components/common/XatoliMaydon";
-import PhoneInput from "@/Components/ui/PhoneInput";
+import XalqaroTelefon from "@/Components/ui/XalqaroTelefon";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
@@ -232,12 +232,12 @@ export default function KompaniyaModal({
                         </XatoliMaydon>
 
                         <XatoliMaydon xato={fx.xato("phone")}>
-                        <label className="grid gap-2">
+                        <label htmlFor="kompaniya-telefon" className="grid gap-2">
                           <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                             <Phone size={14} className="text-[#2563EB]" />
                             {t("kompaniyaModal.phone")}
                           </span>
-                          <PhoneInput value={telefon} onChange={(qiymat) => { fx.tozala("phone"); setTelefon(qiymat); }} invalid={Boolean(fx.xato("phone"))} />
+                          <XalqaroTelefon id="kompaniya-telefon" value={telefon} onChange={(qiymat) => { fx.tozala("phone"); setTelefon(qiymat); }} invalid={Boolean(fx.xato("phone"))} />
                         </label>
                         </XatoliMaydon>
 
@@ -256,12 +256,12 @@ export default function KompaniyaModal({
                         </label>
                         </XatoliMaydon>
 
-                        <label className="grid gap-2">
+                        <label htmlFor="kompaniya-aloqa-telefoni" className="grid gap-2">
                           <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
                             <Phone size={14} className="text-[#2563EB]" />
                             {t("kompaniyaModal.contactPhone")}
                           </span>
-                          <PhoneInput value={aloqaTelefoni} onChange={setAloqaTelefoni} />
+                          <XalqaroTelefon id="kompaniya-aloqa-telefoni" value={aloqaTelefoni} onChange={setAloqaTelefoni} />
                         </label>
 
                         <XatoliMaydon xato={fx.xato("position")}>

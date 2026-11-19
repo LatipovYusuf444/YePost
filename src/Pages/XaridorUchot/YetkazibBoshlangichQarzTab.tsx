@@ -109,7 +109,7 @@ export default function YetkazibBoshlangichQarzTab({
           </div>
         </div>
 
-        <p className="mt-3 text-sm font-medium leading-6 text-slate-500">{t("yetkazibDetails.openingDebt.hint")}</p>
+        <p className="mt-3 text-sm font-medium leading-6 text-slate-500">{t("yetkazibDetails.openingDebt.listHint")}</p>
 
         {xato && <p role="alert" className="mt-3 rounded-xl bg-red-50 px-3 py-2.5 text-sm font-bold text-red-600">{xato}</p>}
 
@@ -128,6 +128,7 @@ export default function YetkazibBoshlangichQarzTab({
               <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-500">
                 <tr>
                   <th data-column-id="h1" className="px-4 py-3">{t("yetkazibDetails.openingDebt.columns.document")}</th>
+                  <th data-column-id="h7" className="px-4 py-3">{t("yetkazibDetails.openingDebt.columns.direction")}</th>
                   <th data-column-id="h2" className="px-4 py-3">{t("yetkazibDetails.openingDebt.columns.date")}</th>
                   <th data-column-id="h3" className="px-4 py-3 text-right">{t("yetkazibDetails.openingDebt.columns.amount")}</th>
                   <th data-column-id="h4" className="px-4 py-3">{t("yetkazibDetails.openingDebt.columns.note")}</th>
@@ -142,6 +143,12 @@ export default function YetkazibBoshlangichQarzTab({
                   return (
                     <tr key={qarz.id} className={bekor ? "bg-slate-50/60 text-slate-400" : "text-slate-800"}>
                       <td className="px-4 py-3 font-bold">{qarz.docNumber || "—"}</td>
+                      <td className="px-4 py-3">
+                        {/* DEBT — biz qarzdor edik; CREDIT — yetkazib beruvchi bizga qarzdor edi (qarzimizdan ayriladi). */}
+                        <span className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-black ring-1 ${qarz.direction === "CREDIT" ? "bg-emerald-50 text-emerald-700 ring-emerald-100" : "bg-blue-50 text-blue-700 ring-blue-100"}`}>
+                          {t(qarz.direction === "CREDIT" ? "openingDebt.direction.supplierCredit" : "openingDebt.direction.supplierDebt")}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 tabular-nums">{qarz.date ? kunMatni(qarz.date) : "—"}</td>
                       <td className={`px-4 py-3 text-right font-black tabular-nums ${bekor ? "line-through" : ""}`}>{summa(qarz)}</td>
                       <td className="max-w-[260px] px-4 py-3 break-words">{qarz.note || "—"}</td>
@@ -191,7 +198,9 @@ export default function YetkazibBoshlangichQarzTab({
           ohang={amal.tur === "bekor" ? "qizil" : "kok"}
           sarlavha={t(amal.tur === "bekor" ? "yetkazibDetails.openingDebt.cancelConfirm.title" : "yetkazibDetails.openingDebt.restoreConfirm.title")}
           nom={`${amal.qarz.docNumber || beruvchi.nomi} · ${summa(amal.qarz)}`}
-          tavsif={t(amal.tur === "bekor" ? "yetkazibDetails.openingDebt.cancelConfirm.description" : "yetkazibDetails.openingDebt.restoreConfirm.description")}
+          tavsif={t(amal.tur === "bekor"
+            ? amal.qarz.direction === "CREDIT" ? "yetkazibDetails.openingDebt.cancelConfirm.descriptionCredit" : "yetkazibDetails.openingDebt.cancelConfirm.description"
+            : "yetkazibDetails.openingDebt.restoreConfirm.description")}
           ortgaMatni={t("yetkazibDetails.openingDebt.back")}
           tasdiqMatni={t(amal.tur === "bekor" ? "yetkazibDetails.openingDebt.cancelConfirm.yes" : "yetkazibDetails.openingDebt.restoreConfirm.yes")}
           jarayonMatni={t(amal.tur === "bekor" ? "yetkazibDetails.openingDebt.cancelConfirm.working" : "yetkazibDetails.openingDebt.restoreConfirm.working")}

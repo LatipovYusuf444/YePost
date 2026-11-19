@@ -1,6 +1,7 @@
 // Mijoz qidiruvi va "Yangi xaridor" oynasini qidiruv matnidan to'ldirish (UI'siz — testlarda to'g'ridan-to'g'ri ishlaydi).
 // Kirill va lotin bir xil topiladi ("жам" ↔ "jam" ↔ "Jam" → JAMSHID), telefon raqam qismi bilan ham ("77777").
 import { qidiruvKorinishi } from "./kategoriyaQidiruvi.ts";
+import { telefonniAjratish, telefonniFormatlash, telefonQiymati } from "./telefon.ts";
 
 /** Matn faqat telefon belgilaridan iboratmi: raqam, "+", bo'sh joy, "-", qavslar. */
 function telefonMatnimi(matn: string) {
@@ -37,20 +38,15 @@ export function mijozMatniniAjratish(matn: string | null | undefined): MijozBosh
   const toza = (matn ?? "").trim().replace(/\s+/g, " ");
   if (!toza) return { ism: "", familiya: "", telefon: "" };
   if (telefonMatnimi(toza)) {
-    let raqamlar = toza.replace(/\D/g, "");
-    if (raqamlar.startsWith("998") && (toza.startsWith("+998") || raqamlar.length >= 12)) raqamlar = raqamlar.slice(3);
-    raqamlar = raqamlar.slice(0, 9);
-    return { ism: "", familiya: "", telefon: raqamlar ? `+998${raqamlar}` : "" };
+    // "+7 912 …" kabi kodli raqam — shu davlat; aks holda O'zbekiston (kodsiz 9 ta raqam) — avvalgidek.
+    const { davlat, milliy } = telefonniAjratish(toza);
+    return { ism: "", familiya: "", telefon: telefonQiymati(davlat, milliy) };
   }
   const [ism, ...qolgan] = toza.split(" ");
   return { ism, familiya: qolgan.join(" "), telefon: "" };
 }
 
-/** Ro'yxatda ko'rinadigan telefon: "+998777777777" → "+998 77 777 77 77"; boshqa ko'rinish o'zgarmaydi. */
+/** Ro'yxatda ko'rinadigan telefon: "+998777777777" → "+998 77 777 77 77", "+79123456789" → "+7 912 345 67 89"; tanilmagani o'zgarmaydi. */
 export function telefonKorinishi(telefon: string | null | undefined) {
-  const raqamlar = (telefon ?? "").replace(/\D/g, "");
-  if (raqamlar.length === 12 && raqamlar.startsWith("998")) {
-    return `+998 ${raqamlar.slice(3, 5)} ${raqamlar.slice(5, 8)} ${raqamlar.slice(8, 10)} ${raqamlar.slice(10, 12)}`;
-  }
-  return telefon ?? "";
+  return telefonniFormatlash(telefon);
 }

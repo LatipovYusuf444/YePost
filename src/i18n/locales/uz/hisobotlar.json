@@ -104,6 +104,34 @@
       "bankUsd": "Bank $",
       "totalSom": "Jami so'm",
       "totalUsd": "Jami $"
+    },
+    "cashInDrawer": "Shundan naqd (kassada)",
+    "expenses": {
+      "title": "Chiqimlar ro'yxati",
+      "subtitle": "Tanlangan davrdagi har bir chiqim alohida: {{count}} ta",
+      "total": "Jami chiqim",
+      "empty": "Bu davrda chiqim yo'q",
+      "columns": {
+        "time": "Vaqt",
+        "document": "Hujjat",
+        "name": "Kontragent",
+        "note": "Izoh",
+        "payment": "To'lov turi",
+        "amount": "Summa",
+        "type": "Turi"
+      },
+      "payment": {
+        "CASH": "Naqd",
+        "CARD": "Karta",
+        "BANK": "Bank"
+      },
+      "source": {
+        "SALE": "Sotuv",
+        "RETURN": "Qaytarish",
+        "CASH_IN": "Kassaga kirim",
+        "EXPENSE": "Xarajat",
+        "CASH_OPERATION": "Kassa amaliyoti"
+      }
     }
   },
   "auditLog": {

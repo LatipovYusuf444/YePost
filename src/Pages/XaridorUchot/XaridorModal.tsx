@@ -13,7 +13,7 @@ import {
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import XatoliMaydon from "@/Components/common/XatoliMaydon";
-import PhoneInput from "@/Components/ui/PhoneInput";
+import XalqaroTelefon from "@/Components/ui/XalqaroTelefon";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
@@ -314,7 +314,7 @@ export default function XaridorModal({
                       {telefonlar.map((telefon, index) => (
                         <XatoliMaydon key={index} xato={index === asosiyTelefon ? fx.xato("phone") : undefined}>
                         <div className="flex gap-2">
-                          <PhoneInput id={`xaridor-telefon-${index}`} value={telefon} onChange={(qiymat) => telefonYangilash(index, qiymat)} className="min-w-0 flex-1" invalid={index === asosiyTelefon && Boolean(fx.xato("phone"))} />
+                          <XalqaroTelefon id={`xaridor-telefon-${index}`} ariaLabel={t("xaridorModal.phone")} value={telefon} onChange={(qiymat) => telefonYangilash(index, qiymat)} className="min-w-0 flex-1" invalid={index === asosiyTelefon && Boolean(fx.xato("phone"))} />
                           <button
                             type="button"
                             onClick={() => telefonOchirish(index)}

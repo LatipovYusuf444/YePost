@@ -139,5 +139,8 @@
     "created": "Muvaffaqiyatli yaratildi",
     "deleted": "Muvaffaqiyatli o'chirildi",
     "saved": "Muvaffaqiyatli saqlandi"
+  },
+  "phone": {
+    "countryCode": "Davlat kodi"
   }
 }

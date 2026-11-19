@@ -22,7 +22,7 @@ import i18n from "i18next";
 // bildirishnoma o'qilgan deb belgilash va chat/support xabar yuborish
 // (fon jarayoni yoki o'z UI-tasdig'i bor harakatlar, alohida toast shart emas).
 // "/reports/discounts" — sahifa xatoni o'zi ko'rsatadi va backendda endpoint bo'lmasa (404) zaxira hisobga o'tadi.
-const TOAST_ISTISNOLARI = ["/auth/login", "/auth/refresh", "/auth/logout", "/notifications", "/chat/", "/support/messages", "/reports/discounts", "/opening-debt"];
+const TOAST_ISTISNOLARI = ["/auth/login", "/auth/refresh", "/auth/logout", "/notifications", "/chat/", "/support/messages", "/reports/discounts", "/opening-debt", "/opening-credits"];
 
 function toastKerakmi(url?: string) {
   if (!url) return true;

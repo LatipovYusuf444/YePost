@@ -155,7 +155,9 @@ test('daily page uses Tashkent today, keeps historical range independent, and ap
   nodes(tree).find(node => node.type === 'MuddatTanlov').props.onChange('2026-01-01', '2026-01-03');
   tree = await screen.settle();
   assert.equal(calls.at(-1).from, '2026-01-01');
-  assert.equal(calls.filter(call => call.from === call.to).length, 1, 'historical range does not change today query');
+  assert.equal(calls.filter(call => call.from === call.to && call.paymentType !== 'CASH').length, 1, 'historical range does not change today query');
+  // Kassadagi naqd pul (18.11): to'lov turi tanlanmaganda bugungi kun uchun alohida CASH so'rovi.
+  assert.ok(calls.some(call => call.from === '2026-10-24' && call.to === '2026-10-24' && call.paymentType === 'CASH'));
   nodes(tree).filter(node => node.type === 'select')[0].props.onChange({ target: { value: 'BANK' } });
   tree = await screen.settle();
   nodes(tree).filter(node => node.type === 'select')[1].props.onChange({ target: { value: 'b1' } });

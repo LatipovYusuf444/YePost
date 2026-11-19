@@ -8,6 +8,8 @@ export type YetkazibQarzHolati = "CONFIRMED" | "CANCELLED" | string;
 export type YetkazibBoshlangichQarzi = {
   id: string;
   docNumber: string;
+  // DEBT — biz qarzdor edik (YQB-); CREDIT — yetkazib beruvchi bizga qarzdor edi (YAB-). Eski javoblarda yo'q — DEBT.
+  direction: "DEBT" | "CREDIT";
   status: YetkazibQarzHolati;
   amount: number;
   currency: "UZS" | "USD";
@@ -45,6 +47,7 @@ export function yetkazibQarzi(raw: unknown): YetkazibBoshlangichQarzi | null {
   return {
     id,
     docNumber: matn(o.docNumber) || matn(o.documentNumber) || matn(o.number),
+    direction: matn(o.direction).toUpperCase() === "CREDIT" ? "CREDIT" : "DEBT",
     status: (matn(o.status) || "CONFIRMED").toUpperCase(),
     amount: son(o.amount),
     currency: valyutaYokiAsosiy(matn(o.currency)),

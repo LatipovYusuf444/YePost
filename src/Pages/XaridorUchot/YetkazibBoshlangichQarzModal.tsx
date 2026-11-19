@@ -8,13 +8,14 @@ import XatoliMaydon from "@/Components/common/XatoliMaydon";
 import { yetkazibBoshlangichQarzApi } from "@/api/yetkazibBoshlangichQarzApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
-import { boshlangichQarzMalumoti } from "@/lib/boshlangichQarz";
+import { boshlangichQarzMalumoti, type BoshlangichYonalish } from "@/lib/boshlangichQarz";
 import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { bugungiToshkentKuni } from "@/lib/hujjatSanasi";
 import { muvaffaqiyatXabari } from "@/lib/toast";
 import { ruxsatEtilganValyuta, standartValyuta, useYagonaValyuta } from "@/lib/valyuta";
 import { YETKAZIB_QARZ_IZOH_UZUNLIGI, type YetkazibBoshlangichQarzi } from "@/lib/yetkazibBoshlangichQarz";
 import type { YetkazibBeruvchi } from "./types";
+import YonalishTanlovi from "./YonalishTanlovi";
 
 // Server xatosi qaysi maydonga tegishli (opening-debt tanasi: amount, currency, date, note). Sana birinchi: "yopilgan davr" (423) va "kelajak sana" sanaga.
 const QARZ_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
@@ -42,6 +43,9 @@ export default function YetkazibBoshlangichQarzModal({
   const yagona = useYagonaValyuta();
   const tanlovBor = yagona === null;
   const [amount, setAmount] = useState("");
+  // DEBT — biz yetkazib beruvchiga qarzdor edik (hozirgidek); CREDIT — yetkazib beruvchi bizga qarzdor edi (YAB-): qarzimizdan ayriladi.
+  const [direction, setDirection] = useState<BoshlangichYonalish>("DEBT");
+  const teskari = direction === "CREDIT";
   const [currency, setCurrency] = useState<string>(standartValyuta);
   const [date, setDate] = useState(bugungiToshkentKuni);
   const [note, setNote] = useState("");
@@ -53,7 +57,7 @@ export default function YetkazibBoshlangichQarzModal({
   async function saqlash(event: FormEvent) {
     event.preventDefault();
     if (lock.current) return;
-    const result = boshlangichQarzMalumoti({ amount, currency: ruxsatEtilganValyuta(currency), date, note: note.slice(0, YETKAZIB_QARZ_IZOH_UZUNLIGI) }, bugungiToshkentKuni());
+    const result = boshlangichQarzMalumoti({ amount, currency: ruxsatEtilganValyuta(currency), date, note: note.slice(0, YETKAZIB_QARZ_IZOH_UZUNLIGI), direction }, bugungiToshkentKuni());
     if (result.error) {
       setError("");
       fx.ornat({ [result.error]: t(`openingDebt.errors.${result.error}`) });
@@ -91,7 +95,17 @@ export default function YetkazibBoshlangichQarzModal({
           <button type="button" onClick={onClose} disabled={saving} aria-label={t("openingDebt.close")} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-40"><X size={19} /></button>
         </header>
         <form onSubmit={(event) => void saqlash(event)} className="space-y-5 p-5 sm:p-6">
-          <p className="rounded-xl bg-blue-50 p-3 text-sm leading-6 text-blue-800">{t("yetkazibDetails.openingDebt.hint")}</p>
+          <YonalishTanlovi
+            nom={t("openingDebt.direction.label")}
+            qiymat={direction}
+            onChange={setDirection}
+            disabled={saving}
+            variantlar={[
+              { qiymat: "DEBT", nom: t("openingDebt.direction.supplierDebt"), izoh: t("openingDebt.direction.supplierDebtHint") },
+              { qiymat: "CREDIT", nom: t("openingDebt.direction.supplierCredit"), izoh: t("openingDebt.direction.supplierCreditHint") },
+            ]}
+          />
+          <p className={`rounded-xl p-3 text-sm leading-6 ${teskari ? "bg-emerald-50 text-emerald-800" : "bg-blue-50 text-blue-800"}`}>{t(teskari ? "yetkazibDetails.openingDebt.creditHint" : "yetkazibDetails.openingDebt.hint")}</p>
           <div className={tanlovBor ? "grid grid-cols-[minmax(0,1fr)_110px] gap-3" : "grid gap-3"}>
             <XatoliMaydon xato={fx.xato("amount")}>
               <label className="grid gap-1.5 text-sm font-semibold text-slate-600">

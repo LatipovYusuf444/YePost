@@ -29,8 +29,10 @@ const qarz = { id: 'd1', docNumber: 'YQB-000001', status: 'CONFIRMED', amount: '
 
 test('opening debt response (wrapped or plain) is read: number, status, amount, currency, rate, date, note', () => {
   assert.deepEqual(yetkazibQarzi(javob(qarz)), {
-    id: 'd1', docNumber: 'YQB-000001', status: 'CONFIRMED', amount: 10150, currency: 'USD', rate: 12650, date: '2026-09-01', note: 'Eski daftardan', createdAt: '',
+    id: 'd1', docNumber: 'YQB-000001', direction: 'DEBT', status: 'CONFIRMED', amount: 10150, currency: 'USD', rate: 12650, date: '2026-09-01', note: 'Eski daftardan', createdAt: '',
   });
+  // Teskari yo'nalish (18.11): yetkazib beruvchi bizga qarzdor edi — YAB-.
+  assert.equal(yetkazibQarzi({ ...qarz, docNumber: 'YAB-000001', direction: 'CREDIT' }).direction, 'CREDIT');
   const somda = yetkazibQarzi({ id: 'd2', amount: 500000, status: 'cancelled', rate: null });
   assert.equal(somda.currency, 'UZS');
   assert.equal(somda.status, 'CANCELLED');

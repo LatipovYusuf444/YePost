@@ -34,7 +34,7 @@
     "import": {
       "button": "Eski qarzlar · Excel",
       "title": "Eski qarzlarni Excel orqali kiritish",
-      "subtitle": "Mijoz, telefon, summa, valyuta, sana va izohni shablon bo'yicha to'ldiring.",
+      "subtitle": "Mijoz, telefon, summa, valyuta, sana, izoh va turini (qarz/avans) shablon bo'yicha to'ldiring.",
       "templateStep": "Shablonni to'ldiring",
       "checkStep": "Faylni tekshiring",
       "saveStep": "Tasdiqlab saqlang",
@@ -53,7 +53,8 @@
       "error": "Xatolik sababi",
       "recheck": "Qayta tekshirish",
       "confirm": "Qarzlarni saqlash",
-      "saved": "Boshlang'ich qarzlar fayldan saqlandi"
+      "saved": "Boshlang'ich qarzlar fayldan saqlandi",
+      "directionHint": "«Turi» ustuni: bo'sh yoki «qarz» — mijoz bizga qarz; «avans» — biz mijozga qarzmiz (summa mijoz hisobiga tushadi). Minus summa ham avans hisoblanadi. Faqat avansdan iborat faylga ombor shart emas."
     },
     "payment": {
       "title": "Qarzni to'lash",
@@ -66,7 +67,22 @@
       "tooMuch": "To'lov qolgan qarzdan oshmasligi kerak.",
       "modeMismatch": "Bu qarz {{currency}} da. Do'kon hozir faqat {{allowed}} bilan ishlaydi, shuning uchun {{currency}} dagi to'lov qabul qilinmaydi.",
       "history": "To'lovlar tarixi"
-    }
+    },
+    "creditHint": "Dasturdan oldin mijoz oldindan to'lagan pul (avans). Summa mijoz hisobiga tushadi: eski qarzi bo'lsa darhol shundan yopiladi, keyingi savdolarda ham shu puldan yechiladi. Kassaga va savdo tushumiga ta'sir qilmaydi.",
+    "saveCredit": "Avansni saqlash",
+    "creditSaved": "Boshlang'ich avans saqlandi: {{raqam}}",
+    "direction": {
+      "label": "Kim kimga qarz?",
+      "customerDebt": "Mijoz bizga qarz",
+      "customerDebtHint": "Dasturdan oldingi qarzi — qarzdorlikda ko'rinadi",
+      "customerCredit": "Biz mijozga qarzmiz (avans)",
+      "customerCreditHint": "Oldindan to'lagan — summa mijoz hisobiga tushadi",
+      "supplierDebt": "Biz unga qarzmiz",
+      "supplierDebtHint": "Dasturdan oldingi qarzimiz — to'lov bilan yopiladi",
+      "supplierCredit": "U bizga qarz",
+      "supplierCreditHint": "Yetkazib beruvchi qarzi — qarzimizdan ayriladi"
+    },
+    "creditDate": "Avans sanasi"
   },
   "xodimModal": {
     "badge": "Mas'ul xodim",
@@ -449,7 +465,8 @@
         "date": "Sana",
         "amount": "Summa",
         "note": "Izoh",
-        "status": "Holat"
+        "status": "Holat",
+        "direction": "Turi"
       },
       "status": {
         "CONFIRMED": "Tasdiqlangan",
@@ -461,7 +478,8 @@
         "title": "Boshlang'ich qarz bekor qilinsinmi?",
         "description": "Qarz hisobdan chiqadi, yetkazib beruvchiga xabar boradi. Keyin uni qayta tiklash mumkin.",
         "yes": "Ha, bekor qilish",
-        "working": "Bekor qilinmoqda..."
+        "working": "Bekor qilinmoqda...",
+        "descriptionCredit": "Yetkazib beruvchining bizga qarzi hisobdan chiqadi. Keyin uni qayta tiklash mumkin."
       },
       "restoreConfirm": {
         "title": "Boshlang'ich qarz qayta tiklansinmi?",
@@ -471,7 +489,9 @@
       },
       "back": "Qaytish",
       "cancelled": "Boshlang'ich qarz bekor qilindi",
-      "restored": "Boshlang'ich qarz qayta tiklandi"
+      "restored": "Boshlang'ich qarz qayta tiklandi",
+      "creditHint": "Dasturdan oldin yetkazib beruvchi bizga qarz bo'lgan summa. U unga bo'lgan qarzimizdan ayriladi, keyingi kirimlar qarzini ham kamaytiradi. Kassaga ta'sir qilmaydi, yetkazib beruvchiga bot xabari bormaydi.",
+      "listHint": "Dasturdan oldingi hisob: bizning unga qarzimiz (YQB-) yoki uning bizga qarzi (YAB-). Bu kirim emas: omborga va qoldiqqa tushmaydi. Bizning qarzimizni to'lov yopadi, uning bizga qarzi qarzimizdan ayriladi."
     }
   },
   "statuses": {
@@ -569,5 +589,29 @@
     "loading": "Ma’lumot yuklanmoqda...",
     "saving": "Saqlanmoqda...",
     "customFieldsTooLarge": "Maxsus maydonlar hajmi 2KB dan oshmasligi kerak."
+  },
+  "openingCredits": {
+    "title": "Boshlang'ich avanslar",
+    "hint": "Dasturdan oldin mijoz oldindan to'lagan summalar: ular mijoz hisobiga tushgan va qarzlarini yopadi.",
+    "cancelled": "Avans bekor qilindi: {{raqam}}",
+    "cancelAction": "Bekor qilish",
+    "columns": {
+      "document": "Hujjat",
+      "date": "Sana",
+      "amount": "Summa",
+      "note": "Izoh",
+      "status": "Holat"
+    },
+    "status": {
+      "CONFIRMED": "Tasdiqlangan",
+      "CANCELLED": "Bekor qilingan"
+    },
+    "cancelConfirm": {
+      "title": "Avans bekor qilinsinmi?",
+      "description": "Summa mijoz hisobidan olinadi, shu pul bilan yopilgan qarzlar qayta ochiladi. Bekor qilingan avansni tiklab bo'lmaydi.",
+      "back": "Ortga",
+      "yes": "Ha, bekor qilish",
+      "working": "Bekor qilinmoqda..."
+    }
   }
 }

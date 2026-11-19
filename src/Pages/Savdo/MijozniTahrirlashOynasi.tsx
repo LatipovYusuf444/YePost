@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Building2, Info, LoaderCircle, MapPin, Phone, UserRound } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import XatoliMaydon from "@/Components/common/XatoliMaydon";
-import PhoneInput from "@/Components/ui/PhoneInput";
+import XalqaroTelefon from "@/Components/ui/XalqaroTelefon";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import { xatoRamkasi, type XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import { mijozKompaniyalariRoyxatiniOlish, mijozlarRoyxatiniOlish } from "@/api/savdoApi";
@@ -13,6 +13,7 @@ import { useSavdoStore } from "@/store/savdoStore";
 import type { Mijoz, MijozKompaniyasi, MijozKompaniyasiMalumoti, MijozMalumoti } from "@/types/partner";
 import type { MijozTanlovi, Sotuv, SotuvYaratishMalumoti } from "@/types/savdo";
 import SavdoSelect from "./SavdoSelect";
+import { toliqTelefonmi } from "@/lib/telefon";
 import { donalikMijozNomi, sotuvJadvalId } from "./savdoYordamchilari";
 
 type Props = {
@@ -86,7 +87,10 @@ function kompaniyaMatni(kompaniya: MijozTanlovi) {
   return `${nom}${kompaniya.phone ? ` - ${kompaniya.phone}` : ""}`;
 }
 
-/** O'zbekiston raqami ("+998XXXXXXXXX") yoki bo'sh bo'lsa — formatlangan kiritish; boshqa (xorijiy, eski) raqam buzilmasligi uchun oddiy matn maydoni. */
+/**
+ * Qo'llab-quvvatlanadigan davlat raqami (+998, +7, +993, +992, +93, +996) yoki bo'sh bo'lsa — davlat kodi tanlanadigan formatlangan kiritish;
+ * tanilmagan (eski) raqam buzilmasligi uchun oddiy matn maydoni.
+ */
 function TelefonMaydoni({
   value,
   onChange,
@@ -100,8 +104,8 @@ function TelefonMaydoni({
   maxLength?: number;
   ariaLabel: string;
 }) {
-  const [uzbekMi] = useState(() => value === "" || /^\+?998\d{9}$/.test(value.replace(/[\s()-]/g, "")));
-  if (uzbekMi) return <PhoneInput value={value} onChange={onChange} invalid={invalid} />;
+  const [uzbekMi] = useState(() => value === "" || toliqTelefonmi(value));
+  if (uzbekMi) return <XalqaroTelefon value={value} onChange={onChange} invalid={invalid} ariaLabel={ariaLabel} />;
   return (
     <input
       type="tel"

@@ -7,6 +7,7 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { qisqaHujjatRaqami, taqsimotSummasi } from "@/lib/qarzTaqsimoti";
 import type { MijozQarzQatori, MijozQarzlari } from "@/types/qarzTaqsimoti";
 import { sanaFormat } from "./yordamchilar";
+import MijozAvanslari from "./MijozAvanslari";
 
 // Mijozning ochiq qarzlari (GET /partners/customers/:id/debts) to'lov tartibida: eng eskisi birinchi yopiladi.
 // Kassadagi "Mijoz hisobini to'ldirish" va mijoz hisobidagi pul shu tartibda yopadi.
@@ -83,6 +84,7 @@ export default function MijozQarzlariTab({ xaridorId }: { xaridorId: string }) {
         </span>
       </div>
       <p className="text-xs font-semibold text-slate-400">{t("qarzlarTab.hint")}</p>
+      <MijozAvanslari xaridorId={xaridorId} yangilanish={yangilanish} />
       {qatorlar.length === 0 ? (
         <p className="rounded-[26px] border border-dashed border-orange-200 bg-white/60 p-16 text-center font-bold text-slate-400">{t("qarzlarTab.empty")}</p>
       ) : (

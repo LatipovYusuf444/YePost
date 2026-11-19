@@ -13,6 +13,7 @@ import type { CashCurrency, CashDailyReport, CashPaymentType } from "@/types/cas
 import type { Filial } from "@/types/ombor";
 import MuddatTanlov from "./MuddatTanlov";
 import YuklanmoqdaHolati from "./YuklanmoqdaHolati";
+import KunChiqimlari from "./KunChiqimlari";
 import { tolovRangi } from "@/lib/tolovTuriRanglari";
 import { korinadiganValyutalar, nolEmasSummaBor } from "./hisobotValyutasi";
 
@@ -43,6 +44,8 @@ export default function KunlikKassa() {
   const [branches, setBranches] = useState<Filial[]>([]);
   const [report, setReport] = useState<CashDailyReport>();
   const [todayReport, setTodayReport] = useState<CashDailyReport>();
+  // Kassadagi naqd pul (paymentType=CASH): umumiy qoldiq ichidan alohida ko'rsatiladi (to'lov turi filtri tanlanmaganda).
+  const [todayCash, setTodayCash] = useState<CashDailyReport>();
   const [loading, setLoading] = useState(false);
   const [todayLoading, setTodayLoading] = useState(false);
   const [error, setError] = useState("");
@@ -92,6 +95,16 @@ export default function KunlikKassa() {
     return () => { active = false; };
   }, [today, paymentType, branchId]);
 
+  useEffect(() => {
+    let active = true;
+    setTodayCash(undefined);
+    if (paymentType) return;
+    cashDailyReportApi.olish({ from: today, to: today, paymentType: "CASH", branchId: branchId || undefined })
+      .then((data) => { if (active) setTodayCash(data); })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [today, paymentType, branchId]);
+
   return <div className="space-y-5">
     <header>
       <p className="text-sm font-bold uppercase tracking-[0.16em] text-blue-600">{t("kunlikKassa.eyebrow")}</p>
@@ -116,6 +129,7 @@ export default function KunlikKassa() {
             {valyutalar.map((currency) => <div key={currency} className={`min-w-0 rounded-2xl border bg-white/85 px-5 py-4 ${currency === "UZS" ? "border-[#D8E2F0]" : "border-[#E7DDCC]"}`}>
               <dt className="flex items-center gap-2 text-[11px] font-medium text-slate-500"><span aria-hidden className={`h-1.5 w-1.5 shrink-0 rounded-full ${currency === "UZS" ? "bg-[#647DA6]" : "bg-[#B39560]"}`} />{currency === "UZS" ? t("kunlikKassa.balanceSom") : t("kunlikKassa.balanceUsd")}<span className="ml-auto text-[10px] font-bold tracking-wider text-slate-400">{currency}</span></dt>
               <dd className={`mt-1.5 break-words font-bold leading-tight tracking-tight text-[#18273F] tabular-nums ${todayLoading ? "text-sm" : "text-2xl 2xl:text-[28px]"}`}>{todayLoading ? t("kunlikKassa.loading") : cashAmount(todayReport?.totals[currency].closing, currency)}</dd>
+              {!todayLoading && todayCash && <p data-naqd-qoldiq className="mt-1 text-xs font-semibold text-slate-500">{t("kunlikKassa.cashInDrawer")}: <span className="font-bold tabular-nums text-[#2F7A5B]">{cashAmount(todayCash.totals[currency].closing, currency)}</span></p>}
             </div>)}
           </dl>
         </div>
@@ -196,6 +210,7 @@ export default function KunlikKassa() {
         </div>
       </section>
     </>}
+    {!rangeError && <KunChiqimlari from={from} to={to} paymentType={paymentType} branchId={branchId} valyutalar={valyutalar} />}
     <Link to="/kassa" className="inline-block text-sm font-bold text-blue-600">{t("kunlikKassa.goToCash")}</Link>
   </div>;
 }
