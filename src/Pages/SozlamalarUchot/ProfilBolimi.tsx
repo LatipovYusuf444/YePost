@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { LoaderCircle } from "lucide-react";
-import PhoneInput from "@/Components/ui/PhoneInput";
+import XalqaroTelefon from "@/Components/ui/XalqaroTelefon";
 import { useTranslation } from "react-i18next";
 import XatoliMaydon from "@/Components/common/XatoliMaydon";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
@@ -126,7 +126,7 @@ export default function ProfilBolimi() {
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <XatoliMaydon xato={fx.xato("fullName")}><Maydon label={t("profil.fields.firstName")}><input value={ism} onChange={(e) => { fx.tozala("fullName"); setIsm(e.target.value); }} className={maydonKlass}/></Maydon></XatoliMaydon>
         <Maydon label={t("profil.fields.lastName")}><input value={familiya} onChange={(e) => { fx.tozala("fullName"); setFamiliya(e.target.value); }} className={maydonKlass}/></Maydon>
-        <XatoliMaydon xato={fx.xato("phone")}><Maydon label={t("profil.fields.phone")}><PhoneInput value={telefon} onChange={(qiymat) => { fx.tozala("phone"); setTelefon(qiymat); }}/></Maydon></XatoliMaydon>
+        <XatoliMaydon xato={fx.xato("phone")}><Maydon label={t("profil.fields.phone")} htmlFor="profil-telefon"><XalqaroTelefon id="profil-telefon" invalid={Boolean(fx.xato("phone"))} value={telefon} onChange={(qiymat) => { fx.tozala("phone"); setTelefon(qiymat); }}/></Maydon></XatoliMaydon>
         <XatoliMaydon xato={fx.xato("email")}><Maydon label={t("profil.fields.email")}><input type="email" value={email} onChange={(e) => { fx.tozala("email"); setEmail(e.target.value); }} className={maydonKlass}/></Maydon></XatoliMaydon>
         <XatoliMaydon xato={fx.xato("position")}><Maydon label={t("profil.fields.position")}><input value={lavozim} onChange={(e) => { fx.tozala("position"); setLavozim(e.target.value); }} className={maydonKlass}/></Maydon></XatoliMaydon>
         <XatoliMaydon xato={fx.xato("telegramId")}><Maydon label={t("profil.fields.telegramId")}><input value={telegramId} onChange={(e) => { fx.tozala("telegramId"); setTelegramId(e.target.value); }} className={maydonKlass}/></Maydon></XatoliMaydon>

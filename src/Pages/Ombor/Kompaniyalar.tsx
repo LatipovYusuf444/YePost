@@ -6,7 +6,7 @@ import AppModal from "@/Components/common/AppModal";
 import XatoliMaydon from "@/Components/common/XatoliMaydon";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
 import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
-import PhoneInput from "@/Components/ui/PhoneInput";
+import XalqaroTelefon from "@/Components/ui/XalqaroTelefon";
 import { useOmborStore } from "@/store/omborStore";
 import type { Kompaniya } from "@/types/ombor";
 
@@ -128,7 +128,7 @@ export default function Kompaniyalar() {
             <div className="mt-5 space-y-3">
               <XatoliMaydon xato={fx.xato("name")}><input value={name} onChange={(e)=>{ fx.tozala("name"); setName(e.target.value); }} className={maydonKlass} placeholder={t("kompaniyalar.namePlaceholder")}/></XatoliMaydon>
               <XatoliMaydon xato={fx.xato("inn")}><input value={inn} onChange={(e)=>{ fx.tozala("inn"); setInn(e.target.value); }} className={maydonKlass} placeholder={t("kompaniyalar.innPlaceholder")}/></XatoliMaydon>
-              <XatoliMaydon xato={fx.xato("phone")}><PhoneInput value={phone} onChange={(qiymat)=>{ fx.tozala("phone"); setPhone(qiymat); }} invalid={Boolean(fx.xato("phone"))}/></XatoliMaydon>
+              <XatoliMaydon xato={fx.xato("phone")}><XalqaroTelefon ariaLabel={t("kompaniyalar.phoneLabel").replace(/:\s*$/, "")} value={phone} onChange={(qiymat)=>{ fx.tozala("phone"); setPhone(qiymat); }} invalid={Boolean(fx.xato("phone"))}/></XatoliMaydon>
               <XatoliMaydon xato={fx.xato("address")}><textarea value={address} onChange={(e)=>{ fx.tozala("address"); setAddress(e.target.value); }} className={`${maydonKlass} h-auto min-h-24 py-3`} placeholder={t("kompaniyalar.addressPlaceholder")}/></XatoliMaydon>
             </div>
             <div className="mt-6 flex justify-end gap-3">

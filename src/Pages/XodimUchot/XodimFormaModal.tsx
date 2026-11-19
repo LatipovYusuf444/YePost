@@ -15,7 +15,7 @@ import {
   Wallet,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
-import PhoneInput from "@/Components/ui/PhoneInput";
+import XalqaroTelefon from "@/Components/ui/XalqaroTelefon";
 import FaoliyatPaneli from "../XaridorUchot/FaoliyatPaneli";
 import TezkorPanel from "../XaridorUchot/TezkorPanel";
 import { TarixTab } from "./XodimTablari";
@@ -29,6 +29,7 @@ import { useAvatarUrl } from "@/store/avatarStore";
 import ModalTablari from "@/Components/common/ModalTablari";
 import XatoliMaydon from "@/Components/common/XatoliMaydon";
 import { useMaydonXatolari } from "@/hooks/useMaydonXatolari";
+import { useQatorKalitlari } from "@/hooks/useQatorKalitlari";
 import { useTranslation } from "react-i18next";
 const malumotTablari = ["Ma'lumotlar", "Vakolatlar", "Tarix"] as const;
 type MalumotTab = (typeof malumotTablari)[number];
@@ -59,6 +60,8 @@ export default function XodimFormaModal({
   const [telefonlar, setTelefonlar] = useState<string[]>(
     boshlangich?.telefonlar.length ? boshlangich.telefonlar : [""]
   );
+  // Har telefon qatoriga barqaror kalit: o'chirilganda tanlangan davlat kodi boshqa qatorga o'tib ketmasin.
+  const qatorlar = useQatorKalitlari(telefonlar.length);
   const [login, setLogin] = useState(boshlangich?.login ?? "");
   const [rol, setRol] = useState<Xodim["rol"]>(boshlangich?.rol ?? "CASHIER");
   const [parol, setParol] = useState("");
@@ -103,6 +106,7 @@ export default function XodimFormaModal({
 
   function telefonOchirish(index: number) {
     setTelefonlar((joriy) => (joriy.length === 1 ? [""] : joriy.filter((_, i) => i !== index)));
+    qatorlar.ochirish(index);
     fx.tozala("telefonlar");
   }
 
@@ -290,9 +294,10 @@ export default function XodimFormaModal({
                           </span>
 
                           {telefonlar.map((telefon, index) => (
-                            <XatoliMaydon key={index} xato={fx.xato(`telefonlar.${index}`)}>
+                            <XatoliMaydon key={qatorlar.kalitlar[index] ?? index} xato={fx.xato(`telefonlar.${index}`)}>
                               <div className="flex gap-2">
-                                <PhoneInput
+                                <XalqaroTelefon
+                                  ariaLabel="Telefon"
                                   value={telefon}
                                   onChange={(qiymat) => telefonYangilash(index, qiymat)}
                                   invalid={Boolean(fx.xato(`telefonlar.${index}`))}
@@ -314,6 +319,7 @@ export default function XodimFormaModal({
                             type="button"
                             onClick={() => {
                               setTelefonlar((joriy) => [...joriy, ""]);
+                              qatorlar.qoshish();
                               fx.tozala("telefonlar");
                             }}
                             className="inline-flex h-10 w-fit items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-3.5 text-xs font-black uppercase text-[#2563EB] transition hover:bg-orange-100"

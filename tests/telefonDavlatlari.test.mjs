@@ -53,13 +53,23 @@ test('mijoz qidiruvidan yangi mijoz: kodli xorijiy raqam o\'z davlatida, kodsiz 
   assert.equal(mijozMatniniAjratish('+998 90 123 45 67').telefon, '+998901234567');
 });
 
-test('xalqaro maydon faqat mijoz, yetkazib beruvchi va mijoz kompaniyasida; xodim, filial, profil — avvalgidek +998', () => {
-  for (const fayl of ['src/Pages/XaridorUchot/XaridorModal.tsx', 'src/Pages/XaridorUchot/YetkazibBeruvchiModal.tsx', 'src/Pages/XaridorUchot/KompaniyaModal.tsx', 'src/Pages/Savdo/MijozniTahrirlashOynasi.tsx']) {
-    assert.match(manba(fayl), /<XalqaroTelefon /, fayl);
+test('xalqaro maydon: mijoz, yetkazib beruvchi, mijoz kompaniyasi (18.11) hamda xodim, filial, kompaniya, profil (19.11)', () => {
+  const fayllar = [
+    'src/Pages/XaridorUchot/XaridorModal.tsx', 'src/Pages/XaridorUchot/YetkazibBeruvchiModal.tsx', 'src/Pages/XaridorUchot/KompaniyaModal.tsx', 'src/Pages/Savdo/MijozniTahrirlashOynasi.tsx',
+    // 19.11: /accounts/users, /organization/branches, /organization/company (Sozlamalar va Ombor), /auth/me
+    'src/Pages/XodimUchot/XodimFormaModal.tsx', 'src/Pages/SozlamalarUchot/FiliallarBolimi.tsx', 'src/Pages/SozlamalarUchot/KompaniyaBolimi.tsx', 'src/Pages/Ombor/Kompaniyalar.tsx', 'src/Pages/SozlamalarUchot/ProfilBolimi.tsx',
+  ];
+  for (const fayl of fayllar) {
+    const m = manba(fayl);
+    assert.match(m, /<XalqaroTelefon\s/, fayl);
+    assert.doesNotMatch(m, /PhoneInput/, fayl);
   }
-  for (const fayl of ['src/Pages/XodimUchot/XodimFormaModal.tsx', 'src/Pages/SozlamalarUchot/FiliallarBolimi.tsx', 'src/Pages/SozlamalarUchot/ProfilBolimi.tsx', 'src/Pages/SozlamalarUchot/KompaniyaBolimi.tsx', 'src/Pages/Ombor/Kompaniyalar.tsx']) {
-    assert.doesNotMatch(manba(fayl), /XalqaroTelefon/, fayl);
+  // Sozlamalardagi yozuv raqam maydoniga bog'langan (davlat tanloviga emas).
+  for (const [fayl, id] of [['src/Pages/SozlamalarUchot/FiliallarBolimi.tsx', 'filial-telefon'], ['src/Pages/SozlamalarUchot/KompaniyaBolimi.tsx', 'sozlama-kompaniya-telefon'], ['src/Pages/SozlamalarUchot/ProfilBolimi.tsx', 'profil-telefon']]) {
+    const m = manba(fayl);
+    assert.ok(m.includes(`htmlFor="${id}"`) && m.includes(`<XalqaroTelefon id="${id}"`), fayl);
   }
+  assert.match(manba('src/Pages/SozlamalarUchot/UmumiyUI.tsx'), /<label htmlFor=\{htmlFor\} className="grid gap-2">/);
   for (const til of ['uz', 'ru']) assert.ok(JSON.parse(manba(`src/i18n/locales/${til}/common.json`)).phone.countryCode, til);
 });
 
@@ -103,4 +113,16 @@ test('telefon yozuvi raqam maydonini nomlaydi (davlat tanlovini emas)', () => {
   }
   assert.ok(manba('src/Pages/XaridorUchot/XaridorModal.tsx').includes('ariaLabel={t("xaridorModal.phone")}'));
   assert.ok(manba('src/Pages/Savdo/MijozniTahrirlashOynasi.tsx').includes('<XalqaroTelefon value={value} onChange={onChange} invalid={invalid} ariaLabel={ariaLabel} />'));
+});
+
+test('bir nechta telefon qatori barqaror kalit bilan: o\'chirilganda davlat kodi boshqa qatorga o\'tmaydi', () => {
+  const hook = manba('src/hooks/useQatorKalitlari.ts');
+  assert.ok(hook.includes('joriy.length === 1 ? [yangiKalit()] : joriy.filter((_, i) => i !== index)'));
+  for (const fayl of ['src/Pages/XaridorUchot/XaridorModal.tsx', 'src/Pages/XodimUchot/XodimFormaModal.tsx']) {
+    const m = manba(fayl);
+    assert.ok(m.includes('const qatorlar = useQatorKalitlari(telefonlar.length);'), fayl);
+    assert.ok(m.includes('key={qatorlar.kalitlar[index] ?? index}'), fayl);
+    assert.ok(m.includes('qatorlar.qoshish();') && m.includes('qatorlar.ochirish(index);'), fayl);
+    assert.doesNotMatch(m, /<XatoliMaydon key=\{index\}/, fayl);
+  }
 });

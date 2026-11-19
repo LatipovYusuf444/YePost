@@ -28,9 +28,9 @@ export function BolimKarta({
   );
 }
 
-export function Maydon({ label, children }: { label: string; children: ReactNode }) {
+export function Maydon({ label, children, htmlFor }: { label: string; children: ReactNode; htmlFor?: string }) {
   return (
-    <label className="grid gap-2">
+    <label htmlFor={htmlFor} className="grid gap-2">
       <span className="text-sm font-bold text-slate-400">{label}</span>
       {children}
     </label>

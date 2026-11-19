@@ -1,5 +1,5 @@
 import AppSelect from "@/Components/ui/AppSelect";
-import PhoneInput from "@/Components/ui/PhoneInput";
+import XalqaroTelefon from "@/Components/ui/XalqaroTelefon";
 import { useEffect, useState } from "react";
 import { LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -59,7 +59,7 @@ export default function KompaniyaBolimi() {
       <div className="grid gap-4 sm:grid-cols-2">
         <XatoliMaydon xato={fx.xato("name")}><Maydon label={t("kompaniya.fields.name")}><input value={nomi} onChange={(e) => { fx.tozala("name"); setNomi(e.target.value); }} className={maydonKlass}/></Maydon></XatoliMaydon>
         <XatoliMaydon xato={fx.xato("inn")}><Maydon label={t("kompaniya.fields.inn")}><input value={stir} onChange={(e) => { fx.tozala("inn"); setStir(e.target.value); }} className={maydonKlass}/></Maydon></XatoliMaydon>
-        <XatoliMaydon xato={fx.xato("phone")}><Maydon label={t("kompaniya.fields.phone")}><PhoneInput value={telefon} onChange={(qiymat) => { fx.tozala("phone"); setTelefon(qiymat); }}/></Maydon></XatoliMaydon>
+        <XatoliMaydon xato={fx.xato("phone")}><Maydon label={t("kompaniya.fields.phone")} htmlFor="sozlama-kompaniya-telefon"><XalqaroTelefon id="sozlama-kompaniya-telefon" invalid={Boolean(fx.xato("phone"))} value={telefon} onChange={(qiymat) => { fx.tozala("phone"); setTelefon(qiymat); }}/></Maydon></XatoliMaydon>
         {!yagona && <XatoliMaydon xato={fx.xato("currency")}><Maydon label={t("kompaniya.fields.currency")}><AppSelect value={valyuta} onChange={(e) => { fx.tozala("currency"); setValyuta(e.target.value as "UZS" | "USD"); }} className={maydonKlass}><option value="UZS">{t("kompaniya.currencyOptions.uzs")}</option><option value="USD">{t("kompaniya.currencyOptions.usd")}</option></AppSelect></Maydon></XatoliMaydon>}
         <div className="sm:col-span-2"><XatoliMaydon xato={fx.xato("address")}><Maydon label={t("kompaniya.fields.address")}><input value={manzil} onChange={(e) => { fx.tozala("address"); setManzil(e.target.value); }} className={maydonKlass}/></Maydon></XatoliMaydon></div>
       </div>

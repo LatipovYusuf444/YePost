@@ -17,9 +17,9 @@ type Props = {
 const NAMUNALAR: Record<string, string> = { "998": "90 123 45 67", "7": "912 345 67 89", "993": "61 234567", "992": "93 123 4567", "93": "70 123 4567", "996": "555 123 456" };
 
 /**
- * Xalqaro telefon maydoni (backend 18.11): davlat kodi tanlanadi — +998, +7, +993, +992, +93, +996; raqam uzunligi va ko'rinishi
- * tanlangan davlatga mos. Faqat backend xorijiy raqamni qabul qiladigan joylarda (mijoz, yetkazib beruvchi, mijoz kompaniyasi);
- * qolgan joylar avvalgidek PhoneInput (faqat +998). Qiymat "+<kod><raqam>" (bo'shliqsiz).
+ * Xalqaro telefon maydoni (backend 18.11 / 19.11): davlat kodi tanlanadi — +998, +7, +993, +992, +93, +996; raqam uzunligi va ko'rinishi
+ * tanlangan davlatga mos. Mijoz, yetkazib beruvchi, mijoz kompaniyasi, xodim, filial, kompaniya va profil telefonlarida.
+ * Qiymat "+<kod><raqam>" (bo'shliqsiz).
  */
 export default function XalqaroTelefon({ value, onChange, id, className = "", disabled = false, invalid = false, ariaLabel }: Props) {
   const { t } = useTranslation("common");

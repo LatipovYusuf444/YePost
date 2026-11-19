@@ -28,6 +28,7 @@ import IjtimoiyTanlov from "./IjtimoiyTanlov";
 import Tanlov from "./Tanlov";
 import TezkorPanel from "./TezkorPanel";
 import { SavdolarTab, TarixTab, TolovlarTab } from "./XaridorTablari";
+import { useQatorKalitlari } from "@/hooks/useQatorKalitlari";
 import type {
   TarixYozuvi,
   Xaridor,
@@ -91,6 +92,8 @@ export default function XaridorModal({
   const [telefonlar, setTelefonlar] = useState<string[]>(
     boshlangich?.telefonlar.length ? boshlangich.telefonlar : [matndan?.telefon ?? ""]
   );
+  // Har telefon qatoriga barqaror kalit: o'chirilganda tanlangan davlat kodi boshqa qatorga o'tib ketmasin.
+  const qatorlar = useQatorKalitlari(telefonlar.length);
   const [telegram, setTelegram] = useState(boshlangich?.ijtimoiy.telegram ?? "");
   const [whatsapp, setWhatsapp] = useState(boshlangich?.ijtimoiy.whatsapp ?? "");
   const [instagram, setInstagram] = useState(boshlangich?.ijtimoiy.instagram ?? "");
@@ -166,11 +169,13 @@ export default function XaridorModal({
   function telefonQoshish() {
     fx.tozala("phone");
     setTelefonlar((joriy) => [...joriy, ""]);
+    qatorlar.qoshish();
   }
 
   function telefonOchirish(index: number) {
     fx.tozala("phone");
     setTelefonlar((joriy) => (joriy.length === 1 ? [""] : joriy.filter((_, i) => i !== index)));
+    qatorlar.ochirish(index);
   }
 
   async function saqlash(event: FormEvent) {
@@ -312,7 +317,7 @@ export default function XaridorModal({
                       </span>
 
                       {telefonlar.map((telefon, index) => (
-                        <XatoliMaydon key={index} xato={index === asosiyTelefon ? fx.xato("phone") : undefined}>
+                        <XatoliMaydon key={qatorlar.kalitlar[index] ?? index} xato={index === asosiyTelefon ? fx.xato("phone") : undefined}>
                         <div className="flex gap-2">
                           <XalqaroTelefon id={`xaridor-telefon-${index}`} ariaLabel={t("xaridorModal.phone")} value={telefon} onChange={(qiymat) => telefonYangilash(index, qiymat)} className="min-w-0 flex-1" invalid={index === asosiyTelefon && Boolean(fx.xato("phone"))} />
                           <button
