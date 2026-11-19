@@ -7,6 +7,8 @@ import { useTranslation } from "react-i18next";
 import { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import type { InventarizatsiyaHujjati, MahsulotModifikatsiyasi } from "@/types/ombor";
 import { inventarizatsiyaQatorFarqi, inventarizatsiyaQatorXulosasi } from "@/lib/inventarizatsiyaKorinish";
+import { korobkaKorinishi } from "@/lib/inventarizatsiyaKorobka";
+import { useTovarBirliklari } from "@/hooks/useTovarBirliklari";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
 import { modificationNomi, sana } from "./omborYordamchilari";
 
@@ -28,6 +30,16 @@ export default function InventarizatsiyaKorinish({ hujjat, modifikatsiyalar, omb
   const bekor = ["CANCELLED", "CANCELED"].includes(holat);
   const tasdiqlangan = holat === "CONFIRMED";
   const modXarita = new Map(modifikatsiyalar.map(item => [item.id, item]));
+  // Korobkada sanalgan qatorlar uchun birlik nomi ("5 korobka + 3"): faqat shunday qatorlarning tovarlari birliklari olinadi.
+  const tovarIdsi = (item: (typeof items)[number]) => {
+    const mod = item.modification ?? modXarita.get(item.modificationId);
+    return mod?.productId ?? mod?.product?.id ?? modXarita.get(item.modificationId)?.productId ?? "";
+  };
+  const birliklar = useTovarBirliklari(items.filter(item => item.closedUnitId).map(tovarIdsi));
+  const korobkaMatni = (item: (typeof items)[number]) => {
+    const birlik = (birliklar[tovarIdsi(item)] ?? []).find(b => b.unitId === item.closedUnitId);
+    return korobkaKorinishi(item, birlik?.nomi);
+  };
   const statistika = [
     { nom: "total", son: xulosa.jami, icon: Package, stil: "border-blue-300 bg-blue-50/70 text-blue-700", ikonka: "bg-blue-100 text-blue-600" },
     { nom: "matched", son: xulosa.mos, icon: CheckCircle2, stil: "border-teal-300 bg-teal-50/70 text-teal-700", ikonka: "bg-teal-100 text-teal-600" },
@@ -80,7 +92,7 @@ export default function InventarizatsiyaKorinish({ hujjat, modifikatsiyalar, omb
               <td className="px-4 py-4"><span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-1.5 font-mono text-xs text-slate-500"><Barcode size={14} />{mod?.barcode || "—"}</span></td>
               <td className="px-4 py-4"><span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-slate-600"><Warehouse size={14} className="text-slate-400" />{omborNomi}</span></td>
               <td className="px-4 py-4 text-right font-semibold tabular-nums text-slate-600">{<StockQuantity value={item.expectedQuantity ?? item.systemQuantity} />}</td>
-              <td className="px-4 py-4 text-right"><span className="inline-flex min-w-14 justify-center rounded-lg border-2 border-blue-300 bg-blue-50 px-3 py-2 font-bold tabular-nums text-blue-700">{sonMatni(item.actualQuantity)}</span></td>
+              <td className="px-4 py-4 text-right"><span className="inline-flex min-w-14 justify-center rounded-lg border-2 border-blue-300 bg-blue-50 px-3 py-2 font-bold tabular-nums text-blue-700">{sonMatni(item.actualQuantity)}</span>{korobkaMatni(item) && <p data-korobka-korinish className="mt-1 whitespace-nowrap text-[11px] font-semibold text-blue-600">{t("inventoryView.boxCount", { value: korobkaMatni(item) })}</p>}</td>
               <td className="px-5 py-4 text-right"><span className={`inline-flex min-w-20 items-center justify-center gap-1 rounded-lg border-2 px-2.5 py-2 font-bold tabular-nums ${farqStili}`}><FarqIcon size={15} />{farq === null ? "—" : `${farq > 0 ? "+" : ""}${sonMatni(farq)}`}</span></td>
             </tr>;
           })}</tbody>

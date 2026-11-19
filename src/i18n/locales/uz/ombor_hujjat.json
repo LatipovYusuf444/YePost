@@ -29,7 +29,8 @@
       "matched": "Mos kelgan",
       "surplus": "Ortiqcha",
       "shortage": "Kamomad"
-    }
+    },
+    "boxCount": "Korobkada: {{value}}"
   },
   "errors": {
     "invalidStockTakeQuantity": "Har bir mahsulot uchun haqiqiy miqdor 0 yoki undan katta raqam bo'lishi kerak.",

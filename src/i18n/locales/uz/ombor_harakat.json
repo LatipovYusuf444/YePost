@@ -136,7 +136,24 @@
         "invalidQuantity": "{{name}} uchun haqiqiy miqdor 0 yoki undan katta raqam bo'lishi kerak."
       },
       "notDeducted": "ayirilmaydi",
-      "addOnlyNote": "Ombor qoldig'i faqat ko'paytiriladi: sanalgan miqdor tizim qoldig'idan kam bo'lsa, farq (kamomad) ombordan ayirilmaydi."
+      "addOnlyNote": "Ombor qoldig'i faqat ko'paytiriladi: sanalgan miqdor tizim qoldig'idan kam bo'lsa, farq (kamomad) ombordan ayirilmaydi.",
+      "box": {
+        "turnOn": "Korobkada sanash",
+        "on": "Korobkada",
+        "turnOff": "Korobkada sanashni o'chirish",
+        "unitLabel": "Qadoq",
+        "defaultUnit": "korobka",
+        "baseUnit": "asosiy birlik",
+        "closedLabel": "{{unit}} soni",
+        "openLabel": "Ochiq qolgani ({{base}})",
+        "closedAria": "{{name}}: {{unit}} soni",
+        "openAria": "{{name}}: ochiq qolgani ({{base}})",
+        "invalid": "Son noto'g'ri: manfiy bo'lmasin, kasr qismi ko'pi bilan 3 xona.",
+        "hint": "1 {{unit}} = {{koeff}} {{base}}. Yopiq qadoqlar soni va ochilganidan qolganini alohida yozing — jami o'zi hisoblanadi.",
+        "totalTitle": "Jami: qadoqlar × koeffitsient + ochiq qolgani",
+        "invalidWhole": "Jami butun son bo'lishi kerak: {{base}} kasr bo'lmaydi.",
+        "factorChanged": "Qadoq koeffitsienti (masalan, 1 korobka = 12) mahsulot kartochkasida o'zgargan. Korobkadagi qatorlar jami yangi koeffitsient bilan qayta hisoblandi — tekshirib, qaytadan saqlang."
+      }
     }
   },
   "kochirish": {

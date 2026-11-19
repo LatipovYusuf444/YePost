@@ -305,9 +305,21 @@ export type InventarizatsiyaHujjati = {
     actualQuantity: number | string;
     systemQuantity?: number | string;
     expectedQuantity?: number | string;
+    // Korobkada sanalgan qator (backend 19.11): closedUnitId — tovar birligi, closedQuantity — yopiq qadoqlar, closedFactor — o'sha paytdagi
+    // koeffitsient, openQuantity — ochiq qolgani asosiy birlikda. actualQuantity = closedQuantity × closedFactor + openQuantity.
+    closedUnitId?: string | null;
+    closedQuantity?: number | string | null;
+    closedFactor?: number | string | null;
+    openQuantity?: number | string | null;
     modification?: MahsulotModifikatsiyasi;
   }>;
 };
+
+// Inventarizatsiya qatori so'rovda: haqiqiy miqdor (asosiy birlikda) yoki korobka + ochiq qolgani.
+export type InventarizatsiyaSoroviQatori = { modificationId: string } & (
+  { actualQuantity: number } |
+  { closedUnitId: string; closedQuantity: number; openQuantity: number }
+);
 
 export type InventarizatsiyaYaratishMalumoti = {
   // Hujjat sanasi (kun, YYYY-MM-DD, Toshkent): berilmasa yoki bugun bo'lsa — hozirgi vaqt; o'tgan kun — o'sha kunning 23:59:59.
@@ -316,7 +328,7 @@ export type InventarizatsiyaYaratishMalumoti = {
   type?: InventarizatsiyaTuri;
   responsibleId?: string;
   note?: string;
-  items: Array<{ modificationId: string; actualQuantity: number }>;
+  items: InventarizatsiyaSoroviQatori[];
 };
 
 // POST /inventory/stock-takes/:id/revise. Ombor va sana o'zgarmaydi.
@@ -326,8 +338,5 @@ export type InventarizatsiyaTahrirMalumoti = {
   type?: InventarizatsiyaTuri;
   responsibleId?: string;
   confirmWarnings?: boolean;
-  items?: Array<{ modificationId: string } & (
-    { actualQuantity: number } |
-    { closedUnitId: string; closedQuantity: number; openQuantity: number }
-  )>;
+  items?: InventarizatsiyaSoroviQatori[];
 };

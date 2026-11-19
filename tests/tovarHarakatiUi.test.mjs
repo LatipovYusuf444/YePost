@@ -29,6 +29,8 @@ function mount(file, initialProps, deps = {}) {
     if (name in deps) return deps[name];
     if (name === './tovarHarakatiModeli') return model;
     if (name === '@/lib/inventarizatsiyaKorinish') return inventory;
+    if (name === '@/lib/inventarizatsiyaKorobka') return require('../src/lib/inventarizatsiyaKorobka.ts');
+    if (name === '@/hooks/useTovarBirliklari') return { useTovarBirliklari: () => ({}) };
     if (name === '@/hooks/useHisobotQatori') return { useHisobotQatori: selection => item => hujjatQatoriTanlangan(selection, item) ? { 'data-report-highlight': 'true' } : {} };
     if (name === 'react-i18next') return { useTranslation: () => ({ t: key => key }) };
     return new Proxy({ __esModule: true, default: name.split('/').at(-1) }, { get: (target, key) => target[key] ?? String(key) });

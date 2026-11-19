@@ -1,5 +1,5 @@
 import { rolniNormallashtirish } from "./roles.ts";
-import type { InventarizatsiyaHujjati, InventarizatsiyaTahrirMalumoti, OmborQoldigi } from "../types/ombor.ts";
+import type { InventarizatsiyaHujjati, InventarizatsiyaSoroviQatori, InventarizatsiyaTahrirMalumoti, OmborQoldigi } from "../types/ombor.ts";
 
 export function inventarizatsiyaTahririMumkin(hujjat: Pick<InventarizatsiyaHujjati, "status">, role?: string | null) {
   const rol = rolniNormallashtirish(role);
@@ -26,11 +26,16 @@ export function inventarizatsiyaTahrirTanlovlari(hujjat: InventarizatsiyaHujjati
     ? row : { ...row, availableQuantity: row.quantity ?? row.balance ?? row.availableQuantity ?? 0 });
 }
 
+// `korobkalar` — korobkada sanalgan qatorlar (tayyor so'rov qatori): ular actualQuantity o'rniga closedUnitId/closedQuantity/openQuantity bilan
+// yuboriladi (backend jamini o'zi hisoblaydi va korobka ko'rinishini saqlaydi).
 export function inventarizatsiyaTahrirSorovi(hujjat: InventarizatsiyaHujjati, forma: {
   ids: string[]; actuals: Record<string, string>; note: string;
+  korobkalar?: Record<string, InventarizatsiyaSoroviQatori | null | undefined>;
 }): InventarizatsiyaTahrirMalumoti {
   if (!forma.ids.length) throw new Error("selectAtLeastOne");
-  const items = forma.ids.map(modificationId => {
+  const items = forma.ids.map((modificationId): InventarizatsiyaSoroviQatori => {
+    const korobka = forma.korobkalar?.[modificationId];
+    if (korobka) return korobka;
     const raw = forma.actuals[modificationId]?.trim();
     const actualQuantity = Number(raw);
     if (!raw || !Number.isFinite(actualQuantity) || actualQuantity < 0) throw new Error("invalidQuantity");

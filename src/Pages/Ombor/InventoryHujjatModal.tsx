@@ -26,6 +26,8 @@ import type { XatoMaydonQoidasi } from "@/lib/maydonXatolari";
 import HujjatOchirish from "@/Components/common/HujjatOchirish";
 import HujjatSanasiMaydoni, { KiritilganBelgisi } from "@/Components/common/HujjatSanasi";
 import { tahrirSanasi, toshkentKuni } from "@/lib/hujjatSanasi";
+import { qoralamaQatorlari } from "@/lib/inventarizatsiyaKorobka";
+import { tovarBirliklariniYangilash } from "@/hooks/useTovarBirliklari";
 import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumkinmi";
 import { useOmborStore } from "@/store/omborStore";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
@@ -367,16 +369,23 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
       }));
     } else {
       if (!warehouseId) return;
+      // Korobkali qatorlar: tovar birliklari serverdan yangidan olinadi — koeffitsienti o'zgarmagan qatorgina korobka bo'lib qayta ketadi.
+      const aslQatorlar = (hujjat as InventarizatsiyaHujjati).items ?? [];
+      const tovarIdsi = new Map(aslQatorlar.filter((qator) => qator.closedUnitId).map((qator) => {
+        const mod = qator.modification ?? store.modifikatsiyalar.find((item) => item.id === qator.modificationId);
+        return [qator.modificationId, mod?.productId ?? mod?.product?.id ?? store.modifikatsiyalar.find((item) => item.id === qator.modificationId)?.productId ?? ""] as const;
+      }));
+      const birliklar = tovarIdsi.size ? await tovarBirliklariniYangilash([...tovarIdsi.values()]) : {};
+      const joriyKoeff = (modificationId: string, unitId: string) =>
+        (birliklar[tovarIdsi.get(modificationId) ?? ""] ?? []).find((birlik) => !birlik.asosiy && birlik.unitId === unitId)?.koeff;
       ok = await fx.kuzat(() => store.inventarizatsiyaYangilash(id, {
         ...tahrirSanasi(hujjatSanasi, boshlangichSana),
         warehouseId,
         type: stockTakeType,
         responsibleId: responsibleId || undefined,
         note,
-        items: tozaItems.map(({ modificationId, quantity }) => ({
-          modificationId,
-          actualQuantity: quantity,
-        })),
+        // Miqdori o'zgarmagan korobkali qatorlar korobka ko'rinishida qoladi ("5 korobka + 3").
+        items: qoralamaQatorlari(tozaItems, aslQatorlar, joriyKoeff),
       }));
     }
 

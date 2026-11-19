@@ -109,6 +109,8 @@ export const mahsulotBirliklariApi = {
   },
   saqlash: async (productId: string, birliklar: readonly TovarBirligi[]): Promise<TovarBirligi[]> => {
     const response = await apiClient.put<unknown>(`/catalog/products/${productId}/units`, birliklarTanasi(birliklar));
+    // Inventarizatsiyadagi birliklar keshi (useTovarBirliklari) eski koeffitsient bilan qolmasin.
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("tovar-birliklari:ozgardi", { detail: productId }));
     return birliklarniMoslash(apiList(response.data as TovarBirligi[] | ApiListEnvelope<TovarBirligi>));
   },
 };
