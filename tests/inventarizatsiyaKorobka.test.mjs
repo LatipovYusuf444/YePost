@@ -132,7 +132,16 @@ test('sahifa ulanishlari: yaratish, tahrir, skaner, ko\'rish va tarjimalar', () 
   assert.ok(sahifa.includes('const korobka = saqlanganKorobka(row);'));
   assert.ok(sahifa.includes('<KorobkaTugmasi') && sahifa.includes('<KorobkaMaydoni'));
   assert.ok(sahifa.includes('korobkaOzgardi(row.modificationId, { ...korobka, ochiq: String('));
-  assert.equal((sahifa.match(/setKorobkalar\(\{\}\);/g) ?? []).length, 3);
+  // Tozalanish joylari: forma ochilishi, ombor almashishi, yaratilgach, qoralama saqlangach.
+  assert.equal((sahifa.match(/setKorobkalar\(\{\}\);/g) ?? []).length, 4);
+  // Qoralamani tahrirlash yaratish oynasida: PATCH, ombor qulflangan, tugmalar o'z matni bilan.
+  assert.ok(sahifa.includes('onQoralamaTahrir={qoralamaniOchish}'));
+  assert.ok(sahifa.includes('const saqlandi = await fx.kuzat(() => store.inventarizatsiyaYangilash(qoralamaId, {'));
+  assert.ok(sahifa.includes('disabled={Boolean(tahrirHujjati || qoralamaHujjati)}'));
+  for (const til of ['uz', 'ru']) {
+    const d = JSON.parse(manba(`src/i18n/locales/${til}/ombor_harakat.json`)).inventarizatsiya.draftEdit;
+    for (const kalit of ['title', 'badge', 'warehouseLocked', 'save', 'saveFinal', 'confirmDescription']) assert.ok(d[kalit], `${til} ${kalit}`);
+  }
   assert.ok(manba('src/Pages/Ombor/InventarizatsiyaKorinish.tsx').includes('t("inventoryView.boxCount", { value: korobkaMatni(item) })'));
   assert.ok(manba('src/Pages/Ombor/InventoryHujjatModal.tsx').includes('items: qoralamaQatorlari(tozaItems, aslQatorlar, joriyKoeff),'));
   for (const til of ['uz', 'ru']) {

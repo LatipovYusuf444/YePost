@@ -154,6 +154,14 @@
         "invalidWhole": "Jami butun son bo'lishi kerak: {{base}} kasr bo'lmaydi.",
         "factorChanged": "Qadoq koeffitsienti (masalan, 1 korobka = 12) mahsulot kartochkasida o'zgargan. Korobkadagi qatorlar jami yangi koeffitsient bilan qayta hisoblandi — tekshirib, qaytadan saqlang."
       }
+    },
+    "draftEdit": {
+      "title": "Qoralamani tahrirlash",
+      "badge": "qoralama",
+      "warehouseLocked": "Qoralamada ombor o'zgarmaydi. Boshqa ombor kerak bo'lsa, yangi inventarizatsiya yarating.",
+      "save": "O'zgarishlarni saqlash",
+      "saveFinal": "Qoralamani saqlash",
+      "confirmDescription": "Qoralamadagi o'zgarishlar saqlanadi va hujjat tasdiqlanadi. Aniqlangan ortiqcha miqdorlar ombor qoldig'iga qo'shiladi."
     }
   },
   "kochirish": {

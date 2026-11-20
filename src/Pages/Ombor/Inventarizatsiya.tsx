@@ -17,7 +17,7 @@ import { omborQoldiqlari } from "@/api/omborApi";
 import { useOmborStore } from "@/store/omborStore";
 import { useSavdoStore } from "@/store/savdoStore";
 import { inventarizatsiyaTahririMumkin, inventarizatsiyaTahrirSorovi, inventarizatsiyaTahrirTanlovlari } from "@/lib/inventarizatsiyaTahriri";
-import { bugungiToshkentKuni, kunMatni, toshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
+import { bugungiToshkentKuni, kunMatni, tahrirSanasi, toshkentKuni, yangiHujjatSanasi } from "@/lib/hujjatSanasi";
 import type { InventarizatsiyaHujjati, InventarizatsiyaSoroviQatori, InventarizatsiyaTuri, OmborQoldigi } from "@/types/ombor";
 import { korobkaBirliklari, korobkaJamiMatni, korobkagaAjratish, korobkaSoroviQatori, saqlanganKorobka, type KorobkaBirligi, type KorobkaSanogi } from "@/lib/inventarizatsiyaKorobka";
 import { tovarBirliklariniYangilash, useTovarBirliklari } from "@/hooks/useTovarBirliklari";
@@ -80,6 +80,9 @@ export default function Inventarizatsiya() {
   const profilniYuklash = useAuthProfileStore((state) => state.profilniYuklash);
   const [modal, setModal] = useState(false);
   const [tahrirHujjati, setTahrirHujjati] = useState<InventarizatsiyaHujjati | null>(null);
+  // Qoralama (DRAFT) inventarizatsiya shu yaratish oynasida tahrirlanmoqda: oqim yaratish bilan bir xil (tekshirish, tasdiqlash), saqlash
+  // PATCH /inventory/stock-takes/:id bilan; ombor qulflangan, sana o'zgartirilishi mumkin. Tasdiqlangan hujjat tahriri — `tahrirHujjati`.
+  const [qoralamaHujjati, setQoralamaHujjati] = useState<InventarizatsiyaHujjati | null>(null);
   const [tahrirSaqlanmoqda, setTahrirSaqlanmoqda] = useState(false);
   const tahrirQulfi = useRef(false);
   const [tanlanganId, setTanlanganId] = useState<string | null>(null);
@@ -145,8 +148,8 @@ export default function Inventarizatsiya() {
   // Inventarizatsiya hujjatining mas'ul shaxsi har doim tizimga real kirgan
   // foydalanuvchi bo'lishi kerak — boshqa xodimga o'tkazib bo'lmaydi.
   useEffect(() => {
-    if (joriyProfil?.id && !tahrirHujjati) setResponsibleId(joriyProfil.id);
-  }, [joriyProfil, tahrirHujjati]);
+    if (joriyProfil?.id && !tahrirHujjati && !qoralamaHujjati) setResponsibleId(joriyProfil.id);
+  }, [joriyProfil, tahrirHujjati, qoralamaHujjati]);
 
   const mahsulotMenyuJoylashuviniYangilash = useCallback(() => {
     const rect = mahsulotSearchRef.current?.getBoundingClientRect();
@@ -252,8 +255,19 @@ export default function Inventarizatsiya() {
         modification: modifikatsiya,
       }));
     const tanlovlar = [...qoldiqlar, ...yangilari];
+    if (qoralamaHujjati) {
+      // Qoralama qatorlari tizim qoldig'i — bugungi (jonli) qoldiq; katalogda topilmagan qator ham ro'yxatdan tushib qolmasin.
+      const bor = new Set(tanlovlar.map((qoldiq) => qoldiq.modificationId));
+      const qolganlari = (qoralamaHujjati.items ?? []).filter((item) => !bor.has(item.modificationId)).map((item) => ({
+        modificationId: item.modificationId,
+        warehouseId,
+        availableQuantity: Number(item.expectedQuantity ?? 0) || 0,
+        modification: item.modification,
+      }));
+      return [...tanlovlar, ...qolganlari];
+    }
     return tahrirHujjati ? inventarizatsiyaTahrirTanlovlari(tahrirHujjati, tanlovlar) : tanlovlar;
-  }, [qoldiqlar, store.modifikatsiyalar, warehouseId, tahrirHujjati]);
+  }, [qoldiqlar, store.modifikatsiyalar, warehouseId, tahrirHujjati, qoralamaHujjati]);
 
   // Jadvalda faqat qidirib (yoki shtrix-kod bilan) qo'shilgan mahsulotlar turadi: ombordagi
   // barcha qoldiq avtomatik chiqmaydi, backend ham faqat ro'yxatdagilarni tuzatadi.
@@ -647,6 +661,7 @@ export default function Inventarizatsiya() {
   function formaniOchish() {
     store.xatolikniTozalash();
     setTahrirHujjati(null);
+    setQoralamaHujjati(null);
     setWarehouseId("");
     setResponsibleId(joriyProfil?.id ?? "");
     setHujjatSanasi(bugungiToshkentKuni());
@@ -676,7 +691,7 @@ export default function Inventarizatsiya() {
   }
 
   async function omborTanlash(id: string) {
-    if (tahrirHujjati) return;
+    if (tahrirHujjati || qoralamaHujjati) return;
     setWarehouseId(id);
     setActuals({});
     setKorobkalar({});
@@ -709,6 +724,27 @@ export default function Inventarizatsiya() {
     setTanlanganModifikatsiyaIds((hujjat.items ?? []).map(row => row.modificationId));
     setActuals(Object.fromEntries((hujjat.items ?? []).map(row => [row.modificationId, String(row.actualQuantity)])));
     // Korobkada sanalgan qatorlar shu ko'rinishda ochiladi ("5 korobka + 3").
+    setKorobkalar(Object.fromEntries((hujjat.items ?? []).flatMap(row => {
+      const korobka = saqlanganKorobka(row);
+      return korobka ? [[row.modificationId, korobka]] : [];
+    })));
+    setQoldiqYuklanmoqda(true);
+    try { await store.qoldiqlarniYuklash(hujjat.warehouseId); }
+    finally { setQoldiqYuklanmoqda(false); }
+  }
+
+  // Qoralamani tahrirlash: yaratish oynasi saqlangan qiymatlar bilan to'ldiriladi (korobkali qatorlar korobka ko'rinishida).
+  async function qoralamaniOchish(hujjat: InventarizatsiyaHujjati) {
+    if (String(hujjat.status ?? "").toUpperCase() !== "DRAFT") return;
+    formaniOchish();
+    setQoralamaHujjati(hujjat);
+    setTanlanganId(null);
+    setWarehouseId(hujjat.warehouseId);
+    setHujjatSanasi(toshkentKuni(hujjat.date ?? hujjat.createdAt));
+    setResponsibleId(hujjat.responsibleId ?? joriyProfil?.id ?? "");
+    setNote(hujjat.note ?? "");
+    setTanlanganModifikatsiyaIds((hujjat.items ?? []).map(row => row.modificationId));
+    setActuals(Object.fromEntries((hujjat.items ?? []).map(row => [row.modificationId, String(Number(row.actualQuantity))])));
     setKorobkalar(Object.fromEntries((hujjat.items ?? []).flatMap(row => {
       const korobka = saqlanganKorobka(row);
       return korobka ? [[row.modificationId, korobka]] : [];
@@ -834,6 +870,30 @@ export default function Inventarizatsiya() {
         modificationId: qoldiq.modificationId,
         actualQuantity: Math.max(actualQuantity, joriy),
       });
+    }
+
+    if (qoralamaHujjati) {
+      // Qoralama: PATCH (sana faqat o'zgargan bo'lsa yuboriladi), keyin "Saqlash va tasdiqlash" bo'lsa tasdiqlanadi.
+      const qoralamaId = qoralamaHujjati.id;
+      const saqlandi = await fx.kuzat(() => store.inventarizatsiyaYangilash(qoralamaId, {
+        ...tahrirSanasi(hujjatSanasi, toshkentKuni(qoralamaHujjati.date ?? qoralamaHujjati.createdAt)),
+        warehouseId,
+        type: qoralamaHujjati.type === "FULL" ? "FULL" : "PARTIAL",
+        responsibleId: responsibleId || undefined,
+        note: note.trim(),
+        items: Array.from(itemMap.values()),
+      }));
+      if (!saqlandi) return;
+      if (reviewAction === "confirm") await store.inventarizatsiyaTasdiqlash(qoralamaId);
+      setModal(false);
+      setQoralamaHujjati(null);
+      setWarehouseId("");
+      setActuals({});
+      setKorobkalar({});
+      setNote("");
+      // Yangilangan hujjat ko'rish oynasida qayta ochiladi.
+      setTanlanganId(qoralamaId);
+      return;
     }
 
     const hujjat = await fx.kuzat(() => store.inventarizatsiyaYaratish({
@@ -1015,8 +1075,8 @@ export default function Inventarizatsiya() {
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-blue-200 bg-white text-blue-600 shadow-sm"><ClipboardList size={24} strokeWidth={2} /></span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2.5">
-                    <h2 id="inventory-create-title" className="text-lg font-bold tracking-tight text-slate-900 sm:text-2xl">{t(tahrirHujjati ? "inventarizatsiya.editModal.title" : "inventarizatsiya.createModal.title")}</h2>
-                    <span className="rounded-lg border border-blue-200 bg-blue-100/60 px-2.5 py-1 text-[11px] font-bold text-blue-700">{tahrirHujjati ? hujjatRaqami(tahrirHujjati) : t(tekshiruvOchiq ? "inventarizatsiya.createModal.reviewBadge" : "inventarizatsiya.createModal.newBadge")}</span>
+                    <h2 id="inventory-create-title" className="text-lg font-bold tracking-tight text-slate-900 sm:text-2xl">{t(tahrirHujjati ? "inventarizatsiya.editModal.title" : qoralamaHujjati ? "inventarizatsiya.draftEdit.title" : "inventarizatsiya.createModal.title")}</h2>
+                    <span className="rounded-lg border border-blue-200 bg-blue-100/60 px-2.5 py-1 text-[11px] font-bold text-blue-700">{tahrirHujjati ? hujjatRaqami(tahrirHujjati) : qoralamaHujjati ? `${hujjatRaqami(qoralamaHujjati)} · ${t("inventarizatsiya.draftEdit.badge")}` : t(tekshiruvOchiq ? "inventarizatsiya.createModal.reviewBadge" : "inventarizatsiya.createModal.newBadge")}</span>
                   </div>
                   {(warehouseId || hujjatSanasi) && (
                     <p className="mt-1 truncate text-xs font-medium text-slate-500">
@@ -1074,7 +1134,7 @@ export default function Inventarizatsiya() {
                         <span className="mb-1.5 block text-xs font-semibold text-slate-600">{t("inventarizatsiya.createModal.warehouseLabel")}</span>
                         <AppSelect
                           value={warehouseId}
-                          disabled={Boolean(tahrirHujjati)}
+                          disabled={Boolean(tahrirHujjati || qoralamaHujjati)}
                           onChange={(event) => void omborTanlash(event.target.value)}
                           // AppSelect ichki tugmaga tashqi paddingni meros qiladi: manfiy chekka tugmani yorliq va boshqa maydonlar bilan tekislaydi.
                           className="-mx-3.5 h-11 rounded-xl px-3.5 text-sm font-medium text-slate-800"
@@ -1099,12 +1159,13 @@ export default function Inventarizatsiya() {
                       </label>
                       </XatoliMaydon>
                       {tahrirHujjati && <p className="flex items-start gap-1.5 text-xs leading-5 text-blue-700"><Lock size={13} className="mt-1 shrink-0" />{t("inventarizatsiya.editModal.lockedFields")}</p>}
+                      {qoralamaHujjati && <p data-qoralama-izoh className="flex items-start gap-1.5 text-xs leading-5 text-blue-700"><Lock size={13} className="mt-1 shrink-0" />{t("inventarizatsiya.draftEdit.warehouseLocked")}</p>}
                       <div className="block">
                         <span className="mb-1.5 block text-xs font-semibold text-slate-600">{t("inventarizatsiya.createModal.responsibleLabel")}</span>
                         <div className="flex h-11 w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-sm font-medium text-slate-800">
                           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600"><UserRound size={14} /></span>
                           <span className="min-w-0 flex-1 truncate">
-                            {tahrirHujjati ? (tahrirHujjati.responsible?.fullName ?? tahrirHujjati.responsible?.username ?? xodimMap.get(responsibleId)?.fullName ?? t("inventarizatsiya.createModal.unknownEmployee")) : (joriyProfil?.fullName ?? joriyProfil?.username ?? t("inventarizatsiya.createModal.unknownEmployee"))}
+                            {tahrirHujjati ? (tahrirHujjati.responsible?.fullName ?? tahrirHujjati.responsible?.username ?? xodimMap.get(responsibleId)?.fullName ?? t("inventarizatsiya.createModal.unknownEmployee")) : qoralamaHujjati ? (qoralamaHujjati.responsible?.fullName ?? qoralamaHujjati.responsible?.username ?? xodimMap.get(responsibleId)?.fullName ?? joriyProfil?.fullName ?? t("inventarizatsiya.createModal.unknownEmployee")) : (joriyProfil?.fullName ?? joriyProfil?.username ?? t("inventarizatsiya.createModal.unknownEmployee"))}
                           </span>
                           <Lock size={14} className="shrink-0 text-slate-400" />
                         </div>
@@ -1466,7 +1527,7 @@ export default function Inventarizatsiya() {
                 </button>
               ) : tekshiruvOchiq ? <>
               <button type="button" onClick={() => { setReviewAction(null); setFormaXatosi(null); }} disabled={store.amalBajarilmoqda} className="h-12 rounded-2xl border border-blue-200 bg-blue-50 px-5 text-sm font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400">{t("inventarizatsiya.createModal.backToCount")}</button>
-              <button type="button" onClick={() => void yaratish()} disabled={store.amalBajarilmoqda || sanoqXulosasi.uncounted.length > 0 || sanoqXulosasi.invalid.length > 0} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none">{store.amalBajarilmoqda && <LoaderCircle size={17} className="animate-spin" />}{t("inventarizatsiya.createModal.saveFinal")}</button>
+              <button type="button" onClick={() => void yaratish()} disabled={store.amalBajarilmoqda || sanoqXulosasi.uncounted.length > 0 || sanoqXulosasi.invalid.length > 0} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none">{store.amalBajarilmoqda && <LoaderCircle size={17} className="animate-spin" />}{t(qoralamaHujjati ? "inventarizatsiya.draftEdit.saveFinal" : "inventarizatsiya.createModal.saveFinal")}</button>
               </> : <>
               <button
                 type="button"
@@ -1475,7 +1536,7 @@ export default function Inventarizatsiya() {
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-5 text-sm font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400"
               >
                 {store.amalBajarilmoqda && <LoaderCircle size={17} className="animate-spin" />}
-                {t("inventarizatsiya.createModal.save")}
+                {t(qoralamaHujjati ? "inventarizatsiya.draftEdit.save" : "inventarizatsiya.createModal.save")}
               </button>
               <button
                 type="button"
@@ -1498,7 +1559,7 @@ export default function Inventarizatsiya() {
           ikonka={<ClipboardList size={26} />}
           sarlavha={t("inventarizatsiya.createModal.confirmation.title")}
           nom={[omborMap.get(warehouseId), kunMatni(hujjatSanasi)].filter(Boolean).join(" · ")}
-          tavsif={t("inventarizatsiya.createModal.confirmation.description")}
+          tavsif={t(qoralamaHujjati ? "inventarizatsiya.draftEdit.confirmDescription" : "inventarizatsiya.createModal.confirmation.description")}
           ortgaMatni={t("inventarizatsiya.createModal.confirmation.no")}
           tasdiqMatni={t("inventarizatsiya.createModal.confirmation.yes")}
           jarayonMatni={t("inventarizatsiya.createModal.confirmation.pending")}
@@ -1512,6 +1573,7 @@ export default function Inventarizatsiya() {
           tur="inventarizatsiya"
           id={tanlanganId}
           onTasdiqlanganTahrir={tahrirlashniOchish}
+          onQoralamaTahrir={qoralamaniOchish}
           onClose={() => setTanlanganId(null)}
         />
       )}

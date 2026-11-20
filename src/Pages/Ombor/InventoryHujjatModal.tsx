@@ -66,6 +66,9 @@ type Props = {
   id: string;
   onClose: () => void;
   onTasdiqlanganTahrir?: (hujjat: InventarizatsiyaHujjati) => void | Promise<void>;
+  // Qoralama inventarizatsiyani yaratish oynasining o'zida tahrirlash (skaner, tizim qoldig'i, farq, korobkada sanash bilan).
+  // Berilmasa (masalan, hisobotdan ochilganda) — shu oynadagi oddiy forma.
+  onQoralamaTahrir?: (hujjat: InventarizatsiyaHujjati) => void | Promise<void>;
 };
 
 type Hujjat =
@@ -103,7 +106,7 @@ function hujjatHolati(hujjat: Hujjat | null) {
   return String(hujjat?.status ?? "DRAFT").toUpperCase();
 }
 
-export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganTahrir, ajratilganQator, hisobotManbasi }: Props) {
+export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganTahrir, onQoralamaTahrir, ajratilganQator, hisobotManbasi }: Props) {
   const profil = useAuthProfileStore(state => state.profil);
   const bekorMumkin = useHujjatniBekorQilishMumkinmi("ombor");
   const { t } = useTranslation("ombor_hujjat");
@@ -578,7 +581,8 @@ export default function InventoryHujjatModal({ tur, id, onClose, onTasdiqlanganT
             {hujjat && qoralama && !tahrir && (
               <button
                 type="button"
-                onClick={tahrirlashniBoshlash}
+                data-qoralama-tahrir
+                onClick={() => (tur === "inventarizatsiya" && onQoralamaTahrir ? void onQoralamaTahrir(hujjat as InventarizatsiyaHujjati) : tahrirlashniBoshlash())}
                 className="inline-flex h-12 items-center gap-2 rounded-2xl bg-orange-500 px-5 font-black text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600"
               >
                 <Edit3 size={18} /> {t("actions.edit")}

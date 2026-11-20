@@ -12,7 +12,8 @@ function editor(options = {}) {
   const states = [], calls = [], stockCalls = [];
   let cursor = 0;
   const store = { inventarizatsiyalar: [document], omborlar: [{ id: 'w', name: 'Warehouse' }], xodimlar: [], qoldiqlar: [{ modificationId: 'a', warehouseId: 'w', quantity: 100, availableQuantity: 100 }], modifikatsiyalar: [],
-    xatolikniTozalash: noop, inventarizatsiyaTahrirlash: async (id, payload) => { calls.push({ id, payload }); return options.fail ? null : { ...document, items: payload.items, updatedAt: 'new-version' }; }, qoldiqlarniYuklash: noop };
+    xatolikniTozalash: noop, inventarizatsiyaTahrirlash: async (id, payload) => { calls.push({ id, payload }); return options.fail ? null : { ...document, items: payload.items, updatedAt: 'new-version' }; }, qoldiqlarniYuklash: noop,
+    inventarizatsiyaYangilash: async (id, payload) => { calls.push({ id, patch: payload }); return true; }, inventarizatsiyaTasdiqlash: async id => { calls.push({ confirm: id }); return true; } };
   const hooks = { useState(initial) { const i = cursor++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial; return [states[i], value => { states[i] = typeof value === 'function' ? value(states[i]) : value; }]; }, useRef: value => hooks.useState(() => ({ current: value }))[0], useEffect: noop, useMemo: fn => fn(), useCallback: fn => fn() };
   const mocks = {
     react: hooks, 'react-dom': { createPortal: node => node }, 'react-i18next': { useTranslation: () => ({ t: key => key }) },
@@ -82,4 +83,40 @@ test('double save sends only one revision and a failed revision preserves edited
   assert.equal(edit.calls[0].payload.expectedUpdatedAt, document.updatedAt);
   assert.equal(find(edit, 'input', props => props['data-inventory-qty'] !== undefined).props.value, '45');
   assert.equal(find(edit, './InventoryHujjatModal'), undefined);
+});
+
+// Qoralama: "Tahrirlash" yaratish oynasining o'zida ochiladi (eski oddiy forma o'rniga), saqlash PATCH bilan.
+const draft = { ...document, id: 'drf', status: 'DRAFT', type: 'PARTIAL', date: '2026-10-23', items: [{ modificationId: 'a', actualQuantity: '100', expectedQuantity: '100', systemQuantity: '0', modification: { id: 'a', name: 'Product' } }] };
+const tugmaMatni = (props, kalit) => Array.isArray(props.children) ? props.children.includes(kalit) : props.children === kalit;
+
+test('draft edit opens the creation form prefilled; warehouse locked, date editable; save goes through review and PATCH', async () => {
+  const edit = editor();
+  const details = find(edit, './InventoryHujjatModal');
+  assert.equal(typeof details.props.onQoralamaTahrir, 'function');
+  await details.props.onQoralamaTahrir(draft);
+  assert.equal(find(edit, './InventoryHujjatModal'), undefined);
+  assert.equal(find(edit, '@/Components/ui/AppSelect', props => props.value === 'w').props.disabled, true);
+  assert.equal(find(edit, '@/Components/common/HujjatSanasi', props => props.value === '2026-10-23').props.disabled, false);
+  assert.equal(find(edit, 'input', props => props['data-inventory-qty'] !== undefined).props.value, '100');
+  find(edit, 'input', props => props['data-inventory-qty'] !== undefined).props.onChange({ target: { value: '120' } });
+  find(edit, 'button', props => tugmaMatni(props, 'inventarizatsiya.draftEdit.save')).props.onClick();
+  find(edit, 'button', props => tugmaMatni(props, 'inventarizatsiya.draftEdit.saveFinal')).props.onClick();
+  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(edit.calls.length, 1);
+  const { id, patch } = edit.calls[0];
+  assert.equal(id, 'drf');
+  assert.equal(JSON.stringify(patch.items), JSON.stringify([{ modificationId: 'a', actualQuantity: 120 }]));
+  assert.equal(patch.warehouseId, 'w');
+  assert.equal(patch.type, 'PARTIAL');
+  assert.equal('date' in patch, false);
+  // Saqlangach yangilangan hujjat ko'rish oynasida qayta ochiladi.
+  assert.equal(find(edit, './InventoryHujjatModal').props.id, 'drf');
+});
+
+test('draft edit is not offered for confirmed documents through the draft path', async () => {
+  const edit = editor();
+  await find(edit, './InventoryHujjatModal').props.onQoralamaTahrir(document);
+  assert.equal(find(edit, 'input', props => props['data-inventory-qty'] !== undefined), undefined);
+  assert.equal(find(edit, './InventoryHujjatModal').props.id, 'inv');
 });
