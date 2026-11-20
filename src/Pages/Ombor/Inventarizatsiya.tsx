@@ -1270,8 +1270,9 @@ export default function Inventarizatsiya() {
                         </div>
                       )}
                       {fx.xato("items") && <div className="mx-5 mb-3 shrink-0"><MaydonXatosi matn={fx.xato("items")} /></div>}
-                      {/* Jadval sarlavhasi 40px, har qator 80px: 5 qatorgacha to'liq ko'rinadi. */}
-                      <div ref={jadvalRef} className={`mx-5 mb-5 box-content max-h-[720px] min-h-40 shrink-0 rounded-2xl border border-slate-200 bg-white sm:max-h-[440px] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 ${inventarizatsiyaQatorlari.length > 5 ? "overflow-y-auto" : "overflow-y-hidden"}`}>
+                      {/* Jadval sarlavhasi 40px, oddiy qator 80px: 5 qatorgacha to'liq ko'rinadi. Korobka paneli qatorni balandlatadi, shuning uchun
+                          scroll qatorlar soniga emas, balandlikka bog'liq: sig'masa doim yuqoriga-pastga aylantirish mumkin (sarlavha yopishqoq). */}
+                      <div ref={jadvalRef} data-inventory-jadval className="mx-5 mb-5 box-content max-h-[720px] min-h-40 shrink-0 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white sm:max-h-[440px] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300">
                         {inventarizatsiyaQatorlari.length > 0 ? (
                           <>
                             <div className="sticky top-0 z-10 hidden h-10 grid-cols-[32px_minmax(0,1fr)_88px_136px_104px_36px] items-center gap-x-3 border-b border-blue-100 bg-blue-50/95 px-4 text-[11px] font-semibold text-slate-600 backdrop-blur sm:grid">

@@ -141,3 +141,9 @@ test('sahifa ulanishlari: yaratish, tahrir, skaner, ko\'rish va tarjimalar', () 
     assert.ok(JSON.parse(manba(`src/i18n/locales/${til}/ombor_hujjat.json`)).inventoryView.boxCount, til);
   }
 });
+
+test('mahsulotlar jadvali balandligi to\'lsa doim aylantiriladi (korobka panellari qatorni balandlatadi)', () => {
+  const sahifa = manba('src/Pages/Ombor/Inventarizatsiya.tsx');
+  assert.match(sahifa, /<div ref=\{jadvalRef\} data-inventory-jadval className="[^"]*\boverflow-y-auto\b[^"]*\bsm:max-h-\[440px\]/);
+  assert.ok(!sahifa.includes('"overflow-y-hidden"'));
+});
