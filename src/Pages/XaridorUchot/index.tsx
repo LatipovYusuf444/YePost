@@ -112,6 +112,12 @@ export default function XaridorUchot({ faolTab = "xaridorlar" }: Props) {
     } finally { setAmalBajarilmoqda(false); }
   }
 
+  // Belgilanganlar o'chirilgach (yoki 404 da) faqat mijozlar ro'yxati qayta yuklanadi.
+  async function xaridorlarniYangilash() {
+    try { setXaridorlar((await mijozlarApi.royxat()).map(mijozniUiGa)); }
+    catch (error) { setXatolik(getApiErrorMessage(error)); }
+  }
+
   async function xaridorOchirish(id: string) {
     setAmalBajarilmoqda(true); setXatolik("");
     try { await mijozlarApi.ochirish(id); setXaridorlar((items) => items.filter((item) => item.id !== id)); return true; }
@@ -191,7 +197,7 @@ export default function XaridorUchot({ faolTab = "xaridorlar" }: Props) {
       {(yuklanmoqda || amalBajarilmoqda) && <div className="flex items-center justify-center gap-2 rounded-2xl bg-white p-3 text-sm font-bold text-slate-500"><LoaderCircle className="animate-spin" size={18}/>{yuklanmoqda ? t("root.loading") : t("root.saving")}</div>}
 
       {!yuklanmoqda && faolTab === "xaridorlar" && (
-        <Xaridorlar xaridorlar={xaridorlar} kompaniyalar={kompaniyalar} savdolar={savdolar} onSaqlash={xaridorSaqlash} onOchirish={xaridorOchirish}/>
+        <Xaridorlar xaridorlar={xaridorlar} kompaniyalar={kompaniyalar} savdolar={savdolar} onSaqlash={xaridorSaqlash} onOchirish={xaridorOchirish} onYangilash={xaridorlarniYangilash}/>
       )}
       {!yuklanmoqda && faolTab === "kompaniyalar" && (
         <Kompaniyalar kompaniyalar={kompaniyalar} xaridorlar={xaridorlar} savdolar={savdolar} onSaqlash={kompaniyaSaqlash} onOchirish={kompaniyaOchirish}/>

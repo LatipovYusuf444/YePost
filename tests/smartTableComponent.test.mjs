@@ -146,6 +146,7 @@ test('shared report reset preserves pagination, row callbacks, delete permission
   const Report = compile('../src/Pages/HisobotUchot/KengaytiriladiganJadval.tsx', {
     '@/Components/common/smart-table/SmartTable': { __esModule: true, default: SmartTable },
     '@/Components/common/TablePagination': { __esModule: true, default: ({ page, onPageChange }) => h('div', {}, h('output', { 'aria-label': 'Page' }, page), h('button', { onClick: () => onPageChange(2) }, 'Next page')) },
+    '@/Components/common/KopTanlov': { TanlashKatagi: () => null },
   }).default;
   const records = Object.freeze(Array.from({ length: 12 }, (_, index) => Object.freeze({ id: `record-${index}`, amount: index + 1 })));
   const rowsClicked = [], deleted = [];

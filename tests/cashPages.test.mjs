@@ -95,6 +95,10 @@ test('customer cards open the report, filter/sort debt per currency and keep pay
     '@/api/integrationsApi': { integratsiyalarApi: { telegramOlish: async () => null } },
     '@/lib/telegramXabarnoma': { MIJOZ_TELEGRAM_FILTRLARI: [], botSozlanganmi: () => false, telegramUstuniKorinadimi: () => false, mijozTelegramSonlari: () => ({}), mijozTelegramFiltridanOtadimi: () => true },
     './yordamchilar': { xaridorNomi: x => x.ism, asosiyTelefon: () => '', kompaniyaNomi: () => '', sanaFormat: () => '' },
+    // Belgilanganlarni o'chirish (20.11): bu sinovda oddiy foydalanuvchi — belgilash ko'rinmaydi.
+    '@/store/authProfileStore': { useAuthProfileStore: selector => selector({ profil: { role: 'KASSIR' } }) },
+    '@/lib/roles': { foydalanuvchiAdminmi: () => false, rolniNormallashtirish: value => String(value ?? '').toUpperCase() },
+    '@/hooks/useKopOchirish': { useKopOchirish: () => ({ tanlangan: new Set(), band: false, kesildi: false, ozgartirish() {}, tozalash() {}, ochirish: async () => {}, holat: () => false }) },
   }, { xaridorlar: customers, kompaniyalar: [], savdolar: [] });
   let tree = await screen.settle();
   const cards = () => nodes(tree).filter(node => node.type === 'article');

@@ -142,5 +142,18 @@
   },
   "phone": {
     "countryCode": "Davlat kodi"
+  },
+  "bulkDelete": {
+    "panelAria": "Belgilangan yozuvlar",
+    "selectAll": "Hammasini tanlash",
+    "selectAllAria": "Ko'rinib turgan {{count}} ta yozuvni belgilash",
+    "selectAllPageAria": "Sahifadagi hamma qatorlarni belgilash",
+    "rowAria": "{{name}} — belgilash",
+    "selected": "ta tanlandi",
+    "clear": "Bekor qilish",
+    "delete": "O'chirish ({{count}})",
+    "limit": "Bir martada ko'pi bilan {{count}} ta yozuv belgilanadi",
+    "deleted": "{{count}} ta yozuv o'chirildi",
+    "notFound": "{{count}} ta yozuv topilmadi — boshqa oynada o'chirilgan bo'lishi mumkin. Hech narsa o'chirilmadi, ro'yxat yangilandi — qaytadan urinib ko'ring."
   }
 }

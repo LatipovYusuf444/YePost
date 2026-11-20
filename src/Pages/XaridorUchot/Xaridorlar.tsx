@@ -29,6 +29,11 @@ import XaridorTafsilotlariModal from "./XaridorTafsilotlariModal";
 import type { Xaridor, XaridorKompaniyasi } from "./types";
 import { asosiyTelefon, kompaniyaNomi, sanaFormat, xaridorNomi } from "./yordamchilar";
 import { useYagonaValyuta } from "@/lib/valyuta";
+import { mijozlarApi } from "@/api/partnersApi";
+import { useAuthProfileStore } from "@/store/authProfileStore";
+import { foydalanuvchiAdminmi } from "@/lib/roles";
+import { useKopOchirish } from "@/hooks/useKopOchirish";
+import { KopTanlovPaneli, TanlashKatagi } from "@/Components/common/KopTanlov";
 
 type Props = {
   xaridorlar: Xaridor[];
@@ -36,10 +41,15 @@ type Props = {
   savdolar: import("./types").XaridorSavdosi[];
   onSaqlash: (xaridor: Xaridor) => Promise<Xaridor | null>;
   onOchirish: (id: string) => Promise<boolean>;
+  /** Ro'yxatni serverdan qayta yuklash (belgilanganlar o'chirilgach). */
+  onYangilash?: () => Promise<void>;
 };
 
-export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqlash, onOchirish }: Props) {
+export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqlash, onOchirish, onYangilash }: Props) {
   const { t } = useTranslation("xaridor_uchot");
+  const { t: tc } = useTranslation("common");
+  // Belgilanganlarni birdaniga o'chirish faqat ADMIN va DIREKTOR uchun (backend boshqalarga 403).
+  const kopOchirishMumkin = foydalanuvchiAdminmi(useAuthProfileStore((holat) => holat.profil));
   // Bir valyutali rejimda qarz bo'yicha saralashda faqat asosiy valyuta varianti.
   const yagonaValyuta = useYagonaValyuta();
   const [qidiruv, setQidiruv] = useState("");
@@ -171,6 +181,14 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
     return natija;
   }, [faolFiltr, kompaniyalar, qidiruv, telegramHolati, xaridorlar, hisobHolati, hisoblar, faqatQarzdorlar, qarzTartibi]);
 
+  const royxatIds = useMemo(() => royxat.map((xaridor) => xaridor.id), [royxat]);
+  const kop = useKopOchirish({
+    mavjudIds: royxatIds,
+    api: mijozlarApi.kopOchirish,
+    yangilash: () => onYangilash?.(),
+    tasdiqMatni: (soni) => t("bulkDelete.confirm", { count: soni }),
+  });
+
   function modalniOchish(xaridor?: Xaridor) {
     setTahrirXaridor(xaridor ?? null);
     setModalOchiq(true);
@@ -255,6 +273,17 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
       </div>
       )}
 
+      {kopOchirishMumkin && (
+        <KopTanlovPaneli
+          soni={kop.tanlangan.size}
+          hammasi={korinish === "karta" ? { holat: kop.holat(royxatIds), korinadiganSoni: royxatIds.length, onChange: (belgilansin) => kop.ozgartirish(royxatIds, belgilansin) } : undefined}
+          onTozalash={kop.tozalash}
+          onOchirish={() => void kop.ochirish()}
+          ochirilmoqda={kop.band}
+          chegaraXabari={kop.kesildi}
+        />
+      )}
+
       {korinish === "jadval" && (
         <KengaytiriladiganJadval tableId="XaridorUchot/Xaridorlar/kengaytiriladiganjadval-1"
           ustunlar={ustunlar}
@@ -263,6 +292,14 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
           sozlamaBor
           onQatorBosildi={setTafsilotXaridor}
           onQatorOchirish={ochirish}
+          tanlash={kopOchirishMumkin ? {
+            holat: kop.holat,
+            tanlangan: kop.tanlangan,
+            onChange: kop.ozgartirish,
+            hammasiAria: tc("bulkDelete.selectAllPageAria"),
+            qatorAria: (xaridor) => tc("bulkDelete.rowAria", { name: xaridorNomi(xaridor) }),
+            disabled: kop.band,
+          } : undefined}
         />
       )}
 
@@ -272,11 +309,22 @@ export default function Xaridorlar({ xaridorlar, kompaniyalar, savdolar, onSaqla
           <article
             key={xaridor.id}
             onClick={() => asosiyHisobniOchish(xaridor)}
-            className="cursor-pointer rounded-[24px] border border-orange-100 bg-white p-5 shadow-sm transition hover:border-orange-200 hover:shadow-md"
+            data-tanlangan={kop.tanlangan.has(xaridor.id) || undefined}
+            className={`cursor-pointer rounded-[24px] border bg-white p-5 shadow-sm transition hover:shadow-md ${kop.tanlangan.has(xaridor.id) ? "border-red-200 ring-2 ring-red-100" : "border-orange-100 hover:border-orange-200"}`}
           >
             <div className="flex items-start justify-between gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-500">
-                <UserRound size={22} />
+              <div className="flex items-center gap-3">
+                {kopOchirishMumkin && (
+                  <TanlashKatagi
+                    holat={kop.tanlangan.has(xaridor.id)}
+                    onChange={(belgilansin) => kop.ozgartirish([xaridor.id], belgilansin)}
+                    ariaLabel={tc("bulkDelete.rowAria", { name: xaridorNomi(xaridor) })}
+                    disabled={kop.band}
+                  />
+                )}
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-500">
+                  <UserRound size={22} />
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <button type="button" aria-label={t("hisob.details")} title={t("hisob.details")} onClick={(event) => { event.stopPropagation(); setTafsilotXaridor(xaridor); }} className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100"><Info size={16} /></button>

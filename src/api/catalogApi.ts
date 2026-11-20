@@ -5,6 +5,7 @@ import { authTokenlarniOlish } from "@/lib/authTokenStorage";
 import { birliklarniMoslash, birliklarTanasi, type TovarBirligi } from "@/lib/kopBirlik";
 import { apiTiliniOlish } from "./apiLanguage";
 import { malumotnomaniOlish, ozgartirishdanKeyinTozalash } from "@/lib/malumotnomaKeshi";
+import { kopOchirishTanasi } from "@/lib/kopTanlov";
 import type {
   Kategoriya,
   KategoriyaMalumoti,
@@ -136,6 +137,9 @@ export const mahsulotlarApi = {
     ),
   ochirish: async (id: string) =>
     apiData((await apiClient.delete<Mahsulot | ApiEnvelope<Mahsulot>>(`/catalog/products/${id}`)).data),
+  // Belgilanganlarni birdaniga o'chirish (ADMIN, DIRECTOR): 1–500 ta id, modifikatsiyalari ham o'chadi; 404 da hech narsa o'chmaydi.
+  kopOchirish: async (ids: readonly string[]) =>
+    (await apiClient.post<unknown>("/catalog/products/bulk-delete", kopOchirishTanasi(ids), { xatoniYashirish: true })).data,
   importQilish: async (file: File, dryRun = false) => {
     const formData = new FormData();
     formData.append("file", file);

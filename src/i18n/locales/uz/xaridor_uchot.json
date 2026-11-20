@@ -613,5 +613,8 @@
       "yes": "Ha, bekor qilish",
       "working": "Bekor qilinmoqda..."
     }
+  },
+  "bulkDelete": {
+    "confirm": "{{count}} ta xaridor o'chiriladi. Davom etasizmi?"
   }
 }

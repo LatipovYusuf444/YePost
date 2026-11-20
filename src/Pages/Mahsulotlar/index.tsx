@@ -1,4 +1,6 @@
 import SmartTable from "@/Components/common/smart-table/SmartTable";
+import { KopTanlovPaneli, TanlashKatagi } from "@/Components/common/KopTanlov";
+import { useKopOchirish } from "@/hooks/useKopOchirish";
 import ProductStockSummary from "./ProductStockSummary";
 import AppSelect from "@/Components/ui/AppSelect";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
@@ -277,6 +279,15 @@ export default function Mahsulotlar() {
   const pageCount = Math.max(1, Math.ceil(mahsulotlar.length / pageSize));
   const currentPage = Math.min(page, pageCount);
   const paginatedMahsulotlar = mahsulotlar.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  // Belgilanganlarni birdaniga o'chirish (ADMIN, DIREKTOR): "hammasini tanlash" — ekranda ko'rinib turgan qatorlar.
+  const mahsulotIds = useMemo(() => mahsulotlar.map((item) => item.id), [mahsulotlar]);
+  const sahifaIds = paginatedMahsulotlar.map((item) => item.id);
+  const kop = useKopOchirish({
+    mavjudIds: mahsulotIds,
+    api: mahsulotlarApi.kopOchirish,
+    yangilash: yuklash,
+    tasdiqMatni: (soni) => t("bulkDelete.confirm", { count: soni }),
+  });
 
   async function oddiyOchirish(id: string) {
     if (!(await tasdiqSorash(t("confirm.deleteCategory"), { ochirish: true })).rozi) return;
@@ -310,6 +321,7 @@ export default function Mahsulotlar() {
   const excelAmallariMumkin = rol === "ADMIN" || rol === "DIREKTOR";
   // Tovar birliklarini faqat admin va direktor o'zgartira oladi (backend PUT /catalog/products/:id/units).
   const birlikTahrirlashMumkin = excelAmallariMumkin;
+  const kopOchirishMumkin = excelAmallariMumkin;
 
   async function importShabloniniYuklash() {
     if (excelAmali) return;
@@ -422,10 +434,18 @@ export default function Mahsulotlar() {
             <button disabled={store.kategoriyalar.length===0||store.birliklar.length===0} onClick={()=>setMahsulotModal("new")} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 font-black text-white disabled:opacity-50"><Plus size={17}/>{t("toolbar.addProduct")}</button>
           </div>
           {(store.kategoriyalar.length===0||store.birliklar.length===0)&&<div className="rounded-2xl bg-amber-50 p-4 text-sm font-bold text-amber-700">{t("warnings.needCategoryAndUnit")}</div>}
+          {kopOchirishMumkin&&<KopTanlovPaneli
+            soni={kop.tanlangan.size}
+            hammasi={korinish==="kartochka"?{holat:kop.holat(mahsulotIds),korinadiganSoni:mahsulotIds.length,onChange:(belgilansin)=>kop.ozgartirish(mahsulotIds,belgilansin)}:undefined}
+            onTozalash={kop.tozalash}
+            onOchirish={()=>void kop.ochirish()}
+            ochirilmoqda={kop.band}
+            chegaraXabari={kop.kesildi}
+          />}
           {korinish==="kartochka" ? (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {mahsulotlar.map(item=><article key={item.id} className="rounded-[26px] border border-orange-100 bg-white p-5 shadow-sm">
-              <div className="flex justify-between"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-600"><Boxes size={22}/></div><span className={`rounded-full px-3 py-1 text-xs font-bold ${item.isActive?"bg-emerald-50 text-emerald-600":"bg-gray-100 text-gray-500"}`}>{item.isActive?t("status.active"):t("status.inactive")}</span></div>
+            {mahsulotlar.map(item=><article key={item.id} data-tanlangan={kop.tanlangan.has(item.id)||undefined} className={`rounded-[26px] border bg-white p-5 shadow-sm ${kop.tanlangan.has(item.id)?"border-red-200 ring-2 ring-red-100":"border-orange-100"}`}>
+              <div className="flex justify-between"><div className="flex items-center gap-3">{kopOchirishMumkin&&<TanlashKatagi holat={kop.tanlangan.has(item.id)} onChange={(belgilansin)=>kop.ozgartirish([item.id],belgilansin)} ariaLabel={t("common:bulkDelete.rowAria",{name:item.name})} disabled={kop.band}/>}<div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-600"><Boxes size={22}/></div></div><span className={`rounded-full px-3 py-1 text-xs font-bold ${item.isActive?"bg-emerald-50 text-emerald-600":"bg-gray-100 text-gray-500"}`}>{item.isActive?t("status.active"):t("status.inactive")}</span></div>
               <h2 className="mt-4 text-xl font-black">{item.name}</h2>
               <p className="mt-1 text-sm text-gray-500">{item.category?.name??store.kategoriyalar.find(x=>x.id===item.categoryId)?.name??t("fallback.category")} В· {item.unit?.shortName??item.unit?.name??store.birliklar.find(x=>x.id===item.unitId)?.shortName??t("fallback.unit")}</p>
               <p className="mt-2 text-xs text-gray-400">{t("table.barcode")}: {item.barcode||t("notEntered")} В· {t("table.article")}: {item.article||t("notEntered")}</p>
@@ -466,6 +486,7 @@ export default function Mahsulotlar() {
                 <SmartTable tableId="Mahsulotlar/index/table-1" replaceColumnControls><table className="w-max min-w-full whitespace-nowrap text-left text-sm">
                   <thead className="bg-slate-50 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
                     <tr>
+                      {kopOchirishMumkin&&<th data-column-id="tanlash" className="w-12 py-4 pl-5 pr-1"><TanlashKatagi holat={kop.holat(sahifaIds)} onChange={(belgilansin)=>kop.ozgartirish(sahifaIds,belgilansin)} ariaLabel={t("common:bulkDelete.selectAllPageAria")} disabled={!sahifaIds.length||kop.band}/></th>}
                       <th data-column-id="h1" className="px-5 py-4">{t("table.index")}</th>
                       <th data-column-id="h2" className="px-5 py-4">{t("table.product")}</th>
                       <th data-column-id="h3" className="px-5 py-4">{t("table.category")}</th>
@@ -490,8 +511,10 @@ export default function Mahsulotlar() {
                           mahsulotniKorish(item);
                         }}
                         tabIndex={0}
-                        className="group cursor-pointer transition hover:bg-orange-50/40 focus-visible:bg-orange-50/60 focus-visible:outline-none"
+                        data-tanlangan={kop.tanlangan.has(item.id)||undefined}
+                        className={`group cursor-pointer transition hover:bg-orange-50/40 focus-visible:bg-orange-50/60 focus-visible:outline-none ${kop.tanlangan.has(item.id)?"bg-red-50/40":""}`}
                       >
+                        {kopOchirishMumkin&&<td className="w-12 py-4 pl-5 pr-1" onClick={(event)=>event.stopPropagation()}><TanlashKatagi holat={kop.tanlangan.has(item.id)} onChange={(belgilansin)=>kop.ozgartirish([item.id],belgilansin)} ariaLabel={t("common:bulkDelete.rowAria",{name:item.name})} disabled={kop.band}/></td>}
                         <td className="px-5 py-4 font-bold text-gray-500">{(currentPage - 1) * pageSize + index + 1}</td>
                         <td className="px-5 py-4">
                           <span className="inline-block whitespace-nowrap rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 font-bold leading-5 text-blue-800">{item.name}</span>

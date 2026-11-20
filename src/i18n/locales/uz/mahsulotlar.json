@@ -354,5 +354,8 @@
       "UZS": "Narxni so'mda qayta kiriting",
       "USD": "Narxni dollarda qayta kiriting"
     }
+  },
+  "bulkDelete": {
+    "confirm": "{{count}} ta mahsulot variantlari bilan birga o'chiriladi. Davom etasizmi?"
   }
 }

@@ -50,7 +50,7 @@ test('API yo\'llari, oynalar va xato matnlari', () => {
   assert.match(manba('src/Pages/XaridorUchot/YetkazibBoshlangichQarzTab.tsx'), /qarz\.direction === "CREDIT"/);
   // Avanslar ro'yxati faqat admin/direktorga so'raladi; umumiy toast chiqmaydi (oyna o'z xabarini beradi).
   assert.match(manba('src/Pages/XaridorUchot/MijozAvanslari.tsx'), /if \(!boshqaradi\) return;/);
-  assert.match(manba('src/api/axios.ts'), /"\/opening-credits"\]/);
+  assert.match(manba('src/api/axios.ts'), /const TOAST_ISTISNOLARI = \[[^\]]*"\/opening-credits"/);
   assert.match(xatoKodiMatni('errors.wallet.insufficient_balance', '/partners/customers/c1/opening-credits/a1/cancel', 'uz'), /Avansni bekor qilib bo'lmaydi/);
   assert.ok(xatoKodiMatni('errors.partners.customer_opening_credit_not_found', '/x', 'ru'));
   for (const til of ['uz', 'ru']) {

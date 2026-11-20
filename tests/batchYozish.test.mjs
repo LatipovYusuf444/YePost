@@ -31,6 +31,7 @@ function katalogApi(calls) {
     '@/lib/kopBirlik': { birliklarniMoslash: value => value, birliklarTanasi: value => value },
     './apiLanguage': { apiTiliniOlish: () => 'uz' },
     '@/lib/malumotnomaKeshi': { malumotnomaniOlish: (guruh, nom, yuklash) => yuklash(), ozgartirishdanKeyinTozalash: (guruh, amal) => amal() },
+    '@/lib/kopTanlov': { kopOchirishTanasi: ids => ({ ids: [...new Set(ids)] }) },
   });
 }
 

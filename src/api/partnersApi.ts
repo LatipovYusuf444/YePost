@@ -1,5 +1,6 @@
 import apiClient from "./axios";
 import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
+import { kopOchirishTanasi } from "../lib/kopTanlov";
 import type {
   Mijoz,
   MijozKompaniyasi,
@@ -24,6 +25,10 @@ export const mijozlarApi = {
     apiData((await apiClient.patch<Mijoz | ApiEnvelope<Mijoz>>(`/partners/customers/${id}`, data)).data),
   ochirish: async (id: string) =>
     apiData((await apiClient.delete<Mijoz | ApiEnvelope<Mijoz>>(`/partners/customers/${id}`)).data),
+  // Belgilanganlarni birdaniga o'chirish (ADMIN, DIRECTOR): 1–500 ta id; 404 da hech narsa o'chmaydi, tanada `ids` — topilmaganlar.
+  // Xato toasti chiqmaydi — sahifa o'zi tushunarli xabar beradi va ro'yxatni yangilaydi.
+  kopOchirish: async (ids: readonly string[]) =>
+    (await apiClient.post<unknown>("/partners/customers/bulk-delete", kopOchirishTanasi(ids), { xatoniYashirish: true })).data,
 };
 
 // Mijozlar sahifasi: mijoz kompaniyalari to'liq CRUD.
