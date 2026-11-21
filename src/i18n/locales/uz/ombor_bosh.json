@@ -128,7 +128,9 @@
       "barcodePlaceholder": "Shtrix kod",
       "pricePlaceholder": "0",
       "selectWarehouseOption": "Omborni tanlang",
-      "deleteRowAria": "Qatorni o'chirish"
+      "deleteRowAria": "Qatorni o'chirish",
+      "sumHeader": "Summa",
+      "sumTitle": "Tan narxi × soni"
     },
     "deleteSelected": "Belgilanganlarni o'chirish ({{count}})",
     "totalLabel": "Umumiy summa",

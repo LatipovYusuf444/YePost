@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { klaviaturaYonalishi } from "@/lib/royxatKlaviaturasi";
 
 export type TanlovVarianti = { value: string; label: string };
 
@@ -9,6 +10,8 @@ const tugmaKlass =
 
 // Native <AppSelect> o'rniga — ochilgan ro'yxati ham yumaloq (dizaynga mos) tanlov.
 // qidiruv=true bo'lsa — ro'yxat tepasida qidiruv maydoni chiqadi (yozib topiladi).
+// Klaviatura (savdodagi mijoz tanlovidek): ↓/↑/Enter/Bo'shliq — ochadi; ochiqda ↑/↓ — yurish, Home/End — boshi/oxiri,
+// Enter — tanlash, Esc — yopish (fokus tugmaga qaytadi), Tab — yopib keyingi maydonga o'tadi.
 export default function Tanlov({
   qiymat,
   variantlar,
@@ -25,6 +28,10 @@ export default function Tanlov({
   const { t } = useTranslation("common");
   const [ochiq, setOchiq] = useState(false);
   const [soz, setSoz] = useState("");
+  const [faol, setFaol] = useState(-1);
+  const tugmaRef = useRef<HTMLButtonElement>(null);
+  const royxatRef = useRef<HTMLDivElement>(null);
+  const royxatId = useId();
   const joriy = variantlar.find((v) => v.value === qiymat) ?? null;
 
   const korinadigan = useMemo(() => {
@@ -33,14 +40,78 @@ export default function Tanlov({
     return variantlar.filter((v) => v.label.toLowerCase().includes(q));
   }, [variantlar, soz]);
 
-  function yopish() {
+  // Belgilangan variant ko'rinib tursin (uzun ro'yxatda ↓ bosilganda pastga aylanadi).
+  useEffect(() => {
+    if (!ochiq || faol < 0) return;
+    royxatRef.current?.querySelector<HTMLElement>(`[data-tanlov-indeks="${faol}"]`)?.scrollIntoView({ block: "nearest" });
+  }, [ochiq, faol]);
+
+  function ochish() {
+    setSoz("");
+    const tanlangan = variantlar.findIndex((v) => v.value === qiymat);
+    setFaol(tanlangan >= 0 ? tanlangan : variantlar.length ? 0 : -1);
+    setOchiq(true);
+  }
+
+  function yopish(fokusQaytsin = false) {
     setOchiq(false);
     setSoz("");
+    setFaol(-1);
+    if (fokusQaytsin) tugmaRef.current?.focus();
   }
+
+  function tanlash(value: string) {
+    onChange(value);
+    yopish(true);
+  }
+
+  function klaviatura(event: KeyboardEvent<HTMLElement>) {
+    if (event.nativeEvent.isComposing) return;
+    if (!ochiq) {
+      if (["ArrowDown", "ArrowUp", "Enter", " "].includes(event.key) && event.currentTarget === tugmaRef.current) {
+        event.preventDefault();
+        ochish();
+      }
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      yopish(true);
+      return;
+    }
+    if (event.key === "Tab") {
+      yopish();
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const variant = korinadigan[faol];
+      if (variant) tanlash(variant.value);
+      return;
+    }
+    const keyingi = klaviaturaYonalishi(event.key, faol, korinadigan.length);
+    if (keyingi !== null) {
+      event.preventDefault();
+      setFaol(keyingi);
+    }
+  }
+
+  const faolId = ochiq && faol >= 0 && korinadigan[faol] ? `${royxatId}-${faol}` : undefined;
 
   return (
     <div className="relative">
-      <button type="button" onClick={() => setOchiq((oldingi) => !oldingi)} className={tugmaKlass}>
+      <button
+        ref={tugmaRef}
+        type="button"
+        onClick={() => (ochiq ? yopish() : ochish())}
+        onKeyDown={klaviatura}
+        aria-haspopup="listbox"
+        aria-expanded={ochiq}
+        aria-controls={ochiq ? royxatId : undefined}
+        aria-activedescendant={qidiruv ? undefined : faolId}
+        className={tugmaKlass}
+      >
         <span className={`truncate ${joriy ? "text-slate-800" : "text-slate-400"}`}>
           {joriy?.label ?? placeholder ?? t("select.placeholder")}
         </span>
@@ -54,8 +125,9 @@ export default function Tanlov({
         <>
           <button
             type="button"
+            tabIndex={-1}
             aria-label={t("actions.close")}
-            onClick={yopish}
+            onClick={() => yopish()}
             className="fixed inset-0 z-40 cursor-default"
           />
           <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_50px_rgba(15,23,42,.16)]">
@@ -65,29 +137,50 @@ export default function Tanlov({
                 <input
                   autoFocus
                   value={soz}
-                  onChange={(e) => setSoz(e.target.value)}
+                  onChange={(e) => {
+                    setSoz(e.target.value);
+                    // Yozilganda birinchi mos variant belgilanadi — Enter darrov tanlaydi.
+                    setFaol(0);
+                  }}
+                  onKeyDown={klaviatura}
+                  role="combobox"
+                  aria-expanded
+                  aria-controls={royxatId}
+                  aria-activedescendant={faolId}
+                  aria-autocomplete="list"
                   placeholder={t("select.searchPlaceholder")}
                   className="h-9 min-w-0 flex-1 text-sm font-semibold outline-none"
                 />
               </div>
             )}
 
-            <div className="max-h-52 overflow-y-auto">
-              {korinadigan.map((v) => {
+            <div ref={royxatRef} id={royxatId} role="listbox" className="max-h-52 overflow-y-auto">
+              {korinadigan.map((v, indeks) => {
                 const tanlangan = v.value === qiymat;
+                const belgilangan = indeks === faol;
                 return (
                   <button
                     key={v.value}
+                    id={`${royxatId}-${indeks}`}
                     type="button"
-                    onClick={() => {
-                      onChange(v.value);
-                      yopish();
+                    role="option"
+                    tabIndex={-1}
+                    aria-selected={tanlangan}
+                    data-tanlov-indeks={indeks}
+                    data-faol={belgilangan || undefined}
+                    // Sichqoncha bilan tanlashda fokus qidiruvdan ketmasin; sichqoncha harakati belgini ham siljitadi.
+                    onMouseDown={(event) => event.preventDefault()}
+                    onMouseMove={() => {
+                      if (!belgilangan) setFaol(indeks);
                     }}
+                    onClick={() => tanlash(v.value)}
                     className={`flex min-h-9 w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${
                       tanlangan
                         ? "bg-orange-50 text-[#2563EB]"
-                        : "text-slate-600 hover:bg-orange-50 hover:text-[#2563EB]"
-                    }`}
+                        : belgilangan
+                          ? "bg-slate-100 text-slate-900"
+                          : "text-slate-600 hover:bg-orange-50 hover:text-[#2563EB]"
+                    } ${belgilangan ? "ring-2 ring-inset ring-blue-200" : ""}`}
                   >
                     <span className="truncate">{v.label}</span>
                     {tanlangan && <Check size={15} className="shrink-0" />}

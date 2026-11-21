@@ -72,10 +72,23 @@ test('2-bag: Yangi sotuvda "Katalog" tugmasi va oyna ulangan', () => {
 
 test('3-bag: kirim yaratish jadvali SmartTable ("Ustunlar"), Mahsulot va Soni majburiy; "№" to\'g\'ri', () => {
   const kod = oqi('Pages/Ombor/YangiKirimModal.tsx');
-  assert.match(kod, /<SmartTable tableId="Ombor\/YangiKirimModal\/tovarlar" replaceColumnControls>/);
+  // 21.11: kalit "-v2" — sotuv/ulgurji narx yashirin standart avval sozlama saqlaganlarga ham qo'llanadi.
+  assert.match(kod, /<SmartTable tableId="Ombor\/YangiKirimModal\/tovarlar-v2" replaceColumnControls>/);
   assert.match(kod, /<th data-column-id="mahsulot" data-required/);
   assert.match(kod, /<th data-column-id="soni" data-required/);
   assert.match(kod, /<th data-column-id="ulgurji"/);
+  // Sotuv va ulgurji narx standartda yashirin, oxirida qator summasi (tan narxi × soni).
+  assert.match(kod, /<th data-column-id="chakana" data-default-hidden/);
+  assert.match(kod, /<th data-column-id="ulgurji" data-default-hidden/);
+  assert.match(kod, /<th data-column-id="summa" className="[^"]*text-right">\{t\("yangiKirim\.table\.sumHeader"\)\}<\/th>/);
+  assert.ok(kod.includes('const summa = item.quantity * item.price;'));
+  assert.ok(kod.includes('{summa ? summaMatni(summa) : "—"}'));
+  for (const l of ['uz', 'ru']) assert.ok(JSON.parse(oqi(`i18n/locales/${l}/ombor_bosh.json`)).yangiKirim.table.sumHeader, l);
+  // Jadval ekranga sig'ishi uchun: ustun kengligini sarlavha beradi, inputlar uni o'z standart kengligi bilan cho'zmaydi.
+  for (const ustun of ['shtrix', 'tannarx', 'soni', 'ombor', 'summa']) assert.match(kod, new RegExp(`<th data-column-id="${ustun}"[^>]*className="w-\\[\\d+px\\]`), ustun);
+  assert.ok((kod.match(/size=\{1\}/g) ?? []).length >= 6);
+  assert.ok(kod.includes('const USTUN_KENGLIGIDA = { width: 0, minWidth: "100%" } as const;'));
+  assert.ok(kod.includes('ixcham') && oqi('Pages/Ombor/MahsulotTanlov.tsx').includes('size={ixcham ? 1 : undefined}'));
   for (const l of ['uz', 'ru']) {
     const json = JSON.parse(oqi(`i18n/locales/${l}/ombor_bosh.json`));
     assert.equal(json.yangiKirim.table.numberHeader, '№');

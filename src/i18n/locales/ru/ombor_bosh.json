@@ -128,7 +128,9 @@
       "barcodePlaceholder": "Штрих-код",
       "pricePlaceholder": "0",
       "selectWarehouseOption": "Выберите склад",
-      "deleteRowAria": "Удалить строку"
+      "deleteRowAria": "Удалить строку",
+      "sumHeader": "Сумма",
+      "sumTitle": "Себестоимость × количество"
     },
     "deleteSelected": "Удалить выбранные ({{count}})",
     "totalLabel": "Общая сумма",

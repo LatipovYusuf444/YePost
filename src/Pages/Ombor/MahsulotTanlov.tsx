@@ -26,6 +26,8 @@ type Props = {
   // Har bir musbat o'zgarish maydonga fokus beradi va ro'yxatni ochadi (masalan, yangi qator qo'shilganda).
   ochishSorovi?: number;
   ariaLabel?: string;
+  // Jadval katagida: maydon ustunni o'z standart kengligi bilan cho'zmaydi (kenglikni ustun beradi).
+  ixcham?: boolean;
 };
 
 // Mahsulot tanlash (AppSelect o'rniga): yozib qidiriladi, ↑/↓ bilan yuriladi, Enter — belgilangan mahsulotni tanlaydi,
@@ -40,6 +42,7 @@ export default function MahsulotTanlov({
   disabled = false,
   ochishSorovi = 0,
   ariaLabel,
+  ixcham = false,
 }: Props) {
   const { t } = useTranslation("ombor_kichik");
   const royxatId = useId();
@@ -167,6 +170,7 @@ export default function MahsulotTanlov({
     <div className="relative min-w-0">
       <input
         ref={inputRef}
+        size={ixcham ? 1 : undefined}
         value={qidiruv ?? tanlanganMatn}
         disabled={disabled}
         placeholder={placeholder}

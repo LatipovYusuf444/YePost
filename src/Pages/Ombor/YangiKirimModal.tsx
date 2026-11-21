@@ -1,6 +1,7 @@
 import AppSelect from "@/Components/ui/AppSelect";
 import SummaMaydoni from "@/Components/common/SummaMaydoni";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { klaviaturaYonalishi } from "@/lib/royxatKlaviaturasi";
 import {
   Barcode,
   Check,
@@ -16,7 +17,6 @@ import {
   Square,
   Trash2,
   UserPlus,
-  Warehouse,
   X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -152,6 +152,9 @@ function yangiQator(warehouseId = ""): Qator {
 
 const input =
   "h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70";
+// type="number" maydonlarda `size` ishlamaydi: kenglik 0 + min 100% — maydon ustunni cho'zmaydi, lekin katakni to'liq egallaydi.
+const USTUN_KENGLIGIDA = { width: 0, minWidth: "100%" } as const;
+
 const inputSm =
   "h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70";
 
@@ -180,6 +183,8 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
   const [supplierQuery, setSupplierQuery] = useState(() => (tahrir ? kirimYetkazibBeruvchiNomi(tahrir, store.yetkazibBeruvchilar) : ""));
   const [supplierId, setSupplierId] = useState(tahrir?.supplierId ?? "");
   const [supplierOchiq, setSupplierOchiq] = useState(false);
+  // Yetkazib beruvchi ro'yxatida klaviatura bilan belgilangan qator (oxirgisi — "Yangi qo'shish", bo'lsa).
+  const [supplierFaol, setSupplierFaol] = useState(-1);
   const supplierRef = useRef<HTMLDivElement | null>(null);
   const [responsibleId, setResponsibleId] = useState(tahrir?.responsibleId ?? "");
   const joriyProfil = useAuthProfileStore((state) => state.profil);
@@ -349,13 +354,27 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
     yangilash(row.id, { [maydon]: asl });
   }
 
-  function jamiMatni() {
-    if (jami === null) return "—";
-    // Jami `jami` hisobida hujjat valyutasida: bir valyutali rejimda shu valyuta (o'girilmaydi), aks holda so'm.
+  // Summa (hujjat valyutasida hisoblangan) ko'rinishi: bir valyutali rejimda shu valyuta (o'girilmaydi), aks holda so'm yoki tanlangan valyuta.
+  function summaMatni(summa: number | null) {
+    if (summa === null) return "—";
     const valyuta = yagona ?? (kursBor ? narxValyutasi : "UZS");
-    const qiymat = kirimNarxiniOgirish(jami, yagona ?? asosiyValyuta(), valyuta, amaldagiKurs);
+    const qiymat = kirimNarxiniOgirish(summa, yagona ?? asosiyValyuta(), valyuta, amaldagiKurs);
     const matn = qiymat.toLocaleString("uz-UZ", { maximumFractionDigits: 2 });
     return valyuta === "USD" ? `$${matn}` : `${matn} so'm`;
+  }
+  function jamiMatni() {
+    return summaMatni(jami);
+  }
+  // Qator summasi = tan narxi × soni (birlik va valyuta "Umumiy summa" bilan bir xil hisoblanadi); mahsulot tanlanmagan bo'lsa — null.
+  function qatorSummasi(row: Qator) {
+    if (!row.modificationId) return null;
+    try {
+      const item = kirimElementiniYigish({ ...row, birlik: birlikTopish(row.birliklar, row.birlikId) }, amaldagiKurs, yagona ?? asosiyValyuta());
+      const summa = item.quantity * item.price;
+      return Number.isFinite(summa) ? summa : null;
+    } catch {
+      return null;
+    }
   }
   const bugun = new Intl.DateTimeFormat("uz-UZ", {
     day: "2-digit",
@@ -390,7 +409,56 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
     setSupplierId(id);
     setSupplierQuery(name);
     setSupplierOchiq(false);
+    setSupplierFaol(-1);
   }
+
+  // Ro'yxatdagi tanlanadigan qatorlar soni: mos yetkazib beruvchilar + (yozilgan nom yangi bo'lsa) "Qo'shish" qatori.
+  const supplierQatorSoni = supplierMoslari.length + (supplierQuery.trim() && !aynanMosSupplier ? 1 : 0);
+
+  // Savdodagi mijoz tanlovidek: ↓/↑ — yurish (yopiq bo'lsa ochadi), Enter — tanlash yoki yangisini qo'shish, Esc — yopish, Tab — yopib o'tish.
+  function supplierKlaviaturasi(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.nativeEvent.isComposing) return;
+    if (event.key === "Escape") {
+      if (!supplierOchiq) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setSupplierOchiq(false);
+      setSupplierFaol(-1);
+      return;
+    }
+    if (event.key === "Tab") {
+      setSupplierOchiq(false);
+      setSupplierFaol(-1);
+      return;
+    }
+    if (!supplierOchiq) {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        setSupplierOchiq(true);
+        const tanlangan = supplierMoslari.findIndex((item) => item.id === supplierId);
+        setSupplierFaol(tanlangan >= 0 ? tanlangan : 0);
+      }
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const item = supplierMoslari[supplierFaol];
+      if (item) supplierTanlash(item.id, item.name ?? item.fullName ?? item.id);
+      else if (supplierFaol === supplierMoslari.length && supplierQatorSoni > supplierMoslari.length && !store.amalBajarilmoqda) void yangiSupplierQoshish();
+      return;
+    }
+    const keyingi = klaviaturaYonalishi(event.key, supplierFaol, supplierQatorSoni);
+    if (keyingi !== null && event.key !== "Home" && event.key !== "End") {
+      event.preventDefault();
+      setSupplierFaol(keyingi);
+    }
+  }
+
+  // Belgilangan qator ro'yxatda ko'rinib tursin.
+  useEffect(() => {
+    if (!supplierOchiq || supplierFaol < 0) return;
+    supplierRef.current?.querySelector<HTMLElement>(`[data-yetkazib-royxati] [id="kirim-yetkazib-${supplierFaol}"]`)?.scrollIntoView({ block: "nearest" });
+  }, [supplierOchiq, supplierFaol]);
 
   async function yangiSupplierQoshish() {
     const nomi = supplierQuery.trim();
@@ -742,19 +810,33 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                       setSupplierQuery(event.target.value);
                       setSupplierId("");
                       setSupplierOchiq(true);
+                      // Yozilganda birinchi mos yetkazib beruvchi belgilanadi — Enter darrov tanlaydi.
+                      setSupplierFaol(0);
                     }}
                     onFocus={() => setSupplierOchiq(true)}
+                    onKeyDown={supplierKlaviaturasi}
+                    role="combobox"
+                    aria-expanded={supplierOchiq}
+                    aria-autocomplete="list"
+                    aria-activedescendant={supplierOchiq && supplierFaol >= 0 && supplierFaol < supplierQatorSoni ? `kirim-yetkazib-${supplierFaol}` : undefined}
                     className={input}
                     placeholder={t("yangiKirim.supplierPlaceholder")}
                   />
                   {supplierOchiq && (
-                    <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 max-h-56 overflow-y-auto rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_44px_rgba(15,23,42,.16)]">
-                      {supplierMoslari.map((item) => (
+                    <div data-yetkazib-royxati role="listbox" className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 max-h-56 overflow-y-auto rounded-2xl border border-orange-100 bg-white p-1.5 shadow-[0_18px_44px_rgba(15,23,42,.16)]">
+                      {supplierMoslari.map((item, indeks) => (
                         <button
                           key={item.id}
+                          id={`kirim-yetkazib-${indeks}`}
                           type="button"
+                          role="option"
+                          tabIndex={-1}
+                          aria-selected={item.id === supplierId}
+                          data-faol={indeks === supplierFaol || undefined}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onMouseMove={() => { if (indeks !== supplierFaol) setSupplierFaol(indeks); }}
                           onClick={() => supplierTanlash(item.id, item.name ?? item.fullName ?? item.id)}
-                          className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-bold text-slate-700 hover:bg-orange-50"
+                          className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-bold text-slate-700 hover:bg-orange-50 ${indeks === supplierFaol ? "bg-orange-50 ring-2 ring-inset ring-orange-200" : ""}`}
                         >
                           {item.name ?? item.fullName}
                           {item.id === supplierId && <Check size={15} className="text-orange-500" />}
@@ -762,10 +844,17 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                       ))}
                       {supplierQuery.trim() && !aynanMosSupplier && (
                         <button
+                          id={`kirim-yetkazib-${supplierMoslari.length}`}
                           type="button"
+                          role="option"
+                          tabIndex={-1}
+                          aria-selected={false}
+                          data-faol={supplierFaol === supplierMoslari.length || undefined}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onMouseMove={() => { if (supplierFaol !== supplierMoslari.length) setSupplierFaol(supplierMoslari.length); }}
                           onClick={() => void yangiSupplierQoshish()}
                           disabled={store.amalBajarilmoqda}
-                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-black text-orange-600 hover:bg-orange-50 disabled:opacity-50"
+                          className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-black text-orange-600 hover:bg-orange-50 disabled:opacity-50 ${supplierFaol === supplierMoslari.length ? "bg-orange-50 ring-2 ring-inset ring-orange-200" : ""}`}
                         >
                           <UserPlus size={15} />
                           {t("yangiKirim.addSupplier", { name: supplierQuery.trim() })}
@@ -956,9 +1045,13 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
             </div>
 
             {/* Tovarlar jadvali "Ustunlar" paneli bilan (yoqish/o'chirish, sudrab tartib, zichlik, standart holat); sozlama foydalanuvchi uchun
-                saqlanadi. Mahsulot va Soni majburiy. Yashirilgan ustundagi maydonlar o'chmaydi (faqat ko'rinmaydi). */}
+                saqlanadi. Mahsulot va Soni majburiy. Yashirilgan ustundagi maydonlar o'chmaydi (faqat ko'rinmaydi).
+                Sotuv va ulgurji narx standartda yashirin ("Ustunlar"dan yoqiladi), oxirida qator summasi. Kalit "-v2": yangi standart
+                avval sozlama saqlagan foydalanuvchilarga ham qo'llanishi uchun. */}
             <div ref={qatorlarRef} className="scrollbar-orange overflow-x-auto pb-2">
-              <SmartTable tableId="Ombor/YangiKirimModal/tovarlar" replaceColumnControls>
+              <SmartTable tableId="Ombor/YangiKirimModal/tovarlar-v2" replaceColumnControls>
+              {/* Qatordagi inputlarda size={1}: input ustunni standart (20 belgilik) kengligi bilan cho'zmaydi — kenglikni sarlavhadagi w-[…]
+                  beradi, input esa w-full bilan katakni to'ldiradi. Shunda jadval ekranga sig'adi va "Summa" ko'rinib turadi. */}
               <table className="w-full text-left text-[13px]">
                 <thead className="text-[13px] font-semibold text-slate-600">
                   <tr>
@@ -972,14 +1065,15 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                       </button>
                     </th>
                     <th data-column-id="raqam" className="w-12 px-1.5 py-2 text-center">{t("yangiKirim.table.numberHeader")}</th>
-                    <th data-column-id="mahsulot" data-required className="min-w-[240px] px-1.5 py-2">{t("yangiKirim.table.productHeader")}</th>
-                    <th data-column-id="shtrix" className="min-w-[150px] px-1.5 py-2">{t("yangiKirim.table.barcodeHeader")}</th>
-                    <th data-column-id="tannarx" className="min-w-[140px] px-1.5 py-2">{t("yangiKirim.table.costPriceHeader")}</th>
-                    <th data-column-id="chakana" className="min-w-[140px] px-1.5 py-2">{t("yangiKirim.table.retailPriceHeader")}</th>
-                    <th data-column-id="ulgurji" className="min-w-[140px] px-1.5 py-2">{t("yangiKirim.table.wholesalePriceHeader")}</th>
-                    <th data-column-id="soni" data-required className="min-w-[130px] px-1.5 py-2">{t("yangiKirim.table.quantityHeader")}</th>
-                    <th data-column-id="ombor" className="min-w-[170px] px-1.5 py-2">{t("yangiKirim.table.warehouseHeader")}</th>
-                    <th data-column-id="qoldiq" className="min-w-[80px] px-1.5 py-2 text-center">{t("yangiKirim.table.stockHeader")}</th>
+                    <th data-column-id="mahsulot" data-required className="w-[230px] min-w-[200px] px-1.5 py-2">{t("yangiKirim.table.productHeader")}</th>
+                    <th data-column-id="shtrix" className="w-[140px] px-1.5 py-2">{t("yangiKirim.table.barcodeHeader")}</th>
+                    <th data-column-id="tannarx" className="w-[140px] px-1.5 py-2">{t("yangiKirim.table.costPriceHeader")}</th>
+                    <th data-column-id="chakana" data-default-hidden className="w-[140px] px-1.5 py-2">{t("yangiKirim.table.retailPriceHeader")}</th>
+                    <th data-column-id="ulgurji" data-default-hidden className="w-[140px] px-1.5 py-2">{t("yangiKirim.table.wholesalePriceHeader")}</th>
+                    <th data-column-id="soni" data-required className="w-[120px] px-1.5 py-2">{t("yangiKirim.table.quantityHeader")}</th>
+                    <th data-column-id="ombor" className="w-[150px] px-1.5 py-2">{t("yangiKirim.table.warehouseHeader")}</th>
+                    <th data-column-id="qoldiq" className="w-[70px] px-1.5 py-2 text-center">{t("yangiKirim.table.stockHeader")}</th>
+                    <th data-column-id="summa" className="w-[140px] px-1.5 py-2 text-right">{t("yangiKirim.table.sumHeader")}</th>
                     <th data-column-id="amal" className="w-14 px-1.5 py-2" aria-label={t("yangiKirim.table.deleteRowAria")} />
                   </tr>
                 </thead>
@@ -1025,6 +1119,7 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                         }}
                         placeholder={t("yangiKirim.table.selectProductOption")}
                         className={inputSm}
+                        ixcham
                         tanlanganNomi={mod ? modificationNomi(mod) : row.nomi}
                         ochishSorovi={fokus?.maydon === "mahsulot" && fokus.qatorId === row.id ? fokus.n : 0}
                       />
@@ -1033,11 +1128,11 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                       <td className="px-1.5 py-2 align-middle">
                       <div className="relative">
                         <Barcode size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input value={mod?.barcode ?? ""} readOnly placeholder={t("yangiKirim.table.barcodePlaceholder")} className={`${inputSm} pl-8`} />
+                        <input size={1} value={mod?.barcode ?? ""} readOnly placeholder={t("yangiKirim.table.barcodePlaceholder")} className={`${inputSm} pl-8`} />
                       </div>
                       </td>
                       <td className="px-1.5 py-2 align-middle">
-                      <XatoliMaydon xato={fx.xato(`items.${index}.price`)}><div className="relative"><SummaMaydoni
+                      <XatoliMaydon xato={fx.xato(`items.${index}.price`)}><div className="relative"><SummaMaydoni size={1}
                         aria-label={`${t("yangiKirim.table.costPriceHeader")} (${korsatishValyutasi(row, "price")})`}
                         kasr={TANNARX_KASRI}
                         value={narxQiymati(row, "price")}
@@ -1056,7 +1151,7 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                       /><span className="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{korsatishValyutasi(row, "price")}</span></div></XatoliMaydon>
                       </td>
                       <td className="px-1.5 py-2 align-middle">
-                      <div className="relative"><SummaMaydoni
+                      <div className="relative"><SummaMaydoni size={1}
                         aria-label={`${t("yangiKirim.table.retailPriceHeader")} (${korsatishValyutasi(row, "retailPrice")})`}
                         value={narxQiymati(row, "retailPrice")}
                         onChange={(qiymat) => narxniKiritish(row, "retailPrice", qiymat)}
@@ -1070,7 +1165,7 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                       /><span className="pointer-events-none absolute right-7 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{korsatishValyutasi(row, "retailPrice")}</span></div>
                       </td>
                       <td className="px-1.5 py-2 align-middle">
-                      <div className="relative"><SummaMaydoni
+                      <div className="relative"><SummaMaydoni size={1}
                         aria-label={`${t("yangiKirim.table.wholesalePriceHeader")} (${korsatishValyutasi(row, "wholesalePrice")})`}
                         value={narxQiymati(row, "wholesalePrice")}
                         onChange={(qiymat) => narxniKiritish(row, "wholesalePrice", qiymat)}
@@ -1087,6 +1182,7 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                       <div className="min-w-0 space-y-1.5">
                       <XatoliMaydon xato={fx.xato(`items.${index}.quantity`)}>
                       <input
+                        style={USTUN_KENGLIGIDA}
                         type="number"
                         min="0.001"
                         step="0.001"
@@ -1108,7 +1204,7 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                       </XatoliMaydon>
                       {mod?.product?.trackSerial && (
                         <XatoliMaydon xato={fx.xato(`items.${index}.serial`)}>
-                        <input
+                        <input size={1}
                           value={row.serial ?? ""}
                           aria-label={t("yangiKirim.table.serial")}
                           placeholder={t("yangiKirim.table.serial")}
@@ -1142,6 +1238,7 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                         <div>
                           <XatoliMaydon xato={fx.xato(`items.${index}.checkCount`) ?? fx.xato(`items.${index}.checkUnitId`)}>
                           <input
+                            style={USTUN_KENGLIGIDA}
                             type="number"
                             min="0"
                             step="1"
@@ -1166,15 +1263,17 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                       </td>
                       <td className="px-1.5 py-2 align-middle">
                       <XatoliMaydon xato={fx.xato(`items.${index}.warehouseId`) ?? (index === 0 ? fx.xato("warehouseId") : undefined)}>
-                      <div className="relative">
-                        <Warehouse size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      {/* SmartTable katak ichidagi elementlarga min-width: max-content beradi — ombor tanlovi ustunni cho'zmasin (nom "…" bilan qisqaradi). */}
+                      <div className="relative [&_button]:!min-w-0 [&_div]:!min-w-0 [&_span]:!min-w-0" style={USTUN_KENGLIGIDA}>
                         <AppSelect
                           value={row.warehouseId}
                           onChange={(event) => {
                             fx.tozala(`items.${index}.warehouseId`, "warehouseId");
                             yangilash(row.id, { warehouseId: event.target.value });
                           }}
-                          className={`${inputSm} appearance-none pl-8 pr-7`}
+                          // AppSelect tugmasi chekka bo'shliqni meros oladi (px-[inherit]): px-2 — tugma katakda 8px ichkarida, matn ham 8px;
+                          // strelka AppSelect'ning o'zida (alohida ChevronDown ikkinchi strelka bo'lib chiqardi).
+                          className={`${inputSm} appearance-none px-2`}
                         >
                           <option value="">{t("yangiKirim.table.selectWarehouseOption")}</option>
                           {store.omborlar
@@ -1185,7 +1284,6 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                               </option>
                             ))}
                         </AppSelect>
-                        <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       </div>
                       </XatoliMaydon>
                       </td>
@@ -1193,6 +1291,20 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                       <p className="truncate text-center text-xs font-bold text-slate-500">
                         {stock ? qoldiqMiqdori(stock) : 0}
                       </p>
+                      </td>
+                      <td className="px-1.5 py-2 text-right align-middle">
+                        {(() => {
+                          const summa = qatorSummasi(row);
+                          return (
+                            <span
+                              data-kirim-qator-summa
+                              title={summa === null ? undefined : t("yangiKirim.table.sumTitle")}
+                              className={`inline-flex h-11 min-w-full items-center justify-end whitespace-nowrap rounded-xl px-3 text-sm font-black tabular-nums ${summa ? "bg-blue-50/70 text-slate-900 ring-1 ring-blue-100" : "text-slate-300"}`}
+                            >
+                              {summa ? summaMatni(summa) : "—"}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="px-1.5 py-2 align-middle">
                       <button

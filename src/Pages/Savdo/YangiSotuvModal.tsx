@@ -1,5 +1,5 @@
 import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
-import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type UIEvent } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type UIEvent } from "react";
 import {
   BadgeCheck,
   Bell,
@@ -104,6 +104,7 @@ import {
   sotuvBirliklari,
   type TovarBirligi,
 } from "@/lib/kopBirlik";
+import { birlikBoyichaMiqdor, birlikMiqdoriMatni, type BirlikMiqdori } from "@/lib/miqdorBirliklari";
 import { useSavdoSozlamalariStore } from "@/store/savdoSozlamalariStore";
 import { pulniFormatlash, sotuvJadvalId } from "./savdoYordamchilari";
 import QoralamaFaoliyatlari from "./QoralamaFaoliyatlari";
@@ -550,6 +551,20 @@ export default function YangiSotuvModal({
   const narxSozlamasi = useSavdoSozlamalariStore((holat) => holat.narxTurlari);
   const narxSozlamasiniYuklash = useSavdoSozlamalariStore((holat) => holat.yuklash);
   const [narxTuri, setNarxTuri] = useState<SotuvNarxTuri>(() => umumiyNarxTuri(mahsulotlar));
+  // Umumiy birlik (masalan "Korobka"): hamma qatorga va keyin qo'shiladigan mahsulotlarga qo'yiladi — shu birligi bor tovarlarga;
+  // "" — har tovar o'z asosiy birligida (dona, kg); null — tanlanmagan.
+  const [umumiyBirlik, setUmumiyBirlik] = useState<string | null>(null);
+  const [birlikXabari, setBirlikXabari] = useState("");
+  // Ombordagi tovarlarning qo'shimcha sotuv birliklari (umumiy birlik variantlari uchun), unitId → nomi.
+  const katalogBirliklari = useMemo(() => {
+    const xarita = new Map<string, string>();
+    for (const qoldiq of qoldiqlar) {
+      for (const birlik of sotuvBirliklari(qoldiq.birliklar)) {
+        if (!birlik.asosiy && !xarita.has(birlik.unitId)) xarita.set(birlik.unitId, birlik.qisqa || birlik.nomi);
+      }
+    }
+    return xarita;
+  }, [qoldiqlar]);
   const [narxXabari, setNarxXabari] = useState("");
   // "Umumiy chegirma" (Mahsulotlar qadami): foizda — har bir qatorning CHEGIRMA maydoniga yoziladi; summada — butun sotuvga beriladi va
   // qatorlarga (o'z chegirmasidan keyingi) summasiga mutanosib taqsimlanadi (foyda hisobotida to'g'ri chiqishi uchun).
@@ -828,13 +843,18 @@ export default function YangiSotuvModal({
     else fx.tozala(`items.${index}`);
     // Tanlangan narx turida narx yo'q bo'lsa (masalan, ulgurji narx belgilanmagan) mos boshqa tur olinadi.
     const tur = sotiladiganNarxTuri(qoldiq, narxTuri, turRuxsati, kurs, blokYagona) ?? narxTuri;
-    const narx = qoldiqNarxiValyutada(qoldiq, sotuvVal, kurs, tur);
+    // Umumiy birlik tanlangan bo'lsa (masalan, korobka) va tovarda shu birlik bo'lsa — qator shu birlikda qo'shiladi.
+    // Shu birlikda narx chiqmasa — asosiy birlikda.
+    const birlik = umumiyBirlikTovarda(qoldiq);
+    const birlikNarxi = birlik ? qoldiqNarxiValyutada(qoldiq, sotuvVal, kurs, tur, birlik) : 0;
+    const birlikBilan = Boolean(birlik && birlikNarxi);
+    const narx = birlikBilan ? birlikNarxi : qoldiqNarxiValyutada(qoldiq, sotuvVal, kurs, tur);
     mahsulotniYangilash(index, {
       modificationId: qoldiq?.modificationId ?? tanlanganQoldiqKaliti,
       qoldiqKaliti: tanlanganQoldiqKaliti,
       priceType: tur,
       price: narx ? String(narx) : "",
-      birlikId: "",
+      birlikId: birlikBilan && birlik ? birlik.unitId : "",
       ustama: "",
       kutilayotganValyuta: undefined,
       tuzatilgan: undefined,
@@ -1122,8 +1142,15 @@ export default function YangiSotuvModal({
     const kalit = qoldiqKaliti(item);
     const mavjudMiqdor = qoldiqMiqdori(item);
     // Pochka shtrix-kodi o'qilsa — shu birlik tanlanadi (qoldiq asosiy birlikda tekshiriladi).
-    const skanBirligi = shtrixBirligi(item.birliklar, kod);
+    // Oddiy (asosiy) shtrix-kod o'qilsa va umumiy birlik tanlangan bo'lsa — tovarda shu birlik bo'lsa, o'sha birlikda.
+    const shtrixdagiBirlik = shtrixBirligi(item.birliklar, kod);
+    const umumiydagiBirlik = shtrixdagiBirlik ? undefined : umumiyBirlikTovarda(item);
+    const skanBirligi = shtrixdagiBirlik
+      ?? (umumiydagiBirlik && qoldiqNarxiValyutada(item, sotuvVal, kurs, sotiladiganNarxTuri(item, narxTuri, turRuxsati, kurs, blokYagona) ?? narxTuri, umumiydagiBirlik) ? umumiydagiBirlik : undefined);
     const skanBirlikId = skanBirligi?.unitId ?? "";
+    // Xabardagi birliklar: qo'shilgani shu birlikda (korobka), qoldiq esa asosiy birlikda (dona, kg).
+    const asosiyBirlikNomi = item.birliklar?.find((birlik) => birlik.asosiy)?.qisqa || t("common.unit");
+    const skanBirlikNomi = skanBirligi ? skanBirligi.qisqa || skanBirligi.nomi : asosiyBirlikNomi;
     const bor = mahsulotlar.findIndex((mahsulot) => mahsulot.qoldiqKaliti === kalit && mahsulot.birlikId === skanBirlikId);
 
     if (bor >= 0) {
@@ -1134,7 +1161,7 @@ export default function YangiSotuvModal({
       setSkanXabari({
         xato: false,
         ogoh: yetmaydi,
-        matn: yetmaydi ? t("products.scanAddedLowStock", { name: nom, qty: yangiMiqdor, available: mavjudMiqdor }) : t("products.scanAdded", { name: nom, qty: yangiMiqdor }),
+        matn: yetmaydi ? t("products.scanAddedLowStock", { name: nom, qty: yangiMiqdor, unit: skanBirlikNomi, available: mavjudMiqdor, baseUnit: asosiyBirlikNomi }) : t("products.scanAdded", { name: nom, qty: yangiMiqdor, unit: skanBirlikNomi }),
       });
     } else {
       const tur = sotiladiganNarxTuri(item, narxTuri, turRuxsati, kurs, blokYagona) ?? narxTuri;
@@ -1161,7 +1188,7 @@ export default function YangiSotuvModal({
       setSkanXabari({
         xato: false,
         ogoh: yetmaydi,
-        matn: yetmaydi ? t("products.scanAddedLowStock", { name: nom, qty: 1, available: mavjudMiqdor }) : t("products.scanAdded", { name: nom, qty: 1 }),
+        matn: yetmaydi ? t("products.scanAddedLowStock", { name: nom, qty: 1, unit: skanBirlikNomi, available: mavjudMiqdor, baseUnit: asosiyBirlikNomi }) : t("products.scanAdded", { name: nom, qty: 1, unit: skanBirlikNomi }),
       });
     }
     setSkanMatni("");
@@ -1334,9 +1361,25 @@ export default function YangiSotuvModal({
   }
 
   // ── UI: bosqichlar, xulosa kartalari va yordamchi funksiyalar (hisob-kitob va saqlash mantiqi o'zgarmagan) ──
+  // "Umumiy birlik" variantlari: savatdagi va ombordagi tovarlarning qo'shimcha sotuv birliklari (korobka, qop, blok...) — unitId bo'yicha.
+  const umumiyBirlikVariantlari = (() => {
+    const xarita = new Map(katalogBirliklari);
+    for (const qator of mahsulotlar) {
+      if (!qator.modificationId) continue;
+      for (const birlik of sotuvBirliklari(qatorQoldigi(qator.qoldiqKaliti)?.birliklar)) {
+        if (!birlik.asosiy && !xarita.has(birlik.unitId)) xarita.set(birlik.unitId, birlik.qisqa || birlik.nomi);
+      }
+    }
+    return [...xarita].map(([unitId, nom]) => ({ unitId, nom }));
+  })();
   const mahsulotTanlanganQatorlar = mahsulotlar.filter((mahsulot) => mahsulot.modificationId);
   const mahsulotlarSoni = mahsulotTanlanganQatorlar.length;
-  const umumiyMiqdor = mahsulotTanlanganQatorlar.reduce((summa, mahsulot) => summa + raqamgaAylantirish(mahsulot.quantity), 0);
+  // Umumiy miqdor har tovarning o'z birligi bo'yicha (5 korobka · 12 kg · 3 dona): qatorda tanlangan birlik, bo'lmasa tovarning asosiy birligi.
+  const birlikMiqdorlari = birlikBoyichaMiqdor(mahsulotTanlanganQatorlar.map((mahsulot) => {
+    const birliklar = qatorQoldigi(mahsulot.qoldiqKaliti)?.birliklar;
+    const birlik = birlikTopish(birliklar, mahsulot.birlikId) ?? birliklar?.find((item) => item.asosiy);
+    return { birlik: birlik?.qisqa || birlik?.nomi || t("common.unit"), miqdor: raqamgaAylantirish(mahsulot.quantity) };
+  }));
   const umumiyChegirma = mahsulotlar.reduce((summa, mahsulot) => summa + qatorChegirmasi(mahsulot), 0) + umumiyUlushJami;
   // Qoldiq yetmaydigan qatorlar (faqat "Manfiy qoldiqqa ruxsat" o'chiq bo'lsa): qoralama saqlanadi, lekin ombordan chiqarishda tovar yetmaydi.
   const qoldiqOgohlantirishlari = new Map<number, { mavjud: number; talab: number }>();
@@ -1472,6 +1515,41 @@ export default function YangiSotuvModal({
     setNarxXabari("");
     fx.tozala(`items.${index}.quantity`);
     mahsulotniYangilash(index, { birlikId, price: String(narx), ustama: "", discount: qator.discountTuri === "sum" ? "" : qator.discount });
+  }
+
+  // Umumiy birlik tovarda bormi: qo'shimcha sotuv birligi (korobka, qop) bo'lsa — o'sha; asosiy yoki yo'q bo'lsa — undefined.
+  function umumiyBirlikTovarda(qoldiq?: QoldiqTanlovi) {
+    if (!umumiyBirlik) return undefined;
+    return sotuvBirliklari(qoldiq?.birliklar).find((birlik) => !birlik.asosiy && birlik.unitId === umumiyBirlik);
+  }
+
+  // "Umumiy birlik": hamma mahsulot qatori shu birlikka o'tadi (narx shu birlikdagi narxga, xuddi qatorda birlik almashtirgandek).
+  // Tovarda bu birlik bo'lmasa yoki shu birlikda narx chiqmasa — qator o'z birligida qoladi va bu haqda xabar beriladi.
+  function umumiyBirlikniTanlash(unitId: string) {
+    setUmumiyBirlik(unitId);
+    let qolgan = 0;
+    const yangi = mahsulotlar.map((qator, index) => {
+      if (!qator.modificationId) return qator;
+      const qoldiq = qatorQoldigi(qator.qoldiqKaliti);
+      const birlik = unitId ? sotuvBirliklari(qoldiq?.birliklar).find((item) => !item.asosiy && item.unitId === unitId) : undefined;
+      if (unitId && !birlik) {
+        qolgan += 1;
+        return qator;
+      }
+      const birlikId = birlik?.unitId ?? "";
+      if (qator.birlikId === birlikId) return qator;
+      const narx = qoldiqNarxiValyutada(qoldiq, sotuvVal, kurs, qator.priceType, birlik);
+      if (!narx) {
+        qolgan += 1;
+        return qator;
+      }
+      fx.tozala(`items.${index}.quantity`);
+      return { ...qator, birlikId, price: String(narx), ustama: "", discount: qator.discountTuri === "sum" ? "" : qator.discount };
+    });
+    setMahsulotlar(yangi);
+    setNarxXabari("");
+    const nom = unitId ? umumiyBirlikVariantlari.find((item) => item.unitId === unitId)?.nom ?? "" : t("generalUnit.base");
+    setBirlikXabari(qolgan > 0 ? t("generalUnit.skipped", { count: qolgan, unit: nom }) : "");
   }
 
   // Chegirma birligi (summa yoki foiz): kiritilgan qiymat shu qator uchun ikkinchi birlikka o'giriladi.
@@ -1654,6 +1732,8 @@ export default function YangiSotuvModal({
     setTugashSanasi(kelasiHafta());
     setIzoh("");
     setMahsulotlar([bosQator(narxTuri)]);
+    setUmumiyBirlik(null);
+    setBirlikXabari("");
     setUmumiyCheg({ tur: "foiz", qiymat: "" });
     setNarxXabari("");
     setSkanMatni("");
@@ -2235,6 +2315,41 @@ export default function YangiSotuvModal({
                     )}
                   </div>
 
+                  {/* Umumiy birlik: faqat qo'shimcha birligi (korobka, qop...) bor tovarlar bo'lsa ko'rinadi. */}
+                  {umumiyBirlikVariantlari.length > 0 && (
+                    <div data-umumiy-birlik className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-slate-50 p-3 ring-2 ring-slate-300">
+                      <span className="text-sm font-bold text-slate-600">{t("generalUnit.label")}</span>
+                      <div role="radiogroup" aria-label={t("generalUnit.label")} className="inline-flex flex-wrap gap-0.5 rounded-xl bg-slate-100 p-1">
+                        {[{ unitId: "", nom: t("generalUnit.base") }, ...umumiyBirlikVariantlari].map(({ unitId, nom }) => {
+                          const faol = umumiyBirlik === unitId;
+                          return (
+                            <button
+                              key={unitId || "asosiy"}
+                              type="button"
+                              role="radio"
+                              aria-checked={faol}
+                              data-umumiy-birlik-variant={unitId || "asosiy"}
+                              title={unitId ? t("generalUnit.optionTitle", { unit: nom }) : t("generalUnit.baseTitle")}
+                              onClick={() => umumiyBirlikniTanlash(unitId)}
+                              className={cn(
+                                "rounded-lg px-4 py-2 text-xs font-bold transition",
+                                faol ? "bg-white text-[#2563EB] shadow-sm ring-2 ring-blue-200" : "text-slate-600 hover:bg-white/70 hover:text-slate-900"
+                              )}
+                            >
+                              {nom}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="min-w-[200px] flex-1 text-xs font-medium leading-5 text-slate-500">{t("generalUnit.hint")}</p>
+                      {birlikXabari && (
+                        <p role="status" className="basis-full text-xs font-bold text-amber-600">
+                          {birlikXabari}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   <div data-umumiy-chegirma className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-slate-50 p-3 ring-2 ring-slate-300">
                     <span className="text-sm font-bold text-slate-600">{t("generalDiscount.label")}</span>
                     <div className="flex items-center gap-1.5">
@@ -2723,7 +2838,7 @@ export default function YangiSotuvModal({
 
                   <div ref={xulosaKartasiRef} className="mt-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
                     <XulosaKarta ikonka={Package} nom={t("summary.productsCount")} qiymat={String(mahsulotlarSoni)} ton="kok" />
-                    <XulosaKarta ikonka={ClipboardList} nom={t("summary.totalQuantity")} qiymat={umumiyMiqdor.toLocaleString("uz-UZ", { maximumFractionDigits: 3 })} ton="oddiy" />
+                    <MiqdorXulosaKarta nom={t("summary.totalQuantity")} guruhlar={birlikMiqdorlari} />
                     <XulosaKarta ikonka={Percent} nom={t("summary.discount")} qiymat={pulniFormatlash(umumiyChegirma, sotuvVal)} ton="yashil" />
                     <XulosaKarta ikonka={Wallet} nom={t("summary.grandTotal")} qiymat={pulniFormatlash(jami, sotuvVal)} ton="asosiy" />
                   </div>
@@ -3123,6 +3238,39 @@ const xulosaTonlari = {
   yashil: { karta: "bg-emerald-50 ring-emerald-200", belgi: "bg-white text-emerald-600 ring-emerald-200", qiymat: "text-emerald-600" },
   asosiy: { karta: "bg-[#E8EEFF] ring-blue-200", belgi: "bg-white text-[#2563EB] ring-blue-200", qiymat: "text-[#1D4ED8]" },
 } as const;
+
+// "Umumiy miqdor": har birlik alohida ("5 korobka · 12 kg · 3 dona"), ixcham ikki qatorgacha; har xil birliklar bitta songa qo'shilmaydi.
+function MiqdorXulosaKarta({ nom, guruhlar }: { nom: string; guruhlar: BirlikMiqdori[] }) {
+  const stil = xulosaTonlari.oddiy;
+  const son = (qiymat: number) => qiymat.toLocaleString("uz-UZ", { maximumFractionDigits: 3 });
+  const matn = guruhlar.length ? birlikMiqdoriMatni(guruhlar, son) : "0";
+  return (
+    <div data-miqdor-xulosa className={`flex min-w-0 items-center gap-3 rounded-2xl p-3.5 ring-2 ${stil.karta}`}>
+      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-2 ${stil.belgi}`}>
+        <ClipboardList size={21} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-semibold text-slate-500">{nom}</p>
+        {guruhlar.length <= 1 ? (
+          <p className={`truncate text-xl font-black tabular-nums ${stil.qiymat}`} title={matn}>
+            {guruhlar[0] ? son(guruhlar[0].miqdor) : "0"}
+            {guruhlar[0] && <span className="ml-1.5 text-sm font-bold text-slate-500">{guruhlar[0].birlik}</span>}
+          </p>
+        ) : (
+          <p className={`mt-0.5 line-clamp-2 text-sm font-black leading-5 tabular-nums ${stil.qiymat}`} title={matn} aria-label={matn}>
+            {guruhlar.map((guruh, indeks) => (
+              <Fragment key={guruh.birlik}>
+                {/* Bo'sh joylar — tor kartada birlik keyingi qatorga o'tishi uchun (birlikning o'zi bo'linmaydi). */}
+                {indeks > 0 && <>{" "}<span className="text-slate-300" aria-hidden>·</span>{" "}</>}
+                <span data-birlik-chip className="whitespace-nowrap">{son(guruh.miqdor)} <span className="text-xs font-bold text-slate-500">{guruh.birlik}</span></span>
+              </Fragment>
+            ))}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function XulosaKarta({ ikonka: Ikonka, nom, qiymat, ton }: { ikonka: LucideIcon; nom: string; qiymat: string; ton: keyof typeof xulosaTonlari }) {
   const stil = xulosaTonlari[ton];

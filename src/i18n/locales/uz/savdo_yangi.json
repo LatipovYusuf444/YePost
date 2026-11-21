@@ -209,8 +209,8 @@
     "keyboardHint": "Klaviatura: ↑/↓ — qatorlar orasida; Enter — keyingi qator (oxirgisida yangisi); ro'yxatda Shift+Enter — tanlab, darrov keyingi mahsulotga; Ctrl+↑/↓ — mahsulot maydoniga; Ctrl+Delete — qatorni o'chirish.",
     "scanPlaceholder": "Shtrix kodni skanerlang yoki yozib Enter bosing",
     "scanAriaLabel": "Shtrix kod bilan mahsulot qo'shish",
-    "scanAddedLowStock": "{{name}} qo'shildi: {{qty}} dona. Omborda {{available}} dona bor — qoralama saqlanadi, lekin ombordan chiqarish uchun tovar yetmaydi.",
-    "scanAdded": "{{name}} qo'shildi: {{qty}} dona",
+    "scanAddedLowStock": "{{name}} qo'shildi: {{qty}} {{unit}}. Omborda {{available}} {{baseUnit}} bor — qoralama saqlanadi, lekin ombordan chiqarish uchun tovar yetmaydi.",
+    "scanAdded": "{{name}} qo'shildi: {{qty}} {{unit}}",
     "scanNotFound": "Bu shtrix kodli mahsulot topilmadi.",
     "scanOutOfStock": "{{name}}: qoldiq yo'q.",
     "scanNoRate": "{{name}}: so'mdagi narx yo'q (kurs kiritilmagan).",
@@ -307,5 +307,13 @@
     "grandTotal": "Jami summa",
     "totalLabel": "Sotuv jami",
     "paymentHint": "To'lov shu yerda qabul qilinmaydi — sotuv qoralama sifatida saqlangach, to'lovni sotuv sahifasidan alohida qabul qilasiz."
+  },
+  "generalUnit": {
+    "label": "Umumiy birlik",
+    "base": "Asosiy birlik",
+    "baseTitle": "Har mahsulot o'z asosiy birligida (dona, kg, litr...)",
+    "optionTitle": "Hamma mahsulot {{unit}}da (shu birligi bor tovarlar)",
+    "hint": "Tanlangan birlik hamma mahsulotga va keyin qo'shiladiganlarga qo'yiladi — shu birligi bor tovarlarga; qolganlari o'z birligida qoladi. Har qatorda alohida ham o'zgartirish mumkin.",
+    "skipped": "{{count}} ta mahsulotda \"{{unit}}\" birligi (yoki shu birlikdagi narx) yo'q — ular o'z birligida qoldi."
   }
 }
