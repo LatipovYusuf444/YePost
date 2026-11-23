@@ -54,6 +54,8 @@ import { HUJJAT_ILOVA_FORMATLARI, HUJJAT_ILOVA_TURLARI, HUJJAT_ILOVA_MAKS_HAJMI 
 import { kirimYetkazibBeruvchiNomi } from "@/lib/kirimYetkazibBeruvchi";
 import MahsulotTanlov, { type MahsulotVarianti } from "./MahsulotTanlov";
 import ShtrixKodMaydoni, { type SkanNatijasi } from "./ShtrixKodMaydoni";
+import { UmumiyBirlikPaneli } from "./HujjatBirligi";
+import { umumiyBirlikTovarda, umumiyBirlikVariantlari } from "@/lib/hujjatBirligi";
 import { asosiyValyuta } from "@/lib/asosiyValyuta";
 
 // Fayl: yangi tanlangan (`fayl`) — kirim saqlangach hujjat ilovalariga yuklanadi; eski hujjatdagi (`url`) — `note`dagi havola.
@@ -476,7 +478,15 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
   function mahsulotTanlash(id: string, modificationId: string) {
     const mod = store.modifikatsiyalar.find((item) => item.id === modificationId);
     yangilash(id, katalogQiymatlari(modificationId, mod));
-    if (mod?.productId) void tovarBirliklari(mod.productId).then((birliklar) => yangilash(id, { birliklar }));
+    if (mod?.productId) void tovarBirliklari(mod.productId).then((birliklar) => {
+      // "Umumiy birlik" tanlangan bo'lsa yangi mahsulot shu birlikda qabul qilinadi (birligi bo'lsa; tannarx — asosiy narx × koeffitsient).
+      const unitId = umumiyBirlikRef.current;
+      const birlik = unitId ? umumiyBirlikTovarda(birliklar, unitId, (item) => item.qabul) : undefined;
+      setQatorlar((rows) => rows.map((row) => {
+        if (row.id !== id || row.modificationId !== modificationId) return row;
+        return birlik && !row.birlikId ? birlikdagiQator({ ...row, birliklar }, birlik.unitId) : { ...row, birliklar };
+      }));
+    });
   }
 
   // Tanlangan mahsulotning katalogdagi narxlari (tannarx, chakana, ulgurji) va ularning valyutalari.
@@ -528,11 +538,43 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
   }
 
   // Qabul birligini almashtirish: tannarx yangi birlikdagi narxga (asosiy narx × koeffitsient) o'tadi.
-  function birlikniOzgartirish(row: Qator, birlikId: string) {
+  function birlikdagiQator(row: Qator, birlikId: string): Qator {
     const birlik = birlikTopish(row.birliklar, birlikId);
     const koeff = birlik && !birlik.asosiy ? birlik.koeff : 1;
     const narx = Math.round(row.boshlangichTanNarx * koeff * 10 ** TANNARX_KASRI) / 10 ** TANNARX_KASRI;
-    yangilash(row.id, { birlikId, price: narx ? String(narx) : "", sanash: "" });
+    return { ...row, birlikId, price: narx ? String(narx) : "", sanash: "" };
+  }
+  function birlikniOzgartirish(row: Qator, birlikId: string) {
+    const yangi = birlikdagiQator(row, birlikId);
+    yangilash(row.id, { birlikId: yangi.birlikId, price: yangi.price, sanash: yangi.sanash });
+  }
+
+  // "Umumiy birlik": hamma qatorni (va keyin qo'shiladiganlarni) bir yo'la qabul birligiga (korobka, qop) yoki asosiy birlikka o'tkazish —
+  // qatorda birlik almashtirgandek (tannarx shu birlikdagi narxga). Shu birligi yo'q tovarlar o'z birligida qoladi.
+  const { t: tb } = useTranslation("ombor_kichik");
+  const [umumiyBirlik, setUmumiyBirlik] = useState<string | null>(null);
+  const [birlikXabari, setBirlikXabari] = useState("");
+  const umumiyBirlikRef = useRef<string | null>(null);
+  const umumiyVariantlar = umumiyBirlikVariantlari(qatorlar.filter((row) => row.modificationId).map((row) => row.birliklar), (birlik) => birlik.qabul);
+  function umumiyBirlikniTanlash(unitId: string) {
+    setUmumiyBirlik(unitId);
+    umumiyBirlikRef.current = unitId;
+    // Natija joriy qatorlardan darhol hisoblanadi (xabardagi son to'g'ri chiqishi uchun — updater funksiyasi keyinroq ishlaydi).
+    let qolgan = 0;
+    const yangi = qatorlar.map((row) => {
+      if (!row.modificationId) return row;
+      if (!unitId) return row.birlikId ? birlikdagiQator(row, "") : row;
+      const birlik = umumiyBirlikTovarda(row.birliklar, unitId, (item) => item.qabul);
+      if (!birlik) {
+        qolgan += 1;
+        return row;
+      }
+      return row.birlikId === birlik.unitId ? row : birlikdagiQator(row, birlik.unitId);
+    });
+    setQatorlar(yangi);
+    fx.tozala(...qatorlar.flatMap((_, index) => [`items.${index}.quantity`, `items.${index}.unitId`, `items.${index}.price`]));
+    const nom = umumiyVariantlar.find((variant) => variant.unitId === unitId)?.nom ?? "";
+    setBirlikXabari(unitId && qolgan > 0 ? tb("hujjatBirligi.umumiy.skipped", { count: qolgan, unit: nom }) : "");
   }
 
   // Yig'ish uchun qatorning tanlangan birligi va sanash birligi (kirimda `canReceive: false` pochka ham sanash uchun bo'ladi).
@@ -1043,6 +1085,7 @@ export default function YangiKirimModal({ onClose, tahrir }: Props) {
                 inputClassName={inputSm}
               />
             </div>
+            <UmumiyBirlikPaneli className="mb-4" variantlar={umumiyVariantlar} tanlangan={umumiyBirlik} onTanlash={umumiyBirlikniTanlash} xabar={birlikXabari} />
 
             {/* Tovarlar jadvali "Ustunlar" paneli bilan (yoqish/o'chirish, sudrab tartib, zichlik, standart holat); sozlama foydalanuvchi uchun
                 saqlanadi. Mahsulot va Soni majburiy. Yashirilgan ustundagi maydonlar o'chmaydi (faqat ko'rinmaydi).

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CheckCircle2, Disc3, FileText, LoaderCircle, NotebookPen, Package, Plus, ScanLine, Trash2, Truck, Undo2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
@@ -20,6 +20,9 @@ import { useAuthProfileStore } from "@/store/authProfileStore";
 import { useOmborStore } from "@/store/omborStore";
 import type { TaminotchiQaytarishHujjati } from "@/types/taminotchiQaytarish";
 import MahsulotTanlov, { type MahsulotVarianti } from "../MahsulotTanlov";
+import { AsosiyEkvivalent, QatorBirligiTanlovi, UmumiyBirlikPaneli } from "../HujjatBirligi";
+import { tovarBirliklariniOlish, useTovarBirliklari } from "@/hooks/useTovarBirliklari";
+import { birlikMiqdoriYaroqli, birlikNomi, birlikdagiNarx, qatorBirligi, qatorKoeffi, umumiyBirlikTovarda, umumiyBirlikVariantlari } from "@/lib/hujjatBirligi";
 import { hujjatRaqami, modificationNomi, pul, qoldiqMiqdori, sana } from "../omborYordamchilari";
 
 type Props = { tahrir?: TaminotchiQaytarishHujjati; onClose: () => void; onSaqlandi: (id: string) => void };
@@ -45,6 +48,8 @@ const yangiQator = (warehouseId = ""): QaytarishFormaQatori => ({
   seriyali: false,
   batchId: "",
   serial: "",
+  birlikId: "",
+  koeff: 1,
 });
 
 const input =
@@ -138,8 +143,89 @@ export default function QaytarishOynasi({ tahrir, onClose, onSaqlandi }: Props) 
   const kirimMap = useMemo(() => new Map(store.kirimlar.map((kirim) => [kirim.id, kirim])), [store.kirimlar]);
   const jami = formaJami(forma.qatorlar);
 
+  // Qator tovarining birliklari (korobka, qop): qator birligi va "Umumiy birlik" uchun.
+  const { t: tb } = useTranslation("ombor_kichik");
+  const tovarId = (modificationId: string) => {
+    const mod = modMap.get(modificationId);
+    return mod?.productId ?? mod?.product?.id ?? "";
+  };
+  const tovarBirliklari = useTovarBirliklari(forma.qatorlar.map((qator) => tovarId(qator.modificationId)));
+  const qatorBirliklari = (qator: Pick<QaytarishFormaQatori, "modificationId">) => tovarBirliklari[tovarId(qator.modificationId)];
+  const koeffi = (qator: QaytarishFormaQatori, birlikId = qator.birlikId) => qatorKoeffi(qatorBirliklari(qator), birlikId, birlikId === qator.birlikId ? qator.koeff : 1);
+  const [umumiyBirlik, setUmumiyBirlik] = useState<string | null>(null);
+  const [birlikXabari, setBirlikXabari] = useState("");
+  const umumiyBirlikRef = useRef<string | null>(null);
+  const umumiyVariantlar = umumiyBirlikVariantlari(forma.qatorlar.filter((qator) => qator.modificationId).map(qatorBirliklari));
+
+  // Birlik almashganda narx yangi birlikka o'tadi: kirimdan olingan narx — kirim narxi × koeffitsient (server ham shunday qiladi),
+  // qo'lda yozilgan narx — eski birlikdan yangisiga qayta hisoblanadi. Miqdor soni o'zgarmaydi.
+  function birlikdagiQator(qator: QaytarishFormaQatori, birlikId: string): QaytarishFormaQatori {
+    const yangiKoeff = qatorKoeffi(qatorBirliklari(qator), birlikId);
+    const eskiKoeff = koeffi(qator);
+    let price = qator.price;
+    if (qator.purchaseId && qator.narxKirimdan) {
+      const narx = kirimNarxi(kirimMap.get(qator.purchaseId), qator.modificationId);
+      if (narx !== undefined) price = String(birlikdagiNarx(narx, 1, yangiKoeff));
+    } else if (price.trim()) {
+      const eski = Number(String(price).replace(/\s/g, "").replace(",", "."));
+      if (Number.isFinite(eski)) price = String(birlikdagiNarx(eski, eskiKoeff, yangiKoeff));
+    }
+    return { ...qator, birlikId, koeff: yangiKoeff, price };
+  }
+
+  function birlikniOzgartirish(indeks: number, birlikId: string) {
+    fx.tozala(`items.${indeks}.quantity`, `items.${indeks}.price`);
+    setForma((joriy) => ({ ...joriy, qatorlar: joriy.qatorlar.map((qator, i) => (i === indeks ? birlikdagiQator(qator, birlikId) : qator)) }));
+  }
+
+  function umumiyBirlikniTanlash(unitId: string) {
+    setUmumiyBirlik(unitId);
+    umumiyBirlikRef.current = unitId;
+    // Natija joriy qatorlardan darhol hisoblanadi (xabardagi son to'g'ri chiqishi uchun — updater funksiyasi keyinroq ishlaydi).
+    let qolgan = 0;
+    const kutilayotgan: QaytarishFormaQatori[] = [];
+    const yangi = forma.qatorlar.map((qator) => {
+      if (!qator.modificationId) return qator;
+      if (!unitId) return qator.birlikId ? birlikdagiQator(qator, "") : qator;
+      if (!qatorBirliklari(qator)) {
+        kutilayotgan.push(qator);
+        return qator;
+      }
+      const birlik = umumiyBirlikTovarda(qatorBirliklari(qator), unitId);
+      if (!birlik) {
+        qolgan += 1;
+        return qator;
+      }
+      return qator.birlikId === birlik.unitId ? qator : birlikdagiQator(qator, birlik.unitId);
+    });
+    setForma((joriy) => ({ ...joriy, qatorlar: yangi }));
+    kutilayotgan.forEach((qator) => umumiyniQollash(qator.id, qator.modificationId));
+    fx.tozala(...forma.qatorlar.flatMap((_, i) => [`items.${i}.quantity`, `items.${i}.price`]));
+    const nom = umumiyVariantlar.find((variant) => variant.unitId === unitId)?.nom ?? "";
+    setBirlikXabari(unitId && qolgan > 0 ? tb("hujjatBirligi.umumiy.skipped", { count: qolgan, unit: nom }) : "");
+  }
+
   function mahsulotTanlash(indeks: number, modificationId: string) {
-    qatorniOzgartir(indeks, { modificationId, purchaseId: "", price: "", narxKirimdan: false, batchId: "", serial: "", seriyali: seriyalimi(modificationId) });
+    const qatorId = forma.qatorlar[indeks]?.id;
+    qatorniOzgartir(indeks, { modificationId, purchaseId: "", price: "", narxKirimdan: false, batchId: "", serial: "", seriyali: seriyalimi(modificationId), birlikId: "", koeff: 1 });
+    if (qatorId) umumiyniQollash(qatorId, modificationId);
+  }
+
+  // Umumiy birlik tanlangan bo'lsa, tovar birliklari yuklangach qatorga qo'yiladi (faqat narxi hali bo'sh qatorga — narx birligi aralashmasin).
+  function umumiyniQollash(qatorId: string, modificationId: string) {
+    const unitId = umumiyBirlikRef.current;
+    const productId = tovarId(modificationId);
+    if (!unitId || !productId) return;
+    void tovarBirliklariniOlish(productId).then((birliklar) => {
+      const birlik = umumiyBirlikTovarda(birliklar, unitId);
+      if (!birlik || umumiyBirlikRef.current !== unitId) return;
+      setForma((joriy) => ({
+        ...joriy,
+        qatorlar: joriy.qatorlar.map((qator) => (qator.id === qatorId && qator.modificationId === modificationId && !qator.birlikId && !qator.price.trim()
+          ? { ...qator, birlikId: birlik.unitId, koeff: birlik.koeff }
+          : qator)),
+      }));
+    });
   }
 
   /** Kirim tanlanganda narx shu kirimdan to'ldiriladi; hujjat valyutasi kirimnikiga teng bo'lishi kerak. */
@@ -153,7 +239,8 @@ export default function QaytarishOynasi({ tahrir, onClose, onSaqlandi }: Props) 
     // boshqa valyutada o'qilib qolardi. Bir valyutali rejimda valyuta o'zgarmaydi.
     const boshqalarToldirilgan = forma.qatorlar.some((boshqa, i) => i !== indeks && (boshqa.purchaseId || boshqa.price.trim()));
     const almashadi = kirimValyutasi !== forma.currency && !boshqalarToldirilgan && !yagona;
-    qatorniOzgartir(indeks, { purchaseId, price: narx !== undefined ? String(narx) : qator.price, narxKirimdan: narx !== undefined });
+    // Kirim narxi asosiy birlikda: qator korobkada bo'lsa × koeffitsient (narx yuborilmaydi — server ham shunday hisoblaydi).
+    qatorniOzgartir(indeks, { purchaseId, price: narx !== undefined ? String(birlikdagiNarx(narx, 1, koeffi(qator))) : qator.price, narxKirimdan: narx !== undefined });
     if (almashadi) ozgar({ currency: kirimValyutasi });
     // Xato qator yangilangandan keyin qo'yiladi (aks holda shu yangilanish uni darhol tozalab yuboradi).
     else if (kirimValyutasi !== forma.currency) fx.ornat({ [`items.${indeks}.purchaseId`]: t("errors.currencyMismatch", { valyuta: kirimValyutasi }) });
@@ -175,7 +262,7 @@ export default function QaytarishOynasi({ tahrir, onClose, onSaqlandi }: Props) 
       setForma((joriy) => ({
         ...joriy,
         qatorlar: joriy.qatorlar.map((joriyQator) => (joriyQator.id === qator.id && joriyQator.modificationId === qator.modificationId
-          ? { ...joriyQator, batchId: rulon.batchId, ...(rulon.warehouseId ? { warehouseId: rulon.warehouseId } : {}), ...(joriyQator.quantity ? {} : { quantity: String(rulon.weightLeft ?? rulon.weight ?? "") }) }
+          ? { ...joriyQator, batchId: rulon.batchId, ...(rulon.warehouseId ? { warehouseId: rulon.warehouseId } : {}), ...(joriyQator.quantity || joriyQator.birlikId ? {} : { quantity: String(rulon.weightLeft ?? rulon.weight ?? "") }) }
           : joriyQator)),
       }));
       fx.tozala(`items.${indeks}.batchId`);
@@ -195,6 +282,12 @@ export default function QaytarishOynasi({ tahrir, onClose, onSaqlandi }: Props) 
     if (ishchi !== forma) setForma(ishchi);
     const natija = qaytarishTanasiniYigish(ishchi, (kalit) => t(kalit), { responsibleId: tahrir?.responsibleId ?? profil?.id });
     if ("xatolar" in natija) return fx.ornat(natija.xatolar);
+    // Qo'shimcha birlikda (korobka) faqat butun son.
+    const butunEmas = Object.fromEntries(ishchi.qatorlar.flatMap((qator, i) => {
+      const birlik = qatorBirligi(qatorBirliklari(qator), qator.birlikId);
+      return !birlikMiqdoriYaroqli(birlik, Number(qator.quantity.replace(",", ".")) || 0) ? [[`items.${i}.quantity`, tb("hujjatBirligi.notWhole", { unit: birlikNomi(birlik) })]] : [];
+    }));
+    if (Object.keys(butunEmas).length) return fx.ornat(butunEmas);
     // Kirimli qatorlar valyutasi hujjat valyutasiga teng (server supplier_return_currency_mismatch beradi).
     const valyutaXatolari = Object.fromEntries(ishchi.qatorlar.flatMap((qator, i) => {
       const kirim = qator.purchaseId ? kirimMap.get(qator.purchaseId) : undefined;
@@ -284,6 +377,7 @@ export default function QaytarishOynasi({ tahrir, onClose, onSaqlandi }: Props) 
 
           <Karta ikonka={<Package size={18} />} sarlavha={t("itemsSection")} amal={<button type="button" onClick={qatorQoshish} className="inline-flex h-10 items-center gap-2 rounded-2xl border border-dashed border-orange-300 bg-white px-4 text-sm font-black text-orange-600 hover:bg-orange-50"><Plus size={16} />{t("addLine")}</button>}>
             <MaydonXatosi matn={fx.xato("items")} />
+            <UmumiyBirlikPaneli className="mb-4" variantlar={umumiyVariantlar} tanlangan={umumiyBirlik} onTanlash={umumiyBirlikniTanlash} xabar={birlikXabari} />
             <div className="space-y-3">
               {forma.qatorlar.map((qator, indeks) => {
                 const mod = modMap.get(qator.modificationId);
@@ -300,7 +394,7 @@ export default function QaytarishOynasi({ tahrir, onClose, onSaqlandi }: Props) 
                         <button type="button" onClick={() => qatorOchirish(indeks)} aria-label={t("removeLine", { n: indeks + 1 })} className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-100"><Trash2 size={16} /></button>
                       </div>
                     </div>
-                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_minmax(0,1.1fr)_minmax(0,0.8fr)_minmax(0,1.5fr)_minmax(0,1fr)]">
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_minmax(0,1.1fr)_minmax(0,0.8fr)_minmax(0,0.9fr)_minmax(0,1.5fr)_minmax(0,1fr)]">
                       <Maydon nom={t("fields.product")} majburiy xato={fx.xato(yol("modificationId"))}>
                         <MahsulotTanlov value={qator.modificationId} variantlar={mahsulotVariantlari} onChange={(id) => mahsulotTanlash(indeks, id)} placeholder={t("fields.selectProduct")} className={input} tanlanganNomi={mod ? modificationNomi(mod) : tahrir?.items?.find((item) => item.modificationId === qator.modificationId)?.productName ?? undefined} ariaLabel={`${t("fields.product")} ${indeks + 1}`} />
                       </Maydon>
@@ -312,6 +406,10 @@ export default function QaytarishOynasi({ tahrir, onClose, onSaqlandi }: Props) 
                       </Maydon>
                       <Maydon nom={t("fields.quantity")} majburiy xato={fx.xato(yol("quantity"))}>
                         <input type="number" inputMode="decimal" min="0" step="any" value={qator.quantity} placeholder="0" aria-label={`${t("fields.quantity")} ${indeks + 1}`} onChange={(event) => qatorniOzgartir(indeks, { quantity: event.target.value })} className={input} />
+                        <AsosiyEkvivalent birliklar={qatorBirliklari(qator)} birlikId={qator.birlikId} miqdor={Number(qator.quantity.replace(",", ".")) || 0} zaxiraKoeff={qator.koeff} />
+                      </Maydon>
+                      <Maydon nom={tb("hujjatBirligi.label")}>
+                        <QatorBirligiTanlovi birliklar={qatorBirliklari(qator)} value={qator.birlikId} disabled={!qator.modificationId} ariaLabel={`${tb("hujjatBirligi.label")} ${indeks + 1}`} onChange={(birlikId) => birlikniOzgartirish(indeks, birlikId)} />
                       </Maydon>
                       <Maydon nom={t("fields.purchase")} xato={fx.xato(yol("purchaseId"))} izoh={!qator.modificationId || !forma.supplierId ? t("purchaseNeedsSupplier") : kirimlar.length === 0 ? t("noPurchases") : undefined}>
                         <AppSelect value={qator.purchaseId} disabled={!kirimlar.length && !qator.purchaseId} aria-label={`${t("fields.purchase")} ${indeks + 1}`} onChange={(event) => kirimTanlash(indeks, event.target.value)} className={selectKlass}>

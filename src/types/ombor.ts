@@ -215,10 +215,15 @@ export type ChiqimHujjati = {
     wentNegative?: boolean;
     id?: string;
     modificationId: string;
+    // Asosiy birlikda.
     quantity: number;
     price?: number | string;
     unitPrice?: number | string;
     costPrice?: number | string;
+    // Qo'shimcha birlikda (korobka) kiritilgan qator: o'sha birlikdagi son va o'sha paytdagi koeffitsient.
+    unitId?: string | null;
+    unitQuantity?: number | string | null;
+    factorSnapshot?: number | string | null;
     modification?: MahsulotModifikatsiyasi;
   }>;
 };
@@ -230,7 +235,8 @@ export type ChiqimYaratishMalumoti = {
   reason: ChiqimSababi;
   responsibleId?: string;
   note?: string;
-  items: Array<{ modificationId: string; quantity: number }>;
+  // `unitId` berilsa `quantity` shu birlikda (korobka); ombordan quantity × koeffitsient chiqadi.
+  items: Array<{ modificationId: string; quantity: number; unitId?: string }>;
 };
 
 export type KochirishHujjati = {
@@ -264,10 +270,15 @@ export type KochirishHujjati = {
     wentNegative?: boolean;
     id?: string;
     modificationId: string;
+    // Asosiy birlikda.
     quantity: number;
     price?: number | string;
     unitPrice?: number | string;
     costPrice?: number | string;
+    // Qo'shimcha birlikda (korobka) kiritilgan qator: o'sha birlikdagi son va o'sha paytdagi koeffitsient.
+    unitId?: string | null;
+    unitQuantity?: number | string | null;
+    factorSnapshot?: number | string | null;
     modification?: MahsulotModifikatsiyasi;
   }>;
 };
@@ -279,7 +290,8 @@ export type KochirishYaratishMalumoti = {
   destWarehouseId: string;
   responsibleId?: string;
   note?: string;
-  items: Array<{ modificationId: string; quantity: number }>;
+  // `unitId` berilsa `quantity` shu birlikda (korobka); ombordan quantity × koeffitsient chiqadi.
+  items: Array<{ modificationId: string; quantity: number; unitId?: string }>;
 };
 
 export type InventarizatsiyaTuri = "FULL" | "PARTIAL";

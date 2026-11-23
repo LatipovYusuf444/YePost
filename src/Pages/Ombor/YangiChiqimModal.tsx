@@ -11,7 +11,6 @@ import {
   Package,
   Plus,
   Trash2,
-  Warehouse,
 } from "lucide-react";
 import AppModal from "@/Components/common/AppModal";
 import { useOzgarishBormi } from "@/hooks/useOzgarishBormi";
@@ -30,13 +29,26 @@ import { kodBilanTopish, modificationNomi, pul, qoldiqMiqdori } from "./omborYor
 import MahsulotTanlov, { type MahsulotVarianti } from "./MahsulotTanlov";
 import ShtrixKodMaydoni, { type SkanNatijasi } from "./ShtrixKodMaydoni";
 import { asosiyValyuta } from "@/lib/asosiyValyuta";
+import { AsosiyEkvivalent, QatorBirligiTanlovi, UmumiyBirlikPaneli } from "./HujjatBirligi";
+import { tovarBirliklariniOlish, useTovarBirliklari } from "@/hooks/useTovarBirliklari";
+import {
+  asosiyBirlikdagiMiqdor,
+  birlikMiqdoriYaroqli,
+  birlikNomi,
+  qatorBirligi,
+  qatorKoeffi,
+  umumiyBirlikTovarda,
+  umumiyBirlikVariantlari,
+  unitIdQismi,
+} from "@/lib/hujjatBirligi";
 
 type Props = { onClose: () => void };
-type Qator = { id: string; modificationId: string; quantity: number };
+// `birlikId` "" — asosiy birlik; aks holda miqdor shu birlikda (korobka), ombordan quantity × koeffitsient chiqadi.
+type Qator = { id: string; modificationId: string; quantity: number; birlikId: string };
 
 const input =
   "h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100 aria-invalid:border-red-400 aria-invalid:ring-4 aria-invalid:ring-red-100 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70";
-const yangiQator = (): Qator => ({ id: crypto.randomUUID(), modificationId: "", quantity: 1 });
+const yangiQator = (): Qator => ({ id: crypto.randomUUID(), modificationId: "", quantity: 1, birlikId: "" });
 
 // Server xatosini maydonga bog'lash: kalit — so'rov tanasidagi yo'l (qatorlar "items.<i>.quantity", tartibi ekrandagi qatorlar bilan bir xil).
 const CHIQIM_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
@@ -124,6 +136,63 @@ export default function YangiChiqimModal({ onClose }: Props) {
     [omborQoldiqlari, canSellNegative, store.modifikatsiyalar, warehouseId]
   );
 
+  // Qator tovarining birliklari (korobka, qop): qator birligi va "Umumiy birlik" uchun.
+  function qatorTovari(modificationId: string) {
+    const mod = store.modifikatsiyalar.find((item) => item.id === modificationId)
+      ?? omborQoldiqlari.find((item) => item.modificationId === modificationId)?.modification;
+    return mod?.productId ?? mod?.product?.id ?? "";
+  }
+  const tovarBirliklari = useTovarBirliklari(qatorlar.map((row) => qatorTovari(row.modificationId)));
+  const qatorBirliklari = (row: Pick<Qator, "modificationId">) => tovarBirliklari[qatorTovari(row.modificationId)];
+  // Asosiy birlikdagi miqdor (qoldiq bilan solishtirish va tannarx summasi uchun).
+  const asosiyMiqdori = (row: Qator) => asosiyBirlikdagiMiqdor(Number(row.quantity || 0), qatorKoeffi(qatorBirliklari(row), row.birlikId));
+
+  // "Umumiy birlik": hamma qatorga va keyin qo'shiladiganlarga bir yo'la (shu birligi bor tovarlarga).
+  const { t: tb } = useTranslation("ombor_kichik");
+  const [umumiyBirlik, setUmumiyBirlik] = useState<string | null>(null);
+  const [birlikXabari, setBirlikXabari] = useState("");
+  const umumiyBirlikRef = useRef<string | null>(null);
+  const umumiyVariantlar = umumiyBirlikVariantlari(qatorlar.filter((row) => row.modificationId).map(qatorBirliklari));
+
+  function umumiyBirlikniTanlash(unitId: string) {
+    setUmumiyBirlik(unitId);
+    umumiyBirlikRef.current = unitId;
+    // Natija joriy qatorlardan darhol hisoblanadi (xabardagi son to'g'ri chiqishi uchun — updater funksiyasi keyinroq ishlaydi).
+    let qolgan = 0;
+    const kutilayotgan: Qator[] = [];
+    const yangi = qatorlar.map((row) => {
+      if (!row.modificationId) return row;
+      if (!unitId) return row.birlikId ? { ...row, birlikId: "" } : row;
+      if (!qatorBirliklari(row)) {
+        kutilayotgan.push(row);
+        return row;
+      }
+      const birlik = umumiyBirlikTovarda(qatorBirliklari(row), unitId);
+      if (!birlik) {
+        qolgan += 1;
+        return row;
+      }
+      return row.birlikId === birlik.unitId ? row : { ...row, birlikId: birlik.unitId };
+    });
+    setQatorlar(yangi);
+    kutilayotgan.forEach((row) => umumiyniQollash(row.id, row.modificationId));
+    fx.tozala(...qatorlar.map((_, index) => `items.${index}.quantity`));
+    const nom = umumiyVariantlar.find((variant) => variant.unitId === unitId)?.nom ?? "";
+    setBirlikXabari(unitId && qolgan > 0 ? tb("hujjatBirligi.umumiy.skipped", { count: qolgan, unit: nom }) : "");
+  }
+
+  // Yangi tanlangan mahsulot: umumiy birlik tanlangan bo'lsa, tovar birliklari yuklangach qatorga qo'yiladi (shu birligi bo'lsa).
+  function umumiyniQollash(qatorId: string, modificationId: string) {
+    const unitId = umumiyBirlikRef.current;
+    const productId = qatorTovari(modificationId);
+    if (!unitId || !productId) return;
+    void tovarBirliklariniOlish(productId).then((birliklar) => {
+      const birlik = umumiyBirlikTovarda(birliklar, unitId);
+      if (!birlik || umumiyBirlikRef.current !== unitId) return;
+      setQatorlar((rows) => rows.map((row) => (row.id === qatorId && row.modificationId === modificationId && !row.birlikId ? { ...row, birlikId: birlik.unitId } : row)));
+    });
+  }
+
   // Tannarx o'z valyutasida (dollar bo'lsa $); tanlanmagan qator jamiga kirmaydi.
   // Mahsulot hali tanlanmagan bo'lsa bo'sh jami bir valyutali rejimda rejim valyutasida chiqadi ("Faqat dollar"da "$0", "0 so'm" emas).
   const yagona = useYagonaValyuta();
@@ -131,10 +200,12 @@ export default function YangiChiqimModal({ onClose }: Props) {
     const tanlangan = qatorlar.filter((row) => row.modificationId).map((row) => {
       const mod = store.modifikatsiyalar.find((item) => item.id === row.modificationId);
       const { narx, valyuta } = chiqimTannarxi(mod);
-      return { summa: row.quantity * narx, valyuta };
+      // Tannarx asosiy birlikda: korobkali qatorda miqdor × koeffitsient.
+      const koeff = qatorKoeffi(tovarBirliklari[mod?.productId ?? mod?.product?.id ?? ""], row.birlikId);
+      return { summa: asosiyBirlikdagiMiqdor(row.quantity, koeff) * narx, valyuta };
     });
     return chiqimJamilari(tanlangan, undefined, yagona ?? asosiyValyuta()).map((jami) => pul(jami.summa, jami.valyuta)).join(" + ");
-  }, [qatorlar, store.modifikatsiyalar, yagona]);
+  }, [qatorlar, store.modifikatsiyalar, yagona, tovarBirliklari]);
 
   function qatorniYangilash(id: string, value: Partial<Qator>) {
     setQatorlar((rows) => rows.map((row) => (row.id === id ? { ...row, ...value } : row)));
@@ -193,24 +264,29 @@ export default function YangiChiqimModal({ onClose }: Props) {
     if (!canSellNegative && !(mavjud > 0)) return { xato: true, matn: tk("shtrixKod.outOfStock", { name: nom }) };
     const bor = qatorlar.find((row) => row.modificationId === qoldiq.modificationId);
     if (bor) {
+      // Miqdor qator birligida oshadi (korobkali qatorda +1 korobka); qoldiq asosiy birlikda solishtiriladi.
       const yangiMiqdor = Number(bor.quantity || 0) + 1;
-      if (!canSellNegative && yangiMiqdor > mavjud) return { xato: true, matn: tk("shtrixKod.notEnough", { name: nom, available: mavjud }) };
+      const koeff = qatorKoeffi(qatorBirliklari(bor), bor.birlikId);
+      if (!canSellNegative && asosiyBirlikdagiMiqdor(yangiMiqdor, koeff) > mavjud) return { xato: true, matn: tk("shtrixKod.notEnough", { name: nom, available: mavjud }) };
       qatorniYangilash(bor.id, { quantity: yangiMiqdor });
       return { xato: false, matn: tk("shtrixKod.added", { name: nom, qty: yangiMiqdor }) };
     }
     const bosh = qatorlar.find((row) => !row.modificationId);
     if (bosh) {
-      qatorniYangilash(bosh.id, { modificationId: qoldiq.modificationId });
+      qatorniYangilash(bosh.id, { modificationId: qoldiq.modificationId, birlikId: "" });
+      umumiyniQollash(bosh.id, qoldiq.modificationId);
       return { xato: false, matn: tk("shtrixKod.added", { name: nom, qty: bosh.quantity || 1 }) };
     }
-    setQatorlar((rows) => [...rows, { ...yangiQator(), modificationId: qoldiq.modificationId }]);
+    const yangi = { ...yangiQator(), modificationId: qoldiq.modificationId };
+    setQatorlar((rows) => [...rows, yangi]);
+    umumiyniQollash(yangi.id, qoldiq.modificationId);
     return { xato: false, matn: tk("shtrixKod.added", { name: nom, qty: 1 }) };
   }
 
   function omborniAlmashtirish(value: string) {
     fx.tozala("warehouseId", "items");
     setWarehouseId(value);
-    setQatorlar((rows) => rows.map((row) => ({ ...row, modificationId: "" })));
+    setQatorlar((rows) => rows.map((row) => ({ ...row, modificationId: "", birlikId: "" })));
   }
 
   async function saqlash(tasdiqlash: boolean) {
@@ -224,6 +300,11 @@ export default function YangiChiqimModal({ onClose }: Props) {
     qatorlar.forEach((row, index) => {
       if (!row.modificationId) xatolar[`items.${index}.modificationId`] = t("yangiChiqimModal.fieldErrors.productRequired");
       if (row.quantity <= 0) xatolar[`items.${index}.quantity`] = t("yangiChiqimModal.fieldErrors.quantityInvalid");
+      // Qo'shimcha birlikda (korobka) faqat butun son.
+      else {
+        const birlik = qatorBirligi(qatorBirliklari(row), row.birlikId);
+        if (!birlikMiqdoriYaroqli(birlik, row.quantity)) xatolar[`items.${index}.quantity`] = tb("hujjatBirligi.notWhole", { unit: birlikNomi(birlik) });
+      }
     });
     // Sabab bo'sh bo'lsa `xatolar.reason` bor; `!reason` sharti TypeScript uchun sababni toraytiradi.
     if (!reason || Object.keys(xatolar).length) return fx.ornat(xatolar);
@@ -236,7 +317,7 @@ export default function YangiChiqimModal({ onClose }: Props) {
     const ortiqchalar = qatorlar.flatMap((row, index) => {
       const stock = omborQoldiqlari.find((item) => item.modificationId === row.modificationId);
       const mavjud = Number(stock ? qoldiqMiqdori(stock) : 0);
-      return row.quantity > mavjud
+      return asosiyMiqdori(row) > mavjud
         ? [[`items.${index}.quantity`, t("yangiChiqimModal.fieldErrors.exceedsStock", { available: mavjud.toLocaleString("uz-UZ") })] as const]
         : [];
     });
@@ -248,7 +329,8 @@ export default function YangiChiqimModal({ onClose }: Props) {
       reason,
       responsibleId: responsibleId || undefined,
       note: note.trim() || undefined,
-      items: qatorlar.map(({ modificationId, quantity }) => ({ modificationId, quantity })),
+      // Birlikda kiritilgan qator `unitId` bilan: miqdor shu birlikda, ombordan quantity × koeffitsient chiqadi.
+      items: qatorlar.map((row) => ({ modificationId: row.modificationId, quantity: row.quantity, ...unitIdQismi(qatorBirliklari(row), row.birlikId) })),
     }));
     if (!hujjat) return;
     if (tasdiqlash && !(await fx.kuzat(() => store.chiqimTasdiqlash(hujjat.id)))) return;
@@ -349,18 +431,24 @@ export default function YangiChiqimModal({ onClose }: Props) {
               />
             </div>
 
+            <UmumiyBirlikPaneli className="mb-4" variantlar={umumiyVariantlar} tanlangan={umumiyBirlik} onTanlash={umumiyBirlikniTanlash} xabar={birlikXabari} />
+
             <div className="scrollbar-orange overflow-x-auto pb-2">
-              <div ref={qatorlarRef} className="min-w-[1220px] space-y-3">
-                <div className="grid grid-cols-[42px_76px_2.1fr_1fr_1fr_1fr_1.35fr_1fr_1fr_48px] gap-3 px-3 text-[13px] font-semibold text-slate-600">
-                  <span>{t("yangiChiqimModal.items.columns.number")}</span><span /><span>{t("yangiChiqimModal.items.columns.product")}</span><span>{t("yangiChiqimModal.items.columns.barcode")}</span><span>{t("yangiChiqimModal.items.columns.costPrice")}</span><span>{t("yangiChiqimModal.items.columns.quantity")}</span><span>{t("yangiChiqimModal.items.columns.warehouse")}</span><span>{t("yangiChiqimModal.items.columns.stock")}</span><span>{t("yangiChiqimModal.items.columns.amount")}</span><span />
+              <div ref={qatorlarRef} className="min-w-[1560px] space-y-3">
+                <div className="grid grid-cols-[42px_76px_1.8fr_1fr_1fr_1.15fr_1.4fr_1.5fr_1fr_1fr_48px] gap-3 px-3 text-[13px] font-semibold text-slate-600">
+                  <span>{t("yangiChiqimModal.items.columns.number")}</span><span /><span>{t("yangiChiqimModal.items.columns.product")}</span><span>{t("yangiChiqimModal.items.columns.barcode")}</span><span>{t("yangiChiqimModal.items.columns.costPrice")}</span><span>{t("yangiChiqimModal.items.columns.quantity")}</span><span>{tb("hujjatBirligi.label")}</span><span>{t("yangiChiqimModal.items.columns.warehouse")}</span><span>{t("yangiChiqimModal.items.columns.stock")}</span><span>{t("yangiChiqimModal.items.columns.amount")}</span><span />
                 </div>
                 {qatorlar.map((row, index) => {
                   const mod = store.modifikatsiyalar.find((item) => item.id === row.modificationId);
                   const stock = omborQoldiqlari.find((item) => item.modificationId === row.modificationId);
                   const mavjud = Number(stock ? qoldiqMiqdori(stock) : 0);
-                  const { narx, valyuta: narxValyutasi } = chiqimTannarxi(mod);
+                  const { narx: asosiyNarx, valyuta: narxValyutasi } = chiqimTannarxi(mod);
+                  const birliklar = qatorBirliklari(row);
+                  const koeff = qatorKoeffi(birliklar, row.birlikId);
+                  // Tannarx tanlangan birlikda (1 korobka), summa — asosiy birlikdagi miqdor bo'yicha.
+                  const narx = asosiyNarx * koeff;
                   return (
-                    <div key={row.id} className="grid grid-cols-[42px_76px_2.1fr_1fr_1fr_1fr_1.35fr_1fr_1fr_48px] items-center gap-3 rounded-2xl border border-orange-100 bg-[#FFFFFF] p-3">
+                    <div key={row.id} className="grid grid-cols-[42px_76px_1.8fr_1fr_1fr_1.15fr_1.4fr_1.5fr_1fr_1fr_48px] items-center gap-3 rounded-2xl border border-orange-100 bg-[#FFFFFF] p-3">
                       <span className="text-center text-sm font-black text-slate-400">{index + 1}</span>
                       <div className="flex h-12 items-center justify-center rounded-xl border border-dashed border-orange-200 bg-white text-slate-300"><Image size={20} /></div>
                       <XatoliMaydon xato={fx.xato(`items.${index}.modificationId`)}>
@@ -369,7 +457,8 @@ export default function YangiChiqimModal({ onClose }: Props) {
                         variantlar={mahsulotVariantlari(row.id)}
                         onChange={(id) => {
                           fx.tozala(`items.${index}`);
-                          qatorniYangilash(row.id, { modificationId: id });
+                          qatorniYangilash(row.id, { modificationId: id, birlikId: "" });
+                          umumiyniQollash(row.id, id);
                           // Mahsulot tanlangach fokus shu qatorning miqdoriga o'tadi.
                           fokusSoralish(row.id, "miqdor");
                         }}
@@ -381,10 +470,12 @@ export default function YangiChiqimModal({ onClose }: Props) {
                       </XatoliMaydon>
                       <div className="relative"><Barcode size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={mod?.barcode ?? ""} readOnly placeholder={t("yangiChiqimModal.items.barcodePlaceholder")} className={`${input} pl-9`} /></div>
                       <input value={narx ? narx.toLocaleString("uz-UZ") : ""} placeholder="0" readOnly className={input} />
-                      <XatoliMaydon xato={fx.xato(`items.${index}.quantity`)}><div className="relative"><input type="number" min="0.001" max={canSellNegative ? undefined : mavjud || undefined} step="0.001" value={row.quantity} data-chiqim-miqdor={row.id} onChange={(event) => { fx.tozala(`items.${index}.quantity`); qatorniYangilash(row.id, { quantity: Number(event.target.value) }); }} onKeyDown={(event) => { if (event.key !== "Enter" || event.nativeEvent.isComposing) return; event.preventDefault(); keyingiQatorgaOtish(row.id); }} className={`${input} pr-14`} /><span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400">{t("yangiChiqimModal.items.unit")}</span></div></XatoliMaydon>
-                      <XatoliMaydon xato={index === 0 ? fx.xato("warehouseId") : undefined}><div className="relative"><Warehouse size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><AppSelect value={warehouseId} onChange={(event) => omborniAlmashtirish(event.target.value)} className={`${input} appearance-none pl-9 pr-8`}><option value="">{t("yangiChiqimModal.items.selectWarehouse")}</option>{store.omborlar.filter((item) => item.isActive !== false).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</AppSelect><ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" /></div></XatoliMaydon>
-                      <div className="rounded-xl bg-slate-50 px-3 py-2.5"><p className="font-black text-slate-700">{mavjud.toLocaleString("uz-UZ")}</p><p className="truncate text-[10px] font-semibold text-slate-400">{store.omborlar.find((item) => item.id === warehouseId)?.name ?? t("yangiChiqimModal.items.warehouseFallback")}</p></div>
-                      <p className="font-black text-emerald-600">{pul(row.quantity * narx, narxValyutasi)}</p>
+                      <XatoliMaydon xato={fx.xato(`items.${index}.quantity`)}><div className="relative"><input type="number" min={koeff === 1 ? "0.001" : "1"} max={canSellNegative ? undefined : mavjud ? mavjud / koeff : undefined} step={koeff === 1 ? "0.001" : "1"} value={row.quantity} data-chiqim-miqdor={row.id} onChange={(event) => { fx.tozala(`items.${index}.quantity`); qatorniYangilash(row.id, { quantity: Number(event.target.value) }); }} onKeyDown={(event) => { if (event.key !== "Enter" || event.nativeEvent.isComposing) return; event.preventDefault(); keyingiQatorgaOtish(row.id); }} className={`${input} pr-14`} /><span className="pointer-events-none absolute right-4 top-1/2 max-w-[44px] -translate-y-1/2 truncate text-[11px] font-bold text-slate-400">{birlikNomi(qatorBirligi(birliklar, row.birlikId) ?? birliklar?.find((birlik) => birlik.asosiy)) || t("yangiChiqimModal.items.unit")}</span></div><AsosiyEkvivalent className="mt-1" birliklar={birliklar} birlikId={row.birlikId} miqdor={Number(row.quantity || 0)} /></XatoliMaydon>
+                      <QatorBirligiTanlovi birliklar={birliklar} value={row.birlikId} disabled={!row.modificationId} ariaLabel={`${tb("hujjatBirligi.label")} ${index + 1}`} onChange={(birlikId) => { fx.tozala(`items.${index}.quantity`); qatorniYangilash(row.id, { birlikId }); }} />
+                      {/* AppSelect o'z strelkasini chizadi va padding'ni tugmaga beradi: ortiqcha ikonka/strelka va keng padding nomni yashirib qo'yardi. */}
+                      <XatoliMaydon xato={index === 0 ? fx.xato("warehouseId") : undefined}><AppSelect value={warehouseId} aria-label={t("yangiChiqimModal.items.columns.warehouse")} onChange={(event) => omborniAlmashtirish(event.target.value)} className={`${input} px-3`}><option value="">{t("yangiChiqimModal.items.selectWarehouse")}</option>{store.omborlar.filter((item) => item.isActive !== false).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</AppSelect></XatoliMaydon>
+                      <div className="rounded-xl bg-slate-50 px-3 py-2.5"><p className="font-black text-slate-700">{mavjud.toLocaleString("uz-UZ")} <span className="text-[11px] font-bold text-slate-400">{birlikNomi(birliklar?.find((birlik) => birlik.asosiy))}</span></p><p className="truncate text-[10px] font-semibold text-slate-400">{store.omborlar.find((item) => item.id === warehouseId)?.name ?? t("yangiChiqimModal.items.warehouseFallback")}</p></div>
+                      <p className="font-black text-emerald-600">{pul(asosiyBirlikdagiMiqdor(row.quantity, koeff) * asosiyNarx, narxValyutasi)}</p>
                       <button type="button" disabled={qatorlar.length === 1} onClick={() => { fx.tozala("items"); setQatorlar((rows) => rows.filter((item) => item.id !== row.id)); }} aria-label={t("yangiChiqimModal.items.removeRowAria")} className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100 disabled:opacity-30"><Trash2 size={17} /></button>
                     </div>
                   );

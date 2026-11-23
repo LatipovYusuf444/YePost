@@ -9,7 +9,7 @@ import { xatoKodiMatni } from '../src/api/xatoKodlari.ts';
 
 const manba = (yol) => readFileSync(new URL(`../${yol}`, import.meta.url), 'utf8');
 const matn = (kalit) => kalit;
-const qator = (qism = {}) => ({ id: 'q1', modificationId: 'm1', warehouseId: 'w1', quantity: '3', purchaseId: '', price: '15000', narxKirimdan: false, seriyali: false, batchId: '', serial: '', ...qism });
+const qator = (qism = {}) => ({ id: 'q1', modificationId: 'm1', warehouseId: 'w1', quantity: '3', purchaseId: '', price: '15000', narxKirimdan: false, seriyali: false, batchId: '', serial: '', birlikId: '', koeff: 1, ...qism });
 const forma = (qism = {}) => ({ supplierId: 's1', currency: 'UZS', note: ' Qadoqi singan ', qatorlar: [qator()], ...qism });
 
 test('kirimsiz qatorda narx majburiy va yuboriladi; izoh tozalanadi', () => {
@@ -63,7 +63,7 @@ test('saqlangan hujjat → forma (tahrir): narx foydalanuvchi qiymati, kirim va 
   const hujjat = { id: 'r1', status: 'DRAFT', supplierId: 's1', currency: 'USD', note: 'singan', items: [{ id: 'i1', modificationId: 'm1', warehouseId: 'w1', quantity: '3', price: '1.25', purchaseId: 'p1', batchId: null }] };
   const f = lib.hujjatdanForma(hujjat, (id) => id === 'm1');
   assert.equal(f.currency, 'USD');
-  assert.deepEqual(f.qatorlar[0], { id: 'i1', modificationId: 'm1', warehouseId: 'w1', quantity: '3', purchaseId: 'p1', price: '1.25', narxKirimdan: false, seriyali: true, batchId: '', serial: '' });
+  assert.deepEqual(f.qatorlar[0], { id: 'i1', modificationId: 'm1', warehouseId: 'w1', quantity: '3', purchaseId: 'p1', price: '1.25', narxKirimdan: false, seriyali: true, batchId: '', serial: '', birlikId: '', koeff: 1 });
   assert.equal(lib.qaytarishHolati('CANCELED'), 'CANCELLED');
   assert.equal(lib.qaytarishHolati(undefined), 'DRAFT');
 });
@@ -98,4 +98,19 @@ test('API yo\'llari va xato matnlari', () => {
   // Kirimni bekor qilishda tovar qaytarishda tursa: avval qaytarishni bekor qilish kerakligi aytiladi; boshqa joyda server xabari.
   assert.match(xatoKodiMatni('errors.inventory.stock_already_consumed', '/inventory/purchases/p1/cancel', 'uz'), /yetkazib beruvchiga qaytarish/);
   assert.equal(xatoKodiMatni('errors.inventory.stock_already_consumed', '/inventory/write-offs/w1/cancel', 'uz'), null);
+});
+
+// 23.11: qaytarishda birlik (backend: qatorda unitId; quantity va price shu birlikda; javobda unitQuantity, unitPrice, factorSnapshot).
+test('birlikda (korobka) qaytarish: unitId yuboriladi, kirimdan olingan narx yuborilmaydi; saqlangan qator o‘z birligida ochiladi', () => {
+  const tana = lib.qaytarishTanasiniYigish(forma({ qatorlar: [qator({ quantity: '2', price: '180000', birlikId: 'box', koeff: 12 })] }), matn).tana;
+  assert.deepEqual(tana.items, [{ modificationId: 'm1', warehouseId: 'w1', quantity: 2, price: 180000, unitId: 'box' }]);
+  const kirimdan = lib.qaytarishTanasiniYigish(forma({ qatorlar: [qator({ purchaseId: 'p1', narxKirimdan: true, birlikId: 'box', koeff: 12 })] }), matn).tana;
+  assert.deepEqual(kirimdan.items, [{ modificationId: 'm1', warehouseId: 'w1', quantity: 3, purchaseId: 'p1', unitId: 'box' }]);
+  const hujjat = { id: 'r2', status: 'DRAFT', supplierId: 's1', currency: 'UZS', items: [{ id: 'i2', modificationId: 'm1', warehouseId: 'w1', quantity: '24', price: '15000', unitId: 'box', unitQuantity: '2', unitPrice: '180000', factorSnapshot: '12' }] };
+  const f = lib.hujjatdanForma(hujjat, () => false);
+  assert.equal(f.qatorlar[0].quantity, '2');
+  assert.equal(f.qatorlar[0].price, '180000');
+  assert.equal(f.qatorlar[0].birlikId, 'box');
+  assert.equal(f.qatorlar[0].koeff, 12);
+  assert.deepEqual(lib.qaytarishTanasiniYigish(f, matn).tana.items, [{ modificationId: 'm1', warehouseId: 'w1', quantity: 2, price: 180000, unitId: 'box' }]);
 });

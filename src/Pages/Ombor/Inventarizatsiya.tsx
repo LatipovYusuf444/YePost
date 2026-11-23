@@ -22,6 +22,8 @@ import type { InventarizatsiyaHujjati, InventarizatsiyaSoroviQatori, Inventariza
 import { korobkaBirliklari, korobkaJamiMatni, korobkagaAjratish, korobkaSoroviQatori, saqlanganKorobka, type KorobkaBirligi, type KorobkaSanogi } from "@/lib/inventarizatsiyaKorobka";
 import { tovarBirliklariniYangilash, useTovarBirliklari } from "@/hooks/useTovarBirliklari";
 import { KorobkaMaydoni, KorobkaTugmasi } from "./InventarizatsiyaKorobka";
+import { UmumiyBirlikPaneli } from "./HujjatBirligi";
+import { umumiyBirlikVariantlari } from "@/lib/hujjatBirligi";
 import { holat, hujjatRaqami, mahsulotQidiruvi, modificationNomi, sana } from "./omborYordamchilari";
 import InventoryHujjatModal from "./InventoryHujjatModal";
 import HujjatStatistikaKartalari from "./HujjatStatistikaKartalari";
@@ -358,6 +360,58 @@ export default function Inventarizatsiya() {
     return natija;
   }
 
+  // "Sanash birligi" (umumiy birlik): hamma qatorni bir yo'la korobkada sanashga o'tkazish (shu birligi bor tovarlarda), "Asosiy birlik" —
+  // hammasini oddiy sanashga qaytarish (jami saqlanadi). Keyin qo'shilgan tovarlar ham birliklari yuklangach shu birlikda ochiladi;
+  // qatorda qo'lda o'chirilgani qayta yoqilmaydi.
+  const [umumiySanash, setUmumiySanash] = useState<string | null>(null);
+  const [umumiySanashXabari, setUmumiySanashXabari] = useState("");
+  const umumiyQollangan = useRef(new Set<string>());
+  const { t: tb } = useTranslation("ombor_kichik");
+  const umumiySanashVariantlari = umumiyBirlikVariantlari(inventarizatsiyaQatorlari.map((qoldiq) => tovarBirliklari[qatorTovari(qoldiq)]), (birlik) => birlik.koeff > 1);
+  function umumiySanashniTozalash() {
+    setUmumiySanash(null);
+    setUmumiySanashXabari("");
+    umumiyQollangan.current = new Set();
+  }
+  function umumiySanashniTanlash(unitId: string) {
+    setUmumiySanash(unitId);
+    // Birliklari hali yuklanmagan qatorlar belgilanmaydi: yuklangach effekt ularga ham qo'llaydi.
+    umumiyQollangan.current = new Set(inventarizatsiyaQatorlari.filter((qoldiq) => tovarBirliklari[qatorTovari(qoldiq)]).map((qoldiq) => qoldiq.modificationId));
+    let qolgan = 0;
+    for (const qoldiq of inventarizatsiyaQatorlari) {
+      const id = qoldiq.modificationId;
+      if (!unitId) {
+        if (korobkalar[id]) korobkaniOchirish(id);
+        continue;
+      }
+      if (!tovarBirliklari[qatorTovari(qoldiq)]) continue;
+      const birlik = qatorKorobkaBirliklari(qoldiq).find((item) => item.unitId === unitId);
+      if (!birlik) {
+        qolgan += 1;
+        continue;
+      }
+      if (faolKorobka(qoldiq)?.korobka.unitId === unitId) continue;
+      korobkaOzgardi(id, korobkagaAjratish(actuals[id], birlik), birlik.koeff, qatorButunmi(qoldiq));
+    }
+    const nom = umumiySanashVariantlari.find((variant) => variant.unitId === unitId)?.nom ?? "";
+    setUmumiySanashXabari(unitId && qolgan > 0 ? tb("hujjatBirligi.umumiy.skipped", { count: qolgan, unit: nom }) : "");
+  }
+  // Keyin qo'shilgan qatorlar: tovar birliklari yuklangach bir marta (deps yo'q — har chizishda faqat yangi qatorlar tekshiriladi).
+  useEffect(() => {
+    const unitId = umumiySanash;
+    if (!unitId) return;
+    for (const qoldiq of inventarizatsiyaQatorlari) {
+      const id = qoldiq.modificationId;
+      if (umumiyQollangan.current.has(id)) continue;
+      const royxat = tovarBirliklari[qatorTovari(qoldiq)];
+      if (!royxat) continue;
+      umumiyQollangan.current.add(id);
+      if (korobkalar[id]) continue;
+      const birlik = korobkaBirliklari(royxat).find((item) => item.unitId === unitId);
+      if (birlik) korobkaOzgardi(id, korobkagaAjratish(actuals[id], birlik), birlik.koeff, butunBirlikmi(royxat));
+    }
+  });
+
   function korobkaniOchirish(modificationId: string) {
     setKorobkalar((oldingi) => {
       const keyingi = { ...oldingi };
@@ -667,6 +721,7 @@ export default function Inventarizatsiya() {
     setHujjatSanasi(bugungiToshkentKuni());
     setActuals({});
     setKorobkalar({});
+    umumiySanashniTozalash();
     setBarcodeInput("");
     setScanFeedback("");
     setReviewAction(null);
@@ -695,6 +750,7 @@ export default function Inventarizatsiya() {
     setWarehouseId(id);
     setActuals({});
     setKorobkalar({});
+    umumiySanashniTozalash();
     setBarcodeInput("");
     setScanFeedback("");
     setReviewAction(null);
@@ -724,6 +780,7 @@ export default function Inventarizatsiya() {
     setTanlanganModifikatsiyaIds((hujjat.items ?? []).map(row => row.modificationId));
     setActuals(Object.fromEntries((hujjat.items ?? []).map(row => [row.modificationId, String(row.actualQuantity)])));
     // Korobkada sanalgan qatorlar shu ko'rinishda ochiladi ("5 korobka + 3").
+    umumiySanashniTozalash();
     setKorobkalar(Object.fromEntries((hujjat.items ?? []).flatMap(row => {
       const korobka = saqlanganKorobka(row);
       return korobka ? [[row.modificationId, korobka]] : [];
@@ -745,6 +802,7 @@ export default function Inventarizatsiya() {
     setNote(hujjat.note ?? "");
     setTanlanganModifikatsiyaIds((hujjat.items ?? []).map(row => row.modificationId));
     setActuals(Object.fromEntries((hujjat.items ?? []).map(row => [row.modificationId, String(Number(row.actualQuantity))])));
+    umumiySanashniTozalash();
     setKorobkalar(Object.fromEntries((hujjat.items ?? []).flatMap(row => {
       const korobka = saqlanganKorobka(row);
       return korobka ? [[row.modificationId, korobka]] : [];
@@ -890,6 +948,7 @@ export default function Inventarizatsiya() {
       setWarehouseId("");
       setActuals({});
       setKorobkalar({});
+      umumiySanashniTozalash();
       setNote("");
       // Yangilangan hujjat ko'rish oynasida qayta ochiladi.
       setTanlanganId(qoralamaId);
@@ -918,6 +977,7 @@ export default function Inventarizatsiya() {
     setWarehouseId("");
     setActuals({});
     setKorobkalar({});
+    umumiySanashniTozalash();
     setNote("");
   }
 
@@ -1330,6 +1390,15 @@ export default function Inventarizatsiya() {
                           <p className="mt-2 px-1 text-xs font-medium leading-5 text-slate-500">{t("inventarizatsiya.createModal.addNextProductHint")}</p>
                         </div>
                       )}
+                      <UmumiyBirlikPaneli
+                        className="mx-5 mb-3 shrink-0"
+                        variantlar={umumiySanashVariantlari}
+                        tanlangan={umumiySanash}
+                        onTanlash={umumiySanashniTanlash}
+                        xabar={umumiySanashXabari}
+                        sarlavha={t("inventarizatsiya.createModal.box.umumiyLabel")}
+                        izoh={t("inventarizatsiya.createModal.box.umumiyHint")}
+                      />
                       {fx.xato("items") && <div className="mx-5 mb-3 shrink-0"><MaydonXatosi matn={fx.xato("items")} /></div>}
                       {/* Jadval sarlavhasi 40px, oddiy qator 80px: 5 qatorgacha to'liq ko'rinadi. Korobka paneli qatorni balandlatadi, shuning uchun
                           scroll qatorlar soniga emas, balandlikka bog'liq: sig'masa doim yuqoriga-pastga aylantirish mumkin (sarlavha yopishqoq). */}
@@ -1433,6 +1502,8 @@ export default function Inventarizatsiya() {
                                         setFormaXatosi(null);
                                         fx.tozala("items");
                                         setTanlanganModifikatsiyaIds((oldingi) => oldingi.filter((id) => id !== qoldiq.modificationId));
+                                        // Qayta qo'shilsa "Sanash birligi" unga yana qo'llanadi.
+                                        umumiyQollangan.current.delete(qoldiq.modificationId);
                                         korobkaniOchirish(qoldiq.modificationId);
                                         setActuals((oldingi) => {
                                           const keyingi = { ...oldingi };

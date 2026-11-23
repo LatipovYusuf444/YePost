@@ -23,6 +23,9 @@ import type { ChiqimHujjati, ChiqimSababi, MahsulotModifikatsiyasi } from "@/typ
 import { holat, hujjatRaqami, modificationNomi, pul, sana } from "./omborYordamchilari";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
 import { asosiyValyuta } from "@/lib/asosiyValyuta";
+import { BirlikliMiqdor } from "./HujjatBirligi";
+import { useTovarBirliklari } from "@/hooks/useTovarBirliklari";
+import { birlikNomi, saqlanganQatorBirligida } from "@/lib/hujjatBirligi";
 
 type Props = { id: string; onClose: () => void; ajratilganQator?: HujjatQatoriTanlovi; hisobotManbasi?: HujjatHisobotManbasi };
 
@@ -93,6 +96,17 @@ export default function ChiqimTafsilotModal({ id, onClose, ajratilganQator, hiso
     }),
     [hujjat?.items, modMap]
   );
+
+  // Birlikda (korobka) kiritilgan qatorlar uchun birlik nomlari: "2 korobka = 24 dona".
+  const tovarBirliklari = useTovarBirliklari(qatorlar.map((item) => item.modification?.productId ?? item.modification?.product?.id ?? ""));
+  function miqdorKorinishi(item: (typeof qatorlar)[number]) {
+    const qator = saqlanganQatorBirligida(item);
+    const birliklar = tovarBirliklari[item.modification?.productId ?? item.modification?.product?.id ?? ""];
+    const asosiyNomi = birlikNomi(birliklar?.find((birlik) => birlik.asosiy));
+    if (!qator.birlikId) return item.quantity.toLocaleString("uz-UZ", { maximumFractionDigits: 3 });
+    const nom = birlikNomi(birliklar?.find((birlik) => birlik.unitId === qator.birlikId));
+    return <BirlikliMiqdor miqdor={qator.miqdor} birlikNomi={nom || "×"} asosiyMiqdor={item.quantity} asosiyNomi={asosiyNomi} />;
+  }
 
   const jamiMatni = useMemo(
     () => chiqimJamilari(qatorlar, hujjat?.totalAmount ?? hujjat?.total, yagona ?? asosiyValyuta()).map((item) => pul(item.summa, item.valyuta)).join(" + "),
@@ -188,7 +202,7 @@ export default function ChiqimTafsilotModal({ id, onClose, ajratilganQator, hiso
                         <td className="px-4 py-4 font-black text-slate-800">{modificationNomi(item.modification)}<NegativeStockBadge wentNegative={item.wentNegative} /></td>
                         <td className="px-4 py-4 font-medium text-slate-500">{item.modification?.barcode || "—"}</td>
                         <td className="px-4 py-4 font-semibold text-slate-600">{pul(item.price, item.valyuta)}</td>
-                        <td className="px-4 py-4 font-semibold text-slate-700">{item.quantity.toLocaleString("uz-UZ")}</td>
+                        <td className="px-4 py-4 font-semibold text-slate-700">{miqdorKorinishi(item)}</td>
                         <td className="px-4 py-4 text-slate-600">{omborNomi}</td>
                         <td className="px-4 py-4 font-black text-emerald-600">{pul(item.summa, item.valyuta)}</td>
                         <td />

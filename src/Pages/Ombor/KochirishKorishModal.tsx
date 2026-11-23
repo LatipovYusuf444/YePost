@@ -32,9 +32,13 @@ import { useHujjatniBekorQilishMumkinmi } from "@/hooks/useHujjatniOchirishMumki
 import type { KochirishHujjati, MahsulotModifikatsiyasi, NomliEntity } from "@/types/ombor";
 import { holat, hujjatRaqami, modificationNomi, pul, qoldiqMiqdori } from "./omborYordamchilari";
 import InventoryDocumentActivity from "./InventoryDocumentActivity";
+import { AsosiyEkvivalent, BirlikliMiqdor, QatorBirligiTanlovi } from "./HujjatBirligi";
+import { useTovarBirliklari } from "@/hooks/useTovarBirliklari";
+import { asosiyBirlikdagiMiqdor, birlikMiqdoriYaroqli, birlikNomi, qatorBirligi, qatorKoeffi, saqlanganQatorBirligida, unitIdQismi } from "@/lib/hujjatBirligi";
 
 type Props = { id: string; onClose: () => void; ajratilganQator?: HujjatQatoriTanlovi; hisobotManbasi?: HujjatHisobotManbasi };
-type TahrirQatori = { modificationId: string; quantity: number };
+// `birlikId` "" — asosiy birlik; `koeff` — saqlangan qatorning koeffitsienti (birliklar yuklanguncha).
+type TahrirQatori = { modificationId: string; quantity: number; birlikId: string; koeff?: number };
 
 // Tahrirda server xatosi qaysi maydonga tegishli (kalit — backend maydon nomi).
 const KOCHIRISH_TAHRIR_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
@@ -106,6 +110,19 @@ export default function KochirishKorishModal({ id, onClose, ajratilganQator, his
   const [items, setItems] = useState<TahrirQatori[]>([]);
   const [xato, setXato] = useState("");
   const fx = useMaydonXatolari(KOCHIRISH_TAHRIR_XATO_QOIDALARI);
+  const { t: tb } = useTranslation("ombor_kichik");
+  // Tovar birliklari: ko'rishda "2 korobka = 24 dona", tahrirda qator birligi uchun.
+  function tovarId(modificationId: string) {
+    const mod = store.modifikatsiyalar.find((modification) => modification.id === modificationId)
+      ?? hujjat?.items?.find((item) => item.modificationId === modificationId)?.modification
+      ?? store.qoldiqlar.find((qoldiq) => qoldiq.modificationId === modificationId)?.modification;
+    return mod?.productId ?? mod?.product?.id ?? "";
+  }
+  const tovarBirliklari = useTovarBirliklari([
+    ...(hujjat?.items ?? []).map((item) => tovarId(item.modificationId)),
+    ...items.map((item) => tovarId(item.modificationId)),
+  ]);
+  const birliklariniOl = (modificationId: string) => tovarBirliklari[tovarId(modificationId)];
 
   async function hujjatniYuklash() {
     setYuklanmoqda(true);
@@ -188,10 +205,11 @@ export default function KochirishKorishModal({ id, onClose, ajratilganQator, his
     setDest(hujjat.destWarehouseId);
     setResponsible(hujjat.responsibleId ?? "");
     setNote(hujjat.note ?? "");
-    setItems((hujjat.items ?? []).map((item) => ({
-      modificationId: item.modificationId,
-      quantity: Number(item.quantity),
-    })));
+    // Birlikda kiritilgan qator o'z birligida ochiladi (2 korobka), saqlashda ham `unitId` bilan qaytadi.
+    setItems((hujjat.items ?? []).map((item) => {
+      const qator = saqlanganQatorBirligida(item as KengaytirilganItem & { unitId?: string | null; unitQuantity?: unknown; factorSnapshot?: unknown });
+      return { modificationId: item.modificationId, quantity: qator.miqdor, birlikId: qator.birlikId, koeff: qator.koeff };
+    }));
     setXato("");
     fx.ornat({});
     setTahrir(true);
@@ -228,10 +246,22 @@ export default function KochirishKorishModal({ id, onClose, ajratilganQator, his
       fx.ornat(maydonlar);
       return;
     }
+    // Qo'shimcha birlikda (korobka) faqat butun son.
+    const butunEmas = items.flatMap((item, index) => {
+      const birlik = qatorBirligi(birliklariniOl(item.modificationId), item.birlikId);
+      return item.quantity > 0 && !birlikMiqdoriYaroqli(birlik, item.quantity) ? [[`items.${index}.quantity`, tb("hujjatBirligi.notWhole", { unit: birlikNomi(birlik) })] as const] : [];
+    });
+    if (butunEmas.length) {
+      setXato("");
+      fx.ornat(Object.fromEntries(butunEmas));
+      return;
+    }
+    // Qoldiq asosiy birlikda solishtiriladi (korobka × koeffitsient).
     const ortiqchaQatorlar = tozaItems.map((item) => {
       const qoldiq = store.qoldiqlar.find((qator) => qator.modificationId === item.modificationId);
       const avvalgi = hujjat?.items?.find((qator) => qator.modificationId === item.modificationId);
-      return Boolean(qoldiq && item.quantity > qoldiqMiqdori(qoldiq) + Number(avvalgi?.quantity ?? 0));
+      const asosiy = asosiyBirlikdagiMiqdor(item.quantity, qatorKoeffi(birliklariniOl(item.modificationId), item.birlikId, item.koeff));
+      return Boolean(qoldiq && asosiy > qoldiqMiqdori(qoldiq) + Number(avvalgi?.quantity ?? 0));
     });
     const ortiqcha = ortiqchaQatorlar.some(Boolean);
     if (!canSellNegative && ortiqcha) {
@@ -246,7 +276,7 @@ export default function KochirishKorishModal({ id, onClose, ajratilganQator, his
       destWarehouseId,
       responsibleId: responsibleId || undefined,
       note: note.trim() || undefined,
-      items: tozaItems,
+      items: tozaItems.map((item) => ({ modificationId: item.modificationId, quantity: item.quantity, ...unitIdQismi(birliklariniOl(item.modificationId), item.birlikId) })),
     }));
     if (!ok) return;
     setTahrir(false);
@@ -313,14 +343,15 @@ export default function KochirishKorishModal({ id, onClose, ajratilganQator, his
                 </div>
                 <div className="mt-5 space-y-3">
                   {items.map((item, index) => (
-                    <div key={`${item.modificationId}-${index}`} className="grid gap-3 rounded-2xl bg-orange-50/60 p-3 md:grid-cols-[1fr_160px_44px]">
-                      <XatoliMaydon xato={fx.xato(`items.${index}.modificationId`)}><AppSelect value={item.modificationId} onChange={(event) => { fx.tozala(`items.${index}.modificationId`); setItems((oldingi) => oldingi.map((qator, i) => i === index ? { ...qator, modificationId: event.target.value } : qator)); }} className="input"><option value="">{t("kochirishKorishModal.edit.productPlaceholder")}</option>{store.qoldiqlar.map((qoldiq) => <option key={`${qoldiq.modificationId}-${qoldiq.id ?? "q"}`} value={qoldiq.modificationId}>{modificationNomi(qoldiq.modification)} — {qoldiqMiqdori(qoldiq)}</option>)}</AppSelect></XatoliMaydon>
-                      <XatoliMaydon xato={fx.xato(`items.${index}.quantity`)}><input type="number" min="0.001" step="0.001" value={item.quantity} onChange={(event) => { fx.tozala(`items.${index}.quantity`); setItems((oldingi) => oldingi.map((qator, i) => i === index ? { ...qator, quantity: Number(event.target.value) } : qator)); }} className="input" /></XatoliMaydon>
+                    <div key={`${item.modificationId}-${index}`} className="grid gap-3 rounded-2xl bg-orange-50/60 p-3 md:grid-cols-[1fr_160px_180px_44px]">
+                      <XatoliMaydon xato={fx.xato(`items.${index}.modificationId`)}><AppSelect value={item.modificationId} onChange={(event) => { fx.tozala(`items.${index}.modificationId`); setItems((oldingi) => oldingi.map((qator, i) => i === index ? { ...qator, modificationId: event.target.value, birlikId: "", koeff: undefined } : qator)); }} className="input"><option value="">{t("kochirishKorishModal.edit.productPlaceholder")}</option>{store.qoldiqlar.map((qoldiq) => <option key={`${qoldiq.modificationId}-${qoldiq.id ?? "q"}`} value={qoldiq.modificationId}>{modificationNomi(qoldiq.modification)} — {qoldiqMiqdori(qoldiq)}</option>)}</AppSelect></XatoliMaydon>
+                      <XatoliMaydon xato={fx.xato(`items.${index}.quantity`)}><input type="number" min="0.001" step="0.001" value={item.quantity} onChange={(event) => { fx.tozala(`items.${index}.quantity`); setItems((oldingi) => oldingi.map((qator, i) => i === index ? { ...qator, quantity: Number(event.target.value) } : qator)); }} className="input" /><AsosiyEkvivalent className="mt-1" birliklar={birliklariniOl(item.modificationId)} birlikId={item.birlikId} miqdor={item.quantity} zaxiraKoeff={item.koeff} /></XatoliMaydon>
+                      <QatorBirligiTanlovi birliklar={birliklariniOl(item.modificationId)} value={item.birlikId} disabled={!item.modificationId} ariaLabel={`${tb("hujjatBirligi.label")} ${index + 1}`} onChange={(birlikId) => { fx.tozala(`items.${index}.quantity`); setItems((oldingi) => oldingi.map((qator, i) => i === index ? { ...qator, birlikId, koeff: undefined } : qator)); }} />
                       <button aria-label={t("common:actions.delete")} type="button" disabled={items.length === 1} onClick={() => { fx.tozala("items"); setItems((oldingi) => oldingi.filter((_, i) => i !== index)); }} className="flex h-12 items-center justify-center rounded-2xl bg-red-50 text-red-500 disabled:opacity-30"><Trash2 size={17} /></button>
                     </div>
                   ))}
                   <MaydonXatosi matn={fx.xato("items")} />
-                  <button type="button" onClick={() => { fx.tozala("items"); setItems((oldingi) => [...oldingi, { modificationId: "", quantity: 1 }]); }} className="rounded-xl bg-orange-50 px-4 py-2.5 text-sm font-black text-orange-600">{t("kochirishKorishModal.edit.addItem")}</button>
+                  <button type="button" onClick={() => { fx.tozala("items"); setItems((oldingi) => [...oldingi, { modificationId: "", quantity: 1, birlikId: "" }]); }} className="rounded-xl bg-orange-50 px-4 py-2.5 text-sm font-black text-orange-600">{t("kochirishKorishModal.edit.addItem")}</button>
                 </div>
                 <XatoliMaydon xato={fx.xato("note")}><textarea value={note} onChange={(event) => { fx.tozala("note"); setNote(event.target.value); }} rows={3} className="mt-5 w-full rounded-2xl border border-slate-200 p-4 outline-none focus:border-orange-300" placeholder={t("kochirishKorishModal.edit.commentPlaceholder")} /></XatoliMaydon>
                 {(fx.tepadagi || (!fx.bor && (xato || store.xatolik))) && <p className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">{fx.tepadagi || (xato ? t(xato) : store.xatolik)}</p>}
@@ -361,7 +392,15 @@ export default function KochirishKorishModal({ id, onClose, ajratilganQator, his
                   <div className="mt-5 overflow-x-auto rounded-2xl border border-orange-100">
                     <SmartTable tableId="Ombor/KochirishKorishModal/table-1" replaceColumnControls><table className="w-full min-w-[900px] text-left text-sm">
                       <thead className="bg-[#F8FAFC] text-xs font-black uppercase text-slate-500"><tr><th data-column-id="h1" className="px-4 py-4">{t("kochirishKorishModal.view.columns.number")}</th><th data-column-id="h2" className="px-4 py-4">{t("kochirishKorishModal.view.columns.product")}</th><th data-column-id="h3" className="px-4 py-4">{t("kochirishKorishModal.view.columns.barcode")}</th><th data-column-id="h4" className="px-4 py-4">{t("kochirishKorishModal.view.columns.price")}</th><th data-column-id="h5" className="px-4 py-4">{t("kochirishKorishModal.view.columns.quantity")}</th><th data-column-id="h6" className="px-4 py-4">{t("kochirishKorishModal.view.columns.amount")}</th></tr></thead>
-                      <tbody className="divide-y divide-orange-100">{toliqItems.map(({ item, mod }, index) => { const narx = narxniOlish(item, mod); return <tr {...ajratish(item)} key={item.id ?? `${item.modificationId}-${index}`}><td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td><td className="px-4 py-4 font-black text-slate-800">{modificationNomi(mod)}<NegativeStockBadge wentNegative={item.wentNegative} /></td><td className="px-4 py-4 text-slate-500">{mod?.barcode ?? "—"}</td><td className="px-4 py-4">{pul(narx)}</td><td className="px-4 py-4">{item.quantity} {item.unit ?? t("kochirishKorishModal.view.unit")}</td><td className="px-4 py-4 font-black text-emerald-600">{pul(Number(item.quantity) * narx)}</td></tr>; })}{!toliqItems.length && <tr><td colSpan={6} className="px-5 py-12 text-center font-bold text-slate-400">{t("kochirishKorishModal.states.noItems")}</td></tr>}</tbody>
+                      <tbody className="divide-y divide-orange-100">{toliqItems.map(({ item, mod }, index) => { const narx = narxniOlish(item, mod); return <tr {...ajratish(item)} key={item.id ?? `${item.modificationId}-${index}`}><td className="px-4 py-4 font-bold text-slate-400">{index + 1}</td><td className="px-4 py-4 font-black text-slate-800">{modificationNomi(mod)}<NegativeStockBadge wentNegative={item.wentNegative} /></td><td className="px-4 py-4 text-slate-500">{mod?.barcode ?? "—"}</td><td className="px-4 py-4">{pul(narx)}</td><td className="px-4 py-4">{(() => {
+                        // Birlikda kiritilgan qator: "2 korobka" va ostida "= 24 dona"; aks holda avvalgidek.
+                        const birlikli = item as KengaytirilganItem & { unitId?: string | null; unitQuantity?: unknown; factorSnapshot?: unknown };
+                        const qator = saqlanganQatorBirligida(birlikli);
+                        const birliklar = birliklariniOl(item.modificationId);
+                        if (!qator.birlikId) return <>{item.quantity} {item.unit ?? t("kochirishKorishModal.view.unit")}</>;
+                        const nom = birlikNomi(birliklar?.find((birlik) => birlik.unitId === qator.birlikId)) || tb("hujjatBirligi.label");
+                        return <BirlikliMiqdor miqdor={qator.miqdor} birlikNomi={nom} asosiyMiqdor={Number(item.quantity)} asosiyNomi={birlikNomi(birliklar?.find((birlik) => birlik.asosiy)) || item.unit || t("kochirishKorishModal.view.unit")} />;
+                      })()}</td><td className="px-4 py-4 font-black text-emerald-600">{pul(Number(item.quantity) * narx)}</td></tr>; })}{!toliqItems.length && <tr><td colSpan={6} className="px-5 py-12 text-center font-bold text-slate-400">{t("kochirishKorishModal.states.noItems")}</td></tr>}</tbody>
                     </table></SmartTable>
                   </div>
                 </section>

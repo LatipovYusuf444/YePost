@@ -31,6 +31,18 @@ import type { MahsulotModifikatsiyasi, OmborQoldigi } from "@/types/ombor";
 import { kodBilanTopish, modificationNomi, pul, qoldiqMiqdori } from "./omborYordamchilari";
 import MahsulotTanlov, { type MahsulotVarianti } from "./MahsulotTanlov";
 import ShtrixKodMaydoni, { type SkanNatijasi } from "./ShtrixKodMaydoni";
+import { AsosiyEkvivalent, QatorBirligiTanlovi, UmumiyBirlikPaneli } from "./HujjatBirligi";
+import { tovarBirliklariniOlish, useTovarBirliklari } from "@/hooks/useTovarBirliklari";
+import {
+  asosiyBirlikdagiMiqdor,
+  birlikMiqdoriYaroqli,
+  birlikNomi,
+  qatorBirligi,
+  qatorKoeffi,
+  umumiyBirlikTovarda,
+  umumiyBirlikVariantlari,
+  unitIdQismi,
+} from "@/lib/hujjatBirligi";
 
 type Props = { onClose: () => void };
 
@@ -42,10 +54,11 @@ const KOCHIRISH_XATO_QOIDALARI: Record<string, XatoMaydonQoidasi> = {
   responsibleId: { maydonlar: ["responsibleId"], kodlar: ["responsible"] },
   note: { maydonlar: ["note"] },
 };
-type Qator = { id: string; modificationId: string; quantity: number };
+// `birlikId` "" — asosiy birlik; aks holda miqdor shu birlikda (korobka), ombordan quantity × koeffitsient chiqadi.
+type Qator = { id: string; modificationId: string; quantity: number; birlikId: string };
 
 function yangiQator(): Qator {
-  return { id: crypto.randomUUID(), modificationId: "", quantity: 1 };
+  return { id: crypto.randomUUID(), modificationId: "", quantity: 1, birlikId: "" };
 }
 
 function shaxsNomi(shaxs?: { fullName?: string; username?: string; name?: string }) {
@@ -119,6 +132,17 @@ export default function KochirishYaratishModal({ onClose }: Props) {
     return Array.from(map.values());
   }, [sourceWarehouseId, store.qoldiqlar, canSellNegative, store.modifikatsiyalar]);
 
+  // Qator tovarining birliklari (korobka, qop): qator birligi va "Umumiy birlik" uchun.
+  function qatorTovari(modificationId: string) {
+    const mod = qoldiqlar.find((qator) => qator.modificationId === modificationId)?.modification
+      ?? store.modifikatsiyalar.find((modification) => modification.id === modificationId);
+    return mod?.productId ?? mod?.product?.id ?? "";
+  }
+  const tovarBirliklari = useTovarBirliklari(items.map((item) => qatorTovari(item.modificationId)));
+  const qatorBirliklari = (item: Pick<Qator, "modificationId">) => tovarBirliklari[qatorTovari(item.modificationId)];
+  // Asosiy birlikdagi miqdor (qoldiq bilan solishtirish va summa uchun).
+  const asosiyMiqdori = (item: Qator) => asosiyBirlikdagiMiqdor(Number(item.quantity || 0), qatorKoeffi(qatorBirliklari(item), item.birlikId));
+
   const qatorMalumotlari = useMemo(
     () =>
       items.map((item) => {
@@ -126,12 +150,61 @@ export default function KochirishYaratishModal({ onClose }: Props) {
         const mod =
           qoldiq?.modification ??
           store.modifikatsiyalar.find((modification) => modification.id === item.modificationId);
+        const birliklar = tovarBirliklari[mod?.productId ?? mod?.product?.id ?? ""];
+        const koeff = qatorKoeffi(birliklar, item.birlikId);
+        // Narx — tanlangan birlikdagi (1 korobka narxi), summa — asosiy birlikdagi miqdor bo'yicha.
         const narx = modifikatsiyaNarxi(mod);
-        return { item, qoldiq, mod, narx, summa: narx * Number(item.quantity || 0) };
+        return { item, qoldiq, mod, birliklar, koeff, narx: narx * koeff, summa: narx * asosiyBirlikdagiMiqdor(Number(item.quantity || 0), koeff) };
       }),
-    [items, qoldiqlar, store.modifikatsiyalar]
+    [items, qoldiqlar, store.modifikatsiyalar, tovarBirliklari]
   );
   const jami = qatorMalumotlari.reduce((summa, qator) => summa + qator.summa, 0);
+
+  // "Umumiy birlik": hamma qatorga va keyin qo'shiladiganlarga bir yo'la (shu birligi bor tovarlarga).
+  const [umumiyBirlik, setUmumiyBirlik] = useState<string | null>(null);
+  const [birlikXabari, setBirlikXabari] = useState("");
+  const umumiyBirlikRef = useRef<string | null>(null);
+  const umumiyVariantlar = umumiyBirlikVariantlari(items.filter((item) => item.modificationId).map(qatorBirliklari));
+  const { t: tb } = useTranslation("ombor_kichik");
+
+  function umumiyBirlikniTanlash(unitId: string) {
+    setUmumiyBirlik(unitId);
+    umumiyBirlikRef.current = unitId;
+    // Natija joriy qatorlardan darhol hisoblanadi (xabardagi son to'g'ri chiqishi uchun — updater funksiyasi keyinroq ishlaydi).
+    let qolgan = 0;
+    const kutilayotgan: Qator[] = [];
+    const yangi = items.map((item) => {
+      if (!item.modificationId) return item;
+      if (!unitId) return item.birlikId ? { ...item, birlikId: "" } : item;
+      if (!qatorBirliklari(item)) {
+        kutilayotgan.push(item);
+        return item;
+      }
+      const birlik = umumiyBirlikTovarda(qatorBirliklari(item), unitId);
+      if (!birlik) {
+        qolgan += 1;
+        return item;
+      }
+      return item.birlikId === birlik.unitId ? item : { ...item, birlikId: birlik.unitId };
+    });
+    setItems(yangi);
+    kutilayotgan.forEach((item) => umumiyniQollash(item.id, item.modificationId));
+    fx.tozala(...items.map((_, index) => `items.${index}.quantity`));
+    const nom = umumiyVariantlar.find((variant) => variant.unitId === unitId)?.nom ?? "";
+    setBirlikXabari(unitId && qolgan > 0 ? tb("hujjatBirligi.umumiy.skipped", { count: qolgan, unit: nom }) : "");
+  }
+
+  // Yangi tanlangan mahsulot: umumiy birlik tanlangan bo'lsa, tovar birliklari yuklangach qatorga qo'yiladi (shu birligi bo'lsa).
+  function umumiyniQollash(qatorId: string, modificationId: string) {
+    const unitId = umumiyBirlikRef.current;
+    const productId = qatorTovari(modificationId);
+    if (!unitId || !productId) return;
+    void tovarBirliklariniOlish(productId).then((birliklar) => {
+      const birlik = umumiyBirlikTovarda(birliklar, unitId);
+      if (!birlik || umumiyBirlikRef.current !== unitId) return;
+      setItems((oldingi) => oldingi.map((item) => (item.id === qatorId && item.modificationId === modificationId && !item.birlikId ? { ...item, birlikId: birlik.unitId } : item)));
+    });
+  }
 
   // Klaviatura bilan tez kiritish: keyingi fokus (mahsulot ro'yxati yoki miqdor maydoni).
   const { t: tk } = useTranslation("ombor_kichik");
@@ -208,18 +281,23 @@ export default function KochirishYaratishModal({ onClose }: Props) {
     if (!canSellNegative && !(mavjud > 0)) return { xato: true, matn: tk("shtrixKod.outOfStock", { name: nom }) };
     const bor = items.find((item) => item.modificationId === qoldiq.modificationId);
     if (bor) {
+      // Miqdor qator birligida oshadi (korobkali qatorda +1 korobka); qoldiq asosiy birlikda solishtiriladi.
       const yangiMiqdor = Number(bor.quantity || 0) + 1;
-      if (!canSellNegative && yangiMiqdor > mavjud) return { xato: true, matn: tk("shtrixKod.notEnough", { name: nom, available: mavjud }) };
+      const koeff = qatorKoeffi(qatorBirliklari(bor), bor.birlikId);
+      if (!canSellNegative && asosiyBirlikdagiMiqdor(yangiMiqdor, koeff) > mavjud) return { xato: true, matn: tk("shtrixKod.notEnough", { name: nom, available: mavjud }) };
       qatorniYangilash(bor.id, { quantity: yangiMiqdor });
       return { xato: false, matn: tk("shtrixKod.added", { name: nom, qty: yangiMiqdor }) };
     }
     const bosh = items.find((item) => !item.modificationId);
     if (bosh) {
-      qatorniYangilash(bosh.id, { modificationId: qoldiq.modificationId });
+      qatorniYangilash(bosh.id, { modificationId: qoldiq.modificationId, birlikId: "" });
+      umumiyniQollash(bosh.id, qoldiq.modificationId);
       return { xato: false, matn: tk("shtrixKod.added", { name: nom, qty: bosh.quantity || 1 }) };
     }
     fx.tozala("items");
-    setItems((oldingi) => [...oldingi, { ...yangiQator(), modificationId: qoldiq.modificationId }]);
+    const yangi = { ...yangiQator(), modificationId: qoldiq.modificationId };
+    setItems((oldingi) => [...oldingi, yangi]);
+    umumiyniQollash(yangi.id, qoldiq.modificationId);
     return { xato: false, matn: tk("shtrixKod.added", { name: nom, qty: 1 }) };
   }
 
@@ -232,9 +310,10 @@ export default function KochirishYaratishModal({ onClose }: Props) {
     if (new Set(items.map((item) => item.modificationId)).size !== items.length) {
       return "kochirishYaratishModal.errors.duplicateProduct";
     }
+    if (items.some((item) => !birlikMiqdoriYaroqli(qatorBirligi(qatorBirliklari(item), item.birlikId), item.quantity))) return "hujjatBirligi.notWhole";
     const ortiqcha = items.some((item) => {
       const qoldiq = qoldiqlar.find((qator) => qator.modificationId === item.modificationId);
-      return !qoldiq || item.quantity > qoldiqMiqdori(qoldiq);
+      return !qoldiq || asosiyMiqdori(item) > qoldiqMiqdori(qoldiq);
     });
     if (!canSellNegative && ortiqcha) return "kochirishYaratishModal.errors.exceedsStock";
     return "";
@@ -244,6 +323,13 @@ export default function KochirishYaratishModal({ onClose }: Props) {
   function tekshiruvMaydonlari(kalit: string): Record<string, string> {
     const matn = t(kalit);
     const maydonlar: Record<string, string> = {};
+    if (kalit === "hujjatBirligi.notWhole") {
+      items.forEach((item, index) => {
+        const birlik = qatorBirligi(qatorBirliklari(item), item.birlikId);
+        if (!birlikMiqdoriYaroqli(birlik, item.quantity)) maydonlar[`items.${index}.quantity`] = tb("hujjatBirligi.notWhole", { unit: birlikNomi(birlik) });
+      });
+      return maydonlar;
+    }
     if (kalit === "kochirishYaratishModal.errors.warehousesRequired") {
       if (!sourceWarehouseId) maydonlar.sourceWarehouseId = matn;
       if (!destWarehouseId) maydonlar.destWarehouseId = matn;
@@ -262,7 +348,7 @@ export default function KochirishYaratishModal({ onClose }: Props) {
       items.forEach((item, index) => {
         const qoldiq = qoldiqlar.find((qator) => qator.modificationId === item.modificationId);
         if (!qoldiq) maydonlar[`items.${index}.modificationId`] = matn;
-        else if (item.quantity > qoldiqMiqdori(qoldiq)) maydonlar[`items.${index}.quantity`] = matn;
+        else if (asosiyMiqdori(item) > qoldiqMiqdori(qoldiq)) maydonlar[`items.${index}.quantity`] = matn;
       });
     }
     return maydonlar;
@@ -271,7 +357,8 @@ export default function KochirishYaratishModal({ onClose }: Props) {
   async function saqlashVaYopish(send = false) {
     const validatsiya = tekshirish();
     if (validatsiya) {
-      setXato(validatsiya);
+      // Butun son xatosi faqat maydonning o'zida (umumiy matn tepada takrorlanmaydi).
+      setXato(validatsiya === "hujjatBirligi.notWhole" ? "" : validatsiya);
       fx.ornat(tekshiruvMaydonlari(validatsiya));
       return;
     }
@@ -284,7 +371,8 @@ export default function KochirishYaratishModal({ onClose }: Props) {
       destWarehouseId,
       responsibleId: responsibleId || undefined,
       note: note.trim() || undefined,
-      items: items.map(({ modificationId, quantity }) => ({ modificationId, quantity })),
+      // Birlikda kiritilgan qator `unitId` bilan: miqdor shu birlikda, ombordan quantity × koeffitsient chiqadi.
+      items: items.map((item) => ({ modificationId: item.modificationId, quantity: item.quantity, ...unitIdQismi(qatorBirliklari(item), item.birlikId) })),
     }));
     if (!hujjat) {
       setJonatilmoqda(false);
@@ -388,21 +476,23 @@ export default function KochirishYaratishModal({ onClose }: Props) {
               <div className="mt-5">
                 <ShtrixKodMaydoni onSkan={kodniQoshish} inputClassName="input" />
               </div>
+              <UmumiyBirlikPaneli className="mt-4" variantlar={umumiyVariantlar} tanlangan={umumiyBirlik} onTanlash={umumiyBirlikniTanlash} xabar={birlikXabari} />
 
               <div className="mt-5 overflow-x-auto rounded-2xl border border-orange-100">
-                <SmartTable tableId="Ombor/KochirishYaratishModal/table-1" replaceColumnControls><table className="w-full min-w-[1150px] table-fixed text-left text-sm">
+                <SmartTable tableId="Ombor/KochirishYaratishModal/table-1" replaceColumnControls><table className="w-full min-w-[1300px] table-fixed text-left text-sm">
                   <thead className="bg-[#F8FAFC] text-xs font-black uppercase text-slate-500">
-                    <tr><th data-column-id="h1" className="w-12 px-3 py-4">{t("kochirishYaratishModal.items.columns.number")}</th><th data-column-id="h2" className="w-[310px] px-3 py-4">{t("kochirishYaratishModal.items.columns.product")}</th><th data-column-id="h3" className="w-44 px-3 py-4">{t("kochirishYaratishModal.items.columns.barcode")}</th><th data-column-id="h4" className="w-36 px-3 py-4">{t("kochirishYaratishModal.items.columns.price")}</th><th data-column-id="h5" className="w-36 px-3 py-4">{t("kochirishYaratishModal.items.columns.quantity")}</th><th data-column-id="h6" className="w-44 px-3 py-4">{t("kochirishYaratishModal.items.columns.stockAtWarehouse")}</th><th data-column-id="h7" className="w-40 px-3 py-4">{t("kochirishYaratishModal.items.columns.amount")}</th><th data-column-id="h8" className="w-16 px-3 py-4"><Package size={16} /></th></tr>
+                    <tr><th data-column-id="h1" className="w-12 px-3 py-4">{t("kochirishYaratishModal.items.columns.number")}</th><th data-column-id="h2" className="w-[310px] px-3 py-4">{t("kochirishYaratishModal.items.columns.product")}</th><th data-column-id="h3" className="w-44 px-3 py-4">{t("kochirishYaratishModal.items.columns.barcode")}</th><th data-column-id="h4" className="w-36 px-3 py-4">{t("kochirishYaratishModal.items.columns.price")}</th><th data-column-id="h5" className="w-36 px-3 py-4">{t("kochirishYaratishModal.items.columns.quantity")}</th><th data-column-id="birlik" className="w-44 px-3 py-4">{tb("hujjatBirligi.label")}</th><th data-column-id="h6" className="w-44 px-3 py-4">{t("kochirishYaratishModal.items.columns.stockAtWarehouse")}</th><th data-column-id="h7" className="w-40 px-3 py-4">{t("kochirishYaratishModal.items.columns.amount")}</th><th data-column-id="h8" className="w-16 px-3 py-4"><Package size={16} /></th></tr>
                   </thead>
                   <tbody ref={qatorlarRef} className="divide-y divide-orange-100">
-                    {qatorMalumotlari.map(({ item, qoldiq, mod, narx, summa }, index) => (
+                    {qatorMalumotlari.map(({ item, qoldiq, mod, birliklar, koeff, narx, summa }, index) => (
                       <tr key={item.id}>
                         <td className="px-3 py-3 font-bold text-slate-400"><span className="flex items-center gap-1"><GripVertical size={14} className="text-slate-300" />{index + 1}</span></td>
-                        <td className="px-3 py-3"><XatoliMaydon xato={fx.xato(`items.${index}.modificationId`)}><MahsulotTanlov value={item.modificationId} variantlar={mahsulotVariantlari(item.id)} disabled={!sourceWarehouseId} onChange={(id) => { qatorniYangilash(item.id, { modificationId: id }); fokusSoralish(item.id, "miqdor"); }} placeholder={sourceWarehouseId ? t("kochirishYaratishModal.items.selectProduct") : t("kochirishYaratishModal.items.selectWarehouseFirst")} className="input" tanlanganNomi={mod ? modificationNomi(mod) : undefined} ochishSorovi={fokus?.maydon === "mahsulot" && fokus.qatorId === item.id ? fokus.n : 0} /></XatoliMaydon></td>
+                        <td className="px-3 py-3"><XatoliMaydon xato={fx.xato(`items.${index}.modificationId`)}><MahsulotTanlov value={item.modificationId} variantlar={mahsulotVariantlari(item.id)} disabled={!sourceWarehouseId} onChange={(id) => { qatorniYangilash(item.id, { modificationId: id, birlikId: "" }); umumiyniQollash(item.id, id); fokusSoralish(item.id, "miqdor"); }} placeholder={sourceWarehouseId ? t("kochirishYaratishModal.items.selectProduct") : t("kochirishYaratishModal.items.selectWarehouseFirst")} className="input" tanlanganNomi={mod ? modificationNomi(mod) : undefined} ochishSorovi={fokus?.maydon === "mahsulot" && fokus.qatorId === item.id ? fokus.n : 0} /></XatoliMaydon></td>
                         <td className="px-3 py-3"><span className="flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 text-slate-500"><Barcode size={16} />{mod?.barcode ?? "—"}</span></td>
                         <td className="px-3 py-3 font-black text-slate-700">{pul(narx)}</td>
-                        <td className="px-3 py-3"><XatoliMaydon xato={fx.xato(`items.${index}.quantity`)}><label className="relative block"><input type="number" min="0.001" max={canSellNegative ? undefined : qoldiq ? qoldiqMiqdori(qoldiq) : undefined} step="0.001" value={item.quantity} data-kochirish-miqdor={item.id} onChange={(event) => qatorniYangilash(item.id, { quantity: Number(event.target.value) })} onKeyDown={(event) => { if (event.key !== "Enter" || event.nativeEvent.isComposing) return; event.preventDefault(); keyingiQatorgaOtish(item.id); }} className="input pr-12" /><span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{t("kochirishYaratishModal.items.unit")}</span></label></XatoliMaydon></td>
-                        <td className="px-3 py-3"><p className="font-black text-slate-700">{qoldiq ? qoldiqMiqdori(qoldiq) : 0}</p><p className="text-xs font-bold text-slate-400">{store.omborlar.find((ombor) => ombor.id === sourceWarehouseId)?.name ?? "—"}</p></td>
+                        <td className="px-3 py-3"><XatoliMaydon xato={fx.xato(`items.${index}.quantity`)}><label className="relative block"><input type="number" min={koeff === 1 ? "0.001" : "1"} max={canSellNegative ? undefined : qoldiq ? qoldiqMiqdori(qoldiq) / koeff : undefined} step={koeff === 1 ? "0.001" : "1"} value={item.quantity} data-kochirish-miqdor={item.id} onChange={(event) => qatorniYangilash(item.id, { quantity: Number(event.target.value) })} onKeyDown={(event) => { if (event.key !== "Enter" || event.nativeEvent.isComposing) return; event.preventDefault(); keyingiQatorgaOtish(item.id); }} className="input pr-12" /><span className="pointer-events-none absolute right-3 top-1/2 max-w-[44px] -translate-y-1/2 truncate text-xs font-bold text-slate-400">{birlikNomi(qatorBirligi(birliklar, item.birlikId) ?? birliklar?.find((birlik) => birlik.asosiy)) || t("kochirishYaratishModal.items.unit")}</span></label><AsosiyEkvivalent className="mt-1" birliklar={birliklar} birlikId={item.birlikId} miqdor={Number(item.quantity || 0)} /></XatoliMaydon></td>
+                        <td className="px-3 py-3"><QatorBirligiTanlovi birliklar={birliklar} value={item.birlikId} disabled={!item.modificationId} ariaLabel={`${tb("hujjatBirligi.label")} ${index + 1}`} onChange={(birlikId) => { qatorniYangilash(item.id, { birlikId }); fx.tozala(`items.${index}.quantity`); }} /></td>
+                        <td className="px-3 py-3"><p className="font-black text-slate-700">{qoldiq ? qoldiqMiqdori(qoldiq) : 0} <span className="text-xs font-bold text-slate-400">{birlikNomi(birliklar?.find((birlik) => birlik.asosiy))}</span></p><p className="text-xs font-bold text-slate-400">{store.omborlar.find((ombor) => ombor.id === sourceWarehouseId)?.name ?? "—"}</p></td>
                         <td className="px-3 py-3 font-black text-emerald-600">{pul(summa)}</td>
                         <td className="px-3 py-3"><button type="button" onClick={() => { fx.tozala("items"); setItems((oldingi) => oldingi.filter((qator) => qator.id !== item.id)); }} disabled={items.length === 1} className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 disabled:opacity-30" aria-label={t("kochirishYaratishModal.items.removeRowAria")}><Trash2 size={16} /></button></td>
                       </tr>

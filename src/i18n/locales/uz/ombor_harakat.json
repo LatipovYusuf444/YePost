@@ -152,7 +152,9 @@
         "hint": "1 {{unit}} = {{koeff}} {{base}}. Yopiq qadoqlar soni va ochilganidan qolganini alohida yozing — jami o'zi hisoblanadi.",
         "totalTitle": "Jami: qadoqlar × koeffitsient + ochiq qolgani",
         "invalidWhole": "Jami butun son bo'lishi kerak: {{base}} kasr bo'lmaydi.",
-        "factorChanged": "Qadoq koeffitsienti (masalan, 1 korobka = 12) mahsulot kartochkasida o'zgargan. Korobkadagi qatorlar jami yangi koeffitsient bilan qayta hisoblandi — tekshirib, qaytadan saqlang."
+        "factorChanged": "Qadoq koeffitsienti (masalan, 1 korobka = 12) mahsulot kartochkasida o'zgargan. Korobkadagi qatorlar jami yangi koeffitsient bilan qayta hisoblandi — tekshirib, qaytadan saqlang.",
+        "umumiyLabel": "Sanash birligi",
+        "umumiyHint": "Tanlangan birlikda sanaladi: yopiq korobkalar + ochiq qolgani (asosiy birlikda). Shu birligi yo'q tovarlar odatdagidek sanaladi; har qatorda alohida ham o'zgartirish mumkin."
       }
     },
     "draftEdit": {

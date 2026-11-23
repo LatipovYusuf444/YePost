@@ -217,5 +217,20 @@
     "outOfStock": "{{name}}: qoldiq yo'q.",
     "notEnough": "{{name}}: qoldiq yetarli emas (mavjud {{available}}).",
     "pickWarehouse": "Avval omborni tanlang."
+  },
+  "hujjatBirligi": {
+    "label": "Birlik",
+    "baseFallback": "asosiy birlik",
+    "optionLabel": "{{unit}} · {{factor}} {{base}}",
+    "baseEquivalent": "= {{qty}} {{unit}}",
+    "notWhole": "{{unit}}da faqat butun son kiritiladi",
+    "umumiy": {
+      "label": "Umumiy birlik",
+      "base": "Asosiy birlik",
+      "baseTitle": "Har mahsulot o'z asosiy birligida (dona, kg, litr...)",
+      "optionTitle": "Hamma mahsulot {{unit}}da (shu birligi bor tovarlar)",
+      "hint": "Tanlangan birlik hamma qatorga va keyin qo'shiladiganlarga qo'yiladi — shu birligi bor tovarlarga; qolganlari o'z birligida qoladi. Har qatorda alohida ham o'zgartirish mumkin.",
+      "skipped": "{{count}} ta mahsulotda \"{{unit}}\" birligi yo'q — ular o'z birligida qoldi."
+    }
   }
 }

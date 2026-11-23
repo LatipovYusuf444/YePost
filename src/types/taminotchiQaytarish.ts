@@ -13,8 +13,14 @@ export type TaminotchiQaytarishQatori = {
   warehouseName?: string | null;
   purchaseId?: string | null;
   batchId?: string | null;
+  // Asosiy birlikda.
   quantity: Son;
   price: Son;
+  // Qo'shimcha birlikda (korobka) kiritilgan qator: o'sha birlikdagi son, narx va koeffitsient.
+  unitId?: string | null;
+  unitQuantity?: Son | null;
+  unitPrice?: Son | null;
+  factorSnapshot?: Son | null;
   wentNegative?: boolean;
 };
 
@@ -47,5 +53,6 @@ export type TaminotchiQaytarishTanasi = {
   currency?: "UZS" | "USD";
   responsibleId?: string;
   note?: string;
-  items: Array<{ modificationId: string; warehouseId: string; quantity: number; purchaseId?: string; batchId?: string; price?: number }>;
+  // `unitId` berilsa `quantity` va `price` shu birlikda (narx kirimdan olinsa server o'zi koeffitsientga ko'paytiradi).
+  items: Array<{ modificationId: string; warehouseId: string; quantity: number; purchaseId?: string; batchId?: string; price?: number; unitId?: string }>;
 };

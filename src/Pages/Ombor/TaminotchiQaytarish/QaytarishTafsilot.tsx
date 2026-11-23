@@ -21,6 +21,9 @@ import { hujjatRaqami, pul, sana } from "../omborYordamchilari";
 import HolatBelgisi from "./HolatBelgisi";
 import QaytarishOynasi from "./QaytarishOynasi";
 import { qatorNomi, yetkazibBeruvchiNomi } from "./yordamchi";
+import { BirlikliMiqdor } from "../HujjatBirligi";
+import { useTovarBirliklari } from "@/hooks/useTovarBirliklari";
+import { birlikNomi, saqlanganQatorBirligida } from "@/lib/hujjatBirligi";
 
 type Props = { id: string; onClose: () => void; onOzgardi?: () => void; ajratilganQator?: HujjatQatoriTanlovi; hisobotManbasi?: HujjatHisobotManbasi };
 
@@ -56,6 +59,21 @@ export default function QaytarishTafsilot({ id, onClose, onOzgardi, ajratilganQa
   const holat = qaytarishHolati(hujjat?.status);
   const valyuta = valyutaKodi(hujjat?.currency ?? undefined);
   const qatorlar = hujjat?.items ?? [];
+  // Birlikda (korobka) kiritilgan qatorlar: "2 korobka = 24 dona", narx — 1 korobka narxi.
+  const tovarId = (modificationId: string) => {
+    const mod = store.modifikatsiyalar.find((item) => item.id === modificationId);
+    return mod?.productId ?? mod?.product?.id ?? "";
+  };
+  const tovarBirliklari = useTovarBirliklari(qatorlar.map((item) => tovarId(item.modificationId)));
+  function birlikli(item: (typeof qatorlar)[number]) {
+    const qator = saqlanganQatorBirligida(item);
+    const birliklar = tovarBirliklari[tovarId(item.modificationId)];
+    return {
+      qator,
+      nom: qator.birlikId ? birlikNomi(birliklar?.find((birlik) => birlik.unitId === qator.birlikId)) || "×" : "",
+      asosiyNomi: birlikNomi(birliklar?.find((birlik) => birlik.asosiy)),
+    };
+  }
 
   async function bajar(ish: () => Promise<TaminotchiQaytarishHujjati>) {
     setBand(true);
@@ -155,9 +173,17 @@ export default function QaytarishTafsilot({ id, onClose, onOzgardi, ajratilganQa
                         <td className="px-4 py-4 font-black text-slate-800">{qatorNomi(item) || "—"}<NegativeStockBadge wentNegative={item.wentNegative} /></td>
                         <td className="px-4 py-4 text-slate-600">{item.warehouseName || store.omborlar.find((ombor) => ombor.id === item.warehouseId)?.name || "—"}</td>
                         <td className="px-4 py-4 text-slate-600">{item.purchaseId ? kirimRaqamlari.get(item.purchaseId) || t("fields.savedPurchase") : <span className="text-slate-300">—</span>}</td>
-                        <td className="px-4 py-4 text-right font-semibold text-slate-700">{(Number(item.quantity) || 0).toLocaleString("uz-UZ", { maximumFractionDigits: 3 })}</td>
-                        <td className="px-4 py-4 text-right font-semibold text-slate-600">{pul(Number(item.price) || 0, valyuta)}</td>
-                        <td className="px-4 py-4 text-right font-black text-emerald-600">{pul((Number(item.quantity) || 0) * (Number(item.price) || 0), valyuta)}</td>
+                        {(() => {
+                          const { qator, nom, asosiyNomi } = birlikli(item);
+                          const birlikda = Boolean(qator.birlikId) && qator.narx !== null;
+                          return (
+                            <>
+                              <td className="px-4 py-4 text-right font-semibold text-slate-700">{qator.birlikId ? <BirlikliMiqdor miqdor={qator.miqdor} birlikNomi={nom} asosiyMiqdor={Number(item.quantity) || 0} asosiyNomi={asosiyNomi} /> : (Number(item.quantity) || 0).toLocaleString("uz-UZ", { maximumFractionDigits: 3 })}</td>
+                              <td className="px-4 py-4 text-right font-semibold text-slate-600">{pul(birlikda ? qator.narx ?? 0 : Number(item.price) || 0, valyuta)}{birlikda && nom && <span className="block text-[11px] font-semibold text-slate-400">1 {nom}</span>}</td>
+                              <td className="px-4 py-4 text-right font-black text-emerald-600">{pul(birlikda ? qator.miqdor * (qator.narx ?? 0) : (Number(item.quantity) || 0) * (Number(item.price) || 0), valyuta)}</td>
+                            </>
+                          );
+                        })()}
                       </tr>
                     ))}
                   </tbody>

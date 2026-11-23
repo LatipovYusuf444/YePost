@@ -1,5 +1,6 @@
 // Yetkazib beruvchiga qaytarish: forma qiymatlarini so'rov tanasiga yig'ish va kirim narxini topish (UI'siz — testlarda ishlaydi).
 import type { TaminotchiQaytarishHujjati, TaminotchiQaytarishTanasi } from "../types/taminotchiQaytarish.ts";
+import { saqlanganQatorBirligida } from "./hujjatBirligi.ts";
 
 export type QaytarishFormaQatori = {
   id: string;
@@ -15,6 +16,10 @@ export type QaytarishFormaQatori = {
   seriyali: boolean;
   batchId: string;
   serial: string;
+  // Qator birligi: "" — asosiy; aks holda `quantity` va `price` shu birlikda (korobka), so'rovda `unitId`.
+  birlikId: string;
+  // Saqlangan qatorning koeffitsienti (birliklar yuklanguncha narx/miqdor hisobi uchun); yangi qatorda 1.
+  koeff: number;
 };
 
 export type QaytarishForma = {
@@ -92,6 +97,7 @@ export function qaytarishTanasiniYigish(
       ...(qator.purchaseId ? { purchaseId: qator.purchaseId } : {}),
       ...(qator.batchId ? { batchId: qator.batchId } : {}),
       ...(price !== undefined && !(qator.purchaseId && qator.narxKirimdan) ? { price } : {}),
+      ...(qator.birlikId ? { unitId: qator.birlikId } : {}),
     });
   });
   if (Object.keys(xatolar).length) return { xatolar };
@@ -114,19 +120,25 @@ export function hujjatdanForma(hujjat: TaminotchiQaytarishHujjati, seriyalimi: (
     supplierId: hujjat.supplierId,
     currency: hujjat.currency === "USD" ? "USD" : "UZS",
     note: hujjat.note ?? "",
-    qatorlar: (hujjat.items ?? []).map((item, i) => ({
-      id: item.id ?? `q${i}`,
-      modificationId: item.modificationId,
-      warehouseId: item.warehouseId,
-      quantity: matn(item.quantity),
-      purchaseId: item.purchaseId ?? "",
-      price: matn(item.price),
-      // Saqlangan narx — foydalanuvchi qiymati: tahrirda doim yuboriladi.
-      narxKirimdan: false,
-      seriyali: seriyalimi(item.modificationId),
-      batchId: item.batchId ?? "",
-      serial: "",
-    })),
+    qatorlar: (hujjat.items ?? []).map((item, i) => {
+      // Birlikda (korobka) kiritilgan qator o'z birligida ochiladi: son va narx o'sha birlikda, saqlashda `unitId` bilan qaytadi.
+      const birlikda = saqlanganQatorBirligida(item);
+      return {
+        id: item.id ?? `q${i}`,
+        modificationId: item.modificationId,
+        warehouseId: item.warehouseId,
+        quantity: birlikda.birlikId ? matn(birlikda.miqdor) : matn(item.quantity),
+        purchaseId: item.purchaseId ?? "",
+        price: birlikda.birlikId ? matn(birlikda.narx) : matn(item.price),
+        // Saqlangan narx — foydalanuvchi qiymati: tahrirda doim yuboriladi.
+        narxKirimdan: false,
+        seriyali: seriyalimi(item.modificationId),
+        batchId: item.batchId ?? "",
+        serial: "",
+        birlikId: birlikda.birlikId,
+        koeff: birlikda.koeff,
+      };
+    }),
   };
 }
 

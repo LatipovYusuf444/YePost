@@ -32,6 +32,11 @@ function yuklash(productId: string, majburiy = false) {
   return sorov;
 }
 
+/** Bitta tovar birliklari (keshdan yoki serverdan): yangi qo'shilgan qatorga "Umumiy birlik"ni qo'yish uchun. Xatoda — bo'sh ro'yxat. */
+export function tovarBirliklariniOlish(productId: string) {
+  return productId ? yuklash(productId) : Promise.resolve([] as TovarBirligi[]);
+}
+
 /** Keshni tozalash (berilmasa — hammasi). */
 export function tovarBirliklariKeshiniTozalash(productId?: string) {
   if (productId) sorovlar.delete(productId);
