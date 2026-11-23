@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   katalogModifikatsiyalariniQoldiqTanlovigaOlish,
+  katalogYangilanishigaObuna,
   omborQoldiqlariniOlish,
   qoldiqNomlariniBoyitish,
 } from "@/api/savdoApi";
@@ -35,14 +36,27 @@ type Natija = { kalit: string; mahsulotlar: QoldiqTanlovi[]; xato: PosMahsulotla
 export function usePosMahsulotlar(warehouseId: string, yangilash = 0) {
   const kalit = `${warehouseId}|${yangilash}`;
   const [natija, setNatija] = useState<Natija | null>(null);
+  // Katalog keshi eskirgan nusxani darhol beradi va fonda yangilaydi: yangisi kelganda ro'yxat jimgina (eski ro'yxat ko'rinib turgan holda)
+  // qayta yig'iladi — yangi narx/nom ochiq oynada ham ko'rinadi.
+  const [katalogVersiyasi, setKatalogVersiyasi] = useState(0);
+  useEffect(() => katalogYangilanishigaObuna(() => setKatalogVersiyasi((versiya) => versiya + 1)), []);
+  // "Yangilash" tugmasi katalogni faqat bir marta majburan qayta yuklaydi (keyingi qayta yig'ishlar keshdan — aks holda cheksiz aylanadi).
+  const majburlanganYangilash = useRef(0);
+  // Ombor qoldig'i shu kalit (ombor + "Yangilash" soni) uchun bir marta olinadi: katalog yangilanishidan qayta yig'ish faqat qayta birlashtiradi.
+  // Avvalgi ro'yxat shu so'rovdan qurilgan, shuning uchun qayta yig'ish yaxshi ro'yxatni xato holatiga almashtirib qo'ymaydi.
+  const qoldiqSorovi = useRef<{ kalit: string; sorov: Promise<QoldiqTanlovi[]> } | null>(null);
 
   useEffect(() => {
     if (!warehouseId) return;
     let active = true;
+    const majbur = yangilash > 0 && majburlanganYangilash.current !== yangilash;
+    majburlanganYangilash.current = yangilash;
+    if (qoldiqSorovi.current?.kalit !== kalit) qoldiqSorovi.current = { kalit, sorov: omborQoldiqlariniOlish(warehouseId) };
+    const stockSorovi = qoldiqSorovi.current.sorov;
     const yuklash = async () => {
       const [stockResult, catalogResult] = await Promise.allSettled([
-        omborQoldiqlariniOlish(warehouseId),
-        katalogModifikatsiyalariniQoldiqTanlovigaOlish(yangilash > 0),
+        stockSorovi,
+        katalogModifikatsiyalariniQoldiqTanlovigaOlish(majbur),
       ]);
       if (!active) return;
 
@@ -91,7 +105,7 @@ export function usePosMahsulotlar(warehouseId: string, yangilash = 0) {
     return () => {
       active = false;
     };
-  }, [warehouseId, yangilash, kalit]);
+  }, [warehouseId, yangilash, kalit, katalogVersiyasi]);
 
   const joriy = warehouseId && natija?.kalit === kalit ? natija : null;
   return {

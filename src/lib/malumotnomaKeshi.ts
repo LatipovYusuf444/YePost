@@ -52,6 +52,6 @@ export async function ozgartirishdanKeyinTozalash<T>(guruhlar: string | string[]
   }
 }
 
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
   window.addEventListener(AUTH_SESSION_CHANGED_EVENT, () => malumotnomaKeshiniTozalash());
 }

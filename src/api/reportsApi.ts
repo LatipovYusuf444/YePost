@@ -4,6 +4,8 @@ import { getApiErrorMessage } from "./sozlamalarApi";
 import { chegirmaParametrlari } from "./hisobotParametrlari";
 import type { CashCurrency, CashDailyParams, CashDailyReport, CashFlowBalance, CashFlowCurrencySummary } from "@/types/cashReports";
 import { asosiyValyuta } from "../lib/asosiyValyuta.ts";
+import { toliqMahsulotlar, toliqModifikatsiyalar } from "./toliqKatalog.ts";
+import { mijozlarRoyxati } from "./mijozlarRoyxati.ts";
 import type {
   AuditFilter,
   AuditLog,
@@ -364,16 +366,16 @@ export async function hisobotTanlovlariniOlish(turi: HisobotTanlovTuri = "all") 
     ? apiClient.get<RoyxatJavobi<Tanlov>>(path).then((response) => royxatniAjratish(response.data))
     : Promise.resolve([] as Tanlov[]);
   const [products, modifications, warehouses, branches, categories, customers, suppliers] = await Promise.all([
-    olish("/catalog/products", kerak.products),
+    // To'liq katalog umumiy keshdan (Mahsulotlar/Ombor qoldig'i bilan bir xil), mijozlar — bir vaqtdagi so'rovlar birlashadi.
+    kerak.products ? toliqMahsulotlar<Tanlov>() : Promise.resolve([] as Tanlov[]),
     kerak.modifications
-      ? apiClient.get<RoyxatJavobi<Tanlov>>("/catalog/modifications")
-          .then((response) => royxatniAjratish(response.data))
+      ? toliqModifikatsiyalar<Tanlov>()
           .catch((error: unknown) => { console.warn(getApiErrorMessage(error)); return [] as Tanlov[]; })
       : Promise.resolve([] as Tanlov[]),
     olish("/organization/warehouses", kerak.warehouses),
     olish("/organization/branches", kerak.branches),
     olish("/catalog/categories", kerak.categories),
-    olish("/partners/customers", kerak.customers),
+    kerak.customers ? mijozlarRoyxati<Tanlov>() : Promise.resolve([] as Tanlov[]),
     olish("/partners/suppliers", kerak.suppliers),
   ]);
   return { products, modifications, warehouses, branches, categories, customers, suppliers, companies: [] as Tanlov[] };

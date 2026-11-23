@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { sotuvTafsilotiniOlish, sotuvlarSahifasiniOlish, sotuvlarXulosasiniOlish, type SotuvlarXulosasi } from "@/api/savdoApi";
+import { katalogniOldindanIsitish, sotuvTafsilotiniOlish, sotuvlarSahifasiniOlish, sotuvlarXulosasiniOlish, type SotuvlarXulosasi } from "@/api/savdoApi";
 import { useShallow } from "zustand/react/shallow";
 import { useSavdoStore } from "@/store/savdoStore";
 import type { Sotuv, SotuvHolati, SotuvYaratishMalumoti, TolovTuri } from "@/types/savdo";
@@ -184,6 +184,11 @@ export default function Savdo() {
     void boshlangichMalumotlarniYuklash();
   }, [boshlangichMalumotlarniYuklash]);
   useEffect(() => () => tanlanganSotuvniTozalash(), [tanlanganSotuvniTozalash]);
+  // Katalog fonda oldindan isitiladi — sahifaning o'z so'rovlari ketgandan keyin; "Yangi sotuv" bosilguncha odatda tayyor bo'ladi.
+  useEffect(() => {
+    const taymer = window.setTimeout(katalogniOldindanIsitish, 1500);
+    return () => window.clearTimeout(taymer);
+  }, []);
 
   // Qaytarishlar va ombor qoldig'i ochilishda olinmaydi: faqat ularni ishlatadigan bo'lim yoki oyna ochilganda (qoldiq 30 s keshlanadi).
   const qaytarishKerak = faolTab === "tarix" || faolTab === "tolovlar" || faolTab === "qaytarish";

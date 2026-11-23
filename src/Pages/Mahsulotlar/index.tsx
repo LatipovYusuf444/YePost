@@ -32,7 +32,7 @@ import { useTranslation } from "react-i18next";
 import AppModal from "@/Components/common/AppModal";
 import ModalYuklanmoqda from "@/Components/common/ModalYuklanmoqda";
 import { useModalYuklash } from "@/hooks/useModalYuklash";
-import { mahsulotBirliklariApi, mahsulotlarApi } from "@/api/catalogApi";
+import { mahsulotBirliklariApi, mahsulotlarApi, toliqKatalogniTozalash } from "@/api/catalogApi";
 import { omborlarApi } from "@/api/omborApi";
 import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import { oziValyutadaMatn, pulMatni, useYagonaValyuta, valyutaKodi, yagonaValyuta } from "@/lib/valyuta";
@@ -388,7 +388,7 @@ export default function Mahsulotlar() {
           <h1 className="mt-1 text-3xl font-black">{t("header.title")}</h1>
           <p className="mt-1 text-sm text-gray-500">{t("header.subtitle")}</p>
         </div>
-        <button onClick={() => void yuklash()} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 font-bold text-gray-600">
+        <button onClick={() => { toliqKatalogniTozalash(); void yuklash(); }} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-orange-100 bg-white px-4 font-bold text-gray-600">
           <RefreshCw size={17}/>{t("header.refresh")}
         </button>
       </header>

@@ -7,38 +7,113 @@ import { parallelBajarish } from "../lib/parallelBajarish.ts";
 // Butun katalog kerak bo'lgan ekranlar uchun: sahifalar shuncha tadan parallel olinadi (47 sahifa ketma-ket ~42 s edi).
 const KATALOG_PARALLEL_SAHIFALAR = 5;
 
-/** Qisqa kesh + umumiy in-flight so'rov: remount/ombor almashishi katalogni qayta yuklamaydi. */
+// Butun katalog (6 000+ tovar = 65 sahifa, ~5-10 s) har ochilishda qayta kutilmasligi uchun:
+// YANGI muddat ichida keshdan beriladi; undan eski, lekin ENG_KOP_ESKILIK dan yosh nusxa darhol beriladi va fonda yangilanadi
+// (stale-while-revalidate). Fondagi yangilanish tugagach obunachilar xabardor qilinadi (savdo qoldiqlari yangi narx bilan qayta yig'iladi).
+// Narx/mahsulot/kurs o'zgarganda `tozalash()` hammasini tashlaydi — eski narx hech qachon berilmaydi.
+export const KATALOG_YANGI_MUDDATI = 60_000;
+export const KATALOG_ENG_KOP_ESKILIK = 5 * 60_000;
+// Shtrix-kod/nom bo'yicha qisqa qidiruvlar ham shu keshda: cheksiz o'smasligi uchun eng eskilari o'chiriladi.
+const KATALOG_KESH_CHEGARASI = 200;
+
+/** Katalog keshi + umumiy in-flight so'rov: remount/ombor almashishi katalogni qayta yuklamaydi. */
 export function katalogQidiruvYuklagich<T>(
-  sahifaOlish: (q: string, page: number) => Promise<{ items: T[]; totalPages: number }>,
+  // `fon` — so'rovni hech kim kutmayapti (fondagi yangilash / oldindan isitish): xatosi foydalanuvchiga toast bo'lib chiqmasin.
+  sahifaOlish: (q: string, page: number, fon: boolean) => Promise<{ items: T[]; totalPages: number }>,
   vaqt = Date.now,
+  // Fon so'rovini (toastsiz) foydalanuvchi kutib qolsa (masalan oldindan isitish paytida "Yangi sotuv" ochildi), uning xatosi shu bilan ko'rsatiladi.
+  fonXatosiniKorsatish?: (error: unknown) => void,
 ) {
-  type Yozuv = { sorov: Promise<T[]>; tugadi: boolean; muddati: number };
+  // `fon` — joriy so'rov xatosi hali hech kimga ko'rsatilmaydi.
+  type Yozuv = { qiymat: T[] | null; olingan: number; sorov: Promise<T[]> | null; fon: boolean };
   const kesh = new Map<string, Yozuv>();
+  const tinglovchilar = new Set<(q: string) => void>();
+
+  async function hammaSahifalar(q: string, fon: boolean) {
+    const birinchi = await sahifaOlish(q, 1, fon);
+    const items = [...birinchi.items];
+    // Barcha sahifalar lokal qidiruv uchun kerak, lekin backendga birdan yuborilmaydi: bir paytda cheklangan son.
+    const sahifalar = Array.from({ length: Math.max(birinchi.totalPages - 1, 0) }, (_, indeks) => indeks + 2);
+    const qolganlar = await parallelBajarish(sahifalar, KATALOG_PARALLEL_SAHIFALAR, (page) => sahifaOlish(q, page, fon));
+    items.push(...qolganlar.flatMap((sahifa) => sahifa.items));
+    return items;
+  }
+
+  function yuklash(q: string, yozuv: Yozuv, fon: boolean) {
+    const sorov = hammaSahifalar(q, fon);
+    yozuv.sorov = sorov;
+    yozuv.fon = fon;
+    // Chaqiruvchilardan oldin ro'yxatdan o'tadi: ular davom etganda kesh allaqachon yangilangan bo'ladi.
+    sorov.then(
+      (items) => {
+        // O'rtada tozalangan (narx o'zgargan yoki sessiya almashgan) bo'lsa eski natija keshga yozilmaydi.
+        if (kesh.get(q) !== yozuv) return;
+        const almashdi = yozuv.qiymat !== null;
+        yozuv.qiymat = items;
+        yozuv.olingan = vaqt();
+        yozuv.sorov = null;
+        if (almashdi) for (const tinglovchi of [...tinglovchilar]) tinglovchi(q);
+      },
+      () => {
+        if (kesh.get(q) !== yozuv) return;
+        yozuv.sorov = null;
+        // Xato yarim ro'yxatni keshga yozmaydi; oldingi to'liq nusxa (bo'lsa) qoladi.
+        if (yozuv.qiymat === null) kesh.delete(q);
+      },
+    );
+    return sorov;
+  }
+
+  function yozuvniOlish(q: string) {
+    const mavjud = kesh.get(q);
+    if (mavjud) return mavjud;
+    if (kesh.size >= KATALOG_KESH_CHEGARASI) {
+      const eng = [...kesh.entries()].filter(([kalit, yozuv]) => kalit !== "" && !yozuv.sorov)
+        .sort((a, b) => a[1].olingan - b[1].olingan)[0];
+      if (eng) kesh.delete(eng[0]);
+    }
+    const yozuv: Yozuv = { qiymat: null, olingan: 0, sorov: null, fon: false };
+    kesh.set(q, yozuv);
+    return yozuv;
+  }
+
   return {
-    olish(q = "", majbur = false): Promise<T[]> {
-      const mavjud = kesh.get(q);
-      if (mavjud && (!mavjud.tugadi || (!majbur && vaqt() < mavjud.muddati))) return mavjud.sorov;
-      const yozuv: Yozuv = { sorov: Promise.resolve([]), tugadi: false, muddati: 0 };
-      yozuv.sorov = (async () => {
-        try {
-          const birinchi = await sahifaOlish(q, 1);
-          const items = [...birinchi.items];
-          // Barcha sahifalar lokal qidiruv uchun kerak, lekin backendga birdan yuborilmaydi: bir paytda cheklangan son.
-          const sahifalar = Array.from({ length: Math.max(birinchi.totalPages - 1, 0) }, (_, indeks) => indeks + 2);
-          const qolganlar = await parallelBajarish(sahifalar, KATALOG_PARALLEL_SAHIFALAR, (page) => sahifaOlish(q, page));
-          items.push(...qolganlar.flatMap((sahifa) => sahifa.items));
-          yozuv.tugadi = true;
-          yozuv.muddati = vaqt() + 30_000;
-          return items;
-        } catch (error) {
-          if (kesh.get(q) === yozuv) kesh.delete(q);
-          throw error;
+    /** `majbur` — yangi nusxa kutiladi. Bo'sh `q` (butun katalog) eskirgan bo'lsa darhol eski nusxa beriladi va fonda yangilanadi.
+     * `fon` — chaqiruvchi natijani foydalanuvchiga ko'rsatmaydi (oldindan isitish): yangi so'rov xatosi toastsiz. */
+    olish(q = "", majbur = false, fon = false): Promise<T[]> {
+      const yozuv = yozuvniOlish(q);
+      // Foydalanuvchi kutayotgan chaqiruv toastsiz (fon) so'rovga qo'shilsa: xato bo'lsa u bir marta ko'rsatiladi.
+      const qoshilish = (sorov: Promise<T[]>) => {
+        if (!fon && yozuv.fon && yozuv.sorov === sorov) {
+          yozuv.fon = false;
+          if (fonXatosiniKorsatish) sorov.catch(fonXatosiniKorsatish);
         }
-      })();
-      kesh.set(q, yozuv);
-      return yozuv.sorov;
+        return sorov;
+      };
+      if (yozuv.sorov && (majbur || yozuv.qiymat === null)) return qoshilish(yozuv.sorov);
+      if (!majbur && yozuv.qiymat) {
+        const yoshi = vaqt() - yozuv.olingan;
+        if (yoshi < KATALOG_YANGI_MUDDATI) return Promise.resolve(yozuv.qiymat);
+        if (q === "" && yoshi < KATALOG_ENG_KOP_ESKILIK) {
+          if (!yozuv.sorov) yuklash(q, yozuv, true);
+          return Promise.resolve(yozuv.qiymat);
+        }
+      }
+      return yozuv.sorov ? qoshilish(yozuv.sorov) : yuklash(q, yozuv, fon);
     },
+    /** Qattiq: narx/mahsulot/kurs o'zgardi yoki sessiya almashdi — eski nusxa ham, ketayotgan so'rov natijasi ham ishlatilmaydi. */
     tozalash() { kesh.clear(); },
+    /** Yumshoq: ma'lumot o'zgargan bo'lishi mumkin (masalan ombor hujjati) — keyingi chaqiruv eski nusxani beradi va fonda yangilaydi. */
+    eskirtirish() {
+      for (const yozuv of kesh.values()) {
+        if (yozuv.qiymat) yozuv.olingan = Math.min(yozuv.olingan, vaqt() - KATALOG_YANGI_MUDDATI);
+      }
+    },
+    /** Fonda yangi nusxa kelib, eskisini almashtirganda chaqiriladi. Qaytgan funksiya obunani bekor qiladi. */
+    obuna(tinglovchi: (q: string) => void) {
+      tinglovchilar.add(tinglovchi);
+      return () => { tinglovchilar.delete(tinglovchi); };
+    },
   };
 }
 

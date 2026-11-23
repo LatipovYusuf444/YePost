@@ -26,6 +26,7 @@ import { profilApi } from "./authProfileApi";
 import { kirimYetkazibBeruvchilariniToldirish } from "@/lib/kirimYetkazibBeruvchi";
 import { hujjatOraligiParametrlari, type HujjatOraligi } from "@/lib/hujjatOraligi";
 import { malumotnomaniOlish, ozgartirishdanKeyinTozalash } from "@/lib/malumotnomaKeshi";
+import { toliqModifikatsiyalar } from "./toliqKatalog";
 
 type RoyxatJavobi<T> = T[] | { value?: T[]; items?: T[]; results?: T[]; data?: T[] };
 
@@ -482,11 +483,7 @@ export async function manzilniKoordinatadanAniqlash(
 // GET /catalog/modifications barcha variantlarni narx va mahsulot bilan bitta so'rovda qaytaradi.
 // KASSIR/OMBORCHI uchun bu endpoint (tannarx borligi sababli) 403 qaytaradi —
 // bo'sh ro'yxat sifatida qabul qilinadi, sahifa yiqilib qolmasligi uchun.
+// Umumiy 1 daqiqalik kesh (toliqKatalog.ts): Monitoring, Ombor qoldig'i, Mahsulotlar va Hisobotlar bir-birining natijasini ishlatadi.
 export async function barchaModifikatsiyalar() {
-  return ruxsatsizBulsaBosh(async () => {
-    const response = await apiClient.get<
-      MahsulotModifikatsiyasi[] | ApiListEnvelope<MahsulotModifikatsiyasi>
-    >("/catalog/modifications");
-    return apiList(response.data);
-  });
+  return ruxsatsizBulsaBosh(() => toliqModifikatsiyalar<MahsulotModifikatsiyasi>());
 }

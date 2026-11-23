@@ -5,6 +5,7 @@ import {
   mijozKompaniyalariRoyxatiniOlish,
   mijozlarRoyxatiniOlish,
   katalogModifikatsiyalariniQoldiqTanlovigaOlish,
+  katalogYangilanishigaObuna,
   omborlarRoyxatiniOlish,
   omborQoldiqlariniOlish,
   qoldiqNomlariniBoyitish,
@@ -143,11 +144,15 @@ function qoldiqlarniKatalogBilanBirlashtirish(
   return Array.from(map.values()).sort((a, b) => {
     const aName = a.modification?.product?.name ?? a.modification?.name ?? a.modificationId;
     const bName = b.modification?.product?.name ?? b.modification?.name ?? b.modificationId;
-    return aName.localeCompare(bName, "uz");
+    return UZ_TARTIBI.compare(aName, bName);
   });
 }
 
-// Ombor qoldig'i (+ katalog narxlari) har sotuv ochilganda qayta olinmasligi uchun omborlar bo'yicha qisqa muddat eslab qolinadi.
+// localeCompare(x, "uz") bilan bir xil tartib; har taqqoslashda yangi Intl obyekti yaratilmaydi (6 000+ qatorda sezilarli).
+const UZ_TARTIBI = new Intl.Collator("uz");
+
+// Ombor qoldig'i har sotuv ochilganda qayta olinmasligi uchun omborlar bo'yicha qisqa muddat eslab qolinadi.
+// Katalog (nom, narx, birliklar) bu yerda emas — uning o'z keshi bor (catalogSearch.ts) va har yuklashda eng so'nggisi bilan birlashtiriladi.
 export const QOLDIQ_KESH_MUDDATI = 30_000;
 
 // Qoldiq keyin kelsa, ochiq sotuv mahsulotlariga nom qo'shiladi; hech narsa o'zgarmasa o'sha obyekt qaytadi (oyna qayta chizilmasligi uchun).
@@ -164,6 +169,21 @@ function sotuvniQoldiqNomlariBilanToldirish(sotuv: Sotuv, qoldiqlar: QoldiqTanlo
     return item.modification?.name !== eski?.name || item.modification?.product?.name !== eski?.product?.name;
   });
   return ozgardi ? { ...sotuv, items: boyitilgan.items } : sotuv;
+}
+
+// modificationId -> birinchi mos qoldiq (Array.find bilan bir xil): butun sotuvlar ro'yxatini boyitishda har qator uchun 6 000+ qatorni
+// qayta ko'rib chiqmaslik uchun. Store har yuklashda yangi massiv o'rnatadi, shuning uchun indeks eskirmaydi.
+const qoldiqIndekslari = new WeakMap<QoldiqTanlovi[], Map<string, QoldiqTanlovi>>();
+function qoldiqIndeksi(qoldiqlar: QoldiqTanlovi[]) {
+  let indeks = qoldiqIndekslari.get(qoldiqlar);
+  if (!indeks) {
+    indeks = new Map();
+    for (const qoldiq of qoldiqlar) {
+      if (qoldiq.modificationId && !indeks.has(qoldiq.modificationId)) indeks.set(qoldiq.modificationId, qoldiq);
+    }
+    qoldiqIndekslari.set(qoldiqlar, indeks);
+  }
+  return indeks;
 }
 
 function sotuvniBoglanganMalumotlarBilanBoyitish(
@@ -183,10 +203,9 @@ function sotuvniBoglanganMalumotlarBilanBoyitish(
   const responsible =
     sotuv.responsible ?? malumotlar.xodimlar.find((item) => item.id === (sotuv.responsibleId ?? sotuv.cashierId));
   const warehouse = sotuv.warehouse ?? malumotlar.omborlar.find((item) => item.id === sotuv.warehouseId);
+  const indeks = malumotlar.qoldiqlar ? qoldiqIndeksi(malumotlar.qoldiqlar) : undefined;
   const items = sotuv.items?.map((item) => {
-    const qoldiq = malumotlar.qoldiqlar?.find(
-      (qoldiqItem) => qoldiqItem.modificationId === item.modificationId
-    );
+    const qoldiq = item.modificationId ? indeks?.get(item.modificationId) : undefined;
 
     if (!qoldiq?.modification) return item;
 
@@ -331,17 +350,50 @@ export const useSavdoStore = create<SavdoState>((set, get) => {
   let qoldiqSorovi = 0;
   let boshlangichSorov: Promise<void> | null = null;
   let qaytarishlarSorovi: Promise<void> | null = null;
-  async function qoldiqlarniOlish(warehouseId?: string) {
-    const [stockQoldiqlar, katalogQoldiqlar] = await Promise.all([
-      omborQoldiqlariniOlish(warehouseId),
-      katalogModifikatsiyalariniQoldiqTanlovigaOlish(),
-    ]);
-    return qoldiqNomlariniBoyitish(qoldiqlarniKatalogBilanBirlashtirish(stockQoldiqlar, katalogQoldiqlar));
+  // Bir xil ombor qoldig'i (o'sha kesh obyekti) va o'sha katalog bilan birlashtirilgan natija qayta hisoblanmaydi va o'sha massiv qaytadi:
+  // ochiq oynalar (Yangi sotuv) hamma narsani qayta hisoblamaydi.
+  const birlashganlar = new WeakMap<{ qatorlar: QoldiqTanlovi[] }, { katalog: QoldiqTanlovi[]; natija: QoldiqTanlovi[] }>();
+  async function birlashtirish(stock: { qatorlar: QoldiqTanlovi[] }, katalog: QoldiqTanlovi[]) {
+    const tayyor = birlashganlar.get(stock);
+    if (tayyor?.katalog === katalog) return tayyor.natija;
+    const natija = await qoldiqNomlariniBoyitish(qoldiqlarniKatalogBilanBirlashtirish(stock.qatorlar, katalog));
+    birlashganlar.set(stock, { katalog, natija });
+    return natija;
   }
-  function qoldiqlarniKeshdanOlish(warehouseId: string | undefined, keshdan: boolean) {
+  async function qoldiqlarniKeshdanOlish(warehouseId: string | undefined, keshdan: boolean) {
     // Kesh o'tkazib yuborilsa qoldiq o'zgargan: boshqa omborlar va "hamma omborlar" nusxalari ham eskirgan hisoblanadi.
     if (!keshdan) malumotnomaKeshiniTozalash("qoldiqlar");
-    return malumotnomaniOlish("qoldiqlar", warehouseId || "hamma", () => qoldiqlarniOlish(warehouseId), QOLDIQ_KESH_MUDDATI);
+    const [stock, katalog] = await Promise.all([
+      // Obyektga o'ralgan: kesh massivni nusxalaydi, obyekt esa o'sha qoladi (birlashtirish natijasi shunga bog'lanadi).
+      malumotnomaniOlish("qoldiqlar", warehouseId || "hamma", async () => ({ qatorlar: await omborQoldiqlariniOlish(warehouseId) }), QOLDIQ_KESH_MUDDATI),
+      katalogModifikatsiyalariniQoldiqTanlovigaOlish(),
+    ]);
+    return { stock, natija: await birlashtirish(stock, katalog) };
+  }
+  // Oxirgi ko'rsatilgan ombor qoldig'i: katalog fonda yangilansa aynan shu qoldiq yangi narx/nom bilan qayta birlashtiriladi
+  // (ombor qoldig'i qayta so'ralmaydi — tarmoq so'rovi ham, kutilmagan xato toasti ham yo'q).
+  let oxirgiQoldiq: { stock: { qatorlar: QoldiqTanlovi[] } } | null = null;
+  // Yangi katalog yuklash davomida kelgan bo'lsa: o'sha yuklash eski katalogni olgan bo'lishi mumkin — u tugagach qayta yig'iladi.
+  let katalogQaytaYigish = false;
+  katalogYangilanishigaObuna(() => {
+    if (get().qoldiqYuklanmoqda) {
+      katalogQaytaYigish = true;
+      return;
+    }
+    jimQaytaYigish();
+  });
+  function jimQaytaYigish() {
+    if (!oxirgiQoldiq) return;
+    const { stock } = oxirgiQoldiq;
+    const sorov = qoldiqSorovi;
+    // Jimgina: qoldiqYuklanmoqda yoqilmaydi (ochiq sotuv tugmalari o'chib-yonmaydi), xato ko'rsatilmaydi — keyingi yuklash qayta urinadi.
+    void katalogModifikatsiyalariniQoldiqTanlovigaOlish(false, true).then((katalog) => birlashtirish(stock, katalog)).then((qoldiqlar) => {
+      if (sorov !== qoldiqSorovi || get().qoldiqYuklanmoqda) return;
+      set((state) => ({
+        qoldiqlar,
+        tanlanganSotuv: state.tanlanganSotuv ? sotuvniQoldiqNomlariBilanToldirish(state.tanlanganSotuv, qoldiqlar) : state.tanlanganSotuv,
+      }));
+    }, () => undefined);
   }
   let mijozlarSorovi: Promise<MijozTanlovi[]> | null = null;
   // StrictMode/remount va mijozlarni oldindan yuklash bir xil so'rovlarni ko'paytirmaydi.
@@ -429,8 +481,9 @@ export const useSavdoStore = create<SavdoState>((set, get) => {
     const sorov = ++qoldiqSorovi;
     set({ qoldiqYuklanmoqda: true });
     try {
-      const qoldiqlar = await qoldiqlarniKeshdanOlish(warehouseId, sozlama?.kesh === true);
+      const { stock, natija: qoldiqlar } = await qoldiqlarniKeshdanOlish(warehouseId, sozlama?.kesh === true);
       if (sorov === qoldiqSorovi) {
+        oxirgiQoldiq = { stock };
         set((state) => ({
           qoldiqlar,
           // Sotuv qoldiqdan oldin ochilgan bo'lsa, mahsulot nomlari endi qo'shiladi.
@@ -440,7 +493,14 @@ export const useSavdoStore = create<SavdoState>((set, get) => {
     } catch (error) {
       if (sorov === qoldiqSorovi) set({ xatolik: getApiErrorMessage(error) });
     } finally {
-      if (sorov === qoldiqSorovi) set({ qoldiqYuklanmoqda: false });
+      if (sorov === qoldiqSorovi) {
+        set({ qoldiqYuklanmoqda: false });
+        // Yuklash paytida fonda yangi katalog kelgan: jimgina qayta yig'iladi (qoldiq keshdan, birlashtirish faqat katalog o'zgargan bo'lsa).
+        if (katalogQaytaYigish) {
+          katalogQaytaYigish = false;
+          jimQaytaYigish();
+        }
+      }
     }
   },
 

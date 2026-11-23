@@ -113,7 +113,9 @@ export default function SavdoSelect({
   const selected = options.find((option) => option.value === value);
   const qidiruv = qidiruvMatni.trim().toLowerCase();
   let korinadiganOptions = options;
-  if (qidirishFaol) {
+  // Ro'yxat faqat ochiq bo'lganda chiziladi va klaviatura bilan boshqariladi: yopiq select (har sotuv qatorida bittadan) har renderda
+  // minglab variantni filtrlamaydi.
+  if (qidirishFaol && open) {
     korinadiganOptions = options.filter((option) => {
       if (qidiruvMosligi) return qidiruvMosligi(option, qidiruvMatni);
       const matn = (option.searchLabel ?? labelToText(option.label)).toLowerCase();

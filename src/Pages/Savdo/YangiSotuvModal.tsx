@@ -335,9 +335,15 @@ function qoldiqNarxi(qoldiq?: QoldiqTanlovi) {
 }
 
 // Dollarda narxlangan mahsulot: asl narx ($100). Sotuvga baribir so'mdagi narx (bugungi kurs bo'yicha) qo'yiladi.
+// toLocaleString("uz-UZ", { maximumFractionDigits: 2 }) bilan aynan bir xil, lekin formatlovchi bir marta yaratiladi:
+// katalog ro'yxatida har dollar tovar uchun chaqiriladi (parametrli toLocaleString har safar yangisini yaratadi).
+const USD_FORMATI = new Intl.NumberFormat("uz-UZ", { maximumFractionDigits: 2 });
 function dollarNarxi(valyuta?: QoldiqTanlovi["valyuta"]) {
-  return valyuta ? `$${valyuta.asl.toLocaleString("uz-UZ", { maximumFractionDigits: 2 })}` : "";
+  return valyuta ? `$${USD_FORMATI.format(valyuta.asl)}` : "";
 }
+
+// localeCompare(x, "uz") bilan bir xil tartib, har taqqoslashda yangi Intl obyekti yaratilmaydi.
+const UZ_TARTIBI = new Intl.Collator("uz");
 
 // Dollarda narxlangan mahsulotning so'mdagi narxi yo'q (kurs kiritilmagan): so'mda sotib bo'lmaydi. "Faqat dollar" rejimida bu muhim emas —
 // sotuv dollarda va dollar narxi o'girilmasdan ishlatiladi.
@@ -522,6 +528,18 @@ export default function YangiSotuvModal({
   const [faoliyatOchiq, setFaoliyatOchiq] = useState(false);
   const [sanaMenyuOchiq, setSanaMenyuOchiq] = useState(false);
   const [sotuvBackendgaSaqlandi, setSotuvBackendgaSaqlandi] = useState(false);
+  // Qoldiq qatorlari kalit bo'yicha (Array.find bilan bir xil — birinchi mos yozuv): har qator har renderda bir necha marta
+  // 6 000+ qatorni qayta ko'rib chiqmasligi uchun. saqlanganQatorlar() (useState boshlang'ich qiymati) dan OLDIN e'lon qilinishi shart.
+  const qoldiqIndeksi = useMemo(() => {
+    const aniq = new Map<string, QoldiqTanlovi>();
+    const omborsiz = new Map<string, QoldiqTanlovi>();
+    for (const item of qoldiqlar) {
+      const kalit = qoldiqKaliti(item);
+      if (typeof kalit === "string" && !aniq.has(kalit)) aniq.set(kalit, item);
+      if (!item.warehouseId && typeof item.modificationId === "string" && !omborsiz.has(item.modificationId)) omborsiz.set(item.modificationId, item);
+    }
+    return { aniq, omborsiz };
+  }, [qoldiqlar]);
   const saqlanganQatorlar = () => {
     if (!tahrir) return [];
     const aslVal = valyutaYokiAsosiy(asl?.currency);
@@ -869,16 +887,16 @@ export default function YangiSotuvModal({
 
   // Qator qoldig'i: aniq ombor yozuvi. Tahrirlashda saqlangan mahsulotning shu omborda yozuvi bo'lmasa, omborsiz katalog yozuvi olinadi.
   function qatorQoldigi(kalit: string) {
-    const mos = qoldiqlar.find((item) => qoldiqKaliti(item) === kalit);
+    const mos = qoldiqIndeksi.aniq.get(kalit);
     if (mos || !tahrir || !kalit.includes("::")) return mos;
     const modificationId = kalit.split("::")[0];
-    return qoldiqlar.find((item) => !item.warehouseId && item.modificationId === modificationId);
+    return qoldiqIndeksi.omborsiz.get(modificationId);
   }
 
   // Saqlangan qatordagi mahsulot hozirgi qoldiq ro'yxatida bo'lmasa ham tanlangan holda ko'rinadi.
   function mahsulotOptionlari(qator?: MahsulotQatori): SavdoSelectOption[] {
     const royxat = katalogOptionlariRoyxati;
-    if (!qator?.saqlanganNom || royxat.some((option) => option.value === qator.qoldiqKaliti)) return royxat;
+    if (!qator?.saqlanganNom || katalogQiymatlari.has(qator.qoldiqKaliti)) return royxat;
     return [{ value: qator.qoldiqKaliti, searchLabel: qator.saqlanganNom, label: qator.saqlanganNom }, ...royxat];
   }
 
@@ -897,13 +915,29 @@ export default function YangiSotuvModal({
       (item) => item.warehouseId || !omborniBilganlar.has(item.modificationId)
     );
 
+    // Tarjimalar va har yozuv nomi bir marta olinadi (6 000+ tovarda har biri uchun qayta-qayta t() chaqirilmaydi).
+    const nomaLum = t("common.unknownProduct");
+    const narxYorligi = t("products.priceLabelShort");
+    const qoldiqYorligi = t("products.stockLabelShort");
+    const yozuvNomlari = new Map<QoldiqTanlovi, string>();
+    const yozuvNomi = (item: QoldiqTanlovi) => {
+      let nom = yozuvNomlari.get(item);
+      if (nom === undefined) {
+        nom = qoldiqNomi(item, t);
+        yozuvNomlari.set(item, nom);
+      }
+      return nom;
+    };
+    const omborNomlari = new Map<string, string | undefined>();
+    for (const ombor of omborlar) if (!omborNomlari.has(ombor.id)) omborNomlari.set(ombor.id, ombor.name);
+
     // Shu mahsulotning boshqa ombordagi yozuvlaridan nom va narx olinadi (qoldig'i yo'q yozuvda ular bo'sh bo'lishi mumkin).
     const nomlar = new Map<string, string>();
     const narxlar = new Map<string, number>();
     for (const item of qoldiqlar) {
       if (!item.modificationId) continue;
-      const nom = qoldiqNomi(item, t);
-      if (nom !== t("common.unknownProduct") && !nomlar.has(item.modificationId)) nomlar.set(item.modificationId, nom);
+      const nom = yozuvNomi(item);
+      if (nom !== nomaLum && !nomlar.has(item.modificationId)) nomlar.set(item.modificationId, nom);
       const narx = Number(qoldiqNarxi(item)) || 0;
       if (narx > 0 && !narxlar.has(item.modificationId)) narxlar.set(item.modificationId, narx);
     }
@@ -921,14 +955,14 @@ export default function YangiSotuvModal({
         // Faqat narxi kurssiz o'girilmaydigan tovar bloklanadi.
         const mavjud = !kursYoq && !rejimKursYoq;
         const qoldiqYoq = !(miqdor > 0);
-        const oziNomi = qoldiqNomi(item, t);
+        const oziNomi = yozuvNomi(item);
         const nom =
-          oziNomi !== t("common.unknownProduct")
+          oziNomi !== nomaLum
             ? oziNomi
             : (item.modificationId ? nomlar.get(item.modificationId) : undefined) ??
               `${oziNomi} #${String(item.modificationId ?? "").slice(-6)}`;
         const itemOmborNomi =
-          item.warehouse?.name ?? omborlar.find((ombor) => ombor.id === item.warehouseId)?.name;
+          item.warehouse?.name ?? (item.warehouseId ? omborNomlari.get(item.warehouseId) : undefined);
         const narxMatni =
           kursYoq && item.valyuta
             ? dollarNarxi(item.valyuta)
@@ -962,13 +996,13 @@ export default function YangiSotuvModal({
                 label: qoldiqYoq && !canSellNegative ? (
                   <span className="flex w-full min-w-0 items-center justify-between gap-3">
                     <span className="min-w-0 truncate">
-                      {nom}{itemOmborNomi ? ` (${itemOmborNomi})` : ""} - {t("products.priceLabelShort")}: {narxMatni}
+                      {nom}{itemOmborNomi ? ` (${itemOmborNomi})` : ""} - {narxYorligi}: {narxMatni}
                     </span>
                     <span className="shrink-0 rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-black text-amber-700">
-                      ⚠ {t("products.stockLabelShort")}: {miqdor}
+                      ⚠ {qoldiqYorligi}: {miqdor}
                     </span>
                   </span>
-                ) : `${nom}${itemOmborNomi ? ` (${itemOmborNomi})` : ""} - ${t("products.stockLabelShort")}: ${miqdor} - ${t("products.priceLabelShort")}: ${narxMatni}`,
+                ) : `${nom}${itemOmborNomi ? ` (${itemOmborNomi})` : ""} - ${qoldiqYorligi}: ${miqdor} - ${narxYorligi}: ${narxMatni}`,
               }
             : {
                 value: qoldiqKaliti(item),
@@ -980,7 +1014,7 @@ export default function YangiSotuvModal({
                 label: (
                   <span className="flex w-full min-w-0 items-center justify-between gap-3">
                     <span className="min-w-0 truncate text-slate-500">
-                      {nom} - {t("products.priceLabelShort")}: {narxMatni}
+                      {nom} - {narxYorligi}: {narxMatni}
                     </span>
                     <span className="shrink-0 rounded-md bg-red-100 px-2 py-0.5 text-[11px] font-black uppercase text-red-600">
                       {kursYoq ? t("products.noRate") : rejimKursYoq ? t(blokYagona === "USD" ? "products.somPriceNoRate" : "products.noRate") : t("products.outOfStock")}
@@ -991,9 +1025,20 @@ export default function YangiSotuvModal({
         };
       })
       // Avval qoldig'i borlar, keyin qoldig'i 0 (tanlanadi), oxirida tanlab bo'lmaydiganlar; ichida nom bo'yicha.
-      .sort((x, y) => Number(y.mavjud) - Number(x.mavjud) || Number(x.qoldiqYoq) - Number(y.qoldiqYoq) || x.nom.localeCompare(y.nom, "uz"))
+      .sort((x, y) => Number(y.mavjud) - Number(x.mavjud) || Number(x.qoldiqYoq) - Number(y.qoldiqYoq) || UZ_TARTIBI.compare(x.nom, y.nom))
       .map((x) => x.option);
   }, [qoldiqlar, warehouseId, omborlar, canSellNegative, sotuvVal, kurs, yagona, blokYagona, narxSozlamasi, t]);
+  // Saqlangan (qoralama) qator mahsuloti ro'yxatda bormi — har renderda 6 000+ variantni ko'rib chiqmaslik uchun.
+  const katalogQiymatlari = useMemo(() => new Set(katalogOptionlariRoyxati.map((option) => option.value)), [katalogOptionlariRoyxati]);
+  // Katalog oynasi uchun barqaror funksiyalar: oyna filtri ularga bog'liq, har renderda yangilansa butun ro'yxat qayta filtrlanardi.
+  const katalogQoldiqSoni = useMemo(
+    () => (kalit: string) => { const qoldiq = qoldiqIndeksi.aniq.get(kalit) ?? (tahrir && kalit.includes("::") ? qoldiqIndeksi.omborsiz.get(kalit.split("::")[0]) : undefined); return qoldiq ? qoldiqMiqdori(qoldiq) : 0; },
+    [qoldiqIndeksi, tahrir]
+  );
+  const katalogModifikatsiyaId = useMemo(
+    () => (kalit: string) => (qoldiqIndeksi.aniq.get(kalit) ?? (tahrir && kalit.includes("::") ? qoldiqIndeksi.omborsiz.get(kalit.split("::")[0]) : undefined))?.modificationId ?? kalit.split("::")[0],
+    [qoldiqIndeksi, tahrir]
+  );
 
   function mijozniTanlash(tanlanganCustomerId: string) {
     fx.tozala("customerId", "clientCompanyId");
@@ -3153,9 +3198,9 @@ export default function YangiSotuvModal({
     {katalogOchiq && (
       <KatalogOynasi
         variantlar={katalogOptionlariRoyxati}
-        qoldiqSoni={(kalit) => { const qoldiq = qatorQoldigi(kalit); return qoldiq ? qoldiqMiqdori(qoldiq) : 0; }}
+        qoldiqSoni={katalogQoldiqSoni}
         narx={katalogNarxi}
-        modificationId={(kalit) => qatorQoldigi(kalit)?.modificationId ?? kalit.split("::")[0]}
+        modificationId={katalogModifikatsiyaId}
         narxMatni={(summa) => pulniFormatlash(summa, sotuvVal)}
         omborTanlanmagan={!warehouseId}
         onQoshish={katalogdanQoshish}

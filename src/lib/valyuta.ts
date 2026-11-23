@@ -224,6 +224,10 @@ export function valyutaBelgisi(): string {
   return korsatiladiganValyuta() === "USD" ? "$" : "so'm";
 }
 
+// toLocaleString("uz-UZ", { maximumFractionDigits: 2 }) bilan aynan bir xil natija, lekin formatlovchi bir marta yaratiladi
+// (parametrli toLocaleString har chaqiruvda yangisini yaratadi — minglab narxli ro'yxatda yuzlab ms).
+const USD_FORMATI = new Intl.NumberFormat("uz-UZ", { maximumFractionDigits: 2 });
+
 /**
  * Summani O'Z valyutasida matnga aylantiradi, hech qanday o'girishsiz (hujjatlar: sotuv, to'lov, qaytarish — `currency`si bilan).
  *  - UZS: "1 250 000 so'm" (`yaxlit` bo'lsa butun songa yaxlitlanadi; `uzsBelgi` — tilga qarab "so'm"/"сум")
@@ -232,7 +236,7 @@ export function valyutaBelgisi(): string {
 export function oziValyutadaMatn(summa: number | string | null | undefined, valyuta: Valyuta, yaxlit = false, uzsBelgi = "so'm") {
   const son = Number(summa ?? 0);
   const qiymat = Number.isFinite(son) ? son : 0;
-  if (valyuta === "USD") return `$${qiymat.toLocaleString("uz-UZ", { maximumFractionDigits: 2 })}`;
+  if (valyuta === "USD") return `$${USD_FORMATI.format(qiymat)}`;
   return `${(yaxlit ? Math.round(qiymat) : qiymat).toLocaleString("uz-UZ")} ${uzsBelgi}`;
 }
 

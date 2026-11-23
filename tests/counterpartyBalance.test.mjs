@@ -6,6 +6,10 @@ import { calls, responses } from './helpers/balanceReportClient.mjs';
 const apiUrl = new URL('../src/api/reportsApi.ts', import.meta.url).href;
 registerHooks({
   resolve(specifier, context, nextResolve) {
+    // reportsApi'ning umumiy katalog/mijoz yuklagichlari (toliqKatalog.ts, mijozlarRoyxati.ts) ham shu soxta mijozdan foydalanadi.
+    if (specifier === './axios' && /\/src\/api\/(toliqKatalog|mijozlarRoyxati)\.ts$/.test(context.parentURL ?? '')) {
+      return { url: new URL('./helpers/balanceReportClient.mjs', import.meta.url).href, shortCircuit: true };
+    }
     if (context.parentURL === apiUrl) {
       if (specifier === './axios') return { url: new URL('./helpers/balanceReportClient.mjs', import.meta.url).href, shortCircuit: true };
       if (specifier === './sozlamalarApi') return { url: 'data:text/javascript,export const getApiErrorMessage = String;', shortCircuit: true };

@@ -1,6 +1,7 @@
 import apiClient from "./axios";
 import { apiData, apiList, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import { kopOchirishTanasi } from "../lib/kopTanlov";
+import { mijozlarRoyxati } from "./mijozlarRoyxati";
 import type {
   Mijoz,
   MijozKompaniyasi,
@@ -12,8 +13,8 @@ import type {
 
 // Mijozlar sahifasi: jismoniy mijozlar to'liq CRUD.
 export const mijozlarApi = {
-  royxat: async () =>
-    apiList((await apiClient.get<Mijoz[] | ApiListEnvelope<Mijoz>>("/partners/customers")).data),
+  // Bir vaqtdagi bir xil so'rovlar bitta bo'ladi (kesh yo'q — balans doim yangi).
+  royxat: () => mijozlarRoyxati<Mijoz>(),
   // `fon` — yordamchi so'rov (nomlarni to'ldirish, hisobni o'qish): mijoz topilmasa (404) xato toasti chiqmaydi, chaqiruvchi xatoni o'zi hal qiladi.
   olish: async (id: string, fon = false) =>
     apiData(

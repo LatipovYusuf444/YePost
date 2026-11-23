@@ -79,8 +79,15 @@ export function HisobotRealDataProvider({ children, tab }: { children: ReactNode
         const products = selections.products as ApiTanlov[];
         const modifications = selections.modifications as ApiTanlov[];
         const mahsulotNomlari = new Map(products.map((product) => [product.id, tanlovNomi(product)]));
+        // Mahsulot -> birinchi mos variant (Array.find bilan bir xil natija): 6 000 x 6 000 qidiruv o'rniga bitta o'tish.
+        const birinchiVariant = new Map<string, ApiTanlov>();
+        for (const item of modifications) {
+          for (const kalit of [item.product?.id, item.productId]) {
+            if (kalit && !birinchiVariant.has(kalit)) birinchiVariant.set(kalit, item);
+          }
+        }
         const maxsulotlar: Maxsulot[] = products.map((product) => {
-          const modification = modifications.find((item) => item.product?.id === product.id || item.productId === product.id);
+          const modification = birinchiVariant.get(product.id);
           return {
             id: product.id,
             nomi: tanlovNomi(product),

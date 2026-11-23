@@ -1,6 +1,6 @@
 import { Fragment, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import YonPanel from "./YonPanel";
 import { useYonPanelHolati } from "./yonPanelHolati";
 import YuqoriPanel from "./YuqoriPanel";
@@ -9,10 +9,12 @@ import { useValyutaRejiminiKuzatish, useValyutaStore } from "@/lib/valyuta";
 import { useInventorySettingsStore } from "@/store/inventorySettingsStore";
 import { useIshlabChiqarishStore } from "@/store/ishlabChiqarishStore";
 
+// Faqat kirish animatsiyasi. Chiqish animatsiyasi (AnimatePresence) olib tashlangan: chiqayotgan blok ichidagi <Outlet /> darhol YANGI
+// sahifani chizardi, so'ng 320 ms dan keyin yangi blokda u yana mount bo'lardi — har o'tishda sahifa ikki marta ochilib,
+// barcha so'rovlari (katalog 1 MB+ ham) ikki marta ketardi va o'tish 320 ms kechikardi.
 const sahifaVariantlari = {
   initial: { opacity: 0, y: 16, scale: 0.99 },
   animate: { opacity: 1, y: 0, scale: 1 },
-  exit: { opacity: 0, y: -10, scale: 0.99 },
 };
 
 export default function AsosiyLayout() {
@@ -44,20 +46,17 @@ export default function AsosiyLayout() {
         <div className="mx-auto w-full max-w-[1880px]">
           <YuqoriPanel sidebarAcik={sidebarAcik} onSidebarToggle={sidebarniAlmashtirish} />
           <div className="app-main-surface @container min-h-[calc(100vh-48px)] min-w-0 max-w-full rounded-[20px] border border-gold-200/60 bg-white/80 p-3 shadow-gold-medium backdrop-blur-xl sm:rounded-[28px] sm:p-5 lg:rounded-[34px] lg:p-7">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={location.pathname}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                variants={sahifaVariantlari}
-                transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-              >
-                <Fragment key={valyutaKaliti}>
-                  <Outlet />
-                </Fragment>
-              </motion.div>
-            </AnimatePresence>
+            <motion.div
+              key={location.pathname}
+              initial="initial"
+              animate="animate"
+              variants={sahifaVariantlari}
+              transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <Fragment key={valyutaKaliti}>
+                <Outlet />
+              </Fragment>
+            </motion.div>
           </div>
         </div>
       </main>

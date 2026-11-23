@@ -28,9 +28,15 @@ function katalogApi(calls) {
     './response': { apiList: data => data, apiData: data => data, ruxsatsizBulsaBosh: callback => callback(), sahifaJavobi: data => data },
     './catalogSearch': { katalogQidiruvQatoriniMoslash: value => value, katalogQidiruvYuklagich: () => ({}) },
     '@/lib/authTokenStorage': { authTokenlarniOlish: () => ({}) },
+    '@/lib/sessiyaIzolyatsiyasi': { sessiyaEgasi: () => '' },
+    '@/lib/toast': { xatolikXabari() {} },
+    axios: { __esModule: true, default: { isAxiosError: () => false, isCancel: () => false } },
+    './sozlamalarApi': { getApiErrorMessage: String },
+    '@/lib/valyuta': { useValyutaStore: { getState: () => ({ kurs: 0, kursBor: false }) } },
+    './toliqKatalog': { TOLIQ_KATALOG_GURUHI: 'katalog', toliqKatalogniEskirtiradimi: () => false, toliqMahsulotlar: async () => [], toliqModifikatsiyalar: async () => [] },
     '@/lib/kopBirlik': { birliklarniMoslash: value => value, birliklarTanasi: value => value },
     './apiLanguage': { apiTiliniOlish: () => 'uz' },
-    '@/lib/malumotnomaKeshi': { malumotnomaniOlish: (guruh, nom, yuklash) => yuklash(), ozgartirishdanKeyinTozalash: (guruh, amal) => amal() },
+    '@/lib/malumotnomaKeshi': { malumotnomaniOlish: (guruh, nom, yuklash) => yuklash(), malumotnomaKeshiniTozalash() {}, ozgartirishdanKeyinTozalash: (guruh, amal) => amal() },
     '@/lib/kopTanlov': { kopOchirishTanasi: ids => ({ ids: [...new Set(ids)] }) },
   });
 }

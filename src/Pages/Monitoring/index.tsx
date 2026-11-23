@@ -30,6 +30,7 @@ import InlineLoading from "@/Components/common/InlineLoading";
 import { sotuvlarRoyxatiniOlish } from "@/api/savdoApi";
 import { savdoHujjatimi } from "@/lib/boshlangichQarz";
 import { barchaModifikatsiyalar, chiqimApi, kirimApi, kochirishApi, omborlarApi } from "@/api/omborApi";
+import { toliqKatalogniTozalash } from "@/api/toliqKatalog";
 import {
   counterpartyBalanceReportApi,
   incomeExpenseReportApi,
@@ -1086,10 +1087,10 @@ export default function Monitoring() {
       const kun = kunniOlish(hujjatSanasi(hujjat));
       return kun >= dateFrom && kun <= dateTo;
     };
-    Promise.all([kirimApi.royxat(oraliq), chiqimApi.royxat(oraliq), kochirishApi.royxat(oraliq)])
-      .then(async ([kirimlar, chiqimlar, kochirmalar]) => {
+    // Katalog hujjatlar bilan parallel (avval ketma-ket kutilardi); u sanaga bog'liq emas va umumiy keshdan keladi.
+    Promise.all([kirimApi.royxat(oraliq), chiqimApi.royxat(oraliq), kochirishApi.royxat(oraliq), barchaModifikatsiyalar().catch(() => [])])
+      .then(async ([kirimlar, chiqimlar, kochirmalar, modifikatsiyalar]) => {
         if (!active) return;
-        const modifikatsiyalar = await barchaModifikatsiyalar().catch(() => []);
         const toliqChiqimlar = await Promise.all(
           chiqimlar.map(async (hujjat) => {
             if (
@@ -1436,6 +1437,8 @@ export default function Monitoring() {
   ];
 
   function yangilash() {
+    // Qo'lda yangilash umumiy katalog keshini chetlab o'tadi.
+    toliqKatalogniTozalash();
     setYangilanish((value) => value + 1);
   }
 

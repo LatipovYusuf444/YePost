@@ -4,6 +4,8 @@ import { bekorQilishSababi } from "../lib/bekorQilishSababi.ts";
 import { shubhaliValyutaBilanBajarish } from "./valyutaShubhasi";
 import axios from "axios";
 import { modifikatsiyalarApi } from "./catalogApi";
+// Savdo store katalog fonda yangilanganda qoldiqlarni qayta yig'adi.
+export { katalogYangilanishigaObuna } from "./catalogApi";
 import { ogohlantirishBilanBajarish } from "./hujjatOgohlantirishi";
 import { stockBalanceReportAll } from "./reportsApi";
 import { apiData, apiList, ruxsatsizBulsaBosh, sahifaJavobi, type ApiEnvelope, type ApiListEnvelope, type SahifaliRoyxat } from "./response";
@@ -30,6 +32,7 @@ import type { Mahsulot, MahsulotModifikatsiyasi } from "@/types/catalog";
 import { katalogNarxiniQoldiqqaMoslash, katalogOmborQoldiqlari, katalogQidiruvQatoriniMoslash, katalogQidiruvQoldigi } from "./catalogSearch";
 import { parallelBajarish } from "../lib/parallelBajarish.ts";
 import { malumotnomaniOlish } from "../lib/malumotnomaKeshi.ts";
+import { mijozlarRoyxati } from "./mijozlarRoyxati.ts";
 
 type RoyxatJavobi<T> = T[] | { value?: T[]; items?: T[]; results?: T[]; data?: T[] };
 
@@ -363,9 +366,9 @@ export function omborlarRoyxatiniOlish() {
 }
 
 // Savdo/index.tsx: sotuvga biriktiriladigan jismoniy mijozlar uchun.
-export async function mijozlarRoyxatiniOlish() {
-  const response = await apiClient.get<RoyxatJavobi<MijozTanlovi> | ApiListEnvelope<MijozTanlovi>>("/partners/customers");
-  return royxatniAjratish(response.data);
+// Bosh sahifa va savdo store bir vaqtda so'raydi — bitta so'rovga birlashadi (mijozlarRoyxati.ts).
+export function mijozlarRoyxatiniOlish() {
+  return mijozlarRoyxati<MijozTanlovi>();
 }
 
 // Savdo/index.tsx: sotuvga biriktiriladigan mijoz kompaniyalari uchun.
@@ -480,6 +483,8 @@ export async function qoldiqNomlariniBoyitish(qoldiqlar: QoldiqTanlovi[]) {
   const tayyor = (qoldiq: QoldiqTanlovi) => Boolean(qoldiq.modification?.product?.name && qoldiq.narxAniq !== false && narxBormi(qoldiq.modification.price));
   // Narxi yo'q yuzlab qator bir vaqtda search=<shtrix-kod> yuborib, serverda navbat hosil qilardi. Katalog 30 s keshda: odatda chaqiruvchi uni allaqachon olgan.
   const toldiriladigan = qoldiqlar.filter((qoldiq) => !tayyor(qoldiq) && (qoldiq.modificationId || qoldiq.modification?.id)).length;
+  // To'ldiriladigan narsa yo'q: o'sha massiv qaytadi (6 000+ qatorni bittalab aylanib chiqish va qayta chizish kerak emas).
+  if (toldiriladigan === 0) return qoldiqlar;
   let katalog: Map<string, MahsulotModifikatsiyasi> | null = null;
   if (toldiriladigan > YAKKA_QIDIRUV_CHEGARASI) {
     try {
@@ -499,11 +504,12 @@ export async function qoldiqNomlariniBoyitish(qoldiqlar: QoldiqTanlovi[]) {
     });
   }
 
-  return parallelBajarish(
-    qoldiqlar,
+  // Faqat tayyor bo'lmagan qatorlar ishlanadi; qolganlari o'z joyida (o'sha obyekt) qoladi.
+  const indekslar = qoldiqlar.flatMap((qoldiq, indeks) => (tayyor(qoldiq) ? [] : [indeks]));
+  const toldirilganlar = await parallelBajarish(
+    indekslar.map((indeks) => qoldiqlar[indeks]),
     TOLDIRISH_PARALLEL_SOROVLAR,
     async (qoldiq) => {
-      if (tayyor(qoldiq)) return qoldiq;
 
       // ID yo'q bo'lsa so'rov yuborilmaydi (aks holda `/catalog/modifications/undefined` → 400).
       const modificationId = qoldiq.modificationId || qoldiq.modification?.id;
@@ -548,6 +554,9 @@ export async function qoldiqNomlariniBoyitish(qoldiqlar: QoldiqTanlovi[]) {
       }
     }
   );
+  const natija = [...qoldiqlar];
+  indekslar.forEach((indeks, tartib) => { natija[indeks] = toldirilganlar[tartib]; });
+  return natija;
 }
 
 // Katalog yozuvini sotuv tanloviga o'giradi: nom, narx (dollar narx ham), birliklar va berilgan qoldiq.
@@ -638,10 +647,14 @@ async function omborlarBoyichaQidirish({ search, page, pageSize, warehouseIds, c
 // To'liq katalog (/catalog/modifications) KASSIR/OMBORCHI uchun 403 (tannarx
 // borligi sababli), shuning uchun ular ham ochiq bo'lgan qidiruv endpointi
 // ishlatiladi (qoldiq bilan, tannarxsiz).
-export async function katalogModifikatsiyalariniQoldiqTanlovigaOlish(majbur = false): Promise<QoldiqTanlovi[]> {
-  const modifications = await modifikatsiyalarApi.qidiruv(undefined, majbur);
+// Katalog o'zgarmaguncha (modifikatsiyalar massivi o'sha) qayta o'girilmaydi. Natija umumiy: chaqiruvchilar uni o'zgartirmaydi.
+const qoldiqTanlovlari = new WeakMap<MahsulotModifikatsiyasi[], QoldiqTanlovi[]>();
+export async function katalogModifikatsiyalariniQoldiqTanlovigaOlish(majbur = false, fon = false): Promise<QoldiqTanlovi[]> {
+  const modifications = await modifikatsiyalarApi.qidiruv(undefined, majbur, fon);
+  const tayyor = qoldiqTanlovlari.get(modifications);
+  if (tayyor) return tayyor;
 
-  return modifications
+  const natija = modifications
     .filter((modification) => modification.product?.isActive !== false)
     .filter((modification) => {
       // ID'siz yozuvni sotuvga qo'shib bo'lmaydi va boshqa yozuvlar bilan adashib ketadi.
@@ -650,6 +663,15 @@ export async function katalogModifikatsiyalariniQoldiqTanlovigaOlish(majbur = fa
       return idBor;
     })
     .map((modification) => modifikatsiyaniQoldiqqa(modification));
+  qoldiqTanlovlari.set(modifications, natija);
+  return natija;
+}
+
+/** Savdo sahifasi ochilganda katalog fonda oldindan yuklanadi: birinchi "Yangi sotuv" uni (6 000+ tovar, 65 sahifa) kutmaydi.
+ * Kesh yangi bo'lsa so'rov ketmaydi; xato jim (oyna ochilganda odatdagidek qayta uriniladi). Yashirin vkladkada ishlamaydi. */
+export function katalogniOldindanIsitish() {
+  if (typeof document !== "undefined" && document.hidden) return;
+  void katalogModifikatsiyalariniQoldiqTanlovigaOlish(false, true).catch(() => undefined);
 }
 
 // Sotuvning saqlangan hujjatlari: tasdiqlashda olingan chek nusxasi (RECEIPT) va talab bo'yicha yaratiladigan hisob-faktura (INVOICE).

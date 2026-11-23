@@ -47,6 +47,9 @@ export const modifikatsiyalarApi = {
     return { total: javob.items.length, ...javob };
   },
 };
+// Katalog fonda yangilanganda chaqiriladigan obuna: test `katalogTinglovchilari` orqali "fonda yangi katalog keldi" ni chaqiradi.
+export const katalogTinglovchilari = new Set();
+export const katalogYangilanishigaObuna = fn => { katalogTinglovchilari.add(fn); return () => katalogTinglovchilari.delete(fn); };
 export const mijozlarApi = {};
 export const getApiErrorMessage = error => error.message;
 export const sotuvQarzdorlikSummasi = () => 0;

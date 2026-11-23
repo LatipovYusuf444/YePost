@@ -820,8 +820,9 @@ export default function BoshSahifa() {
           omborlar: savdo.omborlar.length ? savdo.omborlar : omborlar,
           xodimlar,
         });
-        // Qo'shimcha tahrir/to'lov amallari uchun ma'lumotlar fonda yangilanadi.
-        void savdo.qoldiqlarniYuklash(birinchi.warehouseId);
+        // Qo'shimcha tahrir/to'lov amallari uchun ma'lumotlar fonda yangilanadi. Qoralama omborga tegmaydi, shuning uchun qoldiq keshi
+        // (30 s) yetarli; katalog o'z keshidan olinadi — har sotuvdan keyin butun katalog qayta yuklanmaydi.
+        void savdo.qoldiqlarniYuklash(birinchi.warehouseId, { kesh: true });
         if (!savdo.xodimlar.length) {
           void xodimlarRoyxatiniOlish().then((items) => {
             if (items.length) useSavdoStore.setState({ xodimlar: items });

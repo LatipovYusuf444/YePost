@@ -1,10 +1,18 @@
+import axios from "axios";
 import apiClient from "./axios";
 import { apiData, apiList, ruxsatsizBulsaBosh, sahifaJavobi, type ApiEnvelope, type ApiListEnvelope } from "./response";
 import { katalogQidiruvQatoriniMoslash, katalogQidiruvYuklagich, type KatalogQidiruvQatori } from "./catalogSearch";
 import { authTokenlarniOlish } from "@/lib/authTokenStorage";
+import { sessiyaEgasi } from "@/lib/sessiyaIzolyatsiyasi";
+import { xatolikXabari } from "@/lib/toast";
+import { getApiErrorMessage } from "./sozlamalarApi";
+import { useValyutaStore } from "@/lib/valyuta";
 import { birliklarniMoslash, birliklarTanasi, type TovarBirligi } from "@/lib/kopBirlik";
 import { apiTiliniOlish } from "./apiLanguage";
-import { malumotnomaniOlish, ozgartirishdanKeyinTozalash } from "@/lib/malumotnomaKeshi";
+import { malumotnomaKeshiniTozalash, malumotnomaniOlish, ozgartirishdanKeyinTozalash } from "@/lib/malumotnomaKeshi";
+import { TOLIQ_KATALOG_GURUHI, toliqKatalogniEskirtiradimi, toliqMahsulotlar, toliqModifikatsiyalar } from "./toliqKatalog";
+// Sahifalardagi "Yangilash" tugmalari uchun: umumiy keshni chetlab, serverdan yangisini olish.
+export { toliqKatalogniTozalash } from "./toliqKatalog";
 import { kopOchirishTanasi } from "@/lib/kopTanlov";
 import type {
   Kategoriya,
@@ -118,12 +126,8 @@ export const mahsulotBirliklariApi = {
 
 // Mahsulotlar sahifasi: Swagger catalog/products to'liq CRUD.
 export const mahsulotlarApi = {
-  royxat: async () => {
-    const response = await apiClient.get<Mahsulot[] | ApiListEnvelope<Mahsulot>>(
-      "/catalog/products"
-    );
-    return apiList(response.data);
-  },
+  // Umumiy 1 daqiqalik kesh (toliqKatalog.ts): mahsulot o'zgarsa interceptor tozalaydi.
+  royxat: () => toliqMahsulotlar<Mahsulot>(),
   olish: async (id: string) =>
     apiData((await apiClient.get<Mahsulot | ApiEnvelope<Mahsulot>>(`/catalog/products/${id}`)).data),
   yaratish: async (data: MahsulotMalumoti) =>
@@ -176,23 +180,60 @@ export const mahsulotlarApi = {
 };
 
 // Mahsulot tafsiloti: modifikatsiyalar CRUD va alohida narx endpointlari.
-const katalogYuklagich = katalogQidiruvYuklagich(async (q, page) => {
+const katalogYuklagich = katalogQidiruvYuklagich(async (q, page, fon) => {
   const response = await apiClient.get<unknown>("/catalog/modifications/search", {
     params: { page, pageSize: 100, ...(q ? { search: q } : {}) },
+    // Fondagi yangilash/oldindan isitish xatosi toast bo'lib chiqmaydi (eski nusxa ishlatilaveradi, keyingi ochilishda qayta uriniladi).
+    ...(fon ? { xatoniYashirish: true } : {}),
   });
   return sahifaJavobi<KatalogQidiruvQatori>(response.data, page, 100);
+}, Date.now, (error) => {
+  // axios interceptoridagi qoida bilan bir xil: faqat server/tarmoq xatosi; bekor qilingan so'rov va 401 (sessiya tugadi — login sahifasiga
+  // o'tiladi) toastsiz.
+  if (axios.isAxiosError(error) && !axios.isCancel(error) && error.response?.status !== 401) xatolikXabari(getApiErrorMessage(error));
 });
 let katalogSessiyasi = "";
 
-// Narx/mahsulot, kirim yoki valyuta kursi o'zgarsa eski katalog narxi ishlatilmaydi.
-apiClient.interceptors.response.use((response) => {
-  const method = response.config.method?.toLowerCase();
-  const path = response.config.url ?? "";
-  const kataloggaTasirQiladi = ["/catalog/", "/inventory/", "/settings/currency", "/settings/exchange-rates"]
-    .some((prefix) => path.startsWith(prefix));
-  if (kataloggaTasirQiladi && method && ["post", "put", "patch", "delete"].includes(method)) katalogYuklagich.tozalash();
-  return response;
-});
+// Savdo katalogi (nom, narx, birliklar; qoldiq miqdori undan olinmaydi — u har doim stock-balance dan keladi):
+// - narx/mahsulot/birlik (/catalog/), valyuta kursi va sozlamalar (/settings/), kirim (tannarx) o'zgarsa — QATTIQ: eski narx hech qachon berilmaydi;
+// - boshqa ombor hujjatlari va ishlab chiqarish (/inventory/..., /production/) — YUMSHOQ: keyingi ochilishda eski nusxa darhol, yangisi fonda.
+// O'zgartirish xato bilan tugasa ham (qisman bajarilgan bo'lishi mumkin) shunday qilinadi.
+function katalogKeshiniYangilash(config?: { method?: string; url?: string }) {
+  if (!toliqKatalogniEskirtiradimi(config)) return;
+  malumotnomaKeshiniTozalash(TOLIQ_KATALOG_GURUHI);
+  const yol = config?.url ?? "";
+  if (["/catalog/", "/settings/", "/inventory/purchases"].some((prefix) => yol.startsWith(prefix))) katalogYuklagich.tozalash();
+  else katalogYuklagich.eskirtirish();
+}
+apiClient.interceptors.response.use(
+  (response) => {
+    katalogKeshiniYangilash(response.config);
+    return response;
+  },
+  (error: unknown) => {
+    katalogKeshiniYangilash((error as { config?: { method?: string; url?: string } } | null)?.config);
+    return Promise.reject(error);
+  },
+);
+
+/** Savdo katalogi fonda yangilanganda (eski nusxa almashtirilganda) chaqiriladi. */
+export function katalogYangilanishigaObuna(tinglovchi: () => void) {
+  return katalogYuklagich.obuna((q) => { if (q === "") tinglovchi(); });
+}
+
+// Xom katalog massivi o'zgarmaguncha (kesh yangilanmaguncha) qayta moslanmaydi: 6 000+ qatorni har ochilishda qayta o'girish
+// bir necha yuz ms brauzerni band qilardi. Natija umumiy — chaqiruvchilar uni o'zgartirmaydi (faqat map/filter/find).
+const moslanganlar = new WeakMap<KatalogQidiruvQatori[], MahsulotModifikatsiyasi[]>();
+function moslanganKatalog(xom: KatalogQidiruvQatori[]) {
+  const tayyor = moslanganlar.get(xom);
+  if (tayyor) return tayyor;
+  const modifikatsiyalar = xom
+    .map(katalogQidiruvQatoriniMoslash)
+    .filter((item): item is MahsulotModifikatsiyasi => item !== null);
+  const natija = Array.from(new Map(modifikatsiyalar.map((item) => [item.id, item])).values());
+  moslanganlar.set(xom, natija);
+  return natija;
+}
 
 export const modifikatsiyalarApi = {
   // Barcha mahsulotlar variantlari narx va mahsulot bilan bitta so'rovda —
@@ -200,26 +241,31 @@ export const modifikatsiyalarApi = {
   // KASSIR/OMBORCHI uchun (tannarx borligi sababli) 403 qaytaradi — bo'sh
   // ro'yxat sifatida qabul qilinadi, sahifa yiqilib qolmasligi uchun.
   barchasi: async (productIds?: string[]) => ruxsatsizBulsaBosh(async () => {
+    // Hamma variantlar umumiy keshdan (Mahsulotlar, Ombor qoldig'i, Monitoring, Hisobotlar bir-birining natijasini ishlatadi).
+    if (!productIds?.length) return toliqModifikatsiyalar<MahsulotModifikatsiyasi>();
     const response = await apiClient.get<
       MahsulotModifikatsiyasi[] | ApiListEnvelope<MahsulotModifikatsiyasi>
     >("/catalog/modifications", {
-      params: productIds?.length ? { productIds: productIds.join(",") } : undefined,
+      params: { productIds: productIds.join(",") },
     });
     return apiList(response.data);
   }),
   // Savdo (POS) uchun: KASSIR/OMBORCHI ham foydalanadigan, tannarxsiz va
   // qoldiq bilan qaytaradigan qidiruv endpointi — to'liq katalog (barchasi())
   // o'rniga ishlatiladi, chunki u rol bo'yicha yopiq.
-  qidiruv: async (q?: string, majbur = false) => {
-    const sessiya = `${authTokenlarniOlish().accessToken ?? ""}:${apiTiliniOlish()}`;
+  qidiruv: async (q?: string, majbur = false, fon = false) => {
+    // Kalit — do'kon + foydalanuvchi + til + amaldagi kurs (token emas): token yangilanganda katalog qayta yuklanmaydi; boshqa do'kon,
+    // foydalanuvchi yoki yangi kurs (so'mdagi narx kursdan hisoblanadi — boshqa qurilmada o'zgargan bo'lsa ham) bo'lsa eski nusxa tashlanadi.
+    const tokenlar = authTokenlarniOlish();
+    const valyuta = useValyutaStore.getState();
+    const sessiya = tokenlar.accessToken
+      ? `${sessiyaEgasi(tokenlar.accessToken, tokenlar.username ?? "")}:${apiTiliniOlish()}:${valyuta.kursBor ? valyuta.kurs : 0}`
+      : "";
     if (sessiya !== katalogSessiyasi) {
       katalogYuklagich.tozalash();
       katalogSessiyasi = sessiya;
     }
-    const modifikatsiyalar = (await katalogYuklagich.olish(q, majbur))
-      .map(katalogQidiruvQatoriniMoslash)
-      .filter((item): item is MahsulotModifikatsiyasi => item !== null);
-    return Array.from(new Map(modifikatsiyalar.map((item) => [item.id, item])).values());
+    return moslanganKatalog(await katalogYuklagich.olish(q, majbur, fon));
   },
   // Bitta qidiruv sahifasi: so'z serverda filtrlanadi va aniq mos (shtrix-kod, artikul, nom) birinchi keladi. Butun katalog yuklanmaydi.
   // Qoldiq javobda: `warehouseId` berilsa shu ombor bo'yicha, berilmasa hamma omborlar yig'indisi. Yordamchi so'rov: xato toasti chiqmaydi.
