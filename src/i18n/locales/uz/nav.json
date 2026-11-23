@@ -69,7 +69,20 @@
   },
   "sidebar": {
     "label": "Asosiy menyu",
-    "profile": "{{name}} — profil va sozlamalar"
+    "profile": "{{name}} — profil va sozlamalar",
+    "reorder": {
+      "open": "Menyu tartibini o'zgartirish",
+      "openHint": "Yoki istalgan bandni bosib turing",
+      "title": "Menyu tartibi",
+      "hint": "Bandni bosib turib kerakli joyga sudrang yoki ↑ ↓ tugmalaridan foydalaning. Tartib faqat sizda saqlanadi.",
+      "reset": "Standart holat",
+      "done": "Tayyor",
+      "up": "{{name}} — yuqoriga",
+      "down": "{{name}} — pastga",
+      "drag": "{{name}} — bosib turib sudrang",
+      "children": "{{name}} ichidagi tartib",
+      "moved": "{{name}}: {{pos}}-o'rin"
+    }
   },
   "logout": "Tizimdan chiqish"
 }

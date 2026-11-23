@@ -9,6 +9,7 @@ import {
   type FocusEvent,
   type KeyboardEvent,
   type MouseEvent,
+  type PointerEvent as ReactPointerEvent,
   type Ref,
 } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
@@ -16,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import {
   ArrowDownToLine,
   ArrowLeftRight,
+  ArrowUpDown,
   ArrowUpFromLine,
   Activity,
   Ban,
@@ -24,6 +26,7 @@ import {
   Boxes,
   Building2,
   Calculator,
+  Check,
   CheckCircle2,
   ClipboardCheck,
   ChevronDown,
@@ -62,6 +65,9 @@ import { useSupportStore } from "@/store/supportStore";
 import { useIshlabChiqarishStore } from "@/store/ishlabChiqarishStore";
 import { sahifagaRuxsatBormi } from "@/lib/roles";
 import MobilNavigatsiya from "./MobilNavigatsiya";
+import MenyuTahriri, { ASOSIY_KONTEYNER, type BoshlangichSudrash } from "./MenyuTahriri";
+import { useMenyuTartibi } from "./useMenyuTartibi";
+import { kochirish, korinadiganTartibniBirlashtirish, tartibniQollash } from "@/lib/menyuTartibi";
 
 import { useAvatarUrl } from "@/store/avatarStore";
 import type { YonPanelRejimi } from "./yonPanelHolati";
@@ -340,13 +346,26 @@ export default function YonPanel({
     };
   }, [oqilmaganSoniniYangilash]);
 
+  // Foydalanuvchi tanlagan tartib (shu brauzerda, foydalanuvchi bo'yicha): yuqori bandlar va bo'lim ichidagi bandlar. Yangi qo'shilgan
+  // menyu bandlari standart joyiga yaqin chiqadi; marshrut va ruxsatlar tartibga bog'liq emas.
+  const { tartib, saqlash: tartibniSaqlash } = useMenyuTartibi(profil?.id ?? username);
+  const tartiblanganMenyular = useMemo(
+    () => tartibniQollash(menyular, (menu) => menu.key, tartib?.asosiy).map((menu) =>
+      menu.bolalar ? { ...menu, bolalar: tartibniQollash(menu.bolalar, (bola) => bola.key, tartib?.bolalar[menu.key]) } : menu
+    ),
+    [tartib]
+  );
+  const tartibOzgargan = tartiblanganMenyular.some((menu, indeks) =>
+    menu.key !== menyular[indeks].key || Boolean(menu.bolalar?.some((bola, i) => bola.key !== menyular[indeks].bolalar?.[i]?.key))
+  );
+
   // Profil hali yuklanmagan bo'lsa hamma bandni ko'rsatamiz (bir lahzalik
   // holat, backend real cheklovni baribir 403 orqali ta'minlaydi) — aks
   // holda KASSIR/OMBORCHI uchun ruxsati yo'q bandlar (va ularning bolalari)
   // menyudan yashiriladi.
   const korinadiganMenyular = useMemo(() => {
     // Ishlab chiqarish moduli yoqilmaguncha server hamma yo'lda 403 qaytaradi: menyuda ko'rsatilmaydi.
-    const yoqilganlar = ishlabChiqarishYoqilgan ? menyular : menyular.filter((menu) => menu.key !== "ishlabChiqarish");
+    const yoqilganlar = ishlabChiqarishYoqilgan ? tartiblanganMenyular : tartiblanganMenyular.filter((menu) => menu.key !== "ishlabChiqarish");
     if (!profil) return yoqilganlar;
     return yoqilganlar
       .filter((menu) => sahifagaRuxsatBormi(profil, menu.path))
@@ -355,7 +374,130 @@ export default function YonPanel({
           ? { ...menu, bolalar: menu.bolalar.filter((bola) => sahifagaRuxsatBormi(profil, bola.path.split("?")[0])) }
           : menu
       );
-  }, [profil, ishlabChiqarishYoqilgan]);
+  }, [profil, ishlabChiqarishYoqilgan, tartiblanganMenyular]);
+
+  // ── Menyu tartibini o'zgartirish rejimi ──
+  // Ochish: sarlavhadagi tugma yoki istalgan bandni bosib turish (≈0,5 s) — sichqoncha qo'yib yuborilmasa band darrov sudraladi.
+  const [tahrir, setTahrir] = useState(false);
+  const [boshlangichSudrash, setBoshlangichSudrash] = useState<BoshlangichSudrash | null>(null);
+  const bosilgan = useRef(false);
+  const uzoqBosish = useRef<{ taymer: number; x: number; y: number; oxirgiY: number } | null>(null);
+  // Bosib turishdan keyingi "click" band havolasini ochib yubormasin.
+  const bosishniYutish = useRef(false);
+
+  function tahrirniOchish(boshlangich: BoshlangichSudrash | null = null) {
+    setFlyout(null);
+    maslahatRef.current?.yashir(true);
+    setBoshlangichSudrash(boshlangich);
+    setTahrir(true);
+  }
+  function tahrirniYopish() {
+    setTahrir(false);
+    setBoshlangichSudrash(null);
+  }
+
+  // Panel yopilsa tahrir rejimi ham tugaydi.
+  useEffect(() => {
+    if (!acik) {
+      setTahrir(false);
+      setBoshlangichSudrash(null);
+    }
+  }, [acik]);
+
+  // Escape — tahrirdan chiqish (sudrash paytida Escape faqat sudrashni bekor qiladi — u hodisani o'zi to'xtatadi).
+  useEffect(() => {
+    if (!tahrir) return;
+    const tugma = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      // Band sudralayotgan bo'lsa Escape faqat sudrashni bekor qiladi (buni MenyuTahriri o'zi bajaradi).
+      if (document.querySelector('.yp-edit[data-sudrash="true"]')) return;
+      event.preventDefault();
+      setTahrir(false);
+      setBoshlangichSudrash(null);
+    };
+    window.addEventListener("keydown", tugma, true);
+    return () => window.removeEventListener("keydown", tugma, true);
+  }, [tahrir]);
+
+  // Bosib turishni kuzatish butun oynada: siljisa (> 8px) yoki qo'yib yuborilsa bekor bo'ladi.
+  useEffect(() => {
+    const pastga = () => { bosilgan.current = true; };
+    const harakat = (event: globalThis.PointerEvent) => {
+      const holat = uzoqBosish.current;
+      if (!holat) return;
+      holat.oxirgiY = event.clientY;
+      if (Math.hypot(event.clientX - holat.x, event.clientY - holat.y) > 8) {
+        window.clearTimeout(holat.taymer);
+        uzoqBosish.current = null;
+      }
+    };
+    const qoyish = () => {
+      bosilgan.current = false;
+      if (uzoqBosish.current) {
+        window.clearTimeout(uzoqBosish.current.taymer);
+        uzoqBosish.current = null;
+      }
+      if (bosishniYutish.current) window.setTimeout(() => { bosishniYutish.current = false; }, 0);
+    };
+    const bosish = (event: globalThis.MouseEvent) => {
+      if (!bosishniYutish.current) return;
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    const kontekst = (event: globalThis.MouseEvent) => {
+      if (bosishniYutish.current || uzoqBosish.current) event.preventDefault();
+    };
+    window.addEventListener("pointerdown", pastga, true);
+    window.addEventListener("pointermove", harakat);
+    window.addEventListener("pointerup", qoyish, true);
+    window.addEventListener("pointercancel", qoyish, true);
+    window.addEventListener("click", bosish, true);
+    window.addEventListener("contextmenu", kontekst, true);
+    return () => {
+      window.clearTimeout(uzoqBosish.current?.taymer);
+      window.removeEventListener("pointerdown", pastga, true);
+      window.removeEventListener("pointermove", harakat);
+      window.removeEventListener("pointerup", qoyish, true);
+      window.removeEventListener("pointercancel", qoyish, true);
+      window.removeEventListener("click", bosish, true);
+      window.removeEventListener("contextmenu", kontekst, true);
+    };
+  }, []);
+
+  function navBosildi(event: ReactPointerEvent<HTMLElement>) {
+    if (!acik || tahrir || event.button !== 0) return;
+    const band = (event.target as HTMLElement).closest<HTMLElement>("[data-tartib-kalit]");
+    const kalit = band?.dataset.tartibKalit;
+    if (!band || !kalit) return;
+    const konteyner = band.dataset.tartibOta ?? ASOSIY_KONTEYNER;
+    window.clearTimeout(uzoqBosish.current?.taymer);
+    const holat = { taymer: 0, x: event.clientX, y: event.clientY, oxirgiY: event.clientY };
+    holat.taymer = window.setTimeout(() => {
+      uzoqBosish.current = null;
+      bosishniYutish.current = true;
+      navigator.vibrate?.(12);
+      tahrirniOchish({ konteyner, kalit, clientY: holat.oxirgiY });
+    }, 480);
+    uzoqBosish.current = holat;
+  }
+
+  // Ko'rinadigan tartibda ko'chirish → to'liq tartibga (rolga ko'ra yashirin bandlar o'z joyida qoladi) va saqlash.
+  function tartibniKochirish(konteyner: string, from: number, to: number) {
+    const asosiyToliq = tartiblanganMenyular.map((menu) => menu.key);
+    if (konteyner === ASOSIY_KONTEYNER) {
+      const yangi = kochirish(korinadiganMenyular.map((menu) => menu.key), from, to);
+      tartibniSaqlash({ asosiy: korinadiganTartibniBirlashtirish(asosiyToliq, yangi), bolalar: tartib?.bolalar ?? {} });
+      return;
+    }
+    const korinadigan = korinadiganMenyular.find((menu) => menu.key === konteyner)?.bolalar;
+    const toliq = tartiblanganMenyular.find((menu) => menu.key === konteyner)?.bolalar;
+    if (!korinadigan || !toliq) return;
+    const yangi = kochirish(korinadigan.map((bola) => bola.key), from, to);
+    tartibniSaqlash({
+      asosiy: tartib?.asosiy ?? asosiyToliq,
+      bolalar: { ...(tartib?.bolalar ?? {}), [konteyner]: korinadiganTartibniBirlashtirish(toliq.map((bola) => bola.key), yangi) },
+    });
+  }
 
   // Joriy marshrut tegishli bo'lim ochiq turadi (yangilashdan keyin ham); qolganlarini foydalanuvchi ochadi.
   const faolBolim = menyular.find((menu) => menu.bolalar && yolIchida(pathname, menu.path))?.path;
@@ -502,15 +644,37 @@ export default function YonPanel({
             <h2 className="yp-brand-name">{t("brand")}</h2>
             <p className="yp-brand-tag">{t("brandTagline")}</p>
           </div>
+          {acik && (
+            <button
+              type="button"
+              data-menyu-tartibi={tahrir ? "tayyor" : "ochish"}
+              onClick={() => (tahrir ? tahrirniYopish() : tahrirniOchish())}
+              aria-pressed={tahrir}
+              aria-label={tahrir ? t("sidebar.reorder.done") : t("sidebar.reorder.open")}
+              {...(tahrir ? {} : maslahatHodisalari(t("sidebar.reorder.open"), t("sidebar.reorder.openHint"), true))}
+              className="yp-head-btn yp-fade"
+            >
+              {tahrir ? <><Check size={15} strokeWidth={2.5} aria-hidden="true" />{t("sidebar.reorder.done")}</> : <ArrowUpDown size={16} strokeWidth={2} aria-hidden="true" />}
+            </button>
+          )}
         </div>
 
         <span className="yp-sep" aria-hidden="true" />
 
-        <nav ref={navRef} aria-label={t("sidebar.label")} className="yp-nav">
-          {korinadiganMenyular.map((menu, index) => {
+        <nav ref={navRef} aria-label={t("sidebar.label")} className="yp-nav" data-tahrir={tahrir || undefined} onPointerDown={navBosildi}>
+          {tahrir ? (
+            <MenyuTahriri
+              menyular={korinadiganMenyular}
+              onKochirish={tartibniKochirish}
+              onStandart={() => tartibniSaqlash(null)}
+              ozgartirilgan={tartibOzgargan}
+              boshlangich={boshlangichSudrash}
+              bosilganmi={() => bosilgan.current}
+            />
+          ) : korinadiganMenyular.map((menu, index) => {
             const Icon = menu.icon;
             const nom = t(`menu.${menu.key}`);
-            const tartib = { "--i": index } as CSSProperties;
+            const tartibUslubi = { "--i": index } as CSSProperties;
 
             if (menu.bolalar) {
               const guruhFaol = yolIchida(pathname, menu.path);
@@ -520,7 +684,7 @@ export default function YonPanel({
               const bolimId = `yp-bolim-${menu.key}`;
 
               return (
-                <div key={menu.path} className="yp-enter" style={tartib}>
+                <div key={menu.path} className="yp-enter" style={tartibUslubi} data-tartib-kalit={menu.key}>
                   <button
                     type="button"
                     data-flyout={menu.key}
@@ -562,6 +726,8 @@ export default function YonPanel({
                               key={bola.path}
                               to={bola.path}
                               onClick={bandTanlandi}
+                              data-tartib-kalit={bola.key}
+                              data-tartib-ota={menu.key}
                               aria-current={faol ? "page" : undefined}
                               data-faol={faol || undefined}
                               {...maslahatHodisalari(bolaNomi)}
@@ -583,7 +749,7 @@ export default function YonPanel({
             const badge = menu.key === "qollabQuvvatlash" && oqilmaganXabarSoni > 0 ? oqilmaganXabarSoni : 0;
 
             return (
-              <div key={menu.path} className="yp-enter" style={tartib}>
+              <div key={menu.path} className="yp-enter" style={tartibUslubi} data-tartib-kalit={menu.key}>
                 <NavLink
                   to={menu.path}
                   aria-label={nom}

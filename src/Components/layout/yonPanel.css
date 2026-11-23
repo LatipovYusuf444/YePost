@@ -379,6 +379,132 @@ a.yp-avatar:focus-visible { outline: 2px solid rgb(56 189 248 / 0.8); outline-of
 .yp-fly-title { padding: 6px 10px 8px; overflow: hidden; color: #94a3b8; font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
 .yp-fly-list { display: grid; gap: 2px; }
 
+/* ---------- Menyu tartibini o'zgartirish ---------- */
+.yp-head-btn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 34px;
+  height: 34px;
+  margin-left: auto;
+  padding: 0 9px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 11px;
+  color: #94a3b8;
+  font-size: 12.5px;
+  font-weight: 700;
+  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease, transform 120ms ease;
+}
+.yp-head-btn:hover { background-color: var(--yp-hover); color: #e2e8f0; }
+.yp-head-btn:active { transform: scale(0.95); }
+.yp-head-btn:focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; }
+.yp-head-btn[aria-pressed="true"] { border-color: transparent; background: #0ea5e9; color: #fff; box-shadow: 0 8px 18px rgb(14 165 233 / 0.3); }
+.yp-head-btn[aria-pressed="true"]:hover { background: #0284c7; }
+
+/* Bosib turilganda matn belgilanmasin, telefonda tizim menyusi chiqmasin. */
+.yp-nav { -webkit-touch-callout: none; }
+.yp-nav .yp-item,
+.yp-nav .yp-child { -webkit-user-select: none; user-select: none; }
+
+.yp-edit { display: flex; flex-direction: column; gap: 10px; animation: yp-fade-in 200ms ease backwards; }
+.yp-edit-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 10px 10px 10px 12px;
+  border: 1px solid rgb(56 189 248 / 0.25);
+  border-radius: 14px;
+  background: rgb(14 165 233 / 0.08);
+}
+.yp-edit-title { color: #e0f2fe; font-size: 13px; font-weight: 700; line-height: 18px; }
+.yp-edit-hint { grid-column: 1 / -1; grid-row: 2; color: #94a3b8; font-size: 11.5px; line-height: 16px; }
+.yp-edit-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: 9px;
+  color: #bae6fd;
+  font-size: 11.5px;
+  font-weight: 700;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.yp-edit-reset:hover:not(:disabled) { background: rgb(255 255 255 / 0.08); color: #fff; }
+.yp-edit-reset:disabled { opacity: 0.4; cursor: default; }
+.yp-edit-reset:focus-visible { outline: 2px solid #38bdf8; outline-offset: 1px; }
+
+.yp-edit-list,
+.yp-edit-sub { display: flex; flex-direction: column; gap: 4px; }
+.yp-edit-sub { margin: 4px 0 2px 22px; padding-left: 10px; border-left: 1px solid rgb(255 255 255 / 0.08); }
+
+.yp-edit-band { position: relative; transition: transform 180ms var(--yp-ease); }
+.yp-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 6px 0 17px;
+  border: 1px dashed rgb(255 255 255 / 0.12);
+  border-radius: 14px;
+  background: rgb(255 255 255 / 0.03);
+  color: #cbd5e1;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: grab;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: background-color 160ms ease, border-color 160ms ease, box-shadow 200ms ease, transform 160ms ease;
+}
+.yp-edit-row:hover { border-color: rgb(56 189 248 / 0.35); background: var(--yp-hover); }
+.yp-edit-row .yp-icon { color: #7dd3fc; }
+.yp-edit-row-child { height: 38px; gap: 9px; padding-left: 12px; font-size: 13px; color: #94a3b8; }
+.yp-edit-band[data-sudralmoqda="true"] > .yp-edit-row {
+  border-style: solid;
+  border-color: #38bdf8;
+  background: #16263f;
+  color: #f8fafc;
+  cursor: grabbing;
+  box-shadow: 0 16px 34px rgb(2 6 23 / 0.55), 0 0 0 1px rgb(56 189 248 / 0.35);
+  transform: scale(1.02);
+}
+.yp-edit[data-sudrash="true"],
+.yp-edit[data-sudrash="true"] * { cursor: grabbing !important; }
+
+.yp-edit-ctrls { display: inline-flex; flex-shrink: 0; align-items: center; gap: 2px; }
+.yp-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+.yp-edit-btn:hover:not(:disabled) { background: rgb(255 255 255 / 0.08); color: #f1f5f9; }
+.yp-edit-btn:disabled { opacity: 0.25; cursor: default; }
+.yp-edit-btn:focus-visible { outline: 2px solid #38bdf8; outline-offset: 1px; }
+.yp-edit-btn .yp-chev { position: static; margin-top: 0; transform: none; }
+.yp-edit-btn .yp-chev[data-ochiq="true"] { transform: rotate(180deg); }
+.yp-edit-grip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 30px;
+  border-radius: 8px;
+  color: #64748b;
+  cursor: grab;
+  touch-action: none;
+}
+.yp-edit-row:hover .yp-edit-grip { color: #7dd3fc; }
+
 /* ---------- Planshet: ochiq panel ostidagi solid fon ---------- */
 .yp-backdrop {
   position: fixed;
