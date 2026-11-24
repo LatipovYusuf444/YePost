@@ -2,7 +2,7 @@ import axios from "axios";
 import { qolganSahifalar } from "@/lib/parallelBajarish";
 import { discountReportApi } from "@/api/reportsApi";
 import { sotuvlarSahifasiniOlish } from "@/api/savdoApi";
-import { masulNomi, mijozNomi, sotuvChegirmaSummasi, sotuvHolati, sotuvSummasi } from "@/Pages/Savdo/savdoYordamchilari";
+import { masulNomi, mijozNomi, sotuvChegirmaSummasi, sotuvHolati, sotuvSummasi, sotuvValyutasi, sotuvValyutasigaOgirish } from "@/Pages/Savdo/savdoYordamchilari";
 import type { Sotuv } from "@/types/savdo";
 import { savdoHujjatimi } from "@/lib/boshlangichQarz";
 import type { DiscountReportGroupBy, DiscountReportRow, DiscountReportSummary } from "@/types/reports";
@@ -78,11 +78,29 @@ export async function tasdiqlanganSotuvlar(dateFrom: string, dateTo: string): Pr
     });
 }
 
+/** Sotuvning chek chegirmasi (sotuv valyutasida). */
+export function sotuvChekChegirmasi(sotuv: Sotuv) {
+  const summa = raqam(sotuv.receiptDiscount);
+  if (!(summa > 0)) return 0;
+  const valyuta = sotuv.receiptDiscountCurrency === "USD" || sotuv.receiptDiscountCurrency === "UZS" ? sotuv.receiptDiscountCurrency : sotuvValyutasi(sotuv);
+  return sotuvValyutasigaOgirish(summa, valyuta, sotuv) ?? 0;
+}
+
+/**
+ * Sotuvning qator chegirmasi. Qatorlarda chegirma bo'lsa — ularning yig'indisi; qatorlar kelmasa, backend `discountAmount`i
+ * (qator + chek chegirmasi) dan chek chegirmasi ayriladi — chek chegirmasi ikki marta hisoblanmasin.
+ */
+export function sotuvQatorChegirmasi(sotuv: Sotuv) {
+  const umumiy = sotuvChegirmaSummasi(sotuv);
+  const qatorlarda = (sotuv.items ?? []).some((item) => raqam(item.discount) > 0);
+  return qatorlarda ? umumiy : Math.max(0, umumiy - sotuvChekChegirmasi(sotuv));
+}
+
 export function sotuvlardanXulosa(sotuvlar: Sotuv[]): ChegirmaXulosa {
   let jami = 0;
   let chegirmali = 0;
   sotuvlar.forEach((sotuv) => {
-    const chegirma = sotuvChegirmaSummasi(sotuv);
+    const chegirma = sotuvQatorChegirmasi(sotuv) + sotuvChekChegirmasi(sotuv);
     if (chegirma > 0) {
       jami += chegirma;
       chegirmali += 1;
@@ -127,7 +145,7 @@ export function backendXulosa(javob: unknown): ChegirmaXulosa {
   }
   const qatorlar = javobQatorlari(javob);
   return {
-    jami: qatorlar.reduce((sum, qator) => sum + raqam(qator.discountAmount), 0),
+    jami: qatorlar.reduce((sum, qator) => sum + raqam(qator.discountAmount) + raqam(qator.receiptDiscount), 0),
     chegirmaliSotuvlar: qatorlar.reduce((sum, qator) => sum + raqam(qator.discountedSalesCount ?? qator.salesCount), 0),
     sotuvlarSoni: qatorlar.reduce((sum, qator) => sum + raqam(qator.salesCount), 0),
   };
@@ -165,12 +183,12 @@ export function sotuvlardanQatorlar(
   responsibleId?: string,
 ): DiscountReportRow[] {
   const royxat = responsibleId ? sotuvlar.filter((sotuv) => sotuv.responsibleId === responsibleId) : sotuvlar;
-  type Yig = { label: string; discountAmount: number; salesCount: number; discountedSalesCount: number; salesAmount: number };
+  type Yig = { label: string; discountAmount: number; receiptDiscount: number; salesCount: number; discountedSalesCount: number; salesAmount: number };
   const xarita = new Map<string, Yig>();
   const yigish = (key: string, label: string) => {
     let qator = xarita.get(key);
     if (!qator) {
-      qator = { label, discountAmount: 0, salesCount: 0, discountedSalesCount: 0, salesAmount: 0 };
+      qator = { label, discountAmount: 0, receiptDiscount: 0, salesCount: 0, discountedSalesCount: 0, salesAmount: 0 };
       xarita.set(key, qator);
     }
     return qator;
@@ -180,14 +198,21 @@ export function sotuvlardanQatorlar(
     const kun = sotuvKuni(sotuv);
     if (guruh === "PRODUCT") {
       // Mahsulot kesimi uchun sotuv qatorlari (items) kerak; ro'yxat javobida ular bo'lmasa, bu kesim bo'sh qoladi.
-      (sotuv.items ?? []).forEach((item) => {
+      // Chek chegirmasi qatorlarga ularning qiymati ulushi bo'yicha taqsimlanadi (backend ham shunday hisoblaydi).
+      const items = sotuv.items ?? [];
+      const chek = sotuvChekChegirmasi(sotuv);
+      const jamiQiymat = items.reduce((sum, item) => sum + raqam(item.quantity) * raqam(item.price) - raqam(item.discount), 0);
+      items.forEach((item) => {
         const nomi = item.modification?.product?.name ?? item.modification?.name ?? item.modificationId;
         const qator = yigish(item.modification?.product?.id ?? item.modificationId, nomi);
         const chegirma = raqam(item.discount);
+        const qiymat = raqam(item.quantity) * raqam(item.price) - chegirma;
+        const chekUlushi = chek > 0 && jamiQiymat > 0 ? (chek * qiymat) / jamiQiymat : 0;
         qator.salesCount += 1;
-        if (chegirma > 0) qator.discountedSalesCount += 1;
+        if (chegirma > 0 || chekUlushi > 0) qator.discountedSalesCount += 1;
         qator.discountAmount += chegirma;
-        qator.salesAmount += raqam(item.quantity) * raqam(item.price) - chegirma;
+        qator.receiptDiscount += chekUlushi;
+        qator.salesAmount += qiymat - chekUlushi;
       });
       return;
     }
@@ -200,10 +225,12 @@ export function sotuvlardanQatorlar(
             ? [sotuv.customerId ?? sotuv.clientCompanyId ?? "donalik", mijozNomi(sotuv)]
             : [sotuv.responsibleId ?? "-", masulNomi(sotuv)];
     const qator = yigish(key, label);
-    const chegirma = sotuvChegirmaSummasi(sotuv);
+    const chegirma = sotuvQatorChegirmasi(sotuv);
+    const chek = sotuvChekChegirmasi(sotuv);
     qator.salesCount += 1;
-    if (chegirma > 0) qator.discountedSalesCount += 1;
+    if (chegirma > 0 || chek > 0) qator.discountedSalesCount += 1;
     qator.discountAmount += chegirma;
+    qator.receiptDiscount += chek;
     qator.salesAmount += sotuvSummasi(sotuv);
   });
 

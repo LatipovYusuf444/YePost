@@ -73,7 +73,10 @@ export type DiscountReportFilter = SanaFilter & {
 export type DiscountReportRow = {
   key?: string;
   label?: string;
+  // Faqat qatorlardagi chegirma (SaleItem.discount).
   discountAmount?: number | string;
+  // Sotuvning umumiy chek chegirmasi (Sale.receiptDiscount; mahsulot kesimida qator ulushi bo'yicha taqsimlangan). Qator jami = ikkalasi.
+  receiptDiscount?: number | string;
   salesCount?: number | string;
   discountedSalesCount?: number | string;
   salesAmount?: number | string;
@@ -83,7 +86,10 @@ export type DiscountReportRow = {
 };
 
 export type DiscountReportSummary = {
+  // Qator + chek chegirmasi; alohida — totalLineDiscount va totalReceiptDiscount.
   totalDiscount?: number | string;
+  totalLineDiscount?: number | string;
+  totalReceiptDiscount?: number | string;
   discountedSalesCount?: number | string;
   totalSalesCount?: number | string;
   totalSalesAmount?: number | string;

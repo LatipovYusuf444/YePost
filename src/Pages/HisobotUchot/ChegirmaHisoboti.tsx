@@ -24,22 +24,10 @@ import { getApiErrorMessage } from "@/api/sozlamalarApi";
 import type {
   DiscountReportFilter,
   DiscountReportGroupBy,
-  DiscountReportRow,
   DiscountReportSummary,
 } from "@/types/reports";
+import { qatorlarniOlish, raqam, type Qator } from "./chegirmaModeli";
 import { bugun, bugunMinus, pul, son } from "./yordamchilar";
-
-type Qator = {
-  id: string;
-  nomi: string;
-  sotuvlarSoni: number;
-  chegirmaliSotuvlar: number;
-  sotuvSummasi: number;
-  chegirma: number;
-  foiz: number;
-  // Zavod bonusi (faqat kun/oy kesimida).
-  bonus: number;
-};
 
 const guruhlar: { value: DiscountReportGroupBy; nomi: string; ustun: string; qidiruv: string }[] = [
   { value: "DAY", nomi: "Kun bo'yicha", ustun: "Sana", qidiruv: "Sana bo‘yicha qidiruv" },
@@ -48,45 +36,6 @@ const guruhlar: { value: DiscountReportGroupBy; nomi: string; ustun: string; qid
   { value: "CUSTOMER", nomi: "Mijoz bo'yicha", ustun: "Mijoz", qidiruv: "Mijoz bo‘yicha qidiruv" },
   { value: "PRODUCT", nomi: "Mahsulot bo'yicha", ustun: "Mahsulot", qidiruv: "Mahsulot bo‘yicha qidiruv" },
 ];
-
-const raqam = (value: unknown) => {
-  const natija = Number(value ?? 0);
-  return Number.isFinite(natija) ? natija : 0;
-};
-
-// Backend sana yoki oyni ISO ("2026-10-05", "2026-10") ko'rinishida qaytarsa, o'qishga qulay qilinadi.
-function sarlavhaMatni(label: string, guruh: DiscountReportGroupBy) {
-  if (guruh === "DAY") {
-    const mos = /^(\d{4})-(\d{2})-(\d{2})/.exec(label);
-    if (mos) return `${mos[3]}.${mos[2]}.${mos[1]}`;
-  }
-  if (guruh === "MONTH") {
-    const mos = /^(\d{4})-(\d{2})/.exec(label);
-    if (mos) return `${mos[2]}.${mos[1]}`;
-  }
-  return label;
-}
-
-function qatorlarniOlish(royxat: DiscountReportRow[], guruh: DiscountReportGroupBy): Qator[] {
-  return royxat.map((item, index) => {
-    const chegirma = raqam(item.discountAmount);
-    const sotuvSummasi = raqam(item.salesAmount);
-    const label = String(item.label ?? item.key ?? "").trim();
-    return {
-      id: String(item.key ?? item.label ?? `chegirma-${index}`),
-      nomi: label ? sarlavhaMatni(label, guruh) : "—",
-      sotuvlarSoni: raqam(item.salesCount),
-      chegirmaliSotuvlar: raqam(item.discountedSalesCount ?? item.salesCount),
-      sotuvSummasi,
-      chegirma,
-      bonus: raqam(item.bonusAmount),
-      // Foiz backenddan kelmasa, chegirmagacha bo'lgan summaga nisbatan hisoblanadi.
-      foiz: item.discountPct != null
-        ? raqam(item.discountPct)
-        : sotuvSummasi + chegirma > 0 ? (chegirma / (sotuvSummasi + chegirma)) * 100 : 0,
-    };
-  });
-}
 
 export default function ChegirmaHisoboti() {
   const { filiallar } = useHisobotRealData();
@@ -178,6 +127,8 @@ export default function ChegirmaHisoboti() {
     const chegirma = korinadigan.reduce((sum, item) => sum + item.chegirma, 0);
     const sotuvSummasi = korinadigan.reduce((sum, item) => sum + item.sotuvSummasi, 0);
     return {
+      qatorChegirmasi: korinadigan.reduce((sum, item) => sum + item.qatorChegirmasi, 0),
+      chekChegirmasi: korinadigan.reduce((sum, item) => sum + item.chekChegirmasi, 0),
       sotuvlarSoni: korinadigan.reduce((sum, item) => sum + item.sotuvlarSoni, 0),
       chegirmaliSotuvlar: korinadigan.reduce((sum, item) => sum + item.chegirmaliSotuvlar, 0),
       sotuvSummasi,
@@ -219,7 +170,9 @@ export default function ChegirmaHisoboti() {
     { id: "sotuvlarSoni", nom: "Sotuvlar soni", kenglik: 150, hizalash: "right", katak: (item) => son(item.sotuvlarSoni), jami: () => son(jami.sotuvlarSoni) },
     { id: "chegirmaliSotuvlar", nom: "Chegirmali sotuvlar", kenglik: 180, hizalash: "right", katak: (item) => son(item.chegirmaliSotuvlar), jami: () => son(jami.chegirmaliSotuvlar) },
     { id: "sotuvSummasi", nom: "Sotuv summasi", kenglik: 190, hizalash: "right", katak: (item) => pul(item.sotuvSummasi), jami: () => pul(jami.sotuvSummasi) },
-    { id: "chegirma", nom: "Chegirma summasi", kenglik: 190, hizalash: "right", katak: (item) => <span className="font-black text-lime-700">{pul(item.chegirma)}</span>, jami: () => <span className="text-lime-700">{pul(jami.chegirma)}</span> },
+    { id: "qatorChegirmasi", nom: "Qator chegirmasi", kenglik: 180, hizalash: "right", katak: (item) => pul(item.qatorChegirmasi), jami: () => pul(jami.qatorChegirmasi) },
+    { id: "chekChegirmasi", nom: "Chek chegirmasi", kenglik: 170, hizalash: "right", katak: (item) => (item.chekChegirmasi ? pul(item.chekChegirmasi) : <span className="text-slate-300">—</span>), jami: () => pul(jami.chekChegirmasi) },
+    { id: "chegirma", nom: "Jami chegirma", kenglik: 190, hizalash: "right", katak: (item) => <span className="font-black text-lime-700">{pul(item.chegirma)}</span>, jami: () => <span className="text-lime-700">{pul(jami.chegirma)}</span> },
     { id: "foiz", nom: "Chegirma %", kenglik: 140, hizalash: "right", katak: (item) => `${item.foiz.toFixed(2)}%`, jami: () => `${jami.foiz.toFixed(2)}%` },
     ...bonusUstuni,
   ];
@@ -326,7 +279,7 @@ export default function ChegirmaHisoboti() {
       <label className="relative sm:w-72"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/><input value={qidiruv} onChange={(event) => setQidiruv(event.target.value)} placeholder={joriyGuruh.qidiruv} className="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-orange-400"/></label>
     </div>
     <section className="rounded-[28px] border border-orange-100 bg-white p-5 shadow-sm">
-      {yuklanmoqda ? <LoadingState matn="Chegirmalar jadvali yuklanmoqda..." ikonka={<BadgePercent size={24} />} className="min-h-[300px] rounded-none border-0 bg-transparent py-12" /> : korinadigan.length ? <KengaytiriladiganJadval tableId="HisobotUchot/ChegirmaHisoboti/kengaytiriladiganjadval-1" ustunlar={ustunlar} qatorlar={korinadigan} jamiBor /> : <div className="flex h-72 items-center justify-center font-bold text-slate-400">Tanlangan filtr bo‘yicha chegirma topilmadi.</div>}
+      {yuklanmoqda ? <LoadingState matn="Chegirmalar jadvali yuklanmoqda..." ikonka={<BadgePercent size={24} />} className="min-h-[300px] rounded-none border-0 bg-transparent py-12" /> : korinadigan.length ? <KengaytiriladiganJadval tableId="HisobotUchot/ChegirmaHisoboti/kengaytiriladiganjadval-1-v2" ustunlar={ustunlar} qatorlar={korinadigan} jamiBor /> : <div className="flex h-72 items-center justify-center font-bold text-slate-400">Tanlangan filtr bo‘yicha chegirma topilmadi.</div>}
     </section>
   </div>;
 }

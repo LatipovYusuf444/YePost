@@ -156,7 +156,11 @@ export type Sotuv = {
   totalAmount?: number | string;
   // Sotuv summasi valyutalar bo'yicha (aralash sotuvda): { UZS: "15000", USD: "2" }.
   totalsByCurrency?: Record<string, number | string> | null;
+  // Qator chegirmalari + chek chegirmasi (sotuv valyutasida).
   discountAmount?: number | string;
+  // Butun chekdan olingan qat'iy chegirma (`receiptDiscountCurrency`da, bo'lmasa sotuv valyutasida).
+  receiptDiscount?: number | string | null;
+  receiptDiscountCurrency?: string | null;
   paidAmount?: number | string;
   debtAmount?: number | string;
   // `keepExcess` bilan ortiqcha pulning mijoz hisobiga yozilgan qismi (sotuv valyutasida).
