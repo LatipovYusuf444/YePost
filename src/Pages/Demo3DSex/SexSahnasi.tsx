@@ -1,8 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame, type ThreeEvent } from "@react-three/fiber";
 import { CameraControls, Environment, Html, Lightformer, Sky } from "@react-three/drei";
-import { EffectComposer, N8AO, ToneMapping } from "@react-three/postprocessing";
-import { ToneMappingMode } from "postprocessing";
 import * as THREE from "three";
 import { useTranslation } from "react-i18next";
 import { DEMO_SEX_NS } from "./matnlar";
@@ -651,11 +649,6 @@ function SahnaIchi({ stanoklar, holatlar, reyslar, tanlangan, onTanlash, kamera 
       />
       <directionalLight position={[-30, 20, -20]} intensity={0.3} color="#cfe0ff" />
       <MasofaKuzatuvchi onDaraja={setDaraja} />
-      {/* Ambient occlusion (burchak va tutashgan joylardagi yumshoq soya) — sahnani ancha realistik qiladi */}
-      <EffectComposer multisampling={4}>
-        <N8AO halfRes aoRadius={1.6} intensity={2.2} distanceFalloff={0.6} quality="performance" />
-        <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
-      </EffectComposer>
       <Shaharcha m={mat} sm={sm} />
       <SexMuhiti mat={mat} stanoklar={stanoklar} uzoq={daraja === 2} />
       <Logistika m={mat} sm={sm} reyslar={reyslar} yorliq={daraja > 0 || kamera.tur === "hudud"} />
