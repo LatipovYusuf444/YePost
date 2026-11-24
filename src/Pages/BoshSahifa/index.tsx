@@ -6,6 +6,7 @@ import i18n from "i18next";
 import SummaMaydoni from "@/Components/common/SummaMaydoni";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import {
+  Box,
   LoaderCircle,
   Minus,
   Paperclip,
@@ -18,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import AppModal from "@/Components/common/AppModal";
 import TasdiqlashOynasi from "@/Components/common/TasdiqlashOynasi";
 import AppSelect from "@/Components/ui/AppSelect";
@@ -90,6 +92,7 @@ function xatoMatni(error: unknown, fallback: string) {
 
 export default function BoshSahifa() {
   const { t } = useTranslation("bosh_sahifa");
+  const navigate = useNavigate();
   const canSellNegative = useInventorySettingsStore((s) => s.canSellNegative);
   const customerSearchRef = useRef<HTMLInputElement>(null);
   const cart = usePosStore((state) => state.cart);
@@ -878,6 +881,17 @@ export default function BoshSahifa() {
               </span>
             </div>
           </div>
+          {/* 3D sex demosi (sinov ma'lumotlari, alohida sahifa) */}
+          <button
+            type="button"
+            data-demo-3d
+            onClick={() => navigate("/demo/3d-sex")}
+            title={t("demo3d.title")}
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-blue-200 bg-gradient-to-r from-sky-50 to-blue-50 px-4 text-sm font-bold text-blue-700 shadow-sm transition hover:border-blue-300 hover:from-sky-100 hover:to-blue-100"
+          >
+            <Box size={17} aria-hidden="true" />
+            {t("demo3d.label")}
+          </button>
 
         </div>
 

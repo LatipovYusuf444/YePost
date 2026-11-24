@@ -83,60 +83,7 @@
   "keyboard": {
     "hint": "↑↓ tanlash · +/− miqdor · Del o'chirish · F2 to'lash · Ctrl+/ tugmalar",
     "title": "Tezkor tugmalar",
-    "rows": [
-      [
-        "↓",
-        "Qidiruv bo'sh bo'lsa — savatchaning birinchi qatoriga"
-      ],
-      [
-        "↑ / ↓",
-        "Savatcha qatorlari bo'ylab"
-      ],
-      [
-        "+ / −",
-        "Tanlangan qator miqdori ±1"
-      ],
-      [
-        "0–9",
-        "Miqdorga yozish (Enter — tasdiq)"
-      ],
-      [
-        "F4 / P",
-        "Sotuv narxi maydoni"
-      ],
-      [
-        "Delete",
-        "Qatorni o'chirish (Ctrl+Z — qaytarish)"
-      ],
-      [
-        "Esc",
-        "Qidiruvga qaytish"
-      ],
-      [
-        "F2",
-        "To'lash oynasi"
-      ],
-      [
-        "F3",
-        "Mijoz maydoni"
-      ],
-      [
-        "F8",
-        "Kechiktirish"
-      ],
-      [
-        "1–5",
-        "To'lov oynasida: 1 Naqd, 2 Karta, 3 Bank, 4 Click, 5 Payme (summa maydonida Alt + raqam)"
-      ],
-      [
-        "Enter",
-        "To'lov oynasida — to'lovni yakunlash"
-      ],
-      [
-        "Ctrl + /",
-        "Shu ro'yxat"
-      ]
-    ]
+    "rows": [["↓","Qidiruv bo'sh bo'lsa — savatchaning birinchi qatoriga"],["↑ / ↓","Savatcha qatorlari bo'ylab"],["+ / −","Tanlangan qator miqdori ±1"],["0–9","Miqdorga yozish (Enter — tasdiq)"],["F4 / P","Sotuv narxi maydoni"],["Delete","Qatorni o'chirish (Ctrl+Z — qaytarish)"],["Esc","Qidiruvga qaytish"],["F2","To'lash oynasi"],["F3","Mijoz maydoni"],["F8","Kechiktirish"],["1–5","To'lov oynasida: 1 Naqd, 2 Karta, 3 Bank, 4 Click, 5 Payme (summa maydonida Alt + raqam)"],["Enter","To'lov oynasida — to'lovni yakunlash"],["Ctrl + /","Shu ro'yxat"]]
   },
   "paymentTypes": {
     "payme": "Payme",
@@ -233,5 +180,9 @@
     "cartCurrencyChanged": "Valyuta rejimi o'zgardi — savatcha tozalandi. Mahsulotlarni qayta qo'shing.",
     "noPriceInCart": "{{name}}: narx yo'q. Sotuv narxini kiriting yoki mahsulotni savatchadan olib tashlang.",
     "somPriceInCart": "{{name}}: ulgurji narx so'mda kiritilgan. «Faqat dollar» rejimida chakana narxda soting yoki ulgurji narxni dollarda kiriting."
+  },
+  "demo3d": {
+    "label": "Demo 3D sex",
+    "title": "3D sex demosini ochish (sinov ma'lumotlari)"
   }
 }
