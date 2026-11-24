@@ -2,7 +2,7 @@
 // Ssenariy soniyalar bo'yicha (tik = 1 s) yuradi; Pauza/Davom ettirish/Qayta boshlash bilan boshqariladi.
 // Sahna faqat `SexManbasi` interfeysini biladi — keyinchalik shu joyga Ye-Post API manbai qo'yiladi.
 // UI'siz va `@/` importlarisiz — testlarda ishlaydi.
-import type { SexHodisasi, SexHolati, SexManbasi, StanokHolati, StanokTavsifi, Topshiriq } from "./sexModeli.ts";
+import type { Reys, ReysBosqichi, SexHodisasi, SexHolati, SexManbasi, StanokHolati, StanokTavsifi, Topshiriq } from "./sexModeli.ts";
 
 /** Sex rejasi (metr). Oqim: material ombori → kesish → CNC → qirra → burg'ilash → qadoqlash → tayyor mahsulot. */
 export const DEMO_STANOKLAR: StanokTavsifi[] = [
@@ -76,6 +76,37 @@ const ZAXIRA: Array<[string, string, string, number, string?]> = [
 ];
 
 type Ichki = StanokHolati & { kutish?: number };
+type Hodisachi = (stanokId: string, tur: SexHodisasi["tur"], matn: string, obyekt?: SexHodisasi["obyekt"]) => void;
+
+/**
+ * Logistika (sinov): ikki yuk mashinasi 80 s davr bilan aylanadi. Bosqich uzunligi reysning o'z soniyasida.
+ * Ikkinchi reys 19 s siljigan — KPP va old hovlida bir-biriga yo'liqmaydi (sahnadagi harakat shu oraliqlarga sig'adi).
+ */
+export const LOGISTIKA = {
+  davr: 80,
+  bosqichlar: [["kelmoqda", 30], ["rampada", 24], ["ketmoqda", 22], ["yoq", 4]] as ReadonlyArray<readonly [ReysBosqichi, number]>,
+};
+
+const REYSLAR: Array<Omit<Reys, "bosqich" | "boshlangan" | "palet"> & { siljish: number }> = [
+  { id: "reys-1", raqam: "01 345 ABA", yonalish: "jonatish", rampa: 1, yuk: "№170 · Shkaf \"Lux\"", jamiPalet: 6, siljish: 0 },
+  { id: "reys-2", raqam: "40 512 CAA", yonalish: "qabul", rampa: 2, yuk: "LDSP 16 mm · 120 list", jamiPalet: 6, siljish: 19 },
+];
+
+/** Ssenariy soniyasida reys qaysi bosqichda va bosqich boshlanganiga necha soniya bo'ldi. */
+export function reysBosqichi(soniya: number, siljish: number): { bosqich: ReysBosqichi; otgan: number } {
+  let l = (((soniya - siljish) % LOGISTIKA.davr) + LOGISTIKA.davr) % LOGISTIKA.davr;
+  for (const [bosqich, davom] of LOGISTIKA.bosqichlar) {
+    if (l < davom) return { bosqich, otgan: l };
+    l -= davom;
+  }
+  return { bosqich: "yoq", otgan: 0 };
+}
+
+/** Pogruzchik har 7.5 s da 2 palet olib o'tadi (rampaga turgandan 0.8 s keyin boshlaydi, palet ~4.55 s da o'tadi). */
+function paletSoni(bosqich: ReysBosqichi, otgan: number, jami: number) {
+  if (bosqich === "rampada") return Math.min(jami, 2 * Math.floor((otgan + 2.95) / 7.5));
+  return bosqich === "ketmoqda" ? jami : 0;
+}
 
 export class DemoSexManbasi implements SexManbasi {
   private ichki: Record<string, Ichki> = {};
@@ -84,6 +115,7 @@ export class DemoSexManbasi implements SexManbasi {
   private tinglovchilar = new Set<(holat: SexHolati, hodisa?: SexHodisasi) => void>();
   private taymer: ReturnType<typeof setInterval> | null = null;
   private zaxiraIndeks = 0;
+  private reysHolati: Reys[] = [];
   /** Ssenariy soniyasi. */
   soniya = 0;
   hodisalar: SexHodisasi[] = [];
@@ -96,6 +128,10 @@ export class DemoSexManbasi implements SexManbasi {
 
   holat() {
     return this.korsatilgan;
+  }
+
+  reyslar() {
+    return this.reysHolati;
   }
 
   obuna(tinglovchi: (holat: SexHolati, hodisa?: SexHodisasi) => void) {
@@ -128,6 +164,8 @@ export class DemoSexManbasi implements SexManbasi {
     this.zaxiraIndeks = 0;
     this.hodisalar = [];
     this.ichki = Object.fromEntries(Object.entries(boshlangichHolat()).map(([id, h]) => [id, { ...h, yangilangan: hozir, aloqa: true }]));
+    this.reysHolati = [];
+    this.reyslarniYangila(hozir);
     this.nashr();
     if (xabarBerilsin) this.xabar();
   }
@@ -138,7 +176,7 @@ export class DemoSexManbasi implements SexManbasi {
     const s = this.soniya;
     const hozir = this.vaqt();
     const hodisalar: SexHodisasi[] = [];
-    const hodisa = (stanokId: string, tur: SexHodisasi["tur"], matn: string) => hodisalar.push({ vaqt: hozir, stanokId, tur, matn });
+    const hodisa: Hodisachi = (stanokId, tur, matn, obyekt) => { hodisalar.push({ vaqt: hozir, stanokId, tur, matn, ...(obyekt ? { obyekt } : {}) }); };
 
     // Ssenariy voqealari.
     if (s === SSENARIY.cncBoshlanadi) this.keyinginiBoshlash("cnc-01", hodisa);
@@ -181,6 +219,7 @@ export class DemoSexManbasi implements SexManbasi {
       if (st.aloqa) st.yangilangan = hozir;
     }
 
+    this.reyslarniYangila(hozir, hodisa);
     this.nashr();
     this.hodisalar = [...hodisalar.reverse(), ...this.hodisalar].slice(0, 30);
     if (hodisalar.length) for (const h of hodisalar) this.xabar(h);
@@ -188,7 +227,7 @@ export class DemoSexManbasi implements SexManbasi {
   }
 
   /** Navbatdagi topshiriq alohida hodisa sifatida boshlanadi (tugagani yopilgandan keyin). */
-  private keyinginiBoshlash(id: string, hodisa: (stanokId: string, tur: SexHodisasi["tur"], matn: string) => void) {
+  private keyinginiBoshlash(id: string, hodisa: Hodisachi) {
     const st = this.ichki[id];
     const navbat = [...st.navbat];
     let keyingi = navbat.shift();
@@ -202,6 +241,29 @@ export class DemoSexManbasi implements SexManbasi {
     }
     Object.assign(st, { holat: "ishlayapti", sabab: undefined, joriy: { ...keyingi, bajarildi: 0 }, navbat });
     hodisa(id, "boshlandi", `${this.nomi(id)}: ${keyingi.buyurtma} · ${keyingi.detal} boshlandi (0/${keyingi.jami} ${keyingi.birlik})`);
+  }
+
+  /** Reyslar bosqichi: bosqich almashganda `boshlangan` yangilanadi va hodisa yoziladi (sahna harakatni shu vaqtdan hisoblaydi). */
+  private reyslarniYangila(hozir: number, hodisa?: Hodisachi) {
+    const oldingi = new Map(this.reysHolati.map((reys) => [reys.id, reys]));
+    this.reysHolati = REYSLAR.map(({ siljish, ...tavsif }) => {
+      const { bosqich, otgan } = reysBosqichi(this.soniya, siljish);
+      const eski = oldingi.get(tavsif.id);
+      const almashdi = !eski || eski.bosqich !== bosqich;
+      if (almashdi && eski && hodisa) {
+        const { raqam, yuk, jamiPalet, rampa } = tavsif;
+        const jonatish = tavsif.yonalish === "jonatish";
+        if (bosqich === "kelmoqda") hodisa(tavsif.id, "reys_keldi", `${raqam} KPP'ga kelmoqda — ${jonatish ? `${yuk} uchun` : `yuk: ${yuk}`}`, "reys");
+        if (bosqich === "rampada") hodisa(tavsif.id, "reys_rampada", `${raqam} ${rampa}-rampada — ${yuk} ${jonatish ? "yuklanmoqda" : "tushirilmoqda"}`, "reys");
+        if (bosqich === "ketmoqda") hodisa(tavsif.id, "reys_ketdi", `${raqam} ${jonatish ? "yuklandi" : "tushirildi"} (${jamiPalet} palet) va jo'nab ketdi`, "reys");
+      }
+      return {
+        ...tavsif,
+        bosqich,
+        boshlangan: almashdi || !eski ? hozir - otgan * 1000 : eski.boshlangan,
+        palet: paletSoni(bosqich, otgan, tavsif.jamiPalet),
+      };
+    });
   }
 
   private nomi(id: string) {

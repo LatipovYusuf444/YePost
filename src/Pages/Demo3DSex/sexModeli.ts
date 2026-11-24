@@ -54,10 +54,42 @@ export interface SexManbasi {
   holat(): SexHolati;
   /** O'zgarishlarga obuna; qaytgan funksiya obunani bekor qiladi. */
   obuna(tinglovchi: (holat: SexHolati, hodisa?: SexHodisasi) => void): () => void;
+  /** Hududdagi yuk mashinalari (KPP → rampa → jo'nash). Ixtiyoriy: manba bermasa sahnada yuk mashinasi bo'lmaydi. */
+  reyslar?(): Reys[];
 }
 
-/** Foydalanuvchiga ko'rsatiladigan hodisa (lenta / bildirishnoma uchun). */
-export type SexHodisasi = { vaqt: number; stanokId: string; tur: "boshlandi" | "tugadi" | "pauza" | "davom" | "aloqa_uzildi" | "aloqa_tiklandi"; matn: string };
+/** Foydalanuvchiga ko'rsatiladigan hodisa (lenta / bildirishnoma uchun). `obyekt: "reys"` bo'lsa `stanokId` — reys ID'si. */
+export type SexHodisasi = {
+  vaqt: number;
+  stanokId: string;
+  tur: "boshlandi" | "tugadi" | "pauza" | "davom" | "aloqa_uzildi" | "aloqa_tiklandi" | "reys_keldi" | "reys_rampada" | "reys_ketdi";
+  matn: string;
+  obyekt?: "stanok" | "reys";
+};
+
+// ── Logistika: yuk mashinasi reysi (keyinchalik KPP / jo'natma hujjatlaridan to'ldiriladi) ──
+
+/** Reys bosqichi: hududga kelmoqda (yo'l → KPP → rampa), rampada (yuklash/tushirish), jo'nab ketmoqda, yo'q (navbatda). */
+export type ReysBosqichi = "kelmoqda" | "rampada" | "ketmoqda" | "yoq";
+
+export type Reys = {
+  /** Barqaror ID. */
+  id: string;
+  /** Davlat raqami: "01 A 345 BC". */
+  raqam: string;
+  /** Jo'natish — tayyor mahsulot olib ketadi; qabul — material olib keladi. */
+  yonalish: "jonatish" | "qabul";
+  /** Qaysi rampaga turadi (1 — old tomon, tayyor mahsulot; 2 — chap darvoza, material ombori). */
+  rampa: 1 | 2;
+  bosqich: ReysBosqichi;
+  /** Joriy bosqich qachon boshlangan (ms, epoch) — sahna harakatni shu vaqtdan hisoblaydi. */
+  boshlangan: number;
+  /** Yuk: "№170 · Shkaf "Lux"". */
+  yuk: string;
+  /** Yuklangan (jo'natish) yoki tushirilgan (qabul) paletlar. */
+  palet: number;
+  jamiPalet: number;
+};
 
 /** Bajarilish ulushi 0..1. */
 export function bajarilishUlushi(topshiriq: Topshiriq | null | undefined) {

@@ -3,8 +3,9 @@ import { Html } from "@react-three/drei";
 import { useTranslation } from "react-i18next";
 import { DEMO_SEX_NS } from "./matnlar";
 import { SEX_CHUQURLIGI, SEX_ENI, type Materiallar } from "./materiallar";
-import { Quti, Silindr } from "./shakllar";
+import { Quti, Silindr, StatikGuruh } from "./shakllar";
 import type { StanokTavsifi } from "./sexModeli";
+import { RAMPA1 } from "./hudud";
 
 // Sex muhiti: beton pol, yo'laklar, devorlar va derazalar, darvoza, ustunlar, chang so'rish tizimi, elektr shkaflar, o't o'chirgichlar,
 // usta xonasi, material ombori va tayyor mahsulot zonasi. Hammasi kod bilan (tashqi model/tekstura fayli yo'q).
@@ -15,7 +16,7 @@ const DEVOR_Z = -SEX_CHUQURLIGI / 2;
 const DEVOR_X = -SEX_ENI / 2;
 const QUVUR_Y = 4.4;
 
-function ZonaYorligi({ p, matn, rang }: { p: [number, number, number]; matn: string; rang: string }) {
+export function ZonaYorligi({ p, matn, rang }: { p: [number, number, number]; matn: string; rang: string }) {
   return (
     <Html position={p} center zIndexRange={ZONA_Z} style={ZONA_USLUBI}>
       <span className="whitespace-nowrap rounded-lg px-2.5 py-1 text-[12px] font-black uppercase tracking-wide text-white shadow" style={{ background: rang }}>{matn}</span>
@@ -58,11 +59,12 @@ function TushuvchiQuvur({ mat, x, zMagistral, zStanok, yPast }: { mat: Materiall
   );
 }
 
-export default function SexMuhiti({ mat, stanoklar }: { mat: Materiallar; stanoklar: StanokTavsifi[] }) {
+export default function SexMuhiti({ mat, stanoklar, uzoq = false }: { mat: Materiallar; stanoklar: StanokTavsifi[]; /** Uzoqdan (butun hudud) — bino ichidagi zona yorliqlari yashiriladi. */ uzoq?: boolean }) {
   const { t } = useTranslation(DEMO_SEX_NS);
   const varaqlar = useMemo(() => [mat.lmdp, mat.lmdpOq, mat.lmdpYongoq, mat.lmdpKul], [mat]);
+  // Sex muhiti qimirlamaydi — material bo'yicha birlashtiriladi (yuzlab draw call o'rniga o'nlabtasi).
   return (
-    <group>
+    <StatikGuruh kalit={stanoklar}>
       {/* Beton pol (tekstura kod bilan chizilgan) */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow material={mat.pol}>
         <planeGeometry args={[SEX_ENI, SEX_CHUQURLIGI]} />
@@ -91,17 +93,27 @@ export default function SexMuhiti({ mat, stanoklar }: { mat: Materiallar; stanok
           <Quti o={[3.0, 0.05, 0.06]} p={[0, 0, 0.02]} mat={mat.polatQora} />
         </group>
       ))}
-      {/* Chap devor: derazalar va ko'tariluvchi darvoza (xavf chiziqli rom) */}
-      <Quti o={[0.3, 6, SEX_CHUQURLIGI]} p={[DEVOR_X, 3, 0]} mat={mat.devor} />
-      <Quti o={[0.32, 1.2, SEX_CHUQURLIGI]} p={[DEVOR_X + 0.01, 0.6, 0]} mat={mat.devorPast} />
+      {/* Chap devor: derazalar va ko'tariluvchi darvoza ochig'i (xavf chiziqli rom; pardasi — Transport.tsx, 2-rampa) */}
+      <Quti o={[0.3, 1.9, SEX_CHUQURLIGI]} p={[DEVOR_X, 5.05, 0]} mat={mat.devor} />
+      {[-1, 1].map((yon) => {
+        const eni = SEX_CHUQURLIGI / 2 - 2.0 - yon * 0.1;
+        const markaz = yon * (SEX_CHUQURLIGI / 2 - eni / 2);
+        return (
+          <group key={yon}>
+            <Quti o={[0.3, 4.1, eni]} p={[DEVOR_X, 2.05, markaz]} mat={mat.devor} />
+            <Quti o={[0.32, 1.2, eni]} p={[DEVOR_X + 0.01, 0.6, markaz]} mat={mat.devorPast} />
+          </group>
+        );
+      })}
       <group position={[DEVOR_X + 0.18, 0, 0.1]}>
-        {Array.from({ length: 22 }, (_, i) => <Quti key={i} o={[0.05, 0.16, 4.0]} p={[0, 0.1 + i * 0.18, 0]} mat={i % 2 ? mat.shkaf : mat.oluk} />)}
         {[-2.1, 2.1].map((z) => Array.from({ length: 8 }, (_, i) => <Quti key={`${z}${i}`} o={[0.07, 0.5, 0.2]} p={[0, 0.25 + i * 0.5, z]} mat={i % 2 ? mat.qora : mat.sariq} />))}
         <Quti o={[0.08, 0.3, 4.4]} p={[0, 4.15, 0]} mat={mat.korpusQora} />
       </group>
       {[-7, 7].map((z) => <Quti key={`cd${z}`} o={[0.04, 1.5, 2.8]} p={[DEVOR_X + 0.17, 4.1, z]} mat={mat.derazaYorugi} />)}
       {/* Old va o'ng chetlar: past bordyur (sex ichi ko'rinib turishi uchun devor qirqilgan) */}
-      <Quti o={[SEX_ENI, 0.25, 0.25]} p={[0, 0.125, -DEVOR_Z]} mat={mat.devorPast} />
+      {/* 1-rampa ro'parasida bordyur uzilgan (pogruzchik va mashina o'tadi) */}
+      <Quti o={[RAMPA1.x - 1.8 - DEVOR_X, 0.25, 0.25]} p={[(DEVOR_X + RAMPA1.x - 1.8) / 2, 0.125, -DEVOR_Z]} mat={mat.devorPast} />
+      <Quti o={[SEX_ENI / 2 - RAMPA1.x - 1.8, 0.25, 0.25]} p={[(SEX_ENI / 2 + RAMPA1.x + 1.8) / 2, 0.125, -DEVOR_Z]} mat={mat.devorPast} />
       <Quti o={[0.25, 0.25, SEX_CHUQURLIGI]} p={[-DEVOR_X, 0.125, 0]} mat={mat.devorPast} />
 
       {/* Ustunlar (ba'zilarida o't o'chirgich va ogohlantirish belgisi) */}
@@ -181,7 +193,7 @@ export default function SexMuhiti({ mat, stanoklar }: { mat: Materiallar; stanok
           </group>
         ))}
       </group>
-      <ZonaYorligi p={[-13.3, 3.2, -4]} matn={t("zones.material")} rang="#1d4ed8" />
+      {!uzoq && <ZonaYorligi p={[-13.3, 3.2, -4]} matn={t("zones.material")} rang="#1d4ed8" />}
 
       {/* Tayyor mahsulot zonasi: paletlar, o'ralgan qutilar */}
       <group position={[-12.8, 0, 4.6]}>
@@ -189,7 +201,8 @@ export default function SexMuhiti({ mat, stanoklar }: { mat: Materiallar; stanok
           <planeGeometry args={[6, 6]} />
           <meshStandardMaterial color="#bbf7d0" roughness={0.9} transparent opacity={0.75} />
         </mesh>
-        {[[-1.6, -1.5], [0, -1.5], [1.6, -1.5], [-1.6, 1.2], [0, 1.2], [1.6, 1.2]].map(([x, z], i) => (
+        {/* O'rtada pogruzchik yo'lagi (1-rampaga) bo'sh qoladi */}
+        {[[-2.1, -1.9], [2.1, -1.9], [-2.1, 0.1], [2.1, 0.1], [-2.1, 2.1], [2.1, 2.1]].map(([x, z], i) => (
           <group key={i} position={[x, 0, z]}>
             <Quti o={[1.2, 0.14, 1.0]} p={[0, 0.07, 0]} mat={mat.palet} />
             <Quti o={[1.1, 0.4 + (i % 3) * 0.25, 0.9]} p={[0, 0.34 + (i % 3) * 0.125, 0]} mat={mat.karton} />
@@ -197,7 +210,7 @@ export default function SexMuhiti({ mat, stanoklar }: { mat: Materiallar; stanok
           </group>
         ))}
       </group>
-      <ZonaYorligi p={[-12.8, 2.4, 4.6]} matn={t("zones.finished")} rang="#15803d" />
+      {!uzoq && <ZonaYorligi p={[-12.8, 2.4, 4.6]} matn={t("zones.finished")} rang="#15803d" />}
 
       {/* Stanoklar orasidagi aravachalar va list paletlari (oraliq bufer) */}
       {[[-3.3, -1.9], [3.4, -1.9], [3.4, 2.4], [-3.3, 2.4]].map(([x, z], i) => (
@@ -214,6 +227,6 @@ export default function SexMuhiti({ mat, stanoklar }: { mat: Materiallar; stanok
           {Array.from({ length: 10 + i * 4 }, (_, k) => <Quti key={k} o={[1.95, 0.018, 1.25]} p={[0, 0.16 + k * 0.02, 0]} mat={varaqlar[(i + k) % varaqlar.length]} />)}
         </group>
       ))}
-    </group>
+    </StatikGuruh>
   );
 }

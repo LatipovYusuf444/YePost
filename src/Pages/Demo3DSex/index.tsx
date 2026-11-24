@@ -1,10 +1,10 @@
 import { Component, Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Box, Eye, FlaskConical, LoaderCircle, Pause, Play, RotateCcw, ScanSearch, X } from "lucide-react";
+import { ArrowLeft, Box, Eye, FlaskConical, LoaderCircle, MapPinned, Pause, Play, RotateCcw, ScanSearch, Truck, X } from "lucide-react";
 import { DEMO_SEX_NS } from "./matnlar";
 import { DemoSexManbasi, DEMO_STANOKLAR } from "./demoManbasi";
-import { HOLAT_RANGI, bajarilishUlushi, korinadiganHolat, miqdorMatni, type SexHodisasi, type SexHolati, type StanokHolati, type Topshiriq } from "./sexModeli";
+import { HOLAT_RANGI, bajarilishUlushi, korinadiganHolat, miqdorMatni, type Reys, type SexHodisasi, type SexHolati, type StanokHolati, type Topshiriq } from "./sexModeli";
 import type { KameraBuyrugi } from "./SexSahnasi";
 
 // 3D sex — Demo sahifasi (/demo/3d-sex). Ma'lumot: DemoSexManbasi (sinov ma'lumotlari); sahna (three.js) alohida bo'lakda yuklanadi.
@@ -58,10 +58,38 @@ function Progress({ topshiriq, rang }: { topshiriq: Topshiriq | null | undefined
   );
 }
 
+const BOSQICH_RANGI: Record<Reys["bosqich"], string> = { kelmoqda: "bg-sky-50 text-sky-700", rampada: "bg-emerald-50 text-emerald-700", ketmoqda: "bg-slate-100 text-slate-600", yoq: "bg-slate-50 text-slate-400" };
+
+function ReysKartasi({ reys }: { reys: Reys }) {
+  const { t } = useTranslation(DEMO_SEX_NS);
+  const holat = reys.bosqich === "rampada" ? t(`logistics.rampada_${reys.yonalish}`) : t(`logistics.${reys.bosqich}`);
+  return (
+    <li data-reys={reys.id} data-bosqich={reys.bosqich} className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="inline-flex items-center gap-1.5">
+          <Truck size={15} className="text-slate-500" aria-hidden="true" />
+          <span className="rounded-md border-2 border-slate-800 bg-white px-1.5 font-mono text-xs font-black tracking-wide text-slate-900">{reys.raqam}</span>
+        </span>
+        <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${BOSQICH_RANGI[reys.bosqich]}`}>{holat}</span>
+      </div>
+      <p className="mt-1 truncate text-xs font-semibold text-slate-600">{t(`logistics.${reys.yonalish}`)} · {t("logistics.dock", { n: reys.rampa })} · {reys.yuk}</p>
+      {reys.bosqich === "rampada" && (
+        <div className="mt-1.5 flex items-center gap-2">
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-valuemin={0} aria-valuemax={reys.jamiPalet} aria-valuenow={reys.palet}>
+            <div className="h-full rounded-full bg-emerald-500 transition-[width] duration-700" style={{ width: `${Math.round((reys.palet / Math.max(1, reys.jamiPalet)) * 100)}%` }} />
+          </div>
+          <span className="shrink-0 text-[11px] font-bold text-slate-500">{t("logistics.pallets", { a: reys.palet, b: reys.jamiPalet })}</span>
+        </div>
+      )}
+    </li>
+  );
+}
+
 export default function Demo3DSex() {
   const { t } = useTranslation(DEMO_SEX_NS);
   const [manba] = useState(() => new DemoSexManbasi());
   const [holatlar, setHolatlar] = useState<SexHolati>(() => manba.holat());
+  const [reyslar, setReyslar] = useState<Reys[]>(() => manba.reyslar?.() ?? []);
   const [hodisalar, setHodisalar] = useState<SexHodisasi[]>([]);
   const [ishlayapti, setIshlayapti] = useState(false);
   const [soniya, setSoniya] = useState(0);
@@ -74,6 +102,7 @@ export default function Demo3DSex() {
   useEffect(() => {
     const yangila = () => {
       setHolatlar(manba.holat());
+      setReyslar(manba.reyslar?.() ?? []);
       setHodisalar([...manba.hodisalar]);
       setIshlayapti(manba.ishlayapti);
       setSoniya(manba.soniya);
@@ -127,7 +156,7 @@ export default function Demo3DSex() {
           {webgl ? (
             <SahnaXatosi zaxira={<p className="p-6 text-sm font-semibold text-slate-600">{t("noWebgl")}</p>}>
               <Suspense fallback={<div role="status" className="flex h-full items-center justify-center gap-2 text-sm font-bold text-slate-500"><LoaderCircle size={20} className="animate-spin text-blue-600" />{t("loading")}</div>}>
-                <SexSahnasi stanoklar={DEMO_STANOKLAR} holatlar={holatlar} tanlangan={tanlangan} onTanlash={tanlash} kamera={kamera} />
+                <SexSahnasi stanoklar={DEMO_STANOKLAR} holatlar={holatlar} reyslar={reyslar} tanlangan={tanlangan} onTanlash={tanlash} kamera={kamera} />
               </Suspense>
             </SahnaXatosi>
           ) : (
@@ -142,6 +171,9 @@ export default function Demo3DSex() {
               </button>
               <button type="button" data-kamera="yuqori" onClick={() => kameraga("yuqori")} className="inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-sm font-bold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
                 <ScanSearch size={16} aria-hidden="true" />{t("camera.top")}
+              </button>
+              <button type="button" data-kamera="hudud" onClick={() => { setTanlangan(null); kameraga("hudud"); }} className="inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-sm font-bold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
+                <MapPinned size={16} aria-hidden="true" />{t("camera.site")}
               </button>
             </div>
             {!ishlayapti && (
@@ -238,6 +270,20 @@ export default function Demo3DSex() {
             </ul>
           </section>
 
+          {reyslar.length > 0 && (
+            <section data-logistika className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-sm font-black uppercase tracking-wide text-slate-600">{t("logistics.title")}</h2>
+                <button type="button" onClick={() => { setTanlangan(null); kameraga("hudud"); }} className="inline-flex items-center gap-1 text-xs font-bold text-blue-700 hover:text-blue-800">
+                  <MapPinned size={13} aria-hidden="true" />{t("logistics.show")}
+                </button>
+              </div>
+              <ul className="mt-2 space-y-2">
+                {reyslar.map((reys) => <ReysKartasi key={reys.id} reys={reys} />)}
+              </ul>
+            </section>
+          )}
+
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <h2 className="text-sm font-black uppercase tracking-wide text-slate-600">{t("events.title")}</h2>
             <ol data-hodisalar className="mt-2 space-y-1.5" aria-live="polite">
@@ -245,7 +291,18 @@ export default function Demo3DSex() {
               {hodisalar.slice(0, 8).map((hodisa, i) => (
                 <li key={`${hodisa.vaqt}-${hodisa.stanokId}-${hodisa.tur}-${i}`} className="flex gap-2 text-xs leading-4">
                   <span className="shrink-0 font-mono font-semibold text-slate-400">{vaqtMatni(hodisa.vaqt)}</span>
-                  <button type="button" onClick={() => tanlash(hodisa.stanokId)} className="text-left font-semibold text-slate-700 hover:text-blue-700" title={nomlar[hodisa.stanokId]}>{hodisa.matn}</button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (hodisa.obyekt !== "reys") return tanlash(hodisa.stanokId);
+                      setTanlangan(null);
+                      kameraga("hudud");
+                    }}
+                    className={`text-left font-semibold hover:text-blue-700 ${hodisa.obyekt === "reys" ? "text-teal-700" : "text-slate-700"}`}
+                    title={nomlar[hodisa.stanokId] ?? hodisa.stanokId}
+                  >
+                    {hodisa.matn}
+                  </button>
                 </li>
               ))}
             </ol>

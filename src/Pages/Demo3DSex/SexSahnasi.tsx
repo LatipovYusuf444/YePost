@@ -1,29 +1,130 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame, type ThreeEvent } from "@react-three/fiber";
-import { CameraControls, Html } from "@react-three/drei";
+import { CameraControls, Environment, Html, Lightformer, Sky } from "@react-three/drei";
 import * as THREE from "three";
 import { useTranslation } from "react-i18next";
 import { DEMO_SEX_NS } from "./matnlar";
 import { useMateriallar, type Materiallar } from "./materiallar";
-import { Quti, Silindr } from "./shakllar";
+import { useShaharMateriallari } from "./shaharMateriallari";
+import { Quti, Silindr, Yumaloq } from "./shakllar";
 import SexMuhiti from "./SexMuhiti";
-import { Ishchi, Pogruzchik, YuruvchiIshchi, type IshHarakati } from "./Ishchilar";
-import { HOLAT_RANGI, bajarilishUlushi, korinadiganHolat, type SexHolati, type StanokHolati, type StanokTavsifi, type StanokTuri } from "./sexModeli";
+import Shaharcha from "./Shaharcha";
+import Logistika from "./Transport";
+import { AylanuvchiOdam, Ishchi, Pogruzchik, YuruvchiIshchi, type IshHarakati } from "./Ishchilar";
+import { HOLAT_RANGI, bajarilishUlushi, korinadiganHolat, type Reys, type SexHolati, type StanokHolati, type StanokTavsifi, type StanokTuri } from "./sexModeli";
 
 // 3D sex sahnasi. Barcha stanok modellari shu yerda kod bilan (three.js geometriyasi) yasalgan — tashqi model fayli yoki havolasiz.
 // Sahna ma'lumotni faqat props orqali oladi (stanoklar ro'yxati + holatlar): demo yoki Ye-Post manbaiga bog'liq emas.
 
-export type KameraBuyrugi = { tur: "umumiy" | "yuqori" | "stanok"; stanokId?: string; n: number };
+export type KameraBuyrugi = { tur: "umumiy" | "yuqori" | "hudud" | "stanok"; stanokId?: string; n: number };
 
 type Props = {
   stanoklar: StanokTavsifi[];
   holatlar: SexHolati;
+  /** Hududdagi yuk mashinalari (manba bermasa — bo'sh). */
+  reyslar: Reys[];
   tanlangan: string | null;
   onTanlash: (id: string) => void;
   kamera: KameraBuyrugi;
 };
 
 const UMUMIY_KAMERA = { joy: [13.5, 15.5, 18] as const, nishon: [0, 0, 0.8] as const };
+/** Butun zavod hududi: KPP, rampalar, yuk mashinalari va atrofdagi shaharcha. */
+const HUDUD_KAMERA = { joy: [56, 42, 64] as const, nishon: [-3, 0, 7] as const };
+/** Quyosh (osmon, yorug'lik va soyalar bir yo'nalishda). */
+const QUYOSH: [number, number, number] = [40, 60, 25];
+
+/** Yorliq ko'rinishi kameragacha masofaga qarab: 0 — to'liq karta, 1 — ixcham (nom), 2 — faqat holat nuqtasi. */
+type Daraja = 0 | 1 | 2;
+
+/** Stanok pultidagi ekran: joriy buyurtma, detal, miqdor va holat (ma'lumot o'zgarganda qayta chiziladi). */
+function useEkranMateriali(nom: string, holat: StanokHolati | undefined) {
+  const { t } = useTranslation(DEMO_SEX_NS);
+  const { canvas, tekstura, material } = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 320;
+    canvas.height = 200;
+    const tekstura = new THREE.CanvasTexture(canvas);
+    tekstura.colorSpace = THREE.SRGBColorSpace;
+    tekstura.anisotropy = 4;
+    return { canvas, tekstura, material: new THREE.MeshBasicMaterial({ map: tekstura, toneMapped: false }) };
+  }, []);
+  useEffect(() => () => { tekstura.dispose(); material.dispose(); }, [tekstura, material]);
+  useEffect(() => {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const korinadi = korinadiganHolat(holat);
+    const rang = HOLAT_RANGI[korinadi];
+    ctx.fillStyle = "#0b1220";
+    ctx.fillRect(0, 0, 320, 200);
+    ctx.fillStyle = rang;
+    ctx.fillRect(0, 0, 320, 40);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 22px Arial, sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "left";
+    ctx.fillText(nom, 12, 21);
+    ctx.textAlign = "right";
+    ctx.font = "bold 15px Arial, sans-serif";
+    ctx.fillText(t(`status.${korinadi}`).toUpperCase(), 308, 21);
+    ctx.textAlign = "left";
+    const joriy = holat?.joriy;
+    if (joriy) {
+      ctx.fillStyle = "#e2e8f0";
+      ctx.font = "bold 19px Arial, sans-serif";
+      ctx.fillText(`${joriy.buyurtma} · ${joriy.detal}`, 12, 64);
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "15px Arial, sans-serif";
+      ctx.fillText(joriy.operatsiya, 12, 88);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 46px Arial, sans-serif";
+      const miqdor = `${joriy.bajarildi}/${joriy.jami}`;
+      ctx.fillText(miqdor, 12, 130);
+      const eni = ctx.measureText(miqdor).width;
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "16px Arial, sans-serif";
+      ctx.fillText(joriy.birlik, 20 + eni, 138);
+      ctx.fillStyle = "#1e293b";
+      ctx.fillRect(12, 160, 296, 12);
+      ctx.fillStyle = rang;
+      ctx.fillRect(12, 160, 296 * bajarilishUlushi(joriy), 12);
+    } else {
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "bold 20px Arial, sans-serif";
+      ctx.fillText(t("list.noTask"), 12, 100);
+    }
+    if (holat) {
+      ctx.fillStyle = "#64748b";
+      ctx.font = "13px Arial, sans-serif";
+      ctx.fillText(new Date(holat.yangilangan).toLocaleTimeString("uz-UZ", { hour12: false }), 12, 189);
+      ctx.textAlign = "right";
+      ctx.fillStyle = holat.aloqa ? "#22c55e" : "#a855f7";
+      ctx.fillText(holat.aloqa ? "ONLINE" : "OFFLINE", 308, 189);
+    }
+    tekstura.needsUpdate = true;
+  }, [canvas, tekstura, nom, holat, t]);
+  return material;
+}
+
+/** Avariya to'xtatish tugmasi (sariq qutida qizil "qo'ziqorin"), old tomoni +z. */
+function AvariyaTugmasi({ mat, p, r }: { mat: Materiallar; p: [number, number, number]; r?: [number, number, number] }) {
+  return (
+    <group position={p} rotation={r}>
+      <Yumaloq o={[0.11, 0.11, 0.07]} p={[0, 0, 0]} mat={mat.ogohlantirish} radius={0.015} />
+      <Silindr r={0.038} h={0.045} p={[0, 0, 0.055]} rot={[Math.PI / 2, 0, 0]} mat={mat.qizilTugma} seg={16} />
+    </group>
+  );
+}
+
+/** Ogohlantirish belgisi (sariq romb), old tomoni +z. */
+function Belgi({ mat, p, r }: { mat: Materiallar; p: [number, number, number]; r?: [number, number, number] }) {
+  return (
+    <group position={p} rotation={r}>
+      <Quti o={[0.17, 0.17, 0.008]} p={[0, 0, 0]} r={[0, 0, Math.PI / 4]} mat={mat.qora} />
+      <Quti o={[0.14, 0.14, 0.01]} p={[0, 0, 0.001]} r={[0, 0, Math.PI / 4]} mat={mat.ogohlantirish} />
+    </group>
+  );
+}
 
 /** Signal minorasi (stanok chirog'i): yashil — ishlayapti, sariq — pauza, kulrang — bo'sh, binafsha — aloqa yo'q. */
 function SignalMinorasi({ p, rang, mat }: { p: [number, number, number]; rang: string; mat: Materiallar }) {
@@ -53,8 +154,10 @@ function SignalMinorasi({ p, rang, mat }: { p: [number, number, number]; rang: s
 
 // ── Stanok modellari (front tomoni +z) ──
 
+type ModelProps = { mat: Materiallar; ishlayapti: boolean; ekran: THREE.Material };
+
 /** Format-kesish stanogi: korpus, uzun suriladigan karetka, ko'ndalang stol, aylanuvchi arra, ustki himoya, boshqaruv paneli, LDSP list. */
-function KesishStanogi({ mat, ishlayapti }: { mat: Materiallar; ishlayapti: boolean }) {
+function KesishStanogi({ mat, ishlayapti, ekran }: ModelProps) {
   const arra = useRef<THREE.Mesh>(null);
   const karetka = useRef<THREE.Group>(null);
   useFrame((_, dt) => {
@@ -64,8 +167,10 @@ function KesishStanogi({ mat, ishlayapti }: { mat: Materiallar; ishlayapti: bool
   });
   return (
     <group>
-      <Quti o={[1.5, 0.85, 1.0]} p={[0.4, 0.425, 0]} mat={mat.korpus} />
-      <Quti o={[1.5, 0.08, 1.0]} p={[0.4, 0.89, 0]} mat={mat.kesishRang} />
+      <Yumaloq o={[1.5, 0.85, 1.0]} p={[0.4, 0.425, 0]} mat={mat.korpus} radius={0.05} />
+      <Yumaloq o={[1.5, 0.1, 1.0]} p={[0.4, 0.88, 0]} mat={mat.kesishRang} radius={0.03} />
+      <Belgi mat={mat} p={[0.0, 0.6, 0.505]} />
+      <Quti o={[0.5, 0.12, 0.01]} p={[0.65, 0.6, 0.505]} mat={mat.korpusQora} />
       <Quti o={[1.55, 0.04, 1.05]} p={[0.4, 0.95, 0]} mat={mat.polatQora} />
       {/* Arra (stol tirqishidan chiqib turadi) */}
       <mesh ref={arra} position={[0.4, 1.02, 0.15]} rotation={[0, 0, 0]} material={mat.polat} castShadow>
@@ -89,9 +194,9 @@ function KesishStanogi({ mat, ishlayapti }: { mat: Materiallar; ishlayapti: bool
       {/* Parallel tirgak (o'ngda) */}
       <Quti o={[0.08, 0.1, 1.1]} p={[1.25, 1.02, 0]} mat={mat.polat} />
       {/* Boshqaruv paneli */}
-      <Quti o={[0.32, 0.5, 0.14]} p={[1.3, 1.45, 0.55]} mat={mat.korpusQora} />
-      <Quti o={[0.24, 0.16, 0.01]} p={[1.3, 1.55, 0.625]} mat={mat.ekran} />
-      <Silindr r={0.05} h={0.04} p={[1.3, 1.31, 0.63]} rot={[Math.PI / 2, 0, 0]} mat={mat.qizilTugma} />
+      <Yumaloq o={[0.36, 0.52, 0.14]} p={[1.3, 1.45, 0.55]} mat={mat.korpusQora} radius={0.03} />
+      <Quti o={[0.3, 0.19, 0.01]} p={[1.3, 1.56, 0.625]} mat={ekran} />
+      <AvariyaTugmasi mat={mat} p={[1.3, 1.3, 0.6]} />
       {/* Chiqindi patrubkasi */}
       <Silindr r={0.08} h={1.4} p={[0.7, 2.6, -0.4]} mat={mat.polat} />
     </group>
@@ -99,7 +204,7 @@ function KesishStanogi({ mat, ishlayapti }: { mat: Materiallar; ishlayapti: bool
 }
 
 /** CNC frezer (nesting): vakuum stol, ikki tomonlama relslar, harakatlanuvchi portal, shpindel kallagi, boshqaruv shkafi. */
-function CncStanogi({ mat, ishlayapti }: { mat: Materiallar; ishlayapti: boolean }) {
+function CncStanogi({ mat, ishlayapti, ekran }: ModelProps) {
   const portal = useRef<THREE.Group>(null);
   const kallak = useRef<THREE.Group>(null);
   const shpindel = useRef<THREE.Mesh>(null);
@@ -112,7 +217,9 @@ function CncStanogi({ mat, ishlayapti }: { mat: Materiallar; ishlayapti: boolean
   });
   return (
     <group>
-      <Quti o={[3.3, 0.75, 1.75]} p={[0, 0.375, 0]} mat={mat.korpusQora} />
+      <Yumaloq o={[3.3, 0.75, 1.75]} p={[0, 0.375, 0]} mat={mat.korpusQora} radius={0.06} />
+      <Belgi mat={mat} p={[-1.2, 0.45, 0.88]} />
+      <Quti o={[0.7, 0.14, 0.01]} p={[-0.4, 0.45, 0.88]} mat={mat.cncRang} />
       <Quti o={[3.1, 0.06, 1.6]} p={[0, 0.78, 0]} mat={mat.vakuum} />
       {/* Vakuum stol to'ri */}
       {Array.from({ length: 9 }, (_, i) => <Quti key={`x${i}`} o={[0.012, 0.005, 1.55]} p={[-1.4 + i * 0.35, 0.813, 0]} mat={mat.polatQora} />)}
@@ -122,12 +229,12 @@ function CncStanogi({ mat, ishlayapti }: { mat: Materiallar; ishlayapti: boolean
       <Quti o={[3.4, 0.12, 0.12]} p={[0, 0.84, -0.92]} mat={mat.polat} />
       {/* Portal */}
       <group ref={portal}>
-        <Quti o={[0.3, 1.0, 0.22]} p={[0, 1.4, 0.95]} mat={mat.cncRang} />
-        <Quti o={[0.3, 1.0, 0.22]} p={[0, 1.4, -0.95]} mat={mat.cncRang} />
-        <Quti o={[0.4, 0.32, 2.15]} p={[0, 1.95, 0]} mat={mat.cncRang} />
+        <Yumaloq o={[0.3, 1.0, 0.22]} p={[0, 1.4, 0.95]} mat={mat.cncRang} radius={0.04} />
+        <Yumaloq o={[0.3, 1.0, 0.22]} p={[0, 1.4, -0.95]} mat={mat.cncRang} radius={0.04} />
+        <Yumaloq o={[0.4, 0.32, 2.15]} p={[0, 1.95, 0]} mat={mat.cncRang} radius={0.05} />
         <Quti o={[0.42, 0.06, 2.0]} p={[0, 2.14, 0]} mat={mat.polat} />
         <group ref={kallak}>
-          <Quti o={[0.36, 0.5, 0.36]} p={[0.25, 1.62, 0]} mat={mat.korpus} />
+          <Yumaloq o={[0.36, 0.5, 0.36]} p={[0.25, 1.62, 0]} mat={mat.korpus} radius={0.04} />
           <Silindr r={0.11} h={0.36} p={[0.25, 1.24, 0]} mat={mat.polatQora} />
           <mesh ref={shpindel} position={[0.25, 1.0, 0]} material={mat.polat} castShadow>
             <cylinderGeometry args={[0.03, 0.012, 0.16, 12]} />
@@ -137,17 +244,19 @@ function CncStanogi({ mat, ishlayapti }: { mat: Materiallar; ishlayapti: boolean
         </group>
       </group>
       {/* Boshqaruv shkafi va pult */}
-      <Quti o={[0.6, 1.7, 0.45]} p={[2.15, 0.85, -0.45]} mat={mat.korpus} />
+      <Yumaloq o={[0.6, 1.7, 0.45]} p={[2.15, 0.85, -0.45]} mat={mat.korpus} radius={0.04} />
       <Quti o={[0.5, 0.04, 0.02]} p={[2.15, 1.5, -0.22]} mat={mat.cncRang} />
+      <Belgi mat={mat} p={[2.15, 1.25, -0.22]} />
       <Quti o={[0.06, 1.1, 0.06]} p={[1.95, 0.55, 1.15]} mat={mat.polatQora} />
-      <Quti o={[0.5, 0.36, 0.08]} p={[1.95, 1.25, 1.15]} r={[-0.35, 0, 0]} mat={mat.korpusQora} />
-      <Quti o={[0.42, 0.26, 0.01]} p={[1.95, 1.27, 1.2]} r={[-0.35, 0, 0]} mat={mat.ekran} />
+      <Yumaloq o={[0.5, 0.36, 0.08]} p={[1.95, 1.25, 1.15]} r={[-0.35, 0, 0]} mat={mat.korpusQora} radius={0.025} />
+      <Quti o={[0.42, 0.26, 0.01]} p={[1.95, 1.27, 1.2]} r={[-0.35, 0, 0]} mat={ekran} />
+      <AvariyaTugmasi mat={mat} p={[2.32, 1.12, 1.17]} r={[-0.35, 0, 0]} />
     </group>
   );
 }
 
 /** Qirra yopishtirish stanogi: uzun korpus, kirish/chiqish stoli, yuqori bosim balkasi roliklari, elim idishi, lenta rulon, shaffof qopqoq. */
-function QirraStanogi({ mat, ishlayapti }: { mat: Materiallar; ishlayapti: boolean }) {
+function QirraStanogi({ mat, ishlayapti, ekran }: ModelProps) {
   const detal = useRef<THREE.Mesh>(null);
   const roliklar = useRef<THREE.Group>(null);
   const rulon = useRef<THREE.Mesh>(null);
@@ -162,8 +271,11 @@ function QirraStanogi({ mat, ishlayapti }: { mat: Materiallar; ishlayapti: boole
   });
   return (
     <group>
-      <Quti o={[4.2, 0.9, 0.8]} p={[0, 0.45, -0.1]} mat={mat.korpus} />
-      <Quti o={[4.2, 0.1, 0.8]} p={[0, 0.95, -0.1]} mat={mat.qirraRang} />
+      <Yumaloq o={[4.2, 0.9, 0.8]} p={[0, 0.45, -0.1]} mat={mat.korpus} radius={0.05} />
+      <Yumaloq o={[4.2, 0.12, 0.8]} p={[0, 0.94, -0.1]} mat={mat.qirraRang} radius={0.03} />
+      {[-1.5, 0, 1.5].map((x) => <Quti key={`l${x}`} o={[0.02, 0.6, 0.01]} p={[x, 0.5, 0.305]} mat={mat.korpusQora} />)}
+      <Belgi mat={mat} p={[-0.75, 0.6, 0.31]} />
+      <AvariyaTugmasi mat={mat} p={[1.2, 0.75, 0.33]} />
       {/* Konveyer zanjiri va stollar */}
       <Quti o={[4.6, 0.05, 0.22]} p={[0, 1.02, 0.25]} mat={mat.rezina} />
       <Quti o={[0.8, 0.04, 0.9]} p={[-2.6, 0.95, 0.4]} mat={mat.polatQora} />
@@ -194,14 +306,14 @@ function QirraStanogi({ mat, ishlayapti }: { mat: Materiallar; ishlayapti: boole
       </mesh>
       {/* Boshqaruv paneli (ustun ustida ekran) */}
       <Quti o={[0.07, 1.2, 0.07]} p={[2.2, 0.6, 0.75]} mat={mat.polatQora} />
-      <Quti o={[0.55, 0.38, 0.08]} p={[2.2, 1.35, 0.75]} mat={mat.korpusQora} />
-      <Quti o={[0.46, 0.28, 0.01]} p={[2.2, 1.35, 0.795]} mat={mat.ekran} />
+      <Yumaloq o={[0.55, 0.38, 0.08]} p={[2.2, 1.35, 0.75]} mat={mat.korpusQora} radius={0.025} />
+      <Quti o={[0.46, 0.29, 0.01]} p={[2.2, 1.35, 0.795]} mat={ekran} />
     </group>
   );
 }
 
 /** Burg'ilash stanogi: ish stoli, orqa tirgak, uch shpindelli vertikal kallak (pastga-yuqoriga yuradi), detal. */
-function BurgilashStanogi({ mat, ishlayapti }: { mat: Materiallar; ishlayapti: boolean }) {
+function BurgilashStanogi({ mat, ishlayapti, ekran }: ModelProps) {
   const kallak = useRef<THREE.Group>(null);
   useFrame(() => {
     if (!ishlayapti || !kallak.current) return;
@@ -211,16 +323,18 @@ function BurgilashStanogi({ mat, ishlayapti }: { mat: Materiallar; ishlayapti: b
   });
   return (
     <group>
-      <Quti o={[2.0, 0.85, 1.0]} p={[0, 0.425, 0]} mat={mat.korpus} />
+      <Yumaloq o={[2.0, 0.85, 1.0]} p={[0, 0.425, 0]} mat={mat.korpus} radius={0.05} />
+      <Belgi mat={mat} p={[-0.6, 0.55, 0.505]} />
+      <AvariyaTugmasi mat={mat} p={[0.75, 0.65, 0.52]} />
       <Quti o={[2.1, 0.06, 1.05]} p={[0, 0.88, 0]} mat={mat.polatQora} />
       <Quti o={[2.1, 0.12, 0.08]} p={[0, 0.97, -0.48]} mat={mat.burgRang} />
       <Quti o={[1.4, 0.018, 0.6]} p={[0, 0.92, 0.1]} mat={mat.lmdpKul} />
       {/* Portal ustunlar va balka */}
-      <Quti o={[0.14, 1.4, 0.18]} p={[-0.95, 1.55, -0.38]} mat={mat.burgRang} />
-      <Quti o={[0.14, 1.4, 0.18]} p={[0.95, 1.55, -0.38]} mat={mat.burgRang} />
-      <Quti o={[2.05, 0.2, 0.24]} p={[0, 2.3, -0.38]} mat={mat.burgRang} />
+      <Yumaloq o={[0.14, 1.4, 0.18]} p={[-0.95, 1.55, -0.38]} mat={mat.burgRang} radius={0.03} />
+      <Yumaloq o={[0.14, 1.4, 0.18]} p={[0.95, 1.55, -0.38]} mat={mat.burgRang} radius={0.03} />
+      <Yumaloq o={[2.05, 0.2, 0.24]} p={[0, 2.3, -0.38]} mat={mat.burgRang} radius={0.04} />
       <group ref={kallak} position={[0, 1.62, 0]}>
-        <Quti o={[0.5, 0.35, 0.35]} p={[0, 0.2, -0.1]} mat={mat.korpus} />
+        <Yumaloq o={[0.5, 0.35, 0.35]} p={[0, 0.2, -0.1]} mat={mat.korpus} radius={0.04} />
         {[-0.14, 0, 0.14].map((x) => (
           <group key={x}>
             <Silindr r={0.035} h={0.22} p={[x, -0.07, 0]} mat={mat.polatQora} />
@@ -234,14 +348,14 @@ function BurgilashStanogi({ mat, ishlayapti }: { mat: Materiallar; ishlayapti: b
       {[-0.6, 0.6].map((x) => <Silindr key={x} r={0.05} h={0.12} p={[x, 1.0, -0.3]} mat={mat.polat} />)}
       {/* Pedal va panel */}
       <Quti o={[0.3, 0.06, 0.2]} p={[0.5, 0.03, 0.7]} mat={mat.korpusQora} />
-      <Quti o={[0.4, 0.3, 0.1]} p={[1.25, 1.3, 0.2]} r={[0, -0.5, 0]} mat={mat.korpusQora} />
-      <Quti o={[0.32, 0.2, 0.01]} p={[1.27, 1.3, 0.255]} r={[0, -0.5, 0]} mat={mat.ekran} />
+      <Yumaloq o={[0.4, 0.3, 0.1]} p={[1.25, 1.3, 0.2]} r={[0, -0.5, 0]} mat={mat.korpusQora} radius={0.025} />
+      <Quti o={[0.33, 0.21, 0.01]} p={[1.275, 1.3, 0.255]} r={[0, -0.5, 0]} mat={ekran} />
     </group>
   );
 }
 
 /** Qadoqlash joyi: qadoqlash stoli, karton qutilar, stretch-plyonka o'rash aylanma stoli (minora, palet). */
-function QadoqlashJoyi({ mat, ishlayapti }: { mat: Materiallar; ishlayapti: boolean }) {
+function QadoqlashJoyi({ mat, ishlayapti, ekran }: ModelProps) {
   const stol = useRef<THREE.Group>(null);
   const karetka = useRef<THREE.Mesh>(null);
   useFrame((_, dt) => {
@@ -266,17 +380,18 @@ function QadoqlashJoyi({ mat, ishlayapti }: { mat: Materiallar; ishlayapti: bool
         <Quti o={[1.14, 0.98, 0.79]} p={[0, 0.63, 0]} mat={mat.plyonka} />
       </group>
       {/* Minora va plyonka karetkasi */}
-      <Quti o={[0.16, 2.3, 0.16]} p={[2.35, 1.15, -0.5]} mat={mat.qadoqRang} />
+      <Yumaloq o={[0.16, 2.3, 0.16]} p={[2.35, 1.15, -0.5]} mat={mat.qadoqRang} radius={0.03} />
       <mesh ref={karetka} position={[2.2, 1.2, -0.38]} material={mat.korpus} castShadow>
         <boxGeometry args={[0.28, 0.32, 0.28]} />
       </mesh>
-      <Quti o={[0.36, 0.5, 0.2]} p={[2.35, 0.9, 0.35]} mat={mat.korpusQora} />
-      <Quti o={[0.28, 0.18, 0.01]} p={[2.35, 1.02, 0.455]} mat={mat.ekran} />
+      <Yumaloq o={[0.36, 0.5, 0.2]} p={[2.35, 0.9, 0.35]} mat={mat.korpusQora} radius={0.03} />
+      <Quti o={[0.3, 0.19, 0.01]} p={[2.35, 1.02, 0.455]} mat={ekran} />
+      <AvariyaTugmasi mat={mat} p={[2.35, 0.75, 0.46]} />
     </group>
   );
 }
 
-const MODELLAR: Record<StanokTuri, (p: { mat: Materiallar; ishlayapti: boolean }) => ReactNode> = {
+const MODELLAR: Record<StanokTuri, (p: ModelProps) => ReactNode> = {
   kesish: KesishStanogi,
   cnc: CncStanogi,
   qirra: QirraStanogi,
@@ -330,8 +445,9 @@ function TanlashHalqasi({ radius, rang }: { radius: number; rang: string }) {
   );
 }
 
-function Stanok({ tavsif, holat, tanlangan, onTanlash, mat, yorliqKorinadi }: { tavsif: StanokTavsifi; holat?: StanokHolati; tanlangan: boolean; onTanlash: (id: string) => void; mat: Materiallar; yorliqKorinadi: boolean }) {
+function Stanok({ tavsif, holat, tanlangan, onTanlash, mat, yorliqKorinadi, daraja }: { tavsif: StanokTavsifi; holat?: StanokHolati; tanlangan: boolean; onTanlash: (id: string) => void; mat: Materiallar; yorliqKorinadi: boolean; daraja: Daraja }) {
   const { t } = useTranslation(DEMO_SEX_NS);
+  const ekran = useEkranMateriali(tavsif.nom, holat);
   const [ustida, setUstida] = useState(false);
   const korinadi = korinadiganHolat(holat);
   const rang = HOLAT_RANGI[korinadi];
@@ -358,7 +474,7 @@ function Stanok({ tavsif, holat, tanlangan, onTanlash, mat, yorliqKorinadi }: { 
         onPointerOver={(event) => { event.stopPropagation(); setUstida(true); }}
         onPointerOut={() => setUstida(false)}
       >
-        <Model mat={mat} ishlayapti={ishlayapti} />
+        <Model mat={mat} ishlayapti={ishlayapti} ekran={ekran} />
         {OPERATORLAR[tavsif.tur].map((op, i) => (
           <Ishchi key={i} mat={mat} p={op.p} burilish={op.burilish} harakat={op.harakat} ishlayapti={ishlayapti} turi={(tavsif.joy[0] > 0 ? 1 : 0) + i} faza={i * 1.3 + tavsif.joy[0]} />
         ))}
@@ -370,7 +486,16 @@ function Stanok({ tavsif, holat, tanlangan, onTanlash, mat, yorliqKorinadi }: { 
         </mesh>
       </group>
       {tanlangan && <TanlashHalqasi radius={OLCHAM[tavsif.tur] + 0.35} rang={rang} />}
-      {yorliqKorinadi && <Html position={[0, BALANDLIK[tavsif.tur] + 1.1, 0]} center zIndexRange={YORLIQ_Z} style={YORLIQ_USLUBI}>
+      {yorliqKorinadi && <Html position={[0, BALANDLIK[tavsif.tur] + (daraja === 0 || tanlangan ? 1.1 : 0.6), 0]} center zIndexRange={YORLIQ_Z} style={YORLIQ_USLUBI}>
+        {daraja === 2 && !tanlangan ? (
+          // Uzoqdan: faqat holat nuqtasi (nomi — sichqoncha ustida va ekran o'quvchi uchun).
+          <button type="button" data-stanok-yorliq={tavsif.id} onClick={() => onTanlash(tavsif.id)} title={`${tavsif.nom} · ${t(`status.${korinadi}`)}`} aria-label={`${tavsif.nom} · ${t(`status.${korinadi}`)}`} className="block h-3.5 w-3.5 rounded-full border-2 border-white shadow-md" style={{ background: rang }} />
+        ) : daraja === 1 && !tanlangan ? (
+          <button type="button" data-stanok-yorliq={tavsif.id} onClick={() => onTanlash(tavsif.id)} title={t(`status.${korinadi}`)} className="flex select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-white/70 bg-white/90 px-2.5 py-1 text-[11.5px] font-black text-slate-900 shadow-md backdrop-blur transition hover:border-blue-300 hover:bg-white">
+            <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ background: rang }} aria-hidden="true" />
+            {tavsif.nom}
+          </button>
+        ) : (
         <button
           type="button"
           data-stanok-yorliq={tavsif.id}
@@ -390,6 +515,7 @@ function Stanok({ tavsif, holat, tanlangan, onTanlash, mat, yorliqKorinadi }: { 
             </span>
           )}
         </button>
+        )}
       </Html>}
     </group>
   );
@@ -402,6 +528,10 @@ function KameraBoshqaruvi({ kamera, stanoklar }: { kamera: KameraBuyrugi; stanok
     if (!c) return;
     if (kamera.tur === "yuqori") {
       void c.setLookAt(0, 36, 0.01, 0, 0, 0, true);
+      return;
+    }
+    if (kamera.tur === "hudud") {
+      void c.setLookAt(...HUDUD_KAMERA.joy, ...HUDUD_KAMERA.nishon, true);
       return;
     }
     const stanok = kamera.tur === "stanok" ? stanoklar.find((item) => item.id === kamera.stanokId) : undefined;
@@ -424,7 +554,7 @@ function KameraBoshqaruvi({ kamera, stanoklar }: { kamera: KameraBuyrugi; stanok
       ref={ref}
       makeDefault
       minDistance={3}
-      maxDistance={60}
+      maxDistance={170}
       maxPolarAngle={Math.PI / 2.1}
       smoothTime={0.6}
       draggingSmoothTime={0.15}
@@ -433,45 +563,80 @@ function KameraBoshqaruvi({ kamera, stanoklar }: { kamera: KameraBuyrugi; stanok
   );
 }
 
-export default function SexSahnasi({ stanoklar, holatlar, tanlangan, onTanlash, kamera }: Props) {
+/** Kameragacha masofaga qarab yorliq darajasini aniqlaydi (chegarada titramasligi uchun gisterezis bilan). */
+function MasofaKuzatuvchi({ onDaraja }: { onDaraja: (d: Daraja) => void }) {
+  const joriy = useRef<Daraja>(0);
+  useFrame(({ camera }) => {
+    const d = camera.position.length();
+    const j = joriy.current;
+    const yangi: Daraja = d > (j === 2 ? 65 : 71) ? 2 : d > (j >= 1 ? 35 : 41) ? 1 : 0;
+    if (yangi !== j) {
+      joriy.current = yangi;
+      onDaraja(yangi);
+    }
+  });
+  return null;
+}
+
+export default function SexSahnasi({ stanoklar, holatlar, reyslar, tanlangan, onTanlash, kamera }: Props) {
   return (
     <Canvas
       // PCF soyalar (three r187 da PCFSoftShadowMap olib tashlangan — ogohlantirish chiqmasin).
       shadows="percentage"
-      dpr={[1, 2]}
-      camera={{ position: [...UMUMIY_KAMERA.joy], fov: 42, near: 0.1, far: 200 }}
+      dpr={[1, 1.5]}
+      camera={{ position: [...UMUMIY_KAMERA.joy], fov: 42, near: 0.3, far: 2500 }}
       gl={{ antialias: true, preserveDrawingBuffer: true }}
       onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; }}
       data-sex-sahnasi
     >
-      <SahnaIchi stanoklar={stanoklar} holatlar={holatlar} tanlangan={tanlangan} onTanlash={onTanlash} kamera={kamera} />
+      <SahnaIchi stanoklar={stanoklar} holatlar={holatlar} reyslar={reyslar} tanlangan={tanlangan} onTanlash={onTanlash} kamera={kamera} />
     </Canvas>
   );
 }
 
-function SahnaIchi({ stanoklar, holatlar, tanlangan, onTanlash, kamera }: Props) {
+/** Usta sexni aylanib chiqadi (har stanok oldida to'xtab planshetga qaraydi). */
+const USTA_YOLI: Array<[number, number]> = [[-9, 1.7], [-3.4, 1.7], [3.4, 1.7], [9.4, 1.7], [9.4, -1.45], [3.4, -1.45], [-3.4, -1.45], [-9, -1.45]];
+
+function SahnaIchi({ stanoklar, holatlar, reyslar, tanlangan, onTanlash, kamera }: Props) {
   const mat = useMateriallar();
+  const sm = useShaharMateriallari();
+  const [daraja, setDaraja] = useState<Daraja>(0);
   return (
     <>
-      <color attach="background" args={["#e9eef5"]} />
-      <fog attach="fog" args={["#e9eef5", 45, 90]} />
-      <hemisphereLight args={["#ffffff", "#94a3b8", 0.9]} />
-      <ambientLight intensity={0.25} />
+      {/* Osmon (shader, tashqi rasm yo'q) va havo pardasi: uzoqdagi shaharcha ufqda eriydi */}
+      <Sky distance={1800} sunPosition={QUYOSH} turbidity={4.5} rayleigh={1.2} mieCoefficient={0.004} mieDirectionalG={0.8} />
+      <fog attach="fog" args={["#d4dfe9", 160, 560]} />
+      {/* Muhit aksi: kod bilan yasalgan yorug' panellar (metall va oynalar realistik aks etadi) */}
+      <Environment resolution={128} frames={1} environmentIntensity={0.6}>
+        <Lightformer form="rect" intensity={2.2} position={[0, 40, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[120, 120, 1]} color="#ffffff" />
+        <Lightformer form="rect" intensity={0.9} position={[-50, 12, 0]} rotation={[0, Math.PI / 2, 0]} scale={[100, 24, 1]} color="#c7dbff" />
+        <Lightformer form="rect" intensity={0.7} position={[50, 10, 20]} rotation={[0, -Math.PI / 2, 0]} scale={[100, 24, 1]} color="#ffe6c7" />
+        <Lightformer form="rect" intensity={0.35} position={[0, -6, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[150, 150, 1]} color="#8a9873" />
+      </Environment>
+      <hemisphereLight args={["#e3edf8", "#6f7d5e", 0.55]} />
       <directionalLight
-        position={[9, 30, 7]}
-        intensity={1.6}
+        position={QUYOSH}
+        intensity={2.3}
+        color="#fff6e8"
         castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-20}
-        shadow-camera-right={20}
-        shadow-camera-top={14}
-        shadow-camera-bottom={-14}
-        shadow-bias={-0.0004}
+        shadow-mapSize={[4096, 4096]}
+        shadow-camera-left={-50}
+        shadow-camera-right={50}
+        shadow-camera-top={42}
+        shadow-camera-bottom={-42}
+        shadow-camera-near={10}
+        shadow-camera-far={180}
+        shadow-bias={-0.0003}
+        shadow-normalBias={0.02}
       />
-      <directionalLight position={[-12, 10, -8]} intensity={0.35} />
-      <SexMuhiti mat={mat} stanoklar={stanoklar} />
-      {/* Yo'lakdagi harakat: list ko'tarib yuruvchi ishchilar va pogruzchik */}
-      <YuruvchiIshchi mat={mat} yol={[-10.5, 8.5]} z={-0.35} tezlik={1.15} turi={1} />
+      <directionalLight position={[-30, 20, -20]} intensity={0.3} color="#cfe0ff" />
+      <MasofaKuzatuvchi onDaraja={setDaraja} />
+      <Shaharcha m={mat} sm={sm} />
+      <SexMuhiti mat={mat} stanoklar={stanoklar} uzoq={daraja === 2} />
+      <Logistika m={mat} sm={sm} reyslar={reyslar} yorliq={daraja > 0 || kamera.tur === "hudud"} />
+      {/* Yo'lakdagi harakat: list ko'tarib yuruvchi ishchilar, sexni aylanayotgan usta va pogruzchik */}
+      <YuruvchiIshchi mat={mat} yol={[-9.5, 8.5]} z={-0.35} tezlik={1.15} turi={1} />
+      <AylanuvchiOdam mat={mat} nuqtalar={USTA_YOLI} kiyim="usta" turi={0} tezlik={1.0} toxtash={2.5} />
       <YuruvchiIshchi mat={mat} yol={[-8, 6]} z={0.6} tezlik={0.9} turi={2} faza={7} />
       <Pogruzchik mat={mat} x={11.6} yol={[6.5, -6.0]} />
       {stanoklar.map((tavsif) => (
@@ -484,6 +649,7 @@ function SahnaIchi({ stanoklar, holatlar, tanlangan, onTanlash, kamera }: Props)
           mat={mat}
           // Stanokka yaqinlashilganda faqat uning yorlig'i: ekrandan tashqaridagi yorliqlar sahna chetida tugmalar ustiga chiqib qolmasin.
           yorliqKorinadi={kamera.tur !== "stanok" || !tanlangan || tanlangan === tavsif.id}
+          daraja={daraja}
         />
       ))}
       <KameraBoshqaruvi kamera={kamera} stanoklar={stanoklar} />
