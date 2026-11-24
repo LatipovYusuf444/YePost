@@ -881,11 +881,11 @@ export default function BoshSahifa() {
               </span>
             </div>
           </div>
-          {/* 3D sex demosi (sinov ma'lumotlari, alohida sahifa) */}
+          {/* 3D Demo (sinov ma'lumotlari, alohida sahifa) */}
           <button
             type="button"
             data-demo-3d
-            onClick={() => navigate("/demo/3d-sex")}
+            onClick={() => navigate("/demo/3d")}
             title={t("demo3d.title")}
             className="inline-flex h-10 items-center gap-2 rounded-xl border border-blue-200 bg-gradient-to-r from-sky-50 to-blue-50 px-4 text-sm font-bold text-blue-700 shadow-sm transition hover:border-blue-300 hover:from-sky-100 hover:to-blue-100"
           >

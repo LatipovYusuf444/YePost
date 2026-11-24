@@ -1,17 +1,20 @@
-// 3D sex — DEMO ma'lumot manbai (sinov ma'lumotlari). Haqiqiy stanok, backend yoki maxfiy kalit kerak emas.
+// 3D Demo — DEMO ma'lumot manbai (sinov ma'lumotlari). Haqiqiy stanok, backend yoki maxfiy kalit kerak emas.
 // Ssenariy soniyalar bo'yicha (tik = 1 s) yuradi; Pauza/Davom ettirish/Qayta boshlash bilan boshqariladi.
 // Sahna faqat `SexManbasi` interfeysini biladi — keyinchalik shu joyga Ye-Post API manbai qo'yiladi.
 // UI'siz va `@/` importlarisiz — testlarda ishlaydi.
 import type { Reys, ReysBosqichi, SexHodisasi, SexHolati, SexManbasi, StanokHolati, StanokTavsifi, Topshiriq } from "./sexModeli.ts";
 
-/** Sex rejasi (metr). Oqim: material ombori → kesish → CNC → qirra → burg'ilash → qadoqlash → tayyor mahsulot. */
-export const DEMO_STANOKLAR: StanokTavsifi[] = [
-  { id: "kesish-01", nom: "Kesish-01", tur: "kesish", joy: [-6.5, -4], burilish: 0 },
-  { id: "cnc-01", nom: "CNC-01", tur: "cnc", joy: [0, -4], burilish: 0 },
-  { id: "qirra-01", nom: "Qirra-01", tur: "qirra", joy: [6.8, -4], burilish: 0 },
-  { id: "burgilash-01", nom: "Burg'ilash-01", tur: "burgilash", joy: [6.8, 4.2], burilish: Math.PI },
-  { id: "qadoqlash-01", nom: "Qadoqlash-01", tur: "qadoqlash", joy: [0, 4.2], burilish: Math.PI },
-];
+/** Liniyalardagi stanoklar joyi (x, metr) — ikkala liniyada bir xil. Oqim: material ombori → kesish → CNC → qirra → burg'ilash → qadoqlash → tayyor mahsulot. */
+const LINIYA_X = { kesish: -15, cnc: -5, qirra: 5.5, burgilash: 14.5, qadoqlash: 22.5 } as const;
+/** 1-liniya z = −7.5 (oldi +z — markaziy yo'lakka), 2-liniya z = 7.5 (oldi −z — yo'lakka). */
+const LINIYALAR = [{ z: -7.5, burilish: 0 }, { z: 7.5, burilish: Math.PI }] as const;
+
+/** Ishlab chiqarish rejasi (metr): ikki parallel liniya, har birida 5 ta stanok (ID: "kesish-01" … "qadoqlash-02"). */
+export const DEMO_STANOKLAR: StanokTavsifi[] = LINIYALAR.flatMap(({ z, burilish }, i) => {
+  const n = `0${i + 1}`;
+  const s = (tur: StanokTavsifi["tur"], nom: string): StanokTavsifi => ({ id: `${tur}-${n}`, nom: `${nom}-${n}`, tur, joy: [LINIYA_X[tur], z], burilish });
+  return [s("kesish", "Kesish"), s("cnc", "CNC"), s("qirra", "Qirra"), s("burgilash", "Burg'ilash"), s("qadoqlash", "Qadoqlash")];
+});
 
 const t = (id: string, buyurtma: string, detal: string, operatsiya: string, bajarildi: number, jami: number, birlik = "dona"): Topshiriq =>
   ({ id, buyurtma, detal, operatsiya, bajarildi, jami, birlik });
@@ -43,6 +46,31 @@ function boshlangichHolat(): Record<string, Omit<StanokHolati, "yangilangan" | "
       joriy: t("T-170-9", "№170", "Shkaf \"Lux\"", "Qadoqlash", 6, 12, "komplekt"),
       navbat: [t("T-172-9", "№172", "Komod", "Qadoqlash", 0, 8, "komplekt")],
     },
+    // 2-liniya: boshqa buyurtmalar (№184 — ofis mebeli, №186 — shkaf-kupe, №188 — bolalar xonasi).
+    "kesish-02": {
+      stanokId: "kesish-02", holat: "ishlayapti",
+      joriy: t("T-186-1", "№186", "Shkaf-kupe yon devori", "Kesish", 18, 48),
+      navbat: [t("T-188-1", "№188", "Krovat yon paneli", "Kesish", 0, 24), t("T-186-2", "№186", "Polka", "Kesish", 0, 64)],
+    },
+    "cnc-02": {
+      stanokId: "cnc-02", holat: "ishlayapti",
+      joriy: t("T-186-3", "№186", "Eshik fasadi (MDF)", "Frezalash", 7, 20),
+      navbat: [t("T-188-2", "№188", "Tortma fasadi", "Frezalash", 0, 16)],
+    },
+    "qirra-02": {
+      stanokId: "qirra-02", holat: "ishlayapti",
+      joriy: t("T-184-2", "№184", "Stol qopqog'i", "Qirra yopishtirish", 22, 40),
+      navbat: [t("T-186-4", "№186", "Shkaf-kupe yon devori", "Qirra yopishtirish", 0, 48)],
+    },
+    "burgilash-02": {
+      stanokId: "burgilash-02", holat: "bosh", sabab: "Detal kutilmoqda (Qirra-02)", joriy: null,
+      navbat: [t("T-184-3", "№184", "Stol qopqog'i", "Burg'ilash", 0, 40), t("T-186-5", "№186", "Shkaf-kupe yon devori", "Burg'ilash", 0, 48)],
+    },
+    "qadoqlash-02": {
+      stanokId: "qadoqlash-02", holat: "ishlayapti",
+      joriy: t("T-184-9", "№184", "Ofis stoli", "Qadoqlash", 3, 10, "komplekt"),
+      navbat: [t("T-188-9", "№188", "Kitob javoni", "Qadoqlash", 0, 6, "komplekt")],
+    },
   };
 }
 
@@ -53,6 +81,11 @@ const TEZLIK: Record<string, { har: number; qadam: number }> = {
   "qirra-01": { har: 2, qadam: 2 },
   "burgilash-01": { har: 2, qadam: 1 },
   "qadoqlash-01": { har: 5, qadam: 1 },
+  "kesish-02": { har: 3, qadam: 2 },
+  "cnc-02": { har: 4, qadam: 1 },
+  "qirra-02": { har: 3, qadam: 2 },
+  "burgilash-02": { har: 3, qadam: 2 },
+  "qadoqlash-02": { har: 6, qadam: 1 },
 };
 
 /** Ssenariy voqealari (soniya → amal). Natija: ikki xil buyurtma yangilanadi, pauza, aloqa uzilishi va tiklanishi. */
@@ -62,6 +95,8 @@ export const SSENARIY = {
   aloqaUziladi: 13,
   qirraDavom: 19,
   aloqaTiklanadi: 23,
+  /** 2-liniya: Burg'ilash-02 qirradan detal kelgach ishga tushadi. */
+  burgilash2Boshlanadi: 16,
   /** Tugagan topshiriqdan keyin navbatdagisi necha soniyada (alohida hodisa) boshlanadi. */
   keyingiKutish: 2,
 } as const;
@@ -78,24 +113,52 @@ const ZAXIRA: Array<[string, string, string, number, string?]> = [
 type Ichki = StanokHolati & { kutish?: number };
 type Hodisachi = (stanokId: string, tur: SexHodisasi["tur"], matn: string, obyekt?: SexHodisasi["obyekt"]) => void;
 
-/**
- * Logistika (sinov): ikki yuk mashinasi 80 s davr bilan aylanadi. Bosqich uzunligi reysning o'z soniyasida.
- * Ikkinchi reys 19 s siljigan — KPP va old hovlida bir-biriga yo'liqmaydi (sahnadagi harakat shu oraliqlarga sig'adi).
- */
-export const LOGISTIKA = {
-  davr: 80,
-  bosqichlar: [["kelmoqda", 30], ["rampada", 24], ["ketmoqda", 22], ["yoq", 4]] as ReadonlyArray<readonly [ReysBosqichi, number]>,
-};
+/** Reys bosqichlari ketma-ketligi va uzunligi (s). Yig'indisi — `LOGISTIKA.davr`. */
+export type ReysBosqichlari = ReadonlyArray<readonly [ReysBosqichi, number]>;
 
-const REYSLAR: Array<Omit<Reys, "bosqich" | "boshlangan" | "palet"> & { siljish: number }> = [
-  { id: "reys-1", raqam: "01 345 ABA", yonalish: "jonatish", rampa: 1, yuk: "№170 · Shkaf \"Lux\"", jamiPalet: 6, siljish: 0 },
-  { id: "reys-2", raqam: "40 512 CAA", yonalish: "qabul", rampa: 2, yuk: "LDSP 16 mm · 120 list", jamiPalet: 6, siljish: 19 },
+/** Reys jadvali: tavsif + davrdagi siljish (s) + o'z bosqichlari (kelish/ketish uzunligi rampaga qarab har xil). */
+export type ReysJadvali = Omit<Reys, "bosqich" | "boshlangan" | "palet"> & { siljish: number; bosqichlar: ReysBosqichlari };
+
+/** Har bir reys davri (s). To'rt reys bir xil davr bilan aylanadi — o'zaro joylashuvi har davrda takrorlanadi. */
+const LOGISTIKA_DAVRI = 140;
+/** Rampada turish (s): 6 palet ~19.6 s da tugaydi, qolgani — hujjat va eshiklarni yopish. */
+const RAMPADA_TURISH = 26;
+
+/** Bosqichlar: kelmoqda (ko'chadan rampagacha), rampada (yuklash/tushirish), ketmoqda (rampadan ko'chagacha), yoq — davrning qolgani. */
+const bosqichlar = (kelmoqda: number, ketmoqda: number): ReysBosqichlari => [
+  ["kelmoqda", kelmoqda],
+  ["rampada", RAMPADA_TURISH],
+  ["ketmoqda", ketmoqda],
+  ["yoq", LOGISTIKA_DAVRI - kelmoqda - RAMPADA_TURISH - ketmoqda],
 ];
 
-/** Ssenariy soniyasida reys qaysi bosqichda va bosqich boshlanganiga necha soniya bo'ldi. */
-export function reysBosqichi(soniya: number, siljish: number): { bosqich: ReysBosqichi; otgan: number } {
+/**
+ * Logistika (sinov): to'rt KAMAZ reysi 140 s davr bilan aylanadi. Kelish/ketish bosqichi yollar.ts dagi marshrut
+ * davomiyligiga moslangan (1, 2 — old rampa, qisqaroq; 3, 4 — chap rampa, uzunroq). Siljishlar shunday tanlanganki, kirishlar
+ * navbat bilan (0 → 41 → 76 → 108 s: 1-, 3-, 4-, 2-reys) keladi va istalgan ikki mashina markazlari orasi doim ≥ 6 m,
+ * to'rtburchaklari kesishmaydi (tests/demo3dLogistika.test.mjs simulyatsiya qiladi).
+ */
+export const REYSLAR_JADVALI: ReadonlyArray<ReysJadvali> = [
+  { id: "reys-1", raqam: "01 345 ABA", yonalish: "jonatish", rampa: 1, yuk: "№170 · Shkaf \"Lux\"", jamiPalet: 6, siljish: 0, bosqichlar: bosqichlar(43, 35) },
+  { id: "reys-2", raqam: "01 712 BBA", yonalish: "jonatish", rampa: 2, yuk: "№172 · Komod \"Nova\"", jamiPalet: 6, siljish: 108, bosqichlar: bosqichlar(42, 34) },
+  { id: "reys-3", raqam: "40 512 CAA", yonalish: "qabul", rampa: 3, yuk: "LDSP 16 mm · 120 list", jamiPalet: 6, siljish: 41, bosqichlar: bosqichlar(52, 51) },
+  { id: "reys-4", raqam: "30 228 DAA", yonalish: "qabul", rampa: 4, yuk: "MDF 18 mm · 80 list", jamiPalet: 6, siljish: 76, bosqichlar: bosqichlar(49, 47) },
+];
+
+/** Reys siljishlari (s) — ID bo'yicha. */
+export const REYS_SILJISHLARI: Readonly<Record<string, number>> = Object.fromEntries(REYSLAR_JADVALI.map((r) => [r.id, r.siljish]));
+
+/** Umumiy davr, rampada turish va standart bosqichlar (1-reysniki). Har reysning o'z bosqichlari — `REYSLAR_JADVALI[i].bosqichlar`. */
+export const LOGISTIKA = {
+  davr: LOGISTIKA_DAVRI,
+  rampada: RAMPADA_TURISH,
+  bosqichlar: REYSLAR_JADVALI[0].bosqichlar,
+};
+
+/** Ssenariy soniyasida reys qaysi bosqichda va bosqich boshlanganiga necha soniya bo'ldi (`reysBosqichlari` — reysning o'zi; standart — 1-reys). */
+export function reysBosqichi(soniya: number, siljish: number, reysBosqichlari: ReysBosqichlari = LOGISTIKA.bosqichlar): { bosqich: ReysBosqichi; otgan: number } {
   let l = (((soniya - siljish) % LOGISTIKA.davr) + LOGISTIKA.davr) % LOGISTIKA.davr;
-  for (const [bosqich, davom] of LOGISTIKA.bosqichlar) {
+  for (const [bosqich, davom] of reysBosqichlari) {
     if (l < davom) return { bosqich, otgan: l };
     l -= davom;
   }
@@ -180,6 +243,7 @@ export class DemoSexManbasi implements SexManbasi {
 
     // Ssenariy voqealari.
     if (s === SSENARIY.cncBoshlanadi) this.keyinginiBoshlash("cnc-01", hodisa);
+    if (s === SSENARIY.burgilash2Boshlanadi) this.keyinginiBoshlash("burgilash-02", hodisa);
     if (s === SSENARIY.qirraPauza) {
       Object.assign(this.ichki["qirra-01"], { holat: "pauza", sabab: "Lenta almashtirilmoqda" });
       hodisa("qirra-01", "pauza", "Qirra-01 pauzada — lenta almashtirilmoqda");
@@ -246,8 +310,8 @@ export class DemoSexManbasi implements SexManbasi {
   /** Reyslar bosqichi: bosqich almashganda `boshlangan` yangilanadi va hodisa yoziladi (sahna harakatni shu vaqtdan hisoblaydi). */
   private reyslarniYangila(hozir: number, hodisa?: Hodisachi) {
     const oldingi = new Map(this.reysHolati.map((reys) => [reys.id, reys]));
-    this.reysHolati = REYSLAR.map(({ siljish, ...tavsif }) => {
-      const { bosqich, otgan } = reysBosqichi(this.soniya, siljish);
+    this.reysHolati = REYSLAR_JADVALI.map(({ siljish, bosqichlar: reysBosqichlari, ...tavsif }) => {
+      const { bosqich, otgan } = reysBosqichi(this.soniya, siljish, reysBosqichlari);
       const eski = oldingi.get(tavsif.id);
       const almashdi = !eski || eski.bosqich !== bosqich;
       if (almashdi && eski && hodisa) {

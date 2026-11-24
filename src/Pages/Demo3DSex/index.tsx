@@ -1,13 +1,13 @@
 import { Component, Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Box, Eye, FlaskConical, LoaderCircle, MapPinned, Pause, Play, RotateCcw, ScanSearch, Truck, X } from "lucide-react";
+import { ArrowLeft, Box, Building2, Factory, FlaskConical, LoaderCircle, MapPinned, Pause, Play, RotateCcw, ScanSearch, Shirt, Truck, X, type LucideIcon } from "lucide-react";
 import { DEMO_SEX_NS } from "./matnlar";
 import { DemoSexManbasi, DEMO_STANOKLAR } from "./demoManbasi";
-import { HOLAT_RANGI, bajarilishUlushi, korinadiganHolat, miqdorMatni, type Reys, type SexHodisasi, type SexHolati, type StanokHolati, type Topshiriq } from "./sexModeli";
+import { HOLAT_RANGI, bajarilishUlushi, korinadiganHolat, miqdorMatni, type Reys, type SexHodisasi, type SexHolati, type StanokHolati, type StanokTavsifi, type Topshiriq } from "./sexModeli";
 import type { KameraBuyrugi } from "./SexSahnasi";
 
-// 3D sex — Demo sahifasi (/demo/3d-sex). Ma'lumot: DemoSexManbasi (sinov ma'lumotlari); sahna (three.js) alohida bo'lakda yuklanadi.
+// 3D Demo sahifasi (/demo/3d; eski /demo/3d-sex shu yerga yo'naltiriladi). Ma'lumot: DemoSexManbasi (sinov ma'lumotlari); sahna (three.js) alohida bo'lakda yuklanadi.
 // Backend, autentifikatsiya va ishlab chiqarish API'lariga tegmaydi.
 const SexSahnasi = lazy(() => import("./SexSahnasi"));
 
@@ -49,13 +49,35 @@ function HolatBelgisi({ holat, kichik = false }: { holat: StanokHolati | undefin
   );
 }
 
-function Progress({ topshiriq, rang }: { topshiriq: Topshiriq | null | undefined; rang: string }) {
+function Progress({ topshiriq, rang, ingichka = false }: { topshiriq: Topshiriq | null | undefined; rang: string; ingichka?: boolean }) {
   const ulush = bajarilishUlushi(topshiriq);
   return (
-    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-valuemin={0} aria-valuemax={topshiriq?.jami ?? 0} aria-valuenow={topshiriq?.bajarildi ?? 0}>
+    <div className={`${ingichka ? "h-1.5" : "h-2"} w-full overflow-hidden rounded-full bg-slate-200`} role="progressbar" aria-valuemin={0} aria-valuemax={topshiriq?.jami ?? 0} aria-valuenow={topshiriq?.bajarildi ?? 0}>
       <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${Math.round(ulush * 100)}%`, background: rang }} />
     </div>
   );
+}
+
+type KameraTuri = Exclude<KameraBuyrugi["tur"], "stanok">;
+
+/** Kamera tugmalari: tartib — ichkaridan tashqariga (ishlab chiqarish → yuqoridan → ofis → maishiy blok → butun hudud). */
+const KAMERA_TUGMALARI: { tur: KameraTuri; kalit: string; Belgi: LucideIcon }[] = [
+  { tur: "umumiy", kalit: "camera.overview", Belgi: Factory },
+  { tur: "yuqori", kalit: "camera.top", Belgi: ScanSearch },
+  { tur: "ofis", kalit: "camera.office", Belgi: Building2 },
+  { tur: "maishiy", kalit: "camera.household", Belgi: Shirt },
+  { tur: "hudud", kalit: "camera.site", Belgi: MapPinned },
+];
+
+/** Stanoklar liniyalar bo'yicha: 1-liniya — sexning orqa yarmi (z < 0), 2-liniya — old yarmi (z ≥ 0). */
+function liniyalargaAjratish(stanoklar: StanokTavsifi[]) {
+  const liniyalar = [
+    { raqam: 1, stanoklar: stanoklar.filter((stanok) => stanok.joy[1] < 0) },
+    { raqam: 2, stanoklar: stanoklar.filter((stanok) => stanok.joy[1] >= 0) },
+  ];
+  // Har liniyada chapdan o'ngga (material omboridan qadoqlashgacha) — sahnadagi tartib bilan bir xil.
+  for (const liniya of liniyalar) liniya.stanoklar.sort((a, b) => a.joy[0] - b.joy[0]);
+  return liniyalar.filter((liniya) => liniya.stanoklar.length > 0);
 }
 
 const BOSQICH_RANGI: Record<Reys["bosqich"], string> = { kelmoqda: "bg-sky-50 text-sky-700", rampada: "bg-emerald-50 text-emerald-700", ketmoqda: "bg-slate-100 text-slate-600", yoq: "bg-slate-50 text-slate-400" };
@@ -82,6 +104,26 @@ function ReysKartasi({ reys }: { reys: Reys }) {
         </div>
       )}
     </li>
+  );
+}
+
+function StanokQatori({ stanok, holat, faol, onTanlash }: { stanok: StanokTavsifi; holat: StanokHolati | undefined; faol: boolean; onTanlash: (id: string) => void }) {
+  const { t } = useTranslation(DEMO_SEX_NS);
+  return (
+    <button
+      type="button"
+      data-stanok-royxat={stanok.id}
+      onClick={() => onTanlash(stanok.id)}
+      aria-pressed={faol}
+      className={`w-full rounded-xl border px-2.5 py-2 text-left transition ${faol ? "border-blue-400 bg-blue-50" : "border-transparent hover:border-slate-200 hover:bg-slate-50"}`}
+    >
+      <span className="flex items-center justify-between gap-2">
+        <span className="min-w-0 truncate text-[13px] font-black text-slate-900">{stanok.nom}</span>
+        <HolatBelgisi holat={holat} kichik />
+      </span>
+      <span className="mt-0.5 block truncate text-[11.5px] font-semibold text-slate-500">{topshiriqMatni(holat?.joriy) || t("list.noTask")}</span>
+      {holat?.joriy && <span className="mt-1 block"><Progress topshiriq={holat.joriy} rang={HOLAT_RANGI[korinadiganHolat(holat)]} ingichka /></span>}
+    </button>
   );
 }
 
@@ -131,6 +173,13 @@ export default function Demo3DSex() {
   const tanlanganTavsif = DEMO_STANOKLAR.find((stanok) => stanok.id === tanlangan);
   const tanlanganHolat = tanlangan ? holatlar[tanlangan] : undefined;
   const nomlar = useMemo(() => Object.fromEntries(DEMO_STANOKLAR.map((stanok) => [stanok.id, stanok.nom])), []);
+  const liniyalar = useMemo(() => liniyalargaAjratish(DEMO_STANOKLAR), []);
+  const ishlayotganlar = DEMO_STANOKLAR.filter((stanok) => korinadiganHolat(holatlar[stanok.id]) === "ishlayapti").length;
+  const etiborKerak = DEMO_STANOKLAR.filter((stanok) => {
+    const holat = korinadiganHolat(holatlar[stanok.id]);
+    return holat === "nosoz" || holat === "eskirgan";
+  }).length;
+  const hududdagiReyslar = reyslar.filter((reys) => reys.bosqich !== "yoq").length;
 
   return (
     <div className="flex min-h-dvh flex-col bg-[#eef2f7] text-slate-900 lg:h-dvh">
@@ -163,28 +212,39 @@ export default function Demo3DSex() {
             <p className="p-6 text-sm font-semibold text-slate-600">{t("noWebgl")}</p>
           )}
 
-          {/* Kamera tugmalari */}
-          <div className="pointer-events-none absolute left-3 top-3 z-30 flex flex-wrap items-center gap-2">
-            <div className="pointer-events-auto flex gap-1 rounded-2xl border border-white/70 bg-white/90 p-1 shadow-md backdrop-blur" role="group" aria-label={t("camera.title")}>
-              <button type="button" data-kamera="umumiy" onClick={() => kameraga("umumiy")} className="inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-sm font-bold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
-                <Eye size={16} aria-hidden="true" />{t("camera.overview")}
-              </button>
-              <button type="button" data-kamera="yuqori" onClick={() => kameraga("yuqori")} className="inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-sm font-bold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
-                <ScanSearch size={16} aria-hidden="true" />{t("camera.top")}
-              </button>
-              <button type="button" data-kamera="hudud" onClick={() => { setTanlangan(null); kameraga("hudud"); }} className="inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-sm font-bold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
-                <MapPinned size={16} aria-hidden="true" />{t("camera.site")}
-              </button>
+          {/* Kamera tugmalari + demo belgisi: bitta yuqori qator, tor ekranda (360–768 px) bir necha qatorga o'raladi */}
+          <div className="pointer-events-none absolute inset-x-3 top-3 z-30 flex items-start justify-between gap-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <div className="pointer-events-auto flex max-w-full flex-wrap gap-1 rounded-2xl border border-white/70 bg-white/90 p-1 shadow-md backdrop-blur" role="group" aria-label={t("camera.title")}>
+                {KAMERA_TUGMALARI.map(({ tur, kalit, Belgi }) => {
+                  const faol = kamera.tur === tur;
+                  return (
+                    <button
+                      key={tur}
+                      type="button"
+                      data-kamera={tur}
+                      aria-pressed={faol}
+                      onClick={() => {
+                        if (tur !== "umumiy" && tur !== "yuqori") setTanlangan(null);
+                        kameraga(tur);
+                      }}
+                      className={`inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-xs font-bold transition sm:h-9 sm:px-3 sm:text-sm ${faol ? "bg-blue-600 text-white shadow-sm" : "text-slate-700 hover:bg-blue-50 hover:text-blue-700"}`}
+                    >
+                      <Belgi size={15} aria-hidden="true" />{t(kalit)}
+                    </button>
+                  );
+                })}
+              </div>
+              {!ishlayapti && (
+                <span data-pauza-belgi className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1.5 text-xs font-black text-white shadow">
+                  <Pause size={13} aria-hidden="true" />{t("controls.paused")}
+                </span>
+              )}
             </div>
-            {!ishlayapti && (
-              <span data-pauza-belgi className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1.5 text-xs font-black text-white shadow">
-                <Pause size={13} aria-hidden="true" />{t("controls.paused")}
-              </span>
-            )}
+            <span className="hidden shrink-0 items-center gap-1.5 rounded-full bg-amber-400/95 px-3 py-1.5 text-xs font-black text-amber-950 shadow md:inline-flex">
+              <FlaskConical size={13} aria-hidden="true" />{t("demoBadge")}
+            </span>
           </div>
-          <span className="pointer-events-none absolute right-3 top-3 z-30 inline-flex items-center gap-1.5 rounded-full bg-amber-400/95 px-3 py-1.5 text-xs font-black text-amber-950 shadow">
-            <FlaskConical size={13} aria-hidden="true" />{t("demoBadge")}
-          </span>
 
           {/* Tanlangan stanok paneli: sahnaning bir burchagini egallaydi (to'liq yopmaydi) */}
           {tanlanganTavsif ? (
@@ -239,35 +299,48 @@ export default function Demo3DSex() {
                 <RotateCcw size={16} aria-hidden="true" />{t("controls.restart")}
               </button>
             </div>
+            <dl data-zavod-korsatkich className="mt-3 grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-xl bg-emerald-50 px-1.5 py-2">
+                <dt className="truncate text-[10.5px] font-bold uppercase tracking-wide text-emerald-700">{t("factory.working")}</dt>
+                <dd className="text-base font-black tabular-nums text-emerald-800">{ishlayotganlar}/{DEMO_STANOKLAR.length}</dd>
+              </div>
+              <div className={`rounded-xl px-1.5 py-2 ${etiborKerak > 0 ? "bg-red-50" : "bg-slate-50"}`}>
+                <dt className={`truncate text-[10.5px] font-bold uppercase tracking-wide ${etiborKerak > 0 ? "text-red-700" : "text-slate-500"}`}>{t("factory.attention")}</dt>
+                <dd className={`text-base font-black tabular-nums ${etiborKerak > 0 ? "text-red-700" : "text-slate-700"}`}>{etiborKerak}</dd>
+              </div>
+              <div className="rounded-xl bg-sky-50 px-1.5 py-2">
+                <dt className="truncate text-[10.5px] font-bold uppercase tracking-wide text-sky-700">{t("factory.trucks")}</dt>
+                <dd className="text-base font-black tabular-nums text-sky-800">{hududdagiReyslar}/{reyslar.length}</dd>
+              </div>
+            </dl>
             <p className="mt-3 text-[11.5px] font-medium leading-4 text-slate-500">{t("camera.hint")}</p>
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
-            <h2 className="px-2 pb-1 pt-2 text-sm font-black uppercase tracking-wide text-slate-600">{t("list.title")}</h2>
-            <ul className="space-y-1">
-              {DEMO_STANOKLAR.map((stanok) => {
-                const holat = holatlar[stanok.id];
-                const faol = tanlangan === stanok.id;
+          <section data-stanoklar className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+            <div className="flex items-baseline justify-between gap-2 px-2 pb-1 pt-2">
+              <h2 className="text-sm font-black uppercase tracking-wide text-slate-600">{t("list.title")}</h2>
+              <span className="text-xs font-bold tabular-nums text-slate-400">{DEMO_STANOKLAR.length}</span>
+            </div>
+            <div className="grid gap-x-2 sm:grid-cols-2 lg:grid-cols-1">
+              {liniyalar.map((liniya) => {
+                const ishlayotgan = liniya.stanoklar.filter((stanok) => korinadiganHolat(holatlar[stanok.id]) === "ishlayapti").length;
                 return (
-                  <li key={stanok.id}>
-                    <button
-                      type="button"
-                      data-stanok-royxat={stanok.id}
-                      onClick={() => tanlash(stanok.id)}
-                      aria-pressed={faol}
-                      className={`w-full rounded-xl border px-3 py-2.5 text-left transition ${faol ? "border-blue-400 bg-blue-50" : "border-transparent hover:border-slate-200 hover:bg-slate-50"}`}
-                    >
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="truncate text-sm font-black text-slate-900">{stanok.nom}</span>
-                        <HolatBelgisi holat={holat} kichik />
-                      </span>
-                      <span className="mt-1 block truncate text-xs font-semibold text-slate-500">{topshiriqMatni(holat?.joriy) || t("list.noTask")}</span>
-                      {holat?.joriy && <span className="mt-1.5 block"><Progress topshiriq={holat.joriy} rang={HOLAT_RANGI[korinadiganHolat(holat)]} /></span>}
-                    </button>
-                  </li>
+                  <div key={liniya.raqam} data-liniya={liniya.raqam} role="group" aria-labelledby={`liniya-${liniya.raqam}`} className="min-w-0">
+                    <div className="mt-1 flex items-center justify-between gap-2 border-t border-slate-100 px-2.5 pb-1 pt-2">
+                      <h3 id={`liniya-${liniya.raqam}`} className="text-xs font-black text-slate-700">{t("list.line", { n: liniya.raqam })}</h3>
+                      <span className="text-[11px] font-bold tabular-nums text-slate-400">{t("list.lineCount", { a: ishlayotgan, b: liniya.stanoklar.length })}</span>
+                    </div>
+                    <ul className="space-y-0.5">
+                      {liniya.stanoklar.map((stanok) => (
+                        <li key={stanok.id}>
+                          <StanokQatori stanok={stanok} holat={holatlar[stanok.id]} faol={tanlangan === stanok.id} onTanlash={tanlash} />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 );
               })}
-            </ul>
+            </div>
           </section>
 
           {reyslar.length > 0 && (
@@ -278,7 +351,7 @@ export default function Demo3DSex() {
                   <MapPinned size={13} aria-hidden="true" />{t("logistics.show")}
                 </button>
               </div>
-              <ul className="mt-2 space-y-2">
+              <ul className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
                 {reyslar.map((reys) => <ReysKartasi key={reys.id} reys={reys} />)}
               </ul>
             </section>
@@ -307,6 +380,8 @@ export default function Demo3DSex() {
               ))}
             </ol>
           </section>
+
+          <p data-mualliflar className="px-2 pb-1 text-[11px] font-medium text-slate-400">{t("credits")}</p>
         </aside>
       </div>
     </div>

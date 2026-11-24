@@ -1,18 +1,28 @@
 import i18n from "i18next";
 
-// 3D sex demo matnlari (uz/ru) — modul ichida: asosiy ilova bo'lagiga (bundle) qo'shilmaydi, sahifa ochilganda yuklanadi.
+// 3D Demo matnlari (uz/ru) — modul ichida: asosiy ilova bo'lagiga (bundle) qo'shilmaydi, sahifa ochilganda yuklanadi.
+// Nomlar fazosi (namespace) ichki kalit — foydalanuvchiga ko'rinmaydi, boshqa fayllar shu nom bilan ulangan.
 export const DEMO_SEX_NS = "demo_sex";
 
 const uz = {
-  title: "3D sex",
-  subtitle: "Mebel ishlab chiqarish sexi — stanoklar va joriy topshiriqlar",
+  title: "3D Demo",
+  subtitle: "Mebel ishlab chiqarish zavodi — stanoklar, logistika va xodimlar",
   demoBadge: "Demo — sinov ma'lumotlari",
   back: "Ye-Post'ga qaytish",
-  loading: "3D sex yuklanmoqda…",
+  loading: "3D Demo yuklanmoqda…",
   noWebgl: "Brauzeringiz 3D (WebGL) ni qo'llab-quvvatlamaydi. Ro'yxatdagi ma'lumotlar baribir yangilanib turadi.",
-  camera: { title: "Ko'rinish", overview: "Butun sex", site: "Hudud", top: "Yuqoridan", hint: "Sichqoncha: aylantirish · o'ng tugma: siljitish · g'ildirak: yaqinlashtirish. Barmoq: bir barmoq — aylantirish, ikki barmoq — siljitish va yaqinlashtirish." },
+  camera: {
+    title: "Ko'rinish",
+    overview: "Ishlab chiqarish",
+    top: "Yuqoridan",
+    office: "Ofis",
+    household: "Maishiy blok",
+    site: "Hudud",
+    hint: "Sichqoncha: aylantirish · o'ng tugma: siljitish · g'ildirak: yaqinlashtirish. Barmoq: bir barmoq — aylantirish, ikki barmoq — siljitish va yaqinlashtirish.",
+  },
   controls: { title: "Demo boshqaruvi", pause: "Pauza", resume: "Davom ettirish", restart: "Qayta boshlash", paused: "Demo pauzada", second: "{{s}}-soniya", running: "Jonli" },
-  list: { title: "Stanoklar", noTask: "Topshiriq yo'q" },
+  factory: { working: "Ishlayapti", attention: "E'tibor kerak", trucks: "Hududdagi reyslar" },
+  list: { title: "Stanoklar", noTask: "Topshiriq yo'q", line: "{{n}}-liniya", lineCount: "{{a}}/{{b}} ishlayapti" },
   events: { title: "Hodisalar", empty: "Hali hodisa yo'q" },
   status: { ishlayapti: "Ishlayapti", pauza: "Pauzada", bosh: "Bo'sh", nosoz: "Nosoz", eskirgan: "Ma'lumot eskirgan" },
   panel: {
@@ -29,7 +39,26 @@ const uz = {
     stale: "Stanok bilan aloqa yo'q: oxirgi ma'lum holat ko'rsatilmoqda.",
     machineId: "Stanok ID",
   },
-  zones: { material: "Material ombori", finished: "Tayyor mahsulot", aisle: "Yo'lak", kpp: "KPP", dock1: "1-rampa · jo'natish", dock2: "2-rampa · qabul", parking: "Avtoturargoh" },
+  zones: {
+    material: "Material ombori",
+    finished: "Tayyor mahsulot",
+    aisle: "Yo'lak",
+    kpp: "KPP",
+    entry: "Kirish",
+    exit: "Chiqish",
+    dock1: "1-rampa · jo'natish",
+    dock2: "2-rampa · jo'natish",
+    dock3: "3-rampa · qabul",
+    dock4: "4-rampa · qabul",
+    parking: "Avtoturargoh",
+    waiting: "Kutish joyi",
+    busStop: "Avtobus bekati",
+    office: "Ofis",
+    household: "Maishiy blok",
+    lockerRoom: "Kiyinish xonasi",
+    showers: "Dush",
+    canteen: "Oshxona",
+  },
   logistics: {
     title: "Logistika",
     jonatish: "Jo'natish",
@@ -45,18 +74,28 @@ const uz = {
   },
   machineType: { kesish: "Format-kesish stanogi", cnc: "CNC frezer (nesting)", qirra: "Qirra yopishtirish stanogi", burgilash: "Burg'ilash stanogi", qadoqlash: "Qadoqlash joyi" },
   selectHint: "Stanokni tanlash uchun uning ustiga, yorlig'iga yoki ro'yxatdagi nomiga bosing",
+  credits: "3D modellar: Quaternius, Kenney (CC0)",
 };
 
 const ru: typeof uz = {
-  title: "3D цех",
-  subtitle: "Мебельный цех — станки и текущие задания",
+  title: "3D Демо",
+  subtitle: "Мебельное производство — станки, логистика и сотрудники",
   demoBadge: "Демо — тестовые данные",
   back: "Вернуться в Ye-Post",
-  loading: "Загрузка 3D цеха…",
+  loading: "Загрузка 3D Демо…",
   noWebgl: "Ваш браузер не поддерживает 3D (WebGL). Данные в списке всё равно обновляются.",
-  camera: { title: "Вид", overview: "Весь цех", site: "Территория", top: "Сверху", hint: "Мышь: вращение · правая кнопка: сдвиг · колесо: масштаб. Касание: один палец — вращение, два — сдвиг и масштаб." },
+  camera: {
+    title: "Вид",
+    overview: "Производство",
+    top: "Сверху",
+    office: "Офис",
+    household: "Бытовой блок",
+    site: "Территория",
+    hint: "Мышь: вращение · правая кнопка: сдвиг · колесо: масштаб. Касание: один палец — вращение, два — сдвиг и масштаб.",
+  },
   controls: { title: "Управление демо", pause: "Пауза", resume: "Продолжить", restart: "Начать заново", paused: "Демо на паузе", second: "{{s}}-я секунда", running: "В эфире" },
-  list: { title: "Станки", noTask: "Нет задания" },
+  factory: { working: "Работают", attention: "Требуют внимания", trucks: "Рейсы на территории" },
+  list: { title: "Станки", noTask: "Нет задания", line: "Линия {{n}}", lineCount: "{{a}}/{{b}} работают" },
   events: { title: "События", empty: "Пока нет событий" },
   status: { ishlayapti: "Работает", pauza: "Пауза", bosh: "Свободен", nosoz: "Неисправен", eskirgan: "Данные устарели" },
   panel: {
@@ -73,7 +112,26 @@ const ru: typeof uz = {
     stale: "Нет связи со станком: показано последнее известное состояние.",
     machineId: "ID станка",
   },
-  zones: { material: "Склад материалов", finished: "Готовая продукция", aisle: "Проход", kpp: "КПП", dock1: "Рампа 1 · отгрузка", dock2: "Рампа 2 · приёмка", parking: "Автостоянка" },
+  zones: {
+    material: "Склад материалов",
+    finished: "Готовая продукция",
+    aisle: "Проход",
+    kpp: "КПП",
+    entry: "Въезд",
+    exit: "Выезд",
+    dock1: "Рампа 1 · отгрузка",
+    dock2: "Рампа 2 · отгрузка",
+    dock3: "Рампа 3 · приёмка",
+    dock4: "Рампа 4 · приёмка",
+    parking: "Автостоянка",
+    waiting: "Место ожидания",
+    busStop: "Автобусная остановка",
+    office: "Офис",
+    household: "Бытовой блок",
+    lockerRoom: "Раздевалка",
+    showers: "Душевые",
+    canteen: "Столовая",
+  },
   logistics: {
     title: "Логистика",
     jonatish: "Отгрузка",
@@ -89,7 +147,11 @@ const ru: typeof uz = {
   },
   machineType: { kesish: "Форматно-раскроечный станок", cnc: "ЧПУ фрезер (нестинг)", qirra: "Кромкооблицовочный станок", burgilash: "Сверлильный станок", qadoqlash: "Участок упаковки" },
   selectHint: "Чтобы выбрать станок, нажмите на него, на его ярлык или на название в списке",
+  credits: "3D-модели: Quaternius, Kenney (CC0)",
 };
+
+/** Ikkala til matnlari (testlar va kelgusida boshqa tillar uchun). */
+export const DEMO_MATNLAR = { uz, ru } as const;
 
 if (!i18n.hasResourceBundle("uz", DEMO_SEX_NS)) i18n.addResourceBundle("uz", DEMO_SEX_NS, uz);
 if (!i18n.hasResourceBundle("ru", DEMO_SEX_NS)) i18n.addResourceBundle("ru", DEMO_SEX_NS, ru);

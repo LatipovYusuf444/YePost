@@ -88,8 +88,8 @@ function devorTeksturasi() {
   return tekstura;
 }
 
-export const SEX_ENI = 34; // x (metr)
-export const SEX_CHUQURLIGI = 22; // z (metr)
+export const SEX_ENI = 64; // x (metr) — hudud.ts SEX.eni
+export const SEX_CHUQURLIGI = 30; // z (metr) — hudud.ts SEX.chuqurlik
 
 export function useMateriallar() {
   return useMemo(() => {

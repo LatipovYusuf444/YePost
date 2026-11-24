@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame, type ThreeEvent } from "@react-three/fiber";
 import { CameraControls, Environment, Html, Lightformer, Sky } from "@react-three/drei";
+import { EffectComposer, N8AO, ToneMapping } from "@react-three/postprocessing";
+import { ToneMappingMode } from "postprocessing";
 import * as THREE from "three";
 import { useTranslation } from "react-i18next";
 import { DEMO_SEX_NS } from "./matnlar";
@@ -10,13 +12,17 @@ import { Quti, Silindr, Yumaloq } from "./shakllar";
 import SexMuhiti from "./SexMuhiti";
 import Shaharcha from "./Shaharcha";
 import Logistika from "./Transport";
-import { AylanuvchiOdam, Ishchi, Pogruzchik, YuruvchiIshchi, type IshHarakati } from "./Ishchilar";
+import { Pogruzchik, type IshHarakati } from "./Ishchilar";
+import { GlbOdam, KelibKetuvchilar, YuruvchiGlbOdam } from "./Odamlar";
+import Ofis from "./Ofis";
+import Maishiy from "./Maishiy";
+import { MAISHIY, OFIS } from "./hudud";
 import { HOLAT_RANGI, bajarilishUlushi, korinadiganHolat, type Reys, type SexHolati, type StanokHolati, type StanokTavsifi, type StanokTuri } from "./sexModeli";
 
 // 3D sex sahnasi. Barcha stanok modellari shu yerda kod bilan (three.js geometriyasi) yasalgan — tashqi model fayli yoki havolasiz.
 // Sahna ma'lumotni faqat props orqali oladi (stanoklar ro'yxati + holatlar): demo yoki Ye-Post manbaiga bog'liq emas.
 
-export type KameraBuyrugi = { tur: "umumiy" | "yuqori" | "hudud" | "stanok"; stanokId?: string; n: number };
+export type KameraBuyrugi = { tur: "umumiy" | "yuqori" | "hudud" | "ofis" | "maishiy" | "stanok"; stanokId?: string; n: number };
 
 type Props = {
   stanoklar: StanokTavsifi[];
@@ -28,9 +34,13 @@ type Props = {
   kamera: KameraBuyrugi;
 };
 
-const UMUMIY_KAMERA = { joy: [13.5, 15.5, 18] as const, nishon: [0, 0, 0.8] as const };
+/** Ishlab chiqarish binosi (64 × 30 m) old-o'ng tomondan. */
+const UMUMIY_KAMERA = { joy: [30, 30, 40] as const, nishon: [-1, 0, 1] as const };
+/** Ofis (direktor qavati ochiq) va maishiy blok. */
+const OFIS_KAMERA = { joy: [(OFIS.x0 + OFIS.x1) / 2 + 22, 30, OFIS.z1 + 26] as const, nishon: [(OFIS.x0 + OFIS.x1) / 2, 4, (OFIS.z0 + OFIS.z1) / 2] as const };
+const MAISHIY_KAMERA = { joy: [(MAISHIY.x0 + MAISHIY.x1) / 2 + 20, 26, MAISHIY.z1 + 22] as const, nishon: [(MAISHIY.x0 + MAISHIY.x1) / 2, 0, (MAISHIY.z0 + MAISHIY.z1) / 2] as const };
 /** Butun zavod hududi: KPP, rampalar, yuk mashinalari va atrofdagi shaharcha. */
-const HUDUD_KAMERA = { joy: [56, 42, 64] as const, nishon: [-3, 0, 7] as const };
+const HUDUD_KAMERA = { joy: [95, 78, 118] as const, nishon: [2, 0, 12] as const };
 /** Quyosh (osmon, yorug'lik va soyalar bir yo'nalishda). */
 const QUYOSH: [number, number, number] = [40, 60, 25];
 
@@ -476,7 +486,9 @@ function Stanok({ tavsif, holat, tanlangan, onTanlash, mat, yorliqKorinadi, dara
       >
         <Model mat={mat} ishlayapti={ishlayapti} ekran={ekran} />
         {OPERATORLAR[tavsif.tur].map((op, i) => (
-          <Ishchi key={i} mat={mat} p={op.p} burilish={op.burilish} harakat={op.harakat} ishlayapti={ishlayapti} turi={(tavsif.joy[0] > 0 ? 1 : 0) + i} faza={i * 1.3 + tavsif.joy[0]} />
+          <Suspense key={i} fallback={null}>
+            <GlbOdam tur="ishchi" harakat={ishlayapti ? "ishlash" : "turish"} p={op.p} burilish={op.burilish} faza={((i * 0.37 + tavsif.joy[0] * 0.13) % 1 + 1) % 1} />
+          </Suspense>
         ))}
         <SignalMinorasi p={[-1.0, 1.0, -0.45]} rang={rang} mat={mat} />
         {/* Pol belgisi: stanok zonasi */}
@@ -527,11 +539,19 @@ function KameraBoshqaruvi({ kamera, stanoklar }: { kamera: KameraBuyrugi; stanok
     const c = ref.current;
     if (!c) return;
     if (kamera.tur === "yuqori") {
-      void c.setLookAt(0, 36, 0.01, 0, 0, 0, true);
+      void c.setLookAt(0, 75, 0.01, 0, 0, 2, true);
       return;
     }
     if (kamera.tur === "hudud") {
       void c.setLookAt(...HUDUD_KAMERA.joy, ...HUDUD_KAMERA.nishon, true);
+      return;
+    }
+    if (kamera.tur === "ofis") {
+      void c.setLookAt(...OFIS_KAMERA.joy, ...OFIS_KAMERA.nishon, true);
+      return;
+    }
+    if (kamera.tur === "maishiy") {
+      void c.setLookAt(...MAISHIY_KAMERA.joy, ...MAISHIY_KAMERA.nishon, true);
       return;
     }
     const stanok = kamera.tur === "stanok" ? stanoklar.find((item) => item.id === kamera.stanokId) : undefined;
@@ -554,7 +574,7 @@ function KameraBoshqaruvi({ kamera, stanoklar }: { kamera: KameraBuyrugi; stanok
       ref={ref}
       makeDefault
       minDistance={3}
-      maxDistance={170}
+      maxDistance={260}
       maxPolarAngle={Math.PI / 2.1}
       smoothTime={0.6}
       draggingSmoothTime={0.15}
@@ -595,7 +615,7 @@ export default function SexSahnasi({ stanoklar, holatlar, reyslar, tanlangan, on
 }
 
 /** Usta sexni aylanib chiqadi (har stanok oldida to'xtab planshetga qaraydi). */
-const USTA_YOLI: Array<[number, number]> = [[-9, 1.7], [-3.4, 1.7], [3.4, 1.7], [9.4, 1.7], [9.4, -1.45], [3.4, -1.45], [-3.4, -1.45], [-9, -1.45]];
+const USTA_YOLI: Array<[number, number]> = [[-19, -1.5], [-10, -1.5], [0, -1.5], [10, -1.5], [19, -1.5], [19, 1.9], [10, 1.9], [0, 1.9], [-10, 1.9], [-19, 1.9]];
 
 function SahnaIchi({ stanoklar, holatlar, reyslar, tanlangan, onTanlash, kamera }: Props) {
   const mat = useMateriallar();
@@ -605,7 +625,7 @@ function SahnaIchi({ stanoklar, holatlar, reyslar, tanlangan, onTanlash, kamera 
     <>
       {/* Osmon (shader, tashqi rasm yo'q) va havo pardasi: uzoqdagi shaharcha ufqda eriydi */}
       <Sky distance={1800} sunPosition={QUYOSH} turbidity={4.5} rayleigh={1.2} mieCoefficient={0.004} mieDirectionalG={0.8} />
-      <fog attach="fog" args={["#d4dfe9", 160, 560]} />
+      <fog attach="fog" args={["#d4dfe9", 220, 720]} />
       {/* Muhit aksi: kod bilan yasalgan yorug' panellar (metall va oynalar realistik aks etadi) */}
       <Environment resolution={128} frames={1} environmentIntensity={0.6}>
         <Lightformer form="rect" intensity={2.2} position={[0, 40, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[120, 120, 1]} color="#ffffff" />
@@ -620,25 +640,40 @@ function SahnaIchi({ stanoklar, holatlar, reyslar, tanlangan, onTanlash, kamera 
         color="#fff6e8"
         castShadow
         shadow-mapSize={[4096, 4096]}
-        shadow-camera-left={-50}
-        shadow-camera-right={50}
-        shadow-camera-top={42}
-        shadow-camera-bottom={-42}
+        shadow-camera-left={-80}
+        shadow-camera-right={80}
+        shadow-camera-top={62}
+        shadow-camera-bottom={-62}
         shadow-camera-near={10}
-        shadow-camera-far={180}
+        shadow-camera-far={260}
         shadow-bias={-0.0003}
         shadow-normalBias={0.02}
       />
       <directionalLight position={[-30, 20, -20]} intensity={0.3} color="#cfe0ff" />
       <MasofaKuzatuvchi onDaraja={setDaraja} />
+      {/* Ambient occlusion (burchak va tutashgan joylardagi yumshoq soya) — sahnani ancha realistik qiladi */}
+      <EffectComposer multisampling={4}>
+        <N8AO halfRes aoRadius={1.6} intensity={2.2} distanceFalloff={0.6} quality="performance" />
+        <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+      </EffectComposer>
       <Shaharcha m={mat} sm={sm} />
       <SexMuhiti mat={mat} stanoklar={stanoklar} uzoq={daraja === 2} />
       <Logistika m={mat} sm={sm} reyslar={reyslar} yorliq={daraja > 0 || kamera.tur === "hudud"} />
       {/* Yo'lakdagi harakat: list ko'tarib yuruvchi ishchilar, sexni aylanayotgan usta va pogruzchik */}
-      <YuruvchiIshchi mat={mat} yol={[-9.5, 8.5]} z={-0.35} tezlik={1.15} turi={1} />
-      <AylanuvchiOdam mat={mat} nuqtalar={USTA_YOLI} kiyim="usta" turi={0} tezlik={1.0} toxtash={2.5} />
-      <YuruvchiIshchi mat={mat} yol={[-8, 6]} z={0.6} tezlik={0.9} turi={2} faza={7} />
-      <Pogruzchik mat={mat} x={11.6} yol={[6.5, -6.0]} />
+      {/* Ofis (direktorlar qavati), maishiy blok (kiyinish xonalari, oshxona), odamlar — GLB modellar yuklanguncha ko'rinmaydi */}
+      <Suspense fallback={null}><Ofis m={mat} /></Suspense>
+      <Suspense fallback={null}><Maishiy m={mat} /></Suspense>
+      <Suspense fallback={null}>
+        <YuruvchiGlbOdam tur="biznesmen" nuqtalar={USTA_YOLI} halqa tezlik={1.0} toxtash={2.5} toxtashHarakati="gaplashish" />
+        <YuruvchiGlbOdam tur="oddiyErkak" nuqtalar={[[-21, -1.2], [20, -1.2]]} tezlik={1.2} faza={0.3} />
+        <YuruvchiGlbOdam tur="ishchi" nuqtalar={[[20, -0.8], [-21, -0.8]]} tezlik={1.1} faza={0.6} />
+        <YuruvchiGlbOdam tur="ayolOddiy" nuqtalar={[[41, -8.5], [33, -8.5], [28, -8.5], [28, -1.5]]} tezlik={1.15} faza={0.1} toxtash={1.5} />
+        <KelibKetuvchilar />
+      </Suspense>
+      {/* Markaziy yo'lak bo'ylab (x yo'nalishida) yuradigan pogruzchik */}
+      <group rotation={[0, Math.PI / 2, 0]}>
+        <Pogruzchik mat={mat} x={-1.2} yol={[-18, 10]} />
+      </group>
       {stanoklar.map((tavsif) => (
         <Stanok
           key={tavsif.id}

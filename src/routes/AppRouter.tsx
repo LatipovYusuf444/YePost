@@ -39,7 +39,7 @@ const AdminTariflar = lazy(() => import("@/Pages/Admin/Tariflar"))
 const AdminObunalar = lazy(() => import("@/Pages/Admin/Obunalar"))
 const AdminFoydalanuvchilar = lazy(() => import("@/Pages/Admin/Foydalanuvchilar"))
 const AdminQollabQuvvatlash = lazy(() => import("@/Pages/Admin/QollabQuvvatlash"))
-// 3D sex — Demo (sinov ma'lumotlari): backend va kirishsiz ishlaydi, three.js faqat shu sahifa ochilganda yuklanadi.
+// 3D Demo (sinov ma'lumotlari): backend va kirishsiz ishlaydi, three.js faqat shu sahifa ochilganda yuklanadi.
 const Demo3DSex = lazy(() => import("@/Pages/Demo3DSex"))
 
 function SahifaYuklanmoqda() {
@@ -55,7 +55,9 @@ export default function AppRouter() {
   return (
     <Suspense fallback={<SahifaYuklanmoqda />}>
     <Routes>
-      <Route path="/demo/3d-sex" element={<Demo3DSex />} />
+      <Route path="/demo/3d" element={<Demo3DSex />} />
+      {/* Eski manzil (saqlangan havolalar uchun) — yangi manzilga yo'naltiriladi */}
+      <Route path="/demo/3d-sex" element={<Navigate to="/demo/3d" replace />} />
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />

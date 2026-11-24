@@ -1,6 +1,9 @@
 // 3D sex — ma'lumot modeli (sahnadan alohida). Keyinchalik shu turlar Ye-Post'dan (ishlab chiqarish moduli) to'ldiriladi:
 // stanokning barqaror ID'si, texnik holati, joriy topshirig'i va oxirgi yangilanish vaqti aniq ajratilgan.
 // UI'siz va `@/` importlarisiz — testlarda ishlaydi.
+import type { RampaRaqami } from "./hudud.ts";
+
+export type { RampaRaqami };
 
 /** Stanok turi — 3D modeli shunga qarab tanlanadi. */
 export type StanokTuri = "kesish" | "cnc" | "qirra" | "burgilash" | "qadoqlash";
@@ -79,8 +82,8 @@ export type Reys = {
   raqam: string;
   /** Jo'natish — tayyor mahsulot olib ketadi; qabul — material olib keladi. */
   yonalish: "jonatish" | "qabul";
-  /** Qaysi rampaga turadi (1 — old tomon, tayyor mahsulot; 2 — chap darvoza, material ombori). */
-  rampa: 1 | 2;
+  /** Qaysi rampaga turadi: 1, 2 — old devor (tayyor mahsulot, jo'natish); 3, 4 — chap devor (material ombori, qabul). */
+  rampa: RampaRaqami;
   bosqich: ReysBosqichi;
   /** Joriy bosqich qachon boshlangan (ms, epoch) — sahna harakatni shu vaqtdan hisoblaydi. */
   boshlangan: number;

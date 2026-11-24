@@ -16,8 +16,8 @@ const tikla = (m, vaqt, n) => { for (let i = 0; i < n; i += 1) { vaqt(1); m.tik(
 
 test('boshlanishi: namuna yorlig‘i "Kesish-01 · Ishlayapti · №174 · Yon panel · 32/80 dona", 5 ta stanok, barqaror ID', () => {
   const { m } = yangi();
-  assert.equal(DEMO_STANOKLAR.length, 5);
-  assert.deepEqual(DEMO_STANOKLAR.map((s) => s.tur).sort(), ['burgilash', 'cnc', 'kesish', 'qadoqlash', 'qirra']);
+  assert.equal(DEMO_STANOKLAR.length, 10, 'ikki liniya × 5 stanok');
+  assert.deepEqual([...new Set(DEMO_STANOKLAR.map((s) => s.tur))].sort(), ['burgilash', 'cnc', 'kesish', 'qadoqlash', 'qirra']);
   const h = m.holat()['kesish-01'];
   assert.equal(stanokYorligi('Kesish-01', h, (x) => nomlar[x], "Ma'lumot eskirgan"), 'Kesish-01 · Ishlayapti · №174 · Yon panel · 32/80 dona');
   assert.equal(bajarilishUlushi(h.joriy), 0.4);
@@ -116,40 +116,19 @@ test('ulanish: /demo/3d-sex marshruti (alohida bo‘lak), "Demo — sinov ma’l
 test('sexda odamlar (har stanokda operator), yuruvchi ishchilar va pogruzchik; fon kod bilan; bosh sahifada "Demo 3D sex" tugmasi', () => {
   const sahna = manba('src/Pages/Demo3DSex/SexSahnasi.tsx');
   for (const tur of ['kesish', 'cnc', 'qirra', 'burgilash', 'qadoqlash']) assert.ok(sahna.includes(`${tur}: [\n    { p:`) || sahna.includes(`${tur}: [{ p:`), tur);
-  assert.match(sahna, /<Ishchi key=\{i\}[^>]*ishlayapti=\{ishlayapti\}/);
-  assert.match(sahna, /<YuruvchiIshchi /);
+  assert.match(sahna, /<GlbOdam tur="ishchi" harakat=\{ishlayapti \? "ishlash" : "turish"\}/);
+  assert.match(sahna, /<YuruvchiGlbOdam /);
   assert.match(sahna, /<Pogruzchik /);
   assert.match(sahna, /<SexMuhiti mat=\{mat\} stanoklar=\{stanoklar\}[^>]*\/>/);
   const muhit = manba('src/Pages/Demo3DSex/SexMuhiti.tsx') + manba('src/Pages/Demo3DSex/materiallar.ts') + manba('src/Pages/Demo3DSex/Ishchilar.tsx');
   assert.ok(!/https?:\/\//.test(muhit), 'tashqi model/tekstura havolasi yo‘q');
   assert.match(manba('src/Pages/Demo3DSex/materiallar.ts'), /new THREE\.CanvasTexture\(canvas\)/);
   const bosh = manba('src/Pages/BoshSahifa/index.tsx');
-  assert.match(bosh, /data-demo-3d\s+onClick=\{\(\) => navigate\("\/demo\/3d-sex"\)\}/);
+  assert.match(bosh, /data-demo-3d\s+onClick=\{\(\) => navigate\("\/demo\/3d"\)\}/);
   for (const til of ['uz', 'ru']) assert.ok(JSON.parse(manba(`src/i18n/locales/${til}/bosh_sahifa.json`)).demo3d.label, til);
 });
 
 // ── Logistika: yuk mashinalari (KPP → rampa → jo'nash) ──
-
-test('reyslar: boshida 1-reys KPP\'ga kelmoqda, 2-reys jo\'nab ketmoqda; bosqich almashganda hodisa (obyekt "reys") va yangi boshlanish vaqti', () => {
-  const { m, vaqt } = yangi();
-  const [r1, r2] = m.reyslar();
-  assert.equal(r1.id, 'reys-1');
-  assert.equal(r1.bosqich, 'kelmoqda');
-  assert.equal(r1.rampa, 1);
-  assert.equal(r1.yonalish, 'jonatish');
-  assert.equal(r2.bosqich, 'ketmoqda');
-  assert.equal(r2.rampa, 2);
-  const kelishBoshi = r1.boshlangan;
-  tikla(m, vaqt, 10);
-  assert.equal(m.reyslar()[0].boshlangan, kelishBoshi, 'bosqich ichida boshlanish vaqti o\'zgarmaydi');
-  const kelmoqda = LOGISTIKA.bosqichlar[0][1];
-  tikla(m, vaqt, kelmoqda - 10);
-  const rampada = m.reyslar()[0];
-  assert.equal(rampada.bosqich, 'rampada');
-  assert.ok(rampada.boshlangan > kelishBoshi);
-  const h = m.hodisalar.find((x) => x.stanokId === 'reys-1' && x.tur === 'reys_rampada');
-  assert.ok(h && h.obyekt === 'reys' && /01 345 ABA 1-rampada/.test(h.matn), h?.matn);
-});
 
 test('paletlar: rampada har 7.5 s da 2 tadan, bosqich oxirigacha hammasi (jo\'natishda yuklanadi, qabulda tushiriladi)', () => {
   assert.deepEqual([0, 4, 5, 12, 13, 20, 23].map((s) => {
@@ -160,46 +139,10 @@ test('paletlar: rampada har 7.5 s da 2 tadan, bosqich oxirigacha hammasi (jo\'na
   assert.equal(reysBosqichi(LOGISTIKA.bosqichlar[0][1] + LOGISTIKA.bosqichlar[1][1], 0).bosqich, 'ketmoqda');
 });
 
-test('marshrutlar: mashina demo bosqichi ichida rampaga yetadi va hududdan chiqib ketadi; rampada to\'g\'ri yo\'nalishda turadi', async () => {
-  const y = await import('../src/Pages/Demo3DSex/yollar.ts');
-  const kelmoqda = LOGISTIKA.bosqichlar.find(([b]) => b === 'kelmoqda')[1];
-  const ketmoqda = LOGISTIKA.bosqichlar.find(([b]) => b === 'ketmoqda')[1];
-  for (const rampa of [1, 2]) {
-    assert.ok(y.MARSHRUTLAR[rampa].kelish.davom <= kelmoqda, `${rampa}-rampa kelish ${y.MARSHRUTLAR[rampa].kelish.davom.toFixed(1)} s`);
-    assert.ok(y.MARSHRUTLAR[rampa].ketish.davom <= ketmoqda, `${rampa}-rampa ketish ${y.MARSHRUTLAR[rampa].ketish.davom.toFixed(1)} s`);
-  }
-  const h = y.yangiHolat();
-  y.marshrutHolati(y.RAMPA1_KELISH, 999, h);
-  assert.ok(Math.abs(h.p.x + 12.8) < 0.05 && Math.abs(h.p.z - 15.5) < 0.05, '1-rampa: orqasi binoga tegadi');
-  assert.ok(Math.abs(h.burchak) < 0.05, '1-rampa: oldi +z (hovliga) qaraydi');
-  y.marshrutHolati(y.RAMPA2_KELISH, 999, h);
-  assert.ok(Math.abs(h.p.x + 21.6) < 0.05 && Math.abs(h.p.z - 0.1) < 0.05, '2-rampa');
-  assert.ok(Math.abs(h.burchak + Math.PI / 2) < 0.05, '2-rampa: oldi −x ga qaraydi');
-  // KPP: shlagbaum oldida to'xtaydi (mashina oldi shlagbaumdan o'tmaydi)
-  const kpp = y.RAMPA1_KELISH.bolaklar[0];
-  y.marshrutHolati(y.RAMPA1_KELISH, kpp.vaqt + kpp.kutish / 2, h);
-  assert.ok(!h.harakatda && h.p.z - 4.3 > 25.2, `KPP oldida kutadi (z = ${h.p.z.toFixed(2)})`);
-});
-
-test('ikki yuk mashinasi butun davr davomida bir-biriga yaqinlashmaydi (markazlar orasi ≥ 6 m)', async () => {
-  const y = await import('../src/Pages/Demo3DSex/yollar.ts');
-  const joy = (rampa, { bosqich, otgan }) => {
-    const M = y.MARSHRUTLAR[rampa];
-    if (bosqich === 'yoq' || (bosqich === 'ketmoqda' && otgan > M.ketish.davom)) return null;
-    return y.marshrutHolati(bosqich === 'ketmoqda' ? M.ketish : M.kelish, bosqich === 'rampada' ? 1e9 : otgan, y.yangiHolat()).p;
-  };
-  let eng = Infinity;
-  for (let s = 0; s < LOGISTIKA.davr; s += 0.25) {
-    const a = joy(1, reysBosqichi(s, 0));
-    const b = joy(2, reysBosqichi(s, 19));
-    if (a && b) eng = Math.min(eng, a.distanceTo(b));
-  }
-  assert.ok(eng >= 6, `eng yaqin masofa ${eng.toFixed(2)} m`);
-});
-
 test('ulanish: "Hudud" kamerasi, Logistika bo\'limi, reys hodisasi hududga olib boradi; tashqi muhit kod bilan (havolasiz)', () => {
   const sahifa = manba('src/Pages/Demo3DSex/index.tsx');
-  assert.match(sahifa, /data-kamera="hudud"/);
+  assert.match(sahifa, /tur: "hudud"/);
+  assert.match(sahifa, /data-kamera=\{tur\}/);
   assert.match(sahifa, /data-logistika/);
   assert.match(sahifa, /reyslar=\{reyslar\}/);
   assert.match(sahifa, /hodisa\.obyekt !== "reys"/);

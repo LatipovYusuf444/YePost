@@ -196,19 +196,175 @@ const uyFasad = () => tekstura(256, 128, (ctx, w, h) => {
   ctx.fillRect(0, h - 8, w, 8);
 });
 
-/** Panjara to'ri (shaffof, 1 tekstura = 2.5 m eni × 2.2 m). */
-const panjara = () => tekstura(128, 128, (ctx, w, h) => {
+/**
+ * Payvandlangan to'r panel (3D panjara, shaffof): vertikal simlar har 5 sm, gorizontal — har 20 sm, ikkita V-bukilma (qalinroq, yorug'
+ * tushadigan qirra). 1 tekstura = 2.5 m eni × 2.03 m balandlik.
+ */
+const panjara = () => tekstura(256, 256, (ctx, w, h) => {
   ctx.clearRect(0, 0, w, h);
-  ctx.strokeStyle = "rgba(70,90,80,0.95)";
+  ctx.strokeStyle = "rgba(48,78,62,0.9)";
+  ctx.lineWidth = 1.6;
+  for (let i = 0; i <= 50; i++) {
+    const x = (i * w) / 50;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+  }
+  ctx.lineWidth = 2.2;
+  for (let i = 0; i <= 10; i++) {
+    const y = (i * h) / 10;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+  // V-bukilmalar: yuqori qismi yorug', pastki qismi soyali
+  for (const y of [h * 0.3, h * 0.72]) {
+    ctx.fillStyle = "rgba(96,128,110,0.95)";
+    ctx.fillRect(0, y - 5, w, 4);
+    ctx.fillStyle = "rgba(30,52,40,0.95)";
+    ctx.fillRect(0, y - 1, w, 4);
+  }
+  // Ustki qirra (sim uchlari)
+  ctx.fillStyle = "rgba(48,78,62,0.95)";
+  ctx.fillRect(0, 0, w, 3);
+});
+
+/** Beton plita (1 tekstura = 6 × 6 m, choklar har 3 m): ofis va maishiy blok atrofi, orqa hovli maydonlari. */
+const betonPlita = () => tekstura(256, 256, (ctx, w, h) => {
+  ctx.fillStyle = "#b9b6ae";
+  ctx.fillRect(0, 0, w, h);
+  doglar(ctx, w, h, 40, "rgba(255,255,255,0.07)", "rgba(60,60,55,0.09)", 71);
+  donalar(ctx, w, h, 7000, (r) => { const v = Math.round(140 + r() * 70); return `rgba(${v},${v - 2},${v - 8},0.45)`; }, 72);
+  ctx.strokeStyle = "rgba(85,82,76,0.65)";
   ctx.lineWidth = 2;
-  for (let i = 0; i <= 16; i++) {
-    ctx.beginPath(); ctx.moveTo(i * 8, 0); ctx.lineTo(i * 8, h); ctx.stroke();
+  for (const k of [0, w / 2]) {
+    ctx.beginPath(); ctx.moveTo(k, 0); ctx.lineTo(k, h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, k); ctx.lineTo(w, k); ctx.stroke();
   }
-  for (let i = 0; i <= 8; i++) {
-    ctx.beginPath(); ctx.moveTo(0, i * 16); ctx.lineTo(w, i * 16); ctx.stroke();
+});
+
+/** Qizil g'isht (1 tekstura = 2 × 1 m): kotelxona, darvoza ustunlari. */
+const gisht = () => tekstura(256, 128, (ctx, w, h) => {
+  const rnd = urugli(81);
+  ctx.fillStyle = "#cfc6b8";
+  ctx.fillRect(0, 0, w, h);
+  const qator = h / 13; // 1 m da 13 qator (65 + 10 mm)
+  const uz = w / 8; // 25 sm g'isht
+  for (let q = 0; q < 13; q++) {
+    for (let i = -1; i < 9; i++) {
+      const x = i * uz + (q % 2 ? uz / 2 : 0);
+      const ton = 0.85 + rnd() * 0.3;
+      ctx.fillStyle = `rgb(${Math.round(160 * ton)},${Math.round(74 * ton)},${Math.round(52 * ton)})`;
+      ctx.fillRect(x + 1, q * qator + 1, uz - 2, qator - 2);
+    }
   }
-  ctx.lineWidth = 6;
-  ctx.beginPath(); ctx.moveTo(0, 3); ctx.lineTo(w, 3); ctx.stroke();
+});
+
+/** "STOP" belgisi: qizil sakkizburchak, oq hoshiya va yozuv (sakkizburchak geometriyaga mos). */
+const stopBelgi = () => tekstura(256, 256, (ctx, w, h) => {
+  const sakkiz = (r: number) => {
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const b = Math.PI / 8 + (i * Math.PI) / 4;
+      ctx.lineTo(w / 2 + Math.cos(b) * r, h / 2 + Math.sin(b) * r);
+    }
+    ctx.closePath();
+  };
+  ctx.fillStyle = "#ffffff"; sakkiz(128); ctx.fill();
+  ctx.fillStyle = "#c81e1e"; sakkiz(116); ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 74px Arial, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("STOP", w / 2, h / 2 + 4);
+}, false);
+
+/** Avtobus bekati belgisi: ko'k kvadrat, oq avtobus tasviri. */
+const avtobusBelgi = () => tekstura(128, 128, (ctx, w, h) => {
+  ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = "#1d4ed8"; ctx.fillRect(5, 5, w - 10, h - 10);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(26, 34, 76, 50);
+  ctx.fillStyle = "#1d4ed8";
+  for (let i = 0; i < 3; i++) ctx.fillRect(32 + i * 23, 40, 18, 16);
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath(); ctx.arc(42, 88, 8, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(86, 88, 8, 0, Math.PI * 2); ctx.fill();
+}, false);
+
+/** Navis fasadi (KPP): oq panel, ko'k tasma va "KPP" yozuvi (1 tekstura = navisning old qirrasi butunligicha). */
+const navisFasad = () => tekstura(1024, 64, (ctx, w, h) => {
+  ctx.fillStyle = "#f1f5f9"; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = "#1e3a8a"; ctx.fillRect(0, h - 14, w, 14);
+  ctx.fillStyle = "#0ea5e9"; ctx.fillRect(0, h - 18, w, 4);
+  ctx.fillStyle = "#1e3a8a";
+  ctx.font = "bold 40px Arial, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("KPP", w / 2, h / 2 - 6);
+  ctx.fillRect(w / 2 - 150, h / 2 - 8, 70, 4);
+  ctx.fillRect(w / 2 + 80, h / 2 - 8, 70, 4);
+}, false);
+
+/** Bekatdagi yoritilgan reklama paneli (mavhum rasm, yozuvsiz). */
+const reklama = () => tekstura(128, 192, (ctx, w, h) => {
+  const g = ctx.createLinearGradient(0, 0, w, h);
+  g.addColorStop(0, "#0ea5e9");
+  g.addColorStop(1, "#4338ca");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = "rgba(255,255,255,0.9)";
+  ctx.beginPath(); ctx.arc(w * 0.5, h * 0.38, 30, 0, Math.PI * 2); ctx.fill();
+  ctx.fillRect(18, h * 0.68, w - 36, 10);
+  ctx.fillRect(30, h * 0.76, w - 60, 8);
+}, false);
+
+/** Do'kon qavati (1 tekstura = 6 m × 4.2 m): vitrina, eshik, yuqorida rangli peshtaxta tasmasi. */
+const dokonFasad = () => tekstura(256, 180, (ctx, w, h) => {
+  ctx.fillStyle = "#e7e2d8"; ctx.fillRect(0, 0, w, h);
+  // Peshtaxta tasmasi (ko'k-yashil), ustida mavhum yozuv bloklari
+  ctx.fillStyle = "#0f766e";
+  ctx.fillRect(0, h * 0.06, w, h * 0.17);
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
+  for (let i = 0; i < 5; i++) ctx.fillRect(w * 0.12 + i * w * 0.14, h * 0.11, w * 0.08, h * 0.07);
+  const g = ctx.createLinearGradient(0, h * 0.3, 0, h * 0.95);
+  g.addColorStop(0, "#9fc3dc");
+  g.addColorStop(1, "#2a4256");
+  ctx.fillStyle = g;
+  ctx.fillRect(w * 0.04, h * 0.3, w * 0.92, h * 0.66);
+  ctx.fillStyle = "#374151";
+  for (const x of [0.04, 0.35, 0.65, 0.96]) ctx.fillRect(w * x - 2, h * 0.3, 4, h * 0.66);
+  ctx.fillRect(w * 0.04, h * 0.3, w * 0.92, 3);
+  ctx.fillStyle = "rgba(250,240,210,0.35)";
+  ctx.fillRect(w * 0.06, h * 0.55, w * 0.27, h * 0.4);
+});
+
+/** G'isht ko'p qavatli uy (1 tekstura = 3 seksiya × 2 qavat = 9 × 6 m): sariq g'isht, oq deraza ramalari, balkonlar. */
+const gishtFasad = () => tekstura(384, 256, (ctx, w, h) => {
+  const rnd = urugli(97);
+  ctx.fillStyle = "#c9a27a"; ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = "rgba(120,84,56,0.28)";
+  ctx.lineWidth = 1;
+  for (let y = 0; y < h; y += 5) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+  const sw = w / 3;
+  const qh = h / 2;
+  for (let q = 0; q < 2; q++) {
+    for (let s = 0; s < 3; s++) {
+      const dx = s * sw + sw * 0.2;
+      const dy = q * qh + qh * 0.18;
+      const g = ctx.createLinearGradient(dx, dy, dx, dy + qh * 0.55);
+      const yoniq = rnd() < 0.1;
+      g.addColorStop(0, yoniq ? "#f5d48a" : "#a6c3d8");
+      g.addColorStop(1, yoniq ? "#d39b45" : "#30475c");
+      ctx.fillStyle = "#f4f1ea";
+      ctx.fillRect(dx - 4, dy - 4, sw * 0.6 + 8, qh * 0.55 + 8);
+      ctx.fillStyle = g;
+      ctx.fillRect(dx, dy, sw * 0.6, qh * 0.55);
+      ctx.fillStyle = "#f4f1ea";
+      ctx.fillRect(dx + sw * 0.3 - 2, dy, 4, qh * 0.55);
+      if (s === 1) {
+        ctx.fillStyle = "rgba(235,230,220,0.95)";
+        ctx.fillRect(s * sw + sw * 0.08, q * qh + qh * 0.66, sw * 0.84, qh * 0.24);
+      }
+    }
+    ctx.fillStyle = "rgba(110,80,55,0.35)";
+    ctx.fillRect(0, q * qh + qh - 4, w, 4);
+  }
 });
 
 /** Shlagbaum strelasi: qizil-oq chiziqlar. */
@@ -292,7 +448,7 @@ export function binoGeometriyasi(w: number, h: number, d: number, tileW: number,
 }
 
 /** Fasad turlari va bitta tekstura necha metrni qoplaydi. */
-export const FASAD_OLCHAMI = { panel: [12, 12], ofis: [6, 7], ombor: [6, 6], uy: [8, 3.2] } as const;
+export const FASAD_OLCHAMI = { panel: [12, 12], gisht: [9, 6], ofis: [6, 7], ombor: [6, 6], uy: [8, 3.2], dokon: [6, 4.2] } as const;
 export type FasadTuri = keyof typeof FASAD_OLCHAMI;
 
 export function useShaharMateriallari() {
@@ -303,6 +459,11 @@ export function useShaharMateriallari() {
     const trotuarT = trotuar();
     const panjaraT = panjara();
     const uzuqT = uzuqChiziq();
+    const betonT = betonPlita();
+    const gishtT = gisht();
+    const reklamaT = reklama();
+    /** Yer ustidagi belgilar (chiziq, zebra, strelka): asfalt bilan "titrash" bo'lmasin — polygonOffset. */
+    const belgi = (color: string) => new THREE.MeshStandardMaterial({ color, roughness: 0.65, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
     return {
       asfaltT,
       maysaT,
@@ -317,13 +478,39 @@ export function useShaharMateriallari() {
       chiziqOq: m("#f1f5f9", { roughness: 0.7 }),
       chiziqSariq: m("#facc15", { roughness: 0.7 }),
       uzuqChiziq: new THREE.MeshStandardMaterial({ map: uzuqT, transparent: true, roughness: 0.7, depthWrite: false }),
-      panjara: new THREE.MeshStandardMaterial({ map: panjaraT, transparent: true, side: THREE.DoubleSide, roughness: 0.6, metalness: 0.3, depthWrite: false }),
-      panjaraUstun: m("#3f5a4c", { roughness: 0.5, metalness: 0.4 }),
+      panjara: new THREE.MeshStandardMaterial({ map: panjaraT, transparent: true, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.35, depthWrite: false }),
+      panjaraUstun: m("#3a5646", { roughness: 0.45, metalness: 0.45 }),
+      betonT,
+      gishtT,
+      reklamaT,
+      /** Beton plita maydonlari. */
+      betonMaydon: m("#ffffff", { map: betonT, roughness: 0.95 }),
+      /** Hudud ichidagi piyoda yo'laklari (och plitka). */
+      piyoda: m("#f4f1ea", { map: trotuarT, roughness: 0.9 }),
+      belgiOq: belgi("#eef2f6"),
+      belgiSariq: belgi("#f5c518"),
+      gisht: m("#ffffff", { map: gishtT, roughness: 0.92 }),
+      /** Navis ostidagi LED panellar. */
+      ledPanel: m("#f8fafc", { emissive: "#eef4ff", emissiveIntensity: 1.2, roughness: 0.4 }),
+      svetoforYashil: m("#14532d", { emissive: "#22c55e", emissiveIntensity: 1.6, roughness: 0.3 }),
+      svetoforOchiq: m("#3f1212", { emissive: "#7f1d1d", emissiveIntensity: 0.15, roughness: 0.3 }),
+      stopBelgi: m("#ffffff", { map: stopBelgi(), roughness: 0.45 }),
+      avtobusBelgi: m("#ffffff", { map: avtobusBelgi(), roughness: 0.45 }),
+      navisFasad: m("#ffffff", { map: navisFasad(), roughness: 0.4, metalness: 0.15 }),
+      reklama: m("#ffffff", { map: reklamaT, emissive: "#ffffff", emissiveMap: reklamaT, emissiveIntensity: 0.45, roughness: 0.3 }),
+      /** Tom jihozlari, parapetlar (uzoq shahar). */
+      tomJihoz: m("#a3a8ae", { roughness: 0.85 }),
+      /** Alyumin rom (deraza, eshik, bekat karkasi). */
+      alyumin: m("#aab2bd", { roughness: 0.35, metalness: 0.7 }),
+      /** Sendvich-panel (KPP devorlari, kotelxona tomi). */
+      sendvich: m("#e7ebef", { roughness: 0.55, metalness: 0.15 }),
       fasad: {
         panel: m("#ffffff", { map: panelFasad(), roughness: 0.85 }),
         ofis: m("#ffffff", { map: ofisFasad(), roughness: 0.15, metalness: 0.5 }),
         ombor: m("#ffffff", { map: omborFasad(), roughness: 0.5, metalness: 0.3 }),
         uy: m("#ffffff", { map: uyFasad(), roughness: 0.9 }),
+        gisht: m("#ffffff", { map: gishtFasad(), roughness: 0.88 }),
+        dokon: m("#ffffff", { map: dokonFasad(), roughness: 0.4, metalness: 0.2 }),
       } as Record<FasadTuri, THREE.MeshStandardMaterial>,
       tomTekis: m("#8b9096", { roughness: 0.9 }),
       tomlar: [m("#9a3b2a", { roughness: 0.6, metalness: 0.2 }), m("#3f6f5a", { roughness: 0.6, metalness: 0.3 }), m("#6b7280", { roughness: 0.6, metalness: 0.3 })],
@@ -355,7 +542,11 @@ export function useShaharMateriallari() {
   useEffect(() => () => {
     Object.values(mat).forEach((qiymat) => {
       const royxat = Array.isArray(qiymat) ? qiymat : qiymat instanceof THREE.Material || qiymat instanceof THREE.Texture ? [qiymat] : qiymat && typeof qiymat === "object" ? Object.values(qiymat) : [];
-      royxat.forEach((x) => { if (x instanceof THREE.Material || x instanceof THREE.Texture) x.dispose(); });
+      royxat.forEach((x) => {
+        // Material.dispose() teksturani bo'shatmaydi — kod bilan chizilgan xaritalar ham alohida bo'shatiladi.
+        if (x instanceof THREE.MeshStandardMaterial) { x.map?.dispose(); x.emissiveMap?.dispose(); }
+        if (x instanceof THREE.Material || x instanceof THREE.Texture) x.dispose();
+      });
     });
   }, [mat]);
   return mat;
