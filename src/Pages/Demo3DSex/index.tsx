@@ -1,11 +1,12 @@
 import { Component, Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Box, Building2, Factory, FlaskConical, LoaderCircle, MapPinned, Pause, Play, RotateCcw, ScanSearch, Shirt, Truck, X, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Bot, Box, Building2, Factory, FlaskConical, LoaderCircle, MapPinned, Moon, Pause, Play, RotateCcw, ScanSearch, Shirt, Sun, SunMoon, Truck, Warehouse, X, type LucideIcon } from "lucide-react";
 import { DEMO_SEX_NS } from "./matnlar";
 import { DemoSexManbasi, DEMO_STANOKLAR } from "./demoManbasi";
-import { HOLAT_RANGI, bajarilishUlushi, korinadiganHolat, miqdorMatni, type Reys, type SexHodisasi, type SexHolati, type StanokHolati, type StanokTavsifi, type Topshiriq } from "./sexModeli";
+import { HOLAT_RANGI, bajarilishUlushi, korinadiganHolat, miqdorMatni, type Reys, type SexHodisasi, type SkladHolati, type SexHolati, type StanokHolati, type StanokTavsifi, type Topshiriq } from "./sexModeli";
 import type { KameraBuyrugi } from "./SexSahnasi";
+import { kunFazasi, quyoshHolati, soatMatni, toshkentVaqti, type KunFazasi, type VaqtRejimi } from "./kunTun";
 
 // 3D Demo sahifasi (/demo/3d; eski /demo/3d-sex shu yerga yo'naltiriladi). Ma'lumot: DemoSexManbasi (sinov ma'lumotlari); sahna (three.js) alohida bo'lakda yuklanadi.
 // Backend, autentifikatsiya va ishlab chiqarish API'lariga tegmaydi.
@@ -66,8 +67,52 @@ const KAMERA_TUGMALARI: { tur: KameraTuri; kalit: string; Belgi: LucideIcon }[] 
   { tur: "yuqori", kalit: "camera.top", Belgi: ScanSearch },
   { tur: "ofis", kalit: "camera.office", Belgi: Building2 },
   { tur: "maishiy", kalit: "camera.household", Belgi: Shirt },
+  { tur: "avto", kalit: "camera.automated", Belgi: Bot },
+  { tur: "sklad", kalit: "camera.warehouse", Belgi: Warehouse },
   { tur: "hudud", kalit: "camera.site", Belgi: MapPinned },
 ];
+
+const VAQT_REJIMLARI: VaqtRejimi[] = ["avto", "kun", "tun"];
+const FAZA_BELGISI: Record<KunFazasi, { Belgi: LucideIcon; rang: string; kalit: string }> = {
+  kun: { Belgi: Sun, rang: "text-amber-500", kalit: "vaqt.kunFaza" },
+  tong: { Belgi: SunMoon, rang: "text-orange-500", kalit: "vaqt.tong" },
+  shom: { Belgi: SunMoon, rang: "text-orange-600", kalit: "vaqt.shom" },
+  tun: { Belgi: Moon, rang: "text-indigo-500", kalit: "vaqt.tunFaza" },
+};
+
+/** Kun/tun: jonli Toshkent soati (quyosh/oy belgisi) va "Avto / Kun / Tun" tanlovi. */
+function VaqtBoshqaruvi({ hozir, rejim, onRejim }: { hozir: number; rejim: VaqtRejimi; onRejim: (rejim: VaqtRejimi) => void }) {
+  const { t } = useTranslation(DEMO_SEX_NS);
+  const vaqt = toshkentVaqti(hozir);
+  const quyosh = quyoshHolati(hozir);
+  const faza: KunFazasi = rejim === "avto" ? kunFazasi(quyosh.balandlik, quyosh.azimut < 180).faza : rejim;
+  const { Belgi, rang, kalit } = FAZA_BELGISI[faza];
+  return (
+    <div data-vaqt className="pointer-events-auto flex max-w-full items-center gap-1 rounded-2xl border border-white/70 bg-white/90 p-1 shadow-md backdrop-blur" role="group" aria-label={t("vaqt.title")}>
+      <span data-vaqt-soat data-faza={faza} title={t("vaqt.avtoIzoh")} className="inline-flex h-8 items-center gap-1.5 whitespace-nowrap px-2 text-xs font-bold text-slate-600 sm:h-9 sm:text-sm">
+        <Belgi size={15} className={rang} aria-hidden="true" />
+        {t("vaqt.toshkent")}
+        <time className="font-black tabular-nums text-slate-900">{soatMatni(vaqt)}</time>
+        <span className="sr-only">{t(kalit)}</span>
+      </span>
+      {VAQT_REJIMLARI.map((tur) => {
+        const faol = rejim === tur;
+        return (
+          <button
+            key={tur}
+            type="button"
+            data-vaqt-rejimi={tur}
+            aria-pressed={faol}
+            onClick={() => onRejim(tur)}
+            className={`inline-flex h-8 items-center whitespace-nowrap rounded-xl px-2.5 text-xs font-bold transition sm:h-9 sm:text-sm ${faol ? "bg-slate-800 text-white shadow-sm" : "text-slate-700 hover:bg-blue-50 hover:text-blue-700"}`}
+          >
+            {t(`vaqt.${tur}`)}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 /** Stanoklar liniyalar bo'yicha: 1-liniya — sexning orqa yarmi (z < 0), 2-liniya — old yarmi (z ≥ 0). */
 function liniyalargaAjratish(stanoklar: StanokTavsifi[]) {
@@ -132,12 +177,14 @@ export default function Demo3DSex() {
   const [manba] = useState(() => new DemoSexManbasi());
   const [holatlar, setHolatlar] = useState<SexHolati>(() => manba.holat());
   const [reyslar, setReyslar] = useState<Reys[]>(() => manba.reyslar?.() ?? []);
+  const [sklad, setSklad] = useState<SkladHolati | undefined>(() => manba.sklad?.());
   const [hodisalar, setHodisalar] = useState<SexHodisasi[]>([]);
   const [ishlayapti, setIshlayapti] = useState(false);
   const [soniya, setSoniya] = useState(0);
   const [hozir, setHozir] = useState(() => Date.now());
   const [tanlangan, setTanlangan] = useState<string | null>(null);
   const [kamera, setKamera] = useState<KameraBuyrugi>({ tur: "umumiy", n: 0 });
+  const [vaqtRejimi, setVaqtRejimi] = useState<VaqtRejimi>("avto");
   const [webgl] = useState(webglBormi);
 
   // Demo manbai: obuna + taymer (sahifadan chiqilganda to'xtaydi).
@@ -145,6 +192,7 @@ export default function Demo3DSex() {
     const yangila = () => {
       setHolatlar(manba.holat());
       setReyslar(manba.reyslar?.() ?? []);
+      setSklad(manba.sklad?.());
       setHodisalar([...manba.hodisalar]);
       setIshlayapti(manba.ishlayapti);
       setSoniya(manba.soniya);
@@ -158,7 +206,7 @@ export default function Demo3DSex() {
     };
   }, [manba]);
 
-  // "N s oldin" yozuvi demo pauzada bo'lsa ham yurib tursin.
+  // "N s oldin" yozuvi va Toshkent soati demo pauzada bo'lsa ham yurib tursin.
   useEffect(() => {
     const taymer = window.setInterval(() => setHozir(Date.now()), 1000);
     return () => window.clearInterval(taymer);
@@ -193,7 +241,7 @@ export default function Demo3DSex() {
           <FlaskConical size={14} aria-hidden="true" />
           {t("demoBadge")}
         </span>
-        <Link to="/" className="ml-auto inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 transition hover:border-blue-300 hover:text-blue-700">
+        <Link to="/sozlamalar?bolim=demo3d" className="ml-auto inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 transition hover:border-blue-300 hover:text-blue-700">
           <ArrowLeft size={16} aria-hidden="true" />
           {t("back")}
         </Link>
@@ -205,7 +253,7 @@ export default function Demo3DSex() {
           {webgl ? (
             <SahnaXatosi zaxira={<p className="p-6 text-sm font-semibold text-slate-600">{t("noWebgl")}</p>}>
               <Suspense fallback={<div role="status" className="flex h-full items-center justify-center gap-2 text-sm font-bold text-slate-500"><LoaderCircle size={20} className="animate-spin text-blue-600" />{t("loading")}</div>}>
-                <SexSahnasi stanoklar={DEMO_STANOKLAR} holatlar={holatlar} reyslar={reyslar} tanlangan={tanlangan} onTanlash={tanlash} kamera={kamera} />
+                <SexSahnasi stanoklar={DEMO_STANOKLAR} holatlar={holatlar} reyslar={reyslar} sklad={sklad} tanlangan={tanlangan} onTanlash={tanlash} kamera={kamera} vaqtRejimi={vaqtRejimi} />
               </Suspense>
             </SahnaXatosi>
           ) : (
@@ -235,6 +283,7 @@ export default function Demo3DSex() {
                   );
                 })}
               </div>
+              <VaqtBoshqaruvi hozir={hozir} rejim={vaqtRejimi} onRejim={setVaqtRejimi} />
               {!ishlayapti && (
                 <span data-pauza-belgi className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1.5 text-xs font-black text-white shadow">
                   <Pause size={13} aria-hidden="true" />{t("controls.paused")}
@@ -342,6 +391,32 @@ export default function Demo3DSex() {
               })}
             </div>
           </section>
+
+          {sklad && (
+            <section data-sklad className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="inline-flex items-center gap-1.5 text-sm font-black uppercase tracking-wide text-slate-600"><Warehouse size={15} className="text-teal-600" aria-hidden="true" />{t("warehouse.title")}</h2>
+                <button type="button" onClick={() => { setTanlangan(null); kameraga("sklad"); }} className="text-xs font-bold text-blue-700 hover:text-blue-800">{t("warehouse.show")}</button>
+              </div>
+              <div className="mt-2 flex items-baseline justify-between gap-2">
+                <span data-sklad-palet className="text-lg font-black tabular-nums text-slate-900">{t("warehouse.pallets", { a: sklad.palet, b: sklad.sigim })}</span>
+                <span className="text-xs font-bold text-slate-500">{t("warehouse.fill")}: {Math.round((sklad.palet / Math.max(1, sklad.sigim)) * 100)}%</span>
+              </div>
+              <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-valuemin={0} aria-valuemax={sklad.sigim} aria-valuenow={sklad.palet}>
+                <div className="h-full rounded-full bg-teal-500 transition-[width] duration-700" style={{ width: `${Math.round((sklad.palet / Math.max(1, sklad.sigim)) * 100)}%` }} />
+              </div>
+              <dl className="mt-3 grid grid-cols-2 gap-2 text-center">
+                <div className="rounded-xl bg-emerald-50 px-2 py-1.5">
+                  <dt className="text-[10.5px] font-bold uppercase tracking-wide text-emerald-700">{t("warehouse.in")}</dt>
+                  <dd className="text-base font-black tabular-nums text-emerald-800">+{sklad.kirim}</dd>
+                </div>
+                <div className="rounded-xl bg-sky-50 px-2 py-1.5">
+                  <dt className="text-[10.5px] font-bold uppercase tracking-wide text-sky-700">{t("warehouse.out")}</dt>
+                  <dd className="text-base font-black tabular-nums text-sky-800">−{sklad.chiqim}</dd>
+                </div>
+              </dl>
+            </section>
+          )}
 
           {reyslar.length > 0 && (
             <section data-logistika className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">

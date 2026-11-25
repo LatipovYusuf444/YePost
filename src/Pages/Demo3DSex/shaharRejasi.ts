@@ -4,6 +4,7 @@
 import {
   ASOSIY_YOL,
   AVTOBUS_BEKATI,
+  AVTO_SEX,
   DARVOZA,
   GALEREYA,
   HUDUD,
@@ -15,6 +16,7 @@ import {
   OFIS,
   ORQA_YOL,
   SEX,
+  SKLAD,
   TASHQI_TURARGOH,
 } from "./hudud.ts";
 
@@ -49,12 +51,14 @@ export const TROTUAR_ENI = 1.7;
 
 // ── Hudud ichidagi binolar va inshootlar (oyoq izlari) ──
 
-/** Boshqa fayllar chizadigan binolar: ishlab chiqarish (SexMuhiti), ofis (Ofis), maishiy blok va galereya (Maishiy). Bu yerda bo'sh qoladi. */
+/** Boshqa fayllar chizadigan binolar: ishlab chiqarish (SexMuhiti), 2-sex (AvtoSex), ofis (Ofis), maishiy blok va galereya (Maishiy). Bu yerda bo'sh qoladi. */
 export const BINOLAR_IZI = {
   sex: tb(-SEX.eni / 2, SEX.eni / 2, -SEX.chuqurlik / 2, SEX.chuqurlik / 2),
+  avtoSex: tb(AVTO_SEX.x0, AVTO_SEX.x1, AVTO_SEX.z0, AVTO_SEX.z1),
   ofis: tb(OFIS.x0, OFIS.x1, OFIS.z0, OFIS.z1),
   maishiy: tb(MAISHIY.x0, MAISHIY.x1, MAISHIY.z0, MAISHIY.z1),
   galereya: tb(GALEREYA.x0, GALEREYA.x1, GALEREYA.z0, GALEREYA.z1),
+  sklad: tb(SKLAD.x0, SKLAD.x1, SKLAD.z0, SKLAD.z1),
 } as const;
 
 /** KPP binosi (orolda). */
@@ -71,15 +75,18 @@ export const NAVIS_USTUNLARI: ReadonlyArray<readonly [number, number]> = [
   [-8.2, 47.5], [-1.7, 47.5], [1.7, 47.5], [8.2, 47.5],
 ];
 
-/** Orqa hovli jihozlari (oyoq izlari — daraxt va chiroqlar bularga tushmaydi). */
+/** 2-sex ortidagi xizmat yo'li (asfalt): chap qatordan orqa hovliga, z −49…−41. Orqa hovli jihozlari undan orqada (z < −49). */
+export const XIZMAT_YOLI = tb(-SEX.eni / 2, 56, -49, AVTO_SEX.z0);
+
+/** Orqa hovli jihozlari (oyoq izlari — daraxt va chiroqlar bularga tushmaydi). Hammasi ORQA_HOVLI ichida, xizmat yo'lidan orqada. */
 export const ORQA_JIHOZLAR = {
-  kotelxona: tb(-22, -12, -33, -26),
-  mori: tb(-11, -9.4, -30.8, -29.2),
-  gazShkafi: tb(-26.2, -24.8, -30.1, -28.9),
-  silos: tb(7.5, 12.5, -31.5, -26.5),
-  transformator: tb(43, 51, -34.5, -28),
-  konteynerlar: tb(22.6, 30.6, -22.4, -20),
-  paletlar: tb(15.2, 20.6, -21.6, -19.4),
+  kotelxona: tb(-22, -12, -61, -54),
+  mori: tb(-11, -9.4, -58.8, -57.2),
+  gazShkafi: tb(-26.2, -24.8, -58.1, -56.9),
+  silos: tb(7.5, 12.5, -59.5, -54.5),
+  transformator: tb(43, 51, -62.5, -56),
+  konteynerlar: tb(22.6, 30.6, -54.4, -52),
+  paletlar: tb(15.2, 20.6, -53.6, -51.4),
 } as const;
 
 /** Bayroqlar (ofis kirishi oldida): o'rtadagisi — O'zbekiston bayrog'i (balandroq), yonida ikkita neytral korxona bayrog'i. */
@@ -93,18 +100,20 @@ export const BAYROQLAR = [
 
 /** Hudud ichidagi asfalt (yuk mashinalari yuradigan joylar). Bir-birining ustiga tushmaydi. */
 export const HUDUD_ASFALTI: readonly Tortburchak[] = [
-  // Old hovli: darvozadan rampalargacha va kutish maydonigacha (x −38…44, z 15…48)
-  tb(-38, 44, SEX.chuqurlik / 2, HUDUD.old),
+  // Old hovli: darvozadan sklad rampalarigacha va kutish maydonigacha (x −38…124, z 15…48)
+  tb(-38, HUDUD.ong - 4, SEX.chuqurlik / 2, HUDUD.old),
+  // Sklad oldidagi rampa chizig'i (z 14…15)
+  tb(SKLAD.x0, SKLAD.x1, SKLAD.z1, SEX.chuqurlik / 2),
+  // Elektrokar yo'lagi: sex o'ng tomonidan sklad g'arbiy darvozasigacha (z 8…15)
+  tb(SEX.eni / 2, SKLAD.x0, 8, SEX.chuqurlik / 2),
   // Chap qatorga burilish (ofis bilan sex orasida)
   tb(-48, -38, SEX.chuqurlik / 2, OFIS.z0),
   // Ofis oldidagi maydoncha
   tb(-48, -38, OFIS.z1, HUDUD.old),
-  // Chap qator: 3- va 4-rampalarga (x −48…−32, z −26…15)
-  tb(-48, -SEX.eni / 2, -26, SEX.chuqurlik / 2),
-  // Sex orqasidagi xizmat yo'li (orqa hovliga)
-  tb(-SEX.eni / 2, 36, -24, -SEX.chuqurlik / 2),
-  // Yuk mashinalari kutish maydoni
-  tb(44, 62, 32, HUDUD.old),
+  // Chap qator: 3- va 4-rampalarga va 2-sex yonidan xizmat yo'ligacha (x −48…−32, z −49…15)
+  tb(-48, -SEX.eni / 2, XIZMAT_YOLI.z0, SEX.chuqurlik / 2),
+  // 2-sex orqasidagi xizmat yo'li (orqa hovliga)
+  XIZMAT_YOLI,
 ];
 
 const KOCHA_CHETI = ASOSIY_YOL.z - ASOSIY_YOL.eni / 2; // 64 — asosiy ko'cha asfaltining yaqin cheti
@@ -128,9 +137,10 @@ export const TASHQI_ASFALT: readonly Tortburchak[] = [
 export const BETON_MAYDONLAR: readonly Tortburchak[] = [
   BINOLAR_IZI.ofis,
   tb(MAISHIY.x0 - 1, MAISHIY.x1 + 1, MAISHIY.z0 - 1, MAISHIY.z1 + 1),
-  tb(-27, -8, -34.5, -24.5),
-  tb(6, 14, -33, -24.5),
-  tb(42.5, 51.5, -35, -27.5),
+  tb(-27, -8, -62.5, -52.5),
+  tb(6, 14, -61, -52.5),
+  tb(42.5, 51.5, -63, -55.5),
+  tb(14.5, 31.5, -55, -50.5),
 ];
 
 /** Hudud ichidagi piyoda yo'laklari (och beton plitka, PIYODA_YOLLARI bo'ylab). Bir-birining ustiga tushmaydi. */
@@ -139,9 +149,10 @@ export const PIYODA_YOLAKLARI: readonly Tortburchak[] = [
   tb(7, 64.8, 45, 46.6),
   tb(63.2, 64.8, -5.8, 45),
   tb(MAISHIY.x1, 63.2, -5.8, -4.2),
-  // KPP → ofis: z = 45.8 bo'ylab (kirish qatori ustidagi zebradan keyin), so'ng ofis eshigiga
-  tb(-48.8, -7, 45, 46.6),
-  tb(-48.8, -47.2, OFIS.z1, 45),
+  // KPP → ofis: kirish qatori ustidagi zebradan (z = 45.8) panjara bo'yiga (z = 47.2) chiqadi — direktor mashinasi joyidan o'tmaydi —, so'ng ofis eshigiga
+  tb(-10.4, -7, 45, 47.9),
+  tb(-48.8, -10.4, 46.5, 47.9),
+  tb(-48.8, -47.2, OFIS.z1, 46.5),
   // Ofis oldidagi maydon (bayroqlar shu yerda)
   tb(OFIS.x0, -48.8, OFIS.z1, 47.6),
 ];
@@ -190,6 +201,8 @@ export const STRELKALAR: ReadonlyArray<readonly [number, number, number]> = [
   [-24, 22, Math.PI / 2],
   [-44.5, 8, 0],
   [-44.5, -14, 0],
+  [-44.5, -36, 0],
+  [-20, -45, Math.PI / 2],
   [TASHQI_TURARGOH.x1, 60.2, 0],
   [TASHQI_TURARGOH.x0, 60.2, Math.PI],
 ];
@@ -536,10 +549,10 @@ export function chiroqlarRejasi(): Chiroq[] {
       if (i < 2) qosh(k.x + y, z + 16, Math.PI);
     }
   });
-  // Hudud ichi: old hovli (panjara yonida), chap qator, xizmat yo'li, panjara bo'yidagi piyoda yo'lagi.
+  // Hudud ichi: old hovli (panjara yonida), chap qator, xizmat yo'li (2-sex ortida), panjara bo'yidagi piyoda yo'lagi.
   for (const x of [-40, -29, -18, 19, 31, 44, 57]) qosh(x, 47.2, Math.PI / 2);
-  for (const z of [-20, -5, 9]) qosh(-48.7, z, 0);
-  for (const x of [-20, 2, 22]) qosh(x, -24.7, -Math.PI / 2);
+  for (const z of [-44, -32, -20, -5, 9]) qosh(-48.7, z, 0);
+  for (const x of [-20, 2, 22, 42]) qosh(x, XIZMAT_YOLI.z0 - 0.7, -Math.PI / 2);
   for (const z of [-1.5, 13.5, 28.5]) qosh(65.6, z, Math.PI);
   // Tashqi avtoturargoh: ikki chetida.
   for (const x of [22, 36, 50]) {

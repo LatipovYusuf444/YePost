@@ -113,7 +113,7 @@ test('ulanish: /demo/3d-sex marshruti (alohida bo‘lak), "Demo — sinov ma’l
   assert.ok(!/https?:\/\//.test(sahna), 'tashqi model havolasi yo‘q');
 });
 
-test('sexda odamlar (har stanokda operator), yuruvchi ishchilar va pogruzchik; fon kod bilan; bosh sahifada "Demo 3D sex" tugmasi', () => {
+test('sexda odamlar (har stanokda operator), yuruvchi ishchilar va pogruzchik; fon kod bilan; Sozlamalarda "3D Demo" tugmasi', () => {
   const sahna = manba('src/Pages/Demo3DSex/SexSahnasi.tsx');
   for (const tur of ['kesish', 'cnc', 'qirra', 'burgilash', 'qadoqlash']) assert.ok(sahna.includes(`${tur}: [\n    { p:`) || sahna.includes(`${tur}: [{ p:`), tur);
   assert.match(sahna, /<GlbOdam tur="ishchi" harakat=\{ishlayapti \? "ishlash" : "turish"\}/);
@@ -123,9 +123,8 @@ test('sexda odamlar (har stanokda operator), yuruvchi ishchilar va pogruzchik; f
   const muhit = manba('src/Pages/Demo3DSex/SexMuhiti.tsx') + manba('src/Pages/Demo3DSex/materiallar.ts') + manba('src/Pages/Demo3DSex/Ishchilar.tsx');
   assert.ok(!/https?:\/\//.test(muhit), 'tashqi model/tekstura havolasi yo‘q');
   assert.match(manba('src/Pages/Demo3DSex/materiallar.ts'), /new THREE\.CanvasTexture\(canvas\)/);
-  const bosh = manba('src/Pages/BoshSahifa/index.tsx');
-  assert.match(bosh, /data-demo-3d\s+onClick=\{\(\) => navigate\("\/demo\/3d"\)\}/);
-  for (const til of ['uz', 'ru']) assert.ok(JSON.parse(manba(`src/i18n/locales/${til}/bosh_sahifa.json`)).demo3d.label, til);
+  // 3D Demo tugmasi Sozlamalarda (ADMIN/DIREKTOR): tests/demo3dUi.test.mjs tekshiradi.
+  assert.match(manba('src/Pages/SozlamalarUchot/Demo3dBolimi.tsx'), /data-demo-3d\s+onClick=\{\(\) => navigate\("\/demo\/3d"\)\}/);
 });
 
 // ── Logistika: yuk mashinalari (KPP → rampa → jo'nash) ──

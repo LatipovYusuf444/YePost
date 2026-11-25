@@ -41,6 +41,9 @@ const STANDART_TEZLIK = 5;
 
 function bolakTuz(b: Bolak, boshlanish: number): TayyorBolak {
   const egri = new THREE.CatmullRomCurve3(b.nuqtalar.map(([x, z]) => new THREE.Vector3(x, 0, z)), false, "centripetal");
+  // Uzun yo'lda uzunlik jadvali aniq bo'lsin (aks holda getPointAt notekis — tezlik sakraydi): har ~0.25 m ga bitta bo'lak.
+  egri.arcLengthDivisions = Math.max(200, Math.ceil(egri.getLength() * 4));
+  egri.updateArcLengths();
   const uzunlik = egri.getLength();
   // Nazorat nuqtalarining yo'l bo'yidagi o'rni (taxminan — vatarlar bo'yicha) va tezlik chegarasi.
   const vatar = [0];
@@ -212,7 +215,7 @@ const YARIM_UZUNLIK = YUK_MASHINASI.uzunlik / 2;
 /** Ko'chadagi qator (−x yo'nalish): kelayotgan ham, ketayotgan ham shu qatorda (o'ngga burilib kiradi / chiqadi). */
 const KOCHA_Z = ASOSIY_YOL.qatorlar[0].z;
 /** Ko'chada mashina paydo bo'ladigan va g'oyib bo'ladigan joylar (hududdan uzoqda). */
-const KOCHA_BOSHI_X = 120;
+const KOCHA_BOSHI_X = 175;
 const KOCHA_OXIRI_X = -110;
 /** Shlagbaum oldida to'xtash: mashina oldi shlagbaumdan 0.7 m oldin (kirishda oldi z ≈ 44.2, markaz 48.5). */
 const KIRISH_TOXTASH_Z = KIRISH.shlagbaumZ + 0.7 + YARIM_UZUNLIK;

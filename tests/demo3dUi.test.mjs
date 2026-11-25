@@ -26,33 +26,33 @@ function satrlar(obyekt, yol = '') {
   );
 }
 
-test('marshrut: /demo/3d asosiy (lazy, ochiq), /demo/3d-sex unga yo\'naltiriladi (replace)', () => {
+test('marshrut: /demo/3d faqat tizimga kirgan ADMIN/DIREKTOR uchun (ProtectedRoute → sahifagaRuxsatBormi), /demo/3d-sex unga yo\'naltiriladi', () => {
   const router = manba('src/routes/AppRouter.tsx');
   assert.match(router, /const Demo3DSex = lazy\(\(\) => import\("@\/Pages\/Demo3DSex"\)\)/);
-  assert.match(router, /<Route path="\/demo\/3d" element=\{<Demo3DSex \/>\} \/>/);
+  assert.match(router, /path="\/demo\/3d"\s+element=\{\s*<ProtectedRoute>\s*<Demo3DSex \/>\s*<\/ProtectedRoute>\s*\}/);
   assert.match(router, /<Route path="\/demo\/3d-sex" element=\{<Navigate to="\/demo\/3d" replace \/>\} \/>/);
-  // Ochiq: ProtectedRoute ichida emas — Routes ichidagi birinchi yo'llardan.
-  const routes = router.indexOf('<Routes>');
-  const demo = router.indexOf('path="/demo/3d"');
-  const himoya = router.indexOf('<ProtectedRoute>', routes);
-  assert.ok(routes >= 0 && demo > routes && (himoya < 0 || demo < himoya), 'demo marshruti himoyalanmagan');
+  // Rol: ProtectedRoute sahifagaRuxsatBormi orqali tekshiradi — ADMIN/DIREKTOR barcha sahifalarga, KASSIR/OMBORCHI faqat o'z yo'llariga.
+  const rollar = manba('src/lib/roles.ts');
+  assert.match(rollar, /if \(rol === "ADMIN" \|\| rol === "DIREKTOR"\) return true;/);
+  assert.ok(!/demo/.test(rollar), 'kassir/omborchi yo\'llarida demo yo\'q');
 });
 
-test('bosh sahifa tugmasi /demo/3d ga olib boradi, yorlig\'i i18n demo3d.label', () => {
+test('3D Demo tugmasi Bosh sahifada yo\'q — faqat Sozlamalarda (ADMIN/DIREKTOR uchun bo\'lim)', () => {
   const bosh = manba('src/Pages/BoshSahifa/index.tsx');
-  assert.match(bosh, /data-demo-3d\s+onClick=\{\(\) => navigate\("\/demo\/3d"\)\}/);
-  assert.ok(!bosh.includes('navigate("/demo/3d-sex")'), 'eski manzil qolmagan');
-  assert.match(bosh, /\{t\("demo3d\.label"\)\}/);
-  assert.match(bosh, /title=\{t\("demo3d\.title"\)\}/);
-});
-
-test('i18n: bosh_sahifa demo3d kalitlari uz/ru — "3D Demo" / "3D Демо", "sex"/"цех" so\'zisiz', () => {
-  const uz = JSON.parse(manba('src/i18n/locales/uz/bosh_sahifa.json')).demo3d;
-  const ru = JSON.parse(manba('src/i18n/locales/ru/bosh_sahifa.json')).demo3d;
-  assert.equal(uz.label, '3D Demo');
-  assert.equal(ru.label, '3D Демо');
-  for (const qiymat of [uz.label, uz.title]) assert.ok(!/\bsex/i.test(qiymat), qiymat);
-  for (const qiymat of [ru.label, ru.title]) assert.ok(!/цех/i.test(qiymat), qiymat);
+  assert.ok(!bosh.includes('data-demo-3d'), 'Bosh sahifada tugma qolmagan');
+  assert.ok(!bosh.includes('/demo/3d'), 'Bosh sahifada 3D manzil yo\'q');
+  const soz = manba('src/Pages/SozlamalarUchot/index.tsx');
+  assert.match(soz, /\{ id: "demo3d", icon: Box, faqatAdmin: true \}/);
+  assert.match(soz, /const admin = foydalanuvchiAdminmi\(profil\);/);
+  assert.match(soz, /\(!b\.faqatAdmin \|\| admin\)/);
+  assert.match(soz, /\{bolim === "demo3d" && admin && <Demo3dBolimi \/>\}/);
+  const bolim = manba('src/Pages/SozlamalarUchot/Demo3dBolimi.tsx');
+  assert.match(bolim, /data-demo-3d\s+onClick=\{\(\) => navigate\("\/demo\/3d"\)\}/);
+  for (const til of ['uz', 'ru']) {
+    const m = JSON.parse(manba(`src/i18n/locales/${til}/sozlamalar_uchot.json`));
+    assert.ok(m.nav.demo3d && m.demo3d.open && m.demo3d.title, til);
+    assert.ok(!('demo3d' in JSON.parse(manba(`src/i18n/locales/${til}/bosh_sahifa.json`))), `${til}: bosh sahifa kalitlari olib tashlangan`);
+  }
 });
 
 test('matnlar: sarlavha, yuklanish va kamera tugmalari — "sex"/"цех" so\'zi ko\'rinmaydi; uz va ru kalitlari bir xil', () => {

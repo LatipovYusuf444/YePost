@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { GALEREYA, MAISHIY, OFIS } from "./hudud.ts";
+import { GALEREYA, MAISHIY } from "./hudud.ts";
 import type { Nuqta, OdamHarakati, OdamTuri } from "./odamModellari.ts";
 
 // Ofis va maishiy blok: mebel modellari ro'yxati (Kenney Furniture Kit, CC0 + Quaternius ofis kreslosi), joylashuv ma'lumotlari
@@ -140,6 +140,8 @@ export function mebelOlchami(j: MebelJoyi): V3 {
 }
 
 export type Tortburchak = { x0: number; x1: number; z0: number; z1: number };
+/** Kod bilan chiziladigan to'siqlar (peshtaxta, stol, tumba): test mebel bilan kesishmasligini tekshiradi. */
+export type Tosiq = Tortburchak & { nom: string; y: number; h: number };
 
 /** Mebelning poldagi izi (dunyo o'qlariga tekislangan to'rtburchak) va balandlik oralig'i. */
 export function mebelIzi(j: MebelJoyi): Tortburchak & { y0: number; y1: number } {
@@ -258,7 +260,7 @@ export function pardozMateriallari(): Record<Pardoz, THREE.MeshStandardMaterial>
 
 const r3 = (n: number) => Math.round(n * 1000) / 1000;
 /** Lokal (dx, dz) siljish — b burilishli jism uchun dunyo koordinatasida. */
-function lokal(x: number, z: number, b: number, dx: number, dz: number): [number, number] {
+export function lokal(x: number, z: number, b: number, dx: number, dz: number): [number, number] {
   const c = Math.cos(b);
   const s = Math.sin(b);
   return [r3(x + dx * c + dz * s), r3(z - dx * s + dz * c)];
@@ -277,7 +279,7 @@ export type OtirishJuftligi = { stul: MebelJoyi; nishon: [number, number] };
 
 let fazaSanagich = 0;
 /** Odamlar bir xil harakat qilmasin — har biriga turli faza (takrorlanadi). */
-function keyingiFaza() {
+export function keyingiFaza() {
   fazaSanagich = (fazaSanagich + 0.37) % 1;
   return r3(fazaSanagich);
 }
@@ -305,7 +307,7 @@ export type IshJoyi = { stol: MebelJoyi; stul: MebelJoyi; odam: OdamJoyi | null;
  * Ish joyi: stol (markazi x, z; foydalanuvchi lokal +z tomonda), ofis kreslosi, monitor, klaviatura va (bo'lsa) o'tirgan xodim.
  * Stolning tortmasi lokal −x tomonda — kreslo va tizzalar +0.25 m o'ngda (bo'sh joyda). `bosh` — xodim yo'q, kreslo surilgan.
  */
-export function ishJoyi(x: number, y: number, z: number, b: number, o: { odam?: OdamTuri | null; bosh?: boolean; monitorlar?: 1 | 2; gul?: boolean } = {}): IshJoyi {
+export function ishJoyi(x: number, y: number, z: number, b: number, o: { odam?: OdamTuri | null; bosh?: boolean; monitorlar?: 1 | 2; gul?: boolean; noutbuk?: boolean } = {}): IshJoyi {
   const stol: MebelJoyi = { tur: "stol", p: [r3(x), y, r3(z)], b };
   const ustY = r3(y + STOL.balandlik);
   let stul: MebelJoyi;
@@ -320,7 +322,11 @@ export function ishJoyi(x: number, y: number, z: number, b: number, o: { odam?: 
     odam = natija.odam;
   }
   const jihozlar: MebelJoyi[] = [];
-  if (o.monitorlar === 2) {
+  if (o.noutbuk) {
+    // Noutbuk (ochiq, ekrani orqada) xodim qarshisida, kreslo bilan bir chiziqda
+    const [nx, nz] = lokal(x, z, b, 0.25, -0.02);
+    jihozlar.push({ tur: "noutbuk", p: [nx, ustY, nz], b, ustida: true });
+  } else if (o.monitorlar === 2) {
     // Ikki monitor stol o'rtasida, xodimga qarab biroz burilgan (chapdagisi ko'proq)
     const [ax, az] = lokal(x, z, b, -0.31, -0.2);
     const [bx, bz] = lokal(x, z, b, 0.27, -0.2);
@@ -329,8 +335,10 @@ export function ishJoyi(x: number, y: number, z: number, b: number, o: { odam?: 
     const [mx, mz] = lokal(x, z, b, 0.25, -0.2);
     jihozlar.push({ tur: "monitor", p: [mx, ustY, mz], b, ustida: true });
   }
-  const [kx, kz] = lokal(x, z, b, 0.25, 0.12);
-  jihozlar.push({ tur: "klaviatura", p: [kx, ustY, kz], b, ustida: true });
+  if (!o.noutbuk) {
+    const [kx, kz] = lokal(x, z, b, 0.25, 0.12);
+    jihozlar.push({ tur: "klaviatura", p: [kx, ustY, kz], b, ustida: true });
+  }
   if (o.gul) {
     const [gx, gz] = lokal(x, z, b, -0.55, -0.22);
     jihozlar.push({ tur: "kichikGul", p: [gx, ustY, gz], ustida: true });
@@ -343,7 +351,7 @@ export function ishJoyi(x: number, y: number, z: number, b: number, o: { odam?: 
  * `odamlar` tartibi: [N0, N1, S0, S1]; null — bo'sh joy, `undefined` — stol yo'q (masalan, bitta qatorli guruh).
  * Orada akustik to'siq (bolgich) turadi.
  */
-export function stolGuruhi(cx: number, y: number, cz: number, odamlar: readonly (OdamTuri | null | undefined)[]) {
+export function stolGuruhi(cx: number, y: number, cz: number, odamlar: readonly (OdamTuri | null | undefined)[], noutbuk = false) {
   const joylar: IshJoyi[] = [];
   const yarim = STOL.eni / 2 + 0.001;
   [
@@ -354,275 +362,17 @@ export function stolGuruhi(cx: number, y: number, cz: number, odamlar: readonly 
   ].forEach(([x, z, b], i) => {
     const kim = odamlar[i];
     if (kim === undefined) return;
-    joylar.push(ishJoyi(x, y, z, b, { odam: kim, bosh: !kim, monitorlar: i % 3 === 0 ? 2 : 1, gul: i === 1 }));
+    joylar.push(ishJoyi(x, y, z, b, { odam: kim, bosh: !kim, monitorlar: i % 3 === 0 ? 2 : 1, gul: i === 1, noutbuk }));
   });
   const bolgich = { x0: r3(cx - STOL.eni), x1: r3(cx + STOL.eni), z: cz, y };
   return { joylar, bolgich };
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Ofis (3 qavat). Old (z = 42) va o'ng (x = −38) — shisha fasad, chap va orqa — panel devor (0.25 m).
+// Ofis binosining rejasi (8 qavat, panorama lift, direktor avtomobili) — ofisRejasi.ts da.
 
-/** Pol qoplamasi qalinligi: 0-qavat poli y = 0.05. */
+/** Pol qoplamasi qalinligi: 0-qavat poli y = 0.05 (ofis va maishiy blok). */
 export const POL_QALINLIGI = 0.05;
-/** Har qavat poli (qoplama ustki yuzasi). */
-export const OFIS_POLLARI: readonly number[] = Array.from({ length: OFIS.qavatlar }, (_, k) => r3(POL_QALINLIGI + k * OFIS.qavatBalandligi));
-/** Plita qalinligi va qavatdagi devor balandligi (poldan yuqori plita ostigacha). */
-export const PLITA = 0.3;
-export const DEVOR_BALANDLIGI = r3(OFIS.qavatBalandligi - PLITA);
-/** Eng yuqori nuqta (tomsiz yuqori qavat devorlari tepasi). */
-export const OFIS_TEPASI = r3(OFIS_POLLARI[OFIS.qavatlar - 1] + DEVOR_BALANDLIGI);
-/** Ichki chegara: chap/orqa devor 0.25 m, old/o'ng shisha fasad 0.15 m. */
-export const OFIS_ICHI: Tortburchak = { x0: OFIS.x0 + 0.25, x1: OFIS.x1 - 0.15, z0: OFIS.z0 + 0.25, z1: OFIS.z1 - 0.15 };
-/** Kirish eshigi (old fasad, 0-qavat): x oralig'i va balandligi. */
-export const OFIS_ESHIGI = { x0: OFIS.eshik[0] - 1.3, x1: OFIS.eshik[0] + 1.3, h: 2.7 } as const;
-
-/** Zina va lift yadrosi (chap-orqa burchak). Zina: ikki marshli, oraliq maydonchasi orqada. */
-export const YADRO = { x0: OFIS_ICHI.x0, x1: -52.5, z0: OFIS_ICHI.z0, z1: 33 } as const;
-export const ZINA = {
-  x0: OFIS_ICHI.x0,
-  x1: -54.75,
-  z0: OFIS_ICHI.z0,
-  /** Qavat maydonchasi z 31.4…33 (plitaning bir qismi), oraliq maydoncha z0…28.6. */
-  marshBoshi: 31.4,
-  oraliq: 28.6,
-  /** Chap marsh (pastdan oraliqqa), o'ng marsh (oraliqdan yuqoriga). */
-  chap: [-57.7, -56.3] as const,
-  ong: [-56.15, -54.8] as const,
-  pogona: 11,
-} as const;
-export const LIFT = { x0: ZINA.x1, x1: YADRO.x1, z0: OFIS_ICHI.z0, z1: 28.6, eshik: [-54.1, -53.1] as const } as const;
-/** Yadro old devoridagi (z = 33) eshiklar: zina va lift oldi. */
-export const YADRO_ESHIKLARI: readonly (readonly [number, number])[] = [[-57.4, -55.4], [-54.4, -52.9]];
-
-/** Kod bilan chiziladigan to'siqlar (peshtaxta, stol, tumba): test mebel bilan kesishmasligini tekshiradi. */
-export type Tosiq = Tortburchak & { nom: string; y: number; h: number };
-
-const [Y0, Y1, Y2] = OFIS_POLLARI;
-
-/** Qabulxona peshtaxtasi (0-qavat): old qismi baland (1.08), ichida past ish stoli (0.75). */
-export const QABUL_PESHTAXTASI = { x0: -49.8, x1: -46.2, z0: 34.35, z1: 35.6, oldZ: 34.85, y: Y0 } as const;
-/** Ko'rgazma podiumi (0-qavat): korxona mahsulotlari namunasi. */
-export const PODIUM = { x0: -57.6, x1: -54.4, z0: 35.0, z1: 41.6, h: 0.12, y: Y0 } as const;
-/** Direktor stoli (yong'oq, 2.2 × 1.0). */
-export const DIREKTOR_STOLI = { x: -41.8, z: 36.0, eni: 2.2, chuqurlik: 1.0, h: 0.76, y: Y2 } as const;
-/** Majlislar stoli (4.4 × 1.3). */
-export const MAJLIS_STOLI = { x: -42.6, z: 29.6, eni: 4.4, chuqurlik: 1.3, h: 0.75, y: Y2 } as const;
-
-export const OFIS_TOSIQLARI: readonly Tosiq[] = [
-  { nom: "qabul", x0: QABUL_PESHTAXTASI.x0, x1: QABUL_PESHTAXTASI.x1, z0: QABUL_PESHTAXTASI.z0, z1: QABUL_PESHTAXTASI.z1, y: Y0, h: 1.08 },
-  { nom: "direktorStoli", x0: DIREKTOR_STOLI.x - DIREKTOR_STOLI.eni / 2, x1: DIREKTOR_STOLI.x + DIREKTOR_STOLI.eni / 2, z0: DIREKTOR_STOLI.z - DIREKTOR_STOLI.chuqurlik / 2, z1: DIREKTOR_STOLI.z + DIREKTOR_STOLI.chuqurlik / 2, y: Y2, h: DIREKTOR_STOLI.h },
-  { nom: "kredensa", x0: -43.0, x1: -40.6, z0: 33.1, z1: 33.6, y: Y2, h: 0.72 },
-  { nom: "tvTumba", x0: -46.92, x1: -46.48, z0: 39.0, z1: 40.6, y: Y2, h: 0.5 },
-  { nom: "majlisStoli", x0: MAJLIS_STOLI.x - MAJLIS_STOLI.eni / 2, x1: MAJLIS_STOLI.x + MAJLIS_STOLI.eni / 2, z0: MAJLIS_STOLI.z - MAJLIS_STOLI.chuqurlik / 2, z1: MAJLIS_STOLI.z + MAJLIS_STOLI.chuqurlik / 2, y: Y2, h: MAJLIS_STOLI.h },
-  { nom: "ekranTumba", x0: -46.92, x1: -46.48, z0: 28.6, z1: 30.6, y: Y2, h: 0.45 },
-  { nom: "barStol", x0: -50.2, x1: -49.4, z0: 29.6, z1: 30.4, y: Y2, h: 1.05 },
-  { nom: "printer", x0: -39.6, x1: -38.8, z0: 33.9, z1: 34.5, y: Y1, h: 1.0 },
-  { nom: "kuler", x0: -38.9, x1: -38.5, z0: 35.1, z1: 35.5, y: Y1, h: 1.1 },
-  { nom: "doska", x0: -52.4, x1: -52.3, z0: 28.4, z1: 30.8, y: Y1, h: 2.0 },
-];
-
-/** Xonalar (har qavat): har mebel va odam biror xona ichida bo'lishi shart (devordan o'tmaydi). */
-export const OFIS_XONALARI: readonly (Tortburchak & { nom: string; y: number })[] = [
-  { nom: "vestibyul", y: Y0, x0: OFIS_ICHI.x0, x1: OFIS_ICHI.x1, z0: 33.06, z1: OFIS_ICHI.z1 },
-  { nom: "arxiv", y: Y0, x0: -52.4, x1: -46.06, z0: OFIS_ICHI.z0, z1: 32.94 },
-  { nom: "xodimlarOshxonasi", y: Y0, x0: -45.94, x1: OFIS_ICHI.x1, z0: OFIS_ICHI.z0, z1: 32.94 },
-  { nom: "ochiqOfis", y: Y1, x0: OFIS_ICHI.x0, x1: OFIS_ICHI.x1, z0: 33.06, z1: OFIS_ICHI.z1 },
-  { nom: "kichikMajlis", y: Y1, x0: -52.4, x1: -45.05, z0: OFIS_ICHI.z0, z1: 32.95 },
-  { nom: "boshliq", y: Y1, x0: -44.95, x1: OFIS_ICHI.x1, z0: OFIS_ICHI.z0, z1: 32.95 },
-  { nom: "qabulxona", y: Y2, x0: OFIS_ICHI.x0, x1: -47.06, z0: 33.06, z1: OFIS_ICHI.z1 },
-  { nom: "direktor", y: Y2, x0: -46.94, x1: OFIS_ICHI.x1, z0: 33.06, z1: OFIS_ICHI.z1 },
-  { nom: "kofeBurchak", y: Y2, x0: -52.4, x1: -47.05, z0: OFIS_ICHI.z0, z1: 33.06 },
-  { nom: "majlislar", y: Y2, x0: -46.95, x1: OFIS_ICHI.x1, z0: OFIS_ICHI.z0, z1: 32.94 },
-];
-
-/** Ochiq ofisdagi stol guruhlari (1-qavat): 2 × 2, 2 × 2 va bitta qator (jami 10 stol, 8 xodim). */
-export const OFIS_STOL_GURUHLARI = [
-  stolGuruhi(-53.6, Y1, 37.6, ["xodimErkak", "xodimAyol", "xodimAyol", null]),
-  stolGuruhi(-48.1, Y1, 37.6, ["xodimAyol", null, "xodimErkak", "xodimErkak"]),
-  stolGuruhi(-42.6, Y1, 37.6, [undefined, undefined, "xodimAyol", "xodimErkak"]),
-];
-
-function ofisYarat() {
-  const mebel: MebelJoyi[] = [];
-  const odamlar: OdamJoyi[] = [];
-  const juftlar: OtirishJuftligi[] = [];
-  const ishJoylari: IshJoyi[] = [];
-  const ish = (j: IshJoyi) => {
-    ishJoylari.push(j);
-    mebel.push(j.stol, j.stul, ...j.jihozlar);
-    if (j.odam) odamlar.push(j.odam);
-    juftlar.push({ stul: j.stul, nishon: [j.stol.p[0], j.stol.p[2]] });
-  };
-  const stul = (tur: MebelTuri, x: number, y: number, z: number, b: number, nishon: [number, number] | null, odam?: OdamTuri | null, m?: V3, lateral = 0) => {
-    const n = stulVaOdam(tur, x, y, z, b, odam, m, lateral);
-    mebel.push(n.stul);
-    if (n.odam) odamlar.push(n.odam);
-    if (nishon) juftlar.push({ stul: n.stul, nishon });
-    return n;
-  };
-  const turgan = (tur: OdamTuri, harakat: OdamHarakati, x: number, y: number, z: number, burilish: number) =>
-    odamlar.push({ tur, harakat, p: [x, y, z], burilish: r3(burilish), faza: keyingiFaza() });
-  const P = Math.PI;
-
-  // ── 0-qavat: vestibyul, qabulxona, kutish joyi, ko'rgazma; orqada arxiv va xodimlar oshxonasi ──
-  turgan("xodimAyol", "turish", -48.6, Y0, 33.95, 0);
-  mebel.push(
-    { tur: "monitor", p: [-48.6, r3(Y0 + 0.75), 34.66], b: P, ustida: true },
-    { tur: "klaviatura", p: [-48.6, r3(Y0 + 0.75), 34.45], b: P, ustida: true },
-    { tur: "monitor", p: [-47.2, r3(Y0 + 0.75), 34.66], b: P + 0.2, ustida: true },
-  );
-  turgan("biznesmen", "gaplashish", -48.1, Y0, 36.15, P);
-  // Kutish joyi (o'ng shisha fasad yonida)
-  mebel.push(
-    { tur: "divan", p: [-38.75, Y0, 38.6], b: -P / 2 },
-    { tur: "jurnalStoli", p: [-40.15, Y0, 38.6], b: P / 2 },
-    { tur: "gilam", p: [-40.2, r3(Y0 + 0.003), 38.6], b: P / 2, ustida: true },
-    { tur: "gulTuvak", p: [-38.65, Y0, 36.7] },
-    { tur: "gulTuvak", p: [-38.65, Y0, 41.3] },
-    { tur: "torchiroq", p: [-38.5, Y0, 40.1] },
-    { tur: "gulTuvak", p: [-50.5, Y0, 35.2] },
-    { tur: "gulTuvak", p: [-45.5, Y0, 35.2] },
-    { tur: "kiyimIlgich", p: [-50.6, Y0, 41.35] },
-    { tur: "axlatQuti", p: [-45.9, Y0, 41.5], m: [1, 1, 1] },
-  );
-  stul("yumshoqKreslo", -41.4, Y0, 37.9, P / 2, null);
-  stul("yumshoqKreslo", -41.4, Y0, 39.3, P / 2, null);
-  const divanOdam = stulVaOdam("divan", -38.75, Y0, 38.6, -P / 2, "xodimErkak", undefined, -0.45).odam;
-  if (divanOdam) odamlar.push(divanOdam);
-  // Ko'rgazma podiumi: korxona mebeli namunalari
-  const py = r3(Y0 + PODIUM.h);
-  mebel.push(
-    { tur: "burchakStol", p: [-56.4, py, 40.3], rang: { wood: "#e7d3b0" } },
-    { tur: "ochiqJavon", p: [-57.35, py, 37.6], b: P / 2, rang: { wood: "#8b5a3c" } },
-    { tur: "oshxonaShkafi", p: [-56.0, py, 35.6], rang: { wood: "#f1ede6", woodDark: "#8b5a3c" } },
-    { tur: "oshxonaShkafi", p: [-55.12, py, 35.6], rang: { wood: "#f1ede6", woodDark: "#8b5a3c" } },
-    { tur: "kreslo", p: [-55.2, py, 38.2], b: -P / 2, rang: { Chair: "#7f1d1d" } },
-  );
-  // Arxiv: javonlar orqa devor bo'ylab
-  for (let i = 0; i < 6; i++) mebel.push({ tur: "yopiqJavon", p: [r3(-52.0 + i * 0.8), Y0, r3(OFIS_ICHI.z0 + 0.2)] });
-  // Xodimlar oshxonasi
-  for (let i = 0; i < 4; i++) mebel.push({ tur: "oshxonaShkafi", p: [r3(-45.4 + i * 0.86), Y0, r3(OFIS_ICHI.z0 + 0.315)] });
-  mebel.push(
-    { tur: "muzlatgich", p: [-41.8, Y0, 26.55] },
-    { tur: "kofeMashina", p: [-44.54, r3(Y0 + 0.9), 26.55], ustida: true },
-    { tur: "oshxonaStoli", p: [-42.6, Y0, 30.2] },
-    { tur: "gulTuvak", p: [-38.7, Y0, 26.8] },
-  );
-  for (const [dx, dz, b] of [[-0.42, -0.775, 0], [0.42, -0.775, 0], [-0.42, 0.775, P], [0.42, 0.775, P]] as const) stul("stul", -42.6 + dx, Y0, 30.2 + dz, b, [-42.6, 30.2]);
-
-  // ── 1-qavat: ochiq ofis (3 guruh × 4 stol), kichik majlislar xonasi, bo'lim boshlig'i xonasi ──
-  for (const g of OFIS_STOL_GURUHLARI) g.joylar.forEach(ish);
-  // Tik turib suhbatlashayotgan xodim (B guruhi, janubiy o'ng stol egasi bilan)
-  const suhbatdosh = OFIS_STOL_GURUHLARI[1].joylar[3].odam;
-  if (suhbatdosh) turgan("ayolRasmiy", "gaplashish", -46.3, Y1, 39.35, qarashBurchagi(-46.3, 39.35, suhbatdosh.p[0], suhbatdosh.p[2]));
-  for (let i = 0; i < 4; i++) mebel.push({ tur: "yopiqJavon", p: [-57.55, Y1, r3(34.6 + i * 0.8)], b: P / 2 });
-  mebel.push(
-    { tur: "gulTuvak", p: [-57.4, Y1, 41.3] },
-    { tur: "gulTuvak", p: [-38.65, Y1, 41.35] },
-    { tur: "gulTuvak", p: [-40.4, Y1, 34.2] },
-    { tur: "axlatQuti", p: [-51.0, Y1, 33.4], m: [1, 1, 1] },
-  );
-  // Kichik majlislar xonasi
-  mebel.push({ tur: "shishaStol", p: [-48.8, Y1, 29.6] }, { tur: "gulTuvak", p: [-45.5, Y1, 26.75] });
-  for (const [dx, dz, b] of [[-0.42, -0.775, 0], [0.42, -0.775, 0], [-0.42, 0.775, P], [0.42, 0.775, P]] as const) stul("ofisStuli", -48.8 + dx, Y1, 29.6 + dz, b, [-48.8, 29.6]);
-  // Bo'lim boshlig'i: stol eshikka (+z) qaragan
-  ish(ishJoyi(-41.4, Y1, 29.4, P, { odam: "xodimErkak", monitorlar: 2, gul: true }));
-  for (const x of [-43.0, -42.2, -40.6, -39.8]) mebel.push({ tur: "yopiqJavon", p: [x, Y1, r3(OFIS_ICHI.z0 + 0.2)] });
-  stul("kreslo", -41.95, Y1, 30.6, P, [-41.4, 29.4], null, [0.9, 0.9, 0.9]);
-  stul("kreslo", -40.85, Y1, 30.6, P, [-41.4, 29.4], null, [0.9, 0.9, 0.9]);
-  mebel.push({ tur: "gulTuvak", p: [-44.5, Y1, 32.55] }, { tur: "gulTuvak", p: [-38.65, Y1, 26.75] });
-
-  // ── 2-qavat (tomsiz): direktor kabineti, qabulxona (kotiba), majlislar zali, kofe burchagi ──
-  // Direktor: kreslo stol ortida, eshik va mehmonlarga (+z) qaragan
-  stul("kreslo", DIREKTOR_STOLI.x, Y2, 34.95, 0, [DIREKTOR_STOLI.x, DIREKTOR_STOLI.z], "direktor", [1.06, 1.06, 1.06]);
-  const dsY = r3(Y2 + DIREKTOR_STOLI.h);
-  mebel.push(
-    { tur: "monitor", p: [-42.3, dsY, 35.72], b: P, ustida: true },
-    { tur: "noutbuk", p: [-41.25, dsY, 35.8], b: P, ustida: true },
-    { tur: "kichikGul", p: [-40.95, dsY, 36.25], ustida: true },
-  );
-  for (const x of [-44.2, -43.4, -40.2, -39.4]) mebel.push({ tur: "yopiqJavon", p: [x, Y2, 33.3], rang: { wood: "#5a3d2b", metal: "#c8a24a" } });
-  stul("kreslo", -42.5, Y2, 37.15, P, [DIREKTOR_STOLI.x, DIREKTOR_STOLI.z], "xodimErkak", [0.95, 0.95, 0.95]);
-  stul("kreslo", -41.1, Y2, 37.15, P, [DIREKTOR_STOLI.x, DIREKTOR_STOLI.z], null, [0.95, 0.95, 0.95]);
-  mebel.push(
-    { tur: "divan", p: [-38.75, Y2, 39.8], b: -P / 2, rang: { carpet: "#2b2420" } },
-    { tur: "jurnalStoli", p: [-40.2, Y2, 39.8], b: P / 2 },
-    { tur: "gilam", p: [-40.4, r3(Y2 + 0.003), 39.8], b: P / 2, ustida: true, rang: { carpet: "#8a7d6b", carpetDarker: "#5c5246" } },
-    { tur: "torchiroq", p: [-38.5, Y2, 38.4] },
-    { tur: "gulTuvak", p: [-38.65, Y2, 41.35] },
-    { tur: "gulTuvak", p: [-46.5, Y2, 41.35] },
-    { tur: "gulTuvak", p: [-38.65, Y2, 33.45] },
-    { tur: "televizor", p: [-46.7, r3(Y2 + 0.5), 39.8], b: P / 2, ustida: true },
-  );
-  stul("yumshoqKreslo", -41.7, Y2, 39.8, P / 2, null, undefined).stul.rang = { carpet: "#2b2420" };
-  // Qabulxona: kotiba stoli direktor eshigi yonida, kelganlarga (−x) qaragan
-  ish(ishJoyi(-49.9, Y2, 37.4, P / 2, { odam: "xodimAyol", gul: true }));
-  mebel.push({ tur: "yopiqJavon", p: [-47.26, Y2, 39.0], b: -P / 2 }, { tur: "yopiqJavon", p: [-47.26, Y2, 39.8], b: -P / 2 });
-  mebel.push(
-    { tur: "divan", p: [-57.3, Y2, 38.8], b: P / 2 },
-    { tur: "jurnalStoli", p: [-56.0, Y2, 38.8], b: P / 2 },
-    { tur: "gilam", p: [-56.0, r3(Y2 + 0.003), 38.8], b: P / 2, ustida: true },
-    { tur: "gulTuvak", p: [-57.4, Y2, 41.35] },
-    { tur: "gulTuvak", p: [-57.4, Y2, 36.9] },
-    { tur: "kiyimIlgich", p: [-51.9, Y2, 33.6] },
-  );
-  stul("yumshoqKreslo", -54.6, Y2, 38.8, -P / 2, null);
-  // Kofe burchagi
-  for (let i = 0; i < 4; i++) mebel.push({ tur: "oshxonaShkafi", p: [r3(-51.95 + i * 0.86), Y2, r3(OFIS_ICHI.z0 + 0.315)] });
-  mebel.push(
-    { tur: "muzlatgich", p: [-48.0, Y2, 26.55] },
-    { tur: "kofeMashina", p: [-50.23, r3(Y2 + 0.9), 26.55], ustida: true },
-    { tur: "gulTuvak", p: [-47.5, Y2, 32.6] },
-  );
-  // Majlislar zali: 7 o'rin (g'arbiy uchida — taqdimot ekrani va ma'ruzachi)
-  const mz = MAJLIS_STOLI;
-  const kr: V3 = [0.95, 0.95, 0.95];
-  const nishon: [number, number] = [mz.x, mz.z];
-  const shimolZ = r3(mz.z - mz.chuqurlik / 2 - 0.42);
-  const janubZ = r3(mz.z + mz.chuqurlik / 2 + 0.42);
-  const majlisOdamlari: [number, number, number, OdamTuri | null][] = [
-    [-44.1, shimolZ, 0, "xodimAyol"],
-    [-42.6, shimolZ, 0, null],
-    [-41.1, shimolZ, 0, "xodimErkak"],
-    [-44.1, janubZ, P, null],
-    [-42.6, janubZ, P, "xodimErkak"],
-    [-41.1, janubZ, P, null],
-    [r3(mz.x + mz.eni / 2 + 0.42), mz.z, -P / 2, "xodimAyol"],
-  ];
-  const stolY = r3(Y2 + mz.h);
-  for (const [x, z, b, kim] of majlisOdamlari) {
-    stul("kreslo", x, Y2, z, b, b === -P / 2 ? nishon : [x, mz.z], kim, kr);
-    if (kim) {
-      // Noutbuk stol chetidan 0.35 m ichkarida, egasiga qaragan
-      const [nx, nz] = lokal(x, z, b, 0, b === -P / 2 ? 0.75 : 0.8);
-      mebel.push({ tur: "noutbuk", p: [nx, stolY, nz], b: b + P, ustida: true });
-    }
-  }
-  mebel.push(
-    { tur: "televizor", p: [-46.72, r3(Y2 + 0.45), 29.6], b: P / 2, m: [3, 3, 3], ustida: true },
-    { tur: "gulTuvak", p: [-38.65, Y2, 26.75] },
-    { tur: "gulTuvak", p: [-46.5, Y2, 26.75] },
-  );
-  turgan("biznesmen", "gaplashish", -45.75, Y2, 28.35, P / 2);
-
-  const yuruvchilar: YuruvchiJoyi[] = [
-    // Vestibyulda: kirish eshigidan lift oldiga va qaytib
-    { tur: "ayolRasmiy", nuqtalar: [[-48, 41.2], [-48, 37.3], [-53.8, 37.3], [-53.8, 33.7]], y: Y0, tezlik: 1.15, toxtash: [3, 0, 0, 5], toxtashHarakati: "turish", faza: 0.2 },
-  ];
-  return { mebel, odamlar, juftlar, ishJoylari, yuruvchilar };
-}
-
-const OFIS_JOYLASHUVI = ofisYarat();
-/** Ofisdagi barcha GLB mebel (ish joylari jihozlari bilan). */
-export const OFIS_MEBELLARI: readonly MebelJoyi[] = OFIS_JOYLASHUVI.mebel;
-/** Ofisdagi o'tirgan va tik turgan odamlar. */
-export const OFIS_ODAMLARI: readonly OdamJoyi[] = OFIS_JOYLASHUVI.odamlar;
-export const OFIS_YURUVCHILARI: readonly YuruvchiJoyi[] = OFIS_JOYLASHUVI.yuruvchilar;
-export const OFIS_ISH_JOYLARI: readonly IshJoyi[] = OFIS_JOYLASHUVI.ishJoylari;
-export const OFIS_OTIRISH_JUFTLARI: readonly OtirishJuftligi[] = OFIS_JOYLASHUVI.juftlar;
-/** Majlislar zalidagi taqdimot ekrani yuzasi (televizor ×3 ekrani oldida). */
-export const TAQDIMOT_EKRANI = { x: -46.655, y: r3(Y2 + 0.45 + 0.262 * 3), z: 29.6, eni: 2.0, balandlik: 1.1 } as const;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Maishiy blok (1 qavat, tomsiz) va galereya
@@ -1208,11 +958,186 @@ const menyu = () => tekstura(512, 256, (ctx, w, h) => {
   });
 }, false);
 
+/** Sport zali rezina qoplamasi: ko'k, mayda EPDM donalari (1 tekstura = 2 m). */
+const sportPol = () => tekstura(256, 256, (ctx, w, h) => {
+  ctx.fillStyle = "#2f5d8a";
+  ctx.fillRect(0, 0, w, h);
+  donalar(ctx, w, h, 9000, (r) => (r() < 0.5 ? `rgba(20,40,70,${0.25 + r() * 0.3})` : `rgba(170,200,230,${0.15 + r() * 0.25})`), 121, 2);
+});
+
+/** Silliqlangan mikrotsement (dizayn studiyasi): och kulrang, yumshoq dog'lar (1 tekstura = 3 m). */
+const mikrotsement = () => tekstura(256, 256, (ctx, w, h) => {
+  ctx.fillStyle = "#d7d8d6";
+  ctx.fillRect(0, 0, w, h);
+  const rnd = urug(131);
+  for (let i = 0; i < 60; i++) {
+    const x = rnd() * w;
+    const y = rnd() * h;
+    const r = 10 + rnd() * 40;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, rnd() > 0.5 ? "rgba(255,255,255,0.18)" : "rgba(120,124,128,0.12)");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  donalar(ctx, w, h, 2500, (r) => `rgba(110,112,116,${r() * 0.15})`, 132);
+});
+
+/** Stol tennisi stoli ustki yuzasi: ko'k, oq chetlar va o'rta chiziq (bo'ylama). */
+const tennisStoli = () => tekstura(512, 288, (ctx, w, h) => {
+  ctx.fillStyle = "#1e4fa8";
+  ctx.fillRect(0, 0, w, h);
+  donalar(ctx, w, h, 2500, (r) => `rgba(255,255,255,${r() * 0.05})`, 141);
+  ctx.fillStyle = "#f8fafc";
+  ctx.fillRect(0, 0, w, 7);
+  ctx.fillRect(0, h - 7, w, 7);
+  ctx.fillRect(0, 0, 7, h);
+  ctx.fillRect(w - 7, 0, 7, h);
+  ctx.fillRect(0, h / 2 - 2, w, 4);
+}, false);
+
+/** Yugurish yo'lagi lentasi: to'q rezina, ko'ndalang chiziqlar (u bo'ylab siljiydi — harakat ko'rinadi). */
+const lenta = () => tekstura(256, 64, (ctx, w, h) => {
+  ctx.fillStyle = "#202428";
+  ctx.fillRect(0, 0, w, h);
+  for (let x = 0; x < w; x += 32) {
+    ctx.fillStyle = "rgba(160,170,180,0.35)";
+    ctx.fillRect(x, 0, 6, h);
+  }
+  donalar(ctx, w, h, 800, (r) => `rgba(255,255,255,${r() * 0.08})`, 151);
+});
+
+/** O'yin konsoli ekrani: yuqoridan ko'rinadigan poyga yo'li (vertikal takrorlanadi — siljitilsa "harakatlanadi"). */
+const oyinEkrani = () => tekstura(512, 512, (ctx, w, h) => {
+  ctx.fillStyle = "#1f7a3a";
+  ctx.fillRect(0, 0, w, h);
+  donalar(ctx, w, h, 5000, (r) => `rgba(${r() < 0.5 ? "20,90,40" : "90,170,80"},${0.3 + r() * 0.3})`, 161, 3);
+  // Yo'l, chetlari (qizil-oq), uzuq chiziqlar
+  ctx.fillStyle = "#3a3f47";
+  ctx.fillRect(w * 0.22, 0, w * 0.56, h);
+  for (let y = 0; y < h; y += 32) {
+    ctx.fillStyle = (y / 32) % 2 ? "#ef4444" : "#f8fafc";
+    ctx.fillRect(w * 0.2, y, w * 0.025, 32);
+    ctx.fillRect(w * 0.775, y, w * 0.025, 32);
+  }
+  ctx.fillStyle = "#fde047";
+  for (let y = 8; y < h; y += 64) {
+    ctx.fillRect(w * 0.405, y, 8, 34);
+    ctx.fillRect(w * 0.59, y, 8, 34);
+  }
+  // Raqib mashinalar (yuqoridan)
+  const mashina = (x: number, y: number, rang: string) => {
+    ctx.fillStyle = rang;
+    ctx.fillRect(x, y, 40, 70);
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(x + 6, y + 14, 28, 14);
+    ctx.fillRect(x + 6, y + 46, 28, 10);
+  };
+  mashina(w * 0.3, 90, "#f97316");
+  mashina(w * 0.62, 300, "#a855f7");
+  mashina(w * 0.46, 430, "#22d3ee");
+  // Daraxtlar
+  const rnd = urug(162);
+  for (let i = 0; i < 14; i++) {
+    const x = rnd() < 0.5 ? rnd() * w * 0.16 : w * 0.84 + rnd() * w * 0.14;
+    const y = rnd() * h;
+    ctx.fillStyle = "#14532d";
+    ctx.beginPath();
+    ctx.arc(x, y, 12 + rnd() * 10, 0, Math.PI * 2);
+    ctx.fill();
+  }
+});
+
+/** Kitob javoni qatori: rang-barang muqovalar (turli eni va bo'yi), orqasi qorong'i. */
+const kitoblar = () => tekstura(512, 128, (ctx, w, h) => {
+  ctx.fillStyle = "#1c1917";
+  ctx.fillRect(0, 0, w, h);
+  const rnd = urug(171);
+  const ranglar = ["#7f1d1d", "#1e3a8a", "#14532d", "#78350f", "#f5f5f4", "#334155", "#9a3412", "#0f766e", "#a16207", "#4c1d95", "#e7e5e4", "#57534e"];
+  let x = 0;
+  while (x < w) {
+    const k = 9 + rnd() * 16;
+    const bh = h * (0.68 + rnd() * 0.3);
+    ctx.fillStyle = ranglar[Math.floor(rnd() * ranglar.length)];
+    ctx.fillRect(x, h - bh, k - 1, bh);
+    ctx.fillStyle = "rgba(255,255,255,0.25)";
+    ctx.fillRect(x + 2, h - bh + 10, k - 5, 2);
+    ctx.fillRect(x + 2, h - 18, k - 5, 2);
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    ctx.fillRect(x + k - 2, h - bh, 1, bh);
+    x += k + (rnd() < 0.08 ? 10 : 0);
+  }
+});
+
+/** Dizayn studiyasi ilhom taxtasi: eskizlar, mato va rang namunalari, mebel fotosuratlari (sxematik). */
+const moodboard = () => tekstura(512, 256, (ctx, w, h) => {
+  ctx.fillStyle = "#c8b89a";
+  ctx.fillRect(0, 0, w, h);
+  donalar(ctx, w, h, 3000, (r) => `rgba(90,70,40,${r() * 0.15})`, 181);
+  const rnd = urug(182);
+  const ranglar = ["#e7d3b0", "#8b5a3c", "#334155", "#0f766e", "#f1ede6", "#b45309", "#1e293b", "#94a3b8", "#be123c"];
+  for (let i = 0; i < 22; i++) {
+    const kw = 40 + rnd() * 70;
+    const kh = 30 + rnd() * 60;
+    const x = rnd() * (w - kw);
+    const y = rnd() * (h - kh);
+    ctx.save();
+    ctx.translate(x + kw / 2, y + kh / 2);
+    ctx.rotate((rnd() - 0.5) * 0.12);
+    ctx.fillStyle = "rgba(0,0,0,0.18)";
+    ctx.fillRect(-kw / 2 + 3, -kh / 2 + 3, kw, kh);
+    ctx.fillStyle = rnd() < 0.35 ? "#fafaf9" : ranglar[Math.floor(rnd() * ranglar.length)];
+    ctx.fillRect(-kw / 2, -kh / 2, kw, kh);
+    // Eskiz chiziqlari (oq qog'ozda)
+    ctx.strokeStyle = "rgba(30,41,59,0.6)";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(-kw / 3, -kh / 4, kw / 1.6, kh / 2.2);
+    ctx.fillStyle = "#dc2626";
+    ctx.beginPath();
+    ctx.arc(0, -kh / 2 + 4, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}, false);
+
 /** Ofis binosi materiallari (chaqiruvchi `materiallarniTozala` bilan bo'shatadi). */
 export function ofisMateriallariYarat() {
   const m = (color: string, extra: THREE.MeshStandardMaterialParameters = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0, ...extra });
   const nur = (color: string, kuch: number, map: THREE.Texture | null = null) => new THREE.MeshStandardMaterial({ color: map ? "#ffffff" : color, map, emissive: color, emissiveMap: map, emissiveIntensity: kuch, roughness: 0.4 });
+  const shaffof = (color: string, opacity: number, extra: THREE.MeshStandardMaterialParameters = {}) =>
+    new THREE.MeshStandardMaterial({ color, roughness: 0.04, metalness: 0.25, transparent: true, opacity, depthWrite: false, ...extra });
+  const lentaT = lenta();
+  lentaT?.repeat.set(3, 1);
   return {
+    // Kamera tomonidagi (old va o'ng) parda-devor — ichi ko'rinsin deb shaffofroq; panorama lift shaxtasi shishasi
+    oldOyna: shaffof("#a9d3e6", 0.13),
+    liftOyna: shaffof("#d6eef7", 0.12, { metalness: 0.1 }),
+    mullion: m("#2b3139", { roughness: 0.35, metalness: 0.65 }),
+    plitaQirrasi: m("#eef1f4", { roughness: 0.38, metalness: 0.2 }),
+    liftRom: m("#8f9aa7", { roughness: 0.25, metalness: 0.85 }),
+    /** Lift chirog'i: eshik ochiq — yashil, harakatda — sariq (rang Ofis.tsx dagi useFrame da almashtiriladi). */
+    liftChirogi: new THREE.MeshStandardMaterial({ color: "#22c55e", emissive: "#22c55e", emissiveIntensity: 1.6, roughness: 0.3 }),
+    sportPol: m("#ffffff", { map: sportPol(), roughness: 0.85 }),
+    mikrotsement: m("#ffffff", { map: mikrotsement(), roughness: 0.35 }),
+    tennisStoli: m("#ffffff", { map: tennisStoli(), roughness: 0.45 }),
+    tennisTori: new THREE.MeshStandardMaterial({ color: "#f8fafc", roughness: 0.9, transparent: true, opacity: 0.7, depthWrite: false }),
+    tennisTopi: m("#fff7ed", { roughness: 0.3, emissive: "#ffedd5", emissiveIntensity: 0.35 }),
+    raketka: m("#b91c1c", { roughness: 0.6 }),
+    lenta: m("#ffffff", { map: lentaT, roughness: 0.9 }),
+    trenajer: m("#3a4048", { roughness: 0.4, metalness: 0.55 }),
+    gantel: m("#16181c", { roughness: 0.5, metalness: 0.4 }),
+    yogaMat: [m("#14b8a6", { roughness: 0.95 }), m("#8b5cf6", { roughness: 0.95 }), m("#f97316", { roughness: 0.95 })],
+    oyinEkrani: nur("#ffffff", 1.0, oyinEkrani()),
+    ledBinafsha: nur("#a855f7", 2.2),
+    ledMoviy: nur("#38bdf8", 2.0),
+    pult: m("#111318", { roughness: 0.45 }),
+    kitoblar: m("#ffffff", { map: kitoblar(), roughness: 0.75 }),
+    moodboard: m("#ffffff", { map: moodboard(), roughness: 0.85 }),
+    likopcha: m("#f8fafc", { roughness: 0.2 }),
+    ovqat: [m("#c2410c", { roughness: 0.7 }), m("#facc15", { roughness: 0.6 }), m("#65a30d", { roughness: 0.7 })],
+    zanglamas: m("#c9cfd6", { roughness: 0.22, metalness: 0.9 }),
+    printer3d: nur("#fb923c", 1.2),
+    maket: [m("#e7d3b0", { roughness: 0.6 }), m("#8b5a3c", { roughness: 0.6 }), m("#f1ede6", { roughness: 0.6 }), m("#475569", { roughness: 0.6 })],
     plita: m("#e9e8e4", { roughness: 0.9 }),
     granit: m("#ffffff", { map: granit(), roughness: 0.25, metalness: 0.05 }),
     kovrolin: m("#ffffff", { map: kovrolin(), roughness: 0.98 }),

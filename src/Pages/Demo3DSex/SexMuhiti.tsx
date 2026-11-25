@@ -13,17 +13,19 @@ import {
   ARAVACHALAR, ARAVACHA_OLCHAMI, ASBOB_STOLI, BORDYUR, CHAP_DEVOR_BOLAKLARI, CHAP_ESHIKLAR_Z, CHIQINDI_IDISHLARI, CHIQISH_ESHIKLARI_X,
   DEVOR_BALANDLIGI, DEVOR_QALINLIGI, ELEKTR_SHKAFLAR, ESHIK_BALANDLIGI, ESHIK_ENI, FERMA, FERMA_X, GALEREYA_OCHIGI, GALEREYA_YOLAGI,
   ICHKI_QATOR_Z, JONATISH_YOLAKLARI, KONDALANG_QUVUR_X, KONDALANG_YOLAKLAR, KRAN, LIST_OLCHAMI, MAGISTRAL_R, MARKAZIY_YOLAK,
-  MATERIAL_STELLAJLARI, MATERIAL_TAXLAMLARI, MATERIAL_YOLAKLARI, OLD_BORDYUR_BOLAKLARI, OLD_MAGISTRAL_Z, OLD_RAMPALAR_X, OLD_USTUN_Z,
-  ONG_BORDYUR_BOLAKLARI, ONG_USTUN_X, ORQA_MAGISTRAL_Z, ORQA_USTUN_Z, PALET_OLCHAMI, PATRUBKA, PROGON_Z, PRORAB_XONASI, QUVUR_Y,
-  RAMPA_OCHIGI, SHKAF_ENI, SIKLON, TAYYOR_PALETLAR, USTUN_KESIMI, CHAP_USTUN_X, bolaklar, kranHolati, magistralZ, tushishNuqtasi,
-  ustunlar, type Tortburchak,
+  MATERIAL_STELLAJLARI, MATERIAL_TAXLAMLARI, MATERIAL_YOLAKLARI, OCHIQ_ROMI, OLD_BORDYUR_BOLAKLARI, OLD_MAGISTRAL_Z, OLD_RAMPALAR_X,
+  OLD_USTUN_Z, ONG_BORDYUR_BOLAKLARI, ONG_USTUN_X, ORQA_DEVOR_BOLAKLARI, ORQA_MAGISTRAL_Y, ORQA_MAGISTRAL_Z, ORQA_OCHIQ_H,
+  ORQA_OCHIQ_JOYLARI, ORQA_OCHIQ_YOLAKLARI, ORQA_USTUNLAR_X, ORQA_USTUN_Z, PALET_OLCHAMI, PATRUBKA, PROGON_Z, PRORAB_XONASI, QUVUR_Y,
+  RAMPA_OCHIGI, SHKAF_ENI, SIKLON, SIKLON_TRUBASI, TARMOQ_TUSHISH_Z, TAYYOR_PALETLAR, USTUN_KESIMI, CHAP_USTUN_X, YONGIN_SHKAFI_X, YORDAM_QUTISI_X,
+  bolaklar, kranHolati, magistralZ, ochiqdami, orqaDerazalari, tushishNuqtasi, ustunlar, type Tortburchak,
 } from "./sexBinosi";
 
 // Ishlab chiqarish binosi (64 × 30 × 8 m): beton pol va bo'yalgan yo'laklar, orqa va chap devorlar (derazalar, ko'tariluvchi darvoza
 // ochiqlari), po'lat karkas (ustunlar 12 m qadam, fermalar, progonlar), kran-balka, LED yoritgichlar, kabel lotoklari, chang so'rish
 // (siklon, magistrallar, har stanokka tushuvchi quvur), elektr shkaflar, chilangar stoli, o't o'chirgichlar, belgilar, favqulodda
 // chiqishlar, prorab xonasi, material ombori va tayyor mahsulot zonasi. Old (z = 15) va o'ng (x = 32) tomonlar past bordyurgacha
-// qirqilgan, tom yopilmagan — kamera ichini ko'radi. Hammasi kod bilan (tashqi model/tekstura fayli yo'q).
+// qirqilgan, tom yopilmagan — kamera ichini ko'radi. Orqa devor (z = −15) endi ichki devor: ortida 2-sex (AvtoSex.tsx), ikki keng
+// ochiq (x = ±12, 8 × 5.5 m) orqali AGV va odamlar o'tadi. Hammasi kod bilan (tashqi model/tekstura fayli yo'q).
 // Qimirlamaydigan qismlar StatikGuruh ichida material bo'yicha birlashtiriladi; kran alohida (sekin harakatlanadi).
 
 type V3 = [number, number, number];
@@ -45,6 +47,8 @@ const Y_BELGI = 0.032;
 /** Deraza tasmasi (orqa va chap devor). */
 const DERAZA = { past: 5.0, tepa: 6.6 } as const;
 const YORITGICH_X = [-28, -18, -6, 6, 18, 28] as const;
+/** Ichki qator (z = ±3.6) va torets ustunlari x lari — old kran yo'li konsollari. */
+const ICHKI_USTUNLAR_X = [CHAP_USTUN_X, ...FERMA_X, ONG_USTUN_X];
 const YORITGICH_Z = [-12, -6, 0, 6, 12] as const;
 
 export function ZonaYorligi({ p, matn, rang }: { p: [number, number, number]; matn: string; rang: string }) {
@@ -162,6 +166,7 @@ function useBinoResurslari() {
       atlas,
       led: new THREE.MeshStandardMaterial({ color: "#ffffff", emissive: "#fff6e0", emissiveIntensity: 2.2, roughness: 0.35 }),
       piyoda: new THREE.MeshStandardMaterial({ color: "#4f8297", roughness: 0.78 }),
+      agv: new THREE.MeshStandardMaterial({ color: "#2f6fd6", roughness: 0.8 }),
       belgi: new THREE.MeshStandardMaterial({ map: atlas, roughness: 0.55 }),
       chiqish: new THREE.MeshStandardMaterial({ map: atlas, emissiveMap: atlas, emissive: "#ffffff", emissiveIntensity: 0.9, roughness: 0.4 }),
       g: {
@@ -179,7 +184,7 @@ function useBinoResurslari() {
   }, []);
   useEffect(() => () => {
     r.atlas?.dispose();
-    [r.led, r.piyoda, r.belgi, r.chiqish].forEach((m) => m.dispose());
+    [r.led, r.piyoda, r.agv, r.belgi, r.chiqish].forEach((m) => m.dispose());
     Object.values(r.g).forEach((g) => g.dispose());
   }, [r]);
   return r;
@@ -298,8 +303,8 @@ function Ferma({ mat, x }: { mat: Materiallar; x: number }) {
   );
 }
 
-/** Kran osti yo'li (x bo'ylab): qo'shtavr to'sin va rels, ustunlardagi konsollarda; uchlarida tirgak. */
-function KranYoli({ mat, z, konsolYon }: { mat: Materiallar; z: number; konsolYon: 1 | -1 }) {
+/** Kran osti yo'li (x bo'ylab): qo'shtavr to'sin va rels, ustunlardagi (`xlar`) konsollarda; uchlarida tirgak. */
+function KranYoli({ mat, z, konsolYon, xlar }: { mat: Materiallar; z: number; konsolYon: 1 | -1; xlar: readonly number[] }) {
   const y = KRAN.relsY;
   const x0 = CHAP_USTUN_X;
   const x1 = ONG_USTUN_X;
@@ -311,7 +316,7 @@ function KranYoli({ mat, z, konsolYon }: { mat: Materiallar; z: number; konsolYo
       <Quti o={[uz, 0.35, 0.02]} p={[markaz, y - 0.2, z]} mat={mat.polatQora} />
       <Quti o={[uz, 0.025, 0.3]} p={[markaz, y - 0.0125 - 0.04, z]} mat={mat.polatQora} />
       <Quti o={[uz, 0.04, 0.06]} p={[markaz, y - 0.02, z]} mat={mat.polat} />
-      {[CHAP_USTUN_X, ...FERMA_X, ONG_USTUN_X].map((x) => (
+      {xlar.map((x) => (
         <Quti key={x} o={[0.3, 0.2, 0.42]} p={[x, y - 0.5, z - konsolYon * 0.05]} mat={mat.polatQora} />
       ))}
       {[x0 + 0.3, x1 - 0.3].map((x) => <Quti key={`t${x}`} o={[0.2, 0.3, 0.3]} p={[x, y + 0.15, z]} mat={mat.sariq} />)}
@@ -475,6 +480,46 @@ function DarvozaRomi({ mat, z }: { mat: Materiallar; z: number }) {
   );
 }
 
+/**
+ * Orqa devordagi keng ochiq (2-sexga o'tish): ikki yuzida xavf chiziqli yon romlar, devor qirrasi qoplamasi, ustki to'sin
+ * (xavf chizig'i bilan), polda ostona chizig'i, yonlarida himoya bolardlari va ustida "chiqish" belgisi. Eshigi yo'q — doim ochiq.
+ */
+function OrqaOchiqRomi({ mat, res, x, eni }: { mat: Materiallar; res: Resurslar; x: number; eni: number }) {
+  const yarim = eni / 2;
+  const h = ORQA_OCHIQ_H;
+  const tashqiZ = DEVOR_Z - DEVOR_QALINLIGI / 2;
+  return (
+    <group position={[x, 0, 0]}>
+      {[-1, 1].map((tomon) => (
+        <group key={tomon}>
+          {/* Ichki (sex) va tashqi (2-sex) yuzdagi yon romlar */}
+          <XavfChizigi mat={mat} p={[tomon * (yarim - OCHIQ_ROMI / 2), h / 2, ICHKI_Z + 0.06]} o={[OCHIQ_ROMI, h, 0.12]} soni={10} oqi={1} />
+          <XavfChizigi mat={mat} p={[tomon * (yarim - OCHIQ_ROMI / 2), h / 2, tashqiZ - 0.06]} o={[OCHIQ_ROMI, h, 0.12]} soni={10} oqi={1} />
+          {/* Devor qirrasi qoplamasi */}
+          <Quti o={[0.03, h, DEVOR_QALINLIGI + 0.02]} p={[tomon * (yarim - 0.015), h / 2, DEVOR_Z]} mat={mat.polatQora} />
+          {/* Himoya bolardlari (ikki tomonda) */}
+          {[ICHKI_Z + 0.6, tashqiZ - 0.65].map((z) => (
+            <group key={z}>
+              <Silindr r={0.09} h={1.1} p={[tomon * (yarim + 0.12), 0.55, z]} mat={mat.sariq} seg={14} />
+              <Silindr r={0.095} h={0.12} p={[tomon * (yarim + 0.12), 0.85, z]} mat={mat.qora} seg={14} />
+            </group>
+          ))}
+        </group>
+      ))}
+      {/* Ustki to'sin (ikki yuzda) va xavf chizig'i */}
+      <Quti o={[eni + 0.5, 0.34, DEVOR_QALINLIGI + 0.3]} p={[0, h + 0.17, DEVOR_Z]} mat={mat.korpusQora} />
+      <XavfChizigi mat={mat} p={[0, h + 0.12, ICHKI_Z + 0.155]} o={[eni, 0.14, 0.01]} soni={24} oqi={0} />
+      <XavfChizigi mat={mat} p={[0, h + 0.12, tashqiZ - 0.155]} o={[eni, 0.14, 0.01]} soni={24} oqi={0} />
+      {/* Ostona: polda xavf chizig'i (ikki tomonda) */}
+      <XavfChizigi mat={mat} p={[0, 0.022, ICHKI_Z + 0.25]} o={[eni, 0.012, 0.4]} soni={20} oqi={0} />
+      <XavfChizigi mat={mat} p={[0, 0.022, tashqiZ - 0.25]} o={[eni, 0.012, 0.4]} soni={20} oqi={0} />
+      {/* Ustidagi yorug' belgi (sex tomonida) */}
+      <Quti o={[0.66, 0.34, 0.1]} p={[0, h + 0.62, ICHKI_Z + 0.06]} mat={mat.korpus} />
+      <Belgi g={res.g.chiqish} mat={res.chiqish} p={[0, h + 0.62, ICHKI_Z + 0.115]} s={[0.6, 0.3, 1]} />
+    </group>
+  );
+}
+
 /** Old rampa ochig'i (bordyur uzilgan): rezina buferlar, rampa chirog'i (burilma kronshteynda), polda xavf chizig'i. */
 function OldRampa({ mat, res, x }: { mat: Materiallar; res: Resurslar; x: number }) {
   const yarim = RAMPA_OCHIGI / 2;
@@ -517,48 +562,62 @@ function ChangSorish({ mat, stanoklar }: { mat: Materiallar; stanoklar: StanokTa
   const oraliq = (mz: number) => {
     const xlar = tarmoqlar.filter((t) => t.mz === mz).map((t) => t.x);
     if (!xlar.length) return null;
-    return [Math.min(...xlar, KONDALANG_QUVUR_X) - 0.5, Math.max(...xlar, KONDALANG_QUVUR_X) + 0.5] as const;
+    return [Math.min(...xlar, KONDALANG_QUVUR_X, SIKLON.x) - 0.5, Math.max(...xlar, KONDALANG_QUVUR_X, SIKLON.x) + 0.5] as const;
   };
-  const orqa = oraliq(ORQA_MAGISTRAL_Z) ?? [KONDALANG_QUVUR_X - 2, KONDALANG_QUVUR_X + 2];
+  const orqa = oraliq(ORQA_MAGISTRAL_Z) ?? [Math.min(KONDALANG_QUVUR_X, SIKLON.x) - 1, Math.max(KONDALANG_QUVUR_X, SIKLON.x) + 1];
   const old = oraliq(OLD_MAGISTRAL_Z);
   const y = QUVUR_Y;
+  /** Orqa magistral sathi: ochiqlar (5.5 m) ustidan o'tadi. */
+  const oy = ORQA_MAGISTRAL_Y;
   const ilgichlar = (a: number, b: number) => Array.from({ length: Math.floor((b - a) / 3) + 1 }, (_, i) => a + 0.4 + i * 3).filter((x) => x < b);
   const { x: sx, z: sz, r: sr } = SIKLON;
+  /** Toza havo trubasi (devor ortida, 2-sex tomonida) — siklon markaziga nisbatan. */
+  const tz = SIKLON_TRUBASI.z - sz;
   return (
     <group>
-      {/* Orqa magistral (1-liniya) */}
-      <Quvur a={[orqa[0], y, ORQA_MAGISTRAL_Z]} b={[orqa[1], y, ORQA_MAGISTRAL_Z]} r={MAGISTRAL_R} mat={mat.oluk} seg={20} />
-      {orqa.map((x) => <Silindr key={x} r={MAGISTRAL_R + 0.02} h={0.04} p={[x, y, ORQA_MAGISTRAL_Z]} rot={[0, 0, Math.PI / 2]} mat={mat.polatQora} seg={20} />)}
-      {/* Orqa magistral kran zonasida — osma emas, devordagi konsollarda (kran ko'prigi ustidan o'tadi) */}
-      {ilgichlar(orqa[0], orqa[1]).map((x) => (
+      {/* Orqa magistral (1-liniya): kran relsidan oldinroqda, pastki yuzi ochiqlar balandligidan yuqori */}
+      <Quvur a={[orqa[0], oy, ORQA_MAGISTRAL_Z]} b={[orqa[1], oy, ORQA_MAGISTRAL_Z]} r={MAGISTRAL_R} mat={mat.oluk} seg={20} />
+      {orqa.map((x) => <Silindr key={x} r={MAGISTRAL_R + 0.02} h={0.04} p={[x, oy, ORQA_MAGISTRAL_Z]} rot={[0, 0, Math.PI / 2]} mat={mat.polatQora} seg={20} />)}
+      {/* Devordagi konsollar (kran ko'prigi ustidan o'tadi); ochiqlar ro'parasida devor yo'q — u yerda konsol ham yo'q */}
+      {ilgichlar(orqa[0], orqa[1]).filter((x) => !ochiqdami(x, 0.4)).map((x) => (
         <group key={`i${x}`}>
-          <Quti o={[0.06, 0.06, ORQA_MAGISTRAL_Z - ICHKI_Z + 0.35]} p={[x, y - MAGISTRAL_R - 0.03, (ICHKI_Z + ORQA_MAGISTRAL_Z + 0.35) / 2]} mat={mat.polatQora} />
-          <Quti o={[0.05, 0.05, 0.9]} p={[x, y - MAGISTRAL_R - 0.33, ICHKI_Z + 0.36]} r={[-Math.PI / 4, 0, 0]} mat={mat.polatQora} />
-          <Silindr r={MAGISTRAL_R + 0.015} h={0.05} p={[x, y, ORQA_MAGISTRAL_Z]} rot={[0, 0, Math.PI / 2]} mat={mat.polatQora} seg={20} />
+          <Quti o={[0.06, 0.06, ORQA_MAGISTRAL_Z - ICHKI_Z + 0.35]} p={[x, oy - MAGISTRAL_R - 0.03, (ICHKI_Z + ORQA_MAGISTRAL_Z + 0.35) / 2]} mat={mat.polatQora} />
+          <Quti o={[0.05, 0.05, 0.9]} p={[x, oy - MAGISTRAL_R - 0.33, ICHKI_Z + 0.36]} r={[-Math.PI / 4, 0, 0]} mat={mat.polatQora} />
+          <Silindr r={MAGISTRAL_R + 0.015} h={0.05} p={[x, oy, ORQA_MAGISTRAL_Z]} rot={[0, 0, Math.PI / 2]} mat={mat.polatQora} seg={20} />
         </group>
       ))}
-      {/* Old kollektor (2-liniya) va ko'ndalang ulovchi quvur */}
+      {/* Old kollektor (2-liniya) va ko'ndalang ulovchi quvur (ochiqlar orasidagi bo'lakdan, ichki ustunlar yonidan) */}
       {old && (
         <>
           <Quvur a={[old[0], y, OLD_MAGISTRAL_Z]} b={[old[1], y, OLD_MAGISTRAL_Z]} r={MAGISTRAL_R * 0.85} mat={mat.oluk} seg={20} />
           {old.map((x) => <Silindr key={x} r={MAGISTRAL_R * 0.85 + 0.02} h={0.04} p={[x, y, OLD_MAGISTRAL_Z]} rot={[0, 0, Math.PI / 2]} mat={mat.polatQora} seg={20} />)}
           {ilgichlar(old[0], old[1]).map((x) => <Quti key={`o${x}`} o={[0.03, FERMA.past - y, 0.03]} p={[x, (FERMA.past + y) / 2, OLD_MAGISTRAL_Z]} mat={mat.polatQora} />)}
+          <Quvur a={[KONDALANG_QUVUR_X, oy, ORQA_MAGISTRAL_Z]} b={[KONDALANG_QUVUR_X, y, ORQA_MAGISTRAL_Z]} r={0.22} mat={mat.oluk} seg={18} />
+          <Shar r={0.23} p={[KONDALANG_QUVUR_X, y, ORQA_MAGISTRAL_Z]} mat={mat.oluk} />
           <Quvur a={[KONDALANG_QUVUR_X, y, ORQA_MAGISTRAL_Z]} b={[KONDALANG_QUVUR_X, y, OLD_MAGISTRAL_Z]} r={0.22} mat={mat.oluk} seg={18} />
           <Shar r={0.3} p={[KONDALANG_QUVUR_X, y, OLD_MAGISTRAL_Z]} mat={mat.oluk} />
           {[-3, 3, 9].map((z) => <Quti key={`k${z}`} o={[0.03, FERMA.past - y, 0.03]} p={[KONDALANG_QUVUR_X, (FERMA.past + y) / 2, z]} mat={mat.polatQora} />)}
-          {/* Kran zonasida osma bo'lmaydi: poldan tayanch ustuni (ko'ndalang yo'lak chetida) va konsol */}
-          <Quti o={[0.12, y - 0.22, 0.12]} p={[KONDALANG_QUVUR_X + 1.3, (y - 0.22) / 2, -8.5]} mat={mat.polatQora} />
-          <Quti o={[1.42, 0.08, 0.08]} p={[KONDALANG_QUVUR_X + 0.65, y - 0.26, -8.5]} mat={mat.polatQora} />
-          <Quti o={[0.3, 0.02, 0.3]} p={[KONDALANG_QUVUR_X + 1.3, 0.01, -8.5]} mat={mat.polatQora} />
+          {/* Kran zonasida osma bo'lmaydi: poldan tayanch ustuni (stanoklar orasida) va konsol */}
+          <Quti o={[0.12, y - 0.22, 0.12]} p={[KONDALANG_QUVUR_X + 1.3, (y - 0.22) / 2, -9.6]} mat={mat.polatQora} />
+          <Quti o={[1.42, 0.08, 0.08]} p={[KONDALANG_QUVUR_X + 0.65, y - 0.26, -9.6]} mat={mat.polatQora} />
+          <Quti o={[0.3, 0.02, 0.3]} p={[KONDALANG_QUVUR_X + 1.3, 0.01, -9.6]} mat={mat.polatQora} />
         </>
       )}
-      {/* Har stanokka tarmoq: magistraldan gorizontal, shiber, tirsak, tushuvchi quvur va egiluvchan shlang */}
+      {/* Har stanokka tarmoq: magistraldan gorizontal, shiber, tirsak, tushuvchi quvur va egiluvchan shlang. Orqa magistraldan
+          tarmoq ochiqlar oldidagi o'tish yo'lagi ustidan baland (5.5 m dan yuqori) o'tadi, kran zonasidan oldin tirsak bilan pastga tushadi. */}
       {tarmoqlar.map((t) => {
         const yon = Math.sign(t.z - t.mz);
+        const orqadan = t.mz === ORQA_MAGISTRAL_Z;
+        /** Orqa tarmoq pastga tushadigan joy (z): o'tish yo'lagi oxiri, kran ilmog'i zonasidan oldin. */
+        const tz = orqadan ? TARMOQ_TUSHISH_Z : t.mz;
         return (
           <group key={t.id}>
-            <Quvur a={[t.x, y, t.mz]} b={[t.x, y, t.z]} r={0.12} mat={mat.oluk} />
-            <Quti o={[0.32, 0.36, 0.06]} p={[t.x, y + 0.04, t.mz + yon * 0.75]} mat={mat.polatQora} />
+            {orqadan && <Quvur a={[t.x, oy, t.mz]} b={[t.x, oy, tz]} r={0.12} mat={mat.oluk} />}
+            {orqadan && <Shar r={0.13} p={[t.x, oy, tz]} mat={mat.oluk} />}
+            {orqadan && <Quvur a={[t.x, y, tz]} b={[t.x, oy, tz]} r={0.12} mat={mat.oluk} />}
+            {orqadan && <Shar r={0.13} p={[t.x, y, tz]} mat={mat.oluk} />}
+            <Quvur a={[t.x, y, tz]} b={[t.x, y, t.z]} r={0.12} mat={mat.oluk} />
+            <Quti o={[0.32, 0.36, 0.06]} p={[t.x, (orqadan ? oy : y) + 0.04, t.mz + yon * 0.75]} mat={mat.polatQora} />
             <Shar r={0.13} p={[t.x, y, t.z]} mat={mat.oluk} />
             <Quvur a={[t.x, t.yPast + 0.3, t.z]} b={[t.x, y, t.z]} r={0.1} mat={mat.oluk} />
             <Silindr r={0.12} h={0.36} p={[t.x, t.yPast + 0.12, t.z]} mat={mat.rezina} seg={14} />
@@ -566,7 +625,7 @@ function ChangSorish({ mat, stanoklar }: { mat: Materiallar; stanoklar: StanokTa
           </group>
         );
       })}
-      {/* Siklon-filtr: tayanch oyoqlar, konus, silindr, qalpoq; tangensial kirish; chiqish quvuri devor orqali tashqariga */}
+      {/* Siklon-filtr: tayanch oyoqlar, konus, silindr, qalpoq; tangensial kirish; toza havo quvuri devor orqali 2-sexga, u yerda ventilyator va tepaga truba */}
       <group position={[sx, 0, sz]}>
         {[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([a, b]) => <Quti key={`${a}${b}`} o={[0.1, 2.85, 0.1]} p={[a * 0.68, 1.425, b * 0.68]} mat={mat.polatQora} />)}
         {[-1, 1].map((a) => <Quti key={`b${a}`} o={[1.46, 0.08, 0.08]} p={[0, 0.6, a * 0.68]} mat={mat.polatQora} />)}
@@ -582,19 +641,21 @@ function ChangSorish({ mat, stanoklar }: { mat: Materiallar; stanoklar: StanokTa
         <Quti o={[0.9, 0.85, 0.8]} p={[0, 0.555, 0]} mat={mat.korpusQora} />
         {[[-0.35, -0.3], [0.35, -0.3], [-0.35, 0.3], [0.35, 0.3]].map(([a, b]) => <Silindr key={`g${a}${b}`} r={0.065} h={0.05} p={[a, 0.065, b]} rot={[0, 0, Math.PI / 2]} mat={mat.rezina} seg={12} />)}
         {/* Tangensial kirish: magistraldan pastga, keyin siklon yon tomoniga */}
-        <Quvur a={[0.55, 4.15, ORQA_MAGISTRAL_Z - sz]} b={[0.55, QUVUR_Y, ORQA_MAGISTRAL_Z - sz]} r={0.2} mat={mat.oluk} />
+        <Quvur a={[0.55, 4.15, ORQA_MAGISTRAL_Z - sz]} b={[0.55, oy, ORQA_MAGISTRAL_Z - sz]} r={0.2} mat={mat.oluk} />
         <Shar r={0.21} p={[0.55, 4.15, ORQA_MAGISTRAL_Z - sz]} mat={mat.oluk} />
         <Quvur a={[0.55, 4.15, ORQA_MAGISTRAL_Z - sz]} b={[0.55, 4.15, -0.6]} r={0.2} mat={mat.oluk} />
-        {/* Toza havo chiqishi: tepadan, tirsak, devor orqali tashqariga — ventilyator va so'rish trubasi bino ortida */}
+        {/* Toza havo chiqishi: tepadan, tirsak, devor orqali 2-sexga — ventilyator va truba devor ortida (bino tomidan yuqoriga) */}
         <Quvur a={[0, SIKLON.tepa, 0]} b={[0, 4.75, 0]} r={0.22} mat={mat.oluk} />
         <Shar r={0.23} p={[0, 4.75, 0]} mat={mat.oluk} />
-        <Quvur a={[0, 4.75, 0]} b={[0, 4.75, DEVOR_Z - sz - 0.9]} r={0.22} mat={mat.oluk} />
+        <Quvur a={[0, 4.75, 0]} b={[0, 4.75, tz]} r={0.22} mat={mat.oluk} />
         <Silindr r={0.38} h={0.55} p={[0, 4.75, DEVOR_Z - sz - 0.42]} rot={[Math.PI / 2, 0, 0]} mat={mat.korpus} seg={20} />
         <Silindr r={0.17} h={0.4} p={[-0.55, 4.75, DEVOR_Z - sz - 0.42]} rot={[0, 0, Math.PI / 2]} mat={mat.cncRang} seg={16} />
-        <Shar r={0.23} p={[0, 4.75, DEVOR_Z - sz - 0.9]} mat={mat.oluk} />
-        <Quvur a={[0, 4.75, DEVOR_Z - sz - 0.9]} b={[0, 7.3, DEVOR_Z - sz - 0.9]} r={0.2} mat={mat.oluk} />
-        <Konus rt={0.05} rb={0.34} h={0.22} p={[0, 7.55, DEVOR_Z - sz - 0.9]} mat={mat.polatQora} seg={18} />
-        {[-1, 1].map((a) => <Quti key={`t${a}`} o={[0.03, 0.2, 0.03]} p={[a * 0.2, 7.4, DEVOR_Z - sz - 0.9]} mat={mat.polatQora} />)}
+        <Shar r={0.23} p={[0, 4.75, tz]} mat={mat.oluk} />
+        <Quvur a={[0, 4.75, tz]} b={[0, SIKLON_TRUBASI.tepa - 0.25, tz]} r={0.2} mat={mat.oluk} />
+        <Konus rt={0.05} rb={0.34} h={0.22} p={[0, SIKLON_TRUBASI.tepa, tz]} mat={mat.polatQora} seg={18} />
+        {[-1, 1].map((a) => <Quti key={`t${a}`} o={[0.03, 0.2, 0.03]} p={[a * 0.2, SIKLON_TRUBASI.tepa - 0.15, tz]} mat={mat.polatQora} />)}
+        {/* Trubani devorga mahkamlovchi xomutlar */}
+        {[3.2, 6.2, 8.6].map((h) => <Quti key={`x${h}`} o={[0.06, 0.06, Math.abs(tz - (DEVOR_Z - sz)) + 0.1]} p={[0, h, (tz + DEVOR_Z - sz) / 2 - 0.05]} mat={mat.polatQora} />)}
         {/* Xizmat narvoni */}
         {[-0.22, 0.22].map((a) => <Quti key={`n${a}`} o={[0.04, 4.2, 0.04]} p={[-sr - 0.12, 2.1, a]} mat={mat.polatQora} />)}
         {Array.from({ length: 13 }, (_, i) => <Quti key={`p${i}`} o={[0.03, 0.03, 0.44]} p={[-sr - 0.12, 0.35 + i * 0.3, 0]} mat={mat.polatQora} />)}
@@ -977,6 +1038,22 @@ function PolBelgilari({ mat, res }: { mat: Materiallar; res: Resurslar }) {
           <PolBelgisi g={res.g.iz} p={[28.12, z + 0.4]} r={Math.PI} mat={mat.oq} s={1.3} />
         </group>
       ))}
+      {/* Orqa devor ochiqlari oldidagi o'tish yo'laklari: sariq chegaralar, to'xtash chizig'i, AGV qatori (U-burilish) va o'qlar */}
+      {ORQA_OCHIQ_YOLAKLARI.map((t) => {
+        const x = (t.x0 + t.x1) / 2;
+        return (
+          <group key={`oy${x}`}>
+            {sariqChiziq(t.x0 + 0.05, t.x0 + 0.15, ICHKI_Z + 0.45, t.z1, "c")}
+            {sariqChiziq(t.x1 - 0.15, t.x1 - 0.05, ICHKI_Z + 0.45, t.z1, "o")}
+            {Array.from({ length: 10 }, (_, i) => t.x0 + 0.4 + i * 0.8).map((zx) => <Tekis key={zx} o={[0.45, 0.1]} p={[zx, Y_CHIZIQ, t.z1 - 0.05]} mat={mat.sariq} />)}
+            {[x - 2, x + 2].map((ax) => <Maydon key={ax} t={{ x0: ax - 0.5, x1: ax + 0.5, z0: ICHKI_Z + 0.45, z1: -12.7 }} y={Y_USTKI} mat={res.agv} />)}
+            <Maydon t={{ x0: x - 2.5, x1: x + 2.5, z0: -13.7, z1: -12.7 }} y={Y_USTKI} mat={res.agv} />
+            {/* AGV yo'nalishi: x + 2 qatoridan sexga kiradi, x − 2 qatoridan 2-sexga qaytadi */}
+            <PolBelgisi g={res.g.oq} p={[x + 2, -14.0]} r={-Math.PI / 2} mat={mat.oq} s={0.8} />
+            <PolBelgisi g={res.g.oq} p={[x - 2, -14.0]} r={Math.PI / 2} mat={mat.oq} s={0.8} />
+          </group>
+        );
+      })}
       {/* Elektr shkaflar oldi: "bo'sh saqlang" maydoni */}
       {ELEKTR_SHKAFLAR.map(({ x, soni }) => {
         const x1 = x + soni * SHKAF_ENI;
@@ -999,7 +1076,7 @@ export default function SexMuhiti({ mat, stanoklar, uzoq = false }: { mat: Mater
   const res = useBinoResurslari();
   const varaqlar = useMemo(() => [mat.lmdp, mat.lmdpOq, mat.lmdpYongoq, mat.lmdpKul], [mat]);
   const ustunJoylari = useMemo(() => ustunlar(), []);
-  const derazaX = useMemo(() => Array.from({ length: 16 }, (_, i) => -30 + i * 4), []);
+  const derazaX = useMemo(() => orqaDerazalari(3.2), []);
   const derazaZ = useMemo(() => [-12, -8, -4, 0, 4, 8, 12], []);
   const fermalar = useMemo(() => [CHAP_USTUN_X, ...FERMA_X, ONG_USTUN_X], []);
   const tayyor = ZONALAR.tayyor;
@@ -1013,11 +1090,25 @@ export default function SexMuhiti({ mat, stanoklar, uzoq = false }: { mat: Mater
         </mesh>
         <PolBelgilari mat={mat} res={res} />
 
-        {/* Orqa devor: sendvich-panel, pastki sokol, deraza tasmasi, tepasida parapet */}
-        <Quti o={[SEX_ENI + DEVOR_QALINLIGI, DEVOR_BALANDLIGI, DEVOR_QALINLIGI]} p={[-DEVOR_QALINLIGI / 2, DEVOR_BALANDLIGI / 2, DEVOR_Z]} mat={mat.devor} />
-        <Quti o={[SEX_ENI + DEVOR_QALINLIGI, 1.2, DEVOR_QALINLIGI + 0.04]} p={[-DEVOR_QALINLIGI / 2, 0.6, DEVOR_Z]} mat={mat.devorPast} />
+        {/* Orqa (ichki) devor: ochiqlar orasida to'liq balandlikda sendvich-panel va sokol, ochiqlar ustida — 5.5 m dan yuqorisi;
+            deraza tasmasi faqat devor bo'laklarida, tepasida parapet. Ortida 2-sex (AvtoSex). */}
+        {ORQA_DEVOR_BOLAKLARI.map(([a, b]) => {
+          const a0 = a <= -YX + 1e-6 ? a - DEVOR_QALINLIGI : a;
+          return (
+            <group key={`od${a}`}>
+              <Quti o={[b - a0, DEVOR_BALANDLIGI, DEVOR_QALINLIGI]} p={[(a0 + b) / 2, DEVOR_BALANDLIGI / 2, DEVOR_Z]} mat={mat.devor} />
+              <Quti o={[b - a0, 1.2, DEVOR_QALINLIGI + 0.04]} p={[(a0 + b) / 2, 0.6, DEVOR_Z]} mat={mat.devorPast} />
+            </group>
+          );
+        })}
+        {ORQA_OCHIQ_JOYLARI.map((o) => (
+          <group key={`oo${o.markaz}`}>
+            <Quti o={[o.eni, DEVOR_BALANDLIGI - ORQA_OCHIQ_H, DEVOR_QALINLIGI]} p={[o.markaz, (DEVOR_BALANDLIGI + ORQA_OCHIQ_H) / 2, DEVOR_Z]} mat={mat.devor} />
+            <OrqaOchiqRomi mat={mat} res={res} x={o.markaz} eni={o.eni} />
+          </group>
+        ))}
         <Quti o={[SEX_ENI + DEVOR_QALINLIGI + 0.1, 0.12, DEVOR_QALINLIGI + 0.1]} p={[-DEVOR_QALINLIGI / 2, DEVOR_BALANDLIGI + 0.06, DEVOR_Z]} mat={mat.polatQora} />
-        <DerazaTasmasi mat={mat} markazlar={derazaX} eni={3.5} devor={DEVOR_Z} yon="z" />
+        <DerazaTasmasi mat={mat} markazlar={derazaX} eni={3.2} devor={DEVOR_Z} yon="z" />
         {CHIQISH_ESHIKLARI_X.map((x) => <ChiqishEshigi key={x} mat={mat} res={res} x={x} />)}
 
         {/* Chap devor: darvoza ochiqlari orasida to'liq balandlikda, ochiqlar ustida — ustki qism */}
@@ -1059,8 +1150,8 @@ export default function SexMuhiti({ mat, stanoklar, uzoq = false }: { mat: Mater
         {PROGON_Z.map((z) => <Quti key={`pr${z}`} o={[SEX_ENI, 0.16, 0.08]} p={[0, FERMA.tepa + 0.15, Math.max(ORQA_USTUN_Z, Math.min(OLD_USTUN_Z, z))]} mat={mat.polatQora} />)}
         {[ORQA_USTUN_Z, -ICHKI_QATOR_Z, ICHKI_QATOR_Z, OLD_USTUN_Z].map((z) => <Quti key={`bt${z}`} o={[ONG_USTUN_X - CHAP_USTUN_X, 0.3, 0.16]} p={[(ONG_USTUN_X + CHAP_USTUN_X) / 2, FERMA.past - 0.22, z]} mat={mat.polatQora} />)}
         {/* Kran osti yo'llari */}
-        <KranYoli mat={mat} z={KRAN.orqaRelsZ} konsolYon={1} />
-        <KranYoli mat={mat} z={KRAN.oldRelsZ} konsolYon={-1} />
+        <KranYoli mat={mat} z={KRAN.orqaRelsZ} konsolYon={1} xlar={ORQA_USTUNLAR_X} />
+        <KranYoli mat={mat} z={KRAN.oldRelsZ} konsolYon={-1} xlar={ICHKI_USTUNLAR_X} />
 
         {/* LED yoritgichlar (progonlarga osilgan) */}
         {YORITGICH_X.flatMap((x) => YORITGICH_Z.map((z) => (
@@ -1072,8 +1163,8 @@ export default function SexMuhiti({ mat, stanoklar, uzoq = false }: { mat: Mater
           </group>
         )))}
 
-        {/* Kabel lotoklari: orqa devor bo'ylab va markaziy yo'lak ustida */}
-        <KabelLotogi mat={mat} x0={-24.6} x1={25.5} y={3.8} z={ICHKI_Z + 0.65} />
+        {/* Kabel lotoklari: orqa devor bo'ylab (ochiqlarda uzilgan — kabellar devor orqali 2-sexga o'tadi) va markaziy yo'lak ustida */}
+        {bolaklar(-24.6, 25.5, ORQA_OCHIQ_JOYLARI.map((o) => ({ markaz: o.markaz, eni: o.eni + 0.8 }))).map(([a, b]) => <KabelLotogi key={`kl${a}`} mat={mat} x0={a} x1={b} y={3.8} z={ICHKI_Z + 0.65} />)}
         <KabelLotogi mat={mat} x0={CHAP_USTUN_X + 0.3} x1={ONG_USTUN_X - 0.3} y={6.0} z={ICHKI_QATOR_Z - 0.6} osma={FERMA.past} />
 
         {/* Chang so'rish tizimi */}
@@ -1082,12 +1173,12 @@ export default function SexMuhiti({ mat, stanoklar, uzoq = false }: { mat: Mater
         {/* Elektr shkaflar, chilangar stoli, o't o'chirish va birinchi yordam, chiqindi idishlari */}
         {ELEKTR_SHKAFLAR.flatMap(({ x, soni }) => Array.from({ length: soni }, (_, i) => <ElektrShkaf key={`es${x}${i}`} mat={mat} res={res} x={x + SHKAF_ENI * (i + 0.5)} />))}
         <AsbobStoli mat={mat} />
-        <group position={[-16.2, 0, ICHKI_Z]}>
+        <group position={[YONGIN_SHKAFI_X, 0, ICHKI_Z]}>
           <Quti o={[0.75, 0.9, 0.24]} p={[0, 1.45, 0.12]} mat={mat.qizil} />
           <Quti o={[0.6, 0.6, 0.02]} p={[0, 1.5, 0.245]} mat={mat.oyna} />
           <Silindr r={0.22} h={0.12} p={[0, 1.5, 0.15]} rot={[Math.PI / 2, 0, 0]} mat={mat.qizilTugma} seg={18} />
         </group>
-        <group position={[-3.4, 0, ICHKI_Z]}>
+        <group position={[YORDAM_QUTISI_X, 0, ICHKI_Z]}>
           <Quti o={[0.46, 0.4, 0.15]} p={[0, 1.55, 0.075]} mat={mat.oq} />
           <Belgi g={res.g.yordam} mat={res.belgi} p={[0, 1.55, 0.152]} s={0.24} />
           <Belgi g={res.g.yordam} mat={res.belgi} p={[0, 2.05, 0.01]} s={0.32} />
@@ -1102,7 +1193,7 @@ export default function SexMuhiti({ mat, stanoklar, uzoq = false }: { mat: Mater
           const g = tur === "kaska" ? res.g.kaska : res.g.quloqchin;
           return <Belgi key={`b${x}${z}`} g={g} mat={res.belgi} p={[Number(x), 2.4, zz + (zz < 0 ? 1 : -1) * (USTUN_KESIMI / 2 + 0.012)]} ry={zz < 0 ? 0 : Math.PI} s={0.36} />;
         })}
-        {[-14, -4, 6, 16].map((x, i) => <Belgi key={`ob${x}`} g={i % 2 ? res.g.quloqchin : res.g.kaska} mat={res.belgi} p={[x, 2.6, ICHKI_Z + 0.01]} s={0.5} />)}
+        {[6, 21].map((x, i) => <Belgi key={`ob${x}`} g={i % 2 ? res.g.quloqchin : res.g.kaska} mat={res.belgi} p={[x, 2.6, ICHKI_Z + 0.01]} s={0.5} />)}
         <Belgi g={res.g.chekish} mat={res.belgi} p={[-22.6, 2.6, ICHKI_Z + 0.01]} s={0.5} />
         {CHIQINDI_IDISHLARI.map((c) => <ChiqindiIdishi key={`ch${c.x}${c.z}`} mat={mat} x={c.x} z={c.z} rang={c.rang} />)}
 

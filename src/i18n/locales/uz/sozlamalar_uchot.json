@@ -16,7 +16,8 @@
     "narxTurlari": "Sotuv narx turlari",
     "davrniYopish": "Davrni yopish",
     "inventory": "Ombor",
-    "ishlabChiqarish": "Ishlab chiqarish"
+    "ishlabChiqarish": "Ishlab chiqarish",
+    "demo3d": "3D Demo"
   },
   "saved": "Saqlandi ✓",
   "savingToBackend": "Backendga saqlanmoqda...",
@@ -422,5 +423,15 @@
   },
   "legacyForm": {
     "fieldRequired": "Bu maydon to'ldirilishi shart."
+  },
+  "demo3d": {
+    "title": "3D Demo — zavodning uch o'lchamli ko'rinishi",
+    "desc": "Ishlab chiqarish sexi, tayyor mahsulot skladi, ofis, KPP va yuk mashinalari jonli ko'rinishda. Hozircha sinov ma'lumotlari bilan ishlaydi; keyinchalik Ye-Post ma'lumotlariga ulanadi.",
+    "badge": "Demo — sinov ma'lumotlari",
+    "f1": "Stanoklar holati va joriy buyurtmalar",
+    "f2": "Tayyor mahsulot skladi: kirim va jo'natish",
+    "f3": "KPP, rampalar va yuk mashinalari harakati",
+    "access": "Faqat administrator va direktorga ko'rinadi.",
+    "open": "3D Demoni ochish"
   }
 }

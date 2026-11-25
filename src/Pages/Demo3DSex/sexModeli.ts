@@ -59,6 +59,8 @@ export interface SexManbasi {
   obuna(tinglovchi: (holat: SexHolati, hodisa?: SexHodisasi) => void): () => void;
   /** Hududdagi yuk mashinalari (KPP → rampa → jo'nash). Ixtiyoriy: manba bermasa sahnada yuk mashinasi bo'lmaydi. */
   reyslar?(): Reys[];
+  /** Tayyor mahsulot skladi (ixtiyoriy): qoldiq, sig'im, bugungi kirim (zavoddan) va chiqim (mashinalarga). */
+  sklad?(): SkladHolati;
 }
 
 /** Foydalanuvchiga ko'rsatiladigan hodisa (lenta / bildirishnoma uchun). `obyekt: "reys"` bo'lsa `stanokId` — reys ID'si. */
@@ -129,3 +131,16 @@ export function korinadiganHolat(holat: StanokHolati | undefined): TexnikHolat |
   if (!holat) return "bosh";
   return holat.aloqa ? holat.holat : "eskirgan";
 }
+
+/** Tayyor mahsulot skladi holati (keyinchalik Ye-Post ombor qoldig'i va harakatlaridan to'ldiriladi). Birlik — palet. */
+export type SkladHolati = {
+  /** Hozir skladda turgan paletlar. */
+  palet: number;
+  /** Stellajlar sig'imi (palet joylari). */
+  sigim: number;
+  /** Bugun zavoddan kelgan (kirim). */
+  kirim: number;
+  /** Bugun mashinalarga yuklangan (chiqim). */
+  chiqim: number;
+  yangilangan: number;
+};

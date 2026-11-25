@@ -180,9 +180,5 @@
     "cartCurrencyChanged": "Valyuta rejimi o'zgardi — savatcha tozalandi. Mahsulotlarni qayta qo'shing.",
     "noPriceInCart": "{{name}}: narx yo'q. Sotuv narxini kiriting yoki mahsulotni savatchadan olib tashlang.",
     "somPriceInCart": "{{name}}: ulgurji narx so'mda kiritilgan. «Faqat dollar» rejimida chakana narxda soting yoki ulgurji narxni dollarda kiriting."
-  },
-  "demo3d": {
-    "label": "3D Demo",
-    "title": "3D Demoni ochish: mebel ishlab chiqarish zavodi (sinov ma'lumotlari)"
   }
 }

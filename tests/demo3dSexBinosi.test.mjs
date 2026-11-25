@@ -4,12 +4,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   ARAVACHALAR, ARAVACHA_OLCHAMI, ASBOB_STOLI, BOSH_YOLAKLAR, CHAP_DEVOR_BOLAKLARI, CHAP_ESHIKLAR_Z, CHIQINDI_IDISHLARI, ELEKTR_SHKAFLAR,
-  ESHIK_BALANDLIGI, ESHIK_ENI, FERMA, FERMA_X, ICHKI_QATOR_Z, JONATISH_YOLAKLARI, KRAN, LIST_OLCHAMI, MAGISTRAL_R, MATERIAL_STELLAJLARI,
-  MATERIAL_TAXLAMLARI, MATERIAL_YOLAKLARI, OLD_BORDYUR_BOLAKLARI, OLD_MAGISTRAL_Z, OLD_RAMPALAR_X, ONG_BORDYUR_BOLAKLARI, ORQA_MAGISTRAL_Z,
-  ORQA_USTUN_Z, PALET_OLCHAMI, PRORAB_XONASI, QUVUR_Y, RAMPA_OCHIGI, SHKAF_ENI, SIKLON, TAYYOR_PALETLAR, USTUN_KESIMI, bolaklar, kesishadi,
-  kranHolati, magistralZ, stanokMaydoni, tortburchak, tushishNuqtasi, ustunlar,
+  ESHIK_BALANDLIGI, ESHIK_ENI, FERMA, FERMA_X, ICHKI_QATOR_Z, JONATISH_YOLAKLARI, KONDALANG_QUVUR_X, KRAN, LIST_OLCHAMI, MAGISTRAL_R,
+  MATERIAL_STELLAJLARI, MATERIAL_TAXLAMLARI, MATERIAL_YOLAKLARI, OLD_BORDYUR_BOLAKLARI, OLD_MAGISTRAL_Z, OLD_RAMPALAR_X, ONG_BORDYUR_BOLAKLARI,
+  ORQA_DEVOR_BOLAKLARI, ORQA_MAGISTRAL_Y, ORQA_MAGISTRAL_Z, ORQA_OCHIQ_YOLAKLARI, ORQA_USTUNLAR_X, ORQA_USTUN_Z, PALET_OLCHAMI,
+  PORTAL_USTUNLARI_X, PRORAB_XONASI, QUVUR_Y, RAMPA_OCHIGI, SHKAF_ENI, SIKLON, SIKLON_TRUBASI, TARMOQ_TUSHISH_Z, TAYYOR_PALETLAR, USTUN_KESIMI, YONGIN_SHKAFI_X,
+  YORDAM_QUTISI_X, bolaklar, kesishadi, kranHolati, magistralZ, ochiqdami, orqaDerazalari, stanokMaydoni, tortburchak, tushishNuqtasi, ustunlar,
 } from '../src/Pages/Demo3DSex/sexBinosi.ts';
-import { GALEREYA, ZONALAR } from '../src/Pages/Demo3DSex/hudud.ts';
+import { AVTO_SEX, GALEREYA, ORQA_OCHIQLAR, ORQA_OCHIQ_BALANDLIGI, ZONALAR } from '../src/Pages/Demo3DSex/hudud.ts';
 
 const manba = (yol) => readFileSync(new URL(`../${yol}`, import.meta.url), 'utf8').split(String.fromCharCode(13)).join('');
 const muhit = manba('src/Pages/Demo3DSex/SexMuhiti.tsx');
@@ -47,6 +48,48 @@ test('old bordyur rampalar (x = 18.5 va 27.5) ro‘parasida ≈3.6 m uzilgan; o�
   assert.match(muhit, /OLD_BORDYUR_BOLAKLARI\.map/);
   assert.match(muhit, /ONG_BORDYUR_BOLAKLARI\.map/);
   assert.match(muhit, /function OldRampa/);
+});
+
+test('orqa devor: 2-sexga ikki ochiq (x = ±12, 8 × 5.5 m), ochiqda ustun, jihoz va 5.5 m dan past quvur yo‘q', () => {
+  assert.deepEqual(ORQA_OCHIQLAR.map((o) => [o.x, o.eni]), [[-12, 8], [12, 8]]);
+  assert.deepEqual(ORQA_DEVOR_BOLAKLARI, [[-32, -16], [-8, 8], [16, 32]]);
+  // Ochiqlar ichida ustun yo'q; ikki yonida portal ustunlari, kran yo'li konsollari shularga o'rnatiladi
+  for (const u of ustunlar().filter((x) => x.z === ORQA_USTUN_Z)) {
+    for (const o of ORQA_OCHIQLAR) assert.ok(Math.abs(u.x - o.x) >= o.eni / 2 + USTUN_KESIMI / 2, `ustun x = ${u.x} ochiqda`);
+  }
+  assert.deepEqual(PORTAL_USTUNLARI_X, [-16.25, -7.75, 7.75, 16.25]);
+  for (const x of PORTAL_USTUNLARI_X) assert.ok(ORQA_USTUNLAR_X.includes(x));
+  assert.equal(ochiqdami(-12), true);
+  assert.equal(ochiqdami(0), false);
+  // Ochiqlar oldidagi o'tish yo'laklari bo'sh qoladigan yo'laklar ro'yxatida; stanoklarga tegmaydi
+  for (const y of ORQA_OCHIQ_YOLAKLARI) {
+    assert.ok(BOSH_YOLAKLAR.includes(y));
+    assert.equal(y.z0, -15);
+    for (const m of MAYDONLAR) assert.ok(!kesishadi(y, m), 'o‘tish yo‘lagi stanok maydoniga tegmaydi');
+    for (const j of jihozlar()) assert.ok(!kesishadi(y, j.t), `${j.nom} o‘tish yo‘lagida`);
+  }
+  // Chang quvurlari: orqa magistral ochiqlar ustidan (pastki yuzi ≥ 5.5 m), kran relsiga tegmaydi; ko'ndalang quvur va siklon ochiqlarda emas
+  assert.ok(ORQA_MAGISTRAL_Y - MAGISTRAL_R >= ORQA_OCHIQ_BALANDLIGI);
+  assert.ok(Math.abs(ORQA_MAGISTRAL_Z - KRAN.orqaRelsZ) >= MAGISTRAL_R + 0.15 + 0.1);
+  assert.ok(ORQA_MAGISTRAL_Y + MAGISTRAL_R < KRAN.relsY + 0.02, 'kran torets aravasidan pastda');
+  // Orqa tarmoqlar o'tish yo'lagi ustidan baland o'tib, kran ilmog'i zonasidan oldin pastga tushadi
+  assert.ok(TARMOQ_TUSHISH_Z >= Math.max(...ORQA_OCHIQ_YOLAKLARI.map((y) => y.z1)) - 0.2);
+  assert.ok(TARMOQ_TUSHISH_Z + 0.13 < KRAN.aravaZMin - 0.07, 'tirsak kran ilmog‘iga tegmaydi');
+  assert.match(muhit, /TARMOQ_TUSHISH_Z/);
+  assert.equal(ochiqdami(KONDALANG_QUVUR_X, 0.5), false);
+  assert.equal(ochiqdami(SIKLON.x, SIKLON.r + 0.5), false);
+  assert.ok(SIKLON_TRUBASI.z < -15 && SIKLON_TRUBASI.z > AVTO_SEX.z0 && SIKLON_TRUBASI.tepa > AVTO_SEX.balandlik, 'siklon trubasi 2-sex tomonida, tomdan yuqori');
+  // Ko'chirilgan jihozlar ochiqlardan chetda
+  for (const x of [YONGIN_SHKAFI_X, YORDAM_QUTISI_X, ASBOB_STOLI.x, ...ELEKTR_SHKAFLAR.flatMap(({ x: a, soni }) => [a, a + soni * SHKAF_ENI])]) assert.equal(ochiqdami(x, 0.4), false, `x = ${x}`);
+  // Derazalar faqat devor bo'laklarida
+  for (const u of orqaDerazalari(3.2)) assert.ok(ORQA_DEVOR_BOLAKLARI.some(([a, b]) => u - 1.6 >= a + 0.3 && u + 1.6 <= b - 0.3), `deraza ${u}`);
+  // Manba: devor bo'laklari, ochiq romi (xavf chizig'i, ustki to'sin), yo'lak belgilari; tashqi gaz quvuri endi yo'q
+  assert.match(muhit, /ORQA_DEVOR_BOLAKLARI\.map/);
+  assert.match(muhit, /function OrqaOchiqRomi/);
+  assert.match(muhit, /<OrqaOchiqRomi /);
+  assert.match(muhit, /ORQA_OCHIQ_YOLAKLARI\.map/);
+  assert.match(muhit, /xlar=\{ORQA_USTUNLAR_X\}/);
+  assert.doesNotMatch(muhit, /gaz/i);
 });
 
 test('bolaklar: ochiqlar tartibsiz, chetga tegsa yoki ustma-ust tushsa ham to‘g‘ri bo‘ladi', () => {

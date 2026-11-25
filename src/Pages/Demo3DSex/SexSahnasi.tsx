@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame, type ThreeEvent } from "@react-three/fiber";
-import { CameraControls, Environment, Html, Lightformer, Sky } from "@react-three/drei";
+import { CameraControls, Html } from "@react-three/drei";
 import * as THREE from "three";
 import { useTranslation } from "react-i18next";
 import { DEMO_SEX_NS } from "./matnlar";
@@ -14,19 +14,26 @@ import { Pogruzchik, type IshHarakati } from "./Ishchilar";
 import { GlbOdam, KelibKetuvchilar, YuruvchiGlbOdam } from "./Odamlar";
 import Ofis from "./Ofis";
 import Maishiy from "./Maishiy";
-import { MAISHIY, OFIS } from "./hudud";
-import { HOLAT_RANGI, bajarilishUlushi, korinadiganHolat, type Reys, type SexHolati, type StanokHolati, type StanokTavsifi, type StanokTuri } from "./sexModeli";
+import { AVTO_SEX, MAISHIY, OFIS, SKLAD } from "./hudud";
+import Sklad from "./Sklad";
+import AvtoSex from "./AvtoSex";
+import KunTunYoritish from "./KunTunYoritish";
+import { HOLAT_RANGI, bajarilishUlushi, korinadiganHolat, type Reys, type SexHolati, type SkladHolati, type StanokHolati, type StanokTavsifi, type StanokTuri } from "./sexModeli";
 
 // 3D sex sahnasi. Barcha stanok modellari shu yerda kod bilan (three.js geometriyasi) yasalgan — tashqi model fayli yoki havolasiz.
 // Sahna ma'lumotni faqat props orqali oladi (stanoklar ro'yxati + holatlar): demo yoki Ye-Post manbaiga bog'liq emas.
 
-export type KameraBuyrugi = { tur: "umumiy" | "yuqori" | "hudud" | "ofis" | "maishiy" | "stanok"; stanokId?: string; n: number };
+export type KameraBuyrugi = { tur: "umumiy" | "yuqori" | "hudud" | "ofis" | "maishiy" | "sklad" | "avto" | "stanok"; stanokId?: string; n: number };
 
 type Props = {
   stanoklar: StanokTavsifi[];
   holatlar: SexHolati;
   /** Hududdagi yuk mashinalari (manba bermasa — bo'sh). */
   reyslar: Reys[];
+  /** Tayyor mahsulot skladi holati (stellajdagi paletlar soni shundan). */
+  sklad?: SkladHolati;
+  /** Kun/tun: "avto" — Toshkent vaqti bo'yicha (standart), "kun" / "tun" — qo'lda tanlangan. */
+  vaqtRejimi?: "avto" | "kun" | "tun";
   tanlangan: string | null;
   onTanlash: (id: string) => void;
   kamera: KameraBuyrugi;
@@ -35,12 +42,16 @@ type Props = {
 /** Ishlab chiqarish binosi (64 × 30 m) old-o'ng tomondan. */
 const UMUMIY_KAMERA = { joy: [30, 30, 40] as const, nishon: [-1, 0, 1] as const };
 /** Ofis (direktor qavati ochiq) va maishiy blok. */
-const OFIS_KAMERA = { joy: [(OFIS.x0 + OFIS.x1) / 2 + 22, 30, OFIS.z1 + 26] as const, nishon: [(OFIS.x0 + OFIS.x1) / 2, 4, (OFIS.z0 + OFIS.z1) / 2] as const };
+const OFIS_KAMERA = { joy: [(OFIS.x0 + OFIS.x1) / 2 + 30, 34, OFIS.z1 + 34] as const, nishon: [(OFIS.x0 + OFIS.x1) / 2, (OFIS.qavatlar * OFIS.qavatBalandligi) / 2, (OFIS.z0 + OFIS.z1) / 2] as const };
+/** Avtomatlashtirilgan prolyot (2-sex) — o'ng-orqa tomondan, robotlar va konveyerlar ustidan. */
+const AVTO_KAMERA = { joy: [AVTO_SEX.x1 + 14, 34, AVTO_SEX.z0 - 22] as const, nishon: [(AVTO_SEX.x0 + AVTO_SEX.x1) / 2 + 2, 0, (AVTO_SEX.z0 + AVTO_SEX.z1) / 2] as const };
 const MAISHIY_KAMERA = { joy: [(MAISHIY.x0 + MAISHIY.x1) / 2 + 20, 26, MAISHIY.z1 + 22] as const, nishon: [(MAISHIY.x0 + MAISHIY.x1) / 2, 0, (MAISHIY.z0 + MAISHIY.z1) / 2] as const };
 /** Butun zavod hududi: KPP, rampalar, yuk mashinalari va atrofdagi shaharcha. */
-const HUDUD_KAMERA = { joy: [95, 78, 118] as const, nishon: [2, 0, 12] as const };
-/** Quyosh (osmon, yorug'lik va soyalar bir yo'nalishda). */
-const QUYOSH: [number, number, number] = [40, 60, 25];
+const HUDUD_KAMERA = { joy: [150, 100, 150] as const, nishon: [34, 0, 4] as const };
+/** Tayyor mahsulot skladi (old-o'ng tomondan, stellajlar ustidan). */
+const SKLAD_KAMERA = { joy: [(SKLAD.x0 + SKLAD.x1) / 2 + 26, 40, SKLAD.z1 + 34] as const, nishon: [(SKLAD.x0 + SKLAD.x1) / 2 - 2, 0, (SKLAD.z0 + SKLAD.z1) / 2] as const };
+/** Soya kamerasi markazi — butun zavod hududi (x −60…128). */
+const SOYA_MARKAZI: [number, number, number] = [34, 0, 4];
 
 /** Yorliq ko'rinishi kameragacha masofaga qarab: 0 — to'liq karta, 1 — ixcham (nom), 2 — faqat holat nuqtasi. */
 type Daraja = 0 | 1 | 2;
@@ -548,6 +559,14 @@ function KameraBoshqaruvi({ kamera, stanoklar }: { kamera: KameraBuyrugi; stanok
       void c.setLookAt(...OFIS_KAMERA.joy, ...OFIS_KAMERA.nishon, true);
       return;
     }
+    if (kamera.tur === "avto") {
+      void c.setLookAt(...AVTO_KAMERA.joy, ...AVTO_KAMERA.nishon, true);
+      return;
+    }
+    if (kamera.tur === "sklad") {
+      void c.setLookAt(...SKLAD_KAMERA.joy, ...SKLAD_KAMERA.nishon, true);
+      return;
+    }
     if (kamera.tur === "maishiy") {
       void c.setLookAt(...MAISHIY_KAMERA.joy, ...MAISHIY_KAMERA.nishon, true);
       return;
@@ -572,7 +591,7 @@ function KameraBoshqaruvi({ kamera, stanoklar }: { kamera: KameraBuyrugi; stanok
       ref={ref}
       makeDefault
       minDistance={3}
-      maxDistance={260}
+      maxDistance={320}
       maxPolarAngle={Math.PI / 2.1}
       smoothTime={0.6}
       draggingSmoothTime={0.15}
@@ -596,7 +615,7 @@ function MasofaKuzatuvchi({ onDaraja }: { onDaraja: (d: Daraja) => void }) {
   return null;
 }
 
-export default function SexSahnasi({ stanoklar, holatlar, reyslar, tanlangan, onTanlash, kamera }: Props) {
+export default function SexSahnasi({ stanoklar, holatlar, reyslar, sklad, tanlangan, onTanlash, kamera, vaqtRejimi }: Props) {
   return (
     <Canvas
       // PCF soyalar (three r187 da PCFSoftShadowMap olib tashlangan — ogohlantirish chiqmasin).
@@ -607,7 +626,7 @@ export default function SexSahnasi({ stanoklar, holatlar, reyslar, tanlangan, on
       onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; }}
       data-sex-sahnasi
     >
-      <SahnaIchi stanoklar={stanoklar} holatlar={holatlar} reyslar={reyslar} tanlangan={tanlangan} onTanlash={onTanlash} kamera={kamera} />
+      <SahnaIchi stanoklar={stanoklar} holatlar={holatlar} reyslar={reyslar} sklad={sklad} tanlangan={tanlangan} onTanlash={onTanlash} kamera={kamera} vaqtRejimi={vaqtRejimi} />
     </Canvas>
   );
 }
@@ -615,42 +634,27 @@ export default function SexSahnasi({ stanoklar, holatlar, reyslar, tanlangan, on
 /** Usta sexni aylanib chiqadi (har stanok oldida to'xtab planshetga qaraydi). */
 const USTA_YOLI: Array<[number, number]> = [[-19, -1.5], [-10, -1.5], [0, -1.5], [10, -1.5], [19, -1.5], [19, 1.9], [10, 1.9], [0, 1.9], [-10, 1.9], [-19, 1.9]];
 
-function SahnaIchi({ stanoklar, holatlar, reyslar, tanlangan, onTanlash, kamera }: Props) {
+function SahnaIchi({ stanoklar, holatlar, reyslar, sklad, tanlangan, onTanlash, kamera, vaqtRejimi }: Props) {
   const mat = useMateriallar();
+  // Quyosh soyasi butun hududni qoplasin: nishon hudud markazida (sahnaga qo'shiladi — matritsasi yangilanadi).
+  const soyaNishoni = useMemo(() => {
+    const o = new THREE.Object3D();
+    o.position.set(...SOYA_MARKAZI);
+    return o;
+  }, []);
   const sm = useShaharMateriallari();
   const [daraja, setDaraja] = useState<Daraja>(0);
   return (
     <>
-      {/* Osmon (shader, tashqi rasm yo'q) va havo pardasi: uzoqdagi shaharcha ufqda eriydi */}
-      <Sky distance={1800} sunPosition={QUYOSH} turbidity={4.5} rayleigh={1.2} mieCoefficient={0.004} mieDirectionalG={0.8} />
-      <fog attach="fog" args={["#d4dfe9", 220, 720]} />
-      {/* Muhit aksi: kod bilan yasalgan yorug' panellar (metall va oynalar realistik aks etadi) */}
-      <Environment resolution={128} frames={1} environmentIntensity={0.6}>
-        <Lightformer form="rect" intensity={2.2} position={[0, 40, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[120, 120, 1]} color="#ffffff" />
-        <Lightformer form="rect" intensity={0.9} position={[-50, 12, 0]} rotation={[0, Math.PI / 2, 0]} scale={[100, 24, 1]} color="#c7dbff" />
-        <Lightformer form="rect" intensity={0.7} position={[50, 10, 20]} rotation={[0, -Math.PI / 2, 0]} scale={[100, 24, 1]} color="#ffe6c7" />
-        <Lightformer form="rect" intensity={0.35} position={[0, -6, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[150, 150, 1]} color="#8a9873" />
-      </Environment>
-      <hemisphereLight args={["#e3edf8", "#6f7d5e", 0.55]} />
-      <directionalLight
-        position={QUYOSH}
-        intensity={2.3}
-        color="#fff6e8"
-        castShadow
-        shadow-mapSize={[4096, 4096]}
-        shadow-camera-left={-80}
-        shadow-camera-right={80}
-        shadow-camera-top={62}
-        shadow-camera-bottom={-62}
-        shadow-camera-near={10}
-        shadow-camera-far={260}
-        shadow-bias={-0.0003}
-        shadow-normalBias={0.02}
-      />
-      <directionalLight position={[-30, 20, -20]} intensity={0.3} color="#cfe0ff" />
+      {/* Kun / tun: Toshkent vaqti bo'yicha osmon, tuman, quyosh/oy, yulduzlar va tungi chiroqlar */}
+      <KunTunYoritish m={mat} sm={sm} rejim={vaqtRejimi ?? "avto"} soyaNishoni={soyaNishoni} />
       <MasofaKuzatuvchi onDaraja={setDaraja} />
       <Shaharcha m={mat} sm={sm} />
       <SexMuhiti mat={mat} stanoklar={stanoklar} uzoq={daraja === 2} />
+      <primitive object={soyaNishoni} />
+      <Sklad m={mat} palet={sklad?.palet ?? 0} />
+      {/* Avtomatlashtirilgan prolyot (2-sex): robotlar, konveyerlar, CNC, AGV */}
+      <AvtoSex m={mat} />
       <Logistika m={mat} sm={sm} reyslar={reyslar} yorliq={daraja > 0 || kamera.tur === "hudud"} />
       {/* Yo'lakdagi harakat: list ko'tarib yuruvchi ishchilar, sexni aylanayotgan usta va pogruzchik */}
       {/* Ofis (direktorlar qavati), maishiy blok (kiyinish xonalari, oshxona), odamlar — GLB modellar yuklanguncha ko'rinmaydi */}

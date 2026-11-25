@@ -1,6 +1,7 @@
 import { useSearchParams } from "react-router-dom";
 import {
   Bell,
+  Box,
   Building2,
   Factory,
   CircleDollarSign,
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuthProfileStore } from "@/store/authProfileStore";
-import { foydalanuvchiDirektormi } from "@/lib/roles";
+import { foydalanuvchiAdminmi, foydalanuvchiDirektormi } from "@/lib/roles";
 import BildirishnomaBolimi from "./BildirishnomaBolimi";
 import ChekBolimi from "./ChekBolimi";
 import DavrniYopishBolimi from "./DavrniYopishBolimi";
@@ -31,10 +32,11 @@ import VakolatlarBolimi from "./VakolatlarBolimi";
 import ValyutaBolimi from "./ValyutaBolimi";
 import InventoryBolimi from "./InventoryBolimi";
 import IshlabChiqarishBolimi from "./IshlabChiqarishBolimi";
+import Demo3dBolimi from "./Demo3dBolimi";
 import type { SozlamaBolim } from "./types";
 
-// faqatDirektor: true — bo'lim faqat superadmin/direktor uchun ochiladi.
-const bolimlar: { id: SozlamaBolim; icon: typeof UserRound; faqatDirektor?: boolean }[] = [
+// faqatDirektor: true — bo'lim faqat superadmin/direktor uchun ochiladi; faqatAdmin: true — ADMIN va DIREKTOR uchun.
+const bolimlar: { id: SozlamaBolim; icon: typeof UserRound; faqatDirektor?: boolean; faqatAdmin?: boolean }[] = [
   { id: "profil", icon: UserRound },
   { id: "kompaniya", icon: Building2 },
   { id: "filiallar", icon: MapPin },
@@ -49,6 +51,7 @@ const bolimlar: { id: SozlamaBolim; icon: typeof UserRound; faqatDirektor?: bool
   { id: "telegram", icon: Send, faqatDirektor: true },
   { id: "chek", icon: Receipt },
   { id: "bildirishnoma", icon: Bell },
+  { id: "demo3d", icon: Box, faqatAdmin: true },
 ];
 
 // Sozlamalar uchoti: mavjud bo'limlar real backend API'lariga ulangan.
@@ -63,7 +66,8 @@ export default function SozlamalarUchot() {
   // Rol: SUPERADMIN/OWNER ham DIREKTOR sifatida normallashadi (lib/roles).
   const profil = useAuthProfileStore((s) => s.profil);
   const direktor = foydalanuvchiDirektormi(profil);
-  const korinadiganBolimlar = bolimlar.filter((b) => !b.faqatDirektor || direktor);
+  const admin = foydalanuvchiAdminmi(profil);
+  const korinadiganBolimlar = bolimlar.filter((b) => (!b.faqatDirektor || direktor) && (!b.faqatAdmin || admin));
 
   return (
     <div className="space-y-5">
@@ -115,6 +119,7 @@ export default function SozlamalarUchot() {
           {bolim === "telegram" && direktor && <TelegramBotKarti />}
           {bolim === "chek" && <ChekBolimi />}
           {bolim === "bildirishnoma" && <BildirishnomaBolimi />}
+          {bolim === "demo3d" && admin && <Demo3dBolimi />}
         </div>
       </div>
     </div>

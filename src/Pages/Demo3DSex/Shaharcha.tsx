@@ -8,7 +8,7 @@ import { urugli, type Materiallar } from "./materiallar";
 import { FASAD_OLCHAMI, binoGeometriyasi, type ShaharMateriallari } from "./shaharMateriallari";
 import { Quti, Silindr, StatikGuruh, Yumaloq } from "./shakllar";
 import { ZonaYorligi } from "./SexMuhiti";
-import { AVTOBUS_BEKATI, HUDUD, KPP, RAMPALAR, SEX } from "./hudud";
+import { AVTOBUS_BEKATI, AVTO_SEX, HUDUD, KPP, RAMPALAR } from "./hudud";
 import {
   BAYROQLAR,
   BETON_MAYDONLAR,
@@ -20,6 +20,7 @@ import {
   KUTISH_CHIZIQLARI,
   NAVIS,
   NAVIS_USTUNLARI,
+  ORQA_JIHOZLAR,
   OROL_BALANDLIGI,
   PANJARA_BALANDLIGI,
   PANJARA_KESMALARI,
@@ -32,6 +33,7 @@ import {
   TOXTASH_CHIZIQLARI,
   TROTUAR_ENI,
   TURARGOH_ASFALTI,
+  XIZMAT_YOLI,
   X_KOCHALAR,
   YER_OLCHAMI,
   ZEBRALAR,
@@ -686,19 +688,25 @@ function AvtobusBekati({ sm, m }: { sm: ShaharMateriallari; m: Materiallar }) {
 
 // ── Orqa hovli ──
 
+/** To'rtburchak markazi. */
+const orta = (t: Tortburchak): [number, number] => [(t.x0 + t.x1) / 2, (t.z0 + t.z1) / 2];
+
 function OrqaHovli({ sm, m }: { sm: ShaharMateriallari; m: Materiallar }) {
-  const orqaDevor = -SEX.chuqurlik / 2 - 0.45;
+  const J = ORQA_JIHOZLAR;
+  /** Gaz quvuri 2-sexning orqa devori (z = −41) bo'ylab tashqarida o'tadi. */
+  const orqaDevor = AVTO_SEX.z0 - 0.45;
   const gazY = 4.8;
-  // Kotelxona
-  const kx = -17;
-  const kz = -29.5;
-  // Mo'ri
-  const mx = -10.2;
-  const mz = -30;
+  // Kotelxona, mo'ri, gaz shkafi (GRPSh), silos — ORQA_JIHOZLAR markazlarida
+  const [kx, kz] = orta(J.kotelxona);
+  const [mx, mz] = orta(J.mori);
   const moriH = 26;
-  // Silos
-  const sx = 10;
-  const sz = -29;
+  const [gx, gz] = orta(J.gazShkafi);
+  const [sx, sz] = orta(J.silos);
+  const [tx] = orta(J.transformator);
+  const [px, pz] = orta(J.paletlar);
+  const konteynerZ = orta(J.konteynerlar)[1];
+  /** Quvur tayanchlari xizmat yo'lidan tashqarida (z < −49). */
+  const tayanchZ = XIZMAT_YOLI.z0 - 1;
   return (
     <group>
       {/* Kotelxona: g'isht bino, baland derazalar, metall eshik va soyabon, jalyuzlar, tekis tom parapet bilan */}
@@ -736,26 +744,26 @@ function OrqaHovli({ sm, m }: { sm: ShaharMateriallari; m: Materiallar }) {
         return <Truba key={g} a={[mx, 17, mz]} b={[mx + Math.cos(b) * 5, 0.2, mz + Math.sin(b) * 5]} r={0.012} mat={m.polatQora} seg={4} soya={false} />;
       })}
 
-      {/* Gaz taqsimlash shkafi (GRPSh) va sariq gaz quvurlari: kotelxonaga va sex orqa devori bo'ylab */}
-      <Quti o={[1.4, 1.7, 0.8]} p={[-25.5, 0.85, -29.5]} mat={m.sariq} />
-      <Quti o={[1.42, 0.08, 0.82]} p={[-25.5, 1.74, -29.5]} mat={m.korpusQora} />
-      <Quti o={[0.36, 0.36, 0.02]} p={[-25.5, 1.25, -29.09]} r={[0, 0, Math.PI / 4]} mat={m.qizil} />
-      <Truba a={[-24.8, 1.2, -29.5]} b={[kx - 5, 1.2, -29.5]} r={0.06} mat={m.sariq} />
-      <Truba a={[-25.5, 1.7, -28.95]} b={[-25.5, gazY, -28.95]} r={0.08} mat={m.sariq} />
-      <Truba a={[-25.5, gazY, -28.95]} b={[-25.5, gazY, orqaDevor]} r={0.08} mat={m.sariq} />
-      <Truba a={[-SEX.eni / 2 + 0.5, gazY, orqaDevor]} b={[24, gazY, orqaDevor]} r={0.08} mat={m.sariq} />
+      {/* Gaz taqsimlash shkafi (GRPSh) va sariq gaz quvurlari: kotelxonaga va xizmat yo'li ustidan 2-sex orqa devori bo'ylab */}
+      <Quti o={[1.4, 1.7, 0.8]} p={[gx, 0.85, gz]} mat={m.sariq} />
+      <Quti o={[1.42, 0.08, 0.82]} p={[gx, 1.74, gz]} mat={m.korpusQora} />
+      <Quti o={[0.36, 0.36, 0.02]} p={[gx, 1.25, gz + 0.41]} r={[0, 0, Math.PI / 4]} mat={m.qizil} />
+      <Truba a={[gx + 0.7, 1.2, gz]} b={[kx - 5, 1.2, gz]} r={0.06} mat={m.sariq} />
+      <Truba a={[gx, 1.7, gz + 0.55]} b={[gx, gazY, gz + 0.55]} r={0.08} mat={m.sariq} />
+      <Truba a={[gx, gazY, gz + 0.55]} b={[gx, gazY, orqaDevor]} r={0.08} mat={m.sariq} />
+      <Truba a={[AVTO_SEX.x0 + 0.5, gazY, orqaDevor]} b={[24, gazY, orqaDevor]} r={0.08} mat={m.sariq} />
       <Truba a={[24, gazY, orqaDevor]} b={[24, 3.0, orqaDevor]} r={0.08} mat={m.sariq} />
-      <Truba a={[24, 3.0, orqaDevor]} b={[24, 3.0, -SEX.chuqurlik / 2]} r={0.08} mat={m.sariq} />
-      {[-24.4, -20].map((z) => (
+      <Truba a={[24, 3.0, orqaDevor]} b={[24, 3.0, AVTO_SEX.z0]} r={0.08} mat={m.sariq} />
+      {[tayanchZ - 3, tayanchZ].map((z) => (
         <group key={z}>
-          <Quti o={[0.12, gazY - 0.1, 0.12]} p={[-25.5, (gazY - 0.1) / 2, z]} mat={m.polatQora} />
-          <Quti o={[0.5, 0.06, 0.12]} p={[-25.5, gazY - 0.11, z]} mat={m.polatQora} />
+          <Quti o={[0.12, gazY - 0.1, 0.12]} p={[gx, (gazY - 0.1) / 2, z]} mat={m.polatQora} />
+          <Quti o={[0.5, 0.06, 0.12]} p={[gx, gazY - 0.11, z]} mat={m.polatQora} />
         </group>
       ))}
       {Array.from({ length: 19 }, (_, i) => -30 + i * 3).map((x) => <Quti key={`kr${x}`} o={[0.06, 0.06, 0.42]} p={[x, gazY - 0.1, orqaDevor + 0.24]} mat={m.polatQora} />)}
 
       {/* Transformator podstansiyasi (KTP): beton blok, jalyuzli eshiklar, ogohlantirish belgilari */}
-      <group position={[47, 0, -31.5]}>
+      <group position={[tx, 0, J.transformator.z0 + 3]}>
         <Quti o={[6.8, 3.0, 4.2]} p={[0, 1.5, 0]} mat={sm.transformator} />
         <Quti o={[7.2, 0.18, 4.6]} p={[0, 3.09, 0]} mat={m.korpusQora} />
         {[-2.2, 0, 2.2].map((dx) => (
@@ -792,21 +800,22 @@ function OrqaHovli({ sm, m }: { sm: ShaharMateriallari; m: Materiallar }) {
         </mesh>
         <Quti o={[0.42, 11.6, 0.04]} p={[-2.25, 6.1, 0]} r={[0, Math.PI / 2, 0]} mat={m.polatQora} />
       </group>
-      <Truba a={[sx + 0.8, 13.6, sz + 0.4]} b={[sx + 0.8, 13.6, -21]} r={0.32} mat={m.polat} seg={14} />
-      <Truba a={[sx + 0.8, 13.6, -21]} b={[sx + 0.8, 6.8, -SEX.chuqurlik / 2 - 0.1]} r={0.32} mat={m.polat} seg={14} />
-      <Quti o={[0.2, 13.3, 0.2]} p={[sx + 0.8, 6.65, -21]} mat={m.polatQora} />
+      {/* Silosga havo quvuri: 2-sex orqa devoridan (derazalar ustidan) xizmat yo'li ustidan o'tib, tayanch ustuni orqali */}
+      <Truba a={[sx + 0.8, 13.6, sz + 0.4]} b={[sx + 0.8, 13.6, tayanchZ]} r={0.32} mat={m.polat} seg={14} />
+      <Truba a={[sx + 0.8, 13.6, tayanchZ]} b={[sx + 0.8, 8.2, AVTO_SEX.z0 - 0.1]} r={0.32} mat={m.polat} seg={14} />
+      <Quti o={[0.2, 13.3, 0.2]} p={[sx + 0.8, 6.65, tayanchZ]} mat={m.polatQora} />
 
       {/* Chiqindi konteynerlari (yashil — maishiy, ko'k — qog'oz/karton, kulrang — qipiq/LDSP qoldiqlari) */}
-      {[24, 26.6, 29.2].map((x, i) => (
-        <group key={x} position={[x, 0, -21.2]}>
+      {[0, 1, 2].map((i) => J.konteynerlar.x0 + 1.4 + i * 2.6).map((x, i) => (
+        <group key={x} position={[x, 0, konteynerZ]}>
           <Yumaloq o={[2.2, 1.3, 1.4]} p={[0, 0.78, 0]} mat={i === 0 ? sm.konteyner : i === 1 ? m.cncRang : m.korpusQora} radius={0.06} />
           <Quti o={[2.25, 0.07, 1.45]} p={[0, 1.47, -0.05]} r={[0.1, 0, 0]} mat={m.korpusQora} />
           {[-0.9, 0.9].flatMap((dx) => [-0.5, 0.5].map((dz) => <Silindr key={`${dx}${dz}`} r={0.07} h={0.06} p={[dx, 0.08, dz]} rot={[0, 0, Math.PI / 2]} mat={m.rezina} seg={10} />))}
         </group>
       ))}
       {/* Paletlar taxlami */}
-      {[[16, -20.4, 9], [17.4, -20.4, 7], [19.6, -20.6, 11]].map(([x, z, son], i) => (
-        <group key={i} position={[x, 0, z]}>
+      {[[-1.9, 0.1, 9], [-0.5, 0.1, 7], [1.7, -0.1, 11]].map(([x, z, son], i) => (
+        <group key={i} position={[px + x, 0, pz + z]}>
           {Array.from({ length: son }, (_, k) => <Quti key={k} o={[1.2, 0.144, 1.0]} p={[0, 0.072 + k * 0.146, 0]} mat={m.palet} />)}
         </group>
       ))}

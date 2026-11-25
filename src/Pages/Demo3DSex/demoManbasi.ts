@@ -2,7 +2,7 @@
 // Ssenariy soniyalar bo'yicha (tik = 1 s) yuradi; Pauza/Davom ettirish/Qayta boshlash bilan boshqariladi.
 // Sahna faqat `SexManbasi` interfeysini biladi — keyinchalik shu joyga Ye-Post API manbai qo'yiladi.
 // UI'siz va `@/` importlarisiz — testlarda ishlaydi.
-import type { Reys, ReysBosqichi, SexHodisasi, SexHolati, SexManbasi, StanokHolati, StanokTavsifi, Topshiriq } from "./sexModeli.ts";
+import type { SkladHolati, Reys, ReysBosqichi, SexHodisasi, SexHolati, SexManbasi, StanokHolati, StanokTavsifi, Topshiriq } from "./sexModeli.ts";
 
 /** Liniyalardagi stanoklar joyi (x, metr) — ikkala liniyada bir xil. Oqim: material ombori → kesish → CNC → qirra → burg'ilash → qadoqlash → tayyor mahsulot. */
 const LINIYA_X = { kesish: -15, cnc: -5, qirra: 5.5, burgilash: 14.5, qadoqlash: 22.5 } as const;
@@ -111,6 +111,9 @@ const ZAXIRA: Array<[string, string, string, number, string?]> = [
 ];
 
 type Ichki = StanokHolati & { kutish?: number };
+
+/** Tayyor mahsulot skladi (sinov): 600 palet joyi (6 qator stellaj × 10 bo'lim × 5 qavat × 2 palet), boshida 412 palet; zavoddan har 14 s da 1 palet keladi (jo'natish bilan taxminan muvozanatda). */
+export const SKLAD = { sigim: 600, boshlangich: 412, kirimHar: 14 } as const;
 type Hodisachi = (stanokId: string, tur: SexHodisasi["tur"], matn: string, obyekt?: SexHodisasi["obyekt"]) => void;
 
 /** Reys bosqichlari ketma-ketligi va uzunligi (s). Yig'indisi — `LOGISTIKA.davr`. */
@@ -120,7 +123,7 @@ export type ReysBosqichlari = ReadonlyArray<readonly [ReysBosqichi, number]>;
 export type ReysJadvali = Omit<Reys, "bosqich" | "boshlangan" | "palet"> & { siljish: number; bosqichlar: ReysBosqichlari };
 
 /** Har bir reys davri (s). To'rt reys bir xil davr bilan aylanadi — o'zaro joylashuvi har davrda takrorlanadi. */
-const LOGISTIKA_DAVRI = 140;
+const LOGISTIKA_DAVRI = 170;
 /** Rampada turish (s): 6 palet ~19.6 s da tugaydi, qolgani — hujjat va eshiklarni yopish. */
 const RAMPADA_TURISH = 26;
 
@@ -133,16 +136,16 @@ const bosqichlar = (kelmoqda: number, ketmoqda: number): ReysBosqichlari => [
 ];
 
 /**
- * Logistika (sinov): to'rt KAMAZ reysi 140 s davr bilan aylanadi. Kelish/ketish bosqichi yollar.ts dagi marshrut
- * davomiyligiga moslangan (1, 2 — old rampa, qisqaroq; 3, 4 — chap rampa, uzunroq). Siljishlar shunday tanlanganki, kirishlar
- * navbat bilan (0 → 41 → 76 → 108 s: 1-, 3-, 4-, 2-reys) keladi va istalgan ikki mashina markazlari orasi doim ≥ 6 m,
- * to'rtburchaklari kesishmaydi (tests/demo3dLogistika.test.mjs simulyatsiya qiladi).
+ * Logistika (sinov): to'rt KAMAZ reysi 170 s davr bilan aylanadi. Kelish/ketish bosqichi yollar.ts dagi marshrut
+ * davomiyligiga moslangan (1, 2 — tayyor mahsulot skladi rampalari, hududning o'ng chetida; 3, 4 — sex chap devoridagi qabul rampalari).
+ * Siljishlar juft-juft simulyatsiya bilan tanlangan: kirishlar navbat bilan (0 → 43 → 86 → 128 s: 1-, 3-, 2-, 4-reys) keladi,
+ * istalgan ikki mashina markazlari orasi doim ≥ 9 m va ±2 s siljishga chidamli (tests/demo3dLogistika.test.mjs tekshiradi).
  */
 export const REYSLAR_JADVALI: ReadonlyArray<ReysJadvali> = [
-  { id: "reys-1", raqam: "01 345 ABA", yonalish: "jonatish", rampa: 1, yuk: "№170 · Shkaf \"Lux\"", jamiPalet: 6, siljish: 0, bosqichlar: bosqichlar(43, 35) },
-  { id: "reys-2", raqam: "01 712 BBA", yonalish: "jonatish", rampa: 2, yuk: "№172 · Komod \"Nova\"", jamiPalet: 6, siljish: 108, bosqichlar: bosqichlar(42, 34) },
-  { id: "reys-3", raqam: "40 512 CAA", yonalish: "qabul", rampa: 3, yuk: "LDSP 16 mm · 120 list", jamiPalet: 6, siljish: 41, bosqichlar: bosqichlar(52, 51) },
-  { id: "reys-4", raqam: "30 228 DAA", yonalish: "qabul", rampa: 4, yuk: "MDF 18 mm · 80 list", jamiPalet: 6, siljish: 76, bosqichlar: bosqichlar(49, 47) },
+  { id: "reys-1", raqam: "01 345 ABA", yonalish: "jonatish", rampa: 1, yuk: "№170 · Shkaf \"Lux\"", jamiPalet: 6, siljish: 0, bosqichlar: bosqichlar(60, 46) },
+  { id: "reys-2", raqam: "01 712 BBA", yonalish: "jonatish", rampa: 2, yuk: "№172 · Komod \"Nova\"", jamiPalet: 6, siljish: 86, bosqichlar: bosqichlar(63, 50) },
+  { id: "reys-3", raqam: "40 512 CAA", yonalish: "qabul", rampa: 3, yuk: "LDSP 16 mm · 120 list", jamiPalet: 6, siljish: 43, bosqichlar: bosqichlar(58, 51) },
+  { id: "reys-4", raqam: "30 228 DAA", yonalish: "qabul", rampa: 4, yuk: "MDF 18 mm · 80 list", jamiPalet: 6, siljish: 128, bosqichlar: bosqichlar(54, 48) },
 ];
 
 /** Reys siljishlari (s) — ID bo'yicha. */
@@ -179,6 +182,7 @@ export class DemoSexManbasi implements SexManbasi {
   private taymer: ReturnType<typeof setInterval> | null = null;
   private zaxiraIndeks = 0;
   private reysHolati: Reys[] = [];
+  private skladHolati: SkladHolati = { palet: SKLAD.boshlangich, sigim: SKLAD.sigim, kirim: 0, chiqim: 0, yangilangan: 0 };
   /** Ssenariy soniyasi. */
   soniya = 0;
   hodisalar: SexHodisasi[] = [];
@@ -195,6 +199,10 @@ export class DemoSexManbasi implements SexManbasi {
 
   reyslar() {
     return this.reysHolati;
+  }
+
+  sklad() {
+    return this.skladHolati;
   }
 
   obuna(tinglovchi: (holat: SexHolati, hodisa?: SexHodisasi) => void) {
@@ -228,6 +236,7 @@ export class DemoSexManbasi implements SexManbasi {
     this.hodisalar = [];
     this.ichki = Object.fromEntries(Object.entries(boshlangichHolat()).map(([id, h]) => [id, { ...h, yangilangan: hozir, aloqa: true }]));
     this.reysHolati = [];
+    this.skladHolati = { palet: SKLAD.boshlangich, sigim: SKLAD.sigim, kirim: 0, chiqim: 0, yangilangan: hozir };
     this.reyslarniYangila(hozir);
     this.nashr();
     if (xabarBerilsin) this.xabar();
@@ -283,6 +292,10 @@ export class DemoSexManbasi implements SexManbasi {
       if (st.aloqa) st.yangilangan = hozir;
     }
 
+    // Zavoddan skladga: elektrokar har SKLAD.kirimHar soniyada bitta palet olib keladi.
+    const sklad = { ...this.skladHolati, yangilangan: hozir };
+    if (s % SKLAD.kirimHar === 0 && sklad.palet < sklad.sigim) { sklad.palet += 1; sklad.kirim += 1; }
+    this.skladHolati = sklad;
     this.reyslarniYangila(hozir, hodisa);
     this.nashr();
     this.hodisalar = [...hodisalar.reverse(), ...this.hodisalar].slice(0, 30);
@@ -321,11 +334,18 @@ export class DemoSexManbasi implements SexManbasi {
         if (bosqich === "rampada") hodisa(tavsif.id, "reys_rampada", `${raqam} ${rampa}-rampada — ${yuk} ${jonatish ? "yuklanmoqda" : "tushirilmoqda"}`, "reys");
         if (bosqich === "ketmoqda") hodisa(tavsif.id, "reys_ketdi", `${raqam} ${jonatish ? "yuklandi" : "tushirildi"} (${jamiPalet} palet) va jo'nab ketdi`, "reys");
       }
+      const palet = paletSoni(bosqich, otgan, tavsif.jamiPalet);
+      // Jo'natish: mashinaga yuklangan paletlar skladdan chiqadi.
+      if (eski && tavsif.yonalish === "jonatish" && bosqich === "rampada") {
+        const avval = eski.bosqich === "rampada" ? eski.palet : 0;
+        const farq = Math.min(palet - avval, this.skladHolati.palet);
+        if (farq > 0) this.skladHolati = { ...this.skladHolati, palet: this.skladHolati.palet - farq, chiqim: this.skladHolati.chiqim + farq };
+      }
       return {
         ...tavsif,
         bosqich,
         boshlangan: almashdi || !eski ? hozir - otgan * 1000 : eski.boshlangan,
-        palet: paletSoni(bosqich, otgan, tavsif.jamiPalet),
+        palet,
       };
     });
   }

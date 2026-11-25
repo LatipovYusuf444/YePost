@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DemoSexManbasi, DEMO_STANOKLAR, LOGISTIKA, REYSLAR_JADVALI, REYS_SILJISHLARI, SSENARIY, reysBosqichi } from '../src/Pages/Demo3DSex/demoManbasi.ts';
-import { KIRISH, CHIQISH, KPP, KUTISH_JOYLARI, OFIS, MAISHIY, GALEREYA, TASHQI_TURARGOH, DARVOZA, HUDUD, RAMPALAR, ASOSIY_YOL } from '../src/Pages/Demo3DSex/hudud.ts';
+import { KIRISH, CHIQISH, KPP, KUTISH_JOYLARI, OFIS, MAISHIY, GALEREYA, TASHQI_TURARGOH, DARVOZA, HUDUD, RAMPALAR, ASOSIY_YOL, SKLAD } from '../src/Pages/Demo3DSex/hudud.ts';
 import { MARSHRUTLAR, RAMPA_HOLATI, SHLAGBAUM_VAQTLARI, YUK_MASHINASI, marshrutHolati, yangiHolat } from '../src/Pages/Demo3DSex/yollar.ts';
 
 const YARIM = { u: YUK_MASHINASI.uzunlik / 2, e: YUK_MASHINASI.eni / 2 };
@@ -48,6 +48,7 @@ function reysHolati(reys, soniya) {
 /** Hovlidagi to'siqlar [x0, x1, z0, z1]: bino (rampaga tegish mumkin — 5 sm qisilgan), ofis, kutish joylari, KPP oroli, panjara, maishiy blok... */
 const TOSIQLAR = [
   { nom: 'ishlab chiqarish binosi', q: [-32, 32, -15, 15], qisish: 0.05 },
+  { nom: 'tayyor mahsulot skladi', q: [SKLAD.x0, SKLAD.x1, SKLAD.z0, SKLAD.z1], qisish: 0.05 },
   { nom: 'ofis', q: [OFIS.x0, OFIS.x1, OFIS.z0, OFIS.z1] },
   ...KUTISH_JOYLARI.map((k, i) => ({ nom: `kutish joyi ${i + 1}`, q: [k.x - YARIM.e, k.x + YARIM.e, k.z - YARIM.u, k.z + YARIM.u] })),
   { nom: 'KPP oroli', q: [KPP.x - KPP.yarimEni, KPP.x + KPP.yarimEni, KPP.z0, KPP.z1] },
@@ -108,7 +109,7 @@ test('boshlang‘ich holat: eski 5 ta o‘zgarmagan, yangi 5 tasi o‘z buyurtma
 
 // ── Reyslar ──
 
-test('4 ta reys: 1, 2 — jo‘natish (old rampa), 3, 4 — qabul (chap rampa); bosqichlar davrni to‘ldiradi; boshlanishda bosqichlar', () => {
+test('4 ta reys: 1, 2 — jo‘natish (sklad rampalari), 3, 4 — qabul (chap rampa); bosqichlar davrni to‘ldiradi; boshlanishda bosqichlar', () => {
   assert.deepEqual(REYSLAR_JADVALI.map((r) => [r.id, r.rampa, r.yonalish]), [
     ['reys-1', 1, 'jonatish'], ['reys-2', 2, 'jonatish'], ['reys-3', 3, 'qabul'], ['reys-4', 4, 'qabul'],
   ]);
@@ -121,7 +122,7 @@ test('4 ta reys: 1, 2 — jo‘natish (old rampa), 3, 4 — qabul (chap rampa); 
   }
   assert.equal(LOGISTIKA.bosqichlar, REYSLAR_JADVALI[0].bosqichlar);
   const { m } = yangi();
-  assert.deepEqual(m.reyslar().map((r) => [r.id, r.bosqich]), [['reys-1', 'kelmoqda'], ['reys-2', 'kelmoqda'], ['reys-3', 'ketmoqda'], ['reys-4', 'rampada']]);
+  assert.deepEqual(m.reyslar().map((r) => [r.id, r.bosqich]), [['reys-1', 'kelmoqda'], ['reys-2', 'rampada'], ['reys-3', 'ketmoqda'], ['reys-4', 'kelmoqda']]);
   assert.equal(m.reyslar()[0].boshlangan, 1_000_000, '1-reys aynan 0-soniyada kelishni boshlaydi');
 });
 
@@ -169,8 +170,8 @@ test('har marshrut o‘z bosqichiga sig‘adi; rampada to‘g‘ri joy va yo‘n
     assert.ok(M.ketish.davom <= bosqichUzunligi(r, 'ketmoqda'), `${r.id} ketish ${M.ketish.davom.toFixed(1)} s`);
   }
   const kutilgan = {
-    1: { x: RAMPALAR[1].x, z: 19.3, burchak: 0 },
-    2: { x: RAMPALAR[2].x, z: 19.3, burchak: 0 },
+    1: { x: RAMPALAR[1].x, z: RAMPALAR[1].z + 4.3, burchak: 0 },
+    2: { x: RAMPALAR[2].x, z: RAMPALAR[2].z + 4.3, burchak: 0 },
     3: { x: -36.3, z: RAMPALAR[3].z, burchak: -Math.PI / 2 },
     4: { x: -36.3, z: RAMPALAR[4].z, burchak: -Math.PI / 2 },
   };

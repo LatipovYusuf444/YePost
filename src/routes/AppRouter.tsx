@@ -55,7 +55,15 @@ export default function AppRouter() {
   return (
     <Suspense fallback={<SahifaYuklanmoqda />}>
     <Routes>
-      <Route path="/demo/3d" element={<Demo3DSex />} />
+      {/* 3D Demo: faqat tizimga kirgan ADMIN va DIREKTOR (ProtectedRoute → sahifagaRuxsatBormi), boshqalar bosh sahifaga qaytadi */}
+      <Route
+        path="/demo/3d"
+        element={
+          <ProtectedRoute>
+            <Demo3DSex />
+          </ProtectedRoute>
+        }
+      />
       {/* Eski manzil (saqlangan havolalar uchun) — yangi manzilga yo'naltiriladi */}
       <Route path="/demo/3d-sex" element={<Navigate to="/demo/3d" replace />} />
       <Route element={<AuthLayout />}>

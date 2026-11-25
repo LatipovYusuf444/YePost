@@ -3,12 +3,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  ASOSIY_YOL, DARVOZA, HUDUD, KIRISH, CHIQISH, KIRISH_YOLI, KPP, KUTISH_JOYLARI, MAISHIY, OFIS, ORQA_YOL, PIYODA_YOLLARI, SEX, TASHQI_TURARGOH,
+  ASOSIY_YOL, AVTO_SEX, DARVOZA, HUDUD, KIRISH, CHIQISH, KIRISH_YOLI, KPP, KUTISH_JOYLARI, MAISHIY, OFIS, ORQA_HOVLI, ORQA_YOL, PIYODA_YOLLARI, SEX,
+  TASHQI_TURARGOH,
 } from '../src/Pages/Demo3DSex/hudud.ts';
 import {
   BAYROQLAR, BETON_MAYDONLAR, BINOLAR_IZI, BINO_TURLARI, HUDUD_ASFALTI, KPP_BINOSI, KPP_OROLI, NAVIS, NAVIS_USTUNLARI, OLD_BOG, ORQA_JIHOZLAR,
   PANJARA_KESMALARI, PIYODA_YOLAKLARI, SHAHAR_QATLAMLARI, SHAHAR_RADIUSI, TASHQI_ASFALT, TASHQI_TROTUARLAR, TROTUAR_ENI, TURARGOH_ASFALTI,
-  X_KOCHALAR, ZAVOD_BLOKI, ZEBRALAR, Z_KOCHALAR, binoIzi, chiroqlarRejasi, daraxtlarRejasi, kesishadi, kochalarRejasi, nuqtaIchida,
+  XIZMAT_YOLI, X_KOCHALAR, ZAVOD_BLOKI, ZEBRALAR, Z_KOCHALAR, binoIzi, chiroqlarRejasi, daraxtlarRejasi, kesishadi, kochalarRejasi, nuqtaIchida,
   panjaraUstunlari, shaharBinolari, tb, turargohChiziqlari, turargohJoylari,
 } from '../src/Pages/Demo3DSex/shaharRejasi.ts';
 
@@ -30,13 +31,14 @@ test('asfalt maydonlari bir-birining ustiga tushmaydi, hudud ichida va binolar o
     assert.ok(ichida(a, HUDUD_TB), 'hudud asfalti panjara ichida');
     for (const [nom, iz] of Object.entries(BINOLAR_IZI)) assert.equal(kesishadi(a, iz), false, `asfalt ${nom} ostiga kirmasin`);
   }
-  // Talab qilingan asfalt: old hovli (x −48…44, z 15…48), chap qator (x −48…−32, z −26…22), kutish joylari
+  // Talab qilingan asfalt: old hovli (x −48…44, z 15…48), chap qator (x −48…−32, z −49…22), 2-sex ortidagi xizmat yo'li, kutish joylari
   const asfaltda = (x, z) => [...HUDUD_ASFALTI, ...TASHQI_ASFALT].some((a) => nuqtaIchida(x, z, a, 1e-6));
   for (let x = -47.5; x <= 43.5; x += 1) for (const z of [15.5, 22, 28, 47.5]) {
     if (nuqtaIchida(x, z, BINOLAR_IZI.ofis)) continue;
     assert.ok(asfaltda(x, z), `old hovli asfalti (${x}, ${z})`);
   }
-  for (let z = -25.5; z <= 21.5; z += 1) for (const x of [-47.5, -40, -32.5]) assert.ok(asfaltda(x, z), `chap qator (${x}, ${z})`);
+  for (let z = -48.5; z <= 21.5; z += 1) for (const x of [-47.5, -40, -32.5]) assert.ok(asfaltda(x, z), `chap qator (${x}, ${z})`);
+  for (let x = -47.5; x <= 55.5; x += 1) for (const z of [-48.5, -45, -41.5]) assert.ok(asfaltda(x, z), `xizmat yo'li (${x}, ${z})`);
   for (const k of KUTISH_JOYLARI) for (const [dx, dz] of [[-1.25, -4.3], [1.25, -4.3], [-1.25, 4.3], [1.25, 4.3]]) assert.ok(asfaltda(k.x + dx * 0.99, k.z + dz * 0.99), 'kutish joyi asfaltda');
   // Darvozadan ko'chagacha kirish yo'li
   for (let z = KIRISH_YOLI.z0 + 0.5; z < KIRISH_YOLI.z1; z += 1) for (const x of [KIRISH.x, CHIQISH.x]) assert.ok(asfaltda(x, z), `kirish yo'li (${x}, ${z})`);
@@ -134,7 +136,37 @@ test('ko‘chalar: ko‘ndalang ko‘chalar kesishmada bo‘linadi, asosiy ko‘
   assert.ok(uz.some((u) => u.a < TASHQI_TURARGOH.x1 && u.c > TASHQI_TURARGOH.x1), 'avtoturargoh kirishi');
   // Trotuar z 62.3…64 va 72…73.7 (hudud.ts izohi bilan mos)
   assert.ok(Math.abs(ASOSIY_YOL.z - ASOSIY_YOL.eni / 2 - TROTUAR_ENI - 62.3) < 1e-9);
-  assert.equal(ORQA_YOL.z, -50);
+  assert.equal(ORQA_YOL.z, -82);
+});
+
+test('orqa hovli 2-sex ortida: jihozlar ORQA_HOVLI ichida, 2-sex izi bo‘sh, xizmat yo‘li 2-sex orqa devori bo‘ylab', () => {
+  const avto = tb(AVTO_SEX.x0, AVTO_SEX.x1, AVTO_SEX.z0, AVTO_SEX.z1);
+  const hovli = tb(ORQA_HOVLI.x0, ORQA_HOVLI.x1, ORQA_HOVLI.z0, ORQA_HOVLI.z1);
+  assert.deepEqual(BINOLAR_IZI.avtoSex, avto);
+  assert.ok(ichida(avto, HUDUD_TB), '2-sex hudud ichida');
+  assert.equal(kesishadi(avto, hovli), false, 'orqa hovli 2-sex orqasida');
+  for (const [nom, t] of Object.entries(ORQA_JIHOZLAR)) {
+    assert.ok(ichida(t, hovli), `${nom} orqa hovlida`);
+    assert.equal(kesishadi(t, avto), false, `${nom} 2-sex ichida emas`);
+    assert.equal(kesishadi(t, XIZMAT_YOLI), false, `${nom} xizmat yo‘lida emas`);
+    for (const a of HUDUD_ASFALTI) assert.equal(kesishadi(t, a), false, `${nom} asfaltda emas`);
+  }
+  juftlar(Object.values(ORQA_JIHOZLAR), (a, b, i, k) => assert.equal(kesishadi(a, b), false, `jihozlar ${i}/${k} ustma-ust`));
+  // Hech qanday yer qoplamasi 2-sex ostiga kirmaydi
+  for (const t of [...HUDUD_ASFALTI, ...BETON_MAYDONLAR, ...PIYODA_YOLAKLARI]) assert.equal(kesishadi(t, avto), false, `qoplama 2-sex ostida: ${JSON.stringify(t)}`);
+  // Xizmat yo'li 2-sex orqa devoriga tegib turadi va chap qatorga ulanadi
+  assert.equal(XIZMAT_YOLI.z1, AVTO_SEX.z0);
+  assert.ok(XIZMAT_YOLI.z1 - XIZMAT_YOLI.z0 >= 7);
+  assert.ok(HUDUD_ASFALTI.includes(XIZMAT_YOLI));
+  // Chiroqlar 2-sex ichida emas
+  for (const c of chiroqlarRejasi()) assert.equal(nuqtaIchida(c.x, c.z, avto, 0.3), false, `chiroq (${c.x}, ${c.z}) 2-sex ichida`);
+  // Shaharcha: gaz quvuri 2-sex orqa devori (z = −41) bo'ylab, jihozlar ORQA_JIHOZLAR dan; eski sex orqa devori koordinatalari qolmagan
+  const s = manba('src/Pages/Demo3DSex/Shaharcha.tsx');
+  assert.match(s, /const orqaDevor = AVTO_SEX\.z0 - 0\.45;/);
+  assert.match(s, /orta\(J\.kotelxona\)/);
+  assert.match(s, /orta\(J\.silos\)/);
+  assert.match(s, /J\.transformator\.z0 \+ 3/);
+  assert.doesNotMatch(s, /-SEX\.chuqurlik \/ 2 - 0\.45|-SEX\.chuqurlik \/ 2 - 0\.1|-29\.5\]|-21\.2\]/);
 });
 
 test('shahar binolari: hudud, avtoturargoh, old bog‘ va ko‘chalarga tushmaydi, bir-biriga tegmaydi', () => {

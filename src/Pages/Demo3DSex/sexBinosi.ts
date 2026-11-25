@@ -1,7 +1,7 @@
 // Ishlab chiqarish binosi (64 × 30 × 8 m) rejasi: devor ochiqlari, bordyur bo'laklari, karkas ustunlari, kran-balka harakati,
 // chang so'rish quvurlari va jihozlar joylari. Toza funksiyalar (UI'siz) — SexMuhiti.tsx shu bo'yicha chizadi, testlar shu bo'yicha tekshiradi.
 
-import { GALEREYA, RAMPALAR, SEX, ZONALAR } from "./hudud.ts";
+import { GALEREYA, ORQA_OCHIQLAR, ORQA_OCHIQ_BALANDLIGI, RAMPALAR, SEX, ZONALAR } from "./hudud.ts";
 import type { StanokTavsifi, StanokTuri } from "./sexModeli.ts";
 
 /** Polda to'rtburchak (metr): x0 < x1, z0 < z1. */
@@ -20,7 +20,8 @@ export const ESHIK_ENI = 4;
 export const ESHIK_BALANDLIGI = 4.1;
 
 /** Old tomondagi jo'natish rampalari (2 va 1): bordyur x = 18.5 va x = 27.5 da uzilgan. */
-export const OLD_RAMPALAR_X = [RAMPALAR[2].x, RAMPALAR[1].x] as const;
+/** Sex old devoridagi ichki rampalar (tayyor mahsulot elektrokarga yuklanadi va skladga ketadi). Jo'natish rampalari endi skladda. */
+export const OLD_RAMPALAR_X = [18.5, 27.5] as const;
 export const RAMPA_OCHIGI = 3.6;
 export const BORDYUR = { balandlik: 0.25, qalinlik: 0.25 } as const;
 
@@ -47,6 +48,40 @@ export const OLD_BORDYUR_BOLAKLARI = bolaklar(-YARIM_ENI, YARIM_ENI, OLD_RAMPALA
 export const GALEREYA_OCHIGI: Ochiq = { markaz: (GALEREYA.z0 + GALEREYA.z1) / 2, eni: GALEREYA.z1 - GALEREYA.z0 };
 export const ONG_BORDYUR_BOLAKLARI = bolaklar(-YARIM_CHUQURLIK, YARIM_CHUQURLIK, [GALEREYA_OCHIGI]);
 
+// ── Orqa devor (endi ichki devor: ortida 2-sex — avtomatlashtirilgan prolyot) ──
+
+/** Orqa devordagi ikki keng ochiq (2-sexga o'tish): markazlari x = −12 va 12, eni 8 m, balandligi 5.5 m. */
+export const ORQA_OCHIQ_JOYLARI: Ochiq[] = ORQA_OCHIQLAR.map((o) => ({ markaz: o.x, eni: o.eni }));
+export const ORQA_OCHIQ_H = ORQA_OCHIQ_BALANDLIGI;
+/** Ochiq romi (xavf chiziqli yon romlar) eni — devor bo'lagi chetidan ichkariga. */
+export const OCHIQ_ROMI = 0.18;
+/** Orqa devor bo'laklari (x bo'ylab, to'liq balandlikda): ochiqlar orasida; ochiqlar ustida — 5.5 m dan yuqorisi. */
+export const ORQA_DEVOR_BOLAKLARI = bolaklar(-YARIM_ENI, YARIM_ENI, ORQA_OCHIQ_JOYLARI);
+/**
+ * Ochiqlar oldidagi bo'sh yo'laklar (sex ichida, orqa devordan 1-liniya stanoklari orqasigacha): AGV va pogruzchiklar
+ * shu yerdan 2-sexga o'tadi. Bu yerga jihoz qo'yilmaydi, quvurlar esa 5.5 m dan yuqorida o'tadi.
+ */
+export const ORQA_OCHIQ_YOLAKLARI: Tortburchak[] = ORQA_OCHIQ_JOYLARI.map((o) => ({ x0: o.markaz - o.eni / 2, x1: o.markaz + o.eni / 2, z0: -YARIM_CHUQURLIK, z1: -11.6 }));
+/** x nuqtasi orqa devor ochig'i ichidami (`zaxira` — har ikki tomonga qo'shimcha). */
+export function ochiqdami(x: number, zaxira = 0) {
+  return ORQA_OCHIQ_JOYLARI.some((o) => Math.abs(x - o.markaz) < o.eni / 2 + zaxira);
+}
+/**
+ * Orqa devor deraza tasmasi markazlari: har bir devor bo'lagida teng taqsimlangan (ochiqlar ustiga tushmaydi).
+ * `eni` — deraza eni, `chet` — bo'lak chetidan eng kam masofa.
+ */
+export function orqaDerazalari(eni = 3.2, chet = 0.6) {
+  const natija: number[] = [];
+  for (const [a, b] of ORQA_DEVOR_BOLAKLARI) {
+    const joy = b - a - 2 * chet;
+    const soni = Math.floor((joy + 0.5) / (eni + 0.5));
+    if (soni < 1) continue;
+    const qadam = joy / soni;
+    for (let i = 0; i < soni; i++) natija.push(Math.round((a + chet + qadam * (i + 0.5)) * 1000) / 1000);
+  }
+  return natija;
+}
+
 // ── Po'lat karkas ──
 
 /** Asosiy fermalar (rama) qadami: 12 m (chetki oraliqlar 8 m). */
@@ -64,14 +99,17 @@ export const PROGON_Z = Array.from({ length: 11 }, (_, i) => -YARIM_CHUQURLIK + 
 
 export type UstunJoyi = { x: number; z: number; tur: "chet" | "ichki" };
 
-/** Barcha ustunlar: perimetr (orqa, old, chap/o'ng torets) va ikki ichki qator (z = ±3.6). */
+/** Orqa devordagi portal ustunlari: har ochiqning ikki yonida (ochiq o'rtasidagi ferma ustuni olib tashlangan — fermani rigel ko'taradi). */
+export const PORTAL_USTUNLARI_X = ORQA_OCHIQ_JOYLARI.flatMap((o) => [o.markaz - o.eni / 2 - 0.25, o.markaz + o.eni / 2 + 0.25]);
+/** Orqa qatordagi ustunlar x lari (kran yo'li konsollari shularga o'rnatiladi). */
+export const ORQA_USTUNLAR_X = [CHAP_USTUN_X, ...FERMA_X, ONG_USTUN_X].filter((x) => !ochiqdami(x, 0.3)).concat(PORTAL_USTUNLARI_X).sort((a, b) => a - b);
+
+/** Barcha ustunlar: perimetr (orqa, old, chap/o'ng torets) va ikki ichki qator (z = ±3.6). Orqa ochiqlar ichida ustun yo'q. */
 export function ustunlar(): UstunJoyi[] {
   const natija: UstunJoyi[] = [];
   const chetX = [CHAP_USTUN_X, ...FERMA_X, ONG_USTUN_X];
-  for (const x of chetX) {
-    natija.push({ x, z: ORQA_USTUN_Z, tur: "chet" });
-    natija.push({ x, z: OLD_USTUN_Z, tur: "chet" });
-  }
+  for (const x of ORQA_USTUNLAR_X) natija.push({ x, z: ORQA_USTUN_Z, tur: "chet" });
+  for (const x of chetX) natija.push({ x, z: OLD_USTUN_Z, tur: "chet" });
   for (const z of [-ICHKI_QATOR_Z, ICHKI_QATOR_Z]) {
     natija.push({ x: CHAP_USTUN_X, z, tur: "chet" }, { x: ONG_USTUN_X, z, tur: "chet" });
     for (const x of FERMA_X) natija.push({ x, z, tur: "ichki" });
@@ -114,16 +152,24 @@ export function kranHolati(t: number) {
 
 // ── Chang so'rish ──
 
-/** Magistral va tarmoq quvurlari sathi (o'qi). */
+/** Tarmoq quvurlari va old kollektor sathi (o'qi). */
 export const QUVUR_Y = 5.3;
 export const MAGISTRAL_R = 0.3;
-/** Orqa devor bo'yidagi magistral (1-liniya) va old tomondagi kollektor (2-liniya, oldi −z — "orqasi" +z). */
-export const ORQA_MAGISTRAL_Z = -14.0;
+/**
+ * Orqa devor bo'yidagi magistral (1-liniya) va old tomondagi kollektor (2-liniya, oldi −z — "orqasi" +z).
+ * Orqa magistral ochiqlar oldidan o'tadi — shuning uchun balandroq (pastki yuzi ≥ 5.5 m) va kran relsidan (z = −14.2) oldinroqda.
+ */
+export const ORQA_MAGISTRAL_Z = -13.6;
+export const ORQA_MAGISTRAL_Y = 5.85;
+/** Orqa magistraldan stanokka tarmoq shu z da (o'tish yo'lagi oxiri, kran ilmog'i zonasidan oldin) pastga — QUVUR_Y ga tushadi. */
+export const TARMOQ_TUSHISH_Z = -11.75;
 export const OLD_MAGISTRAL_Z = 12.6;
-/** Ikki magistralni bog'lovchi ko'ndalang quvur (x = 10 dagi ko'ndalang yo'lak ustida). */
-export const KONDALANG_QUVUR_X = 10;
-/** Siklon-filtr (orqa devor yonida, 3- va 4-stanoklar orasidagi bo'shliqda). */
-export const SIKLON = { x: 10, z: -12.7, r: 0.9, tepa: 4.55 } as const;
+/** Ikki magistralni bog'lovchi ko'ndalang quvur: ochiqlar orasidagi devor bo'lagidan (x = −0.9, ichki ustunlar yonidan) o'tadi. */
+export const KONDALANG_QUVUR_X = -0.9;
+/** Siklon-filtr (orqa devor yonida, ochiqlar orasidagi bo'lakda). Toza havo quvuri devor orqali 2-sexga chiqib, tepaga ko'tariladi. */
+export const SIKLON = { x: -5.2, z: -12.7, r: 0.9, tepa: 4.55 } as const;
+/** Siklon chiqish trubasining 2-sex tomonidagi joyi va balandligi (2-sex rejasida shu joy bo'sh qoladi). */
+export const SIKLON_TRUBASI = { x: SIKLON.x, z: -15.9, tepa: 10.2 } as const;
 
 /** Stanok ichidagi so'rish patrubkasi (lokal x siljishi) va shlang uchi balandligi. */
 export const PATRUBKA: Record<StanokTuri, { x: number; y: number }> = {
@@ -186,8 +232,8 @@ export const GALEREYA_YOLAGI: Tortburchak[] = [
   { x0: 28.8, x1: YARIM_ENI - 0.25, z0: -9.3, z1: -7.7 },
   { x0: 27.2, x1: 28.8, z0: -9.3, z1: ZONALAR.yolak.z0 },
 ];
-/** Bo'sh qolishi shart bo'lgan barcha yo'laklar. */
-export const BOSH_YOLAKLAR: Tortburchak[] = [MARKAZIY_YOLAK, ...MATERIAL_YOLAKLARI, ...JONATISH_YOLAKLARI, ...GALEREYA_YOLAGI];
+/** Bo'sh qolishi shart bo'lgan barcha yo'laklar (orqa devor ochiqlari oldidagi o'tish yo'laklari ham). */
+export const BOSH_YOLAKLAR: Tortburchak[] = [MARKAZIY_YOLAK, ...MATERIAL_YOLAKLARI, ...JONATISH_YOLAKLARI, ...GALEREYA_YOLAGI, ...ORQA_OCHIQ_YOLAKLARI];
 
 // ── Jihozlar joylari ──
 
@@ -204,12 +250,16 @@ export const ARAVACHALAR: Array<{ x: number; z: number; burilish: number; varaq:
 ];
 export const ARAVACHA_OLCHAMI = { eni: 1.3, chuqurlik: 0.8 } as const;
 
-/** Elektr shkaflar qatorlari (orqa devor bo'yida): boshlanish x, soni. */
-export const ELEKTR_SHKAFLAR = [{ x: -11.4, soni: 4 }, { x: 1.0, soni: 3 }] as const;
+/** Elektr shkaflar qatorlari (orqa devor bo'yida, ochiqlar orasidagi bo'lakda): boshlanish x, soni. */
+export const ELEKTR_SHKAFLAR = [{ x: -3.9, soni: 4 }, { x: 1.0, soni: 3 }] as const;
 export const SHKAF_ENI = 0.8;
-/** Chilangar stoli (orqa devor bo'yida). */
-export const ASBOB_STOLI = { x: 14.6, z: -14.35, eni: 2.4 } as const;
-/** Favqulodda chiqish eshiklari (orqa devorda, x). */
+/** Chilangar stoli (orqa devor bo'yida, o'ng ochiq va prorab xonasi orasida; chapida asbob aravachasi). */
+export const ASBOB_STOLI = { x: 22.4, z: -14.35, eni: 2.4 } as const;
+/** Yong'in shkafi (orqa devorda, chap ochiq yonida). */
+export const YONGIN_SHKAFI_X = -17.6;
+/** Birinchi yordam qutisi (orqa devorda, ikki shkaflar qatori orasida). */
+export const YORDAM_QUTISI_X = 0.15;
+/** Favqulodda chiqish eshiklari (orqa devorda, x) — endi 2-sexga ochiladi. */
 export const CHIQISH_ESHIKLARI_X = [-20.4, 18.5] as const;
 
 /** Material ombori: LDSP list taxlamlari (2.8 × 2.07 m, polda tagliklar ustida). Qabul yo'laklari (z = ±6) bo'sh qoladi. */
@@ -249,9 +299,9 @@ export const TAYYOR_PALETLAR: Array<{ x: number; z: number; qavat: 1 | 2; baland
 
 /** Chiqindi idishlari (orqa devor bo'yida va galereya yonida). */
 export const CHIQINDI_IDISHLARI: Array<{ x: number; z: number; rang: 0 | 1 | 2 }> = [
-  { x: -6.6, z: -14.35, rang: 0 },
-  { x: -5.85, z: -14.35, rang: 1 },
-  { x: -5.1, z: -14.35, rang: 2 },
+  { x: 5.4, z: -14.35, rang: 0 },
+  { x: 6.15, z: -14.35, rang: 1 },
+  { x: 6.9, z: -14.35, rang: 2 },
   { x: 30.9, z: -6.6, rang: 0 },
   { x: 30.9, z: -5.85, rang: 2 },
 ];
