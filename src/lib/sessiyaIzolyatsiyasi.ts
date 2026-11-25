@@ -36,6 +36,15 @@ export function tokenMuddati(token: string | null | undefined): number | null {
   return typeof exp === "number" && exp > 0 ? exp * 1000 : null;
 }
 
+/** Access token egasi: foydalanuvchi ID (`sub`) va do'kon (`workspaceId`); o'qib bo'lmasa — null. */
+export function tokenEgasi(accessToken: string | null | undefined): { id: string | null; workspaceId: string | null } {
+  const yuk = tokenYuki(accessToken);
+  return {
+    id: typeof yuk?.sub === "string" && yuk.sub ? yuk.sub : null,
+    workspaceId: typeof yuk?.workspaceId === "string" && yuk.workspaceId ? yuk.workspaceId : null,
+  };
+}
+
 /** Sessiya egasi: access token ichidagi `workspaceId` va `sub`; o'qib bo'lmasa — login nomi. */
 export function sessiyaEgasi(accessToken: string | null | undefined, username: string) {
   const yuk = tokenYuki(accessToken);

@@ -50,3 +50,55 @@ test('ulanish: panel tartibni qo‘llaydi (RBAC filtri saqlangan), tahrir rejimi
     for (const kalit of ['open', 'openHint', 'title', 'hint', 'reset', 'done', 'up', 'down', 'drag', 'children', 'moved']) assert.ok(r[kalit], `${til} ${kalit}`);
   }
 });
+
+// 25.11: tartib qayta kirganda / ertasi kuni standartga qaytib qolardi — kalit profil yuklanishiga bog'liq edi (profil?.id ?? username).
+test('saqlash kalitlari: asosiy — foydalanuvchi ID, zaxira — do‘kon|login; eski login kaliti faqat o‘qiladi', () => {
+  const { yozish, oqish } = lib.tartibKalitlari({ id: 'u1', login: 'w1|admin', eskiLogin: 'admin' });
+  assert.deepEqual(yozish, ['yepost-menyu-tartibi:u1', 'yepost-menyu-tartibi:login:w1|admin']);
+  assert.deepEqual(oqish, [...yozish, 'yepost-menyu-tartibi:admin']);
+  assert.equal(yozish[0], lib.tartibKaliti('u1'), 'oldin saqlangan (profil.id) tartib yo‘qolmaydi');
+  // ID hali noma'lum bo'lsa ham zaxira kalit bir xil — o'sha tartib topiladi.
+  assert.deepEqual(lib.tartibKalitlari({ login: 'w1|admin' }).yozish, ['yepost-menyu-tartibi:login:w1|admin']);
+  assert.deepEqual(lib.tartibKalitlari({}), { yozish: ['yepost-menyu-tartibi:mehmon'], oqish: ['yepost-menyu-tartibi:mehmon'] });
+});
+
+test('tartibni topish: birinchi yaroqli kalit; buzilgan qiymat va xotira xatosi o‘tkazib yuboriladi', () => {
+  const xotira = new Map([
+    ['b', 'buzilgan'],
+    ['c', '{"asosiy":["kassa","savdo"],"bolalar":{}}'],
+  ]);
+  const olish = (k) => xotira.get(k) ?? null;
+  assert.deepEqual(lib.tartibniTopish(olish, ['a', 'b', 'c']), { tartib: { asosiy: ['kassa', 'savdo'], bolalar: {} }, kalit: 'c' });
+  assert.equal(lib.tartibniTopish(olish, ['a', 'b']), null);
+  assert.equal(lib.tartibniTopish(() => { throw new Error('yopiq'); }, ['a']), null);
+});
+
+test('ulanish: panel egasini token ichidagi ID dan oladi, hook barcha kalitlarga yozadi va eski kalitdan ko‘chiradi', () => {
+  const panel = manba('src/Components/layout/YonPanel.tsx');
+  assert.match(panel, /id: profil\?\.id \?\? token\.id/);
+  assert.match(panel, /useMenyuTartibi\(tartibEgasi\)/);
+  const hook = manba('src/Components/layout/useMenyuTartibi.ts');
+  assert.match(hook, /tartibKalitlari\(egasi\)/);
+  assert.match(hook, /if \(yangi\) yozish\(yozishImzo\.split\([^)]*\), yangi\);\s*else yozish\(kalitlar, null\);/);
+  assert.match(hook, /yozish\(kalitlar, tartib\)/, 'zaxira/eski kalitdan topilgan tartib asosiy kalitga ko‘chiriladi');
+  assert.ok(!/localStorage\.clear\(\)/.test(manba('src/lib/sessiyaIzolyatsiyasi.ts') + manba('src/lib/authTokenStorage.ts')), 'chiqishda tartib o‘chmaydi');
+});
+
+// 25.11: ochiq bo'lim qayta bosilsa yopiladi va ostidagi keyingi bo'lim avtomatik ochiladi (ketma-ket).
+test('keyingi bo‘lim: tartibdagi navbatdagi bo‘lim, oddiy bandlar o‘tkaziladi, oxirgisidan keyin — null', () => {
+  const r = [
+    { path: '/', },
+    { path: '/savdo', bolalar: [1] },
+    { path: '/kassa' },
+    { path: '/ombor', bolalar: [1, 2] },
+    { path: '/bosh', bolalar: [] },
+    { path: '/hisobot', bolalar: [1] },
+  ];
+  assert.equal(lib.keyingiBolim(r, '/savdo')?.path, '/ombor');
+  assert.equal(lib.keyingiBolim(r, '/ombor')?.path, '/hisobot', 'bo‘sh bo‘lim o‘tkaziladi');
+  assert.equal(lib.keyingiBolim(r, '/hisobot'), null);
+  assert.equal(lib.keyingiBolim(r, '/yoq'), null);
+  const panel = manba('src/Components/layout/YonPanel.tsx');
+  assert.match(panel, /const keyingi = keyingiBolim\(korinadiganMenyular, menu\.path\);/);
+  assert.match(panel, /\[menu\.path\]: false, \.\.\.\(keyingi \? \{ \[keyingi\.path\]: true \} : \{\}\)/);
+});

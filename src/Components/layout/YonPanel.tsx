@@ -61,13 +61,14 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useAuthProfileStore } from "@/store/authProfileStore";
+import { tokenEgasi } from "@/lib/sessiyaIzolyatsiyasi";
 import { useSupportStore } from "@/store/supportStore";
 import { useIshlabChiqarishStore } from "@/store/ishlabChiqarishStore";
 import { sahifagaRuxsatBormi } from "@/lib/roles";
 import MobilNavigatsiya from "./MobilNavigatsiya";
 import MenyuTahriri, { ASOSIY_KONTEYNER, type BoshlangichSudrash } from "./MenyuTahriri";
 import { useMenyuTartibi } from "./useMenyuTartibi";
-import { kochirish, korinadiganTartibniBirlashtirish, tartibniQollash } from "@/lib/menyuTartibi";
+import { keyingiBolim, kochirish, korinadiganTartibniBirlashtirish, tartibniQollash } from "@/lib/menyuTartibi";
 
 import { useAvatarUrl } from "@/store/avatarStore";
 import type { YonPanelRejimi } from "./yonPanelHolati";
@@ -348,7 +349,19 @@ export default function YonPanel({
 
   // Foydalanuvchi tanlagan tartib (shu brauzerda, foydalanuvchi bo'yicha): yuqori bandlar va bo'lim ichidagi bandlar. Yangi qo'shilgan
   // menyu bandlari standart joyiga yaqin chiqadi; marshrut va ruxsatlar tartibga bog'liq emas.
-  const { tartib, saqlash: tartibniSaqlash } = useMenyuTartibi(profil?.id ?? username);
+  // Egasi token ichidagi foydalanuvchi ID'sidan darhol olinadi (profil yuklanishini yoki token yangilanishini kutmaydi) — tartib
+  // qayta kirganda ham, ertasi kuni ham o'sha kalitdan o'qiladi.
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const tartibEgasi = useMemo(() => {
+    const token = tokenEgasi(accessToken);
+    const workspaceId = profil?.workspaceId ?? token.workspaceId;
+    return {
+      id: profil?.id ?? token.id,
+      login: username ? (workspaceId ? `${workspaceId}|${username}` : username) : null,
+      eskiLogin: username,
+    };
+  }, [accessToken, profil?.id, profil?.workspaceId, username]);
+  const { tartib, saqlash: tartibniSaqlash } = useMenyuTartibi(tartibEgasi);
   const tartiblanganMenyular = useMemo(
     () => tartibniQollash(menyular, (menu) => menu.key, tartib?.asosiy).map((menu) =>
       menu.bolalar ? { ...menu, bolalar: tartibniQollash(menu.bolalar, (bola) => bola.key, tartib?.bolalar[menu.key]) } : menu
@@ -583,7 +596,9 @@ export default function YonPanel({
       return;
     }
     if (ochiqBolimlar[menu.path]) {
-      setOchiqBolimlar((joriy) => ({ ...joriy, [menu.path]: false }));
+      // Ochiq bo'lim yopiladi va ostidagi keyingi bo'lim avtomatik ochiladi (ketma-ket; sahifa o'zgarmaydi).
+      const keyingi = keyingiBolim(korinadiganMenyular, menu.path);
+      setOchiqBolimlar((joriy) => ({ ...joriy, [menu.path]: false, ...(keyingi ? { [keyingi.path]: true } : {}) }));
       return;
     }
     setOchiqBolimlar((joriy) => ({ ...joriy, [menu.path]: true }));

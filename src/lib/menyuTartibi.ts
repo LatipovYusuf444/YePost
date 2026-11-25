@@ -55,6 +55,16 @@ export function korinadiganTartibniBirlashtirish(toliq: readonly string[], korin
   return toliq.map((k) => (korinadi.has(k) ? korinadigan[keyingi++] ?? k : k));
 }
 
+/**
+ * Ochiq bo'lim yopilganda avtomatik ochiladigan keyingi bo'lim: ko'rinadigan tartibda shu bo'limdan keyingi, ichida bandlari bor
+ * birinchi bo'lim (oddiy bandlar — Kassa va h.k. — o'tkazib yuboriladi). Oxirgi bo'limdan keyin — null (boshiga qaytmaydi).
+ */
+export function keyingiBolim<T extends { path: string; bolalar?: readonly unknown[] }>(royxat: readonly T[], path: string): T | null {
+  const indeks = royxat.findIndex((menu) => menu.path === path);
+  if (indeks < 0) return null;
+  return royxat.slice(indeks + 1).find((menu) => Boolean(menu.bolalar?.length)) ?? null;
+}
+
 /** Saqlangan qiymat → tartib (buzilgan yoki eski format bo'lsa null). */
 export function tartibniTahlil(matn: string | null | undefined): MenyuTartibi | null {
   if (!matn) return null;
@@ -74,4 +84,46 @@ export function tartibniTahlil(matn: string | null | undefined): MenyuTartibi | 
 /** Foydalanuvchiga tegishli saqlash kaliti (bir brauzerda bir nechta xodim ishlasa, har birining tartibi alohida). */
 export function tartibKaliti(egasi: string | null | undefined) {
   return `${MENYU_TARTIBI_KALITI}:${egasi || "mehmon"}`;
+}
+
+/**
+ * Tartib egasi: foydalanuvchi ID (profil yoki access token ichidagi `sub`), `login` — do'kon bilan login nomi (zaxira kalit),
+ * `eskiLogin` — faqat login nomi (eski versiya profil yuklanmasdan shu kalitga yozgan; faqat o'qiladi).
+ */
+export type TartibEgasi = { id?: string | null; login?: string | null; eskiLogin?: string | null };
+
+/**
+ * Saqlash kalitlari. `yozish` — tartib yoziladigan kalitlar (birinchisi asosiy — foydalanuvchi ID; ikkinchisi zaxira — login nomi, ID
+ * hali ma'lum bo'lmagan paytda ham shu tartib topiladi). `oqish` — qidirish tartibi: yozish kalitlari, so'ng eski versiya yozgan
+ * kalit (profil yuklanmasdan login nomi bilan). Egasi umuman noma'lum bo'lsa — "mehmon".
+ */
+export function tartibKalitlari(egasi: TartibEgasi): { yozish: string[]; oqish: string[] } {
+  const id = egasi.id?.trim();
+  const login = egasi.login?.trim();
+  const eskiLogin = egasi.eskiLogin?.trim();
+  const yozish: string[] = [];
+  if (id) yozish.push(tartibKaliti(id));
+  if (login) yozish.push(`${MENYU_TARTIBI_KALITI}:login:${login}`);
+  if (!yozish.length) return { yozish: [tartibKaliti(null)], oqish: [tartibKaliti(null)] };
+  const oqish = [...yozish];
+  if (eskiLogin && eskiLogin !== id) oqish.push(tartibKaliti(eskiLogin));
+  return { yozish, oqish };
+}
+
+/** `oqish` kalitlaridan birinchi yaroqli tartib va u topilgan kalit (hech biri bo'lmasa — null). */
+export function tartibniTopish(
+  olish: (kalit: string) => string | null,
+  oqish: readonly string[]
+): { tartib: MenyuTartibi; kalit: string } | null {
+  for (const kalit of oqish) {
+    let matn: string | null = null;
+    try {
+      matn = olish(kalit);
+    } catch {
+      matn = null;
+    }
+    const tartib = tartibniTahlil(matn);
+    if (tartib) return { tartib, kalit };
+  }
+  return null;
 }
